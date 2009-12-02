@@ -37,8 +37,8 @@ int main()
     std::cout << "loading xml files: xml/simple.xml, xml/two_message_example.xml" << std::endl;
 
     std::set<std::string> xml_files;
-    xml_files.insert("../simple/simple.xml");
-    xml_files.insert("two_message.xml");    
+    xml_files.insert("../src/acomms/lib_dccl/examples/simple/simple.xml");
+    xml_files.insert("../src/acomms/lib_dccl/examples/two_message/two_message.xml");
     
     dccl::DCCLCodec dccl(xml_files, "../../message_schema.xsd");
 

@@ -28,7 +28,7 @@
 
 // this is an example showing some of the "MOOS" related features of libdccl that can be used (if desired) in the absence of MOOS
 
-#include "../../dccl.h"
+#include "dccl.h"
 #include <exception>
 #include <iostream>
 
@@ -39,8 +39,8 @@ int main()
     std::cout << "loading nafcon xml files" << std::endl;
 
     dccl::DCCLCodec dccl;
-    dccl.add_xml_message_file("nafcon_command.xml", "../../message_schema.xsd");
-    dccl.add_xml_message_file("nafcon_report.xml", "../../message_schema.xsd");
+    dccl.add_xml_message_file("../src/acomms/lib_dccl/examples/plusnet/nafcon_command.xml", "../../message_schema.xsd");
+    dccl.add_xml_message_file("../src/acomms/lib_dccl/examples/plusnet/nafcon_report.xml", "../../message_schema.xsd");
     
     std::cout << std::string(30, '#') << std::endl
               << "detailed message summary:" << std::endl

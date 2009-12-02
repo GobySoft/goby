@@ -1,0 +1,2 @@
+add_executable(two_message two_message.cpp)
+target_link_libraries(two_message dccl)

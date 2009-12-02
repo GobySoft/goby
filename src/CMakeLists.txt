@@ -3,11 +3,11 @@ project(goby)
      
 # set built file locations
 get_filename_component(goby_LIB_DIR ../lib ABSOLUTE)
-set(LIBRARY_OUTPUT_PATH ${goby_LIB_DIR} CACHE PATH 
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${goby_LIB_DIR} CACHE PATH 
   "Output directory for the libraries" )
 
 get_filename_component(goby_BIN_DIR ../bin ABSOLUTE)
-set(RUNTIME_OUTPUT_PATH ${goby_BIN_DIR} CACHE PATH
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${goby_BIN_DIR} CACHE PATH
   "Output directory for the binaries" )
 
 #install(DIRECTORY ${goby_BIN_DIR}/ DESTINATION /usr/local/bin FILE_PERMISSIONS WORLD_EXECUTE)

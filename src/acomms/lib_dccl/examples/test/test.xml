@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<message_set>
+  <message>
+    <name>TEST</name>
+    <size>32</size>
+    <id>4</id>
+    <layout>
+      <bool algorithm="invert">
+        <name>B</name>
+      </bool>
+      <enum>
+        <name>E</name>
+        <value>cat</value>
+        <value>dog</value>
+        <value>mouse</value>
+      </enum>
+      <string algorithm="prepend_fat">
+        <name>S</name>
+        <max_length>15</max_length>
+      </string>
+      <int algorithm="+1">
+        <name>I</name>
+        <max>100</max>
+        <min>-50</min>	  
+      </int>
+      <float algorithm="*2">
+        <name>F</name>
+        <max>100</max>
+        <min>-50</min>	  
+        <precision>2</precision>
+      </float>      
+
+      <float algorithm="sum:F:I">
+        <name>SUM</name>
+        <max>200</max>
+        <min>-100</min>	  
+        <precision>2</precision>
+      </float>      
+
+    </layout>
+  </message>
+</message_set>

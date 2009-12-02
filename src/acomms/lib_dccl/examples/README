@@ -1,0 +1,15 @@
+t. schneider tes@mit.edu 
+ocean engineering graduate student - mit / whoi joint program
+massachusetts institute of technology (mit)
+laboratory for autonomous marine sensing systems (lamss)
+
+the examples are intended to be examined in this order:
+
+'simple'
+'two_message'
+'plusnet'
+'test'
+
+if the user has no interest in MOOS or the related string parsing / formatting capabilities of libdccl, he can skip 'plusnet'.
+
+'test' is included in here for the interested user as it includes how to use algorithms. i use this process to ensure correct operation of the DCCL decode / encode but it may be a bit dense to follow. 

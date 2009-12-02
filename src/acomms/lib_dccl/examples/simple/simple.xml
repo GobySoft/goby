@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<message_set>
+  <message>
+    <name>Simple</name>
+    <id>1</id>
+    <size>32</size>
+    <layout>
+      <string>
+        <name>value</name>
+        <max_length>30</max_length>
+      </string>      
+    </layout>
+  </message>
+</message_set>

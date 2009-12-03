@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e -u
 
-pushd build
-cmake ../src
+pushd ../build
+cmake ..
 make $@
 popd
 

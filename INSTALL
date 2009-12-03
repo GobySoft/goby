@@ -1,0 +1,14 @@
+#!/bin/bash
+# ~~~~~~~~~~~~~~
+# compiling goby
+# ~~~~~~~~~~~~~~
+
+# satisfy the third party dependencies in DEPENDENCIES
+# (this generally means running apt-get)
+
+# then, to build to goby/bin and goby/lib:
+cd scripts
+./goby_build.sh
+
+# (optionally) install to /usr/local/bin and /usr/local/lib
+# > ./goby_build.sh install

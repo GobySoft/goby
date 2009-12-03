@@ -1,9 +1,25 @@
-global:
-- libboost-dev (1.34 or newer)
+#!/bin/bash
+# ~~~~~~~~~~~~~~~~~~~~~~~~
+# third-party dependencies
+# ~~~~~~~~~~~~~~~~~~~~~~~~
 
-libdccl:
-- libxerces-c-dev (or libxerces-c2-dev)
+# these are given as debian/ubuntu package names.
+# to install in these distributions use (as root or with
+# sudo):
+# > apt-get install {packagename}
 
-libmmdriver:
-- libasio-dev
-- libboost-date-time-dev
+# most other distributions will have the appropriate
+# package as well; it's up to you to find out what it is
+
+# global:
+sudo apt-get install \
+     libboost-dev # (1.34 or newer)
+
+# libdccl:
+sudo apt-get install \
+     libxerces-c-dev # (or libxerces-c2-dev)
+
+# libmmdriver:
+sudo apt-get install \
+     libasio-dev \
+     libboost-date-time-dev

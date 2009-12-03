@@ -1,0 +1,9 @@
+global:
+- libboost-dev (1.34 or newer)
+
+libdccl:
+- libxerces-c-dev (or libxerces-c2-dev)
+
+libmmdriver:
+- libasio-dev
+- libboost-date-time-dev

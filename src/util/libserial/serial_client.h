@@ -1,12 +1,10 @@
-// t. schneider tes@mit.edu 06.18.09
-// ocean engineering graduate student - mit / whoi joint program
+// copyright 2009 t. schneider tes@mit.edu
+// ocean engineering graudate student - mit / whoi joint program
 // massachusetts institute of technology (mit)
 // laboratory for autonomous marine sensing systems (lamss)
 // 
-// this is SerialClient.hpp
-//
-// see the readme file within this directory for information
-// pertaining to usage and purpose of this script.
+// this file is part of serial, a library for handling serial
+// communications.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by

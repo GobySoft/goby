@@ -29,8 +29,16 @@
 
 using dccl::operator<<;
 
-void plus1(long& l)
-{ ++l; }
+void plus1(dccl::MessageVal& mv)
+{
+    // this is silly but it demonstrates taking in one value and returning another
+    long l;
+    mv.val(l);
+    ++l;
+
+    double d = l;
+    mv.set(d);
+}
 
 void times2(double& d)
 { d *= 2; }
@@ -41,9 +49,10 @@ void prepend_fat(std::string& s)
 void invert(bool& b)
 { b ^= 1; }
 
-void algsum(double& d, const std::vector<std::string>& params,
+void algsum(dccl::MessageVal& mv, const std::vector<std::string>& params,
          const std::map<std::string,dccl::MessageVal>& vals)
 {
+    double d;
     // index 0 is the name ("sum"), so start at 1
     for(size_t i = 1, n = params.size(); i < n; ++i)
     {
@@ -51,7 +60,8 @@ void algsum(double& d, const std::vector<std::string>& params,
         double v;
         if(it != vals.end() && it->second.val(v))
             d += v;
-    }    
+    }
+    mv.set(d);
 }
 
 
@@ -60,14 +70,14 @@ int main()
     std::cout << "loading xml file: test.xml" << std::endl;
 
     // instantiate the parser with a single xml file
-    dccl::DCCLCodec dccl("../src/acomms/lib_dccl/examples/test/test.xml", "../../message_schema.xsd");
+    dccl::DCCLCodec dccl("../src/acomms/libdccl/examples/test/test.xml", "../../message_schema.xsd");
 
     // load up the algorithms    
     dccl.add_str_algorithm("prepend_fat", &prepend_fat);
-    dccl.add_long_algorithm("+1", &plus1);
+    dccl.add_generic_algorithm("+1", &plus1);
     dccl.add_dbl_algorithm("*2", &times2);
     dccl.add_bool_algorithm("invert", &invert);
-    dccl.add_adv_dbl_algorithm("sum", &algsum);
+    dccl.add_adv_algorithm("sum", &algsum);
     
     std::vector< std::map<std::string, std::string> > s_in;
     s_in.resize(2);
@@ -79,7 +89,7 @@ int main()
     b_in.resize(2);
     
     // first try everything in as a string
-    bool b_i = true;            dccl::MessageVal B(b_i);
+    bool b_i = true;             dccl::MessageVal B(b_i);
     std::string e_i = "dog";     dccl::MessageVal E(e_i);
     std::string s_i = "raccoon"; dccl::MessageVal S(s_i);
     long i_i = 42;               dccl::MessageVal I(i_i);
@@ -134,20 +144,20 @@ int main()
         long i; I.val(i);
         double f; F.val(f);
         double sum; SUM.val(sum);
-        
+
+        ++i;
         invert(b);
         prepend_fat(s);
-        plus1(i);
         times2(f);
         sum += i_i + f_i;
         
         dccl::MessageVal Bo(b);
         dccl::MessageVal Eo(e);
         dccl::MessageVal So(s);
-        dccl::MessageVal Io(i);
         dccl::MessageVal Fo(f, 2);
         dccl::MessageVal SUMo(sum, 2);
-        
+        dccl::MessageVal Io(i);
+
         
         assert(Bo == s_out["B"]);
         assert(Eo == s_out["E"]);

@@ -44,7 +44,7 @@ int main()
     std::cout << "loading xml file: xml/simple.xml" << std::endl;
 
     // instantiate the parser with a single xml file
-    dccl::DCCLCodec dccl("../src/acomms/lib_dccl/examples/simple/simple.xml", "../../message_schema.xsd");
+    dccl::DCCLCodec dccl("../src/acomms/libdccl/examples/simple/simple.xml", "../../message_schema.xsd");
 
     // read message content (in this case from terminal window)
     std::string input;

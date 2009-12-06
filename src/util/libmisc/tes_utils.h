@@ -216,7 +216,7 @@ namespace tes_util
         
         // deal with foo=bar,o=bar problem when looking for "o=" since
         // o is contained in foo
-        while(!(start_pos == 0 || str[start_pos-1] == ',' || start_pos == std::string::npos))
+        while(!(start_pos == 0 || start_pos == std::string::npos || str[start_pos-1] == ','))
             start_pos = str.find(std::string(key+"="), start_pos+1);
 
         

@@ -42,7 +42,7 @@ dccl::DCCLCodec::DCCLCodec(const std::set<std::string>& files,
         add_xml_message_file(s, schema);
 }
 
-unsigned dccl::DCCLCodec::add_xml_message_file(const std::string& xml_file,
+std::set<unsigned> dccl::DCCLCodec::add_xml_message_file(const std::string& xml_file,
                                                const std::string xml_schema)
 {
     size_t begin_size = messages_.size();
@@ -63,15 +63,18 @@ unsigned dccl::DCCLCodec::add_xml_message_file(const std::string& xml_file,
     
     check_duplicates();
 
+    std::set<unsigned> added_ids;
+    
     for(size_t i = 0, n = end_size - begin_size; i < n; ++i)
     {
         // map name/id to position in messages_ vector for later use
         size_t new_index = messages_.size()-i-1;
         name2messages_.insert(std::pair<std::string, size_t>(messages_[new_index].name(), new_index));
         id2messages_.insert(std::pair<unsigned, size_t>(messages_[new_index].id(), new_index));
+        added_ids.insert(messages_[new_index].id());
     }
     
-    return messages_.back().id();
+    return added_ids;
 }
 
 std::set<unsigned> dccl::DCCLCodec::all_message_ids()
@@ -166,27 +169,6 @@ std::ostream& dccl::operator<< (std::ostream& out, const std::set<unsigned>& s)
 /////////////////////
 // public methods (more MOOS specific, but still could be general use)
 /////////////////////
-
-
-void dccl::DCCLCodec::get_queuing(unsigned id,
-                                  bool& ack,
-                                  unsigned& blackout_time,
-                                  unsigned& max_queue,
-                                  bool& newest_first,
-                                  double& priority_base,
-                                  double& priority_time_const)
-{
-    std::vector<Message>::iterator it = to_iterator(id);
-    Queuing * q = it->get_queuing();
-
-    ack = q->ack();
-    blackout_time = q->blackout_time();
-    max_queue = q->max_queue();
-    newest_first = q->newest_first();
-    priority_base = q->priority_base();
-    priority_time_const = q->priority_time_const();
-        
-}
 
 // <trigger_var mandatory_content="string"></trigger_var>
 // mandatory content is a string that must be contained in the

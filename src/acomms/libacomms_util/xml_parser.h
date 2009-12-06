@@ -20,8 +20,8 @@
 
 // based largely on work in C++ Cookbook by D. Ryan Stephens, Christopher Diggins, Jonathan Turkanis, and Jeff Cogswell. Copyright 2006 O'Reilly Media, INc., 0-596-00761-2.
 
-#ifndef MESSAGE_XML_PARSER_H
-#define MESSAGE_XML_PARSER_H
+#ifndef XML_PARSER_H
+#define XML_PARSER_H
 
 
 #include <exception>
@@ -36,55 +36,56 @@
 
 #include "xerces_strings.h" 
 
-namespace dccl
-{
+
     
 // RAII utility that initializes the parser and frees resources
 // when it goes out of scope
-    class XercesInitializer {
-      public:
-        XercesInitializer( ) { xercesc::XMLPlatformUtils::Initialize( ); }
-        ~XercesInitializer( ) { xercesc::XMLPlatformUtils::Terminate( ); }
-      private:
-        // Prohibit copying and assignment
-        XercesInitializer(const XercesInitializer&);
-        XercesInitializer& operator=(const XercesInitializer&);
-    };
+class XercesInitializer {
+  public:
+    XercesInitializer( ) { xercesc::XMLPlatformUtils::Initialize( ); }
+    ~XercesInitializer( ) { xercesc::XMLPlatformUtils::Terminate( ); }
+  private:
+    // Prohibit copying and assignment
+    XercesInitializer(const XercesInitializer&);
+    XercesInitializer& operator=(const XercesInitializer&);
+};
 
-    class XMLParser {
-      public:
-      XMLParser(xercesc::DefaultHandler& content, xercesc::DefaultHandler& error)
-          : content_(content),
-            error_(error) 
+class XMLParser {
+  public:
+  XMLParser(xercesc::DefaultHandler& content, xercesc::DefaultHandler& error)
+      : content_(content),
+        error_(error) 
         { }
         
-        bool parse(const std::string& file, const std::string& schema = "")
+    bool parse(const std::string& file, const std::string& schema = "")
+    {
+        // Initialize Xerces and obtain parser
+        XercesInitializer init; 
+        std::auto_ptr<xercesc::SAX2XMLReader> parser(xercesc::XMLReaderFactory::createXMLReader());
+        
+        if(schema != "")
         {
-            // Initialize Xerces and obtain parser
-            XercesInitializer init; 
-            std::auto_ptr<xercesc::SAX2XMLReader> parser(xercesc::XMLReaderFactory::createXMLReader());
+            std::cout << schema << std::endl;
+            
+            const XercesString xs_schema = fromNative(schema);
+            const XMLCh * const schema_location = xs_schema.c_str();            
+            parser->setFeature(xercesc::XMLUni::fgSAX2CoreValidation, true);
+            parser->setProperty(xercesc::XMLUni::fgXercesSchemaExternalNoNameSpaceSchemaLocation, (void*)schema_location);
+        }
+        parser->setContentHandler(&content_);
+        parser->setErrorHandler(&error_);
         
-            if(schema != "")
-            {
-                const XercesString xs_schema = fromNative(schema);
-                const XMLCh * const schema_location = xs_schema.c_str();            
-                parser->setFeature(xercesc::XMLUni::fgSAX2CoreValidation, true);
-                parser->setProperty(xercesc::XMLUni::fgXercesSchemaExternalNoNameSpaceSchemaLocation, (void*)schema_location);
-            }
-            parser->setContentHandler(&content_);
-            parser->setErrorHandler(&error_);
+        // Parse the XML document
+        parser->parse(file.c_str());
         
-            // Parse the XML document
-            parser->parse(file.c_str());
+        return true;
+    }       
         
-            return true;
-        }       
-        
-      private:
-        xercesc::DefaultHandler& content_;
-        xercesc::DefaultHandler& error_;
-    };
-}
+  private:
+    xercesc::DefaultHandler& content_;
+    xercesc::DefaultHandler& error_;
+};
+
 
 
 

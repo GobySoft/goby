@@ -23,140 +23,145 @@
 #include "message_val.h"
 
 void dccl::MessageVal::set(std::string sval)
-{ sval_ = sval; sval_set_ = true; }        
+{ sval_ = sval; type_ = cpp_string; }
 void dccl::MessageVal::set(double dval, int precision /* = 15 */)
-{ dval_ = dval; dval_set_ = true; precision_ = precision; }
+{ dval_ = dval; type_ = cpp_double; precision_ = precision; }
 void dccl::MessageVal::set(long lval)
-{ lval_ = lval; lval_set_ = true; }
+{ lval_ = lval; type_ = cpp_long; }
 void dccl::MessageVal::set(bool bval)
-{ bval_ = bval; bval_set_ = true; }
+{ bval_ = bval; type_ = cpp_bool; }
 
 
-
-
-bool dccl::MessageVal::val(std::string& s) const 
+bool dccl::MessageVal::val(std::string& s) const
 {
-    if(sval_set_)
-        s = sval_;
-    else if(dval_set_)
+    std::stringstream ss;
+    switch(type_)
     {
-        std::stringstream ss;
-        ss << std::fixed << std::setprecision(precision_) << dval_;
-        s = ss.str();
-    }            
-    else if(lval_set_)
-        s = boost::lexical_cast<std::string>(lval_);
-    else if(bval_set_)
-        s = (bval_) ? "true" : "false";
-    else
-        return false;
-            
-    return true;            
+        case cpp_string:
+            s = sval_;
+            return true;            
+
+        case cpp_double:
+            ss << std::fixed << std::setprecision(precision_) << dval_;
+            s = ss.str();
+            return true;            
+
+        case cpp_long:
+            s = boost::lexical_cast<std::string>(lval_);
+            return true;
+
+        case cpp_bool:
+            s = (bval_) ? "true" : "false";
+            return true;
+
+        default:
+            return false;
+    }
 }
 
 bool dccl::MessageVal::val(bool& b) const
 {
-    if(bval_set_)
-        b = bval_;
-    else if(lval_set_)
+    switch(type_)
     {
-        try { b = boost::numeric_cast<bool>(lval_); }
-        catch(...) { return false; }        
-    }
-    else if(dval_set_)
-    {
-        try { b = boost::numeric_cast<bool>(dval_); }
-        catch(...) { return false; }        
-    }
-    else if(sval_set_)
-    {
-        if(tes_util::stricmp(sval_, "true") || tes_util::stricmp(sval_, "1"))
-            b = true;
-        else if(tes_util::stricmp(sval_, "false") || tes_util::stricmp(sval_, "0"))
-            b = false;
-        else
+        case cpp_string:
+            if(tes_util::stricmp(sval_, "true") || tes_util::stricmp(sval_, "1"))
+                b = true;
+            else if(tes_util::stricmp(sval_, "false") || tes_util::stricmp(sval_, "0"))
+                b = false;
+            else
+                return false;
+            return true;
+            
+        case cpp_double:
+            try { b = boost::numeric_cast<bool>(dval_); }
+            catch(...) { return false; }
+            return true;
+
+        case cpp_long:
+            try { b = boost::numeric_cast<bool>(lval_); }
+            catch(...) { return false; }
+            return true;
+
+        case cpp_bool:
+            b = bval_;
+            return true;
+
+        default:
             return false;
     }
-    else
-        return false;
-
-    return true;
 }    
 
 bool dccl::MessageVal::val(long& t) const
 {
-    if(lval_set_)
-        t = lval_;
-    else if(dval_set_)
+    switch(type_)
     {
-        try { t = boost::numeric_cast<long>(tes_util::sci_round(dval_, 0)); }
-        catch(...) { return false; }        
-    }    
-    else if(bval_set_)
-        t = (bval_) ? 1 : 0;
-    else if(sval_set_)
-    {
-        try
-        {
-            double d = boost::lexical_cast<double>(sval_);
-            t = boost::numeric_cast<long>(tes_util::sci_round(d, 0));
-        }
-        catch (...)
-        {
-            if(tes_util::stricmp(sval_, "true"))
-                t = 1;
-            else if(tes_util::stricmp(sval_, "false"))
-                t = 0;
-            else
-                return false;
-        }  
-    }
-    else
-        return false;
+        case cpp_string:
+            try
+            {
+                double d = boost::lexical_cast<double>(sval_);
+                t = boost::numeric_cast<long>(tes_util::sci_round(d, 0));
+            }
+            catch (...)
+            {
+                if(tes_util::stricmp(sval_, "true"))
+                    t = 1;
+                else if(tes_util::stricmp(sval_, "false"))
+                    t = 0;
+                else
+                    return false;
+            }
+            return true;
 
-    return true;            
+        case cpp_double:
+            try { t = boost::numeric_cast<long>(tes_util::sci_round(dval_, 0)); }
+            catch(...) { return false; }
+            return true;
+
+        case cpp_long:
+            t = lval_;
+            return true;
+
+        case cpp_bool:
+            t = (bval_) ? 1 : 0;
+            return true;
+
+        default:
+            return false;
+    }
 }        
         
 bool dccl::MessageVal::val(double& d) const
 {
-    if(dval_set_)
-        d = dval_;
-    else if(lval_set_)
+    switch(type_)
     {
-        try { d = boost::numeric_cast<double>(lval_); }
-        catch (...) { return false; }
-    }
-    else if(bval_set_)
-        d = (bval_) ? 1 : 0;
-    else if(sval_set_)
-    {
-        try { d = boost::lexical_cast<double>(sval_); }
-        catch (boost::bad_lexical_cast &)
-        {
-            if(tes_util::stricmp(sval_, "true"))
-                d = 1;
-            else if(tes_util::stricmp(sval_, "false"))
-                d = 0;
-            else
-                return false;
-        }  
-    }
-    else
-        return false;
+        case cpp_string:
+            try { d = boost::lexical_cast<double>(sval_); }
+            catch (boost::bad_lexical_cast &)
+            {
+                if(tes_util::stricmp(sval_, "true"))
+                    d = 1;
+                else if(tes_util::stricmp(sval_, "false"))
+                    d = 0;
+                else
+                    return false;
+            }
+            return true;
 
-    return true;            
-}
+        case cpp_double:
+            d = dval_;
+            return true;
 
-dccl::DCCLCppType dccl::MessageVal::type()
-{
-    if(dval_set_)
-        return cpp_double;
-    else if(sval_set_)
-        return cpp_string;
-    else if(bval_set_)
-        return cpp_bool;
-    else if(lval_set_)
-        return cpp_long;
-    else
-        return cpp_notype;
+        case cpp_long:
+            try { d = boost::numeric_cast<double>(lval_); }
+            catch (...) { return false; }
+            return true;
+
+        case cpp_bool:
+            d = (bval_) ? 1 : 0;
+            return true;
+
+        default:
+            return false;
+
+    }
 }

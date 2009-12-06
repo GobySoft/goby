@@ -1,12 +1,10 @@
-// t. schneider tes@mit.edu 8.16.09
-// ocean engineering graduate student - mit / whoi joint program
+// copyright 2009 t. schneider tes@mit.edu
+// ocean engineering graudate student - mit / whoi joint program
 // massachusetts institute of technology (mit)
 // laboratory for autonomous marine sensing systems (lamss)
 // 
-// this is flex_cout.h, part of FlexCout
-//
-// see the readme file within this directory for information
-// pertaining to usage and purpose of this script.
+// this file is part of flex-cout, a terminal display library
+// that extends the functionality of std::cout
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by

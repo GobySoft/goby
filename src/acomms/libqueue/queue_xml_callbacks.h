@@ -20,10 +20,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
-// xml code based initially on work in C++ Cookbook by D. Ryan Stephens, Christopher Diggins, Jonathan Turkanis, and Jeff Cogswell. Copyright 2006 O'Reilly Media, INc., 0-596-00761-2
+// xml code based largely on work in C++ Cookbook by D. Ryan Stephens, Christopher Diggins, Jonathan Turkanis, and Jeff Cogswell. Copyright 2006 O'Reilly Media, INc., 0-596-00761-2
 
-#ifndef MESSAGE_XML_CALLBACKS_H
-#define MESSAGE_XML_CALLBACKS_H
+#ifndef QUEUE_XML_CALLBACKS_H
+#define QUEUE_XML_CALLBACKS_H
 
 #include <stdexcept>                       // runtime_error
 #include <vector>
@@ -35,23 +35,21 @@
 #include <boost/lexical_cast.hpp>
 
 #include "xerces_strings.h"
-#include "message.h"
-#include "message_xml_tags.h"
+#include "queue_manager.h"
+#include "queue_xml_tags.h"
 
-namespace dccl
+namespace queue
 {
     
 // Implements callbacks that receive character data and
 // notifications about the beginnings and ends of elements 
-    class MessageContentHandler : public xercesc::DefaultHandler {
+    class QueueContentHandler : public xercesc::DefaultHandler {
       public:
-      MessageContentHandler(std::vector<Message> & messages) : messages(messages)
+      QueueContentHandler(std::vector<QueueConfig>& q)
+          : q_(q),
+            in_message_(false),
+            in_message_var_(false)
         {
-            in_message = false; // true = in <message>
-            in_layout = false; // true = in <layout>
-            in_message_var = false; // true = in <int>, <bool>, <string>, <float>
-            in_publish = false; // true = in <publish>
-
             initialize_tags(tags_map_);
         }
 
@@ -75,20 +73,17 @@ namespace dccl
 #endif
     
       private:
-        std::vector<Message>&  messages;
+        std::vector<QueueConfig>& q_;
         XercesString current_text;
-
-        bool in_message; // true = inside <message>
-        bool in_layout; // true = inside <layout>
-        bool in_message_var; // true = in <int>, <bool>, <string>, <float>
-        XercesString type; // current message_var type: "int", "bool", etc.
-        bool in_publish; // true = in <publish>
+        
+        bool in_message_; // true = inside <message>
+        bool in_message_var_; // true = in <int>, <bool>, <string>, <float>
+        
         std::map<std::string, Tags> tags_map_;
-    
     };
 
 // Receives Error notifications.
-    class MessageErrorHandler : public xercesc::DefaultHandler 
+    class QueueErrorHandler : public xercesc::DefaultHandler 
     {
 
       public:
@@ -100,7 +95,7 @@ namespace dccl
         {
             XMLSSize_t line = e.getLineNumber();
             std::stringstream ss;
-            ss << "message xml parsing error on line " << line << ": " << std::endl << toNative(e.getMessage());
+            ss << "xml parsing error on line " << line << ": " << std::endl << toNative(e.getMessage());
             
             throw std::runtime_error(ss.str());
         }

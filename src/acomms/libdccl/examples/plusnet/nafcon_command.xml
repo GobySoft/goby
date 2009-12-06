@@ -3,13 +3,11 @@
   <message>
     <name>SENSOR_DEPLOY</name>
     <id>10</id>
-    <destination_moos_var key="DestinationPlatformId">PLUSNET_MESSAGES</destination_moos_var>
-    <outgoing_hex_moos_var>OUT_DEPLOY_HEX_30B</outgoing_hex_moos_var>
-    <incoming_hex_moos_var>IN_DEPLOY_HEX_30B</incoming_hex_moos_var>
+    <destination_var key="DestinationPlatformId">PLUSNET_MESSAGES</destination_var>
     <trigger>publish</trigger>
-    <trigger_moos_var mandatory_content="MessageType=SENSOR_DEPLOY">
+    <trigger_var mandatory_content="MessageType=SENSOR_DEPLOY">
       PLUSNET_MESSAGES
-    </trigger_moos_var>
+    </trigger_var>
     <size>32</size>
     <layout>
       <static>
@@ -105,7 +103,7 @@
     </layout>
     <on_receipt>        
       <publish>
-        <moos_var>NAFCON_MESSAGES</moos_var>
+        <publish_var>NAFCON_MESSAGES</publish_var>
         <all />
       </publish>
     </on_receipt>
@@ -113,13 +111,11 @@
   <message>
     <name>SENSOR_PROSECUTE</name>
     <id>11</id>
-    <outgoing_hex_moos_var>OUT_PROSECUTE_HEX_30B</outgoing_hex_moos_var>
-    <incoming_hex_moos_var>IN_PROSECUTE_HEX_30B</incoming_hex_moos_var>
-    <destination_moos_var key="DestinationPlatformId">PLUSNET_MESSAGES</destination_moos_var>
+    <destination_var key="DestinationPlatformId">PLUSNET_MESSAGES</destination_var>
     <trigger>publish</trigger>
-    <trigger_moos_var mandatory_content="MessageType=SENSOR_PROSECUTE">
+    <trigger_var mandatory_content="MessageType=SENSOR_PROSECUTE">
       PLUSNET_MESSAGES
-    </trigger_moos_var>
+    </trigger_var>
     <size>32</size>
     <layout>
       <static>
@@ -240,7 +236,7 @@
     </layout>
     <on_receipt>        
       <publish>
-        <moos_var>NAFCON_MESSAGES</moos_var>
+        <publish_var>NAFCON_MESSAGES</publish_var>
         <all />
       </publish>
     </on_receipt>

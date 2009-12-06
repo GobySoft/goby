@@ -36,7 +36,6 @@
 #include "tes_utils.h"
 #include "message_var.h"
 #include "message_publish.h"
-#include "message_queuing.h"
 #include "dccl_constants.h"
 #include "modem_message.h"
 
@@ -74,31 +73,7 @@ namespace dccl
         void set_size(unsigned size){size_ = size; avail_size_ = size - acomms_util::NUM_HEADER_BYTES;}
         template<typename T> void set_size(const T& t)
         { set_size(boost::lexical_cast<unsigned>(t)); }
-        
-        void set_q_ack(bool ack) {queuing_.set_ack(ack);}
-        void set_q_ack(const std::string& s) { set_q_ack(tes_util::stricmp(s,"true")); }
-        
-        
-        void set_q_blackout_time(unsigned blackout_time) {queuing_.set_blackout_time(blackout_time);}
-        template<typename T> void set_q_blackout_time(const T& t)
-        { set_q_blackout_time(boost::lexical_cast<unsigned>(t)); }
-        
-        void set_q_max_queue(unsigned max_queue) {queuing_.set_max_queue(max_queue);}
-        template<typename T> void set_q_max_queue(const T& t)
-        { set_q_max_queue(boost::lexical_cast<unsigned>(t)); }
 
-        void set_q_newest_first(bool newest_first) {queuing_.set_newest_first(newest_first);}
-        void set_q_newest_first(const std::string& s) { set_q_newest_first(tes_util::stricmp(s,"true")); }
-        
-        
-        void set_q_priority_base(double priority_base) {queuing_.set_priority_base(priority_base);}
-        template<typename T> void set_q_priority_base(const T& t)
-        { set_q_priority_base(boost::lexical_cast<double>(t)); }        
-
-        void set_q_priority_time_const(double priority_time_const) {queuing_.set_priority_time_const(priority_time_const);}        
-        template<typename T> void set_q_priority_time_const(const T& t)
-        { set_q_priority_time_const(boost::lexical_cast<double>(t)); }
-        
         // for modifying a MessageVar
         void add_message_var(const std::string& type);
         void set_last_name(const std::string& name){layout_.back().set_name(name);}
@@ -150,7 +125,6 @@ namespace dccl
         std::string dest_key() const {return dest_key_;}
     
         std::vector<MessageVar> * get_layout() {return &layout_;}
-        Queuing * get_queuing() {return &queuing_;}
 //   std::vector<Publish> * get_publishes() {return &publishes_;}
 
         std::set<std::string> encode_vars();
@@ -252,8 +226,6 @@ namespace dccl
         
         std::vector<MessageVar> layout_;
         std::vector<Publish> publishes_;
-        
-        Queuing queuing_;        
     };
     
     std::ostream& operator<< (std::ostream& out, const Message& message);

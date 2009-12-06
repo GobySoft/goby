@@ -75,7 +75,7 @@ void dccl::MessageContentHandler::startElement(
                 messages.back().set_last_algorithms(tes_util::explode(toNative(val),',',true));
             break;
             
-        case tag_trigger_moos_var:
+        case tag_trigger_var:
             if((val = attrs.getValue(mandatory_content.c_str())) != 0)
                 messages.back().set_trigger_mandatory(toNative(val));
             break;
@@ -84,7 +84,7 @@ void dccl::MessageContentHandler::startElement(
             messages.back().set_last_publish_use_all_names();
             break;
 
-        case tag_destination_moos_var:
+        case tag_destination_var:
             if((val = attrs.getValue(key.c_str())) != 0)
                 messages.back().set_dest_key(toNative(val));
             break;
@@ -135,17 +135,9 @@ void dccl::MessageContentHandler::endElement(
                 
         case tag_publish:
             in_publish = false;
-            break;
-                
-        case tag_ack:
-            messages.back().set_q_ack(trimmed_data);
-            break;            
+            break;                
 
-        case tag_blackout_time:
-            messages.back().set_q_blackout_time(trimmed_data);
-            break;
-
-        case tag_destination_moos_var:
+        case tag_destination_var:
             messages.back().set_dest_var(trimmed_data);
             break;
 
@@ -176,9 +168,6 @@ void dccl::MessageContentHandler::endElement(
             break;
             
 
-        case tag_max_queue:
-            messages.back().set_q_max_queue(trimmed_data);
-            break;
             
         case tag_max:
             messages.back().set_last_max(trimmed_data);
@@ -198,6 +187,14 @@ void dccl::MessageContentHandler::endElement(
             else if(in_publish)
                 messages.back().set_last_publish_var(trimmed_data);
             break;
+
+        case tag_src_var:
+            messages.back().set_last_source_var(trimmed_data);
+            break;
+
+        case tag_publish_var:
+            messages.back().set_last_publish_var(trimmed_data);
+            break;
             
         case tag_name:
             if(in_message && !in_message_var && !in_publish)
@@ -206,9 +203,6 @@ void dccl::MessageContentHandler::endElement(
                 messages.back().set_last_name(trimmed_data);
             break;
             
-        case tag_newest_first:
-            messages.back().set_q_newest_first(trimmed_data);
-            break;        
             
         case tag_outgoing_hex_moos_var:
             messages.back().set_out_var(trimmed_data);
@@ -218,19 +212,12 @@ void dccl::MessageContentHandler::endElement(
             messages.back().set_last_precision(trimmed_data);
             break;
             
-        case tag_priority_base:
-            messages.back().set_q_priority_base(trimmed_data);
-            break;
-            
-        case tag_priority_time_const:
-            messages.back().set_q_priority_time_const(trimmed_data);
-            break;
             
         case tag_size:
             messages.back().set_size(trimmed_data);
             break;
 
-        case tag_trigger_moos_var:
+        case tag_trigger_var:
             messages.back().set_trigger_var(trimmed_data);        
             break;
             

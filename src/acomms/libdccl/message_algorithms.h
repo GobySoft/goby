@@ -47,11 +47,8 @@ namespace dccl
         typedef boost::function1<void, double& > DblAlgFunction1;
         typedef boost::function1<void, long& > LongAlgFunction1;
         typedef boost::function1<void, bool& > BoolAlgFunction1;
-        typedef boost::function3<void, std::string&, const std::vector<std::string>&, const std::map<std::string,MessageVal>&> StrAlgFunction3;
-        typedef boost::function3<void, double&, const std::vector<std::string>&, const std::map<std::string,MessageVal>&> DblAlgFunction3;
-        typedef boost::function3<void, long&, const std::vector<std::string>&, const std::map<std::string,MessageVal>&> LongAlgFunction3;
-        typedef boost::function3<void, bool&, const std::vector<std::string>&, const std::map<std::string,MessageVal>&> BoolAlgFunction3;
-
+        typedef boost::function1<void, MessageVal&> AdvAlgFunction1;
+        typedef boost::function3<void, MessageVal&, const std::vector<std::string>&, const std::map<std::string,MessageVal>&> AdvAlgFunction3;
 
         void add_str_algorithm(const std::string& name, StrAlgFunction1 func)
         { str_map1_[name] = func; }        
@@ -61,15 +58,12 @@ namespace dccl
         { long_map1_[name] = func; }        
         void add_bool_algorithm(const std::string& name, BoolAlgFunction1 func)
         { bool_map1_[name] = func; }
-        
-        void add_adv_str_algorithm(const std::string& name, StrAlgFunction3 func)
-        { str_map3_[name] = func; }        
-        void add_adv_dbl_algorithm(const std::string& name, DblAlgFunction3 func)
-        { dbl_map3_[name] = func; }        
-        void add_adv_long_algorithm(const std::string& name, LongAlgFunction3 func)
-        { long_map3_[name] = func; }        
-        void add_adv_bool_algorithm(const std::string& name, BoolAlgFunction3 func)
-        { bool_map3_[name] = func; }        
+
+        void add_generic_algorithm(const std::string& name, AdvAlgFunction1 func)
+        { adv_map1_[name] = func; }        
+
+        void add_adv_algorithm(const std::string& name, AdvAlgFunction3 func)
+        { adv_map3_[name] = func; }        
         
       private:
         static AlgorithmPerformer* inst_;
@@ -78,17 +72,15 @@ namespace dccl
         std::map<std::string, LongAlgFunction1> long_map1_;
         std::map<std::string, BoolAlgFunction1> bool_map1_;
 
-        std::map<std::string, StrAlgFunction3> str_map3_;
-        std::map<std::string, DblAlgFunction3> dbl_map3_;
-        std::map<std::string, LongAlgFunction3> long_map3_;
-        std::map<std::string, BoolAlgFunction3> bool_map3_;
+        std::map<std::string, AdvAlgFunction1> adv_map1_;
+        std::map<std::string, AdvAlgFunction3> adv_map3_;
         
-      AlgorithmPerformer()
-            {}
+        AlgorithmPerformer()
+        {}
         
         AlgorithmPerformer(const AlgorithmPerformer&);
         AlgorithmPerformer& operator = (const AlgorithmPerformer&);
-        
+      
     };
 }
 

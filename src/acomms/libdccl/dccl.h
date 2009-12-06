@@ -70,7 +70,7 @@ namespace dccl
         /// must be relative to the directory of the xml_file, not the present working directory. if not provided
         /// no validation is done.
         /// \return returns id of the last message file parsed. note that there can be more than one message in a file
-        unsigned add_xml_message_file(const std::string& xml_file, const std::string xml_schema = "");
+        std::set<unsigned> add_xml_message_file(const std::string& xml_file, const std::string xml_schema = "");
 
         /// \brief set the schema used for xml syntax checking
         /// 
@@ -143,91 +143,34 @@ namespace dccl
             ap -> add_bool_algorithm(name, func);
         }
 
-        /// \brief Add an advanced algorithm callback for a C++ std::string type that requires knowledge of all the other message variables
-        /// and can optionally have additional parameters
+        /// \brief Add an algorithm callback for a dccl::MessageVal. This allows you to have a different input value (e.g. int) as the output value (e.g. string). 
         ///
-        /// C++ std::string primarily corresponds to DCCL types
-        /// <string/> and <enum/>, but can be used with any of the types
-        /// through automatic (internal) casting.
-         /// \param name name of the algorithm (<... algorithm="name:param1:param2"/>)
-        /// \param func has the form
-        /// void name(std::string& val_to_edit,
-        ///  const std::vector<std::string> params,
-        ///  const std::map<std::string,MessageVal>& vals). func can be a function pointer (&name) or
-        /// any function object supported by boost::function (http://www.boost.org/doc/libs/1_34_0/doc/html/function.html).
-        /// \param params (passed to func) a list of colon separated parameters passed by the user in the XML file. param[0] is the name.
-        /// \param vals (passed to func) a map of <name/> to current values for all message variables.
-        template<typename AdvFunction>
-            void add_adv_str_algorithm(const std::string& name, AdvFunction func)
+        /// \param name name of the algorithm (<... algorithm="name"/>)
+        /// \param func has the form void name(dccl::MessageVal& val_to_edit). can be a function pointer (&name) or
+        /// any function object supported by boost::function (http://www.boost.org/doc/libs/1_34_0/doc/html/function.html)
+        template<typename Function>
+            void add_generic_algorithm(const std::string& name, Function func)
         {
             AlgorithmPerformer * ap = AlgorithmPerformer::getInstance();
-            ap -> add_adv_str_algorithm(name, func);
+            ap -> add_generic_algorithm(name, func);
         }
 
-                /// \brief Add an advanced algorithm callback for a C++ double type that requires knowledge of all the other message variables
+        /// \brief Add an advanced algorithm callback for any DCCL C++ type that may also require knowledge of all the other message variables
         /// and can optionally have additional parameters
         ///
-        /// C++ long primarily corresponds to DCCL type
-        /// <float/>, but can be used with any of the types
-        /// through automatic (internal) casting if they can
-        /// be properly represented as a double.
         /// \param name name of the algorithm (<... algorithm="name:param1:param2"/>)
         /// \param func has the form
-        /// void name(double& val_to_edit,
+        /// void name(MessageVal& val_to_edit,
         ///  const std::vector<std::string> params,
         ///  const std::map<std::string,MessageVal>& vals). func can be a function pointer (&name) or
         /// any function object supported by boost::function (http://www.boost.org/doc/libs/1_34_0/doc/html/function.html).
         /// \param params (passed to func) a list of colon separated parameters passed by the user in the XML file. param[0] is the name.
         /// \param vals (passed to func) a map of <name/> to current values for all message variables.
         template<typename AdvFunction>
-            void add_adv_dbl_algorithm(const std::string& name, AdvFunction func)
+            void add_adv_algorithm(const std::string& name, AdvFunction func)
         {
             AlgorithmPerformer * ap = AlgorithmPerformer::getInstance();
-            ap -> add_adv_dbl_algorithm(name, func);
-        }
-
-                /// \brief Add an advanced algorithm callback for a C++ long int type that requires knowledge of all the other message variables
-        /// and can optionally have additional parameters
-        ///
-        /// C++ long primarily corresponds to DCCL type
-        /// <int/>, but can be used with any of the types
-        /// through automatic (internal) casting if they can
-        /// be properly represented as a long.
-        /// \param name name of the algorithm (<... algorithm="name:param1:param2"/>)
-        /// \param func has the form
-        /// void name(long& val_to_edit,
-        ///  const std::vector<std::string> params,
-        ///  const std::map<std::string,MessageVal>& vals). func can be a function pointer (&name) or
-        /// any function object supported by boost::function (http://www.boost.org/doc/libs/1_34_0/doc/html/function.html).
-        /// \param params (passed to func) a list of colon separated parameters passed by the user in the XML file. param[0] is the name.
-        /// \param vals (passed to func) a map of <name/> to current values for all message variables.
-        template<typename AdvFunction>
-            void add_adv_long_algorithm(const std::string& name, AdvFunction func)
-        {
-            AlgorithmPerformer * ap = AlgorithmPerformer::getInstance();
-            ap -> add_adv_long_algorithm(name, func);
-        }
-
-        /// \brief Add an advanced algorithm callback for a C++ bool type that requires knowledge of all the other message variables
-        /// and can optionally have additional parameters
-        ///
-        /// C++ bool primarily corresponds to DCCL type
-        /// <bool/>, but can be used with any of the types
-        /// through automatic (internal) casting if they can
-        /// be properly represented as a bool.
-        /// \param name name of the algorithm (<... algorithm="name:param1:param2"/>)
-        /// \param func has the form
-        /// void name(bool& val_to_edit,
-        ///  const std::vector<std::string> params,
-        ///  const std::map<std::string,MessageVal>& vals). func can be a function pointer (&name) or
-        /// any function object supported by boost::function (http://www.boost.org/doc/libs/1_34_0/doc/html/function.html).
-        /// \param params (passed to func) a list of colon separated parameters passed by the user in the XML file. param[0] is the name.
-        /// \param vals (passed to func) a map of <name/> to current values for all message variables.
-        template<typename AdvFunction>
-            void add_adv_bool_algorithm(const std::string& name, AdvFunction func)
-        {
-            AlgorithmPerformer * ap = AlgorithmPerformer::getInstance();
-            ap -> add_adv_bool_algorithm(name, func);
+            ap -> add_adv_algorithm(name, func);
         }
         //@}
         
@@ -330,23 +273,7 @@ namespace dccl
         /// </ul>
         /// These methods may be useful to someone not working with MOOS but interested in any of the features mentioned above.
         
-        //@{         
-        /// \brief populates variables with queuing information stored in XML files (<queuing/>)
-        /// \param id the message to get queueing information for
-        /// \param ack should we ask for an acknowledgement?
-        /// \param blackout_time seconds not to send this message type after sending last
-        /// \param max_queue size of the queue before message are discarded
-        /// \param newest_first should newest messages be sent first (FILO) or not (FIFO)?
-        /// \param priority_base constant that governs the priority of the message queue
-        /// \param priority_time_const constant that governs the growth rate of the priority of this queue
-        void get_queuing(unsigned id,
-                         bool& ack,
-                         unsigned& blackout_time,
-                         unsigned& max_queue,
-                         bool& newest_first,
-                         double& priority_base,
-                         double& priority_time_const);
-        
+        //@{
         /// \brief Encode a message using <moos_var> tags instead of <name> tags
         ///
         /// Values can be passed in on one or more maps of names to values. The types passed (std::string, double) are typically directly
@@ -366,11 +293,14 @@ namespace dccl
         /// \param ms pointer to map of moos variable name to std::string values. 
         /// \param md pointer to map of moos variable name to double values. double is preferred for <float/>.
         template<typename Key, typename Msg>
-            void encode_from_moos(const Key& k,
-                                  Msg& m,
-                                  const std::map<std::string, std::string>* ms,
-                                  const std::map<std::string, double>* md)
-        { encode_private(to_iterator(k), m, ms, md, 0, 0, Message::FROM_MOOS_VAR); }
+            void encode_from_src_vars(const Key& k,
+                                       Msg& m,
+                                       const std::map<std::string, std::string>* ms,
+                                       const std::map<std::string, double>* md,
+                                       const std::map<std::string, long>* ml = 0,
+                                       const std::map<std::string, bool>* mb = 0)
+
+        { encode_private(to_iterator(k), m, ms, md, ml, mb, Message::FROM_MOOS_VAR); }
 
         /// \brief Decode a message using formatting specified in <publish/> tags.
         ///
@@ -380,26 +310,41 @@ namespace dccl
         ///
         /// \param k can either be std::string (the name of the message) or unsigned (the id of the message)
         /// \param Msg micromodem::Message or std::string to be decode.
-        /// \param ms pointer to std::map or std::multimap of message variable name to std::string values.
-        /// \param md pointer to std::map or std::multimap of message variable name to double values.
-        template<typename Key, typename Msg, typename MapStringString, typename MapStringDouble>
+        /// \param ms pointer to std::multimap of message variable name to std::string values.
+        /// \param md pointer to std::multimap of message variable name to double values.
+        template<typename Key, typename Msg>
             void decode_to_publish(const Key& k,
                                    const Msg& m,
-                                   MapStringString* ms,
-                                   MapStringDouble* md)
-        {
-            std::map<std::string, long>* vl = 0;
-            std::map<std::string, bool>* bl = 0;
-            decode_private(to_iterator(k), m, ms, md, vl, bl, Message::DO_PUBLISHES);
-        }
+                                   std::multimap<std::string, std::string>* ms,
+                                   std::multimap<std::string, double>* md,
+                                   std::multimap<std::string, long>* ml = 0,
+                                   std::multimap<std::string, bool>* mb = 0)
+        { decode_private(to_iterator(k), m, ms, md, ml, mb, Message::DO_PUBLISHES); }
 
-        /// what moos variables do i need to provide to publish?
+        /// \brief Decode a message using formatting specified in <publish/> tags.
+        ///
+        /// Values will be recieved in two maps, one of strings and the other of doubles. The <publish> value will be placed
+        /// either based on the "type" parameter of the <moos_var> tag or missing that, on the best guess (numeric values will generally) be
+        /// returned in the double map, not the string map).
+        ///
+        /// \param k can either be std::string (the name of the message) or unsigned (the id of the message)
+        /// \param Msg micromodem::Message or std::string to be decode.
+        /// \param ms pointer to std::map of message variable name to std::string values.
+        /// \param md pointer to std::map of message variable name to double values.
+        template<typename Key, typename Msg>
+            void decode_to_publish(const Key& k,
+                                   const Msg& m,
+                                   std::map<std::string, std::string>* ms,
+                                   std::map<std::string, double>* md,
+                                   std::map<std::string, long>* ml = 0,
+                                   std::map<std::string, bool>* mb = 0)
+        { decode_private(to_iterator(k), m, ms, md, ml, mb, Message::DO_PUBLISHES); }
+
+
+        
+        /// what moos variables do i need to provide to create a message with a call to encode_using_src_vars
         template<typename Key>
             std::set<std::string> src_vars(const Key& k)
-            { return src_vars(to_iterator(k)); }
-        /// alias for std::set<std::string> src_vars(const Key& k);
-        template<typename Key>
-            std::set<std::string> which_vars(const Key& k)
             { return src_vars(to_iterator(k)); }
 
         /// for a given message name, all MOOS variables (sources, input, destination, trigger)

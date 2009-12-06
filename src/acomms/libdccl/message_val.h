@@ -41,57 +41,67 @@ namespace dccl
         /// \name Constructors/Destructor
         //@{         
         /// empty
-      MessageVal():sval_(""), sval_set_(false),
-            dval_(0), dval_set_(false),
-            lval_(0), lval_set_(false),
-            bval_(false), bval_set_(false),
-            precision_(15)
+      MessageVal()
+          : sval_(""),
+            dval_(0),
+            lval_(0),
+            bval_(false),
+            precision_(15),
+            type_(cpp_notype)
         {}
 
         /// construct with string value
-      MessageVal(const std::string& s):sval_(s), sval_set_(true),
-            dval_(0), dval_set_(false),
-            lval_(0), lval_set_(false),
-            bval_(false), bval_set_(false),
-            precision_(15)
+      MessageVal(const std::string& s)
+          : sval_(s),
+            dval_(0),
+            lval_(0),
+            bval_(false),
+            precision_(15),
+            type_(cpp_string)
         {}
 
         /// construct with double value
-      MessageVal(double d, int p = 15):sval_(""), sval_set_(false),
-            dval_(d), dval_set_(true),
-            lval_(0), lval_set_(false),
-            bval_(false), bval_set_(false),
-            precision_(p)
+      MessageVal(double d, int p = 15)
+          : sval_(""),
+            dval_(d),
+            lval_(0),
+            bval_(false),
+            precision_(p),
+            type_(cpp_double)
         {}
 
         /// construct with long value
-      MessageVal(long l):sval_(""), sval_set_(false),
-            dval_(0), dval_set_(false),
-            lval_(l), lval_set_(true),
-            bval_(false), bval_set_(false),
-            precision_(15)
+      MessageVal(long l)
+          : sval_(""),
+            dval_(0),
+            lval_(l),
+            bval_(false),
+            precision_(15),
+            type_(cpp_long)
         {}
 
         /// construct with bool value
-      MessageVal(bool b):sval_(""), sval_set_(false),
-            dval_(0), dval_set_(false),
-            lval_(0), lval_set_(false),
-            bval_(b), bval_set_(true),
-            precision_(15)
+      MessageVal(bool b)
+          : sval_(""),
+            dval_(0),
+            lval_(0),
+            bval_(b),
+            precision_(15),
+            type_(cpp_bool)
         {}
         //@}
 
         /// \name Setters
         //@{  
-        /// set the value with a string
+        /// set the value with a string (overwrites previous value regardless of type)
         void set(std::string sval);
-        /// \brief set the value with a double
+        /// \brief set the value with a double (overwrites previous value regardless of type)
         /// \param dval values to set
         /// \param precision decimal places of precision to preserve if this is cast to a string
         void set(double dval, int precision = 15);
-        /// set the value with a long
+        /// set the value with a long (overwrites previous value regardless of type)
         void set(long lval);
-        /// set the value with a bool
+        /// set the value with a bool (overwrites previous value regardless of type)
         void set(bool bval);
         //@}
         
@@ -115,7 +125,7 @@ namespace dccl
         bool val(double& d) const;
 
         /// what type is the original type of this MessageVal?
-        DCCLCppType type();
+        DCCLCppType type() const { return type_; }        
         //@}
 
         bool operator==(const std::string& s)
@@ -149,18 +159,13 @@ namespace dccl
         
       private:
         std::string sval_;
-        bool sval_set_;
-        
         double dval_;
-        bool dval_set_;
-        
         long lval_;
-        bool lval_set_;
-
-        bool bval_;        
-        bool bval_set_;
+        bool bval_;
 
         unsigned precision_;
+
+        DCCLCppType type_;
     };
 
     inline std::ostream& operator<<(std::ostream& os, const MessageVal& mv)

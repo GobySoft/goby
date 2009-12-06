@@ -58,7 +58,7 @@ void dccl::Message::add_message_var(const std::string& type)
     layout_.push_back(m);
 }
 
-// add a new publish, i.e. a set of parameters to publish to the MOOSDB
+// add a new publish, i.e. a set of parameters to publish
 // upon receipt of an incoming (hex) message
 void dccl::Message::add_publish()
 {
@@ -92,7 +92,7 @@ void dccl::Message::preprocess()
     }
 
 
-    // set incoming_moos_var / outgoing_moos_var if not set
+    // set incoming_var / outgoing_var if not set
     if(in_var_ == "")
         in_var_ = "IN_" + boost::to_upper_copy(name_) + "_HEX_" + boost::lexical_cast<std::string>(size_) + "B";
     if(out_var_ == "")
@@ -120,7 +120,7 @@ std::string dccl::Message::get_display() const
     
         if(trigger_type_ == "publish")
         {
-            ss << "trigger_moos_var: {" << trigger_var_ << "}";
+            ss << "trigger_var: {" << trigger_var_ << "}";
             if (trigger_mandatory_ != "")
                 ss << " must contain string \"" << trigger_mandatory_ << "\"";
             ss << std::endl;
@@ -130,8 +130,8 @@ std::string dccl::Message::get_display() const
             ss << "trigger_time: {" << trigger_time_ << "}" << std::endl;
         }
     
-        ss << "outgoing_hex_moos_var: {" << out_var_ << "}" << std::endl;
-        ss << "incoming_hex_moos_var: {" << in_var_ << "}" << std::endl;
+        ss << "outgoing_hex_var: {" << out_var_ << "}" << std::endl;
+        ss << "incoming_hex_var: {" << in_var_ << "}" << std::endl;
     }
     
     ss << "requested size {bytes} [bits]: {" << requested_bytes() << "} [" << requested_bits() << "]" << std::endl;
@@ -149,10 +149,6 @@ std::string dccl::Message::get_display() const
         
         BOOST_FOREACH(const Publish& p, publishes_)
             ss << p;
-        
-        ss << ">>>> QUEUING <<<<" << std::endl;
-        
-        ss << queuing_ << std::endl;
     }
     
     ss << std::string(num_stars, '*') << std::endl;

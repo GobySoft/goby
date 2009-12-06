@@ -48,44 +48,17 @@ void dccl::AlgorithmPerformer::algorithm(MessageVal& in, const std::string& algo
 
     // short form for simple algorithms
     if (str_map1_.count(alg) && in.val(s))
-    {
-        str_map1_.find(alg)->second(s);
-        in.set(s);
-    }
+    { str_map1_.find(alg)->second(s); in.set(s); }
     else if (dbl_map1_.count(alg) && in.val(d))
-    {
-        dbl_map1_.find(alg)->second(d);
-        in.set(d);
-    }
+    { dbl_map1_.find(alg)->second(d); in.set(d); }
     else if (long_map1_.count(alg) && in.val(l))
-    {
-        long_map1_.find(alg)->second(l);
-        in.set(l);
-    }
+    { long_map1_.find(alg)->second(l); in.set(l); }
     else if (bool_map1_.count(alg) && in.val(b))
-    {
-        bool_map1_.find(alg)->second(b);
-        in.set(b);
-    }
+    { bool_map1_.find(alg)->second(b); in.set(b); }
+    else if (adv_map1_.count(alg))
+    { adv_map1_.find(alg)->second(in); }
     // longer form for more demanding algorithms
-    else if (str_map3_.count(alg) && in.val(s))
-    {
-        str_map3_.find(alg)->second(s, params, vals);
-        in.set(s);
-    }
-    else if (dbl_map3_.count(alg) && in.val(d))
-    {
-        dbl_map3_.find(alg)->second(d, params, vals);
-        in.set(d);
-    }
-    else if (long_map3_.count(alg) && in.val(l))
-    {
-        long_map3_.find(alg)->second(l, params, vals);
-        in.set(l);
-    }
-    else if (bool_map3_.count(alg) && in.val(b))
-    {
-        bool_map3_.find(alg)->second(b, params, vals);
-        in.set(b);
-    }    
+    else if (adv_map3_.count(alg))
+    { adv_map3_.find(alg)->second(in, params, vals); }
+
 }

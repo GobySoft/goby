@@ -20,16 +20,20 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
-#include "message_queuing.h"
+#include "queue_config.h"
 
-std::ostream& dccl::operator<< (std::ostream& out, const Queuing& q)
+std::ostream& queue::operator<< (std::ostream& out, const QueueConfig& q)
 {
-    out << std::boolalpha << "ack: " << q.ack() << " | "
-        << "blackout_time: " << q.blackout_time() << " | "
-        << "max_queue: " << q.max_queue() << " | "
-        << "newest_first: " << q.newest_first() << " | "
-        << "priority_base: " << q.priority_base() << " | "
-        << "priority_time_const: " << q.priority_time_const();
+    out << "queue configuration:\n"
+        << "\t" << "name: " << q.name() << "\n"
+        << "\t" << "id: " << q.id() << "\n"
+        << "\t" << "type: " << q.type() << "\n"
+        << std::boolalpha << "\t" << "ack: " << q.ack() << "\n"
+        << "\t" << "blackout_time: " << q.blackout_time() << "\n"
+        << "\t" << "max_queue: " << q.max_queue() << "\n"
+        << "\t" << "newest_first: " << q.newest_first() << "\n"
+        << "\t" << "priority_base: " << q.priority_base() << "\n"
+        << "\t" << "priority_time_const: " << q.priority_time_const();
     
     return out;
 }

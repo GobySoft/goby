@@ -55,7 +55,7 @@ class MMDriver
 {
     
   public:
-    MMDriver(FlexCout* ptout = 0);
+    MMDriver(FlexCout* tout = 0);
     ~MMDriver();
     
     void startup();
@@ -70,7 +70,8 @@ class MMDriver
     void set_reset_cfg() { cfg_["ALL"] = 0; }
     
     void set_modem_id(unsigned u) { modem_id_ = u; }
-    
+
+    void initiate_transmission(const micromodem::Message& m);
     
     typedef boost::function<bool (micromodem::Message & message)> MsgFunc1;
     typedef boost::function<bool (micromodem::Message & message1, micromodem::Message & message2)> MsgFunc2;
@@ -146,8 +147,8 @@ class MMDriver
 
     SerialClient serial_;
     
-    FlexCout* ptout_;
-    bool own_ptout_;
+    FlexCout* tout_;
+    bool own_tout_;
     
     // modem startup work
     std::map<std::string, unsigned> cfg_; // what config params do we need to send?

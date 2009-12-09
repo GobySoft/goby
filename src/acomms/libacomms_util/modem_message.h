@@ -51,6 +51,7 @@ namespace micromodem
         data_(""),
             src_(0),
             dest_(0),
+            rate_(0),
             t_(time(NULL)),
             ack_(false),
             size_(0),
@@ -59,6 +60,7 @@ namespace micromodem
             data_set_(false),
             src_set_(false),
             dest_set_(false),
+            rate_set_(false),
             t_set_(false),
             ack_set_(false),
             size_set_(false),
@@ -74,16 +76,18 @@ namespace micromodem
         double t() const {return t_;}
         /// size in bytes
         double size() const {return size_;}
-        /// destination modem id
-        unsigned int dest() const {return dest_;}
         /// source modem id
-        unsigned int src() const {return src_;}
+        unsigned src() const {return src_;}
+        /// destination modem id
+        unsigned dest() const {return dest_;}
+        /// data rate (unsigned from 0 (lowest) to 5 (highest))
+        unsigned rate() const { return rate_; }
         /// acknowledgement requested
         bool ack() const {return ack_;}
         /// modem frame number
-        unsigned int frame() const {return frame_;}
+        unsigned frame() const {return frame_;}
         /// checksum (eight bit XOR of Message::data())
-        unsigned int cs() const {return cs_;}
+        unsigned cs() const {return cs_;}
 
         //@}
         
@@ -93,10 +97,12 @@ namespace micromodem
         bool t_set() const {return t_set_;}
         /// is there a size?
         bool size_set() const {return size_set_;}
-        /// is there a destination?
-        bool dest_set() const {return dest_set_;}
         /// is there a source?
         bool src_set() const {return src_set_;}
+        /// is there a destination?
+        bool dest_set() const {return dest_set_;}
+        /// is there a rate?
+        bool rate_set() const { return rate_set_; }
         /// is there an ack value?
         bool ack_set() const {return ack_set_;}
         /// is there a frame number?
@@ -114,6 +120,7 @@ namespace micromodem
             
             if(src_set_)   ss << " | src " << src_;
             if(dest_set_)  ss << " | dest " << dest_;
+            if(rate_set_)  ss << " | rate " << rate_;
             if(size_set_)  ss << " | size " << size_ << "B";
             if(t_set_)     ss << " | age " << tes_util::sci_round(time(NULL) - t_, 0) << "s";
             if(ack_set_)   ss << " | ack " << std::boolalpha << ack_;
@@ -138,6 +145,7 @@ namespace micromodem
             {       
                 if(src_set_)   ss << ",src=" << src_;
                 if(dest_set_)  ss << ",dest=" << dest_;
+                if(rate_set_)  ss << ",rate=" << rate_;
                 if(data_set_)  ss << ",data=" << data_;
                 if(size_set_)  ss << ",size=" << size_;
                 if(t_set_)     ss << ",time=" << t_;
@@ -167,6 +175,8 @@ namespace micromodem
                     set_src(value);
                 if(tes_util::val_from_string(value, lower_s, "dest"))
                     set_dest(value);
+                if(tes_util::val_from_string(value, lower_s, "rate"))
+                    set_rate(value);
                 if((tes_util::val_from_string(value, lower_s, "data") || tes_util::val_from_string(value, lower_s, "hexdata")) && check_hex(value))
                     set_data(value);
                 if(tes_util::val_from_string(value, lower_s, "time"))
@@ -191,14 +201,16 @@ namespace micromodem
         void set_t(double d)       { t_=d; t_set_ = true; }    
         /// set the size (automatically set by the data size)
         void set_size(double size) { size_= size; size_set_ = true;}    
-        /// set the destination id
-        void set_dest(unsigned int dest)    { dest_=dest; dest_set_ = true; }
         /// set the source id
-        void set_src(unsigned int src)      { src_=src; src_set_ = true; }   
+        void set_src(unsigned src)      { src_=src; src_set_ = true; }   
+        /// set the destination id
+        void set_dest(unsigned dest)    { dest_=dest; dest_set_ = true; }
+        /// set the data rate
+        void set_rate(unsigned rate)      { rate_=rate; rate_set_ = true; }
         /// set the acknowledgement value
         void set_ack(bool ack)     { ack_=ack; ack_set_ = true; }
         /// set the frame number
-        void set_frame(unsigned int frame)  { frame_=frame; frame_set_ = true; }
+        void set_frame(unsigned frame)  { frame_=frame; frame_set_ = true; }
 
         /// try to set the time with std::string
         void set_t(const std::string & t)
@@ -214,13 +226,19 @@ namespace micromodem
         }
         /// try to set the destination id with std::string
          void set_dest(const std::string& dest)   {
-            try { set_dest(boost::lexical_cast<unsigned int>(dest)); }
+            try { set_dest(boost::lexical_cast<unsigned>(dest)); }
             catch(boost::bad_lexical_cast & ) { }
         }
         /// try to set the source id with std::string
          void set_src(const std::string& src)
         {
-            try { set_src(boost::lexical_cast<unsigned int>(src)); }
+            try { set_src(boost::lexical_cast<unsigned>(src)); }
+            catch(boost::bad_lexical_cast & ) { }
+        }
+        /// try to set the source id with std::string
+         void set_rate(const std::string& rate)
+        {
+            try { set_rate(boost::lexical_cast<unsigned>(rate)); }
             catch(boost::bad_lexical_cast & ) { }
         }
         /// try to set the acknowledgement value with string ("true" / "false")
@@ -231,7 +249,7 @@ namespace micromodem
         }
         /// try to set the frame number with std::string
          void set_frame(const std::string& frame) {
-            try { set_frame(boost::lexical_cast<unsigned int>(frame));}
+            try { set_frame(boost::lexical_cast<unsigned>(frame));}
             catch(boost::bad_lexical_cast & ) { }
         }
 
@@ -269,7 +287,7 @@ namespace micromodem
 
         bool check_hex(std::string line)
         {
-            for (unsigned int i = 0; i < line.size(); i++)
+            for (unsigned i = 0; i < line.size(); i++)
             { if(!isxdigit(line[i])) return false; }
             return true;
         }
@@ -277,17 +295,19 @@ namespace micromodem
     
       private:
         std::string data_;
-        unsigned int src_;    
-        unsigned int dest_;  //modem_id
+        unsigned src_;    
+        unsigned dest_;  //modem_id
+        unsigned rate_;
         double t_;
         bool ack_;
         double size_; //in bytes
-        unsigned int frame_;
+        unsigned frame_;
         unsigned char cs_;
 
         bool data_set_;
         bool src_set_;
         bool dest_set_;
+        bool rate_set_;
         bool t_set_;
         bool ack_set_;
         bool size_set_;

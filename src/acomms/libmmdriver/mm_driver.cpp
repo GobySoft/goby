@@ -33,13 +33,13 @@
 
 using namespace termcolor;
 
-MMDriver::MMDriver(FlexCout* ptout /*= 0*/) : baud_(DEFAULT_BAUD),
+MMDriver::MMDriver(FlexCout* tout /*= 0*/) : baud_(DEFAULT_BAUD),
                                               modem_id_(acomms_util::BROADCAST_ID),
                                               serial_(io_,
                                                       in_,
                                                       in_mutex_),
-                                              ptout_(ptout),
-                                              own_ptout_(false),
+                                              tout_(tout),
+                                              own_tout_(false),
                                               last_write_time_(time(NULL)),
                                               waiting_for_modem_(false),
                                               startup_done_(false),
@@ -47,11 +47,11 @@ MMDriver::MMDriver(FlexCout* ptout /*= 0*/) : baud_(DEFAULT_BAUD),
                                               present_fail_count_(0),
                                               clock_set_(false)
 {
-    if(!ptout)
+    if(!tout)
     {
-        ptout_ = new FlexCout();
-        ptout_->verbosity("quiet");
-        own_ptout_ = true;
+        tout_ = new FlexCout();
+        tout_->verbosity("quiet");
+        own_tout_ = true;
     }
     
     initialize_talkers();
@@ -59,20 +59,20 @@ MMDriver::MMDriver(FlexCout* ptout /*= 0*/) : baud_(DEFAULT_BAUD),
 
 MMDriver::~MMDriver()
 {
-    if(own_ptout_) delete ptout_;
+    if(own_tout_) delete tout_;
 }
 
 
 void MMDriver::startup()
 {
-    ptout_->add_group("mm_out", "<", "lt_magenta", "outgoing micromodem messages");
-    ptout_->add_group("mm_in", ">", "lt_blue", "incoming micromodem messages");
+    tout_->add_group("mm_out", "<", "lt_magenta", "outgoing micromodem messages");
+    tout_->add_group("mm_in", ">", "lt_blue", "incoming micromodem messages");
 
-    *ptout_ << group("mm_out") << "setting SRC to given modem_id: " << modem_id_ << std::endl;
+    *tout_ << group("mm_out") << "setting SRC to given modem_id: " << modem_id_ << std::endl;
     cfg_["SRC"] = modem_id_;
     
 
-    *ptout_ << group("mm_out") << "opening serial port " << serial_port_
+    *tout_ << group("mm_out") << "opening serial port " << serial_port_
           << " @ " << baud_ << std::endl;
     try { serial_.start(serial_port_, baud_); }
     catch (...)
@@ -106,13 +106,28 @@ void MMDriver::do_work()
         std::string& in = in_.front();
         boost::trim(in);
         
-        *ptout_ << group("mm_in") << "|" << microsec_simple_time_of_day() << "| " << lt_blue << in << std::endl;
+        *tout_ << group("mm_in") << "|" << microsec_simple_time_of_day() << "| " << lt_blue << in << std::endl;
         
         NMEA nmea(in, STRICT);
         handle_modem_in(nmea);
         in_.pop_front();
     }
 }
+
+
+void MMDriver::initiate_transmission(const micromodem::Message& m)
+{   
+    //$CCCYC,CMD,ADR1,ADR2,Packet Type,ACK,Npkt*CS
+    NMEA nmea("$CCCYC", NOT_STRICT);
+    nmea.push_back(0); // CMD: deprecated field
+    nmea.push_back(m.src()); // ADR1
+    nmea.push_back(m.dest()); // ADR2
+    nmea.push_back(m.rate()); // Packet Type (transmission rate)
+    nmea.push_back(m.ack()); // ACK: deprecated field, this bit may be used for something that's not related to the ack
+    nmea.push_back(acomms_util::PACKET_FRAME_COUNT[m.rate()]); // number of frames we want
+    validate_and_write(nmea);
+}
+
 
 void MMDriver::handle_modem_out()
 {
@@ -126,7 +141,7 @@ void MMDriver::handle_modem_out()
     {
         if(resend)
         {
-            *ptout_ << group("mm_out") << warn << "resending " << nmea.talker() <<  " because we had no modem response for " << (time(NULL) - last_write_time_) << " second(s). " << std::endl;
+            *tout_ << group("mm_out") << warn << "resending " << nmea.talker() <<  " because we had no modem response for " << (time(NULL) - last_write_time_) << " second(s). " << std::endl;
             ++global_fail_count_;
             ++present_fail_count_;
             if(global_fail_count_ == MAX_FAILS_BEFORE_DEAD)
@@ -136,7 +151,7 @@ void MMDriver::handle_modem_out()
             
             if(present_fail_count_ == RETRIES)
             {
-                *ptout_  << group("mm_out") << warn << "modem did not respond to our command even after " << RETRIES << " retries. continuing onwards anyway..." << std::endl;
+                *tout_  << group("mm_out") << warn << "modem did not respond to our command even after " << RETRIES << " retries. continuing onwards anyway..." << std::endl;
                 out_.clear();
                 return;
             }
@@ -144,7 +159,7 @@ void MMDriver::handle_modem_out()
         
         callback_out_raw(nmea.message_no_cs());
 
-        *ptout_ << group("mm_out") << "|" << microsec_simple_time_of_day() << "| " << lt_magenta << nmea.message() << std::endl;
+        *tout_ << group("mm_out") << "|" << microsec_simple_time_of_day() << "| " << lt_magenta << nmea.message() << std::endl;
         
         serial_.write(nmea.message_cr_nl());
 
@@ -166,7 +181,7 @@ void MMDriver::validate_and_write(NMEA& nmea)
     try { nmea.validate(); }
     catch(std::exception& e)
     {
-        *ptout_ << group("mm_out") << warn << e.what() << std::endl;
+        *tout_ << group("mm_out") << warn << e.what() << std::endl;
         return;
     }
     
@@ -215,7 +230,7 @@ void MMDriver::handle_modem_in(NMEA& nmea)
     try { nmea.validate(); }
     catch(std::exception& e)
     {
-        *ptout_ << group("mm_out") << warn << e.what() << std::endl;
+        *tout_ << group("mm_out") << warn << e.what() << std::endl;
         return;
     }
     
@@ -355,7 +370,7 @@ void MMDriver::rev(NMEA& nmea, micromodem::Message& m)
 
 void MMDriver::err(NMEA& nmea, micromodem::Message& m)
 {
-    *ptout_ << group("mm_out") << warn << "modem reports error: " << nmea.message() << std::endl;
+    *tout_ << group("mm_out") << warn << "modem reports error: " << nmea.message() << std::endl;
 }
 
 void MMDriver::cyc(NMEA& nmea, micromodem::Message& m)

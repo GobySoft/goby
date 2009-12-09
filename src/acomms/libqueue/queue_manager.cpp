@@ -570,26 +570,24 @@ bool queue::QueueManager::publish_incoming_piece(micromodem::Message message, co
     return true;
 }
 
-unsigned queue::QueueManager::request_next_destination(unsigned size /* = std::numeric_limits<unsigned>::max() */)
+int queue::QueueManager::request_next_destination(unsigned size /* = std::numeric_limits<unsigned>::max() */)
 {
     clear_packet();
-
-    unsigned dest;
 
     micromodem::Message message;
     message.set_size(size);
     
     Queue* winning_var = find_next_sender(message);
-    if(winning_var != NULL)
+    if(winning_var)
     {
-        dest = winning_var->give_dest();
+        unsigned dest = winning_var->give_dest();
         *tout_ << group("q_out") <<  "got dest request for size " << size << ", giving dest: "
                << dest << std::endl;
         return dest;
     }
     else
     {
-        return 0;
+        return no_available_destination;
     }
     
 }

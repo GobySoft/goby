@@ -107,7 +107,8 @@ namespace queue
         
         //@}
 
-        unsigned request_next_destination(unsigned size = std::numeric_limits<unsigned>::max());
+        enum { no_available_destination = -1 };
+        int request_next_destination(unsigned size = std::numeric_limits<unsigned>::max());
         
         std::string summary() const;
 

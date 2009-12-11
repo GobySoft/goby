@@ -34,7 +34,7 @@
 #include <boost/algorithm/string.hpp> // for string functions
 #include <boost/lexical_cast.hpp>
 
-#include "xerces_strings.h"
+#include "acomms/xml/xerces_strings.h"
 #include "queue_manager.h"
 #include "queue_xml_tags.h"
 

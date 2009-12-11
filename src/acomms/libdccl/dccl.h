@@ -31,10 +31,10 @@
 #include <stdexcept>
 #include <vector>
 
-#include "message.h"
-#include "xml_parser.h"
-#include "message_val.h"
+#include "acomms/xml/xml_parser.h"
 
+#include "message.h"
+#include "message_val.h"
 
 /// all Dynamic Compact Control Language objects are in the `dccl` namespace
 namespace dccl

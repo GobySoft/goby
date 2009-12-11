@@ -26,17 +26,7 @@
 #include <sstream>
 #include <map>
 
-#include "flex_cout_group.h"
 #include "flex_ostreambuf.h"
-
-// print (Error) and exit (see operator<< in FlexCout)
-inline std::ostream & die(std::ostream & os)
-{ return (os << "\33[31m(Error): "); }
-
-// print (Warning) but do not exit
-inline std::ostream & warn(std::ostream & os)
-{ return (os << "\33[31m(Warning): "); }
-
 
 // ostream extended class for holding the FlexOStreamBuf
 class FlexCout : public std::ostream
@@ -98,11 +88,6 @@ class FlexCout : public std::ostream
   private:
     FlexOStreamBuf sb_;
 };
-
-
-inline FlexCout & operator<<(FlexCout & os, const GroupSetter & gs)
-{ gs(os); return(os); }    
-
 
 
 #endif

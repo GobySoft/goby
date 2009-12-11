@@ -30,9 +30,7 @@
 #include <boost/thread.hpp>
 #include "asio.hpp"
 
-#include "nmea.h"
-#include "flex_cout.h"
-#include "serial_client.h"
+#include "util/serial.h"
 
 // for the serial connection ($CCCFG,BR1,3)
 const unsigned DEFAULT_BAUD = 19200;
@@ -55,7 +53,7 @@ class MMDriver
 {
     
   public:
-    MMDriver(FlexCout* tout = 0);
+    MMDriver(std::ostream* out = 0);
     ~MMDriver();
     
     void startup();
@@ -147,8 +145,7 @@ class MMDriver
 
     SerialClient serial_;
     
-    FlexCout* tout_;
-    bool own_tout_;
+    std::ostream* os_;
     
     // modem startup work
     std::map<std::string, unsigned> cfg_; // what config params do we need to send?
@@ -191,8 +188,6 @@ class MMDriver
     
     std::map<std::string, TalkerBacks> talker_backs_map_;
     std::map<std::string, TalkerFronts> talker_fronts_map_;
-    std::map<std::string, std::string> talker_human_map_;    
-
 };
 
 #endif

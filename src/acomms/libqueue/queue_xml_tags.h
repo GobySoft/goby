@@ -20,9 +20,9 @@
 #ifndef QueueXMLTagsH
 #define QueueXMLTagsH
 
-#include "xerces_strings.h"
-
 #include <boost/assign.hpp>
+
+#include "acomms/xml/xerces_strings.h"
 
 namespace queue
 {    

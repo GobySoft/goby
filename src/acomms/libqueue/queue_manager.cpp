@@ -20,25 +20,25 @@
 
 #include <boost/foreach.hpp>
 
+#include "acomms/xml/xml_parser.h"
+#include "util/streamlogger.h"
+
 #include "queue_constants.h"
 #include "queue_manager.h"
 #include "queue_xml_callbacks.h"
-#include "xml_parser.h"
 
-using namespace termcolor;
-
-queue::QueueManager::QueueManager(FlexCout* tout /* =0 */)
+queue::QueueManager::QueueManager(std::ostream* os /* =0 */)
     : modem_id_(0),
       start_time_(time(NULL)),
-      tout_(init_tout(tout)),
+      os_(os),
       packet_dest_(0),
       packet_ack_(0)
 {}
     
-queue::QueueManager::QueueManager(const std::string& file, const std::string schema, FlexCout* tout /* =0 */)
+queue::QueueManager::QueueManager(const std::string& file, const std::string schema, std::ostream* os /* =0 */)
     : modem_id_(0),
       start_time_(time(NULL)),
-      tout_(init_tout(tout)),
+      os_(os),
       packet_dest_(0),
       packet_ack_(0)
 
@@ -47,10 +47,10 @@ queue::QueueManager::QueueManager(const std::string& file, const std::string sch
 }
     
 queue::QueueManager::QueueManager(const std::set<std::string>& files,
-                                  const std::string schema, FlexCout* tout /* =0 */)
+                                  const std::string schema, std::ostream* os /* =0 */)
     : modem_id_(0),
       start_time_(time(NULL)),
-      tout_(init_tout(tout)),
+      os_(os),
       packet_dest_(0),
       packet_ack_(0)
 {
@@ -58,20 +58,20 @@ queue::QueueManager::QueueManager(const std::set<std::string>& files,
         add_xml_queue_file(s, schema);
 }
 
-queue::QueueManager::QueueManager(const QueueConfig& cfg, FlexCout* tout /* =0 */)
+queue::QueueManager::QueueManager(const QueueConfig& cfg, std::ostream* os /* =0 */)
     : modem_id_(0),
       start_time_(time(NULL)),
-      tout_(init_tout(tout)),
+      os_(os),
       packet_dest_(0),
       packet_ack_(0)
 {
     add_queue(cfg);
 }
 
-queue::QueueManager::QueueManager(const std::set<QueueConfig>& cfgs, FlexCout* tout /* =0 */)
+queue::QueueManager::QueueManager(const std::set<QueueConfig>& cfgs, std::ostream* os /* =0 */)
     : modem_id_(0),
       start_time_(time(NULL)),
-      tout_(init_tout(tout)),
+      os_(os),
       packet_dest_(0),
       packet_ack_(0)
 {
@@ -83,7 +83,7 @@ void queue::QueueManager::add_queue(const QueueConfig& cfg)
 {
     QueueKey k(cfg.type(), cfg.id());
 
-    Queue q(cfg, tout_, modem_id_);
+    Queue q(cfg, os_, modem_id_);
     
     if(queues_.count(k))
     {
@@ -100,7 +100,7 @@ void queue::QueueManager::add_queue(const QueueConfig& cfg)
     else
         queues_.insert(std::pair<QueueKey, Queue>(k, q));
 
-    *tout_ << group("q_out") << "added new queue: \n" << q << std::endl;
+    if(os_) *os_<< group("q_out") << "added new queue: \n" << q << std::endl;
     
 }
 
@@ -175,25 +175,6 @@ std::ostream& queue::operator<< (std::ostream& out, const QueueManager& d)
 {
     out << d.summary();
     return out;
-}
-
-                             
-FlexCout* queue::QueueManager::init_tout(FlexCout* tout)
-{
-    if(!tout)
-    {
-        tout = new FlexCout();
-        tout->verbosity("quiet");
-        own_tout_ = true;
-    }
-    
-//    tout->add_group("push", "+", "lt_cyan", "stack push - outgoing messages");
-//    tout->add_group("pop", "-", "lt_green", "stack pop - outgoing messages");
-//    tout->add_group("priority", "<", "yellow", "priority contest");
-//    tout->add_group("q_out", "<", "cyan", "outgoing queuing messages");
-//    tout->add_group("q_in", ">", "green", "incoming queuing messages");
-    
-    return tout;
 }
 
 // combine a number of user frames into one modem frame
@@ -296,8 +277,8 @@ bool queue::QueueManager::provide_outgoing_modem_data(micromodem::Message& messa
         message_out.set_dest(packet_dest_);
         message_out.set_ack(packet_ack_);
 
-        *tout_ << group("q_out") << cyan << "no data found. sending blank to firmware" 
-               << nocolor << ": " << message_out.snip() << std::endl;
+        if(os_) *os_<< group("q_out") << "no data found. sending blank to firmware" 
+                    << ": " << message_out.snip() << std::endl;
         
         return true;
     }    
@@ -313,9 +294,9 @@ bool queue::QueueManager::provide_outgoing_modem_data(micromodem::Message& messa
         if (packet_dest_ == acomms_util::BROADCAST_ID) packet_dest_ = next_message.dest();
         if (packet_ack_ == false) packet_ack_ = next_message.ack();
         
-        *tout_ << group("q_out") << cyan << "sending data to firmware from: "
-               << winning_var->cfg().name() 
-               << nocolor << ": " << next_message.snip() << std::endl;
+        if(os_) *os_<< group("q_out") << "sending data to firmware from: "
+                    << winning_var->cfg().name() 
+                    << ": " << next_message.snip() << std::endl;
         
         if(winning_var->cfg().ack() == false)
         {
@@ -351,8 +332,8 @@ queue::Queue* queue::QueueManager::find_next_sender(micromodem::Message& message
 
     Queue* winning_var = NULL;
     
-    *tout_ << group("priority") << yellow << "starting priority contest" << nocolor
-           << "... request: " << message.snip() << std::endl;
+    if(os_) *os_<< group("priority") << "starting priority contest"
+                << "... request: " << message.snip() << std::endl;
     
     for(std::map<QueueKey, Queue>::iterator it = queues_.begin(), n = queues_.end(); it != n; ++it)
     {
@@ -382,7 +363,7 @@ queue::Queue* queue::QueueManager::find_next_sender(micromodem::Message& message
                 winning_var = &oq;
                 found_data = true;
             }
-            *tout_ << group("priority") << "\t" << oq.cfg().name() << " has priority value"
+            if(os_) *os_<< group("priority") << "\t" << oq.cfg().name() << " has priority value"
                    << ": " << priority << std::endl;
             all_queues_empty = false;
         }
@@ -390,19 +371,28 @@ queue::Queue* queue::QueueManager::find_next_sender(micromodem::Message& message
         {
             if(error != "no available messages")
             {
-                *tout_ << group("priority") << "\t" << error << std::endl;
+                if(os_) *os_<< group("priority") << "\t" << error << std::endl;
                 all_queues_empty = false;
             }
         }
     }
 
     if(all_queues_empty)
-        *tout_ << group("priority") << "\t" << "all queues have no messages" << std::endl;
+    {
+        if(os_) *os_<< group("priority") << "\t"
+                    << "all queues have no messages" << std::endl;
+    }
     else
-        *tout_ << group("priority") << "\t" << "all other queues have no messages" << std::endl;
+    {
+        if(os_) *os_<< group("priority") << "\t"
+                    << "all other queues have no messages" << std::endl;
+    }
 
     if(winning_var)
-        *tout_ << group("priority") << yellow << winning_var->cfg().name() << " has highest priority." << std::endl;
+    {
+        if(os_) *os_<< group("priority") << winning_var->cfg().name()
+                    << " has highest priority." << std::endl;
+    }
     
     return winning_var;
 }    
@@ -412,7 +402,8 @@ bool queue::QueueManager::handle_modem_ack(micromodem::Message& message)
 {
     if(!waiting_for_ack_.count(message.frame()))
     {
-        *tout_ << group("q_in") << "got ack but we were not expecting one" << std::endl;
+        if(os_) *os_<< group("q_in")
+                    << "got ack but we were not expecting one" << std::endl;
         return false;
     }
     else
@@ -421,13 +412,14 @@ bool queue::QueueManager::handle_modem_ack(micromodem::Message& message)
         
         if(dest != modem_id_)
         {
-            *tout_ << group("q_in") << warn << "ignoring ack for modem_id = " << dest << std::endl;
+            if(os_) *os_<< group("q_in") << warn
+                        << "ignoring ack for modem_id = " << dest << std::endl;
             return false;
         }
         else
         {
             // got an ack, let's pop this!
-            *tout_ << group("q_in") << lt_green << "received ack for this id" << std::endl;
+            if(os_) *os_<< group("q_in") << "received ack for this id" << std::endl;
             
             std::multimap<unsigned, Queue *>::iterator it = waiting_for_ack_.find(message.frame());
             while(it != waiting_for_ack_.end())
@@ -436,11 +428,16 @@ bool queue::QueueManager::handle_modem_ack(micromodem::Message& message)
 
                 micromodem::Message removed_msg;
                 if(!oq->pop_message_ack(message.frame(), removed_msg))
-                    *tout_ << group("q_in") << warn << "failed to pop message from " << oq->cfg().name() << std::endl;
+                {
+                    if(os_) *os_<< group("q_in") << warn
+                                << "failed to pop message from "
+                                << oq->cfg().name() << std::endl;
+                }
                 else
                 {
                     qsize(oq);
-                    if(callback_ack) callback_ack(QueueKey(oq->cfg().type(), oq->cfg().id()), removed_msg);
+                    if(callback_ack)
+                        callback_ack(QueueKey(oq->cfg().type(), oq->cfg().id()), removed_msg);
                 }
                 
                 waiting_for_ack_.erase(it);
@@ -459,7 +456,8 @@ bool queue::QueueManager::handle_modem_ack(micromodem::Message& message)
 // in a "receive = " line of the configuration file
 bool queue::QueueManager::receive_incoming_modem_data(micromodem::Message& message)
 {    
-    *tout_ << group("q_in") << green << "received message" << nocolor << ": " << message.snip() << std::endl;
+    if(os_) *os_<< group("q_in") << "received message"
+                << ": " << message.snip() << std::endl;
    
     std::string data = message.data();
    
@@ -523,9 +521,10 @@ bool queue::QueueManager::receive_incoming_modem_data(micromodem::Message& messa
         }
         else
         {
-            *tout_ << group("q_in") << warn << "incoming data string is not for us (first byte is not 0x"
-                   << acomms_util::DCCL_CCL_HEADER_STR 
-                   << " and not one of the alternative CCL types)." << std::endl;
+            if(os_) *os_<< group("q_in") << warn
+                        << "incoming data string is not for us (first byte is not 0x"
+                        << acomms_util::DCCL_CCL_HEADER_STR 
+                        << " and not one of the alternative CCL types)." << std::endl;
             return false;
         }
     }
@@ -538,7 +537,8 @@ bool queue::QueueManager::publish_incoming_piece(micromodem::Message message, co
 {
     if(message.dest() != 0 && message.dest() != modem_id_)
     {
-        *tout_ << group("q_in") << warn << "ignoring message for modem_id = " << message.dest() << std::endl;
+        if(os_) *os_<< group("q_in") << warn << "ignoring message for modem_id = "
+                    << message.dest() << std::endl;
         return false;
     }
 
@@ -549,7 +549,8 @@ bool queue::QueueManager::publish_incoming_piece(micromodem::Message message, co
     
     if(it_dccl == queues_.end() && it_data == queues_.end())
     {
-        *tout_ << group("q_in") << warn << "no mapping for this variable ID: " << incoming_var_id << std::endl;
+        if(os_) *os_<< group("q_in") << warn << "no mapping for this variable ID: "
+                    << incoming_var_id << std::endl;
         return false;
     }
     
@@ -581,8 +582,8 @@ int queue::QueueManager::request_next_destination(unsigned size /* = std::numeri
     if(winning_var)
     {
         unsigned dest = winning_var->give_dest();
-        *tout_ << group("q_out") <<  "got dest request for size " << size << ", giving dest: "
-               << dest << std::endl;
+        if(os_) *os_ << group("q_out") <<  "got dest request for size " << size
+                     << ", giving dest: " << dest << std::endl;
         return dest;
     }
     else

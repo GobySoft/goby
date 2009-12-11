@@ -25,24 +25,21 @@
 // essentially each OutQueue maintains its own stack of messages to send
 // and the configuration data pertaining to its priority in relation to other messages
 
+#include "acomms/acomms_constants.h"
+#include "util/tes_utils.h"
+#include "util/streamlogger.h"
+
 #include "queue.h"
 
-#include "tes_utils.h"
-#include "term_color.h"
-#include "acomms_constants.h"
-
-using namespace termcolor;
-
 queue::Queue::Queue(const QueueConfig cfg /* = 0 */,
-                    FlexCout * tout /* = 0 */,
+                    std::ostream* os /* = 0 */,
                     const unsigned& modem_id /* = 0 */)
     : cfg_(cfg),
       on_demand_(false),
       last_send_time_(time(NULL)),
       modem_id_(modem_id),
-      tout_(tout)
-{
-}
+      os_(os)
+{}
 
 
 // add a new message
@@ -50,7 +47,9 @@ bool queue::Queue::push_message(micromodem::Message& new_message)
 {
     if(new_message.empty())
     {
-        *tout_ << group("q_out") << warn << "empty message attempted to be pushed to queue " << cfg_.name() << std::endl;
+        if(os_) *os_ << group("q_out") << warn
+                     << "empty message attempted to be pushed to queue "
+                     << cfg_.name() << std::endl;
         return false;
     }
             
@@ -65,8 +64,8 @@ bool queue::Queue::push_message(micromodem::Message& new_message)
         tes_util::number2hex_string(hex_variableID, cfg_.id());
 
         new_message.set_data(acomms_util::DCCL_CCL_HEADER_STR +
-                              hex_variableID +
-                              new_message.data());
+                             hex_variableID +
+                             new_message.data());
     }    
     new_message.set_src(modem_id_);
     new_message.set_ack(cfg_.ack());
@@ -87,15 +86,15 @@ bool queue::Queue::push_message(micromodem::Message& new_message)
         waiting_for_ack_it it = find_ack_value(it_to_erase);
         if(it != waiting_for_ack_.end()) waiting_for_ack_.erase(it);        
         
-        *tout_ << "queue exceeded for " << cfg_.name() <<
-            ". removing: " << it_to_erase->snip() << std::endl;
+        if(os_) *os_ << "queue exceeded for " << cfg_.name() <<
+                    ". removing: " << it_to_erase->snip() << std::endl;
 
         messages_.erase(it_to_erase);
     }
     
-    *tout_ << group("push") << lt_cyan
-           << "pushing" << nocolor << " to send stack "
-           << cfg_.name() << " (qsize " << size() <<  "/" << cfg_.max_queue() << "): " << new_message.snip() << std::endl;    
+    if(os_) *os_ << group("push") << "pushing" << " to send stack "
+                 << cfg_.name() << " (qsize " << size() <<  "/"
+                 << cfg_.max_queue() << "): " << new_message.snip() << std::endl;    
     
     return true;     
 }
@@ -170,12 +169,12 @@ bool queue::Queue::pop_message(unsigned frame)
 {
     if (cfg_.newest_first() && !cfg_.ack())
     {
-        pop_tout(messages_.back().snip());
+        stream_for_pop(messages_.back().snip());
         messages_.pop_back();
     }
     else if(!cfg_.newest_first() && !cfg_.ack())
     {
-        pop_tout(messages_.front().snip());
+        stream_for_pop(messages_.front().snip());
         messages_.pop_front();
     }
     else
@@ -198,7 +197,7 @@ bool queue::Queue::pop_message_ack(unsigned frame, micromodem::Message& msg)
         waiting_for_ack_it it = waiting_for_ack_.find(frame);
         msg = *(it->second);
 
-        pop_tout(msg.snip());
+        stream_for_pop(msg.snip());
 
         // remove the message
         messages_.erase(it->second);
@@ -217,11 +216,11 @@ bool queue::Queue::pop_message_ack(unsigned frame, micromodem::Message& msg)
     return true;    
 }
 
-void queue::Queue::pop_tout(const std::string& snip)
+void queue::Queue::stream_for_pop(const std::string& snip)
 {
-    *tout_ << group("pop") << termcolor::lt_green << "popping" << termcolor::nocolor
-           << " from send stack " << cfg_.name() << " (qsize " << size()-1 <<  "/" << cfg_.max_queue() << "): "
-           << snip << std::endl;
+    if(os_) *os_ << group("pop") <<  "popping" << " from send stack "
+                 << cfg_.name() << " (qsize " << size()-1
+                 <<  "/" << cfg_.max_queue() << "): "  << snip << std::endl;
 }
 
 
@@ -253,7 +252,7 @@ std::string queue::Queue::summary() const
 
 void queue::Queue::flush()
 {
-    *tout_ << group("pop") << "flushing stack " << cfg_.name() << " (qsize 0)" << std::endl;
+    if(os_) *os_ << group("pop") << "flushing stack " << cfg_.name() << " (qsize 0)" << std::endl;
     messages_.clear();
 }        
 

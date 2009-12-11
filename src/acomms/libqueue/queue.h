@@ -34,8 +34,8 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
 
-#include "modem_message.h"
-#include "flex_cout.h"
+#include "acomms/modem_message.h"
+
 #include "queue_config.h"
 
 typedef std::list<micromodem::Message>::iterator messages_it;
@@ -47,14 +47,14 @@ namespace queue
     {
       public:
         Queue(const QueueConfig cfg = QueueConfig(),
-              FlexCout* tout = 0,
+              std::ostream* os = 0,
               const unsigned& modem_id = 0);
 
         bool push_message(micromodem::Message& new_message);
         micromodem::Message give_data(unsigned frame);
         bool pop_message(unsigned frame);    
         bool pop_message_ack(unsigned frame, micromodem::Message& msg);
-        void pop_tout(const std::string& snip);
+        void stream_for_pop(const std::string& snip);
         
         
             
@@ -89,7 +89,7 @@ namespace queue
     
         const unsigned& modem_id_;
     
-        FlexCout* tout_;
+        std::ostream* os_;
     
         std::list<micromodem::Message> messages_;
 

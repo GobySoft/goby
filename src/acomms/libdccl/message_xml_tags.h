@@ -23,7 +23,7 @@
 #ifndef MessageXMLTagsH
 #define MessageXMLTagsH
 
-#include "xerces_strings.h"
+#include "acomms/xml/xerces_strings.h"
 
 #include <boost/assign.hpp>
 

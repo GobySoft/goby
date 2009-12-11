@@ -27,7 +27,7 @@
 
 #include <boost/lexical_cast.hpp>
 
-#include "tes_utils.h"
+#include "util/tes_utils.h"
 
 namespace queue
 {

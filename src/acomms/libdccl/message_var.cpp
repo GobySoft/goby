@@ -22,9 +22,10 @@
 
 #include "message_var.h"
 #include "message_val.h"
-#include "tes_utils.h"
 #include "dccl_constants.h"
 #include "message_algorithms.h"
+
+#include "util/tes_utils.h"
 
 dccl::MessageVar::MessageVar() : max_(1e300),
                                  min_(0.0),

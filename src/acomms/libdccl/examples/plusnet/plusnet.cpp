@@ -28,7 +28,8 @@
 
 // this is an example showing some of the "MOOS" related features of libdccl that can be used (if desired) in the absence of MOOS
 
-#include "dccl.h"
+#include "acomms/dccl.h"
+
 #include <exception>
 #include <iostream>
 

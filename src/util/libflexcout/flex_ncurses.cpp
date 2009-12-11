@@ -29,9 +29,11 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
 
+#include "util/streamlogger.h"
+
 #include "flex_ncurses.h"
-#include "flex_cout_group.h"
 #include "term_color.h"
+
 
 FlexNCurses::FlexNCurses(boost::mutex& mutex)
     : xmax_(0),

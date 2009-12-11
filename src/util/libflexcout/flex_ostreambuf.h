@@ -27,10 +27,11 @@
 
 #include <boost/thread.hpp>
 
-#include "flex_cout_group.h"
+#include "util/streamlogger.h"
+
 #include "flex_ncurses.h"
 #include "term_color.h"
-
+           
 // stringbuf that allows us to insert things before the stream and control output
 class FlexOStreamBuf : public std::stringbuf
 {
@@ -89,6 +90,5 @@ class FlexOStreamBuf : public std::stringbuf
     //    boost::thread input_thread_;
 };
 
-
-
 #endif
+

@@ -10,5 +10,5 @@ if(Boost_FOUND)
   
   file(GLOB SRC *.cpp *.c)
   add_library(mmdriver SHARED ${SRC})
-  target_link_libraries(mmdriver flexcout)
+  target_link_libraries(mmdriver streamlogger serial)
 endif()

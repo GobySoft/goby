@@ -25,7 +25,7 @@
 // encodes/decodes a string using the DCCL codec library
 // assumes prior knowledge of the message format (required fields)
 
-#include "../../dccl.h"
+#include "acomms/dccl.h"
 #include <iostream>
 
 using dccl::operator<<;

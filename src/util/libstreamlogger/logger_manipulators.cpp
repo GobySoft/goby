@@ -3,8 +3,8 @@
 // massachusetts institute of technology (mit)
 // laboratory for autonomous marine sensing systems (lamss)
 // 
-// this file is part of flex-cout, a terminal display library
-// that extends the functionality of std::cout
+// this file is part of goby-logger,
+// the goby logging library
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,10 +19,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
-#include "flex_cout_group.h"
+#include "logger_manipulators.h"
 #include "flex_cout.h"
 
-std::ostream & operator<< (std::ostream & os, const Group & g)
+std::ostream & operator<< (std::ostream& os, const Group & g)
 {
     os << "description: " << g.description() << std::endl;
     os << "heartbeat: " << g.heartbeat() << std::endl;
@@ -30,5 +30,16 @@ std::ostream & operator<< (std::ostream & os, const Group & g)
     return os;
 }
 
-void GroupSetter::operator()(FlexCout & os) const
-{ os.group(group_); }
+void GroupSetter::operator()(std::ostream& os) const
+{
+    try
+    {
+        FlexCout& flex_cout = dynamic_cast<FlexCout&>(os);
+        flex_cout.group(group_);
+    }
+    catch (const std::bad_cast& e)
+    {
+        // all other ostreams
+        os << group_ << "\t";
+    }
+}

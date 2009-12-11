@@ -46,49 +46,49 @@ namespace termcolor
     const std::string esc_lt_white = "\33[97m";
     const std::string esc_nocolor = "\33[0m";
     
-    inline std::ostream & red(std::ostream & os) 
+    inline std::ostream& red(std::ostream& os) 
     { return(os << esc_red); }
 
-    inline std::ostream & lt_red(std::ostream & os) 
+    inline std::ostream& lt_red(std::ostream& os) 
     { return(os << esc_lt_red); }
 
-    inline std::ostream & green(std::ostream & os) 
+    inline std::ostream& green(std::ostream& os) 
     { return(os << esc_green); }
 
-    inline std::ostream & lt_green(std::ostream & os) 
+    inline std::ostream& lt_green(std::ostream& os) 
     { return(os << esc_lt_green); }
 
-    inline std::ostream & yellow(std::ostream & os) 
+    inline std::ostream& yellow(std::ostream& os) 
     { return(os << esc_yellow); }
 
-    inline std::ostream & lt_yellow(std::ostream & os) 
+    inline std::ostream& lt_yellow(std::ostream& os) 
     { return(os << esc_lt_yellow); }
 
-    inline std::ostream & blue(std::ostream & os) 
+    inline std::ostream& blue(std::ostream& os) 
     { return(os << esc_blue); }
 
-    inline std::ostream & lt_blue(std::ostream & os) 
+    inline std::ostream& lt_blue(std::ostream& os) 
     { return(os << esc_lt_blue); }
 
-    inline std::ostream & magenta(std::ostream & os) 
+    inline std::ostream& magenta(std::ostream& os) 
     { return(os << esc_magenta); }
 
-    inline std::ostream & lt_magenta(std::ostream & os) 
+    inline std::ostream& lt_magenta(std::ostream& os) 
     { return(os << esc_lt_magenta); }
 
-    inline std::ostream & cyan(std::ostream & os)
+    inline std::ostream& cyan(std::ostream& os)
     { return(os << esc_cyan); }
 
-    inline std::ostream & lt_cyan(std::ostream & os) 
+    inline std::ostream& lt_cyan(std::ostream& os) 
     { return(os << esc_lt_cyan); }
  
-    inline std::ostream & white(std::ostream & os) 
+    inline std::ostream& white(std::ostream& os) 
     { return(os << esc_white); }
   
-    inline std::ostream & lt_white(std::ostream & os) 
+    inline std::ostream& lt_white(std::ostream& os) 
     { return(os << esc_lt_white); }
 
-    inline std::ostream & nocolor(std::ostream & os) 
+    inline std::ostream& nocolor(std::ostream& os) 
     { return(os << esc_nocolor); }
 
     namespace enums
@@ -130,7 +130,7 @@ namespace termcolor
 
         }
 
-        enums::Color from_str(const std::string & s)
+        enums::Color from_str(const std::string& s)
         {
 	  return colors_map_[s];
         }
@@ -148,7 +148,7 @@ namespace termcolor
         }
 
         // "\33[31m" -> red
-        enums::Color from_esc_code(const std::string & s)
+        enums::Color from_esc_code(const std::string& s)
         {
 	  return esc_code_map_[s];
         }
@@ -176,7 +176,7 @@ namespace termcolor
 
 	// use BOOST bimap, which isn't out until 1.35
        /* // "red" -> red */
-        /* enums::Color from_str(const std::string & s) */
+        /* enums::Color from_str(const std::string& s) */
         /* { */
         /*     try { return colors_map_.left.at(s); } */
         /*     catch(...) { return enums::nocolor; }             */
@@ -190,7 +190,7 @@ namespace termcolor
         /* }         */
 
         /* // "\33[31m" -> red */
-        /* enums::Color from_esc_code(const std::string & s) */
+        /* enums::Color from_esc_code(const std::string& s) */
         /* { */
         /*     try { return esc_code_map_.left.at(s); } */
         /*     catch(...) { return enums::nocolor; } */

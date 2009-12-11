@@ -65,8 +65,6 @@ class XMLParser {
         
         if(schema != "")
         {
-            std::cout << schema << std::endl;
-            
             const XercesString xs_schema = fromNative(schema);
             const XMLCh * const schema_location = xs_schema.c_str();            
             parser->setFeature(xercesc::XMLUni::fgSAX2CoreValidation, true);

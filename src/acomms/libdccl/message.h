@@ -33,11 +33,12 @@
 
 #include <boost/foreach.hpp>
 
-#include "tes_utils.h"
+#include "util/tes_utils.h"
+#include "acomms/modem_message.h"
+
 #include "message_var.h"
 #include "message_publish.h"
 #include "dccl_constants.h"
-#include "modem_message.h"
 
 namespace dccl
 {

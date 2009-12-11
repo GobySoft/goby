@@ -27,7 +27,7 @@
 
 #include <boost/thread.hpp>
 
-#include "flex_cout_group.h"
+#include "logger_manipulators.h"
 #include "flex_ncurses.h"
 #include "term_color.h"
 
@@ -89,6 +89,5 @@ class FlexOStreamBuf : public std::stringbuf
     //    boost::thread input_thread_;
 };
 
-
-
 #endif
+

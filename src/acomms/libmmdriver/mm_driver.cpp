@@ -28,52 +28,37 @@
 
 #include "serial_client.h"
 #include "modem_message.h"
-#include "term_color.h"
+#include "logger_manipulators.h"
 
-
-using namespace termcolor;
-
-MMDriver::MMDriver(FlexCout* tout /*= 0*/) : baud_(DEFAULT_BAUD),
-                                              modem_id_(acomms_util::BROADCAST_ID),
-                                              serial_(io_,
-                                                      in_,
-                                                      in_mutex_),
-                                              tout_(tout),
-                                              own_tout_(false),
-                                              last_write_time_(time(NULL)),
-                                              waiting_for_modem_(false),
-                                              startup_done_(false),
-                                              global_fail_count_(0),
-                                              present_fail_count_(0),
-                                              clock_set_(false)
+MMDriver::MMDriver(std::ostream* os /*= 0*/) : baud_(DEFAULT_BAUD),
+                                               modem_id_(acomms_util::BROADCAST_ID),
+                                               serial_(io_,
+                                                       in_,
+                                                       in_mutex_),
+                                               os_(os),
+                                               last_write_time_(time(NULL)),
+                                               waiting_for_modem_(false),
+                                               startup_done_(false),
+                                               global_fail_count_(0),
+                                               present_fail_count_(0),
+                                               clock_set_(false)
 {
-    if(!tout)
-    {
-        tout_ = new FlexCout();
-        tout_->verbosity("quiet");
-        own_tout_ = true;
-    }
-    
     initialize_talkers();
 }
 
 MMDriver::~MMDriver()
-{
-    if(own_tout_) delete tout_;
-}
+{ }
 
 
 void MMDriver::startup()
 {
-    tout_->add_group("mm_out", "<", "lt_magenta", "outgoing micromodem messages");
-    tout_->add_group("mm_in", ">", "lt_blue", "incoming micromodem messages");
-
-    *tout_ << group("mm_out") << "setting SRC to given modem_id: " << modem_id_ << std::endl;
+    if(os_) *os_ << group("mm_out") << "setting SRC to given modem_id: " << modem_id_ << std::endl;
     cfg_["SRC"] = modem_id_;
     
-
-    *tout_ << group("mm_out") << "opening serial port " << serial_port_
+    
+    if(os_) *os_ << group("mm_out") << "opening serial port " << serial_port_
           << " @ " << baud_ << std::endl;
+
     try { serial_.start(serial_port_, baud_); }
     catch (...)
     {
@@ -106,7 +91,7 @@ void MMDriver::do_work()
         std::string& in = in_.front();
         boost::trim(in);
         
-        *tout_ << group("mm_in") << "|" << microsec_simple_time_of_day() << "| " << lt_blue << in << std::endl;
+        if(os_) *os_ << group("mm_in") << "|" << microsec_simple_time_of_day() << "| " << in << std::endl;
         
         NMEA nmea(in, STRICT);
         handle_modem_in(nmea);
@@ -141,7 +126,7 @@ void MMDriver::handle_modem_out()
     {
         if(resend)
         {
-            *tout_ << group("mm_out") << warn << "resending " << nmea.talker() <<  " because we had no modem response for " << (time(NULL) - last_write_time_) << " second(s). " << std::endl;
+            if(os_) *os_ << group("mm_out") << warn << "resending " << nmea.talker() <<  " because we had no modem response for " << (time(NULL) - last_write_time_) << " second(s). " << std::endl;
             ++global_fail_count_;
             ++present_fail_count_;
             if(global_fail_count_ == MAX_FAILS_BEFORE_DEAD)
@@ -151,7 +136,7 @@ void MMDriver::handle_modem_out()
             
             if(present_fail_count_ == RETRIES)
             {
-                *tout_  << group("mm_out") << warn << "modem did not respond to our command even after " << RETRIES << " retries. continuing onwards anyway..." << std::endl;
+                if(os_) *os_  << group("mm_out") << warn << "modem did not respond to our command even after " << RETRIES << " retries. continuing onwards anyway..." << std::endl;
                 out_.clear();
                 return;
             }
@@ -159,7 +144,7 @@ void MMDriver::handle_modem_out()
         
         callback_out_raw(nmea.message_no_cs());
 
-        *tout_ << group("mm_out") << "|" << microsec_simple_time_of_day() << "| " << lt_magenta << nmea.message() << std::endl;
+        if(os_) *os_ << group("mm_out") << "|" << microsec_simple_time_of_day() << "| " << nmea.message() << std::endl;
         
         serial_.write(nmea.message_cr_nl());
 
@@ -181,7 +166,7 @@ void MMDriver::validate_and_write(NMEA& nmea)
     try { nmea.validate(); }
     catch(std::exception& e)
     {
-        *tout_ << group("mm_out") << warn << e.what() << std::endl;
+        if(os_) *os_ << group("mm_out") << warn << e.what() << std::endl;
         return;
     }
     
@@ -230,7 +215,7 @@ void MMDriver::handle_modem_in(NMEA& nmea)
     try { nmea.validate(); }
     catch(std::exception& e)
     {
-        *tout_ << group("mm_out") << warn << e.what() << std::endl;
+        *os_ << group("mm_out") << warn << e.what() << std::endl;
         return;
     }
     
@@ -370,7 +355,7 @@ void MMDriver::rev(NMEA& nmea, micromodem::Message& m)
 
 void MMDriver::err(NMEA& nmea, micromodem::Message& m)
 {
-    *tout_ << group("mm_out") << warn << "modem reports error: " << nmea.message() << std::endl;
+    *os_ << group("mm_out") << warn << "modem reports error: " << nmea.message() << std::endl;
 }
 
 void MMDriver::cyc(NMEA& nmea, micromodem::Message& m)
@@ -484,65 +469,4 @@ void MMDriver::initialize_talkers()
         ("SN",SN)
         ("GP",GP);
  
-   
-    boost::assign::insert (talker_human_map_)
-        ("CAACK","Acknowledgment of a transmitted packet")
-        ("CADRQ","Data request message, modem to host")
-        ("CARXA","Received ASCII message, modem to host")
-        ("CARXD","Received binary message, modem to host")
-        ("CARXP","Incoming packet detected, modem to host")
-        ("CCTXD","Transmit binary data message, host to modem")  
-        ("CCTXA","Transmit ASCII data message, host to modem")
-        ("CATXD","Echo back of transmit binary data message")  
-        ("CATXA","Echo back of transmit ASCII data message")
-        ("CCTXP","Start of packet transmission, modem to host")
-        ("CCTXF","End of packet transmission, modem to host")
-        ("CCCYC","Network Cycle Initialization Command")
-        ("CACYC","Echo of Network Cycle Initialization command")
-        ("CCMPC","MiniPacket Ping command, host to modem")
-        ("CAMPC","Echo of Ping command, modem to host")
-        ("CAMPA","A Ping has been received, modem to host")
-        ("CAMPR","Reply to Ping has been received, modem to host")
-        ("CCRSP","Pinging with an FM sweep")
-        ("CARSP","Respose to FM sweep ping command")
-        ("CCMSC","Sleep command, host to modem")
-        ("CAMSC","Echo of Sleep command, modem to host")
-        ("CAMSA","A Sleep was received acoustically, modem to host")
-        ("CAMSR","A Sleep reply was received, modem to host")
-        ("CCEXL","External hardware control command, local modem only")
-        ("CCMEC","External hardware control command, host to modem")
-        ("CAMEC","Echo of hardware control command, modem to host")
-        ("CAMEA","Hardware control command received acoustically")
-        ("CAMER","Hardware control command reply received")
-        ("CCMUC","User MiniPacket command, host to modem")
-        ("CAMUC","Echo of user MiniPacket, modem to host")
-        ("CAMUA","MiniPacket received acoustically, modem to host")
-        ("CAMUR","Reply to MiniPacket received, modem to host")
-        ("CCPDT","Ping REMUS digital transponder, host to modem")  
-        ("CCPNT","Ping narrowband transponder, host to modem")
-        ("SNTTA","Transponder travel times, modem to host")
-        ("SNMFD","Nav matched filter information, modem to host")  
-        ("CCCLK","Set clock, host to modem")
-        ("CCCFG","Set NVRAM configuration parameter, host to modem")
-        ("CACFG","Report NVRAM configuration parameter, modem to host")
-        ("CCCFQ","Query configuration parameter, host to modem")
-        ("CCAGC","Set automatic gain control")
-        ("CCBBD","Dump baseband data to serial port")  
-        ("CCCFR","Measure noise level at receiver, host to modem")
-        ("SNCFR","Noise report, modem to host")  
-        ("CACST","Communication cycle statistics")  
-        ("CAMSG","Transaction message, modem to host") 
-        ("CAREV","Software revision message, modem to host")
-        ("CADQF","Data quality factor information, modem to host")
-        ("CASHF","Shift information, modem to host")
-        ("CAMFD","Comms matched filter information, modem to host")
-        ("CACLK","Time/Date message, modem to host")
-        ("CASNR","SNR statistics on the incoming PSK packet")  
-        ("CADOP","Doppler speed message, modem to host")
-        ("CADBG","Low level debug message, modem to host")  
-        ("CCFFL","FIFO flush, host to modem")
-        ("CAFFL","FIFO flush acknowledgement host")  
-        ("CCFST","Query FIFO status, host to modem")  
-        ("CAFST","FIFO status, modem to host")
-        ("CAERR","Error message, modem to host");
 }

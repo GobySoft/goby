@@ -30,8 +30,8 @@
 #include <boost/lexical_cast.hpp>
 
 #include "flex_ncurses.h"
-#include "flex_cout_group.h"
 #include "term_color.h"
+#include "logger_manipulators.h"
 
 FlexNCurses::FlexNCurses(boost::mutex& mutex)
     : xmax_(0),

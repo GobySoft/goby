@@ -21,12 +21,12 @@
 #define QueueManager20091204_H
 
 #include <limits>
+#include <set>
 
 #include "queue_config.h"
 #include "queue_key.h"
 #include "queue.h"
 #include "xml_parser.h"
-#include "flex_cout.h"
 
 /// all Queuing objects are in the `queue` namespace
 namespace queue
@@ -38,22 +38,23 @@ namespace queue
         /// \name Constructors/Destructor
         //@{         
         /// default
-        QueueManager(FlexCout* tout = 0);
+        QueueManager(std::ostream* os = 0);
 
         /// instantiate with a single QueueConfig object
-        QueueManager(const QueueConfig& cfg, FlexCout* tout = 0);
+        QueueManager(const QueueConfig& cfg, std::ostream* os = 0);
 
         /// instantiate with a set of QueueConfig objects
-        QueueManager(const std::set<QueueConfig>& cfgs, FlexCout* tout = 0);
+        QueueManager(const std::set<QueueConfig>& cfgs, std::ostream* os = 0);
 
         /// instantiate with a single XML file
-        QueueManager(const std::string& file, const std::string schema = "", FlexCout* tout = 0);
+        QueueManager(const std::string& file, const std::string schema = "", std::ostream* os = 0);
         
         /// instantiate with a set of XML files
-        QueueManager(const std::set<std::string>& files, const std::string schema = "", FlexCout* tout = 0);
+        QueueManager(const std::set<std::string>& files, const std::string schema = "", std::ostream* os = 0);
 
         /// destructor
-        ~QueueManager() { if(own_tout_) delete tout_; }
+        ~QueueManager() { }
+        
         //@}
         
         /// \name Initialization Methods
@@ -139,11 +140,7 @@ namespace queue
             if(callback_qsize)
                 callback_qsize(QueueKey(q->cfg().type(), q->cfg().id()), q->size());
         }
-    
-             
-        FlexCout* init_tout(FlexCout* tout);
-
-
+        
         // finds the queue with the highest priority
         Queue* find_next_sender(micromodem::Message& message);
         
@@ -172,8 +169,7 @@ namespace queue
         std::string xml_schema_;
         time_t start_time_;
 
-        FlexCout* tout_;
-        bool own_tout_;
+        std::ostream* os_;
 
         // map frame number onto Queue pointer that contains
         // the data for this ack

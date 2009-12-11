@@ -30,8 +30,7 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string.hpp>
 
-#include "tes_utils.h"
-#include "dccl_constants.h"
+#include "util/tes_utils.h"
 
 /// WHOI Micro-Modem specific objects
 namespace micromodem
@@ -252,7 +251,6 @@ namespace micromodem
             try { set_frame(boost::lexical_cast<unsigned>(frame));}
             catch(boost::bad_lexical_cast & ) { }
         }
-
 
         /// removes the header bytes (CCL and DCCL ids) from the data
         void remove_header()

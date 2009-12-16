@@ -1,7 +1,4 @@
 // copyright 2008, 2009 t. schneider tes@mit.edu
-// ocean engineering graudate student - mit / whoi joint program
-// massachusetts institute of technology (mit)
-// laboratory for autonomous marine sensing systems (lamss)
 // 
 // this file is part of the Dynamic Compact Control Language (DCCL),
 // the goby-acomms codec. goby-acomms is a collection of libraries 

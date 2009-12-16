@@ -1,12 +1,4 @@
-// t. schneider tes@mit.edu 3.31.09
-// ocean engineering graduate student - mit / whoi joint program
-// massachusetts institute of technology (mit)
-// laboratory for autonomous marine sensing systems (lamss)
-// 
-// this is simple.cpp
-//
-// see the readme file within this directory for information
-// pertaining to usage and purpose of this script.
+// copyright 2009 t. schneider tes@mit.edu
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by

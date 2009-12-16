@@ -1,7 +1,4 @@
 // copyright 2008, 2009 t. schneider tes@mit.edu
-// ocean engineering graudate student - mit / whoi joint program
-// massachusetts institute of technology (mit)
-// laboratory for autonomous marine sensing systems (lamss)
 // 
 // this file is part of the Dynamic Compact Control Language (DCCL),
 // the goby-acomms codec. goby-acomms is a collection of libraries 
@@ -19,8 +16,6 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
-
-// xml code based largely on work in C++ Cookbook by D. Ryan Stephens, Christopher Diggins, Jonathan Turkanis, and Jeff Cogswell. Copyright 2006 O'Reilly Media, INc., 0-596-00761-2. 
 
 #include "message_xml_callbacks.h"
 

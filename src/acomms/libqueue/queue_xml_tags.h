@@ -1,8 +1,8 @@
-// copyright 2009 t. schneider tes@mit.edu
-// ocean engineering graudate student - mit / whoi joint program
-// massachusetts institute of technology (mit)
-// laboratory for autonomous marine sensing systems (lamss)
+// copyright 2009 t. schneider tes@mit.edu 
 //
+// this file is part of the Queue Library (libqueue),
+// the goby-acomms message queue manager. goby-acomms is a collection of 
+// libraries for acoustic underwater networking
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,8 +17,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef QueueXMLTagsH
-#define QueueXMLTagsH
+#ifndef QueueXMLTags20091211H
+#define QueueXMLTags20091211H
 
 #include <boost/assign.hpp>
 

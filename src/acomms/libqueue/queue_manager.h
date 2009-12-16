@@ -1,8 +1,8 @@
-// copyright 2009 t. schneider tes@mit.edu
-// ocean engineering graudate student - mit / whoi joint program
-// massachusetts institute of technology (mit)
-// laboratory for autonomous marine sensing systems (lamss)
-// 
+// copyright 2009 t. schneider tes@mit.edu 
+//
+// this file is part of the Queue Library (libqueue),
+// the goby-acomms message queue manager. goby-acomms is a collection of 
+// libraries for acoustic underwater networking
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -102,9 +102,9 @@ namespace queue
         //@{
 
         /// \brief push a message using the QueueKey as a key
-        void push_message(QueueKey key, micromodem::Message& new_message);
+        void push_message(QueueKey key, modem::Message& new_message);
         /// \brief push a message using the queue id and type together as a key
-        void push_message(unsigned id, micromodem::Message& new_message, QueueType type = queue_dccl);
+        void push_message(unsigned id, modem::Message& new_message, QueueType type = queue_dccl);
 
         
         //@}
@@ -115,15 +115,15 @@ namespace queue
         std::string summary() const;
 
         // finds data to send to the modem
-        bool provide_outgoing_modem_data(micromodem::Message& message_in, micromodem::Message& message_out);
+        bool provide_outgoing_modem_data(modem::Message& message_in, modem::Message& message_out);
         // receive incoming data from the modem
-        bool receive_incoming_modem_data(micromodem::Message& message);
+        bool receive_incoming_modem_data(modem::Message& message);
 
         // pops messages acknowledged
-        bool handle_modem_ack(micromodem::Message& message);
+        bool handle_modem_ack(modem::Message& message);
 
-        typedef boost::function<void (QueueKey key, micromodem::Message & message)> MsgFunc1;
-        typedef boost::function<void (QueueKey key, micromodem::Message & message1, micromodem::Message & message2)> MsgFunc2;
+        typedef boost::function<void (QueueKey key, modem::Message & message)> MsgFunc1;
+        typedef boost::function<void (QueueKey key, modem::Message & message1, modem::Message & message2)> MsgFunc2;
         typedef boost::function<void (QueueKey key, unsigned size)> QSizeFunc;
 
         void set_ack_cb(MsgFunc1 func)     { callback_ack = func; }
@@ -143,16 +143,16 @@ namespace queue
         }
         
         // finds the queue with the highest priority
-        Queue* find_next_sender(micromodem::Message& message);
+        Queue* find_next_sender(modem::Message& message);
         
         // combine multiple "user" frames into a single "modem" frame
-        micromodem::Message stitch(const std::vector<micromodem::Message>& in_frames);
+        modem::Message stitch(const std::vector<modem::Message>& in_frames);
         
         // clears the destination and ack values for the packet to reset for next $CADRQ
         void clear_packet();
 
         // slave function to receive_incoming_modem_data that actually writes a piece of the message (called for each user-frame)
-        bool publish_incoming_piece(micromodem::Message message, const unsigned incoming_var_id);        
+        bool publish_incoming_piece(modem::Message message, const unsigned incoming_var_id);        
         
       private:
         MsgFunc1 callback_ack;

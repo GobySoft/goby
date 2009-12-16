@@ -1,8 +1,3 @@
-#--------------------------------------------------------
-# The CMakeLists.txt for:                    lib_mmdriver
-# Author(s):                                 t. schneider
-#--------------------------------------------------------
-
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
 if(Boost_FOUND)

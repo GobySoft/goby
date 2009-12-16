@@ -1,8 +1,8 @@
-// t. schneider tes@mit.edu 06.05.08
-// ocean engineering graudate student - mit / whoi joint program
-// massachusetts institute of technology (mit)
-// laboratory for autonomous marine sensing systems (lamss)
+// copyright 2008, 2009 t. schneider tes@mit.edu
 //
+// this file is part of the Queue Library (libqueue),
+// the goby-acomms message queue manager. goby-acomms is a collection of 
+// libraries for acoustic underwater networking
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -16,14 +16,6 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
-
-
-// OutQueue - a class that handles all information pertaining to a given
-// MOOS variable specified to send (send = ... configuration parameter)
-// used in pAcommsHandler
-
-// essentially each OutQueue maintains its own stack of messages to send
-// and the configuration data pertaining to its priority in relation to other messages
 
 #include "acomms/acomms_constants.h"
 #include "util/tes_utils.h"
@@ -43,7 +35,7 @@ queue::Queue::Queue(const QueueConfig cfg /* = 0 */,
 
 
 // add a new message
-bool queue::Queue::push_message(micromodem::Message& new_message)
+bool queue::Queue::push_message(modem::Message& new_message)
 {
     if(new_message.empty())
     {
@@ -86,7 +78,7 @@ bool queue::Queue::push_message(micromodem::Message& new_message)
         waiting_for_ack_it it = find_ack_value(it_to_erase);
         if(it != waiting_for_ack_.end()) waiting_for_ack_.erase(it);        
         
-        if(os_) *os_ << "queue exceeded for " << cfg_.name() <<
+        if(os_) *os_ << group("pop") << "queue exceeded for " << cfg_.name() <<
                     ". removing: " << it_to_erase->snip() << std::endl;
 
         messages_.erase(it_to_erase);
@@ -112,7 +104,7 @@ messages_it queue::Queue::next_message_it()
     return it_to_give;
 }
 
-micromodem::Message queue::Queue::give_data(unsigned frame)
+modem::Message queue::Queue::give_data(unsigned frame)
 {
     messages_it it_to_give = next_message_it();
     
@@ -125,7 +117,7 @@ micromodem::Message queue::Queue::give_data(unsigned frame)
 // gives priority values. returns false if in blackout interval or if no data or if messages of wrong size, true if not in blackout
 bool queue::Queue::priority_values(double* priority,
                                    double* last_send_time,
-                                   micromodem::Message* message,
+                                   modem::Message* message,
                                    std::string* error)
 {
     double now = time(NULL);
@@ -141,7 +133,7 @@ bool queue::Queue::priority_values(double* priority,
         return false;
     }
         
-    micromodem::Message next_message = *next_message_it();
+    modem::Message next_message = *next_message_it();
 
     // for followup user-frames, destination must be either zero (broadcast)
     // or the same as the first user-frame
@@ -188,7 +180,7 @@ bool queue::Queue::pop_message(unsigned frame)
     return true;
 }
 
-bool queue::Queue::pop_message_ack(unsigned frame, micromodem::Message& msg)
+bool queue::Queue::pop_message_ack(unsigned frame, modem::Message& msg)
 {
     // pop message from the ack stack
     if(cfg_.ack() && frame && waiting_for_ack_.count(frame))

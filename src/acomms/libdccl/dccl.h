@@ -1,7 +1,4 @@
 // copyright 2009 t. schneider tes@mit.edu
-// ocean engineering graudate student - mit / whoi joint program
-// massachusetts institute of technology (mit)
-// laboratory for autonomous marine sensing systems (lamss)
 // 
 // this file is part of the Dynamic Compact Control Language (DCCL),
 // the goby-acomms codec. goby-acomms is a collection of libraries 
@@ -20,8 +17,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef DCCL_H
-#define DCCL_H
+#ifndef DCCL20091211H
+#define DCCL20091211H
 
 #include <ctime>
 #include <string>
@@ -289,7 +286,7 @@ namespace dccl
         /// In comparison, using encode you would pass *ml["myint"] = 32
         ///
         /// \param k can either be std::string (the name of the message) or unsigned (the id of the message)
-        /// \param Msg micromodem::Message or std::string for encoded message to be stored.
+        /// \param Msg modem::Message or std::string for encoded message to be stored.
         /// \param ms pointer to map of moos variable name to std::string values. 
         /// \param md pointer to map of moos variable name to double values. double is preferred for <float/>.
         template<typename Key, typename Msg>
@@ -309,7 +306,7 @@ namespace dccl
         /// returned in the double map, not the string map).
         ///
         /// \param k can either be std::string (the name of the message) or unsigned (the id of the message)
-        /// \param Msg micromodem::Message or std::string to be decode.
+        /// \param Msg modem::Message or std::string to be decode.
         /// \param ms pointer to std::multimap of message variable name to std::string values.
         /// \param md pointer to std::multimap of message variable name to double values.
         template<typename Key, typename Msg>
@@ -328,7 +325,7 @@ namespace dccl
         /// returned in the double map, not the string map).
         ///
         /// \param k can either be std::string (the name of the message) or unsigned (the id of the message)
-        /// \param Msg micromodem::Message or std::string to be decode.
+        /// \param Msg modem::Message or std::string to be decode.
         /// \param ms pointer to std::map of message variable name to std::string values.
         /// \param md pointer to std::map of message variable name to double values.
         template<typename Key, typename Msg>
@@ -426,7 +423,7 @@ namespace dccl
 
 
         void encode_private(std::vector<Message>::iterator it,
-                    micromodem::Message& out_message,
+                    modem::Message& out_message,
                     const std::map<std::string, std::string>* in_str,
                     const std::map<std::string, double>* in_dbl,
                     const std::map<std::string, long>* in_long,
@@ -452,14 +449,14 @@ namespace dccl
                     const std::map<std::string, bool>* in_bool,
                     bool from_moos = false)
         {
-            micromodem::Message out_message;
+            modem::Message out_message;
             encode_private(it, out_message, in_str, in_dbl, in_long, in_bool, from_moos);
             out_hex = out_message.serialize(true);
         }
         
         template <typename Map1, typename Map2, typename Map3, typename Map4>
             void decode_private(std::vector<Message>::iterator it,
-                        const micromodem::Message& in_message,
+                        const modem::Message& in_message,
                         Map1* out_str,
                         Map2* out_dbl,
                         Map3* out_long,
@@ -481,7 +478,7 @@ namespace dccl
                                 Map4* out_bool,
                                 bool do_publishes = false)
         {
-            micromodem::Message in_message(in_hex);
+            modem::Message in_message(in_hex);
             decode_private(it, in_message, out_str, out_dbl, out_long, out_bool, do_publishes);
         }
 

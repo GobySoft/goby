@@ -1,7 +1,4 @@
 // copyright 2009 t. schneider tes@mit.edu
-// ocean engineering graudate student - mit / whoi joint program
-// massachusetts institute of technology (mit)
-// laboratory for autonomous marine sensing systems (lamss)
 // 
 // this file is part of flex-cout, a terminal display library
 // that extends the functionality of std::cout

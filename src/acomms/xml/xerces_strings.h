@@ -1,7 +1,4 @@
 // copyright 2008, 2009 t. schneider tes@mit.edu
-// ocean engineering graudate student - mit / whoi joint program
-// massachusetts institute of technology (mit)
-// laboratory for autonomous marine sensing systems (lamss)    
 //
 // this file is part of goby-acomms, a collection of libraries for acoustic underwater networking
 //
@@ -18,15 +15,16 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
-// xml code based largely on work in C++ Cookbook by D. Ryan Stephens, Christopher Diggins, Jonathan Turkanis, and Jeff Cogswell. Copyright 2006 O'Reilly Media, INc., 0-596-00761-2.
+// this xml code based largely on work in C++ Cookbook by D. Ryan Stephens, Christopher Diggins, Jonathan Turkanis, and Jeff Cogswell. Copyright 2006 O'Reilly Media, INc., 0-596-00761-2.
 
 // these functions define an easy way to convert from and to the XercesString
 // unicode format to the native (ASCII in our case) string format.
 
-#ifndef XERCES_STRINGS_HPP_INCLUDED
-#define XERCES_STRINGS_HPP_INCLUDED
+#ifndef XERCES_STRINGS20091211H
+#define XERCES_STRINGS20091211H
 
 #include <string>
+
 #include <boost/scoped_array.hpp>
 #include <xercesc/util/XMLString.hpp>
 

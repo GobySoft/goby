@@ -1,7 +1,4 @@
 // copyright 2009 t. schneider tes@mit.edu
-// ocean engineering graudate student - mit / whoi joint program
-// massachusetts institute of technology (mit)
-// laboratory for autonomous marine sensing systems (lamss)
 // 
 // this file is part of goby-acomms, a collection of libraries for acoustic underwater networking
 //
@@ -50,7 +47,5 @@ namespace acomms_util
     const unsigned NUM_HEADER_BYTES = 2;
 
 }
-
-
 
 #endif

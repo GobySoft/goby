@@ -3,7 +3,7 @@
 // massachusetts institute of technology (mit)
 // laboratory for autonomous marine sensing systems (lamss)    
 // 
-// this file is part of goby-acomms, a collection of libraries for acoustic underwater networking
+// this file is part of goby-util, a collection of utility libraries
 //
 // this is an almagamation of various utilities
 // i have written for miscellaneous tasks
@@ -20,8 +20,9 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
-#ifndef TES_UTILSH
-#define TES_UTILSH
+
+#ifndef TES_UTILS20091211H
+#define TES_UTILS20091211H
 
 #include <cmath>
 #include <string>

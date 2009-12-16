@@ -1,13 +1,4 @@
 // t. schneider tes@mit.edu 11.20.09
-// ocean engineering graduate student - mit / whoi joint program
-// massachusetts institute of technology (mit)
-// laboratory for autonomous marine sensing systems (lamss)
-// 
-// this is test.cpp, a set of tests that ensure proper functioning of
-// libdccl.
-//
-// see the readme file within this directory for information
-// pertaining to usage and purpose of this script.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by

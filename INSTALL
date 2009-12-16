@@ -2,13 +2,23 @@
 # ~~~~~~~~~~~~~~
 # compiling goby
 # ~~~~~~~~~~~~~~
+#
+# satisfy the third party dependencies in DEPENDENCIES:
+# > ./DEPENDENCIES
+# then, to install locally (goby/bin, goby/include, goby/lib
+# > ./INSTALL
+# to install to system
+# > sudo ./INSTALL
 
-# satisfy the third party dependencies in DEPENDENCIES
-# (this generally means running apt-get)
+pushd build
+cmake ..
 
-# then, to build to goby/bin and goby/lib:
-cd scripts
-./goby_build.sh
+if [[ $UID -ne 0 ]]; then
+    # if user is not root, build to goby/bin, goby/include, and goby/lib:
+    make $@
+else
+    # otherwise install to /usr/local/bin, /usr/local/lib, /usr/local/include
+    make install $@
+fi
 
-# (optionally) install to /usr/local/bin and /usr/local/lib
-# > ./goby_build.sh install
+popd

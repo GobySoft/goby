@@ -1,7 +1,4 @@
 // copyright 2008, 2009 t. schneider tes@mit.edu
-// ocean engineering graudate student - mit / whoi joint program
-// massachusetts institute of technology (mit)
-// laboratory for autonomous marine sensing systems (lamss)
 // 
 // this file is part of the Dynamic Compact Control Language (DCCL),
 // the goby-acomms codec. goby-acomms is a collection of libraries 
@@ -290,7 +287,7 @@ std::string dccl::Message::input_summary()
 }
 
 
-void dccl::Message::assemble_hex(micromodem::Message& out_message, const boost::dynamic_bitset<>& bits)
+void dccl::Message::assemble_hex(modem::Message& out_message, const boost::dynamic_bitset<>& bits)
 {
     std::bitset<acomms_util::BITS_IN_BYTE> id(id_);
     std::stringstream binary;
@@ -308,7 +305,7 @@ void dccl::Message::assemble_hex(micromodem::Message& out_message, const boost::
     out_message.set_data(out);
 }
 
-void dccl::Message::disassemble_hex(const micromodem::Message& in_message, boost::dynamic_bitset<>& bits)
+void dccl::Message::disassemble_hex(const modem::Message& in_message, boost::dynamic_bitset<>& bits)
 {
     std::string in = in_message.data();
 
@@ -325,7 +322,7 @@ void dccl::Message::disassemble_hex(const micromodem::Message& in_message, boost
     bin_str >> bits;
 }
     
-void dccl::Message::add_destination(micromodem::Message& out_message,
+void dccl::Message::add_destination(modem::Message& out_message,
                                     const std::map<std::string, std::string>& in_str,
                                     const std::map<std::string, double>& in_dbl)
 {

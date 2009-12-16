@@ -1,7 +1,4 @@
 // copyright 2009 t. schneider tes@mit.edu
-// ocean engineering graudate student - mit / whoi joint program
-// massachusetts institute of technology (mit)
-// laboratory for autonomous marine sensing systems (lamss)
 // 
 // this file is part of goby-acomms, a collection of libraries for acoustic underwater networking
 //
@@ -19,8 +16,8 @@
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
 
-#ifndef MODEMMESSAGE_H
-#define MODEMMESSAGE_H
+#ifndef MODEMMESSAGE20091211H
+#define MODEMMESSAGE20091211H
 
 #include <ctime>
 #include <string>
@@ -33,10 +30,10 @@
 #include "util/tes_utils.h"
 #include "acomms/acomms_constants.h"
 
-/// WHOI Micro-Modem specific objects
-namespace micromodem
+/// Acoustic Modem specific objects
+namespace modem
 {
-    /// \brief Provides a class that represents a message to or from the WHOI Micro-Modem.
+    /// \brief Provides a class that represents a message to or from the acoustic modem.
     ///
     /// Message is intended to represent all the possible messages from the modem. Thus, depending
     /// on the specific message certain fields may not be used. Also, fields make take on different
@@ -45,7 +42,7 @@ namespace micromodem
     {
       public:
 
-        /// \brief Construct a message for or from the Micro-Modem
+        /// \brief Construct a message for or from the modem
         /// \param s (optionally) pass a serialized string such as src=3,dest=4,data=CA342BDF ... to initialize
       Message(const std::string & s = ""):
         data_(""),
@@ -148,7 +145,7 @@ namespace micromodem
                 if(rate_set_)  ss << ",rate=" << rate_;
                 if(data_set_)  ss << ",data=" << data_;
                 if(size_set_)  ss << ",size=" << size_;
-                if(t_set_)     ss << ",time=" << t_;
+                if(t_set_)     ss << ",time=" << std::setprecision(15) << t_;
                 if(ack_set_)   ss << ",ack=" << std::boolalpha << ack_;
                 if(frame_set_) ss << ",frame=" << frame_;
                 if(cs_set_)    ss << ",cs=" << std::hex << std::setw(2) << std::setfill('0') << (int)cs_;
@@ -317,7 +314,7 @@ namespace micromodem
 }
 
 /// STL streams overloaded output operator (for std::cout, etc.)
-inline std::ostream & operator<< (std::ostream & out, const micromodem::Message & message)
+inline std::ostream & operator<< (std::ostream & out, const modem::Message & message)
 { out << message.snip(); return out; }
 
 

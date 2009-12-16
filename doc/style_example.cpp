@@ -1,6 +1,9 @@
-// copyright 2009 t. schneider tes@mit.edu
+// implementation file layout:
+
+// copyright {year} {author name} {author email}
+//                  {secondary author} {secondary author email}
 // 
-// this file is part of goby-acomms, a collection of libraries for acoustic underwater networking
+// this file is part of {binary or library}, {description}
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -15,12 +18,23 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
-// courtesy header for the Queueing Library (libqueue)
+// std
+#include <set>
 
-#ifndef QUEUECOURTESY20091211H
-#define QUEUECOURTESY20091211H
+// third party
+#include <boost/bind.hpp>
 
-#include "acomms/libqueue/queue_manager.h"
+// local to goby
+#include "util/flexcout.h"
 
-#endif
+// local to folder (part of same application / library)
+#include "style_example.h"
 
+// global using declaratives: use sparingly, if at all
+// do not use `using namespace std`
+using namespace nspace;
+
+bool nspace::Class::push_message(micromodem::Message& new_message)
+{
+    return true;
+}

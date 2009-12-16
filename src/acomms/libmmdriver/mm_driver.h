@@ -1,7 +1,4 @@
 // copyright 2009 t. schneider tes@mit.edu
-// ocean engineering graudate student - mit / whoi joint program
-// massachusetts institute of technology (mit)
-// laboratory for autonomous marine sensing systems (lamss)
 // 
 // this file is part of the goby-acomms WHOI Micro-Modem driver.
 // goby-acomms is a collection of libraries 
@@ -20,174 +17,131 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef ModemH
-#define ModemH
+#ifndef Modem20091211H
+#define Modem20091211H
 
 #include <ctime>
 #include <fstream>
 
 #include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/thread.hpp>
-#include "asio.hpp"
 
-#include "util/serial.h"
+#include "driver_base.h"
 
-// for the serial connection ($CCCFG,BR1,3)
-const unsigned DEFAULT_BAUD = 19200;
+namespace modem { class Message; }
 
-// seconds to wait for modem to respond
-const time_t MODEM_WAIT = 3;
-// failures before quitting
-const unsigned MAX_FAILS_BEFORE_DEAD = 5;
-// how many retries on a given message
-const unsigned RETRIES = 3;
-// seconds to wait after modem reboot
-const unsigned WAIT_AFTER_REBOOT = 2;
+namespace micromodem
+{    
+    // for the serial connection ($CCCFG,BR1,3)
+    const unsigned DEFAULT_BAUD = 19200;
 
-// allowed time skew between our clock and the modem clock
-const unsigned ALLOWED_SKEW = 1;
+    // seconds to wait for modem to respond
+    const time_t MODEM_WAIT = 3;
+    // failures before quitting
+    const unsigned MAX_FAILS_BEFORE_DEAD = 5;
+    // how many retries on a given message
+    const unsigned RETRIES = 3;
+    // seconds to wait after modem reboot
+    const unsigned WAIT_AFTER_REBOOT = 2;
 
-namespace micromodem { class Message; }
+    // allowed time skew between our clock and the modem clock
+    const unsigned ALLOWED_SKEW = 1;
 
-class MMDriver
-{
+    const std::string SERIAL_DELIMITER = "\r\n";
     
-  public:
-    MMDriver(std::ostream* out = 0);
-    ~MMDriver();
+    class MMDriver : public modem::DriverBase
+    {
     
-    void startup();
-    void do_work();
+      public:
+        MMDriver(std::ostream* out = 0);
+        ~MMDriver();
     
-    void validate_and_write(NMEA & nmea);
+        void startup();
+        void do_work();        
+        // CCCYC
+        void initiate_transmission(const modem::Message& m);
 
-    void set_serial_port(const std::string& s) { serial_port_ = s; }
-    void set_baud(unsigned u) { baud_ = u; }
-
-    void set_cfg(std::map<std::string, unsigned> cfg) { cfg_ = cfg; }
-    void set_reset_cfg() { cfg_["ALL"] = 0; }
-    
-    void set_modem_id(unsigned u) { modem_id_ = u; }
-
-    void initiate_transmission(const micromodem::Message& m);
-    
-    typedef boost::function<bool (micromodem::Message & message)> MsgFunc1;
-    typedef boost::function<bool (micromodem::Message & message1, micromodem::Message & message2)> MsgFunc2;
-    typedef boost::function<void (const std::string& s)> StrFunc1;
-
-    void set_receive_cb(MsgFunc1 func)     { callback_rxd = func; }
-    void set_ack_cb(MsgFunc1 func)         { callback_ack = func; }
-    void set_datarequest_cb(MsgFunc2 func) { callback_drq = func; }
-    void set_in_raw_cb(StrFunc1 func)      { callback_in_raw = func; }
-    void set_out_raw_cb(StrFunc1 func)     { callback_out_raw = func; }
-    void set_in_parsed_cb(MsgFunc1 func)   { callback_decoded = func; }
+      private:
+        void validate_and_write(NMEA& nmea);
         
-    unsigned baud() { return baud_; }
-    
-  private:
-    // callbacks to the parent class
-    MsgFunc1 callback_rxd;
-    MsgFunc1 callback_ack;
-    MsgFunc2 callback_drq;
-    MsgFunc1 callback_decoded;
-    
-    StrFunc1 callback_in_raw;
-    StrFunc1 callback_out_raw;    
-    
-    
-    // startup
-    void initialize_talkers();
-    void set_clock();
-    void write_cfg();
-    void check_cfg();
+        // startup
+        void initialize_talkers();
+        void set_clock();
+        void write_cfg();
+        void check_cfg();
 
-    // output
-    void handle_modem_out();
-    void pop_out();
+        // output
+        void handle_modem_out();
+        void pop_out();
     
-    // input
-    void handle_modem_in(NMEA & nmea);    
-    void ack(NMEA & nmea, micromodem::Message& m);
-    void drq(NMEA & nmea, micromodem::Message& m);
-    void rxd(NMEA & nmea, micromodem::Message& m);
-    void mpa(NMEA & nmea, micromodem::Message& m);
-    void mpr(NMEA & nmea, micromodem::Message& m);
-    void rev(NMEA & nmea, micromodem::Message& m);
-    void err(NMEA & nmea, micromodem::Message& m);
-    void cfg(NMEA & nmea, micromodem::Message& m);
-    void clk(NMEA & nmea, micromodem::Message& m);
-    void cyc(NMEA & nmea, micromodem::Message& m);
+        // input
+        void handle_modem_in(NMEA& nmea);
+        void ack(NMEA& nmea, modem::Message& m);
+        void drq(NMEA& nmea, modem::Message& m);
+        void rxd(NMEA& nmea, modem::Message& m);
+        void mpa(NMEA& nmea, modem::Message& m);
+        void mpr(NMEA& nmea, modem::Message& m);
+        void rev(NMEA& nmea, modem::Message& m);
+        void err(NMEA& nmea, modem::Message& m);
+        void cfg(NMEA& nmea, modem::Message& m);
+        void clk(NMEA& nmea, modem::Message& m);
+        void cyc(NMEA& nmea, modem::Message& m);
     
-    // utility
-    std::string microsec_simple_time_of_day()
-    { return boost::posix_time::to_simple_string(boost::posix_time::microsec_clock::universal_time().time_of_day()); }
+        // utility
+        std::string microsec_simple_time_of_day()
+        { return boost::posix_time::to_simple_string(boost::posix_time::microsec_clock::universal_time().time_of_day()); }
 
-    boost::posix_time::ptime now()
-    { return boost::posix_time::ptime(boost::posix_time::second_clock::universal_time()); }
+        boost::posix_time::ptime now()
+        { return boost::posix_time::ptime(boost::posix_time::second_clock::universal_time()); }
     
-    boost::posix_time::ptime modem_time2posix_time(const std::string & mt);
-    double modem_time2unix_time(const std::string & mt);
+        boost::posix_time::ptime modem_time2posix_time(const std::string& mt);
+        double modem_time2unix_time(const std::string& mt);
     
     
-  private:
-    unsigned baud_;
-    std::string serial_port_;
+      private:
+        std::deque<NMEA> out_;
 
-    unsigned modem_id_;    
+        std::ostream* os_;
     
-    std::deque<std::string> in_;
-    std::deque<NMEA> out_;
+        // time of the last message written. we timeout and resend after MODEM_WAIT seconds
+        time_t last_write_time_;
 
-    // serial port io service
-    asio::io_service io_;
+        // are we waiting for a command ack (CA) from the modem or can we send another output?
+        bool waiting_for_modem_;
 
-    boost::mutex in_mutex_;
+        // set after the startup routines finish once. we can't startup on instantiation because
+        // the base class sets some of our references (from the MOOS file)
+        bool startup_done_;
 
-    SerialClient serial_;
-    
-    std::ostream* os_;
-    
-    // modem startup work
-    std::map<std::string, unsigned> cfg_; // what config params do we need to send?
+        // keeps track of number of failures and exits after reaching MAX_FAILS, assuming modem dead
+        unsigned global_fail_count_;
 
-    // time of the last message written. we timeout and resend after MODEM_WAIT seconds
-    time_t last_write_time_;
+        // keeps track of number of failures on the present talker and moves on to the next talker
+        // if exceeded
+        unsigned present_fail_count_;
 
-    // are we waiting for a command ack (CA) from the modem or can we send another output?
-    bool waiting_for_modem_;
+        bool clock_set_;
 
-    // set after the startup routines finish once. we can't startup on instantiation because
-    // the base class sets some of our references (from the MOOS file)
-    bool startup_done_;
+        enum TalkerFronts { front_not_defined,CA,CC,SN,GP};
 
-    // keeps track of number of failures and exits after reaching MAX_FAILS, assuming modem dead
-    unsigned global_fail_count_;
-
-    // keeps track of number of failures on the present talker and moves on to the next talker
-    // if exceeded
-    unsigned present_fail_count_;
-
-    bool clock_set_;
-
-
-    enum TalkerFronts { front_not_defined,CA,CC,SN,GP};
-
-    enum TalkerBacks  { back_not_defined,
-                        ACK,DRQ,RXA,RXD,
-                        RXP,TXD,TXA,TXP,
-                        TXF,CYC,MPC,MPA,
-                        MPR,RSP,MSC,MSA,
-                        MSR,EXL,MEC,MEA,
-                        MER,MUC,MUA,MUR,
-                        PDT,PNT,TTA,MFD,
-                        CLK,CFG,AGC,BBD,
-                        CFR,CST,MSG,REV,
-                        DQF,SHF,SNR,DOP,
-                        DBG,FFL,FST,ERR};
+        enum TalkerBacks  { back_not_defined,
+                            ACK,DRQ,RXA,RXD,
+                            RXP,TXD,TXA,TXP,
+                            TXF,CYC,MPC,MPA,
+                            MPR,RSP,MSC,MSA,
+                            MSR,EXL,MEC,MEA,
+                            MER,MUC,MUA,MUR,
+                            PDT,PNT,TTA,MFD,
+                            CLK,CFG,AGC,BBD,
+                            CFR,CST,MSG,REV,
+                            DQF,SHF,SNR,DOP,
+                            DBG,FFL,FST,ERR};
 
     
-    std::map<std::string, TalkerBacks> talker_backs_map_;
-    std::map<std::string, TalkerFronts> talker_fronts_map_;
-};
+        std::map<std::string, TalkerBacks> talker_backs_map_;
+        std::map<std::string, TalkerFronts> talker_fronts_map_;
+    };
+
+
+}
 
 #endif

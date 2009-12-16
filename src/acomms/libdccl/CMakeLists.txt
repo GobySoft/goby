@@ -1,8 +1,3 @@
-#--------------------------------------------------------
-# The CMakeLists.txt for:                    lib_dccl
-# Author(s):                                 t. schneider
-#--------------------------------------------------------
-
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
 if(Boost_FOUND AND Xerces_LIB_FOUND AND Xerces_H_FOUND )
@@ -14,3 +9,4 @@ if(Boost_FOUND AND Xerces_LIB_FOUND AND Xerces_H_FOUND )
 endif()
 
 add_subdirectory(examples)
+add_subdirectory(tools)

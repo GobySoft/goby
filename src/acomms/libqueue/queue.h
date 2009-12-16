@@ -1,8 +1,8 @@
-// t. schneider tes@mit.edu 06.05.08
-// ocean engineering graudate student - mit / whoi joint program
-// massachusetts institute of technology (mit)
-// laboratory for autonomous marine sensing systems (lamss)
+// copyright 2008, 2009 t. schneider tes@mit.edu 
 //
+// this file is part of the Queue Library (libqueue),
+// the goby-acomms message queue manager. goby-acomms is a collection of 
+// libraries for acoustic underwater networking
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -38,7 +38,7 @@
 
 #include "queue_config.h"
 
-typedef std::list<micromodem::Message>::iterator messages_it;
+typedef std::list<modem::Message>::iterator messages_it;
 typedef std::multimap<unsigned, messages_it>::iterator waiting_for_ack_it;
 
 namespace queue
@@ -50,15 +50,15 @@ namespace queue
               std::ostream* os = 0,
               const unsigned& modem_id = 0);
 
-        bool push_message(micromodem::Message& new_message);
-        micromodem::Message give_data(unsigned frame);
+        bool push_message(modem::Message& new_message);
+        modem::Message give_data(unsigned frame);
         bool pop_message(unsigned frame);    
-        bool pop_message_ack(unsigned frame, micromodem::Message& msg);
+        bool pop_message_ack(unsigned frame, modem::Message& msg);
         void stream_for_pop(const std::string& snip);
         
         
             
-        bool priority_values(double* priority, double* last_send_time, micromodem::Message* message, std::string* error);
+        bool priority_values(double* priority, double* last_send_time, modem::Message* message, std::string* error);
         unsigned give_dest();
 
         void clear_ack_queue() { waiting_for_ack_.clear(); }
@@ -91,7 +91,7 @@ namespace queue
     
         std::ostream* os_;
     
-        std::list<micromodem::Message> messages_;
+        std::list<modem::Message> messages_;
 
         // map frame number onto messages list iterator
         // can have multiples in the same frame now

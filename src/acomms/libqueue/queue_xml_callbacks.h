@@ -1,11 +1,8 @@
-// copyright 2008, 2009 t. schneider tes@mit.edu
-// ocean engineering graudate student - mit / whoi joint program
-// massachusetts institute of technology (mit)
-// laboratory for autonomous marine sensing systems (lamss)
-// 
-// this file is part of the Dynamic Compact Control Language (DCCL),
-// the goby-acomms codec. goby-acomms is a collection of libraries 
-// for acoustic underwater networking
+// copyright 2009 t. schneider tes@mit.edu 
+//
+// this file is part of the Queue Library (libqueue),
+// the goby-acomms message queue manager. goby-acomms is a collection of 
+// libraries for acoustic underwater networking
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,18 +17,18 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
-// xml code based largely on work in C++ Cookbook by D. Ryan Stephens, Christopher Diggins, Jonathan Turkanis, and Jeff Cogswell. Copyright 2006 O'Reilly Media, INc., 0-596-00761-2
+// xml code based initially on work in C++ Cookbook by D. Ryan Stephens, Christopher Diggins, Jonathan Turkanis, and Jeff Cogswell. Copyright 2006 O'Reilly Media, INc., 0-596-00761-2
 
-#ifndef QUEUE_XML_CALLBACKS_H
-#define QUEUE_XML_CALLBACKS_H
+#ifndef QUEUE_XML_CALLBACKS20091211H
+#define QUEUE_XML_CALLBACKS20091211H
 
-#include <stdexcept>                       // runtime_error
+#include <stdexcept>
 #include <vector>
 #include <sstream>
 
 #include <xercesc/sax2/Attributes.hpp>
 #include <xercesc/sax2/DefaultHandler.hpp> 
-#include <boost/algorithm/string.hpp> // for string functions
+#include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
 
 #include "acomms/xml/xerces_strings.h"

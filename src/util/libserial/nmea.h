@@ -1,7 +1,4 @@
 // copyright 2009 t. schneider tes@mit.edu
-// ocean engineering graudate student - mit / whoi joint program
-// massachusetts institute of technology (mit)
-// laboratory for autonomous marine sensing systems (lamss)
 // 
 // this file is part of serial, a library for handling serial
 // communications.
@@ -19,8 +16,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef NMEAH
-#define NMEAH
+#ifndef NMEA20091211H
+#define NMEA20091211H
 
 #include <exception>
 #include <vector>

@@ -1,7 +1,8 @@
-// copyright 2009 t. schneider tes@mit.edu
-// ocean engineering graudate student - mit / whoi joint program
-// massachusetts institute of technology (mit)
-// laboratory for autonomous marine sensing systems (lamss)
+// copyright 2009 t. schneider tes@mit.edu 
+//
+// this file is part of the Queue Library (libqueue),
+// the goby-acomms message queue manager. goby-acomms is a collection of 
+// libraries for acoustic underwater networking
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -125,7 +126,7 @@ void queue::QueueManager::add_xml_queue_file(const std::string& xml_file,
 }
 
 
-void queue::QueueManager::push_message(QueueKey key, micromodem::Message& new_message)
+void queue::QueueManager::push_message(QueueKey key, modem::Message& new_message)
 {
     if(queues_.count(key))
     {
@@ -141,7 +142,7 @@ void queue::QueueManager::push_message(QueueKey key, micromodem::Message& new_me
     
 }
 
-void queue::QueueManager::push_message(unsigned id, micromodem::Message& new_message, QueueType type /* = dccl_queue */)
+void queue::QueueManager::push_message(unsigned id, modem::Message& new_message, QueueType type /* = dccl_queue */)
 { push_message(QueueKey(type, id), new_message); }
 
 void queue::QueueManager::set_on_demand(QueueKey key)
@@ -190,15 +191,15 @@ std::ostream& queue::operator<< (std::ostream& out, const QueueManager& d)
 // user frame counter - if type flag is 1, the byte indicates the size of the following data (in bytes).
 // message moos variable id - user set value 0-63 that allows mapping of moos variable names from the receive and send ends
 // message hex - the message body
-micromodem::Message queue::QueueManager::stitch(const std::vector<micromodem::Message>& in)
+modem::Message queue::QueueManager::stitch(const std::vector<modem::Message>& in)
 {
-    micromodem::Message out = in.at(0);
+    modem::Message out = in.at(0);
     out.set_dest(packet_dest_);
     out.set_ack(packet_ack_);
 
     std::string data = out.data();
     unsigned i = 0;
-    BOOST_FOREACH(const micromodem::Message& message, in)
+    BOOST_FOREACH(const modem::Message& message, in)
     {
         if(out.empty()) throw (std::runtime_error("empty message passed to stitch"));
         
@@ -253,7 +254,7 @@ void queue::QueueManager::clear_packet()
 // (either no data at all, or in blackout interval) 
 // thus, from all the priority values that return true, pick the one with the lowest
 // priority value, or given a tie, pick the one with the oldest last_send_time
-bool queue::QueueManager::provide_outgoing_modem_data(micromodem::Message& message_in, micromodem::Message& message_out)
+bool queue::QueueManager::provide_outgoing_modem_data(modem::Message& message_in, modem::Message& message_out)
 {
     if(message_in.frame() == 1 || message_in.frame() == 0)
     {
@@ -270,7 +271,7 @@ bool queue::QueueManager::provide_outgoing_modem_data(micromodem::Message& messa
     // no data at all for this frame ... :(
     if(!winning_var)
     {
-        message_out = micromodem::Message();
+        message_out = modem::Message();
 
         // we have to conform to the rest of the packet...
         message_out.set_src(modem_id_);
@@ -284,10 +285,10 @@ bool queue::QueueManager::provide_outgoing_modem_data(micromodem::Message& messa
     }    
 
     // keep filling up the frame with messages until we have nothing small enough to fit...
-    std::vector<micromodem::Message> user_frames;
+    std::vector<modem::Message> user_frames;
     while(winning_var)
     {
-        micromodem::Message next_message = winning_var->give_data(message_in.frame());
+        modem::Message next_message = winning_var->give_data(message_in.frame());
         user_frames.push_back(next_message);
 
         // if a destination has been set or ack been set, do not unset these
@@ -322,7 +323,7 @@ bool queue::QueueManager::provide_outgoing_modem_data(micromodem::Message& messa
 }
 
 
-queue::Queue* queue::QueueManager::find_next_sender(micromodem::Message& message)
+queue::Queue* queue::QueueManager::find_next_sender(modem::Message& message)
 {   
 // competition between variable about who gets to send
     double winning_priority;
@@ -345,7 +346,7 @@ queue::Queue* queue::QueueManager::find_next_sender(micromodem::Message& message
             if(oq.size()) oq.flush();
             if(callback_ondemand)
             {
-                micromodem::Message new_message;
+                modem::Message new_message;
                 callback_ondemand(it->first, message, new_message);
                 push_message(it->first, new_message);
             }
@@ -398,7 +399,7 @@ queue::Queue* queue::QueueManager::find_next_sender(micromodem::Message& message
 }    
 
 
-bool queue::QueueManager::handle_modem_ack(micromodem::Message& message)
+bool queue::QueueManager::handle_modem_ack(modem::Message& message)
 {
     if(!waiting_for_ack_.count(message.frame()))
     {
@@ -426,7 +427,7 @@ bool queue::QueueManager::handle_modem_ack(micromodem::Message& message)
             {
                 Queue* oq = it->second;
 
-                micromodem::Message removed_msg;
+                modem::Message removed_msg;
                 if(!oq->pop_message_ack(message.frame(), removed_msg))
                 {
                     if(os_) *os_<< group("q_in") << warn
@@ -454,7 +455,7 @@ bool queue::QueueManager::handle_modem_ack(micromodem::Message& message)
 // parses and publishes incoming data
 // by matching the variableID field with the variable specified
 // in a "receive = " line of the configuration file
-bool queue::QueueManager::receive_incoming_modem_data(micromodem::Message& message)
+bool queue::QueueManager::receive_incoming_modem_data(modem::Message& message)
 {    
     if(os_) *os_<< group("q_in") << "received message"
                 << ": " << message.snip() << std::endl;
@@ -533,7 +534,7 @@ bool queue::QueueManager::receive_incoming_modem_data(micromodem::Message& messa
 }
 
 
-bool queue::QueueManager::publish_incoming_piece(micromodem::Message message, const unsigned incoming_var_id)
+bool queue::QueueManager::publish_incoming_piece(modem::Message message, const unsigned incoming_var_id)
 {
     if(message.dest() != 0 && message.dest() != modem_id_)
     {
@@ -575,7 +576,7 @@ int queue::QueueManager::request_next_destination(unsigned size /* = std::numeri
 {
     clear_packet();
 
-    micromodem::Message message;
+    modem::Message message;
     message.set_size(size);
     
     Queue* winning_var = find_next_sender(message);

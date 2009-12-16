@@ -1,7 +1,4 @@
 // copyright 2008, 2009 t. schneider tes@mit.edu
-// ocean engineering graudate student - mit / whoi joint program
-// massachusetts institute of technology (mit)
-// laboratory for autonomous marine sensing systems (lamss)   
 // 
 // this file is part of goby-acomms, a collection of libraries for acoustic underwater networking
 //
@@ -18,10 +15,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
-// based largely on work in C++ Cookbook by D. Ryan Stephens, Christopher Diggins, Jonathan Turkanis, and Jeff Cogswell. Copyright 2006 O'Reilly Media, INc., 0-596-00761-2.
+// based initially on work in C++ Cookbook by D. Ryan Stephens, Christopher Diggins, Jonathan Turkanis, and Jeff Cogswell. Copyright 2006 O'Reilly Media, INc., 0-596-00761-2.
 
-#ifndef XML_PARSER_H
-#define XML_PARSER_H
+#ifndef XML_PARSER20091211H
+#define XML_PARSER20091211H
 
 
 #include <exception>

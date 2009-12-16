@@ -17,7 +17,7 @@ sudo apt-get install \
     libboost-dev \
     libncurses-dev
 
-# libdccl:
+# libdccl / libqueue:
 sudo apt-get install \
     libxerces-c-dev # (or libxerces-c2-dev)
 

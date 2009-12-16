@@ -1,8 +1,5 @@
 // copyright 2008, 2009 t. schneider tes@mit.edu
-// ocean engineering graudate student - mit / whoi joint program
-// massachusetts institute of technology (mit)
-// laboratory for autonomous marine sensing systems (lamss)
-// 
+//
 // this file is part of the Dynamic Compact Control Language (DCCL),
 // the goby-acomms codec. goby-acomms is a collection of libraries 
 // for acoustic underwater networking
@@ -20,8 +17,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef PUBLISH_H
-#define PUBLISH_H
+#ifndef PUBLISH20091211H
+#define PUBLISH20091211H
 
 #include <iostream>
 #include <vector>

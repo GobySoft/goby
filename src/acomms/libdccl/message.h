@@ -1,7 +1,4 @@
 // copyright 2008, 2009 t. schneider tes@mit.edu
-// ocean engineering graudate student - mit / whoi joint program
-// massachusetts institute of technology (mit)
-// laboratory for autonomous marine sensing systems (lamss)
 // 
 // this file is part of the Dynamic Compact Control Language (DCCL),
 // the goby-acomms codec. goby-acomms is a collection of libraries 
@@ -20,8 +17,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef MESSAGE_H
-#define MESSAGE_H
+#ifndef MESSAGE20091211H
+#define MESSAGE20091211H
 
 #include <iostream>
 #include <vector>
@@ -144,7 +141,7 @@ namespace dccl
 
             
         enum { NO_MOOS_VAR = 0, FROM_MOOS_VAR = 1 };
-        void encode(micromodem::Message& out,
+        void encode(modem::Message& out,
                     const std::map<std::string, std::string>* in_str,
                     const std::map<std::string, double>* in_dbl,
                     const std::map<std::string, long>* in_long,
@@ -152,7 +149,7 @@ namespace dccl
                     bool extract_from_moos_var = NO_MOOS_VAR);
         enum { NO_PUBLISHES = 0, DO_PUBLISHES = 1 };
         template <typename Map1, typename Map2, typename Map3, typename Map4>
-            void decode(const micromodem::Message& in,
+            void decode(const modem::Message& in,
                         Map1* out_str,
                         Map2* out_dbl,
                         Map3* out_long,
@@ -168,11 +165,11 @@ namespace dccl
     
         
       private:
-        void assemble_hex(micromodem::Message& out_message,
+        void assemble_hex(modem::Message& out_message,
                           const boost::dynamic_bitset<>& bits);
-        void disassemble_hex(const micromodem::Message& in_message,
+        void disassemble_hex(const modem::Message& in_message,
                              boost::dynamic_bitset<>& bits);
-        void add_destination(micromodem::Message& out_message,
+        void add_destination(modem::Message& out_message,
                              const std::map<std::string, std::string>& in_str,
                              const std::map<std::string, double>& in_dbl);
         
@@ -232,7 +229,7 @@ namespace dccl
     std::ostream& operator<< (std::ostream& out, const Message& message);
 
     // decode is a template so put encode in the header too
-    inline void Message::encode(micromodem::Message& out,
+    inline void Message::encode(modem::Message& out,
                                 const std::map<std::string, std::string>* in_str,
                                 const std::map<std::string, double>* in_dbl,
                                 const std::map<std::string, long>* in_long,
@@ -296,7 +293,7 @@ namespace dccl
     }
     
     template <typename Map1, typename Map2, typename Map3, typename Map4>
-        inline void Message::decode(const micromodem::Message& in,
+        inline void Message::decode(const modem::Message& in,
                                     Map1* out_str,
                                     Map2* out_dbl,
                                     Map3* out_long,

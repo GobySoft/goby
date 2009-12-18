@@ -1,7 +1,7 @@
 // copyright 2009 t. schneider tes@mit.edu
 // 
-// this file is part of flex-cout, a terminal display library
-// that extends the functionality of std::cout
+// this file is part of flex-ostream, a terminal display library
+// that provides an ostream with both terminal display and file logging
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -16,8 +16,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef FlexCout20091211H
-#define FlexCout20091211H
+#ifndef FlexOstream20091211H
+#define FlexOstream20091211H
 
 #include <iostream>
 #include <sstream>
@@ -26,10 +26,10 @@
 #include "flex_ostreambuf.h"
 
 // ostream extended class for holding the FlexOStreamBuf
-class FlexCout : public std::ostream
+class FlexOstream : public std::ostream
 {
   public:
-    FlexCout() : std::ostream(&sb_)
+    FlexOstream() : std::ostream(&sb_)
     {}
     
     void name(const std::string & s);

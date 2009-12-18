@@ -32,8 +32,8 @@ int main()
     std::cout << "loading nafcon xml files" << std::endl;
 
     dccl::DCCLCodec dccl;
-    dccl.add_xml_message_file("../src/acomms/libdccl/examples/plusnet/nafcon_command.xml", "../../message_schema.xsd");
-    dccl.add_xml_message_file("../src/acomms/libdccl/examples/plusnet/nafcon_report.xml", "../../message_schema.xsd");
+    dccl.add_xml_message_file(DCCL_EXAMPLES_DIR "/plusnet/nafcon_command.xml", "../../message_schema.xsd");
+    dccl.add_xml_message_file(DCCL_EXAMPLES_DIR "/plusnet/nafcon_report.xml", "../../message_schema.xsd");
     
     std::cout << std::string(30, '#') << std::endl
               << "detailed message summary:" << std::endl

@@ -254,19 +254,20 @@ void queue::QueueManager::clear_packet()
 // (either no data at all, or in blackout interval) 
 // thus, from all the priority values that return true, pick the one with the lowest
 // priority value, or given a tie, pick the one with the oldest last_send_time
-bool queue::QueueManager::provide_outgoing_modem_data(modem::Message& message_in, modem::Message& message_out)
+bool queue::QueueManager::provide_outgoing_modem_data(const modem::Message& message_in, modem::Message& message_out)
 {
-    if(message_in.frame() == 1 || message_in.frame() == 0)
+    modem::Message modified_message_in = message_in;
+    if(modified_message_in.frame() == 1 || modified_message_in.frame() == 0)
     {
         clear_packet();
     }
     else // discipline remaining frames to the first frame dest and ack values
     {
-        message_in.set_dest(packet_dest_);
-        message_in.set_ack(packet_ack_);
+        modified_message_in.set_dest(packet_dest_);
+        modified_message_in.set_ack(packet_ack_);
     }
     
-    Queue* winning_var = find_next_sender(message_in);
+    Queue* winning_var = find_next_sender(modified_message_in);
 
     // no data at all for this frame ... :(
     if(!winning_var)
@@ -288,7 +289,7 @@ bool queue::QueueManager::provide_outgoing_modem_data(modem::Message& message_in
     std::vector<modem::Message> user_frames;
     while(winning_var)
     {
-        modem::Message next_message = winning_var->give_data(message_in.frame());
+        modem::Message next_message = winning_var->give_data(modified_message_in.frame());
         user_frames.push_back(next_message);
 
         // if a destination has been set or ack been set, do not unset these
@@ -301,18 +302,18 @@ bool queue::QueueManager::provide_outgoing_modem_data(modem::Message& message_in
         
         if(winning_var->cfg().ack() == false)
         {
-            winning_var->pop_message(message_in.frame());
+            winning_var->pop_message(modified_message_in.frame());
             qsize(winning_var);
         }
         else
-            waiting_for_ack_.insert(std::pair<unsigned, Queue*>(message_in.frame(), winning_var));
+            waiting_for_ack_.insert(std::pair<unsigned, Queue*>(modified_message_in.frame(), winning_var));
         
-        message_in.set_size(message_in.size() - next_message.size());
+        modified_message_in.set_size(modified_message_in.size() - next_message.size());
 
         // if there's no room for more, don't bother looking
         // also end if the message you have is a CCL message
-        if(message_in.size() > acomms_util::NUM_HEADER_BYTES && winning_var->cfg().type() != queue_ccl)
-            winning_var = find_next_sender(message_in);
+        if(modified_message_in.size() > acomms_util::NUM_HEADER_BYTES && winning_var->cfg().type() != queue_ccl)
+            winning_var = find_next_sender(modified_message_in);
         else
             break;
     }
@@ -399,13 +400,13 @@ queue::Queue* queue::QueueManager::find_next_sender(modem::Message& message)
 }    
 
 
-bool queue::QueueManager::handle_modem_ack(modem::Message& message)
+void queue::QueueManager::handle_modem_ack(const modem::Message& message)
 {
     if(!waiting_for_ack_.count(message.frame()))
     {
         if(os_) *os_<< group("q_in")
                     << "got ack but we were not expecting one" << std::endl;
-        return false;
+        return;
     }
     else
     {
@@ -415,7 +416,7 @@ bool queue::QueueManager::handle_modem_ack(modem::Message& message)
         {
             if(os_) *os_<< group("q_in") << warn
                         << "ignoring ack for modem_id = " << dest << std::endl;
-            return false;
+            return;
         }
         else
         {
@@ -445,8 +446,7 @@ bool queue::QueueManager::handle_modem_ack(modem::Message& message)
 
                 it = waiting_for_ack_.find(message.frame());
             }
-            
-            return true;
+            return;
         }
     }    
 }
@@ -455,21 +455,23 @@ bool queue::QueueManager::handle_modem_ack(modem::Message& message)
 // parses and publishes incoming data
 // by matching the variableID field with the variable specified
 // in a "receive = " line of the configuration file
-bool queue::QueueManager::receive_incoming_modem_data(modem::Message& message)
-{    
+void queue::QueueManager::receive_incoming_modem_data(const modem::Message& message)
+{
+    modem::Message modified_message = message;
+    
     if(os_) *os_<< group("q_in") << "received message"
-                << ": " << message.snip() << std::endl;
+                << ": " << modified_message.snip() << std::endl;
    
-    std::string data = message.data();
+    std::string data = modified_message.data();
    
     if(data.size() <= 4)
-        return false;
+        return;
 
     std::string header_byte_hex = data.substr(0, acomms_util::NIBS_IN_BYTE);
     // check for queue_dccl type
     if(header_byte_hex == acomms_util::DCCL_CCL_HEADER_STR)
     {
-        unsigned original_dest = message.dest();
+        unsigned original_dest = modified_message.dest();
 
         // grab the second byte, which contains multimessage flag, broadcast flag, message id
         // xxxxxxxx
@@ -489,22 +491,22 @@ bool queue::QueueManager::receive_incoming_modem_data(modem::Message& message)
             data.erase(2*acomms_util::NIBS_IN_BYTE, acomms_util::NIBS_IN_BYTE);
 
             // extract the data for this user-frame
-            message.set_data(data.substr(0, (frame_size + acomms_util::NUM_HEADER_BYTES)*acomms_util::NIBS_IN_BYTE));
+            modified_message.set_data(data.substr(0, (frame_size + acomms_util::NUM_HEADER_BYTES)*acomms_util::NIBS_IN_BYTE));
             // erase the data for this user frame, leaving the CCL header intact
             data.erase(1*acomms_util::NIBS_IN_BYTE, (frame_size+1)*acomms_util::NIBS_IN_BYTE);
 
             // overwrite destination as BROADCAST if broadcast bit is set
-            message.set_dest((second_byte & acomms_util::BROADCAST_MASK) ? acomms_util::BROADCAST_ID : original_dest);
+            modified_message.set_dest((second_byte & acomms_util::BROADCAST_MASK) ? acomms_util::BROADCAST_ID : original_dest);
             
-            publish_incoming_piece(message, second_byte & acomms_util::VAR_ID_MASK);
+            publish_incoming_piece(modified_message, second_byte & acomms_util::VAR_ID_MASK);
 
             // pull the new second byte
             tes_util::hex_string2number(data.substr(1*acomms_util::NIBS_IN_BYTE, acomms_util::NIBS_IN_BYTE), second_byte);
         }
         // get the last part
-        message.set_data(data);
-        message.set_dest((second_byte & acomms_util::BROADCAST_MASK) ? acomms_util::BROADCAST_ID : original_dest);
-        publish_incoming_piece(message, second_byte & acomms_util::VAR_ID_MASK);
+        modified_message.set_data(data);
+        modified_message.set_dest((second_byte & acomms_util::BROADCAST_MASK) ? acomms_util::BROADCAST_ID : original_dest);
+        publish_incoming_piece(modified_message, second_byte & acomms_util::VAR_ID_MASK);
     }
     // check for ccl type
     else
@@ -518,7 +520,7 @@ bool queue::QueueManager::receive_incoming_modem_data(modem::Message& message)
             
         if (it != queues_.end())
         {
-            if(callback_receive_ccl) callback_receive_ccl(key, message);
+            if(callback_receive_ccl) callback_receive_ccl(key, modified_message);
         }
         else
         {
@@ -526,11 +528,8 @@ bool queue::QueueManager::receive_incoming_modem_data(modem::Message& message)
                         << "incoming data string is not for us (first byte is not 0x"
                         << acomms_util::DCCL_CCL_HEADER_STR 
                         << " and not one of the alternative CCL types)." << std::endl;
-            return false;
         }
     }
-    
-    return true;
 }
 
 

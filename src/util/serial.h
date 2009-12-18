@@ -21,6 +21,6 @@
 #define SERIALCOURTESY20091211H
 
 #include "util/libserial/serial_client.h"
-#include "util/libserial/nmea.h"
+#include "util/libserial/nmea_sentence.h"
 
 #endif

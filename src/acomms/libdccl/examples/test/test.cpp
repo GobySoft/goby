@@ -61,7 +61,7 @@ int main()
     std::cout << "loading xml file: test.xml" << std::endl;
 
     // instantiate the parser with a single xml file
-    dccl::DCCLCodec dccl("../src/acomms/libdccl/examples/test/test.xml", "../../message_schema.xsd");
+    dccl::DCCLCodec dccl(DCCL_EXAMPLES_DIR "/test/test.xml", "../../message_schema.xsd");
 
     // load up the algorithms    
     dccl.add_str_algorithm("prepend_fat", &prepend_fat);

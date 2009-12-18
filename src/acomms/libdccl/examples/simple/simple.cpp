@@ -24,20 +24,20 @@ using dccl::operator<<;
 
 int main()
 {
-    // initialize input contents to encoder
+    // initialize input contents to encoder. since
     // simple.xml only has a <string/> message var
-    // so we only need one map
+    // we only need one map.
     std::map<std::string, std::string> strings;
 
-    // initialize output hexadecimal (in WHOI micromodem format
-    // with CCL header in most significant byte)
+    //  initialize output hexadecimal
     std::string hex;
     
     std::cout << "loading xml file: xml/simple.xml" << std::endl;
 
-    // instantiate the parser with a single xml file
-    dccl::DCCLCodec dccl("../src/acomms/libdccl/examples/simple/simple.xml", "../../message_schema.xsd");
-
+    // instantiate the parser with a single xml file (simple.xml). also pass the schema,
+    // relative to simple.xml, for XML validity checking (syntax).
+    dccl::DCCLCodec dccl(DCCL_EXAMPLES_DIR "/simple/simple.xml", "../../message_schema.xsd");
+        
     // read message content (in this case from terminal window)
     std::string input;
     std::cout << "input a string to send: " << std::endl;
@@ -72,3 +72,4 @@ int main()
     
     return 0;
 }
+

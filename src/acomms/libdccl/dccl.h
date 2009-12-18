@@ -33,34 +33,43 @@
 #include "message.h"
 #include "message_val.h"
 
-/// all Dynamic Compact Control Language objects are in the `dccl` namespace
+/// \brief contains Dynamic Compact Control Language objects.
+/// 
+/// Use \code #include <goby/acomms/dccl.h> \endcode to gain access to all these objects.
 namespace dccl
 {
+    
     /// provides an API to the Dynamic CCL Codec.
     class DCCLCodec 
     {
       public:
         /// \name Constructors/Destructor
         //@{         
-        /// instantiate with no XML files
+        /// \brief Instantiate with no XML files.
         DCCLCodec();
-        /// instantiate with a single XML file
+        /// \brief Instantiate with a single XML file.
+        ///
+        /// \param file path to an XML message file (i.e. contains \verbatim <layout/> \endverbatim and (optionally) \verbatim <publish/> \endverbatim sections) to parse for use by the codec.
+        /// \param schema path (absolute or relative to the XML file path) for the validating schema (message_schema.xsd) (optional).
         DCCLCodec(const std::string& file, const std::string schema = "");
         
-        /// instantiate with a set of XML files
+        /// \brief Instantiate with a set of XML files.
+        ///
+        /// \param files set of paths to XML message files to parse for use by the codec.
+        /// \param schema path (absolute or relative to the XML file path) for the validating schema (message_schema.xsd) (optional).
         DCCLCodec(const std::set<std::string>& files, const std::string schema = "");
 
         /// destructor
         ~DCCLCodec() {}
         //@}
         
-        /// \name Initialization Methods
+        /// \name Initialization Methods.
         ///
         /// These methods are intended to be called before doing any work with the class. However,
         /// they may be called at any time as desired.
         //@{         
 
-        /// \brief add more messages to this instance of the codec
+        /// \brief Add more messages to this instance of the codec.
         ///
         /// \param xml_file path to the xml file to parse and add to this codec.
         /// \param xml_schema path to the message_schema.xsd file to validate XML with. if using a relative path this
@@ -69,7 +78,7 @@ namespace dccl
         /// \return returns id of the last message file parsed. note that there can be more than one message in a file
         std::set<unsigned> add_xml_message_file(const std::string& xml_file, const std::string xml_schema = "");
 
-        /// \brief set the schema used for xml syntax checking
+        /// \brief Set the schema used for xml syntax checking.
         /// 
         /// location is relative to the XML file location!
         /// if you have XML files in different places you must pass the
@@ -83,12 +92,11 @@ namespace dccl
         /// <string/> and <enum/>, but can be used with any of the types
         /// through automatic (internal) casting.
         /// \param name name of the algorithm (<... algorithm="name"/>)
-        /// \param func has the form void name(std::string& val_to_edit). can be a function pointer (&name) or
-        /// any function object supported by boost::function (http://www.boost.org/doc/libs/1_34_0/doc/html/function.html)
-        template<typename Function>
-            void add_str_algorithm(const std::string& name, Function func)
+        /// \param func has the form void name(std::string& val_to_edit) (see dccl::StrAlgFunction1). can be a function pointer (&name) or
+        /// any function object supported by boost::function (http://www.boost.org/doc/libs/1_34_0/doc/html/function.html)        
+        void add_str_algorithm(const std::string& name, StrAlgFunction1 func)
         {
-            AlgorithmPerformer * ap = AlgorithmPerformer::getInstance();
+            AlgorithmPerformer* ap = AlgorithmPerformer::getInstance();
             ap -> add_str_algorithm(name, func);
         }
 
@@ -99,12 +107,11 @@ namespace dccl
         /// through automatic (internal) casting if they can
         /// be properly represented as a double. 
         /// \param name name of the algorithm (<... algorithm="name"/>)
-        /// \param func has the form void name(double& val_to_edit). can be a function pointer (&name) or
+        /// \param func has the form void name(double& val_to_edit) (see dccl::DblAlgFunction1). can be a function pointer (&name) or
         /// any function object supported by boost::function (http://www.boost.org/doc/libs/1_34_0/doc/html/function.html)
-        template<typename Function>
-            void add_dbl_algorithm(const std::string& name, Function func)
+        void add_dbl_algorithm(const std::string& name, DblAlgFunction1 func)
         {
-            AlgorithmPerformer * ap = AlgorithmPerformer::getInstance();
+            AlgorithmPerformer* ap = AlgorithmPerformer::getInstance();
             ap -> add_dbl_algorithm(name, func);
         }
         
@@ -115,12 +122,11 @@ namespace dccl
         /// through automatic (internal) casting if they can
         /// be properly represented as a long. 
         /// \param name name of the algorithm (<... algorithm="name"/>)
-        /// \param func has the form void name(long& val_to_edit). can be a function pointer (&name) or
+        /// \param func has the form void name(long& val_to_edit) (see dccl::LongAlgFunction1). can be a function pointer (&name) or
         /// any function object supported by boost::function (http://www.boost.org/doc/libs/1_34_0/doc/html/function.html)
-        template<typename Function>
-            void add_long_algorithm(const std::string& name, Function func)
+        void add_long_algorithm(const std::string& name, LongAlgFunction1 func)
         {
-            AlgorithmPerformer * ap = AlgorithmPerformer::getInstance();
+            AlgorithmPerformer* ap = AlgorithmPerformer::getInstance();
             ap -> add_long_algorithm(name, func);
         }
 
@@ -131,10 +137,9 @@ namespace dccl
         /// through automatic (internal) casting if they can
         /// be properly represented as a bool. 
         /// \param name name of the algorithm (<... algorithm="name"/>)
-        /// \param func has the form void name(bool& val_to_edit). can be a function pointer (&name) or
+        /// \param func has the form void name(bool& val_to_edit) (see dccl::BoolAlgFunction1). can be a function pointer (&name) or
         /// any function object supported by boost::function (http://www.boost.org/doc/libs/1_34_0/doc/html/function.html)
-        template<typename Function>
-            void add_bool_algorithm(const std::string& name, Function func)
+        void add_bool_algorithm(const std::string& name, BoolAlgFunction1 func)
         {
             AlgorithmPerformer * ap = AlgorithmPerformer::getInstance();
             ap -> add_bool_algorithm(name, func);
@@ -143,12 +148,11 @@ namespace dccl
         /// \brief Add an algorithm callback for a dccl::MessageVal. This allows you to have a different input value (e.g. int) as the output value (e.g. string). 
         ///
         /// \param name name of the algorithm (<... algorithm="name"/>)
-        /// \param func has the form void name(dccl::MessageVal& val_to_edit). can be a function pointer (&name) or
+        /// \param func has the form void name(dccl::MessageVal& val_to_edit) (see dccl::AdvAlgFunction1). can be a function pointer (&name) or
         /// any function object supported by boost::function (http://www.boost.org/doc/libs/1_34_0/doc/html/function.html)
-        template<typename Function>
-            void add_generic_algorithm(const std::string& name, Function func)
+        void add_generic_algorithm(const std::string& name, AdvAlgFunction1 func)
         {
-            AlgorithmPerformer * ap = AlgorithmPerformer::getInstance();
+            AlgorithmPerformer* ap = AlgorithmPerformer::getInstance();
             ap -> add_generic_algorithm(name, func);
         }
 
@@ -159,14 +163,13 @@ namespace dccl
         /// \param func has the form
         /// void name(MessageVal& val_to_edit,
         ///  const std::vector<std::string> params,
-        ///  const std::map<std::string,MessageVal>& vals). func can be a function pointer (&name) or
+        ///  const std::map<std::string,MessageVal>& vals) (see dccl::AdvAlgFunction3). func can be a function pointer (&name) or
         /// any function object supported by boost::function (http://www.boost.org/doc/libs/1_34_0/doc/html/function.html).
         /// \param params (passed to func) a list of colon separated parameters passed by the user in the XML file. param[0] is the name.
         /// \param vals (passed to func) a map of <name/> to current values for all message variables.
-        template<typename AdvFunction>
-            void add_adv_algorithm(const std::string& name, AdvFunction func)
+        void add_adv_algorithm(const std::string& name, AdvAlgFunction3 func)
         {
-            AlgorithmPerformer * ap = AlgorithmPerformer::getInstance();
+            AlgorithmPerformer* ap = AlgorithmPerformer::getInstance();
             ap -> add_adv_algorithm(name, func);
         }
         //@}
@@ -286,7 +289,7 @@ namespace dccl
         /// In comparison, using encode you would pass *ml["myint"] = 32
         ///
         /// \param k can either be std::string (the name of the message) or unsigned (the id of the message)
-        /// \param Msg modem::Message or std::string for encoded message to be stored.
+        /// \param m modem::Message or std::string for encoded message to be stored.
         /// \param ms pointer to map of moos variable name to std::string values. 
         /// \param md pointer to map of moos variable name to double values. double is preferred for <float/>.
         template<typename Key, typename Msg>
@@ -306,7 +309,7 @@ namespace dccl
         /// returned in the double map, not the string map).
         ///
         /// \param k can either be std::string (the name of the message) or unsigned (the id of the message)
-        /// \param Msg modem::Message or std::string to be decode.
+        /// \param m modem::Message or std::string to be decode.
         /// \param ms pointer to std::multimap of message variable name to std::string values.
         /// \param md pointer to std::multimap of message variable name to double values.
         template<typename Key, typename Msg>
@@ -325,7 +328,7 @@ namespace dccl
         /// returned in the double map, not the string map).
         ///
         /// \param k can either be std::string (the name of the message) or unsigned (the id of the message)
-        /// \param Msg modem::Message or std::string to be decode.
+        /// \param m modem::Message or std::string to be decode.
         /// \param ms pointer to std::map of message variable name to std::string values.
         /// \param md pointer to std::map of message variable name to double values.
         template<typename Key, typename Msg>
@@ -500,6 +503,28 @@ namespace dccl
 
         std::string xml_schema_;
         time_t start_time_;
+        
+        /// \example libdccl/examples/simple/simple.cpp
+        /// simple.xml
+        /// \verbinclude simple.xml
+        /// simple.cpp
+        
+        /// \example libdccl/examples/plusnet/plusnet.cpp
+        /// nafcon_command.xml
+        /// \verbinclude nafcon_command.xml
+        /// nafcon_report.xml
+        /// \verbinclude nafcon_report.xml
+        /// plusnet.cpp
+        
+        /// \example libdccl/examples/test/test.cpp
+        /// test.xml
+        /// \verbinclude test.xml 
+        /// test.cpp
+        
+        /// \example libdccl/examples/two_message/two_message.cpp
+        /// two_message.xml
+        /// \verbinclude two_message.xml
+        /// two_message.cpp
         
     };
 

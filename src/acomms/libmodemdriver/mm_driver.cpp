@@ -25,6 +25,7 @@
 #include "acomms/modem_message.h"
 #include "util/streamlogger.h"
 
+using namespace serial; // for NMEASentence
 
 micromodem::MMDriver::MMDriver(std::ostream* os /*= 0*/)
     : DriverBase(os, SERIAL_DELIMITER),
@@ -68,7 +69,7 @@ void micromodem::MMDriver::do_work()
         boost::trim(in);
         if(os_) *os_ << group("mm_in") << "|" << microsec_simple_time_of_day() << "| " << in << std::endl;
         
-        NMEA nmea(in, STRICT);
+        NMEASentence nmea(in, NMEASentence::STRICT);
         handle_modem_in(nmea);
     }
 }
@@ -77,7 +78,7 @@ void micromodem::MMDriver::do_work()
 void micromodem::MMDriver::initiate_transmission(const modem::Message& m)
 {   
     //$CCCYC,CMD,ADR1,ADR2,Packet Type,ACK,Npkt*CS
-    NMEA nmea("$CCCYC", NOT_STRICT);
+    NMEASentence nmea("$CCCYC", NMEASentence::NOT_STRICT);
     nmea.push_back(0); // CMD: deprecated field
     nmea.push_back(m.src()); // ADR1
     nmea.push_back(m.dest()); // ADR2
@@ -93,7 +94,7 @@ void micromodem::MMDriver::handle_modem_out()
     if(out_.empty())
         return;
     
-    NMEA& nmea = out_.front();
+    NMEASentence& nmea = out_.front();
     
     bool resend = waiting_for_modem_ && (last_write_time_ <= (time(NULL) - MODEM_WAIT));
     if(!waiting_for_modem_ || resend)
@@ -133,7 +134,7 @@ void micromodem::MMDriver::pop_out()
 }
 
 
-void micromodem::MMDriver::validate_and_write(NMEA& nmea)
+void micromodem::MMDriver::validate_and_write(NMEASentence& nmea)
 {
     try { nmea.validate(); }
     catch(std::exception& e)
@@ -150,7 +151,7 @@ void micromodem::MMDriver::validate_and_write(NMEA& nmea)
 
 void micromodem::MMDriver::set_clock()
 {
-    NMEA nmea("$CCCLK", NOT_STRICT);
+    NMEASentence nmea("$CCCLK", NMEASentence::NOT_STRICT);
     boost::posix_time::ptime p = boost::posix_time::second_clock::universal_time();
     
     nmea.push_back(static_cast<int>(p.date().year()));
@@ -167,7 +168,7 @@ void micromodem::MMDriver::write_cfg()
 {
     BOOST_FOREACH(const std::string& s, cfg_)
     {
-        NMEA nmea("$CCCFG", NOT_STRICT);        
+        NMEASentence nmea("$CCCFG", NMEASentence::NOT_STRICT);        
         nmea.push_back(boost::to_upper_copy(s));
         validate_and_write(nmea);
     }    
@@ -175,12 +176,12 @@ void micromodem::MMDriver::write_cfg()
 
 void micromodem::MMDriver::check_cfg()
 {
-    NMEA nmea("$CCCFQ,ALL", NOT_STRICT);
+    NMEASentence nmea("$CCCFQ,ALL", NMEASentence::NOT_STRICT);
     validate_and_write(nmea);
 }
 
 
-void micromodem::MMDriver::handle_modem_in(NMEA& nmea)
+void micromodem::MMDriver::handle_modem_in(NMEASentence& nmea)
 {
     try { nmea.validate(); }
     catch(std::exception& e)
@@ -222,7 +223,7 @@ void micromodem::MMDriver::handle_modem_in(NMEA& nmea)
     callback_decoded(m_in);
 }
 
-void micromodem::MMDriver::rxd(NMEA& nmea, modem::Message& m)
+void micromodem::MMDriver::rxd(NMEASentence& nmea, modem::Message& m)
 {
     m.set_src(nmea[1]);
     m.set_dest(nmea[2]);
@@ -232,7 +233,7 @@ void micromodem::MMDriver::rxd(NMEA& nmea, modem::Message& m)
 
     callback_receive(m);
 }
-void micromodem::MMDriver::ack(NMEA& nmea, modem::Message& m)
+void micromodem::MMDriver::ack(NMEASentence& nmea, modem::Message& m)
 {
     m.set_src(nmea[1]);
     m.set_dest(nmea[2]);
@@ -241,7 +242,7 @@ void micromodem::MMDriver::ack(NMEA& nmea, modem::Message& m)
 
     callback_ack(m);
 }
-void micromodem::MMDriver::drq(NMEA& nmea_in, modem::Message& m_in)
+void micromodem::MMDriver::drq(NMEASentence& nmea_in, modem::Message& m_in)
 {
     // read the drq
     m_in.set_t(modem_time2unix_time(nmea_in[1]));
@@ -256,7 +257,7 @@ void micromodem::MMDriver::drq(NMEA& nmea_in, modem::Message& m_in)
     callback_datarequest(m_in, m_out);
 
     // write the txd
-    NMEA nmea_out("$CCTXD", NOT_STRICT);
+    NMEASentence nmea_out("$CCTXD", NMEASentence::NOT_STRICT);
     nmea_out.push_back(m_out.src());
     nmea_out.push_back(m_out.dest());
     nmea_out.push_back(m_out.ack());
@@ -265,7 +266,7 @@ void micromodem::MMDriver::drq(NMEA& nmea_in, modem::Message& m_in)
     validate_and_write(nmea_out);   
 }
 
-void micromodem::MMDriver::cfg(NMEA& nmea, modem::Message& m)
+void micromodem::MMDriver::cfg(NMEASentence& nmea, modem::Message& m)
 {
     if(out_.front().talker_back() != "CFG" && out_.front().talker_back() != "CFQ")
         return;
@@ -273,7 +274,7 @@ void micromodem::MMDriver::cfg(NMEA& nmea, modem::Message& m)
     pop_out();
 }
 
-void micromodem::MMDriver::clk(NMEA& nmea, modem::Message& m)
+void micromodem::MMDriver::clk(NMEASentence& nmea, modem::Message& m)
 {
     if(out_.front().talker_back() != "CLK")
         return;
@@ -297,10 +298,10 @@ void micromodem::MMDriver::clk(NMEA& nmea, modem::Message& m)
         clock_set_ = true;
 }
 
-void micromodem::MMDriver::mpa(NMEA& nmea, modem::Message& m){}
-void micromodem::MMDriver::mpr(NMEA& nmea, modem::Message& m){}
+void micromodem::MMDriver::mpa(NMEASentence& nmea, modem::Message& m){}
+void micromodem::MMDriver::mpr(NMEASentence& nmea, modem::Message& m){}
 
-void micromodem::MMDriver::rev(NMEA& nmea, modem::Message& m)
+void micromodem::MMDriver::rev(NMEASentence& nmea, modem::Message& m)
 {
     if(nmea[2] == "INIT")
     {
@@ -321,12 +322,12 @@ void micromodem::MMDriver::rev(NMEA& nmea, modem::Message& m)
     
 }
 
-void micromodem::MMDriver::err(NMEA& nmea, modem::Message& m)
+void micromodem::MMDriver::err(NMEASentence& nmea, modem::Message& m)
 {
     *os_ << group("mm_out") << warn << "modem reports error: " << nmea.message() << std::endl;
 }
 
-void micromodem::MMDriver::cyc(NMEA& nmea, modem::Message& m)
+void micromodem::MMDriver::cyc(NMEASentence& nmea, modem::Message& m)
 {
     // somewhat "loose" interpretation of some of the fields
     m.set_src(nmea[2]); // ADR1

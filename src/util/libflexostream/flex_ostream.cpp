@@ -1,7 +1,7 @@
 // copyright 2009 t. schneider tes@mit.edu
-// 
-// this file is part of flex-cout, a terminal display library
-// that extends the functionality of std::cout
+//
+// this file is part of flex-ostream, a terminal display library
+// that provides an ostream with both terminal display and file logging
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -16,22 +16,22 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
-#include "flex_cout.h"
+#include "flex_ostream.h"
 
-void FlexCout::name(const std::string& s)
+void FlexOstream::name(const std::string& s)
 { sb_.name(s); }
 
-void FlexCout::group(const std::string& s)
+void FlexOstream::group(const std::string& s)
 { sb_.group_name(s); }
 
-void FlexCout::verbosity(const std::string& s)
+void FlexOstream::verbosity(const std::string& s)
 { sb_.verbosity(s); }
     
-void FlexCout::die_flag(bool b)
+void FlexOstream::die_flag(bool b)
 { sb_.die_flag(b); }
 
     
-void FlexCout::add_group(const std::string& name,
+void FlexOstream::add_group(const std::string& name,
                          const std::string& heartbeat /* = "." */,
                          const std::string& color /* = "nocolor" */,
                          const std::string& description /* = "" */)
@@ -40,13 +40,13 @@ void FlexCout::add_group(const std::string& name,
     sb_.add_group(name, ng);
 
     if(!sb_.is_scope())
-        std::cout << "Adding FlexCout group: " << sb_.color(color) << name << sb_.color("nocolor")
+        std::cout << "Adding FlexOstream group: " << sb_.color(color) << name << sb_.color("nocolor")
                   << " (" << description << ")" 
                   << " [heartbeat: " << sb_.color(color) << heartbeat << sb_.color("nocolor")
                   << " ]" << std::endl;
 }
 
-std::ostream& FlexCout::operator<<(std::ostream& (*pf) (std::ostream&))
+std::ostream& FlexOstream::operator<<(std::ostream& (*pf) (std::ostream&))
 {
     if(pf == die) die_flag(true);
     return (quiet()) ? *this : std::ostream::operator<<(pf);

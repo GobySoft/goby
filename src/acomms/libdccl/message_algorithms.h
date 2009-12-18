@@ -32,21 +32,39 @@
 namespace dccl
 {
     class MessageVal;
+    
+    /// \brief boost::function for a function taking a single std::string reference. Used for algorithm callbacks.
+    ///
+    /// Think of this as a generalized version of a function pointer (void (*)(std::string&)). See http://www.boost.org/doc/libs/1_34_0/doc/html/function.html for more on boost:function. 
+    typedef boost::function<void (std::string&)> StrAlgFunction1;
+    /// \brief boost::function for a function taking a single double reference. Used for algorithm callbacks.
+    ///
+    /// Think of this as a generalized version of a function pointer (void (*)(double&)). See http://www.boost.org/doc/libs/1_34_0/doc/html/function.html for more on boost:function. 
+    typedef boost::function<void (double&)> DblAlgFunction1;
+    /// \brief boost::function for a function taking a single long reference. Used for algorithm callbacks.
+    ///
+    /// Think of this as a generalized version of a function pointer (void (*)(long&)). See http://www.boost.org/doc/libs/1_34_0/doc/html/function.html for more on boost:function.
+    typedef boost::function<void (long&)> LongAlgFunction1;
+    /// \brief boost::function for a function taking a single bool reference. Used for algorithm callbacks.
+    ///
+    /// Think of this as a generalized version of a function pointer (void (*)(bool&)). See http://www.boost.org/doc/libs/1_34_0/doc/html/function.html for more on boost:function. 
+    typedef boost::function<void (bool&)> BoolAlgFunction1;
+    /// \brief boost::function for a function taking a single dccl::MessageVal reference. Used for algorithm callbacks.
+    ///
+    /// Think of this as a generalized version of a function pointer (void (*)(dccl::MessageVal&)). See http://www.boost.org/doc/libs/1_34_0/doc/html/function.html for more on boost:function.
+    typedef boost::function<void (MessageVal&)> AdvAlgFunction1;
+    /// \brief boost::function for a function taking a dccl::MessageVal reference, a std::vector<std::string> (the parameters for the algorithm), and a std::map<std::string,dccl::MessageVal> (map of all the other message variable values in the current message). Used for algorithm callbacks.
+    ///
+    /// Think of this as a generalized version of a function pointer (void (*)(MessageVal&, const std::vector<std::string>&, const std::map<std::string,dccl::MessageVal>&)). See http://www.boost.org/doc/libs/1_34_0/doc/html/function.html for more on boost:function.
+    typedef boost::function<void (MessageVal&, const std::vector<std::string>&, const std::map<std::string,MessageVal>&)> AdvAlgFunction3;
+
     class AlgorithmPerformer
     {
       public:
         static AlgorithmPerformer* getInstance();
 
         void algorithm(MessageVal& in, const std::string& algorithm, const std::map<std::string,MessageVal>& vals);
-
-
-        typedef boost::function1<void, std::string&> StrAlgFunction1;
-        typedef boost::function1<void, double& > DblAlgFunction1;
-        typedef boost::function1<void, long& > LongAlgFunction1;
-        typedef boost::function1<void, bool& > BoolAlgFunction1;
-        typedef boost::function1<void, MessageVal&> AdvAlgFunction1;
-        typedef boost::function3<void, MessageVal&, const std::vector<std::string>&, const std::map<std::string,MessageVal>&> AdvAlgFunction3;
-
+        
         void add_str_algorithm(const std::string& name, StrAlgFunction1 func)
         { str_map1_[name] = func; }        
         void add_dbl_algorithm(const std::string& name, DblAlgFunction1 func)

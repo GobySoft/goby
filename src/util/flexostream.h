@@ -15,12 +15,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
-// courtesy header for the FlexCout stream logging library
-// (libflexcout)
+// courtesy header for the FlexOstream stream logging library
+// (libflexostream)
 
-#ifndef FLEXCOUTCOURTESY20091211H
-#define FLEXCOUTCOURTESY20091211H
+#ifndef FLEXOSTREAMCOURTESY20091211H
+#define FLEXOSTREAMCOURTESY20091211H
 
-#include "util/libflexcout/flex_cout.h"
+#include "util/libflexostream/flex_ostream.h"
 
 #endif

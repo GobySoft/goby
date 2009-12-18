@@ -4,6 +4,6 @@ if(Boost_FOUND)
   include_directories(${Boost_INCLUDE_DIR})
   
   file(GLOB SRC *.cpp *.c)
-  add_library(mmdriver SHARED ${SRC})
-  target_link_libraries(mmdriver streamlogger serial)
+  add_library(modemdriver SHARED ${SRC})
+  target_link_libraries(modemdriver streamlogger serial)
 endif()

@@ -1,7 +1,7 @@
 // copyright 2009 t. schneider tes@mit.edu
-// 
-// this file is part of flex-cout, a terminal display library
-// that extends the functionality of std::cout
+//
+// this file is part of flex-ostream, a terminal display library
+// that provides an ostream with both terminal display and file logging
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by

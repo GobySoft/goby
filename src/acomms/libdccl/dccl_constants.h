@@ -29,20 +29,20 @@
 namespace dccl
 {
 
-/// Enumeration of DCCL types used for sending messages. dccl_enum and dccl_string primarily map to std::string, dccl_bool to bool, dccl_int to long, dccl_float to double
-    enum DCCLType { dccl_static, /*!< <static/> */
-                    dccl_bool, /*!< <bool/> */
-                    dccl_int, /*!< <int/> */
-                    dccl_float, /*!< <float/> */
-                    dccl_enum, /*!< <enum/> */
-                    dccl_string /*!< <string/> */
+/// Enumeration of DCCL types used for sending messages. dccl_enum and dccl_string primarily map to cpp_string, dccl_bool to cpp_bool, dccl_int to cpp_long, dccl_float to cpp_double
+    enum DCCLType { dccl_static, /*!<  \verbatim <static/> \endverbatim */
+                    dccl_bool, /*!< \verbatim <bool/> \endverbatim */
+                    dccl_int, /*!< \verbatim <int/> \endverbatim */
+                    dccl_float, /*!< \verbatim <float/> \endverbatim */
+                    dccl_enum, /*!< \verbatim <enum/> \endverbatim */
+                    dccl_string /*!< \verbatim <string/> \endverbatim */
     };
 /// Enumeration of C++ types used in DCCL.
     enum DCCLCppType { cpp_notype,/*!< not one of the C++ types used in DCCL */
-                       cpp_bool,/*!< bool */
-                       cpp_string,/*!< std::string */
-                       cpp_long,/*!< long */
-                       cpp_double/*!< double */
+                       cpp_bool,/*!< C++ bool */
+                       cpp_string,/*!< C++ std::string */
+                       cpp_long,/*!< C++ long */
+                       cpp_double/*!< C++ double */
     };
 
 }

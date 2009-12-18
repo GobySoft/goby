@@ -16,9 +16,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
-#include "nmea.h"
+#include "nmea_sentence.h"
 
-NMEA::NMEA(std::string s, bool strict /*= STRICT*/)
+serial::NMEASentence::NMEASentence(std::string s, bool strict /*= STRICT*/)
     : message_(s),
       message_no_cs_(s),
       cs_(0),
@@ -31,7 +31,7 @@ NMEA::NMEA(std::string s, bool strict /*= STRICT*/)
     boost::split(message_parts_, message_no_cs_, boost::is_any_of(","));
 }
 
-NMEA::NMEA()
+serial::NMEASentence::NMEASentence()
     : message_(""),
       message_no_cs_(""),
       cs_(0),
@@ -39,7 +39,7 @@ NMEA::NMEA()
       strict_(true)
 { }
 
-void NMEA::add_cs(std::string & s)
+void serial::NMEASentence::add_cs(std::string& s)
 {
     std::string cs;
     unsigned char c[] = {calc_cs(s)};
@@ -51,7 +51,7 @@ void NMEA::add_cs(std::string & s)
 }
 
 
-unsigned char NMEA::strip_cs(std::string & s)    
+unsigned char serial::NMEASentence::strip_cs(std::string& s)    
 {
     std::string::size_type pos = s.find('*');
             
@@ -68,32 +68,32 @@ unsigned char NMEA::strip_cs(std::string & s)
 }
 
 
-void NMEA::validate()
+void serial::NMEASentence::validate()
 {
     if(message_.empty())
-        throw std::runtime_error("NMEA: no message: " + message_);
+        throw std::runtime_error("NMEASentence: no message: " + message_);
     
     std::string::size_type star_pos = message_.find('*');
     if(star_pos == std::string::npos)
-        throw std::runtime_error("NMEA: no checksum: " + message_);
+        throw std::runtime_error("NMEASentence: no checksum: " + message_);
     
     std::string::size_type dollar_pos = message_.find('$');
     if(dollar_pos == std::string::npos)
-        throw std::runtime_error("NMEA: no $: " + message_);
+        throw std::runtime_error("NMEASentence: no $: " + message_);
     
     if(strict_)
     {    
         if(cs_ != given_cs_)
-            throw std::runtime_error("NMEA: bad checksum: " + message_);
+            throw std::runtime_error("NMEASentence: bad checksum: " + message_);
     }
     
     if(message_parts_[0].length() != 6)
-        throw std::runtime_error("NMEA: wrong talker length: " + message_);
+        throw std::runtime_error("NMEASentence: wrong talker length: " + message_);
     
     valid_ = true;
 }
 
-unsigned char NMEA::calc_cs(const std::string & s)
+unsigned char serial::NMEASentence::calc_cs(const std::string& s)
 {
     if(s.empty())
         return 0;
@@ -112,7 +112,7 @@ unsigned char NMEA::calc_cs(const std::string & s)
     return cs;
 }
 
-void NMEA::update()
+void serial::NMEASentence::update()
 {
     boost::trim(message_);
     boost::trim(message_no_cs_);
@@ -125,7 +125,7 @@ void NMEA::update()
     cs_ = calc_cs(message_);
 }
 
-void NMEA::parts_to_message()
+void serial::NMEASentence::parts_to_message()
 {
     message_.clear();
     for(std::vector<std::string>::const_iterator it = message_parts_.begin(),
@@ -141,7 +141,7 @@ void NMEA::parts_to_message()
     update();
 }
 
-bool icmp_contents(NMEA & n1, NMEA & n2)
+bool icmp_contents(serial::NMEASentence& n1, serial::NMEASentence& n2)
 {
     if(n1.message_no_cs().length() < 7 || n2.message_no_cs().length() < 7)
         return false;

@@ -15,10 +15,14 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
-// courtesy header for the WHOI Micro-Modem driver (libmmdriver)
-#ifndef MMDRIVERCOURTESY20091211H
-#define MMDRIVERCOURTESY20091211H
+// courtesy header for the acoustic modem driver (libmodemdriver)
+#ifndef MODEMDRIVERCOURTESY20091211H
+#define MODEMDRIVERCOURTESY20091211H
 
-#include "acomms/libmmdriver/mm_driver.h"
+// driver base class
+#include "acomms/libmodemdriver/driver_base.h"
+
+// WHOI Micro-Modem driver
+#include "acomms/libmodemdriver/mm_driver.h"
 
 #endif

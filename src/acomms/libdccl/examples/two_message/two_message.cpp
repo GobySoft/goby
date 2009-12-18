@@ -26,11 +26,11 @@ using dccl::operator<<;
 
 int main()
 {
-    std::cout << "loading xml files: xml/simple.xml, xml/two_message_example.xml" << std::endl;
+    std::cout << "loading xml files: xml/simple.xml, xml/two_message.xml" << std::endl;
 
     std::set<std::string> xml_files;
-    xml_files.insert("../src/acomms/libdccl/examples/simple/simple.xml");
-    xml_files.insert("../src/acomms/libdccl/examples/two_message/two_message.xml");
+    xml_files.insert(DCCL_EXAMPLES_DIR "/simple/simple.xml");
+    xml_files.insert(DCCL_EXAMPLES_DIR "/two_message/two_message.xml");
     
     dccl::DCCLCodec dccl(xml_files, "../../message_schema.xsd");
 

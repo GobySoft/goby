@@ -1,3 +1,3 @@
-add_subdirectory(libflexcout)
+add_subdirectory(libflexostream)
 add_subdirectory(libstreamlogger)
 add_subdirectory(libserial)

@@ -10,7 +10,7 @@
 // (at your option) any later version.
 //
 // This software is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// but WITHOUT ANY WARRANTY; without even the implied warranty 
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
@@ -22,6 +22,7 @@
 
 namespace queue
 {    
+    /// forms a unique key for a given message %queue
     class QueueKey 
     {
       public:
@@ -29,10 +30,15 @@ namespace queue
           : type_(type),
             id_(id)
             { }
+
+        /// set the key type
         void set_type(QueueType type) { type_ = type; }
+        /// set the key id (DCCL id for type = queue_dccl, CCL id for type = queue_ccl)
         void set_id(unsigned id)      { id_ = id; }        
 
+        /// \return the key type
         QueueType type() const { return type_; }
+        /// \return the key id
         unsigned id() const { return id_; }        
         
       private:

@@ -1,0 +1,101 @@
+// copyright 2009 t. schneider tes@mit.edu
+// 
+// goby software and documentation is distributed under the GNU General
+// Public License.
+//
+// You should have received a copy of the GNU General Public License
+// along with this software (see goby/COPYING).  If not, see <http://www.gnu.org/licenses/>.
+
+/*! \page acomms Acoustic Communications Libraries (goby-acomms)  
+
+    \section overview Overview
+ 
+    \subsection analogy Analogy to established networking systems
+To start on some (hopefully) common ground, let's begin with an analogy to Open Systems Initiative (OSI) networking layers in this \ref OSI_table "table". For a complete description of the OSI layers see http://www.itu.int/rec/T-REC-X.200-199407-I/en.
+
+\anchor OSI_table
+<table>
+  <tr>
+    <td><strong>OSI Layer</strong></td>
+    <td><strong>Goby library</strong></td>
+    <td><strong>API class</strong></td>
+    <td><strong>Example(s)</strong></td>
+  </tr>
+  <tr>
+    <td>Application</td>
+    <td>not yet part of Goby</td>
+    <td></td>
+    <td>MOOS Application: pAcommsHandler</td>
+  </tr>
+  <tr>
+    <td>Presentation</td>
+    <td>\ref dccl</td>
+    <td>dccl::DCCLCodec</td>
+    <td>
+      \ref libdccl/examples/simple/simple.cpp "simple.cpp" <br/>
+      \ref libdccl/examples/two_message/two_message.cpp "two_message.cpp" <br/>
+      \ref libdccl/examples/plusnet/plusnet.cpp "plusnet.cpp" <br/>
+      \ref libdccl/examples/test/test.cpp "test.cpp"
+    </td>
+  </tr>
+  <tr>
+    <td>Session</td>
+    <td>not used, no connection handshaking is done.</td>
+    <td></td>
+    <td></td>
+  <tr>
+    <td>Transport</td>
+    <td>\ref queue</td>
+    <td>queue::QueueManager</td>
+    <td></td>
+  </tr>    
+  <tr>
+    <td>Network</td>
+    <td>does not yet exist. All transmissions are considered single hop, currently. Addressing routing over multiple hops is an open and pressing research problem.</td>
+    <td></td>
+    <td></td>
+  </tr>
+  <tr>
+    <td>Data Link</td>
+    <td>\ref driver</td>
+    <td>classes derived from modem::DriverBase; e.g. micromodem::MMDriver</td>
+    <td></td>
+  </tr>
+  <tr>
+    <td>Physical</td>
+    <td>not part of Goby</td>
+    <td></td>
+    <td>Modem Firmware, e.g. WHOI Micro-Modem Firmware (NMEA 0183 on RS-232) (see <a href="http://acomms.whoi.edu/documents/uModem%20Software%20Interface%20Guide.pdf">Interface Guide</a>)</td>
+  </tr>
+</table>
+
+\subsection acomms_slow Acoustic Communications are slow
+Do not take the previous analogy too literally; some things we are doing here for acoustic communications (hereafter, acomms) are unconventional from the approach of networking on electromagnetic carriers (hereafter, EM networking). The difference is a vast spread in the expected throughput of a standard internet hardware carrier and acoustic communications. For example, an optical fiber can put through greater than 10 Tbps over greater than 100 km, whereas the WHOI acoustic Micro-Modem can (at best) do 5000 bps over several km. This is a difference of thirteen orders of magnitude for the bit-rate distance product!
+
+\subsection packing_efficiency Efficiency to make small messages is good
+Extremely low throughput means that essentially every efficiency in bit packing messages to the smallest size possible is desirable. The traditional approach of layering (e.g. TCP/IP) creates inefficiencies as each layer wraps the message of the higher layer with its own header. See RFC3439 section 3 ("Layering Considered Harmful") for an interesting discussion of this issue (http://tools.ietf.org/html/rfc3439#page-7). Thus, the "layers" of goby-acomms are more tightly interrelated than TCP/IP, for example. Higher layers depend on lower layers to carry out functions such as error checking and do not replicate this functionality. 
+
+\subsection why_prioritize Total throughput unrealistic: prioritize data
+The second major difference stemming from this bandwidth constraint is that <em> total throughput is often an unrealistic goal</em>. The quality of the acoustic channel varies widely from place to place, and even from hour to hour as changes in the sea affect propagation of sound. This means that it is also difficult to predict what one's throughput will be at any given time. These two considerations manifest themselves in the goby-acomms design as a priority based queueing system for the transport layer. Messages are placed in different queues based on their priority (which is determined by the designer of the message). This means that 
+<ul>
+<li>the channel is always utilized (low priority data are sent when the channel quality is high)
+<li>important messages are not swamped by low priority data
+</ul>
+
+In contrast, TCP/IP considers all packets equally. Packets made from a spam email are given the same consideration as a high priority email from the President. This is a tradeoff in efficiency versus simplicity that makes sense for EM networking, but does not for acoustic communications. 
+
+\subsection simplicity Despite all this, simplicity is good
+The "law of diminishing returns" means that at some point, if we try to optimize excessively, we will end up making the system more complex without substantial gain. Thus, goby-acomms makes some concessions for the sake of simplicity:
+
+<ul>
+<li> Numerical message fields are bounded by powers of 10, rather than 2. Humans deal much better with decimal than binary.
+<li> User data splitting (and subsequent stitching) is not done. This is a key component of TCP/IP, but with the number of dropped packets one can expect with acomms, at the moment this does not seem like a good idea. The user is expected to provide data that is smaller or equal to the packet size of the physical layer (e.g. 32 - 256 bytes for the WHOI Micro-Modem). 
+</ul>
+
+    \section dccl libdccl: Encoding and decoding
+
+    \section queue libqueue: Priority based message queuing
+    \section driver libmodemdriver: Modem driver
+
+
+*/

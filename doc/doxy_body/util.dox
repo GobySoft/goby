@@ -1,0 +1,21 @@
+// copyright 2009 t. schneider tes@mit.edu
+// 
+// goby software and documentation is distributed under the GNU General
+// Public License.
+//
+// You should have received a copy of the GNU General Public License
+// along with this software (see goby/COPYING).  If not, see <http://www.gnu.org/licenses/>.
+
+/*! \page util Utility Libraries (goby-util)
+
+    \section overview Overview
+
+    \section logging Logging
+
+    \subsection stream C++ STL Streams
+
+    \subsection flexostream Configurable extension of std::ostream - libflexostream
+
+    \section serial Serial port communications - libserial
+
+*/

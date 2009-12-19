@@ -200,8 +200,7 @@ namespace dccl
 
         /// \brief Decode a message.
         ///
-        /// Values will be recieved in  one or more maps of names to values. All reasonable casts will be made and returned in the maps
-        /// provided. Thus, <int>234</int> would be returned in ms as "234", md as 234.000, ml as 234, and mb as true.
+        /// Values will be received in one or more maps of names to values. All reasonable casts will be made and returned in the maps provided. If all four maps are provided, the value is returned in the closest dccl::DCCLCppType to the dccl::DCCLType (e.g. <bool> is returned as bool, <int> as long).  If fewer than four maps are provided, the cast hierarchy goes bool -> long -> double -> std::string. The value is returned in the map corresponding to the closest type to the original. For example, a bool value of true would be returned in the mb as true (*mb["key"] == true). If mb was not provided, it would be returned in ml as 1 (*ml["key"] == 1). If ml was not provided, it would be returned in md as 1.0 (*md["key"] == 1.0). If md was not provided, it would be returned in ms as "true" (*ms["key"] == "true").
         ///
         /// \param k can either be std::string (the name of the message) or unsigned (the id of the message)
         /// \param hex the hexadecimal to be decoded.
@@ -263,25 +262,28 @@ namespace dccl
         // MOOS!
         /////////////////
 
-        /// \name MOOS related methods
-        /// \brief Methods written largely to support DCCL in the context of the MOOS autonomy infrastructure (http://www.robots.ox.ac.uk/~mobile/MOOS/wiki/pmwiki.php). The other methods provide a complete interface for encoding and decoding DCCL messages. However, the methods listed here extend the functionality to allow for
+        /// \name Publish/subscribe architecture related methods
+        /// \brief Methods written largely to support DCCL in the context of a publish/subscribe architecture (e.g., see MOOS (http://www.robots.ox.ac.uk/~mobile/MOOS/wiki/pmwiki.php)). The other methods provide a complete interface for encoding and decoding DCCL messages. However, the methods listed here extend the functionality to allow for
         /// <ul>
         /// <li> message creation triggering (a message is encoded on a certain event, either time based or publish based) </li>
-        /// <li> message queuing encoded in XML (this is used by pAcommsHandler) </li>
         /// <li> encoding that will parse strings of the form: "key1=value,key2=value,key3=value" </li>
-        /// <li> decoding to an arbitrary formatted string (similar concept to printf) </li>
+        /// <li> decoding to an arbitrarily formatted string (similar concept to printf) </li>
         /// </ul>
-        /// These methods may be useful to someone not working with MOOS but interested in any of the features mentioned above.
+        /// These methods will be useful if you are interested in any of the features mentioned above.
         
         //@{
-        /// \brief Encode a message using <moos_var> tags instead of <name> tags
+        /// \brief Encode a message using <src_var> tags instead of <name> tags
         ///
-        /// Values can be passed in on one or more maps of names to values. The types passed (std::string, double) are typically directly
-        /// derived from the MOOS types given to this process (std::string / double) since MOOS only supports these two types.
+        /// Values can be passed in on one or more maps of names to values, similar to DCCLCodec::encode. 
         /// Casts are made and string parsing of key=value comma delimited fields is performed.
         /// This differs substantially from the behavior of encode above.
         /// For example, take this message variable:
-        /// <int><name>myint</name><moos_var>somevar</moos_var></int>
+        /*! \verbatim
+          <int>
+            <name>myint</name>
+            <moos_var>somevar</moos_var>
+          </int> \endverbatim
+         */
         ///
         /// Using encode_from_moos you can pass *ms["somevar"] = "mystring=foo,blah=dog,myint=32"
         /// or *md["somevar"] = 32.0
@@ -290,8 +292,10 @@ namespace dccl
         ///
         /// \param k can either be std::string (the name of the message) or unsigned (the id of the message)
         /// \param m modem::Message or std::string for encoded message to be stored.
-        /// \param ms pointer to map of moos variable name to std::string values. 
-        /// \param md pointer to map of moos variable name to double values. double is preferred for <float/>.
+        /// \param ms pointer to map of source variable name to std::string values. 
+        /// \param md pointer to map of source variable name to double values.
+        /// \param ml pointer to map of source variable name to long values.
+        /// \param mb pointer to map of source variable name to bool values. 
         template<typename Key, typename Msg>
             void encode_from_src_vars(const Key& k,
                                        Msg& m,
@@ -304,14 +308,15 @@ namespace dccl
 
         /// \brief Decode a message using formatting specified in <publish/> tags.
         ///
-        /// Values will be recieved in two maps, one of strings and the other of doubles. The <publish> value will be placed
-        /// either based on the "type" parameter of the <moos_var> tag or missing that, on the best guess (numeric values will generally) be
-        /// returned in the double map, not the string map).
+        /// Values will be received in two maps, one of strings and the other of doubles. The <publish> value will be placed
+        /// either based on the "type" parameter of the <publish_var> tag (e.g. <publish_var type="long">SOMEVAR</publish> will be placed as a long). If no type parameter is given and the variable is numeric (e.g. "23242.23") it will be considered a double. If not numeric, it will be considered a string.
         ///
         /// \param k can either be std::string (the name of the message) or unsigned (the id of the message)
         /// \param m modem::Message or std::string to be decode.
-        /// \param ms pointer to std::multimap of message variable name to std::string values.
-        /// \param md pointer to std::multimap of message variable name to double values.
+        /// \param ms pointer to std::multimap of publish variable name to std::string values.
+        /// \param md pointer to std::multimap of publish variable name to double values.
+        /// \param ml pointer to std::multimap of publish variable name to long values.
+        /// \param mb pointer to std::multimap of publish variable name to bool values.
         template<typename Key, typename Msg>
             void decode_to_publish(const Key& k,
                                    const Msg& m,
@@ -321,16 +326,17 @@ namespace dccl
                                    std::multimap<std::string, bool>* mb = 0)
         { decode_private(to_iterator(k), m, ms, md, ml, mb, Message::DO_PUBLISHES); }
 
-        /// \brief Decode a message using formatting specified in <publish/> tags.
+         /// \brief Decode a message using formatting specified in <publish/> tags.
         ///
-        /// Values will be recieved in two maps, one of strings and the other of doubles. The <publish> value will be placed
-        /// either based on the "type" parameter of the <moos_var> tag or missing that, on the best guess (numeric values will generally) be
-        /// returned in the double map, not the string map).
+        /// Values will be received in two maps, one of strings and the other of doubles. The <publish> value will be placed
+        /// either based on the "type" parameter of the <publish_var> tag (e.g. <publish_var type="long">SOMEVAR</publish> will be placed as a long). If no type parameter is given and the variable is numeric (e.g. "23242.23") it will be considered a double. If not numeric, it will be considered a string.
         ///
         /// \param k can either be std::string (the name of the message) or unsigned (the id of the message)
         /// \param m modem::Message or std::string to be decode.
-        /// \param ms pointer to std::map of message variable name to std::string values.
-        /// \param md pointer to std::map of message variable name to double values.
+        /// \param ms pointer to std::map of publish variable name to std::string values.
+        /// \param md pointer to std::map of publish variable name to double values.
+        /// \param ml pointer to std::map of publish variable name to long values.
+        /// \param mb pointer to std::map of publish variable name to bool values.
         template<typename Key, typename Msg>
             void decode_to_publish(const Key& k,
                                    const Msg& m,

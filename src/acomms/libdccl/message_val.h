@@ -128,26 +128,22 @@ namespace dccl
         bool operator==(const std::string& s)
         {
             std::string us;
-            val(us);
-            return us == s;
+            return val(us) && us == s;
         }
         bool operator==(double d)
         {
             double us;
-            val(us);
-            return us == d;
+            return val(us) && us == d;
         }
         bool operator==(long l)
         {
             long us;
-            val(us);
-            return us == l;
+            return val(us) && us == l;
         }
         bool operator==(bool b)
         {
             bool us;
-            val(us);
-            return us == b;
+            return val(us) && us == b;
         }
         
         

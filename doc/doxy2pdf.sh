@@ -9,6 +9,8 @@ do
     doxygen $i
     
     pushd ../build/latex
+    cat refman.tex | sed 's/\\chapter{Namespace Index}/\\appendix\\chapter{Namespace Index}/' > refman2.tex
+    mv refman2.tex refman.tex
     make
     o=${i%.*}
     cp refman.pdf $this_dir/$o.pdf

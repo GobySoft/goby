@@ -33,16 +33,18 @@
 /// Acoustic Modem specific objects
 namespace modem
 {
-    /// \brief Provides a class that represents a message to or from the acoustic modem.
+    /// \brief represents a message to or from the acoustic %modem.
     ///
-    /// Message is intended to represent all the possible messages from the modem. Thus, depending
+    /// Message is intended to represent all the possible messages from the %modem. Thus, depending
     /// on the specific message certain fields may not be used. Also, fields make take on different
     /// meanings depending on the message type. Where this is the case, extra documentation is provided.
     class Message
     {
       public:
+        /// \name Constructors/Destructor
+        //@{
 
-        /// \brief Construct a message for or from the modem
+        /// \brief Construct a message for or from the %modem
         /// \param s (optionally) pass a serialized string such as src=3,dest=4,data=CA342BDF ... to initialize
       Message(const std::string & s = ""):
         data_(""),
@@ -64,129 +66,12 @@ namespace modem
             frame_set_(false),
             cs_set_(false)
             { if(!s.empty()) unserialize(s); }
-
-        //@{
-        
-        /// hexadecimal string
-        std::string data() const {return data_;} 
-        /// time in seconds since UNIX
-        double t() const {return t_;}
-        /// size in bytes
-        double size() const {return size_;}
-        /// source modem id
-        unsigned src() const {return src_;}
-        /// destination modem id
-        unsigned dest() const {return dest_;}
-        /// data rate (unsigned from 0 (lowest) to 5 (highest))
-        unsigned rate() const { return rate_; }
-        /// acknowledgement requested
-        bool ack() const {return ack_;}
-        /// modem frame number
-        unsigned frame() const {return frame_;}
-        /// checksum (eight bit XOR of Message::data())
-        unsigned cs() const {return cs_;}
-
         //@}
-        
-        /// is there data?
-        bool data_set() const {return data_set_;} 
-        /// is there a time?
-        bool t_set() const {return t_set_;}
-        /// is there a size?
-        bool size_set() const {return size_set_;}
-        /// is there a source?
-        bool src_set() const {return src_set_;}
-        /// is there a destination?
-        bool dest_set() const {return dest_set_;}
-        /// is there a rate?
-        bool rate_set() const { return rate_set_; }
-        /// is there an ack value?
-        bool ack_set() const {return ack_set_;}
-        /// is there a frame number?
-        bool frame_set() const {return frame_set_;}
-        /// is there a checksum?
-        bool cs_set() const {return cs_set_;}
 
-        /// is the Message empty (no data)?
-        bool empty() const {return !data_set_;}
+        /// \name Set
+        //@{
 
-        /// short snippet summarizing the Message
-        std::string snip() const 
-        {
-            std::stringstream ss;
-            
-            if(src_set_)   ss << " | src " << src_;
-            if(dest_set_)  ss << " | dest " << dest_;
-            if(rate_set_)  ss << " | rate " << rate_;
-            if(size_set_)  ss << " | size " << size_ << "B";
-            if(t_set_)     ss << " | age " << tes_util::sci_round(time(NULL) - t_, 0) << "s";
-            if(ack_set_)   ss << " | ack " << std::boolalpha << ack_;
-            if(frame_set_) ss << " | frame " << frame_;
-            if(cs_set_)    ss << " | *" << std::hex << std::setw(2) << std::setfill('0') << (int)cs_;
-            
-            if(!ss.str().empty())
-                return ss.str().substr(3);
-            else
-                return "null message";     
-        }
-
-        /// full human readable string serialization
-        enum { COMPRESS = true, NO_COMPRESS = false };
-        std::string serialize(bool compress = NO_COMPRESS) const 
-        {
-            std::stringstream ss;
-
-            if(dest_ == acomms_util::BROADCAST_ID && compress)
-                ss << "," << data_;
-            else
-            {       
-                if(src_set_)   ss << ",src=" << src_;
-                if(dest_set_)  ss << ",dest=" << dest_;
-                if(rate_set_)  ss << ",rate=" << rate_;
-                if(data_set_)  ss << ",data=" << data_;
-                if(size_set_)  ss << ",size=" << size_;
-                if(t_set_)     ss << ",time=" << std::setprecision(15) << t_;
-                if(ack_set_)   ss << ",ack=" << std::boolalpha << ack_;
-                if(frame_set_) ss << ",frame=" << frame_;
-                if(cs_set_)    ss << ",cs=" << std::hex << std::setw(2) << std::setfill('0') << (int)cs_;
-            }
-        
-            if(!ss.str().empty())
-                return ss.str().substr(1);
-            else
-                return "null_message";            
-        }    
-
-        /// reverse serialization
-        void unserialize(const std::string & s) 
-        {
-            std::string value;
-            std::string lower_s = boost::to_lower_copy(s);
-
-            // case where whole string is just hex
-            if(check_hex(lower_s))
-                set_data(lower_s);
-            else
-            {
-                if(tes_util::val_from_string(value, lower_s, "src"))
-                    set_src(value);
-                if(tes_util::val_from_string(value, lower_s, "dest"))
-                    set_dest(value);
-                if(tes_util::val_from_string(value, lower_s, "rate"))
-                    set_rate(value);
-                if((tes_util::val_from_string(value, lower_s, "data") || tes_util::val_from_string(value, lower_s, "hexdata")) && check_hex(value))
-                    set_data(value);
-                if(tes_util::val_from_string(value, lower_s, "time"))
-                    set_t(value);
-                if(tes_util::val_from_string(value, lower_s, "ack"))
-                    set_ack(value);
-                if(tes_util::val_from_string(value, lower_s, "frame"))
-                    set_frame(value);
-            }
-        
-        }    
-    
-        /// set the hexadecimal string data
+        /// set the hexadecimal string data. Also computes the size and the checksum.
         void set_data(const std::string & data)
         {
             data_ = data;
@@ -249,7 +134,145 @@ namespace modem
             try { set_frame(boost::lexical_cast<unsigned>(frame));}
             catch(boost::bad_lexical_cast & ) { }
         }
+         //@}
 
+        
+        /// \name Get
+        //@{
+        
+        /// hexadecimal string
+        std::string data() const {return data_;} 
+        /// time in seconds since 1970-1-1 00:00:00 UTC
+        double t() const {return t_;}
+        /// size in bytes
+        double size() const {return size_;}
+        /// source %modem id
+        unsigned src() const {return src_;}
+        /// destination %modem id
+        unsigned dest() const {return dest_;}
+        /// data rate (unsigned from 0 (lowest) to 5 (highest))
+        unsigned rate() const { return rate_; }
+        /// acknowledgement requested
+        bool ack() const {return ack_;}
+        /// %modem frame number
+        unsigned frame() const {return frame_;}
+        /// checksum (eight bit XOR of Message::data())
+        unsigned cs() const {return cs_;}
+
+        //@}
+
+        /// \name Query availability
+        //@{
+
+        /// is there data?
+        bool data_set() const {return data_set_;} 
+        /// is there a time?
+        bool t_set() const {return t_set_;}
+        /// is there a size?
+        bool size_set() const {return size_set_;}
+        /// is there a source?
+        bool src_set() const {return src_set_;}
+        /// is there a destination?
+        bool dest_set() const {return dest_set_;}
+        /// is there a rate?
+        bool rate_set() const { return rate_set_; }
+        /// is there an ack value?
+        bool ack_set() const {return ack_set_;}
+        /// is there a frame number?
+        bool frame_set() const {return frame_set_;}
+        /// is there a checksum?
+        bool cs_set() const {return cs_set_;}
+
+        /// is the Message empty (no data)?
+        bool empty() const {return !data_set_;}
+        //@}
+        
+        /// short snippet summarizing the Message
+        std::string snip() const 
+        {
+            std::stringstream ss;
+            
+            if(src_set_)   ss << " | src " << src_;
+            if(dest_set_)  ss << " | dest " << dest_;
+            if(rate_set_)  ss << " | rate " << rate_;
+            if(size_set_)  ss << " | size " << size_ << "B";
+            if(t_set_)     ss << " | age " << tes_util::sci_round(time(NULL) - t_, 0) << "s";
+            if(ack_set_)   ss << " | ack " << std::boolalpha << ack_;
+            if(frame_set_) ss << " | frame " << frame_;
+            if(cs_set_)    ss << " | *" << std::hex << std::setw(2) << std::setfill('0') << (int)cs_;
+            
+            if(!ss.str().empty())
+                return ss.str().substr(3);
+            else
+                return "null message";     
+        }
+        
+        enum { COMPRESS = true, NO_COMPRESS = false };
+
+        /// \name Serialize/Unserialize
+        //@{
+
+        /// \brief full human readable string serialization
+        ///
+        /// \param compress if true, give only hex data if destination is 0 (e.g. returns "ABC22345"). if false, always preface with key (e.g. returns "dest=0,data=ABC22345").
+        /// \return string of key=value comma delimited pairs (e.g. "src=2,dest=3,data=ABCD22345"). the order of the keys in sentence is not specified. if compress is true, "dest=0,data=ABC22345,..." will be returned as "ABC22345"
+        std::string serialize(bool compress = NO_COMPRESS) const 
+        {
+            std::stringstream ss;
+
+            if(dest_ == acomms_util::BROADCAST_ID && compress)
+                ss << "," << data_;
+            else
+            {       
+                if(src_set_)   ss << ",src=" << src_;
+                if(dest_set_)  ss << ",dest=" << dest_;
+                if(rate_set_)  ss << ",rate=" << rate_;
+                if(data_set_)  ss << ",data=" << data_;
+                if(size_set_)  ss << ",size=" << size_;
+                if(t_set_)     ss << ",time=" << std::setprecision(15) << t_;
+                if(ack_set_)   ss << ",ack=" << std::boolalpha << ack_;
+                if(frame_set_) ss << ",frame=" << frame_;
+                if(cs_set_)    ss << ",cs=" << std::hex << std::setw(2) << std::setfill('0') << (int)cs_;
+            }
+        
+            if(!ss.str().empty())
+                return ss.str().substr(1);
+            else
+                return "null_message";            
+        }    
+
+        /// reverse serialization
+        void unserialize(const std::string & s) 
+        {
+            std::string value;
+            std::string lower_s = boost::to_lower_copy(s);
+
+            // case where whole string is just hex
+            if(check_hex(lower_s))
+                set_data(lower_s);
+            else
+            {
+                if(tes_util::val_from_string(value, lower_s, "src"))
+                    set_src(value);
+                if(tes_util::val_from_string(value, lower_s, "dest"))
+                    set_dest(value);
+                if(tes_util::val_from_string(value, lower_s, "rate"))
+                    set_rate(value);
+                if((tes_util::val_from_string(value, lower_s, "data") || tes_util::val_from_string(value, lower_s, "hexdata")) && check_hex(value))
+                    set_data(value);
+                if(tes_util::val_from_string(value, lower_s, "time"))
+                    set_t(value);
+                if(tes_util::val_from_string(value, lower_s, "ack"))
+                    set_ack(value);
+                if(tes_util::val_from_string(value, lower_s, "frame"))
+                    set_frame(value);
+            }
+        
+        }    
+        //@}
+
+        /// \name Modify contents
+        //@{        
         /// removes the header bytes (CCL and DCCL ids) from the data
         void remove_header()
         {
@@ -269,7 +292,7 @@ namespace modem
             calc_cs();
             set_size((double)(data_.length()/2));
         }
-        
+        //@}
         
       private:
         void calc_cs()
@@ -292,7 +315,7 @@ namespace modem
       private:
         std::string data_;
         unsigned src_;    
-        unsigned dest_;  //modem_id
+        unsigned dest_;  //%modem_id
         unsigned rate_;
         double t_;
         bool ack_;

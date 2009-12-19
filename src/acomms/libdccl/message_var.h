@@ -79,7 +79,7 @@ namespace dccl
         int calc_size () const;
         std::string get_display() const;
 
-        void read_dynamic_vars(std::map<std::string,MessageVal>& vals, const std::map<std::string, std::string>& in_str, const std::map<std::string, double>& in_dbl);
+        void read_dynamic_vars(std::map<std::string,MessageVal>& vals, const std::map<std::string, std::string>* in_str, const std::map<std::string, double>* in_dbl, const std::map<std::string, long>* in_long, const std::map<std::string, bool>* in_bool);
         std::string parse_string_val(const std::string& sval);
         void var_encode(std::map<std::string,MessageVal>& vals, boost::dynamic_bitset<>& bits);
         void var_decode(std::map<std::string,MessageVal>& vals, boost::dynamic_bitset<>& bits);

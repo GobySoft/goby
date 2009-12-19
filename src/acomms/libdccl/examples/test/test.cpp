@@ -101,8 +101,7 @@ int main()
     S.val(s_in[1]["S"]);
     I.val(l_in[1]["I"]);
     F.val(d_in[1]["F"]);
-    SUM.val(d_in[1]["SUM"]);
-    
+    SUM.val(d_in[1]["SUM"]);    
 
     for(size_t j= 0, n = s_in.size(); j< n; ++j)
     {
@@ -115,56 +114,86 @@ int main()
 
         dccl.encode(4, hex, &s_in[j], &d_in[j], &l_in[j], &b_in[j]);
     
-        std::map<std::string, std::string> s_out;
-        std::map<std::string, double> d_out;
-        std::map<std::string, long> l_out;
-        std::map<std::string, bool> b_out;
+        for(size_t k=0, m=4; k<m; ++k)
+        {
+            
+            std::map<std::string, std::string> s_out;
+            std::map<std::string, double> d_out;
+            std::map<std::string, long> l_out;
+            std::map<std::string, bool> b_out;
+            
+            dccl.decode(4, hex,
+                        &s_out,
+                        (k>0) ? &d_out : 0,
+                        (k>1) ? &l_out : 0,
+                        (k>2) ? &b_out : 0);
+            
+            std::cout << "received values:" << std::endl 
+                      << s_out
+                      << d_out
+                      << l_out
+                      << b_out;
         
-        dccl.decode(4, hex, &s_out, &d_out, &l_out, &b_out);
-        
-        std::cout << "received values:" << std::endl 
-                  << s_out
-                  << d_out
-                  << l_out
-                  << b_out;
-        
-        
-        bool b; B.val(b);
-        std::string e; E.val(e);
-        std::string s; S.val(s);
-        long i; I.val(i);
-        double f; F.val(f);
-        double sum; SUM.val(sum);
+            
+            bool b; B.val(b);
+            std::string e; E.val(e);
+            std::string s; S.val(s);
+            long i; I.val(i);
+            double f; F.val(f);
+            double sum; SUM.val(sum);
 
-        ++i;
-        invert(b);
-        prepend_fat(s);
-        times2(f);
-        sum += i_i + f_i;
-        
-        dccl::MessageVal Bo(b);
-        dccl::MessageVal Eo(e);
-        dccl::MessageVal So(s);
-        dccl::MessageVal Fo(f, 2);
-        dccl::MessageVal SUMo(sum, 2);
-        dccl::MessageVal Io(i);
+            ++i;
+            invert(b);
+            prepend_fat(s);
+            times2(f);
+            sum += i_i + f_i;
+            
+            dccl::MessageVal Bo(b);
+            dccl::MessageVal Eo(e);
+            dccl::MessageVal So(s);
+            dccl::MessageVal Fo(f, 2);
+            dccl::MessageVal SUMo(sum, 2);
+            dccl::MessageVal Io(i);            
 
-        
-        assert(Bo == s_out["B"]);
-        assert(Eo == s_out["E"]);
-        assert(So == s_out["S"]);
-        assert(Io == s_out["I"]);
-        assert(Fo == s_out["F"]);
-        assert(SUMo == s_out["SUM"]);
-        assert(Bo == d_out["B"]);
-        assert(Io == d_out["I"]);
-        assert(Fo == d_out["F"]);
-        assert(SUMo == d_out["SUM"]);
-        assert(Bo == l_out["B"]);
-        assert(Io == l_out["I"]);
-        assert(Fo == l_out["F"]);
-        assert(SUMo == l_out["SUM"]);
-        assert(Bo == b_out["B"]);
+            switch(k)
+            {
+                case 3:
+                    assert(Bo == b_out["B"]);
+                    assert(Eo == s_out["E"]);
+                    assert(So == s_out["S"]);
+                    assert(Fo == d_out["F"]);
+                    assert(SUMo == d_out["SUM"]);
+                    assert(Io == l_out["I"]);
+                    break;
+                    
+                case 2:
+                    assert(Bo == l_out["B"]);
+                    assert(Eo == s_out["E"]);
+                    assert(So == s_out["S"]);
+                    assert(Fo == d_out["F"]);
+                    assert(SUMo == d_out["SUM"]);
+                    assert(Io == l_out["I"]);
+                    break;
+
+                case 1:
+                    assert(Bo == d_out["B"]);
+                    assert(Eo == s_out["E"]);
+                    assert(So == s_out["S"]);
+                    assert(Fo == d_out["F"]);
+                    assert(SUMo == d_out["SUM"]);
+                    assert(Io == d_out["I"]);
+                    break;
+
+                case 0:
+                    assert(Bo == s_out["B"]);
+                    assert(Eo == s_out["E"]);
+                    assert(So == s_out["S"]);
+                    assert(Fo == s_out["F"]);
+                    assert(SUMo == s_out["SUM"]);
+                    assert(Io == s_out["I"]);
+                    break;
+            }
+        }
     }
     
 

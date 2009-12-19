@@ -1,0 +1,32 @@
+// copyright 2009 t. schneider tes@mit.edu
+// 
+// goby software and documentation is distributed under the GNU General
+// Public License.
+//
+// You should have received a copy of the GNU General Public License
+// along with this software (see goby/COPYING).  If not, see <http://www.gnu.org/licenses/>.
+
+/*! \mainpage Goby Underwater Autonomy Project Documentation
+ 
+ \image html goby_m.gif
+
+ The Goby Underwater Autonomy Project aims to create a unified framework for multiple scientific autonomous marine vehicle collaboration, seamlessly incorporating acoustic, ethernet, wifi, and serial communications. Presently the main thrust of the project is developing a set of robust acoustic networking libraries.
+
+  Resources:
+  <ul>
+  <li>  https://launchpad.net/goby for access to code, bug tracking, and more.
+  </ul>
+  
+
+  Developer manual:
+  <ul>
+  <li> \ref acomms - tackle the extremely rate limited acoustic networking problem. These libraries were designed together but can operate independently for a developer looking integrate a specific component (e.g. just encoding/decoding) without committing to the entire goby-acomms stack.
+  <li> \ref util - provide utility functions for tasks such as logging, scientific calculations, string parsing, and serial device i/o. Goby also relies on the boost libraries (http://www.boost.org/) for many utility tasks to fill in areas where the C++ Standard Library is insufficient or unelegant.
+  </ul>  
+
+  Goby components in other projects:
+  <ul>
+  <li> pAcommsHandler is a MOOS acoustic communications process that is based on the goby-acomms libraries. See http://oceanai.mit.edu/moosivp/support/moos-ivp-local.html for access to this code. For documentation and more information on pAcommsHandler, please contact Toby (https://launchpad.net/~tes). To learn about the MOOS and MOOS-IvP projects, visit http://www.robots.ox.ac.uk/~mobile/MOOS/wiki/pmwiki.php and http://www.moos-ivp.com/ .
+  </ul>
+   
+*/

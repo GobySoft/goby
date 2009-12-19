@@ -90,9 +90,13 @@ void dccl::MessageContentHandler::startElement(
             else if(in_publish && ((val = attrs.getValue(stype.c_str())) != 0))
             {
                 if(toNative(val) == "double")
-                    messages.back().set_last_publish_is_double(true);
+                    messages.back().set_last_publish_type(cpp_double);
                 else if(toNative(val) == "string")
-                    messages.back().set_last_publish_is_string(true);
+                    messages.back().set_last_publish_type(cpp_string);
+                else if(toNative(val) == "long")
+                    messages.back().set_last_publish_type(cpp_long);
+                else if(toNative(val) == "bool")
+                    messages.back().set_last_publish_type(cpp_bool);
             }
             break;
 

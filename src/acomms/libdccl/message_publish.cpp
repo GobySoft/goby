@@ -177,11 +177,7 @@ std::string dccl::Publish::get_display() const
 {
     std::stringstream ss;
     
-    ss << "\t(";
-    if(is_string_)
-        ss << "string";
-    else
-        ss << "double";
+    ss << "\t(" << type_;
     ss << ")moos_var: {" << var_ << "}" << std::endl;
     ss << "\tvalue: \"" << format_ << "\"" << std::endl;
     ss << "\tmessage_vars:" << std::endl;

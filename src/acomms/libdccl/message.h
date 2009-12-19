@@ -104,8 +104,7 @@ namespace dccl
         void set_last_publish_var(const std::string& var){publishes_.back().set_var(var);}
         void set_last_publish_use_all_names(){publishes_.back().set_use_all_names(true);}
         void set_last_publish_format(const std::string& format){publishes_.back().set_format(format); publishes_.back().set_format_set(true); }
-        void set_last_publish_is_string(bool is_string){publishes_.back().set_is_string(is_string);}
-        void set_last_publish_is_double(bool is_double){publishes_.back().set_is_double(is_double);}
+        void set_last_publish_type(DCCLCppType type){publishes_.back().set_type(type);}
         void add_last_publish_name(const std::string& name){publishes_.back().add_name(name);}
         void add_last_publish_algorithms(const std::vector<std::string>& algorithms) {publishes_.back().add_algorithms(algorithms);}
 
@@ -247,7 +246,7 @@ namespace dccl
             {   
                 // using <moos_var/> tag, do casts from double, pull strings from key=value,key=value, etc.
                 for (std::vector<MessageVar>::iterator it = layout_.begin(); it != layout_.end(); ++it) 
-                    it->read_dynamic_vars(vals, *in_str, *in_dbl);
+                    it->read_dynamic_vars(vals, in_str, in_dbl, in_long, in_bool);
             }    
         }
         else
@@ -317,7 +316,7 @@ namespace dccl
             {                
                 // 1. now go through all the publishes_ and fill in the format strings
                 for (std::vector<Publish>::iterator it = publishes_.begin(), n = publishes_.end(); it != n; ++it)
-                    it->write_publish(vals, layout_, *out_str, *out_dbl);
+                    it->write_publish(vals, layout_, out_str, out_dbl, out_long, out_bool);
             }    
         }
         else
@@ -330,10 +329,16 @@ namespace dccl
                 double d;
                 long l;
                 bool b;
-                if(out_str && vp.second.val(s))  out_str->insert(std::pair<std::string, std::string>(vp.first,s));
-                if(out_dbl && vp.second.val(d))  out_dbl->insert(std::pair<std::string, double>(vp.first,d));
-                if(out_long && vp.second.val(l)) out_long->insert(std::pair<std::string, long>(vp.first,l));
-                if(out_bool && vp.second.val(b)) out_bool->insert(std::pair<std::string, bool>(vp.first,b));
+                const MessageVal& mv = vp.second;
+                if(out_bool && (mv.type() == cpp_bool) && mv.val(b))
+                    out_bool->insert(std::pair<std::string, bool>(vp.first,b));
+                else if(out_long && (mv.type() == cpp_long || mv.type() == cpp_bool) && mv.val(l))
+                    out_long->insert(std::pair<std::string, long>(vp.first,l));
+                else if(out_dbl && (mv.type() == cpp_double || mv.type() == cpp_long || mv.type() == cpp_bool) && mv.val(d))
+                    out_dbl->insert(std::pair<std::string, double>(vp.first,d));
+                else if(out_str && mv.val(s))
+                    out_str->insert(std::pair<std::string, std::string>(vp.first,s));
+                // otherwise we're out of luck
             }
         }
     }

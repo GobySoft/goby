@@ -48,20 +48,50 @@ std::string dccl::MessageVar::type_as_string() const
     }
 }
 
-void dccl::MessageVar::read_dynamic_vars(std::map<std::string,MessageVal>& vals, const std::map<std::string, std::string>& in_str, const std::map<std::string, double>& in_dbl)
+void dccl::MessageVar::read_dynamic_vars(std::map<std::string,MessageVal>& vals, const std::map<std::string, std::string>* in_str, const std::map<std::string, double>* in_dbl, const std::map<std::string, long>* in_long, const std::map<std::string, bool>* in_bool)
 {
     MessageVal v;
 
-    // regular  
-    const std::map<std::string, std::string>::const_iterator sit = in_str.find(source_var_);
-    const std::map<std::string, double>::const_iterator dit = in_dbl.find(source_var_);
-    
-    if(sit != in_str.end())
-        v.set(parse_string_val(sit->second));
-    else if(dit != in_dbl.end())
-        v.set(dit->second);
-        
-    vals[name_] = v;
+    if(in_str)
+    {        
+        const std::map<std::string, std::string>::const_iterator sit = in_str->find(source_var_);
+        if(sit != in_str->end())
+        {
+            v.set(parse_string_val(sit->second));
+            vals[name_] = v;
+            return;
+        }
+    }
+    if(in_dbl)
+    {
+        const std::map<std::string, double>::const_iterator dit = in_dbl->find(source_var_);
+        if(dit != in_dbl->end())
+        {
+            v.set(dit->second);
+            vals[name_] = v;
+            return;
+        }
+    }
+    if(in_long)
+    {
+        const std::map<std::string, long>::const_iterator lit = in_long->find(source_var_);
+        if(lit != in_long->end())
+        {
+            v.set(lit->second);
+            vals[name_] = v;
+            return;
+        }
+    }
+    if(in_bool)
+    {
+        const std::map<std::string, bool>::const_iterator bit = in_bool->find(source_var_);
+        if(bit != in_bool->end())
+        {
+            v.set(bit->second);
+            vals[name_] = v;
+            return;
+        }
+    }
 }
 
 

@@ -10,23 +10,80 @@
  
  \image html goby_m.gif
 
- The Goby Underwater Autonomy Project aims to create a unified framework for multiple scientific autonomous marine vehicle collaboration, seamlessly incorporating acoustic, ethernet, wifi, and serial communications. Presently the main thrust of the project is developing a set of robust acoustic networking libraries.
+ The Goby Underwater Autonomy Project aims to create a unified framework for multiple scientific autonomous marine vehicle collaboration, seamlessly incorporating acoustic, ethernet, wifi, and serial communications. Presently the main thrust of the project is developing a set of robust acoustic networking libraries. Goby is currently written entirely in C++, and licensed under the GNU General Public License v3 <http://www.gnu.org/licenses/gpl.html>.
 
-  Resources:
+  \section main_resources Resources
   <ul>
-  <li>  https://launchpad.net/goby for access to code, bug tracking, and more.
+  <li> Code, bug tracking, and answers: <https://launchpad.net/goby>.</li>
+  <li> Manual (this document): <http://aubergine.whoi.edu/goby/build/html/>.
+  <li> Wiki: <forthcoming>.
   </ul>
-  
 
-  Developer manual:
+  \section main_manual Developer manual
   <ul>
-  <li> \ref acomms - tackle the extremely rate limited acoustic networking problem. These libraries were designed together but can operate independently for a developer looking integrate a specific component (e.g. just encoding/decoding) without committing to the entire goby-acomms stack.
-  <li> \ref util - provide utility functions for tasks such as logging, scientific calculations, string parsing, and serial device i/o. Goby also relies on the boost libraries (http://www.boost.org/) for many utility tasks to fill in areas where the C++ Standard Library is insufficient or unelegant.
+  <li> \ref acomms - tackle the extremely rate limited acoustic networking problem. These libraries were designed together but can operate independently for a developer looking integrate a specific component (e.g. just encoding/decoding) without committing to the entire goby-acomms stack.</li>
+  <li> \ref util - provide utility functions for tasks such as logging, scientific calculations, string parsing, and serial device i/o. Goby also relies on the boost libraries <http://www.boost.org/> for many utility tasks to fill in areas where the C++ Standard Library is insufficient or unelegant.</li>
   </ul>  
 
-  Goby components in other projects:
+  \section install Installing Goby
+<ol>
+<li> Install bazaar (bzr) version control system:
   <ul>
-  <li> pAcommsHandler is a MOOS acoustic communications process that is based on the goby-acomms libraries. See http://oceanai.mit.edu/moosivp/support/moos-ivp-local.html for access to this code. For documentation and more information on pAcommsHandler, please contact Toby (https://launchpad.net/~tes). To learn about the MOOS and MOOS-IvP projects, visit http://www.robots.ox.ac.uk/~mobile/MOOS/wiki/pmwiki.php and http://www.moos-ivp.com/ .
+    <li> Ubuntu/Debian: \verbatim sudo apt-get install bzr \endverbatim
+    <li> Everyone else: <http://wiki.bazaar.canonical.com/Download>
   </ul>
-   
+<li> Check out a branch of the goby project:
+  <ul>
+    <li> Read-only (users of goby): \verbatim bzr branch lp:goby \endverbatim
+    <li> Read / write (developers of goby):
+      <ol>
+        <li> Register or login to launchpad: <https://launchpad.net/goby/+login>
+        <li> Contact <https://launchpad.net/~tes> for access to the goby project
+        <li> Let bzr know your launchpad id: \verbatim bzr launchpad-login tes \endverbatim
+        <li> Checkout a copy of goby: \verbatim bzr checkout lp:goby \endverbatim
+      </ol>
+  </ul>
+<li> Satisfy third-party library dependences (boost, etc.):
+  <ul>
+    <li> Ubuntu/Debian: \verbatim cd goby; ./DEPENDENCIES \endverbatim
+    <li> Everyone else: \verbatim cd goby; less DEPENDENCIES \endverbatim
+  </ul>    
+<li> Compile to goby/bin, goby/lib, and goby/include: \verbatim cd goby; ./INSTALL \endverbatim
+To install to /usr/local (optional): \verbatim sudo ./INSTALL \endverbatim
+<li> Fine tuning of build system:
+  <ol>
+    <li> \verbatim sudo apt-get install cmake-gui \endverbatim
+    <li> \verbatim cmake-gui goby/build \endverbatim
+  </ol>
+</ol>
+
+
+
+  \section main_goby_elsewhere  Goby components in other projects
+  <ul>
+  <li> pAcommsHandler is a MOOS acoustic communications process that is based on the goby-acomms libraries. See <http://oceanai.mit.edu/moosivp/support/moos-ivp-local.html> for access to this code. For documentation and more information on pAcommsHandler, please contact Toby <https://launchpad.net/~tes>. To learn about the MOOS and MOOS-IvP projects, visit <http://www.robots.ox.ac.uk/~mobile/MOOS/wiki/pmwiki.php> and <http://www.moos-ivp.com/> </li>
+  </ul>
+
+\section authors Authors
+
+Goby is developed by T. Schneider (https://launchpad.net/~tes) with input and suggestions from many people, including but not limited to:
+- H. Schmidt
+- C. Murphy (https://launchpad.net/~chrismurf)
+- K. Cockrell
+- S. Petillo
+
+\section main_3rd_party_ack Third party projects used in Goby
+
+Goby appreciates the availability of the following open source projects (listed with best available documentation):
+
+<ul>
+<li>version control: bzr <http://wiki.bazaar.canonical.com/Documentation>
+<li>build system: cmake <http://www.cmake.org/cmake/help/cmake2.6docs.html>
+<li>general purpose libraries: boost <http://www.boost.org/doc/libs/1_34_0>
+<li>terminal GUI library: ncurses <http://www.c-for-dummies.com/ncurses/>
+<li>XML parsing library: Xerces-C <http://xerces.apache.org/xerces-c/program-3.html>
+<li>Asynchronous networking and serial communications library: asio <http://think-async.com/Asio/asio-1.4.1/doc/>
+</ul>
+
+ 
 */

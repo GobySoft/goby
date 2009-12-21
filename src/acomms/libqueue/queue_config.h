@@ -42,6 +42,7 @@ namespace queue
     {
         switch(qt)
         {
+            default:
             case queue_notype: return out << "notype";
             case queue_dccl:   return out << "dccl";
             case queue_ccl:    return out << "ccl";

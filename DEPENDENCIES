@@ -9,10 +9,12 @@
 # > apt-get install {packagename}
 
 # most other distributions will have the appropriate
-# package as well; it's up to you to find out what it is
+# package as well; it's up to you to find out what it is.
+# if you don't know what a package is, see http://packages.ubuntu.com/
 
 # global:
 sudo apt-get install \
+    build-essential \
     cmake \
     libboost-dev \
     libncurses-dev

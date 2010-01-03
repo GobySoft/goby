@@ -37,6 +37,11 @@
         <precision>2</precision>
       </float>      
 
+      <hex>
+        <name>H</name>
+        <num_bytes>4</num_bytes>
+      </hex>
+
     </layout>
   </message>
 </message_set>

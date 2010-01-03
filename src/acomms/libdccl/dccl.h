@@ -89,7 +89,7 @@ namespace dccl
         /// \brief Add an algorithm callback for a C++ std::string type that only requires the current value.
         ///
         /// C++ std::string primarily corresponds to DCCL types
-        /// <string/> and <enum/>, but can be used with any of the types
+        /// <hex/>, <string/> and <enum/>, but can be used with any of the types
         /// through automatic (internal) casting.
         /// \param name name of the algorithm (<... algorithm="name"/>)
         /// \param func has the form void name(std::string& val_to_edit) (see dccl::StrAlgFunction1). can be a function pointer (&name) or
@@ -451,26 +451,26 @@ namespace dccl
         }
         
         void encode_private(std::vector<Message>::iterator it,
-                    std::string& out_hex,
-                    const std::map<std::string, std::string>* in_str,
-                    const std::map<std::string, double>* in_dbl,
-                    const std::map<std::string, long>* in_long,
-                    const std::map<std::string, bool>* in_bool,
-                    bool from_moos = false)
+                            std::string& out_hex,
+                            const std::map<std::string, std::string>* in_str,
+                            const std::map<std::string, double>* in_dbl,
+                            const std::map<std::string, long>* in_long,
+                            const std::map<std::string, bool>* in_bool,
+                            bool from_moos = false)
         {
             modem::Message out_message;
             encode_private(it, out_message, in_str, in_dbl, in_long, in_bool, from_moos);
-            out_hex = out_message.serialize(true);
+            out_hex = out_message.data();
         }
         
         template <typename Map1, typename Map2, typename Map3, typename Map4>
             void decode_private(std::vector<Message>::iterator it,
-                        const modem::Message& in_message,
-                        Map1* out_str,
-                        Map2* out_dbl,
-                        Map3* out_long,
-                        Map4* out_bool,
-                        bool do_publishes = false)
+                                const modem::Message& in_message,
+                                Map1* out_str,
+                                Map2* out_dbl,
+                                Map3* out_long,
+                                Map4* out_bool,
+                                bool do_publishes = false)
         {
             if(it != messages_.end())
                 it->decode(in_message, out_str, out_dbl, out_long, out_bool, do_publishes);

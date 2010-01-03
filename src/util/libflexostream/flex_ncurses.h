@@ -48,6 +48,8 @@ class FlexNCurses
     
     // run in its own thread to take input
     void run_input();
+
+    void cleanup();
   private:
     class Panel;
     void putline(const std::string &s, unsigned scrn, bool refresh = true);
@@ -57,7 +59,7 @@ class FlexNCurses
                   const std::multimap<time_t, std::string>::const_iterator& omega,
                   bool refresh = true);
     
-    void cleanup();
+ 
     void update_size();
     long color2attr_t(termcolor::enums::Color c);
     size_t find_containing_window(int y, int x);
@@ -234,6 +236,8 @@ class FlexNCurses
 
     boost::mutex& mutex_;    
 
+    bool alive_;
+    
     // ideal number of characters per line
     enum { CHARS_PER_LINE = 60 };
 

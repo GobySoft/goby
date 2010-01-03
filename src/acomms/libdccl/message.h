@@ -188,16 +188,6 @@ namespace dccl
         unsigned requested_bits_no_head() const { return bytes2bits(size_ - acomms_util::NUM_HEADER_BYTES); } 
         unsigned requested_bits() const { return bytes2bits(size_); }        
     
-        // 2^^3 = 8
-        enum { POWER2_BITS_IN_BYTE = 3 };
-        unsigned bits2bytes(unsigned bits) const { return bits >> POWER2_BITS_IN_BYTE; }
-        unsigned bytes2bits(unsigned bytes) const { return bytes << POWER2_BITS_IN_BYTE; }
-
-        // 2^^1 = 2
-        enum { POWER2_NIBS_IN_BYTE = 1 };
-        unsigned bytes2nibs(unsigned bytes) const  { return bytes << POWER2_NIBS_IN_BYTE; }
-        unsigned nibs2bytes(unsigned nibs) const { return nibs >> POWER2_NIBS_IN_BYTE; }
-
         
       private:
         // total size of message, e.g. 32 bytes
@@ -299,10 +289,10 @@ namespace dccl
                                     Map4* out_bool,
                                     bool write_publishes /* = false */)
     {
-        boost::dynamic_bitset<> bits(used_bytes_no_head());
+        boost::dynamic_bitset<> bits(bytes2bits(used_bytes_no_head()));
         // 3. convert hexadecimal string to bitset
         disassemble_hex(in, bits);
-
+        
         std::map<std::string,MessageVal> vals;
         // 2. pull the bits off the message in the reverse that they were put on
         for (std::vector<MessageVar>::reverse_iterator it = layout_.rbegin(), n = layout_.rend(); it != n; ++it) 

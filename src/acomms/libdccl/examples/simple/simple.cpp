@@ -34,18 +34,20 @@ int main()
     
     std::cout << "loading xml file: xml/simple.xml" << std::endl;
 
-    // instantiate the parser with a single xml file (simple.xml). also pass the schema,
-    // relative to simple.xml, for XML validity checking (syntax).
-    dccl::DCCLCodec dccl(DCCL_EXAMPLES_DIR "/simple/simple.xml", "../../message_schema.xsd");
+    // instantiate the parser with a single xml file (simple.xml).
+    // also pass the schema, relative to simple.xml, for XML validity
+    // checking (syntax).
+    dccl::DCCLCodec dccl(DCCL_EXAMPLES_DIR "/simple/simple.xml",
+                         "../../message_schema.xsd");
         
-    // read message content (in this case from terminal window)
+    // read message content (in this case from the command line)
     std::string input;
     std::cout << "input a string to send: " << std::endl;
     getline(std::cin, input);
     
     // key is <name/> child for a given message_var
     // (i.e. child of <int/>, <string/>, etc)
-    strings["value"] = input;
+    strings["s_key"] = input;
 
     std::cout << "passing values to encoder:\n" << strings;
 
@@ -53,18 +55,16 @@ int main()
     // we pass null pointers (0) for the remaining maps (double, long, bool)
     // since we don't have any message vars that require these C types
     // don't forget to pass the pointer(s) for the map! (&)
-    dccl.encode(1, hex, &strings, 0, 0, 0);
+    unsigned id = 1;
+    dccl.encode(id, hex, &strings, 0, 0, 0);
     
     std::cout << "received hexadecimal string: " << hex << std::endl;
     
     strings.clear();
     
-    // input contents right back to encoder
+    // input contents right back to decoder
     std::cout << "passed hexadecimal string to decoder: " << hex << std::endl;
 
-
-    std::map<std::string, double> doubles;
-    
     dccl.decode(1, hex, &strings, 0, 0, 0);
     
     std::cout << "received values:" << std::endl 

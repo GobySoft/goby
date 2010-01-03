@@ -202,6 +202,38 @@
                       </xs:complexType>
                     </xs:element>
 
+
+                    <xs:element name="hex">
+                      <xs:complexType>
+                        <xs:all>
+                          <xs:element name="name" type="xs:string"/>
+                          
+                          <xs:element name="src_var" minOccurs="0">
+                            <xs:complexType>
+                              <xs:simpleContent>
+                                <xs:extension base="xs:string">
+                                  <xs:attribute name="key" type="xs:string"/>
+                                </xs:extension>
+                              </xs:simpleContent>
+                            </xs:complexType>
+                          </xs:element>
+                          <!-- alias for src_var -->
+                          <xs:element name="moos_var"  minOccurs="0">
+                            <xs:complexType>
+                              <xs:simpleContent>
+                                <xs:extension base="xs:string">
+                                  <xs:attribute name="key" type="xs:string"/>
+                                </xs:extension>
+                              </xs:simpleContent>
+                            </xs:complexType>
+                          </xs:element>
+
+                          <xs:element name="num_bytes" type="xs:integer"/>
+                        </xs:all>
+                        <xs:attribute name="algorithm" type="xs:string"/>
+                      </xs:complexType>
+                    </xs:element>
+
                     <xs:element name="enum">
                       <xs:complexType>
                         <xs:choice minOccurs="0" maxOccurs="unbounded">

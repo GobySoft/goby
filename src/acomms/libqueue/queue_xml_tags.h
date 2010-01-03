@@ -34,6 +34,7 @@ namespace queue
                 tag_enum,
                 tag_float,
                 tag_int,
+                tag_hex,
                 tag_static,
                 tag_string,
                 tag_ack,
@@ -55,6 +56,7 @@ namespace queue
             ("enum",tag_enum)
             ("float",tag_float)
             ("int",tag_int)
+            ("hex",tag_hex)
             ("static",tag_static)
             ("string",tag_string)
             ("ack",tag_ack)

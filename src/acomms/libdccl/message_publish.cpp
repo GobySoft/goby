@@ -128,16 +128,13 @@ void dccl::Publish::fill_format(std::map<std::string,MessageVal>& vals,
             std::string s;
             switch(type)
             {
-                default:
-                    break;
-
                 case dccl_int:
                 case dccl_float:
                     if(!v.val(s))
                         s = "nan";
                     break;
 
-
+                case dccl_hex:
                 case dccl_static:
                 case dccl_enum:
                 case dccl_string:

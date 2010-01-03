@@ -18,6 +18,7 @@
 
 #include <iostream>
 #include <ctime>
+#include <limits>
 
 #include <boost/assign.hpp>
 #include <boost/foreach.hpp>
@@ -53,14 +54,6 @@ void FlexOStreamBuf::verbosity(const std::string & s)
         curses_.startup();
         curses_.add_win(&groups_[""]);
         
-        // std::vector<const Group*> groups;
-        // groups.resize(groups_.size());
-        
-        // typedef std::pair<std::string, int> P;
-        // BOOST_FOREACH(const P& p, group_order_)
-        //     groups[p.second] = &(groups_[p.first]);
-        
-//        curses_.recalculate_win(groups_.size(), groups);
         curses_.recalculate_win();
 	
         boost::thread input_thread(boost::bind(&FlexNCurses::run_input, boost::ref(curses_)));
@@ -88,9 +81,6 @@ int FlexOStreamBuf::sync()
     
     while (!getline(is, s).eof())
         display(s);
-
-    if(die_flag_)
-        exit(EXIT_FAILURE);
     
     group_name_.erase();
     
@@ -122,9 +112,28 @@ void FlexOStreamBuf::display(const std::string & s)
             break;
             
         case scope:
-            boost::mutex::scoped_lock lock(curses_mutex_);
-            std::string line = std::string("\n" +  color_.esc_code_from_str(groups_[group_name_].color()) + "| \33[0m" + s);
-            curses_.insert(time(NULL), line, &groups_[group_name_]);
+            if(!die_flag_)
+            {
+                boost::mutex::scoped_lock lock(curses_mutex_);
+                std::string line = std::string("\n" +  color_.esc_code_from_str(groups_[group_name_].color()) + "| \33[0m" + s);
+                curses_.insert(time(NULL), line, &groups_[group_name_]);
+            }
+            else
+            {
+                curses_.cleanup();
+                std::cout << color_.esc_code_from_str(groups_[group_name_].color()) << name_ << nocolor << ": " << s << nocolor << std::endl;
+            }
+            
             break;
+    }
+
+
+    if(die_flag_ && verbosity_ != quiet)
+    {   
+        std::cout << "Press enter to quit." << std::endl;
+        std::cin.clear();
+        std::cin.get();
+        exit(EXIT_FAILURE);
+        
     }
 }

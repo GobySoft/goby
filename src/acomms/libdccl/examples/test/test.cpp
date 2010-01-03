@@ -80,12 +80,13 @@ int main()
     b_in.resize(2);
     
     // first try everything in as a string
-    bool b_i = true;             dccl::MessageVal B(b_i);
-    std::string e_i = "dog";     dccl::MessageVal E(e_i);
-    std::string s_i = "raccoon"; dccl::MessageVal S(s_i);
-    long i_i = 42;               dccl::MessageVal I(i_i);
-    double f_i = -12.5;          dccl::MessageVal F(f_i, 1);
-    double sum_i = 0;            dccl::MessageVal SUM(sum_i, 0);
+    bool b_i = true;              dccl::MessageVal B(b_i);
+    std::string e_i = "dog";      dccl::MessageVal E(e_i);
+    std::string s_i = "raccoon";  dccl::MessageVal S(s_i);
+    long i_i = 42;                dccl::MessageVal I(i_i);
+    double f_i = -12.5;           dccl::MessageVal F(f_i, 1);
+    std::string h_i = "abcd1234"; dccl::MessageVal H(h_i);
+    double sum_i = 0;             dccl::MessageVal SUM(sum_i, 0);
 
     // strings for everything
     B.val(s_in[0]["B"]);
@@ -93,6 +94,7 @@ int main()
     S.val(s_in[0]["S"]);
     I.val(s_in[0]["I"]);
     F.val(s_in[0]["F"]);
+    H.val(s_in[0]["H"]);
     SUM.val(s_in[0]["SUM"]);
 
     // more sane, cast free approach
@@ -101,6 +103,7 @@ int main()
     S.val(s_in[1]["S"]);
     I.val(l_in[1]["I"]);
     F.val(d_in[1]["F"]);
+    H.val(s_in[1]["H"]);
     SUM.val(d_in[1]["SUM"]);    
 
     for(size_t j= 0, n = s_in.size(); j< n; ++j)
@@ -141,7 +144,8 @@ int main()
             long i; I.val(i);
             double f; F.val(f);
             double sum; SUM.val(sum);
-
+            std::string h; H.val(h);
+            
             ++i;
             invert(b);
             prepend_fat(s);
@@ -153,7 +157,8 @@ int main()
             dccl::MessageVal So(s);
             dccl::MessageVal Fo(f, 2);
             dccl::MessageVal SUMo(sum, 2);
-            dccl::MessageVal Io(i);            
+            dccl::MessageVal Io(i);
+            dccl::MessageVal Ho(h);            
 
             switch(k)
             {
@@ -164,6 +169,7 @@ int main()
                     assert(Fo == d_out["F"]);
                     assert(SUMo == d_out["SUM"]);
                     assert(Io == l_out["I"]);
+                    assert(Ho == s_out["H"]);
                     break;
                     
                 case 2:
@@ -173,6 +179,7 @@ int main()
                     assert(Fo == d_out["F"]);
                     assert(SUMo == d_out["SUM"]);
                     assert(Io == l_out["I"]);
+                    assert(Ho == s_out["H"]);
                     break;
 
                 case 1:
@@ -182,6 +189,7 @@ int main()
                     assert(Fo == d_out["F"]);
                     assert(SUMo == d_out["SUM"]);
                     assert(Io == d_out["I"]);
+                    assert(Ho == s_out["H"]);
                     break;
 
                 case 0:
@@ -191,6 +199,7 @@ int main()
                     assert(Fo == s_out["F"]);
                     assert(SUMo == s_out["SUM"]);
                     assert(Io == s_out["I"]);
+                    assert(Ho == s_out["H"]);
                     break;
             }
         }

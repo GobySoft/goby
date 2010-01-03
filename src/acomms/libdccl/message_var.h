@@ -50,7 +50,7 @@ namespace dccl
         void set_source_key(std::string source_key) {source_key_ = source_key;}
         void set_max(double max) {max_ = max;}
         void set_min(double min) {min_ = min;}
-        void set_max_length(int max_length) {max_length_ = max_length;}
+        void set_max_length(unsigned max_length) {max_length_ = max_length;}
         void set_precision(int precision) {precision_ = precision;}
         void set_source_set(bool source_set) {source_set_ = source_set;}
         void set_static_val(std::string static_val) {static_val_ = static_val;}
@@ -67,7 +67,7 @@ namespace dccl
 //    std::string const source_key() {return source_key_;}
         double max() const {return max_;}
         double min() const {return min_;}
-        int max_length() const {return max_length_;}
+        unsigned max_length() const {return max_length_;}
         int precision() const {return precision_;}
 //    bool const source_set() {return source_set_;}
         std::string static_val() const {return static_val_;}
@@ -87,7 +87,7 @@ namespace dccl
       private:
         double max_;
         double min_;
-        int max_length_;
+        unsigned max_length_;
         int precision_;
         bool source_set_;
         AlgorithmPerformer * ap_;

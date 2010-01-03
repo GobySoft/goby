@@ -35,7 +35,8 @@ namespace dccl
                     dccl_int, /*!< \verbatim <int/> \endverbatim */
                     dccl_float, /*!< \verbatim <float/> \endverbatim */
                     dccl_enum, /*!< \verbatim <enum/> \endverbatim */
-                    dccl_string /*!< \verbatim <string/> \endverbatim */
+                    dccl_string, /*!< \verbatim <string/> \endverbatim */
+                    dccl_hex  /*!< \verbatim <hex/> \endverbatim */
     };
 /// Enumeration of C++ types used in DCCL.
     enum DCCLCppType { cpp_notype,/*!< not one of the C++ types used in DCCL */
@@ -44,6 +45,17 @@ namespace dccl
                        cpp_long,/*!< C++ long */
                        cpp_double/*!< C++ double */
     };
+
+
+    // 2^^3 = 8
+    enum { POWER2_BITS_IN_BYTE = 3 };
+    inline unsigned bits2bytes(unsigned bits) { return bits >> POWER2_BITS_IN_BYTE; }
+    inline unsigned bytes2bits(unsigned bytes) { return bytes << POWER2_BITS_IN_BYTE; }
+    
+    // 2^^1 = 2
+    enum { POWER2_NIBS_IN_BYTE = 1 };
+    inline unsigned bytes2nibs(unsigned bytes) { return bytes << POWER2_NIBS_IN_BYTE; }
+    inline unsigned nibs2bytes(unsigned nibs) { return nibs >> POWER2_NIBS_IN_BYTE; }
 
 }
 

@@ -49,6 +49,8 @@ void dccl::Message::add_message_var(const std::string& type)
         dtype = dccl_enum;
     else if(type == "bool")
         dtype = dccl_bool;
+    else if(type == "hex")
+        dtype = dccl_hex;
 
     m.set_type(dtype);
 
@@ -259,6 +261,12 @@ std::string dccl::Message::input_summary()
             view_type += boost::lexical_cast<std::string>(mv.max_length());
             view_type += "]}";
         }
+        else if(type == dccl_hex)
+        {
+            view_type = "{hex[";
+            view_type += boost::lexical_cast<std::string>(mv.max_length());
+            view_type += "]}";
+        }
         else if(type == dccl_int)
         {
             view_type += "{int";
@@ -290,10 +298,9 @@ std::string dccl::Message::input_summary()
 void dccl::Message::assemble_hex(modem::Message& out_message, const boost::dynamic_bitset<>& bits)
 {
     std::bitset<acomms_util::BITS_IN_BYTE> id(id_);
-    std::stringstream binary;
-    binary << acomms_util::DCCL_CCL_HEADER.to_string() << id.to_string() << bits;
-	
-    std::string out = tes_util::binary_string2hex_string(binary.str());
+    std::string out =
+        tes_util::binary_string2hex_string(std::string(acomms_util::DCCL_CCL_HEADER.to_string() + id.to_string())) + // header
+        tes_util::dyn_bitset2hex_string(bits); // rest of message
 
     // strip off ending zeros as we can always get those back
     while(out[out.length()-1] == '0')
@@ -311,15 +318,12 @@ void dccl::Message::disassemble_hex(const modem::Message& in_message, boost::dyn
 
     unsigned int in_bytes = nibs2bytes(in.length());
         
-    if(in_bytes < used_bytes()) // message is too short
+    if(in_bytes < used_bytes()) // message is too short, add zeroes
         in += std::string(bytes2nibs(used_bytes()-in_bytes), '0');
     else if(in_bytes > used_bytes()) // message is too long, truncate
         in = in.substr(0, bytes2nibs(used_bytes()));
 
-    // first make a binary string            
-    std::stringstream bin_str;
-    bin_str << tes_util::hex_string2binary_string(in.substr(bytes2nibs(acomms_util::NUM_HEADER_BYTES)));        
-    bin_str >> bits;
+    bits = tes_util::hex_string2dyn_bitset(in.substr(bytes2nibs(acomms_util::NUM_HEADER_BYTES)));
 }
     
 void dccl::Message::add_destination(modem::Message& out_message,

@@ -6,7 +6,7 @@
     <size>32</size>
     <layout>
       <string>
-        <name>value</name>
+        <name>s_key</name>
         <max_length>30</max_length>
       </string>      
     </layout>

@@ -33,6 +33,7 @@ namespace dccl
                 tag_enum,
                 tag_float,
                 tag_format,
+                tag_hex,
                 tag_id,
                 tag_incoming_hex_moos_var,
                 tag_int,
@@ -71,11 +72,13 @@ namespace dccl
             ("enum",tag_enum)
             ("float",tag_float)
             ("format",tag_format)
+            ("hex", tag_hex)
             ("id",tag_id)
             ("incoming_hex_moos_var",tag_incoming_hex_moos_var)
             ("int",tag_int)
             ("key",tag_key)
             ("layout",tag_layout)
+            ("num_bytes",tag_max_length)
             ("max_length",tag_max_length)
             ("max",tag_max)
             ("message_var",tag_message_var)

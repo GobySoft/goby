@@ -207,34 +207,26 @@ namespace modem
                 return "null message";     
         }
         
-        enum { COMPRESS = true, NO_COMPRESS = false };
-
         /// \name Serialize/Unserialize
         //@{
 
         /// \brief full human readable string serialization
         ///
-        /// \param compress if true, give only hex data if destination is 0 (e.g. returns "ABC22345"). if false, always preface with key (e.g. returns "dest=0,data=ABC22345").
-        /// \return string of key=value comma delimited pairs (e.g. "src=2,dest=3,data=ABCD22345"). the order of the keys in sentence is not specified. if compress is true, "dest=0,data=ABC22345,..." will be returned as "ABC22345"
-        std::string serialize(bool compress = NO_COMPRESS) const 
+        /// \return string of key=value comma delimited pairs (e.g. "src=2,dest=3,data=ABCD22345"). the order of the keys in sentence is not specified. 
+        std::string serialize() const 
         {
             std::stringstream ss;
 
-            if(dest_ == acomms_util::BROADCAST_ID && compress)
-                ss << "," << data_;
-            else
-            {       
-                if(src_set_)   ss << ",src=" << src_;
-                if(dest_set_)  ss << ",dest=" << dest_;
-                if(rate_set_)  ss << ",rate=" << rate_;
-                if(data_set_)  ss << ",data=" << data_;
-                if(size_set_)  ss << ",size=" << size_;
-                if(t_set_)     ss << ",time=" << std::setprecision(15) << t_;
-                if(ack_set_)   ss << ",ack=" << std::boolalpha << ack_;
-                if(frame_set_) ss << ",frame=" << frame_;
-                if(cs_set_)    ss << ",cs=" << std::hex << std::setw(2) << std::setfill('0') << (int)cs_;
-            }
-        
+            if(src_set_)   ss << ",src=" << src_;
+            if(dest_set_)  ss << ",dest=" << dest_;
+            if(rate_set_)  ss << ",rate=" << rate_;
+            if(data_set_)  ss << ",data=" << data_;
+            if(size_set_)  ss << ",size=" << size_;
+            if(t_set_)     ss << ",time=" << std::setprecision(15) << t_;
+            if(ack_set_)   ss << ",ack=" << std::boolalpha << ack_;
+            if(frame_set_) ss << ",frame=" << frame_;
+            if(cs_set_)    ss << ",cs=" << std::hex << std::setw(2) << std::setfill('0') << (int)cs_;
+            
             if(!ss.str().empty())
                 return ss.str().substr(1);
             else

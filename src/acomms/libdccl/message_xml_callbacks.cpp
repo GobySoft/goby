@@ -57,6 +57,7 @@ void dccl::MessageContentHandler::startElement(
             messages.back().add_publish();
             break;
 
+        case tag_hex:
         case tag_int:
         case tag_string:
         case tag_float:
@@ -140,10 +141,11 @@ void dccl::MessageContentHandler::endElement(
             messages.back().set_dest_var(trimmed_data);
             break;
 
+        case tag_hex:
+        case tag_int:
         case tag_bool:
         case tag_enum:
         case tag_float:
-        case tag_int:
         case tag_static:
         case tag_string:
             in_message_var = false;        

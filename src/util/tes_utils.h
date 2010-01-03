@@ -30,6 +30,9 @@
 #include <vector>
 #include <bitset>
 #include <iomanip>
+#include <iostream>
+
+#include <boost/dynamic_bitset.hpp>
 
 namespace tes_util
 {
@@ -119,6 +122,18 @@ namespace tes_util
         return hs;
     }
 
+    inline std::string dyn_bitset2hex_string(const boost::dynamic_bitset<>& bits, unsigned trim_to_bytes_size = 0)
+    {
+        std::stringstream binary;
+        binary << bits;
+        std::string out = tes_util::binary_string2hex_string(binary.str());
+
+        if(trim_to_bytes_size)
+            return out.substr(out.length() - trim_to_bytes_size*2);
+        else
+            return out;
+    }
+    
     // only works on whole byte string
     inline std::string hex_string2binary_string(const std::string & bs)
     {
@@ -135,6 +150,17 @@ namespace tes_util
         return hs;
     }
 
+    inline boost::dynamic_bitset<> hex_string2dyn_bitset(const std::string & hs, unsigned bits_size = 0)
+    {
+        boost::dynamic_bitset<> bits;
+        std::stringstream bin_str;
+        bin_str << hex_string2binary_string(hs);       
+        bin_str >> bits;
+
+        if(bits_size) bits.resize(bits_size);        
+        return bits;
+    }
+    
     template <typename T> bool hex_string2number(const std::string & s, T & t)
     {
         std::stringstream ss;

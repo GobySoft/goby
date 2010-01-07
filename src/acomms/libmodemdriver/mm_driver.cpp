@@ -186,7 +186,7 @@ void micromodem::MMDriver::handle_modem_in(NMEASentence& nmea)
     try { nmea.validate(); }
     catch(std::exception& e)
     {
-        *os_ << group("mm_out") << warn << e.what() << std::endl;
+        if(os_) *os_ << group("mm_in") << warn << e.what() << std::endl;
         return;
     }
     
@@ -270,8 +270,8 @@ void micromodem::MMDriver::cfg(NMEASentence& nmea, modem::Message& m)
 {
     if(out_.front().talker_back() != "CFG" && out_.front().talker_back() != "CFQ")
         return;
-
-    pop_out();
+    
+    if(out_.front().talker_back() == "CFQ") pop_out();
 }
 
 void micromodem::MMDriver::clk(NMEASentence& nmea, modem::Message& m)

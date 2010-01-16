@@ -6,9 +6,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this software (see goby/COPYING).  If not, see <http://www.gnu.org/licenses/>.
 
-/*! \page acomms Acoustic Communications Libraries (goby-acomms)  
+/*! \page acomms goby-acomms: Overview of Acoustic Communications Libraries
 
-Table of Contents for goby-acomms:
+Table of Contents for \ref acomms.
 
 <ul>
 <li> \ref acomms_quick
@@ -21,12 +21,9 @@ Table of Contents for goby-acomms:
 <li> \ref acomms_overview_uml
 </ul>
 <li> \ref dccl
-<ul>
-<li> \ref dccl_designing
-<li> \ref dccl_tags
-<li> \ref dccl_codec
-<li> \ref dccl_how
-</ul>
+<li> \ref queue
+<li> \ref driver
+<li> \ref amac
 </ul>
 
 \section acomms_quick Quick Start
@@ -40,6 +37,7 @@ To get started using the goby-acomms libraries as quickly as possible:
     <li>Encoding and decoding from C++ types to bit-packed messages: \ref dccl</li>
     <li>Queuing of DCCL and CCL messages with priority based message selection: \ref queue</li>
     <li>A driver for interacting with the acoustic %modem firmware. Presently the WHOI Micro-Modem <http://acomms.whoi.edu/> is supported: \ref driver</li>
+    <li>Time division multiple access (TDMA) medium access control (MAC): \ref amac</li>
   </ul> 
   <li> Look at the "simple" code examples that accompany each library (\ref libdccl/examples/simple/simple.cpp "DCCL: simple.cpp", \ref libqueue/examples/simple/simple.cpp "Queue: simple.cpp", \ref libmodemdriver/examples/simple/simple.cpp "MMDriver: simple.cpp"). Then look at the example that uses all three libraries together: \ref acomms/examples/simple/simple.cpp "goby-acomms: simple.cpp".  The full list of examples is given in \ref OSI_table "this table". </li>
   <li> Refer to the rest of the documentation as needed.</li>
@@ -102,6 +100,12 @@ To start on some (hopefully) common ground, let's begin with an analogy to Open 
     <td></td>
   </tr>
   <tr>
+    <td></td>
+    <td>\ref amac</td>
+    <td>amac::MACManager</td>
+    <td></td>
+  </tr>
+  <tr>
     <td>Physical</td>
     <td>Not part of Goby</td>
     <td></td>
@@ -152,6 +156,7 @@ Table of Contents for libdccl:
 <li> \ref dccl_tags
 <li> \ref dccl_codec
 <li> \ref dccl_how
+<li> \ref dccl_tags_details
 </ul>
 
 \section queue libqueue: Priority based message queuing
@@ -162,33 +167,36 @@ On the application side, libqueue provides the ability for the application level
 
 On the driver side, libqueue provides the %modem driver with data upon request. It chooses the data to send based on dynamic priorities (and several other configuration parameters). It will also pack several messages from the user into a single frame from the %modem to fully utilize space (e.g. if the %modem frame is 32 bytes and the user's data are in 16 byte DCCL messages, libqueue will pack two user frames for each %modem frame). This packing and unpacking is transparent to the application side user. Note, however, that libqueue will <em>not</em> split a user's data into frames (like TCP/IP). If this functionality is desired, it must be provided at the application layer. Acoustic communications is too unpredictable to reliably stitch together frames.
 
-\subsection queue_priority Understanding priority queuing 
-
-Each %queue has a base priority (\f$P_{base}\f$) and a priority time constant (\f$\tau\f$) that create the priority (\f$P(t)\f$) at any given time (\f$t\f$):
- \f[
-P(t) = P_{base} \exp{[(t-t_{last})/\tau)]}
- \f]
- where \f$t_{last}\f$ is the time of the last send from this %queue.
-
-This means for every %queue, the user has control over two variables (\f$P_{base}\f$ and \f$\tau\f$). These can be adjusted in practice in a few ways:
+Table of Contents for libqueue:
 <ul>
-<li> Set all time constants to some reasonable value (e.g. \f$\tau = 120 \f$ seconds). Now the ratio of the base values give the approximate frequency of each message type. Assuming the queues are always full, a message with \f$P_{base} = 2\f$ will be sent twice as often as a message with \f$P_{base} = 1\f$. The advantage of this technique is that lower priority messages will never completely be shadowed by higher priority messages.
-<li> Set time constants to infinity. Now the priorities never grow with time, so data from the non-empty %queue with the highest base priority will always be provided to the %modem driver. Note that if a higher priority %queue has data, messages from a lower priority %queue will never be sent.
-<li> Set all base priorities to the same value. Set the time constant to various values to reflect the time sensitive nature of the data. Highly time sensitive data should have a short time constant, while less time sensitive data can have a longer time constant. When the acoustic channel has low throughput, the time sensitive messages will be sent more often. In cases of high throughput, messages will be sent in roughly equal proportions.
-<li> Adjust both the base priority and time constant to balance time sensitivity and overall importance.
+<li> \ref queue_priority
+<li> \ref queue_tags
+<li> \ref queue_manager
+<li> \ref queue_tags_details
 </ul>
-
-\subsection queue_manager Interacting with the QueueManager
-
-
 
 \section driver libmodemdriver: Modem driver
 
-\subsection acomms_driverbase Abstract class: DriverBase
+The goby-acomms Modem driver library (libmodemdriver) provides an interface from the rest of goby-acomms to the acoustic %modem firmware. While currently the only driver available is for the WHOI Micro-Modem, this library is written in such a way that drivers for any acoustic %modem that interfaces over a serial connection and can provide (or provide abstractions for) sending data directly to another %modem on the link should be able to be written. Any one who is interested in writing a %modem driver for another acoustic %modem should get in touch with the goby project <https://launchpad.net/goby> and see \ref acomms_writedriver.
 
-\subsection acomms_mmdriver WHOI Micro-Modem Driver: MMDriver
+Table of Contents for libmodemdriver:
+<ul>
+<li> \ref acomms_driverbase
+<li> \ref acomms_mmdriver
+<li> \ref acomms_writedriver
+</ul>
 
-\subsection acomms_writedriver Writing a new driver
+\section amac libamac: Medium Access Control (MAC)
+
+The goby-acomms MAC library (libamac) handles access to the shared medium, in our case the acoustic channel. We assume that we have a single band for transmission so that if vehicles transmit simultaneously, collisions will occur between messaging. Therefore, we use time division multiple access (TDMA) schemes, or "slotting". we employ Networks with multiple frequency bands will have to employ a different MAC scheme or augment libamac for the frequency division multiple access (FDMA) scenario. The default TDMA scheme used also includes basic peer discovery and subsequent expiry of peers after a long time of silence.
+
+For legacy support and scenarios where fine control is needed, "polling" is also provided. This is a TDMA enforced by a central computer (the "poller"). The "poller" sends a request for data from a list of nodes in sequential order. The advantage of polling is that synchronous clocks are not needed and the MAC scheme can be changed on short notice by the topside operator.
+
+Table of Contents for libamac:
+<ul>
+<li> \ref amac_schemes
+<li> \ref amac_manager
+</ul>
 
 \section  acomms_uml UML models
 
@@ -196,13 +204,5 @@ Model that describes the operation of goby-acomms as a whole:
 
 \image html goby-acomms-detailed-overview.png
 \image latex goby-acomms-detailed-overview.eps "UML Model giving detailed overview of class interfaces and their connections when using all the goby-acomms libraries together. Note that is possible to replace any of the libraries as long as the user handles the nessary callbacks (e.g. to replace libqueue you need functions to handle the data request, acknowledgement, and receive callbacks from libmodemdriver)." width=5in
-
-\section acomms_under_the_hood Under the Hood
-
-\subsection libdccl
-
-\subsection libqueue
-
-\subsection libmodemdriver
 
 */

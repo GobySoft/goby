@@ -1,0 +1,202 @@
+// copyright 2009 t. schneider tes@mit.edu
+// 
+// goby software and documentation is distributed under the GNU General
+// Public License.
+//
+// You should have received a copy of the GNU General Public License
+// along with this software (see goby/COPYING).  If not, see <http://www.gnu.org/licenses/>.
+
+/*! \page acomms_queue goby-acomms: libqueue (Message Priority Queuing)
+
+Table of Contents for libqueue:
+<ul>
+<li> \ref queue_priority
+<li> \ref queue_tags
+<li> \ref queue_manager
+<li> \ref queue_tags_details
+</ul>
+Return to \ref acomms.
+
+\section queue_priority Understanding priority queuing 
+
+Each %queue has a base priority (\f$P_{base}\f$) and a priority time constant (\f$\tau\f$) that create the priority (\f$P(t)\f$) at any given time (\f$t\f$):
+ \f[
+P(t) = P_{base} \exp{[(t-t_{last})/\tau)]}
+ \f]
+ where \f$t_{last}\f$ is the time of the last send from this %queue.
+
+This means for every %queue, the user has control over two variables (\f$P_{base}\f$ and \f$\tau\f$). These can be adjusted in practice in a few ways:
+<ul>
+<li> Set all time constants to some reasonable value (e.g. \f$\tau = 120 \f$ seconds). Now the ratio of the base values give the approximate frequency of each message type. Assuming the queues are always full, a message with \f$P_{base} = 2\f$ will be sent twice as often as a message with \f$P_{base} = 1\f$. The advantage of this technique is that lower priority messages will never completely be shadowed by higher priority messages.
+<li> Set time constants to infinity. Now the priorities never grow with time, so data from the non-empty %queue with the highest base priority will always be provided to the %modem driver. Note that if a higher priority %queue has data, messages from a lower priority %queue will never be sent.
+<li> Set all base priorities to the same value. Set the time constant to various values to reflect the time sensitive nature of the data. Highly time sensitive data should have a short time constant, while less time sensitive data can have a longer time constant. When the acoustic channel has low throughput, the time sensitive messages will be sent more often. In cases of high throughput, messages will be sent in roughly equal proportions.
+<li> Adjust both the base priority and time constant to balance time sensitivity and overall importance.
+</ul>
+
+\section queue_tags Queuing tag structure
+
+This section gives a brief outline of the tag structure of an XML file for defining the queuing for a DCCL message. The tags fit in the same file used for DCCL encoding and decoding; see \ref dccl_tags for more information.
+
+<ul>
+<li> \xmltag{?xml version="1.0" encoding="UTF-8"?}: specifies that the file is XML; must be the first line of every message XML file.
+<li> \ref tag_message_set
+<ul>
+<li> \ref tag_message
+<ul>
+<li> \ref tag_queuing
+<ul>
+<li> \ref tag_ack
+<li> \ref tag_blackout_time
+<li> \ref tag_max_queue
+<li> \ref tag_newest_first
+<li> \ref tag_priority_base
+<li> \ref tag_priority_time_const
+</ul>
+</ul>
+</ul>
+</ul>
+
+\section queue_manager Interacting with the QueueManager
+
+
+\section queue_tags_details Queuing XML Tags Reference
+
+\subsection tag_ack <ack>
+\b Syntax:
+\code
+<?xml version="1.0" encoding="UTF-8"?>
+<message_set>
+  <message>
+    <queuing>
+      ...
+      <ack>true</ack>
+    </queuing>    
+  </message>
+</message_set>
+\endcode
+
+\b Description: boolean flag (1=true, 0=false) whether to request an
+  acoustic acknowledgment on all sent messages from this field. If
+  omitted, default of 0 (false, no ack) is used.
+
+\subsection tag_blackout_time <blackout_time>
+\b Syntax:
+\code
+<?xml version="1.0" encoding="UTF-8"?>
+<message_set>
+  <message>
+    <queuing>
+      ...
+      <blackout_time>0</blackout_time>
+    </queuing>    
+  </message>
+</message_set>
+\endcode
+
+\b Description: time in seconds after sending a message
+  from this queue for which no more messages will be sent. Use this
+  field to stop an always full queue from hogging the channel. If
+  omitted, default of 0 (no blackout) is used.
+
+\subsection tag_max_queue <max_queue>
+\b Syntax:
+\code
+<?xml version="1.0" encoding="UTF-8"?>
+<message_set>
+  <message>
+    <queuing>
+      ...
+      <max_queue>1</max_queue>
+    </queuing>    
+  </message>
+</message_set>
+\endcode
+
+\b Description: number of messages allowed in the queue before
+  discarding messages. If \ref tag_newest_first is set to true, the
+  oldest message in the queue is discarded to make room for the new
+  message. Otherwise, any new messages are disregarded until the space
+  in the queue opens up.
+
+\subsection tag_newest_first <newest_first>
+\b Syntax:
+\code
+<?xml version="1.0" encoding="UTF-8"?>
+<message_set>
+  <message>
+    <queuing>
+      ...
+      <newest_first>true</newest_first>
+    </queuing>    
+  </message>
+</message_set>
+\endcode
+
+\b Description: boolean flag (1=true=FILO, 0=false=FIFO)
+  whether to send newest messages in the queue first (FILO) or not
+  (FIFO).
+
+
+\subsection tag_priority_base <priority_base>
+\b Syntax:
+\code
+<?xml version="1.0" encoding="UTF-8"?>
+<message_set>
+  <message>
+    <queuing>
+      ... 
+      <priority_base>10</priority_base>
+    </queuing>    
+  </message>
+</message_set>
+\endcode
+
+\b Description: base priority value for this message
+  queue. priorities are calculated on a request for data by the modem
+  (to send a message). The queue with the highest priority (and isn't
+  in blackout) is chosen. The actual priority (\f$P\f$) is calculated
+  by \f$P = P_{base} \exp{[(t-t_{last})/\tau)]}\f$ where \f$P_{base}\f$ is
+  the value set here, \f$t\f$ is the current time (in seconds), \f$t_{last}\f$
+  is the time of the last send from this queue, and \f$\tau\f$ is the
+  \ref tag_priority_time_const. Essentially, a message with low
+  \ref tag_priority_time_const will become effective quickly again
+  after a sent message (the exponential grows faster). A higher base
+  priority will also increase the effectiveness of the queue. See \ref queue_priority for further discussion.
+
+\subsection tag_priority_time_const <priority_time_const>
+\b Syntax:
+\code
+<?xml version="1.0" encoding="UTF-8"?>
+<message_set>
+  <message>
+    <queuing>
+      ... 
+      <priority_time_const>120</priority_time_const>
+    </queuing>    
+  </message>
+</message_set>
+\endcode
+
+\b Description: see \ref tag_priority_base for main discussion. 0 is a special value indicating no growth of priorities (i.e. \xmltag{priority_time_const,0} is effectively the same as \xmltag{priority_time_const,\f$\infty\f$}).
+
+\subsection tag_queuing <queuing>
+\b Syntax:
+\code
+<?xml version="1.0" encoding="UTF-8"?>
+<message_set>
+  <message>
+    <queuing>
+      <ack></ack>
+      <blackout_time></blackout_time>
+      <max_queue></max_queue>
+      <newest_first></newest_first>
+      <priority_base></priority_base>
+      <priority_time_const></priority_time_const>
+    </queuing>    
+  </message>
+</message_set>
+\endcode
+
+\b Description: Represents the XML embodiment of the queue::QueueConfig.
+
+*/

@@ -6,7 +6,18 @@
 // You should have received a copy of the GNU General Public License
 // along with this software (see goby/COPYING).  If not, see <http://www.gnu.org/licenses/>.
 
-/*! \page goby-acomms libdccl (Dynamic Compact Control Language)
+/*! \page acomms_dccl goby-acomms: libdccl (Dynamic Compact Control Language)
+
+Table of contents for libdccl:
+<ul>
+<li> \ref dccl_designing
+<li> \ref dccl_tags
+<li> \ref dccl_codec
+<li> \ref dccl_how
+<li> \ref dccl_tags_details
+</ul>
+
+Return to \ref acomms.
 
 \section dccl_designing Designing a message
 
@@ -258,7 +269,7 @@ Using the dccl::DCCLCodec is a fairly straightforward endeavor. First you need t
 dccl::DCCLCodec dccl("/path/to/file.xml", "/path/to/message_schema.xsd");
 \endcode
 
-Then, to encode a message, fill up std::maps of std::strings, doubles, bools, and/or longs where the key of the map is the \ref tag_name of each message variable, and the value is the quantity you wish to encode. All reasonable type conversions will be made by DCCL (doubles to \ref tag_int, for example), but the most predictable (and fastest) results will be gained by using the following mapping between DCCL message variable types and C++ types:
+Then, to encode a message, fill up std::maps of std::strings, doubles, bools, and/or longs where the key of the map (i.e. the \texttt{it->first} if \texttt{it} is the map iterator) is the \ref tag_name of each message variable, and the value (\texttt{it->second}) is the quantity you wish to encode. All reasonable type conversions will be made by DCCL (doubles to \ref tag_int, for example), but the most predictable (and fastest) results will be gained by using the following mapping between DCCL message variable types and C++ types:
 
 \anchor dccl_cpp_types_table
 <table>
@@ -332,7 +343,7 @@ dccl.decode(1, hex, &strings, 0, 0, 0);
 
 For line by line interaction with the dccl::DCCLCodec and for advanced use, investigate the code examples given in the Examples column of this \ref OSI_table "table".
 
-\section dccl_how How it works
+\section dccl_how Details of encoding/decoding scheme
 
 We may want to know the actual layout of the binary/hex message. For the first of the two messages in two_message.xml, we can run \texttt{analyze_dccl_xml} to find the sizes of each message variable. The calculated sizes are used to determine the boundaries (which are by bit, not by byte) when the message is packed. Each field is placed in the order it is declared in the XML file such that the message is as follows (where left to right is the same as reading the hex string from left to right):
 \verbatim
@@ -479,7 +490,7 @@ below the size of each \textit{message_var} and its encoded value in decimal and
 
 and thus the whole message (zero padded from the most significant bits to the closest byte) sent would be \verbatim 00000010 01010001 10010000 01010101 00000000 00010101 01001010 11000000 \endverbatim or \verbatim 0x0251905500154AC0 \endverbatim plus two bytes of header, which in this case is 0x2001, so the full message sent is \verbatim 0x20010251905500154AC0 \endverbatim
 
-\section DCCL XML Tags
+\section dccl_tags_details DCCL XML Tags Reference
 
 \subsection tag_all <all>
 \b Syntax:

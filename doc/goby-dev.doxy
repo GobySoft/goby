@@ -579,7 +579,14 @@ WARN_LOGFILE           =
 # directories like "/usr/src/myproject". Separate the files or directories 
 # with spaces.
 
-INPUT                  = doxy_body ../src
+INPUT                  = doxy_body/main.dox  \
+                         doxy_body/acomms.dox  \
+                         doxy_body/acomms-dccl.dox \
+                         doxy_body/acomms-queue.dox \
+                         doxy_body/acomms-driver.dox \
+                         doxy_body/acomms-mac.dox \
+                         doxy_body/util.dox \
+                          ../src
 
 # This tag can be used to specify the character encoding of the source files 
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding, which is 

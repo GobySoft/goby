@@ -50,7 +50,7 @@
   </ul>    
 <li> Compile to goby/bin, goby/lib, and goby/include: \verbatim cd goby; ./INSTALL \endverbatim
 To install to /usr/local (optional): \verbatim sudo ./INSTALL \endverbatim
-<li> Fine tuning of build system:
+<li> Fine tuning of build system (optional):
   <ol>
     <li> \verbatim sudo apt-get install cmake-gui \endverbatim
     <li> \verbatim cmake-gui goby/build \endverbatim

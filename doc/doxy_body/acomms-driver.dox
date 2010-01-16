@@ -1,0 +1,28 @@
+// copyright 2009 t. schneider tes@mit.edu
+// 
+// goby software and documentation is distributed under the GNU General
+// Public License.
+//
+// You should have received a copy of the GNU General Public License
+// along with this software (see goby/COPYING).  If not, see <http://www.gnu.org/licenses/>.
+
+/*! \page acomms_driver goby-acomms: libmodemdriver (Driver to interact with %modem firmware)
+
+Table of contents for libmodemdriver:
+<ul>
+<li> \ref acomms_driverbase
+<li> \ref acomms_mmdriver
+<li> \ref acomms_writedriver
+</ul>
+
+
+Return to \ref acomms.
+
+\section acomms_driverbase Abstract class: DriverBase
+
+\section acomms_mmdriver WHOI Micro-Modem Driver: MMDriver
+
+\section acomms_writedriver Writing a new driver
+
+
+*/

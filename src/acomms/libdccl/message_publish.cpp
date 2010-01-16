@@ -148,7 +148,6 @@ void dccl::Publish::fill_format(std::map<std::string,MessageVal>& vals,
             f % s;
         }
 
-        // try/catch here?
         filled_value = f.str();
     }
     catch (std::exception& e)
@@ -174,7 +173,7 @@ std::string dccl::Publish::get_display() const
 {
     std::stringstream ss;
     
-    ss << "\t(" << type_;
+    ss << "\t(" << type_to_string(type_);
     ss << ")moos_var: {" << var_ << "}" << std::endl;
     ss << "\tvalue: \"" << format_ << "\"" << std::endl;
     ss << "\tmessage_vars:" << std::endl;

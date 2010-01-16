@@ -41,13 +41,13 @@
     <layout>
       <float>
         <name>nav_x</name>
-        <max>1000</max>
+        <max>10000</max>
         <min>0</min>
         <precision>1</precision>
       </float>
       <float>
         <name>nav_y</name>
-        <max>1000</max>
+        <max>10000</max>
         <min>0</min>
         <precision>1</precision>
       </float>

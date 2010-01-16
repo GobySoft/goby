@@ -32,23 +32,6 @@ dccl::MessageVar::MessageVar() : max_(1e300),
                                  ap_(AlgorithmPerformer::getInstance())
 { }
 
-
-
-std::string dccl::MessageVar::type_as_string() const
-{
-    switch(type_)
-    {
-        case dccl_int:    return "int";
-        case dccl_hex: return "hex";
-        case dccl_bool:   return "bool";
-        case dccl_string: return "string";
-        case dccl_float:  return "float";
-        case dccl_static: return "static";
-        case dccl_enum:   return "enum";
-    }
-    return "notype";
-}
-
 void dccl::MessageVar::read_dynamic_vars(std::map<std::string,MessageVal>& vals, const std::map<std::string, std::string>* in_str, const std::map<std::string, double>* in_dbl, const std::map<std::string, long>* in_long, const std::map<std::string, bool>* in_bool)
 {
     MessageVal v;
@@ -144,7 +127,7 @@ std::string dccl::MessageVar::get_display() const
 {
     std::stringstream ss;    
     
-    ss << "\t" << name_ << " (" << type_as_string() << "):" << std::endl;
+    ss << "\t" << name_ << " (" << type_to_string(type_) << "):" << std::endl;
     
     
     for(std::vector<std::string>::size_type j = 0, m = algorithms_.size(); j < m; ++j)

@@ -57,6 +57,35 @@ namespace dccl
     inline unsigned bytes2nibs(unsigned bytes) { return bytes << POWER2_NIBS_IN_BYTE; }
     inline unsigned nibs2bytes(unsigned nibs) { return nibs >> POWER2_NIBS_IN_BYTE; }
 
+
+    inline std::string type_to_string(DCCLType type)
+    {
+        switch(type)
+        {
+            case dccl_int:    return "int";
+            case dccl_hex:    return "hex";
+            case dccl_bool:   return "bool";
+            case dccl_string: return "string";
+            case dccl_float:  return "float";
+            case dccl_static: return "static";
+            case dccl_enum:   return "enum";
+        }
+        return "notype";
+    }
+
+    inline std::string type_to_string(DCCLCppType type)
+    {
+        switch(type)
+        {
+            case cpp_long:   return "long";
+            case cpp_double: return "double";
+            case cpp_string: return "string";
+            case cpp_bool:   return "bool";
+            case cpp_notype: return "no_type";
+        }
+        return "notype";
+    }
+
 }
 
 #endif

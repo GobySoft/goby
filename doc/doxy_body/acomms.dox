@@ -8,7 +8,28 @@
 
 /*! \page acomms Acoustic Communications Libraries (goby-acomms)  
 
-\section quick Quick Start
+Table of Contents for goby-acomms:
+
+<ul>
+<li> \ref acomms_quick
+<li> \ref acomms_overview
+<ul>
+<li> \ref analogy
+<li> \ref acomms_slow
+<li> \ref packing_efficiency
+<li> \ref why_prioritize
+<li> \ref acomms_overview_uml
+</ul>
+<li> \ref dccl
+<ul>
+<li> \ref dccl_designing
+<li> \ref dccl_tags
+<li> \ref dccl_codec
+<li> \ref dccl_how
+</ul>
+</ul>
+
+\section acomms_quick Quick Start
 
 To get started using the goby-acomms libraries as quickly as possible:
 
@@ -27,7 +48,7 @@ To get started using the goby-acomms libraries as quickly as possible:
 
 Please visit <https://answers.launchpad.net/goby> with any questions.
 
-    \section overview Overview
+    \section acomms_overview Overview
  
     \subsection analogy Analogy to established networking systems
 To start on some (hopefully) common ground, let's begin with an analogy to Open Systems Initiative (OSI) networking layers in this \ref OSI_table "table". For a complete description of the OSI layers see <http://www.itu.int/rec/T-REC-X.200-199407-I/en>.
@@ -84,14 +105,14 @@ To start on some (hopefully) common ground, let's begin with an analogy to Open 
     <td>Physical</td>
     <td>Not part of Goby</td>
     <td></td>
-    <td>Modem Firmware, e.g. WHOI Micro-Modem Firmware (NMEA 0183 on RS-232) (see <a href="http://acomms.whoi.edu/documents/uModem%20Software%20Interface%20Guide.pdf">Interface Guide</a>)</td>
+    <td>Modem Firmware, e.g. WHOI Micro-Modem Firmware (NMEA 0183 on RS-232) (see <a href="http://acomms.whoi.edu/documents/uModem\%20Software\%20Interface\%20Guide.pdf">Interface Guide</a>)</td>
   </tr>
 </table>
 
 \subsection acomms_slow Acoustic Communications are slow
 Do not take the previous analogy too literally; some things we are doing here for acoustic communications (hereafter, acomms) are unconventional from the approach of networking on electromagnetic carriers (hereafter, EM networking). The difference is a vast spread in the expected throughput of a standard internet hardware carrier and acoustic communications. For example, an optical fiber can put through greater than 10 Tbps over greater than 100 km, whereas the WHOI acoustic Micro-Modem can (at best) do 5000 bps over several km. This is a difference of thirteen orders of magnitude for the bit-rate distance product!
 
-\subsection packing_efficiency Efficiency to make small messages is good
+\subsection packing_efficiency Efficiency to make messages small is good
 Extremely low throughput means that essentially every efficiency in bit packing messages to the smallest size possible is desirable. The traditional approach of layering (e.g. TCP/IP) creates inefficiencies as each layer wraps the message of the higher layer with its own header. See RFC3439 section 3 ("Layering Considered Harmful") for an interesting discussion of this issue <http://tools.ietf.org/html/rfc3439#page-7>. Thus, the "layers" of goby-acomms are more tightly interrelated than TCP/IP, for example. Higher layers depend on lower layers to carry out functions such as error checking and do not replicate this functionality. 
 
 \subsection why_prioritize Total throughput unrealistic: prioritize data
@@ -113,7 +134,7 @@ The "law of diminishing returns" means that at some point, if we try to optimize
 
 \subsection acomms_overview_uml Component model
 
-A relatively simple component model for the Goby libraries showing the interface classes:
+A relatively simple component model for the goby-acomms libraries showing the interface classes:
 \image html goby-acomms-overview.png
 \image latex goby-acomms-overview.eps "Basic overview of goby-acomms libraries."
 
@@ -121,15 +142,17 @@ For a more detailed model, see the \ref acomms_uml section.
 
 \section dccl libdccl: Encoding and decoding
 
-Dynamic Compact Control Language (DCCL) provides an structure for defining messages to be sent through an acoustic modem. The messages are configured in XML and are intended to be easily reconfigurable, unlike the original CCL framework used in the REMUS vehicles and others (for information on CCL, see <http://acomms.whoi.edu/ccl/>. DCCL can operate within a CCL network, as the most significant byte (or CCL ID) is 0x20. 
+Dynamic Compact Control Language (DCCL) provides a structure for defining messages to be sent through an acoustic %modem. The messages are configured in XML and are intended to be easily reconfigurable, unlike the original CCL framework used in the REMUS vehicles and others (for information on CCL, see <http://acomms.whoi.edu/ccl/>. DCCL can operate within a CCL network, as the most significant byte (or CCL ID) is 0x20. 
 
 DCCL messages are packed based on boundaries determined with knowledge of the XML file. They are not self-describing as this would be prohibitively expensive in terms of data use. Thus, the sender and receiver must have a copy of the same XML file for decoding a given message. Also, each message is defined by an ID that must be unique with a network. 
 
-\subsection dccl_designing Designing a message
-
-\subsection dccl_codec Interacting with the DCCLCodec
-
-\subsection dccl_how How it works
+Table of Contents for libdccl:
+<ul>
+<li> \ref dccl_designing
+<li> \ref dccl_tags
+<li> \ref dccl_codec
+<li> \ref dccl_how
+</ul>
 
 \section queue libqueue: Priority based message queuing
 
@@ -139,24 +162,24 @@ On the application side, libqueue provides the ability for the application level
 
 On the driver side, libqueue provides the %modem driver with data upon request. It chooses the data to send based on dynamic priorities (and several other configuration parameters). It will also pack several messages from the user into a single frame from the %modem to fully utilize space (e.g. if the %modem frame is 32 bytes and the user's data are in 16 byte DCCL messages, libqueue will pack two user frames for each %modem frame). This packing and unpacking is transparent to the application side user. Note, however, that libqueue will <em>not</em> split a user's data into frames (like TCP/IP). If this functionality is desired, it must be provided at the application layer. Acoustic communications is too unpredictable to reliably stitch together frames.
 
-
 \subsection queue_priority Understanding priority queuing 
 
-Each %queue has a base priority (\f$P\_{base}\f$) and a priority time constant (\f$\tau\f$) that create the priority (\f$P(t)\f$) at any given time (\f$t\f$):
+Each %queue has a base priority (\f$P_{base}\f$) and a priority time constant (\f$\tau\f$) that create the priority (\f$P(t)\f$) at any given time (\f$t\f$):
  \f[
-P(t) = P\_{base} \exp{[(t-t\_{last})/\tau)]}
+P(t) = P_{base} \exp{[(t-t_{last})/\tau)]}
  \f]
- where \f$t\_{last}\f$ is the time of the last send from this %queue.
+ where \f$t_{last}\f$ is the time of the last send from this %queue.
 
-This means for every %queue, the user has control over two variables (\f$P\_{base}\f$ and \f$\tau\f$). These can be adjusted in practice in a few ways:
+This means for every %queue, the user has control over two variables (\f$P_{base}\f$ and \f$\tau\f$). These can be adjusted in practice in a few ways:
 <ul>
-<li> Set all time constants to some reasonable value (e.g. \f$\tau = 120 \f$ seconds). Now the ratio of the base values give the approximate frequency of each message type. Assuming the queues are always full, a message with \f$P\_{base} = 2\f$ will be sent twice as often as a message with \f$P\_{base} = 1\f$. The advantage of this technique is that lower priority messages will never completely be shadowed by higher priority messages.
+<li> Set all time constants to some reasonable value (e.g. \f$\tau = 120 \f$ seconds). Now the ratio of the base values give the approximate frequency of each message type. Assuming the queues are always full, a message with \f$P_{base} = 2\f$ will be sent twice as often as a message with \f$P_{base} = 1\f$. The advantage of this technique is that lower priority messages will never completely be shadowed by higher priority messages.
 <li> Set time constants to infinity. Now the priorities never grow with time, so data from the non-empty %queue with the highest base priority will always be provided to the %modem driver. Note that if a higher priority %queue has data, messages from a lower priority %queue will never be sent.
 <li> Set all base priorities to the same value. Set the time constant to various values to reflect the time sensitive nature of the data. Highly time sensitive data should have a short time constant, while less time sensitive data can have a longer time constant. When the acoustic channel has low throughput, the time sensitive messages will be sent more often. In cases of high throughput, messages will be sent in roughly equal proportions.
 <li> Adjust both the base priority and time constant to balance time sensitivity and overall importance.
 </ul>
 
 \subsection queue_manager Interacting with the QueueManager
+
 
 
 \section driver libmodemdriver: Modem driver
@@ -181,6 +204,5 @@ Model that describes the operation of goby-acomms as a whole:
 \subsection libqueue
 
 \subsection libmodemdriver
-
 
 */

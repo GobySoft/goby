@@ -62,7 +62,6 @@ namespace dccl
         // get
         std::string name() const {return name_;}
         DCCLType type() const {return type_;}
-        std::string type_as_string() const;
         std::string source_var() const {return source_var_;}
 //    std::string const source_key() {return source_key_;}
         double max() const {return max_;}

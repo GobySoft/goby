@@ -49,7 +49,7 @@ namespace dccl
         DCCLCodec();
         /// \brief Instantiate with a single XML file.
         ///
-        /// \param file path to an XML message file (i.e. contains \verbatim <layout/> \endverbatim and (optionally) \verbatim <publish/> \endverbatim sections) to parse for use by the codec.
+        /// \param file path to an XML message file (i.e. contains \ref tag_layout and (optionally) \ref tag_publish sections) to parse for use by the codec.
         /// \param schema path (absolute or relative to the XML file path) for the validating schema (message_schema.xsd) (optional).
         DCCLCodec(const std::string& file, const std::string schema = "");
         
@@ -89,9 +89,9 @@ namespace dccl
         /// \brief Add an algorithm callback for a C++ std::string type that only requires the current value.
         ///
         /// C++ std::string primarily corresponds to DCCL types
-        /// <hex/>, <string/> and <enum/>, but can be used with any of the types
+        /// \ref tag_hex, \ref tag_string and \ref tag_enum, but can be used with any of the types
         /// through automatic (internal) casting.
-        /// \param name name of the algorithm (<... algorithm="name"/>)
+        /// \param name name of the algorithm (\xmltag{... algorithm="name"})
         /// \param func has the form void name(std::string& val_to_edit) (see dccl::StrAlgFunction1). can be a function pointer (&name) or
         /// any function object supported by boost::function (http://www.boost.org/doc/libs/1_34_0/doc/html/function.html)        
         void add_str_algorithm(const std::string& name, StrAlgFunction1 func)
@@ -103,7 +103,7 @@ namespace dccl
         /// \brief Add an algorithm callback for a C++ double type that only requires the current value.
         ///
         /// C++ double primarily corresponds to DCCL type
-        /// <float/>, but can be used with any of the types
+        /// \ref tag_float, but can be used with any of the types
         /// through automatic (internal) casting if they can
         /// be properly represented as a double. 
         /// \param name name of the algorithm (<... algorithm="name"/>)
@@ -118,7 +118,7 @@ namespace dccl
         /// \brief Add an algorithm callback for a C++ long int type that only requires the current value.
         ///
         /// C++ long primarily corresponds to DCCL type
-        /// <int/>, but can be used with any of the types
+        /// \ref tag_int, but can be used with any of the types
         /// through automatic (internal) casting if they can
         /// be properly represented as a long. 
         /// \param name name of the algorithm (<... algorithm="name"/>)
@@ -133,7 +133,7 @@ namespace dccl
         /// \brief Add an algorithm callback  for a C++ bool type that only requires the current value.
         ///
         /// C++ bool primarily corresponds to DCCL type
-        /// <bool/>, but can be used with any of the types
+        /// \ref tag_bool, but can be used with any of the types
         /// through automatic (internal) casting if they can
         /// be properly represented as a bool. 
         /// \param name name of the algorithm (<... algorithm="name"/>)
@@ -147,7 +147,7 @@ namespace dccl
 
         /// \brief Add an algorithm callback for a dccl::MessageVal. This allows you to have a different input value (e.g. int) as the output value (e.g. string). 
         ///
-        /// \param name name of the algorithm (<... algorithm="name"/>)
+        /// \param name name of the algorithm (\xmltag{... algorithm="name"})
         /// \param func has the form void name(dccl::MessageVal& val_to_edit) (see dccl::AdvAlgFunction1). can be a function pointer (&name) or
         /// any function object supported by boost::function (http://www.boost.org/doc/libs/1_34_0/doc/html/function.html)
         void add_generic_algorithm(const std::string& name, AdvAlgFunction1 func)
@@ -159,7 +159,7 @@ namespace dccl
         /// \brief Add an advanced algorithm callback for any DCCL C++ type that may also require knowledge of all the other message variables
         /// and can optionally have additional parameters
         ///
-        /// \param name name of the algorithm (<... algorithm="name:param1:param2"/>)
+        /// \param name name of the algorithm (\xmltag{... algorithm="name:param1:param2"})
         /// \param func has the form
         /// void name(MessageVal& val_to_edit,
         ///  const std::vector<std::string> params,
@@ -180,16 +180,16 @@ namespace dccl
         //@{         
         /// \brief Encode a message.
         ///
-        /// Values can be passed in on one or more maps of names to values. The types passed (std::string, double, long, bool) should match the DCCL types (<string>, <float>, <int>, <bool>, <enum>) as well
-        /// as possible, but all reasonable casts will be made (e.g. std::string("234") is a valid <int/> and double(2.4) could be used
-        /// as a <bool/> (true))
+        /// Values can be passed in on one or more maps of names to values. The types passed (std::string, double, long, bool) should match the DCCL types (\ref tag_string, \ref tag_float, \ref tag_int, \ref tag_bool, \ref tag_enum) as well
+        /// as possible, but all reasonable casts will be made (e.g. std::string("234") is a valid \ref tag_int and double(2.4) could be used
+        /// as a \ref tag_bool (true))
         ///
         /// \param k can either be std::string (the name of the message) or unsigned (the id of the message)
         /// \param hex location for the encoded hexadecimal to be stored. this is suitable for sending to the Micro-Modem
-        /// \param ms pointer to map of message variable name to std::string values. std::string is preferred for <string/> and <enum/>. optional, pass 0 (null pointer) if not using.
-        /// \param md pointer to map of message variable name to double values. double is preferred for <float/>. optional, pass 0 (null pointer) if not using.
-        /// \param ml pointer to map of message variable name to double values. long is preferred for <int/>. optional, pass 0 (null pointer) if not using.
-        /// \param mb pointer to map of message variable name to bool values. bool is preferred for <bool/>. optional, pass 0 (null pointer) if not using.
+        /// \param ms pointer to map of message variable name to std::string values. std::string is preferred for \ref tag_string and \ref tag_enum. optional, pass 0 (null pointer) if not using.
+        /// \param md pointer to map of message variable name to double values. double is preferred for \ref tag_float. optional, pass 0 (null pointer) if not using.
+        /// \param ml pointer to map of message variable name to double values. long is preferred for \ref tag_int. optional, pass 0 (null pointer) if not using.
+        /// \param mb pointer to map of message variable name to bool values. bool is preferred for \ref tag_bool. optional, pass 0 (null pointer) if not using.
         template<typename Key>
             void encode(const Key& k, std::string& hex,
                         const std::map<std::string, std::string>* ms,
@@ -200,7 +200,7 @@ namespace dccl
 
         /// \brief Decode a message.
         ///
-        /// Values will be received in one or more maps of names to values. All reasonable casts will be made and returned in the maps provided. If all four maps are provided, the value is returned in the closest dccl::DCCLCppType to the dccl::DCCLType (e.g. <bool> is returned as bool, <int> as long).  If fewer than four maps are provided, the cast hierarchy goes bool -> long -> double -> std::string. The value is returned in the map corresponding to the closest type to the original. For example, a bool value of true would be returned in the mb as true (*mb["key"] == true). If mb was not provided, it would be returned in ml as 1 (*ml["key"] == 1). If ml was not provided, it would be returned in md as 1.0 (*md["key"] == 1.0). If md was not provided, it would be returned in ms as "true" (*ms["key"] == "true").
+        /// Values will be received in one or more maps of names to values. All reasonable casts will be made and returned in the maps provided. If all four maps are provided, the value is returned in the closest dccl::DCCLCppType to the dccl::DCCLType (e.g. \ref tag_bool is returned as bool, \ref tag_int as long).  If fewer than four maps are provided, the cast hierarchy goes bool -> long -> double -> std::string. The value is returned in the map corresponding to the closest type to the original. For example, a bool value of true would be returned in the mb as true (*mb["key"] == true). If mb was not provided, it would be returned in ml as 1 (*ml["key"] == 1). If ml was not provided, it would be returned in md as 1.0 (*md["key"] == 1.0). If md was not provided, it would be returned in ms as "true" (*ms["key"] == "true").
         ///
         /// \param k can either be std::string (the name of the message) or unsigned (the id of the message)
         /// \param hex the hexadecimal to be decoded.
@@ -272,7 +272,7 @@ namespace dccl
         /// These methods will be useful if you are interested in any of the features mentioned above.
         
         //@{
-        /// \brief Encode a message using <src_var> tags instead of <name> tags
+        /// \brief Encode a message using \ref tag_src_var tags instead of \ref tag_name tags
         ///
         /// Values can be passed in on one or more maps of names to values, similar to DCCLCodec::encode. 
         /// Casts are made and string parsing of key=value comma delimited fields is performed.
@@ -306,10 +306,10 @@ namespace dccl
 
         { encode_private(to_iterator(k), m, ms, md, ml, mb, Message::FROM_MOOS_VAR); }
 
-        /// \brief Decode a message using formatting specified in <publish/> tags.
+        /// \brief Decode a message using formatting specified in \ref tag_publish tags.
         ///
-        /// Values will be received in two maps, one of strings and the other of doubles. The <publish> value will be placed
-        /// either based on the "type" parameter of the <publish_var> tag (e.g. <publish_var type="long">SOMEVAR</publish> will be placed as a long). If no type parameter is given and the variable is numeric (e.g. "23242.23") it will be considered a double. If not numeric, it will be considered a string.
+        /// Values will be received in two maps, one of strings and the other of doubles. The \ref tag_publish value will be placed
+        /// either based on the "type" parameter of the \ref tag_publish_var tag (e.g. \<publish_var type="long"\>SOMEVAR\</publish_var\> will be placed as a long). If no type parameter is given and the variable is numeric (e.g. "23242.23") it will be considered a double. If not numeric, it will be considered a string.
         ///
         /// \param k can either be std::string (the name of the message) or unsigned (the id of the message)
         /// \param m modem::Message or std::string to be decode.
@@ -326,10 +326,10 @@ namespace dccl
                                    std::multimap<std::string, bool>* mb = 0)
         { decode_private(to_iterator(k), m, ms, md, ml, mb, Message::DO_PUBLISHES); }
 
-         /// \brief Decode a message using formatting specified in <publish/> tags.
+         /// \brief Decode a message using formatting specified in \ref tag_publish tags.
         ///
-        /// Values will be received in two maps, one of strings and the other of doubles. The <publish> value will be placed
-        /// either based on the "type" parameter of the <publish_var> tag (e.g. <publish_var type="long">SOMEVAR</publish> will be placed as a long). If no type parameter is given and the variable is numeric (e.g. "23242.23") it will be considered a double. If not numeric, it will be considered a string.
+        /// Values will be received in two maps, one of strings and the other of doubles. The \ref tag_publish value will be placed
+        /// either based on the "type" parameter of the \ref tag_publish_var tag (e.g. \<publish_var type="long"\>SOMEVAR\</publish\> will be placed as a long). If no type parameter is given and the variable is numeric (e.g. "23242.23") it will be considered a double. If not numeric, it will be considered a string.
         ///
         /// \param k can either be std::string (the name of the message) or unsigned (the id of the message)
         /// \param m modem::Message or std::string to be decode.

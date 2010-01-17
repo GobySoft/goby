@@ -184,7 +184,7 @@ std::map<std::string, std::string> dccl::Message::message_var_names() const
 {
     std::map<std::string, std::string> s;
     BOOST_FOREACH(const MessageVar& mv, layout_)
-        s.insert(std::pair<std::string, std::string>(mv.name(), mv.type_as_string()));
+        s.insert(std::pair<std::string, std::string>(mv.name(), type_to_string(mv.type())));
     return s;
 }
 

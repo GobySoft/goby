@@ -83,6 +83,19 @@ int FlexOStreamBuf::sync()
         display(s);
     
     group_name_.erase();
+
+    if(die_flag_ && verbosity_ != quiet)
+    {   
+        std::cout << "Press enter to quit." << std::endl;
+        std::cin.clear();
+        std::cin.get();
+        exit(EXIT_FAILURE);        
+    }
+    else if(die_flag_)
+    {
+        exit(EXIT_FAILURE);
+    }
+    
     
     return 0;
 }
@@ -122,18 +135,7 @@ void FlexOStreamBuf::display(const std::string & s)
             {
                 curses_.cleanup();
                 std::cout << color_.esc_code_from_str(groups_[group_name_].color()) << name_ << nocolor << ": " << s << nocolor << std::endl;
-            }
-            
+            }        
             break;
-    }
-
-
-    if(die_flag_ && verbosity_ != quiet)
-    {   
-        std::cout << "Press enter to quit." << std::endl;
-        std::cin.clear();
-        std::cin.get();
-        exit(EXIT_FAILURE);
-        
     }
 }

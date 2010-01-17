@@ -1,0 +1,1085 @@
+// copyright 2009 t. schneider tes@mit.edu
+// 
+// goby software and documentation is distributed under the GNU General
+// Public License.
+//
+// You should have received a copy of the GNU General Public License
+// along with this software (see goby/COPYING).  If not, see <http://www.gnu.org/licenses/>.
+
+/*! \page acomms_dccl goby-acomms: libdccl (Dynamic Compact Control Language)
+
+Table of contents for libdccl:
+<ul>
+<li> \ref dccl_designing
+<li> \ref dccl_tags
+<li> \ref dccl_codec
+<li> \ref dccl_how
+<li> \ref dccl_tags_details
+</ul>
+
+Return to \ref acomms.
+
+\section dccl_designing Designing a message
+
+<b>Scenario 1: Send a string command to a vehicle</b>: 
+
+We need to send an ASCII string command to an underwater vehicle. We thus make the \ref tag_layout section of the message contain a single message variable, a \ref tag_string. We know that a string uses a byte for each character and DCCL uses two header bytes, making the \ref tag_max_length of our string 30 (32-2). We need some sort of name for our string to use internally when encoding and decoding this message, so we'll use \ref tag_name of "s_key" to stand for "string key".
+
+We want to have the ability to use the lowest rate WHOI Micro-Modem message size, so we pick \ref tag_size to be 32. We have no other DCCL messages currently in the system so we start with an \ref tag_id of 1. Since this is a simple case we choose a "Simple" for our \ref tag_name.
+
+See \ref libdccl/examples/simple/simple.cpp "simple.cpp" for the final result (simple.xml) and for an example of how to use this message.
+
+
+<b>Scenario 2: Send a more realistic command and receive a status message from the vehicle</b>:
+
+We want to be able to command our vehicle to go to a specific point on a local XY grid (meters from some known latitude / longitude), but no more than 10 kilometers from the datum. We also want to be able to turn the lights on or off, and send a short string for other new instructions. Finally, we need to be able to command a speed. Our vehicle can move no faster than 3 m/s, but its control is precise enough to handle hundreds of a m/s (wow!). It's probably easiest to make a table with our conditions:
+
+<table>
+  <tr>
+    <td><strong>message variable name</strong></td>
+    <td><strong>description</strong></td>
+    <td><strong>type</strong></td>
+    <td><strong>bounds</strong></td>
+  </tr>
+  <tr>
+    <td>goto_x</td>
+    <td>meters east to transit from datum</td>
+    <td>integer</td>
+    <td>[0, 10000]</td>
+  </tr>
+  <tr>
+    <td>goto_y</td>
+    <td>meters north to transit from datum</td>
+    <td>integer</td>
+    <td>[0, 10000]</td>
+  </tr>
+  <tr>
+    <td>lights_on</td>
+    <td>turn on the lights?</td>
+    <td>boolean</td>
+    <td></td>
+  </tr>
+  <tr>
+    <td>new_instructions</td>
+    <td>string instructions</td>
+    <td>string</td>
+    <td>no longer than 10 characters</td>
+  </tr>
+  <tr>
+    <td>goto_speed</td>
+    <td>transit speed (m/s)</td>
+    <td>float</td>
+    <td>[0.00, 3.00]</td>
+  </tr>
+</table>
+
+Taking all this into account, we form the \ref tag_layout section of the first message (named GoToCommand) in the file two_message.xml (see \ref libdccl/examples/two_message/two_message.cpp "two_message.cpp").
+
+We choose \ref tag_id of 2 to avoid conflicting with the message from Scenario 1 (simple.xml) and a \ref tag_size of 32 bytes to again allow sending in the WHOI Micro-Modem rate 0 packet.
+
+Now, for the second message in two_message.xml. We want to receive the vehicle's present position and its current health, which can either be "good", "low_battery" or "abort". We make a similar table to before:
+
+<table>
+  <tr>
+    <td><strong>message variable name</strong></td>
+    <td><strong>description</strong></td>
+    <td><strong>type</strong></td>
+    <td><strong>bounds</strong></td>
+  </tr>
+  <tr>
+    <td>nav_x</td>
+    <td>current vehicle position (meters east of the datum)</td>
+    <td>integer</td>
+    <td>[0, 10000]</td>
+  </tr>
+  <tr>
+    <td>nav_y</td>
+    <td>current vehicle position (meters north of the datum)</td>
+    <td>integer</td>
+    <td>[0, 10000]</td>
+  </tr>
+  <tr>
+    <td>health</td>
+    <td>vehicle state</td>
+    <td>enumeration</td>
+    <td>good, low_battery, or abort</td>
+  </tr>
+</table>
+
+The resulting message, along with an example of how to use it, can be seen here: \ref libdccl/examples/two_message/two_message.cpp "two_message.cpp".
+
+You can run <tt>analyze_dccl_xml</tt> to view more information on your messages:
+\code
+> analyze_dccl_xml /path/to/two_message.xml /path/to/message_schema.xsd
+\endcode
+The schema (second parameter) is optional but handy for debugging syntax errors. When I ran the above command I got:
+
+\verbatim
+creating DCCLCodec using xml file: [examples/two_message/two_message.xml] and schema: [../../message_schema.xsd]
+schema must be specified with an absolute path or a relative path to the xml file location (not pwd!)
+parsed file ok!
+##############################
+detailed message summary:
+##############################
+********************
+message 2: {GoToCommand}
+requested size {bytes} [bits]: {32} [256]
+actual size {bytes} [bits]: {17} [135]
+>>>> LAYOUT (message_vars) <<<<
+	type (static):
+		value: "goto"
+		size [bits]: [0]
+	goto_x (int):
+		[min, max] = [0,10000]
+		size [bits]: [14]
+	goto_y (int):
+		[min, max] = [0,10000]
+		size [bits]: [14]
+	lights_on (bool):
+		size [bits]: [2]
+	new_instructions (string):
+		max_length: {10}
+		size [bits]: [80]
+	goto_speed (float):
+		[min, max] = [0,3]
+		precision: {2}
+		size [bits]: [9]
+********************
+********************
+message 3: {VehicleStatus}
+requested size {bytes} [bits]: {32} [256]
+actual size {bytes} [bits]: {6} [46]
+>>>> LAYOUT (message_vars) <<<<
+	nav_x (float):
+		[min, max] = [0,1000]
+		precision: {1}
+		size [bits]: [14]
+	nav_y (float):
+		[min, max] = [0,1000]
+		precision: {1}
+		size [bits]: [14]
+	health (enum):
+		values:{good,low_battery,abort}
+		size [bits]: [2]
+********************
+\endverbatim
+
+Besides validity checking, the most useful feature of <tt>analyze_dccl_xml</tt> is the calculation of the size (in bits) of each message variable. This lets you see which fields in the message are too big. To make fields smaller, tighten up bounds (depending on the type, increase \ref tag_min, decrease \ref tag_max, decrease \ref tag_precision, decrease \ref tag_max_length, decrease \ref tag_num_bytes, or decrease the number of \ref tag_enum \ref tag_value options).
+
+
+\section dccl_tags DCCL tag structure
+
+This section gives a brief outline of the tag structure of an XML file for defining a DCCL message. See \ref tags_dccl for a full description of each tag.
+
+DCCL root tags:
+
+<ul>
+<li> \xmltag{?xml version="1.0" encoding="UTF-8"?}: specifies that the file is XML; must be the first line of every message XML file.
+<li> \ref tag_message_set
+<ul>
+<li> \ref tag_message
+</ul>
+</ul>
+
+Children of \ref tag_message needed for normal dccl::DCCLCodec::encode and dccl::DCCLCodec::decode:
+
+<ul>
+<li> \ref tag_message
+<ul>
+<li> \ref tag_name
+<li> \ref tag_id
+<li> \ref tag_size
+<li> \ref tag_layout
+<ul>
+<li> \ref tag_static
+<ul>
+<li> \ref tag_name
+<li> \ref tag_value
+</ul>
+<li> \ref tag_bool
+<ul>
+<li> \ref tag_name
+</ul>
+<li> \ref tag_int
+<ul>
+<li> \ref tag_name
+<li> \ref tag_max
+<li> \ref tag_min
+</ul>
+<li> \ref tag_float
+<ul>
+<li> \ref tag_name
+<li> \ref tag_max
+<li> \ref tag_min
+<li> \ref tag_precision
+</ul>
+<li> \ref tag_string
+<ul>
+<li> \ref tag_name
+<li> \ref tag_max_length
+</ul>
+<li> \ref tag_enum
+<ul>
+<li> \ref tag_name
+<li> \ref tag_value
+</ul>
+<li> \ref tag_hex
+<ul>
+<li> \ref tag_name
+<li> \ref tag_num_bytes
+</ul>
+</ul>
+</ul>
+</ul>
+
+Children of \ref tag_message needed (in addition to those above) for publish/subscribe architecture methods dccl::DCCLCodec::encode_from_src_vars and dccl::DCCLCodec::decode_to_publish (these tags are ignored for calls to dccl::DCCLCodec::encode and dccl::DCCLCodec::decode):
+
+<ul>
+<li> \ref tag_message
+<ul>
+<li> \ref tag_layout
+<ul>
+<li> \ref tag_int, \ref tag_hex, \ref tag_string, \ref tag_float, \ref tag_enum, or \ref tag_bool
+<ul>
+<li> \ref tag_src_var
+</ul>
+</ul>
+<li> \ref tag_trigger
+<li> \ref tag_trigger_var
+<li> \ref tag_trigger_time
+<li> \ref tag_destination_var
+<li> \ref tag_on_receipt
+<ul>
+<li> \ref tag_publish
+<ul>
+<li> \ref tag_publish_var
+<li> \ref tag_format
+<li> \ref tag_message_var
+<li> \ref tag_all
+</ul>
+</ul>
+</ul>
+</ul>
+
+\section dccl_codec Interacting with the DCCLCodec
+
+Using the dccl::DCCLCodec is a fairly straightforward endeavor. First you need to instantiate a copy of this object with the XML files you want to be able to use and the validating schema (which is optional, but highly recommended especially if editing XML files by hand):
+
+\code
+dccl::DCCLCodec dccl("/path/to/file.xml", "/path/to/message_schema.xsd");
+\endcode
+
+Then, to encode a message, fill up std::maps of std::strings, doubles, bools, and/or longs where the key of the map (i.e. the \texttt{it->first} if \texttt{it} is the map iterator) is the \ref tag_name of each message variable, and the value (\texttt{it->second}) is the quantity you wish to encode. All reasonable type conversions will be made by DCCL (doubles to \ref tag_int, for example), but the most predictable (and fastest) results will be gained by using the following mapping between DCCL message variable types and C++ types:
+
+\anchor dccl_cpp_types_table
+<table>
+  <tr>
+    <td><strong>DCCL Message Variable Type</strong></td>
+    <td><strong>C++ Type</strong></td>
+    <td><strong>Example</strong></td>
+  </tr>
+  <tr>
+    <td>\ref tag_int</td>
+    <td>long</td>
+    <td>421</td>
+  </tr>
+  <tr>
+    <td>\ref tag_float</td>
+    <td>double</td>
+    <td>42.1</td>
+  </tr>
+  <tr>
+    <td>\ref tag_hex</td>
+    <td>std::string</td>
+    <td>"abc23" or "ABC23" (case does not matter)</td>
+  </tr>
+  <tr>
+    <td>\ref tag_enum</td>
+    <td>std::string</td>
+    <td>"ON" (case matters, this will not match \xmltag{value,on}, but will match \xmltag{value,ON})</td>
+  </tr>
+  <tr>
+    <td>\ref tag_string</td>
+    <td>std::string</td>
+    <td>"i am hungry" (case matters, string cannot contain any null characters in the middle, i.e. '\\0')</td>
+  </tr>
+  <tr>
+    <td>\ref tag_bool</td>
+    <td>bool</td>
+    <td>true</td>
+  </tr>
+</table>
+
+After filling up the std::maps, pass pointers to the maps to dccl::DCCLCodec::encode along with a reference to a string in which to store the result:
+
+\code
+std::map<std::string, std::string> strings;
+std::map<std::string, double> doubles;
+std::map<std::string, long> longs;
+std::map<std::string, bool> bools;
+
+// code to insert values into maps
+// ...
+//
+
+// store the result here
+std::string hex;
+
+dccl.encode(id, hex, &strings, &doubles, &longs, &bools);
+\endcode
+
+\texttt{hex} will now contain the encoded message in the form of a hexadecimal string (capital letters for the alphabetic characters).
+
+You may now send this message through whatever channel you would like, or pass it to the queue::QueueManager to %queue for sending later.
+
+To decode a message (stored in \texttt{hex} as a hexadecimal string), simply pass hex as a reference along with pointers to the maps to store the results. Based on the maps you provide, values will be cast and stored as the best fit. That is, if you pass all four maps, values will be stored in the map corresponding to the C++ type that fits the DCCL type as given in this \ref dccl_cpp_types_table "table". If some maps are not provided, the type is downcast in a hierarchy that goes bool -> long -> double -> std::string. For example, if you only provide the double and std::string maps, all \ref tag_bool and \ref tag_int are returned in the double map and all others are returned as normal (per this \ref dccl_cpp_types_table "table").
+
+\code
+// store the result here, all cast to std::string
+std::map<std::string, std::string> strings;
+
+dccl.decode(1, hex, &strings, 0, 0, 0);
+\endcode
+
+For line by line interaction with the dccl::DCCLCodec and for advanced use, investigate the code examples given in the Examples column of this \ref OSI_table "table".
+
+\section dccl_how Details of encoding/decoding scheme
+
+We may want to know the actual layout of the binary/hex message. For the first of the two messages in two_message.xml, we can run \texttt{analyze_dccl_xml} to find the sizes of each message variable. The calculated sizes are used to determine the boundaries (which are by bit, not by byte) when the message is packed. Each field is placed in the order it is declared in the XML file such that the message is as follows (where left to right is the same as reading the hex string from left to right):
+\verbatim
+[[goto_x {14}][goto_y {14}][lights_on {2}][new_instructions {80}][goto_speed {9}][0 {1}]]
+\endverbatim
+
+where \texttt{[0 {1}]} means zero fill the back of the message to the closest round byte (15 bytes = 120 bits minus 119 for other fields = 1). Byte boundaries are dissolved and encoded as a string "ABCDEF..." where the most significant byte (MSB, or leftmost 8 bits) is 0xAB, second MSB is 0xCD, etc. Encoding and decoding are done by functions available in tes_utils.h. You will notice that the resulting size is 15 bytes which is short of the 32 bytes specified for the \ref tag_size. This is because the \ref tag_size is a maximum size before a warning is generated, not the actual size always returned by the DCCLCodec. This allows libqueue to pack multiple messages together to form a %modem message frame and thus fit a nearly optimal amount of data into each %modem packet. For example, you could now fit one of the GoToCommand messages \textit{and} another message up to 17 bytes in a single 32 byte WHOI Micro-Modem rate 0 frame.
+
+The encoding of each \textit{message_var} is done as an unsigned integer, with the exception of strings, which are store as ASCII. The value 0 (all bits zero) always indicates "not specified" or "Not a Number" (nan). This means that the user did not specify any value for this field, specified a value causing overflow (\ref tag_int or \ref tag_float greater than \ref tag_max or less than \ref tag_min), or provided a value for an \ref tag_enum that did not match any of the enumerate's \ref tag_value options. Along with this rule, the method for encoding and decoding is summarized below:
+
+<table> 
+  <tr>
+    <td><strong>message_var</strong></td>
+    <td><strong>size (bits)</strong></td>
+    <td><strong>encode</strong></td> 
+    <td><strong>decode</strong></td>
+  </tr>
+  <tr>
+    <td>static</td>
+    <td>0</td>
+    <td>not sent</td> 
+    <td>not sent</td>
+  </tr>
+  <tr>
+    <td>bool</td>
+    <td>2</td>
+    <td>\f$val_{enc} = (val\f$ == to_lower("true") OR \f$val\f$ != 0) ? 2 : 1</td> 
+    <td>\f$ val = (val_{enc}==2) \f$ ? true : false</td>
+  </tr>
+  <tr>
+    <td>enum</td>
+    <td>\f$ceil(log_2(total\_enums + 1))\f$</td>
+    <td>\f$val_{enc}\f$ = 1 + index to array of enum values based on order they were declared</td> 
+    <td>\f$val\f$ = value at index \f$val_{enc} -1\f$</td>
+  </tr>
+  <tr>
+    <td>string</td>
+    <td>\f$max\_length \cdot 8\f$</td>
+    <td>string is filled at end with zeros (\texttt{'\\0'}) to \f$max_length\f$ then encoded using ASCII byte values</td> 
+    <td>ASCII, ignoring null termination chars (if any)</td>
+  </tr>
+  <tr>
+    <td>int</td>
+    <td>\f$ceil(log_2(max-min + 2))\f$</td>
+    <td>\f$val_{enc} = round(val - min, 0) + 1\f$</td> 
+    <td>\f$val = val_{enc} + min-1\f$</td>
+  </tr>
+  <tr>
+    <td>float</td>
+    <td>\f$ceil(log_2((max-min)\cdot 10^{precision} + 2))\f$</td>
+    <td>\f$val_{enc} = round((val - min)\cdot 10^{precision}, 0) + 1\f$</td> 
+    <td>\f$val = (val_{enc} - 1)/10^{precision} + min\f$</td>
+  </tr>
+  <tr>
+    <td>hex</td>
+    <td>\f$num\_bytes \cdot 8\f$</td>
+    <td>\f$val_{enc} = val\f$</td> 
+    <td>\f$val = val_{enc}\f$</td>
+  </tr>
+</table>
+
+where \f$val\f$ is the original (and decoded) value, \f$val_{enc}\f$ is the encoded value, \f$min\f$, \f$max\f$, \f$max\_length\f$, \f$precision\f$ are the contents of the \ref tag_min, \ref tag_max, \ref tag_max_length, and \ref tag_precision tags, respectively, and round(\f$x\f$,0) means round \f$x\f$ to the nearest integer.
+
+An example. Say you have the following XML file:
+\verbatim
+...
+  <id>1</id>
+  <layout>
+    <bool>
+      <name>B</name>
+    </bool>
+    <enum>
+    <name>E</name>
+      <value>cat</value>
+      <value>dog</value>
+      <value>mouse</value>
+    </enum>
+    <string>
+      <name>S</name>
+      <max_length>4</max_length>
+    </string>
+    <int>
+      <name>I</name>
+      <max>100</max>
+      <min>-50</min>	  
+    </int>
+    <float>
+      <name>F</name>
+      <max>100</max>
+      <min>-50</min>	  
+      <precision>2</precision>
+    </float>      
+  </layout>
+...
+\endverbatim
+
+below the size of each \textit{message_var} and its encoded value in decimal and binary are calculated for an example set of inputs:
+
+
+<table> 
+  <tr>
+    <td><strong>message_var</strong></td>
+    <td><strong>example \f$val\f$</strong></td>
+    <td><strong>size (bits)</strong></td>
+    <td><strong>\f$val_{enc}\f$ (decimal)</strong></td> 
+    <td><strong>\f$val_{enc}\f$ (binary) </strong></td>
+  </tr>
+  <tr>
+    <td>B</td>
+    <td>true</td>
+    <td>2</td> 
+    <td>2</td>
+    <td>10</td>
+  </tr>
+  <tr>
+    <td>E</td>
+    <td>cat</td>
+    <td>2</td> 
+    <td>1</td>
+    <td>01</td>
+  </tr>
+  <tr>
+    <td>S</td>
+    <td>FAT</td>
+    <td>32</td> 
+    <td>1178686464</td>
+    <td>01000110 01000001 01010100 00000000</td>
+  </tr>
+  <tr>
+    <td>I</td>
+    <td>34</td>
+    <td>8</td> 
+    <td>85</td>
+    <td>01010101</td>
+  </tr>
+  <tr>
+    <td>F</td>
+    <td>-22.49</td>
+    <td>14</td> 
+    <td>2752</td>
+    <td>00101011000000</td>
+  </tr>
+</table>
+
+and thus the whole message (zero padded from the most significant bits to the closest byte) sent would be \verbatim 00000010 01010001 10010000 01010101 00000000 00010101 01001010 11000000 \endverbatim or \verbatim 0x0251905500154AC0 \endverbatim plus two bytes of header, which in this case is 0x2001, so the full message sent is \verbatim 0x20010251905500154AC0 \endverbatim
+
+\section dccl_tags_details DCCL XML Tags Reference
+
+\subsection tag_all <all>
+\b Syntax:
+\code
+<?xml version="1.0" encoding="UTF-8"?>
+<message_set>
+  <message>
+    <on_receipt>
+      <publish>
+        ...
+        <all />
+      </publish>
+    </on_receipt>
+  </message>
+</message_set>
+\endcode
+
+\b Description:
+Equivalent to \ref tag_message_var for all the \textit{message_var}s in the message. This is a shortcut when you want to publish all the data in a human readable string. [optional, one allowed].
+
+\subsection tag_bool <bool>
+\code
+\b Syntax:
+<?xml version="1.0" encoding="UTF-8"?>
+<message_set>
+  <message>
+    <layout>
+      ...
+      <bool algorithm="">
+        <src_var></src_var>
+        <name></name>
+      </bool>
+    </layout>
+  </message>
+</message_set>
+\endcode
+
+\b Description: a boolean (true or false) \textit{message_var}  The optional parameter \texttt{algorithm} allows you to perform certain algorithms on the data before encoding. See below. [optional, one or more allowed]. 
+
+\subsection tag_destination_var <destination_var>
+\b Syntax:
+\code
+<?xml version="1.0" encoding="UTF-8"?>
+<message_set>
+  <message>
+    ...
+    <!-- OUT_MESSAGE: destination=abcd,... -->
+    <destination_var key="destination">OUT_MESSAGE</destination_var>
+  </message>
+</message_set>
+\endcode
+
+\b Description: architecture variable to find where this message should be sent. Specify attribute "key=" to specify a substring to look for within the value of this architecture variable. For example, if \texttt{COMMAND} contained the string \texttt{Destination=3} and you want this message sent to modem_id 3, then you should set \texttt{key=Destination} to properly parse that string. [optional: default is 0 (broadcast), one allowed].
+
+\subsection tag_enum <enum>
+\b Syntax:
+\code
+<?xml version="1.0" encoding="UTF-8"?>
+<message_set>
+  <message>
+    <layout>
+      ...
+      <enum algorithm="">
+        <src_var></src_var>
+        <name></name>
+        <value></value>
+        <value></value>
+        <value></value>
+      </enum>
+    </layout>
+  </message>
+</message_set>
+\endcode
+
+\b Description: an enumeration \textit{message_var} [optional, one or more allowed].
+
+\subsection tag_float <float>
+\b Syntax:
+\code
+<?xml version="1.0" encoding="UTF-8"?>
+<message_set>
+  <message>
+    <layout>
+      ...
+      <float algorithm="">
+        <src_var></src_var>
+        <name></name>
+        <max></max>
+        <min></min>
+        <precision></precision>
+      </float>
+    </layout>
+  </message>
+</message_set>
+\endcode
+
+\b Description: a decimal valued real number \textit{message_var} [optional, one or more allowed].
+
+\subsection tag_format <format>
+\b Syntax:
+\code
+<?xml version="1.0" encoding="UTF-8"?>
+<message_set>
+  <message>
+    <on_receipt>
+      <publish>
+        ... 
+        <format>A=%1%,B=%2%</format>
+      </publish>
+    </on_receipt>
+  </message>
+</message_set>
+\endcode
+
+\b Description: a string conforming to the format string syntax of the <a href="http://www.boost.org/doc/libs/1_37_0/libs/format/doc/format.html#syntax">boost::format library</a>. This field will specify the format of the string published to the architecture variable defined in \ref tag_publish_var. At its simplest, it is a string of incrementing numbers surrounded by \%\%. Or, instead, you may also use a printf style string, using \%d for int  \textit{message_var}, \%lf for floats, and \%s for strings, bools, enums and hex. [optional: default is \texttt{name1=\%1\%\,name2=\%2\%\,name3=\%3\%}, where \texttt{name1} is the name of the first \ref tag_message_var field to follow, \texttt{name2} is the second, etc. exception: default is \texttt{\%1\%} if only a single \ref tag_message_var defined. one allowed].
+
+\subsection tag_hex <hex>
+\b Syntax:
+\code
+<?xml version="1.0" encoding="UTF-8"?>
+<message_set>
+  <message>
+    <layout>
+      ...
+      <hex algorithm="">
+        <src_var></src_var>
+        <name></name>
+        <num_bytes></num_bytes>     
+      </hex>
+    </layout>
+  </message>
+</message_set>
+\endcode
+
+\b Description: a message variable represented pre-encoded hexadecimal to add to the message. This field is useful if another source is encoding part or all of a DCCL message. [optional, one or more allowed]. 
+
+\subsection tag_id <id>
+\b Syntax:
+\code
+<?xml version="1.0" encoding="UTF-8"?>
+<message_set>
+  <message>
+    ...
+    <id>23</id>
+  </message>
+</message_set>
+\endcode
+
+\b Description: an unsigned six bit integer (0-63) that identifies this message within a network. very similar to the CCL identifier, but for DCCL messages. The CCL identifier occupies the most significant byte (MSB) of the message followed by this id which takes the part of the second MSB (two flags, multimessage and broadcast, use the remainder of the second MSB). \textit{This must be unique within a network}. [mandatory, one allowed]
+
+\subsection tag_int <int>
+\b Syntax:
+\code
+<?xml version="1.0" encoding="UTF-8"?>
+<message_set>
+  <message>
+    <layout>
+      ...    
+      <int algorithm="">
+        <src_var></src_var>
+        <name></name>
+        <max></max>
+        <min></min>
+      </int>
+    </layout>
+  </message>
+</message_set>
+\endcode
+
+\b Description: an integer \textit{message_var} [optional, one or more allowed].
+
+\subsection tag_layout <layout>
+\b Syntax:
+\code
+<?xml version="1.0" encoding="UTF-8"?>
+<message_set>
+  <message>
+    ...
+    <layout>
+      <int></int>
+      <string></string>
+      <float></float>
+      <bool></bool>
+      <hex></hex>
+      <static></static>
+      <enum></enum>
+    </layout>
+  </message>
+</message_set>
+\endcode
+
+\b Description: defines the message structure itself (what fields [the message variables or \textit{message_var}s] the message contains and how they are to be encoded). [mandatory, one allowed].
+
+\subsection tag_max_length <max_length>
+\b Syntax:
+\code
+<?xml version="1.0" encoding="UTF-8"?>
+<message_set>
+  <message>
+    <layout>
+      <string>
+        ...
+        <max_length>10</max_length>
+      </string>
+    </layout>
+  </message>
+</message_set>
+\endcode
+
+\b Description: the length of the string value in this field. Longer strings are truncated. \xmltag{max_length,4} means "ABCDEFG" is sent as "ABCD". [mandatory, one allowed].
+
+\subsection tag_max <max>
+\b Syntax:
+\code
+<?xml version="1.0" encoding="UTF-8"?>
+<message_set>
+  <message>
+    <layout>
+      <int>
+        <max>100</max>
+      </int>
+      <float>
+        <max>100</max>
+      </float>
+    </layout>
+  </message>
+</message_set>
+\endcode
+
+\b Description: the maximum value this field can take. [mandatory, one allowed].
+
+\subsection tag_message_set <message_set>
+\b Syntax:
+\code
+<?xml version="1.0" encoding="UTF-8"?>
+<message_set>
+  <message></message>
+  <message></message>
+  <message></message>
+</message_set>
+\endcode
+
+\b Description: the root element. All XML files must have a single root element. Since we are define a set of messages (one or more per file), this is a logical choice of name for the root element. [mandatory, one allowed].
+
+\subsection tag_message_var <message_var>
+\b Syntax:
+\code
+<?xml version="1.0" encoding="UTF-8"?>
+<message_set>
+  <message>
+    <on_receipt>
+      <publish>
+        ...
+        <message_var></message_var>
+        <message_var></message_var>
+      </publish>
+    </on_receipt>
+  </message>
+</message_set>
+\endcode
+
+\b Description: the name (\ref tag_name above) of a \textit{message_var} contained in this message (i.e. an \ref tag_int, \ref tag_bool, etc.) the values of these fields upon receipt of a message will be used to populate the format string and the result will be published to \ref tag_publish_var. The optional parameter \texttt{algorithm} allows you to perform certain algorithms on the data after receipt before publishing. See below. [mandatory unless \ref tag_all used, one or more allowed].
+
+\subsection tag_message <message>
+\b Syntax:
+\code
+<?xml version="1.0" encoding="UTF-8"?>
+<message_set>
+  <message>
+    <name></name>
+    <id></id>
+    <size></size>
+    <layout></layout>
+    <destination_var key=""></destination_var>
+    <trigger>publish</trigger>
+    <trigger_var mandatory_content=""></trigger_var>
+    <!-- OR -->
+    <trigger>time</trigger>
+    <trigger_time></trigger_time>
+    <on_receipt></on_receipt>  
+    <queuing></queuing>
+  </message>
+  <message>
+    ...
+  </message>
+</message_set>
+\endcode
+
+\b Description: defines the start of a message. [mandatory, one or more allowed].
+
+\subsection tag_min <min>
+\b Syntax:
+\code
+<?xml version="1.0" encoding="UTF-8"?>
+<message_set>
+  <message>
+    <layout>
+      <int>
+        <min>-100</min>
+      </int>
+      <float>
+        <min>-100</min>
+      </float>
+    </layout>
+  </message>
+</message_set>
+\endcode
+
+\b Description: the minimum value this field can take. [mandatory, one allowed].
+
+\subsection tag_name <name>
+\b Syntax:
+\code
+<message_set>
+  <message>
+    ...
+    <name>STATUS_REPORT</name>
+  </message>
+</message_set>
+\endcode
+
+or 
+
+\code
+<?xml version="1.0" encoding="UTF-8"?>
+<message_set>
+  <message>
+    <layout>
+      <int>
+        <name>parameter1</name>
+      </int>
+      <string>
+        <name>parameter2</name>           
+      </string>
+      <float>
+        <name>parameter3</name>           
+      </float>
+      <bool>
+        <name>parameter4</name>           
+      </bool>
+      <hex>
+        <name>parameter5</name>           
+      </hex>
+      <static>
+        <name>parameter6</name>           
+      </static>
+      <enum>
+        <name>parameter7</name>           
+      </enum>
+    </layout>
+  </message>
+</message_set>
+\endcode
+
+
+\b Description: (as child of \ref tag_message): a human readable name for the message. [mandatory, one allowed]
+
+(as child of \ref tag_int, \ref tag_hex, \ref tag_string, \ref tag_float, \ref tag_enum, or \ref tag_bool): the name of this \textit{message_var}. [mandatory, one allowed].
+
+\subsection tag_num_bytes <num_bytes>
+the number of bytes for this field. The string provided should be twice as many characters as \ref tag_num_bytes since each character of a hexadecimal string is one nibble (4 bits or 1/2 byte). [mandatory, one allowed].
+
+
+\subsection tag_on_receipt  <on_receipt>
+\b Syntax:
+\code
+<?xml version="1.0" encoding="UTF-8"?>
+\endcode
+
+\b Description: contains the various \ref tag_publish options for publishing parts of a message upon receipt when using the publish-subscribe architecture method (dccl::DCCLCodec::encode_to_publish). [optional, one allowed].
+
+\subsection tag_precision  <precision>
+\b Syntax:
+\code
+<?xml version="1.0" encoding="UTF-8"?>
+<message_set>
+  <message>
+    <layout>
+      <float>
+        <precision>3</precision>
+      </float>
+    </layout>
+  </message>
+</message_set>
+\endcode
+
+\b Description: an integer that specifies the number of decimal digits to preserve. Negatives are allowed. For example, \xmltag{precision,2} rounds 1042.1234 to 1042.12; \xmltag{precision,-1} rounds 1042.1234 to 1.04e3. [mandatory, one allowed].
+
+\subsection tag_publish <publish>
+\b Syntax:
+\code
+<?xml version="1.0" encoding="UTF-8"?>
+<message_set>
+  <message>
+    <on_receipt>
+      <publish>
+        <publish_var></publish_var>
+        <format></format>
+        <message_var></message_var>
+      </publish>
+    </on_receipt>
+  </message>
+</message_set>
+\endcode
+
+\b Description: defines a single output value upon receipt of a message. Any number of publishes containing any subset of the \textit{message_var}s can be specified. [mandatory, one or more allowed].
+
+\subsection tag_publish_var <publish_var>
+\b Syntax:
+\code
+<?xml version="1.0" encoding="UTF-8"?>
+<message_set>
+  <message>
+    <on_receipt>
+      <publish>
+        <publish_var type="string">OUT_STATUS_REPORT</publish_var>
+      </publish>
+    </on_receipt>
+  </message>
+</message_set>
+\endcode
+
+\b Description: the name of the architecture variable to publish to. If desired, a format string is allowed here as well (e.g. \texttt{\%1\%_NAV_X} will fill \texttt{\%1\%} with the first \textit{message_var}). See the \ref tag_format tag description for more info. [mandatory, one allowed].
+
+\subsection tag_size <size>
+\b Syntax:
+\code
+<?xml version="1.0" encoding="UTF-8"?>
+<message_set>
+  <message>
+    <size>32</size>
+  </message>
+</message_set>
+\endcode
+
+\b Description: the size of the message in bytes. There are eight bits (binary digits) to a byte. Use N here for messages passed to the Micro-Modem where N is the desired Micro-Modem frame size (N=32, 64, or 256 depending on the rate). If the \ref tag_layout of the message exceeds this size, pGeneralCodec will exit on startup with information about sizes, from which you can remove or reduce the size of certain \textit{message_var}s.
+
+\subsection tag_src_var <src_var>
+\b Syntax:
+\code
+<?xml version="1.0" encoding="UTF-8"?>
+<message_set>
+  <message>
+    <layout>
+      <!-- OUT_MESSAGE: ...,parameter1=123,parameter2=abc,parameter3=3.42,
+                        parameter4=true,parameter5=ON
+           SOME_OTHER_HEX: 24bbc231  -->
+      <int>
+        <src_var key="parameter1">OUT_MESSAGE</src_var>
+      </int>
+      <string>
+        <src_var key="parameter2">OUT_MESSAGE</src_var>  
+      </string>
+      <float>
+        <src_var key="parameter3">OUT_MESSAGE</src_var>           
+      </float>
+      <bool>
+        <src_var key="parameter4">OUT_MESSAGE</src_var>           
+      </bool>
+      <hex>
+        <src_var>SOME_OTHER_HEX</src_var>
+      </hex>
+      <enum>
+        <src_var key="parameter5>OUT_MESSAGE</src_var>           
+      </enum>
+    </layout>
+  </message>
+</message_set>
+\endcode
+
+\b Description: the architecture variable from which to pull the value of this field. [optional if \xmltag{trigger,publish}: default is trigger_var; mandatory if \xmltag{trigger,time}, one allowed]. 
+
+\subsection tag_static <static>
+\b Syntax:
+\code
+<?xml version="1.0" encoding="UTF-8"?>
+<message_set>
+  <message>
+    <layout>
+      <static algorithm="">
+        <name></name>
+        <value></value>
+      </static>
+    </layout>
+  </message>
+</message_set>
+\endcode
+
+\b Description: a \textit{message_var} that is not actually sent with the message but can be used to include in received messages (\textit{publishes}). [optional, one or more allowed]. 
+
+\subsection tag_string <string>
+\b Syntax:
+\code
+<?xml version="1.0" encoding="UTF-8"?>
+<message_set>
+  <message>
+    <layout>
+      <string algorithm="">
+        <src_var></src_var>
+        <name></name>
+        <max_length></max_length>
+      </string>
+    </layout>
+  </message>
+</message_set>
+\endcode
+
+\b Description: an ASCII string \textit{message_var} [optional, one or more allowed].
+
+\subsection tag_trigger_var <trigger_var>
+\b Syntax:
+\code
+<?xml version="1.0" encoding="UTF-8"?>
+<message_set>
+  <message>
+    <trigger>publish</trigger>
+    <trigger_var mandatory_content="">OUT_MESSAGE</trigger_var>
+  </message>
+</message_set>
+\endcode
+
+\b Description: used if \xmltag{trigger,publish}, this field gives the architecture variable that publishes to will trigger the creation of this message [mandatory if and only if \xmltag{trigger,publish}]. optional attribute \texttt{mandatory_content} specifies a string that must be a substring of the contents of the trigger variable in order to trigger the creation of a message. For example, if you wanted to create a certain message every time \texttt{COMMAND} contained the string \texttt{CommandType=GoTo...} but no other time, you would specify  \texttt{mandatory_content="CommandType=GoTo"} within this tag.
+
+\subsection tag_trigger_time <trigger_time>
+\b Syntax:
+\code
+<?xml version="1.0" encoding="UTF-8"?>
+<message_set>
+  <message>
+    <trigger>time</trigger>
+    <trigger_time>60</trigger_time>
+  </message>
+</message_set>
+\endcode
+
+\b Description: used if \xmltag{trigger,time}, this field gives the time interval used to create this message. For example, a value of  \xmltag{trigger_time,10} would mean a message should be created every ten seconds. [mandatory if and only if \xmltag{trigger,time}].
+
+\subsection tag_trigger <trigger>
+\b Syntax:
+\code
+<?xml version="1.0" encoding="UTF-8"?>
+<message_set>
+  <message>
+    <trigger>publish</trigger>
+    <trigger_var mandatory_content=""></trigger_var>
+    <!-- OR -->
+    <trigger>time</trigger>
+    <trigger_time></trigger_time>
+  </message>
+</message_set>
+\endcode
+
+\b Description: how the message is created. Currently this field must take the value "publish" (meaning a message is created on a publish event to a certain architecture variable) or "time" (a message is created on a certain time interval). [mandatory, one allowed]
+
+\subsection tag_value <value>
+\b Syntax:
+\code
+<?xml version="1.0" encoding="UTF-8"?>
+<message_set>
+  <message>
+    <layout>
+      <static>
+        <value>my static value</value>
+      </static>
+    </layout>
+  </message>
+</message_set>
+\endcode
+
+or 
+
+\code
+<?xml version="1.0" encoding="UTF-8"?>
+<message_set>
+  <message>
+    <layout>
+      <enum>
+        <value>ON</value>
+        <value>OFF</value>
+        <value>IN_BETWEEN</value>
+      </enum>
+    </layout>
+  </message>
+</message_set>
+\endcode
+
+\b Description: (as child of \ref tag_static): the value of this static variable. [mandatory, one allowed].
+
+(as child of \ref tag_enum): a possible value (string) the enum can take. Any number of values can be specified. [mandatory, one or more allowed].
+
+
+*/

@@ -6,16 +6,17 @@
 // You should have received a copy of the GNU General Public License
 // along with this software (see goby/COPYING).  If not, see <http://www.gnu.org/licenses/>.
 
-/*! \page util goby-util: Overview of Utility Libraries
+/*! \page acomms_mac goby-acomms: libamac (Medium Access Control)
 
-    \section util_overview Overview
+Table of Contents for libamac:
+<ul>
+<li> \ref amac_schemes
+<li> \ref amac_manager
+</ul>
+Return to \ref acomms.
 
-    \section logging Logging
+\section amac_schemes Supported MAC schemes
 
-    \subsection stream C++ STL Streams
-
-    \subsection flexostream Configurable extension of std::ostream - libflexostream
-
-    \section serial Serial port communications - libserial
+\section amac_manager Interacting with the amac::MACManager
 
 */

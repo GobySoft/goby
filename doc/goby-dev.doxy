@@ -190,7 +190,11 @@ TAB_SIZE               = 1
 # will result in a user-defined paragraph with heading "Side Effects:". 
 # You can put \n's in the value part of an alias to insert newlines.
 
-ALIASES                = 
+ALIASES += texttt{1}="<tt>\1</tt>"
+ALIASES += textbf{1}="<strong>\1</strong>"
+ALIASES += textit{1}="<em>\1</em>"
+ALIASES += xmltag{1}="<tt>\<\1\></tt>"
+ALIASES += xmltag{2}="<tt>\<\1\>\2\</\1\></tt>"
 
 # Set the OPTIMIZE_OUTPUT_FOR_C tag to YES if your project consists of C 
 # sources only. Doxygen will then generate output that is more tailored for C. 
@@ -575,7 +579,14 @@ WARN_LOGFILE           =
 # directories like "/usr/src/myproject". Separate the files or directories 
 # with spaces.
 
-INPUT                  = doxy_body ../src
+INPUT                  = doxy_body/main.dox  \
+                         doxy_body/acomms.dox  \
+                         doxy_body/acomms-dccl.dox \
+                         doxy_body/acomms-queue.dox \
+                         doxy_body/acomms-driver.dox \
+                         doxy_body/acomms-mac.dox \
+                         doxy_body/util.dox \
+                          ../src
 
 # This tag can be used to specify the character encoding of the source files 
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding, which is 

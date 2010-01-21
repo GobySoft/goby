@@ -142,16 +142,6 @@ void amac::MACManager::send_poll(const asio::error_code& e)
         default:
             break;
     }
-    
-    if(send_poll)
-    {
-        modem::Message m;
-        m.set_src(s.src());
-        m.set_dest(destination);
-        m.set_rate(s.rate());
-        m.set_ack(0); // actually a free bit, not the ack (field was deprecated). right now we're not using it
-        callback_initiate_transmission(m);
-    }
 
     if(os_)
     {
@@ -166,6 +156,16 @@ void amac::MACManager::send_poll(const asio::error_code& e)
                  << destination << " @ " << s.rate() << "}" << std::endl;
     }
 
+    
+    if(send_poll)
+    {
+        modem::Message m;
+        m.set_src(s.src());
+        m.set_dest(destination);
+        m.set_rate(s.rate());
+        m.set_ack(0); // actually a free bit, not the ack (field was deprecated). right now we're not using it
+        callback_initiate_transmission(m);
+    }
     
     ++current_slot_;
     

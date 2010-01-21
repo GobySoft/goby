@@ -258,7 +258,8 @@ namespace queue
         std::string summary() const;
         
         //@}
-
+        
+        /// \example libqueue/examples/simple/simple.cpp
 
       private:
         void qsize(Queue* q)
@@ -304,7 +305,6 @@ namespace queue
         // the first *user* frame sets the tone (dest & ack) for the entire packet (all %modem frames)
         unsigned packet_dest_;
         unsigned packet_ack_;
-    
     };
 
     /// outputs information about all available messages (same as std::string summary())

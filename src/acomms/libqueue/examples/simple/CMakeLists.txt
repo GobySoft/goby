@@ -1,0 +1,2 @@
+add_executable(queue_simple simple.cpp)
+target_link_libraries(queue_simple queue)

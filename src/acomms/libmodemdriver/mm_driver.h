@@ -109,7 +109,8 @@ namespace micromodem
     
         boost::posix_time::ptime modem_time2posix_time(const std::string& mt);
         double modem_time2unix_time(const std::string& mt);
-    
+
+        /// \example libmodemdriver/examples/simple/simple.cpp
     
       private:
         std::deque<serial::NMEASentence> out_;

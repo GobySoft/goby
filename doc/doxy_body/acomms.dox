@@ -39,7 +39,7 @@ To get started using the goby-acomms libraries as quickly as possible:
     <li>A driver for interacting with the acoustic %modem firmware. Presently the WHOI Micro-Modem <http://acomms.whoi.edu/> is supported: \ref driver</li>
     <li>Time division multiple access (TDMA) medium access control (MAC): \ref amac</li>
   </ul> 
-  <li> Look at the "simple" code examples that accompany each library (\ref libdccl/examples/simple/simple.cpp "DCCL: simple.cpp", \ref libqueue/examples/simple/simple.cpp "Queue: simple.cpp", \ref libmodemdriver/examples/simple/simple.cpp "MMDriver: simple.cpp"). Then look at the example that uses all three libraries together: \ref acomms/examples/simple/simple.cpp "goby-acomms: simple.cpp".  The full list of examples is given in \ref OSI_table "this table". </li>
+  <li> Look at the "simple" code examples that accompany each library (\ref libdccl/examples/simple/simple.cpp "DCCL: simple.cpp", \ref libqueue/examples/simple/simple.cpp "Queue: simple.cpp", \ref libmodemdriver/examples/simple/simple.cpp "MMDriver: simple.cpp",  \ref libamac/examples/simple/simple.cpp "AMAC: simple.cpp"). Then look at the example that uses all three libraries together: \ref acomms/examples/simple/simple.cpp "goby-acomms: acomms/examples/chat.cpp".  The full list of examples is given in \ref OSI_table "this table". </li>
   <li> Refer to the rest of the documentation as needed.</li>
 </ol>
 
@@ -85,7 +85,9 @@ To start on some (hopefully) common ground, let's begin with an analogy to Open 
     <td>Transport</td>
     <td>\ref queue</td>
     <td>queue::QueueManager</td>
-    <td></td>
+    <td>
+      \ref libqueue/examples/simple/simple.cpp "simple.cpp" <br/>
+    </td>
   </tr>    
   <tr>
     <td>Network</td>
@@ -97,7 +99,9 @@ To start on some (hopefully) common ground, let's begin with an analogy to Open 
     <td>Data Link</td>
     <td>\ref driver</td>
     <td>classes derived from modem::DriverBase; e.g. micromodem::MMDriver</td>
-    <td></td>
+    <td>
+      \ref libmodemdriver/examples/simple/simple.cpp "simple.cpp" <br/>
+b    </td>
   </tr>
   <tr>
     <td></td>

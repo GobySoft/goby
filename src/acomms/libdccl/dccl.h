@@ -403,6 +403,29 @@ namespace dccl
         // provides
         std::vector<Message>& messages() {return messages_;}
         
+
+        /// \example libdccl/examples/simple/simple.cpp
+        /// simple.xml
+        /// \verbinclude simple.xml
+        /// simple.cpp
+        
+        /// \example libdccl/examples/plusnet/plusnet.cpp
+        /// nafcon_command.xml
+        /// \verbinclude nafcon_command.xml
+        /// nafcon_report.xml
+        /// \verbinclude nafcon_report.xml
+        /// plusnet.cpp
+        
+        /// \example libdccl/examples/test/test.cpp
+        /// test.xml
+        /// \verbinclude test.xml 
+        /// test.cpp
+        
+        /// \example libdccl/examples/two_message/two_message.cpp
+        /// two_message.xml
+        /// \verbinclude two_message.xml
+        /// two_message.cpp
+
       private:
         std::vector<Message>::const_iterator to_iterator(const std::string& message_name) const
         {
@@ -510,27 +533,6 @@ namespace dccl
         std::string xml_schema_;
         time_t start_time_;
         
-        /// \example libdccl/examples/simple/simple.cpp
-        /// simple.xml
-        /// \verbinclude simple.xml
-        /// simple.cpp
-        
-        /// \example libdccl/examples/plusnet/plusnet.cpp
-        /// nafcon_command.xml
-        /// \verbinclude nafcon_command.xml
-        /// nafcon_report.xml
-        /// \verbinclude nafcon_report.xml
-        /// plusnet.cpp
-        
-        /// \example libdccl/examples/test/test.cpp
-        /// test.xml
-        /// \verbinclude test.xml 
-        /// test.cpp
-        
-        /// \example libdccl/examples/two_message/two_message.cpp
-        /// two_message.xml
-        /// \verbinclude two_message.xml
-        /// two_message.cpp
         
     };
 

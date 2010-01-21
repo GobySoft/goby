@@ -182,8 +182,10 @@ namespace amac
         void set_expire_cycles(unsigned expire_cycles) { expire_cycles_ = expire_cycles; }
         void set_expire_cycles(const std::string& s) { set_expire_cycles(boost::lexical_cast<unsigned>(s)); }
         /// \brief Callback to call to request which vehicle id should be the next destination. Typically bound to queue::QueueManager::request_next_destination.
+        // 
+        // \param func has the form int next_dest(unsigned size). the return value of func should be the next destination id, or -1 for no message to send.
         void set_destination_cb(IdFunc func) { callback_dest = func; }
-        /// \brief Callback for initiate a tranmission. Typically bound to modem::DriverBase::initiate_transmission.
+        /// \brief Callback for initiate a tranmission. Typically bound to modem::DriverBase::initiate_transmission. 
         void set_initiate_transmission_cb(MsgFunc1 func) { callback_initiate_transmission = func; }
         //@}
 

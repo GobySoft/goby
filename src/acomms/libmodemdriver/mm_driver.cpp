@@ -49,6 +49,10 @@ void micromodem::MMDriver::startup()
 {
     serial_start();
     
+    set_clock();
+    // take a breath to let the clock be set
+    sleep(1);
+    
     write_cfg();
     check_cfg();
     startup_done_ = true;
@@ -220,7 +224,7 @@ void micromodem::MMDriver::handle_modem_in(NMEASentence& nmea)
     if(!out_.empty() && out_.front().talker_back() == nmea.talker_back()) pop_out();
 
     // for anyone who needs to know that we got a message 
-    callback_decoded(m_in);
+    if(callback_decoded) callback_decoded(m_in);
 }
 
 void micromodem::MMDriver::rxd(NMEASentence& nmea, modem::Message& m)
@@ -278,7 +282,7 @@ void micromodem::MMDriver::clk(NMEASentence& nmea, modem::Message& m)
 {
     if(out_.front().talker_back() != "CLK")
         return;
-
+    
     using namespace boost::posix_time;
     using namespace boost::gregorian;
     // modem responds to the previous second, which is why we subtract one second from the current time
@@ -294,8 +298,9 @@ void micromodem::MMDriver::clk(NMEASentence& nmea, modem::Message& m)
 
     // make sure the modem reports its time as set at the right time
     // we may end up oversetting the clock, but better safe than sorry...
-    if((expected == reported) || (expected - seconds(ALLOWED_SKEW) == reported))
-        clock_set_ = true;
+    if(reported >= (expected - seconds(ALLOWED_SKEW)))
+        clock_set_ = true;    
+    
 }
 
 void micromodem::MMDriver::mpa(NMEASentence& nmea, modem::Message& m){}
@@ -316,8 +321,9 @@ void micromodem::MMDriver::rev(NMEASentence& nmea, modem::Message& m)
         ptime expected = now();
         ptime reported = modem_time2posix_time(nmea[1]);
 
-        if((expected != reported) && (expected - seconds(ALLOWED_SKEW) != reported))
+        if(reported < (expected - seconds(ALLOWED_SKEW)))
             clock_set_ = false;
+        
     }
     
 }
@@ -424,7 +430,6 @@ void micromodem::MMDriver::initialize_talkers()
         ("DQF",DQF) 
         ("SHF",SHF) 
         ("MFD",MFD) 
-        ("CLK",CLK) 
         ("SNR",SNR) 
         ("DOP",DOP) 
         ("DBG",DBG) 

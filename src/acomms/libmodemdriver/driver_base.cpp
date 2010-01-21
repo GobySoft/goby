@@ -36,7 +36,7 @@ modem::DriverBase::DriverBase(std::ostream* os, const std::string& line_delimite
 void modem::DriverBase::serial_write(const std::string& out)
 {
     serial_.write(out);
-    callback_out_raw(out);
+    if(callback_out_raw) callback_out_raw(out);
 }
 
 bool modem::DriverBase::serial_read(std::string& in)
@@ -49,7 +49,8 @@ bool modem::DriverBase::serial_read(std::string& in)
     else
     {
         in = in_.front();
-        callback_in_raw(in);
+
+        if(callback_in_raw) callback_in_raw(in);
         in_.pop_front();
         return true;
     }

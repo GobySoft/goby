@@ -5,5 +5,7 @@ if(Boost_FOUND)
   
   file(GLOB SRC *.cpp *.c)
   add_library(amac SHARED ${SRC})
-  target_link_libraries(amac)
+  target_link_libraries(amac streamlogger ${Boost_LIBRARIES})
 endif()
+
+add_subdirectory(examples)

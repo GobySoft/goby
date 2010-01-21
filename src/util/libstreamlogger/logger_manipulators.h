@@ -26,10 +26,10 @@
 #include <boost/algorithm/string.hpp>
 
 inline std::ostream & die(std::ostream & os)
-{ return (os << "\33[31m(Error): "); }
+{ return (os << "\33[31m(Error): \33[0m"); }
 
 inline std::ostream & warn(std::ostream & os)
-{ return (os << "\33[31m(Warning): "); }
+{ return (os << "\33[31m(Warning): \33[0m"); }
 
 class Group
 {

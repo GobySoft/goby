@@ -12,3 +12,5 @@ if(Boost_FOUND AND Xerces_LIB_FOUND AND Xerces_H_FOUND )
   add_library(queue SHARED ${SRC})
   target_link_libraries(queue streamlogger xerces-c)
 endif()
+
+add_subdirectory(examples)

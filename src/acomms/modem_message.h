@@ -258,6 +258,8 @@ namespace modem
                     set_ack(value);
                 if(tes_util::val_from_string(value, lower_s, "frame"))
                     set_frame(value);
+                if(tes_util::val_from_string(value, lower_s, "size"))
+                    set_size(value);
             }
         
         }    

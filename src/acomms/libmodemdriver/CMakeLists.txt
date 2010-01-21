@@ -7,3 +7,5 @@ if(Boost_FOUND)
   add_library(modemdriver SHARED ${SRC})
   target_link_libraries(modemdriver streamlogger serial)
 endif()
+
+add_subdirectory(examples)

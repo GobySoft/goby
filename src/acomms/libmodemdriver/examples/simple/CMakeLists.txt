@@ -1,0 +1,2 @@
+add_executable(driver_simple simple.cpp)
+target_link_libraries(driver_simple modemdriver)

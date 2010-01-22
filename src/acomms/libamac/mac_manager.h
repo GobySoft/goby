@@ -155,8 +155,8 @@ namespace amac
 
         /// \brief Call every time a message is received from vehicle to "discover" this vehicle or reset the expire timer. Only needed when the type is amac::mac_slotted_tdma.
         ///
-        /// \param id identification number of the vehicle a message was received from
-        void process_id(unsigned id);
+        /// \param message the new message (used to detect vehicles)
+        void process_message(const modem::Message& m);
 
         /// \name Manipulate slots
         //@{
@@ -195,7 +195,12 @@ namespace amac
         unsigned slot_time() { return slot_time_; }        
         MACType type() { return type_; }
         //@}
+
+
+        /// \example libamac/examples/amac_simple/amac_simple.cpp
+        /// amac_simple.cpp
         
+        /// \example acomms/examples/chat/chat.cpp
         
       private:
         enum { no_available_destination = -1 };

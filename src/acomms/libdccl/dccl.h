@@ -166,7 +166,7 @@ namespace dccl
         ///  const std::map<std::string,MessageVal>& vals) (see dccl::AdvAlgFunction3). func can be a function pointer (&name) or
         /// any function object supported by boost::function (http://www.boost.org/doc/libs/1_34_0/doc/html/function.html).
         /// \param params (passed to func) a list of colon separated parameters passed by the user in the XML file. param[0] is the name.
-        /// \param vals (passed to func) a map of <name/> to current values for all message variables.
+        /// \param vals (passed to func) a map of \ref tag_name to current values for all message variables.
         void add_adv_algorithm(const std::string& name, AdvAlgFunction3 func)
         {
             AlgorithmPerformer* ap = AlgorithmPerformer::getInstance();
@@ -404,10 +404,10 @@ namespace dccl
         std::vector<Message>& messages() {return messages_;}
         
 
-        /// \example libdccl/examples/simple/simple.cpp
+        /// \example libdccl/examples/dccl_simple/dccl_simple.cpp
         /// simple.xml
         /// \verbinclude simple.xml
-        /// simple.cpp
+        /// dccl_simple.cpp
         
         /// \example libdccl/examples/plusnet/plusnet.cpp
         /// nafcon_command.xml
@@ -426,6 +426,8 @@ namespace dccl
         /// \verbinclude two_message.xml
         /// two_message.cpp
 
+        /// \example acomms/examples/chat/chat.cpp
+        
       private:
         std::vector<Message>::const_iterator to_iterator(const std::string& message_name) const
         {

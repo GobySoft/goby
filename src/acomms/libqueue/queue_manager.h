@@ -259,8 +259,15 @@ namespace queue
         
         //@}
         
-        /// \example libqueue/examples/simple/simple.cpp
+        /// \example libqueue/examples/queue_simple/queue_simple.cpp
+        /// simple.xml
+        /// \verbinclude simple.xml
+        /// queue_simple.cpp
 
+
+        /// \example acomms/examples/chat/chat.cpp
+        
+        
       private:
         void qsize(Queue* q)
         {

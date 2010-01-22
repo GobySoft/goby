@@ -28,31 +28,41 @@
 #include "acomms/modem_driver.h"
 #include "acomms/amac.h"
 
+namespace acomms_util
+{
+    
 // binds the driver link-layer callbacks to the QueueManager
-void bind(modem::DriverBase& driver, queue::QueueManager& queue_manager)
-{
-    using boost::bind;
-    driver.set_receive_cb
-        (bind(&queue::QueueManager::receive_incoming_modem_data, &queue_manager, _1));
-    driver.set_ack_cb
-        (bind(&queue::QueueManager::handle_modem_ack, &queue_manager, _1));
-    driver.set_datarequest_cb
-        (bind(&queue::QueueManager::provide_outgoing_modem_data, &queue_manager, _1, _2));
-}
-
+    void bind(modem::DriverBase& driver, queue::QueueManager& queue_manager)
+    {
+        using boost::bind;
+        driver.set_receive_cb
+            (bind(&queue::QueueManager::receive_incoming_modem_data, &queue_manager, _1));
+        driver.set_ack_cb
+            (bind(&queue::QueueManager::handle_modem_ack, &queue_manager, _1));
+        driver.set_datarequest_cb
+            (bind(&queue::QueueManager::provide_outgoing_modem_data, &queue_manager, _1, _2));
+    }
+    
 // binds the MAC initiate transmission callback to the driver
-void bind(amac::MACManager& mac, modem::DriverBase& driver)
-{
-    using boost::bind;
-    mac.set_initiate_transmission_cb(bind(&modem::DriverBase::initiate_transmission, &driver, _1));
-}
-
+    void bind(amac::MACManager& mac, modem::DriverBase& driver)
+    {
+        mac.set_initiate_transmission_cb(boost::bind(&modem::DriverBase::initiate_transmission, &driver, _1));
+        driver.set_in_parsed_cb(boost::bind(&amac::MACManager::process_message, &mac, _1));
+    }
+    
 // binds the MAC destination request to the queue_manager
-void bind(amac::MACManager& mac, queue::QueueManager& queue_manager)
-{
-    using boost::bind;
-    mac.set_destination_cb
-        (bind(&queue::QueueManager::request_next_destination, &queue_manager, _1));
+    void bind(amac::MACManager& mac, queue::QueueManager& queue_manager)
+    {
+        mac.set_destination_cb(boost::bind(&queue::QueueManager::request_next_destination, &queue_manager, _1));
+    }
+
+    // bind all three
+    void bind(modem::DriverBase& driver, queue::QueueManager& queue_manager, amac::MACManager& mac)
+    {
+        bind(driver, queue_manager);
+        bind(mac, driver);
+        bind(mac, queue_manager);
+    }
 }
 
 #endif

@@ -214,9 +214,10 @@ boost::posix_time::ptime amac::MACManager::next_cycle_time()
     return ptime(day_clock::universal_day(), seconds(secs_to_next));
 }
 
-// when we get a message of some sort from someone else
-void amac::MACManager::process_id(unsigned id)
+void amac::MACManager::process_message(const modem::Message& m)
 {
+    unsigned id = m.src();
+
     if(type_ != mac_slotted_tdma)
         return;
     
@@ -250,7 +251,7 @@ void amac::MACManager::expire_ids()
     
     for(id2slot_it it = id2slot_.begin(), n = id2slot_.end(); it != n; ++it)
     {
-        if(it->second.last_heard_time() < now()-boost::posix_time::seconds(cycle_length()*expire_cycles_))
+        if(it->second.last_heard_time() < now()-boost::posix_time::seconds(cycle_length()*expire_cycles_) && it->first != modem_id_)
         {            
             if(os_) *os_ << group("mac") << "removed id " << it->first
                          << " after not hearing for " << expire_cycles_

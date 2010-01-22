@@ -39,7 +39,7 @@ int main()
     // checking (syntax).
     dccl::DCCLCodec dccl(DCCL_EXAMPLES_DIR "/simple/simple.xml",
                          "../../message_schema.xsd");
-        
+    
     // read message content (in this case from the command line)
     std::string input;
     std::cout << "input a string to send: " << std::endl;

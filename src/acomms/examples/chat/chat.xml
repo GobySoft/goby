@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<message_set>
+  <message>
+    <name>Chat</name>
+    <id>1</id>
+    <size>32</size>
+    <queuing>
+      <ack>true</ack>
+      <blackout_time>0</blackout_time>
+      <max_queue>50</max_queue>
+      <newest_first>false</newest_first>
+    </queuing>
+    <layout>
+      <string>
+        <name>message</name>
+        <max_length>30</max_length>
+      </string>      
+    </layout>
+  </message>
+</message_set>

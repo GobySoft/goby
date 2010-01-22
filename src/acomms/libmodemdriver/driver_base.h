@@ -89,10 +89,18 @@ namespace modem
         /// \param message1 (incoming) The modem::Message containing the details of the request (source, destination, size, etc.)
         /// \param message2 (outgoing) The modem::Message to be sent. This should be populated by the callback.
         void set_datarequest_cb(MsgFunc2 func) { callback_datarequest = func; }
+
+        /// \brief Set the callback to pass all parsed messages to (i.e. modem::Message representation of the serial line)
+        ///
+        ///  If using the amac::MACManager, pass amac::MACManager::process_message to this method.
+        /// \param func Pointer to function (or any other object boost::function accepts) matching the signature of modem::MsgFunc1.
+        /// The callback (func) will be invoked with the following parameters:
+        /// \param message A modem::Message containing the received modem message
+        void set_in_parsed_cb(MsgFunc1 func)   { callback_decoded = func; }
         
         void set_in_raw_cb(StrFunc1 func)      { callback_in_raw = func; }
         void set_out_raw_cb(StrFunc1 func)     { callback_out_raw = func; }
-        void set_in_parsed_cb(MsgFunc1 func)   { callback_decoded = func; }
+
 
         /// \return the serial port name
         std::string serial_port() { return serial_port_; }

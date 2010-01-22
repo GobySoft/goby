@@ -60,8 +60,8 @@ int main(int argc, char* argv[])
     // 5. Discover some friends (modem ids 2 & 3)
     //
     
-    mac.process_id(2);
-    mac.process_id(3);
+    mac.process_message(modem::Message("src=2"));
+    mac.process_message(modem::Message("src=3"));
 
     //
     // 6. Run it, hearing consistently from #3, but #2 has gone silent and will be expired after 2 cycles
@@ -71,7 +71,7 @@ int main(int argc, char* argv[])
     {
         mac.do_work();
         sleep(1);
-        mac.process_id(3);
+        mac.process_message(modem::Message("src=3"));
     }
     
     return 0;

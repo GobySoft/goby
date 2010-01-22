@@ -110,8 +110,12 @@ namespace micromodem
         boost::posix_time::ptime modem_time2posix_time(const std::string& mt);
         double modem_time2unix_time(const std::string& mt);
 
-        /// \example libmodemdriver/examples/simple/simple.cpp
-    
+        /// \example libmodemdriver/examples/driver_simple/driver_simple.cpp
+        /// driver_simple.cpp
+        
+        /// \example acomms/examples/chat/chat.cpp
+        
+        
       private:
         std::deque<serial::NMEASentence> out_;
 
@@ -126,7 +130,7 @@ namespace micromodem
         // set after the startup routines finish once. we can't startup on instantiation because
         // the base class sets some of our references (from the MOOS file)
         bool startup_done_;
-
+        
         // keeps track of number of failures and exits after reaching MAX_FAILS, assuming %modem dead
         unsigned global_fail_count_;
 

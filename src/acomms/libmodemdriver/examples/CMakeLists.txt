@@ -1,1 +1,1 @@
-add_subdirectory(simple)
+add_subdirectory(driver_simple)

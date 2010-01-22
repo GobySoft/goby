@@ -1,0 +1,2 @@
+add_executable(dccl_simple dccl_simple.cpp)
+target_link_libraries(dccl_simple dccl)

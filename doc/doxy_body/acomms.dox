@@ -39,7 +39,7 @@ To get started using the goby-acomms libraries as quickly as possible:
     <li>A driver for interacting with the acoustic %modem firmware. Presently the WHOI Micro-Modem <http://acomms.whoi.edu/> is supported: \ref driver</li>
     <li>Time division multiple access (TDMA) medium access control (MAC): \ref amac</li>
   </ul> 
-  <li> Look at the "simple" code examples that accompany each library (\ref libdccl/examples/simple/simple.cpp "DCCL: simple.cpp", \ref libqueue/examples/simple/simple.cpp "Queue: simple.cpp", \ref libmodemdriver/examples/simple/simple.cpp "MMDriver: simple.cpp",  \ref libamac/examples/simple/simple.cpp "AMAC: simple.cpp"). Then look at the example that uses all three libraries together: \ref acomms/examples/simple/simple.cpp "goby-acomms: acomms/examples/chat.cpp".  The full list of examples is given in \ref OSI_table "this table". </li>
+  <li> Look at the "simple" code examples that accompany each library (\ref libdccl/examples/dccl_simple/dccl_simple.cpp "dccl_simple.cpp", \ref libqueue/examples/queue_simple/queue_simple.cpp "queue_simple.cpp", \ref libmodemdriver/examples/driver_simple/driver_simple.cpp "driver_simple.cpp",  \ref libamac/examples/amac_simple/amac_simple.cpp "amac_simple.cpp"). Then look at the example that uses all the libraries together: \ref acomms/examples/chat/chat.cpp "chat.cpp".  The full list of examples is given in \ref OSI_table "this table". </li>
   <li> Refer to the rest of the documentation as needed.</li>
 </ol>
 
@@ -70,10 +70,11 @@ To start on some (hopefully) common ground, let's begin with an analogy to Open 
     <td>\ref dccl</td>
     <td>dccl::DCCLCodec</td>
     <td>
-      \ref libdccl/examples/simple/simple.cpp "simple.cpp" <br/>
+      \ref libdccl/examples/dccl_simple/dccl_simple.cpp "dccl_simple.cpp" <br/>
       \ref libdccl/examples/two_message/two_message.cpp "two_message.cpp" <br/>
       \ref libdccl/examples/plusnet/plusnet.cpp "plusnet.cpp" <br/>
-      \ref libdccl/examples/test/test.cpp "test.cpp"
+      \ref libdccl/examples/test/test.cpp "test.cpp" <br/>
+      \ref acomms/examples/chat/chat.cpp "chat.cpp" <br/>
     </td>
   </tr>
   <tr>
@@ -86,7 +87,8 @@ To start on some (hopefully) common ground, let's begin with an analogy to Open 
     <td>\ref queue</td>
     <td>queue::QueueManager</td>
     <td>
-      \ref libqueue/examples/simple/simple.cpp "simple.cpp" <br/>
+      \ref libqueue/examples/queue_simple/queue_simple.cpp "queue_simple.cpp" <br/>
+      \ref acomms/examples/chat/chat.cpp "chat.cpp" <br/>
     </td>
   </tr>    
   <tr>
@@ -100,14 +102,18 @@ To start on some (hopefully) common ground, let's begin with an analogy to Open 
     <td>\ref driver</td>
     <td>classes derived from modem::DriverBase; e.g. micromodem::MMDriver</td>
     <td>
-      \ref libmodemdriver/examples/simple/simple.cpp "simple.cpp" <br/>
-b    </td>
+      \ref libmodemdriver/examples/driver_simple/driver_simple.cpp "driver_simple.cpp" <br/>
+      \ref acomms/examples/chat/chat.cpp "chat.cpp" <br/>
+    </td>
   </tr>
   <tr>
     <td></td>
     <td>\ref amac</td>
     <td>amac::MACManager</td>
-    <td></td>
+    <td>
+      \ref libamac/examples/amac_simple/amac_simple.cpp "amac_simple.cpp" <br/>
+      \ref acomms/examples/chat/chat.cpp "chat.cpp" <br/>
+    </td>
   </tr>
   <tr>
     <td>Physical</td>

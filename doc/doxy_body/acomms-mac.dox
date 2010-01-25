@@ -17,6 +17,58 @@ Return to \ref acomms.
 
 \section amac_schemes Supported MAC schemes
 
+The Medium Access Control schemes provided by libamac are based on Time Division Multiple Access (TDMA) where different communicators share the same bandwidth but transmit at different times to avoid conflicts. Time is divided into slots and each vehicle is given a slot to transmit on. The set of slots comprising all the vehicles is referred to here as a cycle, which repeats itself when it reaches the end. The two variations on this scheme provided by libamac are:
+
+<ol>
+<li> Slotted TDMA (amac::mac_slotted_tdma): Each vehicle has a single slot in the cycle on which it transmits. Each vehicle initiates its own transmission at the start of its slot. Collisions are avoided by each vehicle following the same rules about slot placement within the time window (based on real time of day). This scheme requires that each vehicle have reasonably accurate clocks (perhaps better than +/- 0.5 seconds). 
+<li> Centralized Polling (amac::mac_polled): The TDMA cycle is set up and operated by a centralized modem ("poller"), which is usually the modem connected to the vehicle operator's topside. The poller initiates each transmission and thus the vehicles are not required to maintain synchronous clocks.
+</ol>
+
 \section amac_manager Interacting with the amac::MACManager
+
+To use the amac::MACManager, you need to instantiate it (optionally with a std::ostream pointer to a location to log to):
+
+\code
+amac::MACManager mac(&std::cout);
+\endcode
+
+Then you need to provide a callback for providing the next destination of a message (amac::MACManager::set_destination_cb) or simply bind the amac::MACManager to the queue::QueueManager, if you are using one (acomms_util::bind(amac::MACManager&, queue::QueueManager&)). This callback takes as an argument the size (in bytes) of the next message to be sent and should return the modem id number of the next destination (or -1 if no data is to be sent). The other callback to set is for initiating transmission (amac::MACManager::set_initiate_transmission_cb). This callback will be called when the amac::MACManager determines it is time to send a message. If using libmodemdriver, simply call acomms_util::bind(amac::MACManager&, modem::DriverBase&) to bind this callback to the %modem driver.
+
+Next you need to decide which type of MAC to use: slotted TDMA or centralized polling and set the type of the amac::MACManager with the corresponding amac::MACType:
+
+\code
+mac.set_type(amac::mac_slotted_tdma);
+\endcode
+
+The usage of the amac::MACManager depends now on the type:
+
+<ul>
+<li>amac::mac_slotted_tdma: Set the rest of the parameters (modem rate (integer from 0-5), slot time (seconds), cycles before removing a "dead" vehicle from the cycle, and the modem id of this vehicle):
+\code
+mac.set_rate(0);
+mac.set_slot_time(10);
+mac.set_expire_cycles(2);
+mac.set_modem_id(1);
+\endcode
+<li>amac::mac_polled: On the vehicles, you do not need to run the amac::MACManager at all, or simply leave it unconfigured. All the MAC is done on the topside (the centralized poller). On the poller, you need to manually set up a list of vehicles to be polled by adding an amac::Slot (amac::MACManager::add_slot) for each vehicle to be polled. You can poll the same vehicle multiple times, just add more amac::Slot objects corresponding to that vehicle. Each slot has a source, destination, rate, type (data or ping [not yet implemented]), and length (in seconds). If the source is the poller, you can set the destination to -1 to make the amac::MACManager call the callback given to amac::MACManager::set_destination_cb to determine the destination. All amac::Slot objects for vehicles must have a specified destination (the broadcast id of 0 is a good choice). For example:
+\code
+// let's call our poller id 1
+mac.set_modem_id(1);
+
+// poll ourselves (for commands, perhaps)
+// src: 1, dest: ask (-1), rate 0, send data, 10 second slot
+mac.add_slot(amac::Slot(1, -1, 0, amac::slot_data, 10));
+// poll vehicle 3 at rate 0
+mac.add_slot(amac::Slot(3, acomms_util::BROADCAST_ID, 0, amac::slot_data, 10));
+// poll vehicle 3 at rate 5
+mac.add_slot(amac::Slot(3, acomms_util::BROADCAST_ID, 5, amac::slot_data, 10));
+// poll vehicle 4 at rate 0
+mac.add_slot(amac::Slot(4, acomms_util::BROADCAST_ID, 0, amac::slot_data, 10));
+\endcode
+You can remove vehicles by a call to amac::MACManager::remove_slot or clear out the entire cycle and start over with amac::MACManager::clear_all_slots.
+</ul>
+
+Then, for either MAC scheme, start the amac::MACManager running (amac::MACManager::startup), and call amac::MACManager::do_work() periodically (1 Hz is fine). If using a derivative of modem::DriverBase, vehicles will automatically be discovered as they are heard from and added to the cycle (via a callback to amac::MACManager::process_message). If using a different driver, you need to inform the amac::MACManager each time you hear from a vehicle by passing a modem::Message representing any transmission (doesn't need to contain data) to amac::MACManager::process_message. If a vehicle isn't heard from for a certain number of cycles (set by amac::MACManager::set_expire_cycles), it will be removed from the cycle to increase throughput for the remaining vehicles.
+
 
 */

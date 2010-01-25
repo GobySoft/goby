@@ -20,9 +20,143 @@ Return to \ref acomms.
 
 \section acomms_driverbase Abstract class: DriverBase
 
+modem::DriverBase defines the core functionality for an acoustic %modem. It provides
+
+<ul>
+<li>a serial class (and methods to configure it) that reads the serial port data into a buffer for use by the modem::DriverBase derived class (e.g. micromodem::MMDriver). These methods are modem::DriverBase::set_serial_port and modem::DriverBase::set_baud.
+<li>methods to set all six callbacks provided by the derived class (receive, acknowledgement, data request, parsed incoming message, raw incoming message, raw outgoing message). 
+At the application layer, either bind the %modem driver to a queue::QueueManager (acomms_util::bind(modem::DriverBase&, queue::QueueManager&) or pass custom function pointers or objects to the driver layer callbacks: modem::DriverBase::set_receive_cb, modem::DriverBase::set_ack_cb, modem::DriverBase::set_datarequest_cb. The parsed incoming message callback is used by the amac::MACManager to "discover" vehicles so this callback should be bound to the amac::MACManager (using acomms_util::bind(amac::MACManager&, modem::DriverBase&)). The remaining two callbacks (raw incoming and raw outgoing) are for use by the application layer if desired to monitor the functionality of the %modem.
+<li>three virtual functions: for starting the driver (modem::DriverBase::startup), running the driver (modem::DriverBase::do_work), and initiating the transmission of a message (modem::DriverBase::initiate_transmission).
+<li>a method to set configuration values for the acoustic %modem (modem::DriverBase::set_cfg). this configuration takes the form of a vector of strings, the details of which depend on the specific %modem.
+</ul>
+
 \section acomms_mmdriver WHOI Micro-Modem Driver: MMDriver
+
+The micromodem::MMDriver extends the DriverBase for the WHOI Micro-Modem acoustic %modem. It is tested to work with revision 0.93.0.30 of the Micro-Modem firmware, but is known to work with older firmware (at least 0.92.0.85). The following commands of the WHOI Micro-Modem are implemented:
+
+Modem to Control Computer ($CA):
+<ul>
+<li>$CAACK - acknowledgement of sent message. Will be transformed into a modem::Message and passed to the callback provided to modem::DriverBase::set_ack_cb.
+<li>$CADRQ - data request. Will be transformed into a modem::Message and passed to the callback provided to modem::DriverBase::set_datarequest_cb. The second parameter of that callback holds a reference to a modem::Message into which the callback should place the requested data.
+<li>$CARXD - received hexadecimal data. Will be transformed into a modem::Message and passed to the callback provided to modem::DriverBase::set_receive_cb.
+<li>$CAREV - revision number and heartbeat. Used to check for correct clock time and %modem reboots.
+<li>$CAERR - error message. The error message is logged to the std::ostream provided to micromodem::MMDriver at instantiation.
+</ul>
+
+Control Computer to Modem ($CC). Also implemented is the NMEA acknowledge (e.g. $CACYC for $CCCYC):
+<ul>
+<li>$CCTXD - transmit data. Sent using the second parameter of the callback provided to modem::DriverBase::set_datarequest_cb (see $CADRQ).
+<li>$CCCYC - initiate a cycle. Sent on response to a call of micromodem::MMDriver::initiate_transmission.
+<li>$CCCLK - set the clock. The clock is set on startup until a suitably value within 1 second of the computer time is reported back. If the %modem reboots ($CAREV,...,INIT), the clock is set again.
+<li>$CCCFG - configure NVRAM value. All values passed to modem::DriverBase::set_cfg will be passed to $CACFG at startup. For example, to send $CACFG,SRC,3, place the string "SRC,3" in the vector passed to modem::DriverBase::set_cfg.
+<li>$CCCFQ - query configuration values. $CCCFQ,ALL is sent after all the $CCCFG lines to log the NVRAM parameters.
+</ul>
+
+Mapping between modem::Message and NMEA fields (see http://acomms.whoi.edu/documents/uModem%20Software%20Interface%20Guide.pdf for NMEA fields of the WHOI Micro-Modem):
+<table>
+<tr>
+<td>NMEA talker</td>
+<td>Mapping</td>
+</tr>
+<tr>
+<td>$CAACK</td>
+<td>
+modem::Message::src = SRC<br/>
+modem::Message::dest = DEST<br/>
+modem::Message::frame = Frame#<br/>
+modem::Message::ack = A<br/>
+</td>
+</tr>
+<tr>
+<td>$CADRQ</td>
+<td>
+modem::Message::src = SRC<br/>
+modem::Message::dest = DEST<br/>
+modem::Message::ack = ACK<br/>
+modem::Message::size = N<br/>
+modem::Message::frame = F#<br/>
+</td>
+</tr>
+<tr>
+<td>$CARXD</td>
+<td>
+modem::Message::src = SRC<br/>
+modem::Message::dest = DEST<br/>
+modem::Message::ack = ACK<br/>
+modem::Message::frame = F#<br/>
+modem::Message::data = HH...HH <br/>
+modem::Message::size = number of bytes in HH...HH<br/>
+</td>
+</tr>
+<tr>
+<td>$CAREV</td>
+<td>not translated into a modem::Message.</td>
+</tr>
+<tr>
+<td>$CAERR</td>
+<td>not translated into a modem::Message.</td>
+</tr>
+<tr>
+<td>$CCTXD</td>
+<td>
+SRC = modem::Message::src<br/>
+DEST = modem::Message::dest<br/>
+A = modem::Message::ack<br/>
+HH...HH = modem::Message::data<br/>
+</td>
+</tr>
+<tr>
+<td>$CCCYC</td>
+<td>
+CMD = 0<br/>
+ADR1 = modem::Message::src<br/>
+ADR1 = modem::Message::dest<br/>
+Packet Type = modem::Message::rate<br/>
+ACK = modem::Message::ack<br/>
+Nframes = modem::Message::frame<br/>
+</td>
+</tr> 
+<tr>
+<td>$CCCLK</td>
+<td>not translated from a modem::Message (taken from the system time using the boost::date_time library)</td>
+</tr>
+<tr>
+<td>$CCCFG</td>
+<td>not translated from a modem::Message. (taken from the std::vector<std::string> passed to modem::DriverBase::set_cfg)</td>
+</tr>
+<tr>
+<td>$CCCFQ</td>
+<td>not translated from a modem::Message. $CCCFG,ALL sent at startup.</td>
+</tr>
+</table>
 
 \section acomms_writedriver Writing a new driver
 
+Most of goby-acomms is intended to be agnostic of which physical %modem is used. However, since the whole system was designed for the WHOI Micro-Modem initially, it will probably take some work to initially incorporate a different device. 
+
+These are the assumptions of the acoustic %modem:
+
+<ul>
+<li>it communicates using a line based duplex serial connection.
+<li>it is configurable using string values.
+</ul>
+
+
+The new driver must provide this functionality:
+<ul>
+<li>Overload the three pure virtual functions:
+<ol>
+<li>modem::DriverBase::startup: do any initialization here you need to do before the %modem is ready to do work. Probably the place to read and set the values in std::vector<std::string> cfg_.
+<li>modem::DriverBase::do_work: this is called periodically (say at 10 Hz) by the application layer. You should read all the messages in the serial buffer by calling modem::DriverBase::serial_read until it returns false indicating no more lines to read. 
+<li>modem::DriverBase::initiate_transmission: this is called when the application wants to send a message. The modem::Message provided here <i>does not</i> contain the data to be sent. To get data, you must call modem::DriverBase::callback_datarequest where the first parameter is the modem::Message of the request and the second parameter is a reference to a modem::Message that will contain the data to be sent. The modem::Message provided to initiate_transmission may request multiple frames (modem::Message::frame). You can, <i>but are not required to</i>, call as many instances of modem::DriverBase::callback_datarequest as frames requested. It will be important to map the hardware packet sizes to the sizes requested in modem::Message::size of the first parameter of modem::DriverBase::callback_datarequest. This will obviously depend on the specifics of the %modem and the data rate requested. For the WHOI Micro-Modem, for example, there are six possible data rates, four of which are implemented, each with a different frame size and number of frames (rate 0 = 1x 32 byte frame, rate 2 = 3x 64 byte frames, rate 3 = 2x 256 byte frames, rate 5 = 8x 256 byte frames). For example, if your modem uses a single 512 byte frame, call modem::DriverBase::callback_datarequest(modem::Message("size=512")). On the other hand, if it uses 3x 128 byte frames, call modem::DriverBase::callback_datarequest(modem::Message("size=128")) three different times, one for each frame. If your %modem has variable length packets, pick a reasonable size for which the duration of the packet in the water is on the order of several seconds. 
+</ol>
+<li>Call callback_decoded with a modem::Message mapped for each incoming acoustic sourced message (acknowledgement, data packet, control message, anything). Ideally should contain at least a modem::Message::src and modem::Message::dest, and intelligent mappings to the other fields of modem::Message where possible or for which the probability of reception is acceptably high.
+<li>Call callback_ack with the a modem::Message containing modem::Message::src, modem::Message::dest, and modem::Message::frame for each frame acknowledged. You should acknowledge any data that is to be acknowledged before requesting the next set of frames. That is, do not leave a frame 1 unacknowledged (assuming \ref tag_ack is set true for that %queue) and request another frame 1.
+<li>Call callback_receive with any received data. This should include at least a modem::Message::src, modem::Message::dest, and modem::Message::data. 
+</ul>
+
+Modem bit rates need to be mapped onto a set of unsigned integers from 0 to 5 where 0 is the lowest (and thus presumably most robust) bit rate and 5 is the highest. All vehicles in the network must be identified by unsigned integers (in the range 0-std::numeric_limits<unsigned>::max). 
+
+See micromodem::MMDriver for an example implementation.
 
 */

@@ -98,7 +98,20 @@ namespace modem
         /// \param message A modem::Message containing the received modem message
         void set_in_parsed_cb(MsgFunc1 func)   { callback_decoded = func; }
         
+        /// \brief Set the callback to pass raw incoming modem strings to.
+        ///
+        ///  
+        /// \param func Pointer to function (or any other object boost::function accepts) matching the signature of modem::StrFunc1.
+        /// The callback (func) will be invoked with the following parameters:
+        /// \param std::string The raw incoming string
         void set_in_raw_cb(StrFunc1 func)      { callback_in_raw = func; }
+
+        /// \brief Set the callback to pass all raw outgoing modem strings to.
+        ///
+        ///  
+        /// \param func Pointer to function (or any other object boost::function accepts) matching the signature of modem::StrFunc1.
+        /// The callback (func) will be invoked with the following parameters:
+        /// \param std::string The raw outgoing string
         void set_out_raw_cb(StrFunc1 func)     { callback_out_raw = func; }
 
 

@@ -28,10 +28,11 @@
 #include "acomms/modem_driver.h"
 #include "acomms/amac.h"
 
+/// utilites for dealing with goby-acomms
 namespace acomms_util
 {
     
-// binds the driver link-layer callbacks to the QueueManager
+/// binds the driver link-layer callbacks to the QueueManager
     void bind(modem::DriverBase& driver, queue::QueueManager& queue_manager)
     {
         using boost::bind;
@@ -43,20 +44,20 @@ namespace acomms_util
             (bind(&queue::QueueManager::provide_outgoing_modem_data, &queue_manager, _1, _2));
     }
     
-// binds the MAC initiate transmission callback to the driver
+/// binds the MAC initiate transmission callback to the driver and the driver parsed message callback to the MAC
     void bind(amac::MACManager& mac, modem::DriverBase& driver)
     {
         mac.set_initiate_transmission_cb(boost::bind(&modem::DriverBase::initiate_transmission, &driver, _1));
         driver.set_in_parsed_cb(boost::bind(&amac::MACManager::process_message, &mac, _1));
     }
     
-// binds the MAC destination request to the queue_manager
+/// binds the MAC destination request to the queue_manager
     void bind(amac::MACManager& mac, queue::QueueManager& queue_manager)
     {
         mac.set_destination_cb(boost::bind(&queue::QueueManager::request_next_destination, &queue_manager, _1));
     }
 
-    // bind all three
+    /// bind all three (shortcut to calling the other three bind functions)
     void bind(modem::DriverBase& driver, queue::QueueManager& queue_manager, amac::MACManager& mac)
     {
         bind(driver, queue_manager);

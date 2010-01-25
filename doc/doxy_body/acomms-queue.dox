@@ -58,6 +58,31 @@ This section gives a brief outline of the tag structure of an XML file for defin
 
 \section queue_manager Interacting with the QueueManager
 
+The queue::QueueManager is configured similarly to the dccl::DCCLCodec. You need to add queues to the QueueManager which is done by feeding it either XML files (for DCCL queues with queue::QueueManager::add_xml_queue_file) or queue::QueueConfig objects (for CCL queues with queue::QueueManager::add_queue). You can instantiate the queue::QueueManager (optionally with XML files) like
+
+\code
+queue::QueueManager q_manager("/path/to/file.xml","/path/to/message_schema.xsd");
+\endcode
+
+Then, you need to do a few more initialization chores:
+<ul>
+<li> Set the %modem id for the current vehicle: queue::QueueManager::set_modem_id
+<li> Pass function pointers or function objects for these callbacks (any of these are optional if you do not need their functionality):
+<ul>
+<li> Received DCCL data: queue::QueueManager::set_receive_cb
+<li> Received CCL data: queue::QueueManager::set_receive_ccl_cb
+<li> Received acknowledgements: queue::QueueManager::set_ack_cb
+</ul>
+<li> Optional advanced features
+<ul>
+<li> Set a callback for every time a %queue size changes due to a new message being pushed or a message being sent: queue::QueueManager::set_queue_size_change_cb 
+<li> Request that a %queue be <i>on_demand</i>, that is, request data from the application layer every time the %modem layer requests data. This effectively bypasses the %queue and forwards the modem's data request to the application layer. Use this for sending highly time sensitive data which needs to be encoded immediately prior to sending: queue::QueueManager::set_on_demand. You must also provide a function callback that will be executed each time data is request: queue::QueueManager::set_data_on_demand_cb.
+</ul>
+</ul>
+
+At this point the queue::QueueManager is ready to use. At the application layer, new messages are pushed to the queues for sending using queue::QueueManager::push_message. Each %queue is identified by a unique queue::QueueKey, which is simply the identification number of the %queue (\ref tag_id for DCCL queues or the decimal representation of the first byte of a CCL message) and the %queue type (queue::queue_dccl or queue::queue_ccl).
+
+At the driver layer, messages are requested using queue::QueueManager::provide_outgoing_modem_data, incoming messages are published using queue::QueueManager::receive_incoming_modem_data, and queue::QueueManager::acknowledgements are given using queue::QueueManager::handle_modem_ack. If using the goby-acomms drivers (i.e. some class derived from modem::DriverBase), simply call acomms_util::bind(modem::DriverBase&, queue::QueueManager&) and these methods will be invoked automatically from the proper driver callbacks.
 
 \section queue_tags_details Queuing XML Tags Reference
 

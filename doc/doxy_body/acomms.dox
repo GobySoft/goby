@@ -210,9 +210,20 @@ Table of Contents for libamac:
 
 \section  acomms_uml UML models
 
-Model that describes the operation of goby-acomms as a whole:
+Model that describes the static structure of goby-acomms as a whole:
 
 \image html goby-acomms-detailed-overview.png
-\image latex goby-acomms-detailed-overview.eps "UML Model giving detailed overview of class interfaces and their connections when using all the goby-acomms libraries together. Note that is possible to replace any of the libraries as long as the user handles the nessary callbacks (e.g. to replace libqueue you need functions to handle the data request, acknowledgement, and receive callbacks from libmodemdriver)." width=5in
+\image latex goby-acomms-detailed-overview.eps "UML Model that shows detailed overview of class interfaces and their connections when using all the goby-acomms libraries together. Note that is possible to replace any of the libraries as long as the user handles the nessary callbacks (e.g. to replace libqueue you need functions to handle the data request, acknowledgement, and receive callbacks from libmodemdriver)." width=\textwidth
+
+Model that gives the sequence for sending a message with goby-acomms:
+
+\image html goby-acomms-send-message-sequence.png
+\image latex goby-acomms-send-message-sequence.eps "UML model that gives the sequence of calls required in sending a message using goby-acomms. The WHOI Micro-Modem is used as example firmware but the specific libmodemdriver-firmware interaction will depend on the acoustic modem used." width=\textwidth
+
+Model that shows the commands needed to start and keep goby-acomms running:
+
+\image html goby-acomms-background-sequence.png
+\image latex goby-acomms-background-sequence.eps "UML model that illustrates the set of commands needed to start up goby-acomms and keep it running." width=\textwidth
+
 
 */

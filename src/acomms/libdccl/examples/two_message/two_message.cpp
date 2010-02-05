@@ -29,7 +29,7 @@ int main()
     std::cout << "loading xml files: xml/simple.xml, xml/two_message.xml" << std::endl;
 
     std::set<std::string> xml_files;
-    xml_files.insert(DCCL_EXAMPLES_DIR "/simple/simple.xml");
+    xml_files.insert(DCCL_EXAMPLES_DIR "/dccl_simple/simple.xml");
     xml_files.insert(DCCL_EXAMPLES_DIR "/two_message/two_message.xml");
     
     dccl::DCCLCodec dccl(xml_files, "../../message_schema.xsd");

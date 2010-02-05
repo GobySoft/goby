@@ -37,7 +37,7 @@ int main()
     // instantiate the parser with a single xml file (simple.xml).
     // also pass the schema, relative to simple.xml, for XML validity
     // checking (syntax).
-    dccl::DCCLCodec dccl(DCCL_EXAMPLES_DIR "/simple/simple.xml",
+    dccl::DCCLCodec dccl(DCCL_EXAMPLES_DIR "/dccl_simple/simple.xml",
                          "../../message_schema.xsd");
     
     // read message content (in this case from the command line)

@@ -31,7 +31,7 @@ int main()
     
     // create a QueueManager for all our queues
     // and at the same time add our message as a DCCL queue
-    queue::QueueManager q_manager(QUEUE_EXAMPLES_DIR "/simple/simple.xml",
+    queue::QueueManager q_manager(QUEUE_EXAMPLES_DIR "/queue_simple/simple.xml",
                                   "../../../libdccl/message_schema.xsd");
 
     // our modem id (arbitrary)

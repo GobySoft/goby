@@ -198,7 +198,7 @@ Table of Contents for libmodemdriver:
 
 \section amac libamac: Medium Access Control (MAC)
 
-The goby-acomms MAC library (libamac) handles access to the shared medium, in our case the acoustic channel. We assume that we have a single band for transmission so that if vehicles transmit simultaneously, collisions will occur between messaging. Therefore, we use time division multiple access (TDMA) schemes, or "slotting". we employ Networks with multiple frequency bands will have to employ a different MAC scheme or augment libamac for the frequency division multiple access (FDMA) scenario. The default TDMA scheme used also includes basic peer discovery and subsequent expiry of peers after a long time of silence.
+The goby-acomms MAC library (libamac) handles access to the shared medium, in our case the acoustic channel. We assume that we have a single band for transmission so that if vehicles transmit simultaneously, collisions will occur between messaging. Therefore, we use time division multiple access (TDMA) schemes, or "slotting". Networks with multiple frequency bands will have to employ a different MAC scheme or augment libamac for the frequency division multiple access (FDMA) scenario. The default TDMA scheme used also includes basic peer discovery and subsequent expiry of peers after a long time of silence.
 
 For legacy support and scenarios where fine control is needed, "polling" is also provided. This is a TDMA enforced by a central computer (the "poller"). The "poller" sends a request for data from a list of nodes in sequential order. The advantage of polling is that synchronous clocks are not needed and the MAC scheme can be changed on short notice by the topside operator.
 
@@ -213,7 +213,7 @@ Table of Contents for libamac:
 Model that describes the static structure of goby-acomms as a whole:
 
 \image html goby-acomms-detailed-overview.png
-\image latex goby-acomms-detailed-overview.eps "UML Model that shows detailed overview of class interfaces and their connections when using all the goby-acomms libraries together. Note that is possible to replace any of the libraries as long as the user handles the nessary callbacks (e.g. to replace libqueue you need functions to handle the data request, acknowledgement, and receive callbacks from libmodemdriver)." width=\textwidth
+\image latex goby-acomms-detailed-overview.eps "UML Model that shows detailed overview of class interfaces and their connections when using all the goby-acomms libraries together. Note that is possible to replace any of the libraries as long as the user handles the nessary callbacks (e.g. to replace libqueue you need functions to handle the data request, acknowledgement, and receive callbacks from libmodemdriver)." width=0.9\textwidth
 
 Model that gives the sequence for sending a message with goby-acomms:
 

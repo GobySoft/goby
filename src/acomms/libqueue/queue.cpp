@@ -60,13 +60,13 @@ bool queue::Queue::push_message(modem::Message& new_message)
                              new_message.data());
     }    
     new_message.set_src(modem_id_);
-    new_message.set_ack(cfg_.ack());
+    new_message.set_ack(new_message.ack_set() ? new_message.ack() : cfg_.ack());
         
     messages_.push_back(new_message);
 
     
     // push messages off the stack if the queue is full
-    if(messages_.size() > cfg_.max_queue() && cfg_.max_queue() > 0)
+    if(cfg_.max_queue() && messages_.size() > cfg_.max_queue())
     {        
         messages_it it_to_erase =
             cfg_.newest_first() ? messages_.begin() : messages_.end();
@@ -115,42 +115,37 @@ modem::Message queue::Queue::give_data(unsigned frame)
 
 
 // gives priority values. returns false if in blackout interval or if no data or if messages of wrong size, true if not in blackout
-bool queue::Queue::priority_values(double* priority,
-                                   double* last_send_time,
-                                   modem::Message* message,
-                                   std::string* error)
+bool queue::Queue::priority_values(double& priority,
+                                   double& last_send_time,
+                                   modem::Message& message)
 {
     double now = time(NULL);
     
-    *priority =
-        cfg_.priority_time_const() ? cfg_.priority_base() * exp((now-last_send_time_) / cfg_.priority_time_const()) : cfg_.priority_base();
+    priority = (now-last_send_time_)/cfg_.ttl()*cfg_.value_base();
     
-    *last_send_time = last_send_time_;
-    
-    if(messages_.size() <= waiting_for_ack_.size())
-    {
-        *error = "no available messages";
-        return false;
-    }
+    last_send_time = last_send_time_;
+
+    // no messages left to send
+    if(messages_.size() <= waiting_for_ack_.size()) return false;
         
-    modem::Message next_message = *next_message_it();
+    messages_it next_msg_it = next_message_it();
 
     // for followup user-frames, destination must be either zero (broadcast)
     // or the same as the first user-frame
-    if((message->dest_set() && next_message.dest() != acomms_util::BROADCAST_ID && message->dest() != next_message.dest())
-       || (message->ack_set() && message->ack() != next_message.ack()))
+    if((message.dest_set() && next_msg_it->dest() != acomms_util::BROADCAST_ID && message.dest() != next_msg_it->dest())
+       || (message.ack_set() && message.ack() != next_msg_it->ack()))
     {
-        *error = cfg_.name() + " next message has wrong destination  (must be BROADCAST (0) or same as first user-frame) or requires ACK and the packet does not";
+        if(os_) *os_<< group("priority") << "\t" <<  cfg_.name() << " next message has wrong destination  (must be BROADCAST (0) or same as first user-frame) or requires ACK and the packet does not" << std::endl;
         return false; 
     }
-    else if(next_message.size() > message->size())
+    else if(next_msg_it->size() > message.size())
     {
-        *error = cfg_.name() + " next message is too large {"+ boost::lexical_cast<std::string>(next_message.size()) +  "}";
+        if(os_) *os_<< group("priority") << "\t" << cfg_.name() << " next message is too large {" << next_msg_it->size() << "}" << std::endl;
         return false;
     }
     else if (last_send_time_ + cfg_.blackout_time() > time(NULL))
     {
-        *error = cfg_.name() + " is in blackout";
+        if(os_) *os_<< group("priority") << "\t" << cfg_.name() << " is in blackout" << std::endl;
         return false;
     }
 
@@ -183,7 +178,7 @@ bool queue::Queue::pop_message(unsigned frame)
 bool queue::Queue::pop_message_ack(unsigned frame, modem::Message& msg)
 {
     // pop message from the ack stack
-    if(cfg_.ack() && frame && waiting_for_ack_.count(frame))
+    if(waiting_for_ack_.count(frame))
     {
         // remove a messages in this frame that needs ack
         waiting_for_ack_it it = waiting_for_ack_.find(frame);
@@ -215,6 +210,29 @@ void queue::Queue::stream_for_pop(const std::string& snip)
                  <<  "/" << cfg_.max_queue() << "): "  << snip << std::endl;
 }
 
+std::vector<modem::Message> queue::Queue::expire()
+{
+    std::vector<modem::Message> expired_msgs;
+    time_t now = time(NULL);
+    
+    while(!messages_.empty())
+    {
+        if((messages_.front().t() + cfg_.ttl()) < now)
+        {
+            expired_msgs.push_back(messages_.front());
+            if(os_) *os_ << group("pop") <<  "expiring" << " from send stack "
+                         << cfg_.name() << " (qsize " << size()-1
+                         <<  "/" << cfg_.max_queue() << "): "  << messages_.front().snip() << std::endl;
+            messages_.pop_front();
+        }
+        else
+        {
+            return expired_msgs;
+        } 
+    }
+
+    return expired_msgs;
+}
 
 unsigned queue::Queue::give_dest()
 {

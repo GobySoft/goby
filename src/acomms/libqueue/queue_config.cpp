@@ -29,8 +29,8 @@ std::ostream& queue::operator<< (std::ostream& out, const QueueConfig& q)
         << "\t" << "blackout_time: " << q.blackout_time() << "\n"
         << "\t" << "max_queue: " << q.max_queue() << "\n"
         << "\t" << "newest_first: " << q.newest_first() << "\n"
-        << "\t" << "priority_base: " << q.priority_base() << "\n"
-        << "\t" << "priority_time_const: " << q.priority_time_const();
+        << "\t" << "value_base: " << q.value_base() << "\n"
+        << "\t" << "ttl: " << q.ttl();
     
     return out;
 }

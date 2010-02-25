@@ -56,12 +56,12 @@ namespace queue
     {
       public:
       QueueConfig()
-          : ack_(false),
+          : ack_(true),
             blackout_time_(0),
             max_queue_(0),
-            newest_first_(false),
-            priority_base_(1),
-            priority_time_const_(120),
+            newest_first_(true),
+            value_base_(1),
+            ttl_(1800),
             type_(queue_notype),
             id_(0),
             name_("")
@@ -79,12 +79,12 @@ namespace queue
         /// sets whether the newest messages are sent first (FILO %queue) or not (FIFO %queue)
         void set_newest_first(bool newest_first)
         { newest_first_ = newest_first; }
-        /// sets the base priority value
-        void set_priority_base(double priority_base)
-        { priority_base_ = priority_base; }
-        /// sets the time constant governing exponential growth of the %queue priority since the last time a message was sent. A low time constant means a %queue that grows quickly. 0 is a special value indicating the priority value should not grow.
-        void set_priority_time_const(double priority_time_const)
-        { priority_time_const_=priority_time_const; }
+        /// sets the base value
+        void set_value_base(double value_base)
+        { value_base_ = value_base; }
+        /// sets the time to live
+        void set_ttl(unsigned ttl)
+        { ttl_=ttl; }
         /// sets the type of the %queue
         void set_type(QueueType t)
         { type_ = t; }
@@ -103,10 +103,10 @@ namespace queue
         { set_max_queue(boost::lexical_cast<unsigned>(s)); }
         void set_newest_first(const std::string& s)
         { set_newest_first(tes_util::string2bool(s)); }
-        void set_priority_base(const std::string& s)
-        { set_priority_base(boost::lexical_cast<double>(s)); }            
-        void set_priority_time_const(const std::string& s)
-        { set_priority_time_const(boost::lexical_cast<double>(s)); }
+        void set_value_base(const std::string& s)
+        { set_value_base(boost::lexical_cast<double>(s)); }            
+        void set_ttl(const std::string& s)
+        { set_ttl(boost::lexical_cast<unsigned>(s)); }
         void set_type(const std::string& s)
         {
             if(tes_util::stricmp("queue_dccl", s))
@@ -129,16 +129,16 @@ namespace queue
         unsigned max_queue() const {return max_queue_;} 
         /// \return whether new messages are sent first (true) or not (false)
         bool newest_first() const {return newest_first_;}
-        /// \return the base priority value
-        double priority_base() const {return priority_base_;} 
-        /// \return the priority time constant
-        double priority_time_const() const {return priority_time_const_;}
         /// \return the type of the %queue.
         QueueType type() const { return type_; }
         /// \return the id of the %queue.
         unsigned id() const { return id_; }
         /// \return the name of the %queue.
-        std::string name() const { return name_; }        
+        std::string name() const { return name_; }
+        /// \return the base value of messages in this queue
+        double value_base() const {return value_base_;} 
+        /// \return the time to live of messages
+        unsigned ttl() const {return ttl_;}
         
         private:
         
@@ -146,8 +146,8 @@ namespace queue
         unsigned blackout_time_;
         unsigned max_queue_;
         bool newest_first_;
-        double priority_base_;
-        double priority_time_const_;
+        double value_base_;
+        unsigned ttl_;
 
         QueueType type_;
 

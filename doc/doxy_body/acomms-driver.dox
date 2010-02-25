@@ -110,7 +110,7 @@ HH...HH = modem::Message::data<br/>
 <td>
 CMD = 0<br/>
 ADR1 = modem::Message::src<br/>
-ADR1 = modem::Message::dest<br/>
+ADR2 = modem::Message::dest<br/>
 Packet Type = modem::Message::rate<br/>
 ACK = modem::Message::ack<br/>
 Nframes = modem::Message::frame<br/>

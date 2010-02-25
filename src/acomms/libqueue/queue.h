@@ -55,10 +55,13 @@ namespace queue
         bool pop_message(unsigned frame);    
         bool pop_message_ack(unsigned frame, modem::Message& msg);
         void stream_for_pop(const std::string& snip);
+
+        std::vector<modem::Message> expire();
         
+        bool priority_values(double& priority,
+                             double& last_send_time,
+                             modem::Message& message);
         
-            
-        bool priority_values(double* priority, double* last_send_time, modem::Message* message, std::string* error);
         unsigned give_dest();
 
         void clear_ack_queue() { waiting_for_ack_.clear(); }

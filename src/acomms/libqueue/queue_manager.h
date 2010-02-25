@@ -203,6 +203,15 @@ namespace queue
         
         //@}
 
+
+        /// \name Active methods
+        ///
+        /// Call these methods when you want the QueueManager to perform time sensitive tasks
+        //@{
+        void do_work();
+
+        //@}
+        
         /// \name Additional Application level methods
         ///
         /// Use these methods for advanced features and more fine grained control.
@@ -233,6 +242,15 @@ namespace queue
         /// \param size the size of the %queue after the size change event.
         void set_queue_size_change_cb(QSizeFunc func) { callback_qsize = func; }
 
+        /// \brief Set the callback to receive messages every time a message is expired due to exceeding its time to live (ttl)
+        ///
+        /// \param func Pointer to function (or any other object boost::function accepts) matching the signature of queue::MsgFunc1.
+        /// The callback (func) will be invoked with the following parameters:
+        /// \param key the QueueKey for the queue from which the expired message originated.
+        /// \param message A modem::Message containing the contents of the original message that was expired. 
+        void set_expire_cb(MsgFunc1 func) { callback_expire = func; }
+
+        
         //@}
 
         /// \name Medium Access Control methods
@@ -293,6 +311,8 @@ namespace queue
         MsgFunc1 callback_receive;
         MsgFunc1 callback_receive_ccl;        
         MsgFunc2 callback_ondemand;
+
+        MsgFunc1 callback_expire;
         
         QSizeFunc callback_qsize;
         

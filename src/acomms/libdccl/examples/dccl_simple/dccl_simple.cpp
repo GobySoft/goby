@@ -65,7 +65,7 @@ int main()
     // input contents right back to decoder
     std::cout << "passed hexadecimal string to decoder: " << hex << std::endl;
 
-    dccl.decode(1, hex, &strings, 0, 0, 0);
+    dccl.decode(id, hex, &strings, 0, 0, 0);
     
     std::cout << "received values:" << std::endl 
               << strings;

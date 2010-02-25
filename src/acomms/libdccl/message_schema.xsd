@@ -332,9 +332,16 @@
                     <xs:element name="ack" type="xs:string" minOccurs="0"/>
                     <xs:element name="blackout_time" type="xs:integer" minOccurs="0"/>
                     <xs:element name="max_queue" type="xs:integer" minOccurs="0"/>
+                    <xs:element name="value_base" type="xs:float" minOccurs="0"/>
+                    <xs:element name="ttl" type="xs:float" minOccurs="0"/>
+
                     <xs:element name="newest_first" type="xs:string" minOccurs="0"/>
+
+                    <!-- deprecated -->
                     <xs:element name="priority_base" type="xs:float" minOccurs="0"/>
-                    <xs:element name="priority_time_const" type="xs:string" minOccurs="0"/>
+                    <xs:element name="priority_time_const" type="xs:float" minOccurs="0"/>
+
+
                   </xs:all>
                 </xs:complexType>
               </xs:element>  <!-- </queuing> -->

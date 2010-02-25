@@ -37,7 +37,7 @@ class FlexNCurses
     FlexNCurses(boost::mutex& mutex);
     
     ~FlexNCurses()
-    { cleanup(); }
+    { end(); cleanup(); }
 
     void startup();
     void add_win(Group* title);
@@ -49,7 +49,9 @@ class FlexNCurses
     // run in its own thread to take input
     void run_input();
 
+    void alive(bool alive);
     void cleanup();
+    
   private:
     class Panel;
     void putline(const std::string &s, unsigned scrn, bool refresh = true);

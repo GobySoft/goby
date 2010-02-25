@@ -101,11 +101,8 @@ void FlexNCurses::update_size()
     }
 }
 
-void FlexNCurses::cleanup()
-{
-    endwin();
-    alive_ = false;
-}
+void FlexNCurses::alive(bool alive) { alive_ = alive; }
+void FlexNCurses::cleanup() { endwin(); }
 
 void FlexNCurses::add_win(Group* g)
 {
@@ -369,174 +366,6 @@ bool FlexNCurses::in_window(void* p, int y, int x)
     return (y < ybeg+ymax && y >= ybeg && x < xbeg+xmax && x >= xbeg);
 }
 
-void FlexNCurses::run_input()
-{
-    sleep(1);
-
-    // MOOS loves to stomp on me at startup...
-    if(true)
-      {
-        boost::mutex::scoped_lock lock(mutex_);
-	BOOST_FOREACH(size_t i, unique_panels_)
-	  {
-	    WINDOW* win = static_cast<WINDOW*>(panels_[i].window());
-	    if(win) redrawwin(win);
-	    WINDOW* head_win = static_cast<WINDOW*>(panels_[i].head_window());
-	    if(head_win) redrawwin(head_win);
-	  }
-	BOOST_FOREACH(void* w, vert_windows_)
-	  {
-	    WINDOW* vert_win = static_cast<WINDOW*>(w);
-	    if(vert_win) redrawwin(vert_win);
-	  }
-	BOOST_FOREACH(void* w, col_end_windows_)
-	  {
-	    WINDOW* win = static_cast<WINDOW*>(w);
-	    if(win) redrawwin(win);
-	  }
-	redrawwin(static_cast<WINDOW*>(foot_window_));
-      }
-    
-    while(alive_)
-    {
-        int k = getch();
-
-        boost::mutex::scoped_lock lock(mutex_);
-        switch(k)
-        {
-            // same as resize but restores the order too
-            case 'r':
-                uncombine_all();
-                restore_order();
-            case KEY_RESIZE:
-                update_size();
-                recalculate_win();
-                break;
-                
-            case '1': deselect_all(); select(0); break;
-            case '2': deselect_all(); select(1); break;
-            case '3': deselect_all(); select(2); break;
-            case '4': deselect_all(); select(3); break;
-            case '5': deselect_all(); select(4); break;
-            case '6': deselect_all(); select(5); break;
-            case '7': deselect_all(); select(6); break;
-            case '8': deselect_all(); select(7); break;
-            case '9': deselect_all(); select(8); break;
-            case '0': deselect_all(); select(9); break;
-
-                // shift + numbers
-            case '!': select(0); break;
-            case '@': select(1); break;
-            case '#': select(2); break;
-            case '$': select(3); break;
-            case '%': select(4); break;
-            case '^': select(5); break;
-            case '&': select(6); break;
-            case '*': select(7); break;
-            case '(': select(8); break;
-            case ')': select(9); break;
-
-            case 'a': move_left();  break;
-            case 'd': move_right();    break;                
-            case 'w': move_up(); break;
-            case 's': move_down(); break;
-
-            case '+': case '=': grow_all(); break;
-            case '_': case '-': shrink_all(); break;
-
-            case 'c': combine(); break;
-            case 'C': uncombine_selected(); break;
-                
-            case 'm':                
-            case ' ':
-                BOOST_FOREACH(size_t i, unique_panels_)
-                {
-                    if(panels_[i].selected())
-                        toggle_minimized(i);
-                }            
-            recalculate_win();
-            break;
-
-            case 'M':                
-                BOOST_FOREACH(size_t i, unique_panels_)
-                {
-                    if(!panels_[i].selected())
-                        toggle_minimized(i);
-                }            
-            recalculate_win();
-            break;
-
-            
-            case 'D': deselect_all(); break;
-                // CTRL-A
-            case 1: select_all(); break;
-
-            case '\n':
-            case KEY_ENTER:
-                (is_locked_) ? winunlock(): winlock();
-            break;
-                
-            case KEY_LEFT:
-                shift(left());
-                break;
-            case KEY_RIGHT:
-                shift(right());
-                break;
-            case KEY_DOWN:
-                (!is_locked_) ? shift(down()): scroll_down();
-                break;
-            case KEY_UP:
-                (!is_locked_) ? shift(up()): scroll_up();
-                break;
-
-            case KEY_PPAGE:
-                if(is_locked_) page_up();
-                break;
-                
-            case KEY_NPAGE:
-                if(is_locked_) page_down();
-                break;
-                    
-                
-            case KEY_END:   (!is_locked_) ? end() : scroll_end();   break;
-            case KEY_HOME:  (!is_locked_) ? home() : scroll_home();  break;                
-                
-            case KEY_MOUSE:
-                MEVENT mort;
-                getmouse(&mort);
-                size_t gt = find_containing_window(mort.y, mort.x);
-                if(gt >= panels_.size())
-                    break;
-                
-                switch(mort.bstate)
-                {
-                    case BUTTON1_CLICKED:
-                    case BUTTON1_PRESSED:
-                        deselect_all();
-                        select(gt);
-                        last_select_x_ = mort.x;
-                        last_select_y_ = mort.y;
-                        break;
-                    case BUTTON1_RELEASED:
-                        for(int x = min(mort.x, last_select_x_), n = max(mort.x, last_select_x_); x < n; ++x)
-                        {
-                            for(size_t y = min(mort.y, last_select_y_), m = max(mort.y, last_select_y_); y < m; ++y)
-                            {
-                                size_t t = find_containing_window(y, x);
-                                if(!panels_[t].selected()) select(t);
-                            }
-                        }
-                        
-                        break;
-                    case BUTTON1_DOUBLE_CLICKED:
-                        toggle_minimized(gt);
-                        recalculate_win();
-                        break;
-                }
-        }
-        refresh();
-    }
-}
 
 void FlexNCurses::write_head_title(size_t i)
 {
@@ -1183,3 +1012,174 @@ int FlexNCurses::Panel::minimized(bool b)
         return unminimized_ywidth_ - HEAD_Y;
     }
 }
+
+
+void FlexNCurses::run_input()
+{
+    sleep(1);
+
+    // MOOS loves to stomp on me at startup...
+    if(true)
+      {
+        boost::mutex::scoped_lock lock(mutex_);
+	BOOST_FOREACH(size_t i, unique_panels_)
+	  {
+	    WINDOW* win = static_cast<WINDOW*>(panels_[i].window());
+	    if(win) redrawwin(win);
+	    WINDOW* head_win = static_cast<WINDOW*>(panels_[i].head_window());
+	    if(head_win) redrawwin(head_win);
+	  }
+	BOOST_FOREACH(void* w, vert_windows_)
+	  {
+	    WINDOW* vert_win = static_cast<WINDOW*>(w);
+	    if(vert_win) redrawwin(vert_win);
+	  }
+	BOOST_FOREACH(void* w, col_end_windows_)
+	  {
+	    WINDOW* win = static_cast<WINDOW*>(w);
+	    if(win) redrawwin(win);
+	  }
+	redrawwin(static_cast<WINDOW*>(foot_window_));
+      }
+    
+    while(alive_)
+    {
+        int k = getch();
+
+        boost::mutex::scoped_lock lock(mutex_);
+        switch(k)
+        {
+            // same as resize but restores the order too
+            case 'r':
+                uncombine_all();
+                restore_order();
+            case KEY_RESIZE:
+                update_size();
+                recalculate_win();
+                break;
+                
+            case '1': deselect_all(); select(0); break;
+            case '2': deselect_all(); select(1); break;
+            case '3': deselect_all(); select(2); break;
+            case '4': deselect_all(); select(3); break;
+            case '5': deselect_all(); select(4); break;
+            case '6': deselect_all(); select(5); break;
+            case '7': deselect_all(); select(6); break;
+            case '8': deselect_all(); select(7); break;
+            case '9': deselect_all(); select(8); break;
+            case '0': deselect_all(); select(9); break;
+
+                // shift + numbers
+            case '!': select(0); break;
+            case '@': select(1); break;
+            case '#': select(2); break;
+            case '$': select(3); break;
+            case '%': select(4); break;
+            case '^': select(5); break;
+            case '&': select(6); break;
+            case '*': select(7); break;
+            case '(': select(8); break;
+            case ')': select(9); break;
+
+            case 'a': move_left();  break;
+            case 'd': move_right();    break;                
+            case 'w': move_up(); break;
+            case 's': move_down(); break;
+
+            case '+': case '=': grow_all(); break;
+            case '_': case '-': shrink_all(); break;
+
+            case 'c': combine(); break;
+            case 'C': uncombine_selected(); break;
+                
+            case 'm':                
+            case ' ':
+                BOOST_FOREACH(size_t i, unique_panels_)
+                {
+                    if(panels_[i].selected())
+                        toggle_minimized(i);
+                }            
+            recalculate_win();
+            break;
+
+            case 'M':                
+                BOOST_FOREACH(size_t i, unique_panels_)
+                {
+                    if(!panels_[i].selected())
+                        toggle_minimized(i);
+                }            
+            recalculate_win();
+            break;
+
+            
+            case 'D': deselect_all(); break;
+                // CTRL-A
+            case 1: select_all(); break;
+
+            case '\n':
+            case KEY_ENTER:
+                (is_locked_) ? winunlock(): winlock();
+            break;
+                
+            case KEY_LEFT:
+                shift(left());
+                break;
+            case KEY_RIGHT:
+                shift(right());
+                break;
+            case KEY_DOWN:
+                (!is_locked_) ? shift(down()): scroll_down();
+                break;
+            case KEY_UP:
+                (!is_locked_) ? shift(up()): scroll_up();
+                break;
+
+            case KEY_PPAGE:
+                if(is_locked_) page_up();
+                break;
+                
+            case KEY_NPAGE:
+                if(is_locked_) page_down();
+                break;
+                    
+                
+            case KEY_END:   (!is_locked_) ? end() : scroll_end();   break;
+            case KEY_HOME:  (!is_locked_) ? home() : scroll_home();  break;                
+                
+            case KEY_MOUSE:
+                MEVENT mort;
+                getmouse(&mort);
+                size_t gt = find_containing_window(mort.y, mort.x);
+                if(gt >= panels_.size())
+                    break;
+                
+                switch(mort.bstate)
+                {
+                    case BUTTON1_CLICKED:
+                    case BUTTON1_PRESSED:
+                        deselect_all();
+                        select(gt);
+                        last_select_x_ = mort.x;
+                        last_select_y_ = mort.y;
+                        break;
+                    case BUTTON1_RELEASED:
+                        for(int x = min(mort.x, last_select_x_), n = max(mort.x, last_select_x_); x < n; ++x)
+                        {
+                            for(size_t y = min(mort.y, last_select_y_), m = max(mort.y, last_select_y_); y < m; ++y)
+                            {
+                                size_t t = find_containing_window(y, x);
+                                if(!panels_[t].selected()) select(t);
+                            }
+                        }
+                        
+                        break;
+                    case BUTTON1_DOUBLE_CLICKED:
+                        toggle_minimized(gt);
+                        recalculate_win();
+                        break;
+                }
+        }
+        refresh();
+    }
+}
+

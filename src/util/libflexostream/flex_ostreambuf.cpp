@@ -56,7 +56,7 @@ void FlexOStreamBuf::verbosity(const std::string & s)
         
         curses_.recalculate_win();
 	
-        boost::thread input_thread(boost::bind(&FlexNCurses::run_input, boost::ref(curses_)));
+        input_thread_ = boost::shared_ptr<boost::thread>(new boost::thread(boost::bind(&FlexNCurses::run_input, boost::ref(curses_))));
         
     }
 }
@@ -81,21 +81,19 @@ int FlexOStreamBuf::sync()
     
     while (!getline(is, s).eof())
         display(s);
-    
-    group_name_.erase();
 
-    if(die_flag_ && verbosity_ != quiet)
-    {   
-        std::cout << "Press enter to quit." << std::endl;
-        std::cin.clear();
-        std::cin.get();
-        exit(EXIT_FAILURE);        
-    }
-    else if(die_flag_)
+    if(die_flag_)
     {
+        if(verbosity_ != quiet)
+        {
+            std::cout << "Press enter to quit." << std::endl;
+        }
+        char c;
+        std::cin.get(c);
         exit(EXIT_FAILURE);
     }
     
+    group_name_.erase();
     
     return 0;
 }
@@ -133,9 +131,13 @@ void FlexOStreamBuf::display(const std::string & s)
             }
             else
             {
+                curses_.alive(false);
+                input_thread_->join();
                 curses_.cleanup();
+                
                 std::cout << color_.esc_code_from_str(groups_[group_name_].color()) << name_ << nocolor << ": " << s << nocolor << std::endl;
-            }        
+            }            
+                  
             break;
     }
 }

@@ -42,7 +42,9 @@ namespace queue
                 tag_max_queue,
                 tag_newest_first,
                 tag_priority_base,
-                tag_priority_time_const
+                tag_priority_time_const,
+                tag_ttl,
+                tag_value_base
     };
 
     
@@ -64,7 +66,10 @@ namespace queue
             ("max_queue",tag_max_queue)
             ("newest_first",tag_newest_first)
             ("priority_base",tag_priority_base)
-            ("priority_time_const",tag_priority_time_const);
+            ("priority_time_const",tag_priority_time_const)
+            ("ttl",tag_ttl)
+            ("value_base",tag_value_base);
+        
     }
 }
 

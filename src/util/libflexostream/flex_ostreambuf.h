@@ -83,8 +83,7 @@ class FlexOStreamBuf : public std::stringbuf
     FlexNCurses curses_;
 
     boost::mutex curses_mutex_;
-    
-    //    boost::thread input_thread_;
+    boost::shared_ptr<boost::thread> input_thread_;
 };
 
 #endif

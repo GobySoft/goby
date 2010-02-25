@@ -5,12 +5,9 @@
     <id>1</id>
     <size>32</size>
     <queuing>
-      <ack>false</ack>
-      <blackout_time>0</blackout_time>
-      <max_queue>100</max_queue>
-      <newest_first>true</newest_first>
-      <priority_base>3</priority_base>
-      <priority_time_const>120</priority_time_const>
+      <ack>false</ack> 
+      <value_base>1</value_base>
+      <ttl>1800</ttl>
     </queuing>
 
     <!-- used by libdccl alone and not needed for libqueue, but left for reference-->

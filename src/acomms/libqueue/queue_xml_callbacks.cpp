@@ -101,13 +101,10 @@ void queue::QueueContentHandler::endElement(
         case tag_id:
             q_.back().set_id(trimmed_data);
             break;
-            
+
         case tag_priority_base:
-            q_.back().set_priority_base(trimmed_data);
-            break;
-            
         case tag_priority_time_const:
-            q_.back().set_priority_time_const(trimmed_data);
+            // deprecated
             break;
 
         case tag_name:
@@ -115,7 +112,17 @@ void queue::QueueContentHandler::endElement(
                 q_.back().set_name(trimmed_data);
             break;
             
-        default:
+
+        case tag_ttl:
+            q_.back().set_ttl(trimmed_data);            
+            break;
+
+
+        case tag_value_base:
+            q_.back().set_value_base(trimmed_data);
+            break;
+
+        case tag_not_defined:
             break;
             
     }

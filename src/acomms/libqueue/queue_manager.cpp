@@ -125,6 +125,21 @@ void queue::QueueManager::add_xml_queue_file(const std::string& xml_file,
         add_queue(c);
 }
 
+void queue::QueueManager::do_work()
+{
+    typedef std::pair<const QueueKey, Queue> P;
+    for(std::map<QueueKey, Queue>::iterator it = queues_.begin(), n = queues_.end(); it != n; ++it)
+    {
+        std::vector<modem::Message> expired_msgs = it->second.expire();
+        if(callback_expire)
+        {
+            BOOST_FOREACH(const modem::Message& m, expired_msgs)
+                callback_expire(it->first, m);    
+        }
+    }
+    
+}
+
 
 void queue::QueueManager::push_message(QueueKey key, modem::Message& new_message)
 {
@@ -329,10 +344,8 @@ queue::Queue* queue::QueueManager::find_next_sender(modem::Message& message)
 // competition between variable about who gets to send
     double winning_priority;
     double winning_last_send_time;
-    bool found_data = false;
-    bool all_queues_empty = true;
 
-    Queue* winning_var = NULL;
+    Queue* winning_var = 0;
     
     if(os_) *os_<< group("priority") << "starting priority contest"
                 << "... request: " << message.snip() << std::endl;
@@ -354,41 +367,23 @@ queue::Queue* queue::QueueManager::find_next_sender(modem::Message& message)
         }
         
         double priority, last_send_time;
-        std::string error;
-        if(oq.priority_values(&priority, &last_send_time, &message, &error))
+        if(oq.priority_values(priority, last_send_time, message))
         { 
-            if(!found_data || priority > winning_priority ||
+            if(!winning_var || priority > winning_priority ||
                (priority == winning_priority && last_send_time < winning_last_send_time))
             {
                 winning_priority = priority;
                 winning_last_send_time = last_send_time;
                 winning_var = &oq;
-                found_data = true;
             }
-            if(os_) *os_<< group("priority") << "\t" << oq.cfg().name() << " has priority value"
-                   << ": " << priority << std::endl;
-            all_queues_empty = false;
-        }
-        else
-        {
-            if(error != "no available messages")
-            {
-                if(os_) *os_<< group("priority") << "\t" << error << std::endl;
-                all_queues_empty = false;
-            }
+            if(os_) *os_<< group("priority") << "\t" << oq.cfg().name()
+                        << " has priority value"
+                        << ": " << priority << std::endl;
         }
     }
 
-    if(all_queues_empty)
-    {
-        if(os_) *os_<< group("priority") << "\t"
-                    << "all queues have no messages" << std::endl;
-    }
-    else
-    {
-        if(os_) *os_<< group("priority") << "\t"
-                    << "all other queues have no messages" << std::endl;
-    }
+    if(os_) *os_<< group("priority") << "\t"
+                << "all other queues have no messages" << std::endl;
 
     if(winning_var)
     {

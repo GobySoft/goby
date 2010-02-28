@@ -6,7 +6,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this software (see goby/COPYING).  If not, see <http://www.gnu.org/licenses/>.
 
-/*! \mainpage Goby Underwater Autonomy Project Documentation
+/*! \mainpage Goby Underwater Autonomy Project
  
  \image html goby_m.gif
 
@@ -14,9 +14,10 @@
 
   \section main_resources Resources
   <ul>
+  <li> Home page: <http://goby-marine.com>
   <li> Code, bug tracking, and answers: <https://launchpad.net/goby>.</li>
-  <li> Manual (this document): <http://aubergine.whoi.edu/goby/build/html/>.
-  <li> Wiki: <forthcoming>.
+  <li> Manual: <a href=http://goby-marine.com>(html)</a> <a href=http://aubergine.whoi.edu/goby-bzr/doc/goby-dev.pdf>(pdf)</a>.</li>
+  <li> Wiki: <forthcoming>.</li>
   </ul>
 
   \section main_manual Developer manual

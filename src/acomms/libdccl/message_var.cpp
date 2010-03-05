@@ -29,10 +29,16 @@ dccl::MessageVar::MessageVar() : max_(1e300),
                                  max_length_(0),
                                  precision_(0),
                                  source_set_(false),
+                                 expected_delta_(acomms_util::NaN),
+                                 delta_var_(false),
                                  ap_(AlgorithmPerformer::getInstance())
 { }
 
-void dccl::MessageVar::read_dynamic_vars(std::map<std::string,MessageVal>& vals, const std::map<std::string, std::string>* in_str, const std::map<std::string, double>* in_dbl, const std::map<std::string, long>* in_long, const std::map<std::string, bool>* in_bool)
+void dccl::MessageVar::read_dynamic_vars(std::map<std::string,MessageVal>& vals,
+                                         const std::map<std::string, std::string>* in_str,
+                                         const std::map<std::string, double>* in_dbl,
+                                         const std::map<std::string, long>* in_long,
+                                         const std::map<std::string, bool>* in_bool)
 {
     MessageVal v;
 
@@ -79,7 +85,7 @@ void dccl::MessageVar::read_dynamic_vars(std::map<std::string,MessageVal>& vals,
 }
 
 
-void dccl::MessageVar::initialize(const std::string& message_name, const std::string& trigger_var)
+void dccl::MessageVar::initialize(const std::string& message_name, const std::string& trigger_var, bool delta_encode)
 {
     // add trigger_var_ as source_var for any message_vars without a source
     if(!source_set_)
@@ -98,6 +104,17 @@ void dccl::MessageVar::initialize(const std::string& message_name, const std::st
         min_ = tmp;
         std::cout << "(Warning) max < min for field {" << name_ << "} in message {" << message_name << "}. max and min switched." << std::endl;
     } 
+
+    if(type_ == dccl_int || type_ == dccl_float)
+    {        
+        // needs to be positive value
+        expected_delta_ = abs(expected_delta_);
+        if(isnan(expected_delta_) && delta_encode)
+        {
+            // use default of 10% of range
+            expected_delta_ = 0.1 * (max_ - min_);
+        }
+    }
 }
 
 
@@ -107,14 +124,14 @@ int dccl::MessageVar::calc_size() const
     switch(type_)
     {
         // +2: one since you need to store zero. e.g., 0->255 is 256 values, other to store "not_specified" value
-        case dccl_int:    return ceil(log(max_-min_+2)/log(2));            
+        case dccl_int:    return ceil(log(max()-min()+2)/log(2));            
         case dccl_bool:   return 1 + 1;
 
         // eight bits per byte (or character (ASCII))
         case dccl_hex:
         case dccl_string: return max_length_*acomms_util::BITS_IN_BYTE;
 
-        case dccl_float:  return ceil(log((max_-min_)*pow(10.0,static_cast<double>(precision_))+2)/log(2));
+        case dccl_float:  return ceil(log((max()-min())*pow(10.0,static_cast<double>(precision_))+2)/log(2));
         case dccl_static: return 0;
             // +1 for overflow (that is, value is not in enums list)
         case dccl_enum:   return ceil(log(enums_.size()+1)/log(2));
@@ -162,7 +179,13 @@ std::string dccl::MessageVar::get_display() const
     }
         
     if (type_ == dccl_int || type_ == dccl_float)
-        ss << "\t\t[min, max] = [" << min_ << "," << max_ << "]" << std::endl;        
+    {
+        ss << "\t\t[min, max] = [" << min_ << "," << max_ << "]" << std::endl;
+        if(!isnan(expected_delta_))
+           ss << "\t\texpected_delta: {" << expected_delta_ << "}" << std::endl;
+    }
+    
+    
     if (type_ == dccl_float)
         ss << "\t\tprecision: {" << precision_ << "}" << std::endl;   
     if (type_ == dccl_string)
@@ -275,9 +298,9 @@ void dccl::MessageVar::var_encode(std::map<std::string,MessageVal>& vals, boost:
         case dccl_int:
             bits <<= size;    
 
-            if(v.val(t) && !(t < min_ || t > max_))
+            if(v.val(t) && !(t < min() || t > max()))
             {
-                t -= static_cast<long>(min_);
+                t -= static_cast<long>(min());
                 bits |= boost::dynamic_bitset<>(bits_size, static_cast<unsigned long>(t)+1);
             }
             break;
@@ -285,9 +308,9 @@ void dccl::MessageVar::var_encode(std::map<std::string,MessageVal>& vals, boost:
         case dccl_float:
             bits <<= size;
             
-            if(v.val(r) && !(r < min_ || r > max_))
+            if(v.val(r) && !(r < min() || r > max()))
             {
-                r = (r-min_)*pow(10.0, static_cast<double>(precision_));
+                r = (r-min())*pow(10.0, static_cast<double>(precision_));
                 
                 r = tes_util::sci_round(r, 0);
                 
@@ -380,11 +403,11 @@ void dccl::MessageVar::var_decode(std::map<std::string,MessageVal>& vals, boost:
                 if(type_ == dccl_bool)
                     v.set(bool((t)));
                 else if(type_ == dccl_float)
-                    v.set(static_cast<double>(t) / (pow(10.0, static_cast<double>(precision_))) + min_, precision_);
+                    v.set(static_cast<double>(t) / (pow(10.0, static_cast<double>(precision_))) + min(), precision_);
                 else if(type_ == dccl_enum)
                     v.set(enums_[t]);
                 else
-                    v.set(static_cast<long>(t) + static_cast<long>(min_));
+                    v.set(static_cast<long>(t) + static_cast<long>(min()));
             }
             break;
     }

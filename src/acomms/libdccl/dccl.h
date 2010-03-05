@@ -196,7 +196,7 @@ namespace dccl
                         const std::map<std::string, double>* md,
                         const std::map<std::string, long>* ml,
                         const std::map<std::string, bool>* mb)
-        { encode_private(to_iterator(k), hex, ms, md, ml, mb); }        
+        { encode_private(to_iterator(k), hex, ms, md, ml, mb); }
 
         /// \brief Decode a message.
         ///

@@ -29,8 +29,10 @@ namespace dccl
     enum Tags { tag_not_defined,
                 tag_all,
                 tag_bool,
+                tag_delta_encode,
                 tag_destination_var,
                 tag_enum,
+                tag_expected_delta,
                 tag_float,
                 tag_format,
                 tag_hex,
@@ -67,9 +69,11 @@ namespace dccl
         boost::assign::insert(tags_map)
             ("all",tag_all)
             ("bool",tag_bool)
+            ("delta_encode", tag_delta_encode)
             ("destination_moos_var",tag_destination_var)
             ("destination_var",tag_destination_var)
             ("enum",tag_enum)
+            ("expected_delta",tag_expected_delta)
             ("float",tag_float)
             ("format",tag_format)
             ("hex", tag_hex)

@@ -28,7 +28,7 @@
 #include <ostream>
 
 #include <boost/dynamic_bitset.hpp>
-
+#include <boost/lexical_cast.hpp>
 
 #include "dccl_constants.h"
 
@@ -48,14 +48,29 @@ namespace dccl
         void set_type(DCCLType type) {type_ = type;}
         void set_source_var(std::string source_var) {source_var_ = source_var;}
         void set_source_key(std::string source_key) {source_key_ = source_key;}
+
         void set_max(double max) {max_ = max;}
+        void set_max(const std::string& s) { set_max(boost::lexical_cast<double>(s)); }
+        
         void set_min(double min) {min_ = min;}
+        void set_min(const std::string& s) { set_min(boost::lexical_cast<double>(s)); }
+
         void set_max_length(unsigned max_length) {max_length_ = max_length;}
+        void set_max_length(const std::string& s) { set_max_length(boost::lexical_cast<unsigned>(s)); }
+
         void set_precision(int precision) {precision_ = precision;}
+        void set_precision(const std::string& s) { set_precision(boost::lexical_cast<int>(s)); }
+
         void set_source_set(bool source_set) {source_set_ = source_set;}
         void set_static_val(std::string static_val) {static_val_ = static_val;}
         void set_algorithms(const std::vector<std::string>& algorithm) {algorithms_ = algorithm;}
-    
+
+        void set_expected_delta(double expected_delta) {expected_delta_ = expected_delta;}
+        void set_expected_delta(const std::string& s) { set_expected_delta(boost::lexical_cast<double>(s)); }
+
+        void set_delta_var(bool b) { delta_var_ = b; }
+        
+        
         void add_enum(std::string senum) {enums_.push_back(senum);}
         
 
@@ -64,8 +79,8 @@ namespace dccl
         DCCLType type() const {return type_;}
         std::string source_var() const {return source_var_;}
 //    std::string const source_key() {return source_key_;}
-        double max() const {return max_;}
-        double min() const {return min_;}
+        double max() const { return (delta_var_) ? expected_delta_ : max_;}
+        double min() const {return (delta_var_) ? -expected_delta_ : min_;}
         unsigned max_length() const {return max_length_;}
         int precision() const {return precision_;}
 //    bool const source_set() {return source_set_;}
@@ -74,8 +89,8 @@ namespace dccl
 //    std::vector<std::string> const& algorithms() {return algorithms_;}
 
         // other
-        void initialize(const std::string& message_name, const std::string& trigger_var);
-        int calc_size () const;
+        void initialize(const std::string& message_name, const std::string& trigger_var, bool delta_encode);
+        int calc_size() const;
         std::string get_display() const;
 
         void read_dynamic_vars(std::map<std::string,MessageVal>& vals, const std::map<std::string, std::string>* in_str, const std::map<std::string, double>* in_dbl, const std::map<std::string, long>* in_long, const std::map<std::string, bool>* in_bool);
@@ -89,6 +104,9 @@ namespace dccl
         unsigned max_length_;
         int precision_;
         bool source_set_;
+        double expected_delta_;
+        bool delta_var_;
+        
         AlgorithmPerformer * ap_;
         
         std::string name_;
@@ -98,6 +116,7 @@ namespace dccl
         std::string static_val_;
         std::vector<std::string> enums_;
         std::vector<std::string> algorithms_;
+
     };
 
     std::ostream& operator<< (std::ostream& out, const MessageVar& m);

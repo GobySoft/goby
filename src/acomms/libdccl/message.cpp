@@ -27,7 +27,8 @@ dccl::Message::Message():size_(0),
                          trigger_number_(1),    
                          total_bits_(0),
                          id_(0),
-                         trigger_time_(0.0)
+                         trigger_time_(0.0),
+                         delta_encode_(false)
 { }
 
     
@@ -73,7 +74,7 @@ void dccl::Message::preprocess()
     // iterate over layout_
     BOOST_FOREACH(MessageVar& mv, layout_)
     {
-        mv.initialize(name_, trigger_var_);
+        mv.initialize(name_, trigger_var_, delta_encode_);
         // calculate total bits for the message from the bits for each message_var
         total_bits_ += mv.calc_size();
     }
@@ -137,10 +138,10 @@ std::string dccl::Message::get_display() const
     ss << "actual size {bytes} [bits]: {" << used_bytes() << "} [" << used_bits() << "]" << std::endl;
     
     ss << ">>>> LAYOUT (message_vars) <<<<" << std::endl;
-    
+
     BOOST_FOREACH(const MessageVar& mv, layout_)
         ss << mv;
-
+    
     if(is_moos)
     {
 
@@ -356,7 +357,8 @@ void dccl::Message::add_destination(modem::Message& out_message,
         
     out_message.set_dest(boost::numeric_cast<unsigned int>(tes_util::sci_round(dval,0)));
 }
-    
+
+
     
 // overloaded <<
 std::ostream& dccl::operator<< (std::ostream& out, const Message& message)

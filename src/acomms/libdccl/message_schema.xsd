@@ -59,6 +59,11 @@
                 </xs:complexType>
               </xs:element>  <!-- </trigger_moos_var> -->
 
+              <xs:element name="delta_encode" minOccurs="0">
+                <xs:complexType>
+                </xs:complexType>
+              </xs:element>
+
 
               <xs:element name="layout">
                 <xs:complexType>
@@ -102,6 +107,8 @@
 
                           <xs:element name="max" type="xs:integer"/>
                           <xs:element name="min" type="xs:integer"/>
+                          <xs:element name="expected_delta" type="xs:integer" minOccurs="0"/>
+
                         </xs:all>
                         <xs:attribute name="algorithm" type="xs:string"/>
                       </xs:complexType>
@@ -165,6 +172,7 @@
 
                           <xs:element name="max" type="xs:double"/>
                           <xs:element name="min" type="xs:double"/>
+                          <xs:element name="expected_delta" type="xs:double" minOccurs="0"/>
                           <xs:element name="precision" type="xs:integer"/>
                         </xs:all>
                         <xs:attribute name="algorithm" type="xs:string"/>

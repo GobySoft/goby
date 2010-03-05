@@ -72,41 +72,10 @@ namespace dccl
         template<typename T> void set_size(const T& t)
         { set_size(boost::lexical_cast<unsigned>(t)); }
 
-        // for modifying a MessageVar
-        void add_message_var(const std::string& type);
-        void set_last_name(const std::string& name){layout_.back().set_name(name);}
-        void set_last_source_var(const std::string& source_var){layout_.back().set_source_var(source_var); layout_.back().set_source_set(true);}
-        void set_last_source_key(const std::string& source_key){layout_.back().set_source_key(source_key);}
-
-        void set_last_max(double max){layout_.back().set_max(max);}
-        template<typename T> void set_last_max(const T& t)
-        { set_last_max(boost::lexical_cast<double>(t)); }
-
-        void set_last_min(double min){layout_.back().set_min(min);}
-        template<typename T> void set_last_min(const T& t)
-        { set_last_min(boost::lexical_cast<double>(t)); }
-
-        void set_last_max_length(unsigned max_length){layout_.back().set_max_length(max_length);}
-        template<typename T> void set_last_max_length(const T& t)
-        { set_last_max_length(boost::lexical_cast<unsigned>(t)); }
-
-        void set_last_static_value(const std::string& static_val){layout_.back().set_static_val(static_val);}
-
-        void set_last_precision(int precision){layout_.back().set_precision(precision);}
-        template<typename T> void set_last_precision(const T& t)
-        { set_last_precision(boost::lexical_cast<int>(t)); }
+        void set_delta_encode(bool b) { delta_encode_ = b; }
         
-        void set_last_algorithms(const std::vector<std::string>& algorithms) {layout_.back().set_algorithms(algorithms);}
-        void add_last_enum(const std::string& value){layout_.back().add_enum(value);}
-
-        // for modifying a Publish
+        void add_message_var(const std::string& type);        
         void add_publish();
-        void set_last_publish_var(const std::string& var){publishes_.back().set_var(var);}
-        void set_last_publish_use_all_names(){publishes_.back().set_use_all_names(true);}
-        void set_last_publish_format(const std::string& format){publishes_.back().set_format(format); publishes_.back().set_format_set(true); }
-        void set_last_publish_type(DCCLCppType type){publishes_.back().set_type(type);}
-        void add_last_publish_name(const std::string& name){publishes_.back().add_name(name);}
-        void add_last_publish_algorithms(const std::vector<std::string>& algorithms) {publishes_.back().add_algorithms(algorithms);}
 
         //get
         std::string name() const {return name_;}
@@ -120,9 +89,12 @@ namespace dccl
         std::string out_var() const {return out_var_;}
         std::string dest_var() const {return dest_var_;}
         std::string dest_key() const {return dest_key_;}
-    
+
+        MessageVar& last_message_var() { return layout_.back(); }
+        Publish& last_publish() { return publishes_.back(); }        
+        
         std::vector<MessageVar> * get_layout() {return &layout_;}
-//   std::vector<Publish> * get_publishes() {return &publishes_;}
+        std::vector<Publish> * get_publishes() {return &publishes_;}
 
         std::set<std::string> encode_vars();
         std::set<std::string> decode_vars();
@@ -139,14 +111,14 @@ namespace dccl
         void preprocess();
 
             
-        enum { NO_MOOS_VAR = 0, FROM_MOOS_VAR = 1 };
+        enum { NO_MOOS_VAR = false, FROM_MOOS_VAR = true };
         void encode(modem::Message& out,
                     const std::map<std::string, std::string>* in_str,
                     const std::map<std::string, double>* in_dbl,
                     const std::map<std::string, long>* in_long,
                     const std::map<std::string, bool>* in_bool,
                     bool extract_from_moos_var = NO_MOOS_VAR);
-        enum { NO_PUBLISHES = 0, DO_PUBLISHES = 1 };
+        enum { NO_PUBLISHES = false, DO_PUBLISHES = true };
         template <typename Map1, typename Map2, typename Map3, typename Map4>
             void decode(const modem::Message& in,
                         Map1* out_str,
@@ -154,7 +126,7 @@ namespace dccl
                         Map3* out_long,
                         Map4* out_bool,
                         bool write_publishes = NO_PUBLISHES);
-            
+        
 
         // increment, means increase trigger number
         // prefix ++Message
@@ -170,8 +142,7 @@ namespace dccl
                              boost::dynamic_bitset<>& bits);
         void add_destination(modem::Message& out_message,
                              const std::map<std::string, std::string>& in_str,
-                             const std::map<std::string, double>& in_dbl);
-        
+                             const std::map<std::string, double>& in_dbl);        
         
         
         // more efficient way to do ceil(total_bits / 8) to get the number of bytes rounded up.
@@ -201,6 +172,7 @@ namespace dccl
 
         unsigned id_;
         double trigger_time_;        
+        bool delta_encode_;
         std::string name_;
         std::string trigger_type_;
         std::string trigger_var_;
@@ -213,6 +185,7 @@ namespace dccl
         
         std::vector<MessageVar> layout_;
         std::vector<Publish> publishes_;
+
     };
     
     std::ostream& operator<< (std::ostream& out, const Message& message);
@@ -225,6 +198,9 @@ namespace dccl
                                 const std::map<std::string, bool>* in_bool,                                
                                 bool extract_from_moos_var /* = false */)
     {
+
+        boost::dynamic_bitset<> bits(bytes2bits(used_bytes_no_head())); // actual size rounded up to closest byte
+        
         // 1. iterate first to build up maps of values
         std::map<std::string,MessageVal> vals;
 
@@ -267,13 +243,11 @@ namespace dccl
                     vals[p.first] = MessageVal(p.second);
             }            
         }
-
             
         // 2. encode each variable
-        boost::dynamic_bitset<> bits(bytes2bits(used_bytes_no_head())); // actual size rounded up to closest byte
         for (std::vector<MessageVar>::iterator it = layout_.begin(); it != layout_.end(); ++it)
             it->var_encode(vals, bits);
-
+        
         // 3. convert to hexadecimal string and tack on the header
         assemble_hex(out, bits);
 
@@ -289,15 +263,16 @@ namespace dccl
                                     Map4* out_bool,
                                     bool write_publishes /* = false */)
     {
+        
         boost::dynamic_bitset<> bits(bytes2bits(used_bytes_no_head()));
         // 3. convert hexadecimal string to bitset
         disassemble_hex(in, bits);
         
         std::map<std::string,MessageVal> vals;
         // 2. pull the bits off the message in the reverse that they were put on
-        for (std::vector<MessageVar>::reverse_iterator it = layout_.rbegin(), n = layout_.rend(); it != n; ++it) 
+        for (std::vector<MessageVar>::reverse_iterator it = layout_.rbegin(), n = layout_.rend(); it != n; ++it)
             it->var_decode(vals, bits);
-
+        
         if(write_publishes)
         {
             if(!out_str || !out_dbl)
@@ -332,7 +307,6 @@ namespace dccl
             }
         }
     }
-
 }
 
 #endif

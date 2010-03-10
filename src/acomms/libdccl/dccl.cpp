@@ -39,7 +39,7 @@ dccl::DCCLCodec::DCCLCodec(const std::set<std::string>& files,
 }
 
 std::set<unsigned> dccl::DCCLCodec::add_xml_message_file(const std::string& xml_file,
-                                               const std::string xml_schema)
+                                                         const std::string xml_schema)
 {
     size_t begin_size = messages_.size();
             
@@ -93,7 +93,7 @@ std::string dccl::DCCLCodec::summary() const
 { 
     std::string out;
     for(std::vector<Message>::const_iterator it = messages_.begin(), n = messages_.end(); it != n; ++it)
-        out += summary(it);
+        out += it->get_display();
     return out;
 }
 
@@ -101,47 +101,52 @@ std::string dccl::DCCLCodec::brief_summary() const
 { 
     std::string out;
     for(std::vector<Message>::const_iterator it = messages_.begin(), n = messages_.end(); it != n; ++it)
-        out += brief_summary(it);
+        out += it->get_short_display();
     return out;
 }
 
-    
+
+
+void dccl::DCCLCodec::add_str_algorithm(const std::string& name, StrAlgFunction1 func)
+{
+    AlgorithmPerformer* ap = AlgorithmPerformer::getInstance();
+    ap -> add_str_algorithm(name, func);
+}
+
+void dccl::DCCLCodec::add_dbl_algorithm(const std::string& name, DblAlgFunction1 func)
+{
+    AlgorithmPerformer* ap = AlgorithmPerformer::getInstance();
+    ap -> add_dbl_algorithm(name, func);
+}
+
+void dccl::DCCLCodec::add_long_algorithm(const std::string& name, LongAlgFunction1 func)
+{
+    AlgorithmPerformer* ap = AlgorithmPerformer::getInstance();
+    ap -> add_long_algorithm(name, func);
+}
+
+void dccl::DCCLCodec::add_bool_algorithm(const std::string& name, BoolAlgFunction1 func)
+{
+    AlgorithmPerformer * ap = AlgorithmPerformer::getInstance();
+    ap -> add_bool_algorithm(name, func);
+}
+
+void dccl::DCCLCodec::add_generic_algorithm(const std::string& name, AdvAlgFunction1 func)
+{
+    AlgorithmPerformer* ap = AlgorithmPerformer::getInstance();
+    ap -> add_generic_algorithm(name, func);
+}
+
+void dccl::DCCLCodec::add_adv_algorithm(const std::string& name, AdvAlgFunction3 func)
+{
+    AlgorithmPerformer* ap = AlgorithmPerformer::getInstance();
+    ap -> add_adv_algorithm(name, func);
+}
+
+
 std::ostream& dccl::operator<< (std::ostream& out, const DCCLCodec& d)
 {
     out << d.summary();
-    return out;
-}
-
-std::ostream& dccl::operator<< (std::ostream& out, const std::map<std::string, double>& m)
-{
-    for (std::map<std::string, double>::const_iterator it = m.begin(), n = m.end(); it != n; ++it)
-        out << "\t" << "key: " << it->first << std::endl
-            << "\t" << "value (double): " << it->second << std::endl;    
-    return out;
-}
-
-std::ostream& dccl::operator<< (std::ostream& out, const std::map<std::string, std::string>& m)
-{
-    for (std::map<std::string, std::string>::const_iterator it = m.begin(), n = m.end(); it != n; ++it)
-        out << "\t" << "key: " << it->first << std::endl
-            << "\t" << "value (string): \"" << it->second << "\"" << std::endl;
-    return out;
-}
-
-
-std::ostream& dccl::operator<< (std::ostream& out, const std::map<std::string, long>& m)
-{
-    for (std::map<std::string, long>::const_iterator it = m.begin(), n = m.end(); it != n; ++it)
-        out << "\t" << "key: " << it->first << std::endl
-            << "\t" << "value (long): " << it->second << std::endl;    
-    return out;
-}
-
-std::ostream& dccl::operator<< (std::ostream& out, const std::map<std::string, bool>& m)
-{
-    for (std::map<std::string, bool>::const_iterator it = m.begin(), n = m.end(); it != n; ++it)
-        out << "\t" << "key: " << it->first << std::endl
-            << "\t" << "value (bool): " << std::boolalpha <<  it->second << std::endl;    
     return out;
 }
 
@@ -209,74 +214,6 @@ bool dccl::DCCLCodec::is_incoming(unsigned& id, const std::string& key)
 /////////////////////
 // private methods
 /////////////////////
-                                
-std::set<std::string> dccl::DCCLCodec::encode_vars(std::vector<Message>::iterator it)
-{
-    if(it != messages_.end())
-        return it->encode_vars();
-    else
-        throw std::runtime_error(std::string("DCCL: queried `encode_vars` on message which is not loaded"));
-}	
-
-
-std::set<std::string> dccl::DCCLCodec::decode_vars(std::vector<Message>::iterator it)
-{
-    if(it != messages_.end())
-        return it->decode_vars();
-    else
-        throw std::runtime_error(std::string("DCCL: queried `decode_vars` on message which is not loaded"));
-}
-    
-std::set<std::string> dccl::DCCLCodec::src_vars(std::vector<Message>::iterator it)
-{
-    if(it != messages_.end())
-        return it->src_vars();
-    else
-        throw std::runtime_error(std::string("DCCL: queried `src_vars` on message which is not loaded"));
-}	
-
-std::set<std::string> dccl::DCCLCodec::all_vars(std::vector<Message>::iterator it)
-{
-    if(it != messages_.end())
-        return it->all_vars();
-    else
-        throw std::runtime_error(std::string("DCCL: queried `all_vars` on message which is not loaded"));
-}	
-
-    
-std::string dccl::DCCLCodec::input_summary(std::vector<Message>::iterator it)
-{
-    if(it != messages_.end())
-        return it->input_summary();
-    else
-        throw std::runtime_error(std::string("DCCL: queried `input_summary` on message which is not loaded"));
-}
-
-std::string dccl::DCCLCodec::summary(const std::vector<Message>::const_iterator it) const 
-{
-    if(it != messages_.end())
-        return it->get_display();        
-    else
-        return "invalid message!";
-}
-
-std::string dccl::DCCLCodec::brief_summary(const std::vector<Message>::const_iterator it) const 
-{
-    if(it != messages_.end())
-        return it->get_short_display();        
-    else
-        return "invalid message!";
-}
-
-std::map<std::string, std::string> dccl::DCCLCodec::message_var_names(const std::vector<Message>::const_iterator it) const 
-{
-    if(it != messages_.end())
-    {
-        return it->message_var_names();
-    }
-    else
-        throw std::runtime_error(std::string("DCCL: queried `message_var_names` on message which is not loaded"));
-}
 
 
 void dccl::DCCLCodec::check_duplicates()
@@ -293,3 +230,62 @@ void dccl::DCCLCodec::check_duplicates()
         all_ids.insert(std::pair<unsigned, std::vector<Message>::iterator>(id, it));
     }
 }
+
+std::vector<dccl::Message>::const_iterator dccl::DCCLCodec::to_iterator(const std::string& message_name) const
+{
+    if(name2messages_.count(message_name))
+        return messages_.begin() + name2messages_.find(message_name)->second;
+    else
+        throw std::runtime_error(std::string("DCCL: attempted an operation on message [" + message_name + "] which is not loaded"));
+}
+std::vector<dccl::Message>::iterator dccl::DCCLCodec::to_iterator(const std::string& message_name)
+{
+    if(name2messages_.count(message_name))
+        return messages_.begin() + name2messages_.find(message_name)->second;
+    else
+        throw std::runtime_error(std::string("DCCL: attempted an operation on message [" + message_name + "] which is not loaded"));
+}
+std::vector<dccl::Message>::const_iterator dccl::DCCLCodec::to_iterator(const unsigned& id) const
+{
+    if(id2messages_.count(id))
+        return messages_.begin() + id2messages_.find(id)->second;
+    else
+        throw std::runtime_error(std::string("DCCL: attempted an operation on message [" + boost::lexical_cast<std::string>(id) + "] which is not loaded"));
+}
+
+std::vector<dccl::Message>::iterator dccl::DCCLCodec::to_iterator(const unsigned& id)
+{
+    if(id2messages_.count(id))
+        return messages_.begin() + id2messages_.find(id)->second;
+    else
+        throw std::runtime_error(std::string("DCCL: attempted an operation on message [" + boost::lexical_cast<std::string>(id) + "] which is not loaded"));
+}
+
+
+void dccl::DCCLCodec::encode_private(std::vector<Message>::iterator it,
+                                     std::string& out,
+                                     const std::map<std::string, MessageVal>& in)
+{
+    it->encode(out, in);
+    ++(*it);
+}
+        
+void dccl::DCCLCodec::encode_private(std::vector<Message>::iterator it,
+                                     modem::Message& out_msg,
+                                     const std::map<std::string, MessageVal>& in)
+{
+    std::string out;
+    encode_private(it, out, in);
+    out_msg.set_data(out);    
+}
+        
+void dccl::DCCLCodec::decode_private(std::vector<Message>::iterator it,
+                                     const std::string& in,
+                                     std::map<std::string, MessageVal>& out)
+{ it->decode(in, out); }
+
+void dccl::DCCLCodec::decode_private(std::vector<Message>::iterator it,
+                                     const modem::Message& in_msg,
+                                     std::map<std::string, MessageVal>& out)
+{ decode_private(it, in_msg.data(), out); }
+

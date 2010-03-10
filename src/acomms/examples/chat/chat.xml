@@ -6,8 +6,6 @@
     <size>32</size>
     <queuing>
       <ack>true</ack>
-      <blackout_time>0</blackout_time>
-      <max_queue>50</max_queue>
       <newest_first>false</newest_first>
     </queuing>
     <layout>

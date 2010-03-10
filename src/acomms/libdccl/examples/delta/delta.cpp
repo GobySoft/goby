@@ -24,8 +24,8 @@ using dccl::operator<<;
 
 int main()
 {
-    std::vector< std::map<std::string, double> > doubles_vect;
-    std::map<std::string, double> doubles;
+    std::vector< std::map<std::string, dccl::MessageVal> > vals_vect;
+    std::map<std::string, dccl::MessageVal> vals;
     
     //  initialize output hexadecimal
     std::string hex;
@@ -38,48 +38,48 @@ int main()
     std::cout << dccl << std::endl;
     
     
-    doubles["time"] = 1250000000;
-    doubles["temp"] = 15.23;
-    doubles["sal"] = 37.9;
-    doubles["depth"] = 10;
+    vals["time"] = 1250000000;
+    vals["temp"] = 15.23;
+    vals["sal"] = 37.9;
+    vals["depth"] = 10;
 
-    doubles_vect.push_back(doubles);
+    vals_vect.push_back(vals);
 
-    std::cout << "passing key frame values to encoder:\n" << doubles;
+    std::cout << "passing key frame values to encoder:\n" << vals;
     
-    doubles["time"] = 1250000010;
-    doubles["temp"] = 15.4;
-    doubles["sal"] = 37.8;
-    doubles["depth"] = 14;
+    vals["time"] = 1250000010;
+    vals["temp"] = 15.4;
+    vals["sal"] = 37.8;
+    vals["depth"] = 14;
 
-    doubles_vect.push_back(doubles);
+    vals_vect.push_back(vals);
 
-    std::cout << "passing delta frame values to encoder:\n" << doubles;
+    std::cout << "passing delta frame values to encoder:\n" << vals;
     
-    doubles["time"] = 1250000020;
-    doubles["temp"] = 15.7;
-    doubles["sal"] = 37.7;
-    doubles["depth"] = 19;
+    vals["time"] = 1250000020;
+    vals["temp"] = 15.7;
+    vals["sal"] = 37.7;
+    vals["depth"] = 19;
 
-    doubles_vect.push_back(doubles);
+    vals_vect.push_back(vals);
 
-    std::cout << "passing delta frame values to encoder:\n" << doubles;
+    std::cout << "passing delta frame values to encoder:\n" << vals;
 
     unsigned id = 4;
-//    dccl.delta_encode(id, hex, 0, &doubles_vect, 0, 0);
+//    dccl.delta_encode(id, hex, 0, &vals_vect, 0, 0);
     
     std::cout << "received hexadecimal string: " << hex << std::endl;
     
-    doubles_vect.clear();
+    vals_vect.clear();
     
     // input contents right back to decoder
     std::cout << "passed hexadecimal string to decoder: " << hex << std::endl;
 
-//    dccl.delta_decode(1, hex, 0, &doubles_vect, 0, 0);
+//    dccl.delta_decode(1, hex, 0, &vals_vect, 0, 0);
     
-    for(std::vector< std::map<std::string, double> >::iterator
-            it = doubles_vect.begin(),
-            n = doubles_vect.end();
+    for(std::vector< std::map<std::string, dccl::MessageVal> >::iterator
+            it = vals_vect.begin(),
+            n = vals_vect.end();
         it != n;
         ++it)
     {

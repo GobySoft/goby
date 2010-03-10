@@ -22,13 +22,9 @@ using dccl::operator<<;
 
 void plus1(dccl::MessageVal& mv)
 {
-    // this is silly but it demonstrates taking in one value and returning another
-    long l;
-    mv.val(l);
+    long l = mv;
     ++l;
-
-    double d = l;
-    mv.set(d);
+    mv = l;
 }
 
 void times2(double& d)
@@ -49,10 +45,10 @@ void algsum(dccl::MessageVal& mv, const std::vector<std::string>& params,
     {
         std::map<std::string, dccl::MessageVal>::const_iterator it = vals.find(params[i]);
         double v;
-        if(it != vals.end() && it->second.val(v))
+        if(it != vals.end() && it->second.get(v))
             d += v;
     }
-    mv.set(d);
+    mv = d;
 }
 
 
@@ -70,141 +66,51 @@ int main()
     dccl.add_bool_algorithm("invert", &invert);
     dccl.add_adv_algorithm("sum", &algsum);
     
-    std::vector< std::map<std::string, std::string> > s_in;
-    s_in.resize(2);
-    std::vector< std::map<std::string, double> > d_in;
-    d_in.resize(2);
-    std::vector< std::map<std::string, long> > l_in;
-    l_in.resize(2);
-    std::vector< std::map<std::string, bool> > b_in;
-    b_in.resize(2);
+    std::map<std::string, dccl::MessageVal> in;
     
-    // first try everything in as a string
-    bool b_i = true;              dccl::MessageVal B(b_i);
-    std::string e_i = "dog";      dccl::MessageVal E(e_i);
-    std::string s_i = "raccoon";  dccl::MessageVal S(s_i);
-    long i_i = 42;                dccl::MessageVal I(i_i);
-    double f_i = -12.5;           dccl::MessageVal F(f_i, 1);
-    std::string h_i = "abcd1234"; dccl::MessageVal H(h_i);
-    double sum_i = 0;             dccl::MessageVal SUM(sum_i, 0);
-
-    // strings for everything
-    B.val(s_in[0]["B"]);
-    E.val(s_in[0]["E"]);
-    S.val(s_in[0]["S"]);
-    I.val(s_in[0]["I"]);
-    F.val(s_in[0]["F"]);
-    H.val(s_in[0]["H"]);
-    SUM.val(s_in[0]["SUM"]);
-
-    // more sane, cast free approach
-    B.val(b_in[1]["B"]);
-    E.val(s_in[1]["E"]);
-    S.val(s_in[1]["S"]);
-    I.val(l_in[1]["I"]);
-    F.val(d_in[1]["F"]);
-    H.val(s_in[1]["H"]);
-    SUM.val(d_in[1]["SUM"]);    
-
-    for(size_t j= 0, n = s_in.size(); j< n; ++j)
-    {
-        std::string hex;
-        std::cout << "sent values:" << std::endl 
-                  << s_in[j]
-                  << d_in[j]
-                  << l_in[j]
-                  << b_in[j];
-
-        dccl.encode(4, hex, &s_in[j], &d_in[j], &l_in[j], &b_in[j]);
+    bool b = true; 
+    std::string e = "dog";      
+    std::string s = "raccoon";  
+    long i = 42;                
+    double f = -12.5;           
+    std::string h = "abcd1234"; 
+    double sum = 0;             
     
-        for(size_t k=0, m=4; k<m; ++k)
-        {
-            
-            std::map<std::string, std::string> s_out;
-            std::map<std::string, double> d_out;
-            std::map<std::string, long> l_out;
-            std::map<std::string, bool> b_out;
-            
-            dccl.decode(4, hex,
-                        &s_out,
-                        (k>0) ? &d_out : 0,
-                        (k>1) ? &l_out : 0,
-                        (k>2) ? &b_out : 0);
-            
-            std::cout << "received values:" << std::endl 
-                      << s_out
-                      << d_out
-                      << l_out
-                      << b_out;
-        
-            
-            bool b; B.val(b);
-            std::string e; E.val(e);
-            std::string s; S.val(s);
-            long i; I.val(i);
-            double f; F.val(f);
-            double sum; SUM.val(sum);
-            std::string h; H.val(h);
-            
-            ++i;
-            invert(b);
-            prepend_fat(s);
-            times2(f);
-            sum += i_i + f_i;
-            
-            dccl::MessageVal Bo(b);
-            dccl::MessageVal Eo(e);
-            dccl::MessageVal So(s);
-            dccl::MessageVal Fo(f, 2);
-            dccl::MessageVal SUMo(sum, 2);
-            dccl::MessageVal Io(i);
-            dccl::MessageVal Ho(h);            
+    in["B"] = b;
+    in["E"] = e;
+    in["S"] = s;
+    in["I"] = i;
+    in["F"] = f;
+    in["H"] = h;
+    in["SUM"] = sum;
 
-            switch(k)
-            {
-                case 3:
-                    assert(Bo == b_out["B"]);
-                    assert(Eo == s_out["E"]);
-                    assert(So == s_out["S"]);
-                    assert(Fo == d_out["F"]);
-                    assert(SUMo == d_out["SUM"]);
-                    assert(Io == l_out["I"]);
-                    assert(Ho == s_out["H"]);
-                    break;
-                    
-                case 2:
-                    assert(Bo == l_out["B"]);
-                    assert(Eo == s_out["E"]);
-                    assert(So == s_out["S"]);
-                    assert(Fo == d_out["F"]);
-                    assert(SUMo == d_out["SUM"]);
-                    assert(Io == l_out["I"]);
-                    assert(Ho == s_out["H"]);
-                    break;
+    std::string hex;
+    std::cout << "sent values:" << std::endl 
+              << in;
 
-                case 1:
-                    assert(Bo == d_out["B"]);
-                    assert(Eo == s_out["E"]);
-                    assert(So == s_out["S"]);
-                    assert(Fo == d_out["F"]);
-                    assert(SUMo == d_out["SUM"]);
-                    assert(Io == d_out["I"]);
-                    assert(Ho == s_out["H"]);
-                    break;
-
-                case 0:
-                    assert(Bo == s_out["B"]);
-                    assert(Eo == s_out["E"]);
-                    assert(So == s_out["S"]);
-                    assert(Fo == s_out["F"]);
-                    assert(SUMo == s_out["SUM"]);
-                    assert(Io == s_out["I"]);
-                    assert(Ho == s_out["H"]);
-                    break;
-            }
-        }
-    }
+    dccl.encode(4, hex, in);
     
+    std::map<std::string, dccl::MessageVal> out;
+    
+    dccl.decode(4, hex, out);
+    
+    std::cout << "received values:" << std::endl 
+              << out;    
+    
+
+    sum += i + f;
+    ++i;
+    invert(b);
+    prepend_fat(s);
+    times2(f);
+    
+    assert(out["B"] == b);
+    assert(out["E"] == e);
+    assert(out["S"] == s);
+    assert(out["F"] == f);
+    assert(out["SUM"] == sum);
+    assert(out["I"] == i);
+    assert(out["H"] == h);
 
     std::cout << "all tests passed" << std::endl;
 }

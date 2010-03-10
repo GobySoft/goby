@@ -354,10 +354,11 @@ queue::Queue* queue::QueueManager::find_next_sender(modem::Message& message)
     {
         Queue& oq = it->second;
         
-        // flush and encode on demands
-        if(oq.on_demand())
+        // encode on demand
+        if(oq.on_demand() &&
+           (!oq.size() || oq.newest_msg_time() + acomms_util::ON_DEMAND_SKEW < time(NULL))
+            )
         {
-            if(oq.size()) oq.flush();
             if(callback_ondemand)
             {
                 modem::Message new_message;
@@ -574,6 +575,7 @@ int queue::QueueManager::request_next_destination(unsigned size /* = std::numeri
     message.set_size(size);
     
     Queue* winning_var = find_next_sender(message);
+
     if(winning_var)
     {
         unsigned dest = winning_var->give_dest();

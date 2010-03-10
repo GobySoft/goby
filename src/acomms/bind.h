@@ -64,6 +64,16 @@ namespace acomms_util
         bind(mac, driver);
         bind(mac, queue_manager);
     }
+
+    // examples
+    /// \example acomms/examples/chat/chat.cpp
+    /// chat.xml
+    /// \verbinclude chat.xml
+    /// chat.cpp
+
+
 }
+
+
 
 #endif

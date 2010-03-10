@@ -29,7 +29,6 @@ We want to have the ability to use the lowest rate WHOI Micro-Modem message size
 
 See \ref libdccl/examples/simple/simple.cpp "simple.cpp" for the final result (simple.xml) and for an example of how to use this message.
 
-
 <b>Scenario 2: Send a more realistic command and receive a status message from the vehicle</b>:
 
 We want to be able to command our vehicle to go to a specific point on a local XY grid (meters from some known latitude / longitude), but no more than 10 kilometers from the datum. We also want to be able to turn the lights on or off, and send a short string for other new instructions. Finally, we need to be able to command a speed. Our vehicle can move no faster than 3 m/s, but its control is precise enough to handle hundreds of a m/s (wow!). It's probably easiest to make a table with our conditions:
@@ -269,7 +268,7 @@ Using the dccl::DCCLCodec is a fairly straightforward endeavor. First you need t
 dccl::DCCLCodec dccl("/path/to/file.xml", "/path/to/message_schema.xsd");
 \endcode
 
-Then, to encode a message, fill up std::maps of std::strings, doubles, bools, and/or longs where the key of the map (i.e. the \texttt{it->first} if \texttt{it} is the map iterator) is the \ref tag_name of each message variable, and the value (\texttt{it->second}) is the quantity you wish to encode. All reasonable type conversions will be made by DCCL (doubles to \ref tag_int, for example), but the most predictable (and fastest) results will be gained by using the following mapping between DCCL message variable types and C++ types:
+Then, to encode a message, fill up std::maps of dccl::MessageVal where the key of the map (i.e. the \texttt{it->first} if \texttt{it} is the map iterator) is the \ref tag_name of each message variable, and the value (\texttt{it->second}) is the quantity you wish to encode. All reasonable type conversions will be made by DCCL (doubles to \ref tag_int, for example), but the most predictable (and fastest) results will be gained by using the following mapping between DCCL message variable types and C++ types:
 
 \anchor dccl_cpp_types_table
 <table>
@@ -313,10 +312,7 @@ Then, to encode a message, fill up std::maps of std::strings, doubles, bools, an
 After filling up the std::maps, pass pointers to the maps to dccl::DCCLCodec::encode along with a reference to a string in which to store the result:
 
 \code
-std::map<std::string, std::string> strings;
-std::map<std::string, double> doubles;
-std::map<std::string, long> longs;
-std::map<std::string, bool> bools;
+std::map<std::string, dccl::MessageVal> vals;
 
 // code to insert values into maps
 // ...
@@ -325,20 +321,19 @@ std::map<std::string, bool> bools;
 // store the result here
 std::string hex;
 
-dccl.encode(id, hex, &strings, &doubles, &longs, &bools);
+dccl.encode(id, hex, vals);
 \endcode
 
 \texttt{hex} will now contain the encoded message in the form of a hexadecimal string (capital letters for the alphabetic characters).
 
 You may now send this message through whatever channel you would like, or pass it to the queue::QueueManager to %queue for sending later.
 
-To decode a message (stored in \texttt{hex} as a hexadecimal string), simply pass hex as a reference along with pointers to the maps to store the results. Based on the maps you provide, values will be cast and stored as the best fit. That is, if you pass all four maps, values will be stored in the map corresponding to the C++ type that fits the DCCL type as given in this \ref dccl_cpp_types_table "table". If some maps are not provided, the type is downcast in a hierarchy that goes bool -> long -> double -> std::string. For example, if you only provide the double and std::string maps, all \ref tag_bool and \ref tag_int are returned in the double map and all others are returned as normal (per this \ref dccl_cpp_types_table "table").
+To decode a message (stored in \texttt{hex} as a hexadecimal string), simply pass hex as a reference along with pointers to the maps to store the results. Based on the maps you provide, values will be cast and stored as the best fit. 
 
 \code
-// store the result here, all cast to std::string
-std::map<std::string, std::string> strings;
+std::map<std::string, std::string> vals;
 
-dccl.decode(1, hex, &strings, 0, 0, 0);
+dccl.decode(1, hex, vals);
 \endcode
 
 For line by line interaction with the dccl::DCCLCodec and for advanced use, investigate the code examples given in the Examples column of this \ref OSI_table "table".

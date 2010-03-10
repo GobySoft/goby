@@ -19,9 +19,88 @@
 
 #include "message_val.h"
 
+dccl::MessageVal::MessageVal()
+    : sval_(""),
+      dval_(0),
+      lval_(0),
+      bval_(false),
+      precision_(MAX_DBL_PRECISION),
+      type_(cpp_notype)
+{}
+
+
+dccl::MessageVal::MessageVal(const std::string& s)
+    : sval_(s),
+      dval_(0),
+      lval_(0),
+      bval_(false),
+      precision_(MAX_DBL_PRECISION),
+      type_(cpp_string)
+{}
+
+
+dccl::MessageVal::MessageVal(const char* s)
+    : sval_(s),
+      dval_(0),
+      lval_(0),
+      bval_(false),
+      precision_(MAX_DBL_PRECISION),
+      type_(cpp_string)
+{}
+
+
+dccl::MessageVal::MessageVal(double d, int p /* = MAX_DBL_PRECISION*/ )
+    : sval_(""),
+      dval_(d),
+      lval_(0),
+      bval_(false),
+      precision_(p),
+      type_(cpp_double)
+{}
+
+
+dccl::MessageVal::MessageVal(long l)
+    : sval_(""),
+      dval_(0),
+      lval_(l),
+      bval_(false),
+      precision_(MAX_DBL_PRECISION),
+      type_(cpp_long)
+{}
+        
+
+dccl::MessageVal::MessageVal(int i)
+    : sval_(""),
+      dval_(0),
+      lval_(i),
+      bval_(false),
+      precision_(MAX_DBL_PRECISION),
+      type_(cpp_long)
+{}
+
+
+dccl::MessageVal::MessageVal(float f)
+    : sval_(""),
+      dval_(f),
+      lval_(0),
+      bval_(false),
+      precision_(MAX_DBL_PRECISION),
+      type_(cpp_long)
+{}
+
+dccl::MessageVal::MessageVal(bool b)
+    : sval_(""),
+      dval_(0),
+      lval_(0),
+      bval_(b),
+      precision_(MAX_DBL_PRECISION),
+      type_(cpp_bool)
+{}
+
+
 void dccl::MessageVal::set(std::string sval)
 { sval_ = sval; type_ = cpp_string; }
-void dccl::MessageVal::set(double dval, int precision /* = 15 */)
+void dccl::MessageVal::set(double dval, int precision /* = MAX_DBL_PRECISION */)
 { dval_ = dval; type_ = cpp_double; precision_ = precision; }
 void dccl::MessageVal::set(long lval)
 { lval_ = lval; type_ = cpp_long; }
@@ -29,7 +108,7 @@ void dccl::MessageVal::set(bool bval)
 { bval_ = bval; type_ = cpp_bool; }
 
 
-bool dccl::MessageVal::val(std::string& s) const
+bool dccl::MessageVal::get(std::string& s) const
 {
     std::stringstream ss;
     switch(type_)
@@ -56,7 +135,7 @@ bool dccl::MessageVal::val(std::string& s) const
     }
 }
 
-bool dccl::MessageVal::val(bool& b) const
+bool dccl::MessageVal::get(bool& b) const
 {
     switch(type_)
     {
@@ -88,7 +167,7 @@ bool dccl::MessageVal::val(bool& b) const
     }
 }    
 
-bool dccl::MessageVal::val(long& t) const
+bool dccl::MessageVal::get(long& t) const
 {
     switch(type_)
     {
@@ -127,7 +206,7 @@ bool dccl::MessageVal::val(long& t) const
     }
 }        
         
-bool dccl::MessageVal::val(double& d) const
+bool dccl::MessageVal::get(double& d) const
 {
     switch(type_)
     {
@@ -162,3 +241,59 @@ bool dccl::MessageVal::val(double& d) const
 
     }
 }
+
+dccl::MessageVal::operator double() const
+{
+    double d;
+    if(get(d)) return d;
+    else return acomms_util::NaN;
+}
+dccl::MessageVal::operator float() const
+{
+    return double();
+}
+dccl::MessageVal::operator bool() const
+{
+    bool b;
+    if(get(b)) return b;
+    else return false;
+}
+dccl::MessageVal::operator std::string() const
+{
+    std::string s;
+    if(get(s)) return s;
+    else return "";
+}
+dccl::MessageVal::operator long() const
+{
+    long l;
+    if(get(l)) return l;
+    else return 0;
+}
+dccl::MessageVal::operator int() const
+{
+    return long();
+}
+
+
+
+bool dccl::MessageVal::operator==(const std::string& s)
+{
+    std::string us;
+    return get(us) && us == s;
+}
+bool dccl::MessageVal::operator==(double d)
+{
+    double us;
+    return get(us) && us == d;
+}
+bool dccl::MessageVal::operator==(long l)
+{
+    long us;
+    return get(us) && us == l;
+}
+bool dccl::MessageVal::operator==(bool b)
+{
+    bool us;
+    return get(us) && us == b;
+}        

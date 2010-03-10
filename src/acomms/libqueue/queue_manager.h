@@ -279,7 +279,7 @@ namespace queue
         
         /// \example libqueue/examples/queue_simple/queue_simple.cpp
         /// simple.xml
-        /// \verbinclude simple.xml
+        /// \verbinclude queue_simple/simple.xml
         /// queue_simple.cpp
 
 

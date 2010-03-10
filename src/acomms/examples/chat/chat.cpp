@@ -133,13 +133,13 @@ int main(int argc, char* argv[])
 
         if(!line.empty())
         {
-            std::map<std::string, std::string> strings;
-            strings["message"] = line;
+            std::map<std::string, dccl::MessageVal> vals;
+            vals["message"] = line;
 
             std::string hex_out;
 
             unsigned message_id = 1;
-            dccl_.encode(message_id, hex_out, &strings, 0, 0, 0);
+            dccl_.encode(message_id, hex_out, vals);
             
             modem::Message message_out;
             message_out.set_data(hex_out);
@@ -187,7 +187,7 @@ void received_ack(queue::QueueKey key, const modem::Message& ack_message)
 
 std::string decode_received(unsigned id, const std::string& data)
 {
-    std::map<std::string, std::string> strings;
-    dccl_.decode(id, data, &strings, 0, 0, 0);
-    return strings["message"];
+    std::map<std::string, dccl::MessageVal> vals;
+    dccl_.decode(id, data, vals);
+    return vals["message"];
 }

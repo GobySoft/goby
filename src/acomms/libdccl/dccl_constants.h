@@ -47,12 +47,12 @@ namespace dccl
     };
 
 
-    // 2^^3 = 8
+    // 2^3 = 8
     enum { POWER2_BITS_IN_BYTE = 3 };
     inline unsigned bits2bytes(unsigned bits) { return bits >> POWER2_BITS_IN_BYTE; }
     inline unsigned bytes2bits(unsigned bytes) { return bytes << POWER2_BITS_IN_BYTE; }
     
-    // 2^^1 = 2
+    // 2^1 = 2
     enum { POWER2_NIBS_IN_BYTE = 1 };
     inline unsigned bytes2nibs(unsigned bytes) { return bytes << POWER2_NIBS_IN_BYTE; }
     inline unsigned nibs2bytes(unsigned nibs) { return nibs >> POWER2_NIBS_IN_BYTE; }

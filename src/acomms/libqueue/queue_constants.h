@@ -25,6 +25,9 @@ namespace acomms_util
     const unsigned MULTIMESSAGE_MASK = 1 << 7;
     const unsigned BROADCAST_MASK = 1 << 6;
     const unsigned VAR_ID_MASK = 0xFF ^ MULTIMESSAGE_MASK ^ BROADCAST_MASK;
+
+    // how old an on_demand message can be before re-encoding
+    const unsigned ON_DEMAND_SKEW = 1;    
 }
 
 #endif

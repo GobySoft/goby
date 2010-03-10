@@ -45,37 +45,35 @@ int main()
               << std::string(30, '#') << std::endl;
 
     // initialize input contents to encoder
-    std::map<std::string, std::string> strings;
-    std::map<std::string, double> doubles;
+    std::map<std::string, dccl::MessageVal> in_vals;
 
-    // initialize output hexadecimal
-    std::string hex;
+    // initialize output message
+    modem::Message msg;
 
-    strings["PLUSNET_MESSAGES"] = "MessageType=SENSOR_STATUS,SensorReportType=0,SourcePlatformId=3,DestinationPlatformId=0,Timestamp=1191947446.91117,NodeLatitude=47.7448,NodeLongitude=-122.845,NodeDepth=0.26,NodeCEP=0,NodeHeading=169.06,NodeSpeed=0,MissionState=2,MissionType=2,LastGPSTimestamp=1191947440,PowerLife=6,SensorHealth=0,RecorderState=1,RecorderLife=0,NodeSpecificInfo0=0,NodeSpecificInfo1=0,NodeSpecificInfo2=23,NodeSpecificInfo3=0,NodeSpecificInfo4=3,NodeSpecificInfo5=0";
+    in_vals["PLUSNET_MESSAGES"] = "MessageType=SENSOR_STATUS,SensorReportType=0,SourcePlatformId=3,DestinationPlatformId=0,Timestamp=1191947446.91117,NodeLatitude=47.7448,NodeLongitude=-122.845,NodeDepth=0.26,NodeCEP=0,NodeHeading=169.06,NodeSpeed=0,MissionState=2,MissionType=2,LastGPSTimestamp=1191947440,PowerLife=6,SensorHealth=0,RecorderState=1,RecorderLife=0,NodeSpecificInfo0=0,NodeSpecificInfo1=0,NodeSpecificInfo2=23,NodeSpecificInfo3=0,NodeSpecificInfo4=3,NodeSpecificInfo5=0";
 
     std::cout << "passing values to encoder:" << std::endl  
-              << strings
-              << doubles;
+              << in_vals;
     
-    dccl.encode_from_src_vars("SENSOR_STATUS", hex, &strings, &doubles);
+    dccl.pubsub_encode("SENSOR_STATUS", msg, in_vals);
     
     std::cout << "received hexadecimal string: "
-              << hex
+              << msg.data()
               << std::endl;
 
     
-    strings.clear();
-    doubles.clear();
+    std::multimap<std::string, dccl::MessageVal> out_vals;
+
     
     std::cout << "passed hexadecimal string to decoder: " 
-              << hex
+              << msg.data()
               << std::endl;
 
-    dccl.decode_to_publish("SENSOR_STATUS", hex, &strings, &doubles);
+    dccl.pubsub_decode("SENSOR_STATUS", msg, out_vals);
     
     std::cout << "received values:" << std::endl 
-              << strings
-              << doubles;
+              << out_vals;
+    
     
     return 0;
 }

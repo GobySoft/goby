@@ -44,13 +44,13 @@ void dccl::AlgorithmPerformer::algorithm(MessageVal& in, const std::string& algo
     bool b;
 
     // short form for simple algorithms
-    if (str_map1_.count(alg) && in.val(s))
+    if (str_map1_.count(alg) && in.get(s))
     { str_map1_.find(alg)->second(s); in.set(s); }
-    else if (dbl_map1_.count(alg) && in.val(d))
+    else if (dbl_map1_.count(alg) && in.get(d))
     { dbl_map1_.find(alg)->second(d); in.set(d); }
-    else if (long_map1_.count(alg) && in.val(l))
+    else if (long_map1_.count(alg) && in.get(l))
     { long_map1_.find(alg)->second(l); in.set(l); }
-    else if (bool_map1_.count(alg) && in.val(b))
+    else if (bool_map1_.count(alg) && in.get(b))
     { bool_map1_.find(alg)->second(b); in.set(b); }
     else if (adv_map1_.count(alg))
     { adv_map1_.find(alg)->second(in); }

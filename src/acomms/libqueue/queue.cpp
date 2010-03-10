@@ -65,7 +65,7 @@ bool queue::Queue::push_message(modem::Message& new_message)
     messages_.push_back(new_message);
 
     
-    // push messages off the stack if the queue is full
+    // pop messages off the stack if the queue is full
     if(cfg_.max_queue() && messages_.size() > cfg_.max_queue())
     {        
         messages_it it_to_erase =
@@ -86,7 +86,7 @@ bool queue::Queue::push_message(modem::Message& new_message)
     
     if(os_) *os_ << group("push") << "pushing" << " to send stack "
                  << cfg_.name() << " (qsize " << size() <<  "/"
-                 << cfg_.max_queue() << "): " << new_message.snip() << std::endl;    
+                 << cfg_.max_queue() << "): " << new_message.snip() << std::endl;
     
     return true;     
 }

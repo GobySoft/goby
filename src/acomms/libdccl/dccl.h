@@ -38,6 +38,39 @@
 /// Use \code #include <goby/acomms/dccl.h> \endcode to gain access to all these objects.
 namespace dccl
 {
+
+    /// use this for displaying a human readable version
+    template<typename Value>
+        std::ostream& operator<< (std::ostream& out, const std::map<std::string, Value>& m)
+    {
+        typedef std::pair<std::string, Value> P;
+        BOOST_FOREACH(const P& p, m)
+        {
+            out << "\t" << "key: " << p.first << std::endl
+                << "\t" << "value: " << p.second << std::endl;
+        }
+        return out;
+    }
+
+    template<typename Value>
+        std::ostream& operator<< (std::ostream& out, const std::multimap<std::string, Value>& m)
+    {
+        typedef std::pair<std::string, Value> P;
+        BOOST_FOREACH(const P& p, m)
+        {
+            out << "\t" << "key: " << p.first << std::endl
+                << "\t" << "value: " << p.second << std::endl;
+        }
+        return out;
+    }
+
+    
+    /// use this for displaying a human readable version of this STL object
+    std::ostream& operator<< (std::ostream& out, const std::set<unsigned>& s);
+    /// use this for displaying a human readable version of this STL object
+    std::ostream& operator<< (std::ostream& out, const std::set<std::string>& s);
+
+
     
     /// provides an API to the Dynamic CCL Codec.
     class DCCLCodec 
@@ -94,12 +127,8 @@ namespace dccl
         /// \param name name of the algorithm (\xmltag{... algorithm="name"})
         /// \param func has the form void name(std::string& val_to_edit) (see dccl::StrAlgFunction1). can be a function pointer (&name) or
         /// any function object supported by boost::function (http://www.boost.org/doc/libs/1_34_0/doc/html/function.html)        
-        void add_str_algorithm(const std::string& name, StrAlgFunction1 func)
-        {
-            AlgorithmPerformer* ap = AlgorithmPerformer::getInstance();
-            ap -> add_str_algorithm(name, func);
-        }
-
+        void add_str_algorithm(const std::string& name, StrAlgFunction1 func);
+        
         /// \brief Add an algorithm callback for a C++ double type that only requires the current value.
         ///
         /// C++ double primarily corresponds to DCCL type
@@ -109,11 +138,7 @@ namespace dccl
         /// \param name name of the algorithm (<... algorithm="name"/>)
         /// \param func has the form void name(double& val_to_edit) (see dccl::DblAlgFunction1). can be a function pointer (&name) or
         /// any function object supported by boost::function (http://www.boost.org/doc/libs/1_34_0/doc/html/function.html)
-        void add_dbl_algorithm(const std::string& name, DblAlgFunction1 func)
-        {
-            AlgorithmPerformer* ap = AlgorithmPerformer::getInstance();
-            ap -> add_dbl_algorithm(name, func);
-        }
+        void add_dbl_algorithm(const std::string& name, DblAlgFunction1 func);
         
         /// \brief Add an algorithm callback for a C++ long int type that only requires the current value.
         ///
@@ -124,12 +149,8 @@ namespace dccl
         /// \param name name of the algorithm (<... algorithm="name"/>)
         /// \param func has the form void name(long& val_to_edit) (see dccl::LongAlgFunction1). can be a function pointer (&name) or
         /// any function object supported by boost::function (http://www.boost.org/doc/libs/1_34_0/doc/html/function.html)
-        void add_long_algorithm(const std::string& name, LongAlgFunction1 func)
-        {
-            AlgorithmPerformer* ap = AlgorithmPerformer::getInstance();
-            ap -> add_long_algorithm(name, func);
-        }
-
+        void add_long_algorithm(const std::string& name, LongAlgFunction1 func);
+        
         /// \brief Add an algorithm callback  for a C++ bool type that only requires the current value.
         ///
         /// C++ bool primarily corresponds to DCCL type
@@ -139,23 +160,15 @@ namespace dccl
         /// \param name name of the algorithm (<... algorithm="name"/>)
         /// \param func has the form void name(bool& val_to_edit) (see dccl::BoolAlgFunction1). can be a function pointer (&name) or
         /// any function object supported by boost::function (http://www.boost.org/doc/libs/1_34_0/doc/html/function.html)
-        void add_bool_algorithm(const std::string& name, BoolAlgFunction1 func)
-        {
-            AlgorithmPerformer * ap = AlgorithmPerformer::getInstance();
-            ap -> add_bool_algorithm(name, func);
-        }
-
+        void add_bool_algorithm(const std::string& name, BoolAlgFunction1 func);
+        
         /// \brief Add an algorithm callback for a dccl::MessageVal. This allows you to have a different input value (e.g. int) as the output value (e.g. string). 
         ///
         /// \param name name of the algorithm (\xmltag{... algorithm="name"})
         /// \param func has the form void name(dccl::MessageVal& val_to_edit) (see dccl::AdvAlgFunction1). can be a function pointer (&name) or
         /// any function object supported by boost::function (http://www.boost.org/doc/libs/1_34_0/doc/html/function.html)
-        void add_generic_algorithm(const std::string& name, AdvAlgFunction1 func)
-        {
-            AlgorithmPerformer* ap = AlgorithmPerformer::getInstance();
-            ap -> add_generic_algorithm(name, func);
-        }
-
+        void add_generic_algorithm(const std::string& name, AdvAlgFunction1 func);
+        
         /// \brief Add an advanced algorithm callback for any DCCL C++ type that may also require knowledge of all the other message variables
         /// and can optionally have additional parameters
         ///
@@ -167,11 +180,7 @@ namespace dccl
         /// any function object supported by boost::function (http://www.boost.org/doc/libs/1_34_0/doc/html/function.html).
         /// \param params (passed to func) a list of colon separated parameters passed by the user in the XML file. param[0] is the name.
         /// \param vals (passed to func) a map of \ref tag_name to current values for all message variables.
-        void add_adv_algorithm(const std::string& name, AdvAlgFunction3 func)
-        {
-            AlgorithmPerformer* ap = AlgorithmPerformer::getInstance();
-            ap -> add_adv_algorithm(name, func);
-        }
+        void add_adv_algorithm(const std::string& name, AdvAlgFunction3 func);
         //@}
         
         /// \name Codec functions.
@@ -180,41 +189,23 @@ namespace dccl
         //@{         
         /// \brief Encode a message.
         ///
-        /// Values can be passed in on one or more maps of names to values. The types passed (std::string, double, long, bool) should match the DCCL types (\ref tag_string, \ref tag_float, \ref tag_int, \ref tag_bool, \ref tag_enum) as well
-        /// as possible, but all reasonable casts will be made (e.g. std::string("234") is a valid \ref tag_int and double(2.4) could be used
-        /// as a \ref tag_bool (true))
-        ///
         /// \param k can either be std::string (the name of the message) or unsigned (the id of the message)
         /// \param hex location for the encoded hexadecimal to be stored. this is suitable for sending to the Micro-Modem
-        /// \param ms pointer to map of message variable name to std::string values. std::string is preferred for \ref tag_string and \ref tag_enum. optional, pass 0 (null pointer) if not using.
-        /// \param md pointer to map of message variable name to double values. double is preferred for \ref tag_float. optional, pass 0 (null pointer) if not using.
-        /// \param ml pointer to map of message variable name to double values. long is preferred for \ref tag_int. optional, pass 0 (null pointer) if not using.
-        /// \param mb pointer to map of message variable name to bool values. bool is preferred for \ref tag_bool. optional, pass 0 (null pointer) if not using.
+        /// \param m map of std::string (\ref tag_name) to dccl::MessageVal representing the values to encode
         template<typename Key>
             void encode(const Key& k, std::string& hex,
-                        const std::map<std::string, std::string>* ms,
-                        const std::map<std::string, double>* md,
-                        const std::map<std::string, long>* ml,
-                        const std::map<std::string, bool>* mb)
-        { encode_private(to_iterator(k), hex, ms, md, ml, mb); }
+                        const std::map<std::string, MessageVal>& m)
+        { encode_private(to_iterator(k), hex, m); }
 
         /// \brief Decode a message.
         ///
-        /// Values will be received in one or more maps of names to values. All reasonable casts will be made and returned in the maps provided. If all four maps are provided, the value is returned in the closest dccl::DCCLCppType to the dccl::DCCLType (e.g. \ref tag_bool is returned as bool, \ref tag_int as long).  If fewer than four maps are provided, the cast hierarchy goes bool -> long -> double -> std::string. The value is returned in the map corresponding to the closest type to the original. For example, a bool value of true would be returned in the mb as true (*mb["key"] == true). If mb was not provided, it would be returned in ml as 1 (*ml["key"] == 1). If ml was not provided, it would be returned in md as 1.0 (*md["key"] == 1.0). If md was not provided, it would be returned in ms as "true" (*ms["key"] == "true").
-        ///
         /// \param k can either be std::string (the name of the message) or unsigned (the id of the message)
         /// \param hex the hexadecimal to be decoded.
-        /// \param ms pointer to map of message variable name to std::string values. optional, pass 0 (null pointer) if not using.
-        /// \param md pointer to map of message variable name to double values. optional, pass 0 (null pointer) if not using.
-        /// \param ml pointer to map of message variable name to double values. optional, pass 0 (null pointer) if not using.
-        /// \param mb pointer to map of message variable name to bool values. optional, pass 0 (null pointer) if not using.
+        /// \param m map of std::string (\xmltag name) to dccl::MessageVal to store the values to be decoded
         template<typename Key>
             void decode(const Key& k, const std::string& hex,
-                        std::map<std::string, std::string>* ms,
-                        std::map<std::string, double>* md,
-                        std::map<std::string, long>* ml,
-                        std::map<std::string, bool>* mb)
-        { decode_private(to_iterator(k), hex, ms, md, ml, mb); }
+                        std::map<std::string, MessageVal>& m)
+        { decode_private(to_iterator(k), hex, m); }
         //@}
         
         /// \name Informational Methods
@@ -224,14 +215,14 @@ namespace dccl
         /// \param k can either be std::string (the name of the message) or unsigned (the id of the message)
         template<typename Key>
             std::string summary(const Key& k) const
-        { return summary(to_iterator(k)); }
+        { return to_iterator(k)->get_display(); }
         /// long summary of a message for all loaded messages
         std::string summary() const;
 
         /// brief summary of a message for a given Key (std::string name or unsigned id)
         template<typename Key>
             std::string brief_summary(const Key& k) const
-        { return brief_summary(to_iterator(k)); }
+        { return to_iterator(k)->get_short_display(); }
         /// brief summary of a message for all loaded messages
         std::string brief_summary() const;
 
@@ -247,7 +238,7 @@ namespace dccl
         /// \return map of names to DCCL types needed to encode a given message
         template<typename Key>
             std::map<std::string, std::string> message_var_names(const Key& k) const
-        { return message_var_names(to_iterator(k)); }
+        { return to_iterator(k)->message_var_names(); }
         
         /// \param id message id
         /// \return name of message
@@ -257,10 +248,6 @@ namespace dccl
         unsigned name2id(const std::string& name) {return to_iterator(name)->id();}
         //@}
 
-        
-        /////////////////
-        // MOOS!
-        /////////////////
 
         /// \name Publish/subscribe architecture related methods
         /// \brief Methods written largely to support DCCL in the context of a publish/subscribe architecture (e.g., see MOOS (http://www.robots.ox.ac.uk/~mobile/MOOS/wiki/pmwiki.php)). The other methods provide a complete interface for encoding and decoding DCCL messages. However, the methods listed here extend the functionality to allow for
@@ -281,97 +268,87 @@ namespace dccl
         /*! \verbatim
           <int>
             <name>myint</name>
-            <moos_var>somevar</moos_var>
+            <src_var>somevar</src_var>
           </int> \endverbatim
          */
         ///
-        /// Using encode_from_moos you can pass *ms["somevar"] = "mystring=foo,blah=dog,myint=32"
-        /// or *md["somevar"] = 32.0
+        /// Using this method you can pass vals["somevar"] = "mystring=foo,blah=dog,myint=32"
+        /// or vals["somevar"] = 32.0
         /// and both cases will properly parse out 32 as the value for this field.
-        /// In comparison, using encode you would pass *ml["myint"] = 32
+        /// In comparison, using the normal encode you would pass vals["myint"] = 32
         ///
         /// \param k can either be std::string (the name of the message) or unsigned (the id of the message)
-        /// \param m modem::Message or std::string for encoded message to be stored.
-        /// \param ms pointer to map of source variable name to std::string values. 
-        /// \param md pointer to map of source variable name to double values.
-        /// \param ml pointer to map of source variable name to long values.
-        /// \param mb pointer to map of source variable name to bool values. 
-        template<typename Key, typename Msg>
-            void encode_from_src_vars(const Key& k,
-                                       Msg& m,
-                                       const std::map<std::string, std::string>* ms,
-                                       const std::map<std::string, double>* md,
-                                       const std::map<std::string, long>* ml = 0,
-                                       const std::map<std::string, bool>* mb = 0)
+        /// \param msg modem::Message or std::string for encoded message to be stored.
+        /// \param vals map of source variable name to dccl::MessageVal values. 
+        template<typename Key>
+            void pubsub_encode(const Key& k,
+                               modem::Message& msg,
+                               const std::map<std::string, dccl::MessageVal>& pubsub_vals)
+ 	{
+            std::vector<dccl::Message>::iterator it = to_iterator(k);
 
-        { encode_private(to_iterator(k), m, ms, md, ml, mb, Message::FROM_MOOS_VAR); }
+            std::map<std::string, dccl::MessageVal> vals;
+            // clean the pubsub vals into dccl vals
+            // using <src_var/> tag, do casts from double, pull strings from key=value,key=value, etc.
+            BOOST_FOREACH(MessageVar& mv, it->layout())
+                mv.read_dynamic_vars(vals, pubsub_vals);
 
+            encode_private(it, msg, vals);
+            
+            // deal with the destination
+            it->add_destination(msg, pubsub_vals);
+        }
+
+        
         /// \brief Decode a message using formatting specified in \ref tag_publish tags.
         ///
         /// Values will be received in two maps, one of strings and the other of doubles. The \ref tag_publish value will be placed
         /// either based on the "type" parameter of the \ref tag_publish_var tag (e.g. \<publish_var type="long"\>SOMEVAR\</publish_var\> will be placed as a long). If no type parameter is given and the variable is numeric (e.g. "23242.23") it will be considered a double. If not numeric, it will be considered a string.
         ///
         /// \param k can either be std::string (the name of the message) or unsigned (the id of the message)
-        /// \param m modem::Message or std::string to be decode.
-        /// \param ms pointer to std::multimap of publish variable name to std::string values.
-        /// \param md pointer to std::multimap of publish variable name to double values.
-        /// \param ml pointer to std::multimap of publish variable name to long values.
-        /// \param mb pointer to std::multimap of publish variable name to bool values.
-        template<typename Key, typename Msg>
-            void decode_to_publish(const Key& k,
-                                   const Msg& m,
-                                   std::multimap<std::string, std::string>* ms,
-                                   std::multimap<std::string, double>* md,
-                                   std::multimap<std::string, long>* ml = 0,
-                                   std::multimap<std::string, bool>* mb = 0)
-        { decode_private(to_iterator(k), m, ms, md, ml, mb, Message::DO_PUBLISHES); }
+        /// \param msg modem::Message or std::string to be decode.
+        /// \param vals pointer to std::multimap of publish variable name to std::string values.
+        template<typename Key>
+            void pubsub_decode(const Key& k,
+                               const modem::Message& msg,
+                               std::multimap<std::string, dccl::MessageVal>& pubsub_vals)
+                               
+        {
+            std::vector<dccl::Message>::iterator it = to_iterator(k);
 
-         /// \brief Decode a message using formatting specified in \ref tag_publish tags.
-        ///
-        /// Values will be received in two maps, one of strings and the other of doubles. The \ref tag_publish value will be placed
-        /// either based on the "type" parameter of the \ref tag_publish_var tag (e.g. \<publish_var type="long"\>SOMEVAR\</publish\> will be placed as a long). If no type parameter is given and the variable is numeric (e.g. "23242.23") it will be considered a double. If not numeric, it will be considered a string.
-        ///
-        /// \param k can either be std::string (the name of the message) or unsigned (the id of the message)
-        /// \param m modem::Message or std::string to be decode.
-        /// \param ms pointer to std::map of publish variable name to std::string values.
-        /// \param md pointer to std::map of publish variable name to double values.
-        /// \param ml pointer to std::map of publish variable name to long values.
-        /// \param mb pointer to std::map of publish variable name to bool values.
-        template<typename Key, typename Msg>
-            void decode_to_publish(const Key& k,
-                                   const Msg& m,
-                                   std::map<std::string, std::string>* ms,
-                                   std::map<std::string, double>* md,
-                                   std::map<std::string, long>* ml = 0,
-                                   std::map<std::string, bool>* mb = 0)
-        { decode_private(to_iterator(k), m, ms, md, ml, mb, Message::DO_PUBLISHES); }
+            std::map<std::string, dccl::MessageVal> vals;
+            decode_private(it, msg, vals);
 
-
+            // go through all the publishes_ and fill in the format strings
+            BOOST_FOREACH(Publish& p, it->publishes())
+                p.write_publish(vals, it->layout(), pubsub_vals);
+        }
+        
         
         /// what moos variables do i need to provide to create a message with a call to encode_using_src_vars
         template<typename Key>
             std::set<std::string> src_vars(const Key& k)
-            { return src_vars(to_iterator(k)); }
+        { return to_iterator(k)->src_vars(); }
 
         /// for a given message name, all MOOS variables (sources, input, destination, trigger)
         template<typename Key>
             std::set<std::string> all_vars(const Key& k)
-            { return all_vars(to_iterator(k)); }
+        { return to_iterator(k)->all_vars(); }
 
         /// all MOOS variables needed for encoding (includes trigger)
         template<typename Key>
             std::set<std::string> encode_vars(const Key& k)
-        { return encode_vars(to_iterator(k)); }
+        { return to_iterator(k)->encode_vars(); }
 
         /// for a given message name, all MOOS variables for decoding (input)
         template<typename Key>
             std::set<std::string> decode_vars(const Key& k)
-        { return decode_vars(to_iterator(k)); }
+        { return to_iterator(k)->decode_vars(); }
 
         /// what is the syntax of the message i need to provide?
         template<typename Key>
             std::string input_summary(const Key& k)
-        { return input_summary(to_iterator(k)); }
+        { return to_iterator(k)->input_summary(); }
         
         /// returns outgoing moos variable (hexadecimal) 
         template<typename Key>
@@ -406,7 +383,7 @@ namespace dccl
 
         /// \example libdccl/examples/dccl_simple/dccl_simple.cpp
         /// simple.xml
-        /// \verbinclude simple.xml
+        /// \verbinclude dccl_simple/simple.xml
         /// dccl_simple.cpp
         
         /// \example libdccl/examples/plusnet/plusnet.cpp
@@ -429,102 +406,27 @@ namespace dccl
         /// \example acomms/examples/chat/chat.cpp
         
       private:
-        std::vector<Message>::const_iterator to_iterator(const std::string& message_name) const
-        {
-            return name2messages_.count(message_name)
-                ? messages_.begin() + name2messages_.find(message_name)->second
-                : messages_.end();
-        }
-        std::vector<Message>::iterator to_iterator(const std::string& message_name)
-        {
-            return name2messages_.count(message_name)
-                ? messages_.begin() + name2messages_.find(message_name)->second
-                : messages_.end();
-        }
-        std::vector<Message>::const_iterator to_iterator(const unsigned& id) const
-        {
-            return id2messages_.count(id)
-                ? messages_.begin() + id2messages_.find(id)->second
-                : messages_.end();
-        }
-
-        std::vector<Message>::iterator to_iterator(const unsigned& id)
-        {
-            return id2messages_.count(id)
-                ? messages_.begin() + id2messages_.find(id)->second
-                : messages_.end();    
-        }
-
+        std::vector<Message>::const_iterator to_iterator(const std::string& message_name) const;
+        std::vector<Message>::iterator to_iterator(const std::string& message_name);
+        std::vector<Message>::const_iterator to_iterator(const unsigned& id) const;
+        std::vector<Message>::iterator to_iterator(const unsigned& id);        
 
         void encode_private(std::vector<Message>::iterator it,
-                    modem::Message& out_message,
-                    const std::map<std::string, std::string>* in_str,
-                    const std::map<std::string, double>* in_dbl,
-                    const std::map<std::string, long>* in_long,
-                    const std::map<std::string, bool>* in_bool,
-                    bool from_moos = false)
-        {
-            if(it != messages_.end())
-            {
-                it->encode(out_message, in_str, in_dbl, in_long, in_bool, from_moos);
-                ++(*it);
-            }
-            else
-            {
-                throw std::runtime_error(std::string("DCCL: attempted `encode` on message which is not loaded"));
-            }
-        }
+                            std::string& out,
+                            const std::map<std::string, MessageVal>& in);
         
         void encode_private(std::vector<Message>::iterator it,
-                            std::string& out_hex,
-                            const std::map<std::string, std::string>* in_str,
-                            const std::map<std::string, double>* in_dbl,
-                            const std::map<std::string, long>* in_long,
-                            const std::map<std::string, bool>* in_bool,
-                            bool from_moos = false)
-        {
-            modem::Message out_message;
-            encode_private(it, out_message, in_str, in_dbl, in_long, in_bool, from_moos);
-            out_hex = out_message.data();
-        }
+                            modem::Message& out_msg,
+                            const std::map<std::string, MessageVal>& in);
         
-        template <typename Map1, typename Map2, typename Map3, typename Map4>
-            void decode_private(std::vector<Message>::iterator it,
-                                const modem::Message& in_message,
-                                Map1* out_str,
-                                Map2* out_dbl,
-                                Map3* out_long,
-                                Map4* out_bool,
-                                bool do_publishes = false)
-        {
-            if(it != messages_.end())
-                it->decode(in_message, out_str, out_dbl, out_long, out_bool, do_publishes);
-            else
-                throw std::runtime_error(std::string("DCCL: attempted `decode` on message which is not loaded"));
-        }
-
-        template <typename Map1, typename Map2, typename Map3, typename Map4>
-            void decode_private(std::vector<Message>::iterator it,
-                                const std::string& in_hex,
-                                Map1* out_str,
-                                Map2* out_dbl,
-                                Map3* out_long,
-                                Map4* out_bool,
-                                bool do_publishes = false)
-        {
-            modem::Message in_message(in_hex);
-            decode_private(it, in_message, out_str, out_dbl, out_long, out_bool, do_publishes);
-        }
-
-        std::map<std::string, std::string> message_var_names(const std::vector<Message>::const_iterator it) const;        
-	std::string summary(const std::vector<Message>::const_iterator it) const;         
-        std::string brief_summary(const std::vector<Message>::const_iterator it) const;
-        std::set<std::string> src_vars(std::vector<Message>::iterator it);
-        std::set<std::string> all_vars(std::vector<Message>::iterator it);
-        std::set<std::string> encode_vars(std::vector<Message>::iterator it);
-        std::set<std::string> decode_vars(std::vector<Message>::iterator it);
-        std::string input_summary(std::vector<Message>::iterator it);
-
+        void decode_private(std::vector<Message>::iterator it,
+                            const std::string& in,
+                            std::map<std::string, MessageVal>& out);
+        
+        void decode_private(std::vector<Message>::iterator it,
+                            const modem::Message& in_msg,
+                            std::map<std::string, MessageVal>& out);
+        
         void check_duplicates();
         
       private:
@@ -540,20 +442,9 @@ namespace dccl
 
     /// outputs information about all available messages (same as std::string summary())
     std::ostream& operator<< (std::ostream& out, const DCCLCodec& d);
-    
-    /// use this for displaying a human readable version of this STL object
-    std::ostream& operator<< (std::ostream& out, const std::map<std::string, double>& m);
-    /// use this for displaying a human readable version of this STL object
-    std::ostream& operator<< (std::ostream& out, const std::map<std::string, std::string>& m);
-   /// use this for displaying a human readable version of this STL object
-    std::ostream& operator<< (std::ostream& out, const std::map<std::string, long>& m);
-    /// use this for displaying a human readable version of this STL object
-    std::ostream& operator<< (std::ostream& out, const std::map<std::string, bool>& m);
-    /// use this for displaying a human readable version of this STL object
-    std::ostream& operator<< (std::ostream& out, const std::set<unsigned>& s);
-    /// use this for displaying a human readable version of this STL object
-    std::ostream& operator<< (std::ostream& out, const std::set<std::string>& s);
 
+
+    
 }
 
 

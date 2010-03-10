@@ -35,52 +35,26 @@ dccl::MessageVar::MessageVar() : max_(1e300),
 { }
 
 void dccl::MessageVar::read_dynamic_vars(std::map<std::string,MessageVal>& vals,
-                                         const std::map<std::string, std::string>* in_str,
-                                         const std::map<std::string, double>* in_dbl,
-                                         const std::map<std::string, long>* in_long,
-                                         const std::map<std::string, bool>* in_bool)
+                                         const std::map<std::string, MessageVal>& in)
 {
-    MessageVal v;
+    const std::map<std::string, dccl::MessageVal>::const_iterator it =
+        in.find(source_var_);
 
-    if(in_str)
-    {        
-        const std::map<std::string, std::string>::const_iterator sit = in_str->find(source_var_);
-        if(sit != in_str->end())
-        {
-            v.set(parse_string_val(sit->second));
-            vals[name_] = v;
-            return;
-        }
-    }
-    if(in_dbl)
+    if(it != in.end())
     {
-        const std::map<std::string, double>::const_iterator dit = in_dbl->find(source_var_);
-        if(dit != in_dbl->end())
+        MessageVal val = it->second;
+        
+        switch(val.type())
         {
-            v.set(dit->second);
-            vals[name_] = v;
-            return;
+            case cpp_string: 
+                val = parse_string_val(val);
+                break;
+                
+            default:
+                break;
+
         }
-    }
-    if(in_long)
-    {
-        const std::map<std::string, long>::const_iterator lit = in_long->find(source_var_);
-        if(lit != in_long->end())
-        {
-            v.set(lit->second);
-            vals[name_] = v;
-            return;
-        }
-    }
-    if(in_bool)
-    {
-        const std::map<std::string, bool>::const_iterator bit = in_bool->find(source_var_);
-        if(bit != in_bool->end())
-        {
-            v.set(bit->second);
-            vals[name_] = v;
-            return;
-        }
+        vals[name_] = val;
     }
 }
 
@@ -259,12 +233,12 @@ void dccl::MessageVar::var_encode(std::map<std::string,MessageVal>& vals, boost:
         
         case dccl_bool:
             bits <<= size;
-            if(v.val(b))
+            if(v.get(b))
                 bits |= boost::dynamic_bitset<>(bits_size, ((b) ? 1 : 0) + 1);
             break;
 
         case dccl_hex:
-            v.val(s);
+            v.get(s);
             
             // max_length_ is max bytes            
             if(s.length() == bytes2nibs(max_length_))
@@ -281,7 +255,7 @@ void dccl::MessageVar::var_encode(std::map<std::string,MessageVal>& vals, boost:
             break;
             
         case dccl_string:
-            v.val(s);
+            v.get(s);
             
             // tack on null terminators (probably a byte of zeros in ASCII)
             s += std::string(max_length_, '\0');
@@ -298,7 +272,7 @@ void dccl::MessageVar::var_encode(std::map<std::string,MessageVal>& vals, boost:
         case dccl_int:
             bits <<= size;    
 
-            if(v.val(t) && !(t < min() || t > max()))
+            if(v.get(t) && !(t < min() || t > max()))
             {
                 t -= static_cast<long>(min());
                 bits |= boost::dynamic_bitset<>(bits_size, static_cast<unsigned long>(t)+1);
@@ -308,7 +282,7 @@ void dccl::MessageVar::var_encode(std::map<std::string,MessageVal>& vals, boost:
         case dccl_float:
             bits <<= size;
             
-            if(v.val(r) && !(r < min() || r > max()))
+            if(v.get(r) && !(r < min() || r > max()))
             {
                 r = (r-min())*pow(10.0, static_cast<double>(precision_));
                 
@@ -324,7 +298,7 @@ void dccl::MessageVar::var_encode(std::map<std::string,MessageVal>& vals, boost:
             
             bits <<= size;
 
-            if(v.val(s))
+            if(v.get(s))
             {
                 // find the iterator within the std::vector of enumerator values for *this* enumerator value
                 std::vector<std::string>::iterator pos;
@@ -346,7 +320,7 @@ void dccl::MessageVar::var_encode(std::map<std::string,MessageVal>& vals, boost:
 }
 
 void dccl::MessageVar::var_decode(std::map<std::string,MessageVal>& vals, boost::dynamic_bitset<>& bits)
-{
+{   
     MessageVal v;
         
     unsigned int size = calc_size();
@@ -411,8 +385,7 @@ void dccl::MessageVar::var_decode(std::map<std::string,MessageVal>& vals, boost:
             }
             break;
     }
-    
-        
+
     vals[name_] = v;
 }
 

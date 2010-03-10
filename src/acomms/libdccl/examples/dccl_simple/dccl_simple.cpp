@@ -27,7 +27,7 @@ int main()
     // initialize input contents to encoder. since
     // simple.xml only has a <string/> message var
     // we only need one map.
-    std::map<std::string, std::string> strings;
+    std::map<std::string, dccl::MessageVal> val_map;
 
     //  initialize output hexadecimal
     std::string hex;
@@ -47,28 +47,28 @@ int main()
     
     // key is <name/> child for a given message_var
     // (i.e. child of <int/>, <string/>, etc)
-    strings["s_key"] = input;
-
-    std::cout << "passing values to encoder:\n" << strings;
+    val_map["s_key"] = input;    
+    
+    std::cout << "passing values to encoder:\n" << val_map;
 
     // we are encoding for message id 1 - given in simple.xml
-    // we pass null pointers (0) for the remaining maps (double, long, bool)
-    // since we don't have any message vars that require these C types
-    // don't forget to pass the pointer(s) for the map! (&)
     unsigned id = 1;
-    dccl.encode(id, hex, &strings, 0, 0, 0);
+    dccl.encode(id, hex, val_map);
     
     std::cout << "received hexadecimal string: " << hex << std::endl;
     
-    strings.clear();
+    val_map.clear();
     
     // input contents right back to decoder
     std::cout << "passed hexadecimal string to decoder: " << hex << std::endl;
 
-    dccl.decode(id, hex, &strings, 0, 0, 0);
+    dccl.decode(id, hex, val_map);
     
     std::cout << "received values:" << std::endl 
-              << strings;
+              << val_map;
+
+    // now you can use it...
+    std::string output = val_map["s_key"];
     
     return 0;
 }

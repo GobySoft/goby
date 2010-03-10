@@ -51,8 +51,7 @@ namespace dccl
         //set
     
         void set_var(std::string var) {var_=var;}
-        void set_format(std::string format) {format_=format;}
-        void set_format_set(bool format_set) {format_set_=format_set;}
+        void set_format(std::string format) {format_=format; format_set_ = true;}
         void set_use_all_names(bool use_all_names) {use_all_names_ = use_all_names;}
         void set_type(DCCLCppType type) {type_ = type;}
     
@@ -73,14 +72,20 @@ namespace dccl
         
         std::string get_display() const;
 
-        template <typename Map1, typename Map2, typename Map3, typename Map4>
-            void write_publish(std::map<std::string,MessageVal>& vals, std::vector<MessageVar>& layout, Map1* out_str, Map2* out_dbl, Map3* out_long, Map4* out_bool);
+        void write_publish(const std::map<std::string,MessageVal>& vals,
+                           std::vector<MessageVar>& layout,
+                           std::multimap<std::string,MessageVal>& pubsub_vals);
+        
+        
         
 
         void initialize(std::vector<MessageVar>& layout);
 
       private:
-        void fill_format(std::map<std::string,MessageVal>& vals, std::vector<MessageVar>& layout, std::string& key, std::string& value);
+        void fill_format(const std::map<std::string,MessageVal>& vals,
+                         const std::vector<MessageVar>& layout,
+                         std::string& key,
+                         std::string& value);
             
       private:
         std::string var_;
@@ -94,64 +99,6 @@ namespace dccl
         AlgorithmPerformer* ap_;
     };
 
-    template <typename Map1, typename Map2, typename Map3, typename Map4>
-        inline void Publish::write_publish(std::map<std::string,MessageVal>& vals, std::vector<MessageVar>& layout, Map1* out_str, Map2* out_dbl, Map3* out_long, Map4* out_bool)
-    {
-        std::string out_var, out_val;
-        fill_format(vals, layout, out_var, out_val);
-
-        // user sets to string
-        if(out_str && type_ == cpp_string)
-        {
-            out_str->insert(std::pair<std::string, std::string>(out_var, out_val));
-            return;
-        }
-        
-        // pass through a MessageVal to do the type conversions
-        MessageVal mv;
-        mv.set(out_val);
-        
-        double out_dval = acomms_util::NaN;
-        mv.val(out_dval);
-
-        if(out_dbl && type_ == cpp_double)
-        {
-            out_dbl->insert(std::pair<std::string, double>(out_var, out_dval));
-            return;
-        }
-        
-        long out_lval = 0;
-        mv.val(out_lval);
-
-        if(out_long && type_ == cpp_long)
-        {
-            out_long->insert(std::pair<std::string, long>(out_var, out_lval));
-            return;
-        }
-        
-        bool out_bval = false;
-        mv.val(out_bval);
-
-        if(out_bool && type_ == cpp_bool)
-        {
-            out_bool->insert(std::pair<std::string, bool>(out_var, out_bval));
-            return;
-        }
-        
-        // see if our value is numeric
-        bool is_numeric = true;
-        try { boost::lexical_cast<double>(out_val); }
-        catch (boost::bad_lexical_cast &) { is_numeric = false; }
-
-        if(out_str && !is_numeric)
-        {
-            out_str->insert(std::pair<std::string, std::string>(out_var, out_val));
-        }
-        else if(out_dbl)
-        {
-            out_dbl->insert(std::pair<std::string, double>(out_var, out_dval));
-        }
-    }
     std::ostream& operator<< (std::ostream& out, const Publish& publish);
 }
 

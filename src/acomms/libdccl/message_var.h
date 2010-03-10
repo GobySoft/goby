@@ -46,7 +46,7 @@ namespace dccl
         // set
         void set_name(std::string name) {name_ = name;}
         void set_type(DCCLType type) {type_ = type;}
-        void set_source_var(std::string source_var) {source_var_ = source_var;}
+        void set_source_var(std::string source_var) {source_var_ = source_var; source_set_=true;}
         void set_source_key(std::string source_key) {source_key_ = source_key;}
 
         void set_max(double max) {max_ = max;}
@@ -93,10 +93,16 @@ namespace dccl
         int calc_size() const;
         std::string get_display() const;
 
-        void read_dynamic_vars(std::map<std::string,MessageVal>& vals, const std::map<std::string, std::string>* in_str, const std::map<std::string, double>* in_dbl, const std::map<std::string, long>* in_long, const std::map<std::string, bool>* in_bool);
+        void read_dynamic_vars(std::map<std::string,MessageVal>& vals,
+                               const std::map<std::string, MessageVal>& in);
+             
         std::string parse_string_val(const std::string& sval);
-        void var_encode(std::map<std::string,MessageVal>& vals, boost::dynamic_bitset<>& bits);
-        void var_decode(std::map<std::string,MessageVal>& vals, boost::dynamic_bitset<>& bits);
+        
+        void var_encode(std::map<std::string,MessageVal>& vals,
+                        boost::dynamic_bitset<>& bits);
+
+        void var_decode(std::map<std::string,MessageVal>& vals,
+                        boost::dynamic_bitset<>& bits);
 
       private:
         double max_;

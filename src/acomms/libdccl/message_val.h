@@ -35,57 +35,34 @@ namespace dccl
     class MessageVal
     {
       public:
+        enum { MAX_DBL_PRECISION = 15 };
+        
         /// \name Constructors/Destructor
         //@{         
         /// empty
-      MessageVal()
-          : sval_(""),
-            dval_(0),
-            lval_(0),
-            bval_(false),
-            precision_(15),
-            type_(cpp_notype)
-        {}
-
+        MessageVal();
+        
         /// construct with string value
-      MessageVal(const std::string& s)
-          : sval_(s),
-            dval_(0),
-            lval_(0),
-            bval_(false),
-            precision_(15),
-            type_(cpp_string)
-        {}
-
+        MessageVal(const std::string& s);
+        
+        /// construct with char* value
+        MessageVal(const char* s);
+        
         /// construct with double value
-      MessageVal(double d, int p = 15)
-          : sval_(""),
-            dval_(d),
-            lval_(0),
-            bval_(false),
-            precision_(p),
-            type_(cpp_double)
-        {}
-
+        MessageVal(double d, int p = MAX_DBL_PRECISION);
+        
         /// construct with long value
-      MessageVal(long l)
-          : sval_(""),
-            dval_(0),
-            lval_(l),
-            bval_(false),
-            precision_(15),
-            type_(cpp_long)
-        {}
-
+        MessageVal(long l);
+        
+        /// construct with int value
+        MessageVal(int i);
+        
+        /// construct with float value
+        MessageVal(float f);
+        
         /// construct with bool value
-      MessageVal(bool b)
-          : sval_(""),
-            dval_(0),
-            lval_(0),
-            bval_(b),
-            precision_(15),
-            type_(cpp_bool)
-        {}
+        MessageVal(bool b);
+        
         //@}
 
         /// \name Setters
@@ -95,60 +72,51 @@ namespace dccl
         /// \brief set the value with a double (overwrites previous value regardless of type)
         /// \param dval values to set
         /// \param precision decimal places of precision to preserve if this is cast to a string
-        void set(double dval, int precision = 15);
+        void set(double dval, int precision = MAX_DBL_PRECISION);
         /// set the value with a long (overwrites previous value regardless of type)
         void set(long lval);
         /// set the value with a bool (overwrites previous value regardless of type)
         void set(bool bval);
-        //@}
+
+       //@}
         
         /// \name Getters
         //@{       
         /// \brief extract as std::string (all reasonable casts are done)
         /// \param s std::string to store value in
         /// \return successfully extracted (and if necessary successfully cast to this type)
-        bool val(std::string& s) const;
+        bool get(std::string& s) const;
         /// \brief extract as bool (all reasonable casts are done)
         /// \param b bool to store value in
         /// \return successfully extracted (and if necessary successfully cast to this type)
-        bool val(bool& b) const;
+        bool get(bool& b) const;
         /// \brief extract as long (all reasonable casts are done)
         /// \param t long to store value in
         /// \return successfully extracted (and if necessary successfully cast to this type)
-        bool val(long& t) const;        
+        bool get(long& t) const;        
         /// \brief extract as double (all reasonable casts are done)
         /// \param d double to store value in
         /// \return successfully extracted (and if necessary successfully cast to this type)
-        bool val(double& d) const;
+        bool get(double& d) const;
 
+        operator double() const;
+        operator float() const;
+        operator bool() const;
+        operator std::string() const;
+        operator long() const;
+        operator int() const;
+        
         /// what type is the original type of this MessageVal?
         DCCLCppType type() const { return type_; }        
         //@}
 
-        bool operator==(const std::string& s)
-        {
-            std::string us;
-            return val(us) && us == s;
-        }
-        bool operator==(double d)
-        {
-            double us;
-            return val(us) && us == d;
-        }
-        bool operator==(long l)
-        {
-            long us;
-            return val(us) && us == l;
-        }
-        bool operator==(bool b)
-        {
-            bool us;
-            return val(us) && us == b;
-        }
-        
+        bool operator==(const std::string& s);
+        bool operator==(double d);
+        bool operator==(long l);
+        bool operator==(bool b);
         
       private:
-        friend std::ostream& operator<<(std::ostream& os,  const MessageVal& mv);        
+        friend std::ostream& operator<<(std::ostream& os, const MessageVal& mv);
         
       private:
         std::string sval_;
@@ -161,16 +129,21 @@ namespace dccl
         DCCLCppType type_;
     };
 
-    inline std::ostream& operator<<(std::ostream& os, const MessageVal& mv)
+    inline std::ostream& operator<<(std::ostream& os, const dccl::MessageVal& mv)
     {
-        os << "sval: " << mv.sval_ << std::endl;
-        os << "dval: " << mv.dval_ << std::endl;
-        os << "lval: " << mv.lval_ << std::endl;
-        os << "bval: " << mv.bval_;
-        return os;
+        switch(mv.type_)
+        {
+            case cpp_string: return os << "std::string: " << mv.sval_;
+            case cpp_double: return os << "double: " << mv.dval_;
+            case cpp_long:   return os << "long: " << mv.lval_;                
+            case cpp_bool:   return os << "bool: " << mv.bval_;
+            default:         return os;
+        }
     }
 
+    
 }
+
 
 
 #endif

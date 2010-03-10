@@ -296,11 +296,41 @@ std::string dccl::Message::input_summary()
 }
 
 
-void dccl::Message::assemble_hex(modem::Message& out_message, const boost::dynamic_bitset<>& bits)
+
+void dccl::Message::encode(std::string& out, const std::map<std::string, MessageVal>& in)
+{
+    // make a copy because we need to modify this (algorithms, etc.)
+    std::map<std::string, MessageVal> vals = in;    
+
+    boost::dynamic_bitset<> bits(bytes2bits(used_bytes_no_head())); // actual size rounded up to closest byte
+
+   // 1. encode each variable
+    for (std::vector<MessageVar>::iterator it = layout_.begin(), n = layout_.end();
+         it != n;
+         ++it)
+        it->var_encode(vals, bits);
+        
+    // 2. convert to hexadecimal string and tack on the header
+    assemble_hex(out, bits);
+}
+    
+void dccl::Message::decode(const std::string& in, std::map<std::string, MessageVal>& out)
+{
+    
+    boost::dynamic_bitset<> bits(bytes2bits(used_bytes_no_head()));
+    // 2. convert hexadecimal string to bitset
+    disassemble_hex(in, bits);
+
+    // 1. pull the bits off the message in the reverse that they were put on
+    for (std::vector<MessageVar>::reverse_iterator it = layout_.rbegin(), n = layout_.rend(); it != n; ++it)
+        it->var_decode(out, bits);
+}
+
+
+void dccl::Message::assemble_hex(std::string& out, const boost::dynamic_bitset<>& bits)
 {
     std::bitset<acomms_util::BITS_IN_BYTE> id(id_);
-    std::string out =
-        tes_util::binary_string2hex_string(std::string(acomms_util::DCCL_CCL_HEADER.to_string() + id.to_string())) + // header
+    out = tes_util::binary_string2hex_string(std::string(acomms_util::DCCL_CCL_HEADER.to_string() + id.to_string())) + // header
         tes_util::dyn_bitset2hex_string(bits); // rest of message
 
     // strip off ending zeros as we can always get those back
@@ -309,53 +339,55 @@ void dccl::Message::assemble_hex(modem::Message& out_message, const boost::dynam
     // make it an even length (even bytes)
     if(out.length()& 1)
         out += '0';
-
-    out_message.set_data(out);
 }
 
-void dccl::Message::disassemble_hex(const modem::Message& in_message, boost::dynamic_bitset<>& bits)
+void dccl::Message::disassemble_hex(const std::string& in, boost::dynamic_bitset<>& bits)
 {
-    std::string in = in_message.data();
-
-    unsigned int in_bytes = nibs2bytes(in.length());
+    // copy because we may need to tack some stuff
+    std::string in_copy = in;
+        
+    unsigned int in_bytes = nibs2bytes(in_copy.length());
         
     if(in_bytes < used_bytes()) // message is too short, add zeroes
-        in += std::string(bytes2nibs(used_bytes()-in_bytes), '0');
+        in_copy += std::string(bytes2nibs(used_bytes()-in_bytes), '0');
     else if(in_bytes > used_bytes()) // message is too long, truncate
-        in = in.substr(0, bytes2nibs(used_bytes()));
-
-    bits = tes_util::hex_string2dyn_bitset(in.substr(bytes2nibs(acomms_util::NUM_HEADER_BYTES)));
+        in_copy = in_copy.substr(0, bytes2nibs(used_bytes()));
+    
+    bits = tes_util::hex_string2dyn_bitset(in_copy.substr(bytes2nibs(acomms_util::NUM_HEADER_BYTES)));
 }
     
 void dccl::Message::add_destination(modem::Message& out_message,
-                                    const std::map<std::string, std::string>& in_str,
-                                    const std::map<std::string, double>& in_dbl)
+                                    const std::map<std::string, dccl::MessageVal>& in)
 {
-    double dval = 0;
     if(!dest_var_.empty())
-    {
-                
+    {        
         MessageVar mv;
         mv.set_source_key(dest_key_);
         mv.set_name("destination");
             
-        const std::map<std::string, std::string>::const_iterator sit = in_str.find(dest_var_);
-        const std::map<std::string, double>::const_iterator dit = in_dbl.find(dest_var_);
-            
-        if(sit != in_str.end())
+        const std::map<std::string, dccl::MessageVal>::const_iterator it =
+            in.find(dest_var_);
+
+        if(it != in.end())
         {
-            std::string sval = mv.parse_string_val(sit->second);
-            try { dval = boost::lexical_cast<double>(sval); }
-            catch(boost::bad_lexical_cast &)
-            { dval = 0; }
+            MessageVal val = it->second;
+            
+            switch(val.type())
+            {
+                case cpp_string: 
+                    val = mv.parse_string_val(val);
+                    break;
+                    
+                default:
+                    break;
+            }
+            out_message.set_dest(int(val));
         }
-        else if(dit != in_dbl.end())
-            dval = dit->second;
         else
+        {
             throw std::runtime_error(std::string("DCCL: for message [" + name_ + "]: destination requested but not provided."));
+        }
     }
-        
-    out_message.set_dest(boost::numeric_cast<unsigned int>(tes_util::sci_round(dval,0)));
 }
 
 

@@ -46,6 +46,7 @@ namespace acomms_util
 
     const unsigned NUM_HEADER_BYTES = 2;
 
+    const double NOT_A_TIME = -1;
 }
 
 #endif

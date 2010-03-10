@@ -89,6 +89,8 @@ void dccl::MessageContentHandler::startElement(
                 messages.back().set_dest_key(toNative(val));
             break;
 
+        case tag_src_var:
+        case tag_publish_var:
         case tag_moos_var:
             if(in_message_var && !in_publish && ((val = attrs.getValue(key.c_str())) != 0))
                 messages.back().last_message_var().set_source_key(toNative(val));
@@ -190,19 +192,13 @@ void dccl::MessageContentHandler::endElement(
             messages.back().last_message_var().set_min(trimmed_data);
             break;
             
+        case tag_src_var:            
+        case tag_publish_var:
         case tag_moos_var:
             if(in_message_var)
                 messages.back().last_message_var().set_source_var(trimmed_data);
             else if(in_publish)
                 messages.back().last_publish().set_var(trimmed_data);
-            break;
-
-        case tag_src_var:
-            messages.back().last_message_var().set_source_var(trimmed_data);
-            break;
-
-        case tag_publish_var:
-            messages.back().last_publish().set_var(trimmed_data);
             break;
             
         case tag_name:

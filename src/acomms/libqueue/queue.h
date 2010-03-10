@@ -64,18 +64,31 @@ namespace queue
         
         unsigned give_dest();
 
-        void clear_ack_queue() { waiting_for_ack_.clear(); }
+        void clear_ack_queue()
+        { waiting_for_ack_.clear(); }
+
         void flush();
         
-        size_t size() { return messages_.size(); }
+        size_t size() const 
+        { return messages_.size(); }
     
-        bool on_demand() const        { return on_demand_; }
-        double last_send_time() const { return last_send_time_; }
+        bool on_demand() const
+        { return on_demand_; }
 
-        void set_on_demand(bool b)       { on_demand_ = b; }
-        void set_on_demand(const std::string& s)     { set_on_demand(tes_util::string2bool(s)); }
+        double last_send_time() const
+        { return last_send_time_; }
 
-        const QueueConfig cfg() const { return cfg_; }
+        double newest_msg_time() const
+        { return size() ? messages_.back().t() : acomms_util::NOT_A_TIME; }
+        
+        void set_on_demand(bool b)
+        { on_demand_ = b; }
+
+        void set_on_demand(const std::string& s)
+        { set_on_demand(tes_util::string2bool(s)); }
+
+        const QueueConfig cfg() const
+        { return cfg_; }
         
         std::string summary() const;
         

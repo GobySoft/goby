@@ -96,8 +96,8 @@ void dccl::Publish::initialize(std::vector<MessageVar>& layout)
 }
 
 
-void dccl::Publish::fill_format(std::map<std::string,MessageVal>& vals,
-                                std::vector<MessageVar>& layout,
+void dccl::Publish::fill_format(const std::map<std::string,MessageVal>& vals,
+                                const std::vector<MessageVar>& layout,
                                 std::string& key,
                                 std::string& value)
 {
@@ -116,9 +116,9 @@ void dccl::Publish::fill_format(std::map<std::string,MessageVal>& vals,
         // iterate over the message_vars and fill in the format field
         for (std::vector<std::string>::size_type k = 0, o = names_.size(); k < o; ++k)
         {
-            MessageVar& mv = layout[ids_[k]];
+            MessageVar mv = layout[ids_[k]];
             DCCLType type = mv.type();
-            MessageVal v = vals[names_[k]];
+            MessageVal v = vals.find(names_[k])->second;
 
             std::vector<std::string>::size_type num_algs = algorithms_[k].size();
             for(std::vector<std::string>::size_type l = 0; l < num_algs; ++l)
@@ -130,7 +130,7 @@ void dccl::Publish::fill_format(std::map<std::string,MessageVal>& vals,
             {
                 case dccl_int:
                 case dccl_float:
-                    if(!v.val(s))
+                    if(!v.get(s))
                         s = "nan";
                     break;
 
@@ -139,7 +139,7 @@ void dccl::Publish::fill_format(std::map<std::string,MessageVal>& vals,
                 case dccl_enum:
                 case dccl_string:
                 case dccl_bool:
-                    if(!v.val(s))
+                    if(!v.get(s))
                         s = "";
                     break;
                     
@@ -167,6 +167,53 @@ void dccl::Publish::fill_format(std::map<std::string,MessageVal>& vals,
 }
 
     
+
+void dccl::Publish::write_publish(const std::map<std::string,MessageVal>& vals,
+                                  std::vector<MessageVar>& layout,
+                                  std::multimap<std::string,MessageVal>& pubsub_vals)
+
+{
+    std::string out_var, out_val;
+    fill_format(vals, layout, out_var, out_val);
+    
+    // user sets to string
+    if(type_ == cpp_string)
+    {
+        pubsub_vals.insert(std::pair<std::string, MessageVal>(out_var, out_val));
+        return;
+    }
+
+    // pass through a MessageVal to do the type conversions
+    MessageVal mv = out_val;
+    double out_dval = mv;
+    if(type_ == cpp_double)
+    {
+        pubsub_vals.insert(std::pair<std::string, MessageVal>(out_var, out_dval));
+        return;
+    }
+    long out_lval = mv;    
+    if(type_ == cpp_long)
+    {
+        pubsub_vals.insert(std::pair<std::string, MessageVal>(out_var, out_lval));
+        return;
+    }
+    bool out_bval = mv;
+    if(type_ == cpp_bool)
+    {
+        pubsub_vals.insert(std::pair<std::string, MessageVal>(out_var, out_bval));
+        return;
+    }
+    
+    // see if our value is numeric
+    bool is_numeric = true;
+    try { boost::lexical_cast<double>(out_val); }
+    catch (boost::bad_lexical_cast &) { is_numeric = false; }
+
+    if(!is_numeric)
+        pubsub_vals.insert(std::pair<std::string, MessageVal>(out_var, out_val));
+    else
+        pubsub_vals.insert(std::pair<std::string, MessageVal>(out_var, out_dval));
+}
 
     
 std::string dccl::Publish::get_display() const

@@ -74,34 +74,28 @@ int main()
               << std::string(30, '#') << std::endl;
 
     // initialize input contents to encoder
-    std::map<std::string, std::string> strings;
-    std::map<std::string, double> doubles;
-    std::map<std::string, long> longs;
-    std::map<std::string, bool> bools;
+    std::map<std::string, dccl::MessageVal> vals;
     
     // initialize output hexadecimal
     std::string hex2, hex3;
 
     // id = 2, name = GoToCommand
-    longs["goto_x"] = 423;
-    longs["goto_y"] = 523;
-    bools["lights_on"] = true;
-    strings["new_instructions"] = "make_toast";
-    doubles["goto_speed"] = 2.3456;
+    vals["goto_x"] = 423;
+    vals["goto_y"] = 523;
+    vals["lights_on"] = true;
+    vals["new_instructions"] = "make_toast";
+    vals["goto_speed"] = 2.3456;
     
     // id = 3, name = VehicleStatus
-    doubles["nav_x"] = 234.5;
-    doubles["nav_y"] = 451.3;
-    strings["health"] = "abort";
+    vals["nav_x"] = 234.5;
+    vals["nav_y"] = 451.3;
+    vals["health"] = "abort";
 
     std::cout << "passing values to encoder:" << std::endl  
-              << strings
-              << doubles
-              << longs
-              << bools;
+              << vals;
 
-    dccl.encode(2, hex2, &strings, &doubles, &longs, &bools);
-    dccl.encode(3, hex3, &strings, &doubles, &longs, &bools);
+    dccl.encode(2, hex2, vals);
+    dccl.encode(3, hex3, vals);
     
     std::cout << "received hexadecimal string for message 2 (GoToCommand): "
               << hex2
@@ -111,10 +105,7 @@ int main()
               << hex3
               << std::endl;
 
-    strings.clear();
-    doubles.clear();
-    longs.clear();
-    bools.clear();
+    vals.clear();
     
     std::cout << "passed hexadecimal string for message 2 to decoder: " 
               << hex2
@@ -125,14 +116,11 @@ int main()
               << std::endl;
 
 
-    dccl.decode(2, hex2, &strings, &doubles, &longs, &bools);
-    dccl.decode(3, hex3, &strings, &doubles, &longs, &bools);
+    dccl.decode(2, hex2, vals);
+    dccl.decode(3, hex3, vals);
     
-    std::cout << "received values:" << std::endl 
-              << strings
-              << doubles
-              << longs
-              << bools;
+    std::cout << "received values:" << std::endl
+              << vals;
     
     return 0;
 }

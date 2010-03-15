@@ -122,7 +122,7 @@ namespace tes_util
         return hs;
     }
 
-    inline std::string dyn_bitset2hex_string(const boost::dynamic_bitset<>& bits, unsigned trim_to_bytes_size = 0)
+    inline std::string dyn_bitset2hex_string(const boost::dynamic_bitset<unsigned char>& bits, unsigned trim_to_bytes_size = 0)
     {
         std::stringstream binary;
         binary << bits;
@@ -150,9 +150,10 @@ namespace tes_util
         return hs;
     }
 
-    inline boost::dynamic_bitset<> hex_string2dyn_bitset(const std::string & hs, unsigned bits_size = 0)
+
+    inline boost::dynamic_bitset<unsigned char> hex_string2dyn_bitset(const std::string & hs, unsigned bits_size = 0)
     {
-        boost::dynamic_bitset<> bits;
+        boost::dynamic_bitset<unsigned char> bits;
         std::stringstream bin_str;
         bin_str << hex_string2binary_string(hs);       
         bin_str >> bits;
@@ -160,6 +161,7 @@ namespace tes_util
         if(bits_size) bits.resize(bits_size);        
         return bits;
     }
+
     
     template <typename T> bool hex_string2number(const std::string & s, T & t)
     {

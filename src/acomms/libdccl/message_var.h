@@ -99,10 +99,10 @@ namespace dccl
         std::string parse_string_val(const std::string& sval);
         
         void var_encode(std::map<std::string,MessageVal>& vals,
-                        boost::dynamic_bitset<>& bits);
+                        boost::dynamic_bitset<unsigned char>& bits);
 
         void var_decode(std::map<std::string,MessageVal>& vals,
-                        boost::dynamic_bitset<>& bits);
+                        boost::dynamic_bitset<unsigned char>& bits);
 
       private:
         double max_;

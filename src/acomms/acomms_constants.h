@@ -31,7 +31,8 @@ namespace acomms_util
     const unsigned BROADCAST_ID = 0;
 
     const std::string DCCL_CCL_HEADER_STR = "20";
-    const std::bitset<BITS_IN_BYTE> DCCL_CCL_HEADER(32);
+//    const std::bitset<BITS_IN_BYTE> DCCL_CCL_HEADER(32);
+    const char DCCL_CCL_HEADER = 32;
     
     // 00000111
     const unsigned BYTE_MASK = 7; 

@@ -22,13 +22,21 @@
 
 #include "message.h"
 
+#include <crypto++/filters.h>
+#include <crypto++/modes.h>
+#include <crypto++/aes.h>
+#include <crypto++/hex.h>
+#include <crypto++/sha.h>
+
+
 dccl::Message::Message():size_(0),
                          avail_size_(0),
                          trigger_number_(1),    
                          total_bits_(0),
                          id_(0),
                          trigger_time_(0.0),
-                         delta_encode_(false)
+                         delta_encode_(false),
+                         crypto_(false)
 { }
 
     
@@ -64,6 +72,14 @@ void dccl::Message::add_publish()
 {
     Publish p;
     publishes_.push_back(p);
+}
+
+void dccl::Message::set_crypto_passphrase(const std::string& s)
+{
+    using namespace CryptoPP;
+    SHA256 hash;
+    StringSource unused (s, true, new HashFilter(hash, new StringSink(crypto_key_)));
+    crypto_ = true;
 }
 
 // a number of tasks to perform after reading in an entire <message> from
@@ -300,60 +316,137 @@ std::string dccl::Message::input_summary()
 void dccl::Message::encode(std::string& out, const std::map<std::string, MessageVal>& in)
 {
     // make a copy because we need to modify this (algorithms, etc.)
-    std::map<std::string, MessageVal> vals = in;    
+    std::map<std::string, MessageVal> vals = in;
 
-    boost::dynamic_bitset<> bits(bytes2bits(used_bytes_no_head())); // actual size rounded up to closest byte
+    boost::dynamic_bitset<unsigned char> bits(bytes2bits(used_bytes_no_head())); // actual size rounded up to closest byte
 
    // 1. encode each variable
-    for (std::vector<MessageVar>::iterator it = layout_.begin(), n = layout_.end();
-         it != n;
-         ++it)
+    for (std::vector<MessageVar>::iterator it = layout_.begin(), n = layout_.end(); it != n; ++it)
         it->var_encode(vals, bits);
-        
-    // 2. convert to hexadecimal string and tack on the header
-    assemble_hex(out, bits);
+
+    // 2. convert bitset to string
+    assemble(out, bits);
+
+    // 3. encrypt
+    if(crypto_) encrypt(out);
+
+    // 4. add on the header
+    out = std::string(1, acomms_util::DCCL_CCL_HEADER) + std::string(1, id_) + out;
+    
+    // 5. hex encode
+    hex_encode(out);
 }
     
-void dccl::Message::decode(const std::string& in, std::map<std::string, MessageVal>& out)
+void dccl::Message::decode(const std::string& in_const, std::map<std::string, MessageVal>& out)
 {
-    
-    boost::dynamic_bitset<> bits(bytes2bits(used_bytes_no_head()));
-    // 2. convert hexadecimal string to bitset
-    disassemble_hex(in, bits);
+    std::string in = in_const;
+    // 5. hex decode
+    hex_decode(in);
 
+    // 4. remove the header
+    in = in.substr(acomms_util::NUM_HEADER_BYTES);
+    
+    // 3. decrypt
+    if(crypto_) decrypt(in);
+    
+    boost::dynamic_bitset<unsigned char> bits(bytes2bits(used_bytes_no_head()));
+    // 2. convert string to bitset
+    disassemble(in, bits);    
+    
     // 1. pull the bits off the message in the reverse that they were put on
     for (std::vector<MessageVar>::reverse_iterator it = layout_.rbegin(), n = layout_.rend(); it != n; ++it)
         it->var_decode(out, bits);
 }
 
 
-void dccl::Message::assemble_hex(std::string& out, const boost::dynamic_bitset<>& bits)
+void dccl::Message::assemble(std::string& out, const boost::dynamic_bitset<unsigned char>& bits)
 {
-    std::bitset<acomms_util::BITS_IN_BYTE> id(id_);
-    out = tes_util::binary_string2hex_string(std::string(acomms_util::DCCL_CCL_HEADER.to_string() + id.to_string())) + // header
-        tes_util::dyn_bitset2hex_string(bits); // rest of message
+    // resize the string to fit the bitset
+    out.resize(bits.num_blocks());
 
-    // strip off ending zeros as we can always get those back
-    while(out[out.length()-1] == '0')
-        out.erase(out.length()-1);
-    // make it an even length (even bytes)
-    if(out.length()& 1)
-        out += '0';
+    // bitset to string
+    to_block_range(bits, out.rbegin()); 
+
+
+    // strip all the ending zeros
+    out.resize(out.find_last_not_of(char(0))+1);
 }
 
-void dccl::Message::disassemble_hex(const std::string& in, boost::dynamic_bitset<>& bits)
+void dccl::Message::disassemble(std::string& in, boost::dynamic_bitset<unsigned char>& bits)
 {
     // copy because we may need to tack some stuff
-    std::string in_copy = in;
-        
-    unsigned int in_bytes = nibs2bytes(in_copy.length());
-        
+    size_t in_bytes = in.length();
+
     if(in_bytes < used_bytes()) // message is too short, add zeroes
-        in_copy += std::string(bytes2nibs(used_bytes()-in_bytes), '0');
+        in += std::string(used_bytes_no_head()-in_bytes, 0);
     else if(in_bytes > used_bytes()) // message is too long, truncate
-        in_copy = in_copy.substr(0, bytes2nibs(used_bytes()));
+        in = in.substr(0, used_bytes_no_head());
+
+    from_block_range(in.rbegin(), in.rend(), bits);
+}
+
+
+void dccl::Message::hex_encode(std::string& s)
+{
+    using namespace CryptoPP;
     
-    bits = tes_util::hex_string2dyn_bitset(in_copy.substr(bytes2nibs(acomms_util::NUM_HEADER_BYTES)));
+    std::string out;
+    const bool uppercase = false;
+    HexEncoder hex(new StringSink(out), uppercase);
+    hex.Put((byte*)s.c_str(), s.size());
+    hex.MessageEnd();
+    s = out;
+}
+
+void dccl::Message::hex_decode(std::string& s)
+{
+    using namespace CryptoPP;
+
+    std::string out;
+    HexDecoder hex(new StringSink(out));
+    hex.Put((byte*)s.c_str(), s.size());
+    hex.MessageEnd();
+    s = out;
+}
+
+
+void dccl::Message::encrypt(std::string& s)
+{
+    using namespace CryptoPP;
+
+    std::string nonce = "FIXTHISHACK";
+    std::string iv;
+    SHA256 hash;
+    StringSource unused(nonce, true, new HashFilter(hash, new StringSink(iv)));
+    
+    CTR_Mode<AES>::Encryption encryptor;
+    encryptor.SetKeyWithIV((byte*)crypto_key_.c_str(), crypto_key_.size(), (byte*)iv.c_str());
+
+    std::string cipher;
+    StreamTransformationFilter in(encryptor, new StringSink(cipher));
+    in.Put((byte*)s.c_str(), s.size());
+    in.MessageEnd();
+    s = cipher;
+}
+
+void dccl::Message::decrypt(std::string& s)
+{
+    using namespace CryptoPP;
+
+    std::string nonce = "FIXTHISHACK";
+    std::string iv;
+    SHA256 hash;
+    StringSource unused(nonce, true, new HashFilter(hash, new StringSink(iv)));
+    
+    CTR_Mode<AES>::Decryption decryptor;    
+    decryptor.SetKeyWithIV((byte*)crypto_key_.c_str(), crypto_key_.size(), (byte*)iv.c_str());
+    
+    std::string recovered;
+    StreamTransformationFilter out(decryptor, new StringSink(recovered));
+    out.Put((byte*)s.c_str(), s.size());
+    out.MessageEnd();
+    
+    s = recovered;
 }
     
 void dccl::Message::add_destination(modem::Message& out_message,

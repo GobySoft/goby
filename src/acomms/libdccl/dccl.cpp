@@ -52,7 +52,7 @@ std::set<unsigned> dccl::DCCLCodec::add_xml_message_file(const std::string& xml_
     // parse(file, [schema])
     if(xml_schema != "")
         xml_schema_ = xml_schema;
-        
+    
     parser.parse(xml_file, xml_schema_);
 
     size_t end_size = messages_.size();
@@ -68,6 +68,9 @@ std::set<unsigned> dccl::DCCLCodec::add_xml_message_file(const std::string& xml_
         name2messages_.insert(std::pair<std::string, size_t>(messages_[new_index].name(), new_index));
         id2messages_.insert(std::pair<unsigned, size_t>(messages_[new_index].id(), new_index));
         added_ids.insert(messages_[new_index].id());
+
+        if(!crypto_passphrase_.empty())
+            messages_[new_index].set_crypto_passphrase(crypto_passphrase_);
     }
     
     return added_ids;

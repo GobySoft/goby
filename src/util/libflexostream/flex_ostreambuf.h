@@ -23,6 +23,7 @@
 #include <sstream>
 
 #include <boost/thread.hpp>
+#include <boost/shared_ptr.hpp>
 
 #include "util/streamlogger.h"
 

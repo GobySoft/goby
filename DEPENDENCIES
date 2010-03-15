@@ -21,7 +21,8 @@ sudo apt-get install \
 
 # libdccl / libqueue:
 sudo apt-get install \
-    libxerces-c-dev # (or libxerces-c2-dev)
+    libxerces-c-dev \
+    libcrypto++-dev
 
 # libmmdriver:
 sudo apt-get install \

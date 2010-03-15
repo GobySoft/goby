@@ -91,6 +91,8 @@ namespace dccl
 
         void set_delta_encode(bool b)
         { delta_encode_ = b; }
+
+        void set_crypto_passphrase(const std::string& s);
         
         void add_message_var(const std::string& type);        
         void add_publish();
@@ -146,11 +148,13 @@ namespace dccl
                              const std::map<std::string, dccl::MessageVal>& in);
         
       private:
-        void assemble_hex(std::string& out_message,
-                          const boost::dynamic_bitset<>& bits);
-        void disassemble_hex(const std::string& in_message,
-                             boost::dynamic_bitset<>& bits);        
-   
+        void assemble(std::string& out_message, const boost::dynamic_bitset<unsigned char>& bits);
+        void disassemble(std::string& in, boost::dynamic_bitset<unsigned char>& bits);   
+        void hex_decode(std::string& s);
+        void hex_encode(std::string& s);
+        void encrypt(std::string& s);
+        void decrypt(std::string& s);
+        
         
         // more efficient way to do ceil(total_bits / 8) to get the number of bytes rounded up.
         unsigned used_bytes_no_head() const
@@ -208,6 +212,8 @@ namespace dccl
         std::string dest_var_;
         std::string dest_key_;
 
+        bool crypto_;
+        std::string crypto_key_;
         
         std::vector<MessageVar> layout_;
         std::vector<Publish> publishes_;

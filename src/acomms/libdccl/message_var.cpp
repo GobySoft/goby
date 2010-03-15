@@ -207,7 +207,7 @@ std::string dccl::MessageVar::parse_string_val(const std::string& sval)
 
 }
 
-void dccl::MessageVar::var_encode(std::map<std::string,MessageVal>& vals, boost::dynamic_bitset<>& bits)
+void dccl::MessageVar::var_encode(std::map<std::string,MessageVal>& vals, boost::dynamic_bitset<unsigned char>& bits)
 {
     MessageVal v = vals[name_];
         
@@ -219,7 +219,7 @@ void dccl::MessageVar::var_encode(std::map<std::string,MessageVal>& vals, boost:
     
     // in bits
     unsigned int size = calc_size();
-    boost::dynamic_bitset<>::size_type bits_size = bits.size();
+    boost::dynamic_bitset<unsigned char>::size_type bits_size = bits.size();
 
     bool b;
     std::string s;
@@ -234,7 +234,7 @@ void dccl::MessageVar::var_encode(std::map<std::string,MessageVal>& vals, boost:
         case dccl_bool:
             bits <<= size;
             if(v.get(b))
-                bits |= boost::dynamic_bitset<>(bits_size, ((b) ? 1 : 0) + 1);
+                bits |= boost::dynamic_bitset<unsigned char>(bits_size, ((b) ? 1 : 0) + 1);
             break;
 
         case dccl_hex:
@@ -244,7 +244,7 @@ void dccl::MessageVar::var_encode(std::map<std::string,MessageVal>& vals, boost:
             if(s.length() == bytes2nibs(max_length_))
             {
                 bits <<= size;
-                bits |= tes_util::hex_string2dyn_bitset(s, bits_size);                
+                bits |= tes_util::hex_string2dyn_bitset(s, bits_size);
                 break;
             }
             else if(s.length() < bytes2nibs(max_length_))
@@ -264,7 +264,7 @@ void dccl::MessageVar::var_encode(std::map<std::string,MessageVal>& vals, boost:
             for (size_t j = 0; j < (size_t)max_length_; ++j)
             {
                 bits <<= acomms_util::BITS_IN_BYTE;
-                bits |= boost::dynamic_bitset<>(bits_size, s[j]);;
+                bits |= boost::dynamic_bitset<unsigned char>(bits_size, s[j]);;
             }
 
             break;
@@ -275,7 +275,7 @@ void dccl::MessageVar::var_encode(std::map<std::string,MessageVal>& vals, boost:
             if(v.get(t) && !(t < min() || t > max()))
             {
                 t -= static_cast<long>(min());
-                bits |= boost::dynamic_bitset<>(bits_size, static_cast<unsigned long>(t)+1);
+                bits |= boost::dynamic_bitset<unsigned char>(bits_size, static_cast<unsigned long>(t)+1);
             }
             break;
 
@@ -288,7 +288,7 @@ void dccl::MessageVar::var_encode(std::map<std::string,MessageVal>& vals, boost:
                 
                 r = tes_util::sci_round(r, 0);
                 
-                bits |= boost::dynamic_bitset<>(bits_size, static_cast<unsigned long>(r)+1);
+                bits |= boost::dynamic_bitset<unsigned char>(bits_size, static_cast<unsigned long>(r)+1);
             }
             
 
@@ -312,27 +312,27 @@ void dccl::MessageVar::var_encode(std::map<std::string,MessageVal>& vals, boost:
                 else
                     ++t;
                 
-                bits |= boost::dynamic_bitset<>(bits_size, t);
+                bits |= boost::dynamic_bitset<unsigned char>(bits_size, t);
             }
 
             break;
     }
 }
 
-void dccl::MessageVar::var_decode(std::map<std::string,MessageVal>& vals, boost::dynamic_bitset<>& bits)
+void dccl::MessageVar::var_decode(std::map<std::string,MessageVal>& vals, boost::dynamic_bitset<unsigned char>& bits)
 {   
     MessageVal v;
         
     unsigned int size = calc_size();
 
-    boost::dynamic_bitset<>::size_type bits_size = bits.size();
+    boost::dynamic_bitset<unsigned char>::size_type bits_size = bits.size();
     
     char s[max_length_+1];
 
     std::string hex_s;
 
     unsigned long t;
-    boost::dynamic_bitset <> mask(bits_size);
+    boost::dynamic_bitset<unsigned char> mask(bits_size);
     std::stringstream smask;
     smask << std::string(size, '1');
     smask >> mask;
@@ -354,7 +354,7 @@ void dccl::MessageVar::var_decode(std::map<std::string,MessageVal>& vals, boost:
             
             for (size_t j = 0; j < max_length_; ++j)
             {
-                s[max_length_-j-1] = (bits & boost::dynamic_bitset<>(bits_size, 0xff)).to_ulong();
+                s[max_length_-j-1] = (bits & boost::dynamic_bitset<unsigned char>(bits_size, 0xff)).to_ulong();
                 bits >>= acomms_util::BITS_IN_BYTE;
             }
             
@@ -366,7 +366,7 @@ void dccl::MessageVar::var_decode(std::map<std::string,MessageVal>& vals, boost:
         case dccl_float:
         case dccl_int:
         case dccl_enum:
-        case dccl_bool:            
+        case dccl_bool:
             t = (bits & mask).to_ulong();
             bits >>= size;
             

@@ -85,7 +85,6 @@ namespace dccl
         }
         return "notype";
     }
-
 }
 
 #endif

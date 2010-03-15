@@ -65,6 +65,9 @@ int main()
     dccl.add_dbl_algorithm("*2", &times2);
     dccl.add_bool_algorithm("invert", &invert);
     dccl.add_adv_algorithm("sum", &algsum);
+
+    // must be kept secret!
+    dccl.set_crypto_passphrase("my_password!");
     
     std::map<std::string, dccl::MessageVal> in;
     

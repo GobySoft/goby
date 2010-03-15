@@ -117,8 +117,20 @@ namespace dccl
         /// if you have XML files in different places you must pass the
         /// proper relative path (or just use absolute paths)
         /// \param schema location of the message_schema.xsd file
-        void set_schema(const std::string schema) { xml_schema_ = schema; }
+        void set_schema(const std::string& schema) { xml_schema_ = schema; }
 
+        /// \brief Set a passphrase for encrypting all messages with
+        /// 
+        /// \param passphrase text passphrase
+        void set_crypto_passphrase(const std::string& passphrase)
+        {
+            crypto_passphrase_ = passphrase;
+            BOOST_FOREACH(Message& m, messages_)
+                m.set_crypto_passphrase(passphrase);
+        }
+        
+            
+        
         /// \brief Add an algorithm callback for a C++ std::string type that only requires the current value.
         ///
         /// C++ std::string primarily corresponds to DCCL types
@@ -436,8 +448,7 @@ namespace dccl
 
         std::string xml_schema_;
         time_t start_time_;
-        
-        
+        std::string crypto_passphrase_;
     };
 
     /// outputs information about all available messages (same as std::string summary())

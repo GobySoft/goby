@@ -122,14 +122,7 @@ namespace dccl
         /// \brief Set a passphrase for encrypting all messages with
         /// 
         /// \param passphrase text passphrase
-        void set_crypto_passphrase(const std::string& passphrase)
-        {
-            crypto_passphrase_ = passphrase;
-            BOOST_FOREACH(Message& m, messages_)
-                m.set_crypto_passphrase(passphrase);
-        }
-        
-            
+        void set_crypto_passphrase(const std::string& passphrase);
         
         /// \brief Add an algorithm callback for a C++ std::string type that only requires the current value.
         ///
@@ -423,23 +416,29 @@ namespace dccl
         std::vector<Message>::const_iterator to_iterator(const unsigned& id) const;
         std::vector<Message>::iterator to_iterator(const unsigned& id);        
 
+        // in map not passed by reference because we want to be able to modify it
         void encode_private(std::vector<Message>::iterator it,
                             std::string& out,
-                            const std::map<std::string, MessageVal>& in);
+                            std::map<std::string, MessageVal> in);
+
+        // in string not passed by reference because we want to be able to modify it
+        void decode_private(std::vector<Message>::iterator it,
+                            std::string in,
+                            std::map<std::string, MessageVal>& out);
+
         
         void encode_private(std::vector<Message>::iterator it,
                             modem::Message& out_msg,
                             const std::map<std::string, MessageVal>& in);
         
         void decode_private(std::vector<Message>::iterator it,
-                            const std::string& in,
-                            std::map<std::string, MessageVal>& out);
-        
-        void decode_private(std::vector<Message>::iterator it,
                             const modem::Message& in_msg,
                             std::map<std::string, MessageVal>& out);
         
         void check_duplicates();
+        
+        void encrypt(std::string& s, const std::string& nonce);
+        void decrypt(std::string& s, const std::string& nonce);
         
       private:
         std::vector<Message> messages_;
@@ -448,7 +447,8 @@ namespace dccl
 
         std::string xml_schema_;
         time_t start_time_;
-        std::string crypto_passphrase_;
+
+        std::string crypto_key_;
     };
 
     /// outputs information about all available messages (same as std::string summary())

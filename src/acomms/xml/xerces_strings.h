@@ -25,7 +25,7 @@
 
 #include <string>
 
-#include <boost/scoped_array.hpp>
+#include <boost/scoped_ptr.hpp>
 #include <xercesc/util/XMLString.hpp>
 
 typedef std::basic_string<XMLCh> XercesString;
@@ -33,7 +33,7 @@ typedef std::basic_string<XMLCh> XercesString;
 // Converts from a narrow-character string to a wide-character string.
 inline XercesString fromNative(const char* str)
 {
-    boost::scoped_array<XMLCh> ptr(xercesc::XMLString::transcode(str));
+    boost::scoped_ptr<XMLCh> ptr(xercesc::XMLString::transcode(str));
     return XercesString(ptr.get());
 }
 
@@ -46,7 +46,7 @@ inline XercesString fromNative(const std::string& str)
 // Converts from a wide-character string to a narrow-character string.
 inline std::string toNative(const XMLCh* str)
 {
-    boost::scoped_array<char> ptr(xercesc::XMLString::transcode(str));
+    boost::scoped_ptr<char> ptr(xercesc::XMLString::transcode(str));
     return std::string(ptr.get());
 }
 

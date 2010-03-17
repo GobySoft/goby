@@ -24,6 +24,9 @@
 #include <bitset>
 #include <limits>
 
+#include <crypto++/filters.h>
+#include <crypto++/hex.h>
+
 #include "acomms/acomms_constants.h"
 
 namespace dccl
@@ -85,6 +88,27 @@ namespace dccl
         }
         return "notype";
     }
+
+    inline void hex_decode(std::string& s)
+    {
+        std::string out;
+        CryptoPP::HexDecoder hex(new CryptoPP::StringSink(out));
+        hex.Put((byte*)s.c_str(), s.size());
+        hex.MessageEnd();
+        s = out;
+    }
+    
+    inline void hex_encode(std::string& s)
+    {
+        std::string out;
+        const bool uppercase = false;
+        CryptoPP::HexEncoder hex(new CryptoPP::StringSink(out), uppercase);
+        hex.Put((byte*)s.c_str(), s.size());
+        hex.MessageEnd();
+        s = out;
+    }
+    
+    
 }
 
 #endif

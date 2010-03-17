@@ -81,18 +81,13 @@ namespace dccl
         { dest_key_ = dest_key; }
     
         void set_size(unsigned size)
-        {
-          size_ = size; 
-          avail_size_ = size - acomms_util::NUM_HEADER_BYTES;
-        }
+        { size_ = size; }
 
         template<typename T> void set_size(const T& t)
         { set_size(boost::lexical_cast<unsigned>(t)); }
 
         void set_delta_encode(bool b)
         { delta_encode_ = b; }
-
-        void set_crypto_passphrase(const std::string& s);
         
         void add_message_var(const std::string& type);        
         void add_publish();
@@ -130,10 +125,12 @@ namespace dccl
         std::map<std::string, std::string> message_var_names() const;
         void preprocess();
             
-        void encode(std::string& out,
-                    const std::map<std::string, MessageVal>& in);
+        void encode(std::string& body,
+                    std::string& head,
+                    std::map<std::string, MessageVal>& in);
 
-        void decode(const std::string& in,
+        void decode(std::string& body,
+                    std::string& head,
                     std::map<std::string, MessageVal>& out);
 
         // increment, means increase trigger number
@@ -148,57 +145,50 @@ namespace dccl
                              const std::map<std::string, dccl::MessageVal>& in);
         
       private:
-        void assemble(std::string& out_message, const boost::dynamic_bitset<unsigned char>& bits);
-        void disassemble(std::string& in, boost::dynamic_bitset<unsigned char>& bits);   
-        void hex_decode(std::string& s);
-        void hex_encode(std::string& s);
-        void encrypt(std::string& s);
-        void decrypt(std::string& s);
-        
-        
-        // more efficient way to do ceil(total_bits / 8) to get the number of bytes rounded up.
-        unsigned used_bytes_no_head() const
+
+        unsigned bytes_head() const
+        { return acomms_util::NUM_HEADER_BYTES; }
+        unsigned bits_head() const
+        { return bytes2bits(acomms_util::NUM_HEADER_BYTES); }
+
+        // more efficient way to do ceil(total_bits / 8)
+        // to get the number of bytes rounded up.
+        unsigned used_bytes_body() const
         {
-            return (total_bits_& acomms_util::BYTE_MASK) ?
-                bits2bytes(total_bits_) + 1 :
-                bits2bytes(total_bits_);
-        }
-        unsigned used_bytes() const
-        { 
-          return (total_bits_& acomms_util::BYTE_MASK) ?
-              bits2bytes(total_bits_) + 1 + acomms_util::NUM_HEADER_BYTES :
-              bits2bytes(total_bits_) + acomms_util::NUM_HEADER_BYTES; 
+            return (body_bits_& acomms_util::BYTE_MASK) ?
+                bits2bytes(body_bits_) + 1 :
+                bits2bytes(body_bits_);
         }
 
-        unsigned used_bits_no_head() const
-        { return total_bits_; } 
+        unsigned used_bytes_total() const
+        { return bytes_head() + used_bytes_body(); }
 
-        unsigned used_bits() const
-        { return total_bits_ + bytes2bits(acomms_util::NUM_HEADER_BYTES); }
-
-        // more efficient way to do ceil(total_bits / 8) to get the number of bytes rounded up.
-        unsigned requested_bytes_no_head() const
+        unsigned used_bits_body() const
+        { return body_bits_; }
+        
+        unsigned used_bits_total() const
+        { return bits_head() + used_bits_body(); }
+        
+        unsigned requested_bytes_body() const
         { return size_ - acomms_util::NUM_HEADER_BYTES; }
 
-        unsigned requested_bytes() const
+        unsigned requested_bytes_total() const
         { return size_; }
 
-        unsigned requested_bits_no_head() const
+        unsigned requested_bits_body() const
         { return bytes2bits(size_ - acomms_util::NUM_HEADER_BYTES); } 
 
-        unsigned requested_bits() const
+        unsigned requested_bits_total() const
         { return bytes2bits(size_); }        
     
         
       private:
-        // total size of message, e.g. 32 bytes
+        // total request size of message, e.g. 32 bytes
         unsigned size_;
-        // available size of message, e.g. 32-2 = 30 bytes;
-        unsigned avail_size_;
         
         unsigned trigger_number_;
-        // bits in user part of message (not including header bits)
-        unsigned total_bits_;
+        // actual used bits in body part of message (not including header bits)
+        unsigned body_bits_;
 
         unsigned id_;
         double trigger_time_;        
@@ -212,9 +202,6 @@ namespace dccl
         std::string dest_var_;
         std::string dest_key_;
 
-        bool crypto_;
-        std::string crypto_key_;
-        
         std::vector<MessageVar> layout_;
         std::vector<Publish> publishes_;
 

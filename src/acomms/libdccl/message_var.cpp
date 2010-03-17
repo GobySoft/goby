@@ -221,10 +221,11 @@ void dccl::MessageVar::var_encode(std::map<std::string,MessageVal>& vals, boost:
     unsigned int size = calc_size();
     boost::dynamic_bitset<unsigned char>::size_type bits_size = bits.size();
 
-    bool b;
+    bool b = false;
     std::string s;
-    long t;
-    double r;
+    long t = 0;
+    double r = acomms_util::NaN;
+
     switch(type_)
     {
         case dccl_static:
@@ -369,6 +370,7 @@ void dccl::MessageVar::var_decode(std::map<std::string,MessageVal>& vals, boost:
         case dccl_bool:
             t = (bits & mask).to_ulong();
             bits >>= size;
+
             
             if(t)
             {
@@ -379,7 +381,7 @@ void dccl::MessageVar::var_decode(std::map<std::string,MessageVal>& vals, boost:
                 else if(type_ == dccl_float)
                     v.set(static_cast<double>(t) / (pow(10.0, static_cast<double>(precision_))) + min(), precision_);
                 else if(type_ == dccl_enum)
-                    v.set(enums_[t]);
+                    v.set(enums_.at(t));
                 else
                     v.set(static_cast<long>(t) + static_cast<long>(min()));
             }

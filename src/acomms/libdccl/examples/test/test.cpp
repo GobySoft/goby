@@ -67,7 +67,7 @@ int main()
     dccl.add_adv_algorithm("sum", &algsum);
 
     // must be kept secret!
-    dccl.set_crypto_passphrase("my_password!");
+    dccl.set_crypto_passphrase("my_passphrase!");
     
     std::map<std::string, dccl::MessageVal> in;
     
@@ -92,6 +92,11 @@ int main()
               << in;
 
     dccl.encode(4, hex, in);
+
+    std::cout << "hex out: " << hex << std::endl;
+    hex.resize(32*2,'0');
+    std::cout << "hex in: " << hex << std::endl;
+    
     
     std::map<std::string, dccl::MessageVal> out;
     

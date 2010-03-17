@@ -18,6 +18,10 @@
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <boost/foreach.hpp>
+#include <crypto++/filters.h>
+#include <crypto++/sha.h>
+#include <crypto++/modes.h>
+#include <crypto++/aes.h>
 
 #include "dccl.h"
 #include "message_xml_callbacks.h"
@@ -68,9 +72,6 @@ std::set<unsigned> dccl::DCCLCodec::add_xml_message_file(const std::string& xml_
         name2messages_.insert(std::pair<std::string, size_t>(messages_[new_index].name(), new_index));
         id2messages_.insert(std::pair<unsigned, size_t>(messages_[new_index].id(), new_index));
         added_ids.insert(messages_[new_index].id());
-
-        if(!crypto_passphrase_.empty())
-            messages_[new_index].set_crypto_passphrase(crypto_passphrase_);
     }
     
     return added_ids;
@@ -267,10 +268,44 @@ std::vector<dccl::Message>::iterator dccl::DCCLCodec::to_iterator(const unsigned
 
 void dccl::DCCLCodec::encode_private(std::vector<Message>::iterator it,
                                      std::string& out,
-                                     const std::map<std::string, MessageVal>& in)
+                                     std::map<std::string, MessageVal> in)
 {
-    it->encode(out, in);
+    // 1. encode parts
+    std::string body, head;
+    it->encode(body, head, in);
+    
+    // 2. encrypt
+    if(!crypto_key_.empty()) encrypt(body, head);
+ 
+    // 3. join head and body
+    out = head + body;
+
+    // 4. hex encode
+    hex_encode(out);
+
+    // increment message counter
     ++(*it);
+}
+        
+void dccl::DCCLCodec::decode_private(std::vector<Message>::iterator it,
+                                     std::string in,
+                                     std::map<std::string, MessageVal>& out)
+{
+    // 4. hex decode
+    hex_decode(in);
+
+    // clean up any ending junk added by modem
+    in.resize(in.find_last_not_of(char(0))+1);
+    
+    // 3. split body and header
+    std::string body = in.substr(acomms_util::NUM_HEADER_BYTES);
+    std::string head = in.substr(0, acomms_util::NUM_HEADER_BYTES);
+    
+    // 2. decrypt
+    if(!crypto_key_.empty()) decrypt(body, head);
+
+    // 1. decode parts
+    it->decode(body, head, out);
 }
         
 void dccl::DCCLCodec::encode_private(std::vector<Message>::iterator it,
@@ -279,16 +314,57 @@ void dccl::DCCLCodec::encode_private(std::vector<Message>::iterator it,
 {
     std::string out;
     encode_private(it, out, in);
-    out_msg.set_data(out);    
+    out_msg.set_data(out);
 }
-        
-void dccl::DCCLCodec::decode_private(std::vector<Message>::iterator it,
-                                     const std::string& in,
-                                     std::map<std::string, MessageVal>& out)
-{ it->decode(in, out); }
 
 void dccl::DCCLCodec::decode_private(std::vector<Message>::iterator it,
                                      const modem::Message& in_msg,
                                      std::map<std::string, MessageVal>& out)
 { decode_private(it, in_msg.data(), out); }
 
+
+void dccl::DCCLCodec::set_crypto_passphrase(const std::string& s)
+{
+    using namespace CryptoPP;
+
+    SHA256 hash;
+    StringSource unused (s, true, new HashFilter(hash, new StringSink(crypto_key_)));
+}
+
+
+void dccl::DCCLCodec::encrypt(std::string& s, const std::string& nonce)
+{
+    using namespace CryptoPP;
+
+    std::string iv;
+    SHA256 hash;
+    StringSource unused(nonce, true, new HashFilter(hash, new StringSink(iv)));
+    
+    CTR_Mode<AES>::Encryption encryptor;
+    encryptor.SetKeyWithIV((byte*)crypto_key_.c_str(), crypto_key_.size(), (byte*)iv.c_str());
+
+    std::string cipher;
+    StreamTransformationFilter in(encryptor, new StringSink(cipher));
+    in.Put((byte*)s.c_str(), s.size());
+    in.MessageEnd();
+    s = cipher;
+}
+
+void dccl::DCCLCodec::decrypt(std::string& s, const std::string& nonce)
+{
+    using namespace CryptoPP;
+
+    std::string iv;
+    SHA256 hash;
+    StringSource unused(nonce, true, new HashFilter(hash, new StringSink(iv)));
+    
+    CTR_Mode<AES>::Decryption decryptor;    
+    decryptor.SetKeyWithIV((byte*)crypto_key_.c_str(), crypto_key_.size(), (byte*)iv.c_str());
+    
+    std::string recovered;
+    StreamTransformationFilter out(decryptor, new StringSink(recovered));
+    out.Put((byte*)s.c_str(), s.size());
+    out.MessageEnd();
+    
+    s = recovered;
+}

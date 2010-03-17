@@ -250,7 +250,7 @@ dccl::MessageVal::operator double() const
 }
 dccl::MessageVal::operator float() const
 {
-    return double();
+    return double(*this);
 }
 dccl::MessageVal::operator bool() const
 {
@@ -272,7 +272,7 @@ dccl::MessageVal::operator long() const
 }
 dccl::MessageVal::operator int() const
 {
-    return long();
+    return long(*this);
 }
 
 

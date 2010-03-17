@@ -22,21 +22,12 @@
 
 #include "message.h"
 
-#include <crypto++/filters.h>
-#include <crypto++/modes.h>
-#include <crypto++/aes.h>
-#include <crypto++/hex.h>
-#include <crypto++/sha.h>
-
-
 dccl::Message::Message():size_(0),
-                         avail_size_(0),
                          trigger_number_(1),    
-                         total_bits_(0),
+                         body_bits_(0),
                          id_(0),
                          trigger_time_(0.0),
-                         delta_encode_(false),
-                         crypto_(false)
+                         delta_encode_(false)
 { }
 
     
@@ -74,29 +65,21 @@ void dccl::Message::add_publish()
     publishes_.push_back(p);
 }
 
-void dccl::Message::set_crypto_passphrase(const std::string& s)
-{
-    using namespace CryptoPP;
-    SHA256 hash;
-    StringSource unused (s, true, new HashFilter(hash, new StringSink(crypto_key_)));
-    crypto_ = true;
-}
-
 // a number of tasks to perform after reading in an entire <message> from
 // the xml file
 void dccl::Message::preprocess()
 {
-    total_bits_ = 0;
+    body_bits_ = 0;
     // iterate over layout_
     BOOST_FOREACH(MessageVar& mv, layout_)
     {
         mv.initialize(name_, trigger_var_, delta_encode_);
         // calculate total bits for the message from the bits for each message_var
-        total_bits_ += mv.calc_size();
+        body_bits_ += mv.calc_size();
     }
     
     // 'size' is the <size> tag in BYTES
-    if(total_bits_ > bytes2bits(avail_size_))
+    if(body_bits_ > bytes2bits(requested_bits_total()))
     {
         throw std::runtime_error(std::string("DCCL: " + get_display() + "the message [" + name_ + "] will not fit within specified size. remove parameters, tighten bounds, or increase allowed size. details of the offending message are printed above."));
     }
@@ -107,7 +90,7 @@ void dccl::Message::preprocess()
         p.initialize(layout_);
     }
 
-
+    
     // set incoming_var / outgoing_var if not set
     if(in_var_ == "")
         in_var_ = "IN_" + boost::to_upper_copy(name_) + "_HEX_" + boost::lexical_cast<std::string>(size_) + "B";
@@ -117,85 +100,6 @@ void dccl::Message::preprocess()
     
 }
 
-    
-// a long visual display of all the parameters for a Message
-std::string dccl::Message::get_display() const
-{
-    const unsigned int num_stars = 20;
-
-    bool is_moos = !trigger_type_.empty();
-        
-    std::stringstream ss;
-    ss << std::string(num_stars, '*') << std::endl;
-    ss << "message " << id_ << ": {" << name_ << "}" << std::endl;
-
-    if(is_moos)
-    {
-        ss << "trigger_type: {" << trigger_type_ << "}" << std::endl;
-    
-    
-        if(trigger_type_ == "publish")
-        {
-            ss << "trigger_var: {" << trigger_var_ << "}";
-            if (trigger_mandatory_ != "")
-                ss << " must contain string \"" << trigger_mandatory_ << "\"";
-            ss << std::endl;
-        }
-        else if(trigger_type_ == "time")
-        {
-            ss << "trigger_time: {" << trigger_time_ << "}" << std::endl;
-        }
-    
-        ss << "outgoing_hex_var: {" << out_var_ << "}" << std::endl;
-        ss << "incoming_hex_var: {" << in_var_ << "}" << std::endl;
-    }
-    
-    ss << "requested size {bytes} [bits]: {" << requested_bytes() << "} [" << requested_bits() << "]" << std::endl;
-    ss << "actual size {bytes} [bits]: {" << used_bytes() << "} [" << used_bits() << "]" << std::endl;
-    
-    ss << ">>>> LAYOUT (message_vars) <<<<" << std::endl;
-
-    BOOST_FOREACH(const MessageVar& mv, layout_)
-        ss << mv;
-    
-    if(is_moos)
-    {
-
-        ss << ">>>> PUBLISHES <<<<" << std::endl;
-        
-        BOOST_FOREACH(const Publish& p, publishes_)
-            ss << p;
-    }
-    
-    ss << std::string(num_stars, '*') << std::endl;
-        
-    return ss.str();
-}
-
-// a much shorter rundown of the Message parameters
-std::string dccl::Message::get_short_display() const
-{
-    std::stringstream ss;
-
-    ss << name_ <<  ": ";
-
-    bool is_moos = !trigger_type_.empty();
-    if(is_moos)
-    {
-        ss << "trig: ";
-        
-        if(trigger_type_ == "publish")
-            ss << trigger_var_;
-        else if(trigger_type_ == "time")
-            ss << trigger_time_ << "s";
-        ss << " | out: " << out_var_;
-        ss << " | in: " << in_var_ << " | ";
-    }
-
-    ss << "size: {" << used_bytes() << "/" << requested_bytes() << "B} [" <<  used_bits() << "/" << requested_bits() << "b] | message var N: " << layout_.size() << std::endl;
-
-    return ss.str();
-}
 
 std::map<std::string, std::string> dccl::Message::message_var_names() const
 {
@@ -241,6 +145,166 @@ std::set<std::string> dccl::Message::src_vars()
         s.insert(dest_var_);
         
     return s;
+}
+
+
+void dccl::Message::encode(std::string& body,
+                           std::string& head,
+                           std::map<std::string, MessageVal>& in)
+{
+    boost::dynamic_bitset<unsigned char> body_bits(bytes2bits(used_bytes_body()));
+    
+    // 1. encode each variable into the bitset
+    for (std::vector<MessageVar>::iterator it = layout_.begin(), n = layout_.end(); it != n; ++it)
+        it->var_encode(in, body_bits);
+    
+    // 2. bitset to string
+    body.resize(body_bits.num_blocks()); // resize the string to fit the bitset
+    to_block_range(body_bits, body.rbegin());
+
+    // 3. strip all the ending zeros
+    body.resize(body.find_last_not_of(char(0))+1);
+
+    // 4. encode the header
+    head = std::string(1, acomms_util::DCCL_CCL_HEADER) + std::string(1, id_);
+}
+    
+void dccl::Message::decode(std::string& body,
+                           std::string& head,
+                           std::map<std::string, MessageVal>& out)
+{
+    // 4. decode the header
+
+    
+    // 3. resize the string to the proper size
+    body.resize(used_bytes_body());
+    
+    boost::dynamic_bitset<unsigned char> body_bits(bytes2bits(used_bytes_body()));
+    // 2. convert string to bitset
+    from_block_range(body.rbegin(), body.rend(), body_bits);
+    
+    // 1. pull the bits off the message in the reverse that they were put on
+    for (std::vector<MessageVar>::reverse_iterator it = layout_.rbegin(), n = layout_.rend(); it != n; ++it)
+        it->var_decode(out, body_bits);
+}
+    
+void dccl::Message::add_destination(modem::Message& out_message,
+                                    const std::map<std::string, dccl::MessageVal>& in)
+{
+    if(!dest_var_.empty())
+    {        
+        MessageVar mv;
+        mv.set_source_key(dest_key_);
+        mv.set_name("destination");
+            
+        const std::map<std::string, dccl::MessageVal>::const_iterator it =
+            in.find(dest_var_);
+
+        if(it != in.end())
+        {
+            MessageVal val = it->second;
+            
+            switch(val.type())
+            {
+                case cpp_string: 
+                    val = mv.parse_string_val(val);
+                    break;
+                    
+                default:
+                    break;
+            }
+            out_message.set_dest(int(val));
+        }
+        else
+        {
+            throw std::runtime_error(std::string("DCCL: for message [" + name_ + "]: destination requested but not provided."));
+        }
+    }
+}
+
+
+////////////////////////////
+// VISUALIZATION
+////////////////////////////
+
+    
+// a long visual display of all the parameters for a Message
+std::string dccl::Message::get_display() const
+{
+    const unsigned int num_stars = 20;
+
+    bool is_moos = !trigger_type_.empty();
+        
+    std::stringstream ss;
+    ss << std::string(num_stars, '*') << std::endl;
+    ss << "message " << id_ << ": {" << name_ << "}" << std::endl;
+
+    if(is_moos)
+    {
+        ss << "trigger_type: {" << trigger_type_ << "}" << std::endl;
+    
+    
+        if(trigger_type_ == "publish")
+        {
+            ss << "trigger_var: {" << trigger_var_ << "}";
+            if (trigger_mandatory_ != "")
+                ss << " must contain string \"" << trigger_mandatory_ << "\"";
+            ss << std::endl;
+        }
+        else if(trigger_type_ == "time")
+        {
+            ss << "trigger_time: {" << trigger_time_ << "}" << std::endl;
+        }
+    
+        ss << "outgoing_hex_var: {" << out_var_ << "}" << std::endl;
+        ss << "incoming_hex_var: {" << in_var_ << "}" << std::endl;
+    }
+    
+    ss << "requested size {bytes} [bits]: {" << requested_bytes_total() << "} [" << requested_bits_total() << "]" << std::endl;
+    ss << "actual size {bytes} [bits]: {" << used_bytes_total() << "} [" << used_bits_total() << "]" << std::endl;
+    
+    ss << ">>>> LAYOUT (message_vars) <<<<" << std::endl;
+
+    BOOST_FOREACH(const MessageVar& mv, layout_)
+        ss << mv;
+    
+    if(is_moos)
+    {
+
+        ss << ">>>> PUBLISHES <<<<" << std::endl;
+        
+        BOOST_FOREACH(const Publish& p, publishes_)
+            ss << p;
+    }
+    
+    ss << std::string(num_stars, '*') << std::endl;
+        
+    return ss.str();
+}
+
+// a much shorter rundown of the Message parameters
+std::string dccl::Message::get_short_display() const
+{
+    std::stringstream ss;
+
+    ss << name_ <<  ": ";
+
+    bool is_moos = !trigger_type_.empty();
+    if(is_moos)
+    {
+        ss << "trig: ";
+        
+        if(trigger_type_ == "publish")
+            ss << trigger_var_;
+        else if(trigger_type_ == "time")
+            ss << trigger_time_ << "s";
+        ss << " | out: " << out_var_;
+        ss << " | in: " << in_var_ << " | ";
+    }
+
+    ss << "size: {" << used_bytes_total() << "/" << requested_bytes_total() << "B} [" <<  used_bits_total() << "/" << requested_bits_total() << "b] | message var N: " << layout_.size() << std::endl;
+
+    return ss.str();
 }
 
 //display a summary of what input values you need
@@ -310,180 +374,6 @@ std::string dccl::Message::input_summary()
         
     return s;
 }
-
-
-
-void dccl::Message::encode(std::string& out, const std::map<std::string, MessageVal>& in)
-{
-    // make a copy because we need to modify this (algorithms, etc.)
-    std::map<std::string, MessageVal> vals = in;
-
-    boost::dynamic_bitset<unsigned char> bits(bytes2bits(used_bytes_no_head())); // actual size rounded up to closest byte
-
-   // 1. encode each variable
-    for (std::vector<MessageVar>::iterator it = layout_.begin(), n = layout_.end(); it != n; ++it)
-        it->var_encode(vals, bits);
-
-    // 2. convert bitset to string
-    assemble(out, bits);
-
-    // 3. encrypt
-    if(crypto_) encrypt(out);
-
-    // 4. add on the header
-    out = std::string(1, acomms_util::DCCL_CCL_HEADER) + std::string(1, id_) + out;
-    
-    // 5. hex encode
-    hex_encode(out);
-}
-    
-void dccl::Message::decode(const std::string& in_const, std::map<std::string, MessageVal>& out)
-{
-    std::string in = in_const;
-    // 5. hex decode
-    hex_decode(in);
-
-    // 4. remove the header
-    in = in.substr(acomms_util::NUM_HEADER_BYTES);
-    
-    // 3. decrypt
-    if(crypto_) decrypt(in);
-    
-    boost::dynamic_bitset<unsigned char> bits(bytes2bits(used_bytes_no_head()));
-    // 2. convert string to bitset
-    disassemble(in, bits);    
-    
-    // 1. pull the bits off the message in the reverse that they were put on
-    for (std::vector<MessageVar>::reverse_iterator it = layout_.rbegin(), n = layout_.rend(); it != n; ++it)
-        it->var_decode(out, bits);
-}
-
-
-void dccl::Message::assemble(std::string& out, const boost::dynamic_bitset<unsigned char>& bits)
-{
-    // resize the string to fit the bitset
-    out.resize(bits.num_blocks());
-
-    // bitset to string
-    to_block_range(bits, out.rbegin()); 
-
-
-    // strip all the ending zeros
-    out.resize(out.find_last_not_of(char(0))+1);
-}
-
-void dccl::Message::disassemble(std::string& in, boost::dynamic_bitset<unsigned char>& bits)
-{
-    // copy because we may need to tack some stuff
-    size_t in_bytes = in.length();
-
-    if(in_bytes < used_bytes()) // message is too short, add zeroes
-        in += std::string(used_bytes_no_head()-in_bytes, 0);
-    else if(in_bytes > used_bytes()) // message is too long, truncate
-        in = in.substr(0, used_bytes_no_head());
-
-    from_block_range(in.rbegin(), in.rend(), bits);
-}
-
-
-void dccl::Message::hex_encode(std::string& s)
-{
-    using namespace CryptoPP;
-    
-    std::string out;
-    const bool uppercase = false;
-    HexEncoder hex(new StringSink(out), uppercase);
-    hex.Put((byte*)s.c_str(), s.size());
-    hex.MessageEnd();
-    s = out;
-}
-
-void dccl::Message::hex_decode(std::string& s)
-{
-    using namespace CryptoPP;
-
-    std::string out;
-    HexDecoder hex(new StringSink(out));
-    hex.Put((byte*)s.c_str(), s.size());
-    hex.MessageEnd();
-    s = out;
-}
-
-
-void dccl::Message::encrypt(std::string& s)
-{
-    using namespace CryptoPP;
-
-    std::string nonce = "FIXTHISHACK";
-    std::string iv;
-    SHA256 hash;
-    StringSource unused(nonce, true, new HashFilter(hash, new StringSink(iv)));
-    
-    CTR_Mode<AES>::Encryption encryptor;
-    encryptor.SetKeyWithIV((byte*)crypto_key_.c_str(), crypto_key_.size(), (byte*)iv.c_str());
-
-    std::string cipher;
-    StreamTransformationFilter in(encryptor, new StringSink(cipher));
-    in.Put((byte*)s.c_str(), s.size());
-    in.MessageEnd();
-    s = cipher;
-}
-
-void dccl::Message::decrypt(std::string& s)
-{
-    using namespace CryptoPP;
-
-    std::string nonce = "FIXTHISHACK";
-    std::string iv;
-    SHA256 hash;
-    StringSource unused(nonce, true, new HashFilter(hash, new StringSink(iv)));
-    
-    CTR_Mode<AES>::Decryption decryptor;    
-    decryptor.SetKeyWithIV((byte*)crypto_key_.c_str(), crypto_key_.size(), (byte*)iv.c_str());
-    
-    std::string recovered;
-    StreamTransformationFilter out(decryptor, new StringSink(recovered));
-    out.Put((byte*)s.c_str(), s.size());
-    out.MessageEnd();
-    
-    s = recovered;
-}
-    
-void dccl::Message::add_destination(modem::Message& out_message,
-                                    const std::map<std::string, dccl::MessageVal>& in)
-{
-    if(!dest_var_.empty())
-    {        
-        MessageVar mv;
-        mv.set_source_key(dest_key_);
-        mv.set_name("destination");
-            
-        const std::map<std::string, dccl::MessageVal>::const_iterator it =
-            in.find(dest_var_);
-
-        if(it != in.end())
-        {
-            MessageVal val = it->second;
-            
-            switch(val.type())
-            {
-                case cpp_string: 
-                    val = mv.parse_string_val(val);
-                    break;
-                    
-                default:
-                    break;
-            }
-            out_message.set_dest(int(val));
-        }
-        else
-        {
-            throw std::runtime_error(std::string("DCCL: for message [" + name_ + "]: destination requested but not provided."));
-        }
-    }
-}
-
-
     
 // overloaded <<
 std::ostream& dccl::operator<< (std::ostream& out, const Message& message)

@@ -2,14 +2,23 @@
 <message_set>
   <message>
     <name>SENSOR_STATUS</name>
-    <id>12</id>
-    <outgoing_hex_moos_var>OUT_STATUS_HEX_32B</outgoing_hex_moos_var>
-    <incoming_hex_moos_var>IN_STATUS_HEX_32B</incoming_hex_moos_var>
     <trigger>publish</trigger> <!-- package upon publish to some moos var -->
     <trigger_moos_var mandatory_content="MessageType=SENSOR_STATUS">
       PLUSNET_MESSAGES
     </trigger_moos_var>
     <size>32</size>
+    <header>
+      <id>12</id>   
+      <time>
+        <name>Timestamp</name>
+      </time>
+      <src_id>
+        <name>SourcePlatformId</name>  
+      </src_id>
+      <dest_id>
+        <name>DestinationPlatformId</name>
+      </dest_id>
+    </header>
     <layout>
       <static>
         <name>MessageType</name>
@@ -19,21 +28,6 @@
         <name>SensorReportType</name>
         <value>0</value>
       </static>
-      <int>
-        <name>SourcePlatformId</name>
-        <max>30</max>
-        <min>0</min>
-      </int>
-      <int>
-        <name>DestinationPlatformId</name>
-        <max>30</max>
-        <min>0</min>
-      </int>
-      <int>
-        <name>Timestamp</name>
-        <max>2000000000</max>
-        <min>1000000000</min>
-      </int>
       <float>
         <name>NodeLatitude</name>
         <precision>5</precision>
@@ -143,14 +137,23 @@
   </message>
   <message>
     <name>SENSOR_CONTACT</name>
-    <id>13</id>
-    <outgoing_hex_moos_var>OUT_CONTACT_HEX_32B</outgoing_hex_moos_var>
-    <incoming_hex_moos_var>IN_CONTACT_HEX_32B</incoming_hex_moos_var>
     <trigger>publish</trigger> 
     <trigger_moos_var mandatory_content="MessageType=SENSOR_CONTACT">
       PLUSNET_MESSAGES
     </trigger_moos_var>
-    <size>32</size>
+    <size>32</size>  
+    <header>
+      <id>13</id>   
+      <time>
+        <name>ContactTimestamp</name>
+      </time>
+      <src_id>
+        <name>SourcePlatformId</name>  
+      </src_id>
+      <dest_id>
+        <name>DestinationPlatformId</name>
+      </dest_id>
+    </header> 
     <layout>
       <static>
         <name>MessageType</name>
@@ -160,21 +163,6 @@
         <name>SensorReportType</name>
         <value>1</value>
       </static>
-      <int>
-        <name>SourcePlatformId</name>
-        <max>30</max>
-        <min>0</min>
-      </int>
-      <int>
-        <name>DestinationPlatformId</name>
-        <max>30</max>
-        <min>0</min>
-      </int>
-      <int>
-        <name>ContactTimestamp</name>
-        <max>2000000000</max>
-        <min>1000000000</min>
-      </int>
       <float algorithm="angle_0_360">
         <name>SensorHeading</name>
         <max>360</max>
@@ -291,14 +279,25 @@
   </message>
   <message>
     <name>SENSOR_TRACK</name>
-    <id>14</id>
-    <outgoing_hex_moos_var>OUT_TRACK_HEX_32B</outgoing_hex_moos_var>
-    <incoming_hex_moos_var>IN_TRACK_HEX_32B</incoming_hex_moos_var>
     <trigger>publish</trigger> 
     <trigger_moos_var mandatory_content="MessageType=SENSOR_TRACK">
       PLUSNET_MESSAGES
     </trigger_moos_var>
     <size>32</size>
+
+    <header>
+      <id>14</id>
+      <time>
+        <name>TrackTimestamp</name>
+      </time>
+      <src_id>
+        <name>SourcePlatformId</name>  
+      </src_id>
+      <dest_id>
+        <name>DestinationPlatformId</name>
+      </dest_id>
+    </header>
+
     <layout>
       <static>
         <name>MessageType</name>
@@ -308,21 +307,6 @@
         <name>SensorReportType</name>
         <value>2</value>
       </static>
-      <int>
-        <name>SourcePlatformId</name>
-        <max>30</max>
-        <min>0</min>
-      </int>
-      <int>
-        <name>DestinationPlatformId</name>
-        <max>30</max>
-        <min>0</min>
-      </int>
-      <int>
-        <name>TrackTimestamp</name>
-        <max>2000000000</max>
-        <min>1000000000</min>
-      </int>
       <int>
         <name>PlatformID</name>
         <max>30</max>

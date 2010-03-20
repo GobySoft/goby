@@ -10,14 +10,12 @@
           <xs:complexType>
             <xs:all>
               <xs:element name="name" type="xs:string"/>
-              <xs:element name="id" type="xs:string"/>
-              <xs:element name="size" type="xs:integer"/>
-              
-              <xs:element name="outgoing_hex_moos_var" type="xs:string" minOccurs="0"/>
-              <xs:element name="incoming_hex_moos_var" type="xs:string" minOccurs="0"/>
-              <xs:element name="trigger" type="xs:string" minOccurs="0"/>
-              <xs:element name="trigger_time" type="xs:integer" minOccurs="0"/>
 
+              <!-- prefer to have this inside <header/> but leave it here as well
+                   for backwards compatibility -->
+              <xs:element name="id" type="xs:string" minOccurs="0"/>
+
+              <!-- legacy -->
               <xs:element name="destination_var" minOccurs="0">
                 <xs:complexType>
                   <xs:simpleContent>
@@ -37,7 +35,14 @@
                   </xs:simpleContent>
                 </xs:complexType>
               </xs:element> <!-- </destination_moos_var> -->
+
+
+              <xs:element name="size" type="xs:integer"/>
               
+              <xs:element name="outgoing_hex_moos_var" type="xs:string" minOccurs="0"/>
+              <xs:element name="incoming_hex_moos_var" type="xs:string" minOccurs="0"/>
+              <xs:element name="trigger" type="xs:string" minOccurs="0"/>
+              <xs:element name="trigger_time" type="xs:integer" minOccurs="0"/>
 
               <xs:element name="trigger_var" minOccurs="0">
                 <xs:complexType>
@@ -63,6 +68,103 @@
                 <xs:complexType>
                 </xs:complexType>
               </xs:element>
+
+              <xs:element name="header" minOccurs="0">
+                <xs:complexType>
+                  <xs:all>
+                    <xs:element name="id" type="xs:string" minOccurs="0"/>
+                    
+                    <xs:element name="time" minOccurs="0">
+                      <xs:complexType>
+                        <xs:all>
+                          <xs:element name="name" type="xs:string"/>
+                          
+                          <xs:element name="src_var" minOccurs="0">
+                            <xs:complexType>
+                              <xs:simpleContent>
+                                <xs:extension base="xs:string">
+                                  <xs:attribute name="key" type="xs:string"/>
+                                </xs:extension>
+                              </xs:simpleContent>
+                            </xs:complexType>
+                          </xs:element>
+                          <!-- alias for src_var -->
+                          <xs:element name="moos_var" minOccurs="0">
+                            <xs:complexType>
+                              <xs:simpleContent>
+                                <xs:extension base="xs:string">
+                                  <xs:attribute name="key" type="xs:string"/>
+                                </xs:extension>
+                              </xs:simpleContent>
+                            </xs:complexType>
+                          </xs:element>
+                        </xs:all>
+                        <xs:attribute name="algorithm" type="xs:string"/>
+                      </xs:complexType>
+                    </xs:element>             
+                    
+                    <xs:element name="src_id" minOccurs="0">
+                      <xs:complexType>
+                        <xs:all>
+                          <xs:element name="name" type="xs:string"/>
+                          
+                          <xs:element name="src_var" minOccurs="0">
+                            <xs:complexType>
+                              <xs:simpleContent>
+                                <xs:extension base="xs:string">
+                                  <xs:attribute name="key" type="xs:string"/>
+                                </xs:extension>
+                              </xs:simpleContent>
+                            </xs:complexType>
+                          </xs:element>
+                          <!-- alias for src_var -->
+                          <xs:element name="moos_var" minOccurs="0">
+                            <xs:complexType>
+                              <xs:simpleContent>
+                                <xs:extension base="xs:string">
+                                  <xs:attribute name="key" type="xs:string"/>
+                                </xs:extension>
+                              </xs:simpleContent>
+                            </xs:complexType>
+                          </xs:element>
+                        </xs:all>
+                        <xs:attribute name="algorithm" type="xs:string"/>
+                      </xs:complexType>
+                    </xs:element>         
+                    
+                    <xs:element name="dest_id" minOccurs="0">
+                      <xs:complexType>
+                        <xs:all>
+                          <xs:element name="name" type="xs:string"/>
+                          
+                          <xs:element name="src_var" minOccurs="0">
+                            <xs:complexType>
+                              <xs:simpleContent>
+                                <xs:extension base="xs:string">
+                                  <xs:attribute name="key" type="xs:string"/>
+                                </xs:extension>
+                              </xs:simpleContent>
+                            </xs:complexType>
+                          </xs:element>
+                          <!-- alias for src_var -->
+                          <xs:element name="moos_var" minOccurs="0">
+                            <xs:complexType>
+                              <xs:simpleContent>
+                                <xs:extension base="xs:string">
+                                  <xs:attribute name="key" type="xs:string"/>
+                                </xs:extension>
+                              </xs:simpleContent>
+                            </xs:complexType>
+                          </xs:element>
+                        </xs:all>
+                        <xs:attribute name="algorithm" type="xs:string"/>
+                      </xs:complexType>
+                    </xs:element>             
+
+                  </xs:all>
+                </xs:complexType>
+              </xs:element>  <!-- </header> -->
+
 
 
               <xs:element name="layout">

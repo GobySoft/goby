@@ -295,13 +295,12 @@ namespace dccl
             std::map<std::string, dccl::MessageVal> vals;
             // clean the pubsub vals into dccl vals
             // using <src_var/> tag, do casts from double, pull strings from key=value,key=value, etc.
-            BOOST_FOREACH(MessageVar& mv, it->layout())
-                mv.read_dynamic_vars(vals, pubsub_vals);
-
-            encode_private(it, msg, vals);
+            BOOST_FOREACH(boost::shared_ptr<MessageVar> mv, it->layout())
+                mv->read_pubsub_vars(vals, pubsub_vals);
+            BOOST_FOREACH(boost::shared_ptr<MessageVar> mv, it->header())
+                mv->read_pubsub_vars(vals, pubsub_vals);
             
-            // deal with the destination
-            it->add_destination(msg, pubsub_vals);
+            encode_private(it, msg, vals);
         }
 
         
@@ -326,34 +325,29 @@ namespace dccl
 
             // go through all the publishes_ and fill in the format strings
             BOOST_FOREACH(Publish& p, it->publishes())
-                p.write_publish(vals, it->layout(), pubsub_vals);
+                p.write_publish(vals, pubsub_vals);
         }
         
         
         /// what moos variables do i need to provide to create a message with a call to encode_using_src_vars
         template<typename Key>
-            std::set<std::string> src_vars(const Key& k)
-        { return to_iterator(k)->src_vars(); }
+            std::set<std::string> get_pubsub_src_vars(const Key& k)
+        { return to_iterator(k)->get_pubsub_src_vars(); }
 
         /// for a given message name, all MOOS variables (sources, input, destination, trigger)
         template<typename Key>
-            std::set<std::string> all_vars(const Key& k)
-        { return to_iterator(k)->all_vars(); }
+            std::set<std::string> get_pubsub_all_vars(const Key& k)
+        { return to_iterator(k)->get_pubsub_all_vars(); }
 
         /// all MOOS variables needed for encoding (includes trigger)
         template<typename Key>
-            std::set<std::string> encode_vars(const Key& k)
-        { return to_iterator(k)->encode_vars(); }
+            std::set<std::string> get_pubsub_encode_vars(const Key& k)
+        { return to_iterator(k)->get_pubsub_encode_vars(); }
 
         /// for a given message name, all MOOS variables for decoding (input)
         template<typename Key>
-            std::set<std::string> decode_vars(const Key& k)
-        { return to_iterator(k)->decode_vars(); }
-
-        /// what is the syntax of the message i need to provide?
-        template<typename Key>
-            std::string input_summary(const Key& k)
-        { return to_iterator(k)->input_summary(); }
+            std::set<std::string> get_pubsub_decode_vars(const Key& k)
+        { return to_iterator(k)->get_pubsub_decode_vars(); }
         
         /// returns outgoing moos variable (hexadecimal) 
         template<typename Key>
@@ -454,6 +448,43 @@ namespace dccl
     /// outputs information about all available messages (same as std::string summary())
     std::ostream& operator<< (std::ostream& out, const DCCLCodec& d);
 
+
+    class DCCLHeaderEncoder
+    {
+      public:
+        DCCLHeaderEncoder(const std::map<std::string, MessageVal>& in)
+        {
+            std::map<std::string, MessageVal> in_copy = in;
+            msg_.head_encode(encoded_, in_copy);
+            hex_encode(encoded_);
+        }
+        std::string& get() { return encoded_; }
+
+      private:
+        Message msg_;
+        std::string encoded_;        
+    };
+
+    class DCCLHeaderDecoder
+    {
+      public:
+        DCCLHeaderDecoder(const std::string& in_orig)
+        {
+            std::string in = in_orig.substr(0, acomms::NUM_HEADER_NIBS);
+            hex_decode(in);    
+            msg_.head_decode(in, decoded_);
+        }   
+        std::map<std::string, MessageVal>& get() { return decoded_; }
+        MessageVal& operator[] (const std::string& s)
+        { return decoded_[s]; }
+        MessageVal& operator[] (acomms::DCCLHeaderPart p)
+        { return decoded_[acomms::to_str(p)]; }
+
+        
+      private:
+        Message msg_;
+        std::map<std::string, MessageVal> decoded_;
+    };
 
     
 }

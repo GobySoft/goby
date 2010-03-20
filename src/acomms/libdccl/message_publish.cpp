@@ -20,42 +20,39 @@
 #include <boost/foreach.hpp>
 
 #include "message_publish.h"
+#include "message.h"
 
-using acomms_util::NaN;
+using acomms::NaN;
 
-void dccl::Publish::initialize(std::vector<MessageVar>& layout)
+void dccl::Publish::initialize(Message& msg)
 {
-    // add names for any <all/> publishes and empty std::vector for algorithms
+    // add names for any <all/> publishes and empty std::vector fo algorithms
     if(use_all_names_)
     {
-        BOOST_FOREACH(MessageVar& mv, layout)
+        BOOST_FOREACH(boost::shared_ptr<MessageVar> mv, msg.header())
         {
-            add_name(mv.name());
+            // ignore header pieces not explicitly overloaded by the <name> tag
+            if(!mv->name().empty() && !(mv->name()[0] == '_'))
+            {
+                add_name(mv->name());
+                // add an empty std::vector for algorithms (no algorithms allowed for <all/> tag)
+                add_algorithms(std::vector<std::string>());
+            }
+        }
+
+        BOOST_FOREACH(boost::shared_ptr<MessageVar> mv, msg.layout())
+        {
+            add_name(mv->name());
             // add an empty std::vector for algorithms (no algorithms allowed for <all/> tag)
             add_algorithms(std::vector<std::string>());
         }
     }
         
-    // add ids for all publish names
-    BOOST_FOREACH(std::string& name, names_)
+    // check all publish names
+    BOOST_FOREACH(const std::string& name, names_)
     {
-        bool found_id = false;
-
-        size_t k = 0;
-        BOOST_FOREACH(MessageVar& mv, layout)
-        {
-            if(mv.name() == name)
-            {
-                add_id(k);
-                found_id = true;
-                break;
-            }
-            ++k;
-        }
-        if(!found_id)
-        {
+        if(!msg.name_present(name))
             throw std::runtime_error(std::string("DCCL: no such name \"" + name + "\" found in layout for publish value."));
-        }
     }
 
     int format_count = 0;
@@ -65,8 +62,6 @@ void dccl::Publish::initialize(std::vector<MessageVar>& layout)
         std::string format_str;
         for (std::vector<std::string>::size_type j = 0, m = names_.size(); j < m; ++j) 
         {
-            //MessageVar& mv = layout[ids_[j]];
-                
             if (m > 1)
             {
                 if (j)
@@ -85,7 +80,6 @@ void dccl::Publish::initialize(std::vector<MessageVar>& layout)
                     format_str += names_[j] + "=";           
             }
             
-            //DCCLType type = mv.type();
             ++format_count;
             std::stringstream ss;
             ss << "%" << format_count << "%";
@@ -97,15 +91,14 @@ void dccl::Publish::initialize(std::vector<MessageVar>& layout)
 
 
 void dccl::Publish::fill_format(const std::map<std::string,MessageVal>& vals,
-                                const std::vector<MessageVar>& layout,
                                 std::string& key,
                                 std::string& value)
 {
     std::string filled_value;
     // format is a boost library class for replacing printf and its ilk
     boost::format f;
-        
-    // tack on the moos variable with a space separator (no space allowed in moos var
+    
+    // tack on the dest variable with a space separator (no space allowed in dest var
     // so we can use format on that too
     std::string input_format = var_ + " " + format_;
 
@@ -116,35 +109,13 @@ void dccl::Publish::fill_format(const std::map<std::string,MessageVal>& vals,
         // iterate over the message_vars and fill in the format field
         for (std::vector<std::string>::size_type k = 0, o = names_.size(); k < o; ++k)
         {
-            MessageVar mv = layout[ids_[k]];
-            DCCLType type = mv.type();
             MessageVal v = vals.find(names_[k])->second;
-
+            
             std::vector<std::string>::size_type num_algs = algorithms_[k].size();
             for(std::vector<std::string>::size_type l = 0; l < num_algs; ++l)
                 ap_->algorithm(v, algorithms_[k][l], vals);
-
             
-            std::string s;
-            switch(type)
-            {
-                case dccl_int:
-                case dccl_float:
-                    if(!v.get(s))
-                        s = "nan";
-                    break;
-
-                case dccl_hex:
-                case dccl_static:
-                case dccl_enum:
-                case dccl_string:
-                case dccl_bool:
-                    if(!v.get(s))
-                        s = "";
-                    break;
-                    
-            }                
-                
+            std::string s = v;
             f % s;
         }
 
@@ -169,12 +140,11 @@ void dccl::Publish::fill_format(const std::map<std::string,MessageVal>& vals,
     
 
 void dccl::Publish::write_publish(const std::map<std::string,MessageVal>& vals,
-                                  std::vector<MessageVar>& layout,
                                   std::multimap<std::string,MessageVal>& pubsub_vals)
 
 {
     std::string out_var, out_val;
-    fill_format(vals, layout, out_var, out_val);
+    fill_format(vals, out_var, out_val);
     
     // user sets to string
     if(type_ == cpp_string)

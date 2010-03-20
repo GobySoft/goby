@@ -32,8 +32,8 @@
 #include <boost/lexical_cast.hpp>
 
 #include "acomms/xml/xerces_strings.h"
+#include "acomms/xml/tags.h"
 #include "queue_manager.h"
-#include "queue_xml_tags.h"
 
 namespace queue
 {
@@ -43,13 +43,9 @@ namespace queue
     class QueueContentHandler : public xercesc::DefaultHandler {
       public:
       QueueContentHandler(std::vector<QueueConfig>& q)
-          : q_(q),
-            in_message_(false),
-            in_message_var_(false)
-        {
-            initialize_tags(tags_map_);
-        }
-
+          : q_(q)
+        { xml::initialize_tags(tags_map_); }
+        
         void startElement( 
             const XMLCh *const uri,        // namespace URI
             const XMLCh *const localname,  // tagname w/ out NS prefix
@@ -70,13 +66,19 @@ namespace queue
 #endif
     
       private:
+        bool in_message_var()
+        { return xml::in_message_var(parents_); }
+        bool in_header_var()
+        { return xml::in_header_var(parents_); }
+        bool in_publish()
+        { return xml::in_publish(parents_); }
+ 
+      private:
         std::vector<QueueConfig>& q_;
         XercesString current_text;
         
-        bool in_message_; // true = inside <message>
-        bool in_message_var_; // true = in <int>, <bool>, <string>, <float>
-        
-        std::map<std::string, Tags> tags_map_;
+        std::set<xml::Tag> parents_;
+        std::map<std::string, xml::Tag> tags_map_;
     };
 
 // Receives Error notifications.

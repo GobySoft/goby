@@ -50,23 +50,23 @@ int main()
     // initialize output message
     modem::Message msg;
 
-    in_vals["PLUSNET_MESSAGES"] = "MessageType=SENSOR_STATUS,SensorReportType=0,SourcePlatformId=3,DestinationPlatformId=0,Timestamp=1191947446.91117,NodeLatitude=47.7448,NodeLongitude=-122.845,NodeDepth=0.26,NodeCEP=0,NodeHeading=169.06,NodeSpeed=0,MissionState=2,MissionType=2,LastGPSTimestamp=1191947440,PowerLife=6,SensorHealth=0,RecorderState=1,RecorderLife=0,NodeSpecificInfo0=0,NodeSpecificInfo1=0,NodeSpecificInfo2=23,NodeSpecificInfo3=0,NodeSpecificInfo4=3,NodeSpecificInfo5=0";
+    in_vals["PLUSNET_MESSAGES"] = "MessageType=SENSOR_STATUS,SensorReportType=0,SourcePlatformId=1,DestinationPlatformId=3,Timestamp=1191947446.91117,NodeLatitude=47.7448,NodeLongitude=-122.845,NodeDepth=0.26,NodeCEP=0,NodeHeading=169.06,NodeSpeed=0,MissionState=2,MissionType=2,LastGPSTimestamp=1191947440,PowerLife=6,SensorHealth=0,RecorderState=1,RecorderLife=0,NodeSpecificInfo0=0,NodeSpecificInfo1=0,NodeSpecificInfo2=23,NodeSpecificInfo3=0,NodeSpecificInfo4=3,NodeSpecificInfo5=0";
 
     std::cout << "passing values to encoder:" << std::endl  
               << in_vals;
     
     dccl.pubsub_encode("SENSOR_STATUS", msg, in_vals);
     
-    std::cout << "received hexadecimal string: "
-              << msg.data()
+    std::cout << "received dccl::Message: "
+              << msg.serialize()
               << std::endl;
 
     
     std::multimap<std::string, dccl::MessageVal> out_vals;
 
     
-    std::cout << "passed hexadecimal string to decoder: " 
-              << msg.data()
+    std::cout << "passed dccl::Message to decoder: " 
+              << msg.serialize()
               << std::endl;
 
     dccl.pubsub_decode("SENSOR_STATUS", msg, out_vals);

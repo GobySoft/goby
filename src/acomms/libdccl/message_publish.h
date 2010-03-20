@@ -33,6 +33,7 @@
 
 namespace dccl
 {
+    class Message;
     
 // defines (a single) thing to do with the decoded message
 // that is, where do we publish it and what should we include in the
@@ -57,7 +58,6 @@ namespace dccl
     
         void add_name(const std::string& name) {names_.push_back(name);}
         void add_algorithms(const std::vector<std::string> algorithms) {algorithms_.push_back(algorithms);}
-        void add_id(size_t id) {ids_.push_back(id);}
     
         //get
 //    std::string var() const {return var_;}
@@ -73,17 +73,15 @@ namespace dccl
         std::string get_display() const;
 
         void write_publish(const std::map<std::string,MessageVal>& vals,
-                           std::vector<MessageVar>& layout,
                            std::multimap<std::string,MessageVal>& pubsub_vals);
         
         
         
 
-        void initialize(std::vector<MessageVar>& layout);
+        void initialize(Message& msg);
 
       private:
         void fill_format(const std::map<std::string,MessageVal>& vals,
-                         const std::vector<MessageVar>& layout,
                          std::string& key,
                          std::string& value);
             
@@ -95,7 +93,6 @@ namespace dccl
         DCCLCppType type_;
         std::vector<std::string> names_;
         std::vector< std::vector<std::string> > algorithms_;
-        std::vector<size_t> ids_;    
         AlgorithmPerformer* ap_;
     };
 

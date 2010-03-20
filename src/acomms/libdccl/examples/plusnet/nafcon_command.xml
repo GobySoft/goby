@@ -2,13 +2,24 @@
 <message_set>
   <message>
     <name>SENSOR_DEPLOY</name>
-    <id>10</id>
     <destination_var key="DestinationPlatformId">PLUSNET_MESSAGES</destination_var>
     <trigger>publish</trigger>
     <trigger_var mandatory_content="MessageType=SENSOR_DEPLOY">
       PLUSNET_MESSAGES
     </trigger_var>
     <size>32</size>
+    <header>
+      <id>10</id>
+      <time>
+        <name>Timestamp</name>
+      </time>
+      <src_id>
+        <name>SourcePlatformId</name>  
+      </src_id>
+      <dest_id>
+        <name>DestinationPlatformId</name>
+      </dest_id>
+    </header> 
     <layout>
       <static>
         <name>MessageType</name>
@@ -18,21 +29,6 @@
         <name>SensorCommandType</name>
         <value>0</value>
       </static>
-      <int>
-        <name>SourcePlatformId</name>
-        <max>30</max>
-        <min>0</min>
-      </int>
-      <int>
-        <name>DestinationPlatformId</name>
-        <max>30</max>
-        <min>0</min>
-      </int>
-      <int>
-        <name>Timestamp</name>
-        <max>2000000000</max>
-        <min>1000000000</min>
-      </int>
       <float>
         <name>DeployLatitude</name>
         <precision>5</precision>
@@ -110,13 +106,24 @@
   </message>
   <message>
     <name>SENSOR_PROSECUTE</name>
-    <id>11</id>
     <destination_var key="DestinationPlatformId">PLUSNET_MESSAGES</destination_var>
     <trigger>publish</trigger>
     <trigger_var mandatory_content="MessageType=SENSOR_PROSECUTE">
       PLUSNET_MESSAGES
     </trigger_var>
     <size>32</size>
+    <header>
+      <id>11</id>   
+      <time>
+        <name>TargetTimestamp</name>
+      </time>
+      <src_id>
+        <name>SourcePlatformId</name>  
+      </src_id>
+      <dest_id>
+        <name>DestinationPlatformId</name>
+      </dest_id>
+    </header> 
     <layout>
       <static>
         <name>MessageType</name>
@@ -126,21 +133,6 @@
         <name>SensorCommandType</name>
         <min>1</min>
         <max>4</max>
-      </int>
-      <int>
-        <name>SourcePlatformId</name>
-        <max>30</max>
-        <min>0</min>
-      </int>
-      <int>
-        <name>DestinationPlatformId</name>
-        <max>30</max>
-        <min>0</min>
-      </int>
-      <int>
-        <name>TargetTimestamp</name>
-        <max>2000000000</max>
-        <min>1000000000</min>
       </int>
       <int>
         <name>PlatformID</name>

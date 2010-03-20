@@ -14,7 +14,7 @@
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
 
-// queues a single message from the DCCL library
+// queues two messages from the DCCL library
 
 #include "acomms/queue.h"
 #include <iostream>
@@ -32,9 +32,8 @@ int main()
     // create a QueueManager for all our queues
     // and at the same time add our message as a DCCL queue
     queue::QueueManager q_manager(QUEUE_EXAMPLES_DIR "/queue_simple/simple.xml",
-                                  "../../../libdccl/message_schema.xsd");
-
-    // our modem id (arbitrary)
+                                  "../../../libdccl/message_schema.xsd", &std::cerr);
+    
     unsigned our_id = 1;
     q_manager.set_modem_id(our_id);
 
@@ -57,10 +56,18 @@ int main()
     app_layer_message_out.set_dest(dest);
     // typically grab these data from DCCLCodec::encode, but here we'll just enter an example
     // hexadecimal string
-    app_layer_message_out.set_data("2000802500006162636431323334");
+    app_layer_message_out.set_data("2000800000001234");
 
     // push to queue 1 (which is the Simple message <id/>)
     q_manager.push_message(1, app_layer_message_out);
+
+    std::cout << "pushing message to queue 1: " << app_layer_message_out << std::endl;
+    std::cout << "\t" << "data: " <<  app_layer_message_out.data() << std::endl;
+
+    app_layer_message_out.set_dest(acomms::BROADCAST_ID);
+    app_layer_message_out.set_data("2000800000005678");
+    q_manager.push_message(1, app_layer_message_out);
+    
     std::cout << "pushing message to queue 1: " << app_layer_message_out << std::endl;
     std::cout << "\t" << "data: " <<  app_layer_message_out.data() << std::endl;
     
@@ -78,8 +85,12 @@ int main()
     q_manager.provide_outgoing_modem_data(data_request_message, link_layer_message_out);
 
     // we set the incoming message equal to the outgoing message to create the loopback.
-    modem::Message link_layer_message_in = link_layer_message_out;
 
+    std::cout << "link_layer: " << link_layer_message_out.serialize() << std::endl;
+    std::cout << "link_layer: " << tes_util::hex_string2binary_string(link_layer_message_out.data()) << std::endl;
+    
+    
+    modem::Message link_layer_message_in = link_layer_message_out;
     
     // 
     //  4. Pass the received message to the QueueManager 
@@ -91,7 +102,7 @@ int main()
 }
 
 //
-//  5. Do something with the received message  
+//  5. Do something with the received messages  
 //
 void received_data(queue::QueueKey key, const modem::Message& app_layer_message_in)
 {

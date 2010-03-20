@@ -5,6 +5,10 @@
     <size>32</size>
     <id>4</id>
     <layout>
+      <static>
+        <name>Stat</name>
+        <value>hi</value>
+      </static>
       <bool algorithm="invert">
         <name>B</name>
       </bool>
@@ -23,6 +27,12 @@
         <max>100</max>
         <min>-50</min>	  
       </int>
+      <float>
+        <name>my_NAN</name>
+        <max>100</max>
+        <min>-50</min>	  
+        <precision>0</precision>
+      </float>
       <float algorithm="*2">
         <name>F</name>
         <max>100</max>

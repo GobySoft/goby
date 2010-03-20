@@ -88,7 +88,7 @@ void micromodem::MMDriver::initiate_transmission(const modem::Message& m)
     nmea.push_back(m.dest()); // ADR2
     nmea.push_back(m.rate()); // Packet Type (transmission rate)
     nmea.push_back(m.ack()); // ACK: deprecated field, this bit may be used for something that's not related to the ack
-    nmea.push_back(acomms_util::PACKET_FRAME_COUNT[m.rate()]); // number of frames we want
+    nmea.push_back(PACKET_FRAME_COUNT[m.rate()]); // number of frames we want
     validate_and_write(nmea);
 }
 

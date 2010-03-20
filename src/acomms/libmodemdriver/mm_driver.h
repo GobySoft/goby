@@ -46,10 +46,12 @@ namespace micromodem
 
     // allowed time skew between our clock and the %modem clock
     const unsigned ALLOWED_SKEW = 1;
-
     
     const std::string SERIAL_DELIMITER = "\r\n";
     
+    // number of frames for a given packet type
+    const unsigned PACKET_FRAME_COUNT [] = { 1, 3, 3, 2, 2, 8 };
+
     /// provides an API to the WHOI Micro-Modem driver
     class MMDriver : public modem::DriverBase
     {

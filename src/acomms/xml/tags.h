@@ -17,16 +17,16 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef MessageXMLTags20091211H
-#define MessageXMLTags20091211H
+#ifndef XMLTags20091211H
+#define XMLTags20091211H
 
 #include "acomms/xml/xerces_strings.h"
 
 #include <boost/assign.hpp>
 
-namespace dccl
+namespace xml
 {    
-    enum Tags { tag_not_defined,
+    enum Tag { tag_not_defined,
                 tag_all,
                 tag_bool,
                 tag_delta_encode,
@@ -64,11 +64,19 @@ namespace dccl
                 tag_time,
                 tag_src_id,
                 tag_dest_id,
-                tag_destination_var
+                tag_destination_var,
+                tag_ack,
+                tag_blackout_time,
+                tag_max_queue,
+                tag_newest_first,
+                tag_priority_base,
+                tag_priority_time_const,
+                tag_ttl,
+                tag_value_base
     };
 
     
-    static void initialize_tags(std::map<std::string, Tags>& tags_map)
+    static void initialize_tags(std::map<std::string, Tag>& tags_map)
     {
         boost::assign::insert(tags_map)
             ("all",tag_all)
@@ -110,8 +118,39 @@ namespace dccl
             ("src_id",tag_src_id)
             ("dest_id",tag_dest_id)
             ("destination_var",tag_destination_var)
-            ("destination_moos_var",tag_destination_var);
+            ("destination_moos_var",tag_destination_var)
+            ("ack",tag_ack)
+            ("blackout_time",tag_blackout_time)
+            ("max_queue",tag_max_queue)
+            ("newest_first",tag_newest_first)
+            ("priority_base",tag_priority_base)
+            ("priority_time_const",tag_priority_time_const)
+            ("ttl",tag_ttl)
+            ("value_base",tag_value_base);
+
     }
+    
+    inline bool in_message_var(std::set<Tag>& parents)
+    {
+        if(parents.count(tag_hex)) return true;
+        else if(parents.count(tag_int)) return true;
+        else if(parents.count(tag_string)) return true;
+        else if(parents.count(tag_float)) return true;
+        else if(parents.count(tag_bool)) return true;
+        else if(parents.count(tag_static)) return true;
+        else if(parents.count(tag_enum)) return true;
+        else return false;
+    }
+    inline bool in_header_var(std::set<Tag>& parents)
+    {
+        if(parents.count(tag_time)) return true;
+        else if(parents.count(tag_src_id)) return true;
+        else if(parents.count(tag_dest_id)) return true;
+        else return false;
+    }
+    
+    inline bool in_publish(std::set<Tag>& parents)
+    { return parents.count(tag_publish); }
 }
 
 

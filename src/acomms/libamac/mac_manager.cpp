@@ -80,7 +80,7 @@ void amac::MACManager::startup()
             if(os_) *os_ << group("mac")
                          << "Using the Slotted TDMA MAC scheme with autodiscovery"
                          << std::endl;
-            blank_it_ = add_slot(amac::Slot(acomms_util::BROADCAST_ID,
+            blank_it_ = add_slot(amac::Slot(acomms::BROADCAST_ID,
                                            amac::Slot::query_destination,
                                            rate_,
                                            amac::Slot::slot_data,
@@ -127,7 +127,8 @@ void amac::MACManager::send_poll(const asio::error_code& e)
     unsigned id = s.src();
     
     bool send_poll = true;
-    int destination = (s.dest() == Slot::query_destination) ? callback_dest(acomms_util::PACKET_SIZE[rate_]) : s.dest();
+    int destination = (s.dest() == Slot::query_destination)
+        ? callback_dest(acomms::PACKET_SIZE[rate_]) : s.dest();
     
     switch(type_)
     {

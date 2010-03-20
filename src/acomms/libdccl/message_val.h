@@ -105,11 +105,14 @@ namespace dccl
         operator std::string() const;
         operator long() const;
         operator int() const;
+        operator unsigned() const;
         
         /// what type is the original type of this MessageVal?
         DCCLCppType type() const { return type_; }        
         //@}
 
+        bool empty() const { return type_ == cpp_notype; }        
+        
         bool operator==(const std::string& s);
         bool operator==(double d);
         bool operator==(long l);
@@ -129,19 +132,7 @@ namespace dccl
         DCCLCppType type_;
     };
 
-    inline std::ostream& operator<<(std::ostream& os, const dccl::MessageVal& mv)
-    {
-        switch(mv.type_)
-        {
-            case cpp_string: return os << "std::string: " << mv.sval_;
-            case cpp_double: return os << "double: " << mv.dval_;
-            case cpp_long:   return os << "long: " << mv.lval_;                
-            case cpp_bool:   return os << "bool: " << mv.bval_;
-            default:         return os;
-        }
-    }
-
-    
+    std::ostream& operator<<(std::ostream& os, const dccl::MessageVal& mv);
 }
 
 

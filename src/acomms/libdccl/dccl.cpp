@@ -272,7 +272,8 @@ void dccl::DCCLCodec::encode_private(std::vector<Message>::iterator it,
 {
     // 1. encode parts
     std::string body, head;
-    it->encode(body, head, in);
+    it->head_encode(head, in);
+    it->body_encode(body, in);
     
     // 2. encrypt
     if(!crypto_key_.empty()) encrypt(body, head);
@@ -298,14 +299,18 @@ void dccl::DCCLCodec::decode_private(std::vector<Message>::iterator it,
     in.resize(in.find_last_not_of(char(0))+1);
     
     // 3. split body and header
-    std::string body = in.substr(acomms_util::NUM_HEADER_BYTES);
-    std::string head = in.substr(0, acomms_util::NUM_HEADER_BYTES);
+    std::string body = in.substr(acomms::NUM_HEADER_BYTES);
+    std::string head = in.substr(0, acomms::NUM_HEADER_BYTES);
     
     // 2. decrypt
     if(!crypto_key_.empty()) decrypt(body, head);
 
+
+    
     // 1. decode parts
-    it->decode(body, head, out);
+    it->head_decode(head, out);
+    it->body_decode(body, out);
+
 }
         
 void dccl::DCCLCodec::encode_private(std::vector<Message>::iterator it,
@@ -314,7 +319,18 @@ void dccl::DCCLCodec::encode_private(std::vector<Message>::iterator it,
 {
     std::string out;
     encode_private(it, out, in);
+
+    dccl::DCCLHeaderDecoder head_dec(out);
+
     out_msg.set_data(out);
+    
+    MessageVal& t = head_dec[acomms::head_time];
+    MessageVal& src = head_dec[acomms::head_src_id];
+    MessageVal& dest = head_dec[acomms::head_dest_id];
+
+    out_msg.set_t(long(t));
+    out_msg.set_src(long(src));
+    out_msg.set_dest(long(dest));
 }
 
 void dccl::DCCLCodec::decode_private(std::vector<Message>::iterator it,
@@ -365,6 +381,5 @@ void dccl::DCCLCodec::decrypt(std::string& s, const std::string& nonce)
     StreamTransformationFilter out(decryptor, new StringSink(recovered));
     out.Put((byte*)s.c_str(), s.size());
     out.MessageEnd();
-    
     s = recovered;
 }

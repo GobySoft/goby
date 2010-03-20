@@ -14,8 +14,8 @@
     <layout>
       <string>
         <name>s_key</name>
-        <max_length>30</max_length>
-      </string>      
+        <max_length>24</max_length>
+      </string>
     </layout>
     <!-- end used by libdccl -->
   </message>

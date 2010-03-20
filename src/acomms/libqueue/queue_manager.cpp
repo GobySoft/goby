@@ -18,6 +18,7 @@
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <map>
+#include <deque>
 
 #include <boost/foreach.hpp>
 
@@ -92,10 +93,10 @@ void queue::QueueManager::add_queue(const QueueConfig& cfg)
         ss << "Queue: duplicate key specified for key: " << k;
         throw std::runtime_error(ss.str());
     }
-    else if(q.cfg().id() > acomms_util::MAX_ID && q.cfg().type() != queue_ccl)
+    else if(q.cfg().id() > MAX_ID && q.cfg().type() != queue_ccl)
     {
         std::stringstream ss;
-        ss << "Queue: key (" << k << ") is too large for use with libqueue. Use a id smaller than " << acomms_util::MAX_ID;
+        ss << "Queue: key (" << k << ") is too large for use with libqueue. Use a id smaller than " << MAX_ID;
         throw std::runtime_error(ss.str());
     }
     else
@@ -193,62 +194,58 @@ std::ostream& queue::operator<< (std::ostream& out, const QueueManager& d)
     return out;
 }
 
-// combine a number of user frames into one modem frame
-// in_frames[0] is on the LSBs of the message
-//
-// message layout
-// [ccl identifier (1 byte)][multimessage flag set to 0 (1 bit)][broadcast flag (true / false) (1 bit)][dccl message id (6 bits)][message hex (30, 62 or 254 bytes)]
-// [ccl identifier (1 byte)][multimessage flag set to 1 (1 bit)][broadcast flag (true / false) (1 bit)][dccl message id (6 bits)][user-frame counter (8 bits)][message hex for first user frame] ... [multimessage flag set to 0 (1 bit)][broadcast flag (true / false) (1 bit)][dccl message id (6 bits)][message hex for last user-frame]
-//
-// ccl identifier - we use 0x20
-// multimessage flag - 0 means last user-frame within message, 1 means more user-frames follow within this modem frame
-// broadcast flag - 0 means message is NOT broadcast (respect the destination in the message meta-data). 1 means the message is broadcast (decode regardless of who you are)
-// user frame counter - if type flag is 1, the byte indicates the size of the following data (in bytes).
-// message moos variable id - user set value 0-63 that allows mapping of moos variable names from the receive and send ends
-// message hex - the message body
-modem::Message queue::QueueManager::stitch(const std::vector<modem::Message>& in)
+modem::Message queue::QueueManager::stitch(std::deque<modem::Message>& in)
 {
-    modem::Message out = in.at(0);
+    modem::Message out;
     out.set_dest(packet_dest_);
-    out.set_ack(packet_ack_);
-
-    std::string data = out.data();
-    unsigned i = 0;
-    BOOST_FOREACH(const modem::Message& message, in)
-    {
-        if(out.empty()) throw (std::runtime_error("empty message passed to stitch"));
-        
-        if(i)
-        {
-            // chunk off the first byte of the last frame
-            data.erase(0, acomms_util::NIBS_IN_BYTE);
-
-            data = message.data() + data;
-            std::string frame_size;
-            tes_util::number2hex_string(frame_size, message.size()-acomms_util::NUM_HEADER_BYTES);
-            data.insert(2*acomms_util::NIBS_IN_BYTE, frame_size);    
-        }        
-        
-        unsigned second_byte;
-        tes_util::hex_string2number(data.substr(1*acomms_util::NIBS_IN_BYTE, acomms_util::NIBS_IN_BYTE), second_byte);
-
-        // 10000000 if not the first (i = 0) frame
-        unsigned multimessage_mask = i ? acomms_util::MULTIMESSAGE_MASK : 0;
-
-        // 01000000 if destination is broadcast
-        unsigned broadcast_mask = (message.dest() == acomms_util::BROADCAST_ID) ? acomms_util::BROADCAST_MASK : 0;
-        
-        second_byte |= multimessage_mask | broadcast_mask;
-        std::string new_second_byte;
-        tes_util::number2hex_string(new_second_byte, second_byte);
-        
-        data.replace(1*acomms_util::NIBS_IN_BYTE, acomms_util::NIBS_IN_BYTE, new_second_byte);        
-        ++i;
-    }
-
-    out.set_data(data);    
+    out.set_ack(packet_ack_);    
+    stitch_recursive(out.data_ref(), in); // returns stitched together version
+    
     return out;
 }
+
+bool queue::QueueManager::stitch_recursive(std::string& data, std::deque<modem::Message>& in)
+{
+    modem::Message& message = in.front();
+    bool is_last_user_frame = (in.size() == 1);
+    
+    if(message.empty())
+        throw (std::runtime_error("empty message passed to stitch"));        
+    
+    dccl::DCCLHeaderDecoder head_decoder(message.data());
+
+    // don't put the multimessage flag on the last user-frame
+    head_decoder[acomms::head_multimessage_flag] =
+        (!is_last_user_frame) ? true : false;
+    head_decoder[acomms::head_broadcast_flag] =
+        (message.dest() == acomms::BROADCAST_ID) ? true : false;
+    
+    std::string& new_data = message.data_ref();
+
+    if(!is_last_user_frame)
+    {
+        std::string frame_size =
+            tes_util::number2hex_string(message.size()-acomms::NUM_HEADER_BYTES);
+        new_data.insert(acomms::NUM_HEADER_NIBS, frame_size);
+    }
+    
+    dccl::DCCLHeaderEncoder head_encoder(head_decoder.get());
+    new_data.replace(0, head_encoder.get().size(), head_encoder.get());
+
+    //remove ccl_id
+    data += new_data.substr(1*acomms::NIBS_IN_BYTE);
+
+    in.pop_front();
+
+    if(is_last_user_frame)
+    {
+        data.insert(0, tes_util::number2hex_string(acomms::DCCL_CCL_HEADER));
+        return true;
+    }
+    else
+        return stitch_recursive(data, in);
+}
+    
 
 void queue::QueueManager::clear_packet()
 {
@@ -301,14 +298,14 @@ bool queue::QueueManager::provide_outgoing_modem_data(const modem::Message& mess
     }    
 
     // keep filling up the frame with messages until we have nothing small enough to fit...
-    std::vector<modem::Message> user_frames;
+    std::deque<modem::Message> user_frames;
     while(winning_var)
     {
         modem::Message next_message = winning_var->give_data(modified_message_in.frame());
         user_frames.push_back(next_message);
 
         // if a destination has been set or ack been set, do not unset these
-        if (packet_dest_ == acomms_util::BROADCAST_ID) packet_dest_ = next_message.dest();
+        if (packet_dest_ == acomms::BROADCAST_ID) packet_dest_ = next_message.dest();
         if (packet_ack_ == false) packet_ack_ = next_message.ack();
         
         if(os_) *os_<< group("q_out") << "sending data to firmware from: "
@@ -327,7 +324,7 @@ bool queue::QueueManager::provide_outgoing_modem_data(const modem::Message& mess
 
         // if there's no room for more, don't bother looking
         // also end if the message you have is a CCL message
-        if(modified_message_in.size() > acomms_util::NUM_HEADER_BYTES && winning_var->cfg().type() != queue_ccl)
+        if(modified_message_in.size() > acomms::NUM_HEADER_BYTES && winning_var->cfg().type() != queue_ccl)
             winning_var = find_next_sender(modified_message_in);
         else
             break;
@@ -356,7 +353,7 @@ queue::Queue* queue::QueueManager::find_next_sender(modem::Message& message)
         
         // encode on demand
         if(oq.on_demand() &&
-           (!oq.size() || oq.newest_msg_time() + acomms_util::ON_DEMAND_SKEW < time(NULL))
+           (!oq.size() || oq.newest_msg_time() + ON_DEMAND_SKEW < time(NULL))
             )
         {
             if(callback_ondemand)
@@ -453,81 +450,90 @@ void queue::QueueManager::handle_modem_ack(const modem::Message& message)
 // in a "receive = " line of the configuration file
 void queue::QueueManager::receive_incoming_modem_data(const modem::Message& message)
 {
-    modem::Message modified_message = message;
-    
     if(os_) *os_<< group("q_in") << "received message"
-                << ": " << modified_message.snip() << std::endl;
-   
-    std::string data = modified_message.data();
-   
-    if(data.size() <= 4)
+                << ": " << message.snip() << std::endl;
+
+    std::string data = message.data();
+    if(data.size() <= acomms::NUM_HEADER_NIBS)
         return;
+    
+    dccl::DCCLHeaderDecoder head_decoder(data);
+    int ccl_id = head_decoder[acomms::head_ccl_id];
 
-    std::string header_byte_hex = data.substr(0, acomms_util::NIBS_IN_BYTE);
     // check for queue_dccl type
-    if(header_byte_hex == acomms_util::DCCL_CCL_HEADER_STR)
+    if(ccl_id == acomms::DCCL_CCL_HEADER)
     {
-        unsigned original_dest = modified_message.dest();
-
-        // grab the second byte, which contains multimessage flag, broadcast flag, message id
-        // xxxxxxxx
-        // x - multimessage flag (1 = more message to come, 0 = last user frame in message)
-        //  x - broadcast flag (1 = use broadcast as destination, 0 = use message destination)
-        //   xxxxxx - 6 bit message id (0-63)
-        unsigned second_byte;
-        tes_util::hex_string2number(data.substr(1*acomms_util::NIBS_IN_BYTE, acomms_util::NIBS_IN_BYTE), second_byte);
-        
-        // test multimessage bit
-        while(second_byte & acomms_util::MULTIMESSAGE_MASK)
-        {
-            // extract frame_size
-            unsigned frame_size;
-            tes_util::hex_string2number(data.substr(2*acomms_util::NIBS_IN_BYTE, acomms_util::NIBS_IN_BYTE), frame_size);
-            // erase the frame size byte
-            data.erase(2*acomms_util::NIBS_IN_BYTE, acomms_util::NIBS_IN_BYTE);
-
-            // extract the data for this user-frame
-            modified_message.set_data(data.substr(0, (frame_size + acomms_util::NUM_HEADER_BYTES)*acomms_util::NIBS_IN_BYTE));
-            // erase the data for this user frame, leaving the CCL header intact
-            data.erase(1*acomms_util::NIBS_IN_BYTE, (frame_size+1)*acomms_util::NIBS_IN_BYTE);
-
-            // overwrite destination as BROADCAST if broadcast bit is set
-            modified_message.set_dest((second_byte & acomms_util::BROADCAST_MASK) ? acomms_util::BROADCAST_ID : original_dest);
-            
-            publish_incoming_piece(modified_message, second_byte & acomms_util::VAR_ID_MASK);
-
-            // pull the new second byte
-            tes_util::hex_string2number(data.substr(1*acomms_util::NIBS_IN_BYTE, acomms_util::NIBS_IN_BYTE), second_byte);
-        }
-        // get the last part
-        modified_message.set_data(data);
-        modified_message.set_dest((second_byte & acomms_util::BROADCAST_MASK) ? acomms_util::BROADCAST_ID : original_dest);
-        publish_incoming_piece(modified_message, second_byte & acomms_util::VAR_ID_MASK);
+        modem::Message mod_message = message;
+        unstitch_recursive(data, mod_message);
     }
     // check for ccl type
     else
     {
-        std::string ccl_header = data.substr(0, acomms_util::NIBS_IN_BYTE);
-        unsigned ccl_id;
-        tes_util::hex_string2number(ccl_header, ccl_id);
-
         QueueKey key(queue_ccl, ccl_id);
         std::map<QueueKey, Queue>::iterator it = queues_.find(key);
-            
+        
         if (it != queues_.end())
         {
-            if(callback_receive_ccl) callback_receive_ccl(key, modified_message);
+            if(callback_receive_ccl) callback_receive_ccl(key, message);
         }
         else
         {
-            if(os_) *os_<< group("q_in") << warn
-                        << "incoming data string is not for us (first byte is not 0x"
-                        << acomms_util::DCCL_CCL_HEADER_STR 
-                        << " and not one of the alternative CCL types)." << std::endl;
+            if(os_) *os_<< group("q_in") << warn << "incoming data string is not for us (not DCCL or known CCL)." << std::endl;
         }
     }
 }
 
+bool queue::QueueManager::unstitch_recursive(std::string& data, modem::Message& message)
+{
+    unsigned original_dest = message.dest();
+    dccl::DCCLHeaderDecoder head_decoder(data);
+    bool multimessage_flag = head_decoder[acomms::head_multimessage_flag];
+    bool broadcast_flag = head_decoder[acomms::head_broadcast_flag];
+    unsigned dccl_id = head_decoder[acomms::head_dccl_id];
+        
+    // test multimessage bit
+    if(multimessage_flag)
+    {
+        // extract frame_size
+        unsigned frame_size;
+        tes_util::hex_string2number(data.substr(acomms::NUM_HEADER_NIBS, acomms::NIBS_IN_BYTE), frame_size);
+
+        std::cout << "frame size: " << frame_size << std::endl;
+        std::cout << "data: " << data << std::endl;
+        
+        // erase the frame size byte
+        data.erase(acomms::NUM_HEADER_NIBS, acomms::NIBS_IN_BYTE);
+        
+        std::cout << "data - erasure of frame size: " << data << std::endl;
+        
+        // extract the data for this user-frame
+        message.set_data(data.substr(0, (frame_size + acomms::NUM_HEADER_BYTES)*acomms::NIBS_IN_BYTE));
+
+        data.erase(1*acomms::NIBS_IN_BYTE, (frame_size + acomms::NUM_HEADER_BYTES-1)*acomms::NIBS_IN_BYTE);
+    }
+    else
+    {
+        message.set_data(data);
+    }
+    
+    // reset these flags
+    head_decoder[acomms::head_multimessage_flag] = false;
+    head_decoder[acomms::head_broadcast_flag] = false;
+    
+    dccl::DCCLHeaderEncoder head_encoder(head_decoder.get());
+    message.data_ref().replace(0, acomms::NUM_HEADER_NIBS,head_encoder.get());
+    // overwrite destination as BROADCAST if broadcast bit is set
+    message.set_dest(broadcast_flag ? acomms::BROADCAST_ID : original_dest);
+    publish_incoming_piece(message, dccl_id);        
+
+    // put the destination back
+    message.set_dest(original_dest);
+    
+    if(!multimessage_flag)
+        return true;    
+    else    
+        return unstitch_recursive(data, message);
+}
 
 bool queue::QueueManager::publish_incoming_piece(modem::Message message, const unsigned incoming_var_id)
 {
@@ -539,30 +545,16 @@ bool queue::QueueManager::publish_incoming_piece(modem::Message message, const u
     }
 
     QueueKey dccl_key(queue_dccl, incoming_var_id);
-    QueueKey data_key(queue_data, incoming_var_id);
     std::map<QueueKey, Queue>::iterator it_dccl = queues_.find(dccl_key);
-    std::map<QueueKey, Queue>::iterator it_data = queues_.find(data_key);
     
-    if(it_dccl == queues_.end() && it_data == queues_.end())
+    if(it_dccl == queues_.end())
     {
         if(os_) *os_<< group("q_in") << warn << "no mapping for this variable ID: "
                     << incoming_var_id << std::endl;
         return false;
     }
-    
-    if(it_data != queues_.end())
-    {
-        message.remove_header();
-        if(callback_receive) callback_receive(data_key, message);    
-    }
-    else
-    {
-        // restore the second byte
-        std::string new_second_byte;
-        tes_util::number2hex_string(new_second_byte, incoming_var_id);
-        message.replace_in_data(1*acomms_util::NIBS_IN_BYTE, acomms_util::NIBS_IN_BYTE, new_second_byte);
-        if(callback_receive) callback_receive(dccl_key, message);    
-    }
+
+    if(callback_receive) callback_receive(dccl_key, message);    
 
     return true;
 }

@@ -29,6 +29,8 @@
 #include "queue_key.h"
 #include "queue.h"
 
+#include "acomms/dccl.h"
+
 /// \brief contains the message priority queuing objects.
 ///
 /// Use \code #include <goby/acomms/queue.h> \endcode to gain access to all these objects.
@@ -297,8 +299,11 @@ namespace queue
         Queue* find_next_sender(modem::Message& message);
         
         // combine multiple "user" frames into a single "modem" frame
-        modem::Message stitch(const std::vector<modem::Message>& in_frames);
+        modem::Message stitch(std::deque<modem::Message>& in_frames);
+        bool stitch_recursive(std::string& data, std::deque<modem::Message>& in);
+        bool unstitch_recursive(std::string& data, modem::Message& message);
         
+       
         // clears the destination and ack values for the packet to reset for next $CADRQ
         void clear_packet();
 
@@ -307,7 +312,6 @@ namespace queue
         
       private:
         MsgFunc1 callback_ack;
-                
         MsgFunc1 callback_receive;
         MsgFunc1 callback_receive_ccl;        
         MsgFunc2 callback_ondemand;

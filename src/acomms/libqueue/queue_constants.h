@@ -18,7 +18,7 @@
 #ifndef QueueConstants20091205H
 #define QueueConstants20091205H
 
-namespace acomms_util
+namespace queue
 {
     // largest allowed id 
     const unsigned MAX_ID = 63;

@@ -20,8 +20,8 @@
 #include "message_xml_callbacks.h"
 
 using namespace xercesc;
+using namespace xml;
 
-    
 // this is called when the parser encounters the start tag, e.g. <message>
 void dccl::MessageContentHandler::startElement( 
     const XMLCh *const uri,        // namespace URI
@@ -36,24 +36,24 @@ void dccl::MessageContentHandler::startElement(
     static XercesString mandatory_content = fromNative("mandatory_content");
     static XercesString key = fromNative("key");
     static XercesString stype = fromNative("type");
+
+    Tag current_tag = tags_map_[toNative(localname)];
+    parents_.insert(current_tag);
     
-    switch(tags_map_[toNative(localname)])
+    switch(current_tag)
     {
         default:
             break;
 
         case tag_message:
             // start new message
-            in_message = true;
             messages.push_back(Message());
             break;
 
         case tag_layout:
-            in_layout = true;
             break;
 
         case tag_publish:
-            in_publish = true;
             messages.back().add_publish();
             break;
 
@@ -64,9 +64,7 @@ void dccl::MessageContentHandler::startElement(
         case tag_bool:
         case tag_static:
         case tag_enum:
-            in_message_var = true;
             messages.back().add_message_var(toNative(localname));
-            type = localname;
             if((val = attrs.getValue(algorithm.c_str())) != 0)
                 messages.back().last_message_var().set_algorithms(tes_util::explode(toNative(val),',',true));
             break;
@@ -84,17 +82,15 @@ void dccl::MessageContentHandler::startElement(
             messages.back().last_publish().set_use_all_names(true);
             break;
 
-        case tag_destination_var:
-            if((val = attrs.getValue(key.c_str())) != 0)
-                messages.back().set_dest_key(toNative(val));
-            break;
-
+            
         case tag_src_var:
         case tag_publish_var:
         case tag_moos_var:
-            if(in_message_var && !in_publish && ((val = attrs.getValue(key.c_str())) != 0))
+            if(in_message_var() && ((val = attrs.getValue(key.c_str())) != 0))
                 messages.back().last_message_var().set_source_key(toNative(val));
-            else if(in_publish && ((val = attrs.getValue(stype.c_str())) != 0))
+            else if(in_header_var()  && ((val = attrs.getValue(key.c_str())) != 0))
+                messages.back().header_var(curr_head_piece_).set_source_key(toNative(val));
+            else if(in_publish() && ((val = attrs.getValue(stype.c_str())) != 0))
             {
                 if(toNative(val) == "double")
                     messages.back().last_publish().set_type(cpp_double);
@@ -108,7 +104,7 @@ void dccl::MessageContentHandler::startElement(
             break;
 
         case tag_message_var:
-            if(in_publish)
+            if(in_publish())
             {
                 if((val = attrs.getValue(algorithm.c_str())) != 0)
                     messages.back().last_publish().add_algorithms(tes_util::explode(toNative(val),',',true));
@@ -116,6 +112,30 @@ void dccl::MessageContentHandler::startElement(
                     messages.back().last_publish().add_algorithms(std::vector<std::string>());
             }
             break;
+
+        case tag_time:
+            curr_head_piece_ = acomms::head_time;
+            if((val = attrs.getValue(algorithm.c_str())) != 0)
+                messages.back().header_var(curr_head_piece_).set_algorithms(tes_util::explode(toNative(val),',',true));
+            break;
+
+        case tag_src_id:
+            curr_head_piece_ = acomms::head_src_id;
+            if((val = attrs.getValue(algorithm.c_str())) != 0)
+                messages.back().header_var(curr_head_piece_).set_algorithms(tes_util::explode(toNative(val),',',true));
+            break;
+
+        case tag_dest_id:
+            curr_head_piece_ = acomms::head_dest_id;
+            if((val = attrs.getValue(algorithm.c_str())) != 0)
+                messages.back().header_var(curr_head_piece_).set_algorithms(tes_util::explode(toNative(val),',',true));
+            break;
+
+            // legacy
+        case tag_destination_var:
+            if((val = attrs.getValue(key.c_str())) != 0)
+                messages.back().header_var(acomms::head_dest_id).set_name(toNative(val));
+            break;            
     }
 
     current_text.clear(); // starting a new tag, clear any old CDATA
@@ -128,24 +148,20 @@ void dccl::MessageContentHandler::endElement(
 {        
     std::string trimmed_data = boost::trim_copy(toNative(current_text));
 
-    switch(tags_map_[toNative(localname)])
+    Tag current_tag = tags_map_[toNative(localname)];
+    parents_.erase(current_tag);
+    
+    switch(current_tag)
     {
         case tag_message:
             messages.back().preprocess(); // do any message tasks that require all data
-            in_message = false;
             break;
             
         case tag_layout:
-            in_layout = false;
             break;
                 
         case tag_publish:
-            in_publish = false;
             break;                
-
-        case tag_destination_var:
-            messages.back().set_dest_var(trimmed_data);
-            break;
 
         case tag_hex:
         case tag_int:
@@ -154,8 +170,6 @@ void dccl::MessageContentHandler::endElement(
         case tag_float:
         case tag_static:
         case tag_string:
-            in_message_var = false;        
-            type.clear();
             break;
 
         case tag_expected_delta:
@@ -177,8 +191,10 @@ void dccl::MessageContentHandler::endElement(
         case tag_max_length:
             messages.back().last_message_var().set_max_length(trimmed_data);
             break;
-            
 
+        case tag_num_bytes:
+            messages.back().last_message_var().set_num_bytes(trimmed_data);
+            break;
             
         case tag_max:
             messages.back().last_message_var().set_max(trimmed_data);
@@ -192,20 +208,30 @@ void dccl::MessageContentHandler::endElement(
             messages.back().last_message_var().set_min(trimmed_data);
             break;
             
-        case tag_src_var:            
+        case tag_src_var:
         case tag_publish_var:
         case tag_moos_var:
-            if(in_message_var)
+            if(in_message_var())
                 messages.back().last_message_var().set_source_var(trimmed_data);
-            else if(in_publish)
+            else if(in_header_var())
+                messages.back().header_var(curr_head_piece_).set_source_var(trimmed_data);
+            else if(in_publish())
                 messages.back().last_publish().set_var(trimmed_data);
             break;
+
+            // legacy
+        case tag_destination_var:
+            messages.back().header_var(acomms::head_dest_id).set_source_var(trimmed_data);
+            break;
+            
             
         case tag_name:
-            if(in_message && !in_message_var && !in_publish)
+            if(!in_message_var() && !in_header_var())
                 messages.back().set_name(trimmed_data);
-            else if(in_message_var && !in_publish)
+            else if(in_message_var())
                 messages.back().last_message_var().set_name(trimmed_data);
+            else if(in_header_var())
+                messages.back().header_var(curr_head_piece_).set_name(trimmed_data);
             break;
             
             
@@ -235,9 +261,9 @@ void dccl::MessageContentHandler::endElement(
             break;
             
         case tag_value:
-            if(tags_map_[toNative(type)] == tag_static)
+            if(parents_.count(tag_static))
                 messages.back().last_message_var().set_static_val(trimmed_data);
-            else if(tags_map_[toNative(type)] == tag_enum)
+            else if(parents_.count(tag_enum))
                 messages.back().last_message_var().add_enum(trimmed_data);
             break;
 

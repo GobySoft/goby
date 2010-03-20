@@ -29,11 +29,21 @@
 #include <map>
 
 #include <boost/foreach.hpp>
+#include <boost/shared_ptr.hpp>
 
 #include "util/tes_utils.h"
 #include "acomms/modem_message.h"
 
 #include "message_var.h"
+#include "message_var_int.h"
+#include "message_var_float.h"
+#include "message_var_static.h"
+#include "message_var_hex.h"
+#include "message_var_bool.h"
+#include "message_var_string.h"
+#include "message_var_enum.h"
+#include "message_var_head.h"
+
 #include "message_publish.h"
 #include "dccl_constants.h"
 
@@ -45,7 +55,7 @@ namespace dccl
     {
       public:
         Message();
-
+        
         // set
         void set_name(const std::string& name) {name_ = name;}
 
@@ -74,12 +84,6 @@ namespace dccl
         void set_out_var(const std::string& out_var)
         { out_var_ = out_var; }
 
-        void set_dest_var(const std::string& dest_var)
-        { dest_var_ = dest_var; }
-
-        void set_dest_key(const std::string& dest_key)
-        { dest_key_ = dest_key; }
-    
         void set_size(unsigned size)
         { size_ = size; }
 
@@ -102,22 +106,21 @@ namespace dccl
         std::string trigger_type() const      { return trigger_type_; }
         std::string in_var() const            { return in_var_; }
         std::string out_var() const           { return out_var_; }
-        std::string dest_var() const          { return dest_var_; }
-        std::string dest_key() const          { return dest_key_; }
 
-        MessageVar& last_message_var()        { return layout_.back(); }
+        MessageVar& last_message_var()        { return *layout_.back(); }
+        MessageVar& header_var(acomms::DCCLHeaderPart p) { return *header_[p]; }
         Publish& last_publish()               { return publishes_.back(); }        
         
-        std::vector<MessageVar>& layout()     { return layout_; }
-        std::vector<Publish>& publishes()     { return publishes_; }
+        std::vector< boost::shared_ptr<MessageVar> >& layout()     { return layout_; }
+        std::vector< boost::shared_ptr<MessageVar> >& header()     { return header_; }
+        std::vector<Publish>& publishes()                      { return publishes_; }
 
-        std::set<std::string> encode_vars();
-        std::set<std::string> decode_vars();
-        std::set<std::string> src_vars();
-        std::set<std::string> all_vars();
+        std::set<std::string> get_pubsub_encode_vars();
+        std::set<std::string> get_pubsub_decode_vars();
+        std::set<std::string> get_pubsub_src_vars();
+        std::set<std::string> get_pubsub_all_vars();
 
-        //visual display of required inputs
-        std::string input_summary();        
+        bool name_present(const std::string& name);
         
         //other
         std::string get_display() const;
@@ -125,13 +128,12 @@ namespace dccl
         std::map<std::string, std::string> message_var_names() const;
         void preprocess();
             
-        void encode(std::string& body,
-                    std::string& head,
-                    std::map<std::string, MessageVal>& in);
 
-        void decode(std::string& body,
-                    std::string& head,
-                    std::map<std::string, MessageVal>& out);
+        void head_encode(std::string& head, std::map<std::string, MessageVal>& in);
+        void head_decode(const std::string& head, std::map<std::string, MessageVal>& out);
+        
+        void body_encode(std::string& body, std::map<std::string, MessageVal>& in);
+        void body_decode(std::string& body, std::map<std::string, MessageVal>& out);
 
         // increment, means increase trigger number
         // prefix ++Message
@@ -141,21 +143,20 @@ namespace dccl
         const Message operator++(int)
         { Message tmp(*this); ++(*this); return tmp;}
         
-        void add_destination(modem::Message& out_message,
-                             const std::map<std::string, dccl::MessageVal>& in);
         
       private:
-
         unsigned bytes_head() const
-        { return acomms_util::NUM_HEADER_BYTES; }
+        { return acomms::NUM_HEADER_BYTES; }
         unsigned bits_head() const
-        { return bytes2bits(acomms_util::NUM_HEADER_BYTES); }
+        { return bytes2bits(acomms::NUM_HEADER_BYTES); }
 
         // more efficient way to do ceil(total_bits / 8)
         // to get the number of bytes rounded up.
+        
+        enum { BYTE_MASK = 7 }; // 00000111
         unsigned used_bytes_body() const
         {
-            return (body_bits_& acomms_util::BYTE_MASK) ?
+            return (body_bits_& BYTE_MASK) ?
                 bits2bytes(body_bits_) + 1 :
                 bits2bytes(body_bits_);
         }
@@ -170,17 +171,17 @@ namespace dccl
         { return bits_head() + used_bits_body(); }
         
         unsigned requested_bytes_body() const
-        { return size_ - acomms_util::NUM_HEADER_BYTES; }
+        { return size_ - acomms::NUM_HEADER_BYTES; }
 
         unsigned requested_bytes_total() const
         { return size_; }
 
         unsigned requested_bits_body() const
-        { return bytes2bits(size_ - acomms_util::NUM_HEADER_BYTES); } 
+        { return bytes2bits(size_ - acomms::NUM_HEADER_BYTES); } 
 
         unsigned requested_bits_total() const
-        { return bytes2bits(size_); }        
-    
+        { return bytes2bits(size_); }
+        
         
       private:
         // total request size of message, e.g. 32 bytes
@@ -199,14 +200,30 @@ namespace dccl
         std::string trigger_mandatory_;
         std::string in_var_;
         std::string out_var_;
-        std::string dest_var_;
-        std::string dest_key_;
 
-        std::vector<MessageVar> layout_;
+        std::vector< boost::shared_ptr<MessageVar> > layout_;
+        std::vector< boost::shared_ptr<MessageVar> > header_;
+        
+        
         std::vector<Publish> publishes_;
 
     };
+
+
+    inline void bitset2string(const boost::dynamic_bitset<unsigned char>& body_bits,
+                              std::string& body)
+    {
+        body.resize(body_bits.num_blocks()); // resize the string to fit the bitset
+        to_block_range(body_bits, body.rbegin());
+    }
     
+    inline void string2bitset(boost::dynamic_bitset<unsigned char>& body_bits,
+                              const std::string& body)
+    {
+        from_block_range(body.rbegin(), body.rend(), body_bits);
+    }
+
+
     std::ostream& operator<< (std::ostream& out, const Message& message);
 }
 

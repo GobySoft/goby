@@ -79,7 +79,7 @@ namespace queue
         { return last_send_time_; }
 
         double newest_msg_time() const
-        { return size() ? messages_.back().t() : acomms_util::NOT_A_TIME; }
+        { return size() ? messages_.back().t() : acomms::NOT_A_TIME; }
         
         void set_on_demand(bool b)
         { on_demand_ = b; }

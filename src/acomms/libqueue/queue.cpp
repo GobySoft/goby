@@ -43,22 +43,8 @@ bool queue::Queue::push_message(modem::Message& new_message)
                      << "empty message attempted to be pushed to queue "
                      << cfg_.name() << std::endl;
         return false;
-    }
-            
-    // most significant byte is CCL message type,
-    // second most is split into two nibbles
-    //     most significant nibble is remaining packets to receive from this id (modem and variable)
-    //     least significant nibble is variableID
-    
-    if(cfg_.type() == queue_data)
-    {
-        std::string hex_variableID;
-        tes_util::number2hex_string(hex_variableID, cfg_.id());
+    }            
 
-        new_message.set_data(acomms_util::DCCL_CCL_HEADER_STR +
-                             hex_variableID +
-                             new_message.data());
-    }    
     new_message.set_src(modem_id_);
     new_message.set_ack(new_message.ack_set() ? new_message.ack() : cfg_.ack());
         
@@ -132,7 +118,7 @@ bool queue::Queue::priority_values(double& priority,
 
     // for followup user-frames, destination must be either zero (broadcast)
     // or the same as the first user-frame
-    if((message.dest_set() && next_msg_it->dest() != acomms_util::BROADCAST_ID && message.dest() != next_msg_it->dest())
+    if((message.dest_set() && next_msg_it->dest() != acomms::BROADCAST_ID && message.dest() != next_msg_it->dest())
        || (message.ack_set() && message.ack() != next_msg_it->ack()))
     {
         if(os_) *os_<< group("priority") << "\t" <<  cfg_.name() << " next message has wrong destination  (must be BROADCAST (0) or same as first user-frame) or requires ACK and the packet does not" << std::endl;

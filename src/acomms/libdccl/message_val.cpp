@@ -246,7 +246,7 @@ dccl::MessageVal::operator double() const
 {
     double d;
     if(get(d)) return d;
-    else return acomms_util::NaN;
+    else return acomms::NaN;
 }
 dccl::MessageVal::operator float() const
 {
@@ -275,7 +275,10 @@ dccl::MessageVal::operator int() const
     return long(*this);
 }
 
-
+dccl::MessageVal::operator unsigned() const
+{
+    return long(*this);
+}
 
 bool dccl::MessageVal::operator==(const std::string& s)
 {
@@ -297,3 +300,19 @@ bool dccl::MessageVal::operator==(bool b)
     bool us;
     return get(us) && us == b;
 }        
+
+
+
+std::ostream& dccl::operator<<(std::ostream& os, const dccl::MessageVal& mv)
+{
+    switch(mv.type_)
+    {
+        case cpp_string: return os << "std::string: " << mv.sval_;
+        case cpp_double: return os << "double: " << std::fixed << std::setprecision(mv.precision_) << mv.dval_;
+        case cpp_long:   return os << "long: " << mv.lval_;                
+        case cpp_bool:   return os << "bool: " << std::boolalpha << mv.bval_;
+        default:         return os;
+    }
+}
+
+    

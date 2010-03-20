@@ -223,7 +223,7 @@ namespace amac
         void position_blank();
     
       private:
-        // micromodem (bit)-rate id number
+        // (bit)-rate id number
         int rate_;
         // size of each slot (seconds)
         unsigned slot_time_;

@@ -1,6 +1,8 @@
-    7         9        5          17           5      5
-[xxxxxxx][xxxxxxxxx][xxxxx][xxxxxxxxxxxxxxx][xxxxx][xxxxx]
-  CCL ID   DCCL ID   FLAGS   TIME SINCE DAY   SRC   DEST
+    7         9            17           5      5      5   
+[xxxxxxx][xxxxxxxxx][xxxxxxxxxxxxxxx][xxxxx][xxxxx][xxxxx]
+  CCL ID   DCCL ID    TIME SINCE DAY   SRC   DEST   FLAGS  
+
+FLAGS - unused | unused | unused | broadcast | multimessage
 
 7+9+5+17+5+5 = 6 bytes
 

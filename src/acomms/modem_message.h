@@ -75,8 +75,6 @@ namespace modem
         void set_data(const std::string & data)
         {
             data_ = data;
-            calc_cs();
-            set_size((double)(data.length()/2));
             data_set_ = true;
         }
         /// set the time
@@ -142,11 +140,11 @@ namespace modem
         
         /// hexadecimal string
         std::string data() const {return data_;} 
+        /// hexadecimal string reference
+        std::string& data_ref() {return data_;}
         /// time in seconds since 1970-1-1 00:00:00 UTC
         double t() const {return t_;}
-        /// size in bytes
-        double size() const {return size_;}
-        /// source %modem id
+        /// source %modem id        
         unsigned src() const {return src_;}
         /// destination %modem id
         unsigned dest() const {return dest_;}
@@ -156,8 +154,11 @@ namespace modem
         bool ack() const {return ack_;}
         /// %modem frame number
         unsigned frame() const {return frame_;}
+
+        /// size in bytes
+        double size() const { return data_set_ ? calc_size() : size_; }
         /// checksum (eight bit XOR of Message::data())
-        unsigned cs() const {return cs_;}
+        unsigned cs() const { return data_set_ ? calc_cs() : cs_; }
 
         //@}
 
@@ -195,11 +196,11 @@ namespace modem
             if(src_set_)   ss << " | src " << src_;
             if(dest_set_)  ss << " | dest " << dest_;
             if(rate_set_)  ss << " | rate " << rate_;
-            if(size_set_)  ss << " | size " << size_ << "B";
+            if(dest_set_ || size_set_)  ss << " | size " << size() << "B";
             if(t_set_)     ss << " | age " << tes_util::sci_round(time(NULL) - t_, 0) << "s";
             if(ack_set_)   ss << " | ack " << std::boolalpha << ack_;
             if(frame_set_) ss << " | frame " << frame_;
-            if(cs_set_)    ss << " | *" << std::hex << std::setw(2) << std::setfill('0') << (int)cs_;
+            if(dest_set_ || cs_set_)    ss << " | *" << std::hex << std::setw(2) << std::setfill('0') << (int)cs();
             
             if(!ss.str().empty())
                 return ss.str().substr(3);
@@ -221,11 +222,11 @@ namespace modem
             if(dest_set_)  ss << ",dest=" << dest_;
             if(rate_set_)  ss << ",rate=" << rate_;
             if(data_set_)  ss << ",data=" << data_;
-            if(size_set_)  ss << ",size=" << size_;
             if(t_set_)     ss << ",time=" << std::setprecision(15) << t_;
             if(ack_set_)   ss << ",ack=" << std::boolalpha << ack_;
             if(frame_set_) ss << ",frame=" << frame_;
-            if(cs_set_)    ss << ",cs=" << std::hex << std::setw(2) << std::setfill('0') << (int)cs_;
+            if(data_set_ || size_set_)  ss << ",size=" << size();
+            if(data_set_ || cs_set_)    ss << ",cs=" << std::hex << std::setw(2) << std::setfill('0') << (int)cs();
             
             if(!ss.str().empty())
                 return ss.str().substr(1);
@@ -264,38 +265,19 @@ namespace modem
         
         }    
         //@}
-
-        /// \name Modify contents
-        //@{        
-        /// removes the header bytes (CCL and DCCL ids) from the data
-        void remove_header()
-        {
-            try
-            {
-                data_.erase(0, acomms_util::NUM_HEADER_BYTES*acomms_util::NIBS_IN_BYTE);
-                calc_cs();
-                set_size((double)(data_.length()/2));
-            }
-            catch (...) { }
-        }
-        
-        /// string replace inside the hexadecimal data
-        void replace_in_data(std::string::size_type start, std::string::size_type length, const std::string & value)
-        {
-            data_.replace(start, length, value);
-            calc_cs();
-            set_size((double)(data_.length()/2));
-        }
-        //@}
         
       private:
-        void calc_cs()
+        double calc_size() const
         {
-            cs_ = 0;
+            return double(data_.length())/2;
+        }
+        
+        unsigned char calc_cs() const
+        {
+            unsigned char cs = 0;
             for(std::string::size_type i = 0, n = data_.length(); i < n; ++i)
-                cs_ ^= data_[i];
-
-            cs_set_ = true;
+                cs ^= data_[i];
+            return cs;
         }    
 
         bool check_hex(std::string line)

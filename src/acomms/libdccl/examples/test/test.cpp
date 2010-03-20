@@ -59,6 +59,8 @@ int main()
     // instantiate the parser with a single xml file
     dccl::DCCLCodec dccl(DCCL_EXAMPLES_DIR "/test/test.xml", "../../message_schema.xsd");
 
+    std::cout << dccl << std::endl;
+    
     // load up the algorithms    
     dccl.add_str_algorithm("prepend_fat", &prepend_fat);
     dccl.add_generic_algorithm("+1", &plus1);
@@ -96,6 +98,7 @@ int main()
     std::cout << "hex out: " << hex << std::endl;
     hex.resize(32*2,'0');
     std::cout << "hex in: " << hex << std::endl;
+
     
     
     std::map<std::string, dccl::MessageVal> out;
@@ -119,6 +122,6 @@ int main()
     assert(out["SUM"] == sum);
     assert(out["I"] == i);
     assert(out["H"] == h);
-
+    
     std::cout << "all tests passed" << std::endl;
 }

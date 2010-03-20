@@ -20,7 +20,8 @@
 #include "queue_xml_callbacks.h"
 
 using namespace xercesc;
-    
+using namespace xml;
+
 // this is called when the parser encounters the start tag, e.g. <message>
 void queue::QueueContentHandler::startElement( 
     const XMLCh *const uri,        // namespace URI
@@ -29,31 +30,18 @@ void queue::QueueContentHandler::startElement(
     const Attributes &attrs )      // elements's attributes
 {
     //const XMLCh* val;
+    Tag current_tag = tags_map_[toNative(localname)];
+    parents_.insert(current_tag);
     
-    switch(tags_map_[toNative(localname)])
+    switch(current_tag)
     {
         default:
-            break;
-
-        case tag_hex:
-        case tag_int:
-        case tag_string:
-        case tag_float:
-        case tag_bool:
-        case tag_static:
-        case tag_enum:
-            in_message_var_ = true;
-            break;
-            
+            break;            
             
         case tag_message:
-            // start new message
-            in_message_ = true;
             q_.push_back(QueueConfig());
             q_.back().set_type(queue_dccl);
             break;
-
-
     }
     
     current_text.clear();
@@ -66,22 +54,14 @@ void queue::QueueContentHandler::endElement(
 {        
     std::string trimmed_data = boost::trim_copy(toNative(current_text));
 
-    switch(tags_map_[toNative(localname)])
-    {
-        case tag_bool:
-        case tag_enum:
-        case tag_float:
-        case tag_hex:
-        case tag_int:
-        case tag_static:
-        case tag_string:
-            in_message_var_ = false;        
-            break;
+    Tag current_tag = tags_map_[toNative(localname)];
+    parents_.erase(current_tag);
+    
+    switch(current_tag)
+    {            
+        default:
+            break;            
 
-        case tag_message:
-            in_message_ = false;
-            break;
-            
         case tag_ack:
             q_.back().set_ack(trimmed_data);
             break;            
@@ -108,7 +88,7 @@ void queue::QueueContentHandler::endElement(
             break;
 
         case tag_name:
-            if(in_message_ && !in_message_var_)
+            if(!in_message_var() && !in_header_var())
                 q_.back().set_name(trimmed_data);
             break;
             
@@ -122,8 +102,5 @@ void queue::QueueContentHandler::endElement(
             q_.back().set_value_base(trimmed_data);
             break;
 
-        case tag_not_defined:
-            break;
-            
     }
 }

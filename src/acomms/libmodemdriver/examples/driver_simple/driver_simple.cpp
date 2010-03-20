@@ -69,7 +69,7 @@ int main(int argc, char* argv[])
     
     modem::Message transmit_init_message;
     transmit_init_message.set_src(our_id);
-    transmit_init_message.set_dest(acomms_util::BROADCAST_ID);
+    transmit_init_message.set_dest(acomms::BROADCAST_ID);
     // one frame @ 32 bytes
     transmit_init_message.set_rate(0);
 

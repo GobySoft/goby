@@ -34,7 +34,7 @@
 #include "acomms/xml/xerces_strings.h"
 
 #include "message.h"
-#include "message_xml_tags.h"
+#include "acomms/xml/tags.h"
 
 namespace dccl
 {
@@ -44,14 +44,7 @@ namespace dccl
     class MessageContentHandler : public xercesc::DefaultHandler {
       public:
       MessageContentHandler(std::vector<Message> & messages) : messages(messages)
-        {
-            in_message = false; // true = in <message>
-            in_layout = false; // true = in <layout>
-            in_message_var = false; // true = in <int>, <bool>, <string>, <float>
-            in_publish = false; // true = in <publish>
-
-            initialize_tags(tags_map_);
-        }
+        { xml::initialize_tags(tags_map_); }
 
         void startElement( 
             const XMLCh *const uri,        // namespace URI
@@ -71,18 +64,24 @@ namespace dccl
         void characters(const XMLCh* const chars, const XMLSize_t length )
 	{ current_text.append(chars, length); }
 #endif
-    
+
       private:
-        std::vector<Message>&  messages;
+        bool in_message_var()
+        { return xml::in_message_var(parents_); }
+        bool in_header_var()
+        { return xml::in_header_var(parents_); }
+        bool in_publish()
+        { return xml::in_publish(parents_); }
+        
+      private:
+        std::vector<Message>& messages;
         XercesString current_text;
 
-        bool in_message; // true = inside <message>
-        bool in_layout; // true = inside <layout>
-        bool in_message_var; // true = in <int>, <bool>, <string>, <float>
-        XercesString type; // current message_var type: "int", "bool", etc.
-        bool in_publish; // true = in <publish>
-        std::map<std::string, Tags> tags_map_;
-    
+        std::set<xml::Tag> parents_;
+        std::map<std::string, xml::Tag> tags_map_;
+
+        acomms::DCCLHeaderPart curr_head_piece_;
+        
     };
 
 // Receives Error notifications.

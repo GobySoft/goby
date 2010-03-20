@@ -1,0 +1,2 @@
+add_executable(queue_multimessage multimessage.cpp)
+target_link_libraries(queue_multimessage queue)

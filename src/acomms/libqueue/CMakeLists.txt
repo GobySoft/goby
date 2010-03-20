@@ -10,7 +10,7 @@ if(Boost_FOUND AND Xerces_LIB_FOUND AND Xerces_H_FOUND )
   
   file(GLOB SRC *.cpp *.c)
   add_library(queue SHARED ${SRC})
-  target_link_libraries(queue streamlogger xerces-c)
+  target_link_libraries(queue streamlogger xerces-c dccl)
 endif()
 
 add_subdirectory(examples)

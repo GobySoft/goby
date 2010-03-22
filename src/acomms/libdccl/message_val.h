@@ -48,7 +48,7 @@ namespace dccl
         /// construct with char* value
         MessageVal(const char* s);
         
-        /// construct with double value
+        /// construct with double value, optionally giving the precision of the double (number of decimal places) which is used if a cast to std::string is required in the future.
         MessageVal(double d, int p = MAX_DBL_PRECISION);
         
         /// construct with long value
@@ -99,24 +99,51 @@ namespace dccl
         /// \return successfully extracted (and if necessary successfully cast to this type)
         bool get(double& d) const;
 
+        ///
+        /// allows statements of the form \code double d = MessageVal("3.23"); \endcode
         operator double() const;
+
+        ///
+        /// allows statements of the form \code float f = MessageVal("3.5"); \endcode
         operator float() const;
+        ///
+        /// allows statements of the form \code bool b = MessageVal("1"); \endcode
         operator bool() const;
+
+        ///
+        /// allows statements of the form \code std::string s = MessageVal(3); \endcode
         operator std::string() const;
+
+        ///
+        /// allows statements of the form \code long l = MessageVal(5); \endcode
         operator long() const;
+
+        ///
+        /// allows statements of the form \code int i = MessageVal(2); \endcode
         operator int() const;
+
+        ///
+        /// allows statements of the form \code unsigned u = MessageVal(2); \endcode
         operator unsigned() const;
         
-        /// what type is the original type of this MessageVal?
-        DCCLCppType type() const { return type_; }        
-        //@}
 
+        /// what type is the original type of this MessageVal?
+        DCCLCppType type() const { return type_; }
+        
+        /// was this just constructed with MessageVal() ? 
         bool empty() const { return type_ == cpp_notype; }        
+//@}
+
+
+        /// \name Comparison
+        //@{       
         
         bool operator==(const std::string& s);
         bool operator==(double d);
         bool operator==(long l);
         bool operator==(bool b);
+
+        // @}
         
       private:
         friend std::ostream& operator<<(std::ostream& os, const MessageVal& mv);

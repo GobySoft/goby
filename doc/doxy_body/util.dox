@@ -10,11 +10,18 @@
 
     \section util_overview Overview
 
+    \textit{forthcoming...}
+
     \section logging Logging
+
+    \textit{forthcoming...}
 
     \subsection stream C++ STL Streams
 
+    \textit{forthcoming...}
+
     \subsection flexostream Configurable extension of std::ostream - libflexostream
+    \textit{forthcoming...}
 
     \section serial Serial port communications - libserial
 

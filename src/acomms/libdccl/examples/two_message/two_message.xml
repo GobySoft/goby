@@ -4,6 +4,11 @@
     <name>GoToCommand</name>
     <id>2</id>
     <size>32</size>
+    <header>
+      <dest_id>
+        <name>destination</name>
+      </dest_id>
+    </header>
     <layout>
       <static>
         <name>type</name>

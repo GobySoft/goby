@@ -202,7 +202,7 @@ void dccl::Message::head_encode(std::string& head, std::map<std::string, Message
     boost::dynamic_bitset<unsigned char> head_bits(bytes2bits(acomms::NUM_HEADER_BYTES));
 
     long id;
-    in["_id"] = (!in["_id"].empty() && in["_id"].get(id)) ? id : id_;
+    in["_id"] = (!in["_id"].empty() && in["_id"].get(id)) ? long(id) : long(id_);
     
     for (std::vector< boost::shared_ptr<MessageVar> >::iterator it = header_.begin(),
              n = header_.end();

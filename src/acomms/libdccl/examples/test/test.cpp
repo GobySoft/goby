@@ -27,14 +27,26 @@ void plus1(dccl::MessageVal& mv)
     mv = l;
 }
 
-void times2(double& d)
-{ d *= 2; }
+void times2(dccl::MessageVal& mv)
+{
+    double d = mv;
+    d *= 2;
+    mv = d;
+}
 
-void prepend_fat(std::string& s)
-{ s = "fat_" + s; }
+void prepend_fat(dccl::MessageVal& mv)
+{
+    std::string s = mv;
+    s = "fat_" + s;
+    mv = s;
+}
 
-void invert(bool& b)
-{ b ^= 1; }
+void invert(dccl::MessageVal& mv)
+{
+    bool b = mv;
+    b ^= 1;
+    mv = b;
+}
 
 void algsum(dccl::MessageVal& mv, const std::vector<std::string>& params,
          const std::map<std::string,dccl::MessageVal>& vals)
@@ -62,10 +74,10 @@ int main()
     std::cout << dccl << std::endl;
     
     // load up the algorithms    
-    dccl.add_str_algorithm("prepend_fat", &prepend_fat);
-    dccl.add_generic_algorithm("+1", &plus1);
-    dccl.add_dbl_algorithm("*2", &times2);
-    dccl.add_bool_algorithm("invert", &invert);
+    dccl.add_algorithm("prepend_fat", &prepend_fat);
+    dccl.add_algorithm("+1", &plus1);
+    dccl.add_algorithm("*2", &times2);
+    dccl.add_algorithm("invert", &invert);
     dccl.add_adv_algorithm("sum", &algsum);
 
     // must be kept secret!
@@ -111,9 +123,18 @@ int main()
 
     sum += i + f;
     ++i;
-    invert(b);
-    prepend_fat(s);
-    times2(f);
+
+    dccl::MessageVal tmp = b;
+    invert(tmp);
+    b = tmp;
+    
+    tmp = s;
+    prepend_fat(tmp);
+    tmp.get(s);
+
+    tmp = f;
+    times2(tmp);
+    f = tmp;
     
     assert(out["B"] == b);
     assert(out["E"] == e);

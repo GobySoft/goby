@@ -17,14 +17,18 @@
   <li> Home page: <http://goby-marine.com>
   <li> Code, bug tracking, and answers: <https://launchpad.net/goby>.</li>
   <li> Manual: <a href=http://goby-marine.com>(html)</a> <a href=http://aubergine.whoi.edu/goby-bzr/doc/goby-dev.pdf>(pdf)</a>.</li>
-  <li> Wiki: <forthcoming>.</li>
   </ul>
 
   \section main_manual Developer manual
   <ul>
   <li> \ref acomms - tackle the extremely rate limited acoustic networking problem. These libraries were designed together but can operate independently for a developer looking integrate a specific component (e.g. just encoding/decoding) without committing to the entire goby-acomms stack.</li>
-  <li> \ref util - provide utility functions for tasks such as logging, scientific calculations, string parsing, and serial device i/o. Goby also relies on the boost libraries <http://www.boost.org/> for many utility tasks to fill in areas where the C++ Standard Library is insufficient or unelegant.</li>
+<!--  <li> \ref util - provide utility functions for tasks such as logging, scientific calculations, string parsing, and serial device i/o. Goby also relies on the boost libraries <http://www.boost.org/> for many utility tasks to fill in areas where the C++ Standard Library is insufficient or unelegant.</li> -->
   </ul>  
+
+  \section main_papers Publications
+  <ul>
+    <li> <a href=http://aubergine.whoi.edu/goby-bzr/doc/papers/dccl_oceans10.pdf>The Dynamic Compact Control Language: A Compact Marshalling Scheme for Acoustic Communications</a>. IEEE OCEANS'10 / Sydney.
+  </ul>
 
   \section install Installing Goby
 <ol>
@@ -72,6 +76,8 @@ Goby is developed by T. Schneider (https://launchpad.net/~tes) with input and su
 - C. Murphy (https://launchpad.net/~chrismurf)
 - K. Cockrell
 - S. Petillo
+- L. Freitag
+- M. Grund
 
 \section main_3rd_party_ack Third party projects used in Goby
 
@@ -83,7 +89,8 @@ Goby appreciates the availability of the following open source projects (listed 
 <li>general purpose libraries: boost <http://www.boost.org/doc/libs/1_34_0>
 <li>terminal GUI library: ncurses <http://www.c-for-dummies.com/ncurses/>
 <li>XML parsing library: Xerces-C <http://xerces.apache.org/xerces-c/program-3.html>
-<li>Asynchronous networking and serial communications library: asio <http://think-async.com/Asio/asio-1.4.1/doc/>
+<li>asynchronous networking and serial communications library: asio <http://think-async.com/Asio/asio-1.4.1/doc/>
+<li>cryptography: crypto++ <http://www.cryptopp.com>
 </ul>
 
  

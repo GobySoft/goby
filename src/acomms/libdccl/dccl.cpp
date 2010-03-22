@@ -109,39 +109,13 @@ std::string dccl::DCCLCodec::brief_summary() const
     return out;
 }
 
-
-
-void dccl::DCCLCodec::add_str_algorithm(const std::string& name, StrAlgFunction1 func)
+void dccl::DCCLCodec::add_algorithm(const std::string& name, AlgFunction1 func)
 {
     AlgorithmPerformer* ap = AlgorithmPerformer::getInstance();
-    ap -> add_str_algorithm(name, func);
+    ap -> add_algorithm(name, func);
 }
 
-void dccl::DCCLCodec::add_dbl_algorithm(const std::string& name, DblAlgFunction1 func)
-{
-    AlgorithmPerformer* ap = AlgorithmPerformer::getInstance();
-    ap -> add_dbl_algorithm(name, func);
-}
-
-void dccl::DCCLCodec::add_long_algorithm(const std::string& name, LongAlgFunction1 func)
-{
-    AlgorithmPerformer* ap = AlgorithmPerformer::getInstance();
-    ap -> add_long_algorithm(name, func);
-}
-
-void dccl::DCCLCodec::add_bool_algorithm(const std::string& name, BoolAlgFunction1 func)
-{
-    AlgorithmPerformer * ap = AlgorithmPerformer::getInstance();
-    ap -> add_bool_algorithm(name, func);
-}
-
-void dccl::DCCLCodec::add_generic_algorithm(const std::string& name, AdvAlgFunction1 func)
-{
-    AlgorithmPerformer* ap = AlgorithmPerformer::getInstance();
-    ap -> add_generic_algorithm(name, func);
-}
-
-void dccl::DCCLCodec::add_adv_algorithm(const std::string& name, AdvAlgFunction3 func)
+void dccl::DCCLCodec::add_adv_algorithm(const std::string& name, AlgFunction3 func)
 {
     AlgorithmPerformer* ap = AlgorithmPerformer::getInstance();
     ap -> add_adv_algorithm(name, func);

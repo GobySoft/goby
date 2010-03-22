@@ -166,6 +166,7 @@ Table of Contents for libdccl:
 <li> \ref dccl_tags
 <li> \ref dccl_codec
 <li> \ref dccl_how
+<li> \ref dccl_encrypt
 <li> \ref dccl_tags_details
 </ul>
 

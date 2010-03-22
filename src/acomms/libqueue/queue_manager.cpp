@@ -497,14 +497,9 @@ bool queue::QueueManager::unstitch_recursive(std::string& data, modem::Message& 
         // extract frame_size
         unsigned frame_size;
         tes_util::hex_string2number(data.substr(acomms::NUM_HEADER_NIBS, acomms::NIBS_IN_BYTE), frame_size);
-
-        std::cout << "frame size: " << frame_size << std::endl;
-        std::cout << "data: " << data << std::endl;
         
         // erase the frame size byte
         data.erase(acomms::NUM_HEADER_NIBS, acomms::NIBS_IN_BYTE);
-        
-        std::cout << "data - erasure of frame size: " << data << std::endl;
         
         // extract the data for this user-frame
         message.set_data(data.substr(0, (frame_size + acomms::NUM_HEADER_BYTES)*acomms::NIBS_IN_BYTE));

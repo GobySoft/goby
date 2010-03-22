@@ -33,7 +33,7 @@
 /// Acoustic Modem specific objects
 namespace modem
 {
-    /// \brief represents a message to or from the acoustic %modem.
+    /// \brief represents a %message to or from the acoustic %modem.
     ///
     /// Message is intended to represent all the possible messages from the %modem. Thus, depending
     /// on the specific message certain fields may not be used. Also, fields make take on different

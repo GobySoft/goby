@@ -19,19 +19,19 @@ Return to \ref acomms.
 
 \section queue_priority Understanding priority queuing 
 
-Each %queue has a base priority (\f$P_{base}\f$) and a priority time constant (\f$\tau\f$) that create the priority (\f$P(t)\f$) at any given time (\f$t\f$):
+Each %queue has a base value (\f$V_{base}\f$) and a time-to-live (\f$ttl\f$) that create the priority (\f$P(t)\f$) at any given time (\f$t\f$):
  \f[
-P(t) = P_{base} \exp{[(t-t_{last})/\tau)]}
+P(t) = V_{base} \frac{(t-t_{last})}{ttl}
  \f]
  where \f$t_{last}\f$ is the time of the last send from this %queue.
 
-This means for every %queue, the user has control over two variables (\f$P_{base}\f$ and \f$\tau\f$). These can be adjusted in practice in a few ways:
-<ul>
-<li> Set all time constants to some reasonable value (e.g. \f$\tau = 120 \f$ seconds). Now the ratio of the base values give the approximate frequency of each message type. Assuming the queues are always full, a message with \f$P_{base} = 2\f$ will be sent twice as often as a message with \f$P_{base} = 1\f$. The advantage of this technique is that lower priority messages will never completely be shadowed by higher priority messages.
-<li> Set time constants to infinity. Now the priorities never grow with time, so data from the non-empty %queue with the highest base priority will always be provided to the %modem driver. Note that if a higher priority %queue has data, messages from a lower priority %queue will never be sent.
-<li> Set all base priorities to the same value. Set the time constant to various values to reflect the time sensitive nature of the data. Highly time sensitive data should have a short time constant, while less time sensitive data can have a longer time constant. When the acoustic channel has low throughput, the time sensitive messages will be sent more often. In cases of high throughput, messages will be sent in roughly equal proportions.
-<li> Adjust both the base priority and time constant to balance time sensitivity and overall importance.
-</ul>
+This means for every %queue, the user has control over two variables (\f$V_{base}\f$ and \f$ttl\f$). \f$V_{base}\f$ is intended to capture how important the message type is in general. Higher base values mean the message is of higher importance. The \f$ttl\f$ governs the number of seconds the message lives from creation until it is destroyed by libqueue. The \f$ttl\f$ also factors into the priority calculation since all things being equal (same \f$V_{base}\f$), it is preferable to send more time sensitive messages first. So in these two parameters, the user can capture both overall value (i.e. \f$V_{base}\f$) and latency tolerance (\f$ttl\f$) of the message %queue.
+
+The following graph illustrates the priority growth over time of three queues with different \f$ttl\f$ and \f$V_{base}\f$. A message is sent every 100 seconds and the %queue that is chosen is marked on the graph.
+
+\image html priority_graph.png
+\image latex priority_graph.eps "Graph of the growth of queueing priorities for libqueue for three different queues. A message is sent every 100 seconds from the %queue with the highest priority (numbered on the graph)." width=0.9\textwidth
+
 
 \section queue_tags Queuing tag structure
 
@@ -49,8 +49,8 @@ This section gives a brief outline of the tag structure of an XML file for defin
 <li> \ref tag_blackout_time
 <li> \ref tag_max_queue
 <li> \ref tag_newest_first
-<li> \ref tag_priority_base
-<li> \ref tag_priority_time_const
+<li> \ref tag_ttl
+<li> \ref tag_value_base
 </ul>
 </ul>
 </ul>
@@ -162,7 +162,7 @@ At the driver layer, messages are requested using queue::QueueManager::provide_o
   (FIFO).
 
 
-\subsection tag_priority_base <priority_base>
+\subsection tag_value_base <value_base>
 \b Syntax:
 \code
 <?xml version="1.0" encoding="UTF-8"?>
@@ -170,7 +170,7 @@ At the driver layer, messages are requested using queue::QueueManager::provide_o
   <message>
     <queuing>
       ... 
-      <priority_base>10</priority_base>
+      <value_base>10</value_base>
     </queuing>    
   </message>
 </message_set>
@@ -180,15 +180,14 @@ At the driver layer, messages are requested using queue::QueueManager::provide_o
   queue. priorities are calculated on a request for data by the modem
   (to send a message). The queue with the highest priority (and isn't
   in blackout) is chosen. The actual priority (\f$P\f$) is calculated
-  by \f$P = P_{base} \exp{[(t-t_{last})/\tau)]}\f$ where \f$P_{base}\f$ is
+  by P(t) = \f$V_{base} \frac{(t-t_{last})}{ttl}\f$ where \f$V_{base}\f$ is
   the value set here, \f$t\f$ is the current time (in seconds), \f$t_{last}\f$
-  is the time of the last send from this queue, and \f$\tau\f$ is the
-  \ref tag_priority_time_const. Essentially, a message with low
-  \ref tag_priority_time_const will become effective quickly again
-  after a sent message (the exponential grows faster). A higher base
-  priority will also increase the effectiveness of the queue. See \ref queue_priority for further discussion.
+  is the time of the last send from this queue, and \f$ttl\f$ is the
+  \ref tag_ttl. Essentially, a message with low
+  \ref tag_ttl will become effective quickly again
+  after a sent message (the priority line grows faster). See \ref queue_priority for further discussion.
 
-\subsection tag_priority_time_const <priority_time_const>
+\subsection tag_ttl <ttl>
 \b Syntax:
 \code
 <?xml version="1.0" encoding="UTF-8"?>
@@ -196,13 +195,13 @@ At the driver layer, messages are requested using queue::QueueManager::provide_o
   <message>
     <queuing>
       ... 
-      <priority_time_const>120</priority_time_const>
+      <ttl>120</ttl>
     </queuing>    
   </message>
 </message_set>
 \endcode
 
-\b Description: see \ref tag_priority_base for main discussion. 0 is a special value indicating no growth of priorities (i.e. \xmltag{priority_time_const,0} is effectively the same as \xmltag{priority_time_const,\f$\infty\f$}).
+\b Description: the time in seconds a message lives after its creation before being discarded. This time-to-live also factors into the growth in priority of a queue. see \ref tag_value_base for the main discussion on this. 0 is a special value indicating no infinite live (i.e. \xmltag{ttl,0} is effectively the same as \xmltag{ttl,\f$\infty\f$}).
 
 \subsection tag_queuing <queuing>
 \b Syntax:

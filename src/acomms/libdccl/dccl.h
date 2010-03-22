@@ -124,55 +124,13 @@ namespace dccl
         /// \param passphrase text passphrase
         void set_crypto_passphrase(const std::string& passphrase);
         
-        /// \brief Add an algorithm callback for a C++ std::string type that only requires the current value.
-        ///
-        /// C++ std::string primarily corresponds to DCCL types
-        /// \ref tag_hex, \ref tag_string and \ref tag_enum, but can be used with any of the types
-        /// through automatic (internal) casting.
-        /// \param name name of the algorithm (\xmltag{... algorithm="name"})
-        /// \param func has the form void name(std::string& val_to_edit) (see dccl::StrAlgFunction1). can be a function pointer (&name) or
-        /// any function object supported by boost::function (http://www.boost.org/doc/libs/1_34_0/doc/html/function.html)        
-        void add_str_algorithm(const std::string& name, StrAlgFunction1 func);
         
-        /// \brief Add an algorithm callback for a C++ double type that only requires the current value.
-        ///
-        /// C++ double primarily corresponds to DCCL type
-        /// \ref tag_float, but can be used with any of the types
-        /// through automatic (internal) casting if they can
-        /// be properly represented as a double. 
-        /// \param name name of the algorithm (<... algorithm="name"/>)
-        /// \param func has the form void name(double& val_to_edit) (see dccl::DblAlgFunction1). can be a function pointer (&name) or
-        /// any function object supported by boost::function (http://www.boost.org/doc/libs/1_34_0/doc/html/function.html)
-        void add_dbl_algorithm(const std::string& name, DblAlgFunction1 func);
-        
-        /// \brief Add an algorithm callback for a C++ long int type that only requires the current value.
-        ///
-        /// C++ long primarily corresponds to DCCL type
-        /// \ref tag_int, but can be used with any of the types
-        /// through automatic (internal) casting if they can
-        /// be properly represented as a long. 
-        /// \param name name of the algorithm (<... algorithm="name"/>)
-        /// \param func has the form void name(long& val_to_edit) (see dccl::LongAlgFunction1). can be a function pointer (&name) or
-        /// any function object supported by boost::function (http://www.boost.org/doc/libs/1_34_0/doc/html/function.html)
-        void add_long_algorithm(const std::string& name, LongAlgFunction1 func);
-        
-        /// \brief Add an algorithm callback  for a C++ bool type that only requires the current value.
-        ///
-        /// C++ bool primarily corresponds to DCCL type
-        /// \ref tag_bool, but can be used with any of the types
-        /// through automatic (internal) casting if they can
-        /// be properly represented as a bool. 
-        /// \param name name of the algorithm (<... algorithm="name"/>)
-        /// \param func has the form void name(bool& val_to_edit) (see dccl::BoolAlgFunction1). can be a function pointer (&name) or
-        /// any function object supported by boost::function (http://www.boost.org/doc/libs/1_34_0/doc/html/function.html)
-        void add_bool_algorithm(const std::string& name, BoolAlgFunction1 func);
-        
-        /// \brief Add an algorithm callback for a dccl::MessageVal. This allows you to have a different input value (e.g. int) as the output value (e.g. string). 
+        /// \brief Add an algorithm callback for a dccl::MessageVal. The return value is stored back into the input parameter (dccl::MessageVal). See test.cpp for an example.
         ///
         /// \param name name of the algorithm (\xmltag{... algorithm="name"})
         /// \param func has the form void name(dccl::MessageVal& val_to_edit) (see dccl::AdvAlgFunction1). can be a function pointer (&name) or
         /// any function object supported by boost::function (http://www.boost.org/doc/libs/1_34_0/doc/html/function.html)
-        void add_generic_algorithm(const std::string& name, AdvAlgFunction1 func);
+        void add_algorithm(const std::string& name, AlgFunction1 func);
         
         /// \brief Add an advanced algorithm callback for any DCCL C++ type that may also require knowledge of all the other message variables
         /// and can optionally have additional parameters
@@ -185,7 +143,7 @@ namespace dccl
         /// any function object supported by boost::function (http://www.boost.org/doc/libs/1_34_0/doc/html/function.html).
         /// \param params (passed to func) a list of colon separated parameters passed by the user in the XML file. param[0] is the name.
         /// \param vals (passed to func) a map of \ref tag_name to current values for all message variables.
-        void add_adv_algorithm(const std::string& name, AdvAlgFunction3 func);
+        void add_adv_algorithm(const std::string& name, AlgFunction3 func);
         //@}
         
         /// \name Codec functions.
@@ -334,7 +292,7 @@ namespace dccl
             std::set<std::string> get_pubsub_src_vars(const Key& k)
         { return to_iterator(k)->get_pubsub_src_vars(); }
 
-        /// for a given message name, all MOOS variables (sources, input, destination, trigger)
+        /// for a given message name, all architecture variables (sources, input, destination, trigger)
         template<typename Key>
             std::set<std::string> get_pubsub_all_vars(const Key& k)
         { return to_iterator(k)->get_pubsub_all_vars(); }
@@ -344,7 +302,7 @@ namespace dccl
             std::set<std::string> get_pubsub_encode_vars(const Key& k)
         { return to_iterator(k)->get_pubsub_encode_vars(); }
 
-        /// for a given message name, all MOOS variables for decoding (input)
+        /// for a given message name, all architecture variables for decoding (input)
         template<typename Key>
             std::set<std::string> get_pubsub_decode_vars(const Key& k)
         { return to_iterator(k)->get_pubsub_decode_vars(); }

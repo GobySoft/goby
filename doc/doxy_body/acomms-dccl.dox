@@ -14,6 +14,7 @@ Table of contents for libdccl:
 <li> \ref dccl_tags
 <li> \ref dccl_codec
 <li> \ref dccl_how
+<li> \ref dccl_encrypt
 <li> \ref dccl_tags_details
 </ul>
 
@@ -23,15 +24,15 @@ Return to \ref acomms.
 
 <b>Scenario 1: Send a string command to a vehicle</b>: 
 
-We need to send an ASCII string command to an underwater vehicle. We thus make the \ref tag_layout section of the message contain a single message variable, a \ref tag_string. We know that a string uses a byte for each character and DCCL uses two header bytes, making the \ref tag_max_length of our string 30 (32-2). We need some sort of name for our string to use internally when encoding and decoding this message, so we'll use \ref tag_name of "s_key" to stand for "string key".
+We need to send an ASCII string command to an underwater vehicle. We thus make the \ref tag_layout section of the message contain a single message variable, a \ref tag_string. We know that a string uses a byte for each character and DCCL uses six header bytes (CCL id, DCCL id, time, src, dest, flags), making the \ref tag_max_length of our string 26 (32-6). We need some sort of name for our string to use internally when encoding and decoding this message, so we'll use \ref tag_name of "s_key" to stand for "string key".
 
 We want to have the ability to use the lowest rate WHOI Micro-Modem message size, so we pick \ref tag_size to be 32. We have no other DCCL messages currently in the system so we start with an \ref tag_id of 1. Since this is a simple case we choose a "Simple" for our \ref tag_name.
 
-See \ref libdccl/examples/simple/simple.cpp "simple.cpp" for the final result (simple.xml) and for an example of how to use this message.
+See \ref libdccl/examples/dccl_simple/dccl_simple.cpp "dccl_simple.cpp" for the final result (simple.xml) and for an example of how to use this message.
 
 <b>Scenario 2: Send a more realistic command and receive a status message from the vehicle</b>:
 
-We want to be able to command our vehicle to go to a specific point on a local XY grid (meters from some known latitude / longitude), but no more than 10 kilometers from the datum. We also want to be able to turn the lights on or off, and send a short string for other new instructions. Finally, we need to be able to command a speed. Our vehicle can move no faster than 3 m/s, but its control is precise enough to handle hundreds of a m/s (wow!). It's probably easiest to make a table with our conditions:
+We want to be able to command our vehicle (to which we have assigned an ID number of "2") to go to a specific point on a local XY grid (meters from some known latitude / longitude), but no more than 10 kilometers from the datum. We also want to be able to turn the lights on or off, and send a short string for other new instructions. Finally, we need to be able to command a speed. Our vehicle can move no faster than 3 m/s, but its control is precise enough to handle hundredths of a m/s (wow!). It's probably easiest to make a table with our conditions:
 
 <table>
   <tr>
@@ -39,6 +40,12 @@ We want to be able to command our vehicle to go to a specific point on a local X
     <td><strong>description</strong></td>
     <td><strong>type</strong></td>
     <td><strong>bounds</strong></td>
+  </tr>
+  <tr>
+    <td>dest_id</td>
+    <td>id number of the vehicle we are commanding</td>
+    <td>integer</td>
+    <td>built into the header [0, 31]</td>
   </tr>
   <tr>
     <td>goto_x</td>
@@ -111,7 +118,7 @@ You can run <tt>analyze_dccl_xml</tt> to view more information on your messages:
 \code
 > analyze_dccl_xml /path/to/two_message.xml /path/to/message_schema.xsd
 \endcode
-The schema (second parameter) is optional but handy for debugging syntax errors. When I ran the above command I got:
+The schema (second parameter) is optional but handy for debugging syntax errors. When I ran the above command I got (omitting parts of the header we're not using to save space):
 
 \verbatim
 creating DCCLCodec using xml file: [examples/two_message/two_message.xml] and schema: [../../message_schema.xsd]
@@ -123,43 +130,46 @@ detailed message summary:
 ********************
 message 2: {GoToCommand}
 requested size {bytes} [bits]: {32} [256]
-actual size {bytes} [bits]: {17} [135]
+actual size {bytes} [bits]: {21} [167]
+>>>> HEADER <<<<
+	destination (int):
+		size [bits]: [5]
+		[min, max] = [0,31]
 >>>> LAYOUT (message_vars) <<<<
 	type (static):
-		value: "goto"
 		size [bits]: [0]
+		value: "goto"
 	goto_x (int):
-		[min, max] = [0,10000]
 		size [bits]: [14]
+		[min, max] = [0,10000]
 	goto_y (int):
-		[min, max] = [0,10000]
 		size [bits]: [14]
+		[min, max] = [0,10000]
 	lights_on (bool):
 		size [bits]: [2]
 	new_instructions (string):
-		max_length: {10}
 		size [bits]: [80]
 	goto_speed (float):
+		size [bits]: [9]
 		[min, max] = [0,3]
 		precision: {2}
-		size [bits]: [9]
 ********************
 ********************
 message 3: {VehicleStatus}
 requested size {bytes} [bits]: {32} [256]
-actual size {bytes} [bits]: {6} [46]
+actual size {bytes} [bits]: {11} [84]
 >>>> LAYOUT (message_vars) <<<<
 	nav_x (float):
-		[min, max] = [0,1000]
+		size [bits]: [17]
+		[min, max] = [0,10000]
 		precision: {1}
-		size [bits]: [14]
 	nav_y (float):
-		[min, max] = [0,1000]
+		size [bits]: [17]
+		[min, max] = [0,10000]
 		precision: {1}
-		size [bits]: [14]
 	health (enum):
-		values:{good,low_battery,abort}
 		size [bits]: [2]
+		values:{good,low_battery,abort}
 ********************
 \endverbatim
 
@@ -188,6 +198,21 @@ Children of \ref tag_message needed for normal dccl::DCCLCodec::encode and dccl:
 <li> \ref tag_name
 <li> \ref tag_id
 <li> \ref tag_size
+<li> \ref tag_header
+<ul>
+<li> \ref tag_time
+<ul>
+<li> \ref tag_name
+</ul>
+<li> \ref tag_src_id
+<ul>
+<li> \ref tag_name
+</ul>
+<li> \ref tag_dest_id
+<ul>
+<li> \ref tag_name
+</ul>
+</ul>
 <li> \ref tag_layout
 <ul>
 <li> \ref tag_static
@@ -236,6 +261,13 @@ Children of \ref tag_message needed (in addition to those above) for publish/sub
 <ul>
 <li> \ref tag_message
 <ul>
+<li> \ref tag_header
+<ul>
+<li> \ref tag_src_id, \ref tag_dest_id, or \ref tag_time
+<ul>
+<li> \ref tag_src_var
+</ul>
+</ul>
 <li> \ref tag_layout
 <ul>
 <li> \ref tag_int, \ref tag_hex, \ref tag_string, \ref tag_float, \ref tag_enum, or \ref tag_bool
@@ -246,7 +278,6 @@ Children of \ref tag_message needed (in addition to those above) for publish/sub
 <li> \ref tag_trigger
 <li> \ref tag_trigger_var
 <li> \ref tag_trigger_time
-<li> \ref tag_destination_var
 <li> \ref tag_on_receipt
 <ul>
 <li> \ref tag_publish
@@ -268,7 +299,7 @@ Using the dccl::DCCLCodec is a fairly straightforward endeavor. First you need t
 dccl::DCCLCodec dccl("/path/to/file.xml", "/path/to/message_schema.xsd");
 \endcode
 
-Then, to encode a message, fill up std::maps of dccl::MessageVal where the key of the map (i.e. the \texttt{it->first} if \texttt{it} is the map iterator) is the \ref tag_name of each message variable, and the value (\texttt{it->second}) is the quantity you wish to encode. All reasonable type conversions will be made by DCCL (doubles to \ref tag_int, for example), but the most predictable (and fastest) results will be gained by using the following mapping between DCCL message variable types and C++ types:
+Then, to encode a message, fill up std::maps of dccl::MessageVal where the key of the map (i.e. the \texttt{it->first} if \texttt{it} is the map iterator) is the \ref tag_name of each message variable, and the value (\texttt{it->second}) is the quantity you wish to encode. All reasonable type conversions will be made by DCCL using dccl::MessageVal (doubles to \ref tag_int, for example), but the most predictable (and fastest) results will be gained by using the following mapping between DCCL message variable types and C++ types:
 
 \anchor dccl_cpp_types_table
 <table>
@@ -314,7 +345,7 @@ After filling up the std::maps, pass pointers to the maps to dccl::DCCLCodec::en
 \code
 std::map<std::string, dccl::MessageVal> vals;
 
-// code to insert values into maps
+// code to insert values into map
 // ...
 //
 
@@ -338,14 +369,22 @@ dccl.decode(1, hex, vals);
 
 For line by line interaction with the dccl::DCCLCodec and for advanced use, investigate the code examples given in the Examples column of this \ref OSI_table "table".
 
+\section dccl_encrypt Encryption
+
+Encryption of all messages can be enabled by providing a secret passphrase to dccl::DCCLCodec::set_crypto_passphrase. All parties to the communication must have the same secret key. 
+
+DCCL provides AES (Rijndael) encryption for the body (\ref tag_layout) of the message. The header, which is sent in plain text, is hashed to form an initialization vector (IV), and the passphrase is hashed using SHA-256 to form the cipher key. 
+
+AES is considered secure and is used for United States top secret information.
+
 \section dccl_how Details of encoding/decoding scheme
 
 We may want to know the actual layout of the binary/hex message. For the first of the two messages in two_message.xml, we can run \texttt{analyze_dccl_xml} to find the sizes of each message variable. The calculated sizes are used to determine the boundaries (which are by bit, not by byte) when the message is packed. Each field is placed in the order it is declared in the XML file such that the message is as follows (where left to right is the same as reading the hex string from left to right):
 \verbatim
-[[goto_x {14}][goto_y {14}][lights_on {2}][new_instructions {80}][goto_speed {9}][0 {1}]]
+[[header][0 {1}][goto_x {14}][goto_y {14}][lights_on {2}][new_instructions {80}][goto_speed {9}]]
 \endverbatim
 
-where \texttt{[0 {1}]} means zero fill the back of the message to the closest round byte (15 bytes = 120 bits minus 119 for other fields = 1). Byte boundaries are dissolved and encoded as a string "ABCDEF..." where the most significant byte (MSB, or leftmost 8 bits) is 0xAB, second MSB is 0xCD, etc. Encoding and decoding are done by functions available in tes_utils.h. You will notice that the resulting size is 15 bytes which is short of the 32 bytes specified for the \ref tag_size. This is because the \ref tag_size is a maximum size before a warning is generated, not the actual size always returned by the DCCLCodec. This allows libqueue to pack multiple messages together to form a %modem message frame and thus fit a nearly optimal amount of data into each %modem packet. For example, you could now fit one of the GoToCommand messages \textit{and} another message up to 17 bytes in a single 32 byte WHOI Micro-Modem rate 0 frame.
+where \texttt{[0 {1}]} means zero fill the message to the closest whole byte (15 bytes = 120 bits minus 119 for other fields = 1). Byte boundaries are dissolved and encoded as a string "ABCDEF..." where the most significant byte (MSB, or leftmost 8 bits) is 0xAB, second MSB is 0xCD, etc. Encoding and decoding are done by functions available in tes_utils.h. You will notice that the resulting size is 15 bytes which is short of the 32 bytes specified for the \ref tag_size. This is because the \ref tag_size is a maximum size before a warning is generated, not the actual size always returned by the DCCLCodec. This allows libqueue to pack multiple messages together to form a %modem message frame and thus fit a nearly optimal amount of data into each %modem packet. For example, you could now fit one of the GoToCommand messages \textit{and} another message up to 17 bytes in a single 32 byte WHOI Micro-Modem rate 0 frame.
 
 The encoding of each \textit{message_var} is done as an unsigned integer, with the exception of strings, which are store as ASCII. The value 0 (all bits zero) always indicates "not specified" or "Not a Number" (nan). This means that the user did not specify any value for this field, specified a value causing overflow (\ref tag_int or \ref tag_float greater than \ref tag_max or less than \ref tag_min), or provided a value for an \ref tag_enum that did not match any of the enumerate's \ref tag_value options. Along with this rule, the method for encoding and decoding is summarized below:
 
@@ -406,6 +445,14 @@ An example. Say you have the following XML file:
 \verbatim
 ...
   <id>1</id>
+   <header>
+   <src_id>
+      <name>Src</name>
+    </src_id>
+    <dest_id>
+      <name>Dest</name>
+    </dest_id>
+  </header>
   <layout>
     <bool>
       <name>B</name>
@@ -435,8 +482,11 @@ An example. Say you have the following XML file:
 ...
 \endverbatim
 
-below the size of each \textit{message_var} and its encoded value in decimal and binary are calculated for an example set of inputs:
+The header is always the same size and is given by (sizes shown in bits):
+\image html dccl-header.png
+\image latex dccl-header.eps "Header for all DCCL messages. Sizes shown in bits" width=0.9\textwidth
 
+Next, the size of each \textit{message_var} (in the \ref tag_layout section) and its encoded value in decimal and binary are calculated for an example set of inputs:
 
 <table> 
   <tr>
@@ -483,7 +533,7 @@ below the size of each \textit{message_var} and its encoded value in decimal and
   </tr>
 </table>
 
-and thus the whole message (zero padded from the most significant bits to the closest byte) sent would be \verbatim 00000010 01010001 10010000 01010101 00000000 00010101 01001010 11000000 \endverbatim or \verbatim 0x0251905500154AC0 \endverbatim plus two bytes of header, which in this case is 0x2001, so the full message sent is \verbatim 0x20010251905500154AC0 \endverbatim
+and thus the whole message (zero padded from the most significant bits to the closest byte) sent would be \verbatim 00000010 01010001 10010000 01010101 00000000 00010101 01001010 11000000 \endverbatim or \verbatim 0x0251905500154AC0 \endverbatim plus the header, which in this case is 0x2000AA300230, so the full message sent is \verbatim 0x2000AA3002300251905500154AC0 \endverbatim
 
 \section dccl_tags_details DCCL XML Tags Reference
 
@@ -525,6 +575,28 @@ Equivalent to \ref tag_message_var for all the \textit{message_var}s in the mess
 
 \b Description: a boolean (true or false) \textit{message_var}  The optional parameter \texttt{algorithm} allows you to perform certain algorithms on the data before encoding. See below. [optional, one or more allowed]. 
 
+
+\subsection tag_dest_id <dest_id>
+\b Syntax:
+\code
+<?xml version="1.0" encoding="UTF-8"?>
+<message_set>
+  <message>
+    <header>
+      <dest_id>
+        <name></name>
+        <src_var></src_var>
+      <dest_id>
+    </header>
+  </message>
+</message_set>
+\endcode
+
+\b Description: Allows setting a name other than the default ("_dest_id") and a \ref tag_src_var for the destination id field of the header.
+
+
+
+
 \subsection tag_destination_var <destination_var>
 \b Syntax:
 \code
@@ -538,7 +610,9 @@ Equivalent to \ref tag_message_var for all the \textit{message_var}s in the mess
 </message_set>
 \endcode
 
-\b Description: architecture variable to find where this message should be sent. Specify attribute "key=" to specify a substring to look for within the value of this architecture variable. For example, if \texttt{COMMAND} contained the string \texttt{Destination=3} and you want this message sent to modem_id 3, then you should set \texttt{key=Destination} to properly parse that string. [optional: default is 0 (broadcast), one allowed].
+\b Description: deprecated. Use \ref tag_dest_id instead.
+
+architecture variable to find where this message should be sent. Specify attribute "key=" to specify a substring to look for within the value of this architecture variable. For example, if \texttt{COMMAND} contained the string \texttt{Destination=3} and you want this message sent to modem_id 3, then you should set \texttt{key=Destination} to properly parse that string. [optional: default is 0 (broadcast), one allowed].
 
 \subsection tag_enum <enum>
 \b Syntax:
@@ -601,6 +675,27 @@ Equivalent to \ref tag_message_var for all the \textit{message_var}s in the mess
 \endcode
 
 \b Description: a string conforming to the format string syntax of the <a href="http://www.boost.org/doc/libs/1_37_0/libs/format/doc/format.html#syntax">boost::format library</a>. This field will specify the format of the string published to the architecture variable defined in \ref tag_publish_var. At its simplest, it is a string of incrementing numbers surrounded by \%\%. Or, instead, you may also use a printf style string, using \%d for int  \textit{message_var}, \%lf for floats, and \%s for strings, bools, enums and hex. [optional: default is \texttt{name1=\%1\%\,name2=\%2\%\,name3=\%3\%}, where \texttt{name1} is the name of the first \ref tag_message_var field to follow, \texttt{name2} is the second, etc. exception: default is \texttt{\%1\%} if only a single \ref tag_message_var defined. one allowed].
+
+
+\subsection tag_header <header>
+\b Syntax:
+\code
+<?xml version="1.0" encoding="UTF-8"?>
+<message_set>
+  <message>
+    <header>
+      <time></time>
+      <src_id></src_id>
+      <dest_id></dest_id>
+    </header>
+    <layout>
+      ...
+    </layout>
+  </message>
+</message_set>
+\endcode
+
+\b Description: holds tags allowing some parts of the DCCL header to be referenced by a new name (other than the defaults: "_time", "_src_id", "_dest_id") at encode and decode time. See \ref tag_src_id, \ref tag_dest_id, \ref tag_time.
 
 \subsection tag_hex <hex>
 \b Syntax:
@@ -923,6 +1018,26 @@ the number of bytes for this field. The string provided should be twice as many 
 
 \b Description: the size of the message in bytes. There are eight bits (binary digits) to a byte. Use N here for messages passed to the Micro-Modem where N is the desired Micro-Modem frame size (N=32, 64, or 256 depending on the rate). If the \ref tag_layout of the message exceeds this size, pGeneralCodec will exit on startup with information about sizes, from which you can remove or reduce the size of certain \textit{message_var}s.
 
+
+\subsection tag_src_id <src_id>
+\b Syntax:
+\code
+<?xml version="1.0" encoding="UTF-8"?>
+<message_set>
+  <message>
+    <header>
+      <src_id>
+        <name></name>
+        <src_var></src_var>
+      <src_id>
+    </header>
+  </message>
+</message_set>
+\endcode
+
+\b Description: Allows setting a name other than the default ("_src_id") and a \ref tag_src_var for the source id field of the header.
+
+
 \subsection tag_src_var <src_var>
 \b Syntax:
 \code
@@ -994,6 +1109,25 @@ the number of bytes for this field. The string provided should be twice as many 
 \endcode
 
 \b Description: an ASCII string \textit{message_var} [optional, one or more allowed].
+
+\subsection tag_time <time>
+\b Syntax:
+\code
+<?xml version="1.0" encoding="UTF-8"?>
+<message_set>
+  <message>
+    <header>
+      <time>
+        <name></name>
+        <src_var></src_var>
+      </time>
+    </header>
+  </message>
+</message_set>
+\endcode
+
+\b Description: Allows setting a name other than the default ("_time") and a \ref tag_src_var for the time field of the header. Note that the value of the \ref tag_src_var should be a UNIX timestamp (seconds since 1/1/1970 00:00:00).
+
 
 \subsection tag_trigger_var <trigger_var>
 \b Syntax:

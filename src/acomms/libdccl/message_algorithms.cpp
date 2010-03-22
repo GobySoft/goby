@@ -38,24 +38,10 @@ void dccl::AlgorithmPerformer::algorithm(MessageVal& in, const std::string& algo
     std::vector<std::string>params = tes_util::explode(algorithm, ':', true);
     std::string alg = params[0];
 
-    std::string s;
-    double d;
-    long l;
-    bool b;
-
     // short form for simple algorithms
-    if (str_map1_.count(alg) && in.get(s))
-    { str_map1_.find(alg)->second(s); in.set(s); }
-    else if (dbl_map1_.count(alg) && in.get(d))
-    { dbl_map1_.find(alg)->second(d); in.set(d); }
-    else if (long_map1_.count(alg) && in.get(l))
-    { long_map1_.find(alg)->second(l); in.set(l); }
-    else if (bool_map1_.count(alg) && in.get(b))
-    { bool_map1_.find(alg)->second(b); in.set(b); }
-    else if (adv_map1_.count(alg))
+    if (adv_map1_.count(alg))
     { adv_map1_.find(alg)->second(in); }
     // longer form for more demanding algorithms
     else if (adv_map3_.count(alg))
     { adv_map3_.find(alg)->second(in, params, vals); }
-
 }

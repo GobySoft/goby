@@ -26,7 +26,8 @@ using dccl::operator<<;
 
 int main()
 {
-    std::cout << "loading xml files: xml/simple.xml, xml/two_message.xml" << std::endl;
+    std::cout << "loading xml files: xml/simple.xml, xml/two_message.xml"
+              << std::endl;
 
     std::set<std::string> xml_files;
     xml_files.insert(DCCL_EXAMPLES_DIR "/dccl_simple/simple.xml");
@@ -80,6 +81,7 @@ int main()
     std::string hex2, hex3;
 
     // id = 2, name = GoToCommand
+    vals["destination"] = 2;
     vals["goto_x"] = 423;
     vals["goto_y"] = 523;
     vals["lights_on"] = true;

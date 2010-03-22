@@ -535,6 +535,13 @@ Next, the size of each \textit{message_var} (in the \ref tag_layout section) and
 
 and thus the whole message (zero padded from the most significant bits to the closest byte) sent would be \verbatim 00000010 01010001 10010000 01010101 00000000 00010101 01001010 11000000 \endverbatim or \verbatim 0x0251905500154AC0 \endverbatim plus the header, which in this case is 0x2000AA300230, so the full message sent is \verbatim 0x2000AA3002300251905500154AC0 \endverbatim
 
+\subsection dccl_uml UML diagrams
+
+The class structure of DCCL:
+\image html dccl_structure.png
+\image latex dccl_structure.eps "Structure diagram of libdccl." width=0.5\textwidth
+
+
 \section dccl_tags_details DCCL XML Tags Reference
 
 \subsection tag_all <all>

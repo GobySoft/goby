@@ -14,9 +14,10 @@
 
   \section main_resources Resources
   <ul>
-  <li> Home page: <http://goby-marine.com>
+  <li> Home page: <http://gobysoft.com>
   <li> Code, bug tracking, and answers: <https://launchpad.net/goby>.</li>
-  <li> Manual: <a href=http://goby-marine.com>(html)</a> <a href=http://aubergine.whoi.edu/goby-bzr/doc/goby-dev.pdf>(pdf)</a>.</li>
+  <li> Manual: <a href=http://gobysoft.com>(html)</a> <a href=http://gobysoft.com/goby-bzr/doc/goby-dev.pdf>(pdf)</a>.</li>
+  <li> Wiki: <forthcoming>.</li>
   </ul>
 
   \section main_manual Developer manual

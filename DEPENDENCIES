@@ -17,7 +17,8 @@ sudo apt-get install \
     build-essential \
     cmake \
     libboost-dev \
-    libncurses-dev
+    libncurses-dev \
+    libasio-dev
 
 # libdccl / libqueue:
 sudo apt-get install \

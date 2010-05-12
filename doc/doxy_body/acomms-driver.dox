@@ -61,31 +61,31 @@ Mapping between modem::Message and NMEA fields (see http://acomms.whoi.edu/docum
 <tr>
 <td>$CAACK</td>
 <td>
-modem::Message::src = SRC<br/>
-modem::Message::dest = DEST<br/>
-modem::Message::frame = Frame#<br/>
-modem::Message::ack = A<br/>
+modem::Message::src = SRC<br>
+modem::Message::dest = DEST<br>
+modem::Message::frame = Frame#<br>
+modem::Message::ack = A<br>
 </td>
 </tr>
 <tr>
 <td>$CADRQ</td>
 <td>
-modem::Message::src = SRC<br/>
-modem::Message::dest = DEST<br/>
-modem::Message::ack = ACK<br/>
-modem::Message::size = N<br/>
-modem::Message::frame = F#<br/>
+modem::Message::src = SRC<br>
+modem::Message::dest = DEST<br>
+modem::Message::ack = ACK<br>
+modem::Message::size = N<br>
+modem::Message::frame = F#<br>
 </td>
 </tr>
 <tr>
 <td>$CARXD</td>
 <td>
-modem::Message::src = SRC<br/>
-modem::Message::dest = DEST<br/>
-modem::Message::ack = ACK<br/>
-modem::Message::frame = F#<br/>
-modem::Message::data = HH...HH <br/>
-modem::Message::size = number of bytes in HH...HH<br/>
+modem::Message::src = SRC<br>
+modem::Message::dest = DEST<br>
+modem::Message::ack = ACK<br>
+modem::Message::frame = F#<br>
+modem::Message::data = HH...HH <br>
+modem::Message::size = number of bytes in HH...HH<br>
 </td>
 </tr>
 <tr>
@@ -99,21 +99,21 @@ modem::Message::size = number of bytes in HH...HH<br/>
 <tr>
 <td>$CCTXD</td>
 <td>
-SRC = modem::Message::src<br/>
-DEST = modem::Message::dest<br/>
-A = modem::Message::ack<br/>
-HH...HH = modem::Message::data<br/>
+SRC = modem::Message::src<br>
+DEST = modem::Message::dest<br>
+A = modem::Message::ack<br>
+HH...HH = modem::Message::data<br>
 </td>
 </tr>
 <tr>
 <td>$CCCYC</td>
 <td>
-CMD = 0<br/>
-ADR1 = modem::Message::src<br/>
-ADR2 = modem::Message::dest<br/>
-Packet Type = modem::Message::rate<br/>
-ACK = modem::Message::ack<br/>
-Nframes = modem::Message::frame<br/>
+CMD = 0<br>
+ADR1 = modem::Message::src<br>
+ADR2 = modem::Message::dest<br>
+Packet Type = modem::Message::rate<br>
+ACK = modem::Message::ack<br>
+Nframes = modem::Message::frame<br>
 </td>
 </tr> 
 <tr>

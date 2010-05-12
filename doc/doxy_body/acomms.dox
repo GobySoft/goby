@@ -70,11 +70,11 @@ To start on some (hopefully) common ground, let's begin with an analogy to Open 
     <td>\ref dccl</td>
     <td>dccl::DCCLCodec</td>
     <td>
-      \ref libdccl/examples/dccl_simple/dccl_simple.cpp "dccl_simple.cpp" <br/>
-      \ref libdccl/examples/two_message/two_message.cpp "two_message.cpp" <br/>
-      \ref libdccl/examples/plusnet/plusnet.cpp "plusnet.cpp" <br/>
-      \ref libdccl/examples/test/test.cpp "test.cpp" <br/>
-      \ref acomms/examples/chat/chat.cpp "chat.cpp" <br/>
+      \ref libdccl/examples/dccl_simple/dccl_simple.cpp "dccl_simple.cpp" <br>
+      \ref libdccl/examples/two_message/two_message.cpp "two_message.cpp" <br>
+      \ref libdccl/examples/plusnet/plusnet.cpp "plusnet.cpp" <br>
+      \ref libdccl/examples/test/test.cpp "test.cpp" <br>
+      \ref acomms/examples/chat/chat.cpp "chat.cpp" <br>
     </td>
   </tr>
   <tr>
@@ -87,8 +87,8 @@ To start on some (hopefully) common ground, let's begin with an analogy to Open 
     <td>\ref queue</td>
     <td>queue::QueueManager</td>
     <td>
-      \ref libqueue/examples/queue_simple/queue_simple.cpp "queue_simple.cpp" <br/>
-      \ref acomms/examples/chat/chat.cpp "chat.cpp" <br/>
+      \ref libqueue/examples/queue_simple/queue_simple.cpp "queue_simple.cpp" <br>
+      \ref acomms/examples/chat/chat.cpp "chat.cpp" <br>
     </td>
   </tr>    
   <tr>
@@ -102,8 +102,8 @@ To start on some (hopefully) common ground, let's begin with an analogy to Open 
     <td>\ref driver</td>
     <td>classes derived from modem::DriverBase; e.g. micromodem::MMDriver</td>
     <td>
-      \ref libmodemdriver/examples/driver_simple/driver_simple.cpp "driver_simple.cpp" <br/>
-      \ref acomms/examples/chat/chat.cpp "chat.cpp" <br/>
+      \ref libmodemdriver/examples/driver_simple/driver_simple.cpp "driver_simple.cpp" <br>
+      \ref acomms/examples/chat/chat.cpp "chat.cpp" <br>
     </td>
   </tr>
   <tr>
@@ -111,8 +111,8 @@ To start on some (hopefully) common ground, let's begin with an analogy to Open 
     <td>\ref amac</td>
     <td>amac::MACManager</td>
     <td>
-      \ref libamac/examples/amac_simple/amac_simple.cpp "amac_simple.cpp" <br/>
-      \ref acomms/examples/chat/chat.cpp "chat.cpp" <br/>
+      \ref libamac/examples/amac_simple/amac_simple.cpp "amac_simple.cpp" <br>
+      \ref acomms/examples/chat/chat.cpp "chat.cpp" <br>
     </td>
   </tr>
   <tr>

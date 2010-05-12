@@ -242,34 +242,38 @@ bool dccl::MessageVal::get(double& d) const
     }
 }
 
+
+
+
 dccl::MessageVal::operator double() const
 {
     double d;
     if(get(d)) return d;
     else return acomms::NaN;
 }
-dccl::MessageVal::operator float() const
-{
-    return double(*this);
-}
+
+
 dccl::MessageVal::operator bool() const
 {
     bool b;
     if(get(b)) return b;
     else return false;
 }
+
 dccl::MessageVal::operator std::string() const
 {
     std::string s;
     if(get(s)) return s;
     else return "";
 }
+
 dccl::MessageVal::operator long() const
 {
     long l;
     if(get(l)) return l;
     else return 0;
 }
+
 dccl::MessageVal::operator int() const
 {
     return long(*this);
@@ -280,21 +284,30 @@ dccl::MessageVal::operator unsigned() const
     return long(*this);
 }
 
+dccl::MessageVal::operator float() const
+{
+    return double(*this);
+}
+
+
 bool dccl::MessageVal::operator==(const std::string& s)
 {
     std::string us;
     return get(us) && us == s;
 }
+
 bool dccl::MessageVal::operator==(double d)
 {
     double us;
     return get(us) && us == d;
 }
+
 bool dccl::MessageVal::operator==(long l)
 {
     long us;
     return get(us) && us == l;
 }
+
 bool dccl::MessageVal::operator==(bool b)
 {
     bool us;

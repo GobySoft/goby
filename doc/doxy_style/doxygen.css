@@ -485,7 +485,7 @@ proper pixel height of your image.
 	display: none;
 	margin: 0px;
 }
-
+ 
 .directory-alt img {
 	vertical-align: -30%;
 }
@@ -496,3 +496,5 @@ address {
 	font-style: normal;
 	color: #333;
 }
+
+

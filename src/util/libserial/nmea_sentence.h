@@ -35,8 +35,7 @@ namespace serial
       public:
         enum { STRICT = true, NOT_STRICT = false };
     
-        NMEASentence(std::string s, bool strict = STRICT);    
-
+        NMEASentence(std::string s, bool strict = STRICT);
         NMEASentence();
     
         void add_cs(std::string& s);

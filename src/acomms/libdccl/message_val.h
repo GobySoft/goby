@@ -104,9 +104,6 @@ namespace dccl
         operator double() const;
 
         ///
-        /// allows statements of the form \code float f = MessageVal("3.5"); \endcode
-        operator float() const;
-        ///
         /// allows statements of the form \code bool b = MessageVal("1"); \endcode
         operator bool() const;
 
@@ -125,6 +122,11 @@ namespace dccl
         ///
         /// allows statements of the form \code unsigned u = MessageVal(2); \endcode
         operator unsigned() const;
+
+        ///
+        /// allows statements of the form \code float f = MessageVal("3.5"); \endcode
+        operator float() const;
+
         
 
         /// what type is the original type of this MessageVal?
@@ -142,7 +144,7 @@ namespace dccl
         bool operator==(double d);
         bool operator==(long l);
         bool operator==(bool b);
-
+        
         // @}
         
       private:

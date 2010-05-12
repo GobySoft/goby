@@ -108,11 +108,7 @@ void serial::SerialClient::do_close(const asio::error_code& error)
 { // something has gone wrong, so close the socket & make this object inactive
     if (error == asio::error::operation_aborted) // if this call is the result of a timer cancel()
         return; // ignore it because the connection cancelled the timer
-    if (error)
-        std::cerr << "error: " << error.message() << std::endl; // show the error message
-    else
-        std::cout << "error: serial port connection did not succeed.\n";
-        
+
     serial_port_.close();
     active_ = false;
 }

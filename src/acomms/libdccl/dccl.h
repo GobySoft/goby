@@ -164,7 +164,7 @@ namespace dccl
         ///
         /// \param k can either be std::string (the name of the message) or unsigned (the id of the message)
         /// \param hex the hexadecimal to be decoded.
-        /// \param m map of std::string (\xmltag name) to dccl::MessageVal to store the values to be decoded
+        /// \param m map of std::string (\ref tag_name) to dccl::MessageVal to store the values to be decoded
         template<typename Key>
             void decode(const Key& k, const std::string& hex,
                         std::map<std::string, MessageVal>& m)

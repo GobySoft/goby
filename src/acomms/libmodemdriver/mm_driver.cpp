@@ -272,7 +272,7 @@ void micromodem::MMDriver::drq(NMEASentence& nmea_in, modem::Message& m_in)
 
 void micromodem::MMDriver::cfg(NMEASentence& nmea, modem::Message& m)
 {
-    if(out_.front().talker_back() != "CFG" && out_.front().talker_back() != "CFQ")
+    if(out_.empty() || (out_.front().talker_back() != "CFG" && out_.front().talker_back() != "CFQ"))
         return;
     
     if(out_.front().talker_back() == "CFQ") pop_out();
@@ -280,7 +280,7 @@ void micromodem::MMDriver::cfg(NMEASentence& nmea, modem::Message& m)
 
 void micromodem::MMDriver::clk(NMEASentence& nmea, modem::Message& m)
 {
-    if(out_.front().talker_back() != "CLK")
+    if(out_.empty() || out_.front().talker_back() != "CLK")
         return;
     
     using namespace boost::posix_time;

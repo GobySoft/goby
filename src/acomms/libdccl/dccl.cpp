@@ -272,8 +272,9 @@ void dccl::DCCLCodec::decode_private(std::vector<Message>::iterator it,
     // clean up any ending junk added by modem
     in.resize(in.find_last_not_of(char(0))+1);
     
-    // 3. split body and header
-    std::string body = in.substr(acomms::NUM_HEADER_BYTES);
+    // 3. split body and header (avoid substr::out_of_range)
+    std::string body = (acomms::NUM_HEADER_BYTES < in.size()) ?
+        in.substr(acomms::NUM_HEADER_BYTES) : "";
     std::string head = in.substr(0, acomms::NUM_HEADER_BYTES);
     
     // 2. decrypt

@@ -203,7 +203,7 @@ namespace amac
         /// \example acomms/examples/chat/chat.cpp
         
       private:
-        enum { no_available_destination = -1 };
+        enum { NO_AVAILABLE_DESTINATION = -1 };
         IdFunc callback_dest;
         MsgFunc1 callback_initiate_transmission;
 

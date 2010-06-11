@@ -17,6 +17,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
+#include <sstream>
+
 #include "mm_driver.h"
 
 #include <boost/foreach.hpp>
@@ -42,7 +44,7 @@ micromodem::MMDriver::MMDriver(std::ostream* os /*= 0*/)
 }
 
 micromodem::MMDriver::~MMDriver()
-{ }
+ { }
 
 
 void micromodem::MMDriver::startup()
@@ -72,6 +74,17 @@ void micromodem::MMDriver::do_work()
     {
         boost::trim(in);
         if(os_) *os_ << group("mm_in") << "|" << microsec_simple_time_of_day() << "| " << in << std::endl;
+
+	// Begin the addition of code to support the gateway buoy
+	// Added by Andrew Bouchard, NSWC PCD
+
+	// Check for whether the gateway buoy is being used
+	if ( gateway_prefix_in_ != "" )
+	{
+	    // Remove the prefix
+	    in.erase(0, gateway_prefix_in_.length());
+	}
+	// End the addition of code to support the gateway buoy
         
         NMEASentence nmea(in, NMEASentence::STRICT);
         handle_modem_in(nmea);
@@ -122,9 +135,12 @@ void micromodem::MMDriver::handle_modem_out()
         }
 
         if(os_) *os_ << group("mm_out") << "|" << microsec_simple_time_of_day() << "| " << nmea.message() << std::endl;
-        
-        serial_write(nmea.message_cr_nl());
 
+        // Begin the addition of code to support the gateway buoy
+        // Added by Andrew Bouchard, NSWC PCD
+        serial_write(gateway_prefix_out_ + nmea.message_cr_nl());
+        // End the addition of code to support the gateway buoy
+        
         waiting_for_modem_ = true;
         last_write_time_ = time(NULL);
     }
@@ -444,3 +460,33 @@ void micromodem::MMDriver::initialize_talkers()
         ("GP",GP);
  
 }
+
+// Begin the addition of code to support the gateway buoy
+// Added by Andrew Bouchard, NSWC PCD
+/**
+ * set_gateway_prefix - This function creates a prefix that is required to
+ *      support the use of the Hydroid gateway buoy for acoustic communications
+ * @param IsGateway - A bool indicating whether the sytem is using a gateway
+ *      buoy for acoustic communications
+ * @param GatewayID - The numberical index of the buoy being used
+ */
+void micromodem::MMDriver::set_gateway_prefix(bool IsGateway, int GatewayID)
+{
+    // If the buoy is in use, make the prefix #M<ID>
+    if ( IsGateway )
+    {
+        std::stringstream prefix_in;
+	prefix_in << "!M" << GatewayID;
+        gateway_prefix_in_ = prefix_in.str();
+	std::stringstream prefix_out;
+	prefix_out << "#M" << GatewayID;
+        gateway_prefix_out_ = prefix_out.str();
+
+        if(os_) *os_ << "Setting the gateway buoy prefix: in=" << gateway_prefix_in_ << ", out=" << gateway_prefix_out_ << std::endl;
+    }
+
+
+
+}
+
+// End the addition of code to support the gateway buoy

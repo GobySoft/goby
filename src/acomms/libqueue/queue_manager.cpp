@@ -144,7 +144,14 @@ void queue::QueueManager::do_work()
 
 void queue::QueueManager::push_message(QueueKey key, modem::Message& new_message)
 {
-    if(queues_.count(key))
+    // message is to us, auto-loopback
+    if(new_message.dest() == modem_id_)
+    {
+        if(os_) *os_<< group("q_out") << "outgoing message is for us: using loopback, not physical interface" << std::endl;
+        receive_incoming_modem_data(new_message);
+    }
+    // we have a queue with this key, so push message for sending
+    else if(queues_.count(key))
     {
         queues_[key].push_message(new_message);
         qsize(&queues_[key]);
@@ -154,8 +161,7 @@ void queue::QueueManager::push_message(QueueKey key, modem::Message& new_message
         std::stringstream ss;
         ss << "no queue for key: " << key;
         throw std::runtime_error(ss.str());
-    }
-    
+    }    
 }
 
 void queue::QueueManager::push_message(unsigned id, modem::Message& new_message, QueueType type /* = dccl_queue */)
@@ -278,8 +284,9 @@ bool queue::QueueManager::provide_outgoing_modem_data(const modem::Message& mess
         modified_message_in.set_dest(packet_dest_);
         modified_message_in.set_ack(packet_ack_);
     }
-    
-    Queue* winning_var = find_next_sender(modified_message_in);
+
+    // first (0th) user-frame
+    Queue* winning_var = find_next_sender(modified_message_in, 0);
 
     // no data at all for this frame ... :(
     if(!winning_var)
@@ -325,7 +332,7 @@ bool queue::QueueManager::provide_outgoing_modem_data(const modem::Message& mess
         // if there's no room for more, don't bother looking
         // also end if the message you have is a CCL message
         if(modified_message_in.size() > acomms::NUM_HEADER_BYTES && winning_var->cfg().type() != queue_ccl)
-            winning_var = find_next_sender(modified_message_in);
+            winning_var = find_next_sender(modified_message_in, user_frames.size());
         else
             break;
     }
@@ -336,7 +343,7 @@ bool queue::QueueManager::provide_outgoing_modem_data(const modem::Message& mess
 }
 
 
-queue::Queue* queue::QueueManager::find_next_sender(modem::Message& message)
+queue::Queue* queue::QueueManager::find_next_sender(modem::Message& message, unsigned user_frame_num)
 {   
 // competition between variable about who gets to send
     double winning_priority;
@@ -366,9 +373,12 @@ queue::Queue* queue::QueueManager::find_next_sender(modem::Message& message)
         
         double priority, last_send_time;
         if(oq.priority_values(priority, last_send_time, message))
-        { 
-            if(!winning_var || priority > winning_priority ||
-               (priority == winning_priority && last_send_time < winning_last_send_time))
+        {
+            // no winner, better winner, or equal & older winner
+            // AND not CCL when not the first user-frame
+            if((!winning_var || priority > winning_priority ||
+                (priority == winning_priority && last_send_time < winning_last_send_time))
+               && !(oq.cfg().type() == queue_ccl && user_frame_num > 0))
             {
                 winning_priority = priority;
                 winning_last_send_time = last_send_time;
@@ -561,7 +571,7 @@ int queue::QueueManager::request_next_destination(unsigned size /* = std::numeri
     modem::Message message;
     message.set_size(size);
     
-    Queue* winning_var = find_next_sender(message);
+    Queue* winning_var = find_next_sender(message, 0);
 
     if(winning_var)
     {

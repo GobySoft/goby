@@ -296,7 +296,7 @@ namespace queue
         }
         
         // finds the %queue with the highest priority
-        Queue* find_next_sender(modem::Message& message);
+        Queue* find_next_sender(modem::Message& message, unsigned user_frame_num);
         
         // combine multiple "user" frames into a single "modem" frame
         modem::Message stitch(std::deque<modem::Message>& in_frames);

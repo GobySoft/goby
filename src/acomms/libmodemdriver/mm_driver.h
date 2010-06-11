@@ -47,7 +47,7 @@ namespace micromodem
     // allowed time skew between our clock and the %modem clock
     const unsigned ALLOWED_SKEW = 1;
     
-    const std::string SERIAL_DELIMITER = "\r\n";
+    const std::string SERIAL_DELIMITER = "\r";
     
     // number of frames for a given packet type
     const unsigned PACKET_FRAME_COUNT [] = { 1, 3, 3, 2, 2, 8 };
@@ -75,7 +75,16 @@ namespace micromodem
         ///
         /// \param m modem::Message containing the details of the transmission to be started. This does *not* contain data, which must be requested in a call to the datarequest callback (set by DriverBase::set_data_request_cb)
         void initiate_transmission(const modem::Message& m);
+        
 
+        // Begin the addition of code to support the gateway buoy
+        // Added by Andrew Bouchard, NSWC PCD
+
+        // Create the message prefix string needed by the gateway buoy
+        void set_gateway_prefix(bool IsGateway, int GatewayID);
+        // End the addition of code to support the gateway buoy
+
+        
       private:
         void validate_and_write(serial::NMEASentence& nmea);
         
@@ -160,6 +169,10 @@ namespace micromodem
     
         std::map<std::string, TalkerBacks> talker_backs_map_;
         std::map<std::string, TalkerFronts> talker_fronts_map_;
+
+        std::string gateway_prefix_in_;
+        std::string gateway_prefix_out_;
+
     };
 
 

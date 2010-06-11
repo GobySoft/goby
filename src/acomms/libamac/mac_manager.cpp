@@ -133,11 +133,11 @@ void amac::MACManager::send_poll(const asio::error_code& e)
     switch(type_)
     {
         case mac_slotted_tdma:
-            send_poll = (id == modem_id_ && destination != no_available_destination);
+            send_poll = (id == modem_id_ && destination != NO_AVAILABLE_DESTINATION);
             break;
 
         case mac_polled:
-            send_poll = (destination != no_available_destination);
+            send_poll = (destination != NO_AVAILABLE_DESTINATION);
             break;
 
         default:
@@ -326,6 +326,7 @@ std::map<unsigned, amac::Slot>::iterator amac::MACManager::add_slot(const amac::
 bool amac::MACManager::remove_slot(const amac::Slot& s)    
 {
     bool removed_a_slot = false;
+    
     for(id2slot_it it = id2slot_.begin(), n = id2slot_.end(); it != n; ++it)
     {
         if(s == it->second)
@@ -335,6 +336,7 @@ bool amac::MACManager::remove_slot(const amac::Slot& s)
             id2slot_.erase(it);
             slot_order_.remove(it);
             removed_a_slot = true;
+            break;
         }
     }
 

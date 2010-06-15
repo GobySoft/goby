@@ -27,17 +27,29 @@ namespace dccl
     class MessageVarHead : public MessageVarInt
     {
       public:
-      MessageVarHead(const std::string& name, int bit_size)
+      MessageVarHead(const std::string& default_name, int bit_size)
           : MessageVarInt(pow(2, bit_size)-1, 0),
-            bit_size_(bit_size)
-            { set_name(name); }
+            bit_size_(bit_size),
+            default_name_(default_name)
+            { set_name(default_name); }
 
         int calc_size() const
         { return bit_size_; }        
+
+        int calc_total_size() const
+        { return bit_size_; }
+            
         
       private:
+        void initialize_specific()
+        {
+            if(default_name_ == name_) source_var_.clear();
+        }
+
+        virtual void set_defaults_specific(MessageVal& v, unsigned modem_id, unsigned id)
+        { }
         
-         virtual boost::dynamic_bitset<unsigned char> encode_specific(const MessageVal& v)
+        virtual boost::dynamic_bitset<unsigned char> encode_specific(const MessageVal& v)
         { return boost::dynamic_bitset<unsigned char>(calc_size(), long(v)); }
         
         virtual MessageVal decode_specific(boost::dynamic_bitset<unsigned char>& b)
@@ -45,6 +57,7 @@ namespace dccl
         
       protected:
         int bit_size_;
+        std::string default_name_;
     };
     
     class MessageVarTime : public MessageVarHead
@@ -54,16 +67,20 @@ namespace dccl
         MessageVarHead(acomms::DCCL_HEADER_NAMES[acomms::head_time],
                        acomms::head_time_size)
         { }
+
+        void set_defaults_specific(MessageVal& v, unsigned modem_id, unsigned id)
+        {
+            using namespace tes_util;
+            double d;
+            v = (!v.empty() && v.get(d)) ? v : MessageVal(ptime2unix_double(ptime_now()));
+        }
         
         boost::dynamic_bitset<unsigned char> encode_specific(const MessageVal& v)
         {
             // trim to time of day
             using namespace tes_util;
-
-            double d;
-            boost::posix_time::time_duration time_of_day = (!v.empty() && v.get(d))
-                ? unix_double2ptime(d).time_of_day()
-                : ptime_now().time_of_day();
+            
+            boost::posix_time::time_duration time_of_day = unix_double2ptime(v).time_of_day();
             
             return boost::dynamic_bitset<unsigned char>(calc_size(), long(sci_round(time_duration2unix_double(time_of_day), 0)));    
         }
@@ -84,27 +101,41 @@ namespace dccl
       MessageVarCCLID():
         MessageVarHead(acomms::DCCL_HEADER_NAMES[acomms::head_ccl_id],
                acomms::head_ccl_id_size) { }        
-        
-        boost::dynamic_bitset<unsigned char> encode_specific(const MessageVal& v)
-        { return boost::dynamic_bitset<unsigned char>(calc_size(), long(acomms::DCCL_CCL_HEADER)); }
-        MessageVal decode_specific(boost::dynamic_bitset<unsigned char>& b)
-        { return MessageVal(long(b.to_ulong())); }
+
+        void set_defaults_specific(MessageVal& v, unsigned modem_id, unsigned id)
+        {
+            v = long(acomms::DCCL_CCL_HEADER);
+        }        
     };
     
     class MessageVarDCCLID : public MessageVarHead
     {
       public:
-      MessageVarDCCLID():
-        MessageVarHead(acomms::DCCL_HEADER_NAMES[acomms::head_dccl_id],
-               acomms::head_dccl_id_size) { }
+      MessageVarDCCLID()
+          : MessageVarHead(acomms::DCCL_HEADER_NAMES[acomms::head_dccl_id],
+                           acomms::head_dccl_id_size)
+        { }
+        
+        void set_defaults_specific(MessageVal& v, unsigned modem_id, unsigned id)
+        {
+            long l;
+            v = (!v.empty() && v.get(l)) ? v : MessageVal(long(id));
+        }
     };
 
     class MessageVarSrc : public MessageVarHead
     {
       public:
-      MessageVarSrc():
-        MessageVarHead(acomms::DCCL_HEADER_NAMES[acomms::head_src_id],
-               acomms::head_src_id_size) { }
+      MessageVarSrc()
+          : MessageVarHead(acomms::DCCL_HEADER_NAMES[acomms::head_src_id],
+                           acomms::head_src_id_size)
+            { }
+        
+        void set_defaults_specific(MessageVal& v, unsigned modem_id, unsigned id)
+        {
+            long l;
+            v = (!v.empty() && v.get(l)) ? v : MessageVal(long(modem_id));
+        }        
     };
 
     class MessageVarDest : public MessageVarHead
@@ -113,6 +144,12 @@ namespace dccl
       MessageVarDest():
         MessageVarHead(acomms::DCCL_HEADER_NAMES[acomms::head_dest_id],
                        acomms::head_dest_id_size) { }
+
+        void set_defaults_specific(MessageVal& v, unsigned modem_id, unsigned id)
+        {
+            long l;
+            v = (!v.empty() && v.get(l)) ? v : MessageVal(long(acomms::BROADCAST_ID));
+        }
     };
 
     class MessageVarMultiMessageFlag : public MessageVarHead
@@ -127,6 +164,7 @@ namespace dccl
         
         MessageVal decode_specific(boost::dynamic_bitset<unsigned char>& b)
         { return MessageVal(bool(b.to_ulong())); }        
+
     };
     
     class MessageVarBroadcastFlag : public MessageVarHead
@@ -150,6 +188,8 @@ namespace dccl
       MessageVarUnused():
         MessageVarHead(acomms::DCCL_HEADER_NAMES[acomms::head_unused],
                        acomms::head_unused_size) { }
+
+
     };
 
 }

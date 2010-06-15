@@ -17,85 +17,87 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
+#include <exception>
+
+#include <boost/foreach.hpp>
+
 #include "message_val.h"
 
+void dccl::MessageVal::init()
+{
+    sval_ = "";
+    dval_ = 0;
+    lval_ = 0;
+    bval_ = false;
+    precision_ = MAX_DBL_PRECISION;
+    type_ = cpp_notype;
+}
+
+
 dccl::MessageVal::MessageVal()
-    : sval_(""),
-      dval_(0),
-      lval_(0),
-      bval_(false),
-      precision_(MAX_DBL_PRECISION),
-      type_(cpp_notype)
-{}
+{ init(); }
 
 
 dccl::MessageVal::MessageVal(const std::string& s)
-    : sval_(s),
-      dval_(0),
-      lval_(0),
-      bval_(false),
-      precision_(MAX_DBL_PRECISION),
-      type_(cpp_string)
-{}
+{
+    init();
+    sval_ = s;
+    type_ = cpp_string;
+}
 
 
 dccl::MessageVal::MessageVal(const char* s)
-    : sval_(s),
-      dval_(0),
-      lval_(0),
-      bval_(false),
-      precision_(MAX_DBL_PRECISION),
-      type_(cpp_string)
-{}
+{
+    init();
+    sval_ = s;
+    type_ = cpp_string;
+}
 
 
 dccl::MessageVal::MessageVal(double d, int p /* = MAX_DBL_PRECISION*/ )
-    : sval_(""),
-      dval_(d),
-      lval_(0),
-      bval_(false),
-      precision_(p),
-      type_(cpp_double)
-{}
-
-
-dccl::MessageVal::MessageVal(long l)
-    : sval_(""),
-      dval_(0),
-      lval_(l),
-      bval_(false),
-      precision_(MAX_DBL_PRECISION),
-      type_(cpp_long)
-{}
-        
-
-dccl::MessageVal::MessageVal(int i)
-    : sval_(""),
-      dval_(0),
-      lval_(i),
-      bval_(false),
-      precision_(MAX_DBL_PRECISION),
-      type_(cpp_long)
-{}
-
+{
+    init();
+    dval_ = d;
+    precision_ = p;
+    type_ = cpp_double;
+}
 
 dccl::MessageVal::MessageVal(float f)
-    : sval_(""),
-      dval_(f),
-      lval_(0),
-      bval_(false),
-      precision_(MAX_DBL_PRECISION),
-      type_(cpp_long)
-{}
+{
+    init();
+    dval_ = f;
+    type_ = cpp_double;
+}
+
+dccl::MessageVal::MessageVal(long l)
+{
+    init();
+    lval_ = l;
+    type_ = cpp_long;
+}        
+
+dccl::MessageVal::MessageVal(int i)
+{
+    init();
+    lval_ = i;
+    type_ = cpp_long;
+}        
 
 dccl::MessageVal::MessageVal(bool b)
-    : sval_(""),
-      dval_(0),
-      lval_(0),
-      bval_(b),
-      precision_(MAX_DBL_PRECISION),
-      type_(cpp_bool)
-{}
+{
+    init();
+    bval_ = b;
+    type_ = cpp_bool;
+}        
+
+
+dccl::MessageVal::MessageVal(const std::vector<MessageVal>& vm)
+{
+    if(vm.size() != 1)
+        throw(std::runtime_error("vector cast to MessageVal failed: vector is not size 1"));
+    else
+        *this = vm[0];
+}
 
 
 void dccl::MessageVal::set(std::string sval)
@@ -118,7 +120,11 @@ bool dccl::MessageVal::get(std::string& s) const
             return true;            
 
         case cpp_double:
-            ss << std::fixed << std::setprecision(precision_) << dval_;
+            if((log10(dval_) + precision_) <= MAX_DBL_PRECISION) 
+                ss << std::fixed << std::setprecision(precision_) << dval_;
+            else
+                ss << dval_;
+            
             s = ss.str();
             return true;            
 
@@ -289,26 +295,42 @@ dccl::MessageVal::operator float() const
     return double(*this);
 }
 
+dccl::MessageVal::operator std::vector<MessageVal>() const
+{
+    return std::vector<MessageVal>(1, *this);
+}
 
-bool dccl::MessageVal::operator==(const std::string& s)
+bool dccl::MessageVal::operator==(const MessageVal& mv) const
+{
+    switch(mv.type_)
+    {
+        case cpp_string: return mv == sval_;
+        case cpp_double: return mv == dval_;
+        case cpp_long:   return mv == lval_;
+        case cpp_bool:   return mv == bval_;
+        default:         return false;
+    }
+}
+
+bool dccl::MessageVal::operator==(const std::string& s)  const
 {
     std::string us;
     return get(us) && us == s;
 }
 
-bool dccl::MessageVal::operator==(double d)
+bool dccl::MessageVal::operator==(double d) const
 {
     double us;
     return get(us) && us == d;
 }
 
-bool dccl::MessageVal::operator==(long l)
+bool dccl::MessageVal::operator==(long l) const
 {
     long us;
     return get(us) && us == l;
 }
 
-bool dccl::MessageVal::operator==(bool b)
+bool dccl::MessageVal::operator==(bool b) const
 {
     bool us;
     return get(us) && us == b;
@@ -324,8 +346,19 @@ std::ostream& dccl::operator<<(std::ostream& os, const dccl::MessageVal& mv)
         case cpp_double: return os << "double: " << std::fixed << std::setprecision(mv.precision_) << mv.dval_;
         case cpp_long:   return os << "long: " << mv.lval_;                
         case cpp_bool:   return os << "bool: " << std::boolalpha << mv.bval_;
-        default:         return os;
+        default:         return os << "{empty}";
     }
 }
 
     
+std::ostream& dccl::operator<<(std::ostream& os, const std::vector<dccl::MessageVal>& vm)
+{
+    int j=0;
+    BOOST_FOREACH(const dccl::MessageVal& m, vm)
+    {
+        if(j) os << ",";
+        os << m;
+        ++j;        
+    }
+    return os;
+}

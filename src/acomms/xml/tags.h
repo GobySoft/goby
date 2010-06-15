@@ -27,52 +27,54 @@
 namespace xml
 {    
     enum Tag { tag_not_defined,
-                tag_all,
-                tag_bool,
-                tag_delta_encode,
-                tag_enum,
-                tag_expected_delta,
-                tag_float,
-                tag_format,
-                tag_hex,
-                tag_id,
-                tag_incoming_hex_moos_var,
-                tag_int,
-                tag_key,
-                tag_layout,
-                tag_max_length,
-                tag_max,
-                tag_message_var,
-                tag_message,
-                tag_min,
-                tag_moos_var,
-                tag_name,
-                tag_num_bytes,
-                tag_outgoing_hex_moos_var,
-                tag_precision, 
-                tag_publish,
-                tag_publish_var,
-                tag_size,
-                tag_source,
-                tag_src_var,
-                tag_static,
-                tag_string,
-                tag_trigger_var,
-                tag_trigger_time,
-                tag_trigger,
-                tag_value,
-                tag_time,
-                tag_src_id,
-                tag_dest_id,
-                tag_destination_var,
-                tag_ack,
-                tag_blackout_time,
-                tag_max_queue,
-                tag_newest_first,
-                tag_priority_base,
-                tag_priority_time_const,
-                tag_ttl,
-                tag_value_base
+               tag_all,
+               tag_array_length,
+               tag_bool,
+               tag_delta_encode,
+               tag_enum,
+               tag_max_delta,
+               tag_float,
+               tag_format,
+               tag_hex,
+               tag_id,
+               tag_incoming_hex_moos_var,
+               tag_int,
+               tag_key,
+               tag_layout,
+               tag_max_length,
+               tag_max,
+               tag_message_var,
+               tag_message,
+               tag_min,
+               tag_moos_var,
+               tag_name,
+               tag_num_bytes,
+               tag_outgoing_hex_moos_var,
+               tag_precision, 
+               tag_publish,
+               tag_publish_var,
+               tag_repeat,
+               tag_size,
+               tag_source,
+               tag_src_var,
+               tag_static,
+               tag_string,
+               tag_trigger_var,
+               tag_trigger_time,
+               tag_trigger,
+               tag_value,
+               tag_time,
+               tag_src_id,
+               tag_dest_id,
+               tag_destination_var,
+               tag_ack,
+               tag_blackout_time,
+               tag_max_queue,
+               tag_newest_first,
+               tag_priority_base,
+               tag_priority_time_const,
+               tag_ttl,
+               tag_value_base
     };
 
     
@@ -80,10 +82,11 @@ namespace xml
     {
         boost::assign::insert(tags_map)
             ("all",tag_all)
+            ("array_length",tag_array_length)
             ("bool",tag_bool)
             ("delta_encode", tag_delta_encode)
             ("enum",tag_enum)
-            ("expected_delta",tag_expected_delta)
+            ("max_delta",tag_max_delta)
             ("float",tag_float)
             ("format",tag_format)
             ("hex", tag_hex)
@@ -104,6 +107,7 @@ namespace xml
             ("precision", tag_precision) 
             ("publish",tag_publish)
             ("publish_var",tag_publish_var)
+            ("repeat",tag_repeat)
             ("size",tag_size)
             ("source",tag_source)
             ("src_var",tag_src_var)

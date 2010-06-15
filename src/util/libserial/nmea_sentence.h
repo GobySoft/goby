@@ -71,7 +71,7 @@ namespace serial
         // all the parts
         std::vector<std::string>& parts()
         { return message_parts_; }
-    
+        
         std::string& operator[](std::vector<std::string>::size_type i) 
         { return message_parts_.at(i); }
     

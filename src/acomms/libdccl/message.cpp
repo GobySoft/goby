@@ -27,7 +27,7 @@ dccl::Message::Message():size_(0),
                          body_bits_(0),
                          id_(0),
                          trigger_time_(0.0),
-                         delta_encode_(false)
+                         repeat_(1)
 {
     header_.resize(acomms::NUM_HEADER_PARTS);
     header_[acomms::head_ccl_id] =
@@ -79,19 +79,32 @@ void dccl::Message::add_publish()
 // a number of tasks to perform after reading in an entire <message> from
 // the xml file
 void dccl::Message::preprocess()
-{
+{    
+    if(repeat_ > 1)
+    {
+        // set array_length_ for repeated messages
+        BOOST_FOREACH(boost::shared_ptr<MessageVar> mv, layout_)
+        {
+            if(mv->array_length() != 1)
+                throw(std::runtime_error("<repeat> is not allowed on messages with arrays (<array_length> not 1)"));
+            else
+                mv->set_array_length(repeat_);
+        }
+    }
+
     body_bits_ = 0;
     // iterate over layout_
     BOOST_FOREACH(boost::shared_ptr<MessageVar> mv, layout_)
     {
         mv->initialize(trigger_var_);
         // calculate total bits for the message from the bits for each message_var
-        body_bits_ += mv->calc_size();
+        body_bits_ += mv->calc_total_size();
     }
 
     // initialize header vars
     BOOST_FOREACH(boost::shared_ptr<MessageVar> mv, header_)
         mv->initialize(trigger_var_);
+
     
     if(body_bits_ > requested_bits_body())
     {
@@ -156,7 +169,7 @@ std::set<std::string> dccl::Message::get_pubsub_src_vars()
 }
 
     
-void dccl::Message::body_encode(std::string& body, std::map<std::string, MessageVal>& in)
+void dccl::Message::body_encode(std::string& body, std::map<std::string, std::vector<MessageVal> >& in)
 {
     boost::dynamic_bitset<unsigned char> body_bits(bytes2bits(used_bytes_body()));
 
@@ -176,7 +189,7 @@ void dccl::Message::body_encode(std::string& body, std::map<std::string, Message
     body.resize(body.find_last_not_of(char(0))+1);
 }
 
-void dccl::Message::body_decode(std::string& body, std::map<std::string, MessageVal>& out)
+void dccl::Message::body_decode(std::string& body, std::map<std::string, std::vector<MessageVal> >& out)
 {
     boost::dynamic_bitset<unsigned char> body_bits(bytes2bits(used_bytes_body()));       
     
@@ -196,13 +209,21 @@ void dccl::Message::body_decode(std::string& body, std::map<std::string, Message
     }
 }
 
+void dccl::Message::set_head_defaults(std::map<std::string, std::vector<MessageVal> >& in, unsigned modem_id)
+{
+    for (std::vector< boost::shared_ptr<MessageVar> >::iterator it = header_.begin(),
+             n = header_.end();
+         it != n;
+         ++it)
+    {
+        (*it)->set_defaults(in, modem_id, id_);
+    }
+}
 
-void dccl::Message::head_encode(std::string& head, std::map<std::string, MessageVal>& in)
+void dccl::Message::head_encode(std::string& head, std::map<std::string, std::vector<MessageVal> >& in)
 {    
     boost::dynamic_bitset<unsigned char> head_bits(bytes2bits(acomms::NUM_HEADER_BYTES));
 
-    long id;
-    in["_id"] = (!in["_id"].empty() && in["_id"].get(id)) ? long(id) : long(id_);
     
     for (std::vector< boost::shared_ptr<MessageVar> >::iterator it = header_.begin(),
              n = header_.end();
@@ -215,7 +236,7 @@ void dccl::Message::head_encode(std::string& head, std::map<std::string, Message
     bitset2string(head_bits, head);
 }
 
-void dccl::Message::head_decode(const std::string& head, std::map<std::string, MessageVal>& out)
+void dccl::Message::head_decode(const std::string& head, std::map<std::string, std::vector<MessageVal> >& out)
 {
     boost::dynamic_bitset<unsigned char> head_bits(bytes2bits(acomms::NUM_HEADER_BYTES));
     string2bitset(head_bits, head);
@@ -228,18 +249,20 @@ void dccl::Message::head_decode(const std::string& head, std::map<std::string, M
     }
 }
 
-bool dccl::Message::name_present(const std::string& name)
+boost::shared_ptr<dccl::MessageVar> dccl::Message::name2message_var(const std::string& name)
 {
     BOOST_FOREACH(boost::shared_ptr<MessageVar> mv, layout_)
     {
-        if(mv->name() == name) return true;
-    }            
+        if(mv->name() == name) return mv;
+    }    
     BOOST_FOREACH(boost::shared_ptr<MessageVar> mv, header_)
     {
-        if(mv->name() == name) return true;
+        if(mv->name() == name) return mv;
     }
 
-    return false;
+    throw std::runtime_error(std::string("DCCL: no such name \"" + name + "\" found in <layout> or <header>"));
+    
+    return boost::shared_ptr<dccl::MessageVar>();
 }
 
 ////////////////////////////

@@ -43,9 +43,8 @@ bool queue::Queue::push_message(modem::Message& new_message)
                      << "empty message attempted to be pushed to queue "
                      << cfg_.name() << std::endl;
         return false;
-    }            
-
-    new_message.set_src(modem_id_);
+    }
+    
     new_message.set_ack(new_message.ack_set() ? new_message.ack() : cfg_.ack());
         
     messages_.push_back(new_message);

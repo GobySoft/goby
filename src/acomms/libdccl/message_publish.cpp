@@ -26,7 +26,14 @@ using acomms::NaN;
 
 void dccl::Publish::initialize(Message& msg)
 {
-    // add names for any <all/> publishes and empty std::vector fo algorithms
+    repeat_ = msg.repeat();
+
+    // check and add all publish names grabbed by the xml parser
+    BOOST_FOREACH(const std::string& name, names_)
+        add_message_var(msg.name2message_var(name));
+
+    
+    // add names for any <all/> publishes and empty std::vector for algorithms
     if(use_all_names_)
     {
         BOOST_FOREACH(boost::shared_ptr<MessageVar> mv, msg.header())
@@ -34,65 +41,71 @@ void dccl::Publish::initialize(Message& msg)
             // ignore header pieces not explicitly overloaded by the <name> tag
             if(!mv->name().empty() && !(mv->name()[0] == '_'))
             {
-                add_name(mv->name());
+                add_message_var(mv);
                 // add an empty std::vector for algorithms (no algorithms allowed for <all/> tag)
                 add_algorithms(std::vector<std::string>());
             }
         }
-
+        
         BOOST_FOREACH(boost::shared_ptr<MessageVar> mv, msg.layout())
         {
-            add_name(mv->name());
+            add_message_var(mv);
             // add an empty std::vector for algorithms (no algorithms allowed for <all/> tag)
             add_algorithms(std::vector<std::string>());
         }
     }
-        
-    // check all publish names
-    BOOST_FOREACH(const std::string& name, names_)
-    {
-        if(!msg.name_present(name))
-            throw std::runtime_error(std::string("DCCL: no such name \"" + name + "\" found in layout for publish value."));
-    }
-
+    
     int format_count = 0;
     // add format if publish doesn't have one  
     if(!format_set_)
     {
         std::string format_str;
-        for (std::vector<std::string>::size_type j = 0, m = names_.size(); j < m; ++j) 
+        for (std::vector<boost::shared_ptr<MessageVar> >::size_type j = 0, m = message_vars_.size(); j < m; ++j)
         {
             if (m > 1)
             {
                 if (j)
                     format_str += ",";
-
+                
                 // allows you to use the same message var twice but gives a unique name based on the algorithms used
                 unsigned size = algorithms_[j].size();
-                if(count(names_.begin(), names_.end(), names_[j]) > 1 && size )
+                if(count(message_vars_.begin(), message_vars_.end(), message_vars_[j]) > 1 && size )
                 {
                     for(unsigned i = 0; i < size; ++i)
                         format_str += algorithms_[j][i];
                             
-                    format_str += "(" + names_[j] + ")=";
+                    format_str += "(" + message_vars_[j]->name() + ")=";
                 }
                 else
-                    format_str += names_[j] + "=";           
+                    format_str += message_vars_[j]->name() + "=";           
             }
             
-            ++format_count;
-            std::stringstream ss;
-            ss << "%" << format_count << "%";
-            format_str += ss.str();
+            for(unsigned i = 0,
+                    n = (repeat_ > 1) ? 1 : message_vars_[j]->array_length();
+                i < n;
+                ++i)
+            {                
+                ++format_count;
+                std::stringstream ss;
+
+                if(m > 1 && n > 1 && i == 0) ss << "{";
+                if(i) ss << ",";
+                
+                ss << "%" << format_count << "%";
+
+                if(m > 1 && n > 1 && i+1 == n) ss << "}";
+                format_str += ss.str();
+            }
         }
         format_ = format_str;
     } 
 }
 
 
-void dccl::Publish::fill_format(const std::map<std::string,MessageVal>& vals,
+void dccl::Publish::fill_format(const std::map<std::string,std::vector<MessageVal> >& vals,
                                 std::string& key,
-                                std::string& value)
+                                std::string& value,
+                                unsigned repeat_index)
 {
     std::string filled_value;
     // format is a boost library class for replacing printf and its ilk
@@ -107,16 +120,23 @@ void dccl::Publish::fill_format(const std::map<std::string,MessageVal>& vals,
         f.parse(input_format);
             
         // iterate over the message_vars and fill in the format field
-        for (std::vector<std::string>::size_type k = 0, o = names_.size(); k < o; ++k)
+        for (std::vector<boost::shared_ptr<MessageVar> >::size_type k = 0, o = message_vars_.size(); k < o; ++k)
         {
-            MessageVal v = vals.find(names_[k])->second;
-            
-            std::vector<std::string>::size_type num_algs = algorithms_[k].size();
-            for(std::vector<std::string>::size_type l = 0; l < num_algs; ++l)
-                ap_->algorithm(v, algorithms_[k][l], vals);
-            
-            std::string s = v;
-            f % s;
+            std::vector<MessageVal> vm = vals.find(message_vars_[k]->name())->second;
+            for(std::vector<MessageVal>::size_type i = (repeat_ > 1) ? repeat_index : 0,
+                    n = (repeat_ > 1) ? repeat_index + 1 : vm.size();
+                i < n;
+                ++i)
+            {
+                std::vector<std::string>::size_type num_algs = algorithms_[k].size();
+                for(std::vector<std::string>::size_type l = 0; l < num_algs; ++l)
+                    ap_->algorithm(vm[i], i, algorithms_[k][l], vals);
+
+                // special case when repeating and variable has a single entry, repeat
+                // that entry over all the publishes (this is used for the header
+                std::string s = (repeat_ > 1 && vm.size() == 1) ? vm[0] : vm[i];
+                f % s;
+            }
         }
 
         filled_value = f.str();
@@ -139,50 +159,56 @@ void dccl::Publish::fill_format(const std::map<std::string,MessageVal>& vals,
 
     
 
-void dccl::Publish::write_publish(const std::map<std::string,MessageVal>& vals,
+void dccl::Publish::write_publish(const std::map<std::string,std::vector<MessageVal> >& vals,
                                   std::multimap<std::string,MessageVal>& pubsub_vals)
 
 {
-    std::string out_var, out_val;
-    fill_format(vals, out_var, out_val);
-    
-    // user sets to string
-    if(type_ == cpp_string)
-    {
-        pubsub_vals.insert(std::pair<std::string, MessageVal>(out_var, out_val));
-        return;
+    for(unsigned i = 0, n = repeat_;
+        i < n;
+        ++i)
+    {        
+        std::string out_var, out_val;
+        fill_format(vals, out_var, out_val, i);
+        
+        // user sets to string
+        if(type_ == cpp_string)
+        {
+            pubsub_vals.insert(std::pair<std::string, MessageVal>(out_var, out_val));
+            continue;
+        }
+        
+        // pass through a MessageVal to do the type conversions
+        MessageVal mv = out_val;
+        double out_dval = mv;
+        if(type_ == cpp_double)
+        {
+            pubsub_vals.insert(std::pair<std::string, MessageVal>(out_var, out_dval));
+            continue;
+        }
+        long out_lval = mv;    
+        if(type_ == cpp_long)
+        {
+            pubsub_vals.insert(std::pair<std::string, MessageVal>(out_var, out_lval));
+            continue;
+            
+        }
+        bool out_bval = mv;
+        if(type_ == cpp_bool)
+        {
+            pubsub_vals.insert(std::pair<std::string, MessageVal>(out_var, out_bval));
+            continue;
+        }
+        
+        // see if our value is numeric
+        bool is_numeric = true;
+        try { boost::lexical_cast<double>(out_val); }
+        catch (boost::bad_lexical_cast &) { is_numeric = false; }
+        
+        if(!is_numeric)
+            pubsub_vals.insert(std::pair<std::string, MessageVal>(out_var, out_val));
+        else
+            pubsub_vals.insert(std::pair<std::string, MessageVal>(out_var, out_dval));
     }
-
-    // pass through a MessageVal to do the type conversions
-    MessageVal mv = out_val;
-    double out_dval = mv;
-    if(type_ == cpp_double)
-    {
-        pubsub_vals.insert(std::pair<std::string, MessageVal>(out_var, out_dval));
-        return;
-    }
-    long out_lval = mv;    
-    if(type_ == cpp_long)
-    {
-        pubsub_vals.insert(std::pair<std::string, MessageVal>(out_var, out_lval));
-        return;
-    }
-    bool out_bval = mv;
-    if(type_ == cpp_bool)
-    {
-        pubsub_vals.insert(std::pair<std::string, MessageVal>(out_var, out_bval));
-        return;
-    }
-    
-    // see if our value is numeric
-    bool is_numeric = true;
-    try { boost::lexical_cast<double>(out_val); }
-    catch (boost::bad_lexical_cast &) { is_numeric = false; }
-
-    if(!is_numeric)
-        pubsub_vals.insert(std::pair<std::string, MessageVal>(out_var, out_val));
-    else
-        pubsub_vals.insert(std::pair<std::string, MessageVal>(out_var, out_dval));
 }
 
     
@@ -194,9 +220,9 @@ std::string dccl::Publish::get_display() const
     ss << ")moos_var: {" << var_ << "}" << std::endl;
     ss << "\tvalue: \"" << format_ << "\"" << std::endl;
     ss << "\tmessage_vars:" << std::endl;
-    for (std::vector<std::string>::size_type j = 0, m = names_.size(); j < m; ++j)
+    for (std::vector<boost::shared_ptr<MessageVar> >::size_type j = 0, m = message_vars_.size(); j < m; ++j)
     {
-        ss << "\t\t" << (j+1) << ": " << names_[j];
+        ss << "\t\t" << (j+1) << ": " << message_vars_[j]->name();
 
         for(std::vector<std::string>::size_type k = 0, o = algorithms_[j].size(); k < o; ++k)
         {

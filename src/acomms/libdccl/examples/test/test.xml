@@ -2,55 +2,68 @@
 <message_set>
   <message>
     <name>TEST</name>
-    <size>32</size>
+    <size>256</size>
     <id>4</id>
+    <repeat>5</repeat>
     <layout>
       <static>
         <name>Stat</name>
         <value>hi</value>
       </static>
-      <bool algorithm="invert">
-        <name>B</name>
-      </bool>
-      <enum>
-        <name>E</name>
-        <value>cat</value>
-        <value>dog</value>
-        <value>mouse</value>
-      </enum>
-      <string algorithm="prepend_fat">
-        <name>S</name>
-        <max_length>15</max_length>
-      </string>
-      <int algorithm="+1">
-        <name>I</name>
-        <max>100</max>
-        <min>-50</min>	  
-      </int>
-      <float>
-        <name>my_NAN</name>
-        <max>100</max>
-        <min>-50</min>	  
-        <precision>0</precision>
-      </float>
-      <float algorithm="*2">
-        <name>F</name>
-        <max>100</max>
-        <min>-50</min>	  
-        <precision>2</precision>
-      </float>      
 
       <float algorithm="sum:F:I">
         <name>SUM</name>
         <max>200</max>
         <min>-100</min>	  
         <precision>2</precision>
+
       </float>      
 
-      <hex>
+      <float algorithm="*2">
+        <name>F</name>
+        <max>100</max>
+        <min>-50</min>	  
+        <precision>2</precision>
+      </float>
+
+      <bool algorithm="invert">
+        <name>B</name>
+
+      </bool>
+
+      <enum>
+        <name>E</name>
+        <value>cat</value>
+        <value>dog</value>
+        <value>mouse</value>
+        <value>emu</value>
+
+      </enum>
+
+      <string algorithm="prepend_fat">
+        <name>S</name>
+        <max_length>15</max_length>
+
+      </string>
+
+      <float>
+        <name>my_NAN</name>
+        <max>100</max>
+        <min>-50</min>	  
+        <precision>0</precision>
+      </float>
+
+      <int algorithm="+1">
+        <name>I</name>
+        <max>100</max>
+        <min>-50</min>	  
+        <max_delta>10</max_delta>
+      </int>
+
+<!--      <hex>
         <name>H</name>
         <num_bytes>4</num_bytes>
-      </hex>
+      </hex> -->
 
     </layout>
   </message>

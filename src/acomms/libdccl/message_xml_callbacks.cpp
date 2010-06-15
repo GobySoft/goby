@@ -69,9 +69,6 @@ void dccl::MessageContentHandler::startElement(
                 messages.back().last_message_var().set_algorithms(tes_util::explode(toNative(val),',',true));
             break;
 
-        case tag_delta_encode:
-            messages.back().set_delta_encode(true);
-            break;
             
         case tag_trigger_var:
             if((val = attrs.getValue(mandatory_content.c_str())) != 0)
@@ -172,8 +169,8 @@ void dccl::MessageContentHandler::endElement(
         case tag_string:
             break;
 
-        case tag_expected_delta:
-            messages.back().last_message_var().set_expected_delta(trimmed_data);
+        case tag_max_delta:
+            messages.back().last_message_var().set_max_delta(trimmed_data);
             break;
             
         case tag_format:
@@ -183,6 +180,11 @@ void dccl::MessageContentHandler::endElement(
         case tag_id:
             messages.back().set_id(trimmed_data);
             break;
+            
+        case tag_repeat:
+            messages.back().set_repeat(trimmed_data);
+            break;
+
             
         case tag_incoming_hex_moos_var:
             messages.back().set_in_var(trimmed_data);
@@ -267,6 +269,11 @@ void dccl::MessageContentHandler::endElement(
                 messages.back().last_message_var().add_enum(trimmed_data);
             break;
 
+        case tag_array_length:
+            messages.back().last_message_var().set_array_length(trimmed_data);
+            break;
+
+            
         default:
             break;
             

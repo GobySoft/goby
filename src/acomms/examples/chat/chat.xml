@@ -11,7 +11,7 @@
     <layout>
       <string>
         <name>message</name>
-        <max_length>30</max_length>
+        <max_length>26</max_length>
       </string>      
     </layout>
   </message>

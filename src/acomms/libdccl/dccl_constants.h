@@ -23,6 +23,7 @@
 #include <string>
 #include <bitset>
 #include <limits>
+#include <vector>
 
 #include <crypto++/filters.h>
 #include <crypto++/hex.h>
@@ -108,7 +109,7 @@ namespace dccl
         s = out;
     }
     
-    
+
 }
 
 #endif

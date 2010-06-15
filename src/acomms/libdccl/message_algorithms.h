@@ -37,28 +37,28 @@ namespace dccl
     ///
     /// Think of this as a generalized version of a function pointer (void (*)(dccl::MessageVal&)). See http://www.boost.org/doc/libs/1_34_0/doc/html/function.html for more on boost:function.
     typedef boost::function<void (MessageVal&)> AlgFunction1;
-    /// \brief boost::function for a function taking a dccl::MessageVal reference, a std::vector<std::string> (the parameters for the algorithm), and a std::map<std::string,dccl::MessageVal> (map of all the other message variable values in the current message). Used for algorithm callbacks.
+    /// \brief boost::function for a function taking a dccl::MessageVal reference, and the MessageVal of a second part of the message. Used for algorithm callbacks.
     ///
-    /// Think of this as a generalized version of a function pointer (void (*)(MessageVal&, const std::vector<std::string>&, const std::map<std::string,dccl::MessageVal>&)). See http://www.boost.org/doc/libs/1_34_0/doc/html/function.html for more on boost:function.
-    typedef boost::function<void (MessageVal&, const std::vector<std::string>&, const std::map<std::string,MessageVal>&)> AlgFunction3;
+    /// Think of this as a generalized version of a function pointer (void (*)(MessageVal&, const MessageVal&). See http://www.boost.org/doc/libs/1_34_0/doc/html/function.html for more on boost:function.
+    typedef boost::function<void (MessageVal&, const std::vector<MessageVal>&)> AlgFunction2;
 
     class AlgorithmPerformer
     {
       public:
         static AlgorithmPerformer* getInstance();
 
-        void algorithm(MessageVal& in, const std::string& algorithm, const std::map<std::string,MessageVal>& vals);
+        void algorithm(MessageVal& in, unsigned array_index, const std::string& algorithm, const std::map<std::string,std::vector<MessageVal> >& vals);
         
         void add_algorithm(const std::string& name, AlgFunction1 func)
         { adv_map1_[name] = func; }
 
-        void add_adv_algorithm(const std::string& name, AlgFunction3 func)
-        { adv_map3_[name] = func; }
+        void add_algorithm(const std::string& name, AlgFunction2 func)
+        { adv_map2_[name] = func; }
         
       private:
         static AlgorithmPerformer* inst_;
         std::map<std::string, AlgFunction1> adv_map1_;
-        std::map<std::string, AlgFunction3> adv_map3_;
+        std::map<std::string, AlgFunction2> adv_map2_;
         
         AlgorithmPerformer()
         {}

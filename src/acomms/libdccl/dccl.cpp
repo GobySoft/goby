@@ -29,14 +29,14 @@
 /////////////////////
 // public methods (general use)
 /////////////////////
-dccl::DCCLCodec::DCCLCodec() : start_time_(time(NULL))
+dccl::DCCLCodec::DCCLCodec() : start_time_(time(NULL)), modem_id_(0)
 { }
     
-dccl::DCCLCodec::DCCLCodec(const std::string& file, const std::string schema) : start_time_(time(NULL))
+dccl::DCCLCodec::DCCLCodec(const std::string& file, const std::string schema) : start_time_(time(NULL)), modem_id_(0)
 { add_xml_message_file(file, schema); }
     
 dccl::DCCLCodec::DCCLCodec(const std::set<std::string>& files,
-                           const std::string schema) : start_time_(time(NULL))
+                           const std::string schema) : start_time_(time(NULL)), modem_id_(0)
 {
     BOOST_FOREACH(const std::string& s, files)
         add_xml_message_file(s, schema);
@@ -115,10 +115,10 @@ void dccl::DCCLCodec::add_algorithm(const std::string& name, AlgFunction1 func)
     ap -> add_algorithm(name, func);
 }
 
-void dccl::DCCLCodec::add_adv_algorithm(const std::string& name, AlgFunction3 func)
+void dccl::DCCLCodec::add_adv_algorithm(const std::string& name, AlgFunction2 func)
 {
     AlgorithmPerformer* ap = AlgorithmPerformer::getInstance();
-    ap -> add_adv_algorithm(name, func);
+    ap -> add_algorithm(name, func);
 }
 
 
@@ -167,11 +167,16 @@ bool dccl::DCCLCodec::is_publish_trigger(std::set<unsigned>& id, const std::stri
 
 bool dccl::DCCLCodec::is_time_trigger(std::set<unsigned>& id)
 {
-    for (std::vector<dccl::Message>::const_iterator it = messages_.begin(), n = messages_.end(); it != n; ++it)
+    for (std::vector<dccl::Message>::iterator it = messages_.begin(), n = messages_.end(); it != n; ++it)
     {
-        if(it->trigger_type() == "time" && time(NULL) > (start_time_ + it->trigger_number() * it->trigger_time())) 
+        if(it->trigger_type() == "time" && time(NULL) > (start_time_ + it->trigger_number() * it->trigger_time()))
+        {
             id.insert(it->id());
+            // increment message counter
+            ++(*it);
+        }        
     }
+
     return (id.empty()) ? false : true;
 }
 
@@ -242,10 +247,13 @@ std::vector<dccl::Message>::iterator dccl::DCCLCodec::to_iterator(const unsigned
 
 void dccl::DCCLCodec::encode_private(std::vector<Message>::iterator it,
                                      std::string& out,
-                                     std::map<std::string, MessageVal> in)
+                                     std::map<std::string, std::vector<MessageVal> > in /* copy */)
 {
     // 1. encode parts
     std::string body, head;
+    
+    it->set_head_defaults(in, modem_id_);
+
     it->head_encode(head, in);
     it->body_encode(body, in);
     
@@ -257,14 +265,11 @@ void dccl::DCCLCodec::encode_private(std::vector<Message>::iterator it,
 
     // 4. hex encode
     hex_encode(out);
-
-    // increment message counter
-    ++(*it);
 }
-        
+
 void dccl::DCCLCodec::decode_private(std::vector<Message>::iterator it,
                                      std::string in,
-                                     std::map<std::string, MessageVal>& out)
+                                     std::map<std::string, std::vector<MessageVal> >& out)
 {
     // 4. hex decode
     hex_decode(in);
@@ -290,7 +295,7 @@ void dccl::DCCLCodec::decode_private(std::vector<Message>::iterator it,
         
 void dccl::DCCLCodec::encode_private(std::vector<Message>::iterator it,
                                      modem::Message& out_msg,
-                                     const std::map<std::string, MessageVal>& in)
+                                     const std::map<std::string, std::vector<MessageVal> >& in)
 {
     std::string out;
     encode_private(it, out, in);
@@ -310,7 +315,7 @@ void dccl::DCCLCodec::encode_private(std::vector<Message>::iterator it,
 
 void dccl::DCCLCodec::decode_private(std::vector<Message>::iterator it,
                                      const modem::Message& in_msg,
-                                     std::map<std::string, MessageVal>& out)
+                                     std::map<std::string,std::vector<MessageVal> >& out)
 { decode_private(it, in_msg.data(), out); }
 
 

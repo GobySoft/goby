@@ -90,8 +90,10 @@ namespace dccl
         template<typename T> void set_size(const T& t)
         { set_size(boost::lexical_cast<unsigned>(t)); }
 
-        void set_delta_encode(bool b)
-        { delta_encode_ = b; }
+        void set_repeat(unsigned repeat)
+        { repeat_ = repeat; }
+        template<typename T> void set_repeat(const T& t)
+        { set_repeat(boost::lexical_cast<unsigned>(t)); }
         
         void add_message_var(const std::string& type);        
         void add_publish();
@@ -106,6 +108,7 @@ namespace dccl
         std::string trigger_type() const      { return trigger_type_; }
         std::string in_var() const            { return in_var_; }
         std::string out_var() const           { return out_var_; }
+        unsigned repeat() const               { return repeat_; }
 
         MessageVar& last_message_var()        { return *layout_.back(); }
         MessageVar& header_var(acomms::DCCLHeaderPart p) { return *header_[p]; }
@@ -120,7 +123,8 @@ namespace dccl
         std::set<std::string> get_pubsub_src_vars();
         std::set<std::string> get_pubsub_all_vars();
 
-        bool name_present(const std::string& name);
+        boost::shared_ptr<MessageVar> name2message_var(const std::string& name);
+        
         
         //other
         std::string get_display() const;
@@ -128,12 +132,14 @@ namespace dccl
         std::map<std::string, std::string> message_var_names() const;
         void preprocess();
             
-
-        void head_encode(std::string& head, std::map<std::string, MessageVal>& in);
-        void head_decode(const std::string& head, std::map<std::string, MessageVal>& out);
+        void set_head_defaults(std::map<std::string, std::vector<MessageVal> >& in, unsigned modem_id);
         
-        void body_encode(std::string& body, std::map<std::string, MessageVal>& in);
-        void body_decode(std::string& body, std::map<std::string, MessageVal>& out);
+    
+        void head_encode(std::string& head, std::map<std::string, std::vector<MessageVal> >& in);
+        void head_decode(const std::string& head, std::map<std::string, std::vector<MessageVal> >& out);
+        
+        void body_encode(std::string& body, std::map<std::string, std::vector<MessageVal> >& in);
+        void body_decode(std::string& body, std::map<std::string, std::vector<MessageVal> >& out);
 
         // increment, means increase trigger number
         // prefix ++Message
@@ -192,8 +198,11 @@ namespace dccl
         unsigned body_bits_;
 
         unsigned id_;
+        unsigned modem_id_;
         double trigger_time_;        
-        bool delta_encode_;
+
+        unsigned repeat_;
+        
         std::string name_;
         std::string trigger_type_;
         std::string trigger_var_;

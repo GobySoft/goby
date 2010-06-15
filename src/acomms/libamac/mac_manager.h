@@ -110,6 +110,16 @@ namespace amac
         int dest() const { return dest_; }
         int rate() const { return rate_; } 
         SlotType type() const { return type_; }
+        std::string type_as_string() const
+        {
+            switch(type_)
+            {
+                case slot_data: return "data";
+                case slot_ping: return "ping";
+                default: return "unknown";
+            }
+        }
+        
         boost::posix_time::ptime last_heard_time() const { return last_heard_time_; }
         unsigned slot_time() const { return slot_time_; }        
         //@}
@@ -187,7 +197,11 @@ namespace amac
         void set_destination_cb(IdFunc func) { callback_dest = func; }
         /// \brief Callback for initiate a tranmission. Typically bound to modem::DriverBase::initiate_transmission. 
         void set_initiate_transmission_cb(MsgFunc1 func) { callback_initiate_transmission = func; }
-        //@}
+
+        /// \brief Callback for initiate ranging ("ping"). Typically bound to modem::DriverBase::initiate_ranging. 
+        void set_initiate_ranging_cb(MsgFunc1 func) { callback_initiate_ranging = func; }
+
+//@}
 
         /// \name Get
         //@{    
@@ -206,6 +220,7 @@ namespace amac
         enum { NO_AVAILABLE_DESTINATION = -1 };
         IdFunc callback_dest;
         MsgFunc1 callback_initiate_transmission;
+        MsgFunc1 callback_initiate_ranging;
 
         boost::posix_time::ptime next_cycle_time();
 

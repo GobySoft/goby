@@ -141,13 +141,14 @@ void queue::QueueManager::do_work()
     
 }
 
-
 void queue::QueueManager::push_message(QueueKey key, modem::Message& new_message)
 {
+    
     // message is to us, auto-loopback
     if(new_message.dest() == modem_id_)
     {
         if(os_) *os_<< group("q_out") << "outgoing message is for us: using loopback, not physical interface" << std::endl;
+        
         receive_incoming_modem_data(new_message);
     }
     // we have a queue with this key, so push message for sending
@@ -203,6 +204,7 @@ std::ostream& queue::operator<< (std::ostream& out, const QueueManager& d)
 modem::Message queue::QueueManager::stitch(std::deque<modem::Message>& in)
 {
     modem::Message out;
+//    out.set_src(modem_id_);
     out.set_dest(packet_dest_);
     out.set_ack(packet_ack_);    
     stitch_recursive(out.data_ref(), in); // returns stitched together version
@@ -227,7 +229,7 @@ bool queue::QueueManager::stitch_recursive(std::string& data, std::deque<modem::
         (message.dest() == acomms::BROADCAST_ID) ? true : false;
     
     std::string& new_data = message.data_ref();
-
+    
     if(!is_last_user_frame)
     {
         std::string frame_size =
@@ -530,19 +532,19 @@ bool queue::QueueManager::unstitch_recursive(std::string& data, modem::Message& 
     // overwrite destination as BROADCAST if broadcast bit is set
     message.set_dest(broadcast_flag ? acomms::BROADCAST_ID : original_dest);
     publish_incoming_piece(message, dccl_id);        
-
+    
     // put the destination back
     message.set_dest(original_dest);
     
     if(!multimessage_flag)
         return true;    
-    else    
+    else
         return unstitch_recursive(data, message);
 }
 
 bool queue::QueueManager::publish_incoming_piece(modem::Message message, const unsigned incoming_var_id)
 {
-    if(message.dest() != 0 && message.dest() != modem_id_)
+    if(message.dest() != acomms::BROADCAST_ID && message.dest() != modem_id_)
     {
         if(os_) *os_<< group("q_in") << warn << "ignoring message for modem_id = "
                     << message.dest() << std::endl;

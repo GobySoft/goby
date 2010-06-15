@@ -58,6 +58,10 @@ namespace modem
         /// Virtual initiate_transmission method. see derived classes (e.g. micromodem::MMDriver) for examples.
         virtual void initiate_transmission(const modem::Message& m) = 0;
 
+        /// Virtual initiate_ranging method. see derived classes (e.g. micromodem::MMDriver) for examples.
+        virtual void initiate_ranging(const modem::Message& m) = 0;
+
+        
         /// Set configuration strings for the %modem. The contents of these strings depends on the specific %modem.
         void set_cfg(const std::vector<std::string>& cfg) { cfg_ = cfg; }
 
@@ -74,6 +78,13 @@ namespace modem
         /// \param message A modem::Message reference containing the contents of the received %modem message.       
         void set_receive_cb(MsgFunc1 func)     { callback_receive = func; }
 
+        /// \brief Set the callback to receive incoming ranging responses.
+        ///
+        /// \param func Pointer to function (or any other object boost::function accepts) matching the signature of modem::MsgFunc1.
+        /// The callback (func) will be invoked with the following parameters:
+        /// \param message A modem::Message reference containing the contents of the received ranging (in travel time in seconds)
+        void set_range_reply_cb(MsgFunc1 func)     { callback_range_reply = func; }
+        
         /// \brief Set the callback to receive acknowledgements from the %modem.
         ///
         ///  If using the queue::QueueManager, pass queue::QueueManager::handle_modem_ack to this method.
@@ -121,11 +132,6 @@ namespace modem
         /// \return the serial port baud rate
         unsigned baud() { return baud_; }
         
-        /// \brief write a line to the serial port. 
-        ///
-        /// Would be protected but sometimes application level processes require direct access to the serial port.
-        /// \param out reference to string to write. Must already include any end-of-line character(s).
-        void serial_write(const std::string& out);
         
       protected:
         /// \brief Constructor
@@ -136,6 +142,12 @@ namespace modem
         /// Destructor
         ~DriverBase() { }
 
+        /// \brief write a line to the serial port. 
+        ///
+        /// \param out reference to string to write. Must already include any end-of-line character(s).
+        void serial_write(const std::string& out);
+
+        
         /// \brief read a line from the serial port, including end-of-line character(s)
         ///
         /// \param in reference to string to store line
@@ -151,6 +163,7 @@ namespace modem
         std::vector<std::string> cfg_; 
 
         MsgFunc1 callback_receive;
+        MsgFunc1 callback_range_reply;
         MsgFunc1 callback_ack;
         MsgFunc2 callback_datarequest;
         MsgFunc1 callback_decoded;

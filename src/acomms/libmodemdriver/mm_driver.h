@@ -75,18 +75,20 @@ namespace micromodem
         ///
         /// \param m modem::Message containing the details of the transmission to be started. This does *not* contain data, which must be requested in a call to the datarequest callback (set by DriverBase::set_data_request_cb)
         void initiate_transmission(const modem::Message& m);
-        
+
+        /// \brief Initiate ranging ("ping") to the modem. 
+        ///
+        /// \param m modem::Message containing the details of the ranging request to be started. (source and destination)
+        void initiate_ranging(const modem::Message& m);
 
         // Begin the addition of code to support the gateway buoy
         // Added by Andrew Bouchard, NSWC PCD
-
         // Create the message prefix string needed by the gateway buoy
         void set_gateway_prefix(bool IsGateway, int GatewayID);
         // End the addition of code to support the gateway buoy
 
-        
-      private:
         void validate_and_write(serial::NMEASentence& nmea);
+      private:
         
         // startup
         void initialize_talkers();

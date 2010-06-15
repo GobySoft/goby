@@ -58,6 +58,17 @@ namespace tes_util
             return (final+1) / ex;
     }
 
+// K.V. Mackenzie, Nine-term equation for the sound speed in the oceans (1981) J. Acoust. Soc. Am. 70(3), pp 807-812
+// http://scitation.aip.org/getabs/servlet/GetabsServlet?prog=normal&id=JASMAN000070000003000807000001&idtype=cvips&gifs=yes
+    inline double mackenzie_soundspeed(double T, double S, double D)
+    {
+        return
+            1448.96 + 4.591*T - 5.304e-2*T*T + 2.374e-4*T*T*T +
+            1.340*(S-35) + 1.630e-2*D+1.675e-7*D*D -
+            1.025e-2*T*(S-35)-7.139e-13*T*D*D*D;
+    }
+
+    
     //
     // BINARY ENCODING
     //
@@ -204,12 +215,12 @@ namespace tes_util
                 s.erase(it);
         }
     }
-    
 
+    
 // "explodes" a string on a delimiter into a vector of strings
-    inline std::vector<std::string> explode(std::string s, char d, bool do_stripblanks)
+    template<typename T>
+        inline void explode(std::string s, std::vector<T>& rs, char d, bool do_stripblanks)
     {
-        std::vector<std::string> rs;
         std::string::size_type pos;
     
         pos = s.find(d);
@@ -225,7 +236,7 @@ namespace tes_util
             if (pos+1 < s.length())
                 s = s.substr(pos+1);
             else
-                return rs;
+                return;
             pos = s.find(d);
         }
         
@@ -234,10 +245,16 @@ namespace tes_util
             stripblanks(s);
         
         rs.push_back(s);
-        
-        return rs;
     }
 
+    inline std::vector<std::string> explode(const std::string& s, char d, bool do_stripblanks)
+    {
+        std::vector<std::string> out;
+        explode(s, out, d, do_stripblanks);
+        return out;
+    }
+
+    
     inline bool charicmp(char a, char b) { return(tolower(a) == tolower(b)); }
     inline bool stricmp(const std::string & s1, const std::string & s2)
     {
@@ -248,30 +265,61 @@ namespace tes_util
 
     // find `key` in `str` and if successful put it in out
     // and return true
+
+    // deal with these basic forms:
+    // str = foo=1,bar=2,pig=3
+    // str = foo=1,bar={2,3,4,5},pig=3
     inline bool val_from_string(std::string & out, const std::string & str, const std::string & key)
     {
-        out.erase();
+        // str:  foo=1,bar={2,3,4,5},pig=3,cow=yes
+        // two cases:
+        // key:  bar
+        // key:  pig
         
+        out.erase();
+
+        // str:  foo=1,bar={2,3,4,5},pig=3,cow=yes
+        //  start_pos  ^             ^
         std::string::size_type start_pos = str.find(std::string(key+"="));
         
         // deal with foo=bar,o=bar problem when looking for "o=" since
         // o is contained in foo
+
+        // ok: beginning of string, end of string, comma right before start_pos
         while(!(start_pos == 0 || start_pos == std::string::npos || str[start_pos-1] == ','))
             start_pos = str.find(std::string(key+"="), start_pos+1);
-
         
         if(start_pos != std::string::npos)
         {
-            
+            // chopped:   bar={2,3,4,5},pig=3,cow=yes
+            // chopped:   pig=3,cow=yes
             std::string chopped = str.substr(start_pos);
-            
+
+            // chopped:  bar={2,3,4,5},pig=3,cow=yes
+            // equal_pos    ^         
+            // chopped:  pig=3,cow=yes
+            // equal_pos    ^         
             std::string::size_type equal_pos = chopped.find("=");
 
+            // check for array
+            bool is_array = (equal_pos+1 < chopped.length() && chopped[equal_pos+1] == '{');
+            
             if(equal_pos != std::string::npos)
             {
+                // chopped_twice:  ={2,3,4,5},pig=3,cow=yes
+                // chopped_twice:  =pig=3,cow=yes              
                 std::string chopped_twice = chopped.substr(equal_pos);
-                std::string::size_type comma_pos = chopped_twice.find(",");
-                out = chopped_twice.substr(1, comma_pos-1);
+
+                // chopped_twice:  ={2,3,4,5},pig=3,cow=yes  
+                // end_pos                  ^     
+                // chopped_twice:  =pig=3,cow=yes
+                // end_pos               ^         
+                std::string::size_type end_pos =
+                    (is_array) ? chopped_twice.find("}") : chopped_twice.find(",");
+
+                // out:  2,3,4,5
+                // out:  3
+                out = (is_array) ? chopped_twice.substr(2, end_pos-2) : chopped_twice.substr(1, end_pos-1);
                 return true;
             }
         }

@@ -105,6 +105,14 @@ void micromodem::MMDriver::initiate_transmission(const modem::Message& m)
     validate_and_write(nmea);
 }
 
+void micromodem::MMDriver::initiate_ranging(const modem::Message& m)
+{   
+    //$CCMPC,SRC,DEST*CS
+    NMEASentence nmea("$CCMPC", NMEASentence::NOT_STRICT);
+    nmea.push_back(m.src()); // ADR1
+    nmea.push_back(m.dest()); // ADR2
+    validate_and_write(nmea);
+}
 
 void micromodem::MMDriver::handle_modem_out()
 {
@@ -134,7 +142,7 @@ void micromodem::MMDriver::handle_modem_out()
             }
         }
 
-        if(os_) *os_ << group("mm_out") << "|" << microsec_simple_time_of_day() << "| " << nmea.message() << std::endl;
+        if(os_) *os_ << group("mm_out") << "|" << microsec_simple_time_of_day() << "| " << gateway_prefix_out_ << nmea.message() << std::endl;
 
         // Begin the addition of code to support the gateway buoy
         // Added by Andrew Bouchard, NSWC PCD
@@ -251,7 +259,7 @@ void micromodem::MMDriver::rxd(NMEASentence& nmea, modem::Message& m)
     m.set_frame(nmea[4]);
     m.set_data(nmea[5]);
 
-    callback_receive(m);
+    if(callback_receive) callback_receive(m);
 }
 void micromodem::MMDriver::ack(NMEASentence& nmea, modem::Message& m)
 {
@@ -260,7 +268,7 @@ void micromodem::MMDriver::ack(NMEASentence& nmea, modem::Message& m)
     m.set_frame(nmea[3]);
     m.set_ack(nmea[4]);
 
-    callback_ack(m);
+    if(callback_ack) callback_ack(m);
 }
 void micromodem::MMDriver::drq(NMEASentence& nmea_in, modem::Message& m_in)
 {
@@ -274,7 +282,7 @@ void micromodem::MMDriver::drq(NMEASentence& nmea_in, modem::Message& m_in)
 
     modem::Message m_out;
     // fetch the data
-    callback_datarequest(m_in, m_out);
+    if(callback_datarequest) callback_datarequest(m_in, m_out);
 
     // write the txd
     NMEASentence nmea_out("$CCTXD", NMEASentence::NOT_STRICT);
@@ -320,7 +328,18 @@ void micromodem::MMDriver::clk(NMEASentence& nmea, modem::Message& m)
 }
 
 void micromodem::MMDriver::mpa(NMEASentence& nmea, modem::Message& m){}
-void micromodem::MMDriver::mpr(NMEASentence& nmea, modem::Message& m){}
+
+void micromodem::MMDriver::mpr(NMEASentence& nmea, modem::Message& m)
+{
+    // $CAMPR,SRC,DEST,TRAVELTIME*CS
+    m.set_src(nmea[1]);
+    m.set_dest(nmea[2]);
+
+    if(nmea.parts().size() > 3)
+        m.set_t(nmea[3]);
+
+    if(callback_range_reply) callback_range_reply(m);
+}
 
 void micromodem::MMDriver::rev(NMEASentence& nmea, modem::Message& m)
 {
@@ -488,5 +507,4 @@ void micromodem::MMDriver::set_gateway_prefix(bool IsGateway, int GatewayID)
 
 
 }
-
 // End the addition of code to support the gateway buoy

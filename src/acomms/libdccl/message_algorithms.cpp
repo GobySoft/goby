@@ -33,15 +33,36 @@ dccl::AlgorithmPerformer* dccl::AlgorithmPerformer::getInstance()
     return(inst_);
 }
 
-void dccl::AlgorithmPerformer::algorithm(MessageVal& in, const std::string& algorithm, const std::map<std::string,MessageVal>& vals)
+void dccl::AlgorithmPerformer::algorithm(MessageVal& in, unsigned array_index, const std::string& algorithm, const std::map<std::string,std::vector<MessageVal> >& vals)
 {
-    std::vector<std::string>params = tes_util::explode(algorithm, ':', true);
-    std::string alg = params[0];
+    if(in.empty()) return;
 
+// algo_name:ref_variable_name1:ref_variable_name2...
+    
+    std::vector<std::string>ref_vars = tes_util::explode(algorithm, ':', true);
+
+    std::string alg;
+    std::vector<MessageVal> tied_vals;
+
+    for(std::vector<std::string>::size_type i = 1, n = ref_vars.size();
+        i < n;
+        ++i)
+    {
+        std::map<std::string, std::vector<dccl::MessageVal> >::const_iterator it = vals.find(ref_vars[i]);
+        if(it != vals.end() && array_index < it->second.size())
+            tied_vals.push_back(it->second[array_index]);
+        else
+            tied_vals.push_back(it->second[0]);
+    }
+    
+    if(ref_vars.size() > 0)
+        alg = ref_vars[0];    
+    
     // short form for simple algorithms
     if (adv_map1_.count(alg))
     { adv_map1_.find(alg)->second(in); }
     // longer form for more demanding algorithms
-    else if (adv_map3_.count(alg))
-    { adv_map3_.find(alg)->second(in, params, vals); }
+    else if (adv_map2_.count(alg))
+    { adv_map2_.find(alg)->second(in, tied_vals); }
+
 }

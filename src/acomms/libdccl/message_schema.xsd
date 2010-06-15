@@ -15,6 +15,9 @@
                    for backwards compatibility -->
               <xs:element name="id" type="xs:string" minOccurs="0"/>
 
+
+              <xs:element name="repeat" type="xs:integer" minOccurs="0"/>
+
               <!-- legacy -->
               <xs:element name="destination_var" minOccurs="0">
                 <xs:complexType>
@@ -63,11 +66,6 @@
                   </xs:simpleContent>
                 </xs:complexType>
               </xs:element>  <!-- </trigger_moos_var> -->
-
-              <xs:element name="delta_encode" minOccurs="0">
-                <xs:complexType>
-                </xs:complexType>
-              </xs:element>
 
               <xs:element name="header" minOccurs="0">
                 <xs:complexType>
@@ -209,7 +207,9 @@
 
                           <xs:element name="max" type="xs:integer"/>
                           <xs:element name="min" type="xs:integer"/>
-                          <xs:element name="expected_delta" type="xs:integer" minOccurs="0"/>
+
+                          <xs:element name="array_length" type="xs:integer" minOccurs="0"/>
+                          <xs:element name="max_delta" type="xs:integer" minOccurs="0"/>
 
                         </xs:all>
                         <xs:attribute name="algorithm" type="xs:string"/>
@@ -241,6 +241,7 @@
                             </xs:complexType>
                           </xs:element>
 
+                          <xs:element name="array_length" type="xs:integer" minOccurs="0"/>
                         </xs:all>
                         <xs:attribute name="algorithm" type="xs:string"/>
                       </xs:complexType>
@@ -274,8 +275,11 @@
 
                           <xs:element name="max" type="xs:double"/>
                           <xs:element name="min" type="xs:double"/>
-                          <xs:element name="expected_delta" type="xs:double" minOccurs="0"/>
                           <xs:element name="precision" type="xs:integer"/>
+
+                          <xs:element name="array_length" type="xs:integer" minOccurs="0"/>
+                          <xs:element name="max_delta" type="xs:double" minOccurs="0"/>
+
                         </xs:all>
                         <xs:attribute name="algorithm" type="xs:string"/>
                       </xs:complexType>
@@ -306,6 +310,7 @@
                             </xs:complexType>
                           </xs:element>
 
+                          <xs:element name="array_length" type="xs:integer" minOccurs="0"/>
                           <xs:element name="max_length" type="xs:integer"/>
                         </xs:all>
                         <xs:attribute name="algorithm" type="xs:string"/>
@@ -338,6 +343,7 @@
                             </xs:complexType>
                           </xs:element>
 
+                          <xs:element name="array_length" type="xs:integer" minOccurs="0"/>
                           <xs:element name="num_bytes" type="xs:integer"/>
                         </xs:all>
                         <xs:attribute name="algorithm" type="xs:string"/>
@@ -369,6 +375,7 @@
                             </xs:complexType>
                           </xs:element>
 
+                          <xs:element name="array_length" type="xs:integer" minOccurs="0"/>
                           <xs:element name="value" type="xs:string"/>
                         </xs:choice>
                         <xs:attribute name="algorithm" type="xs:string"/>

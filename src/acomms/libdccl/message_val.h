@@ -62,6 +62,11 @@ namespace dccl
         
         /// construct with bool value
         MessageVal(bool b);
+
+        /// construct with vector
+        MessageVal(const std::vector<MessageVal>& vm);
+
+        
         
         //@}
 
@@ -127,6 +132,7 @@ namespace dccl
         /// allows statements of the form \code float f = MessageVal("3.5"); \endcode
         operator float() const;
 
+        operator std::vector<MessageVal>() const;
         
 
         /// what type is the original type of this MessageVal?
@@ -134,20 +140,25 @@ namespace dccl
         
         /// was this just constructed with MessageVal() ? 
         bool empty() const { return type_ == cpp_notype; }        
+
+        unsigned precision() const { return precision_; }
+        
 //@}
 
 
         /// \name Comparison
         //@{       
-        
-        bool operator==(const std::string& s);
-        bool operator==(double d);
-        bool operator==(long l);
-        bool operator==(bool b);
+        bool operator==(const MessageVal& mv) const;
+        bool operator==(const std::string& s) const;  
+        bool operator==(double d) const;
+        bool operator==(long l) const;
+        bool operator==(bool b) const;
         
         // @}
         
       private:
+        void init();
+        
         friend std::ostream& operator<<(std::ostream& os, const MessageVal& mv);
         
       private:
@@ -162,6 +173,7 @@ namespace dccl
     };
 
     std::ostream& operator<<(std::ostream& os, const dccl::MessageVal& mv);
+    std::ostream& operator<<(std::ostream& os, const std::vector<dccl::MessageVal>& vm);
 }
 
 

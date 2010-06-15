@@ -48,6 +48,7 @@ namespace acomms_util
     void bind(amac::MACManager& mac, modem::DriverBase& driver)
     {
         mac.set_initiate_transmission_cb(boost::bind(&modem::DriverBase::initiate_transmission, &driver, _1));
+        mac.set_initiate_ranging_cb(boost::bind(&modem::DriverBase::initiate_ranging, &driver, _1));
         driver.set_in_parsed_cb(boost::bind(&amac::MACManager::process_message, &mac, _1));
     }
     

@@ -20,106 +20,24 @@
 #ifndef MESSAGE_VAR_INT20100317H
 #define MESSAGE_VAR_INT20100317H
 
-#include "message_var.h"
+#include "message_var_float.h"
 
 namespace dccl
-{   
-    class MessageVarInt : public MessageVar
+{
+    // <int> is a <float> with <precision>0</precision>
+    class MessageVarInt : public MessageVarFloat
     {
       public:
       MessageVarInt(long max = std::numeric_limits<long>::max(), long min = 0)
-          : MessageVar(),
-            max_(max),
-            min_(min),
-            expected_delta_(acomms::NaN),
-            delta_var_(false)
-            { }        
+          : MessageVarFloat(max, min)
+        { }
 
-        virtual int calc_size() const
-        { return ceil(log(max()-min()+2)/log(2)); }        
-
-        void set_max(long max) {max_ = max;}
-        void set_max(const std::string& s) { set_max(boost::lexical_cast<long>(s)); }
-        
-        void set_min(long min) {min_ = min;}
-        void set_min(const std::string& s) { set_min(boost::lexical_cast<long>(s)); }
-
-        double max() const { return (delta_var_) ? expected_delta_ : max_; }
-        double min() const { return (delta_var_) ? -expected_delta_ : min_; }
-        
-        void set_expected_delta(double expected_delta)
-        { expected_delta_ = expected_delta; }
-        void set_expected_delta(const std::string& s)
-        { set_expected_delta(boost::lexical_cast<double>(s)); }
-
-        void set_delta_var(bool b) { delta_var_ = b; }
-
-        DCCLType type() const { return dccl_int; }
+        virtual DCCLType type() const { return dccl_int; }
         
       private:
-        void initialize_specific()
-        {
-            // flip max and min if needed
-            if(max_ < min_)
-            {
-                long tmp = max_;
-                max_ = min_;
-                min_ = tmp;
-            }    
-
-            if(isnan(expected_delta_))
-                // use default of 10% of range
-                expected_delta_ = 0.1 * (max_ - min_);
-            else
-                expected_delta_ = abs(expected_delta_);
-        }
+        MessageVal cast(double d, int precision) { return long(d); }
         
-        virtual boost::dynamic_bitset<unsigned char> encode_specific(const MessageVal& v)
-        {
-            long t;
-            if(v.get(t) && !(t < min() || t > max()))
-            {
-                t -= min();
-                return boost::dynamic_bitset<unsigned char>(calc_size(), static_cast<unsigned long>(t)+1);
-            }
-            else
-            {
-                return boost::dynamic_bitset<unsigned char>();
-            }
-        }
-        
-
-        virtual MessageVal decode_specific(boost::dynamic_bitset<unsigned char>& b)
-        {
-
-            unsigned long t = b.to_ulong();
-            if(t)
-            {
-                --t;
-                return MessageVal(long(t) + long(min()));
-            }
-            else
-            {                
-                return MessageVal();
-            }
-        }
-
-        void get_display_specific(std::stringstream& ss) const
-        {
-            ss << "\t\t[min, max] = [" << min_ << "," << max_ << "]" << std::endl;
-            if(!isnan(expected_delta_))
-                ss << "\t\texpected_delta: {" << expected_delta_ << "}" << std::endl;
-        }        
-
-
-      private:
-        long max_;
-        long min_;
-        
-        double expected_delta_;
-        bool delta_var_;
-        
-    };
+    };    
 }
 
 #endif

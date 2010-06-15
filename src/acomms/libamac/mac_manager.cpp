@@ -149,11 +149,13 @@ void amac::MACManager::send_poll(const asio::error_code& e)
         *os_ << group("mac") << "cycle order: [";
     
         BOOST_FOREACH(id2slot_it it, slot_order_)
-            *os_ << " " << it->second.src();
+        {
+            *os_ << " " << it->second.src() << it->second.type_as_string()[0];
+        }
 
         *os_ << " ]" << std::endl;    
 
-        *os_ << group("mac") << "slot is starting: {" << s.src() << " to "
+        *os_ << group("mac") << s.type_as_string() << " slot is starting: {" << s.src() << " to "
                  << destination << " @ " << s.rate() << "}" << std::endl;
     }
 
@@ -161,11 +163,25 @@ void amac::MACManager::send_poll(const asio::error_code& e)
     if(send_poll)
     {
         modem::Message m;
-        m.set_src(s.src());
-        m.set_dest(destination);
-        m.set_rate(s.rate());
-        m.set_ack(0); // actually a free bit, not the ack (field was deprecated). right now we're not using it
-        callback_initiate_transmission(m);
+        switch(s.type())
+        {
+            case Slot::slot_data:
+                m.set_src(s.src());
+                m.set_dest(destination);
+                m.set_rate(s.rate());
+                m.set_ack(0); // actually a free bit, not the ack (field was deprecated). right now we're not using it
+                callback_initiate_transmission(m);
+                break;
+
+            case Slot::slot_ping:
+                m.set_src(s.src());
+                m.set_dest(destination);
+                callback_initiate_ranging(m);
+                break;
+
+            default:
+                break;
+        }
     }
     
     ++current_slot_;
@@ -197,7 +213,7 @@ void amac::MACManager::send_poll(const asio::error_code& e)
     restart_timer();
 }
 
-boost::posix_time::ptime amac::MACManager::next_cycle_time()
+    boost::posix_time::ptime amac::MACManager::next_cycle_time()
 {
     using namespace boost::gregorian;
     using namespace boost::posix_time;
@@ -218,7 +234,7 @@ boost::posix_time::ptime amac::MACManager::next_cycle_time()
 void amac::MACManager::process_message(const modem::Message& m)
 {
     unsigned id = m.src();
-
+    
     if(type_ != mac_slotted_tdma)
         return;
     

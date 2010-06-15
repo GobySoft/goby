@@ -48,17 +48,13 @@ void invert(dccl::MessageVal& mv)
     mv = b;
 }
 
-void algsum(dccl::MessageVal& mv, const std::vector<std::string>& params,
-         const std::map<std::string,dccl::MessageVal>& vals)
+void algsum(dccl::MessageVal& mv, const std::vector<dccl::MessageVal>& ref_vals)
 {
-    double d;
+    double d = 0;
     // index 0 is the name ("sum"), so start at 1
-    for(size_t i = 1, n = params.size(); i < n; ++i)
+    for(size_t i = 0, n = ref_vals.size(); i < n; ++i)
     {
-        std::map<std::string, dccl::MessageVal>::const_iterator it = vals.find(params[i]);
-        double v;
-        if(it != vals.end() && it->second.get(v))
-            d += v;
+        d += double(ref_vals[i]);
     }
     mv = d;
 }
@@ -83,22 +79,32 @@ int main()
     // must be kept secret!
     dccl.set_crypto_passphrase("my_passphrase!");
     
-    std::map<std::string, dccl::MessageVal> in;
+    std::map<std::string, std::vector<dccl::MessageVal> > in;
     
     bool b = true; 
-    std::string e = "dog";      
-    std::string s = "raccoon";  
-    long i = 42;                
-    double f = -12.5;           
-    std::string h = "abcd1234"; 
-    double sum = 0;             
+    std::vector<dccl::MessageVal> e;
+    e.push_back("dog");
+    e.push_back("cat");
+    e.push_back("emu");
     
-    in["B"] = b;
+    std::string s = "raccoon";  
+    std::vector<dccl::MessageVal> i;
+    i.push_back(30);
+    i.push_back(40);
+    std::vector<dccl::MessageVal> f;
+    f.push_back(-12.5);
+    f.push_back(1);
+    
+    std::string h = "abcd1234"; 
+    std::vector<dccl::MessageVal> sum(2,0);
+    
+    
+    in["B"] = std::vector<dccl::MessageVal>(1,b);
     in["E"] = e;
-    in["S"] = s;
+    in["S"] = std::vector<dccl::MessageVal>(1,s);
     in["I"] = i;
     in["F"] = f;
-    in["H"] = h;
+    in["H"] = std::vector<dccl::MessageVal>(1,h);
     in["SUM"] = sum;
 
     std::string hex;
@@ -108,22 +114,21 @@ int main()
     dccl.encode(4, hex, in);
 
     std::cout << "hex out: " << hex << std::endl;
-    hex.resize(32*2,'0');
-    std::cout << "hex in: " << hex << std::endl;
-
+    hex.resize(hex.length() + 20,'0');
+    std::cout << "hex in: " << hex << std::endl;    
     
-    
-    std::map<std::string, dccl::MessageVal> out;
+    std::map<std::string, std::vector<dccl::MessageVal> > out;
     
     dccl.decode(4, hex, out);
     
     std::cout << "received values:" << std::endl 
               << out;    
+
+    sum[0] = double(i[0]) + double(f[0]);
+    sum[1] = double(i[1]) + double(f[1]);
+    i[0] = int(i[0]) + 1;
+    i[1] = int(i[1]) + 1;
     
-
-    sum += i + f;
-    ++i;
-
     dccl::MessageVal tmp = b;
     invert(tmp);
     b = tmp;
@@ -132,17 +137,26 @@ int main()
     prepend_fat(tmp);
     tmp.get(s);
 
-    tmp = f;
+    tmp = f[0];
     times2(tmp);
-    f = tmp;
-    
-    assert(out["B"] == b);
-    assert(out["E"] == e);
-    assert(out["S"] == s);
-    assert(out["F"] == f);
-    assert(out["SUM"] == sum);
-    assert(out["I"] == i);
-    assert(out["H"] == h);
+    f[0] = tmp;
+
+    tmp = f[1];
+    times2(tmp);
+    f[1] = tmp;
+
+    assert(out["B"][0] == b);
+    assert(out["E"][0] == e[0]);
+    assert(out["E"][1] == e[1]);
+    assert(out["E"][2] == e[2]);
+    assert(out["S"][0] == s);
+    assert(out["F"][0] == f[0]);
+    assert(out["F"][1] == f[1]);
+    assert(out["SUM"][0] == sum[0]);
+    assert(out["SUM"][1] == sum[1]);
+    assert(out["I"][0] == i[0]);
+    assert(out["I"][1] == i[1]);
+    //assert(out["H"][0] == h);
     
     std::cout << "all tests passed" << std::endl;
 }

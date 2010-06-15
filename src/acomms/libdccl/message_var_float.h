@@ -27,18 +27,13 @@ namespace dccl
     class MessageVarFloat : public MessageVar
     {
       public:
-      MessageVarFloat()
-          : MessageVar(),
-            max_(std::numeric_limits<double>::max()),
-            min_(0.0),
-            precision_(0),
-            expected_delta_(acomms::NaN),
-            delta_var_(false)
-            { }
+        MessageVarFloat(double max = std::numeric_limits<double>::max(), double min = 0, double precision = 0);
 
-        int calc_size() const
-        { return ceil(log((max()-min())*pow(10.0,static_cast<double>(precision_))+2)/log(2)); }
+        virtual int calc_size() const
+        { return is_delta() ? delta_size() : key_size(); }
 
+        virtual int calc_total_size() const;
+        
         void set_max(double max) {max_ = max;}
         void set_max(const std::string& s) { set_max(boost::lexical_cast<double>(s)); }
         
@@ -47,81 +42,47 @@ namespace dccl
 
         void set_precision(int precision) {precision_ = precision;}
         void set_precision(const std::string& s) { set_precision(boost::lexical_cast<int>(s)); }
-
         
-        double max() const { return (delta_var_) ? expected_delta_ : max_;}
-        double min() const {return (delta_var_) ? -expected_delta_ : min_;}
         int precision() const { return precision_; }  
 
-        void set_expected_delta(double expected_delta)
-        { expected_delta_ = expected_delta; }
-        void set_expected_delta(const std::string& s)
-        { set_expected_delta(boost::lexical_cast<double>(s)); }
+        double min() const { return min_; }
+        double max() const { return max_; }
+        
+        void set_max_delta(double max_delta)
+        { max_delta_ = max_delta; }
+        void set_max_delta(const std::string& s)
+        { set_max_delta(boost::lexical_cast<double>(s)); }
 
-        void set_delta_var(bool b) { delta_var_ = b; }
+        virtual DCCLType type() const { return dccl_float; }
 
-        DCCLType type() const { return dccl_float; }
+        unsigned key_size() const
+        { return ceil(log((max_-min_)*pow(10.0,static_cast<double>(precision_))+2)/log(2)); }
+
+        unsigned delta_size() const
+        { return ceil(log((2*max_delta_)*pow(10.0,static_cast<double>(precision_))+2)/log(2)); }
+
+      protected:
+        virtual MessageVal cast(double d, int precision) { return MessageVal(d, precision); }
+        virtual void initialize_specific();
         
       private:
-        void initialize_specific()
-        {
-            // flip max and min if needed
-            if(max_ < min_)
-            {
-                double tmp = max_;
-                max_ = min_;
-                min_ = tmp;
-            } 
-    
-            if(isnan(expected_delta_))
-                // use default of 10% of range
-                expected_delta_ = 0.1 * (max_ - min_);
-            else
-                expected_delta_ = abs(expected_delta_);
-        }
+        bool is_delta() const
+        { return using_delta_differencing() && !is_key_frame_; }
         
-        boost::dynamic_bitset<unsigned char> encode_specific(const MessageVal& v)
-        {
-            double r;
-            if(v.get(r) && !(r < min() || r > max()))
-            {
-                r = (r-min())*pow(10.0, static_cast<double>(precision_));
-                r = tes_util::sci_round(r, 0);
-                
-                return boost::dynamic_bitset<unsigned char>(calc_size(), static_cast<unsigned long>(r)+1);
-            }
-            else return boost::dynamic_bitset<unsigned char>();
-        }
+        bool using_delta_differencing() const
+        { return !isnan(max_delta_); }
         
+        boost::dynamic_bitset<unsigned char> encode_specific(const MessageVal& v);
+        MessageVal decode_specific(boost::dynamic_bitset<unsigned char>& b);
 
-        MessageVal decode_specific(boost::dynamic_bitset<unsigned char>& b)
-        {
-
-            unsigned long t = b.to_ulong();
-            if(t)
-            {
-                --t;
-                return MessageVal(static_cast<double>(t) / (pow(10.0, static_cast<double>(precision_))) + min(), precision_);
-            }
-            else return MessageVal();
-        }
-
-        void get_display_specific(std::stringstream& ss) const
-        {
-            ss << "\t\t[min, max] = [" << min_ << "," << max_ << "]" << std::endl;
-            if(!isnan(expected_delta_))
-                ss << "\t\texpected_delta: {" << expected_delta_ << "}" << std::endl;
-            ss << "\t\tprecision: {" << precision_ << "}" << std::endl;   
-        }        
-
+        void get_display_specific(std::stringstream& ss) const;
+        
       private:
         double max_;
         double min_;
         int precision_;
 
-        double expected_delta_;
-        bool delta_var_;
-        
+        double max_delta_;
     };
 
 }

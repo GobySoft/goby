@@ -17,6 +17,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
+#include <boost/foreach.hpp>
+
 #include "util/tes_utils.h"
 
 #include "message_var.h"
@@ -24,8 +26,11 @@
 #include "dccl_constants.h"
 #include "message_algorithms.h"
 
-dccl::MessageVar::MessageVar() : source_set_(false),
-                                 ap_(AlgorithmPerformer::getInstance())
+dccl::MessageVar::MessageVar()
+    : array_length_(1),
+      is_key_frame_(true),
+      source_set_(false),
+      ap_(AlgorithmPerformer::getInstance())
 { }
 
 void dccl::MessageVar::initialize(const std::string& trigger_var)
@@ -35,53 +40,115 @@ void dccl::MessageVar::initialize(const std::string& trigger_var)
         source_var_ = trigger_var;
 
     initialize_specific();
+
 }
 
-void dccl::MessageVar::var_encode(std::map<std::string,MessageVal>& vals, boost::dynamic_bitset<unsigned char>& bits)
+void dccl::MessageVar::set_defaults(std::map<std::string,std::vector<MessageVal> >& vals, unsigned modem_id, unsigned id)
 {
-    MessageVal v = vals[name_];
-    for(std::vector<std::string>::size_type i = 0, n = algorithms_.size(); i < n; ++i)
-        ap_->algorithm(v, algorithms_[i], vals);
+    vals[name_].resize(array_length_);    
 
+    std::vector<MessageVal>& vm = vals[name_];
+
+    for(std::vector<MessageVal>::size_type i = 0, n = vm.size(); i < n; ++i)
+        set_defaults_specific(vm[i], modem_id, id);
+
+}
+
+    
+void dccl::MessageVar::var_encode(std::map<std::string,std::vector<MessageVal> >& vals, boost::dynamic_bitset<unsigned char>& bits)
+{    
+    // ensure that every MessageVar has the full number of (maybe blank) MessageVals
+    vals[name_].resize(array_length_);
+
+    // copy so algorithms can modify directly and not affect other algorithms' use of original values
+    std::vector<MessageVal> vm = vals[name_];
+    
+    // write all the delta values first
+    is_key_frame_ = false;
+    
+    for(std::vector<MessageVal>::size_type i = 0, n = vm.size(); i < n; ++i)
+    {
+        for(std::vector<std::string>::size_type j = 0, m = algorithms_.size(); j < m; ++j)
+            ap_->algorithm(vm[i], i, algorithms_[j], vals);
+
+        // read the first value as the key
+        if(i == 0) key_val_ = vm[i];
+        // otherwise add the bits to the stream
+        else encode_value(vm[i], bits);
+    }
+
+    is_key_frame_ = true;
+    
+    // insert the key at the end of the bitstream
+    encode_value(key_val_, bits);
+}
+
+void dccl::MessageVar::encode_value(const MessageVal& val, boost::dynamic_bitset<unsigned char>& bits)
+{
     bits <<= calc_size();
-
-    boost::dynamic_bitset<unsigned char> add_bits = encode_specific(v);
+    
+    boost::dynamic_bitset<unsigned char> add_bits = encode_specific(val);
     add_bits.resize(bits.size());
-
+    
     bits |= add_bits;
 }
 
-void dccl::MessageVar::var_decode(std::map<std::string,MessageVal>& vals, boost::dynamic_bitset<unsigned char>& bits)
+
+void dccl::MessageVar::var_decode(std::map<std::string,std::vector<MessageVal> >& vals, boost::dynamic_bitset<unsigned char>& bits)
 {
-    boost::dynamic_bitset<unsigned char> remove_bits = bits;
-    remove_bits.resize(calc_size());
+    vals[name_].resize(array_length_);
+    
+    // count down from one-past-the-end to 1, because we'll put the key at the beginning (array position 0)
+    for(unsigned i = array_length_, n = 0; i > n; --i)
+    {
+        is_key_frame_ = (i == array_length_) ? true : false;
+        
+        boost::dynamic_bitset<unsigned char> remove_bits = bits;
+        remove_bits.resize(calc_size());
 
-    vals[name_] = decode_specific(remove_bits);
+        MessageVal val = decode_specific(remove_bits);
+        
+        bits >>= calc_size();
 
-    bits >>= calc_size();    
+        // read the key first on the reverse bitstream
+        if(is_key_frame_) key_val_ = val;
+        else vals[name_][i] = val;
+    }
+
+    // insert the key at the beginning of the return vector
+    vals[name_][0] = key_val_;    
 }
 
 
-void dccl::MessageVar::read_pubsub_vars(std::map<std::string,MessageVal>& vals,
-                                         const std::map<std::string, MessageVal>& in)
+void dccl::MessageVar::read_pubsub_vars(std::map<std::string,std::vector<MessageVal> >& vals,
+                                        const std::map<std::string,std::vector<MessageVal> >& in)
 {
-    const std::map<std::string, dccl::MessageVal>::const_iterator it =
+    const std::map<std::string, std::vector<dccl::MessageVal> >::const_iterator it =
         in.find(source_var_);
-
+    
     if(it != in.end())
     {
-        MessageVal val = it->second;
-        switch(val.type())
+        const std::vector<MessageVal>& vm = it->second;
+
+        BOOST_FOREACH(MessageVal val, vm)
         {
-            case cpp_string: 
-                val = parse_string_val(val);
-                break;
-            
-            default:
-                break;
-            
-        }
-        vals[name_] = val;
+            switch(val.type())
+            {
+                case cpp_string:
+                    val = parse_string_val(val);
+                    break;
+                    
+                default:
+                    break;
+            }
+
+            // if we're expecting a vector,
+            // split up vector quantities and add to vector
+            if(array_length_ > 1)
+                tes_util::explode(val, vals[name_], ',', false);
+            else // otherwise just use the value as is
+                vals[name_] = val;
+        }        
     }
 }
 
@@ -133,9 +200,19 @@ std::string dccl::MessageVar::get_display() const
             ss << " key: " << source_key_;
         ss << std::endl;
     }
-    ss << "\t\tsize [bits]: [" << calc_size() << "]" << std::endl;
+
+    if(array_length_ > 1)
+        ss << "\t\tarray length: " << array_length_ << std::endl;
     
     get_display_specific(ss);
+
+    
+    if(array_length_ > 1)
+        ss << "\t\telement size [bits]: [" << calc_size() << "]" << std::endl;
+    
+
+    ss << "\t\ttotal size [bits]: [" << calc_total_size() << "]" << std::endl;
+
     return ss.str();
 }
 

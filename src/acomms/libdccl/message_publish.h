@@ -46,7 +46,8 @@ namespace dccl
             format_set_(false),
             use_all_names_(false),
             type_(cpp_notype),
-            ap_(AlgorithmPerformer::getInstance())
+            ap_(AlgorithmPerformer::getInstance()),
+            repeat_(1)
             { }        
 
         //set
@@ -55,8 +56,9 @@ namespace dccl
         void set_format(std::string format) {format_=format; format_set_ = true;}
         void set_use_all_names(bool use_all_names) {use_all_names_ = use_all_names;}
         void set_type(DCCLCppType type) {type_ = type;}
-    
+
         void add_name(const std::string& name) {names_.push_back(name);}
+        void add_message_var(boost::shared_ptr<MessageVar> mv) {message_vars_.push_back(mv);}
         void add_algorithms(const std::vector<std::string> algorithms) {algorithms_.push_back(algorithms);}
     
         //get
@@ -72,7 +74,7 @@ namespace dccl
         
         std::string get_display() const;
 
-        void write_publish(const std::map<std::string,MessageVal>& vals,
+        void write_publish(const std::map<std::string,std::vector<MessageVal> >& vals,
                            std::multimap<std::string,MessageVal>& pubsub_vals);
         
         
@@ -81,9 +83,10 @@ namespace dccl
         void initialize(Message& msg);
 
       private:
-        void fill_format(const std::map<std::string,MessageVal>& vals,
+        void fill_format(const std::map<std::string,std::vector<MessageVal> >& vals,
                          std::string& key,
-                         std::string& value);
+                         std::string& value,
+                         unsigned repeat_index);
             
       private:
         std::string var_;
@@ -92,8 +95,10 @@ namespace dccl
         bool use_all_names_;
         DCCLCppType type_;
         std::vector<std::string> names_;
+        std::vector<boost::shared_ptr<MessageVar> > message_vars_;
         std::vector< std::vector<std::string> > algorithms_;
         AlgorithmPerformer* ap_;
+        unsigned repeat_;
     };
 
     std::ostream& operator<< (std::ostream& out, const Publish& publish);

@@ -1,7 +1,6 @@
-// copyright 2009 t. schneider tes@mit.edu
+// copyright 2009, 2010 t. schneider tes@mit.edu
 // 
-// this file is part of serial, a library for handling serial
-// communications.
+// this file is part of comms, a library for handling various communications.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,55 +20,35 @@
 #ifndef SerialClient20091211H
 #define SerialClient20091211H
 
-#include <deque>
-
-#include "asio.hpp"
-#include <boost/bind.hpp> 
-
-namespace boost { class mutex; }
+#include "client_base.h"
 
 namespace serial
 {    
-    class SerialClient
+    class SerialClient: public comms::ClientBase<asio::serial_port>
     {
       public:
-        SerialClient(asio::io_service& io_service,
-                     std::deque<std::string>& in,
-                     boost::mutex& in_mutex,
-                     std::string delimiter = "\r\n");
-        
-        void start(const std::string& name, unsigned int baud);
-        
-        
-        void write(const std::string& msg) // pass the write data to the do_write function via the io service in the other thread
-        { io_service_.post(boost::bind(&SerialClient::do_write, this, msg)); }
-        
-        void close() // call the do_close function via the io service in the other thread
-        { io_service_.post(boost::bind(&SerialClient::do_close, this, asio::error_code())); }
-        
-        bool active() // return true if the socket is still active
-        { return active_; }
-        
+        static SerialClient* getInstance(const std::string& name,
+                                         unsigned baud,
+                                         std::deque<std::string>* in,
+                                         boost::mutex* in_mutex,
+                                         const std::string& delimiter = "\r\n");
+
       private:
-        
-        void read_start(void);
-        void read_complete(const asio::error_code& error, size_t bytes_transferred);
-        void do_write(const std::string& line);
-        void write_start();
-        void write_complete(const asio::error_code& error);
-        void do_close(const asio::error_code& error);
-        
+
+        SerialClient(const std::string& name,
+                     unsigned baud,
+                     std::deque<std::string>* in,
+                     boost::mutex* in_mutex,
+                     const std::string& delimiter);
+
+        bool start_specific();        
   
       private:
-        bool active_; // remains true while this object is still operating
-        asio::io_service& io_service_; // the main IO service that runs this connection
+        static std::map<std::string, SerialClient*> inst_;
         asio::serial_port serial_port_; // the serial port this instance is connected to
-        asio::streambuf buffer_; // streambuf to store serial data in for use by program
-        std::deque<std::string> out_; // buffered write data 
-        std::deque<std::string>& in_; // buffered read data
-        boost::mutex& in_mutex_;    
-        std::string delimiter_;    
-    
+        std::string name_;
+        unsigned baud_;
+        
     }; 
 }
 

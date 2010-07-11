@@ -46,6 +46,12 @@ bool queue::Queue::push_message(modem::Message& new_message)
     }
     
     new_message.set_ack(new_message.ack_set() ? new_message.ack() : cfg_.ack());
+
+    // BROADCAST cannot ACK messages
+    if(new_message.dest() == acomms::BROADCAST_ID) new_message.set_ack(false);
+    
+    // needed for CCL messages
+    new_message.set_src(modem_id_);
         
     messages_.push_back(new_message);
 
@@ -93,7 +99,7 @@ modem::Message queue::Queue::give_data(unsigned frame)
 {
     messages_it it_to_give = next_message_it();
     
-    if(cfg_.ack()) waiting_for_ack_.insert(std::pair<unsigned, messages_it>(frame, it_to_give));
+    if(it_to_give->ack()) waiting_for_ack_.insert(std::pair<unsigned, messages_it>(frame, it_to_give));
     
     return *it_to_give;
 }
@@ -112,15 +118,19 @@ bool queue::Queue::priority_values(double& priority,
 
     // no messages left to send
     if(messages_.size() <= waiting_for_ack_.size()) return false;
-        
+    
     messages_it next_msg_it = next_message_it();
 
     // for followup user-frames, destination must be either zero (broadcast)
     // or the same as the first user-frame
-    if((message.dest_set() && next_msg_it->dest() != acomms::BROADCAST_ID && message.dest() != next_msg_it->dest())
-       || (message.ack_set() && message.ack() != next_msg_it->ack()))
+    if((message.dest_set() && next_msg_it->dest() != acomms::BROADCAST_ID && message.dest() != next_msg_it->dest()))
     {
-        if(os_) *os_<< group("priority") << "\t" <<  cfg_.name() << " next message has wrong destination  (must be BROADCAST (0) or same as first user-frame) or requires ACK and the packet does not" << std::endl;
+        if(os_) *os_<< group("priority") << "\t" <<  cfg_.name() << " next message has wrong destination  (must be BROADCAST (0) or same as first user-frame)" << std::endl;
+        return false; 
+    }
+    else if((message.ack_set() && message.ack() != next_msg_it->ack()))
+    {
+        if(os_) *os_<< group("priority") << "\t" <<  cfg_.name() << " next message requires ACK and the packet does not" << std::endl;
         return false; 
     }
     else if(next_msg_it->size() > message.size())
@@ -138,13 +148,13 @@ bool queue::Queue::priority_values(double& priority,
 }
 
 bool queue::Queue::pop_message(unsigned frame)
-{
-    if (cfg_.newest_first() && !cfg_.ack())
+{   
+    if (cfg_.newest_first() && !messages_.back().ack())
     {
         stream_for_pop(messages_.back().snip());
         messages_.pop_back();
     }
-    else if(!cfg_.newest_first() && !cfg_.ack())
+    else if(!cfg_.newest_first() && !messages_.front().ack())
     {
         stream_for_pop(messages_.front().snip());
         messages_.pop_front();

@@ -181,9 +181,8 @@ namespace modem
         std::deque<std::string> in_;
 
         // serial port io service
-        asio::io_service io_;
         boost::mutex in_mutex_;
-        serial::SerialClient serial_;
+        serial::SerialClient* serial_;
     };
 
 }

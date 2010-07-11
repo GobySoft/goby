@@ -91,7 +91,7 @@ void FlexNCurses::update_size()
         panels_[i].minimized(false);
         panels_[i].ywidth(ymax_ / ywinN_);
         line_buffer_[col] = ymax_;
-       //int ywidth = (m_N == ywinN_) ? 0 : (ymax_-m_N*HEAD_Y)/(ywinN_-m_N);
+        //int ywidth = (m_N == ywinN_) ? 0 : (ymax_-m_N*HEAD_Y)/(ywinN_-m_N);
     }
 
     BOOST_FOREACH(size_t i, unique_panels_)
@@ -126,7 +126,7 @@ void FlexNCurses::recalculate_win()
     
     // clear any old windows
     BOOST_FOREACH(size_t i, unique_panels_)
-      {
+    {
         delwin(static_cast<WINDOW*>(panels_[i].window()));
         delwin(static_cast<WINDOW*>(panels_[i].head_window()));
         panels_[i].window(0);
@@ -153,7 +153,7 @@ void FlexNCurses::recalculate_win()
     wrefresh(static_cast<WINDOW*>(foot_window_));
             
     col_end_windows_.resize(xwinN_);
-    vert_windows_.resize(xwinN_-1);    
+    vert_windows_.resize(xwinN_-1);
     BOOST_FOREACH(size_t i, unique_panels_)
     {
         int col = panels_[i].col();
@@ -172,7 +172,7 @@ void FlexNCurses::recalculate_win()
         
         // vertical divider
         // not last column, not if only one column
-        if(col != xwinN_ && xwinN_ > 1)
+        if(col < xwinN_-1 && xwinN_ > 1)
         {
             WINDOW* new_vert = newwin(ymax_, 1, 0, (col+1)*xwidth-1);
             mvwvline(new_vert, 0, 0, 0, ymax_);
@@ -351,7 +351,7 @@ size_t FlexNCurses::find_containing_window(int y, int x)
         if(in_window(panels_[i].window(),y,x) || in_window(panels_[i].head_window(),y,x))
             return i;
     }
-   return panels_.size();
+    return panels_.size();
 }
 
 bool FlexNCurses::in_window(void* p, int y, int x)
@@ -589,11 +589,11 @@ void FlexNCurses::move_up()
 
 void FlexNCurses::move_down()
 { 
-  //    BOOST_REVERSE_FOREACH(size_t i, unique_panels_)   
-  for(std::set<size_t>::reverse_iterator it = unique_panels_.rbegin(),
-	n = unique_panels_.rend(); it != n; ++it)
+    //    BOOST_REVERSE_FOREACH(size_t i, unique_panels_)   
+    for(std::set<size_t>::reverse_iterator it = unique_panels_.rbegin(),
+            n = unique_panels_.rend(); it != n; ++it)
     {
-      size_t i = *it;
+        size_t i = *it;
         if(!last_in_col(i) && panels_[i].selected())
             iter_swap(panels_.begin()+i, panels_.begin()+i+1);
     }
@@ -602,11 +602,11 @@ void FlexNCurses::move_down()
 
 void FlexNCurses::move_right()
 {
-  //    BOOST_REVERSE_FOREACH(size_t i, unique_panels_)
-  for(std::set<size_t>::reverse_iterator it = unique_panels_.rbegin(),
-	n = unique_panels_.rend(); it != n; ++it)
+    //    BOOST_REVERSE_FOREACH(size_t i, unique_panels_)
+    for(std::set<size_t>::reverse_iterator it = unique_panels_.rbegin(),
+            n = unique_panels_.rend(); it != n; ++it)
     {
-      size_t i = *it;
+        size_t i = *it;
         size_t rpanel = right(i);
         if(rpanel == panels_.size())
         {
@@ -689,7 +689,7 @@ bool FlexNCurses::last_in_col(size_t val)
 
 bool FlexNCurses::first_in_col(size_t val)
 {
-  BOOST_FOREACH(size_t i, unique_panels_)
+    BOOST_FOREACH(size_t i, unique_panels_)
     {
         if(panels_[i].col() == panels_[val].col() && i < val)
             return false;
@@ -939,7 +939,7 @@ std::multimap<time_t, std::string> FlexNCurses::get_history(size_t i, int how_mu
         
         std::multimap<time_t, std::string> merged;
         for( ; i_it_begin != panels_[i].history().end(); ++i_it_begin)
-                merged.insert(*i_it_begin);
+            merged.insert(*i_it_begin);
 
         BOOST_FOREACH(size_t j, panels_[i].combined())
         {
@@ -976,7 +976,7 @@ size_t FlexNCurses::get_history_size(size_t i)
         }
         return sum;
     }
- }
+}
 
 
 
@@ -1016,31 +1016,29 @@ int FlexNCurses::Panel::minimized(bool b)
 
 void FlexNCurses::run_input()
 {
-    sleep(1);
-
+    // sleep(1);
     // MOOS loves to stomp on me at startup...
-    if(true)
-      {
-        boost::mutex::scoped_lock lock(mutex_);
-	BOOST_FOREACH(size_t i, unique_panels_)
-	  {
-	    WINDOW* win = static_cast<WINDOW*>(panels_[i].window());
-	    if(win) redrawwin(win);
-	    WINDOW* head_win = static_cast<WINDOW*>(panels_[i].head_window());
-	    if(head_win) redrawwin(head_win);
-	  }
-	BOOST_FOREACH(void* w, vert_windows_)
-	  {
-	    WINDOW* vert_win = static_cast<WINDOW*>(w);
-	    if(vert_win) redrawwin(vert_win);
-	  }
-	BOOST_FOREACH(void* w, col_end_windows_)
-	  {
-	    WINDOW* win = static_cast<WINDOW*>(w);
-	    if(win) redrawwin(win);
-	  }
-	redrawwin(static_cast<WINDOW*>(foot_window_));
-      }
+    // if(true)
+    // {
+    //     boost::mutex::scoped_lock lock(mutex_);
+    //     BOOST_FOREACH(size_t i, unique_panels_)
+    //     {
+    //         WINDOW* win = static_cast<WINDOW*>(panels_[i].window());
+    //         if(win) redrawwin(win);    //         WINDOW* head_win = static_cast<WINDOW*>(panels_[i].head_window());
+    //         if(head_win) redrawwin(head_win);
+    //     }
+    //     BOOST_FOREACH(void* w, vert_windows_)
+    //     {
+    //         WINDOW* vert_win = static_cast<WINDOW*>(w);
+    //         if(vert_win) redrawwin(vert_win);
+    //     }
+    //     BOOST_FOREACH(void* w, col_end_windows_)
+    //     {
+    //         WINDOW* win = static_cast<WINDOW*>(w);
+    //         if(win) redrawwin(win);
+    //     }
+    //     redrawwin(static_cast<WINDOW*>(foot_window_));
+    // }
     
     while(alive_)
     {
@@ -1095,10 +1093,10 @@ void FlexNCurses::run_input()
             case 'm':                
             case ' ':
                 BOOST_FOREACH(size_t i, unique_panels_)
-                {
-                    if(panels_[i].selected())
-                        toggle_minimized(i);
-                }            
+            {
+                if(panels_[i].selected())
+                    toggle_minimized(i);
+            }            
             recalculate_win();
             break;
 
@@ -1108,8 +1106,8 @@ void FlexNCurses::run_input()
                     if(!panels_[i].selected())
                         toggle_minimized(i);
                 }            
-            recalculate_win();
-            break;
+                recalculate_win();
+                break;
 
             
             case 'D': deselect_all(); break;

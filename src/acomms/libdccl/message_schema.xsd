@@ -15,8 +15,10 @@
                    for backwards compatibility -->
               <xs:element name="id" type="xs:string" minOccurs="0"/>
 
-
-              <xs:element name="repeat" type="xs:integer" minOccurs="0"/>
+              <xs:element name="repeat" minOccurs="0">
+                <xs:complexType>
+                </xs:complexType>
+              </xs:element>             
 
               <!-- legacy -->
               <xs:element name="destination_var" minOccurs="0">

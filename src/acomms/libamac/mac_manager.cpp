@@ -36,7 +36,7 @@
 amac::MACManager::MACManager(std::ostream* os /* =0 */)
     : rate_(0),
       slot_time_(15),
-      expire_cycles_(2),
+      expire_cycles_(5),
       os_(os),
       modem_id_(0),
       timer_(io_),
@@ -127,8 +127,9 @@ void amac::MACManager::send_poll(const asio::error_code& e)
     unsigned id = s.src();
     
     bool send_poll = true;
+    
     int destination = (s.dest() == Slot::query_destination)
-        ? callback_dest(acomms::PACKET_SIZE[rate_]) : s.dest();
+        ? callback_dest(acomms::PACKET_SIZE[s.rate()]) : s.dest();
     
     switch(type_)
     {
@@ -348,16 +349,19 @@ bool amac::MACManager::remove_slot(const amac::Slot& s)
         if(s == it->second)
         {
             if(os_) *os_ << group("mac") << "removed slot " << it->second << std::endl;
-                
-            id2slot_.erase(it);
             slot_order_.remove(it);
+            id2slot_.erase(it);
             removed_a_slot = true;
             break;
         }
     }
 
+    
     if(slot_order_.empty())
         stop_timer();
+
+    if(removed_a_slot)
+        current_slot_ = slot_order_.begin();    
     
     return removed_a_slot;
 }

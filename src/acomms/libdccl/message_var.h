@@ -101,7 +101,7 @@ namespace dccl
         virtual DCCLType type() const = 0;
 
         std::string name() const {return name_;}
-        std::string source_var() const {return source_var_;}
+        std::string source_var() const { return source_var_; }
 
         // other
         void initialize(const std::string& trigger_var);

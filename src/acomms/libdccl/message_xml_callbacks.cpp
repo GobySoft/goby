@@ -75,6 +75,11 @@ void dccl::MessageContentHandler::startElement(
                 messages.back().set_trigger_mandatory(toNative(val));
             break;
 
+            
+        case tag_repeat:
+            messages.back().set_repeat_enabled(true);
+            break;
+            
         case tag_all:
             messages.back().last_publish().set_use_all_names(true);
             break;
@@ -180,11 +185,6 @@ void dccl::MessageContentHandler::endElement(
         case tag_id:
             messages.back().set_id(trimmed_data);
             break;
-            
-        case tag_repeat:
-            messages.back().set_repeat(trimmed_data);
-            break;
-
             
         case tag_incoming_hex_moos_var:
             messages.back().set_in_var(trimmed_data);

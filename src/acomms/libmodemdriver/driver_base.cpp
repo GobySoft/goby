@@ -24,18 +24,15 @@
 #include "driver_base.h"
 
 modem::DriverBase::DriverBase(std::ostream* os, const std::string& line_delimiter)
-    : os_(os),
-      serial_(io_,
-              in_,
-              in_mutex_,
-              line_delimiter)
+    : serial_delimiter_(line_delimiter),
+      os_(os)
 {
-
+    
 }
 
 void modem::DriverBase::serial_write(const std::string& out)
 {
-    serial_.write(out);
+    serial_->write(out);
     if(callback_out_raw) callback_out_raw(out);
 }
 
@@ -61,13 +58,14 @@ void modem::DriverBase::serial_start()
     if(os_) *os_ << group("mm_out") << "opening serial port " << serial_port_
           << " @ " << baud_ << std::endl;
     
-    try { serial_.start(serial_port_, baud_); }
+    try
+    {
+        serial_ = serial::SerialClient::getInstance(serial_port_, baud_, &in_, &in_mutex_, serial_delimiter_);
+        serial_->start();
+    }
     catch (...)
     {
         throw(std::runtime_error(std::string("failed to open serial port: " + serial_port_ + ". make sure this port exists and that you have permission to use it.")));
     }
     
-    // start the serial client
-    // toss the io service (for the serial client) into its own thread
-    boost::thread t(boost::bind(&asio::io_service::run, &io_));
 }

@@ -27,6 +27,7 @@ dccl::Message::Message():size_(0),
                          body_bits_(0),
                          id_(0),
                          trigger_time_(0.0),
+                         repeat_enabled_(false),
                          repeat_(1)
 {
     header_.resize(acomms::NUM_HEADER_PARTS);
@@ -79,34 +80,36 @@ void dccl::Message::add_publish()
 // a number of tasks to perform after reading in an entire <message> from
 // the xml file
 void dccl::Message::preprocess()
-{    
-    if(repeat_ > 1)
+{
+    // calculate number of repeated messages that will fit and put this in `repeat_`.
+    if(repeat_enabled_)
     {
-        // set array_length_ for repeated messages
         BOOST_FOREACH(boost::shared_ptr<MessageVar> mv, layout_)
         {
-            if(mv->array_length() != 1)
-                throw(std::runtime_error("<repeat> is not allowed on messages with arrays (<array_length> not 1)"));
-            else
-                mv->set_array_length(repeat_);
+        if(mv->array_length() != 1)
+            throw(std::runtime_error("<repeat> is not allowed on messages with arrays (<array_length> not 1)"));
         }
+        
+        // crank up the repeat until we go over
+        while(calc_total_size() <= requested_bits_body())
+        {
+            ++repeat_;
+            set_repeat_array_length();
+        }
+
+        // back off one
+        --repeat_;
+        set_repeat_array_length();
     }
 
-    body_bits_ = 0;
-    // iterate over layout_
-    BOOST_FOREACH(boost::shared_ptr<MessageVar> mv, layout_)
-    {
-        mv->initialize(trigger_var_);
-        // calculate total bits for the message from the bits for each message_var
-        body_bits_ += mv->calc_total_size();
-    }
+    body_bits_ = calc_total_size();
 
     // initialize header vars
     BOOST_FOREACH(boost::shared_ptr<MessageVar> mv, header_)
         mv->initialize(trigger_var_);
 
     
-    if(body_bits_ > requested_bits_body())
+    if(body_bits_ > requested_bits_body() || repeat_ == 0)
     {
         throw std::runtime_error(std::string("DCCL: " + get_display() + "the message [" + name_ + "] will not fit within specified size. remove parameters, tighten bounds, or increase allowed size. details of the offending message are printed above."));
     }
@@ -121,6 +124,28 @@ void dccl::Message::preprocess()
     if(out_var_ == "")
         out_var_ = "OUT_" + boost::to_upper_copy(name_) + "_HEX_" + boost::lexical_cast<std::string>(size_) + "B";   
 }
+
+void dccl::Message::set_repeat_array_length()
+{
+    // set array_length_ for repeated messages for all MessageVars
+    BOOST_FOREACH(boost::shared_ptr<MessageVar> mv, layout_)
+        mv->set_array_length(repeat_);
+}
+
+unsigned dccl::Message::calc_total_size()
+{
+    unsigned body_bits = 0;
+    // iterate over layout_
+    BOOST_FOREACH(boost::shared_ptr<MessageVar> mv, layout_)
+    {
+        mv->initialize(trigger_var_);
+        // calculate total bits for the message from the bits for each message_var
+        body_bits += mv->calc_total_size();
+    }
+    return body_bits;
+}
+
+
 
 std::map<std::string, std::string> dccl::Message::message_var_names() const
 {
@@ -164,7 +189,7 @@ std::set<std::string> dccl::Message::get_pubsub_src_vars()
         s.insert(mv->source_var());
     BOOST_FOREACH(boost::shared_ptr<MessageVar> mv, header_)
         s.insert(mv->source_var());
-
+    
     return s;
 }
 
@@ -300,6 +325,10 @@ std::string dccl::Message::get_display() const
     
         ss << "outgoing_hex_var: {" << out_var_ << "}" << std::endl;
         ss << "incoming_hex_var: {" << in_var_ << "}" << std::endl;
+        
+        if(repeat_enabled_)
+            ss << "repeated " << repeat_ << " times." << std::endl;
+        
     }
     
     ss << "requested size {bytes} [bits]: {" << requested_bytes_total() << "} [" << requested_bits_total() << "]" << std::endl;

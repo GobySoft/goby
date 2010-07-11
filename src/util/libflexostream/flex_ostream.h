@@ -35,6 +35,9 @@ class FlexOstream : public std::ostream
     void name(const std::string & s);
     void group(const std::string & s);
     void verbosity(const std::string & s);
+
+    void refresh() { sb_.refresh(); }
+    
     
     void die_flag(bool b);
     bool quiet()

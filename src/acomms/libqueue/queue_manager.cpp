@@ -321,7 +321,7 @@ bool queue::QueueManager::provide_outgoing_modem_data(const modem::Message& mess
                     << winning_var->cfg().name() 
                     << ": " << next_message.snip() << std::endl;
         
-        if(winning_var->cfg().ack() == false)
+        if(!packet_ack_)
         {
             winning_var->pop_message(modified_message_in.frame());
             qsize(winning_var);
@@ -466,7 +466,7 @@ void queue::QueueManager::receive_incoming_modem_data(const modem::Message& mess
                 << ": " << message.snip() << std::endl;
 
     std::string data = message.data();
-    if(data.size() <= acomms::NUM_HEADER_NIBS)
+    if(data.size() < acomms::NUM_HEADER_NIBS)
         return;
     
     dccl::DCCLHeaderDecoder head_decoder(data);

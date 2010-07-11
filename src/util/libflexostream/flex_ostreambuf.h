@@ -59,7 +59,15 @@ class FlexOStreamBuf : public std::stringbuf
 
     std::string color(const std::string& color)
     { return color_.esc_code_from_str(color); }
-    
+
+    void refresh()
+    {
+            if(verbosity_ == scope)
+            {
+                boost::mutex::scoped_lock lock(curses_mutex_);
+                curses_.recalculate_win();
+            }
+    }
     
   private:
     void display(const std::string& s);

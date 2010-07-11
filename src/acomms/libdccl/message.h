@@ -90,10 +90,10 @@ namespace dccl
         template<typename T> void set_size(const T& t)
         { set_size(boost::lexical_cast<unsigned>(t)); }
 
-        void set_repeat(unsigned repeat)
-        { repeat_ = repeat; }
-        template<typename T> void set_repeat(const T& t)
-        { set_repeat(boost::lexical_cast<unsigned>(t)); }
+        void set_repeat_enabled(unsigned repeat_enabled)
+        { repeat_enabled_ = repeat_enabled; }
+        template<typename T> void set_repeat_enabled(const T& t)
+        { set_repeat_enabled(boost::lexical_cast<unsigned>(t)); }
         
         void add_message_var(const std::string& type);        
         void add_publish();
@@ -108,6 +108,7 @@ namespace dccl
         std::string trigger_type() const      { return trigger_type_; }
         std::string in_var() const            { return in_var_; }
         std::string out_var() const           { return out_var_; }
+        bool repeat_enabled() const       { return repeat_enabled_; }
         unsigned repeat() const               { return repeat_; }
 
         MessageVar& last_message_var()        { return *layout_.back(); }
@@ -131,7 +132,9 @@ namespace dccl
         std::string get_short_display() const;
         std::map<std::string, std::string> message_var_names() const;
         void preprocess();
-            
+        void set_repeat_array_length();
+        unsigned calc_total_size();
+        
         void set_head_defaults(std::map<std::string, std::vector<MessageVal> >& in, unsigned modem_id);
         
     
@@ -201,6 +204,7 @@ namespace dccl
         unsigned modem_id_;
         double trigger_time_;        
 
+        bool repeat_enabled_;
         unsigned repeat_;
         
         std::string name_;

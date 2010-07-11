@@ -258,11 +258,11 @@ namespace amac
         boost::posix_time::ptime next_slot_t_;
 
         // <id, last time heard from>
-        typedef std::map<unsigned, Slot>::iterator id2slot_it;
+        typedef std::multimap<unsigned, Slot>::iterator id2slot_it;
 
         id2slot_it blank_it_;
         std::list<id2slot_it> slot_order_;
-        std::multimap<unsigned, Slot> id2slot_;    
+        std::multimap<unsigned, Slot> id2slot_;
     
         std::list<id2slot_it>::iterator current_slot_;
     
@@ -281,7 +281,7 @@ namespace amac
     inline bool operator==(const Slot& a, const Slot& b)
     {
         return a.src() == b.src() && a.dest() == b.dest() && a.rate() == b.rate() && a.type() == b.type() && a.slot_time() == b.slot_time();
-}
+    }
 
 
 }

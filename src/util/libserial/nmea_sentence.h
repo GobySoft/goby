@@ -44,14 +44,14 @@ namespace serial
 
         NMEASentence() : super() {}
 
-        // Does not include checksum or \r\n
-        std::string bare_message() const;
+        // Bare message, no checksum or \r\n
+        std::string message_no_cs() const;
 
-        // Includes checksum
-        std::string message_cs() const;
+        // Includes checksum, but no \r\n
+        std::string message() const;
 
         // Includes checksum and \r\n
-        std::string message() const { return message_cs() + "\r\n"; }
+        std::string message_cr_nl() const { return message() + "\r\n"; }
 
         // first two talker (CC)
         std::string talker_id() const 

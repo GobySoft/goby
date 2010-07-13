@@ -73,7 +73,7 @@ unsigned char serial::NMEASentence::checksum(const std::string& s) {
     return csum;
 }
 
-std::string serial::NMEASentence::bare_message() const {
+std::string serial::NMEASentence::message_no_cs() const {
     std::string message = "";
 
     for(const_iterator it = begin(), n = end(); it < n; ++it)
@@ -84,8 +84,8 @@ std::string serial::NMEASentence::bare_message() const {
     return message;
 }
 
-std::string serial::NMEASentence::message_cs() const {
-    std::string bare = bare_message();
+std::string serial::NMEASentence::message() const {
+    std::string bare = message_no_cs();
     std::stringstream message;
     unsigned char csum = NMEASentence::checksum(bare);
     message << bare << "*";

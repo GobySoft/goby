@@ -146,11 +146,11 @@ void micromodem::MMDriver::handle_modem_out()
             }
         }
 
-        if(os_) *os_ << group("mm_out") << "|" << microsec_simple_time_of_day() << "| " << gateway_prefix_out_ << nmea.message_cs() << std::endl;
+        if(os_) *os_ << group("mm_out") << "|" << microsec_simple_time_of_day() << "| " << gateway_prefix_out_ << nmea.message() << std::endl;
 
         // Begin the addition of code to support the gateway buoy
         // Added by Andrew Bouchard, NSWC PCD
-        serial_write(gateway_prefix_out_ + nmea.message());
+        serial_write(gateway_prefix_out_ + nmea.message_cr_nl());
         // End the addition of code to support the gateway buoy
         
         waiting_for_modem_ = true;
@@ -355,7 +355,7 @@ void micromodem::MMDriver::rev(NMEASentence& nmea, modem::Message& m)
 
 void micromodem::MMDriver::err(NMEASentence& nmea, modem::Message& m)
 {
-    *os_ << group("mm_out") << warn << "modem reports error: " << nmea.bare_message() << std::endl;
+    *os_ << group("mm_out") << warn << "modem reports error: " << nmea.message() << std::endl;
 }
 
 void micromodem::MMDriver::cyc(NMEASentence& nmea, modem::Message& m)

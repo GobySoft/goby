@@ -86,8 +86,12 @@ void micromodem::MMDriver::do_work()
 	}
 	// End the addition of code to support the gateway buoy
         
-        NMEASentence nmea(in, NMEASentence::STRICT);
-        handle_modem_in(nmea);
+        try {
+          NMEASentence nmea(in, NMEASentence::VALIDATE);
+          handle_modem_in(nmea);
+        } catch(std::exception& e) {
+          if(os_) *os_ << group("mm_in") << warn << e.what() << std::endl;
+        }
     }
 }
 
@@ -95,23 +99,23 @@ void micromodem::MMDriver::do_work()
 void micromodem::MMDriver::initiate_transmission(const modem::Message& m)
 {   
     //$CCCYC,CMD,ADR1,ADR2,Packet Type,ACK,Npkt*CS
-    NMEASentence nmea("$CCCYC", NMEASentence::NOT_STRICT);
+    NMEASentence nmea("$CCCYC", NMEASentence::IGNORE);
     nmea.push_back(0); // CMD: deprecated field
     nmea.push_back(m.src()); // ADR1
     nmea.push_back(m.dest()); // ADR2
     nmea.push_back(m.rate()); // Packet Type (transmission rate)
     nmea.push_back(m.ack()); // ACK: deprecated field, this bit may be used for something that's not related to the ack
     nmea.push_back(PACKET_FRAME_COUNT[m.rate()]); // number of frames we want
-    validate_and_write(nmea);
+    write(nmea);
 }
 
 void micromodem::MMDriver::initiate_ranging(const modem::Message& m)
 {   
     //$CCMPC,SRC,DEST*CS
-    NMEASentence nmea("$CCMPC", NMEASentence::NOT_STRICT);
+    NMEASentence nmea("$CCMPC", NMEASentence::IGNORE);
     nmea.push_back(m.src()); // ADR1
     nmea.push_back(m.dest()); // ADR2
-    validate_and_write(nmea);
+    write(nmea);
 }
 
 void micromodem::MMDriver::handle_modem_out()
@@ -126,7 +130,7 @@ void micromodem::MMDriver::handle_modem_out()
     {
         if(resend)
         {
-            if(os_) *os_ << group("mm_out") << warn << "resending " << nmea.talker() <<  " because we had no modem response for " << (time(NULL) - last_write_time_) << " second(s). " << std::endl;
+            if(os_) *os_ << group("mm_out") << warn << "resending " << nmea.front() <<  " because we had no modem response for " << (time(NULL) - last_write_time_) << " second(s). " << std::endl;
             ++global_fail_count_;
             ++present_fail_count_;
             if(global_fail_count_ == MAX_FAILS_BEFORE_DEAD)
@@ -142,11 +146,11 @@ void micromodem::MMDriver::handle_modem_out()
             }
         }
 
-        if(os_) *os_ << group("mm_out") << "|" << microsec_simple_time_of_day() << "| " << gateway_prefix_out_ << nmea.message() << std::endl;
+        if(os_) *os_ << group("mm_out") << "|" << microsec_simple_time_of_day() << "| " << gateway_prefix_out_ << nmea.message_cs() << std::endl;
 
         // Begin the addition of code to support the gateway buoy
         // Added by Andrew Bouchard, NSWC PCD
-        serial_write(gateway_prefix_out_ + nmea.message_cr_nl());
+        serial_write(gateway_prefix_out_ + nmea.message());
         // End the addition of code to support the gateway buoy
         
         waiting_for_modem_ = true;
@@ -162,15 +166,8 @@ void micromodem::MMDriver::pop_out()
 }
 
 
-void micromodem::MMDriver::validate_and_write(NMEASentence& nmea)
-{
-    try { nmea.validate(); }
-    catch(std::exception& e)
-    {
-        if(os_) *os_ << group("mm_out") << warn << e.what() << std::endl;
-        return;
-    }
-    
+void micromodem::MMDriver::write(NMEASentence& nmea)
+{    
     out_.push_back(nmea);
 
     handle_modem_out(); // try to push it now without waiting for the next call to do_work();
@@ -179,7 +176,7 @@ void micromodem::MMDriver::validate_and_write(NMEASentence& nmea)
 
 void micromodem::MMDriver::set_clock()
 {
-    NMEASentence nmea("$CCCLK", NMEASentence::NOT_STRICT);
+    NMEASentence nmea("$CCCLK", NMEASentence::IGNORE);
     boost::posix_time::ptime p = boost::posix_time::second_clock::universal_time();
     
     nmea.push_back(static_cast<int>(p.date().year()));
@@ -189,37 +186,30 @@ void micromodem::MMDriver::set_clock()
     nmea.push_back(static_cast<int>(p.time_of_day().minutes()));
     nmea.push_back(static_cast<int>(p.time_of_day().seconds()));
     
-    validate_and_write(nmea);
+    write(nmea);
 }
 
 void micromodem::MMDriver::write_cfg()
 {
     BOOST_FOREACH(const std::string& s, cfg_)
     {
-        NMEASentence nmea("$CCCFG", NMEASentence::NOT_STRICT);        
+        NMEASentence nmea("$CCCFG", NMEASentence::IGNORE);        
         nmea.push_back(boost::to_upper_copy(s));
-        validate_and_write(nmea);
+        write(nmea);
     }    
 }
 
 void micromodem::MMDriver::check_cfg()
 {
-    NMEASentence nmea("$CCCFQ,ALL", NMEASentence::NOT_STRICT);
-    validate_and_write(nmea);
+    NMEASentence nmea("$CCCFQ,ALL", NMEASentence::IGNORE);
+    write(nmea);
 }
 
 
 void micromodem::MMDriver::handle_modem_in(NMEASentence& nmea)
-{
-    try { nmea.validate(); }
-    catch(std::exception& e)
-    {
-        if(os_) *os_ << group("mm_in") << warn << e.what() << std::endl;
-        return;
-    }
-    
+{    
     // look at the talker front (talker id)
-    switch(talker_fronts_map_[nmea.talker_front()])
+    switch(talker_id_map_[nmea.talker_id()])
     {
         // only process messages from CA (modem)
         case CA: global_fail_count_ = 0; break; // reset fail count - modem is alive!
@@ -229,7 +219,7 @@ void micromodem::MMDriver::handle_modem_in(NMEASentence& nmea)
 
     modem::Message m_in;
     // look at the talker back (message code)
-    switch(talker_backs_map_[nmea.talker_back()])
+    switch(sentence_id_map_[nmea.sentence_id()])
     {
         case ACK: ack(nmea, m_in); break; // acknowledge
         case DRQ: drq(nmea, m_in); break; // data request
@@ -245,7 +235,7 @@ void micromodem::MMDriver::handle_modem_in(NMEASentence& nmea)
     }
 
     // clear the last send given modem acknowledgement
-    if(!out_.empty() && out_.front().talker_back() == nmea.talker_back()) pop_out();
+    if(!out_.empty() && out_.front().sentence_id() == nmea.sentence_id()) pop_out();
 
     // for anyone who needs to know that we got a message 
     if(callback_decoded) callback_decoded(m_in);
@@ -285,38 +275,38 @@ void micromodem::MMDriver::drq(NMEASentence& nmea_in, modem::Message& m_in)
     if(callback_datarequest) callback_datarequest(m_in, m_out);
 
     // write the txd
-    NMEASentence nmea_out("$CCTXD", NMEASentence::NOT_STRICT);
+    NMEASentence nmea_out("$CCTXD", NMEASentence::IGNORE);
     nmea_out.push_back(m_out.src());
     nmea_out.push_back(m_out.dest());
     nmea_out.push_back(m_out.ack());
     nmea_out.push_back(m_out.data());
 
-    validate_and_write(nmea_out);   
+    write(nmea_out);   
 }
 
 void micromodem::MMDriver::cfg(NMEASentence& nmea, modem::Message& m)
 {
-    if(out_.empty() || (out_.front().talker_back() != "CFG" && out_.front().talker_back() != "CFQ"))
+    if(out_.empty() || (out_.front().sentence_id() != "CFG" && out_.front().sentence_id() != "CFQ"))
         return;
     
-    if(out_.front().talker_back() == "CFQ") pop_out();
+    if(out_.front().sentence_id() == "CFQ") pop_out();
 }
 
 void micromodem::MMDriver::clk(NMEASentence& nmea, modem::Message& m)
 {
-    if(out_.empty() || out_.front().talker_back() != "CLK")
+    if(out_.empty() || out_.front().sentence_id() != "CLK")
         return;
     
     using namespace boost::posix_time;
     using namespace boost::gregorian;
     // modem responds to the previous second, which is why we subtract one second from the current time
     ptime expected = now();
-    ptime reported = ptime(date(nmea.part_as_int(1),
-                                nmea.part_as_int(2),
-                                nmea.part_as_int(3)),
-                           time_duration(nmea.part_as_int(4),
-                                         nmea.part_as_int(5),
-                                         nmea.part_as_int(6),
+    ptime reported = ptime(date(nmea.as<int>(1),
+                                nmea.as<int>(2),
+                                nmea.as<int>(3)),
+                           time_duration(nmea.as<int>(4),
+                                         nmea.as<int>(5),
+                                         nmea.as<int>(6),
                                          0));
 
 
@@ -335,7 +325,7 @@ void micromodem::MMDriver::mpr(NMEASentence& nmea, modem::Message& m)
     m.set_src(nmea[1]);
     m.set_dest(nmea[2]);
 
-    if(nmea.parts().size() > 3)
+    if(nmea.size() > 3)
         m.set_t(nmea[3]);
 
     if(callback_range_reply) callback_range_reply(m);
@@ -365,7 +355,7 @@ void micromodem::MMDriver::rev(NMEASentence& nmea, modem::Message& m)
 
 void micromodem::MMDriver::err(NMEASentence& nmea, modem::Message& m)
 {
-    *os_ << group("mm_out") << warn << "modem reports error: " << nmea.message() << std::endl;
+    *os_ << group("mm_out") << warn << "modem reports error: " << nmea.bare_message() << std::endl;
 }
 
 void micromodem::MMDriver::cyc(NMEASentence& nmea, modem::Message& m)
@@ -425,7 +415,7 @@ double micromodem::MMDriver::modem_time2unix_time(const std::string& mt)
 
 void micromodem::MMDriver::initialize_talkers()
 {
-    boost::assign::insert (talker_backs_map_)
+    boost::assign::insert (sentence_id_map_)
         ("ACK",ACK)
         ("DRQ",DRQ)
         ("RXA",RXA)
@@ -472,7 +462,7 @@ void micromodem::MMDriver::initialize_talkers()
         ("FST",FST) 
         ("ERR",ERR);
 
-    boost::assign::insert (talker_fronts_map_)
+    boost::assign::insert (talker_id_map_)
         ("CC",CC)
         ("CA",CA)
         ("SN",SN)

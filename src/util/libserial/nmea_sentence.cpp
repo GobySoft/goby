@@ -1,4 +1,5 @@
 // copyright 2009 t. schneider tes@mit.edu
+//           2010 c. murphy    cmurphy@whoi.edu
 // 
 // this file is part of serial, a library for handling serial
 // communications.
@@ -18,129 +19,81 @@
 
 #include "nmea_sentence.h"
 
-serial::NMEASentence::NMEASentence(std::string s, bool strict /*= STRICT*/)
-    : message_(s),
-      message_no_cs_(s),
-      cs_(0),
-      valid_(false),
-      strict_(strict)
-{
-    // make message_, message_no_cs_, message_parts in sync
-    update();
-    
-    boost::split(message_parts_, message_no_cs_, boost::is_any_of(","));
-}
+#include <cstdio>
 
-serial::NMEASentence::NMEASentence()
-    : message_(""),
-      message_no_cs_(""),
-      cs_(0),
-      valid_(false),
-      strict_(true)
-{ }
-
-void serial::NMEASentence::add_cs(std::string& s)
-{
-    std::string cs;
-    unsigned char c[] = {calc_cs(s)};
-    tes_util::char_array2hex_string(c, cs, 1);
-    // modem requires CS to be uppercase...
-    boost::to_upper(cs);
-    
-    s += "*" + cs;
-}
-
-
-unsigned char serial::NMEASentence::strip_cs(std::string& s)    
-{
-    std::string::size_type pos = s.find('*');
-            
-    // make sure it's in the right place
-    if(pos == (s.length()-3))
-    {
-        std::string cs = s.substr(pos+1, 2);
-        s = s.substr(0, pos);
-        unsigned char c[1] = {0};
-        tes_util::hex_string2char_array(c, cs, 1);
-        return c[0];
+serial::NMEASentence::NMEASentence(std::string s, strategy cs_strat = VALIDATE)
+  : super() {
+    bool found_csum = false;
+    unsigned int cs;
+    // Silently drop leading/trailing whitespace if present.
+    boost::trim(s);
+    // Basic error checks ($, empty)
+    if (s.empty())
+      throw std::runtime_error("NMEASentence: no message provided.");
+    if (s[0] != '$')
+      throw std::runtime_error("NMEASentence: no $: '" + s + "'.");
+    // Check if the checksum exists and is correctly placed, and strip it.
+    // If it's not correctly placed, we'll interpret it as part of message.
+    // NMEA spec doesn't seem to say that * is forbidden elsewhere? (should be)
+    if (s.size() > 3 && s.at(s.size()-3) == '*') {
+      std::string hex_csum = s.substr(s.size()-2);
+      found_csum = tes_util::hex_string2number(hex_csum, cs);
+      s = s.substr(0, s.size()-3);
     }
-    else return 0;
-}
-
-
-void serial::NMEASentence::validate()
-{
-    if(message_.empty())
-        throw std::runtime_error("NMEASentence: no message: " + message_);
-    
-    std::string::size_type star_pos = message_.find('*');
-    if(star_pos == std::string::npos)
-        throw std::runtime_error("NMEASentence: no checksum: " + message_);
-    
-    std::string::size_type dollar_pos = message_.find('$');
-    if(dollar_pos == std::string::npos)
-        throw std::runtime_error("NMEASentence: no $: " + message_);
-    
-    if(strict_)
-    {    
-        if(cs_ != given_cs_)
-            throw std::runtime_error("NMEASentence: bad checksum: " + message_);
+    // If we require a checksum and haven't found one, fail.
+    if (cs_strat == REQUIRE and !found_csum)
+      throw std::runtime_error("NMEASentence: no checksum: '" + s + "'.");
+    // If we found a bad checksum and we care, fail.
+    if (found_csum && (cs_strat == REQUIRE || cs_strat == VALIDATE)) {
+      unsigned char calc_cs = NMEASentence::checksum(s);
+      if (calc_cs != cs)
+        throw std::runtime_error("NMEASentence: bad checksum: '" + s + "'.");
     }
-    
-    if(message_parts_[0].length() != 6)
-        throw std::runtime_error("NMEASentence: wrong talker length: " + message_);
-    
-    valid_ = true;
+    // Split string into parts.
+    boost::split(*(super*)this, s, boost::is_any_of(","));
+    // Validate talker size.
+    if (this->front().size() != 6)
+      throw std::runtime_error("NMEASentence: bad talker length '" + s + "'.");
 }
 
-unsigned char serial::NMEASentence::calc_cs(const std::string& s)
-{
+unsigned char serial::NMEASentence::checksum(const std::string& s) {
+    unsigned char csum = 0;
+
     if(s.empty())
-        return 0;
+      throw std::runtime_error("NMEASentence::checksum: no message provided.");
+    std::string::size_type star = s.find_first_of("*\r\n");
+    std::string::size_type dollar = s.find('$');
     
-    std::string::size_type star_pos = s.find('*');
-    std::string::size_type dollar_pos = s.find('$');
+    if(dollar == std::string::npos)
+      throw std::runtime_error("NMEASentence::checksum: no $ found.");
+
+    if(star == std::string::npos) star = s.length();
     
-    if(dollar_pos == std::string::npos)
-        return 0;
-    if(star_pos == std::string::npos)
-        star_pos = s.length();
-    
-    unsigned char cs = 0;
-    for(std::string::size_type i = dollar_pos+1, n = star_pos; i < n; ++i)
-        cs ^= s[i];
-    return cs;
+    for(std::string::size_type i = dollar+1; i < star; ++i) csum ^= s[i];
+    return csum;
 }
 
-void serial::NMEASentence::update()
-{
-    boost::trim(message_);
-    boost::trim(message_no_cs_);
-    
-    if(message_.find('*') == std::string::npos && !strict_)
-        add_cs(message_);
-    
-    given_cs_ = strip_cs(message_no_cs_);
-    
-    cs_ = calc_cs(message_);
-}
+std::string serial::NMEASentence::bare_message() const {
+    std::string message = "";
 
-void serial::NMEASentence::parts_to_message()
-{
-    message_.clear();
-    for(std::vector<std::string>::const_iterator it = message_parts_.begin(),
-            n = message_parts_.end();
-        it != n;
-        ++it)
-        message_ += *it + ",";
-    
+    for(const_iterator it = begin(), n = end(); it < n; ++it)
+      message += *it + ",";
+
     // kill last ","
-    message_.erase(message_.end()-1);
-    
-    message_no_cs_ = message_;
-    update();
+    message.resize(message.size()-1);
+    return message;
 }
 
+std::string serial::NMEASentence::message_cs() const {
+    std::string bare = bare_message();
+    std::stringstream message;
+    unsigned char csum = NMEASentence::checksum(bare);
+    message << bare << "*";
+    message << std::uppercase << std::hex << unsigned(csum);
+    return message.str();
+}
+
+/** Unused, purpose unclear, doesn't seem to do what it says it does?
 bool icmp_contents(serial::NMEASentence& n1, serial::NMEASentence& n2)
 {
     if(n1.message_no_cs().length() < 7 || n2.message_no_cs().length() < 7)
@@ -149,4 +102,4 @@ bool icmp_contents(serial::NMEASentence& n1, serial::NMEASentence& n2)
         return tes_util::stricmp(n1.message_no_cs().substr(7), n2.message_no_cs().substr(7));
 }    
     
-
+**/

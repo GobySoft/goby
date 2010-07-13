@@ -120,7 +120,7 @@ bool dccl::MessageVal::get(std::string& s) const
             return true;            
 
         case cpp_double:
-            if((log10(dval_) + precision_) <= MAX_DBL_PRECISION) 
+            if((log10(abs(dval_)) + precision_) <= MAX_DBL_PRECISION) 
                 ss << std::fixed << std::setprecision(precision_) << dval_;
             else
                 ss << std::setprecision(precision_) << dval_;

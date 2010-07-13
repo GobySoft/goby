@@ -80,7 +80,7 @@ namespace modem
         /// set the time
         void set_t(double d)       { t_=d; t_set_ = true; }    
         /// set the size (automatically set by the data size)
-        void set_size(double size) { size_= size; size_set_ = true;}    
+        void set_size(unsigned size) { size_= size; size_set_ = true;}    
         /// set the source id
         void set_src(unsigned src)      { src_=src; src_set_ = true; }   
         /// set the destination id
@@ -101,7 +101,7 @@ namespace modem
         /// try to set the size with std::string
          void set_size(const std::string& size)
         {
-            try {  set_size(boost::lexical_cast<double>(size)); }
+            try {  set_size(boost::lexical_cast<unsigned>(size)); }
             catch(boost::bad_lexical_cast & ) { }
         }
         /// try to set the destination id with std::string
@@ -156,7 +156,7 @@ namespace modem
         unsigned frame() const {return frame_;}
 
         /// size in bytes
-        double size() const { return data_set_ ? calc_size() : size_; }
+        unsigned size() const { return data_set_ ? calc_size() : size_; }
         /// checksum (eight bit XOR of Message::data())
         unsigned cs() const { return data_set_ ? calc_cs() : cs_; }
 
@@ -267,9 +267,9 @@ namespace modem
         //@}
         
       private:
-        double calc_size() const
+        unsigned calc_size() const
         {
-            return double(data_.length())/2;
+            return data_.length()/2;
         }
         
         unsigned char calc_cs() const
@@ -295,7 +295,7 @@ namespace modem
         unsigned rate_;
         double t_;
         bool ack_;
-        double size_; //in bytes
+        unsigned size_; //in bytes
         unsigned frame_;
         unsigned char cs_;
 

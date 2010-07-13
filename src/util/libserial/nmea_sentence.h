@@ -34,15 +34,12 @@ namespace serial
 {    
     class NMEASentence : public std::vector<std::string>
     {
-      private:
-        typedef std::vector<std::string> super; // To shorten references
-
       public:
         enum strategy { IGNORE, VALIDATE, REQUIRE };
     
         NMEASentence(std::string s, strategy cs_strat);
 
-        NMEASentence() : super() {}
+        NMEASentence() : std::vector<std::string>() {}
 
         // Bare message, no checksum or \r\n
         std::string message_no_cs() const;
@@ -66,7 +63,7 @@ namespace serial
     
         template<typename T>
             void push_back(T t)
-        { super::push_back(boost::lexical_cast<std::string>(t)); }
+        { std::vector<std::string>::push_back(boost::lexical_cast<std::string>(t)); }
     
         static unsigned char checksum(const std::string& s);
     };

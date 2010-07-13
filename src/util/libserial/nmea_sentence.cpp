@@ -22,7 +22,7 @@
 #include <cstdio>
 
 serial::NMEASentence::NMEASentence(std::string s, strategy cs_strat = VALIDATE)
-  : super() {
+  : std::vector<std::string>() {
     bool found_csum = false;
     unsigned int cs;
     // Silently drop leading/trailing whitespace if present.
@@ -50,7 +50,7 @@ serial::NMEASentence::NMEASentence(std::string s, strategy cs_strat = VALIDATE)
         throw std::runtime_error("NMEASentence: bad checksum: '" + s + "'.");
     }
     // Split string into parts.
-    boost::split(*(super*)this, s, boost::is_any_of(","));
+    boost::split(*(std::vector<std::string>*)this, s, boost::is_any_of(","));
     // Validate talker size.
     if (this->front().size() != 6)
       throw std::runtime_error("NMEASentence: bad talker length '" + s + "'.");

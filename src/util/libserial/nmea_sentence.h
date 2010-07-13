@@ -1,4 +1,5 @@
 // copyright 2009 t. schneider tes@mit.edu
+//           2010 c. murphy    cmurphy@whoi.edu
 // 
 // this file is part of serial, a library for handling serial
 // communications.
@@ -21,6 +22,7 @@
 
 #include <exception>
 #include <vector>
+#include <cstdio>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/assign.hpp>
@@ -30,105 +32,49 @@
 
 namespace serial
 {    
-    class NMEASentence
+    class NMEASentence : public std::vector<std::string>
     {
       public:
-        enum { STRICT = true, NOT_STRICT = false };
+        enum strategy { IGNORE, VALIDATE, REQUIRE };
     
-        NMEASentence(std::string s, bool strict = STRICT);
-        NMEASentence();
-    
-        void add_cs(std::string& s);
-        unsigned char strip_cs(std::string& s);
-    
-        // checks for problems with the NMEA sentence
-        void validate();
-    
-        // includes cs
-        std::string message() const
-        { return (valid_) ? message_ : "not_validated"; }
+        NMEASentence(std::string s, strategy cs_strat);
 
-        // full message with \r\n
-        std::string message_cr_nl() const 
-        { return (valid_) ? std::string(message_ + "\r\n") : "not_validated"; }
-    
-        // no checksum
-        std::string message_no_cs() const
-        { return (valid_) ? message_no_cs_ : "not_validated"; }
-    
-        // talker CCCFG
-        std::string talker() const
-        { return (valid_) ? message_parts_[0].substr(1) : "not_validated"; }
+        NMEASentence() : std::vector<std::string>() {}
 
-        // first two talker CC
-        std::string talker_front() const 
-        { return (valid_) ? message_parts_[0].substr(1,2) : "not_validated"; }
+        // Bare message, no checksum or \r\n
+        std::string message_no_cs() const;
 
-        // last three CFG
-        std::string talker_back() const
-        { return (valid_) ? message_parts_[0].substr(3) : "not_validated"; }
+        // Includes checksum, but no \r\n
+        std::string message() const;
 
-        // all the parts
-        std::vector<std::string>& parts()
-        { return message_parts_; }
-        
-        std::string& operator[](std::vector<std::string>::size_type i) 
-        { return message_parts_.at(i); }
-    
-        double part_as_double(std::vector<std::string>::size_type i) 
-        { return boost::lexical_cast<double>(message_parts_.at(i)); }
+        // Includes checksum and \r\n
+        std::string message_cr_nl() const { return message() + "\r\n"; }
 
-        int part_as_int(std::vector<std::string>::size_type i) 
-        { return boost::lexical_cast<int>(message_parts_.at(i)); }
+        // first two talker (CC)
+        std::string talker_id() const 
+        { return empty() ? "" : front().substr(1, 2); }
 
-    
-        // all the parts
-        bool empty()
-        { return message_parts_.empty(); }
-            
+        // last three (CFG)
+        std::string sentence_id() const
+        { return empty() ? "" : front().substr(3); }
+
+        template<typename T>
+            T as(int i) { return boost::lexical_cast<T>(at(i)); }
     
         template<typename T>
             void push_back(T t)
-        { push_back(boost::lexical_cast<std::string>(t)); }
+        { std::vector<std::string>::push_back(boost::lexical_cast<std::string>(t)); }
     
-        void push_back(const std::string& s)
-        {
-            message_parts_.push_back(s);
-            parts_to_message();
-        }
-
-    
-      private:
-
-        unsigned char calc_cs(const std::string& s);    
-
-        // recalculates cs, and sets message_, message_no_cs_
-        void update();
-    
-        // takes the parts and makes a message string out of it
-        void parts_to_message();
-    
-    
-    
-      private:
-        std::string message_;
-        std::string message_no_cs_;    
-        std::vector<std::string> message_parts_;
-        unsigned char cs_;
-        unsigned char given_cs_;
-        bool valid_;
-        bool strict_; // require cs on original message?
-
+        static unsigned char checksum(const std::string& s);
     };
-
-
 }
 // overloaded <<
 inline std::ostream& operator<< (std::ostream& out, const serial::NMEASentence& nmea)
 { out << nmea.message(); return out; }
 
+/* Unused, purpose unclear, doesn't seem to do what it says it does?
 // compares the contents of the NMEASentences without regard to case
 bool icmp_contents(serial::NMEASentence& n1, serial::NMEASentence& n2);
+*/
 
 #endif
-

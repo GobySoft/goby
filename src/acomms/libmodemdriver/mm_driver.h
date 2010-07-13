@@ -87,7 +87,7 @@ namespace micromodem
         void set_gateway_prefix(bool IsGateway, int GatewayID);
         // End the addition of code to support the gateway buoy
 
-        void validate_and_write(serial::NMEASentence& nmea);
+        void write(serial::NMEASentence& nmea);
       private:
         
         // startup
@@ -153,9 +153,9 @@ namespace micromodem
 
         bool clock_set_;
 
-        enum TalkerFronts { front_not_defined,CA,CC,SN,GP};
+        enum TalkerIDs { front_not_defined,CA,CC,SN,GP};
 
-        enum TalkerBacks  { back_not_defined,
+        enum SentenceIDs  { back_not_defined,
                             ACK,DRQ,RXA,RXD,
                             RXP,TXD,TXA,TXP,
                             TXF,CYC,MPC,MPA,
@@ -169,8 +169,8 @@ namespace micromodem
                             DBG,FFL,FST,ERR};
 
     
-        std::map<std::string, TalkerBacks> talker_backs_map_;
-        std::map<std::string, TalkerFronts> talker_fronts_map_;
+        std::map<std::string, TalkerIDs> talker_id_map_;
+        std::map<std::string, SentenceIDs> sentence_id_map_;
 
         std::string gateway_prefix_in_;
         std::string gateway_prefix_out_;

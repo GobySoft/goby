@@ -29,14 +29,20 @@
 /////////////////////
 // public methods (general use)
 /////////////////////
-dccl::DCCLCodec::DCCLCodec() : start_time_(time(NULL)), modem_id_(0)
+dccl::DCCLCodec::DCCLCodec()
+    : start_time_(gtime::now()),
+      modem_id_(0)
 { }
     
-dccl::DCCLCodec::DCCLCodec(const std::string& file, const std::string schema) : start_time_(time(NULL)), modem_id_(0)
+dccl::DCCLCodec::DCCLCodec(const std::string& file, const std::string schema)
+    : start_time_(gtime::now()),
+      modem_id_(0)
 { add_xml_message_file(file, schema); }
     
 dccl::DCCLCodec::DCCLCodec(const std::set<std::string>& files,
-                           const std::string schema) : start_time_(time(NULL)), modem_id_(0)
+                           const std::string schema)
+    : start_time_(gtime::now()),
+      modem_id_(0)
 {
     BOOST_FOREACH(const std::string& s, files)
         add_xml_message_file(s, schema);
@@ -167,9 +173,12 @@ bool dccl::DCCLCodec::is_publish_trigger(std::set<unsigned>& id, const std::stri
 
 bool dccl::DCCLCodec::is_time_trigger(std::set<unsigned>& id)
 {
+    using boost::posix_time::seconds;
+    
     for (std::vector<dccl::Message>::iterator it = messages_.begin(), n = messages_.end(); it != n; ++it)
     {
-        if(it->trigger_type() == "time" && time(NULL) > (start_time_ + it->trigger_number() * it->trigger_time()))
+        if(it->trigger_type() == "time" &&
+           gtime::now() > (start_time_ + seconds(it->trigger_number() * it->trigger_time())))
         {
             id.insert(it->id());
             // increment message counter
@@ -308,7 +317,7 @@ void dccl::DCCLCodec::encode_private(std::vector<Message>::iterator it,
     MessageVal& src = head_dec[acomms::head_src_id];
     MessageVal& dest = head_dec[acomms::head_dest_id];
 
-    out_msg.set_t(long(t));
+    out_msg.set_time(double(t));
     out_msg.set_src(long(src));
     out_msg.set_dest(long(dest));
 }

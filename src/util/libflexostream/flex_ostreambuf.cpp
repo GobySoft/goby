@@ -17,7 +17,6 @@
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <iostream>
-#include <ctime>
 #include <limits>
 
 #include <boost/assign.hpp>
@@ -31,7 +30,7 @@ using namespace termcolor;
 FlexOStreamBuf::FlexOStreamBuf(): name_("no name"),
                                   verbosity_(verbose),
                                   die_flag_(false),
-                                  curses_(curses_mutex_)
+                                  curses_(0)
 {
     boost::assign::insert (verbosity_map_)
         ("quiet",quiet)
@@ -43,18 +42,25 @@ FlexOStreamBuf::FlexOStreamBuf(): name_("no name"),
     groups_[""] = no_group;    
 }
 
+FlexOStreamBuf::~FlexOStreamBuf()
+{
+    if(curses_) delete curses_;
+}
+
 void FlexOStreamBuf::verbosity(const std::string & s)
 {
     verbosity_ = verbosity_map_[s];
     
     if(verbosity_ == scope)
     {
+        curses_ = new FlexNCurses(curses_mutex_);
+        
         boost::mutex::scoped_lock lock(curses_mutex_);
 
-        curses_.startup();
-        curses_.add_win(&groups_[""]);
+        curses_->startup();
+        curses_->add_win(&groups_[""]);
         
-        curses_.recalculate_win();
+        curses_->recalculate_win();
 	
         input_thread_ = boost::shared_ptr<boost::thread>(new boost::thread(boost::bind(&FlexNCurses::run_input, boost::ref(curses_))));
         
@@ -68,7 +74,7 @@ void FlexOStreamBuf::add_group(const std::string & name, Group g)
     if(verbosity_ == scope)
     {
         boost::mutex::scoped_lock lock(curses_mutex_);
-        curses_.add_win(&groups_[name]);
+        curses_->add_win(&groups_[name]);
     }
 }
 
@@ -127,13 +133,13 @@ void FlexOStreamBuf::display(const std::string & s)
             {
                 boost::mutex::scoped_lock lock(curses_mutex_);
                 std::string line = std::string("\n" +  color_.esc_code_from_str(groups_[group_name_].color()) + "| \33[0m" + s);
-                curses_.insert(time(NULL), line, &groups_[group_name_]);
+                curses_->insert(time(NULL), line, &groups_[group_name_]);
             }
             else
             {
-                curses_.alive(false);
+                curses_->alive(false);
                 input_thread_->join();
-                curses_.cleanup();
+                curses_->cleanup();
                 
                 std::cout << color_.esc_code_from_str(groups_[group_name_].color()) << name_ << nocolor << ": " << s << nocolor << std::endl;
             }            

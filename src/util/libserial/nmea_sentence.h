@@ -72,9 +72,4 @@ namespace serial
 inline std::ostream& operator<< (std::ostream& out, const serial::NMEASentence& nmea)
 { out << nmea.message(); return out; }
 
-/* Unused, purpose unclear, doesn't seem to do what it says it does?
-// compares the contents of the NMEASentences without regard to case
-bool icmp_contents(serial::NMEASentence& n1, serial::NMEASentence& n2);
-*/
-
 #endif

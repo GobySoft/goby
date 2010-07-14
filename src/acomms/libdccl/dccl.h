@@ -20,7 +20,6 @@
 #ifndef DCCL20091211H
 #define DCCL20091211H
 
-#include <ctime>
 #include <string>
 #include <set>
 #include <map>
@@ -29,6 +28,7 @@
 #include <vector>
 
 #include "acomms/xml/xml_parser.h"
+#include "util/gtime.h"
 
 #include "message.h"
 #include "message_val.h"
@@ -465,7 +465,7 @@ namespace dccl
         std::map<unsigned, size_t>     id2messages_;
 
         std::string xml_schema_;
-        time_t start_time_;
+        boost::posix_time::ptime start_time_;
 
         unsigned modem_id_;
         

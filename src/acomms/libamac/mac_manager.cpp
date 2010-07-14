@@ -1,4 +1,4 @@
-// copyright 2009 t. schneider tes@mit.edu
+// copyright 2009, 2010 t. schneider tes@mit.edu
 // 
 // this file is part of libamac, a medium access control for
 // acoustic networks. 
@@ -107,7 +107,7 @@ void amac::MACManager::startup()
         case mac_polled:
             if(os_) *os_ << group("mac")
                          << "Using the Centralized Polling MAC scheme" << std::endl;
-            next_slot_t_ = now();
+            next_slot_t_ = gtime::now();
             break;
 
         default:
@@ -129,7 +129,7 @@ void amac::MACManager::send_poll(const asio::error_code& e)
     bool send_poll = true;
     
     int destination = (s.dest() == Slot::query_destination)
-        ? callback_dest(acomms::PACKET_SIZE[s.rate()]) : s.dest();
+        ? callback_dest(s.rate()) : s.dest();
     
     switch(type_)
     {
@@ -219,7 +219,7 @@ void amac::MACManager::send_poll(const asio::error_code& e)
     using namespace boost::gregorian;
     using namespace boost::posix_time;
 
-    int since_day_start = now().time_of_day().total_seconds();
+    int since_day_start = gtime::now().time_of_day().total_seconds();
     cycles_since_day_start_ = (floor(since_day_start/cycle_length()) + 1);
 
     if(os_) *os_ << group("mac") << "cycles since day start: "
@@ -249,7 +249,7 @@ void amac::MACManager::process_message(const modem::Message& m)
         
         slot_order_.push_back
             (id2slot_.insert
-             (std::pair<unsigned, Slot> (id, Slot(id, Slot::query_destination, rate_, Slot::slot_data, slot_time_, now()))));
+             (std::pair<unsigned, Slot> (id, Slot(id, Slot::query_destination, rate_, Slot::slot_data, slot_time_, gtime::now()))));
 
         slot_order_.sort();
 
@@ -259,7 +259,7 @@ void amac::MACManager::process_message(const modem::Message& m)
     {
         std::pair<id2slot_it, id2slot_it> p = id2slot_.equal_range(id);
         for(id2slot_it it = p.first; it != p.second; ++it)
-            it->second.set_last_heard_time(now());
+            it->second.set_last_heard_time(gtime::now());
     }
 }
 
@@ -269,7 +269,7 @@ void amac::MACManager::expire_ids()
     
     for(id2slot_it it = id2slot_.begin(), n = id2slot_.end(); it != n; ++it)
     {
-        if(it->second.last_heard_time() < now()-boost::posix_time::seconds(cycle_length()*expire_cycles_) && it->first != modem_id_)
+        if(it->second.last_heard_time() < gtime::now()-boost::posix_time::seconds(cycle_length()*expire_cycles_) && it->first != modem_id_)
         {            
             if(os_) *os_ << group("mac") << "removed id " << it->first
                          << " after not hearing for " << expire_cycles_
@@ -333,7 +333,7 @@ std::map<unsigned, amac::Slot>::iterator amac::MACManager::add_slot(const amac::
     
     if(do_timer_start)
     {
-        next_slot_t_ = now();
+        next_slot_t_ = gtime::now();
         restart_timer();
     }
     

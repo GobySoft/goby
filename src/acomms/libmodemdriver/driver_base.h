@@ -46,6 +46,12 @@ namespace modem
     /// Think of this as a generalized version of a function pointer (void (*)(const std::string&)). See http://www.boost.org/doc/libs/1_34_0/doc/html/function.html for more on boost:function.
     typedef boost::function<void (const std::string& s)> StrFunc1;
 
+    /// \brief boost::function for a function taking a unsigned and returning an integer.
+    ///
+    /// Think of this as a generalized version of a function pointer (int (*) (unsigned)). See http://www.boost.org/doc/libs/1_34_0/doc/html/function.html for more on boost:function.
+    typedef boost::function<int (unsigned)> IdFunc;
+
+
     /// provides a base class for acoustic %modem drivers (i.e. for different manufacturer %modems) to derive
     class DriverBase
     {
@@ -60,6 +66,9 @@ namespace modem
 
         /// Virtual initiate_ranging method. see derived classes (e.g. micromodem::MMDriver) for examples.
         virtual void initiate_ranging(const modem::Message& m) = 0;
+
+        /// Virtual request next destination method. Provided a rate (0-5), must return the size of the packet (in bytes) to be used
+        virtual int request_next_destination(unsigned rate) = 0;
 
         
         /// Set configuration strings for the %modem. The contents of these strings depends on the specific %modem.
@@ -125,7 +134,11 @@ namespace modem
         /// \param std::string The raw outgoing string
         void set_out_raw_cb(StrFunc1 func)     { callback_out_raw = func; }
 
-
+        /// \brief Callback to call to request which vehicle id should be the next destination. Typically bound to queue::QueueManager::request_next_destination.
+        // 
+        // \param func has the form int next_dest(unsigned rate). the return value of func should be the next destination id, or -1 for no message to send.
+        void set_destination_cb(IdFunc func) { callback_dest = func; }
+        
         /// \return the serial port name
         std::string serial_port() { return serial_port_; }
 
@@ -171,6 +184,9 @@ namespace modem
         StrFunc1 callback_in_raw;
         StrFunc1 callback_out_raw;
 
+        IdFunc callback_dest;
+
+        
       private:
         unsigned baud_;
         std::string serial_port_;

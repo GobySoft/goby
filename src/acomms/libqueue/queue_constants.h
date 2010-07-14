@@ -18,6 +18,8 @@
 #ifndef QueueConstants20091205H
 #define QueueConstants20091205H
 
+#include "util/gtime.h"
+
 namespace queue
 {
     // largest allowed id 
@@ -27,7 +29,7 @@ namespace queue
     const unsigned VAR_ID_MASK = 0xFF ^ MULTIMESSAGE_MASK ^ BROADCAST_MASK;
 
     // how old an on_demand message can be before re-encoding
-    const unsigned ON_DEMAND_SKEW = 1;    
+    const boost::posix_time::time_duration ON_DEMAND_SKEW = boost::posix_time::seconds(1);    
 }
 
 #endif

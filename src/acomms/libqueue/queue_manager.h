@@ -325,7 +325,6 @@ namespace queue
         std::map<QueueKey, Queue> queues_;
 
         std::string xml_schema_;
-        time_t start_time_;
 
         std::ostream* os_;
 

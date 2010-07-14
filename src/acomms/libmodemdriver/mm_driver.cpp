@@ -26,13 +26,14 @@
 
 #include "acomms/modem_message.h"
 #include "util/streamlogger.h"
+#include "util/gtime.h"
 
 using namespace serial; // for NMEASentence
 
 micromodem::MMDriver::MMDriver(std::ostream* os /*= 0*/)
     : DriverBase(os, SERIAL_DELIMITER),
       os_(os),
-      last_write_time_(time(NULL)),
+      last_write_time_(gtime::now()),
       waiting_for_modem_(false),
       startup_done_(false),
       global_fail_count_(0),
@@ -73,7 +74,7 @@ void micromodem::MMDriver::do_work()
     while(serial_read(in))
     {
         boost::trim(in);
-        if(os_) *os_ << group("mm_in") << "|" << microsec_simple_time_of_day() << "| " << in << std::endl;
+        if(os_) *os_ << group("mm_in") << in << std::endl;
 
 	// Begin the addition of code to support the gateway buoy
 	// Added by Andrew Bouchard, NSWC PCD
@@ -125,12 +126,12 @@ void micromodem::MMDriver::handle_modem_out()
     
     NMEASentence& nmea = out_.front();
     
-    bool resend = waiting_for_modem_ && (last_write_time_ <= (time(NULL) - MODEM_WAIT));
+    bool resend = waiting_for_modem_ && (last_write_time_ <= (gtime::now() - MODEM_WAIT));
     if(!waiting_for_modem_ || resend)
     {
         if(resend)
         {
-            if(os_) *os_ << group("mm_out") << warn << "resending " << nmea.front() <<  " because we had no modem response for " << (time(NULL) - last_write_time_) << " second(s). " << std::endl;
+            if(os_) *os_ << group("mm_out") << warn << "resending " << nmea.front() <<  " because we had no modem response for " << (gtime::now() - last_write_time_).total_seconds() << " second(s). " << std::endl;
             ++global_fail_count_;
             ++present_fail_count_;
             if(global_fail_count_ == MAX_FAILS_BEFORE_DEAD)
@@ -146,7 +147,7 @@ void micromodem::MMDriver::handle_modem_out()
             }
         }
 
-        if(os_) *os_ << group("mm_out") << "|" << microsec_simple_time_of_day() << "| " << gateway_prefix_out_ << nmea.message() << std::endl;
+        if(os_) *os_ << group("mm_out") << gateway_prefix_out_ << nmea.message() << std::endl;
 
         // Begin the addition of code to support the gateway buoy
         // Added by Andrew Bouchard, NSWC PCD
@@ -154,7 +155,7 @@ void micromodem::MMDriver::handle_modem_out()
         // End the addition of code to support the gateway buoy
         
         waiting_for_modem_ = true;
-        last_write_time_ = time(NULL);
+        last_write_time_ = gtime::now();
     }
 }
 
@@ -177,14 +178,14 @@ void micromodem::MMDriver::write(NMEASentence& nmea)
 void micromodem::MMDriver::set_clock()
 {
     NMEASentence nmea("$CCCLK", NMEASentence::IGNORE);
-    boost::posix_time::ptime p = boost::posix_time::second_clock::universal_time();
+    boost::posix_time::ptime p = gtime::now();
     
-    nmea.push_back(static_cast<int>(p.date().year()));
-    nmea.push_back(static_cast<int>(p.date().month()));
-    nmea.push_back(static_cast<int>(p.date().day()));
-    nmea.push_back(static_cast<int>(p.time_of_day().hours()));
-    nmea.push_back(static_cast<int>(p.time_of_day().minutes()));
-    nmea.push_back(static_cast<int>(p.time_of_day().seconds()));
+    nmea.push_back(int(p.date().year()));
+    nmea.push_back(int(p.date().month()));
+    nmea.push_back(int(p.date().day()));
+    nmea.push_back(int(p.time_of_day().hours()));
+    nmea.push_back(int(p.time_of_day().minutes()));
+    nmea.push_back(int(p.time_of_day().seconds()));
     
     write(nmea);
 }
@@ -263,7 +264,7 @@ void micromodem::MMDriver::ack(NMEASentence& nmea, modem::Message& m)
 void micromodem::MMDriver::drq(NMEASentence& nmea_in, modem::Message& m_in)
 {
     // read the drq
-    m_in.set_t(modem_time2unix_time(nmea_in[1]));
+    m_in.set_time(modem_time2ptime(nmea_in[1]));
     m_in.set_src(nmea_in[2]);
     m_in.set_dest(nmea_in[3]);
 //  m_in.set_ack(nmea_in[4]);
@@ -300,7 +301,7 @@ void micromodem::MMDriver::clk(NMEASentence& nmea, modem::Message& m)
     using namespace boost::posix_time;
     using namespace boost::gregorian;
     // modem responds to the previous second, which is why we subtract one second from the current time
-    ptime expected = now();
+    ptime expected = gtime::now();
     ptime reported = ptime(date(nmea.as<int>(1),
                                 nmea.as<int>(2),
                                 nmea.as<int>(3)),
@@ -312,7 +313,7 @@ void micromodem::MMDriver::clk(NMEASentence& nmea, modem::Message& m)
 
     // make sure the modem reports its time as set at the right time
     // we may end up oversetting the clock, but better safe than sorry...
-    if(reported >= (expected - seconds(ALLOWED_SKEW)))
+    if(reported >= (expected - ALLOWED_SKEW))
         clock_set_ = true;    
     
 }
@@ -326,7 +327,7 @@ void micromodem::MMDriver::mpr(NMEASentence& nmea, modem::Message& m)
     m.set_dest(nmea[2]);
 
     if(nmea.size() > 3)
-        m.set_t(nmea[3]);
+        m.set_tof(nmea[3]);
 
     if(callback_range_reply) callback_range_reply(m);
 }
@@ -336,17 +337,17 @@ void micromodem::MMDriver::rev(NMEASentence& nmea, modem::Message& m)
     if(nmea[2] == "INIT")
     {
         // reboot
-        sleep(WAIT_AFTER_REBOOT);
+        sleep(WAIT_AFTER_REBOOT.total_seconds());
         clock_set_ = false;
     }
     else if(nmea[2] == "AUV")
     {
         //check the clock
-        using namespace boost::posix_time;
-        ptime expected = now();
-        ptime reported = modem_time2posix_time(nmea[1]);
+        using boost::posix_time::ptime;
+        ptime expected = gtime::now();
+        ptime reported = modem_time2ptime(nmea[1]);
 
-        if(reported < (expected - seconds(ALLOWED_SKEW)))
+        if(reported < (expected - ALLOWED_SKEW))
             clock_set_ = false;
         
     }
@@ -368,7 +369,7 @@ void micromodem::MMDriver::cyc(NMEASentence& nmea, modem::Message& m)
 }
 
 
-boost::posix_time::ptime micromodem::MMDriver::modem_time2posix_time(const std::string& mt)
+boost::posix_time::ptime micromodem::MMDriver::modem_time2ptime(const std::string& mt)
 {   
     using namespace boost::posix_time;
     using namespace boost::gregorian;
@@ -398,20 +399,6 @@ boost::posix_time::ptime micromodem::MMDriver::modem_time2posix_time(const std::
     }
 }
 
-double micromodem::MMDriver::modem_time2unix_time(const std::string& mt)
-{
-    using namespace boost::posix_time;
-    using namespace boost::gregorian;
-    
-    ptime given_time = modem_time2posix_time(mt);
-    if (given_time == not_a_date_time)
-        return -1;
-    
-    ptime time_t_epoch(date(1970,1,1));
-
-    time_duration diff = given_time - time_t_epoch;
-    return (diff.total_seconds() + diff.fractional_seconds() / time_duration::ticks_per_second());
-}
 
 void micromodem::MMDriver::initialize_talkers()
 {

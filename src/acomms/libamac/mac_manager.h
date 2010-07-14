@@ -1,4 +1,4 @@
-// copyright 2009 t. schneider tes@mit.edu
+// copyright 2009, 2010 t. schneider tes@mit.edu
 // 
 // this file is part of libamac, a medium access control for
 // acoustic networks. 
@@ -23,9 +23,10 @@
 #define MAC20091019H
 
 #include <boost/lexical_cast.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/function.hpp>
 #include "asio.hpp"
+
+#include "util/gtime.h"
 
 namespace modem { class Message; }
 
@@ -233,7 +234,6 @@ namespace amac
         unsigned cycle_count() { return slot_order_.size(); }
         unsigned cycle_length() { return cycle_count() * slot_time_; }
     
-        boost::posix_time::ptime now() { return boost::posix_time::second_clock::universal_time(); }    
         unsigned cycle_sum();
         void position_blank();
     

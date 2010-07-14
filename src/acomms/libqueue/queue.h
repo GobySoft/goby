@@ -29,12 +29,12 @@
 #include <list>
 #include <string>
 #include <map>
-#include <ctime>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
 
 #include "acomms/modem_message.h"
+#include "util/gtime.h"
 
 #include "queue_config.h"
 
@@ -59,7 +59,7 @@ namespace queue
         std::vector<modem::Message> expire();
         
         bool priority_values(double& priority,
-                             double& last_send_time,
+                             boost::posix_time::ptime& last_send_time,
                              modem::Message& message);
         
         unsigned give_dest();
@@ -75,11 +75,11 @@ namespace queue
         bool on_demand() const
         { return on_demand_; }
 
-        double last_send_time() const
+        boost::posix_time::ptime last_send_time() const
         { return last_send_time_; }
 
-        double newest_msg_time() const
-        { return size() ? messages_.back().t() : acomms::NOT_A_TIME; }
+        boost::posix_time::ptime newest_msg_time() const
+        { return size() ? messages_.back().time() : boost::posix_time::ptime(); }
         
         void set_on_demand(bool b)
         { on_demand_ = b; }
@@ -101,7 +101,7 @@ namespace queue
         
         bool on_demand_;
     
-        double last_send_time_;
+        boost::posix_time::ptime last_send_time_;
     
         const unsigned& modem_id_;
     

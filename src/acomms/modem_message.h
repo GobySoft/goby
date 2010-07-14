@@ -19,7 +19,6 @@
 #ifndef MODEMMESSAGE20091211H
 #define MODEMMESSAGE20091211H
 
-#include <ctime>
 #include <string>
 #include <sstream>
 #include <iomanip>
@@ -29,6 +28,7 @@
 
 #include "util/tes_utils.h"
 #include "acomms/acomms_constants.h"
+#include "util/gtime.h"
 
 /// Acoustic Modem specific objects
 namespace modem
@@ -51,7 +51,8 @@ namespace modem
             src_(0),
             dest_(0),
             rate_(0),
-            t_(time(NULL)),
+            time_(gtime::now()),
+            tof_(0),
             ack_(false),
             size_(0),
             frame_(1),
@@ -60,7 +61,8 @@ namespace modem
             src_set_(false),
             dest_set_(false),
             rate_set_(false),
-            t_set_(false),
+            time_set_(false),
+            tof_set_(false),
             ack_set_(false),
             size_set_(false),
             frame_set_(false),
@@ -72,30 +74,38 @@ namespace modem
         //@{
 
         /// set the hexadecimal string data. Also computes the size and the checksum.
-        void set_data(const std::string & data)
-        {
-            data_ = data;
-            data_set_ = true;
-        }
+        void set_data(const std::string & data)   { data_ = data; data_set_ = true; }
         /// set the time
-        void set_t(double d)       { t_=d; t_set_ = true; }    
+        void set_time(boost::posix_time::ptime t) { time_=t; time_set_ = true; }
+        /// set the time of flight
+        void set_tof(double t)                    { tof_=t; tof_set_ = true; }
         /// set the size (automatically set by the data size)
-        void set_size(unsigned size) { size_= size; size_set_ = true;}    
+        void set_size(unsigned size)              { size_= size; size_set_ = true;}    
         /// set the source id
-        void set_src(unsigned src)      { src_=src; src_set_ = true; }   
+        void set_src(unsigned src)                { src_=src; src_set_ = true; }   
         /// set the destination id
-        void set_dest(unsigned dest)    { dest_=dest; dest_set_ = true; }
+        void set_dest(unsigned dest)              { dest_=dest; dest_set_ = true; }
         /// set the data rate
-        void set_rate(unsigned rate)      { rate_=rate; rate_set_ = true; }
+        void set_rate(unsigned rate)              { rate_=rate; rate_set_ = true; }
         /// set the acknowledgement value
-        void set_ack(bool ack)     { ack_=ack; ack_set_ = true; }
+        void set_ack(bool ack)                    { ack_=ack; ack_set_ = true; }
         /// set the frame number
-        void set_frame(unsigned frame)  { frame_=frame; frame_set_ = true; }
+        void set_frame(unsigned frame)            { frame_=frame; frame_set_ = true; }
+
+        /// try to set the time with unix double
+        void set_time(double t)
+        { set_time(gtime::unix_double2ptime(t)); }
 
         /// try to set the time with std::string
-        void set_t(const std::string & t)
+        void set_time(const std::string & t)
         {
-            try { set_t(boost::lexical_cast<double>(t)); }
+            try { set_time(boost::posix_time::from_iso_string(t)); }
+            catch(...) { }
+        }
+        /// try to set the time of flight with std::string
+        void set_tof(const std::string& tof)
+        {
+            try { set_tof(boost::lexical_cast<double>(tof)); }
             catch(boost::bad_lexical_cast & ) { }
         }
         /// try to set the size with std::string
@@ -142,8 +152,10 @@ namespace modem
         std::string data() const {return data_;} 
         /// hexadecimal string reference
         std::string& data_ref() {return data_;}
-        /// time in seconds since 1970-1-1 00:00:00 UTC
-        double t() const {return t_;}
+        /// time
+        boost::posix_time::ptime time() const {return time_;}
+        /// tof
+        double tof() const {return tof_;}
         /// source %modem id        
         unsigned src() const {return src_;}
         /// destination %modem id
@@ -168,7 +180,9 @@ namespace modem
         /// is there data?
         bool data_set() const {return data_set_;} 
         /// is there a time?
-        bool t_set() const {return t_set_;}
+        bool time_set() const {return time_set_;}
+        /// is there a time of flight?
+        bool tof_set() const {return tof_set_;}
         /// is there a size?
         bool size_set() const {return size_set_;}
         /// is there a source?
@@ -197,7 +211,8 @@ namespace modem
             if(dest_set_)  ss << " | dest " << dest_;
             if(rate_set_)  ss << " | rate " << rate_;
             if(dest_set_ || size_set_)  ss << " | size " << size() << "B";
-            if(t_set_)     ss << " | age " << tes_util::sci_round(time(NULL) - t_, 0) << "s";
+            if(time_set_)     ss << " | age " << (gtime::now() - time_).total_seconds() << "s";
+            if(tof_set_)  ss << " | time-of-flight " << tof_;
             if(ack_set_)   ss << " | ack " << std::boolalpha << ack_;
             if(frame_set_) ss << " | frame " << frame_;
             if(dest_set_ || cs_set_)    ss << " | *" << std::hex << std::setw(2) << std::setfill('0') << (int)cs();
@@ -222,7 +237,8 @@ namespace modem
             if(dest_set_)  ss << ",dest=" << dest_;
             if(rate_set_)  ss << ",rate=" << rate_;
             if(data_set_)  ss << ",data=" << data_;
-            if(t_set_)     ss << ",time=" << std::setprecision(15) << t_;
+            if(time_set_)     ss << ",time=" << boost::posix_time::to_iso_string(time_);
+            if(tof_set_)  ss << ",tof=" << std::setprecision(15) << tof_;
             if(ack_set_)   ss << ",ack=" << std::boolalpha << ack_;
             if(frame_set_) ss << ",frame=" << frame_;
             if(data_set_ || size_set_)  ss << ",size=" << size();
@@ -254,7 +270,7 @@ namespace modem
                 if((tes_util::val_from_string(value, lower_s, "data") || tes_util::val_from_string(value, lower_s, "hexdata")) && check_hex(value))
                     set_data(value);
                 if(tes_util::val_from_string(value, lower_s, "time"))
-                    set_t(value);
+                    set_time(value);
                 if(tes_util::val_from_string(value, lower_s, "ack"))
                     set_ack(value);
                 if(tes_util::val_from_string(value, lower_s, "frame"))
@@ -293,7 +309,8 @@ namespace modem
         unsigned src_;    
         unsigned dest_;  //%modem_id
         unsigned rate_;
-        double t_;
+        boost::posix_time::ptime time_;
+        double tof_;
         bool ack_;
         unsigned size_; //in bytes
         unsigned frame_;
@@ -303,7 +320,8 @@ namespace modem
         bool src_set_;
         bool dest_set_;
         bool rate_set_;
-        bool t_set_;
+        bool time_set_;
+        bool tof_set_;
         bool ack_set_;
         bool size_set_;
         bool frame_set_;

@@ -24,6 +24,7 @@
 
 #include "acomms/xml/xml_parser.h"
 #include "util/streamlogger.h"
+#include "util/gtime.h"
 
 #include "queue_constants.h"
 #include "queue_manager.h"
@@ -31,7 +32,6 @@
 
 queue::QueueManager::QueueManager(std::ostream* os /* =0 */)
     : modem_id_(0),
-      start_time_(time(NULL)),
       os_(os),
       packet_dest_(0),
       packet_ack_(0)
@@ -39,7 +39,6 @@ queue::QueueManager::QueueManager(std::ostream* os /* =0 */)
     
 queue::QueueManager::QueueManager(const std::string& file, const std::string schema, std::ostream* os /* =0 */)
     : modem_id_(0),
-      start_time_(time(NULL)),
       os_(os),
       packet_dest_(0),
       packet_ack_(0)
@@ -51,7 +50,6 @@ queue::QueueManager::QueueManager(const std::string& file, const std::string sch
 queue::QueueManager::QueueManager(const std::set<std::string>& files,
                                   const std::string schema, std::ostream* os /* =0 */)
     : modem_id_(0),
-      start_time_(time(NULL)),
       os_(os),
       packet_dest_(0),
       packet_ack_(0)
@@ -62,7 +60,6 @@ queue::QueueManager::QueueManager(const std::set<std::string>& files,
 
 queue::QueueManager::QueueManager(const QueueConfig& cfg, std::ostream* os /* =0 */)
     : modem_id_(0),
-      start_time_(time(NULL)),
       os_(os),
       packet_dest_(0),
       packet_ack_(0)
@@ -72,7 +69,6 @@ queue::QueueManager::QueueManager(const QueueConfig& cfg, std::ostream* os /* =0
 
 queue::QueueManager::QueueManager(const std::set<QueueConfig>& cfgs, std::ostream* os /* =0 */)
     : modem_id_(0),
-      start_time_(time(NULL)),
       os_(os),
       packet_dest_(0),
       packet_ack_(0)
@@ -349,7 +345,7 @@ queue::Queue* queue::QueueManager::find_next_sender(modem::Message& message, uns
 {   
 // competition between variable about who gets to send
     double winning_priority;
-    double winning_last_send_time;
+    boost::posix_time::ptime winning_last_send_time;
 
     Queue* winning_var = 0;
     
@@ -362,7 +358,7 @@ queue::Queue* queue::QueueManager::find_next_sender(modem::Message& message, uns
         
         // encode on demand
         if(oq.on_demand() &&
-           (!oq.size() || oq.newest_msg_time() + ON_DEMAND_SKEW < time(NULL))
+           (!oq.size() || oq.newest_msg_time() + ON_DEMAND_SKEW < gtime::now())
             )
         {
             if(callback_ondemand)
@@ -373,7 +369,8 @@ queue::Queue* queue::QueueManager::find_next_sender(modem::Message& message, uns
             }
         }
         
-        double priority, last_send_time;
+        double priority;
+        boost::posix_time::ptime last_send_time;
         if(oq.priority_values(priority, last_send_time, message))
         {
             // no winner, better winner, or equal & older winner

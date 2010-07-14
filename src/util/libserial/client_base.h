@@ -19,7 +19,6 @@
 #define ClientBase20100628H
 
 #include <iostream>
-#include <ctime>
 #include <deque>
 #include <fstream>
 #include <set>

@@ -22,7 +22,6 @@
 #include <vector>
 #include <deque>
 #include <string>
-#include <ctime>
 
 #include <boost/thread.hpp>
 

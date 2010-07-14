@@ -42,6 +42,9 @@ namespace acomms_util
             (bind(&queue::QueueManager::handle_modem_ack, &queue_manager, _1));
         driver.set_datarequest_cb
             (bind(&queue::QueueManager::provide_outgoing_modem_data, &queue_manager, _1, _2));
+        
+        driver.set_destination_cb(boost::bind(&queue::QueueManager::request_next_destination, &queue_manager, _1));
+
     }
     
 /// binds the MAC initiate transmission callback to the driver and the driver parsed message callback to the MAC
@@ -49,21 +52,16 @@ namespace acomms_util
     {
         mac.set_initiate_transmission_cb(boost::bind(&modem::DriverBase::initiate_transmission, &driver, _1));
         mac.set_initiate_ranging_cb(boost::bind(&modem::DriverBase::initiate_ranging, &driver, _1));
+        mac.set_destination_cb(boost::bind(&modem::DriverBase::request_next_destination, &driver, _1));
         driver.set_in_parsed_cb(boost::bind(&amac::MACManager::process_message, &mac, _1));
     }
     
-/// binds the MAC destination request to the queue_manager
-    void bind(amac::MACManager& mac, queue::QueueManager& queue_manager)
-    {
-        mac.set_destination_cb(boost::bind(&queue::QueueManager::request_next_destination, &queue_manager, _1));
-    }
 
     /// bind all three (shortcut to calling the other three bind functions)
     void bind(modem::DriverBase& driver, queue::QueueManager& queue_manager, amac::MACManager& mac)
     {
         bind(driver, queue_manager);
         bind(mac, driver);
-        bind(mac, queue_manager);
     }
 
     // examples

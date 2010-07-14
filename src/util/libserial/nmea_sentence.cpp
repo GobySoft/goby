@@ -92,14 +92,3 @@ std::string serial::NMEASentence::message() const {
     message << std::uppercase << std::hex << unsigned(csum);
     return message.str();
 }
-
-/** Unused, purpose unclear, doesn't seem to do what it says it does?
-bool icmp_contents(serial::NMEASentence& n1, serial::NMEASentence& n2)
-{
-    if(n1.message_no_cs().length() < 7 || n2.message_no_cs().length() < 7)
-        return false;
-    else
-        return tes_util::stricmp(n1.message_no_cs().substr(7), n2.message_no_cs().substr(7));
-}    
-    
-**/

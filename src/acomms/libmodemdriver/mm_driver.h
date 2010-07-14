@@ -20,7 +20,6 @@
 #ifndef Modem20091211H
 #define Modem20091211H
 
-#include <ctime>
 #include <fstream>
 
 #include <boost/date_time/posix_time/posix_time.hpp>
@@ -31,26 +30,28 @@ namespace modem { class Message; }
 
 /// contains WHOI Micro-Modem specific objects. 
 namespace micromodem
-{    
+{
     // for the serial connection ($CCCFG,BR1,3)
     const unsigned DEFAULT_BAUD = 19200;
 
     // seconds to wait for %modem to respond
-    const time_t MODEM_WAIT = 3;
+    const boost::posix_time::time_duration MODEM_WAIT = boost::posix_time::seconds(3);
     // failures before quitting
     const unsigned MAX_FAILS_BEFORE_DEAD = 5;
     // how many retries on a given message
     const unsigned RETRIES = 3;
     // seconds to wait after %modem reboot
-    const unsigned WAIT_AFTER_REBOOT = 2;
+    const boost::posix_time::time_duration WAIT_AFTER_REBOOT = boost::posix_time::seconds(2);
 
     // allowed time skew between our clock and the %modem clock
-    const unsigned ALLOWED_SKEW = 1;
+    const boost::posix_time::time_duration ALLOWED_SKEW = boost::posix_time::seconds(1);
     
     const std::string SERIAL_DELIMITER = "\r";
     
     // number of frames for a given packet type
     const unsigned PACKET_FRAME_COUNT [] = { 1, 3, 3, 2, 2, 8 };
+
+    const unsigned PACKET_SIZE [] = { 32, 32, 64, 256, 256, 256 };
 
     /// provides an API to the WHOI Micro-Modem driver
     class MMDriver : public modem::DriverBase
@@ -81,6 +82,13 @@ namespace micromodem
         /// \param m modem::Message containing the details of the ranging request to be started. (source and destination)
         void initiate_ranging(const modem::Message& m);
 
+        /// \brief Retrieve the desired destination of the next message
+        ///
+        /// \param rate next rate to be sent
+        /// \return destination id for the next message
+        int request_next_destination(unsigned rate)
+        { return callback_dest(PACKET_SIZE[rate]); }
+        
         // Begin the addition of code to support the gateway buoy
         // Added by Andrew Bouchard, NSWC PCD
         // Create the message prefix string needed by the gateway buoy
@@ -88,6 +96,8 @@ namespace micromodem
         // End the addition of code to support the gateway buoy
 
         void write(serial::NMEASentence& nmea);
+
+
       private:
         
         // startup
@@ -114,14 +124,8 @@ namespace micromodem
         void cyc(serial::NMEASentence& nmea, modem::Message& m);
     
         // utility
-        std::string microsec_simple_time_of_day()
-        { return boost::posix_time::to_simple_string(boost::posix_time::microsec_clock::universal_time().time_of_day()); }
-
-        boost::posix_time::ptime now()
-        { return boost::posix_time::ptime(boost::posix_time::second_clock::universal_time()); }
     
-        boost::posix_time::ptime modem_time2posix_time(const std::string& mt);
-        double modem_time2unix_time(const std::string& mt);
+        boost::posix_time::ptime modem_time2ptime(const std::string& mt);
 
         /// \example libmodemdriver/examples/driver_simple/driver_simple.cpp
         /// driver_simple.cpp
@@ -135,8 +139,8 @@ namespace micromodem
         std::ostream* os_;
     
         // time of the last message written. we timeout and resend after MODEM_WAIT seconds
-        time_t last_write_time_;
-
+        boost::posix_time::ptime last_write_time_;
+        
         // are we waiting for a command ack (CA) from the %modem or can we send another output?
         bool waiting_for_modem_;
 

@@ -33,7 +33,6 @@
 #include <iostream>
 
 #include <boost/dynamic_bitset.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
 
 
 namespace tes_util
@@ -329,57 +328,8 @@ namespace tes_util
     
     inline bool string2bool(const std::string & in)
     { return (stricmp(in, "true") || stricmp(in, "1")) ? true : false; }
-    
-    //
-    // TIME
-    //
 
 
-    inline double ptime2unix_double(boost::posix_time::ptime given_time)
-    {
-        using namespace boost::posix_time;
-        using namespace boost::gregorian;
-        
-        if (given_time == not_a_date_time)
-            return -1;
-    
-        ptime time_t_epoch(date(1970,1,1));
-        
-        time_duration diff = given_time - time_t_epoch;
-        
-        return (double(diff.total_seconds()) + double(diff.fractional_seconds()) / double(time_duration::ticks_per_second()));
-    }
-    
-    inline double time_duration2unix_double(boost::posix_time::time_duration time_of_day)
-    {
-        return (double(time_of_day.total_seconds()) + double(time_of_day.fractional_seconds()) / double(boost::posix_time::time_duration::ticks_per_second()));
-    }
-    
-    inline double date2unix_double(boost::gregorian::date date)
-    {
-        return ptime2unix_double(boost::posix_time::ptime(date, boost::posix_time::seconds(0)));
-    }
-            
-    
-
-    // good to the microsecond
-    inline boost::posix_time::ptime unix_double2ptime(double given_time)
-    {
-        using namespace boost::posix_time;
-        using namespace boost::gregorian;
-    
-        if (given_time == -1)
-            return boost::posix_time::ptime(not_a_date_time);
-    
-        ptime time_t_epoch(date(1970,1,1));
-
-        double s = floor(given_time);
-        double micro_s = (given_time - s)*1e6;
-        return time_t_epoch + seconds(s) + microseconds(micro_s);
-    }
-    
-    inline boost::posix_time::ptime ptime_now()
-    { return boost::posix_time::ptime(boost::posix_time::microsec_clock::universal_time()); }
     
 }
 

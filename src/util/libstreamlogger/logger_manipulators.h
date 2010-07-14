@@ -21,7 +21,6 @@
 
 #include <string>
 #include <deque>
-#include <ctime>
 
 #include <boost/algorithm/string.hpp>
 

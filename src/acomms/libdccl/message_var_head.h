@@ -22,6 +22,8 @@
 
 #include "message_var.h"
 
+#include "util/gtime.h"
+
 namespace dccl
 {    
     class MessageVarHead : public MessageVarInt
@@ -70,27 +72,40 @@ namespace dccl
 
         void set_defaults_specific(MessageVal& v, unsigned modem_id, unsigned id)
         {
-            using namespace tes_util;
             double d;
-            v = (!v.empty() && v.get(d)) ? v : MessageVal(ptime2unix_double(ptime_now()));
+            v = (!v.empty() && v.get(d)) ? v : MessageVal(gtime::ptime2unix_double(gtime::now()));
         }
         
         boost::dynamic_bitset<unsigned char> encode_specific(const MessageVal& v)
         {
             // trim to time of day
-            using namespace tes_util;
+            boost::posix_time::time_duration time_of_day = gtime::unix_double2ptime(v).time_of_day();
             
-            boost::posix_time::time_duration time_of_day = unix_double2ptime(v).time_of_day();
-            
-            return boost::dynamic_bitset<unsigned char>(calc_size(), long(sci_round(time_duration2unix_double(time_of_day), 0)));    
+            return boost::dynamic_bitset<unsigned char>(calc_size(), long(tes_util::sci_round(gtime::time_duration2double(time_of_day), 0)));    
         }
         
         MessageVal decode_specific(boost::dynamic_bitset<unsigned char>& b)
         {
             // add the date back in (assumes message sent the same day received)
             MessageVal v(long(b.to_ulong()));
-            using namespace tes_util;
-            v.set(double(v) + date2unix_double(ptime_now().date()),0);
+
+            using namespace boost::posix_time;
+            using namespace boost::gregorian;
+            
+            ptime now = gtime::now();
+            date day_sent;
+
+            // this logic will break if there is a separation between message sending and
+            // message receipt of greater than 1/2 day (twelve hours)
+            
+            // if message is from part of the day removed from us by 12 hours, we assume it
+            // was sent yesterday
+            if(abs(now.time_of_day().total_seconds() - double(v)) > hours(12).total_seconds())
+                day_sent = now.date() - days(1);
+            else // otherwise figure it was sent today
+                day_sent = now.date();
+            
+            v.set(double(v) + gtime::ptime2unix_double(ptime(day_sent,seconds(0))));
             return v;
         }
     };

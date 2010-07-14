@@ -28,7 +28,7 @@ queue::Queue::Queue(const QueueConfig cfg /* = 0 */,
                     const unsigned& modem_id /* = 0 */)
     : cfg_(cfg),
       on_demand_(false),
-      last_send_time_(time(NULL)),
+      last_send_time_(gtime::now()),
       modem_id_(modem_id),
       os_(os)
 {}
@@ -107,12 +107,10 @@ modem::Message queue::Queue::give_data(unsigned frame)
 
 // gives priority values. returns false if in blackout interval or if no data or if messages of wrong size, true if not in blackout
 bool queue::Queue::priority_values(double& priority,
-                                   double& last_send_time,
+                                   boost::posix_time::ptime& last_send_time,
                                    modem::Message& message)
 {
-    double now = time(NULL);
-    
-    priority = (now-last_send_time_)/cfg_.ttl()*cfg_.value_base();
+    priority = gtime::time_duration2double((gtime::now()-last_send_time_))/cfg_.ttl()*cfg_.value_base();
     
     last_send_time = last_send_time_;
 
@@ -138,7 +136,7 @@ bool queue::Queue::priority_values(double& priority,
         if(os_) *os_<< group("priority") << "\t" << cfg_.name() << " next message is too large {" << next_msg_it->size() << "}" << std::endl;
         return false;
     }
-    else if (last_send_time_ + cfg_.blackout_time() > time(NULL))
+    else if (last_send_time_ + boost::posix_time::seconds(cfg_.blackout_time()) > gtime::now())
     {
         if(os_) *os_<< group("priority") << "\t" << cfg_.name() << " is in blackout" << std::endl;
         return false;
@@ -165,7 +163,7 @@ bool queue::Queue::pop_message(unsigned frame)
     }
     
     // only set last_send_time on a successful message (after ack, if one is desired)
-    last_send_time_ = time(NULL);
+    last_send_time_ = gtime::now();
 
     return true;
 }
@@ -193,7 +191,7 @@ bool queue::Queue::pop_message_ack(unsigned frame, modem::Message& msg)
     }
     
     // only set last_send_time on a successful message (after ack, if one is desired)
-    last_send_time_ = time(NULL);
+    last_send_time_ = gtime::now();
     
     return true;    
 }
@@ -208,11 +206,10 @@ void queue::Queue::stream_for_pop(const std::string& snip)
 std::vector<modem::Message> queue::Queue::expire()
 {
     std::vector<modem::Message> expired_msgs;
-    time_t now = time(NULL);
     
     while(!messages_.empty())
     {
-        if((messages_.front().t() + cfg_.ttl()) < now)
+        if((messages_.front().time() + boost::posix_time::seconds(cfg_.ttl())) < gtime::now())
         {
             expired_msgs.push_back(messages_.front());
             if(os_) *os_ << group("pop") <<  "expiring" << " from send stack "

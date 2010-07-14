@@ -72,11 +72,6 @@ namespace acomms
                           head_unused_size = 2
     };
     
-    const double NOT_A_TIME = -1;
-
-    // this is Micro-Modem specific and is used by libmac, therefore
-    // we must get rid of it at some point soon...
-    const unsigned PACKET_SIZE [] = { 32, 32, 64, 256, 256, 256 };
 }
 
 #endif

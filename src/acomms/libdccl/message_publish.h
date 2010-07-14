@@ -31,6 +31,8 @@
 #include "message_algorithms.h"
 #include "dccl_constants.h"
 
+namespace goby
+{
 namespace dccl
 {
     class Message;
@@ -103,5 +105,5 @@ namespace dccl
 
     std::ostream& operator<< (std::ostream& out, const Publish& publish);
 }
-
+}
 #endif

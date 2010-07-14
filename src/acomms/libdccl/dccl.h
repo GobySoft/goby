@@ -27,11 +27,14 @@
 #include <stdexcept>
 #include <vector>
 
-#include "acomms/xml/xml_parser.h"
-#include "util/gtime.h"
+#include "goby/acomms/xml/xml_parser.h"
+#include "goby/util/gtime.h"
 
 #include "message.h"
 #include "message_val.h"
+
+namespace goby
+{
 
 /// \brief contains Dynamic Compact Control Language objects.
 /// 
@@ -515,7 +518,7 @@ namespace dccl
 
     
 }
-
+}
 
 
 #endif

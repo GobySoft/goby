@@ -31,10 +31,12 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
 
-#include "acomms/xml/xerces_strings.h"
-#include "acomms/xml/tags.h"
+#include "goby/acomms/xml/xerces_strings.h"
+#include "goby/acomms/xml/tags.h"
 #include "queue_manager.h"
 
+namespace goby
+{
 namespace queue
 {
     
@@ -103,6 +105,7 @@ namespace queue
             error(e);
         }
     };
+}
 }
 
 #endif

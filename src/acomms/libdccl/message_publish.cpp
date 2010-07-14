@@ -22,9 +22,9 @@
 #include "message_publish.h"
 #include "message.h"
 
-using acomms::NaN;
+using goby::acomms::NaN;
 
-void dccl::Publish::initialize(Message& msg)
+void goby::dccl::Publish::initialize(Message& msg)
 {
     repeat_ = msg.repeat();
 
@@ -102,7 +102,7 @@ void dccl::Publish::initialize(Message& msg)
 }
 
 
-void dccl::Publish::fill_format(const std::map<std::string,std::vector<MessageVal> >& vals,
+void goby::dccl::Publish::fill_format(const std::map<std::string,std::vector<MessageVal> >& vals,
                                 std::string& key,
                                 std::string& value,
                                 unsigned repeat_index)
@@ -159,7 +159,7 @@ void dccl::Publish::fill_format(const std::map<std::string,std::vector<MessageVa
 
     
 
-void dccl::Publish::write_publish(const std::map<std::string,std::vector<MessageVal> >& vals,
+void goby::dccl::Publish::write_publish(const std::map<std::string,std::vector<MessageVal> >& vals,
                                   std::multimap<std::string,MessageVal>& pubsub_vals)
 
 {
@@ -212,7 +212,7 @@ void dccl::Publish::write_publish(const std::map<std::string,std::vector<Message
 }
 
     
-std::string dccl::Publish::get_display() const
+std::string goby::dccl::Publish::get_display() const
 {
     std::stringstream ss;
     
@@ -240,7 +240,7 @@ std::string dccl::Publish::get_display() const
 }
 
 // overloaded <<
-std::ostream& dccl::operator<< (std::ostream& out, const Publish& publish)
+std::ostream& goby::dccl::operator<< (std::ostream& out, const Publish& publish)
 {
     out << publish.get_display();
     return out;

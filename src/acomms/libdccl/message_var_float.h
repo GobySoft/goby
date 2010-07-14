@@ -21,7 +21,8 @@
 #define MESSAGE_VAR_FLOAT20100317H
 
 #include "message_var.h"
-
+namespace goby
+{
 namespace dccl
 {   
     class MessageVarFloat : public MessageVar
@@ -86,5 +87,5 @@ namespace dccl
     };
 
 }
-
+}
 #endif

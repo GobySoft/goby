@@ -31,11 +31,12 @@
 #include <boost/algorithm/string.hpp> // for string functions
 #include <boost/lexical_cast.hpp>
 
-#include "acomms/xml/xerces_strings.h"
+#include "goby/acomms/xml/xerces_strings.h"
 
 #include "message.h"
-#include "acomms/xml/tags.h"
-
+#include "goby/acomms/xml/tags.h"
+namespace goby
+{
 namespace dccl
 {
     
@@ -107,5 +108,5 @@ namespace dccl
         }
     };
 }
-
+}
 #endif

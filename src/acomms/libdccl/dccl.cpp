@@ -29,17 +29,17 @@
 /////////////////////
 // public methods (general use)
 /////////////////////
-dccl::DCCLCodec::DCCLCodec()
+goby::dccl::DCCLCodec::DCCLCodec()
     : start_time_(gtime::now()),
       modem_id_(0)
 { }
     
-dccl::DCCLCodec::DCCLCodec(const std::string& file, const std::string schema)
+goby::dccl::DCCLCodec::DCCLCodec(const std::string& file, const std::string schema)
     : start_time_(gtime::now()),
       modem_id_(0)
 { add_xml_message_file(file, schema); }
     
-dccl::DCCLCodec::DCCLCodec(const std::set<std::string>& files,
+goby::dccl::DCCLCodec::DCCLCodec(const std::set<std::string>& files,
                            const std::string schema)
     : start_time_(gtime::now()),
       modem_id_(0)
@@ -48,7 +48,7 @@ dccl::DCCLCodec::DCCLCodec(const std::set<std::string>& files,
         add_xml_message_file(s, schema);
 }
 
-std::set<unsigned> dccl::DCCLCodec::add_xml_message_file(const std::string& xml_file,
+std::set<unsigned> goby::dccl::DCCLCodec::add_xml_message_file(const std::string& xml_file,
                                                          const std::string xml_schema)
 {
     size_t begin_size = messages_.size();
@@ -83,14 +83,14 @@ std::set<unsigned> dccl::DCCLCodec::add_xml_message_file(const std::string& xml_
     return added_ids;
 }
 
-std::set<unsigned> dccl::DCCLCodec::all_message_ids()
+std::set<unsigned> goby::dccl::DCCLCodec::all_message_ids()
 {
     std::set<unsigned> s;
     BOOST_FOREACH(const Message &msg, messages_)
         s.insert(msg.id());
     return s;
 }    
-std::set<std::string> dccl::DCCLCodec::all_message_names()
+std::set<std::string> goby::dccl::DCCLCodec::all_message_names()
 {
     std::set<std::string> s;
     BOOST_FOREACH(const Message &msg, messages_)
@@ -99,7 +99,7 @@ std::set<std::string> dccl::DCCLCodec::all_message_names()
 }
 
     
-std::string dccl::DCCLCodec::summary() const	
+std::string goby::dccl::DCCLCodec::summary() const	
 { 
     std::string out;
     for(std::vector<Message>::const_iterator it = messages_.begin(), n = messages_.end(); it != n; ++it)
@@ -107,7 +107,7 @@ std::string dccl::DCCLCodec::summary() const
     return out;
 }
 
-std::string dccl::DCCLCodec::brief_summary() const	
+std::string goby::dccl::DCCLCodec::brief_summary() const	
 { 
     std::string out;
     for(std::vector<Message>::const_iterator it = messages_.begin(), n = messages_.end(); it != n; ++it)
@@ -115,27 +115,27 @@ std::string dccl::DCCLCodec::brief_summary() const
     return out;
 }
 
-void dccl::DCCLCodec::add_algorithm(const std::string& name, AlgFunction1 func)
+void goby::dccl::DCCLCodec::add_algorithm(const std::string& name, AlgFunction1 func)
 {
     AlgorithmPerformer* ap = AlgorithmPerformer::getInstance();
     ap -> add_algorithm(name, func);
 }
 
-void dccl::DCCLCodec::add_adv_algorithm(const std::string& name, AlgFunction2 func)
+void goby::dccl::DCCLCodec::add_adv_algorithm(const std::string& name, AlgFunction2 func)
 {
     AlgorithmPerformer* ap = AlgorithmPerformer::getInstance();
     ap -> add_algorithm(name, func);
 }
 
 
-std::ostream& dccl::operator<< (std::ostream& out, const DCCLCodec& d)
+std::ostream& goby::dccl::operator<< (std::ostream& out, const DCCLCodec& d)
 {
     out << d.summary();
     return out;
 }
 
 
-std::ostream& dccl::operator<< (std::ostream& out, const std::set<std::string>& s)
+std::ostream& goby::dccl::operator<< (std::ostream& out, const std::set<std::string>& s)
 {
     out << "std::set<std::string>:" << std::endl;
     for (std::set<std::string>::const_iterator it = s.begin(), n = s.end(); it != n; ++it)
@@ -143,7 +143,7 @@ std::ostream& dccl::operator<< (std::ostream& out, const std::set<std::string>& 
     return out;
 }
 
-std::ostream& dccl::operator<< (std::ostream& out, const std::set<unsigned>& s)
+std::ostream& goby::dccl::operator<< (std::ostream& out, const std::set<unsigned>& s)
 {
     out << "std::set<unsigned>:" << std::endl;
     for (std::set<unsigned>::const_iterator it = s.begin(), n = s.end(); it != n; ++it)
@@ -161,9 +161,9 @@ std::ostream& dccl::operator<< (std::ostream& out, const std::set<unsigned>& s)
 // to be processed. this allows the SAME moos trigger variable
 // to be used to trigger creation of different messages based on the
 // contents of the trigger message itself.
-bool dccl::DCCLCodec::is_publish_trigger(std::set<unsigned>& id, const std::string& key, const std::string& value)
+bool goby::dccl::DCCLCodec::is_publish_trigger(std::set<unsigned>& id, const std::string& key, const std::string& value)
 {
-    for (std::vector<dccl::Message>::const_iterator it = messages_.begin(), n = messages_.end(); it != n; ++it)
+    for (std::vector<goby::dccl::Message>::const_iterator it = messages_.begin(), n = messages_.end(); it != n; ++it)
     {
         if(key == it->trigger_var() && (it->trigger_mandatory() == "" || value.find(it->trigger_mandatory()) != std::string::npos))
             id.insert(it->id());
@@ -171,11 +171,11 @@ bool dccl::DCCLCodec::is_publish_trigger(std::set<unsigned>& id, const std::stri
     return (id.empty()) ? false : true;
 }
 
-bool dccl::DCCLCodec::is_time_trigger(std::set<unsigned>& id)
+bool goby::dccl::DCCLCodec::is_time_trigger(std::set<unsigned>& id)
 {
     using boost::posix_time::seconds;
     
-    for (std::vector<dccl::Message>::iterator it = messages_.begin(), n = messages_.end(); it != n; ++it)
+    for (std::vector<goby::dccl::Message>::iterator it = messages_.begin(), n = messages_.end(); it != n; ++it)
     {
         if(it->trigger_type() == "time" &&
            gtime::now() > (start_time_ + seconds(it->trigger_number() * it->trigger_time())))
@@ -190,9 +190,9 @@ bool dccl::DCCLCodec::is_time_trigger(std::set<unsigned>& id)
 }
 
     
-bool dccl::DCCLCodec::is_incoming(unsigned& id, const std::string& key)
+bool goby::dccl::DCCLCodec::is_incoming(unsigned& id, const std::string& key)
 {
-    for (std::vector<dccl::Message>::const_iterator it = messages_.begin(), n = messages_.end(); it != n; ++it)
+    for (std::vector<goby::dccl::Message>::const_iterator it = messages_.begin(), n = messages_.end(); it != n; ++it)
     {
         if (key == it->in_var())
         {
@@ -208,7 +208,7 @@ bool dccl::DCCLCodec::is_incoming(unsigned& id, const std::string& key)
 /////////////////////
 
 
-void dccl::DCCLCodec::check_duplicates()
+void goby::dccl::DCCLCodec::check_duplicates()
 {
     std::map<unsigned, std::vector<Message>::iterator> all_ids;
     for(std::vector<Message>::iterator it = messages_.begin(), n = messages_.end(); it != n; ++it)
@@ -223,21 +223,21 @@ void dccl::DCCLCodec::check_duplicates()
     }
 }
 
-std::vector<dccl::Message>::const_iterator dccl::DCCLCodec::to_iterator(const std::string& message_name) const
+std::vector<goby::dccl::Message>::const_iterator goby::dccl::DCCLCodec::to_iterator(const std::string& message_name) const
 {
     if(name2messages_.count(message_name))
         return messages_.begin() + name2messages_.find(message_name)->second;
     else
         throw std::runtime_error(std::string("DCCL: attempted an operation on message [" + message_name + "] which is not loaded"));
 }
-std::vector<dccl::Message>::iterator dccl::DCCLCodec::to_iterator(const std::string& message_name)
+std::vector<goby::dccl::Message>::iterator goby::dccl::DCCLCodec::to_iterator(const std::string& message_name)
 {
     if(name2messages_.count(message_name))
         return messages_.begin() + name2messages_.find(message_name)->second;
     else
         throw std::runtime_error(std::string("DCCL: attempted an operation on message [" + message_name + "] which is not loaded"));
 }
-std::vector<dccl::Message>::const_iterator dccl::DCCLCodec::to_iterator(const unsigned& id) const
+std::vector<goby::dccl::Message>::const_iterator goby::dccl::DCCLCodec::to_iterator(const unsigned& id) const
 {
     if(id2messages_.count(id))
         return messages_.begin() + id2messages_.find(id)->second;
@@ -245,7 +245,7 @@ std::vector<dccl::Message>::const_iterator dccl::DCCLCodec::to_iterator(const un
         throw std::runtime_error(std::string("DCCL: attempted an operation on message [" + boost::lexical_cast<std::string>(id) + "] which is not loaded"));
 }
 
-std::vector<dccl::Message>::iterator dccl::DCCLCodec::to_iterator(const unsigned& id)
+std::vector<goby::dccl::Message>::iterator goby::dccl::DCCLCodec::to_iterator(const unsigned& id)
 {
     if(id2messages_.count(id))
         return messages_.begin() + id2messages_.find(id)->second;
@@ -254,7 +254,7 @@ std::vector<dccl::Message>::iterator dccl::DCCLCodec::to_iterator(const unsigned
 }
 
 
-void dccl::DCCLCodec::encode_private(std::vector<Message>::iterator it,
+void goby::dccl::DCCLCodec::encode_private(std::vector<Message>::iterator it,
                                      std::string& out,
                                      std::map<std::string, std::vector<MessageVal> > in /* copy */)
 {
@@ -276,7 +276,7 @@ void dccl::DCCLCodec::encode_private(std::vector<Message>::iterator it,
     hex_encode(out);
 }
 
-void dccl::DCCLCodec::decode_private(std::vector<Message>::iterator it,
+void goby::dccl::DCCLCodec::decode_private(std::vector<Message>::iterator it,
                                      std::string in,
                                      std::map<std::string, std::vector<MessageVal> >& out)
 {
@@ -302,14 +302,14 @@ void dccl::DCCLCodec::decode_private(std::vector<Message>::iterator it,
 
 }
         
-void dccl::DCCLCodec::encode_private(std::vector<Message>::iterator it,
+void goby::dccl::DCCLCodec::encode_private(std::vector<Message>::iterator it,
                                      modem::Message& out_msg,
                                      const std::map<std::string, std::vector<MessageVal> >& in)
 {
     std::string out;
     encode_private(it, out, in);
 
-    dccl::DCCLHeaderDecoder head_dec(out);
+    goby::dccl::DCCLHeaderDecoder head_dec(out);
 
     out_msg.set_data(out);
     
@@ -322,13 +322,13 @@ void dccl::DCCLCodec::encode_private(std::vector<Message>::iterator it,
     out_msg.set_dest(long(dest));
 }
 
-void dccl::DCCLCodec::decode_private(std::vector<Message>::iterator it,
+void goby::dccl::DCCLCodec::decode_private(std::vector<Message>::iterator it,
                                      const modem::Message& in_msg,
                                      std::map<std::string,std::vector<MessageVal> >& out)
 { decode_private(it, in_msg.data(), out); }
 
 
-void dccl::DCCLCodec::set_crypto_passphrase(const std::string& s)
+void goby::dccl::DCCLCodec::set_crypto_passphrase(const std::string& s)
 {
     using namespace CryptoPP;
 
@@ -337,7 +337,7 @@ void dccl::DCCLCodec::set_crypto_passphrase(const std::string& s)
 }
 
 
-void dccl::DCCLCodec::encrypt(std::string& s, const std::string& nonce)
+void goby::dccl::DCCLCodec::encrypt(std::string& s, const std::string& nonce)
 {
     using namespace CryptoPP;
 
@@ -355,7 +355,7 @@ void dccl::DCCLCodec::encrypt(std::string& s, const std::string& nonce)
     s = cipher;
 }
 
-void dccl::DCCLCodec::decrypt(std::string& s, const std::string& nonce)
+void goby::dccl::DCCLCodec::decrypt(std::string& s, const std::string& nonce)
 {
     using namespace CryptoPP;
 

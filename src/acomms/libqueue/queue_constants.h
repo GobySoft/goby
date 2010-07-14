@@ -18,8 +18,9 @@
 #ifndef QueueConstants20091205H
 #define QueueConstants20091205H
 
-#include "util/gtime.h"
-
+#include "goby/util/gtime.h"
+namespace goby
+{
 namespace queue
 {
     // largest allowed id 
@@ -31,5 +32,5 @@ namespace queue
     // how old an on_demand message can be before re-encoding
     const boost::posix_time::time_duration ON_DEMAND_SKEW = boost::posix_time::seconds(1);    
 }
-
+}
 #endif

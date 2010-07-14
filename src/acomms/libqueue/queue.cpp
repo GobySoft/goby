@@ -17,13 +17,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
-#include "acomms/acomms_constants.h"
-#include "util/tes_utils.h"
-#include "util/streamlogger.h"
+#include "goby/acomms/acomms_constants.h"
+#include "goby/util/logger.h"
 
 #include "queue.h"
 
-queue::Queue::Queue(const QueueConfig cfg /* = 0 */,
+goby::queue::Queue::Queue(const QueueConfig cfg /* = 0 */,
                     std::ostream* os /* = 0 */,
                     const unsigned& modem_id /* = 0 */)
     : cfg_(cfg),
@@ -35,7 +34,7 @@ queue::Queue::Queue(const QueueConfig cfg /* = 0 */,
 
 
 // add a new message
-bool queue::Queue::push_message(modem::Message& new_message)
+bool goby::queue::Queue::push_message(modem::Message& new_message)
 {
     if(new_message.empty())
     {
@@ -82,7 +81,7 @@ bool queue::Queue::push_message(modem::Message& new_message)
     return true;     
 }
 
-messages_it queue::Queue::next_message_it()
+messages_it goby::queue::Queue::next_message_it()
 {
     messages_it it_to_give =
         cfg_.newest_first() ? messages_.end() : messages_.begin();
@@ -95,7 +94,7 @@ messages_it queue::Queue::next_message_it()
     return it_to_give;
 }
 
-modem::Message queue::Queue::give_data(unsigned frame)
+goby::modem::Message goby::queue::Queue::give_data(unsigned frame)
 {
     messages_it it_to_give = next_message_it();
     
@@ -106,7 +105,7 @@ modem::Message queue::Queue::give_data(unsigned frame)
 
 
 // gives priority values. returns false if in blackout interval or if no data or if messages of wrong size, true if not in blackout
-bool queue::Queue::priority_values(double& priority,
+bool goby::queue::Queue::priority_values(double& priority,
                                    boost::posix_time::ptime& last_send_time,
                                    modem::Message& message)
 {
@@ -145,7 +144,7 @@ bool queue::Queue::priority_values(double& priority,
     return true;
 }
 
-bool queue::Queue::pop_message(unsigned frame)
+bool goby::queue::Queue::pop_message(unsigned frame)
 {   
     if (cfg_.newest_first() && !messages_.back().ack())
     {
@@ -168,7 +167,7 @@ bool queue::Queue::pop_message(unsigned frame)
     return true;
 }
 
-bool queue::Queue::pop_message_ack(unsigned frame, modem::Message& msg)
+bool goby::queue::Queue::pop_message_ack(unsigned frame, modem::Message& msg)
 {
     // pop message from the ack stack
     if(waiting_for_ack_.count(frame))
@@ -196,14 +195,14 @@ bool queue::Queue::pop_message_ack(unsigned frame, modem::Message& msg)
     return true;    
 }
 
-void queue::Queue::stream_for_pop(const std::string& snip)
+void goby::queue::Queue::stream_for_pop(const std::string& snip)
 {
     if(os_) *os_ << group("pop") <<  "popping" << " from send stack "
                  << cfg_.name() << " (qsize " << size()-1
                  <<  "/" << cfg_.max_queue() << "): "  << snip << std::endl;
 }
 
-std::vector<modem::Message> queue::Queue::expire()
+std::vector<goby::modem::Message> goby::queue::Queue::expire()
 {
     std::vector<modem::Message> expired_msgs;
     
@@ -226,13 +225,13 @@ std::vector<modem::Message> queue::Queue::expire()
     return expired_msgs;
 }
 
-unsigned queue::Queue::give_dest()
+unsigned goby::queue::Queue::give_dest()
 {
     return cfg_.newest_first() ? messages_.back().dest() : messages_.front().dest();
 }
 
 
-waiting_for_ack_it queue::Queue::find_ack_value(messages_it it_to_find)
+waiting_for_ack_it goby::queue::Queue::find_ack_value(messages_it it_to_find)
 {
     waiting_for_ack_it n = waiting_for_ack_.end();
     for(waiting_for_ack_it it = waiting_for_ack_.begin(); it != n; ++it)
@@ -244,7 +243,7 @@ waiting_for_ack_it queue::Queue::find_ack_value(messages_it it_to_find)
 }
 
 
-std::string queue::Queue::summary() const 
+std::string goby::queue::Queue::summary() const 
 {
     std::stringstream ss;
     ss << cfg_;
@@ -252,14 +251,14 @@ std::string queue::Queue::summary() const
 }
 
 
-void queue::Queue::flush()
+void goby::queue::Queue::flush()
 {
     if(os_) *os_ << group("pop") << "flushing stack " << cfg_.name() << " (qsize 0)" << std::endl;
     messages_.clear();
 }        
 
 
-std::ostream& queue::operator<< (std::ostream& os, const queue::Queue& oq)
+std::ostream& goby::queue::operator<< (std::ostream& os, const goby::queue::Queue& oq)
 {
     os << oq.summary();
     return os;

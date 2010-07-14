@@ -17,10 +17,10 @@
 // encodes/decodes several fields using delta encoding
 
 
-#include "acomms/dccl.h"
+#include "goby/acomms/dccl.h"
 #include <iostream>
 
-using dccl::operator<<;
+using goby::dccl::operator<<;
 
 int main()
 {
@@ -32,7 +32,7 @@ int main()
     
     std::cout << "loading xml file: delta.xml" << std::endl;
 
-    dccl::DCCLCodec dccl(DCCL_EXAMPLES_DIR "/delta/delta.xml",
+    goby::dccl::DCCLCodec dccl(DCCL_EXAMPLES_DIR "/delta/delta.xml",
                          "../../message_schema.xsd");
 
     std::cout << dccl << std::endl;

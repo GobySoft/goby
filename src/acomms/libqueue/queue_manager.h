@@ -23,14 +23,15 @@
 #include <limits>
 #include <set>
 
-#include "acomms/xml/xml_parser.h"
+#include "goby/acomms/xml/xml_parser.h"
+#include "goby/acomms/dccl.h"
 
 #include "queue_config.h"
 #include "queue_key.h"
 #include "queue.h"
 
-#include "acomms/dccl.h"
-
+namespace goby
+{
 /// \brief contains the message priority queuing objects.
 ///
 /// Use \code #include <goby/acomms/queue.h> \endcode to gain access to all these objects.
@@ -342,6 +343,6 @@ namespace queue
 
 }
 
-
+}
 
 #endif

@@ -26,10 +26,12 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string.hpp>
 
-#include "util/tes_utils.h"
-#include "acomms/acomms_constants.h"
-#include "util/gtime.h"
+#include "goby/util/string.h"
+#include "goby/acomms/acomms_constants.h"
+#include "goby/util/gtime.h"
 
+namespace goby
+{
 /// Acoustic Modem specific objects
 namespace modem
 {
@@ -134,7 +136,7 @@ namespace modem
         /// try to set the acknowledgement value with string ("true" / "false")
         void set_ack(const std::string & ack)
         {
-            try { set_ack(tes_util::string2bool(ack)); }
+            try { set_ack(str::string2bool(ack)); }
             catch(boost::bad_lexical_cast & ) { }
         }
         /// try to set the frame number with std::string
@@ -261,21 +263,21 @@ namespace modem
                 set_data(lower_s);
             else
             {
-                if(tes_util::val_from_string(value, lower_s, "src"))
+                if(str::val_from_string(value, lower_s, "src"))
                     set_src(value);
-                if(tes_util::val_from_string(value, lower_s, "dest"))
+                if(str::val_from_string(value, lower_s, "dest"))
                     set_dest(value);
-                if(tes_util::val_from_string(value, lower_s, "rate"))
+                if(str::val_from_string(value, lower_s, "rate"))
                     set_rate(value);
-                if((tes_util::val_from_string(value, lower_s, "data") || tes_util::val_from_string(value, lower_s, "hexdata")) && check_hex(value))
+                if((str::val_from_string(value, lower_s, "data") || str::val_from_string(value, lower_s, "hexdata")) && check_hex(value))
                     set_data(value);
-                if(tes_util::val_from_string(value, lower_s, "time"))
+                if(str::val_from_string(value, lower_s, "time"))
                     set_time(value);
-                if(tes_util::val_from_string(value, lower_s, "ack"))
+                if(str::val_from_string(value, lower_s, "ack"))
                     set_ack(value);
-                if(tes_util::val_from_string(value, lower_s, "frame"))
+                if(str::val_from_string(value, lower_s, "frame"))
                     set_frame(value);
-                if(tes_util::val_from_string(value, lower_s, "size"))
+                if(str::val_from_string(value, lower_s, "size"))
                     set_size(value);
             }
         
@@ -329,9 +331,10 @@ namespace modem
     };
 
 }
+}
 
 /// STL streams overloaded output operator (for std::cout, etc.)
-inline std::ostream & operator<< (std::ostream & out, const modem::Message & message)
+inline std::ostream & operator<< (std::ostream & out, const goby::modem::Message & message)
 { out << message.snip(); return out; }
 
 

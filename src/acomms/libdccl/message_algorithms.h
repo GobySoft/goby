@@ -28,7 +28,8 @@
 
 #include <boost/algorithm/string.hpp>
 #include <boost/function.hpp>
-
+namespace goby
+{
 namespace dccl
 {
     class MessageVal;
@@ -68,5 +69,5 @@ namespace dccl
       
     };
 }
-
+}
 #endif

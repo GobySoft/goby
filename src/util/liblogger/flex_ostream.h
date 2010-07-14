@@ -25,6 +25,10 @@
 
 #include "flex_ostreambuf.h"
 
+namespace goby
+{
+namespace logger
+{    
 // ostream extended class for holding the FlexOStreamBuf
 class FlexOstream : public std::ostream
 {
@@ -88,6 +92,7 @@ class FlexOstream : public std::ostream
   private:
     FlexOStreamBuf sb_;
 };
-
+}
+}
 
 #endif

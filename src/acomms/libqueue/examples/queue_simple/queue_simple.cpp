@@ -16,12 +16,13 @@
 
 // queues a single message from the DCCL library
 
-#include "acomms/queue.h"
+#include "goby/acomms/queue.h"
 #include <iostream>
 
-using queue::operator<<;
 
-void received_data(queue::QueueKey, const modem::Message&);
+using goby::queue::operator<<;
+
+void received_data(goby::queue::QueueKey, const goby::modem::Message&);
 
 int main()
 {
@@ -31,7 +32,7 @@ int main()
     
     // create a QueueManager for all our queues
     // and at the same time add our message as a DCCL queue
-    queue::QueueManager q_manager(QUEUE_EXAMPLES_DIR "/queue_simple/simple.xml",
+    goby::queue::QueueManager q_manager(QUEUE_EXAMPLES_DIR "/queue_simple/simple.xml",
                                   "../../../libdccl/message_schema.xsd");
 
     // our modem id (arbitrary)
@@ -49,7 +50,7 @@ int main()
     //
     
     // let's make a message to store in the queue
-    modem::Message app_layer_message_out;
+    goby::modem::Message app_layer_message_out;
 
     // we're making a loopback in this simple example, so make this message's destination our id
     unsigned dest = 1;
@@ -71,14 +72,14 @@ int main()
     std::cout << "executing loopback (simulating sending a message to ourselves over the modem link)" << std::endl;
     
     // pretend the modem is requesting data of up to 32 bytes
-    modem::Message data_request_message;
+    goby::modem::Message data_request_message;
     data_request_message.set_size(32);
     
-    modem::Message link_layer_message_out;
+    goby::modem::Message link_layer_message_out;
     q_manager.provide_outgoing_modem_data(data_request_message, link_layer_message_out);
 
     // we set the incoming message equal to the outgoing message to create the loopback.
-    modem::Message link_layer_message_in = link_layer_message_out;
+    goby::modem::Message link_layer_message_in = link_layer_message_out;
 
     
     // 
@@ -93,7 +94,7 @@ int main()
 //
 //  5. Do something with the received message  
 //
-void received_data(queue::QueueKey key, const modem::Message& app_layer_message_in)
+void received_data(goby::queue::QueueKey key, const goby::modem::Message& app_layer_message_in)
 {
     std::cout << "received message (key is " << key << "): " << app_layer_message_in << std::endl;
     std::cout << "\t" << "data: " <<  app_layer_message_in.data() << std::endl;

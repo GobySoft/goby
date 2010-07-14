@@ -21,6 +21,8 @@
 #define MESSAGE_VAR_ENUM20100317H
 
 #include "message_var.h"
+namespace goby
+{
 
 namespace dccl
 {   
@@ -87,5 +89,5 @@ namespace dccl
         std::vector<std::string> enums_;
     };
 }
-
+}
 #endif

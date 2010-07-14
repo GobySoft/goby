@@ -21,7 +21,8 @@
 #define MESSAGE_VAR_STRING20100317H
 
 #include "message_var.h"
-
+namespace goby
+{
 namespace dccl
 {   
     class MessageVarString : public MessageVar
@@ -91,5 +92,5 @@ namespace dccl
 
     };
 }
-
+}
 #endif

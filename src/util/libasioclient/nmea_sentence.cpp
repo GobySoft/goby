@@ -19,9 +19,9 @@
 
 #include "nmea_sentence.h"
 
-#include <cstdio>
+#include "goby/util/binary.h"
 
-serial::NMEASentence::NMEASentence(std::string s, strategy cs_strat = VALIDATE)
+goby::serial::NMEASentence::NMEASentence(std::string s, strategy cs_strat = VALIDATE)
   : std::vector<std::string>() {
     bool found_csum = false;
     unsigned int cs;
@@ -37,7 +37,7 @@ serial::NMEASentence::NMEASentence(std::string s, strategy cs_strat = VALIDATE)
     // NMEA spec doesn't seem to say that * is forbidden elsewhere? (should be)
     if (s.size() > 3 && s.at(s.size()-3) == '*') {
       std::string hex_csum = s.substr(s.size()-2);
-      found_csum = tes_util::hex_string2number(hex_csum, cs);
+      found_csum = bin::hex_string2number(hex_csum, cs);
       s = s.substr(0, s.size()-3);
     }
     // If we require a checksum and haven't found one, fail.
@@ -56,7 +56,7 @@ serial::NMEASentence::NMEASentence(std::string s, strategy cs_strat = VALIDATE)
       throw std::runtime_error("NMEASentence: bad talker length '" + s + "'.");
 }
 
-unsigned char serial::NMEASentence::checksum(const std::string& s) {
+unsigned char goby::serial::NMEASentence::checksum(const std::string& s) {
     unsigned char csum = 0;
 
     if(s.empty())
@@ -73,7 +73,7 @@ unsigned char serial::NMEASentence::checksum(const std::string& s) {
     return csum;
 }
 
-std::string serial::NMEASentence::message_no_cs() const {
+std::string goby::serial::NMEASentence::message_no_cs() const {
     std::string message = "";
 
     for(const_iterator it = begin(), n = end(); it < n; ++it)
@@ -84,7 +84,7 @@ std::string serial::NMEASentence::message_no_cs() const {
     return message;
 }
 
-std::string serial::NMEASentence::message() const {
+std::string goby::serial::NMEASentence::message() const {
     std::string bare = message_no_cs();
     std::stringstream message;
     unsigned char csum = NMEASentence::checksum(bare);

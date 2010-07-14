@@ -25,7 +25,8 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 
 #include "driver_base.h"
-
+namespace goby
+{
 namespace modem { class Message; }
 
 /// contains WHOI Micro-Modem specific objects. 
@@ -183,5 +184,5 @@ namespace micromodem
 
 
 }
-
+}
 #endif

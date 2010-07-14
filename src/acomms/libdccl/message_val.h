@@ -25,9 +25,10 @@
 #include <boost/numeric/conversion/cast.hpp>
 #include <boost/lexical_cast.hpp> 
 
-#include "util/tes_utils.h"
 #include "dccl_constants.h"
 
+namespace goby
+{
 namespace dccl
 {
     
@@ -176,6 +177,6 @@ namespace dccl
     std::ostream& operator<<(std::ostream& os, const std::vector<dccl::MessageVal>& vm);
 }
 
-
+}
 
 #endif

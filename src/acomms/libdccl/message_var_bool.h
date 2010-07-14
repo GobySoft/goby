@@ -22,6 +22,8 @@
 
 #include "message_var.h"
 
+namespace goby
+{
 namespace dccl
 {   
     class MessageVarBool : public MessageVar
@@ -64,6 +66,7 @@ namespace dccl
         { }        
 
     };
+}
 }
 
 #endif

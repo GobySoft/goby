@@ -19,24 +19,24 @@
 
 #include <boost/thread/mutex.hpp>
 
-#include "util/streamlogger.h"
+#include "goby/util/logger.h"
 
 #include "driver_base.h"
 
-modem::DriverBase::DriverBase(std::ostream* os, const std::string& line_delimiter)
+goby::modem::DriverBase::DriverBase(std::ostream* os, const std::string& line_delimiter)
     : serial_delimiter_(line_delimiter),
       os_(os)
 {
     
 }
 
-void modem::DriverBase::serial_write(const std::string& out)
+void goby::modem::DriverBase::serial_write(const std::string& out)
 {
     serial_->write(out);
     if(callback_out_raw) callback_out_raw(out);
 }
 
-bool modem::DriverBase::serial_read(std::string& in)
+bool goby::modem::DriverBase::serial_read(std::string& in)
 {
     // SerialClient can write to this deque, so lock it
     boost::mutex::scoped_lock lock(in_mutex_);
@@ -53,7 +53,7 @@ bool modem::DriverBase::serial_read(std::string& in)
     }
 }
 
-void modem::DriverBase::serial_start()
+void goby::modem::DriverBase::serial_start()
 {        
     if(os_) *os_ << group("mm_out") << "opening serial port " << serial_port_
           << " @ " << baud_ << std::endl;

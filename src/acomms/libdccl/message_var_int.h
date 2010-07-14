@@ -21,7 +21,8 @@
 #define MESSAGE_VAR_INT20100317H
 
 #include "message_var_float.h"
-
+namespace goby
+{
 namespace dccl
 {
     // <int> is a <float> with <precision>0</precision>
@@ -39,5 +40,5 @@ namespace dccl
         
     };    
 }
-
+}
 #endif

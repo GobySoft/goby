@@ -15,12 +15,13 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
-// courtesy header for the Serial Library (libserial)
+// courtesy header for the ASIO Client Library (libasioclient)
 
 #ifndef SERIALCOURTESY20091211H
 #define SERIALCOURTESY20091211H
 
-#include "util/libserial/serial_client.h"
-#include "util/libserial/nmea_sentence.h"
+#include "goby/util/libasioclient/serial_client.h"
+#include "goby/util/libasioclient/tcp_client.h"
+#include "goby/util/libasioclient/nmea_sentence.h"
 
 #endif

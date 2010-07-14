@@ -23,9 +23,10 @@
 #include <boost/thread.hpp>
 #include "asio.hpp"
 
-#include "util/serial.h"
-#include "acomms/modem_message.h"
-
+#include "goby/util/asioclient.h"
+#include "goby/acomms/modem_message.h"
+namespace goby
+{
 namespace modem
 {
     /// \name Driver Library callback function type definitions
@@ -202,6 +203,6 @@ namespace modem
     };
 
 }
-
+}
 #endif
 

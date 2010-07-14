@@ -22,6 +22,9 @@
 
 #include "message_var.h"
 
+#include "goby/util/binary.h"
+namespace goby
+{
 namespace dccl
 {   
     class MessageVarHex : public MessageVar
@@ -51,7 +54,7 @@ namespace dccl
             std::string s = v;
             
             if(s.length() == bytes2nibs(num_bytes_))
-                return tes_util::hex_string2dyn_bitset(s, calc_size());
+                return bin::hex_string2dyn_bitset(s, calc_size());
             else if(s.length() < bytes2nibs(num_bytes_))
                 throw(std::runtime_error(std::string("Passed hex value (" + s + ") is too short. Should be " + boost::lexical_cast<std::string>(num_bytes_) +  " bytes")));
             else if(s.length() > bytes2nibs(num_bytes_))
@@ -63,7 +66,7 @@ namespace dccl
 
         MessageVal decode_specific(boost::dynamic_bitset<unsigned char>& b)
         {
-            return MessageVal(tes_util::dyn_bitset2hex_string(b, num_bytes_));
+            return MessageVal(bin::dyn_bitset2hex_string(b, num_bytes_));
         }
 
         void get_display_specific(std::stringstream& ss) const
@@ -74,5 +77,5 @@ namespace dccl
 
     };
 }
-
+}
 #endif

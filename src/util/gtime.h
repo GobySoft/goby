@@ -22,6 +22,8 @@
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 
+namespace goby
+{
 namespace gtime
 {
     // always use for current time
@@ -97,5 +99,5 @@ namespace gtime
     }    
  
 }
-
+}
 #endif

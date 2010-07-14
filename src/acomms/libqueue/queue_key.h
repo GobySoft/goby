@@ -19,7 +19,8 @@
 
 #ifndef QueueKey20091211H
 #define QueueKey20091211H
-
+namespace goby
+{
 namespace queue
 {    
     /// forms a unique key for a given message %queue
@@ -56,5 +57,5 @@ namespace queue
     { return (a.id() == b.id()) && (a.type() == b.type()); }
 
 }
-
+}
 #endif

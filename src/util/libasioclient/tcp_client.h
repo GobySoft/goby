@@ -20,6 +20,8 @@
 
 #include "client_base.h"
 
+namespace goby
+{
 namespace tcp
 {    
     class TCPClient : public comms::ClientBase<asio::ip::tcp::socket>
@@ -48,6 +50,7 @@ namespace tcp
         std::string port_;
 
     }; 
+}
 }
 
 #endif

@@ -31,7 +31,8 @@
 
 
 
-
+namespace goby
+{
 namespace comms
 {
     // seconds to wait before trying a reconnect
@@ -204,6 +205,7 @@ namespace comms
         ClientBase& operator= (const ClientBase&);
         
     }; 
+}
 }
 
 #endif

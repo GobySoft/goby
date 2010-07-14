@@ -9,8 +9,8 @@ if(Boost_FOUND AND Xerces_LIB_FOUND AND Xerces_H_FOUND )
   include_directories(${Boost_INCLUDE_DIR})
   
   file(GLOB SRC *.cpp *.c)
-  add_library(queue SHARED ${SRC})
-  target_link_libraries(queue streamlogger xerces-c dccl)
+  add_library(goby_queue SHARED ${SRC})
+  target_link_libraries(goby_queue goby_logger xerces-c goby_dccl)
 endif()
 
 add_subdirectory(examples)

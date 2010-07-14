@@ -24,8 +24,9 @@
 
 #include <boost/lexical_cast.hpp>
 
-#include "util/tes_utils.h"
-
+#include "goby/util/string.h"
+namespace goby
+{
 namespace queue
 {
     /// specifies the type of the Queue
@@ -96,24 +97,24 @@ namespace queue
         { name_ = name; }
         
         void set_ack(const std::string& s)
-        { set_ack(tes_util::string2bool(s)); }
+        { set_ack(str::string2bool(s)); }
         void set_blackout_time(const std::string& s)
         { set_blackout_time(boost::lexical_cast<unsigned>(s)); }
         void set_max_queue(const std::string& s)
         { set_max_queue(boost::lexical_cast<unsigned>(s)); }
         void set_newest_first(const std::string& s)
-        { set_newest_first(tes_util::string2bool(s)); }
+        { set_newest_first(str::string2bool(s)); }
         void set_value_base(const std::string& s)
         { set_value_base(boost::lexical_cast<double>(s)); }            
         void set_ttl(const std::string& s)
         { set_ttl(boost::lexical_cast<unsigned>(s)); }
         void set_type(const std::string& s)
         {
-            if(tes_util::stricmp("queue_dccl", s))
+            if(str::stricmp("queue_dccl", s))
                 set_type(queue_dccl);
-            else if(tes_util::stricmp("queue_ccl", s))
+            else if(str::stricmp("queue_ccl", s))
                 set_type(queue_ccl);
-            else if(tes_util::stricmp("queue_data", s))
+            else if(str::stricmp("queue_data", s))
                 set_type(queue_data);
             else
                 set_type(queue_notype);
@@ -163,5 +164,5 @@ namespace queue
     std::ostream& operator<< (std::ostream& out, const QueueConfig& q);
     
 }
-
+}
 #endif

@@ -1,6 +1,6 @@
-// copyright 2009 t. schneider tes@mit.edu
+// copyright 2010 t. schneider tes@mit.edu
 // 
-// this file is part of goby-util, a collection of utility libraries
+// this file is part of goby-
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -15,11 +15,17 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
-// courtesy header for the Stream Logging library (libstreamlogger)
 
-#ifndef STREAMLOGGERCOURTESY20091211H
-#define STREAMLOGGERCOURTESY20091211H
+// courtesy header for all the goby acomms libraries
 
-#include "util/libstreamlogger/logger_manipulators.h"
+#ifndef ACOMMSCOURTESY20100713H
+#define ACOMMSCOURTESY20100713H
+
+#include "goby/acomms/dccl.h"
+#include "goby/acomms/queue.h"
+#include "goby/acomms/bind.h"
+#include "goby/acomms/modem_driver.h"
+#include "goby/acomms/modem_message.h"
+#include "goby/acomms/amac.h"
 
 #endif

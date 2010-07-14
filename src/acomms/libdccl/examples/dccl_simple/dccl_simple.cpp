@@ -17,17 +17,17 @@
 // encodes/decodes a string using the DCCL codec library
 // assumes prior knowledge of the message format (required fields)
 
-#include "acomms/dccl.h"
+#include "goby/acomms/dccl.h"
 #include <iostream>
 
-using dccl::operator<<;
+using goby::dccl::operator<<;
 
 int main()
 {
     // initialize input contents to encoder. since
     // simple.xml only has a <string/> message var
     // we only need one map.
-    std::map<std::string, dccl::MessageVal> val_map;
+    std::map<std::string, goby::dccl::MessageVal> val_map;
 
     //  initialize output hexadecimal
     std::string hex;
@@ -37,7 +37,7 @@ int main()
     // instantiate the parser with a single xml file (simple.xml).
     // also pass the schema, relative to simple.xml, for XML validity
     // checking (syntax).
-    dccl::DCCLCodec dccl(DCCL_EXAMPLES_DIR "/dccl_simple/simple.xml",
+    goby::dccl::DCCLCodec dccl(DCCL_EXAMPLES_DIR "/dccl_simple/simple.xml",
                          "../../message_schema.xsd");
 
     

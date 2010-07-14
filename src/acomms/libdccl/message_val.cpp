@@ -17,13 +17,17 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
-#include <exception>
+#include <stdexcept>
+#include <iomanip>
 
 #include <boost/foreach.hpp>
 
+#include "goby/util/string.h"
+#include "goby/util/sci.h"
+
 #include "message_val.h"
 
-void dccl::MessageVal::init()
+void goby::dccl::MessageVal::init()
 {
     sval_ = "";
     dval_ = 0;
@@ -34,11 +38,11 @@ void dccl::MessageVal::init()
 }
 
 
-dccl::MessageVal::MessageVal()
+goby::dccl::MessageVal::MessageVal()
 { init(); }
 
 
-dccl::MessageVal::MessageVal(const std::string& s)
+goby::dccl::MessageVal::MessageVal(const std::string& s)
 {
     init();
     sval_ = s;
@@ -46,7 +50,7 @@ dccl::MessageVal::MessageVal(const std::string& s)
 }
 
 
-dccl::MessageVal::MessageVal(const char* s)
+goby::dccl::MessageVal::MessageVal(const char* s)
 {
     init();
     sval_ = s;
@@ -54,7 +58,7 @@ dccl::MessageVal::MessageVal(const char* s)
 }
 
 
-dccl::MessageVal::MessageVal(double d, int p /* = MAX_DBL_PRECISION*/ )
+goby::dccl::MessageVal::MessageVal(double d, int p /* = MAX_DBL_PRECISION*/ )
 {
     init();
     dval_ = d;
@@ -62,28 +66,28 @@ dccl::MessageVal::MessageVal(double d, int p /* = MAX_DBL_PRECISION*/ )
     type_ = cpp_double;
 }
 
-dccl::MessageVal::MessageVal(float f)
+goby::dccl::MessageVal::MessageVal(float f)
 {
     init();
     dval_ = f;
     type_ = cpp_double;
 }
 
-dccl::MessageVal::MessageVal(long l)
+goby::dccl::MessageVal::MessageVal(long l)
 {
     init();
     lval_ = l;
     type_ = cpp_long;
 }        
 
-dccl::MessageVal::MessageVal(int i)
+goby::dccl::MessageVal::MessageVal(int i)
 {
     init();
     lval_ = i;
     type_ = cpp_long;
 }        
 
-dccl::MessageVal::MessageVal(bool b)
+goby::dccl::MessageVal::MessageVal(bool b)
 {
     init();
     bval_ = b;
@@ -91,7 +95,7 @@ dccl::MessageVal::MessageVal(bool b)
 }        
 
 
-dccl::MessageVal::MessageVal(const std::vector<MessageVal>& vm)
+goby::dccl::MessageVal::MessageVal(const std::vector<MessageVal>& vm)
 {
     if(vm.size() != 1)
         throw(std::runtime_error("vector cast to MessageVal failed: vector is not size 1"));
@@ -100,17 +104,17 @@ dccl::MessageVal::MessageVal(const std::vector<MessageVal>& vm)
 }
 
 
-void dccl::MessageVal::set(std::string sval)
+void goby::dccl::MessageVal::set(std::string sval)
 { sval_ = sval; type_ = cpp_string; }
-void dccl::MessageVal::set(double dval, int precision /* = MAX_DBL_PRECISION */)
+void goby::dccl::MessageVal::set(double dval, int precision /* = MAX_DBL_PRECISION */)
 { dval_ = dval; type_ = cpp_double; precision_ = precision; }
-void dccl::MessageVal::set(long lval)
+void goby::dccl::MessageVal::set(long lval)
 { lval_ = lval; type_ = cpp_long; }
-void dccl::MessageVal::set(bool bval)
+void goby::dccl::MessageVal::set(bool bval)
 { bval_ = bval; type_ = cpp_bool; }
 
 
-bool dccl::MessageVal::get(std::string& s) const
+bool goby::dccl::MessageVal::get(std::string& s) const
 {
     std::stringstream ss;
     switch(type_)
@@ -141,14 +145,14 @@ bool dccl::MessageVal::get(std::string& s) const
     }
 }
 
-bool dccl::MessageVal::get(bool& b) const
+bool goby::dccl::MessageVal::get(bool& b) const
 {
     switch(type_)
     {
         case cpp_string:
-            if(tes_util::stricmp(sval_, "true") || tes_util::stricmp(sval_, "1"))
+            if(str::stricmp(sval_, "true") || str::stricmp(sval_, "1"))
                 b = true;
-            else if(tes_util::stricmp(sval_, "false") || tes_util::stricmp(sval_, "0"))
+            else if(str::stricmp(sval_, "false") || str::stricmp(sval_, "0"))
                 b = false;
             else
                 return false;
@@ -173,7 +177,7 @@ bool dccl::MessageVal::get(bool& b) const
     }
 }    
 
-bool dccl::MessageVal::get(long& t) const
+bool goby::dccl::MessageVal::get(long& t) const
 {
     switch(type_)
     {
@@ -181,13 +185,13 @@ bool dccl::MessageVal::get(long& t) const
             try
             {
                 double d = boost::lexical_cast<double>(sval_);
-                t = boost::numeric_cast<long>(tes_util::sci_round(d, 0));
+                t = boost::numeric_cast<long>(sci::unbiased_round(d, 0));
             }
             catch (...)
             {
-                if(tes_util::stricmp(sval_, "true"))
+                if(str::stricmp(sval_, "true"))
                     t = 1;
-                else if(tes_util::stricmp(sval_, "false"))
+                else if(str::stricmp(sval_, "false"))
                     t = 0;
                 else
                     return false;
@@ -195,7 +199,7 @@ bool dccl::MessageVal::get(long& t) const
             return true;
 
         case cpp_double:
-            try { t = boost::numeric_cast<long>(tes_util::sci_round(dval_, 0)); }
+            try { t = boost::numeric_cast<long>(sci::unbiased_round(dval_, 0)); }
             catch(...) { return false; }
             return true;
 
@@ -212,7 +216,7 @@ bool dccl::MessageVal::get(long& t) const
     }
 }        
         
-bool dccl::MessageVal::get(double& d) const
+bool goby::dccl::MessageVal::get(double& d) const
 {
     switch(type_)
     {
@@ -220,9 +224,9 @@ bool dccl::MessageVal::get(double& d) const
             try { d = boost::lexical_cast<double>(sval_); }
             catch (boost::bad_lexical_cast &)
             {
-                if(tes_util::stricmp(sval_, "true"))
+                if(str::stricmp(sval_, "true"))
                     d = 1;
-                else if(tes_util::stricmp(sval_, "false"))
+                else if(str::stricmp(sval_, "false"))
                     d = 0;
                 else
                     return false;
@@ -251,7 +255,7 @@ bool dccl::MessageVal::get(double& d) const
 
 
 
-dccl::MessageVal::operator double() const
+goby::dccl::MessageVal::operator double() const
 {
     double d;
     if(get(d)) return d;
@@ -259,48 +263,48 @@ dccl::MessageVal::operator double() const
 }
 
 
-dccl::MessageVal::operator bool() const
+goby::dccl::MessageVal::operator bool() const
 {
     bool b;
     if(get(b)) return b;
     else return false;
 }
 
-dccl::MessageVal::operator std::string() const
+goby::dccl::MessageVal::operator std::string() const
 {
     std::string s;
     if(get(s)) return s;
     else return "";
 }
 
-dccl::MessageVal::operator long() const
+goby::dccl::MessageVal::operator long() const
 {
     long l;
     if(get(l)) return l;
     else return 0;
 }
 
-dccl::MessageVal::operator int() const
+goby::dccl::MessageVal::operator int() const
 {
     return long(*this);
 }
 
-dccl::MessageVal::operator unsigned() const
+goby::dccl::MessageVal::operator unsigned() const
 {
     return long(*this);
 }
 
-dccl::MessageVal::operator float() const
+goby::dccl::MessageVal::operator float() const
 {
     return double(*this);
 }
 
-dccl::MessageVal::operator std::vector<MessageVal>() const
+goby::dccl::MessageVal::operator std::vector<MessageVal>() const
 {
     return std::vector<MessageVal>(1, *this);
 }
 
-bool dccl::MessageVal::operator==(const MessageVal& mv) const
+bool goby::dccl::MessageVal::operator==(const MessageVal& mv) const
 {
     switch(mv.type_)
     {
@@ -312,25 +316,25 @@ bool dccl::MessageVal::operator==(const MessageVal& mv) const
     }
 }
 
-bool dccl::MessageVal::operator==(const std::string& s)  const
+bool goby::dccl::MessageVal::operator==(const std::string& s)  const
 {
     std::string us;
     return get(us) && us == s;
 }
 
-bool dccl::MessageVal::operator==(double d) const
+bool goby::dccl::MessageVal::operator==(double d) const
 {
     double us;
     return get(us) && us == d;
 }
 
-bool dccl::MessageVal::operator==(long l) const
+bool goby::dccl::MessageVal::operator==(long l) const
 {
     long us;
     return get(us) && us == l;
 }
 
-bool dccl::MessageVal::operator==(bool b) const
+bool goby::dccl::MessageVal::operator==(bool b) const
 {
     bool us;
     return get(us) && us == b;
@@ -338,7 +342,7 @@ bool dccl::MessageVal::operator==(bool b) const
 
 
 
-std::ostream& dccl::operator<<(std::ostream& os, const dccl::MessageVal& mv)
+std::ostream& goby::dccl::operator<<(std::ostream& os, const goby::dccl::MessageVal& mv)
 {
     switch(mv.type_)
     {
@@ -351,10 +355,10 @@ std::ostream& dccl::operator<<(std::ostream& os, const dccl::MessageVal& mv)
 }
 
     
-std::ostream& dccl::operator<<(std::ostream& os, const std::vector<dccl::MessageVal>& vm)
+std::ostream& goby::dccl::operator<<(std::ostream& os, const std::vector<goby::dccl::MessageVal>& vm)
 {
     int j=0;
-    BOOST_FOREACH(const dccl::MessageVal& m, vm)
+    BOOST_FOREACH(const goby::dccl::MessageVal& m, vm)
     {
         if(j) os << ",";
         os << m;

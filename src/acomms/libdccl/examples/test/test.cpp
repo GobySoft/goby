@@ -14,11 +14,12 @@
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
 
-#include "acomms/dccl.h"
+#include "goby/acomms/dccl.h"
 #include <iostream>
 #include <cassert>
 
-using dccl::operator<<;
+using namespace goby;
+using goby::dccl::operator<<;
 
 void plus1(dccl::MessageVal& mv)
 {

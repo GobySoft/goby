@@ -24,9 +24,12 @@
 #include <boost/assign.hpp>
 #include <boost/foreach.hpp>
 
-// defines a number of stream operators that implement colors
-namespace termcolor
-{    
+namespace goby
+{
+    namespace tcolor
+    {    
+    
+// defines a number of stream operators that implement colors    
     const std::string esc_red = "\33[31m";
     const std::string esc_lt_red = "\33[91m";
     const std::string esc_green = "\33[32m";
@@ -42,7 +45,7 @@ namespace termcolor
     const std::string esc_white = "\33[37m";
     const std::string esc_lt_white = "\33[97m";
     const std::string esc_nocolor = "\33[0m";
-    
+
     inline std::ostream& red(std::ostream& os) 
     { return(os << esc_red); }
 
@@ -86,7 +89,7 @@ namespace termcolor
     { return(os << esc_lt_white); }
 
     inline std::ostream& nocolor(std::ostream& os) 
-    { return(os << esc_nocolor); }
+    { return(os << esc_nocolor); }    
 
     namespace enums
     {
@@ -215,9 +218,8 @@ namespace termcolor
 	std::map<std::string, enums::Color> colors_map_;
 	std::map<std::string, enums::Color> esc_code_map_;
 
-    };
-    
-    
+    };    
+}
 }
 
 #endif

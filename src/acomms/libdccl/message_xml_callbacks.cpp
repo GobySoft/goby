@@ -19,11 +19,13 @@
 
 #include "message_xml_callbacks.h"
 
+#include "goby/util/string.h"
+
 using namespace xercesc;
-using namespace xml;
+using namespace goby::xml;
 
 // this is called when the parser encounters the start tag, e.g. <message>
-void dccl::MessageContentHandler::startElement( 
+void goby::dccl::MessageContentHandler::startElement( 
     const XMLCh *const uri,        // namespace URI
     const XMLCh *const localname,  // tagname w/ out NS prefix
     const XMLCh *const qname,      // tagname + NS pefix
@@ -66,7 +68,7 @@ void dccl::MessageContentHandler::startElement(
         case tag_enum:
             messages.back().add_message_var(toNative(localname));
             if((val = attrs.getValue(algorithm.c_str())) != 0)
-                messages.back().last_message_var().set_algorithms(tes_util::explode(toNative(val),',',true));
+                messages.back().last_message_var().set_algorithms(str::explode(toNative(val),',',true));
             break;
 
             
@@ -109,7 +111,7 @@ void dccl::MessageContentHandler::startElement(
             if(in_publish())
             {
                 if((val = attrs.getValue(algorithm.c_str())) != 0)
-                    messages.back().last_publish().add_algorithms(tes_util::explode(toNative(val),',',true));
+                    messages.back().last_publish().add_algorithms(str::explode(toNative(val),',',true));
                 else
                     messages.back().last_publish().add_algorithms(std::vector<std::string>());
             }
@@ -118,19 +120,19 @@ void dccl::MessageContentHandler::startElement(
         case tag_time:
             curr_head_piece_ = acomms::head_time;
             if((val = attrs.getValue(algorithm.c_str())) != 0)
-                messages.back().header_var(curr_head_piece_).set_algorithms(tes_util::explode(toNative(val),',',true));
+                messages.back().header_var(curr_head_piece_).set_algorithms(str::explode(toNative(val),',',true));
             break;
 
         case tag_src_id:
             curr_head_piece_ = acomms::head_src_id;
             if((val = attrs.getValue(algorithm.c_str())) != 0)
-                messages.back().header_var(curr_head_piece_).set_algorithms(tes_util::explode(toNative(val),',',true));
+                messages.back().header_var(curr_head_piece_).set_algorithms(str::explode(toNative(val),',',true));
             break;
 
         case tag_dest_id:
             curr_head_piece_ = acomms::head_dest_id;
             if((val = attrs.getValue(algorithm.c_str())) != 0)
-                messages.back().header_var(curr_head_piece_).set_algorithms(tes_util::explode(toNative(val),',',true));
+                messages.back().header_var(curr_head_piece_).set_algorithms(str::explode(toNative(val),',',true));
             break;
 
             // legacy
@@ -143,7 +145,7 @@ void dccl::MessageContentHandler::startElement(
     current_text.clear(); // starting a new tag, clear any old CDATA
 }
 
-void dccl::MessageContentHandler::endElement(          
+void goby::dccl::MessageContentHandler::endElement(          
     const XMLCh *const uri,        // namespace URI
     const XMLCh *const localname,  // tagname w/ out NS prefix
     const XMLCh *const qname )     // tagname + NS pefix

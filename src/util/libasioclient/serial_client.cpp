@@ -21,10 +21,10 @@
 
 #include "serial_client.h"
 
-std::map<std::string, serial::SerialClient*> serial::SerialClient::inst_;
+std::map<std::string, goby::serial::SerialClient*> goby::serial::SerialClient::inst_;
 
 
-serial::SerialClient* serial::SerialClient::getInstance(const std::string& name,
+goby::serial::SerialClient* goby::serial::SerialClient::getInstance(const std::string& name,
                                                         unsigned baud,
                                                         std::deque<std::string>* in,
                                                         boost::mutex* in_mutex,
@@ -42,7 +42,7 @@ serial::SerialClient* serial::SerialClient::getInstance(const std::string& name,
 }
 
 
-serial::SerialClient::SerialClient(const std::string& name,
+goby::serial::SerialClient::SerialClient(const std::string& name,
                                    unsigned baud,
                                    std::deque<std::string>* in,
                                    boost::mutex* in_mutex,
@@ -53,7 +53,7 @@ serial::SerialClient::SerialClient(const std::string& name,
       baud_(baud)
 { }
 
-bool serial::SerialClient::start_specific()
+bool goby::serial::SerialClient::start_specific()
 {
     try
     {

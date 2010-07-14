@@ -17,11 +17,12 @@
 // encodes/decodes the message given in the pGeneralCodec documentation
 // also includes the simple.xml file to show example of DCCLCodec instantiation
 // with multiple files
-#include "acomms/dccl.h"
+#include "goby/acomms/dccl.h"
 #include <exception>
 #include <iostream>
 
-using dccl::operator<<;
+using namespace goby;
+using goby::dccl::operator<<;
 
 
 int main()

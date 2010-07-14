@@ -23,13 +23,15 @@
 
 #include <boost/bind.hpp>
 
-#include "acomms/dccl.h"
-#include "acomms/queue.h"
-#include "acomms/modem_driver.h"
-#include "acomms/amac.h"
+#include "goby/acomms/dccl.h"
+#include "goby/acomms/queue.h"
+#include "goby/acomms/modem_driver.h"
+#include "goby/acomms/amac.h"
 
+namespace goby
+{
 /// utilites for dealing with goby-acomms
-namespace acomms_util
+namespace acomms
 {
     
 /// binds the driver link-layer callbacks to the QueueManager
@@ -73,6 +75,6 @@ namespace acomms_util
 
 }
 
-
+}
 
 #endif

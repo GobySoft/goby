@@ -26,7 +26,10 @@
 #include <boost/function.hpp>
 #include "asio.hpp"
 
-#include "util/gtime.h"
+#include "goby/util/gtime.h"
+
+namespace goby
+{
 
 namespace modem { class Message; }
 
@@ -285,6 +288,6 @@ namespace amac
 
 
 }
-
+}
 
 #endif

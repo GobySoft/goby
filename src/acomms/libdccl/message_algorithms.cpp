@@ -22,10 +22,12 @@
 #include "message_algorithms.h"
 #include "message_val.h"
 
-dccl::AlgorithmPerformer* dccl::AlgorithmPerformer::inst_ = NULL;
+#include "goby/util/string.h"
+
+goby::dccl::AlgorithmPerformer* goby::dccl::AlgorithmPerformer::inst_ = NULL;
 
 // singleton class, use this to get pointer
-dccl::AlgorithmPerformer* dccl::AlgorithmPerformer::getInstance()
+goby::dccl::AlgorithmPerformer* goby::dccl::AlgorithmPerformer::getInstance()
 {
     if(inst_ == NULL)
         inst_ = new AlgorithmPerformer();
@@ -33,13 +35,13 @@ dccl::AlgorithmPerformer* dccl::AlgorithmPerformer::getInstance()
     return(inst_);
 }
 
-void dccl::AlgorithmPerformer::algorithm(MessageVal& in, unsigned array_index, const std::string& algorithm, const std::map<std::string,std::vector<MessageVal> >& vals)
+void goby::dccl::AlgorithmPerformer::algorithm(MessageVal& in, unsigned array_index, const std::string& algorithm, const std::map<std::string,std::vector<MessageVal> >& vals)
 {
     if(in.empty()) return;
 
 // algo_name:ref_variable_name1:ref_variable_name2...
     
-    std::vector<std::string>ref_vars = tes_util::explode(algorithm, ':', true);
+    std::vector<std::string>ref_vars = str::explode(algorithm, ':', true);
 
     std::string alg;
     std::vector<MessageVal> tied_vals;
@@ -48,7 +50,7 @@ void dccl::AlgorithmPerformer::algorithm(MessageVal& in, unsigned array_index, c
         i < n;
         ++i)
     {
-        std::map<std::string, std::vector<dccl::MessageVal> >::const_iterator it = vals.find(ref_vars[i]);
+        std::map<std::string, std::vector<goby::dccl::MessageVal> >::const_iterator it = vals.find(ref_vars[i]);
         if(it != vals.end() && array_index < it->second.size())
             tied_vals.push_back(it->second[array_index]);
         else

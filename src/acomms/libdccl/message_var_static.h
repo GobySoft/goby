@@ -21,7 +21,8 @@
 #define MESSAGE_VAR_STATIC20100317H
 
 #include "message_var.h"
-
+namespace goby
+{
 namespace dccl
 {   
     class MessageVarStatic : public MessageVar
@@ -60,5 +61,5 @@ namespace dccl
         std::string static_val_;
     };
 }
-
+}
 #endif

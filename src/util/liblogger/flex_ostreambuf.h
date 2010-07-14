@@ -25,11 +25,15 @@
 #include <boost/thread.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include "util/streamlogger.h"
+#include "logger_manipulators.h"
 
 #include "flex_ncurses.h"
 #include "term_color.h"
-           
+
+namespace goby
+{
+namespace logger
+{    
 // stringbuf that allows us to insert things before the stream and control output
 class FlexOStreamBuf : public std::stringbuf
 {
@@ -88,13 +92,14 @@ class FlexOStreamBuf : public std::stringbuf
         
     bool die_flag_;
 
-    termcolor::TermColor color_;
+    tcolor::TermColor color_;
     
     FlexNCurses* curses_;
 
     boost::mutex curses_mutex_;
     boost::shared_ptr<boost::thread> input_thread_;
 };
-
+}
+}
 #endif
 

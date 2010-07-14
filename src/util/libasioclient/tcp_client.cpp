@@ -18,10 +18,10 @@
 #include "tcp_client.h"
 
 
-std::map<std::string, tcp::TCPClient*> tcp::TCPClient::inst_;
+std::map<std::string, goby::tcp::TCPClient*> goby::tcp::TCPClient::inst_;
 
 
-tcp::TCPClient* tcp::TCPClient::getInstance(const std::string& server,
+goby::tcp::TCPClient* goby::tcp::TCPClient::getInstance(const std::string& server,
                                             const std::string& port,
                                             std::deque<std::string>* in,
                                             boost::mutex* in_mutex)
@@ -36,7 +36,7 @@ tcp::TCPClient* tcp::TCPClient::getInstance(const std::string& server,
     return(inst_[server_port]);
 }
 
-tcp::TCPClient::TCPClient(const std::string& server,
+goby::tcp::TCPClient::TCPClient(const std::string& server,
                           const std::string& port,
                           std::deque<std::string>* in,
                           boost::mutex* in_mutex,
@@ -48,7 +48,7 @@ tcp::TCPClient::TCPClient(const std::string& server,
 { }
 
 
-bool tcp::TCPClient::start_specific()
+bool goby::tcp::TCPClient::start_specific()
 {
     asio::ip::tcp::resolver resolver(io_service_);
     asio::ip::tcp::resolver::query query(server_, port_);

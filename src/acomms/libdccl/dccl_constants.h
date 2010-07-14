@@ -28,7 +28,10 @@
 #include <crypto++/filters.h>
 #include <crypto++/hex.h>
 
-#include "acomms/acomms_constants.h"
+#include "goby/acomms/acomms_constants.h"
+
+namespace goby
+{
 
 namespace dccl
 {
@@ -111,5 +114,5 @@ namespace dccl
     
 
 }
-
+}
 #endif

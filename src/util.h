@@ -1,6 +1,6 @@
-// copyright 2009 t. schneider tes@mit.edu 
-//
-// this file is part of goby-acomms, a collection of libraries for acoustic underwater networking
+// copyright 2010 t. schneider tes@mit.edu
+// 
+// this file is part of goby
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -15,14 +15,17 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
-// courtesy header for the acoustic modem driver (libmodemdriver)
-#ifndef MODEMDRIVERCOURTESY20091211H
-#define MODEMDRIVERCOURTESY20091211H
 
-// driver base class
-#include "goby/acomms/libmodemdriver/driver_base.h"
+// courtesy header for all the goby utility libraries
 
-// WHOI Micro-Modem driver
-#include "goby/acomms/libmodemdriver/mm_driver.h"
+#ifndef UTILCOURTESY20100713H
+#define UTILCOURTESY20100713H
+
+#include "goby/util/asioclient.h"
+#include "goby/util/binary.h"
+#include "goby/util/gtime.h"
+#include "goby/util/logger.h"
+#include "goby/util/sci.h"
+#include "goby/util/string.h"
 
 #endif

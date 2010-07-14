@@ -1,3 +1,2 @@
-add_subdirectory(libflexostream)
-add_subdirectory(libstreamlogger)
-add_subdirectory(libserial)
+add_subdirectory(liblogger)
+add_subdirectory(libasioclient)

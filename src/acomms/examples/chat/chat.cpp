@@ -22,16 +22,18 @@
 
 #include <iostream>
 
-#include "acomms/dccl.h"
-#include "acomms/queue.h"
-#include "acomms/modem_driver.h"
-#include "acomms/amac.h"
-#include "acomms/modem_message.h"
-#include "acomms/bind.h"
+#include "goby/acomms/dccl.h"
+#include "goby/acomms/queue.h"
+#include "goby/acomms/modem_driver.h"
+#include "goby/acomms/amac.h"
+#include "goby/acomms/modem_message.h"
+#include "goby/acomms/bind.h"
 
 #include <boost/lexical_cast.hpp>
 
 #include "chat_curses.h"
+
+using namespace goby;
 
 int startup_failure();
 void received_data(queue::QueueKey, const modem::Message&);
@@ -77,7 +79,7 @@ int main(int argc, char* argv[])
     }    
 
     // bind the callbacks of these libraries
-    acomms_util::bind(mm_driver_, q_manager_, mac_);
+    acomms::bind(mm_driver_, q_manager_, mac_);
     
     //
     // Initiate DCCL (libdccl)

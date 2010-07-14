@@ -22,22 +22,23 @@
 
 #include <boost/foreach.hpp>
 
-#include "acomms/xml/xml_parser.h"
-#include "util/streamlogger.h"
-#include "util/gtime.h"
+#include "goby/acomms/xml/xml_parser.h"
+#include "goby/util/logger.h"
+#include "goby/util/gtime.h"
+#include "goby/util/binary.h"
 
 #include "queue_constants.h"
 #include "queue_manager.h"
 #include "queue_xml_callbacks.h"
 
-queue::QueueManager::QueueManager(std::ostream* os /* =0 */)
+goby::queue::QueueManager::QueueManager(std::ostream* os /* =0 */)
     : modem_id_(0),
       os_(os),
       packet_dest_(0),
       packet_ack_(0)
 {}
     
-queue::QueueManager::QueueManager(const std::string& file, const std::string schema, std::ostream* os /* =0 */)
+goby::queue::QueueManager::QueueManager(const std::string& file, const std::string schema, std::ostream* os /* =0 */)
     : modem_id_(0),
       os_(os),
       packet_dest_(0),
@@ -47,7 +48,7 @@ queue::QueueManager::QueueManager(const std::string& file, const std::string sch
     add_xml_queue_file(file, schema);
 }
     
-queue::QueueManager::QueueManager(const std::set<std::string>& files,
+goby::queue::QueueManager::QueueManager(const std::set<std::string>& files,
                                   const std::string schema, std::ostream* os /* =0 */)
     : modem_id_(0),
       os_(os),
@@ -58,7 +59,7 @@ queue::QueueManager::QueueManager(const std::set<std::string>& files,
         add_xml_queue_file(s, schema);
 }
 
-queue::QueueManager::QueueManager(const QueueConfig& cfg, std::ostream* os /* =0 */)
+goby::queue::QueueManager::QueueManager(const QueueConfig& cfg, std::ostream* os /* =0 */)
     : modem_id_(0),
       os_(os),
       packet_dest_(0),
@@ -67,7 +68,7 @@ queue::QueueManager::QueueManager(const QueueConfig& cfg, std::ostream* os /* =0
     add_queue(cfg);
 }
 
-queue::QueueManager::QueueManager(const std::set<QueueConfig>& cfgs, std::ostream* os /* =0 */)
+goby::queue::QueueManager::QueueManager(const std::set<QueueConfig>& cfgs, std::ostream* os /* =0 */)
     : modem_id_(0),
       os_(os),
       packet_dest_(0),
@@ -77,7 +78,7 @@ queue::QueueManager::QueueManager(const std::set<QueueConfig>& cfgs, std::ostrea
         add_queue(c);    
 }
 
-void queue::QueueManager::add_queue(const QueueConfig& cfg)
+void goby::queue::QueueManager::add_queue(const QueueConfig& cfg)
 {
     QueueKey k(cfg.type(), cfg.id());
 
@@ -102,7 +103,7 @@ void queue::QueueManager::add_queue(const QueueConfig& cfg)
     
 }
 
-void queue::QueueManager::add_xml_queue_file(const std::string& xml_file,
+void goby::queue::QueueManager::add_xml_queue_file(const std::string& xml_file,
                                              const std::string xml_schema)
 {
     std::vector<QueueConfig> cfgs;
@@ -122,7 +123,7 @@ void queue::QueueManager::add_xml_queue_file(const std::string& xml_file,
         add_queue(c);
 }
 
-void queue::QueueManager::do_work()
+void goby::queue::QueueManager::do_work()
 {
     typedef std::pair<const QueueKey, Queue> P;
     for(std::map<QueueKey, Queue>::iterator it = queues_.begin(), n = queues_.end(); it != n; ++it)
@@ -137,7 +138,7 @@ void queue::QueueManager::do_work()
     
 }
 
-void queue::QueueManager::push_message(QueueKey key, modem::Message& new_message)
+void goby::queue::QueueManager::push_message(QueueKey key, modem::Message& new_message)
 {
     
     // message is to us, auto-loopback
@@ -161,10 +162,10 @@ void queue::QueueManager::push_message(QueueKey key, modem::Message& new_message
     }    
 }
 
-void queue::QueueManager::push_message(unsigned id, modem::Message& new_message, QueueType type /* = dccl_queue */)
+void goby::queue::QueueManager::push_message(unsigned id, modem::Message& new_message, QueueType type /* = dccl_queue */)
 { push_message(QueueKey(type, id), new_message); }
 
-void queue::QueueManager::set_on_demand(QueueKey key)
+void goby::queue::QueueManager::set_on_demand(QueueKey key)
 {
     if(queues_.count(key))
         queues_[key].set_on_demand(true);
@@ -176,11 +177,11 @@ void queue::QueueManager::set_on_demand(QueueKey key)
     }
 }
 
-void queue::QueueManager::set_on_demand(unsigned id, QueueType type /* = dccl_queue */)
+void goby::queue::QueueManager::set_on_demand(unsigned id, QueueType type /* = dccl_queue */)
 { set_on_demand(QueueKey(type, id)); }
 
 
-std::string queue::QueueManager::summary() const
+std::string goby::queue::QueueManager::summary() const
 {
     std::string s;
     typedef std::pair<const QueueKey, Queue> P;
@@ -191,13 +192,13 @@ std::string queue::QueueManager::summary() const
 }
 
     
-std::ostream& queue::operator<< (std::ostream& out, const QueueManager& d)
+std::ostream& goby::queue::operator<< (std::ostream& out, const QueueManager& d)
 {
     out << d.summary();
     return out;
 }
 
-modem::Message queue::QueueManager::stitch(std::deque<modem::Message>& in)
+goby::modem::Message goby::queue::QueueManager::stitch(std::deque<modem::Message>& in)
 {
     modem::Message out;
 //    out.set_src(modem_id_);
@@ -208,7 +209,7 @@ modem::Message queue::QueueManager::stitch(std::deque<modem::Message>& in)
     return out;
 }
 
-bool queue::QueueManager::stitch_recursive(std::string& data, std::deque<modem::Message>& in)
+bool goby::queue::QueueManager::stitch_recursive(std::string& data, std::deque<modem::Message>& in)
 {
     modem::Message& message = in.front();
     bool is_last_user_frame = (in.size() == 1);
@@ -229,7 +230,7 @@ bool queue::QueueManager::stitch_recursive(std::string& data, std::deque<modem::
     if(!is_last_user_frame)
     {
         std::string frame_size =
-            tes_util::number2hex_string(message.size()-acomms::NUM_HEADER_BYTES);
+            bin::number2hex_string(message.size()-acomms::NUM_HEADER_BYTES);
         new_data.insert(acomms::NUM_HEADER_NIBS, frame_size);
     }
     
@@ -243,7 +244,7 @@ bool queue::QueueManager::stitch_recursive(std::string& data, std::deque<modem::
 
     if(is_last_user_frame)
     {
-        data.insert(0, tes_util::number2hex_string(acomms::DCCL_CCL_HEADER));
+        data.insert(0, bin::number2hex_string(acomms::DCCL_CCL_HEADER));
         return true;
     }
     else
@@ -251,7 +252,7 @@ bool queue::QueueManager::stitch_recursive(std::string& data, std::deque<modem::
 }
     
 
-void queue::QueueManager::clear_packet()
+void goby::queue::QueueManager::clear_packet()
 {
     typedef std::pair<unsigned, Queue*> P;
     BOOST_FOREACH(const P& p, waiting_for_ack_)
@@ -270,7 +271,7 @@ void queue::QueueManager::clear_packet()
 // (either no data at all, or in blackout interval) 
 // thus, from all the priority values that return true, pick the one with the lowest
 // priority value, or given a tie, pick the one with the oldest last_send_time
-bool queue::QueueManager::provide_outgoing_modem_data(const modem::Message& message_in, modem::Message& message_out)
+bool goby::queue::QueueManager::provide_outgoing_modem_data(const modem::Message& message_in, modem::Message& message_out)
 {
     modem::Message modified_message_in = message_in;
     if(modified_message_in.frame() == 1 || modified_message_in.frame() == 0)
@@ -341,7 +342,7 @@ bool queue::QueueManager::provide_outgoing_modem_data(const modem::Message& mess
 }
 
 
-queue::Queue* queue::QueueManager::find_next_sender(modem::Message& message, unsigned user_frame_num)
+goby::queue::Queue* goby::queue::QueueManager::find_next_sender(modem::Message& message, unsigned user_frame_num)
 {   
 // competition between variable about who gets to send
     double winning_priority;
@@ -402,7 +403,7 @@ queue::Queue* queue::QueueManager::find_next_sender(modem::Message& message, uns
 }    
 
 
-void queue::QueueManager::handle_modem_ack(const modem::Message& message)
+void goby::queue::QueueManager::handle_modem_ack(const modem::Message& message)
 {
     if(!waiting_for_ack_.count(message.frame()))
     {
@@ -457,7 +458,7 @@ void queue::QueueManager::handle_modem_ack(const modem::Message& message)
 // parses and publishes incoming data
 // by matching the variableID field with the variable specified
 // in a "receive = " line of the configuration file
-void queue::QueueManager::receive_incoming_modem_data(const modem::Message& message)
+void goby::queue::QueueManager::receive_incoming_modem_data(const modem::Message& message)
 {
     if(os_) *os_<< group("q_in") << "received message"
                 << ": " << message.snip() << std::endl;
@@ -492,7 +493,7 @@ void queue::QueueManager::receive_incoming_modem_data(const modem::Message& mess
     }
 }
 
-bool queue::QueueManager::unstitch_recursive(std::string& data, modem::Message& message)
+bool goby::queue::QueueManager::unstitch_recursive(std::string& data, modem::Message& message)
 {
     unsigned original_dest = message.dest();
     dccl::DCCLHeaderDecoder head_decoder(data);
@@ -505,7 +506,7 @@ bool queue::QueueManager::unstitch_recursive(std::string& data, modem::Message& 
     {
         // extract frame_size
         unsigned frame_size;
-        tes_util::hex_string2number(data.substr(acomms::NUM_HEADER_NIBS, acomms::NIBS_IN_BYTE), frame_size);
+        bin::hex_string2number(data.substr(acomms::NUM_HEADER_NIBS, acomms::NIBS_IN_BYTE), frame_size);
         
         // erase the frame size byte
         data.erase(acomms::NUM_HEADER_NIBS, acomms::NIBS_IN_BYTE);
@@ -539,7 +540,7 @@ bool queue::QueueManager::unstitch_recursive(std::string& data, modem::Message& 
         return unstitch_recursive(data, message);
 }
 
-bool queue::QueueManager::publish_incoming_piece(modem::Message message, const unsigned incoming_var_id)
+bool goby::queue::QueueManager::publish_incoming_piece(modem::Message message, const unsigned incoming_var_id)
 {
     if(message.dest() != acomms::BROADCAST_ID && message.dest() != modem_id_)
     {
@@ -563,7 +564,7 @@ bool queue::QueueManager::publish_incoming_piece(modem::Message message, const u
     return true;
 }
 
-int queue::QueueManager::request_next_destination(unsigned size /* = std::numeric_limits<unsigned>::max() */)
+int goby::queue::QueueManager::request_next_destination(unsigned size /* = std::numeric_limits<unsigned>::max() */)
 {
     clear_packet();
 

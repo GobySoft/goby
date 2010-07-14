@@ -22,6 +22,8 @@
 
 #include "client_base.h"
 
+namespace goby
+{
 namespace serial
 {    
     class SerialClient: public comms::ClientBase<asio::serial_port>
@@ -51,5 +53,5 @@ namespace serial
         
     }; 
 }
-
+}
 #endif

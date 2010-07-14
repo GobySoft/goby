@@ -22,7 +22,8 @@
 #include <limits>
 #include <bitset>
 
-#include "util/tes_utils.h"
+namespace goby
+{
 
 namespace acomms
 {
@@ -74,4 +75,5 @@ namespace acomms
     
 }
 
+}
 #endif

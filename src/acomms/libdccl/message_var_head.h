@@ -22,8 +22,10 @@
 
 #include "message_var.h"
 
-#include "util/gtime.h"
-
+#include "goby/util/gtime.h"
+#include "goby/util/sci.h"
+namespace goby
+{
 namespace dccl
 {    
     class MessageVarHead : public MessageVarInt
@@ -81,7 +83,7 @@ namespace dccl
             // trim to time of day
             boost::posix_time::time_duration time_of_day = gtime::unix_double2ptime(v).time_of_day();
             
-            return boost::dynamic_bitset<unsigned char>(calc_size(), long(tes_util::sci_round(gtime::time_duration2double(time_of_day), 0)));    
+            return boost::dynamic_bitset<unsigned char>(calc_size(), long(sci::unbiased_round(gtime::time_duration2double(time_of_day), 0)));    
         }
         
         MessageVal decode_specific(boost::dynamic_bitset<unsigned char>& b)
@@ -208,5 +210,5 @@ namespace dccl
     };
 
 }
-
+}
 #endif

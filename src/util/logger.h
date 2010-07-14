@@ -15,12 +15,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
-// courtesy header for the FlexOstream stream logging library
-// (libflexostream)
+// courtesy header for the Stream Logging library (libstreamlogger)
 
-#ifndef FLEXOSTREAMCOURTESY20091211H
-#define FLEXOSTREAMCOURTESY20091211H
+#ifndef STREAMLOGGERCOURTESY20091211H
+#define STREAMLOGGERCOURTESY20091211H
 
-#include "util/libflexostream/flex_ostream.h"
+#include "goby/util/liblogger/flex_ostream.h"
+#include "goby/util/liblogger/logger_manipulators.h"
 
 #endif

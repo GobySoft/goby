@@ -20,10 +20,12 @@
 #ifndef XMLTags20091211H
 #define XMLTags20091211H
 
-#include "acomms/xml/xerces_strings.h"
+#include "goby/acomms/xml/xerces_strings.h"
 
 #include <boost/assign.hpp>
 
+namespace goby
+{
 namespace xml
 {    
     enum Tag { tag_not_defined,
@@ -156,6 +158,6 @@ namespace xml
     inline bool in_publish(std::set<Tag>& parents)
     { return parents.count(tag_publish); }
 }
-
+}
 
 #endif

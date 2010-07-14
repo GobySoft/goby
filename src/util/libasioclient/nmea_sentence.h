@@ -28,8 +28,8 @@
 #include <boost/assign.hpp>
 #include <boost/lexical_cast.hpp>
 
-#include "util/tes_utils.h"
-
+namespace goby
+{
 namespace serial
 {    
     class NMEASentence : public std::vector<std::string>
@@ -68,8 +68,10 @@ namespace serial
         static unsigned char checksum(const std::string& s);
     };
 }
+}
+
 // overloaded <<
-inline std::ostream& operator<< (std::ostream& out, const serial::NMEASentence& nmea)
+inline std::ostream& operator<< (std::ostream& out, const goby::serial::NMEASentence& nmea)
 { out << nmea.message(); return out; }
 
 #endif

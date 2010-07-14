@@ -34,7 +34,8 @@
 
 #include "dccl_constants.h"
 #include "message_val.h"
-
+namespace goby
+{
 namespace dccl
 {
     class MessageVal;
@@ -161,5 +162,5 @@ namespace dccl
 
     std::ostream& operator<< (std::ostream& out, const MessageVar& m);
 }
-
+}
 #endif

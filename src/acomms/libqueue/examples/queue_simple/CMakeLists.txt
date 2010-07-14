@@ -1,2 +1,2 @@
 add_executable(queue_simple queue_simple.cpp)
-target_link_libraries(queue_simple queue)
+target_link_libraries(queue_simple goby_queue)

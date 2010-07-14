@@ -19,21 +19,21 @@
 
 #include <boost/foreach.hpp>
 
-#include "util/tes_utils.h"
+#include "goby/util/string.h"
 
 #include "message_var.h"
 #include "message_val.h"
 #include "dccl_constants.h"
 #include "message_algorithms.h"
 
-dccl::MessageVar::MessageVar()
+goby::dccl::MessageVar::MessageVar()
     : array_length_(1),
       is_key_frame_(true),
       source_set_(false),
       ap_(AlgorithmPerformer::getInstance())
 { }
 
-void dccl::MessageVar::initialize(const std::string& trigger_var)
+void goby::dccl::MessageVar::initialize(const std::string& trigger_var)
 {
     // add trigger_var_ as source_var for any message_vars without a source
     if(!source_set_)
@@ -43,7 +43,7 @@ void dccl::MessageVar::initialize(const std::string& trigger_var)
 
 }
 
-void dccl::MessageVar::set_defaults(std::map<std::string,std::vector<MessageVal> >& vals, unsigned modem_id, unsigned id)
+void goby::dccl::MessageVar::set_defaults(std::map<std::string,std::vector<MessageVal> >& vals, unsigned modem_id, unsigned id)
 {
     vals[name_].resize(array_length_);    
 
@@ -55,7 +55,7 @@ void dccl::MessageVar::set_defaults(std::map<std::string,std::vector<MessageVal>
 }
 
     
-void dccl::MessageVar::var_encode(std::map<std::string,std::vector<MessageVal> >& vals, boost::dynamic_bitset<unsigned char>& bits)
+void goby::dccl::MessageVar::var_encode(std::map<std::string,std::vector<MessageVal> >& vals, boost::dynamic_bitset<unsigned char>& bits)
 {    
     // ensure that every MessageVar has the full number of (maybe blank) MessageVals
     vals[name_].resize(array_length_);
@@ -83,7 +83,7 @@ void dccl::MessageVar::var_encode(std::map<std::string,std::vector<MessageVal> >
     encode_value(key_val_, bits);
 }
 
-void dccl::MessageVar::encode_value(const MessageVal& val, boost::dynamic_bitset<unsigned char>& bits)
+void goby::dccl::MessageVar::encode_value(const MessageVal& val, boost::dynamic_bitset<unsigned char>& bits)
 {
     bits <<= calc_size();
     
@@ -94,7 +94,7 @@ void dccl::MessageVar::encode_value(const MessageVal& val, boost::dynamic_bitset
 }
 
 
-void dccl::MessageVar::var_decode(std::map<std::string,std::vector<MessageVal> >& vals, boost::dynamic_bitset<unsigned char>& bits)
+void goby::dccl::MessageVar::var_decode(std::map<std::string,std::vector<MessageVal> >& vals, boost::dynamic_bitset<unsigned char>& bits)
 {
     vals[name_].resize(array_length_);
     
@@ -120,10 +120,10 @@ void dccl::MessageVar::var_decode(std::map<std::string,std::vector<MessageVal> >
 }
 
 
-void dccl::MessageVar::read_pubsub_vars(std::map<std::string,std::vector<MessageVal> >& vals,
+void goby::dccl::MessageVar::read_pubsub_vars(std::map<std::string,std::vector<MessageVal> >& vals,
                                         const std::map<std::string,std::vector<MessageVal> >& in)
 {
-    const std::map<std::string, std::vector<dccl::MessageVal> >::const_iterator it =
+    const std::map<std::string, std::vector<goby::dccl::MessageVal> >::const_iterator it =
         in.find(source_var_);
     
     if(it != in.end())
@@ -145,7 +145,7 @@ void dccl::MessageVar::read_pubsub_vars(std::map<std::string,std::vector<Message
             // if we're expecting a vector,
             // split up vector quantities and add to vector
             if(array_length_ > 1)
-                tes_util::explode(val, vals[name_], ',', false);
+                str::explode(val, vals[name_], ',', false);
             else // otherwise just use the value as is
                 vals[name_] = val;
         }        
@@ -154,7 +154,7 @@ void dccl::MessageVar::read_pubsub_vars(std::map<std::string,std::vector<Message
 
 
 // deal with cases where key=value exists within the string
-std::string dccl::MessageVar::parse_string_val(const std::string& sval)
+std::string goby::dccl::MessageVar::parse_string_val(const std::string& sval)
 {
     std::string pieceval;
 
@@ -167,7 +167,7 @@ std::string dccl::MessageVar::parse_string_val(const std::string& sval)
     // use source_key if specified, otherwise try the name
     std::string subkey = (source_key_ == "") ? name_ : source_key_;
         
-    in_str = tes_util::val_from_string(pieceval, sval, subkey);        
+    in_str = str::val_from_string(pieceval, sval, subkey);        
     //pick the substring from the string
     if(in_str)
         return pieceval;
@@ -175,7 +175,7 @@ std::string dccl::MessageVar::parse_string_val(const std::string& sval)
         return sval;
 }
 
-std::string dccl::MessageVar::get_display() const
+std::string goby::dccl::MessageVar::get_display() const
 {
     std::stringstream ss;    
     ss << "\t" << name_ << " (" << type_to_string(type()) << "):" << std::endl;    
@@ -217,7 +217,7 @@ std::string dccl::MessageVar::get_display() const
 }
 
 
-std::ostream& dccl::operator<< (std::ostream& out, const MessageVar& mv)
+std::ostream& goby::dccl::operator<< (std::ostream& out, const MessageVar& mv)
 {
     out << mv.get_display();
     return out;

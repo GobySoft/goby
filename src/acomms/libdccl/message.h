@@ -31,8 +31,7 @@
 #include <boost/foreach.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include "util/tes_utils.h"
-#include "acomms/modem_message.h"
+#include "goby/acomms/modem_message.h"
 
 #include "message_var.h"
 #include "message_var_int.h"
@@ -47,6 +46,9 @@
 #include "message_publish.h"
 #include "dccl_constants.h"
 
+
+namespace goby
+{
 namespace dccl
 {
     
@@ -239,5 +241,5 @@ namespace dccl
 
     std::ostream& operator<< (std::ostream& out, const Message& message);
 }
-
+}
 #endif

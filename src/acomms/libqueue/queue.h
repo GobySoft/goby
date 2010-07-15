@@ -34,17 +34,17 @@
 #include <boost/lexical_cast.hpp>
 
 #include "goby/acomms/modem_message.h"
-#include "goby/util/gtime.h"
+#include "goby/util/time.h"
 #include "goby/util/string.h"
 
 #include "queue_config.h"
 
-typedef std::list<goby::modem::Message>::iterator messages_it;
+typedef std::list<goby::acomms::ModemMessage>::iterator messages_it;
 typedef std::multimap<unsigned, messages_it>::iterator waiting_for_ack_it;
 
 namespace goby
 {
-    namespace queue
+    namespace acomms
     {    
         class Queue
         {
@@ -53,17 +53,17 @@ namespace goby
                   std::ostream* os = 0,
                   const unsigned& modem_id = 0);
 
-            bool push_message(modem::Message& new_message);
-            modem::Message give_data(unsigned frame);
+            bool push_message(ModemMessage& new_message);
+            ModemMessage give_data(unsigned frame);
             bool pop_message(unsigned frame);    
-            bool pop_message_ack(unsigned frame, modem::Message& msg);
+            bool pop_message_ack(unsigned frame, ModemMessage& msg);
             void stream_for_pop(const std::string& snip);
 
-            std::vector<modem::Message> expire();
+            std::vector<ModemMessage> expire();
         
             bool priority_values(double& priority,
                                  boost::posix_time::ptime& last_send_time,
-                                 modem::Message& message);
+                                 ModemMessage& message);
         
             unsigned give_dest();
 
@@ -88,7 +88,7 @@ namespace goby
             { on_demand_ = b; }
 
             void set_on_demand(const std::string& s)
-            { set_on_demand(str::string2bool(s)); }
+            { set_on_demand(util::string2bool(s)); }
 
             const QueueConfig cfg() const
             { return cfg_; }
@@ -110,7 +110,7 @@ namespace goby
     
             std::ostream* os_;
     
-            std::list<modem::Message> messages_;
+            std::list<ModemMessage> messages_;
 
             // map frame number onto messages list iterator
             // can have multiples in the same frame now

@@ -20,19 +20,19 @@
 #include "goby/acomms/dccl.h"
 #include <iostream>
 
-using goby::dccl::operator<<;
+using goby::acomms::operator<<;
 
 int main()
 {
-    std::vector< std::map<std::string, dccl::MessageVal> > vals_vect;
-    std::map<std::string, dccl::MessageVal> vals;
+    std::vector< std::map<std::string, acomms::DCCLMessageVal> > vals_vect;
+    std::map<std::string, acomms::DCCLMessageVal> vals;
     
     //  initialize output hexadecimal
     std::string hex;
     
     std::cout << "loading xml file: delta.xml" << std::endl;
 
-    goby::dccl::DCCLCodec dccl(DCCL_EXAMPLES_DIR "/delta/delta.xml",
+    goby::acomms::DCCLCodec dccl(DCCL_EXAMPLES_DIR "/delta/delta.xml",
                          "../../message_schema.xsd");
 
     std::cout << dccl << std::endl;
@@ -77,7 +77,7 @@ int main()
 
 //    dccl.delta_decode(1, hex, 0, &vals_vect, 0, 0);
     
-    for(std::vector< std::map<std::string, dccl::MessageVal> >::iterator
+    for(std::vector< std::map<std::string, acomms::DCCLMessageVal> >::iterator
             it = vals_vect.begin(),
             n = vals_vect.end();
         it != n;

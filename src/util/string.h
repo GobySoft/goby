@@ -27,7 +27,7 @@
 namespace goby
 {
 
-namespace str
+namespace util
 {   
     //
     // STRING PARSING

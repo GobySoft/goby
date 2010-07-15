@@ -22,19 +22,21 @@
 
 #include "queue.h"
 
-goby::queue::Queue::Queue(const QueueConfig cfg /* = 0 */,
+using goby::util::goby_time;
+
+goby::acomms::Queue::Queue(const QueueConfig cfg /* = 0 */,
                     std::ostream* os /* = 0 */,
                     const unsigned& modem_id /* = 0 */)
     : cfg_(cfg),
       on_demand_(false),
-      last_send_time_(gtime::now()),
+      last_send_time_(goby_time()),
       modem_id_(modem_id),
       os_(os)
 {}
 
 
 // add a new message
-bool goby::queue::Queue::push_message(modem::Message& new_message)
+bool goby::acomms::Queue::push_message(ModemMessage& new_message)
 {
     if(new_message.empty())
     {
@@ -81,7 +83,7 @@ bool goby::queue::Queue::push_message(modem::Message& new_message)
     return true;     
 }
 
-messages_it goby::queue::Queue::next_message_it()
+messages_it goby::acomms::Queue::next_message_it()
 {
     messages_it it_to_give =
         cfg_.newest_first() ? messages_.end() : messages_.begin();
@@ -94,7 +96,7 @@ messages_it goby::queue::Queue::next_message_it()
     return it_to_give;
 }
 
-goby::modem::Message goby::queue::Queue::give_data(unsigned frame)
+goby::acomms::ModemMessage goby::acomms::Queue::give_data(unsigned frame)
 {
     messages_it it_to_give = next_message_it();
     
@@ -105,11 +107,11 @@ goby::modem::Message goby::queue::Queue::give_data(unsigned frame)
 
 
 // gives priority values. returns false if in blackout interval or if no data or if messages of wrong size, true if not in blackout
-bool goby::queue::Queue::priority_values(double& priority,
-                                   boost::posix_time::ptime& last_send_time,
-                                   modem::Message& message)
+bool goby::acomms::Queue::priority_values(double& priority,
+                                          boost::posix_time::ptime& last_send_time,
+                                          ModemMessage& message)
 {
-    priority = gtime::time_duration2double((gtime::now()-last_send_time_))/cfg_.ttl()*cfg_.value_base();
+    priority = util::time_duration2double((goby_time()-last_send_time_))/cfg_.ttl()*cfg_.value_base();
     
     last_send_time = last_send_time_;
 
@@ -135,7 +137,7 @@ bool goby::queue::Queue::priority_values(double& priority,
         if(os_) *os_<< group("priority") << "\t" << cfg_.name() << " next message is too large {" << next_msg_it->size() << "}" << std::endl;
         return false;
     }
-    else if (last_send_time_ + boost::posix_time::seconds(cfg_.blackout_time()) > gtime::now())
+    else if (last_send_time_ + boost::posix_time::seconds(cfg_.blackout_time()) > goby_time())
     {
         if(os_) *os_<< group("priority") << "\t" << cfg_.name() << " is in blackout" << std::endl;
         return false;
@@ -144,7 +146,7 @@ bool goby::queue::Queue::priority_values(double& priority,
     return true;
 }
 
-bool goby::queue::Queue::pop_message(unsigned frame)
+bool goby::acomms::Queue::pop_message(unsigned frame)
 {   
     if (cfg_.newest_first() && !messages_.back().ack())
     {
@@ -162,12 +164,12 @@ bool goby::queue::Queue::pop_message(unsigned frame)
     }
     
     // only set last_send_time on a successful message (after ack, if one is desired)
-    last_send_time_ = gtime::now();
+    last_send_time_ = goby_time();
 
     return true;
 }
 
-bool goby::queue::Queue::pop_message_ack(unsigned frame, modem::Message& msg)
+bool goby::acomms::Queue::pop_message_ack(unsigned frame, ModemMessage& msg)
 {
     // pop message from the ack stack
     if(waiting_for_ack_.count(frame))
@@ -190,25 +192,25 @@ bool goby::queue::Queue::pop_message_ack(unsigned frame, modem::Message& msg)
     }
     
     // only set last_send_time on a successful message (after ack, if one is desired)
-    last_send_time_ = gtime::now();
+    last_send_time_ = goby_time();
     
     return true;    
 }
 
-void goby::queue::Queue::stream_for_pop(const std::string& snip)
+void goby::acomms::Queue::stream_for_pop(const std::string& snip)
 {
     if(os_) *os_ << group("pop") <<  "popping" << " from send stack "
                  << cfg_.name() << " (qsize " << size()-1
                  <<  "/" << cfg_.max_queue() << "): "  << snip << std::endl;
 }
 
-std::vector<goby::modem::Message> goby::queue::Queue::expire()
+std::vector<goby::acomms::ModemMessage> goby::acomms::Queue::expire()
 {
-    std::vector<modem::Message> expired_msgs;
+    std::vector<ModemMessage> expired_msgs;
     
     while(!messages_.empty())
     {
-        if((messages_.front().time() + boost::posix_time::seconds(cfg_.ttl())) < gtime::now())
+        if((messages_.front().time() + boost::posix_time::seconds(cfg_.ttl())) < goby_time())
         {
             expired_msgs.push_back(messages_.front());
             if(os_) *os_ << group("pop") <<  "expiring" << " from send stack "
@@ -225,13 +227,13 @@ std::vector<goby::modem::Message> goby::queue::Queue::expire()
     return expired_msgs;
 }
 
-unsigned goby::queue::Queue::give_dest()
+unsigned goby::acomms::Queue::give_dest()
 {
     return cfg_.newest_first() ? messages_.back().dest() : messages_.front().dest();
 }
 
 
-waiting_for_ack_it goby::queue::Queue::find_ack_value(messages_it it_to_find)
+waiting_for_ack_it goby::acomms::Queue::find_ack_value(messages_it it_to_find)
 {
     waiting_for_ack_it n = waiting_for_ack_.end();
     for(waiting_for_ack_it it = waiting_for_ack_.begin(); it != n; ++it)
@@ -243,7 +245,7 @@ waiting_for_ack_it goby::queue::Queue::find_ack_value(messages_it it_to_find)
 }
 
 
-std::string goby::queue::Queue::summary() const 
+std::string goby::acomms::Queue::summary() const 
 {
     std::stringstream ss;
     ss << cfg_;
@@ -251,14 +253,14 @@ std::string goby::queue::Queue::summary() const
 }
 
 
-void goby::queue::Queue::flush()
+void goby::acomms::Queue::flush()
 {
     if(os_) *os_ << group("pop") << "flushing stack " << cfg_.name() << " (qsize 0)" << std::endl;
     messages_.clear();
 }        
 
 
-std::ostream& goby::queue::operator<< (std::ostream& os, const goby::queue::Queue& oq)
+std::ostream& goby::acomms::operator<< (std::ostream& os, const goby::acomms::Queue& oq)
 {
     os << oq.summary();
     return os;

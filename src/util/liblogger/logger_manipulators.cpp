@@ -34,7 +34,7 @@ void GroupSetter::operator()(std::ostream& os) const
 {
     try
     {
-        goby::logger::FlexOstream& flex = dynamic_cast<goby::logger::FlexOstream&>(os);
+        goby::util::FlexOstream& flex = dynamic_cast<goby::util::FlexOstream&>(os);
         flex.group(group_);
     }
     catch (const std::bad_cast& e)

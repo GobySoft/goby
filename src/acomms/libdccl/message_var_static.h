@@ -23,43 +23,43 @@
 #include "message_var.h"
 namespace goby
 {
-namespace dccl
-{   
-    class MessageVarStatic : public MessageVar
-    {
-      public:
-        int calc_size() const
-        { return 0; }
+    namespace acomms
+    {   
+        class DCCLMessageVarStatic : public DCCLMessageVar
+        {
+          public:
+            int calc_size() const
+            { return 0; }
 
-        void set_static_val(const std::string& static_val)
-        { static_val_ = static_val; }
+            void set_static_val(const std::string& static_val)
+            { static_val_ = static_val; }
 
-        std::string static_val() const {return static_val_;}
+            std::string static_val() const {return static_val_;}
 
-        DCCLType type() const  { return dccl_static; }
+            DCCLType type() const  { return dccl_static; }
         
-      private:
-        void initialize_specific()
-        { }
+          private:
+            void initialize_specific()
+            { }
         
-        boost::dynamic_bitset<unsigned char> encode_specific(const MessageVal& v)
-        {
-            return boost::dynamic_bitset<unsigned char>();
-        }        
+            boost::dynamic_bitset<unsigned char> encode_specific(const DCCLMessageVal& v)
+            {
+                return boost::dynamic_bitset<unsigned char>();
+            }        
 
-        MessageVal decode_specific(boost::dynamic_bitset<unsigned char>& b)
-        {
-            return MessageVal(static_val_);
-        }
+            DCCLMessageVal decode_specific(boost::dynamic_bitset<unsigned char>& b)
+            {
+                return DCCLMessageVal(static_val_);
+            }
 
-        void get_display_specific(std::stringstream& ss) const
-        {
-            ss << "\t\t" << "value: \"" << static_val_ << "\"" << std::endl;
-        }
+            void get_display_specific(std::stringstream& ss) const
+            {
+                ss << "\t\t" << "value: \"" << static_val_ << "\"" << std::endl;
+            }
 
-      private:
-        std::string static_val_;
-    };
-}
+          private:
+            std::string static_val_;
+        };
+    }
 }
 #endif

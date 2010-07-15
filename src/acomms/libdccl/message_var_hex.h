@@ -25,57 +25,57 @@
 #include "goby/util/binary.h"
 namespace goby
 {
-namespace dccl
-{   
-    class MessageVarHex : public MessageVar
-    {
-      public:
+    namespace acomms
+    {   
+        class DCCLMessageVarHex : public DCCLMessageVar
+        {
+          public:
 
-      MessageVarHex()
-          : MessageVar(),
-            num_bytes_(0)
+          DCCLMessageVarHex()
+              : DCCLMessageVar(),
+                num_bytes_(0)
+                { }
+
+            int calc_size() const
+            { return num_bytes_*acomms::BITS_IN_BYTE; }
+
+            void set_num_bytes(unsigned num_bytes) {num_bytes_ = num_bytes;}
+            void set_num_bytes(const std::string& s) { set_num_bytes(boost::lexical_cast<unsigned>(s)); }
+
+            unsigned num_bytes() const {return num_bytes_;}        
+            DCCLType type() const { return dccl_hex; }        
+        
+          private:
+            void initialize_specific()
+            { }
+        
+            boost::dynamic_bitset<unsigned char> encode_specific(const DCCLMessageVal& v)
+            {
+                std::string s = v;
+            
+                if(s.length() == bytes2nibs(num_bytes_))
+                    return util::hex_string2dyn_bitset(s, calc_size());
+                else if(s.length() < bytes2nibs(num_bytes_))
+                    throw(std::runtime_error(std::string("Passed hex value (" + s + ") is too short. Should be " + boost::lexical_cast<std::string>(num_bytes_) +  " bytes")));
+                else if(s.length() > bytes2nibs(num_bytes_))
+                    throw(std::runtime_error(std::string("Passed hex value (" + s + ") is too long. Should be " + boost::lexical_cast<std::string>(num_bytes_) +  " bytes")));
+                else
+                    return boost::dynamic_bitset<unsigned char>();
+            
+            }        
+
+            DCCLMessageVal decode_specific(boost::dynamic_bitset<unsigned char>& b)
+            {
+                return DCCLMessageVal(util::dyn_bitset2hex_string(b, num_bytes_));
+            }
+
+            void get_display_specific(std::stringstream& ss) const
             { }
 
-        int calc_size() const
-        { return num_bytes_*acomms::BITS_IN_BYTE; }
+          private:
+            unsigned num_bytes_;
 
-        void set_num_bytes(unsigned num_bytes) {num_bytes_ = num_bytes;}
-        void set_num_bytes(const std::string& s) { set_num_bytes(boost::lexical_cast<unsigned>(s)); }
-
-        unsigned num_bytes() const {return num_bytes_;}        
-        DCCLType type() const { return dccl_hex; }        
-        
-      private:
-        void initialize_specific()
-        { }
-        
-        boost::dynamic_bitset<unsigned char> encode_specific(const MessageVal& v)
-        {
-            std::string s = v;
-            
-            if(s.length() == bytes2nibs(num_bytes_))
-                return bin::hex_string2dyn_bitset(s, calc_size());
-            else if(s.length() < bytes2nibs(num_bytes_))
-                throw(std::runtime_error(std::string("Passed hex value (" + s + ") is too short. Should be " + boost::lexical_cast<std::string>(num_bytes_) +  " bytes")));
-            else if(s.length() > bytes2nibs(num_bytes_))
-                throw(std::runtime_error(std::string("Passed hex value (" + s + ") is too long. Should be " + boost::lexical_cast<std::string>(num_bytes_) +  " bytes")));
-            else
-                return boost::dynamic_bitset<unsigned char>();
-            
-        }        
-
-        MessageVal decode_specific(boost::dynamic_bitset<unsigned char>& b)
-        {
-            return MessageVal(bin::dyn_bitset2hex_string(b, num_bytes_));
-        }
-
-        void get_display_specific(std::stringstream& ss) const
-        { }
-
-      private:
-        unsigned num_bytes_;
-
-    };
-}
+        };
+    }
 }
 #endif

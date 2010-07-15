@@ -21,10 +21,10 @@
 
 #include "serial_client.h"
 
-std::map<std::string, goby::serial::SerialClient*> goby::serial::SerialClient::inst_;
+std::map<std::string, goby::util::SerialClient*> goby::util::SerialClient::inst_;
 
 
-goby::serial::SerialClient* goby::serial::SerialClient::getInstance(const std::string& name,
+goby::util::SerialClient* goby::util::SerialClient::getInstance(const std::string& name,
                                                         unsigned baud,
                                                         std::deque<std::string>* in,
                                                         boost::mutex* in_mutex,
@@ -42,18 +42,18 @@ goby::serial::SerialClient* goby::serial::SerialClient::getInstance(const std::s
 }
 
 
-goby::serial::SerialClient::SerialClient(const std::string& name,
+goby::util::SerialClient::SerialClient(const std::string& name,
                                    unsigned baud,
                                    std::deque<std::string>* in,
                                    boost::mutex* in_mutex,
                                    const std::string& delimiter)
-    : comms::ClientBase<asio::serial_port>(serial_port_, in, in_mutex, delimiter),
+    : ClientBase<asio::serial_port>(serial_port_, in, in_mutex, delimiter),
       serial_port_(io_service_),
       name_(name),
       baud_(baud)
 { }
 
-bool goby::serial::SerialClient::start_specific()
+bool goby::util::SerialClient::start_specific()
 {
     try
     {

@@ -37,75 +37,75 @@
 
 namespace goby
 {
-namespace queue
-{
+    namespace acomms
+    {
     
 // Implements callbacks that receive character data and
 // notifications about the beginnings and ends of elements 
-    class QueueContentHandler : public xercesc::DefaultHandler {
-      public:
-      QueueContentHandler(std::vector<QueueConfig>& q)
-          : q_(q)
-        { xml::initialize_tags(tags_map_); }
+        class QueueContentHandler : public xercesc::DefaultHandler {
+          public:
+          QueueContentHandler(std::vector<QueueConfig>& q)
+              : q_(q)
+            { xml::initialize_tags(tags_map_); }
         
-        void startElement( 
-            const XMLCh *const uri,        // namespace URI
-            const XMLCh *const localname,  // tagname w/ out NS prefix
-            const XMLCh *const qname,      // tagname + NS pefix
-            const xercesc::Attributes &attrs );      // elements's attributes
+            void startElement( 
+                const XMLCh *const uri,        // namespace URI
+                const XMLCh *const localname,  // tagname w/ out NS prefix
+                const XMLCh *const qname,      // tagname + NS pefix
+                const xercesc::Attributes &attrs );      // elements's attributes
 
-        void endElement(          
-            const XMLCh *const uri,        // namespace URI
-            const XMLCh *const localname,  // tagname w/ out NS prefix
-            const XMLCh *const qname );     // tagname + NS pefix
+            void endElement(          
+                const XMLCh *const uri,        // namespace URI
+                const XMLCh *const localname,  // tagname w/ out NS prefix
+                const XMLCh *const qname );     // tagname + NS pefix
 
 #if XERCES_VERSION_MAJOR < 3
-        void characters(const XMLCh* const chars, const unsigned int length)
-	{ current_text.append(chars, length); }
+            void characters(const XMLCh* const chars, const unsigned int length)
+            { current_text.append(chars, length); }
 #else
-        void characters(const XMLCh* const chars, const XMLSize_t length )
-	{ current_text.append(chars, length); }
+            void characters(const XMLCh* const chars, const XMLSize_t length )
+            { current_text.append(chars, length); }
 #endif
     
-      private:
-        bool in_message_var()
-        { return xml::in_message_var(parents_); }
-        bool in_header_var()
-        { return xml::in_header_var(parents_); }
-        bool in_publish()
-        { return xml::in_publish(parents_); }
+          private:
+            bool in_message_var()
+            { return xml::in_message_var(parents_); }
+            bool in_header_var()
+            { return xml::in_header_var(parents_); }
+            bool in_publish()
+            { return xml::in_publish(parents_); }
  
-      private:
-        std::vector<QueueConfig>& q_;
-        XercesString current_text;
+          private:
+            std::vector<QueueConfig>& q_;
+            XercesString current_text;
         
-        std::set<xml::Tag> parents_;
-        std::map<std::string, xml::Tag> tags_map_;
-    };
+            std::set<xml::Tag> parents_;
+            std::map<std::string, xml::Tag> tags_map_;
+        };
 
 // Receives Error notifications.
-    class QueueErrorHandler : public xercesc::DefaultHandler 
-    {
+        class QueueErrorHandler : public xercesc::DefaultHandler 
+        {
 
-      public:
-        void warning(const xercesc::SAXParseException& e)
-        {
-            std::cout << "warning:" << toNative(e.getMessage());
-        }
-        void error(const xercesc::SAXParseException& e)
-        {
-            XMLSSize_t line = e.getLineNumber();
-            std::stringstream ss;
-            ss << "xml parsing error on line " << line << ": " << std::endl << toNative(e.getMessage());
+          public:
+            void warning(const xercesc::SAXParseException& e)
+            {
+                std::cout << "warning:" << toNative(e.getMessage());
+            }
+            void error(const xercesc::SAXParseException& e)
+            {
+                XMLSSize_t line = e.getLineNumber();
+                std::stringstream ss;
+                ss << "xml parsing error on line " << line << ": " << std::endl << toNative(e.getMessage());
             
-            throw std::runtime_error(ss.str());
-        }
-        void fatalError(const xercesc::SAXParseException& e) 
-        {
-            error(e);
-        }
-    };
-}
+                throw std::runtime_error(ss.str());
+            }
+            void fatalError(const xercesc::SAXParseException& e) 
+            {
+                error(e);
+            }
+        };
+    }
 }
 
 #endif

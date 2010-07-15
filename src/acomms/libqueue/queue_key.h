@@ -21,41 +21,41 @@
 #define QueueKey20091211H
 namespace goby
 {
-namespace queue
-{    
-    /// forms a unique key for a given message %queue
-    class QueueKey 
-    {
-      public:
-      QueueKey(QueueType type = queue_notype, unsigned id = 0)
-          : type_(type),
-            id_(id)
-            { }
+    namespace acomms
+    {    
+        /// forms a unique key for a given message %queue
+        class QueueKey 
+        {
+          public:
+            QueueKey(QueueType type = queue_notype, unsigned id = 0)
+                : type_(type),
+                id_(id)
+                { }
 
-        /// set the key type
-        void set_type(QueueType type) { type_ = type; }
-        /// set the key id (DCCL id for type = queue_dccl, CCL id for type = queue_ccl)
-        void set_id(unsigned id)      { id_ = id; }        
+            /// set the key type
+            void set_type(QueueType type) { type_ = type; }
+            /// set the key id (DCCL id for type = queue_dccl, CCL id for type = queue_ccl)
+            void set_id(unsigned id)      { id_ = id; }        
 
-        /// \return the key type
-        QueueType type() const { return type_; }
-        /// \return the key id
-        unsigned id() const { return id_; }        
+            /// \return the key type
+            QueueType type() const { return type_; }
+            /// \return the key id
+            unsigned id() const { return id_; }        
         
-      private:
-        QueueType type_;
-        unsigned id_;
-    };
+          private:
+            QueueType type_;
+            unsigned id_;
+        };
 
-    inline std::ostream& operator<< (std::ostream& out, const QueueKey& qk)
-    { return out << "type: " << qk.type() << " | " << "id: " << qk.id(); }
+        inline std::ostream& operator<< (std::ostream& out, const QueueKey& qk)
+        { return out << "type: " << qk.type() << " | " << "id: " << qk.id(); }
     
-    inline bool operator<(const QueueKey& a, const QueueKey& b)
-    { return (a.id() == b.id()) ? a.type() < b.type() : a.id() < b.id(); }
+        inline bool operator<(const QueueKey& a, const QueueKey& b)
+        { return (a.id() == b.id()) ? a.type() < b.type() : a.id() < b.id(); }
 
-    inline bool operator==(const QueueKey& a, const QueueKey& b)
-    { return (a.id() == b.id()) && (a.type() == b.type()); }
+        inline bool operator==(const QueueKey& a, const QueueKey& b)
+        { return (a.id() == b.id()) && (a.type() == b.type()); }
 
-}
+    }
 }
 #endif

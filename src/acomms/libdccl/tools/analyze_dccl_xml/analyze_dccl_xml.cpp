@@ -16,7 +16,7 @@
 #include "goby/acomms/dccl.h"
 #include <iostream>
 
-using goby::dccl::operator<<;
+using goby::acomms::operator<<;
 
 int main(int argc, char* argv[])
 {
@@ -38,7 +38,7 @@ int main(int argc, char* argv[])
     std::cout << "creating DCCLCodec using xml file: [" << xml_file << "] and schema: [" << xml_schema << "]" << std::endl;
     std::cout << "schema must be specified with an absolute path or a relative path to the xml file location (not pwd!)" << std::endl;
     
-    goby::dccl::DCCLCodec dccl(xml_file, xml_schema);
+    goby::acomms::DCCLCodec dccl(xml_file, xml_schema);
 
     std::cout << "parsed file ok!" << std::endl;
     

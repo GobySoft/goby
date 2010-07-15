@@ -20,14 +20,14 @@
 #include "goby/acomms/dccl.h"
 #include <iostream>
 
-using goby::dccl::operator<<;
+using goby::acomms::operator<<;
 
 int main()
 {
     // initialize input contents to encoder. since
     // simple.xml only has a <string/> message var
     // we only need one map.
-    std::map<std::string, goby::dccl::MessageVal> val_map;
+    std::map<std::string, goby::acomms::DCCLMessageVal> val_map;
 
     //  initialize output hexadecimal
     std::string hex;
@@ -37,7 +37,7 @@ int main()
     // instantiate the parser with a single xml file (simple.xml).
     // also pass the schema, relative to simple.xml, for XML validity
     // checking (syntax).
-    goby::dccl::DCCLCodec dccl(DCCL_EXAMPLES_DIR "/dccl_simple/simple.xml",
+    goby::acomms::DCCLCodec dccl(DCCL_EXAMPLES_DIR "/dccl_simple/simple.xml",
                          "../../message_schema.xsd");
 
     

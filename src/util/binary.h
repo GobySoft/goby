@@ -30,7 +30,7 @@
 
 namespace goby
 {
-namespace bin
+namespace util
 {
     
     //

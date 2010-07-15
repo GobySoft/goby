@@ -18,20 +18,20 @@
 
 #include "flex_ostream.h"
 
-void goby::logger::FlexOstream::name(const std::string& s)
+void goby::util::FlexOstream::name(const std::string& s)
 { sb_.name(s); }
 
-void goby::logger::FlexOstream::group(const std::string& s)
+void goby::util::FlexOstream::group(const std::string& s)
 { sb_.group_name(s); }
 
-void goby::logger::FlexOstream::verbosity(const std::string& s)
+void goby::util::FlexOstream::verbosity(const std::string& s)
 { sb_.verbosity(s); }
     
-void goby::logger::FlexOstream::die_flag(bool b)
+void goby::util::FlexOstream::die_flag(bool b)
 { sb_.die_flag(b); }
 
     
-void goby::logger::FlexOstream::add_group(const std::string& name,
+void goby::util::FlexOstream::add_group(const std::string& name,
                          const std::string& heartbeat /* = "." */,
                          const std::string& color /* = "nocolor" */,
                          const std::string& description /* = "" */)
@@ -46,7 +46,7 @@ void goby::logger::FlexOstream::add_group(const std::string& name,
                   << " ]" << std::endl;
 }
 
-std::ostream& goby::logger::FlexOstream::operator<<(std::ostream& (*pf) (std::ostream&))
+std::ostream& goby::util::FlexOstream::operator<<(std::ostream& (*pf) (std::ostream&))
 {
     if(pf == die) die_flag(true);
     return (quiet()) ? *this : std::ostream::operator<<(pf);

@@ -23,74 +23,74 @@
 #include "message_var.h"
 namespace goby
 {
-namespace dccl
-{   
-    class MessageVarString : public MessageVar
-    {
-      public:
-      MessageVarString()
-          : MessageVar(),
-            max_length_(0)
+    namespace acomms
+    {   
+        class DCCLMessageVarString : public DCCLMessageVar
+        {
+          public:
+          DCCLMessageVarString()
+              : DCCLMessageVar(),
+                max_length_(0)
+                { }
+
+            int calc_size() const
+            { return max_length_*acomms::BITS_IN_BYTE; }
+
+            void set_max_length(unsigned max_length) {max_length_ = max_length;}
+            void set_max_length(const std::string& s) { set_max_length(boost::lexical_cast<unsigned>(s)); }
+
+            unsigned max_length() const {return max_length_;}        
+
+            DCCLType type() const  { return dccl_string; }
+        
+          private:
+            void initialize_specific()
             { }
-
-        int calc_size() const
-        { return max_length_*acomms::BITS_IN_BYTE; }
-
-        void set_max_length(unsigned max_length) {max_length_ = max_length;}
-        void set_max_length(const std::string& s) { set_max_length(boost::lexical_cast<unsigned>(s)); }
-
-        unsigned max_length() const {return max_length_;}        
-
-        DCCLType type() const  { return dccl_string; }
         
-      private:
-        void initialize_specific()
-        { }
-        
-        boost::dynamic_bitset<unsigned char> encode_specific(const MessageVal& v)
-        {
-            unsigned size = calc_size();            
-            boost::dynamic_bitset<unsigned char> bits(size);
-
-            std::string s = v;
-            
-            // tack on null terminators (probably a byte of zeros in ASCII)
-            s += std::string(max_length_, '\0');
-            
-            // one byte per char
-            for (size_t j = 0; j < (size_t)max_length_; ++j)
+            boost::dynamic_bitset<unsigned char> encode_specific(const DCCLMessageVal& v)
             {
-                bits <<= acomms::BITS_IN_BYTE;
-                bits |= boost::dynamic_bitset<unsigned char>(size, s[j]);;
+                unsigned size = calc_size();            
+                boost::dynamic_bitset<unsigned char> bits(size);
+
+                std::string s = v;
+            
+                // tack on null terminators (probably a byte of zeros in ASCII)
+                s += std::string(max_length_, '\0');
+            
+                // one byte per char
+                for (size_t j = 0; j < (size_t)max_length_; ++j)
+                {
+                    bits <<= acomms::BITS_IN_BYTE;
+                    bits |= boost::dynamic_bitset<unsigned char>(size, s[j]);;
+                }
+                return bits;
             }
-            return bits;
-        }
         
 
-        MessageVal decode_specific(boost::dynamic_bitset<unsigned char>& b)
-        {
-            char s[max_length_+1];
-            s[max_length_] = '\0';
-            
-            for (size_t j = 0; j < max_length_; ++j)
+            DCCLMessageVal decode_specific(boost::dynamic_bitset<unsigned char>& b)
             {
-                s[max_length_-j-1] = (b & boost::dynamic_bitset<unsigned char>(calc_size(), 0xff)).to_ulong();
-                b >>= acomms::BITS_IN_BYTE;
-            }
+                char s[max_length_+1];
+                s[max_length_] = '\0';
             
-            if(!std::string(s).empty())
-                return MessageVal(std::string(s));
-            else
-                return MessageVal();
-        }
+                for (size_t j = 0; j < max_length_; ++j)
+                {
+                    s[max_length_-j-1] = (b & boost::dynamic_bitset<unsigned char>(calc_size(), 0xff)).to_ulong();
+                    b >>= acomms::BITS_IN_BYTE;
+                }
+            
+                if(!std::string(s).empty())
+                    return DCCLMessageVal(std::string(s));
+                else
+                    return DCCLMessageVal();
+            }
 
-        void get_display_specific(std::stringstream& ss) const
-        { }        
+            void get_display_specific(std::stringstream& ss) const
+            { }        
 
-      private:
-        unsigned max_length_;
+          private:
+            unsigned max_length_;
 
-    };
-}
+        };
+    }
 }
 #endif

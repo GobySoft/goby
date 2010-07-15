@@ -30,44 +30,44 @@
 #include <boost/function.hpp>
 namespace goby
 {
-namespace dccl
-{
-    class MessageVal;
-    
-    /// \brief boost::function for a function taking a single dccl::MessageVal reference. Used for algorithm callbacks.
-    ///
-    /// Think of this as a generalized version of a function pointer (void (*)(dccl::MessageVal&)). See http://www.boost.org/doc/libs/1_34_0/doc/html/function.html for more on boost:function.
-    typedef boost::function<void (MessageVal&)> AlgFunction1;
-    /// \brief boost::function for a function taking a dccl::MessageVal reference, and the MessageVal of a second part of the message. Used for algorithm callbacks.
-    ///
-    /// Think of this as a generalized version of a function pointer (void (*)(MessageVal&, const MessageVal&). See http://www.boost.org/doc/libs/1_34_0/doc/html/function.html for more on boost:function.
-    typedef boost::function<void (MessageVal&, const std::vector<MessageVal>&)> AlgFunction2;
-
-    class AlgorithmPerformer
+    namespace acomms
     {
-      public:
-        static AlgorithmPerformer* getInstance();
+        class DCCLMessageVal;
+    
+        /// \brief boost::function for a function taking a single DCCLMessageVal reference. Used for algorithm callbacks.
+        ///
+        /// Think of this as a generalized version of a function pointer (void (*)(DCCLMessageVal&)). See http://www.boost.org/doc/libs/1_34_0/doc/html/function.html for more on boost:function.
+        typedef boost::function<void (DCCLMessageVal&)> AlgFunction1;
+        /// \brief boost::function for a function taking a dccl::MessageVal reference, and the MessageVal of a second part of the message. Used for algorithm callbacks.
+        ///
+        /// Think of this as a generalized version of a function pointer (void (*)(DCCLMessageVal&, const DCCLMessageVal&). See http://www.boost.org/doc/libs/1_34_0/doc/html/function.html for more on boost:function.
+        typedef boost::function<void (DCCLMessageVal&, const std::vector<DCCLMessageVal>&)> AlgFunction2;
 
-        void algorithm(MessageVal& in, unsigned array_index, const std::string& algorithm, const std::map<std::string,std::vector<MessageVal> >& vals);
-        
-        void add_algorithm(const std::string& name, AlgFunction1 func)
-        { adv_map1_[name] = func; }
+        class DCCLAlgorithmPerformer
+        {
+          public:
+            static DCCLAlgorithmPerformer* getInstance();
 
-        void add_algorithm(const std::string& name, AlgFunction2 func)
-        { adv_map2_[name] = func; }
+            void algorithm(DCCLMessageVal& in, unsigned array_index, const std::string& algorithm, const std::map<std::string,std::vector<DCCLMessageVal> >& vals);
         
-      private:
-        static AlgorithmPerformer* inst_;
-        std::map<std::string, AlgFunction1> adv_map1_;
-        std::map<std::string, AlgFunction2> adv_map2_;
+            void add_algorithm(const std::string& name, AlgFunction1 func)
+            { adv_map1_[name] = func; }
+
+            void add_algorithm(const std::string& name, AlgFunction2 func)
+            { adv_map2_[name] = func; }
         
-        AlgorithmPerformer()
-        {}
+          private:
+            static DCCLAlgorithmPerformer* inst_;
+            std::map<std::string, AlgFunction1> adv_map1_;
+            std::map<std::string, AlgFunction2> adv_map2_;
         
-        AlgorithmPerformer(const AlgorithmPerformer&);
-        AlgorithmPerformer& operator = (const AlgorithmPerformer&);
+            DCCLAlgorithmPerformer()
+            {}
+        
+            DCCLAlgorithmPerformer(const DCCLAlgorithmPerformer&);
+            DCCLAlgorithmPerformer& operator = (const DCCLAlgorithmPerformer&);
       
-    };
-}
+        };
+    }
 }
 #endif

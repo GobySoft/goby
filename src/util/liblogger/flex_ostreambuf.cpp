@@ -27,7 +27,7 @@
 
 using namespace goby::tcolor;
 
-goby::logger::FlexOStreamBuf::FlexOStreamBuf(): name_("no name"),
+goby::util::FlexOStreamBuf::FlexOStreamBuf(): name_("no name"),
                                   verbosity_(verbose),
                                   die_flag_(false),
                                   curses_(0)
@@ -42,12 +42,12 @@ goby::logger::FlexOStreamBuf::FlexOStreamBuf(): name_("no name"),
     groups_[""] = no_group;    
 }
 
-goby::logger::FlexOStreamBuf::~FlexOStreamBuf()
+goby::util::FlexOStreamBuf::~FlexOStreamBuf()
 {
     if(curses_) delete curses_;
 }
 
-void goby::logger::FlexOStreamBuf::verbosity(const std::string & s)
+void goby::util::FlexOStreamBuf::verbosity(const std::string & s)
 {
     verbosity_ = verbosity_map_[s];
     
@@ -67,7 +67,7 @@ void goby::logger::FlexOStreamBuf::verbosity(const std::string & s)
     }
 }
 
-void goby::logger::FlexOStreamBuf::add_group(const std::string & name, Group g)
+void goby::util::FlexOStreamBuf::add_group(const std::string & name, Group g)
 {
     groups_[name] = g;
     
@@ -80,7 +80,7 @@ void goby::logger::FlexOStreamBuf::add_group(const std::string & name, Group g)
 
 
 // called when flush() or std::endl
-int goby::logger::FlexOStreamBuf::sync()
+int goby::util::FlexOStreamBuf::sync()
 {
     std::istream is(this);
     std::string s;
@@ -104,7 +104,7 @@ int goby::logger::FlexOStreamBuf::sync()
     return 0;
 }
 
-void goby::logger::FlexOStreamBuf::display(const std::string & s)
+void goby::util::FlexOStreamBuf::display(const std::string & s)
 {
     bool is_group = groups_.count(group_name_);
 

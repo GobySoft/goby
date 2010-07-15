@@ -26,13 +26,13 @@
 #include <iostream>
 
 using namespace goby;
-using goby::dccl::operator<<;
+using goby::acomms::operator<<;
 
 int main()
 {
     std::cout << "loading nafcon xml files" << std::endl;
 
-    dccl::DCCLCodec dccl;
+    acomms::DCCLCodec dccl;
     dccl.add_xml_message_file(DCCL_EXAMPLES_DIR "/plusnet/nafcon_command.xml", "../../message_schema.xsd");
     dccl.add_xml_message_file(DCCL_EXAMPLES_DIR "/plusnet/nafcon_report.xml", "../../message_schema.xsd");
     
@@ -46,10 +46,10 @@ int main()
               << std::string(30, '#') << std::endl;
 
     // initialize input contents to encoder
-    std::map<std::string, dccl::MessageVal> in_vals;
+    std::map<std::string, acomms::DCCLMessageVal> in_vals;
 
     // initialize output message
-    modem::Message msg;
+    acomms::ModemMessage msg;
 
     in_vals["PLUSNET_MESSAGES"] = "MessageType=SENSOR_STATUS,SensorReportType=0,SourcePlatformId=1,DestinationPlatformId=3,Timestamp=1191947446.91117,NodeLatitude=47.7448,NodeLongitude=-122.845,NodeDepth=0.26,NodeCEP=0,NodeHeading=169.06,NodeSpeed=0,MissionState=2,MissionType=2,LastGPSTimestamp=1191947440,PowerLife=6,SensorHealth=0,RecorderState=1,RecorderLife=0,NodeSpecificInfo0=0,NodeSpecificInfo1=0,NodeSpecificInfo2=23,NodeSpecificInfo3=0,NodeSpecificInfo4=3,NodeSpecificInfo5=0";
 
@@ -58,15 +58,15 @@ int main()
     
     dccl.pubsub_encode("SENSOR_STATUS", msg, in_vals);
     
-    std::cout << "received dccl::Message: "
+    std::cout << "received acomms::DCCLMessage: "
               << msg.serialize()
               << std::endl;
 
     
-    std::multimap<std::string, dccl::MessageVal> out_vals;
+    std::multimap<std::string, acomms::DCCLMessageVal> out_vals;
 
     
-    std::cout << "passed dccl::Message to decoder: " 
+    std::cout << "passed acomms::DCCLMessage to decoder: " 
               << msg.serialize()
               << std::endl;
 

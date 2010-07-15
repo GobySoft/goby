@@ -23,20 +23,20 @@
 
 #include "driver_base.h"
 
-goby::modem::DriverBase::DriverBase(std::ostream* os, const std::string& line_delimiter)
+goby::acomms::ModemDriverBase::ModemDriverBase(std::ostream* os, const std::string& line_delimiter)
     : serial_delimiter_(line_delimiter),
       os_(os)
 {
     
 }
 
-void goby::modem::DriverBase::serial_write(const std::string& out)
+void goby::acomms::ModemDriverBase::serial_write(const std::string& out)
 {
     serial_->write(out);
     if(callback_out_raw) callback_out_raw(out);
 }
 
-bool goby::modem::DriverBase::serial_read(std::string& in)
+bool goby::acomms::ModemDriverBase::serial_read(std::string& in)
 {
     // SerialClient can write to this deque, so lock it
     boost::mutex::scoped_lock lock(in_mutex_);
@@ -53,14 +53,14 @@ bool goby::modem::DriverBase::serial_read(std::string& in)
     }
 }
 
-void goby::modem::DriverBase::serial_start()
+void goby::acomms::ModemDriverBase::serial_start()
 {        
     if(os_) *os_ << group("mm_out") << "opening serial port " << serial_port_
           << " @ " << baud_ << std::endl;
     
     try
     {
-        serial_ = serial::SerialClient::getInstance(serial_port_, baud_, &in_, &in_mutex_, serial_delimiter_);
+        serial_ = util::SerialClient::getInstance(serial_port_, baud_, &in_, &in_mutex_, serial_delimiter_);
         serial_->start();
     }
     catch (...)

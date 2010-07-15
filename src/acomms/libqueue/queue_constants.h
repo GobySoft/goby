@@ -18,19 +18,20 @@
 #ifndef QueueConstants20091205H
 #define QueueConstants20091205H
 
-#include "goby/util/gtime.h"
+#include "goby/util/time.h"
+
 namespace goby
 {
-namespace queue
-{
-    // largest allowed id 
-    const unsigned MAX_ID = 63;
-    const unsigned MULTIMESSAGE_MASK = 1 << 7;
-    const unsigned BROADCAST_MASK = 1 << 6;
-    const unsigned VAR_ID_MASK = 0xFF ^ MULTIMESSAGE_MASK ^ BROADCAST_MASK;
+    namespace acomms
+    {
+        // largest allowed id 
+        const unsigned MAX_ID = 63;
+        const unsigned MULTIMESSAGE_MASK = 1 << 7;
+        const unsigned BROADCAST_MASK = 1 << 6;
+        const unsigned VAR_ID_MASK = 0xFF ^ MULTIMESSAGE_MASK ^ BROADCAST_MASK;
 
-    // how old an on_demand message can be before re-encoding
-    const boost::posix_time::time_duration ON_DEMAND_SKEW = boost::posix_time::seconds(1);    
-}
+        // how old an on_demand message can be before re-encoding
+        const boost::posix_time::time_duration ON_DEMAND_SKEW = boost::posix_time::seconds(1);    
+    }
 }
 #endif

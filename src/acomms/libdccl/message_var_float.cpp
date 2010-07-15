@@ -21,15 +21,15 @@
 
 #include "goby/util/sci.h"
 
-goby::dccl::MessageVarFloat::MessageVarFloat(double max /*= std::numeric_limits<double>::max()*/, double min /*= 0*/, double precision /*= 0*/)
-    : MessageVar(),
+goby::acomms::DCCLMessageVarFloat::DCCLMessageVarFloat(double max /*= std::numeric_limits<double>::max()*/, double min /*= 0*/, double precision /*= 0*/)
+    : DCCLMessageVar(),
       max_(max),
       min_(min),
       precision_(precision),
       max_delta_(acomms::NaN)
 { }
 
-int goby::dccl::MessageVarFloat::calc_total_size() const
+int goby::acomms::DCCLMessageVarFloat::calc_total_size() const
 {
     if(using_delta_differencing())
         // key frame + N-1 delta frames
@@ -39,7 +39,7 @@ int goby::dccl::MessageVarFloat::calc_total_size() const
         return array_length_*key_size();
 }
         
-void goby::dccl::MessageVarFloat::initialize_specific()
+void goby::acomms::DCCLMessageVarFloat::initialize_specific()
 {
     // flip max and min if needed
     if(max_ < min_)
@@ -53,7 +53,7 @@ void goby::dccl::MessageVarFloat::initialize_specific()
         max_delta_ = -max_delta_;
 }
         
-boost::dynamic_bitset<unsigned char> goby::dccl::MessageVarFloat::encode_specific(const MessageVal& v)
+boost::dynamic_bitset<unsigned char> goby::acomms::DCCLMessageVarFloat::encode_specific(const DCCLMessageVal& v)
 {
     double r;
     if(!v.get(r) || (r < min() || r > max())) return boost::dynamic_bitset<unsigned char>();
@@ -69,29 +69,25 @@ boost::dynamic_bitset<unsigned char> goby::dccl::MessageVarFloat::encode_specifi
         r -= min_;
     }
     
-    r *= pow(10.0, static_cast<double>(precision_));
-    r = sci::unbiased_round(r, 0);
+    r *= pow(10.0, double(precision_));
+    r = util::unbiased_round(r, 0);
 
     return boost::dynamic_bitset<unsigned char>(calc_size(), static_cast<unsigned long>(r)+1);
 }        
         
-goby::dccl::MessageVal goby::dccl::MessageVarFloat::decode_specific(boost::dynamic_bitset<unsigned char>& b)
+goby::acomms::DCCLMessageVal goby::acomms::DCCLMessageVarFloat::decode_specific(boost::dynamic_bitset<unsigned char>& b)
 {            
     unsigned long t = b.to_ulong();
-    if(!t) return MessageVal();
+    if(!t) return DCCLMessageVal();
                 
     --t;
     if(is_delta())
-    {
-        return cast(static_cast<double>(t) / (pow(10.0, static_cast<double>(precision_))) - double(max_delta_) + double(key_val_), precision_);
-    }
+        return cast(double(t) / (pow(10.0, double(precision_))) - double(max_delta_) + double(key_val_), precision_);
     else
-    {
-        return cast(static_cast<double>(t) / (pow(10.0, static_cast<double>(precision_))) + min_, precision_);
-    }
+        return cast(double(t) / (pow(10.0, double(precision_))) + min_, precision_);
 }
 
-void goby::dccl::MessageVarFloat::get_display_specific(std::stringstream& ss) const
+void goby::acomms::DCCLMessageVarFloat::get_display_specific(std::stringstream& ss) const
 {
     ss << "\t\t[min, max] = [" << min_ << "," << max_ << "]" << std::endl;
     ss << "\t\tprecision: {" << precision_ << "}" << std::endl;   

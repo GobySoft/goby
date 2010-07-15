@@ -24,9 +24,9 @@
 
 namespace goby
 {
-namespace serial
+namespace util
 {    
-    class SerialClient: public comms::ClientBase<asio::serial_port>
+    class SerialClient: public ClientBase<asio::serial_port>
     {
       public:
         static SerialClient* getInstance(const std::string& name,

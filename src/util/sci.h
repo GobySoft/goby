@@ -26,7 +26,7 @@
 
 namespace goby
 {
-    namespace sci
+    namespace util
     {
         //
         // SCIENCE

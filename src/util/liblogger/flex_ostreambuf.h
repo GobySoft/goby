@@ -32,7 +32,7 @@
 
 namespace goby
 {
-namespace logger
+namespace util
 {    
 // stringbuf that allows us to insert things before the stream and control output
 class FlexOStreamBuf : public std::stringbuf

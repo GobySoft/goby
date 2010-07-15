@@ -27,8 +27,8 @@
 #include "goby/acomms/modem_driver.h"
 #include <iostream>
 
-bool data_request(const goby::modem::Message&, goby::modem::Message&);
-void data_receive(const goby::modem::Message&);
+bool data_request(const goby::acomms::ModemMessage&, goby::acomms::ModemMessage&);
+void data_receive(const goby::acomms::ModemMessage&);
 
 int main(int argc, char* argv[])
 {
@@ -42,7 +42,7 @@ int main(int argc, char* argv[])
     // 1. Create and initialize the driver we want (currently WHOI Micro-Modem)
     //
     
-    goby::micromodem::MMDriver mm_driver(&std::cout);
+    goby::acomms::MMDriver mm_driver(&std::cout);
 
     // set the serial port given on the command line
     mm_driver.set_serial_port(argv[1]);
@@ -67,7 +67,7 @@ int main(int argc, char* argv[])
     // 3. Initiate a transmission cycle
     //
     
-    goby::modem::Message transmit_init_message;
+    goby::acomms::ModemMessage transmit_init_message;
     transmit_init_message.set_src(our_id);
     transmit_init_message.set_dest(goby::acomms::BROADCAST_ID);
     // one frame @ 32 bytes
@@ -94,7 +94,7 @@ int main(int argc, char* argv[])
 // 5. Handle the data request ($CADRQ)
 //
 
-bool data_request(const goby::modem::Message& request_message, goby::modem::Message& message_out)
+bool data_request(const goby::acomms::ModemMessage& request_message, goby::acomms::ModemMessage& message_out)
 {
     message_out.set_src(request_message.src());
     message_out.set_dest(request_message.dest());
@@ -108,7 +108,7 @@ bool data_request(const goby::modem::Message& request_message, goby::modem::Mess
 // 6. Post the received data 
 //
 
-void data_receive(const goby::modem::Message& message_in)
+void data_receive(const goby::acomms::ModemMessage& message_in)
 {
     std::cout << "got a message: " << message_in << std::endl;
     std::cout << "\t" << "data: " << message_in.data() << std::endl;

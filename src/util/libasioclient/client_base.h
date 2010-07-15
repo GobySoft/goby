@@ -33,7 +33,7 @@
 
 namespace goby
 {
-namespace comms
+namespace util
 {
     // seconds to wait before trying a reconnect
     const unsigned RETRY_INTERVAL = 10;

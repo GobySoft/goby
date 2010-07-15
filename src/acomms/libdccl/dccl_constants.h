@@ -33,7 +33,7 @@
 namespace goby
 {
 
-namespace dccl
+namespace acomms
 {
 
 /// Enumeration of DCCL types used for sending messages. dccl_enum and dccl_string primarily map to cpp_string, dccl_bool to cpp_bool, dccl_int to cpp_long, dccl_float to cpp_double

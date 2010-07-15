@@ -22,193 +22,194 @@
 
 #include "message_var.h"
 
-#include "goby/util/gtime.h"
+#include "goby/util/time.h"
 #include "goby/util/sci.h"
+
 namespace goby
 {
-namespace dccl
-{    
-    class MessageVarHead : public MessageVarInt
-    {
-      public:
-      MessageVarHead(const std::string& default_name, int bit_size)
-          : MessageVarInt(pow(2, bit_size)-1, 0),
-            bit_size_(bit_size),
-            default_name_(default_name)
-            { set_name(default_name); }
+    namespace acomms
+    {    
+        class DCCLMessageVarHead : public DCCLMessageVarInt
+        {
+          public:
+          DCCLMessageVarHead(const std::string& default_name, int bit_size)
+              : DCCLMessageVarInt(pow(2, bit_size)-1, 0),
+                bit_size_(bit_size),
+                default_name_(default_name)
+                { set_name(default_name); }
 
-        int calc_size() const
-        { return bit_size_; }        
+            int calc_size() const
+            { return bit_size_; }        
 
-        int calc_total_size() const
-        { return bit_size_; }
+            int calc_total_size() const
+            { return bit_size_; }
             
         
-      private:
-        void initialize_specific()
-        {
-            if(default_name_ == name_) source_var_.clear();
-        }
+          private:
+            void initialize_specific()
+            {
+                if(default_name_ == name_) source_var_.clear();
+            }
 
-        virtual void set_defaults_specific(MessageVal& v, unsigned modem_id, unsigned id)
-        { }
-        
-        virtual boost::dynamic_bitset<unsigned char> encode_specific(const MessageVal& v)
-        { return boost::dynamic_bitset<unsigned char>(calc_size(), long(v)); }
-        
-        virtual MessageVal decode_specific(boost::dynamic_bitset<unsigned char>& b)
-        { return MessageVal(long(b.to_ulong())); }
-        
-      protected:
-        int bit_size_;
-        std::string default_name_;
-    };
-    
-    class MessageVarTime : public MessageVarHead
-    {
-      public:
-      MessageVarTime():
-        MessageVarHead(acomms::DCCL_HEADER_NAMES[acomms::head_time],
-                       acomms::head_time_size)
-        { }
-
-        void set_defaults_specific(MessageVal& v, unsigned modem_id, unsigned id)
-        {
-            double d;
-            v = (!v.empty() && v.get(d)) ? v : MessageVal(gtime::ptime2unix_double(gtime::now()));
-        }
-        
-        boost::dynamic_bitset<unsigned char> encode_specific(const MessageVal& v)
-        {
-            // trim to time of day
-            boost::posix_time::time_duration time_of_day = gtime::unix_double2ptime(v).time_of_day();
-            
-            return boost::dynamic_bitset<unsigned char>(calc_size(), long(sci::unbiased_round(gtime::time_duration2double(time_of_day), 0)));    
-        }
-        
-        MessageVal decode_specific(boost::dynamic_bitset<unsigned char>& b)
-        {
-            // add the date back in (assumes message sent the same day received)
-            MessageVal v(long(b.to_ulong()));
-
-            using namespace boost::posix_time;
-            using namespace boost::gregorian;
-            
-            ptime now = gtime::now();
-            date day_sent;
-
-            // this logic will break if there is a separation between message sending and
-            // message receipt of greater than 1/2 day (twelve hours)
-            
-            // if message is from part of the day removed from us by 12 hours, we assume it
-            // was sent yesterday
-            if(abs(now.time_of_day().total_seconds() - double(v)) > hours(12).total_seconds())
-                day_sent = now.date() - days(1);
-            else // otherwise figure it was sent today
-                day_sent = now.date();
-            
-            v.set(double(v) + gtime::ptime2unix_double(ptime(day_sent,seconds(0))));
-            return v;
-        }
-    };
-
-    class MessageVarCCLID : public MessageVarHead
-    {
-      public:
-      MessageVarCCLID():
-        MessageVarHead(acomms::DCCL_HEADER_NAMES[acomms::head_ccl_id],
-               acomms::head_ccl_id_size) { }        
-
-        void set_defaults_specific(MessageVal& v, unsigned modem_id, unsigned id)
-        {
-            v = long(acomms::DCCL_CCL_HEADER);
-        }        
-    };
-    
-    class MessageVarDCCLID : public MessageVarHead
-    {
-      public:
-      MessageVarDCCLID()
-          : MessageVarHead(acomms::DCCL_HEADER_NAMES[acomms::head_dccl_id],
-                           acomms::head_dccl_id_size)
-        { }
-        
-        void set_defaults_specific(MessageVal& v, unsigned modem_id, unsigned id)
-        {
-            long l;
-            v = (!v.empty() && v.get(l)) ? v : MessageVal(long(id));
-        }
-    };
-
-    class MessageVarSrc : public MessageVarHead
-    {
-      public:
-      MessageVarSrc()
-          : MessageVarHead(acomms::DCCL_HEADER_NAMES[acomms::head_src_id],
-                           acomms::head_src_id_size)
+            virtual void set_defaults_specific(DCCLMessageVal& v, unsigned modem_id, unsigned id)
             { }
         
-        void set_defaults_specific(MessageVal& v, unsigned modem_id, unsigned id)
-        {
-            long l;
-            v = (!v.empty() && v.get(l)) ? v : MessageVal(long(modem_id));
-        }        
-    };
-
-    class MessageVarDest : public MessageVarHead
-    {
-      public:
-      MessageVarDest():
-        MessageVarHead(acomms::DCCL_HEADER_NAMES[acomms::head_dest_id],
-                       acomms::head_dest_id_size) { }
-
-        void set_defaults_specific(MessageVal& v, unsigned modem_id, unsigned id)
-        {
-            long l;
-            v = (!v.empty() && v.get(l)) ? v : MessageVal(long(acomms::BROADCAST_ID));
-        }
-    };
-
-    class MessageVarMultiMessageFlag : public MessageVarHead
-    {
-      public:
-      MessageVarMultiMessageFlag():
-        MessageVarHead(acomms::DCCL_HEADER_NAMES[acomms::head_multimessage_flag],
-                       acomms::head_flag_size) { }
+            virtual boost::dynamic_bitset<unsigned char> encode_specific(const DCCLMessageVal& v)
+            { return boost::dynamic_bitset<unsigned char>(calc_size(), long(v)); }
         
-        boost::dynamic_bitset<unsigned char> encode_specific(const MessageVal& v)
-        { return boost::dynamic_bitset<unsigned char>(calc_size(), bool(v)); }
+            virtual DCCLMessageVal decode_specific(boost::dynamic_bitset<unsigned char>& b)
+            { return DCCLMessageVal(long(b.to_ulong())); }
         
-        MessageVal decode_specific(boost::dynamic_bitset<unsigned char>& b)
-        { return MessageVal(bool(b.to_ulong())); }        
-
-    };
+          protected:
+            int bit_size_;
+            std::string default_name_;
+        };
     
-    class MessageVarBroadcastFlag : public MessageVarHead
-    {
-      public:
-      MessageVarBroadcastFlag():
-        MessageVarHead(acomms::DCCL_HEADER_NAMES[acomms::head_broadcast_flag],
-                       acomms::head_flag_size) { }
+        class DCCLMessageVarTime : public DCCLMessageVarHead
+        {
+          public:
+          DCCLMessageVarTime():
+            DCCLMessageVarHead(acomms::DCCL_HEADER_NAMES[acomms::head_time],
+                               acomms::head_time_size)
+            { }
 
-        boost::dynamic_bitset<unsigned char> encode_specific(const MessageVal& v)
-        { return boost::dynamic_bitset<unsigned char>(calc_size(), bool(v)); }
+            void set_defaults_specific(DCCLMessageVal& v, unsigned modem_id, unsigned id)
+            {
+                double d;
+                v = (!v.empty() && v.get(d)) ? v : DCCLMessageVal(util::ptime2unix_double(util::goby_time()));
+            }
         
-        MessageVal decode_specific(boost::dynamic_bitset<unsigned char>& b)
-        { return MessageVal(bool(b.to_ulong())); }        
+            boost::dynamic_bitset<unsigned char> encode_specific(const DCCLMessageVal& v)
+            {
+                // trim to time of day
+                boost::posix_time::time_duration time_of_day = util::unix_double2ptime(v).time_of_day();
+            
+                return boost::dynamic_bitset<unsigned char>(calc_size(), long(util::unbiased_round(util::time_duration2double(time_of_day), 0)));    
+            }
+        
+            DCCLMessageVal decode_specific(boost::dynamic_bitset<unsigned char>& b)
+            {
+                // add the date back in (assumes message sent the same day received)
+                DCCLMessageVal v(long(b.to_ulong()));
 
-    };
+                using namespace boost::posix_time;
+                using namespace boost::gregorian;
+            
+                ptime now = util::goby_time();
+                date day_sent;
 
-    class MessageVarUnused : public MessageVarHead
-    {
-      public:
-      MessageVarUnused():
-        MessageVarHead(acomms::DCCL_HEADER_NAMES[acomms::head_unused],
-                       acomms::head_unused_size) { }
+                // this logic will break if there is a separation between message sending and
+                // message receipt of greater than 1/2 day (twelve hours)
+            
+                // if message is from part of the day removed from us by 12 hours, we assume it
+                // was sent yesterday
+                if(abs(now.time_of_day().total_seconds() - double(v)) > hours(12).total_seconds())
+                    day_sent = now.date() - days(1);
+                else // otherwise figure it was sent today
+                    day_sent = now.date();
+            
+                v.set(double(v) + util::ptime2unix_double(ptime(day_sent,seconds(0))));
+                return v;
+            }
+        };
+
+        class DCCLMessageVarCCLID : public DCCLMessageVarHead
+        {
+          public:
+          DCCLMessageVarCCLID():
+            DCCLMessageVarHead(acomms::DCCL_HEADER_NAMES[acomms::head_ccl_id],
+                               acomms::head_ccl_id_size) { }        
+
+            void set_defaults_specific(DCCLMessageVal& v, unsigned modem_id, unsigned id)
+            {
+                v = long(acomms::DCCL_CCL_HEADER);
+            }        
+        };
+    
+        class DCCLMessageVarDCCLID : public DCCLMessageVarHead
+        {
+          public:
+          DCCLMessageVarDCCLID()
+              : DCCLMessageVarHead(acomms::DCCL_HEADER_NAMES[acomms::head_dccl_id],
+                                   acomms::head_dccl_id_size)
+            { }
+        
+            void set_defaults_specific(DCCLMessageVal& v, unsigned modem_id, unsigned id)
+            {
+                long l;
+                v = (!v.empty() && v.get(l)) ? v : DCCLMessageVal(long(id));
+            }
+        };
+
+        class DCCLMessageVarSrc : public DCCLMessageVarHead
+        {
+          public:
+          DCCLMessageVarSrc()
+              : DCCLMessageVarHead(acomms::DCCL_HEADER_NAMES[acomms::head_src_id],
+                                   acomms::head_src_id_size)
+            { }
+        
+            void set_defaults_specific(DCCLMessageVal& v, unsigned modem_id, unsigned id)
+            {
+                long l;
+                v = (!v.empty() && v.get(l)) ? v : DCCLMessageVal(long(modem_id));
+            }        
+        };
+
+        class DCCLMessageVarDest : public DCCLMessageVarHead
+        {
+          public:
+          DCCLMessageVarDest():
+            DCCLMessageVarHead(acomms::DCCL_HEADER_NAMES[acomms::head_dest_id],
+                               acomms::head_dest_id_size) { }
+
+            void set_defaults_specific(DCCLMessageVal& v, unsigned modem_id, unsigned id)
+            {
+                long l;
+                v = (!v.empty() && v.get(l)) ? v : DCCLMessageVal(long(acomms::BROADCAST_ID));
+            }
+        };
+
+        class DCCLMessageVarMultiMessageFlag : public DCCLMessageVarHead
+        {
+          public:
+          DCCLMessageVarMultiMessageFlag():
+            DCCLMessageVarHead(acomms::DCCL_HEADER_NAMES[acomms::head_multimessage_flag],
+                               acomms::head_flag_size) { }
+        
+            boost::dynamic_bitset<unsigned char> encode_specific(const DCCLMessageVal& v)
+            { return boost::dynamic_bitset<unsigned char>(calc_size(), bool(v)); }
+        
+            DCCLMessageVal decode_specific(boost::dynamic_bitset<unsigned char>& b)
+            { return DCCLMessageVal(bool(b.to_ulong())); }        
+
+        };
+    
+        class DCCLMessageVarBroadcastFlag : public DCCLMessageVarHead
+        {
+          public:
+          DCCLMessageVarBroadcastFlag():
+            DCCLMessageVarHead(acomms::DCCL_HEADER_NAMES[acomms::head_broadcast_flag],
+                               acomms::head_flag_size) { }
+
+            boost::dynamic_bitset<unsigned char> encode_specific(const DCCLMessageVal& v)
+            { return boost::dynamic_bitset<unsigned char>(calc_size(), bool(v)); }
+        
+            DCCLMessageVal decode_specific(boost::dynamic_bitset<unsigned char>& b)
+            { return DCCLMessageVal(bool(b.to_ulong())); }        
+
+        };
+
+        class DCCLMessageVarUnused : public DCCLMessageVarHead
+        {
+          public:
+          DCCLMessageVarUnused():
+            DCCLMessageVarHead(acomms::DCCL_HEADER_NAMES[acomms::head_unused],
+                               acomms::head_unused_size) { }
 
 
-    };
+        };
 
-}
+    }
 }
 #endif

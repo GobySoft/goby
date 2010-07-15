@@ -30,7 +30,7 @@
 
 namespace goby
 {
-namespace serial
+namespace util
 {    
     class NMEASentence : public std::vector<std::string>
     {
@@ -71,7 +71,7 @@ namespace serial
 }
 
 // overloaded <<
-inline std::ostream& operator<< (std::ostream& out, const goby::serial::NMEASentence& nmea)
+inline std::ostream& operator<< (std::ostream& out, const goby::util::NMEASentence& nmea)
 { out << nmea.message(); return out; }
 
 #endif

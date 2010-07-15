@@ -27,7 +27,7 @@
 
 namespace goby
 {
-namespace logger
+namespace util
 {    
 // ostream extended class for holding the FlexOStreamBuf
 class FlexOstream : public std::ostream

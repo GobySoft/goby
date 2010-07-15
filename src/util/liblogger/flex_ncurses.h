@@ -31,7 +31,7 @@ class Group;
 
 namespace goby
 {
-    namespace logger
+    namespace util
     {
         class FlexNCurses
         {

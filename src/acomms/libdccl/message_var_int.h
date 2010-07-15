@@ -21,23 +21,24 @@
 #define MESSAGE_VAR_INT20100317H
 
 #include "message_var_float.h"
-
-namespace dccl
+namespace goby
 {
-    // <int> is a <float> with <precision>0</precision>
-    class MessageVarInt : public MessageVarFloat
+    namespace acomms
     {
-      public:
-      MessageVarInt(long max = std::numeric_limits<long>::max(), long min = 0)
-          : MessageVarFloat(max, min)
-        { }
+        // <int> is a <float> with <precision>0</precision>
+        class DCCLMessageVarInt : public DCCLMessageVarFloat
+        {
+          public:
+          DCCLMessageVarInt(long max = std::numeric_limits<long>::max(), long min = 0)
+              : DCCLMessageVarFloat(max, min)
+            { }
 
-        virtual DCCLType type() const { return dccl_int; }
+            virtual DCCLType type() const { return dccl_int; }
         
-      private:
-        MessageVal cast(double d, int precision) { return long(d); }
+          private:
+            DCCLMessageVal cast(double d, int precision) { return long(d); }
         
-    };    
+        };    
+    }
 }
-
 #endif

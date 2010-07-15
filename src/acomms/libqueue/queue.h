@@ -29,93 +29,96 @@
 #include <list>
 #include <string>
 #include <map>
-#include <ctime>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
 
-#include "acomms/modem_message.h"
+#include "goby/acomms/modem_message.h"
+#include "goby/util/time.h"
+#include "goby/util/string.h"
 
 #include "queue_config.h"
 
-typedef std::list<modem::Message>::iterator messages_it;
+typedef std::list<goby::acomms::ModemMessage>::iterator messages_it;
 typedef std::multimap<unsigned, messages_it>::iterator waiting_for_ack_it;
 
-namespace queue
-{    
-    class Queue
-    {
-      public:
-        Queue(const QueueConfig cfg = QueueConfig(),
-              std::ostream* os = 0,
-              const unsigned& modem_id = 0);
+namespace goby
+{
+    namespace acomms
+    {    
+        class Queue
+        {
+          public:
+            Queue(const QueueConfig cfg = QueueConfig(),
+                  std::ostream* os = 0,
+                  const unsigned& modem_id = 0);
 
-        bool push_message(modem::Message& new_message);
-        modem::Message give_data(unsigned frame);
-        bool pop_message(unsigned frame);    
-        bool pop_message_ack(unsigned frame, modem::Message& msg);
-        void stream_for_pop(const std::string& snip);
+            bool push_message(ModemMessage& new_message);
+            ModemMessage give_data(unsigned frame);
+            bool pop_message(unsigned frame);    
+            bool pop_message_ack(unsigned frame, ModemMessage& msg);
+            void stream_for_pop(const std::string& snip);
 
-        std::vector<modem::Message> expire();
+            std::vector<ModemMessage> expire();
         
-        bool priority_values(double& priority,
-                             double& last_send_time,
-                             modem::Message& message);
+            bool priority_values(double& priority,
+                                 boost::posix_time::ptime& last_send_time,
+                                 ModemMessage& message);
         
-        unsigned give_dest();
+            unsigned give_dest();
 
-        void clear_ack_queue()
-        { waiting_for_ack_.clear(); }
+            void clear_ack_queue()
+            { waiting_for_ack_.clear(); }
 
-        void flush();
+            void flush();
         
-        size_t size() const 
-        { return messages_.size(); }
+            size_t size() const 
+            { return messages_.size(); }
     
-        bool on_demand() const
-        { return on_demand_; }
+            bool on_demand() const
+            { return on_demand_; }
 
-        double last_send_time() const
-        { return last_send_time_; }
+            boost::posix_time::ptime last_send_time() const
+            { return last_send_time_; }
 
-        double newest_msg_time() const
-        { return size() ? messages_.back().t() : acomms::NOT_A_TIME; }
+            boost::posix_time::ptime newest_msg_time() const
+            { return size() ? messages_.back().time() : boost::posix_time::ptime(); }
         
-        void set_on_demand(bool b)
-        { on_demand_ = b; }
+            void set_on_demand(bool b)
+            { on_demand_ = b; }
 
-        void set_on_demand(const std::string& s)
-        { set_on_demand(tes_util::string2bool(s)); }
+            void set_on_demand(const std::string& s)
+            { set_on_demand(util::string2bool(s)); }
 
-        const QueueConfig cfg() const
-        { return cfg_; }
+            const QueueConfig cfg() const
+            { return cfg_; }
         
-        std::string summary() const;
+            std::string summary() const;
+            
+          private:
+            waiting_for_ack_it find_ack_value(messages_it it_to_find);
+            messages_it next_message_it();    
+    
+          private:
+            const QueueConfig cfg_;
         
-      private:
-        waiting_for_ack_it find_ack_value(messages_it it_to_find);
-        messages_it next_message_it();    
+            bool on_demand_;
     
-      private:
-        const QueueConfig cfg_;
-        
-        bool on_demand_;
+            boost::posix_time::ptime last_send_time_;
     
-        double last_send_time_;
+            const unsigned& modem_id_;
     
-        const unsigned& modem_id_;
+            std::ostream* os_;
     
-        std::ostream* os_;
-    
-        std::list<modem::Message> messages_;
+            std::list<ModemMessage> messages_;
 
-        // map frame number onto messages list iterator
-        // can have multiples in the same frame now
-        std::multimap<unsigned, messages_it> waiting_for_ack_;
+            // map frame number onto messages list iterator
+            // can have multiples in the same frame now
+            std::multimap<unsigned, messages_it> waiting_for_ack_;
     
-    };
-    std::ostream & operator<< (std::ostream & os, const Queue & oq);
+        };
+        std::ostream & operator<< (std::ostream & os, const Queue & oq);
+    }
+
 }
-
-
 #endif

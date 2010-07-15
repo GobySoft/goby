@@ -28,9 +28,12 @@
 #include <crypto++/filters.h>
 #include <crypto++/hex.h>
 
-#include "acomms/acomms_constants.h"
+#include "goby/acomms/acomms_constants.h"
 
-namespace dccl
+namespace goby
+{
+
+namespace acomms
 {
 
 /// Enumeration of DCCL types used for sending messages. dccl_enum and dccl_string primarily map to cpp_string, dccl_bool to cpp_bool, dccl_int to cpp_long, dccl_float to cpp_double
@@ -111,5 +114,5 @@ namespace dccl
     
 
 }
-
+}
 #endif

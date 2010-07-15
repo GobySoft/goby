@@ -14,41 +14,42 @@
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
 
-#include "acomms/dccl.h"
+#include "goby/acomms/dccl.h"
 #include <iostream>
 #include <cassert>
 
-using dccl::operator<<;
+using namespace goby;
+using goby::acomms::operator<<;
 
-void plus1(dccl::MessageVal& mv)
+void plus1(acomms::DCCLMessageVal& mv)
 {
     long l = mv;
     ++l;
     mv = l;
 }
 
-void times2(dccl::MessageVal& mv)
+void times2(acomms::DCCLMessageVal& mv)
 {
     double d = mv;
     d *= 2;
     mv = d;
 }
 
-void prepend_fat(dccl::MessageVal& mv)
+void prepend_fat(acomms::DCCLMessageVal& mv)
 {
     std::string s = mv;
     s = "fat_" + s;
     mv = s;
 }
 
-void invert(dccl::MessageVal& mv)
+void invert(acomms::DCCLMessageVal& mv)
 {
     bool b = mv;
     b ^= 1;
     mv = b;
 }
 
-void algsum(dccl::MessageVal& mv, const std::vector<dccl::MessageVal>& ref_vals)
+void algsum(acomms::DCCLMessageVal& mv, const std::vector<acomms::DCCLMessageVal>& ref_vals)
 {
     double d = 0;
     // index 0 is the name ("sum"), so start at 1
@@ -65,7 +66,7 @@ int main()
     std::cout << "loading xml file: test.xml" << std::endl;
 
     // instantiate the parser with a single xml file
-    dccl::DCCLCodec dccl(DCCL_EXAMPLES_DIR "/test/test.xml", "../../message_schema.xsd");
+    acomms::DCCLCodec dccl(DCCL_EXAMPLES_DIR "/test/test.xml", "../../message_schema.xsd");
 
     std::cout << dccl << std::endl;
     
@@ -79,32 +80,32 @@ int main()
     // must be kept secret!
     dccl.set_crypto_passphrase("my_passphrase!");
     
-    std::map<std::string, std::vector<dccl::MessageVal> > in;
+    std::map<std::string, std::vector<acomms::DCCLMessageVal> > in;
     
     bool b = true; 
-    std::vector<dccl::MessageVal> e;
+    std::vector<acomms::DCCLMessageVal> e;
     e.push_back("dog");
     e.push_back("cat");
     e.push_back("emu");
     
     std::string s = "raccoon";  
-    std::vector<dccl::MessageVal> i;
+    std::vector<acomms::DCCLMessageVal> i;
     i.push_back(30);
     i.push_back(40);
-    std::vector<dccl::MessageVal> f;
+    std::vector<acomms::DCCLMessageVal> f;
     f.push_back(-12.5);
     f.push_back(1);
     
     std::string h = "abcd1234"; 
-    std::vector<dccl::MessageVal> sum(2,0);
+    std::vector<acomms::DCCLMessageVal> sum(2,0);
     
     
-    in["B"] = std::vector<dccl::MessageVal>(1,b);
+    in["B"] = std::vector<acomms::DCCLMessageVal>(1,b);
     in["E"] = e;
-    in["S"] = std::vector<dccl::MessageVal>(1,s);
+    in["S"] = std::vector<acomms::DCCLMessageVal>(1,s);
     in["I"] = i;
     in["F"] = f;
-    in["H"] = std::vector<dccl::MessageVal>(1,h);
+    in["H"] = std::vector<acomms::DCCLMessageVal>(1,h);
     in["SUM"] = sum;
 
     std::string hex;
@@ -117,7 +118,7 @@ int main()
     hex.resize(hex.length() + 20,'0');
     std::cout << "hex in: " << hex << std::endl;    
     
-    std::map<std::string, std::vector<dccl::MessageVal> > out;
+    std::map<std::string, std::vector<acomms::DCCLMessageVal> > out;
     
     dccl.decode(4, hex, out);
     
@@ -129,7 +130,7 @@ int main()
     i[0] = int(i[0]) + 1;
     i[1] = int(i[1]) + 1;
     
-    dccl::MessageVal tmp = b;
+    acomms::DCCLMessageVal tmp = b;
     invert(tmp);
     b = tmp;
     

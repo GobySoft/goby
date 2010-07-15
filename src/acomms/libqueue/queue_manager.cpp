@@ -22,24 +22,24 @@
 
 #include <boost/foreach.hpp>
 
-#include "acomms/xml/xml_parser.h"
-#include "util/streamlogger.h"
+#include "goby/acomms/xml/xml_parser.h"
+#include "goby/util/logger.h"
+#include "goby/util/time.h"
+#include "goby/util/binary.h"
 
 #include "queue_constants.h"
 #include "queue_manager.h"
 #include "queue_xml_callbacks.h"
 
-queue::QueueManager::QueueManager(std::ostream* os /* =0 */)
+goby::acomms::QueueManager::QueueManager(std::ostream* os /* =0 */)
     : modem_id_(0),
-      start_time_(time(NULL)),
       os_(os),
       packet_dest_(0),
       packet_ack_(0)
 {}
     
-queue::QueueManager::QueueManager(const std::string& file, const std::string schema, std::ostream* os /* =0 */)
+goby::acomms::QueueManager::QueueManager(const std::string& file, const std::string schema, std::ostream* os /* =0 */)
     : modem_id_(0),
-      start_time_(time(NULL)),
       os_(os),
       packet_dest_(0),
       packet_ack_(0)
@@ -48,10 +48,9 @@ queue::QueueManager::QueueManager(const std::string& file, const std::string sch
     add_xml_queue_file(file, schema);
 }
     
-queue::QueueManager::QueueManager(const std::set<std::string>& files,
+goby::acomms::QueueManager::QueueManager(const std::set<std::string>& files,
                                   const std::string schema, std::ostream* os /* =0 */)
     : modem_id_(0),
-      start_time_(time(NULL)),
       os_(os),
       packet_dest_(0),
       packet_ack_(0)
@@ -60,9 +59,8 @@ queue::QueueManager::QueueManager(const std::set<std::string>& files,
         add_xml_queue_file(s, schema);
 }
 
-queue::QueueManager::QueueManager(const QueueConfig& cfg, std::ostream* os /* =0 */)
+goby::acomms::QueueManager::QueueManager(const QueueConfig& cfg, std::ostream* os /* =0 */)
     : modem_id_(0),
-      start_time_(time(NULL)),
       os_(os),
       packet_dest_(0),
       packet_ack_(0)
@@ -70,9 +68,8 @@ queue::QueueManager::QueueManager(const QueueConfig& cfg, std::ostream* os /* =0
     add_queue(cfg);
 }
 
-queue::QueueManager::QueueManager(const std::set<QueueConfig>& cfgs, std::ostream* os /* =0 */)
+goby::acomms::QueueManager::QueueManager(const std::set<QueueConfig>& cfgs, std::ostream* os /* =0 */)
     : modem_id_(0),
-      start_time_(time(NULL)),
       os_(os),
       packet_dest_(0),
       packet_ack_(0)
@@ -81,7 +78,7 @@ queue::QueueManager::QueueManager(const std::set<QueueConfig>& cfgs, std::ostrea
         add_queue(c);    
 }
 
-void queue::QueueManager::add_queue(const QueueConfig& cfg)
+void goby::acomms::QueueManager::add_queue(const QueueConfig& cfg)
 {
     QueueKey k(cfg.type(), cfg.id());
 
@@ -106,7 +103,7 @@ void queue::QueueManager::add_queue(const QueueConfig& cfg)
     
 }
 
-void queue::QueueManager::add_xml_queue_file(const std::string& xml_file,
+void goby::acomms::QueueManager::add_xml_queue_file(const std::string& xml_file,
                                              const std::string xml_schema)
 {
     std::vector<QueueConfig> cfgs;
@@ -126,22 +123,22 @@ void queue::QueueManager::add_xml_queue_file(const std::string& xml_file,
         add_queue(c);
 }
 
-void queue::QueueManager::do_work()
+void goby::acomms::QueueManager::do_work()
 {
     typedef std::pair<const QueueKey, Queue> P;
     for(std::map<QueueKey, Queue>::iterator it = queues_.begin(), n = queues_.end(); it != n; ++it)
     {
-        std::vector<modem::Message> expired_msgs = it->second.expire();
+        std::vector<ModemMessage> expired_msgs = it->second.expire();
         if(callback_expire)
         {
-            BOOST_FOREACH(const modem::Message& m, expired_msgs)
+            BOOST_FOREACH(const ModemMessage& m, expired_msgs)
                 callback_expire(it->first, m);    
         }
     }
     
 }
 
-void queue::QueueManager::push_message(QueueKey key, modem::Message& new_message)
+void goby::acomms::QueueManager::push_message(QueueKey key, ModemMessage& new_message)
 {
     
     // message is to us, auto-loopback
@@ -165,10 +162,10 @@ void queue::QueueManager::push_message(QueueKey key, modem::Message& new_message
     }    
 }
 
-void queue::QueueManager::push_message(unsigned id, modem::Message& new_message, QueueType type /* = dccl_queue */)
+void goby::acomms::QueueManager::push_message(unsigned id, ModemMessage& new_message, QueueType type /* = dccl_queue */)
 { push_message(QueueKey(type, id), new_message); }
 
-void queue::QueueManager::set_on_demand(QueueKey key)
+void goby::acomms::QueueManager::set_on_demand(QueueKey key)
 {
     if(queues_.count(key))
         queues_[key].set_on_demand(true);
@@ -180,11 +177,11 @@ void queue::QueueManager::set_on_demand(QueueKey key)
     }
 }
 
-void queue::QueueManager::set_on_demand(unsigned id, QueueType type /* = dccl_queue */)
+void goby::acomms::QueueManager::set_on_demand(unsigned id, QueueType type /* = dccl_queue */)
 { set_on_demand(QueueKey(type, id)); }
 
 
-std::string queue::QueueManager::summary() const
+std::string goby::acomms::QueueManager::summary() const
 {
     std::string s;
     typedef std::pair<const QueueKey, Queue> P;
@@ -195,15 +192,15 @@ std::string queue::QueueManager::summary() const
 }
 
     
-std::ostream& queue::operator<< (std::ostream& out, const QueueManager& d)
+std::ostream& goby::acomms::operator<< (std::ostream& out, const QueueManager& d)
 {
     out << d.summary();
     return out;
 }
 
-modem::Message queue::QueueManager::stitch(std::deque<modem::Message>& in)
+goby::acomms::ModemMessage goby::acomms::QueueManager::stitch(std::deque<ModemMessage>& in)
 {
-    modem::Message out;
+    ModemMessage out;
 //    out.set_src(modem_id_);
     out.set_dest(packet_dest_);
     out.set_ack(packet_ack_);    
@@ -212,42 +209,42 @@ modem::Message queue::QueueManager::stitch(std::deque<modem::Message>& in)
     return out;
 }
 
-bool queue::QueueManager::stitch_recursive(std::string& data, std::deque<modem::Message>& in)
+bool goby::acomms::QueueManager::stitch_recursive(std::string& data, std::deque<acomms::ModemMessage>& in)
 {
-    modem::Message& message = in.front();
+    ModemMessage& message = in.front();
     bool is_last_user_frame = (in.size() == 1);
     
     if(message.empty())
         throw (std::runtime_error("empty message passed to stitch"));        
     
-    dccl::DCCLHeaderDecoder head_decoder(message.data());
+    DCCLHeaderDecoder head_decoder(message.data());
 
     // don't put the multimessage flag on the last user-frame
-    head_decoder[acomms::head_multimessage_flag] =
+    head_decoder[head_multimessage_flag] =
         (!is_last_user_frame) ? true : false;
-    head_decoder[acomms::head_broadcast_flag] =
-        (message.dest() == acomms::BROADCAST_ID) ? true : false;
+    head_decoder[head_broadcast_flag] =
+        (message.dest() == BROADCAST_ID) ? true : false;
     
     std::string& new_data = message.data_ref();
     
     if(!is_last_user_frame)
     {
         std::string frame_size =
-            tes_util::number2hex_string(message.size()-acomms::NUM_HEADER_BYTES);
-        new_data.insert(acomms::NUM_HEADER_NIBS, frame_size);
+            util::number2hex_string(message.size()-DCCL_NUM_HEADER_BYTES);
+        new_data.insert(DCCL_NUM_HEADER_NIBS, frame_size);
     }
     
-    dccl::DCCLHeaderEncoder head_encoder(head_decoder.get());
+    DCCLHeaderEncoder head_encoder(head_decoder.get());
     new_data.replace(0, head_encoder.get().size(), head_encoder.get());
 
     //remove ccl_id
-    data += new_data.substr(1*acomms::NIBS_IN_BYTE);
+    data += new_data.substr(1*NIBS_IN_BYTE);
 
     in.pop_front();
 
     if(is_last_user_frame)
     {
-        data.insert(0, tes_util::number2hex_string(acomms::DCCL_CCL_HEADER));
+        data.insert(0, util::number2hex_string(DCCL_CCL_HEADER));
         return true;
     }
     else
@@ -255,7 +252,7 @@ bool queue::QueueManager::stitch_recursive(std::string& data, std::deque<modem::
 }
     
 
-void queue::QueueManager::clear_packet()
+void goby::acomms::QueueManager::clear_packet()
 {
     typedef std::pair<unsigned, Queue*> P;
     BOOST_FOREACH(const P& p, waiting_for_ack_)
@@ -274,9 +271,9 @@ void queue::QueueManager::clear_packet()
 // (either no data at all, or in blackout interval) 
 // thus, from all the priority values that return true, pick the one with the lowest
 // priority value, or given a tie, pick the one with the oldest last_send_time
-bool queue::QueueManager::provide_outgoing_modem_data(const modem::Message& message_in, modem::Message& message_out)
+bool goby::acomms::QueueManager::provide_outgoing_modem_data(const ModemMessage& message_in, ModemMessage& message_out)
 {
-    modem::Message modified_message_in = message_in;
+    ModemMessage modified_message_in = message_in;
     if(modified_message_in.frame() == 1 || modified_message_in.frame() == 0)
     {
         clear_packet();
@@ -293,7 +290,7 @@ bool queue::QueueManager::provide_outgoing_modem_data(const modem::Message& mess
     // no data at all for this frame ... :(
     if(!winning_var)
     {
-        message_out = modem::Message();
+        message_out = ModemMessage();
 
         // we have to conform to the rest of the packet...
         message_out.set_src(modem_id_);
@@ -307,14 +304,14 @@ bool queue::QueueManager::provide_outgoing_modem_data(const modem::Message& mess
     }    
 
     // keep filling up the frame with messages until we have nothing small enough to fit...
-    std::deque<modem::Message> user_frames;
+    std::deque<ModemMessage> user_frames;
     while(winning_var)
     {
-        modem::Message next_message = winning_var->give_data(modified_message_in.frame());
+        ModemMessage next_message = winning_var->give_data(modified_message_in.frame());
         user_frames.push_back(next_message);
 
         // if a destination has been set or ack been set, do not unset these
-        if (packet_dest_ == acomms::BROADCAST_ID) packet_dest_ = next_message.dest();
+        if (packet_dest_ == BROADCAST_ID) packet_dest_ = next_message.dest();
         if (packet_ack_ == false) packet_ack_ = next_message.ack();
         
         if(os_) *os_<< group("q_out") << "sending data to firmware from: "
@@ -333,7 +330,7 @@ bool queue::QueueManager::provide_outgoing_modem_data(const modem::Message& mess
 
         // if there's no room for more, don't bother looking
         // also end if the message you have is a CCL message
-        if(modified_message_in.size() > acomms::NUM_HEADER_BYTES && winning_var->cfg().type() != queue_ccl)
+        if(modified_message_in.size() > DCCL_NUM_HEADER_BYTES && winning_var->cfg().type() != queue_ccl)
             winning_var = find_next_sender(modified_message_in, user_frames.size());
         else
             break;
@@ -345,11 +342,11 @@ bool queue::QueueManager::provide_outgoing_modem_data(const modem::Message& mess
 }
 
 
-queue::Queue* queue::QueueManager::find_next_sender(modem::Message& message, unsigned user_frame_num)
+goby::acomms::Queue* goby::acomms::QueueManager::find_next_sender(ModemMessage& message, unsigned user_frame_num)
 {   
 // competition between variable about who gets to send
     double winning_priority;
-    double winning_last_send_time;
+    boost::posix_time::ptime winning_last_send_time;
 
     Queue* winning_var = 0;
     
@@ -362,18 +359,19 @@ queue::Queue* queue::QueueManager::find_next_sender(modem::Message& message, uns
         
         // encode on demand
         if(oq.on_demand() &&
-           (!oq.size() || oq.newest_msg_time() + ON_DEMAND_SKEW < time(NULL))
+           (!oq.size() || oq.newest_msg_time() + ON_DEMAND_SKEW < util::goby_time())
             )
         {
             if(callback_ondemand)
             {
-                modem::Message new_message;
+                ModemMessage new_message;
                 callback_ondemand(it->first, message, new_message);
                 push_message(it->first, new_message);
             }
         }
         
-        double priority, last_send_time;
+        double priority;
+        boost::posix_time::ptime last_send_time;
         if(oq.priority_values(priority, last_send_time, message))
         {
             // no winner, better winner, or equal & older winner
@@ -405,7 +403,7 @@ queue::Queue* queue::QueueManager::find_next_sender(modem::Message& message, uns
 }    
 
 
-void queue::QueueManager::handle_modem_ack(const modem::Message& message)
+void goby::acomms::QueueManager::handle_modem_ack(const ModemMessage& message)
 {
     if(!waiting_for_ack_.count(message.frame()))
     {
@@ -433,7 +431,7 @@ void queue::QueueManager::handle_modem_ack(const modem::Message& message)
             {
                 Queue* oq = it->second;
 
-                modem::Message removed_msg;
+                ModemMessage removed_msg;
                 if(!oq->pop_message_ack(message.frame(), removed_msg))
                 {
                     if(os_) *os_<< group("q_in") << warn
@@ -460,22 +458,22 @@ void queue::QueueManager::handle_modem_ack(const modem::Message& message)
 // parses and publishes incoming data
 // by matching the variableID field with the variable specified
 // in a "receive = " line of the configuration file
-void queue::QueueManager::receive_incoming_modem_data(const modem::Message& message)
+void goby::acomms::QueueManager::receive_incoming_modem_data(const ModemMessage& message)
 {
     if(os_) *os_<< group("q_in") << "received message"
                 << ": " << message.snip() << std::endl;
 
     std::string data = message.data();
-    if(data.size() < acomms::NUM_HEADER_NIBS)
+    if(data.size() < DCCL_NUM_HEADER_NIBS)
         return;
     
-    dccl::DCCLHeaderDecoder head_decoder(data);
-    int ccl_id = head_decoder[acomms::head_ccl_id];
+    DCCLHeaderDecoder head_decoder(data);
+    int ccl_id = head_decoder[head_ccl_id];
 
     // check for queue_dccl type
-    if(ccl_id == acomms::DCCL_CCL_HEADER)
+    if(ccl_id == DCCL_CCL_HEADER)
     {
-        modem::Message mod_message = message;
+        ModemMessage mod_message = message;
         unstitch_recursive(data, mod_message);
     }
     // check for ccl type
@@ -495,28 +493,28 @@ void queue::QueueManager::receive_incoming_modem_data(const modem::Message& mess
     }
 }
 
-bool queue::QueueManager::unstitch_recursive(std::string& data, modem::Message& message)
+bool goby::acomms::QueueManager::unstitch_recursive(std::string& data, ModemMessage& message)
 {
     unsigned original_dest = message.dest();
-    dccl::DCCLHeaderDecoder head_decoder(data);
-    bool multimessage_flag = head_decoder[acomms::head_multimessage_flag];
-    bool broadcast_flag = head_decoder[acomms::head_broadcast_flag];
-    unsigned dccl_id = head_decoder[acomms::head_dccl_id];
+    DCCLHeaderDecoder head_decoder(data);
+    bool multimessage_flag = head_decoder[head_multimessage_flag];
+    bool broadcast_flag = head_decoder[head_broadcast_flag];
+    unsigned dccl_id = head_decoder[head_dccl_id];
         
     // test multimessage bit
     if(multimessage_flag)
     {
         // extract frame_size
         unsigned frame_size;
-        tes_util::hex_string2number(data.substr(acomms::NUM_HEADER_NIBS, acomms::NIBS_IN_BYTE), frame_size);
+        util::hex_string2number(data.substr(DCCL_NUM_HEADER_NIBS, NIBS_IN_BYTE), frame_size);
         
         // erase the frame size byte
-        data.erase(acomms::NUM_HEADER_NIBS, acomms::NIBS_IN_BYTE);
+        data.erase(DCCL_NUM_HEADER_NIBS, NIBS_IN_BYTE);
         
         // extract the data for this user-frame
-        message.set_data(data.substr(0, (frame_size + acomms::NUM_HEADER_BYTES)*acomms::NIBS_IN_BYTE));
+        message.set_data(data.substr(0, (frame_size + DCCL_NUM_HEADER_BYTES)*NIBS_IN_BYTE));
 
-        data.erase(1*acomms::NIBS_IN_BYTE, (frame_size + acomms::NUM_HEADER_BYTES-1)*acomms::NIBS_IN_BYTE);
+        data.erase(1*NIBS_IN_BYTE, (frame_size + DCCL_NUM_HEADER_BYTES-1)*NIBS_IN_BYTE);
     }
     else
     {
@@ -524,13 +522,13 @@ bool queue::QueueManager::unstitch_recursive(std::string& data, modem::Message& 
     }
     
     // reset these flags
-    head_decoder[acomms::head_multimessage_flag] = false;
-    head_decoder[acomms::head_broadcast_flag] = false;
+    head_decoder[head_multimessage_flag] = false;
+    head_decoder[head_broadcast_flag] = false;
     
-    dccl::DCCLHeaderEncoder head_encoder(head_decoder.get());
-    message.data_ref().replace(0, acomms::NUM_HEADER_NIBS,head_encoder.get());
+    DCCLHeaderEncoder head_encoder(head_decoder.get());
+    message.data_ref().replace(0, DCCL_NUM_HEADER_NIBS,head_encoder.get());
     // overwrite destination as BROADCAST if broadcast bit is set
-    message.set_dest(broadcast_flag ? acomms::BROADCAST_ID : original_dest);
+    message.set_dest(broadcast_flag ? BROADCAST_ID : original_dest);
     publish_incoming_piece(message, dccl_id);        
     
     // put the destination back
@@ -542,9 +540,9 @@ bool queue::QueueManager::unstitch_recursive(std::string& data, modem::Message& 
         return unstitch_recursive(data, message);
 }
 
-bool queue::QueueManager::publish_incoming_piece(modem::Message message, const unsigned incoming_var_id)
+bool goby::acomms::QueueManager::publish_incoming_piece(ModemMessage message, const unsigned incoming_var_id)
 {
-    if(message.dest() != acomms::BROADCAST_ID && message.dest() != modem_id_)
+    if(message.dest() != BROADCAST_ID && message.dest() != modem_id_)
     {
         if(os_) *os_<< group("q_in") << warn << "ignoring message for modem_id = "
                     << message.dest() << std::endl;
@@ -566,11 +564,11 @@ bool queue::QueueManager::publish_incoming_piece(modem::Message message, const u
     return true;
 }
 
-int queue::QueueManager::request_next_destination(unsigned size /* = std::numeric_limits<unsigned>::max() */)
+int goby::acomms::QueueManager::request_next_destination(unsigned size /* = std::numeric_limits<unsigned>::max() */)
 {
     clear_packet();
 
-    modem::Message message;
+    ModemMessage message;
     message.set_size(size);
     
     Queue* winning_var = find_next_sender(message, 0);
@@ -584,7 +582,7 @@ int queue::QueueManager::request_next_destination(unsigned size /* = std::numeri
     }
     else
     {
-        return no_available_destination;
+        return NO_AVAILABLE_DESTINATION;
     }
     
 }

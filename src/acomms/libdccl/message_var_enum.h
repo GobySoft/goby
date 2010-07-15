@@ -21,71 +21,73 @@
 #define MESSAGE_VAR_ENUM20100317H
 
 #include "message_var.h"
+namespace goby
+{
 
-namespace dccl
-{   
-    class MessageVarEnum : public MessageVar
-    {
-      public:
-        int calc_size() const
-        { return ceil(log(enums_.size()+1)/log(2)); }        
-        
-        void add_enum(std::string senum) {enums_.push_back(senum);}
-
-        std::vector<std::string>* enums() { return &enums_; }
-
-        DCCLType type()  const { return dccl_enum; }
-        
-      private:
-        void initialize_specific()
-        { }
-        
-        boost::dynamic_bitset<unsigned char> encode_specific(const MessageVal& v)
+    namespace acomms
+    {   
+        class DCCLMessageVarEnum : public DCCLMessageVar
         {
-            std::string s = v;
-            // find the iterator within the std::vector of enumerator values for *this* enumerator value
-            std::vector<std::string>::iterator pos;
-            pos = find(enums_.begin(), enums_.end(), s);
-            
-            // now convert that iterator into a number (think traditional array index)
-            unsigned long t = (unsigned long)distance(enums_.begin(), pos);
-            
-            if(pos == enums_.end())
-                t = 0;
-            else
-                ++t;
-            
-            return boost::dynamic_bitset<unsigned char>(calc_size(), t);            
-        }        
+          public:
+            int calc_size() const
+            { return ceil(log(enums_.size()+1)/log(2)); }        
+        
+            void add_enum(std::string senum) {enums_.push_back(senum);}
 
-        MessageVal decode_specific(boost::dynamic_bitset<unsigned char>& b)
-        {
-            unsigned long t = b.to_ulong();
-            if(t)
+            std::vector<std::string>* enums() { return &enums_; }
+
+            DCCLType type()  const { return dccl_enum; }
+        
+          private:
+            void initialize_specific()
+            { }
+        
+            boost::dynamic_bitset<unsigned char> encode_specific(const DCCLMessageVal& v)
             {
-                --t;
-                return MessageVal(enums_.at(t));
-            }
-            else
-                return MessageVal();            
-        }
-
-        void get_display_specific(std::stringstream& ss) const
-        {
-            ss << "\t\tvalues:{"; 
-            for (std::vector<std::string>::size_type j = 0, m = enums_.size(); j < m; ++j)
-            {
-                if(j)
-                    ss << ",";
-                ss << enums_[j];
-            }
+                std::string s = v;
+                // find the iterator within the std::vector of enumerator values for *this* enumerator value
+                std::vector<std::string>::iterator pos;
+                pos = find(enums_.begin(), enums_.end(), s);
             
-            ss << "}" << std::endl;
-        }
+                // now convert that iterator into a number (think traditional array index)
+                unsigned long t = (unsigned long)distance(enums_.begin(), pos);
+            
+                if(pos == enums_.end())
+                    t = 0;
+                else
+                    ++t;
+            
+                return boost::dynamic_bitset<unsigned char>(calc_size(), t);            
+            }        
 
-      private:
-        std::vector<std::string> enums_;
-    };
+            DCCLMessageVal decode_specific(boost::dynamic_bitset<unsigned char>& b)
+            {
+                unsigned long t = b.to_ulong();
+                if(t)
+                {
+                    --t;
+                    return DCCLMessageVal(enums_.at(t));
+                }
+                else
+                    return DCCLMessageVal();            
+            }
+
+            void get_display_specific(std::stringstream& ss) const
+            {
+                ss << "\t\tvalues:{"; 
+                for (std::vector<std::string>::size_type j = 0, m = enums_.size(); j < m; ++j)
+                {
+                    if(j)
+                        ss << ",";
+                    ss << enums_[j];
+                }
+            
+                ss << "}" << std::endl;
+            }
+
+          private:
+            std::vector<std::string> enums_;
+        };
+    }
 }
-
 #endif

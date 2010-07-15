@@ -22,9 +22,11 @@
 
 #include "message_var.h"
 
-namespace dccl
+namespace goby
+{
+namespace acomms
 {   
-    class MessageVarBool : public MessageVar
+    class DCCLMessageVarBool : public DCCLMessageVar
     {
       public:
         int calc_size() const
@@ -37,7 +39,7 @@ namespace dccl
         { }
         
         
-        boost::dynamic_bitset<unsigned char> encode_specific(const MessageVal& v)
+        boost::dynamic_bitset<unsigned char> encode_specific(const DCCLMessageVal& v)
         {
             bool b;
             if(v.get(b))
@@ -47,23 +49,24 @@ namespace dccl
         }
         
 
-        MessageVal decode_specific(boost::dynamic_bitset<unsigned char>& b)
+        DCCLMessageVal decode_specific(boost::dynamic_bitset<unsigned char>& b)
         {
 
             unsigned long t = b.to_ulong();
             if(t)
             {
                 --t;
-                return MessageVal(bool(t));
+                return DCCLMessageVal(bool(t));
             }
             else
-                return MessageVal();
+                return DCCLMessageVal();
         }
 
         void get_display_specific(std::stringstream& ss) const
         { }        
 
     };
+}
 }
 
 #endif

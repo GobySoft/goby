@@ -22,7 +22,7 @@
 
 #include "message.h"
 
-dccl::Message::Message():size_(0),
+goby::acomms::DCCLMessage::DCCLMessage():size_(0),
                          trigger_number_(1), 
                          body_bits_(0),
                          id_(0),
@@ -30,61 +30,64 @@ dccl::Message::Message():size_(0),
                          repeat_enabled_(false),
                          repeat_(1)
 {
-    header_.resize(acomms::NUM_HEADER_PARTS);
-    header_[acomms::head_ccl_id] =
-        boost::shared_ptr<MessageVar>(new MessageVarCCLID());
-    header_[acomms::head_dccl_id] =
-        boost::shared_ptr<MessageVar>(new MessageVarDCCLID());
-    header_[acomms::head_time] =
-        boost::shared_ptr<MessageVar>(new MessageVarTime());
-    header_[acomms::head_src_id] =
-        boost::shared_ptr<MessageVar>(new MessageVarSrc());
-    header_[acomms::head_dest_id] =
-        boost::shared_ptr<MessageVar>(new MessageVarDest());
-    header_[acomms::head_multimessage_flag] =
-        boost::shared_ptr<MessageVar>(new MessageVarMultiMessageFlag());
-    header_[acomms::head_broadcast_flag] =
-        boost::shared_ptr<MessageVar>(new MessageVarBroadcastFlag());
-    header_[acomms::head_unused] =
-        boost::shared_ptr<MessageVar>(new MessageVarUnused());
+    header_.resize(DCCL_NUM_HEADER_PARTS);
+    header_[head_ccl_id] =
+        boost::shared_ptr<DCCLMessageVar>(new DCCLMessageVarCCLID());
+    header_[head_dccl_id] =
+        boost::shared_ptr<DCCLMessageVar>(new DCCLMessageVarDCCLID());
+    header_[head_time] =
+        boost::shared_ptr<DCCLMessageVar>(new DCCLMessageVarTime());
+    header_[head_src_id] =
+        boost::shared_ptr<DCCLMessageVar>(new DCCLMessageVarSrc());
+    header_[head_dest_id] =
+        boost::shared_ptr<DCCLMessageVar>(new DCCLMessageVarDest());
+    header_[head_multimessage_flag] =
+        boost::shared_ptr<DCCLMessageVar>(new DCCLMessageVarMultiMessageFlag());
+    header_[head_broadcast_flag] =
+        boost::shared_ptr<DCCLMessageVar>(new DCCLMessageVarBroadcastFlag());
+    header_[head_unused] =
+        boost::shared_ptr<DCCLMessageVar>(new DCCLMessageVarUnused());
 }
 
     
 // add a new message_var to the current messages vector
-void dccl::Message::add_message_var(const std::string& type)
+void goby::acomms::DCCLMessage::add_message_var(const std::string& type)
 {
     if(type == "static")
-        layout_.push_back(boost::shared_ptr<MessageVar>(new MessageVarStatic()));
+        layout_.push_back(boost::shared_ptr<DCCLMessageVar>(new DCCLMessageVarStatic()));
     else if(type == "int")
-        layout_.push_back(boost::shared_ptr<MessageVar>(new MessageVarInt()));
+        layout_.push_back(boost::shared_ptr<DCCLMessageVar>(new DCCLMessageVarInt()));
     else if(type == "string")
-        layout_.push_back(boost::shared_ptr<MessageVar>(new MessageVarString()));
+        layout_.push_back(boost::shared_ptr<DCCLMessageVar>(new DCCLMessageVarString()));
     else if(type == "float")
-        layout_.push_back(boost::shared_ptr<MessageVar>(new MessageVarFloat()));
+        layout_.push_back(boost::shared_ptr<DCCLMessageVar>(new DCCLMessageVarFloat()));
     else if(type == "enum")
-        layout_.push_back(boost::shared_ptr<MessageVar>(new MessageVarEnum()));
+        layout_.push_back(boost::shared_ptr<DCCLMessageVar>(new DCCLMessageVarEnum()));
     else if(type == "bool")
-        layout_.push_back(boost::shared_ptr<MessageVar>(new MessageVarBool()));
+        layout_.push_back(boost::shared_ptr<DCCLMessageVar>(new DCCLMessageVarBool()));
     else if(type == "hex")
-        layout_.push_back(boost::shared_ptr<MessageVar>(new MessageVarHex()));
+        layout_.push_back(boost::shared_ptr<DCCLMessageVar>(new DCCLMessageVarHex()));
 }
 
 // add a new publish, i.e. a set of parameters to publish
 // upon receipt of an incoming (hex) message
-void dccl::Message::add_publish()
+void goby::acomms::DCCLMessage::add_publish()
 {
-    Publish p;
+    DCCLPublish p;
     publishes_.push_back(p);
 }
 
 // a number of tasks to perform after reading in an entire <message> from
 // the xml file
-void dccl::Message::preprocess()
+void goby::acomms::DCCLMessage::preprocess()
 {
+    if(requested_bytes_total() <= bytes_head())
+        throw(std::runtime_error(std::string("<size> must be larger than the header size of " + boost::lexical_cast<std::string>(bytes_head()))));
+
     // calculate number of repeated messages that will fit and put this in `repeat_`.
     if(repeat_enabled_)
     {
-        BOOST_FOREACH(boost::shared_ptr<MessageVar> mv, layout_)
+        BOOST_FOREACH(boost::shared_ptr<DCCLMessageVar> mv, layout_)
         {
         if(mv->array_length() != 1)
             throw(std::runtime_error("<repeat> is not allowed on messages with arrays (<array_length> not 1)"));
@@ -105,7 +108,7 @@ void dccl::Message::preprocess()
     body_bits_ = calc_total_size();
 
     // initialize header vars
-    BOOST_FOREACH(boost::shared_ptr<MessageVar> mv, header_)
+    BOOST_FOREACH(boost::shared_ptr<DCCLMessageVar> mv, header_)
         mv->initialize(trigger_var_);
 
     
@@ -115,7 +118,7 @@ void dccl::Message::preprocess()
     }
 
     // iterate over publishes_
-    BOOST_FOREACH(Publish& p, publishes_)
+    BOOST_FOREACH(DCCLPublish& p, publishes_)
         p.initialize(*this);
     
     // set incoming_var / outgoing_var if not set
@@ -125,18 +128,18 @@ void dccl::Message::preprocess()
         out_var_ = "OUT_" + boost::to_upper_copy(name_) + "_HEX_" + boost::lexical_cast<std::string>(size_) + "B";   
 }
 
-void dccl::Message::set_repeat_array_length()
+void goby::acomms::DCCLMessage::set_repeat_array_length()
 {
-    // set array_length_ for repeated messages for all MessageVars
-    BOOST_FOREACH(boost::shared_ptr<MessageVar> mv, layout_)
+    // set array_length_ for repeated messages for all DCCLMessageVars
+    BOOST_FOREACH(boost::shared_ptr<DCCLMessageVar> mv, layout_)
         mv->set_array_length(repeat_);
 }
 
-unsigned dccl::Message::calc_total_size()
+unsigned goby::acomms::DCCLMessage::calc_total_size()
 {
     unsigned body_bits = 0;
     // iterate over layout_
-    BOOST_FOREACH(boost::shared_ptr<MessageVar> mv, layout_)
+    BOOST_FOREACH(boost::shared_ptr<DCCLMessageVar> mv, layout_)
     {
         mv->initialize(trigger_var_);
         // calculate total bits for the message from the bits for each message_var
@@ -147,15 +150,15 @@ unsigned dccl::Message::calc_total_size()
 
 
 
-std::map<std::string, std::string> dccl::Message::message_var_names() const
+std::map<std::string, std::string> goby::acomms::DCCLMessage::message_var_names() const
 {
     std::map<std::string, std::string> s;
-    BOOST_FOREACH(const boost::shared_ptr<MessageVar> mv, layout_)
+    BOOST_FOREACH(const boost::shared_ptr<DCCLMessageVar> mv, layout_)
         s.insert(std::pair<std::string, std::string>(mv->name(), type_to_string(mv->type())));
     return s;
 }
 
-std::set<std::string> dccl::Message::get_pubsub_encode_vars()
+std::set<std::string> goby::acomms::DCCLMessage::get_pubsub_encode_vars()
 {
     std::set<std::string> s = get_pubsub_src_vars();
     if(trigger_type_ == "publish")
@@ -163,14 +166,14 @@ std::set<std::string> dccl::Message::get_pubsub_encode_vars()
     return s;
 }
 
-std::set<std::string> dccl::Message::get_pubsub_decode_vars()
+std::set<std::string> goby::acomms::DCCLMessage::get_pubsub_decode_vars()
 {
     std::set<std::string> s;
     s.insert(in_var_);
     return s;
 }
     
-std::set<std::string> dccl::Message::get_pubsub_all_vars()
+std::set<std::string> goby::acomms::DCCLMessage::get_pubsub_all_vars()
 {
     std::set<std::string> s_enc = get_pubsub_encode_vars();
     std::set<std::string> s_dec = get_pubsub_decode_vars();
@@ -181,25 +184,25 @@ std::set<std::string> dccl::Message::get_pubsub_all_vars()
     return s;
 }
     
-std::set<std::string> dccl::Message::get_pubsub_src_vars()
+std::set<std::string> goby::acomms::DCCLMessage::get_pubsub_src_vars()
 {
     std::set<std::string> s;
 
-    BOOST_FOREACH(boost::shared_ptr<MessageVar> mv, layout_)
+    BOOST_FOREACH(boost::shared_ptr<DCCLMessageVar> mv, layout_)
         s.insert(mv->source_var());
-    BOOST_FOREACH(boost::shared_ptr<MessageVar> mv, header_)
+    BOOST_FOREACH(boost::shared_ptr<DCCLMessageVar> mv, header_)
         s.insert(mv->source_var());
     
     return s;
 }
 
     
-void dccl::Message::body_encode(std::string& body, std::map<std::string, std::vector<MessageVal> >& in)
+void goby::acomms::DCCLMessage::body_encode(std::string& body, std::map<std::string, std::vector<DCCLMessageVal> >& in)
 {
     boost::dynamic_bitset<unsigned char> body_bits(bytes2bits(used_bytes_body()));
 
     // 1. encode each variable into the bitset
-    for (std::vector< boost::shared_ptr<MessageVar> >::iterator it = layout_.begin(),
+    for (std::vector< boost::shared_ptr<DCCLMessageVar> >::iterator it = layout_.begin(),
              n = layout_.end();
          it != n;
          ++it)
@@ -214,7 +217,7 @@ void dccl::Message::body_encode(std::string& body, std::map<std::string, std::ve
     body.resize(body.find_last_not_of(char(0))+1);
 }
 
-void dccl::Message::body_decode(std::string& body, std::map<std::string, std::vector<MessageVal> >& out)
+void goby::acomms::DCCLMessage::body_decode(std::string& body, std::map<std::string, std::vector<DCCLMessageVal> >& out)
 {
     boost::dynamic_bitset<unsigned char> body_bits(bytes2bits(used_bytes_body()));       
     
@@ -225,7 +228,7 @@ void dccl::Message::body_decode(std::string& body, std::map<std::string, std::ve
     string2bitset(body_bits, body);
     
     // 1. pull the bits off the message in the reverse that they were put on
-    for (std::vector< boost::shared_ptr<MessageVar> >::reverse_iterator it = layout_.rbegin(),
+    for (std::vector< boost::shared_ptr<DCCLMessageVar> >::reverse_iterator it = layout_.rbegin(),
              n = layout_.rend();
          it != n;
          ++it)
@@ -234,9 +237,9 @@ void dccl::Message::body_decode(std::string& body, std::map<std::string, std::ve
     }
 }
 
-void dccl::Message::set_head_defaults(std::map<std::string, std::vector<MessageVal> >& in, unsigned modem_id)
+void goby::acomms::DCCLMessage::set_head_defaults(std::map<std::string, std::vector<DCCLMessageVal> >& in, unsigned modem_id)
 {
-    for (std::vector< boost::shared_ptr<MessageVar> >::iterator it = header_.begin(),
+    for (std::vector< boost::shared_ptr<DCCLMessageVar> >::iterator it = header_.begin(),
              n = header_.end();
          it != n;
          ++it)
@@ -245,12 +248,12 @@ void dccl::Message::set_head_defaults(std::map<std::string, std::vector<MessageV
     }
 }
 
-void dccl::Message::head_encode(std::string& head, std::map<std::string, std::vector<MessageVal> >& in)
+void goby::acomms::DCCLMessage::head_encode(std::string& head, std::map<std::string, std::vector<DCCLMessageVal> >& in)
 {    
-    boost::dynamic_bitset<unsigned char> head_bits(bytes2bits(acomms::NUM_HEADER_BYTES));
+    boost::dynamic_bitset<unsigned char> head_bits(bytes2bits(DCCL_NUM_HEADER_BYTES));
 
     
-    for (std::vector< boost::shared_ptr<MessageVar> >::iterator it = header_.begin(),
+    for (std::vector< boost::shared_ptr<DCCLMessageVar> >::iterator it = header_.begin(),
              n = header_.end();
          it != n;
          ++it)
@@ -261,12 +264,12 @@ void dccl::Message::head_encode(std::string& head, std::map<std::string, std::ve
     bitset2string(head_bits, head);
 }
 
-void dccl::Message::head_decode(const std::string& head, std::map<std::string, std::vector<MessageVal> >& out)
+void goby::acomms::DCCLMessage::head_decode(const std::string& head, std::map<std::string, std::vector<DCCLMessageVal> >& out)
 {
-    boost::dynamic_bitset<unsigned char> head_bits(bytes2bits(acomms::NUM_HEADER_BYTES));
+    boost::dynamic_bitset<unsigned char> head_bits(bytes2bits(DCCL_NUM_HEADER_BYTES));
     string2bitset(head_bits, head);
 
-    for (std::vector< boost::shared_ptr<MessageVar> >::reverse_iterator it = header_.rbegin(), n = header_.rend();
+    for (std::vector< boost::shared_ptr<DCCLMessageVar> >::reverse_iterator it = header_.rbegin(), n = header_.rend();
          it != n;
          ++it)
     {
@@ -274,20 +277,20 @@ void dccl::Message::head_decode(const std::string& head, std::map<std::string, s
     }
 }
 
-boost::shared_ptr<dccl::MessageVar> dccl::Message::name2message_var(const std::string& name)
+boost::shared_ptr<goby::acomms::DCCLMessageVar> goby::acomms::DCCLMessage::name2message_var(const std::string& name)
 {
-    BOOST_FOREACH(boost::shared_ptr<MessageVar> mv, layout_)
+    BOOST_FOREACH(boost::shared_ptr<DCCLMessageVar> mv, layout_)
     {
         if(mv->name() == name) return mv;
     }    
-    BOOST_FOREACH(boost::shared_ptr<MessageVar> mv, header_)
+    BOOST_FOREACH(boost::shared_ptr<DCCLMessageVar> mv, header_)
     {
         if(mv->name() == name) return mv;
     }
 
     throw std::runtime_error(std::string("DCCL: no such name \"" + name + "\" found in <layout> or <header>"));
     
-    return boost::shared_ptr<dccl::MessageVar>();
+    return boost::shared_ptr<DCCLMessageVar>();
 }
 
 ////////////////////////////
@@ -295,8 +298,8 @@ boost::shared_ptr<dccl::MessageVar> dccl::Message::name2message_var(const std::s
 ////////////////////////////
 
     
-// a long visual display of all the parameters for a Message
-std::string dccl::Message::get_display() const
+// a long visual display of all the parameters for a DCCLMessage
+std::string goby::acomms::DCCLMessage::get_display() const
 {
     const unsigned int num_stars = 20;
 
@@ -335,12 +338,12 @@ std::string dccl::Message::get_display() const
     ss << "actual size {bytes} [bits]: {" << used_bytes_total() << "} [" << used_bits_total() << "]" << std::endl;
 
     ss << ">>>> HEADER <<<<" << std::endl;
-    BOOST_FOREACH(const boost::shared_ptr<MessageVar> mv, header_)
+    BOOST_FOREACH(const boost::shared_ptr<DCCLMessageVar> mv, header_)
         ss << *mv;
     
     ss << ">>>> LAYOUT (message_vars) <<<<" << std::endl;
 
-    BOOST_FOREACH(const boost::shared_ptr<MessageVar> mv, layout_)
+    BOOST_FOREACH(const boost::shared_ptr<DCCLMessageVar> mv, layout_)
         ss << *mv;
     
     if(is_moos)
@@ -348,7 +351,7 @@ std::string dccl::Message::get_display() const
 
         ss << ">>>> PUBLISHES <<<<" << std::endl;
         
-        BOOST_FOREACH(const Publish& p, publishes_)
+        BOOST_FOREACH(const DCCLPublish& p, publishes_)
             ss << p;
     }
     
@@ -359,7 +362,7 @@ std::string dccl::Message::get_display() const
 }
 
 // a much shorter rundown of the Message parameters
-std::string dccl::Message::get_short_display() const
+std::string goby::acomms::DCCLMessage::get_short_display() const
 {
     std::stringstream ss;
 
@@ -384,7 +387,7 @@ std::string dccl::Message::get_short_display() const
 }
     
 // overloaded <<
-std::ostream& dccl::operator<< (std::ostream& out, const Message& message)
+std::ostream& goby::acomms::operator<< (std::ostream& out, const DCCLMessage& message)
 {
     out << message.get_display();
     return out;

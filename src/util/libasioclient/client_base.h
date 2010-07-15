@@ -19,7 +19,6 @@
 #define ClientBase20100628H
 
 #include <iostream>
-#include <ctime>
 #include <deque>
 #include <fstream>
 #include <set>
@@ -32,8 +31,9 @@
 
 
 
-
-namespace comms
+namespace goby
+{
+namespace util
 {
     // seconds to wait before trying a reconnect
     const unsigned RETRY_INTERVAL = 10;
@@ -205,6 +205,7 @@ namespace comms
         ClientBase& operator= (const ClientBase&);
         
     }; 
+}
 }
 
 #endif

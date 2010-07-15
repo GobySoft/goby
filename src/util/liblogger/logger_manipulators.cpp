@@ -20,7 +20,7 @@
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "logger_manipulators.h"
-#include "util/libflexostream/flex_ostream.h"
+#include "flex_ostream.h"
 
 std::ostream & operator<< (std::ostream& os, const Group & g)
 {
@@ -34,7 +34,7 @@ void GroupSetter::operator()(std::ostream& os) const
 {
     try
     {
-        FlexOstream& flex = dynamic_cast<FlexOstream&>(os);
+        goby::util::FlexOstream& flex = dynamic_cast<goby::util::FlexOstream&>(os);
         flex.group(group_);
     }
     catch (const std::bad_cast& e)

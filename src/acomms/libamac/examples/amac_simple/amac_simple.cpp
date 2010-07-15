@@ -13,12 +13,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
-#include "acomms/amac.h"
-#include "acomms/modem_message.h"
+#include "goby/acomms/amac.h"
+#include "goby/acomms/modem_message.h"
 #include <iostream>
 
 int next_dest(unsigned);
-void init_transmission(const modem::Message&);
+void init_transmission(const goby::acomms::ModemMessage&);
 
 int main(int argc, char* argv[])
 {
@@ -26,12 +26,12 @@ int main(int argc, char* argv[])
     //
     // 1. Create a MACManager and feed it a std::ostream to log to
     //
-    amac::MACManager mac(&std::cout);
+    goby::acomms::MACManager mac(&std::cout);
 
     //
     // 2. Configure it for TDMA with basic peer discovery, rate 0, 10 second slots, and expire vehicles after 2 cycles of no communications. also, we are modem id 1.
     //
-    mac.set_type(amac::mac_slotted_tdma);
+    mac.set_type(goby::acomms::mac_slotted_tdma);
     mac.set_rate(0);
     mac.set_slot_time(10);
     mac.set_expire_cycles(2);
@@ -43,7 +43,7 @@ int main(int argc, char* argv[])
 
     // give callback for the next destination. this is called before a cycle is initiated, and would be bound to queue::QueueManager::request_next_destination if using libqueue.
     mac.set_destination_cb(&next_dest);
-    // give a callback to use for actually initiating the transmission. this would be bound to modem::DriverBase::initiate_transmission if using libmodemdriver.
+    // give a callback to use for actually initiating the transmission. this would be bound to goby::acomms::ModemDriverBase::initiate_transmission if using libmodemdriver.
     mac.set_initiate_transmission_cb(&init_transmission);
 
     //
@@ -60,8 +60,8 @@ int main(int argc, char* argv[])
     // 5. Discover some friends (modem ids 2 & 3)
     //
     
-    mac.process_message(modem::Message("src=2"));
-    mac.process_message(modem::Message("src=3"));
+    mac.process_message(goby::acomms::ModemMessage("src=2"));
+    mac.process_message(goby::acomms::ModemMessage("src=3"));
 
     //
     // 6. Run it, hearing consistently from #3, but #2 has gone silent and will be expired after 2 cycles
@@ -71,7 +71,7 @@ int main(int argc, char* argv[])
     {
         mac.do_work();
         sleep(1);
-        mac.process_message(modem::Message("src=3"));
+        mac.process_message(goby::acomms::ModemMessage("src=3"));
     }
     
     return 0;
@@ -83,7 +83,7 @@ int next_dest(unsigned size)
     return 10;
 }
 
-void init_transmission(const modem::Message& init_message)
+void init_transmission(const goby::acomms::ModemMessage& init_message)
 {
     std::cout << "starting transmission with these values: " << init_message << std::endl;
 }

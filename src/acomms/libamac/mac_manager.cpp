@@ -1,4 +1,4 @@
-// copyright 2009 t. schneider tes@mit.edu
+// copyright 2009, 2010 t. schneider tes@mit.edu
 // 
 // this file is part of libamac, a medium access control for
 // acoustic networks. 
@@ -27,13 +27,15 @@
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 
-#include "acomms/modem_message.h"
-#include "acomms/libdccl/dccl_constants.h"
-#include "util/streamlogger.h"
+#include "goby/acomms/modem_message.h"
+#include "goby/acomms/libdccl/dccl_constants.h"
+#include "goby/util/logger.h"
 
 #include "mac_manager.h"
 
-amac::MACManager::MACManager(std::ostream* os /* =0 */)
+using goby::util::goby_time;
+
+goby::acomms::MACManager::MACManager(std::ostream* os /* =0 */)
     : rate_(0),
       slot_time_(15),
       expire_cycles_(5),
@@ -45,34 +47,34 @@ amac::MACManager::MACManager(std::ostream* os /* =0 */)
       type_(mac_notype)
 { }
 
-amac::MACManager::~MACManager()
+goby::acomms::MACManager::~MACManager()
 { }
 
-void amac::MACManager::do_work()
+void goby::acomms::MACManager::do_work()
 {
-//    if(os_) *os_ << group("mac") << "timer is running: " << std::boolalpha << timer_is_running_ << std::endl;
+ //    if(os_) *os_ << group("mac") << "timer is running: " << std::boolalpha << timer_is_running_ << std::endl;
     
     // let the io service execute ready handlers (in this case, is the timer up?)
     if(timer_is_running_) io_.poll();
 }
 
-void amac::MACManager::restart_timer()
+void goby::acomms::MACManager::restart_timer()
 {    
     // cancel any old timer jobs waiting
     timer_.cancel();
     timer_.expires_at(next_slot_t_);
-    timer_.async_wait(boost::bind(&amac::MACManager::send_poll, this, _1));
+    timer_.async_wait(boost::bind(&MACManager::send_poll, this, _1));
     timer_is_running_ = true;
 }
 
-void amac::MACManager::stop_timer()
+void goby::acomms::MACManager::stop_timer()
 {
     timer_is_running_ = false;
     timer_.cancel();
 }
 
 
-void amac::MACManager::startup()
+void goby::acomms::MACManager::startup()
 {
     switch(type_)
     {
@@ -80,17 +82,17 @@ void amac::MACManager::startup()
             if(os_) *os_ << group("mac")
                          << "Using the Slotted TDMA MAC scheme with autodiscovery"
                          << std::endl;
-            blank_it_ = add_slot(amac::Slot(acomms::BROADCAST_ID,
-                                           amac::Slot::query_destination,
-                                           rate_,
-                                           amac::Slot::slot_data,
-                                           slot_time_,
-                                           boost::posix_time::ptime(boost::posix_time::pos_infin)));
+            blank_it_ = add_slot(Slot(acomms::BROADCAST_ID,
+                                      Slot::query_destination,
+                                      rate_,
+                                      Slot::slot_data,
+                                      slot_time_,
+                                      boost::posix_time::ptime(boost::posix_time::pos_infin)));
 
-            add_slot(amac::Slot(modem_id_,
-                          amac::Slot::query_destination,
+            add_slot(Slot(modem_id_,
+                          Slot::query_destination,
                           rate_,
-                          amac::Slot::slot_data,
+                          Slot::slot_data,
                           slot_time_,
                           boost::posix_time::ptime(boost::posix_time::pos_infin)));
 
@@ -107,7 +109,7 @@ void amac::MACManager::startup()
         case mac_polled:
             if(os_) *os_ << group("mac")
                          << "Using the Centralized Polling MAC scheme" << std::endl;
-            next_slot_t_ = now();
+            next_slot_t_ = goby_time();
             break;
 
         default:
@@ -118,7 +120,7 @@ void amac::MACManager::startup()
         restart_timer();
 }
 
-void amac::MACManager::send_poll(const asio::error_code& e)
+void goby::acomms::MACManager::send_poll(const asio::error_code& e)
 {    
     // canceled the last timer
     if(e == asio::error::operation_aborted) return;   
@@ -129,7 +131,7 @@ void amac::MACManager::send_poll(const asio::error_code& e)
     bool send_poll = true;
     
     int destination = (s.dest() == Slot::query_destination)
-        ? callback_dest(acomms::PACKET_SIZE[s.rate()]) : s.dest();
+        ? callback_dest(s.rate()) : s.dest();
     
     switch(type_)
     {
@@ -157,13 +159,13 @@ void amac::MACManager::send_poll(const asio::error_code& e)
         *os_ << " ]" << std::endl;    
 
         *os_ << group("mac") << s.type_as_string() << " slot is starting: {" << s.src() << " to "
-                 << destination << " @ " << s.rate() << "}" << std::endl;
+             << destination << " @ " << s.rate() << "}" << std::endl;
     }
 
     
     if(send_poll)
     {
-        modem::Message m;
+        ModemMessage m;
         switch(s.type())
         {
             case Slot::slot_data:
@@ -214,12 +216,12 @@ void amac::MACManager::send_poll(const asio::error_code& e)
     restart_timer();
 }
 
-    boost::posix_time::ptime amac::MACManager::next_cycle_time()
+boost::posix_time::ptime goby::acomms::MACManager::next_cycle_time()
 {
     using namespace boost::gregorian;
     using namespace boost::posix_time;
 
-    int since_day_start = now().time_of_day().total_seconds();
+    int since_day_start = goby_time().time_of_day().total_seconds();
     cycles_since_day_start_ = (floor(since_day_start/cycle_length()) + 1);
 
     if(os_) *os_ << group("mac") << "cycles since day start: "
@@ -232,7 +234,7 @@ void amac::MACManager::send_poll(const asio::error_code& e)
     return ptime(day_clock::universal_day(), seconds(secs_to_next));
 }
 
-void amac::MACManager::process_message(const modem::Message& m)
+void goby::acomms::MACManager::process_message(const ModemMessage& m)
 {
     unsigned id = m.src();
     
@@ -249,7 +251,7 @@ void amac::MACManager::process_message(const modem::Message& m)
         
         slot_order_.push_back
             (id2slot_.insert
-             (std::pair<unsigned, Slot> (id, Slot(id, Slot::query_destination, rate_, Slot::slot_data, slot_time_, now()))));
+             (std::pair<unsigned, Slot> (id, Slot(id, Slot::query_destination, rate_, Slot::slot_data, slot_time_, goby_time()))));
 
         slot_order_.sort();
 
@@ -259,17 +261,17 @@ void amac::MACManager::process_message(const modem::Message& m)
     {
         std::pair<id2slot_it, id2slot_it> p = id2slot_.equal_range(id);
         for(id2slot_it it = p.first; it != p.second; ++it)
-            it->second.set_last_heard_time(now());
+            it->second.set_last_heard_time(goby_time());
     }
 }
 
-void amac::MACManager::expire_ids()
+void goby::acomms::MACManager::expire_ids()
 {
     bool reset = false;
     
     for(id2slot_it it = id2slot_.begin(), n = id2slot_.end(); it != n; ++it)
     {
-        if(it->second.last_heard_time() < now()-boost::posix_time::seconds(cycle_length()*expire_cycles_) && it->first != modem_id_)
+        if(it->second.last_heard_time() < goby_time()-boost::posix_time::seconds(cycle_length()*expire_cycles_) && it->first != modem_id_)
         {            
             if(os_) *os_ << group("mac") << "removed id " << it->first
                          << " after not hearing for " << expire_cycles_
@@ -284,7 +286,7 @@ void amac::MACManager::expire_ids()
     if(reset) process_cycle_size_change();
 }
 
-void amac::MACManager::process_cycle_size_change()
+void goby::acomms::MACManager::process_cycle_size_change()
 {
     next_slot_t_ = next_cycle_time();
     if(os_) *os_ << group("mac") << "the MAC TDMA next cycle begins at time: "
@@ -296,7 +298,7 @@ void amac::MACManager::process_cycle_size_change()
 }
 
 
-unsigned amac::MACManager::cycle_sum()
+unsigned goby::acomms::MACManager::cycle_sum()
 {
     unsigned s = 0;
     BOOST_FOREACH(id2slot_it it, slot_order_)
@@ -304,7 +306,7 @@ unsigned amac::MACManager::cycle_sum()
     return s;
 }
 
-void amac::MACManager::position_blank()
+void goby::acomms::MACManager::position_blank()
 {
     unsigned blank_pos = cycle_length() - ((cycles_since_day_start_ % ENTROPY) == (cycle_sum() % ENTROPY)) - 1;
     
@@ -319,11 +321,11 @@ void amac::MACManager::position_blank()
     current_slot_ = slot_order_.begin();
 }
 
-std::map<unsigned, amac::Slot>::iterator amac::MACManager::add_slot(const amac::Slot& s)    
+std::map<unsigned, goby::acomms::Slot>::iterator goby::acomms::MACManager::add_slot(const Slot& s)    
 {
     bool do_timer_start = slot_order_.empty();
 
-    std::map<unsigned, amac::Slot>::iterator it =
+    std::map<unsigned, Slot>::iterator it =
         id2slot_.insert(std::pair<unsigned, Slot>(s.src(), s));
 
     slot_order_.push_back(it);
@@ -333,14 +335,14 @@ std::map<unsigned, amac::Slot>::iterator amac::MACManager::add_slot(const amac::
     
     if(do_timer_start)
     {
-        next_slot_t_ = now();
+        next_slot_t_ = goby_time();
         restart_timer();
     }
     
     return it;
 }
 
-bool amac::MACManager::remove_slot(const amac::Slot& s)    
+bool goby::acomms::MACManager::remove_slot(const Slot& s)    
 {
     bool removed_a_slot = false;
     

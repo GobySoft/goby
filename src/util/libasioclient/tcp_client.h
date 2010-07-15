@@ -20,9 +20,11 @@
 
 #include "client_base.h"
 
-namespace tcp
+namespace goby
+{
+namespace util
 {    
-    class TCPClient : public comms::ClientBase<asio::ip::tcp::socket>
+    class TCPClient : public ClientBase<asio::ip::tcp::socket>
     {
       public:
         static TCPClient* getInstance(const std::string& server,
@@ -48,6 +50,7 @@ namespace tcp
         std::string port_;
 
     }; 
+}
 }
 
 #endif

@@ -26,13 +26,13 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
 
-#include "util/streamlogger.h"
+#include "logger_manipulators.h"
 
 #include "flex_ncurses.h"
 #include "term_color.h"
 
 
-FlexNCurses::FlexNCurses(boost::mutex& mutex)
+goby::util::FlexNCurses::FlexNCurses(boost::mutex& mutex)
     : xmax_(0),
       ymax_(0),
       xwinN_(1),
@@ -45,19 +45,19 @@ FlexNCurses::FlexNCurses(boost::mutex& mutex)
 {  }
 
 
-void FlexNCurses::startup()
+void goby::util::FlexNCurses::startup()
 {
     initscr();
     start_color();
     
     
-    init_pair(termcolor::enums::white, COLOR_WHITE, COLOR_BLACK);
-    init_pair(termcolor::enums::red, COLOR_RED, COLOR_BLACK);
-    init_pair(termcolor::enums::green, COLOR_GREEN, COLOR_BLACK);
-    init_pair(termcolor::enums::yellow, COLOR_YELLOW, COLOR_BLACK);
-    init_pair(termcolor::enums::blue, COLOR_BLUE, COLOR_BLACK);
-    init_pair(termcolor::enums::magenta, COLOR_MAGENTA, COLOR_BLACK);
-    init_pair(termcolor::enums::cyan, COLOR_CYAN, COLOR_BLACK);
+    init_pair(tcolor::enums::white, COLOR_WHITE, COLOR_BLACK);
+    init_pair(tcolor::enums::red, COLOR_RED, COLOR_BLACK);
+    init_pair(tcolor::enums::green, COLOR_GREEN, COLOR_BLACK);
+    init_pair(tcolor::enums::yellow, COLOR_YELLOW, COLOR_BLACK);
+    init_pair(tcolor::enums::blue, COLOR_BLUE, COLOR_BLACK);
+    init_pair(tcolor::enums::magenta, COLOR_MAGENTA, COLOR_BLACK);
+    init_pair(tcolor::enums::cyan, COLOR_CYAN, COLOR_BLACK);
     
     refresh();
     update_size();
@@ -75,7 +75,7 @@ void FlexNCurses::startup()
 //    mousemask(ALL_MOUSE_EVENTS, 0);
 }
 
-void FlexNCurses::update_size()
+void goby::util::FlexNCurses::update_size()
 {
     getmaxyx(stdscr, ymax_, xmax_);
     ymax_ -= FOOTER_Y;
@@ -101,10 +101,10 @@ void FlexNCurses::update_size()
     }
 }
 
-void FlexNCurses::alive(bool alive) { alive_ = alive; }
-void FlexNCurses::cleanup() { endwin(); }
+void goby::util::FlexNCurses::alive(bool alive) { alive_ = alive; }
+void goby::util::FlexNCurses::cleanup() { endwin(); }
 
-void FlexNCurses::add_win(Group* g)
+void goby::util::FlexNCurses::add_win(Group* g)
 {
     int N_windows = panels_.size()+1;
         
@@ -121,7 +121,7 @@ void FlexNCurses::add_win(Group* g)
     recalculate_win();
 }
 
-void FlexNCurses::recalculate_win()
+void goby::util::FlexNCurses::recalculate_win()
 {
     
     // clear any old windows
@@ -212,7 +212,7 @@ void FlexNCurses::recalculate_win()
             wmove(new_window, 0, 0);
 
             // set the background color
-            wbkgd(new_window, COLOR_PAIR(termcolor::enums::white));
+            wbkgd(new_window, COLOR_PAIR(tcolor::enums::white));
 
             // scrolling is good!
             scrollok(new_window, true);
@@ -226,7 +226,7 @@ void FlexNCurses::recalculate_win()
     }    
 }
 
-void FlexNCurses::insert(time_t t, const std::string& s, Group* g)
+void goby::util::FlexNCurses::insert(time_t t, const std::string& s, Group* g)
 {
     size_t i = panel_from_group(g);
     
@@ -247,7 +247,7 @@ void FlexNCurses::insert(time_t t, const std::string& s, Group* g)
     hist.insert(std::pair<time_t, std::string>(t, s));
 }
 
-size_t FlexNCurses::panel_from_group(Group* g)
+size_t goby::util::FlexNCurses::panel_from_group(Group* g)
 {
 //    BOOST_FOREACH(size_t i, unique_panels_)
     for(size_t i = 0, n = panels_.size(); i < n; ++i)
@@ -257,7 +257,7 @@ size_t FlexNCurses::panel_from_group(Group* g)
     return 0;
 }
 
-void FlexNCurses::putline(const std::string &s, unsigned scrn, bool refresh /* = true */)
+void goby::util::FlexNCurses::putline(const std::string &s, unsigned scrn, bool refresh /* = true */)
 {
     if(s.empty())
         return;
@@ -296,7 +296,7 @@ void FlexNCurses::putline(const std::string &s, unsigned scrn, bool refresh /* =
 }
 
 
-void FlexNCurses::putlines(unsigned scrn,
+void goby::util::FlexNCurses::putlines(unsigned scrn,
                            const std::multimap<time_t, std::string>::const_iterator& alpha,
                            const std::multimap<time_t, std::string>::const_iterator& omega,
                            bool refresh /* = true */)
@@ -317,9 +317,9 @@ void FlexNCurses::putlines(unsigned scrn,
 }
 
 
-long FlexNCurses::color2attr_t(termcolor::enums::Color c)
+long goby::util::FlexNCurses::color2attr_t(tcolor::enums::Color c)
 {
-    using namespace termcolor::enums;
+    using namespace tcolor::enums;
     
     switch(c)
     {
@@ -344,7 +344,7 @@ long FlexNCurses::color2attr_t(termcolor::enums::Color c)
 }
 
 // find screen containing click
-size_t FlexNCurses::find_containing_window(int y, int x)
+size_t goby::util::FlexNCurses::find_containing_window(int y, int x)
 {
     BOOST_FOREACH(size_t i, unique_panels_)
     {
@@ -354,7 +354,7 @@ size_t FlexNCurses::find_containing_window(int y, int x)
     return panels_.size();
 }
 
-bool FlexNCurses::in_window(void* p, int y, int x)
+bool goby::util::FlexNCurses::in_window(void* p, int y, int x)
 {
     if(!p) return false;
     
@@ -367,11 +367,11 @@ bool FlexNCurses::in_window(void* p, int y, int x)
 }
 
 
-void FlexNCurses::write_head_title(size_t i)
+void goby::util::FlexNCurses::write_head_title(size_t i)
 {
     WINDOW* win = static_cast<WINDOW*>(panels_[i].head_window());
 
-    (void) wattrset(win, color2attr_t(termcolor::enums::lt_white));
+    (void) wattrset(win, color2attr_t(tcolor::enums::lt_white));
         
     int ymax, xmax;
     getmaxyx(win, ymax, xmax);
@@ -386,7 +386,7 @@ void FlexNCurses::write_head_title(size_t i)
 
 
     attr_t color_attr = color2attr_t(color_.from_str(panels_[i].group()->color()));
-    attr_t white_attr = color2attr_t(termcolor::enums::lt_white);
+    attr_t white_attr = color2attr_t(tcolor::enums::lt_white);
     wattron(win, white_attr);
     mvwaddstr(win, 0, 0, std::string(boost::lexical_cast<std::string>(i+1)+". ").c_str());
 
@@ -423,7 +423,7 @@ void FlexNCurses::write_head_title(size_t i)
     wrefresh(win);
 }
 
-void FlexNCurses::deselect_all()
+void goby::util::FlexNCurses::deselect_all()
 {
     if(is_locked_)
         return;
@@ -438,14 +438,14 @@ void FlexNCurses::deselect_all()
     }
 }
 
-void FlexNCurses::select_all()
+void goby::util::FlexNCurses::select_all()
 {
     BOOST_FOREACH(size_t i, unique_panels_)
         select(i);
 }
 
 
-void FlexNCurses::select(size_t gt)
+void goby::util::FlexNCurses::select(size_t gt)
 {    
     if(is_locked_)
         return;
@@ -457,7 +457,7 @@ void FlexNCurses::select(size_t gt)
     }    
 }
 
-size_t FlexNCurses::down(size_t curr)
+size_t goby::util::FlexNCurses::down(size_t curr)
 {
     int ybeg, xbeg;
     int ymax, xmax;
@@ -468,7 +468,7 @@ size_t FlexNCurses::down(size_t curr)
     return next;
 }
 
-size_t FlexNCurses::up(size_t curr)
+size_t goby::util::FlexNCurses::up(size_t curr)
 {
     int ybeg, xbeg;
     getbegyx(static_cast<WINDOW*>(panels_[curr].head_window()), ybeg, xbeg);
@@ -476,7 +476,7 @@ size_t FlexNCurses::up(size_t curr)
     return next;
 }
 
-size_t FlexNCurses::left(size_t curr)
+size_t goby::util::FlexNCurses::left(size_t curr)
 {
     int ybeg, xbeg;
     getbegyx(static_cast<WINDOW*>(panels_[curr].head_window()), ybeg, xbeg);
@@ -485,7 +485,7 @@ size_t FlexNCurses::left(size_t curr)
     return next;
 }
 
-size_t FlexNCurses::right(size_t curr)
+size_t goby::util::FlexNCurses::right(size_t curr)
 {
     int ybeg, xbeg;
     int ymax, xmax;
@@ -496,17 +496,17 @@ size_t FlexNCurses::right(size_t curr)
     return next;
 }
 
-void FlexNCurses::home()
+void goby::util::FlexNCurses::home()
 {
     shift(0);
 }
 
-void FlexNCurses::end()
+void goby::util::FlexNCurses::end()
 {
     shift(panels_.size()-1);
 }
 
-void FlexNCurses::shift(size_t next)
+void goby::util::FlexNCurses::shift(size_t next)
 {
     if(next < panels_.size())
     {    
@@ -515,7 +515,7 @@ void FlexNCurses::shift(size_t next)
     }
 }
 
-void FlexNCurses::combine()
+void goby::util::FlexNCurses::combine()
 {
     size_t lowest;
     BOOST_FOREACH(size_t i, unique_panels_)
@@ -545,14 +545,14 @@ void FlexNCurses::combine()
     recalculate_win();
 }
 
-void FlexNCurses::uncombine(size_t i)
+void goby::util::FlexNCurses::uncombine(size_t i)
 {
     BOOST_FOREACH(size_t j, panels_[i].combined())
         unique_panels_.insert(j);
     panels_[i].clear_combined();
 }
 
-void FlexNCurses::uncombine_selected()
+void goby::util::FlexNCurses::uncombine_selected()
 {
     BOOST_FOREACH(size_t i, unique_panels_)
     {
@@ -566,7 +566,7 @@ void FlexNCurses::uncombine_selected()
     recalculate_win();
 }
 
-void FlexNCurses::uncombine_all()
+void goby::util::FlexNCurses::uncombine_all()
 {
     BOOST_FOREACH(size_t i, unique_panels_)
         uncombine(i);
@@ -577,7 +577,7 @@ void FlexNCurses::uncombine_all()
 
 
 
-void FlexNCurses::move_up()
+void goby::util::FlexNCurses::move_up()
 {
     BOOST_FOREACH(size_t i, unique_panels_)
     {
@@ -587,7 +587,7 @@ void FlexNCurses::move_up()
     recalculate_win();
 }
 
-void FlexNCurses::move_down()
+void goby::util::FlexNCurses::move_down()
 { 
     //    BOOST_REVERSE_FOREACH(size_t i, unique_panels_)   
     for(std::set<size_t>::reverse_iterator it = unique_panels_.rbegin(),
@@ -600,7 +600,7 @@ void FlexNCurses::move_down()
     recalculate_win();
 }
 
-void FlexNCurses::move_right()
+void goby::util::FlexNCurses::move_right()
 {
     //    BOOST_REVERSE_FOREACH(size_t i, unique_panels_)
     for(std::set<size_t>::reverse_iterator it = unique_panels_.rbegin(),
@@ -635,7 +635,7 @@ void FlexNCurses::move_right()
     recalculate_win();
 }
 
-void FlexNCurses::move_left()
+void goby::util::FlexNCurses::move_left()
 {
     BOOST_FOREACH(size_t i, unique_panels_)
     {
@@ -667,7 +667,7 @@ void FlexNCurses::move_left()
     recalculate_win();
 }
 
-size_t FlexNCurses::find_first_selected()
+size_t goby::util::FlexNCurses::find_first_selected()
 {
     BOOST_FOREACH(size_t i, unique_panels_)
     {
@@ -677,7 +677,7 @@ size_t FlexNCurses::find_first_selected()
     return 0;
 }
 
-bool FlexNCurses::last_in_col(size_t val)
+bool goby::util::FlexNCurses::last_in_col(size_t val)
 {
     BOOST_FOREACH(size_t i, unique_panels_)
     {
@@ -687,7 +687,7 @@ bool FlexNCurses::last_in_col(size_t val)
     return true;
 }
 
-bool FlexNCurses::first_in_col(size_t val)
+bool goby::util::FlexNCurses::first_in_col(size_t val)
 {
     BOOST_FOREACH(size_t i, unique_panels_)
     {
@@ -697,7 +697,7 @@ bool FlexNCurses::first_in_col(size_t val)
     return true;
 }
 
-void FlexNCurses::grow_all()
+void goby::util::FlexNCurses::grow_all()
 {
     BOOST_FOREACH(size_t i, unique_panels_)
     {
@@ -707,7 +707,7 @@ void FlexNCurses::grow_all()
     recalculate_win(); 
 }
 
-void FlexNCurses::shrink_all()
+void goby::util::FlexNCurses::shrink_all()
 {
 
     BOOST_FOREACH(size_t i, unique_panels_)
@@ -719,7 +719,7 @@ void FlexNCurses::shrink_all()
 }
 
 
-void FlexNCurses::grow(int i)
+void goby::util::FlexNCurses::grow(int i)
 {
     panels_[i].set_minimized(false);
     size_t largest_panel = panels_.size();
@@ -748,7 +748,7 @@ void FlexNCurses::grow(int i)
 }
 
 
-void FlexNCurses::shrink(int i)
+void goby::util::FlexNCurses::shrink(int i)
 {
     size_t smallest_panel = panels_.size();
     int smallest_panel_size = ymax_;
@@ -776,14 +776,14 @@ void FlexNCurses::shrink(int i)
 }
     
 
-void FlexNCurses::toggle_minimized(int i)
+void goby::util::FlexNCurses::toggle_minimized(int i)
 {
     int change = panels_[i].toggle_minimized();
     for(int j = 0, m = abs(change); j < m; ++j)
         (change/abs(change) == 1) ? grow(i) : shrink(i);
 }
 
-void FlexNCurses::winunlock()
+void goby::util::FlexNCurses::winunlock()
 {
     BOOST_FOREACH(size_t j, unique_panels_)
     {        
@@ -804,7 +804,7 @@ void FlexNCurses::winunlock()
 
 }
 
-void FlexNCurses::redraw_lines(int j, int offset /* = -1 */)
+void goby::util::FlexNCurses::redraw_lines(int j, int offset /* = -1 */)
 {    
     wclear(static_cast<WINDOW*>(panels_[j].window()));
     
@@ -840,7 +840,7 @@ void FlexNCurses::redraw_lines(int j, int offset /* = -1 */)
 }
 
 
-void FlexNCurses::winlock()
+void goby::util::FlexNCurses::winlock()
 {
     size_t i = panels_.size();
     BOOST_FOREACH(size_t j, unique_panels_)
@@ -869,45 +869,45 @@ void FlexNCurses::winlock()
 
 
 
-void FlexNCurses::scroll_up()
+void goby::util::FlexNCurses::scroll_up()
 {
     int i = locked_panel_;
     int l = panels_[i].lines_from_beg();    
     redraw_lines(i, lines_from_beg(l-1, i));
 }
 
-void FlexNCurses::scroll_down()
+void goby::util::FlexNCurses::scroll_down()
 {
     int i = locked_panel_;
     int l = panels_[i].lines_from_beg();
     redraw_lines(i, lines_from_beg(l+1, i));
 }
 
-void FlexNCurses::page_up()
+void goby::util::FlexNCurses::page_up()
 {
     int i = locked_panel_;
     int l = panels_[i].lines_from_beg();    
     redraw_lines(i, lines_from_beg(l-(panels_[i].ywidth()-1), i));
 }
 
-void FlexNCurses::page_down()
+void goby::util::FlexNCurses::page_down()
 {
     int i = locked_panel_;
     int l = panels_[i].lines_from_beg();    
     redraw_lines(i, lines_from_beg(l+(panels_[i].ywidth()-1), i));
 }
-void FlexNCurses::scroll_end()
+void goby::util::FlexNCurses::scroll_end()
 {
     int i = locked_panel_;
     redraw_lines(i, lines_from_beg(get_history_size(i), i));
 }
-void FlexNCurses::scroll_home()
+void goby::util::FlexNCurses::scroll_home()
 {
     int i = locked_panel_;
     redraw_lines(i, lines_from_beg(0, i));
 }
 
-void FlexNCurses::restore_order()
+void goby::util::FlexNCurses::restore_order()
 {
     std::vector<Panel> new_panels;
     new_panels.resize(panels_.size());
@@ -921,7 +921,7 @@ void FlexNCurses::restore_order()
     panels_ = new_panels;
 }
 
-std::multimap<time_t, std::string> FlexNCurses::get_history(size_t i, int how_much /* = -1 */)
+std::multimap<time_t, std::string> goby::util::FlexNCurses::get_history(size_t i, int how_much /* = -1 */)
 {
     if(panels_[i].combined().empty())
         return panels_[i].history();
@@ -963,7 +963,7 @@ std::multimap<time_t, std::string> FlexNCurses::get_history(size_t i, int how_mu
             
 
 
-size_t FlexNCurses::get_history_size(size_t i)
+size_t goby::util::FlexNCurses::get_history_size(size_t i)
 {
     if(panels_[i].combined().empty())
         return panels_[i].history().size();
@@ -981,7 +981,7 @@ size_t FlexNCurses::get_history_size(size_t i)
 
 
 
-int FlexNCurses::lines_from_beg(int l, size_t i)
+int goby::util::FlexNCurses::lines_from_beg(int l, size_t i)
 {
     int hist_size = get_history_size(i);
     int past = std::min(hist_size, panels_[i].ywidth());
@@ -994,12 +994,12 @@ int FlexNCurses::lines_from_beg(int l, size_t i)
 }
 
 
-int FlexNCurses::Panel::lines_from_beg(int i)
+int goby::util::FlexNCurses::Panel::lines_from_beg(int i)
 {
     return lines_from_beg_ = i;    
 }
 
-int FlexNCurses::Panel::minimized(bool b)
+int goby::util::FlexNCurses::Panel::minimized(bool b)
 {
     minimized_ = b;
     if(b)
@@ -1014,7 +1014,7 @@ int FlexNCurses::Panel::minimized(bool b)
 }
 
 
-void FlexNCurses::run_input()
+void goby::util::FlexNCurses::run_input()
 {
     // sleep(1);
     // MOOS loves to stomp on me at startup...

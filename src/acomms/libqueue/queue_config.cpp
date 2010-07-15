@@ -19,7 +19,7 @@
 
 #include "queue_config.h"
 
-std::ostream& queue::operator<< (std::ostream& out, const QueueConfig& q)
+std::ostream& goby::acomms::operator<< (std::ostream& out, const QueueConfig& q)
 {
     out << "queue configuration:\n"
         << "\t" << "name: " << q.name() << "\n"

@@ -22,9 +22,11 @@
 
 #include "client_base.h"
 
-namespace serial
+namespace goby
+{
+namespace util
 {    
-    class SerialClient: public comms::ClientBase<asio::serial_port>
+    class SerialClient: public ClientBase<asio::serial_port>
     {
       public:
         static SerialClient* getInstance(const std::string& name,
@@ -51,5 +53,5 @@ namespace serial
         
     }; 
 }
-
+}
 #endif

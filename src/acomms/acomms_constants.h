@@ -22,61 +22,58 @@
 #include <limits>
 #include <bitset>
 
-#include "util/tes_utils.h"
-
-namespace acomms
+namespace goby
 {
-    const unsigned BITS_IN_BYTE = 8;
-    // one hex char is a nibble (4 bits), two nibbles per byte
-    const unsigned NIBS_IN_BYTE = 2;
 
-    const unsigned BROADCAST_ID = 0;
-    const unsigned char DCCL_CCL_HEADER = 32;
-    
-    const double NaN = std::numeric_limits<double>::quiet_NaN();
-    
-    const unsigned NUM_HEADER_BYTES = 6;
-    const unsigned NUM_HEADER_NIBS = 6*NIBS_IN_BYTE;
-
-    const unsigned NUM_HEADER_PARTS = 8;
-    enum DCCLHeaderPart { head_ccl_id = 0,
-                          head_dccl_id = 1,
-                          head_time = 2,
-                          head_src_id = 3,
-                          head_dest_id = 4,
-                          head_multimessage_flag = 5,
-                          head_broadcast_flag = 6,
-                          head_unused = 7
-    };
-    
-    const std::string DCCL_HEADER_NAMES [] = { "_ccl_id",
-                                               "_id",
-                                               "_time",
-                                               "_src_id",
-                                               "_dest_id",
-                                               "_multimessage_flag",
-                                               "_broadcast_flag",
-                                               "_unused",
-    };
-    inline std::string to_str(DCCLHeaderPart p)
+    namespace acomms
     {
-        return DCCL_HEADER_NAMES[p];
+        const unsigned BITS_IN_BYTE = 8;
+        // one hex char is a nibble (4 bits), two nibbles per byte
+        const unsigned NIBS_IN_BYTE = 2;
+
+        const unsigned BROADCAST_ID = 0;
+        const unsigned char DCCL_CCL_HEADER = 32;
+    
+        const double NaN = std::numeric_limits<double>::quiet_NaN();
+        
+        const unsigned DCCL_NUM_HEADER_BYTES = 6;
+
+        const unsigned DCCL_NUM_HEADER_PARTS = 8;
+
+        enum DCCLHeaderPart { head_ccl_id = 0,
+                              head_dccl_id = 1,
+                              head_time = 2,
+                              head_src_id = 3,
+                              head_dest_id = 4,
+                              head_multimessage_flag = 5,
+                              head_broadcast_flag = 6,
+                              head_unused = 7
+        };
+    
+        const std::string DCCL_HEADER_NAMES [] = { "_ccl_id",
+                                                   "_id",
+                                                   "_time",
+                                                   "_src_id",
+                                                   "_dest_id",
+                                                   "_multimessage_flag",
+                                                   "_broadcast_flag",
+                                                   "_unused",
+        };
+        inline std::string to_str(DCCLHeaderPart p)
+        {
+            return DCCL_HEADER_NAMES[p];
+        }
+    
+        enum DCCLHeaderBits { head_ccl_id_size = 8,
+                              head_dccl_id_size = 9,
+                              head_time_size = 17,
+                              head_src_id_size = 5,
+                              head_dest_id_size = 5,
+                              head_flag_size = 1,
+                              head_unused_size = 2
+        };
+    
     }
-    
-    enum DCCLHeaderBits { head_ccl_id_size = 8,
-                          head_dccl_id_size = 9,
-                          head_time_size = 17,
-                          head_src_id_size = 5,
-                          head_dest_id_size = 5,
-                          head_flag_size = 1,
-                          head_unused_size = 2
-    };
-    
-    const double NOT_A_TIME = -1;
 
-    // this is Micro-Modem specific and is used by libmac, therefore
-    // we must get rid of it at some point soon...
-    const unsigned PACKET_SIZE [] = { 32, 32, 64, 256, 256, 256 };
 }
-
 #endif

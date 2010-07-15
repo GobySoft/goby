@@ -17,11 +17,12 @@
 // encodes/decodes the message given in the pGeneralCodec documentation
 // also includes the simple.xml file to show example of DCCLCodec instantiation
 // with multiple files
-#include "acomms/dccl.h"
+#include "goby/acomms/dccl.h"
 #include <exception>
 #include <iostream>
 
-using dccl::operator<<;
+using namespace goby;
+using goby::acomms::operator<<;
 
 
 int main()
@@ -33,7 +34,7 @@ int main()
     xml_files.insert(DCCL_EXAMPLES_DIR "/dccl_simple/simple.xml");
     xml_files.insert(DCCL_EXAMPLES_DIR "/two_message/two_message.xml");
     
-    dccl::DCCLCodec dccl(xml_files, "../../message_schema.xsd");
+    acomms::DCCLCodec dccl(xml_files, "../../message_schema.xsd");
 
     // show some useful information about all the loaded messages
     std::cout << std::string(30, '#') << std::endl
@@ -75,7 +76,7 @@ int main()
               << std::string(30, '#') << std::endl;
 
     // initialize input contents to encoder
-    std::map<std::string, dccl::MessageVal> vals;
+    std::map<std::string, acomms::DCCLMessageVal> vals;
     
     // initialize output hexadecimal
     std::string hex2, hex3;

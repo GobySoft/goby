@@ -17,7 +17,6 @@
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <iostream>
-#include <ctime>
 #include <limits>
 
 #include <boost/assign.hpp>
@@ -26,12 +25,12 @@
 
 #include "flex_ostreambuf.h"
 
-using namespace termcolor;
+using namespace goby::tcolor;
 
-FlexOStreamBuf::FlexOStreamBuf(): name_("no name"),
+goby::util::FlexOStreamBuf::FlexOStreamBuf(): name_("no name"),
                                   verbosity_(verbose),
                                   die_flag_(false),
-                                  curses_(curses_mutex_)
+                                  curses_(0)
 {
     boost::assign::insert (verbosity_map_)
         ("quiet",quiet)
@@ -43,38 +42,45 @@ FlexOStreamBuf::FlexOStreamBuf(): name_("no name"),
     groups_[""] = no_group;    
 }
 
-void FlexOStreamBuf::verbosity(const std::string & s)
+goby::util::FlexOStreamBuf::~FlexOStreamBuf()
+{
+    if(curses_) delete curses_;
+}
+
+void goby::util::FlexOStreamBuf::verbosity(const std::string & s)
 {
     verbosity_ = verbosity_map_[s];
     
     if(verbosity_ == scope)
     {
+        curses_ = new FlexNCurses(curses_mutex_);
+        
         boost::mutex::scoped_lock lock(curses_mutex_);
 
-        curses_.startup();
-        curses_.add_win(&groups_[""]);
+        curses_->startup();
+        curses_->add_win(&groups_[""]);
         
-        curses_.recalculate_win();
+        curses_->recalculate_win();
 	
         input_thread_ = boost::shared_ptr<boost::thread>(new boost::thread(boost::bind(&FlexNCurses::run_input, boost::ref(curses_))));
         
     }
 }
 
-void FlexOStreamBuf::add_group(const std::string & name, Group g)
+void goby::util::FlexOStreamBuf::add_group(const std::string & name, Group g)
 {
     groups_[name] = g;
     
     if(verbosity_ == scope)
     {
         boost::mutex::scoped_lock lock(curses_mutex_);
-        curses_.add_win(&groups_[name]);
+        curses_->add_win(&groups_[name]);
     }
 }
 
 
 // called when flush() or std::endl
-int FlexOStreamBuf::sync()
+int goby::util::FlexOStreamBuf::sync()
 {
     std::istream is(this);
     std::string s;
@@ -98,7 +104,7 @@ int FlexOStreamBuf::sync()
     return 0;
 }
 
-void FlexOStreamBuf::display(const std::string & s)
+void goby::util::FlexOStreamBuf::display(const std::string & s)
 {
     bool is_group = groups_.count(group_name_);
 
@@ -127,13 +133,13 @@ void FlexOStreamBuf::display(const std::string & s)
             {
                 boost::mutex::scoped_lock lock(curses_mutex_);
                 std::string line = std::string("\n" +  color_.esc_code_from_str(groups_[group_name_].color()) + "| \33[0m" + s);
-                curses_.insert(time(NULL), line, &groups_[group_name_]);
+                curses_->insert(time(NULL), line, &groups_[group_name_]);
             }
             else
             {
-                curses_.alive(false);
+                curses_->alive(false);
                 input_thread_->join();
-                curses_.cleanup();
+                curses_->cleanup();
                 
                 std::cout << color_.esc_code_from_str(groups_[group_name_].color()) << name_ << nocolor << ": " << s << nocolor << std::endl;
             }            

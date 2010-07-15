@@ -4,8 +4,8 @@ if(Boost_FOUND)
   include_directories(${Boost_INCLUDE_DIR})
   
   file(GLOB SRC *.cpp *.c)
-  add_library(amac SHARED ${SRC})
-  target_link_libraries(amac streamlogger ${Boost_LIBRARIES})
+  add_library(goby_amac SHARED ${SRC})
+  target_link_libraries(goby_amac goby_logger ${Boost_LIBRARIES})
 endif()
 
 add_subdirectory(examples)

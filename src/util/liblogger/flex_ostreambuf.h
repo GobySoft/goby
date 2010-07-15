@@ -25,17 +25,22 @@
 #include <boost/thread.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include "util/streamlogger.h"
+#include "logger_manipulators.h"
 
 #include "flex_ncurses.h"
 #include "term_color.h"
-           
+
+namespace goby
+{
+namespace util
+{    
 // stringbuf that allows us to insert things before the stream and control output
 class FlexOStreamBuf : public std::stringbuf
 {
   public:
     FlexOStreamBuf();
-        
+    ~FlexOStreamBuf();
+    
     int sync();
     
     void name(const std::string & s)
@@ -62,11 +67,11 @@ class FlexOStreamBuf : public std::stringbuf
 
     void refresh()
     {
-            if(verbosity_ == scope)
-            {
-                boost::mutex::scoped_lock lock(curses_mutex_);
-                curses_.recalculate_win();
-            }
+        if(verbosity_ == scope)
+        {
+            boost::mutex::scoped_lock lock(curses_mutex_);
+            curses_->recalculate_win();
+        }
     }
     
   private:
@@ -87,13 +92,14 @@ class FlexOStreamBuf : public std::stringbuf
         
     bool die_flag_;
 
-    termcolor::TermColor color_;
+    tcolor::TermColor color_;
     
-    FlexNCurses curses_;
+    FlexNCurses* curses_;
 
     boost::mutex curses_mutex_;
     boost::shared_ptr<boost::thread> input_thread_;
 };
-
+}
+}
 #endif
 

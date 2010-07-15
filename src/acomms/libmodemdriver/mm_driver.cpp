@@ -24,15 +24,16 @@
 #include <boost/foreach.hpp>
 #include <boost/assign.hpp>
 
-#include "acomms/modem_message.h"
-#include "util/streamlogger.h"
+#include "goby/acomms/modem_message.h"
+#include "goby/util/logger.h"
+#include "goby/util/time.h"
 
-using namespace serial; // for NMEASentence
+using namespace goby::util; // for NMEASentence & goby_time()
 
-micromodem::MMDriver::MMDriver(std::ostream* os /*= 0*/)
-    : DriverBase(os, SERIAL_DELIMITER),
+goby::acomms::MMDriver::MMDriver(std::ostream* os /*= 0*/)
+    : ModemDriverBase(os, SERIAL_DELIMITER),
       os_(os),
-      last_write_time_(time(NULL)),
+      last_write_time_(goby_time()),
       waiting_for_modem_(false),
       startup_done_(false),
       global_fail_count_(0),
@@ -43,11 +44,11 @@ micromodem::MMDriver::MMDriver(std::ostream* os /*= 0*/)
     set_baud(DEFAULT_BAUD);
 }
 
-micromodem::MMDriver::~MMDriver()
+goby::acomms::MMDriver::~MMDriver()
  { }
 
 
-void micromodem::MMDriver::startup()
+void goby::acomms::MMDriver::startup()
 {
     serial_start();
     
@@ -60,7 +61,7 @@ void micromodem::MMDriver::startup()
     startup_done_ = true;
 }
 
-void micromodem::MMDriver::do_work()
+void goby::acomms::MMDriver::do_work()
 {    
     if(!clock_set_ && out_.empty())
         set_clock();
@@ -73,7 +74,7 @@ void micromodem::MMDriver::do_work()
     while(serial_read(in))
     {
         boost::trim(in);
-        if(os_) *os_ << group("mm_in") << "|" << microsec_simple_time_of_day() << "| " << in << std::endl;
+        if(os_) *os_ << group("mm_in") << in << std::endl;
 
 	// Begin the addition of code to support the gateway buoy
 	// Added by Andrew Bouchard, NSWC PCD
@@ -96,7 +97,7 @@ void micromodem::MMDriver::do_work()
 }
 
 
-void micromodem::MMDriver::initiate_transmission(const modem::Message& m)
+void goby::acomms::MMDriver::initiate_transmission(const acomms::ModemMessage& m)
 {   
     //$CCCYC,CMD,ADR1,ADR2,Packet Type,ACK,Npkt*CS
     NMEASentence nmea("$CCCYC", NMEASentence::IGNORE);
@@ -109,7 +110,7 @@ void micromodem::MMDriver::initiate_transmission(const modem::Message& m)
     write(nmea);
 }
 
-void micromodem::MMDriver::initiate_ranging(const modem::Message& m)
+void goby::acomms::MMDriver::initiate_ranging(const acomms::ModemMessage& m)
 {   
     //$CCMPC,SRC,DEST*CS
     NMEASentence nmea("$CCMPC", NMEASentence::IGNORE);
@@ -118,19 +119,19 @@ void micromodem::MMDriver::initiate_ranging(const modem::Message& m)
     write(nmea);
 }
 
-void micromodem::MMDriver::handle_modem_out()
+void goby::acomms::MMDriver::handle_modem_out()
 {
     if(out_.empty())
         return;
     
     NMEASentence& nmea = out_.front();
     
-    bool resend = waiting_for_modem_ && (last_write_time_ <= (time(NULL) - MODEM_WAIT));
+    bool resend = waiting_for_modem_ && (last_write_time_ <= (goby_time() - MODEM_WAIT));
     if(!waiting_for_modem_ || resend)
     {
         if(resend)
         {
-            if(os_) *os_ << group("mm_out") << warn << "resending " << nmea.front() <<  " because we had no modem response for " << (time(NULL) - last_write_time_) << " second(s). " << std::endl;
+            if(os_) *os_ << group("mm_out") << warn << "resending " << nmea.front() <<  " because we had no modem response for " << (goby_time() - last_write_time_).total_seconds() << " second(s). " << std::endl;
             ++global_fail_count_;
             ++present_fail_count_;
             if(global_fail_count_ == MAX_FAILS_BEFORE_DEAD)
@@ -146,7 +147,7 @@ void micromodem::MMDriver::handle_modem_out()
             }
         }
 
-        if(os_) *os_ << group("mm_out") << "|" << microsec_simple_time_of_day() << "| " << gateway_prefix_out_ << nmea.message() << std::endl;
+        if(os_) *os_ << group("mm_out") << gateway_prefix_out_ << nmea.message() << std::endl;
 
         // Begin the addition of code to support the gateway buoy
         // Added by Andrew Bouchard, NSWC PCD
@@ -154,11 +155,11 @@ void micromodem::MMDriver::handle_modem_out()
         // End the addition of code to support the gateway buoy
         
         waiting_for_modem_ = true;
-        last_write_time_ = time(NULL);
+        last_write_time_ = goby_time();
     }
 }
 
-void micromodem::MMDriver::pop_out()
+void goby::acomms::MMDriver::pop_out()
 {
     waiting_for_modem_ = false;
     out_.pop_front();
@@ -166,7 +167,7 @@ void micromodem::MMDriver::pop_out()
 }
 
 
-void micromodem::MMDriver::write(NMEASentence& nmea)
+void goby::acomms::MMDriver::write(NMEASentence& nmea)
 {    
     out_.push_back(nmea);
 
@@ -174,22 +175,22 @@ void micromodem::MMDriver::write(NMEASentence& nmea)
 }
 
 
-void micromodem::MMDriver::set_clock()
+void goby::acomms::MMDriver::set_clock()
 {
     NMEASentence nmea("$CCCLK", NMEASentence::IGNORE);
-    boost::posix_time::ptime p = boost::posix_time::second_clock::universal_time();
+    boost::posix_time::ptime p = goby_time();
     
-    nmea.push_back(static_cast<int>(p.date().year()));
-    nmea.push_back(static_cast<int>(p.date().month()));
-    nmea.push_back(static_cast<int>(p.date().day()));
-    nmea.push_back(static_cast<int>(p.time_of_day().hours()));
-    nmea.push_back(static_cast<int>(p.time_of_day().minutes()));
-    nmea.push_back(static_cast<int>(p.time_of_day().seconds()));
+    nmea.push_back(int(p.date().year()));
+    nmea.push_back(int(p.date().month()));
+    nmea.push_back(int(p.date().day()));
+    nmea.push_back(int(p.time_of_day().hours()));
+    nmea.push_back(int(p.time_of_day().minutes()));
+    nmea.push_back(int(p.time_of_day().seconds()));
     
     write(nmea);
 }
 
-void micromodem::MMDriver::write_cfg()
+void goby::acomms::MMDriver::write_cfg()
 {
     BOOST_FOREACH(const std::string& s, cfg_)
     {
@@ -199,14 +200,14 @@ void micromodem::MMDriver::write_cfg()
     }    
 }
 
-void micromodem::MMDriver::check_cfg()
+void goby::acomms::MMDriver::check_cfg()
 {
     NMEASentence nmea("$CCCFQ,ALL", NMEASentence::IGNORE);
     write(nmea);
 }
 
 
-void micromodem::MMDriver::handle_modem_in(NMEASentence& nmea)
+void goby::acomms::MMDriver::handle_modem_in(NMEASentence& nmea)
 {    
     // look at the talker front (talker id)
     switch(talker_id_map_[nmea.talker_id()])
@@ -217,7 +218,7 @@ void micromodem::MMDriver::handle_modem_in(NMEASentence& nmea)
         case CC: case SN: case GP: default: return;
     }
 
-    modem::Message m_in;
+    acomms::ModemMessage m_in;
     // look at the talker back (message code)
     switch(sentence_id_map_[nmea.sentence_id()])
     {
@@ -241,7 +242,7 @@ void micromodem::MMDriver::handle_modem_in(NMEASentence& nmea)
     if(callback_decoded) callback_decoded(m_in);
 }
 
-void micromodem::MMDriver::rxd(NMEASentence& nmea, modem::Message& m)
+void goby::acomms::MMDriver::rxd(NMEASentence& nmea, acomms::ModemMessage& m)
 {
     m.set_src(nmea[1]);
     m.set_dest(nmea[2]);
@@ -251,7 +252,7 @@ void micromodem::MMDriver::rxd(NMEASentence& nmea, modem::Message& m)
 
     if(callback_receive) callback_receive(m);
 }
-void micromodem::MMDriver::ack(NMEASentence& nmea, modem::Message& m)
+void goby::acomms::MMDriver::ack(NMEASentence& nmea, acomms::ModemMessage& m)
 {
     m.set_src(nmea[1]);
     m.set_dest(nmea[2]);
@@ -260,17 +261,17 @@ void micromodem::MMDriver::ack(NMEASentence& nmea, modem::Message& m)
 
     if(callback_ack) callback_ack(m);
 }
-void micromodem::MMDriver::drq(NMEASentence& nmea_in, modem::Message& m_in)
+void goby::acomms::MMDriver::drq(NMEASentence& nmea_in, acomms::ModemMessage& m_in)
 {
     // read the drq
-    m_in.set_t(modem_time2unix_time(nmea_in[1]));
+    m_in.set_time(modem_time2ptime(nmea_in[1]));
     m_in.set_src(nmea_in[2]);
     m_in.set_dest(nmea_in[3]);
 //  m_in.set_ack(nmea_in[4]);
     m_in.set_size(nmea_in[5]);
     m_in.set_frame(nmea_in[6]);
 
-    modem::Message m_out;
+    acomms::ModemMessage m_out;
     // fetch the data
     if(callback_datarequest) callback_datarequest(m_in, m_out);
 
@@ -284,7 +285,7 @@ void micromodem::MMDriver::drq(NMEASentence& nmea_in, modem::Message& m_in)
     write(nmea_out);   
 }
 
-void micromodem::MMDriver::cfg(NMEASentence& nmea, modem::Message& m)
+void goby::acomms::MMDriver::cfg(NMEASentence& nmea, acomms::ModemMessage& m)
 {
     if(out_.empty() || (out_.front().sentence_id() != "CFG" && out_.front().sentence_id() != "CFQ"))
         return;
@@ -292,7 +293,7 @@ void micromodem::MMDriver::cfg(NMEASentence& nmea, modem::Message& m)
     if(out_.front().sentence_id() == "CFQ") pop_out();
 }
 
-void micromodem::MMDriver::clk(NMEASentence& nmea, modem::Message& m)
+void goby::acomms::MMDriver::clk(NMEASentence& nmea, acomms::ModemMessage& m)
 {
     if(out_.empty() || out_.front().sentence_id() != "CLK")
         return;
@@ -300,7 +301,7 @@ void micromodem::MMDriver::clk(NMEASentence& nmea, modem::Message& m)
     using namespace boost::posix_time;
     using namespace boost::gregorian;
     // modem responds to the previous second, which is why we subtract one second from the current time
-    ptime expected = now();
+    ptime expected = goby_time();
     ptime reported = ptime(date(nmea.as<int>(1),
                                 nmea.as<int>(2),
                                 nmea.as<int>(3)),
@@ -312,53 +313,53 @@ void micromodem::MMDriver::clk(NMEASentence& nmea, modem::Message& m)
 
     // make sure the modem reports its time as set at the right time
     // we may end up oversetting the clock, but better safe than sorry...
-    if(reported >= (expected - seconds(ALLOWED_SKEW)))
+    if(reported >= (expected - ALLOWED_SKEW))
         clock_set_ = true;    
     
 }
 
-void micromodem::MMDriver::mpa(NMEASentence& nmea, modem::Message& m){}
+void goby::acomms::MMDriver::mpa(NMEASentence& nmea, acomms::ModemMessage& m){}
 
-void micromodem::MMDriver::mpr(NMEASentence& nmea, modem::Message& m)
+void goby::acomms::MMDriver::mpr(NMEASentence& nmea, acomms::ModemMessage& m)
 {
     // $CAMPR,SRC,DEST,TRAVELTIME*CS
     m.set_src(nmea[1]);
     m.set_dest(nmea[2]);
 
     if(nmea.size() > 3)
-        m.set_t(nmea[3]);
+        m.set_tof(nmea[3]);
 
     if(callback_range_reply) callback_range_reply(m);
 }
 
-void micromodem::MMDriver::rev(NMEASentence& nmea, modem::Message& m)
+void goby::acomms::MMDriver::rev(NMEASentence& nmea, acomms::ModemMessage& m)
 {
     if(nmea[2] == "INIT")
     {
         // reboot
-        sleep(WAIT_AFTER_REBOOT);
+        sleep(WAIT_AFTER_REBOOT.total_seconds());
         clock_set_ = false;
     }
     else if(nmea[2] == "AUV")
     {
         //check the clock
-        using namespace boost::posix_time;
-        ptime expected = now();
-        ptime reported = modem_time2posix_time(nmea[1]);
+        using boost::posix_time::ptime;
+        ptime expected = goby_time();
+        ptime reported = modem_time2ptime(nmea[1]);
 
-        if(reported < (expected - seconds(ALLOWED_SKEW)))
+        if(reported < (expected - ALLOWED_SKEW))
             clock_set_ = false;
         
     }
     
 }
 
-void micromodem::MMDriver::err(NMEASentence& nmea, modem::Message& m)
+void goby::acomms::MMDriver::err(NMEASentence& nmea, acomms::ModemMessage& m)
 {
     *os_ << group("mm_out") << warn << "modem reports error: " << nmea.message() << std::endl;
 }
 
-void micromodem::MMDriver::cyc(NMEASentence& nmea, modem::Message& m)
+void goby::acomms::MMDriver::cyc(NMEASentence& nmea, acomms::ModemMessage& m)
 {
     // somewhat "loose" interpretation of some of the fields
     m.set_src(nmea[2]); // ADR1
@@ -368,7 +369,7 @@ void micromodem::MMDriver::cyc(NMEASentence& nmea, modem::Message& m)
 }
 
 
-boost::posix_time::ptime micromodem::MMDriver::modem_time2posix_time(const std::string& mt)
+boost::posix_time::ptime goby::acomms::MMDriver::modem_time2ptime(const std::string& mt)
 {   
     using namespace boost::posix_time;
     using namespace boost::gregorian;
@@ -398,22 +399,8 @@ boost::posix_time::ptime micromodem::MMDriver::modem_time2posix_time(const std::
     }
 }
 
-double micromodem::MMDriver::modem_time2unix_time(const std::string& mt)
-{
-    using namespace boost::posix_time;
-    using namespace boost::gregorian;
-    
-    ptime given_time = modem_time2posix_time(mt);
-    if (given_time == not_a_date_time)
-        return -1;
-    
-    ptime time_t_epoch(date(1970,1,1));
 
-    time_duration diff = given_time - time_t_epoch;
-    return (diff.total_seconds() + diff.fractional_seconds() / time_duration::ticks_per_second());
-}
-
-void micromodem::MMDriver::initialize_talkers()
+void goby::acomms::MMDriver::initialize_talkers()
 {
     boost::assign::insert (sentence_id_map_)
         ("ACK",ACK)
@@ -479,7 +466,7 @@ void micromodem::MMDriver::initialize_talkers()
  *      buoy for acoustic communications
  * @param GatewayID - The numberical index of the buoy being used
  */
-void micromodem::MMDriver::set_gateway_prefix(bool IsGateway, int GatewayID)
+void goby::acomms::MMDriver::set_gateway_prefix(bool IsGateway, int GatewayID)
 {
     // If the buoy is in use, make the prefix #M<ID>
     if ( IsGateway )

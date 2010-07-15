@@ -20,7 +20,7 @@
 #ifndef QUEUECOURTESY20091211H
 #define QUEUECOURTESY20091211H
 
-#include "acomms/libqueue/queue_manager.h"
+#include "goby/acomms/libqueue/queue_manager.h"
 
 #endif
 

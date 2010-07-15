@@ -23,7 +23,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${goby_BIN_DIR} CACHE PATH
 
 # set instructions for `make install`
 install(DIRECTORY ${goby_BIN_DIR}/ DESTINATION /usr/local/bin FILE_PERMISSIONS WORLD_EXECUTE)
-install(DIRECTORY ${goby_LIB_DIR}/ DESTINATION /usr/local/lib/goby)
+install(DIRECTORY ${goby_LIB_DIR}/ DESTINATION /usr/local/lib)
 install(DIRECTORY ${goby_INC_DIR}/ DESTINATION /usr/local/include/goby)
 
 # find packages, libraries, and headers
@@ -51,7 +51,7 @@ endforeach()
 # copy to goby/include
 file(GLOB_RECURSE INCLUDE_FILES RELATIVE ${goby_SRC_DIR} src/*.h)
 foreach(I ${INCLUDE_FILES})
-  configure_file(${goby_SRC_DIR}/${I} ${goby_INC_DIR}/${I})
+  configure_file(${goby_SRC_DIR}/${I} ${goby_INC_DIR}/goby/${I})
 endforeach()
 
 # let cmake know where the headers are

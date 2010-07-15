@@ -22,9 +22,9 @@
 #include "message_publish.h"
 #include "message.h"
 
-using acomms::NaN;
+using goby::acomms::NaN;
 
-void dccl::Publish::initialize(Message& msg)
+void goby::acomms::DCCLPublish::initialize(DCCLMessage& msg)
 {
     repeat_ = msg.repeat();
 
@@ -36,7 +36,7 @@ void dccl::Publish::initialize(Message& msg)
     // add names for any <all/> publishes and empty std::vector for algorithms
     if(use_all_names_)
     {
-        BOOST_FOREACH(boost::shared_ptr<MessageVar> mv, msg.header())
+        BOOST_FOREACH(boost::shared_ptr<DCCLMessageVar> mv, msg.header())
         {
             // ignore header pieces not explicitly overloaded by the <name> tag
             if(!mv->name().empty() && !(mv->name()[0] == '_'))
@@ -47,7 +47,7 @@ void dccl::Publish::initialize(Message& msg)
             }
         }
         
-        BOOST_FOREACH(boost::shared_ptr<MessageVar> mv, msg.layout())
+        BOOST_FOREACH(boost::shared_ptr<DCCLMessageVar> mv, msg.layout())
         {
             add_message_var(mv);
             // add an empty std::vector for algorithms (no algorithms allowed for <all/> tag)
@@ -60,7 +60,7 @@ void dccl::Publish::initialize(Message& msg)
     if(!format_set_)
     {
         std::string format_str;
-        for (std::vector<boost::shared_ptr<MessageVar> >::size_type j = 0, m = message_vars_.size(); j < m; ++j)
+        for (std::vector<boost::shared_ptr<DCCLMessageVar> >::size_type j = 0, m = message_vars_.size(); j < m; ++j)
         {
             if (m > 1)
             {
@@ -102,10 +102,10 @@ void dccl::Publish::initialize(Message& msg)
 }
 
 
-void dccl::Publish::fill_format(const std::map<std::string,std::vector<MessageVal> >& vals,
-                                std::string& key,
-                                std::string& value,
-                                unsigned repeat_index)
+void goby::acomms::DCCLPublish::fill_format(const std::map<std::string,std::vector<DCCLMessageVal> >& vals,
+                                            std::string& key,
+                                            std::string& value,
+                                            unsigned repeat_index)
 {
     std::string filled_value;
     // format is a boost library class for replacing printf and its ilk
@@ -120,10 +120,10 @@ void dccl::Publish::fill_format(const std::map<std::string,std::vector<MessageVa
         f.parse(input_format);
             
         // iterate over the message_vars and fill in the format field
-        for (std::vector<boost::shared_ptr<MessageVar> >::size_type k = 0, o = message_vars_.size(); k < o; ++k)
+        for (std::vector<boost::shared_ptr<DCCLMessageVar> >::size_type k = 0, o = message_vars_.size(); k < o; ++k)
         {
-            std::vector<MessageVal> vm = vals.find(message_vars_[k]->name())->second;
-            for(std::vector<MessageVal>::size_type i = (repeat_ > 1) ? repeat_index : 0,
+            std::vector<DCCLMessageVal> vm = vals.find(message_vars_[k]->name())->second;
+            for(std::vector<DCCLMessageVal>::size_type i = (repeat_ > 1) ? repeat_index : 0,
                     n = (repeat_ > 1) ? repeat_index + 1 : vm.size();
                 i < n;
                 ++i)
@@ -159,8 +159,8 @@ void dccl::Publish::fill_format(const std::map<std::string,std::vector<MessageVa
 
     
 
-void dccl::Publish::write_publish(const std::map<std::string,std::vector<MessageVal> >& vals,
-                                  std::multimap<std::string,MessageVal>& pubsub_vals)
+void goby::acomms::DCCLPublish::write_publish(const std::map<std::string,std::vector<DCCLMessageVal> >& vals,
+                                              std::multimap<std::string,DCCLMessageVal>& pubsub_vals)
 
 {
     for(unsigned i = 0, n = repeat_;
@@ -173,29 +173,29 @@ void dccl::Publish::write_publish(const std::map<std::string,std::vector<Message
         // user sets to string
         if(type_ == cpp_string)
         {
-            pubsub_vals.insert(std::pair<std::string, MessageVal>(out_var, out_val));
+            pubsub_vals.insert(std::pair<std::string, DCCLMessageVal>(out_var, out_val));
             continue;
         }
         
-        // pass through a MessageVal to do the type conversions
-        MessageVal mv = out_val;
+        // pass through a DCCLMessageVal to do the type conversions
+        DCCLMessageVal mv = out_val;
         double out_dval = mv;
         if(type_ == cpp_double)
         {
-            pubsub_vals.insert(std::pair<std::string, MessageVal>(out_var, out_dval));
+            pubsub_vals.insert(std::pair<std::string, DCCLMessageVal>(out_var, out_dval));
             continue;
         }
         long out_lval = mv;    
         if(type_ == cpp_long)
         {
-            pubsub_vals.insert(std::pair<std::string, MessageVal>(out_var, out_lval));
+            pubsub_vals.insert(std::pair<std::string, DCCLMessageVal>(out_var, out_lval));
             continue;
             
         }
         bool out_bval = mv;
         if(type_ == cpp_bool)
         {
-            pubsub_vals.insert(std::pair<std::string, MessageVal>(out_var, out_bval));
+            pubsub_vals.insert(std::pair<std::string, DCCLMessageVal>(out_var, out_bval));
             continue;
         }
         
@@ -205,14 +205,14 @@ void dccl::Publish::write_publish(const std::map<std::string,std::vector<Message
         catch (boost::bad_lexical_cast &) { is_numeric = false; }
         
         if(!is_numeric)
-            pubsub_vals.insert(std::pair<std::string, MessageVal>(out_var, out_val));
+            pubsub_vals.insert(std::pair<std::string, DCCLMessageVal>(out_var, out_val));
         else
-            pubsub_vals.insert(std::pair<std::string, MessageVal>(out_var, out_dval));
+            pubsub_vals.insert(std::pair<std::string, DCCLMessageVal>(out_var, out_dval));
     }
 }
 
     
-std::string dccl::Publish::get_display() const
+std::string goby::acomms::DCCLPublish::get_display() const
 {
     std::stringstream ss;
     
@@ -220,7 +220,7 @@ std::string dccl::Publish::get_display() const
     ss << ")moos_var: {" << var_ << "}" << std::endl;
     ss << "\tvalue: \"" << format_ << "\"" << std::endl;
     ss << "\tmessage_vars:" << std::endl;
-    for (std::vector<boost::shared_ptr<MessageVar> >::size_type j = 0, m = message_vars_.size(); j < m; ++j)
+    for (std::vector<boost::shared_ptr<DCCLMessageVar> >::size_type j = 0, m = message_vars_.size(); j < m; ++j)
     {
         ss << "\t\t" << (j+1) << ": " << message_vars_[j]->name();
 
@@ -240,7 +240,7 @@ std::string dccl::Publish::get_display() const
 }
 
 // overloaded <<
-std::ostream& dccl::operator<< (std::ostream& out, const Publish& publish)
+std::ostream& goby::acomms::operator<< (std::ostream& out, const DCCLPublish& publish)
 {
     out << publish.get_display();
     return out;

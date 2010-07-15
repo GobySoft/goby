@@ -2,9 +2,9 @@
 <message_set>
   <message>
     <name>TEST</name>
-    <size>256</size>
+    <size>128</size>
     <id>4</id>
-    <repeat>5</repeat>
+    <repeat/>
     <layout>
       <static>
         <name>Stat</name>

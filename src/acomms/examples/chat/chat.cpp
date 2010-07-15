@@ -22,27 +22,29 @@
 
 #include <iostream>
 
-#include "acomms/dccl.h"
-#include "acomms/queue.h"
-#include "acomms/modem_driver.h"
-#include "acomms/amac.h"
-#include "acomms/modem_message.h"
-#include "acomms/bind.h"
+#include "goby/acomms/dccl.h"
+#include "goby/acomms/queue.h"
+#include "goby/acomms/modem_driver.h"
+#include "goby/acomms/amac.h"
+#include "goby/acomms/modem_message.h"
+#include "goby/acomms/bind.h"
 
 #include <boost/lexical_cast.hpp>
 
 #include "chat_curses.h"
 
+using namespace goby::acomms;
+
 int startup_failure();
-void received_data(queue::QueueKey, const modem::Message&);
-void received_ack(queue::QueueKey, const modem::Message&);
+void received_data(QueueKey, const ModemMessage&);
+void received_ack(QueueKey, const ModemMessage&);
 std::string decode_received(unsigned id, const std::string& data);
 
 std::ofstream fout_;
-dccl::DCCLCodec dccl_;
-queue::QueueManager q_manager_(&fout_);
-micromodem::MMDriver mm_driver_(&fout_);
-amac::MACManager mac_(&fout_);
+DCCLCodec dccl_;
+QueueManager q_manager_(&fout_);
+MMDriver mm_driver_(&fout_);
+MACManager mac_(&fout_);
 ChatCurses curses_;
 
 
@@ -77,7 +79,7 @@ int main(int argc, char* argv[])
     }    
 
     // bind the callbacks of these libraries
-    acomms_util::bind(mm_driver_, q_manager_, mac_);
+    bind(mm_driver_, q_manager_, mac_);
     
     //
     // Initiate DCCL (libdccl)
@@ -100,7 +102,7 @@ int main(int argc, char* argv[])
     //
     // Initiate medium access control (libamac)
     //
-    mac_.set_type(amac::mac_slotted_tdma);
+    mac_.set_type(mac_slotted_tdma);
     mac_.set_rate(0);
     mac_.set_slot_time(15);
     mac_.set_expire_cycles(5);
@@ -133,7 +135,7 @@ int main(int argc, char* argv[])
 
         if(!line.empty())
         {
-            std::map<std::string, dccl::MessageVal> vals;
+            std::map<std::string, DCCLMessageVal> vals;
             vals["message"] = line;
 
             std::string hex_out;
@@ -141,7 +143,7 @@ int main(int argc, char* argv[])
             unsigned message_id = 1;
             dccl_.encode(message_id, hex_out, vals);
             
-            modem::Message message_out;
+            ModemMessage message_out;
             message_out.set_data(hex_out);
             // send this message to my buddy!
             message_out.set_dest(buddy_id);
@@ -171,12 +173,12 @@ int startup_failure()
     return 1;
 }
 
-void received_data(queue::QueueKey key, const modem::Message& message_in)
+void received_data(QueueKey key, const ModemMessage& message_in)
 {    
     curses_.post_message(message_in.src(), decode_received(key.id(), message_in.data()));
 }
 
-void received_ack(queue::QueueKey key, const modem::Message& ack_message)
+void received_ack(QueueKey key, const ModemMessage& ack_message)
 {
     
     curses_.post_message
@@ -187,7 +189,7 @@ void received_ack(queue::QueueKey key, const modem::Message& ack_message)
 
 std::string decode_received(unsigned id, const std::string& data)
 {
-    std::map<std::string, dccl::MessageVal> vals;
+    std::map<std::string, DCCLMessageVal> vals;
     dccl_.decode(id, data, vals);
     return vals["message"];
 }

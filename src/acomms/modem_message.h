@@ -32,7 +32,6 @@
 
 namespace goby
 {
-/// Acoustic Modem specific objects
     namespace acomms
     {
         /// \brief represents a %message to or from the acoustic %modem.

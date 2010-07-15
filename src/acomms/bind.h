@@ -30,7 +30,6 @@
 
 namespace goby
 {
-/// utilites for dealing with goby-acomms
     namespace acomms
     {
     

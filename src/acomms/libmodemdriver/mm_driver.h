@@ -27,7 +27,6 @@
 #include "driver_base.h"
 namespace goby
 {
-/// contains WHOI Micro-Modem specific objects. 
     namespace acomms
     {
         class ModemMessage;

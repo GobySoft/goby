@@ -17,47 +17,47 @@
 #ifndef ClientBase20100628H
 #define ClientBase20100628H
 
-#include "base.h"
+#include "interface.h"
+#include "connection.h"
 
 namespace goby
 {
     namespace util
     {
-        
         // template for type of client socket (asio::serial_port, asio::ip::tcp::socket)
-        template<typename AsyncReadStream>
-            class ASIOStreamClient : public ASIOLineBasedInterface, public ASIOAsyncConnection<AsyncReadStream>
+        template<typename ASIOAsyncReadStream>
+            class LineBasedClient : public LineBasedInterface, public LineBasedConnection<ASIOAsyncReadStream>
         {
           protected:
             enum { RETRY_INTERVAL = 10 };
             
-          ASIOStreamClient(AsyncReadStream& socket,
+          LineBasedClient(ASIOAsyncReadStream& socket,
                            const std::string& delimiter)
-              : ASIOLineBasedInterface(),
-                ASIOAsyncConnection<AsyncReadStream>(socket, out_, in_, in_mutex_, delimiter),
+              : LineBasedInterface(),
+                LineBasedConnection<ASIOAsyncReadStream>(socket, out_, in_, in_mutex_, delimiter),
                 socket_(socket)
                 { }
 
-            // from ASIOLineBasedInterface
-            void do_start()
+            // from LineBasedInterface
+            void do_start()                     
             {
                 set_active(start_specific());
-
+                
                 if(active())
-                    ASIOAsyncConnection<AsyncReadStream>::read_start();
+                    LineBasedConnection<ASIOAsyncReadStream>::read_start();
             }
             
             virtual bool start_specific() = 0;
 
-            // from ASIOLineBasedInterface
+            // from LineBasedInterface
             void do_write(const std::string & line)
             { 
                 bool write_in_progress = !out_.empty();
                 out_.push_back(line);
-                if (!write_in_progress) ASIOAsyncConnection<AsyncReadStream>::write_start();
+                if (!write_in_progress) LineBasedConnection<ASIOAsyncReadStream>::write_start();
             }
 
-            // from ASIOLineBasedInterface
+            // from LineBasedInterface
             void do_close(const asio::error_code& error)
             { 
                 if (error == asio::error::operation_aborted) // if this call is the result of a timer cancel()
@@ -73,7 +73,8 @@ namespace goby
                 
                 start();
             }
-            
+
+            // same as do_close in this case
             void socket_close(const asio::error_code& error)
             {
                 do_close(error);
@@ -81,14 +82,16 @@ namespace goby
             
                 
           private:        
-            AsyncReadStream& socket_;
+            ASIOAsyncReadStream& socket_;
             std::deque<std::string> out_; // buffered write data
             
-            ASIOStreamClient(const ASIOStreamClient&);
-            ASIOStreamClient& operator= (const ASIOStreamClient&);
+            LineBasedClient(const LineBasedClient&);
+            LineBasedClient& operator= (const LineBasedClient&);
         
         }; 
+
     }
 }
+
 
 #endif

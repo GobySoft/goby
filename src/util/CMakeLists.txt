@@ -1,2 +1,2 @@
 add_subdirectory(liblogger)
-add_subdirectory(libasioclient)
+add_subdirectory(liblinebasedcomms)

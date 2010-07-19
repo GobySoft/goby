@@ -44,7 +44,7 @@ goby::util::SerialClient* goby::util::SerialClient::get_instance(unsigned& clien
 goby::util::SerialClient::SerialClient(const std::string& name,
                                        unsigned baud,
                                        const std::string& delimiter)
-    : ASIOStreamClient<asio::serial_port>(serial_port_, delimiter),
+    : LineBasedClient<asio::serial_port>(serial_port_, delimiter),
       serial_port_(io_service_),
       name_(name),
       baud_(baud)

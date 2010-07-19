@@ -5,7 +5,7 @@ if(Boost_FOUND)
   
   file(GLOB SRC *.cpp *.c)
   add_library(goby_modemdriver SHARED ${SRC})
-  target_link_libraries(goby_modemdriver goby_logger goby_asioclient)
+  target_link_libraries(goby_modemdriver goby_logger goby_linebasedcomms)
 endif()
 
 add_subdirectory(examples)

@@ -15,15 +15,17 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
-// courtesy header for the ASIO Client Library (libasioclient)
+// courtesy header for the ASIO line-based comms library
 
-#ifndef SERIALCOURTESY20091211H
-#define SERIALCOURTESY20091211H
+#ifndef LINEBASEDCOMMSCOURTESY20091211H
+#define LINEBASEDCOMMSCOURTESY20091211H
 
-#include "goby/util/libasioclient/base.h"
-#include "goby/util/libasioclient/client_base.h"
-#include "goby/util/libasioclient/serial_client.h"
-#include "goby/util/libasioclient/tcp_client.h"
-#include "goby/util/libasioclient/nmea_sentence.h"
+#include "goby/util/liblinebasedcomms/interface.h"
+#include "goby/util/liblinebasedcomms/connection.h"
+#include "goby/util/liblinebasedcomms/client_base.h"
+#include "goby/util/liblinebasedcomms/serial_client.h"
+#include "goby/util/liblinebasedcomms/tcp_client.h"
+#include "goby/util/liblinebasedcomms/tcp_server.h"
+#include "goby/util/liblinebasedcomms/nmea_sentence.h"
 
 #endif

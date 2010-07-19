@@ -43,7 +43,7 @@ goby::util::TCPClient* goby::util::TCPClient::get_instance(unsigned& clientkey,
 goby::util::TCPClient::TCPClient(const std::string& server,
                                  const std::string& port,
                                  const std::string& delimiter /*= "\r\n"*/)
-    : ASIOStreamClient<asio::ip::tcp::socket>(socket_, delimiter),
+    : LineBasedClient<asio::ip::tcp::socket>(socket_, delimiter),
       socket_(io_service_),
       server_(server),
       port_(port)

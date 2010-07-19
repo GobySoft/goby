@@ -23,7 +23,7 @@
 #include <boost/thread.hpp>
 #include "asio.hpp"
 
-#include "goby/util/asioclient.h"
+#include "goby/util/linebasedcomms.h"
 #include "goby/acomms/modem_message.h"
 
 namespace goby
@@ -221,11 +221,11 @@ namespace goby
             std::ostream* log_;
 
             // represents the line based communications interface to the modem
-            util::ASIOLineBasedInterface* modem_;
+            util::LineBasedInterface* modem_;
 
             // identifies us to the singleton class controller the modem interface (SerialClient, etc.)
 
-            unsigned modem_client_key_;
+            unsigned modem_key_;
             ConnectionType connection_type_;
         };
     }

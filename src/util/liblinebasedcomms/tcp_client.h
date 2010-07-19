@@ -24,7 +24,7 @@ namespace goby
 {
     namespace util
     {    
-        class TCPClient : public ASIOStreamClient<asio::ip::tcp::socket>
+        class TCPClient : public LineBasedClient<asio::ip::tcp::socket>
         {
           public:
             static TCPClient* get_instance(unsigned& clientkey,

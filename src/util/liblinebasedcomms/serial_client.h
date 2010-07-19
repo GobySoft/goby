@@ -26,7 +26,7 @@ namespace goby
 {
     namespace util
     {    
-        class SerialClient: public ASIOStreamClient<asio::serial_port>
+        class SerialClient: public LineBasedClient<asio::serial_port>
         {
           public:
             static SerialClient* get_instance(unsigned& clientkey,

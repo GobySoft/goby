@@ -235,9 +235,34 @@ void goby::acomms::MMDriver::handle_modem_in(NMEASentence& nmea)
         default:                   break;
     }
 
-    // clear the last send given modem acknowledgement
-    if(!out_.empty() && out_.front().sentence_id() == nmea.sentence_id()) pop_out();
+    
+    if(out_.empty() || out_.front().sentence_id() != nmea.sentence_id())
+    {
+        // look for unexpected messages from the modem
+        switch(sentence_id_map_[nmea.sentence_id()])
+        {
+            // commands that we *must* send (we should
+            // never get a CA* of these types without having
+            // just send the corresponding CC*).
+            // this is used to ensure we always have control of the
+            // modem
+            case TXD:
+            case TXA:
+            case MPC:
+                handle_modem_malfunction();
+                break;
+                
+            default:
+                break;    
+        }
+    }
 
+    // clear the last send given modem acknowledgement
+    if(!out_.empty() && out_.front().sentence_id() == nmea.sentence_id())
+        pop_out();
+
+
+    
     // for anyone who needs to know that we got a message 
     if(callback_decoded) callback_decoded(m_in);
 }
@@ -287,6 +312,8 @@ void goby::acomms::MMDriver::drq(NMEASentence& nmea_in, acomms::ModemMessage& m_
 
 void goby::acomms::MMDriver::cfg(NMEASentence& nmea, acomms::ModemMessage& m)
 {
+    nvram_cfg_[nmea[1]] = nmea.as<int>(2);
+    
     if(out_.empty() || (out_.front().sentence_id() != "CFG" && out_.front().sentence_id() != "CFQ"))
         return;
     
@@ -400,6 +427,22 @@ boost::posix_time::ptime goby::acomms::MMDriver::modem_time2ptime(const std::str
 }
 
 
+// send a reboot and continue on our way
+void goby::acomms::MMDriver::handle_modem_malfunction()
+{
+    if(log_) *log_  << group("mm_out") << warn << "unexpected sentence ID, rebooting modem" << std::endl;
+
+    // 0 second sleep from ourselves to ourselves is a reboot
+    NMEASentence nmea_out("$CCMSC", NMEASentence::IGNORE);
+    nmea_out.push_back(nvram_cfg_["SRC"]);
+    nmea_out.push_back(nvram_cfg_["SRC"]);
+    nmea_out.push_back(0);
+
+    write(nmea_out);    
+}
+
+
+
 void goby::acomms::MMDriver::initialize_talkers()
 {
     boost::assign::insert (sentence_id_map_)
@@ -420,6 +463,8 @@ void goby::acomms::MMDriver::initialize_talkers()
         ("CC",CC)("CA",CA)("SN",SN)("GP",GP);
  
 }
+
+
 
 // Begin the addition of code to support the gateway buoy
 // Added by Andrew Bouchard, NSWC PCD

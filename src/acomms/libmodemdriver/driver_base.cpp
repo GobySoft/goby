@@ -31,7 +31,7 @@ goby::acomms::ModemDriverBase::ModemDriverBase(std::ostream* log /* = 0 */, cons
 
 goby::acomms::ModemDriverBase::~ModemDriverBase()
 {
-    if(modem_) modem_->release_user(modem_client_key_);
+    if(modem_) modem_->remove_user(modem_key_);
 }
 
 
@@ -43,9 +43,7 @@ void goby::acomms::ModemDriverBase::modem_write(const std::string& out)
 
 bool goby::acomms::ModemDriverBase::modem_read(std::string& in)
 {
-    in = modem_->read(modem_client_key_);
-
-    if(!in.empty())
+    if(!(in = modem_->readline(modem_key_)).empty())
     {
         if(callback_in_raw) callback_in_raw(in); 
         return true;
@@ -62,14 +60,16 @@ void goby::acomms::ModemDriverBase::modem_start()
     switch(connection_type_)
     {
         case serial:
-            modem_ = util::SerialClient::get_instance(modem_client_key_, serial_port_, serial_baud_, line_delimiter_);
+            modem_ = util::SerialClient::get_instance(modem_key_, serial_port_, serial_baud_, line_delimiter_);
             break;
 
         case tcp_as_client:
-            modem_ = util::TCPClient::get_instance(modem_client_key_, tcp_server_, tcp_port_, line_delimiter_);
+            modem_ = util::TCPClient::get_instance(modem_key_, tcp_server_, tcp_port_, line_delimiter_);
             break;
             
         case tcp_as_server:
+            modem_ = util::TCPServer::get_instance(modem_key_, tcp_port_, line_delimiter_);
+
         case dual_udp_broadcast:
             throw(std::runtime_error("unimplemented connection type"));
     }

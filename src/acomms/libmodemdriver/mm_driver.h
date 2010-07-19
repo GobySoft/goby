@@ -85,7 +85,8 @@ namespace goby
             // output
             void handle_modem_out();
             void pop_out();
-    
+            void handle_modem_malfunction();   
+            
             // input
             void handle_modem_in(util::NMEASentence& nmea);
             void ack(util::NMEASentence& nmea, ModemMessage& m);
@@ -168,13 +169,15 @@ namespace goby
                                 CFR,CST,MSG,REV,
                                 DQF,SHF,SNR,DOP,
                                 DBG,FFL,FST,ERR};
-
+            
     
             std::map<std::string, TalkerIDs> talker_id_map_;
             std::map<std::string, SentenceIDs> sentence_id_map_;
 
             std::string gateway_prefix_in_;
             std::string gateway_prefix_out_;
+
+            std::map<std::string, int> nvram_cfg_;
 
         };
     }

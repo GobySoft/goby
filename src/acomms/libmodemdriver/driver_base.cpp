@@ -23,49 +23,58 @@
 
 #include "driver_base.h"
 
-goby::acomms::ModemDriverBase::ModemDriverBase(std::ostream* os, const std::string& line_delimiter)
-    : serial_delimiter_(line_delimiter),
-      os_(os)
+goby::acomms::ModemDriverBase::ModemDriverBase(std::ostream* log /* = 0 */, const std::string& line_delimiter /* = "\r\n"*/ )
+    : line_delimiter_(line_delimiter),
+      log_(log),
+      connection_type_(serial)
+{ }
+
+goby::acomms::ModemDriverBase::~ModemDriverBase()
 {
-    
+    if(modem_) modem_->release_user(modem_client_key_);
 }
 
-void goby::acomms::ModemDriverBase::serial_write(const std::string& out)
+
+void goby::acomms::ModemDriverBase::modem_write(const std::string& out)
 {
-    serial_->write(out);
+    modem_->write(out);
     if(callback_out_raw) callback_out_raw(out);
 }
 
-bool goby::acomms::ModemDriverBase::serial_read(std::string& in)
+bool goby::acomms::ModemDriverBase::modem_read(std::string& in)
 {
-    // SerialClient can write to this deque, so lock it
-    boost::mutex::scoped_lock lock(in_mutex_);
+    in = modem_->read(modem_client_key_);
 
-    if(in_.empty())
-        return false;
-    else
+    if(!in.empty())
     {
-        in = in_.front();
-
-        if(callback_in_raw) callback_in_raw(in);
-        in_.pop_front();
+        if(callback_in_raw) callback_in_raw(in); 
         return true;
     }
+    else
+        return false;
 }
 
-void goby::acomms::ModemDriverBase::serial_start()
+void goby::acomms::ModemDriverBase::modem_start()
 {        
-    if(os_) *os_ << group("mm_out") << "opening serial port " << serial_port_
-          << " @ " << baud_ << std::endl;
+    if(log_) *log_ << group("mm_out") << "opening serial port " << serial_port_
+          << " @ " << serial_baud_ << std::endl;
     
-    try
+    switch(connection_type_)
     {
-        serial_ = util::SerialClient::getInstance(serial_port_, baud_, &in_, &in_mutex_, serial_delimiter_);
-        serial_->start();
+        case serial:
+            modem_ = util::SerialClient::get_instance(modem_client_key_, serial_port_, serial_baud_, line_delimiter_);
+            break;
+
+        case tcp_as_client:
+            modem_ = util::TCPClient::get_instance(modem_client_key_, tcp_server_, tcp_port_, line_delimiter_);
+            break;
+            
+        case tcp_as_server:
+        case dual_udp_broadcast:
+            throw(std::runtime_error("unimplemented connection type"));
     }
-    catch (...)
-    {
-        throw(std::runtime_error(std::string("failed to open serial port: " + serial_port_ + ". make sure this port exists and that you have permission to use it.")));
-    }
+    
+
+    modem_->start();
     
 }

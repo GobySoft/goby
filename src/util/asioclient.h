@@ -20,6 +20,8 @@
 #ifndef SERIALCOURTESY20091211H
 #define SERIALCOURTESY20091211H
 
+#include "goby/util/libasioclient/base.h"
+#include "goby/util/libasioclient/client_base.h"
 #include "goby/util/libasioclient/serial_client.h"
 #include "goby/util/libasioclient/tcp_client.h"
 #include "goby/util/libasioclient/nmea_sentence.h"

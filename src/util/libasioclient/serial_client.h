@@ -24,34 +24,30 @@
 
 namespace goby
 {
-namespace util
-{    
-    class SerialClient: public ClientBase<asio::serial_port>
-    {
-      public:
-        static SerialClient* getInstance(const std::string& name,
-                                         unsigned baud,
-                                         std::deque<std::string>* in,
-                                         boost::mutex* in_mutex,
-                                         const std::string& delimiter = "\r\n");
+    namespace util
+    {    
+        class SerialClient: public ASIOStreamClient<asio::serial_port>
+        {
+          public:
+            static SerialClient* get_instance(unsigned& clientkey,
+                                              const std::string& name,
+                                              unsigned baud,
+                                              const std::string& delimiter = "\r\n");
 
-      private:
+          private:
+            SerialClient(const std::string& name,
+                         unsigned baud,
+                         const std::string& delimiter);
 
-        SerialClient(const std::string& name,
-                     unsigned baud,
-                     std::deque<std::string>* in,
-                     boost::mutex* in_mutex,
-                     const std::string& delimiter);
-
-        bool start_specific();        
+            bool start_specific();        
   
-      private:
-        static std::map<std::string, SerialClient*> inst_;
-        asio::serial_port serial_port_; // the serial port this instance is connected to
-        std::string name_;
-        unsigned baud_;
+          private:
+            static std::map<std::string, SerialClient*> inst_;
+            asio::serial_port serial_port_; // the serial port this instance is connected to
+            std::string name_;
+            unsigned baud_;
         
-    }; 
-}
+        }; 
+    }
 }
 #endif

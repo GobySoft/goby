@@ -20,45 +20,21 @@
 #ifndef Modem20091211H
 #define Modem20091211H
 
-#include <fstream>
-
-#include <boost/date_time/posix_time/posix_time.hpp>
+#include "goby/util/time.h"
 
 #include "driver_base.h"
+
 namespace goby
 {
     namespace acomms
     {
         class ModemMessage;
 
-        // for the serial connection ($CCCFG,BR1,3)
-        const unsigned DEFAULT_BAUD = 19200;
-
-        // seconds to wait for %modem to respond
-        const boost::posix_time::time_duration MODEM_WAIT = boost::posix_time::seconds(3);
-        // failures before quitting
-        const unsigned MAX_FAILS_BEFORE_DEAD = 5;
-        // how many retries on a given message
-        const unsigned RETRIES = 3;
-        // seconds to wait after %modem reboot
-        const boost::posix_time::time_duration WAIT_AFTER_REBOOT = boost::posix_time::seconds(2);
-
-        // allowed time skew between our clock and the %modem clock
-        const boost::posix_time::time_duration ALLOWED_SKEW = boost::posix_time::seconds(1);
-    
-        const std::string SERIAL_DELIMITER = "\r";
-    
-        // number of frames for a given packet type
-        const unsigned PACKET_FRAME_COUNT [] = { 1, 3, 3, 2, 2, 8 };
-
-        const unsigned PACKET_SIZE [] = { 32, 32, 64, 256, 256, 256 };
 
         /// provides an API to the WHOI Micro-Modem driver
         class MMDriver : public ModemDriverBase
         {
-    
           public:
-
             /// \brief Default constructor.
             ///
             /// \param os std::ostream object or FlexOstream to capture all humanly readable runtime and debug information (optional).
@@ -104,7 +80,7 @@ namespace goby
             void initialize_talkers();
             void set_clock();
             void write_cfg();
-            void check_cfg();
+            void query_all_cfg();
 
             // output
             void handle_modem_out();
@@ -123,10 +99,10 @@ namespace goby
             void clk(util::NMEASentence& nmea, ModemMessage& m);
             void cyc(util::NMEASentence& nmea, ModemMessage& m);
     
-            // utility
-    
+            // utility    
             boost::posix_time::ptime modem_time2ptime(const std::string& mt);
 
+            // doxygen
             /// \example libmodemdriver/examples/driver_simple/driver_simple.cpp
             /// driver_simple.cpp
         
@@ -134,9 +110,30 @@ namespace goby
         
         
           private:
+            // for the serial connection ($CCCFG,BR1,3)
+            enum { DEFAULT_BAUD = 19200 };
+            // failures before quitting
+            enum { MAX_FAILS_BEFORE_DEAD = 5 };
+            // how many retries on a given message
+            enum { RETRIES = 3 };
+            
+            // seconds to wait for %modem to respond
+            static boost::posix_time::time_duration MODEM_WAIT; 
+            // seconds to wait after %modem reboot
+            static boost::posix_time::time_duration WAIT_AFTER_REBOOT;
+            // allowed time skew between our clock and the %modem clock
+            static boost::posix_time::time_duration ALLOWED_SKEW;
+            static std::string SERIAL_DELIMITER;
+            // number of frames for a given packet type
+            static unsigned PACKET_FRAME_COUNT [];
+            // size of packet (in bytes) for a given modem rate
+            static unsigned PACKET_SIZE [];
+
+            // deque for outgoing messages to the modem, we queue them up and send
+            // as the modem acknowledges them
             std::deque<util::NMEASentence> out_;
 
-            std::ostream* os_;
+            std::ostream* log_;
     
             // time of the last message written. we timeout and resend after MODEM_WAIT seconds
             boost::posix_time::ptime last_write_time_;

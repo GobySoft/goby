@@ -25,25 +25,32 @@
 
 #include "dccl.h"
 #include "message_xml_callbacks.h"
+#include "goby/util/logger.h"
 
 using goby::util::goby_time;
 
 /////////////////////
 // public methods (general use)
 /////////////////////
-goby::acomms::DCCLCodec::DCCLCodec()
-    : start_time_(goby_time()),
+goby::acomms::DCCLCodec::DCCLCodec(std::ostream* os /* =0 */)
+    : os_(os),
+      start_time_(goby_time()),
       modem_id_(0)
 { }
     
-goby::acomms::DCCLCodec::DCCLCodec(const std::string& file, const std::string schema)
-    : start_time_(goby_time()),
+goby::acomms::DCCLCodec::DCCLCodec(const std::string& file,
+                                   const std::string schema,
+                                   std::ostream* os /* =0 */)
+    : os_(os),
+      start_time_(goby_time()),
       modem_id_(0)
 { add_xml_message_file(file, schema); }
     
 goby::acomms::DCCLCodec::DCCLCodec(const std::set<std::string>& files,
-                           const std::string schema)
-    : start_time_(goby_time()),
+                                   const std::string schema,
+                                   std::ostream* os /* =0 */)
+    : os_(os),
+      start_time_(goby_time()),
       modem_id_(0)
 {
     BOOST_FOREACH(const std::string& s, files)
@@ -129,6 +136,12 @@ void goby::acomms::DCCLCodec::add_adv_algorithm(const std::string& name, AlgFunc
     ap -> add_algorithm(name, func);
 }
 
+void goby::acomms::DCCLCodec::add_flex_groups(util::FlexOstream& tout)
+{
+    tout.add_group("dccl_enc", "<", "lt_magenta", "encoder messages (goby_dccl)");
+    tout.add_group("dccl_dec", ">", "lt_blue", "decoder messages (goby_dccl)");
+}
+
 
 std::ostream& goby::acomms::operator<< (std::ostream& out, const DCCLCodec& d)
 {
@@ -152,6 +165,7 @@ std::ostream& goby::acomms::operator<< (std::ostream& out, const std::set<unsign
         out << (*it) << std::endl;
     return out;
 }
+
 
 /////////////////////
 // public methods (more MOOS specific, but still could be general use)
@@ -260,6 +274,21 @@ void goby::acomms::DCCLCodec::encode_private(std::vector<DCCLMessage>::iterator 
                                      std::string& out,
                                      std::map<std::string, std::vector<DCCLMessageVal> > in /* copy */)
 {
+    if(os_)
+    {
+        *os_ << group("dccl_enc") << "starting encode for " << it->name() << std::endl;        
+
+        typedef std::pair<std::string, std::vector<DCCLMessageVal> > P;
+        BOOST_FOREACH(const P& p, in)                    
+        {
+            if(!p.first.empty())
+            {
+                BOOST_FOREACH(const DCCLMessageVal& mv, p.second)
+                    *os_ << group("dccl_enc") << "\t" << p.first << ": "<< mv << std::endl;
+            }
+        }
+    }
+    
     // 1. encode parts
     std::string body, head;
     
@@ -276,12 +305,16 @@ void goby::acomms::DCCLCodec::encode_private(std::vector<DCCLMessage>::iterator 
 
     // 4. hex encode
     hex_encode(out);
+    
+    if(os_) *os_ << group("dccl_enc") << "finished encode of " << it->name() << std::endl;    
 }
 
 void goby::acomms::DCCLCodec::decode_private(std::vector<DCCLMessage>::iterator it,
                                      std::string in,
                                      std::map<std::string, std::vector<DCCLMessageVal> >& out)
 {
+    if(os_) *os_ << group("dccl_dec") << "starting decode for " << it->name() << std::endl;        
+    
     // 4. hex decode
     hex_decode(in);
 
@@ -295,13 +328,24 @@ void goby::acomms::DCCLCodec::decode_private(std::vector<DCCLMessage>::iterator 
     
     // 2. decrypt
     if(!crypto_key_.empty()) decrypt(body, head);
-
-
     
     // 1. decode parts
     it->head_decode(head, out);
     it->body_decode(body, out);
-
+    
+    if(os_)
+    {
+        typedef std::pair<std::string, std::vector<DCCLMessageVal> > P;
+        BOOST_FOREACH(const P& p, out)                    
+        {
+            if(!p.first.empty())
+            {
+                BOOST_FOREACH(const DCCLMessageVal& mv, p.second)
+                    *os_ << group("dccl_dec") << "\t" << p.first << ": "<< mv << std::endl;
+            }
+        }
+        *os_ << group("dccl_dec") << "finished decode of "<< it->name() << std::endl;
+    }
 }
         
 void goby::acomms::DCCLCodec::encode_private(std::vector<DCCLMessage>::iterator it,
@@ -322,12 +366,18 @@ void goby::acomms::DCCLCodec::encode_private(std::vector<DCCLMessage>::iterator 
     out_msg.set_time(double(t));
     out_msg.set_src(long(src));
     out_msg.set_dest(long(dest));
+
+    if(os_) *os_ << group("dccl_enc") << "created encoded message: " << out_msg.snip() << std::endl;
 }
 
 void goby::acomms::DCCLCodec::decode_private(std::vector<DCCLMessage>::iterator it,
                                              const ModemMessage& in_msg,
                                      std::map<std::string,std::vector<DCCLMessageVal> >& out)
-{ decode_private(it, in_msg.data(), out); }
+{
+    if(os_) *os_ << group("dccl_dec") << "using message for decode: " << in_msg.snip() << std::endl;
+
+    decode_private(it, in_msg.data(), out);
+}
 
 
 void goby::acomms::DCCLCodec::set_crypto_passphrase(const std::string& s)

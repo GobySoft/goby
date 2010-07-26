@@ -25,6 +25,8 @@ namespace goby
     namespace util
     {
         // template for type of client socket (asio::serial_port, asio::ip::tcp::socket)
+        // LineBasedInterface runs in a one thread (same as user program)
+        // LineBasedClient and LineBasedConnection run in another thread (spawned by LineBasedInterface's constructor)
         template<typename ASIOAsyncReadStream>
             class LineBasedClient : public LineBasedInterface, public LineBasedConnection<ASIOAsyncReadStream>
         {
@@ -41,10 +43,13 @@ namespace goby
             // from LineBasedInterface
             void do_start()                     
             {
-                set_active(start_specific());
+                last_start_time_ = goby_time();
                 
-                if(active())
-                    LineBasedConnection<ASIOAsyncReadStream>::read_start();
+                set_active(start_specific());
+
+                LineBasedConnection<ASIOAsyncReadStream>::read_start();
+                if(!out_.empty())
+                    LineBasedConnection<ASIOAsyncReadStream>::write_start();
             }
             
             virtual bool start_specific() = 0;
@@ -62,7 +67,7 @@ namespace goby
             { 
                 if (error == asio::error::operation_aborted) // if this call is the result of a timer cancel()
                     return; // ignore it because the connection cancelled the timer
-
+                
                 set_active(false);
                 socket_.close();
                 
@@ -71,19 +76,18 @@ namespace goby
                 if(now - seconds(RETRY_INTERVAL) < last_start_time_)
                     sleep(RETRY_INTERVAL - (now-last_start_time_).total_seconds());
                 
-                start();
+                do_start();
             }
 
             // same as do_close in this case
             void socket_close(const asio::error_code& error)
-            {
-                do_close(error);
-            }
+            { do_close(error); }
             
                 
           private:        
             ASIOAsyncReadStream& socket_;
             std::deque<std::string> out_; // buffered write data
+            boost::posix_time::ptime last_start_time_;
             
             LineBasedClient(const LineBasedClient&);
             LineBasedClient& operator= (const LineBasedClient&);

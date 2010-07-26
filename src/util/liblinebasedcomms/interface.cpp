@@ -20,7 +20,6 @@ void goby::util::LineBasedInterface::start()
 {
     if(active_) return;
     
-    last_start_time_ = goby_time();
     io_service_.post(boost::bind(&LineBasedInterface::do_start, this));
 }
             

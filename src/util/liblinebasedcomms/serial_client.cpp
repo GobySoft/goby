@@ -71,7 +71,6 @@ bool goby::util::SerialClient::start_specific()
     serial_port_.set_option(asio::serial_port_base::character_size(8));
     serial_port_.set_option(asio::serial_port_base::parity(asio::serial_port_base::parity::none));
     serial_port_.set_option(asio::serial_port_base::stop_bits(asio::serial_port_base::stop_bits::one));
-
     
     return true;    
 }

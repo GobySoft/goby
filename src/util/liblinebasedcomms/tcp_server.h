@@ -94,7 +94,7 @@ namespace goby
                 { socket_.get_io_service().post(boost::bind(&TCPConnection::socket_write, this, msg)); }    
 
                 void close(const asio::error_code& error)
-                { socket_.get_io_service().post(boost::bind(&TCPConnection::socket_close, this, error)); }    
+                { socket_.get_io_service().post(boost::bind(&TCPConnection::socket_close, this, error)); }
         
               private:
                 void socket_write(const std::string& line);

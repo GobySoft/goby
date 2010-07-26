@@ -28,6 +28,12 @@
 
 namespace goby
 {
+    namespace util
+    {
+        class FlexOstream;
+    }
+    
+
     namespace acomms
     {
         /// \name Driver Library callback function type definitions
@@ -166,7 +172,9 @@ namespace goby
             /// \return the serial port baud rate
             unsigned tcp_port() { return tcp_port_; }
 
-        
+            void add_flex_groups(util::FlexOstream& tout);
+            
+            
           protected:
             /// \brief Constructor
             ///

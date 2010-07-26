@@ -17,25 +17,16 @@
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "flex_ostream.h"
+#include "term_color.h"
 
-    
-void goby::util::FlexOstream::add_group(const std::string& name,
-                         const std::string& heartbeat /* = "." */,
-                         const std::string& color /* = "nocolor" */,
-                         const std::string& description /* = "" */)
+std::ostream& goby::tcolor::add_escape_code(std::ostream& os, const std::string& esc_code)
 {
-    Group ng(name, description, color, heartbeat);
-    sb_.add_group(name, ng);
-
-    if(!sb_.is_scope())
-        std::cout << "Adding FlexOstream group: " << sb_.color(color) << name << sb_.color("nocolor")
-                  << " (" << description << ")" 
-                  << " [heartbeat: " << sb_.color(color) << heartbeat << sb_.color("nocolor")
-                  << " ]" << std::endl;
+    try
+    {
+        util::FlexOstream& flex = dynamic_cast<util::FlexOstream&>(os);
+        return(flex << esc_code);
+    }
+    catch (const std::bad_cast& e)
+    { return(os); }
 }
 
-std::ostream& goby::util::FlexOstream::operator<<(std::ostream& (*pf) (std::ostream&))
-{
-    if(pf == die) die_flag(true);
-    return (quiet()) ? *this : std::ostream::operator<<(pf);
-}

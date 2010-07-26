@@ -52,7 +52,14 @@ void goby::acomms::DCCLMessageVarFloat::initialize_specific()
     if(using_delta_differencing() && max_delta_ < 0)
         max_delta_ = -max_delta_;
 }
-        
+
+void goby::acomms::DCCLMessageVarFloat::pre_encode(DCCLMessageVal& v)
+{
+    double r;
+    if(v.get(r)) v = util::unbiased_round(r,precision_);
+}
+
+
 boost::dynamic_bitset<unsigned char> goby::acomms::DCCLMessageVarFloat::encode_specific(const DCCLMessageVal& v)
 {
     double r;
@@ -62,7 +69,7 @@ boost::dynamic_bitset<unsigned char> goby::acomms::DCCLMessageVarFloat::encode_s
     if(is_delta())
     {
         r += max_delta_ - double(key_val_);
-        if((r > 2*max_delta_)) return boost::dynamic_bitset<unsigned char>();
+        if(r > 2*max_delta_ || r < 0) return boost::dynamic_bitset<unsigned char>();
     }
     else
     {
@@ -70,7 +77,7 @@ boost::dynamic_bitset<unsigned char> goby::acomms::DCCLMessageVarFloat::encode_s
     }
     
     r *= pow(10.0, double(precision_));
-    r = util::unbiased_round(r, 0);
+    //r = util::unbiased_round(r, 0);
 
     return boost::dynamic_bitset<unsigned char>(calc_size(), static_cast<unsigned long>(r)+1);
 }        
@@ -79,7 +86,7 @@ goby::acomms::DCCLMessageVal goby::acomms::DCCLMessageVarFloat::decode_specific(
 {            
     unsigned long t = b.to_ulong();
     if(!t) return DCCLMessageVal();
-                
+    
     --t;
     if(is_delta())
         return cast(double(t) / (pow(10.0, double(precision_))) - double(max_delta_) + double(key_val_), precision_);

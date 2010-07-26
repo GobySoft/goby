@@ -53,6 +53,7 @@ namespace goby
             unsigned add_user();
             void remove_user(unsigned clientkey);
 
+            // safe to read this here but not write (only write from derived class)
             bool active() { return active_; }
 
           protected:            
@@ -67,9 +68,9 @@ namespace goby
             
             asio::io_service io_service_; // the main IO service that runs this connection
             std::vector< std::deque<std::string> > in_; // buffered read data
-            boost::mutex in_mutex_;
-            boost::posix_time::ptime last_start_time_;
 
+            boost::mutex in_mutex_;
+            
           private:
             asio::io_service::work work_;
             bool active_; // remains true while this object is still operating

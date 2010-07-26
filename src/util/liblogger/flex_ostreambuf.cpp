@@ -17,26 +17,34 @@
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <iostream>
+#include <sstream>
 #include <limits>
+#include <iomanip>
 
 #include <boost/assign.hpp>
 #include <boost/foreach.hpp>
 #include <boost/bind.hpp>
 
 #include "flex_ostreambuf.h"
+#include "flex_ncurses.h"
+#include "goby/util/sci.h"
 
 using namespace goby::tcolor;
 
 goby::util::FlexOStreamBuf::FlexOStreamBuf(): name_("no name"),
-                                  verbosity_(verbose),
-                                  die_flag_(false),
-                                  curses_(0)
+                                              die_flag_(false),
+                                              curses_(0),
+                                              start_time_(goby_time()),
+                                              is_quiet_(true),
+                                              is_scope_(false)
+                                              
 {
     boost::assign::insert (verbosity_map_)
         ("quiet",quiet)
         ("terse",terse)
         ("verbose",verbose)
         ("scope",scope);
+
 
     Group no_group("", "warnings and ungrouped messages");
     groups_[""] = no_group;    
@@ -47,31 +55,40 @@ goby::util::FlexOStreamBuf::~FlexOStreamBuf()
     if(curses_) delete curses_;
 }
 
-void goby::util::FlexOStreamBuf::verbosity(const std::string & s)
+void goby::util::FlexOStreamBuf::add_stream(const std::string& s, std::ostream* os)
 {
-    verbosity_ = verbosity_map_[s];
+    Verbosity verbosity = verbosity_map_[s];
     
-    if(verbosity_ == scope)
+    if(verbosity == scope)
     {
-        curses_ = new FlexNCurses(curses_mutex_);
+        if(is_scope_) return;
         
+        is_scope_ = true;
+        
+        curses_ = new FlexNCurses(curses_mutex_);
+
         boost::mutex::scoped_lock lock(curses_mutex_);
 
         curses_->startup();
         curses_->add_win(&groups_[""]);
-        
+
         curses_->recalculate_win();
-	
+
         input_thread_ = boost::shared_ptr<boost::thread>(new boost::thread(boost::bind(&FlexNCurses::run_input, boost::ref(curses_))));
-        
+
+    }
+    else if(verbosity != quiet)
+    {
+        is_quiet_ = false;
+        streams_.push_back(StreamConfig(os, verbosity));
     }
 }
 
 void goby::util::FlexOStreamBuf::add_group(const std::string & name, Group g)
 {
     groups_[name] = g;
-    
-    if(verbosity_ == scope)
+
+    if(is_scope_)
     {
         boost::mutex::scoped_lock lock(curses_mutex_);
         curses_->add_win(&groups_[name]);
@@ -84,66 +101,100 @@ int goby::util::FlexOStreamBuf::sync()
 {
     std::istream is(this);
     std::string s;
-    
+
     while (!getline(is, s).eof())
         display(s);
 
     if(die_flag_)
     {
-        if(verbosity_ != quiet)
-        {
+        if(!is_quiet_)
             std::cout << "Press enter to quit." << std::endl;
-        }
+
         char c;
         std::cin.get(c);
         exit(EXIT_FAILURE);
     }
-    
+
     group_name_.erase();
-    
+
     return 0;
 }
 
-void goby::util::FlexOStreamBuf::display(const std::string & s)
+void goby::util::FlexOStreamBuf::display(std::string & s)
 {
-    bool is_group = groups_.count(group_name_);
-
-    switch(verbosity_)
+    if(is_scope_)
     {
-        default:
-        case verbose:
-            if(is_group)
-                std::cout << color_.esc_code_from_str(groups_[group_name_].color()) << name_ << nocolor << ": " << s << nocolor << std::endl;
-            else
-                std::cout << name_ << ": " << s << nocolor << std::endl;
-            break;
-
-        case terse:
-            if (is_group)
-                std::cout << color_.esc_code_from_str(groups_[group_name_].color()) << groups_[group_name_].heartbeat() << nocolor;
-            else
-                std::cout << "." << std::flush;
-            break;
-
-        case quiet:
-            break;
+        if(!die_flag_)
+        {
+            boost::mutex::scoped_lock lock(curses_mutex_);
+            std::stringstream line;
+            boost::posix_time::time_duration time_of_day = goby_time().time_of_day();
+            line << "\n"
+                 << std::setfill('0') << std::setw(2) << time_of_day.hours() << ":"  
+                 << std::setw(2) << time_of_day.minutes() << ":" 
+                 << std::setw(2) << time_of_day.seconds() <<
+                color_.esc_code_from_str(groups_[group_name_].color()) << " | "  << esc_nocolor
+                 <<  s;
             
-        case scope:
-            if(!die_flag_)
+            curses_->insert(goby_time(), line.str(), &groups_[group_name_]);
+        }
+        else
+        {
+            curses_->alive(false);
+            input_thread_->join();
+            curses_->cleanup();
+            
+            std::cout << color_.esc_code_from_str(groups_[group_name_].color()) << name_ << esc_nocolor << ": " << s << esc_nocolor << std::endl;
+        }           
+    }
+
+    BOOST_FOREACH(const StreamConfig& cfg, streams_)
+    {
+        if(cfg.os() == &std::cout || cfg.os() == &std::cerr || cfg.os() == &std::clog)
+        {
+            switch(cfg.verbosity())
             {
-                boost::mutex::scoped_lock lock(curses_mutex_);
-                std::string line = std::string("\n" +  color_.esc_code_from_str(groups_[group_name_].color()) + "| \33[0m" + s);
-                curses_->insert(time(NULL), line, &groups_[group_name_]);
-            }
-            else
-            {
-                curses_->alive(false);
-                input_thread_->join();
-                curses_->cleanup();
+                default:
+                case verbose:
+                    *cfg.os() << color_.esc_code_from_str(groups_[group_name_].color()) << name_ << esc_nocolor << " (" << boost::posix_time::to_iso_string(goby_time()) << "): " << s << esc_nocolor << std::endl;
+                break;
                 
-                std::cout << color_.esc_code_from_str(groups_[group_name_].color()) << name_ << nocolor << ": " << s << nocolor << std::endl;
-            }            
-                  
-            break;
+            case terse:
+                *cfg.os() << color_.esc_code_from_str(groups_[group_name_].color()) << groups_[group_name_].heartbeat() << esc_nocolor;
+                break;
+        
+            case quiet:
+                break;
+            }
+        }
+        else if(cfg.os())
+        {
+            basic_log_header(*cfg.os(), group_name_);
+            strip_escapes(s);
+            *cfg.os() << s << std::endl;
+        }
     }
 }
+
+void goby::util::FlexOStreamBuf::refresh()
+{
+    if(is_scope_)
+    {
+        boost::mutex::scoped_lock lock(curses_mutex_);
+        curses_->recalculate_win();
+    }
+}
+
+// clean out any escape codes for non terminal streams
+void goby::util::FlexOStreamBuf::strip_escapes(std::string& s)
+{
+    static const std::string esc = "\33[";
+    static const std::string m = "m";
+    
+    size_t esc_pos, m_pos;
+    while((esc_pos = s.find(esc)) != std::string::npos
+          && (m_pos = s.find(m, esc_pos)) != std::string::npos)
+        s.erase(esc_pos, m_pos-esc_pos+1);
+    
+}
+

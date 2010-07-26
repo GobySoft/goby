@@ -30,6 +30,11 @@
 
 namespace goby
 {
+    namespace util
+    {
+        class FlexOstream;
+    }
+
     namespace acomms
     {
 	class ModemMessage;
@@ -101,6 +106,9 @@ namespace goby
             void set_type(SlotType type) { type_ = type; }
             void set_last_heard_time(boost::posix_time::ptime t) { last_heard_time_ = t; }
             void set_slot_time(unsigned t) { slot_time_ = t; }
+
+
+
             //@}
 
             /// \name Get
@@ -166,7 +174,9 @@ namespace goby
             ///
             /// \param message the new message (used to detect vehicles)
             void process_message(const acomms::ModemMessage& m);
-
+            
+            void add_flex_groups(util::FlexOstream& tout);
+            
             /// \name Manipulate slots
             //@{
             /// \return iterator to newly added slot
@@ -177,6 +187,9 @@ namespace goby
             bool remove_slot(const Slot& s);
             void clear_all_slots() { id2slot_.clear(); slot_order_.clear(); }    
             //@}
+
+            
+            
 
     
             /// \name Set

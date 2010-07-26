@@ -60,6 +60,12 @@ void goby::acomms::DCCLMessageVar::var_encode(std::map<std::string,std::vector<D
     // ensure that every DCCLMessageVar has the full number of (maybe blank) DCCLMessageVals
     vals[name_].resize(array_length_);
 
+    // modify the original vals to be used before running algorithms and encoding
+    for(std::vector<DCCLMessageVal>::size_type i = 0, n = vals[name_].size(); i < n; ++i)
+    {
+        pre_encode(vals[name_][i]);
+    }    
+    
     // copy so algorithms can modify directly and not affect other algorithms' use of original values
     std::vector<DCCLMessageVal> vm = vals[name_];
     

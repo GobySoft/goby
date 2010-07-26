@@ -31,6 +31,7 @@
 #include "flex_ncurses.h"
 #include "term_color.h"
 
+using boost::posix_time::ptime;
 
 goby::util::FlexNCurses::FlexNCurses(boost::mutex& mutex)
     : xmax_(0),
@@ -226,11 +227,11 @@ void goby::util::FlexNCurses::recalculate_win()
     }    
 }
 
-void goby::util::FlexNCurses::insert(time_t t, const std::string& s, Group* g)
+void goby::util::FlexNCurses::insert(ptime t, const std::string& s, Group* g)
 {
     size_t i = panel_from_group(g);
     
-    std::multimap<time_t, std::string>& hist = panels_[i].history();
+    std::multimap<ptime, std::string>& hist = panels_[i].history();
     if(hist.size() >= panels_[i].max_hist())
         hist.erase(hist.begin());
     
@@ -244,7 +245,7 @@ void goby::util::FlexNCurses::insert(time_t t, const std::string& s, Group* g)
         else
             putline(s, i);
     }
-    hist.insert(std::pair<time_t, std::string>(t, s));
+    hist.insert(std::pair<ptime, std::string>(t, s));
 }
 
 size_t goby::util::FlexNCurses::panel_from_group(Group* g)
@@ -297,11 +298,11 @@ void goby::util::FlexNCurses::putline(const std::string &s, unsigned scrn, bool 
 
 
 void goby::util::FlexNCurses::putlines(unsigned scrn,
-                           const std::multimap<time_t, std::string>::const_iterator& alpha,
-                           const std::multimap<time_t, std::string>::const_iterator& omega,
+                           const std::multimap<ptime, std::string>::const_iterator& alpha,
+                           const std::multimap<ptime, std::string>::const_iterator& omega,
                            bool refresh /* = true */)
 {
-    for(std::multimap<time_t, std::string>::const_iterator it = alpha; it != omega; ++it)
+    for(std::multimap<ptime, std::string>::const_iterator it = alpha; it != omega; ++it)
     {
         if(it == alpha)
             putline(boost::trim_left_copy(it->second), scrn, false);
@@ -810,10 +811,10 @@ void goby::util::FlexNCurses::redraw_lines(int j, int offset /* = -1 */)
     
     if(offset < 0)
     {
-        const std::multimap<time_t, std::string>& hist = get_history(j, panels_[j].ywidth());
+        const std::multimap<ptime, std::string>& hist = get_history(j, panels_[j].ywidth());
         int past = min(static_cast<int>(hist.size()),panels_[j].ywidth()-1) ;
 
-        std::multimap<time_t, std::string>::const_iterator a_it = hist.end();
+        std::multimap<ptime, std::string>::const_iterator a_it = hist.end();
         for(int k = 0; k < past; ++k)
             --a_it;
         
@@ -821,16 +822,16 @@ void goby::util::FlexNCurses::redraw_lines(int j, int offset /* = -1 */)
     }
     else
     {
-        const std::multimap<time_t, std::string>& hist = get_history(j);
+        const std::multimap<ptime, std::string>& hist = get_history(j);
         int past = min(static_cast<int>(hist.size()), panels_[j].ywidth()-1) ;
 
         int eff_offset = min(static_cast<int>(hist.size())-past, offset);
 
-        std::multimap<time_t, std::string>::const_iterator a_it = hist.begin();
+        std::multimap<ptime, std::string>::const_iterator a_it = hist.begin();
         for(int k = 0; k < eff_offset; ++k)
             ++a_it;
 
-        std::multimap<time_t, std::string>::const_iterator o_it = a_it;
+        std::multimap<ptime, std::string>::const_iterator o_it = a_it;
         for(int k = 0; k < past; ++k)
             ++o_it;
         
@@ -921,13 +922,13 @@ void goby::util::FlexNCurses::restore_order()
     panels_ = new_panels;
 }
 
-std::multimap<time_t, std::string> goby::util::FlexNCurses::get_history(size_t i, int how_much /* = -1 */)
+std::multimap<ptime, std::string> goby::util::FlexNCurses::get_history(size_t i, int how_much /* = -1 */)
 {
     if(panels_[i].combined().empty())
         return panels_[i].history();
     else
     {
-        std::multimap<time_t, std::string>::iterator i_it_begin;
+        std::multimap<ptime, std::string>::iterator i_it_begin;
         if(how_much < 0)
             i_it_begin = panels_[i].history().begin();
         else
@@ -937,13 +938,13 @@ std::multimap<time_t, std::string> goby::util::FlexNCurses::get_history(size_t i
                 --i_it_begin;
         }   
         
-        std::multimap<time_t, std::string> merged;
+        std::multimap<ptime, std::string> merged;
         for( ; i_it_begin != panels_[i].history().end(); ++i_it_begin)
             merged.insert(*i_it_begin);
 
         BOOST_FOREACH(size_t j, panels_[i].combined())
         {
-            std::multimap<time_t, std::string>::iterator j_it_begin;
+            std::multimap<ptime, std::string>::iterator j_it_begin;
             if(how_much < 0)
                 j_it_begin = panels_[j].history().begin();
             else

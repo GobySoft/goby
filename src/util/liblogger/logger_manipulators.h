@@ -21,21 +21,27 @@
 
 #include <string>
 #include <deque>
+#include <iomanip>
 
 #include <boost/algorithm/string.hpp>
 
+#include "term_color.h"
+#include "goby/util/time.h"
+
 inline std::ostream & die(std::ostream & os)
-{ return (os << "\33[31m(Error): \33[0m"); }
+{ return (os << goby::tcolor::red << "(Error): " << goby::tcolor::nocolor); }
 
 inline std::ostream & warn(std::ostream & os)
-{ return (os << "\33[31m(Warning): \33[0m"); }
+{ return (os << goby::tcolor::red << "(Warning): " << goby::tcolor::nocolor); }
+
+
 
 class Group
 {
   public:
   Group(const std::string& name = "",
         const std::string& description = "",
-        const std::string& color = "",
+        const std::string& color = "nocolor",
         const std::string& heartbeat = "")
       : name_(name),
         description_(description),
@@ -71,10 +77,9 @@ class GroupSetter
   public:
     explicit GroupSetter (const std::string& s) : group_(s) { }
     void operator()(std::ostream& os) const;
-
+    
   private:
     std::string group_;
-    
 };
 
 inline GroupSetter group(std::string n) 
@@ -82,5 +87,10 @@ inline GroupSetter group(std::string n)
 
 inline std::ostream& operator<<(std::ostream& os, const GroupSetter & gs)
 { gs(os); return(os); }
+
+  // used for non tty ostreams (everything but std::cout / std::cerr
+inline std::ostream& basic_log_header(std::ostream& os, const std::string& group_name)
+{ return os << goby::util::goby_time_as_string() << "\t" <<  std::setw(15) << group_name << "\t"; }
+
 
 #endif

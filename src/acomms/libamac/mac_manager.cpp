@@ -342,6 +342,12 @@ std::map<unsigned, goby::acomms::Slot>::iterator goby::acomms::MACManager::add_s
     return it;
 }
 
+void goby::acomms::MACManager::add_flex_groups(util::FlexOstream& tout)
+{
+    tout.add_group("mac", "*", "blue", "MAC related messages (goby_amac)");
+}
+
+
 bool goby::acomms::MACManager::remove_slot(const Slot& s)    
 {
     bool removed_a_slot = false;

@@ -29,13 +29,18 @@
 
 #include "goby/acomms/xml/xml_parser.h"
 #include "goby/util/time.h"
-
+#include "goby/util/logger.h"
+  
 #include "message.h"
 #include "message_val.h"
 
 namespace goby
 {
-
+    namespace util
+    {
+        class FlexOstream;
+    }
+    
     namespace acomms
     {
 
@@ -79,18 +84,18 @@ namespace goby
             /// \name Constructors/Destructor
             //@{         
             /// \brief Instantiate with no XML files.
-            DCCLCodec();
+            DCCLCodec(std::ostream* os = 0);
             /// \brief Instantiate with a single XML file.
             ///
             /// \param file path to an XML message file (i.e. contains \ref tag_layout and (optionally) \ref tag_publish sections) to parse for use by the codec.
             /// \param schema path (absolute or relative to the XML file path) for the validating schema (message_schema.xsd) (optional).
-            DCCLCodec(const std::string& file, const std::string schema = "");
+            DCCLCodec(const std::string& file, const std::string schema = "", std::ostream* os = 0);
         
             /// \brief Instantiate with a set of XML files.
             ///
             /// \param files set of paths to XML message files to parse for use by the codec.
             /// \param schema path (absolute or relative to the XML file path) for the validating schema (message_schema.xsd) (optional).
-            DCCLCodec(const std::set<std::string>& files, const std::string schema = "");
+            DCCLCodec(const std::set<std::string>& files, const std::string schema = "", std::ostream* os = 0);
 
             /// destructor
             ~DCCLCodec() {}
@@ -150,6 +155,10 @@ namespace goby
             /// \param params (passed to func) a list of colon separated parameters passed by the user in the XML file. param[0] is the name.
             /// \param vals (passed to func) a map of \ref tag_name to current values for all message variables.
             void add_adv_algorithm(const std::string& name, AlgFunction2 func);
+
+            /// Registers the group names used for the FlexOstream logger
+            void add_flex_groups(util::FlexOstream& tout);
+            
             //@}
         
             /// \name Codec functions.
@@ -299,6 +308,23 @@ namespace goby
             {
                 std::vector<DCCLMessage>::iterator it = to_iterator(k);
                 
+                if(os_)
+                {
+                    *os_ << group("dccl_enc") << "starting publish/subscribe encode for " << it->name() << std::endl;
+                    *os_ << group("dccl_enc") << "publish/subscribe variables are: " << std::endl;
+                    
+                    typedef std::pair<std::string, std::vector<DCCLMessageVal> > P;
+                    BOOST_FOREACH(const P& p, pubsub_vals)                    
+                    {
+                        if(!p.first.empty())
+                        {
+                            BOOST_FOREACH(const DCCLMessageVal& mv, p.second)
+                                *os_ << group("dccl_enc") << "\t" << p.first << ": " <<  mv << std::endl;
+                        }   
+                    }                 
+                }
+
+                
                 std::map<std::string, std::vector<DCCLMessageVal> > vals;
                 // clean the pubsub vals into dccl vals
                 // using <src_var/> tag, do casts from double, pull strings from key=value,key=value, etc.
@@ -308,6 +334,9 @@ namespace goby
                     mv->read_pubsub_vars(vals, pubsub_vals);
             
                 encode_private(it, msg, vals);
+
+                if(os_) *os_ << group("dccl_enc") << "message published to variable: " <<
+                            get_outgoing_hex_var(it->id()) << std::endl;
             }
 
             /// \brief Encode a message using \ref tag_src_var tags instead of \ref tag_name tags
@@ -350,6 +379,18 @@ namespace goby
                 // go through all the publishes_ and fill in the format strings
                 BOOST_FOREACH(DCCLPublish& p, it->publishes())
                     p.write_publish(vals, pubsub_vals);
+
+                if(os_)
+                {
+                    *os_ << group("dccl_dec") << "publish/subscribe variables are: " << std::endl;
+                    typedef std::pair<std::string, DCCLMessageVal> P;
+                    BOOST_FOREACH(const P& p, pubsub_vals)
+                    {
+                        
+                        *os_ << group("dccl_dec") << "\t" << p.first << ": " << p.second << std::endl;
+                    }                 
+                    *os_ << group("dccl_dec") << "finished publish/subscribe decode for " << it->name() << std::endl;
+                }
             }
         
         
@@ -460,6 +501,8 @@ namespace goby
             void decrypt(std::string& s, const std::string& nonce);
         
           private:
+            std::ostream* os_;
+            
             std::vector<DCCLMessage> messages_;
             std::map<std::string, size_t>  name2messages_;
             std::map<unsigned, size_t>     id2messages_;
@@ -512,8 +555,6 @@ namespace goby
             DCCLMessage msg_;
             std::map<std::string, std::vector<DCCLMessageVal> > decoded_;
         };
-
-    
     }
 }
 

@@ -27,6 +27,7 @@
 #include "goby/acomms/queue.h"
 #include "goby/acomms/modem_driver.h"
 #include "goby/acomms/amac.h"
+#include "goby/util/logger.h"
 
 namespace goby
 {
@@ -64,13 +65,14 @@ namespace goby
             bind(driver, queue_manager);
             bind(mac, driver);
         }
-
+        
         // examples
         /// \example acomms/examples/chat/chat.cpp
         /// chat.xml
         /// \verbinclude chat.xml
         /// chat.cpp
 
+        
 
     }
 

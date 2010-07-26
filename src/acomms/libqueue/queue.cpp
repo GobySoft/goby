@@ -47,9 +47,6 @@ bool goby::acomms::Queue::push_message(ModemMessage& new_message)
     }
     
     new_message.set_ack(new_message.ack_set() ? new_message.ack() : cfg_.ack());
-
-    // BROADCAST cannot ACK messages
-    if(new_message.dest() == acomms::BROADCAST_ID) new_message.set_ack(false);
     
     // needed for CCL messages
     new_message.set_src(modem_id_);
@@ -122,7 +119,18 @@ bool goby::acomms::Queue::priority_values(double& priority,
 
     // for followup user-frames, destination must be either zero (broadcast)
     // or the same as the first user-frame
-    if((message.dest_set() && next_msg_it->dest() != acomms::BROADCAST_ID && message.dest() != next_msg_it->dest()))
+
+    if (last_send_time_ + boost::posix_time::seconds(cfg_.blackout_time()) > goby_time())
+    {
+        if(os_) *os_<< group("priority") << "\t" << cfg_.name() << " is in blackout" << std::endl;
+        return false;
+    }
+    else if(next_msg_it->size() > message.size())
+    {
+        if(os_) *os_<< group("priority") << "\t" << cfg_.name() << " next message is too large {" << next_msg_it->size() << "}" << std::endl;
+        return false;
+    }
+    else if((message.dest_set() && next_msg_it->dest() != acomms::BROADCAST_ID && message.dest() != next_msg_it->dest()))
     {
         if(os_) *os_<< group("priority") << "\t" <<  cfg_.name() << " next message has wrong destination  (must be BROADCAST (0) or same as first user-frame)" << std::endl;
         return false; 
@@ -132,15 +140,10 @@ bool goby::acomms::Queue::priority_values(double& priority,
         if(os_) *os_<< group("priority") << "\t" <<  cfg_.name() << " next message requires ACK and the packet does not" << std::endl;
         return false; 
     }
-    else if(next_msg_it->size() > message.size())
+    else if((next_msg_it->ack() && message.dest_set() && message.dest() == acomms::BROADCAST_ID))
     {
-        if(os_) *os_<< group("priority") << "\t" << cfg_.name() << " next message is too large {" << next_msg_it->size() << "}" << std::endl;
-        return false;
-    }
-    else if (last_send_time_ + boost::posix_time::seconds(cfg_.blackout_time()) > goby_time())
-    {
-        if(os_) *os_<< group("priority") << "\t" << cfg_.name() << " is in blackout" << std::endl;
-        return false;
+        if(os_) *os_<< group("priority") << "\t" <<  cfg_.name() << " next message requires ACK but the destination is BROADCAST (0)" << std::endl;
+        return false; 
     }
 
     return true;

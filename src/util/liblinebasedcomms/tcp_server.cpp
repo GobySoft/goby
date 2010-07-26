@@ -67,7 +67,7 @@ void goby::util::TCPServer::do_write(const std::string& line)
         c->write(line);
 }
 
-// cloase all the connections
+// close all the connections, it's up to the clients to try to reconnect
 void goby::util::TCPServer::do_close(const asio::error_code& error)
 {
     BOOST_FOREACH(boost::shared_ptr<TCPConnection> c, connections_)

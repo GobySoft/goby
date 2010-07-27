@@ -21,85 +21,104 @@
 
 #include <iostream>
 #include <sstream>
+#include <vector>
 
 #include <boost/thread.hpp>
 #include <boost/shared_ptr.hpp>
 
 #include "logger_manipulators.h"
 
-#include "flex_ncurses.h"
 #include "term_color.h"
 
 namespace goby
 {
-namespace util
-{    
-// stringbuf that allows us to insert things before the stream and control output
-class FlexOStreamBuf : public std::stringbuf
-{
-  public:
-    FlexOStreamBuf();
-    ~FlexOStreamBuf();
-    
-    int sync();
-    
-    void name(const std::string & s)
-    { name_ = s; }
-
-    void verbosity(const std::string & s);
-
-    bool is_quiet()
-    { return (verbosity_ == quiet); }    
-
-    bool is_scope()
-    { return (verbosity_ == scope); }
-    
-    void group_name(const std::string & s)
-    { group_name_ = s; }
-
-    void die_flag(bool b)
-    { die_flag_ = b; }
-    
-    void add_group(const std::string& name, Group g);
-
-    std::string color(const std::string& color)
-    { return color_.esc_code_from_str(color); }
-
-    void refresh()
+    namespace util
     {
-        if(verbosity_ == scope)
-        {
-            boost::mutex::scoped_lock lock(curses_mutex_);
-            curses_->recalculate_win();
-        }
-    }
-    
-  private:
-    void display(const std::string& s);
-    
-    
-  private:
-    std::string name_;
-    std::string group_name_;
-    
-    std::map<std::string, Group> groups_;
-    
-    enum Verbosity { verbose = 0, quiet, terse, scope };
-    
-    Verbosity verbosity_;
 
-    std::map<std::string, Verbosity> verbosity_map_;
+        class FlexNCurses;
         
-    bool die_flag_;
-
-    tcolor::TermColor color_;
+// stringbuf that allows us to insert things before the stream and control output
+        class FlexOStreamBuf : public std::stringbuf
+        {
+          public:
+            FlexOStreamBuf();
+            ~FlexOStreamBuf();
     
-    FlexNCurses* curses_;
+            int sync();
+    
+            void name(const std::string & s)
+            { name_ = s; }
+            
+            void add_stream(const std::string& verbosity, std::ostream* os);            
 
-    boost::mutex curses_mutex_;
-    boost::shared_ptr<boost::thread> input_thread_;
-};
-}
+            bool is_quiet()
+            { return is_quiet_; }    
+
+            bool is_scope()
+            { return is_scope_; }    
+
+            
+            void group_name(const std::string & s)
+            { group_name_ = s; }
+
+            void die_flag(bool b)
+            { die_flag_ = b; }
+    
+            void add_group(const std::string& name, Group g);
+
+            std::string color(const std::string& color)
+            { return color_.esc_code_from_str(color); }
+
+            void refresh();            
+    
+          private:
+            void display(std::string& s);    
+            void strip_escapes(std::string& s);
+            
+          private:
+            enum Verbosity { verbose = 0, quiet, terse, scope };
+            std::map<std::string, Verbosity> verbosity_map_;
+
+
+            class StreamConfig
+            {
+              public:
+                StreamConfig(std::ostream* os, Verbosity verbosity)
+                    : os_(os),
+                    verbosity_(verbosity)
+                    { }
+                
+                std::ostream* os() const { return os_; }
+                Verbosity verbosity() const { return verbosity_; }
+                
+              private:
+                std::ostream* os_;
+                Verbosity verbosity_;
+            };
+            
+            std::string name_;
+            std::string group_name_;
+    
+            std::map<std::string, Group> groups_;
+        
+            bool die_flag_;
+
+            tcolor::TermColor color_;
+    
+            FlexNCurses* curses_;
+
+            boost::mutex curses_mutex_;
+            boost::shared_ptr<boost::thread> input_thread_;
+
+            boost::posix_time::ptime start_time_;
+
+            std::vector<StreamConfig> streams_;
+
+            bool is_quiet_;
+            bool is_scope_;
+            
+        };
+    }
 }
 #endif
 

@@ -32,6 +32,10 @@
 
 namespace goby
 {
+    namespace util
+    {
+        class FlexOstream;
+    }
 
     namespace acomms
     {
@@ -136,7 +140,10 @@ namespace goby
             /// 
             /// \param id DCCL message id (\verbatim <id/> \endverbatim) that references the %queue for which to enable the <tt>on demand</tt> callback.
             void set_on_demand(unsigned id, QueueType type = queue_dccl);
-        
+
+            void add_flex_groups(util::FlexOstream& tout);
+            
+            
             //@}
 
             /// \name Application level Push/Receive Methods
@@ -278,7 +285,9 @@ namespace goby
 
             /// \return human readable summary of all loaded %queues
             std::string summary() const;
-        
+
+            
+            
             //@}
         
             /// \example libqueue/examples/queue_simple/queue_simple.cpp
@@ -335,7 +344,6 @@ namespace goby
             std::multimap<unsigned, Queue*> waiting_for_ack_;
 
             // the first *user* frame sets the tone (dest & ack) for the entire packet (all %modem frames)
-            unsigned packet_dest_;
             unsigned packet_ack_;
         };
 

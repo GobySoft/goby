@@ -21,27 +21,29 @@
 std::map<std::string, goby::util::TCPClient*> goby::util::TCPClient::inst_;
 
 
-goby::util::TCPClient* goby::util::TCPClient::getInstance(const std::string& server,
-                                            const std::string& port,
-                                            std::deque<std::string>* in,
-                                            boost::mutex* in_mutex)
+goby::util::TCPClient* goby::util::TCPClient::get_instance(unsigned& clientkey,
+                                                           const std::string& server,
+                                                           unsigned port,
+                                                           const std::string& delimiter /*= "\r\n"*/)
 {
-    std::string server_port = server + ":" + port;
+    std::string port_str = boost::lexical_cast<std::string>(port);
+    std::string server_port = server + ":" + port_str;
     
-    if(!inst_.count(server_port))
-        inst_[server_port] = new TCPClient(server, port, in, in_mutex);
-    else
-        inst_[server_port]->add_user(in);
+    if(!inst_.count(server_port)) // if no connection for this server:port combination, create one
+    {
+        inst_[server_port] = new TCPClient(server, port_str, delimiter);
+        clientkey = 0;
+    }
+    else // otherwise, register this user with an existing client
+        clientkey = inst_[server_port]->add_user();
         
     return(inst_[server_port]);
 }
 
 goby::util::TCPClient::TCPClient(const std::string& server,
-                          const std::string& port,
-                          std::deque<std::string>* in,
-                          boost::mutex* in_mutex,
-                          std::string delimiter /*= "\r\n"*/)
-    : ClientBase<asio::ip::tcp::socket>(socket_, in, in_mutex, delimiter),
+                                 const std::string& port,
+                                 const std::string& delimiter /*= "\r\n"*/)
+    : LineBasedClient<asio::ip::tcp::socket>(socket_, delimiter),
       socket_(io_service_),
       server_(server),
       port_(port)
@@ -62,15 +64,6 @@ bool goby::util::TCPClient::start_specific()
         socket_.connect(*endpoint_iterator++, error);
     }
     
-    if (error)
-    {
-        std::cerr << "error connecting to " << server_ << ":" << port_ << std::endl;
-        return false;
-    }
-    else
-    {
-        std::cerr << "successful connection to: " << server_ << ":" << port_ << std::endl;
-        return true;
-    }
+    return error ? false : true;
 }
 

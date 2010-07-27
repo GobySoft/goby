@@ -26,6 +26,7 @@
 #include <boost/thread.hpp>
 
 #include "term_color.h"
+#include "goby/util/time.h"
 
 class Group;
 
@@ -44,7 +45,7 @@ namespace goby
             void startup();
             void add_win(Group* title);
             void recalculate_win();
-            void insert(time_t t, const std::string& s, Group* g);
+            void insert(boost::posix_time::ptime t, const std::string& s, Group* g);
             size_t panel_from_group(Group* g);
     
     
@@ -59,8 +60,8 @@ namespace goby
             void putline(const std::string &s, unsigned scrn, bool refresh = true);
 
             void putlines(unsigned scrn,
-                          const std::multimap<time_t, std::string>::const_iterator& alpha,
-                          const std::multimap<time_t, std::string>::const_iterator& omega,
+                          const std::multimap<boost::posix_time::ptime, std::string>::const_iterator& alpha,
+                          const std::multimap<boost::posix_time::ptime, std::string>::const_iterator& omega,
                           bool refresh = true);
     
  
@@ -124,7 +125,7 @@ namespace goby
             void toggle_minimized(int i);
             void redraw_lines(int j, int offset = -1 );
     
-            std::multimap<time_t, std::string> get_history(size_t i, int how_much = -1);
+            std::multimap<boost::posix_time::ptime, std::string> get_history(size_t i, int how_much = -1);
             size_t get_history_size(size_t i);
     
     
@@ -208,7 +209,7 @@ namespace goby
                 bool locked() const { return locked_; }
                 int lines_from_beg() const { return lines_from_beg_; }        
                 int original_order() const { return original_order_; }
-                std::multimap<time_t, std::string>& history() { return history_; }
+                std::multimap<boost::posix_time::ptime, std::string>& history() { return history_; }
                 unsigned max_hist() const { return max_hist_; }
                 const std::set<size_t>& combined() const { return combined_; }
         
@@ -225,7 +226,7 @@ namespace goby
                 int lines_from_beg_;
                 int original_order_;
                 unsigned max_hist_;
-                std::multimap<time_t, std::string> history_;
+                std::multimap<boost::posix_time::ptime, std::string> history_;
                 std::set<size_t> combined_;
             };    
 

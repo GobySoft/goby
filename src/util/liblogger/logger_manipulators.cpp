@@ -39,7 +39,8 @@ void GroupSetter::operator()(std::ostream& os) const
     }
     catch (const std::bad_cast& e)
     {
-        // all other ostreams
-        os << group_ << "\t";
+        basic_log_header(os, group_);
     }
 }
+
+

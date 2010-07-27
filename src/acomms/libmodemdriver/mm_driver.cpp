@@ -26,13 +26,21 @@
 
 #include "goby/acomms/modem_message.h"
 #include "goby/util/logger.h"
-#include "goby/util/time.h"
 
 using namespace goby::util; // for NMEASentence & goby_time()
 
-goby::acomms::MMDriver::MMDriver(std::ostream* os /*= 0*/)
-    : ModemDriverBase(os, SERIAL_DELIMITER),
-      os_(os),
+boost::posix_time::time_duration goby::acomms::MMDriver::MODEM_WAIT = boost::posix_time::seconds(3);
+boost::posix_time::time_duration goby::acomms::MMDriver::WAIT_AFTER_REBOOT = boost::posix_time::seconds(2);
+boost::posix_time::time_duration goby::acomms::MMDriver::ALLOWED_SKEW = boost::posix_time::seconds(2);
+
+std::string goby::acomms::MMDriver::SERIAL_DELIMITER = "\r";
+unsigned goby::acomms::MMDriver::PACKET_FRAME_COUNT [] = { 1, 3, 3, 2, 2, 8 };
+unsigned goby::acomms::MMDriver::PACKET_SIZE [] = { 32, 32, 64, 256, 256, 256 };
+
+
+goby::acomms::MMDriver::MMDriver(std::ostream* log /*= 0*/)
+    : ModemDriverBase(log, SERIAL_DELIMITER),
+      log_(log),
       last_write_time_(goby_time()),
       waiting_for_modem_(false),
       startup_done_(false),
@@ -41,28 +49,32 @@ goby::acomms::MMDriver::MMDriver(std::ostream* os /*= 0*/)
       clock_set_(false)
 {
     initialize_talkers();
-    set_baud(DEFAULT_BAUD);
+    set_serial_baud(DEFAULT_BAUD);
 }
 
 goby::acomms::MMDriver::~MMDriver()
- { }
+{ }
 
 
 void goby::acomms::MMDriver::startup()
 {
-    serial_start();
+    modem_start();
     
     set_clock();
-    // take a breath to let the clock be set
+    // take a breath to let the clock be set 
     sleep(1);
     
     write_cfg();
-    check_cfg();
+    // useful to have all the CFG values in the log file for later analysis
+    query_all_cfg();
     startup_done_ = true;
 }
 
 void goby::acomms::MMDriver::do_work()
 {    
+    // don't try to set the clock if we already have outgoing
+    // messages queued since the time will be wrong by the time
+    // we can send
     if(!clock_set_ && out_.empty())
         set_clock();
     
@@ -71,27 +83,23 @@ void goby::acomms::MMDriver::do_work()
 
     // read any incoming messages from the modem
     std::string in;
-    while(serial_read(in))
+    while(modem_read(in))
     {
         boost::trim(in);
-        if(os_) *os_ << group("mm_in") << in << std::endl;
+        if(log_) *log_ << group("mm_in") << in << std::endl;
 
-	// Begin the addition of code to support the gateway buoy
-	// Added by Andrew Bouchard, NSWC PCD
-
-	// Check for whether the gateway buoy is being used
-	if ( gateway_prefix_in_ != "" )
-	{
-	    // Remove the prefix
+	// Check for whether the gateway buoy is being used and if so, remove the prefix
+	if (!gateway_prefix_in_.empty())
 	    in.erase(0, gateway_prefix_in_.length());
-	}
-	// End the addition of code to support the gateway buoy
         
-        try {
-          NMEASentence nmea(in, NMEASentence::VALIDATE);
-          handle_modem_in(nmea);
-        } catch(std::exception& e) {
-          if(os_) *os_ << group("mm_in") << warn << e.what() << std::endl;
+        try
+        {
+            NMEASentence nmea(in, NMEASentence::VALIDATE);
+            handle_modem_in(nmea);
+        }
+        catch(std::exception& e)
+        {
+            if(log_) *log_ << group("mm_in") << warn << e.what() << std::endl;
         }
     }
 }
@@ -121,8 +129,7 @@ void goby::acomms::MMDriver::initiate_ranging(const acomms::ModemMessage& m)
 
 void goby::acomms::MMDriver::handle_modem_out()
 {
-    if(out_.empty())
-        return;
+    if(out_.empty()) return;
     
     NMEASentence& nmea = out_.front();
     
@@ -131,28 +138,23 @@ void goby::acomms::MMDriver::handle_modem_out()
     {
         if(resend)
         {
-            if(os_) *os_ << group("mm_out") << warn << "resending " << nmea.front() <<  " because we had no modem response for " << (goby_time() - last_write_time_).total_seconds() << " second(s). " << std::endl;
+            if(log_) *log_ << group("mm_out") << warn << "resending " << nmea.front() <<  " because we had no modem response for " << (goby_time() - last_write_time_).total_seconds() << " second(s). " << std::endl;
             ++global_fail_count_;
             ++present_fail_count_;
             if(global_fail_count_ == MAX_FAILS_BEFORE_DEAD)
-            {
                 throw(std::runtime_error(std::string("modem appears to not be responding. going down")));
-            }
             
             if(present_fail_count_ == RETRIES)
             {
-                if(os_) *os_  << group("mm_out") << warn << "modem did not respond to our command even after " << RETRIES << " retries. continuing onwards anyway..." << std::endl;
+                if(log_) *log_  << group("mm_out") << warn << "modem did not respond to our command even after " << RETRIES << " retries. continuing onwards anyway..." << std::endl;
                 out_.clear();
                 return;
             }
         }
 
-        if(os_) *os_ << group("mm_out") << gateway_prefix_out_ << nmea.message() << std::endl;
+        if(log_) *log_ << group("mm_out") << gateway_prefix_out_ << nmea.message() << std::endl;
 
-        // Begin the addition of code to support the gateway buoy
-        // Added by Andrew Bouchard, NSWC PCD
-        serial_write(gateway_prefix_out_ + nmea.message_cr_nl());
-        // End the addition of code to support the gateway buoy
+        modem_write(gateway_prefix_out_ + nmea.message_cr_nl());
         
         waiting_for_modem_ = true;
         last_write_time_ = goby_time();
@@ -170,7 +172,6 @@ void goby::acomms::MMDriver::pop_out()
 void goby::acomms::MMDriver::write(NMEASentence& nmea)
 {    
     out_.push_back(nmea);
-
     handle_modem_out(); // try to push it now without waiting for the next call to do_work();
 }
 
@@ -200,7 +201,7 @@ void goby::acomms::MMDriver::write_cfg()
     }    
 }
 
-void goby::acomms::MMDriver::check_cfg()
+void goby::acomms::MMDriver::query_all_cfg()
 {
     NMEASentence nmea("$CCCFQ,ALL", NMEASentence::IGNORE);
     write(nmea);
@@ -214,7 +215,7 @@ void goby::acomms::MMDriver::handle_modem_in(NMEASentence& nmea)
     {
         // only process messages from CA (modem)
         case CA: global_fail_count_ = 0; break; // reset fail count - modem is alive!
-        // ignore the rest
+            // ignore the rest
         case CC: case SN: case GP: default: return;
     }
 
@@ -235,9 +236,34 @@ void goby::acomms::MMDriver::handle_modem_in(NMEASentence& nmea)
         default:                   break;
     }
 
-    // clear the last send given modem acknowledgement
-    if(!out_.empty() && out_.front().sentence_id() == nmea.sentence_id()) pop_out();
+    
+    if(out_.empty() || out_.front().sentence_id() != nmea.sentence_id())
+    {
+        // look for unexpected messages from the modem
+        switch(sentence_id_map_[nmea.sentence_id()])
+        {
+            // commands that we *must* send (we should
+            // never get a CA* of these types without having
+            // just send the corresponding CC*).
+            // this is used to ensure we always have control of the
+            // modem
+            case TXD:
+            case TXA:
+            case MPC:
+                handle_modem_malfunction();
+                break;
+                
+            default:
+                break;    
+        }
+    }
 
+    // clear the last send given modem acknowledgement
+    if(!out_.empty() && out_.front().sentence_id() == nmea.sentence_id())
+        pop_out();
+
+
+    
     // for anyone who needs to know that we got a message 
     if(callback_decoded) callback_decoded(m_in);
 }
@@ -287,6 +313,8 @@ void goby::acomms::MMDriver::drq(NMEASentence& nmea_in, acomms::ModemMessage& m_
 
 void goby::acomms::MMDriver::cfg(NMEASentence& nmea, acomms::ModemMessage& m)
 {
+    nvram_cfg_[nmea[1]] = nmea.as<int>(2);
+    
     if(out_.empty() || (out_.front().sentence_id() != "CFG" && out_.front().sentence_id() != "CFQ"))
         return;
     
@@ -356,7 +384,7 @@ void goby::acomms::MMDriver::rev(NMEASentence& nmea, acomms::ModemMessage& m)
 
 void goby::acomms::MMDriver::err(NMEASentence& nmea, acomms::ModemMessage& m)
 {
-    *os_ << group("mm_out") << warn << "modem reports error: " << nmea.message() << std::endl;
+    *log_ << group("mm_out") << warn << "modem reports error: " << nmea.message() << std::endl;
 }
 
 void goby::acomms::MMDriver::cyc(NMEASentence& nmea, acomms::ModemMessage& m)
@@ -400,62 +428,44 @@ boost::posix_time::ptime goby::acomms::MMDriver::modem_time2ptime(const std::str
 }
 
 
+// send a reboot and continue on our way
+void goby::acomms::MMDriver::handle_modem_malfunction()
+{
+    if(log_) *log_  << group("mm_out") << warn << "unexpected sentence ID, rebooting modem" << std::endl;
+
+    // 0 second sleep from ourselves to ourselves is a reboot
+    NMEASentence nmea_out("$CCMSC", NMEASentence::IGNORE);
+    nmea_out.push_back(nvram_cfg_["SRC"]);
+    nmea_out.push_back(nvram_cfg_["SRC"]);
+    nmea_out.push_back(0);
+
+    write(nmea_out);    
+}
+
+
+
 void goby::acomms::MMDriver::initialize_talkers()
 {
     boost::assign::insert (sentence_id_map_)
-        ("ACK",ACK)
-        ("DRQ",DRQ)
-        ("RXA",RXA)
-        ("RXD",RXD)
-        ("RXP",RXP)
-        ("TXD",TXD)
-        ("TXA",TXA) 
-        ("TXP",TXP) 
-        ("TXF",TXF)  
-        ("CYC",CYC) 
-        ("MPC",MPC) 
-        ("MPA",MPA) 
-        ("MPR",MPR) 
-        ("RSP",RSP) 
-        ("MSC",MSC) 
-        ("MSA",MSA) 
-        ("MSR",MSR) 
-        ("EXL",EXL) 
-        ("MEC",MEC) 
-        ("MEA",MEA) 
-        ("MER",MER) 
-        ("MUC",MUC) 
-        ("MUA",MUA) 
-        ("MUR",MUR) 
-        ("PDT",PDT) 
-        ("PNT",PNT) 
-        ("TTA",TTA) 
-        ("MFD",MFD) 
-        ("CLK",CLK) 
-        ("CFG",CFG) 
-        ("AGC",AGC) 
-        ("BBD",BBD) 
-        ("CFR",CFR) 
-        ("CST",CST) 
-        ("MSG",MSG) 
-        ("REV",REV) 
-        ("DQF",DQF) 
-        ("SHF",SHF) 
-        ("MFD",MFD) 
-        ("SNR",SNR) 
-        ("DOP",DOP) 
-        ("DBG",DBG) 
-        ("FFL",FFL) 
-        ("FST",FST) 
+        ("ACK",ACK)("DRQ",DRQ)("RXA",RXA)("RXD",RXD)
+        ("RXP",RXP)("TXD",TXD)("TXA",TXA)("TXP",TXP) 
+        ("TXF",TXF)("CYC",CYC)("MPC",MPC)("MPA",MPA)
+        ("MPR",MPR)("RSP",RSP)("MSC",MSC)("MSA",MSA)
+        ("MSR",MSR)("EXL",EXL)("MEC",MEC)("MEA",MEA) 
+        ("MER",MER)("MUC",MUC)("MUA",MUA)("MUR",MUR) 
+        ("PDT",PDT)("PNT",PNT)("TTA",TTA)("MFD",MFD) 
+        ("CLK",CLK)("CFG",CFG)("AGC",AGC)("BBD",BBD) 
+        ("CFR",CFR)("CST",CST)("MSG",MSG)("REV",REV) 
+        ("DQF",DQF)("SHF",SHF)("MFD",MFD)("SNR",SNR) 
+        ("DOP",DOP)("DBG",DBG)("FFL",FFL)("FST",FST) 
         ("ERR",ERR);
 
     boost::assign::insert (talker_id_map_)
-        ("CC",CC)
-        ("CA",CA)
-        ("SN",SN)
-        ("GP",GP);
+        ("CC",CC)("CA",CA)("SN",SN)("GP",GP);
  
 }
+
+
 
 // Begin the addition of code to support the gateway buoy
 // Added by Andrew Bouchard, NSWC PCD
@@ -478,7 +488,7 @@ void goby::acomms::MMDriver::set_gateway_prefix(bool IsGateway, int GatewayID)
 	prefix_out << "#M" << GatewayID;
         gateway_prefix_out_ = prefix_out.str();
 
-        if(os_) *os_ << "Setting the gateway buoy prefix: in=" << gateway_prefix_in_ << ", out=" << gateway_prefix_out_ << std::endl;
+        if(log_) *log_ << "Setting the gateway buoy prefix: in=" << gateway_prefix_in_ << ", out=" << gateway_prefix_out_ << std::endl;
     }
 
 

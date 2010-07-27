@@ -23,31 +23,28 @@
 
 std::map<std::string, goby::util::SerialClient*> goby::util::SerialClient::inst_;
 
-
-goby::util::SerialClient* goby::util::SerialClient::getInstance(const std::string& name,
-                                                        unsigned baud,
-                                                        std::deque<std::string>* in,
-                                                        boost::mutex* in_mutex,
-                                                        const std::string& delimiter /*= "\r\n"*/)
+goby::util::SerialClient* goby::util::SerialClient::get_instance(unsigned& clientkey,
+                                                                 const std::string& name,
+                                                                 unsigned baud,
+                                                                 const std::string& delimiter /*= "\r\n"*/)
 {
-    // uniquely defines the serial port
-    std::string port_baud = name + ":" + boost::lexical_cast<std::string>(baud);
-    
-    if(!inst_.count(port_baud))
-        inst_[port_baud] = new SerialClient(name, baud, in, in_mutex, delimiter);
+    // port name uniquely defines the serial port    
+    if(!inst_.count(name))
+    {
+        inst_[name] = new SerialClient(name, baud, delimiter);
+        clientkey = 0;
+    }
     else
-        inst_[port_baud]->add_user(in);
-        
-    return(inst_[port_baud]);
+        clientkey = inst_[name]->add_user();
+    
+    return(inst_[name]);
 }
 
 
 goby::util::SerialClient::SerialClient(const std::string& name,
-                                   unsigned baud,
-                                   std::deque<std::string>* in,
-                                   boost::mutex* in_mutex,
-                                   const std::string& delimiter)
-    : ClientBase<asio::serial_port>(serial_port_, in, in_mutex, delimiter),
+                                       unsigned baud,
+                                       const std::string& delimiter)
+    : LineBasedClient<asio::serial_port>(serial_port_, delimiter),
       serial_port_(io_service_),
       name_(name),
       baud_(baud)
@@ -66,7 +63,15 @@ bool goby::util::SerialClient::start_specific()
     }
     
     serial_port_.set_option(asio::serial_port_base::baud_rate(baud_));
-    return true;
+
+    // no flow control
+    serial_port_.set_option(asio::serial_port_base::flow_control(asio::serial_port_base::flow_control::none));
+
+    // 8N1
+    serial_port_.set_option(asio::serial_port_base::character_size(8));
+    serial_port_.set_option(asio::serial_port_base::parity(asio::serial_port_base::parity::none));
+    serial_port_.set_option(asio::serial_port_base::stop_bits(asio::serial_port_base::stop_bits::one));
     
+    return true;    
 }
 

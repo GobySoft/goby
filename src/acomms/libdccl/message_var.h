@@ -128,6 +128,9 @@ namespace goby
         
           protected:
             virtual void initialize_specific() = 0;
+
+            virtual void pre_encode(DCCLMessageVal& val) { }
+             
             virtual boost::dynamic_bitset<unsigned char> encode_specific(const DCCLMessageVal& v) = 0;
             virtual DCCLMessageVal decode_specific(boost::dynamic_bitset<unsigned char>& bits) = 0;
             virtual void get_display_specific(std::stringstream& ss) const = 0;

@@ -34,14 +34,12 @@
 goby::acomms::QueueManager::QueueManager(std::ostream* os /* =0 */)
     : modem_id_(0),
       os_(os),
-      packet_dest_(0),
       packet_ack_(0)
 {}
     
 goby::acomms::QueueManager::QueueManager(const std::string& file, const std::string schema, std::ostream* os /* =0 */)
     : modem_id_(0),
       os_(os),
-      packet_dest_(0),
       packet_ack_(0)
 
 {
@@ -52,7 +50,6 @@ goby::acomms::QueueManager::QueueManager(const std::set<std::string>& files,
                                   const std::string schema, std::ostream* os /* =0 */)
     : modem_id_(0),
       os_(os),
-      packet_dest_(0),
       packet_ack_(0)
 {
     BOOST_FOREACH(const std::string& s, files)
@@ -62,7 +59,6 @@ goby::acomms::QueueManager::QueueManager(const std::set<std::string>& files,
 goby::acomms::QueueManager::QueueManager(const QueueConfig& cfg, std::ostream* os /* =0 */)
     : modem_id_(0),
       os_(os),
-      packet_dest_(0),
       packet_ack_(0)
 {
     add_queue(cfg);
@@ -71,7 +67,6 @@ goby::acomms::QueueManager::QueueManager(const QueueConfig& cfg, std::ostream* o
 goby::acomms::QueueManager::QueueManager(const std::set<QueueConfig>& cfgs, std::ostream* os /* =0 */)
     : modem_id_(0),
       os_(os),
-      packet_dest_(0),
       packet_ack_(0)
 {
     BOOST_FOREACH(const QueueConfig& c, cfgs)
@@ -201,8 +196,6 @@ std::ostream& goby::acomms::operator<< (std::ostream& out, const QueueManager& d
 goby::acomms::ModemMessage goby::acomms::QueueManager::stitch(std::deque<ModemMessage>& in)
 {
     ModemMessage out;
-//    out.set_src(modem_id_);
-    out.set_dest(packet_dest_);
     out.set_ack(packet_ack_);    
     stitch_recursive(out.data_ref(), in); // returns stitched together version
     
@@ -260,7 +253,6 @@ void goby::acomms::QueueManager::clear_packet()
     
     waiting_for_ack_.clear();
     
-    packet_dest_ = 0;
     packet_ack_ = 0;
 }
 
@@ -272,17 +264,13 @@ void goby::acomms::QueueManager::clear_packet()
 // thus, from all the priority values that return true, pick the one with the lowest
 // priority value, or given a tie, pick the one with the oldest last_send_time
 bool goby::acomms::QueueManager::provide_outgoing_modem_data(const ModemMessage& message_in, ModemMessage& message_out)
-{
+{    
     ModemMessage modified_message_in = message_in;
     if(modified_message_in.frame() == 1 || modified_message_in.frame() == 0)
-    {
         clear_packet();
-    }
-    else // discipline remaining frames to the first frame dest and ack values
-    {
-        modified_message_in.set_dest(packet_dest_);
+    else // discipline remaining frames to the first frame ack value
         modified_message_in.set_ack(packet_ack_);
-    }
+
 
     // first (0th) user-frame
     Queue* winning_var = find_next_sender(modified_message_in, 0);
@@ -291,10 +279,8 @@ bool goby::acomms::QueueManager::provide_outgoing_modem_data(const ModemMessage&
     if(!winning_var)
     {
         message_out = ModemMessage();
-
-        // we have to conform to the rest of the packet...
-        message_out.set_src(modem_id_);
-        message_out.set_dest(packet_dest_);
+        message_out.set_src(message_in.src());
+        message_out.set_dest(message_in.dest());
         message_out.set_ack(packet_ack_);
 
         if(os_) *os_<< group("q_out") << "no data found. sending blank to firmware" 
@@ -311,7 +297,6 @@ bool goby::acomms::QueueManager::provide_outgoing_modem_data(const ModemMessage&
         user_frames.push_back(next_message);
 
         // if a destination has been set or ack been set, do not unset these
-        if (packet_dest_ == BROADCAST_ID) packet_dest_ = next_message.dest();
         if (packet_ack_ == false) packet_ack_ = next_message.ack();
         
         if(os_) *os_<< group("q_out") << "sending data to firmware from: "
@@ -336,8 +321,9 @@ bool goby::acomms::QueueManager::provide_outgoing_modem_data(const ModemMessage&
             break;
     }
 
-    message_out = (user_frames.size() > 1) ? stitch(user_frames) : user_frames[0];
-    
+    message_out = stitch(user_frames);
+    message_out.set_src(message_in.src());
+    message_out.set_dest(message_in.dest());
     return true;
 }
 
@@ -405,7 +391,14 @@ goby::acomms::Queue* goby::acomms::QueueManager::find_next_sender(ModemMessage& 
 
 void goby::acomms::QueueManager::handle_modem_ack(const ModemMessage& message)
 {
-    if(!waiting_for_ack_.count(message.frame()))
+    unsigned dest = message.dest();
+    if(dest != modem_id_)
+    {
+        if(os_) *os_<< group("q_in") << warn
+                    << "ignoring ack for modem_id = " << dest << std::endl;
+        return;
+    }
+    else if(!waiting_for_ack_.count(message.frame()))
     {
         if(os_) *os_<< group("q_in")
                     << "got ack but we were not expecting one" << std::endl;
@@ -413,45 +406,36 @@ void goby::acomms::QueueManager::handle_modem_ack(const ModemMessage& message)
     }
     else
     {
-        unsigned dest = message.dest();
         
-        if(dest != modem_id_)
+      // got an ack, let's pop this!
+        if(os_) *os_<< group("q_in") << "received ack for this id" << std::endl;
+        
+        std::multimap<unsigned, Queue *>::iterator it = waiting_for_ack_.find(message.frame());
+        while(it != waiting_for_ack_.end())
         {
-            if(os_) *os_<< group("q_in") << warn
-                        << "ignoring ack for modem_id = " << dest << std::endl;
-            return;
-        }
-        else
-        {
-            // got an ack, let's pop this!
-            if(os_) *os_<< group("q_in") << "received ack for this id" << std::endl;
+            Queue* oq = it->second;
             
-            std::multimap<unsigned, Queue *>::iterator it = waiting_for_ack_.find(message.frame());
-            while(it != waiting_for_ack_.end())
+            ModemMessage removed_msg;
+            if(!oq->pop_message_ack(message.frame(), removed_msg))
             {
-                Queue* oq = it->second;
-
-                ModemMessage removed_msg;
-                if(!oq->pop_message_ack(message.frame(), removed_msg))
-                {
-                    if(os_) *os_<< group("q_in") << warn
-                                << "failed to pop message from "
-                                << oq->cfg().name() << std::endl;
-                }
-                else
-                {
-                    qsize(oq);
-                    if(callback_ack)
-                        callback_ack(QueueKey(oq->cfg().type(), oq->cfg().id()), removed_msg);
-                }
-                
-                waiting_for_ack_.erase(it);
-
-                it = waiting_for_ack_.find(message.frame());
+                if(os_) *os_<< group("q_in") << warn
+                            << "failed to pop message from "
+                            << oq->cfg().name() << std::endl;
             }
-            return;
+            else
+            {
+                qsize(oq);
+                if(callback_ack)
+                    callback_ack(QueueKey(oq->cfg().type(), oq->cfg().id()), removed_msg);
+            }
+            
+            waiting_for_ack_.erase(it);
+            
+            it = waiting_for_ack_.find(message.frame());
         }
-    }    
+    }
+    
+    return;    
 }
 
 
@@ -586,3 +570,14 @@ int goby::acomms::QueueManager::request_next_destination(unsigned size /* = std:
     }
     
 }
+
+
+void goby::acomms::QueueManager::add_flex_groups(util::FlexOstream& tout)
+{
+    tout.add_group("push", "+", "lt_cyan", "stack push - outgoing messages (goby_queue)");
+    tout.add_group("pop", "-", "lt_green", "stack pop - outgoing messages (goby_queue)");
+    tout.add_group("priority", "<", "yellow", "priority contest (goby_queue)");
+    tout.add_group("q_out", "<", "cyan", "outgoing queuing messages (goby_queue)");
+    tout.add_group("q_in", ">", "green", "incoming queuing messages (goby_queue)");
+}
+

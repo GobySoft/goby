@@ -22,35 +22,33 @@
 
 namespace goby
 {
-namespace util
-{    
-    class TCPClient : public ClientBase<asio::ip::tcp::socket>
-    {
-      public:
-        static TCPClient* getInstance(const std::string& server,
-                                      const std::string& port,
-                                      std::deque<std::string>* in,
-                                      boost::mutex* in_mutex);
+    namespace util
+    {    
+        class TCPClient : public LineBasedClient<asio::ip::tcp::socket>
+        {
+          public:
+            static TCPClient* get_instance(unsigned& clientkey,
+                                           const std::string& server,
+                                           unsigned port,
+                                           const std::string& delimiter = "\r\n");
 
-      private:
+          private:
 
-        TCPClient(const std::string& server,
-                  const std::string& port,
-                  std::deque<std::string>* in,
-                  boost::mutex* in_mutex,
-                  std::string delimiter = "\r\n");
+            TCPClient(const std::string& server,
+                      const std::string& port,
+                      const std::string& delimiter = "\r\n");
 
-        bool start_specific();
+            bool start_specific();
 
         
-      private:
-        static std::map<std::string, TCPClient*> inst_;
-        asio::ip::tcp::socket socket_;
-        std::string server_;
-        std::string port_;
+          private:
+            static std::map<std::string, TCPClient*> inst_;
+            asio::ip::tcp::socket socket_;
+            std::string server_;
+            std::string port_;
 
-    }; 
-}
+        }; 
+    }
 }
 
 #endif

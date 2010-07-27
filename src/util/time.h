@@ -20,7 +20,7 @@
 
 #include <ctime>
 
-#include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/date_time.hpp>
 
 namespace goby
 {
@@ -86,18 +86,14 @@ namespace goby
             std::tm out = boost::posix_time::to_tm(t);
             return mktime(&out);
         }
-
-
     
         // time duration to double number of seconds
         // good to the microsecond
         inline double time_duration2double(boost::posix_time::time_duration time_of_day)
         {
             using namespace boost::posix_time;
-            return (double(time_of_day.total_seconds()) + double(time_of_day.fractional_seconds())
-                    / double(time_duration::ticks_per_second()));
-        }    
- 
+            return (double(time_of_day.total_seconds()) + double(time_of_day.fractional_seconds()) / double(time_duration::ticks_per_second()));
+        }
     }
 }
 #endif

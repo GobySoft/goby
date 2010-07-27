@@ -128,13 +128,17 @@ void goby::acomms::DCCLPublish::fill_format(const std::map<std::string,std::vect
                 i < n;
                 ++i)
             {
-                std::vector<std::string>::size_type num_algs = algorithms_[k].size();
-                for(std::vector<std::string>::size_type l = 0; l < num_algs; ++l)
-                    ap_->algorithm(vm[i], i, algorithms_[k][l], vals);
-
                 // special case when repeating and variable has a single entry, repeat
                 // that entry over all the publishes (this is used for the header
-                std::string s = (repeat_ > 1 && vm.size() == 1) ? vm[0] : vm[i];
+                std::vector<DCCLMessageVal>::size_type eff_index = (repeat_ > 1 && vm.size() == 1) ? 0 : i;
+                
+                std::vector<std::string>::size_type num_algs = algorithms_[k].size();
+
+                // only run algorithms once on a given variable
+                for(std::vector<std::string>::size_type l = 0; l < num_algs; ++l)
+                    ap_->algorithm(vm[eff_index], i, algorithms_[k][l], vals);
+                
+                std::string s =  vm[eff_index];
                 f % s;
             }
         }
@@ -143,7 +147,7 @@ void goby::acomms::DCCLPublish::fill_format(const std::map<std::string,std::vect
     }
     catch (std::exception& e)
     {
-        throw std::runtime_error(std::string(e.what() + (std::string)" decode failed. check format string for this <publish />: \n" + get_display()));
+        throw std::runtime_error(std::string(e.what() + (std::string)"\n decode failed. check format string for this <publish />: \n" + get_display()));
     }
 
     // split filled_value back into variable and value

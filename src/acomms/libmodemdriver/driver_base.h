@@ -23,10 +23,17 @@
 #include <boost/thread.hpp>
 #include "asio.hpp"
 
-#include "goby/util/asioclient.h"
+#include "goby/util/linebasedcomms.h"
 #include "goby/acomms/modem_message.h"
+
 namespace goby
 {
+    namespace util
+    {
+        class FlexOstream;
+    }
+    
+
     namespace acomms
     {
         /// \name Driver Library callback function type definitions
@@ -51,34 +58,45 @@ namespace goby
         ///
         /// Think of this as a generalized version of a function pointer (int (*) (unsigned)). See http://www.boost.org/doc/libs/1_34_0/doc/html/function.html for more on boost:function.
         typedef boost::function<int (unsigned)> DriverIdFunc;
-
-
+        
         /// provides a base class for acoustic %modem drivers (i.e. for different manufacturer %modems) to derive
         class ModemDriverBase
         {
           public:
-
-            /// Virtual startup method. see derived classes (e.g. microModemMMDriver) for examples.
+            enum ConnectionType { serial,
+                                  tcp_as_client,
+                                  tcp_as_server /* unimplemented */,
+                                  dual_udp_broadcast /* unimplemented */
+            };
+            
+            /// Virtual startup method. see derived classes (e.g. MMDriver) for examples.
             virtual void startup() = 0;
-            /// Virtual do_work method. see derived classes (e.g. microModemMMDriver) for examples.
+            /// Virtual do_work method. see derived classes (e.g. MMDriver) for examples.
             virtual void do_work() = 0;
-            /// Virtual initiate_transmission method. see derived classes (e.g. microModemMMDriver) for examples.
+            /// Virtual initiate_transmission method. see derived classes (e.g. MMDriver) for examples.
             virtual void initiate_transmission(const ModemMessage& m) = 0;
 
-            /// Virtual initiate_ranging method. see derived classes (e.g. microModemMMDriver) for examples.
+            /// Virtual initiate_ranging method. see derived classes (e.g. MMDriver) for examples.
             virtual void initiate_ranging(const ModemMessage& m) = 0;
 
             /// Virtual request next destination method. Provided a rate (0-5), must return the size of the packet (in bytes) to be used
             virtual int request_next_destination(unsigned rate) = 0;
-
+            
         
             /// Set configuration strings for the %modem. The contents of these strings depends on the specific %modem.
             void set_cfg(const std::vector<std::string>& cfg) { cfg_ = cfg; }
 
+            void set_connection_type(ConnectionType ct) { connection_type_ = ct; }            
+            
             /// Set the serial port name (e.g. /dev/ttyS0)
             void set_serial_port(const std::string& s) { serial_port_ = s; }
             /// Set the serial port baud rate (e.g. 19200)
-            void set_baud(unsigned u) { baud_ = u; }
+            void set_serial_baud(unsigned u) { serial_baud_ = u; }
+
+            /// Set the tcp server name (e.g. 192.168.1.111 or www.foo.com)
+            void set_tcp_server(const std::string& s) { tcp_server_ = s; }
+            /// Set the tcp server  (e.g. 5000)
+            void set_tcp_port(unsigned u) { tcp_port_ = u; }
 
             /// \brief Set the callback to receive incoming %modem messages. 
             ///
@@ -139,39 +157,50 @@ namespace goby
             // 
             // \param func has the form int next_dest(unsigned rate). the return value of func should be the next destination id, or -1 for no message to send.
             void set_destination_cb(DriverIdFunc func) { callback_dest = func; }
-        
+
+            ConnectionType connection_type() { return connection_type_; }            
+            
             /// \return the serial port name
             std::string serial_port() { return serial_port_; }
-
+            
             /// \return the serial port baud rate
-            unsigned baud() { return baud_; }
-        
-        
+            unsigned serial_baud() { return serial_baud_; }
+
+            /// \return the tcp server name or IP address
+            std::string tcp_server() { return tcp_server_; }
+            
+            /// \return the serial port baud rate
+            unsigned tcp_port() { return tcp_port_; }
+
+            void add_flex_groups(util::FlexOstream& tout);
+            
+            
           protected:
             /// \brief Constructor
             ///
             /// \param out pointer to std::ostream to log human readable debugging and runtime information
             /// \param line_delimiter string indicating the end-of-line character(s) from the serial port (usually newline ("\n") or carriage-return and newline ("\r\n"))
-            ModemDriverBase(std::ostream* out, const std::string& line_delimiter);
+            /// \param connection_type enumeration indicating the type of physical connection to the modem
+            ModemDriverBase(std::ostream* log = 0, const std::string& line_delimiter = "\r\n");
             /// Destructor
-            ~ModemDriverBase() { }
+            ~ModemDriverBase();
 
             /// \brief write a line to the serial port. 
             ///
             /// \param out reference to string to write. Must already include any end-of-line character(s).
-            void serial_write(const std::string& out);
+            void modem_write(const std::string& out);
 
         
             /// \brief read a line from the serial port, including end-of-line character(s)
             ///
             /// \param in reference to string to store line
             /// \return true if a line was available, false if no line available
-            bool serial_read(std::string& in);
+            bool modem_read(std::string& in);
 
-            /// \brief start the serial port. must be called before DriverBase::serial_read() or DriverBase::serial_write()
+            /// \brief start the serial port. must be called before DriverBase::modem_read() or DriverBase::modem_write()
             ///
             /// \throw std::runtime_error Serial port could not be opened.
-            void serial_start();
+            void modem_start();
 
             /// vector containing the configuration parameters intended to be set during ::startup()
             std::vector<std::string> cfg_; 
@@ -189,19 +218,24 @@ namespace goby
 
         
           private:
-            unsigned baud_;
+            unsigned serial_baud_;
             std::string serial_port_;
-            std::string serial_delimiter_;
-        
-            std::ostream* os_;
-        
-            std::deque<std::string> in_;
 
-            // serial port io service
-            boost::mutex in_mutex_;
-            util::SerialClient* serial_;
+            unsigned tcp_port_;
+            std::string tcp_server_;
+            
+            std::string line_delimiter_;
+            
+            std::ostream* log_;
+
+            // represents the line based communications interface to the modem
+            util::LineBasedInterface* modem_;
+
+            // identifies us to the singleton class controller the modem interface (SerialClient, etc.)
+
+            unsigned modem_key_;
+            ConnectionType connection_type_;
         };
-
     }
 }
 #endif

@@ -65,7 +65,9 @@ namespace goby
           protected:
             virtual DCCLMessageVal cast(double d, int precision) { return DCCLMessageVal(d, precision); }
             virtual void initialize_specific();
-        
+
+            void pre_encode(DCCLMessageVal& v);            
+            
           private:
             bool is_delta() const
             { return using_delta_differencing() && !is_key_frame_; }

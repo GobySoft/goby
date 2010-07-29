@@ -23,48 +23,35 @@ void goby::util::LineBasedInterface::start()
     io_service_.post(boost::bind(&LineBasedInterface::do_start, this));
 }
             
-std::string goby::util::LineBasedInterface::readline_oldest(unsigned clientkey)
+std::string goby::util::LineBasedInterface::readline_oldest()
 {
     boost::mutex::scoped_lock lock(in_mutex_);
-    if(in_.at(clientkey).empty()) return "";
+    if(in_.empty()) return "";
     else
     {
-        std::string in = in_.at(clientkey).front();
-        in_.at(clientkey).pop_front();
+        std::string in = in_.front();
+        in_.pop_front();
         return in;
     }
 }
             
-std::string goby::util::LineBasedInterface::readline_newest(unsigned clientkey)
+std::string goby::util::LineBasedInterface::readline_newest()
 {
     boost::mutex::scoped_lock lock(in_mutex_);
-    if(in_.at(clientkey).empty()) return "";
+    if(in_.empty()) return "";
     else
     {
-        std::string in = in_.at(clientkey).back();
-        in_.at(clientkey).pop_back();
+        std::string in = in_.back();
+        in_.pop_back();
         return in;
     }
 }
             
-unsigned goby::util::LineBasedInterface::add_user()
-{
-    boost::mutex::scoped_lock lock(in_mutex_);                        
-    in_.push_back(std::deque<std::string>());
-    return in_.size()-1;
-}
-
-void goby::util::LineBasedInterface::remove_user(unsigned clientkey)
-{
-    boost::mutex::scoped_lock lock(in_mutex_);                        
-    in_.erase(in_.begin() + clientkey);
-}
 
 goby::util::LineBasedInterface::LineBasedInterface()
     : work_(io_service_),
       active_(false)
 {
-    in_.push_back(std::deque<std::string>());
     boost::thread t(boost::bind(&asio::io_service::run, &io_service_));
 }
 
@@ -74,7 +61,4 @@ void goby::util::LineBasedInterface::write(const std::string& msg)
 
 // call the do_close function via the io service in the other thread
 void goby::util::LineBasedInterface::close()
-{ io_service_.post(boost::bind(&LineBasedInterface::do_close, this, asio::error_code())); }            
-
-std::string goby::util::LineBasedInterface::readline(unsigned clientkey)
-{ return readline_oldest(clientkey); }
+{ io_service_.post(boost::bind(&LineBasedInterface::do_close, this, asio::error_code())); }

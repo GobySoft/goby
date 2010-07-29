@@ -108,10 +108,9 @@ int goby::util::FlexOStreamBuf::sync()
     if(die_flag_)
     {
         if(!is_quiet_)
-            std::cout << "Press enter to quit." << std::endl;
+            std::cout << "Exiting in 30 seconds." << std::endl;
 
-        char c;
-        std::cin.get(c);
+        sleep(30);
         exit(EXIT_FAILURE);
     }
 

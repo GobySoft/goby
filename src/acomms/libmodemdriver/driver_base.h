@@ -95,6 +95,7 @@ namespace goby
 
             /// Set the tcp server name (e.g. 192.168.1.111 or www.foo.com)
             void set_tcp_server(const std::string& s) { tcp_server_ = s; }
+
             /// Set the tcp server  (e.g. 5000)
             void set_tcp_port(unsigned u) { tcp_port_ = u; }
 
@@ -232,8 +233,6 @@ namespace goby
             util::LineBasedInterface* modem_;
 
             // identifies us to the singleton class controller the modem interface (SerialClient, etc.)
-
-            unsigned modem_key_;
             ConnectionType connection_type_;
         };
     }

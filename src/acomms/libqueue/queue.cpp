@@ -219,6 +219,10 @@ std::vector<goby::acomms::ModemMessage> goby::acomms::Queue::expire()
             if(os_) *os_ << group("pop") <<  "expiring" << " from send stack "
                          << cfg_.name() << " (qsize " << size()-1
                          <<  "/" << cfg_.max_queue() << "): "  << messages_.front().snip() << std::endl;
+            // if we were waiting for an ack for this, erase that too
+            waiting_for_ack_it it = find_ack_value(messages_.begin());
+            if(it != waiting_for_ack_.end()) waiting_for_ack_.erase(it);
+            
             messages_.pop_front();
         }
         else

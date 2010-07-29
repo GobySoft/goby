@@ -29,16 +29,17 @@ namespace goby
         class SerialClient: public LineBasedClient<asio::serial_port>
         {
           public:
-            static SerialClient* get_instance(unsigned& clientkey,
-                                              const std::string& name,
-                                              unsigned baud,
-                                              const std::string& delimiter = "\r\n");
+            SerialClient(const std::string& name = "",
+                         unsigned baud = 9600,
+                         const std::string& delimiter = "\r\n");
 
+            void set_name(const std::string& name) { name_ = name; }
+            void set_baud(unsigned baud) { baud_ = baud; }
+
+            std::string name() const { return name_; }
+            unsigned baud() const { return baud_; }            
+            
           private:
-            SerialClient(const std::string& name,
-                         unsigned baud,
-                         const std::string& delimiter);
-
             bool start_specific();        
   
           private:

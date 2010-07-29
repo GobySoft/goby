@@ -30,44 +30,44 @@
 
 namespace goby
 {
-namespace util
-{    
-    class NMEASentence : public std::vector<std::string>
-    {
-      public:
-        enum strategy { IGNORE, VALIDATE, REQUIRE };
+    namespace util
+    {    
+        class NMEASentence : public std::vector<std::string>
+        {
+          public:
+            enum strategy { IGNORE, VALIDATE, REQUIRE };
     
-        NMEASentence(std::string s, strategy cs_strat);
+            NMEASentence(std::string s, strategy cs_strat);
 
-        NMEASentence() : std::vector<std::string>() {}
+          NMEASentence() : std::vector<std::string>() {}
 
-        // Bare message, no checksum or \r\n
-        std::string message_no_cs() const;
+            // Bare message, no checksum or \r\n
+            std::string message_no_cs() const;
 
-        // Includes checksum, but no \r\n
-        std::string message() const;
+            // Includes checksum, but no \r\n
+            std::string message() const;
 
-        // Includes checksum and \r\n
-        std::string message_cr_nl() const { return message() + "\r\n"; }
+            // Includes checksum and \r\n
+            std::string message_cr_nl() const { return message() + "\r\n"; }
 
-        // first two talker (CC)
-        std::string talker_id() const 
-        { return empty() ? "" : front().substr(1, 2); }
+            // first two talker (CC)
+            std::string talker_id() const 
+            { return empty() ? "" : front().substr(1, 2); }
 
-        // last three (CFG)
-        std::string sentence_id() const
-        { return empty() ? "" : front().substr(3); }
+            // last three (CFG)
+            std::string sentence_id() const
+            { return empty() ? "" : front().substr(3); }
 
-        template<typename T>
-            T as(int i) { return boost::lexical_cast<T>(at(i)); }
+            template<typename T>
+                T as(int i) { return boost::lexical_cast<T>(at(i)); }
     
-        template<typename T>
-            void push_back(T t)
-        { std::vector<std::string>::push_back(boost::lexical_cast<std::string>(t)); }
+            template<typename T>
+                void push_back(T t)
+            { std::vector<std::string>::push_back(boost::lexical_cast<std::string>(t)); }
     
-        static unsigned char checksum(const std::string& s);
-    };
-}
+            static unsigned char checksum(const std::string& s);
+        };
+    }
 }
 
 // overloaded <<

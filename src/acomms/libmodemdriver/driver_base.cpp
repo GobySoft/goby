@@ -26,12 +26,13 @@
 goby::acomms::ModemDriverBase::ModemDriverBase(std::ostream* log /* = 0 */, const std::string& line_delimiter /* = "\r\n"*/ )
     : line_delimiter_(line_delimiter),
       log_(log),
+      modem_(0),
       connection_type_(serial)
 { }
 
 goby::acomms::ModemDriverBase::~ModemDriverBase()
 {
-    if(modem_) modem_->remove_user(modem_key_);
+    if(modem_) delete modem_;
 }
 
 
@@ -43,7 +44,7 @@ void goby::acomms::ModemDriverBase::modem_write(const std::string& out)
 
 bool goby::acomms::ModemDriverBase::modem_read(std::string& in)
 {
-    if(!(in = modem_->readline(modem_key_)).empty())
+    if(!(in = modem_->readline()).empty())
     {
         if(callback_in_raw) callback_in_raw(in); 
         return true;
@@ -54,21 +55,23 @@ bool goby::acomms::ModemDriverBase::modem_read(std::string& in)
 
 void goby::acomms::ModemDriverBase::modem_start()
 {        
-    if(log_) *log_ << group("mm_out") << "opening serial port " << serial_port_
-          << " @ " << serial_baud_ << std::endl;
     
     switch(connection_type_)
     {
         case serial:
-            modem_ = util::SerialClient::get_instance(modem_key_, serial_port_, serial_baud_, line_delimiter_);
+            if(log_) *log_ << group("mm_out") << "opening serial port " << serial_port_ << " @ " << serial_baud_ << std::endl;
+            
+            modem_ = new util::SerialClient(serial_port_, serial_baud_, line_delimiter_);
             break;
-
+            
         case tcp_as_client:
-            modem_ = util::TCPClient::get_instance(modem_key_, tcp_server_, tcp_port_, line_delimiter_);
+            if(log_) *log_ << group("mm_out") << "opening tcp client: " << tcp_server_ << ":" << tcp_port_ << std::endl;
+            modem_ = new util::TCPClient(tcp_server_, tcp_port_, line_delimiter_);
             break;
             
         case tcp_as_server:
-            modem_ = util::TCPServer::get_instance(modem_key_, tcp_port_, line_delimiter_);
+            if(log_) *log_ << group("mm_out") << "opening tcp server on port" << tcp_port_ << std::endl;
+            modem_ = new util::TCPServer(tcp_port_, line_delimiter_);
 
         case dual_udp_broadcast:
             throw(std::runtime_error("unimplemented connection type"));

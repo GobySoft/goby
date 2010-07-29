@@ -303,7 +303,7 @@ bool goby::acomms::QueueManager::provide_outgoing_modem_data(const ModemMessage&
                     << winning_var->cfg().name() 
                     << ": " << next_message.snip() << std::endl;
         
-        if(!packet_ack_)
+        if(!next_message.ack())
         {
             winning_var->pop_message(modified_message_in.frame());
             qsize(winning_var);

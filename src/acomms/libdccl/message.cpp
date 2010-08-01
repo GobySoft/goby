@@ -109,7 +109,7 @@ void goby::acomms::DCCLMessage::preprocess()
 
     // initialize header vars
     BOOST_FOREACH(boost::shared_ptr<DCCLMessageVar> mv, header_)
-        mv->initialize(trigger_var_);
+        mv->initialize(*this);
 
     
     if(body_bits_ > requested_bits_body() || repeat_ == 0)
@@ -141,7 +141,7 @@ unsigned goby::acomms::DCCLMessage::calc_total_size()
     // iterate over layout_
     BOOST_FOREACH(boost::shared_ptr<DCCLMessageVar> mv, layout_)
     {
-        mv->initialize(trigger_var_);
+        mv->initialize(*this);
         // calculate total bits for the message from the bits for each message_var
         body_bits += mv->calc_total_size();
     }
@@ -277,7 +277,7 @@ void goby::acomms::DCCLMessage::head_decode(const std::string& head, std::map<st
     }
 }
 
-boost::shared_ptr<goby::acomms::DCCLMessageVar> goby::acomms::DCCLMessage::name2message_var(const std::string& name)
+boost::shared_ptr<goby::acomms::DCCLMessageVar> goby::acomms::DCCLMessage::name2message_var(const std::string& name) const 
 {
     BOOST_FOREACH(boost::shared_ptr<DCCLMessageVar> mv, layout_)
     {

@@ -33,6 +33,7 @@ namespace goby
     namespace acomms
     {
         class DCCLMessageVal;
+        class DCCLMessage;
     
         /// \brief boost::function for a function taking a single DCCLMessageVal reference. Used for algorithm callbacks.
         ///
@@ -55,7 +56,9 @@ namespace goby
 
             void add_algorithm(const std::string& name, AlgFunction2 func)
             { adv_map2_[name] = func; }
-        
+
+            void check_algorithm(const std::string& alg, const DCCLMessage& msg);
+
           private:
             static DCCLAlgorithmPerformer* inst_;
             std::map<std::string, AlgFunction1> adv_map1_;
@@ -66,7 +69,8 @@ namespace goby
         
             DCCLAlgorithmPerformer(const DCCLAlgorithmPerformer&);
             DCCLAlgorithmPerformer& operator = (const DCCLAlgorithmPerformer&);
-      
+
+            
         };
     }
 }

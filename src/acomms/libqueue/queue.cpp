@@ -135,7 +135,7 @@ bool goby::acomms::Queue::priority_values(double& priority,
         if(os_) *os_<< group("priority") << "\t" <<  cfg_.name() << " next message has wrong destination  (must be BROADCAST (0) or same as first user-frame)" << std::endl;
         return false; 
     }
-    else if((message.ack_set() && message.ack() != next_msg_it->ack()))
+    else if((message.ack_set() && !message.ack() && next_msg_it->ack()))
     {
         if(os_) *os_<< group("priority") << "\t" <<  cfg_.name() << " next message requires ACK and the packet does not" << std::endl;
         return false; 

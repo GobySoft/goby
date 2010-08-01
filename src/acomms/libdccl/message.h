@@ -119,6 +119,10 @@ namespace goby
         
             std::vector< boost::shared_ptr<DCCLMessageVar> >& layout()     { return layout_; }
             std::vector< boost::shared_ptr<DCCLMessageVar> >& header()     { return header_; }
+
+            const std::vector< boost::shared_ptr<DCCLMessageVar> >& layout_const() const { return layout_; }
+            const std::vector< boost::shared_ptr<DCCLMessageVar> >& header_const() const { return header_; }
+
             std::vector<DCCLPublish>& publishes()                      { return publishes_; }
 
             std::set<std::string> get_pubsub_encode_vars();
@@ -126,7 +130,7 @@ namespace goby
             std::set<std::string> get_pubsub_src_vars();
             std::set<std::string> get_pubsub_all_vars();
 
-            boost::shared_ptr<DCCLMessageVar> name2message_var(const std::string& name);
+            boost::shared_ptr<DCCLMessageVar> name2message_var(const std::string& name) const;
         
         
             //other

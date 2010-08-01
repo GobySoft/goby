@@ -39,6 +39,7 @@ namespace goby
     namespace acomms
     {
         class DCCLMessageVal;
+        class DCCLMessage;
         class DCCLAlgorithmPerformer;
     
 // defines a piece of a DCCLMessage (an <int>, a <bool>, etc)
@@ -105,7 +106,7 @@ namespace goby
             std::string source_var() const { return source_var_; }
 
             // other
-            void initialize(const std::string& trigger_var);
+            void initialize(const DCCLMessage& msg);
             std::string get_display() const;
 
             void read_pubsub_vars(std::map<std::string,std::vector<DCCLMessageVal> >& vals,

@@ -21,6 +21,7 @@
 
 #include "message_algorithms.h"
 #include "message_val.h"
+#include "message.h"
 
 #include "goby/util/string.h"
 
@@ -50,14 +51,17 @@ void goby::acomms::DCCLAlgorithmPerformer::algorithm(DCCLMessageVal& in, unsigne
         ++i)
     {
         std::map<std::string, std::vector<DCCLMessageVal> >::const_iterator it = vals.find(ref_vars[i]);
-        if(it != vals.end() && array_index < it->second.size())
-            tied_vals.push_back(it->second[array_index]);
-        else
-            tied_vals.push_back(it->second[0]);
+        if(it != vals.end())
+        {
+            if(array_index < it->second.size())
+                tied_vals.push_back(it->second[array_index]);
+            else
+                tied_vals.push_back(it->second[0]);
+        }
     }
     
     if(ref_vars.size() > 0)
-        alg = ref_vars[0];    
+        alg = ref_vars[0];
     
     // short form for simple algorithms
     if (adv_map1_.count(alg))
@@ -66,4 +70,45 @@ void goby::acomms::DCCLAlgorithmPerformer::algorithm(DCCLMessageVal& in, unsigne
     else if (adv_map2_.count(alg))
     { adv_map2_.find(alg)->second(in, tied_vals); }
 
+}
+
+// check validity of algorithm name and references
+void goby::acomms::DCCLAlgorithmPerformer::check_algorithm(const std::string& alg, const DCCLMessage& msg)
+{
+    if(alg.empty()) return;
+    
+    std::vector<std::string>ref_vars = util::explode(alg, ':', true);
+
+    // check if the algorithm exists
+    // but ignore if no algorithms loaded (to use for testing tools)
+    if ((adv_map1_.size() || adv_map2_.size()) && !adv_map1_.count(ref_vars.at(0)) && !adv_map2_.count(ref_vars.at(0)))
+        throw(std::runtime_error(std::string(msg.get_display() + "unknown algorithm defined: " + ref_vars.at(0))));
+
+    
+    for(std::vector<std::string>::size_type i = 1, n = ref_vars.size();
+        i < n;
+        ++i)
+    {
+        bool ref_found = false;
+        BOOST_FOREACH(const boost::shared_ptr<DCCLMessageVar> mv, msg.header_const())
+        {
+            if(ref_vars[i] == mv->name())
+            {
+                ref_found =true;
+                break;
+            }
+        }
+        
+        BOOST_FOREACH(const boost::shared_ptr<DCCLMessageVar> mv, msg.layout_const())
+        {
+            if(ref_vars[i] == mv->name())
+            {
+                ref_found =true;
+                break;
+            }
+        }
+
+        if(!ref_found)
+            throw(std::runtime_error(std::string(msg.get_display() + "no such reference message variable " + ref_vars.at(i) + " used in algorithm: " + ref_vars.at(0))));
+    }
 }

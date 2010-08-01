@@ -83,7 +83,7 @@ namespace goby
             {
                 // trim to time of day
                 boost::posix_time::time_duration time_of_day = util::unix_double2ptime(v).time_of_day();
-            
+                
                 return boost::dynamic_bitset<unsigned char>(calc_size(), long(util::unbiased_round(util::time_duration2double(time_of_day), 0)));    
             }
         

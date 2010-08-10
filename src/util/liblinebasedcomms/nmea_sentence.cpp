@@ -89,6 +89,6 @@ std::string goby::util::NMEASentence::message() const {
     std::stringstream message;
     unsigned char csum = NMEASentence::checksum(bare);
     message << bare << "*";
-    message << std::uppercase << std::hex << unsigned(csum);
+    message << std::uppercase << std::hex << std::setfill('0') << std::setw(2) << unsigned(csum);
     return message.str();
 }

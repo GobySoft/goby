@@ -22,6 +22,7 @@
 #include "goby/util/string.h"
 
 #include "message_var.h"
+#include "message.h"
 #include "message_val.h"
 #include "dccl_constants.h"
 #include "message_algorithms.h"
@@ -33,12 +34,15 @@ goby::acomms::DCCLMessageVar::DCCLMessageVar()
       ap_(DCCLAlgorithmPerformer::getInstance())
 { }
 
-void goby::acomms::DCCLMessageVar::initialize(const std::string& trigger_var)
+void goby::acomms::DCCLMessageVar::initialize(const DCCLMessage& msg)
 {
     // add trigger_var_ as source_var for any message_vars without a source
     if(!source_set_)
-        source_var_ = trigger_var;
+        source_var_ = msg.trigger_var();
 
+    BOOST_FOREACH(const std::string& alg, algorithms_)
+        ap_->check_algorithm(alg, msg);
+    
     initialize_specific();
 
 }

@@ -73,7 +73,8 @@ namespace goby
 
             void write(util::NMEASentence& nmea);
 
-
+            void measure_noise(unsigned milliseconds_to_average);
+            
           private:
         
             // startup

@@ -21,25 +21,6 @@
 
 #include "serial_client.h"
 
-std::map<std::string, goby::util::SerialClient*> goby::util::SerialClient::inst_;
-
-goby::util::SerialClient* goby::util::SerialClient::get_instance(unsigned& clientkey,
-                                                                 const std::string& name,
-                                                                 unsigned baud,
-                                                                 const std::string& delimiter /*= "\r\n"*/)
-{
-    // port name uniquely defines the serial port    
-    if(!inst_.count(name))
-    {
-        inst_[name] = new SerialClient(name, baud, delimiter);
-        clientkey = 0;
-    }
-    else
-        clientkey = inst_[name]->add_user();
-    
-    return(inst_[name]);
-}
-
 
 goby::util::SerialClient::SerialClient(const std::string& name,
                                        unsigned baud,

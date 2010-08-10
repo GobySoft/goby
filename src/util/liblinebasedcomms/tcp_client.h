@@ -27,17 +27,15 @@ namespace goby
         class TCPClient : public LineBasedClient<asio::ip::tcp::socket>
         {
           public:
-            static TCPClient* get_instance(unsigned& clientkey,
-                                           const std::string& server,
-                                           unsigned port,
-                                           const std::string& delimiter = "\r\n");
-
-          private:
-
             TCPClient(const std::string& server,
-                      const std::string& port,
+                      unsigned port,
                       const std::string& delimiter = "\r\n");
 
+
+            std::string local_ip() { return socket_.local_endpoint().address().to_string(); }
+            
+            
+          private:
             bool start_specific();
 
         

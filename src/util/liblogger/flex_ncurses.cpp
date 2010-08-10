@@ -150,7 +150,7 @@ void goby::util::FlexNCurses::recalculate_win()
     refresh();
 
     foot_window_ = newwin(FOOTER_Y-1, xmax_, ymax_+1, 0);
-    mvwaddstr(static_cast<WINDOW*>(foot_window_), 0, 0, "help: [+]/[-]: expand/contract window | [w][a][s][d]: move window | spacebar: toggle minimize | [r]: reset | [CTRL][A]: select all | [1][2][3]...[n] select window n | [SHIFT][[n] select multiple | [p] pause and scroll | [c]/[C] combine/uncombine selected windows");
+    mvwaddstr(static_cast<WINDOW*>(foot_window_), 0, 0, "help: [+]/[-]: expand/contract window | [w][a][s][d]: move window | spacebar: toggle minimize | [r]: reset | [CTRL][A]: select all | [1][2][3]...[n] select window n | [SHIFT][[n] select multiple | [enter] pause and scroll | [c]/[C] combine/uncombine selected windows");
     wrefresh(static_cast<WINDOW*>(foot_window_));
             
     col_end_windows_.resize(xwinN_);

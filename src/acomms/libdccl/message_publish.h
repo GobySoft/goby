@@ -82,7 +82,7 @@ namespace goby
         
         
 
-            void initialize(DCCLMessage& msg);
+            void initialize(const DCCLMessage& msg);
 
           private:
             void fill_format(const std::map<std::string,std::vector<DCCLMessageVal> >& vals,

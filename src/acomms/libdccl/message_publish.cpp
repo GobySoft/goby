@@ -24,7 +24,7 @@
 
 using goby::acomms::NaN;
 
-void goby::acomms::DCCLPublish::initialize(DCCLMessage& msg)
+void goby::acomms::DCCLPublish::initialize(const DCCLMessage& msg)
 {
     repeat_ = msg.repeat();
 
@@ -32,11 +32,18 @@ void goby::acomms::DCCLPublish::initialize(DCCLMessage& msg)
     BOOST_FOREACH(const std::string& name, names_)
         add_message_var(msg.name2message_var(name));
 
+
+    BOOST_FOREACH(const std::vector<std::string>& algs, algorithms_)
+    {
+        BOOST_FOREACH(const std::string& alg, algs)
+            ap_->check_algorithm(alg, msg);
+    }
+    
     
     // add names for any <all/> publishes and empty std::vector for algorithms
     if(use_all_names_)
     {
-        BOOST_FOREACH(boost::shared_ptr<DCCLMessageVar> mv, msg.header())
+        BOOST_FOREACH(const boost::shared_ptr<DCCLMessageVar> mv, msg.header_const())
         {
             // ignore header pieces not explicitly overloaded by the <name> tag
             if(!mv->name().empty() && !(mv->name()[0] == '_'))
@@ -47,7 +54,7 @@ void goby::acomms::DCCLPublish::initialize(DCCLMessage& msg)
             }
         }
         
-        BOOST_FOREACH(boost::shared_ptr<DCCLMessageVar> mv, msg.layout())
+        BOOST_FOREACH(const boost::shared_ptr<DCCLMessageVar> mv, msg.layout_const())
         {
             add_message_var(mv);
             // add an empty std::vector for algorithms (no algorithms allowed for <all/> tag)

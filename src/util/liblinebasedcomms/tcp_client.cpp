@@ -17,36 +17,13 @@
 
 #include "tcp_client.h"
 
-
-std::map<std::string, goby::util::TCPClient*> goby::util::TCPClient::inst_;
-
-
-goby::util::TCPClient* goby::util::TCPClient::get_instance(unsigned& clientkey,
-                                                           const std::string& server,
-                                                           unsigned port,
-                                                           const std::string& delimiter /*= "\r\n"*/)
-{
-    std::string port_str = boost::lexical_cast<std::string>(port);
-    std::string server_port = server + ":" + port_str;
-    
-    if(!inst_.count(server_port)) // if no connection for this server:port combination, create one
-    {
-        inst_[server_port] = new TCPClient(server, port_str, delimiter);
-        clientkey = 0;
-    }
-    else // otherwise, register this user with an existing client
-        clientkey = inst_[server_port]->add_user();
-        
-    return(inst_[server_port]);
-}
-
 goby::util::TCPClient::TCPClient(const std::string& server,
-                                 const std::string& port,
+                                 unsigned port,
                                  const std::string& delimiter /*= "\r\n"*/)
     : LineBasedClient<asio::ip::tcp::socket>(socket_, delimiter),
       socket_(io_service_),
       server_(server),
-      port_(port)
+      port_(boost::lexical_cast<std::string>(port))
 { }
 
 

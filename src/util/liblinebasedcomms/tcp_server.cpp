@@ -16,10 +16,8 @@
 
 #include "tcp_server.h"
 
-std::map<std::string, goby::util::TCPServer*> goby::util::TCPServer::inst_;
-
 boost::shared_ptr<goby::util::TCPConnection> goby::util::TCPConnection::create(asio::io_service& io_service,
-                                                                   std::vector< std::deque<std::string> >& in,
+                                                                   std::deque<std::string>& in,
                                                                    boost::mutex& in_mutex,
                                                                    const std::string& delimiter)
 {
@@ -44,23 +42,6 @@ void goby::util::TCPConnection::socket_close(const asio::error_code& error)
 }
 
     
-goby::util::TCPServer* goby::util::TCPServer::get_instance(unsigned& clientkey,
-                                               unsigned port,
-                                               const std::string& delimiter /*= "\r\n"*/)
-{
-    std::string port_str = boost::lexical_cast<std::string>(port);
-    
-    if(!inst_.count(port_str))
-    {
-        inst_[port_str] = new TCPServer(port_str, delimiter);
-        clientkey = 0;
-    }
-    else
-        clientkey = inst_[port_str]->add_user();
-    
-    return(inst_[port_str]);
-}
-        
 void goby::util::TCPServer::do_write(const std::string& line)
 {
     BOOST_FOREACH(boost::shared_ptr<TCPConnection> c, connections_)

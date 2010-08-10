@@ -63,8 +63,9 @@ void goby::acomms::DCCLMessageVarFloat::pre_encode(DCCLMessageVal& v)
 boost::dynamic_bitset<unsigned char> goby::acomms::DCCLMessageVarFloat::encode_specific(const DCCLMessageVal& v)
 {
     double r;
+    
     if(!v.get(r) || (r < min() || r > max())) return boost::dynamic_bitset<unsigned char>();
-
+    
     // delta-differencing
     if(is_delta())
     {
@@ -78,7 +79,7 @@ boost::dynamic_bitset<unsigned char> goby::acomms::DCCLMessageVarFloat::encode_s
     
     r *= pow(10.0, double(precision_));
     //r = util::unbiased_round(r, 0);
-
+    
     return boost::dynamic_bitset<unsigned char>(calc_size(), static_cast<unsigned long>(r)+1);
 }        
         

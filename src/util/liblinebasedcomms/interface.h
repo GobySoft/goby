@@ -41,17 +41,14 @@ namespace goby
           public:
             void start();
 
-            std::string readline(unsigned clientkey);            
-
+            std::string readline()
+            { return readline_oldest(); }
+            
             void write(const std::string& msg);
-
             void close();
             
-            std::string readline_oldest(unsigned clientkey);
-            std::string readline_newest(unsigned clientkey);            
-            
-            unsigned add_user();
-            void remove_user(unsigned clientkey);
+            std::string readline_oldest();
+            std::string readline_newest();            
 
             // safe to read this here but not write (only write from derived class)
             bool active() { return active_; }
@@ -67,8 +64,7 @@ namespace goby
             void set_active(bool active) { active_ = active; }
             
             asio::io_service io_service_; // the main IO service that runs this connection
-            std::vector< std::deque<std::string> > in_; // buffered read data
-
+            std::deque<std::string> in_; // buffered read data
             boost::mutex in_mutex_;
             
           private:

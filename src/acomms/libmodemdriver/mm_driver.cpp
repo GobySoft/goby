@@ -169,6 +169,14 @@ void goby::acomms::MMDriver::pop_out()
 }
 
 
+void goby::acomms::MMDriver::measure_noise(unsigned milliseconds_to_average)
+{
+    NMEASentence nmea_out("$CCCFR", NMEASentence::IGNORE);
+    nmea_out.push_back(milliseconds_to_average);
+    if(log_) *log_ << group("mm_out") << gateway_prefix_out_ << nmea_out.message() << std::endl;
+    modem_write(gateway_prefix_out_ + nmea_out.message_cr_nl());
+}
+
 void goby::acomms::MMDriver::write(NMEASentence& nmea)
 {    
     out_.push_back(nmea);

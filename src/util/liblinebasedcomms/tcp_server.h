@@ -39,19 +39,16 @@ namespace goby
         class TCPConnection;
         class TCPServer : public LineBasedInterface
         {
-          public:    
-            static TCPServer* get_instance(unsigned& clientkey,
-                                           unsigned port,
-                                           const std::string& delimiter = "\r\n");
-    
-          private:
-          TCPServer(const std::string& port,
+          public:
+          TCPServer(unsigned port,
                     const std::string& delimiter = "\r\n")
-              : acceptor_(io_service_, asio::ip::tcp::endpoint(asio::ip::tcp::v4(), 9000)),
+              : acceptor_(io_service_, asio::ip::tcp::endpoint(asio::ip::tcp::v4(), port)),
                 delimiter_(delimiter)
                 {  }
-    
-    
+
+            std::string local_ip() { return acceptor_.local_endpoint().address().to_string(); }
+            
+          private:
             void do_start()
             { start_accept(); }
         
@@ -66,7 +63,6 @@ namespace goby
           private:
             static std::map<std::string, TCPServer*> inst_;
             std::string server_;
-            std::string port_;
             asio::ip::tcp::acceptor acceptor_;
             boost::shared_ptr<TCPConnection> new_connection_;
             std::set< boost::shared_ptr<TCPConnection> > connections_;
@@ -80,7 +76,7 @@ namespace goby
             {
               public:
                 static boost::shared_ptr<TCPConnection> create(asio::io_service& io_service,
-                                                               std::vector< std::deque<std::string> >& in,
+                                                               std::deque<std::string>& in,
                                                                boost::mutex& in_mutex,
                                                                const std::string& delimiter);
                 
@@ -101,7 +97,7 @@ namespace goby
                 void socket_close(const asio::error_code& error);
     
               TCPConnection(asio::io_service& io_service,
-                            std::vector< std::deque<std::string> >& in,
+                            std::deque<std::string>& in,
                             boost::mutex& in_mutex,
                             const std::string& delimiter)
                   : LineBasedConnection<asio::ip::tcp::socket>(socket_, out_, in, in_mutex, delimiter),

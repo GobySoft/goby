@@ -26,10 +26,15 @@ namespace goby
         template<typename ASIOAsyncReadStream>
             class LineBasedConnection
         {
+          public:
+            void set_delimiter(const std::string& s) { delimiter_ = s; }
+            std::string delimiter() const { return delimiter_; }
+            
+            
           protected:
           LineBasedConnection(ASIOAsyncReadStream& socket,
                               std::deque<std::string>& out,
-                              std::vector< std::deque<std::string> >& in,
+                              std::deque<std::string>& in,
                               boost::mutex& in_mutex,
                               const std::string& delimiter)
               : socket_(socket),
@@ -71,9 +76,7 @@ namespace goby
                     // grab a lock on the in_ deque because the user can modify    
                     boost::mutex::scoped_lock lock(in_mutex_);
                     
-                    // add for all the users
-                    for(std::vector< std::deque<std::string> >::iterator it = in_.begin(), n = in_.end(); it != n; ++it)
-                        it->push_back(line);
+                    in_.push_back(line);
                     
                     extra_.clear();
                 }
@@ -98,7 +101,7 @@ namespace goby
           private:
             ASIOAsyncReadStream& socket_;
             std::deque<std::string>& out_; // buffered write data
-            std::vector< std::deque<std::string> >& in_; // buffered read data
+            std::deque<std::string>& in_; // buffered read data
             boost::mutex& in_mutex_;
             
             asio::streambuf buffer_; // streambuf to store serial data in for use by program

@@ -24,6 +24,7 @@
 
 #include <boost/lexical_cast.hpp>
 #include <boost/function.hpp>
+#include <boost/foreach.hpp>
 #include "asio.hpp"
 
 #include "goby/util/time.h"
@@ -143,8 +144,8 @@ namespace goby
             boost::posix_time::ptime last_heard_time_;
         };
     
-        inline std::ostream& operator<<(std::ostream& os, const Slot& s)
-        { return os << "src: " << s.src() << " | dest: " << s.dest() << " | rate: " << s.rate() << " | slot_time: " << s.slot_time(); }
+        inline std::ostream& operator<<(std::ostream& os, const Slot& s) 
+        { return os << "type: " << s.type_as_string() <<  " | src: " << s.src() << " | dest: " << s.dest() << " | rate: " << s.rate() << " | slot_time: " << s.slot_time(); }
 
 
         /// provides an API to the goby-acomms MAC library.
@@ -243,8 +244,7 @@ namespace goby
             void process_cycle_size_change();
 
             unsigned cycle_count() { return slot_order_.size(); }
-            unsigned cycle_length() { return cycle_count() * slot_time_; }
-    
+            unsigned cycle_length();
             unsigned cycle_sum();
             void position_blank();
     
@@ -291,7 +291,7 @@ namespace goby
         /// Are two amac::Slot equal?
         inline bool operator==(const Slot& a, const Slot& b)
         {
-            return a.src() == b.src() && a.dest() == b.dest() && a.rate() == b.rate() && a.type() == b.type() && a.slot_time() == b.slot_time();
+            return a.src() == b.src() && a.dest() == b.dest() && a.rate() == b.rate() && a.type() == b.type() && a.slot_time() == b.slot_time() && a.type() == b.type();
         }
 
 

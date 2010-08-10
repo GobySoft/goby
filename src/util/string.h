@@ -24,6 +24,9 @@
 
 #include <string>
 #include <vector>
+#include <boost/lexical_cast.hpp>
+#include <iostream>
+
 namespace goby
 {
 
@@ -90,19 +93,19 @@ namespace goby
         }
 
 
+        
         // find `key` in `str` and if successful put it in out
         // and return true
-
         // deal with these basic forms:
         // str = foo=1,bar=2,pig=3
         // str = foo=1,bar={2,3,4,5},pig=3
-        inline bool val_from_string(std::string & out, const std::string & str, const std::string & key)
+        inline bool val_from_string(std::string& out, const std::string& str, const std::string & key)
         {
             // str:  foo=1,bar={2,3,4,5},pig=3,cow=yes
             // two cases:
             // key:  bar
             // key:  pig
-        
+            
             out.erase();
 
             // str:  foo=1,bar={2,3,4,5},pig=3,cow=yes
@@ -147,13 +150,29 @@ namespace goby
                     // out:  2,3,4,5
                     // out:  3
                     out = (is_array) ? chopped_twice.substr(2, end_pos-2) : chopped_twice.substr(1, end_pos-1);
+
                     return true;
                 }
             }
 
             return false;        
+        }        
+
+        template<typename T>
+            inline bool val_from_string(T& out, const std::string& str, const std::string & key)        
+        {
+            std::string s;
+            if(!val_from_string(s, str, key)) return false;
+            
+            try { out = boost::lexical_cast<T>(s); }
+            catch (boost::bad_lexical_cast&)
+            { return false; }
+
+            return true;            
         }
-    
+
+
+        
         inline bool string2bool(const std::string & in)
         { return (stricmp(in, "true") || stricmp(in, "1")) ? true : false; }
 

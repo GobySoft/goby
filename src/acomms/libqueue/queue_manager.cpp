@@ -293,7 +293,7 @@ bool goby::acomms::QueueManager::provide_outgoing_modem_data(const ModemMessage&
     std::deque<ModemMessage> user_frames;
     while(winning_var)
     {
-        ModemMessage next_message = winning_var->give_data(modified_message_in.frame());
+        ModemMessage next_message = winning_var->give_data(modified_message_in);
         user_frames.push_back(next_message);
 
         // if a destination has been set or ack been set, do not unset these

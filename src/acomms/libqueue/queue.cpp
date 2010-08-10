@@ -93,11 +93,18 @@ messages_it goby::acomms::Queue::next_message_it()
     return it_to_give;
 }
 
-goby::acomms::ModemMessage goby::acomms::Queue::give_data(unsigned frame)
+goby::acomms::ModemMessage goby::acomms::Queue::give_data(const ModemMessage& msg)
 {
     messages_it it_to_give = next_message_it();
-    
-    if(it_to_give->ack()) waiting_for_ack_.insert(std::pair<unsigned, messages_it>(frame, it_to_give));
+
+    bool ack = it_to_give->ack();
+    // broadcast cannot acknowledge
+    if(msg.dest() == BROADCAST_ID) ack = false;
+    it_to_give->set_ack(ack);
+
+    if(ack) waiting_for_ack_.insert(std::pair<unsigned, messages_it>(msg.frame(), it_to_give));
+
+    last_send_time_ = goby_time();    
     
     return *it_to_give;
 }
@@ -125,24 +132,22 @@ bool goby::acomms::Queue::priority_values(double& priority,
         if(os_) *os_<< group("priority") << "\t" << cfg_.name() << " is in blackout" << std::endl;
         return false;
     }
+    // wrong size
     else if(next_msg_it->size() > message.size())
     {
         if(os_) *os_<< group("priority") << "\t" << cfg_.name() << " next message is too large {" << next_msg_it->size() << "}" << std::endl;
         return false;
     }
+    // wrong destination
     else if((message.dest_set() && next_msg_it->dest() != acomms::BROADCAST_ID && message.dest() != next_msg_it->dest()))
     {
         if(os_) *os_<< group("priority") << "\t" <<  cfg_.name() << " next message has wrong destination  (must be BROADCAST (0) or same as first user-frame)" << std::endl;
         return false; 
     }
-    else if((message.ack_set() && !message.ack() && next_msg_it->ack()))
+    // wrong ack value UNLESS message can be broadcast
+    else if((message.ack_set() && !message.ack() && next_msg_it->ack() && message.dest() != acomms::BROADCAST_ID))
     {
         if(os_) *os_<< group("priority") << "\t" <<  cfg_.name() << " next message requires ACK and the packet does not" << std::endl;
-        return false; 
-    }
-    else if((next_msg_it->ack() && message.dest_set() && message.dest() == acomms::BROADCAST_ID))
-    {
-        if(os_) *os_<< group("priority") << "\t" <<  cfg_.name() << " next message requires ACK but the destination is BROADCAST (0)" << std::endl;
         return false; 
     }
 
@@ -164,10 +169,7 @@ bool goby::acomms::Queue::pop_message(unsigned frame)
     else
     {
         return false;
-    }
-    
-    // only set last_send_time on a successful message (after ack, if one is desired)
-    last_send_time_ = goby_time();
+    }    
 
     return true;
 }
@@ -193,9 +195,6 @@ bool goby::acomms::Queue::pop_message_ack(unsigned frame, ModemMessage& msg)
     {
         return false;
     }
-    
-    // only set last_send_time on a successful message (after ack, if one is desired)
-    last_send_time_ = goby_time();
     
     return true;    
 }

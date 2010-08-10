@@ -31,6 +31,10 @@ namespace goby
                       unsigned port,
                       const std::string& delimiter = "\r\n");
 
+
+            std::string local_ip() { return socket_.local_endpoint().address().to_string(); }
+            
+            
           private:
             bool start_specific();
 

@@ -54,7 +54,7 @@ namespace goby
                   const unsigned& modem_id = 0);
 
             bool push_message(ModemMessage& new_message);
-            ModemMessage give_data(unsigned frame);
+            ModemMessage give_data(const ModemMessage& msg);
             bool pop_message(unsigned frame);    
             bool pop_message_ack(unsigned frame, ModemMessage& msg);
             void stream_for_pop(const std::string& snip);

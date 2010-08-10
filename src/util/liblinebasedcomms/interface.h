@@ -65,7 +65,6 @@ namespace goby
             
             asio::io_service io_service_; // the main IO service that runs this connection
             std::deque<std::string> in_; // buffered read data
-
             boost::mutex in_mutex_;
             
           private:

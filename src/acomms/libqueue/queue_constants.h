@@ -19,13 +19,14 @@
 #define QueueConstants20091205H
 
 #include "goby/util/time.h"
+#include "goby/acomms/acomms_constants.h"
 
 namespace goby
 {
     namespace acomms
     {
         // largest allowed id 
-        const unsigned MAX_ID = 63;
+        const unsigned MAX_ID = 1 << head_dccl_id_size;
         const unsigned MULTIMESSAGE_MASK = 1 << 7;
         const unsigned BROADCAST_MASK = 1 << 6;
         const unsigned VAR_ID_MASK = 0xFF ^ MULTIMESSAGE_MASK ^ BROADCAST_MASK;

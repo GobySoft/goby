@@ -45,7 +45,9 @@ namespace goby
               : acceptor_(io_service_, asio::ip::tcp::endpoint(asio::ip::tcp::v4(), port)),
                 delimiter_(delimiter)
                 {  }
-    
+
+            std::string local_ip() { return acceptor_.local_endpoint().address().to_string(); }
+            
           private:
             void do_start()
             { start_accept(); }

@@ -28,8 +28,7 @@ namespace goby
         {
           public:
             void set_delimiter(const std::string& s) { delimiter_ = s; }
-            std::string delimiter() const { return delimiter_; }
-            
+            std::string delimiter() const { return delimiter_; }            
             
           protected:
           LineBasedConnection(ASIOAsyncReadStream& socket,
@@ -104,7 +103,7 @@ namespace goby
             std::deque<std::string>& in_; // buffered read data
             boost::mutex& in_mutex_;
             
-            asio::streambuf buffer_; // streambuf to store serial data in for use by program
+            asio::streambuf buffer_; 
             std::string delimiter_;
             std::string extra_;
         };

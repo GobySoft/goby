@@ -8,5 +8,11 @@ if(Boost_FOUND AND Xerces_LIB_FOUND AND Xerces_H_FOUND )
   target_link_libraries(goby_dccl goby_logger xerces-c crypto++ ${Boost_LIBRARIES})
 endif()
 
-add_subdirectory(examples)
-add_subdirectory(tools)
+if(build_acomms_examples)
+  add_subdirectory(examples)
+endif()
+
+if(build_acomms_tools)
+  add_subdirectory(tools)
+endif()
+

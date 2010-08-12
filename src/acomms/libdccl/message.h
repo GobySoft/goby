@@ -64,7 +64,7 @@ namespace goby
             void set_id(unsigned id)
             { id_ = id; }
             template<typename T> void set_id(const T& t)
-            { set_id(boost::lexical_cast<unsigned>(t)); }
+            { set_id(util::as<unsigned>(t)); }
         
             void set_trigger(const std::string& trigger_type) 
             { trigger_type_ = trigger_type; }
@@ -75,7 +75,7 @@ namespace goby
             void set_trigger_time(double trigger_time)
             { trigger_time_ = trigger_time; }
             template<typename T> void set_trigger_time(const T& t)
-            { set_trigger_time(boost::lexical_cast<double>(t)); }        
+            { set_trigger_time(util::as<double>(t)); }        
         
             void set_trigger_mandatory(const std::string& trigger_mandatory)
             { trigger_mandatory_ = trigger_mandatory; }
@@ -90,12 +90,12 @@ namespace goby
             { size_ = size; }
 
             template<typename T> void set_size(const T& t)
-            { set_size(boost::lexical_cast<unsigned>(t)); }
+            { set_size(util::as<unsigned>(t)); }
 
             void set_repeat_enabled(unsigned repeat_enabled)
             { repeat_enabled_ = repeat_enabled; }
             template<typename T> void set_repeat_enabled(const T& t)
-            { set_repeat_enabled(boost::lexical_cast<unsigned>(t)); }
+            { set_repeat_enabled(util::as<unsigned>(t)); }
         
             void add_message_var(const std::string& type);        
             void add_publish();

@@ -13,4 +13,6 @@ if(Boost_FOUND AND Xerces_LIB_FOUND AND Xerces_H_FOUND )
   target_link_libraries(goby_queue goby_logger xerces-c goby_dccl)
 endif()
 
-add_subdirectory(examples)
+if(build_acomms_examples)
+  add_subdirectory(examples)
+endif()

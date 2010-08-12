@@ -17,10 +17,14 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
-#include <boost/lexical_cast.hpp>
 #include <boost/foreach.hpp>
 
+#include "goby/util/string.h"
 #include "message.h"
+#include "dccl_exception.h"
+
+using goby::util::as;
+
 
 goby::acomms::DCCLMessage::DCCLMessage():size_(0),
                          trigger_number_(1), 
@@ -82,7 +86,7 @@ void goby::acomms::DCCLMessage::add_publish()
 void goby::acomms::DCCLMessage::preprocess()
 {
     if(requested_bytes_total() <= bytes_head())
-        throw(std::runtime_error(std::string("<size> must be larger than the header size of " + boost::lexical_cast<std::string>(bytes_head()))));
+        throw(dccl_exception(std::string("<size> must be larger than the header size of " + as<std::string>(bytes_head()))));
 
     // calculate number of repeated messages that will fit and put this in `repeat_`.
     if(repeat_enabled_)
@@ -90,7 +94,7 @@ void goby::acomms::DCCLMessage::preprocess()
         BOOST_FOREACH(boost::shared_ptr<DCCLMessageVar> mv, layout_)
         {
         if(mv->array_length() != 1)
-            throw(std::runtime_error("<repeat> is not allowed on messages with arrays (<array_length> not 1)"));
+            throw(dccl_exception("<repeat> is not allowed on messages with arrays (<array_length> not 1)"));
         }
         
         // crank up the repeat until we go over
@@ -114,7 +118,7 @@ void goby::acomms::DCCLMessage::preprocess()
     
     if(body_bits_ > requested_bits_body() || repeat_ == 0)
     {
-        throw std::runtime_error(std::string("DCCL: " + get_display() + "the message [" + name_ + "] will not fit within specified size. remove parameters, tighten bounds, or increase allowed size. details of the offending message are printed above."));
+        throw dccl_exception(std::string("DCCL: " + get_display() + "the message [" + name_ + "] will not fit within specified size. remove parameters, tighten bounds, or increase allowed size. details of the offending message are printed above."));
     }
 
     // iterate over publishes_
@@ -123,9 +127,9 @@ void goby::acomms::DCCLMessage::preprocess()
     
     // set incoming_var / outgoing_var if not set
     if(in_var_ == "")
-        in_var_ = "IN_" + boost::to_upper_copy(name_) + "_HEX_" + boost::lexical_cast<std::string>(size_) + "B";
+        in_var_ = "IN_" + boost::to_upper_copy(name_) + "_HEX_" + as<std::string>(size_) + "B";
     if(out_var_ == "")
-        out_var_ = "OUT_" + boost::to_upper_copy(name_) + "_HEX_" + boost::lexical_cast<std::string>(size_) + "B";   
+        out_var_ = "OUT_" + boost::to_upper_copy(name_) + "_HEX_" + as<std::string>(size_) + "B";   
 }
 
 void goby::acomms::DCCLMessage::set_repeat_array_length()
@@ -288,7 +292,7 @@ boost::shared_ptr<goby::acomms::DCCLMessageVar> goby::acomms::DCCLMessage::name2
         if(mv->name() == name) return mv;
     }
 
-    throw std::runtime_error(std::string("DCCL: no such name \"" + name + "\" found in <layout> or <header>"));
+    throw dccl_exception(std::string("DCCL: no such name \"" + name + "\" found in <layout> or <header>"));
     
     return boost::shared_ptr<DCCLMessageVar>();
 }

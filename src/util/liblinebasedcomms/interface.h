@@ -21,7 +21,6 @@
 #include <iostream>
 #include <deque>
 #include <fstream>
-#include <boost/lexical_cast.hpp>
 #include <boost/thread.hpp>
 #include <boost/bind.hpp>
 #include <boost/array.hpp>
@@ -39,20 +38,30 @@ namespace goby
         class LineBasedInterface
         {
           public:
+            // start the connection
             void start();
-
+            // close the connection cleanly
+            void close();
+            // is the connection alive and well?
+            bool active() { return active_; }
+            
+            // returns line with delimiter
+            // returns "" if no data to read  because there is a always
+            // at least a non-empty delimiter in a valid line
             std::string readline()
             { return readline_oldest(); }
-            
+
+            // write a line to the buffer
             void write(const std::string& msg);
-            void close();
-            
+
+            // allows FIFO access (default)
             std::string readline_oldest();
-            std::string readline_newest();            
+            // allows FILO access
+            std::string readline_newest();
 
-            // safe to read this here but not write (only write from derived class)
-            bool active() { return active_; }
-
+            // empties the read buffer
+            void clear();
+            
           protected:            
             LineBasedInterface();
             

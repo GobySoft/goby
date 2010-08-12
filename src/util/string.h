@@ -26,12 +26,27 @@
 #include <vector>
 #include <boost/lexical_cast.hpp>
 #include <iostream>
+#include <limits>
 
 namespace goby
 {
 
     namespace util
     {   
+        // non-throwing lexical cast
+        template<typename To, typename From>
+            To as(From from)
+        {
+            try { return boost::lexical_cast<To>(from); }
+            catch(boost::bad_lexical_cast&)
+            {
+                // return NaN or minimum value supported by the type
+                return std::numeric_limits<To>::has_quiet_NaN
+                    ? std::numeric_limits<To>::quiet_NaN()
+                    : std::numeric_limits<To>::min();
+            }
+        }        
+ 
         //
         // STRING PARSING
         //

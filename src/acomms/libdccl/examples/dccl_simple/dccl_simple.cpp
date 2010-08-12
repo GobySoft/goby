@@ -39,7 +39,6 @@ int main()
     // checking (syntax).
     goby::acomms::DCCLCodec dccl(DCCL_EXAMPLES_DIR "/dccl_simple/simple.xml",
                          "../../message_schema.xsd");
-
     
     // read message content (in this case from the command line)
     std::string input;
@@ -63,7 +62,7 @@ int main()
     // input contents right back to decoder
     std::cout << "passed hexadecimal string to decoder: " << hex << std::endl;
 
-    dccl.decode(id, hex, val_map);
+    dccl.decode(hex, val_map);
     
     std::cout << "received values:" << std::endl 
               << val_map;

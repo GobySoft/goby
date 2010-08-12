@@ -20,7 +20,10 @@
 #ifndef MESSAGE_VAR_FLOAT20100317H
 #define MESSAGE_VAR_FLOAT20100317H
 
+#include "goby/util/string.h"
+
 #include "message_var.h"
+
 namespace goby
 {
     namespace acomms
@@ -36,13 +39,13 @@ namespace goby
             virtual int calc_total_size() const;
         
             void set_max(double max) {max_ = max;}
-            void set_max(const std::string& s) { set_max(boost::lexical_cast<double>(s)); }
+            void set_max(const std::string& s) { set_max(util::as<double>(s)); }
         
             void set_min(double min) {min_ = min;}
-            void set_min(const std::string& s) { set_min(boost::lexical_cast<double>(s)); }
+            void set_min(const std::string& s) { set_min(util::as<double>(s)); }
 
             void set_precision(int precision) {precision_ = precision;}
-            void set_precision(const std::string& s) { set_precision(boost::lexical_cast<int>(s)); }
+            void set_precision(const std::string& s) { set_precision(util::as<int>(s)); }
         
             int precision() const { return precision_; }  
 
@@ -52,7 +55,7 @@ namespace goby
             void set_max_delta(double max_delta)
             { max_delta_ = max_delta; }
             void set_max_delta(const std::string& s)
-            { set_max_delta(boost::lexical_cast<double>(s)); }
+            { set_max_delta(util::as<double>(s)); }
 
             virtual DCCLType type() const { return dccl_float; }
 

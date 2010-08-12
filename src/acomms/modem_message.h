@@ -55,7 +55,7 @@ namespace goby
                 time_(util::goby_time()),
                 tof_(0),
                 ack_(false),
-                size_(0),
+                max_size_(0),
                 frame_(1),
                 cs_(0),
                 data_set_(false),
@@ -65,7 +65,7 @@ namespace goby
                 time_set_(false),
                 tof_set_(false),
                 ack_set_(false),
-                size_set_(false),
+                max_size_set_(false),
                 frame_set_(false),
                 cs_set_(false)
                 { if(!s.empty()) unserialize(s); }
@@ -81,7 +81,7 @@ namespace goby
             /// set the time of flight
             void set_tof(double t)                    { tof_=t; tof_set_ = true; }
             /// set the size (automatically set by the data size)
-            void set_size(unsigned size)              { size_= size; size_set_ = true;}    
+            void set_max_size(unsigned size)              { max_size_= size; max_size_set_ = true;}    
             /// set the source id
             void set_src(unsigned src)                { src_=src; src_set_ = true; }   
             /// set the destination id
@@ -110,9 +110,9 @@ namespace goby
                 catch(boost::bad_lexical_cast & ) { }
             }
             /// try to set the size with std::string
-            void set_size(const std::string& size)
+            void set_max_size(const std::string& size)
             {
-                try {  set_size(boost::lexical_cast<unsigned>(size)); }
+                try {  set_max_size(boost::lexical_cast<unsigned>(size)); }
                 catch(boost::bad_lexical_cast & ) { }
             }
             /// try to set the destination id with std::string
@@ -143,8 +143,23 @@ namespace goby
                 try { set_frame(boost::lexical_cast<unsigned>(frame));}
                 catch(boost::bad_lexical_cast & ) { }
             }
-            //@}
 
+            void clear()
+            {
+                data_.clear();
+                data_set_ = false;
+                src_set_ = false;
+                dest_set_ = false;
+                rate_set_ = false;
+                time_set_ = false;
+                tof_set_ = false;
+                ack_set_ = false;
+                max_size_set_ = false;
+                frame_set_ = false;
+                cs_set_ = false;
+            }
+            //@}
+            
         
             /// \name Get
             //@{
@@ -152,7 +167,11 @@ namespace goby
             /// hexadecimal string
             std::string data() const {return data_;} 
             /// hexadecimal string reference
-            std::string& data_ref() {return data_;}
+            std::string& data_ref()
+            {
+                data_set_ = true;
+                return data_;
+            }
             /// time
             boost::posix_time::ptime time() const {return time_;}
             /// tof
@@ -169,7 +188,10 @@ namespace goby
             unsigned frame() const {return frame_;}
 
             /// size in bytes
-            unsigned size() const { return data_set_ ? calc_size() : size_; }
+            unsigned size() const { return calc_size(); }
+            /// maximum size in bytes
+            unsigned max_size() const { return max_size_; }
+            
             /// checksum (eight bit XOR of Message::data())
             unsigned cs() const { return data_set_ ? calc_cs() : cs_; }
 
@@ -184,8 +206,8 @@ namespace goby
             bool time_set() const {return time_set_;}
             /// is there a time of flight?
             bool tof_set() const {return tof_set_;}
-            /// is there a size?
-            bool size_set() const {return size_set_;}
+            /// is there a max size?
+            bool max_size_set() const {return max_size_set_;}
             /// is there a source?
             bool src_set() const {return src_set_;}
             /// is there a destination?
@@ -211,12 +233,13 @@ namespace goby
                 if(src_set_)   ss << " | src " << src_;
                 if(dest_set_)  ss << " | dest " << dest_;
                 if(rate_set_)  ss << " | rate " << rate_;
-                if(dest_set_ || size_set_)  ss << " | size " << size() << "B";
+                if(data_set_)  ss << " | size " << calc_size() << "B";
+                if(max_size_set_)  ss << " | max_size " << max_size_ << "B";
                 if(time_set_)     ss << " | age " << (util::goby_time() - time_).total_seconds() << "s";
                 if(tof_set_)  ss << " | time-of-flight " << tof_;
                 if(ack_set_)   ss << " | ack " << std::boolalpha << ack_;
                 if(frame_set_) ss << " | frame " << frame_;
-                if(dest_set_ || cs_set_)    ss << " | *" << std::hex << std::setw(2) << std::setfill('0') << (int)cs();
+                if(data_set_ || cs_set_)    ss << " | *" << std::hex << std::setw(2) << std::setfill('0') << (int)cs();
             
                 if(!ss.str().empty())
                     return ss.str().substr(3);
@@ -242,7 +265,8 @@ namespace goby
                 if(tof_set_)  ss << ",tof=" << std::setprecision(15) << tof_;
                 if(ack_set_)   ss << ",ack=" << std::boolalpha << ack_;
                 if(frame_set_) ss << ",frame=" << frame_;
-                if(data_set_ || size_set_)  ss << ",size=" << size();
+                if(data_set_)  ss << ",size=" << calc_size();
+                if(max_size_set_)  ss << ",max_size=" << calc_size();
                 if(data_set_ || cs_set_)    ss << ",cs=" << std::hex << std::setw(2) << std::setfill('0') << (int)cs();
             
                 if(!ss.str().empty())
@@ -276,8 +300,8 @@ namespace goby
                         set_ack(value);
                     if(util::val_from_string(value, lower_s, "frame"))
                         set_frame(value);
-                    if(util::val_from_string(value, lower_s, "size"))
-                        set_size(value);
+                    if(util::val_from_string(value, lower_s, "max_size"))
+                        set_max_size(value);
                 }
         
             }    
@@ -313,7 +337,7 @@ namespace goby
             boost::posix_time::ptime time_;
             double tof_;
             bool ack_;
-            unsigned size_; //in bytes
+            unsigned max_size_; //in bytes
             unsigned frame_;
             unsigned char cs_;
 
@@ -324,9 +348,10 @@ namespace goby
             bool time_set_;
             bool tof_set_;
             bool ack_set_;
-            bool size_set_;
+            bool max_size_set_;    
             bool frame_set_;
-            bool cs_set_;    
+            bool cs_set_;
+
         };
 
     }

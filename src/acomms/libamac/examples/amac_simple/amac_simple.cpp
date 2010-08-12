@@ -17,7 +17,7 @@
 #include "goby/acomms/modem_message.h"
 #include <iostream>
 
-int next_dest(unsigned);
+bool request_next_dest(goby::acomms::ModemMessage&);
 void init_transmission(const goby::acomms::ModemMessage&);
 
 int main(int argc, char* argv[])
@@ -31,7 +31,7 @@ int main(int argc, char* argv[])
     //
     // 2. Configure it for TDMA with basic peer discovery, rate 0, 10 second slots, and expire vehicles after 2 cycles of no communications. also, we are modem id 1.
     //
-    mac.set_type(goby::acomms::mac_slotted_tdma);
+    mac.set_type(goby::acomms::mac_auto_decentralized);
     mac.set_rate(0);
     mac.set_slot_time(10);
     mac.set_expire_cycles(2);
@@ -42,9 +42,9 @@ int main(int argc, char* argv[])
     //
 
     // give callback for the next destination. this is called before a cycle is initiated, and would be bound to queue::QueueManager::request_next_destination if using libqueue.
-    mac.set_destination_cb(&next_dest);
+    mac.set_callback_dest_request(&request_next_dest);
     // give a callback to use for actually initiating the transmission. this would be bound to goby::acomms::ModemDriverBase::initiate_transmission if using libmodemdriver.
-    mac.set_initiate_transmission_cb(&init_transmission);
+    mac.set_callback_initiate_transmission(&init_transmission);
 
     //
     // 4. Let it run for a bit alone in the world
@@ -60,8 +60,8 @@ int main(int argc, char* argv[])
     // 5. Discover some friends (modem ids 2 & 3)
     //
     
-    mac.process_message(goby::acomms::ModemMessage("src=2"));
-    mac.process_message(goby::acomms::ModemMessage("src=3"));
+    mac.handle_modem_in_parsed(goby::acomms::ModemMessage("src=2"));
+    mac.handle_modem_in_parsed(goby::acomms::ModemMessage("src=3"));
 
     //
     // 6. Run it, hearing consistently from #3, but #2 has gone silent and will be expired after 2 cycles
@@ -71,16 +71,17 @@ int main(int argc, char* argv[])
     {
         mac.do_work();
         sleep(1);
-        mac.process_message(goby::acomms::ModemMessage("src=3"));
+        mac.handle_modem_in_parsed(goby::acomms::ModemMessage("src=3"));
     }
     
     return 0;
 }
 
-int next_dest(unsigned size)
+bool request_next_dest(goby::acomms::ModemMessage& msg)
 {
     // let's pretend we always have a message to send to vehicle 10
-    return 10;
+    msg.set_dest(10);
+    return true;
 }
 
 void init_transmission(const goby::acomms::ModemMessage& init_message)

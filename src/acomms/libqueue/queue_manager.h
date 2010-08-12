@@ -17,15 +17,20 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
+
 #ifndef QueueManager20091204_H
 #define QueueManager20091204_H
 
+
+
 #include <limits>
 #include <set>
+#include <boost/bind.hpp>
 
 #include "goby/acomms/xml/xml_parser.h"
 #include "goby/acomms/dccl.h"
 
+#include "queue_exception.h"
 #include "queue_config.h"
 #include "queue_key.h"
 #include "queue.h"
@@ -36,7 +41,8 @@ namespace goby
     {
         class FlexOstream;
     }
-
+        
+    
     namespace acomms
     {
         /// \name Queue Library callback function type definitions
@@ -45,11 +51,11 @@ namespace goby
         /// \brief boost::function for a function taking a single ModemMessage reference.
         ///
         /// Think of this as a generalized version of a function pointer (void (*)(QueueKey, ModemMessage&)). See http://www.boost.org/doc/libs/1_34_0/doc/html/function.html for more on boost:function. 
-        typedef boost::function<void (QueueKey key, const ModemMessage& message)> QueueMsgFunc1;
+        typedef boost::function<void (QueueKey key, const ModemMessage& message)> QueueMsgFunc;
         /// \brief boost::function for a function taking a ModemMessage reference as input and filling a ModemMessage reference as output.
         ///
         /// Think of this as a generalized version of a function pointer (void (*)(QueueKey, ModemMessage&, ModemMessage&)). See http://www.boost.org/doc/libs/1_34_0/doc/html/function.html for more on boost:function.
-        typedef boost::function<bool (QueueKey key, const ModemMessage& message1, ModemMessage & message2)> QueueMsgFunc2;
+        typedef boost::function<bool (QueueKey key, ModemMessage & message)> MutableQueueMsgFunc;
         /// \brief boost::function for a function returning a single unsigned 
         ///
         /// Think of this as a generalized version of a function pointer (void (*)(QueueKey, unsigned)). See http://www.boost.org/doc/libs/1_34_0/doc/html/function.html for more on boost:function.
@@ -166,19 +172,19 @@ namespace goby
 
             /// \brief Set the callback to receive incoming DCCL messages. Any messages received before this callback is set will be discarded.
             ///
-            /// \param func Pointer to function (or any other object boost::function accepts) matching the signature of queue::QueueMsgFunc1.
+            /// \param func Pointer to function (or any other object boost::function accepts) matching the signature of queue::QueueMsgFunc.
             /// The callback (func) will be invoked with the following parameters:
             /// \param key the QueueKey for the %queue for which this received message belongs.
             /// \param message A ModemMessage reference containing the contents of the received DCCL message.
-            void set_receive_cb(QueueMsgFunc1 func)     { callback_receive = func; }
+            void set_callback_receive(QueueMsgFunc func)     { callback_receive = func; }
 
             /// \brief Set the callback to receive incoming CCL messages. Any messages received before this callback is set will be discarded.
             ///
-            /// \param func Pointer to function (or any other object boost::function accepts) matching the signature of queue::QueueMsgFunc1.
+            /// \param func Pointer to function (or any other object boost::function accepts) matching the signature of queue::QueueMsgFunc.
             /// The callback (func) will be invoked with the following parameters:
             /// \param key the QueueKey for the %queue for which this received message belongs.
             /// \param message A ModemMessage reference containing the contents of the received CCL message.
-            void set_receive_ccl_cb(QueueMsgFunc1 func) { callback_receive_ccl = func; }
+            void set_callback_receive_ccl(QueueMsgFunc func) { callback_receive_ccl = func; }
 
             //@}
         
@@ -193,13 +199,13 @@ namespace goby
             /// \param message_in The ModemMessage containing the details of the request (source, destination, size, etc.)
             /// \param message_out The packed ModemMessage ready for sending by the modem. This will be populated by this function.
             /// \return true if successful in finding data to send, false if no data is available
-            bool provide_outgoing_modem_data(const ModemMessage& message_in, ModemMessage& message_out);
+            bool handle_modem_data_request(ModemMessage& message_in);
 
             /// \brief Receive incoming data from the %modem.
             ///
             /// If using one of the classes inheriting ModemDriverBase, this method should be bound and passed to ModemDriverBase::set_receive_cb.
             /// \param message The received ModemMessage.
-            void receive_incoming_modem_data(const ModemMessage& message);
+            void handle_modem_receive(const ModemMessage& message);
         
             /// \brief Receive acknowledgements from the %modem.
             ///
@@ -228,11 +234,11 @@ namespace goby
         
             /// \brief Set the callback to receive acknowledgements of message receipt. 
             ///
-            /// \param func Pointer to function (or any other object boost::function accepts) matching the signature of queue::QueueMsgFunc1.
+            /// \param func Pointer to function (or any other object boost::function accepts) matching the signature of queue::QueueMsgFunc.
             /// The callback (func) will be invoked with the following parameters:
             /// \param key the QueueKey for this acknowledgement.
             /// \param message A ModemMessage containing the contents of the original message that was acknowledged. 
-            void set_ack_cb(QueueMsgFunc1 func)     { callback_ack = func; }
+            void set_callback_ack(QueueMsgFunc func)     { callback_ack = func; }
         
             /// \brief Set the callback to process %queues marked \p on_demand by QueueManager::set_on_demand. 
             ///
@@ -241,24 +247,45 @@ namespace goby
             /// \param key the QueueKey for the data request.
             /// \param message1 (incoming) The ModemMessage containing the details of the request (source, destination, size, etc.)
             /// \param message2 (outgoing) The ModemMessage to be sent. This should be populated by the callback.
-            void set_data_on_demand_cb(QueueMsgFunc2 func) { callback_ondemand = func; }        
+            void set_callback_data_on_demand(MutableQueueMsgFunc func) { callback_ondemand = func; }        
             /// \brief Set the callback to receive messages every time a %queue changes size (that is, a message is popped or pushed).
             ///
             /// \param func Pointer to function (or any other object boost::function accepts) matching the signature of queue::QueueSizeFunc.
             /// The callback (func) will be provided with the following parameters:
             /// \param key the QueueKey for %queue that changed size.
             /// \param size the size of the %queue after the size change event.
-            void set_queue_size_change_cb(QueueSizeFunc func) { callback_qsize = func; }
+            void set_callback_queue_size_change(QueueSizeFunc func) { callback_qsize = func; }
 
             /// \brief Set the callback to receive messages every time a message is expired due to exceeding its time to live (ttl)
             ///
-            /// \param func Pointer to function (or any other object boost::function accepts) matching the signature of queue::QueueMsgFunc1.
+            /// \param func Pointer to function (or any other object boost::function accepts) matching the signature of queue::QueueMsgFunc.
             /// The callback (func) will be invoked with the following parameters:
             /// \param key the QueueKey for the queue from which the expired message originated.
             /// \param message A ModemMessage containing the contents of the original message that was expired. 
-            void set_expire_cb(QueueMsgFunc1 func) { callback_expire = func; }
+            void set_callback_expire(QueueMsgFunc func) { callback_expire = func; }
 
-        
+            
+            template<typename V, typename A1, typename A2>
+                void set_callback_receive(void(V::*mem_func)(A1, A2), V* obj)
+            { set_callback_receive(boost::bind(mem_func, obj, _1, _2)); }
+            template<typename V, typename A1, typename A2>
+                void set_callback_receive_ccl(void(V::*mem_func)(A1, A2), V* obj)
+            { set_callback_receive_ccl(boost::bind(mem_func, obj, _1, _2)); }
+            template<typename V, typename A1, typename A2>
+                void set_callback_ack(void(V::*mem_func)(A1, A2), V* obj)
+            { set_callback_ack(boost::bind(mem_func, obj, _1, _2)); }
+            template<typename V, typename A1, typename A2>
+                void set_callback_data_on_demand(bool(V::*mem_func)(A1, A2), V* obj)
+            { set_callback_data_on_demand(boost::bind(mem_func, obj, _1, _2)); }
+            template<typename V, typename A1, typename A2>
+                void set_callback_queue_size_change(void(V::*mem_func)(A1, A2), V* obj)
+            { set_callback_queue_size_change(boost::bind(mem_func, obj, _1, _2)); }
+            template<typename V, typename A1, typename A2>
+                void set_callback_expire(void(V::*mem_func)(A1, A2), V* obj)
+            { set_callback_expire(boost::bind(mem_func, obj, _1, _2)); }
+
+
+            
             //@}
 
             /// \name Medium Access Control methods
@@ -270,11 +297,10 @@ namespace goby
             ///
             /// \param size size (in bytes) of the next transmission. Size affects the next destination since messages that are too large are disregarded.
             /// \return id of the next destination
-            int request_next_destination(unsigned size = std::numeric_limits<unsigned>::max());
+            bool handle_modem_dest_request(ModemMessage& msg);
 
-            //@}
-        
-            enum { NO_AVAILABLE_DESTINATION = -1 };
+            //@}        
+
             enum { DCCL_NUM_HEADER_NIBS = DCCL_NUM_HEADER_BYTES*NIBS_IN_BYTE };
         
         
@@ -307,13 +333,13 @@ namespace goby
             }
         
             // finds the %queue with the highest priority
-            Queue* find_next_sender(ModemMessage& message, unsigned user_frame_num);
+            Queue* find_next_sender(const ModemMessage& message, bool first_user_frame);
         
             // combine multiple "user" frames into a single "modem" frame
-            ModemMessage stitch(std::deque<ModemMessage>& in_frames);
-            bool stitch_recursive(std::string& data, std::deque<ModemMessage>& in);
+            bool stitch_recursive(ModemMessage& msg, Queue* winning_var);
             bool unstitch_recursive(std::string& data, ModemMessage& message);
-        
+
+            void replace_header(bool is_last_user_frame, ModemMessage& msg, const ModemMessage& next_msg, const std::string& new_data);
        
             // clears the destination and ack values for the packet to reset for next $CADRQ
             void clear_packet();
@@ -322,13 +348,13 @@ namespace goby
             bool publish_incoming_piece(ModemMessage message, const unsigned incoming_var_id);        
         
           private:
-            QueueMsgFunc1 callback_ack;
-            QueueMsgFunc1 callback_receive;
-            QueueMsgFunc1 callback_receive_ccl;        
-            QueueMsgFunc2 callback_ondemand;
+            QueueMsgFunc callback_ack;
+            QueueMsgFunc callback_receive;
+            QueueMsgFunc callback_receive_ccl;        
+            QueueMsgFunc callback_expire;
+            
+            MutableQueueMsgFunc callback_ondemand;
 
-            QueueMsgFunc1 callback_expire;
-        
             QueueSizeFunc callback_qsize;
         
             unsigned modem_id_;
@@ -337,7 +363,7 @@ namespace goby
 
             std::string xml_schema_;
 
-            std::ostream* os_;
+            std::ostream* log_;
 
             // map frame number onto %queue pointer that contains
             // the data for this ack

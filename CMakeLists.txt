@@ -10,10 +10,10 @@ cmake_minimum_required(VERSION 2.6.0 FATAL_ERROR)
 project(goby)
      
 # fetch all the local directories for generated code
-get_filename_component(goby_LIB_DIR ./lib ABSOLUTE)
-get_filename_component(goby_BIN_DIR ./bin ABSOLUTE)
-get_filename_component(goby_INC_DIR ./include ABSOLUTE)
-get_filename_component(goby_SRC_DIR ./src ABSOLUTE)
+get_filename_component(goby_LIB_DIR lib ABSOLUTE)
+get_filename_component(goby_BIN_DIR bin ABSOLUTE)
+get_filename_component(goby_INC_DIR include ABSOLUTE)
+get_filename_component(goby_SRC_DIR src ABSOLUTE)
 
 # set the cmake defaults for libraries and binaries
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${goby_LIB_DIR} CACHE PATH 
@@ -26,10 +26,14 @@ install(DIRECTORY ${goby_BIN_DIR}/ DESTINATION /usr/local/bin FILE_PERMISSIONS W
 install(DIRECTORY ${goby_LIB_DIR}/ DESTINATION /usr/local/lib)
 install(DIRECTORY ${goby_INC_DIR}/ DESTINATION /usr/local/include/goby)
 
+# allow users to turn on and off various modules
+
+
 # find packages, libraries, and headers
 find_package(Boost 1.34.0 COMPONENTS date_time thread regex)
 set(CURSES_NEED_NCURSES TRUE)
 find_package(Curses)
+find_package(Protobuf REQUIRED)
 find_library(Xerces_LIB_FOUND xerces-c)
 find_file(Xerces_H_FOUND xercesc/sax2/SAX2XMLReader.hpp)
 if(Xerces_LIB_FOUND AND Xerces_H_FOUND)
@@ -56,6 +60,7 @@ endforeach()
 
 # let cmake know where the headers are
 include_directories(${goby_INC_DIR})
+
 
 # start adding subdirectories
 add_subdirectory(src)

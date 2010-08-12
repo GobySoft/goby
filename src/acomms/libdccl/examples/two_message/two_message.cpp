@@ -119,8 +119,8 @@ int main()
               << std::endl;
 
 
-    dccl.decode(2, hex2, vals);
-    dccl.decode(3, hex3, vals);
+    dccl.decode(hex2, vals);
+    dccl.decode(hex3, vals);
     
     std::cout << "received values:" << std::endl
               << vals;

@@ -27,8 +27,8 @@
 #include "goby/acomms/modem_driver.h"
 #include <iostream>
 
-bool data_request(const goby::acomms::ModemMessage&, goby::acomms::ModemMessage&);
-void data_receive(const goby::acomms::ModemMessage&);
+bool handle_data_request(goby::acomms::ModemMessage&);
+void handle_data_receive(const goby::acomms::ModemMessage&);
 
 int main(int argc, char* argv[])
 {
@@ -54,8 +54,8 @@ int main(int argc, char* argv[])
     mm_driver.set_cfg(cfg);
 
     // for handling $CADRQ
-    mm_driver.set_datarequest_cb(&data_request);
-    mm_driver.set_receive_cb(&data_receive);
+    mm_driver.set_callback_data_request(&handle_data_request);
+    mm_driver.set_callback_receive(&handle_data_receive);
     
     //
     // 2. Startup the driver
@@ -73,7 +73,7 @@ int main(int argc, char* argv[])
     // one frame @ 32 bytes
     transmit_init_message.set_rate(0);
 
-    mm_driver.initiate_transmission(transmit_init_message);
+    mm_driver.handle_mac_initiate_transmission(transmit_init_message);
 
     //
     // 4. Run the driver
@@ -94,21 +94,17 @@ int main(int argc, char* argv[])
 // 5. Handle the data request ($CADRQ)
 //
 
-bool data_request(const goby::acomms::ModemMessage& request_message, goby::acomms::ModemMessage& message_out)
+bool handle_data_request(goby::acomms::ModemMessage& request_message)
 {
-    message_out.set_src(request_message.src());
-    message_out.set_dest(request_message.dest());
-    message_out.set_data("aa1100bbccddef0987654321");
-
-    // we have data
-    return true;
+    request_message.set_data("aa1100bbccddef0987654321");
+    return true; // we have data
 }
 
 //
 // 6. Post the received data 
 //
 
-void data_receive(const goby::acomms::ModemMessage& message_in)
+void handle_data_receive(const goby::acomms::ModemMessage& message_in)
 {
     std::cout << "got a message: " << message_in << std::endl;
     std::cout << "\t" << "data: " << message_in.data() << std::endl;

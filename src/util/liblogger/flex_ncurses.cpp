@@ -24,7 +24,8 @@
 #include <ncurses.h>
 #include <boost/foreach.hpp>
 #include <boost/algorithm/string.hpp>
-#include <boost/lexical_cast.hpp>
+
+#include "goby/util/string.h"
 
 #include "logger_manipulators.h"
 
@@ -389,7 +390,7 @@ void goby::util::FlexNCurses::write_head_title(size_t i)
     attr_t color_attr = color2attr_t(color_.from_str(panels_[i].group()->color()));
     attr_t white_attr = color2attr_t(tcolor::enums::lt_white);
     wattron(win, white_attr);
-    mvwaddstr(win, 0, 0, std::string(boost::lexical_cast<std::string>(i+1)+". ").c_str());
+    mvwaddstr(win, 0, 0, std::string(as<std::string>(i+1)+". ").c_str());
 
 
     
@@ -404,7 +405,7 @@ void goby::util::FlexNCurses::write_head_title(size_t i)
         wattron(win, white_attr);
         waddstr(win, "| ");
         color_attr = color2attr_t(color_.from_str(panels_[j].group()->color()));
-        waddstr(win, std::string(boost::lexical_cast<std::string>(j+1)+". ").c_str());
+        waddstr(win, std::string(as<std::string>(j+1)+". ").c_str());
               
         std::stringstream ss_com;
         ss_com << panels_[j].group()->description() << " ";

@@ -120,7 +120,7 @@ int main()
     
     std::map<std::string, std::vector<acomms::DCCLMessageVal> > out;
     
-    dccl.decode(4, hex, out);
+    dccl.decode(hex, out);
     
     std::cout << "received values:" << std::endl 
               << out;    

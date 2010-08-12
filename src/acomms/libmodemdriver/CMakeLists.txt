@@ -8,4 +8,6 @@ if(Boost_FOUND)
   target_link_libraries(goby_modemdriver goby_logger goby_linebasedcomms)
 endif()
 
-add_subdirectory(examples)
+if(build_acomms_examples)
+  add_subdirectory(examples)
+endif()

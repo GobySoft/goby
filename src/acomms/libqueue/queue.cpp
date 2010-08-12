@@ -25,13 +25,13 @@
 using goby::util::goby_time;
 
 goby::acomms::Queue::Queue(const QueueConfig cfg /* = 0 */,
-                    std::ostream* os /* = 0 */,
+                    std::ostream* log /* = 0 */,
                     const unsigned& modem_id /* = 0 */)
     : cfg_(cfg),
       on_demand_(false),
       last_send_time_(goby_time()),
       modem_id_(modem_id),
-      os_(os)
+      log_(log)
 {}
 
 
@@ -40,7 +40,7 @@ bool goby::acomms::Queue::push_message(ModemMessage& new_message)
 {
     if(new_message.empty())
     {
-        if(os_) *os_ << group("q_out") << warn
+        if(log_) *log_ << group("q_out") << warn
                      << "empty message attempted to be pushed to queue "
                      << cfg_.name() << std::endl;
         return false;
@@ -67,13 +67,13 @@ bool goby::acomms::Queue::push_message(ModemMessage& new_message)
         waiting_for_ack_it it = find_ack_value(it_to_erase);
         if(it != waiting_for_ack_.end()) waiting_for_ack_.erase(it);        
         
-        if(os_) *os_ << group("pop") << "queue exceeded for " << cfg_.name() <<
+        if(log_) *log_ << group("pop") << "queue exceeded for " << cfg_.name() <<
                     ". removing: " << it_to_erase->snip() << std::endl;
 
         messages_.erase(it_to_erase);
     }
     
-    if(os_) *os_ << group("push") << "pushing" << " to send stack "
+    if(log_) *log_ << group("push") << "pushing" << " to send stack "
                  << cfg_.name() << " (qsize " << size() <<  "/"
                  << cfg_.max_queue() << "): " << new_message.snip() << std::endl;
     
@@ -113,7 +113,7 @@ goby::acomms::ModemMessage goby::acomms::Queue::give_data(const ModemMessage& ms
 // gives priority values. returns false if in blackout interval or if no data or if messages of wrong size, true if not in blackout
 bool goby::acomms::Queue::priority_values(double& priority,
                                           boost::posix_time::ptime& last_send_time,
-                                          ModemMessage& message)
+                                          const ModemMessage& message)
 {
     priority = util::time_duration2double((goby_time()-last_send_time_))/cfg_.ttl()*cfg_.value_base();
     
@@ -129,25 +129,25 @@ bool goby::acomms::Queue::priority_values(double& priority,
 
     if (last_send_time_ + boost::posix_time::seconds(cfg_.blackout_time()) > goby_time())
     {
-        if(os_) *os_<< group("priority") << "\t" << cfg_.name() << " is in blackout" << std::endl;
+        if(log_) *log_<< group("priority") << "\t" << cfg_.name() << " is in blackout" << std::endl;
         return false;
     }
     // wrong size
-    else if(next_msg_it->size() > message.size())
+    else if(next_msg_it->size() > (message.max_size() - message.size()))
     {
-        if(os_) *os_<< group("priority") << "\t" << cfg_.name() << " next message is too large {" << next_msg_it->size() << "}" << std::endl;
+        if(log_) *log_<< group("priority") << "\t" << cfg_.name() << " next message is too large {" << next_msg_it->size() << "}" << std::endl;
         return false;
     }
     // wrong destination
     else if((message.dest_set() && next_msg_it->dest() != acomms::BROADCAST_ID && message.dest() != next_msg_it->dest()))
     {
-        if(os_) *os_<< group("priority") << "\t" <<  cfg_.name() << " next message has wrong destination  (must be BROADCAST (0) or same as first user-frame)" << std::endl;
+        if(log_) *log_<< group("priority") << "\t" <<  cfg_.name() << " next message has wrong destination  (must be BROADCAST (0) or same as first user-frame)" << std::endl;
         return false; 
     }
     // wrong ack value UNLESS message can be broadcast
     else if((message.ack_set() && !message.ack() && next_msg_it->ack() && message.dest() != acomms::BROADCAST_ID))
     {
-        if(os_) *os_<< group("priority") << "\t" <<  cfg_.name() << " next message requires ACK and the packet does not" << std::endl;
+        if(log_) *log_<< group("priority") << "\t" <<  cfg_.name() << " next message requires ACK and the packet does not" << std::endl;
         return false; 
     }
 
@@ -201,7 +201,7 @@ bool goby::acomms::Queue::pop_message_ack(unsigned frame, ModemMessage& msg)
 
 void goby::acomms::Queue::stream_for_pop(const std::string& snip)
 {
-    if(os_) *os_ << group("pop") <<  "popping" << " from send stack "
+    if(log_) *log_ << group("pop") <<  "popping" << " from send stack "
                  << cfg_.name() << " (qsize " << size()-1
                  <<  "/" << cfg_.max_queue() << "): "  << snip << std::endl;
 }
@@ -215,7 +215,7 @@ std::vector<goby::acomms::ModemMessage> goby::acomms::Queue::expire()
         if((messages_.front().time() + boost::posix_time::seconds(cfg_.ttl())) < goby_time())
         {
             expired_msgs.push_back(messages_.front());
-            if(os_) *os_ << group("pop") <<  "expiring" << " from send stack "
+            if(log_) *log_ << group("pop") <<  "expiring" << " from send stack "
                          << cfg_.name() << " (qsize " << size()-1
                          <<  "/" << cfg_.max_queue() << "): "  << messages_.front().snip() << std::endl;
             // if we were waiting for an ack for this, erase that too
@@ -261,7 +261,7 @@ std::string goby::acomms::Queue::summary() const
 
 void goby::acomms::Queue::flush()
 {
-    if(os_) *os_ << group("pop") << "flushing stack " << cfg_.name() << " (qsize 0)" << std::endl;
+    if(log_) *log_ << group("pop") << "flushing stack " << cfg_.name() << " (qsize 0)" << std::endl;
     messages_.clear();
 }        
 

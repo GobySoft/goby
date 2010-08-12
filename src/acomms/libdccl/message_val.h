@@ -22,9 +22,6 @@
 
 #include <iostream>
 
-#include <boost/numeric/conversion/cast.hpp>
-#include <boost/lexical_cast.hpp> 
-
 #include "dccl_constants.h"
 
 namespace goby

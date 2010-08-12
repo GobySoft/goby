@@ -21,8 +21,11 @@
 #define MESSAGE_VAR_HEX20100317H
 
 #include "message_var.h"
+#include "dccl_exception.h"
 
 #include "goby/util/binary.h"
+#include "goby/util/string.h"
+
 namespace goby
 {
     namespace acomms
@@ -56,9 +59,9 @@ namespace goby
                 if(s.length() == bytes2nibs(num_bytes_))
                     return util::hex_string2dyn_bitset(s, calc_size());
                 else if(s.length() < bytes2nibs(num_bytes_))
-                    throw(std::runtime_error(std::string("Passed hex value (" + s + ") is too short. Should be " + boost::lexical_cast<std::string>(num_bytes_) +  " bytes")));
+                    throw(dccl_exception(std::string("Passed hex value (" + s + ") is too short. Should be " + util::as<std::string>(num_bytes_) +  " bytes")));
                 else if(s.length() > bytes2nibs(num_bytes_))
-                    throw(std::runtime_error(std::string("Passed hex value (" + s + ") is too long. Should be " + boost::lexical_cast<std::string>(num_bytes_) +  " bytes")));
+                    throw(dccl_exception(std::string("Passed hex value (" + s + ") is too long. Should be " + util::as<std::string>(num_bytes_) +  " bytes")));
                 else
                     return boost::dynamic_bitset<unsigned char>();
             

@@ -22,7 +22,14 @@ void goby::util::LineBasedInterface::start()
     
     io_service_.post(boost::bind(&LineBasedInterface::do_start, this));
 }
-            
+
+void goby::util::LineBasedInterface::clear()
+{
+    boost::mutex::scoped_lock lock(in_mutex_);
+    in_.clear();
+}
+
+
 std::string goby::util::LineBasedInterface::readline_oldest()
 {
     boost::mutex::scoped_lock lock(in_mutex_);
@@ -34,7 +41,7 @@ std::string goby::util::LineBasedInterface::readline_oldest()
         return in;
     }
 }
-            
+
 std::string goby::util::LineBasedInterface::readline_newest()
 {
     boost::mutex::scoped_lock lock(in_mutex_);

@@ -32,30 +32,25 @@
 namespace goby
 {
     namespace acomms
-    {
-    
-/// binds the driver link-layer callbacks to the QueueManager
+    {   
+        
+        /// binds the driver link-layer callbacks to the QueueManager
         void bind(ModemDriverBase& driver, QueueManager& queue_manager)
         {
-            using boost::bind;
-            driver.set_receive_cb
-                (bind(&QueueManager::receive_incoming_modem_data, &queue_manager, _1));
-            driver.set_ack_cb
-                (bind(&QueueManager::handle_modem_ack, &queue_manager, _1));
-            driver.set_datarequest_cb
-                (bind(&QueueManager::provide_outgoing_modem_data, &queue_manager, _1, _2));
-        
-            driver.set_destination_cb(boost::bind(&QueueManager::request_next_destination, &queue_manager, _1));
-
+            driver.set_callback_receive(&QueueManager::handle_modem_receive, &queue_manager);
+            driver.set_callback_ack(&QueueManager::handle_modem_ack, &queue_manager);
+            driver.set_callback_data_request(&QueueManager::handle_modem_data_request, &queue_manager);
+            driver.set_callback_dest_request(&QueueManager::handle_modem_dest_request, &queue_manager);
         }
-    
-/// binds the MAC initiate transmission callback to the driver and the driver parsed message callback to the MAC
+
+        /// binds the MAC initiate transmission callback to the driver
+        /// and the driver parsed message callback to the MAC
         void bind(MACManager& mac, ModemDriverBase& driver)
         {
-            mac.set_initiate_transmission_cb(boost::bind(&ModemDriverBase::initiate_transmission, &driver, _1));
-            mac.set_initiate_ranging_cb(boost::bind(&ModemDriverBase::initiate_ranging, &driver, _1));
-            mac.set_destination_cb(boost::bind(&ModemDriverBase::request_next_destination, &driver, _1));
-            driver.set_in_parsed_cb(boost::bind(&MACManager::process_message, &mac, _1));
+            mac.set_callback_initiate_transmission(&ModemDriverBase::handle_mac_initiate_transmission, &driver);
+            mac.set_callback_initiate_ranging(&ModemDriverBase::handle_mac_initiate_ranging, &driver);
+            mac.set_callback_dest_request(&ModemDriverBase::handle_mac_dest_request, &driver);
+            driver.set_callback_in_parsed(&MACManager::handle_modem_in_parsed, &mac);
         }
     
 
@@ -70,9 +65,7 @@ namespace goby
         /// \example acomms/examples/chat/chat.cpp
         /// chat.xml
         /// \verbinclude chat.xml
-        /// chat.cpp
-
-        
+        /// chat.cpp        
 
     }
 

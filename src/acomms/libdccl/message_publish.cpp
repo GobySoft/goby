@@ -20,6 +20,7 @@
 #include <boost/foreach.hpp>
 
 #include "message_publish.h"
+#include "dccl_exception.h"
 #include "message.h"
 
 using goby::acomms::NaN;
@@ -154,7 +155,7 @@ void goby::acomms::DCCLPublish::fill_format(const std::map<std::string,std::vect
     }
     catch (std::exception& e)
     {
-        throw std::runtime_error(std::string(e.what() + (std::string)"\n decode failed. check format string for this <publish />: \n" + get_display()));
+        throw dccl_exception(std::string(e.what() + (std::string)"\n decode failed. check format string for this <publish />: \n" + get_display()));
     }
 
     // split filled_value back into variable and value

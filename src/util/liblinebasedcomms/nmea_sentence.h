@@ -21,6 +21,7 @@
 #define NMEASentence20091211H
 
 #include <exception>
+#include <stdexcept>
 #include <vector>
 #include <sstream>
 

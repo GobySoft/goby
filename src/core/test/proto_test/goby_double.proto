@@ -1,0 +1,3 @@
+message GobyDouble {
+  optional double value = 1;
+}

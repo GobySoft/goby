@@ -1,3 +1,4 @@
 message GobyDouble {
   optional double value = 1;
+  optional double time = 2;
 }

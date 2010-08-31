@@ -22,11 +22,13 @@
 
 #include <boost/type_traits/is_convertible.hpp>
 #include <boost/utility/enable_if.hpp>
+#include <boost/preprocessor.hpp>
+
 
 #include <google/protobuf/message.h>
 #include <google/protobuf/dynamic_message.h>
 #include <google/protobuf/descriptor.h>
-#include "goby_double.pb.h"
+#include <google/protobuf/descriptor.pb.h>
 
 #include <Wt/Dbo/Dbo>
 #include <Wt/Dbo/backend/Sqlite3>
@@ -34,6 +36,7 @@
 #include <ctime>
 #include <map>
 
+#define GOBY_MAX_PROTOBUF_TYPES 16
 
 using namespace boost::interprocess;
 namespace dbo = Wt::Dbo;
@@ -42,11 +45,11 @@ const unsigned MAX_BUFFER_SIZE = 1 << 20;
 
 std::map<int, const google::protobuf::Descriptor*> descriptor_map;
 google::protobuf::DynamicMessageFactory msg_factory;
+google::protobuf::DescriptorPool descriptor_pool;
 std::map<int, std::string> dbo_map;
 
 // A session manages persist objects
-dbo::Session session;
-    
+dbo::Session session;    
 
 void add_dbo(int i, const std::string& name);
 void add_message(int i, google::protobuf::Message * msg);
@@ -95,7 +98,7 @@ namespace Wt
                 switch(p->cpp_type())
                 {
                     default:
-                        std::cout << "error" << std::endl;
+                        std::cout << "missing mapping from protobuf type to SQL type" << std::endl;
                         break;
                         
                     case google::protobuf::FieldDescriptor::CPPTYPE_DOUBLE:
@@ -103,6 +106,8 @@ namespace Wt
                         dbo::field(action, d, p->name());
                         refl->SetDouble(&obj, p, d);
                         break;
+
+                        // NEED SENSIBLE MAPPING FOR REMAINING PROTOBUF TYPES
                 }
             }
         }
@@ -132,38 +137,49 @@ int main()
 {
     char buffer [MAX_BUFFER_SIZE];
 
-    // Currentely we only have an Sqlite3 backend
     dbo::backend::Sqlite3 connection("test2.db");
     session.setConnection(connection);
     
     
     try
     {
+        message_queue tq (open_only, "type_queue");
         message_queue mq (open_only, "message_queue");
         
         unsigned int priority;
         std::size_t recvd_size;
+        const int dbl_index = 15;
+        
+        while(tq.try_receive(&buffer, MAX_BUFFER_SIZE, recvd_size, priority))
+        {            
+            google::protobuf::FileDescriptorProto proto_in;
+            proto_in.ParseFromArray(&buffer,recvd_size);
+            
+            descriptor_pool.BuildFile(proto_in);
+            const google::protobuf::Descriptor* descriptor_in = descriptor_pool.FindMessageTypeByName("GobyDouble");    
+        
+            descriptor_map[dbl_index] = descriptor_in;
+        }
+                       
         
         while(mq.try_receive(&buffer, MAX_BUFFER_SIZE, recvd_size, priority))
         {
-            GobyDouble dbl;
             
-            descriptor_map[0] = dbl.GetDescriptor();
-            google::protobuf::Message* dbl_msg = msg_factory.GetPrototype(descriptor_map[0])->New();
+            google::protobuf::Message* dbl_msg = msg_factory.GetPrototype(descriptor_map[dbl_index])->New();
             dbl_msg->ParseFromArray(&buffer,recvd_size);
             
             std::cout << "know what type i is" << std::endl;
             
             // Map classes to tables
             
-            add_dbo(0, "A");            
+            add_dbo(dbl_index, "A"); 
             
             try { session.createTables(); }
             catch (...) 
             { }
 
             std::cout << "receiver: " << dbl_msg->ShortDebugString() << std::endl;
-            add_message(0, dbl_msg);
+            add_message(dbl_index, dbl_msg);
             
         }
     }
@@ -183,24 +199,37 @@ void add_dbo(int i, const std::string& name)
 
     switch(i)
     {
-        case 0: session.mapClass< GobyProtoBufWrapper<0> >(dbo_map[0].c_str()); break;
-        case 1: session.mapClass< GobyProtoBufWrapper<1> >(dbo_map[1].c_str()); break;
-        case 2: session.mapClass< GobyProtoBufWrapper<2> >(dbo_map[2].c_str()); break;
-        case 3: session.mapClass< GobyProtoBufWrapper<3> >(dbo_map[3].c_str()); break;
+#define BOOST_PP_LOCAL_MACRO(n)     \
+        case n: session.mapClass< GobyProtoBufWrapper<n> >(dbo_map[n].c_str()); break;
+#define BOOST_PP_LOCAL_LIMITS (0, GOBY_MAX_PROTOBUF_TYPES)
+#include BOOST_PP_LOCAL_ITERATE()
     }
 }
 
 
-void add_message(int i, google::protobuf::Message * msg)
+void add_message(int i, google::protobuf::Message* msg)
 {
     dbo::Transaction transaction(session);
     switch(i)
     {
-        case 0: session.add(new GobyProtoBufWrapper<0>(msg)); break;
-        case 1: session.add(new GobyProtoBufWrapper<1>(msg)); break;
-        case 2: session.add(new GobyProtoBufWrapper<2>(msg)); break;
-        case 3: session.add(new GobyProtoBufWrapper<3>(msg)); break;            
+#define BOOST_PP_LOCAL_MACRO(n)     \
+        case n: session.add(new GobyProtoBufWrapper<n>(msg)); break;
+#define BOOST_PP_LOCAL_LIMITS (0, GOBY_MAX_PROTOBUF_TYPES)
+#include BOOST_PP_LOCAL_ITERATE()
     }    
     transaction.commit();
 }
 
+// query_message(int i)
+// {
+//     dbo::Transaction transaction(session);    
+//     switch(i)
+//     {
+// #define BOOST_PP_LOCAL_MACRO(n)  \
+//         case n: return *session.find< GobyProtoBufWrapper<n> >().where("value = ?").bind("24358570361")); break;
+// #define BOOST_PP_LOCAL_LIMITS (0, GOBY_MAX_PROTOBUF_TYPES)
+// #include BOOST_PP_LOCAL_ITERATE()
+//     }
+    
+//     transaction.commit();
+// }

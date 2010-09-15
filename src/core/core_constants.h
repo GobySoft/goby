@@ -22,16 +22,23 @@ namespace goby
     namespace core
     {
         const unsigned MAX_MSG_BUFFER_SIZE = 1 << 20;
-        // gobyd will listen for new applications and subscription requests on this queue
-        const std::string LISTEN_QUEUE = "goby_connection";
+        const unsigned MAX_NUM_MSG = 100;
+
+        const std::string QUEUE_PREFIX = "goby_";
+        // gobyd will listen for new application connection requests on this queue
+        const std::string LISTEN_QUEUE = QUEUE_PREFIX + "connection";
         
-
-
-
+        // prefix + application name
+        // forms full queue name
+        const std::string TO_SERVER_QUEUE_PREFIX = QUEUE_PREFIX + "to_gobyd_";
+        const std::string FROM_SERVER_QUEUE_PREFIX = QUEUE_PREFIX + "from_gobyd_";
+        
+        // prefix + application name + protobuf type name
+        // forms full queue name
+        const std::string SUBSCRIBE_QUEUE_PREFIX = QUEUE_PREFIX + "subscribe_";
+        const std::string PUBLISH_QUEUE_PREFIX = QUEUE_PREFIX + "publish_";       
 
     }
 }
-
-
 
 #endif

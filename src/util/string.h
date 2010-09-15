@@ -185,11 +185,20 @@ namespace goby
 
             return true;            
         }
-
-
         
         inline bool string2bool(const std::string & in)
         { return (stricmp(in, "true") || stricmp(in, "1")) ? true : false; }
+
+        inline bool val_from_string(bool& out, const std::string& str, const std::string & key)
+        {
+            std::string s;
+            if(!val_from_string(s, str, key)) return false;
+
+            out = string2bool(s);
+            return true;            
+        }
+
+        
 
 
     

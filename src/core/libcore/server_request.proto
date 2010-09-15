@@ -1,0 +1,22 @@
+package goby.core;
+
+message ServerRequest
+{
+    required string application_name = 1;
+
+    enum RequestType { 
+        CONNECT = 1;
+        DISCONNECT = 2;
+    }
+    required RequestType request_type = 2;
+}
+
+message ServerResponse
+{
+    enum ResponseType { 
+        CONNECTION_ACCEPTED = 1;
+        CONNECTION_SPURNED = 2;
+    }
+    required ResponseType response_type = 1;   
+
+}

@@ -52,14 +52,17 @@ foreach(I Boost CURSES Xerces Asio)
   endif()
 endforeach()
 
+
 # copy to goby/include
 file(GLOB_RECURSE INCLUDE_FILES RELATIVE ${goby_SRC_DIR} src/*.h)
 foreach(I ${INCLUDE_FILES})
   configure_file(${goby_SRC_DIR}/${I} ${goby_INC_DIR}/goby/${I})
 endforeach()
 
+
 # let cmake know where the headers are
 include_directories(${goby_INC_DIR})
+include_directories(${Boost_INCLUDE_DIR})
 
 
 # start adding subdirectories

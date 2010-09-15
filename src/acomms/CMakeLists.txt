@@ -1,7 +1,6 @@
-
 set(build_dccl ON CACHE BOOL "Build the Dynamic Compact Control Language library")
 set(build_modemdriver ON CACHE BOOL "Build the Acoustic Modem Driver library")
-set(build_queue ON CACHE BOOL "Build the Priority Queueing library")
+set(build_queue ON CACHE BOOL "Build the Priority Queuing library")
 set(build_amac ON CACHE BOOL "Build the Acoustic MAC library")
 set(build_acomms_examples ON CACHE BOOL "Build the Acoustic Communications examples")
 set(build_acomms_tools ON CACHE BOOL "Build the Acoustic Communications tools")

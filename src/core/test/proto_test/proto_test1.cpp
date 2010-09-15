@@ -46,21 +46,21 @@ int main()
         boost::interprocess::message_queue::remove("type_queue");
         boost::interprocess::message_queue tq (boost::interprocess::create_only, "type_queue", 100, MAX_BUFFER_SIZE);
 
+        
+        // notify proto_test2 of the contents of the type we want to use (GobyDouble)
+        google::protobuf::FileDescriptorProto proto_out;
+        GobyDouble::descriptor()->file()->CopyTo(&proto_out);
+        proto_out.SerializeToArray(&buffer, sizeof(buffer));
+        tq.send(&buffer, proto_out.ByteSize(), 0);        
+
+
         boost::interprocess::message_queue::remove("message_queue");
         boost::interprocess::message_queue mq (boost::interprocess::create_only, "message_queue", 100, MAX_BUFFER_SIZE);
-
+        
         GobyDouble dbl;
-        
-        const google::protobuf::Descriptor* descriptor_out = dbl.GetDescriptor();
-            
-        google::protobuf::FileDescriptorProto proto_out;
-        descriptor_out->file()->CopyTo(&proto_out);
-
-        proto_out.SerializeToArray(&buffer, sizeof(buffer));
-        tq.send(&buffer, proto_out.ByteSize(), 0);
-        
         dbl.set_value(time(0)*19);
         dbl.set_time(time(0));
+        dbl.set_foo(16);
         
         dbl.SerializeToArray(&buffer, sizeof(buffer));
         

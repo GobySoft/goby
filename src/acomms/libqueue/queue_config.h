@@ -22,8 +22,6 @@
 
 #include <ostream>
 
-#include <boost/lexical_cast.hpp>
-
 #include "goby/util/string.h"
 namespace goby
 {
@@ -99,15 +97,15 @@ namespace goby
             void set_ack(const std::string& s)
             { set_ack(util::string2bool(s)); }
             void set_blackout_time(const std::string& s)
-            { set_blackout_time(boost::lexical_cast<unsigned>(s)); }
+            { set_blackout_time(util::as<unsigned>(s)); }
             void set_max_queue(const std::string& s)
-            { set_max_queue(boost::lexical_cast<unsigned>(s)); }
+            { set_max_queue(util::as<unsigned>(s)); }
             void set_newest_first(const std::string& s)
             { set_newest_first(util::string2bool(s)); }
             void set_value_base(const std::string& s)
-            { set_value_base(boost::lexical_cast<double>(s)); }            
+            { set_value_base(util::as<double>(s)); }            
             void set_ttl(const std::string& s)
-            { set_ttl(boost::lexical_cast<unsigned>(s)); }
+            { set_ttl(util::as<unsigned>(s)); }
             void set_type(const std::string& s)
             {
                 if(util::stricmp("queue_dccl", s))
@@ -120,7 +118,7 @@ namespace goby
                     set_type(queue_notype);
             }        
             void set_id(const std::string& s)
-            { set_id(boost::lexical_cast<unsigned>(s)); }
+            { set_id(util::as<unsigned>(s)); }
         
             /// \return current acknowledgement setting    
             bool ack() const {return ack_;}

@@ -1,5 +1,5 @@
 // copyright 2009 t. schneider tes@mit.edu
- // 
+// 
 // this file is part of the Dynamic Compact Control Language (DCCL),
 // the goby-acomms codec. goby-acomms is a collection of libraries 
 // for acoustic underwater networking
@@ -33,6 +33,7 @@
   
 #include "message.h"
 #include "message_val.h"
+#include "dccl_exception.h"
 
 namespace goby
 {
@@ -40,6 +41,8 @@ namespace goby
     {
         class FlexOstream;
     }
+
+
     
     namespace acomms
     {
@@ -84,18 +87,18 @@ namespace goby
             /// \name Constructors/Destructor
             //@{         
             /// \brief Instantiate with no XML files.
-            DCCLCodec(std::ostream* os = 0);
+            DCCLCodec(std::ostream* log = 0);
             /// \brief Instantiate with a single XML file.
             ///
             /// \param file path to an XML message file (i.e. contains \ref tag_layout and (optionally) \ref tag_publish sections) to parse for use by the codec.
             /// \param schema path (absolute or relative to the XML file path) for the validating schema (message_schema.xsd) (optional).
-            DCCLCodec(const std::string& file, const std::string schema = "", std::ostream* os = 0);
+            DCCLCodec(const std::string& file, const std::string schema = "", std::ostream* log = 0);
         
             /// \brief Instantiate with a set of XML files.
             ///
             /// \param files set of paths to XML message files to parse for use by the codec.
             /// \param schema path (absolute or relative to the XML file path) for the validating schema (message_schema.xsd) (optional).
-            DCCLCodec(const std::set<std::string>& files, const std::string schema = "", std::ostream* os = 0);
+            DCCLCodec(const std::set<std::string>& files, const std::string schema = "", std::ostream* log = 0);
 
             /// destructor
             ~DCCLCodec() {}
@@ -199,13 +202,12 @@ namespace goby
             /// \param k can either be std::string (the name of the message) or unsigned (the id of the message
             /// \param hex the hexadecimal to be decoded.
             /// \param m map of std::string (\ref tag_name) to MessageVal to store the values to be decoded. No fields can be arrays using this call. If fields are arrays, only the first value is returned.
-            template<typename Key>
-                void decode(const Key& k, const std::string& hex,
-                            std::map<std::string, DCCLMessageVal>& m)
+            void decode(const std::string& hex,
+                        std::map<std::string, DCCLMessageVal>& m)
             {
                 std::map<std::string, std::vector<DCCLMessageVal> > vm;
-
-                decode_private(to_iterator(k), hex, vm);
+                
+                decode_private(hex, vm);
             
                 typedef std::pair<std::string,std::vector<DCCLMessageVal> > P;
                 BOOST_FOREACH(const P& p, vm)
@@ -217,11 +219,10 @@ namespace goby
             /// \param k can either be std::string (the name of the message) or unsigned (the id of the message
             /// \param hex the hexadecimal to be decoded.
             /// \param m map of std::string (\ref tag_name) to MessageVal to store the values to be decoded
-            template<typename Key>
-                void decode(const Key& k, const std::string& hex,
-                            std::map<std::string, std::vector<DCCLMessageVal> >& m)
-            { decode_private(to_iterator(k), hex, m); }
-
+            void decode(const std::string& hex,
+                        std::map<std::string, std::vector<DCCLMessageVal> >& m)
+            { decode_private(hex, m); }
+            
         
             //@}
         
@@ -308,10 +309,10 @@ namespace goby
             {
                 std::vector<DCCLMessage>::iterator it = to_iterator(k);
                 
-                if(os_)
+                if(log_)
                 {
-                    *os_ << group("dccl_enc") << "starting publish/subscribe encode for " << it->name() << std::endl;
-                    *os_ << group("dccl_enc") << "publish/subscribe variables are: " << std::endl;
+                    *log_ << group("dccl_enc") << "starting publish/subscribe encode for " << it->name() << std::endl;
+                    *log_ << group("dccl_enc") << "publish/subscribe variables are: " << std::endl;
                     
                     typedef std::pair<std::string, std::vector<DCCLMessageVal> > P;
                     BOOST_FOREACH(const P& p, pubsub_vals)                    
@@ -319,7 +320,7 @@ namespace goby
                         if(!p.first.empty())
                         {
                             BOOST_FOREACH(const DCCLMessageVal& mv, p.second)
-                                *os_ << group("dccl_enc") << "\t" << p.first << ": " <<  mv << std::endl;
+                                *log_ << group("dccl_enc") << "\t" << p.first << ": " <<  mv << std::endl;
                         }   
                     }                 
                 }
@@ -335,7 +336,7 @@ namespace goby
             
                 encode_private(it, msg, vals);
 
-                if(os_) *os_ << group("dccl_enc") << "message published to variable: " <<
+                if(log_) *log_ << group("dccl_enc") << "message published to variable: " <<
                             get_outgoing_hex_var(it->id()) << std::endl;
             }
 
@@ -365,31 +366,27 @@ namespace goby
             /// \param k can either be std::string (the name of the message) or unsigned (the id of the message)
             /// \param msg ModemMessage or std::string to be decode.
             /// \param vals pointer to std::multimap of publish variable name to std::string values.
-            template<typename Key>
-                void pubsub_decode(const Key& k,
-                                   const ModemMessage& msg,
-                                   std::multimap<std::string, DCCLMessageVal>& pubsub_vals)
+            void pubsub_decode(const ModemMessage& msg,
+                               std::multimap<std::string, DCCLMessageVal>& pubsub_vals)
                                
             {
-                std::vector<DCCLMessage>::iterator it = to_iterator(k);
-
                 std::map<std::string, std::vector<DCCLMessageVal> > vals;
-                decode_private(it, msg, vals);
-
+                std::vector<DCCLMessage>::iterator it = decode_private(msg, vals);
+                
                 // go through all the publishes_ and fill in the format strings
                 BOOST_FOREACH(DCCLPublish& p, it->publishes())
                     p.write_publish(vals, pubsub_vals);
 
-                if(os_)
+                if(log_)
                 {
-                    *os_ << group("dccl_dec") << "publish/subscribe variables are: " << std::endl;
+                    *log_ << group("dccl_dec") << "publish/subscribe variables are: " << std::endl;
                     typedef std::pair<std::string, DCCLMessageVal> P;
                     BOOST_FOREACH(const P& p, pubsub_vals)
                     {
                         
-                        *os_ << group("dccl_dec") << "\t" << p.first << ": " << p.second << std::endl;
+                        *log_ << group("dccl_dec") << "\t" << p.first << ": " << p.second << std::endl;
                     }                 
-                    *os_ << group("dccl_dec") << "finished publish/subscribe decode for " << it->name() << std::endl;
+                    *log_ << group("dccl_dec") << "finished publish/subscribe decode for " << it->name() << std::endl;
                 }
             }
         
@@ -482,16 +479,14 @@ namespace goby
                                 std::map<std::string, std::vector<DCCLMessageVal> > in);
 
             // in string not passed by reference because we want to be able to modify it
-            void decode_private(std::vector<DCCLMessage>::iterator it,
-                                std::string in,
+            std::vector<DCCLMessage>::iterator decode_private(std::string in,
                                 std::map<std::string, std::vector<DCCLMessageVal> >& out);
         
             void encode_private(std::vector<DCCLMessage>::iterator it,
                                 ModemMessage& out_msg,
                                 const std::map<std::string, std::vector<DCCLMessageVal> >& in);
         
-            void decode_private(std::vector<DCCLMessage>::iterator it,
-                                const ModemMessage& in_msg,
+            std::vector<DCCLMessage>::iterator decode_private(const ModemMessage& in_msg,
                                 std::map<std::string, std::vector<DCCLMessageVal> >& out);
         
             void check_duplicates();
@@ -501,7 +496,7 @@ namespace goby
             void decrypt(std::string& s, const std::string& nonce);
         
           private:
-            std::ostream* os_;
+            std::ostream* log_;
             
             std::vector<DCCLMessage> messages_;
             std::map<std::string, size_t>  name2messages_;

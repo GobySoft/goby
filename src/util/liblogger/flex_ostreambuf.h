@@ -106,8 +106,7 @@ namespace goby
             tcolor::TermColor color_;
     
             FlexNCurses* curses_;
-
-            boost::mutex curses_mutex_;
+            
             boost::shared_ptr<boost::thread> input_thread_;
 
             boost::posix_time::ptime start_time_;

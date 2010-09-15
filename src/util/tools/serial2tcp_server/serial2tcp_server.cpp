@@ -16,6 +16,9 @@
 #include <iostream>
 
 #include "goby/util/linebasedcomms.h"
+#include "goby/util/string.h"
+
+using goby::util::as;
 
 int main(int argc, char* argv[])
 {
@@ -33,8 +36,8 @@ int main(int argc, char* argv[])
     serial_port = argv[2];
     serial_baud = argv[3];
 
-    goby::util::TCPServer tcp_server(boost::lexical_cast<unsigned>(server_port));
-    goby::util::SerialClient serial_client(serial_port, boost::lexical_cast<unsigned>(serial_baud));
+    goby::util::TCPServer tcp_server(as<unsigned>(server_port));
+    goby::util::SerialClient serial_client(serial_port, as<unsigned>(serial_baud));
 
     tcp_server.start();
     serial_client.start(); 

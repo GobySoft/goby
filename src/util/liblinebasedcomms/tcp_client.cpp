@@ -15,6 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
+#include "goby/util/string.h"
+
 #include "tcp_client.h"
 
 goby::util::TCPClient::TCPClient(const std::string& server,
@@ -23,7 +25,7 @@ goby::util::TCPClient::TCPClient(const std::string& server,
     : LineBasedClient<asio::ip::tcp::socket>(socket_, delimiter),
       socket_(io_service_),
       server_(server),
-      port_(boost::lexical_cast<std::string>(port))
+      port_(as<std::string>(port))
 { }
 
 

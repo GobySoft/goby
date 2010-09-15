@@ -51,28 +51,28 @@ namespace goby
             /// \brief Initiate a transmission to the modem. 
             ///
             /// \param m ModemMessage containing the details of the transmission to be started. This does *not* contain data, which must be requested in a call to the datarequest callback (set by DriverBase::set_data_request_cb)
-            void initiate_transmission(const ModemMessage& m);
+            void handle_mac_initiate_transmission(const ModemMessage& m);
 
             /// \brief Initiate ranging ("ping") to the modem. 
             ///
             /// \param m ModemMessage containing the details of the ranging request to be started. (source and destination)
-            void initiate_ranging(const ModemMessage& m);
+            void handle_mac_initiate_ranging(const ModemMessage& m);
 
             /// \brief Retrieve the desired destination of the next message
             ///
             /// \param rate next rate to be sent
-            /// \return destination id for the next message
-            int request_next_destination(unsigned rate)
-            { return callback_dest(PACKET_SIZE[rate]); }
-        
-            // Begin the addition of code to support the gateway buoy
-            // Added by Andrew Bouchard, NSWC PCD
-            // Create the message prefix string needed by the gateway buoy
-            void set_gateway_prefix(bool IsGateway, int GatewayID);
-            // End the addition of code to support the gateway buoy
+            /// \return successfully stored destination
+            bool handle_mac_dest_request(ModemMessage& msg)
+            {
+                msg.set_max_size(PACKET_SIZE[msg.rate()]);
+                // fill in the required destination
+                return callback_dest_request(msg);
+            }
+
+            // set an additional prefix to support the hydroid gateway
+            void set_gateway_prefix(bool is_gateway, int id);
 
             void write(util::NMEASentence& nmea);
-
             void measure_noise(unsigned milliseconds_to_average);
             
           private:
@@ -86,7 +86,6 @@ namespace goby
             // output
             void handle_modem_out();
             void pop_out();
-            void handle_modem_malfunction();   
             
             // input
             void handle_modem_in(util::NMEASentence& nmea);

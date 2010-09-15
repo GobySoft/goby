@@ -31,6 +31,8 @@
 
 using namespace goby::tcolor;
 
+boost::mutex curses_mutex;
+
 goby::util::FlexOStreamBuf::FlexOStreamBuf(): name_("no name"),
                                               die_flag_(false),
                                               curses_(0),
@@ -65,16 +67,20 @@ void goby::util::FlexOStreamBuf::add_stream(const std::string& s, std::ostream* 
         
         is_scope_ = true;
         
-        curses_ = new FlexNCurses(curses_mutex_);
+        curses_ = new FlexNCurses;
 
-        boost::mutex::scoped_lock lock(curses_mutex_);
+        boost::mutex::scoped_lock lock(curses_mutex);
 
         curses_->startup();
-        curses_->add_win(&groups_[""]);
 
+        // add any groups already on the screen as ncurses windows
+        typedef std::pair<std::string, Group> P;
+        BOOST_FOREACH(const P&p, groups_)
+            curses_->add_win(&groups_[p.first]);
+        
         curses_->recalculate_win();
 
-        input_thread_ = boost::shared_ptr<boost::thread>(new boost::thread(boost::bind(&FlexNCurses::run_input, boost::ref(curses_))));
+        input_thread_ = boost::shared_ptr<boost::thread>(new boost::thread(boost::bind(&FlexNCurses::run_input, curses_)));
 
     }
     else if(verbosity != quiet)
@@ -90,7 +96,7 @@ void goby::util::FlexOStreamBuf::add_group(const std::string & name, Group g)
 
     if(is_scope_)
     {
-        boost::mutex::scoped_lock lock(curses_mutex_);
+        boost::mutex::scoped_lock lock(curses_mutex);
         curses_->add_win(&groups_[name]);
     }
 }
@@ -125,7 +131,7 @@ void goby::util::FlexOStreamBuf::display(std::string & s)
     {
         if(!die_flag_)
         {
-            boost::mutex::scoped_lock lock(curses_mutex_);
+            boost::mutex::scoped_lock lock(curses_mutex);
             std::stringstream line;
             boost::posix_time::time_duration time_of_day = goby_time().time_of_day();
             line << "\n"
@@ -179,7 +185,7 @@ void goby::util::FlexOStreamBuf::refresh()
 {
     if(is_scope_)
     {
-        boost::mutex::scoped_lock lock(curses_mutex_);
+        boost::mutex::scoped_lock lock(curses_mutex);
         curses_->recalculate_win();
     }
 }

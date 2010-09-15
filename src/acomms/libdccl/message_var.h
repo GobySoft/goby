@@ -33,6 +33,7 @@
 #include <boost/lexical_cast.hpp>
 
 #include "dccl_constants.h"
+#include "dccl_exception.h"
 #include "message_val.h"
 namespace goby
 {
@@ -142,7 +143,7 @@ namespace goby
           private:
             void bad_overload(const std::string& s) const
             {
-                throw(std::runtime_error(std::string(s + " not supported by this DCCLMessageVar: " + name() + " (" + type_to_string(type()) + ")")));
+                throw(dccl_exception(std::string(s + " not supported by this DCCLMessageVar: " + name() + " (" + type_to_string(type()) + ")")));
             }        
 
             // helper to avoid copy-paste code

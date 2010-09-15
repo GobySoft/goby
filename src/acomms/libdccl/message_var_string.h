@@ -20,7 +20,10 @@
 #ifndef MESSAGE_VAR_STRING20100317H
 #define MESSAGE_VAR_STRING20100317H
 
+#include "goby/util/string.h"
+
 #include "message_var.h"
+
 namespace goby
 {
     namespace acomms
@@ -37,7 +40,7 @@ namespace goby
             { return max_length_*acomms::BITS_IN_BYTE; }
 
             void set_max_length(unsigned max_length) {max_length_ = max_length;}
-            void set_max_length(const std::string& s) { set_max_length(boost::lexical_cast<unsigned>(s)); }
+            void set_max_length(const std::string& s) { set_max_length(util::as<unsigned>(s)); }
 
             unsigned max_length() const {return max_length_;}        
 

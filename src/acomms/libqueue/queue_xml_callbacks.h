@@ -27,9 +27,7 @@
 #include <sstream>
 
 #include <xercesc/sax2/Attributes.hpp>
-#include <xercesc/sax2/DefaultHandler.hpp> 
-#include <boost/algorithm/string.hpp>
-#include <boost/lexical_cast.hpp>
+#include <xercesc/sax2/DefaultHandler.hpp>
 
 #include "goby/acomms/xml/xerces_strings.h"
 #include "goby/acomms/xml/tags.h"
@@ -97,8 +95,7 @@ namespace goby
                 XMLSSize_t line = e.getLineNumber();
                 std::stringstream ss;
                 ss << "xml parsing error on line " << line << ": " << std::endl << toNative(e.getMessage());
-            
-                throw std::runtime_error(ss.str());
+                throw queue_exception(ss.str());
             }
             void fatalError(const xercesc::SAXParseException& e) 
             {

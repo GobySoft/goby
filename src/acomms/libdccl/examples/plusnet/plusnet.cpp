@@ -70,7 +70,7 @@ int main()
               << msg.serialize()
               << std::endl;
 
-    dccl.pubsub_decode("SENSOR_STATUS", msg, out_vals);
+    dccl.pubsub_decode(msg, out_vals);
     
     std::cout << "received values:" << std::endl 
               << out_vals;

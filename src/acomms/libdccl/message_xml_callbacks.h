@@ -22,19 +22,19 @@
 #ifndef MESSAGE_XML_CALLBACKS20091211H
 #define MESSAGE_XML_CALLBACKS20091211H
 
-#include <stdexcept>                       // runtime_error
 #include <vector>
 #include <sstream>
 
 #include <xercesc/sax2/Attributes.hpp>
 #include <xercesc/sax2/DefaultHandler.hpp> 
 #include <boost/algorithm/string.hpp> // for string functions
-#include <boost/lexical_cast.hpp>
 
 #include "goby/acomms/xml/xerces_strings.h"
 
 #include "message.h"
+#include "dccl_exception.h"
 #include "goby/acomms/xml/tags.h"
+
 namespace goby
 {
     namespace acomms
@@ -100,7 +100,7 @@ namespace goby
                 std::stringstream ss;
                 ss << "message xml parsing error on line " << line << ": " << std::endl << toNative(e.getMessage());
             
-                throw std::runtime_error(ss.str());
+                throw dccl_exception(ss.str());
             }
             void fatalError(const xercesc::SAXParseException& e) 
             {

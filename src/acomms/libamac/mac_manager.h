@@ -25,9 +25,11 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/function.hpp>
 #include <boost/foreach.hpp>
+#include <boost/bind.hpp>
 #include "asio.hpp"
 
 #include "goby/util/time.h"
+#include "goby/util/string.h"
 
 namespace goby
 {
@@ -45,19 +47,20 @@ namespace goby
         /// \brief boost::function for a function taking a unsigned and returning an integer.
         ///
         /// Think of this as a generalized version of a function pointer (int (*) (unsigned)). See http://www.boost.org/doc/libs/1_34_0/doc/html/function.html for more on boost:function.
-        typedef boost::function<int (unsigned)> MACIdFunc;
+        typedef boost::function<bool (acomms::ModemMessage& message)> MutableMACMsgFunc;
 
         /// \brief boost::function for a function taking a single acomms::ModemMessage reference.
         ///
         /// Think of this as a generalized version of a function pointer (void (*)(acomms::ModemMessage&)). See http://www.boost.org/doc/libs/1_34_0/doc/html/function.html for more on boost:function.
-        typedef boost::function<void (const acomms::ModemMessage & message)> MACMsgFunc1;
-
+        typedef boost::function<void (const acomms::ModemMessage& message)> MACMsgFunc;
+        
         //@}
 
 /// Enumeration of MAC types
         enum MACType {
             mac_notype, /*!< no MAC */
-            mac_slotted_tdma, /*!< decentralized time division multiple access */
+            mac_fixed_decentralized, /*!< decentralized time division multiple access */
+            mac_auto_decentralized, /*!< decentralized time division multiple access with peer discovery */
             mac_polled /*!< centralized polling */
         };    
 
@@ -159,7 +162,7 @@ namespace goby
             /// \brief Default constructor.
             ///
             /// \param os std::ostream object or FlexOstream to capture all humanly readable runtime and debug information (optional).
-            MACManager(std::ostream* os = 0);
+            MACManager(std::ostream* log = 0);
             ~MACManager();
             //@}
         
@@ -171,10 +174,10 @@ namespace goby
             /// \brief Manually initiate a transmission out of the normal cycle. This is not normally called by the user of MACManager
             void send_poll(const asio::error_code&);
 
-            /// \brief Call every time a message is received from vehicle to "discover" this vehicle or reset the expire timer. Only needed when the type is amac::mac_slotted_tdma.
+            /// \brief Call every time a message is received from vehicle to "discover" this vehicle or reset the expire timer. Only needed when the type is amac::mac_auto_decentralized.
             ///
             /// \param message the new message (used to detect vehicles)
-            void process_message(const acomms::ModemMessage& m);
+            void handle_modem_in_parsed(const acomms::ModemMessage& m);
             
             void add_flex_groups(util::FlexOstream& tout);
             
@@ -197,22 +200,41 @@ namespace goby
             //@{    
             void set_type(MACType type) { type_ = type; }
             void set_modem_id(unsigned modem_id) { modem_id_ = modem_id; }    
-            void set_modem_id(const std::string& s) { set_modem_id(boost::lexical_cast<unsigned>(s)); }
+            void set_modem_id(const std::string& s) { set_modem_id(util::as<unsigned>(s)); }
             void set_rate(int rate) { rate_ = rate; }
-            void set_rate(const std::string& s) { set_rate(boost::lexical_cast<int>(s)); }
+            void set_rate(const std::string& s) { set_rate(util::as<int>(s)); }
             void set_slot_time(unsigned slot_time) { slot_time_ = slot_time; }
-            void set_slot_time(const std::string& s) { set_slot_time(boost::lexical_cast<unsigned>(s)); } 
+
+            void set_slot_time(const std::string& s) { set_slot_time(util::as<unsigned>(s)); } 
+
             void set_expire_cycles(unsigned expire_cycles) { expire_cycles_ = expire_cycles; }
-            void set_expire_cycles(const std::string& s) { set_expire_cycles(boost::lexical_cast<unsigned>(s)); }
+            void set_expire_cycles(const std::string& s) { set_expire_cycles(util::as<unsigned>(s)); }
             /// \brief Callback to call to request which vehicle id should be the next destination. Typically bound to queue::QueueManager::request_next_destination.
             // 
             // \param func has the form int next_dest(unsigned size). the return value of func should be the next destination id, or -1 for no message to send.
-            void set_destination_cb(MACIdFunc func) { callback_dest = func; }
+            void set_callback_dest_request(MutableMACMsgFunc func)
+            { callback_dest_request = func; }
             /// \brief Callback for initiate a tranmission. Typically bound to acomms::ModemDriverBase::initiate_transmission. 
-            void set_initiate_transmission_cb(MACMsgFunc1 func) { callback_initiate_transmission = func; }
+            void set_callback_initiate_transmission(MACMsgFunc func)
+            { callback_initiate_transmission = func; }
 
             /// \brief Callback for initiate ranging ("ping"). Typically bound to acomms::ModemDriverBase::initiate_ranging. 
-            void set_initiate_ranging_cb(MACMsgFunc1 func) { callback_initiate_ranging = func; }
+            void set_callback_initiate_ranging(MACMsgFunc func)
+            { callback_initiate_ranging = func; }
+
+
+            // templated overloads of the callback set methods
+            // to make binding of member functions simpler
+            template<typename V, typename A1>
+                void set_callback_dest_request(bool(V::*mem_func)(A1), V* obj)
+            { set_callback_dest_request(boost::bind(mem_func, obj, _1)); }
+            template<typename V, typename A1>
+                void set_callback_initiate_transmission(void(V::*mem_func)(A1), V* obj)
+            { set_callback_initiate_transmission(boost::bind(mem_func, obj, _1)); }
+            template<typename V, typename A1>
+                void set_callback_initiate_ranging(void(V::*mem_func)(A1), V* obj)
+            { set_callback_initiate_ranging(boost::bind(mem_func, obj, _1)); }
+
 
 //@}
 
@@ -231,9 +253,10 @@ namespace goby
         
           private:
             enum { NO_AVAILABLE_DESTINATION = -1 };
-            MACIdFunc callback_dest;
-            MACMsgFunc1 callback_initiate_transmission;
-            MACMsgFunc1 callback_initiate_ranging;
+
+            MutableMACMsgFunc callback_dest_request;
+            MACMsgFunc callback_initiate_transmission;
+            MACMsgFunc callback_initiate_ranging;
 
             boost::posix_time::ptime next_cycle_time();
 
@@ -256,7 +279,7 @@ namespace goby
             // how many cycles before we remove someone?
             unsigned expire_cycles_;
     
-            std::ostream* os_;
+            std::ostream* log_;
     
             unsigned modem_id_;
     

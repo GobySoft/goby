@@ -22,6 +22,7 @@
 #include "goby/util/logger.h"
 
 #include "driver_base.h"
+#include "driver_exception.h"
 
 goby::acomms::ModemDriverBase::ModemDriverBase(std::ostream* log /* = 0 */, const std::string& line_delimiter /* = "\r\n"*/ )
     : line_delimiter_(line_delimiter),
@@ -74,7 +75,7 @@ void goby::acomms::ModemDriverBase::modem_start()
             modem_ = new util::TCPServer(tcp_port_, line_delimiter_);
 
         case dual_udp_broadcast:
-            throw(std::runtime_error("unimplemented connection type"));
+            throw(driver_exception("unimplemented connection type"));
     }
     
 
@@ -87,5 +88,3 @@ void goby::acomms::ModemDriverBase::add_flex_groups(util::FlexOstream& tout)
     tout.add_group("mm_out", "<", "lt_magenta", "outgoing micromodem messages (goby_modemdriver)");
     tout.add_group("mm_in", ">", "lt_blue", "incoming micromodem messages (goby_modemdriver)");
 }
-
-

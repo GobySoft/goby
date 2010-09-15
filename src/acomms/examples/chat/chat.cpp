@@ -28,17 +28,19 @@
 #include "goby/acomms/amac.h"
 #include "goby/acomms/modem_message.h"
 #include "goby/acomms/bind.h"
+#include "goby/util/string.h"
 
 #include <boost/lexical_cast.hpp>
 
 #include "chat_curses.h"
 
 using namespace goby::acomms;
+using namespace goby::util;
 
 int startup_failure();
 void received_data(QueueKey, const ModemMessage&);
 void received_ack(QueueKey, const ModemMessage&);
-std::string decode_received(unsigned id, const std::string& data);
+std::string decode_received(const std::string& data);
 
 std::ofstream fout_;
 DCCLCodec dccl_;
@@ -90,19 +92,19 @@ int main(int argc, char* argv[])
     // Initiate queue manager (libqueue)
     //
     q_manager_.set_modem_id(my_id);
-    q_manager_.set_receive_cb(&received_data);
-    q_manager_.set_ack_cb(&received_ack);
+    q_manager_.set_callback_receive(&received_data);
+    q_manager_.set_callback_ack(&received_ack);
     q_manager_.add_xml_queue_file(ACOMMS_EXAMPLES_DIR "/chat/chat.xml", "../../libdccl/message_schema.xsd");
     //
     // Initiate modem driver (libmodemdriver)
     //
     mm_driver_.set_serial_port(serial_port);
-    mm_driver_.set_cfg(std::vector<std::string>(1, std::string("SRC," + boost::lexical_cast<std::string>(my_id))));
+    mm_driver_.set_cfg(std::vector<std::string>(1, std::string("SRC," + as<std::string>(my_id))));
 
     //
     // Initiate medium access control (libamac)
     //
-    mac_.set_type(mac_slotted_tdma);
+    mac_.set_type(mac_auto_decentralized);
     mac_.set_rate(0);
     mac_.set_slot_time(15);
     mac_.set_expire_cycles(5);
@@ -175,7 +177,7 @@ int startup_failure()
 
 void received_data(QueueKey key, const ModemMessage& message_in)
 {    
-    curses_.post_message(message_in.src(), decode_received(key.id(), message_in.data()));
+    curses_.post_message(message_in.src(), decode_received(message_in.data()));
 }
 
 void received_ack(QueueKey key, const ModemMessage& ack_message)
@@ -184,12 +186,12 @@ void received_ack(QueueKey key, const ModemMessage& ack_message)
     curses_.post_message
         (ack_message.dest(),
          std::string("received message starting with: "
-                     + decode_received(key.id(), ack_message.data()).substr(0,5)));
+                     + decode_received(ack_message.data()).substr(0,5)));
 }
 
-std::string decode_received(unsigned id, const std::string& data)
+std::string decode_received(const std::string& data)
 {
     std::map<std::string, DCCLMessageVal> vals;
-    dccl_.decode(id, data, vals);
+    dccl_.decode(data, vals);
     return vals["message"];
 }

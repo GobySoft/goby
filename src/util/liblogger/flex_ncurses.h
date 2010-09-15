@@ -37,13 +37,16 @@ namespace goby
         class FlexNCurses
         {
           public:
-            FlexNCurses(boost::mutex& mutex);
+            FlexNCurses();
     
             ~FlexNCurses()
-            { end(); cleanup(); }
+            {
+                alive_ = false;
+                cleanup();
+            }
 
             void startup();
-            void add_win(Group* title);
+            void add_win(const Group* title);
             void recalculate_win();
             void insert(boost::posix_time::ptime t, const std::string& s, Group* g);
             size_t panel_from_group(Group* g);
@@ -159,7 +162,7 @@ namespace goby
             class Panel
             {
               public:
-              Panel(Group* group = 0)
+              Panel(const Group* group = 0)
                   : group_(group),
                     window_(0),
                     head_window_(0),
@@ -174,7 +177,7 @@ namespace goby
 
                 void window(void* v) { window_ = v; }
                 void head_window(void* v) { head_window_ = v; }
-                void group(Group* g) { group_ = g; }
+                void group(const Group* g) { group_ = g; }
                 // returns number of lines to grow/shrink
                 void set_minimized(bool b) { minimized_ = b; } 
                 int minimized(bool b);        
@@ -201,7 +204,7 @@ namespace goby
         
                 void* window() const { return window_; }
                 void* head_window() const { return head_window_; }
-                Group* group() const { return group_; }
+                const Group* group() const { return group_; }
                 bool minimized() const { return minimized_; }
                 bool selected() const { return selected_; }
                 int ywidth() const { return ywidth_; }
@@ -214,7 +217,7 @@ namespace goby
                 const std::set<size_t>& combined() const { return combined_; }
         
               private:
-                Group* group_;
+                const Group* group_;
                 void* window_;
                 void* head_window_;
                 bool minimized_;
@@ -238,8 +241,6 @@ namespace goby
             std::vector<int> line_buffer_;
     
             tcolor::TermColor color_;
-
-            boost::mutex& mutex_;    
 
             bool alive_;
     

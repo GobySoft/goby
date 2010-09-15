@@ -22,10 +22,17 @@
 
 #include <boost/foreach.hpp>
 
+#include <boost/lexical_cast.hpp>
+#include <boost/numeric/conversion/cast.hpp>
+
 #include "goby/util/string.h"
 #include "goby/util/sci.h"
 
 #include "message_val.h"
+#include "dccl_exception.h"
+
+using goby::util::as;
+
 
 void goby::acomms::DCCLMessageVal::init()
 {
@@ -98,7 +105,7 @@ goby::acomms::DCCLMessageVal::DCCLMessageVal(bool b)
 goby::acomms::DCCLMessageVal::DCCLMessageVal(const std::vector<DCCLMessageVal>& vm)
 {
     if(vm.size() != 1)
-        throw(std::runtime_error("vector cast to DCCLMessageVal failed: vector is not size 1"));
+        throw(dccl_exception("vector cast to DCCLMessageVal failed: vector is not size 1"));
     else
         *this = vm[0];
 }
@@ -133,7 +140,7 @@ bool goby::acomms::DCCLMessageVal::get(std::string& s) const
             return true;            
 
         case cpp_long:
-            s = boost::lexical_cast<std::string>(lval_);
+            s = as<std::string>(lval_);
             return true;
 
         case cpp_bool:

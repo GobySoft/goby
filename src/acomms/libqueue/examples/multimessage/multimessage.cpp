@@ -38,38 +38,34 @@ int main()
     q_manager.set_modem_id(our_id);
 
     // set up the callback to handle received DCCL messages
-    q_manager.set_receive_cb(&received_data);
-    
-    // see what our QueueManager contains
-    std::cout << q_manager << std::endl;
+    q_manager.set_callback_receive(&received_data);
 
     // 
     //  2. Push a message to a queue 
     //
     
     // let's make a message to store in the queue
-    goby::acomms::ModemMessage app_layer_message_out;
+    goby::acomms::ModemMessage msg;
 
-    // we're making a loopback in this simple example, so make this message's destination our id
-    unsigned dest = 1;
+    unsigned dest = 0;
 
-    app_layer_message_out.set_dest(dest);
+    msg.set_dest(dest);
     // typically grab these data from DCCLCodec::encode, but here we'll just enter an example
     // hexadecimal string
-    app_layer_message_out.set_data("2000800000001234");
+    msg.set_data("2000802500000102030405060708091011121314151617181920212223242526");
 
     // push to queue 1 (which is the Simple message <id/>)
-    q_manager.push_message(1, app_layer_message_out);
+    q_manager.push_message(1, msg);
 
-    std::cout << "pushing message to queue 1: " << app_layer_message_out << std::endl;
-    std::cout << "\t" << "data: " <<  app_layer_message_out.data() << std::endl;
+    std::cout << "pushing message to queue 1: " << msg << std::endl;
+    std::cout << "\t" << "data: " <<  msg.data() << std::endl;
 
-    app_layer_message_out.set_dest(goby::acomms::BROADCAST_ID);
-    app_layer_message_out.set_data("2000800000005678");
-    q_manager.push_message(1, app_layer_message_out);
+    msg.set_dest(goby::acomms::BROADCAST_ID);
+    msg.set_data("2000802500002625242322212019181716151413121110090807060504030201");
+    q_manager.push_message(1, msg);
     
-    std::cout << "pushing message to queue 1: " << app_layer_message_out << std::endl;
-    std::cout << "\t" << "data: " <<  app_layer_message_out.data() << std::endl;
+    std::cout << "pushing message to queue 1: " << msg << std::endl;
+    std::cout << "\t" << "data: " <<  msg.data() << std::endl;
     
     //
     //  3. Create a loopback to simulate the Link Layer (libmodemdriver & modem firmware) 
@@ -77,26 +73,22 @@ int main()
 
     std::cout << "executing loopback (simulating sending a message to ourselves over the modem link)" << std::endl;
     
-    // pretend the modem is requesting data of up to 32 bytes
-    goby::acomms::ModemMessage data_request_message;
-    data_request_message.set_size(32);
+    // pretend the modem is requesting data of up to 64 bytes
+    msg.clear();
+    msg.set_max_size(64);
     
-    goby::acomms::ModemMessage link_layer_message_out;
-    q_manager.provide_outgoing_modem_data(data_request_message, link_layer_message_out);
+    q_manager.handle_modem_data_request(msg);
 
     // we set the incoming message equal to the outgoing message to create the loopback.
 
-    std::cout << "link_layer: " << link_layer_message_out.serialize() << std::endl;
-    std::cout << "link_layer: " << goby::util::hex_string2binary_string(link_layer_message_out.data()) << std::endl;
-    
-    
-    goby::acomms::ModemMessage link_layer_message_in = link_layer_message_out;
+    std::cout << "link_layer: " << msg.serialize() << std::endl;
+    std::cout << "link_layer: " << goby::util::hex_string2binary_string(msg.data()) << std::endl; 
     
     // 
     //  4. Pass the received message to the QueueManager 
     //
     
-    q_manager.receive_incoming_modem_data(link_layer_message_in);
+    q_manager.handle_modem_receive(msg);
     
     return 0;
 }

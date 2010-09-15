@@ -17,7 +17,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
-
 #ifndef Queue20080605H
 #define Queue20080605H
 
@@ -31,7 +30,6 @@
 #include <map>
 
 #include <boost/algorithm/string.hpp>
-#include <boost/lexical_cast.hpp>
 
 #include "goby/acomms/modem_message.h"
 #include "goby/util/time.h"
@@ -50,7 +48,7 @@ namespace goby
         {
           public:
             Queue(const QueueConfig cfg = QueueConfig(),
-                  std::ostream* os = 0,
+                  std::ostream* log = 0,
                   const unsigned& modem_id = 0);
 
             bool push_message(ModemMessage& new_message);
@@ -63,7 +61,7 @@ namespace goby
         
             bool priority_values(double& priority,
                                  boost::posix_time::ptime& last_send_time,
-                                 ModemMessage& message);
+                                 const ModemMessage& message);
         
             unsigned give_dest();
 
@@ -108,7 +106,7 @@ namespace goby
     
             const unsigned& modem_id_;
     
-            std::ostream* os_;
+            std::ostream* log_;
     
             std::list<ModemMessage> messages_;
 

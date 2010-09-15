@@ -21,25 +21,33 @@
 #define NMEASentence20091211H
 
 #include <exception>
+#include <stdexcept>
 #include <vector>
-#include <cstdio>
+#include <sstream>
 
-#include <boost/algorithm/string.hpp>
-#include <boost/assign.hpp>
-#include <boost/lexical_cast.hpp>
+#include "goby/util/string.h"
 
 namespace goby
 {
     namespace util
-    {    
+    {
+        // simple exception class
+        class bad_nmea_sentence : public std::runtime_error
+        {
+          public:
+            bad_nmea_sentence(const std::string& s)
+                : std::runtime_error(s)
+            { }
+        };
+        
+        
         class NMEASentence : public std::vector<std::string>
         {
           public:
             enum strategy { IGNORE, VALIDATE, REQUIRE };
-    
+            
+            NMEASentence() {}
             NMEASentence(std::string s, strategy cs_strat);
-
-          NMEASentence() : std::vector<std::string>() {}
 
             // Bare message, no checksum or \r\n
             std::string message_no_cs() const;
@@ -59,11 +67,12 @@ namespace goby
             { return empty() ? "" : front().substr(3); }
 
             template<typename T>
-                T as(int i) { return boost::lexical_cast<T>(at(i)); }
-    
+                T as(int i) { return goby::util::as<T>(at(i)); }
+            
+
             template<typename T>
                 void push_back(T t)
-            { std::vector<std::string>::push_back(boost::lexical_cast<std::string>(t)); }
+            { std::vector<std::string>::push_back(goby::util::as<std::string>(t)); }
     
             static unsigned char checksum(const std::string& s);
         };

@@ -24,7 +24,8 @@
 #include <ncurses.h>
 #include <boost/foreach.hpp>
 #include <boost/algorithm/string.hpp>
-#include <boost/lexical_cast.hpp>
+
+#include "goby/util/string.h"
 
 #include "logger_manipulators.h"
 
@@ -33,7 +34,11 @@
 
 using boost::posix_time::ptime;
 
-goby::util::FlexNCurses::FlexNCurses(boost::mutex& mutex)
+// defined in flex_ostreambuf.cpp
+extern boost::mutex curses_mutex;
+
+
+goby::util::FlexNCurses::FlexNCurses()
     : xmax_(0),
       ymax_(0),
       xwinN_(1),
@@ -41,7 +46,6 @@ goby::util::FlexNCurses::FlexNCurses(boost::mutex& mutex)
       foot_window_(0),
       is_locked_(false),
       locked_panel_(0),
-      mutex_(mutex),
       alive_(true)
 {  }
 
@@ -105,7 +109,7 @@ void goby::util::FlexNCurses::update_size()
 void goby::util::FlexNCurses::alive(bool alive) { alive_ = alive; }
 void goby::util::FlexNCurses::cleanup() { endwin(); }
 
-void goby::util::FlexNCurses::add_win(Group* g)
+void goby::util::FlexNCurses::add_win(const Group* g)
 {
     int N_windows = panels_.size()+1;
         
@@ -389,7 +393,7 @@ void goby::util::FlexNCurses::write_head_title(size_t i)
     attr_t color_attr = color2attr_t(color_.from_str(panels_[i].group()->color()));
     attr_t white_attr = color2attr_t(tcolor::enums::lt_white);
     wattron(win, white_attr);
-    mvwaddstr(win, 0, 0, std::string(boost::lexical_cast<std::string>(i+1)+". ").c_str());
+    mvwaddstr(win, 0, 0, std::string(as<std::string>(i+1)+". ").c_str());
 
 
     
@@ -404,7 +408,7 @@ void goby::util::FlexNCurses::write_head_title(size_t i)
         wattron(win, white_attr);
         waddstr(win, "| ");
         color_attr = color2attr_t(color_.from_str(panels_[j].group()->color()));
-        waddstr(win, std::string(boost::lexical_cast<std::string>(j+1)+". ").c_str());
+        waddstr(win, std::string(as<std::string>(j+1)+". ").c_str());
               
         std::stringstream ss_com;
         ss_com << panels_[j].group()->description() << " ";
@@ -1021,7 +1025,7 @@ void goby::util::FlexNCurses::run_input()
     // MOOS loves to stomp on me at startup...
     // if(true)
     // {
-    //     boost::mutex::scoped_lock lock(mutex_);
+    //     boost::mutex::scoped_lock lock(curses_mutex);
     //     BOOST_FOREACH(size_t i, unique_panels_)
     //     {
     //         WINDOW* win = static_cast<WINDOW*>(panels_[i].window());
@@ -1045,7 +1049,7 @@ void goby::util::FlexNCurses::run_input()
     {
         int k = getch();
 
-        boost::mutex::scoped_lock lock(mutex_);
+        boost::mutex::scoped_lock lock(curses_mutex);
         switch(k)
         {
             // same as resize but restores the order too

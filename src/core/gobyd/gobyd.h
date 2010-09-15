@@ -21,11 +21,9 @@
 #include <map>
 
 #include "goby/util/logger.h"
-
 #include "goby/util/time.h"
 
-// terminal IO
-extern goby::util::FlexOstream logger_;
+#include "goby/core/dbo.h"
 
 class GobyDaemon
 {
@@ -56,8 +54,8 @@ class GobyDaemon
 
     
   private:
-    void do_connect(const std::string& name);
-    void do_disconnect(const std::string& name);
+    void connect(const std::string& name);
+    void disconnect(const std::string& name);
     
   private:
     bool active_;
@@ -65,16 +63,11 @@ class GobyDaemon
     // ServerRequest objects passed through here
     boost::interprocess::message_queue listen_queue_;
 
-    boost::mutex mutex_;
-
+    goby::core::DBOManager* dbo_manager_;
+    
     std::map<std::string, boost::shared_ptr<ConnectedClient> > clients_;
     std::map<std::string, boost::shared_ptr<boost::thread> > client_threads_;
-    
-
 };
-
-
-
 
 
 #endif

@@ -1,0 +1,4 @@
+message TestMessage
+{
+    required double foo = 1;
+}

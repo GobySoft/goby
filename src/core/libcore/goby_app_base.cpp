@@ -18,38 +18,60 @@
 
 #include "goby/util/time.h"
 
-
 #include "goby_app_base.h"
-#include "proto_headers.h"
 
 using namespace goby::core;
 using namespace goby::util;
+using boost::interprocess::message_queue;
 
-boost::posix_time::time_duration GobyAppBase::MAX_CONNECTION_TIME = boost::posix_time::seconds(10);
+goby::util::FlexOstream glogger;
+
+boost::posix_time::time_duration GobyAppBase::CONNECTION_WAIT_TIME = boost::posix_time::seconds(1);
 
 GobyAppBase::GobyAppBase(const std::string& application_name)
-    : application_name_(application_name)
+    : application_name_(application_name),
+      connected_(false)
+{
+    std::string verbosity = "verbose";
+    glogger.add_stream(verbosity, &std::cout);
+    glogger.name(application_name);
+
+    connect();
+
+    server_listen_thread_ =
+        boost::shared_ptr<boost::thread>
+        (new boost::thread(boost::bind(&GobyAppBase::server_listen, this)));
+}
+
+GobyAppBase::~GobyAppBase()
+{
+    disconnect();
+    server_listen_thread_->join();
+}
+
+void GobyAppBase::connect()
 {
     try
     {
+        glogger <<  "trying to connect..." <<  std::endl;
+        
         // set up queues to wait for response from server
-        boost::interprocess::message_queue::remove
-            (std::string(FROM_SERVER_QUEUE_PREFIX + application_name_).c_str());
+        message_queue::remove
+            (std::string(CONNECT_RESPONSE_QUEUE_PREFIX + application_name_).c_str());
 
-        boost::interprocess::message_queue
-            from_server_queue(boost::interprocess::create_only,
-                              std::string(FROM_SERVER_QUEUE_PREFIX + application_name_).c_str(),
-                              MAX_NUM_MSG,
-                              MAX_MSG_BUFFER_SIZE);    
-
+        message_queue response_queue(boost::interprocess::create_only,
+                                     std::string(CONNECT_RESPONSE_QUEUE_PREFIX
+                                                 + application_name_).c_str(),
+                                     1,
+                                     MAX_MSG_BUFFER_SIZE);    
+        
         // make connection
-        boost::interprocess::message_queue listen_queue(boost::interprocess::open_only,
-                                                        goby::core::LISTEN_QUEUE.c_str());
-
+        message_queue listen_queue(boost::interprocess::open_or_create, CONNECT_LISTEN_QUEUE.c_str(), MAX_NUM_MSG, MAX_MSG_BUFFER_SIZE);
+        
         
         // populate server request for connection
-        goby::core::ServerRequest request;
-        request.set_request_type(goby::core::ServerRequest::CONNECT);
+        ConnectionRequest request;
+        request.set_request_type(ConnectionRequest::CONNECT);
         request.set_application_name(application_name_);
 
         // serialize and send the server request
@@ -58,48 +80,70 @@ GobyAppBase::GobyAppBase(const std::string& application_name)
         listen_queue.send(&send_buffer, request.ByteSize(), 0);        
         
         // wait for response
+        ConnectionResponse response;  
+        while(!timed_receive(response_queue, response, CONNECTION_WAIT_TIME))
+            glogger << warn << "waiting for server to respond..." <<  std::endl;        
 
-        char receive_buffer [MAX_MSG_BUFFER_SIZE];
-        unsigned int priority;
-        std::size_t recvd_size;
-        from_server_queue.timed_receive(&receive_buffer, MAX_MSG_BUFFER_SIZE, recvd_size, priority, goby_time() + MAX_CONNECTION_TIME);
-        
-        goby::core::ServerResponse response;  
-        response.ParseFromArray(&receive_buffer,recvd_size);
-        
-        
+        if(response.response_type() == ConnectionResponse::CONNECTION_ACCEPTED)
+        {
+            connected_ = true;
+            glogger <<  "connection succeeded." <<  std::endl;
+        }
+        else
+        {
+            glogger << die << "server did not connect us: " << "\n"
+                    << response.ShortDebugString() << std::endl;
+        }
     }
     catch(boost::interprocess::interprocess_exception &ex)
     {
-        std::cout << ex.what() << std::endl;
+        glogger << warn << ex.what() << std::endl;
     }
 }
 
-GobyAppBase::~GobyAppBase()
+
+void GobyAppBase::disconnect()
 {
     try
     {
         // make disconnection
-        boost::interprocess::message_queue listen_queue(boost::interprocess::open_only,
-                                                    goby::core::LISTEN_QUEUE.c_str());
+        message_queue listen_queue(boost::interprocess::open_only,
+                                   CONNECT_LISTEN_QUEUE.c_str());
     
     
         // populate server request for connection
-        goby::core::ServerRequest sr;
-        sr.set_request_type(goby::core::ServerRequest::DISCONNECT);
+        ConnectionRequest sr;
+        sr.set_request_type(ConnectionRequest::DISCONNECT);
         sr.set_application_name(application_name_);
         
         // serialize and send the server request
-        char buffer [sr.ByteSize()];
-        sr.SerializeToArray(&buffer, sizeof(buffer));
-        listen_queue.send(&buffer, sr.ByteSize(), 0);
+        send(listen_queue, sr);
+        connected_ = false;
     }
     catch(boost::interprocess::interprocess_exception &ex)
     {
-        std::cout << ex.what() << std::endl;
+        glogger << warn << ex.what() << std::endl;
     }
-
-    std::cout << "cleanup" << std::endl;
-
 }
 
+
+void GobyAppBase::server_listen()
+{
+    try
+    {
+        boost::interprocess::message_queue
+            from_server_queue(boost::interprocess::open_only,
+                              std::string(FROM_SERVER_QUEUE_PREFIX + application_name_).c_str());
+        
+        while(connected_)
+        {
+            ClientNotification notification;
+            if(timed_receive(from_server_queue, notification, boost::posix_time::seconds(1)))
+                glogger << notification.ShortDebugString() << std::endl;
+        }
+    }
+    catch(boost::interprocess::interprocess_exception &ex)
+    {
+        glogger << warn << ex.what() << std::endl;
+    }    
+}

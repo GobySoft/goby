@@ -31,9 +31,12 @@
 #include <google/protobuf/descriptor.h>
 #include <google/protobuf/descriptor.pb.h>
 
+#include "goby/util/logger.h"
 
 #include <ctime>
 #include <map>
+
+goby::util::FlexOstream glogger;
 
 
 const unsigned MAX_BUFFER_SIZE = 1 << 20;

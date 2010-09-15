@@ -34,7 +34,11 @@
 
 using boost::posix_time::ptime;
 
-goby::util::FlexNCurses::FlexNCurses(boost::mutex& mutex)
+// defined in flex_ostreambuf.cpp
+extern boost::mutex curses_mutex;
+
+
+goby::util::FlexNCurses::FlexNCurses()
     : xmax_(0),
       ymax_(0),
       xwinN_(1),
@@ -42,7 +46,6 @@ goby::util::FlexNCurses::FlexNCurses(boost::mutex& mutex)
       foot_window_(0),
       is_locked_(false),
       locked_panel_(0),
-      mutex_(mutex),
       alive_(true)
 {  }
 
@@ -106,7 +109,7 @@ void goby::util::FlexNCurses::update_size()
 void goby::util::FlexNCurses::alive(bool alive) { alive_ = alive; }
 void goby::util::FlexNCurses::cleanup() { endwin(); }
 
-void goby::util::FlexNCurses::add_win(Group* g)
+void goby::util::FlexNCurses::add_win(const Group* g)
 {
     int N_windows = panels_.size()+1;
         
@@ -1022,7 +1025,7 @@ void goby::util::FlexNCurses::run_input()
     // MOOS loves to stomp on me at startup...
     // if(true)
     // {
-    //     boost::mutex::scoped_lock lock(mutex_);
+    //     boost::mutex::scoped_lock lock(curses_mutex);
     //     BOOST_FOREACH(size_t i, unique_panels_)
     //     {
     //         WINDOW* win = static_cast<WINDOW*>(panels_[i].window());
@@ -1046,7 +1049,7 @@ void goby::util::FlexNCurses::run_input()
     {
         int k = getch();
 
-        boost::mutex::scoped_lock lock(mutex_);
+        boost::mutex::scoped_lock lock(curses_mutex);
         switch(k)
         {
             // same as resize but restores the order too

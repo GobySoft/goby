@@ -21,8 +21,10 @@
 #include <boost/thread.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include "goby/core/libcore/proto_headers.h"
+#include "server_request.pb.h"
+
 #include "goby/core/core_constants.h"
+#include "goby/core/libcore/message_queue_util.h"
 
 #include "gobyd.h"
 
@@ -30,7 +32,10 @@ using boost::interprocess::message_queue;
 using namespace goby::core;
 using namespace goby::util;
 
-goby::util::FlexOstream logger_;
+boost::mutex gmutex;
+
+// defined in libcore
+extern goby::util::FlexOstream glogger;
 
 int main()
 {
@@ -43,62 +48,63 @@ int main()
 
 GobyDaemon::GobyDaemon()
     : active_(true),
-      listen_queue_(boost::interprocess::open_or_create, LISTEN_QUEUE.c_str(), MAX_NUM_MSG, MAX_MSG_BUFFER_SIZE)
+      listen_queue_(boost::interprocess::open_or_create, CONNECT_LISTEN_QUEUE.c_str(), MAX_NUM_MSG, MAX_MSG_BUFFER_SIZE),
+      dbo_manager_(goby::core::DBOManager::get_instance())
 {
+    dbo_manager_->connect("gobyd_test.db");
+    
     std::string verbosity = "scope";
-    logger_.add_stream(verbosity, &std::cout);
-
+    glogger.add_stream(verbosity, &std::cout);
+    glogger.name("gobyd");
+    
     // nocolor, red, lt_red, green, lt_green, yellow,  lt_yellow, blue, lt_blue, magenta, lt_magenta, cyan, lt_cyan, white, lt_white
-    logger_.add_group("connect", ">", "lt_magenta", "connections");
-    logger_.add_group("disconnect", "<", "lt_blue", "disconnections");
+    glogger.add_group("connect", ">", "lt_magenta", "connections");
+    glogger.add_group("disconnect", "<", "lt_blue", "disconnections");
 }
 
 GobyDaemon::~GobyDaemon()
 {
-    boost::interprocess::message_queue::remove(LISTEN_QUEUE.c_str());
+    boost::interprocess::message_queue::remove(CONNECT_LISTEN_QUEUE.c_str());
 }
 
-// handled by listen_thread_
 void GobyDaemon::run()
 {
     while(active_)
     {
         try
         {
-            char buffer [MAX_MSG_BUFFER_SIZE];
-
-            unsigned int priority;
-            std::size_t recvd_size;
-
             // blocks waiting for receive
-            listen_queue_.receive(&buffer, MAX_MSG_BUFFER_SIZE, recvd_size, priority);
-        
-            ServerRequest sr;        
-            sr.ParseFromArray(&buffer,recvd_size);
+            ConnectionRequest request;
+            receive(listen_queue_, request);
 
-            if(sr.request_type() == ServerRequest::CONNECT)
-                do_connect(sr.application_name());
-            else if(sr.request_type() == ServerRequest::DISCONNECT)
-                do_disconnect(sr.application_name());
+            switch(request.request_type())
+            {
+                case ConnectionRequest::CONNECT:
+                    connect(request.application_name());
+                    break;
+                case ConnectionRequest::DISCONNECT:
+                    disconnect(request.application_name());
+                    break;
+            }
         }
         catch(boost::interprocess::interprocess_exception &ex)
         {
-            logger_ << warn << ex.what() << std::endl;
+            glogger << warn << ex.what() << std::endl;
         }        
     }
 }
 
-void GobyDaemon::do_connect(const std::string& name)
+void GobyDaemon::connect(const std::string& name)
 {
-    boost::mutex::scoped_lock lock(mutex_);
+    boost::mutex::scoped_lock lock(gmutex);
 
     boost::interprocess::message_queue
-        from_server_queue(boost::interprocess::open_only,
-                          std::string(FROM_SERVER_QUEUE_PREFIX + name).c_str());
+        connect_response_queue(boost::interprocess::open_only,
+                          std::string(CONNECT_RESPONSE_QUEUE_PREFIX + name).c_str());
     
 
     // populate server request for connection
-    goby::core::ServerResponse sr;  
+    goby::core::ConnectionResponse response;  
 
     if(!clients_.count(name))
     {
@@ -108,30 +114,27 @@ void GobyDaemon::do_connect(const std::string& name)
         clients_[name] = client;
         client_threads_[name] = thread;
         
-        logger_ << group("connect")
+        glogger << group("connect")
                 << "`" << name << "` has connected" << std::endl;
 
-        sr.set_response_type(goby::core::ServerRequest::CONNECTION_ACCEPTED);
+        response.set_response_type(goby::core::ConnectionResponse::CONNECTION_ACCEPTED);
     }
     else
     {
-        logger_ << group("connect") << warn
+        glogger << group("connect") << warn
                 << "cannot connect: application with name `"
                 << name << "` is already connected" << std::endl;
 
-        sr.set_response_type(goby::core::ServerRequest::CONNECTION_SPURNED);
+        response.set_response_type(goby::core::ConnectionResponse::CONNECTION_DENIED);
+        response.set_denial_reason(goby::core::ConnectionResponse::NAME_IN_USE);
     }
 
-    // serialize and send the server request
-    char buffer [sr.ByteSize()];
-    sr.SerializeToArray(&buffer, sizeof(buffer));
-    from_server_queue.send(&buffer, sr.ByteSize(), 0);
-
+    send(connect_response_queue, response);
 }
 
-void GobyDaemon::do_disconnect(const std::string& name)
+void GobyDaemon::disconnect(const std::string& name)
 {
-    boost::mutex::scoped_lock lock(mutex_);
+    boost::mutex::scoped_lock lock(gmutex);
 
     if(clients_.count(name))
     {
@@ -141,13 +144,13 @@ void GobyDaemon::do_disconnect(const std::string& name)
         clients_.erase(name);
         client_threads_.erase(name);
         
-        logger_ << group("disconnect")
+        glogger << group("disconnect")
                 << "`" << name << "` has disconnected" << std::endl;
                     
     }
     else
     {
-        logger_ << group("disconnect") << warn
+        glogger << group("disconnect") << warn
                 << "cannot disconnect: no application with name `"
                 << name << "` connected" << std::endl; 
     }
@@ -159,7 +162,26 @@ GobyDaemon::ConnectedClient::ConnectedClient(const std::string& name)
     : name_(name),
       active_(true),
       t_connected_(goby_time())
-{ }
+{
+        boost::interprocess::message_queue::remove
+            (std::string(TO_SERVER_QUEUE_PREFIX + name_).c_str());
+        
+        boost::interprocess::message_queue::remove
+            (std::string(FROM_SERVER_QUEUE_PREFIX + name_).c_str());
+        
+        boost::interprocess::message_queue
+            to_server_queue(boost::interprocess::create_only,
+                            std::string(TO_SERVER_QUEUE_PREFIX + name_).c_str(),
+                            MAX_NUM_MSG,
+                            MAX_MSG_BUFFER_SIZE);
+        
+        
+        boost::interprocess::message_queue
+            from_server_queue(boost::interprocess::create_only,
+                              std::string(FROM_SERVER_QUEUE_PREFIX + name_).c_str(),
+                              MAX_NUM_MSG,
+                              MAX_MSG_BUFFER_SIZE);
+}
 
 GobyDaemon::ConnectedClient::~ConnectedClient()
 {
@@ -174,19 +196,30 @@ GobyDaemon::ConnectedClient::~ConnectedClient()
 
 void GobyDaemon::ConnectedClient::run()
 {
-    boost::interprocess::message_queue::remove
-        (std::string(TO_SERVER_QUEUE_PREFIX + name_).c_str());
-    
-    boost::interprocess::message_queue
-        to_server_queue(boost::interprocess::create_only,
-                        std::string(TO_SERVER_QUEUE_PREFIX + name_).c_str(),
-                        MAX_NUM_MSG,
-                        MAX_MSG_BUFFER_SIZE);
-
-    
-    while(active_)
+    try
     {
-        logger_ << warn << name_ << " listener working..." << std::endl;
-        sleep(1);
+        boost::interprocess::message_queue
+            to_server_queue(boost::interprocess::open_only,
+                            std::string(TO_SERVER_QUEUE_PREFIX + name_).c_str());
+        boost::interprocess::message_queue
+            from_server_queue(boost::interprocess::open_only,
+                              std::string(FROM_SERVER_QUEUE_PREFIX + name_).c_str());
+
+        
+        while(active_)
+        {
+            ServerNotification notification;
+            if(timed_receive(to_server_queue, notification, boost::posix_time::seconds(1)))
+            {
+                glogger << notification.ShortDebugString() << std::endl;
+
+                boost::mutex::scoped_lock lock(gmutex);
+                goby::core::DBOManager::get_instance()->add_file(notification.file_descriptor_proto());
+            }
+        }
     }
+    catch(boost::interprocess::interprocess_exception &ex)
+    {
+        glogger << warn << ex.what() << std::endl;
+    }    
 }

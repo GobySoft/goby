@@ -1,0 +1,55 @@
+import "google/protobuf/descriptor.proto";
+
+package goby.core;
+
+message ConnectionRequest
+{
+    required string application_name = 1;
+
+    enum RequestType { 
+        CONNECT = 1;
+        DISCONNECT = 2;
+    }
+    required RequestType request_type = 2;
+}
+
+message ConnectionResponse
+{
+    enum ResponseType { 
+        CONNECTION_ACCEPTED = 1;
+        CONNECTION_DENIED = 2;
+    }
+    required ResponseType response_type = 1;   
+
+    enum DenialReason { 
+         NAME_IN_USE = 1;
+    }
+    optional DenialReason denial_reason = 2;
+}
+
+message ServerNotification
+{
+    enum NotificationType { 
+        HEARTBEAT = 1;
+        PUBLISH_REQUEST = 2;
+        SUBSCRIBE_REQUEST = 3;
+    }
+    required NotificationType notification_type = 1;
+
+    // used to inform gobyd of the google protobuf type used for a 
+    // given publish or subscribe request
+    optional google.protobuf.FileDescriptorProto file_descriptor_proto = 2;
+}
+
+message ClientNotification
+{
+    enum NotificationType { 
+        HEARTBEAT = 1;
+        PUBLISH_ACCEPTED = 2;
+        SUBSCRIBE_ACCEPTED = 3;
+    }
+    required NotificationType notification_type = 1;
+
+    // for publish / subscribe
+    
+}

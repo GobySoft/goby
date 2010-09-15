@@ -34,11 +34,21 @@ int goby::core::DBOManager::index = 0;
 
 goby::core::DBOManager* goby::core::DBOManager::inst_ = 0;
 
+// defined in libcore
+extern goby::util::FlexOstream glogger;
+
+
 // singleton class, use this to get pointer
 goby::core::DBOManager* goby::core::DBOManager::get_instance()
 {
     if(!inst_) inst_ = new goby::core::DBOManager();
     return(inst_);
+}
+
+goby::core::DBOManager::DBOManager()
+  : connection_(0)
+{
+    glogger.add_group("dbo", "d", "lt_green", "database");
 }
 
 void goby::core::DBOManager::add_file(const google::protobuf::FileDescriptorProto& proto)
@@ -53,8 +63,14 @@ void goby::core::DBOManager::add_type(const google::protobuf::Descriptor* descri
 {
     using goby::util::as;
 
-    std::cout << "DBOManager: adding type: " << std::endl;
-    std::cout << descriptor->DebugString() << std::endl;
+    if(dbo_map.right.count(descriptor->full_name()))
+    {
+        glogger << group("dbo") << "type with name " << descriptor->full_name() << " already exists" << std::endl;
+        return;
+    }
+
+    glogger << group("dbo") << "adding type: \n"
+            << descriptor->DebugString() << std::endl;
     
     dbo_map.insert(boost::bimap<int, std::string>::value_type(index, descriptor->full_name()));
 
@@ -62,7 +78,7 @@ void goby::core::DBOManager::add_type(const google::protobuf::Descriptor* descri
     switch(index)
     {
         // preprocessor `for` loop from 0 to GOBY_MAX_PROTOBUF_TYPES
-#define BOOST_PP_LOCAL_MACRO(n)                                         \
+#define BOOST_PP_LOCAL_MACRO(n)                              \
         case n: session_.mapClass< ProtoBufWrapper<n> >(dbo_map.left.at(n).c_str()); break;
 #define BOOST_PP_LOCAL_LIMITS (0, GOBY_MAX_PROTOBUF_TYPES)
 #include BOOST_PP_LOCAL_ITERATE()
@@ -87,7 +103,11 @@ void goby::core::DBOManager::add_message(google::protobuf::Message* msg)
     using goby::util::as;
     
     Wt::Dbo::Transaction transaction(session_);
-        
+
+    glogger << group("dbo") << "adding message: \n"
+            << msg->ShortDebugString() << std::endl;
+
+    
     switch(dbo_map.right.at(msg->GetTypeName()))
     {
 

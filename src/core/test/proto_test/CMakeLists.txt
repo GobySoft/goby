@@ -10,7 +10,7 @@ add_executable(interprocess1 interprocess1.cpp)
 add_executable(interprocess2 interprocess2.cpp)
 
 target_link_libraries(proto_test1 ${PROTOBUF_LIBRARY} ${Boost_LIBRARIES} pthread wtdbo wtdbosqlite3)
-target_link_libraries(proto_test2 ${PROTOBUF_LIBRARY} ${Boost_LIBRARIES} pthread wtdbo wtdbosqlite3 goby_dbo)
+target_link_libraries(proto_test2 ${PROTOBUF_LIBRARY} ${Boost_LIBRARIES} pthread wtdbo wtdbosqlite3 goby_dbo goby_logger)
 target_link_libraries(proto_test3 ${PROTOBUF_LIBRARY} ${Boost_LIBRARIES} pthread wtdbo wtdbosqlite3)
 
 target_link_libraries(interprocess1 ${Boost_LIBRARIES} pthread)

@@ -30,7 +30,10 @@
 #include <google/protobuf/descriptor.h>
 #include <google/protobuf/descriptor.pb.h>
 
+#include "goby/util/logger.h"
 #include "goby/core/core_constants.h"
+#include "message_queue_util.h"
+#include "server_request.pb.h"
 
 class GobyAppBase
 {
@@ -50,33 +53,38 @@ class GobyAppBase
     template<typename ProtoBufMessage>
         void subscribe(boost::function<void (const ProtoBufMessage&)> handler)
     {
-        
+        boost::interprocess::message_queue
+            to_server_queue(boost::interprocess::open_only,
+                            std::string(goby::core::TO_SERVER_QUEUE_PREFIX + application_name_).c_str());
+
+        goby::core::ServerNotification notification;
+        // copy descriptor for the new subscription type to the notification message
+        ProtoBufMessage::descriptor()->file()->CopyTo(notification.mutable_file_descriptor_proto());
+        notification.set_notification_type(goby::core::ServerNotification::SUBSCRIBE_REQUEST);
+        goby::core::send(to_server_queue, notification);
     }
 
     // overload subscribe for member functions of a class object
     // void C::mem_func(const ProtoBufMessage& msg)    
     template<class C, typename ProtoBufMessage>
         void subscribe(void(C::*mem_func)(const ProtoBufMessage&), C* obj)
-    { subscribe(boost::bind(mem_func, obj, _1)); }
-    
-  private:
-    static boost::posix_time::time_duration MAX_CONNECTION_TIME;
-    
-    void connect()
-    { }
-    
-    
-    void mail_listener(const google::protobuf::Message* message_template)
-    {
-        
+    { subscribe<ProtoBufMessage>(boost::bind(mem_func, obj, _1)); }
 
-    }
+  private:
+    static boost::posix_time::time_duration CONNECTION_WAIT_TIME;
+    
+    void connect();
+    void disconnect();
+    
+    void server_listen();
     
   private:
+    boost::shared_ptr<boost::thread> server_listen_thread_;
+        
     std::vector< boost::shared_ptr<boost::thread> > subscription_threads_;
     boost::mutex mutex_;
     std::string application_name_;
-    
+    bool connected_;
 };
 
 

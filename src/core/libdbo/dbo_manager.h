@@ -27,6 +27,8 @@
 
 #include <google/protobuf/message.h>
 
+#include "goby/util/logger.h"
+
 namespace goby 
 {
     namespace core
@@ -86,9 +88,9 @@ namespace goby
 
           private:    
             static DBOManager* inst_;
-          DBOManager()
-              : connection_(0)
-            { }
+            DBOManager();
+            
+            
             ~DBOManager()
             {
                 if(connection_) delete connection_;

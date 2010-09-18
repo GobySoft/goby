@@ -24,6 +24,7 @@
 #include "wt_dbo_overloads.h"
 #include "dbo_manager.h"
 
+
 // must be define since we are using the preprocessor
 #define GOBY_MAX_PROTOBUF_TYPES 16
 
@@ -34,10 +35,6 @@ int goby::core::DBOManager::index = 0;
 
 goby::core::DBOManager* goby::core::DBOManager::inst_ = 0;
 
-// defined in libcore
-extern goby::util::FlexOstream glogger;
-
-
 // singleton class, use this to get pointer
 goby::core::DBOManager* goby::core::DBOManager::get_instance()
 {
@@ -46,10 +43,14 @@ goby::core::DBOManager* goby::core::DBOManager::get_instance()
 }
 
 goby::core::DBOManager::DBOManager()
-  : connection_(0)
+    : connection_(0),
+      log_(0)
+{}
+
+void goby::core::DBOManager::add_flex_groups(util::FlexOstream& tout)
 {
-    glogger.add_group("dbo", "d", "lt_green", "database");
-}
+    tout.add_group("dbo", "d", "lt_green", "database");
+}          
 
 void goby::core::DBOManager::add_file(const google::protobuf::FileDescriptorProto& proto)
 {
@@ -65,12 +66,12 @@ void goby::core::DBOManager::add_type(const google::protobuf::Descriptor* descri
 
     if(dbo_map.right.count(descriptor->full_name()))
     {
-        glogger << group("dbo") << "type with name " << descriptor->full_name() << " already exists" << std::endl;
+        if(log_) *log_ << group("dbo") << "type with name " << descriptor->full_name() << " already exists" << std::endl;
         return;
     }
 
-    glogger << group("dbo") << "adding type: \n"
-            << descriptor->DebugString() << std::endl;
+    if(log_) *log_ << group("dbo") << "adding type: \n"
+                 << descriptor->DebugString() << std::endl;
     
     dbo_map.insert(boost::bimap<int, std::string>::value_type(index, descriptor->full_name()));
 
@@ -78,7 +79,7 @@ void goby::core::DBOManager::add_type(const google::protobuf::Descriptor* descri
     switch(index)
     {
         // preprocessor `for` loop from 0 to GOBY_MAX_PROTOBUF_TYPES
-#define BOOST_PP_LOCAL_MACRO(n)                              \
+#define BOOST_PP_LOCAL_MACRO(n)                                         \
         case n: session_.mapClass< ProtoBufWrapper<n> >(dbo_map.left.at(n).c_str()); break;
 #define BOOST_PP_LOCAL_LIMITS (0, GOBY_MAX_PROTOBUF_TYPES)
 #include BOOST_PP_LOCAL_ITERATE()
@@ -97,15 +98,21 @@ void goby::core::DBOManager::add_type(const google::protobuf::Descriptor* descri
     ++index;
 }
 
+void goby::core::DBOManager::add_message(const std::string& name, const std::string& serialized_message)
+{
+    google::protobuf::Message* msg = new_msg_from_name(name);
+    msg->ParseFromString(serialized_message);
+    add_message(msg);
+}
 
 void goby::core::DBOManager::add_message(google::protobuf::Message* msg)
 {
     using goby::util::as;
     
     Wt::Dbo::Transaction transaction(session_);
-
-    glogger << group("dbo") << "adding message: \n"
-            << msg->ShortDebugString() << std::endl;
+    
+    if(log_) *log_ << group("dbo") << "adding message: \n"
+                 << msg->ShortDebugString() << std::endl;
 
     
     switch(dbo_map.right.at(msg->GetTypeName()))
@@ -121,6 +128,14 @@ void goby::core::DBOManager::add_message(google::protobuf::Message* msg)
 
         default: throw(std::runtime_error(std::string("exceeded maximum number of types allowed: " + as<std::string>(GOBY_MAX_PROTOBUF_TYPES)))); break;
     }    
-    transaction.commit();
-}
 
+    if(log_) *log_ << group("dbo") << "starting commit"
+                   << std::endl;
+
+    transaction.commit();
+
+    if(log_) *log_ << group("dbo") << "finished commit"
+                   << std::endl;
+    
+    
+}

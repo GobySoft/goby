@@ -29,7 +29,8 @@
 
 #include "goby/util/logger.h"
 
-namespace goby 
+
+namespace goby
 {
     namespace core
     {    
@@ -43,8 +44,14 @@ namespace goby
 
             void add_file(const google::protobuf::FileDescriptorProto& proto);
             void add_type(const google::protobuf::Descriptor* descriptor);
+            void add_message(const std::string& name, const std::string& serialized_message);
             void add_message(google::protobuf::Message* msg);
 
+            /// Registers the group names used for the FlexOstream logger
+            void add_flex_groups(util::FlexOstream& tout);
+            
+            void set_logger(std::ostream* log) { log_ = log; }            
+            
             google::protobuf::Message* new_msg_from_name(const std::string& name)
             {
                 return msg_factory.GetPrototype(descriptor_pool.FindMessageTypeByName(name))->New();
@@ -104,8 +111,10 @@ namespace goby
             // next integer to use for new incoming type
             static int index;
 
+            std::ostream* log_;
+
             Wt::Dbo::Session session_;
-            Wt::Dbo::backend::Sqlite3* connection_;    
+            Wt::Dbo::backend::Sqlite3* connection_;
     
         };
     }

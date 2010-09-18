@@ -92,6 +92,8 @@ void goby::util::FlexOStreamBuf::add_stream(const std::string& s, std::ostream* 
 
 void goby::util::FlexOStreamBuf::add_group(const std::string & name, Group g)
 {
+    if(groups_.count(name)) return;
+    
     groups_[name] = g;
 
     if(is_scope_)

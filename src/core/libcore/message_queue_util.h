@@ -40,10 +40,19 @@ namespace goby
             queue.send(&buffer, in.ByteSize(), 0);
         }
         
+        template<typename SerializeFromType>
+            bool try_send(boost::interprocess::message_queue& queue, SerializeFromType& in)
+        {
+            static char buffer [MAX_MSG_BUFFER_SIZE];
+            in.SerializeToArray(&buffer, sizeof(buffer));
+            return queue.try_send(&buffer, in.ByteSize(), 0);
+        }
+
         //
         // receive
         //
 
+        // TODO(tes): need to throw exception on parsing errors (ParseFromArray is false) 
         template<typename ParseToType>
             void receive(boost::interprocess::message_queue& queue, ParseToType& out)
         {

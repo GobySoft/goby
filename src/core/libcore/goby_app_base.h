@@ -41,28 +41,17 @@ class GobyAppBase
     GobyAppBase(const std::string& application_name);
     virtual ~GobyAppBase();
 
-  protected:    
+  protected:
+    // publish a message to all subscribers to that type
     template<typename ProtoBufMessage>
-        void publish(const ProtoBufMessage& msg)
-    { }
+        void publish(const ProtoBufMessage& msg);
 
     // subscribes by binding a handler to a
     // generic function object (boost::function)
     // void handler(const ProtoBufMessage& msg)
     // ProtoBufMessage is any google::protobuf::Message derivatives
     template<typename ProtoBufMessage>
-        void subscribe(boost::function<void (const ProtoBufMessage&)> handler)
-    {
-        boost::interprocess::message_queue
-            to_server_queue(boost::interprocess::open_only,
-                            std::string(goby::core::TO_SERVER_QUEUE_PREFIX + application_name_).c_str());
-
-        goby::core::ServerNotification notification;
-        // copy descriptor for the new subscription type to the notification message
-        ProtoBufMessage::descriptor()->file()->CopyTo(notification.mutable_file_descriptor_proto());
-        notification.set_notification_type(goby::core::ServerNotification::SUBSCRIBE_REQUEST);
-        goby::core::send(to_server_queue, notification);
-    }
+        void subscribe(boost::function<void (const ProtoBufMessage&)> handler);
 
     // overload subscribe for member functions of a class object
     // void C::mem_func(const ProtoBufMessage& msg)    
@@ -70,22 +59,85 @@ class GobyAppBase
         void subscribe(void(C::*mem_func)(const ProtoBufMessage&), C* obj)
     { subscribe<ProtoBufMessage>(boost::bind(mem_func, obj, _1)); }
 
-  private:
-    static boost::posix_time::time_duration CONNECTION_WAIT_TIME;
+    goby::util::FlexOstream glogger_;
     
+  private:    
     void connect();
     void disconnect();
     
     void server_listen();
-    
+    void server_notify_subscribe(const google::protobuf::Descriptor* descriptor);
+    void server_notify_publish(const google::protobuf::Descriptor* descriptor, const std::string& serialized_message);
+
   private:
+    class SubscriptionBase
+    {
+      public:
+        virtual void post(const std::string& serialized_message) = 0;
+    };
+
+    template<typename ProtoBufMessage>
+        class Subscription : public SubscriptionBase
+    {
+
+      public:
+        Subscription(boost::function<void (const ProtoBufMessage&)>& handler)
+            : handler_(handler)
+        { }
+
+        void post(const std::string& serialized_message)
+        {
+            ProtoBufMessage msg;
+            msg.ParseFromString(serialized_message);
+            handler_(msg);
+        }
+        
+      private:
+        boost::function<void (const ProtoBufMessage&)> handler_;
+        
+    };
+    
+    static boost::posix_time::time_duration CONNECTION_WAIT_TIME;
+
     boost::shared_ptr<boost::thread> server_listen_thread_;
         
-    std::vector< boost::shared_ptr<boost::thread> > subscription_threads_;
     boost::mutex mutex_;
-    std::string application_name_;
     bool connected_;
+
+    // types we have informed the server of already
+    std::set<std::string> registered_protobuf_types_;
+    std::string application_name_;
+    
+    // handlers for all the subscriptions (keyed by protobuf message type name)
+    std::map<std::string, boost::shared_ptr<SubscriptionBase> > subscriptions_;
 };
+
+template<typename ProtoBufMessage>
+void GobyAppBase::publish(const ProtoBufMessage& msg)
+{
+    std::string serialized_message;
+    msg.SerializeToString(&serialized_message);
+    server_notify_publish(ProtoBufMessage::descriptor(), serialized_message);
+}
+
+
+
+template<typename ProtoBufMessage>
+void GobyAppBase::subscribe(boost::function<void (const ProtoBufMessage&)> handler)
+    {
+        const std::string& type_name = ProtoBufMessage::descriptor()->full_name(); 
+
+        // make sure we don't already have a handler for this type
+        if(subscriptions_.count(type_name))
+            glogger_ << die << "handler already given for subscription to protobuf type name: " << type_name << std::endl;
+
+        // machinery so we can call the proper handler upon receipt of this type
+        boost::shared_ptr<SubscriptionBase> subscription(new Subscription<ProtoBufMessage>(handler));
+        subscriptions_.insert(make_pair(type_name, subscription));
+
+        // tell the server about our subscription
+        server_notify_subscribe(ProtoBufMessage::descriptor());
+    }
 
 
 #endif

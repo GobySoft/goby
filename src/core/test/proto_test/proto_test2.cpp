@@ -64,9 +64,9 @@ int main()
         }
         
         while (mq.try_receive(&buffer, MAX_BUFFER_SIZE, recvd_size, priority))
-        {            
+        {
             google::protobuf::Message* dbl_msg = dbo_manager->new_msg_from_name("GobyDouble");
-            dbl_msg->ParseFromArray(&buffer,recvd_size);            
+            dbl_msg->ParseFromArray(&buffer,recvd_size);
             
             std::cout << "receiver: " << dbl_msg->ShortDebugString() << std::endl;
             dbo_manager->add_message(dbl_msg);

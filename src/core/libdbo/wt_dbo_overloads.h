@@ -51,7 +51,7 @@ namespace Wt
                         throw(std::runtime_error(std::string("nested messages are not currently supported:" +  field_desc->DebugString())));
                         break;    
                         
-                    // int
+                        // int
                     case google::protobuf::FieldDescriptor::CPPTYPE_INT32:
                     {
                         int tmp = refl->GetInt32(obj, field_desc);
@@ -59,7 +59,7 @@ namespace Wt
                         refl->SetInt32(&obj, field_desc, tmp);
                     }
                     break;
-                        
+                    
                     // long long (should be long, but not currently implemented by Wt::Dbo)
                     case google::protobuf::FieldDescriptor::CPPTYPE_INT64:
                     {

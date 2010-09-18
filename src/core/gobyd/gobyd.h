@@ -34,7 +34,7 @@ class GobyDaemon
     
     void run();
 
-    class ConnectedClient
+    class ConnectedClient : public boost::enable_shared_from_this<ConnectedClient>
     {
       public:
         ConnectedClient(const std::string& name);
@@ -42,16 +42,26 @@ class GobyDaemon
 
         void run();
         void stop() { active_ = false; }
-        
+
+        std::string name() const { return name_; }        
         
       private:
-                
+        void process_notification(const goby::core::proto::NotificationToServer& notification);
+        void process_publish(const goby::core::proto::NotificationToServer& incoming_message);
+        void process_subscribe(const goby::core::proto::NotificationToServer& incoming_message);
+        
       private:
         bool active_;
         std::string name_;
         boost::posix_time::ptime t_connected_;
+        boost::posix_time::ptime t_last_active_;
     };
 
+    // key = protobuf message type name, value = set of subscribed clients
+    static std::map<std::string, std::set<boost::shared_ptr<ConnectedClient> > > subscriptions;
+    static goby::util::FlexOstream glogger;
+    static boost::mutex dbo_mutex;
+    static boost::mutex subscription_mutex;
     
   private:
     void connect(const std::string& name);
@@ -65,8 +75,11 @@ class GobyDaemon
 
     goby::core::DBOManager* dbo_manager_;
     
+    // key = client name, value = ConnectedClient deals with this client
     std::map<std::string, boost::shared_ptr<ConnectedClient> > clients_;
+    // key = client name, value = thread to run ConnectedClient in 
     std::map<std::string, boost::shared_ptr<boost::thread> > client_threads_;
+
 };
 
 

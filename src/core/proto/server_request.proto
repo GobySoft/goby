@@ -1,55 +1,49 @@
 import "google/protobuf/descriptor.proto";
 
-package goby.core;
+package goby.core.proto;
 
-message ConnectionRequest
+message NotificationToServer
 {
-    required string application_name = 1;
 
-    enum RequestType { 
-        CONNECT = 1;
-        DISCONNECT = 2;
-    }
-    required RequestType request_type = 2;
-}
-
-message ConnectionResponse
-{
-    enum ResponseType { 
-        CONNECTION_ACCEPTED = 1;
-        CONNECTION_DENIED = 2;
-    }
-    required ResponseType response_type = 1;   
-
-    enum DenialReason { 
-         NAME_IN_USE = 1;
-    }
-    optional DenialReason denial_reason = 2;
-}
-
-message ServerNotification
-{
     enum NotificationType { 
         HEARTBEAT = 1;
-        PUBLISH_REQUEST = 2;
-        SUBSCRIBE_REQUEST = 3;
+        CONNECT = 2;
+        DISCONNECT = 3;
+        PUBLISH_REQUEST = 4;
+        SUBSCRIBE_REQUEST = 5;
     }
     required NotificationType notification_type = 1;
 
+    // used for connection
+    optional string application_name = 2;
+
+
+    optional string message_type = 3;
     // used to inform gobyd of the google protobuf type used for a 
     // given publish or subscribe request
-    optional google.protobuf.FileDescriptorProto file_descriptor_proto = 2;
+    optional google.protobuf.FileDescriptorProto file_descriptor_proto = 4;
+
+    // encoded contents of a message (if publish)
+    optional bytes serialized_message = 5;
+
 }
 
-message ClientNotification
+message NotificationToClient
 {
     enum NotificationType { 
         HEARTBEAT = 1;
-        PUBLISH_ACCEPTED = 2;
-        SUBSCRIBE_ACCEPTED = 3;
+        CONNECTION_ACCEPTED = 2;
+        CONNECTION_DENIED = 3;
+        PUBLISH_ACCEPTED = 4;
+        SUBSCRIBE_ACCEPTED = 5;
+        INCOMING_MESSAGE = 6;
     }
     required NotificationType notification_type = 1;
 
-    // for publish / subscribe
-    
+    // why did we deny you?
+    optional string explanation = 2;
+
+
+    optional string message_type = 3;
+    optional bytes serialized_message = 4;    
 }

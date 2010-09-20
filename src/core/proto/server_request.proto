@@ -2,6 +2,14 @@ import "google/protobuf/descriptor.proto";
 
 package goby.core.proto;
 
+
+message EmbeddedMessage
+{
+    optional string type = 1;
+    optional string name = 2;
+    optional bytes body = 3;    
+}
+
 message NotificationToServer
 {
 
@@ -17,33 +25,25 @@ message NotificationToServer
     // used for connection
     optional string application_name = 2;
 
-
-    optional string message_type = 3;
     // used to inform gobyd of the google protobuf type used for a 
     // given publish or subscribe request
-    optional google.protobuf.FileDescriptorProto file_descriptor_proto = 4;
+    optional google.protobuf.FileDescriptorProto file_descriptor_proto = 3;
 
-    // encoded contents of a message (if publish)
-    optional bytes serialized_message = 5;
-
+    optional EmbeddedMessage embedded_msg = 4;
 }
 
 message NotificationToClient
 {
     enum NotificationType { 
-        HEARTBEAT = 1;
+        HEARTBEAT_REQUEST = 1;
         CONNECTION_ACCEPTED = 2;
         CONNECTION_DENIED = 3;
-        PUBLISH_ACCEPTED = 4;
-        SUBSCRIBE_ACCEPTED = 5;
-        INCOMING_MESSAGE = 6;
+        INCOMING_MESSAGE = 4;
     }
     required NotificationType notification_type = 1;
 
     // why did we deny you?
     optional string explanation = 2;
+    optional EmbeddedMessage embedded_msg = 3;
 
-
-    optional string message_type = 3;
-    optional bytes serialized_message = 4;    
 }

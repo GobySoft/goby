@@ -20,6 +20,7 @@
 #include <boost/preprocessor.hpp>
 
 #include "goby/util/string.h"
+#include "goby/util/time.h"
 
 #include "wt_dbo_overloads.h"
 #include "dbo_manager.h"
@@ -35,6 +36,11 @@ int goby::core::DBOManager::index = 0;
 
 goby::core::DBOManager* goby::core::DBOManager::inst_ = 0;
 
+boost::posix_time::time_duration goby::core::DBOManager::t_between_commits_ = boost::posix_time::seconds(1);
+
+using goby::util::goby_time;
+
+
 // singleton class, use this to get pointer
 goby::core::DBOManager* goby::core::DBOManager::get_instance()
 {
@@ -43,8 +49,10 @@ goby::core::DBOManager* goby::core::DBOManager::get_instance()
 }
 
 goby::core::DBOManager::DBOManager()
-    : connection_(0),
-      log_(0)
+    : log_(0),
+      connection_(0),
+      transaction_(0),
+      t_last_commit_(goby_time())
 {}
 
 void goby::core::DBOManager::add_flex_groups(util::FlexOstream& tout)
@@ -109,7 +117,6 @@ void goby::core::DBOManager::add_message(google::protobuf::Message* msg)
 {
     using goby::util::as;
     
-    Wt::Dbo::Transaction transaction(session_);
     
     if(log_) *log_ << group("dbo") << "adding message: \n"
                  << msg->ShortDebugString() << std::endl;
@@ -127,15 +134,21 @@ void goby::core::DBOManager::add_message(google::protobuf::Message* msg)
 
 
         default: throw(std::runtime_error(std::string("exceeded maximum number of types allowed: " + as<std::string>(GOBY_MAX_PROTOBUF_TYPES)))); break;
-    }    
+    }
+}
 
+void goby::core::DBOManager::commit()
+{
     if(log_) *log_ << group("dbo") << "starting commit"
                    << std::endl;
-
-    transaction.commit();
-
+        
+    transaction_->commit();
+        
     if(log_) *log_ << group("dbo") << "finished commit"
                    << std::endl;
-    
-    
+
+    t_last_commit_ = goby_time();
+    delete transaction_;
+    transaction_ = new Wt::Dbo::Transaction(session_);
 }
+

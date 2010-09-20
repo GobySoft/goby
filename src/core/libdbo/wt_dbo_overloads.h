@@ -31,6 +31,7 @@ namespace Wt
 {
     namespace Dbo
     {
+        // TODO(tes): support repeats, enumerations, and embedded messages
         template <typename T, typename A>
         void protobuf_message_persist(T& obj, A& action)
         {

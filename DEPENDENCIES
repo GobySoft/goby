@@ -31,3 +31,10 @@ sudo apt-get install \
     libboost-date-time-dev \
     libboost-thread-dev \
     libboost-regex-dev
+
+# core
+# sudo apt-get install \
+#     libprotobuf-dev \
+#     libwt-dev \
+#     libwtdbo-dev \
+#     libwtdbosqlite-dev

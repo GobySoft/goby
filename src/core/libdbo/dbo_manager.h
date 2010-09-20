@@ -46,7 +46,9 @@ namespace goby
             void add_type(const google::protobuf::Descriptor* descriptor);
             void add_message(const std::string& name, const std::string& serialized_message);
             void add_message(google::protobuf::Message* msg);
-
+            void commit();
+            
+            
             /// Registers the group names used for the FlexOstream logger
             void add_flex_groups(util::FlexOstream& tout);
             
@@ -61,6 +63,7 @@ namespace goby
             {
                 connection_ = new Wt::Dbo::backend::Sqlite3(db_name);
                 session_.setConnection(*connection_);
+                transaction_ = new Wt::Dbo::Transaction(session_);
             }
 
             // wraps a particular type of Protobuf message (designated by id number i)
@@ -115,7 +118,11 @@ namespace goby
 
             Wt::Dbo::Session session_;
             Wt::Dbo::backend::Sqlite3* connection_;
-    
+
+            Wt::Dbo::Transaction* transaction_;
+            boost::posix_time::ptime t_last_commit_;
+            static boost::posix_time::time_duration t_between_commits_;
+            
         };
     }
 }

@@ -1,0 +1,16 @@
+package goby.core.proto;
+
+// contains the same information as a CMOOSMsg
+message CMOOSMsgMimic
+{
+    required int32 msg_type = 1;
+    required int32 data_type = 2;
+    required string key = 3;
+    required int32 msg_id = 4;
+    required double time = 5;
+    optional double d_val = 6;
+    optional string s_val = 7;
+    required string src = 8;
+    optional string src_aux = 9;
+    required string originating_community = 10;
+}

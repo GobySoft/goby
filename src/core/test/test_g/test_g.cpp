@@ -1,7 +1,12 @@
 #include "goby/core/libcore/goby_app_base.h"
-
+#include "goby/util/time.h"
 #include "test.pb.h"
 #include <ctime>
+#include <google/protobuf/text_format.h>
+
+using goby::util::goby_time;
+
+TestGConfig cfg;
 
 class TestG1 : public GobyAppBase
 {
@@ -11,10 +16,16 @@ public:
         {
             TestMessage a;
 
-            for(int i = 0; i < 100; ++i)
+            std::cout << goby_time() << ": begin" << std::endl;
+
+            for(int i = 0; i < 10000; ++i)
             {
                 a.set_foo(i);
                 publish(a);
+                // std::string out;
+                // google::protobuf::TextFormat::PrintToString(a, &out);
+                // glogger << a.GetDescriptor()->full_name() << std::endl;
+                // glogger << out << std::endl;
             }
         }
 };    
@@ -30,13 +41,13 @@ public:
     
     void handler(const TestMessage& msg)
         {
-            glogger_ << msg.ShortDebugString() << std::endl;
+            if(msg.foo() == 9999)
+                std::cout << goby_time() << ": end" << std::endl;
         }
 };
 
 int main()
 {
-    TestG2 g2;
     TestG1 g1;
-    sleep(5);
+    g1.run();
 }

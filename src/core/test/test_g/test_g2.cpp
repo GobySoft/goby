@@ -10,7 +10,7 @@ class TestG2 : public GobyAppBase
 {
 public:
     TestG2()
-        : GobyAppBase("test_app2", boost::posix_time::seconds(1))
+        : GobyAppBase("test_app2", boost::posix_time::milliseconds(200))
         {
             subscribe(&TestG2::handler, this);
         }

@@ -160,6 +160,8 @@ class GobyAppBase
 
     boost::posix_time::ptime t_start_;
     boost::posix_time::ptime t_next_loop_;
+
+    char buffer_ [goby::core::MAX_MSG_BUFFER_SIZE];
 };
 
 
@@ -195,7 +197,7 @@ void GobyAppBase::subscribe(boost::function<void (const ProtoBufMessage&)> handl
 }
 
 
-std::ostream& operator<<(std::ostream& out, const google::protobuf::Message& msg)
+inline std::ostream& operator<<(std::ostream& out, const google::protobuf::Message& msg)
 { return (out << msg.ShortDebugString());}
 
 

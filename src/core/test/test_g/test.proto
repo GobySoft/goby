@@ -8,10 +8,10 @@ message TestGConfig
     required double dvalue1 = 1;
     optional string svalue2 = 2;
 
-    enum MyEnum { 
-        YES = 1;
-        NO = 2;
-        MAYBE = 3;
-    }
-    required MyEnum evalue3 = 3;
+    // enum MyEnum { 
+    //     YES = 1;
+    //     NO = 2;
+    //     MAYBE = 3;
+    // }
+    // required MyEnum evalue3 = 3;
 }

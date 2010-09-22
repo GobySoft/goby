@@ -19,7 +19,6 @@
 #include "goby/core/libcore/goby_app_base.h"
 #include "cmoosmsg_mimic.pb.h"
 
-
 #include <MOOSLIB/MOOSMsg.h>
 #include <MOOSGenLib/ProcessConfigReader.h>
 
@@ -32,37 +31,18 @@ class GobyCMOOSApp : public GobyAppBase
 {
     
   public:
-    GobyCMOOSApp()
-        : m_Comms(*this)
-    {
-        OnStartUp();
-    }    
+    GobyCMOOSApp();
     virtual ~GobyCMOOSApp() { }
 
     //enum { DEFAULT_MOOS_APP_COMMS_FREQ = 5 };
-    enum { DEFAULT_MOOS_APP_FREQ = 5 };
+    enum { DEFAULT_MOOS_APP_FREQ_ = 5 };
     //enum { MOOS_MAX_APP_FREQ = 50 };
     //enum { MOOS_MAX_COMMS_FREQ = 200 };
     //enum { STATUS_PERIOD = 2 };
     
     bool Run(const char * sName,
              const char * sMissionFile,
-             const char * sSubscribeName = 0)
-    {
-        if(sMissionFile)
-        {
-            if(!m_MissionReader.SetFile(sMissionFile))
-            {
-                glogger << die << "mission file: " << sMissionFile << " not found" << std::endl;
-            }
-        }
-        
-        GobyAppBase::set_application_name(sName);
-        GobyAppBase::set_loop_freq(DEFAULT_MOOS_APP_FREQ);
-        GobyAppBase::start();
-        OnConnectToServer();
-        GobyAppBase::run();
-    }
+             const char * sSubscribeName = 0);
     
     bool RequestQuit()
     { GobyAppBase::end(); }
@@ -77,55 +57,30 @@ class GobyCMOOSApp : public GobyAppBase
     class CMOOSCommClient
     {
       public:        
-        CMOOSCommClient(GobyCMOOSApp& base)
-            : base_(base)
-        { }
-        
+        CMOOSCommClient(GobyCMOOSApp& base);        
 
         bool Notify(const std::string &sVar,
                     const std::string & sVal,
                     const std::string & sSrcAux,
-                    double dfTime=-1)
-        {
-            CMOOSMsg Msg(MOOS_NOTIFY,sVar.c_str(),sVal.c_str(),dfTime);
-            Msg.SetSourceAux(sSrcAux);
-            Post(Msg);
-        }
-        
+                    double dfTime=-1);
 
         bool Notify(const std::string & sVar,
                     double dfVal,
                     const std::string & sSrcAux,
-                    double dfTime=-1)
-        {
-            CMOOSMsg Msg(MOOS_NOTIFY,sVar.c_str(),dfVal,dfTime);
-            Msg.SetSourceAux(sSrcAux);
-            Post(Msg);
-        }
-        
+                    double dfTime=-1);        
 
         template<typename V>
             bool Notify(const std::string &sVar,
                         const V& val,
                         double dfTime=-1)
         { Notify(sVar, val, "", dfTime); }
-
         
-        bool Register(const std::string & sVar,double dfInterval)
-        {
-            base_.GobyAppBase::subscribe(&GobyCMOOSApp::handle_incoming, &base_, sVar);
-        } 
-        
+        bool Register(const std::string & sVar,double dfInterval);        
         bool UnRegister(const std::string & sVar);
-
         bool IsConnected()
         { return base_.GobyAppBase::connected(); }
         
-        bool Post(CMOOSMsg& Msg)
-        {
-            base_.GobyAppBase::publish(moosmsg2proto_mimic(Msg));
-            return true;
-        }
+        bool Post(CMOOSMsg& Msg);
 
       private:
         GobyCMOOSApp& base_;
@@ -152,48 +107,20 @@ class GobyCMOOSApp : public GobyAppBase
     std::string GetMissionFileName()
     { return m_MissionReader.GetFileName(); }
     
-
+    std::string community_;
   private:
     void loop()
     { Iterate(); }
 
-    static goby::core::proto::CMOOSMsgMimic moosmsg2proto_mimic(const CMOOSMsg& in)
-    {
-        goby::core::proto::CMOOSMsgMimic out;
-        out.set_msg_type(in.m_cMsgType);
-        out.set_data_type(in.m_cDataType);
-        out.set_key(in.m_sKey);
-        out.set_msg_id(in.m_nID);
-        out.set_time(in.m_dfTime);
-        out.set_d_val(in.m_dfVal);
-        out.set_s_val(in.m_sVal);
-        out.set_src(in.m_sSrc);
-        out.set_src_aux(in.m_sSrcAux);
-        out.set_originating_community(in.m_sOriginatingCommunity);
-        return out;
-    }
-    
-    static CMOOSMsg proto_mimic2moosmsg(const goby::core::proto::CMOOSMsgMimic& in)
-    {
-        CMOOSMsg out;
-        out.m_cMsgType = in.msg_type();
-        out.m_cDataType = in.data_type();
-        out.m_sKey = in.key();
-        out.m_nID = in.msg_id();
-        out.m_dfTime = in.time();
-        out.m_dfVal = in.d_val();
-        out.m_sVal = in.s_val();
-        out.m_sSrc = in.src();
-        out.m_sSrcAux = in.src_aux();
-        out.m_sOriginatingCommunity = in.originating_community();
-        return out;
-    }
+    static proto::CMOOSMsg moosmsg2proto_mimic(const CMOOSMsg& in);
+    static CMOOSMsg proto_mimic2moosmsg(const proto::CMOOSMsg& in);
 
-    void handle_incoming(const goby::core::proto::CMOOSMsgMimic& msg)
+    void handle_incoming(const proto::CMOOSMsg& msg)
     {
         MOOSMSG_LIST in_list(1,proto_mimic2moosmsg(msg));
         OnNewMail(in_list);
     }
+
     
     // virtual bool OnCommandMsg(CMOOSMsg Msg);
     // virtual std::string MakeStatusString();

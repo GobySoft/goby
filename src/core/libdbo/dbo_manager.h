@@ -46,6 +46,7 @@ namespace goby
             void add_type(const google::protobuf::Descriptor* descriptor);
             void add_message(const std::string& name, const std::string& serialized_message);
             void add_message(google::protobuf::Message* msg);
+
             void commit();
             
             
@@ -59,13 +60,30 @@ namespace goby
                 return msg_factory.GetPrototype(descriptor_pool.FindMessageTypeByName(name))->New();
             }
             
-            void connect(const std::string& db_name)
+            void connect(const std::string& db_name = "")
             {
-                connection_ = new Wt::Dbo::backend::Sqlite3(db_name);
-                session_.setConnection(*connection_);
-                transaction_ = new Wt::Dbo::Transaction(session_);
+                if(!db_name.empty())
+                    db_name_ = db_name;
+
+                if(connection_) delete connection_;
+                connection_ = new Wt::Dbo::backend::Sqlite3(db_name_);
+                // also deletes any transaction
+                if(session_) delete session_;
+                session_ = new Wt::Dbo::Session;
+                session_->setConnection(*connection_);
+                // transaction deleted by session
+                transaction_ = new Wt::Dbo::Transaction(*session_);
             }
 
+            void reset_session()
+            {
+                
+                commit();
+                if(log_) *log_ << "resetting session" << std::endl;
+                connect();
+            }
+            
+            
             // wraps a particular type of Protobuf message (designated by id number i)
             // so that we can use it with Wt::Dbo
             template <int i>
@@ -77,7 +95,12 @@ namespace goby
                 {
                     // create new blank message if none given
                     // either way, we own the message
-                    if(!p) p_ = msg_factory.GetPrototype(descriptor_pool.FindMessageTypeByName(dbo_map.left.at(i)))->New();
+                    if(!p)
+                    {
+                        p_ = msg_factory.GetPrototype
+                               (descriptor_pool.FindMessageTypeByName
+                                (dbo_map.left.at(i)))->New();
+                    }
                 }
 
                 ~ProtoBufWrapper()
@@ -91,10 +114,12 @@ namespace goby
               private:
                 google::protobuf::Message* p_;
             };
-    
 
             static google::protobuf::DynamicMessageFactory msg_factory;
             static google::protobuf::DescriptorPool descriptor_pool;
+
+          private:
+            void map_type(const google::protobuf::Descriptor* descriptor);
 
           private:    
             static DBOManager* inst_;
@@ -102,26 +127,31 @@ namespace goby
             
             
             ~DBOManager()
-            {
-                if(connection_) delete connection_;
-            }
+            { }
             DBOManager(const DBOManager&);
             DBOManager& operator = (const DBOManager&);
 
             // used to map runtime provided type (name, std::string) onto the compile time
             // templated integers (incrementing int) for Wt::Dbo    
+            // key = integer (order type was declared)
+            // value = string full name of protobuf type
             static boost::bimap<int, std::string> dbo_map;
+            // key = integer (order type was declared)
+            // value = string name for database table
+            std::map<int, std::string> mangle_map_;
             // next integer to use for new incoming type
-            static int index;
+            int index_;
 
             std::ostream* log_;
 
-            Wt::Dbo::Session session_;
-            Wt::Dbo::backend::Sqlite3* connection_;
+            std::string db_name_;
 
+            // Wt Dbo has its own brand of memory management
+            Wt::Dbo::backend::Sqlite3* connection_;
+            Wt::Dbo::Session* session_;
             Wt::Dbo::Transaction* transaction_;
+
             boost::posix_time::ptime t_last_commit_;
-            static boost::posix_time::time_duration t_between_commits_;
             
         };
     }

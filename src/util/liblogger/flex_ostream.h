@@ -43,9 +43,8 @@ namespace goby
             { sb_.group_name(s); }
             
             void add_stream(const std::string& verbosity = "verbose", std::ostream* os = 0)
-            { sb_.add_stream(verbosity, os); }
+            { sb_.add_stream(verbosity, os); }            
             
-
             void refresh() { sb_.refresh(); }
     
             void die_flag(bool b)
@@ -59,13 +58,13 @@ namespace goby
                            const std::string & color = "nocolor",
                            const std::string & description = "");
             
-    
+            
             // overload this function so we can look for the die manipulator
             // and set the die_flag
             // to exit after this line
             std::ostream & operator<<(std::ostream & (*pf) (std::ostream &));    
 
-//provide interfaces to the rest of the types
+            //provide interfaces to the rest of the types
             std::ostream& operator<< (bool& val )
             { return (quiet()) ? *this : std::ostream::operator<<(val); }
             std::ostream& operator<< (const short& val )

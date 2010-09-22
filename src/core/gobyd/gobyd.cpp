@@ -76,7 +76,7 @@ Daemon::Daemon()
     std::string verbosity = "verbose";
     glogger.add_stream(verbosity, &std::cout);
     glogger.name("gobyd");
-    
+  
     // nocolor, red, lt_red, green, lt_green, yellow,  lt_yellow, blue, lt_blue, magenta, lt_magenta, cyan, lt_cyan, white, lt_white
     glogger.add_group("connect", ">", "lt_magenta", "connections");
     glogger.add_group("disconnect", "<", "lt_blue", "disconnections");
@@ -99,7 +99,8 @@ void Daemon::run()
         
         if(timed_receive(*listen_queue_,
                          request,
-                         t_next_db_commit_))
+                         t_next_db_commit_,
+                         buffer_))
         {
             switch(request.notification_type())
             {
@@ -117,7 +118,8 @@ void Daemon::run()
         else
         {    
             // write database entries to actual db
-            boost::mutex::scoped_lock lock(dbo_mutex);
+            boost::mutex::scoped_lock lock1(logger_mutex);
+            boost::mutex::scoped_lock lock2(dbo_mutex);
             dbo_manager_->commit();
             // TODO(tes): make this configurable
             t_next_db_commit_ += boost::posix_time::seconds(1);
@@ -165,7 +167,7 @@ void Daemon::connect(const std::string& name)
         response.set_explanation("name in use");
     }
 
-    send(connect_response_queue, response);
+    send(connect_response_queue, response, buffer_, sizeof(buffer_));
 }
 
 void Daemon::disconnect(const std::string& name)
@@ -266,7 +268,7 @@ void Daemon::ConnectedClient::run()
     while(active_)
     {
         proto::NotificationToServer notification;
-        if(timed_receive(to_server_queue, notification, t_next_heartbeat_)) 
+        if(timed_receive(to_server_queue, notification, t_next_heartbeat_, buffer_)) 
             process_notification(notification);
         else
         {
@@ -280,7 +282,7 @@ void Daemon::ConnectedClient::run()
                 proto::NotificationToServer sr;
                 sr.set_notification_type(proto::NotificationToServer::DISCONNECT);
                 sr.set_application_name(name_);
-                send(listen_queue, sr);
+                send(listen_queue, sr, buffer_, sizeof(buffer_));
                 stop();
             } 
             else if(now > t_last_active_ + HEARTBEAT_INTERVAL)
@@ -288,7 +290,7 @@ void Daemon::ConnectedClient::run()
                 // send request for heartbeat
                 proto::NotificationToClient request;
                 request.set_notification_type(proto::NotificationToClient::HEARTBEAT_REQUEST);
-                send(from_server_queue, request);
+                send(from_server_queue, request, buffer_, sizeof(buffer_));
             }
             
             t_next_heartbeat_ += boost::posix_time::seconds(5);
@@ -301,7 +303,7 @@ void Daemon::ConnectedClient::process_notification(const proto::NotificationToSe
     if(!glogger.quiet())
     {
         boost::mutex::scoped_lock lock(logger_mutex);
-        glogger << group(name_) << "> " << notification.ShortDebugString() << std::endl;
+        glogger << group(name_) << "> " << notification.DebugString() << std::endl;
     }
     
     
@@ -311,7 +313,10 @@ void Daemon::ConnectedClient::process_notification(const proto::NotificationToSe
     // if the client sent along a new type, add it to our database
     if(notification.has_file_descriptor_proto())
     {
-        boost::mutex::scoped_lock lock(dbo_mutex);
+        //TODO(tes): Make liblogger thread safe and thus remove logger_mutex
+        // from this application
+        boost::mutex::scoped_lock lock1(logger_mutex);
+        boost::mutex::scoped_lock lock2(dbo_mutex);
         DBOManager::get_instance()->add_file(notification.file_descriptor_proto());
     }
 
@@ -343,7 +348,8 @@ void Daemon::ConnectedClient::process_publish(const proto::NotificationToServer&
     
     
     // finally publish this to the SQL database
-    boost::mutex::scoped_lock lock(dbo_mutex);
+    boost::mutex::scoped_lock lock1(logger_mutex);
+    boost::mutex::scoped_lock lock2(dbo_mutex);
     DBOManager::get_instance()->add_message
         (msg_in.embedded_msg().type(),
          msg_in.embedded_msg().body());
@@ -409,7 +415,7 @@ void Daemon::ConnectedClient::process_publish_subscribers(const proto::Notificat
                 it = p.first;
             }
                  
-            if(try_send(*(it->second), msg_out))
+            if(try_send(*(it->second), msg_out, buffer_, sizeof(buffer_)))
             {
                 if(!glogger.quiet())
                 {

@@ -93,13 +93,11 @@ void GobyAppBase::connect()
         request.set_application_name(application_name_);
 
         // serialize and send the server request
-        char send_buffer [request.ByteSize()];
-        request.SerializeToArray(&send_buffer, sizeof(send_buffer));
-        listen_queue.send(&send_buffer, request.ByteSize(), 0);        
+        send(listen_queue,request, buffer_, sizeof(buffer_));  
         
         // wait for response
         proto::NotificationToClient response;  
-        while(!timed_receive(response_queue, response, goby_time() + CONNECTION_WAIT_INTERVAL))
+        while(!timed_receive(response_queue, response, goby_time() + CONNECTION_WAIT_INTERVAL, buffer_))
             glogger << warn << "waiting for server to respond..." <<  std::endl;        
 
         if(response.notification_type() == proto::NotificationToClient::CONNECTION_ACCEPTED)
@@ -134,7 +132,7 @@ void GobyAppBase::disconnect()
         sr.set_application_name(application_name_);
         
         // serialize and send the server request
-        send(listen_queue, sr);
+        send(listen_queue, sr, buffer_, sizeof(buffer_));
         connected_ = false;
     }
     catch(boost::interprocess::interprocess_exception &ex)
@@ -150,8 +148,10 @@ void GobyAppBase::run()
     while(connected_)
     {
         proto::NotificationToClient in_msg;
-        if(timed_receive(*from_server_queue_, in_msg, t_next_loop_))
+        if(timed_receive(*from_server_queue_, in_msg, t_next_loop_, buffer_))
         {
+            glogger << "> " << in_msg.DebugString() << std::endl;
+            
             switch(in_msg.notification_type())
             {
                 case proto::NotificationToClient::HEARTBEAT_REQUEST:
@@ -159,7 +159,7 @@ void GobyAppBase::run()
                     proto::NotificationToServer heartbeat;
                     heartbeat.set_notification_type
                         (proto::NotificationToServer::HEARTBEAT);
-                    send(*to_server_queue_, heartbeat);
+                    send(*to_server_queue_, heartbeat, buffer_, sizeof(buffer_));
                 }
                 break;
                         
@@ -171,8 +171,10 @@ void GobyAppBase::run()
                     {
                         NameHandlerMap& name_map = subscriptions_[in_msg.embedded_msg().type()];
                         for(NameHandlerMap::iterator it = name_map.begin(), n = name_map.end(); it !=n; ++it)
+                        {
                             it->second->post(in_msg.embedded_msg().body());
-                            
+                        }
+                        
                     }
                 }
                 break;
@@ -205,7 +207,7 @@ void GobyAppBase::server_notify_subscribe(const google::protobuf::Descriptor* de
         notification.mutable_embedded_msg()->set_name(variable_name);
     
     notification.set_notification_type(proto::NotificationToServer::SUBSCRIBE_REQUEST);
-    send(*to_server_queue_, notification);
+    send(*to_server_queue_, notification, buffer_, sizeof(buffer_));
 }
 
 
@@ -224,8 +226,12 @@ void GobyAppBase::server_notify_publish(const google::protobuf::Descriptor* desc
     notification.mutable_embedded_msg()->set_type(type_name);
     if(!variable_name.empty())
         notification.mutable_embedded_msg()->set_name(variable_name);
+
     
     notification.set_notification_type(proto::NotificationToServer::PUBLISH_REQUEST);
     notification.mutable_embedded_msg()->set_body(serialized_message);
-    send(*to_server_queue_, notification);
+
+    glogger << "< " << notification.DebugString() << std::endl;    
+
+    send(*to_server_queue_, notification, buffer_, sizeof(buffer_));
 }

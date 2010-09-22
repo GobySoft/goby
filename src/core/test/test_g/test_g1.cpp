@@ -13,7 +13,7 @@ class TestG1 : public GobyAppBase
 {
 public:
     TestG1()
-        : GobyAppBase("test_app1", boost::posix_time::seconds(1))
+        : GobyAppBase("test_app1", boost::posix_time::milliseconds(200))
         {
             subscribe(&TestG1::handler, this, "bob");
             subscribe(&TestG1::handler2, this, "joe");
@@ -38,6 +38,8 @@ private:
 
     void handler(const TestMessage& msg)
         {
+            double d = msg.foo();
+            
             glogger << "in1: " << msg << std::endl;
         }
 

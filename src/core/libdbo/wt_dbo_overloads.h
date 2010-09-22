@@ -33,7 +33,7 @@ namespace Wt
     {
         // TODO(tes): support repeats, enumerations, and embedded messages
         template <typename T, typename A>
-        void protobuf_message_persist(T& obj, A& action)
+            void protobuf_message_persist(T& obj, A& action)
         {
             const google::protobuf::Descriptor* desc = obj.GetDescriptor();
             const google::protobuf::Reflection* refl = obj.GetReflection();
@@ -41,7 +41,7 @@ namespace Wt
             for(int i = 0, n = desc->field_count(); i < n; ++i)
             {
                 const google::protobuf::FieldDescriptor* field_desc = desc->field(i);
-
+                
                 
                 if(field_desc->is_repeated())
                     throw(std::runtime_error(std::string("repeated messages are not currently supported:" +  field_desc->DebugString())));
@@ -101,7 +101,7 @@ namespace Wt
                         std::string tmp = refl->GetString(obj, field_desc);
                         Wt::Dbo::field(action, tmp, field_desc->name());
                         refl->SetString(&obj, field_desc, tmp);
-                    }                        
+                    }
                     break;                    
 
                     case google::protobuf::FieldDescriptor::CPPTYPE_FLOAT:

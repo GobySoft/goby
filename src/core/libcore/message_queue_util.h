@@ -33,19 +33,17 @@ namespace goby
         // send
         //
         template<typename SerializeFromType>
-            void send(boost::interprocess::message_queue& queue, SerializeFromType& out)
-        {
-            static char buffer [MAX_MSG_BUFFER_SIZE];
-            out.SerializeToArray(&buffer, sizeof(buffer));
-            queue.send(&buffer, out.ByteSize(), 0);
+            void send(boost::interprocess::message_queue& queue, SerializeFromType& out, char* buffer, int buffer_size)
+        {            
+            out.SerializeToArray(buffer, buffer_size);
+            queue.send(buffer, out.ByteSize(), 0);
         }
         
         template<typename SerializeFromType>
-            bool try_send(boost::interprocess::message_queue& queue, SerializeFromType& out)
+            bool try_send(boost::interprocess::message_queue& queue, SerializeFromType& out, char* buffer, int buffer_size)
         {
-            static char buffer [MAX_MSG_BUFFER_SIZE];
-            out.SerializeToArray(&buffer, sizeof(buffer));
-            return queue.try_send(&buffer, out.ByteSize(), 0);
+            out.SerializeToArray(buffer, buffer_size);
+            return queue.try_send(buffer, out.ByteSize(), 0);
         }
 
         //
@@ -54,25 +52,25 @@ namespace goby
 
         // TODO(tes): need to throw exception on parsing errors (ParseFromArray is false) 
         template<typename ParseToType>
-            void receive(boost::interprocess::message_queue& queue, ParseToType& in)
+            void receive(boost::interprocess::message_queue& queue, ParseToType& in, char* buffer)
         {
-            static char buffer [MAX_MSG_BUFFER_SIZE];
             unsigned int priority;
             std::size_t recvd_size;
 
-            queue.receive(&buffer, MAX_MSG_BUFFER_SIZE, recvd_size, priority);
-            in.ParseFromArray(&buffer,recvd_size);
+            queue.receive(buffer, MAX_MSG_BUFFER_SIZE, recvd_size, priority);
+            in.ParseFromArray(buffer, recvd_size);
         }
         
         template<typename ParseToType>
-            bool timed_receive(boost::interprocess::message_queue& queue, ParseToType& in, boost::posix_time::ptime abs_time)
+            bool timed_receive(boost::interprocess::message_queue& queue, ParseToType& in, boost::posix_time::ptime abs_time, char* buffer)
         {
-            static char buffer [MAX_MSG_BUFFER_SIZE];
             unsigned int priority;
             std::size_t recvd_size;
 
-            bool receive_good = queue.timed_receive(&buffer, MAX_MSG_BUFFER_SIZE, recvd_size, priority, abs_time);
-            if(receive_good) in.ParseFromArray(&buffer,recvd_size);
+            bool receive_good = queue.timed_receive(buffer, MAX_MSG_BUFFER_SIZE, recvd_size, priority, abs_time);
+            if(receive_good)
+                in.ParseFromArray(buffer, recvd_size);
+            
             return receive_good;
         }
     }

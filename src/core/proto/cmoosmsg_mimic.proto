@@ -1,7 +1,7 @@
-package goby.core.proto;
+package proto;
 
 // contains the same information as a CMOOSMsg
-message CMOOSMsgMimic
+message CMOOSMsg
 {
     required int32 msg_type = 1;
     required int32 data_type = 2;

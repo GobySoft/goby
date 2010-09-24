@@ -21,8 +21,7 @@
 #include <boost/thread.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include "server_request.pb.h"
-
+#include "goby/core/proto/server_request.pb.h"
 #include "goby/core/core_constants.h"
 #include "goby/core/libcore/message_queue_util.h"
 
@@ -39,21 +38,36 @@ boost::mutex Daemon::subscription_mutex;
 boost::mutex Daemon::logger_mutex;
 goby::util::FlexOstream Daemon::glogger;
 
-Daemon::TypeNameSubscribersMap Daemon::subscriptions;
-
+boost::unordered_multimap<std::string, Daemon::Subscriber > Daemon::subscriptions;
+goby::core::Daemon* goby::core::Daemon::inst_ = 0;
 
 // how long a client can be quiet before we ask for a heartbeat
-boost::posix_time::time_duration Daemon::HEARTBEAT_INTERVAL = boost::posix_time::seconds(2);
+const boost::posix_time::time_duration Daemon::HEARTBEAT_INTERVAL =
+    boost::posix_time::seconds(2);
 
 // how long a client can be quiet before we send it to the morgue
-boost::posix_time::time_duration Daemon::DEAD_INTERVAL = Daemon::HEARTBEAT_INTERVAL + Daemon::HEARTBEAT_INTERVAL;
+const boost::posix_time::time_duration Daemon::DEAD_INTERVAL =
+    Daemon::HEARTBEAT_INTERVAL + Daemon::HEARTBEAT_INTERVAL;
 
+
+// singleton class, use this to get pointer
+goby::core::Daemon* goby::core::Daemon::get_instance()
+{
+    if(!inst_) inst_ = new goby::core::Daemon();
+    return(inst_);
+}
+
+void goby::core::Daemon::shutdown()
+{
+    if(inst_) delete inst_;
+}
 
 int main()
 {
-    Daemon g;
-    g.run();
-    
+    Daemon::get_instance()->run();
+    Daemon::shutdown();
+    DBOManager::shutdown();
+    google::protobuf::ShutdownProtobufLibrary();
     return 0;
 }
 
@@ -65,22 +79,33 @@ Daemon::Daemon()
     message_queue::remove(CONNECT_LISTEN_QUEUE.c_str());
 
     listen_queue_ = boost::shared_ptr<message_queue>
-        (new message_queue
-         (boost::interprocess::create_only, CONNECT_LISTEN_QUEUE.c_str(), MAX_NUM_MSG, MAX_MSG_BUFFER_SIZE));
+        (new message_queue(
+            boost::interprocess::create_only,
+            CONNECT_LISTEN_QUEUE.c_str(),
+            MAX_NUM_MSG,
+            MAX_MSG_BUFFER_SIZE));
     
-    
-    dbo_manager_->connect("gobyd_test.db");
-    dbo_manager_->set_logger(&glogger);
-    dbo_manager_->add_flex_groups(glogger);
-    
-    std::string verbosity = "verbose";
-    glogger.add_stream(verbosity, &std::cout);
-    glogger.name("gobyd");
-  
-    // nocolor, red, lt_red, green, lt_green, yellow,  lt_yellow, blue, lt_blue, magenta, lt_magenta, cyan, lt_cyan, white, lt_white
-    glogger.add_group("connect", ">", "lt_magenta", "connections");
-    glogger.add_group("disconnect", "<", "lt_blue", "disconnections");
+    {        
+        boost::mutex::scoped_lock lock(dbo_mutex);
+        
+        dbo_manager_->connect("gobyd_test.db");
+        dbo_manager_->set_logger(&glogger);
+        dbo_manager_->add_flex_groups(glogger);
+    }
 
+    {
+        boost::mutex::scoped_lock lock(logger_mutex);
+
+        fout_.open("gobyd.txt");
+        glogger.add_stream("verbose", &fout_);        
+        
+        glogger.name("gobyd");
+        
+        // nocolor, red, lt_red, green, lt_green, yellow,  lt_yellow, blue, lt_blue, magenta, lt_magenta, cyan, lt_cyan, white, lt_white
+        glogger.add_group("connect", ">", "lt_magenta", "connections");
+        glogger.add_group("disconnect", "<", "lt_blue", "disconnections");
+    }
+    
     t_start_ = goby_time();
     t_next_db_commit_ = boost::posix_time::second_clock::universal_time() + boost::posix_time::seconds(1);
 }
@@ -93,22 +118,26 @@ Daemon::~Daemon()
 void Daemon::run()
 {
     while(active_)
-    {
-        // blocks waiting for receive
-        proto::NotificationToServer request;
-        
+    {        
         if(timed_receive(*listen_queue_,
-                         request,
+                         notification_,
                          t_next_db_commit_,
-                         buffer_))
+                         buffer_,
+                         &buffer_msg_size_))
         {
-            switch(request.notification_type())
+            // if(!glogger.quiet())
+            // {
+            //     boost::mutex::scoped_lock lock(logger_mutex);
+            //     glogger << "> " << notification_.DebugString() << std::endl;
+            // }
+            
+            switch(notification_.notification_type())
             {
-                case proto::NotificationToServer::CONNECT:
-                    connect(request.application_name());
+                case proto::Notification::CONNECT_REQUEST:
+                    connect();
                     break;
-                case proto::NotificationToServer::DISCONNECT:
-                    disconnect(request.application_name());
+                case proto::Notification::DISCONNECT_REQUEST:
+                    disconnect();
                     break;
 
                     // ignore other requests on the connection line
@@ -122,20 +151,20 @@ void Daemon::run()
             boost::mutex::scoped_lock lock2(dbo_mutex);
             dbo_manager_->commit();
             // TODO(tes): make this configurable
-            t_next_db_commit_ += boost::posix_time::seconds(1);
+            t_next_db_commit_ += boost::posix_time::seconds(1);            
         }
     }
 }
 
-void Daemon::connect(const std::string& name)
+void Daemon::connect()
 {
+    const std::string& name = notification_.application_name();
+
+    std::cout << "name: " << name << std::endl;
+    
     message_queue connect_response_queue
         (boost::interprocess::open_only,
          std::string(CONNECT_RESPONSE_QUEUE_PREFIX + name).c_str());
-    
-
-    // populate server request for connection
-    proto::NotificationToClient response;  
 
     if(!clients_.count(name))
     {
@@ -150,8 +179,9 @@ void Daemon::connect(const std::string& name)
             boost::mutex::scoped_lock lock(logger_mutex);
             glogger << group("connect") << "`" << name << "` has connected" << std::endl;
         }
-
-        response.set_notification_type(proto::NotificationToClient::CONNECTION_ACCEPTED);
+        
+        notification_.Clear();
+        notification_.set_notification_type(proto::Notification::CONNECTION_ACCEPTED);
     }
     else
     {
@@ -163,28 +193,32 @@ void Daemon::connect(const std::string& name)
                     << name << "` is already connected" << std::endl;
         }
         
-        response.set_notification_type(proto::NotificationToClient::CONNECTION_DENIED);
-        response.set_explanation("name in use");
+        notification_.Clear();
+        notification_.set_notification_type(proto::Notification::CONNECTION_DENIED);
+        notification_.set_explanation("name in use");
     }
 
-    send(connect_response_queue, response, buffer_, sizeof(buffer_));
+    send(connect_response_queue, notification_, buffer_, sizeof(buffer_));
 }
 
-void Daemon::disconnect(const std::string& name)
+void Daemon::disconnect()
 {
+    const std::string& name = notification_.application_name();
+    
     if(clients_.count(name))
     {
         clients_[name]->stop();
         client_threads_[name]->join();        
-
+        
         boost::mutex::scoped_lock lock(subscription_mutex);
         // remove entries from subscription database
-        for(TypeNameSubscribersMap::iterator it = subscriptions.begin(),
-                n = subscriptions.end(); it != n; ++it)
+        typedef boost::unordered_multimap<std::string, Subscriber>::iterator iterator;
+        for(iterator it = subscriptions.begin(), n = subscriptions.end(); it != n;)
         {
-            for(NameSubscribersMap::iterator jt = it->second.begin(),
-                    o = it->second.end(); jt != o; ++jt)
-                jt->second.erase(clients_[name]);
+            iterator erase_it = it++;
+
+            if(erase_it->second.client() == clients_[name])
+                subscriptions.erase(erase_it);
         }
     
         clients_.erase(name);
@@ -211,243 +245,4 @@ void Daemon::disconnect(const std::string& name)
 }
 
 
-
-Daemon::ConnectedClient::ConnectedClient(const std::string& name)
-    : name_(name),
-      active_(true),
-      t_connected_(goby_time()),
-      t_last_active_(t_connected_),
-      t_next_heartbeat_(boost::posix_time::second_clock::universal_time() + boost::posix_time::seconds(1))
-{
-    if(!glogger.quiet())
-    {
-        boost::mutex::scoped_lock lock(logger_mutex);
-        glogger.add_group(name_, ">", "blue", name_);
-    }
-    
-    message_queue::remove
-        (std::string(TO_SERVER_QUEUE_PREFIX + name_).c_str());
-        
-    message_queue::remove
-        (std::string(FROM_SERVER_QUEUE_PREFIX + name_).c_str());
-        
-    message_queue to_server_queue(boost::interprocess::create_only,
-                                  std::string(TO_SERVER_QUEUE_PREFIX + name_).c_str(),
-                                  MAX_NUM_MSG,
-                                  MAX_MSG_BUFFER_SIZE);
-        
-        
-    message_queue from_server_queue(boost::interprocess::create_only,
-                                    std::string(FROM_SERVER_QUEUE_PREFIX + name_).c_str(),
-                                    MAX_NUM_MSG,
-                                    MAX_MSG_BUFFER_SIZE);
-}
-
-Daemon::ConnectedClient::~ConnectedClient()
-{
-    message_queue::remove(std::string(TO_SERVER_QUEUE_PREFIX + name_).c_str());
-    message_queue::remove(std::string(FROM_SERVER_QUEUE_PREFIX + name_).c_str());    
-
-    if(!glogger.quiet())
-    {
-        boost::mutex::scoped_lock lock(logger_mutex);
-        glogger << group(name_) << "ConnectedClient destructed" << std::endl;
-    }
-    
-
-}
-
-
-void Daemon::ConnectedClient::run()
-{
-    message_queue to_server_queue(boost::interprocess::open_only,
-                                  std::string(TO_SERVER_QUEUE_PREFIX + name_).c_str());
-    message_queue from_server_queue(boost::interprocess::open_only,
-                                    std::string(FROM_SERVER_QUEUE_PREFIX + name_).c_str());
-    
-    while(active_)
-    {
-        proto::NotificationToServer notification;
-        if(timed_receive(to_server_queue, notification, t_next_heartbeat_, buffer_)) 
-            process_notification(notification);
-        else
-        {
-            boost::posix_time::ptime now = goby_time();
-            
-            if(now > t_last_active_ + DEAD_INTERVAL)
-            {
-                // deceased client - disconnect ourselves
-                message_queue listen_queue(boost::interprocess::open_only, CONNECT_LISTEN_QUEUE.c_str());
-                
-                proto::NotificationToServer sr;
-                sr.set_notification_type(proto::NotificationToServer::DISCONNECT);
-                sr.set_application_name(name_);
-                send(listen_queue, sr, buffer_, sizeof(buffer_));
-                stop();
-            } 
-            else if(now > t_last_active_ + HEARTBEAT_INTERVAL)
-            {
-                // send request for heartbeat
-                proto::NotificationToClient request;
-                request.set_notification_type(proto::NotificationToClient::HEARTBEAT_REQUEST);
-                send(from_server_queue, request, buffer_, sizeof(buffer_));
-            }
-            
-            t_next_heartbeat_ += boost::posix_time::seconds(5);
-        }        
-    }
-}
-
-void Daemon::ConnectedClient::process_notification(const proto::NotificationToServer& notification)
-{
-    if(!glogger.quiet())
-    {
-        boost::mutex::scoped_lock lock(logger_mutex);
-        glogger << group(name_) << "> " << notification.DebugString() << std::endl;
-    }
-    
-    
-    // client sent us a message, so it's still alive
-    t_last_active_ = goby_time();
-
-    // if the client sent along a new type, add it to our database
-    if(notification.has_file_descriptor_proto())
-    {
-        //TODO(tes): Make liblogger thread safe and thus remove logger_mutex
-        // from this application
-        boost::mutex::scoped_lock lock1(logger_mutex);
-        boost::mutex::scoped_lock lock2(dbo_mutex);
-        DBOManager::get_instance()->add_file(notification.file_descriptor_proto());
-    }
-
-    
-    switch(notification.notification_type())
-    {
-        case proto::NotificationToServer::PUBLISH_REQUEST: 
-            process_publish(notification);
-            break;
-
-        case proto::NotificationToServer::SUBSCRIBE_REQUEST:
-            process_subscribe(notification);
-            break;
-
-        case proto::NotificationToServer::HEARTBEAT:
-        default: return;
-    }
-}
-
-
-void Daemon::ConnectedClient::process_publish(const proto::NotificationToServer& msg_in)
-{
-    
-    // enforce thread-safety
-    const TypeNameSubscribersMap& type_map = subscriptions;
-    TypeNameSubscribersMap::const_iterator it = type_map.find(msg_in.embedded_msg().type());  
-    if(it != type_map.end())
-        process_publish_name(msg_in, it->second);
-    
-    
-    // finally publish this to the SQL database
-    boost::mutex::scoped_lock lock1(logger_mutex);
-    boost::mutex::scoped_lock lock2(dbo_mutex);
-    DBOManager::get_instance()->add_message
-        (msg_in.embedded_msg().type(),
-         msg_in.embedded_msg().body());
-}
-
-
-void Daemon::ConnectedClient::process_publish_name(const proto::NotificationToServer& msg_in,
-                                                   const NameSubscribersMap& name_map)
-{
-
-    if(!msg_in.embedded_msg().has_name())
-    {
-        // send to all subscribers with this type
-        typedef std::pair<std::string, Subscribers> P;
-        BOOST_FOREACH(const P&p, name_map)
-            process_publish_subscribers(msg_in, p.second);
-    }
-    else
-    {
-        // send to those subscribed to your name
-        NameSubscribersMap::const_iterator it_incoming_name = name_map.find(msg_in.embedded_msg().name());  
-        if(it_incoming_name != name_map.end())
-            process_publish_subscribers(msg_in,
-                                        it_incoming_name->second);
-
-        // ... and those subscribed to all names
-        NameSubscribersMap::const_iterator it_all_name = name_map.find("");  
-        if(it_all_name != name_map.end())
-            process_publish_subscribers(msg_in,
-                                        it_all_name->second);
-    }
-}
-
-void Daemon::ConnectedClient::process_publish_subscribers(const proto::NotificationToServer& msg_in,
-                                                          const Subscribers& subscribers)
-{
-    // prepare outgoing message
-    proto::NotificationToClient msg_out;
-    msg_out.mutable_embedded_msg()->CopyFrom(msg_in.embedded_msg());
-    msg_out.set_notification_type
-        (proto::NotificationToClient::INCOMING_MESSAGE);    
-    
-    // send it to everyone on the subscription list
-    BOOST_FOREACH(const shared_ptr<ConnectedClient>& cc, subscribers)
-    {
-        // don't send mail back to yourself!
-        if(cc != shared_from_this())
-        {
-            typedef boost::unordered_map< shared_ptr<ConnectedClient>, shared_ptr<message_queue> > QMap;
-            
-            QMap::iterator it = open_queues_.find(cc);
-            
-            if(it == open_queues_.end())
-            {
-                std::pair<QMap::iterator,bool> p =
-                    open_queues_.insert
-                    (std::make_pair
-                     (cc, shared_ptr<message_queue>
-                      (new message_queue
-                       (boost::interprocess::open_only,
-                        std::string(FROM_SERVER_QUEUE_PREFIX
-                                    + cc->name()).c_str()))));
-                it = p.first;
-            }
-                 
-            if(try_send(*(it->second), msg_out, buffer_, sizeof(buffer_)))
-            {
-                if(!glogger.quiet())
-                {
-                    boost::mutex::scoped_lock lock(logger_mutex);
-                    glogger << group(name_) << "sent message to " << cc->name() << std::endl;
-                }
-            }
-            else
-            {
-                if(!glogger.quiet())
-                {
-                    boost::mutex::scoped_lock lock(logger_mutex);
-                    glogger << group(name_) << "failed to send message to " << cc->name() << std::endl;
-                }
-            }             
-        }
-    }
-}
-
-
-
-void Daemon::ConnectedClient::process_subscribe(const proto::NotificationToServer& msg_in)
-{
-    boost::mutex::scoped_lock lock(subscription_mutex);
-
-    subscriptions[msg_in.embedded_msg().type()][msg_in.embedded_msg().name()].insert(shared_from_this());
-    
-    if(!glogger.quiet())
-    {
-        boost::mutex::scoped_lock lock(logger_mutex);
-        glogger << group(name_) << "subscribed to " << msg_in.embedded_msg().type() << std::endl;
-    }
-    
-}
 

@@ -23,9 +23,9 @@ namespace goby
 {
     namespace core
     {
-        const unsigned MAX_MSG_BUFFER_SIZE = 1 << 20;
-        const unsigned MAX_NUM_MSG = 100;
-
+        const unsigned MAX_MSG_BUFFER_SIZE = 1 << 19;
+        const unsigned MAX_NUM_MSG = 10;
+        
         const std::string QUEUE_PREFIX = "goby_";
         
         // gobyd will listen for new application connection requests on this queue
@@ -46,5 +46,9 @@ namespace goby
 
     }
 }
+
+inline std::ostream& operator<<(std::ostream& out, const google::protobuf::Message& msg)
+{ return (out << msg.DebugString());}
+
 
 #endif

@@ -14,6 +14,7 @@ get_filename_component(goby_LIB_DIR lib ABSOLUTE)
 get_filename_component(goby_BIN_DIR bin ABSOLUTE)
 get_filename_component(goby_INC_DIR include ABSOLUTE)
 get_filename_component(goby_SRC_DIR src ABSOLUTE)
+get_filename_component(goby_BUILD_DIR build ABSOLUTE)
 
 # set the cmake defaults for libraries and binaries
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${goby_LIB_DIR} CACHE PATH 
@@ -58,7 +59,13 @@ endforeach()
 # copy to goby/include
 file(GLOB_RECURSE INCLUDE_FILES RELATIVE ${goby_SRC_DIR} src/*.h)
 foreach(I ${INCLUDE_FILES})
-  configure_file(${goby_SRC_DIR}/${I} ${goby_INC_DIR}/goby/${I})
+  configure_file(${goby_SRC_DIR}/${I} ${goby_INC_DIR}/goby/${I} COPYONLY)
+endforeach()
+
+# copy also for google protobuf headers
+file(GLOB_RECURSE INCLUDE_FILES RELATIVE ${goby_BUILD_DIR}/src build/src/*.h)
+foreach(I ${INCLUDE_FILES})
+  configure_file(${goby_BUILD_DIR}/src/${I} ${goby_INC_DIR}/goby/${I} COPYONLY)
 endforeach()
 
 

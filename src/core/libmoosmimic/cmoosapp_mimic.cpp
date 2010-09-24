@@ -14,20 +14,19 @@
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
 
-#include "moos_mimic.h"
+#include "cmoosapp_mimic.h"
 
-GobyCMOOSApp::GobyCMOOSApp() 
+goby::core::CMOOSApp::CMOOSApp() 
     : m_Comms(*this),
       community_("#1")
-{
-    OnStartUp();
-}
+{ }
 
-bool GobyCMOOSApp::Run(const char * sName,
+bool goby::core::CMOOSApp::Run(const char * sName,
                        const char * sMissionFile,
                        const char * sSubscribeName /*=0*/)
 {
     std::cout << "run called" << std::endl;
+    goby::core::ApplicationBase::set_application_name(sName);
             
     if(sMissionFile)
     {
@@ -37,63 +36,71 @@ bool GobyCMOOSApp::Run(const char * sName,
         }
     }
 
+    m_MissionReader.SetAppName(sName);
     m_MissionReader.GetValue("Community", community_);
-    
-    GobyAppBase::set_application_name(sName);
 
-    std::cout << "set loop freq" << std::endl;
-    GobyAppBase::set_loop_freq(DEFAULT_MOOS_APP_FREQ_);
+    int freq = DEFAULT_MOOS_APP_FREQ_;
+    m_MissionReader.GetConfigurationParam("AppTick", freq);
+    goby::core::ApplicationBase::set_loop_freq(freq);
 
     std::cout << "start called" << std::endl;
-    GobyAppBase::start();
+    goby::core::ApplicationBase::start();
+    std::cout << "OnStartUp called" << std::endl;
+    OnStartUp();
     OnConnectToServer();
-    GobyAppBase::run();
+    goby::core::ApplicationBase::run();
+
+    return true;
 }
 
 
-GobyCMOOSApp::CMOOSCommClient::CMOOSCommClient(GobyCMOOSApp& base)
+goby::core::CMOOSApp::CMOOSCommClient::CMOOSCommClient(goby::core::CMOOSApp& base)
     : base_(base)
 { }
 
-bool GobyCMOOSApp::CMOOSCommClient::Notify(const std::string &sVar,
+bool goby::core::CMOOSApp::CMOOSCommClient::Notify(const std::string &sVar,
                                            const std::string & sVal,
                                            const std::string & sSrcAux,
                                            double dfTime/*=-1*/)
 {
     CMOOSMsg Msg(MOOS_NOTIFY,sVar.c_str(),sVal.c_str(),dfTime);
     Msg.SetSourceAux(sSrcAux);
-    Post(Msg);
+    return Post(Msg);
 }
         
 
-bool GobyCMOOSApp::CMOOSCommClient::Notify(const std::string & sVar,
+bool goby::core::CMOOSApp::CMOOSCommClient::Notify(const std::string & sVar,
                                            double dfVal,
                                            const std::string & sSrcAux,
                                            double dfTime/*=-1*/)
 {
     CMOOSMsg Msg(MOOS_NOTIFY,sVar.c_str(),dfVal,dfTime);
     Msg.SetSourceAux(sSrcAux);
-    Post(Msg);
+    return Post(Msg);
 }
 
-bool GobyCMOOSApp::CMOOSCommClient::Register(const std::string & sVar,double dfInterval)
+bool goby::core::CMOOSApp::CMOOSCommClient::Register(const std::string & sVar,double dfInterval)
 {
-    base_.GobyAppBase::subscribe(&GobyCMOOSApp::handle_incoming, &base_, sVar);
-} 
+    base_.goby::core::ApplicationBase::subscribe(
+        &goby::core::CMOOSApp::handle_incoming,
+        &base_,
+        make_filter("key", Filter::EQUAL, sVar));
 
-bool GobyCMOOSApp::CMOOSCommClient::Post(CMOOSMsg& Msg)
+    return true;
+}
+
+bool goby::core::CMOOSApp::CMOOSCommClient::Post(CMOOSMsg& Msg)
 {
     Msg.m_sSrc = base_.application_name();
     Msg.m_sOriginatingCommunity = base_.community_;
     
-    base_.GobyAppBase::publish(moosmsg2proto_mimic(Msg));
+    base_.goby::core::ApplicationBase::publish(moosmsg2proto_mimic(Msg));
     return true;
 }
 
-
-proto::CMOOSMsg GobyCMOOSApp::moosmsg2proto_mimic(const CMOOSMsg& in)
+proto::CMOOSMsg goby::core::CMOOSApp::moosmsg2proto_mimic(const CMOOSMsg& in)
 {
-    proto::CMOOSMsg out;
+    static ::proto::CMOOSMsg out;
     out.set_msg_type(in.m_cMsgType);
     out.set_data_type(in.m_cDataType);
     out.set_key(in.m_sKey);
@@ -108,9 +115,9 @@ proto::CMOOSMsg GobyCMOOSApp::moosmsg2proto_mimic(const CMOOSMsg& in)
 }
     
 
-CMOOSMsg GobyCMOOSApp::proto_mimic2moosmsg(const proto::CMOOSMsg& in)
+CMOOSMsg goby::core::CMOOSApp::proto_mimic2moosmsg(const ::proto::CMOOSMsg& in)
 {
-    CMOOSMsg out;
+    static CMOOSMsg out;
     out.m_cMsgType = in.msg_type();
     out.m_cDataType = in.data_type();
     out.m_sKey = in.key();

@@ -4,9 +4,9 @@
 #define SIMULATORH
 
 #include <MOOSLIB/MOOSApp.h>
-#include "goby/core/libmoosmimic/moos_mimic.h"
+#include "goby/core/libmoosmimic/cmoosapp_mimic.h"
 
-class CSimulator : public GobyCMOOSApp
+class CSimulator : public goby::core::CMOOSApp
 {
 public:
     //standard construction and destruction

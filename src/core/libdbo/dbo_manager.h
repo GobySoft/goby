@@ -21,6 +21,7 @@
 #include <stdexcept>
 
 #include <boost/bimap.hpp>
+#include <boost/shared_ptr.hpp>
 
 #include <Wt/Dbo/Dbo>
 #include <Wt/Dbo/backend/Sqlite3>
@@ -41,11 +42,12 @@ namespace goby
         {
           public:
             static DBOManager* get_instance();
-
+            static void shutdown();
+            
             void add_file(const google::protobuf::FileDescriptorProto& proto);
             void add_type(const google::protobuf::Descriptor* descriptor);
-            void add_message(const std::string& name, const std::string& serialized_message);
-            void add_message(google::protobuf::Message* msg);
+//            void add_message(const std::string& name, const std::string& serialized_message);
+            void add_message(boost::shared_ptr<google::protobuf::Message> msg);
 
             void commit();
             
@@ -55,9 +57,11 @@ namespace goby
             
             void set_logger(std::ostream* log) { log_ = log; }            
             
-            google::protobuf::Message* new_msg_from_name(const std::string& name)
+            static boost::shared_ptr<google::protobuf::Message> new_msg_from_name(const std::string& name)
             {
-                return msg_factory.GetPrototype(descriptor_pool.FindMessageTypeByName(name))->New();
+                return boost::shared_ptr<google::protobuf::Message>(
+                    msg_factory.GetPrototype(
+                        descriptor_pool.FindMessageTypeByName(name))->New());
             }
             
             void connect(const std::string& db_name = "")
@@ -65,10 +69,10 @@ namespace goby
                 if(!db_name.empty())
                     db_name_ = db_name;
 
+                if(transaction_) delete transaction_;
                 if(connection_) delete connection_;
-                connection_ = new Wt::Dbo::backend::Sqlite3(db_name_);
-                // also deletes any transaction
                 if(session_) delete session_;
+                connection_ = new Wt::Dbo::backend::Sqlite3(db_name_);
                 session_ = new Wt::Dbo::Session;
                 session_->setConnection(*connection_);
                 // transaction deleted by session
@@ -90,29 +94,23 @@ namespace goby
                 class ProtoBufWrapper
             {
               public:
-              ProtoBufWrapper(google::protobuf::Message* p = 0)
+              ProtoBufWrapper(boost::shared_ptr<google::protobuf::Message> p =
+                              boost::shared_ptr<google::protobuf::Message>())
                   : p_(p)
                 {
                     // create new blank message if none given
-                    // either way, we own the message
                     if(!p)
                     {
-                        p_ = msg_factory.GetPrototype
-                               (descriptor_pool.FindMessageTypeByName
-                                (dbo_map.left.at(i)))->New();
+                        p_.reset(msg_factory.GetPrototype
+                                 (descriptor_pool.FindMessageTypeByName
+                                  (dbo_map.left.at(i)))->New());
                     }
                 }
 
-                ~ProtoBufWrapper()
-                {
-                    // we own the message, delete it
-                    if(p_) delete p_;
-                }
-    
-                google::protobuf::Message& msg() const { return *p_; }
-    
+                google::protobuf::Message& msg(){ return *p_; }                
+                
               private:
-                google::protobuf::Message* p_;
+                boost::shared_ptr<google::protobuf::Message> p_;
             };
 
             static google::protobuf::DynamicMessageFactory msg_factory;
@@ -125,9 +123,12 @@ namespace goby
             static DBOManager* inst_;
             DBOManager();
             
-            
             ~DBOManager()
-            { }
+            {
+                if(transaction_) delete transaction_;
+                if(connection_) delete connection_;
+                if(session_) delete session_;
+            }
             DBOManager(const DBOManager&);
             DBOManager& operator = (const DBOManager&);
 

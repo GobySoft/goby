@@ -1,6 +1,22 @@
+message Sub
+{
+    required double baz = 1;
+    required double bar = 2;  
+    repeated uint32 rint = 6;
+}
+
 message TestMessage
 {
     required double foo = 1;
+    optional string name = 2;
+    enum MyEnum { 
+         YES = 1;
+         NO = 2;
+         MAYBE = 3;
+     }
+    optional MyEnum evalue = 3;
+    optional Sub subfoo = 4;
+    repeated string rstr = 5;
 }
 
 message TestGConfig

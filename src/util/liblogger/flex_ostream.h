@@ -28,8 +28,10 @@
 namespace goby
 {
     namespace util
-    {    
+    {
+        
 // ostream extended class for holding the FlexOStreamBuf
+
         class FlexOstream : public std::ostream
         {
           public:
@@ -58,15 +60,15 @@ namespace goby
                            const std::string & color = "nocolor",
                            const std::string & description = "");
             
-            
             // overload this function so we can look for the die manipulator
             // and set the die_flag
             // to exit after this line
             std::ostream & operator<<(std::ostream & (*pf) (std::ostream &));    
 
+            
             //provide interfaces to the rest of the types
             std::ostream& operator<< (bool& val )
-            { return (quiet()) ? *this : std::ostream::operator<<(val); }
+            { return std::ostream::operator<<(val); }
             std::ostream& operator<< (const short& val )
             { return (quiet()) ? *this : std::ostream::operator<<(val); }
             std::ostream& operator<< (const unsigned short& val )
@@ -98,6 +100,7 @@ namespace goby
           private:
             FlexOStreamBuf sb_;
         };
+        
     }
 }
 

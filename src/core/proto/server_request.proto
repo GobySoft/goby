@@ -2,23 +2,34 @@ import "google/protobuf/descriptor.proto";
 
 package goby.core.proto;
 
+message Filter
+{
+    required string key = 1;
+    enum Operation {
+        EQUAL = 1;     // key == value
+        NOT_EQUAL = 2; // key != value
+    }
+    required Operation operation = 2;
+    required string value = 3;
+}
 
 message EmbeddedMessage
 {
     optional bytes body = 1;   
-    optional string type = 2;
-    optional string name = 3;
+    required string type = 2;
+    optional Filter filter = 3;
 }
 
-message NotificationToServer
+message Notification
 {
-
     enum NotificationType { 
         HEARTBEAT = 1;
-        CONNECT = 2;
-        DISCONNECT = 3;
-        PUBLISH_REQUEST = 4;
-        SUBSCRIBE_REQUEST = 5;
+        CONNECT_REQUEST = 2;
+        DISCONNECT_REQUEST = 3;
+        CONNECTION_ACCEPTED = 4;
+        CONNECTION_DENIED = 5;
+        PUBLISH_REQUEST = 6;
+        SUBSCRIBE_REQUEST = 7;
     }
     required NotificationType notification_type = 1;
 
@@ -30,20 +41,6 @@ message NotificationToServer
     optional google.protobuf.FileDescriptorProto file_descriptor_proto = 3;
 
     optional EmbeddedMessage embedded_msg = 4;
-}
 
-message NotificationToClient
-{
-    enum NotificationType { 
-        HEARTBEAT_REQUEST = 1;
-        CONNECTION_ACCEPTED = 2;
-        CONNECTION_DENIED = 3;
-        INCOMING_MESSAGE = 4;
-    }
-    required NotificationType notification_type = 1;
-
-    // why did we deny you?
-    optional string explanation = 2;
-    optional EmbeddedMessage embedded_msg = 3;
-
+    optional string explanation = 5;
 }

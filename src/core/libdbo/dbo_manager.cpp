@@ -36,7 +36,6 @@ boost::bimap<int, std::string> goby::core::DBOManager::dbo_map;
 
 goby::core::DBOManager* goby::core::DBOManager::inst_ = 0;
 
-
 using goby::util::goby_time;
 
 
@@ -46,6 +45,12 @@ goby::core::DBOManager* goby::core::DBOManager::get_instance()
     if(!inst_) inst_ = new goby::core::DBOManager();
     return(inst_);
 }
+
+void goby::core::DBOManager::shutdown()
+{
+    if(inst_) delete inst_;
+}
+
 
 goby::core::DBOManager::DBOManager()
     : index_(0),
@@ -97,11 +102,10 @@ void goby::core::DBOManager::add_type(const google::protobuf::Descriptor* descri
     try{ session_->createTables(); }
     catch(Wt::Dbo::Exception& e)
     {
-        if(log) *log_ << warn << e.what() << std::endl;
-    }
+        if(log_) *log_ << warn << e.what() << std::endl;
+    }    
     
-    
-    if(log) *log_ <<group("dbo") << "created tables for  " << descriptor->full_name() << std::endl;
+    if(log_) *log_ <<group("dbo") << "created tables for  " << descriptor->full_name() << std::endl;
 
     // remap all the tables
     for(boost::bimap<int, std::string>::left_iterator it = dbo_map.left.begin(),
@@ -118,7 +122,7 @@ void goby::core::DBOManager::map_type(const google::protobuf::Descriptor* descri
 {
     using goby::util::as;
 
-    if(log) *log_ <<group("dbo") << "mapping type: " << descriptor->full_name() << std::endl;
+    if(log_) *log_ <<group("dbo") << "mapping type: " << descriptor->full_name() << std::endl;
 
     
     // allows us to select compile time type to use at runtime
@@ -136,31 +140,30 @@ void goby::core::DBOManager::map_type(const google::protobuf::Descriptor* descri
 }
 
 
-void goby::core::DBOManager::add_message(const std::string& name, const std::string& serialized_message)
-{
-    google::protobuf::Message* msg = new_msg_from_name(name);
-    msg->ParseFromString(serialized_message);
-    add_message(msg);
-}
+// void goby::core::DBOManager::add_message(const std::string& name, const std::string& serialized_message)
+// {
+//     google::protobuf::Message* msg = new_msg_from_name(name);
+//     msg->ParseFromString(serialized_message);
+//     add_message(msg);
+// }
 
-void goby::core::DBOManager::add_message(google::protobuf::Message* msg)
+void goby::core::DBOManager::add_message(boost::shared_ptr<google::protobuf::Message> msg)
 {
     using goby::util::as;
     
     
-    if(log_) *log_ << group("dbo") << "adding message: \n"
-                 << msg->ShortDebugString() << std::endl;
+    if(log_) *log_ << group("dbo") << "adding message of type: "
+                   << msg->GetTypeName() << std::endl;
     
     switch(dbo_map.right.at(msg->GetTypeName()))
     {
 
         // preprocessor `for` loop from 0 to GOBY_MAX_PROTOBUF_TYPES
-#define BOOST_PP_LOCAL_MACRO(n)                                         \
+#define BOOST_PP_LOCAL_MACRO(n)                        \
         case n: session_->add(new ProtoBufWrapper<n>(msg)); break;
 #define BOOST_PP_LOCAL_LIMITS (0, GOBY_MAX_PROTOBUF_TYPES)
 #include BOOST_PP_LOCAL_ITERATE()
         // end preprocessor `for` loop
-
 
         default: throw(std::runtime_error(std::string("exceeded maximum number of types allowed: " + as<std::string>(GOBY_MAX_PROTOBUF_TYPES)))); break;
     }

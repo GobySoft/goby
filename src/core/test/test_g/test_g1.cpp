@@ -1,4 +1,4 @@
-#include "goby/core/libcore/goby_app_base.h"
+#include "goby/core/core.h"
 #include "goby/util/time.h"
 #include "test.pb.h"
 #include <ctime>
@@ -6,18 +6,18 @@
 #include <boost/unordered_map.hpp>
 
 using goby::util::goby_time;
+using goby::core::proto::Filter;
 
 TestGConfig cfg;
 
-class TestG1 : public GobyAppBase
+class TestG1 : public goby::core::ApplicationBase
 {
 public:
     TestG1()
-        : GobyAppBase("test_app1", boost::posix_time::milliseconds(200))
+        : goby::core::ApplicationBase("test_app1", boost::posix_time::milliseconds(1000))
         {
-            subscribe(&TestG1::handler, this, "bob");
-            subscribe(&TestG1::handler2, this, "joe");
-                        
+            subscribe(&TestG1::handler, this, make_filter("name", Filter::EQUAL, "joe"));
+            subscribe(&TestG1::handler2, this, make_filter("name", Filter::EQUAL, "bob"));
         }
 
 private:
@@ -27,13 +27,13 @@ private:
             TestMessage a;
 
             a.set_foo(++i);
-            publish(a);
+//            publish(a);
             // std::string out;
             // google::protobuf::TextFormat::PrintToString(a, &out);
             // glogger << a.GetDescriptor()->full_name() << std::endl;
             // glogger << out << std::endl;
             
-            glogger << "out: " << a << std::endl;
+//            glogger << "out: " << a << std::endl;
         }
 
     void handler(const TestMessage& msg)

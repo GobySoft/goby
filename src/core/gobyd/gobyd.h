@@ -25,111 +25,132 @@
 #include "goby/util/time.h"
 
 #include "goby/core/dbo.h"
+#include "goby/core/core.h"
 
 namespace goby
 {
-  namespace core
-  {
-    class Daemon
+    namespace core
     {
-    public:
-      Daemon();
-      ~Daemon();
+        class Daemon
+        {
+          public:
+            static Daemon* get_instance();
+            static void shutdown();
     
-      void run();
-
-      class ConnectedClient;
+            void run();
             
-      //                    |
-      //                  / | \
-      //                  Types
-      //                 /  |  \
-      //                /|  |\  \
-      //                  Names
-      //               / |  | \  \
-      //              /| |\ |\ |\ \
-      //               Subscribers
-      // set of subscribers
-      typedef std::set<boost::shared_ptr<ConnectedClient> >
-	Subscribers;
-      // key = goby variable name
-      typedef boost::unordered_map<std::string, Subscribers>
-	NameSubscribersMap;
-      // key = protobuf message type name
-      typedef boost::unordered_map<std::string, NameSubscribersMap>
-	TypeNameSubscribersMap;
-      static TypeNameSubscribersMap subscriptions;
-            
-      class ConnectedClient : public boost::enable_shared_from_this<ConnectedClient>
-	{
-	public:
-	  ConnectedClient(const std::string& name);
-	  ~ConnectedClient();
+            class ConnectedClient;
+            class Subscriber;
+            // key = protobuf message type name
+            // value = set of subscribers to this protobuf type
+            static boost::unordered_multimap<std::string, Subscriber> subscriptions;
+            static boost::mutex dbo_mutex;
+            static boost::mutex subscription_mutex;
+            static boost::mutex logger_mutex;
+            static goby::util::FlexOstream glogger;
 
-	  void run();
-	  void stop() { active_ = false; }
-
-	  std::string name() const { return name_; }
-        
-	private:
-	  void process_notification(const goby::core::proto::NotificationToServer& notification);
-	  void process_publish(const goby::core::proto::NotificationToServer& incoming_message);
-	  void process_publish_name(const goby::core::proto::NotificationToServer& incoming_message, const NameSubscribersMap& name_map);
-	  void process_publish_subscribers(const goby::core::proto::NotificationToServer& incoming_message, const Subscribers& subscribers);
-
-	  void process_subscribe(const goby::core::proto::NotificationToServer& incoming_message);
-        
-	private:
-	  bool active_;
-	  std::string name_;
-	  boost::posix_time::ptime t_connected_;
-	  boost::posix_time::ptime t_last_active_;
-	  boost::posix_time::ptime t_next_heartbeat_;
+            class Subscriber
+            {
+              public:
+              Subscriber(
+                  boost::shared_ptr<ConnectedClient> client = boost::shared_ptr<ConnectedClient>(),
+                  const goby::core::proto::Filter& filter = goby::core::proto::Filter())
+                  : client_(client),
+                    filter_(filter)
+                    { }
                 
-	  boost::unordered_map<boost::shared_ptr<ConnectedClient>, boost::shared_ptr<boost::interprocess::message_queue> > open_queues_;
+                const boost::shared_ptr<ConnectedClient> client() const
+                { return client_; }
 
-	  // used for serialize / deserialize on the line
-	  char buffer_ [MAX_MSG_BUFFER_SIZE];
+                // true if filter permits message
+                bool check_filter(const google::protobuf::Message& msg) const
+                { return clears_filter(msg, filter_); }
+          
+                bool operator<(const Subscriber& rhs) const { return client_ < rhs.client_; }
+          
+              
+              private:
+                boost::shared_ptr<ConnectedClient> client_;
+                goby::core::proto::Filter filter_;
+            };
+
+            
+            class ConnectedClient : public boost::enable_shared_from_this<ConnectedClient>
+            {
+              public:
+                ConnectedClient(const std::string& name);
+                ~ConnectedClient();
+
+                void run();
+                void stop() { active_ = false; }
+
+                std::string name() const { return name_; }
         
-	};
+              private:
+                void process_notification();
+                void process_publish();
+                void process_publish_subscribers(
+                    boost::unordered_multimap<std::string, Subscriber>::const_iterator begin_it,
+                    boost::unordered_multimap<std::string, Subscriber>::const_iterator end_it,
+                    const google::protobuf::Message& parsed_embedded_msg);
 
+                void process_subscribe();
+          
+              private:
+                std::string name_;
+                bool active_;
+                boost::posix_time::ptime t_connected_;
+                boost::posix_time::ptime t_last_active_;
+                boost::posix_time::ptime t_next_heartbeat_;
+                
+                boost::unordered_map<boost::shared_ptr<ConnectedClient>,
+                    boost::shared_ptr<boost::interprocess::message_queue> > open_queues_;
 
+                // used for serialize / deserialize on the line
+                char buffer_ [MAX_MSG_BUFFER_SIZE];
+                std::size_t buffer_msg_size_;
+                proto::Notification notification_;
+            };
+      
+          private:
+            void connect();
+            void disconnect();
             
-      static boost::mutex dbo_mutex;
-      static boost::mutex subscription_mutex;
-      static boost::mutex logger_mutex;
-      static goby::util::FlexOstream glogger;
             
-    private:
-      void connect(const std::string& name);
-      void disconnect(const std::string& name);
+          private:
+            static Daemon* inst_;
+            Daemon();
+            ~Daemon();
+            Daemon(const Daemon&);
+            Daemon& operator = (const Daemon&);
             
-            
-    private:
-            
-      bool active_;
+            bool active_;
 
-      // ServerRequest objects passed through here
-      boost::shared_ptr<boost::interprocess::message_queue> listen_queue_;
+            // ServerRequest objects passed through here
+            boost::shared_ptr<boost::interprocess::message_queue> listen_queue_;
 
-      goby::core::DBOManager* dbo_manager_;
+            goby::core::DBOManager* dbo_manager_;
     
-      // key = client name, value = ConnectedClient deals with this client
-      boost::unordered_map<std::string, boost::shared_ptr<ConnectedClient> > clients_;
-      // key = client name, value = thread to run ConnectedClient in 
-      boost::unordered_map<std::string, boost::shared_ptr<boost::thread> > client_threads_;
+            // key = client name, value = ConnectedClient deals with this client
+            boost::unordered_map<std::string, boost::shared_ptr<ConnectedClient> > clients_;
+            // key = client name, value = thread to run ConnectedClient in 
+            boost::unordered_map<std::string, boost::shared_ptr<boost::thread> > client_threads_;
 
-      boost::posix_time::ptime t_start_;
-      boost::posix_time::ptime t_next_db_commit_;
+            boost::posix_time::ptime t_start_;
+            boost::posix_time::ptime t_next_db_commit_;
 
-      static boost::posix_time::time_duration HEARTBEAT_INTERVAL;
-      static boost::posix_time::time_duration DEAD_INTERVAL;
+            const static boost::posix_time::time_duration HEARTBEAT_INTERVAL;
+            const static boost::posix_time::time_duration DEAD_INTERVAL;
 
-      char buffer_ [MAX_MSG_BUFFER_SIZE];
-            
-    };
-  }
+            proto::Notification notification_;
+            char buffer_ [MAX_MSG_BUFFER_SIZE];
+            std::size_t buffer_msg_size_;
+
+            std::ofstream fout_;
+        };
+    }
 }
+
 
 
 #endif

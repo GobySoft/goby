@@ -1,4 +1,4 @@
-include_directories("${CMAKE_CURRENT_BINARY_DIR}/proto")
+#include_directories("${CMAKE_CURRENT_BINARY_DIR}/proto")
 
 if(build_test)
   add_subdirectory(test)

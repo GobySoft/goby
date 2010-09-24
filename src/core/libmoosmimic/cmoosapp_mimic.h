@@ -16,23 +16,31 @@
 #ifndef MOOSMIMIC20100918H
 #define MOOSMIMIC20100918H
 
-#include "goby/core/libcore/goby_app_base.h"
-#include "cmoosmsg_mimic.pb.h"
+#include "goby/core/core.h"
+#include "goby/core/proto/cmoosmsg_mimic.pb.h"
 
 #include <MOOSLIB/MOOSMsg.h>
 #include <MOOSGenLib/ProcessConfigReader.h>
+
+namespace goby
+{
+    namespace core
+    {        
 
 typedef std::list<CMOOSMsg> MOOSMSG_LIST;
 
 // mimics some of the functionality of CMOOSApp to allow
 // MOOS applications to compile directly against goby
 // without changes
-class GobyCMOOSApp : public GobyAppBase
+class CMOOSApp : public goby::core::ApplicationBase
 {
     
   public:
-    GobyCMOOSApp();
-    virtual ~GobyCMOOSApp() { }
+    CMOOSApp();
+    virtual ~CMOOSApp()
+    {
+        glogger << "goby::core::CMOOSApp destructing..." << std::endl;
+    }
 
     //enum { DEFAULT_MOOS_APP_COMMS_FREQ = 5 };
     enum { DEFAULT_MOOS_APP_FREQ_ = 5 };
@@ -45,19 +53,22 @@ class GobyCMOOSApp : public GobyAppBase
              const char * sSubscribeName = 0);
     
     bool RequestQuit()
-    { GobyAppBase::end(); }
+    {
+        ApplicationBase::end();
+        return true;
+    }
     
   protected:
     virtual bool OnConnectToServer() { return true; }
     virtual bool OnDisconnectFromServer() { return true; }
-    virtual bool Iterate() { return true; }
-    virtual bool OnNewMail(MOOSMSG_LIST & NewMail) { return true; }
+    virtual bool Iterate()  { return true; }
+    virtual bool OnNewMail(MOOSMSG_LIST & NewMail)  { return true; }
     virtual bool OnStartUp() { return true; }
     
     class CMOOSCommClient
     {
       public:        
-        CMOOSCommClient(GobyCMOOSApp& base);        
+        CMOOSCommClient(CMOOSApp& base);        
 
         bool Notify(const std::string &sVar,
                     const std::string & sVal,
@@ -73,17 +84,35 @@ class GobyCMOOSApp : public GobyAppBase
             bool Notify(const std::string &sVar,
                         const V& val,
                         double dfTime=-1)
-        { Notify(sVar, val, "", dfTime); }
+        { return Notify(sVar, val, "", dfTime); }
         
         bool Register(const std::string & sVar,double dfInterval);        
         bool UnRegister(const std::string & sVar);
         bool IsConnected()
-        { return base_.GobyAppBase::connected(); }
+        { return base_.ApplicationBase::connected(); }
         
         bool Post(CMOOSMsg& Msg);
 
+        // not fully implemented
+        bool Run(const char * sServer,
+                 long lPort,
+                 const char * sMyName,
+                 unsigned int nFundamentalFreq=5)
+        { return true; }        
+
+        // not fully implemented
+        void SetOnConnectCallBack(bool (*pfn)(void * pParamCaller), void * pCallerParam) 
+        { }
+        
+        
+        // not fully implemented
+        void SetOnDisconnectCallBack(bool (*pfn)(void * pParamCaller), void * pCallerParam)
+        { }
+        
+
+        
       private:
-        GobyCMOOSApp& base_;
+        CMOOSApp& base_;
         
     };
     
@@ -96,31 +125,53 @@ class GobyCMOOSApp : public GobyAppBase
     
     // how often to call "loop"
     void SetAppFreq(double dfFreq)
-    { GobyAppBase::set_loop_freq(dfFreq); }
+    { ApplicationBase::set_loop_freq(dfFreq); }
 
     double GetAppStartTime()
-    { return goby::util::ptime2unix_double(GobyAppBase::t_start()); }
-        
+    { return goby::util::ptime2unix_double(ApplicationBase::t_start()); }
+    
     std::string GetAppName()
-    { return GobyAppBase::application_name(); }
+    { return ApplicationBase::application_name(); }
     
     std::string GetMissionFileName()
     { return m_MissionReader.GetFileName(); }
     
     std::string community_;
+    
+    bool MOOSDebugWrite(const std::string & sTxt)
+    {
+        glogger << warn << sTxt << std::endl;
+        return true;
+    }
+    
+    
+    // might not do anything with these and force
+    // users to switch to using methods
+    long m_lServerPort;
+    std::string m_sServerHost;
+    std::string m_sServerPort;
+    virtual bool ConfigureComms() { return true; }
+    std::string m_sAppName;
+    std::string m_sMOOSName;    
+
+    int m_nCommsFreq;
+    double m_dfFreq;
+    
   private:
     void loop()
     { Iterate(); }
 
-    static proto::CMOOSMsg moosmsg2proto_mimic(const CMOOSMsg& in);
-    static CMOOSMsg proto_mimic2moosmsg(const proto::CMOOSMsg& in);
+    static ::proto::CMOOSMsg moosmsg2proto_mimic(const CMOOSMsg& in);
+    static CMOOSMsg proto_mimic2moosmsg(const ::proto::CMOOSMsg& in);
 
-    void handle_incoming(const proto::CMOOSMsg& msg)
+    void handle_incoming(const ::proto::CMOOSMsg& msg)
     {
         MOOSMSG_LIST in_list(1,proto_mimic2moosmsg(msg));
         OnNewMail(in_list);
     }
 
+
+    
     
     // virtual bool OnCommandMsg(CMOOSMsg Msg);
     // virtual std::string MakeStatusString();
@@ -129,7 +180,6 @@ class GobyCMOOSApp : public GobyAppBase
     // bool UseMOOSComms(bool bUse);
     // void SortMailByTime(bool bSort=true){m_bSortMailByTime = bSort;};
     // void SetQuitOnFailedIterate(bool bQuit){m_bQuitOnIterateFail = bQuit;};
-    // bool MOOSDebugWrite(const std::string & sTxt);
     // void EnableCommandMessageFiltering(bool bEnable);
     // void EnableIterateWithoutComms(bool bEnable);
     // bool LookForAndHandleAppCommand(MOOSMSG_LIST & NewMail);
@@ -138,7 +188,6 @@ class GobyCMOOSApp : public GobyAppBase
     // int GetIterateCount();
     // bool CanIterateWithoutComms();
     /* bool IsSimulateMode(); */
-    /* virtual bool ConfigureComms(); */
     /* bool IsDebug() { return m_bDebug; }; */
     /* std::string GetCommandKey();     */
 
@@ -160,14 +209,8 @@ class GobyCMOOSApp : public GobyAppBase
     /* bool RegisterMOOSVariables(); */
 
     
-    /* long m_lServerPort; */
-    /* std::string m_sServerHost; */
-    /* std::string m_sServerPort; */
     /* bool m_bServerSet; */
     /* bool m_bUseMOOSComms; */
-    /* std::string m_sAppName; */
-    /* std::string m_sMOOSName; */
-    /* int m_nCommsFreq; */
     /* double m_dfFreq; */
     /* std::string m_sMissionFile; */
     /* bool m_bCommandMessageFiltering; */
@@ -184,6 +227,8 @@ class GobyCMOOSApp : public GobyAppBase
 
 };
 
+    }
+}
 
 
 // Built using MOOSApp.h (svn -r 2300)

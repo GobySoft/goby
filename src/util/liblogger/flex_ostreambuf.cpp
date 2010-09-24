@@ -112,19 +112,12 @@ int goby::util::FlexOStreamBuf::sync()
 
     while (!getline(is, s).eof())
         display(s);
-
-    if(die_flag_)
-    {
-        if(!is_quiet_)
-            std::cout << "Exiting in 30 seconds." << std::endl;
-
-        sleep(30);
-        exit(EXIT_FAILURE);
-    }
+    
+    if(die_flag_) exit(EXIT_FAILURE);
 
     group_name_.erase();
 
-    return 0;
+    return std::stringbuf::sync();
 }
 
 void goby::util::FlexOStreamBuf::display(std::string & s)

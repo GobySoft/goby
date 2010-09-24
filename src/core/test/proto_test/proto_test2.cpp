@@ -65,7 +65,7 @@ int main()
         
         while (mq.try_receive(&buffer, MAX_BUFFER_SIZE, recvd_size, priority))
         {
-            google::protobuf::Message* dbl_msg = dbo_manager->new_msg_from_name("GobyDouble");
+            boost::shared_ptr<google::protobuf::Message> dbl_msg = dbo_manager->new_msg_from_name("GobyDouble");
             dbl_msg->ParseFromArray(&buffer,recvd_size);
             
             std::cout << "receiver: " << dbl_msg->ShortDebugString() << std::endl;

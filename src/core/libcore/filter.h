@@ -20,7 +20,7 @@
 #include <google/protobuf/message.h>
 #include <google/protobuf/descriptor.h>
 
-#include "goby/core/proto/server_request.pb.h"
+#include "goby/core/proto/interprocess_notification.pb.h"
 
 
 namespace goby

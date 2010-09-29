@@ -68,9 +68,14 @@ void goby::core::DBOManager::add_flex_groups(util::FlexOstream& tout)
 
 void goby::core::DBOManager::add_file(const google::protobuf::FileDescriptorProto& proto)
 {
-    const google::protobuf::FileDescriptor* new_file_descriptor = descriptor_pool.BuildFile(proto);
-    for(int i = 0, n = new_file_descriptor->message_type_count(); i < n; ++i)
-        add_type(new_file_descriptor->message_type(i));
+    const google::protobuf::FileDescriptor* new_file_descriptor = descriptor_pool.BuildFile(proto); 
+    // for(int i = 0, n = new_file_descriptor->message_type_count(); i < n; ++i)
+    //     add_type(new_file_descriptor->message_type(i));
+}
+
+void goby::core::DBOManager::add_type(const std::string& name)
+{
+    add_type(descriptor_pool.FindMessageTypeByName(name));
 }
 
 // add check for type if name already exists in the database!

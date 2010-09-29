@@ -1,4 +1,4 @@
-package proto;
+package goby.core.proto;
 
 // contains the same information as a CMOOSMsg
 message CMOOSMsg

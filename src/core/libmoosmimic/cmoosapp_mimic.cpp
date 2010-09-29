@@ -98,9 +98,9 @@ bool goby::core::CMOOSApp::CMOOSCommClient::Post(CMOOSMsg& Msg)
     return true;
 }
 
-proto::CMOOSMsg goby::core::CMOOSApp::moosmsg2proto_mimic(const CMOOSMsg& in)
+goby::core::proto::CMOOSMsg goby::core::CMOOSApp::moosmsg2proto_mimic(const CMOOSMsg& in)
 {
-    static ::proto::CMOOSMsg out;
+    static goby::core::proto::CMOOSMsg out;
     out.set_msg_type(in.m_cMsgType);
     out.set_data_type(in.m_cDataType);
     out.set_key(in.m_sKey);
@@ -115,7 +115,7 @@ proto::CMOOSMsg goby::core::CMOOSApp::moosmsg2proto_mimic(const CMOOSMsg& in)
 }
     
 
-CMOOSMsg goby::core::CMOOSApp::proto_mimic2moosmsg(const ::proto::CMOOSMsg& in)
+CMOOSMsg goby::core::CMOOSApp::proto_mimic2moosmsg(const goby::core::proto::CMOOSMsg& in)
 {
     static CMOOSMsg out;
     out.m_cMsgType = in.msg_type();

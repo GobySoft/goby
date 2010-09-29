@@ -1,0 +1,10 @@
+import "google/protobuf/descriptor.proto";
+
+
+
+extend .google.protobuf.FieldOptions
+{
+    optional double dccl_max = 5000;
+    optional double dccl_min = 5001;
+    optional string description = 5002;
+}

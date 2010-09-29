@@ -1,0 +1,7 @@
+package goby.core.proto;
+
+message Config
+{
+    required string community = 1;    
+    extensions 1000 to max;
+}

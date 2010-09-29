@@ -26,7 +26,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${goby_BIN_DIR} CACHE PATH
 # set instructions for `make install`
 install(DIRECTORY ${goby_BIN_DIR}/ DESTINATION /usr/local/bin FILE_PERMISSIONS WORLD_EXECUTE)
 install(DIRECTORY ${goby_LIB_DIR}/ DESTINATION /usr/local/lib)
-install(DIRECTORY ${goby_INC_DIR}/ DESTINATION /usr/local/include/goby)
+install(DIRECTORY ${goby_INC_DIR}/ DESTINATION /usr/local/include)
 
 # allows use to write custom modules or modifying existing ones
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules/")
@@ -57,15 +57,9 @@ endforeach()
 
 
 # copy to goby/include
-file(GLOB_RECURSE INCLUDE_FILES RELATIVE ${goby_SRC_DIR} src/*.h)
+file(GLOB_RECURSE INCLUDE_FILES RELATIVE ${goby_SRC_DIR} src/*.h src/*.proto)
 foreach(I ${INCLUDE_FILES})
   configure_file(${goby_SRC_DIR}/${I} ${goby_INC_DIR}/goby/${I} COPYONLY)
-endforeach()
-
-# copy also for google protobuf headers
-file(GLOB_RECURSE INCLUDE_FILES RELATIVE ${goby_BUILD_DIR}/src build/src/*.h)
-foreach(I ${INCLUDE_FILES})
-  configure_file(${goby_BUILD_DIR}/src/${I} ${goby_INC_DIR}/goby/${I} COPYONLY)
 endforeach()
 
 

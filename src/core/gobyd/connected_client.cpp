@@ -21,7 +21,7 @@
 #include <boost/thread.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include "goby/core/proto/server_request.pb.h"
+#include "goby/core/proto/interprocess_notification.pb.h"
 #include "goby/core/core_constants.h"
 #include "goby/core/libcore/message_queue_util.h"
 
@@ -143,6 +143,7 @@ void Daemon::ConnectedClient::process_notification()
         boost::mutex::scoped_lock lock1(logger_mutex);
         boost::mutex::scoped_lock lock2(dbo_mutex);
         DBOManager::get_instance()->add_file(notification_.file_descriptor_proto());
+        DBOManager::get_instance()->add_type(notification_.embedded_msg().type());
     }
     
     switch(notification_.notification_type())

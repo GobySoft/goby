@@ -30,10 +30,16 @@
 #include <google/protobuf/descriptor.h>
 #include <google/protobuf/descriptor.pb.h>
 
+#include <Wt/Dbo/Dbo>
+#include <Wt/Dbo/Query>
+#include <Wt/Dbo/backend/Sqlite3>
+#include <Wt/Dbo/Exception>
+
+#include "goby/core/libdbo/wt_dbo_overloads.h"
 #include "goby/util/logger.h"
 #include "goby/core/core_constants.h"
 #include "message_queue_util.h"
-#include "goby/core/proto/server_request.pb.h"
+#include "goby/core/proto/interprocess_notification.pb.h"
 #include "filter.h"
 
 namespace goby
@@ -110,7 +116,11 @@ namespace goby
             { return connected_; }
             boost::posix_time::ptime t_start()
             { return t_start_; }
-    
+
+            Wt::Dbo::backend::Sqlite3& db_connection() { return *db_connection_; }
+            Wt::Dbo::Session& db_session() { return *db_session_; }
+            
+            
             // if constructed with a name, this is called from the constructor
             // otherwise you must call it yourself
             void start();
@@ -199,6 +209,10 @@ namespace goby
             proto::Notification notification_;
             char buffer_ [goby::core::MAX_MSG_BUFFER_SIZE];
             std::size_t buffer_msg_size_;
+
+            // database objects
+            Wt::Dbo::backend::Sqlite3* db_connection_;
+            Wt::Dbo::Session* db_session_;            
         };
 
 

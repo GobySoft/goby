@@ -22,7 +22,7 @@
 
 #include <google/protobuf/message.h>
 #include <google/protobuf/descriptor.h>
-#include "goby_double.pb.h"
+#include "goby/core/test/proto_test/goby_double.pb.h"
 #include <google/protobuf/descriptor.pb.h>
 
 #include <Wt/Dbo/Dbo>

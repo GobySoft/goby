@@ -1,5 +1,3 @@
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
-                    
 protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS goby_double.proto)
 
 add_executable(proto_test1 proto_test1.cpp ${PROTO_SRCS} ${PROTO_HDRS})

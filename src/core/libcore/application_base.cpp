@@ -33,8 +33,15 @@ goby::core::ApplicationBase::ApplicationBase(
     boost::posix_time::time_duration loop_period /*= boost::posix_time::milliseconds(100)*/)
     : application_name_(application_name),
       loop_period_(loop_period),
-      connected_(false)
+      connected_(false),
+      db_connection_(0),
+      db_session_(0)
 {
+
+    db_connection_ = new Wt::Dbo::backend::Sqlite3("gobyd_test.db");
+    db_session_ = new Wt::Dbo::Session;
+    db_session_->setConnection(*db_connection_);
+
     // connect and some other initialization duties
     if(!application_name.empty()) start(); 
 }
@@ -43,6 +50,9 @@ goby::core::ApplicationBase::~ApplicationBase()
 {
     glogger << "ApplicationBase destructing..." << std::endl;
     
+    if(db_connection_) delete db_connection_;
+    if(db_session_) delete db_session_;
+
     if(connected_) end();
 }
 

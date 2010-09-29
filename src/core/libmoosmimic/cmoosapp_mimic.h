@@ -161,10 +161,10 @@ class CMOOSApp : public goby::core::ApplicationBase
     void loop()
     { Iterate(); }
 
-    static ::proto::CMOOSMsg moosmsg2proto_mimic(const CMOOSMsg& in);
-    static CMOOSMsg proto_mimic2moosmsg(const ::proto::CMOOSMsg& in);
+    static proto::CMOOSMsg moosmsg2proto_mimic(const CMOOSMsg& in);
+    static CMOOSMsg proto_mimic2moosmsg(const proto::CMOOSMsg& in);
 
-    void handle_incoming(const ::proto::CMOOSMsg& msg)
+    void handle_incoming(const proto::CMOOSMsg& msg)
     {
         MOOSMSG_LIST in_list(1,proto_mimic2moosmsg(msg));
         OnNewMail(in_list);

@@ -46,6 +46,7 @@ namespace goby
             
             void add_file(const google::protobuf::FileDescriptorProto& proto);
             void add_type(const google::protobuf::Descriptor* descriptor);
+            void add_type(const std::string& name);
 //            void add_message(const std::string& name, const std::string& serialized_message);
             void add_message(boost::shared_ptr<google::protobuf::Message> msg);
 

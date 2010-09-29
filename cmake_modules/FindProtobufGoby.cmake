@@ -58,25 +58,50 @@ function(PROTOBUF_GENERATE_CPP SRCS HDRS)
     return()
   endif(NOT ARGN)
 
+#  file(MAKE_DIRECTORY ${goby_BUILD_DIR}/proto) 
+
   set(${SRCS})
   set(${HDRS})
   foreach(FIL ${ARGN})
+    # /home/toby/goby/src/core/proto/foo.proto
     get_filename_component(ABS_FIL ${FIL} ABSOLUTE)
+    # foo
     get_filename_component(FIL_WE ${FIL} NAME_WE)
-    
-    list(APPEND ${SRCS} "${CMAKE_CURRENT_BINARY_DIR}/${FIL_WE}.pb.cc")
-    list(APPEND ${HDRS} "${CMAKE_CURRENT_BINARY_DIR}/${FIL_WE}.pb.h")
+    # core/proto/foo.proto
+    file(RELATIVE_PATH REL_FIL ${goby_SRC_DIR} ${ABS_FIL})
+    # /home/toby/goby/include/goby/core/proto/foo.proto
+    set(ABS_BUILT_FIL "${goby_INC_DIR}/goby/${REL_FIL}")
+    # /home/toby/goby/include/goby/core/proto
+    get_filename_component(FIL_PATH ${ABS_BUILT_FIL} PATH)
+
+    # message(STATUS ${ABS_FIL})
+    # message(STATUS ${FIL_WE})
+    # message(STATUS ${REL_FIL})
+    # message(STATUS ${FIL_PATH})
+
+    include_directories(${FIL_PATH})
+
+    list(APPEND ${SRCS} "${FIL_PATH}/${FIL_WE}.pb.cc")
+    list(APPEND ${HDRS} "${FIL_PATH}/${FIL_WE}.pb.h")
 
     add_custom_command(
-      OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${FIL_WE}.pb.cc"
-             "${CMAKE_CURRENT_BINARY_DIR}/${FIL_WE}.pb.h"
+      OUTPUT "${FIL_PATH}/${FIL_WE}.pb.cc"
+             "${FIL_PATH}/${FIL_WE}.pb.h"
       COMMAND  ${PROTOBUF_PROTOC_EXECUTABLE}
-      ARGS --cpp_out  ${CMAKE_CURRENT_BINARY_DIR} --proto_path ${CMAKE_CURRENT_SOURCE_DIR} ${ABS_FIL} -I ${PROTOBUF_INCLUDE_DIRS}
+      ARGS --cpp_out ${goby_INC_DIR} --proto_path ${goby_INC_DIR} ${goby_INC_DIR}/goby/${REL_FIL} -I ${PROTOBUF_INCLUDE_DIRS} -I ${goby_INC_DIR}
       DEPENDS ${ABS_FIL}
       COMMENT "Running C++ protocol buffer compiler on ${FIL}"
       VERBATIM )
   endforeach()
 
+  # copy headers for generated headers
+  file(GLOB_RECURSE INCLUDE_FILES RELATIVE ${goby_BUILD_DIR}/proto build/proto/*.h)
+  foreach(I ${INCLUDE_FILES})
+    message(STATUS ${goby_BUILD_DIR}/proto/${I})
+    message(STATUS ${goby_INC_DIR}/${I})
+    configure_file(${goby_BUILD_DIR}/proto/${I} ${goby_INC_DIR}/${I} COPYONLY)
+  endforeach()
+  
   set_source_files_properties(${${SRCS}} ${${HDRS}} PROPERTIES GENERATED TRUE)
   set(${SRCS} ${${SRCS}} PARENT_SCOPE)
   set(${HDRS} ${${HDRS}} PARENT_SCOPE)

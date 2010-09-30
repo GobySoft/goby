@@ -65,7 +65,6 @@ public:
             std::cout << cfg_.evalue3() << std::endl;
 
 
-            cfg_.GetDescriptor()->FindFieldByName("svalue2").has_default_value();
             
             if(cfg_.has_svalue2())
             {

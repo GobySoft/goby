@@ -13,34 +13,3 @@ extend .google.protobuf.FieldOptions
     // optional string cli_short = 5003;
 }
 
-message DCCLDouble
-{
-    optional double value;
-    optional double min;
-    optional double max;
-    optional double precision;
-}
-
-
-
-message CTDSample
-{   
-    optional double time = 1;
-    optional double salinity = 2 [(dccl_max) = 30, (dccl_min) =10];
-    optional double temperature = 3;
-}
-
-message FullCTDSample
-{
-    required CTDSample core = 1;
-    optional double sound_vel = 2;
-    
-}
-
-
-message Position
-{
-    optional double x;
-    optional double y;
-}
-

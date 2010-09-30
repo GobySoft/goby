@@ -189,7 +189,7 @@ void  goby::core::ConfigReader::get_protobuf_program_options(boost::program_opti
         
         std::string cli_name = field_name;
 
-        std::string human_desc = field_desc->options().GetExtension(GobyExtend::description);
+        std::string human_desc = field_desc->options().GetExtension(description);
         
         if(field_desc->is_repeated())
         {                    

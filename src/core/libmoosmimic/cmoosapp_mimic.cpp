@@ -13,6 +13,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
+#include <cstdio>
+#include <cstring>
 
 #include "cmoosapp_mimic.h"
 
@@ -44,10 +46,11 @@ bool goby::core::CMOOSApp::Run(const char * sName,
     goby::core::ApplicationBase::set_loop_freq(freq);
 
     std::cout << "start called" << std::endl;
-    goby::core::ApplicationBase::start();
+    goby::core::ApplicationBase::connect();
     std::cout << "OnStartUp called" << std::endl;
     OnStartUp();
     OnConnectToServer();
+ 
     goby::core::ApplicationBase::run();
 
     return true;

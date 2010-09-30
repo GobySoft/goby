@@ -1,4 +1,4 @@
-add_executable(gobyd gobyd.cpp connected_client.cpp)
+add_executable(gobyd gobyd.cpp connected_client.cpp main.cpp)
 
 target_link_libraries(gobyd 
   ${PROTOBUF_LIBRARY}

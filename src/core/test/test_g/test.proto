@@ -1,4 +1,4 @@
-import "goby/core/proto/config.proto";
+import "goby/core/proto/option_extensions.proto";
 
 message Sub
 {
@@ -24,19 +24,13 @@ message TestMessage
 
 message TestGConfig
 {
-    required double dvalue1 = 1;
-    optional string svalue2 = 2;
-    
+    required double dvalue1 = 1 [(description)="some fun double"];
+    optional string svalue2 = 2;    
+
     enum MyEnum { 
         YES = 1;
         NO = 2;
         MAYBE = 3;
     }
     required MyEnum evalue3 = 3;
-}
-    
-// add ourselves to the master configuration
-extend .goby.core.proto.Config
-{
-    optional TestGConfig test_g1 = 1002;
 }

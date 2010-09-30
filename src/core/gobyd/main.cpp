@@ -1,5 +1,6 @@
 // copyright 2010 t. schneider tes@mit.edu
 // 
+// the file is the goby daemon, part of the core goby autonomy system
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,14 +15,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
+#include "gobyd.h"
 
-// courtesy header for the goby core library
+int main(int argc, char* argv[])
+{
+    return goby::run<goby::core::Daemon>(argc, argv);
+}
 
-#ifndef CORECOURTESY20100922H
-#define CORECOURTESY20100922H
-
-#include "goby/core/libcore/application_base.h"
-#include "goby/core/libcore/configuration_reader.h"
-#include "goby/core/libcore/filter.h"
-
-#endif

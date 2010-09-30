@@ -99,7 +99,7 @@ namespace Wt
                         {
                             protobuf_message_persist(*refl->MutableMessage(&obj, field_desc),
                                                      action,
-                                                     std::string(prefix + field_name + "_"));
+                                                     std::string(field_name + "_"));
                         }
                         break;    
                     
@@ -172,14 +172,14 @@ namespace Wt
                         break;
 
                         case google::protobuf::FieldDescriptor::CPPTYPE_ENUM:
-                        default:
+                        {
                             const google::protobuf::EnumValueDescriptor* enum_value =
                                 refl->GetEnum(obj, field_desc);
                             std::string tmp = enum_value->name();
                             Wt::Dbo::field(action, tmp, field_name);
                             refl->SetEnum(&obj, field_desc, enum_value->type()->FindValueByName(tmp));
                             break;
-
+                        }
                     }
                 }
             }

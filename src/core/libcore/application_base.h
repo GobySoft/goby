@@ -25,6 +25,7 @@
 #include <boost/interprocess/ipc/message_queue.hpp>
 #include <boost/date_time.hpp>
 #include <boost/unordered_map.hpp>
+#include <boost/program_options.hpp>
 
 #include <google/protobuf/message.h>
 #include <google/protobuf/descriptor.h>
@@ -40,31 +41,38 @@
 #include "goby/core/core_constants.h"
 #include "message_queue_util.h"
 #include "goby/core/proto/interprocess_notification.pb.h"
+//#include "goby/core/proto/config.pb.h"
 #include "filter.h"
 
 namespace goby
 {
+
+    // call this to make everything happen
+    // blocks until end() is called
+    // or object is destroyed
+
+    // have to give the option to pass a pointer to support moos-mimic
+    template<typename App>
+        static int run(int argc, char* argv[]);
+        
     namespace core
     {
-        
+
         class ApplicationBase
         {
-          public:
+          protected:
             // make this more accessible
             typedef goby::core::proto::Filter Filter;
             
-            ApplicationBase(
-                const std::string& application_name = "",
-                boost::posix_time::time_duration loop_period =
-                boost::posix_time::milliseconds(100));
+            ApplicationBase(google::protobuf::Message* cfg = 0);
             virtual ~ApplicationBase();
+            ApplicationBase(const ApplicationBase&);
+            ApplicationBase& operator= (const ApplicationBase&);
 
-            // call this to make everything happen
-            // blocks until end() is called
-            // or object is destroyed
-            void run();
-            
-          protected:
+            template<typename App>
+                friend int ::goby::run(int argc, char* argv[]);
+            friend class CMOOSApp;
+
             // here's where any synchronous work happens
             virtual void loop() { }
     
@@ -89,7 +97,6 @@ namespace goby
                                const proto::Filter& filter = proto::Filter())
             { subscribe<ProtoBufMessage>(boost::bind(mem_func, obj, _1), filter); }
 
-            goby::util::FlexOstream glogger;
 
             // setters
             void set_application_name(std::string s)
@@ -120,13 +127,6 @@ namespace goby
             Wt::Dbo::backend::Sqlite3& db_connection() { return *db_connection_; }
             Wt::Dbo::Session& db_session() { return *db_session_; }
             
-            
-            // if constructed with a name, this is called from the constructor
-            // otherwise you must call it yourself
-            void start();
-
-            // this is called by the destructor, call this yourself if you wish to keep the object around but want to disconnect and cleanup
-            void end();
 
             static Filter make_filter(const std::string& key,
                                Filter::Operation op,
@@ -139,9 +139,13 @@ namespace goby
                 return filter;
             }
 
+            goby::util::FlexOstream& glogger() { return glogger_; }
+            
             
           private:
-    
+            // main loop that exits on disconnect
+            void run();
+            // called in Ctor if possible
             void connect();
             void disconnect();
     
@@ -195,8 +199,7 @@ namespace goby
             std::set<std::string> registered_protobuf_types_;
             std::string application_name_;
             boost::posix_time::time_duration loop_period_;
-            bool connected_;
-
+            bool connected_;            
             
             // key = protobuf message type name
             // value = handler for all the subscriptions (keyed by protobuf message type name)
@@ -212,7 +215,14 @@ namespace goby
 
             // database objects
             Wt::Dbo::backend::Sqlite3* db_connection_;
-            Wt::Dbo::Session* db_session_;            
+            Wt::Dbo::Session* db_session_;
+
+            goby::util::FlexOstream glogger_;
+
+            static int argc_;
+            static char** argv_;
+
+            boost::program_options::variables_map command_line_map_;
         };
 
 
@@ -235,8 +245,8 @@ namespace goby
             {
                 if(p.second->filter() == filter)
                 {
-                    glogger << warn << "already have subscription for type: " << type_name
-                            << " and filter: " << filter;
+                    glogger() << warn << "already have subscription for type: " << type_name
+                              << " and filter: " << filter;
                     return;
                 }
             }
@@ -252,6 +262,27 @@ namespace goby
         }
     }
 }
+
+template<typename App>
+static int goby::run(int argc, char* argv[])
+{
+    // avoid making the user pass these through their Ctor...
+    App::argc_ = argc;
+    App::argv_ = argv;
+
+    try
+    {
+        App app;
+        app.run();
+    }
+    catch(std::exception& e)
+    {
+        //std::cerr << "uncaught exception: " << e.what() << std::endl;
+        return 1;
+    }
+}
+
+
 
 
 #endif

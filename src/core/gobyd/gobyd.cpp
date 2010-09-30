@@ -22,6 +22,7 @@
 #include <boost/shared_ptr.hpp>
 
 #include "goby/core/proto/interprocess_notification.pb.h"
+#include "goby/core/proto/option_extensions.pb.h"
 #include "goby/core/core_constants.h"
 #include "goby/core/libcore/message_queue_util.h"
 
@@ -39,7 +40,8 @@ boost::mutex Daemon::logger_mutex;
 goby::util::FlexOstream Daemon::glogger;
 
 boost::unordered_multimap<std::string, Daemon::Subscriber > Daemon::subscriptions;
-goby::core::Daemon* goby::core::Daemon::inst_ = 0;
+
+goby::core::proto::Config Daemon::cfg_;
 
 // how long a client can be quiet before we ask for a heartbeat
 const boost::posix_time::time_duration Daemon::HEARTBEAT_INTERVAL =
@@ -50,32 +52,18 @@ const boost::posix_time::time_duration Daemon::DEAD_INTERVAL =
     Daemon::HEARTBEAT_INTERVAL + Daemon::HEARTBEAT_INTERVAL;
 
 
-// singleton class, use this to get pointer
-goby::core::Daemon* goby::core::Daemon::get_instance()
-{
-    if(!inst_) inst_ = new goby::core::Daemon();
-    return(inst_);
-}
-
-void goby::core::Daemon::shutdown()
-{
-    if(inst_) delete inst_;
-}
-
-int main()
-{
-    Daemon::get_instance()->run();
-    Daemon::shutdown();
-    DBOManager::shutdown();
-    google::protobuf::ShutdownProtobufLibrary();
-    return 0;
-}
-
+int Daemon::argc_ = 0;
+char** Daemon::argv_ = 0;
 
 Daemon::Daemon()
     : active_(true),
       dbo_manager_(DBOManager::get_instance())
 {
+    if(!ConfigReader::read_cfg(argc_, argv_, &cfg_, &application_name_, &command_line_map_))
+        throw(std::runtime_error("did not successfully read configuration"));
+
+    std::cout << cfg_ << std::endl;
+    
     message_queue::remove(CONNECT_LISTEN_QUEUE.c_str());
 
     listen_queue_ = boost::shared_ptr<message_queue>
@@ -91,6 +79,15 @@ Daemon::Daemon()
         dbo_manager_->connect("gobyd_test.db");
         dbo_manager_->set_logger(&glogger);
         dbo_manager_->add_flex_groups(glogger);
+
+        // add files of core static types for dynamic messages
+        // #include <google/protobuf/descriptor.pb.h>
+        dbo_manager_->add_file(google::protobuf::FileDescriptorProto::descriptor());
+        dbo_manager_->add_file(GobyExtend::descriptor());
+        // #include "goby/core/proto/interprocess_notification.pb.h"
+        dbo_manager_->add_file(proto::Notification::descriptor());
+        // #include "goby/core/proto/config.pb.h"
+        dbo_manager_->add_file(proto::Config::descriptor());
     }
 
     {

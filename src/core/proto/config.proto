@@ -1,7 +1,45 @@
+import "goby/core/proto/option_extensions.proto";
+
+
 package goby.core.proto;
+
+// defines information and connections
+// to a node (vehicle, ship, etc.)
+// a node is defined by a single gobyd and collection
+// of connected processes
+message Node
+{
+    message SerialInfo
+    {
+        required string port = 1 [(description)="e.g. /dev/ttyUSB1"];
+        required uint32 baud = 2 [(description)="e.g. 19200"];
+    }
+    message AcousticModemInfo
+    {
+        required uint32 mm_id = 1 [(description)="WHOI Micro-Modem id ($CCCFQ,SRC)"];
+        required SerialInfo mm_serial = 2;
+        optional bool has_coproc = 3 [(description)="can handle PSK messages (rate 2,3,5)", default=true];
+    }
+    message EthernetInfo
+    {
+        required string ipv4_addr = 1 [(description)="e.g. 192.168.1.1 or bob.mit.edu"];
+        required uint32 ipv4_port = 2 [(description)="e.g. 10023"];
+    }
+    
+    required string name = 1 [(description)="unique name of the node"];
+    optional AcousticModemInfo acomms = 2;
+    // how to access this via ethernet
+    optional EthernetInfo ether = 3;
+    // how to access this node via serial
+    optional SerialInfo serial = 4;
+}
 
 message Config
 {
-    required string community = 1;    
-    extensions 1000 to max;
+    // who are we?
+    required Node self = 1;
+    // who do we know about and how do we contact them?
+    repeated Node other = 2;
+
 }
+

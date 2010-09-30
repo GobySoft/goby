@@ -14,11 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
-#include "filter.h"
-
 #include <boost/cstdint.hpp>
+
 #include "goby/util/string.h"
 
+#include "filter.h"
 
 bool goby::core::clears_filter(const google::protobuf::Message& msg, const goby::core::proto::Filter& filter)
 {

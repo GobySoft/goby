@@ -9,8 +9,7 @@ using goby::util::goby_time;
 class TestG2 : public goby::core::ApplicationBase
 {
 public:
-    TestG2()
-        : goby::core::ApplicationBase("test_app2", boost::posix_time::milliseconds(200))
+    TestG2() : goby::core::ApplicationBase()
         {
             // int i = 0;
 
@@ -39,7 +38,7 @@ public:
     
     void handler(const TestMessage& msg)
         {
-            glogger << "in: " << msg << std::endl;
+            glogger() << "in: " << msg << std::endl;
         }
     void loop()
         {
@@ -74,13 +73,12 @@ public:
             b.add_rstr("fie");
             b.add_rstr("foe");
             publish(b);
-            glogger << "out: " << b << std::endl;
+            glogger() << "out: " << b << std::endl;
         }
     
 };
 
-int main()
+int main(int argc, char* argv[])
 {
-    TestG2 g2;
-    g2.run();
+    return goby::run<TestG2>(argc, argv);
 }

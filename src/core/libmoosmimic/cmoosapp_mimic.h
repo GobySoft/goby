@@ -39,7 +39,7 @@ class CMOOSApp : public goby::core::ApplicationBase
     CMOOSApp();
     virtual ~CMOOSApp()
     {
-        glogger << "goby::core::CMOOSApp destructing..." << std::endl;
+        glogger() << "goby::core::CMOOSApp destructing..." << std::endl;
     }
 
     //enum { DEFAULT_MOOS_APP_COMMS_FREQ = 5 };
@@ -54,7 +54,7 @@ class CMOOSApp : public goby::core::ApplicationBase
     
     bool RequestQuit()
     {
-        ApplicationBase::end();
+        ApplicationBase::disconnect();
         return true;
     }
     
@@ -140,7 +140,7 @@ class CMOOSApp : public goby::core::ApplicationBase
     
     bool MOOSDebugWrite(const std::string & sTxt)
     {
-        glogger << warn << sTxt << std::endl;
+        glogger() << warn << sTxt << std::endl;
         return true;
     }
     

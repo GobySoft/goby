@@ -18,6 +18,9 @@
 #include <stdexcept>
 #include <algorithm>
 
+#include <google/protobuf/descriptor.pb.h>
+
+
 #include <boost/preprocessor.hpp>
 
 #include "goby/util/string.h"
@@ -65,6 +68,14 @@ void goby::core::DBOManager::add_flex_groups(util::FlexOstream& tout)
 {
     tout.add_group("dbo", "d", "lt_green", "database");
 }          
+
+void goby::core::DBOManager::add_file(const google::protobuf::Descriptor* descriptor)
+{
+    google::protobuf::FileDescriptorProto proto_file;
+    descriptor->file()->CopyTo(&proto_file);
+    add_file(proto_file);
+}
+    
 
 void goby::core::DBOManager::add_file(const google::protobuf::FileDescriptorProto& proto)
 {

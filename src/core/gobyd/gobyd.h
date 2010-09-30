@@ -26,6 +26,7 @@
 
 #include "goby/core/dbo.h"
 #include "goby/core/core.h"
+#include "goby/core/proto/config.pb.h"
 
 namespace goby
 {
@@ -33,10 +34,10 @@ namespace goby
     {
         class Daemon
         {
-          public:
-            static Daemon* get_instance();
-            static void shutdown();
-    
+          private:
+            template<typename App>
+                friend int ::goby::run(int argc, char* argv[]);
+            
             void run();
             
             class ConnectedClient;
@@ -54,7 +55,7 @@ namespace goby
               public:
               Subscriber(
                   boost::shared_ptr<ConnectedClient> client = boost::shared_ptr<ConnectedClient>(),
-                  const goby::core::proto::Filter& filter = goby::core::proto::Filter())
+                  const proto::Filter& filter = proto::Filter())
                   : client_(client),
                     filter_(filter)
                     { }
@@ -71,7 +72,7 @@ namespace goby
               
               private:
                 boost::shared_ptr<ConnectedClient> client_;
-                goby::core::proto::Filter filter_;
+                proto::Filter filter_;
             };
 
             
@@ -112,25 +113,23 @@ namespace goby
                 proto::Notification notification_;
             };
       
-          private:
             void connect();
             void disconnect();
             
             
           private:
-            static Daemon* inst_;
             Daemon();
             ~Daemon();
             Daemon(const Daemon&);
             Daemon& operator = (const Daemon&);
             
             bool active_;
-
+            
             // ServerRequest objects passed through here
             boost::shared_ptr<boost::interprocess::message_queue> listen_queue_;
-
-            goby::core::DBOManager* dbo_manager_;
-    
+            
+            DBOManager* dbo_manager_;
+            
             // key = client name, value = ConnectedClient deals with this client
             boost::unordered_map<std::string, boost::shared_ptr<ConnectedClient> > clients_;
             // key = client name, value = thread to run ConnectedClient in 
@@ -147,6 +146,13 @@ namespace goby
             std::size_t buffer_msg_size_;
 
             std::ofstream fout_;
+            static proto::Config cfg_;
+            boost::program_options::variables_map command_line_map_;
+            std::string application_name_;
+
+            static int argc_;
+            static char** argv_;
+            
         };
     }
 }

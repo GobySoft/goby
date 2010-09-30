@@ -43,8 +43,10 @@ namespace goby
           public:
             static DBOManager* get_instance();
             static void shutdown();
-            
+
+            void add_file(const google::protobuf::Descriptor* descriptor);
             void add_file(const google::protobuf::FileDescriptorProto& proto);
+
             void add_type(const google::protobuf::Descriptor* descriptor);
             void add_type(const std::string& name);
 //            void add_message(const std::string& name, const std::string& serialized_message);

@@ -13,38 +13,35 @@
 using goby::util::goby_time;
 using goby::core::proto::Filter;
 
-TestGConfig cfg;
-
 namespace dbo = Wt::Dbo;
 
-class User {
-public:
-  enum Role {
-    Visitor = 0,
-    Admin = 1,
-    Alien = 42
-  };
+// class User {
+// public:
+//   enum Role {
+//     Visitor = 0,
+//     Admin = 1,
+//     Alien = 42
+//   };
 
-  std::string name;
-  std::string password;
-  Role        role;
-  int         karma;
+//   std::string name;
+//   std::string password;
+//   Role        role;
+//   int         karma;
 
-  template<class Action>
-  void persist(Action& a)
-  {
-    dbo::field(a, name,     "name");
-    dbo::field(a, password, "password");
-    dbo::field(a, role,     "role");
-    dbo::field(a, karma,    "karma");
-  }
-};
+//   template<class Action>
+//   void persist(Action& a)
+//   {
+//     dbo::field(a, name,     "name");
+//     dbo::field(a, password, "password");
+//     dbo::field(a, role,     "role");
+//     dbo::field(a, karma,    "karma");
+//   }
+// };
 
 class TestG1 : public goby::core::ApplicationBase
 {
 public:
-    TestG1()
-        : goby::core::ApplicationBase("test_app1", boost::posix_time::milliseconds(1000))
+    TestG1() : goby::core::ApplicationBase(&cfg_)
         {
             
             // MetaConfig cfg_out;
@@ -63,20 +60,27 @@ public:
 
             // fout.close();
             
-            std::ifstream fin;
-            fin.open("test.cfg");
+            std::cout << cfg_ << std::endl;
             
-            goby::core::proto::Config cfg_in;
-            google::protobuf::io::IstreamInputStream is(&fin);
-            google::protobuf::TextFormat::Parse(&is, &cfg_in);
+            std::cout << cfg_.evalue3() << std::endl;
+
+
+            cfg_.GetDescriptor()->FindFieldByName("svalue2").has_default_value();
             
-            std::cout << cfg_in << std::endl;
+            if(cfg_.has_svalue2())
+            {
+                
+                std::cout << "not the default:" << cfg_.svalue2() << std::endl;
+            }
+            else
+            {
+                
+                std::cout << "the default: " << cfg_.svalue2() << std::endl;
+            }
             
-            const TestGConfig cfg = cfg_in.GetExtension(test_g1);
-            std::cout << "[" << cfg.svalue2() << "]" << std::endl;
             
             //subscribe(&TestG1::handler, this, make_filter("name", Filter::EQUAL, "joe"));
-            //subscribe(&TestG1::handler2, this, make_filter("name", Filter::EQUAL, "bob"));
+            subscribe(&TestG1::handler2, this, make_filter("name", Filter::EQUAL, "bob"));
 
             // db_session().mapClass<TestMessage>("TestMessage");
 
@@ -125,52 +129,32 @@ private:
             // publish(a);
             // std::string out;
             // google::protobuf::TextFormat::PrintToString(a, &out);
-            // glogger << a.GetDescriptor()->full_name() << std::endl;
-            // glogger << out << std::endl;
+            // glogger() << a.GetDescriptor()->full_name() << std::endl;
+            // glogger() << out << std::endl;
             
-//            glogger << "out: " << a << std::endl;
+//            glogger() << "out: " << a << std::endl;
         }
 
     void handler(const TestMessage& msg)
         {
             double d = msg.foo();
             
-            glogger << "in1: " << msg << std::endl;
+            glogger() << "in1: " << msg << std::endl;
         }
 
     void handler2(const TestMessage& msg)
         {
-            glogger << "in2: " << msg << std::endl;
+            glogger() << "in2: " << msg << std::endl;
         }
+
+    static TestGConfig cfg_;
 
 };    
 
-int main()
+TestGConfig TestG1::cfg_;
+
+
+int main(int argc, char* argv[])
 {
-    // boost::unordered_multimap<GobyVariable, int> m;
-   
-    // m.insert(std::make_pair(GobyVariable("Foo", "a"),1));
-    // m.insert(std::make_pair(GobyVariable("Foo"),2));
-    // m.insert(std::make_pair(GobyVariable("Foo", "b"),3));
-    // m.insert(std::make_pair(GobyVariable("Bar"),4));
-    // m.insert(std::make_pair(GobyVariable("Bar", "a"),5));
-    // m.insert(std::make_pair(GobyVariable("Baz", "c"),6));
-    // m.insert(std::make_pair(GobyVariable("Quk", "c"),6));
-
-    // typedef boost::unordered_multimap<GobyVariable,int>::iterator iterator;
-
-    // for (iterator it = m.begin(); it != m.end(); ++it)
-    //     std::cout << (*it).first.type_name << " " << (*it).first.var_name << " => " << (*it).second << std::endl;
-
-    // std::cout << std::endl;
-    
-    // std::pair<iterator,iterator> p_it = m.equal_range(GobyVariable("Foo", ""));
-    
-    //  for (iterator it = p_it.first; it != p_it.second; ++it)
-    //      std::cout << (*it).first.type_name << " " << (*it).first.var_name << " => " << (*it).second << std::endl;
-    
-    
-    TestG1 g1;
-    g1.run();
+    return goby::run<TestG1>(argc, argv);
 }
-

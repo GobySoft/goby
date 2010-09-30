@@ -32,7 +32,7 @@ install(DIRECTORY ${goby_INC_DIR}/ DESTINATION /usr/local/include)
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules/")
 
 # find packages, libraries, and headers
-find_package(Boost 1.34.0 COMPONENTS date_time thread regex)
+find_package(Boost 1.34.0 COMPONENTS date_time thread regex program_options filesystem)
 set(CURSES_NEED_NCURSES TRUE)
 find_package(Curses)
 # need custom FindProtoBuf because packaged one is missing options

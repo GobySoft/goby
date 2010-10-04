@@ -29,6 +29,21 @@ namespace goby
 {
     namespace core
     {
+        inline std::string name_connect_listen(const std::string& self_name)
+        { return CONNECT_LISTEN_QUEUE_PREFIX + self_name; }
+
+        inline std::string name_connect_response(const std::string& self_name,
+                                                  const std::string& app_name)
+        { return CONNECT_LISTEN_QUEUE_PREFIX + app_name + "_" + self_name; }
+        
+        inline std::string name_to_server(const std::string& self_name,
+                                           const std::string& app_name)
+        { return TO_SERVER_QUEUE_PREFIX + app_name + "_" + self_name; }
+
+        inline std::string name_from_server(const std::string& self_name,
+                                             const std::string& app_name)
+        { return FROM_SERVER_QUEUE_PREFIX + app_name + "_" + self_name; }
+        
         //
         // send
         //

@@ -77,7 +77,7 @@ namespace Wt
                         if(field_desc->cpp_type() ==
                            google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE)
                         {
-                           google::protobuf::TextFormat::ParseFromString(
+                            google::protobuf::TextFormat::ParseFromString(
                                 boost::copy_range<std::string>(*it),
                                 refl->AddMessage(&obj, field_desc));
                         }

@@ -45,8 +45,18 @@ namespace goby
                     ? std::numeric_limits<To>::quiet_NaN()
                     : std::numeric_limits<To>::min();
             }
-        }        
- 
+        }
+
+        // specialization for bool -> string
+        template <>
+            inline std::string as<std::string, bool>(bool from)
+        {
+            std::stringstream ss;
+            ss << std::boolalpha << from;
+            return ss.str();
+        }
+
+        
         //
         // STRING PARSING
         //

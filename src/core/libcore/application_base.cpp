@@ -19,6 +19,7 @@
 
 #include "goby/util/time.h"
 #include "goby/core/libcore/configuration_reader.h"
+#include "goby/core/libdbo/dbo_manager.h"
 
 #include "application_base.h"
 
@@ -41,15 +42,19 @@ goby::core::ApplicationBase::ApplicationBase(
       db_connection_(0),
       db_session_(0)
 {
-    
-    db_connection_ = new Wt::Dbo::backend::Sqlite3("gobyd_test.db");
-    db_session_ = new Wt::Dbo::Session;
-    db_session_->setConnection(*db_connection_);
-
-    if(!ConfigReader::read_cfg(argc_, argv_, cfg, &application_name_, &command_line_map_))
+    if(!ConfigReader::read_cfg(argc_,
+                               argv_,
+                               cfg,
+                               &application_name_,
+                               &self_name_,
+                               &command_line_map_))
         throw(std::runtime_error("did not successfully read configuration"));
     
     connect();
+    
+    db_connection_ = new Wt::Dbo::backend::Sqlite3(daemon_cfg_.log().sqlite().path());
+    db_session_ = new Wt::Dbo::Session;
+    db_session_->setConnection(*db_connection_);
 }
 
 goby::core::ApplicationBase::~ApplicationBase()
@@ -74,17 +79,17 @@ void goby::core::ApplicationBase::connect()
         
         // set up queues to wait for response from server
 
-        message_queue::remove(std::string(CONNECT_RESPONSE_QUEUE_PREFIX + application_name_).c_str());
+        message_queue::remove(
+            name_connect_response(self_name_, application_name_).c_str());
 
-        // TODO(tes): mangle application name to prevent "/" problems in queue name
-        message_queue response_queue(boost::interprocess::create_only,
-                                     std::string(CONNECT_RESPONSE_QUEUE_PREFIX
-                                                 + application_name_).c_str(),
-                                     1,
-                                     MAX_MSG_BUFFER_SIZE);
+        message_queue response_queue(
+            boost::interprocess::create_only,
+            name_connect_response(self_name_, application_name_).c_str(),
+            1, MAX_MSG_BUFFER_SIZE);
         
         // make connection
-        message_queue listen_queue(boost::interprocess::open_only, CONNECT_LISTEN_QUEUE.c_str());
+        message_queue listen_queue(boost::interprocess::open_only,
+                                   name_connect_listen(self_name_).c_str());
         
         // populate server request for connection
         notification_.Clear();
@@ -103,13 +108,14 @@ void goby::core::ApplicationBase::connect()
         {
             glogger() << die << "no response to connection request. make sure gobyd is alive."
                     <<  std::endl;        
-        }
-        
+        }        
 
         if(notification_.notification_type() == proto::Notification::CONNECTION_ACCEPTED)
         {
             connected_ = true;
             glogger() <<  "connection succeeded." <<  std::endl;
+            daemon_cfg_.ParseFromString(notification_.embedded_msg().body());
+            glogger() << "Daemon configuration: \n" << daemon_cfg_ << std::endl;
         }
         else
         {
@@ -117,7 +123,8 @@ void goby::core::ApplicationBase::connect()
                     << notification_ << std::endl;
         }
 
-        message_queue::remove(std::string(CONNECT_RESPONSE_QUEUE_PREFIX + application_name_).c_str());
+        message_queue::remove(
+            name_connect_response(self_name_, application_name_).c_str());
 
     }
     catch(boost::interprocess::interprocess_exception &ex)
@@ -125,9 +132,15 @@ void goby::core::ApplicationBase::connect()
         glogger() << die << "could not open message queue(s) with gobyd. check to make sure gobyd is alive. " << ex.what() << std::endl;
     }
     
-    to_server_queue_ = shared_ptr<message_queue>(new message_queue(boost::interprocess::open_only, std::string(goby::core::TO_SERVER_QUEUE_PREFIX + application_name_).c_str()));
+    to_server_queue_ = shared_ptr<message_queue>(
+        new message_queue(
+            boost::interprocess::open_only,
+            name_to_server(self_name_, application_name_).c_str()));
     
-    from_server_queue_ = shared_ptr<message_queue>(new message_queue(boost::interprocess::open_only, std::string(goby::core::FROM_SERVER_QUEUE_PREFIX + application_name_).c_str()));
+    from_server_queue_ = shared_ptr<message_queue>(
+        new message_queue(
+            boost::interprocess::open_only,
+            name_from_server(self_name_, application_name_).c_str()));
     
     t_start_ = goby_time();
     // start on the next even second
@@ -143,7 +156,7 @@ void goby::core::ApplicationBase::disconnect()
     {
         // make disconnection
         message_queue listen_queue(boost::interprocess::open_only,
-                                   CONNECT_LISTEN_QUEUE.c_str());
+                                   name_connect_listen(self_name_).c_str());
     
         // populate server request for connection
         notification_.Clear();
@@ -208,32 +221,6 @@ void goby::core::ApplicationBase::run()
 
 }
 
-
-void goby::core::ApplicationBase::server_notify_subscribe(const google::protobuf::Descriptor* descriptor, const proto::Filter& filter)
-{
-    const std::string& type_name = descriptor->full_name();
-
-    notification_.Clear();
-    
-    if(!registered_protobuf_types_.count(type_name))
-    {
-        // copy descriptor for the new subscription type to the notification message
-        descriptor->file()->CopyTo(notification_.mutable_file_descriptor_proto());
-        registered_protobuf_types_.insert(type_name);
-    }
-    notification_.mutable_embedded_msg()->set_type(type_name);
-    
-    if(filter.IsInitialized() && is_valid_filter(descriptor, filter))
-        notification_.mutable_embedded_msg()->mutable_filter()->CopyFrom(filter);
-    
-    notification_.set_notification_type(proto::Notification::SUBSCRIBE_REQUEST);
-
-    glogger() << notification_ << std::endl;
-    
-    
-    send(*to_server_queue_, notification_, buffer_, sizeof(buffer_));
-}
-
 bool goby::core::ApplicationBase::is_valid_filter(const google::protobuf::Descriptor* descriptor, const proto::Filter& filter)
 {
     using namespace google::protobuf;
@@ -250,26 +237,13 @@ bool goby::core::ApplicationBase::is_valid_filter(const google::protobuf::Descri
     return true;
 }
 
-void goby::core::ApplicationBase::server_notify_publish(
-    const google::protobuf::Descriptor* descriptor,
-    const std::string& serialized_message)
-{
-    const std::string& type_name = descriptor->full_name();
 
-    notification_.Clear();
-    if(!registered_protobuf_types_.count(type_name))
+void goby::core::ApplicationBase::insert_descriptor_proto(const google::protobuf::Descriptor* descriptor)
+{
+    if(!registered_protobuf_types_.count(descriptor->full_name()))
     {
         // copy descriptor for the new subscription type to the notification message
         descriptor->file()->CopyTo(notification_.mutable_file_descriptor_proto());
-        registered_protobuf_types_.insert(type_name);
+        registered_protobuf_types_.insert(descriptor->full_name());
     }
-
-    notification_.mutable_embedded_msg()->set_type(type_name);
-    
-    notification_.set_notification_type(proto::Notification::PUBLISH_REQUEST);
-    notification_.mutable_embedded_msg()->set_body(serialized_message);
-
-    glogger() << "< " << notification_ << std::endl;    
-
-    send(*to_server_queue_, notification_, buffer_, sizeof(buffer_));
 }

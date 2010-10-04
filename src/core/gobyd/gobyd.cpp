@@ -20,6 +20,7 @@
 #include <boost/interprocess/ipc/message_queue.hpp>
 #include <boost/thread.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/format.hpp>
 
 #include "goby/core/proto/interprocess_notification.pb.h"
 #include "goby/core/proto/option_extensions.pb.h"
@@ -42,6 +43,7 @@ goby::util::FlexOstream Daemon::glogger;
 boost::unordered_multimap<std::string, Daemon::Subscriber > Daemon::subscriptions;
 
 goby::core::proto::Config Daemon::cfg_;
+std::string Daemon::self_name_;
 
 // how long a client can be quiet before we ask for a heartbeat
 const boost::posix_time::time_duration Daemon::HEARTBEAT_INTERVAL =
@@ -59,49 +61,94 @@ Daemon::Daemon()
     : active_(true),
       dbo_manager_(DBOManager::get_instance())
 {
-    if(!ConfigReader::read_cfg(argc_, argv_, &cfg_, &application_name_, &command_line_map_))
+    if(!ConfigReader::read_cfg(argc_, argv_,
+                               &cfg_,
+                               &application_name_,
+                               &self_name_,
+                               &command_line_map_))
+    {
         throw(std::runtime_error("did not successfully read configuration"));
-
-    std::cout << cfg_ << std::endl;
+    }
     
-    message_queue::remove(CONNECT_LISTEN_QUEUE.c_str());
+    {
+        boost::mutex::scoped_lock lock(logger_mutex);
+
+        switch(cfg_.verbosity())
+        {
+            case proto::Config::quiet:
+            case proto::Config::warning:
+                break;
+            case proto::Config::verbose:
+                glogger.add_stream("verbose", &std::cout);
+                break;
+            case proto::Config::gui:
+                glogger.add_stream("scope", &std::cout);
+                break;
+        }
+        
+        
+        fout_.open("gobyd.txt");
+        glogger.add_stream("verbose", &fout_);
+        
+        glogger.name(application_name_);
+        
+        // nocolor, red, lt_red, green, lt_green, yellow,  lt_yellow, blue, lt_blue, magenta, lt_magenta, cyan, lt_cyan, white, lt_white
+        glogger.add_group("connect", ">", "lt_magenta", "connections");
+        glogger.add_group("disconnect", "<", "lt_blue", "disconnections");
+    }
+
+    
+    glogger << cfg_ << std::endl;
+    
+    message_queue::remove(name_connect_listen(self_name_).c_str());    
 
     listen_queue_ = boost::shared_ptr<message_queue>
         (new message_queue(
             boost::interprocess::create_only,
-            CONNECT_LISTEN_QUEUE.c_str(),
+            name_connect_listen(self_name_).c_str(),
             MAX_NUM_MSG,
             MAX_MSG_BUFFER_SIZE));
     
     {        
         boost::mutex::scoped_lock lock(dbo_mutex);
+
         
-        dbo_manager_->connect("gobyd_test.db");
+        try
+        {
+            cfg_.mutable_log()->mutable_sqlite()->set_path(
+                format_filename(cfg_.log().sqlite().path()));
+            
+            dbo_manager_->connect(std::string(cfg_.log().sqlite().path()));
+            
+        }
+        catch(std::exception& e)
+        {
+            cfg_.mutable_log()->mutable_sqlite()->clear_path();
+            cfg_.mutable_log()->mutable_sqlite()->set_path(
+                format_filename(cfg_.log().sqlite().path()));
+            
+            glogger << warn << "db connection failed: " << e.what() << std::endl;
+            std::string default_file = cfg_.log().sqlite().path();
+            
+            glogger << "trying again with defaults: " << default_file << std::endl;
+            dbo_manager_->connect(default_file);
+        }
+        
+        
         dbo_manager_->set_logger(&glogger);
         dbo_manager_->add_flex_groups(glogger);
 
         // add files of core static types for dynamic messages
         // #include <google/protobuf/descriptor.pb.h>
         dbo_manager_->add_file(google::protobuf::FileDescriptorProto::descriptor());
-        dbo_manager_->add_file(GobyExtend::descriptor());
+        // #include "goby/core/proto/option_extensions.pb.h"
+        dbo_manager_->add_file(proto::extend::descriptor());
         // #include "goby/core/proto/interprocess_notification.pb.h"
         dbo_manager_->add_file(proto::Notification::descriptor());
         // #include "goby/core/proto/config.pb.h"
         dbo_manager_->add_file(proto::Config::descriptor());
     }
 
-    {
-        boost::mutex::scoped_lock lock(logger_mutex);
-
-        fout_.open("gobyd.txt");
-        glogger.add_stream("verbose", &fout_);        
-        
-        glogger.name("gobyd");
-        
-        // nocolor, red, lt_red, green, lt_green, yellow,  lt_yellow, blue, lt_blue, magenta, lt_magenta, cyan, lt_cyan, white, lt_white
-        glogger.add_group("connect", ">", "lt_magenta", "connections");
-        glogger.add_group("disconnect", "<", "lt_blue", "disconnections");
-    }
     
     t_start_ = goby_time();
     t_next_db_commit_ = boost::posix_time::second_clock::universal_time() + boost::posix_time::seconds(1);
@@ -109,7 +156,7 @@ Daemon::Daemon()
 
 Daemon::~Daemon()
 {
-    message_queue::remove(CONNECT_LISTEN_QUEUE.c_str());
+    message_queue::remove(name_connect_listen(self_name_).c_str());
 }
 
 void Daemon::run()
@@ -159,9 +206,9 @@ void Daemon::connect()
 
     std::cout << "name: " << name << std::endl;
     
-    message_queue connect_response_queue
-        (boost::interprocess::open_only,
-         std::string(CONNECT_RESPONSE_QUEUE_PREFIX + name).c_str());
+    message_queue response_queue(
+        boost::interprocess::open_only,
+        name_connect_response(self_name_, name).c_str());
 
     if(!clients_.count(name))
     {
@@ -179,6 +226,12 @@ void Daemon::connect()
         
         notification_.Clear();
         notification_.set_notification_type(proto::Notification::CONNECTION_ACCEPTED);
+        // send configuration along
+        notification_.mutable_embedded_msg()->set_type(cfg_.GetDescriptor()->full_name());
+        google::protobuf::io::StringOutputStream os(
+            notification_.mutable_embedded_msg()->mutable_body());
+        cfg_.SerializeToZeroCopyStream(&os);
+
     }
     else
     {
@@ -195,7 +248,7 @@ void Daemon::connect()
         notification_.set_explanation("name in use");
     }
 
-    send(connect_response_queue, notification_, buffer_, sizeof(buffer_));
+    send(response_queue, notification_, buffer_, sizeof(buffer_));
 }
 
 void Daemon::disconnect()
@@ -241,5 +294,15 @@ void Daemon::disconnect()
     }
 }
 
+
+std::string Daemon::format_filename(const std::string& in)
+{   
+    boost::format f(in);
+    // don't thrown if user doesn't need some or all of format fields
+    f.exceptions(boost::io::all_error_bits^(
+                     boost::io::too_many_args_bit | boost::io::too_few_args_bit));
+    f % goby::util::goby_file_timestamp();
+    return f.str();
+}
 
 

@@ -1,6 +1,8 @@
 import "google/protobuf/descriptor.proto";
 
-message GobyExtend
+package goby.core.proto;
+
+message extend
 {
     // currently a dummy message so i can get FileDescriptorProto
 }
@@ -10,6 +12,7 @@ extend .google.protobuf.FieldOptions
     optional double dccl_max = 5000;
     optional double dccl_min = 5001;
     optional string description = 5002;
+    optional string example = 5003;
     // optional string cli_short = 5003;
 }
 

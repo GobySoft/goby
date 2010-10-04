@@ -30,6 +30,8 @@
 #include <google/protobuf/message.h>
 #include <google/protobuf/descriptor.h>
 #include <google/protobuf/descriptor.pb.h>
+#include <google/protobuf/io/zero_copy_stream.h>
+#include <google/protobuf/io/zero_copy_stream_impl.h>
 
 #include <Wt/Dbo/Dbo>
 #include <Wt/Dbo/Query>
@@ -41,23 +43,20 @@
 #include "goby/core/core_constants.h"
 #include "message_queue_util.h"
 #include "goby/core/proto/interprocess_notification.pb.h"
-//#include "goby/core/proto/config.pb.h"
+#include "goby/core/proto/config.pb.h"
 #include "filter.h"
 
 namespace goby
 {
 
-    // call this to make everything happen
-    // blocks until end() is called
-    // or object is destroyed
-
-    // have to give the option to pass a pointer to support moos-mimic
+    // friend function that creates and runs the
+    // Goby Application
+    // blocks caller until ApplicationBase::run() returns
     template<typename App>
         static int run(int argc, char* argv[]);
         
     namespace core
     {
-
         class ApplicationBase
         {
           protected:
@@ -66,17 +65,12 @@ namespace goby
             
             ApplicationBase(google::protobuf::Message* cfg = 0);
             virtual ~ApplicationBase();
-            ApplicationBase(const ApplicationBase&);
-            ApplicationBase& operator= (const ApplicationBase&);
-
-            template<typename App>
-                friend int ::goby::run(int argc, char* argv[]);
-            friend class CMOOSApp;
 
             // here's where any synchronous work happens
             virtual void loop() { }
-    
-            // publish a message to all subscribers to that type (and variable name, if given)
+            
+            // publish a message to all subscribers to that
+            // type (and variable name, if given)
             template<typename ProtoBufMessage>
                 void publish(const ProtoBufMessage& msg);
 
@@ -84,10 +78,13 @@ namespace goby
             // generic function object (boost::function)
             // void handler(const ProtoBufMessage& msg)
             // ProtoBufMessage is any google::protobuf::Message derivatives
-            // if name is omitted. all messages of this type are provided
+            // if `filter` is omitted. all messages of this type are provided (unfiltered)
+            // if `handler` is omitted, no handler is called and only the newest message buffer
+            // is updated
             template<typename ProtoBufMessage>
-                void subscribe(boost::function<void (const ProtoBufMessage&)> handler,
-                               const proto::Filter& filter = proto::Filter());
+                void subscribe(
+                    boost::function<void (const ProtoBufMessage&)> handler,
+                    const proto::Filter& filter = proto::Filter());
 
             // overload subscribe for member functions of a class object
             // void C::mem_func(const ProtoBufMessage& msg)    
@@ -110,7 +107,7 @@ namespace goby
             { set_loop_period(boost::posix_time::milliseconds(milliseconds)); }
             void set_loop_freq(long hertz)
             { set_loop_period(boost::posix_time::milliseconds(1000/hertz)); }
-    
+            
     
             // getters
             std::string application_name()
@@ -129,8 +126,8 @@ namespace goby
             
 
             static Filter make_filter(const std::string& key,
-                               Filter::Operation op,
-                               const std::string& value)
+                                      Filter::Operation op,
+                                      const std::string& value)
             {
                 Filter filter;
                 filter.set_key(key);
@@ -138,24 +135,28 @@ namespace goby
                 filter.set_value(value);
                 return filter;
             }
-
+            
             goby::util::FlexOstream& glogger() { return glogger_; }
             
             
           private:
+            ApplicationBase(const ApplicationBase&);
+            ApplicationBase& operator= (const ApplicationBase&);
+
             // main loop that exits on disconnect
             void run();
             // called in Ctor if possible
             void connect();
-            void disconnect();
-    
-            void server_notify_subscribe(const google::protobuf::Descriptor* descriptor,
-                                         const proto::Filter& filter);
-            void server_notify_publish(const google::protobuf::Descriptor* descriptor,
-                                       const std::string& serialized_message);
+            void disconnect();    
 
             bool is_valid_filter(const google::protobuf::Descriptor* descriptor,
                                  const proto::Filter& filter);
+
+            void insert_descriptor_proto(const google::protobuf::Descriptor* descriptor);
+
+            template<typename App>
+                friend int ::goby::run(int argc, char* argv[]);
+            friend class CMOOSApp;
             
           private:
             class SubscriptionBase
@@ -173,19 +174,19 @@ namespace goby
                            const proto::Filter& filter)
                   : handler_(handler),
                     filter_(filter)
-                { }
+                    { }
                 void post(const std::string& serialized_message)
                 {
-                    ProtoBufMessage msg;
-                    msg.ParseFromString(serialized_message);
-                    if(clears_filter(msg, filter_))
-                        handler_(msg);
+                    latest_msg_.ParseFromString(serialized_message);
+                    if(clears_filter(latest_msg_, filter_))
+                        handler_(latest_msg_);
                 }
 
                 const proto::Filter& filter() const { return filter_; }
                 
               private:
                 boost::function<void (const ProtoBufMessage&)> handler_;
+                ProtoBufMessage latest_msg_;
                 const proto::Filter filter_;
             };
     
@@ -197,7 +198,10 @@ namespace goby
 
             // types we have informed the server of already
             std::set<std::string> registered_protobuf_types_;
+            // name of this application (e.g. garmin_gps_g)
             std::string application_name_;
+            // name of this platform (e.g. name of the AUV)
+            std::string self_name_;
             boost::posix_time::time_duration loop_period_;
             bool connected_;            
             
@@ -223,45 +227,76 @@ namespace goby
             static char** argv_;
 
             boost::program_options::variables_map command_line_map_;
+
+            // gobyd/global configuration
+            // populated at connection time
+            goby::core::proto::Config daemon_cfg_;
         };
-
-
-        template<typename ProtoBufMessage>
-            void ApplicationBase::publish(const ProtoBufMessage& msg)
-        {
-            std::string serialized_message;
-            msg.SerializeToString(&serialized_message);
-            server_notify_publish(ProtoBufMessage::descriptor(), serialized_message);
-        }
-
-        template<typename ProtoBufMessage>
-            void ApplicationBase::subscribe(boost::function<void (const ProtoBufMessage&)> handler, const proto::Filter& filter /* = proto::Filter() */)
-        {
-            const std::string& type_name = ProtoBufMessage::descriptor()->full_name();
-
-            // enforce one handler for each type / filter combination            
-            typedef std::pair <std::string, boost::shared_ptr<SubscriptionBase> > P;
-            BOOST_FOREACH(const P&p, subscriptions_)
-            {
-                if(p.second->filter() == filter)
-                {
-                    glogger() << warn << "already have subscription for type: " << type_name
-                              << " and filter: " << filter;
-                    return;
-                }
-            }
-            
-            // machinery so we can call the proper handler upon receipt of this type
-            boost::shared_ptr<SubscriptionBase> subscription(
-                new Subscription<ProtoBufMessage>(handler, filter));
-            
-            subscriptions_.insert(make_pair(type_name, subscription));
-
-            // tell the server about our subscription
-            server_notify_subscribe(ProtoBufMessage::descriptor(), filter);
-        }
     }
 }
+
+
+             
+template<typename ProtoBufMessage>
+void goby::core::ApplicationBase::publish(const ProtoBufMessage& msg)
+{
+    // clear the global notification message
+    notification_.Clear();
+    // we are publishing
+    notification_.set_notification_type(proto::Notification::PUBLISH_REQUEST);
+    // contents of the message
+    google::protobuf::io::StringOutputStream os(
+        notification_.mutable_embedded_msg()->mutable_body());
+    msg.SerializeToZeroCopyStream(&os);
+    // name of the message
+    notification_.mutable_embedded_msg()->set_type(msg.GetDescriptor()->full_name());
+    // appends, if needed, the meta data of this type to notification_
+    insert_descriptor_proto(msg.GetDescriptor());
+
+    glogger() << "< " << notification_ << std::endl;
+    send(*to_server_queue_, notification_, buffer_, sizeof(buffer_));
+}
+
+template<typename ProtoBufMessage>
+void goby::core::ApplicationBase::subscribe(boost::function<void (const ProtoBufMessage&)> handler, const proto::Filter& filter /* = proto::Filter() */)
+{
+    const std::string& type_name = ProtoBufMessage::descriptor()->full_name();
+
+    // enforce one handler for each type / filter combination            
+    typedef std::pair <std::string, boost::shared_ptr<SubscriptionBase> > P;
+    BOOST_FOREACH(const P&p, subscriptions_)
+    {
+        if(p.second->filter() == filter)
+        {
+            glogger() << warn << "already have subscription for type: " << type_name
+                      << " and filter: " << filter;
+            return;
+        }
+    }
+            
+    // machinery so we can call the proper handler upon receipt of this type
+    boost::shared_ptr<SubscriptionBase> subscription(
+        new Subscription<ProtoBufMessage>(handler, filter));
+            
+    subscriptions_.insert(make_pair(type_name, subscription));
+    // clear the global notification message
+    notification_.Clear();
+    // we are subscribing
+    notification_.set_notification_type(proto::Notification::SUBSCRIBE_REQUEST);
+    // subscribe to this type
+    notification_.mutable_embedded_msg()->set_type(type_name);
+    // appends, if needed, the meta data of this type to notification_
+    insert_descriptor_proto(ProtoBufMessage::descriptor());
+    // if a filter, append it
+    if(filter.IsInitialized() && is_valid_filter(ProtoBufMessage::descriptor(), filter))
+        notification_.mutable_embedded_msg()->mutable_filter()->CopyFrom(filter);
+            
+    glogger() << notification_ << std::endl;    
+            
+    send(*to_server_queue_, notification_, buffer_, sizeof(buffer_));
+            
+}
+
 
 template<typename App>
 static int goby::run(int argc, char* argv[])
@@ -277,12 +312,10 @@ static int goby::run(int argc, char* argv[])
     }
     catch(std::exception& e)
     {
-        //std::cerr << "uncaught exception: " << e.what() << std::endl;
+        std::cerr << "uncaught exception: " << e.what() << std::endl;
         return 1;
     }
 }
-
-
 
 
 #endif

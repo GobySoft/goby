@@ -37,6 +37,13 @@ namespace goby
         inline std::string goby_time_as_string(const boost::posix_time::ptime& t = goby_time())
         { return boost::posix_time::to_simple_string(t); }
 
+        inline std::string goby_file_timestamp()
+        {
+            using namespace boost::posix_time;
+            return to_iso_string(second_clock::universal_time());
+        }
+        
+        
         //
         // ptime <--> double (seconds since UNIX)
         // 

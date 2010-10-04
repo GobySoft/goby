@@ -46,28 +46,28 @@ Daemon::ConnectedClient::ConnectedClient(const std::string& name)
         glogger.add_group(name_, ">", "blue", name_);
     }
     
-    message_queue::remove
-        (std::string(TO_SERVER_QUEUE_PREFIX + name_).c_str());
+    message_queue::remove(
+        name_to_server(self_name_, name_).c_str());
         
-    message_queue::remove
-        (std::string(FROM_SERVER_QUEUE_PREFIX + name_).c_str());
-        
+    message_queue::remove(
+        name_from_server(self_name_, name_).c_str());
+    
     message_queue to_server_queue(boost::interprocess::create_only,
-                                  std::string(TO_SERVER_QUEUE_PREFIX + name_).c_str(),
+                                  name_to_server(self_name_, name_).c_str(),
                                   MAX_NUM_MSG,
                                   MAX_MSG_BUFFER_SIZE);
         
-        
+    
     message_queue from_server_queue(boost::interprocess::create_only,
-                                    std::string(FROM_SERVER_QUEUE_PREFIX + name_).c_str(),
+                                    name_from_server(self_name_, name_).c_str(),
                                     MAX_NUM_MSG,
                                     MAX_MSG_BUFFER_SIZE);
 }
 
 Daemon::ConnectedClient::~ConnectedClient()
 {
-    message_queue::remove(std::string(TO_SERVER_QUEUE_PREFIX + name_).c_str());
-    message_queue::remove(std::string(FROM_SERVER_QUEUE_PREFIX + name_).c_str());    
+    message_queue::remove(name_to_server(self_name_, name_).c_str());
+    message_queue::remove(name_from_server(self_name_, name_).c_str());
 
     if(!glogger.quiet())
     {
@@ -82,9 +82,9 @@ Daemon::ConnectedClient::~ConnectedClient()
 void Daemon::ConnectedClient::run()
 {
     message_queue to_server_queue(boost::interprocess::open_only,
-                                  std::string(TO_SERVER_QUEUE_PREFIX + name_).c_str());
+                                  name_to_server(self_name_, name_).c_str());
     message_queue from_server_queue(boost::interprocess::open_only,
-                                    std::string(FROM_SERVER_QUEUE_PREFIX + name_).c_str());
+                                    name_from_server(self_name_, name_).c_str());
     
     while(active_)
     {
@@ -103,7 +103,9 @@ void Daemon::ConnectedClient::run()
             if(now > t_last_active_ + DEAD_INTERVAL)
             {
                 // deceased client - disconnect ourselves
-                message_queue listen_queue(boost::interprocess::open_only, CONNECT_LISTEN_QUEUE.c_str());
+                message_queue listen_queue(
+                    boost::interprocess::open_only,
+                    name_connect_listen(self_name_).c_str());
                 notification_.Clear();
                 notification_.set_notification_type(proto::Notification::DISCONNECT_REQUEST);
                 notification_.set_application_name(name_);
@@ -226,8 +228,8 @@ void Daemon::ConnectedClient::process_publish_subscribers(
                                        shared_ptr<message_queue>(
                                            new message_queue(
                                                boost::interprocess::open_only,
-                                               std::string(FROM_SERVER_QUEUE_PREFIX
-                                                           + cc->name()).c_str()))));
+                                               name_from_server(self_name_,
+                                                                cc->name()).c_str()))));
                 it = p.first;
             }
             

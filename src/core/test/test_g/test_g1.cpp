@@ -7,6 +7,8 @@
 #include <google/protobuf/io/zero_copy_stream_impl.h>
 #include <boost/unordered_map.hpp>
 #include <Wt/Dbo/Query>
+#include <Wt/Dbo/backend/Sqlite3>
+#include <Wt/Dbo/Exception>
 #include <iostream>
 #include <fstream>
 
@@ -60,28 +62,13 @@ public:
 
             // fout.close();
             
-            std::cout << cfg_ << std::endl;
-            
-            std::cout << cfg_.evalue3() << std::endl;
-
-
-            
-            if(cfg_.has_svalue2())
-            {
-                
-                std::cout << "not the default:" << cfg_.svalue2() << std::endl;
-            }
-            else
-            {
-                
-                std::cout << "the default: " << cfg_.svalue2() << std::endl;
-            }
+            glogger() << cfg_ << std::endl;
             
             
             //subscribe(&TestG1::handler, this, make_filter("name", Filter::EQUAL, "joe"));
-            subscribe(&TestG1::handler2, this, make_filter("name", Filter::EQUAL, "bob"));
+            //subscribe(&TestG1::handler2, this, make_filter("name", Filter::EQUAL, "bob"));
 
-            // db_session().mapClass<TestMessage>("TestMessage");
+            db_session().mapClass<TestMessage>("TestMessage");
 
             // db_session().mapClass<User>("user");
             
@@ -106,20 +93,18 @@ public:
 private:
     void loop()
         {    
-            // try
-            // {
-            //     Wt::Dbo::Transaction transaction(db_session());
-            //     Wt::Dbo::ptr<TestMessage> x = db_session().find<TestMessage>("where foo = ?").bind(11);
-            //     std::cout << *x << std::endl;
+            try
+            {
+                Wt::Dbo::Transaction transaction(db_session());
+                Wt::Dbo::ptr<TestMessage> x = db_session().find<TestMessage>("where foo = ?").bind(11);
+                if(x) std::cout << *x << std::endl;
                 
-            //     // dbo::Transaction transaction(db_session());
-            //     // dbo::ptr<User> joe = db_session().find<User>(" where name = 'Joe'");
-            //     // std::cerr << "Joe has karma: " << joe->karma << std::endl;
-            //     transaction.commit();
-            // }
-            // catch(Wt::Dbo::Exception& e)
-            // {}
-            
+                transaction.commit();
+            }
+            catch(Wt::Dbo::Exception& e)
+            {
+                glogger() << warn << e.what() << std::endl;
+            }
             
             // static int i = 0;
             // TestMessage a;
@@ -146,8 +131,8 @@ private:
             glogger() << "in2: " << msg << std::endl;
         }
 
+    // needs to be static so it gets constructed before TestG1
     static TestGConfig cfg_;
-
 };    
 
 TestGConfig TestG1::cfg_;

@@ -19,6 +19,8 @@
 #include <sstream>
 #include <iostream>
 #include <fstream>
+#include <vector>
+
 
 #include <boost/foreach.hpp>
 #include <boost/program_options.hpp>
@@ -32,6 +34,7 @@
 #include <google/protobuf/io/zero_copy_stream_impl.h>
 #include <google/protobuf/text_format.h>
 
+#include "goby/util/string.h"
 
 namespace goby
 {
@@ -40,12 +43,82 @@ namespace goby
         class ConfigReader
         {
           public:
-            static bool read_cfg(int argc, char* argv[], google::protobuf::Message* message, std::string* application_name, boost::program_options::variables_map* var_map);
+            static bool read_cfg(int argc,
+                                 char* argv[],
+                                 google::protobuf::Message* message,
+                                 std::string* application_name,
+                                 std::string* self_name,
+                                 boost::program_options::variables_map* var_map);
             
           private:
-            static void get_protobuf_program_options(boost::program_options::options_description& po_desc, const google::protobuf::Message& message, const std::string& prefix = "");
-            static void set_protobuf_program_option(const boost::program_options::variables_map& vm, google::protobuf::Message& message, const std::string& full_name, const boost::program_options::variable_value& value);
-        };
+            static void get_protobuf_program_options(
+                boost::program_options::options_description& po_desc,
+                const google::protobuf::Descriptor* desc);
+            
+            static void set_protobuf_program_option(
+                const boost::program_options::variables_map& vm,
+                google::protobuf::Message& message,
+                const std::string& full_name,
+                const boost::program_options::variable_value& value);
+
+            static void build_description(const google::protobuf::Descriptor* desc,
+                                          std::stringstream& human_desc,
+                                          const std::string& indent = "");
+            
+            static void append_label(std::stringstream& human_desc_ss,
+                                     const google::protobuf::FieldDescriptor* field_desc);
+            
+
+            static std::string default_as_string(const google::protobuf::FieldDescriptor* field_desc);
+            
+            
+            template<typename T>
+                static void set_single_option(
+                    boost::program_options::options_description& po_desc,
+                    const google::protobuf::FieldDescriptor* field_desc,
+                    const T& default_value,
+                    const std::string& name,
+                    const std::string& description)
+            {
+                if(!field_desc->is_repeated())
+                {
+                    if(field_desc->has_default_value())
+                    {
+                        po_desc.add_options()
+                            (name.c_str(),
+                             boost::program_options::value<T>()->default_value(default_value),
+                             description.c_str());
+                    }
+                    else
+                    {
+                        po_desc.add_options()
+                            (name.c_str(),
+                             boost::program_options::value<T>(),
+                             description.c_str());
+                    }
+                }
+                else
+                {                    
+                    if(field_desc->has_default_value())
+                    {
+                        po_desc.add_options()
+                            (name.c_str(),
+                             boost::program_options::value<std::vector<T> >()->default_value(
+                                 std::vector<T>(1, default_value),
+                                 goby::util::as<std::string>(default_value)),
+                             description.c_str());
+                    }
+                    else
+                    {
+                        po_desc.add_options()
+                            (name.c_str(),
+                             boost::program_options::value<std::vector<T> >(),
+                             description.c_str());
+                    }
+                }
+                
+            }
+        };        
     }
 }
 

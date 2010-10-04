@@ -37,6 +37,11 @@ namespace goby
           private:
             template<typename App>
                 friend int ::goby::run(int argc, char* argv[]);
+
+            Daemon();
+            ~Daemon();
+            Daemon(const Daemon&);
+            Daemon& operator = (const Daemon&);
             
             void run();
             
@@ -115,13 +120,11 @@ namespace goby
       
             void connect();
             void disconnect();
+
+            std::string format_filename(const std::string& in);
             
             
           private:
-            Daemon();
-            ~Daemon();
-            Daemon(const Daemon&);
-            Daemon& operator = (const Daemon&);
             
             bool active_;
             
@@ -152,6 +155,9 @@ namespace goby
 
             static int argc_;
             static char** argv_;
+
+            // name of this platform
+            static std::string self_name_;
             
         };
     }

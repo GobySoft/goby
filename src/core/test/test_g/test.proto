@@ -24,7 +24,7 @@ message TestMessage
 
 message TestGConfig
 {
-    required double dvalue1 = 1 [(description)="some fun double"];
+    required double dvalue1 = 1 [(goby.core.proto.description)="some fun double"];
     optional string svalue2 = 2;    
 
     enum MyEnum { 
@@ -33,4 +33,10 @@ message TestGConfig
         MAYBE = 3;
     }
     required MyEnum evalue3 = 3;
+
+    repeated int32 i32 = 4;
+    repeated int64 i64 = 5;
+    repeated uint32 ui32 = 6;
+    repeated uint64 ui64 = 7;
 }
+

@@ -45,22 +45,22 @@ bool goby::core::clears_filter(const google::protobuf::Message& msg, const goby:
             return false;
             
         case google::protobuf::FieldDescriptor::CPPTYPE_INT32:
-            return filter_comp(as<boost::int_least32_t>(filter.value()),
+            return filter_comp(as<google::protobuf::int32>(filter.value()),
                                reflection->GetInt32(msg, field_descriptor),
                                filter.operation());
             
         case google::protobuf::FieldDescriptor::CPPTYPE_INT64:
-            return filter_comp(as<boost::int_least64_t>(filter.value()),
+            return filter_comp(as<google::protobuf::int64>(filter.value()),
                                reflection->GetInt64(msg, field_descriptor),
                                filter.operation());
 
         case google::protobuf::FieldDescriptor::CPPTYPE_UINT32:
-            return filter_comp(as<boost::uint_least32_t>(filter.value()),
+            return filter_comp(as<google::protobuf::uint32>(filter.value()),
                                reflection->GetUInt32(msg, field_descriptor),
                                filter.operation());
 
         case google::protobuf::FieldDescriptor::CPPTYPE_UINT64:
-            return filter_comp(as<boost::uint_least64_t>(filter.value()),
+            return filter_comp(as<google::protobuf::uint64>(filter.value()),
                                reflection->GetUInt64(msg, field_descriptor),
                                filter.operation());
 

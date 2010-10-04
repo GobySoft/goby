@@ -1,45 +1,70 @@
 import "goby/core/proto/option_extensions.proto";
 
-
 package goby.core.proto;
 
 // defines information and connections
 // to a node (vehicle, ship, etc.)
 // a node is defined by a single gobyd and collection
 // of connected processes
-message Node
+message Platform
 {
-    message SerialInfo
-    {
-        required string port = 1 [(description)="e.g. /dev/ttyUSB1"];
-        required uint32 baud = 2 [(description)="e.g. 19200"];
-    }
-    message AcousticModemInfo
-    {
-        required uint32 mm_id = 1 [(description)="WHOI Micro-Modem id ($CCCFQ,SRC)"];
-        required SerialInfo mm_serial = 2;
-        optional bool has_coproc = 3 [(description)="can handle PSK messages (rate 2,3,5)", default=true];
-    }
-    message EthernetInfo
-    {
-        required string ipv4_addr = 1 [(description)="e.g. 192.168.1.1 or bob.mit.edu"];
-        required uint32 ipv4_port = 2 [(description)="e.g. 10023"];
-    }
+  message SerialInfo
+  {
+    required string port = 1 [(example)="/dev/ttyUSB1"];
+    required uint32 baud = 2 [(example)="19200"];
+  }
+  message AcousticModemInfo
+  {
+    required uint32 mm_id = 1 [(description)="Micro-Modem id ($CCCFQ,SRC)",
+                               (example)="1"];
+    required SerialInfo mm_serial = 2;
+    optional bool has_coproc = 3 [default=true,
+                                  (description)="can handle high-rate PSK"];
+  }
+  message EthernetInfo
+  {
+    required string ipv4_addr = 1 [(example)="192.168.1.1"];
+    required uint32 ipv4_port = 2 [(example)="10023"];
+  }
     
-    required string name = 1 [(description)="unique name of the node"];
-    optional AcousticModemInfo acomms = 2;
-    // how to access this via ethernet
-    optional EthernetInfo ether = 3;
-    // how to access this node via serial
-    optional SerialInfo serial = 4;
+  required string name = 1 [(description)="unique name of the node",
+                            (example)="AUV-23"];
+  optional AcousticModemInfo acomms = 2 [(description)="acoustic connectivity"];
+  optional EthernetInfo ether = 3 [(description)="ethernet connectivity"];
+  optional SerialInfo serial = 4 [(description)="serial connectivity "];
+}
+
+message LogConfig
+{
+  enum SQLBackend
+  {
+    SQLITE = 1;
+  }
+  optional SQLBackend backend = 1 [default=SQLITE];
+    
+  message SQLiteInfo
+  {       
+    // %1% gets expanded to iso date-time stamp
+    optional string path = 2 [default="./goby_%1%.db"];
+  }
+  // only needed if backend == SQLITE
+  optional SQLiteInfo sqlite = 2;
 }
 
 message Config
 {
-    // who are we?
-    required Node self = 1;
-    // who do we know about and how do we contact them?
-    repeated Node other = 2;
+  required Platform self = 1 [(description)="this platform"];
+  repeated Platform other = 2 [(description)="the known world of platforms"];
+  required LogConfig log = 3 [(description)="SQL log configuration"];
 
+  enum Verbosity
+  {
+    quiet = 1;
+    warning = 2;
+    verbose = 3;
+    gui = 4;
+  }
+  optional Verbosity verbosity = 4 [default = quiet,
+                                    (description)="Terminal verbosity"];    
 }
 

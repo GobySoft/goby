@@ -14,117 +14,113 @@
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "goby/core/proto/option_extensions.pb.h"
+#include "goby/core/proto/app_base_config.pb.h"
 
 #include "configuration_reader.h"
 
 #include "goby/util/liblogger/term_color.h"
+#include "exception.h"
 
-using namespace goby::tcolor;
+// brings std::ostream& red, etc. into scope
+using namespace goby::util::tcolor;
 
-bool goby::core::ConfigReader::read_cfg(int argc,
+void goby::core::ConfigReader::read_cfg(int argc,
                                         char* argv[],
                                         google::protobuf::Message* message,
                                         std::string* application_name,
-                                        std::string* self_name,
+                                        boost::program_options::options_description* od_all,
                                         boost::program_options::variables_map* var_map)
 {
+    if(!argv) return;
+
     boost::filesystem::path launch_path(argv[0]);
     *application_name = launch_path.filename();
     
-    namespace po = boost::program_options;
-    std::string cfg_path;
-    
-    po::options_description od_all("Allowed options");
+    std::string cfg_path;    
 
-    po::options_description od_cli_only("Given on command line only");
+    boost::program_options::options_description od_cli_only("Given on command line only");
 
     std::string cfg_path_desc = "path to " + *application_name + " configuration file (typically " + *application_name + ".cfg)";
+    
+    std::string app_name_desc = "name to use when connecting to gobyd (default: " + std::string(argv[0]) + ")";
     od_cli_only.add_options()
-        ("cfg_path,c", po::value<std::string>(&cfg_path), cfg_path_desc.c_str())
+        ("cfg_path,c", boost::program_options::value<std::string>(&cfg_path), cfg_path_desc.c_str())
         ("help,h", "writes this help message")
-        ("self.name,n", po::value<std::string>(self_name), "name of this platform (same as gobyd configuration value `self.name`)");
+        ("platform_name,p", boost::program_options::value<std::string>(), "name of this platform (same as gobyd configuration value `self.name`)")
+        ("app_name,a", boost::program_options::value<std::string>(), app_name_desc.c_str())
+        ("verbose,v", boost::program_options::value<std::string>()->implicit_value("")->multitoken(), "output useful information to std::cout. -v is verbosity: verbose, -vv is verbosity: debug, -vvv is verbosity: gui");
     
     std::string od_both_desc = "Typically given in " + *application_name + " configuration file, but may be specified on the command line";
-    po::options_description od_both(od_both_desc.c_str());
+    boost::program_options::options_description od_both(od_both_desc.c_str());
 
-    od_all.add(od_cli_only);
     if(message)
     {
         get_protobuf_program_options(od_both, message->GetDescriptor());
-        od_all.add(od_both);
+        od_all->add(od_both);
+    }
+    od_all->add(od_cli_only);
+    
+    boost::program_options::positional_options_description p;
+    p.add("cfg_path", 1);
+    p.add("platform_name", 2);
+    p.add("app_name", 3);
+    
+        
+    boost::program_options::store(boost::program_options::command_line_parser(argc, argv).
+                                  options(*od_all).positional(p).run(), *var_map);
+    
+    if (var_map->count("help"))
+    {
+        ConfigException e("");
+        e.set_error(false);
+        throw(e);
     }
     
-    try
+    boost::program_options::notify(*var_map);
+        
+    if(message)
     {
-        po::positional_options_description p;
-        p.add("cfg_path", 1);
-        p.add("self.name", 2);
-        
-        po::store(po::command_line_parser(argc, argv).
-                  options(od_all).positional(p).run(), *var_map);
-        
-        if (var_map->count("help")) {
-            std::cout << od_all << "\n";
-            return false;
-        }
-        
-        po::notify(*var_map);
-
-        if(message)
+        if(!cfg_path.empty())
         {
-            if(!cfg_path.empty())
-            {
                 
-                // try to read file
-                std::ifstream fin;
-                fin.open(cfg_path.c_str(), std::ifstream::in);
-                if(!fin.is_open())
-                    throw(std::runtime_error(std::string("could not open '" + cfg_path + "' for reading. check value of --cfg_path")));        
+            // try to read file
+            std::ifstream fin;
+            fin.open(cfg_path.c_str(), std::ifstream::in);
+            if(!fin.is_open())
+                throw(ConfigException(std::string("could not open '" + cfg_path + "' for reading. check value of --cfg_path")));   
                 
-                google::protobuf::io::IstreamInputStream is(&fin);
+            google::protobuf::io::IstreamInputStream is(&fin);
                 
-                google::protobuf::TextFormat::Parser parser;
-                // maybe the command line will fill in the missing pieces
-                parser.AllowPartialMessage(true);
-                parser.Parse(&is, message);
-            }
-            
-            // add / overwrite any options that are specified in the cfg file with those given on the command line
-            typedef std::pair<std::string, boost::program_options::variable_value> P;
-            BOOST_FOREACH(const P&p, *var_map)
-            {
-                // let protobuf deal with the defaults
-                if(!p.second.defaulted())
-                    set_protobuf_program_option(*var_map, *message, p.first, p.second);
-            }
-
-            // now the proto message must have all required fields
-            if(!message->IsInitialized())
-            {
-                std::vector< std::string > errors;
-                message->FindInitializationErrors(&errors);
-                
-                std::stringstream err_msg;
-                err_msg << "Configuration is missing required parameters: \n";
-                BOOST_FOREACH(const std::string& s, errors)
-                    err_msg << esc_red << s << "\n" << esc_nocolor;
-                
-                err_msg << "Make sure you specified a proper `cfg_path` to the configuration file.";
-                throw(std::runtime_error(err_msg.str()));
-            }
+            google::protobuf::TextFormat::Parser parser;
+            // maybe the command line will fill in the missing pieces
+            parser.AllowPartialMessage(true);
+            parser.Parse(&is, message);
         }
         
-    }
-    catch(std::exception& e)
-    {
-        std::cerr << od_all << "\n" 
-                  << "Problem parsing command-line configuration: \n"
-                  << e.what() << "\n";
-
-        return false;
-    }
-    
-    return true;
+        // add / overwrite any options that are specified in the cfg file with those given on the command line
+        typedef std::pair<std::string, boost::program_options::variable_value> P;
+        BOOST_FOREACH(const P&p, *var_map)
+        {
+            // let protobuf deal with the defaults
+            if(!p.second.defaulted())
+                set_protobuf_program_option(*var_map, *message, p.first, p.second);
+        }
+        
+        // now the proto message must have all required fields
+        if(!message->IsInitialized())
+        {
+            std::vector< std::string > errors;
+            message->FindInitializationErrors(&errors);
+                
+            std::stringstream err_msg;
+            err_msg << "Configuration is missing required parameters: \n";
+            BOOST_FOREACH(const std::string& s, errors)
+                err_msg << util::esc_red << s << "\n" << util::esc_nocolor;
+                
+            err_msg << "Make sure you specified a proper `cfg_path` to the configuration file.";
+            throw(ConfigException(err_msg.str()));
+        }
+    }        
 }
 
 
@@ -205,7 +201,7 @@ void goby::core::ConfigReader::set_protobuf_program_option(const boost::program_
                     const google::protobuf::EnumValueDescriptor* enum_desc =
                         refl->GetEnum(message, field_desc)->type()->FindValueByName(v);
                     if(!enum_desc)
-                        throw(std::runtime_error(std::string("invalid enumeration " + v + " for field " + full_name)));
+                        throw(ConfigException(std::string("invalid enumeration " + v + " for field " + full_name)));
                     
                     refl->AddEnum(&message, field_desc, enum_desc);
                 }
@@ -260,7 +256,7 @@ void goby::core::ConfigReader::set_protobuf_program_option(const boost::program_
                 const google::protobuf::EnumValueDescriptor* enum_desc =
                     refl->GetEnum(message, field_desc)->type()->FindValueByName(value.as<std::string>());
                 if(!enum_desc)
-                    throw(std::runtime_error(std::string("invalid enumeration " + value.as<std::string>() + " for field "
+                    throw(ConfigException(std::string("invalid enumeration " + value.as<std::string>() + " for field "
                                                          + full_name)));
                 
                 refl->SetEnum(&message, field_desc, enum_desc);
@@ -280,7 +276,7 @@ void  goby::core::ConfigReader::get_protobuf_program_options(boost::program_opti
         
         std::string cli_name = field_name;
         std::stringstream human_desc_ss;
-        human_desc_ss << esc_green << field_desc->options().GetExtension(proto::description) << esc_nocolor;
+        human_desc_ss << util::esc_green << field_desc->options().GetExtension(::description) << util::esc_nocolor;
 
         append_label(human_desc_ss, field_desc);
         
@@ -404,7 +400,7 @@ void goby::core::ConfigReader::build_description(const google::protobuf::Descrip
         {
             
             human_desc_ss << "\n" << indent << field_desc->name() << " {  \t" <<
-                esc_blue << field_desc->options().GetExtension(proto::description) << esc_nocolor;
+                util::esc_blue << field_desc->options().GetExtension(::description) << util::esc_nocolor;
             append_label(human_desc_ss, field_desc);
 
             build_description(field_desc->message_type(), human_desc_ss, indent + "  ");
@@ -420,7 +416,7 @@ void goby::core::ConfigReader::build_description(const google::protobuf::Descrip
             if(field_desc->has_default_value())
                 example = default_as_string(field_desc);
             else
-                example = field_desc->options().GetExtension(proto::example); 
+                example = field_desc->options().GetExtension(::example); 
 
             if(field_desc->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_STRING)
                 example = "\"" + example + "\""; 
@@ -429,7 +425,7 @@ void goby::core::ConfigReader::build_description(const google::protobuf::Descrip
             human_desc_ss << field_desc->name() << ": "
                           << example;
             
-            human_desc_ss << "  \t" << esc_blue << field_desc->options().GetExtension(proto::description) << esc_nocolor;
+            human_desc_ss << "  \t" << util::esc_blue << field_desc->options().GetExtension(::description) << util::esc_nocolor;
             append_label(human_desc_ss, field_desc);
 
             if(field_desc->has_default_value())
@@ -446,15 +442,15 @@ void goby::core::ConfigReader::append_label(std::stringstream& human_desc_ss,
     switch(field_desc->label())
     {
         case google::protobuf::FieldDescriptor::LABEL_REQUIRED:
-            human_desc_ss << esc_red << " (req)" << esc_nocolor;
+            human_desc_ss << util::esc_red << " (req)" << util::esc_nocolor;
             break;
             
         case google::protobuf::FieldDescriptor::LABEL_OPTIONAL:
-            human_desc_ss << esc_lt_magenta << " (opt)" << esc_nocolor;
+            human_desc_ss << util::esc_lt_magenta << " (opt)" << util::esc_nocolor;
             break;
             
         case google::protobuf::FieldDescriptor::LABEL_REPEATED:
-            human_desc_ss << esc_lt_cyan << " (repeat)"  << esc_nocolor;
+            human_desc_ss << util::esc_lt_cyan << " (repeat)"  << util::esc_nocolor;
             break;
     }
 }
@@ -468,32 +464,53 @@ std::string goby::core::ConfigReader::default_as_string(const google::protobuf::
             return "";
         
         case google::protobuf::FieldDescriptor::CPPTYPE_INT32:                    
-            return goby::util::as<std::string>(field_desc->default_value_int32());
+            return util::as<std::string>(field_desc->default_value_int32());
                     
         case google::protobuf::FieldDescriptor::CPPTYPE_INT64:
-            return goby::util::as<std::string>(field_desc->default_value_int64());
+            return util::as<std::string>(field_desc->default_value_int64());
 
         case google::protobuf::FieldDescriptor::CPPTYPE_UINT32:
-            return goby::util::as<std::string>(field_desc->default_value_uint32());
+            return util::as<std::string>(field_desc->default_value_uint32());
                                 
         case google::protobuf::FieldDescriptor::CPPTYPE_UINT64:
-            return goby::util::as<std::string>(field_desc->default_value_uint64());
+            return util::as<std::string>(field_desc->default_value_uint64());
                         
         case google::protobuf::FieldDescriptor::CPPTYPE_BOOL:
-            return goby::util::as<std::string>(field_desc->default_value_bool());
+            return util::as<std::string>(field_desc->default_value_bool());
                     
         case google::protobuf::FieldDescriptor::CPPTYPE_STRING:
             return field_desc->default_value_string();
             
         case google::protobuf::FieldDescriptor::CPPTYPE_FLOAT:
-            return goby::util::as<std::string>(field_desc->default_value_float());
+            return util::as<std::string>(field_desc->default_value_float());
                         
         case google::protobuf::FieldDescriptor::CPPTYPE_DOUBLE:
-            return goby::util::as<std::string>(field_desc->default_value_double());
+            return util::as<std::string>(field_desc->default_value_double());
                 
         case google::protobuf::FieldDescriptor::CPPTYPE_ENUM:
             return field_desc->default_value_enum()->name();
             
                                       
+    }
+}
+
+void goby::core::ConfigReader::merge_app_base_cfg(AppBaseConfig* base_cfg,
+                        const boost::program_options::variables_map& var_map)
+{
+    if (var_map.count("verbose"))
+    {
+        switch(var_map["verbose"].as<std::string>().size())
+        {
+            case 0:
+                base_cfg->set_verbosity(AppBaseConfig::verbose);
+                break;
+            case 1:
+                base_cfg->set_verbosity(AppBaseConfig::debug);
+                break;
+            default:
+            case 2:
+                base_cfg->set_verbosity(AppBaseConfig::gui);
+                break;
+        }
     }
 }

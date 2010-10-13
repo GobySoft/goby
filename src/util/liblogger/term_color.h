@@ -19,18 +19,16 @@
 #ifndef TermColor20091211H
 #define TermColor20091211H
 
-#include <sstream>
+#include <iostream>
+#include <string>
 
 #include <boost/assign.hpp>
 #include <boost/foreach.hpp>
 
 namespace goby
 {    
-    namespace tcolor
-    {    
-
-        
-        // defines a number of stream operators that implement colors    
+    namespace util
+    {
         const std::string esc_red = "\33[31m";
         const std::string esc_lt_red = "\33[91m";
         const std::string esc_green = "\33[32m";
@@ -47,54 +45,77 @@ namespace goby
         const std::string esc_lt_white = "\33[97m";
         const std::string esc_nocolor = "\33[0m";
 
-        std::ostream& add_escape_code(std::ostream& os, const std::string& esc_code);
-        
-        inline std::ostream& red(std::ostream& os)
-        { return(add_escape_code(os, esc_red)); }
+        /// Contains functions for adding color to Terminal window streams
+        namespace tcolor
+        {
+            /// Append the given escape code to the stream os
+            /// \param os ostream to append to
+            /// \param esc_code escape code to append (e.g. "\33[31m")
+            std::ostream& add_escape_code(std::ostream& os, const std::string& esc_code);
 
-        inline std::ostream& lt_red(std::ostream& os) 
-        { return(add_escape_code(os, esc_lt_red)); }
+            /// All text following this manipulator is red. (e.g. std::cout << red << "text";)
+            inline std::ostream& red(std::ostream& os)
+            { return(add_escape_code(os, esc_red)); }
+            
+            /// All text following this manipulator is light red (e.g. std::cout << lt_red << "text";)
+            inline std::ostream& lt_red(std::ostream& os) 
+            { return(add_escape_code(os, esc_lt_red)); }
 
-        inline std::ostream& green(std::ostream& os) 
-        { return(add_escape_code(os, esc_green)); }
+            /// All text following this manipulator is green (e.g. std::cout << green << "text";)
+            inline std::ostream& green(std::ostream& os) 
+            { return(add_escape_code(os, esc_green)); }
 
-        inline std::ostream& lt_green(std::ostream& os) 
-        { return(add_escape_code(os, esc_lt_green)); }
-
-        inline std::ostream& yellow(std::ostream& os) 
-        { return(add_escape_code(os, esc_yellow)); }
-
-        inline std::ostream& lt_yellow(std::ostream& os) 
-        { return(add_escape_code(os, esc_lt_yellow)); }
-
-        inline std::ostream& blue(std::ostream& os) 
-        { return(add_escape_code(os, esc_blue)); }
-
-        inline std::ostream& lt_blue(std::ostream& os) 
-        { return(add_escape_code(os, esc_lt_blue)); }
-
-        inline std::ostream& magenta(std::ostream& os) 
-        { return(add_escape_code(os, esc_magenta)); }
-
-        inline std::ostream& lt_magenta(std::ostream& os) 
-        { return(add_escape_code(os, esc_lt_magenta)); }
-
-        inline std::ostream& cyan(std::ostream& os)
-        { return(add_escape_code(os, esc_cyan)); }
-
-        inline std::ostream& lt_cyan(std::ostream& os) 
-        { return(add_escape_code(os, esc_lt_cyan)); }
+            /// All text following this manipulator is light green (e.g. std::cout << lt_green << "text";)
+            inline std::ostream& lt_green(std::ostream& os) 
+            { return(add_escape_code(os, esc_lt_green)); }
  
-        inline std::ostream& white(std::ostream& os) 
-        { return(add_escape_code(os, esc_white)); }
+            /// All text following this manipulator is yellow (e.g. std::cout << yellow << "text";)
+            inline std::ostream& yellow(std::ostream& os) 
+            { return(add_escape_code(os, esc_yellow)); }
+
+            /// All text following this manipulator is light yellow  (e.g. std::cout << lt_yellow << "text";)
+            inline std::ostream& lt_yellow(std::ostream& os) 
+            { return(add_escape_code(os, esc_lt_yellow)); }
+
+            /// All text following this manipulator is blue (e.g. std::cout << blue << "text";)
+            inline std::ostream& blue(std::ostream& os) 
+            { return(add_escape_code(os, esc_blue)); }
+
+            /// All text following this manipulator is light blue (e.g. std::cout << lt_blue << "text";)
+            inline std::ostream& lt_blue(std::ostream& os) 
+            { return(add_escape_code(os, esc_lt_blue)); }
+
+            /// All text following this manipulator is magenta (e.g. std::cout << magenta << "text";)
+            inline std::ostream& magenta(std::ostream& os) 
+            { return(add_escape_code(os, esc_magenta)); }
+
+            /// All text following this manipulator is light magenta (e.g. std::cout << lt_magenta << "text";)
+            inline std::ostream& lt_magenta(std::ostream& os) 
+            { return(add_escape_code(os, esc_lt_magenta)); }
+
+            /// All text following this manipulator is cyan (e.g. std::cout << cyan << "text";)
+            inline std::ostream& cyan(std::ostream& os)
+            { return(add_escape_code(os, esc_cyan)); }
+
+            /// All text following this manipulator is light cyan (e.g. std::cout << lt_cyan << "text";)
+            inline std::ostream& lt_cyan(std::ostream& os) 
+            { return(add_escape_code(os, esc_lt_cyan)); }
+ 
+            /// All text following this manipulator is white (e.g. std::cout << white << "text";)
+            inline std::ostream& white(std::ostream& os) 
+            { return(add_escape_code(os, esc_white)); }
   
-        inline std::ostream& lt_white(std::ostream& os) 
-        { return(add_escape_code(os, esc_lt_white)); }
+            /// All text following this manipulator is bright white (e.g. std::cout << lt_white << "text";)
+            inline std::ostream& lt_white(std::ostream& os) 
+            { return(add_escape_code(os, esc_lt_white)); }
 
-        inline std::ostream& nocolor(std::ostream& os) 
-        { return(add_escape_code(os, esc_nocolor)); }    
+            /// All text following this manipulator is uncolored (e.g. std::cout << green << "green" << nocolor << "uncolored";)
+            inline std::ostream& nocolor(std::ostream& os) 
+            { return(add_escape_code(os, esc_nocolor)); }    
+        }
 
-        namespace enums
+        /// Represents the eight available terminal colors (and bold variants)
+        struct Colors
         {
             enum Color { nocolor,
                          red,     lt_red,
@@ -104,44 +125,47 @@ namespace goby
                          magenta, lt_magenta,
                          cyan,    lt_cyan,
                          white,   lt_white };
-        }
-    
+        };
+
+        /// Converts between string, escape code, and enumeration representations of the terminal colors
         class TermColor
         {
           public:
-            TermColor()
-            {
-                boost::assign::insert(colors_map_)
-                    ("nocolor",enums::nocolor)
-                    ("red",enums::red)         ("lt_red",enums::lt_red)
-                    ("green",enums::green)     ("lt_green",enums::lt_green)
-                    ("yellow",enums::yellow)   ("lt_yellow",enums::lt_yellow)
-                    ("blue",enums::blue)       ("lt_blue",enums::lt_blue)
-                    ("magenta",enums::magenta) ("lt_magenta",enums::lt_magenta)
-                    ("cyan",enums::cyan)       ("lt_cyan",enums::lt_cyan)
-                    ("white",enums::white)     ("lt_white",enums::lt_white);
+            /// Color enumeration from string (e.g. "blue" -> blue)
+            static Colors::Color from_str(const std::string& s)
+            { return get_instance()->priv_from_str(s); }
+            
+            /// String from color enumeration (e,g, red -> "red")
+            static std::string str_from_col(const Colors::Color& c)
+            { return get_instance()->priv_str_from_col(c); }
 
-                boost::assign::insert(esc_code_map_)
-                    (esc_nocolor,enums::nocolor)
-                    (esc_red,enums::red)         (esc_lt_red,enums::lt_red)
-                    (esc_green,enums::green)     (esc_lt_green,enums::lt_green)
-                    (esc_yellow,enums::yellow)   (esc_lt_yellow,enums::lt_yellow)
-                    (esc_blue,enums::blue)       (esc_lt_blue,enums::lt_blue)
-                    (esc_magenta,enums::magenta) (esc_lt_magenta,enums::lt_magenta)
-                    (esc_cyan,enums::cyan)       (esc_lt_cyan,enums::lt_cyan)
-                    (esc_white,enums::white)     (esc_lt_white,enums::lt_white);
+            /// Color enumeration from escape code (e,g, "\33[31m" -> red)
+            static Colors::Color from_esc_code(const std::string& s)
+            { return get_instance()->priv_from_esc_code(s); }
 
-            }
+            /// Escape code from color enumeration (e.g. red -> "\33[31m")
+            static std::string esc_code_from_col(const Colors::Color& c)
+            { return get_instance()->priv_esc_code_from_col(c); }
+        
+            /// Escape code from string (e.g. "red" -> "\33[31m")
+            static std::string esc_code_from_str(const std::string& s)
+            { return get_instance()->priv_esc_code_from_str(s); }
 
-            enums::Color from_str(const std::string& s)
-            {
-                return colors_map_[s];
-            }
+          private:
+            TermColor();
+            ~TermColor();            
+            TermColor(const TermColor&);
+            TermColor& operator = (const TermColor&);
 
+            static TermColor* get_instance();
+            
+            Colors::Color priv_from_str(const std::string& s)
+            { return colors_map_[s]; }
+            
             // red -> "red"
-            std::string str_from_col(const enums::Color& c)
+            std::string priv_str_from_col(const Colors::Color& c)
             {
-                typedef std::pair<std::string, enums::Color> P;
+                typedef std::pair<std::string, Colors::Color> P;
                 BOOST_FOREACH(const P& p, colors_map_)
                 {
                     if(p.second == c)
@@ -151,15 +175,15 @@ namespace goby
             }
 
             // "\33[31m" -> red
-            enums::Color from_esc_code(const std::string& s)
+            Colors::Color priv_from_esc_code(const std::string& s)
             {
                 return esc_code_map_[s];
             }
 
             // red -> "\33[31m"
-            std::string esc_code_from_col(const enums::Color& c)
+            std::string priv_esc_code_from_col(const Colors::Color& c)
             {
-                typedef std::pair<std::string, enums::Color> P;
+                typedef std::pair<std::string, Colors::Color> P;
                 BOOST_FOREACH(const P& p, esc_code_map_)
                 {
                     if(p.second == c)
@@ -169,58 +193,16 @@ namespace goby
             }
         
             // "red" -> "\33[31m"
-            std::string esc_code_from_str(const std::string& s)
+            std::string priv_esc_code_from_str(const std::string& s)
             {
                 return esc_code_from_col(from_str(s));
             }
- 
-	
 
-
-            // use BOOST bimap, which isn't out until 1.35
-            /* // "red" -> red */
-            /* enums::Color from_str(const std::string& s) */
-            /* { */
-            /*     try { return colors_map_.left.at(s); } */
-            /*     catch(...) { return enums::nocolor; }             */
-            /* } */
-
-            /* // red -> "red" */
-            /* std::string str_from_col(const enums::Color& c) */
-            /* { */
-            /*     try { return colors_map_.right.at(c); } */
-            /*     catch(...) { return "nocolor"; } */
-            /* }         */
-
-            /* // "\33[31m" -> red */
-            /* enums::Color from_esc_code(const std::string& s) */
-            /* { */
-            /*     try { return esc_code_map_.left.at(s); } */
-            /*     catch(...) { return enums::nocolor; } */
-            /* } */
-
-            /* // red -> "\33[31m" */
-            /* std::string esc_code_from_col(const enums::Color& c) */
-            /* { */
-            /*     try { return esc_code_map_.right.at(c); } */
-            /*     catch(...) { return esc_nocolor; } */
-            /* } */
-        
-            /* // "red" -> "\33[31m" */
-            /* std::string esc_code_from_str(const std::string& s) */
-            /* { */
-            /*     try { return esc_code_from_col(from_str(s)); } */
-            /*     catch(...) { return esc_nocolor; } */
-            /* } */
-
-        
+            
           private:        
-            // not until BOOST 1.35...
-            //boost::bimap<std::string, enums::Color> colors_map_;
-            //boost::bimap<std::string, enums::Color> esc_code_map_;
-            std::map<std::string, enums::Color> colors_map_;
-            std::map<std::string, enums::Color> esc_code_map_;
-
+            static TermColor* inst_;
+            std::map<std::string, Colors::Color> colors_map_;
+            std::map<std::string, Colors::Color> esc_code_map_;
         };    
     }
 }

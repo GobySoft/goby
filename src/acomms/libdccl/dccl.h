@@ -43,7 +43,7 @@ namespace goby
     }
 
 
-    
+    /// Objects pertaining to acoustic communications (acomms)
     namespace acomms
     {
 

@@ -1,4 +1,5 @@
 import "goby/core/proto/option_extensions.proto";
+import "goby/core/proto/app_base_config.proto";
 
 package goby.core.proto;
 
@@ -44,8 +45,9 @@ message LogConfig
     
   message SQLiteInfo
   {       
-    // %1% gets expanded to iso date-time stamp
-    optional string path = 2 [default="./goby_%1%.db"];
+    // %1% gets expanded into platform name
+    // %2% gets expanded to iso date-time stamp
+    optional string path = 2 [default="./%1%_%2%_goby.db"];
   }
   // only needed if backend == SQLITE
   optional SQLiteInfo sqlite = 2;
@@ -53,18 +55,8 @@ message LogConfig
 
 message Config
 {
-  required Platform self = 1 [(description)="this platform"];
-  repeated Platform other = 2 [(description)="the known world of platforms"];
-  required LogConfig log = 3 [(description)="SQL log configuration"];
-
-  enum Verbosity
-  {
-    quiet = 1;
-    warning = 2;
-    verbose = 3;
-    gui = 4;
-  }
-  optional Verbosity verbosity = 4 [default = quiet,
-                                    (description)="Terminal verbosity"];    
+  optional AppBaseConfig base = 1 [(description)="params shared with all goby applications"];
+  optional Platform self = 2 [(description)="this platform"];
+  repeated Platform other = 3 [(description)="the known world of platforms"];
+  optional LogConfig log = 4 [(description)="SQL log configuration"];
 }
-

@@ -56,13 +56,13 @@ void goby::util::FlexNCurses::startup()
     start_color();
     
     
-    init_pair(tcolor::enums::white, COLOR_WHITE, COLOR_BLACK);
-    init_pair(tcolor::enums::red, COLOR_RED, COLOR_BLACK);
-    init_pair(tcolor::enums::green, COLOR_GREEN, COLOR_BLACK);
-    init_pair(tcolor::enums::yellow, COLOR_YELLOW, COLOR_BLACK);
-    init_pair(tcolor::enums::blue, COLOR_BLUE, COLOR_BLACK);
-    init_pair(tcolor::enums::magenta, COLOR_MAGENTA, COLOR_BLACK);
-    init_pair(tcolor::enums::cyan, COLOR_CYAN, COLOR_BLACK);
+    init_pair(Colors::white, COLOR_WHITE, COLOR_BLACK);
+    init_pair(Colors::red, COLOR_RED, COLOR_BLACK);
+    init_pair(Colors::green, COLOR_GREEN, COLOR_BLACK);
+    init_pair(Colors::yellow, COLOR_YELLOW, COLOR_BLACK);
+    init_pair(Colors::blue, COLOR_BLUE, COLOR_BLACK);
+    init_pair(Colors::magenta, COLOR_MAGENTA, COLOR_BLACK);
+    init_pair(Colors::cyan, COLOR_CYAN, COLOR_BLACK);
     
     refresh();
     update_size();
@@ -217,7 +217,7 @@ void goby::util::FlexNCurses::recalculate_win()
             wmove(new_window, 0, 0);
 
             // set the background color
-            wbkgd(new_window, COLOR_PAIR(tcolor::enums::white));
+            wbkgd(new_window, COLOR_PAIR(Colors::white));
 
             // scrolling is good!
             scrollok(new_window, true);
@@ -286,7 +286,7 @@ void goby::util::FlexNCurses::putline(const std::string &s, unsigned scrn, bool 
                 waddstr(win, s.substr(last_m_pos+1, esc_pos-last_m_pos-1).c_str());
 
             // void kills compiler warning and doesn't do anything bad
-            (void) wattrset(win, color2attr_t(color_.from_esc_code(esc_sequence)));
+            (void) wattrset(win, color2attr_t(TermColor::from_esc_code(esc_sequence)));
             
             last_m_pos = m_pos;            
         }
@@ -322,28 +322,26 @@ void goby::util::FlexNCurses::putlines(unsigned scrn,
 }
 
 
-long goby::util::FlexNCurses::color2attr_t(tcolor::enums::Color c)
+long goby::util::FlexNCurses::color2attr_t(Colors::Color c)
 {
-    using namespace tcolor::enums;
-    
     switch(c)
     {
         default:
-        case nocolor:    return COLOR_PAIR(white);
-        case red:        return COLOR_PAIR(red);
-        case lt_red:     return COLOR_PAIR(red) | A_BOLD;
-        case green:      return COLOR_PAIR(green);
-        case lt_green:   return COLOR_PAIR(green) | A_BOLD;
-        case yellow:     return COLOR_PAIR(yellow);
-        case lt_yellow:  return COLOR_PAIR(yellow) | A_BOLD;
-        case blue:       return COLOR_PAIR(blue);
-        case lt_blue:    return COLOR_PAIR(blue) | A_BOLD;
-        case magenta:    return COLOR_PAIR(magenta);
-        case lt_magenta: return COLOR_PAIR(magenta) | A_BOLD;
-        case cyan:       return COLOR_PAIR(cyan);
-        case lt_cyan:    return COLOR_PAIR(cyan) | A_BOLD;
-        case white:      return COLOR_PAIR(white);
-        case lt_white:   return COLOR_PAIR(white) | A_BOLD;
+        case Colors::nocolor:    return COLOR_PAIR(Colors::white);
+        case Colors::red:        return COLOR_PAIR(Colors::red);
+        case Colors::lt_red:     return COLOR_PAIR(Colors::red) | A_BOLD;
+        case Colors::green:      return COLOR_PAIR(Colors::green);
+        case Colors::lt_green:   return COLOR_PAIR(Colors::green) | A_BOLD;
+        case Colors::yellow:     return COLOR_PAIR(Colors::yellow);
+        case Colors::lt_yellow:  return COLOR_PAIR(Colors::yellow) | A_BOLD;
+        case Colors::blue:       return COLOR_PAIR(Colors::blue);
+        case Colors::lt_blue:    return COLOR_PAIR(Colors::blue) | A_BOLD;
+        case Colors::magenta:    return COLOR_PAIR(Colors::magenta);
+        case Colors::lt_magenta: return COLOR_PAIR(Colors::magenta) | A_BOLD;
+        case Colors::cyan:       return COLOR_PAIR(Colors::cyan);
+        case Colors::lt_cyan:    return COLOR_PAIR(Colors::cyan) | A_BOLD;
+        case Colors::white:      return COLOR_PAIR(Colors::white);
+        case Colors::lt_white:   return COLOR_PAIR(Colors::white) | A_BOLD;
     }
     
 }
@@ -376,7 +374,7 @@ void goby::util::FlexNCurses::write_head_title(size_t i)
 {
     WINDOW* win = static_cast<WINDOW*>(panels_[i].head_window());
 
-    (void) wattrset(win, color2attr_t(tcolor::enums::lt_white));
+    (void) wattrset(win, color2attr_t(util::Colors::lt_white));
         
     int ymax, xmax;
     getmaxyx(win, ymax, xmax);
@@ -390,8 +388,8 @@ void goby::util::FlexNCurses::write_head_title(size_t i)
     
 
 
-    attr_t color_attr = color2attr_t(color_.from_str(panels_[i].group()->color()));
-    attr_t white_attr = color2attr_t(tcolor::enums::lt_white);
+    attr_t color_attr = color2attr_t(panels_[i].group()->color());
+    attr_t white_attr = color2attr_t(Colors::lt_white);
     wattron(win, white_attr);
     mvwaddstr(win, 0, 0, std::string(as<std::string>(i+1)+". ").c_str());
 
@@ -407,7 +405,7 @@ void goby::util::FlexNCurses::write_head_title(size_t i)
     {
         wattron(win, white_attr);
         waddstr(win, "| ");
-        color_attr = color2attr_t(color_.from_str(panels_[j].group()->color()));
+        color_attr = color2attr_t(panels_[j].group()->color());
         waddstr(win, std::string(as<std::string>(j+1)+". ").c_str());
               
         std::stringstream ss_com;

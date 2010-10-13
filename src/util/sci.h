@@ -28,13 +28,16 @@ namespace goby
 {
     namespace util
     {
-        //
-        // SCIENCE
-        //
+
+        /// \name Science
+        //@{
     
-        // round 'r' to 'dec' number of decimal places
-// we want no upward bias so
-// round 5 up if odd next to it, down if even
+        /// round 'r' to 'dec' number of decimal places
+        /// we want no upward bias so
+        /// round 5 up if odd next to it, down if even
+        /// \param r value to round
+        /// \param dec number of places past the decimal to round (e.g. dec=1 rounds to tenths)
+        /// \return r rounded
         inline double unbiased_round(double r, double dec)
         {
             double ex = pow(10, dec);
@@ -48,8 +51,12 @@ namespace goby
                 return (final+1) / ex;
         }
 
-// K.V. Mackenzie, Nine-term equation for the sound speed in the oceans (1981) J. Acoust. Soc. Am. 70(3), pp 807-812
-// http://scitation.aip.org/getabs/servlet/GetabsServlet?prog=normal&id=JASMAN000070000003000807000001&idtype=cvips&gifs=yes
+        /// K.V. Mackenzie, Nine-term equation for the sound speed in the oceans (1981) J. Acoust. Soc. Am. 70(3), pp 807-812
+        /// http://scitation.aip.org/getabs/servlet/GetabsServlet?prog=normal&id=JASMAN000070000003000807000001&idtype=cvips&gifs=yes
+        /// \param T temperature in degrees Celcius (see paper for applicable ranges)
+        /// \param S salinity (unitless, calculated using Practical Salinity Scale) (see paper for applicable ranges)
+        /// \param D depth in meters (see paper for applicable ranges)
+        /// \return speed of sound in meters per second
         inline double mackenzie_soundspeed(double T, double S, double D)
         {
             return
@@ -58,6 +65,9 @@ namespace goby
                 1.025e-2*T*(S-35)-7.139e-13*T*D*D*D;
         }
     }
+
+    //@}
+
 }
 
 

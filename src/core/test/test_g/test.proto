@@ -1,4 +1,5 @@
 import "goby/core/proto/option_extensions.proto";
+import "goby/core/proto/app_base_config.proto";
 
 message Sub
 {
@@ -24,19 +25,21 @@ message TestMessage
 
 message TestGConfig
 {
-    required double dvalue1 = 1 [(goby.core.proto.description)="some fun double"];
-    optional string svalue2 = 2;    
-
-    enum MyEnum { 
-        YES = 1;
-        NO = 2;
-        MAYBE = 3;
-    }
-    required MyEnum evalue3 = 3;
-
-    repeated int32 i32 = 4;
-    repeated int64 i64 = 5;
-    repeated uint32 ui32 = 6;
-    repeated uint64 ui64 = 7;
+  required AppBaseConfig base = 1;
+  
+  required double dvalue1 = 2 [(description)="some fun double"];
+  optional string svalue2 = 3;    
+  
+  enum MyEnum { 
+    YES = 1;
+    NO = 2;
+    MAYBE = 3;
+  }
+  required MyEnum evalue3 = 4;
+  
+  repeated int32 i32 = 5;
+  repeated int64 i64 = 6;
+  repeated uint32 ui32 = 7;
+  repeated uint64 ui64 = 8;
 }
-
+ 

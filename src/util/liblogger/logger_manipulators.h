@@ -19,64 +19,80 @@
 #ifndef LoggerManipulators20091110H
 #define LoggerManipulators20091110H
 
+#include <iostream>
 #include <string>
-#include <deque>
-#include <iomanip>
-
-#include <boost/algorithm/string.hpp>
 
 #include "term_color.h"
-#include "goby/util/time.h"
 
-inline std::ostream & die(std::ostream & os)
-{ return (os << goby::tcolor::red << "(Error): " << goby::tcolor::nocolor); }
+namespace goby { namespace util { class FlexOstream; } }
+           
+/// label stream as "error" and exit after next std::flush or std::endl.
+inline std::ostream& die(std::ostream & os)
+{ return (os << goby::util::tcolor::red << "(Error): " << goby::util::tcolor::nocolor); }
 
-inline std::ostream & warn(std::ostream & os)
-{ return (os << goby::tcolor::red << "(Warning): " << goby::tcolor::nocolor); }
+/// label stream as "warning" until next std::flush or std::endl.
+inline std::ostream& warn(std::ostream & os)
+{ return (os << goby::util::tcolor::red << "(Warning): " << goby::util::tcolor::nocolor); }
 
+/// label stream as "debug" until next std::flush or std::endl.
+inline std::ostream& debug(std::ostream & os)
+{ return (os << "(Debug): "); }
 
-
+/// Defines a group of messages to be sent to the Goby logger. For Verbosity == verbose streams, all entries appear interleaved, but each group is offset with a different color. For Verbosity == gui streams, all groups have a separate subwindow.
 class Group
 {
   public:
   Group(const std::string& name = "",
         const std::string& description = "",
-        const std::string& color = "nocolor",
-        const std::string& heartbeat = "")
+        goby::util::Colors::Color color = goby::util::Colors::nocolor)
       : name_(name),
         description_(description),
         color_(color),
-        heartbeat_(heartbeat),
         enabled_(true)
         {}
 
-    std::string name() const { return name_; }        
-    std::string description() const { return description_; }        
-    std::string color() const       { return color_; }        
-    std::string heartbeat() const   { return heartbeat_; }
-    bool enabled() const            { return enabled_; }
+    /// \name Getters
+    //@{
+    /// Name of this group (used in the group manipulator)
+    std::string name() const
+    { return name_; }
+    /// Human readable description of this group
+    std::string description() const
+    { return description_; }        
+    /// Color to use when displaying this group (for streams that support terminal escape codes only: std::cout, std::cerr, std::clog)
+    goby::util::Colors::Color color() const
+    { return color_; }
+    /// Is this group enabled?
+    bool enabled() const
+    { return enabled_; }
+    //@}
 
+    /// \name Setters
+    //@{    
     void name(const std::string & s)        { name_ = s; }    
     void description(const std::string & s) { description_ = s; }    
-    void color(const std::string & s)       { color_ = s; }        
-    void heartbeat(const std::string & s)   { heartbeat_ = s; }
+    void color(goby::util::Colors::Color c) { color_ = c; }        
     void enabled(bool b)                    { enabled_ = b; }
+    //@}
     
   private:
     std::string name_;
     std::string description_;
-    std::string color_;
-    std::string heartbeat_;
+    goby::util::Colors::Color color_;
     bool enabled_;
 };
 
-std::ostream & operator<< (std::ostream & os, const Group & g);
 
+std::ostream& operator<< (std::ostream& os, const Group & g);
+
+/// Helper class for enabling the group(std::string) manipulator
 class GroupSetter
 {
+    
   public:
     explicit GroupSetter (const std::string& s) : group_(s) { }
     void operator()(std::ostream& os) const;
+    void operator()(goby::util::FlexOstream& os) const;
     
   private:
     std::string group_;
@@ -86,11 +102,20 @@ inline GroupSetter group(std::string n)
 { return(GroupSetter(n)); }
 
 inline std::ostream& operator<<(std::ostream& os, const GroupSetter & gs)
-{ gs(os); return(os); }
+{
+    gs(os);
+    return(os);
+}
 
-  // used for non tty ostreams (everything but std::cout / std::cerr
-inline std::ostream& basic_log_header(std::ostream& os, const std::string& group_name)
-{ return os << goby::util::goby_time_as_string() << "\t" <<  std::setw(15) << group_name << "\t"; }
+inline goby::util::FlexOstream& operator<<(goby::util::FlexOstream& os, const GroupSetter & gs)
+{
+    gs(os);
+    return(os);
+}
+
+/// used for non tty ostreams (everything but std::cout / std::cerr) as the header for every line
+std::ostream& basic_log_header(std::ostream& os, const std::string& group_name);
+
 
 
 #endif

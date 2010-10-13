@@ -17,25 +17,50 @@
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "flex_ostream.h"
+#include "logger_manipulators.h"
 
+goby::util::FlexOstream* goby::util::FlexOstream::inst_ = 0;
+
+goby::util::FlexOstream& goby::util::glogger(logger_lock::LockAction lock_action /*= none*/)
+{    
+    if(!FlexOstream::inst_) FlexOstream::inst_ = new FlexOstream();
     
-void goby::util::FlexOstream::add_group(const std::string& name,
-                         const std::string& heartbeat /* = "." */,
-                         const std::string& color /* = "nocolor" */,
-                         const std::string& description /* = "" */)
-{
-    Group ng(name, description, color, heartbeat);
-    sb_.add_group(name, ng);
+    if(lock_action == logger_lock::lock)
+    {
+        goby::util::Logger::mutex.lock(); 
+    }
 
-    if(!sb_.is_scope())
-        std::cout << "Adding FlexOstream group: " << sb_.color(color) << name << sb_.color("nocolor")
-                  << " (" << description << ")" 
-                  << " [heartbeat: " << sb_.color(color) << heartbeat << sb_.color("nocolor")
-                  << " ]" << std::endl;
+    return(*FlexOstream::inst_);
 }
+
+void goby::util::FlexOstream::add_group(const std::string& name,
+                                        Colors::Color color /*= Colors::nocolor*/,
+                                        const std::string& description /*= ""*/)
+{
+
+    if(description.empty())
+    {
+        Group ng(name, name, color);
+        sb_.add_group(name, ng);
+    }
+    else
+    {
+        Group ng(name, description, color);
+        sb_.add_group(name, ng);
+    }
+    
+    
+    *this << "Adding FlexOstream group: " << sb_.color2esc_code(color) << name
+          << sb_.color2esc_code(Colors::nocolor) << " (" << description << ")" << std::endl;
+}
+
 
 std::ostream& goby::util::FlexOstream::operator<<(std::ostream& (*pf) (std::ostream&))
 {
-    if(pf == die) die_flag(true);
-    return (quiet()) ? *this : std::ostream::operator<<(pf);
-}
+    if(pf == die)   sb_.set_die_flag(true);
+    if(pf == debug) sb_.set_debug_flag(true);
+    if(pf == warn)  sb_.set_warn_flag(true);
+
+    return std::ostream::operator<<(pf);
+}            
+

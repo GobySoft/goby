@@ -33,16 +33,16 @@ namespace goby
 {
     namespace util
     {
-        //
-        // BINARY ENCODING
-        //
+        /// \name Binary encoding
+        //@{
     
-        // converts a char (byte) array into a hex string where
-// c = pointer to array of char
-// s = reference to string to put char into as hex
-// n = length of c
-// first two hex chars in s are the 0 index in c
-        inline bool char_array2hex_string(const unsigned char * c, std::string & s, const unsigned int n)
+        /// \brief converts a char (byte) array into a hex string
+        ///
+        /// \param c pointer to array of char
+        /// \param s reference to string to put char into as hex
+        /// \param n length of c
+        /// the first two hex chars in s are the 0 index in c
+        inline bool char_array2hex_string(const unsigned char* c, std::string& s, const unsigned int n)
         {
             std::stringstream ss;
             for (unsigned int i=0; i<n; i++)
@@ -52,9 +52,8 @@ namespace goby
             return true;
         }
 
-// turns a string of hex chars ABCDEF into a character array reading
-// each byte 0xAB,0xCD, 0xEF, etc.
-        inline bool hex_string2char_array(unsigned char * c, const std::string s, const unsigned int n)
+        /// \brief turns a string of hex chars ABCDEF into a character array reading  each byte 0xAB,0xCD, 0xEF, etc.
+        inline bool hex_string2char_array(unsigned char* c, const std::string& s, const unsigned int n)
         {
             for (unsigned int i = 0; i<n; i++)
             {
@@ -67,8 +66,7 @@ namespace goby
             return true;
         }
 
-// return a string represented the binary value of 'l' for 'bits' number of bits
-// reads MSB -> LSB
+        /// \brief return a string represented the binary value of `l` for `bits` number of bits which reads MSB -> LSB
         inline std::string long2binary_string(unsigned long l, unsigned short bits)
         {
             char s [bits+1];
@@ -81,6 +79,7 @@ namespace goby
             return (std::string)s;
         }
     
+        /// \brief converts a binary string ("1000101010101010") into a hex string ("8AAA")
         inline std::string binary_string2hex_string(const std::string & bs)
         {
             std::string hs;
@@ -98,6 +97,7 @@ namespace goby
             return hs;
         }
 
+        /// \brief converts a boost::dynamic_bitset (similar to std::bitset but without compile time size requirements) into a hex string
         inline std::string dyn_bitset2hex_string(const boost::dynamic_bitset<unsigned char>& bits, unsigned trim_to_bytes_size = 0)
         {
             std::stringstream binary;
@@ -110,7 +110,9 @@ namespace goby
                 return out;
         }
     
-        // only works on whole byte string
+        /// \brief converts a hex string ("8AAA") into a binary string ("1000101010101010")
+        ///
+        /// only works on whole byte string (even number of nibbles)
         inline std::string hex_string2binary_string(const std::string & bs)
         {
             int bytes = bs.length()/2;
@@ -127,6 +129,7 @@ namespace goby
         }
 
 
+        /// \brief converts a hex string ("8AAA") into a dynamic_bitset
         inline boost::dynamic_bitset<unsigned char> hex_string2dyn_bitset(const std::string & hs, unsigned bits_size = 0)
         {
             boost::dynamic_bitset<unsigned char> bits;
@@ -138,7 +141,9 @@ namespace goby
             return bits;
         }
 
-    
+        /// \brief attempts to convert a hex string into a numerical representation (of type T)
+        ///
+        /// \return true if conversion succeeds, false otherwise
         template <typename T> bool hex_string2number(const std::string & s, T & t)
         {
             std::stringstream ss;
@@ -146,9 +151,14 @@ namespace goby
             ss >> std::hex >> t;
             return !ss.fail();        
         }
-
-
-    
+        
+        
+        /// \brief converts a decimal number of type T into a hex string
+        ///
+        /// \param s string reference to store result in
+        /// \param t decimal number to convert
+        /// \param width desired width (in characters) of return string. Width should be twice the number of bytes
+        /// \return true if successful, false otherwise
         template <typename T> bool number2hex_string(std::string & s, const T & t, unsigned int width = 2)
         {
             std::stringstream ss;
@@ -157,12 +167,19 @@ namespace goby
             return !ss.fail();        
         }
 
+        /// \brief converts a decimal number of type T into a hex string assuming success
+        ///
+        /// \param t decimal number to convert
+        /// \param width desired width (in characters) of return string. Width should be twice the number of bytes
+        /// \return hex string
         template <typename T> std::string number2hex_string(const T & t, unsigned int width = 2)
         {
             std::string s;
             number2hex_string(s,t,width);
             return s;
         }
+
+        //@}
     }
 }
 

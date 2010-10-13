@@ -557,10 +557,10 @@ bool goby::acomms::QueueManager::handle_modem_dest_request(ModemMessage& msg)
 
 void goby::acomms::QueueManager::add_flex_groups(util::FlexOstream& tout)
 {
-    tout.add_group("push", "+", "lt_cyan", "stack push - outgoing messages (goby_queue)");
-    tout.add_group("pop", "-", "lt_green", "stack pop - outgoing messages (goby_queue)");
-    tout.add_group("priority", "<", "yellow", "priority contest (goby_queue)");
-    tout.add_group("q_out", "<", "cyan", "outgoing queuing messages (goby_queue)");
-    tout.add_group("q_in", ">", "green", "incoming queuing messages (goby_queue)");
+    tout.add_group("push", util::Colors::lt_cyan, "stack push - outgoing messages (goby_queue)");
+    tout.add_group("pop",  util::Colors::lt_green, "stack pop - outgoing messages (goby_queue)");
+    tout.add_group("priority",  util::Colors::yellow, "priority contest (goby_queue)");
+    tout.add_group("q_out",  util::Colors::cyan, "outgoing queuing messages (goby_queue)");
+    tout.add_group("q_in",  util::Colors::green, "incoming queuing messages (goby_queue)");
 }
 

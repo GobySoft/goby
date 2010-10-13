@@ -20,12 +20,15 @@
 #ifndef DCCLException20100812H
 #define DCCLException20100812H
 
-// simple exception class
-class dccl_exception : public std::runtime_error
+#include "goby/core/libcore/exception.h"
+
+/// \brief simple exception class for libdccl
+// TODO(tes): bring into goby::acomms namespace
+class dccl_exception : public goby::Exception
 {
   public:
   dccl_exception(const std::string& s)
-      : std::runtime_error(s)
+      : Exception(s)
     { }
 
 };

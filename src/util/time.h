@@ -22,21 +22,27 @@
 
 #include <boost/date_time.hpp>
 
+/// All objects related to the Goby Underwater Autonomy Project
 namespace goby
 {
+    /// Utility objects for performing functions such as logging, non-acoustic communication (ethernet / serial), time, scientific, string manipulation, etc.
     namespace util
     {
-        // always use for current time
+        ///\name Time
+        //@{
+
+        /// Always use for current time within the Goby project
         inline boost::posix_time::ptime goby_time()
         {
             using namespace boost::posix_time;
             return ptime(microsec_clock::universal_time());
         }
 
-        // string representation
+        /// Simple string representation of goby_time()
         inline std::string goby_time_as_string(const boost::posix_time::ptime& t = goby_time())
         { return boost::posix_time::to_simple_string(t); }
 
+        /// ISO string representation of goby_time()
         inline std::string goby_file_timestamp()
         {
             using namespace boost::posix_time;
@@ -44,11 +50,7 @@ namespace goby
         }
         
         
-        //
-        // ptime <--> double (seconds since UNIX)
-        // 
-        // convert from boost date_time ptime to the number of seconds (including fractional) since
-        // 1/1/1970 0:00 UTC ("UNIX Time")
+        /// convert from boost date_time ptime to the number of seconds (including fractional) since 1/1/1970 0:00 UTC ("UNIX Time")
         inline double ptime2unix_double(boost::posix_time::ptime given_time)
         {
             using namespace boost::posix_time;
@@ -65,7 +67,7 @@ namespace goby
             }
         }
     
-        // good to the microsecond
+        /// convert to boost date_time ptime from the number of seconds (including fractional) since 1/1/1970 0:00 UTC ("UNIX Time"): good to the microsecond
         inline boost::posix_time::ptime unix_double2ptime(double given_time)
         {
             using namespace boost::posix_time;
@@ -84,23 +86,26 @@ namespace goby
         }
 
     
-        // ptime <--> time_t (whole seconds since UNIX)
+        /// convert to ptime from time_t from time.h (whole seconds since UNIX)
         inline boost::posix_time::ptime time_t2ptime(std::time_t t)
         { return boost::posix_time::from_time_t(t); }
     
+        /// convert from ptime to time_t from time.h (whole seconds since UNIX)
         inline std::time_t ptime2time_t(boost::posix_time::ptime t)
         {
             std::tm out = boost::posix_time::to_tm(t);
             return mktime(&out);
         }
-    
-        // time duration to double number of seconds
-        // good to the microsecond
+        
+        /// time duration to double number of seconds: good to the microsecond
         inline double time_duration2double(boost::posix_time::time_duration time_of_day)
         {
             using namespace boost::posix_time;
             return (double(time_of_day.total_seconds()) + double(time_of_day.fractional_seconds()) / double(time_duration::ticks_per_second()));
         }
+
+        //@}
+
     }
 }
 #endif

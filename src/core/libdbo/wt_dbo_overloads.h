@@ -22,7 +22,6 @@
 
 #include <boost/algorithm/string.hpp>
 
-
 #include <google/protobuf/message.h>
 #include <google/protobuf/descriptor.h>
 #include <google/protobuf/dynamic_message.h>
@@ -35,6 +34,13 @@ namespace Wt
 {
     namespace Dbo
     {
+        /// \brief allows us to "persist" a Google Protocol Buffers message in an SQL
+        /// database handled by Wt::Dbo.
+        ///
+        /// We "trick" Wt::Dbo into thinking we have a
+        /// compile time generated object (here, ProtoBufWrapper<i>) that is actually
+        /// runtime assigned and examined google::protobuf::Message. We can do this
+        /// because google::protobuf::Messages support runtime reflection
         template <typename T, typename A>
             void protobuf_message_persist(T& obj, A& action, const std::string& prefix = "")
         {            
@@ -186,7 +192,7 @@ namespace Wt
         }
     
 
-        // use this overload of `persist` if the object
+        // Tells Wt::Dbo use this overload of `persist` if the object
         // is derived from google::protobuf::Message
         template <typename C>
         struct persist<C, typename boost::enable_if<boost::is_base_of<google::protobuf::Message, C> >::type>

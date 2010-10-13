@@ -140,8 +140,8 @@ void goby::acomms::DCCLCodec::add_adv_algorithm(const std::string& name, AlgFunc
 
 void goby::acomms::DCCLCodec::add_flex_groups(util::FlexOstream& tout)
 {
-    tout.add_group("dccl_enc", "<", "lt_magenta", "encoder messages (goby_dccl)");
-    tout.add_group("dccl_dec", ">", "lt_blue", "decoder messages (goby_dccl)");
+    tout.add_group("dccl_enc", util::Colors::lt_magenta, "encoder messages (goby_dccl)");
+    tout.add_group("dccl_dec", util::Colors::lt_blue, "decoder messages (goby_dccl)");
 }
 
 

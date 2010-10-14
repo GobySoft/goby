@@ -22,82 +22,88 @@
 
 #include <boost/bimap.hpp>
 #include <boost/shared_ptr.hpp>
-#include <boost/format.hpp>
-
-#include <Wt/Dbo/Dbo>
-#include <Wt/Dbo/backend/Sqlite3>
 
 #include <google/protobuf/message.h>
 #include <google/protobuf/descriptor.h>
 #include <google/protobuf/dynamic_message.h>
 
-#include "goby/util/logger.h"
+#include <Wt/Dbo/Dbo>
+
 #include "goby/util/time.h"
+
+namespace Wt
+{
+    namespace Dbo
+    {
+        namespace backend
+        {
+            class Sqlite3;
+        }
+        
+        class Session;
+        class Transaction;
+    }
+}
 
 namespace goby
 {
     namespace core
-    {    
-
-
-        
-        // provides a way for Wt::Dbo to work with arbitrary
-        // (run-time provided) Google Protocol Buffers types
+    {        
+        /// \brief provides a way for Wt::Dbo to work with arbitrary
+        /// (run-time provided) Google Protocol Buffers types
         class DBOManager
         {
           public:
+            /// \brief singleton class: use this to get a pointer
             static DBOManager* get_instance();
+            /// \brief if desired, this will release all resources (use right before exiting)
             static void shutdown();
 
+            /// \brief add the entire .proto file in which descriptor is defined
+            ///
+            /// this does not add all the types contained within this file. You must add each type you want persisted by calling add_type() for each
+            /// \param descriptor Descriptor (meta-data) of the message whose containing file you wish to add
             void add_file(const google::protobuf::Descriptor* descriptor);
+            /// \brief add the entire .proto file given by this FileDescriptorProto
+            ///
+            /// this does not add all the types contained within this file. You must add each type you want persisted by calling add_type() for each
+            /// \param proto FileDescriptorProto representation of a .proto file. This object can be transmitted on the wire like any other google::protobuf::Message
             void add_file(const google::protobuf::FileDescriptorProto& proto);
 
+            /// \brief add a type (given by its descriptor) to the Wt::Dbo SQL database
+            ///
+            /// you must have already added the .proto file in which this type resides using add_file()
             void add_type(const google::protobuf::Descriptor* descriptor);
+            /// \brief add a type (given by its full name as defined by Descriptor::full_name()) to the Wt::Dbo SQL database 
+            ///
+            /// you must have already added the .proto file in which this type resides using add_file()
             void add_type(const std::string& name);
+            
 //            void add_message(const std::string& name, const std::string& serialized_message);
+            /// \brief add a message to the Wt::Dbo SQL database
+            ///
+            /// This is not written to the database until commit() is called
             void add_message(boost::shared_ptr<google::protobuf::Message> msg);
 
+            /// \brief commit all changes to the Wt::Dbo SQL database
             void commit();
             
-            
-            /// Registers the group names used for the FlexOstream logger
-            void add_flex_groups(util::FlexOstream& tout);
-            
-            void set_logger(std::ostream* log) { log_ = log; }            
-            
-            static boost::shared_ptr<google::protobuf::Message> new_msg_from_name(const std::string& name)
-            {
-                return boost::shared_ptr<google::protobuf::Message>(
-                    msg_factory.GetPrototype(
-                        descriptor_pool.FindMessageTypeByName(name))->New());
-            }
-            
-            void connect(const std::string& db_name = "")
-            {
-                if(!db_name.empty())
-                    db_name_ = db_name;
+            /// \brief create a blank message of the type given by its name (as defined by Descriptor::full_name())
+            static boost::shared_ptr<google::protobuf::Message>
+                new_msg_from_name(const std::string& name);            
 
-                if(transaction_) delete transaction_;
-                if(connection_) delete connection_;
-                if(session_) delete session_;
-                connection_ = new Wt::Dbo::backend::Sqlite3(db_name_);
-                session_ = new Wt::Dbo::Session;
-                session_->setConnection(*connection_);
-                // transaction deleted by session
-                transaction_ = new Wt::Dbo::Transaction(*session_);
-            }
-
-            void reset_session()
-            {
-                
-                commit();
-                if(log_) *log_ << "resetting session" << std::endl;
-                connect();
-            }
+            /// \brief connect to the Wt::Dbo SQL database
+            void connect(const std::string& db_name = "");            
             
-            
-            // wraps a particular type of Protobuf message (designated by id number i)
-            // so that we can use it with Wt::Dbo
+            /// \brief wraps a particular type of Google Protocol Buffers message
+            /// (designated by id number i) so that we can use it with Wt::Dbo
+            ///
+            /// Wt:Dbo requires each type to be "persisted" or stored in the database
+            /// to have a compile-time type. Since gobyd does not know about the types
+            /// we want to use at compile-time, we have use this placeholder (ProtoBufWrapper)
+            /// which creates a new type for each value of i. At runtime we map
+            /// the Protocol Buffers types onto a given value of i and use Reflection
+            /// to properly store the fields
             template <int i>
                 class ProtoBufWrapper
             {
@@ -114,29 +120,30 @@ namespace goby
                                   (dbo_map.left.at(i)))->New());
                     }
                 }
-
+                
                 google::protobuf::Message& msg(){ return *p_; }                
                 
               private:
                 boost::shared_ptr<google::protobuf::Message> p_;
             };
 
+            // see google::protobuf documentation: this assists in
+            // creating messages at runtime
             static google::protobuf::DynamicMessageFactory msg_factory;
+            // see google::protobuf documentation: this assists in
+            // creating messages at runtime
             static google::protobuf::DescriptorPool descriptor_pool;
 
           private:
             void map_type(const google::protobuf::Descriptor* descriptor);
+            void reset_session();
 
           private:    
             static DBOManager* inst_;
             DBOManager();
             
-            ~DBOManager()
-            {
-                if(transaction_) delete transaction_;
-                if(connection_) delete connection_;
-                if(session_) delete session_;
-            }
+            ~DBOManager();
+            
             DBOManager(const DBOManager&);
             DBOManager& operator = (const DBOManager&);
 
@@ -150,8 +157,6 @@ namespace goby
             std::map<int, std::string> mangle_map_;
             // next integer to use for new incoming type
             int index_;
-
-            std::ostream* log_;
 
             std::string db_name_;
 
@@ -168,7 +173,8 @@ namespace goby
     }
 }
 
-// provide a special overload of `persist` for the ProtoBufWrapper class
+// provide a special overload of `persist` for the ProtoBufWrapper class so that
+// Wt::Dbo knows how to handle ProtoBufWrapper types (and then through that class, google::protobuf::Message types)
 namespace Wt
 {
     namespace Dbo

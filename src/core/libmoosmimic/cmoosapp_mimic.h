@@ -26,206 +26,250 @@ namespace goby
 {
     namespace core
     {        
+        /// same typedef used by MOOS, but redefining it here
+        /// minimizes the number of #includes from MOOS
+        typedef std::list<CMOOSMsg> MOOSMSG_LIST;
 
-typedef std::list<CMOOSMsg> MOOSMSG_LIST;
-
-// mimics some of the functionality of CMOOSApp to allow
-// MOOS applications to compile directly against goby
-// without changes
-class CMOOSApp : public goby::core::ApplicationBase
-{
+        /// \brief mimics some of the functionality of ::CMOOSApp to allow
+        /// original MOOS applications to compile directly against goby
+        /// without changes
+        ///
+        /// Not all the features of ::CMOOSApp are provided because
+        /// many of them are little used. Also, data in ::CMOOSApp are not
+        /// private so any applications that used to directly modify members
+        /// of ::CMOOSApp will not work
+        class CMOOSApp : public goby::core::ApplicationBase
+        {
     
-  public:
-    CMOOSApp();
-    virtual ~CMOOSApp()
-    {
-        glogger() << "goby::core::CMOOSApp destructing..." << std::endl;
-    }
+          public:
+            ///\name Constructors
+            //@{
+            CMOOSApp();
+            virtual ~CMOOSApp()
+            {
+                OnDisconnectFromServer();
+                glogger() << "goby::core::CMOOSApp destructing..." << std::endl;
+            }
+            //@}
 
-    //enum { DEFAULT_MOOS_APP_COMMS_FREQ = 5 };
-    enum { DEFAULT_MOOS_APP_FREQ_ = 5 };
-    //enum { MOOS_MAX_APP_FREQ = 50 };
-    //enum { MOOS_MAX_COMMS_FREQ = 200 };
-    //enum { STATUS_PERIOD = 2 };
+            //enum { DEFAULT_MOOS_APP_COMMS_FREQ = 5 };
+            enum { DEFAULT_MOOS_APP_FREQ_ = 5 };
+            //enum { MOOS_MAX_APP_FREQ = 50 };
+            //enum { MOOS_MAX_COMMS_FREQ = 200 };
+            //enum { STATUS_PERIOD = 2 };
     
-    bool Run(const char * sName,
-             const char * sMissionFile,
-             const char * sSubscribeName = 0);
+            ///\name Go / Stop
+            //@{
+            bool Run(const char * sName,
+                     const char * sMissionFile,
+                     const char * sSubscribeName = 0);
     
-    bool RequestQuit()
-    {
-        ApplicationBase::disconnect();
-        return true;
-    }
+            bool RequestQuit()
+            {
+                ApplicationBase::disconnect();
+                return true;
+            }
+            //@}
     
-  protected:
-    virtual bool OnConnectToServer() { return true; }
-    virtual bool OnDisconnectFromServer() { return true; }
-    virtual bool Iterate()  { return true; }
-    virtual bool OnNewMail(MOOSMSG_LIST & NewMail)  { return true; }
-    virtual bool OnStartUp() { return true; }
-    
-    class CMOOSCommClient
-    {
-      public:        
-        CMOOSCommClient(CMOOSApp& base);        
+          protected:
+            /// \brief Guaranteed to be called after OnStartUp and after
+            /// a connection to gobyd is made
+            ///
+            /// Will be called before goby::core::ApplicationBase::run() is called (thus
+            /// before Iterate or OnNewMail is called).
+            /// goby::core::ApplicationBase has no analogous method as the constructor
+            /// is use for this purpose
+            virtual bool OnConnectToServer() { return true; }
+            virtual bool OnDisconnectFromServer() { return true; }
 
-        bool Notify(const std::string &sVar,
-                    const std::string & sVal,
-                    const std::string & sSrcAux,
-                    double dfTime=-1);
+            /// \brief Essentially the same as goby::core::ApplicationBase::loop()
+            virtual bool Iterate()  { return true; }
+            /// \brief Called each time a message arrives (thus NewMail.size() == 1)
+            /// not on the CommTick (which is ignored)
+            /// This is similar to a single handler provided to a call to goby::core::ApplicationBase::subscribe() for messages to type goby::core::proto::CMOOSMsg
+            virtual bool OnNewMail(MOOSMSG_LIST & NewMail)  { return true; }
 
-        bool Notify(const std::string & sVar,
-                    double dfVal,
-                    const std::string & sSrcAux,
-                    double dfTime=-1);        
+            /// \brief Guaranteed to be called before OnConnectToServer
+            ///
+            /// MOOS offers few guarantees so the only one we will provide
+            /// is that OnStartUp is called before OnConnectToServer and
+            /// before goby::core::ApplicationBase::run() is called (thus
+            /// before Iterate or OnNewMail is called)
+            /// goby::core::ApplicationBase has no analogous method as the constructor
+            /// is use for this purpose
+            virtual bool OnStartUp() { return true; }
+    
+            /// \brief Mimic the CMOOSCommClient class as a nested class
+            /// within CMOOSApp since goby::core::ApplicationBase provides
+            /// the features of both ::CMOOSApp and ::CMOOSCommClient
+            class CMOOSCommClient
+            {
+              public:        
+                CMOOSCommClient(CMOOSApp& base);
 
-        template<typename V>
-            bool Notify(const std::string &sVar,
-                        const V& val,
-                        double dfTime=-1)
-        { return Notify(sVar, val, "", dfTime); }
+                /// 
+                bool Notify(const std::string &sVar,
+                            const std::string & sVal,
+                            const std::string & sSrcAux,
+                            double dfTime=-1);
+
+                bool Notify(const std::string & sVar,
+                            double dfVal,
+                            const std::string & sSrcAux,
+                            double dfTime=-1);        
+
+                template<typename V>
+                    bool Notify(const std::string &sVar,
+                                const V& val,
+                                double dfTime=-1)
+                { return Notify(sVar, val, "", dfTime); }
         
-        bool Register(const std::string & sVar,double dfInterval);        
-        bool UnRegister(const std::string & sVar);
-        bool IsConnected()
-        { return base_.ApplicationBase::connected(); }
+                bool Register(const std::string & sVar,double dfInterval);        
+                bool UnRegister(const std::string & sVar);
+                bool IsConnected()
+                { return base_.ApplicationBase::connected(); }
         
-        bool Post(CMOOSMsg& Msg);
+                bool Post(CMOOSMsg& Msg);
 
-        // not fully implemented
-        bool Run(const char * sServer,
-                 long lPort,
-                 const char * sMyName,
-                 unsigned int nFundamentalFreq=5)
-        { return true; }        
+                // not fully implemented
+                bool Run(const char * sServer,
+                         long lPort,
+                         const char * sMyName,
+                         unsigned int nFundamentalFreq=5)
+                { return true; }        
 
-        // not fully implemented
-        void SetOnConnectCallBack(bool (*pfn)(void * pParamCaller), void * pCallerParam) 
-        { }
+                // not fully implemented
+                void SetOnConnectCallBack(bool (*pfn)(void * pParamCaller), void * pCallerParam) 
+                { }
         
+                
+                // not fully implemented
+                void SetOnDisconnectCallBack(bool (*pfn)(void * pParamCaller), void * pCallerParam)
+                { }
         
-        // not fully implemented
-        void SetOnDisconnectCallBack(bool (*pfn)(void * pParamCaller), void * pCallerParam)
-        { }
+              private:
+                CMOOSApp& base_;
+        
+            };
+    
+            CMOOSCommClient m_Comms;
+            CProcessConfigReader m_MissionReader;
+
+            /// \brief This does nothing and returns true as goby has no concept of a CommsTick
+            bool SetCommsFreq(unsigned int nFreq)
+            { return true; }
+    
+            /// \brief How often to call Iterate (that is, goby::core::ApplicationBase::loop())
+            void SetAppFreq(double dfFreq)
+            { ApplicationBase::set_loop_freq(dfFreq); }
+            
+            double GetAppStartTime()
+            { return goby::util::ptime2unix_double(ApplicationBase::t_start()); }
+
+            std::string GetAppName()
+            { return ApplicationBase::application_name(); }
+    
+            std::string GetMissionFileName()
+            { return m_MissionReader.GetFileName(); }
+    
+            std::string community_;
+            
+            /// \brief Feeds this to the glogger
+            bool MOOSDebugWrite(const std::string & sTxt)
+            {
+                glogger() << warn << sTxt << std::endl;
+                return true;
+            }
+    
+            /// Doesn't currently do anything (returns true)
+            virtual bool ConfigureComms() { return true; }
+    
+            /// MOOS should hide its data; this variable is ignored and should be removed
+            long m_lServerPort;
+            /// MOOS should hide its data; this variable is ignored and should be removed
+            std::string m_sServerHost;
+            /// MOOS should hide its data; this variable is ignored and should be removed
+            std::string m_sServerPort;
+
+            /// MOOS should hide its data; this variable is ignored and should be removed
+            std::string m_sAppName;
+            /// MOOS should hide its data; this variable is ignored and should be removed
+            std::string m_sMOOSName;    
+
+            /// MOOS should hide its data; this variable is ignored and should be removed
+            int m_nCommsFreq;
+            /// MOOS should hide its data; this variable is ignored and should be removed
+            double m_dfFreq;
+    
+          private:
+            void loop()
+            { Iterate(); }
+
+            static proto::CMOOSMsg moosmsg2proto_mimic(const CMOOSMsg& in);
+            static CMOOSMsg proto_mimic2moosmsg(const proto::CMOOSMsg& in);
+
+            void handle_incoming(const proto::CMOOSMsg& msg)
+            {
+                MOOSMSG_LIST in_list(1,proto_mimic2moosmsg(msg));
+                OnNewMail(in_list);
+            }
+
+
+    
+    
+            // virtual bool OnCommandMsg(CMOOSMsg Msg);
+            // virtual std::string MakeStatusString();
+            // void SetAppError(bool bFlag, const std::string & sReason);
+            // void SetServer(const char * sServerHost="LOCALHOST",long lPort=9000);
+            // bool UseMOOSComms(bool bUse);
+            // void SortMailByTime(bool bSort=true){m_bSortMailByTime = bSort;};
+            // void SetQuitOnFailedIterate(bool bQuit){m_bQuitOnIterateFail = bQuit;};
+            // void EnableCommandMessageFiltering(bool bEnable);
+            // void EnableIterateWithoutComms(bool bEnable);
+            // bool LookForAndHandleAppCommand(MOOSMSG_LIST & NewMail);
+            // double GetTimeSinceIterate();
+            // double GetLastIterateTime();
+            // int GetIterateCount();
+            // bool CanIterateWithoutComms();
+            /* bool IsSimulateMode(); */
+            /* bool IsDebug() { return m_bDebug; }; */
+            /* std::string GetCommandKey();     */
+
+
+    
+            // private?
+            //bool DoRunWork();
         
 
-        
-      private:
-        CMOOSApp& base_;
-        
-    };
-    
-    CMOOSCommClient m_Comms;
-    CProcessConfigReader m_MissionReader;
+            // "dynamic" moos variables
+            /* bool AddMOOSVariable(std::string sName,std::string sSubscribeName,std::string sPublishName,double dfCommsTime); */
+            /* bool SetMOOSVar(const CMOOSVariable& MOOSVar); */
+            /* CMOOSVariable * GetMOOSVar(std::string sName); */
 
-    // goby has no concept of "CommsTick"
-    bool SetCommsFreq(unsigned int nFreq)
-    { return true; }
-    
-    // how often to call "loop"
-    void SetAppFreq(double dfFreq)
-    { ApplicationBase::set_loop_freq(dfFreq); }
-
-    double GetAppStartTime()
-    { return goby::util::ptime2unix_double(ApplicationBase::t_start()); }
-    
-    std::string GetAppName()
-    { return ApplicationBase::application_name(); }
-    
-    std::string GetMissionFileName()
-    { return m_MissionReader.GetFileName(); }
-    
-    std::string community_;
-    
-    bool MOOSDebugWrite(const std::string & sTxt)
-    {
-        glogger() << warn << sTxt << std::endl;
-        return true;
-    }
-    
-    
-    // might not do anything with these and force
-    // users to switch to using methods
-    long m_lServerPort;
-    std::string m_sServerHost;
-    std::string m_sServerPort;
-    virtual bool ConfigureComms() { return true; }
-    std::string m_sAppName;
-    std::string m_sMOOSName;    
-
-    int m_nCommsFreq;
-    double m_dfFreq;
-    
-  private:
-    void loop()
-    { Iterate(); }
-
-    static proto::CMOOSMsg moosmsg2proto_mimic(const CMOOSMsg& in);
-    static CMOOSMsg proto_mimic2moosmsg(const proto::CMOOSMsg& in);
-
-    void handle_incoming(const proto::CMOOSMsg& msg)
-    {
-        MOOSMSG_LIST in_list(1,proto_mimic2moosmsg(msg));
-        OnNewMail(in_list);
-    }
-
+            /* bool UpdateMOOSVariables(MOOSMSG_LIST & NewMail); */
+            /* bool SetMOOSVar(const std::string & sName,const std::string & sVal,double dfTime); */
+            /* bool SetMOOSVar(const std::string & sVarName,double dfVal,double dfTime); */
+            /* bool PublishFreshMOOSVariables(); */
+            /* bool RegisterMOOSVariables(); */
 
     
-    
-    // virtual bool OnCommandMsg(CMOOSMsg Msg);
-    // virtual std::string MakeStatusString();
-    // void SetAppError(bool bFlag, const std::string & sReason);
-    // void SetServer(const char * sServerHost="LOCALHOST",long lPort=9000);
-    // bool UseMOOSComms(bool bUse);
-    // void SortMailByTime(bool bSort=true){m_bSortMailByTime = bSort;};
-    // void SetQuitOnFailedIterate(bool bQuit){m_bQuitOnIterateFail = bQuit;};
-    // void EnableCommandMessageFiltering(bool bEnable);
-    // void EnableIterateWithoutComms(bool bEnable);
-    // bool LookForAndHandleAppCommand(MOOSMSG_LIST & NewMail);
-    // double GetTimeSinceIterate();
-    // double GetLastIterateTime();
-    // int GetIterateCount();
-    // bool CanIterateWithoutComms();
-    /* bool IsSimulateMode(); */
-    /* bool IsDebug() { return m_bDebug; }; */
-    /* std::string GetCommandKey();     */
+            /* bool m_bServerSet; */
+            /* bool m_bUseMOOSComms; */
+            /* double m_dfFreq; */
+            /* std::string m_sMissionFile; */
+            /* bool m_bCommandMessageFiltering; */
+            /* bool m_bQuitOnIterateFail; */
+            /* double m_dfAppStartTime; */
+            /* double m_dfLastRunTime; */
+            /* bool m_bSortMailByTime;     */
+            /* std::string m_sAppError; */
+            /* bool m_bAppError;     */
+            /* MOOSVARMAP m_MOOSVars; */
+            /* bool m_bDebug; */
+            /* bool m_bSimMode; */
 
 
-    
-    // private?
-    //bool DoRunWork();
-        
-
-    // "dynamic" moos variables
-    /* bool AddMOOSVariable(std::string sName,std::string sSubscribeName,std::string sPublishName,double dfCommsTime); */
-    /* bool SetMOOSVar(const CMOOSVariable& MOOSVar); */
-    /* CMOOSVariable * GetMOOSVar(std::string sName); */
-
-    /* bool UpdateMOOSVariables(MOOSMSG_LIST & NewMail); */
-    /* bool SetMOOSVar(const std::string & sName,const std::string & sVal,double dfTime); */
-    /* bool SetMOOSVar(const std::string & sVarName,double dfVal,double dfTime); */
-    /* bool PublishFreshMOOSVariables(); */
-    /* bool RegisterMOOSVariables(); */
-
-    
-    /* bool m_bServerSet; */
-    /* bool m_bUseMOOSComms; */
-    /* double m_dfFreq; */
-    /* std::string m_sMissionFile; */
-    /* bool m_bCommandMessageFiltering; */
-    /* bool m_bQuitOnIterateFail; */
-    /* double m_dfAppStartTime; */
-    /* double m_dfLastRunTime; */
-    /* bool m_bSortMailByTime;     */
-    /* std::string m_sAppError; */
-    /* bool m_bAppError;     */
-    /* MOOSVARMAP m_MOOSVars; */
-    /* bool m_bDebug; */
-    /* bool m_bSimMode; */
-
-
-};
+        };
 
     }
 }

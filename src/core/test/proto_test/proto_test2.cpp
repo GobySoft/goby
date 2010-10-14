@@ -36,9 +36,6 @@
 #include <ctime>
 #include <map>
 
-goby::util::FlexOstream glogger;
-
-
 const unsigned MAX_BUFFER_SIZE = 1 << 20;
 
 int main()

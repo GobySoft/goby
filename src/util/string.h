@@ -33,7 +33,13 @@ namespace goby
 
     namespace util
     {   
-        // non-throwing lexical cast
+        /// \name String
+        //@{
+
+        /// \brief non-throwing lexical cast (e.g. assert(as<double>("3.2") == 3.2))
+        /// \param from value to cast from 
+        /// \return to value to cast to
+        /// \throw none
         template<typename To, typename From>
             To as(From from)
         {
@@ -47,7 +53,7 @@ namespace goby
             }
         }
 
-        // specialization for bool -> string
+        /// specialization of as() for bool -> string
         template <>
             inline std::string as<std::string, bool>(bool from)
         {
@@ -55,13 +61,8 @@ namespace goby
             ss << std::boolalpha << from;
             return ss.str();
         }
-
         
-        //
-        // STRING PARSING
-        //
-
-    
+        /// remove all blanks from string s    
         inline void stripblanks(std::string& s)
         {
             for(std::string::iterator it=s.end()-1; it!=s.begin()-1; --it)
@@ -70,9 +71,9 @@ namespace goby
                     s.erase(it);
             }
         }
-
-    
-// "explodes" a string on a delimiter into a vector of strings
+        
+        /// "explodes" a string on a delimiter into a vector of strings. name take from equivalent php function
+        /// TODO(tes): remove in favor of boost::split
         template<typename T>
             inline void explode(std::string s, std::vector<T>& rs, char d, bool do_stripblanks)
         {
@@ -102,6 +103,7 @@ namespace goby
             rs.push_back(s);
         }
 
+        /// variation on explode that returns the vector (instead of storing to the passed reference)
         inline std::vector<std::string> explode(const std::string& s, char d, bool do_stripblanks)
         {
             std::vector<std::string> out;
@@ -109,21 +111,31 @@ namespace goby
             return out;
         }
 
-    
+
+        /// compare two characters regardless of case
+        /// \param a first character
+        /// \param b second character
+        /// \return a == b (ignoring case)
         inline bool charicmp(char a, char b) { return(tolower(a) == tolower(b)); }
+        /// compare two strings regardless of case
+        /// \param s1 first string
+        /// \param s2 second string
+        /// \return s1 == s2 (ignoring case)
         inline bool stricmp(const std::string & s1, const std::string & s2)
         {
             return((s1.size() == s2.size()) &&
                    equal(s1.begin(), s1.end(), s2.begin(), charicmp));
         }
-
-
         
-        // find `key` in `str` and if successful put it in out
-        // and return true
-        // deal with these basic forms:
-        // str = foo=1,bar=2,pig=3
-        // str = foo=1,bar={2,3,4,5},pig=3
+        /// find `key` in `str` and if successful put it in out
+        /// and return true
+        /// deal with these basic forms:
+        /// str = foo=1,bar=2,pig=3
+        /// str = foo=1,bar={2,3,4,5},pig=3
+        /// \param out string to return value in
+        /// \param str haystack to search
+        /// \param key needle to find
+        /// \return true if key is in str, false otherwise
         inline bool val_from_string(std::string& out, const std::string& str, const std::string & key)
         {
             // str:  foo=1,bar={2,3,4,5},pig=3,cow=yes
@@ -183,6 +195,8 @@ namespace goby
             return false;        
         }        
 
+        /// variation of val_from_string() for arbitrary return type
+        /// \return false if `key` not in `str` OR if `out` is not of proper type T
         template<typename T>
             inline bool val_from_string(T& out, const std::string& str, const std::string & key)        
         {
@@ -196,9 +210,12 @@ namespace goby
             return true;            
         }
         
+        /// convert string to bool including "true" and "false"
+        /// \return true if in == "true" (ignoring case) or in == "1"; false otherwise
         inline bool string2bool(const std::string & in)
         { return (stricmp(in, "true") || stricmp(in, "1")) ? true : false; }
 
+        /// specialization of val_from_string for boolean `out`
         inline bool val_from_string(bool& out, const std::string& str, const std::string & key)
         {
             std::string s;
@@ -206,12 +223,9 @@ namespace goby
 
             out = string2bool(s);
             return true;            
-        }
+        }        
+        //@}
 
-        
-
-
-    
     }
 }
 #endif

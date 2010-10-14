@@ -34,7 +34,7 @@
 #include "mac_manager.h"
 
 using goby::util::goby_time;
-using namespace goby::tcolor;
+using namespace goby::util::tcolor;
 
 goby::acomms::MACManager::MACManager(std::ostream* log /* =0 */)
     : rate_(0),
@@ -367,7 +367,7 @@ std::map<unsigned, goby::acomms::Slot>::iterator goby::acomms::MACManager::add_s
 
 void goby::acomms::MACManager::add_flex_groups(util::FlexOstream& tout)
 {
-    tout.add_group("mac", "*", "blue", "MAC related messages (goby_amac)");
+    tout.add_group("mac", util::Colors::blue, "MAC related messages (goby_amac)");
 }
 
 

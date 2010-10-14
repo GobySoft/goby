@@ -27,12 +27,24 @@ namespace goby
 {
     namespace core
     {
-        // true if `msg` passes through `filter`
+        /// \name Filter Helpers
+        //@{
+        /// \brief Helper function for determining if a google::protobuf::Message pass through
+        /// the given Filter object 
+        ///
+        /// \param msg Google Protocol Buffers message to check
+        /// \param filter Filter to check message against
+        /// \return true if `msg` passes through `filter`
         bool clears_filter(const google::protobuf::Message& msg, const goby::core::proto::Filter& filter);
 
-        template<typename T1, typename T2>
-            bool filter_comp(const T1& t1,
-                             const T2& t2,
+        /// \brief gives the boolean value for t1 and t2 for the given comparison operation
+        ///
+        /// \param t1 first value to compare
+        /// \param t2 second value to compare
+        /// \return boolean value depending on the Filter::Operation. For Filter::EQUAL, returns true if t1==t2 or false if t1 != t2.
+        template<typename T>
+            bool filter_comp(const T& t1,
+                             const T& t2,
                              goby::core::proto::Filter::Operation op)
         {
             switch(op)
@@ -54,7 +66,8 @@ namespace goby
         inline bool operator!=(const goby::core::proto::Filter& f1,
                                const goby::core::proto::Filter& f2)
         { return !(f1==f2); }
-        
+
+        //@}
     }
 }
 

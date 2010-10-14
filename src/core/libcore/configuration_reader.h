@@ -36,19 +36,24 @@
 
 #include "goby/util/string.h"
 
+class AppBaseConfig;
+
 namespace goby
 {
     namespace core
-    {
+    {        
         class ConfigReader
         {
           public:
-            static bool read_cfg(int argc,
+            static void read_cfg(int argc,
                                  char* argv[],
                                  google::protobuf::Message* message,
                                  std::string* application_name,
-                                 std::string* self_name,
+                                 boost::program_options::options_description* od_all,
                                  boost::program_options::variables_map* var_map);
+            
+            static void merge_app_base_cfg(AppBaseConfig* base_cfg,
+                                           const boost::program_options::variables_map& var_map);
             
           private:
             static void get_protobuf_program_options(

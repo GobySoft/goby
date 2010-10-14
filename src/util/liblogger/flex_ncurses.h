@@ -34,29 +34,46 @@ namespace goby
 {
     namespace util
     {
+        /// Enables the Verbosity == gui mode of the Goby logger and displays an NCurses gui for the logger content
         class FlexNCurses
         {
           public:
+
+            /// \name Constructors / Destructor
+            //@{ 
             FlexNCurses();
-    
             ~FlexNCurses()
             {
                 alive_ = false;
                 cleanup();
             }
+            //@}
 
+            /// \name Initialization
+            //@{
             void startup();
             void add_win(const Group* title);
-            void recalculate_win();
-            void insert(boost::posix_time::ptime t, const std::string& s, Group* g);
-            size_t panel_from_group(Group* g);
-    
-    
-            // run in its own thread to take input
-            void run_input();
+            //@}
 
-            void alive(bool alive);
+            /// \name Use
+            //@{
+            /// Add a string to the gui
+            void insert(boost::posix_time::ptime t, const std::string& s, Group* g);
+            //@}
+            
+            /// \name Utility
+            //@{
+            size_t panel_from_group(Group* g);
+            void recalculate_win();
             void cleanup();
+            void alive(bool alive);
+            //@}
+            
+            /// \name User Input Thread
+            //@{
+            /// run in its own thread to take input from the user
+            void run_input();
+            //@}
     
           private:
             class Panel;
@@ -69,7 +86,7 @@ namespace goby
     
  
             void update_size();
-            long color2attr_t(tcolor::enums::Color c);
+            long color2attr_t(Colors::Color c);
             size_t find_containing_window(int y, int x);
     
             // void* is WINDOW*
@@ -240,8 +257,6 @@ namespace goby
             // indexed by column
             std::vector<int> line_buffer_;
     
-            tcolor::TermColor color_;
-
             bool alive_;
     
             // ideal number of characters per line

@@ -72,7 +72,7 @@ public:
             b.add_rstr("fee");
             b.add_rstr("fie");
             b.add_rstr("foe");
-            publish(b);
+            publish<all>(b);
             glogger() << "out: " << b << std::endl;
         }
     

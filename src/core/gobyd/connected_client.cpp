@@ -32,59 +32,56 @@ using boost::shared_ptr;
 
 using namespace goby::core;
 using namespace goby::util;
+using goby::util::logger_lock::lock;
+
 
 Daemon::ConnectedClient::ConnectedClient(const std::string& name)
     : name_(name),
       active_(true),
       t_connected_(goby_time()),
       t_last_active_(t_connected_),
-      t_next_heartbeat_(boost::posix_time::second_clock::universal_time() + boost::posix_time::seconds(1))
+      t_next_heartbeat_(boost::posix_time::second_clock::universal_time() +
+                        boost::posix_time::seconds(1))
 {
-    if(!glogger.quiet())
     {
-        boost::mutex::scoped_lock lock(logger_mutex);
-        glogger.add_group(name_, ">", "blue", name_);
+        boost::mutex::scoped_lock lock(glogger().mutex());
+        glogger().add_group(name_, Colors::blue, name_);
     }
     
-    message_queue::remove(
-        name_to_server(self_name_, name_).c_str());
-        
-    message_queue::remove(
-        name_from_server(self_name_, name_).c_str());
+    
+
+    message_queue::remove(name_to_server(cfg_.self().name(), name_).c_str());
+    message_queue::remove(name_from_server(cfg_.self().name(), name_).c_str());
     
     message_queue to_server_queue(boost::interprocess::create_only,
-                                  name_to_server(self_name_, name_).c_str(),
+                                  name_to_server(cfg_.self().name(), name_).c_str(),
                                   MAX_NUM_MSG,
                                   MAX_MSG_BUFFER_SIZE);
         
     
     message_queue from_server_queue(boost::interprocess::create_only,
-                                    name_from_server(self_name_, name_).c_str(),
+                                    name_from_server(cfg_.self().name(), name_).c_str(),
                                     MAX_NUM_MSG,
                                     MAX_MSG_BUFFER_SIZE);
+
+    glogger(lock) << group(name_) << "ConnectedClient constructed" << std::endl << unlock;
 }
 
 Daemon::ConnectedClient::~ConnectedClient()
 {
-    message_queue::remove(name_to_server(self_name_, name_).c_str());
-    message_queue::remove(name_from_server(self_name_, name_).c_str());
+    message_queue::remove(name_to_server(cfg_.self().name(), name_).c_str());
+    message_queue::remove(name_from_server(cfg_.self().name(), name_).c_str());
 
-    if(!glogger.quiet())
-    {
-        boost::mutex::scoped_lock lock(logger_mutex);
-        glogger << group(name_) << "ConnectedClient destructed" << std::endl;
-    }
-    
-
+    glogger(lock) << group(name_) << "ConnectedClient destructed" << std::endl << unlock;
 }
 
 
 void Daemon::ConnectedClient::run()
 {
     message_queue to_server_queue(boost::interprocess::open_only,
-                                  name_to_server(self_name_, name_).c_str());
+                                  name_to_server(cfg_.self().name(), name_).c_str());
     message_queue from_server_queue(boost::interprocess::open_only,
-                                    name_from_server(self_name_, name_).c_str());
+                                    name_from_server(cfg_.self().name(), name_).c_str());
     
     while(active_)
     {
@@ -94,56 +91,51 @@ void Daemon::ConnectedClient::run()
                          buffer_,
                          &buffer_msg_size_))
         {
+            glogger(lock) << group(name_) << "> notification: "
+                          << notification_.GetReflection()->GetEnum(notification_, notification_.GetDescriptor()->FindFieldByName("notification_type"))->name()
+                          << std::endl << unlock;
             process_notification();
         }
         else
         {
             boost::posix_time::ptime now = goby_time();
+            glogger(lock) << group(name_) << "now " <<  now << std::endl << unlock;
             
             if(now > t_last_active_ + DEAD_INTERVAL)
             {
-                // deceased client - disconnect ourselves
-                message_queue listen_queue(
-                    boost::interprocess::open_only,
-                    name_connect_listen(self_name_).c_str());
-                notification_.Clear();
-                notification_.set_notification_type(proto::Notification::DISCONNECT_REQUEST);
-                notification_.set_application_name(name_);
-                send(listen_queue, notification_, buffer_, sizeof(buffer_));
-                stop();
+                glogger(lock) << group(name_) << warn << "disconnecting self"
+                                 << std::endl << unlock;
+                disconnect_self();
             } 
             else if(now > t_last_active_ + HEARTBEAT_INTERVAL)
             {
+                glogger(lock) << group(name_) << "< sending HEARTBEAT"
+                                 << std::endl << unlock;
                 // send request for heartbeat
                 notification_.Clear();
                 notification_.set_notification_type(proto::Notification::HEARTBEAT);
-                send(from_server_queue, notification_, buffer_, sizeof(buffer_));
+                if(try_send(from_server_queue, notification_, buffer_, sizeof(buffer_)))
+                    glogger(lock) << group(name_) << "< sent heartbeat"
+                                     << std::endl << unlock;
+                else
+                    glogger(lock) << group(name_) << warn << "could not send heartbeat"
+                                     << std::endl << unlock;
             }
-            
             t_next_heartbeat_ += HEARTBEAT_INTERVAL;
-        }        
+        }
     }
 }
 
 void Daemon::ConnectedClient::process_notification()
 {
-    // if(!glogger.quiet())
-    // {
-    //     boost::mutex::scoped_lock lock(logger_mutex);
-    //     glogger << group(name_) << "> " << notification_.DebugString() << std::endl;
-    // }
-    
-    
     // client sent us a message, so it's still alive
     t_last_active_ = goby_time();
-
+    glogger(lock) << group(name_) << "last_active " << t_last_active_ << std::endl << unlock;
+    
     // if the client sent along a new type, add it to our database
     if(notification_.has_file_descriptor_proto())
     {
-        //TODO(tes): Make liblogger thread safe and thus remove logger_mutex
-        // from this application
-        boost::mutex::scoped_lock lock1(logger_mutex);
-        boost::mutex::scoped_lock lock2(dbo_mutex);
+        boost::mutex::scoped_lock lock(dbo_mutex);
         DBOManager::get_instance()->add_file(notification_.file_descriptor_proto());
         DBOManager::get_instance()->add_type(notification_.embedded_msg().type());
     }
@@ -165,19 +157,19 @@ void Daemon::ConnectedClient::process_notification()
 
 
 void Daemon::ConnectedClient::process_publish()
-{    
+{
+    glogger(lock) << group(name_) << "publishing: "
+                  << notification_.embedded_msg().type()
+                  << notification_.embedded_msg().filter()
+                  << std::endl << unlock;
+    
     shared_ptr<google::protobuf::Message> parsed_embedded_msg = 
         DBOManager::new_msg_from_name(notification_.embedded_msg().type());
     
-    parsed_embedded_msg->ParseFromString(notification_.embedded_msg().body());    
-
-    // if(!glogger.quiet())
-    // {
-    //     boost::mutex::scoped_lock lock1(logger_mutex);
-    //     glogger << group(name_) << "embedded_message: " << *parsed_embedded_msg << std::endl;
-    // }
+    parsed_embedded_msg->ParseFromString(notification_.embedded_msg().body());
     
-    // enforce thread-safety
+    // enforce read only thread-safety
+    subscription_mutex.lock_shared();
     const boost::unordered_multimap<std::string, Subscriber>& const_subscriptions =
         subscriptions;
     
@@ -188,10 +180,10 @@ void Daemon::ConnectedClient::process_publish()
     process_publish_subscribers(equal_it_pair.first,
                                 equal_it_pair.second,
                                 *parsed_embedded_msg);
+    subscription_mutex.unlock_shared();
 
     // add to the database
-    boost::mutex::scoped_lock lock1(logger_mutex);
-    boost::mutex::scoped_lock lock2(dbo_mutex);
+    boost::mutex::scoped_lock lock(dbo_mutex);
     DBOManager::get_instance()->add_message(parsed_embedded_msg);
 }
 
@@ -199,13 +191,7 @@ void Daemon::ConnectedClient::process_publish_subscribers(
     boost::unordered_multimap<std::string, Subscriber>::const_iterator begin_it,
     boost::unordered_multimap<std::string, Subscriber>::const_iterator end_it,
     const google::protobuf::Message& parsed_embedded_msg)
-{
-    if(!glogger.quiet())
-    {
-        boost::mutex::scoped_lock lock(logger_mutex);
-        glogger << group(name_) << "distributing message: " << parsed_embedded_msg << std::endl;
-    }
-    
+{    
     // send it to everyone on the subscription list
     for(boost::unordered_multimap<std::string, Subscriber>::const_iterator it = begin_it;
         it != end_it;
@@ -228,47 +214,47 @@ void Daemon::ConnectedClient::process_publish_subscribers(
                                        shared_ptr<message_queue>(
                                            new message_queue(
                                                boost::interprocess::open_only,
-                                               name_from_server(self_name_,
+                                               name_from_server(cfg_.self().name(),
                                                                 cc->name()).c_str()))));
                 it = p.first;
             }
             
-            // last thing we received is what we want to send out
-            // so don't reserialize this...
-            if(try_send(*(it->second), buffer_, buffer_msg_size_))
+            if(!timed_send(*(it->second), buffer_, buffer_msg_size_, goby_time() + PUBLISH_WAIT))
             {
-                if(!glogger.quiet())
-                {
-                    boost::mutex::scoped_lock lock(logger_mutex);
-                    glogger << group(name_) << "sent message to " << cc->name() << std::endl;
-                }
+                glogger(lock) << group(name_) << warn << "failed to send "
+                              << notification_.embedded_msg().type() << " to "
+                              << cc->name() << std::endl << unlock;
+                
             }
             else
             {
-                if(!glogger.quiet())
-                {
-                    boost::mutex::scoped_lock lock(logger_mutex);
-                    glogger << group(name_) << "failed to send message to " << cc->name() << std::endl;
-                }
-            }             
+                glogger(lock) << group(name_) << "\tsent " << notification_.embedded_msg().type() << " to " << cc->name() << std::endl << unlock;
+            }
         }
     }
 }
 
-
-
 void Daemon::ConnectedClient::process_subscribe()
 {
-    boost::mutex::scoped_lock lock(subscription_mutex);
-    
+    subscription_mutex.lock();
     subscriptions.insert(
         make_pair(notification_.embedded_msg().type(),
                   Subscriber(shared_from_this(), notification_.embedded_msg().filter())));
-    
-    if(!glogger.quiet())
-    {
-        boost::mutex::scoped_lock lock(logger_mutex);
-        glogger << group(name_) << "subscribed to " << notification_.embedded_msg() << std::endl;
-    }
-    
+    subscription_mutex.unlock();
+
+    glogger(lock) << group(name_) << "subscribed to " << notification_.embedded_msg() << std::endl << unlock;
+}
+
+
+void Daemon::ConnectedClient::disconnect_self()
+{
+    // deceased client - disconnect ourselves
+    message_queue listen_queue(
+        boost::interprocess::open_only,
+        name_connect_listen(cfg_.self().name()).c_str());
+    notification_.Clear();
+    notification_.set_notification_type(proto::Notification::DISCONNECT_REQUEST);
+    notification_.set_application_name(name_);
+    send(listen_queue, notification_, buffer_, sizeof(buffer_));
+    stop();
 }

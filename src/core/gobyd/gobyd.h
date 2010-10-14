@@ -21,7 +21,6 @@
 #include <map>
 #include <boost/unordered_map.hpp>
 
-#include "goby/util/logger.h"
 #include "goby/util/time.h"
 
 #include "goby/core/dbo.h"
@@ -32,18 +31,27 @@ namespace goby
 {
     namespace core
     {
+        /// \brief The Goby Publish/Subscribe server or daemon that handles all
+        /// application communications on a given platform
         class Daemon
         {
           private:
+            // run this the same was as an application derived from goby::core::ApplicationBase
             template<typename App>
                 friend int ::goby::run(int argc, char* argv[]);
-
+            
             Daemon();
             ~Daemon();
             Daemon(const Daemon&);
-            Daemon& operator = (const Daemon&);
+            Daemon& operator= (const Daemon&);
             
             void run();
+
+            void init_cfg();
+            void init_logger();
+            void init_sql();
+            void init_listener();
+            
             
             class ConnectedClient;
             class Subscriber;
@@ -51,10 +59,10 @@ namespace goby
             // value = set of subscribers to this protobuf type
             static boost::unordered_multimap<std::string, Subscriber> subscriptions;
             static boost::mutex dbo_mutex;
-            static boost::mutex subscription_mutex;
-            static boost::mutex logger_mutex;
-            static goby::util::FlexOstream glogger;
+            static boost::shared_mutex subscription_mutex;
 
+            // handles a single subscription from a single connected client (one client may
+            // be many subscribers)
             class Subscriber
             {
               public:
@@ -64,23 +72,25 @@ namespace goby
                   : client_(client),
                     filter_(filter)
                     { }
-                
+
+                // which client is this subscriber
                 const boost::shared_ptr<ConnectedClient> client() const
                 { return client_; }
-
+                
                 // true if filter permits message
                 bool check_filter(const google::protobuf::Message& msg) const
                 { return clears_filter(msg, filter_); }
-          
+
+                // allows us to map subscribers
                 bool operator<(const Subscriber& rhs) const { return client_ < rhs.client_; }
-          
               
               private:
                 boost::shared_ptr<ConnectedClient> client_;
                 proto::Filter filter_;
             };
 
-            
+
+            // Represents a connection from a single application (derived from goby::core::AppliccationBase)
             class ConnectedClient : public boost::enable_shared_from_this<ConnectedClient>
             {
               public:
@@ -88,8 +98,9 @@ namespace goby
                 ~ConnectedClient();
 
                 void run();
-                void stop() { active_ = false; }
-
+                void stop()
+                { active_ = false; }
+                
                 std::string name() const { return name_; }
         
               private:
@@ -101,8 +112,15 @@ namespace goby
                     const google::protobuf::Message& parsed_embedded_msg);
 
                 void process_subscribe();
-          
+                void disconnect_self();
+                
+                
+                
               private:
+                enum { MESSAGE_SEND_TRIES = 5 };
+                
+                
+                
                 std::string name_;
                 bool active_;
                 boost::posix_time::ptime t_connected_;
@@ -143,6 +161,7 @@ namespace goby
 
             const static boost::posix_time::time_duration HEARTBEAT_INTERVAL;
             const static boost::posix_time::time_duration DEAD_INTERVAL;
+            const static boost::posix_time::time_duration PUBLISH_WAIT;
 
             proto::Notification notification_;
             char buffer_ [MAX_MSG_BUFFER_SIZE];
@@ -150,15 +169,9 @@ namespace goby
 
             std::ofstream fout_;
             static proto::Config cfg_;
-            boost::program_options::variables_map command_line_map_;
-            std::string application_name_;
 
             static int argc_;
             static char** argv_;
-
-            // name of this platform
-            static std::string self_name_;
-            
         };
     }
 }

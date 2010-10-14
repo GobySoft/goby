@@ -85,6 +85,6 @@ void goby::acomms::ModemDriverBase::modem_start()
 
 void goby::acomms::ModemDriverBase::add_flex_groups(util::FlexOstream& tout)
 {
-    tout.add_group("mm_out", "<", "lt_magenta", "outgoing micromodem messages (goby_modemdriver)");
-    tout.add_group("mm_in", ">", "lt_blue", "incoming micromodem messages (goby_modemdriver)");
+    tout.add_group("mm_out", util::Colors::lt_magenta, "outgoing micromodem messages (goby_modemdriver)");
+    tout.add_group("mm_in", util::Colors::lt_blue, "incoming micromodem messages (goby_modemdriver)");
 }

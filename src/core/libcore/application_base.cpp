@@ -16,10 +16,17 @@
 
 #include <iostream>
 
+#include <boost/program_options.hpp>
+
+#include <Wt/Dbo/Dbo>
+#include <Wt/Dbo/Query>
+#include <Wt/Dbo/backend/Sqlite3>
+#include <Wt/Dbo/Exception>
 
 #include "goby/util/time.h"
 #include "goby/core/libcore/configuration_reader.h"
 #include "goby/core/libdbo/dbo_manager.h"
+#include "goby/core/proto/app_base_config.pb.h"
 
 #include "application_base.h"
 
@@ -28,38 +35,118 @@ using namespace goby::util;
 using boost::interprocess::message_queue;
 using boost::shared_ptr;
 
-boost::posix_time::time_duration goby::core::ApplicationBase::CONNECTION_WAIT_INTERVAL =
+const boost::posix_time::time_duration goby::core::ApplicationBase::CONNECTION_WAIT_INTERVAL =
     boost::posix_time::seconds(1);
 
 int goby::core::ApplicationBase::argc_ = 0;
 char** goby::core::ApplicationBase::argv_ = 0;
 
-
 goby::core::ApplicationBase::ApplicationBase(
-    google::protobuf::Message* cfg /*= 0*/)
+    google::protobuf::Message* cfg /*= 0*/,
+    bool skip_cfg_checks /* = false */)
     : loop_period_(boost::posix_time::milliseconds(100)),
       connected_(false),
       db_connection_(0),
       db_session_(0)
 {
-    if(!ConfigReader::read_cfg(argc_,
-                               argv_,
-                               cfg,
-                               &application_name_,
-                               &self_name_,
-                               &command_line_map_))
-        throw(std::runtime_error("did not successfully read configuration"));
+    //
+    // read the configuration
+    //
+    boost::program_options::options_description od("Allowed options");
+    boost::program_options::variables_map var_map;
+    try
+    {
+        std::string application_name;
+        ConfigReader::read_cfg(argc_, argv_, cfg, &application_name, &od, &var_map);
+        base_cfg_.set_app_name(application_name);
+
+        // extract the AppBaseConfig assuming the user provided it in their configuration
+        // .proto file
+        if(cfg)
+        {
+            const google::protobuf::Descriptor* desc = cfg->GetDescriptor();
+            for (int i = 0, n = desc->field_count(); i < n; ++i)
+            {
+                const google::protobuf::FieldDescriptor* field_desc = desc->field(i);
+                if(field_desc->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE)
+                {
+                    if(field_desc->message_type() == ::AppBaseConfig::descriptor())
+                        base_cfg_.MergeFrom(cfg->GetReflection()->GetMessage(*cfg, field_desc));
+                }
+            }
+        }
+
+        
+        // determine the name of this platform
+        std::string self_name;
+        if(var_map.count("platform_name"))
+            self_name = var_map["platform_name"].as<std::string>();
+        else if(base_cfg_.has_platform_name())
+            self_name = base_cfg_.platform_name();
+        else
+            throw(ConfigException("missing platform_name"));
+        base_cfg_.set_platform_name(self_name);
+        
+        // incorporate some parts of the AppBaseConfig that are common
+        // with gobyd (e.g. Verbosity)
+        ConfigReader::merge_app_base_cfg(&base_cfg_, var_map);
+        
+        set_loop_freq(base_cfg_.loop_freq());
+    }
+    catch(ConfigException& e)
+    {
+        if(!skip_cfg_checks)
+        {
+            // output all the available command line options
+            std::cerr << od << "\n";
+            if(e.error())
+                std::cerr << "Problem parsing command-line configuration: \n"
+                          << e.what() << "\n";
+            
+            throw;
+        }
+    }
     
-    connect();
+    // set up the logger
+    glogger().set_name(application_name());
+
+    switch(base_cfg_.verbosity())
+    {
+        case AppBaseConfig::quiet:
+            glogger().add_stream(Logger::quiet, &std::cout);
+            break;            
+        case AppBaseConfig::warn:
+            glogger().add_stream(Logger::warn, &std::cout);
+            break;
+        case AppBaseConfig::verbose:
+            glogger().add_stream(Logger::verbose, &std::cout);
+            break;
+        case AppBaseConfig::debug:
+            glogger().add_stream(Logger::debug, &std::cout);
+            break;
+        case AppBaseConfig::gui:
+            glogger().add_stream(Logger::gui, &std::cout);
+            break;    
+    }
+
+    if(base_cfg_.IsInitialized())
+    {
+        connect();
+
+        // notify the server of our configuration for logging purposes
+        if(cfg) publish(*cfg);
+        
+        // start up SQL
+        db_connection_ = new Wt::Dbo::backend::Sqlite3(daemon_cfg_.log().sqlite().path());
+        db_session_ = new Wt::Dbo::Session;
+        db_session_->setConnection(*db_connection_);
+    }
     
-    db_connection_ = new Wt::Dbo::backend::Sqlite3(daemon_cfg_.log().sqlite().path());
-    db_session_ = new Wt::Dbo::Session;
-    db_session_->setConnection(*db_connection_);
 }
 
 goby::core::ApplicationBase::~ApplicationBase()
 {
-    glogger() << "ApplicationBase destructing..." << std::endl;
+    glogger() << debug <<"ApplicationBase destructing..." << std::endl;
     
     if(db_connection_) delete db_connection_;
     if(db_session_) delete db_session_;
@@ -69,32 +156,27 @@ goby::core::ApplicationBase::~ApplicationBase()
 
 void goby::core::ApplicationBase::connect()
 {
-    std::string verbosity = "verbose";
-    glogger().add_stream(verbosity, &std::cout);
-    glogger().name(application_name());
-
     try
     {
-        glogger() <<  "trying to connect..." <<  std::endl;
+        glogger() << debug << "trying to connect..." <<  std::endl;
         
         // set up queues to wait for response from server
-
-        message_queue::remove(
-            name_connect_response(self_name_, application_name_).c_str());
+        message_queue::remove(name_connect_response(base_cfg_.platform_name(),
+                                                    base_cfg_.app_name()).c_str());
 
         message_queue response_queue(
             boost::interprocess::create_only,
-            name_connect_response(self_name_, application_name_).c_str(),
+            name_connect_response(base_cfg_.platform_name(), base_cfg_.app_name()).c_str(),
             1, MAX_MSG_BUFFER_SIZE);
         
         // make connection
         message_queue listen_queue(boost::interprocess::open_only,
-                                   name_connect_listen(self_name_).c_str());
+                                   name_connect_listen(base_cfg_.platform_name()).c_str());
         
         // populate server request for connection
         notification_.Clear();
         notification_.set_notification_type(proto::Notification::CONNECT_REQUEST);
-        notification_.set_application_name(application_name_);
+        notification_.set_application_name(base_cfg_.app_name());
 
         // serialize and send the server request
         send(listen_queue, notification_, buffer_, sizeof(buffer_));  
@@ -106,44 +188,51 @@ void goby::core::ApplicationBase::connect()
                           buffer_,
                           &buffer_msg_size_))
         {
+            // no response
             glogger() << die << "no response to connection request. make sure gobyd is alive."
                     <<  std::endl;        
         }        
 
+        // good response
         if(notification_.notification_type() == proto::Notification::CONNECTION_ACCEPTED)
         {
             connected_ = true;
-            glogger() <<  "connection succeeded." <<  std::endl;
+            glogger() << debug << "connection succeeded." <<  std::endl;
             daemon_cfg_.ParseFromString(notification_.embedded_msg().body());
-            glogger() << "Daemon configuration: \n" << daemon_cfg_ << std::endl;
+            glogger() << debug <<"Daemon configuration: \n" << daemon_cfg_ << std::endl;
         }
-        else
+        else // bad response
         {
             glogger() << die << "server did not connect us: " << "\n"
                     << notification_ << std::endl;
         }
 
-        message_queue::remove(
-            name_connect_response(self_name_, application_name_).c_str());
+        // remove this so that future applications with the same name can (try) to connect
+        message_queue::remove(name_connect_response(base_cfg_.platform_name(),
+                                                    base_cfg_.app_name()).c_str());
 
     }
     catch(boost::interprocess::interprocess_exception &ex)
     {
+        // no queues set up by gobyd
         glogger() << die << "could not open message queue(s) with gobyd. check to make sure gobyd is alive. " << ex.what() << std::endl;
     }
     
+
+    // open the queues that gobyd promises to create upon connection
     to_server_queue_ = shared_ptr<message_queue>(
         new message_queue(
             boost::interprocess::open_only,
-            name_to_server(self_name_, application_name_).c_str()));
+            name_to_server(base_cfg_.platform_name(), base_cfg_.app_name()).c_str()));
     
     from_server_queue_ = shared_ptr<message_queue>(
         new message_queue(
             boost::interprocess::open_only,
-            name_from_server(self_name_, application_name_).c_str()));
-    
+            name_from_server(base_cfg_.platform_name(), base_cfg_.app_name()).c_str()));
+
+    // we are started
     t_start_ = goby_time();
-    // start on the next even second
+    // start the loop() on the next even second
     t_next_loop_ = boost::posix_time::second_clock::universal_time() +
         boost::posix_time::seconds(1);
 
@@ -156,14 +245,14 @@ void goby::core::ApplicationBase::disconnect()
     {
         // make disconnection
         message_queue listen_queue(boost::interprocess::open_only,
-                                   name_connect_listen(self_name_).c_str());
+                                   name_connect_listen(base_cfg_.platform_name()).c_str());
     
         // populate server request for connection
         notification_.Clear();
         notification_.set_notification_type(proto::Notification::DISCONNECT_REQUEST);
-        notification_.set_application_name(application_name_);
+        notification_.set_application_name(base_cfg_.app_name());
 
-        glogger() << notification_ << std::endl;
+        glogger() << debug <<notification_ << std::endl;
         
         // serialize and send the server request
         send(listen_queue, notification_, buffer_, sizeof(buffer_));
@@ -178,33 +267,37 @@ void goby::core::ApplicationBase::disconnect()
 
 void goby::core::ApplicationBase::run()
 {
+    // continue to run while we have a connection
     while(connected_)
     {
+        // sit and wait on a message until the next time to call loop() is up
         if(timed_receive(*from_server_queue_,
                          notification_,
                          t_next_loop_,
                          buffer_,
                          &buffer_msg_size_))
         {
-            glogger() << "> " << notification_ << std::endl;
-            
+            // we have a message from gobyd
+            glogger() << debug <<"> " << notification_ << std::endl;
+
+            // what type of message?
             switch(notification_.notification_type())
             {
                 case proto::Notification::HEARTBEAT:
                 {
-                    // reply with same message
+                    // reply with same message to let gobyd know we're ok
                     send(*to_server_queue_, buffer_, buffer_msg_size_);
                 }
                 break;
 
-                // someone else's publish
+                // someone else's publish, this is our subscription
                 case proto::Notification::PUBLISH_REQUEST:
                 {
-                    typedef boost::unordered_multimap<std::string, shared_ptr<SubscriptionBase> >::const_iterator const_iterator;
-                    std::pair<const_iterator, const_iterator> equal_it_pair =
+                    typedef boost::unordered_multimap<std::string, shared_ptr<SubscriptionBase> >::const_iterator c_it;
+                    std::pair<c_it, c_it> equal_it_pair =
                         subscriptions_.equal_range(notification_.embedded_msg().type());
     
-                    for(const_iterator it = equal_it_pair.first; it != equal_it_pair.second; ++it)
+                    for(c_it it = equal_it_pair.first; it != equal_it_pair.second; ++it)
                         it->second->post(notification_.embedded_msg().body());
                 }
                 break;
@@ -214,6 +307,7 @@ void goby::core::ApplicationBase::run()
         }
         else
         {
+            // no message, time to call loop()            
             loop();
             t_next_loop_ += loop_period_;
         }            

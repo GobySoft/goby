@@ -1,0 +1,8 @@
+// see http://code.google.com/apis/protocolbuffers/docs/cpptutorial.html
+// and http://code.google.com/apis/protocolbuffers/docs/proto.html
+// and http://code.google.com/apis/protocolbuffers/docs/reference/cpp-generated.html
+message HelloWorldMsg
+{
+  required string telegram = 1;
+  required uint32 count = 2;
+}

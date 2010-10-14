@@ -19,17 +19,26 @@
 #include "cmoosapp_mimic.h"
 
 goby::core::CMOOSApp::CMOOSApp() 
-    : m_Comms(*this),
+    : goby::core::ApplicationBase(0, true),
+      m_Comms(*this),
       community_("#1")
 { }
 
 bool goby::core::CMOOSApp::Run(const char * sName,
-                       const char * sMissionFile,
-                       const char * sSubscribeName /*=0*/)
+                               const char * sMissionFile,
+                               const char * sSubscribeName /*=0*/)
 {
-    std::cout << "run called" << std::endl;
-    goby::core::ApplicationBase::set_application_name(sName);
+    std::cout << "Starting goby CMOOSApp mimic: hold on to your hats." << std::endl;
+    
+    
+    if(sSubscribeName)
+        goby::core::ApplicationBase::set_application_name(sSubscribeName);
+    else
+        goby::core::ApplicationBase::set_application_name(sName);
+
+    glogger().set_name(application_name());
             
+    m_MissionReader.SetAppName(application_name());
     if(sMissionFile)
     {
         if(!m_MissionReader.SetFile(sMissionFile))
@@ -38,21 +47,50 @@ bool goby::core::CMOOSApp::Run(const char * sName,
         }
     }
 
-    m_MissionReader.SetAppName(sName);
     m_MissionReader.GetValue("Community", community_);
+    goby::core::ApplicationBase::set_platform_name(community_);
 
     int freq = DEFAULT_MOOS_APP_FREQ_;
     m_MissionReader.GetConfigurationParam("AppTick", freq);
+
+    std::string verbosity = "verbose";
+    m_MissionReader.GetConfigurationParam("verbosity", verbosity);
+    
+    if(verbosity == "debug")
+    {
+        base_cfg_.set_verbosity(AppBaseConfig::debug);
+        glogger().add_stream(goby::util::Logger::debug, &std::cout);
+    }
+    else if(verbosity == "quiet")
+    {
+        base_cfg_.set_verbosity(AppBaseConfig::quiet);
+        glogger().add_stream(goby::util::Logger::quiet, &std::cout);
+    }
+    else 
+    {
+        base_cfg_.set_verbosity(AppBaseConfig::verbose);
+        glogger().add_stream(goby::util::Logger::verbose, &std::cout);
+    }    
+    
     goby::core::ApplicationBase::set_loop_freq(freq);
 
-    std::cout << "start called" << std::endl;
+    glogger() << "ApplicationBase::connect() called" << std::endl;
     goby::core::ApplicationBase::connect();
-    std::cout << "OnStartUp called" << std::endl;
-    OnStartUp();
-    OnConnectToServer();
- 
-    goby::core::ApplicationBase::run();
+//    glogger() << "CMOOSApp::OnStartUp() called" << std::endl;
 
+    std::cout << "onstartup" << std::endl;
+    
+    OnStartUp();
+
+//    glogger() << "CMOOSApp::OnConnectToServer() called" << std::endl;
+
+    std::cout << "onconnect" << std::endl;
+
+    OnConnectToServer();
+    
+    glogger() << "AppBaseConfig: " << base_cfg_ << std::flush;
+
+    goby::core::ApplicationBase::run();
     return true;
 }
 
@@ -88,7 +126,7 @@ bool goby::core::CMOOSApp::CMOOSCommClient::Register(const std::string & sVar,do
         &goby::core::CMOOSApp::handle_incoming,
         &base_,
         make_filter("key", Filter::EQUAL, sVar));
-
+    
     return true;
 }
 

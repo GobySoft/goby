@@ -26,85 +26,105 @@
 #include <boost/thread.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include "logger_manipulators.h"
-
 #include "term_color.h"
+
+class Group;
 
 namespace goby
 {
     namespace util
     {
 
+        /// Holds static objects of the Goby Logger
+        struct Logger
+        {
+            static boost::mutex mutex;
+            enum Verbosity { quiet, warn, verbose, debug, gui };
+        };        
+        
         class FlexNCurses;
         
-// stringbuf that allows us to insert things before the stream and control output
+        /// Class derived from std::stringbuf that allows us to insert things before the stream and control output. This is the string buffer used by goby::util::FlexOstream for the Goby Logger (glogger)
         class FlexOStreamBuf : public std::stringbuf
         {
           public:
             FlexOStreamBuf();
             ~FlexOStreamBuf();
-    
+
+            /// virtual inherited from std::ostream. Called when std::endl or std::flush is inserted into the stream
             int sync();
-    
+
+            /// name of the application being served
             void name(const std::string & s)
             { name_ = s; }
-            
-            void add_stream(const std::string& verbosity, std::ostream* os);            
 
+            /// add a stream to the logger
+            void add_stream(Logger::Verbosity verbosity, std::ostream* os);            
+
+            /// do all attached streams have Verbosity == quiet?
             bool is_quiet()
             { return is_quiet_; }    
 
-            bool is_scope()
-            { return is_scope_; }    
-
+            /// is there an attached stream with Verbosity == gui (ncurses GUI)
+            bool is_gui()
+            { return is_gui_; }
             
+            /// current group name (last insertion of group("") into the stream)
             void group_name(const std::string & s)
             { group_name_ = s; }
 
-            void die_flag(bool b)
+            /// exit on error at the next call to sync()
+            void set_die_flag(bool b)
             { die_flag_ = b; }
-    
+
+            /// label stream contents as "debug" until the next call to sync()
+            void set_debug_flag(bool b)
+            { debug_flag_ = b; }
+
+            /// label stream contents as "warning" until the next call to sync()
+            void set_warn_flag(bool b)
+            { warn_flag_ = b; }
+
+            /// add a new group
             void add_group(const std::string& name, Group g);
 
-            std::string color(const std::string& color)
-            { return color_.esc_code_from_str(color); }
+            /// TODO(tes): unnecessary?
+            std::string color2esc_code(Colors::Color color)
+            { return TermColor::esc_code_from_col(color); }
 
-            void refresh();            
-    
+            /// refresh the display (does nothing if !is_gui())
+            void refresh();
           private:
             void display(std::string& s);    
             void strip_escapes(std::string& s);
             
           private:
-            enum Verbosity { verbose = 0, quiet, terse, scope };
-            std::map<std::string, Verbosity> verbosity_map_;
-
 
             class StreamConfig
             {
               public:
-                StreamConfig(std::ostream* os, Verbosity verbosity)
+                StreamConfig(std::ostream* os, Logger::Verbosity verbosity)
                     : os_(os),
                     verbosity_(verbosity)
                     { }
                 
                 std::ostream* os() const { return os_; }
-                Verbosity verbosity() const { return verbosity_; }
+                Logger::Verbosity verbosity() const { return verbosity_; }
                 
               private:
                 std::ostream* os_;
-                Verbosity verbosity_;
+                Logger::Verbosity verbosity_;
             };
             
             std::string name_;
             std::string group_name_;
     
             std::map<std::string, Group> groups_;
-        
-            bool die_flag_;
 
-            tcolor::TermColor color_;
-    
+            bool die_flag_;
+            bool warn_flag_;
+            bool debug_flag_;
+
             FlexNCurses* curses_;
             
             boost::shared_ptr<boost::thread> input_thread_;
@@ -114,7 +134,7 @@ namespace goby
             std::vector<StreamConfig> streams_;
 
             bool is_quiet_;
-            bool is_scope_;
+            bool is_gui_;
             
         };
     }

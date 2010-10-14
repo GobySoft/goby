@@ -18,13 +18,15 @@
 #include <stdexcept>
 #include <algorithm>
 
+#include <boost/preprocessor.hpp>
+
 #include <google/protobuf/descriptor.pb.h>
 
-
-#include <boost/preprocessor.hpp>
+#include <Wt/Dbo/backend/Sqlite3>
 
 #include "goby/util/string.h"
 #include "goby/util/time.h"
+#include "goby/util/logger.h"
 
 #include "wt_dbo_overloads.h"
 #include "dbo_manager.h"
@@ -40,6 +42,8 @@ boost::bimap<int, std::string> goby::core::DBOManager::dbo_map;
 goby::core::DBOManager* goby::core::DBOManager::inst_ = 0;
 
 using goby::util::goby_time;
+using goby::util::glogger;
+using goby::util::logger_lock::lock;
 
 
 // singleton class, use this to get pointer
@@ -57,17 +61,21 @@ void goby::core::DBOManager::shutdown()
 
 goby::core::DBOManager::DBOManager()
     : index_(0),
-      log_(0),
       connection_(0),
       session_(0),
       transaction_(0),
       t_last_commit_(goby_time())
-{}
-
-void goby::core::DBOManager::add_flex_groups(util::FlexOstream& tout)
 {
-    tout.add_group("dbo", "d", "lt_green", "database");
-}          
+    boost::mutex::scoped_lock lock(glogger().mutex());
+    glogger().add_group("dbo", goby::util::Colors::lt_green, "database");
+}
+
+goby::core::DBOManager::~DBOManager()
+{
+    if(transaction_) delete transaction_;
+    if(connection_) delete connection_;
+    if(session_) delete session_;
+}
 
 void goby::core::DBOManager::add_file(const google::protobuf::Descriptor* descriptor)
 {
@@ -96,13 +104,13 @@ void goby::core::DBOManager::add_type(const google::protobuf::Descriptor* descri
     
     if(dbo_map.right.count(descriptor->full_name()))
     {
-        if(log_) *log_ << group("dbo") << "type with name " << descriptor->full_name() << " already exists" << std::endl;
+        glogger(lock) << group("dbo") << "type with name " << descriptor->full_name() << " already exists" << std::endl << unlock;
         return;
     }
 
-    if(log_) *log_ << group("dbo") << "adding type: "
-                   << descriptor->DebugString() << "\n"
-                   << "with index: " << index_ << std::endl;
+    glogger(lock) << group("dbo") << "adding type: "
+                       << descriptor->DebugString() << "\n"
+                       << "with index: " << index_ << std::endl << unlock;
     
     reset_session();
     dbo_map.insert(boost::bimap<int, std::string>::value_type(index_, descriptor->full_name()));
@@ -118,10 +126,10 @@ void goby::core::DBOManager::add_type(const google::protobuf::Descriptor* descri
     try{ session_->createTables(); }
     catch(Wt::Dbo::Exception& e)
     {
-        if(log_) *log_ << warn << e.what() << std::endl;
+        glogger(lock) << warn << e.what() << std::endl << unlock;
     }    
     
-    if(log_) *log_ <<group("dbo") << "created tables for  " << descriptor->full_name() << std::endl;
+    glogger(lock) <<group("dbo") << "created tables for  " << descriptor->full_name() << std::endl << unlock;
 
     // remap all the tables
     for(boost::bimap<int, std::string>::left_iterator it = dbo_map.left.begin(),
@@ -138,7 +146,7 @@ void goby::core::DBOManager::map_type(const google::protobuf::Descriptor* descri
 {
     using goby::util::as;
 
-    if(log_) *log_ <<group("dbo") << "mapping type: " << descriptor->full_name() << std::endl;
+    glogger(lock) <<group("dbo") << "mapping type: " << descriptor->full_name() << std::endl << unlock;
 
     
     // allows us to select compile time type to use at runtime
@@ -168,14 +176,14 @@ void goby::core::DBOManager::add_message(boost::shared_ptr<google::protobuf::Mes
     using goby::util::as;
     
     
-    if(log_) *log_ << group("dbo") << "adding message of type: "
-                   << msg->GetTypeName() << std::endl;
+    glogger(lock) << group("dbo") << "adding message of type: "
+                       << msg->GetTypeName() << std::endl << unlock;
     
     switch(dbo_map.right.at(msg->GetTypeName()))
     {
 
         // preprocessor `for` loop from 0 to GOBY_MAX_PROTOBUF_TYPES
-#define BOOST_PP_LOCAL_MACRO(n)                        \
+#define BOOST_PP_LOCAL_MACRO(n)                                         \
         case n: session_->add(new ProtoBufWrapper<n>(msg)); break;
 #define BOOST_PP_LOCAL_LIMITS (0, GOBY_MAX_PROTOBUF_TYPES)
 #include BOOST_PP_LOCAL_ITERATE()
@@ -187,17 +195,53 @@ void goby::core::DBOManager::add_message(boost::shared_ptr<google::protobuf::Mes
 
 void goby::core::DBOManager::commit()
 {
-    if(log_) *log_ << group("dbo") << "starting commit"
-                   << std::endl;
+    glogger(lock) << group("dbo") << "starting commit"
+                       << std::endl << unlock;
         
     transaction_->commit();
         
-    if(log_) *log_ << group("dbo") << "finished commit"
-                   << std::endl;
+    glogger(lock) << group("dbo") << "finished commit"
+                       << std::endl << unlock;
 
     t_last_commit_ = goby_time();
 
     delete transaction_;
     transaction_ = new Wt::Dbo::Transaction(*session_);
 }
+
+
+boost::shared_ptr<google::protobuf::Message> goby::core::DBOManager::new_msg_from_name(const std::string& name)
+{
+    return boost::shared_ptr<google::protobuf::Message>(
+        msg_factory.GetPrototype(
+            descriptor_pool.FindMessageTypeByName(name))->New());
+}
+
+
+void goby::core::DBOManager::connect(const std::string& db_name /* = "" */)
+{
+    if(!db_name.empty())
+        db_name_ = db_name;
+
+    if(transaction_) delete transaction_;
+    if(connection_) delete connection_;
+    if(session_) delete session_;
+    connection_ = new Wt::Dbo::backend::Sqlite3(db_name_);
+    session_ = new Wt::Dbo::Session;
+    session_->setConnection(*connection_);
+    // transaction deleted by session
+    transaction_ = new Wt::Dbo::Transaction(*session_);
+}
+
+void goby::core::DBOManager::reset_session()
+{
+    using goby::util::logger_lock::lock;
+    using goby::util::glogger;
+                
+    commit();
+    glogger(lock) << "resetting session" 
+                  << std::endl << unlock;
+    connect();
+}
+            
 

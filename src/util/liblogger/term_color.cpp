@@ -19,14 +19,48 @@
 #include "flex_ostream.h"
 #include "term_color.h"
 
-std::ostream& goby::tcolor::add_escape_code(std::ostream& os, const std::string& esc_code)
+// TODO(tes): See if this dynamic cast is unncessary now 
+std::ostream& goby::util::tcolor::add_escape_code(std::ostream& os, const std::string& esc_code)
 {
     try
     {
-        util::FlexOstream& flex = dynamic_cast<util::FlexOstream&>(os);
+        FlexOstream& flex = dynamic_cast<FlexOstream&>(os);
         return(flex << esc_code);
     }
     catch (const std::bad_cast& e)
     { return(os); }
+}
+
+
+goby::util::TermColor* goby::util::TermColor::inst_ = 0;
+
+goby::util::TermColor* goby::util::TermColor::get_instance()
+{
+    if(!inst_) inst_ = new TermColor();
+    return(inst_);
+}
+
+goby::util::TermColor::TermColor()
+{
+    boost::assign::insert(colors_map_)
+        ("nocolor",Colors::nocolor)
+        ("red",Colors::red)         ("lt_red",Colors::lt_red)
+        ("green",Colors::green)     ("lt_green",Colors::lt_green)
+        ("yellow",Colors::yellow)   ("lt_yellow",Colors::lt_yellow)
+        ("blue",Colors::blue)       ("lt_blue",Colors::lt_blue)
+        ("magenta",Colors::magenta) ("lt_magenta",Colors::lt_magenta)
+        ("cyan",Colors::cyan)       ("lt_cyan",Colors::lt_cyan)
+        ("white",Colors::white)     ("lt_white",Colors::lt_white);
+
+    boost::assign::insert(esc_code_map_)
+        (esc_nocolor,Colors::nocolor)
+        (esc_red,Colors::red)         (esc_lt_red,Colors::lt_red)
+        (esc_green,Colors::green)     (esc_lt_green,Colors::lt_green)
+        (esc_yellow,Colors::yellow)   (esc_lt_yellow,Colors::lt_yellow)
+        (esc_blue,Colors::blue)       (esc_lt_blue,Colors::lt_blue)
+        (esc_magenta,Colors::magenta) (esc_lt_magenta,Colors::lt_magenta)
+        (esc_cyan,Colors::cyan)       (esc_lt_cyan,Colors::lt_cyan)
+        (esc_white,Colors::white)     (esc_lt_white,Colors::lt_white);
+
 }
 

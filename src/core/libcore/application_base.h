@@ -108,8 +108,14 @@ namespace goby
             /// \brief Publish a message (of any type derived from google::protobuf::Message) to all subscribers
             ///
             /// \param msg Message to publish
+            enum PublishDestination { self, other, all };
+
+            template<PublishDestination dest, typename ProtoBufMessage>
+                void publish(const ProtoBufMessage& msg, const std::string& platform_name = "");
+
             template<typename ProtoBufMessage>
-                void publish(const ProtoBufMessage& msg);
+                void publish(const ProtoBufMessage& msg)
+            { publish<self>(msg); }
 
             /// \brief Subscribe to a message (of any type derived from google::protobuf::Message)            
             ///
@@ -381,9 +387,10 @@ namespace goby
 }
 
 
-             
-template<typename ProtoBufMessage>
-void goby::core::ApplicationBase::publish(const ProtoBufMessage& msg)
+
+// TODO(tes): implement publish destinations besides "self"
+template<goby::core::ApplicationBase::PublishDestination dest, typename ProtoBufMessage>
+    void goby::core::ApplicationBase::publish(const ProtoBufMessage& msg, const std::string& platform_name /*=  ""*/)
 {
     // clear the global notification message
     notification_.Clear();

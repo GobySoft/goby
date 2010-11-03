@@ -112,7 +112,7 @@ void goby::acomms::MMDriver::handle_mac_initiate_transmission(const acomms::Mode
     nmea.push_back(m.src()); // ADR1
     nmea.push_back(m.dest()); // ADR2
     nmea.push_back(m.rate()); // Packet Type (transmission rate)
-    nmea.push_back(m.ack()); // ACK: deprecated field, this bit may be used for something that's not related to the ack
+    nmea.push_back(int(m.ack())); // ACK: deprecated field, this bit may be used for something that's not related to the ack
     nmea.push_back(PACKET_FRAME_COUNT[m.rate()]); // number of frames we want
     write(nmea);
 }
@@ -291,7 +291,7 @@ void goby::acomms::MMDriver::drq(NMEASentence& nmea_in, acomms::ModemMessage& m)
     NMEASentence nmea_out("$CCTXD", NMEASentence::IGNORE);
     nmea_out.push_back(m.src());
     nmea_out.push_back(m.dest());
-    nmea_out.push_back(m.ack());
+    nmea_out.push_back(int(m.ack()));
     nmea_out.push_back(m.data());
 
     write(nmea_out);   

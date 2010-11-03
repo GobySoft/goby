@@ -1,0 +1,21 @@
+import "goby/core/proto/option_extensions.proto";
+import "goby/core/proto/app_base_config.proto";
+
+message GPSDriverConfig
+{
+  required AppBaseConfig base = 1;
+
+  required string serial_port = 2;
+  optional uint32 serial_baud = 3 [default = 4800];
+  optional string end_line = 4 [default = "\r\n"];
+}
+ 
+message SonarSimulatorConfig
+{
+  required AppBaseConfig base = 1;
+}
+
+message CTDSimulatorConfig
+{
+  required AppBaseConfig base = 1;
+}

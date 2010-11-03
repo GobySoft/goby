@@ -17,19 +17,17 @@
 #define MOOSMIMIC20100918H
 
 #include "goby/core/core.h"
-#include "goby/core/proto/cmoosmsg_mimic.pb.h"
+#include "cmooscommclient_mimic.h"
+#include "cmoosmsg_mimic.h"
 
-#include <MOOSLIB/MOOSMsg.h>
 #include <MOOSGenLib/ProcessConfigReader.h>
 
 namespace goby
 {
     namespace core
     {        
-        /// same typedef used by MOOS, but redefining it here
-        /// minimizes the number of #includes from MOOS
-        typedef std::list<CMOOSMsg> MOOSMSG_LIST;
-
+        typedef std::list<goby::core::CMOOSMsg> MOOSMSG_LIST;
+        
         /// \brief mimics some of the functionality of ::CMOOSApp to allow
         /// original MOOS applications to compile directly against goby
         /// without changes
@@ -70,7 +68,6 @@ namespace goby
                 return true;
             }
             //@}
-    
           protected:
             /// \brief Guaranteed to be called after OnStartUp and after
             /// a connection to gobyd is made
@@ -99,58 +96,6 @@ namespace goby
             /// is use for this purpose
             virtual bool OnStartUp() { return true; }
     
-            /// \brief Mimic the CMOOSCommClient class as a nested class
-            /// within CMOOSApp since goby::core::ApplicationBase provides
-            /// the features of both ::CMOOSApp and ::CMOOSCommClient
-            class CMOOSCommClient
-            {
-              public:        
-                CMOOSCommClient(CMOOSApp& base);
-
-                /// 
-                bool Notify(const std::string &sVar,
-                            const std::string & sVal,
-                            const std::string & sSrcAux,
-                            double dfTime=-1);
-
-                bool Notify(const std::string & sVar,
-                            double dfVal,
-                            const std::string & sSrcAux,
-                            double dfTime=-1);        
-
-                template<typename V>
-                    bool Notify(const std::string &sVar,
-                                const V& val,
-                                double dfTime=-1)
-                { return Notify(sVar, val, "", dfTime); }
-        
-                bool Register(const std::string & sVar,double dfInterval);        
-                bool UnRegister(const std::string & sVar);
-                bool IsConnected()
-                { return base_.ApplicationBase::connected(); }
-        
-                bool Post(CMOOSMsg& Msg);
-
-                // not fully implemented
-                bool Run(const char * sServer,
-                         long lPort,
-                         const char * sMyName,
-                         unsigned int nFundamentalFreq=5)
-                { return true; }        
-
-                // not fully implemented
-                void SetOnConnectCallBack(bool (*pfn)(void * pParamCaller), void * pCallerParam) 
-                { }
-        
-                
-                // not fully implemented
-                void SetOnDisconnectCallBack(bool (*pfn)(void * pParamCaller), void * pCallerParam)
-                { }
-        
-              private:
-                CMOOSApp& base_;
-        
-            };
     
             CMOOSCommClient m_Comms;
             CProcessConfigReader m_MissionReader;
@@ -200,22 +145,20 @@ namespace goby
             int m_nCommsFreq;
             /// MOOS should hide its data; this variable is ignored and should be removed
             double m_dfFreq;
+            /// MOOS should hide its data; this variable is ignored and should be removed
+            double m_dfAppStartTime;
     
           private:
             void loop()
             { Iterate(); }
 
-            static proto::CMOOSMsg moosmsg2proto_mimic(const CMOOSMsg& in);
-            static CMOOSMsg proto_mimic2moosmsg(const proto::CMOOSMsg& in);
-
-            void handle_incoming(const proto::CMOOSMsg& msg)
-            {
-                MOOSMSG_LIST in_list(1,proto_mimic2moosmsg(msg));
-                OnNewMail(in_list);
-            }
-
-
+            //static proto::CMOOSMsg moosmsg2proto_mimic(const CMOOSMsg& in);
+            //static CMOOSMsg proto_mimic2moosmsg(const proto::CMOOSMsg& in);
     
+            void handle_incoming(const goby::core::proto::CMOOSMsgBase& heart);
+            
+
+            friend class CMOOSCommClient;
     
             // virtual bool OnCommandMsg(CMOOSMsg Msg);
             // virtual std::string MakeStatusString();
@@ -259,7 +202,6 @@ namespace goby
             /* std::string m_sMissionFile; */
             /* bool m_bCommandMessageFiltering; */
             /* bool m_bQuitOnIterateFail; */
-            /* double m_dfAppStartTime; */
             /* double m_dfLastRunTime; */
             /* bool m_bSortMailByTime;     */
             /* std::string m_sAppError; */

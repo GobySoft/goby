@@ -55,6 +55,13 @@ goby::util::FlexOStreamBuf::~FlexOStreamBuf()
 
 void goby::util::FlexOStreamBuf::add_stream(Logger::Verbosity verbosity, std::ostream* os)
 {
+    //check that this stream doesn't exist
+    BOOST_FOREACH(const StreamConfig& sc, streams_)
+    {
+        if(sc.os() == os)
+            return;
+    }
+    
     if(verbosity == Logger::gui)
     {
         if(is_gui_) return;

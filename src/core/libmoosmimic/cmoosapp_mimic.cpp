@@ -55,23 +55,8 @@ bool goby::core::CMOOSApp::Run(const char * sName,
 
     std::string verbosity = "verbose";
     m_MissionReader.GetConfigurationParam("verbosity", verbosity);
-    
-    if(verbosity == "debug")
-    {
-        base_cfg_.set_verbosity(AppBaseConfig::debug);
-        glogger().add_stream(goby::util::Logger::debug, &std::cout);
-    }
-    else if(verbosity == "quiet")
-    {
-        base_cfg_.set_verbosity(AppBaseConfig::quiet);
-        glogger().add_stream(goby::util::Logger::quiet, &std::cout);
-    }
-    else 
-    {
-        base_cfg_.set_verbosity(AppBaseConfig::verbose);
-        glogger().add_stream(goby::util::Logger::verbose, &std::cout);
-    }    
-    
+    glogger().add_stream(verbosity, &std::cout);
+        
     goby::core::ApplicationBase::set_loop_freq(freq);
 
     glogger() << "ApplicationBase::connect() called" << std::endl;
@@ -94,80 +79,47 @@ bool goby::core::CMOOSApp::Run(const char * sName,
     return true;
 }
 
-
-goby::core::CMOOSApp::CMOOSCommClient::CMOOSCommClient(goby::core::CMOOSApp& base)
-    : base_(base)
-{ }
-
-bool goby::core::CMOOSApp::CMOOSCommClient::Notify(const std::string &sVar,
-                                           const std::string & sVal,
-                                           const std::string & sSrcAux,
-                                           double dfTime/*=-1*/)
+void goby::core::CMOOSApp::handle_incoming(const goby::core::proto::CMOOSMsgBase& heart)
 {
-    CMOOSMsg Msg(MOOS_NOTIFY,sVar.c_str(),sVal.c_str(),dfTime);
-    Msg.SetSourceAux(sSrcAux);
-    return Post(Msg);
+    glogger() << warn << "******RECEIVED********" << heart << std::endl;
+    
+    goby::core::CMOOSMsg msg(heart);
+    goby::core::MOOSMSG_LIST in_list(1, msg);
+    OnNewMail(in_list);
 }
+
+
         
 
-bool goby::core::CMOOSApp::CMOOSCommClient::Notify(const std::string & sVar,
-                                           double dfVal,
-                                           const std::string & sSrcAux,
-                                           double dfTime/*=-1*/)
-{
-    CMOOSMsg Msg(MOOS_NOTIFY,sVar.c_str(),dfVal,dfTime);
-    Msg.SetSourceAux(sSrcAux);
-    return Post(Msg);
-}
-
-bool goby::core::CMOOSApp::CMOOSCommClient::Register(const std::string & sVar,double dfInterval)
-{
-    base_.goby::core::ApplicationBase::subscribe(
-        &goby::core::CMOOSApp::handle_incoming,
-        &base_,
-        make_filter("key", Filter::EQUAL, sVar));
-    
-    return true;
-}
-
-bool goby::core::CMOOSApp::CMOOSCommClient::Post(CMOOSMsg& Msg)
-{
-    Msg.m_sSrc = base_.application_name();
-    Msg.m_sOriginatingCommunity = base_.community_;
-    
-    base_.goby::core::ApplicationBase::publish(moosmsg2proto_mimic(Msg));
-    return true;
-}
-
-goby::core::proto::CMOOSMsg goby::core::CMOOSApp::moosmsg2proto_mimic(const CMOOSMsg& in)
-{
-    static goby::core::proto::CMOOSMsg out;
-    out.set_msg_type(in.m_cMsgType);
-    out.set_data_type(in.m_cDataType);
-    out.set_key(in.m_sKey);
-    out.set_msg_id(in.m_nID);
-    out.set_time(in.m_dfTime);
-    out.set_d_val(in.m_dfVal);
-    out.set_s_val(in.m_sVal);
-    out.set_src(in.m_sSrc);
-    out.set_src_aux(in.m_sSrcAux);
-    out.set_originating_community(in.m_sOriginatingCommunity);
-    return out;
-}
+// goby::core::proto::CMOOSMsg goby::core::CMOOSApp::moosmsg2proto_mimic(const CMOOSMsg& in)
+// {
+//     static goby::core::proto::CMOOSMsg out;
+//     out.set_msg_type(in.m_cMsgType);
+//     out.set_data_type(in.m_cDataType);
+//     out.set_key(in.m_sKey);
+//     out.set_msg_id(in.m_nID);
+//     out.set_time(in.m_dfTime);
+//     out.set_d_val(in.m_dfVal);
+//     out.set_s_val(in.m_sVal);
+//     out.set_src(in.m_sSrc);
+//     out.set_src_aux(in.m_sSrcAux);
+//     out.set_originating_community(in.m_sOriginatingCommunity);
+//     return out;
+// }
     
 
-CMOOSMsg goby::core::CMOOSApp::proto_mimic2moosmsg(const goby::core::proto::CMOOSMsg& in)
-{
-    static CMOOSMsg out;
-    out.m_cMsgType = in.msg_type();
-    out.m_cDataType = in.data_type();
-    out.m_sKey = in.key();
-    out.m_nID = in.msg_id();
-    out.m_dfTime = in.time();
-    out.m_dfVal = in.d_val();
-    out.m_sVal = in.s_val();
-    out.m_sSrc = in.src();
-    out.m_sSrcAux = in.src_aux();
-    out.m_sOriginatingCommunity = in.originating_community();
-    return out;
-}
+// CMOOSMsg goby::core::CMOOSApp::proto_mimic2moosmsg(const goby::core::proto::CMOOSMsg& in)
+// {
+//     static CMOOSMsg out;
+//     out.m_cMsgType = in.msg_type();
+//     out.m_cDataType = in.data_type();
+//     out.m_sKey = in.key();
+//     out.m_nID = in.msg_id();
+//     out.m_dfTime = in.time();
+//     out.m_dfVal = in.d_val();
+//     out.m_sVal = in.s_val();
+//     out.m_sSrc = in.src();
+//     out.m_sSrcAux = in.src_aux();
+//     out.m_sOriginatingCommunity = in.originating_community();
+//     return out;
+// }

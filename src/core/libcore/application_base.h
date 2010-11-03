@@ -105,14 +105,20 @@ namespace goby
             
             /// \name Publish / Subscribe
             //@{
-            /// \brief Publish a message (of any type derived from google::protobuf::Message) to all subscribers
-            ///
-            /// \param msg Message to publish
+            
+            /// \brief Interplatform publishing options. `self` publishes only to the local gobyd, `other` also attempts to transmit to the name other platform, and `all` attempts to transmit to all known platforms
             enum PublishDestination { self, other, all };
 
+            /// \brief Publish a message (of any type derived from google::protobuf::Message)
+            ///
+            /// \param msg Message to publish
+            /// \param platform_name Platform to send to as well as `self` if PublishDestination == other
             template<PublishDestination dest, typename ProtoBufMessage>
                 void publish(const ProtoBufMessage& msg, const std::string& platform_name = "");
 
+            /// \brief Publish a message (of any type derived from google::protobuf::Message) to all local subscribers (self)
+            ///
+            /// \param msg Message to publish
             template<typename ProtoBufMessage>
                 void publish(const ProtoBufMessage& msg)
             { publish<self>(msg); }
@@ -132,7 +138,7 @@ namespace goby
             /// \param mem_func Member function (method) of class C with a signature of void C::mem_func(const ProtoBufMessage& msg)
             /// \param obj pointer to the object whose member function (mem_func) to call
             /// \param filter (optional) Filter object to reject some subset of ProtoBufMessages.
-            template<class C, typename ProtoBufMessage>
+            template<typename ProtoBufMessage, class C>
                 void subscribe(void(C::*mem_func)(const ProtoBufMessage&),
                                C* obj,
                                const proto::Filter& filter = proto::Filter())

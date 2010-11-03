@@ -7,14 +7,14 @@ public:
     HelloWorld2()
         {
             // subscribe for all messages of type HelloWorldMsg
-            subscribe<HelloWorldMsg>();
+            subscribe<HelloWorldMsg>(&HelloWorld2::receive_msg, this);
         }
 
 private:
-    void loop()
+    void receive_msg(const HelloWorldMsg& msg)
         {
             // print to the log the newest received "HelloWorldMsg"
-            glogger() << "newest message is: " << newest<HelloWorldMsg>() << std::endl;
+            glogger() << "received: " << msg << std::endl;
         }
 };
 

@@ -7,9 +7,6 @@
 // create our Goby Application with ApplicationBase as a public base
 class HelloWorld1 : public goby::core::ApplicationBase
 {
- public:
-   HelloWorld1() { }
-    
 private:
     // loop() is a virtual method of ApplicationBase that is called
     // at 10 Hz (by default)

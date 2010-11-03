@@ -1,0 +1,46 @@
+import "goby/core/proto/header.proto";
+
+message NMEASentence
+{
+  // e.g. "GP"
+  required string talker_id = 1;
+  // e.g. "GGA"
+  required string sentence_id = 2;
+  // e.g. 71
+  required uint32 checksum = 3;
+  // e.g. part[0] = $GPGGA
+  //      part[1] = 123519
+  //      part[2] = 4807.038
+  //      part[3] = N
+  // and so on
+  repeated string part = 4;
+}
+
+message GPSSentenceGGA
+{
+  // time is in header
+  required Header header = 1;
+  required NMEASentence nmea = 2;
+
+  // decimal degrees
+  required double lat = 3;
+  required double lon = 4;
+
+  enum FixQuality
+  {
+    INVALID = 0;
+    GPS_FIX = 1;
+    DGPS_FIX = 2;
+    PPS_FIX = 3;
+    REAL_TIME_KINEMATIC = 4;
+    FLOAT_RTK = 5;
+    ESTIMATED = 6;
+    MANUAL_MODE = 7;
+    SIMULATION_MODE = 8;
+  }
+  required FixQuality fix_quality = 5;
+  required uint32 num_satellites = 6;
+  required float horiz_dilution = 7;
+  required double altitude = 8;
+  required double geoid_height = 9;
+}

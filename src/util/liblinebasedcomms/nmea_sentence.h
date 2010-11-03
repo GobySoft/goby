@@ -47,7 +47,7 @@ namespace goby
             enum strategy { IGNORE, VALIDATE, REQUIRE };
             
             NMEASentence() {}
-            NMEASentence(std::string s, strategy cs_strat);
+            NMEASentence(std::string s, strategy cs_strat = VALIDATE);
 
             // Bare message, no checksum or \r\n
             std::string message_no_cs() const;
@@ -69,7 +69,7 @@ namespace goby
             template<typename T>
                 T as(int i) { return goby::util::as<T>(at(i)); }
             
-
+            
             template<typename T>
                 void push_back(T t)
             { std::vector<std::string>::push_back(goby::util::as<std::string>(t)); }

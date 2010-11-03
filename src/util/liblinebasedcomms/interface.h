@@ -51,6 +51,13 @@ namespace goby
             std::string readline()
             { return readline_oldest(); }
 
+            bool readline(std::string* s)
+            {
+                *s = readline_oldest();
+                return !s->empty();
+            }
+            
+            
             // write a line to the buffer
             void write(const std::string& msg);
 

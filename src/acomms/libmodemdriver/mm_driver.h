@@ -101,7 +101,7 @@ namespace goby
             void cyc(util::NMEASentence& nmea, ModemMessage& m);
     
             // utility    
-            boost::posix_time::ptime modem_time2ptime(const std::string& mt);
+            static boost::posix_time::ptime modem_time2ptime(const std::string& mt);
 
             // doxygen
             /// \example libmodemdriver/examples/driver_simple/driver_simple.cpp

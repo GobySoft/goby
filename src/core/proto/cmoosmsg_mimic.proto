@@ -1,12 +1,12 @@
 package goby.core.proto;
 
 // contains the same information as a CMOOSMsg
-message CMOOSMsg
+message CMOOSMsgBase
 {
     required int32 msg_type = 1;
     required int32 data_type = 2;
     required string key = 3;
-    required int32 msg_id = 4;
+    optional int32 msg_id = 4;
     required double time = 5;
     optional double d_val = 6;
     optional string s_val = 7;

@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e -u
 # ~~~~~~~~~~~~~~~~~~~~~~~
 # third-party dependencies
 # ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -10,9 +11,20 @@
 
 # most other distributions will have the appropriate
 # package as well; it's up to you to find out what it is.
-# if you don't know what a package is, see http://packages.ubuntu.com/
+# if you don't know what a package is or does,
+# search for it on http://packages.ubuntu.com/
+# and you should be able to find the analog for your system
+# if that fails, you can always download and compile from source
+#
+# if you need to compile boost from source, I recommend
+# the boost-cmake distribution rather than the official
+# bjam distribution. See https://svn.boost.org/trac/boost/wiki/CMake
 
 # global:
+# build-essential: gcc, c++ library, etc.
+# cmake: Cross Platform Make: http://www.cmake.org/
+# boost: header-only libraries in boost: http://www.boost.org/
+# asio: asynchronous IO: http://think-async.com/
 sudo apt-get install \
     build-essential \
     cmake \
@@ -21,20 +33,34 @@ sudo apt-get install \
     libasio-dev
 
 # libdccl / libqueue:
+# xerces: Apache XML parser: http://xerces.apache.org/xerces-c/
+# crypto++: Cryptography: http://www.cryptopp.com/
 sudo apt-get install \
     libxerces-c-dev \
     libcrypto++-dev
 
 # libmmdriver:
+# boost-*: compiled libraries in boost: http://www.boost.org
 sudo apt-get install \
-    libasio-dev \
     libboost-date-time-dev \
     libboost-thread-dev \
     libboost-regex-dev
 
 # core
+# protobuf: Google Protocol Buffers: http://code.google.com/p/protobuf/
+# boost-*: compiled libraries in boost: http://www.boost.org
 sudo apt-get install \
-     libprotobuf-dev \
+    libprotobuf-dev \
+    libboost-program-options-dev \
+    libboost-signals-dev \
+    libboost-system-dev \
+    libboost-filesystem-dev
+
+# Wt: Web Toolkit: http://www.webtoolkit.eu/wt
+# packages are provided on Ubuntu 10.10 (maverick) only, 
+# others will have to download Wt and compile from source:
+# http://www.webtoolkit.eu/wt#/download
+sudo apt-get install \
      libwt-dev \
      libwtdbo-dev \
      libwtdbosqlite-dev

@@ -1,0 +1,7 @@
+Community = unicorn
+
+ProcessConfig = Simulator
+{
+        AppTick = 10
+        verbosity = debug
+}

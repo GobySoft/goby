@@ -23,7 +23,7 @@
 
 #include "nmea_sentence.h"
 
-goby::util::NMEASentence::NMEASentence(std::string s, strategy cs_strat = VALIDATE)
+goby::util::NMEASentence::NMEASentence(std::string s, strategy cs_strat /*= VALIDATE*/)
 {
     bool found_csum = false;
     unsigned int cs;

@@ -53,6 +53,21 @@ namespace goby
                 sb_.name(s);
             }
 
+            void add_stream(const std::string& verbosity, std::ostream* os = 0)
+            {
+                if(verbosity == "scope" || verbosity == "gui")        
+                    add_stream(goby::util::Logger::gui, os);
+                else if(verbosity == "quiet")        
+                    add_stream(goby::util::Logger::quiet, os);
+                else if(verbosity == "terse" || verbosity == "warn")        
+                    add_stream(goby::util::Logger::warn, os);
+                else if(verbosity == "debug")        
+                    add_stream(goby::util::Logger::debug, os);
+                else
+                    add_stream(goby::util::Logger::verbose, os);
+            }
+            
+            
             /// Attach a stream object (e.g. std::cout, std::ofstream, ...) to the logger with desired verbosity
             void add_stream(Logger::Verbosity verbosity = Logger::verbose, std::ostream* os = 0)
             {
@@ -104,23 +119,22 @@ namespace goby
             { return Logger::mutex; }
             //@}
 
-            
-          private:            
-            void set_group(const std::string & s)
-            {
-                sb_.group_name(s);
-            }            
             void refresh()
             {
                 sb_.refresh();
             }
+            void set_group(const std::string & s)
+            {
+                sb_.group_name(s);
+            }            
+            
+          private:            
             bool quiet()
             { return (sb_.is_quiet()); }
             
             
             friend FlexOstream& glogger(logger_lock::LockAction lock_action);
 
-            friend void GroupSetter::operator()(FlexOstream& os) const;
             friend std::ostream& operator<< (FlexOstream& out, char c );
             friend std::ostream& operator<< (FlexOstream& out, signed char c );
             friend std::ostream& operator<< (FlexOstream& out, unsigned char c );

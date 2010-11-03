@@ -32,13 +32,6 @@ namespace goby
         /// \name Message Queue Utilities
         //@{
 
-        /// \brief create the name of the queue for connecting to gobyd
-        ///
-        /// \param self_name name of the current platform (e.g. "unicorn")
-        /// \return string name of the boost::interprocess::message_queue for connecting to gobyd
-        inline std::string name_connect_listen(const std::string& self_name)
-        { return CONNECT_LISTEN_QUEUE_PREFIX + self_name; }
-
         /// \brief create the name of the queue for the gobyd connection response
         ///
         /// \param self_name name of the current platform (e.g. "unicorn")
@@ -47,6 +40,14 @@ namespace goby
         inline std::string name_connect_response(const std::string& self_name,
                                                   const std::string& app_name)
         { return CONNECT_LISTEN_QUEUE_PREFIX + app_name + "_" + self_name; }
+
+        /// \brief create the name of the queue for connecting to gobyd
+        ///
+        /// \param self_name name of the current platform (e.g. "unicorn")
+        /// \return string name of the boost::interprocess::message_queue for connecting to gobyd
+        inline std::string name_connect_listen(const std::string& self_name)
+        { return CONNECT_LISTEN_QUEUE_PREFIX + self_name; }
+
         
         /// \brief create the name of the queue for sending messages to gobyd from the Application
         ///

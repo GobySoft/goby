@@ -1,0 +1,19 @@
+import "goby/core/proto/header.proto";
+
+message NodeReport
+{
+  required Header header = 1;
+  required string name = 2;
+  enum VehicleType { auv = 1; usv = 2; ship = 3; glider = 4; }
+  required VehicleType type = 3;
+  required double lat = 4;
+  required double lon = 5;
+  required float x = 6;
+  required float y = 7;
+  required float speed = 8;
+  required float heading = 9;
+  optional float depth = 10 [default = 0];
+  optional float roll = 11;
+  optional float pitch = 12;
+  optional float yaw = 13;
+}

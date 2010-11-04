@@ -22,7 +22,7 @@
 goby::util::TCPClient::TCPClient(const std::string& server,
                                  unsigned port,
                                  const std::string& delimiter /*= "\r\n"*/)
-    : LineBasedClient<asio::ip::tcp::socket>(socket_, delimiter),
+    : LineBasedClient<boost::asio::ip::tcp::socket>(socket_, delimiter),
       socket_(io_service_),
       server_(server),
       port_(as<std::string>(port))
@@ -31,12 +31,12 @@ goby::util::TCPClient::TCPClient(const std::string& server,
 
 bool goby::util::TCPClient::start_specific()
 {
-    asio::ip::tcp::resolver resolver(io_service_);
-    asio::ip::tcp::resolver::query query(server_, port_);
-    asio::ip::tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
-    asio::ip::tcp::resolver::iterator end;
+    boost::asio::ip::tcp::resolver resolver(io_service_);
+    boost::asio::ip::tcp::resolver::query query(server_, port_);
+    boost::asio::ip::tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
+    boost::asio::ip::tcp::resolver::iterator end;
 
-    asio::error_code error = asio::error::host_not_found;
+    boost::system::error_code error = boost::asio::error::host_not_found;
     while (error && endpoint_iterator != end)
     {
         socket_.close();

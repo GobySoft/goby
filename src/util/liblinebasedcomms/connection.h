@@ -48,20 +48,20 @@ namespace goby
                 async_read_until(socket_, buffer_, delimiter_,
                                  boost::bind(&LineBasedConnection::read_complete,
                                              this,
-                                             asio::placeholders::error));
+                                             boost::asio::placeholders::error));
             }
             
             void write_start()
             { // Start an asynchronous write and call write_complete when it completes or fails
                 
-                asio::async_write(socket_,
-                                  asio::buffer(out_.front()),
-                                  boost::bind(&LineBasedConnection::write_complete,
-                                              this,
-                                              asio::placeholders::error));
+                boost::asio::async_write(socket_,
+                                         boost::asio::buffer(out_.front()),
+                                         boost::bind(&LineBasedConnection::write_complete,
+                                                     this,
+                                                     boost::asio::placeholders::error));
             }
             
-            void read_complete(const asio::error_code& error)
+            void read_complete(const boost::system::error_code& error)
             {     
                 if(error) return socket_close(error);
 
@@ -86,7 +86,7 @@ namespace goby
                 read_start(); // start waiting for another asynchronous read again
             }    
 
-            void write_complete(const asio::error_code& error)
+            void write_complete(const boost::system::error_code& error)
             { // the asynchronous read operation has now completed or failed and returned an error
                 if(error) return socket_close(error);
                 
@@ -95,7 +95,7 @@ namespace goby
                     write_start(); // then start sending the next item in the buffer
             }
 
-            virtual void socket_close(const asio::error_code& error) = 0;
+            virtual void socket_close(const boost::system::error_code& error) = 0;
 
           private:
             ASIOAsyncReadStream& socket_;
@@ -103,7 +103,7 @@ namespace goby
             std::deque<std::string>& in_; // buffered read data
             boost::mutex& in_mutex_;
             
-            asio::streambuf buffer_; 
+            boost::asio::streambuf buffer_; 
             std::string delimiter_;
             std::string extra_;
         };

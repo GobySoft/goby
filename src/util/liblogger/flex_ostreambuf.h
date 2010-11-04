@@ -35,6 +35,8 @@ namespace goby
     namespace util
     {
 
+        class FlexNCurses;
+
         /// Holds static objects of the Goby Logger
         struct Logger
         {
@@ -42,7 +44,6 @@ namespace goby
             enum Verbosity { quiet, warn, verbose, debug, gui };
         };        
         
-        class FlexNCurses;
         
         /// Class derived from std::stringbuf that allows us to insert things before the stream and control output. This is the string buffer used by goby::util::FlexOstream for the Goby Logger (glogger)
         class FlexOStreamBuf : public std::stringbuf
@@ -125,8 +126,9 @@ namespace goby
             bool warn_flag_;
             bool debug_flag_;
 
+#if HAS_NCURSES
             FlexNCurses* curses_;
-            
+#endif            
             boost::shared_ptr<boost::thread> input_thread_;
 
             boost::posix_time::ptime start_time_;

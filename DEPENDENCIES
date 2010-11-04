@@ -4,11 +4,6 @@ set -e -u
 # third-party dependencies
 # ~~~~~~~~~~~~~~~~~~~~~~~~
 
-# these are given as debian/ubuntu package names.
-# to install in these distributions use (as root or with
-# sudo):
-# > apt-get install {packagename}
-
 # most other distributions will have the appropriate
 # package as well; it's up to you to find out what it is.
 # if you don't know what a package is or does,
@@ -20,47 +15,60 @@ set -e -u
 # the boost-cmake distribution rather than the official
 # bjam distribution. See https://svn.boost.org/trac/boost/wiki/CMake
 
-# global:
 # build-essential: gcc, c++ library, etc.
 # cmake: Cross Platform Make: http://www.cmake.org/
 # boost: header-only libraries in boost: http://www.boost.org/
-# asio: asynchronous IO: http://think-async.com/
-sudo apt-get install \
-    build-essential \
-    cmake \
-    libboost-dev \
-    libncurses-dev \
-    libasio-dev
-
-# libdccl / libqueue:
+# boost-*: compiled libraries in boost: http://www.boost.org
 # xerces: Apache XML parser: http://xerces.apache.org/xerces-c/
 # crypto++: Cryptography: http://www.cryptopp.com/
-sudo apt-get install \
-    libxerces-c-dev \
-    libcrypto++-dev
-
-# libmmdriver:
-# boost-*: compiled libraries in boost: http://www.boost.org
-sudo apt-get install \
-    libboost-date-time-dev \
-    libboost-thread-dev \
-    libboost-regex-dev
-
-# core
 # protobuf: Google Protocol Buffers: http://code.google.com/p/protobuf/
-# boost-*: compiled libraries in boost: http://www.boost.org
-sudo apt-get install \
-    libprotobuf-dev \
-    libboost-program-options-dev \
-    libboost-signals-dev \
-    libboost-system-dev \
-    libboost-filesystem-dev
+# wt*: Web Toolkit: http://www.webtoolkit.eu/wt
+#   packages are provided on Ubuntu 10.10 (maverick) only, 
+#   others will have to download Wt and compile from source:
+#   http://www.webtoolkit.eu/wt#/download
 
-# Wt: Web Toolkit: http://www.webtoolkit.eu/wt
-# packages are provided on Ubuntu 10.10 (maverick) only, 
-# others will have to download Wt and compile from source:
-# http://www.webtoolkit.eu/wt#/download
-sudo apt-get install \
-     libwt-dev \
-     libwtdbo-dev \
-     libwtdbosqlite-dev
+if [[ $UID -ne 0 ]]; then
+    printf "You must run this script as root. Use 'sudo' in Ubuntu. \n" 1>&2
+    exit 1
+fi
+
+
+red="\33[1;31m"
+nc="\33[1;0m"
+green="\33[1;32m"
+
+debian_base_packages=\
+"build-essential 
+cmake"
+
+debian_boost_packages=\
+"libboost-dev
+libboost-system-dev
+libboost-date-time-dev
+libboost-thread-dev
+libboost-regex-dev
+libboost-program-options-dev
+libboost-signals-dev
+libboost-filesystem-dev"
+
+debian_other_packages=\
+"libxerces-c-dev
+libcrypto++-dev
+libncurses-dev
+libprotobuf-dev"
+
+debian_wt_packages=\
+"libwt-dev
+libwtdbo-dev
+libwtdbosqlite-dev"
+
+if [ -e "`which apt-get`" ]; then
+    apt-get -y install $debian_base_packages || printf $red"Could not install base packages\n"$nc
+    apt-get -y install $debian_boost_packages || printf $red"Could not install boost packages: see http://www.boost.org/\n"$nc
+    apt-get -y install $debian_other_packages || printf $red"Could not install some packages: read the top of this file (DEPENDENCIES)\n"$nc
+    apt-get -y install $debian_wt_packages || printf $red"Could not install Wt packages: you need to download from source. See http://www.webtoolkit.eu/wt#/download\n"$nc
+fi
+
+
+#redhat_packages=\
+#""

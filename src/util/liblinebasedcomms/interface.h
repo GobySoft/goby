@@ -24,7 +24,7 @@
 #include <boost/thread.hpp>
 #include <boost/bind.hpp>
 #include <boost/array.hpp>
-#include <asio.hpp>
+#include <boost/asio.hpp>
 
 #include "goby/util/time.h"
 
@@ -75,16 +75,16 @@ namespace goby
             // all implementors of this line based interface must provide do_start, do_write, do_close, and put all read data into "in_"
             virtual void do_start() = 0;
             virtual void do_write(const std::string & line) = 0;
-            virtual void do_close(const asio::error_code& error) = 0;            
+            virtual void do_close(const boost::system::error_code& error) = 0;            
 
             void set_active(bool active) { active_ = active; }
             
-            asio::io_service io_service_; // the main IO service that runs this connection
+            boost::asio::io_service io_service_; // the main IO service that runs this connection
             std::deque<std::string> in_; // buffered read data
             boost::mutex in_mutex_;
             
           private:
-            asio::io_service::work work_;
+            boost::asio::io_service::work work_;
             bool active_; // remains true while this object is still operating
             
         };        

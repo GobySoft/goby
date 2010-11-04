@@ -26,7 +26,7 @@ namespace goby
 {
     namespace util
     {    
-        class SerialClient: public LineBasedClient<asio::serial_port>
+        class SerialClient: public LineBasedClient<boost::asio::serial_port>
         {
           public:
             SerialClient(const std::string& name = "",
@@ -44,7 +44,7 @@ namespace goby
   
           private:
             static std::map<std::string, SerialClient*> inst_;
-            asio::serial_port serial_port_; // the serial port this instance is connected to
+            boost::asio::serial_port serial_port_; // the serial port this instance is connected to
             std::string name_;
             unsigned baud_;
         

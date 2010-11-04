@@ -24,11 +24,19 @@
 #include <boost/assign.hpp>
 #include <boost/foreach.hpp>
 #include <boost/bind.hpp>
+#include <boost/date_time.hpp>
+
+//#ifdef HAS_NCURSES
+#include "flex_ncurses.h"
+//#endif
 
 #include "flex_ostreambuf.h"
-#include "flex_ncurses.h"
 #include "goby/util/sci.h"
+#include "goby/util/time.h"
+#include "goby/core/libcore/exception.h"
 #include "logger_manipulators.h"
+
+
 
 boost::mutex curses_mutex;
 
@@ -38,7 +46,9 @@ goby::util::FlexOStreamBuf::FlexOStreamBuf(): name_("no name"),
                                               die_flag_(false),
                                               debug_flag_(false),
                                               warn_flag_(false),
+#ifdef HAS_NCURSES
                                               curses_(0),
+#endif
                                               start_time_(goby_time()),
                                               is_quiet_(true),
                                               is_gui_(false)
@@ -50,7 +60,9 @@ goby::util::FlexOStreamBuf::FlexOStreamBuf(): name_("no name"),
 
 goby::util::FlexOStreamBuf::~FlexOStreamBuf()
 {
+#ifdef HAS_NCURSES    
     if(curses_) delete curses_;
+#endif
 }
 
 void goby::util::FlexOStreamBuf::add_stream(Logger::Verbosity verbosity, std::ostream* os)
@@ -61,9 +73,10 @@ void goby::util::FlexOStreamBuf::add_stream(Logger::Verbosity verbosity, std::os
         if(sc.os() == os)
             return;
     }
-    
+
     if(verbosity == Logger::gui)
     {
+#ifdef HAS_NCURSES    
         if(is_gui_) return;
         
         is_gui_ = true;
@@ -82,7 +95,9 @@ void goby::util::FlexOStreamBuf::add_stream(Logger::Verbosity verbosity, std::os
         curses_->recalculate_win();
 
         input_thread_ = boost::shared_ptr<boost::thread>(new boost::thread(boost::bind(&FlexNCurses::run_input, curses_)));
-
+#else
+        throw(goby::Exception("Tried to use verbosity==gui without compiling against NCurses. Install NCurses and recompile goby or use a different verbosity"));
+#endif
     }
     else if(verbosity != Logger::quiet)
     {
@@ -97,11 +112,13 @@ void goby::util::FlexOStreamBuf::add_group(const std::string & name, Group g)
     
     groups_[name] = g;
 
+#ifdef HAS_NCURSES    
     if(is_gui_)
     {
         boost::mutex::scoped_lock lock(curses_mutex);
         curses_->add_win(&groups_[name]);
     }
+#endif
 }
 
 
@@ -127,6 +144,8 @@ int goby::util::FlexOStreamBuf::sync()
 
 void goby::util::FlexOStreamBuf::display(std::string & s)
 {
+
+#ifdef HAS_NCURSES    
     if(is_gui_)
     {
         if(!die_flag_)
@@ -152,7 +171,8 @@ void goby::util::FlexOStreamBuf::display(std::string & s)
             std::cout << TermColor::esc_code_from_col(groups_[group_name_].color()) << name_ << esc_nocolor << ": " << s << esc_nocolor << std::endl;
         }           
     }
-
+#endif
+    
     BOOST_FOREACH(const StreamConfig& cfg, streams_)
     {
         if(cfg.os() == &std::cout || cfg.os() == &std::cerr || cfg.os() == &std::clog)
@@ -194,11 +214,13 @@ void goby::util::FlexOStreamBuf::display(std::string & s)
 
 void goby::util::FlexOStreamBuf::refresh()
 {
+#ifdef HAS_NCURSES
     if(is_gui_)
     {
         boost::mutex::scoped_lock lock(curses_mutex);
         curses_->recalculate_win();
     }
+#endif
 }
 
 // clean out any escape codes for non terminal streams

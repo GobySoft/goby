@@ -63,9 +63,9 @@ namespace goby
             }
 
             // from LineBasedInterface
-            void do_close(const asio::error_code& error)
+            void do_close(const boost::system::error_code& error)
             { 
-                if (error == asio::error::operation_aborted) // if this call is the result of a timer cancel()
+                if (error == boost::asio::error::operation_aborted) // if this call is the result of a timer cancel()
                     return; // ignore it because the connection cancelled the timer
                 
                 set_active(false);
@@ -80,7 +80,7 @@ namespace goby
             }
 
             // same as do_close in this case
-            void socket_close(const asio::error_code& error)
+            void socket_close(const boost::system::error_code& error)
             { do_close(error); }
             
                 

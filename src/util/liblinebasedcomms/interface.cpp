@@ -59,7 +59,7 @@ goby::util::LineBasedInterface::LineBasedInterface()
     : work_(io_service_),
       active_(false)
 {
-    boost::thread t(boost::bind(&asio::io_service::run, &io_service_));
+    boost::thread t(boost::bind(&boost::asio::io_service::run, &io_service_));
 }
 
 // pass the write data via the io service in the other thread
@@ -68,4 +68,4 @@ void goby::util::LineBasedInterface::write(const std::string& msg)
 
 // call the do_close function via the io service in the other thread
 void goby::util::LineBasedInterface::close()
-{ io_service_.post(boost::bind(&LineBasedInterface::do_close, this, asio::error_code())); }
+{ io_service_.post(boost::bind(&LineBasedInterface::do_close, this, boost::system::error_code())); }

@@ -124,10 +124,10 @@ void goby::acomms::MACManager::startup()
         restart_timer();
 }
 
-void goby::acomms::MACManager::send_poll(const asio::error_code& e)
+void goby::acomms::MACManager::send_poll(const boost::system::error_code& e)
 {    
     // canceled the last timer
-    if(e == asio::error::operation_aborted) return;   
+    if(e == boost::asio::error::operation_aborted) return;   
     
     const Slot& s = (*current_slot_)->second;
     unsigned id = s.src();

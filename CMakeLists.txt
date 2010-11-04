@@ -9,65 +9,69 @@
 cmake_minimum_required(VERSION 2.6.0 FATAL_ERROR)
 project(goby)
      
-# fetch all the local directories for generated code
+## fetch all the local directories for generated code
 get_filename_component(goby_LIB_DIR lib ABSOLUTE)
 get_filename_component(goby_BIN_DIR bin ABSOLUTE)
 get_filename_component(goby_INC_DIR include ABSOLUTE)
 get_filename_component(goby_SRC_DIR src ABSOLUTE)
 get_filename_component(goby_BUILD_DIR build ABSOLUTE)
 
-# set the cmake defaults for libraries and binaries
+## set the cmake defaults for libraries and binaries
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${goby_LIB_DIR} CACHE PATH 
   "Output directory for the libraries" )
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${goby_BIN_DIR} CACHE PATH
   "Output directory for the binaries" )
 
 
-# set instructions for `make install`
+## set instructions for `make install`
 install(DIRECTORY ${goby_BIN_DIR}/ DESTINATION /usr/local/bin FILE_PERMISSIONS WORLD_EXECUTE)
 install(DIRECTORY ${goby_LIB_DIR}/ DESTINATION /usr/local/lib)
 install(DIRECTORY ${goby_INC_DIR}/ DESTINATION /usr/local/include)
 
-# allows use to write custom modules or modifying existing ones
+## allows use to write custom modules or modifying existing ones
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules/")
 
-# find packages, libraries, and headers
-find_package(Boost 1.36.0 COMPONENTS date_time thread regex program_options filesystem)
-set(CURSES_NEED_NCURSES TRUE)
-find_package(Curses)
-# need custom FindProtoBuf because packaged one is missing options
-find_package(ProtobufGoby REQUIRED)
+## find external packages, libraries, and headers for the entire goby project
+# mandatory
+find_package(Boost 1.36.0 COMPONENTS system date_time thread regex program_options signals filesystem)
 find_library(Xerces_LIB_FOUND xerces-c)
 find_file(Xerces_H_FOUND xercesc/sax2/SAX2XMLReader.hpp)
 if(Xerces_LIB_FOUND AND Xerces_H_FOUND)
   set(Xerces_FOUND TRUE)
 endif()
-find_file(Asio_H_FOUND asio.hpp)
-if(Asio_H_FOUND)
-  set(Asio_FOUND TRUE)
-endif()
 
-# give the user a useful warning if third party dependencies
-# are missing
-foreach(I Boost CURSES Xerces Asio)
+foreach(I Boost Xerces)
   if(NOT ${I}_FOUND)
     message(FATAL_ERROR "missing required external library: ${I}. read and/or execute the goby/DEPENDENCIES file to resolve.")
   endif()
 endforeach()
 
+#optional
+set(CURSES_NEED_NCURSES TRUE)
+find_package(Curses)
+if(CURSES_FOUND)
+  add_definitions(-DHAS_NCURSES)
+endif()
 
-# copy to goby/include
+foreach(I CURSES)
+  if(NOT ${I}_FOUND)
+    message(WARNING "missing optional external library: ${I}. Goby will function without the support of this library. See http://gobysoft/doc for more information.")
+  endif()
+endforeach()
+
+
+## copy to goby/include
 file(GLOB_RECURSE INCLUDE_FILES RELATIVE ${goby_SRC_DIR} src/*.h src/*.proto)
 foreach(I ${INCLUDE_FILES})
   configure_file(${goby_SRC_DIR}/${I} ${goby_INC_DIR}/goby/${I} COPYONLY)
 endforeach()
 
 
-# let cmake know where the headers are
+## let cmake know where the headers are
 include_directories(${goby_INC_DIR})
 include_directories(${Boost_INCLUDE_DIR})
 
 
-# start adding subdirectories
+## start adding subdirectories
 add_subdirectory(src)
 

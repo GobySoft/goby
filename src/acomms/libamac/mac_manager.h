@@ -26,7 +26,7 @@
 #include <boost/function.hpp>
 #include <boost/foreach.hpp>
 #include <boost/bind.hpp>
-#include "asio.hpp"
+#include <boost/asio.hpp>
 
 #include "goby/util/time.h"
 #include "goby/util/string.h"
@@ -172,7 +172,7 @@ namespace goby
             void do_work();
 
             /// \brief Manually initiate a transmission out of the normal cycle. This is not normally called by the user of MACManager
-            void send_poll(const asio::error_code&);
+            void send_poll(const boost::system::error_code&);
 
             /// \brief Call every time a message is received from vehicle to "discover" this vehicle or reset the expire timer. Only needed when the type is amac::mac_auto_decentralized.
             ///
@@ -284,8 +284,8 @@ namespace goby
             unsigned modem_id_;
     
             // asynchronous timer
-            asio::io_service io_;
-            asio::deadline_timer timer_;
+            boost::asio::io_service io_;
+            boost::asio::deadline_timer timer_;
             bool timer_is_running_;
     
             boost::posix_time::ptime next_cycle_t_;

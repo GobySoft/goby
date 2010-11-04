@@ -24,7 +24,7 @@ namespace goby
 {
     namespace util
     {    
-        class TCPClient : public LineBasedClient<asio::ip::tcp::socket>
+        class TCPClient : public LineBasedClient<boost::asio::ip::tcp::socket>
         {
           public:
             TCPClient(const std::string& server,
@@ -41,7 +41,7 @@ namespace goby
         
           private:
             static std::map<std::string, TCPClient*> inst_;
-            asio::ip::tcp::socket socket_;
+            boost::asio::ip::tcp::socket socket_;
             std::string server_;
             std::string port_;
 

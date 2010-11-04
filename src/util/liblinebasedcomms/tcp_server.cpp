@@ -16,7 +16,7 @@
 
 #include "tcp_server.h"
 
-boost::shared_ptr<goby::util::TCPConnection> goby::util::TCPConnection::create(asio::io_service& io_service,
+boost::shared_ptr<goby::util::TCPConnection> goby::util::TCPConnection::create(boost::asio::io_service& io_service,
                                                                    std::deque<std::string>& in,
                                                                    boost::mutex& in_mutex,
                                                                    const std::string& delimiter)
@@ -32,9 +32,9 @@ void goby::util::TCPConnection::socket_write(const std::string& line) // give it
         write_start();
 }    
 
-void goby::util::TCPConnection::socket_close(const asio::error_code& error)
+void goby::util::TCPConnection::socket_close(const boost::system::error_code& error)
 { // something has gone wrong, so close the socket & make this object inactive
-    if (error == asio::error::operation_aborted) // if this call is the result of a timer cancel()
+    if (error == boost::asio::error::operation_aborted) // if this call is the result of a timer cancel()
         return; // ignore it because the connection cancelled the timer
     
     if(error)
@@ -49,7 +49,7 @@ void goby::util::TCPServer::do_write(const std::string& line)
 }
 
 // close all the connections, it's up to the clients to try to reconnect
-void goby::util::TCPServer::do_close(const asio::error_code& error)
+void goby::util::TCPServer::do_close(const boost::system::error_code& error)
 {
     BOOST_FOREACH(boost::shared_ptr<TCPConnection> c, connections_)
         c->close(error);
@@ -59,10 +59,10 @@ void goby::util::TCPServer::start_accept()
 {
     new_connection_ = TCPConnection::create(acceptor_.io_service(), in_, in_mutex_, delimiter_);
     acceptor_.async_accept(new_connection_->socket(),
-                           boost::bind(&TCPServer::handle_accept, this, new_connection_, asio::placeholders::error));
+                           boost::bind(&TCPServer::handle_accept, this, new_connection_, boost::asio::placeholders::error));
 }
 
-void goby::util::TCPServer::handle_accept(boost::shared_ptr<TCPConnection> new_connection, const asio::error_code& error)
+void goby::util::TCPServer::handle_accept(boost::shared_ptr<TCPConnection> new_connection, const boost::system::error_code& error)
 {
     if (!error)
     {

@@ -21,7 +21,6 @@
 #define DriverBase20091214H
 
 #include <boost/thread.hpp>
-#include "asio.hpp"
 
 #include "goby/util/linebasedcomms.h"
 #include "goby/acomms/modem_message.h"

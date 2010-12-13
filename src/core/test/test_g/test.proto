@@ -1,3 +1,4 @@
+import "goby/core/proto/header.proto";
 import "goby/core/proto/option_extensions.proto";
 import "goby/core/proto/app_base_config.proto";
 
@@ -10,17 +11,18 @@ message Sub
 }
 
 message TestMessage
-{
-    required double foo = 1;
-    optional string name = 2;
+{       
+    required Header header = 1;
+    required double foo = 2;
+    optional string name = 3;
     enum MyEnum { 
          YES = 1;
          NO = 2;
          MAYBE = 3;
      }
-    optional MyEnum evalue = 3;
-    optional Sub subfoo = 4;
-    repeated string rstr = 5;
+    optional MyEnum evalue = 4;
+    optional Sub subfoo = 5;
+    repeated string rstr = 6;
 }
 
 message TestGConfig

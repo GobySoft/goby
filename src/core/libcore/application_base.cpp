@@ -27,6 +27,7 @@
 #include "goby/core/libcore/configuration_reader.h"
 #include "goby/core/libdbo/dbo_manager.h"
 #include "goby/core/proto/app_base_config.pb.h"
+#include "goby/core/proto/header.pb.h"
 
 #include "application_base.h"
 
@@ -68,10 +69,9 @@ goby::core::ApplicationBase::ApplicationBase(
             for (int i = 0, n = desc->field_count(); i < n; ++i)
             {
                 const google::protobuf::FieldDescriptor* field_desc = desc->field(i);
-                if(field_desc->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE)
+                if(field_desc->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE && field_desc->message_type() == ::AppBaseConfig::descriptor())
                 {
-                    if(field_desc->message_type() == ::AppBaseConfig::descriptor())
-                        base_cfg_.MergeFrom(cfg->GetReflection()->GetMessage(*cfg, field_desc));
+                    base_cfg_.MergeFrom(cfg->GetReflection()->GetMessage(*cfg, field_desc));
                 }
             }
         }
@@ -332,12 +332,89 @@ bool goby::core::ApplicationBase::is_valid_filter(const google::protobuf::Descri
 }
 
 
-void goby::core::ApplicationBase::insert_descriptor_proto(const google::protobuf::Descriptor* descriptor)
+void goby::core::ApplicationBase::insert_file_descriptor_proto(const google::protobuf::FileDescriptor* file_descriptor)
 {
-    if(!registered_protobuf_types_.count(descriptor->full_name()))
+    // copy file descriptor for all dependencies of the new file
+    for(int i = 0, n = file_descriptor->dependency_count(); i < n; ++i)
+        // recursively add dependencies
+        insert_file_descriptor_proto(file_descriptor->dependency(i));
+    
+    // copy descriptor for the new subscription type to the notification message
+    if(!registered_file_descriptors_.count(file_descriptor))
     {
-        // copy descriptor for the new subscription type to the notification message
-        descriptor->file()->CopyTo(notification_.mutable_file_descriptor_proto());
-        registered_protobuf_types_.insert(descriptor->full_name());
+        file_descriptor->CopyTo(notification_.add_file_descriptor_proto());
+        registered_file_descriptors_.insert(file_descriptor);
+    }
+}
+
+void goby::core::ApplicationBase::finalize_header(
+    google::protobuf::Message* msg,
+    const goby::core::ApplicationBase::PublishDestination dest_type,
+    const std::string& dest_platform)
+{
+    const google::protobuf::Descriptor* desc = msg->GetDescriptor();
+    const google::protobuf::Reflection* refl = msg->GetReflection();    
+
+    
+    for (int i = 0, n = desc->field_count(); i < n; ++i)
+    {
+        const google::protobuf::FieldDescriptor* field_desc = desc->field(i);
+        if(field_desc->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE && field_desc->message_type() == ::Header::descriptor())
+        {
+            
+            Header* header = dynamic_cast<Header*>(refl->MutableMessage(msg, field_desc));
+            
+
+            bool has_unix_time = header->has_unix_time();
+            bool has_iso_time = header->has_iso_time();
+
+            // derived app has set neither time, use current time
+            if(!(has_unix_time || has_iso_time))
+            {
+                boost::posix_time::ptime now = goby_time();
+                header->set_unix_time(ptime2unix_double(now));
+                header->set_iso_time(boost::posix_time::to_iso_string(now));
+            }
+            // derived app has set iso time, use this to set unix time
+            else if(has_iso_time)
+            {
+                header->set_unix_time(ptime2unix_double(
+                                          boost::posix_time::from_iso_string(
+                                              header->iso_time())));
+            }
+            // derived app has set unix time, use this to set iso time
+            else if(has_unix_time)
+            {
+                header->set_iso_time(boost::posix_time::to_iso_string(
+                                         unix_double2ptime(
+                                             header->unix_time())));
+            }
+            
+            
+            if(!header->has_source_app())
+                header->set_source_app(base_cfg_.app_name());
+
+            if(!header->has_source_platform())
+                header->set_source_platform(base_cfg_.platform_name());
+
+            switch(dest_type)
+            {
+                case goby::core::ApplicationBase::self:
+                    header->set_dest_type(Header::self);
+                    break;
+                    
+                case goby::core::ApplicationBase::other:
+                    header->set_dest_type(Header::other);
+                    header->set_dest_platform(dest_platform);
+                    break;
+
+                case goby::core::ApplicationBase::all:
+                    header->set_dest_type(Header::all);
+                    break;
+
+            }
+            
+            
+        }
     }
 }

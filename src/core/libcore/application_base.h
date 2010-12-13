@@ -114,13 +114,13 @@ namespace goby
             /// \param msg Message to publish
             /// \param platform_name Platform to send to as well as `self` if PublishDestination == other
             template<PublishDestination dest, typename ProtoBufMessage>
-                void publish(const ProtoBufMessage& msg, const std::string& platform_name = "");
+                void publish(ProtoBufMessage& msg, const std::string& platform_name = "");
 
             /// \brief Publish a message (of any type derived from google::protobuf::Message) to all local subscribers (self)
             ///
             /// \param msg Message to publish
             template<typename ProtoBufMessage>
-                void publish(const ProtoBufMessage& msg)
+                void publish(ProtoBufMessage& msg)
             { publish<self>(msg); }
 
             /// \brief Subscribe to a message (of any type derived from google::protobuf::Message)            
@@ -273,7 +273,15 @@ namespace goby
             // add the protobuf description of the given descriptor (essentially the
             // instructions on how to make the descriptor or message meta-data)
             // to the notification_ message. 
-            void insert_descriptor_proto(const google::protobuf::Descriptor* descriptor);
+            void insert_file_descriptor_proto(const google::protobuf::FileDescriptor* file_descriptor);
+
+            // adds required fields to the Header if not given by the derived application
+            void finalize_header(
+                google::protobuf::Message* msg,
+                const goby::core::ApplicationBase::PublishDestination dest_type,
+                const std::string& dest_platform);
+            
+            
             
             template<typename App>
                 friend int ::goby::run(int argc, char* argv[]);
@@ -339,7 +347,8 @@ namespace goby
 
             // types we have informed the server of already, so we don't always
             // send the message meta-data (descriptor proto)
-            std::set<std::string> registered_protobuf_types_;
+            std::set<const google::protobuf::FileDescriptor*> registered_file_descriptors_;
+            
 
             // how long to wait between calls to loop()
             boost::posix_time::time_duration loop_period_;
@@ -396,12 +405,16 @@ namespace goby
 
 // TODO(tes): implement publish destinations besides "self"
 template<goby::core::ApplicationBase::PublishDestination dest, typename ProtoBufMessage>
-    void goby::core::ApplicationBase::publish(const ProtoBufMessage& msg, const std::string& platform_name /*=  ""*/)
+    void goby::core::ApplicationBase::publish(ProtoBufMessage& msg, const std::string& platform_name /*=  ""*/)
 {
+    // adds, as needed, required fields of Header
+    finalize_header(&msg, dest, platform_name);
+
     // clear the global notification message
     notification_.Clear();
     // we are publishing
     notification_.set_notification_type(proto::Notification::PUBLISH_REQUEST);
+     
     // contents of the message
     google::protobuf::io::StringOutputStream os(
         notification_.mutable_embedded_msg()->mutable_body());
@@ -409,7 +422,7 @@ template<goby::core::ApplicationBase::PublishDestination dest, typename ProtoBuf
     // name of the message
     notification_.mutable_embedded_msg()->set_type(msg.GetDescriptor()->full_name());
     // appends, if needed, the meta data of this type to notification_
-    insert_descriptor_proto(msg.GetDescriptor());
+    insert_file_descriptor_proto(msg.GetDescriptor()->file());
 
     goby::util::glogger() << debug << "< " << notification_ << std::endl;
     send(*to_server_queue_, notification_, buffer_, sizeof(buffer_));
@@ -450,7 +463,7 @@ template<typename ProtoBufMessage>
     // subscribe to this type
     notification_.mutable_embedded_msg()->set_type(type_name);
     // appends, if needed, the meta data of this type to notification_
-    insert_descriptor_proto(ProtoBufMessage::descriptor());
+    insert_file_descriptor_proto(ProtoBufMessage::descriptor()->file());
     // if a filter, append it
     if(filter.IsInitialized() && is_valid_filter(ProtoBufMessage::descriptor(), filter))
         notification_.mutable_embedded_msg()->mutable_filter()->CopyFrom(filter);

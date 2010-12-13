@@ -76,7 +76,7 @@ bool goby::core::CMOOSCommClient::Post(goby::core::CMOOSMsg& msg)
     if(msg.heart().time() == -1)
         msg.mutable_heart()->set_time(goby::util::ptime2unix_double(goby::util::goby_time()));
     
-    base_.goby::core::ApplicationBase::publish<goby::core::proto::CMOOSMsgBase>(msg.heart());
+    base_.goby::core::ApplicationBase::publish<goby::core::proto::CMOOSMsgBase>(*msg.mutable_heart());
     return true;
 }
 

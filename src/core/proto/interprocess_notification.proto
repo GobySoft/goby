@@ -48,7 +48,7 @@ message Notification
 
   // used to inform gobyd of the google protobuf type used for a 
   // given publish or subscribe request
-  optional .google.protobuf.FileDescriptorProto file_descriptor_proto = 3;
+  repeated .google.protobuf.FileDescriptorProto file_descriptor_proto = 3;
 
   // information about the payload
   optional EmbeddedMessage embedded_msg = 4;

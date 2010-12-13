@@ -44,6 +44,7 @@ public:
         {
             static int i = 0;
             TestMessage b;
+            //b.mutable_header()->set_iso_time("20000101T000001");
             b.set_foo(++i);
             b.set_name("bob");
             b.set_evalue(TestMessage::YES);
@@ -72,7 +73,7 @@ public:
             b.add_rstr("fee");
             b.add_rstr("fie");
             b.add_rstr("foe");
-            publish<all>(b);
+            publish(b);
             glogger() << "out: " << b << std::endl;
         }
     

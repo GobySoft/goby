@@ -133,12 +133,18 @@ void Daemon::ConnectedClient::process_notification()
     glogger(lock) << group(name_) << "last_active " << t_last_active_ << std::endl << unlock;
     
     // if the client sent along a new type, add it to our database
-    if(notification_.has_file_descriptor_proto())
+    for(int i = 0, n = notification_.file_descriptor_proto_size(); i < n; ++i)
     {
         boost::mutex::scoped_lock lock(dbo_mutex);
-        DBOManager::get_instance()->add_file(notification_.file_descriptor_proto());
+        DBOManager::get_instance()->add_file(notification_.file_descriptor_proto(i));
+    }
+
+    if(notification_.file_descriptor_proto_size())
+    {
+        boost::mutex::scoped_lock lock(dbo_mutex);
         DBOManager::get_instance()->add_type(notification_.embedded_msg().type());
     }
+    
     
     switch(notification_.notification_type())
     {

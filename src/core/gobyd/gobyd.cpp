@@ -187,14 +187,15 @@ void Daemon::init_sql()
     // order matters! must add a proto before adding any for which it is an import
     // #include <google/protobuf/descriptor.pb.h>
     dbo_manager_->add_file(google::protobuf::FileDescriptorProto::descriptor());
+
     // #include "goby/core/proto/option_extensions.pb.h"
-    dbo_manager_->add_file(::extend::descriptor());
+    // dbo_manager_->add_file(::extend::descriptor());
     // #include "goby/core/proto/interprocess_notification.pb.h"
-    dbo_manager_->add_file(proto::Notification::descriptor());
+    // dbo_manager_->add_file(proto::Notification::descriptor());
     // #include "goby/core/proto/app_base_config.pb.h"
-    dbo_manager_->add_file(::AppBaseConfig::descriptor());
+    // dbo_manager_->add_file(::AppBaseConfig::descriptor());
     // #include "goby/core/proto/config.pb.h"
-    dbo_manager_->add_file(proto::Config::descriptor());
+    // dbo_manager_->add_file(proto::Config::descriptor());
 }
 
 void Daemon::init_listener()

@@ -3,6 +3,15 @@ import "goby/core/proto/app_base_config.proto";
 
 package goby.core.proto;
 
+// Type of vehicle for a given node
+enum VehicleType { AUV = 1;
+                   USV = 2;
+                   SHIP = 3;
+                   GLIDER = 4;
+                   TARGET = 5;
+                   BUOY = 6;
+                   OTHER = 7; }
+
 // defines information and connections
 // to a node (vehicle, ship, etc.)
 // a node is defined by a single gobyd and collection
@@ -30,9 +39,11 @@ message Platform
     
   required string name = 1 [(description)="unique name of the node",
                             (example)="AUV-23"];
-  optional AcousticModemInfo acomms = 2 [(description)="acoustic connectivity"];
-  optional EthernetInfo ether = 3 [(description)="ethernet connectivity"];
-  optional SerialInfo serial = 4 [(description)="serial connectivity "];
+  required VehicleType type = 2 [(description)="type of the node"];
+
+  optional AcousticModemInfo acomms = 3 [(description)="acoustic connectivity"];
+  optional EthernetInfo ether = 4 [(description)="ethernet connectivity"];
+  optional SerialInfo serial = 5 [(description)="serial connectivity "];
 }
 
 message LogConfig
@@ -53,10 +64,24 @@ message LogConfig
   optional SQLiteInfo sqlite = 2;
 }
 
+// latitude and longitude can be troublesome to use, so often
+// we want to define a local datum for doing a planar approximation
+// in X,Y,Z coordinates (meters) of where vehicles are.
+// This datum is the 0,0,0 point of the X,Y,Z grid
+message LocalCartesianDatum
+{
+  required double lat = 1; // decimal degrees
+  required double lon = 2; // decimal degrees
+  optional double depth = 3 [default=0]; // meters
+}
+
 message Config
 {
   optional AppBaseConfig base = 1 [(description)="params shared with all goby applications"];
   optional Platform self = 2 [(description)="this platform"];
   repeated Platform other = 3 [(description)="the known world of platforms"];
   optional LogConfig log = 4 [(description)="SQL log configuration"];
+
+  optional LocalCartesianDatum origin = 5 [(description)="Convenient origin for local cartesian coordinate transformations"];
 }
+

@@ -183,7 +183,7 @@ namespace goby
             /// \brief set the frequency with which loop() is called. Alternative to set_loop_period().
             ///
             /// \param hertz new frequency for loop()
-            void set_loop_freq(long hertz)
+            void set_loop_freq(double hertz)
             { set_loop_period(boost::posix_time::milliseconds(1000/hertz)); }
             //@}
             
@@ -208,6 +208,10 @@ namespace goby
             /// \return absolute time that this application was launched
             boost::posix_time::ptime t_start()
             { return t_start_; }
+
+
+            const goby::core::proto::Config& global_cfg() { return daemon_cfg_; }
+            
             //@}
 
             /// \name Utility
@@ -443,7 +447,7 @@ template<typename ProtoBufMessage>
     typedef std::pair <std::string, boost::shared_ptr<SubscriptionBase> > P;
     BOOST_FOREACH(const P&p, subscriptions_)
     {
-        if(p.second->filter() == filter)
+        if(type_name == p.first && p.second->filter() == filter)
         {
             goby::util::glogger() << warn << "already have subscription for type: " << type_name
                                   << " and filter: " << filter << std::endl;

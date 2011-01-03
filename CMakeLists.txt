@@ -28,12 +28,12 @@ install(DIRECTORY ${goby_BIN_DIR}/ DESTINATION /usr/local/bin FILE_PERMISSIONS W
 install(DIRECTORY ${goby_LIB_DIR}/ DESTINATION /usr/local/lib)
 install(DIRECTORY ${goby_INC_DIR}/ DESTINATION /usr/local/include)
 
-## allows use to write custom modules or modifying existing ones
+## allows us to write custom modules or modifying existing ones
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules/")
 
 ## find external packages, libraries, and headers for the entire goby project
 # mandatory
-find_package(Boost 1.36.0 COMPONENTS system date_time thread regex program_options signals filesystem)
+find_package(Boost 1.36.0 REQUIRED system date_time thread regex program_options signals filesystem)
 find_library(Xerces_LIB_FOUND xerces-c)
 find_file(Xerces_H_FOUND xercesc/sax2/SAX2XMLReader.hpp)
 if(Xerces_LIB_FOUND AND Xerces_H_FOUND)
@@ -66,11 +66,9 @@ foreach(I ${INCLUDE_FILES})
   configure_file(${goby_SRC_DIR}/${I} ${goby_INC_DIR}/goby/${I} COPYONLY)
 endforeach()
 
-
 ## let cmake know where the headers are
 include_directories(${goby_INC_DIR})
 include_directories(${Boost_INCLUDE_DIR})
-
 
 ## start adding subdirectories
 add_subdirectory(src)

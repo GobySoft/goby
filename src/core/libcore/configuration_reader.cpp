@@ -502,14 +502,14 @@ void goby::core::ConfigReader::merge_app_base_cfg(AppBaseConfig* base_cfg,
         switch(var_map["verbose"].as<std::string>().size())
         {
             case 0:
-                base_cfg->set_verbosity(AppBaseConfig::verbose);
+                base_cfg->set_verbosity(AppBaseConfig::VERBOSE);
                 break;
             case 1:
-                base_cfg->set_verbosity(AppBaseConfig::debug);
+                base_cfg->set_verbosity(AppBaseConfig::DEBUG);
                 break;
             default:
             case 2:
-                base_cfg->set_verbosity(AppBaseConfig::gui);
+                base_cfg->set_verbosity(AppBaseConfig::GUI);
                 break;
         }
     }

@@ -5,7 +5,8 @@ if(Boost_FOUND AND Xerces_LIB_FOUND AND Xerces_H_FOUND )
   
   file(GLOB SRC *.cpp *.c)
   add_library(goby_dccl SHARED ${SRC})
-  target_link_libraries(goby_dccl goby_logger xerces-c crypto++ ${Boost_LIBRARIES})
+  # icuuc needed by xerces
+  target_link_libraries(goby_dccl goby_logger xerces-c icuuc crypto++ ${Boost_LIBRARIES})
 endif()
 
 if(build_acomms_examples)

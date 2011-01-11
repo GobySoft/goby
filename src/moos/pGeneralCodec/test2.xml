@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<message_set>
+  <message>
+    <name>test_time</name>
+    <id>5</id>
+    <outgoing_hex_moos_var>OUT_TEST_HEX1</outgoing_hex_moos_var>
+    <incoming_hex_moos_var>IN_TEST_HEX1</incoming_hex_moos_var>
+    <trigger>time</trigger> 
+    <trigger_time>5</trigger_time>
+    <size>30</size>
+    <layout>
+      <int> <!--algorithm="name2modem_id"-->
+        <name>vehicle_name</name>
+        <moos_var>VEHICLE_NAME</moos_var>
+        <max>31</max>
+        <min>0</min>
+      </int>
+      <float algorithm="lon2utm_x:nav_y">
+        <name>nav_x</name>
+        <moos_var>NAV_X</moos_var>
+        <max>10000000</max>
+        <min>0</min>
+        <precision>0</precision>
+      </float>
+      <float algorithm="lat2utm_y:nav_x">
+        <name>nav_y</name>
+        <moos_var>NAV_Y</moos_var>
+        <max>10000000</max>
+        <min>0</min>
+        <precision>0</precision>
+      </float>
+    </layout>
+    <on_receipt>
+      <publish>
+        <moos_var type="string">%1%_STATUS_INCOMING</moos_var>
+        <message_var algorithm="modem_id2name,to_upper">vehicle_name</message_var>
+        <format>vehicle_id=%2%,nav_y=%3%,nav_x=%4%</format>
+        <message_var>vehicle_name</message_var>
+        <message_var>nav_y</message_var>
+        <message_var>nav_x</message_var>
+      </publish>
+    </on_receipt>
+  </message>
+</message_set>

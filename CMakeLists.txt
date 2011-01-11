@@ -23,7 +23,8 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${goby_BIN_DIR} CACHE PATH
   "Output directory for the binaries" )
 
 ## set instructions for `make install`
-install(DIRECTORY ${goby_BIN_DIR}/ DESTINATION /usr/local/bin FILE_PERMISSIONS WORLD_EXECUTE)
+install(DIRECTORY ${goby_BIN_DIR}/ DESTINATION /usr/local/bin 
+  FILE_PERMISSIONS WORLD_EXECUTE)
 install(DIRECTORY ${goby_LIB_DIR}/ DESTINATION /usr/local/lib)
 install(DIRECTORY ${goby_INC_DIR}/ DESTINATION /usr/local/include)
 

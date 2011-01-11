@@ -1,5 +1,5 @@
 ## xerces
-goby_find_required_package(Xerces "libxerces-c-dev libxerces-c3.1")
+goby_find_required_package(Xerces libxerces-c-dev)
 
 option(build_acomms_dccl "Build the Dynamic Compact Control Language library" ON)
 option(build_acomms_modemdriver "Build the Acoustic Modem Driver library" ON)

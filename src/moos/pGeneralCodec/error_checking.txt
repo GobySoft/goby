@@ -1,0 +1,16 @@
+where are errors handled and by whom?
+
+exceptions: SAXException, XMLException, general exceptions due to parsing of XML files
+            - message_xml_parser.cpp
+            / print error and exit
+
+            SAXParseException: errors thrown on parsing (like missing tags)
+            - message_xml_callbacks.h
+            / print error with line number and exit
+
+
+to deal with still:
+proper structure and data (schema) - need to see what cannot be handled
+by the schema that we need to consider
+
+<format></format>: make sure correct number of message_vars are given 

@@ -68,6 +68,7 @@ if [ -e "`which aptitude`" ]; then
     if [[ ! `aptitude search ${ubuntu_wt_packages}` ]]; then
         echo "adding ppa:pgquiles/wt for Wt packages"
         add-apt-repository ppa:pgquiles/wt
+	aptitude update
     fi 
 
     if [[ ! `aptitude search ${ubuntu_xerces_package}` ]]; then

@@ -2,3 +2,15 @@ build/*
 bin
 lib
 include
+user_manual.aux
+user_manual.idx
+user_manual.log
+user_manual.out
+user_manual.pdf
+user_manual.toc
+whitepaper.aux
+whitepaper.log
+whitepaper.out
+whitepaper.pdf
+goby-dev.pdf
+whitepaper.dvi

@@ -1,25 +1,31 @@
 find_path(MOOS_CORE_INCLUDE_DIR MOOSLIB/MOOSLib.h 
-  HINTS ~/moos-ivp
+  HINTS ~/moos-ivp ~/
   PATH_SUFFIXES MOOS/Core)
 
 find_path(MOOS_ESSENTIAL_INCLUDE_DIR MOOSUtilityLib/MOOSGeodesy.h
-  HINTS ~/moos-ivp
+  HINTS ~/moos-ivp ~/
   PATH_SUFFIXES MOOS/Essentials)
 
 #message("MOOS Include DIR: ${MOOS_INCLUDE_DIR}")
 
 find_library(MOOS_LIBRARY NAMES MOOS
-  DOC "The MOOS library")
+  DOC "The MOOS library"
+  HINTS ~/moos-ivp ~/
+  PATH_SUFFIXES MOOS/MOOSBin)
 
 #message("MOOS LIBRARY: ${MOOS_LIBRARY}"
 
 find_library(MOOS_GEN_LIBRARY NAMES MOOSGen
-  DOC "The MOOS general library")
+  DOC "The MOOS general library"
+  HINTS ~/moos-ivp ~/
+  PATH_SUFFIXES MOOS/MOOSBin)
 
 #message("MOOS GEN LIBRARY: ${MOOS_GEN_LIBRARY}")
 
 find_library(MOOS_UTILITY_LIBRARY NAMES MOOSUtility
-  DOC "The MOOS utility library")
+  DOC "The MOOS utility library"
+  HINTS ~/moos-ivp ~/
+  PATH_SUFFIXES MOOS/MOOSBin)
 
 #message("MOOS UTILITY LIBRARY: ${MOOS_UTILITY_LIBRARY}")
 

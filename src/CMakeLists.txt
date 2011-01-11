@@ -35,6 +35,7 @@ endfunction()
 goby_find_required_package(Boost "libboost-dev libboost-system-dev libboost-date-time-dev libboost libboost-thread-dev libboost-regex-dev libboost-program-options-dev libboost-signals-dev libfilesystem-dev" 1.36.0 REQUIRED system date_time thread regex program_options signals filesystem)
 include_directories(${Boost_INCLUDE_DIRS})
 
+goby_find_required_package(ProtobufGoby "libprotobuf-c0-dev" REQUIRED)
 
 ## ncurses
 set(CURSES_NEED_NCURSES TRUE)

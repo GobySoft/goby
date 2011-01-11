@@ -1,6 +1,3 @@
-## find external packages, libraries, and headers for goby-core
-
-goby_find_required_package(ProtobufGoby "libprotobuf-c0-dev" REQUIRED)
 
 if(build_test)
   add_subdirectory(test)

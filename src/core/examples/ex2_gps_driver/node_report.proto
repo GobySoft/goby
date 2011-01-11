@@ -1,19 +1,78 @@
 import "goby/core/proto/header.proto";
+import "goby/core/proto/app_base_config.proto";
+import "goby/core/proto/config.proto";
 
 message NodeReport
 {
   required Header header = 1;
   required string name = 2;
-  enum VehicleType { auv = 1; usv = 2; ship = 3; glider = 4; }
-  required VehicleType type = 3;
-  required double lat = 4;
-  required double lon = 5;
-  required float x = 6;
-  required float y = 7;
-  required float speed = 8;
-  required float heading = 9;
-  optional float depth = 10 [default = 0];
-  optional float roll = 11;
-  optional float pitch = 12;
-  optional float yaw = 13;
+
+  // defined in goby/core/proto/config.proto
+  required goby.core.proto.VehicleType type = 3;
+  
+  // lat, lon, depth
+  required GeodeticCoordinate global_fix = 4;  
+  // x, y, z on local cartesian grid
+  optional CartesianCoordinate local_fix = 5;
+  
+  // roll, pitch, yaw
+  optional EulerAngles pose = 7;
+  
+  // speed over ground (not relative to water or surface)
+  optional double speed = 8;
+  optional SourceSensor speed_source = 9;  
+  optional double speed_time_lag = 11;
+  
 }
+
+enum SourceSensor { GPS = 1;
+                    DEAD_RECKONING = 2;
+                    INERTIAL_MEASUREMENT_UNIT = 3;
+                    PRESSURE_SENSOR = 4;
+                    COMPASS = 5;
+                    SIMULATION = 6;}
+
+message GeodeticCoordinate
+{
+  required double lat = 1;
+  required double lon = 2;
+  optional double depth = 3 [default = 0]; // negative of "height"
+  optional double altitude = 4;
+  
+  optional SourceSensor lat_source = 5;
+  optional SourceSensor lon_source = 6;
+  optional SourceSensor depth_source = 7;
+  optional SourceSensor altitude_source = 8;
+
+  // time lags (in seconds) from the message Header time
+  optional double lat_time_lag = 9;
+  optional double lon_time_lag = 10;
+  optional double depth_time_lag = 11;
+  optional double altitude_time_lag = 12;
+}
+
+// computed from GeodeticCoordinate
+message CartesianCoordinate
+{
+  required double x = 1;
+  required double y = 2;
+  optional double z = 3 [default = 0]; // negative of "depth"  
+}
+
+// all in degrees
+message EulerAngles
+{
+  optional double roll = 1;
+  optional double pitch = 2;
+  optional double yaw = 3; // also known as "heading"
+  
+  optional SourceSensor roll_source = 4;
+  optional SourceSensor pitch_source = 5;
+  optional SourceSensor yaw_source = 6;
+
+  // time lags (in seconds) from the message Header time
+  optional double roll_time_lag = 7;
+  optional double pitch_time_lag = 8;
+  optional double yaw_time_lag = 9;
+}
+

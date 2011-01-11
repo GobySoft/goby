@@ -128,19 +128,19 @@ void Daemon::init_logger()
     glogger().set_name(cfg_.base().app_name());
     switch(cfg_.base().verbosity())
     {
-        case AppBaseConfig::quiet:
+        case AppBaseConfig::QUIET:
             glogger().add_stream(Logger::quiet, &std::cout);
             break;            
-        case AppBaseConfig::warn:
+        case AppBaseConfig::WARN:
             glogger().add_stream(Logger::warn, &std::cout);
             break;
-        case AppBaseConfig::verbose:
+        case AppBaseConfig::VERBOSE:
             glogger().add_stream(Logger::verbose, &std::cout);
             break;
-        case AppBaseConfig::debug:
+        case AppBaseConfig::DEBUG:
             glogger().add_stream(Logger::debug, &std::cout);
             break;
-        case AppBaseConfig::gui:
+        case AppBaseConfig::GUI:
             glogger().add_stream(Logger::gui, &std::cout);
             break;    
     }

@@ -7,3 +7,4 @@ message HelloWorldMsg
   required string telegram = 1;
   required uint32 count = 2;
 }
+

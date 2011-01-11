@@ -52,7 +52,7 @@ libboost-signals-dev
 libboost-filesystem-dev"
 
 debian_other_packages=\
-"libxerces-c-dev
+"libxerces-c2-dev
 libcrypto++-dev
 libncurses-dev
 libprotobuf-dev"

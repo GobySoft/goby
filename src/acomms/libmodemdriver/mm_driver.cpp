@@ -249,8 +249,6 @@ void goby::acomms::MMDriver::handle_modem_in(NMEASentence& nmea)
     // clear the last send given modem acknowledgement
     if(!out_.empty() && out_.front().sentence_id() == nmea.sentence_id())
         pop_out();
-
-
     
     // for anyone who needs to know that we got a message 
     if(callback_in_parsed) callback_in_parsed(m_in);

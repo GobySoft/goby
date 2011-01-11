@@ -1,12 +1,6 @@
 ## find external packages, libraries, and headers for goby-core
 
-find_package(ProtobufGoby REQUIRED)
-
-foreach(I PROTOBUF)
-  if(NOT ${I}_FOUND)
-    message(FATAL_ERROR "missing required external library: ${I}. read and/or execute the goby/DEPENDENCIES file to resolve.")
-  endif()
-endforeach()
+goby_find_required_package(ProtobufGoby "libprotobuf-c0-dev" REQUIRED)
 
 if(build_test)
   add_subdirectory(test)

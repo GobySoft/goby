@@ -51,7 +51,7 @@
   </ul>
 <li> Satisfy third-party library dependences (boost, etc.):
   <ul>
-    <li> Ubuntu/Debian: \verbatim cd goby; ./DEPENDENCIES \endverbatim
+    <li> Ubuntu/Debian: \verbatim cd goby; sudo ./DEPENDENCIES \endverbatim
     <li> Everyone else: \verbatim cd goby; less DEPENDENCIES \endverbatim
   </ul>    
 <li> Compile to goby/bin, goby/lib, and goby/include: \verbatim cd goby; ./INSTALL \endverbatim

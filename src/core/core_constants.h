@@ -18,6 +18,7 @@
 #define CoreConstants20100813H
 
 #include "goby/util/time.h"
+#include <google/protobuf/descriptor.h>
 
 namespace goby
 {
@@ -36,8 +37,11 @@ namespace goby
     }
 }
 
+/// provides stream output operator for Google Protocol Buffers Message 
 inline std::ostream& operator<<(std::ostream& out, const google::protobuf::Message& msg)
-{ return (out << msg.DebugString());}
+{
+    return (out << "### " << msg.GetDescriptor()->full_name() << " ###\n" << msg.DebugString());
+}
 
 
 #endif

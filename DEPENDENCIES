@@ -37,11 +37,11 @@ red="\33[1;31m"
 nc="\33[1;0m"
 green="\33[1;32m"
 
-debian_base_packages=\
+ubuntu_base_packages=\
 "build-essential 
 cmake"
 
-debian_boost_packages=\
+ubuntu_boost_packages=\
 "libboost-dev
 libboost-system-dev
 libboost-date-time-dev
@@ -51,22 +51,34 @@ libboost-program-options-dev
 libboost-signals-dev
 libboost-filesystem-dev"
 
-debian_other_packages=\
-"libxerces-c2-dev
-libcrypto++-dev
+ubuntu_xerces_package=\
+"libxerces-c-dev"
+
+ubuntu_other_packages=\
+"libcrypto++-dev
 libncurses-dev
 libprotobuf-dev"
 
-debian_wt_packages=\
+ubuntu_wt_packages=\
 "libwt-dev
 libwtdbo-dev
 libwtdbosqlite-dev"
 
-if [ -e "`which apt-get`" ]; then
-    apt-get -y install $debian_base_packages || printf $red"Could not install base packages\n"$nc
-    apt-get -y install $debian_boost_packages || printf $red"Could not install boost packages: see http://www.boost.org/\n"$nc
-    apt-get -y install $debian_other_packages || printf $red"Could not install some packages: read the top of this file (DEPENDENCIES)\n"$nc
-    apt-get -y install $debian_wt_packages || printf $red"Could not install Wt packages: you need to download from source. See http://www.webtoolkit.eu/wt#/download\n"$nc
+if [ -e "`which aptitude`" ]; then
+    if [[ ! `aptitude search ${ubuntu_wt_packages}` ]]; then
+        echo "adding ppa:pgquiles/wt for Wt packages"
+        add-apt-repository ppa:pgquiles/wt
+    fi 
+
+    if [[ ! `aptitude search ${ubuntu_xerces_package}` ]]; then
+        ubuntu_xerces_package="libxerces-c2-dev"
+    fi 
+    
+    aptitude -y install $ubuntu_base_packages || printf $red"Could not install base packages\n"$nc
+    aptitude -y install $ubuntu_boost_packages || printf $red"Could not install boost packages: see http://www.boost.org/\n"$nc
+    aptitude -y install $ubuntu_xerces_package || printf $red"Could not install xerces package\n"$nc
+    aptitude -y install $ubuntu_other_packages || printf $red"Could not install some packages: read the top of this file (DEPENDENCIES)\n"$nc
+    aptitude -y install $ubuntu_wt_packages || printf $red"Could not install Wt packages: you need to download from source. See http://www.webtoolkit.eu/wt#/download\n"$nc
 fi
 
 

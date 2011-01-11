@@ -13,11 +13,5 @@
 # > sudo ./INSTALL
 
 pushd build
-if [[ $UID -ne 0 ]]; then
-    # if user is not root, build to goby/bin, goby/include, and goby/lib:
-    make $@
-else
-    # otherwise install to /usr/local/bin, /usr/local/lib, /usr/local/include
-    make install $@
-fi
+cmake .. $@
 popd

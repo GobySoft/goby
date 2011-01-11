@@ -1,6 +1,0 @@
-#!/bin/bash
-
-pushd ../build
-cmake .. -Dbuild_moos=ON -Dbuild_core=OFF  
-make $@
-popd

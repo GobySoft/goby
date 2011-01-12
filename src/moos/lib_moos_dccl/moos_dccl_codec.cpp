@@ -273,10 +273,6 @@ void MOOSDCCLCodec::read_parameters(CProcessConfigReader& processConfigReader)
         }
     }
 
-    if(!dccl_.message_count())
-        base_app_->logger() << die << "no messages defined. make sure message_file=file.xml lines are correct in .moos file" << std::endl;    
-
-
     // set up algorithms
     dccl_.add_algorithm("power_to_dB", boost::bind(&MOOSDCCLCodec::alg_power_to_dB, this, _1));
     dccl_.add_algorithm("dB_to_power", boost::bind(&MOOSDCCLCodec::alg_dB_to_power, this, _1));

@@ -1,29 +1,19 @@
 ## xerces
 goby_find_required_package(Xerces libxerces-c-dev)
 
-option(build_acomms_dccl "Build the Dynamic Compact Control Language library" ON)
-option(build_acomms_modemdriver "Build the Acoustic Modem Driver library" ON)
-option(build_acomms_queue "Build the Priority Queuing library" ON)
-option(build_acomms_amac "Build the Acoustic MAC library" ON)
+option(build_acomms_lib "Build the Acoustic Communications libraries" ON)
 option(build_acomms_examples "Build the Acoustic Communications examples" OFF)
 option(build_acomms_tools "Build the Acoustic Communications tools" OFF)
 
-if(build_acomms_dccl) 
+if(build_acomms_lib) 
   add_subdirectory(libdccl)
-endif()
-
-if(build_acomms_modemdriver)
   add_subdirectory(libmodemdriver)
-endif()
-
-if(build_acomms_queue)
   add_subdirectory(libqueue)
-endif()
-
-if(build_acomms_amac)
   add_subdirectory(libamac)
+  add_subdirectory(proto)
 endif()
 
 if(build_acomms_examples)
   add_subdirectory(examples)
 endif()
+

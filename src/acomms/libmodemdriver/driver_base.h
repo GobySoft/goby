@@ -74,7 +74,7 @@ namespace goby
             virtual void handle_mac_initiate_ranging(const ModemMessage& m) = 0;
 
             /// Virtual request next destination method. Provided a rate (0-5) in msg.rate(), this must calculate and store the next destination (msg.dest()).
-            virtual bool handle_mac_dest_request(ModemMessage& msg) = 0;            
+            virtual bool handle_mac_dest_request(ModemMessage& msg) = 0;
         
             /// Set configuration strings for the %modem. The contents of these strings depends on the specific %modem.
             void set_cfg(const std::vector<std::string>& cfg) { cfg_ = cfg; }

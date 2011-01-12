@@ -251,10 +251,10 @@ void goby::acomms::MMDriver::handle_modem_in(NMEASentence& nmea)
     // look at the talker front (talker id)
     switch(talker_id_map_[nmea.talker_id()])
     {
-        // only process messages from CA (modem)
-        case CA: global_fail_count_ = 0; break; // reset fail count - modem is alive!
+      // only process messages from CA (modem)
+    case CA: case SN: global_fail_count_ = 0; break; // reset fail count - modem is alive!
             // ignore the rest
-        case CC: case SN: case GP: default: return;
+    case CC: case GP: default: return;
     }
 
     acomms::ModemMessage m_in;
@@ -271,6 +271,7 @@ void goby::acomms::MMDriver::handle_modem_in(NMEASentence& nmea)
         case CFG: cfg(nmea, m_in); break; // configuration
         case CLK: clk(nmea, m_in); break; // clock
         case CYC: cyc(nmea, m_in); break; // cycle init
+        case TTA: tta(nmea, m_in); break; // cycle init
         default:                   break;
     }
 
@@ -408,11 +409,11 @@ void goby::acomms::MMDriver::cyc(NMEASentence& nmea, acomms::ModemMessage& m)
 
 void goby::acomms::MMDriver::tta(util::NMEASentence& nmea, ModemMessage& m)
 {
-    m.add_tof(nmea[1]);
-    m.add_tof(nmea[2]);
-    m.add_tof(nmea[3]);
-    m.add_tof(nmea[4]);
-    if(callback_range_reply) callback_range_reply(m);
+  m.add_tof(goby::util::as<double>(nmea[1]));
+  m.add_tof(goby::util::as<double>(nmea[2]));
+  m.add_tof(goby::util::as<double>(nmea[3]));
+  m.add_tof(goby::util::as<double>(nmea[4]));
+  if(callback_range_reply) callback_range_reply(m);    
 }
 
 

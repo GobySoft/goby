@@ -223,7 +223,7 @@ void CpAcommsHandler::handle_mac_cycle_update(const CMOOSMsg& msg)
         try
         {
             s = boost::lexical_cast<unsigned>(src_id);
-            d = boost::lexical_cast<unsigned>(dest_id);
+            d = boost::lexical_cast<int>(dest_id);
             r = boost::lexical_cast<unsigned>(rate);
             t = boost::lexical_cast<unsigned>(wait);
         }

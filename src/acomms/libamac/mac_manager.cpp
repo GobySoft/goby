@@ -194,9 +194,14 @@ void goby::acomms::MACManager::send_poll(const boost::system::error_code& e)
             case Slot::slot_ping:
                 m.set_src(s.src());
                 m.set_dest(destination);
-                callback_initiate_ranging(m);
+                callback_initiate_ranging(m, ModemDriverBase::MODEM);
                 break;
 
+            case Slot::slot_remus_lbl:
+                m.set_src(s.src());
+                callback_initiate_ranging(m, ModemDriverBase::REMUS_LBL);
+                break;
+                
             default:
                 break;
         }

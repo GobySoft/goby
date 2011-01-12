@@ -70,8 +70,10 @@ namespace goby
             /// Virtual initiate_transmission method. see derived classes (e.g. MMDriver) for examples.
             virtual void handle_mac_initiate_transmission(const ModemMessage& m) = 0;
 
+            enum RangingType { MODEM, REMUS_LBL };
+            
             /// Virtual initiate_ranging method. see derived classes (e.g. MMDriver) for examples.
-            virtual void handle_mac_initiate_ranging(const ModemMessage& m) = 0;
+            virtual void handle_mac_initiate_ranging(const ModemMessage& m, RangingType type) = 0;
 
             /// Virtual request next destination method. Provided a rate (0-5) in msg.rate(), this must calculate and store the next destination (msg.dest()).
             virtual bool handle_mac_dest_request(ModemMessage& msg) = 0;

@@ -30,10 +30,24 @@
 #include "goby/acomms/acomms_constants.h"
 #include "goby/util/time.h"
 
+
+
 namespace goby
 {
     namespace acomms
     {
+        inline std::ostream& operator<< (std::ostream& out, const std::vector<double> & t)
+        {
+            for(std::vector<double>::const_iterator it = t.begin(),
+                    nt = t.end(); it != nt; ++it)
+            {
+                if(it != t.begin()) out << ",";
+                out << *it;
+            }    
+            return out;
+        }
+        
+        
         /// \brief represents a %message to or from the acoustic %modem.
         ///
         /// Message is intended to represent all the possible messages from the %modem. Thus, depending
@@ -53,7 +67,7 @@ namespace goby
                 dest_(0),
                 rate_(0),
                 time_(util::goby_time()),
-                tof_(0),
+                //tof_(0),
                 ack_(false),
                 max_size_(0),
                 frame_(1),
@@ -79,7 +93,7 @@ namespace goby
             /// set the time
             void set_time(boost::posix_time::ptime t) { time_=t; time_set_ = true; }
             /// set the time of flight
-            void set_tof(double t)                    { tof_=t; tof_set_ = true; }
+            void add_tof(double t)                    { tof_.push_back(t); tof_set_ = true; }
             /// set the size (automatically set by the data size)
             void set_max_size(unsigned size)              { max_size_= size; max_size_set_ = true;}    
             /// set the source id
@@ -104,9 +118,9 @@ namespace goby
                 catch(...) { }
             }
             /// try to set the time of flight with std::string
-            void set_tof(const std::string& tof)
+            void add_tof(const std::string& tof)
             {
-                try { set_tof(boost::lexical_cast<double>(tof)); }
+                try { add_tof(boost::lexical_cast<double>(tof)); }
                 catch(boost::bad_lexical_cast & ) { }
             }
             /// try to set the size with std::string
@@ -175,7 +189,7 @@ namespace goby
             /// time
             boost::posix_time::ptime time() const {return time_;}
             /// tof
-            double tof() const {return tof_;}
+            std::vector<double> tof() const {return tof_;}
             /// source %modem id        
             unsigned src() const {return src_;}
             /// destination %modem id
@@ -326,21 +340,20 @@ namespace goby
                 for (unsigned i = 0; i < line.size(); i++)
                 { if(!isxdigit(line[i])) return false; }
                 return true;
-            }
-
-    
+            }            
+            
           private:
             std::string data_;
             unsigned src_;    
             unsigned dest_;  //%modem_id
             unsigned rate_;
             boost::posix_time::ptime time_;
-            double tof_;
+            std::vector<double> tof_;
             bool ack_;
             unsigned max_size_; //in bytes
             unsigned frame_;
             unsigned char cs_;
-
+            
             bool data_set_;
             bool src_set_;
             bool dest_set_;
@@ -352,8 +365,7 @@ namespace goby
             bool frame_set_;
             bool cs_set_;
 
-        };
-
+        };        
     }
 }
 

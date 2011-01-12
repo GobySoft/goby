@@ -28,6 +28,7 @@
 #include <boost/bind.hpp>
 #include <boost/asio.hpp>
 
+#include "goby/acomms/modem_driver.h"
 #include "goby/util/time.h"
 #include "goby/util/string.h"
 
@@ -73,7 +74,8 @@ namespace goby
             {
                 slot_notype, /*!< useless slot */
                 slot_data, /*!< slot to send data packet */
-                slot_ping /*!< slot to send ping (ranging) */
+                slot_ping, /*!< slot to send ping (ranging) */
+                slot_remus_lbl /*!< slot to send remus lbl ranging message */
             };
         
             /// \name Constructors/Destructor
@@ -127,6 +129,7 @@ namespace goby
                 {
                     case slot_data: return "data";
                     case slot_ping: return "ping";
+                    case slot_remus_lbl: return "remus_lbl";
                     default: return "unknown";
                 }
             }
@@ -219,7 +222,8 @@ namespace goby
             { callback_initiate_transmission = func; }
 
             /// \brief Callback for initiate ranging ("ping"). Typically bound to acomms::ModemDriverBase::initiate_ranging. 
-            void set_callback_initiate_ranging(MACMsgFunc func)
+
+            void set_callback_initiate_ranging(boost::function<void (const acomms::ModemMessage& message, ModemDriverBase::RangingType type)> func)
             { callback_initiate_ranging = func; }
 
 
@@ -231,9 +235,9 @@ namespace goby
             template<typename V, typename A1>
                 void set_callback_initiate_transmission(void(V::*mem_func)(A1), V* obj)
             { set_callback_initiate_transmission(boost::bind(mem_func, obj, _1)); }
-            template<typename V, typename A1>
-                void set_callback_initiate_ranging(void(V::*mem_func)(A1), V* obj)
-            { set_callback_initiate_ranging(boost::bind(mem_func, obj, _1)); }
+            template<typename V, typename A1, typename A2>
+                void set_callback_initiate_ranging(void(V::*mem_func)(A1, A2), V* obj)
+            { set_callback_initiate_ranging(boost::bind(mem_func, obj, _1, _2)); }
 
 
 //@}
@@ -256,7 +260,9 @@ namespace goby
 
             MutableMACMsgFunc callback_dest_request;
             MACMsgFunc callback_initiate_transmission;
-            MACMsgFunc callback_initiate_ranging;
+
+            boost::function<void (const acomms::ModemMessage& message, ModemDriverBase::RangingType type)>
+                callback_initiate_ranging;
 
             boost::posix_time::ptime next_cycle_time();
 

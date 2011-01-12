@@ -56,7 +56,7 @@ namespace goby
             /// \brief Initiate ranging ("ping") to the modem. 
             ///
             /// \param m ModemMessage containing the details of the ranging request to be started. (source and destination)
-            void handle_mac_initiate_ranging(const ModemMessage& m);
+            void handle_mac_initiate_ranging(const ModemMessage& m, RangingType type);
 
             /// \brief Retrieve the desired destination of the next message
             ///
@@ -99,7 +99,8 @@ namespace goby
             void cfg(util::NMEASentence& nmea, ModemMessage& m);
             void clk(util::NMEASentence& nmea, ModemMessage& m);
             void cyc(util::NMEASentence& nmea, ModemMessage& m);
-    
+            void tta(util::NMEASentence& nmea, ModemMessage& m);
+            
             // utility    
             static boost::posix_time::ptime modem_time2ptime(const std::string& mt);
 

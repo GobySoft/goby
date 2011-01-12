@@ -117,14 +117,42 @@ void goby::acomms::MMDriver::handle_mac_initiate_transmission(const acomms::Mode
     write(nmea);
 }
 
-void goby::acomms::MMDriver::handle_mac_initiate_ranging(const acomms::ModemMessage& m)
-{   
-    //$CCMPC,SRC,DEST*CS
-    NMEASentence nmea("$CCMPC", NMEASentence::IGNORE);
-    nmea.push_back(m.src()); // ADR1
-    nmea.push_back(m.dest()); // ADR2
-    write(nmea);
+void goby::acomms::MMDriver::handle_mac_initiate_ranging(const acomms::ModemMessage& m, RangingType type)
+{
+    switch(type)
+    {
+        case MODEM:
+        {
+            //$CCMPC,SRC,DEST*CS
+            NMEASentence nmea("$CCMPC", NMEASentence::IGNORE);
+            nmea.push_back(m.src()); // ADR1
+            nmea.push_back(m.dest()); // ADR2
+            write(nmea);
+            break;
+        }
+        
+
+        case REMUS_LBL:
+        {
+            // $CCPDT,GRP,CHANNEL,SF,STO,Timeout,AF,BF,CF,DF*CS
+            NMEASentence nmea("$CCPDT", NMEASentence::IGNORE);
+            nmea.push_back(1); // 
+            nmea.push_back(m.src() % 4); // can only use 1-4
+            nmea.push_back(0); // synchronize may not work?
+            nmea.push_back(0); // synchronize may not work?
+            nmea.push_back(2500);
+            nmea.push_back(1);
+            nmea.push_back(1);
+            nmea.push_back(1);
+            nmea.push_back(1);
+            write(nmea);
+            break;
+        }
+        
+    }
 }
+
+
 
 void goby::acomms::MMDriver::handle_modem_out()
 {
@@ -339,7 +367,7 @@ void goby::acomms::MMDriver::mpr(NMEASentence& nmea, acomms::ModemMessage& m)
     m.set_dest(nmea[2]);
 
     if(nmea.size() > 3)
-        m.set_tof(nmea[3]);
+        m.add_tof(nmea[3]);
 
     if(callback_range_reply) callback_range_reply(m);
 }
@@ -377,6 +405,16 @@ void goby::acomms::MMDriver::cyc(NMEASentence& nmea, acomms::ModemMessage& m)
     m.set_ack(nmea[5]); // "ACK", actually deprecated free bit
     m.set_frame(nmea[6]); // Npkts, number of packets
 }
+
+void goby::acomms::MMDriver::tta(util::NMEASentence& nmea, ModemMessage& m)
+{
+    m.add_tof(nmea[1]);
+    m.add_tof(nmea[2]);
+    m.add_tof(nmea[3]);
+    m.add_tof(nmea[4]);
+    if(callback_range_reply) callback_range_reply(m);
+}
+
 
 
 boost::posix_time::ptime goby::acomms::MMDriver::modem_time2ptime(const std::string& mt)

@@ -125,7 +125,7 @@ void CpAcommsHandler::handle_nmea_out_request(const CMOOSMsg& msg)
 void CpAcommsHandler::handle_ranging_request(const CMOOSMsg& msg)
 {        
     logger() << "ranging (ping): " << msg.GetString() << std::endl;
-    driver_.handle_mac_initiate_ranging(ModemMessage(msg.GetString()));
+    driver_.handle_mac_initiate_ranging(ModemMessage(msg.GetString()), goby::acomms::ModemDriverBase::MODEM);
 }
 
 void CpAcommsHandler::handle_message_push(const CMOOSMsg& msg)
@@ -214,7 +214,10 @@ void CpAcommsHandler::handle_mac_cycle_update(const CMOOSMsg& msg)
             slot_type = goby::acomms::Slot::slot_data;
         else if(tes::stricmp(poll_type, "ping"))
             slot_type = goby::acomms::Slot::slot_ping;
-
+        else if(tes::stricmp(poll_type, "remus_lbl"))
+            slot_type = goby::acomms::Slot::slot_remus_lbl;
+        
+        
         bool fail = false;
         unsigned s, d, r, t;
         try

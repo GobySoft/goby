@@ -67,7 +67,7 @@ namespace goby
             { return empty() ? "" : front().substr(3); }
 
             template<typename T>
-                T as(int i) { return goby::util::as<T>(at(i)); }
+                T as(int i) const { return goby::util::as<T>(at(i)); }
             
             
             template<typename T>

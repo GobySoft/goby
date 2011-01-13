@@ -365,27 +365,22 @@ void CpAcommsHandler::read_configuration(CProcessConfigReader& config)
 
 void CpAcommsHandler::read_driver_parameters(CProcessConfigReader& config)
 {
-
-    // Begin the addition of code to support the gateway buoy
-    // Added by Andrew Bouchard, NSWC PCD
-
     std::cout << "Reading driver parameters..." << std::endl;
 
-    // Read whether using a gateway buoy
-    bool IsGateway = false;
-    if (!config.GetConfigurationParam("hydroid_gateway_enabled", IsGateway))
-        logger() << group("mm_out") << "Hydroid Buoy flag not set, using default of " << std::boolalpha << IsGateway << std::endl;
+    // Read whether using a hydroid gateway buoy
+    bool is_hydroid_gateway = false;
+    if (!config.GetConfigurationParam("hydroid_gateway_enabled", is_hydroid_gateway))
+        logger() << group("mm_out") << "Hydroid Buoy flag not set, using default of " << std::boolalpha << is_hydroid_gateway << std::endl;
 
-    // Read the gateway buoy index
-    int GatewayID = 0;
-    if(IsGateway)
+    // Read the hydroid gateway buoy index
+    int hydroid_gateway_id = 1;
+    if(is_hydroid_gateway)
     {
-        if (!config.GetConfigurationParam("hydroid_gateway_id", GatewayID))
-            logger() << group("mm_out") << warn << "Hydroid Gateway ID not set, using default of " << GatewayID << std::endl;
+        if (!config.GetConfigurationParam("hydroid_gateway_id", hydroid_gateway_id))
+            logger() << group("mm_out") << warn << "Hydroid Gateway ID not set, using default of " << hydroid_gateway_id << std::endl;
     }    
     
-    driver_.set_gateway_prefix( IsGateway, GatewayID );
-    // End the addition of code to support the gateway buoy
+    driver_.set_hydroid_gateway_prefix(is_hydroid_gateway, hydroid_gateway_id);
 
 
     std::string connection_type;
@@ -438,12 +433,12 @@ void CpAcommsHandler::read_driver_parameters(CProcessConfigReader& config)
     
     std::vector<std::string> cfg;
 
-    bool cfgall = true;
+    bool cfgall = false;
     if (!config.GetConfigurationParam("cfg_to_defaults", cfgall))
-        logger()  << group("mm_out") << "using default of setting all CFG values to factory default "
-               << "before setting our CFG values." << std::endl;
+        logger()  << group("mm_out") << "not setting all CFG values to factory default "
+               << "before setting our CFG values. consider using cfg_to_defaults=true if you can." << std::endl;
     
-    if(cfgall)
+    if(cfgall && !is_hydroid_gateway) // Hydroid gateway breaks if you run CCCFG,ALL! They use a 4800 baud while the WHOI default is 19200. You will need to open the buoy if this happens
         cfg.push_back("ALL,0");
 
     cfg.push_back(std::string("SRC," + boost::lexical_cast<std::string>(modem_id_)));

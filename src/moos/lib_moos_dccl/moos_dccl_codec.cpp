@@ -147,7 +147,7 @@ void MOOSDCCLCodec::read_parameters(CProcessConfigReader& processConfigReader)
     }
     
 
-    
+   
     
     std::string schema = "";
     if (!processConfigReader.GetConfigurationParam("schema", schema))
@@ -250,7 +250,7 @@ void MOOSDCCLCodec::read_parameters(CProcessConfigReader& processConfigReader)
             else if(tes::stricmp(key, "tcp_share_in_address"))
             {
                 if(!tcp_share_enable_)
-                    base_app_->logger() << group("tcp") << "tcp_share_in_to_ip given but tcp_enable is false" << std::endl;
+                    base_app_->logger() << group("tcp") << "tcp_share_in_address given but tcp_enable is false" << std::endl;
                 else
                 {
                     std::string ip;

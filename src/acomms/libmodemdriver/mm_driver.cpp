@@ -493,7 +493,7 @@ void goby::acomms::MMDriver::set_hydroid_gateway_prefix(int id)
 {
     is_hydroid_gateway_ = true;
     // If the buoy is in use, make the prefix #M<ID>
-    hydroid_gateway_gps_request_ = "#G" + as<std::string>(id);        
+    hydroid_gateway_gps_request_ = "#G" + as<std::string>(id) + "\r\n";        
     hydroid_gateway_modem_prefix_ = "#M" + as<std::string>(id);
     
     if(log_) *log_ << "Setting the hydroid_gateway buoy prefix: out=" << hydroid_gateway_modem_prefix_ << std::endl;

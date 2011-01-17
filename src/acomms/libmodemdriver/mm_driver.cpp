@@ -34,6 +34,10 @@ boost::posix_time::time_duration goby::acomms::MMDriver::MODEM_WAIT = boost::pos
 boost::posix_time::time_duration goby::acomms::MMDriver::WAIT_AFTER_REBOOT = boost::posix_time::seconds(2);
 boost::posix_time::time_duration goby::acomms::MMDriver::ALLOWED_SKEW = boost::posix_time::seconds(2);
 
+boost::posix_time::time_duration goby::acomms::MMDriver::HYDROID_GATEWAY_GPS_REQUEST_INTERVAL = boost::posix_time::seconds(30);
+
+
+
 std::string goby::acomms::MMDriver::SERIAL_DELIMITER = "\r";
 unsigned goby::acomms::MMDriver::PACKET_FRAME_COUNT [] = { 1, 3, 3, 2, 2, 8 };
 unsigned goby::acomms::MMDriver::PACKET_SIZE [] = { 32, 32, 64, 256, 256, 256 };
@@ -47,7 +51,9 @@ goby::acomms::MMDriver::MMDriver(std::ostream* log /*= 0*/)
       startup_done_(false),
       global_fail_count_(0),
       present_fail_count_(0),
-      clock_set_(false)
+      clock_set_(false),
+      last_hydroid_gateway_gps_request_(goby_time()),
+      is_hydroid_gateway_(false)
 {
     initialize_talkers();
     set_serial_baud(DEFAULT_BAUD);
@@ -88,8 +94,7 @@ void goby::acomms::MMDriver::do_work()
         if(log_) *log_ << group("mm_in") << in << std::endl;
 
 	// Check for whether the hydroid_gateway buoy is being used and if so, remove the prefix
-	if (!hydroid_gateway_prefix_in_.empty())
-	    in.erase(0, hydroid_gateway_prefix_in_.length());
+	if (is_hydroid_gateway_) in.erase(0, HYDROID_GATEWAY_PREFIX_LENGTH);
         
         try
         {
@@ -101,6 +106,15 @@ void goby::acomms::MMDriver::do_work()
             if(log_) *log_ << group("mm_in") << warn << e.what() << std::endl;
         }
     }
+
+    // if we're using a hydroid buoy query it for its GPS position
+    if(is_hydroid_gateway_ &&
+       last_hydroid_gateway_gps_request_ + HYDROID_GATEWAY_GPS_REQUEST_INTERVAL < goby_time())
+    {
+        modem_write(hydroid_gateway_gps_request_);
+        last_hydroid_gateway_gps_request_ = goby_time();
+    }
+    
 }
 
 
@@ -114,7 +128,7 @@ void goby::acomms::MMDriver::handle_mac_initiate_transmission(const acomms::Mode
     nmea.push_back(m.rate()); // Packet Type (transmission rate)
     nmea.push_back(int(m.ack())); // ACK: deprecated field, this bit may be used for something that's not related to the ack
     nmea.push_back(PACKET_FRAME_COUNT[m.rate()]); // number of frames we want
-    write(nmea);
+    write(nmea);        
 }
 
 void goby::acomms::MMDriver::handle_mac_initiate_ranging(const acomms::ModemMessage& m, RangingType type)
@@ -188,8 +202,8 @@ void goby::acomms::MMDriver::handle_modem_out()
 
 void goby::acomms::MMDriver::mm_write(const NMEASentence& nmea_out)
 {
-    if(log_) *log_ << group("mm_out") << hydroid_gateway_prefix_out_ << nmea_out.message() << std::endl;
-    modem_write(hydroid_gateway_prefix_out_ + nmea_out.message_cr_nl());
+    if(log_) *log_ << group("mm_out") << hydroid_gateway_modem_prefix_ << nmea_out.message() << std::endl;
+    modem_write(hydroid_gateway_modem_prefix_ + nmea_out.message_cr_nl());
 }
 
 
@@ -475,14 +489,13 @@ void goby::acomms::MMDriver::initialize_talkers()
 
 
 
-void goby::acomms::MMDriver::set_hydroid_gateway_prefix(bool is_hydroid_gateway, int id)
+void goby::acomms::MMDriver::set_hydroid_gateway_prefix(int id)
 {
+    is_hydroid_gateway_ = true;
     // If the buoy is in use, make the prefix #M<ID>
-    if (is_hydroid_gateway)
-    {
-        hydroid_gateway_prefix_in_ = "!M" + as<std::string>(id);
-        hydroid_gateway_prefix_out_ = "#M" + as<std::string>(id);
-
-        if(log_) *log_ << "Setting the hydroid_gateway buoy prefix: in=" << hydroid_gateway_prefix_in_ << ", out=" << hydroid_gateway_prefix_out_ << std::endl;
-    }
+    hydroid_gateway_gps_request_ = "#G" + as<std::string>(id);        
+    hydroid_gateway_modem_prefix_ = "#M" + as<std::string>(id);
+    
+    if(log_) *log_ << "Setting the hydroid_gateway buoy prefix: out=" << hydroid_gateway_modem_prefix_ << std::endl;
 }
+

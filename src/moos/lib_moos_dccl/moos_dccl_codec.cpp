@@ -340,6 +340,8 @@ void MOOSDCCLCodec::pack(unsigned dccl_id, goby::acomms::ModemMessage& modem_mes
         
         
         std::string out_var = dccl_.get_outgoing_hex_var(dccl_id);
+
+        base_app_->outbox(MOOS_VAR_OUTGOING_DATA, modem_message.serialize());        
         base_app_->outbox(out_var, modem_message.serialize());        
         
         if(callback_pack && queue(dccl_id)) callback_pack(goby::acomms::QueueKey(goby::acomms::queue_dccl, dccl_id), modem_message);
@@ -397,7 +399,6 @@ void MOOSDCCLCodec::unpack(unsigned dccl_id, const goby::acomms::ModemMessage& m
         base_app_->logger() << group("dccl_dec") << warn << "could not decode message with id: " << dccl_id << ", reason: " << e.what() << std::endl;
     }    
 }
-
 
 void MOOSDCCLCodec::register_variables()
 {

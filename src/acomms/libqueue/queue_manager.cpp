@@ -81,10 +81,10 @@ void goby::acomms::QueueManager::add_queue(const QueueConfig& cfg)
         ss << "Queue: duplicate key specified for key: " << k;
         throw queue_exception(ss.str());
     }
-    else if(q.cfg().id() > MAX_ID && q.cfg().type() != queue_ccl)
+    else if((q.cfg().id() > MAX_ID || q.cfg().id() < MIN_ID) && q.cfg().type() == queue_dccl)
     {
         std::stringstream ss;
-        ss << "Queue: key (" << k << ") is too large for use with libqueue. Use a id smaller than " << MAX_ID;
+        ss << "Queue: key (" << k << ") is out of bounds for use with libqueue. Use a id from " << MIN_ID << " to " << MAX_ID;
         throw queue_exception(ss.str());
     }
     else

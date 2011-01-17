@@ -70,7 +70,7 @@ namespace goby
             }
 
             // set an additional prefix to support the hydroid gateway
-            void set_hydroid_gateway_prefix(bool is_hydroid_gateway, int id);
+            void set_hydroid_gateway_prefix(int id);
 
             void write(util::NMEASentence& nmea);
             void measure_noise(unsigned milliseconds_to_average);
@@ -128,6 +128,7 @@ namespace goby
             static boost::posix_time::time_duration WAIT_AFTER_REBOOT;
             // allowed time skew between our clock and the %modem clock
             static boost::posix_time::time_duration ALLOWED_SKEW;
+            
             static std::string SERIAL_DELIMITER;
             // number of frames for a given packet type
             static unsigned PACKET_FRAME_COUNT [];
@@ -178,9 +179,17 @@ namespace goby
             std::map<std::string, TalkerIDs> talker_id_map_;
             std::map<std::string, SentenceIDs> sentence_id_map_;
 
-            std::string hydroid_gateway_prefix_in_;
-            std::string hydroid_gateway_prefix_out_;
+            // length of #G1 or #M1
+            enum { HYDROID_GATEWAY_PREFIX_LENGTH = 3 };
 
+            // time between requests to the hydroid gateway buoy gps
+            static boost::posix_time::time_duration HYDROID_GATEWAY_GPS_REQUEST_INTERVAL;
+            boost::posix_time::ptime last_hydroid_gateway_gps_request_;
+            bool is_hydroid_gateway_;
+            std::string hydroid_gateway_modem_prefix_;
+            std::string hydroid_gateway_gps_request_;
+            
+            
             std::map<std::string, int> nvram_cfg_;
 
         };

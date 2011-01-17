@@ -280,18 +280,25 @@ void CpAcommsHandler::queue_expire(goby::acomms::QueueKey qk, const ModemMessage
 
 void CpAcommsHandler::queue_incoming_data(goby::acomms::QueueKey key, const ModemMessage & message)
 {
-
-// post message and set originating community to modem id 
-    CMOOSMsg m(MOOS_NOTIFY, in_queue2moos_var_[key], message.serialize(), -1);
-    m.m_sOriginatingCommunity = boost::lexical_cast<std::string>(message.src());
-    
+    // also post to the generic incoming data variable
+    CMOOSMsg m(MOOS_NOTIFY, MOOS_VAR_INCOMING_DATA, message.serialize(), -1);
+    m.m_sOriginatingCommunity = boost::lexical_cast<std::string>(message.src());    
     outbox(m);
-    
-    logger() << group("q_in") << "published received data to "
-           << in_queue2moos_var_[key] << ": " << message.snip() << std::endl;
 
-    if(moos_dccl_.decode(key.id()) && key.type() == goby::acomms::queue_dccl)
-        moos_dccl_.unpack(key.id(), message);
+    // we know what this type is
+    if(in_queue2moos_var_.count(key))
+    {
+        // post message and set originating community to modem id 
+        CMOOSMsg m_specific(MOOS_NOTIFY, in_queue2moos_var_[key], message.serialize(), -1);
+        m_specific.m_sOriginatingCommunity = boost::lexical_cast<std::string>(message.src());    
+        outbox(m_specific);
+    
+        logger() << group("q_in") << "published received data to "
+                 << in_queue2moos_var_[key] << ": " << message.snip() << std::endl;
+        
+        if(moos_dccl_.decode(key.id()) && key.type() == goby::acomms::queue_dccl)
+            moos_dccl_.unpack(key.id(), message);
+    }
 }
 
 
@@ -378,10 +385,9 @@ void CpAcommsHandler::read_driver_parameters(CProcessConfigReader& config)
     {
         if (!config.GetConfigurationParam("hydroid_gateway_id", hydroid_gateway_id))
             logger() << group("mm_out") << warn << "Hydroid Gateway ID not set, using default of " << hydroid_gateway_id << std::endl;
-    }    
-    
-    driver_.set_hydroid_gateway_prefix(is_hydroid_gateway, hydroid_gateway_id);
-
+        
+        driver_.set_hydroid_gateway_prefix(hydroid_gateway_id);
+    }
 
     std::string connection_type;
     config.GetConfigurationParam("connection_type", connection_type);

@@ -54,6 +54,7 @@ const std::string MOOS_VAR_NMEA_IN = "ACOMMS_NMEA_IN";
 const std::string MOOS_VAR_RANGING = "ACOMMS_RANGE_RESPONSE";
 const std::string MOOS_VAR_COMMAND_RANGING = "ACOMMS_RANGE_COMMAND";
 
+
 // pAcommsPoller
 const std::string MOOS_VAR_POLLER_REQUEST = "POLLER_DEST_REQUEST";
 const std::string MOOS_VAR_POLLER_COMMAND = "POLLER_DEST_COMMAND";
@@ -145,8 +146,6 @@ class CpAcommsHandler : public TesMoosApp
 
     std::map<std::string, goby::acomms::QueueKey> out_moos_var2queue_;
     std::map<goby::acomms::QueueKey, std::string> in_queue2moos_var_;
-
-    
 };
 
 #endif 

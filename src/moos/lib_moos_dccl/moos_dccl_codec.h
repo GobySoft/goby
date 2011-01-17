@@ -42,6 +42,10 @@ namespace goby {
     }
 } 
 
+// data
+const std::string MOOS_VAR_INCOMING_DATA = "ACOMMS_INCOMING_DATA";
+const std::string MOOS_VAR_OUTGOING_DATA = "ACOMMS_OUTGOING_DATA";
+
 const bool DEFAULT_NO_ENCODE = true;
 const bool DEFAULT_ENCODE = false;
 

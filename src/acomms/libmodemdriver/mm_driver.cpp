@@ -95,7 +95,9 @@ void goby::acomms::MMDriver::do_work()
 
 	// Check for whether the hydroid_gateway buoy is being used and if so, remove the prefix
 	if (is_hydroid_gateway_) in.erase(0, HYDROID_GATEWAY_PREFIX_LENGTH);
-        
+	
+	if(callback_in_raw) callback_in_raw(in); 
+  
         try
         {
             NMEASentence nmea(in, NMEASentence::VALIDATE);
@@ -203,6 +205,8 @@ void goby::acomms::MMDriver::handle_modem_out()
 void goby::acomms::MMDriver::mm_write(const NMEASentence& nmea_out)
 {
     if(log_) *log_ << group("mm_out") << hydroid_gateway_modem_prefix_ << nmea_out.message() << std::endl;
+ 
+    if(callback_out_raw) callback_out_raw(nmea_out.message());
     modem_write(hydroid_gateway_modem_prefix_ + nmea_out.message_cr_nl());
 }
 

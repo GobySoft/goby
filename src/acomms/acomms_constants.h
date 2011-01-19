@@ -22,6 +22,12 @@
 #include <limits>
 #include <bitset>
 
+#include <crypto++/filters.h>
+#include <crypto++/hex.h>
+
+#include "goby/acomms/protobuf/modem_message.pb.h"
+#include "goby/core/core_constants.h"
+
 namespace goby
 {
 
@@ -31,7 +37,9 @@ namespace goby
         // one hex char is a nibble (4 bits), two nibbles per byte
         const unsigned NIBS_IN_BYTE = 2;
 
-        const unsigned BROADCAST_ID = 0;
+        const int BROADCAST_ID = 0;
+        const int QUERY_DESTINATION_ID = -1;
+        
         const unsigned char DCCL_CCL_HEADER = 32;
     
         const double NaN = std::numeric_limits<double>::quiet_NaN();
@@ -63,7 +71,8 @@ namespace goby
         {
             return DCCL_HEADER_NAMES[p];
         }
-    
+
+        
         enum DCCLHeaderBits { head_ccl_id_size = 8,
                               head_dccl_id_size = 9,
                               head_time_size = 17,
@@ -72,7 +81,46 @@ namespace goby
                               head_flag_size = 1,
                               head_unused_size = 2
         };
+
+
+        
+            
+        inline void hex_decode(const std::string& in, std::string* out)
+        {
+            CryptoPP::HexDecoder hex(new CryptoPP::StringSink(*out));
+            hex.Put((byte*)in.c_str(), in.size());
+            hex.MessageEnd();
+        }
+
+        inline std::string hex_decode(const std::string& in)
+        {
+            std::string out;
+            hex_decode(in, &out);
+            return out;
+        }
     
+        inline void hex_encode(const std::string& in, std::string* out)
+        {
+            const bool uppercase = false;
+            CryptoPP::HexEncoder hex(new CryptoPP::StringSink(*out), uppercase);
+            hex.Put((byte*)in.c_str(), in.size());
+            hex.MessageEnd();
+        }
+
+        inline std::string hex_encode(const std::string& in)
+        {
+            std::string out;
+            hex_encode(in, &out);
+            return out;
+        }
+        
+        // provides stream output operator for Google Protocol Buffers Message 
+        inline std::ostream& operator<<(std::ostream& out, const google::protobuf::Message& msg)
+        {
+            return (out << "[[" << msg.GetDescriptor()->name() <<"]] " << msg.DebugString());
+        }
+        
+        
     }
 
 }

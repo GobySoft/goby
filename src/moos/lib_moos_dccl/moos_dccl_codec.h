@@ -36,11 +36,17 @@
 #include "goby/moos/lib_tes_util/dynamic_moos_vars.h"
 #include "goby/moos/lib_tes_util/tes_moos_app.h"
 
+#include <google/protobuf/io/tokenizer.h>
+
+
+
 namespace goby {
     namespace acomms {
-        class ModemMessage;
-    }
-} 
+        namespace protobuf {
+            class ModemDataTransmission;
+        }
+    } 
+}
 
 // data
 const std::string MOOS_VAR_INCOMING_DATA = "ACOMMS_INCOMING_DATA";
@@ -74,12 +80,38 @@ IP(const std::string& ip = "", unsigned port = DEFAULT_TCP_SHARE_PORT)
 };
     
 
+inline void serialize_for_moos(std::string* out, const google::protobuf::Message& msg)
+{
+    google::protobuf::TextFormat::Printer printer;
+    printer.SetSingleLineMode(true);
+    printer.PrintToString(msg, out);
+}
+
+class FlexOStreamErrorCollector : public google::protobuf::io::ErrorCollector
+{
+  public:
+    void AddError(int line, int column, const std::string& message)
+    {
+        goby::util::glogger() << warn << message << std::endl;
+    }
+    void AddWarning(int line, int column, const std::string& message)
+    {
+        goby::util::glogger() << warn << message << std::endl;        
+    }
+};
+
+inline void parse_for_moos(const std::string& in, google::protobuf::Message* msg)
+{
+    google::protobuf::TextFormat::Parser parser;
+    FlexOStreamErrorCollector error_collector;
+    parser.RecordErrorsTo(&error_collector);
+    parser.ParseFromString(in, msg);
+}
+
 
 class MOOSDCCLCodec
 {
-  public:
-
-    
+  public:    
   MOOSDCCLCodec(TesMoosApp* base_app,
                 goby::acomms::QueueManager* queue_manager = 0,
                 bool all_no_encode = false,
@@ -100,10 +132,10 @@ class MOOSDCCLCodec
     void read_parameters(CProcessConfigReader& processConfigReader);
     void register_variables();
 
-    void pack(unsigned dccl_id, goby::acomms::ModemMessage& modem_message);
-    void unpack(unsigned dccl_id, const goby::acomms::ModemMessage& modem_message, std::set<std::string>previous_hops = std::set<std::string>());
+    void pack(unsigned dccl_id, goby::acomms::protobuf::ModemDataTransmission* modem_message);
+    void unpack(unsigned dccl_id, const goby::acomms::protobuf::ModemDataTransmission& modem_message, std::set<std::string>previous_hops = std::set<std::string>());
 
-    void handle_tcp_share(unsigned dccl_id, const goby::acomms::ModemMessage& modem_message, std::set<std::string>previous_hops);
+    void handle_tcp_share(unsigned dccl_id, const goby::acomms::protobuf::ModemDataTransmission& modem_message, std::set<std::string>previous_hops);
 
     
     bool encode(unsigned id)
@@ -164,7 +196,7 @@ class MOOSDCCLCodec
     void alg_modem_id2type(goby::acomms::DCCLMessageVal& in);
     void alg_name2modem_id(goby::acomms::DCCLMessageVal& in);
 
-    typedef boost::function<void (goby::acomms::QueueKey key, goby::acomms::ModemMessage & message)> MsgFunc;
+    typedef boost::function<void (goby::acomms::QueueKey key, goby::acomms::protobuf::ModemDataTransmission & message)> MsgFunc;
 
     void set_callback_pack(MsgFunc func) { callback_pack = func; }
     template<typename V, typename A1, typename A2>
@@ -209,7 +241,7 @@ class MOOSDCCLCodec
     std::map<unsigned, std::map<std::string, std::vector<goby::acomms::DCCLMessageVal> > > repeat_buffer_;
     std::map<unsigned, unsigned> repeat_count_;
 
-    unsigned modem_id_;
+    int modem_id_;
 
     bool tcp_share_enable_;
     unsigned tcp_share_port_;

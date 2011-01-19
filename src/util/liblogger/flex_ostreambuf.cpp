@@ -44,8 +44,8 @@ boost::mutex goby::util::Logger::mutex;
 
 goby::util::FlexOStreamBuf::FlexOStreamBuf(): name_("no name"),
                                               die_flag_(false),
-                                              debug_flag_(false),
                                               warn_flag_(false),
+                                              debug_flag_(false),
 #ifdef HAS_NCURSES
                                               curses_(0),
 #endif

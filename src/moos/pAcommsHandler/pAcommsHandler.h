@@ -36,7 +36,6 @@
 #include "goby/acomms/queue.h"
 #include "goby/acomms/modem_driver.h"
 #include "goby/acomms/amac.h"
-#include "goby/acomms/modem_message.h"
 
 #include "goby/moos/lib_tes_util/dynamic_moos_vars.h"
 #include "goby/moos/lib_moos_dccl/moos_dccl_codec.h"
@@ -53,11 +52,6 @@ const std::string MOOS_VAR_NMEA_IN = "ACOMMS_NMEA_IN";
 // ranging responses
 const std::string MOOS_VAR_RANGING = "ACOMMS_RANGE_RESPONSE";
 const std::string MOOS_VAR_COMMAND_RANGING = "ACOMMS_RANGE_COMMAND";
-
-
-// pAcommsPoller
-const std::string MOOS_VAR_POLLER_REQUEST = "POLLER_DEST_REQUEST";
-const std::string MOOS_VAR_POLLER_COMMAND = "POLLER_DEST_COMMAND";
 
 // command to measure noise
 const std::string MOOS_VAR_MEASURE_NOISE_REQUEST = "ACOMMS_MEASURE_NOISE_COMMAND";
@@ -95,17 +89,19 @@ class CpAcommsHandler : public TesMoosApp
     void read_internal_mac_parameters(CProcessConfigReader& config);
     // read the message queueing (XML / send, receive = ) part of the .moos file
     void read_queue_parameters(CProcessConfigReader& config);
-
     
-
     // from QueueManager
-    void queue_incoming_data(goby::acomms::QueueKey key, const goby::acomms::ModemMessage & message);
-    void queue_ack(goby::acomms::QueueKey key, const goby::acomms::ModemMessage & message);
-    bool queue_on_demand(goby::acomms::QueueKey key, goby::acomms::ModemMessage & message);
-
+    void queue_incoming_data(goby::acomms::QueueKey key,
+                             const goby::acomms::protobuf::ModemDataTransmission & message);
+    void queue_ack(goby::acomms::QueueKey key,
+                   const goby::acomms::protobuf::ModemDataAck & message);
+    bool queue_on_demand(goby::acomms::QueueKey key,
+                         const goby::acomms::protobuf::ModemDataRequest& request_msg,
+                         goby::acomms::protobuf::ModemDataTransmission* data_msg);
     
     void queue_qsize(goby::acomms::QueueKey qk, unsigned size);
-    void queue_expire(goby::acomms::QueueKey key, const goby::acomms::ModemMessage & message);
+    void queue_expire(goby::acomms::QueueKey key,
+                      const goby::acomms::protobuf::ModemDataExpire & message);
     
     // from pAcommsPoller
     // provides the next highest priority destination for the poller ($CCCYC)
@@ -123,14 +119,14 @@ class CpAcommsHandler : public TesMoosApp
     // publish raw NMEA stream to the modem ($CC)
     void modem_raw_out(std::string s);
     // write ping (ranging) responses
-    void modem_range_reply(const goby::acomms::ModemMessage& message);    
+    void modem_range_reply(const goby::acomms::protobuf::ModemRangingReply& message);
     
   private:
     //DCCL parsing
     goby::acomms::DCCLCodec dccl_;
 
     // ours ($CCCFG,SRC,modem_id_)
-    unsigned modem_id_;    
+    int modem_id_;    
     
     // do the encoding / decoding
     MOOSDCCLCodec moos_dccl_;

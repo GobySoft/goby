@@ -49,28 +49,28 @@ int main()
     std::map<std::string, acomms::DCCLMessageVal> in_vals;
 
     // initialize output message
-    acomms::ModemMessage msg;
+    acomms::protobuf::ModemDataTransmission msg;
 
     in_vals["PLUSNET_MESSAGES"] = "MessageType=SENSOR_STATUS,SensorReportType=0,SourcePlatformId=1,DestinationPlatformId=3,Timestamp=1191947446.91117,NodeLatitude=47.7448,NodeLongitude=-122.845,NodeDepth=0.26,NodeCEP=0,NodeHeading=169.06,NodeSpeed=0,MissionState=2,MissionType=2,LastGPSTimestamp=1191947440,PowerLife=6,SensorHealth=0,RecorderState=1,RecorderLife=0,NodeSpecificInfo0=0,NodeSpecificInfo1=0,NodeSpecificInfo2=23,NodeSpecificInfo3=0,NodeSpecificInfo4=3,NodeSpecificInfo5=0";
 
     std::cout << "passing values to encoder:" << std::endl  
               << in_vals;
     
-    dccl.pubsub_encode("SENSOR_STATUS", msg, in_vals);
+    dccl.pubsub_encode("SENSOR_STATUS", &msg, in_vals);
     
-    std::cout << "received acomms::DCCLMessage: "
-              << msg.serialize()
+    std::cout << "received: "
+              << msg
               << std::endl;
 
     
     std::multimap<std::string, acomms::DCCLMessageVal> out_vals;
 
     
-    std::cout << "passed acomms::DCCLMessage to decoder: " 
-              << msg.serialize()
+    std::cout << "passed to decoder: " 
+              << msg
               << std::endl;
 
-    dccl.pubsub_decode(msg, out_vals);
+    dccl.pubsub_decode(msg, &out_vals);
     
     std::cout << "received values:" << std::endl 
               << out_vals;

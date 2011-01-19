@@ -30,7 +30,8 @@
 #include "goby/acomms/xml/xml_parser.h"
 #include "goby/util/time.h"
 #include "goby/util/logger.h"
-  
+
+#include "goby/core/core_constants.h"
 #include "message.h"
 #include "message_val.h"
 #include "dccl_exception.h"
@@ -46,7 +47,6 @@ namespace goby
     /// Objects pertaining to acoustic communications (acomms)
     namespace acomms
     {
-
         /// use this for displaying a human readable version
         template<typename Value>
             std::ostream& operator<< (std::ostream& out, const std::map<std::string, Value>& m)
@@ -304,7 +304,7 @@ namespace goby
             /// \param vals map of source variable name to MessageVal values. 
             template<typename Key>
                 void pubsub_encode(const Key& k,
-                                   ModemMessage& msg,
+                                   protobuf::ModemDataTransmission* msg,
                                    const std::map<std::string, std::vector<DCCLMessageVal> >& pubsub_vals)
             {
                 std::vector<DCCLMessage>::iterator it = to_iterator(k);
@@ -345,7 +345,7 @@ namespace goby
             /// Use this version if you do not have vectors of src_var values
             template<typename Key>
                 void pubsub_encode(const Key& k,
-                                   ModemMessage& msg,
+                                   protobuf::ModemDataTransmission* msg,
                                    const std::map<std::string, DCCLMessageVal>& pubsub_vals)
             {
                 std::map<std::string, std::vector<DCCLMessageVal> > vm;
@@ -366,8 +366,8 @@ namespace goby
             /// \param k can either be std::string (the name of the message) or unsigned (the id of the message)
             /// \param msg ModemMessage or std::string to be decode.
             /// \param vals pointer to std::multimap of publish variable name to std::string values.
-            void pubsub_decode(const ModemMessage& msg,
-                               std::multimap<std::string, DCCLMessageVal>& pubsub_vals)
+            void pubsub_decode(const protobuf::ModemDataTransmission& msg,
+                               std::multimap<std::string, DCCLMessageVal>* pubsub_vals)
                                
             {
                 std::map<std::string, std::vector<DCCLMessageVal> > vals;
@@ -381,7 +381,7 @@ namespace goby
                 {
                     *log_ << group("dccl_dec") << "publish/subscribe variables are: " << std::endl;
                     typedef std::pair<std::string, DCCLMessageVal> P;
-                    BOOST_FOREACH(const P& p, pubsub_vals)
+                    BOOST_FOREACH(const P& p, *pubsub_vals)
                     {
                         
                         *log_ << group("dccl_dec") << "\t" << p.first << ": " << p.second << std::endl;
@@ -483,10 +483,10 @@ namespace goby
                                 std::map<std::string, std::vector<DCCLMessageVal> >& out);
         
             void encode_private(std::vector<DCCLMessage>::iterator it,
-                                ModemMessage& out_msg,
+                                protobuf::ModemDataTransmission* out_msg,
                                 const std::map<std::string, std::vector<DCCLMessageVal> >& in);
         
-            std::vector<DCCLMessage>::iterator decode_private(const ModemMessage& in_msg,
+            std::vector<DCCLMessage>::iterator decode_private(const protobuf::ModemDataTransmission& in_msg,
                                 std::map<std::string, std::vector<DCCLMessageVal> >& out);
         
             void check_duplicates();
@@ -521,10 +521,9 @@ namespace goby
             {
                 std::map<std::string, std::vector<DCCLMessageVal> > in_copy = in;
                 msg_.head_encode(encoded_, in_copy);
-                hex_encode(encoded_);
             }
-            std::string& get() { return encoded_; }
-
+            std::string& str() { return encoded_; }
+            
           private:
             DCCLMessage msg_;
             std::string encoded_;        
@@ -535,8 +534,7 @@ namespace goby
           public:
             DCCLHeaderDecoder(const std::string& in_orig)
             {
-                std::string in = in_orig.substr(0, DCCL_NUM_HEADER_BYTES*NIBS_IN_BYTE);
-                hex_decode(in);    
+                std::string in = in_orig.substr(0, DCCL_NUM_HEADER_BYTES);
                 msg_.head_decode(in, decoded_);
             }   
             std::map<std::string, std::vector<DCCLMessageVal> >& get() { return decoded_; }

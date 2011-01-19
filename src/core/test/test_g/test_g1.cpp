@@ -14,6 +14,8 @@
 
 using goby::util::goby_time;
 using goby::core::proto::Filter;
+using goby::core::operator<<;
+
 
 namespace dbo = Wt::Dbo;
 

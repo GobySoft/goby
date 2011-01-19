@@ -27,8 +27,12 @@
 #include "goby/acomms/modem_driver.h"
 #include <iostream>
 
-bool handle_data_request(goby::acomms::ModemMessage&);
-void handle_data_receive(const goby::acomms::ModemMessage&);
+using goby::acomms::operator<<;
+
+
+void handle_data_request(const goby::acomms::protobuf::ModemDataRequest& request_msg,
+                         goby::acomms::protobuf::ModemDataTransmission* data_msg);
+void handle_data_receive(const goby::acomms::protobuf::ModemDataTransmission& data_msg);
 
 int main(int argc, char* argv[])
 {
@@ -67,13 +71,13 @@ int main(int argc, char* argv[])
     // 3. Initiate a transmission cycle
     //
     
-    goby::acomms::ModemMessage transmit_init_message;
-    transmit_init_message.set_src(our_id);
+    goby::acomms::protobuf::ModemMsgBase transmit_init_message;
+    transmit_init_message.set_src(goby::util::as<unsigned>(our_id));
     transmit_init_message.set_dest(goby::acomms::BROADCAST_ID);
     // one frame @ 32 bytes
     transmit_init_message.set_rate(0);
 
-    mm_driver.handle_mac_initiate_transmission(transmit_init_message);
+    mm_driver.handle_initiate_transmission(transmit_init_message);
 
     //
     // 4. Run the driver
@@ -94,18 +98,17 @@ int main(int argc, char* argv[])
 // 5. Handle the data request ($CADRQ)
 //
 
-bool handle_data_request(goby::acomms::ModemMessage& request_message)
+void handle_data_request(const goby::acomms::protobuf::ModemDataRequest& request_msg,
+                         goby::acomms::protobuf::ModemDataTransmission* data_msg)
 {
-    request_message.set_data("aa1100bbccddef0987654321");
-    return true; // we have data
+    data_msg->set_data(goby::acomms::hex_decode("aa1100bbccddef0987654321"));
 }
 
 //
 // 6. Post the received data 
 //
 
-void handle_data_receive(const goby::acomms::ModemMessage& message_in)
+void handle_data_receive(const goby::acomms::protobuf::ModemDataTransmission& data_msg)
 {
-    std::cout << "got a message: " << message_in << std::endl;
-    std::cout << "\t" << "data: " << message_in.data() << std::endl;
+    std::cout << "got a message: " << data_msg << std::endl;
 }

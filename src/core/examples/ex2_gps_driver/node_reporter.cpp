@@ -3,6 +3,8 @@
 
 #include "node_report.pb.h"
 
+using goby::core::operator<<;
+
 NodeReporterConfig NodeReporter::cfg_;
 
 int main(int argc, char* argv[])

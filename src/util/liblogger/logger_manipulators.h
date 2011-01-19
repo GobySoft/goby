@@ -116,6 +116,4 @@ inline goby::util::FlexOstream& operator<<(goby::util::FlexOstream& os, const Gr
 /// used for non tty ostreams (everything but std::cout / std::cerr) as the header for every line
 std::ostream& basic_log_header(std::ostream& os, const std::string& group_name);
 
-
-
 #endif

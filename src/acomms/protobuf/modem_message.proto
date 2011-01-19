@@ -1,0 +1,78 @@
+// TODO(tes) consider using extensions to handle different modem characteristics
+
+package goby.acomms.protobuf;
+
+// shared for all messages
+message ModemMsgBase
+{
+  optional int32 src = 1 [default = 0]; //  0 (BROADCAST), 1-31, 
+  optional int32 dest = 2 [default = 0]; //  0 (BROADCAST), 1-31, -1 (QUERY_DESTINATION_ID)
+  required string iso_time = 3; // YYYYMMDDTHHMMSS e.g. 20110110T133345
+  required double unix_time = 4; // seconds since 1970-01-01 00:00:00 UTC
+  enum TimeSource { MODEM_TIME = 1; GOBY_TIME = 2; } 
+  required TimeSource time_source = 5; // source of the timestamp given  
+  optional uint32 rate = 6 [default = 0]; // 0 (lowest) - 5 (highest)
+  optional string raw = 7; // "$CARXD,..."
+}
+
+// data 
+message ModemDataTransmission
+{
+  optional ModemMsgBase base = 1;
+  optional bool ack_requested = 2;
+  //  optional uint32 max_bytes = 3;
+  optional bytes data = 4;
+  optional uint32 frame = 5 [default = 0];  
+}
+
+message ModemDataAck
+{
+  optional ModemMsgBase base = 1;
+  optional uint32 frame = 2 [default = 0];
+  optional ModemDataTransmission orig_msg = 3; // will be provided by libqueue
+}
+
+message ModemDataExpire
+{
+  optional ModemDataTransmission orig_msg = 1;
+}
+
+message ModemDataRequest
+{
+  optional ModemMsgBase base = 1;
+  optional uint32 max_bytes = 2;
+  optional uint32 frame = 3 [default = 0];  
+  //optional bool ack_requested = 3;
+}
+
+message ModemDataInit
+{
+  optional ModemMsgBase base = 1;
+  optional uint32 num_frames = 2 [default = 1];
+}
+
+// ranging
+enum RangingType
+{
+  MODEM_RANGING= 1;
+  REMUS_LBL_RANGING = 2;
+}
+
+message ModemRangingReply
+{
+  optional ModemMsgBase base = 1;
+  // seconds
+  repeated double one_way_travel_time = 2;  
+  optional RangingType type = 3;
+}
+
+message ModemRangingRequest
+{
+  optional ModemMsgBase base = 1;
+  optional RangingType type = 2;
+  optional uint32 max_range = 3 [default = 1000]; // meters
+  // LSB->MSB is LBL beacons 1,2,3,... true is enabled, false is disabled
+  optional uint32 enable_beacons = 4 [default = 15]; 
+  
+  
+}

@@ -35,7 +35,7 @@ namespace goby
     {   
         /// \name String
         //@{
-
+        
         /// \brief non-throwing lexical cast (e.g. assert(as<double>("3.2") == 3.2))
         /// \param from value to cast from 
         /// \return to value to cast to
@@ -51,8 +51,8 @@ namespace goby
                     ? std::numeric_limits<To>::quiet_NaN()
                     : std::numeric_limits<To>::min();
             }
-        }
-
+        }        
+        
         /// specialization of as() for bool -> string
         template <>
             inline std::string as<std::string, bool>(bool from)

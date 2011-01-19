@@ -19,6 +19,9 @@
 
 #ifndef QueueKey20091211H
 #define QueueKey20091211H
+
+#include "queue_config.h"
+
 namespace goby
 {
     namespace acomms

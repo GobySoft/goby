@@ -31,40 +31,41 @@
 
 #include <boost/algorithm/string.hpp>
 
-#include "goby/acomms/modem_message.h"
 #include "goby/util/time.h"
 #include "goby/util/string.h"
 
 #include "queue_config.h"
 
-typedef std::list<goby::acomms::ModemMessage>::iterator messages_it;
+typedef std::list<goby::acomms::protobuf::ModemDataTransmission>::iterator messages_it;
 typedef std::multimap<unsigned, messages_it>::iterator waiting_for_ack_it;
 
 namespace goby
 {
     namespace acomms
-    {    
+    {
         class Queue
         {
           public:
+
+
             Queue(const QueueConfig cfg = QueueConfig(),
                   std::ostream* log = 0,
-                  const unsigned& modem_id = 0);
+                  int modem_id = 0);
 
-            bool push_message(ModemMessage& new_message);
-            ModemMessage give_data(const ModemMessage& msg);
-            bool pop_message(unsigned frame);    
-            bool pop_message_ack(unsigned frame, ModemMessage& msg);
-            void stream_for_pop(const std::string& snip);
+            bool push_message(const protobuf::ModemDataTransmission& data_msg);
+            protobuf::ModemDataTransmission give_data(const protobuf::ModemDataRequest& request_msg);
+            bool pop_message(unsigned frame);
+            bool pop_message_ack(unsigned frame, protobuf::ModemDataTransmission* data_msg);
+            void stream_for_pop(const protobuf::ModemDataTransmission& data_msg);
 
-            std::vector<ModemMessage> expire();
-        
+
+            std::vector<protobuf::ModemDataTransmission> expire();
+          
             bool priority_values(double& priority,
                                  boost::posix_time::ptime& last_send_time,
-                                 const ModemMessage& message);
+                                 const protobuf::ModemDataRequest& request_msg,
+                                 const protobuf::ModemDataTransmission& data_msg);
         
-            unsigned give_dest();
-
             void clear_ack_queue()
             { waiting_for_ack_.clear(); }
 
@@ -80,7 +81,11 @@ namespace goby
             { return last_send_time_; }
 
             boost::posix_time::ptime newest_msg_time() const
-            { return size() ? messages_.back().time() : boost::posix_time::ptime(); }
+            {
+                return size()
+                    ? boost::posix_time::from_iso_string(messages_.back().base().iso_time())
+                    : boost::posix_time::ptime();
+            }
         
             void set_on_demand(bool b)
             { on_demand_ = b; }
@@ -102,13 +107,11 @@ namespace goby
         
             bool on_demand_;
     
-            boost::posix_time::ptime last_send_time_;
-    
-            const unsigned& modem_id_;
-    
+            boost::posix_time::ptime last_send_time_;    
+            
             std::ostream* log_;
     
-            std::list<ModemMessage> messages_;
+            std::list<protobuf::ModemDataTransmission> messages_;
 
             // map frame number onto messages list iterator
             // can have multiples in the same frame now

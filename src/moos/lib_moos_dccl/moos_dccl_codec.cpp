@@ -32,6 +32,7 @@
 using goby::acomms::NaN;
 using namespace goby::util::tcolor;
 using goby::acomms::DCCLMessageVal;
+using goby::acomms::operator<<;
 
 void MOOSDCCLCodec::inbox(const CMOOSMsg& msg)
 {            
@@ -45,13 +46,14 @@ void MOOSDCCLCodec::inbox(const CMOOSMsg& msg)
     {
         BOOST_FOREACH(unsigned id, ids)
         {
-            goby::acomms::ModemMessage mm;
-            pack(id, mm);
+            goby::acomms::protobuf::ModemDataTransmission mm;
+            pack(id, &mm);
         }
     }
     else if(dccl_.is_incoming(id, key) && is_str && msg.GetSource() != base_app_->appName())
     {
-        goby::acomms::ModemMessage mm(sval);
+        goby::acomms::protobuf::ModemDataTransmission mm;
+        mm.ParseFromString(sval);
         unpack(id, mm);
     }
 }
@@ -63,8 +65,8 @@ void MOOSDCCLCodec::iterate()
     {
         BOOST_FOREACH(unsigned id, ids)
         {
-            goby::acomms::ModemMessage mm;
-            pack(id, mm);
+            goby::acomms::protobuf::ModemDataTransmission mm;
+            pack(id, &mm);
         }
     }
     if(tcp_share_enable_ && tcp_share_server_)
@@ -74,7 +76,9 @@ void MOOSDCCLCodec::iterate()
         {
             boost::trim(s);
             
-            goby::acomms::ModemMessage mm(s);
+            goby::acomms::protobuf::ModemDataTransmission mm;
+            mm.ParseFromString(s);
+            
             unsigned dccl_id;
             goby::util::val_from_string(dccl_id, s, "dccl_id");
             std::string seen_str;
@@ -86,7 +90,11 @@ void MOOSDCCLCodec::iterate()
 
             // post for others to use as needed in MOOS
             std::string in_var = dccl_.get_incoming_hex_var(dccl_id);
-            base_app_->outbox(in_var, mm.serialize());
+
+            std::string serialized;
+            serialize_for_moos(&serialized, mm);        
+            
+            base_app_->outbox(in_var,serialized);
             
             unpack(dccl_id, mm, seen_set);
         }
@@ -296,7 +304,7 @@ void MOOSDCCLCodec::read_parameters(CProcessConfigReader& processConfigReader)
     dccl_.add_algorithm("name2modem_id", boost::bind(&MOOSDCCLCodec::alg_name2modem_id, this, _1));
 }
 
-void MOOSDCCLCodec::pack(unsigned dccl_id, goby::acomms::ModemMessage& modem_message)
+void MOOSDCCLCodec::pack(unsigned dccl_id, goby::acomms::protobuf::ModemDataTransmission* modem_message)
 {    
     if(!encode(dccl_id))
         return;    
@@ -341,14 +349,16 @@ void MOOSDCCLCodec::pack(unsigned dccl_id, goby::acomms::ModemMessage& modem_mes
         
         std::string out_var = dccl_.get_outgoing_hex_var(dccl_id);
 
-        base_app_->outbox(MOOS_VAR_OUTGOING_DATA, modem_message.serialize());        
-        base_app_->outbox(out_var, modem_message.serialize());        
+        std::string serialized;
+        serialize_for_moos(&serialized, *modem_message);        
+        base_app_->outbox(MOOS_VAR_OUTGOING_DATA, serialized);
+        base_app_->outbox(out_var, serialized);
         
-        if(callback_pack && queue(dccl_id)) callback_pack(goby::acomms::QueueKey(goby::acomms::queue_dccl, dccl_id), modem_message);
+        if(callback_pack && queue(dccl_id)) callback_pack(goby::acomms::QueueKey(goby::acomms::queue_dccl, dccl_id), *modem_message);
         
-        handle_tcp_share(dccl_id, modem_message, std::set<std::string>());
+        handle_tcp_share(dccl_id, *modem_message, std::set<std::string>());
         
-        if(loopback(dccl_id)) unpack(dccl_id, modem_message);
+        if(loopback(dccl_id)) unpack(dccl_id, *modem_message);
     }
     else
     {
@@ -356,7 +366,7 @@ void MOOSDCCLCodec::pack(unsigned dccl_id, goby::acomms::ModemMessage& modem_mes
     }    
 }
 
-void MOOSDCCLCodec::unpack(unsigned dccl_id, const goby::acomms::ModemMessage& modem_message, std::set<std::string>previous_hops_ips /* = std::set<std::string>() */)
+void MOOSDCCLCodec::unpack(unsigned dccl_id, const goby::acomms::protobuf::ModemDataTransmission& modem_message, std::set<std::string>previous_hops_ips /* = std::set<std::string>() */)
 {
     handle_tcp_share(dccl_id, modem_message, previous_hops_ips);
 
@@ -365,15 +375,14 @@ void MOOSDCCLCodec::unpack(unsigned dccl_id, const goby::acomms::ModemMessage& m
 
     try
     {
-        if(modem_message.dest() != modem_id_ && modem_message.dest() != goby::acomms::BROADCAST_ID)
+        if(modem_message.base().dest() != modem_id_ && modem_message.base().dest() != goby::acomms::BROADCAST_ID)
         {
-            base_app_->logger() << group("dccl_dec") << "ignoring message for modem_id " << modem_message.dest() << std::endl;
+            base_app_->logger() << group("dccl_dec") << "ignoring message for modem_id " << modem_message.base().dest() << std::endl;
             return;
         }
         
         std::multimap<std::string, DCCLMessageVal> out;
-    
-        dccl_.pubsub_decode(modem_message, out); 
+        dccl_.pubsub_decode(modem_message, &out); 
     
         typedef std::pair<std::string, DCCLMessageVal> P;
         BOOST_FOREACH(const P& p, out)
@@ -382,14 +391,14 @@ void MOOSDCCLCodec::unpack(unsigned dccl_id, const goby::acomms::ModemMessage& m
             {
                 double dval = p.second;
                 CMOOSMsg m(MOOS_NOTIFY, p.first, dval, -1);
-                m.m_sOriginatingCommunity = boost::lexical_cast<std::string>(modem_message.src());
+                m.m_sOriginatingCommunity = boost::lexical_cast<std::string>(modem_message.base().src());
                 base_app_->outbox(m);
             }
             else
             {
                 std::string sval = p.second;
                 CMOOSMsg m(MOOS_NOTIFY, p.first, sval, -1);
-                m.m_sOriginatingCommunity = boost::lexical_cast<std::string>(modem_message.src());
+                m.m_sOriginatingCommunity = boost::lexical_cast<std::string>(modem_message.base().src());
                 base_app_->outbox(m);   
             }
         }
@@ -607,7 +616,7 @@ void MOOSDCCLCodec::alg_name2modem_id(DCCLMessageVal& in)
 }
 
 
-void MOOSDCCLCodec::handle_tcp_share(unsigned dccl_id, const goby::acomms::ModemMessage& modem_message, std::set<std::string> previous_hops)
+void MOOSDCCLCodec::handle_tcp_share(unsigned dccl_id, const goby::acomms::protobuf::ModemDataTransmission& modem_message, std::set<std::string> previous_hops)
 {
     if(tcp_share_enable_ && tcp_share(dccl_id))
     {
@@ -620,7 +629,7 @@ void MOOSDCCLCodec::handle_tcp_share(unsigned dccl_id, const goby::acomms::Modem
                 ss << "dccl_id=" << dccl_id << ",seen={" << p.second->local_ip() << ":" << tcp_share_port_ << ",";
                 BOOST_FOREACH(const std::string& s, previous_hops)
                     ss << s << ",";
-                ss << "}," << modem_message.serialize() << "\r\n";
+                ss << "}," << modem_message << "\r\n";
 
                 if(!previous_hops.count(p.first.ip_and_port()))
                 {

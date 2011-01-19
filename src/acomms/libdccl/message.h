@@ -31,8 +31,6 @@
 #include <boost/foreach.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include "goby/acomms/modem_message.h"
-
 #include "message_var.h"
 #include "message_var_int.h"
 #include "message_var_float.h"

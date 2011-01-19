@@ -1,7 +1,6 @@
 add_executable(gobyd gobyd.cpp connected_client.cpp main.cpp)
 
 target_link_libraries(gobyd 
-  ${PROTOBUF_LIBRARY}
   ${Boost_LIBRARIES}
   pthread
   goby_core

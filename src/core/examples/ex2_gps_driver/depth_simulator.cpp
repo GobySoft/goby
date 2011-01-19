@@ -5,6 +5,7 @@
 #include "config.pb.h"
 #include "depth_reading.pb.h"
 
+using goby::core::operator<<;
 
 class DepthSimulator : public goby::core::ApplicationBase
 {

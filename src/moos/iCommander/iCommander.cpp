@@ -69,7 +69,7 @@ bool CiCommander::OnNewMail(MOOSMSG_LIST & NewMail)
             {
                 vector<string> mesg;
                 mesg.push_back(string("</B>Message </40>acknowledged<!40> from queue " + dccl_.id2name(boost::lexical_cast<unsigned>(ack_msg.at(0)))));
-                mesg.push_back(goby::acomms::ModemMessage(ack_msg.at(1)).snip());
+                mesg.push_back(ack_msg.at(1));
                 mesg.push_back(string(" at time: " + command_gui_.microsec_simple_time_of_day()));
                 gui_.disp_info(mesg);
             }
@@ -85,7 +85,7 @@ bool CiCommander::OnNewMail(MOOSMSG_LIST & NewMail)
             {
                 vector<string> mesg;
                 mesg.push_back(string("</B>Message </16>expired<!16> from queue: " + dccl_.id2name(boost::lexical_cast<unsigned>(ack_msg.at(0))) + " at time: " + command_gui_.microsec_simple_time_of_day()));
-                mesg.push_back(goby::acomms::ModemMessage(ack_msg.at(1)).snip());
+                mesg.push_back(ack_msg.at(1));
                 mesg.push_back(string(" at time: " + command_gui_.microsec_simple_time_of_day()));
                 gui_.disp_info(mesg);
             }

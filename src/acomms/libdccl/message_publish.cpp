@@ -171,8 +171,7 @@ void goby::acomms::DCCLPublish::fill_format(const std::map<std::string,std::vect
 
     
 
-void goby::acomms::DCCLPublish::write_publish(const std::map<std::string,std::vector<DCCLMessageVal> >& vals,
-                                              std::multimap<std::string,DCCLMessageVal>& pubsub_vals)
+void goby::acomms::DCCLPublish::write_publish(const std::map<std::string,std::vector<DCCLMessageVal> >& vals, std::multimap<std::string,DCCLMessageVal>* pubsub_vals)
 
 {
     for(unsigned i = 0, n = repeat_;
@@ -185,7 +184,7 @@ void goby::acomms::DCCLPublish::write_publish(const std::map<std::string,std::ve
         // user sets to string
         if(type_ == cpp_string)
         {
-            pubsub_vals.insert(std::pair<std::string, DCCLMessageVal>(out_var, out_val));
+            pubsub_vals->insert(std::pair<std::string, DCCLMessageVal>(out_var, out_val));
             continue;
         }
         
@@ -194,20 +193,20 @@ void goby::acomms::DCCLPublish::write_publish(const std::map<std::string,std::ve
         double out_dval = mv;
         if(type_ == cpp_double)
         {
-            pubsub_vals.insert(std::pair<std::string, DCCLMessageVal>(out_var, out_dval));
+            pubsub_vals->insert(std::pair<std::string, DCCLMessageVal>(out_var, out_dval));
             continue;
         }
         long out_lval = mv;    
         if(type_ == cpp_long)
         {
-            pubsub_vals.insert(std::pair<std::string, DCCLMessageVal>(out_var, out_lval));
+            pubsub_vals->insert(std::pair<std::string, DCCLMessageVal>(out_var, out_lval));
             continue;
             
         }
         bool out_bval = mv;
         if(type_ == cpp_bool)
         {
-            pubsub_vals.insert(std::pair<std::string, DCCLMessageVal>(out_var, out_bval));
+            pubsub_vals->insert(std::pair<std::string, DCCLMessageVal>(out_var, out_bval));
             continue;
         }
         
@@ -217,9 +216,9 @@ void goby::acomms::DCCLPublish::write_publish(const std::map<std::string,std::ve
         catch (boost::bad_lexical_cast &) { is_numeric = false; }
         
         if(!is_numeric)
-            pubsub_vals.insert(std::pair<std::string, DCCLMessageVal>(out_var, out_val));
+            pubsub_vals->insert(std::pair<std::string, DCCLMessageVal>(out_var, out_val));
         else
-            pubsub_vals.insert(std::pair<std::string, DCCLMessageVal>(out_var, out_dval));
+            pubsub_vals->insert(std::pair<std::string, DCCLMessageVal>(out_var, out_dval));
     }
 }
 

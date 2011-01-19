@@ -38,7 +38,7 @@
 #include "goby/moos/lib_tes_util/binary.h"
 
 using namespace goby::util::tcolor;
-using goby::acomms::ModemMessage;
+using goby::acomms::operator<<;
 
 CpAcommsHandler::CpAcommsHandler()
     : modem_id_(1),
@@ -54,8 +54,8 @@ CpAcommsHandler::CpAcommsHandler()
     goby::acomms::bind(driver_, queue_manager_, mac_);
 
     // bind our methods to the rest of the goby-acomms callbacks
-    driver_.set_callback_in_raw(&CpAcommsHandler::modem_raw_in, this);
-    driver_.set_callback_out_raw(&CpAcommsHandler::modem_raw_out, this);
+//    driver_.set_callback_in_raw(&CpAcommsHandler::modem_raw_in, this);
+//    driver_.set_callback_out_raw(&CpAcommsHandler::modem_raw_out, this);
     driver_.set_callback_range_reply(&CpAcommsHandler::modem_range_reply, this);    
 
     queue_manager_.set_callback_receive(&CpAcommsHandler::queue_incoming_data, this);
@@ -98,9 +98,6 @@ void CpAcommsHandler::do_subscriptions()
     // ping
     subscribe(MOOS_VAR_COMMAND_RANGING, &CpAcommsHandler::handle_ranging_request, this);
     
-    // pAcommsPoller destination request
-    subscribe(MOOS_VAR_POLLER_REQUEST, &CpAcommsHandler::handle_poller_dest_request, this);
-    
     subscribe(MOOS_VAR_CYCLE_UPDATE, &CpAcommsHandler::handle_mac_cycle_update, this);
     subscribe(MOOS_VAR_POLLER_UPDATE, &CpAcommsHandler::handle_mac_cycle_update, this);
         
@@ -123,32 +120,24 @@ void CpAcommsHandler::handle_nmea_out_request(const CMOOSMsg& msg)
 }
 
 void CpAcommsHandler::handle_ranging_request(const CMOOSMsg& msg)
-{        
-    logger() << "ranging (ping): " << msg.GetString() << std::endl;
-    driver_.handle_mac_initiate_ranging(ModemMessage(msg.GetString()), goby::acomms::ModemDriverBase::MODEM);
+{
+    goby::acomms::protobuf::ModemRangingRequest request_msg;
+    parse_for_moos(msg.GetString(), &request_msg);
+    logger() << "ranging request: " << request_msg << std::endl;
+    driver_.handle_initiate_ranging(request_msg);
 }
 
 void CpAcommsHandler::handle_message_push(const CMOOSMsg& msg)
 {
-    ModemMessage new_message(msg.GetString());
+    goby::acomms::protobuf::ModemDataTransmission new_message;
+    parse_for_moos(msg.GetString(), &new_message);
     
     goby::acomms::QueueKey& qk = out_moos_var2queue_[msg.GetKey()];
     
-    if(new_message.empty())
-        logger() << warn << "message is either empty or contains invalid hex" << std::endl;
+    if(new_message.data().empty())
+        logger() << warn << "message is either empty or contains invalid data" << std::endl;
     else if(!(qk.type() == goby::acomms::queue_dccl && !moos_dccl_.queue(qk.id())))
         queue_manager_.push_message(out_moos_var2queue_[msg.GetKey()], new_message);
-}
-
-void CpAcommsHandler::handle_poller_dest_request(const CMOOSMsg& msg)
-{
-    ModemMessage dest_query_msg;
-    dest_query_msg.set_rate(msg.GetDouble());
-    int destination = -1;
-    if(driver_.handle_mac_dest_request(dest_query_msg))
-        destination = dest_query_msg.dest();
-    
-    outbox(MOOS_VAR_POLLER_COMMAND, destination);
 }
 
 
@@ -271,30 +260,31 @@ void CpAcommsHandler::queue_qsize(goby::acomms::QueueKey qk, unsigned size)
         }
     }    
 }
-void CpAcommsHandler::queue_expire(goby::acomms::QueueKey qk, const ModemMessage & message)
+void CpAcommsHandler::queue_expire(goby::acomms::QueueKey qk, const goby::acomms::protobuf::ModemDataExpire& message)
 {
     std::stringstream ss;
-    ss << qk.id() << ":" << message.serialize();
+    ss << message;
     outbox(MOOS_VAR_EXPIRE, ss.str());
 }
 
-void CpAcommsHandler::queue_incoming_data(goby::acomms::QueueKey key, const ModemMessage & message)
+void CpAcommsHandler::queue_incoming_data(goby::acomms::QueueKey key, const goby::acomms::protobuf::ModemDataTransmission& message)
 {
-    // also post to the generic incoming data variable
-    CMOOSMsg m(MOOS_NOTIFY, MOOS_VAR_INCOMING_DATA, message.serialize(), -1);
-    m.m_sOriginatingCommunity = boost::lexical_cast<std::string>(message.src());    
+    std::string serialized;
+    serialize_for_moos(&serialized, message);        
+    CMOOSMsg m(MOOS_NOTIFY, MOOS_VAR_INCOMING_DATA, serialized, -1);
+    m.m_sOriginatingCommunity = boost::lexical_cast<std::string>(message.base().src());    
     outbox(m);
 
     // we know what this type is
     if(in_queue2moos_var_.count(key))
     {
         // post message and set originating community to modem id 
-        CMOOSMsg m_specific(MOOS_NOTIFY, in_queue2moos_var_[key], message.serialize(), -1);
-        m_specific.m_sOriginatingCommunity = boost::lexical_cast<std::string>(message.src());    
+        CMOOSMsg m_specific(MOOS_NOTIFY, in_queue2moos_var_[key], serialized, -1);
+        m_specific.m_sOriginatingCommunity = boost::lexical_cast<std::string>(message.base().src());    
         outbox(m_specific);
     
         logger() << group("q_in") << "published received data to "
-                 << in_queue2moos_var_[key] << ": " << message.snip() << std::endl;
+                 << in_queue2moos_var_[key] << ": " << message << std::endl;
         
         if(moos_dccl_.decode(key.id()) && key.type() == goby::acomms::queue_dccl)
             moos_dccl_.unpack(key.id(), message);
@@ -302,18 +292,19 @@ void CpAcommsHandler::queue_incoming_data(goby::acomms::QueueKey key, const Mode
 }
 
 
-bool CpAcommsHandler::queue_on_demand(goby::acomms::QueueKey key, ModemMessage & message)
+bool CpAcommsHandler::queue_on_demand(goby::acomms::QueueKey key, const goby::acomms::protobuf::ModemDataRequest& request_msg, goby::acomms::protobuf::ModemDataTransmission* data_msg)
 {
-    moos_dccl_.pack(key.id(), message);
+    moos_dccl_.pack(key.id(), data_msg);
     return true;
 }
 
 
-void CpAcommsHandler::queue_ack(goby::acomms::QueueKey key, const ModemMessage& message)
+void CpAcommsHandler::queue_ack(goby::acomms::QueueKey key, const goby::acomms::protobuf::ModemDataAck& message)
 {
-    std::stringstream ss;
-    ss << key.id() << ":" << message.serialize();
-    outbox(MOOS_VAR_ACK, ss.str());
+    std::string serialized;
+    serialize_for_moos(&serialized, message);
+    
+    outbox(MOOS_VAR_ACK, serialized);
 }
 
 
@@ -329,11 +320,12 @@ void CpAcommsHandler::modem_raw_out(std::string s)
     if(s.length() < MAX_MOOS_PACKET) outbox(MOOS_VAR_NMEA_OUT, s);
 }
 
-void CpAcommsHandler::modem_range_reply(const ModemMessage& message)
+void CpAcommsHandler::modem_range_reply(const goby::acomms::protobuf::ModemRangingReply& message)
 {
-    logger() << "got range (time is one-way travel time in seconds): " << message.serialize() << std::endl;
-    
-    outbox(MOOS_VAR_RANGING, message.serialize());
+    logger() << "got range reply: " << message << std::endl;    
+    std::string serialized;
+    serialize_for_moos(&serialized, message);
+    outbox(MOOS_VAR_RANGING, serialized);
 }
 
 
@@ -392,17 +384,17 @@ void CpAcommsHandler::read_driver_parameters(CProcessConfigReader& config)
     std::string connection_type;
     config.GetConfigurationParam("connection_type", connection_type);
 
-    goby::acomms::ModemDriverBase::ConnectionType type = goby::acomms::ModemDriverBase::serial;
+    goby::acomms::ModemDriverBase::ConnectionType type = goby::acomms::ModemDriverBase::CONNECTION_SERIAL;
 
     if(tes::stricmp(connection_type, "tcp_as_client"))
-        type = goby::acomms::ModemDriverBase::tcp_as_client;
+        type = goby::acomms::ModemDriverBase::CONNECTION_TCP_AS_CLIENT;
     else if(tes::stricmp(connection_type, "tcp_as_server"))
-        type = goby::acomms::ModemDriverBase::tcp_as_server;
+        type = goby::acomms::ModemDriverBase::CONNECTION_TCP_AS_SERVER;
     else if(tes::stricmp(connection_type, "dual_udp_broadcast"))
-        type = goby::acomms::ModemDriverBase::dual_udp_broadcast;
+        type = goby::acomms::ModemDriverBase::CONNECTION_DUAL_UDP_BROADCAST;
 
     driver_.set_connection_type(type);
-    if(type == goby::acomms::ModemDriverBase::serial)
+    if(type == goby::acomms::ModemDriverBase::CONNECTION_SERIAL)
     {
         // read information about serial port (name & baud) and set them
         std::string serial_port_name;
@@ -416,7 +408,7 @@ void CpAcommsHandler::read_driver_parameters(CProcessConfigReader& config)
         else
             driver_.set_serial_baud(baud);
     }
-    else if(type == goby::acomms::ModemDriverBase::tcp_as_client)
+    else if(type == goby::acomms::ModemDriverBase::CONNECTION_TCP_AS_CLIENT)
     {
         // read information about serial port (name & baud) and set them
         std::string network_address;
@@ -429,7 +421,7 @@ void CpAcommsHandler::read_driver_parameters(CProcessConfigReader& config)
             logger() << die << "no network port set." << std::endl; 
         driver_.set_tcp_port(network_port);
     }
-    else if(type == goby::acomms::ModemDriverBase::tcp_as_server)
+    else if(type == goby::acomms::ModemDriverBase::CONNECTION_TCP_AS_SERVER)
     {
         unsigned network_port;
         if (!config.GetConfigurationParam("network_port", network_port))

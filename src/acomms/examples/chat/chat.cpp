@@ -18,7 +18,7 @@
 // > chat /dev/tty_modem_A 2 1 log_file_B
 
 // type into a window and hit enter to send a message. messages will be queued
-// and sent on a rotating cycle every 15 seconds
+// and sent on a fixed rotating cycle
 
 #include <iostream>
 
@@ -26,7 +26,6 @@
 #include "goby/acomms/queue.h"
 #include "goby/acomms/modem_driver.h"
 #include "goby/acomms/amac.h"
-#include "goby/acomms/modem_message.h"
 #include "goby/acomms/bind.h"
 #include "goby/util/string.h"
 
@@ -38,8 +37,8 @@ using namespace goby::acomms;
 using namespace goby::util;
 
 int startup_failure();
-void received_data(QueueKey, const ModemMessage&);
-void received_ack(QueueKey, const ModemMessage&);
+void received_data(QueueKey, const protobuf::ModemDataTransmission&);
+void received_ack(QueueKey, const protobuf::ModemDataAck&);
 std::string decode_received(const std::string& data);
 
 std::ofstream fout_;
@@ -59,12 +58,12 @@ int main(int argc, char* argv[])
     if(argc != 5) return startup_failure();
     
     std::string serial_port = argv[1];
-    unsigned my_id;
-    unsigned buddy_id;
+    int my_id;
+    int buddy_id;
     try
     {
-        my_id = boost::lexical_cast<unsigned>(argv[2]);
-        buddy_id = boost::lexical_cast<unsigned>(argv[3]);
+        my_id = boost::lexical_cast<int>(argv[2]);
+        buddy_id = boost::lexical_cast<int>(argv[3]);
     }
     catch(boost::bad_lexical_cast&)
     {
@@ -104,12 +103,34 @@ int main(int argc, char* argv[])
     //
     // Initiate medium access control (libamac)
     //
-    mac_.set_type(mac_auto_decentralized);
-    mac_.set_rate(0);
-    mac_.set_slot_time(15);
-    mac_.set_expire_cycles(5);
+    mac_.set_type(mac_fixed_decentralized);
     mac_.set_modem_id(my_id);
 
+    goby::acomms::Slot my_slot;
+    my_slot.set_src(my_id);
+    my_slot.set_dest(buddy_id);
+    my_slot.set_rate(0);
+    my_slot.set_slot_time(12);  
+    my_slot.set_type(goby::acomms::Slot::slot_data);
+    
+    goby::acomms::Slot buddy_slot;
+    buddy_slot.set_src(buddy_id);
+    buddy_slot.set_dest(my_id);
+    buddy_slot.set_rate(0);
+    buddy_slot.set_slot_time(12);
+    buddy_slot.set_type(goby::acomms::Slot::slot_data);
+
+    if(my_id < buddy_id)
+    {
+        mac_.add_slot(my_slot);
+        mac_.add_slot(buddy_slot);
+    }
+    else
+    {
+        mac_.add_slot(buddy_slot);
+        mac_.add_slot(my_slot);
+    }    
+    
     //
     // Start up everything
     //
@@ -140,15 +161,15 @@ int main(int argc, char* argv[])
             std::map<std::string, DCCLMessageVal> vals;
             vals["message"] = line;
 
-            std::string hex_out;
+            std::string bytes_out;
 
             unsigned message_id = 1;
-            dccl_.encode(message_id, hex_out, vals);
+            dccl_.encode(message_id, bytes_out, vals);
             
-            ModemMessage message_out;
-            message_out.set_data(hex_out);
+            protobuf::ModemDataTransmission message_out;
+            message_out.set_data(bytes_out);
             // send this message to my buddy!
-            message_out.set_dest(buddy_id);
+            message_out.mutable_base()->set_dest(buddy_id);
 
             q_manager_.push_message(message_id, message_out);
         }
@@ -175,18 +196,17 @@ int startup_failure()
     return 1;
 }
 
-void received_data(QueueKey key, const ModemMessage& message_in)
+void received_data(QueueKey key, const protobuf::ModemDataTransmission& message_in)
 {    
-    curses_.post_message(message_in.src(), decode_received(message_in.data()));
+    curses_.post_message(message_in.base().src(), decode_received(message_in.data()));
 }
 
-void received_ack(QueueKey key, const ModemMessage& ack_message)
-{
-    
+void received_ack(QueueKey key, const protobuf::ModemDataAck& ack_message)
+{   
     curses_.post_message
-        (ack_message.dest(),
-         std::string("received message starting with: "
-                     + decode_received(ack_message.data()).substr(0,5)));
+        (ack_message.base().src(),
+         std::string("{ acknowledged receiving message starting with: "
+                     + decode_received(ack_message.orig_msg().data()).substr(0,5)) + " }");
 }
 
 std::string decode_received(const std::string& data)

@@ -28,6 +28,7 @@
 #include <boost/bind.hpp>
 #include <boost/asio.hpp>
 
+#include "goby/acomms/protobuf/modem_message.pb.h"
 #include "goby/acomms/modem_driver.h"
 #include "goby/util/time.h"
 #include "goby/util/string.h"
@@ -41,23 +42,10 @@ namespace goby
 
     namespace acomms
     {
-	class ModemMessage;
         /// \name Acoustic MAC Library callback function type definitions
         //@{
 
-        /// \brief boost::function for a function taking a unsigned and returning an integer.
-        ///
-        /// Think of this as a generalized version of a function pointer (int (*) (unsigned)). See http://www.boost.org/doc/libs/1_34_0/doc/html/function.html for more on boost:function.
-        typedef boost::function<bool (acomms::ModemMessage& message)> MutableMACMsgFunc;
-
-        /// \brief boost::function for a function taking a single acomms::ModemMessage reference.
-        ///
-        /// Think of this as a generalized version of a function pointer (void (*)(acomms::ModemMessage&)). See http://www.boost.org/doc/libs/1_34_0/doc/html/function.html for more on boost:function.
-        typedef boost::function<void (const acomms::ModemMessage& message)> MACMsgFunc;
-        
-        //@}
-
-/// Enumeration of MAC types
+        /// Enumeration of MAC types
         enum MACType {
             mac_notype, /*!< no MAC */
             mac_fixed_decentralized, /*!< decentralized time division multiple access */
@@ -88,8 +76,8 @@ namespace goby
             /// \param type amac::Slot::SlotType of this slot
             /// \param slot_time length of time this slot should last in seconds
             /// \param last_heard_time last time (in seconds since 1/1/70) the src vehicle was heard from
-          Slot(unsigned src = 0,
-               unsigned dest = 0,
+          Slot(int src = 0,
+               int dest = 0,
                int rate = 0,
                SlotType type = slot_notype,
                unsigned slot_time = 15,
@@ -106,7 +94,7 @@ namespace goby
 
             /// \name Set
             //@{
-            void set_src(unsigned src) { src_ = src; }
+            void set_src(int src) { src_ = src; }
             void set_dest(int dest) { dest_ = dest; }
             void set_rate(int rate) { rate_ = rate; }
             void set_type(SlotType type) { type_ = type; }
@@ -119,7 +107,7 @@ namespace goby
 
             /// \name Get
             //@{
-            unsigned src() const { return src_; }
+            int src() const { return src_; }
             int dest() const { return dest_; }
             int rate() const { return rate_; } 
             SlotType type() const { return type_; }
@@ -138,11 +126,9 @@ namespace goby
             unsigned slot_time() const { return slot_time_; }        
             //@}
         
-            enum { query_destination = -1 };        
-        
         
           private:
-            unsigned src_;
+            int src_;
             int dest_;
             int rate_;
             SlotType type_;
@@ -157,7 +143,7 @@ namespace goby
         /// provides an API to the goby-acomms MAC library.
         class MACManager
         {
-
+            
           public:
 
             /// \name Constructors/Destructor
@@ -180,7 +166,7 @@ namespace goby
             /// \brief Call every time a message is received from vehicle to "discover" this vehicle or reset the expire timer. Only needed when the type is amac::mac_auto_decentralized.
             ///
             /// \param message the new message (used to detect vehicles)
-            void handle_modem_in_parsed(const acomms::ModemMessage& m);
+            void handle_modem_all_incoming(const protobuf::ModemMsgBase& m);
             
             void add_flex_groups(util::FlexOstream& tout);
             
@@ -212,32 +198,24 @@ namespace goby
 
             void set_expire_cycles(unsigned expire_cycles) { expire_cycles_ = expire_cycles; }
             void set_expire_cycles(const std::string& s) { set_expire_cycles(util::as<unsigned>(s)); }
-            /// \brief Callback to call to request which vehicle id should be the next destination. Typically bound to queue::QueueManager::request_next_destination.
-            // 
-            // \param func has the form int next_dest(unsigned size). the return value of func should be the next destination id, or -1 for no message to send.
-            void set_callback_dest_request(MutableMACMsgFunc func)
-            { callback_dest_request = func; }
+
             /// \brief Callback for initiate a tranmission. Typically bound to acomms::ModemDriverBase::initiate_transmission. 
-            void set_callback_initiate_transmission(MACMsgFunc func)
+            void set_callback_initiate_transmission(boost::function<void (const protobuf::ModemMsgBase& m)> func)
             { callback_initiate_transmission = func; }
 
-            /// \brief Callback for initiate ranging ("ping"). Typically bound to acomms::ModemDriverBase::initiate_ranging. 
-
-            void set_callback_initiate_ranging(boost::function<void (const acomms::ModemMessage& message, ModemDriverBase::RangingType type)> func)
+            /// \brief Callback for initiate ranging ("ping"). Typically bound to acomms::ModemDriverBase::initiate_ranging.
+            void set_callback_initiate_ranging(boost::function<void (const protobuf::ModemRangingRequest& m)> func)
             { callback_initiate_ranging = func; }
 
 
             // templated overloads of the callback set methods
             // to make binding of member functions simpler
             template<typename V, typename A1>
-                void set_callback_dest_request(bool(V::*mem_func)(A1), V* obj)
-            { set_callback_dest_request(boost::bind(mem_func, obj, _1)); }
-            template<typename V, typename A1>
                 void set_callback_initiate_transmission(void(V::*mem_func)(A1), V* obj)
             { set_callback_initiate_transmission(boost::bind(mem_func, obj, _1)); }
-            template<typename V, typename A1, typename A2>
-                void set_callback_initiate_ranging(void(V::*mem_func)(A1, A2), V* obj)
-            { set_callback_initiate_ranging(boost::bind(mem_func, obj, _1, _2)); }
+            template<typename V, typename A1>
+                void set_callback_initiate_ranging(void(V::*mem_func)(A1), V* obj)
+            { set_callback_initiate_ranging(boost::bind(mem_func, obj, _1)); }
 
 
 //@}
@@ -258,11 +236,8 @@ namespace goby
           private:
             enum { NO_AVAILABLE_DESTINATION = -1 };
 
-            MutableMACMsgFunc callback_dest_request;
-            MACMsgFunc callback_initiate_transmission;
-
-            boost::function<void (const acomms::ModemMessage& message, ModemDriverBase::RangingType type)>
-                callback_initiate_ranging;
+            boost::function<void (const protobuf::ModemMsgBase& m)> callback_initiate_transmission;
+            boost::function<void (const protobuf::ModemRangingRequest& m)> callback_initiate_ranging;
 
             boost::posix_time::ptime next_cycle_time();
 

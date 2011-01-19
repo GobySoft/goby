@@ -10,7 +10,7 @@ if(build_acomms_lib)
   add_subdirectory(libmodemdriver)
   add_subdirectory(libqueue)
   add_subdirectory(libamac)
-  add_subdirectory(proto)
+  add_subdirectory(protobuf)
 endif()
 
 if(build_acomms_examples)

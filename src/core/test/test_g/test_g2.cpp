@@ -5,6 +5,8 @@
 #include <google/protobuf/text_format.h>
 
 using goby::util::goby_time;
+using goby::core::operator<<;
+
 
 class TestG2 : public goby::core::ApplicationBase
 {

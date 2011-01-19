@@ -50,6 +50,6 @@ void GroupSetter::operator()(std::ostream& os) const
 
 std::ostream& basic_log_header(std::ostream& os, const std::string& group_name)
 {
-    return os << goby::util::goby_time_as_string() << "\t"
-              << std::setw(15) << group_name << "\t";
+    return os << "[ " << goby::util::goby_time_as_string() << " ] "
+              << std::setw(15) << "{" << group_name << "}: ";
 }

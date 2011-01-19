@@ -27,6 +27,7 @@
 #include "message_xml_callbacks.h"
 #include "goby/util/logger.h"
 #include "goby/util/string.h"
+#include "goby/acomms/protobuf/acomms_proto_helpers.h"
 
 using goby::util::goby_time;
 using goby::util::as;
@@ -353,7 +354,7 @@ std::vector<goby::acomms::DCCLMessage>::iterator goby::acomms::DCCLCodec::decode
 }
         
 void goby::acomms::DCCLCodec::encode_private(std::vector<DCCLMessage>::iterator it,
-                                             ModemMessage& out_msg,
+                                             protobuf::ModemDataTransmission* out_msg,
                                              const std::map<std::string, std::vector<DCCLMessageVal> >& in)
 {
     std::string out;
@@ -361,23 +362,23 @@ void goby::acomms::DCCLCodec::encode_private(std::vector<DCCLMessage>::iterator 
 
     DCCLHeaderDecoder head_dec(out);
 
-    out_msg.set_data(out);
+    out_msg->set_data(out);
     
     DCCLMessageVal& t = head_dec[head_time];
     DCCLMessageVal& src = head_dec[head_src_id];
     DCCLMessageVal& dest = head_dec[head_dest_id];
 
-    out_msg.set_time(double(t));
-    out_msg.set_src(long(src));
-    out_msg.set_dest(long(dest));
+    set_time(out_msg->mutable_base(), goby::util::unix_double2ptime(double(t)));
 
-    if(log_) *log_ << group("dccl_enc") << "created encoded message: " << out_msg.snip() << std::endl;
+    out_msg->mutable_base()->set_src(long(src));
+    out_msg->mutable_base()->set_dest(long(dest));
+
+    if(log_) *log_ << group("dccl_enc") << "created encoded message: " << *out_msg << std::endl;
 }
 
-std::vector<goby::acomms::DCCLMessage>::iterator goby::acomms::DCCLCodec::decode_private(const ModemMessage& in_msg,
-                                             std::map<std::string,std::vector<DCCLMessageVal> >& out)
+std::vector<goby::acomms::DCCLMessage>::iterator goby::acomms::DCCLCodec::decode_private(const protobuf::ModemDataTransmission& in_msg, std::map<std::string,std::vector<DCCLMessageVal> >& out)
 {
-    if(log_) *log_ << group("dccl_dec") << "using message for decode: " << in_msg.snip() << std::endl;
+    if(log_) *log_ << group("dccl_dec") << "using message for decode: " << in_msg << std::endl;
 
     return decode_private(in_msg.data(), out);
 }

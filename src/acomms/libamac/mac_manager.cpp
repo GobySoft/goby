@@ -27,7 +27,6 @@
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 
-#include "goby/acomms/modem_message.h"
 #include "goby/acomms/libdccl/dccl_constants.h"
 #include "goby/util/logger.h"
 
@@ -81,14 +80,14 @@ void goby::acomms::MACManager::startup()
                          << "Using the Slotted TDMA MAC scheme with autodiscovery"
                          << std::endl;
             blank_it_ = add_slot(Slot(acomms::BROADCAST_ID,
-                                      Slot::query_destination,
+                                      acomms::QUERY_DESTINATION_ID,
                                       rate_,
                                       Slot::slot_data,
                                       slot_time_,
                                       boost::posix_time::ptime(boost::posix_time::pos_infin)));
 
             add_slot(Slot(modem_id_,
-                          Slot::query_destination,
+                          acomms::QUERY_DESTINATION_ID,
                           rate_,
                           Slot::slot_data,
                           slot_time_,
@@ -133,27 +132,18 @@ void goby::acomms::MACManager::send_poll(const boost::system::error_code& e)
     unsigned id = s.src();
     
     bool send_poll = true;
-
     int destination = s.dest();
-    if(s.dest() == Slot::query_destination)
-    {
-        ModemMessage dest_query_msg;
-        dest_query_msg.set_rate(s.rate());
-        if(callback_dest_request(dest_query_msg))
-            destination = dest_query_msg.dest();
-        else
-            destination = NO_AVAILABLE_DESTINATION;
-    }
     
     switch(type_)
     {
         case mac_fixed_decentralized:
         case mac_auto_decentralized:
-            send_poll = (id == modem_id_ && destination != NO_AVAILABLE_DESTINATION);
+            send_poll = (id == modem_id_);
             break;
 
         case mac_polled:
-            send_poll = (destination != NO_AVAILABLE_DESTINATION && !(s.src() == int(BROADCAST_ID) && destination == int(BROADCAST_ID)));
+            // be quiet in the case where src = 0
+            send_poll = (s.src() != BROADCAST_ID);
             break;
 
         default:
@@ -180,28 +170,33 @@ void goby::acomms::MACManager::send_poll(const boost::system::error_code& e)
     
     if(send_poll)
     {
-        ModemMessage m;
         switch(s.type())
         {
             case Slot::slot_data:
+            {
+                protobuf::ModemMsgBase m;
                 m.set_src(s.src());
                 m.set_dest(destination);
                 m.set_rate(s.rate());
-                m.set_ack(0); // actually a free bit, not the ack (field was deprecated). right ow we're not using it
                 callback_initiate_transmission(m);
                 break;
-
-            case Slot::slot_ping:
-                m.set_src(s.src());
-                m.set_dest(destination);
-                callback_initiate_ranging(m, ModemDriverBase::MODEM);
-                break;
-
+            }
+            
             case Slot::slot_remus_lbl:
-                m.set_src(s.src());
-                callback_initiate_ranging(m, ModemDriverBase::REMUS_LBL);
-                break;
+            case Slot::slot_ping:
+            {
+                protobuf::ModemRangingRequest m;
+                m.mutable_base()->set_src(s.src());
+                m.mutable_base()->set_dest(destination);
+
+                if(s.type() == Slot::slot_remus_lbl)
+                    m.set_type(protobuf::REMUS_LBL_RANGING);
+                else if(s.type() == Slot::slot_ping)
+                    m.set_type(protobuf::MODEM_RANGING);
                 
+                callback_initiate_ranging(m);
+                break;
+            }            
             default:
                 break;
         }
@@ -256,7 +251,7 @@ boost::posix_time::ptime goby::acomms::MACManager::next_cycle_time()
     return ptime(day_clock::universal_day(), seconds(secs_to_next));
 }
 
-void goby::acomms::MACManager::handle_modem_in_parsed(const ModemMessage& m)
+void goby::acomms::MACManager::handle_modem_all_incoming(const protobuf::ModemMsgBase& m)
 {
     unsigned id = m.src();
     
@@ -273,7 +268,7 @@ void goby::acomms::MACManager::handle_modem_in_parsed(const ModemMessage& m)
         
         slot_order_.push_back
             (id2slot_.insert
-             (std::pair<unsigned, Slot> (id, Slot(id, Slot::query_destination, rate_, Slot::slot_data, slot_time_, goby_time()))));
+             (std::pair<unsigned, Slot> (id, Slot(id, acomms::QUERY_DESTINATION_ID, rate_, Slot::slot_data, slot_time_, goby_time()))));
 
         slot_order_.sort();
 

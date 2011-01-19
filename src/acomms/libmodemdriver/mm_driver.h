@@ -24,12 +24,11 @@
 
 #include "driver_base.h"
 
+
 namespace goby
 {
     namespace acomms
     {
-        class ModemMessage;
-
 
         /// provides an API to the WHOI Micro-Modem driver
         class MMDriver : public ModemDriverBase
@@ -51,28 +50,17 @@ namespace goby
             /// \brief Initiate a transmission to the modem. 
             ///
             /// \param m ModemMessage containing the details of the transmission to be started. This does *not* contain data, which must be requested in a call to the datarequest callback (set by DriverBase::set_data_request_cb)
-            void handle_mac_initiate_transmission(const ModemMessage& m);
+            void handle_initiate_transmission(const protobuf::ModemMsgBase& m);
 
             /// \brief Initiate ranging ("ping") to the modem. 
             ///
             /// \param m ModemMessage containing the details of the ranging request to be started. (source and destination)
-            void handle_mac_initiate_ranging(const ModemMessage& m, RangingType type);
-
-            /// \brief Retrieve the desired destination of the next message
-            ///
-            /// \param rate next rate to be sent
-            /// \return successfully stored destination
-            bool handle_mac_dest_request(ModemMessage& msg)
-            {
-                msg.set_max_size(PACKET_SIZE[msg.rate()]);
-                // fill in the required destination
-                return callback_dest_request(msg);
-            }
+            void handle_initiate_ranging(const protobuf::ModemRangingRequest& m);
 
             // set an additional prefix to support the hydroid gateway
             void set_hydroid_gateway_prefix(int id);
 
-            void write(util::NMEASentence& nmea);
+            void write(const util::NMEASentence& nmea);
             void measure_noise(unsigned milliseconds_to_average);
             
           private:
@@ -84,35 +72,39 @@ namespace goby
             void query_all_cfg();
 
             // output
-            void handle_modem_out();
+            void try_send();
             void pop_out();
             void mm_write(const util::NMEASentence& nmea_out);
+            void cache_outgoing_data(const protobuf::ModemDataInit& init_msg);
             
             // input
+            void process_receive(const util::NMEASentence& nmea);
+            void process_parsed(const util::NMEASentence& nmea, protobuf::ModemMsgBase* m);
             
-            
-            void handle_modem_in(const util::NMEASentence& nmea);
-            void ack(const util::NMEASentence& nmea, ModemMessage& m);
-            void drq(const util::NMEASentence& nmea, ModemMessage& m);
-            void rxd(const util::NMEASentence& nmea, ModemMessage& m);
-            void mpa(const util::NMEASentence& nmea, ModemMessage& m);
-            void mpr(const util::NMEASentence& nmea, ModemMessage& m);
-            void rev(const util::NMEASentence& nmea, ModemMessage& m);
-            void err(const util::NMEASentence& nmea, ModemMessage& m);
-            void cfg(const util::NMEASentence& nmea, ModemMessage& m);
-            void clk(const util::NMEASentence& nmea, ModemMessage& m);
-            void cyc(const util::NMEASentence& nmea, ModemMessage& m);
-            void tta(const util::NMEASentence& nmea, ModemMessage& m);
+            // data cycle
+            void cyc(const util::NMEASentence& nmea, protobuf::ModemDataInit* m);
+            void rxd(const util::NMEASentence& nmea, protobuf::ModemDataTransmission* m);
+            void ack(const util::NMEASentence& nmea, protobuf::ModemDataAck* m);
+
+            // ranging (pings)
+            void mpr(const util::NMEASentence& nmea, protobuf::ModemRangingReply* m);
+            void tta(const util::NMEASentence& nmea, protobuf::ModemRangingReply* m);
+
+            // local modem
+            void rev(const util::NMEASentence& nmea);
+            void err(const util::NMEASentence& nmea);
+            void cfg(const util::NMEASentence& nmea);
+            void clk(const util::NMEASentence& nmea);
+            void drq(const util::NMEASentence& nmea);
             
             // utility    
-            static boost::posix_time::ptime modem_time2ptime(const std::string& mt);
+            static boost::posix_time::ptime nmea_time2ptime(const std::string& mt);
 
             // doxygen
             /// \example libmodemdriver/examples/driver_simple/driver_simple.cpp
             /// driver_simple.cpp
-        
-            /// \example acomms/examples/chat/chat.cpp
             
+            /// \example acomms/examples/chat/chat.cpp            
         
           private:
             // for the serial connection ($CCCFG,BR1,3)
@@ -121,6 +113,9 @@ namespace goby
             enum { MAX_FAILS_BEFORE_DEAD = 5 };
             // how many retries on a given message
             enum { RETRIES = 3 };
+            enum { ROUGH_SPEED_OF_SOUND = 1500 }; // m/s
+            enum { REMUS_LBL_TURN_AROUND_MS = 50 }; // milliseconds
+                
             
             // seconds to wait for %modem to respond
             static boost::posix_time::time_duration MODEM_WAIT; 
@@ -192,6 +187,13 @@ namespace goby
             
             std::map<std::string, int> nvram_cfg_;
 
+            // cache the appropriate amount of data upon CCCYC request (initiate_transmission)
+            // for immediate use upon the DRQ message
+            std::deque<protobuf::ModemDataTransmission> cached_data_msgs_;
+
+            // did we initiate the last cycle (and thereby cache data for it)?
+            bool local_cccyc_;
+            
         };
     }
 }

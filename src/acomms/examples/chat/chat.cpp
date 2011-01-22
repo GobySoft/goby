@@ -37,8 +37,8 @@ using namespace goby::acomms;
 using namespace goby::util;
 
 int startup_failure();
-void received_data(QueueKey, const protobuf::ModemDataTransmission&);
-void received_ack(QueueKey, const protobuf::ModemDataAck&);
+void received_data(protobuf::QueueKey, const protobuf::ModemDataTransmission&);
+void received_ack(protobuf::QueueKey, const protobuf::ModemDataAck&);
 std::string decode_received(const std::string& data);
 
 std::ofstream fout_;
@@ -91,8 +91,8 @@ int main(int argc, char* argv[])
     // Initiate queue manager (libqueue)
     //
     q_manager_.set_modem_id(my_id);
-    q_manager_.set_callback_receive(&received_data);
-    q_manager_.set_callback_ack(&received_ack);
+    goby::acomms::connect(&q_manager_.signal_receive, &received_data);
+    goby::acomms::connect(&q_manager_.signal_ack, &received_ack);
     q_manager_.add_xml_queue_file(ACOMMS_EXAMPLES_DIR "/chat/chat.xml", "../../libdccl/message_schema.xsd");
     //
     // Initiate modem driver (libmodemdriver)
@@ -103,22 +103,22 @@ int main(int argc, char* argv[])
     //
     // Initiate medium access control (libamac)
     //
-    mac_.set_type(mac_fixed_decentralized);
+    mac_.set_type(MAC_FIXED_DECENTRALIZED);
     mac_.set_modem_id(my_id);
 
-    goby::acomms::Slot my_slot;
+    goby::acomms::protobuf::Slot my_slot;
     my_slot.set_src(my_id);
     my_slot.set_dest(buddy_id);
     my_slot.set_rate(0);
-    my_slot.set_slot_time(12);  
-    my_slot.set_type(goby::acomms::Slot::slot_data);
+    my_slot.set_slot_seconds(12);  
+    my_slot.set_type(goby::acomms::protobuf::SLOT_DATA);
     
-    goby::acomms::Slot buddy_slot;
+    goby::acomms::protobuf::Slot buddy_slot;
     buddy_slot.set_src(buddy_id);
     buddy_slot.set_dest(my_id);
     buddy_slot.set_rate(0);
-    buddy_slot.set_slot_time(12);
-    buddy_slot.set_type(goby::acomms::Slot::slot_data);
+    buddy_slot.set_slot_seconds(12);
+    buddy_slot.set_type(goby::acomms::protobuf::SLOT_DATA);
 
     if(my_id < buddy_id)
     {
@@ -171,7 +171,9 @@ int main(int argc, char* argv[])
             // send this message to my buddy!
             message_out.mutable_base()->set_dest(buddy_id);
 
-            q_manager_.push_message(message_id, message_out);
+            goby::acomms::protobuf::QueueKey key;
+            key.set_id(message_id);
+            q_manager_.push_message(key, message_out);
         }
             
         try
@@ -196,12 +198,12 @@ int startup_failure()
     return 1;
 }
 
-void received_data(QueueKey key, const protobuf::ModemDataTransmission& message_in)
+void received_data(protobuf::QueueKey key, const protobuf::ModemDataTransmission& message_in)
 {    
     curses_.post_message(message_in.base().src(), decode_received(message_in.data()));
 }
 
-void received_ack(QueueKey key, const protobuf::ModemDataAck& ack_message)
+void received_ack(protobuf::QueueKey key, const protobuf::ModemDataAck& ack_message)
 {   
     curses_.post_message
         (ack_message.base().src(),

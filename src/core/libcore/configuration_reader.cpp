@@ -460,6 +460,8 @@ std::string goby::core::ConfigReader::default_as_string(const google::protobuf::
 {
     switch(field_desc->cpp_type())
     {
+        default: return "";
+            
         case google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE:
             return "";
         
@@ -488,9 +490,7 @@ std::string goby::core::ConfigReader::default_as_string(const google::protobuf::
             return util::as<std::string>(field_desc->default_value_double());
                 
         case google::protobuf::FieldDescriptor::CPPTYPE_ENUM:
-            return field_desc->default_value_enum()->name();
-            
-                                      
+            return field_desc->default_value_enum()->name();                                      
     }
 }
 

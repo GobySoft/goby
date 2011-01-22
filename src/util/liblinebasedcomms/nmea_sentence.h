@@ -25,6 +25,9 @@
 #include <vector>
 #include <sstream>
 
+#include <boost/foreach.hpp>
+#include <boost/algorithm/string.hpp>
+
 #include "goby/util/string.h"
 
 namespace goby
@@ -69,11 +72,22 @@ namespace goby
             template<typename T>
                 T as(int i) const { return goby::util::as<T>(at(i)); }
             
-            
             template<typename T>
                 void push_back(T t)
-            { std::vector<std::string>::push_back(goby::util::as<std::string>(t)); }
+            { push_back(goby::util::as<std::string>(t)); }
+            
+            // necessary when pushing back string "foo,bar" that contain
+            // commas
+            void push_back(const std::string& str)
+            {
+                std::vector<std::string> vec;
+                boost::split(vec, str, boost::is_any_of(","));
+                
+                BOOST_FOREACH(const std::string& s, vec)
+                    std::vector<std::string>::push_back(s);
+            }
     
+            
             static unsigned char checksum(const std::string& s);
         };
     }

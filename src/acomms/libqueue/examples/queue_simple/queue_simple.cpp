@@ -17,12 +17,13 @@
 // queues a single message from the DCCL library
 
 #include "goby/acomms/queue.h"
+#include "goby/acomms/connect.h"
 #include <iostream>
 
 
 using goby::acomms::operator<<;
 
-void received_data(goby::acomms::QueueKey, const goby::acomms::protobuf::ModemDataTransmission& msg);
+void received_data(goby::acomms::protobuf::QueueKey, const goby::acomms::protobuf::ModemDataTransmission& msg);
 
 int main()
 {
@@ -40,7 +41,7 @@ int main()
     q_manager.set_modem_id(our_id);
 
     // set up the callback to handle received DCCL messages
-    q_manager.set_callback_receive(&received_data);
+    goby::acomms::connect(&q_manager.signal_receive, &received_data);
     
     // see what our QueueManager contains
     std::cout << "1. " << q_manager << std::endl;
@@ -59,7 +60,9 @@ int main()
     data_msg.set_data(goby::acomms::hex_decode("2000802500006162636431323334"));
 
     // push to queue 1 (which is the Simple message <id/>)
-    q_manager.push_message(1, data_msg);
+    goby::acomms::protobuf::QueueKey key;
+    key.set_id(1);
+    q_manager.push_message(key, data_msg);
     
     std::cout << "2. pushing message to queue 1: " << data_msg << std::endl;
     std::cout << "\tdata as hex: " << goby::acomms::hex_encode(data_msg.data()) << std::endl;
@@ -92,7 +95,7 @@ int main()
 //
 //  5. Do something with the received message  
 //
-void received_data(goby::acomms::QueueKey key, const goby::acomms::protobuf::ModemDataTransmission& msg)
+void received_data(goby::acomms::protobuf::QueueKey key, const goby::acomms::protobuf::ModemDataTransmission& msg)
 {
     std::cout << "5. received message (key is " << key << "): " << msg << std::endl;
     std::cout << "\tdata as hex: " << goby::acomms::hex_encode(msg.data()) << std::endl;

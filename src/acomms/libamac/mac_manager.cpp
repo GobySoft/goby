@@ -33,6 +33,7 @@
 #include "mac_manager.h"
 
 using goby::util::goby_time;
+using goby::util::as;
 using namespace goby::util::tcolor;
 
 goby::acomms::MACManager::MACManager(std::ostream* log /* =0 */)
@@ -44,7 +45,7 @@ goby::acomms::MACManager::MACManager(std::ostream* log /* =0 */)
       timer_(io_),
       timer_is_running_(false),
       current_slot_(slot_order_.begin()),
-      type_(mac_notype)
+      type_(MAC_NONE)
 { }
 
 goby::acomms::MACManager::~MACManager()
@@ -75,37 +76,47 @@ void goby::acomms::MACManager::startup()
 {
     switch(type_)
     {
-        case mac_auto_decentralized:
+        case MAC_AUTO_DECENTRALIZED:
+        {
             if(log_) *log_ << group("mac")
-                         << "Using the Slotted TDMA MAC scheme with autodiscovery"
-                         << std::endl;
-            blank_it_ = add_slot(Slot(acomms::BROADCAST_ID,
-                                      acomms::QUERY_DESTINATION_ID,
-                                      rate_,
-                                      Slot::slot_data,
-                                      slot_time_,
-                                      boost::posix_time::ptime(boost::posix_time::pos_infin)));
+                           << "Using the Slotted TDMA MAC scheme with autodiscovery"
+                           << std::endl;
 
-            add_slot(Slot(modem_id_,
-                          acomms::QUERY_DESTINATION_ID,
-                          rate_,
-                          Slot::slot_data,
-                          slot_time_,
-                          boost::posix_time::ptime(boost::posix_time::pos_infin)));
+            
+            protobuf::Slot blank_slot;
+            blank_slot.set_src(acomms::BROADCAST_ID);
+            blank_slot.set_dest(acomms::QUERY_DESTINATION_ID);
+            blank_slot.set_rate(rate_);
+            blank_slot.set_type(protobuf::SLOT_DATA);
+            blank_slot.set_slot_seconds(slot_time_);
+            blank_slot.set_last_heard_time(as<std::string>(goby_time()));
+            blank_it_ = add_slot(blank_slot);
+            
 
+            protobuf::Slot our_slot;
+            our_slot.set_src(modem_id_);
+            our_slot.set_dest(acomms::QUERY_DESTINATION_ID);
+            our_slot.set_rate(rate_);
+            our_slot.set_type(protobuf::SLOT_DATA);
+            our_slot.set_slot_seconds(slot_time_);
+            our_slot.set_last_heard_time(as<std::string>(goby_time()));
+
+            add_slot(our_slot);
+            
             slot_order_.sort();
 
             next_slot_t_ = next_cycle_time();
             position_blank();
             
             break;
-
-        case mac_polled:
+        }
+        
+        case MAC_POLLED:
             if(log_) *log_ << group("mac")
                          << "Using the Centralized Polling MAC scheme" << std::endl;
             break;
 
-        case mac_fixed_decentralized:
+        case MAC_FIXED_DECENTRALIZED:
             if(log_) *log_ << group("mac")
                          << "Using the fixed Slotted TDMA MAC scheme" << std::endl;
             break;
@@ -128,20 +139,17 @@ void goby::acomms::MACManager::send_poll(const boost::system::error_code& e)
     // canceled the last timer
     if(e == boost::asio::error::operation_aborted) return;   
     
-    const Slot& s = (*current_slot_)->second;
-    unsigned id = s.src();
+    const protobuf::Slot& s = (*current_slot_)->second;
     
-    bool send_poll = true;
-    int destination = s.dest();
-    
+    bool send_poll = true;    
     switch(type_)
     {
-        case mac_fixed_decentralized:
-        case mac_auto_decentralized:
-            send_poll = (id == modem_id_);
+        case MAC_FIXED_DECENTRALIZED:
+        case MAC_AUTO_DECENTRALIZED:
+            send_poll = (s.src() == modem_id_);
             break;
 
-        case mac_polled:
+        case MAC_POLLED:
             // be quiet in the case where src = 0
             send_poll = (s.src() != BROADCAST_ID);
             break;
@@ -159,7 +167,14 @@ void goby::acomms::MACManager::send_poll(const boost::system::error_code& e)
             if(it==(*current_slot_))
                 *log_ << " " << green;
             
-            *log_ << it->second.type_as_string()[0] << it->second.src() << "/" << it->second.dest() << "@" << it->second.rate() << " " << nocolor;
+            switch(s.type())
+            {
+                case protobuf::SLOT_DATA: *log_ << "d"; break;
+                case protobuf::SLOT_PING: *log_ << "p"; break;
+                case protobuf::SLOT_REMUS_LBL: *log_ << "r"; break; 
+            }
+
+            *log_ << it->second.src() << "/" << it->second.dest() << "@" << it->second.rate() << " " << nocolor;
         }
 
         *log_ << " ]" << std::endl;
@@ -172,29 +187,29 @@ void goby::acomms::MACManager::send_poll(const boost::system::error_code& e)
     {
         switch(s.type())
         {
-            case Slot::slot_data:
+            case protobuf::SLOT_DATA:
             {
                 protobuf::ModemMsgBase m;
                 m.set_src(s.src());
-                m.set_dest(destination);
+                m.set_dest(s.dest());
                 m.set_rate(s.rate());
-                callback_initiate_transmission(m);
+                signal_initiate_transmission(&m);
                 break;
             }
             
-            case Slot::slot_remus_lbl:
-            case Slot::slot_ping:
+            case protobuf::SLOT_REMUS_LBL:
+            case protobuf::SLOT_PING:
             {
                 protobuf::ModemRangingRequest m;
                 m.mutable_base()->set_src(s.src());
-                m.mutable_base()->set_dest(destination);
+                m.mutable_base()->set_dest(s.dest());
 
-                if(s.type() == Slot::slot_remus_lbl)
+                if(s.type() == protobuf::SLOT_REMUS_LBL)
                     m.set_type(protobuf::REMUS_LBL_RANGING);
-                else if(s.type() == Slot::slot_ping)
+                else if(s.type() == protobuf::SLOT_PING)
                     m.set_type(protobuf::MODEM_RANGING);
                 
-                callback_initiate_ranging(m);
+                signal_initiate_ranging(&m);
                 break;
             }            
             default:
@@ -206,7 +221,7 @@ void goby::acomms::MACManager::send_poll(const boost::system::error_code& e)
     
     switch(type_)
     {
-        case mac_auto_decentralized:
+        case MAC_AUTO_DECENTRALIZED:
             expire_ids();
 
             if (current_slot_ == slot_order_.end())
@@ -219,17 +234,17 @@ void goby::acomms::MACManager::send_poll(const boost::system::error_code& e)
             next_slot_t_ += boost::posix_time::seconds(slot_time_);
             break;
             
-        case mac_fixed_decentralized:
-        case mac_polled:
+        case MAC_FIXED_DECENTRALIZED:
+        case MAC_POLLED:
             if (current_slot_ == slot_order_.end()) current_slot_ = slot_order_.begin();
-            next_slot_t_ += boost::posix_time::seconds(s.slot_time());
+            next_slot_t_ += boost::posix_time::seconds(s.slot_seconds());
             break;
 
         default:
             break;
  
     }
-
+    
     restart_timer();
 }
 
@@ -255,7 +270,7 @@ void goby::acomms::MACManager::handle_modem_all_incoming(const protobuf::ModemMs
 {
     unsigned id = m.src();
     
-    if(type_ != mac_auto_decentralized)
+    if(type_ != MAC_AUTO_DECENTRALIZED)
         return;
     
 
@@ -266,9 +281,16 @@ void goby::acomms::MACManager::handle_modem_all_incoming(const protobuf::ModemMs
     {
         if(log_) *log_ << group("mac") << "discovered id " << id << std::endl;
         
-        slot_order_.push_back
-            (id2slot_.insert
-             (std::pair<unsigned, Slot> (id, Slot(id, acomms::QUERY_DESTINATION_ID, rate_, Slot::slot_data, slot_time_, goby_time()))));
+        protobuf::Slot new_slot;
+        
+        new_slot.set_src(id);
+        new_slot.set_dest(acomms::QUERY_DESTINATION_ID);
+        new_slot.set_rate(rate_);
+        new_slot.set_type(protobuf::SLOT_DATA);
+        new_slot.set_slot_seconds(slot_time_);
+        new_slot.set_last_heard_time(as<std::string>(goby_time()));
+
+        slot_order_.push_back(id2slot_.insert(std::make_pair(id, new_slot)));
 
         slot_order_.sort();
 
@@ -278,7 +300,7 @@ void goby::acomms::MACManager::handle_modem_all_incoming(const protobuf::ModemMs
     {
         std::pair<id2slot_it, id2slot_it> p = id2slot_.equal_range(id);
         for(id2slot_it it = p.first; it != p.second; ++it)
-            it->second.set_last_heard_time(goby_time());
+            it->second.set_last_heard_time(as<std::string>(goby_time()));
     }
 }
 
@@ -288,7 +310,10 @@ void goby::acomms::MACManager::expire_ids()
     
     for(id2slot_it it = id2slot_.begin(), n = id2slot_.end(); it != n; ++it)
     {
-        if(it->second.last_heard_time() < goby_time()-boost::posix_time::seconds(cycle_length()*expire_cycles_) && it->first != modem_id_)
+        if(as<boost::posix_time::ptime>(it->second.last_heard_time()) <
+           goby_time()-boost::posix_time::seconds(cycle_length()*expire_cycles_)
+           && it->first != modem_id_
+           && it->first != BROADCAST_ID)
         {
             if(log_) *log_ << group("mac") << "removed id " << it->first
                          << " after not hearing for " << expire_cycles_
@@ -310,7 +335,7 @@ void goby::acomms::MACManager::process_cycle_size_change()
                  << next_slot_t_ << std::endl;
     
     
-    if(type_ == mac_auto_decentralized && slot_order_.size() > 1)
+    if(type_ == MAC_AUTO_DECENTRALIZED && slot_order_.size() > 1)
         position_blank();
   
     restart_timer();
@@ -329,7 +354,7 @@ unsigned goby::acomms::MACManager::cycle_length()
 {
     unsigned length = 0;
     BOOST_FOREACH(const id2slot_it& it, slot_order_)
-        length += it->second.slot_time();
+        length += it->second.slot_seconds();
 
     
     return length;
@@ -351,10 +376,10 @@ void goby::acomms::MACManager::position_blank()
     current_slot_ = slot_order_.begin();
 }
 
-std::map<unsigned, goby::acomms::Slot>::iterator goby::acomms::MACManager::add_slot(const Slot& s)    
+std::map<int, goby::acomms::protobuf::Slot>::iterator goby::acomms::MACManager::add_slot(const protobuf::Slot& s)    
 {
-    std::map<unsigned, Slot>::iterator it =
-        id2slot_.insert(std::pair<unsigned, Slot>(s.src(), s));
+    std::map<int, protobuf::Slot>::iterator it =
+        id2slot_.insert(std::pair<int, protobuf::Slot>(s.src(), s));
 
     slot_order_.push_back(it);
     current_slot_ = slot_order_.begin();
@@ -371,7 +396,7 @@ void goby::acomms::MACManager::add_flex_groups(util::FlexOstream& tout)
 }
 
 
-bool goby::acomms::MACManager::remove_slot(const Slot& s)    
+bool goby::acomms::MACManager::remove_slot(const protobuf::Slot& s)    
 {
     bool removed_a_slot = false;
     

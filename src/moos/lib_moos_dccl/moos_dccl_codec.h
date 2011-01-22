@@ -196,18 +196,11 @@ class MOOSDCCLCodec
     void alg_modem_id2type(goby::acomms::DCCLMessageVal& in);
     void alg_name2modem_id(goby::acomms::DCCLMessageVal& in);
 
-    typedef boost::function<void (goby::acomms::QueueKey key, goby::acomms::protobuf::ModemDataTransmission & message)> MsgFunc;
-
-    void set_callback_pack(MsgFunc func) { callback_pack = func; }
-    template<typename V, typename A1, typename A2>
-        void set_callback_pack(void(V::*mem_func)(A1, A2), V* obj)
-    { set_callback_pack(boost::bind(mem_func, obj, _1, _2)); }
-    
+    boost::signal<void (goby::acomms::protobuf::QueueKey key,
+                        const goby::acomms::protobuf::ModemDataTransmission& message)> signal_pack;
     
   
   private:
-    MsgFunc callback_pack;
-    
     // do not encode for these ids
     std::set<unsigned> no_encode_;
     // do not decode for these ids

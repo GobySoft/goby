@@ -23,6 +23,7 @@
 
 #include <boost/bind.hpp>
 
+#include "goby/acomms/connect.h"
 #include "goby/acomms/dccl.h"
 #include "goby/acomms/queue.h"
 #include "goby/acomms/modem_driver.h"
@@ -35,25 +36,35 @@ namespace goby
     {   
         
         /// binds the driver link-layer callbacks to the QueueManager
-        void bind(ModemDriverBase& driver, QueueManager& queue_manager)
+        inline void bind(ModemDriverBase& driver, QueueManager& queue_manager)
         {
-            driver.set_callback_receive(&QueueManager::handle_modem_receive, &queue_manager);
-            driver.set_callback_ack(&QueueManager::handle_modem_ack, &queue_manager);
-            driver.set_callback_data_request(&QueueManager::handle_modem_data_request, &queue_manager);
+            connect(&driver.signal_receive,
+                    &queue_manager, &QueueManager::handle_modem_receive);
+            
+            connect(&driver.signal_data_request,
+                    &queue_manager, &QueueManager::handle_modem_data_request);
+            
+            connect(&driver.signal_ack,
+                    &queue_manager, &QueueManager::handle_modem_ack);
         }
 
         /// binds the MAC initiate transmission callback to the driver
         /// and the driver parsed message callback to the MAC
-        void bind(MACManager& mac, ModemDriverBase& driver)
+        inline void bind(MACManager& mac, ModemDriverBase& driver)
         {
-            mac.set_callback_initiate_transmission(&ModemDriverBase::handle_initiate_transmission, &driver);
-            mac.set_callback_initiate_ranging(&ModemDriverBase::handle_initiate_ranging, &driver);
-            driver.set_callback_all_incoming(&MACManager::handle_modem_all_incoming, &mac);
+            connect(&mac.signal_initiate_transmission,
+                    &driver, &ModemDriverBase::handle_initiate_transmission);
+            
+            connect(&mac.signal_initiate_ranging,
+                    &driver, &ModemDriverBase::handle_initiate_ranging);
+
+            connect(&driver.signal_all_incoming,
+                    &mac, &MACManager::handle_modem_all_incoming);
         }
     
 
         /// bind all three (shortcut to calling the other three bind functions)
-        void bind(ModemDriverBase& driver, QueueManager& queue_manager, MACManager& mac)
+        inline void bind(ModemDriverBase& driver, QueueManager& queue_manager, MACManager& mac)
         {
             bind(driver, queue_manager);
             bind(mac, driver);

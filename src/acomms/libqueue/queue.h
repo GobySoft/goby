@@ -34,7 +34,7 @@
 #include "goby/util/time.h"
 #include "goby/util/string.h"
 
-#include "queue_config.h"
+#include "goby/acomms/protobuf/queue.pb.h"
 
 typedef std::list<goby::acomms::protobuf::ModemDataTransmission>::iterator messages_it;
 typedef std::multimap<unsigned, messages_it>::iterator waiting_for_ack_it;
@@ -48,7 +48,7 @@ namespace goby
           public:
 
 
-            Queue(const QueueConfig cfg = QueueConfig(),
+            Queue(const protobuf::QueueConfig cfg = protobuf::QueueConfig(),
                   std::ostream* log = 0,
                   int modem_id = 0);
 
@@ -93,7 +93,7 @@ namespace goby
             void set_on_demand(const std::string& s)
             { set_on_demand(util::string2bool(s)); }
 
-            const QueueConfig cfg() const
+            const protobuf::QueueConfig cfg() const
             { return cfg_; }
         
             std::string summary() const;
@@ -103,7 +103,7 @@ namespace goby
             messages_it next_message_it();    
     
           private:
-            const QueueConfig cfg_;
+            const protobuf::QueueConfig cfg_;
         
             bool on_demand_;
     

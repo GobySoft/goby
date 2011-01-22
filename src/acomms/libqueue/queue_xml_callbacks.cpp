@@ -39,8 +39,8 @@ void goby::acomms::QueueContentHandler::startElement(
             break;            
             
         case tag_message:
-            q_.push_back(QueueConfig());
-            q_.back().set_type(queue_dccl);
+            q_.push_back(protobuf::QueueConfig());
+            q_.back().set_type(protobuf::QUEUE_DCCL);
             break;
     }
     
@@ -56,6 +56,9 @@ void goby::acomms::QueueContentHandler::endElement(
 
     Tag current_tag = tags_map_[toNative(localname)];
     parents_.erase(current_tag);
+
+    using goby::util::as;
+    using google::protobuf::uint32;
     
     switch(current_tag)
     {            
@@ -63,23 +66,23 @@ void goby::acomms::QueueContentHandler::endElement(
             break;            
 
         case tag_ack:
-            q_.back().set_ack(trimmed_data);
+            q_.back().set_ack(as<bool>(trimmed_data));
             break;            
 
         case tag_blackout_time:
-            q_.back().set_blackout_time(trimmed_data);
+            q_.back().set_blackout_time(as<uint32>(trimmed_data));
             break;
 
         case tag_max_queue:
-            q_.back().set_max_queue(trimmed_data);
+            q_.back().set_max_queue(as<uint32>(trimmed_data));
             break;
             
         case tag_newest_first:
-            q_.back().set_newest_first(trimmed_data);
+            q_.back().set_newest_first(as<bool>(trimmed_data));
             break;        
 
         case tag_id:
-            q_.back().set_id(trimmed_data);
+            q_.back().set_id(as<uint32>(trimmed_data));
             break;
 
         case tag_priority_base:
@@ -94,12 +97,12 @@ void goby::acomms::QueueContentHandler::endElement(
             
 
         case tag_ttl:
-            q_.back().set_ttl(trimmed_data);            
+            q_.back().set_ttl(as<uint32>(trimmed_data));
             break;
 
 
         case tag_value_base:
-            q_.back().set_value_base(trimmed_data);
+            q_.back().set_value_base(as<double>(trimmed_data));
             break;
 
     }

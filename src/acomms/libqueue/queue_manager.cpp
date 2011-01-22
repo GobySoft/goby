@@ -17,9 +17,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
-#include <map>
-#include <deque>
-
 #include <boost/foreach.hpp>
 
 #include "goby/acomms/xml/xml_parser.h"
@@ -27,11 +24,12 @@
 #include "goby/util/time.h"
 #include "goby/util/binary.h"
 
-#include "queue_constants.h"
 #include "queue_manager.h"
+#include "queue_constants.h"
 #include "queue_xml_callbacks.h"
 
 int goby::acomms::QueueManager::modem_id_ = 0;
+
 
 goby::acomms::QueueManager::QueueManager(std::ostream* log /* =0 */)
     : log_(log),
@@ -53,22 +51,24 @@ goby::acomms::QueueManager::QueueManager(const std::set<std::string>& files,
         add_xml_queue_file(s, schema);
 }
 
-goby::acomms::QueueManager::QueueManager(const QueueConfig& cfg, std::ostream* log /* =0 */)
+goby::acomms::QueueManager::QueueManager(const protobuf::QueueConfig& cfg, std::ostream* log /* =0 */)
     : log_(log),
       packet_ack_(0)
 { add_queue(cfg); }
 
-goby::acomms::QueueManager::QueueManager(const std::set<QueueConfig>& cfgs, std::ostream* log /* =0 */)
+goby::acomms::QueueManager::QueueManager(const std::set<protobuf::QueueConfig>& cfgs, std::ostream* log /* =0 */)
     : log_(log),
       packet_ack_(0)
 {
-    BOOST_FOREACH(const QueueConfig& c, cfgs)
+    BOOST_FOREACH(const protobuf::QueueConfig& c, cfgs)
         add_queue(c);    
 }
 
-void goby::acomms::QueueManager::add_queue(const QueueConfig& cfg)
+void goby::acomms::QueueManager::add_queue(const protobuf::QueueConfig& cfg)
 {
-    QueueKey k(cfg.type(), cfg.id());
+    protobuf::QueueKey k;
+    k.set_type(cfg.type());
+    k.set_id(cfg.id());
     
     Queue q(cfg, log_, modem_id_);
     
@@ -78,14 +78,17 @@ void goby::acomms::QueueManager::add_queue(const QueueConfig& cfg)
         ss << "Queue: duplicate key specified for key: " << k;
         throw queue_exception(ss.str());
     }
-    else if((q.cfg().id() > MAX_ID || q.cfg().id() < MIN_ID) && q.cfg().type() == queue_dccl)
+    else if((q.cfg().id() > MAX_ID || q.cfg().id() < MIN_ID) && q.cfg().type() == protobuf::QUEUE_DCCL)
     {
         std::stringstream ss;
         ss << "Queue: key (" << k << ") is out of bounds for use with libqueue. Use a id from " << MIN_ID << " to " << MAX_ID;
         throw queue_exception(ss.str());
     }
     else
-        queues_.insert(std::pair<QueueKey, Queue>(k, q));
+    {
+        queues_.insert(std::pair<protobuf::QueueKey, Queue>(k, q));
+    }
+    
 
     if(log_) *log_<< group("q_out") << "added new queue: \n" << q << std::endl;
     
@@ -94,7 +97,7 @@ void goby::acomms::QueueManager::add_queue(const QueueConfig& cfg)
 void goby::acomms::QueueManager::add_xml_queue_file(const std::string& xml_file,
                                                     const std::string xml_schema)
 {
-    std::vector<QueueConfig> cfgs;
+    std::vector<protobuf::QueueConfig> cfgs;
     
     // Register handlers for XML parsing
     QueueContentHandler content(cfgs);
@@ -107,28 +110,26 @@ void goby::acomms::QueueManager::add_xml_queue_file(const std::string& xml_file,
         
     parser.parse(xml_file, xml_schema_);
 
-    BOOST_FOREACH(const QueueConfig& c, cfgs)
+    BOOST_FOREACH(const protobuf::QueueConfig& c, cfgs)
         add_queue(c);
 }
 
 void goby::acomms::QueueManager::do_work()
 {
-    typedef std::pair<const QueueKey, Queue> P;
-    for(std::map<QueueKey, Queue>::iterator it = queues_.begin(), n = queues_.end(); it != n; ++it)
+    typedef std::pair<const protobuf::QueueKey, Queue> P;
+    for(std::map<protobuf::QueueKey, Queue>::iterator it = queues_.begin(), n = queues_.end(); it != n; ++it)
     {
         std::vector<protobuf::ModemDataTransmission> expired_msgs = it->second.expire();
-        if(callback_expire)
-        {
-            protobuf::ModemDataExpire expire;
-            protobuf::ModemDataTransmission* data_msg = expire.mutable_orig_msg();
-            BOOST_FOREACH(*data_msg, expired_msgs)
-                callback_expire(it->first, expire);
-        }
+
+        protobuf::ModemDataExpire expire;
+        protobuf::ModemDataTransmission* data_msg = expire.mutable_orig_msg();
+        BOOST_FOREACH(*data_msg, expired_msgs)
+            signal_expire(it->first, expire);
     }
     
 }
 
-void goby::acomms::QueueManager::push_message(QueueKey key, const protobuf::ModemDataTransmission& data_msg)
+void goby::acomms::QueueManager::push_message(protobuf::QueueKey key, const protobuf::ModemDataTransmission& data_msg)
 {
     // message is to us, auto-loopback
     if(data_msg.base().dest() == modem_id_)
@@ -137,7 +138,7 @@ void goby::acomms::QueueManager::push_message(QueueKey key, const protobuf::Mode
         
         handle_modem_receive(data_msg);
     }
-    // we have a queue with this key, so push message for sending
+// we have a queue with this key, so push message for sending
     else if(queues_.count(key))
     {
         queues_[key].push_message(data_msg);
@@ -148,16 +149,15 @@ void goby::acomms::QueueManager::push_message(QueueKey key, const protobuf::Mode
         std::stringstream ss;
         ss << "no queue for key: " << key;
         throw queue_exception(ss.str());
-    }    
+    }
 }
 
-void goby::acomms::QueueManager::push_message(unsigned id, const protobuf::ModemDataTransmission& data_msg, QueueType type /* = dccl_queue */)
-{ push_message(QueueKey(type, id), data_msg); }
-
-void goby::acomms::QueueManager::set_on_demand(QueueKey key)
+void goby::acomms::QueueManager::set_on_demand(protobuf::QueueKey key)
 {
     if(queues_.count(key))
+    {
         queues_[key].set_on_demand(true);
+    }    
     else
     {
         std::stringstream ss;
@@ -166,14 +166,20 @@ void goby::acomms::QueueManager::set_on_demand(QueueKey key)
     }
 }
 
-void goby::acomms::QueueManager::set_on_demand(unsigned id, QueueType type /* = dccl_queue */)
-{ set_on_demand(QueueKey(type, id)); }
+void goby::acomms::QueueManager::set_on_demand(unsigned id, protobuf::QueueType type /* = dccl_queue */)
+{
+    protobuf::QueueKey key;
+    key.set_type(type);
+    key.set_id(id);
+
+    set_on_demand(key);
+}
 
 
 std::string goby::acomms::QueueManager::summary() const
 {
     std::string s;
-    typedef std::pair<const QueueKey, Queue> P;
+    typedef std::pair<const protobuf::QueueKey, Queue> P;
     BOOST_FOREACH(const P& p, queues_)
         s += p.second.summary();
 
@@ -261,7 +267,7 @@ bool goby::acomms::QueueManager::stitch_recursive(const protobuf::ModemDataReque
     bool is_last_user_frame = true;
     // if true, we may be able to add more user-frames to this message
     if((request_msg.max_bytes() - complete_data_msg->data().size()) > DCCL_NUM_HEADER_BYTES
-       && winning_queue->cfg().type() != queue_ccl)
+       && winning_queue->cfg().type() != protobuf::QUEUE_CCL)
     {
         winning_queue = find_next_sender(request_msg, *complete_data_msg, false);
         if(winning_queue) is_last_user_frame = false;
@@ -334,7 +340,7 @@ goby::acomms::Queue* goby::acomms::QueueManager::find_next_sender(const protobuf
                   << "... have " << data_msg 
                   << "requesting: " << request_msg << std::endl;
     
-    for(std::map<QueueKey, Queue>::iterator it = queues_.begin(), n = queues_.end(); it != n; ++it)
+    for(std::map<protobuf::QueueKey, Queue>::iterator it = queues_.begin(), n = queues_.end(); it != n; ++it)
     {
         Queue& oq = it->second;
         
@@ -343,12 +349,9 @@ goby::acomms::Queue* goby::acomms::QueueManager::find_next_sender(const protobuf
            (!oq.size() || oq.newest_msg_time() + ON_DEMAND_SKEW < util::goby_time())
             )
         {
-            if(callback_ondemand)
-            {
-                protobuf::ModemDataTransmission data_msg;
-                callback_ondemand(it->first, request_msg, &data_msg);
-                push_message(it->first, data_msg);
-            }
+            protobuf::ModemDataTransmission data_msg;
+            signal_data_on_demand(it->first, request_msg, &data_msg);
+            push_message(it->first, data_msg);
         }
         
         double priority;
@@ -359,14 +362,14 @@ goby::acomms::Queue* goby::acomms::QueueManager::find_next_sender(const protobuf
             // AND not CCL when not the first user-frame
             if((!winning_queue || priority > winning_priority ||
                 (priority == winning_priority && last_send_time < winning_last_send_time))
-               && !(oq.cfg().type() == queue_ccl && !first_user_frame))
+               && !(oq.cfg().type() == protobuf::QUEUE_CCL && !first_user_frame))
             {
                 winning_priority = priority;
                 winning_last_send_time = last_send_time;
                 winning_queue = &oq;
             }            if(log_) *log_<< group("priority") << "\t" << oq.cfg().name()
-                          << " has priority value"
-                          << ": " << priority << std::endl;
+                                       << " has priority value"
+                                       << ": " << priority << std::endl;
         }
     }
 
@@ -405,6 +408,7 @@ void goby::acomms::QueueManager::handle_modem_ack(const protobuf::ModemDataAck& 
         // got an ack, let's pop this!
         if(log_) *log_<< group("q_in") << "received ack for this id" << std::endl;
         
+        
         std::multimap<unsigned, Queue *>::iterator it = waiting_for_ack_.find(ack_msg.frame());
         while(it != waiting_for_ack_.end())
         {
@@ -420,9 +424,15 @@ void goby::acomms::QueueManager::handle_modem_ack(const protobuf::ModemDataAck& 
             else
             {
                 qsize(oq);
-                if(callback_ack)
-                    callback_ack(QueueKey(oq->cfg().type(), oq->cfg().id()), ack_msg);
+
+                protobuf::QueueKey key;
+                key.set_type(oq->cfg().type());
+                key.set_id(oq->cfg().id());
+                signal_ack(key, ack_msg);
+                
             }
+
+            if(log_) *log_<< group("q_in") << ack_msg << std::endl;
             
             waiting_for_ack_.erase(it);
             
@@ -458,12 +468,15 @@ void goby::acomms::QueueManager::handle_modem_receive(const protobuf::ModemDataT
     // check for ccl type
     else
     {
-        QueueKey key(queue_ccl, ccl_id);
-        std::map<QueueKey, Queue>::iterator it = queues_.find(key);
+        protobuf::QueueKey key;
+        key.set_type(protobuf::QUEUE_CCL);
+        key.set_id(ccl_id);
+        
+        std::map<protobuf::QueueKey, Queue>::iterator it = queues_.find(key);
         
         if (it != queues_.end())
         {
-            if(callback_receive_ccl) callback_receive_ccl(key, message);
+            signal_receive_ccl(key, message);
         }
         else
         {
@@ -527,8 +540,11 @@ bool goby::acomms::QueueManager::publish_incoming_piece(const protobuf::ModemDat
         return false;
     }
 
-    QueueKey dccl_key(queue_dccl, incoming_var_id);
-    std::map<QueueKey, Queue>::iterator it_dccl = queues_.find(dccl_key);
+    protobuf::QueueKey dccl_key;
+    dccl_key.set_type(protobuf::QUEUE_DCCL);
+    dccl_key.set_id(incoming_var_id);
+    
+    std::map<protobuf::QueueKey, Queue>::iterator it_dccl = queues_.find(dccl_key);
     
     if(it_dccl == queues_.end())
     {
@@ -536,8 +552,8 @@ bool goby::acomms::QueueManager::publish_incoming_piece(const protobuf::ModemDat
                       << incoming_var_id << std::endl;
         return false;
     }
-
-    if(callback_receive) callback_receive(dccl_key, message);    
+    
+    signal_receive(dccl_key, message);    
 
     return true;
 }
@@ -550,4 +566,5 @@ void goby::acomms::QueueManager::add_flex_groups(util::FlexOstream& tout)
     tout.add_group("q_out",  util::Colors::cyan, "outgoing queuing messages (goby_queue)");
     tout.add_group("q_in",  util::Colors::green, "incoming queuing messages (goby_queue)");
 }
+
 

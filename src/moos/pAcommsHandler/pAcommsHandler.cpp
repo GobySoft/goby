@@ -26,12 +26,10 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/bind.hpp>
 #include <boost/numeric/conversion/cast.hpp>
 #include <boost/foreach.hpp>
 
-#include "goby/acomms/libdccl/dccl_constants.h"
-#include "goby/acomms/bind.h"
+#include "goby/acomms.h"
 
 #include "pAcommsHandler.h"
 #include "goby/moos/lib_tes_util/tes_string.h"
@@ -39,6 +37,8 @@
 
 using namespace goby::util::tcolor;
 using goby::acomms::operator<<;
+using goby::util::as;
+using google::protobuf::uint32;
 
 CpAcommsHandler::CpAcommsHandler()
     : modem_id_(1),
@@ -53,19 +53,29 @@ CpAcommsHandler::CpAcommsHandler()
     // bind the lower level pieces of goby-acomms together
     goby::acomms::bind(driver_, queue_manager_, mac_);
 
-    // bind our methods to the rest of the goby-acomms callbacks
-//    driver_.set_callback_in_raw(&CpAcommsHandler::modem_raw_in, this);
-//    driver_.set_callback_out_raw(&CpAcommsHandler::modem_raw_out, this);
-    driver_.set_callback_range_reply(&CpAcommsHandler::modem_range_reply, this);    
+    // bind our methods to the rest of the goby-acomms signals
+    goby::acomms::connect(&driver_.signal_all_outgoing,
+                          this, &CpAcommsHandler::modem_raw_out);
+    goby::acomms::connect(&driver_.signal_all_incoming,
+                          this, &CpAcommsHandler::modem_raw_in);    
+    goby::acomms::connect(&driver_.signal_range_reply,
+                          this, &CpAcommsHandler::modem_range_reply);
 
-    queue_manager_.set_callback_receive(&CpAcommsHandler::queue_incoming_data, this);
-    queue_manager_.set_callback_receive_ccl(&CpAcommsHandler::queue_incoming_data, this);
-    queue_manager_.set_callback_ack(&CpAcommsHandler::queue_ack, this);
-    queue_manager_.set_callback_data_on_demand(&CpAcommsHandler::queue_on_demand, this);
-    queue_manager_.set_callback_queue_size_change(&CpAcommsHandler::queue_qsize, this);
-    queue_manager_.set_callback_expire(&CpAcommsHandler::queue_expire, this);
-
-    moos_dccl_.set_callback_pack(&goby::acomms::QueueManager::push_message, &queue_manager_);
+    goby::acomms::connect(&queue_manager_.signal_receive,
+                          this, &CpAcommsHandler::queue_incoming_data);
+    goby::acomms::connect(&queue_manager_.signal_receive_ccl,
+                          this, &CpAcommsHandler::queue_incoming_data);
+    goby::acomms::connect(&queue_manager_.signal_ack,
+                          this, &CpAcommsHandler::queue_ack);
+    goby::acomms::connect(&queue_manager_.signal_data_on_demand,
+                          this, &CpAcommsHandler::queue_on_demand);
+    goby::acomms::connect(&queue_manager_.signal_queue_size_change,
+                          this, &CpAcommsHandler::queue_qsize);
+    goby::acomms::connect(&queue_manager_.signal_expire,
+                          this, &CpAcommsHandler::queue_expire);
+    
+    goby::acomms::connect(&moos_dccl_.signal_pack,
+                          &queue_manager_, &goby::acomms::QueueManager::push_message);
 }
 
 CpAcommsHandler::~CpAcommsHandler()
@@ -84,11 +94,12 @@ void CpAcommsHandler::do_subscriptions()
 // RegisterVariables: register for variables we want to get mail for
 {
     // subscribe for publishes to the incoming hex
-    typedef std::pair<std::string, goby::acomms::QueueKey> P;
+    typedef std::pair<std::string, goby::acomms::protobuf::QueueKey> P;
     BOOST_FOREACH(const P& p, out_moos_var2queue_)
     {
         // *if* we're not doing the encoding, add the variable
-        if(p.second.type() != goby::acomms::queue_dccl || !moos_dccl_.encode(p.second.id()))
+        if(p.second.type() != goby::acomms::protobuf::QUEUE_DCCL
+           || !moos_dccl_.encode(p.second.id()))
             subscribe(p.first, &CpAcommsHandler::handle_message_push, this);
     }
         
@@ -115,7 +126,10 @@ void CpAcommsHandler::handle_nmea_out_request(const CMOOSMsg& msg)
     if(msg.GetSource()!=GetAppName())
     {
         goby::util::NMEASentence nmea(msg.GetString(), goby::util::NMEASentence::VALIDATE);
-        driver_.write(nmea);
+
+        static goby::acomms::protobuf::ModemMsgBase base_msg;
+        base_msg.Clear();
+        driver_.append_to_write_queue(nmea, &base_msg);
     }
 }
 
@@ -124,7 +138,7 @@ void CpAcommsHandler::handle_ranging_request(const CMOOSMsg& msg)
     goby::acomms::protobuf::ModemRangingRequest request_msg;
     parse_for_moos(msg.GetString(), &request_msg);
     logger() << "ranging request: " << request_msg << std::endl;
-    driver_.handle_initiate_ranging(request_msg);
+    driver_.handle_initiate_ranging(&request_msg);
 }
 
 void CpAcommsHandler::handle_message_push(const CMOOSMsg& msg)
@@ -132,11 +146,11 @@ void CpAcommsHandler::handle_message_push(const CMOOSMsg& msg)
     goby::acomms::protobuf::ModemDataTransmission new_message;
     parse_for_moos(msg.GetString(), &new_message);
     
-    goby::acomms::QueueKey& qk = out_moos_var2queue_[msg.GetKey()];
+    goby::acomms::protobuf::QueueKey& qk = out_moos_var2queue_[msg.GetKey()];
     
     if(new_message.data().empty())
         logger() << warn << "message is either empty or contains invalid data" << std::endl;
-    else if(!(qk.type() == goby::acomms::queue_dccl && !moos_dccl_.queue(qk.id())))
+    else if(!(qk.type() == goby::acomms::protobuf::QUEUE_DCCL && !moos_dccl_.queue(qk.id())))
         queue_manager_.push_message(out_moos_var2queue_[msg.GetKey()], new_message);
 }
 
@@ -197,17 +211,18 @@ void CpAcommsHandler::handle_mac_cycle_update(const CMOOSMsg& msg)
            tes::val_from_string(wait, s, std::string("poll_wait" + si))))
     {
         
-        
-        goby::acomms::Slot::SlotType slot_type = goby::acomms::Slot::slot_notype;
-        if(tes::stricmp(poll_type, "data"))
-            slot_type = goby::acomms::Slot::slot_data;
-        else if(tes::stricmp(poll_type, "ping"))
-            slot_type = goby::acomms::Slot::slot_ping;
-        else if(tes::stricmp(poll_type, "remus_lbl"))
-            slot_type = goby::acomms::Slot::slot_remus_lbl;
-        
-        
         bool fail = false;
+        
+        goby::acomms::protobuf::SlotType slot_type;
+        if(tes::stricmp(poll_type, "data"))
+            slot_type = goby::acomms::protobuf::SLOT_DATA;
+        else if(tes::stricmp(poll_type, "ping"))
+            slot_type = goby::acomms::protobuf::SLOT_PING;
+        else if(tes::stricmp(poll_type, "remus_lbl"))
+            slot_type = goby::acomms::protobuf::SLOT_REMUS_LBL;
+        else
+            fail = true;
+        
         unsigned s, d, r, t;
         try
         {
@@ -223,7 +238,12 @@ void CpAcommsHandler::handle_mac_cycle_update(const CMOOSMsg& msg)
 
         if(!fail)
         {
-            goby::acomms::Slot slot(s, d, r, slot_type, t);
+            goby::acomms::protobuf::Slot slot;
+            slot.set_src(s);
+            slot.set_dest(d);
+            slot.set_rate(r);
+            slot.set_type(slot_type);
+            slot.set_slot_seconds(t);
             if(type == replace || type == add)
                 mac_.add_slot(slot);
             else
@@ -248,9 +268,9 @@ void CpAcommsHandler::handle_measure_noise_request(const CMOOSMsg& msg)
 //
 // Callbacks from goby libraries
 //
-void CpAcommsHandler::queue_qsize(goby::acomms::QueueKey qk, unsigned size)
+void CpAcommsHandler::queue_qsize(goby::acomms::protobuf::QueueKey qk, unsigned size)
 {
-    typedef std::pair<std::string, goby::acomms::QueueKey> P;
+    typedef std::pair<std::string, goby::acomms::protobuf::QueueKey> P;
     BOOST_FOREACH(const P& p, out_moos_var2queue_)
     {
         if(qk == p.second)
@@ -260,14 +280,14 @@ void CpAcommsHandler::queue_qsize(goby::acomms::QueueKey qk, unsigned size)
         }
     }    
 }
-void CpAcommsHandler::queue_expire(goby::acomms::QueueKey qk, const goby::acomms::protobuf::ModemDataExpire& message)
+void CpAcommsHandler::queue_expire(goby::acomms::protobuf::QueueKey qk, const goby::acomms::protobuf::ModemDataExpire& message)
 {
     std::stringstream ss;
     ss << message;
     outbox(MOOS_VAR_EXPIRE, ss.str());
 }
 
-void CpAcommsHandler::queue_incoming_data(goby::acomms::QueueKey key, const goby::acomms::protobuf::ModemDataTransmission& message)
+void CpAcommsHandler::queue_incoming_data(goby::acomms::protobuf::QueueKey key, const goby::acomms::protobuf::ModemDataTransmission& message)
 {
     std::string serialized;
     serialize_for_moos(&serialized, message);        
@@ -286,20 +306,19 @@ void CpAcommsHandler::queue_incoming_data(goby::acomms::QueueKey key, const goby
         logger() << group("q_in") << "published received data to "
                  << in_queue2moos_var_[key] << ": " << message << std::endl;
         
-        if(moos_dccl_.decode(key.id()) && key.type() == goby::acomms::queue_dccl)
+        if(moos_dccl_.decode(key.id()) && key.type() == goby::acomms::protobuf::QUEUE_DCCL)
             moos_dccl_.unpack(key.id(), message);
     }
 }
 
 
-bool CpAcommsHandler::queue_on_demand(goby::acomms::QueueKey key, const goby::acomms::protobuf::ModemDataRequest& request_msg, goby::acomms::protobuf::ModemDataTransmission* data_msg)
+void CpAcommsHandler::queue_on_demand(goby::acomms::protobuf::QueueKey key, const goby::acomms::protobuf::ModemDataRequest& request_msg, goby::acomms::protobuf::ModemDataTransmission* data_msg)
 {
     moos_dccl_.pack(key.id(), data_msg);
-    return true;
 }
 
 
-void CpAcommsHandler::queue_ack(goby::acomms::QueueKey key, const goby::acomms::protobuf::ModemDataAck& message)
+void CpAcommsHandler::queue_ack(goby::acomms::protobuf::QueueKey key, const goby::acomms::protobuf::ModemDataAck& message)
 {
     std::string serialized;
     serialize_for_moos(&serialized, message);
@@ -308,16 +327,20 @@ void CpAcommsHandler::queue_ack(goby::acomms::QueueKey key, const goby::acomms::
 }
 
 
-void CpAcommsHandler::modem_raw_in(std::string s)
+void CpAcommsHandler::modem_raw_in(const goby::acomms::protobuf::ModemMsgBase& base_msg)
 {
-    boost::trim(s);
-    if(s.length() < MAX_MOOS_PACKET) outbox(MOOS_VAR_NMEA_IN, s);
+    if(base_msg.raw().length() < MAX_MOOS_PACKET)
+        outbox(MOOS_VAR_NMEA_IN, base_msg.raw());
 }
 
-void CpAcommsHandler::modem_raw_out(std::string s)
+void CpAcommsHandler::modem_raw_out(const goby::acomms::protobuf::ModemMsgBase& base_msg)
 {
-    boost::trim(s);
-    if(s.length() < MAX_MOOS_PACKET) outbox(MOOS_VAR_NMEA_OUT, s);
+    std::string out;
+    serialize_for_moos(&out, base_msg);
+        
+    if(base_msg.raw().length() < MAX_MOOS_PACKET)
+        outbox(MOOS_VAR_NMEA_OUT, out);
+    
 }
 
 void CpAcommsHandler::modem_range_reply(const goby::acomms::protobuf::ModemRangingReply& message)
@@ -463,9 +486,9 @@ void CpAcommsHandler::read_driver_parameters(CProcessConfigReader& config)
     if (!config.GetConfigurationParam("mac", mac))
         logger() << group("mac") << "`mac` not specified, using no medium access control. you must provide an external MAC, or set `mac = slotted`, `mac=fixed_slotted` or `mac = polled` in the .moos file" << std::endl;
 
-    if(mac == "polled") mac_.set_type(goby::acomms::mac_polled);
-    else if(mac == "slotted") mac_.set_type(goby::acomms::mac_auto_decentralized);
-    else if(mac == "fixed_slotted") mac_.set_type(goby::acomms::mac_fixed_decentralized);
+    if(mac == "polled") mac_.set_type(goby::acomms::MAC_POLLED);
+    else if(mac == "slotted") mac_.set_type(goby::acomms::MAC_AUTO_DECENTRALIZED);
+    else if(mac == "fixed_slotted") mac_.set_type(goby::acomms::MAC_FIXED_DECENTRALIZED);
     
     read_internal_mac_parameters(config);
     
@@ -476,7 +499,7 @@ void CpAcommsHandler::read_driver_parameters(CProcessConfigReader& config)
 
 void CpAcommsHandler::read_internal_mac_parameters(CProcessConfigReader& config)
 {
-    if(mac_.type() == goby::acomms::mac_auto_decentralized)
+    if(mac_.type() == goby::acomms::MAC_AUTO_DECENTRALIZED)
     {   
         unsigned slot_time = 15;
         if (!config.GetConfigurationParam("slot_time", slot_time))
@@ -531,19 +554,23 @@ void CpAcommsHandler::read_queue_parameters(CProcessConfigReader& config)
 
                 unsigned id;
                 goby::util::hex_string2number(send_params[1], id);
-                out_moos_var2queue_[moos_var_name] = goby::acomms::QueueKey(goby::acomms::queue_ccl, id);
-                    
-                goby::acomms::QueueConfig q_cfg;                    
+
+                goby::acomms::protobuf::QueueKey key;
+                key.set_type(goby::acomms::protobuf::QUEUE_CCL);
+                key.set_id(id);
+                out_moos_var2queue_[moos_var_name] = key;
+                
+                goby::acomms::protobuf::QueueConfig q_cfg;                    
                 switch (send_params.size())
                 {
-                    case 8: q_cfg.set_ttl(send_params[7]);
-                    case 7: q_cfg.set_value_base(send_params[6]);
-                    case 6: q_cfg.set_newest_first(send_params[5]);
-                    case 5: q_cfg.set_max_queue(send_params[4]);
-                    case 4: q_cfg.set_blackout_time(send_params[3]);
-                    case 3: q_cfg.set_ack(send_params[2]);
-                    case 2: q_cfg.set_id(id);
-                        q_cfg.set_type(goby::acomms::queue_ccl);
+                    case 8: q_cfg.set_ttl(as<uint32>(send_params[7]));
+                    case 7: q_cfg.set_value_base(as<double>(send_params[6]));
+                    case 6: q_cfg.set_newest_first(as<bool>(send_params[5]));
+                    case 5: q_cfg.set_max_queue(as<uint32>(send_params[4]));
+                    case 4: q_cfg.set_blackout_time(as<uint32>(send_params[3]));
+                    case 3: q_cfg.set_ack(as<bool>(send_params[2]));
+                    case 2: q_cfg.set_id(as<uint32>(id));
+                        q_cfg.set_type(goby::acomms::protobuf::QUEUE_CCL);
                         q_cfg.set_name(boost::trim_copy(send_params[0]));
                     default: break;
                 }
@@ -565,7 +592,11 @@ void CpAcommsHandler::read_queue_parameters(CProcessConfigReader& config)
 
                 unsigned id;
                 goby::util::hex_string2number(variable_id, id);
-                in_queue2moos_var_[goby::acomms::QueueKey(goby::acomms::queue_ccl, id)] = moos_var_name;
+
+                goby::acomms::protobuf::QueueKey key;
+                key.set_type(goby::acomms::protobuf::QUEUE_CCL);
+                key.set_id(id);
+                in_queue2moos_var_[key] = moos_var_name;
 
             }
         }
@@ -574,7 +605,9 @@ void CpAcommsHandler::read_queue_parameters(CProcessConfigReader& config)
     std::set<unsigned> ids = moos_dccl_.dccl_codec().all_message_ids();
     BOOST_FOREACH(unsigned id, ids)
     {
-        goby::acomms::QueueKey key(goby::acomms::queue_dccl, id);
+        goby::acomms::protobuf::QueueKey key;
+        key.set_type(goby::acomms::protobuf::QUEUE_DCCL);
+        key.set_id(id);
         out_moos_var2queue_[moos_dccl_.dccl_codec().get_outgoing_hex_var(id)] = key;
         in_queue2moos_var_[key] = moos_dccl_.dccl_codec().get_incoming_hex_var(id);
     }    

@@ -1,4 +1,4 @@
-// copyright 2009 t. schneider tes@mit.edu
+/// copyright 2009 t. schneider tes@mit.edu
 //
 // this file is part of flex-ostream, a terminal display library
 // that provides an ostream with both terminal display and file logging

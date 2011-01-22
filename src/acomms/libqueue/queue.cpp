@@ -25,7 +25,7 @@
 
 using goby::util::goby_time;
 
-goby::acomms::Queue::Queue(const QueueConfig cfg /* = 0 */,
+goby::acomms::Queue::Queue(const protobuf::QueueConfig cfg /* = 0 */,
                            std::ostream* log /* = 0 */,
                            int modem_id /* = 0 */)
     : cfg_(cfg),

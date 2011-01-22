@@ -220,7 +220,14 @@ void MOOSDCCLCodec::read_parameters(CProcessConfigReader& processConfigReader)
                             // this is queued automatically by libqueue, so
                             // don't duplicate
                             no_queue_.insert(id);
-                            if(queue_manager_) queue_manager_->set_on_demand(goby::acomms::QueueKey(goby::acomms::queue_dccl, id));
+                            if(queue_manager_)
+                            {
+                                goby::acomms::protobuf::QueueKey key;
+                                key.set_type(goby::acomms::protobuf::QUEUE_DCCL);
+                                key.set_id(id);
+                                queue_manager_->set_on_demand(key);
+                            }
+                            
                         }
                         if(manipulator.find("tcp_share_in") != std::string::npos)
                             tcp_share_.insert(id);
@@ -354,7 +361,13 @@ void MOOSDCCLCodec::pack(unsigned dccl_id, goby::acomms::protobuf::ModemDataTran
         base_app_->outbox(MOOS_VAR_OUTGOING_DATA, serialized);
         base_app_->outbox(out_var, serialized);
         
-        if(callback_pack && queue(dccl_id)) callback_pack(goby::acomms::QueueKey(goby::acomms::queue_dccl, dccl_id), *modem_message);
+        if(queue(dccl_id))
+        {
+            goby::acomms::protobuf::QueueKey key;
+            key.set_type(goby::acomms::protobuf::QUEUE_DCCL);
+            key.set_id(dccl_id);
+            signal_pack(key, *modem_message);
+        }
         
         handle_tcp_share(dccl_id, *modem_message, std::set<std::string>());
         

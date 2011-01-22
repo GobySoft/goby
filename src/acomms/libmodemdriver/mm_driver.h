@@ -49,19 +49,22 @@ namespace goby
             
             /// \brief Initiate a transmission to the modem. 
             ///
+            ///
             /// \param m ModemMessage containing the details of the transmission to be started. This does *not* contain data, which must be requested in a call to the datarequest callback (set by DriverBase::set_data_request_cb)
-            void handle_initiate_transmission(const protobuf::ModemMsgBase& m);
+            void handle_initiate_transmission(protobuf::ModemMsgBase* m);
 
             /// \brief Initiate ranging ("ping") to the modem. 
             ///
             /// \param m ModemMessage containing the details of the ranging request to be started. (source and destination)
-            void handle_initiate_ranging(const protobuf::ModemRangingRequest& m);
+            void handle_initiate_ranging(protobuf::ModemRangingRequest* m);
 
             // set an additional prefix to support the hydroid gateway
             void set_hydroid_gateway_prefix(int id);
 
-            void write(const util::NMEASentence& nmea);
             void measure_noise(unsigned milliseconds_to_average);
+
+            // will set the description 
+            void append_to_write_queue(const util::NMEASentence& nmea, protobuf::ModemMsgBase* base_msg);
             
           private:
         
@@ -70,31 +73,30 @@ namespace goby
             void set_clock();
             void write_cfg();
             void query_all_cfg();
-
+            
             // output
             void try_send();
             void pop_out();
-            void mm_write(const util::NMEASentence& nmea_out);
             void cache_outgoing_data(const protobuf::ModemDataInit& init_msg);
+            void mm_write(const protobuf::ModemMsgBase& base_msg);
             
             // input
             void process_receive(const util::NMEASentence& nmea);
-            void process_parsed(const util::NMEASentence& nmea, protobuf::ModemMsgBase* m);
             
             // data cycle
-            void cyc(const util::NMEASentence& nmea, protobuf::ModemDataInit* m);
-            void rxd(const util::NMEASentence& nmea, protobuf::ModemDataTransmission* m);
-            void ack(const util::NMEASentence& nmea, protobuf::ModemDataAck* m);
+            void cyc(const util::NMEASentence& nmea, protobuf::ModemDataInit* init_msg);
+            void rxd(const util::NMEASentence& nmea, protobuf::ModemDataTransmission* data_msg);
+            void ack(const util::NMEASentence& nmea, protobuf::ModemDataAck* ack_msg);
 
             // ranging (pings)
-            void mpr(const util::NMEASentence& nmea, protobuf::ModemRangingReply* m);
-            void tta(const util::NMEASentence& nmea, protobuf::ModemRangingReply* m);
+            void mpr(const util::NMEASentence& nmea, protobuf::ModemRangingReply* ranging_msg);
+            void tta(const util::NMEASentence& nmea, protobuf::ModemRangingReply* ranging_msg);
 
             // local modem
             void rev(const util::NMEASentence& nmea);
             void err(const util::NMEASentence& nmea);
-            void cfg(const util::NMEASentence& nmea);
-            void clk(const util::NMEASentence& nmea);
+            void cfg(const util::NMEASentence& nmea, protobuf::ModemMsgBase* base_msg);
+            void clk(const util::NMEASentence& nmea, protobuf::ModemMsgBase* base_msg);
             void drq(const util::NMEASentence& nmea);
             
             // utility    
@@ -132,7 +134,7 @@ namespace goby
 
             // deque for outgoing messages to the modem, we queue them up and send
             // as the modem acknowledges them
-            std::deque<util::NMEASentence> out_;
+            std::deque< std::pair<util::NMEASentence, protobuf::ModemMsgBase> > out_;
 
             std::ostream* log_;
     
@@ -170,10 +172,11 @@ namespace goby
                                 DQF,SHF,SNR,DOP,
                                 DBG,FFL,FST,ERR};
             
-    
             std::map<std::string, TalkerIDs> talker_id_map_;
             std::map<std::string, SentenceIDs> sentence_id_map_;
-
+            std::map<std::string, std::string> description_map_;
+            std::map<std::string, std::string> cfg_map_;
+            
             // length of #G1 or #M1
             enum { HYDROID_GATEWAY_PREFIX_LENGTH = 3 };
 

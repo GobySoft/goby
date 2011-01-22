@@ -24,14 +24,19 @@
 #include <limits>
 #include <set>
 #include <boost/bind.hpp>
+#include <boost/signal.hpp>
 
 #include "goby/acomms/xml/xml_parser.h"
 #include "goby/acomms/dccl.h"
+#include "goby/acomms/protobuf/queue.pb.h"
+#include "goby/acomms/protobuf/acomms_proto_helpers.h"
 
-#include "queue_config.h"
+#include <map>
+#include <deque>
+
 #include "queue_exception.h"
-#include "queue_key.h"
 #include "queue.h"
+
 
 namespace goby
 {
@@ -72,13 +77,13 @@ namespace goby
             ///
             /// \param cfg QueueConfig object to initialize a new %queue with. Use the QueueConfig largely for non-DCCL messages. Use the XML file constructors for XML configured DCCL messages.
             /// \param os std::ostream object or FlexOstream to capture all humanly readable runtime and debug information (optional).
-            QueueManager(const QueueConfig& cfg, std::ostream* os = 0);
+            QueueManager(const protobuf::QueueConfig& cfg, std::ostream* os = 0);
         
             /// \brief Instantiate with a set of QueueConfig objects.
             //
             /// \param cfgs Set of QueueConfig objects to initialize new %queues with. Use the QueueConfig largely for non-DCCL messages. Use the XML file constructors for XML configured DCCL messages.
             /// \param os std::ostream object or FlexOstream to capture all humanly readable runtime and debug information (optional).
-            QueueManager(const std::set<QueueConfig>& cfgs, std::ostream* os = 0);
+            QueueManager(const std::set<protobuf::QueueConfig>& cfgs, std::ostream* os = 0);
 
             /// Destructor.
             ~QueueManager() { }
@@ -102,7 +107,7 @@ namespace goby
             /// \brief Add more Queues.
             ///
             /// \param QueueConfig& cfg: configuration object for the new %queue.
-            void add_queue(const QueueConfig& cfg);
+            void add_queue(const protobuf::QueueConfig& cfg);
         
 
             /// \brief Set the schema used for XML syntax checking.
@@ -121,11 +126,11 @@ namespace goby
             /// \brief Set a %queue to call the data_on_demand callback every time data is request (basically forwards the %modem data_request).
             ///
             /// \param key QueueKey that references the %queue for which to enable the <tt>on demand</tt>  callback.
-            void set_on_demand(QueueKey key);
+            void set_on_demand(protobuf::QueueKey key);
             /// \brief Set a %queue to call the data_on_demand callback every time data is request (basically forwards the %modem data_request).
             /// 
             /// \param id DCCL message id (\verbatim <id/> \endverbatim) that references the %queue for which to enable the <tt>on demand</tt> callback.
-            void set_on_demand(unsigned id, QueueType type = queue_dccl);
+            void set_on_demand(unsigned id, protobuf::QueueType type = protobuf::QUEUE_DCCL);
 
             void add_flex_groups(util::FlexOstream& tout);
             
@@ -142,32 +147,7 @@ namespace goby
             ///
             /// \param key QueueKey that references the %queue to push the message to.
             /// \param new_message ModemMessage to push.
-            void push_message(QueueKey key, const protobuf::ModemDataTransmission& new_message);
-        
-            /// \brief Push a message using the %queue id and type together as a key.
-            ///
-            /// \param id DCCL message id (\verbatim <id/> \endverbatim) that references the %queue for which to push the message to.
-            /// \param new_message ModemMessage to push.
-            void push_message(unsigned id, const protobuf::ModemDataTransmission& new_message, QueueType type = queue_dccl);
-
-            /// \brief Set the callback to receive incoming DCCL messages. Any messages received before this callback is set will be discarded.
-            ///
-            /// \param func Pointer to function (or any other object boost::function accepts) matching the signature of queue::QueueMsgFunc.
-            /// The callback (func) will be invoked with the following parameters:
-            /// \param key the QueueKey for the %queue for which this received message belongs.
-            /// \param message A ModemMessage reference containing the contents of the received DCCL message.
-            void set_callback_receive(boost::function<void (QueueKey key, const protobuf::ModemDataTransmission& msg)> func)
-            { callback_receive = func; }
-
-            /// \brief Set the callback to receive incoming CCL messages. Any messages received before this callback is set will be discarded.
-            ///
-            /// \param func Pointer to function (or any other object boost::function accepts) matching the signature of queue::QueueMsgFunc.
-            /// The callback (func) will be invoked with the following parameters:
-            /// \param key the QueueKey for the %queue for which this received message belongs.
-            /// \param message A ModemMessage reference containing the contents of the received CCL message.
-            void set_callback_receive_ccl(boost::function<void (QueueKey key, const protobuf::ModemDataTransmission& msg)> func)
-            { callback_receive_ccl = func; }
-
+            void push_message(protobuf::QueueKey key, const protobuf::ModemDataTransmission& new_message);        
             //@}
         
             /// \name Modem Driver level Push/Receive Methods
@@ -194,8 +174,6 @@ namespace goby
             /// If using one of the classes inheriting ModemDriverBase, this method should be bound and passed to ModemDriverBase::set_ack_cb.
             /// \param message The ModemMessage corresponding to the acknowledgement (dest, src, frame#)
             void handle_modem_ack(const protobuf::ModemDataAck& message);
-
-
         
             //@}
 
@@ -208,73 +186,6 @@ namespace goby
 
             //@}
         
-            /// \name Additional Application level methods
-            ///
-            /// Use these methods for advanced features and more fine grained control.
-            //@{
-        
-        
-            /// \brief Set the callback to receive acknowledgements of message receipt. 
-            ///
-            /// \param func Pointer to function (or any other object boost::function accepts) matching the signature of queue::QueueMsgFunc.
-            /// The callback (func) will be invoked with the following parameters:
-            /// \param key the QueueKey for this acknowledgement.
-            /// \param message A ModemMessage containing the contents of the original message that was acknowledged. 
-            void set_callback_ack(boost::function<void (QueueKey key, const protobuf::ModemDataAck& ack_msg)> func)
-            { callback_ack = func; }
-        
-            /// \brief Set the callback to process %queues marked \p on_demand by QueueManager::set_on_demand. 
-            ///
-            /// This method forwards a data request from the %modem to the application level for applications demanding to wait on encoding until the moment data is required (highly time sensitive data). Note that in most circumstances it is better to fill the %queues asynchronously and let the QueueManager take care of this transaction.
-            /// \param func Pointer to function (or other boost::function object) of the signature queue::QueueMsgFunc2. The callback (func) will be invoked with the following parameters:
-            /// \param key the QueueKey for the data request.
-            /// \param message1 (incoming) The ModemMessage containing the details of the request (source, destination, size, etc.)
-            /// \param message2 (outgoing) The ModemMessage to be sent. This should be populated by the callback.
-            void set_callback_data_on_demand(boost::function<void (QueueKey key, const protobuf::ModemDataRequest& request_msg, protobuf::ModemDataTransmission* data_msg)> func)
-            { callback_ondemand = func; }
-            
-            /// \brief Set the callback to receive messages every time a %queue changes size (that is, a message is popped or pushed).
-            ///
-            /// \param func Pointer to function (or any other object boost::function accepts) matching the signature of queue::QueueSizeFunc.
-            /// The callback (func) will be provided with the following parameters:
-            /// \param key the QueueKey for %queue that changed size.
-            /// \param size the size of the %queue after the size change event.
-            void set_callback_queue_size_change(boost::function<void (QueueKey key, unsigned size)> func)
-            { callback_qsize = func; }
-
-            /// \brief Set the callback to receive messages every time a message is expired due to exceeding its time to live (ttl)
-            ///
-            /// \param func Pointer to function (or any other object boost::function accepts) matching the signature of queue::QueueMsgFunc.
-            /// The callback (func) will be invoked with the following parameters:
-            /// \param key the QueueKey for the queue from which the expired message originated.
-            /// \param message A ModemMessage containing the contents of the original message that was expired. 
-            void set_callback_expire(boost::function<void (QueueKey key, protobuf::ModemDataExpire expire_msg)> func)
-            { callback_expire = func; }
-
-            
-            template<typename V, typename A1, typename A2>
-                void set_callback_receive(void(V::*mem_func)(A1, A2), V* obj)
-            { set_callback_receive(boost::bind(mem_func, obj, _1, _2)); }
-            template<typename V, typename A1, typename A2>
-                void set_callback_receive_ccl(void(V::*mem_func)(A1, A2), V* obj)
-            { set_callback_receive_ccl(boost::bind(mem_func, obj, _1, _2)); }
-            template<typename V, typename A1, typename A2>
-                void set_callback_ack(void(V::*mem_func)(A1, A2), V* obj)
-            { set_callback_ack(boost::bind(mem_func, obj, _1, _2)); }
-            template<typename V, typename A1, typename A2, typename A3>
-                void set_callback_data_on_demand(bool(V::*mem_func)(A1, A2, A3), V* obj)
-            { set_callback_data_on_demand(boost::bind(mem_func, obj, _1, _2, _3)); }
-            template<typename V, typename A1, typename A2>
-                void set_callback_queue_size_change(void(V::*mem_func)(A1, A2), V* obj)
-            { set_callback_queue_size_change(boost::bind(mem_func, obj, _1, _2)); }
-            template<typename V, typename A1, typename A2>
-                void set_callback_expire(void(V::*mem_func)(A1, A2), V* obj)
-            { set_callback_expire(boost::bind(mem_func, obj, _1, _2)); }
-
-
-            
-            //@}
-
             /// \name Informational Methods
             ///
             //@{        
@@ -295,12 +206,27 @@ namespace goby
             /// \example acomms/examples/chat/chat.cpp
 
             static int modem_id_;
+
+            boost::signal<void (protobuf::QueueKey key,
+                                const protobuf::ModemDataAck& ack_msg)> signal_ack;
+            boost::signal<void (protobuf::QueueKey key,
+                                const protobuf::ModemDataTransmission& msg)> signal_receive;
+            boost::signal<void (protobuf::QueueKey key,
+                                const protobuf::ModemDataTransmission& msg)> signal_receive_ccl;
+            boost::signal<void (protobuf::QueueKey key,
+                                const protobuf::ModemDataExpire& expire_msg)> signal_expire;
+            boost::signal<void (protobuf::QueueKey key,
+                                const protobuf::ModemDataRequest& request_msg,
+                                protobuf::ModemDataTransmission* data_msg)> signal_data_on_demand;
+            boost::signal<void (protobuf::QueueKey key, unsigned size)> signal_queue_size_change;
             
           private:
             void qsize(Queue* q)
             {
-                if(callback_qsize)
-                    callback_qsize(QueueKey(q->cfg().type(), q->cfg().id()), q->size());
+                protobuf::QueueKey qkey;
+                qkey.set_type(q->cfg().type());
+                qkey.set_id(q->cfg().id());
+                signal_queue_size_change(qkey, q->size());
             }
         
             // finds the %queue with the highest priority
@@ -319,23 +245,11 @@ namespace goby
             bool publish_incoming_piece(const protobuf::ModemDataTransmission& message, const unsigned incoming_var_id);
             
         
-          private:
-            boost::function<void (QueueKey key, const protobuf::ModemDataAck& ack_msg)>
-                callback_ack;
-            boost::function<void (QueueKey key, const protobuf::ModemDataTransmission& msg)>
-                callback_receive;
-            boost::function<void (QueueKey key, const protobuf::ModemDataTransmission& msg)>
-                callback_receive_ccl;
-            boost::function<void (QueueKey key, const protobuf::ModemDataExpire& expire_msg)>
-                callback_expire;
-            
-            boost::function<void (QueueKey key, const protobuf::ModemDataRequest& request_msg,
-                                  protobuf::ModemDataTransmission* data_msg)> callback_ondemand;
-            
-            boost::function<void (QueueKey key, unsigned size)> callback_qsize;
-            
-            std::map<QueueKey, Queue> queues_;
 
+          private:
+            std::map<goby::acomms::protobuf::QueueKey, Queue> queues_;
+            //boost::unordered_map<goby::acomms::protobuf::QueueKey, Queue> queues_;
+            
             std::string xml_schema_;
 
             std::ostream* log_;
@@ -351,8 +265,10 @@ namespace goby
         /// outputs information about all available messages (same as std::string summary())
         std::ostream& operator<< (std::ostream& out, const QueueManager& d);
 
+        
     }
 
 }
+
 
 #endif

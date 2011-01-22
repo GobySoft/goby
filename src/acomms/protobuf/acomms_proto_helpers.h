@@ -15,29 +15,62 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
-
 #ifndef AcommsProtoHelpers20110117H
 #define AcommsProtoHelpers20110117H
 
+#include <sstream>
+
 #include "goby/acomms/protobuf/modem_message.pb.h"
+#include "goby/acomms/protobuf/queue.pb.h"
 #include "goby/util/time.h"
 
 namespace goby
 {
     namespace acomms
     {
-        inline void set_time(protobuf::ModemMsgBase* msg_base, const boost::posix_time::ptime& t = goby::util::goby_time())
+        inline void set_time(protobuf::ModemMsgBase* base_msg, const boost::posix_time::ptime& t = goby::util::goby_time())
         {
-            msg_base->set_iso_time(boost::posix_time::to_iso_string(t));
-            msg_base->set_unix_time(goby::util::ptime2unix_double(t));
-            msg_base->set_time_source(protobuf::ModemMsgBase::GOBY_TIME);
+            base_msg->set_iso_time(boost::posix_time::to_iso_string(t));
+            base_msg->set_unix_time(goby::util::ptime2unix_double(t));
+            base_msg->set_time_source(protobuf::ModemMsgBase::GOBY_TIME);
         }
-        inline void get_time(const protobuf::ModemMsgBase& msg_base, boost::posix_time::ptime* t)
+
+        inline void get_time(const protobuf::ModemMsgBase& base_msg, boost::posix_time::ptime* t)
         {
-            *t = boost::posix_time::from_iso_string(msg_base.iso_time());
+            *t = boost::posix_time::from_iso_string(base_msg.iso_time());
+        }
+        
+        /* inline std::string snippet(const ModemMsgBase& base_msg) */
+        /* { */
+        /* } */
+        
+        
+        namespace protobuf
+        {
+            
+            inline bool operator<(const goby::acomms::protobuf::QueueKey& a,
+                                  const goby::acomms::protobuf::QueueKey& b)
+            { return (a.id() == b.id()) ? a.type() < b.type() : a.id() < b.id(); }
+
+            inline bool operator>(const goby::acomms::protobuf::QueueKey& a,
+                                  const goby::acomms::protobuf::QueueKey& b)
+            { return (a.id() == b.id()) ? a.type() > b.type() : a.id() > b.id(); }
+            inline bool operator>=(const goby::acomms::protobuf::QueueKey& a,
+                                   const goby::acomms::protobuf::QueueKey& b)
+            { return !(a<b); }
+            inline bool operator<=(const goby::acomms::protobuf::QueueKey& a,
+                                   const goby::acomms::protobuf::QueueKey& b)
+            { return !(a>b); }
+            inline bool operator==(const goby::acomms::protobuf::QueueKey& a,
+                                   const goby::acomms::protobuf::QueueKey& b)
+            { return (a.id() == b.id()) && (a.type() == b.type()); }
         }
     }
 }
+
+        
+
+
 
 
 #endif

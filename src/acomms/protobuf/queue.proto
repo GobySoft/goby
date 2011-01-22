@@ -1,0 +1,26 @@
+package goby.acomms.protobuf;
+
+enum QueueType
+{
+  QUEUE_DCCL = 1;
+  QUEUE_CCL = 2;
+};
+
+message QueueConfig
+{
+  optional bool ack = 1 [default = true];
+  optional uint32 blackout_time = 2 [default = 0];
+  optional uint32 max_queue = 3 [default = 0];
+  optional bool newest_first = 4 [default = true];
+  optional double value_base = 5 [default = 1];
+  optional uint32 ttl = 6 [default = 1800];
+  optional QueueType type = 7 [default = QUEUE_DCCL];
+  required uint32 id = 8;
+  required string name = 9;
+}
+
+message QueueKey
+{
+  required QueueType type = 1 [default = QUEUE_DCCL];
+  required uint32 id = 2;
+}

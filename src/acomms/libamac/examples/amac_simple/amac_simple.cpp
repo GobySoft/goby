@@ -14,11 +14,12 @@
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "goby/acomms/amac.h"
+#include "goby/acomms/connect.h"
 #include <iostream>
 
 using goby::acomms::operator<<;
 
-void init_transmission(const goby::acomms::protobuf::ModemMsgBase&);
+void init_transmission(goby::acomms::protobuf::ModemMsgBase* base_msg);
 
 int main(int argc, char* argv[])
 {
@@ -31,7 +32,7 @@ int main(int argc, char* argv[])
     //
     // 2. Configure it for TDMA with basic peer discovery, rate 0, 10 second slots, and expire vehicles after 2 cycles of no communications. also, we are modem id 1.
     //
-    mac.set_type(goby::acomms::mac_auto_decentralized);
+    mac.set_type(goby::acomms::MAC_AUTO_DECENTRALIZED);
     mac.set_rate(0);
     mac.set_slot_time(10);
     mac.set_expire_cycles(2);
@@ -42,7 +43,7 @@ int main(int argc, char* argv[])
     //
 
     // give a callback to use for actually initiating the transmission. this would be bound to goby::acomms::ModemDriverBase::initiate_transmission if using libmodemdriver.
-    mac.set_callback_initiate_transmission(&init_transmission);
+    goby::acomms::connect(&mac.signal_initiate_transmission, &init_transmission);
 
     //
     // 4. Let it run for a bit alone in the world
@@ -79,7 +80,7 @@ int main(int argc, char* argv[])
     return 0;
 }
 
-void init_transmission(const goby::acomms::protobuf::ModemMsgBase& init_message)
+void init_transmission(goby::acomms::protobuf::ModemMsgBase* init_message)
 {
     std::cout << "starting transmission with these values: " << init_message << std::endl;
 }

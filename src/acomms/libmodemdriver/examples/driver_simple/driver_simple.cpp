@@ -25,6 +25,8 @@
 
 
 #include "goby/acomms/modem_driver.h"
+#include "goby/acomms/connect.h"
+
 #include <iostream>
 
 using goby::acomms::operator<<;
@@ -46,7 +48,7 @@ int main(int argc, char* argv[])
     // 1. Create and initialize the driver we want (currently WHOI Micro-Modem)
     //
     
-    goby::acomms::MMDriver mm_driver(&std::cout);
+    goby::acomms::MMDriver mm_driver(&std::cerr);
 
     // set the serial port given on the command line
     mm_driver.set_serial_port(argv[1]);
@@ -58,8 +60,8 @@ int main(int argc, char* argv[])
     mm_driver.set_cfg(cfg);
 
     // for handling $CADRQ
-    mm_driver.set_callback_data_request(&handle_data_request);
-    mm_driver.set_callback_receive(&handle_data_receive);
+    goby::acomms::connect(&mm_driver.signal_receive, &handle_data_receive);
+    goby::acomms::connect(&mm_driver.signal_data_request, &handle_data_request);
     
     //
     // 2. Startup the driver
@@ -77,7 +79,9 @@ int main(int argc, char* argv[])
     // one frame @ 32 bytes
     transmit_init_message.set_rate(0);
 
-    mm_driver.handle_initiate_transmission(transmit_init_message);
+    std::cout << transmit_init_message << std::endl;
+    
+    mm_driver.handle_initiate_transmission(&transmit_init_message);
 
     //
     // 4. Run the driver

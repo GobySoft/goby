@@ -91,16 +91,16 @@ class CpAcommsHandler : public TesMoosApp
     void read_queue_parameters(CProcessConfigReader& config);
     
     // from QueueManager
-    void queue_incoming_data(goby::acomms::QueueKey key,
+    void queue_incoming_data(goby::acomms::protobuf::QueueKey key,
                              const goby::acomms::protobuf::ModemDataTransmission & message);
-    void queue_ack(goby::acomms::QueueKey key,
+    void queue_ack(goby::acomms::protobuf::QueueKey key,
                    const goby::acomms::protobuf::ModemDataAck & message);
-    bool queue_on_demand(goby::acomms::QueueKey key,
+    void queue_on_demand(goby::acomms::protobuf::QueueKey key,
                          const goby::acomms::protobuf::ModemDataRequest& request_msg,
                          goby::acomms::protobuf::ModemDataTransmission* data_msg);
     
-    void queue_qsize(goby::acomms::QueueKey qk, unsigned size);
-    void queue_expire(goby::acomms::QueueKey key,
+    void queue_qsize(goby::acomms::protobuf::QueueKey qk, unsigned size);
+    void queue_expire(goby::acomms::protobuf::QueueKey key,
                       const goby::acomms::protobuf::ModemDataExpire & message);
     
     // from pAcommsPoller
@@ -115,9 +115,9 @@ class CpAcommsHandler : public TesMoosApp
     
     // from MMDriver
     // publish raw NMEA stream from the modem ($CA)
-    void modem_raw_in(std::string s);
+    void modem_raw_in(const goby::acomms::protobuf::ModemMsgBase& base_msg);
     // publish raw NMEA stream to the modem ($CC)
-    void modem_raw_out(std::string s);
+    void modem_raw_out(const goby::acomms::protobuf::ModemMsgBase& base_msg);
     // write ping (ranging) responses
     void modem_range_reply(const goby::acomms::protobuf::ModemRangingReply& message);
     
@@ -140,8 +140,8 @@ class CpAcommsHandler : public TesMoosApp
     // internal MAC
     goby::acomms::MACManager mac_;
 
-    std::map<std::string, goby::acomms::QueueKey> out_moos_var2queue_;
-    std::map<goby::acomms::QueueKey, std::string> in_queue2moos_var_;
+    std::map<std::string, goby::acomms::protobuf::QueueKey> out_moos_var2queue_;
+    std::map<goby::acomms::protobuf::QueueKey, std::string> in_queue2moos_var_;
 };
 
 #endif 

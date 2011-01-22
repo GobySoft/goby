@@ -13,33 +13,34 @@ message ModemMsgBase
   required TimeSource time_source = 5; // source of the timestamp given  
   optional uint32 rate = 6 [default = 0]; // 0 (lowest) - 5 (highest)
   optional string raw = 7; // "$CARXD,..."
+  optional string description = 8; // "Incoming hexadecimal data"
 }
 
 // data 
 message ModemDataTransmission
 {
-  optional ModemMsgBase base = 1;
-  optional bool ack_requested = 2;
+  required ModemMsgBase base = 1;
+  optional bool ack_requested = 2 [default = true]; // acoustic acknowledgment requested
   //  optional uint32 max_bytes = 3;
-  optional bytes data = 4;
-  optional uint32 frame = 5 [default = 0];  
+  optional bytes data = 4; // data (encoded as a byte string - eight bits to the character)
+  optional uint32 frame = 5 [default = 0];  // frame number if the modem supports multiple frames per packet
 }
 
 message ModemDataAck
 {
-  optional ModemMsgBase base = 1;
+  required ModemMsgBase base = 1;
   optional uint32 frame = 2 [default = 0];
   optional ModemDataTransmission orig_msg = 3; // will be provided by libqueue
 }
 
 message ModemDataExpire
 {
-  optional ModemDataTransmission orig_msg = 1;
+  optional ModemDataTransmission orig_msg = 1; // the message that just expired
 }
 
 message ModemDataRequest
 {
-  optional ModemMsgBase base = 1;
+  required ModemMsgBase base = 1;
   optional uint32 max_bytes = 2;
   optional uint32 frame = 3 [default = 0];  
   //optional bool ack_requested = 3;
@@ -47,7 +48,7 @@ message ModemDataRequest
 
 message ModemDataInit
 {
-  optional ModemMsgBase base = 1;
+  required ModemMsgBase base = 1;
   optional uint32 num_frames = 2 [default = 1];
 }
 
@@ -60,7 +61,7 @@ enum RangingType
 
 message ModemRangingReply
 {
-  optional ModemMsgBase base = 1;
+  required ModemMsgBase base = 1;
   // seconds
   repeated double one_way_travel_time = 2;  
   optional RangingType type = 3;
@@ -68,11 +69,13 @@ message ModemRangingReply
 
 message ModemRangingRequest
 {
-  optional ModemMsgBase base = 1;
+  required ModemMsgBase base = 1;
   optional RangingType type = 2;
-  optional uint32 max_range = 3 [default = 1000]; // meters
+
+  // meters, not used if type == MODEM_RANGING
+  optional uint32 max_range = 3 [default = 1000]; 
+  
   // LSB->MSB is LBL beacons 1,2,3,... true is enabled, false is disabled
-  optional uint32 enable_beacons = 4 [default = 15]; 
-  
-  
+  // enable four beacons is b1111 == d15 
+  optional uint32 enable_beacons = 4 [default = 15];
 }

@@ -23,8 +23,10 @@
 
 #include "goby/acomms/dccl.h"
 #include "goby/acomms/queue.h"
+#include "goby/acomms/connect.h"
 #include "goby/acomms/bind.h"
 #include "goby/acomms/modem_driver.h"
 #include "goby/acomms/amac.h"
+
 
 #endif

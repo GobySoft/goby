@@ -28,6 +28,8 @@
 #include "goby/acomms/protobuf/modem_message.pb.h"
 #include "goby/core/core_constants.h"
 
+#include <boost/bind.hpp>
+
 namespace goby
 {
 
@@ -118,10 +120,9 @@ namespace goby
         inline std::ostream& operator<<(std::ostream& out, const google::protobuf::Message& msg)
         {
             return (out << "[[" << msg.GetDescriptor()->name() <<"]] " << msg.DebugString());
-        }
+        }        
         
         
     }
-
 }
 #endif

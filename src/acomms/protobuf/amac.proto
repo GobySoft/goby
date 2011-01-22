@@ -1,0 +1,21 @@
+package goby.acomms.protobuf;
+
+enum SlotType
+{
+  SLOT_DATA = 1;
+  SLOT_PING = 2;
+  SLOT_REMUS_LBL = 3;
+};
+
+message Slot
+{
+  required int32 src = 1;
+  optional int32 dest = 2 [ default = 0 ];
+  optional uint32 rate = 3 [ default = 0 ];
+  required SlotType type = 4;
+  optional uint32 slot_seconds = 5;
+
+  // "2011-Jan-22 12:08:06.887950"
+  // which is produced by operator<< for boost::posix_time::ptime
+  optional string last_heard_time = 6; 
+}

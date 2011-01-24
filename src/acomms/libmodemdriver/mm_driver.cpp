@@ -34,6 +34,10 @@ boost::posix_time::time_duration goby::acomms::MMDriver::MODEM_WAIT = boost::pos
 boost::posix_time::time_duration goby::acomms::MMDriver::WAIT_AFTER_REBOOT = boost::posix_time::seconds(2);
 boost::posix_time::time_duration goby::acomms::MMDriver::ALLOWED_SKEW = boost::posix_time::seconds(2);
 
+boost::posix_time::time_duration goby::acomms::MMDriver::HYDROID_GATEWAY_GPS_REQUEST_INTERVAL = boost::posix_time::seconds(30);
+
+
+
 std::string goby::acomms::MMDriver::SERIAL_DELIMITER = "\r";
 unsigned goby::acomms::MMDriver::PACKET_FRAME_COUNT [] = { 1, 3, 3, 2, 2, 8 };
 unsigned goby::acomms::MMDriver::PACKET_SIZE [] = { 32, 32, 64, 256, 256, 256 };
@@ -47,7 +51,9 @@ goby::acomms::MMDriver::MMDriver(std::ostream* log /*= 0*/)
       startup_done_(false),
       global_fail_count_(0),
       present_fail_count_(0),
-      clock_set_(false)
+      clock_set_(false),
+      last_hydroid_gateway_gps_request_(goby_time()),
+      is_hydroid_gateway_(false)
 {
     initialize_talkers();
     set_serial_baud(DEFAULT_BAUD);
@@ -87,10 +93,11 @@ void goby::acomms::MMDriver::do_work()
         boost::trim(in);
         if(log_) *log_ << group("mm_in") << in << std::endl;
 
-	// Check for whether the gateway buoy is being used and if so, remove the prefix
-	if (!gateway_prefix_in_.empty())
-	    in.erase(0, gateway_prefix_in_.length());
-        
+	// Check for whether the hydroid_gateway buoy is being used and if so, remove the prefix
+	if (is_hydroid_gateway_) in.erase(0, HYDROID_GATEWAY_PREFIX_LENGTH);
+	
+	if(callback_in_raw) callback_in_raw(in); 
+  
         try
         {
             NMEASentence nmea(in, NMEASentence::VALIDATE);
@@ -101,6 +108,15 @@ void goby::acomms::MMDriver::do_work()
             if(log_) *log_ << group("mm_in") << warn << e.what() << std::endl;
         }
     }
+
+    // if we're using a hydroid buoy query it for its GPS position
+    if(is_hydroid_gateway_ &&
+       last_hydroid_gateway_gps_request_ + HYDROID_GATEWAY_GPS_REQUEST_INTERVAL < goby_time())
+    {
+        modem_write(hydroid_gateway_gps_request_);
+        last_hydroid_gateway_gps_request_ = goby_time();
+    }
+    
 }
 
 
@@ -114,17 +130,45 @@ void goby::acomms::MMDriver::handle_mac_initiate_transmission(const acomms::Mode
     nmea.push_back(m.rate()); // Packet Type (transmission rate)
     nmea.push_back(int(m.ack())); // ACK: deprecated field, this bit may be used for something that's not related to the ack
     nmea.push_back(PACKET_FRAME_COUNT[m.rate()]); // number of frames we want
-    write(nmea);
+    write(nmea);        
 }
 
-void goby::acomms::MMDriver::handle_mac_initiate_ranging(const acomms::ModemMessage& m)
-{   
-    //$CCMPC,SRC,DEST*CS
-    NMEASentence nmea("$CCMPC", NMEASentence::IGNORE);
-    nmea.push_back(m.src()); // ADR1
-    nmea.push_back(m.dest()); // ADR2
-    write(nmea);
+void goby::acomms::MMDriver::handle_mac_initiate_ranging(const acomms::ModemMessage& m, RangingType type)
+{
+    switch(type)
+    {
+        case MODEM:
+        {
+            //$CCMPC,SRC,DEST*CS
+            NMEASentence nmea("$CCMPC", NMEASentence::IGNORE);
+            nmea.push_back(m.src()); // ADR1
+            nmea.push_back(m.dest()); // ADR2
+            write(nmea);
+            break;
+        }
+        
+
+        case REMUS_LBL:
+        {
+            // $CCPDT,GRP,CHANNEL,SF,STO,Timeout,AF,BF,CF,DF*CS
+            NMEASentence nmea("$CCPDT", NMEASentence::IGNORE);
+            nmea.push_back(1); // 
+            nmea.push_back(m.src() % 4); // can only use 1-4
+            nmea.push_back(0); // synchronize may not work?
+            nmea.push_back(0); // synchronize may not work?
+            nmea.push_back(2500);
+            nmea.push_back(1);
+            nmea.push_back(1);
+            nmea.push_back(1);
+            nmea.push_back(1);
+            write(nmea);
+            break;
+        }
+        
+    }
 }
+
+
 
 void goby::acomms::MMDriver::handle_modem_out()
 {
@@ -150,15 +194,22 @@ void goby::acomms::MMDriver::handle_modem_out()
                 return;
             }
         }
-
-        if(log_) *log_ << group("mm_out") << gateway_prefix_out_ << nmea.message() << std::endl;
-
-        modem_write(gateway_prefix_out_ + nmea.message_cr_nl());
+        
+        mm_write(nmea);
         
         waiting_for_modem_ = true;
         last_write_time_ = goby_time();
     }
 }
+
+void goby::acomms::MMDriver::mm_write(const NMEASentence& nmea_out)
+{
+    if(log_) *log_ << group("mm_out") << hydroid_gateway_modem_prefix_ << nmea_out.message() << std::endl;
+ 
+    if(callback_out_raw) callback_out_raw(nmea_out.message());
+    modem_write(hydroid_gateway_modem_prefix_ + nmea_out.message_cr_nl());
+}
+
 
 void goby::acomms::MMDriver::pop_out()
 {
@@ -172,8 +223,7 @@ void goby::acomms::MMDriver::measure_noise(unsigned milliseconds_to_average)
 {
     NMEASentence nmea_out("$CCCFR", NMEASentence::IGNORE);
     nmea_out.push_back(milliseconds_to_average);
-    if(log_) *log_ << group("mm_out") << gateway_prefix_out_ << nmea_out.message() << std::endl;
-    modem_write(gateway_prefix_out_ + nmea_out.message_cr_nl());
+    mm_write(nmea_out);
 }
 
 void goby::acomms::MMDriver::write(NMEASentence& nmea)
@@ -218,15 +268,15 @@ void goby::acomms::MMDriver::query_all_cfg()
 }
 
 
-void goby::acomms::MMDriver::handle_modem_in(NMEASentence& nmea)
+void goby::acomms::MMDriver::handle_modem_in(const NMEASentence& nmea)
 {    
     // look at the talker front (talker id)
     switch(talker_id_map_[nmea.talker_id()])
     {
-        // only process messages from CA (modem)
-        case CA: global_fail_count_ = 0; break; // reset fail count - modem is alive!
+      // only process messages from CA (modem)
+    case CA: case SN: global_fail_count_ = 0; break; // reset fail count - modem is alive!
             // ignore the rest
-        case CC: case SN: case GP: default: return;
+    case CC: case GP: default: return;
     }
 
     acomms::ModemMessage m_in;
@@ -243,20 +293,19 @@ void goby::acomms::MMDriver::handle_modem_in(NMEASentence& nmea)
         case CFG: cfg(nmea, m_in); break; // configuration
         case CLK: clk(nmea, m_in); break; // clock
         case CYC: cyc(nmea, m_in); break; // cycle init
+        case TTA: tta(nmea, m_in); break; // cycle init
         default:                   break;
     }
 
     // clear the last send given modem acknowledgement
     if(!out_.empty() && out_.front().sentence_id() == nmea.sentence_id())
         pop_out();
-
-
     
     // for anyone who needs to know that we got a message 
     if(callback_in_parsed) callback_in_parsed(m_in);
 }
 
-void goby::acomms::MMDriver::rxd(NMEASentence& nmea, acomms::ModemMessage& m)
+void goby::acomms::MMDriver::rxd(const NMEASentence& nmea, acomms::ModemMessage& m)
 {
     m.set_src(nmea[1]);
     m.set_dest(nmea[2]);
@@ -266,7 +315,7 @@ void goby::acomms::MMDriver::rxd(NMEASentence& nmea, acomms::ModemMessage& m)
 
     if(callback_receive) callback_receive(m);
 }
-void goby::acomms::MMDriver::ack(NMEASentence& nmea, acomms::ModemMessage& m)
+void goby::acomms::MMDriver::ack(const NMEASentence& nmea, acomms::ModemMessage& m)
 {
     m.set_src(nmea[1]);
     m.set_dest(nmea[2]);
@@ -275,7 +324,7 @@ void goby::acomms::MMDriver::ack(NMEASentence& nmea, acomms::ModemMessage& m)
 
     if(callback_ack) callback_ack(m);
 }
-void goby::acomms::MMDriver::drq(NMEASentence& nmea_in, acomms::ModemMessage& m)
+void goby::acomms::MMDriver::drq(const NMEASentence& nmea_in, acomms::ModemMessage& m)
 {
     // read the drq
     m.set_time(modem_time2ptime(nmea_in[1]));
@@ -297,7 +346,7 @@ void goby::acomms::MMDriver::drq(NMEASentence& nmea_in, acomms::ModemMessage& m)
     write(nmea_out);   
 }
 
-void goby::acomms::MMDriver::cfg(NMEASentence& nmea, acomms::ModemMessage& m)
+void goby::acomms::MMDriver::cfg(const NMEASentence& nmea, acomms::ModemMessage& m)
 {
     nvram_cfg_[nmea[1]] = nmea.as<int>(2);
     
@@ -307,7 +356,7 @@ void goby::acomms::MMDriver::cfg(NMEASentence& nmea, acomms::ModemMessage& m)
     if(out_.front().sentence_id() == "CFQ") pop_out();
 }
 
-void goby::acomms::MMDriver::clk(NMEASentence& nmea, acomms::ModemMessage& m)
+void goby::acomms::MMDriver::clk(const NMEASentence& nmea, acomms::ModemMessage& m)
 {
     if(out_.empty() || out_.front().sentence_id() != "CLK")
         return;
@@ -332,21 +381,21 @@ void goby::acomms::MMDriver::clk(NMEASentence& nmea, acomms::ModemMessage& m)
     
 }
 
-void goby::acomms::MMDriver::mpa(NMEASentence& nmea, acomms::ModemMessage& m){}
+void goby::acomms::MMDriver::mpa(const NMEASentence& nmea, acomms::ModemMessage& m){}
 
-void goby::acomms::MMDriver::mpr(NMEASentence& nmea, acomms::ModemMessage& m)
+void goby::acomms::MMDriver::mpr(const NMEASentence& nmea, acomms::ModemMessage& m)
 {
     // $CAMPR,SRC,DEST,TRAVELTIME*CS
     m.set_src(nmea[1]);
     m.set_dest(nmea[2]);
 
     if(nmea.size() > 3)
-        m.set_tof(nmea[3]);
+        m.add_tof(nmea[3]);
 
     if(callback_range_reply) callback_range_reply(m);
 }
 
-void goby::acomms::MMDriver::rev(NMEASentence& nmea, acomms::ModemMessage& m)
+void goby::acomms::MMDriver::rev(const NMEASentence& nmea, acomms::ModemMessage& m)
 {
     if(nmea[2] == "INIT")
     {
@@ -366,12 +415,12 @@ void goby::acomms::MMDriver::rev(NMEASentence& nmea, acomms::ModemMessage& m)
     }
 }
 
-void goby::acomms::MMDriver::err(NMEASentence& nmea, acomms::ModemMessage& m)
+void goby::acomms::MMDriver::err(const NMEASentence& nmea, acomms::ModemMessage& m)
 {
     *log_ << group("mm_out") << warn << "modem reports error: " << nmea.message() << std::endl;
 }
 
-void goby::acomms::MMDriver::cyc(NMEASentence& nmea, acomms::ModemMessage& m)
+void goby::acomms::MMDriver::cyc(const NMEASentence& nmea, acomms::ModemMessage& m)
 {
     // somewhat "loose" interpretation of some of the fields
     m.set_src(nmea[2]); // ADR1
@@ -379,6 +428,16 @@ void goby::acomms::MMDriver::cyc(NMEASentence& nmea, acomms::ModemMessage& m)
     m.set_ack(nmea[5]); // "ACK", actually deprecated free bit
     m.set_frame(nmea[6]); // Npkts, number of packets
 }
+
+void goby::acomms::MMDriver::tta(const NMEASentence& nmea, ModemMessage& m)
+{
+  m.add_tof(goby::util::as<double>(nmea[1]));
+  m.add_tof(goby::util::as<double>(nmea[2]));
+  m.add_tof(goby::util::as<double>(nmea[3]));
+  m.add_tof(goby::util::as<double>(nmea[4]));
+  if(callback_range_reply) callback_range_reply(m);    
+}
+
 
 
 boost::posix_time::ptime goby::acomms::MMDriver::modem_time2ptime(const std::string& mt)
@@ -434,14 +493,13 @@ void goby::acomms::MMDriver::initialize_talkers()
 
 
 
-void goby::acomms::MMDriver::set_gateway_prefix(bool is_gateway, int id)
+void goby::acomms::MMDriver::set_hydroid_gateway_prefix(int id)
 {
+    is_hydroid_gateway_ = true;
     // If the buoy is in use, make the prefix #M<ID>
-    if (is_gateway)
-    {
-        gateway_prefix_in_ = "!M" + as<std::string>(id);
-        gateway_prefix_out_ = "#M" + as<std::string>(id);
-
-        if(log_) *log_ << "Setting the gateway buoy prefix: in=" << gateway_prefix_in_ << ", out=" << gateway_prefix_out_ << std::endl;
-    }
+    hydroid_gateway_gps_request_ = "#G" + as<std::string>(id) + "\r\n";        
+    hydroid_gateway_modem_prefix_ = "#M" + as<std::string>(id);
+    
+    if(log_) *log_ << "Setting the hydroid_gateway buoy prefix: out=" << hydroid_gateway_modem_prefix_ << std::endl;
 }
+

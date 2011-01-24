@@ -1,0 +1,25 @@
+t. schneider tes@mit.edu 06.05.08
+ocean engineering graudate student - mit / whoi joint program
+massachusetts institute of technology (mit)
+laboratory for autonomous marine sensing systems (lamss)
+
+readme for pAcommsHandler:
+
+********************************************************
+also consult the pdf document pAcommsHandler.pdf available by symlink in this directory.
+********************************************************
+
+this process is a program running under the MOOS robotic control
+software system developed by paul newman:
+http://www.robots.ox.ac.uk/%7Epnewman/TheMOOS/index.html
+
+> compilation:
+please consult the pdf document moos_at_lamms.pdf available in moos-ivp-local/docs/tes/moos_at_lamss
+
+> usage:
+pAcommsHandler file.moos [name_to_register_with_moos]
+
+an example .moos configuration file (with comments) is provided
+in this directory.
+
+this process may also be launched by pAntler.

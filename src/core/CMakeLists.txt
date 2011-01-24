@@ -1,20 +1,29 @@
-## find external packages, libraries, and headers for goby-core
-
-find_package(ProtobufGoby REQUIRED)
-
-foreach(I PROTOBUF)
-  if(NOT ${I}_FOUND)
-    message(FATAL_ERROR "missing required external library: ${I}. read and/or execute the goby/DEPENDENCIES file to resolve.")
-  endif()
-endforeach()
 
 if(build_test)
   add_subdirectory(test)
 endif()
 
-add_subdirectory(gobyd)
-add_subdirectory(libdbo)
-add_subdirectory(libcore)
-add_subdirectory(proto)
-add_subdirectory(libmoosmimic)
-add_subdirectory(examples)
+
+option(build_core_lib "Build the Core Libraries" ON)
+option(build_core_bin "Build the Core Binaries" ON)
+option(build_core_examples "Build the Core Examples" OFF)
+
+if(build_core_lib)
+  add_subdirectory(libdbo)
+  add_subdirectory(libcore)
+  add_subdirectory(proto)
+
+  option(build_core_moosmimic "Build the Core MOOS Mimic Library (requires MOOS)" OFF)
+  if(build_core_moosmimic)
+    add_subdirectory(libmoosmimic)
+  endif()
+endif()
+
+if(build_core_bin)
+  add_subdirectory(gobyd)
+endif()
+
+
+if(build_core_examples)
+  add_subdirectory(examples)
+endif()

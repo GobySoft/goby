@@ -47,7 +47,7 @@ namespace goby
 
             /// \brief Must be called regularly for the driver to perform its work.
             void do_work();
-
+            
             /// \brief Initiate a transmission to the modem. 
             ///
             /// \param m ModemMessage containing the details of the transmission to be started. This does *not* contain data, which must be requested in a call to the datarequest callback (set by DriverBase::set_data_request_cb)
@@ -56,7 +56,7 @@ namespace goby
             /// \brief Initiate ranging ("ping") to the modem. 
             ///
             /// \param m ModemMessage containing the details of the ranging request to be started. (source and destination)
-            void handle_mac_initiate_ranging(const ModemMessage& m);
+            void handle_mac_initiate_ranging(const ModemMessage& m, RangingType type);
 
             /// \brief Retrieve the desired destination of the next message
             ///
@@ -70,7 +70,7 @@ namespace goby
             }
 
             // set an additional prefix to support the hydroid gateway
-            void set_gateway_prefix(bool is_gateway, int id);
+            void set_hydroid_gateway_prefix(int id);
 
             void write(util::NMEASentence& nmea);
             void measure_noise(unsigned milliseconds_to_average);
@@ -86,20 +86,24 @@ namespace goby
             // output
             void handle_modem_out();
             void pop_out();
+            void mm_write(const util::NMEASentence& nmea_out);
             
             // input
-            void handle_modem_in(util::NMEASentence& nmea);
-            void ack(util::NMEASentence& nmea, ModemMessage& m);
-            void drq(util::NMEASentence& nmea, ModemMessage& m);
-            void rxd(util::NMEASentence& nmea, ModemMessage& m);
-            void mpa(util::NMEASentence& nmea, ModemMessage& m);
-            void mpr(util::NMEASentence& nmea, ModemMessage& m);
-            void rev(util::NMEASentence& nmea, ModemMessage& m);
-            void err(util::NMEASentence& nmea, ModemMessage& m);
-            void cfg(util::NMEASentence& nmea, ModemMessage& m);
-            void clk(util::NMEASentence& nmea, ModemMessage& m);
-            void cyc(util::NMEASentence& nmea, ModemMessage& m);
-    
+            
+            
+            void handle_modem_in(const util::NMEASentence& nmea);
+            void ack(const util::NMEASentence& nmea, ModemMessage& m);
+            void drq(const util::NMEASentence& nmea, ModemMessage& m);
+            void rxd(const util::NMEASentence& nmea, ModemMessage& m);
+            void mpa(const util::NMEASentence& nmea, ModemMessage& m);
+            void mpr(const util::NMEASentence& nmea, ModemMessage& m);
+            void rev(const util::NMEASentence& nmea, ModemMessage& m);
+            void err(const util::NMEASentence& nmea, ModemMessage& m);
+            void cfg(const util::NMEASentence& nmea, ModemMessage& m);
+            void clk(const util::NMEASentence& nmea, ModemMessage& m);
+            void cyc(const util::NMEASentence& nmea, ModemMessage& m);
+            void tta(const util::NMEASentence& nmea, ModemMessage& m);
+            
             // utility    
             static boost::posix_time::ptime modem_time2ptime(const std::string& mt);
 
@@ -108,7 +112,7 @@ namespace goby
             /// driver_simple.cpp
         
             /// \example acomms/examples/chat/chat.cpp
-        
+            
         
           private:
             // for the serial connection ($CCCFG,BR1,3)
@@ -124,6 +128,7 @@ namespace goby
             static boost::posix_time::time_duration WAIT_AFTER_REBOOT;
             // allowed time skew between our clock and the %modem clock
             static boost::posix_time::time_duration ALLOWED_SKEW;
+            
             static std::string SERIAL_DELIMITER;
             // number of frames for a given packet type
             static unsigned PACKET_FRAME_COUNT [];
@@ -174,9 +179,17 @@ namespace goby
             std::map<std::string, TalkerIDs> talker_id_map_;
             std::map<std::string, SentenceIDs> sentence_id_map_;
 
-            std::string gateway_prefix_in_;
-            std::string gateway_prefix_out_;
+            // length of #G1 or #M1
+            enum { HYDROID_GATEWAY_PREFIX_LENGTH = 3 };
 
+            // time between requests to the hydroid gateway buoy gps
+            static boost::posix_time::time_duration HYDROID_GATEWAY_GPS_REQUEST_INTERVAL;
+            boost::posix_time::ptime last_hydroid_gateway_gps_request_;
+            bool is_hydroid_gateway_;
+            std::string hydroid_gateway_modem_prefix_;
+            std::string hydroid_gateway_gps_request_;
+            
+            
             std::map<std::string, int> nvram_cfg_;
 
         };

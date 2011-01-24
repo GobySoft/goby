@@ -2,16 +2,25 @@
 // if you choose not to do so yourself
 message Header
 {
+  //
   // time
-  required double unix_time = 1;
+  //
+
+  // seconds since 01/01/1970 00:00:00 UTC
+  required double unix_time = 1; 
+  // boost::posix_time::to_iso_string(boost::posix_time::ptime)
   required string iso_time = 2;
 
+  //
   // source
+  //
   required string source_app = 3;
   required string source_platform = 4;
   optional string source_additional = 5;
 
+  //
   // destination
+  //
   enum PublishDestination { self = 1; other = 2; all = 3; }
   optional PublishDestination dest_type = 6 [default = self];
   optional string dest_platform = 7; // required if dest_type == other  

@@ -40,14 +40,12 @@ goby::acomms::ModemDriverBase::~ModemDriverBase()
 void goby::acomms::ModemDriverBase::modem_write(const std::string& out)
 {
     modem_->write(out);
-    if(callback_out_raw) callback_out_raw(out);
 }
 
 bool goby::acomms::ModemDriverBase::modem_read(std::string& in)
 {
     if(!(in = modem_->readline()).empty())
     {
-        if(callback_in_raw) callback_in_raw(in); 
         return true;
     }
     else

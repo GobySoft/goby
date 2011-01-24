@@ -1,0 +1,8 @@
+add mutex for gui_
+make show_vars_ not steal focus from the gui
+make gui thread not another MOOS app
+
+handle the escape key ... way to get from menu to menu
+
+
+display receiver output on the preview and send screen

@@ -1,0 +1,43 @@
+//------------------------------------------------------------------
+// iCommander configuration  block
+
+// GLINT'08 Pianosa Area B 
+LatOrigin = 42.5
+LongOrigin = 10.08333
+
+// where to find the file specifying modem lookups
+modem_id_lookup_path = ../../../data/acomms/modemidlookup.txt
+Community = topside
+
+ProcessConfig = iCommander
+{
+  // available to all moos processes.
+  AppTick    = 4
+  CommsTick  = 4
+  
+  // available to all tes moos processes
+
+  //verbose, terse, quiet
+  verbosity = verbose
+
+  // for checking xml structure correctness
+  // highly recommended to use this
+//  schema = /home/toby/moos-ivp-local/src/tes/pGeneralCodec/message_schema.xsd
+
+  message_file =    /home/toby/moos-ivp-local/missions/tes/plus_jan09meeting/example1.xml
+  message_file = ../pGeneralCodec/test.xml
+  message_file = ../../../data/acomms/simple_status.xml
+  message_file = ../../../data/acomms/nafcon_command.xml
+  message_file = ../../../data/acomms/nafcon_report.xml
+  message_file = ../../../data/acomms/nafcon_targetsim.xml
+//  message_file = test_lat_lon.xml
+
+  load = iCommander_autosave.txt  
+
+  // set all lat/long to xy
+  force_xy_only = true
+  
+  // all case insensitive
+  show_variable = UNICORN_NAV_X
+  show_variable = UNICORN_NAV_Y
+}

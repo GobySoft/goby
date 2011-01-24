@@ -10,12 +10,13 @@ message GPSDriverConfig
   optional string end_line = 4 [default = "\r\n"];
 }
  
-message SonarSimulatorConfig
+message NodeReporterConfig
 {
   required AppBaseConfig base = 1;
 }
 
-message CTDSimulatorConfig
+message DepthSimulatorConfig
 {
   required AppBaseConfig base = 1;
+  required double depth = 2;
 }

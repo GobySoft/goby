@@ -41,9 +41,8 @@ message ModemDataExpire
 message ModemDataRequest
 {
   required ModemMsgBase base = 1;
-  optional uint32 max_bytes = 2;
-  optional uint32 frame = 3 [default = 0];  
-  //optional bool ack_requested = 3;
+  optional uint32 max_bytes = 2 [default = 0]; // zero means no maximum
+  optional uint32 frame = 3 [default = 0]; 
 }
 
 message ModemDataInit

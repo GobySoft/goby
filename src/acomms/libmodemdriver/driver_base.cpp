@@ -24,11 +24,9 @@
 #include "driver_base.h"
 #include "driver_exception.h"
 
-goby::acomms::ModemDriverBase::ModemDriverBase(std::ostream* log /* = 0 */, const std::string& line_delimiter /* = "\r\n"*/ )
-    : line_delimiter_(line_delimiter),
-      log_(log),
-      modem_(0),
-      connection_type_(CONNECTION_SERIAL)
+goby::acomms::ModemDriverBase::ModemDriverBase(std::ostream* log /* = 0 */)
+    : log_(log),
+      modem_(0)
 { }
 
 goby::acomms::ModemDriverBase::~ModemDriverBase()
@@ -41,43 +39,56 @@ void goby::acomms::ModemDriverBase::modem_write(const std::string& out)
     modem_->write(out);
 }
 
-bool goby::acomms::ModemDriverBase::modem_read(std::string& in)
+bool goby::acomms::ModemDriverBase::modem_read(std::string* in)
 {
-    return (!(in = modem_->readline()).empty()) ? true : false;
+    return modem_->readline(in);
 }
 
-void goby::acomms::ModemDriverBase::modem_start()
+void goby::acomms::ModemDriverBase::modem_start(const protobuf::DriverConfig& cfg)
 {        
     
-    switch(connection_type_)
+    switch(cfg.connection_type())
     {
-        case CONNECTION_SERIAL:
-            if(log_) *log_ << group("mm_out") << "opening serial port " << serial_port_ << " @ " << serial_baud_ << std::endl;
-            
-            modem_ = new util::SerialClient(serial_port_, serial_baud_, line_delimiter_);
-            break;
-            
-        case CONNECTION_TCP_AS_CLIENT:
-            if(log_) *log_ << group("mm_out") << "opening tcp client: " << tcp_server_ << ":" << tcp_port_ << std::endl;
-            modem_ = new util::TCPClient(tcp_server_, tcp_port_, line_delimiter_);
-            break;
-            
-        case CONNECTION_TCP_AS_SERVER:
-            if(log_) *log_ << group("mm_out") << "opening tcp server on port" << tcp_port_ << std::endl;
-            modem_ = new util::TCPServer(tcp_port_, line_delimiter_);
+        case protobuf::DriverConfig::CONNECTION_SERIAL:
+            if(log_) *log_ << group("mm_out") << "opening serial port " << cfg.serial_port() << " @ " << cfg.serial_baud() << std::endl;
 
-        case CONNECTION_DUAL_UDP_BROADCAST:
+            if(!cfg.has_serial_port())
+                throw(driver_exception("missing serial port in configuration"));
+            if(!cfg.has_serial_baud())
+                throw(driver_exception("missing serial baud in configuration"));
+            
+            modem_ = new util::SerialClient(cfg.serial_port(), cfg.serial_baud(), cfg.line_delimiter());
+            break;
+            
+        case protobuf::DriverConfig::CONNECTION_TCP_AS_CLIENT:
+            if(log_) *log_ << group("mm_out") << "opening tcp client: " << cfg.tcp_server() << ":" << cfg.tcp_port() << std::endl;
+            if(!cfg.has_tcp_server())
+                throw(driver_exception("missing tcp server address in configuration"));
+            if(!cfg.has_tcp_port())
+                throw(driver_exception("missing tcp port in configuration"));
+
+            modem_ = new util::TCPClient(cfg.tcp_server(), cfg.tcp_port(), cfg.line_delimiter());
+            break;
+            
+        case protobuf::DriverConfig::CONNECTION_TCP_AS_SERVER:
+            if(log_) *log_ << group("mm_out") << "opening tcp server on port" << cfg.tcp_port() << std::endl;
+
+            if(!cfg.has_tcp_port())
+                throw(driver_exception("missing tcp port in configuration"));
+
+            modem_ = new util::TCPServer(cfg.tcp_port(), cfg.line_delimiter());
+
+        case protobuf::DriverConfig::CONNECTION_DUAL_UDP_BROADCAST:
             throw(driver_exception("unimplemented connection type"));
-    }
-    
+    }    
 
     modem_->start();
 
 }
 
-void goby::acomms::ModemDriverBase::add_flex_groups(util::FlexOstream& tout)
+void goby::acomms::ModemDriverBase::add_flex_groups(util::FlexOstream* tout)
 {
-    tout.add_group("mm_out", util::Colors::lt_magenta, "outgoing micromodem messages (goby_modemdriver)");
-    tout.add_group("mm_in", util::Colors::lt_blue, "incoming micromodem messages (goby_modemdriver)");
+    tout->add_group("mm_out", util::Colors::lt_magenta, "outgoing micromodem messages (goby_modemdriver)");
+    tout->add_group("mm_in", util::Colors::lt_blue, "incoming micromodem messages (goby_modemdriver)");
 }
 

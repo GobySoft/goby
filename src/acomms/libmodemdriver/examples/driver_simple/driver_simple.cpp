@@ -50,15 +50,15 @@ int main(int argc, char* argv[])
     
     goby::acomms::MMDriver mm_driver(&std::cerr);
 
+    goby::acomms::protobuf::DriverConfig cfg;
+    
     // set the serial port given on the command line
-    mm_driver.set_serial_port(argv[1]);
+    cfg.set_serial_port(argv[1]);
 
     // set the source id of this modem
     std::string our_id = argv[2];
-    std::vector<std::string> cfg(1, std::string("SRC," + our_id)); 
-
-    mm_driver.set_cfg(cfg);
-
+    cfg.AddExtension(goby::acomms::protobuf::MMDriverConfig::nvram_cfg, "SRC," + our_id);
+    
     // for handling $CADRQ
     goby::acomms::connect(&mm_driver.signal_receive, &handle_data_receive);
     goby::acomms::connect(&mm_driver.signal_data_request, &handle_data_request);
@@ -67,7 +67,7 @@ int main(int argc, char* argv[])
     // 2. Startup the driver
     //
     
-    mm_driver.startup();
+    mm_driver.startup(cfg);
 
     //
     // 3. Initiate a transmission cycle

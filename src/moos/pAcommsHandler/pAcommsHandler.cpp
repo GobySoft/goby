@@ -361,7 +361,7 @@ void CpAcommsHandler::read_configuration(CProcessConfigReader& config)
     mac_.add_flex_groups(logger());
     moos_dccl_.add_flex_groups();
     queue_manager_.add_flex_groups(logger());
-    driver_.add_flex_groups(logger());
+    driver_.add_flex_groups(&logger());
     
     moos_dccl_.read_parameters(config);
 
@@ -394,75 +394,75 @@ void CpAcommsHandler::read_driver_parameters(CProcessConfigReader& config)
     if (!config.GetConfigurationParam("hydroid_gateway_enabled", is_hydroid_gateway))
         logger() << group("mm_out") << "Hydroid Buoy flag not set, using default of " << std::boolalpha << is_hydroid_gateway << std::endl;
 
+    goby::acomms::protobuf::DriverConfig driver_cfg;
+
     // Read the hydroid gateway buoy index
     int hydroid_gateway_id = 1;
     if(is_hydroid_gateway)
     {
         if (!config.GetConfigurationParam("hydroid_gateway_id", hydroid_gateway_id))
             logger() << group("mm_out") << warn << "Hydroid Gateway ID not set, using default of " << hydroid_gateway_id << std::endl;
-        
-        driver_.set_hydroid_gateway_prefix(hydroid_gateway_id);
+
+        driver_cfg.SetExtension(goby::acomms::protobuf::MMDriverConfig::hydroid_gateway_id, hydroid_gateway_id);
     }
 
     std::string connection_type;
     config.GetConfigurationParam("connection_type", connection_type);
 
-    goby::acomms::ModemDriverBase::ConnectionType type = goby::acomms::ModemDriverBase::CONNECTION_SERIAL;
+    goby::acomms::protobuf::DriverConfig::ConnectionType type = goby::acomms::protobuf::DriverConfig::CONNECTION_SERIAL;
 
     if(tes::stricmp(connection_type, "tcp_as_client"))
-        type = goby::acomms::ModemDriverBase::CONNECTION_TCP_AS_CLIENT;
+        type = goby::acomms::protobuf::DriverConfig::CONNECTION_TCP_AS_CLIENT;
     else if(tes::stricmp(connection_type, "tcp_as_server"))
-        type = goby::acomms::ModemDriverBase::CONNECTION_TCP_AS_SERVER;
+        type = goby::acomms::protobuf::DriverConfig::CONNECTION_TCP_AS_SERVER;
     else if(tes::stricmp(connection_type, "dual_udp_broadcast"))
-        type = goby::acomms::ModemDriverBase::CONNECTION_DUAL_UDP_BROADCAST;
+        type = goby::acomms::protobuf::DriverConfig::CONNECTION_DUAL_UDP_BROADCAST;
 
-    driver_.set_connection_type(type);
-    if(type == goby::acomms::ModemDriverBase::CONNECTION_SERIAL)
+    driver_cfg.set_connection_type(type);
+    if(type == goby::acomms::protobuf::DriverConfig::CONNECTION_SERIAL)
     {
         // read information about serial port (name & baud) and set them
         std::string serial_port_name;
         if (!config.GetConfigurationParam("serial_port", serial_port_name))
             logger() << die << "no serial_port set." << std::endl;    
-        driver_.set_serial_port(serial_port_name);
+        driver_cfg.set_serial_port(serial_port_name);
         
         unsigned baud;
         if (!config.GetConfigurationParam("baud", baud))
-            logger() << group("mm_out") << warn << "no baud rate set, using default of " << driver_.serial_baud() << " ($CCCFG,BR1,3 or $CCCFG,BR2,3)" << std::endl;
+            logger() << group("mm_out") << warn << "no baud rate set, using default of " << driver_cfg.serial_baud() << " ($CCCFG,BR1,3 or $CCCFG,BR2,3)" << std::endl;
         else
-            driver_.set_serial_baud(baud);
+            driver_cfg.set_serial_baud(baud);
     }
-    else if(type == goby::acomms::ModemDriverBase::CONNECTION_TCP_AS_CLIENT)
+    else if(type == goby::acomms::protobuf::DriverConfig::CONNECTION_TCP_AS_CLIENT)
     {
         // read information about serial port (name & baud) and set them
         std::string network_address;
         if (!config.GetConfigurationParam("network_address", network_address))
             logger() << die << "no network address set." << std::endl; 
-        driver_.set_tcp_server(network_address);
+        driver_cfg.set_tcp_server(network_address);
         
         unsigned network_port;
         if (!config.GetConfigurationParam("network_port", network_port))
             logger() << die << "no network port set." << std::endl; 
-        driver_.set_tcp_port(network_port);
+        driver_cfg.set_tcp_port(network_port);
     }
-    else if(type == goby::acomms::ModemDriverBase::CONNECTION_TCP_AS_SERVER)
+    else if(type == goby::acomms::protobuf::DriverConfig::CONNECTION_TCP_AS_SERVER)
     {
         unsigned network_port;
         if (!config.GetConfigurationParam("network_port", network_port))
             logger() << die << "no network port set." << std::endl; 
-        driver_.set_tcp_port(network_port);        
+        driver_cfg.set_tcp_port(network_port);        
     }    
     
-    std::vector<std::string> cfg;
-
     bool cfgall = false;
     if (!config.GetConfigurationParam("cfg_to_defaults", cfgall))
         logger()  << group("mm_out") << "not setting all CFG values to factory default "
                << "before setting our CFG values. consider using cfg_to_defaults=true if you can." << std::endl;
     
     if(cfgall && !is_hydroid_gateway) // Hydroid gateway breaks if you run CCCFG,ALL! They use a 4800 baud while the WHOI default is 19200. You will need to open the buoy if this happens
-        cfg.push_back("ALL,0");
+        driver_cfg.AddExtension(goby::acomms::protobuf::MMDriverConfig::nvram_cfg, "ALL,0");
 
-    cfg.push_back(std::string("SRC," + boost::lexical_cast<std::string>(modem_id_)));
+    driver_cfg.AddExtension(goby::acomms::protobuf::MMDriverConfig::nvram_cfg, "SRC," + as<std::string>(modem_id_));
     
     std::list<std::string> params;
     if(config.GetConfiguration(GetAppName(), params))
@@ -475,13 +475,11 @@ void CpAcommsHandler::read_driver_parameters(CProcessConfigReader& config)
             if(tes::stricmp(key, "cfg"))
             {
                 logger() << group("mm_out") << "adding CFG value: " << value << std::endl;
-                cfg.push_back(value);
+                driver_cfg.AddExtension(goby::acomms::protobuf::MMDriverConfig::nvram_cfg, value);
             }
         }
     }
 
-    driver_.set_cfg(cfg);
-    
     std::string mac;
     if (!config.GetConfigurationParam("mac", mac))
         logger() << group("mac") << "`mac` not specified, using no medium access control. you must provide an external MAC, or set `mac = slotted`, `mac=fixed_slotted` or `mac = polled` in the .moos file" << std::endl;
@@ -490,10 +488,9 @@ void CpAcommsHandler::read_driver_parameters(CProcessConfigReader& config)
     else if(mac == "slotted") mac_.set_type(goby::acomms::MAC_AUTO_DECENTRALIZED);
     else if(mac == "fixed_slotted") mac_.set_type(goby::acomms::MAC_FIXED_DECENTRALIZED);
     
-    read_internal_mac_parameters(config);
-    
+    read_internal_mac_parameters(config);    
         
-    driver_.startup();
+    driver_.startup(driver_cfg);
     mac_.startup();
 }
 

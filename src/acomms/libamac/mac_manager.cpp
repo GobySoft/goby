@@ -79,7 +79,7 @@ void goby::acomms::MACManager::startup()
         case MAC_AUTO_DECENTRALIZED:
         {
             if(log_) *log_ << group("mac")
-                           << "Using the Slotted TDMA MAC scheme with autodiscovery"
+                           << "Using the Decentralized Slotted TDMA MAC scheme with autodiscovery"
                            << std::endl;
 
             
@@ -118,7 +118,7 @@ void goby::acomms::MACManager::startup()
 
         case MAC_FIXED_DECENTRALIZED:
             if(log_) *log_ << group("mac")
-                         << "Using the fixed Slotted TDMA MAC scheme" << std::endl;
+                         << "Using the Decentralized (Fixed) Slotted TDMA MAC scheme" << std::endl;
             break;
 
         default:

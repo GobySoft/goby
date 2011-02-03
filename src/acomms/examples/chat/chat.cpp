@@ -79,7 +79,7 @@ int main(int argc, char* argv[])
         return startup_failure();        
     }    
 
-    // bind the callbacks of these libraries
+    // bind the signals of these libraries
     bind(mm_driver_, q_manager_, mac_);
     
     //
@@ -94,11 +94,13 @@ int main(int argc, char* argv[])
     goby::acomms::connect(&q_manager_.signal_receive, &received_data);
     goby::acomms::connect(&q_manager_.signal_ack, &received_ack);
     q_manager_.add_xml_queue_file(ACOMMS_EXAMPLES_DIR "/chat/chat.xml", "../../libdccl/message_schema.xsd");
+
     //
     // Initiate modem driver (libmodemdriver)
     //
-    mm_driver_.set_serial_port(serial_port);
-    mm_driver_.set_cfg(std::vector<std::string>(1, std::string("SRC," + as<std::string>(my_id))));
+    goby::acomms::protobuf::DriverConfig cfg;
+    cfg.set_serial_port(serial_port);
+    cfg.AddExtension(goby::acomms::protobuf::MMDriverConfig::nvram_cfg, "SRC," + as<std::string>(my_id));
 
     //
     // Initiate medium access control (libamac)
@@ -137,7 +139,7 @@ int main(int argc, char* argv[])
     try
     {
         mac_.startup();
-        mm_driver_.startup();
+        mm_driver_.startup(cfg);
     }
     catch(std::runtime_error& e)
     {

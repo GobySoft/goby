@@ -23,6 +23,7 @@
 #include "goby/util/time.h"
 
 #include "driver_base.h"
+#include "goby/acomms/protobuf/mm_driver.pb.h"
 
 
 namespace goby
@@ -36,30 +37,28 @@ namespace goby
           public:
             /// \brief Default constructor.
             ///
-            /// \param os std::ostream object or FlexOstream to capture all humanly readable runtime and debug information (optional).
+            /// \param out std::ostream object or FlexOstream to capture all humanly
+            /// readable runtime and debug information (optional).
             MMDriver(std::ostream* out = 0);
             /// Destructor.
             ~MMDriver();
 
             /// \brief Starts the driver.
-            void startup();
+            void startup(const protobuf::DriverConfig& cfg);
 
-            /// \brief Must be called regularly for the driver to perform its work.
+            /// \brief Must be called regularly for the driver to perform its work. 10 Hz is good, but less frequently is fine too. Signals will be emitted only during calls to this method.
             void do_work();
             
             /// \brief Initiate a transmission to the modem. 
             ///
             ///
-            /// \param m ModemMessage containing the details of the transmission to be started. This does *not* contain data, which must be requested in a call to the datarequest callback (set by DriverBase::set_data_request_cb)
+            /// \param m ModemMsgBase (defined in modem_message.proto) containing the details of the transmission to be started. This does *not* contain data, which will be requested when MMDriver calls the data request signal (ModemDriverBase::signal_data_request)
             void handle_initiate_transmission(protobuf::ModemMsgBase* m);
 
             /// \brief Initiate ranging ("ping") to the modem. 
             ///
             /// \param m ModemMessage containing the details of the ranging request to be started. (source and destination)
             void handle_initiate_ranging(protobuf::ModemRangingRequest* m);
-
-            // set an additional prefix to support the hydroid gateway
-            void set_hydroid_gateway_prefix(int id);
 
             void measure_noise(unsigned milliseconds_to_average);
 
@@ -73,6 +72,7 @@ namespace goby
             void set_clock();
             void write_cfg();
             void query_all_cfg();
+            void set_hydroid_gateway_prefix(int id);
             
             // output
             void try_send();
@@ -196,6 +196,9 @@ namespace goby
 
             // did we initiate the last cycle (and thereby cache data for it)?
             bool local_cccyc_;
+
+            
+            protobuf::DriverConfig driver_cfg_;
             
         };
     }

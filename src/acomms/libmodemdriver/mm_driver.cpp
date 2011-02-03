@@ -46,7 +46,7 @@ unsigned goby::acomms::MMDriver::PACKET_SIZE [] = { 32, 32, 64, 256, 256, 256 };
 
 
 goby::acomms::MMDriver::MMDriver(std::ostream* log /*= 0*/)
-    : ModemDriverBase(log, SERIAL_DELIMITER),
+    : ModemDriverBase(log),
       log_(log),
       last_write_time_(goby_time()),
       waiting_for_modem_(false),
@@ -59,16 +59,28 @@ goby::acomms::MMDriver::MMDriver(std::ostream* log /*= 0*/)
       local_cccyc_(false)
 {
     initialize_talkers();
-    set_serial_baud(DEFAULT_BAUD);
 }
 
 goby::acomms::MMDriver::~MMDriver()
 { }
 
 
-void goby::acomms::MMDriver::startup()
+void goby::acomms::MMDriver::startup(const protobuf::DriverConfig& cfg)
 {
-    modem_start();
+    // store a copy for us later
+    driver_cfg_ = cfg;
+    
+    if(!cfg.has_line_delimiter())
+        driver_cfg_.set_line_delimiter(SERIAL_DELIMITER);
+
+    if(!cfg.has_serial_baud())
+        driver_cfg_.set_serial_baud(DEFAULT_BAUD);
+
+    // support the non-standard Hydroid gateway buoy
+    if(driver_cfg_.HasExtension(protobuf::MMDriverConfig::hydroid_gateway_id))
+        set_hydroid_gateway_prefix(driver_cfg_.GetExtension(protobuf::MMDriverConfig::hydroid_gateway_id));
+    
+    modem_start(driver_cfg_);
     
     set_clock();
     
@@ -93,7 +105,7 @@ void goby::acomms::MMDriver::do_work()
 
     // read any incoming messages from the modem
     std::string in;
-    while(modem_read(in))
+    while(modem_read(&in))
     {
         boost::trim(in);
 	// Check for whether the hydroid_gateway buoy is being used and if so, remove the prefix
@@ -287,8 +299,10 @@ void goby::acomms::MMDriver::set_clock()
 
 void goby::acomms::MMDriver::write_cfg()
 {
-    BOOST_FOREACH(const std::string& s, cfg_)
+    for(int i = 0, n = driver_cfg_.ExtensionSize(protobuf::MMDriverConfig::nvram_cfg); i < n; ++i)
     {
+        const std::string& s = driver_cfg_.GetExtension(protobuf::MMDriverConfig::nvram_cfg, i);
+
         NMEASentence nmea("$CCCFG", NMEASentence::IGNORE);        
         nmea.push_back(boost::to_upper_copy(s));
 

@@ -24,32 +24,34 @@
 #include <boost/signal.hpp>
 
 #include "goby/acomms/acomms_constants.h"
+#include "goby/acomms/protobuf/modem_message.pb.h"
+#include "goby/acomms/protobuf/driver_base.pb.h"
 #include "goby/util/linebasedcomms.h"
 #include "goby/acomms/protobuf/acomms_proto_helpers.h"
 
 namespace goby
 {
-    namespace util
-    {
-        class FlexOstream;
-    }    
+    namespace util { class FlexOstream; }    
 
     namespace acomms
-    {
-
-        
-/// provides a base class for acoustic %modem drivers (i.e. for different manufacturer %modems) to derive
+    {         
+        /// provides a base class for acoustic %modem drivers (i.e. for different manufacturer %modems) to derive
         class ModemDriverBase
         {
           public:
-            enum ConnectionType { CONNECTION_SERIAL,
-                                  CONNECTION_TCP_AS_CLIENT,
-                                  CONNECTION_TCP_AS_SERVER, 
-                                  CONNECTION_DUAL_UDP_BROADCAST /* unimplemented */
+            enum ConnectionType { CONNECTION_SERIAL, /*!< Modem is connected by a tty serial line (e.g. RS-232) */
+                                  CONNECTION_TCP_AS_CLIENT, /*!< Modem is connected by ethernet and is serving clients */
+                                  CONNECTION_TCP_AS_SERVER, /*!< Modem is connected by ethernet and expects us to serve it */
+                                  CONNECTION_DUAL_UDP_BROADCAST /*!< Presently unimplemented */
             };
-            
-            /// Virtual startup method. see derived classes (e.g. MMDriver) for examples.
-            virtual void startup() = 0;
+
+            /// \name Pure virtual
+            //@{
+
+            /// \brief Virtual startup method. see derived classes (e.g. MMDriver) for examples.
+            ///
+            /// \param cfg Startup configuration for the driver and modem. DriverConfig is defined in driver_base.proto. Derived classes can define extensions (see http://code.google.com/apis/protocolbuffers/docs/proto.html#extensions) to DriverConfig to handle modem specific configuration.
+            virtual void startup(const protobuf::DriverConfig& cfg) = 0;
             /// Virtual do_work method. see derived classes (e.g. MMDriver) for examples.
             virtual void do_work() = 0;
             /// Virtual initiate_transmission method. see derived classes (e.g. MMDriver) for examples.
@@ -58,141 +60,76 @@ namespace goby
             /// Virtual initiate_ranging method. see derived classes (e.g. MMDriver) for examples.
             virtual void handle_initiate_ranging(protobuf::ModemRangingRequest* m) = 0;
             
-            /// Set configuration strings for the %modem. The contents of these strings depends on the specific %modem.
-            void set_cfg(const std::vector<std::string>& cfg) { cfg_ = cfg; }
+            //@}
 
-            void set_connection_type(ConnectionType ct) { connection_type_ = ct; }            
-            
-            /// Set the serial port name (e.g. /dev/ttyS0)
-            void set_serial_port(const std::string& s) { serial_port_ = s; }
-            /// Set the serial port baud rate (e.g. 19200)
-            void set_serial_baud(unsigned u) { serial_baud_ = u; }
+            /// \name Signals
+            //@{
 
-            /// Set the tcp server name (e.g. 192.168.1.111 or www.foo.com)
-            void set_tcp_server(const std::string& s) { tcp_server_ = s; }
-            /// Set the tcp server  (e.g. 5000)
-            void set_tcp_port(unsigned u) { tcp_port_ = u; }
-
-            /* /// \brief Set the callback to receive incoming %modem messages.  */
-            /* /// */
-            /* /// Any messages received before this callback is set will be discarded.  If using the queue::QueueManager, pass queue::QueueManager::receive_incoming_modem_data to this method. */
-            /* /// \param func Pointer to function (or any other object boost::function accepts) matching the signature of ModemDriverMsgFunc. */
-            /* /// The callback (func) will be invoked with the following parameters: */
-            /* /// \param message A ModemMessage reference containing the contents of the received %modem message.        */
-            /* void set_callback_receive(boost::function<void (const protobuf::ModemDataTransmission& message)> func) */
-            /* { callback_receive = func; } */
-            
-            
-            /* /// \brief Set the callback to receive incoming ranging responses. */
-            /* /// */
-            /* /// \param func Pointer to function (or any other object boost::function accepts) matching the signature of ModemDriverMsgFunc. */
-            /* /// The callback (func) will be invoked with the following parameters: */
-            /* /// \param message A ModemMessage reference containing the contents of the received ranging (in travel time in seconds) */
-            /* void set_callback_range_reply(boost::function<void (const protobuf::ModemRangingReply& message)> func) */
-            /* { callback_range_reply = func; } */
-
-            
-            /* /// \brief Set the callback to receive acknowledgements from the %modem. */
-            /* /// */
-            /* ///  If using the queue::QueueManager, pass queue::QueueManager::handle_modem_ack to this method. */
-            /* /// \param func Pointer to function (or any other object boost::function accepts) matching the signature of ModemDriverMsgFunc. */
-            /* /// The callback (func) will be invoked with the following parameters: */
-            /* /// \param message A ModemMessage containing the acknowledgement message */
-            /* void set_callback_ack(boost::function<void (const protobuf::ModemDataAck& message)> func) */
-            /* { callback_ack = func; } */
-
-            /* /// \brief Set the callback to handle data requests from the %modem (or the %modem driver, if the %modem does not have this functionality). */
-            /* ///  */
-            /* /// If using the queue::QueueManager, pass queue::QueueManager::provide_outgoing_modem_data to this method. */
-            /* /// \param func Pointer to function (or other boost::function object) of the signature MutableDriverMsgFunc. The callback (func) will be invoked with the following parameters: */
-            /* /// \param message1 (incoming) The ModemMessage containing the details of the request (source, destination, size, etc.) */
-            /* /// \param message2 (outgoing) The ModemMessage to be sent. This should be populated by the callback. */
-            /* void set_callback_data_request(boost::function<void (const protobuf::ModemDataRequest& request_msg, protobuf::ModemDataTransmission* data_mgs)> func) */
-            /* { callback_data_request = func; } */
-            
-            
-            /* /// \brief Set the callback to pass all parsed messages to (i.e. ModemMessage representation of the serial line) */
-            /* /// */
-            /* ///  If using the amac::MACManager, pass amac::MACManager::process_message to this method. */
-            /* /// \param func Pointer to function (or any other object boost::function accepts) matching the signature of ModemDriverMsgFunc. */
-            /* /// The callback (func) will be invoked with the following parameters: */
-            /* /// \param message A ModemMessage containing the received modem message */
-            /* void set_callback_all_incoming(boost::function<void (const protobuf::ModemMsgBase& msg)> func) */
-            /* { callback_all_incoming = func; } */
-
-            /* void set_callback_all_outgoing(boost::function<void (const protobuf::ModemMsgBase& msg)> func) */
-            /* { callback_all_outgoing = func; }         */
-            
-            ConnectionType connection_type() { return connection_type_; }            
-            
-            /// \return the serial port name
-            std::string serial_port() { return serial_port_; }
-            
-            /// \return the serial port baud rate
-            unsigned serial_baud() { return serial_baud_; }
-
-            /// \return the tcp server name or IP address
-            std::string tcp_server() { return tcp_server_; }
-            
-            /// \return the serial port baud rate
-            unsigned tcp_port() { return tcp_port_; }
-
-            void add_flex_groups(util::FlexOstream& tout);
-            
-            // templated overloads of the callback set methods
-            // to make binding of member functions simpler
-            /* template<typename V, typename A1> */
-            /*     void set_callback_out_raw(void(V::*mem_func)(A1), V* obj) */
-            /* { set_callback_out_raw(boost::bind(mem_func, obj, _1)); } */
-            /* template<typename V, typename A1> */
-            /*     void set_callback_in_raw(void(V::*mem_func)(A1), V* obj) */
-            /* { set_callback_in_raw(boost::bind(mem_func, obj, _1)); } */
-            /* template<typename V, typename A1> */
-            /*     void set_callback_all_incoming(void(V::*mem_func)(A1), V* obj) */
-            /* { set_callback_all_incoming(boost::bind(mem_func, obj, _1)); } */
-            /* template<typename V, typename A1> */
-            /*     void set_callback_all_outgoing(void(V::*mem_func)(A1), V* obj) */
-            /* { set_callback_all_outgoing(boost::bind(mem_func, obj, _1)); } */
-            /* template<typename V, typename A1, typename A2> */
-            /*     void set_callback_data_request(void(V::*mem_func)(A1, A2), V* obj) */
-            /* { set_callback_data_request(boost::bind(mem_func, obj, _1, _2)); } */
-            /* template<typename V, typename A1> */
-            /*     void set_callback_ack(void(V::*mem_func)(A1), V* obj) */
-            /* { set_callback_ack(boost::bind(mem_func, obj, _1)); } */
-            /* template<typename V, typename A1> */
-            /*     void set_callback_range_reply(void(V::*mem_func)(A1), V* obj) */
-            /* { set_callback_range_reply(boost::bind(mem_func, obj, _1)); } */
-            /* template<typename V, typename A1> */
-            /*     void set_callback_receive(void(V::*mem_func)(A1), V* obj) */
-            /* { set_callback_receive(boost::bind(mem_func, obj, _1)); } */
-
-            
-            // slots
+            /// \brief Called when a binary data transmission is received from the modem
+            ///
+            /// You should connect one or more slots (a function or member function) to this signal to receive incoming messages. Use the goby::acomms::connect family of functions to do this. This signal will only be called during a call to do_work. ModemDataTransmission is defined in modem_message.proto.
             boost::signal<void (const protobuf::ModemDataTransmission& message)>
                 signal_receive;
-            boost::signal<void (const protobuf::ModemDataRequest& msg_request,
-                                protobuf::ModemDataTransmission* msg_data)>
+
+            /// \brief Called when the modem or modem driver needs data to send. msg_request contains details on the data request, and the returned data should be stored in msg_data.
+            ///
+            /// You should connect one or more slots (a function or member function) to this signal to handle data requests. Use the goby::acomms::connect family of functions to do this. This signal will only be called during a call to do_work. ModemDataRequest and ModemDataTransmission are defined in modem_message.proto.
+            boost::signal<void (const protobuf::ModemDataRequest& msg_request, protobuf::ModemDataTransmission* msg_data)>
                 signal_data_request;
+
+            
+            /// \brief Called when the modem receives ranging information (time of flight to another vehicle or LBL ranging beacons)
+            ///
+            /// You should connect one or more slots (a function or member function) to this signal to handle ranging replies. Use the goby::acomms::connect family of functions to do this. This signal will only be called during a call to do_work. ModemRangingReply is defined in modem_message.proto.
             boost::signal<void (const protobuf::ModemRangingReply& message)>
                 signal_range_reply;
+
+            /// \brief Called when the modem receives an acknowledgment of proper receipt of a prior data transmission. The frame number of the acknowledgment must match the frame number of the original message.
+            ///
+            /// You should connect one or more slots (a function or member function) to this signal to handle acknowledgments. Use the goby::acomms::connect family of functions to do this. This signal will only be called during a call to do_work. ModemDataAck is defined in modem_message.proto.
             boost::signal<void (const protobuf::ModemDataAck& message)>
                 signal_ack;
+
+            /// \brief Called after any message is received from the modem by the driver. Useful for higher level analysis and debugging of the transactions between the driver and the modem.
+            ///
+            /// If desired, you should connect one or more slots (a function or member function) to this signal to listen on incoming transactions. Use the goby::acomms::connect family of functions to do this. This signal will only be called during a call to do_work. ModemMsgBase is defined in modem_message.proto.
             boost::signal<void (const protobuf::ModemMsgBase& msg_data)>
                 signal_all_incoming;
+            
+            /// \brief Called after any message is sent from the driver to the modem. Useful for higher level analysis and debugging of the transactions between the driver and the modem.
+            ///
+            /// If desired, you should connect one or more slots (a function or member function) to this signal to listen on outgoing transactions. Use the goby::acomms::connect family of functions to do this. This signal will only be called during a call to do_work. ModemMsgBase is defined in modem_message.proto.
             boost::signal<void (const protobuf::ModemMsgBase& msg_data)>
                 signal_all_outgoing;
+            //@}
+
+            /// \name Static helpers
+            //@{
+            /// \brief Set the output groups for the modem driver if using the util::FlexOstream class for human readable debugging out. Setting groups allows the util::FlexOstream class to differentiate between different types of debugging messages.
+            ///
+            /// \param tout pointer to util::FlexOstream stream object to add groups to.
+            static void add_flex_groups(util::FlexOstream* tout);
+            //@}
 
             
           protected:
+            /// \name Constructors/Destructor
+            //@{
+            
             /// \brief Constructor
             ///
-            /// \param out pointer to std::ostream to log human readable debugging and runtime information
+            /// \param log pointer to std::ostream to log human readable debugging and runtime information
             /// \param line_delimiter string indicating the end-of-line character(s) from the serial port (usually newline ("\n") or carriage-return and newline ("\r\n"))
-            /// \param connection_type enumeration indicating the type of physical connection to the modem
-            ModemDriverBase(std::ostream* log = 0, const std::string& line_delimiter = "\r\n");
+            ModemDriverBase(std::ostream* log = 0);
             /// Destructor
             ~ModemDriverBase();
 
+            //@}
+
+            
+            /// \name Write/read from the line-based interface to the modem
+            //@{
+            
             /// \brief write a line to the serial port. 
             ///
             /// \param out reference to string to write. Must already include any end-of-line character(s).
@@ -201,34 +138,22 @@ namespace goby
         
             /// \brief read a line from the serial port, including end-of-line character(s)
             ///
-            /// \param in reference to string to store line
+            /// \param in pointer to string to store line
             /// \return true if a line was available, false if no line available
-            bool modem_read(std::string& in);
+            bool modem_read(std::string* in);
 
             /// \brief start the serial port. must be called before DriverBase::modem_read() or DriverBase::modem_write()
             ///
             /// \throw std::runtime_error Serial port could not be opened.
-            void modem_start();
+            void modem_start(const protobuf::DriverConfig& cfg);
 
-            /// vector containing the configuration parameters intended to be set during ::startup()
-            std::vector<std::string> cfg_;            
-            
+            //@}
+
           private:
-            unsigned serial_baud_;
-            std::string serial_port_;
-
-            unsigned tcp_port_;
-            std::string tcp_server_;
-            
-            std::string line_delimiter_;
-            
             std::ostream* log_;
 
             // represents the line based communications interface to the modem
             util::LineBasedInterface* modem_;
-
-            // identifies us to the singleton class controller the modem interface (SerialClient, etc.)
-            ConnectionType connection_type_;
         };
     }
 }

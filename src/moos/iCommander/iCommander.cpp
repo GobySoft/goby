@@ -217,7 +217,10 @@ bool CiCommander::ReadConfiguration()
             {
                 tout_.EchoInform(string("try to parse file: " + value));
                 // parse the message file
-                dccl_.add_xml_message_file(value, schema_);
+                protobuf::DCCLConfig cfg;
+                cfg.add_message_file()->set_path(value);
+                cfg.set_schema(schema_);
+                dccl_.merge_cfg(cfg);
                 tout_.EchoInform("success!");
             }
             else if(stricmp(key, "load"))

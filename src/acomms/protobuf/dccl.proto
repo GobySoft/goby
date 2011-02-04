@@ -1,0 +1,13 @@
+// provides MessageFile
+import "goby/acomms/protobuf/xml_config.proto";
+
+package goby.acomms.protobuf;
+
+message DCCLConfig
+{
+  required int32 modem_id = 1;
+  repeated MessageFile message_file = 2;
+  optional string schema = 3;
+  optional string crypto_passphrase = 4;
+}
+

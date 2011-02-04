@@ -1,4 +1,4 @@
-// copyright 2009 t. schneider tes@mit.edu
+// copyright 2009-2011 t. schneider tes@mit.edu
 // 
 // this file is part of the goby-acomms acoustic modem driver.
 // goby-acomms is a collection of libraries 
@@ -35,16 +35,10 @@ namespace goby
 
     namespace acomms
     {         
-        /// provides a base class for acoustic %modem drivers (i.e. for different manufacturer %modems) to derive
+        /// provides an abstract base class for acoustic modem drivers. This is subclassed by the various drivers for different manufacturers' modems.
         class ModemDriverBase
         {
           public:
-            enum ConnectionType { CONNECTION_SERIAL, /*!< Modem is connected by a tty serial line (e.g. RS-232) */
-                                  CONNECTION_TCP_AS_CLIENT, /*!< Modem is connected by ethernet and is serving clients */
-                                  CONNECTION_TCP_AS_SERVER, /*!< Modem is connected by ethernet and expects us to serve it */
-                                  CONNECTION_DUAL_UDP_BROADCAST /*!< Presently unimplemented */
-            };
-
             /// \name Pure virtual
             //@{
 
@@ -52,12 +46,20 @@ namespace goby
             ///
             /// \param cfg Startup configuration for the driver and modem. DriverConfig is defined in driver_base.proto. Derived classes can define extensions (see http://code.google.com/apis/protocolbuffers/docs/proto.html#extensions) to DriverConfig to handle modem specific configuration.
             virtual void startup(const protobuf::DriverConfig& cfg) = 0;
-            /// Virtual do_work method. see derived classes (e.g. MMDriver) for examples.
+
+            virtual void shutdown() = 0;
+
+            /// \brief Virtual do_work method. See derived classes (e.g. MMDriver) for examples.
+            ///
+            /// Should be called regularly to perform the work of the driver as the driver *does not* run in its own thread. This allows us to guarantee that no signals are called except inside this do_work method.
             virtual void do_work() = 0;
-            /// Virtual initiate_transmission method. see derived classes (e.g. MMDriver) for examples.
-            virtual void handle_initiate_transmission(protobuf::ModemMsgBase* m) = 0;
-            
-            /// Virtual initiate_ranging method. see derived classes (e.g. MMDriver) for examples.
+            /// \brief Virtual initiate_transmission method. See derived classes (e.g. MMDriver) for examples.
+            ///
+            /// \param m ModemMsgBase (defined in modem_message.proto) containing the details of the transmission to be started. This does *not* contain data, which will be requested when the driver calls the data request signal (ModemDriverBase::signal_data_request)
+            virtual void handle_initiate_transmission(protobuf::ModemMsgBase* m) = 0;            
+            /// \brief Virtual initiate_ranging method. see derived classes (e.g. MMDriver) for examples.
+            ///
+            /// \param m ModemRangingRequest (defined in modem_message.proto) containing the details of the ranging request to be started: source, destination, type, etc.
             virtual void handle_initiate_ranging(protobuf::ModemRangingRequest* m) = 0;
             
             //@}
@@ -110,7 +112,6 @@ namespace goby
             /// \param tout pointer to util::FlexOstream stream object to add groups to.
             static void add_flex_groups(util::FlexOstream* tout);
             //@}
-
             
           protected:
             /// \name Constructors/Destructor
@@ -147,6 +148,10 @@ namespace goby
             /// \throw std::runtime_error Serial port could not be opened.
             void modem_start(const protobuf::DriverConfig& cfg);
 
+            /// \brief closes the serial port. Use modem_start to reopen the port.
+            void modem_close();
+
+            
             //@}
 
           private:

@@ -27,24 +27,7 @@
 namespace goby
 {
     namespace acomms
-    {
-        inline void set_time(protobuf::ModemMsgBase* base_msg, const boost::posix_time::ptime& t = goby::util::goby_time())
-        {
-            base_msg->set_iso_time(boost::posix_time::to_iso_string(t));
-            base_msg->set_unix_time(goby::util::ptime2unix_double(t));
-            base_msg->set_time_source(protobuf::ModemMsgBase::GOBY_TIME);
-        }
-
-        inline void get_time(const protobuf::ModemMsgBase& base_msg, boost::posix_time::ptime* t)
-        {
-            *t = boost::posix_time::from_iso_string(base_msg.iso_time());
-        }
-        
-        /* inline std::string snippet(const ModemMsgBase& base_msg) */
-        /* { */
-        /* } */
-        
-        
+    {        
         namespace protobuf
         {
             

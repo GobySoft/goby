@@ -92,47 +92,14 @@ namespace goby
         
             /// \name Initialization Methods
             ///
-            /// These methods are intended to be called before doing any work with the class. However,
-            /// they may be called at any time as desired.
+            /// These methods are intended to be called before doing any work with the class.
             //@{
 
-            /// \brief Add more %queues by configuration XML files (typically contained in DCCL message XML files).
-            ///
-            /// \param xml_file path to the XML file to parse and add to this codec.
-            /// \param xml_schema path to the message_schema.xsd file to validate XML with. if using a relative path this
-            /// must be relative to the directory of the xml_file, not the present working directory. if not provided
-            /// no validation is done.
-            void add_xml_queue_file(const std::string& xml_file, const std::string xml_schema = "");
 
-            /// \brief Add more Queues.
-            ///
-            /// \param QueueConfig& cfg: configuration object for the new %queue.
-            void add_queue(const protobuf::QueueConfig& cfg);
-        
+            void set_cfg(const protobuf::QueueManagerConfig& cfg);
+            void merge_cfg(const protobuf::QueueManagerConfig& cfg);
 
-            /// \brief Set the schema used for XML syntax checking.
-            /// 
-            /// Schema location is relative to the XML file location!
-            /// if you have XML files in different places you must pass the
-            /// proper relative path (or just use absolute paths)
-            /// \param schema location of the message_schema.xsd file.
-            void set_schema(const std::string schema) { xml_schema_ = schema; }
-
-            /// \brief Set the %modem id for this vehicle.
-            ///
-            /// \param modem_id unique (within a network) number representing the %modem on this vehicle.
-            void set_modem_id(int modem_id) { modem_id_ = modem_id; }
-
-            /// \brief Set a %queue to call the data_on_demand callback every time data is request (basically forwards the %modem data_request).
-            ///
-            /// \param key QueueKey that references the %queue for which to enable the <tt>on demand</tt>  callback.
-            void set_on_demand(protobuf::QueueKey key);
-            /// \brief Set a %queue to call the data_on_demand callback every time data is request (basically forwards the %modem data_request).
-            /// 
-            /// \param id DCCL message id (\verbatim <id/> \endverbatim) that references the %queue for which to enable the <tt>on demand</tt> callback.
-            void set_on_demand(unsigned id, protobuf::QueueType type = protobuf::QUEUE_DCCL);
-
-            void add_flex_groups(util::FlexOstream& tout);
+            void add_flex_groups(util::FlexOstream* tout);
             
             
             //@}
@@ -221,6 +188,25 @@ namespace goby
             boost::signal<void (protobuf::QueueKey key, unsigned size)> signal_queue_size_change;
             
           private:
+            /// \brief Set a queue to call the data_on_demand callback every time data is request (basically forwards the %modem data_request).
+            ///
+            /// \param key QueueKey that references the %queue for which to enable the <tt>on demand</tt>  callback.
+            void set_on_demand(protobuf::QueueKey key);
+
+            /// \brief Add more %queues by configuration XML files (typically contained in DCCL message XML files).
+            ///
+            /// \param xml_file path to the XML file to parse and add to this codec.
+            /// \param xml_schema path to the message_schema.xsd file to validate XML with. if using a relative path this
+            /// must be relative to the directory of the xml_file, not the present working directory. if not provided
+            /// no validation is done.
+            void add_xml_queue_file(const std::string& xml_file, const std::string xml_schema = "");
+
+            /// \brief Add more Queues.
+            ///
+            /// \param QueueConfig& cfg: configuration object for the new %queue.
+            void add_queue(const protobuf::QueueConfig& cfg);
+        
+            
             void qsize(Queue* q)
             {
                 protobuf::QueueKey qkey;
@@ -245,13 +231,12 @@ namespace goby
             bool publish_incoming_piece(const protobuf::ModemDataTransmission& message, const unsigned incoming_var_id);
             
         
-
+            void process_cfg();
+            
           private:
             std::map<goby::acomms::protobuf::QueueKey, Queue> queues_;
             //boost::unordered_map<goby::acomms::protobuf::QueueKey, Queue> queues_;
             
-            std::string xml_schema_;
-
             std::ostream* log_;
 
             // map frame number onto %queue pointer that contains
@@ -260,6 +245,9 @@ namespace goby
 
             // the first *user* frame sets the tone (dest & ack) for the entire packet (all %modem frames)
             unsigned packet_ack_;
+
+            protobuf::QueueManagerConfig cfg_;
+            
         };
 
         /// outputs information about all available messages (same as std::string summary())

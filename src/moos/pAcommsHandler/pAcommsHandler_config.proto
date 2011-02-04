@@ -1,0 +1,67 @@
+import "goby/acomms/protobuf/driver_base.proto";
+import "goby/acomms/protobuf/queue.proto";
+import "goby/acomms/protobuf/amac.proto";
+import "goby/acomms/protobuf/dccl.proto";
+
+message pAcommsHandlerConfig
+{  
+  // driver
+  enum DriverType { DRIVER_NONE = 1; DRIVER_WHOI_MICROMODEM = 2; }
+  optional DriverType driver_type = 2 [default = DRIVER_NONE];
+  optional goby.acomms.protobuf.DriverConfig driver_cfg = 3;
+
+  // amac
+  optional goby.acomms.protobuf.MACConfig mac_cfg = 4;
+  
+  // for queue
+  optional goby.acomms.protobuf.QueueManagerConfig queue_cfg = 5;
+
+  // for dccl
+  optional goby.acomms.protobuf.DCCLConfig dccl_cfg = 6;  
+
+
+  enum Verbosity
+  {
+    VERBOSITY_QUIET = 1;
+    VERBOSITY_WARN = 2;
+    VERBOSITY_VERBOSE = 3;
+    VERBOSITY_DEBUG = 4;
+    VERBOSITY_GUI = 5;
+  }
+  
+  optional Verbosity verbosity = 100 [default = VERBOSITY_VERBOSE];
+  
+  
+  optional bool tcp_share_enable = 200 [default = false];
+  optional uint32 tcp_share_port = 201 [default = 11000];
+  repeated string tcp_share_to_ip = 202;
+  
+  message DoubleInitializer
+  {
+    required string moos_var = 1;
+    required double value = 2;
+  }
+
+  message StringInitializer
+  {
+    required string moos_var = 1;
+    required string value = 2;
+  }
+
+  message DoubleGlobalInitializer
+  {
+    required string moos_var = 1;
+    required string global_cfg_var = 2;
+  }
+
+  message StringGlobalInitializer
+  {
+    required string moos_var = 1;
+    required string global_cfg_var = 2;
+  }
+  
+  repeated DoubleInitializer initializer_double = 300;
+  repeated StringInitializer initializer_string = 301;
+  repeated DoubleGlobalInitializer global_initializer_double = 302;
+  repeated StringGlobalInitializer global_initializer_string = 303;
+}

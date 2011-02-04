@@ -2,26 +2,28 @@ package goby.acomms.protobuf;
 
 message DriverConfig
 {
+  required int32 modem_id = 1;
+  
   enum ConnectionType { CONNECTION_SERIAL = 1; // Modem is connected by a tty serial line (e.g. RS-232)
                         CONNECTION_TCP_AS_CLIENT = 2; // Modem is connected by ethernet and is serving clients
                         CONNECTION_TCP_AS_SERVER = 3; // Modem is connected by ethernet and expects us to serve it
                         CONNECTION_DUAL_UDP_BROADCAST = 4; // Presently unimplemented
   }
   
-  optional ConnectionType connection_type = 1 [default = CONNECTION_SERIAL];
-  optional string line_delimiter = 2 [default = "\r\n"]; // delimits lines on the serial or tcp interface
+  optional ConnectionType connection_type = 2 [default = CONNECTION_SERIAL];
+  optional string line_delimiter = 3 [default = "\r\n"]; // delimits lines on the serial or tcp interface
   
   // required if connection_type == CONNECTION_SERIAL
-  optional string serial_port = 3; // e.g. /dev/ttyS0
-  optional uint32 serial_baud = 4; // e.g. 19200
+  optional string serial_port = 4; // e.g. /dev/ttyS0
+  optional uint32 serial_baud = 5; // e.g. 19200
 
   // required if connection_type == CONNECTION_TCP_AS_CLIENT
-  optional string tcp_server = 5; // e.g. 192.168.1.111 or www.foo.com
+  optional string tcp_server = 6; // e.g. 192.168.1.111 or www.foo.com
 
   // required if connection_type == CONNECTION_TCP_AS_CLIENT or CONNECTION_TCP_AS_SERVER
-  optional uint32 tcp_port = 6; // e.g. 50000  
-
-
+  optional uint32 tcp_port = 7; // e.g. 50000
+  
+  
   extensions 1000 to max;
   // extensions 1000-1100 used by mm_driver.proto
   

@@ -35,13 +35,12 @@
 #include "message.h"
 #include "message_val.h"
 #include "dccl_exception.h"
+#include "goby/acomms/protobuf/dccl.pb.h"
 
 namespace goby
 {
     namespace util
-    {
-        class FlexOstream;
-    }
+    { class FlexOstream; }
 
 
     /// Objects pertaining to acoustic communications (acomms)
@@ -86,19 +85,8 @@ namespace goby
           public:
             /// \name Constructors/Destructor
             //@{         
-            /// \brief Instantiate with no XML files.
+            /// \brief Instantiate optionally with a ostream logger (for human readable output)
             DCCLCodec(std::ostream* log = 0);
-            /// \brief Instantiate with a single XML file.
-            ///
-            /// \param file path to an XML message file (i.e. contains \ref tag_layout and (optionally) \ref tag_publish sections) to parse for use by the codec.
-            /// \param schema path (absolute or relative to the XML file path) for the validating schema (message_schema.xsd) (optional).
-            DCCLCodec(const std::string& file, const std::string schema = "", std::ostream* log = 0);
-        
-            /// \brief Instantiate with a set of XML files.
-            ///
-            /// \param files set of paths to XML message files to parse for use by the codec.
-            /// \param schema path (absolute or relative to the XML file path) for the validating schema (message_schema.xsd) (optional).
-            DCCLCodec(const std::set<std::string>& files, const std::string schema = "", std::ostream* log = 0);
 
             /// destructor
             ~DCCLCodec() {}
@@ -108,36 +96,10 @@ namespace goby
             ///
             /// These methods are intended to be called before doing any work with the class. However,
             /// they may be called at any time as desired.
-            //@{         
-
-            /// \brief Add more messages to this instance of the codec.
-            ///
-            /// \param xml_file path to the xml file to parse and add to this codec.
-            /// \param xml_schema path to the message_schema.xsd file to validate XML with. if using a relative path this
-            /// must be relative to the directory of the xml_file, not the present working directory. if not provided
-            /// no validation is done.
-            /// \return returns id of the last message file parsed. note that there can be more than one message in a file
-            std::set<unsigned> add_xml_message_file(const std::string& xml_file, const std::string xml_schema = "");
-
-            /// \brief Set the schema used for xml syntax checking.
-            /// 
-            /// location is relative to the XML file location!
-            /// if you have XML files in different places you must pass the
-            /// proper relative path (or just use absolute paths)
-            /// \param schema location of the message_schema.xsd file
-            void set_schema(const std::string& schema) { xml_schema_ = schema; }
-
-            /// \brief Set a passphrase for encrypting all messages with
-            /// 
-            /// \param passphrase text passphrase
-            void set_crypto_passphrase(const std::string& passphrase);
-
-            /// \brief Set the %modem id for this vehicle.
-            ///
-            /// \param modem_id unique (within a network) number representing the %modem on this vehicle.
-            void set_modem_id(unsigned modem_id) { modem_id_ = modem_id; }
-
-        
+            //@{
+            
+            void set_cfg(const protobuf::DCCLConfig& cfg);
+            void merge_cfg(const protobuf::DCCLConfig& cfg);
         
             /// \brief Add an algorithm callback for a MessageVal. The return value is stored back into the input parameter (MessageVal). See test.cpp for an example.
             ///
@@ -160,7 +122,7 @@ namespace goby
             void add_adv_algorithm(const std::string& name, AlgFunction2 func);
 
             /// Registers the group names used for the FlexOstream logger
-            void add_flex_groups(util::FlexOstream& tout);
+            void add_flex_groups(util::FlexOstream* tout);
             
             //@}
         
@@ -468,6 +430,15 @@ namespace goby
             /// \example acomms/examples/chat/chat.cpp
         
           private:
+            /// \brief Add more messages to this instance of the codec.
+            ///
+            /// \param xml_file path to the xml file to parse and add to this codec.
+            /// \param xml_schema path to the message_schema.xsd file to validate XML with. if using a relative path this
+            /// must be relative to the directory of the xml_file, not the present working directory. if not provided
+            /// no validation is done.
+            /// \return returns id of the last message file parsed. note that there can be more than one message in a file
+            std::set<unsigned> add_xml_message_file(const std::string& xml_file, const std::string xml_schema = "");
+            
             std::vector<DCCLMessage>::const_iterator to_iterator(const std::string& message_name) const;
             std::vector<DCCLMessage>::iterator to_iterator(const std::string& message_name);
             std::vector<DCCLMessage>::const_iterator to_iterator(const unsigned& id) const;
@@ -494,7 +465,9 @@ namespace goby
         
             void encrypt(std::string& s, const std::string& nonce);
             void decrypt(std::string& s, const std::string& nonce);
-        
+
+            void process_cfg();
+            
           private:
             std::ostream* log_;
             
@@ -502,11 +475,12 @@ namespace goby
             std::map<std::string, size_t>  name2messages_;
             std::map<unsigned, size_t>     id2messages_;
 
+            protobuf::DCCLConfig cfg_;
+
             std::string xml_schema_;
             boost::posix_time::ptime start_time_;
 
-            unsigned modem_id_;
-        
+            // SHA256 hash of the crypto passphrase
             std::string crypto_key_;
         };
 

@@ -157,7 +157,7 @@ class MOOSDCCLCodec
     { return tcp_share_.count(id); }
         
     void add_flex_groups()
-    { dccl_.add_flex_groups(base_app_->logger()); }
+    { dccl_.add_flex_groups(&base_app_->logger()); }
     
     goby::acomms::DCCLCodec& dccl_codec() { return dccl_; }
     

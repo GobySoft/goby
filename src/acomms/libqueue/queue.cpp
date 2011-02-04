@@ -138,7 +138,8 @@ bool goby::acomms::Queue::priority_values(double& priority,
         return false;
     }
     // wrong size
-    else if(next_msg_it->data().size() > (request_msg.max_bytes() - data_msg.data().size()))
+    else if(request_msg.has_max_bytes() &&
+            (next_msg_it->data().size() > (request_msg.max_bytes() - data_msg.data().size())))
     {
         if(log_) *log_<< group("priority") << "\t" << cfg_.name() << " next message is too large {" << next_msg_it->data().size() << "}" << std::endl;
         return false;
@@ -221,7 +222,7 @@ std::vector<goby::acomms::protobuf::ModemDataTransmission> goby::acomms::Queue::
     
     while(!messages_.empty())
     {
-        if((boost::posix_time::from_iso_string(messages_.front().base().iso_time())
+        if((goby::util::as<boost::posix_time::ptime>(messages_.front().base().time())
             + boost::posix_time::seconds(cfg_.ttl())) < goby_time())
         {
             expired_msgs.push_back(messages_.front());

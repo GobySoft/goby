@@ -27,7 +27,7 @@
 
 #include "moos_dccl_codec.h"
 #include "goby/moos/lib_tes_util/tes_string.h"
-#include "goby/util/sci.h"
+
 
 using goby::acomms::NaN;
 using namespace goby::util::tcolor;
@@ -102,10 +102,9 @@ void MOOSDCCLCodec::iterate()
     
 }
 
-void MOOSDCCLCodec::read_parameters(CProcessConfigReader& processConfigReader)
+void MOOSDCCLCodec::read_parameters(CProcessConfigReader& processConfigReader, const protobuf::DCCLConfig& cfg)
 {
     base_app_->logger().add_group("tcp", goby::util::Colors::green, "tcp share");
-
     
     std::string path;
     if (!processConfigReader.GetValue("modem_id_lookup_path", path))
@@ -113,17 +112,6 @@ void MOOSDCCLCodec::read_parameters(CProcessConfigReader& processConfigReader)
     else
         base_app_->logger() << modem_lookup_.read_lookup_file(path) << std::endl;
 
-    std::string crypto_passphrase;
-    if (processConfigReader.GetConfigurationParam("crypto_passphrase", crypto_passphrase))
-    {
-        dccl_.set_crypto_passphrase(crypto_passphrase);
-        base_app_->logger() << "cryptography enabled with given passphrase" << std::endl;
-    }    
-
-    if (!processConfigReader.GetValue("modem_id", modem_id_))
-    	base_app_->logger() << die << "modem_id not specified in .moos file." << std::endl;
-    dccl_.set_modem_id(modem_id_);
-    
     // look for latitude, longitude global variables
     double latOrigin, longOrigin;
     base_app_->logger() << "reading in geodesy information: " << std::endl;

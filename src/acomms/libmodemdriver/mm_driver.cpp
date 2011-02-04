@@ -1,4 +1,4 @@
-// copyright 2009 t. schneider tes@mit.edu
+// copyright 2009-2011 t. schneider tes@mit.edu
 // 
 // this file is part of the goby-acomms WHOI Micro-Modem driver.
 // goby-acomms is a collection of libraries 
@@ -79,6 +79,7 @@ void goby::acomms::MMDriver::startup(const protobuf::DriverConfig& cfg)
     // support the non-standard Hydroid gateway buoy
     if(driver_cfg_.HasExtension(protobuf::MMDriverConfig::hydroid_gateway_id))
         set_hydroid_gateway_prefix(driver_cfg_.GetExtension(protobuf::MMDriverConfig::hydroid_gateway_id));
+
     
     modem_start(driver_cfg_);
     
@@ -86,11 +87,19 @@ void goby::acomms::MMDriver::startup(const protobuf::DriverConfig& cfg)
     
     write_cfg();
     
-    // useful to have all the CFG values in the debug log file for later analysis
+    // so that we know what the modem has for all the NVRAM values, not just the ones we set
     query_all_cfg();
 
     startup_done_ = true;
 }
+
+void goby::acomms::MMDriver::shutdown()
+{
+    startup_done_ = false;
+    modem_close();
+}
+
+
 
 void goby::acomms::MMDriver::do_work()
 {    
@@ -135,7 +144,7 @@ void goby::acomms::MMDriver::do_work()
 
 void goby::acomms::MMDriver::handle_initiate_transmission(protobuf::ModemMsgBase* base_msg)
 {
-    // we initiated this cycle so don't grab data *again* on the CACYC
+    // we initiated this cycle so don't grab data *again* on the CACYC (in cyc()) 
     local_cccyc_ = true;
     protobuf::ModemDataInit init_msg;
     init_msg.mutable_base()->CopyFrom(*base_msg);
@@ -162,7 +171,7 @@ void goby::acomms::MMDriver::handle_initiate_ranging(protobuf::ModemRangingReque
 {
     switch(request_msg->type())
     {
-        case protobuf::MODEM_RANGING:
+        case protobuf::MODEM_TWO_WAY_PING:
         {
             //$CCMPC,SRC,DEST*CS
             NMEASentence nmea("$CCMPC", NMEASentence::IGNORE);
@@ -213,8 +222,12 @@ void goby::acomms::MMDriver::try_send()
             ++global_fail_count_;
             ++present_fail_count_;
             if(global_fail_count_ == MAX_FAILS_BEFORE_DEAD)
-                throw(driver_exception(std::string("modem appears to not be responding. going down")));
+            {
+                modem_close();
+                throw(driver_exception("modem appears to not be responding!"));
+            }
             
+                
             if(present_fail_count_ == RETRIES)
             {
                 if(log_) *log_  << group("mm_out") << warn << "modem did not respond to our command even after " << RETRIES << " retries. continuing onwards anyway..." << std::endl;
@@ -249,23 +262,12 @@ void goby::acomms::MMDriver::pop_out()
     present_fail_count_ = 0;
 }
 
-
-void goby::acomms::MMDriver::measure_noise(unsigned milliseconds_to_average)
-{
-    NMEASentence nmea_out("$CCCFR", NMEASentence::IGNORE);
-    nmea_out.push_back(milliseconds_to_average);
-
-    static protobuf::ModemMsgBase base_msg;
-    base_msg.Clear();
-    append_to_write_queue(nmea_out, &base_msg);
-}
-
 void goby::acomms::MMDriver::append_to_write_queue(const NMEASentence& nmea, protobuf::ModemMsgBase* base_msg)
 {
     base_msg->set_raw(nmea.message());
     
-    if(!base_msg->has_iso_time())
-        set_time(base_msg);
+    if(!base_msg->has_time())
+        base_msg->set_time(as<std::string>(goby_time()));
     
     if(!base_msg->has_description() && description_map_.count(nmea.front()))
         base_msg->set_description(description_map_[nmea.front()]);
@@ -290,7 +292,7 @@ void goby::acomms::MMDriver::set_clock()
     
     static protobuf::ModemMsgBase base_msg;
     base_msg.Clear();
-    set_time(&base_msg, p);
+    base_msg.set_time(as<std::string>(p));
     append_to_write_queue(nmea, &base_msg);
 
     // take a breath to let the clock be set 
@@ -299,21 +301,37 @@ void goby::acomms::MMDriver::set_clock()
 
 void goby::acomms::MMDriver::write_cfg()
 {
+    // reset nvram if requested and not a Hydroid buoy
+    // as this resets the baud to 19200 and the buoy
+    // requires 4800
+    if(!is_hydroid_gateway_ && driver_cfg_.GetExtension(protobuf::MMDriverConfig::reset_nvram))
+        write_single_cfg("ALL,0");
+
+    write_single_cfg("SRC," + as<std::string>(driver_cfg_.modem_id()));
+    
+    
     for(int i = 0, n = driver_cfg_.ExtensionSize(protobuf::MMDriverConfig::nvram_cfg); i < n; ++i)
     {
-        const std::string& s = driver_cfg_.GetExtension(protobuf::MMDriverConfig::nvram_cfg, i);
-
-        NMEASentence nmea("$CCCFG", NMEASentence::IGNORE);        
-        nmea.push_back(boost::to_upper_copy(s));
-
-        // set our map now so we know various values immediately (like SRC)
-        nvram_cfg_[nmea[1]] = nmea.as<int>(2);
-        
-        static protobuf::ModemMsgBase base_msg;
-        base_msg.Clear();
-        append_to_write_queue(nmea, &base_msg);
+        write_single_cfg(driver_cfg_.GetExtension(protobuf::MMDriverConfig::nvram_cfg, i));
     }    
 }
+
+void goby::acomms::MMDriver::write_single_cfg(const std::string &s)
+{
+        
+    NMEASentence nmea("$CCCFG", NMEASentence::IGNORE);        
+    nmea.push_back(boost::to_upper_copy(s));
+
+    // set our map now so we know various values immediately (like SRC)
+    nvram_cfg_[nmea[1]] = nmea.as<int>(2);
+        
+    static protobuf::ModemMsgBase base_msg;
+    base_msg.Clear();
+    append_to_write_queue(nmea, &base_msg);
+    
+}
+
+
 
 void goby::acomms::MMDriver::query_all_cfg()
 {
@@ -416,8 +434,7 @@ void goby::acomms::MMDriver::process_receive(const NMEASentence& nmea)
 
 void goby::acomms::MMDriver::ack(const NMEASentence& nmea, protobuf::ModemDataAck* m)
 {
-    set_time(m->mutable_base());
-    
+    m->mutable_base()->set_time(as<std::string>(goby_time()));
     m->mutable_base()->set_src(as<uint32>(nmea[1]));
     m->mutable_base()->set_dest(as<uint32>(nmea[2]));
     // WHOI counts starting at 1, Goby counts starting at 0
@@ -457,7 +474,7 @@ void goby::acomms::MMDriver::drq(const NMEASentence& nmea_in)
 
 void goby::acomms::MMDriver::rxd(const NMEASentence& nmea, protobuf::ModemDataTransmission* m)
 {
-    set_time(m->mutable_base());
+    m->mutable_base()->set_time(as<std::string>(goby_time()));
     m->mutable_base()->set_src(as<uint32>(nmea[1]));
     m->mutable_base()->set_dest(as<uint32>(nmea[2]));
     m->set_ack_requested(as<bool>(nmea[3]));
@@ -498,7 +515,7 @@ void goby::acomms::MMDriver::clk(const NMEASentence& nmea, protobuf::ModemMsgBas
                                          nmea.as<int>(6),
                                          0));
 
-    set_time(base_msg, reported);
+    base_msg->set_time(as<std::string>(reported));
     base_msg->set_time_source(protobuf::ModemMsgBase::MODEM_TIME);
     
     // make sure the modem reports its time as set at the right time
@@ -510,16 +527,18 @@ void goby::acomms::MMDriver::clk(const NMEASentence& nmea, protobuf::ModemMsgBas
 
 void goby::acomms::MMDriver::mpr(const NMEASentence& nmea, protobuf::ModemRangingReply* m)
 {
-    set_time(m->mutable_base());
+    m->mutable_base()->set_time(as<std::string>(goby_time()));
     
     // $CAMPR,SRC,DEST,TRAVELTIME*CS
-    m->mutable_base()->set_src(as<uint32>(nmea[1]));
-    m->mutable_base()->set_dest(as<uint32>(nmea[2]));
+    // reverse src and dest so they match the original request
+    m->mutable_base()->set_src(as<uint32>(nmea[2]));
+    m->mutable_base()->set_dest(as<uint32>(nmea[1]));
 
     if(nmea.size() > 3)
         m->add_one_way_travel_time(as<double>(nmea[3]));
 
-    m->set_type(protobuf::MODEM_RANGING);
+    m->set_type(protobuf::MODEM_TWO_WAY_PING);
+
     
     signal_range_reply(*m);
 }
@@ -551,7 +570,7 @@ void goby::acomms::MMDriver::err(const NMEASentence& nmea)
 
 void goby::acomms::MMDriver::cyc(const NMEASentence& nmea, protobuf::ModemDataInit* init_msg)
 {
-    set_time(init_msg->mutable_base());
+    init_msg->mutable_base()->set_time(as<std::string>(goby_time()));
 
     // somewhat "loose" interpretation of some of the fields
     init_msg->mutable_base()->set_src(as<uint32>(nmea[2])); // ADR1
@@ -580,7 +599,7 @@ void goby::acomms::MMDriver::cache_outgoing_data(const protobuf::ModemDataInit& 
         static protobuf::ModemDataRequest request_msg;
         request_msg.Clear();
         // make a data request in anticipation that we will need to send
-        set_time(request_msg.mutable_base());
+        request_msg.mutable_base()->set_time(as<std::string>(goby_time()));
     
         request_msg.mutable_base()->set_src(as<uint32>(init_msg.base().src()));
         request_msg.mutable_base()->set_dest(as<uint32>(init_msg.base().dest()));
@@ -614,7 +633,7 @@ void goby::acomms::MMDriver::tta(const NMEASentence& nmea, protobuf::ModemRangin
     
     m->set_type(protobuf::REMUS_LBL_RANGING);
 
-    set_time(m->mutable_base(), nmea_time2ptime(nmea[5]));    
+    m->mutable_base()->set_time(as<std::string>(nmea_time2ptime(nmea[5])));
     m->mutable_base()->set_time_source(protobuf::ModemMsgBase::MODEM_TIME);
     
     signal_range_reply(*m);    

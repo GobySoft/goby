@@ -37,15 +37,10 @@ using goby::util::as;
 using namespace goby::util::tcolor;
 
 goby::acomms::MACManager::MACManager(std::ostream* log /* =0 */)
-    : rate_(0),
-      slot_time_(15),
-      expire_cycles_(5),
-      log_(log),
-      modem_id_(0),
+    : log_(log),
       timer_(io_),
       timer_is_running_(false),
-      current_slot_(slot_order_.begin()),
-      type_(MAC_NONE)
+      current_slot_(slot_order_.begin())
 { }
 
 goby::acomms::MACManager::~MACManager()
@@ -72,11 +67,14 @@ void goby::acomms::MACManager::stop_timer()
     timer_.cancel();
 }
 
-void goby::acomms::MACManager::startup()
+void goby::acomms::MACManager::startup(const protobuf::MACConfig& cfg)
 {
-    switch(type_)
+    // create a copy for us
+    cfg_ = cfg;
+    
+    switch(cfg_.type())
     {
-        case MAC_AUTO_DECENTRALIZED:
+        case protobuf::MAC_AUTO_DECENTRALIZED:
         {
             if(log_) *log_ << group("mac")
                            << "Using the Decentralized Slotted TDMA MAC scheme with autodiscovery"
@@ -86,19 +84,19 @@ void goby::acomms::MACManager::startup()
             protobuf::Slot blank_slot;
             blank_slot.set_src(acomms::BROADCAST_ID);
             blank_slot.set_dest(acomms::QUERY_DESTINATION_ID);
-            blank_slot.set_rate(rate_);
+            blank_slot.set_rate(cfg_.rate());
             blank_slot.set_type(protobuf::SLOT_DATA);
-            blank_slot.set_slot_seconds(slot_time_);
+            blank_slot.set_slot_seconds(cfg_.slot_seconds());
             blank_slot.set_last_heard_time(as<std::string>(goby_time()));
             blank_it_ = add_slot(blank_slot);
             
 
             protobuf::Slot our_slot;
-            our_slot.set_src(modem_id_);
+            our_slot.set_src(cfg_.modem_id());
             our_slot.set_dest(acomms::QUERY_DESTINATION_ID);
-            our_slot.set_rate(rate_);
+            our_slot.set_rate(cfg_.rate());
             our_slot.set_type(protobuf::SLOT_DATA);
-            our_slot.set_slot_seconds(slot_time_);
+            our_slot.set_slot_seconds(cfg_.slot_seconds());
             our_slot.set_last_heard_time(as<std::string>(goby_time()));
 
             add_slot(our_slot);
@@ -111,14 +109,16 @@ void goby::acomms::MACManager::startup()
             break;
         }
         
-        case MAC_POLLED:
-            if(log_) *log_ << group("mac")
-                         << "Using the Centralized Polling MAC scheme" << std::endl;
-            break;
+        case protobuf::MAC_POLLED:
+        case protobuf::MAC_FIXED_DECENTRALIZED:
+            for(int i = 0, n = cfg_.cycle_size(); i < n; ++i)
+                add_slot(cfg_.cycle(i));
+            
+            if(log_ && cfg_.type() == protobuf::MAC_POLLED)
+                *log_ << group("mac") << "Using the Centralized Polling MAC scheme" << std::endl;
+            else if(log_ && cfg_.type() == protobuf::MAC_FIXED_DECENTRALIZED)
+                *log_ << group("mac") << "Using the Decentralized (Fixed) Slotted TDMA MAC scheme" << std::endl;
 
-        case MAC_FIXED_DECENTRALIZED:
-            if(log_) *log_ << group("mac")
-                         << "Using the Decentralized (Fixed) Slotted TDMA MAC scheme" << std::endl;
             break;
 
         default:
@@ -134,6 +134,17 @@ void goby::acomms::MACManager::startup()
         restart_timer();
 }
 
+void goby::acomms::MACManager::shutdown()
+{
+    stop_timer();
+    
+    slot_order_.clear();
+    id2slot_.clear();
+    current_slot_ = slot_order_.begin();
+    
+}
+
+
 void goby::acomms::MACManager::send_poll(const boost::system::error_code& e)
 {    
     // canceled the last timer
@@ -142,14 +153,14 @@ void goby::acomms::MACManager::send_poll(const boost::system::error_code& e)
     const protobuf::Slot& s = (*current_slot_)->second;
     
     bool send_poll = true;    
-    switch(type_)
+    switch(cfg_.type())
     {
-        case MAC_FIXED_DECENTRALIZED:
-        case MAC_AUTO_DECENTRALIZED:
-            send_poll = (s.src() == modem_id_);
+        case protobuf::MAC_FIXED_DECENTRALIZED:
+        case protobuf::MAC_AUTO_DECENTRALIZED:
+            send_poll = (s.src() == cfg_.modem_id());
             break;
 
-        case MAC_POLLED:
+        case protobuf::MAC_POLLED:
             // be quiet in the case where src = 0
             send_poll = (s.src() != BROADCAST_ID);
             break;
@@ -207,7 +218,7 @@ void goby::acomms::MACManager::send_poll(const boost::system::error_code& e)
                 if(s.type() == protobuf::SLOT_REMUS_LBL)
                     m.set_type(protobuf::REMUS_LBL_RANGING);
                 else if(s.type() == protobuf::SLOT_PING)
-                    m.set_type(protobuf::MODEM_RANGING);
+                    m.set_type(protobuf::MODEM_TWO_WAY_PING);
                 
                 signal_initiate_ranging(&m);
                 break;
@@ -219,9 +230,9 @@ void goby::acomms::MACManager::send_poll(const boost::system::error_code& e)
     
     ++current_slot_;
     
-    switch(type_)
+    switch(cfg_.type())
     {
-        case MAC_AUTO_DECENTRALIZED:
+        case protobuf::MAC_AUTO_DECENTRALIZED:
             expire_ids();
 
             if (current_slot_ == slot_order_.end())
@@ -231,11 +242,11 @@ void goby::acomms::MACManager::send_poll(const boost::system::error_code& e)
                              << cycles_since_day_start_ << std::endl;    
                 position_blank();
             }
-            next_slot_t_ += boost::posix_time::seconds(slot_time_);
+            next_slot_t_ += boost::posix_time::seconds(cfg_.slot_seconds());
             break;
             
-        case MAC_FIXED_DECENTRALIZED:
-        case MAC_POLLED:
+        case protobuf::MAC_FIXED_DECENTRALIZED:
+        case protobuf::MAC_POLLED:
             if (current_slot_ == slot_order_.end()) current_slot_ = slot_order_.begin();
             next_slot_t_ += boost::posix_time::seconds(s.slot_seconds());
             break;
@@ -270,7 +281,7 @@ void goby::acomms::MACManager::handle_modem_all_incoming(const protobuf::ModemMs
 {
     unsigned id = m.src();
     
-    if(type_ != MAC_AUTO_DECENTRALIZED)
+    if(cfg_.type() != protobuf::MAC_AUTO_DECENTRALIZED)
         return;
     
 
@@ -285,9 +296,9 @@ void goby::acomms::MACManager::handle_modem_all_incoming(const protobuf::ModemMs
         
         new_slot.set_src(id);
         new_slot.set_dest(acomms::QUERY_DESTINATION_ID);
-        new_slot.set_rate(rate_);
+        new_slot.set_rate(cfg_.rate());
         new_slot.set_type(protobuf::SLOT_DATA);
-        new_slot.set_slot_seconds(slot_time_);
+        new_slot.set_slot_seconds(cfg_.slot_seconds());
         new_slot.set_last_heard_time(as<std::string>(goby_time()));
 
         slot_order_.push_back(id2slot_.insert(std::make_pair(id, new_slot)));
@@ -311,13 +322,13 @@ void goby::acomms::MACManager::expire_ids()
     for(id2slot_it it = id2slot_.begin(), n = id2slot_.end(); it != n; ++it)
     {
         if(as<boost::posix_time::ptime>(it->second.last_heard_time()) <
-           goby_time()-boost::posix_time::seconds(cycle_length()*expire_cycles_)
-           && it->first != modem_id_
+           goby_time()-boost::posix_time::seconds(cycle_length()*cfg_.expire_cycles())
+           && it->first != cfg_.modem_id()
            && it->first != BROADCAST_ID)
         {
             if(log_) *log_ << group("mac") << "removed id " << it->first
-                         << " after not hearing for " << expire_cycles_
-                         << " cycles." << std::endl;
+                           << " after not hearing for " << cfg_.expire_cycles()
+                           << " cycles." << std::endl;
 
             id2slot_.erase(it);
             slot_order_.remove(it);
@@ -335,7 +346,7 @@ void goby::acomms::MACManager::process_cycle_size_change()
                  << next_slot_t_ << std::endl;
     
     
-    if(type_ == MAC_AUTO_DECENTRALIZED && slot_order_.size() > 1)
+    if(cfg_.type() == protobuf::MAC_AUTO_DECENTRALIZED && slot_order_.size() > 1)
         position_blank();
   
     restart_timer();
@@ -390,9 +401,9 @@ std::map<int, goby::acomms::protobuf::Slot>::iterator goby::acomms::MACManager::
     return it;
 }
 
-void goby::acomms::MACManager::add_flex_groups(util::FlexOstream& tout)
+void goby::acomms::MACManager::add_flex_groups(util::FlexOstream* tout)
 {
-    tout.add_group("mac", util::Colors::blue, "MAC related messages (goby_amac)");
+    tout->add_group("mac", util::Colors::blue, "MAC related messages (goby_amac)");
 }
 
 

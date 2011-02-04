@@ -1,4 +1,4 @@
-// copyright 2009 t. schneider tes@mit.edu
+// copyright 2009-2011 t. schneider tes@mit.edu
 // 
 // this file is part of the goby-acomms acoustic modem driver.
 // goby-acomms is a collection of libraries 
@@ -43,6 +43,13 @@ bool goby::acomms::ModemDriverBase::modem_read(std::string* in)
 {
     return modem_->readline(in);
 }
+
+void goby::acomms::ModemDriverBase::modem_close()
+{
+    modem_->close();    
+}
+
+
 
 void goby::acomms::ModemDriverBase::modem_start(const protobuf::DriverConfig& cfg)
 {        

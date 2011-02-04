@@ -105,10 +105,8 @@ void goby::acomms::QueueManager::add_xml_queue_file(const std::string& xml_file,
     // instantiate a parser for the xml message files
     XMLParser parser(content, error);
     // parse(file, [schema])
-    if(xml_schema != "")
-        xml_schema_ = xml_schema;
         
-    parser.parse(xml_file, xml_schema_);
+    parser.parse(xml_file, xml_schema);
 
     BOOST_FOREACH(const protobuf::QueueConfig& c, cfgs)
         add_queue(c);
@@ -165,16 +163,6 @@ void goby::acomms::QueueManager::set_on_demand(protobuf::QueueKey key)
         throw queue_exception(ss.str());
     }
 }
-
-void goby::acomms::QueueManager::set_on_demand(unsigned id, protobuf::QueueType type /* = dccl_queue */)
-{
-    protobuf::QueueKey key;
-    key.set_type(type);
-    key.set_id(id);
-
-    set_on_demand(key);
-}
-
 
 std::string goby::acomms::QueueManager::summary() const
 {
@@ -558,13 +546,40 @@ bool goby::acomms::QueueManager::publish_incoming_piece(const protobuf::ModemDat
     return true;
 }
 
-void goby::acomms::QueueManager::add_flex_groups(util::FlexOstream& tout)
+void goby::acomms::QueueManager::add_flex_groups(util::FlexOstream* tout)
 {
-    tout.add_group("push", util::Colors::lt_cyan, "stack push - outgoing messages (goby_queue)");
-    tout.add_group("pop",  util::Colors::lt_green, "stack pop - outgoing messages (goby_queue)");
-    tout.add_group("priority",  util::Colors::yellow, "priority contest (goby_queue)");
-    tout.add_group("q_out",  util::Colors::cyan, "outgoing queuing messages (goby_queue)");
-    tout.add_group("q_in",  util::Colors::green, "incoming queuing messages (goby_queue)");
+    tout->add_group("push", util::Colors::lt_cyan, "stack push - outgoing messages (goby_queue)");
+    tout->add_group("pop",  util::Colors::lt_green, "stack pop - outgoing messages (goby_queue)");
+    tout->add_group("priority",  util::Colors::yellow, "priority contest (goby_queue)");
+    tout->add_group("q_out",  util::Colors::cyan, "outgoing queuing messages (goby_queue)");
+    tout->add_group("q_in",  util::Colors::green, "incoming queuing messages (goby_queue)");
 }
 
+
+void goby::acomms::QueueManager::set_cfg(const protobuf::QueueManagerConfig& cfg)
+{
+    cfg_ = cfg;
+    process_cfg();
+}
+
+void goby::acomms::QueueManager::merge_cfg(const protobuf::QueueManagerConfig& cfg)
+{
+    cfg_.MergeFrom(cfg);
+    process_cfg();
+}
+
+
+void goby::acomms::QueueManager::process_cfg()
+{
+    queues_.clear();
+    waiting_for_ack_.clear();
+    
+    for(int i = 0, n = cfg_.message_file_size(); i < n; ++i)
+        add_xml_queue_file(cfg_.message_file(i).path(), cfg_.schema());
+    
+    for(int i = 0, n = cfg_.queue_cfg_size(); i < n; ++i)
+        add_queue(cfg_.queue_cfg(i));
+
+    modem_id_ = cfg_.modem_id();
+}
 

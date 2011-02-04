@@ -85,28 +85,33 @@ int main(int argc, char* argv[])
     //
     // Initiate DCCL (libdccl)
     //
-    dccl_.add_xml_message_file(ACOMMS_EXAMPLES_DIR "/chat/chat.xml", "../../libdccl/message_schema.xsd");
+    goby::acomms::protobuf::DCCLConfig dccl_cfg;
+    dccl_cfg.add_message_file()->set_path(ACOMMS_EXAMPLES_DIR "/chat/chat.xml");
+    dccl_cfg.set_schema("../../libdccl/message_schema.xsd");
     
     //
     // Initiate queue manager (libqueue)
     //
-    q_manager_.set_modem_id(my_id);
+    goby::acomms::protobuf::QueueManagerConfig q_manager_cfg;
+    q_manager_cfg.set_modem_id(my_id);
     goby::acomms::connect(&q_manager_.signal_receive, &received_data);
     goby::acomms::connect(&q_manager_.signal_ack, &received_ack);
-    q_manager_.add_xml_queue_file(ACOMMS_EXAMPLES_DIR "/chat/chat.xml", "../../libdccl/message_schema.xsd");
+    for(int i = 0, n = dccl_cfg.message_file_size(); i < n; ++i)
+        q_manager_cfg.add_message_file()->CopyFrom(dccl_cfg.message_file(i));
 
     //
     // Initiate modem driver (libmodemdriver)
     //
-    goby::acomms::protobuf::DriverConfig cfg;
-    cfg.set_serial_port(serial_port);
-    cfg.AddExtension(goby::acomms::protobuf::MMDriverConfig::nvram_cfg, "SRC," + as<std::string>(my_id));
+    goby::acomms::protobuf::DriverConfig driver_cfg;
+    driver_cfg.set_serial_port(serial_port);
+    driver_cfg.AddExtension(goby::acomms::protobuf::MMDriverConfig::nvram_cfg, "SRC," + as<std::string>(my_id));
 
     //
     // Initiate medium access control (libamac)
     //
-    mac_.set_type(MAC_FIXED_DECENTRALIZED);
-    mac_.set_modem_id(my_id);
+    goby::acomms::protobuf::MACConfig mac_cfg;
+    mac_cfg.set_type(protobuf::MAC_FIXED_DECENTRALIZED);
+    mac_cfg.set_modem_id(my_id);
 
     goby::acomms::protobuf::Slot my_slot;
     my_slot.set_src(my_id);
@@ -124,13 +129,13 @@ int main(int argc, char* argv[])
 
     if(my_id < buddy_id)
     {
-        mac_.add_slot(my_slot);
-        mac_.add_slot(buddy_slot);
+        mac_cfg.add_cycle()->CopyFrom(my_slot);
+        mac_cfg.add_cycle()->CopyFrom(buddy_slot);
     }
     else
     {
-        mac_.add_slot(buddy_slot);
-        mac_.add_slot(my_slot);
+        mac_cfg.add_cycle()->CopyFrom(buddy_slot);
+        mac_cfg.add_cycle()->CopyFrom(my_slot);
     }    
     
     //
@@ -138,8 +143,10 @@ int main(int argc, char* argv[])
     //
     try
     {
-        mac_.startup();
-        mm_driver_.startup(cfg);
+        dccl_.set_cfg(dccl_cfg);
+        q_manager_.set_cfg(q_manager_cfg);
+        mac_.startup(mac_cfg);
+        mm_driver_.startup(driver_cfg);
     }
     catch(std::runtime_error& e)
     {

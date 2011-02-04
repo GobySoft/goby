@@ -1,3 +1,6 @@
+// provides MessageFile
+import "goby/acomms/protobuf/xml_config.proto";
+
 package goby.acomms.protobuf;
 
 enum QueueType
@@ -24,3 +27,12 @@ message QueueKey
   required QueueType type = 1 [default = QUEUE_DCCL];
   required uint32 id = 2;
 }
+
+message QueueManagerConfig
+{
+  required int32 modem_id = 1;
+  repeated MessageFile message_file = 2;
+  optional string schema = 3;
+  repeated QueueConfig queue_cfg = 4;
+}
+

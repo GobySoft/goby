@@ -334,7 +334,10 @@ void CommandGui::import_xml()
         
         try
         {
-            dccl_.add_xml_message_file(filename, schema_);
+            protobuf::DCCLConfig cfg;
+            cfg.add_message_file()->set_path(filename);
+            cfg.set_schema(schema_);
+            dccl_.merge_cfg(cfg);
             gui_.disp_scroll(string("Imported:\n" + filename), vector<string>(1, "OK"));
         }
         catch(exception & e)

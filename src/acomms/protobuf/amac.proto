@@ -19,3 +19,25 @@ message Slot
   // which is produced by operator<< for boost::posix_time::ptime
   optional string last_heard_time = 6; 
 }
+
+enum MACType {
+  MAC_NONE = 1; // no MAC 
+  MAC_FIXED_DECENTRALIZED = 2; // decentralized time division multiple access
+  MAC_AUTO_DECENTRALIZED = 3; // decentralized time division multiple access with peer discovery
+  MAC_POLLED = 4; // centralized polling
+};
+
+message MACConfig
+{
+  optional MACType type = 1 [default = MAC_NONE];
+  required int32 modem_id = 2;
+
+  // only required for MAC_FIXED_DECENTRALIZED and MAC_POLLED, specify templates for MAC_AUTO_DECENTRALIZED below
+  repeated Slot cycle = 3;
+  
+  // only required for MAC_AUTO_DECENTRALIZED - specify these in `cycle` (above) for other types
+  optional uint32 rate = 4 [default = 0];
+  optional uint32 slot_seconds = 5 [default = 15];
+  optional uint32 expire_cycles = 6 [default = 30];
+  
+}

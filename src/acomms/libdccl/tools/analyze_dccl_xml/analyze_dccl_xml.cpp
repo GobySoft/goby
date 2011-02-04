@@ -38,7 +38,11 @@ int main(int argc, char* argv[])
     std::cout << "creating DCCLCodec using xml file: [" << xml_file << "] and schema: [" << xml_schema << "]" << std::endl;
     std::cout << "schema must be specified with an absolute path or a relative path to the xml file location (not pwd!)" << std::endl;
     
-    goby::acomms::DCCLCodec dccl(xml_file, xml_schema);
+    goby::acomms::DCCLCodec dccl;    
+    goby::acomms::protobuf::DCCLConfig cfg;
+    cfg.set_schema(xml_schema);
+    cfg.add_message_file()->set_path(xml_file);
+    dccl.set_cfg(cfg);
 
     std::cout << "parsed file ok!" << std::endl;
     

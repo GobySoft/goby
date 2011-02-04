@@ -1,0 +1,17 @@
+package goby.acomms.protobuf;
+
+message MessageFile
+{
+  required string path = 1;
+  enum Manipulator 
+  {
+    NO_ENCODE = 1;
+    NO_DECODE = 2;
+    
+    NO_QUEUE = 3;
+    LOOPBACK = 4;
+    ON_DEMAND = 5;
+    TCP_SHARE_IN = 6;
+  }
+  repeated Manipulator manipulator = 2;
+}

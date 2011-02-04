@@ -33,8 +33,13 @@ int main()
     std::cout << "loading nafcon xml files" << std::endl;
 
     acomms::DCCLCodec dccl;
-    dccl.add_xml_message_file(DCCL_EXAMPLES_DIR "/plusnet/nafcon_command.xml", "../../message_schema.xsd");
-    dccl.add_xml_message_file(DCCL_EXAMPLES_DIR "/plusnet/nafcon_report.xml", "../../message_schema.xsd");
+
+    goby::acomms::protobuf::DCCLConfig cfg;
+    cfg.set_schema("../../message_schema.xsd");
+    cfg.add_message_file()->set_path(DCCL_EXAMPLES_DIR "/plusnet/nafcon_command.xml");
+    cfg.add_message_file()->set_path(DCCL_EXAMPLES_DIR "/plusnet/nafcon_report.xml");
+    
+    dccl.set_cfg(cfg);
     
     std::cout << std::string(30, '#') << std::endl
               << "detailed message summary:" << std::endl

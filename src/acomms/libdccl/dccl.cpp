@@ -29,6 +29,7 @@
 #include "goby/util/string.h"
 #include "goby/acomms/protobuf/acomms_proto_helpers.h"
 
+
 using goby::util::goby_time;
 using goby::util::as;
 
@@ -37,28 +38,8 @@ using goby::util::as;
 /////////////////////
 goby::acomms::DCCLCodec::DCCLCodec(std::ostream* log /* =0 */)
     : log_(log),
-      start_time_(goby_time()),
-      modem_id_(0)
+      start_time_(goby_time())
 { }
-    
-goby::acomms::DCCLCodec::DCCLCodec(const std::string& file,
-                                   const std::string schema,
-                                   std::ostream* log /* =0 */)
-    : log_(log),
-      start_time_(goby_time()),
-      modem_id_(0)
-{ add_xml_message_file(file, schema); }
-    
-goby::acomms::DCCLCodec::DCCLCodec(const std::set<std::string>& files,
-                                   const std::string schema,
-                                   std::ostream* log /* =0 */)
-    : log_(log),
-      start_time_(goby_time()),
-      modem_id_(0)
-{
-    BOOST_FOREACH(const std::string& s, files)
-        add_xml_message_file(s, schema);
-}
 
 std::set<unsigned> goby::acomms::DCCLCodec::add_xml_message_file(const std::string& xml_file,
                                                          const std::string xml_schema)
@@ -72,10 +53,8 @@ std::set<unsigned> goby::acomms::DCCLCodec::add_xml_message_file(const std::stri
     // instantiate a parser for the xml message files
     XMLParser parser(content, error);
     // parse(file, [schema])
-    if(xml_schema != "")
-        xml_schema_ = xml_schema;
-    
-    parser.parse(xml_file, xml_schema_);
+
+    parser.parse(xml_file, xml_schema);
 
     size_t end_size = messages_.size();
     
@@ -139,10 +118,10 @@ void goby::acomms::DCCLCodec::add_adv_algorithm(const std::string& name, AlgFunc
     ap -> add_algorithm(name, func);
 }
 
-void goby::acomms::DCCLCodec::add_flex_groups(util::FlexOstream& tout)
+void goby::acomms::DCCLCodec::add_flex_groups(util::FlexOstream* tout)
 {
-    tout.add_group("dccl_enc", util::Colors::lt_magenta, "encoder messages (goby_dccl)");
-    tout.add_group("dccl_dec", util::Colors::lt_blue, "decoder messages (goby_dccl)");
+    tout->add_group("dccl_enc", util::Colors::lt_magenta, "encoder messages (goby_dccl)");
+    tout->add_group("dccl_dec", util::Colors::lt_blue, "decoder messages (goby_dccl)");
 }
 
 
@@ -295,7 +274,7 @@ void goby::acomms::DCCLCodec::encode_private(std::vector<DCCLMessage>::iterator 
     // 1. encode parts
     std::string body, head;
     
-    it->set_head_defaults(in, modem_id_);
+    it->set_head_defaults(in, cfg_.modem_id());
 
     it->head_encode(head, in);
     it->body_encode(body, in);
@@ -368,8 +347,7 @@ void goby::acomms::DCCLCodec::encode_private(std::vector<DCCLMessage>::iterator 
     DCCLMessageVal& src = head_dec[head_src_id];
     DCCLMessageVal& dest = head_dec[head_dest_id];
 
-    set_time(out_msg->mutable_base(), goby::util::unix_double2ptime(double(t)));
-
+    out_msg->mutable_base()->set_time(goby::util::as<std::string>(goby::util::unix_double2ptime(double(t))));
     out_msg->mutable_base()->set_src(long(src));
     out_msg->mutable_base()->set_dest(long(dest));
 
@@ -384,13 +362,6 @@ std::vector<goby::acomms::DCCLMessage>::iterator goby::acomms::DCCLCodec::decode
 }
 
 
-void goby::acomms::DCCLCodec::set_crypto_passphrase(const std::string& s)
-{
-    using namespace CryptoPP;
-
-    SHA256 hash;
-    StringSource unused (s, true, new HashFilter(hash, new StringSink(crypto_key_)));
-}
 
 
 void goby::acomms::DCCLCodec::encrypt(std::string& s, const std::string& nonce)
@@ -427,4 +398,33 @@ void goby::acomms::DCCLCodec::decrypt(std::string& s, const std::string& nonce)
     out.Put((byte*)s.c_str(), s.size());
     out.MessageEnd();
     s = recovered;
+}
+
+void goby::acomms::DCCLCodec::merge_cfg(const protobuf::DCCLConfig& cfg)
+{
+    cfg_.MergeFrom(cfg);
+    process_cfg();
+}
+
+void goby::acomms::DCCLCodec::set_cfg(const protobuf::DCCLConfig& cfg)
+{
+    cfg_.CopyFrom(cfg);
+    process_cfg();
+}
+
+void goby::acomms::DCCLCodec::process_cfg()
+{
+    messages_.clear();
+    name2messages_.clear();
+    id2messages_.clear();
+    
+    for(int i = 0, n = cfg_.message_file_size(); i < n; ++i)
+        add_xml_message_file(cfg_.message_file(i).path(), cfg_.schema());
+    
+    using namespace CryptoPP;
+    
+    SHA256 hash;
+    StringSource unused(cfg_.crypto_passphrase(), true, new HashFilter(hash, new StringSink(crypto_key_)));
+
+    if(log_) *log_ << "cryptography enabled with given passphrase" << std::endl;
 }

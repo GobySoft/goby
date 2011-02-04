@@ -32,12 +32,16 @@ int main()
     
     // create a QueueManager for all our queues
     // and at the same time add our message as a DCCL queue
-    goby::acomms::QueueManager q_manager(QUEUE_EXAMPLES_DIR "/queue_simple/simple.xml",
-                                  "../../../libdccl/message_schema.xsd", &std::cerr);
+    goby::acomms::QueueManager q_manager(&std::cerr);
     
     unsigned our_id = 1;
-    q_manager.set_modem_id(our_id);
 
+    goby::acomms::protobuf::QueueManagerConfig cfg;
+    cfg.set_modem_id(our_id);
+    cfg.set_schema("../../../libdccl/message_schema.xsd");
+    cfg.add_message_file()->set_path(QUEUE_EXAMPLES_DIR "/queue_simple/simple.xml");
+    q_manager.set_cfg(cfg);
+    
     // set up the callback to handle received DCCL messages
     goby::acomms::connect(&q_manager.signal_receive, &received_data);
 

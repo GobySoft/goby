@@ -30,11 +30,15 @@ int main()
     std::cout << "loading xml files: xml/simple.xml, xml/two_message.xml"
               << std::endl;
 
-    std::set<std::string> xml_files;
-    xml_files.insert(DCCL_EXAMPLES_DIR "/dccl_simple/simple.xml");
-    xml_files.insert(DCCL_EXAMPLES_DIR "/two_message/two_message.xml");
-    
-    acomms::DCCLCodec dccl(xml_files, "../../message_schema.xsd");
+
+    goby::acomms::DCCLCodec dccl;    
+    goby::acomms::protobuf::DCCLConfig cfg;
+    cfg.set_schema("../../message_schema.xsd");
+    cfg.add_message_file()->set_path(DCCL_EXAMPLES_DIR "/dccl_simple/simple.xml");
+    cfg.add_message_file()->set_path(DCCL_EXAMPLES_DIR "/two_message/two_message.xml");
+    // must be kept secret!
+    cfg.set_crypto_passphrase("my_passphrase!");
+    dccl.set_cfg(cfg);
 
     // show some useful information about all the loaded messages
     std::cout << std::string(30, '#') << std::endl
@@ -79,7 +83,7 @@ int main()
     std::map<std::string, acomms::DCCLMessageVal> vals;
     
     // initialize output hexadecimal
-    std::string hex2, hex3;
+    std::string bytes2, bytes3;
 
     // id = 2, name = GoToCommand
     vals["destination"] = 2;
@@ -97,30 +101,30 @@ int main()
     std::cout << "passing values to encoder:" << std::endl  
               << vals;
 
-    dccl.encode(2, hex2, vals);
-    dccl.encode(3, hex3, vals);
+    dccl.encode(2, bytes2, vals);
+    dccl.encode(3, bytes3, vals);
     
     std::cout << "received hexadecimal string for message 2 (GoToCommand): "
-              << hex2
+              << goby::acomms::hex_encode(bytes2)
               << std::endl;
 
     std::cout << "received hexadecimal string for message 3 (VehicleStatus): "
-              << hex3
+              << goby::acomms::hex_encode(bytes3)
               << std::endl;
 
     vals.clear();
     
     std::cout << "passed hexadecimal string for message 2 to decoder: " 
-              << hex2
+              << goby::acomms::hex_encode(bytes2)
               << std::endl;
     
     std::cout << "passed hexadecimal string for message 3 to decoder: " 
-              << hex3
+              << goby::acomms::hex_encode(bytes3)
               << std::endl;
 
 
-    dccl.decode(hex2, vals);
-    dccl.decode(hex3, vals);
+    dccl.decode(bytes2, vals);
+    dccl.decode(bytes3, vals);
     
     std::cout << "received values:" << std::endl
               << vals;

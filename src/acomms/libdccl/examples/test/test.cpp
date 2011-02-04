@@ -66,7 +66,13 @@ int main()
     std::cout << "loading xml file: test.xml" << std::endl;
 
     // instantiate the parser with a single xml file
-    acomms::DCCLCodec dccl(DCCL_EXAMPLES_DIR "/test/test.xml", "../../message_schema.xsd");
+    goby::acomms::DCCLCodec dccl;    
+    goby::acomms::protobuf::DCCLConfig cfg;
+    cfg.set_schema("../../message_schema.xsd");
+    cfg.add_message_file()->set_path(DCCL_EXAMPLES_DIR "/test/test.xml");
+    // must be kept secret!
+    cfg.set_crypto_passphrase("my_passphrase!");
+    dccl.set_cfg(cfg);
 
     std::cout << dccl << std::endl;
     
@@ -77,8 +83,6 @@ int main()
     dccl.add_algorithm("invert", &invert);
     dccl.add_adv_algorithm("sum", &algsum);
 
-    // must be kept secret!
-    dccl.set_crypto_passphrase("my_passphrase!");
     
     std::map<std::string, std::vector<acomms::DCCLMessageVal> > in;
     

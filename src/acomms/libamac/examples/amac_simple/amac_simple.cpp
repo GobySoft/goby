@@ -32,11 +32,13 @@ int main(int argc, char* argv[])
     //
     // 2. Configure it for TDMA with basic peer discovery, rate 0, 10 second slots, and expire vehicles after 2 cycles of no communications. also, we are modem id 1.
     //
-    mac.set_type(goby::acomms::MAC_AUTO_DECENTRALIZED);
-    mac.set_rate(0);
-    mac.set_slot_time(10);
-    mac.set_expire_cycles(2);
-    mac.set_modem_id(1);
+    goby::acomms::protobuf::MACConfig cfg;    
+    cfg.set_type(goby::acomms::protobuf::MAC_AUTO_DECENTRALIZED);
+    cfg.set_rate(0);
+    cfg.set_slot_seconds(10);
+    cfg.set_expire_cycles(2);
+    cfg.set_modem_id(1);
+    
     
     //
     // 3. Set up the callback
@@ -48,7 +50,7 @@ int main(int argc, char* argv[])
     //
     // 4. Let it run for a bit alone in the world
     //
-    mac.startup();
+    mac.startup(cfg);
     for(unsigned i = 1; i < 60; ++i)
     {
         mac.do_work();
@@ -82,5 +84,5 @@ int main(int argc, char* argv[])
 
 void init_transmission(goby::acomms::protobuf::ModemMsgBase* init_message)
 {
-    std::cout << "starting transmission with these values: " << init_message << std::endl;
+    std::cout << "starting transmission with these values: " << *init_message << std::endl;
 }

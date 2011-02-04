@@ -46,14 +46,6 @@ namespace goby
         /// \name Acoustic MAC Library callback function type definitions
         //@{
 
-        /// Enumeration of MAC types
-        enum MACType {
-            MAC_NONE, /*!< no MAC */
-            MAC_FIXED_DECENTRALIZED, /*!< decentralized time division multiple access */
-            MAC_AUTO_DECENTRALIZED, /*!< decentralized time division multiple access with peer discovery */
-            MAC_POLLED /*!< centralized polling */
-        };
-
         /// provides an API to the goby-acomms MAC library.
         class MACManager
         {
@@ -70,7 +62,11 @@ namespace goby
             //@}
         
             /// \brief Starts the MAC
-            void startup();
+            void startup(const protobuf::MACConfig& cfg);
+
+            /// \brief Shutdown the MAC
+            void shutdown();
+            
             /// \brief Must be called regularly for the MAC to perform its work
             void do_work();
 
@@ -82,7 +78,7 @@ namespace goby
             /// \param message the new message (used to detect vehicles)
             void handle_modem_all_incoming(const protobuf::ModemMsgBase& m);
             
-            void add_flex_groups(util::FlexOstream& tout);
+            void add_flex_groups(util::FlexOstream* tout);
             
             /// \name Manipulate slots
             //@{
@@ -94,29 +90,6 @@ namespace goby
             bool remove_slot(const protobuf::Slot& s);
             void clear_all_slots() { id2slot_.clear(); slot_order_.clear(); }    
             //@}            
-
-    
-            /// \name Set
-            //@{    
-            void set_type(MACType type) { type_ = type; }
-            void set_modem_id(int modem_id) { modem_id_ = modem_id; }    
-            void set_modem_id(const std::string& s) { set_modem_id(util::as<int>(s)); }
-            void set_rate(int rate) { rate_ = rate; }
-            void set_rate(const std::string& s) { set_rate(util::as<int>(s)); }
-            void set_slot_time(unsigned slot_time) { slot_time_ = slot_time; }
-
-            void set_slot_time(const std::string& s) { set_slot_time(util::as<unsigned>(s)); } 
-
-            void set_expire_cycles(unsigned expire_cycles) { expire_cycles_ = expire_cycles; }
-            void set_expire_cycles(const std::string& s) { set_expire_cycles(util::as<unsigned>(s)); }
-//@}
-
-            /// \name Get
-            //@{    
-            int rate() { return rate_; }
-            unsigned slot_time() { return slot_time_; }        
-            MACType type() { return type_; }
-            //@}
             
             boost::signal<void (protobuf::ModemMsgBase* m)> signal_initiate_transmission;
             boost::signal<void (protobuf::ModemRangingRequest* m)> signal_initiate_ranging;
@@ -127,9 +100,6 @@ namespace goby
             /// \example acomms/examples/chat/chat.cpp
         
           private:
-            enum { NO_AVAILABLE_DESTINATION = -1 };
-
-
             boost::posix_time::ptime next_cycle_time();
 
             void restart_timer();
@@ -144,17 +114,10 @@ namespace goby
             void position_blank();
     
           private:
-            // (bit)-rate id number
-            int rate_;
-            // size of each slot (seconds)
-            unsigned slot_time_;
-            // how many cycles before we remove someone?
-            unsigned expire_cycles_;
-    
             std::ostream* log_;
-    
-            int modem_id_;
-    
+
+            protobuf::MACConfig cfg_;
+            
             // asynchronous timer
             boost::asio::io_service io_;
             boost::asio::deadline_timer timer_;
@@ -176,7 +139,6 @@ namespace goby
     
             // entropy value used to determine how the "blank" slot moves around relative to the values of the modem ids. determining the proper value for this is a bit of work and i will detail when i have time.
             enum { ENTROPY = 5 };
-            MACType type_;
         };
 
         ///

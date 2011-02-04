@@ -83,7 +83,7 @@ namespace goby
             boost::posix_time::ptime newest_msg_time() const
             {
                 return size()
-                    ? boost::posix_time::from_iso_string(messages_.back().base().iso_time())
+                    ? goby::util::as<boost::posix_time::ptime>(messages_.back().base().time())
                     : boost::posix_time::ptime();
             }
         

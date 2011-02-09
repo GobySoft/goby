@@ -118,19 +118,19 @@ void goby::acomms::DCCLMessageContentHandler::startElement(
             break;
 
         case tag_time:
-            curr_head_piece_ = head_time;
+            curr_head_piece_ = HEAD_TIME;
             if((val = attrs.getValue(algorithm.c_str())) != 0)
                 messages.back().header_var(curr_head_piece_).set_algorithms(util::explode(toNative(val),',',true));
             break;
 
         case tag_src_id:
-            curr_head_piece_ = head_src_id;
+            curr_head_piece_ = HEAD_SRC_ID;
             if((val = attrs.getValue(algorithm.c_str())) != 0)
                 messages.back().header_var(curr_head_piece_).set_algorithms(util::explode(toNative(val),',',true));
             break;
 
         case tag_dest_id:
-            curr_head_piece_ = head_dest_id;
+            curr_head_piece_ = HEAD_DEST_ID;
             if((val = attrs.getValue(algorithm.c_str())) != 0)
                 messages.back().header_var(curr_head_piece_).set_algorithms(util::explode(toNative(val),',',true));
             break;
@@ -138,7 +138,7 @@ void goby::acomms::DCCLMessageContentHandler::startElement(
             // legacy
         case tag_destination_var:
             if((val = attrs.getValue(key.c_str())) != 0)
-                messages.back().header_var(head_dest_id).set_name(toNative(val));
+                messages.back().header_var(HEAD_DEST_ID).set_name(toNative(val));
             break;            
     }
 
@@ -225,7 +225,7 @@ void goby::acomms::DCCLMessageContentHandler::endElement(
 
             // legacy
         case tag_destination_var:
-            messages.back().header_var(head_dest_id).set_source_var(trimmed_data);
+            messages.back().header_var(HEAD_DEST_ID).set_source_var(trimmed_data);
             break;
             
             

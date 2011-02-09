@@ -23,6 +23,9 @@ message ModemDataTransmission
   //  optional uint32 max_bytes = 3;
   optional bytes data = 4; // data (encoded as a byte string - eight bits to the character)
   optional uint32 frame = 5 [default = 0];  // frame number if the modem supports multiple frames per packet
+
+
+  extensions 1000 to max;
 }
 
 message ModemDataAck

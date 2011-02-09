@@ -199,7 +199,7 @@ namespace goby
             /// \param xml_schema path to the message_schema.xsd file to validate XML with. if using a relative path this
             /// must be relative to the directory of the xml_file, not the present working directory. if not provided
             /// no validation is done.
-            void add_xml_queue_file(const std::string& xml_file, const std::string xml_schema = "");
+            std::set<unsigned> add_xml_queue_file(const std::string& xml_file, const std::string xml_schema = "");
 
             /// \brief Add more Queues.
             ///
@@ -235,7 +235,6 @@ namespace goby
             
           private:
             std::map<goby::acomms::protobuf::QueueKey, Queue> queues_;
-            //boost::unordered_map<goby::acomms::protobuf::QueueKey, Queue> queues_;
             
             std::ostream* log_;
 
@@ -247,6 +246,10 @@ namespace goby
             unsigned packet_ack_;
 
             protobuf::QueueManagerConfig cfg_;
+            
+            // manipulator multimap (no_encode, no_decode, etc)
+            // maps DCCL ID (unsigned) onto Manipulator enumeration (xml_config.proto)
+            std::multimap<unsigned, goby::acomms::protobuf::MessageFile::Manipulator> manips_;
             
         };
 

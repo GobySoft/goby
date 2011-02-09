@@ -28,7 +28,7 @@ namespace goby
         // smallest allowed id - 0 is reserved for non-existent message
         const unsigned MIN_ID = 1;
         // largest allowed id 
-        const unsigned MAX_ID = 1 << head_dccl_id_size;
+        const unsigned MAX_ID = 1 << HEAD_DCCL_ID_SIZE;
         
         const unsigned MULTIMESSAGE_MASK = 1 << 7;
         const unsigned BROADCAST_MASK = 1 << 6;

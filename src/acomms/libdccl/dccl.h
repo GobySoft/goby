@@ -230,6 +230,21 @@ namespace goby
             /// \param name message name
             /// \return id of message
             unsigned name2id(const std::string& name) {return to_iterator(name)->id();}
+            
+            bool has_manipulator(unsigned id, goby::acomms::protobuf::MessageFile::Manipulator manip)
+            {
+                typedef std::multimap<unsigned, goby::acomms::protobuf::MessageFile::Manipulator>::const_iterator iterator;
+                std::pair<iterator,iterator> p = manips_.equal_range(id);
+
+                for(iterator it = p.first; it != p.second; ++it)
+                {
+                    if(it->second == manip)
+                        return true;
+                }
+
+                return false;
+            }
+            
             //@}
 
 
@@ -409,7 +424,7 @@ namespace goby
             /// simple.xml
             /// \verbinclude dccl_simple/simple.xml
             /// dccl_simple.cpp
-        
+            
             /// \example libdccl/examples/plusnet/plusnet.cpp
             /// nafcon_command.xml
             /// \verbinclude nafcon_command.xml
@@ -482,6 +497,10 @@ namespace goby
 
             // SHA256 hash of the crypto passphrase
             std::string crypto_key_;
+
+            // manipulator multimap (no_encode, no_decode, etc)
+            // maps DCCL ID (unsigned) onto Manipulator enumeration (xml_config.proto)
+            std::multimap<unsigned, goby::acomms::protobuf::MessageFile::Manipulator> manips_;
         };
 
         /// outputs information about all available messages (same as std::string summary())

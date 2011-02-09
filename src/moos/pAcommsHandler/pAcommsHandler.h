@@ -165,16 +165,11 @@ class CpAcommsHandler : public TesMoosApp
     
     void queue_qsize(goby::acomms::protobuf::QueueKey qk, unsigned size);
     void queue_expire(goby::acomms::protobuf::QueueKey key,
-                      const goby::acomms::protobuf::ModemDataExpire & message);
-    
-    // from pAcommsPoller
-    // provides the next highest priority destination for the poller ($CCCYC)
-    void handle_poller_dest_request(const CMOOSMsg& msg);
+                      const goby::acomms::protobuf::ModemDataExpire & message);    
 
     void handle_mac_cycle_update(const CMOOSMsg& msg);
     void handle_ranging_request(const CMOOSMsg& msg);
     void handle_message_push(const CMOOSMsg& msg);
-    void handle_measure_noise_request(const CMOOSMsg& msg);
     
     // from MMDriver
     // publish raw NMEA stream from the modem ($CA)
@@ -184,38 +179,15 @@ class CpAcommsHandler : public TesMoosApp
     // write ping (ranging) responses
     void modem_range_reply(const goby::acomms::protobuf::ModemRangingReply& message);
 
-    ///////
-    /////// FROM MOOSDCCL
-    ///////
-
+ 
     void dccl_inbox(const CMOOSMsg& msg);
-    void dccl_iterate();
-    // void read_dccl_parameters(CProcessConfigReader& processConfigReader);
+    void dccl_loop();
 
     void pack(unsigned dccl_id, goby::acomms::protobuf::ModemDataTransmission* modem_message);
-    void unpack(unsigned dccl_id, const goby::acomms::protobuf::ModemDataTransmission& modem_message, std::set<std::string>previous_hops = std::set<std::string>());
+    void unpack(goby::acomms::protobuf::ModemDataTransmission modem_message);
 
-    void handle_tcp_share(unsigned dccl_id, const goby::acomms::protobuf::ModemDataTransmission& modem_message, std::set<std::string>previous_hops);
-
+    void handle_tcp_share(goby::acomms::protobuf::ModemDataTransmission* modem_message);
     
-    bool encode(unsigned id)
-    { return !(no_encode_.count(id) || all_no_encode_) || on_demand_.count(id); }
-    
-    bool decode(unsigned id)
-    { return !(no_decode_.count(id) || all_no_decode_); }
-    
-    bool on_demand(unsigned id)
-    { return on_demand_.count(id); }
-
-    bool queue(unsigned id)
-    { return !(no_queue_.count(id)); }
-
-    bool loopback(unsigned id)
-    { return loopback_.count(id); }
-        
-    bool tcp_share(unsigned id)
-    { return tcp_share_.count(id); }
-        
     void alg_power_to_dB(goby::acomms::DCCLMessageVal& val_to_mod);
     void alg_dB_to_power(goby::acomms::DCCLMessageVal& val_to_mod);
 
@@ -264,37 +236,15 @@ class CpAcommsHandler : public TesMoosApp
     // manages queues and does additional packing
     goby::acomms::QueueManager queue_manager_;
     
-    // internal driver class that interfaces to the modem
+    // driver class that interfaces to the modem
     goby::acomms::ModemDriverBase* driver_;
 
-    // internal MAC
+    // MAC
     goby::acomms::MACManager mac_;
 
     std::map<std::string, goby::acomms::protobuf::QueueKey> out_moos_var2queue_;
     std::map<goby::acomms::protobuf::QueueKey, std::string> in_queue2moos_var_;
-
-    ///////
-    /////// FROM MOOSDCCL
-    ///////
-        // do not encode for these ids
-    std::set<unsigned> no_encode_;
-    // do not decode for these ids
-    std::set<unsigned> no_decode_;
-    // encode these on demand 
-    std::set<unsigned> on_demand_;
-    // do not queue these ids
-    std::set<unsigned> no_queue_;
-    // loopback these ids
-    std::set<unsigned> loopback_;
-    // tcp share these ids
-    std::set<unsigned> tcp_share_;
     
-    bool all_no_encode_;
-    bool all_no_decode_;    
-    
-    // initial values specified by user to be posted to the MOOSDB
-    std::vector<CMOOSMsg> initializes_;
-
     CMOOSGeodesy geodesy_;
     
     tes::ModemIdConvert modem_lookup_;
@@ -304,12 +254,9 @@ class CpAcommsHandler : public TesMoosApp
     std::map<unsigned, std::map<std::string, std::vector<goby::acomms::DCCLMessageVal> > > repeat_buffer_;
     std::map<unsigned, unsigned> repeat_count_;
 
-//    bool tcp_share_enable_;
-//    unsigned tcp_share_port_;
-    // map ip -> port
-    
     std::map<IP, goby::util::TCPClient*> tcp_share_map_;
     goby::util::TCPServer* tcp_share_server_;
+
 };
 
 inline bool operator<(const IP& a, const IP& b)

@@ -50,14 +50,14 @@ namespace goby
 
         const unsigned DCCL_NUM_HEADER_PARTS = 8;
 
-        enum DCCLHeaderPart { head_ccl_id = 0,
-                              head_dccl_id = 1,
-                              head_time = 2,
-                              head_src_id = 3,
-                              head_dest_id = 4,
-                              head_multimessage_flag = 5,
-                              head_broadcast_flag = 6,
-                              head_unused = 7
+        enum DCCLHeaderPart { HEAD_CCL_ID = 0,
+                              HEAD_DCCL_ID = 1,
+                              HEAD_TIME = 2,
+                              HEAD_SRC_ID = 3,
+                              HEAD_DEST_ID = 4,
+                              HEAD_MULTIMESSAGE_FLAG = 5,
+                              HEAD_BROADCAST_FLAG = 6,
+                              HEAD_UNUSED = 7
         };
     
         const std::string DCCL_HEADER_NAMES [] = { "_ccl_id",
@@ -75,13 +75,13 @@ namespace goby
         }
 
         
-        enum DCCLHeaderBits { head_ccl_id_size = 8,
-                              head_dccl_id_size = 9,
-                              head_time_size = 17,
-                              head_src_id_size = 5,
-                              head_dest_id_size = 5,
-                              head_flag_size = 1,
-                              head_unused_size = 2
+        enum DCCLHeaderBits { HEAD_CCL_ID_SIZE = 8,
+                              HEAD_DCCL_ID_SIZE = 9,
+                              HEAD_TIME_SIZE = 17,
+                              HEAD_SRC_ID_SIZE = 5,
+                              HEAD_DEST_ID_SIZE = 5,
+                              HEAD_FLAG_SIZE = 1,
+                              HEAD_UNUSED_SIZE = 2
         };
 
 

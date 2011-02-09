@@ -77,8 +77,8 @@ void goby::acomms::MMDriver::startup(const protobuf::DriverConfig& cfg)
         driver_cfg_.set_serial_baud(DEFAULT_BAUD);
 
     // support the non-standard Hydroid gateway buoy
-    if(driver_cfg_.HasExtension(protobuf::MMDriverConfig::hydroid_gateway_id))
-        set_hydroid_gateway_prefix(driver_cfg_.GetExtension(protobuf::MMDriverConfig::hydroid_gateway_id));
+    if(driver_cfg_.HasExtension(MicroModemConfig::hydroid_gateway_id))
+        set_hydroid_gateway_prefix(driver_cfg_.GetExtension(MicroModemConfig::hydroid_gateway_id));
 
     
     modem_start(driver_cfg_);
@@ -171,6 +171,12 @@ void goby::acomms::MMDriver::handle_initiate_ranging(protobuf::ModemRangingReque
 {
     switch(request_msg->type())
     {
+        case protobuf::MODEM_ONE_WAY_SYNCHRONOUS:
+        {
+            if(log_) *log_ << warn << group("mm_out") << "Cannot initiate ONE_WAY_SYNCHRONOUS ping manually. You must enable NVRAM cfg \"TOA,1\" and one-way synchronous messages will be reported on all relevant acoustic transactions" << std::endl;
+            break;
+        }
+        
         case protobuf::MODEM_TWO_WAY_PING:
         {
             //$CCMPC,SRC,DEST*CS
@@ -304,15 +310,15 @@ void goby::acomms::MMDriver::write_cfg()
     // reset nvram if requested and not a Hydroid buoy
     // as this resets the baud to 19200 and the buoy
     // requires 4800
-    if(!is_hydroid_gateway_ && driver_cfg_.GetExtension(protobuf::MMDriverConfig::reset_nvram))
+    if(!is_hydroid_gateway_ && driver_cfg_.GetExtension(MicroModemConfig::reset_nvram))
         write_single_cfg("ALL,0");
 
     write_single_cfg("SRC," + as<std::string>(driver_cfg_.modem_id()));
     
     
-    for(int i = 0, n = driver_cfg_.ExtensionSize(protobuf::MMDriverConfig::nvram_cfg); i < n; ++i)
+    for(int i = 0, n = driver_cfg_.ExtensionSize(MicroModemConfig::nvram_cfg); i < n; ++i)
     {
-        write_single_cfg(driver_cfg_.GetExtension(protobuf::MMDriverConfig::nvram_cfg, i));
+        write_single_cfg(driver_cfg_.GetExtension(MicroModemConfig::nvram_cfg, i));
     }    
 }
 
@@ -346,6 +352,7 @@ void goby::acomms::MMDriver::process_receive(const NMEASentence& nmea)
 {
     global_fail_count_ = 0; 
 
+    
     protobuf::ModemMsgBase* this_base_msg = 0;
     static protobuf::ModemMsgBase base_msg;
     static protobuf::ModemDataInit init_msg;
@@ -424,7 +431,7 @@ void goby::acomms::MMDriver::process_receive(const NMEASentence& nmea)
     
     if(log_) *log_ << group("mm_in") << this_base_msg->raw() << "\n"
                    << "^ " << blue << this_base_msg->description() << nocolor << std::endl;
-    
+
     signal_all_incoming(*this_base_msg);
     
     // clear the last send given modem acknowledgement

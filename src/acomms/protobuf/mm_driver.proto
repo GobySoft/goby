@@ -1,10 +1,8 @@
 import "goby/acomms/protobuf/driver_base.proto";
 
-package goby.acomms.protobuf;
-
-message MMDriverConfig
+message MicroModemConfig
 {
-  extend DriverConfig
+  extend goby.acomms.protobuf.DriverConfig 
   {
     // reset all NVRAM settings to factory before
     // setting ours ($CCCFG,ALL,0)
@@ -14,10 +12,11 @@ message MMDriverConfig
     // on startup (e.g. "$CACFG,SRC,1"). Omit the "$CACFG," here.
     // To reinitialize all values to factory settings, send "ALL,0"
     repeated string nvram_cfg = 1001; // e.g. "SRC,3"
-
+    
     // set to a non-zero value to indicate that we are using the hydroid gateway
     // buoy which has a non-standard sentence structure (#M / !M prefixes)
     // *do not set for the normal WHOI Micro-Modem*
     optional uint32 hydroid_gateway_id = 1002 [default = 0]; 
   }
 }
+

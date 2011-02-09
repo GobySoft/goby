@@ -52,6 +52,7 @@
 
 #include "pAcommsHandler_config.pb.h"
 
+
 namespace goby {
     namespace acomms {
         namespace protobuf {
@@ -124,23 +125,11 @@ inline void serialize_for_moos(std::string* out, const google::protobuf::Message
     printer.PrintToString(msg, out);
 }
 
-class FlexOStreamErrorCollector : public google::protobuf::io::ErrorCollector
-{
-  public:
-    void AddError(int line, int column, const std::string& message)
-    {
-        goby::util::glogger() << warn << message << std::endl;
-    }
-    void AddWarning(int line, int column, const std::string& message)
-    {
-        goby::util::glogger() << warn << message << std::endl;        
-    }
-};
 
 inline void parse_for_moos(const std::string& in, google::protobuf::Message* msg)
 {
     google::protobuf::TextFormat::Parser parser;
-    FlexOStreamErrorCollector error_collector;
+    FlexOStreamErrorCollector error_collector(in);
     parser.RecordErrorsTo(&error_collector);
     parser.ParseFromString(in, msg);
 }
@@ -156,15 +145,14 @@ class CpAcommsHandler : public TesMoosApp
     // from TesMoosApp
     void loop();    
     void do_subscriptions();
-    void read_configuration(CProcessConfigReader& config);
-
+    void process_configuration();
 
     // read the internal driver part of the .moos file
-    void read_driver_parameters(CProcessConfigReader& config);
+    // void read_driver_parameters(CProcessConfigReader& config);
     // read the internal mac part of the .moos file
-    void read_internal_mac_parameters(CProcessConfigReader& config);
+    // void read_internal_mac_parameters(CProcessConfigReader& config);
     // read the message queueing (XML / send, receive = ) part of the .moos file
-    void read_queue_parameters(CProcessConfigReader& config);
+    // void read_queue_parameters(CProcessConfigReader& config);
     
     // from QueueManager
     void queue_incoming_data(goby::acomms::protobuf::QueueKey key,
@@ -202,7 +190,7 @@ class CpAcommsHandler : public TesMoosApp
 
     void dccl_inbox(const CMOOSMsg& msg);
     void dccl_iterate();
-    void read_dccl_parameters(CProcessConfigReader& processConfigReader);
+    // void read_dccl_parameters(CProcessConfigReader& processConfigReader);
 
     void pack(unsigned dccl_id, goby::acomms::protobuf::ModemDataTransmission* modem_message);
     void unpack(unsigned dccl_id, const goby::acomms::protobuf::ModemDataTransmission& modem_message, std::set<std::string>previous_hops = std::set<std::string>());
@@ -268,7 +256,7 @@ class CpAcommsHandler : public TesMoosApp
     // ours ($CCCFG,SRC,modem_id_)
     int modem_id_;    
 
-    pAcommsHandlerConfig cfg_;
+    static pAcommsHandlerConfig cfg_;
     
     //DCCL parsing
     goby::acomms::DCCLCodec dccl_;
@@ -277,7 +265,7 @@ class CpAcommsHandler : public TesMoosApp
     goby::acomms::QueueManager queue_manager_;
     
     // internal driver class that interfaces to the modem
-    goby::acomms::MMDriver driver_;
+    goby::acomms::ModemDriverBase* driver_;
 
     // internal MAC
     goby::acomms::MACManager mac_;
@@ -316,8 +304,8 @@ class CpAcommsHandler : public TesMoosApp
     std::map<unsigned, std::map<std::string, std::vector<goby::acomms::DCCLMessageVal> > > repeat_buffer_;
     std::map<unsigned, unsigned> repeat_count_;
 
-    bool tcp_share_enable_;
-    unsigned tcp_share_port_;
+//    bool tcp_share_enable_;
+//    unsigned tcp_share_port_;
     // map ip -> port
     
     std::map<IP, goby::util::TCPClient*> tcp_share_map_;

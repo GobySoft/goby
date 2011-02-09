@@ -19,45 +19,55 @@
 #ifndef TESMOOSAPP20100726H
 #define TESMOOSAPP20100726H
 
+#include "MOOSLIB/MOOSApp.h"
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <map>
 #include <boost/function.hpp>
+#include <boost/algorithm/string.hpp>
 #include <boost/bind.hpp>
+#include <boost/filesystem.hpp>
 
-#include "goby/moos/lib_nurc_moosapp/NurcMoosApp.h"
 #include "dynamic_moos_vars.h"
 #include "goby/util/logger.h"
+#include "tes_moos_app.pb.h"
 
 
-class TesMoosApp : public NurcMoosApp
+namespace goby
+{
+    namespace moos
+    {
+        template<typename App>
+            int run(int argc, char* argv[]);
+    }
+}
+
+
+
+class TesMoosApp : public CMOOSApp
 {   
-  public:
+  protected:
     typedef boost::function<void (const CMOOSMsg& msg)> InboxFunc;
 
-    TesMoosApp();
-    virtual ~TesMoosApp() { }    
+    template<typename ProtobufConfig>
+        explicit TesMoosApp(ProtobufConfig* cfg);
     
-    void outbox(CMOOSMsg& msg)
+  
+    virtual ~TesMoosApp() { }    
+  
+    void publish(CMOOSMsg& msg)
     { m_Comms.Post(msg); }
     
     template<typename T>
-        void outbox(const std::string& key, const T& value)
+        void publish(const std::string& key, const T& value)
     { m_Comms.Notify(key, value); }
     
-    
-    goby::util::FlexOstream& logger() { return goby::util::glogger(); }
     tes::DynamicMOOSVars& dynamic_vars() { return dynamic_vars_; }
     double start_time() const { return start_time_; }
 
     void subscribe(const std::string& var,
-                   InboxFunc handler = InboxFunc(),
-                   int blackout = 0);
-    
-    void subscribe(const std::string& var,
-                   int blackout)
-    { subscribe(var, InboxFunc(), blackout); }
-    
+                   InboxFunc handler,
+                   int blackout = 0);    
         
     template<typename V, typename A1>
         void subscribe(const std::string& var,
@@ -68,25 +78,21 @@ class TesMoosApp : public NurcMoosApp
 
     
     
-  protected:
+    template<typename App>
+        friend int ::goby::moos::run(int argc, char* argv[]);
+    
     virtual void loop() = 0;
     virtual void inbox(const CMOOSMsg& msg) { }    
-    virtual void read_configuration(CProcessConfigReader& config) = 0;
-    virtual void do_subscriptions() = 0;
-    
     
   private:
-// from NurcMoosApp
-    // from NurcMoosApp
-    bool registerMoosVariables ()
-    { do_subscriptions(); return true; }
-    
-    bool readMissionParameters (CProcessConfigReader& processConfigReader);
-
     // from CMOOSApp
     bool Iterate();
+    bool OnStartUp();
+    bool OnConnectToServer();
     bool OnNewMail(MOOSMSG_LIST &NewMail);
-
+    void try_subscribing();
+    void do_subscriptions();
+    
 
   private:
     
@@ -96,16 +102,205 @@ class TesMoosApp : public NurcMoosApp
     // have we read the configuration file fully?
     bool configuration_read_;
     bool cout_cleared_;
-
-    // log file for internal driver
+    
     std::ofstream fout_;
 
     // allows direct reading of newest publish to a given MOOS variable
     tes::DynamicMOOSVars dynamic_vars_;
 
     std::map<std::string, boost::function<void (const CMOOSMsg& msg)> > mail_handlers_;
-    
+
+    // CMOOSApp::OnConnectToServer()
+    bool connected_;
+    // CMOOSApp::OnStartUp()
+    bool started_up_;
+
+    // MOOS Variable name, blackout time
+    std::deque<std::pair<std::string, int> > pending_subscriptions_;
+
+    static std::string mission_file_;
+    static std::string application_name_;
 };
+
+
+template<typename ProtobufConfig>
+TesMoosApp::TesMoosApp(ProtobufConfig* cfg)
+: start_time_(MOOSTime()),
+    configuration_read_(false),
+    cout_cleared_(false),
+    connected_(false),
+    started_up_(false)
+{
+
+    std::cerr << mission_file_ << std::endl;
+    
+    using goby::util::glogger;
+    
+    glogger().set_name(application_name_);
+    glogger().add_stream("verbose", &std::cout);
+    
+    std::string protobuf_text;
+    std::ifstream fin;
+    fin.open(mission_file_.c_str());
+    if(fin.is_open())
+    {
+        std::string line;
+        bool in_process_config = false;
+        while(!getline(fin, line).eof())
+        {
+            if(!boost::algorithm::ifind_first(line, "PROCESSCONFIG").empty() &&
+               !boost::algorithm::ifind_first(line, application_name_).empty())
+            {
+                in_process_config = true;
+            }
+            else if(in_process_config &&
+                    !boost::algorithm::ifind_first(line, "PROCESSCONFIG").empty())
+            {
+                break;
+            }
+
+            if(in_process_config)
+                protobuf_text += line + "\n";
+        }
+            
+        // trim off "ProcessConfig = __ {"
+        protobuf_text.erase(0, protobuf_text.find_first_of('{')+1);
+            
+        // trim off last "}" and anything that follows
+        protobuf_text.erase(protobuf_text.find_last_of('}'));
+            
+        // convert "//" to "#" for comments
+        boost::algorithm::replace_all(protobuf_text, "//", "#");
+            
+        google::protobuf::TextFormat::Parser parser;
+        FlexOStreamErrorCollector error_collector(protobuf_text);
+        parser.RecordErrorsTo(&error_collector);
+        parser.AllowPartialMessage(true);
+        parser.ParseFromString(protobuf_text, cfg);
+        if(error_collector.has_errors())
+            glogger() << die << "fatal configuration errors (see above)" << std::endl;    
+        
+    }
+    else
+    {
+        std::cerr << "failed to open " << mission_file_ << std::endl;
+    }
+    
+    fin.close();
+
+    
+    std::cerr << protobuf_text << std::endl;    
+
+    switch(cfg->common().verbosity())
+    {
+        case TesMoosAppConfig::VERBOSITY_VERBOSE:
+            glogger().add_stream(goby::util::Logger::verbose, &std::cout);
+            break;
+        case TesMoosAppConfig::VERBOSITY_WARN:
+            glogger().add_stream(goby::util::Logger::warn, &std::cout);
+            break;
+        case TesMoosAppConfig::VERBOSITY_DEBUG:
+            glogger().add_stream(goby::util::Logger::debug, &std::cout);
+            break;
+        case TesMoosAppConfig::VERBOSITY_GUI:
+            glogger().add_stream(goby::util::Logger::gui, &std::cout);
+            break;
+        case TesMoosAppConfig::VERBOSITY_QUIET:
+            glogger().add_stream(goby::util::Logger::quiet, &std::cout);
+            break;
+    }
+
+    // TODO: actually do something with the AppTick and CommTick
+    
+    
+/*     // if the user doesn't tell us otherwise, we're talking! */
+/*     std::string verbosity = "verbose"; */
+/*     bool verbosity_success = config.GetConfigurationParam("verbosity", verbosity); */
+/*     glogger().add_stream(verbosity, &std::cout); */
+    
+/*     if(!verbosity_success) */
+/*         glogger() << warn << "verbosity not specified in configuration. using verbose mode." << std::endl; */
+
+/* //    glogger() << die << verbosity << std::endl;     */
+
+    
+/*     bool log = true; */
+/*     config.GetConfigurationParam("log", log); */
+        
+/*     if(log) */
+/*     { */
+/*         std::string log_path = "."; */
+/*         if(!config.GetValue("log_path", log_path) && log) */
+/*         { */
+/*             glogger() << warn << "logging all terminal output to current directory (./). " << "setglobal value log_path for another path " << std::endl; */
+/*         } */
+
+/*         std::string community = "unknown";         */
+/*         config.GetValue("Community", community); */
+        
+/*         if(!log_path.empty()) */
+/*         { */
+/*             using namespace boost::posix_time; */
+/*             std::string file_name = GetAppName() + "_" + community + "_" + to_iso_string(second_clock::universal_time()) + ".txt"; */
+            
+/*             glogger() << "logging output to file: " << file_name << std::endl;   */
+            
+/*             fout_.open(std::string(log_path + "/" + file_name).c_str()); */
+        
+/*             // if fails, try logging to this directory */
+/*             if(!fout_.is_open()) */
+/*             { */
+/*                 fout_.open(std::string("./" + file_name).c_str()); */
+/*                 glogger() << warn << "logging to current directory because given directory is unwritable!" << std::endl; */
+/*             } */
+/*             // if still no go, quit */
+/*             if(!fout_.is_open()) */
+/*                 glogger() << die << "cannot write to current directory, so cannot log." << std::endl; */
+
+/*             glogger().add_stream(goby::util::Logger::verbose, &fout_); */
+/*         }    */
+/*     } */
+
+
+
+    configuration_read_ = true;
+}
+
+
+// designed to run CMOOSApp derived applications
+// using the MOOS "convention" of argv[1] == mission file, argv[2] == alternative name
+template<typename App>
+int goby::moos::run(int argc, char* argv[])
+{
+    boost::filesystem::path launch_path(argv[0]);
+    App::application_name_ = launch_path.filename();
+    App::mission_file_ = App::application_name_ + ".moos";
+
+    switch(argc)
+    {
+        case 3:
+            // command line says don't register with default name
+            App::application_name_ = argv[2];
+        case 2:
+            // command line says don't use default config file
+            App::mission_file_ = argv[1];
+    }
+    
+    try
+    {
+        App app;
+        app.Run(App::application_name_.c_str(), App::mission_file_.c_str());
+    }
+    catch(std::exception& e)
+    {
+        // some other exception
+        std::cerr << "uncaught exception: " << e.what() << std::endl;
+        return 2;
+    }
+
+    return 0;
+}
+
 
 
 #endif

@@ -22,12 +22,10 @@
 #include <boost/foreach.hpp>
 #include <boost/bind.hpp>
 
+using goby::util::glogger;
 
-TesMoosApp::TesMoosApp()
-    : start_time_(MOOSTime()),
-      configuration_read_(false),
-      cout_cleared_(false)
-{}
+std::string TesMoosApp::mission_file_;
+std::string TesMoosApp::application_name_;
 
 bool TesMoosApp::Iterate()
 {
@@ -37,7 +35,7 @@ bool TesMoosApp::Iterate()
     // MOOS has stopped talking by first Iterate()
     if(!cout_cleared_)
     {
-        logger().refresh();
+        glogger().refresh();
         cout_cleared_ = true;
     }
 
@@ -54,77 +52,55 @@ bool TesMoosApp::OnNewMail(MOOSMSG_LIST &NewMail)
         dynamic_vars().update_moos_vars(msg);   
 
         if(msg.GetTime() < start_time_)
-            logger() << warn << "ignoring normal mail from " << msg.GetKey()
+            glogger() << warn << "ignoring normal mail from " << msg.GetKey()
                   << " from before we started (dynamics still updated)"
                   << std::endl;
         else if(mail_handlers_.count(msg.GetKey()))
             mail_handlers_[msg.GetKey()](msg);
         else
-            inbox(msg);    
+            glogger() << die << "received mail that we have no handler for!" << std::endl;
     }
     
     return true;    
 }
 
-bool TesMoosApp::readMissionParameters (CProcessConfigReader& config)
+bool TesMoosApp::OnConnectToServer()
 {
-    logger().set_name(GetAppName());
-
-    // if the user doesn't tell us otherwise, we're talking!
-    std::string verbosity = "verbose";
-    if (!config.GetConfigurationParam("verbosity", verbosity))
-        logger() << warn << "verbosity not specified in configuration. using verbose mode." << std::endl;
-
-    logger().add_stream(verbosity, &std::cout);
-    
-    bool log = true;
-    config.GetConfigurationParam("log", log);
-        
-    if(log)
-    {
-        std::string log_path = ".";
-        if(!config.GetValue("log_path", log_path) && log)
-        {
-            logger() << warn << "logging all terminal output to current directory (./). " << "setglobal value log_path for another path " << std::endl;
-        }
-
-        std::string community = "unknown";        
-        config.GetValue("Community", community);
-        
-        if(!log_path.empty())
-        {
-            using namespace boost::posix_time;
-            std::string file_name = GetAppName() + "_" + community + "_" + to_iso_string(second_clock::universal_time()) + ".txt";
-            
-            logger() << "logging output to file: " << file_name << std::endl;  
-            
-            fout_.open(std::string(log_path + "/" + file_name).c_str());
-        
-            // if fails, try logging to this directory
-            if(!fout_.is_open())
-            {
-                fout_.open(std::string("./" + file_name).c_str());
-                logger() << warn << "logging to current directory because given directory is unwritable!" << std::endl;
-            }
-            // if still no go, quit
-            if(!fout_.is_open())
-                logger() << die << "cannot write to current directory, so cannot log." << std::endl;
-
-            logger().add_stream(goby::util::Logger::verbose, &fout_);
-        }   
-    }
-
-    // virtual subclass method
-    read_configuration(config);
-    configuration_read_ = true;
-    return true;    
+    std::cout << m_MissionReader.GetAppName() << ", connected to server." << std::endl;
+    connected_ = true;
+    try_subscribing();
+    return true;
 }
+
+bool TesMoosApp::OnStartUp()
+{
+    std::cout << m_MissionReader.GetAppName () << ", starting ..." << std::endl;
+    started_up_ = true;
+    try_subscribing();
+    return true;
+}
+
 
 void TesMoosApp::subscribe(const std::string& var,  InboxFunc handler /* = InboxFunc() */, int blackout /* = 0 */ )
 {
-    m_Comms.Register(var, blackout);
-    
+    pending_subscriptions_.push_back(std::make_pair(var, blackout));
+    try_subscribing();
     mail_handlers_[var] = handler ? handler : boost::bind(&TesMoosApp::inbox, this, _1);
 }
 
+void TesMoosApp::try_subscribing()
+{
+    if (connected_ && started_up_)
+        do_subscriptions();
+}
 
+void TesMoosApp::do_subscriptions()
+{
+    while(!pending_subscriptions_.empty())
+    {
+        // variable name, blackout
+        m_Comms.Register(pending_subscriptions_.front().first,
+                         pending_subscriptions_.front().second);
+        pending_subscriptions_.pop_front();
+    }
+}

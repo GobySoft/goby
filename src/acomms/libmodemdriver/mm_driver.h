@@ -25,7 +25,6 @@
 #include "driver_base.h"
 #include "goby/acomms/protobuf/mm_driver.pb.h"
 
-
 namespace goby
 {
     namespace acomms

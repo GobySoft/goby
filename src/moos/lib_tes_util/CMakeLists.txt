@@ -1,5 +1,8 @@
-FILE(GLOB SRC *.cpp *.c)
+file(GLOB PROTOS *.proto)
+protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${PROTOS})
 
-ADD_LIBRARY(tes_util SHARED ${SRC})
+file(GLOB SRC *.cpp *.c)
+add_library(tes_util SHARED ${SRC} ${PROTO_SRCS} ${PROTO_HDRS})
 
-TARGET_LINK_LIBRARIES(tes_util nurc_moosapp goby_logger ${MOOS_LIBRARIES} ${Boost_LIBRARIES})
+TARGET_LINK_LIBRARIES(tes_util
+  goby_logger ${MOOS_LIBRARIES} ${Boost_LIBRARIES} ${PROTOBUF_LIBRARY})

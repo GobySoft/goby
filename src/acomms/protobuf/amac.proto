@@ -29,8 +29,8 @@ enum MACType {
 
 message MACConfig
 {
-  optional MACType type = 1 [default = MAC_NONE];
-  required int32 modem_id = 2;
+  required int32 modem_id = 1;
+  optional MACType type = 2 [default = MAC_NONE];
 
   // only required for MAC_FIXED_DECENTRALIZED and MAC_POLLED, specify templates for MAC_AUTO_DECENTRALIZED below
   repeated Slot cycle = 3;

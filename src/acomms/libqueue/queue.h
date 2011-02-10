@@ -35,6 +35,7 @@
 #include "goby/util/string.h"
 
 #include "goby/acomms/protobuf/queue.pb.h"
+#include "goby/acomms/acomms_helpers.h"
 
 typedef std::list<goby::acomms::protobuf::ModemDataTransmission>::iterator messages_it;
 typedef std::multimap<unsigned, messages_it>::iterator waiting_for_ack_it;
@@ -74,8 +75,6 @@ namespace goby
             size_t size() const 
             { return messages_.size(); }
     
-            bool on_demand() const
-            { return on_demand_; }
 
             boost::posix_time::ptime last_send_time() const
             { return last_send_time_; }
@@ -86,13 +85,7 @@ namespace goby
                     ? goby::util::as<boost::posix_time::ptime>(messages_.back().base().time())
                     : boost::posix_time::ptime();
             }
-        
-            void set_on_demand(bool b)
-            { on_demand_ = b; }
-
-            void set_on_demand(const std::string& s)
-            { set_on_demand(util::string2bool(s)); }
-
+            
             const protobuf::QueueConfig cfg() const
             { return cfg_; }
         
@@ -105,8 +98,6 @@ namespace goby
           private:
             const protobuf::QueueConfig cfg_;
         
-            bool on_demand_;
-    
             boost::posix_time::ptime last_send_time_;    
             
             std::ostream* log_;

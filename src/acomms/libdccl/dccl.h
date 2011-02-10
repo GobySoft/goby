@@ -36,6 +36,8 @@
 #include "message_val.h"
 #include "dccl_exception.h"
 #include "goby/acomms/protobuf/dccl.pb.h"
+#include "goby/acomms/protobuf/modem_message.pb.h"
+#include "goby/acomms/acomms_helpers.h"
 
 namespace goby
 {
@@ -230,6 +232,8 @@ namespace goby
             /// \param name message name
             /// \return id of message
             unsigned name2id(const std::string& name) {return to_iterator(name)->id();}
+            
+            
             //@}
 
 
@@ -403,13 +407,14 @@ namespace goby
             // this is only used if one needs more control than DCCLCodec
             // provides
             std::vector<DCCLMessage>& messages() {return messages_;}
-        
+
+            const ManipulatorManager& manip_manager() const { return manip_manager_; }
 
             /// \example libdccl/examples/dccl_simple/dccl_simple.cpp
             /// simple.xml
             /// \verbinclude dccl_simple/simple.xml
             /// dccl_simple.cpp
-        
+            
             /// \example libdccl/examples/plusnet/plusnet.cpp
             /// nafcon_command.xml
             /// \verbinclude nafcon_command.xml
@@ -482,8 +487,11 @@ namespace goby
 
             // SHA256 hash of the crypto passphrase
             std::string crypto_key_;
+            
+            ManipulatorManager manip_manager_;    
+            
         };
-
+        
         /// outputs information about all available messages (same as std::string summary())
         std::ostream& operator<< (std::ostream& out, const DCCLCodec& d);
 

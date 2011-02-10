@@ -159,6 +159,7 @@ namespace goby
 
             /// \return human readable summary of all loaded %queues
             std::string summary() const;
+            const ManipulatorManager& manip_manager() const { return manip_manager_; }
 
             
             
@@ -188,18 +189,13 @@ namespace goby
             boost::signal<void (protobuf::QueueKey key, unsigned size)> signal_queue_size_change;
             
           private:
-            /// \brief Set a queue to call the data_on_demand callback every time data is request (basically forwards the %modem data_request).
-            ///
-            /// \param key QueueKey that references the %queue for which to enable the <tt>on demand</tt>  callback.
-            void set_on_demand(protobuf::QueueKey key);
-
             /// \brief Add more %queues by configuration XML files (typically contained in DCCL message XML files).
             ///
             /// \param xml_file path to the XML file to parse and add to this codec.
             /// \param xml_schema path to the message_schema.xsd file to validate XML with. if using a relative path this
             /// must be relative to the directory of the xml_file, not the present working directory. if not provided
             /// no validation is done.
-            void add_xml_queue_file(const std::string& xml_file, const std::string xml_schema = "");
+            std::set<unsigned> add_xml_queue_file(const std::string& xml_file, const std::string xml_schema = "");
 
             /// \brief Add more Queues.
             ///
@@ -235,7 +231,6 @@ namespace goby
             
           private:
             std::map<goby::acomms::protobuf::QueueKey, Queue> queues_;
-            //boost::unordered_map<goby::acomms::protobuf::QueueKey, Queue> queues_;
             
             std::ostream* log_;
 
@@ -248,6 +243,7 @@ namespace goby
 
             protobuf::QueueManagerConfig cfg_;
             
+            ManipulatorManager manip_manager_;
         };
 
         /// outputs information about all available messages (same as std::string summary())

@@ -67,6 +67,12 @@ goby::acomms::MMDriver::~MMDriver()
 
 void goby::acomms::MMDriver::startup(const protobuf::DriverConfig& cfg)
 {
+    if(startup_done_)
+    {
+        if(log_) *log_ << warn << group("mm_out") << "startup() called but driver is already started." << std::endl;
+        return;
+    }
+        
     // store a copy for us later
     driver_cfg_ = cfg;
     

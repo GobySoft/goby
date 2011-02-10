@@ -139,6 +139,8 @@ namespace goby
     
             // entropy value used to determine how the "blank" slot moves around relative to the values of the modem ids. determining the proper value for this is a bit of work and i will detail when i have time.
             enum { ENTROPY = 5 };
+
+            bool startup_done_;
         };
 
         ///

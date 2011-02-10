@@ -29,7 +29,6 @@
 #include "goby/util/string.h"
 #include "goby/acomms/protobuf/acomms_proto_helpers.h"
 
-
 using goby::util::goby_time;
 using goby::util::as;
 
@@ -42,7 +41,7 @@ goby::acomms::DCCLCodec::DCCLCodec(std::ostream* log /* =0 */)
 { }
 
 std::set<unsigned> goby::acomms::DCCLCodec::add_xml_message_file(const std::string& xml_file,
-                                                         const std::string xml_schema)
+                                                                 const std::string xml_schema)
 {
     size_t begin_size = messages_.size();
             
@@ -253,9 +252,15 @@ std::vector<goby::acomms::DCCLMessage>::iterator goby::acomms::DCCLCodec::to_ite
 
 
 void goby::acomms::DCCLCodec::encode_private(std::vector<DCCLMessage>::iterator it,
-                                     std::string& out,
-                                     std::map<std::string, std::vector<DCCLMessageVal> > in /* copy */)
+                                             std::string& out,
+                                             std::map<std::string, std::vector<DCCLMessageVal> > in /* copy */)
 {
+    if(manip_manager_.has(it->id(), protobuf::MessageFile::NO_ENCODE))
+    {
+        if(log_) *log_ << group("dccl_enc") << "not encoding DCCL ID: " << it->id() << "; NO_ENCODE manipulator is set" << std::endl;
+        throw(dccl_exception("NO_ENCODE manipulator set"));
+    }
+    
     if(log_)
     {
         *log_ << group("dccl_enc") << "starting encode for " << it->name() << std::endl;        
@@ -293,8 +298,16 @@ void goby::acomms::DCCLCodec::encode_private(std::vector<DCCLMessage>::iterator 
 
 std::vector<goby::acomms::DCCLMessage>::iterator goby::acomms::DCCLCodec::decode_private(std::string in,
                                                                                          std::map<std::string, std::vector<DCCLMessageVal> >& out)
-{\
-    std::vector<DCCLMessage>::iterator it = to_iterator(unsigned(DCCLHeaderDecoder(in)[head_dccl_id]));
+{
+    std::vector<DCCLMessage>::iterator it = to_iterator(unsigned(DCCLHeaderDecoder(in)[HEAD_DCCL_ID]));
+
+    if(manip_manager_.has(it->id(), protobuf::MessageFile::NO_DECODE))
+    {
+        if(log_) *log_ << group("dccl_enc") << "not decoding DCCL ID: " << it->id() << "; NO_DECODE manipulator is set" << std::endl;
+        throw(dccl_exception("NO_DECODE manipulator set"));
+    }
+
+
     if(log_) *log_ << group("dccl_dec") << "starting decode for " << it->name() << std::endl;        
     
     // 4. hex decode
@@ -343,9 +356,9 @@ void goby::acomms::DCCLCodec::encode_private(std::vector<DCCLMessage>::iterator 
 
     out_msg->set_data(out);
     
-    DCCLMessageVal& t = head_dec[head_time];
-    DCCLMessageVal& src = head_dec[head_src_id];
-    DCCLMessageVal& dest = head_dec[head_dest_id];
+    DCCLMessageVal& t = head_dec[HEAD_TIME];
+    DCCLMessageVal& src = head_dec[HEAD_SRC_ID];
+    DCCLMessageVal& dest = head_dec[HEAD_DEST_ID];
 
     out_msg->mutable_base()->set_time(goby::util::as<std::string>(goby::util::unix_double2ptime(double(t))));
     out_msg->mutable_base()->set_src(long(src));
@@ -417,9 +430,17 @@ void goby::acomms::DCCLCodec::process_cfg()
     messages_.clear();
     name2messages_.clear();
     id2messages_.clear();
-    
+    manip_manager_.clear();
+
     for(int i = 0, n = cfg_.message_file_size(); i < n; ++i)
-        add_xml_message_file(cfg_.message_file(i).path(), cfg_.schema());
+    {
+        std::set<unsigned> new_ids = add_xml_message_file(cfg_.message_file(i).path(), cfg_.schema());
+        BOOST_FOREACH(unsigned new_id, new_ids)
+        {
+            for(int j = 0, o = cfg_.message_file(i).manipulator_size(); j < o; ++j)
+                manip_manager_.add(new_id, cfg_.message_file(i).manipulator(j));
+        }
+    }
     
     using namespace CryptoPP;
     

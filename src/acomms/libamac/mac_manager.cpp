@@ -29,6 +29,7 @@
 
 #include "goby/acomms/libdccl/dccl_constants.h"
 #include "goby/util/logger.h"
+#include "goby/acomms/acomms_helpers.h"
 
 #include "mac_manager.h"
 
@@ -40,7 +41,8 @@ goby::acomms::MACManager::MACManager(std::ostream* log /* =0 */)
     : log_(log),
       timer_(io_),
       timer_is_running_(false),
-      current_slot_(slot_order_.begin())
+      current_slot_(slot_order_.begin()),
+      startup_done_(false)
 { }
 
 goby::acomms::MACManager::~MACManager()
@@ -69,6 +71,12 @@ void goby::acomms::MACManager::stop_timer()
 
 void goby::acomms::MACManager::startup(const protobuf::MACConfig& cfg)
 {
+    if(startup_done_)
+    {
+        if(log_) *log_ << warn << group("mm_out") << "startup() called but driver is already started." << std::endl;
+        return;
+    }
+    
     // create a copy for us
     cfg_ = cfg;
     
@@ -132,6 +140,8 @@ void goby::acomms::MACManager::startup(const protobuf::MACConfig& cfg)
     
     if(!slot_order_.empty())
         restart_timer();
+
+    startup_done_ = true;
 }
 
 void goby::acomms::MACManager::shutdown()
@@ -141,7 +151,7 @@ void goby::acomms::MACManager::shutdown()
     slot_order_.clear();
     id2slot_.clear();
     current_slot_ = slot_order_.begin();
-    
+    startup_done_ = false;
 }
 
 

@@ -1,4 +1,4 @@
-// copyright 2009 t. schneider tes@mit.edu
+// copyright 2009-2011 t. schneider tes@mit.edu
 // 
 // this file is part of goby-acomms, a collection of libraries for acoustic underwater networking
 //
@@ -22,13 +22,7 @@
 #include <limits>
 #include <bitset>
 
-#include <crypto++/filters.h>
-#include <crypto++/hex.h>
-
-#include "goby/acomms/protobuf/modem_message.pb.h"
 #include "goby/core/core_constants.h"
-
-#include <boost/bind.hpp>
 
 namespace goby
 {
@@ -50,14 +44,14 @@ namespace goby
 
         const unsigned DCCL_NUM_HEADER_PARTS = 8;
 
-        enum DCCLHeaderPart { head_ccl_id = 0,
-                              head_dccl_id = 1,
-                              head_time = 2,
-                              head_src_id = 3,
-                              head_dest_id = 4,
-                              head_multimessage_flag = 5,
-                              head_broadcast_flag = 6,
-                              head_unused = 7
+        enum DCCLHeaderPart { HEAD_CCL_ID = 0,
+                              HEAD_DCCL_ID = 1,
+                              HEAD_TIME = 2,
+                              HEAD_SRC_ID = 3,
+                              HEAD_DEST_ID = 4,
+                              HEAD_MULTIMESSAGE_FLAG = 5,
+                              HEAD_BROADCAST_FLAG = 6,
+                              HEAD_UNUSED = 7
         };
     
         const std::string DCCL_HEADER_NAMES [] = { "_ccl_id",
@@ -75,53 +69,18 @@ namespace goby
         }
 
         
-        enum DCCLHeaderBits { head_ccl_id_size = 8,
-                              head_dccl_id_size = 9,
-                              head_time_size = 17,
-                              head_src_id_size = 5,
-                              head_dest_id_size = 5,
-                              head_flag_size = 1,
-                              head_unused_size = 2
+        enum DCCLHeaderBits { HEAD_CCL_ID_SIZE = 8,
+                              HEAD_DCCL_ID_SIZE = 9,
+                              HEAD_TIME_SIZE = 17,
+                              HEAD_SRC_ID_SIZE = 5,
+                              HEAD_DEST_ID_SIZE = 5,
+                              HEAD_FLAG_SIZE = 1,
+                              HEAD_UNUSED_SIZE = 2
         };
 
 
         
-            
-        inline void hex_decode(const std::string& in, std::string* out)
-        {
-            CryptoPP::HexDecoder hex(new CryptoPP::StringSink(*out));
-            hex.Put((byte*)in.c_str(), in.size());
-            hex.MessageEnd();
-        }
-
-        inline std::string hex_decode(const std::string& in)
-        {
-            std::string out;
-            hex_decode(in, &out);
-            return out;
-        }
-    
-        inline void hex_encode(const std::string& in, std::string* out)
-        {
-            const bool uppercase = false;
-            CryptoPP::HexEncoder hex(new CryptoPP::StringSink(*out), uppercase);
-            hex.Put((byte*)in.c_str(), in.size());
-            hex.MessageEnd();
-        }
-
-        inline std::string hex_encode(const std::string& in)
-        {
-            std::string out;
-            hex_encode(in, &out);
-            return out;
-        }
-        
-        // provides stream output operator for Google Protocol Buffers Message 
-        inline std::ostream& operator<<(std::ostream& out, const google::protobuf::Message& msg)
-        {
-            return (out << "[[" << msg.GetDescriptor()->name() <<"]] " << msg.DebugString());
-        }        
-        
+                
         
     }
 }

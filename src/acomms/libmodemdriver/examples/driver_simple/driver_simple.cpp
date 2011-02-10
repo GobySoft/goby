@@ -57,7 +57,7 @@ int main(int argc, char* argv[])
 
     // set the source id of this modem
     std::string our_id = argv[2];
-    cfg.AddExtension(goby::acomms::protobuf::MMDriverConfig::nvram_cfg, "SRC," + our_id);
+    cfg.AddExtension(MicroModemConfig::nvram_cfg, "SRC," + our_id);
     
     // for handling $CADRQ
     goby::acomms::connect(&mm_driver.signal_receive, &handle_data_receive);

@@ -94,22 +94,29 @@ void goby::acomms::QueueManager::add_queue(const protobuf::QueueConfig& cfg)
     
 }
 
-void goby::acomms::QueueManager::add_xml_queue_file(const std::string& xml_file,
-                                                    const std::string xml_schema)
+std::set<unsigned> goby::acomms::QueueManager::add_xml_queue_file(const std::string& xml_file,
+                                                                  const std::string xml_schema)
 {
     std::vector<protobuf::QueueConfig> cfgs;
-    
+
     // Register handlers for XML parsing
     QueueContentHandler content(cfgs);
     QueueErrorHandler error;
     // instantiate a parser for the xml message files
     XMLParser parser(content, error);
-    // parse(file, [schema])
-        
-    parser.parse(xml_file, xml_schema);
+    // parse(file, [schema])    
 
+    
+    std::set<unsigned> added_ids;
+    
+    parser.parse(xml_file, xml_schema);
     BOOST_FOREACH(const protobuf::QueueConfig& c, cfgs)
+    {
         add_queue(c);
+        added_ids.insert(c.id());
+    }
+    
+    return added_ids;
 }
 
 void goby::acomms::QueueManager::do_work()
@@ -139,8 +146,21 @@ void goby::acomms::QueueManager::push_message(protobuf::QueueKey key, const prot
 // we have a queue with this key, so push message for sending
     else if(queues_.count(key))
     {
-        queues_[key].push_message(data_msg);
-        qsize(&queues_[key]);
+        if(key.type() == protobuf::QUEUE_DCCL && manip_manager_.has(key.id(), protobuf::MessageFile::NO_QUEUE))
+        {
+            if(log_) *log_ << group("q_out") << "not queuing DCCL ID: " << key.id() << "; NO_QUEUE manipulator is set" << std::endl;
+        }
+        else
+        {
+            queues_[key].push_message(data_msg);
+            qsize(&queues_[key]);
+        }        
+
+        if(key.type() == protobuf::QUEUE_DCCL && manip_manager_.has(key.id(), protobuf::MessageFile::LOOPBACK))
+        {
+            if(log_) *log_ << group("q_out") << "LOOPBACK manipulator set, sending back to decoder" << std::endl;
+            handle_modem_receive(data_msg);
+        }        
     }
     else
     {
@@ -150,19 +170,6 @@ void goby::acomms::QueueManager::push_message(protobuf::QueueKey key, const prot
     }
 }
 
-void goby::acomms::QueueManager::set_on_demand(protobuf::QueueKey key)
-{
-    if(queues_.count(key))
-    {
-        queues_[key].set_on_demand(true);
-    }    
-    else
-    {
-        std::stringstream ss;
-        ss << "no queue for key: " << key;
-        throw queue_exception(ss.str());
-    }
-}
 
 std::string goby::acomms::QueueManager::summary() const
 {
@@ -213,7 +220,7 @@ void goby::acomms::QueueManager::handle_modem_data_request(const protobuf::Modem
 
 bool goby::acomms::QueueManager::stitch_recursive(const protobuf::ModemDataRequest& request_msg, protobuf::ModemDataTransmission* complete_data_msg, Queue* winning_queue)
 {
-    const unsigned CCL_ID_BYTES = head_ccl_id_size / BITS_IN_BYTE;
+    const unsigned CCL_ID_BYTES = HEAD_CCL_ID_SIZE / BITS_IN_BYTE;
     
     // new user frame (e.g. 32B)
     const protobuf::ModemDataTransmission& next_data_msg = winning_queue->give_data(request_msg);
@@ -286,17 +293,17 @@ void goby::acomms::QueueManager::replace_header(bool is_last_user_frame, protobu
     DCCLHeaderDecoder head_decoder(new_data);
 
     // don't put the multimessage flag on the last user-frame
-    head_decoder[head_multimessage_flag] =
+    head_decoder[HEAD_MULTIMESSAGE_FLAG] =
         (!is_last_user_frame) ? true : false;
     // put the broadcast flag on if needed 
-    head_decoder[head_broadcast_flag] =
+    head_decoder[HEAD_BROADCAST_FLAG] =
         (next_data_msg.base().dest() == BROADCAST_ID) ? true : false;
 
     // re-encode the header
     DCCLHeaderEncoder head_encoder(head_decoder.get());
 
     // replace the header without the CCL ID
-    const unsigned CCL_ID_BYTES = head_ccl_id_size / BITS_IN_BYTE;
+    const unsigned CCL_ID_BYTES = HEAD_CCL_ID_SIZE / BITS_IN_BYTE;
     data_msg->mutable_data()->replace(data_msg->data().size()-new_data.size()+CCL_ID_BYTES,
                                       head_encoder.str().size()-CCL_ID_BYTES,
                                       head_encoder.str().substr(CCL_ID_BYTES));
@@ -333,9 +340,9 @@ goby::acomms::Queue* goby::acomms::QueueManager::find_next_sender(const protobuf
         Queue& oq = it->second;
         
         // encode on demand
-        if(oq.on_demand() &&
-           (!oq.size() || oq.newest_msg_time() + ON_DEMAND_SKEW < util::goby_time())
-            )
+        if(oq.cfg().type() == protobuf::QUEUE_DCCL &&
+           manip_manager_.has(oq.cfg().id(), protobuf::MessageFile::ON_DEMAND) &&
+           (!oq.size() || oq.newest_msg_time() + ON_DEMAND_SKEW < util::goby_time()))
         {
             protobuf::ModemDataTransmission data_msg;
             signal_data_on_demand(it->first, request_msg, &data_msg);
@@ -445,7 +452,7 @@ void goby::acomms::QueueManager::handle_modem_receive(const protobuf::ModemDataT
         return;
     
     DCCLHeaderDecoder head_decoder(data);
-    int ccl_id = head_decoder[head_ccl_id];
+    int ccl_id = head_decoder[HEAD_CCL_ID];
 
     // check for queue_dccl type
     if(ccl_id == DCCL_CCL_HEADER)
@@ -477,9 +484,9 @@ bool goby::acomms::QueueManager::unstitch_recursive(std::string* data, protobuf:
 {
     unsigned original_dest = data_msg->base().dest();
     DCCLHeaderDecoder head_decoder(*data);
-    bool multimessage_flag = head_decoder[head_multimessage_flag];
-    bool broadcast_flag = head_decoder[head_broadcast_flag];
-    unsigned dccl_id = head_decoder[head_dccl_id];
+    bool multimessage_flag = head_decoder[HEAD_MULTIMESSAGE_FLAG];
+    bool broadcast_flag = head_decoder[HEAD_BROADCAST_FLAG];
+    unsigned dccl_id = head_decoder[HEAD_DCCL_ID];
     
     // test multimessage bit
     if(multimessage_flag)
@@ -503,8 +510,8 @@ bool goby::acomms::QueueManager::unstitch_recursive(std::string* data, protobuf:
     }
     
     // reset these flags
-    head_decoder[head_multimessage_flag] = false;
-    head_decoder[head_broadcast_flag] = false;
+    head_decoder[HEAD_MULTIMESSAGE_FLAG] = false;
+    head_decoder[HEAD_BROADCAST_FLAG] = false;
     
     DCCLHeaderEncoder head_encoder(head_decoder.get());
     data_msg->mutable_data()->replace(0, DCCL_NUM_HEADER_BYTES, head_encoder.str());
@@ -573,9 +580,17 @@ void goby::acomms::QueueManager::process_cfg()
 {
     queues_.clear();
     waiting_for_ack_.clear();
+    manip_manager_.clear();
     
     for(int i = 0, n = cfg_.message_file_size(); i < n; ++i)
-        add_xml_queue_file(cfg_.message_file(i).path(), cfg_.schema());
+    {
+        std::set<unsigned> new_ids = add_xml_queue_file(cfg_.message_file(i).path(), cfg_.schema());
+        BOOST_FOREACH(unsigned new_id, new_ids)
+        {
+            for(int j = 0, o = cfg_.message_file(i).manipulator_size(); j < o; ++j)
+                manip_manager_.add(new_id, cfg_.message_file(i).manipulator(j));
+        }
+    }
     
     for(int i = 0, n = cfg_.queue_cfg_size(); i < n; ++i)
         add_queue(cfg_.queue_cfg(i));

@@ -3,24 +3,25 @@ import "goby/acomms/protobuf/driver_base.proto";
 import "goby/acomms/protobuf/queue.proto";
 import "goby/acomms/protobuf/amac.proto";
 import "goby/acomms/protobuf/dccl.proto";
+import "goby/acomms/protobuf/modem_message.proto";
 
 message pAcommsHandlerConfig
 {
-  optional TesMoosAppConfig common = 1;
+  optional TesMoosAppConfig common = 1; // see tes_moos_app.proto
   
   // driver
   enum DriverType { DRIVER_NONE = 1; DRIVER_WHOI_MICROMODEM = 2; }
   optional DriverType driver_type = 2 [default = DRIVER_NONE];
-  optional goby.acomms.protobuf.DriverConfig driver_cfg = 3;
+  optional goby.acomms.protobuf.DriverConfig driver_cfg = 3; // see driver_base.proto & mm_driver.proto
 
   // amac
-  optional goby.acomms.protobuf.MACConfig mac_cfg = 4;
+  optional goby.acomms.protobuf.MACConfig mac_cfg = 4; // see amac.proto
   
   // for queue
-  optional goby.acomms.protobuf.QueueManagerConfig queue_cfg = 5;
+  optional goby.acomms.protobuf.QueueManagerConfig queue_cfg = 5; // see queue.proto
 
   // for dccl
-  optional goby.acomms.protobuf.DCCLConfig dccl_cfg = 6;  
+  optional goby.acomms.protobuf.DCCLConfig dccl_cfg = 6;  // see dccl.proto
 
   // unique identifying integer (1-31) for this vehicle's modem
   // setting this will set the modem_id for all the components of goby-acomms
@@ -33,6 +34,13 @@ message pAcommsHandlerConfig
 
   optional bool tcp_share_enable = 200 [default = false];
   optional uint32 tcp_share_port = 201 [default = 11000];
-  repeated string tcp_share_to_ip = 202;
+  repeated string tcp_share_to_ip = 202; // e.g. "192.168.1.42:11000"
 }
 
+message pAcommsHandlerExtensions
+{
+  extend goby.acomms.protobuf.ModemDataTransmission
+  {
+    repeated string seen_ip = 1000;
+  }
+}

@@ -1272,11 +1272,11 @@ vector< boost::shared_ptr<DCCLMessageVar> > CommandGui::fetch_message_vars(DCCLM
     vector< boost::shared_ptr<DCCLMessageVar> > message_vars;
 
     // set src_id and dest_id, all the rest should be automatic
-    if(msg->header()[goby::acomms::head_src_id]->name() != goby::acomms::DCCL_HEADER_NAMES[goby::acomms::head_src_id])
-        message_vars.push_back(msg->header()[goby::acomms::head_src_id]);
+    if(msg->header()[goby::acomms::HEAD_SRC_ID]->name() != goby::acomms::DCCL_HEADER_NAMES[goby::acomms::HEAD_SRC_ID])
+        message_vars.push_back(msg->header()[goby::acomms::HEAD_SRC_ID]);
 
-    if(msg->header()[goby::acomms::head_dest_id]->name() != goby::acomms::DCCL_HEADER_NAMES[goby::acomms::head_dest_id])
-        message_vars.push_back(msg->header()[goby::acomms::head_dest_id]);
+    if(msg->header()[goby::acomms::HEAD_DEST_ID]->name() != goby::acomms::DCCL_HEADER_NAMES[goby::acomms::HEAD_DEST_ID])
+        message_vars.push_back(msg->header()[goby::acomms::HEAD_DEST_ID]);
     
     message_vars.insert(message_vars.end(),
                         msg->layout().begin(),

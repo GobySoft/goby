@@ -104,7 +104,7 @@ int main(int argc, char* argv[])
     //
     goby::acomms::protobuf::DriverConfig driver_cfg;
     driver_cfg.set_serial_port(serial_port);
-    driver_cfg.AddExtension(goby::acomms::protobuf::MMDriverConfig::nvram_cfg, "SRC," + as<std::string>(my_id));
+    driver_cfg.AddExtension(MicroModemConfig::nvram_cfg, "SRC," + as<std::string>(my_id));
 
     //
     // Initiate medium access control (libamac)

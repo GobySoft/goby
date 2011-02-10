@@ -118,6 +118,8 @@ class TesMoosApp : public CMOOSApp
     // MOOS Variable name, blackout time
     std::deque<std::pair<std::string, int> > pending_subscriptions_;
 
+    TesMoosAppConfig common_cfg_;
+    
     static std::string mission_file_;
     static std::string application_name_;
 };
@@ -131,14 +133,14 @@ TesMoosApp::TesMoosApp(ProtobufConfig* cfg)
     connected_(false),
     started_up_(false)
 {
-
-    std::cerr << mission_file_ << std::endl;
-    
     using goby::util::glogger;
     
     glogger().set_name(application_name_);
     glogger().add_stream("verbose", &std::cout);
-    
+
+    //
+    // READ CONFIGURATION
+    //
     std::string protobuf_text;
     std::ifstream fin;
     fin.open(mission_file_.c_str());
@@ -188,9 +190,113 @@ TesMoosApp::TesMoosApp(ProtobufConfig* cfg)
     
     fin.close();
 
-    
-    std::cerr << protobuf_text << std::endl;    
+    CMOOSFileReader moos_file_reader;
+    moos_file_reader.SetFile(mission_file_);
 
+    const google::protobuf::Descriptor* desc = cfg->common().GetDescriptor();
+    const google::protobuf::Reflection* refl = cfg->common().GetReflection();
+    for(int i = 0, n = desc->field_count(); i < n; ++i)
+    {
+        const google::protobuf::FieldDescriptor* field_desc = desc->field(i);
+        
+        std::string moos_global = field_desc->options().GetExtension(::moos_global);
+        
+        switch(field_desc->cpp_type())
+        {
+            case google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE:
+                break;    
+                    
+            case google::protobuf::FieldDescriptor::CPPTYPE_INT32:
+            {
+                int result;
+                if(moos_file_reader.GetValue(moos_global, result))
+                    refl->SetInt32(cfg->mutable_common(), field_desc, result);
+                break;
+            }
+            
+            case google::protobuf::FieldDescriptor::CPPTYPE_INT64:
+            {
+                int result;
+                if(moos_file_reader.GetValue(moos_global, result))
+                    refl->SetInt64(cfg->mutable_common(), field_desc, result);
+                break;
+            }
+
+            case google::protobuf::FieldDescriptor::CPPTYPE_UINT32:
+            {
+                unsigned result;
+                if(moos_file_reader.GetValue(moos_global, result))
+                    refl->SetUInt32(cfg->mutable_common(), field_desc, result);
+                break;
+            }
+
+            case google::protobuf::FieldDescriptor::CPPTYPE_UINT64:
+            {
+                unsigned result;
+                if(moos_file_reader.GetValue(moos_global, result))
+                    refl->SetUInt64(cfg->mutable_common(), field_desc, result);
+                break;
+            }
+                        
+            case google::protobuf::FieldDescriptor::CPPTYPE_BOOL:
+            {
+                bool result;
+                if(moos_file_reader.GetValue(moos_global, result))
+                    refl->SetBool(cfg->mutable_common(), field_desc, result);
+                break;
+            }
+                    
+            case google::protobuf::FieldDescriptor::CPPTYPE_STRING:
+            {
+                std::string result;
+                if(moos_file_reader.GetValue(moos_global, result))
+                    refl->SetString(cfg->mutable_common(), field_desc, result);
+                break;
+            }
+                
+            case google::protobuf::FieldDescriptor::CPPTYPE_FLOAT:
+            {
+                float result;
+                if(moos_file_reader.GetValue(moos_global, result))
+                    refl->SetFloat(cfg->mutable_common(), field_desc, result);
+                break;
+            }
+
+            case google::protobuf::FieldDescriptor::CPPTYPE_DOUBLE:
+            {
+                double result;
+                if(moos_file_reader.GetValue(moos_global, result))
+                    refl->SetDouble(cfg->mutable_common(), field_desc, result);
+                break;
+            }
+                
+            case google::protobuf::FieldDescriptor::CPPTYPE_ENUM:
+            {
+                std::string result;
+                if(moos_file_reader.GetValue(moos_global, result))
+                {                
+                    const google::protobuf::EnumValueDescriptor* enum_desc =
+                        refl->GetEnum(cfg->common(), field_desc)->type()->FindValueByName(result);
+                    if(!enum_desc)
+                        throw(std::runtime_error(std::string("invalid enumeration " +
+                                                             result + " for field " +
+                                                             field_desc->name())));
+                    
+                    refl->SetEnum(cfg->mutable_common(), field_desc, enum_desc);
+                }
+                break;
+            }
+        }
+    }    
+
+    // keep a copy for ourselves
+    common_cfg_ = cfg->common();
+    configuration_read_ = true;
+    
+
+    //
+    // PROCESS CONFIGURATION
+    //
     switch(cfg->common().verbosity())
     {
         case TesMoosAppConfig::VERBOSITY_VERBOSE:
@@ -208,62 +314,39 @@ TesMoosApp::TesMoosApp(ProtobufConfig* cfg)
         case TesMoosAppConfig::VERBOSITY_QUIET:
             glogger().add_stream(goby::util::Logger::quiet, &std::cout);
             break;
+    }    
+
+
+    if(cfg->common().log())
+    {
+        if(!cfg->common().has_log_path())
+        {
+            glogger() << warn << "logging all terminal output to default directory (" << cfg->common().log_path() << ")." << "set log_path for another path " << std::endl;
+        }
+
+        if(!cfg->common().log_path().empty())
+        {
+            using namespace boost::posix_time;
+            std::string file_name = application_name_ + "_" + cfg->common().community() + "_" + to_iso_string(second_clock::universal_time()) + ".txt";
+            
+            glogger() << "logging output to file: " << file_name << std::endl;
+            
+            fout_.open(std::string(cfg->common().log_path() + "/" + file_name).c_str());
+        
+            // if fails, try logging to this directory
+            if(!fout_.is_open())
+            {
+                fout_.open(std::string("./" + file_name).c_str());
+                glogger() << warn << "logging to current directory because given directory is unwritable!" << std::endl;
+            }
+            // if still no go, quit
+            if(!fout_.is_open())
+                glogger() << die << "cannot write to current directory, so cannot log." << std::endl;
+
+            glogger().add_stream(goby::util::Logger::verbose, &fout_);
+        }
     }
 
-    // TODO: actually do something with the AppTick and CommTick
-    
-    
-/*     // if the user doesn't tell us otherwise, we're talking! */
-/*     std::string verbosity = "verbose"; */
-/*     bool verbosity_success = config.GetConfigurationParam("verbosity", verbosity); */
-/*     glogger().add_stream(verbosity, &std::cout); */
-    
-/*     if(!verbosity_success) */
-/*         glogger() << warn << "verbosity not specified in configuration. using verbose mode." << std::endl; */
-
-/* //    glogger() << die << verbosity << std::endl;     */
-
-    
-/*     bool log = true; */
-/*     config.GetConfigurationParam("log", log); */
-        
-/*     if(log) */
-/*     { */
-/*         std::string log_path = "."; */
-/*         if(!config.GetValue("log_path", log_path) && log) */
-/*         { */
-/*             glogger() << warn << "logging all terminal output to current directory (./). " << "setglobal value log_path for another path " << std::endl; */
-/*         } */
-
-/*         std::string community = "unknown";         */
-/*         config.GetValue("Community", community); */
-        
-/*         if(!log_path.empty()) */
-/*         { */
-/*             using namespace boost::posix_time; */
-/*             std::string file_name = GetAppName() + "_" + community + "_" + to_iso_string(second_clock::universal_time()) + ".txt"; */
-            
-/*             glogger() << "logging output to file: " << file_name << std::endl;   */
-            
-/*             fout_.open(std::string(log_path + "/" + file_name).c_str()); */
-        
-/*             // if fails, try logging to this directory */
-/*             if(!fout_.is_open()) */
-/*             { */
-/*                 fout_.open(std::string("./" + file_name).c_str()); */
-/*                 glogger() << warn << "logging to current directory because given directory is unwritable!" << std::endl; */
-/*             } */
-/*             // if still no go, quit */
-/*             if(!fout_.is_open()) */
-/*                 glogger() << die << "cannot write to current directory, so cannot log." << std::endl; */
-
-/*             glogger().add_stream(goby::util::Logger::verbose, &fout_); */
-/*         }    */
-/*     } */
-
-
-
-    configuration_read_ = true;
 }
 
 

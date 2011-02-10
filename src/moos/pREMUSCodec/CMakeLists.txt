@@ -5,6 +5,6 @@ ADD_EXECUTABLE(pREMUSCodec ${SRC})
 TARGET_LINK_LIBRARIES(pREMUSCodec
   m
   pthread
-  tes_util
+  goby_moos_util
   ${MOOS_LIBRARIES}
 )

@@ -1,10 +1,12 @@
 #include "command_gui.h"
-#include "goby/moos/lib_tes_util/sci.h"
 
 using namespace std;
 using boost::trim_copy;
-using tes::stricmp;
+using goby::util::stricmp;
+
 using namespace goby::acomms;
+using goby::util::as;
+
 //using namespace boost::posix_time;
 
 // Construction / Destruction
@@ -121,7 +123,7 @@ void CommandGui::main_menu()
         string("</B/40>Main Menu:<!40>");
 
 //    for(int i = 0; i < 64; ++i)
-//                title += "</" + tes::intToString(i) + ">" +  tes::intToString(i) + "<!"+ tes::intToString(i) + ">";
+//                title += "</" + as<string>(i) + ">" +  as<string>(i) + "<!"+ as<string>(i) + ">";
     
 
     vector<string> buttons;
@@ -361,7 +363,7 @@ void CommandGui::edit()
     curr_mess_vals_->resize(cols*rows);
     
     string title = "</B/40>Message<!40> (Type: " + curr_message_->name() + ")\n" +
-        tes::intToString(message_vars.size()) + " entries total\n"+
+        as<string>(message_vars.size()) + " entries total\n"+
         "\t{Enter} for options\n" +
         "\t{Up/Down} for more message variables";
     
@@ -392,11 +394,11 @@ void CommandGui::edit()
                 stype = "</48>float<!48>";
                 // + 1 for decimal point, +1 for e
                 width =
-                    max((tes::intToString((int)mp->max())).size(),(tes::intToString((int)mp->min())).size()) + mp->precision() + 2;
+                    max((as<string>((int)mp->max())).size(),(as<string>((int)mp->min())).size()) + mp->precision() + 2;
                 break;
             case dccl_int:
                 stype = "</56>int<!56>";
-                width = max((tes::intToString((int)mp->max())).size(),(tes::intToString((int)mp->min())).size());
+                width = max((as<string>((int)mp->max())).size(),(as<string>((int)mp->min())).size());
                 break;
                 
             case dccl_static:
@@ -645,9 +647,9 @@ bool CommandGui::edit_isprint(int row, std::string & val, chtype input, DCCLType
                 
             if(mp->precision() >= 0)
             {
-                double a = tes::sci_round(fabs(dnum)*pow(10.0, (double)mp->precision()),0);
+                double a = goby::util::unbiased_round(fabs(dnum)*pow(10.0, (double)mp->precision()),0);
                 double b = fabs(dnum)*pow(10.0, (double)mp->precision());
-                if(tes::doubleToString(a) != tes::doubleToString(b))
+                if(as<string>(a) != as<string>(b))
                 {
  
                     return false;
@@ -805,11 +807,11 @@ bool CommandGui::edit_leftright(int row, std::string & val, chtype input, DCCLTy
             
             
         if(posy != string::npos)
-            val = "_y:" + tes::doubleToString(dnum);
+            val = "_y:" + as<string>(dnum);
         else if(posx != string::npos)
-            val = "_x:" + tes::doubleToString(dnum);
+            val = "_x:" + as<string>(dnum);
         else
-            val = tes::doubleToString(dnum);
+            val = as<string>(dnum);
     }
 
     return false;
@@ -834,19 +836,19 @@ bool CommandGui::edit_postcallback(int row, int col, string & val, chtype & inpu
 
     vector<string> mesg;
     
-    string line = "Editing message variable " + tes::intToString(row) + " of " + tes::intToString(message_vars.size()) + ": " + mp->name();
+    string line = "Editing message variable " + as<string>(row) + " of " + as<string>(message_vars.size()) + ": " + mp->name();
     mesg.push_back(line);
     
     DCCLType type = mp->type();
     
     if(type == dccl_string)
-        line = "(</24>string<!24>) max length: " + tes::intToString(mp->max_length()) + " chars.";
+        line = "(</24>string<!24>) max length: " + as<string>(mp->max_length()) + " chars.";
     else if (type == dccl_bool)
         line = "(</32>bool<!32>) specify true/false with right/left arrows";
     else if (type == dccl_float)
-        line = "(</48>float<!48>) min: " + tes::doubleToString(mp->min()) + ", max: " + tes::doubleToString(mp->max()) + ", precision: " + tes::intToString(mp->precision());
+        line = "(</48>float<!48>) min: " + as<string>(mp->min()) + ", max: " + as<string>(mp->max()) + ", precision: " + as<string>(mp->precision());
     else if (type == dccl_int)
-        line = "(</56>int<!56>) min: " + tes::doubleToString(mp->min()) + ", max: " + tes::doubleToString(mp->max());    
+        line = "(</56>int<!56>) min: " + as<string>(mp->min()) + ", max: " + as<string>(mp->max());    
     else if (type == dccl_enum)
         line = "(</40>enum<!40>) specify values with right/left arrows";
     else if (type == dccl_static)
@@ -989,7 +991,7 @@ void CommandGui::insert_specials(string & s)
     pos = s.find(to_find);
     while(pos != string::npos)
     {
-        s = s.substr(0, pos) + tes::doubleToString(MOOSTime()) + s.substr(pos+to_find.length());
+        s = s.substr(0, pos) + as<string>(MOOSTime()) + s.substr(pos+to_find.length());
         pos = s.find(to_find);
     }
 
@@ -1021,13 +1023,13 @@ void CommandGui::insert_specials(string & s)
         // order matters
         if(y_start_pos < x_start_pos)
         {
-            s.replace(x_start_pos, x_comma_pos-x_start_pos, tes::doubleToString(lon));
-            s.replace(y_start_pos, y_comma_pos-y_start_pos, tes::doubleToString(lat));
+            s.replace(x_start_pos, x_comma_pos-x_start_pos, as<string>(lon));
+            s.replace(y_start_pos, y_comma_pos-y_start_pos, as<string>(lat));
         }
         else
         {
-            s.replace(y_start_pos, y_comma_pos-y_start_pos, tes::doubleToString(lat));
-            s.replace(x_start_pos, x_comma_pos-x_start_pos, tes::doubleToString(lon));
+            s.replace(y_start_pos, y_comma_pos-y_start_pos, as<string>(lat));
+            s.replace(x_start_pos, x_comma_pos-x_start_pos, as<string>(lon));
         }
         
         y_start_pos = s.find("_y:");
@@ -1044,7 +1046,7 @@ int CommandGui::insert_modem_id()
     {
         buttons.push_back(
             string(
-                tes::intToString(i) + ": " +
+                as<string>(i) + ": " +
                 modem_lookup_.get_name_from_id(i) +
                 " (" + modem_lookup_.get_type_from_id(i) + ")"
                 )
@@ -1074,7 +1076,7 @@ bool CommandGui::field_check(string & s, boost::shared_ptr<DCCLMessageVar> mp)
         double dnum = atof(snum.c_str());
 
         if (type == dccl_float)
-            dnum = tes::sci_round(dnum, mp->precision());
+            dnum = goby::util::unbiased_round(dnum, mp->precision());
         
         // check max, min
         if(dnum > mp->max() || dnum < mp->min() || s.empty())
@@ -1083,7 +1085,7 @@ bool CommandGui::field_check(string & s, boost::shared_ptr<DCCLMessageVar> mp)
             ok = false;
         }        
             
-        s = tes::doubleToString(dnum);
+        s = as<string>(dnum);
     }
     else if (type == dccl_string && ((int)s.length() > mp->max_length()))
     {
@@ -1147,7 +1149,7 @@ void CommandGui::check_specials(string & val, chtype input, int row)
     else if(input == 'm')
     {
         int id = insert_modem_id();
-        val = tes::intToString(id);
+        val = as<string>(id);
     }
 }
 

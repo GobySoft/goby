@@ -29,8 +29,6 @@
 #include <cdk/cdk.h>
 #include <boost/function.hpp>
 
-#include "goby/moos/lib_tes_util/tes_string.h"
-
 typedef boost::function<bool(int, int, std::string &, chtype)> cdk_callback;
 
 static cdk_callback post_cb_;
@@ -112,9 +110,42 @@ class CommanderCdk
 
     void resize();
 
+    
+    
   private:
     void fail();
     void restore_widgets();
+
+    std::string word_wrap(std::string s, int width, const std::string & delim)
+    {
+        std::string out;
+
+        while((int)s.length() > width)
+        {            
+            std::string::size_type pos_newline = s.find("\n");
+            std::string::size_type pos_delim = s.substr(0, width).find_last_of(delim);
+            if((int)pos_newline < width)
+            {
+                out += s.substr(0, pos_newline);
+                s = s.substr(pos_newline+1);
+            }
+            else if (pos_delim != std::string::npos)
+            {
+                out += s.substr(0, pos_delim+1);
+                s = s.substr(pos_delim+1);
+            }
+            else
+            {
+                out += s.substr(0, width);
+                s = s.substr(width);
+            }
+            out += "\n";        
+        }
+        out += s;
+        
+        return out;
+    }
+
     
   private:
     WINDOW *cursesWin_;

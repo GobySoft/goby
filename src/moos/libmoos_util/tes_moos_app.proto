@@ -1,0 +1,34 @@
+import "goby/core/proto/option_extensions.proto";
+
+message TesMoosAppConfig
+{
+  // Global moos variables (Specified outside "ProcessConfig" blocks)
+  optional bool log = 100 [default = true, (moos_global) = "log"];
+  optional string log_path = 101 [default = "./", (moos_global) = "log_path"];
+  optional string community = 102 [(moos_global) = "Community"];
+  optional double lat_origin = 103 [(moos_global) = "LatOrigin"];
+  optional double lon_origin = 104 [(moos_global) = "LongOrigin"];
+  
+  optional uint32 app_tick = 1 [default = 10];
+  optional uint32 comm_tick = 2 [default = 10];
+  
+  enum Verbosity { VERBOSITY_QUIET = 1; VERBOSITY_WARN = 2; VERBOSITY_VERBOSE = 3; VERBOSITY_DEBUG = 4; VERBOSITY_GUI = 5; }
+  optional Verbosity verbosity = 3 [default = VERBOSITY_VERBOSE];
+
+  // post various configuration values to the MOOSDB on startup
+  message Initializer
+  {
+    enum Type
+    {
+      INI_DOUBLE = 1;
+      INI_STRING = 2;
+    }
+    required Type type = 1;
+    required string moos_var = 2;
+    optional string global_cfg_var = 3; // pull from globals at top of MOOS file
+    optional double dval = 4; // required if type == MOOS_DOUBLE
+    optional string sval = 5; // required if type == MOOS_STRING
+  }  
+  repeated Initializer initializer = 10;
+}
+    

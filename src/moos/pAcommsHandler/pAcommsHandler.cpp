@@ -29,11 +29,7 @@
 #include <boost/numeric/conversion/cast.hpp>
 #include <boost/foreach.hpp>
 
-#include "goby/acomms.h"
-
 #include "pAcommsHandler.h"
-#include "goby/moos/lib_tes_util/tes_string.h"
-#include "goby/moos/lib_tes_util/binary.h"
 #include "goby/util/sci.h"
 
 using namespace goby::util::tcolor;
@@ -237,31 +233,31 @@ void CpAcommsHandler::handle_mac_cycle_update(const CMOOSMsg& msg)
     glogger() << "got update for MAC: " << s << std::endl;
 
     std::string dest;
-    if(!tes::val_from_string(dest, s, "destination"))
+    if(!goby::util::val_from_string(dest, s, "destination"))
         return;
 
-    if(!tes::stricmp(dest, boost::lexical_cast<std::string>(cfg_.modem_id())))
+    if(!goby::util::stricmp(dest, boost::lexical_cast<std::string>(cfg_.modem_id())))
         return;
     
     enum Type { replace, add, remove };
     Type type;
 
     std::string stype;
-    if(!tes::val_from_string(stype, s, "update_type"))
+    if(!goby::util::val_from_string(stype, s, "update_type"))
         return;
 
-    if(tes::stricmp(stype, "replace"))
+    if(goby::util::stricmp(stype, "replace"))
     {
         mac_.clear_all_slots();
         type = replace;
         glogger() << "type is replace" << std::endl;
     }
-    else if(tes::stricmp(stype, "add"))
+    else if(goby::util::stricmp(stype, "add"))
     {
         type = add;
         glogger() << "type is add" << std::endl;
     }
-    else if(tes::stricmp(stype, "remove"))
+    else if(goby::util::stricmp(stype, "remove"))
     {
         type = remove;
         glogger() << "type is remove" << std::endl;
@@ -273,27 +269,27 @@ void CpAcommsHandler::handle_mac_cycle_update(const CMOOSMsg& msg)
     int i = 1;
     std::string si = boost::lexical_cast<std::string>(i);
     std::string poll_type, src_id, dest_id, rate, wait;
-    while((tes::val_from_string(poll_type, s, std::string("slot_" + si + "_type")) &&  // preferred
-           tes::val_from_string(src_id, s, std::string("slot_" + si + "_from")) &&
-           tes::val_from_string(dest_id, s, std::string("slot_" + si + "_to")) &&  
-           tes::val_from_string(rate, s, std::string("slot_" + si + "_rate")) &&
-           tes::val_from_string(wait, s, std::string("slot_" + si + "_wait")))
+    while((goby::util::val_from_string(poll_type, s, std::string("slot_" + si + "_type")) &&  // preferred
+           goby::util::val_from_string(src_id, s, std::string("slot_" + si + "_from")) &&
+           goby::util::val_from_string(dest_id, s, std::string("slot_" + si + "_to")) &&  
+           goby::util::val_from_string(rate, s, std::string("slot_" + si + "_rate")) &&
+           goby::util::val_from_string(wait, s, std::string("slot_" + si + "_wait")))
           ||
-          (tes::val_from_string(poll_type, s, std::string("poll_type" + si)) && // legacy
-           tes::val_from_string(src_id, s, std::string("poll_from_id" + si)) &&
-           tes::val_from_string(dest_id, s, std::string("poll_to_id" + si)) &&
-           tes::val_from_string(rate, s, std::string("poll_rate" + si)) &&
-           tes::val_from_string(wait, s, std::string("poll_wait" + si))))
+          (goby::util::val_from_string(poll_type, s, std::string("poll_type" + si)) && // legacy
+           goby::util::val_from_string(src_id, s, std::string("poll_from_id" + si)) &&
+           goby::util::val_from_string(dest_id, s, std::string("poll_to_id" + si)) &&
+           goby::util::val_from_string(rate, s, std::string("poll_rate" + si)) &&
+           goby::util::val_from_string(wait, s, std::string("poll_wait" + si))))
     {
         
         bool fail = false;
         
         goby::acomms::protobuf::SlotType slot_type;
-        if(tes::stricmp(poll_type, "data"))
+        if(goby::util::stricmp(poll_type, "data"))
             slot_type = goby::acomms::protobuf::SLOT_DATA;
-        else if(tes::stricmp(poll_type, "ping"))
+        else if(goby::util::stricmp(poll_type, "ping"))
             slot_type = goby::acomms::protobuf::SLOT_PING;
-        else if(tes::stricmp(poll_type, "remus_lbl"))
+        else if(goby::util::stricmp(poll_type, "remus_lbl"))
             slot_type = goby::acomms::protobuf::SLOT_REMUS_LBL;
         else
             fail = true;
@@ -553,375 +549,6 @@ void CpAcommsHandler::process_configuration()
 }
 
 
-//void CpAcommsHandler::read_driver_parameters(CProcessConfigReader& config)
-//{
-    // std::cout << "Reading driver parameters..." << std::endl;
-
-    // // Read whether using a hydroid gateway buoy
-    // bool is_hydroid_gateway = false;
-    // if (!config.GetConfigurationParam("hydroid_gateway_enabled", is_hydroid_gateway))
-    //     glogger() << group("mm_out") << "Hydroid Buoy flag not set, using default of " << std::boolalpha << is_hydroid_gateway << std::endl;
-
-    // goby::acomms::protobuf::DriverConfig driver_cfg;
-
-    // // Read the hydroid gateway buoy index
-    // int hydroid_gateway_id = 1;
-    // if(is_hydroid_gateway)
-    // {
-    //     if (!config.GetConfigurationParam("hydroid_gateway_id", hydroid_gateway_id))
-    //         glogger() << group("mm_out") << warn << "Hydroid Gateway ID not set, using default of " << hydroid_gateway_id << std::endl;
-
-    //     driver_cfg.SetExtension(goby::acomms::protobuf::MMDriverConfig::hydroid_gateway_id, hydroid_gateway_id);
-    // }
-
-    // std::string connection_type;
-    // config.GetConfigurationParam("connection_type", connection_type);
-
-    // goby::acomms::protobuf::DriverConfig::ConnectionType type = goby::acomms::protobuf::DriverConfig::CONNECTION_SERIAL;
-
-    // if(tes::stricmp(connection_type, "tcp_as_client"))
-    //     type = goby::acomms::protobuf::DriverConfig::CONNECTION_TCP_AS_CLIENT;
-    // else if(tes::stricmp(connection_type, "tcp_as_server"))
-    //     type = goby::acomms::protobuf::DriverConfig::CONNECTION_TCP_AS_SERVER;
-    // else if(tes::stricmp(connection_type, "dual_udp_broadcast"))
-    //     type = goby::acomms::protobuf::DriverConfig::CONNECTION_DUAL_UDP_BROADCAST;
-
-    // driver_cfg.set_connection_type(type);
-    // if(type == goby::acomms::protobuf::DriverConfig::CONNECTION_SERIAL)
-    // {
-    //     // read information about serial port (name & baud) and set them
-    //     std::string serial_port_name;
-    //     if (!config.GetConfigurationParam("serial_port", serial_port_name))
-    //         glogger() << die << "no serial_port set." << std::endl;    
-    //     driver_cfg.set_serial_port(serial_port_name);
-        
-    //     unsigned baud;
-    //     if (!config.GetConfigurationParam("baud", baud))
-    //         glogger() << group("mm_out") << warn << "no baud rate set, using default of " << driver_cfg.serial_baud() << " ($CCCFG,BR1,3 or $CCCFG,BR2,3)" << std::endl;
-    //     else
-    //         driver_cfg.set_serial_baud(baud);
-    // }
-    // else if(type == goby::acomms::protobuf::DriverConfig::CONNECTION_TCP_AS_CLIENT)
-    // {
-    //     // read information about serial port (name & baud) and set them
-    //     std::string network_address;
-    //     if (!config.GetConfigurationParam("network_address", network_address))
-    //         glogger() << die << "no network address set." << std::endl; 
-    //     driver_cfg.set_tcp_server(network_address);
-        
-    //     unsigned network_port;
-    //     if (!config.GetConfigurationParam("network_port", network_port))
-    //         glogger() << die << "no network port set." << std::endl; 
-    //     driver_cfg.set_tcp_port(network_port);
-    // }
-    // else if(type == goby::acomms::protobuf::DriverConfig::CONNECTION_TCP_AS_SERVER)
-    // {
-    //     unsigned network_port;
-    //     if (!config.GetConfigurationParam("network_port", network_port))
-    //         glogger() << die << "no network port set." << std::endl; 
-    //     driver_cfg.set_tcp_port(network_port);        
-    // }    
-    
-    // bool cfgall = false;
-    // if (!config.GetConfigurationParam("cfg_to_defaults", cfgall))
-    //     glogger()  << group("mm_out") << "not setting all CFG values to factory default "
-    //            << "before setting our CFG values. consider using cfg_to_defaults=true if you can." << std::endl;
-    
-    // if(cfgall && !is_hydroid_gateway) // Hydroid gateway breaks if you run CCCFG,ALL! They use a 4800 baud while the WHOI default is 19200. You will need to open the buoy if this happens
-    //     driver_cfg.AddExtension(goby::acomms::protobuf::MMDriverConfig::nvram_cfg, "ALL,0");
-
-    // driver_cfg.AddExtension(goby::acomms::protobuf::MMDriverConfig::nvram_cfg, "SRC," + as<std::string>(modem_id_));
-    
-    // std::list<std::string> params;
-    // if(config.GetConfiguration(GetAppName(), params))
-    // {
-    //     BOOST_FOREACH(std::string& value, params)
-    //     {
-    //         boost::trim(value);
-    //         std::string key = MOOSChomp(value, "=");
-
-    //         if(tes::stricmp(key, "cfg"))
-    //         {
-    //             glogger() << group("mm_out") << "adding CFG value: " << value << std::endl;
-    //             driver_cfg.AddExtension(goby::acomms::protobuf::MMDriverConfig::nvram_cfg, value);
-    //         }
-    //     }
-    // }
-
-    // std::string mac;
-    // if (!config.GetConfigurationParam("mac", mac))
-    //     glogger() << group("mac") << "`mac` not specified, using no medium access control. you must provide an external MAC, or set `mac = slotted`, `mac=fixed_slotted` or `mac = polled` in the .moos file" << std::endl;
-
-    // if(mac == "polled") mac_.set_type(goby::acomms::MAC_POLLED);
-    // else if(mac == "slotted") mac_.set_type(goby::acomms::MAC_AUTO_DECENTRALIZED);
-    // else if(mac == "fixed_slotted") mac_.set_type(goby::acomms::MAC_FIXED_DECENTRALIZED);
-    
-    // read_internal_mac_parameters(config);
-
-    
-//}
-
-// void CpAcommsHandler::read_internal_mac_parameters(CProcessConfigReader& config)
-// {
-//     if(mac_.type() == goby::acomms::MAC_AUTO_DECENTRALIZED)
-//     {   
-//         unsigned slot_time = 15;
-//         if (!config.GetConfigurationParam("slot_time", slot_time))
-//             glogger() << group("mac") << warn << "slot_time not specified in .moos file, using default of " << slot_time << std::endl;
-        
-//         mac_.set_slot_time(slot_time);
-        
-//         std::string rate = "0";
-//         if (!config.GetConfigurationParam("rate", rate))
-//             glogger() << group("mac") << warn << "message rate not specified in .moos file, using default of " << rate << std::endl;
-        
-//         if(tes::stricmp(rate, "auto"))
-//             rate = "-1";
-        
-//         mac_.set_rate(rate);
-
-//         unsigned expire_cycles = 15;
-//         if (!config.GetConfigurationParam("expire_cycles", expire_cycles))
-//             glogger() << group("mac") << warn << "expire_cycles not specified in .moos file, using default of " << expire_cycles << std::endl;
-        
-//         mac_.set_expire_cycles(expire_cycles);
-
-//     }
-// }
-
-// void CpAcommsHandler::read_queue_parameters(CProcessConfigReader& config)
-// {    
-//     std::list<std::string> params;
-//     if(!config.GetConfiguration(GetAppName(), params))
-//         return;
-    
-//     BOOST_FOREACH(std::string& value, params)
-//     {
-//         boost::trim(value);
-//         std::string key = MOOSChomp(value, "=");
-
-
-//         if(tes::stricmp(key, "send") || tes::stricmp(key, "receive"))
-//             glogger() << die << "`send =` and `receive =` configuration options are no longer available. all data must be either a DCCL or CCL message. use message XML files to encode DCCL and configure queuing with the <queue/> block. add XML files with `message_file = `" << std::endl;
-        
-//         if(tes::stricmp(key, "send_CCL"))
-//         {
-//             // break up the parameter into a vector of individual strings
-//             std::vector<std::string> send_params;
-//             boost::split(send_params, value, boost::is_any_of(","));
-                
-//             if(send_params.size() < 2)
-//                 glogger() << warn << "invalid send configuration line: " << value << std::endl;
-//             else
-//             {
-//                 std::string moos_var_name = boost::trim_copy(send_params[0]);
-
-//                 unsigned id;
-//                 goby::util::hex_string2number(send_params[1], id);
-
-//                 goby::acomms::protobuf::QueueKey key;
-//                 key.set_type(goby::acomms::protobuf::QUEUE_CCL);
-//                 key.set_id(id);
-//                 out_moos_var2queue_[moos_var_name] = key;
-                
-//                 goby::acomms::protobuf::QueueConfig q_cfg;                    
-//                 switch (send_params.size())
-//                 {
-//                     case 8: q_cfg.set_ttl(as<uint32>(send_params[7]));
-//                     case 7: q_cfg.set_value_base(as<double>(send_params[6]));
-//                     case 6: q_cfg.set_newest_first(as<bool>(send_params[5]));
-//                     case 5: q_cfg.set_max_queue(as<uint32>(send_params[4]));
-//                     case 4: q_cfg.set_blackout_time(as<uint32>(send_params[3]));
-//                     case 3: q_cfg.set_ack(as<bool>(send_params[2]));
-//                     case 2: q_cfg.set_id(as<uint32>(id));
-//                         q_cfg.set_type(goby::acomms::protobuf::QUEUE_CCL);
-//                         q_cfg.set_name(boost::trim_copy(send_params[0]));
-//                     default: break;
-//                 }
-//                 queue_manager_.add_queue(q_cfg);
-//             }
-//         }
-//         else if(tes::stricmp(key, "receive_CCL"))
-//         {
-//             std::vector<std::string> receive_params;
-//             boost::split(receive_params, value, boost::is_any_of(","));
-
-//             if(receive_params.size() < 2)
-//                 glogger() << warn << "invalid receive configuration line: " + value << std::endl;
-//             else
-//             {
-//                 std::string moos_var_name = boost::trim_copy(receive_params[0]);
-//                 // could be internal ID or CCL id
-//                 std::string variable_id = boost::trim_copy(receive_params[1]);
-
-//                 unsigned id;
-//                 goby::util::hex_string2number(variable_id, id);
-
-//                 goby::acomms::protobuf::QueueKey key;
-//                 key.set_type(goby::acomms::protobuf::QUEUE_CCL);
-//                 key.set_id(id);
-//                 in_queue2moos_var_[key] = moos_var_name;
-
-//             }
-//         }
-//     }
-    
-
-// }
-
-
-
-
-//void CpAcommsHandler::read_dccl_parameters(CProcessConfigReader& processConfigReader)
-//{
-
-//     processConfigReader.GetConfigurationParam("tcp_share_enable", tcp_share_enable_);
-//     glogger() << group("tcp") << "tcp_share_enable is " << std::boolalpha << tcp_share_enable_ << std::endl;
-
-//     if(tcp_share_enable_)
-//     {
-//         if(!processConfigReader.GetConfigurationParam("tcp_share_port", tcp_share_port_))
-//             glogger() << group("tcp") << warn << "tcp_share_port not specified. using: " <<  tcp_share_port_ << std::endl;
-//         else
-//             glogger() << group("tcp") << "tcp_share_port is: " << tcp_share_port_ << std::endl;
-
-//         tcp_share_server_ = new goby::util::TCPServer(tcp_share_port_);
-//         tcp_share_server_->start();
-//         glogger() << group("tcp") << "starting TCP server on: " << tcp_share_port_ << std::endl;        
-//     }
-    
-
-   
-    
-//     std::string schema = "";
-//     if (!processConfigReader.GetConfigurationParam("schema", schema))
-//     {
-//         glogger() << group("dccl_enc") <<  warn << "no schema specified. xml error checking disabled!" << std::endl;
-//     }    
-//     else
-//     {
-//         glogger() << group("dccl_enc") << "using schema located at: [" << schema << "]" << std::endl;
-//     }
-    
-//     std::list<std::string> params;
-//     if(processConfigReader.GetConfiguration(processConfigReader.GetAppName(), params))
-//     {
-//         BOOST_FOREACH(const std::string& s, params)
-//         {
-//             std::vector<std::string> parts;
-//             boost::split(parts, s, boost::is_any_of("="));
-//             std::string value, key, manipulator;            
-
-//             switch(parts.size())
-//             {
-//                 case 3:
-//                     key = parts[0];
-//                     manipulator = parts[1];
-//                     value = parts[2];                    
-//                     break;                    
-//                 case 2:
-//                     key = parts[0];
-//                     value = parts[1];
-//                     break;
-//             }
-            
-//             boost::trim(value);
-//             boost::trim(key);
-//             boost::trim(manipulator);
-            
-//             if(tes::stricmp(key, "message_file"))
-//             {
-//                 glogger() << group("dccl_enc") <<  "trying to parse file: " << value << std::endl;
-
-//                 // parse the message file
-//                 std::set<unsigned> ids = dccl_.add_xml_message_file(value, schema);
-//                 queue_manager_.add_xml_queue_file(value, schema);
-
-//                 BOOST_FOREACH(unsigned id, ids)
-//                 {
-//                     if(!manipulator.empty())
-//                     {
-//                         glogger() << group("dccl_enc") << "manipulators for id " << id << ": " << manipulator << std::endl;
-//                         if(manipulator.find("no_encode") != std::string::npos)
-//                             no_encode_.insert(id);
-//                         if(manipulator.find("no_decode") != std::string::npos)
-//                             no_decode_.insert(id);
-//                         if(manipulator.find("no_queue") != std::string::npos)
-//                             no_queue_.insert(id);
-//                         if(manipulator.find("loopback") != std::string::npos)
-//                             loopback_.insert(id);
-//                         if(manipulator.find("on_demand") != std::string::npos)
-//                         {
-//                             on_demand_.insert(id);
-//                             // this is queued automatically by libqueue, so
-//                             // don't duplicate
-//                             no_queue_.insert(id);
-//                             goby::acomms::protobuf::QueueKey key;
-//                             key.set_type(goby::acomms::protobuf::QUEUE_DCCL);
-//                             key.set_id(id);
-//                             queue_manager_.set_on_demand(key);
-//                         }
-//                         if(manipulator.find("tcp_share_in") != std::string::npos)
-//                             tcp_share_.insert(id);
-//                     }
-//                 }
-//                 glogger() << group("dccl_enc") << "success!" << std::endl;
-//             }
-//             else if(tes::stricmp(key, "encode"))
-//                 all_no_encode_ = !tes::stricmp(value, "true");
-//             else if(tes::stricmp(key, "decode"))
-//                 all_no_decode_ = !tes::stricmp(value, "true");
-//             else if(tes::stricmp(key, "global_initializer") ||
-//                     tes::stricmp(key, "global_initializer.double") ||
-//                     tes::stricmp(key, "global_initializer.string")) 
-//             {
-//                 // global_initializer = moos_var = other_value
-                
-//                 std::string& moos_var = manipulator;
-
-//                 bool is_dbl = tes::stricmp(key, "global_initializer.double") ? true : false;
-
-//                 std::string init_value;
-//                 if (!processConfigReader.GetValue(value, init_value))
-//                     glogger() << group("dccl_enc") << warn << "cannot find global initialize variable: "  << value << std::endl;
-//                 else
-//                 {                    
-//                     glogger() << group("dccl_enc") << "processing global initialized variable: " << moos_var << ": " << init_value << std::endl;
-                    
-//                     if(is_dbl)
-//                         initializes_.push_back(CMOOSMsg('N', moos_var, boost::lexical_cast<double>(init_value)));
-//                     else
-//                         initializes_.push_back(CMOOSMsg('N', moos_var, init_value));
-//                 }
-//             }
-//             else if(tes::stricmp(key, "tcp_share_in_address"))
-//             {
-//                 if(!tcp_share_enable_)
-//                     glogger() << group("tcp") << "tcp_share_in_address given but tcp_enable is false" << std::endl;
-//                 else
-//                 {
-//                     std::string ip;
-//                     unsigned port = tcp_share_port_;
-
-//                     std::string::size_type colon_pos = value.find(":");
-//                     if(colon_pos == std::string::npos)
-//                         ip = value;
-//                     else
-//                     {
-//                         ip = value.substr(0, colon_pos);
-//                         port = boost::lexical_cast<unsigned>(value.substr(colon_pos+1));
-//                     }
-//                     IP ip_and_port(ip, port);
-//                     tcp_share_map_[ip_and_port] = new goby::util::TCPClient(ip, port);
-//                     tcp_share_map_[ip_and_port]->start();
-//                     glogger() << group("tcp") << "starting TCP client to "<<  ip << ":" << port << std::endl;
-//                 }   
-//             }
-//         }
-//     }
-
-// }
-
 void CpAcommsHandler::pack(unsigned dccl_id, goby::acomms::protobuf::ModemDataTransmission* modem_message)
 {
     // encode the message and notify the MOOSDB
@@ -955,11 +582,6 @@ void CpAcommsHandler::pack(unsigned dccl_id, goby::acomms::protobuf::ModemDataTr
     {
         try
         {
-            // flush buffer
-            repeat_buffer_[dccl_id].clear();
-            // reset counter
-            repeat_count_[dccl_id] = 0;
-
             // encode
             dccl_.pubsub_encode(dccl_id, modem_message, in);
 
@@ -981,7 +603,11 @@ void CpAcommsHandler::pack(unsigned dccl_id, goby::acomms::protobuf::ModemDataTr
         {
             glogger() << group("dccl_enc") << warn << "could not encode message: " << *modem_message << ", reason: " << e.what() << std::endl;
         }
-        
+
+        // flush buffer
+        repeat_buffer_[dccl_id].clear();
+        // reset counter
+        repeat_count_[dccl_id] = 0;
     }
     else
     {

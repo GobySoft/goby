@@ -1,4 +1,4 @@
-import "goby/moos/lib_tes_util/tes_moos_app.proto";
+import "goby/moos/libmoos_util/tes_moos_app.proto";
 import "goby/acomms/protobuf/driver_base.proto";
 import "goby/acomms/protobuf/queue.proto";
 import "goby/acomms/protobuf/amac.proto";
@@ -26,6 +26,7 @@ message pAcommsHandlerConfig
   // unique identifying integer (1-31) for this vehicle's modem
   // setting this will set the modem_id for all the components of goby-acomms
   required int32 modem_id = 100;
+  
   // path to text file with entries:
   //   modem_id,name,type
   // for example

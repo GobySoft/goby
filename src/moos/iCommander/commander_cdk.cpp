@@ -22,6 +22,7 @@
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "commander_cdk.h"
+#include "goby/util/string.h"
 
 using namespace std;
 
@@ -143,7 +144,7 @@ bool CommanderCdk::disp_scroll(std::string title, std::vector<std::string> butto
     int width = min(GENERIC_WIDTH,max_x);
 
     if (do_split_title)
-        title = tes::word_wrap(title, width, ",");
+        title = word_wrap(title, width, ",");
         
     // figure out how big the buffer needs to be
     size_t max_length = title.length();
@@ -270,7 +271,7 @@ bool CommanderCdk::disp_alphalist(const string title,
     // check if valid message
     for (vector<string>::size_type i = 0, n = items.size(); i < n; ++i)
     {
-        if (tes::stricmp(items[i], selected_message))
+        if (goby::util::stricmp(items[i], selected_message))
             selected = i;
     }
 

@@ -223,7 +223,7 @@ bool goby::acomms::QueueManager::stitch_recursive(const protobuf::ModemDataReque
     const unsigned CCL_ID_BYTES = HEAD_CCL_ID_SIZE / BITS_IN_BYTE;
     
     // new user frame (e.g. 32B)
-    const protobuf::ModemDataTransmission& next_data_msg = winning_queue->give_data(request_msg);
+    protobuf::ModemDataTransmission next_data_msg = winning_queue->give_data(request_msg);
 
     // discipline the destination of the packet if initially unset
     if(complete_data_msg->base().dest() == QUERY_DESTINATION_ID)
@@ -238,7 +238,7 @@ bool goby::acomms::QueueManager::stitch_recursive(const protobuf::ModemDataReque
     
     // if an ack been set, do not unset these
     if (packet_ack_ == false) packet_ack_ = next_data_msg.ack_requested();    
-    
+     
     // insert ack if desired
     if(next_data_msg.ack_requested())
         waiting_for_ack_.insert(std::pair<unsigned, Queue*>(complete_data_msg->frame(), winning_queue));

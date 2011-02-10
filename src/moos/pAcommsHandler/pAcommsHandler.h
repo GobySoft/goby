@@ -30,23 +30,16 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 
 #include "MOOSLIB/MOOSApp.h"
-#include "goby/moos/lib_tes_util/tes_moos_app.h"
 
-#include "goby/acomms/dccl.h"
-#include "goby/acomms/queue.h"
-#include "goby/acomms/modem_driver.h"
-#include "goby/acomms/amac.h"
-
-#include "goby/moos/lib_tes_util/dynamic_moos_vars.h"
+#include "goby/acomms.h"
+#include "goby/util.h"
 
 #include "MOOSLIB/MOOSLib.h"
 #include "MOOSUtilityLib/MOOSGeodesy.h"
 
-#include "goby/util/logger.h"
-#include "goby/util/linebasedcomms.h"
-
-#include "goby/moos/lib_tes_util/modem_id_convert.h"
-#include "goby/moos/lib_tes_util/tes_moos_app.h"
+#include "goby/moos/libmoos_util/dynamic_moos_vars.h"
+#include "goby/moos/libmoos_util/modem_id_convert.h"
+#include "goby/moos/libmoos_util/tes_moos_app.h"
 
 #include <google/protobuf/io/tokenizer.h>
 

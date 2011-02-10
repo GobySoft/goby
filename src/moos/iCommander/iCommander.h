@@ -35,9 +35,7 @@
 
 #include "MOOSLIB/MOOSLib.h"
 #include "MOOSUtilityLib/MOOSGeodesy.h"
-#include "goby/moos/lib_tes_util/terminalio.h"
 #include "goby/acomms/dccl.h"
-#include "goby/moos/lib_tes_util/tes_string.h"
 #include "command_gui.h"
 
 class CiCommander : public CMOOSApp  
@@ -55,9 +53,7 @@ class CiCommander : public CMOOSApp
 
     void RegisterVariables();
     bool ReadConfiguration();
-    
-    CMOOSTermIO tout_;
-    
+
     CommanderCdk gui_;
     CMOOSGeodesy geodesy_;
     tes::ModemIdConvert modem_lookup_;

@@ -22,7 +22,10 @@
 #include <boost/foreach.hpp>
 #include <boost/bind.hpp>
 
+#include "goby/util/string.h"
+
 using goby::util::glogger;
+using goby::util::as;
 
 std::string TesMoosApp::mission_file_;
 std::string TesMoosApp::application_name_;
@@ -69,12 +72,38 @@ bool TesMoosApp::OnConnectToServer()
     std::cout << m_MissionReader.GetAppName() << ", connected to server." << std::endl;
     connected_ = true;
     try_subscribing();
+
+    BOOST_FOREACH(const TesMoosAppConfig::Initializer& ini,
+                  common_cfg_.initializer())
+    {   
+        if(ini.has_global_cfg_var())
+        {
+            std::string result;
+            if(m_MissionReader.GetValue(ini.global_cfg_var(), result))
+            {
+                if(ini.type() == TesMoosAppConfig::Initializer::INI_DOUBLE)
+                    publish(ini.moos_var(), as<double>(result));
+                else if(ini.type() == TesMoosAppConfig::Initializer::INI_STRING)
+                    publish(ini.moos_var(), result);
+            }
+        }
+        else
+        {
+            if(ini.type() == TesMoosAppConfig::Initializer::INI_DOUBLE)
+                publish(ini.moos_var(), ini.dval());
+            else if(ini.type() == TesMoosAppConfig::Initializer::INI_STRING)
+                publish(ini.moos_var(), ini.sval());            
+        }        
+    }
+    
     return true;
 }
 
 bool TesMoosApp::OnStartUp()
 {
     std::cout << m_MissionReader.GetAppName () << ", starting ..." << std::endl;
+    CMOOSApp::SetCommsFreq(common_cfg_.comm_tick());
+    CMOOSApp::SetAppFreq(common_cfg_.app_tick());
     started_up_ = true;
     try_subscribing();
     return true;

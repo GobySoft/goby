@@ -13,11 +13,9 @@
 #include "MOOSUtilityLib/MOOSGeodesy.h"
 #include "MOOSLIB/MOOSLib.h"
 
-#include "goby/moos/lib_tes_util/terminalio.h"
-#include "goby/moos/lib_tes_util/tes_string.h"
 #include "commander_cdk.h"
 #include "goby/acomms/dccl.h"
-#include "goby/moos/lib_tes_util/modem_id_convert.h"
+#include "goby/moos/libmoos_util/modem_id_convert.h"
 
 class CommandGui
 {

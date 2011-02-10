@@ -25,9 +25,7 @@
 
 using namespace std;
 using boost::trim_copy;
-using tes::stricmp;
 using namespace goby::acomms;
-//using namespace boost::posix_time;
 
 // Construction / Destruction
 CiCommander::CiCommander()
@@ -58,7 +56,7 @@ bool CiCommander::OnNewMail(MOOSMSG_LIST & NewMail)
         
         if((*p).GetTime() < start_time_)
         {
-            tout_.EchoWarn(string("ignoring normal mail from " + p->GetKey() + " from before we started"));
+            std::cerr << "ignoring normal mail from " << p->GetKey() << " from before we started" << std::endl;
         }
         else if(MOOSStrCmp("ACOMMS_ACK", key))
         {   
@@ -98,7 +96,7 @@ bool CiCommander::OnNewMail(MOOSMSG_LIST & NewMail)
             if(it != show_vars_.end()) 
             {
                 if(is_dbl)
-                    show_vars_[key] = tes::doubleToString(dval);
+                    show_vars_[key] = goby::util::as<string>(dval);
                 else
                     show_vars_[key] = sval;
             }
@@ -152,36 +150,30 @@ void CiCommander::RegisterVariables()
 // parameter keys are case insensitive
 bool CiCommander::ReadConfiguration()
 {
-    tout_.SetProcessName("iCommander");
-
-    // if the user doesn't tell us otherwise, we're talking!
-    string verbosity = "verbose";
-    if (!m_MissionReader.GetConfigurationParam("verbosity", verbosity))
-	tout_.EchoWarn("verbosity not specified in configuration. using verbose mode.");
-    
-    tout_.SetVerbosity(verbosity);
 
     // read the schema
     if (!m_MissionReader.GetConfigurationParam("schema", schema_))
     {
-        tout_.EchoWarn("no schema specified. xml error checking disabled!");
+        std::cerr << "no schema specified. xml error checking disabled!" << std::endl;
     }
 
     double latOrigin, longOrigin;
-    tout_.EchoInform("reading in geodesy information: ");
+    std::cerr << "reading in geodesy information: " << std::endl;
     if (!m_MissionReader.GetValue("LatOrigin", latOrigin) || !m_MissionReader.GetValue("LongOrigin", longOrigin))
     {
-        tout_.EchoDie("no LatOrigin and/or LongOrigin in moos file. this is required for geodesic conversion");
+        std::cerr << "no LatOrigin and/or LongOrigin in moos file. this is required for geodesic conversion" << std::endl;
     }
     else if (!geodesy_.Initialise(latOrigin, longOrigin))
     {
-        tout_.EchoDie("CMOOSGeodesy initialization failed.");
+        std::cerr << "CMOOSGeodesy initialization failed." << std::endl;
+        exit(EXIT_FAILURE);
     }
 
     string path;
     if (!m_MissionReader.GetValue("modem_id_lookup_path", path))
     {
-        tout_.EchoWarn("no modem_id_lookup_path in moos file. this is required for modem_id conversion");
+        std::cerr << "no modem_id_lookup_path in moos file. this is required for modem_id conversion" << std::endl;
+        exit(EXIT_FAILURE);
     }
     else
     {
@@ -190,13 +182,13 @@ bool CiCommander::ReadConfiguration()
         while(message != "")
         {
             string line = MOOSChomp(message, "\n");
-            tout_.EchoInform(line);
+            std::cerr << line << std::endl;
         }
     }
 
     if (!m_MissionReader.GetValue("Community", community_))
     {
-        tout_.EchoWarn("no Community in moos file. this is required for special:community");
+        std::cerr << "no Community in moos file. this is required for special:community" << std::endl;
     }
     
     xy_only_ = false;
@@ -213,21 +205,21 @@ bool CiCommander::ReadConfiguration()
             string value = trim_copy(*it);
             string key = trim_copy(MOOSChomp(value, "="));
 
-            if(stricmp(key, "message_file"))
+            if(goby::util::stricmp(key, "message_file"))
             {
-                tout_.EchoInform(string("try to parse file: " + value));
+                std::cerr << "try to parse file: " << value << std::endl;
                 // parse the message file
                 protobuf::DCCLConfig cfg;
                 cfg.add_message_file()->set_path(value);
                 cfg.set_schema(schema_);
                 dccl_.merge_cfg(cfg);
-                tout_.EchoInform("success!");
+                std::cerr << "success!" << std::endl;
             }
-            else if(stricmp(key, "load"))
+            else if(goby::util::stricmp(key, "load"))
             {
                 loads_.push_back(value);
             }                
-            else if(stricmp(key, "show_variable"))
+            else if(goby::util::stricmp(key, "show_variable"))
             {
                 show_vars_[value] = "";
             }                

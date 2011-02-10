@@ -7,8 +7,8 @@ add_executable(pAcommsHandler
   
 target_link_libraries(pAcommsHandler
   m
-  tes_util
   pthread
+  goby_moos_util
   goby_dccl
   goby_queue
   goby_amac

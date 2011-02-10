@@ -54,7 +54,7 @@ goby::util::FlexOStreamBuf::FlexOStreamBuf(): name_("no name"),
                                               is_gui_(false)
                                               
 {
-    Group no_group("", "warnings and ungrouped messages");
+    Group no_group("", "Ungrouped messages");
     groups_[""] = no_group;    
 }
 

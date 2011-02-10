@@ -100,9 +100,11 @@ goby::acomms::protobuf::ModemDataTransmission goby::acomms::Queue::give_data(con
 
     bool ack = it_to_give->ack_requested();
     // broadcast cannot acknowledge
-    if(request_msg.base().dest() == BROADCAST_ID) ack = false;
+    if(it_to_give->base().dest() == BROADCAST_ID) ack = false;
     it_to_give->set_ack_requested(ack);
 
+    if(log_) *log_ << "giving data:" << *it_to_give << std::endl;
+    
     if(ack)
         waiting_for_ack_.insert(std::pair<unsigned, messages_it>(request_msg.frame(),
                                                                  it_to_give));

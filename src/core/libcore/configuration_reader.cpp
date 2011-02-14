@@ -276,9 +276,9 @@ void  goby::core::ConfigReader::get_protobuf_program_options(boost::program_opti
         
         std::string cli_name = field_name;
         std::stringstream human_desc_ss;
-        human_desc_ss << util::esc_green << field_desc->options().GetExtension(::description) << util::esc_nocolor;
-
+        human_desc_ss << util::esc_lt_blue << field_desc->options().GetExtension(::description);
         append_label(human_desc_ss, field_desc);
+        human_desc_ss << util::esc_nocolor;
         
         switch(field_desc->cpp_type())
         {
@@ -399,10 +399,12 @@ void goby::core::ConfigReader::build_description(const google::protobuf::Descrip
         if(field_desc->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE)
         {
             
-            human_desc_ss << "\n" << indent << field_desc->name() << " {  \t" <<
-                util::esc_blue << field_desc->options().GetExtension(::description) << util::esc_nocolor;
+            human_desc_ss << "\n" << indent << field_desc->name() << " {  " <<
+                util::esc_green << field_desc->options().GetExtension(::description);
             append_label(human_desc_ss, field_desc);
-
+            human_desc_ss << util::esc_nocolor;
+            
+            
             build_description(field_desc->message_type(), human_desc_ss, indent + "  ");
             human_desc_ss << "\n" << indent << "}";
 
@@ -425,11 +427,13 @@ void goby::core::ConfigReader::build_description(const google::protobuf::Descrip
             human_desc_ss << field_desc->name() << ": "
                           << example;
             
-            human_desc_ss << "  \t" << util::esc_blue << field_desc->options().GetExtension(::description) << util::esc_nocolor;
+            human_desc_ss << "  " << util::esc_green << field_desc->options().GetExtension(::description);
             append_label(human_desc_ss, field_desc);
 
             if(field_desc->has_default_value())
                 human_desc_ss << " (default)";
+
+            human_desc_ss << util::esc_nocolor;
         
         }
     }
@@ -442,15 +446,15 @@ void goby::core::ConfigReader::append_label(std::stringstream& human_desc_ss,
     switch(field_desc->label())
     {
         case google::protobuf::FieldDescriptor::LABEL_REQUIRED:
-            human_desc_ss << util::esc_red << " (req)" << util::esc_nocolor;
+            human_desc_ss << " (req)";
             break;
             
         case google::protobuf::FieldDescriptor::LABEL_OPTIONAL:
-            human_desc_ss << util::esc_lt_magenta << " (opt)" << util::esc_nocolor;
+            human_desc_ss << " (opt)";
             break;
             
         case google::protobuf::FieldDescriptor::LABEL_REPEATED:
-            human_desc_ss << util::esc_lt_cyan << " (repeat)"  << util::esc_nocolor;
+            human_desc_ss << " (repeat)";
             break;
     }
 }

@@ -1,13 +1,14 @@
 // provides MessageFile
 import "goby/acomms/protobuf/xml_config.proto";
+import "goby/core/proto/option_extensions.proto";
 
 package goby.acomms.protobuf;
 
 message DCCLConfig
 {
-  required int32 modem_id = 1;
-  repeated MessageFile message_file = 2;
-  optional string schema = 3;
-  optional string crypto_passphrase = 4;
+  required int32 modem_id = 1 [(description)="Unique number 1-31 to identify this node"];
+  repeated MessageFile message_file = 2 [(description)="XML message file containing one or more DCCL message descriptions"];
+  optional string schema = 3 [(description)="Path to message_schema.xsd used to validate your DCCL message_files"];
+  optional string crypto_passphrase = 4 [(description)="If given, encrypt all communications with this passphrase using AES. Omit for unencrypted communications."];
 }
 

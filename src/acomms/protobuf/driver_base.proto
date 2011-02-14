@@ -1,8 +1,10 @@
+import "goby/core/proto/option_extensions.proto";
+
 package goby.acomms.protobuf;
 
 message DriverConfig
 {
-  required int32 modem_id = 1;
+  required int32 modem_id = 1 [(description)="Unique number 1-31 to identify this node"];
   
   enum ConnectionType { CONNECTION_SERIAL = 1; // Modem is connected by a tty serial line (e.g. RS-232)
                         CONNECTION_TCP_AS_CLIENT = 2; // Modem is connected by ethernet and is serving clients
@@ -10,18 +12,18 @@ message DriverConfig
                         CONNECTION_DUAL_UDP_BROADCAST = 4; // Presently unimplemented
   }
   
-  optional ConnectionType connection_type = 2 [default = CONNECTION_SERIAL];
-  optional string line_delimiter = 3 [default = "\r\n"]; // delimits lines on the serial or tcp interface
+  optional ConnectionType connection_type = 2 [default = CONNECTION_SERIAL, (description)="Physical connection type from this computer (running Goby) to the acoustic modem"];
+  optional string line_delimiter = 3 [default = "\r\n", (description)="String used to delimit new lines for this acoustic modem"]; // delimits lines on the serial or tcp interface
   
   // required if connection_type == CONNECTION_SERIAL
-  optional string serial_port = 4; // e.g. /dev/ttyS0
-  optional uint32 serial_baud = 5; // e.g. 19200
+  optional string serial_port = 4 [(description)="Serial port for CONNECTION_SERIAL"]; // e.g. /dev/ttyS0
+  optional uint32 serial_baud = 5 [(description)="Baud rate for CONNECTION_SERIAL"]; // e.g. 19200
 
   // required if connection_type == CONNECTION_TCP_AS_CLIENT
-  optional string tcp_server = 6; // e.g. 192.168.1.111 or www.foo.com
+  optional string tcp_server = 6 [(description)="IP Address or domain name for the server if CONNECTION_TCP_AS_CLIENT"]; // e.g. 192.168.1.111 or www.foo.com
 
   // required if connection_type == CONNECTION_TCP_AS_CLIENT or CONNECTION_TCP_AS_SERVER
-  optional uint32 tcp_port = 7; // e.g. 50000
+  optional uint32 tcp_port = 7 [(description)="Port to serve on (for CONNECTION_TCP_AS_SERVER) or to connect to (for CONNECTION_TCP_AS_CLIENT)"];
   
   
   extensions 1000 to max;

@@ -31,6 +31,8 @@
 #include "dynamic_moos_vars.h"
 #include "goby/util/logger.h"
 #include "tes_moos_app.pb.h"
+#include "goby/core/libcore/configuration_reader.h"
+#include "goby/core/libcore/exception.h"
 
 
 namespace goby
@@ -119,7 +121,11 @@ class TesMoosApp : public CMOOSApp
     std::deque<std::pair<std::string, int> > pending_subscriptions_;
 
     TesMoosAppConfig common_cfg_;
+
     
+    
+    static int argc_;
+    static char** argv_;
     static std::string mission_file_;
     static std::string application_name_;
 };
@@ -134,13 +140,81 @@ TesMoosApp::TesMoosApp(ProtobufConfig* cfg)
     started_up_(false)
 {
     using goby::util::glogger;
-    
-    glogger().set_name(application_name_);
-    glogger().add_stream("verbose", &std::cout);
+
+    boost::filesystem::path launch_path(argv_[0]);
+    application_name_ = launch_path.filename();
 
     //
     // READ CONFIGURATION
     //
+    
+    boost::program_options::options_description od_all;    
+    boost::program_options::variables_map var_map;
+    try
+    {        
+    
+        boost::program_options::options_description od_cli_only("Given on command line only");    
+        od_cli_only.add_options()
+            ("help,h", "writes this help message")
+            ("moos_file,c", boost::program_options::value<std::string>(&mission_file_), "path to .moos file")
+            ("moos_name,a", boost::program_options::value<std::string>(&application_name_), "name to register with MOOS")
+            ("example_config,e", "writes an example .moos ProcessConfig block");
+        
+    
+        boost::program_options::options_description od_both("Typically given in the .moos file, but may be specified on the command line");
+    
+        goby::core::ConfigReader::get_protobuf_program_options(od_both, cfg->GetDescriptor());
+        od_all.add(od_both);
+        od_all.add(od_cli_only);
+
+        boost::program_options::positional_options_description p;
+        p.add("moos_file", 1);
+        p.add("moos_name", 2);
+        
+        boost::program_options::store(boost::program_options::command_line_parser(argc_, argv_).
+                                      options(od_all).positional(p).run(), var_map);
+
+
+        boost::program_options::notify(var_map);
+        
+        if (var_map.count("help"))
+        {
+            goby::ConfigException e("");
+            e.set_error(false);
+            throw(e);
+        }
+        else if(var_map.count("example_config"))
+        {
+            std::cout << "ProcessConfig = " << application_name_ << std::endl;
+            std::cout << "{" << std::endl;
+            BOOST_FOREACH(boost::shared_ptr<boost::program_options::option_description> odp,
+                          od_all.options())
+            {
+                std::cout << "  " << odp->long_name() << " {";
+                std::cout << "    " << odp->description() << std::endl;
+                std::cout << "  }\n" << std::endl;
+            }
+            std::cout << "}" << std::endl;
+            exit(EXIT_SUCCESS);
+        }
+        
+        
+        
+    }
+    catch(goby::ConfigException& e)
+    {
+        // output all the available command line options
+        std::cerr << od_all << "\n";
+        if(e.error())
+            std::cerr << "Problem parsing command-line configuration: \n"
+                      << e.what() << "\n";
+        
+        throw;
+    }
+    glogger().set_name(application_name_);
+    glogger().add_stream("verbose", &std::cout);
+    
+    
     std::string protobuf_text;
     std::ifstream fin;
     fin.open(mission_file_.c_str());
@@ -150,8 +224,8 @@ TesMoosApp::TesMoosApp(ProtobufConfig* cfg)
         bool in_process_config = false;
         while(!getline(fin, line).eof())
         {
-            if(!boost::algorithm::ifind_first(line, "PROCESSCONFIG").empty() &&
-               !boost::algorithm::ifind_first(line, application_name_).empty())
+            std::string no_blanks_line = boost::algorithm::erase_all_copy(line, " ");
+            if(boost::algorithm::iequals(no_blanks_line, "PROCESSCONFIG=" +  application_name_))
             {
                 in_process_config = true;
             }
@@ -164,7 +238,10 @@ TesMoosApp::TesMoosApp(ProtobufConfig* cfg)
             if(in_process_config)
                 protobuf_text += line + "\n";
         }
-            
+
+        if(!in_process_config)
+            glogger() << die << "no ProcessConfig block for " << application_name_ << std::endl;
+
         // trim off "ProcessConfig = __ {"
         protobuf_text.erase(0, protobuf_text.find_first_of('{')+1);
             
@@ -185,11 +262,11 @@ TesMoosApp::TesMoosApp(ProtobufConfig* cfg)
     }
     else
     {
-        std::cerr << "failed to open " << mission_file_ << std::endl;
+        glogger() << warn << "failed to open " << mission_file_ << std::endl;
     }
     
     fin.close();
-
+    
     CMOOSFileReader moos_file_reader;
     moos_file_reader.SetFile(mission_file_);
 
@@ -289,6 +366,16 @@ TesMoosApp::TesMoosApp(ProtobufConfig* cfg)
         }
     }    
 
+    // add / overwrite any options that are specified in the cfg file with those given on the command line
+    typedef std::pair<std::string, boost::program_options::variable_value> P;
+    BOOST_FOREACH(const P&p, var_map)
+    {
+        // let protobuf deal with the defaults
+        if(!p.second.defaulted())
+            goby::core::ConfigReader::set_protobuf_program_option(var_map, *cfg, p.first, p.second);
+    }
+
+    
     // keep a copy for ourselves
     common_cfg_ = cfg->common();
     configuration_read_ = true;
@@ -355,24 +442,18 @@ TesMoosApp::TesMoosApp(ProtobufConfig* cfg)
 template<typename App>
 int goby::moos::run(int argc, char* argv[])
 {
-    boost::filesystem::path launch_path(argv[0]);
-    App::application_name_ = launch_path.filename();
-    App::mission_file_ = App::application_name_ + ".moos";
+    App::argc_ = argc;
+    App::argv_ = argv;
 
-    switch(argc)
-    {
-        case 3:
-            // command line says don't register with default name
-            App::application_name_ = argv[2];
-        case 2:
-            // command line says don't use default config file
-            App::mission_file_ = argv[1];
-    }
-    
     try
     {
         App app;
         app.Run(App::application_name_.c_str(), App::mission_file_.c_str());
+    }
+    catch(goby::ConfigException& e)
+    {
+        // no further warning as the ApplicationBase Ctor handles this
+        return 1;
     }
     catch(std::exception& e)
     {

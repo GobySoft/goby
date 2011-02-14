@@ -119,8 +119,8 @@ void goby::acomms::MACManager::startup(const protobuf::MACConfig& cfg)
         
         case protobuf::MAC_POLLED:
         case protobuf::MAC_FIXED_DECENTRALIZED:
-            for(int i = 0, n = cfg_.cycle_size(); i < n; ++i)
-                add_slot(cfg_.cycle(i));
+            for(int i = 0, n = cfg_.slot_size(); i < n; ++i)
+                add_slot(cfg_.slot(i));
             
             if(log_ && cfg_.type() == protobuf::MAC_POLLED)
                 *log_ << group("mac") << "Using the Centralized Polling MAC scheme" << std::endl;

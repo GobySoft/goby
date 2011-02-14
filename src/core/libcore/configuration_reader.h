@@ -55,7 +55,6 @@ namespace goby
             static void merge_app_base_cfg(AppBaseConfig* base_cfg,
                                            const boost::program_options::variables_map& var_map);
             
-          private:
             static void get_protobuf_program_options(
                 boost::program_options::options_description& po_desc,
                 const google::protobuf::Descriptor* desc);
@@ -65,6 +64,8 @@ namespace goby
                 google::protobuf::Message& message,
                 const std::string& full_name,
                 const boost::program_options::variable_value& value);
+
+          private:
 
             static void build_description(const google::protobuf::Descriptor* desc,
                                           std::stringstream& human_desc,

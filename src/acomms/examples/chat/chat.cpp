@@ -129,13 +129,13 @@ int main(int argc, char* argv[])
 
     if(my_id < buddy_id)
     {
-        mac_cfg.add_cycle()->CopyFrom(my_slot);
-        mac_cfg.add_cycle()->CopyFrom(buddy_slot);
+        mac_cfg.add_slot()->CopyFrom(my_slot);
+        mac_cfg.add_slot()->CopyFrom(buddy_slot);
     }
     else
     {
-        mac_cfg.add_cycle()->CopyFrom(buddy_slot);
-        mac_cfg.add_cycle()->CopyFrom(my_slot);
+        mac_cfg.add_slot()->CopyFrom(buddy_slot);
+        mac_cfg.add_slot()->CopyFrom(my_slot);
     }    
     
     //

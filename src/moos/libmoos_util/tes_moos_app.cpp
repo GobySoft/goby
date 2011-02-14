@@ -30,6 +30,9 @@ using goby::util::as;
 std::string TesMoosApp::mission_file_;
 std::string TesMoosApp::application_name_;
 
+int TesMoosApp::argc_ = 0;
+char** TesMoosApp::argv_ = 0;
+
 bool TesMoosApp::Iterate()
 {
     if(!configuration_read_) return true;

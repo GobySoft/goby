@@ -40,7 +40,8 @@
   </ul>
 <li> Check out a branch of the goby project:
   <ul>
-    <li> Read-only (users of goby): \verbatim bzr checkout lp:goby \endverbatim
+    <li> Read-only (users of goby): \verbatim bzr checkout lp:goby \endverbatim (Please note that this message is \a not an error, as you are only attempted to gain read access to goby (not write):  <tt> You have not informed bzr of your Launchpad ID, and you must do this to
+write to Launchpad or access private data.  See "bzr help launchpad-login". </tt>)
     <li> Read / write (developers of goby):
       <ol>
         <li> Register or login to launchpad: <https://launchpad.net/goby/+login>

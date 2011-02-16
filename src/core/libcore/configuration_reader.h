@@ -65,18 +65,20 @@ namespace goby
                 const std::string& full_name,
                 const boost::program_options::variable_value& value);
 
+            static void get_example_cfg_file(google::protobuf::Message* message,
+                                             std::ostream* human_desc_ss,
+                                             const std::string& indent = "");
+
+            
           private:
 
             static void build_description(const google::protobuf::Descriptor* desc,
-                                          std::stringstream& human_desc,
-                                          const std::string& indent = "");
+                                          std::ostream& human_desc,
+                                          const std::string& indent = "",
+                                          bool use_color = true);
             
-            static void append_label(std::stringstream& human_desc_ss,
+            static void append_label(std::ostream& human_desc_ss,
                                      const google::protobuf::FieldDescriptor* field_desc);
-            
-
-            static std::string default_as_string(const google::protobuf::FieldDescriptor* field_desc);
-            
             
             template<typename T>
                 static void set_single_option(

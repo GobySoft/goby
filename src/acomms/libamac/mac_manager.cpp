@@ -399,6 +399,12 @@ void goby::acomms::MACManager::position_blank()
 
 std::map<int, goby::acomms::protobuf::Slot>::iterator goby::acomms::MACManager::add_slot(const protobuf::Slot& s)    
 {
+    if(!s.IsInitialized())
+    {
+        if(log_) *log_ << group("mac") << warn << "ignoring invalid Slot: " << s << std::endl;
+        return id2slot_.begin();
+    }
+        
     std::map<int, protobuf::Slot>::iterator it =
         id2slot_.insert(std::pair<int, protobuf::Slot>(s.src(), s));
 
@@ -419,6 +425,12 @@ void goby::acomms::MACManager::add_flex_groups(util::FlexOstream* tout)
 
 bool goby::acomms::MACManager::remove_slot(const protobuf::Slot& s)    
 {
+    if(!s.IsInitialized())
+    {
+        if(log_) *log_ << group("mac") << warn << "ignoring invalid Slot: " << s << std::endl;
+        return false; 
+    }
+
     bool removed_a_slot = false;
     
     for(id2slot_it it = id2slot_.begin(), n = id2slot_.end(); it != n; ++it)

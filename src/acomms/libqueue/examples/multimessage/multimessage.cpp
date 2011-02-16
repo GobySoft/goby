@@ -22,7 +22,7 @@
 
 using goby::acomms::operator<<;
 
-void received_data(goby::acomms::protobuf::QueueKey, const goby::acomms::protobuf::ModemDataTransmission&);
+void received_data(const goby::acomms::protobuf::ModemDataTransmission&);
 
 int main()
 {
@@ -59,16 +59,15 @@ int main()
     data_msg.set_data(goby::acomms::hex_decode("200080250000010203040506070809101112131415161718192021222324252A"));
 
     // push to queue 1 (which is the Simple message <id/>)
-    goby::acomms::protobuf::QueueKey key;
-    key.set_id(1);
-    q_manager.push_message(key, data_msg);
+    data_msg.mutable_queue_key()->set_id(1);
+    q_manager.push_message(data_msg);
 
     std::cout << "pushing message to queue 1: " << data_msg << std::endl;
     std::cout << "\t" << "data as hex: " <<  goby::acomms::hex_encode(data_msg.data()) << std::endl;
     
     data_msg.mutable_base()->set_dest(goby::acomms::BROADCAST_ID);
     data_msg.set_data(goby::acomms::hex_decode("200080250000262524232221201918171615141312111009080706050403020B"));
-    q_manager.push_message(key, data_msg);
+    q_manager.push_message(data_msg);
     
     std::cout << "pushing message to queue 1: " << data_msg << std::endl;
     std::cout << "\t" << "data as hex: " <<  goby::acomms::hex_encode(data_msg.data()) << std::endl;
@@ -105,9 +104,9 @@ int main()
 //
 //  5. Do something with the received messages  
 //
-void received_data(goby::acomms::protobuf::QueueKey key, const goby::acomms::protobuf::ModemDataTransmission& app_layer_message_in)
+void received_data(const goby::acomms::protobuf::ModemDataTransmission& app_layer_message_in)
 {
-    std::cout << "received message (key is " << key << "): " << app_layer_message_in << std::endl;
+    std::cout << "received message: " << app_layer_message_in << std::endl;
     std::cout << "\t" << "data as hex: " <<  goby::acomms::hex_encode(app_layer_message_in.data()) << std::endl;
 }
 

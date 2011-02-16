@@ -114,7 +114,7 @@ namespace goby
             ///
             /// \param key QueueKey that references the %queue to push the message to.
             /// \param new_message ModemMessage to push.
-            void push_message(protobuf::QueueKey key, const protobuf::ModemDataTransmission& new_message);        
+            void push_message(const protobuf::ModemDataTransmission& new_message);        
             //@}
         
             /// \name Modem Driver level Push/Receive Methods
@@ -175,18 +175,13 @@ namespace goby
 
             static int modem_id_;
 
-            boost::signal<void (protobuf::QueueKey key,
-                                const protobuf::ModemDataAck& ack_msg)> signal_ack;
-            boost::signal<void (protobuf::QueueKey key,
-                                const protobuf::ModemDataTransmission& msg)> signal_receive;
-            boost::signal<void (protobuf::QueueKey key,
-                                const protobuf::ModemDataTransmission& msg)> signal_receive_ccl;
-            boost::signal<void (protobuf::QueueKey key,
-                                const protobuf::ModemDataExpire& expire_msg)> signal_expire;
-            boost::signal<void (protobuf::QueueKey key,
-                                const protobuf::ModemDataRequest& request_msg,
+            boost::signal<void (const protobuf::ModemDataAck& ack_msg)> signal_ack;
+            boost::signal<void (const protobuf::ModemDataTransmission& msg)> signal_receive;
+            boost::signal<void (const protobuf::ModemDataTransmission& msg)> signal_receive_ccl;
+            boost::signal<void (const protobuf::ModemDataExpire& expire_msg)> signal_expire;
+            boost::signal<void (const protobuf::ModemDataRequest& request_msg,
                                 protobuf::ModemDataTransmission* data_msg)> signal_data_on_demand;
-            boost::signal<void (protobuf::QueueKey key, unsigned size)> signal_queue_size_change;
+            boost::signal<void (protobuf::QueueSize size)> signal_queue_size_change;
             
           private:
             /// \brief Add more %queues by configuration XML files (typically contained in DCCL message XML files).
@@ -205,10 +200,10 @@ namespace goby
             
             void qsize(Queue* q)
             {
-                protobuf::QueueKey qkey;
-                qkey.set_type(q->cfg().type());
-                qkey.set_id(q->cfg().id());
-                signal_queue_size_change(qkey, q->size());
+                protobuf::QueueSize size;
+                size.mutable_key()->CopyFrom(q->cfg().key());
+                size.set_size(q->size());
+                signal_queue_size_change(size);
             }
         
             // finds the %queue with the highest priority
@@ -224,7 +219,7 @@ namespace goby
             void clear_packet();
             
             // slave function to receive_incoming_modem_data that actually writes a piece of the message (called for each user-frame)
-            bool publish_incoming_piece(const protobuf::ModemDataTransmission& message, const unsigned incoming_var_id);
+            bool publish_incoming_piece(protobuf::ModemDataTransmission* message, const unsigned incoming_var_id);
             
         
             void process_cfg();

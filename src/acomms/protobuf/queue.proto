@@ -18,22 +18,30 @@ message QueueConfig
   optional bool newest_first = 4 [default = true, (description)="true = FILO queue, false = FIFO queue"];
   optional double value_base = 5 [default = 1, (description)="Base value (general importance) of the messages in this queue"];
   optional uint32 ttl = 6 [default = 1800, (description)="Time to live in seconds; messages exceeding this time are discarded. Also factors into priority equation"];
-  optional QueueType type = 7 [default = QUEUE_DCCL, (description)="Type of messages in this queue"];
-  required uint32 id = 8 [(description)="DCCL ID for QUEUE_DCCL, CCL Identifier (first) byte for QUEUE_CCL"];
-  required string name = 9 [(description)="Human readable name for this queue"];
+  optional QueueKey key = 7;
+  required string name = 8 [(description)="Human readable name for this queue", (example)="Remus_State"];
+  optional string in_pubsub_var = 9 [(description)="Publish subscribe architecture variable for posting incoming data to", (example)="REMUS_STATE_RAW_IN"];
+  optional string out_pubsub_var = 10 [(description)="Publish subscribe architecture variable for fetching outgoing data from", (example)="REMUS_STATE_RAW_OUT"];
+  
 }
 
 message QueueKey
 {
-  required QueueType type = 1 [default = QUEUE_DCCL];
-  required uint32 id = 2;
+  required QueueType type = 1 [default = QUEUE_DCCL, (description)="Type of messages in this queue"];
+  required uint32 id = 2 [(description)="DCCL ID for QUEUE_DCCL, CCL Identifier (first) byte for QUEUE_CCL", (example)="14"];
 }
 
 message QueueManagerConfig
 {
-  required int32 modem_id = 1 [(description)="Unique number 1-31 to identify this node"];
+  required int32 modem_id = 1 [(description)="Unique number 1-31 to identify this node", (example)="1"];
   repeated MessageFile message_file = 2 [(description)="XML message file containing one or more DCCL message descriptions. Use for specifying DCCL queues."];
-  optional string schema = 3 [(description)="Path to message_schema.xsd used to validate your DCCL message_files"];
-  repeated QueueConfig queue_cfg = 4 [(description)="Use for specifying CCL queues; use message_file for DCCL queues."];
+  optional string schema = 3 [(description)="Path to message_schema.xsd used to validate your DCCL message_files. If using a relative path, this is relative to the location of the XML files", (example)="/home/toby/goby/src/acomms/libdccl/message_schema.xsd"];
+  repeated QueueConfig queue = 4 [(description)="Use for specifying CCL queues; use message_file for DCCL queues."];
 }
 
+
+message QueueSize
+{
+  required QueueKey key = 1;
+  required uint32 size = 2;
+}

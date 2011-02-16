@@ -64,22 +64,22 @@ ubuntu_wt_packages=\
 libwtdbo-dev
 libwtdbosqlite-dev"
 
-if [ -e "`which aptitude`" ]; then
-    if [[ ! `aptitude search ${ubuntu_wt_packages}` ]]; then
+if [ -e "`which apt-get`" ]; then
+    if [[ `apt-cache search ${ubuntu_wt_packages}` ]]; then
         echo "adding ppa:pgquiles/wt for Wt packages"
         add-apt-repository ppa:pgquiles/wt
-	aptitude update
+	apt-get update
     fi 
 
-    if [[ ! `aptitude search ${ubuntu_xerces_package}` ]]; then
+    if [[ `apt-cache search ${ubuntu_xerces_package}` ]]; then
         ubuntu_xerces_package="libxerces-c2-dev"
     fi 
     
-    aptitude -y install $ubuntu_base_packages || printf $red"Could not install base packages\n"$nc
-    aptitude -y install $ubuntu_boost_packages || printf $red"Could not install boost packages: see http://www.boost.org/\n"$nc
-    aptitude -y install $ubuntu_xerces_package || printf $red"Could not install xerces package\n"$nc
-    aptitude -y install $ubuntu_other_packages || printf $red"Could not install some packages: read the top of this file (DEPENDENCIES)\n"$nc
-    aptitude -y install $ubuntu_wt_packages || printf $red"Could not install Wt packages: you need to download from source. See http://www.webtoolkit.eu/wt#/download\n"$nc
+    apt-get -y install $ubuntu_base_packages || printf $red"Could not install base packages\n"$nc
+    apt-get -y install $ubuntu_boost_packages || printf $red"Could not install boost packages: see http://www.boost.org/\n"$nc
+    apt-get -y install $ubuntu_xerces_package || printf $red"Could not install xerces package\n"$nc
+    apt-get -y install $ubuntu_other_packages || printf $red"Could not install some packages: read the top of this file (DEPENDENCIES)\n"$nc
+    apt-get -y install $ubuntu_wt_packages || printf $red"Could not install Wt packages: you need to download from source. See http://www.webtoolkit.eu/wt#/download\n"$nc
 fi
 
 

@@ -33,6 +33,7 @@
 #include "tes_moos_app.pb.h"
 #include "goby/core/libcore/configuration_reader.h"
 #include "goby/core/libcore/exception.h"
+#include <google/protobuf/io/tokenizer.h>
 
 
 namespace goby
@@ -44,7 +45,21 @@ namespace goby
     }
 }
 
+inline void serialize_for_moos(std::string* out, const google::protobuf::Message& msg)
+{
+    google::protobuf::TextFormat::Printer printer;
+    printer.SetSingleLineMode(true);
+    printer.PrintToString(msg, out);
+}
 
+
+inline void parse_for_moos(const std::string& in, google::protobuf::Message* msg)
+{
+    google::protobuf::TextFormat::Parser parser;
+    FlexOStreamErrorCollector error_collector(in);
+    parser.RecordErrorsTo(&error_collector);
+    parser.ParseFromString(in, msg);
+}
 
 class TesMoosApp : public CMOOSApp
 {   
@@ -185,17 +200,10 @@ TesMoosApp::TesMoosApp(ProtobufConfig* cfg)
         }
         else if(var_map.count("example_config"))
         {
-            std::cout << "ProcessConfig = " << application_name_ << std::endl;
-            std::cout << "{" << std::endl;
-            BOOST_FOREACH(boost::shared_ptr<boost::program_options::option_description> odp,
-                          od_all.options())
-            {
-                std::cout << "  " << odp->long_name() << " {";
-                std::cout << "    " << odp->description() << std::endl;
-                std::cout << "  }\n" << std::endl;
-            }
+            std::cout << "ProcessConfig = " << application_name_ << "\n{";
+            goby::core::ConfigReader::get_example_cfg_file(cfg, &std::cout, "  ");
             std::cout << "}" << std::endl;
-            exit(EXIT_SUCCESS);
+            exit(EXIT_SUCCESS);            
         }
         
         
@@ -225,7 +233,7 @@ TesMoosApp::TesMoosApp(ProtobufConfig* cfg)
         while(!getline(fin, line).eof())
         {
             std::string no_blanks_line = boost::algorithm::erase_all_copy(line, " ");
-            if(boost::algorithm::iequals(no_blanks_line, "PROCESSCONFIG=" +  application_name_))
+            if(boost::algorithm::istarts_with(no_blanks_line, "PROCESSCONFIG=" +  application_name_))
             {
                 in_process_config = true;
             }

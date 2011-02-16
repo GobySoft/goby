@@ -37,8 +37,8 @@ using namespace goby::acomms;
 using namespace goby::util;
 
 int startup_failure();
-void received_data(protobuf::QueueKey, const protobuf::ModemDataTransmission&);
-void received_ack(protobuf::QueueKey, const protobuf::ModemDataAck&);
+void received_data(const protobuf::ModemDataTransmission&);
+void received_ack(const protobuf::ModemDataAck&);
 std::string decode_received(const std::string& data);
 
 std::ofstream fout_;
@@ -180,9 +180,8 @@ int main(int argc, char* argv[])
             // send this message to my buddy!
             message_out.mutable_base()->set_dest(buddy_id);
 
-            goby::acomms::protobuf::QueueKey key;
-            key.set_id(message_id);
-            q_manager_.push_message(key, message_out);
+            message_out.mutable_queue_key()->set_id(message_id);
+            q_manager_.push_message(message_out);
         }
             
         try
@@ -207,12 +206,12 @@ int startup_failure()
     return 1;
 }
 
-void received_data(protobuf::QueueKey key, const protobuf::ModemDataTransmission& message_in)
+void received_data(const protobuf::ModemDataTransmission& message_in)
 {    
     curses_.post_message(message_in.base().src(), decode_received(message_in.data()));
 }
 
-void received_ack(protobuf::QueueKey key, const protobuf::ModemDataAck& ack_message)
+void received_ack(const protobuf::ModemDataAck& ack_message)
 {   
     curses_.post_message
         (ack_message.base().src(),

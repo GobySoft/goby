@@ -40,12 +40,13 @@
   </ul>
 <li> Check out a branch of the goby project:
   <ul>
-    <li> Read-only (users of goby): \verbatim bzr branch lp:goby \endverbatim
+    <li> Read-only (users of goby): \verbatim bzr checkout lp:goby \endverbatim (Please note that the following message that is displayed is \a not an error, as you are only attempting to gain read access to goby (not write):  <tt> You have not informed bzr of your Launchpad ID, and you must do this to
+write to Launchpad or access private data.  See "bzr help launchpad-login". </tt>)
     <li> Read / write (developers of goby):
       <ol>
         <li> Register or login to launchpad: <https://launchpad.net/goby/+login>
         <li> Contact <https://launchpad.net/~tes> for access to the goby project
-        <li> Let bzr know your launchpad id: \verbatim bzr launchpad-login tes \endverbatim
+        <li> Let bzr know your launchpad id (replacing <tt>tes</tt> with your new launchpad id): \verbatim bzr launchpad-login tes \endverbatim
         <li> Checkout a copy of goby: \verbatim bzr checkout lp:goby \endverbatim
       </ol>
   </ul>
@@ -67,7 +68,7 @@ To install to /usr/local (optional): \verbatim sudo ./INSTALL \endverbatim
 
   \section main_goby_elsewhere  Goby components in other projects
   <ul>
-  <li> pAcommsHandler is a MOOS acoustic communications process that is based on the goby-acomms libraries. See <http://oceanai.mit.edu/moosivp/support/moos-ivp-local.html> for access to this code. For documentation and more information on pAcommsHandler, please contact Toby <https://launchpad.net/~tes>. To learn about the MOOS and MOOS-IvP projects, visit <http://www.robots.ox.ac.uk/~mobile/MOOS/wiki/pmwiki.php> and <http://www.moos-ivp.com/> </li>
+  <li> pAcommsHandler is a MOOS acoustic communications process that is based on the goby-acomms libraries. pAcommsHandler is now maintained in the goby repository in goby/src/moos. For documentation and more information on pAcommsHandler, please contact Toby <https://launchpad.net/~tes>. To learn about the MOOS and MOOS-IvP projects, visit <http://www.robots.ox.ac.uk/~mobile/MOOS/wiki/pmwiki.php> and <http://www.moos-ivp.com/> </li>
   </ul>
 
 \section authors Authors
@@ -79,6 +80,7 @@ Goby is developed by T. Schneider (https://launchpad.net/~tes) with input and su
 - S. Petillo
 - L. Freitag
 - M. Grund
+- M. Fallon (https://launchpad.net/~mfallon)
 
 \section main_3rd_party_ack Third party projects used in Goby
 
@@ -92,6 +94,7 @@ Goby appreciates the availability of the following open source projects (listed 
 <li>XML parsing library: Xerces-C <http://xerces.apache.org/xerces-c/program-3.html>
 <li>asynchronous networking and serial communications library: asio <http://think-async.com/Asio/asio-1.4.1/doc/>
 <li>cryptography: crypto++ <http://www.cryptopp.com>
+<li>custom message structures: google protocol buffers <http://code.google.com/apis/protocolbuffers/docs/overview.html>
 </ul>
 
  

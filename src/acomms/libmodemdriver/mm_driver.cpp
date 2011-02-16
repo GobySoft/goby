@@ -157,14 +157,19 @@ void goby::acomms::MMDriver::handle_initiate_transmission(protobuf::ModemMsgBase
     init_msg.set_num_frames(PACKET_FRAME_COUNT[base_msg->rate()]);
     cache_outgoing_data(init_msg);
     
-    // don't start a cycle if we have no data
-    if(!cached_data_msgs_.empty())
+    // don't start a local cycle if we have no data
+    if(init_msg.base().src() != driver_cfg_.modem_id() || !cached_data_msgs_.empty())
     {
         //$CCCYC,CMD,ADR1,ADR2,Packet Type,ACK,Npkt*CS
         NMEASentence nmea("$CCCYC", NMEASentence::IGNORE);
         nmea.push_back(0); // CMD: deprecated field
         nmea.push_back(init_msg.base().src()); // ADR1
-        nmea.push_back(cached_data_msgs_.front().base().dest()); // ADR2
+
+        if(!cached_data_msgs_.empty())
+            nmea.push_back(cached_data_msgs_.front().base().dest()); // ADR2
+        else
+            nmea.push_back(init_msg.base().dest()); // ADR2
+        
         nmea.push_back(init_msg.base().rate()); // Packet Type (transmission rate)
         nmea.push_back(0); // ACK: deprecated field, this bit may be used for something that's not related to the ack
         nmea.push_back(init_msg.num_frames()); // number of frames we want
@@ -590,8 +595,6 @@ void goby::acomms::MMDriver::cyc(const NMEASentence& nmea, protobuf::ModemDataIn
     init_msg->mutable_base()->set_dest(as<uint32>(nmea[3])); // ADR2
     init_msg->set_num_frames(as<uint32>(nmea[6])); // Npkts, number of packets
 
-    if(log_) *log_ << *init_msg << std::endl;
-    
     // if we're supposed to send and we didn't initiate the cycle
     if(!local_cccyc_)
         cache_outgoing_data(*init_msg);
@@ -601,7 +604,7 @@ void goby::acomms::MMDriver::cyc(const NMEASentence& nmea, protobuf::ModemDataIn
 
 void goby::acomms::MMDriver::cache_outgoing_data(const protobuf::ModemDataInit& init_msg)
 {
-    if(init_msg.base().src() == nvram_cfg_["SRC"])
+    if(init_msg.base().src() == driver_cfg_.modem_id())
     {
         if(!cached_data_msgs_.empty())
         {

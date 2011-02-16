@@ -41,7 +41,6 @@
 #include "goby/moos/libmoos_util/modem_id_convert.h"
 #include "goby/moos/libmoos_util/tes_moos_app.h"
 
-#include <google/protobuf/io/tokenizer.h>
 
 #include "pAcommsHandler_config.pb.h"
 
@@ -85,6 +84,9 @@ const std::string MOOS_VAR_ACK = "ACOMMS_ACK";
 // expired messages (ttl ends)
 const std::string MOOS_VAR_EXPIRE = "ACOMMS_EXPIRE";
 
+const std::string MOOS_VAR_QSIZE = "ACOMMS_QSIZE";
+
+
 // communications quality statistics
 // const std::string MOOS_VAR_STATS = "ACOMMS_STATS";
 
@@ -111,22 +113,6 @@ IP(const std::string& ip = "", unsigned port = DEFAULT_TCP_SHARE_PORT)
 };
     
 
-inline void serialize_for_moos(std::string* out, const google::protobuf::Message& msg)
-{
-    google::protobuf::TextFormat::Printer printer;
-    printer.SetSingleLineMode(true);
-    printer.PrintToString(msg, out);
-}
-
-
-inline void parse_for_moos(const std::string& in, google::protobuf::Message* msg)
-{
-    google::protobuf::TextFormat::Parser parser;
-    FlexOStreamErrorCollector error_collector(in);
-    parser.RecordErrorsTo(&error_collector);
-    parser.ParseFromString(in, msg);
-}
-
 
 class CpAcommsHandler : public TesMoosApp
 {
@@ -148,18 +134,13 @@ class CpAcommsHandler : public TesMoosApp
     // void read_queue_parameters(CProcessConfigReader& config);
     
     // from QueueManager
-    void queue_incoming_data(goby::acomms::protobuf::QueueKey key,
-                             const goby::acomms::protobuf::ModemDataTransmission & message);
-    void queue_ack(goby::acomms::protobuf::QueueKey key,
-                   const goby::acomms::protobuf::ModemDataAck & message);
-    void queue_on_demand(goby::acomms::protobuf::QueueKey key,
-                         const goby::acomms::protobuf::ModemDataRequest& request_msg,
+    void queue_incoming_data(const goby::acomms::protobuf::ModemDataTransmission& message);
+    void queue_ack(const goby::acomms::protobuf::ModemDataAck & message);
+    void queue_on_demand(const goby::acomms::protobuf::ModemDataRequest& request_msg,
                          goby::acomms::protobuf::ModemDataTransmission* data_msg);
+    void queue_expire(const goby::acomms::protobuf::ModemDataExpire& message);
+    void queue_qsize(const goby::acomms::protobuf::QueueSize& size);
     
-    void queue_qsize(goby::acomms::protobuf::QueueKey qk, unsigned size);
-    void queue_expire(goby::acomms::protobuf::QueueKey key,
-                      const goby::acomms::protobuf::ModemDataExpire & message);    
-
     void handle_mac_cycle_update(const CMOOSMsg& msg);
     void handle_ranging_request(const CMOOSMsg& msg);
     void handle_message_push(const CMOOSMsg& msg);
@@ -254,5 +235,6 @@ class CpAcommsHandler : public TesMoosApp
 
 inline bool operator<(const IP& a, const IP& b)
 { return a.ip < b.ip; }
+
 
 #endif 

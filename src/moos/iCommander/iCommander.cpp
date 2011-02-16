@@ -22,6 +22,8 @@
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "iCommander.h"
+#include "goby/moos/libmoos_util/tes_moos_app.h"
+#include "goby/acomms/protobuf/modem_message.pb.h"
 
 using namespace std;
 using boost::trim_copy;
@@ -60,35 +62,40 @@ bool CiCommander::OnNewMail(MOOSMSG_LIST & NewMail)
         }
         else if(MOOSStrCmp("ACOMMS_ACK", key))
         {   
-            vector<string> ack_msg;
-            boost::split(ack_msg, sval, boost::is_any_of(":"));
+            goby::acomms::protobuf::ModemDataAck ack_msg;
+            parse_for_moos(sval, &ack_msg);
 
             try
             {
                 vector<string> mesg;
-                mesg.push_back(string("</B>Message </40>acknowledged<!40> from queue " + dccl_.id2name(boost::lexical_cast<unsigned>(ack_msg.at(0)))));
-                mesg.push_back(ack_msg.at(1));
-                mesg.push_back(string(" at time: " + command_gui_.microsec_simple_time_of_day()));
+                DCCLHeaderDecoder head_decoder(ack_msg.orig_msg().data());
+                mesg.push_back(string("</B>Message </40>acknowledged<!40> from queue: " + dccl_.id2name(ack_msg.orig_msg().queue_key().id())));
+                mesg.push_back(string(" for destination: " + modem_lookup_.get_name_from_id(ack_msg.orig_msg().base().dest())));
+                mesg.push_back(string(" at time: " + ack_msg.orig_msg().base().time()));
                 gui_.disp_info(mesg);
             }
-            catch(std::exception&) // boost::lexical_cast and goby::acomms::DCCLCodec
+            catch(...)
             { }
+            
+        
         }
         else if(MOOSStrCmp("ACOMMS_EXPIRE", key))
         {
-            vector<string> ack_msg;
-            boost::split(ack_msg, sval, boost::is_any_of(":"));
-            
+            goby::acomms::protobuf::ModemDataExpire expire_msg;
+            parse_for_moos(sval, &expire_msg);
+
             try
             {
                 vector<string> mesg;
-                mesg.push_back(string("</B>Message </16>expired<!16> from queue: " + dccl_.id2name(boost::lexical_cast<unsigned>(ack_msg.at(0))) + " at time: " + command_gui_.microsec_simple_time_of_day()));
-                mesg.push_back(ack_msg.at(1));
-                mesg.push_back(string(" at time: " + command_gui_.microsec_simple_time_of_day()));
+                DCCLHeaderDecoder head_decoder(expire_msg.orig_msg().data());
+                mesg.push_back(string("</B>Message </16>expired<!16> from queue: " + dccl_.id2name(expire_msg.orig_msg().queue_key().id())));
+                mesg.push_back(string(" for destination: " + modem_lookup_.get_name_from_id(expire_msg.orig_msg().base().dest())));
+                mesg.push_back(string(" at time: " + expire_msg.orig_msg().base().time()));
                 gui_.disp_info(mesg);
             }
-            catch(std::exception&) // boost::lexical_cast and goby::acomms::DCCLCodec
+            catch(...)
             { }
+            
         }
         else
         {

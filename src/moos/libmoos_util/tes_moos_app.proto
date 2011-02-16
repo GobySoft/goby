@@ -14,7 +14,8 @@ message TesMoosAppConfig
                                     (description)="Latitude in decimal degrees of the local cartesian datum",
                                     (example)="42.5"];
   optional double lon_origin = 104 [(moos_global) = "LongOrigin",
-                                    (description)="Longitude in decimal degrees of the local cartesian datum", (example)="10.9"];
+                                    (description)="Longitude in decimal degrees of the local cartesian datum",
+                                    (example)="10.9"];
   
   optional uint32 app_tick = 1 [default = 10,
                                 (description)="Frequency at which to run Iterate()."];
@@ -34,11 +35,15 @@ message TesMoosAppConfig
       INI_DOUBLE = 1;
       INI_STRING = 2;
     }
-    required Type type = 1 [(description)="type of MOOS variable to publish", (example)="INI_DOUBLE"];
-    required string moos_var = 2 [(description)="name of MOOS variable to publish to", (example)="SOME_MOOS_VAR"];
+    required Type type = 1 [(description)="type of MOOS variable to publish",
+                            (example)="INI_DOUBLE"];
+    required string moos_var = 2 [(description)="name of MOOS variable to publish to",
+                                  (example)="SOME_MOOS_VAR"];
     optional string global_cfg_var = 3 [(description)="Optionally, instead of giving `sval` or `dval`, give a name here of a global MOOS variable (one at the top of the file) whose contents should be written to `moos_var`", (example)="LatOrigin"]; // pull from globals at top of MOOS file
-    optional double dval = 4 [(description)="Value to write for type==INI_DOUBLE", (example)="3.454"]; // required if type == MOOS_DOUBLE
-    optional string sval = 5 [(description)="Value to write for type==INI_STRING", (example)="a string"]; // required if type == MOOS_STRING
+    optional double dval = 4 [(description)="Value to write for type==INI_DOUBLE",
+                              (example)="3.454"]; // required if type == MOOS_DOUBLE
+    optional string sval = 5 [(description)="Value to write for type==INI_STRING",
+                              (example)="a string"]; // required if type == MOOS_STRING
   }  
   repeated Initializer initializer = 10 [(description)="Publish a constant value to the MOOSDB at startup"];
 }

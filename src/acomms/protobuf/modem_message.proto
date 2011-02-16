@@ -1,3 +1,4 @@
+import "goby/acomms/protobuf/queue.proto";
 // TODO(tes) consider using extensions to handle different modem characteristics
 
 package goby.acomms.protobuf;
@@ -23,7 +24,7 @@ message ModemDataTransmission
   //  optional uint32 max_bytes = 3;
   optional bytes data = 4; // data (encoded as a byte string - eight bits to the character)
   optional uint32 frame = 5 [default = 0];  // frame number if the modem supports multiple frames per packet
-
+  optional QueueKey queue_key = 6;
 
   extensions 1000 to max;
 }
@@ -33,6 +34,7 @@ message ModemDataAck
   required ModemMsgBase base = 1;
   optional uint32 frame = 2 [default = 0];
   optional ModemDataTransmission orig_msg = 3; // will be provided by libqueue
+  // TODO(tes) put DCCL header in here if DCCL
 }
 
 message ModemDataExpire
@@ -45,7 +47,7 @@ message ModemDataRequest
   required ModemMsgBase base = 1;
   optional uint32 max_bytes = 2; // omitted means no maximum
   optional uint32 frame = 3 [default = 0]; 
-}
+ }
 
 message ModemDataInit
 {

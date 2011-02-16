@@ -40,7 +40,7 @@ void goby::acomms::QueueContentHandler::startElement(
             
         case tag_message:
             q_.push_back(protobuf::QueueConfig());
-            q_.back().set_type(protobuf::QUEUE_DCCL);
+            q_.back().mutable_key()->set_type(protobuf::QUEUE_DCCL);
             break;
     }
     
@@ -82,7 +82,7 @@ void goby::acomms::QueueContentHandler::endElement(
             break;        
 
         case tag_id:
-            q_.back().set_id(as<uint32>(trimmed_data));
+            q_.back().mutable_key()->set_id(as<uint32>(trimmed_data));
             break;
 
         case tag_priority_base:

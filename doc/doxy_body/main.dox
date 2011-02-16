@@ -46,7 +46,7 @@ write to Launchpad or access private data.  See "bzr help launchpad-login". </tt
       <ol>
         <li> Register or login to launchpad: <https://launchpad.net/goby/+login>
         <li> Contact <https://launchpad.net/~tes> for access to the goby project
-        <li> Let bzr know your launchpad id: \verbatim bzr launchpad-login tes \endverbatim
+        <li> Let bzr know your launchpad id (replacing <tt>tes</tt> with your new launchpad id): \verbatim bzr launchpad-login tes \endverbatim
         <li> Checkout a copy of goby: \verbatim bzr checkout lp:goby \endverbatim
       </ol>
   </ul>

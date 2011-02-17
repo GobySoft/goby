@@ -38,7 +38,6 @@ int main()
 
     goby::acomms::protobuf::QueueManagerConfig cfg;
     cfg.set_modem_id(our_id);
-    cfg.set_schema("../../../libdccl/message_schema.xsd");
     cfg.add_message_file()->set_path(QUEUE_EXAMPLES_DIR "/queue_simple/simple.xml");
     q_manager.set_cfg(cfg);
     

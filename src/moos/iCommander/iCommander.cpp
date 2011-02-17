@@ -31,7 +31,7 @@ using namespace goby::acomms;
 
 // Construction / Destruction
 CiCommander::CiCommander()
-    : command_gui_(gui_, gui_mutex_, geodesy_, modem_lookup_, m_Comms, schema_, dccl_, loads_, community_, xy_only_),
+    : command_gui_(gui_, gui_mutex_, geodesy_, modem_lookup_, m_Comms, dccl_, loads_, community_, xy_only_),
       command_gui_thread_(boost::bind(&CommandGui::run, &command_gui_)),
       start_time_(MOOSTime())
 { }
@@ -158,11 +158,6 @@ void CiCommander::RegisterVariables()
 bool CiCommander::ReadConfiguration()
 {
 
-    // read the schema
-    if (!m_MissionReader.GetConfigurationParam("schema", schema_))
-    {
-        std::cerr << "no schema specified. xml error checking disabled!" << std::endl;
-    }
 
     double latOrigin, longOrigin;
     std::cerr << "reading in geodesy information: " << std::endl;
@@ -218,7 +213,6 @@ bool CiCommander::ReadConfiguration()
                 // parse the message file
                 protobuf::DCCLConfig cfg;
                 cfg.add_message_file()->set_path(value);
-                cfg.set_schema(schema_);
                 dccl_.merge_cfg(cfg);
                 std::cerr << "success!" << std::endl;
             }

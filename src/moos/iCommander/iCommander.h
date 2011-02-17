@@ -57,7 +57,6 @@ class CiCommander : public CMOOSApp
     CommanderCdk gui_;
     CMOOSGeodesy geodesy_;
     tes::ModemIdConvert modem_lookup_;
-    std::string schema_;
     goby::acomms::DCCLCodec dccl_;
     std::vector<std::string> loads_;
     std::string community_;

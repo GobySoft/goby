@@ -33,36 +33,9 @@ int goby::acomms::QueueManager::modem_id_ = 0;
 
 goby::acomms::QueueManager::QueueManager(std::ostream* log /* =0 */)
     : log_(log),
-      packet_ack_(0)
+      packet_ack_(0),
+      packet_dest_(BROADCAST_ID)
 {}
-    
-goby::acomms::QueueManager::QueueManager(const std::string& file, const std::string schema, std::ostream* log /* =0 */)
-    : log_(log),
-      packet_ack_(0)
-
-{ add_xml_queue_file(file, schema); }
-    
-goby::acomms::QueueManager::QueueManager(const std::set<std::string>& files,
-                                         const std::string schema, std::ostream* log /* =0 */)
-    : log_(log),
-      packet_ack_(0)
-{
-    BOOST_FOREACH(const std::string& s, files)
-        add_xml_queue_file(s, schema);
-}
-
-goby::acomms::QueueManager::QueueManager(const protobuf::QueueConfig& cfg, std::ostream* log /* =0 */)
-    : log_(log),
-      packet_ack_(0)
-{ add_queue(cfg); }
-
-goby::acomms::QueueManager::QueueManager(const std::set<protobuf::QueueConfig>& cfgs, std::ostream* log /* =0 */)
-    : log_(log),
-      packet_ack_(0)
-{
-    BOOST_FOREACH(const protobuf::QueueConfig& c, cfgs)
-        add_queue(c);    
-}
 
 void goby::acomms::QueueManager::add_queue(const protobuf::QueueConfig& cfg)
 {
@@ -90,8 +63,7 @@ void goby::acomms::QueueManager::add_queue(const protobuf::QueueConfig& cfg)
     
 }
 
-std::set<unsigned> goby::acomms::QueueManager::add_xml_queue_file(const std::string& xml_file,
-                                                                  const std::string xml_schema)
+std::set<unsigned> goby::acomms::QueueManager::add_xml_queue_file(const std::string& xml_file)
 {
     std::vector<protobuf::QueueConfig> cfgs;
 
@@ -105,7 +77,7 @@ std::set<unsigned> goby::acomms::QueueManager::add_xml_queue_file(const std::str
     
     std::set<unsigned> added_ids;
     
-    parser.parse(xml_file, xml_schema);
+    parser.parse(xml_file, DCCL_INCLUDE_DIR "/message_schema.xsd");
     BOOST_FOREACH(const protobuf::QueueConfig& c, cfgs)
     {
         add_queue(c);
@@ -158,7 +130,7 @@ void goby::acomms::QueueManager::push_message(const protobuf::ModemDataTransmiss
 
         if(data_msg.queue_key().type() == protobuf::QUEUE_DCCL && manip_manager_.has(data_msg.queue_key().id(), protobuf::MessageFile::LOOPBACK))
         {
-            if(log_) *log_ << group("q_out") << "LOOPBACK manipulator set, sending back to decoder" << std::endl;
+            if(log_) *log_ << group("q_out") << data_msg.queue_key() << " LOOPBACK manipulator set, sending back to decoder" << std::endl;
             handle_modem_receive(data_msg);
         }        
     }
@@ -198,10 +170,16 @@ std::ostream& goby::acomms::operator<< (std::ostream& out, const QueueManager& d
 void goby::acomms::QueueManager::handle_modem_data_request(const protobuf::ModemDataRequest& request_msg, protobuf::ModemDataTransmission* data_msg)
 {
     if(request_msg.frame() == 0)
+    {
         clear_packet();
-    else // discipline remaining frames to the first frame ack value
-        data_msg->set_ack_requested(packet_ack_);
-    
+    }
+    else
+    {
+        if(packet_ack_)
+            data_msg->set_ack_requested(packet_ack_);
+
+        data_msg->mutable_base()->set_dest(packet_dest_);    
+    }
     // first (0th) user-frame
     Queue* winning_queue = find_next_sender(request_msg, *data_msg, true);
     
@@ -209,6 +187,7 @@ void goby::acomms::QueueManager::handle_modem_data_request(const protobuf::Modem
     if(!winning_queue)
     {
         data_msg->set_ack_requested(packet_ack_);
+        data_msg->mutable_base()->set_dest(packet_dest_);
         if(log_) *log_<< group("q_out") << "no data found. sending blank to firmware" 
                       << ": " << *data_msg << std::endl; 
     }
@@ -240,16 +219,26 @@ bool goby::acomms::QueueManager::stitch_recursive(const protobuf::ModemDataReque
         winning_queue->pop_message(complete_data_msg->frame());
         qsize(winning_queue); // notify change in queue size
     }
-    
-    if(winning_queue->cfg().key().type() == protobuf::QUEUE_DCCL)
+
+    if(request_msg.frame() == 0)
     {
         // discipline the destination of the packet if initially unset
         if(complete_data_msg->base().dest() == QUERY_DESTINATION_ID)
-            complete_data_msg->mutable_base()->set_dest(next_data_msg.base().dest());    
+            complete_data_msg->mutable_base()->set_dest(next_data_msg.base().dest());
 
-        // if an ack been set, do not unset these
-        if (packet_ack_ == false) packet_ack_ = next_data_msg.ack_requested();    
-
+        if(packet_dest_ == BROADCAST_ID)
+            packet_dest_ = complete_data_msg->base().dest();
+    }
+    else
+    {
+        complete_data_msg->mutable_base()->set_dest(packet_dest_);
+    }
+        
+    // if an ack been set, do not unset these
+    if (packet_ack_ == false) packet_ack_ = next_data_msg.ack_requested();
+    
+    if(winning_queue->cfg().key().type() == protobuf::QUEUE_DCCL)
+    {   
         // e.g. 32B
         std::string new_data = next_data_msg.data();
         
@@ -327,7 +316,8 @@ void goby::acomms::QueueManager::clear_packet()
     
     waiting_for_ack_.clear();
     
-    packet_ack_ = 0;
+    packet_ack_ = false;
+    packet_dest_ = BROADCAST_ID;
 }
 
 
@@ -340,9 +330,10 @@ goby::acomms::Queue* goby::acomms::QueueManager::find_next_sender(const protobuf
 
     Queue* winning_queue = 0;
     
-    if(log_) *log_<< group("priority") << "starting priority contest"
-                  << "... have " << data_msg 
-                  << "requesting: " << request_msg << std::endl;
+    if(log_) *log_<< group("priority") << "starting priority contest\n"
+                  << "requesting: " << request_msg << "\n"
+                  << "have " << data_msg.data().size() << "/" << request_msg.max_bytes() << "B: " << data_msg << std::endl;
+
     
     for(std::map<protobuf::QueueKey, Queue>::iterator it = queues_.begin(), n = queues_.end(); it != n; ++it)
     {
@@ -372,9 +363,7 @@ goby::acomms::Queue* goby::acomms::QueueManager::find_next_sender(const protobuf
                 winning_priority = priority;
                 winning_last_send_time = last_send_time;
                 winning_queue = &oq;
-            }            if(log_) *log_<< group("priority") << "\t" << oq.cfg().name()
-                                       << " has priority value"
-                                       << ": " << priority << std::endl;
+            }
         }
     }
 
@@ -595,7 +584,7 @@ void goby::acomms::QueueManager::process_cfg()
     
     for(int i = 0, n = cfg_.message_file_size(); i < n; ++i)
     {
-        std::set<unsigned> new_ids = add_xml_queue_file(cfg_.message_file(i).path(), cfg_.schema());
+        std::set<unsigned> new_ids = add_xml_queue_file(cfg_.message_file(i).path());
         BOOST_FOREACH(unsigned new_id, new_ids)
         {
             for(int j = 0, o = cfg_.message_file(i).manipulator_size(); j < o; ++j)

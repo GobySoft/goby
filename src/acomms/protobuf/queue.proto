@@ -35,8 +35,7 @@ message QueueManagerConfig
 {
   required int32 modem_id = 1 [(description)="Unique number 1-31 to identify this node", (example)="1"];
   repeated MessageFile message_file = 2 [(description)="XML message file containing one or more DCCL message descriptions. Use for specifying DCCL queues."];
-  optional string schema = 3 [(description)="Path to message_schema.xsd used to validate your DCCL message_files. If using a relative path, this is relative to the location of the XML files", (example)="/home/toby/goby/src/acomms/libdccl/message_schema.xsd"];
-  repeated QueueConfig queue = 4 [(description)="Use for specifying CCL queues; use message_file for DCCL queues."];
+  repeated QueueConfig queue = 3 [(description)="Use for specifying CCL queues; use message_file for DCCL queues."];
 }
 
 

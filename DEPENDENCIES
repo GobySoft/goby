@@ -58,7 +58,8 @@ debian_other_packages=\
 "libcrypto++-dev
 libncurses-dev
 libprotobuf-dev
-protobuf-compiler"
+protobuf-compiler
+libcdk5-dev"
 
 debian_wt_packages=\
 "libwt-dev

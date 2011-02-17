@@ -25,7 +25,6 @@ class CommandGui
                CMOOSGeodesy & geodesy,
                tes::ModemIdConvert & modem_lookup,
                CMOOSCommClient & comms,
-               std::string & schema,
                goby::acomms::DCCLCodec & dccl,
                std::vector<std::string> & loads,
                std::string & community,
@@ -88,7 +87,6 @@ class CommandGui
     CMOOSGeodesy & geodesy_;
     tes::ModemIdConvert & modem_lookup_;
     CMOOSCommClient & m_Comms;
-    std::string & schema_;
     goby::acomms::DCCLCodec & dccl_;
     std::vector<std::string> & loads_;
     std::string & community_;

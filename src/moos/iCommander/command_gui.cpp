@@ -15,7 +15,6 @@ CommandGui::CommandGui(CommanderCdk & gui,
                        CMOOSGeodesy & geodesy,
                        tes::ModemIdConvert & modem_lookup,
                        CMOOSCommClient & comms,
-                       std::string & schema,
                        DCCLCodec & dccl,
                        std::vector<std::string> & loads,
                        std::string & community,
@@ -26,7 +25,6 @@ CommandGui::CommandGui(CommanderCdk & gui,
       geodesy_(geodesy),
       modem_lookup_(modem_lookup),
       m_Comms(comms),
-      schema_(schema),
       dccl_(dccl),
       loads_(loads),
       community_(community),
@@ -338,7 +336,6 @@ void CommandGui::import_xml()
         {
             protobuf::DCCLConfig cfg;
             cfg.add_message_file()->set_path(filename);
-            cfg.set_schema(schema_);
             dccl_.merge_cfg(cfg);
             gui_.disp_scroll(string("Imported:\n" + filename), vector<string>(1, "OK"));
         }

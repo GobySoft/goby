@@ -59,32 +59,6 @@ namespace goby
             /// \param os std::ostream object or FlexOstream to capture all humanly readable runtime and debug information (optional).
             QueueManager(std::ostream* os = 0);
 
-            /// \brief Instantiate with a single XML file.
-            ///
-            /// \param file path to an XML queuing configuration (i.e. contains a \verbatim <queuing/> \endverbatim section) file to parse for use by the QueueManager.
-            /// \param schema path (absolute or relative to the XML file path) for the validating schema (message_schema.xsd) (optional).
-            /// \param os std::ostream object or FlexOstream to capture all humanly readable runtime and debug information (optional).
-            QueueManager(const std::string& file, const std::string schema = "", std::ostream* os = 0);
-        
-            /// \brief Instantiate with a set of XML files
-            /// 
-            /// \param files set of paths to XML queuing configuration (i.e. contains a \verbatim <queuing/> \endverbatim section) files to parse for use by the QueueManager.
-            /// \param os std::ostream object or FlexOstream to capture all humanly readable runtime and debug information (optional).
-            QueueManager(const std::set<std::string>& files, const std::string schema = "", std::ostream* os = 0);
-
-
-            /// \brief Instantiate with a single QueueConfig object.
-            ///
-            /// \param cfg QueueConfig object to initialize a new %queue with. Use the QueueConfig largely for non-DCCL messages. Use the XML file constructors for XML configured DCCL messages.
-            /// \param os std::ostream object or FlexOstream to capture all humanly readable runtime and debug information (optional).
-            QueueManager(const protobuf::QueueConfig& cfg, std::ostream* os = 0);
-        
-            /// \brief Instantiate with a set of QueueConfig objects.
-            //
-            /// \param cfgs Set of QueueConfig objects to initialize new %queues with. Use the QueueConfig largely for non-DCCL messages. Use the XML file constructors for XML configured DCCL messages.
-            /// \param os std::ostream object or FlexOstream to capture all humanly readable runtime and debug information (optional).
-            QueueManager(const std::set<protobuf::QueueConfig>& cfgs, std::ostream* os = 0);
-
             /// Destructor.
             ~QueueManager() { }
         
@@ -187,10 +161,7 @@ namespace goby
             /// \brief Add more %queues by configuration XML files (typically contained in DCCL message XML files).
             ///
             /// \param xml_file path to the XML file to parse and add to this codec.
-            /// \param xml_schema path to the message_schema.xsd file to validate XML with. if using a relative path this
-            /// must be relative to the directory of the xml_file, not the present working directory. if not provided
-            /// no validation is done.
-            std::set<unsigned> add_xml_queue_file(const std::string& xml_file, const std::string xml_schema = "");
+            std::set<unsigned> add_xml_queue_file(const std::string& xml_file);
 
             /// \brief Add more Queues.
             ///
@@ -235,7 +206,8 @@ namespace goby
 
             // the first *user* frame sets the tone (dest & ack) for the entire packet (all %modem frames)
             unsigned packet_ack_;
-
+            int packet_dest_;
+ 
             protobuf::QueueManagerConfig cfg_;
             
             ManipulatorManager manip_manager_;

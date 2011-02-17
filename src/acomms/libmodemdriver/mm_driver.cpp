@@ -463,31 +463,22 @@ void goby::acomms::MMDriver::ack(const NMEASentence& nmea, protobuf::ModemDataAc
 
 void goby::acomms::MMDriver::drq(const NMEASentence& nmea_in)
 {    
-    NMEASentence nmea_out("$CCTXD", NMEASentence::IGNORE);
-
     // use the cached data
     if(!cached_data_msgs_.empty())
     {
+        NMEASentence nmea_out("$CCTXD", NMEASentence::IGNORE);
+
         protobuf::ModemDataTransmission& data_msg = cached_data_msgs_.front();    
         nmea_out.push_back(data_msg.base().src());
         nmea_out.push_back(data_msg.base().dest());
         nmea_out.push_back(int(data_msg.ack_requested()));
         nmea_out.push_back(hex_encode(data_msg.data()));
         cached_data_msgs_.pop_front();
-    }
-    else // send a blank message to stop further DRQs
-    {
-        // $CCTXD,SRC,DEST,ACK bit, Hex encoded data message
-        // $CADRQ,Time,SRC,DEST,ACK Request Bit,Max # Bytes Requested,Frame Counter
-        nmea_out.push_back(nmea_in.at(2)); 
-        nmea_out.push_back(nmea_in.at(3));
-        nmea_out.push_back(nmea_in.at(4));
-        nmea_out.push_back("");
-    }
 
-    static protobuf::ModemMsgBase base_msg;
-    base_msg.Clear();
-    append_to_write_queue(nmea_out, &base_msg);   
+        static protobuf::ModemMsgBase base_msg;
+        base_msg.Clear();
+        append_to_write_queue(nmea_out, &base_msg);
+    }
 }
 
 void goby::acomms::MMDriver::rxd(const NMEASentence& nmea, protobuf::ModemDataTransmission* m)
@@ -593,8 +584,10 @@ void goby::acomms::MMDriver::cyc(const NMEASentence& nmea, protobuf::ModemDataIn
     // somewhat "loose" interpretation of some of the fields
     init_msg->mutable_base()->set_src(as<uint32>(nmea[2])); // ADR1
     init_msg->mutable_base()->set_dest(as<uint32>(nmea[3])); // ADR2
+    init_msg->mutable_base()->set_rate(as<uint32>(nmea[4])); // Rate
     init_msg->set_num_frames(as<uint32>(nmea[6])); // Npkts, number of packets
-
+    
+    
     // if we're supposed to send and we didn't initiate the cycle
     if(!local_cccyc_)
         cache_outgoing_data(*init_msg);
@@ -631,10 +624,10 @@ void goby::acomms::MMDriver::cache_outgoing_data(const protobuf::ModemDataInit& 
 
             signal_data_request(request_msg, &data_msg);
         
+
+            cached_data_msgs_.push_back(data_msg);
             // no more data to send
             if(data_msg.data().empty()) break;
-        
-            cached_data_msgs_.push_back(data_msg);
         }
     }
 }

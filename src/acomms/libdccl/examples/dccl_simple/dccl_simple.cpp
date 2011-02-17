@@ -39,7 +39,6 @@ int main()
     // checking (syntax).
     goby::acomms::DCCLCodec dccl;    
     goby::acomms::protobuf::DCCLConfig cfg;
-    cfg.set_schema("../../message_schema.xsd");
     cfg.add_message_file()->set_path(DCCL_EXAMPLES_DIR "/dccl_simple/simple.xml");
     dccl.set_cfg(cfg);
     

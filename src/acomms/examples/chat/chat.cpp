@@ -87,7 +87,6 @@ int main(int argc, char* argv[])
     //
     goby::acomms::protobuf::DCCLConfig dccl_cfg;
     dccl_cfg.add_message_file()->set_path(ACOMMS_EXAMPLES_DIR "/chat/chat.xml");
-    dccl_cfg.set_schema("../../libdccl/message_schema.xsd");
     
     //
     // Initiate queue manager (libqueue)

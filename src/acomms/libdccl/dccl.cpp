@@ -40,8 +40,7 @@ goby::acomms::DCCLCodec::DCCLCodec(std::ostream* log /* =0 */)
       start_time_(goby_time())
 { }
 
-std::set<unsigned> goby::acomms::DCCLCodec::add_xml_message_file(const std::string& xml_file,
-                                                                 const std::string xml_schema)
+std::set<unsigned> goby::acomms::DCCLCodec::add_xml_message_file(const std::string& xml_file)
 {
     size_t begin_size = messages_.size();
             
@@ -53,7 +52,7 @@ std::set<unsigned> goby::acomms::DCCLCodec::add_xml_message_file(const std::stri
     XMLParser parser(content, error);
     // parse(file, [schema])
 
-    parser.parse(xml_file, xml_schema);
+    parser.parse(xml_file, DCCL_INCLUDE_DIR "/message_schema.xsd");
 
     size_t end_size = messages_.size();
     
@@ -434,7 +433,7 @@ void goby::acomms::DCCLCodec::process_cfg()
 
     for(int i = 0, n = cfg_.message_file_size(); i < n; ++i)
     {
-        std::set<unsigned> new_ids = add_xml_message_file(cfg_.message_file(i).path(), cfg_.schema());
+        std::set<unsigned> new_ids = add_xml_message_file(cfg_.message_file(i).path());
         BOOST_FOREACH(unsigned new_id, new_ids)
         {
             for(int j = 0, o = cfg_.message_file(i).manipulator_size(); j < o; ++j)

@@ -175,8 +175,15 @@ bool goby::acomms::Queue::priority_values(double& priority,
         if(log_) *log_<< group("priority") << "\t" <<  cfg_.name() << " next message requires ACK and the packet does not" << std::endl;
         return false; 
     }
-
-    return true;
+    else // ok!
+    {
+        if(log_) *log_<< group("priority") << "\t" << cfg().name()
+                      << " (" << next_msg_it->data().size()
+                      << "B) has priority value"
+                      << ": " << priority << std::endl;
+        return true;
+    }
+    
 }
 
 bool goby::acomms::Queue::pop_message(unsigned frame)

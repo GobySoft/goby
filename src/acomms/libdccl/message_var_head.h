@@ -75,7 +75,8 @@ namespace goby
 
             void set_defaults_specific(DCCLMessageVal& v, unsigned modem_id, unsigned id)
             {
-                v = (!v.empty()) ? v : DCCLMessageVal(util::ptime2unix_double(util::goby_time()));
+                double d;
+                v = (!v.empty() && v.get(d)) ? v : DCCLMessageVal(util::ptime2unix_double(util::goby_time()));
             }
         
             boost::dynamic_bitset<unsigned char> encode_specific(const DCCLMessageVal& v)

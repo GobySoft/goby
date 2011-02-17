@@ -35,7 +35,6 @@ int main()
     acomms::DCCLCodec dccl;
 
     goby::acomms::protobuf::DCCLConfig cfg;
-    cfg.set_schema("../../message_schema.xsd");
     cfg.add_message_file()->set_path(DCCL_EXAMPLES_DIR "/plusnet/nafcon_command.xml");
     cfg.add_message_file()->set_path(DCCL_EXAMPLES_DIR "/plusnet/nafcon_report.xml");
     

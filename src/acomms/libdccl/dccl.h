@@ -438,11 +438,8 @@ namespace goby
             /// \brief Add more messages to this instance of the codec.
             ///
             /// \param xml_file path to the xml file to parse and add to this codec.
-            /// \param xml_schema path to the message_schema.xsd file to validate XML with. if using a relative path this
-            /// must be relative to the directory of the xml_file, not the present working directory. if not provided
-            /// no validation is done.
             /// \return returns id of the last message file parsed. note that there can be more than one message in a file
-            std::set<unsigned> add_xml_message_file(const std::string& xml_file, const std::string xml_schema = "");
+            std::set<unsigned> add_xml_message_file(const std::string& xml_file);
             
             std::vector<DCCLMessage>::const_iterator to_iterator(const std::string& message_name) const;
             std::vector<DCCLMessage>::iterator to_iterator(const std::string& message_name);
@@ -482,7 +479,6 @@ namespace goby
 
             protobuf::DCCLConfig cfg_;
 
-            std::string xml_schema_;
             boost::posix_time::ptime start_time_;
 
             // SHA256 hash of the crypto passphrase

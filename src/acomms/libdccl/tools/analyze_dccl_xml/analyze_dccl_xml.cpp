@@ -20,27 +20,22 @@ using goby::acomms::operator<<;
 
 int main(int argc, char* argv[])
 {
-    std::string xml_file, xml_schema;
+    std::string xml_file;
     switch(argc)
     {
-        case 3:
-            xml_schema = argv[2];
-            // no break intentional
         case 2:
             xml_file = argv[1];
             break;
 
         default:
-            std::cout << "usage: analyze_dccl_xml message_xml_file.xml [schema_path]" << std::endl;
+            std::cout << "usage: analyze_dccl_xml message_xml_file.xml" << std::endl;
             exit(EXIT_FAILURE);
     }
 
-    std::cout << "creating DCCLCodec using xml file: [" << xml_file << "] and schema: [" << xml_schema << "]" << std::endl;
-    std::cout << "schema must be specified with an absolute path or a relative path to the xml file location (not pwd!)" << std::endl;
+    std::cout << "creating DCCLCodec using xml file: [" << xml_file << "]" << std::endl;
     
     goby::acomms::DCCLCodec dccl;    
     goby::acomms::protobuf::DCCLConfig cfg;
-    cfg.set_schema(xml_schema);
     cfg.add_message_file()->set_path(xml_file);
     dccl.set_cfg(cfg);
 

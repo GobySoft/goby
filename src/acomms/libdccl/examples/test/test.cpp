@@ -68,7 +68,6 @@ int main()
     // instantiate the parser with a single xml file
     goby::acomms::DCCLCodec dccl;    
     goby::acomms::protobuf::DCCLConfig cfg;
-    cfg.set_schema("../../message_schema.xsd");
     cfg.add_message_file()->set_path(DCCL_EXAMPLES_DIR "/test/test.xml");
     // must be kept secret!
     cfg.set_crypto_passphrase("my_passphrase!");

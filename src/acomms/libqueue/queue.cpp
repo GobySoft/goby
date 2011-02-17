@@ -40,11 +40,22 @@ bool goby::acomms::Queue::push_message(const protobuf::ModemDataTransmission& da
     if(data_msg.data().empty())
     {
         if(log_) *log_ << group("q_out") << warn
-                     << "empty message attempted to be pushed to queue "
-                     << cfg_.name() << std::endl;
+                       << "empty message attempted to be pushed to queue "
+                       << cfg_.name() << std::endl;
         return false;
     }
-        
+    else if(cfg_.key().type() == protobuf::QUEUE_CCL && data_msg.data()[0] != char(cfg_.key().id()))
+    {
+        if(log_) *log_ << group("q_out") << warn
+                       << "CCL message attempted to be pushed to queue "
+                       << cfg_.name() << " that doesn't have proper CCL byte. " 
+                       << "expecting: " << cfg_.key().id() << ", given: " << int(data_msg.data()[0])
+                       << std::endl;
+        return false;
+    }
+    
+    
+    
     messages_.push_back(data_msg);
     
     protobuf::ModemDataTransmission* new_data_msg = &messages_.back();
@@ -100,7 +111,12 @@ goby::acomms::protobuf::ModemDataTransmission goby::acomms::Queue::give_data(con
 
     bool ack = it_to_give->ack_requested();
     // broadcast cannot acknowledge
-    if(it_to_give->base().dest() == BROADCAST_ID) ack = false;
+    if(it_to_give->base().dest() == BROADCAST_ID && ack == true)
+    {
+        if(log_) *log_ << group("pop") << warn << "overriding ack request and setting ack = false because dest = BROADCAST (0) cannot acknowledge messages" << std::endl;
+        ack = false;
+    }
+
     it_to_give->set_ack_requested(ack);
 
     if(ack)

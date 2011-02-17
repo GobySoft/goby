@@ -225,19 +225,12 @@ bool goby::acomms::QueueManager::stitch_recursive(const protobuf::ModemDataReque
     // new user frame (e.g. 32B)
     protobuf::ModemDataTransmission next_data_msg = winning_queue->give_data(request_msg);
 
-    // discipline the destination of the packet if initially unset
-    if(complete_data_msg->base().dest() == QUERY_DESTINATION_ID)
-        complete_data_msg->mutable_base()->set_dest(next_data_msg.base().dest());
-    
     // message should never be empty
     if(next_data_msg.data().empty()) throw (queue_exception("empty message!"));
 
     if(log_) *log_<< group("q_out") << "sending data to firmware from: "
                   << winning_queue->cfg().name() 
                   << ": " << next_data_msg << std::endl;
-    
-    // if an ack been set, do not unset these
-    if (packet_ack_ == false) packet_ack_ = next_data_msg.ack_requested();    
      
     // insert ack if desired
     if(next_data_msg.ack_requested())
@@ -246,43 +239,59 @@ bool goby::acomms::QueueManager::stitch_recursive(const protobuf::ModemDataReque
     {
         winning_queue->pop_message(complete_data_msg->frame());
         qsize(winning_queue); // notify change in queue size
-    }    
-
-    // e.g. 32B
-    std::string new_data = next_data_msg.data();
-    
-    // insert the size of the next field (e.g. 33B) right after the header
-    std::string frame_size(USER_FRAME_NEXT_SIZE_BYTES,
-                           (next_data_msg.data().size()-DCCL_NUM_HEADER_BYTES));
-    new_data.insert(DCCL_NUM_HEADER_BYTES, frame_size);
-    
-    // append without the CCL ID (old size + 32B)
-    *(complete_data_msg->mutable_data()) += new_data.substr(CCL_ID_BYTES);
-    
-    bool is_last_user_frame = true;
-    // if true, we may be able to add more user-frames to this message
-    if((request_msg.max_bytes() - complete_data_msg->data().size()) > DCCL_NUM_HEADER_BYTES
-       && winning_queue->cfg().key().type() != protobuf::QUEUE_CCL)
-    {
-        winning_queue = find_next_sender(request_msg, *complete_data_msg, false);
-        if(winning_queue) is_last_user_frame = false;
     }
-
-    if(!is_last_user_frame)
+    
+    if(winning_queue->cfg().key().type() == protobuf::QUEUE_DCCL)
     {
-        replace_header(false, complete_data_msg, next_data_msg, new_data);
-        return stitch_recursive(request_msg, complete_data_msg, winning_queue);
+        // discipline the destination of the packet if initially unset
+        if(complete_data_msg->base().dest() == QUERY_DESTINATION_ID)
+            complete_data_msg->mutable_base()->set_dest(next_data_msg.base().dest());    
+
+        // if an ack been set, do not unset these
+        if (packet_ack_ == false) packet_ack_ = next_data_msg.ack_requested();    
+
+        // e.g. 32B
+        std::string new_data = next_data_msg.data();
+        
+        // insert the size of the next field (e.g. 33B) right after the header
+        std::string frame_size(USER_FRAME_NEXT_SIZE_BYTES,
+                               (next_data_msg.data().size()-DCCL_NUM_HEADER_BYTES));
+        new_data.insert(DCCL_NUM_HEADER_BYTES, frame_size);
+        
+        // append without the CCL ID (old size + 32B)
+        *(complete_data_msg->mutable_data()) += new_data.substr(CCL_ID_BYTES);
+        
+        bool is_last_user_frame = true;
+        // if true, we may be able to add more user-frames to this message
+        if((request_msg.max_bytes() - complete_data_msg->data().size()) > DCCL_NUM_HEADER_BYTES
+           && winning_queue->cfg().key().type() != protobuf::QUEUE_CCL)
+        {
+            winning_queue = find_next_sender(request_msg, *complete_data_msg, false);
+            if(winning_queue) is_last_user_frame = false;
+        }
+        
+        if(!is_last_user_frame)
+        {
+            replace_header(false, complete_data_msg, next_data_msg, new_data);
+            return stitch_recursive(request_msg, complete_data_msg, winning_queue);
+        }
+        else
+        {
+            replace_header(true, complete_data_msg, next_data_msg, new_data);
+            // add the CCL ID back on to the message (e.g. 33B)
+            complete_data_msg->mutable_data()->insert(0, std::string(1, DCCL_CCL_HEADER));
+            // remove the size of the next field from the last user-frame (e.g. 32B).
+            complete_data_msg->mutable_data()->erase(complete_data_msg->data().size()-new_data.size()+DCCL_NUM_HEADER_BYTES, USER_FRAME_NEXT_SIZE_BYTES);
+            // set the ack to conform to the entire message
+            complete_data_msg->set_ack_requested(packet_ack_);
+            
+            return true;
+        }
     }
     else
     {
-        replace_header(true, complete_data_msg, next_data_msg, new_data);
-        // add the CCL ID back on to the message (e.g. 33B)
-        complete_data_msg->mutable_data()->insert(0, std::string(1, DCCL_CCL_HEADER));
-        // remove the size of the next field from the last user-frame (e.g. 32B).
-        complete_data_msg->mutable_data()->erase(complete_data_msg->data().size()-new_data.size()+DCCL_NUM_HEADER_BYTES, USER_FRAME_NEXT_SIZE_BYTES);
-        // set the ack to conform to the entire message
-        complete_data_msg->set_ack_requested(packet_ack_);
-        
+        // not DCCL, copy the msg and we are done
+        complete_data_msg->CopyFrom(next_data_msg);
         return true;
     }
 }

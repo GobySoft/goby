@@ -120,7 +120,7 @@ namespace goby
             void var_decode(std::map<std::string,std::vector<DCCLMessageVal> >& vals,
                             boost::dynamic_bitset<unsigned char>& bits);
 
-            void set_defaults(std::map<std::string,std::vector<DCCLMessageVal> >& vals, unsigned modem_id, unsigned idcd);  
+            void set_defaults(std::map<std::string,std::vector<DCCLMessageVal> >& vals, unsigned modem_id, unsigned id);  
         
             virtual int calc_size() const = 0;
             virtual int calc_total_size() const

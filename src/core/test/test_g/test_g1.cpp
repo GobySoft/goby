@@ -45,7 +45,7 @@ namespace dbo = Wt::Dbo;
 class TestG1 : public goby::core::ApplicationBase
 {
 public:
-    TestG1() : goby::core::ApplicationBase(&cfg_)
+    TestG1() //: goby::core::ApplicationBase(&cfg_)
         {
             glogger().add_group("foo", Colors::blue);
             subscribe<TestMessage>();

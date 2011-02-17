@@ -33,8 +33,7 @@
 #include "tes_moos_app.pb.h"
 #include "goby/core/libcore/configuration_reader.h"
 #include "goby/core/libcore/exception.h"
-#include <google/protobuf/io/tokenizer.h>
-
+#include "moos_protobuf_helpers.h"
 
 namespace goby
 {
@@ -43,22 +42,6 @@ namespace goby
         template<typename App>
             int run(int argc, char* argv[]);
     }
-}
-
-inline void serialize_for_moos(std::string* out, const google::protobuf::Message& msg)
-{
-    google::protobuf::TextFormat::Printer printer;
-    printer.SetSingleLineMode(true);
-    printer.PrintToString(msg, out);
-}
-
-
-inline void parse_for_moos(const std::string& in, google::protobuf::Message* msg)
-{
-    google::protobuf::TextFormat::Parser parser;
-    FlexOStreamErrorCollector error_collector(in);
-    parser.RecordErrorsTo(&error_collector);
-    parser.ParseFromString(in, msg);
 }
 
 class TesMoosApp : public CMOOSApp

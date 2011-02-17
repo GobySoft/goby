@@ -8,7 +8,7 @@ message ModemMsgBase
 {
   optional int32 src = 1 [default = 0]; //  0 (BROADCAST), 1-31, 
   optional int32 dest = 2 [default = 0]; //  0 (BROADCAST), 1-31, -1 (QUERY_DESTINATION_ID)
-  required string time = 3; // UTC time output from operator<< of boost::posix_time::ptime: e.g. "2002-Jan-01 14:23:11"
+  optional string time = 3; // UTC time output from operator<< of boost::posix_time::ptime: e.g. "2002-Jan-01 14:23:11"
   enum TimeSource { MODEM_TIME = 1; GOBY_TIME = 2; } 
   optional TimeSource time_source = 5 [default = GOBY_TIME]; // source of the timestamp given  
   optional uint32 rate = 6 [default = 0]; // 0 (lowest) - 5 (highest)
@@ -19,7 +19,7 @@ message ModemMsgBase
 // data 
 message ModemDataTransmission
 {
-  required ModemMsgBase base = 1;
+  optional ModemMsgBase base = 1;
   optional bool ack_requested = 2 [default = true]; // acoustic acknowledgment requested
   //  optional uint32 max_bytes = 3;
   optional bytes data = 4; // data (encoded as a byte string - eight bits to the character)
@@ -31,7 +31,7 @@ message ModemDataTransmission
 
 message ModemDataAck
 {
-  required ModemMsgBase base = 1;
+  optional ModemMsgBase base = 1;
   optional uint32 frame = 2 [default = 0];
   optional ModemDataTransmission orig_msg = 3; // will be provided by libqueue
   // TODO(tes) put DCCL header in here if DCCL
@@ -44,14 +44,14 @@ message ModemDataExpire
 
 message ModemDataRequest
 {
-  required ModemMsgBase base = 1;
+  optional ModemMsgBase base = 1;
   optional uint32 max_bytes = 2; // omitted means no maximum
   optional uint32 frame = 3 [default = 0]; 
  }
 
 message ModemDataInit
 {
-  required ModemMsgBase base = 1;
+  optional ModemMsgBase base = 1;
   optional uint32 num_frames = 2 [default = 1];
 }
 
@@ -72,7 +72,7 @@ enum RangingType
 
 message ModemRangingReply
 {
-  required ModemMsgBase base = 1;
+  optional ModemMsgBase base = 1;
   // seconds
   repeated double one_way_travel_time = 2;  
   optional RangingType type = 3;
@@ -80,7 +80,7 @@ message ModemRangingReply
 
 message ModemRangingRequest
 {
-  required ModemMsgBase base = 1;
+  optional ModemMsgBase base = 1;
   optional RangingType type = 2;
 
   // meters, not used if type == MODEM_RANGING

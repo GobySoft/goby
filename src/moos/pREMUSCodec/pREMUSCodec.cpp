@@ -25,6 +25,8 @@
 
 #include "goby/util/string.h"
 #include "boost/algorithm/string.hpp"
+#include "goby/acomms/protobuf/modem_message.pb.h"
+#include "goby/moos/libmoos_util/moos_protobuf_helpers.h"
 
 using namespace std;
 using goby::util::as;
@@ -33,6 +35,7 @@ using goby::util::as;
 
 // Construction / Destruction
 CpREMUSCodec::CpREMUSCodec()
+    : my_id(0)
 {
   got_x =false;
   got_y = false;
@@ -176,7 +179,7 @@ for(MOOSMSG_LIST::iterator p = NewMail.begin(); p != NewMail.end(); p++)
             
             string human = decode_mdat_alert2(bytes, node, name, type);
 	  }
-	else if(MOOSStrCmp(key,"VEHICLE_ID"))
+	else if(MOOSStrCmp(key,"MODEM_ID"))
 	  {	 
 	    my_id = atoi(sval.c_str());
 	  } 
@@ -212,14 +215,26 @@ for(MOOSMSG_LIST::iterator p = NewMail.begin(); p != NewMail.end(); p++)
 	    if (parseRedirect(msg.m_sVal, dest_id))
 	      {
 		MOOSTrace("parseRedirect: dest_id= %d\n", dest_id);
-		vector<unsigned int> bytes;
+
+                vector<unsigned int> bytes;
 		for (int i=0; i<32; i++)
-		  bytes.push_back(0);
+                    bytes.push_back(0);
 		if (encode_mdat_redirect(bytes))
-		  {
-                      string out = "src=" + as<string>(my_id) + ",dest=" + as<string>(dest_id) + ",data=" + int_array_to_hex(bytes);
-                      m_Comms.Notify(mdat_redirect_out, out);
-		  }
+                {
+                    goby::acomms::protobuf::ModemDataTransmission msg_out;
+                    
+                    for (int i=0, n=bytes.size(); i<n; i++)
+                        msg_out.mutable_data()->append(1, char(bytes[i]));
+
+                    msg_out.mutable_base()->set_src(my_id);
+                    msg_out.mutable_base()->set_dest(dest_id);
+
+                    std::string out;
+                    serialize_for_moos(&out, msg_out);
+
+                    std::cerr << "publishing to " << mdat_redirect_out << " " << out << std::endl;
+                    m_Comms.Notify(mdat_redirect_out, out);
+                }
 	      }
 	  } 
     }  
@@ -250,9 +265,21 @@ bool CpREMUSCodec::Iterate()
 	bytes.push_back(0);
       if (encode_mdat_state(bytes))
 	{
-	  string out = "dest=" + as<string>(0) + ",data=" + int_array_to_hex(bytes);
-	  m_Comms.Notify(mdat_state_out, out);
-	  status_time = curr_time;
+            goby::acomms::protobuf::ModemDataTransmission msg_out;
+
+            for (int i=0, n=bytes.size(); i<n; i++)
+                msg_out.mutable_data()->append(1, char(bytes[i]));
+
+            msg_out.mutable_base()->set_src(my_id);
+            msg_out.mutable_base()->set_dest(0);
+            
+            std::string out;
+            serialize_for_moos(&out, msg_out);
+
+            std::cerr << "publishing to " << mdat_state_out << " " << out << std::endl;
+
+            m_Comms.Notify(mdat_state_out, out);
+            status_time = curr_time;
 	}
     }
   
@@ -283,7 +310,7 @@ void CpREMUSCodec::RegisterVariables()
     m_Comms.Register(mdat_alert_out, 0);
     m_Comms.Register(mdat_alert2_var, 0);
     m_Comms.Register(mdat_alert2_out, 0);
-    m_Comms.Register("VEHICLE_ID", 0);
+    m_Comms.Register("MODEM_ID", 0);
     m_Comms.Register("NAV_X", 0);
     m_Comms.Register("NAV_Y", 0);
     m_Comms.Register("NAV_SPEED", 0);

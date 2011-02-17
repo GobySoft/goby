@@ -146,14 +146,13 @@ namespace tes
     
     int ModemIdConvert::get_id_from_name(string name)
     {
-        
         for (map<int,string>::iterator it = names.begin(); it != names.end(); ++it)
         {
             if(goby::util::stricmp(it->second, name))
                 return it->first;
         }
-
-        return as<int>(name);
         
+        
+        return int(as<double>(name));
     }
 }

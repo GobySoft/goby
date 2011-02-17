@@ -132,7 +132,17 @@ void CpAcommsHandler::dccl_loop()
 
 void CpAcommsHandler::do_subscriptions()
 // RegisterVariables: register for variables we want to get mail for
-{        
+{
+    // non dccl
+    typedef std::pair<std::string, goby::acomms::protobuf::QueueKey> P;
+    BOOST_FOREACH(const P& p, out_moos_var2queue_)
+    {
+        if(p.second.type() != goby::acomms::protobuf::QUEUE_DCCL)
+            subscribe(p.first, &CpAcommsHandler::handle_message_push, this);
+    }
+        
+
+
     // ping
     subscribe(MOOS_VAR_COMMAND_RANGING, &CpAcommsHandler::handle_ranging_request, this);
 
@@ -217,7 +227,10 @@ void CpAcommsHandler::handle_message_push(const CMOOSMsg& msg)
 {
     goby::acomms::protobuf::ModemDataTransmission new_message;
     parse_for_moos(msg.GetString(), &new_message);
-    
+
+    if(!new_message.base().has_time())
+        new_message.mutable_base()->set_time(as<std::string>(goby::util::goby_time()));
+        
     goby::acomms::protobuf::QueueKey& qk = out_moos_var2queue_[msg.GetKey()];
     
     if(new_message.data().empty())
@@ -225,6 +238,10 @@ void CpAcommsHandler::handle_message_push(const CMOOSMsg& msg)
     else if(!(qk.type() == goby::acomms::protobuf::QUEUE_DCCL))
     {
         new_message.mutable_queue_key()->CopyFrom(out_moos_var2queue_[msg.GetKey()]);
+        
+        std::string serialized;
+        serialize_for_moos(&serialized, new_message);
+        publish(MOOS_VAR_OUTGOING_DATA, serialized);
         queue_manager_.push_message(new_message);
     }
 }
@@ -391,6 +408,7 @@ void CpAcommsHandler::process_configuration()
         glogger() << die << "modem_id = " << goby::acomms::BROADCAST_ID << " is reserved for broadcast messages. You must specify a modem_id != " << goby::acomms::BROADCAST_ID << " for this vehicle." << std::endl;
     
     publish("MODEM_ID", cfg_.modem_id());    
+    publish("VEHICLE_ID", cfg_.modem_id());    
     
     cfg_.mutable_queue_cfg()->set_modem_id(cfg_.modem_id());
     cfg_.mutable_mac_cfg()->set_modem_id(cfg_.modem_id());
@@ -749,7 +767,7 @@ void CpAcommsHandler::alg_angle_n180_180(DCCLMessageVal& angle)
 }
 
 void CpAcommsHandler::alg_lat2utm_y(DCCLMessageVal& mv,
-                                  const std::vector<DCCLMessageVal>& ref_vals)
+                                    const std::vector<DCCLMessageVal>& ref_vals)
 {
     double lat = mv;
     double lon = ref_vals[0];
@@ -761,7 +779,7 @@ void CpAcommsHandler::alg_lat2utm_y(DCCLMessageVal& mv,
 }
 
 void CpAcommsHandler::alg_lon2utm_x(DCCLMessageVal& mv,
-                                  const std::vector<DCCLMessageVal>& ref_vals)
+                                    const std::vector<DCCLMessageVal>& ref_vals)
 {
     double lon = mv;
     double lat = ref_vals[0];
@@ -774,7 +792,7 @@ void CpAcommsHandler::alg_lon2utm_x(DCCLMessageVal& mv,
 
 
 void CpAcommsHandler::alg_utm_x2lon(DCCLMessageVal& mv,
-                                  const std::vector<DCCLMessageVal>& ref_vals)
+                                    const std::vector<DCCLMessageVal>& ref_vals)
 {
     double x = mv;
     double y = ref_vals[0];
@@ -786,7 +804,7 @@ void CpAcommsHandler::alg_utm_x2lon(DCCLMessageVal& mv,
 }
 
 void CpAcommsHandler::alg_utm_y2lat(DCCLMessageVal& mv,
-                                  const std::vector<DCCLMessageVal>& ref_vals)
+                                    const std::vector<DCCLMessageVal>& ref_vals)
 {
     double y = mv;
     double x = ref_vals[0];
@@ -830,7 +848,6 @@ void CpAcommsHandler::alg_utm_y2lat(DCCLMessageVal& mv,
 void CpAcommsHandler::alg_name2modem_id(DCCLMessageVal& in)
 {
     std::stringstream ss;
-    ss << modem_lookup_.get_id_from_name(in);
-    
+    ss << modem_lookup_.get_id_from_name(std::string(in));
     in = ss.str();
 }

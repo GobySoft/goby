@@ -75,8 +75,7 @@ namespace goby
 
             void set_defaults_specific(DCCLMessageVal& v, unsigned modem_id, unsigned id)
             {
-                double d;
-                v = (!v.empty() && v.get(d)) ? v : DCCLMessageVal(util::ptime2unix_double(util::goby_time()));
+                v = (!v.empty()) ? v : DCCLMessageVal(util::ptime2unix_double(util::goby_time()));
             }
         
             boost::dynamic_bitset<unsigned char> encode_specific(const DCCLMessageVal& v)
@@ -136,8 +135,7 @@ namespace goby
         
             void set_defaults_specific(DCCLMessageVal& v, unsigned modem_id, unsigned id)
             {
-                long l;
-                v = (!v.empty() && v.get(l)) ? v : DCCLMessageVal(long(id));
+                v = (!v.empty()) ? v : DCCLMessageVal(long(id));
             }
         };
 
@@ -151,9 +149,8 @@ namespace goby
         
             void set_defaults_specific(DCCLMessageVal& v, unsigned modem_id, unsigned id)
             {
-                long l;
-                v = (!v.empty() && v.get(l)) ? v : DCCLMessageVal(long(modem_id));
-            }        
+                v = (!v.empty()) ? v : DCCLMessageVal(long(modem_id));
+            }
         };
 
         class DCCLMessageVarDest : public DCCLMessageVarHead
@@ -165,8 +162,7 @@ namespace goby
 
             void set_defaults_specific(DCCLMessageVal& v, unsigned modem_id, unsigned id)
             {
-                long l;
-                v = (!v.empty() && v.get(l)) ? v : DCCLMessageVal(long(acomms::BROADCAST_ID));
+                v = (!v.empty()) ? v : DCCLMessageVal(long(acomms::BROADCAST_ID));
             }
         };
 

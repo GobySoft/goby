@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="ASCII" standalone="yes"?>
+<!-- codec for broadcasting track solutions for active sonar --> 
+<message_set>
+  <message>
+    <name>ACTIVE_TRACKS</name>
+    <trigger>publish</trigger> <!-- package upon publish to some moos var -->
+    <trigger_moos_var>ACTIVE_TRACKS_LOCAL</trigger_moos_var>
+    <size>32</size>    
+    <header>
+      <id>16</id>
+      <time>
+        <name>time</name>
+      </time>
+      <src_id algorithm="to_lower,name2modem_id"> 
+        <name>platform_id</name>
+        <moos_var>VEHICLE_NAME</moos_var>
+      </src_id>
+    </header>
+    <layout>
+      <static>
+        <name>MessageType</name>
+        <value>ACTIVE_TRACKS</value>
+      </static>
+      <float>
+        <name>nav_x</name>
+        <max>100000</max>
+        <min>-100000</min>
+        <precision>0</precision>
+      </float>
+      <float>
+        <name>nav_y</name>
+        <max>100000</max>
+        <min>-100000</min>
+        <precision>0</precision>
+      </float>
+      <float>
+        <name>nav_spd</name>
+        <max>20</max>
+        <min>-2</min>
+        <precision>1</precision>
+      </float>
+      <float algorithm="angle_0_360">
+        <name>nav_hdg</name>
+        <max>360</max>
+        <min>0</min>
+        <precision>2</precision>
+      </float>
+      <float>
+        <name>nav_dep</name>
+        <max>500</max>
+        <min>-10</min>
+        <precision>0</precision>
+      </float>
+      <float>
+        <name>nav_alt</name>
+        <max>500</max>
+        <min>-10</min>
+        <precision>0</precision>
+      </float>
+	<!-- Track 1 -->
+      <int>
+        <name>trk1_id</name>
+        <min>0</min>
+        <max>15</max>
+      </int>
+      <float>
+        <name>trk1_x</name>
+        <min>-100000</min>
+        <max>100000</max>
+        <precision>0</precision>
+      </float>
+      <float>
+        <name>trk1_y</name>
+        <min>-100000</min>
+        <max>100000</max>
+        <precision>0</precision>
+      </float>
+<!-- Track 2 -->
+      <int>
+        <name>trk2_id</name>
+        <min>0</min>
+        <max>15</max>
+      </int>
+      <float>
+        <name>trk2_x</name>
+        <min>-100000</min>
+        <max>100000</max>
+        <precision>0</precision>
+      </float>
+      <float>
+        <name>trk2_y</name>
+        <min>-100000</min>
+        <max>100000</max>
+        <precision>0</precision>
+      </float>
+<!-- Track 3 -->
+      <int>
+        <name>trk3_id</name>
+        <min>0</min>
+        <max>15</max>
+      </int>
+      <float>
+        <name>trk3_x</name>
+        <min>-100000</min>
+        <max>100000</max>
+        <precision>0</precision>
+      </float>
+      <float>
+        <name>trk3_y</name>
+        <min>-100000</min>
+        <max>100000</max>
+        <precision>0</precision>
+      </float>
+    </layout>
+    <!-- decoding -->
+    <on_receipt>
+      <publish>
+        <moos_var>ACTIVE_TRACKS</moos_var>
+        <format>MessageType=%1%,platform_id=%2%,nav_x=%3%,nav_y=%4%,nav_lat=%5$lf,nav_lon=%6$lf,spd=%7%,hdg=%8%,depth=%9%,altitude=%10%,time=%11%,trk1_id=%12%,trk1_x=%13%,trk1_y=%14%,trk2_id=%15%,trk2_x=%16%,trk2_y=%17%,trk3_id=%18%,trk3_x=%19%,trk3_y=%20%</format>
+        <message_var>MessageType</message_var>
+        <message_var>platform_id</message_var>
+        <message_var>nav_x</message_var>
+        <message_var>nav_y</message_var>
+        <message_var algorithm="utm_y2lat:nav_x">nav_y</message_var>
+        <message_var algorithm="utm_x2lon:nav_y">nav_x</message_var>
+        <message_var>nav_spd</message_var>
+        <message_var>nav_hdg</message_var>
+        <message_var>nav_dep</message_var>
+        <message_var>nav_alt</message_var>
+        <message_var>time</message_var> 
+        <message_var>trk1_id</message_var>
+        <message_var>trk1_x</message_var>
+        <message_var>trk1_y</message_var>
+        <message_var>trk2_id</message_var>
+        <message_var>trk2_x</message_var>
+        <message_var>trk2_y</message_var>
+        <message_var>trk3_id</message_var>
+        <message_var>trk3_x</message_var>
+        <message_var>trk3_y</message_var>
+      </publish>
+      <!-- start pTransponderAIS replacement -->    
+      <publish>
+        <moos_var>NODE_REPORT</moos_var>
+        <format>NAME=%1%,TYPE=%2%,UTC_TIME=%3$.0lf,X=%4%,Y=%5%,LAT=%6$lf,LON=%7$lf,SPD=%8%,HDG=%9%,DEPTH=%10%</format>
+        <message_var algorithm="modem_id2name,to_lower">platform_id</message_var>
+        <message_var algorithm="modem_id2type,to_lower">platform_id</message_var>
+        <message_var>time</message_var>
+        <message_var>nav_x</message_var>
+        <message_var>nav_y</message_var>
+        <message_var algorithm="utm_y2lat:nav_x">nav_y</message_var>
+        <message_var algorithm="utm_x2lon:nav_y">nav_x</message_var>
+        <message_var>nav_spd</message_var>
+        <message_var>nav_hdg</message_var>
+        <message_var>nav_dep</message_var>
+      </publish>
+      <publish>
+        <moos_var type="double">%1%_NAV_UTC</moos_var>
+        <format>%2$lf</format>
+        <message_var algorithm="modem_id2name,to_upper">platform_id</message_var>
+        <message_var>time</message_var>
+      </publish>
+      <publish>
+        <moos_var type="double">%1%_NAV_X</moos_var>
+        <format>%2%</format>
+        <message_var algorithm="modem_id2name,to_upper">platform_id</message_var>
+        <message_var>nav_x</message_var>
+      </publish>
+      <publish>
+        <moos_var type="double">%1%_NAV_Y</moos_var>
+        <format>%2%</format>
+        <message_var algorithm="modem_id2name,to_upper">platform_id</message_var>
+        <message_var>nav_y</message_var>
+      </publish>
+      <publish>
+        <moos_var type="double">%1%_NAV_LAT</moos_var>
+        <format>%2%</format>
+        <message_var algorithm="modem_id2name,to_upper">platform_id</message_var>
+        <message_var algorithm="utm_y2lat:nav_x">nav_y</message_var>
+      </publish>
+      <publish>
+        <moos_var type="double">%1%_NAV_LONG</moos_var>
+        <format>%2$lf</format>
+        <message_var algorithm="modem_id2name,to_upper">platform_id</message_var>
+        <message_var algorithm="utm_x2lon:nav_y">nav_x</message_var>
+      </publish>
+      <publish>
+        <moos_var type="double">%1%_NAV_SPEED</moos_var>
+        <format>%2$lf</format>
+        <message_var algorithm="modem_id2name,to_upper">platform_id</message_var>
+        <message_var>nav_spd</message_var>
+      </publish>
+      <publish>
+        <moos_var type="double">%1%_NAV_HEADING</moos_var>
+        <format>%2%</format>
+        <message_var algorithm="modem_id2name,to_upper">platform_id</message_var>
+        <message_var>nav_hdg</message_var>
+      </publish>
+      <publish>
+        <moos_var type="double">%1%_NAV_DEPTH</moos_var>
+        <format>%2%</format>
+        <message_var algorithm="modem_id2name,to_upper">platform_id</message_var>
+        <message_var>nav_dep</message_var>
+      </publish>
+      <!-- end pTransponderAIS replacement -->
+      <!-- Track 3 AIS Report -->
+      <publish>
+        <moos_var>NODE_REPORT</moos_var>
+        <format>NAME=TRK_%1%_%2%,TYPE=buoy,UTC_TIME=%3$.0lf,X=%4%,Y=%5%,LAT=%6$lf,LON=%7$lf,SPD=0,HDG=0,DEPTH=%8%</format>
+        <message_var>trk3_id</message_var>
+        <message_var>platform_id</message_var>
+        <message_var>time</message_var>
+        <message_var>trk3_x</message_var>
+        <message_var>trk3_y</message_var>
+        <message_var algorithm="utm_y2lat:nav_x">trk3_y</message_var>
+        <message_var algorithm="utm_x2lon:nav_y">trk3_x</message_var>
+        <message_var>nav_alt</message_var>
+      </publish>
+      <!-- Track 2 AIS Report -->
+      <publish>
+        <moos_var>NODE_REPORT</moos_var>
+        <format>NAME=TRK_%1%_%2%,TYPE=buoy,UTC_TIME=%3$.0lf,X=%4%,Y=%5%,LAT=%6$lf,LON=%7$lf,SPD=0,HDG=0,DEPTH=%8%</format>
+        <message_var>trk2_id</message_var>
+        <message_var>platform_id</message_var>
+        <message_var>time</message_var>
+        <message_var>trk2_x</message_var>
+        <message_var>trk2_y</message_var>
+        <message_var algorithm="utm_y2lat:nav_x">trk2_y</message_var>
+        <message_var algorithm="utm_x2lon:nav_y">trk2_x</message_var>
+        <message_var>nav_alt</message_var>
+      </publish>
+      <!-- Track 1 AIS Report -->
+      <publish>
+        <moos_var>NODE_REPORT</moos_var>
+        <format>NAME=TRK_%1%_%2%,TYPE=buoy,UTC_TIME=%3$.0lf,X=%4%,Y=%5%,LAT=%6$lf,LON=%7$lf,SPD=0,HDG=0,DEPTH=%8%</format>
+        <message_var>trk1_id</message_var>
+        <message_var>platform_id</message_var>
+        <message_var>time</message_var>
+        <message_var>trk1_x</message_var>
+        <message_var>trk1_y</message_var>
+        <message_var algorithm="utm_y2lat:nav_x">trk1_y</message_var>
+        <message_var algorithm="utm_x2lon:nav_y">trk1_x</message_var>
+        <message_var>nav_alt</message_var>
+      </publish>
+    </on_receipt>
+    <queuing>
+      <ttl>600</ttl>
+      <value_base>4</value_base>
+    </queuing>
+  </message>
+</message_set>
+
+

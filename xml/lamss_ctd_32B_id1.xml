@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<message_set>
+  <message>
+    <name>LAMSS_CTD_32B</name>
+    <id>1</id>
+    <trigger>publish</trigger>
+    <trigger_var>NAV_DEPTH</trigger_var>
+    <size>32</size>
+    <repeat/>
+    <header>
+      <time>
+        <name>message_time</name>
+      </time>
+      <src_id>
+        <name>originator</name>
+      </src_id>
+    </header>
+    <layout>
+      <float algorithm="subtract:message_time">
+        <name>time</name>
+        <src_var>DB_TIME</src_var>
+        <max>10</max>
+        <min>-90</min>
+        <precision>1</precision>
+      </float>
+      <float>
+        <name>depth</name>
+        <src_var>NAV_DEPTH</src_var>
+        <max>1000</max>
+        <min>0</min>
+        <max_delta>10</max_delta>
+        <precision>1</precision>
+      </float>
+      <float>
+        <name>temp</name>
+        <src_var>CTD_TEMPERATURE</src_var>
+        <max>30</max>
+        <min>10</min>
+        <max_delta>2</max_delta>
+        <precision>2</precision>
+      </float>
+      <float>
+        <name>sal</name>
+        <src_var>CTD_SALINITY</src_var>
+        <max>45</max>
+        <min>20</min>
+        <max_delta>0.5</max_delta>
+        <precision>2</precision>
+      </float>
+      <float>
+        <name>lat</name>
+        <src_var>GPS_LATITUDE</src_var>
+        <max>44</max>
+        <min>41</min>
+        <max_delta>0.01</max_delta>
+        <precision>5</precision>
+      </float>
+      <float>
+        <name>lon</name>
+        <src_var>GPS_LONGITUDE</src_var>
+        <max>11</max>
+        <min>10.5</min>
+        <max_delta>0.01</max_delta>
+        <precision>5</precision>
+      </float>
+    </layout>
+    <!-- decoding -->
+    <on_receipt>
+      <publish>
+        <publish_var>IN_LAMSS_CTD_DEC</publish_var>
+        <format>originator=%1%,time=%2%,depth=%3%,temp=%4%,sal=%5%,lat=%6%,lon=%7%,mackenzie_soundspeed=%8%</format>
+        <message_var>originator</message_var>
+        <message_var algorithm="add:message_time">time</message_var>
+        <message_var>depth</message_var>
+        <message_var>temp</message_var>
+        <message_var>sal</message_var>
+        <message_var>lat</message_var>
+        <message_var>lon</message_var>
+        <message_var algorithm="TSD_to_soundspeed:sal:depth">temp</message_var>
+      </publish>
+    </on_receipt>
+    <queuing>
+      <ttl>7200</ttl>
+      <value_base>1</value_base>
+    </queuing>
+  </message>
+</message_set>

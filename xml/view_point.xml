@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="ASCII" standalone="yes"?>
+<!-- replaces functionality of pTransponderAIS -->
+<message_set>
+  <message>
+    <name>VIEW_POINT</name>
+    <trigger>publish</trigger>
+    <trigger_moos_var>VIEW_POINT_OUT</trigger_moos_var>
+    <size>32</size>
+    <header>
+      <id>55</id>
+      <time>
+        <name>Timestamp</name>
+      </time>
+      <src_id algorithm="to_lower,name2modem_id">
+        <name>Node</name>
+        <moos_var>VEHICLE_NAME</moos_var>
+      </src_id>
+    </header>
+    <layout>
+      <static>
+        <name>MessageType</name>
+        <value>VIEW_POINT</value>
+      </static>
+   <!-- point 1 -->
+      <enum algorithm="to_lower">
+        <name>pt_active_1</name>
+        <value>true</value>
+        <value>false</value>
+      </enum>
+      <enum algorithm="to_lower">
+        <name>pt_type_1</name>
+        <value>waypoint</value>
+        <value>trailpoint</value>
+        <value>attractor</value>
+        <value>station</value>
+      </enum>
+      <float>
+        <name>pt_x_1</name>
+        <max>16000</max>
+        <min>0</min>
+        <precision>0</precision>
+      </float>
+      <float>
+        <name>pt_y_1</name>
+        <max>16000</max>
+        <min>0</min>
+        <precision>0</precision>
+      </float>
+   <!-- point 2 -->
+      <enum algorithm="to_lower">
+        <name>pt_active_2</name>
+        <value>true</value>
+        <value>false</value>
+      </enum>
+      <enum algorithm="to_lower">
+        <name>pt_type_2</name>
+        <value>waypoint</value>
+        <value>trailpoint</value>
+        <value>attractor</value>
+        <value>station</value>
+      </enum>
+      <float>
+        <name>pt_x_2</name>
+        <max>16000</max>
+        <min>0</min>
+        <precision>0</precision>
+      </float>
+      <float>
+        <name>pt_y_2</name>
+        <max>16000</max>
+        <min>0</min>
+        <precision>0</precision>
+      </float>
+   <!-- point 3 -->
+      <enum algorithm="to_lower">
+        <name>pt_active_3</name>
+        <value>true</value>
+        <value>false</value>
+      </enum>
+      <enum algorithm="to_lower">
+        <name>pt_type_3</name>
+        <value>waypoint</value>
+        <value>trailpoint</value>
+        <value>attractor</value>
+        <value>station</value>
+      </enum>
+      <float>
+        <name>pt_x_3</name>
+        <max>16000</max>
+        <min>0</min>
+        <precision>0</precision>
+      </float>
+      <float>
+        <name>pt_y_3</name>
+        <max>16000</max>
+        <min>0</min>
+        <precision>0</precision>
+      </float>
+  <!-- point 4 -->
+      <enum algorithm="to_lower">
+        <name>pt_active_4</name>
+        <value>true</value>
+        <value>false</value>
+      </enum>
+      <enum algorithm="to_lower">
+        <name>pt_type_4</name>
+        <value>waypoint</value>
+        <value>trailpoint</value>
+        <value>attractor</value>
+        <value>station</value>
+      </enum>
+      <float>
+        <name>pt_x_4</name>
+        <max>16000</max>
+        <min>0</min>
+        <precision>0</precision>
+      </float>
+      <float>
+        <name>pt_y_4</name>
+        <max>16000</max>
+        <min>0</min>
+        <precision>0</precision>
+      </float>
+     </layout>
+    <!-- decoding -->
+    <on_receipt>
+      <publish>
+        <moos_var>VIEW_POINT_IN</moos_var>
+        <all />
+      </publish>
+      <publish>
+        <moos_var>VIEW_POINT</moos_var>
+        <format>active,%2%:label,%1%_%3%:type,%3%:source,%1%_%3%:%4%,%5%</format>
+        <message_var algorithm="modem_id2name">Node</message_var>
+        <message_var>pt_active_1</message_var>
+        <message_var>pt_type_1</message_var>
+        <message_var>pt_x_1</message_var>
+        <message_var>pt_y_1</message_var>
+      </publish>
+      <publish>
+        <moos_var>VIEW_POINT</moos_var>
+        <format>active,%2%:label,%1%_%3%:type,%3%:source,%1%_%3%:%4%,%5%</format>
+        <message_var algorithm="modem_id2name">Node</message_var>
+        <message_var>pt_active_2</message_var>
+        <message_var>pt_type_2</message_var>
+        <message_var>pt_x_2</message_var>
+        <message_var>pt_y_2</message_var>
+      </publish>
+      <publish>
+        <moos_var>VIEW_POINT</moos_var>
+        <format>active,%2%:label,%1%_%3%:type,%3%:source,%1%_%3%:%4%,%5%</format>
+        <message_var algorithm="modem_id2name">Node</message_var>
+        <message_var>pt_active_3</message_var>
+        <message_var>pt_type_3</message_var>
+        <message_var>pt_x_3</message_var>
+        <message_var>pt_y_3</message_var>
+      </publish>
+      <publish>
+        <moos_var>VIEW_POINT</moos_var>
+        <format>active,%2%:label,%1%_%3%:type,%3%:source,%1%_%3%:%4%,%5%</format>
+        <message_var algorithm="modem_id2name">Node</message_var>
+        <message_var>pt_active_4</message_var>
+        <message_var>pt_type_4</message_var>
+        <message_var>pt_x_4</message_var>
+        <message_var>pt_y_4</message_var>
+      </publish>
+    </on_receipt>
+    <queuing>
+      <blackout_time>10</blackout_time>
+      <max_queue>1</max_queue>
+      <newest_first>true</newest_first>
+      <ttl>300</ttl>
+      <value_base>1.2</value_base>
+    </queuing>
+  </message>
+</message_set>

@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="ASCII" standalone="yes"?>
+<!-- replaces functionality of pTransponderAIS -->
+<message_set>
+  <message>
+    <name>SIMPLE_STATUS_EXACT</name>
+    <id>24</id>
+    <trigger>publish</trigger>
+    <trigger_moos_var>CREATE_STATUS</trigger_moos_var>
+    <size>32</size>
+    <header>
+      <id>24</id>
+      <time>
+        <name>time</name>
+      </time>
+    </header>
+    <layout>
+      <string algorithm="to_lower">
+        <name>name</name>
+        <moos_var>VEHICLE_NAME</moos_var>
+        <max_length>11</max_length>
+      </string>
+      <enum algorithm="to_lower">
+        <name>type</name>
+        <moos_var>VEHICLE_TYPE</moos_var>
+        <value>kayak</value>
+        <value>asc</value>
+        <value>auv</value>
+        <value>ship</value>
+        <value>buoy</value>
+        <value>glider</value>
+        <value>unknown</value>
+      </enum>
+      <float>
+        <name>nav_x</name>
+        <moos_var>NAV_X</moos_var>
+        <max>100000</max>
+        <min>-100000</min>
+        <precision>1</precision>
+      </float>
+      <float>
+        <name>nav_y</name>
+        <moos_var>NAV_Y</moos_var>
+        <max>100000</max>
+        <min>-100000</min>
+        <precision>1</precision>
+      </float>
+      <float>
+        <name>spd</name>
+        <moos_var>NAV_SPEED</moos_var>
+        <max>20</max>
+        <min>-2</min>
+        <precision>1</precision>
+      </float>
+      <float algorithm="angle_0_360">
+        <name>hdg</name>
+        <moos_var>NAV_HEADING</moos_var>
+        <max>360</max>
+        <min>0</min>
+        <precision>2</precision>
+      </float>
+      <float>
+        <name>depth</name>
+        <moos_var>NAV_DEPTH</moos_var>
+        <max>5000</max>
+        <min>-10</min>
+        <precision>1</precision>
+      </float>
+      <float>
+        <name>altitude</name>
+        <moos_var>NAV_ALTITUDE</moos_var>
+        <max>5000</max>
+        <min>-10</min>
+        <precision>1</precision>
+      </float>
+      <float>
+        <name>pitch</name>
+        <moos_var>NAV_PITCH</moos_var>
+        <max>1.57</max>
+        <min>-1.57</min>
+        <precision>2</precision>
+      </float>
+      <float>
+        <name>roll</name>
+        <moos_var>NAV_ROLL</moos_var>
+        <max>1.57</max>
+        <min>-1.57</min>
+        <precision>2</precision>
+      </float>
+    </layout>
+    <!-- decoding -->
+    <on_receipt>
+      <publish>
+        <moos_var>NODE_REPORT_EXACT</moos_var>
+        <format>NAME=%1%,TYPE=%2%,UTC_TIME=%3$.0lf,X=%4%,Y=%5%,LAT=%6$lf,LON=%7$lf,SPD=%8%,HDG=%9%,DEPTH=%10%,ALTITUDE=%11%,PITCH=%12%,ROLL=%13%</format>
+        <message_var>name</message_var>
+        <message_var>type</message_var>
+        <message_var>time</message_var>
+        <message_var>nav_x</message_var>
+        <message_var>nav_y</message_var>
+        <message_var algorithm="utm_y2lat:nav_x">nav_y</message_var>
+        <message_var algorithm="utm_x2lon:nav_y">nav_x</message_var>
+        <message_var>spd</message_var>
+        <message_var>hdg</message_var>
+        <message_var>depth</message_var>
+        <message_var>altitude</message_var>
+        <message_var>pitch</message_var>
+        <message_var>roll</message_var>
+      </publish>
+      <publish>
+        <moos_var>%1%_STATUS_EXACT</moos_var>
+        <format>t:%2$.0lf,x:%3%,y:%4%,spd=%5%,hdg=%6%,depth=%7%,alt=%8%</format>
+        <message_var algorithm="to_upper">name</message_var>
+        <message_var>time</message_var>
+        <message_var>nav_x</message_var>
+        <message_var>nav_y</message_var>
+        <message_var>spd</message_var>
+        <message_var>hdg</message_var>
+        <message_var>depth</message_var>
+        <message_var>altitude</message_var>
+      </publish>
+      <publish>
+        <moos_var type="double">%1%_NAV_UTC_EXACT</moos_var>
+        <format>%2$lf</format>
+        <message_var algorithm="to_upper">name</message_var>
+        <message_var>time</message_var>
+      </publish>
+      <publish>
+        <moos_var type="double">%1%_NAV_X_EXACT</moos_var>
+        <format>%2%</format>
+        <message_var algorithm="to_upper">name</message_var>
+        <message_var>nav_x</message_var>
+      </publish>
+      <publish>
+        <moos_var type="double">%1%_NAV_Y_EXACT</moos_var>
+        <format>%2%</format>
+        <message_var algorithm="to_upper">name</message_var>
+        <message_var>nav_y</message_var>
+      </publish>
+      <publish>
+        <moos_var type="double">%1%_NAV_LAT_EXACT</moos_var>
+        <format>%2%</format>
+        <message_var algorithm="to_upper">name</message_var>
+        <message_var algorithm="utm_y2lat:nav_x">nav_y</message_var>
+      </publish>
+      <publish>
+        <moos_var type="double">%1%_NAV_LONG_EXACT</moos_var>
+        <format>%2$lf</format>
+        <message_var algorithm="to_upper">name</message_var>
+        <message_var algorithm="utm_x2lon:nav_y">nav_x</message_var>
+      </publish>
+      <publish>
+        <moos_var type="double">%1%_NAV_SPEED_EXACT</moos_var>
+        <format>%2$lf</format>
+        <message_var algorithm="to_upper">name</message_var>
+        <message_var>spd</message_var>
+      </publish>
+      <publish>
+        <moos_var type="double">%1%_NAV_HEADING_EXACT</moos_var>
+        <format>%2%</format>
+        <message_var algorithm="to_upper">name</message_var>
+        <message_var>hdg</message_var>
+      </publish>
+      <publish>
+        <moos_var type="double">%1%_NAV_DEPTH_EXACT</moos_var>
+        <format>%2%</format>
+        <message_var algorithm="to_upper">name</message_var>
+        <message_var>depth</message_var>
+      </publish>
+      <publish>
+        <moos_var type="double">%1%_NAV_ALTITUDE_EXACT</moos_var>
+        <format>%2%</format>
+        <message_var algorithm="to_upper">name</message_var>
+        <message_var>altitude</message_var>
+      </publish>
+      <publish>
+        <moos_var type="double">%1%_NAV_PITCH_EXACT</moos_var>
+        <format>%2%</format>
+        <message_var algorithm="to_upper">name</message_var>
+        <message_var>pitch</message_var>
+      </publish>
+      <publish>
+        <moos_var type="double">%1%_NAV_ROLL_EXACT</moos_var>
+        <format>%2%</format>
+        <message_var algorithm="to_upper">name</message_var>
+        <message_var>roll</message_var>
+      </publish>
+    </on_receipt>
+    <!-- not intended to be sent by acomms, but by UDP (MOOSBlink) -->
+  </message>
+</message_set>

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF8"?>
+<message_set>
+  <message>
+    <!-- required for all DCCL implementations -->
+    <name>Winch_Control</name>
+    <trigger>publish</trigger>
+    <trigger_moos_var>NAV_DEPTH</trigger_moos_var>
+    <size>32</size>
+    <header>
+      <id>41</id>
+    </header>
+    <layout>
+      <int>
+        <name>length</name>
+        <max>40</max>
+        <min>1</min>
+      </int>      
+    </layout>
+    <on_receipt>
+      <publish>
+        <moos_var>WINCH_DESIRED_LENGTH</moos_var>
+        <message_var>length</message_var>
+      </publish>
+    </on_receipt>
+    <queuing>
+      <ttl>300</ttl>
+      <value_base>5</value_base>
+    </queuing>
+  </message>
+</message_set>

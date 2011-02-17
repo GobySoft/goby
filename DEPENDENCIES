@@ -37,11 +37,11 @@ red="\33[1;31m"
 nc="\33[1;0m"
 green="\33[1;32m"
 
-ubuntu_base_packages=\
+debian_base_packages=\
 "build-essential 
 cmake"
 
-ubuntu_boost_packages=\
+debian_boost_packages=\
 "libboost-dev
 libboost-system-dev
 libboost-date-time-dev
@@ -51,35 +51,39 @@ libboost-program-options-dev
 libboost-signals-dev
 libboost-filesystem-dev"
 
-ubuntu_xerces_package=\
+debian_xerces_package=\
 "libxerces-c-dev"
 
-ubuntu_other_packages=\
+debian_other_packages=\
 "libcrypto++-dev
 libncurses-dev
-libprotobuf-dev"
+libprotobuf-dev
+protobuf-compiler"
 
-ubuntu_wt_packages=\
+debian_wt_packages=\
 "libwt-dev
 libwtdbo-dev
 libwtdbosqlite-dev"
 
 if [ -e "`which apt-get`" ]; then
-    if [[ `apt-cache search ${ubuntu_wt_packages}` ]]; then
-        echo "adding ppa:pgquiles/wt for Wt packages"
-        add-apt-repository ppa:pgquiles/wt
-	apt-get update
+    if [ -z "`apt-cache search ${debian_wt_packages}`" ]; then
+	if [ -e "`which add-apt-repository`" ]; then
+            echo "adding ppa:pgquiles/wt for Wt packages"
+            add-apt-repository ppa:pgquiles/wt
+	    apt-get update
+	fi
     fi 
 
-    if [[ `apt-cache search ${ubuntu_xerces_package}` ]]; then
-        ubuntu_xerces_package="libxerces-c2-dev"
+    if [ -z "`apt-cache search ${debian_xerces_package}`" ]; then
+	 
+        debian_xerces_package="libxerces-c2-dev"
     fi 
     
-    apt-get -y install $ubuntu_base_packages || printf $red"Could not install base packages\n"$nc
-    apt-get -y install $ubuntu_boost_packages || printf $red"Could not install boost packages: see http://www.boost.org/\n"$nc
-    apt-get -y install $ubuntu_xerces_package || printf $red"Could not install xerces package\n"$nc
-    apt-get -y install $ubuntu_other_packages || printf $red"Could not install some packages: read the top of this file (DEPENDENCIES)\n"$nc
-    apt-get -y install $ubuntu_wt_packages || printf $red"Could not install Wt packages: you need to download from source. See http://www.webtoolkit.eu/wt#/download\n"$nc
+    apt-get -y install $debian_base_packages || printf $red"Could not install base packages\n"$nc
+    apt-get -y install $debian_boost_packages || printf $red"Could not install boost packages: see http://www.boost.org/\n"$nc
+    apt-get -y install $debian_xerces_package || printf $red"Could not install xerces package\n"$nc
+    apt-get -y install $debian_other_packages || printf $red"Could not install some packages: read the top of this file (DEPENDENCIES)\n"$nc
+    apt-get -y install $debian_wt_packages || printf $red"Could not install Wt packages: you need to download from source. See http://www.webtoolkit.eu/wt#/download\n"$nc
 fi
 
 

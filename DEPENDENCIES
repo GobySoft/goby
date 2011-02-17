@@ -65,13 +65,13 @@ libwtdbo-dev
 libwtdbosqlite-dev"
 
 if [ -e "`which apt-get`" ]; then
-    if [[ `apt-cache search ${ubuntu_wt_packages}` ]]; then
+    if [[ ! `apt-cache search ${ubuntu_wt_packages}` ]]; then
         echo "adding ppa:pgquiles/wt for Wt packages"
         add-apt-repository ppa:pgquiles/wt
 	apt-get update
     fi 
 
-    if [[ `apt-cache search ${ubuntu_xerces_package}` ]]; then
+    if [[ ! `apt-cache search ${ubuntu_xerces_package}` ]]; then
         ubuntu_xerces_package="libxerces-c2-dev"
     fi 
     

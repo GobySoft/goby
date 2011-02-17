@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="ASCII" standalone="yes"?>
+<!-- contains nafcon (plus) commands: deploy, prosecute 
+ for replacing pFramer (but still need pNaFCon) --> 
+<message_set>
+  <message>
+    <name>LAMSS_PROSECUTE</name>
+    <trigger>publish</trigger> <!-- package upon publish to some moos var -->
+    <trigger_moos_var mandatory_content="MessageType=LAMSS_PROSECUTE">
+      OUTGOING_COMMAND
+    </trigger_moos_var>
+    <size>32</size>
+    <header>
+      <id>19</id>
+      <time>
+        <name>Target_Timestamp</name>
+      </time>
+      <src_id>
+        <name>SourcePlatformId</name>
+      </src_id>
+      <dest_id>
+        <name>DestinationPlatformId</name>
+      </dest_id>
+    </header>
+    <layout>
+      <static>
+        <name>MessageType</name>
+        <value>LAMSS_PROSECUTE</value>
+      </static>
+      <enum>
+        <name>Prosecute_Type</name>
+	<value>DLT</value>
+	<value>DCLT</value>
+	<value>TMA</value>
+	<value>POLYGON</value>
+      </enum>
+      <float>
+        <name>Prosecute_Duration</name>
+        <max>20470</max>
+        <min>0</min>
+        <precision>-1</precision>
+      </float>
+      <int>
+        <name>Target_Number</name>
+        <max>255</max>
+        <min>0</min>
+      </int>
+      <float>
+        <name>Target_X</name>
+        <precision>0</precision>
+        <max>100000</max>
+        <min>-100000</min>
+      </float>
+      <float>
+        <name>Target_Y</name>
+        <precision>0</precision>
+        <max>100000</max>
+        <min>-100000</min>
+      </float>
+      <int>
+        <name>Target_Depth</name>
+        <max>255</max>
+        <min>0</min>
+      </int>
+      <float algorithm="angle_0_360">
+        <name>Target_Heading</name>
+        <max>360</max>
+        <min>0</min>
+        <precision>1</precision>
+      </float>
+      <float>
+        <name>Target_Speed</name>
+        <max>12.8</max>
+        <min>0</min>
+        <precision>1</precision>
+      </float>
+      <int>
+        <name>Target_Spectral_Level</name>
+        <max>163</max>
+        <min>100</min>
+      </int>
+      <int>
+        <name>Target_Frequency</name>
+        <max>4095</max>
+        <min>0</min>
+      </int>
+      <int>
+        <name>Target_Bandwidth</name>
+        <max>1023</max>
+        <min>0</min>
+      </int>
+    </layout>
+    <!-- decoding -->
+    <on_receipt>        
+      <publish>
+        <moos_var>INCOMING_COMMAND</moos_var>
+        <all />
+      </publish>
+      <publish>
+        <moos_var>PROSECUTE_MISSION</moos_var>
+        <format>%1%</format>
+        <message_var>Prosecute_Type</message_var>
+      </publish>
+    <!-- The following replaces all the pNaFCon publications. Can probably be cleaned up -->
+      <publish>
+        <moos_var>TARGET_ID</moos_var>
+        <format>TGT_%1%</format>
+        <message_var>Target_Number</message_var>
+      </publish>
+      <publish>
+        <moos_var>TARGET_STATE</moos_var>
+        <format>tgt_id=%1%,tgt_x=%2%,tgt_y=%3%,tgt_dep=%4%,tgt_hdg=%5%,tgt_spd=%6%,tgt_freq=%7%,tgt_bw=%8%,tgt_spl=%9%,tgt_utc=%10%</format>
+        <message_var>Target_Number</message_var>
+        <message_var>Target_X</message_var>
+        <message_var>Target_Y</message_var>
+        <message_var>Target_Depth</message_var>
+        <message_var>Target_Heading</message_var>
+        <message_var>Target_Speed</message_var>
+        <message_var>Target_Frequency</message_var>
+        <message_var>Target_Bandwidth</message_var>
+        <message_var>Target_Spectral_Level</message_var>
+        <message_var>Target_Timestamp</message_var>
+      </publish>
+      <publish>
+        <moos_var>NODE_REPORT</moos_var>
+        <format>NAME=TGT_%1%,TYPE=track,UTC_TIME=%2$.0lf,X=%3%,Y=%4%,LAT=%5$lf,LON=%6$lf,SPD=%7%,HDG=%8%,DEP=%9%</format>
+        <message_var>Target_Number</message_var>
+        <message_var>Target_Timestamp</message_var>
+        <message_var>Target_X</message_var>
+        <message_var>Target_Y</message_var>
+        <message_var algorithm="utm_y2lat:Target_X">Target_Y</message_var>
+        <message_var algorithm="utm_x2lon:Target_Y">Target_X</message_var>
+        <message_var>Target_Speed</message_var>
+        <message_var>Target_Heading</message_var>
+        <message_var>Target_Depth</message_var>
+      </publish>
+      <publish>
+        <moos_var type="string">TARGET_NUMBER</moos_var>
+        <format>%1%</format>
+        <message_var>Target_Number</message_var>
+      </publish>
+      <publish>
+        <moos_var>MY_TARGET</moos_var>
+        <format>contact=TGT_%1%</format>
+        <message_var>Target_Number</message_var>
+      </publish>
+      <publish>
+        <moos_var>PRIORITY_TRK</moos_var>
+        <format>contact=target_cue</format>
+      </publish>
+      <publish>
+        <moos_var>CURRENT_TARGET</moos_var>
+        <format>contact=TGT_%1%</format>
+        <message_var>Target_Number</message_var>
+      </publish>
+      <publish>
+        <moos_var type="double">TARGET_FREQ</moos_var>
+        <message_var>Target_Frequency</message_var>
+      </publish>
+      <publish>
+        <moos_var type="double">TARGET_SPL</moos_var>
+        <message_var>Target_Spectral_Level</message_var>
+      </publish>
+     <publish>
+        <moos_var type="double">TARGET_BW</moos_var>
+        <message_var>Target_Bandwidth</message_var>
+      </publish>
+     <publish>
+        <moos_var type="double">PROSECUTE_DURATION</moos_var>
+        <message_var>Prosecute_Duration</message_var>
+      </publish>
+      <!-- Finally, set state variables -->
+      <publish>
+        <moos_var>MISSION_STATE</moos_var>
+        <format>PROSECUTE</format>
+      </publish>
+      <!-- these are for backward compatibility -->
+      <publish>
+        <moos_var>GOTO_SURFACE</moos_var>
+        <format>FALSE</format>
+      </publish>
+    </on_receipt>
+    <queuing>
+      <ttl>300</ttl>
+      <ack>true</ack>
+      <value_base>1000</value_base>
+    </queuing>
+  </message>
+</message_set>

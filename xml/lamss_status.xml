@@ -1,0 +1,327 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- replaces functionality of pTransponderAIS -->
+<message_set>
+  <message>
+    <name>LAMSS_STATUS</name>
+    <trigger>time</trigger>
+    <trigger_time>5</trigger_time>
+    <size>32</size>
+    <header>
+      <id>20</id>
+      <time>
+        <name>Timestamp</name>
+      </time>
+      <src_id algorithm="to_lower,name2modem_id">
+        <name>Node</name>
+        <moos_var>VEHICLE_NAME</moos_var>
+      </src_id>
+    </header>
+    <layout>
+      <static>
+        <name>MessageType</name>
+        <value>LAMSS_STATUS</value>
+      </static>
+      <float>
+        <name>nav_x</name>
+        <moos_var>NAV_X</moos_var>
+        <max>100000</max>
+        <min>-100000</min>
+        <precision>0</precision>
+      </float>
+      <float>
+        <name>nav_y</name>
+        <moos_var>NAV_Y</moos_var>
+        <max>100000</max>
+        <min>-100000</min>
+        <precision>0</precision>
+      </float>
+      <float>
+        <name>Speed</name>
+        <moos_var>NAV_SPEED</moos_var>
+        <max>20</max>
+        <min>-2</min>
+        <precision>1</precision>
+      </float>
+      <float algorithm="angle_0_360">
+        <name>Heading</name>
+        <moos_var>NAV_HEADING</moos_var>
+        <max>360</max>
+        <min>0</min>
+        <precision>2</precision>
+      </float>
+      <float>
+        <name>Depth</name>
+        <moos_var>NAV_DEPTH</moos_var>
+        <max>6400</max>
+        <min>0</min>
+        <precision>1</precision>
+      </float>
+      <float>
+        <name>Altitude</name>
+        <moos_var>NAV_ALTITUDE</moos_var>
+        <max>5000</max>
+        <min>-10</min>
+        <precision>1</precision>
+      </float>
+      <float>
+        <name>Pitch</name>
+        <moos_var>NAV_PITCH</moos_var>
+        <max>1.57</max>
+        <min>-1.57</min>
+        <precision>2</precision>
+      </float>
+      <float>
+        <name>Roll</name>
+        <moos_var>NAV_ROLL</moos_var>
+        <max>1.57</max>
+        <min>-1.57</min>
+        <precision>2</precision>
+      </float>
+      <enum>
+        <name>Mission_State</name>
+        <moos_var>MISSION_STATE</moos_var>
+        <value>FALSE</value>
+        <value>DEPLOY</value>
+        <value>PROSECUTE</value>
+        <value>ABORT</value>
+        <value>unknown</value>
+      </enum>
+      <enum>
+        <name>Deploy_Mode</name>
+        <moos_var>DEPLOY_MISSION</moos_var>
+	<value>LOITER</value>
+	<value>RETURN</value>
+	<value>RACETRACK</value>
+	<value>ZIGZAG</value>
+	<value>BISTATIC</value>
+	<value>TRAIL</value>
+        <value>unknown</value>
+      </enum>
+      <enum>
+        <name>Depth_Mode</name>
+        <moos_var>DEPTH_MODE</moos_var>
+	<value>SINGLE</value>
+	<value>DUAL</value>
+	<value>YOYO</value>
+	<value>ADAPTIVE_YOYO</value>
+	<value>ADAPTIVE_ACOMMS</value>
+        <value>unknown</value>
+      </enum>
+      <enum>
+        <name>Prosecute_Mode</name>
+        <moos_var>PROSECUTE_MISSION</moos_var>
+	<value>DLT</value>
+	<value>DCLT</value>
+	<value>TMA</value>
+	<value>POLYGON</value>
+        <value>unknown</value>
+      </enum>
+
+      <!-- for active collaboration -->
+      <enum>
+        <name>Collaboration_Mode</name>
+        <moos_var>COLLABORATION_MODE</moos_var>
+        <value>OFF</value>
+        <value>SYNCH</value>
+        <value>COLLABORATING</value>
+      </enum>      
+      <enum>
+        <name>Sonar_Control</name>
+        <moos_var>SONAR_CONTROL</moos_var>
+        <value>ON</value>
+        <value>OFF</value>
+      </enum>
+      <float>
+        <name>Secs_to_GPS</name>
+        <moos_var>PENDING_SURFACE</moos_var>
+        <max>5110</max>
+        <min>-5120</min>
+        <precision>-1</precision>
+      </float>
+
+      <!-- pEnvtGrad adaptive yoyo -->
+      <int>
+	<name>Max_Cline_Depth</name>
+	<moos_var>MAX_CLINE_DEPTH</moos_var>
+	<max>255</max>
+	<min>0</min>
+      </int>
+      <int>
+	<name>Min_Cline_Depth</name>
+	<moos_var>MIN_CLINE_DEPTH</moos_var>
+	<max>255</max>
+	<min>0</min>
+      </int>
+      <int>
+	<name>Ctr_Cline_Depth</name>
+	<moos_var>CTR_CLINE_DEPTH</moos_var>
+	<max>255</max>
+	<min>0</min>
+      </int>      
+      <!-- end pEnvtGrad adaptive yoyo -->
+
+    </layout>
+
+    <!-- decoding -->
+    <on_receipt>
+      <publish>
+        <moos_var>STATUS_REPORT_IN</moos_var>
+        <all />
+      </publish>
+      <publish>
+        <moos_var>NODE_REPORT</moos_var>
+        <format>NAME=%1%,TYPE=%2%,UTC_TIME=%3$.0lf,X=%4%,Y=%5%,LAT=%6$lf,LON=%7$lf,SPD=%8%,HDG=%9%,DEPTH=%10%,ALTITUDE=%11%,PITCH=%12%,ROLL=%13%</format>
+        <message_var algorithm="modem_id2name">Node</message_var>
+	<message_var algorithm="modem_id2type">Node</message_var>
+        <message_var>Timestamp</message_var>
+        <message_var>nav_x</message_var>
+        <message_var>nav_y</message_var>
+        <message_var algorithm="utm_y2lat:nav_x">nav_y</message_var>
+        <message_var algorithm="utm_x2lon:nav_y">nav_x</message_var>
+        <message_var>Speed</message_var>
+        <message_var>Heading</message_var>
+        <message_var>Depth</message_var>
+        <message_var>Altitude</message_var>
+        <message_var>Pitch</message_var>
+        <message_var>Roll</message_var>
+      </publish>
+      <publish>
+        <moos_var>%1%_STATUS</moos_var>
+        <format>t:%2$.0lf,x:%3%,y:%4%,spd=%5%,hdg=%6%,depth=%7%,alt=%8%</format>
+        <message_var algorithm="modem_id2name,to_upper">Node</message_var>
+        <message_var>Timestamp</message_var>
+        <message_var>nav_x</message_var>
+        <message_var>nav_y</message_var>
+        <message_var>Speed</message_var>
+        <message_var>Heading</message_var>
+        <message_var>Depth</message_var>
+        <message_var>Altitude</message_var>
+      </publish>
+      <publish>
+        <moos_var>COMMUNITY_STAT</moos_var>
+        <format>node=%1%,x=%2%,y=%3%,heading=%4%,speed=%5%,time=%6$.0lf</format>
+        <message_var>Node</message_var>
+        <message_var>nav_x</message_var>
+        <message_var>nav_y</message_var>
+        <message_var>Heading</message_var>
+        <message_var>Speed</message_var>
+        <message_var>Timestamp</message_var>
+      </publish>
+      <publish>
+        <moos_var type="double">%1%_NAV_UTC</moos_var>
+        <format>%2$lf</format>
+        <message_var algorithm="modem_id2name,to_upper">Node</message_var>
+        <message_var>Timestamp</message_var>
+      </publish>
+      <publish>
+        <moos_var type="double">%1%_NAV_X</moos_var>
+        <format>%2%</format>
+        <message_var algorithm="modem_id2name,to_upper">Node</message_var>
+        <message_var>nav_x</message_var>
+      </publish>
+      <publish>
+        <moos_var type="double">%1%_NAV_Y</moos_var>
+        <format>%2%</format>
+        <message_var algorithm="modem_id2name,to_upper">Node</message_var>
+        <message_var>nav_y</message_var>
+      </publish>
+      <publish>
+        <moos_var type="double">%1%_NAV_LAT</moos_var>
+        <format>%2%</format>
+        <message_var algorithm="modem_id2name,to_upper">Node</message_var>
+        <message_var algorithm="utm_y2lat:nav_x">nav_y</message_var>
+      </publish>
+      <publish>
+        <moos_var type="double">%1%_NAV_LONG</moos_var>
+        <format>%2$lf</format>
+        <message_var algorithm="modem_id2name,to_upper">Node</message_var>
+        <message_var algorithm="utm_x2lon:nav_y">nav_x</message_var>
+      </publish>
+      <publish>
+        <moos_var type="double">%1%_NAV_SPEED</moos_var>
+        <format>%2$lf</format>
+        <message_var algorithm="modem_id2name,to_upper">Node</message_var>
+        <message_var>Speed</message_var>
+      </publish>
+      <publish>
+        <moos_var type="double">%1%_NAV_HEADING</moos_var>
+        <format>%2%</format>
+        <message_var algorithm="modem_id2name,to_upper">Node</message_var>
+        <message_var>Heading</message_var>
+      </publish>
+      <publish>
+        <moos_var type="double">%1%_NAV_DEPTH</moos_var>
+        <format>%2%</format>
+        <message_var algorithm="modem_id2name,to_upper">Node</message_var>
+        <message_var>Depth</message_var>
+      </publish>
+      <publish>
+        <moos_var type="double">%1%_NAV_ALTITUDE</moos_var>
+        <format>%2%</format>
+        <message_var algorithm="modem_id2name,to_upper">Node</message_var>
+        <message_var>Altitude</message_var>
+      </publish>
+      <publish>
+        <moos_var type="double">%1%_NAV_PITCH</moos_var>
+        <format>%2%</format>
+        <message_var algorithm="modem_id2name,to_upper">Node</message_var>
+        <message_var>Pitch</message_var>
+      </publish>
+      <publish>
+        <moos_var type="double">%1%_NAV_ROLL</moos_var>
+        <format>%2%</format>
+        <message_var algorithm="modem_id2name,to_upper">Node</message_var>
+        <message_var>Roll</message_var>
+      </publish>
+
+      <!-- added in SWAMSI 09 -->
+      <publish>
+        <moos_var>%1%_COLLABORATION</moos_var>
+        <format>%2%</format>
+        <message_var algorithm="modem_id2name,to_upper">Node</message_var>
+        <message_var>Collaboration_Mode</message_var>
+      </publish>
+      <publish>
+        <moos_var>%1%_SONAR_CONTROL</moos_var>
+        <format>%2%</format>
+        <message_var algorithm="modem_id2name,to_upper">Node</message_var>
+        <message_var>Sonar_Control</message_var>
+      </publish>
+      <!-- end added in SWAMSI 09 -->
+
+      <!-- pEnvtGrad adaptive yoyo -->
+      <publish>
+        <moos_var>%1%_MAX_CLINE_DEPTH</moos_var>
+        <format>%2%</format>
+        <message_var algorithm="modem_id2name,to_upper">Node</message_var>
+        <message_var>Max_Cline_Depth</message_var>
+      </publish>
+      <publish>
+        <moos_var>%1%_MIN_CLINE_DEPTH</moos_var>
+        <format>%2%</format>
+        <message_var algorithm="modem_id2name,to_upper">Node</message_var>
+        <message_var>Min_Cline_Depth</message_var>
+      </publish>
+      <publish>
+        <moos_var>%1%_CTR_CLINE_DEPTH</moos_var>
+        <format>%2%</format>
+        <message_var algorithm="modem_id2name,to_upper">Node</message_var>
+        <message_var>Ctr_Cline_Depth</message_var>
+      </publish>
+      <publish>
+        <moos_var>%1%_CTR_CLINE_DEPTH_UPDATE</moos_var>
+        <format>depth=%2%</format>
+        <message_var algorithm="modem_id2name,to_upper">Node</message_var>
+        <message_var>Ctr_Cline_Depth</message_var>
+      </publish>
+      <!-- end pEnvtGrad adaptive yoyo -->
+    </on_receipt>
+    <queuing>
+      <ack>false</ack>
+      <blackout_time>10</blackout_time>
+      <ttl>300</ttl>
+      <value_base>1.5</value_base>
+    </queuing>
+  </message>
+</message_set>
+

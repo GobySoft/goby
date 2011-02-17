@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="ASCII" standalone="yes"?>
+<!-- codec for broadcasting target state for simulators 
+     running on nodes --> 
+<message_set>
+  <message>
+    <name>ACTIVE_CONTACTS</name>
+    <trigger>publish</trigger> <!-- package upon publish to some moos var -->
+    <trigger_moos_var>ACTIVE_CONTACTS_LOCAL</trigger_moos_var>
+    <size>32</size>
+    <header>
+      <id>15</id>
+      <time>
+        <name>data_time_utc_sec</name>
+      </time>
+      <src_id algorithm="to_lower,name2modem_id"> 
+        <name>platform_id</name>
+        <moos_var>VEHICLE_NAME</moos_var>
+      </src_id>
+    </header> 
+    <layout>
+      <static>
+        <name>MessageType</name>
+        <value>ACTIVE_CONTACT</value>
+      </static>
+      <float>
+        <name>nav_x</name>
+        <max>100000</max>
+        <min>-100000</min>
+        <precision>0</precision>
+      </float>
+      <float>
+        <name>nav_y</name>
+        <max>100000</max>
+        <min>-100000</min>
+        <precision>0</precision>
+      </float>
+      <float>
+        <name>nav_spd</name>
+        <max>20</max>
+        <min>-2</min>
+        <precision>1</precision>
+      </float>
+      <float algorithm="angle_0_360">
+        <name>nav_hdg</name>
+        <max>360</max>
+        <min>0</min>
+        <precision>2</precision>
+      </float>
+      <float>
+        <name>nav_dep</name>
+        <max>500</max>
+        <min>-10</min>
+        <precision>0</precision>
+      </float>
+      <float>
+        <name>nav_alt</name>
+        <max>500</max>
+        <min>-10</min>
+        <precision>0</precision>
+      </float>
+      <float> <!-- add to data_time_utc_sec to get exact time -->
+        <name>data_time_utc_frac_sec</name>
+        <min>0</min>
+        <max>0.999999</max>
+        <precision>6</precision>
+      </float>
+      <float> <!-- offset from data_time in seconds -->
+        <name>ping_time_offset</name>
+        <min>0</min>
+        <max>0.999999</max>
+        <precision>6</precision>
+      </float>
+      <int>
+        <name>contactsize</name>
+        <min>0</min>
+        <max>5</max>
+      </int>
+      <float>
+        <name>contact1_sec</name>
+        <min>0</min>
+        <max>1</max>
+        <precision>3</precision>
+      </float>
+      <float>
+        <name>contact1_deg</name>
+        <min>0</min>
+        <max>180</max>
+        <precision>1</precision>
+      </float>
+      <float>
+        <name>contact2_sec</name>
+        <min>0</min>
+        <max>1</max>
+        <precision>3</precision>
+      </float>
+      <float>
+        <name>contact2_deg</name>
+        <min>0</min>
+        <max>180</max>
+        <precision>1</precision>
+      </float>
+      <float>
+        <name>contact3_sec</name>
+        <min>0</min>
+        <max>1</max>
+        <precision>3</precision>
+      </float>
+      <float>
+        <name>contact3_deg</name>
+        <min>0</min>
+        <max>180</max>
+        <precision>1</precision>
+      </float>
+      <float>
+        <name>contact4_sec</name>
+        <min>0</min>
+        <max>1</max>
+        <precision>3</precision>
+      </float>
+      <float>
+        <name>contact4_deg</name>
+        <min>0</min>
+        <max>180</max>
+        <precision>1</precision>
+      </float>
+    </layout>
+    <!-- decoding -->
+    <on_receipt>
+      <publish>
+        <moos_var>ACTIVE_CONTACTS</moos_var>
+        <format>MessageType=%1%,platform_id=%2%,platform_nav_x=%3%,platform_nav_y=%4%,platform_nav_lat=%5$lf,platform_nav_lon=%6$lf,platform_spd=%7%,platform_hdg=%8%,platform_depth=%9%,platform_altitude=%10%,data_time_utc_sec=%11%,data_time_utc_frac_sec=%12%,ping_time_offset=%13%,contactsize=%14%,contact1_sec=%15%,contact1_deg=%16%,contact2_sec=%17%,contact2_deg=%18%,contact3_sec=%19%,contact3_deg=%20%,contact4_sec=%21%,contact4_deg=%22%</format>
+        <message_var>MessageType</message_var>
+        <message_var>platform_id</message_var>
+        <message_var>nav_x</message_var>
+        <message_var>nav_y</message_var>
+        <message_var algorithm="utm_y2lat:nav_x">nav_y</message_var>
+        <message_var algorithm="utm_x2lon:nav_y">nav_x</message_var>
+        <message_var>nav_spd</message_var>
+        <message_var>nav_hdg</message_var>
+        <message_var>nav_dep</message_var>
+        <message_var>nav_alt</message_var>
+        <message_var>data_time_utc_sec</message_var> 
+        <message_var>data_time_utc_frac_sec</message_var>
+        <message_var>ping_time_offset</message_var>
+        <message_var>contactsize</message_var>
+        <message_var>contact1_sec</message_var>
+        <message_var>contact1_deg</message_var>
+        <message_var>contact2_sec</message_var>
+        <message_var>contact2_deg</message_var>
+        <message_var>contact3_sec</message_var>
+        <message_var>contact3_deg</message_var>
+        <message_var>contact4_sec</message_var>
+        <message_var>contact4_deg</message_var>
+      </publish>
+      <!-- start pTransponderAIS replacement -->    
+      <publish>
+        <moos_var>NODE_REPORT</moos_var>
+        <format>NAME=%1%,TYPE=%2%,UTC_TIME=%3$.0lf,X=%4%,Y=%5%,LAT=%6$lf,LON=%7$lf,SPD=%8%,HDG=%9%,DEPTH=%10%</format>
+        <message_var algorithm="modem_id2name,to_lower">platform_id</message_var>
+        <message_var algorithm="modem_id2type,to_lower">platform_id</message_var>
+        <message_var>data_time_utc_sec</message_var>
+        <message_var>nav_x</message_var>
+        <message_var>nav_y</message_var>
+        <message_var algorithm="utm_y2lat:nav_x">nav_y</message_var>
+        <message_var algorithm="utm_x2lon:nav_y">nav_x</message_var>
+        <message_var>nav_spd</message_var>
+        <message_var>nav_hdg</message_var>
+        <message_var>nav_dep</message_var>
+      </publish>
+      <publish>
+        <moos_var type="double">%1%_NAV_UTC</moos_var>
+        <format>%2$lf</format>
+        <message_var algorithm="modem_id2name,to_upper">platform_id</message_var>
+        <message_var>data_time_utc_sec</message_var>
+      </publish>
+      <publish>
+        <moos_var type="double">%1%_NAV_X</moos_var>
+        <format>%2%</format>
+        <message_var algorithm="modem_id2name,to_upper">platform_id</message_var>
+        <message_var>nav_x</message_var>
+      </publish>
+      <publish>
+        <moos_var type="double">%1%_NAV_Y</moos_var>
+        <format>%2%</format>
+        <message_var algorithm="modem_id2name,to_upper">platform_id</message_var>
+        <message_var>nav_y</message_var>
+      </publish>
+      <publish>
+        <moos_var type="double">%1%_NAV_LAT</moos_var>
+        <format>%2%</format>
+        <message_var algorithm="modem_id2name,to_upper">platform_id</message_var>
+        <message_var algorithm="utm_y2lat:nav_x">nav_y</message_var>
+      </publish>
+      <publish>
+        <moos_var type="double">%1%_NAV_LONG</moos_var>
+        <format>%2$lf</format>
+        <message_var algorithm="modem_id2name,to_upper">platform_id</message_var>
+        <message_var algorithm="utm_x2lon:nav_y">nav_x</message_var>
+      </publish>
+      <publish>
+        <moos_var type="double">%1%_NAV_SPEED</moos_var>
+        <format>%2$lf</format>
+        <message_var algorithm="modem_id2name,to_upper">platform_id</message_var>
+        <message_var>nav_spd</message_var>
+      </publish>
+      <publish>
+        <moos_var type="double">%1%_NAV_HEADING</moos_var>
+        <format>%2%</format>
+        <message_var algorithm="modem_id2name,to_upper">platform_id</message_var>
+        <message_var>nav_hdg</message_var>
+      </publish>
+      <publish>
+        <moos_var type="double">%1%_NAV_DEPTH</moos_var>
+        <format>%2%</format>
+        <message_var algorithm="modem_id2name,to_upper">platform_id</message_var>
+        <message_var>nav_dep</message_var>
+      </publish>
+      <!-- end pTransponderAIS replacement -->
+    </on_receipt>
+    <queuing>
+      <ttl>600</ttl>
+      <value_base>2</value_base>
+    </queuing>
+  </message>
+</message_set>
+
+

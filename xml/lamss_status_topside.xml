@@ -1,0 +1,282 @@
+<?xml version="1.0" encoding="ASCII" standalone="yes"?>
+<!-- encodes message from iSerialNMEA -->
+<message_set>
+  <message>
+    <name>LAMSS_STATUS_NMEA_BUOY</name>
+    <trigger>publish</trigger>
+    <size>32</size>
+    <header>
+      <id>22</id>
+      <time>
+        <name>UTC_TIME</name>
+	<src_var>NODE_REPORT_NMEA_BUOY</src_var>
+      </time>
+    </header>
+    <layout>
+      <int algorithm="to_lower,name2modem_id">
+        <name>NAME</name>
+	<src_var>NODE_REPORT_NMEA_BUOY</src_var>
+	<max>31</max>
+	<min>0</min>
+      </int>
+      <enum algorithm="to_lower">
+        <name>TYPE</name>
+        <value>kayak</value>
+        <value>asc</value>
+        <value>auv</value>
+        <value>ship</value>
+        <value>buoy</value>
+        <value>glider</value>
+        <value>unknown</value>
+	<src_var>NODE_REPORT_NMEA_BUOY</src_var>
+      </enum>
+      <float>
+        <name>X</name>
+        <max>100000</max>
+        <min>-100000</min>
+        <precision>1</precision>
+	<src_var>NODE_REPORT_NMEA_BUOY</src_var>
+      </float>
+      <float>
+        <name>Y</name>
+        <max>100000</max>
+        <min>-100000</min>
+        <precision>1</precision>
+	<src_var>NODE_REPORT_NMEA_BUOY</src_var>
+      </float>
+      <float>
+        <name>SPD</name>
+        <max>20</max>
+        <min>-2</min>
+        <precision>1</precision>
+	<src_var>NODE_REPORT_NMEA_BUOY</src_var>
+      </float>
+      <float algorithm="angle_0_360">
+        <name>HDG</name>
+        <max>360</max>
+        <min>0</min>
+        <precision>2</precision>
+	<src_var>NODE_REPORT_NMEA_BUOY</src_var>
+      </float>
+      <float>
+        <name>DEPTH</name>
+        <max>5000</max>
+        <min>-10</min>
+        <precision>1</precision>
+	<src_var>NODE_REPORT_NMEA_BUOY</src_var>
+      </float>
+    </layout>
+    <!-- decoding -->
+    <on_receipt>
+      <publish>
+        <moos_var>NODE_REPORT</moos_var>
+        <format>NAME=%1%,TYPE=%2%,UTC_TIME=%3$.0lf,X=%4%,Y=%5%,LAT=%6$lf,LON=%7$lf,SPD=%8%,HDG=%9%,DEPTH=%10%</format>
+        <message_var algorithm="modem_id2name,to_upper">NAME</message_var>
+        <message_var>TYPE</message_var>
+        <message_var>UTC_TIME</message_var>
+        <message_var>X</message_var>
+        <message_var>Y</message_var>
+        <message_var algorithm="utm_y2lat:X">Y</message_var>
+        <message_var algorithm="utm_x2lon:Y">X</message_var>
+        <message_var>SPD</message_var>
+        <message_var>HDG</message_var>
+        <message_var>DEPTH</message_var>
+      </publish>
+      <publish>
+        <moos_var type="double">%1%_NAV_UTC</moos_var>
+        <format>%2$lf</format>
+        <message_var algorithm="modem_id2name,to_upper">NAME</message_var>
+        <message_var>UTC_TIME</message_var>
+      </publish>
+      <publish>
+        <moos_var type="double">%1%_NAV_X</moos_var>
+        <format>%2%</format>
+        <message_var algorithm="modem_id2name,to_upper">NAME</message_var>
+        <message_var>X</message_var>
+      </publish>
+      <publish>
+        <moos_var type="double">%1%_NAV_Y</moos_var>
+        <format>%2%</format>
+	<message_var algorithm="modem_id2name,to_upper">NAME</message_var>
+        <message_var>Y</message_var>
+      </publish>
+      <publish>
+        <moos_var type="double">%1%_NAV_LAT</moos_var>
+        <format>%2%</format>
+	<message_var algorithm="modem_id2name,to_upper">NAME</message_var>
+        <message_var algorithm="utm_y2lat:X">Y</message_var>
+      </publish>
+      <publish>
+        <moos_var type="double">%1%_NAV_LONG</moos_var>
+        <format>%2$lf</format>
+	<message_var algorithm="modem_id2name,to_upper">NAME</message_var>
+        <message_var algorithm="utm_x2lon:Y">X</message_var>
+      </publish>
+      <publish>
+        <moos_var type="double">%1%_NAV_SPEED</moos_var>
+        <format>%2$lf</format>
+	<message_var algorithm="modem_id2name,to_upper">NAME</message_var>
+        <message_var>SPD</message_var>
+      </publish>
+      <publish>
+        <moos_var type="double">%1%_NAV_HEADING</moos_var>
+        <format>%2%</format>
+	<message_var algorithm="modem_id2name,to_upper">NAME</message_var>
+        <message_var>HDG</message_var>
+      </publish>
+      <publish>
+        <moos_var type="double">%1%_NAV_DEPTH</moos_var>
+        <format>%2%</format>
+	<message_var algorithm="modem_id2name,to_upper">NAME</message_var>
+        <message_var>DEPTH</message_var>
+      </publish>
+    </on_receipt>
+    <queuing>
+      <ack>false</ack>
+      <ttl>300</ttl>
+      <value_base>1</value_base>
+    </queuing>
+  </message>
+  <message>
+    <name>LAMSS_STATUS_NMEA_SHIP</name>
+    <size>32</size>
+    <header>
+      <id>21</id>
+      <time>
+        <name>UTC_TIME</name>
+	<src_var>NODE_REPORT_NMEA_SHIP</src_var>
+      </time>
+    </header>
+    <layout>
+      <int algorithm="to_lower,name2modem_id">
+        <name>NAME</name>
+	<src_var>NODE_REPORT_NMEA_SHIP</src_var>
+	<max>31</max>
+	<min>0</min>
+      </int>
+      <enum algorithm="to_lower">
+        <name>TYPE</name>
+        <value>kayak</value>
+        <value>asc</value>
+        <value>auv</value>
+        <value>ship</value>
+        <value>buoy</value>
+        <value>glider</value>
+        <value>unknown</value>
+	<src_var>NODE_REPORT_NMEA_SHIP</src_var>
+      </enum>
+      <float>
+        <name>UTC_TIME</name>
+        <max>2000000000</max>
+        <min>1000000000</min>
+        <precision>0</precision>
+	<src_var>NODE_REPORT_NMEA_SHIP</src_var>
+      </float>
+      <float>
+        <name>X</name>
+        <max>100000</max>
+        <min>-100000</min>
+        <precision>1</precision>
+	<src_var>NODE_REPORT_NMEA_SHIP</src_var>
+      </float>
+      <float>
+        <name>Y</name>
+        <max>100000</max>
+        <min>-100000</min>
+        <precision>1</precision>
+	<src_var>NODE_REPORT_NMEA_SHIP</src_var>
+      </float>
+      <float>
+        <name>SPD</name>
+        <max>20</max>
+        <min>-2</min>
+        <precision>1</precision>
+	<src_var>NODE_REPORT_NMEA_SHIP</src_var>
+      </float>
+      <float algorithm="angle_0_360">
+        <name>HDG</name>
+        <max>360</max>
+        <min>0</min>
+        <precision>2</precision>
+	<src_var>NODE_REPORT_NMEA_SHIP</src_var>
+      </float>
+      <float>
+        <name>DEPTH</name>
+        <max>5000</max>
+        <min>-10</min>
+        <precision>1</precision>
+	<src_var>NODE_REPORT_NMEA_SHIP</src_var>
+      </float>
+    </layout>
+    <!-- decoding -->
+    <on_receipt>
+      <publish>
+        <moos_var>NODE_REPORT</moos_var>
+        <format>NAME=%1%,TYPE=%2%,UTC_TIME=%3$.0lf,X=%4%,Y=%5%,LAT=%6$lf,LON=%7$lf,SPD=%8%,HDG=%9%,DEPTH=%10%</format>
+        <message_var algorithm="modem_id2name,to_upper">NAME</message_var>
+        <message_var>TYPE</message_var>
+        <message_var>UTC_TIME</message_var>
+        <message_var>X</message_var>
+        <message_var>Y</message_var>
+        <message_var algorithm="utm_y2lat:X">Y</message_var>
+        <message_var algorithm="utm_x2lon:Y">X</message_var>
+        <message_var>SPD</message_var>
+        <message_var>HDG</message_var>
+        <message_var>DEPTH</message_var>
+      </publish>
+      <publish>
+        <moos_var type="double">%1%_NAV_UTC</moos_var>
+        <format>%2$lf</format>
+        <message_var algorithm="modem_id2name,to_upper">NAME</message_var>
+        <message_var>UTC_TIME</message_var>
+      </publish>
+      <publish>
+        <moos_var type="double">%1%_NAV_X</moos_var>
+        <format>%2%</format>
+        <message_var algorithm="modem_id2name,to_upper">NAME</message_var>
+        <message_var>X</message_var>
+      </publish>
+      <publish>
+        <moos_var type="double">%1%_NAV_Y</moos_var>
+        <format>%2%</format>
+	<message_var algorithm="modem_id2name,to_upper">NAME</message_var>
+        <message_var>Y</message_var>
+      </publish>
+      <publish>
+        <moos_var type="double">%1%_NAV_LAT</moos_var>
+        <format>%2%</format>
+	<message_var algorithm="modem_id2name,to_upper">NAME</message_var>
+        <message_var algorithm="utm_y2lat:X">Y</message_var>
+      </publish>
+      <publish>
+        <moos_var type="double">%1%_NAV_LONG</moos_var>
+        <format>%2$lf</format>
+	<message_var algorithm="modem_id2name,to_upper">NAME</message_var>
+        <message_var algorithm="utm_x2lon:Y">X</message_var>
+      </publish>
+      <publish>
+        <moos_var type="double">%1%_NAV_SPEED</moos_var>
+        <format>%2$lf</format>
+	<message_var algorithm="modem_id2name,to_upper">NAME</message_var>
+        <message_var>SPD</message_var>
+      </publish>
+      <publish>
+        <moos_var type="double">%1%_NAV_HEADING</moos_var>
+        <format>%2%</format>
+	<message_var algorithm="modem_id2name,to_upper">NAME</message_var>
+        <message_var>HDG</message_var>
+      </publish>
+      <publish>
+        <moos_var type="double">%1%_NAV_DEPTH</moos_var>
+        <format>%2%</format>
+	<message_var algorithm="modem_id2name,to_upper">NAME</message_var>
+        <message_var>DEPTH</message_var>
+      </publish>
+    </on_receipt>
+    <queuing>
+      <ack>false</ack>
+      <ttl>300</ttl>
+      <value_base>1</value_base>
+    </queuing>
+  </message>
+</message_set>

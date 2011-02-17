@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf8" ?>
+<message_set>
+  <message>
+    <name>SURFACE_DEPLOY</name>
+    <trigger>publish</trigger> 
+    <trigger_moos_var>SURFACE_COMMAND</trigger_moos_var>
+    <size>32</size>
+    <header>
+      <id>40</id>
+      <dest_id>
+        <name>destination_id</name>
+      </dest_id>
+    </header>
+    <layout>
+      <enum>
+        <name>active_state</name>
+        <value>active</value>
+        <value>shutdown</value>
+      </enum>
+      <enum>
+        <name>active_type</name>
+        <value>engage</value>
+        <value>deploytopoint</value>
+      </enum>
+      <enum>
+        <name>engage_type</name>
+        <value>hexagon</value>
+        <value>harbor</value>
+        <value>trail</value>
+      </enum>
+      <!-- gives an x/y position for all relevant updates (Active:DeployToPoint, center point for Active:Engage:Hexagon)-->
+      <int>
+        <name>command_x</name>
+        <max>100000</max>
+        <min>-100000</min>
+      </int>
+      <int>
+        <name>command_y</name>
+        <max>100000</max>
+        <min>-100000</min>
+      </int>
+
+      <!-- gives radius for Active:Engage:Hexagon -->
+      <int>
+        <name>engage_radius</name>
+        <max>10000</max>
+        <min>0</min>
+      </int>
+      <enum>
+        <name>trail_target</name>
+        <value>discovery</value>
+        <value>leonardo</value>
+        <value>alliance</value>
+        <value>dee</value>
+        <value>elanor</value>
+        <value>unicorn</value>
+        <value>macrura</value>
+        <value>resolution</value>
+      </enum>
+      <int>
+        <name>trail_range</name>
+        <max>1023</max>
+        <min>0</min>
+      </int>
+      <int> 
+        <name>trail_angle</name>
+        <max>359</max>
+        <min>0</min>
+      </int>    
+      <enum>
+        <name>trail_angle_type</name>
+        <value>relative</value>
+        <value>absolute</value>
+      </enum>
+    </layout>
+    <on_receipt>
+      <!-- set states -->
+      <publish>
+        <moos_var>ACTIVE_STATE_%1%</moos_var>
+        <format>%2%</format>
+        <message_var algorithm="modem_id2name,to_upper">destination_id</message_var>
+        <message_var>active_state</message_var>
+      </publish>
+      <publish>
+        <moos_var>ACTIVE_TYPE_%1%</moos_var>
+        <format>%2%</format>
+        <message_var algorithm="modem_id2name,to_upper">destination_id</message_var>
+        <message_var>active_type</message_var>
+      </publish>
+      <publish>
+        <moos_var>ENGAGE_TYPE_%1%</moos_var>
+        <format>%2%</format>
+        <message_var algorithm="modem_id2name,to_upper">destination_id</message_var>
+        <message_var>engage_type</message_var>
+      </publish>
+      <!-- end set states -->
+
+      <!-- set values -->
+      <!-- for Active:DeployToPoint:Transiting -->
+      <publish>
+        <moos_var>TRANSIT_UPDATES_%1%</moos_var>
+        <format>points=%2%,%3%</format>
+        <message_var algorithm="modem_id2name,to_upper">destination_id</message_var>
+        <message_var>command_x</message_var>
+        <message_var>command_y</message_var>
+      </publish>
+      <!-- we sent a command, if we happen to be in DeployToPoint, throw us back into Transiting -->
+      <publish>
+        <moos_var>DEPLOY_TRANSIT_%1%</moos_var>
+        <message_var algorithm="modem_id2name,to_upper">destination_id</message_var>
+        <format>true</format>
+      </publish>
+      <!-- for Active:Engage:Hexagon -->
+      <publish>
+        <moos_var>HEXAGON_UPDATES_%1%</moos_var>
+        <format>polygon=radial:%2%,%3%,%4%,6#clockwise=true</format>
+        <message_var algorithm="modem_id2name,to_upper">destination_id</message_var>
+        <message_var>command_x</message_var>
+        <message_var>command_y</message_var>
+        <message_var>engage_radius</message_var>
+      </publish>
+      <!-- for Active:Engage:Trail -->
+      <publish>
+	<moos_var>TRAIL_UPDATES_%1%</moos_var>
+        <message_var algorithm="modem_id2name,to_upper">destination_id</message_var>
+	<format>contact=%2%#trail_range=%3%#trail_angle=%4%#trail_angle_type=%5%</format>
+	<message_var>trail_target</message_var>
+	<message_var>trail_range</message_var>
+	<message_var>trail_angle</message_var>
+	<message_var>trail_angle_type</message_var>
+      </publish>
+      <!-- for Active:Engage:Harbor -->
+      <publish>
+	<moos_var>FORMATION_RADIUS</moos_var>
+	<message_var>engage_radius</message_var>
+      </publish>
+
+      <!-- end set values -->
+    </on_receipt>    
+    <queuing>
+      <ttl>300</ttl>
+      <value_base>10</value_base>
+    </queuing>
+  </message>
+</message_set>

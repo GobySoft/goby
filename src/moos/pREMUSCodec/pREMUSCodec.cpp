@@ -86,98 +86,44 @@ for(MOOSMSG_LIST::iterator p = NewMail.begin(); p != NewMail.end(); p++)
         string msg_community = msg.GetCommunity();
 	
 
-	if(MOOSStrCmp(key, mdat_state_var)) // case insensitive
-	  {
-	    // first get rid of header if present
-	    string bite;
-	    if ( !MOOSValFromString(bite,sval,"data") )
-	      bite = sval;
-
+	if(MOOSStrCmp(key, mdat_state_var) || MOOSStrCmp(key, mdat_ranger_var)
+           || MOOSStrCmp(key, mdat_redirect_var) || MOOSStrCmp(key, mdat_alert_var)
+            || MOOSStrCmp(key, mdat_alert2_var)) // case insensitive
+        {
+            goby::acomms::protobuf::ModemDataTransmission msg_in;
+            parse_for_moos(sval, &msg_in);
+            
 	    vector<unsigned int> bytes;
-	    for (int i=0; i<32; i++)
-	      bytes.push_back(0);
-
-            hex_to_int_array(bite, bytes);
-	    int node =atoi(msg_community.c_str());
+	    for (unsigned i=0; i<32; i++)
+            {
+                if(i < msg_in.data().size())
+                    bytes.push_back(msg_in.data().at(i));
+                else
+                    bytes.push_back(0);
+            }
+            
+	    int node = msg_in.base().src();
             string name = modem_lookup[atoi(msg_community.c_str())].name;
             string type = modem_lookup[atoi(msg_community.c_str())].type;
+
+            string human;
             
-            string human = decode_mdat_state(bytes, node, name, type);
-            m_Comms.Notify("NODE_REPORT", human);
-	  }
-	else if(MOOSStrCmp(key, mdat_ranger_var)) // case insensitive
-	  {
-	    // first get rid of header if present
-	    string bite;
-	    if ( !MOOSValFromString(bite,sval,"data") )
-	      bite = sval;
-
-	    vector<unsigned int> bytes;
-	    for (int i=0; i<32; i++)
-	      bytes.push_back(0);
-
-            hex_to_int_array(bite, bytes);
-	    int node =atoi(msg_community.c_str());
-            string name = modem_lookup[atoi(msg_community.c_str())].name;
-            string type = modem_lookup[atoi(msg_community.c_str())].type;
-            
-            string human = decode_mdat_ranger(bytes, node, name, type);
-            m_Comms.Notify("NODE_REPORT", human);
-	  }
-	else if(MOOSStrCmp(key, mdat_redirect_var)) // case insensitive
-	  {
-	    // first get rid of header if present
-
-	    string bite;
-	    if ( !MOOSValFromString(bite,sval,"data") )
-	      bite = sval;
-
-            vector<unsigned int> bytes;
-	    for (int i=0; i<32; i++)
-	      bytes.push_back(0);
-
-            hex_to_int_array(bite, bytes);
-	    int node =atoi(msg_community.c_str());
-            string name = modem_lookup[atoi(msg_community.c_str())].name;
-            string type = modem_lookup[atoi(msg_community.c_str())].type;
-            
-            string human = decode_mdat_redirect(bytes, node, name, type);
-	  }
-	else if(MOOSStrCmp(key, mdat_alert_var)) // case insensitive
-	  {
-	    // first get rid of header if present
-	    string bite;
-	    if ( !MOOSValFromString(bite,sval,"data") )
-	      bite = sval;
-
-            vector<unsigned int> bytes;
-	    for (int i=0; i<32; i++)
-	      bytes.push_back(0);
-
-            hex_to_int_array(bite, bytes);
-	    int node =atoi(msg_community.c_str());
-            string name = modem_lookup[atoi(msg_community.c_str())].name;
-            string type = modem_lookup[atoi(msg_community.c_str())].type;
-            
-            string human = decode_mdat_alert(bytes, node, name, type);
-	  }
-	else if(MOOSStrCmp(key, mdat_alert2_var)) // case insensitive
-	  {
-	    // first get rid of header if present
-	    string bite;
-	    if ( !MOOSValFromString(bite,sval,"data") )
-	      bite = sval;
-
-            vector<unsigned int> bytes;
-	    for (int i=0; i<32; i++)
-	      bytes.push_back(0);
-
-            hex_to_int_array(bite, bytes);
-	    int node =atoi(msg_community.c_str());
-            string name = modem_lookup[atoi(msg_community.c_str())].name;
-            string type = modem_lookup[atoi(msg_community.c_str())].type;
-            
-            string human = decode_mdat_alert2(bytes, node, name, type);
+            if(MOOSStrCmp(key, mdat_state_var))
+            {
+                human = decode_mdat_state(bytes, node, name, type);
+                m_Comms.Notify("NODE_REPORT", human);
+            }
+            else if(MOOSStrCmp(key, mdat_ranger_var))
+            {
+                human = decode_mdat_ranger(bytes, node, name, type);
+                m_Comms.Notify("NODE_REPORT", human);
+            }
+            else if(MOOSStrCmp(key, mdat_redirect_var))
+                human = decode_mdat_redirect(bytes, node, name, type);
+            else if(MOOSStrCmp(key, mdat_alert_var))
+                human = decode_mdat_alert(bytes, node, name, type);
+            else if(MOOSStrCmp(key, mdat_alert2_var))
+                human = decode_mdat_alert2(bytes, node, name, type);
 	  }
 	else if(MOOSStrCmp(key,"MODEM_ID"))
 	  {	 
@@ -266,7 +212,7 @@ bool CpREMUSCodec::Iterate()
       if (encode_mdat_state(bytes))
 	{
             goby::acomms::protobuf::ModemDataTransmission msg_out;
-
+            
             for (int i=0, n=bytes.size(); i<n; i++)
                 msg_out.mutable_data()->append(1, char(bytes[i]));
 

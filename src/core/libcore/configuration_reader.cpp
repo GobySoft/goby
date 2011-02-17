@@ -141,11 +141,11 @@ void goby::core::ConfigReader::set_protobuf_program_option(const boost::program_
         switch(field_desc->cpp_type())
         {
             case google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE:
-                BOOST_FOREACH(std::string v,
-                              value.as<std::vector<std::string> >())
+                BOOST_FOREACH(std::string v,value.as<std::vector<std::string> >())
                 {
-                    google::protobuf::TextFormat::MergeFromString(
-                        v, refl->AddMessage(&message, field_desc));
+                    google::protobuf::TextFormat::Parser parser;
+                    parser.AllowPartialMessage(true);   
+                    parser.MergeFromString(v, refl->AddMessage(&message, field_desc));
                 }
                 
                 break;    
@@ -216,10 +216,12 @@ void goby::core::ConfigReader::set_protobuf_program_option(const boost::program_
         switch(field_desc->cpp_type())
         {
             case google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE:
-                google::protobuf::TextFormat::MergeFromString(
-                    value.as<std::string>(),
-                    refl->MutableMessage(&message, field_desc));
+            {
+                google::protobuf::TextFormat::Parser parser;
+                parser.AllowPartialMessage(true);
+                parser.MergeFromString(value.as<std::string>(),refl->MutableMessage(&message, field_desc));
                 break;    
+            }
                     
             case google::protobuf::FieldDescriptor::CPPTYPE_INT32:
                 refl->SetInt32(&message, field_desc, value.as<boost::int_least32_t>());

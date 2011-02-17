@@ -1,0 +1,158 @@
+Goby Release Notes
+
+
+*****************
+Version 1.0
+
+MOOS (pAcommsHandler)
+--- Most MOOS messages originating from pAcommsHandler (ACOMMS_*) now use the Protocol Buffers TextFormat class to serialize and parse from string (to send through MOOS) to the various Protocol Buffers messages defined in goby/src/acomms/protobuf/*.proto (primarily modem_message.proto)
+	* Informational *
+	--- ACOMMS_NMEA_IN (type: string), ModemMsgBase::raw() for all incoming messages ("$CA..." for WHOI Micro-Modem)
+	--- ACOMMS_NMEA_OUT (type: string), ModemMsgBase::raw() for all outgoing messages ("$CC..." for WHOI Micro-Modem)
+	--- ACOMMS_INCOMING_DATA (type: ModemDataTransmission) written for all received messages containing a data payload
+	--- ACOMMS_OUTGOING_DATA (type: ModemDataTransmission) written for all queued messages containing a data payload
+	--- ACOMMS_RANGE_RESPONSE (type: ModemRangingReply) written in response to ranging request (to another modem or LBL beacons)
+	--- ACOMMS_ACK (type: ModemDataAck) written when received data is acknowledged acoustically by a third party. Contains the original message.
+	--- ACOMMS_EXPIRE (type: ModemDataExpire) written when a message expires (time-to-live [ttl] exceeded) from the queue before being sent (ack = false) or acknowledged (ack = true)
+	--- ACOMMS_QSIZE (type: QueueSize) written when a queue changes size (pop or push) with the new size of the queue.
+	* Commands *
+	 (queuing DCCL data to send is initiated with a DCCL publish when <trigger>publish</trigger> as always, no change here)
+	--- ACOMMS_RANGE_COMMAND (type: ModemRangingRequest) you write this to pAcommsHandler to initiate a ranging request outside the MAC schedule. Note in general it is preferable to use the MAC cycle to coordinate data and ranging.
+	--- ACOMMS_MAC_CYCLE_UPDATE (type: MACUpdate) you write this to update the MAC cycle for MAC_FIXED_DECENTRALIZED and MAC_POLLED modes of operation
+--- All .moos file configuration settings can be set at runtime using the command line. run "pAcommsHandler -h" for a list of available options and their syntax. For example, 
+> pAcommsHandler last.moos --driver_cfg 'serial_port: "/dev/ttyUSB1"'
+runs pAcommsHandler with the serial port set to /dev/ttyUSB1. Command line options overwrite .moos file options if both are set.
+--- Configuration (.moos) is type checked and syntax checked for common mistakes including extraneous parameters (often misspelled parameters), duplicate parameters (for non-repeat fields) and missing required parameters.
+--- Running "pAcommsHandler -e" outputs an example .moos ProcessConfig block with all the available options for configuring pAcommsHandler and an example. Where applicable, defaults are indicated with "(default)".
+
+Acomms
+--- Replaced generic ModemMessage class with a variety of Google Protocol Buffers messages (see http://code.google.com/p/protobuf/) for all internal signals and slots. Replaced callback handling of asynchronous events with a more general signal/slot mechanism based on boost::signals.
+--- DriverBase and supporting messaging is more streamlined to remove the remaining WHOI Micro-Modem bias from the design of Goby. Goby should now easily support other manufacturers' modems by subclassing goby::acomms::DriverBase (goby/src/acomms/libmodemdriver/driver_base.*). No new drivers are including in this release, though some are in the works soon.
+--- Fixed CCL queuing functionality in libqueue
+--- Improved error handling messages for CCL functionality
+--- Support for REMUS LBL beacon ranging in the WHOI Micro-Modem ($SNTTA, etc.)
+--- Fixed bug where some variables using Algorithms in the DCCL header were being overwritten by the default for that field. DCCL layout variables were not affected.
+
+Core (still in development / testing)
+--- Implemented basic functionality for all core elements (message passing, logging, base application superclass).
+--- Wrote two examples in goby/src/core/examples that are documented partially in goby/doc/user_manual
+
+Util
+--- Fixed miscellaneous bugs in liblogger
+
+
+
+*****************
+Version 0.1
+
+First release of Goby; unless you specifically need backwards compatibility, I suggest you upgrade to Version 1.0.
+
+> bzr log --line -n0
+65: toby 2011-02-15 minor edit to Installing Goby doc
+64: toby 2011-02-14 fixed type in main doxygen page
+63: toby 2011-02-14 updated main document page
+62: toby 2011-01-29 minor updates to main page documentation (including installation instructions)
+61: toby 2011-01-24 [merge] merge changes from SWAMSI11 cruise - added MOOS applications
+  60.2.18: mituser 2011-01-17 modem driver subclass (e.g. MMDriver) now handles raw callbacks
+  60.2.17: mituser 2011-01-17 fixed missing <CR><NL> at the end of the Hydroid Gateway GPS request
+  60.2.16: toby 2011-01-17 added GPS request for Hydroid Gateway buoy
+  60.2.15: toby 2011-01-13 updated functionality for Hydroid buoy
+  60.2.14: toby 2011-01-12 no xml files is not an error
+  60.2.13: mituser 2011-01-12 fixed unsigned for int
+  60.2.12: mituser 2011-01-12 minor fix to output properly missing LBL beacon values
+  60.2.11: toby 2011-01-12 added compatibility for REMUS LBL
+  60.2.10: toby 2011-01-12 started work on .proto files for acomms p.2 
+  60.2.9: toby 2011-01-12 started work on .proto files for acomms
+  60.2.8: mituser 2011-01-11 more robust Wt finding
+  60.2.7: toby 2011-01-11 updated defaults for the CMakeLists
+  60.2.6: toby 2011-01-11 split out CONFIGURE from INSTALL
+  60.2.5: mituser 2011-01-11 improved robustness of FindMOOS
+  60.2.4: toby 2011-01-11 fixed FindMOOS typo
+  60.2.3: toby 2011-01-11 added MOOS applications from moos-ivp-local
+  60.2.2: toby 2011-01-11 updated .bzrignore to ignore build related files for documentation
+  60.2.1: toby 2011-01-11 [merge] improved CMake error reporting when missing packages. Finished ex2
+    60.1.1: toby 2011-01-02 finished example 2: gps driver
+60: toby 2010-12-13 added support to ApplicationBase for Header .proto
+59: toby 2010-11-23 fixed png size
+58: toby 2010-11-23 updated UML images
+57: toby 2010-11-03 made NCurses optional: working on building for Windows
+56: toby 2010-11-03 started second example for core and added more MOOS mimics
+55: toby 2010-10-14 [merge] merged changes from flight to San Diego: mostly documentation (Doxygen and otherwise). See submerge changes for details
+  54.1.2: toby 2010-10-14 wrote some examples, a second whitepaper, and the start of a user manual
+  54.1.1: toby 2010-10-12 doxygen documentation for goby::core and some work on making the logger optionally thread safe
+54: toby 2010-10-04 seamless configuration / cli initially finished for goby core
+53: toby 2010-09-29 fixed minor errors from previous commit
+52: toby 2010-09-29 added configuration file / command line reader for gobyd and application_base
+51: toby 2010-09-29 proto files (*.pb.cc and *.pb.h) are generated to goby/include/... to simplify compiling
+50: toby 2010-09-24 significant progress on core: working cmoosapp mimic, full database support for all google protobuf types (included embedded messages and repeated message)
+49: toby 2010-09-22 worked out several critical thread safety bugs in core
+48: toby 2010-09-20 initial work on a mimic for CMOOSApp for easy transition for MOOS users
+47: toby 2010-09-18 basic working core (gobyd)
+46: toby 2010-09-15 [merge] significant initial work on goby core
+  45.1.5: toby 2010-09-15 working connection between gobyd and goby base application
+  45.1.4: toby 2010-09-14 initial testing work on gobyd and goby app
+  45.1.3: toby 2010-08-31 significant testing work for gobyd integrating google protobuf with Wt::Dbo and boost::interprocess
+  45.1.2: toby 2010-08-16 new shells for exception classes and tests for goby core
+  45.1.1: toby 2010-08-12 significant cleanup of callback structure
+45: toby 2010-08-10 [merge] merged changes from GLINT10 cruise
+  44.1.3: toby 2010-08-10 minor adjustments to MAC log output and line-based-comms methods
+  44.1.2: toby 2010-08-01 checking of DCCL message algorithm validity
+  44.1.1: toby 2010-07-29 changed linebasedcomms to a single user system for simplicity
+44: toby 2010-07-27 [merge] merged work on replacement for serial client with abstracted networking "serial-like" client (liblinebasedcomms)
+  43.1.3: toby 2010-07-26 many small changes to improve logging facilities
+  43.1.2: toby 2010-07-19 replaced libserial with liblinebasedcomms which allows emulated serial type line based connections over serial, tcp (as client), tcp (as server) and (in the future) UDP
+  43.1.1: toby 2010-07-19 added preliminary work for tcp_server option
+43: toby 2010-07-15 [merge] merged lp:~tes/goby/time_fix with namespace cleanup and time source consistency
+  41.1.4: toby 2010-07-15 fixed some Doxygen comments to reflect new namespaces
+  41.1.3: toby 2010-07-14 reduced excessive number of namespaces and changed namespaces to reflect file structure: goby::acomms and goby::util. Also changed some class names to resolve the resulting ...
+  41.1.2: toby 2010-07-14 put all of goby into goby:: namespace and renamed some libraries
+  41.1.1: toby 2010-07-13 calls to time should uniformly use boost date_time (and util/gtime.h helper functions)
+42: Chris Murphy 2010-07-14 Minor COPYING tweak to test chrismurf commit.
+41: toby 2010-07-13 [merge] merged lp:~chrismurf/goby/nmea_rewrite
+  40.1.3: Chris Murphy 2010-07-13 Removing super typedef and references.
+  40.1.2: Chris Murphy 2010-07-13 Going back to Toby's original nomenclature for message(), it was better.
+  40.1.1: Chris Murphy 2010-07-13 Initial commit of new NMEASentence class.
+40: toby 2010-07-12 fixed bug taking base 10 log of negative number & changed double size_ to unsigned size_ in modem_message
+39: toby 2010-07-11 mainly minor bug and memory fixes
+38: toby 2010-06-15 added support for arrays and delta-difference encoded arrays
+37: toby 2010-06-11 added support for the Hydroid Gateway Buoy from Andrew Bouchard
+36: toby 2010-05-13 white paper
+35: toby 2010-05-12 fixed missing include
+34: toby 2010-04-29 changed website references to gobysoft.com
+33: toby 2010-04-01 working on html css
+32: toby 2010-03-30 fixed bad eps conversion
+31: toby schneider 2010-03-21 minor doc update
+30: toby schneider 2010-03-21 updated doc to reflect recent changes
+29: toby schneider 2010-03-20 changed the header to 6 bytes to include time, src_id, dest_id, larger dccl_id and added many features related to that
+28: toby schneider 2010-03-17 more work on crypto
+27: toby 2010-03-15 added crypto
+26: toby schneider 2010-03-09 cleaned up encode/decode interface to use dccl::MessageVal in place of basic types
+25: toby schneider 2010-03-04 cleaning up DCCL and adding delta encoding
+24: toby 2010-02-28 updated URLs in documentation
+23: toby 2010-02-25 reworked priority queuing
+22: toby 2010-02-04 fixed wrong path in several examples
+21: toby schneider 2010-02-04 reworked UML diagrams
+20: toby 2010-01-26 tweaked one of the UML models
+19: toby schneider 2010-01-25 added more UML models to the documentation
+18: toby schneider 2010-01-25 libamac documentation
+17: toby schneider 2010-01-21 added DCCL ids used by LAMSS
+16: toby schneider 2010-01-21 more documentation
+15: toby schneider 2010-01-20 added simple examples for each of the goby-acomms libraries
+14: toby schneider 2010-01-17 [merge] mostly documentation work and added hex
+  13.1.2: toby schneider 2010-01-16 added MAC
+  13.1.1: toby schneider 2010-01-15 work on documents
+13: toby 2010-01-06 fixed bug with modem configuration
+12: toby schneider 2010-01-03 added <hex/> tag for DCCL
+11: toby 2009-12-21 documentation!
+10: toby schneider 2009-12-19 documentation work
+9: toby schneider 2009-12-17 worked on making driver a base class so that different types of modems can have their own driver class (like MMDriver for the WHOI Micro-Modem). also did a good deal of d...
+8: toby schneider 2009-12-16 added some namespaces and made consistent header files
+7: toby schneider 2009-12-11 [merge] reworked structure to be more in line with linux conventions
+  6.1.1: toby schneider 2009-12-10 working on cleaning up structure
+6: toby schneider 2009-12-09 minor interface changes to deal with MAC
+5: toby 2009-12-05 [merge] initial working version of libqueue, incorporating much of the heart of pAcommsHandler
+  4.1.1: toby schneider 2009-12-03 consistent header comments, algorithms can take in MessageVal and thus have different input and output, included documentation for libdccl, cleaned up MessageVal
+4: toby schneider 2009-12-03 added more information on installing and made install/dependencies files executable
+3: toby schneider 2009-12-03 incorporated utility libraries and fixed compile problems with libmmdriver
+2: toby schneider 2009-12-02 completed transition to CMake
+1: toby schneider 2009-12-01 initial commit

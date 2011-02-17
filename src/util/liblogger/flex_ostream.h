@@ -21,6 +21,7 @@
 
 #include <iostream>
 #include <string>
+#include <iomanip>
 
 #include "flex_ostreambuf.h"
 #include "logger_manipulators.h"

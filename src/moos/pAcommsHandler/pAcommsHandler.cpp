@@ -318,7 +318,8 @@ void CpAcommsHandler::queue_incoming_data(const goby::acomms::protobuf::ModemDat
     {
         // post message and set originating community to modem id 
         CMOOSMsg m_specific(MOOS_NOTIFY, in_queue2moos_var_[message.queue_key()], serialized, -1);
-        m_specific.m_sOriginatingCommunity = boost::lexical_cast<std::string>(message.base().src());    
+        m_specific.m_sOriginatingCommunity = boost::lexical_cast<std::string>(message.base().src());
+        
         publish(m_specific);
     
         glogger() << group("q_in") << "published received data to "

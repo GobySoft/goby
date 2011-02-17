@@ -66,7 +66,12 @@ int main()
     std::cout << "loading xml file: test.xml" << std::endl;
 
     // instantiate the parser with a single xml file
-    acomms::DCCLCodec dccl(DCCL_EXAMPLES_DIR "/test/test.xml", "../../message_schema.xsd");
+    goby::acomms::DCCLCodec dccl;    
+    goby::acomms::protobuf::DCCLConfig cfg;
+    cfg.add_message_file()->set_path(DCCL_EXAMPLES_DIR "/test/test.xml");
+    // must be kept secret!
+    cfg.set_crypto_passphrase("my_passphrase!");
+    dccl.set_cfg(cfg);
 
     std::cout << dccl << std::endl;
     
@@ -77,8 +82,6 @@ int main()
     dccl.add_algorithm("invert", &invert);
     dccl.add_adv_algorithm("sum", &algsum);
 
-    // must be kept secret!
-    dccl.set_crypto_passphrase("my_passphrase!");
     
     std::map<std::string, std::vector<acomms::DCCLMessageVal> > in;
     
@@ -108,19 +111,19 @@ int main()
     in["H"] = std::vector<acomms::DCCLMessageVal>(1,h);
     in["SUM"] = sum;
 
-    std::string hex;
+    std::string bytes;
     std::cout << "sent values:" << std::endl 
               << in;
 
-    dccl.encode(4, hex, in);
-
-    std::cout << "hex out: " << hex << std::endl;
-    hex.resize(hex.length() + 20,'0');
-    std::cout << "hex in: " << hex << std::endl;    
+    dccl.encode(4, bytes, in);
+    
+    std::cout << "hex out: " << goby::acomms::hex_encode(bytes) << std::endl;
+    bytes.resize(bytes.length() + 20, '0');
+    std::cout << "hex in: " << goby::acomms::hex_encode(bytes) << std::endl;    
     
     std::map<std::string, std::vector<acomms::DCCLMessageVal> > out;
     
-    dccl.decode(hex, out);
+    dccl.decode(bytes, out);
     
     std::cout << "received values:" << std::endl 
               << out;    

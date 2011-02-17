@@ -5,6 +5,8 @@
 #include "goby/util/binary.h" // for goby::util::hex_string2number
 #include "goby/util/string.h" // for goby::util::as
 
+using goby::core::operator<<;
+
 GPSDriverConfig GPSDriver::cfg_;
 
 int main(int argc, char* argv[])

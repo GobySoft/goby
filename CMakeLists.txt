@@ -16,6 +16,8 @@ get_filename_component(goby_INC_DIR include ABSOLUTE)
 get_filename_component(goby_SRC_DIR src ABSOLUTE)
 get_filename_component(goby_BUILD_DIR build ABSOLUTE)
 
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall")
+
 ## set the cmake defaults for libraries and binaries
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${goby_LIB_DIR} CACHE PATH 
   "Output directory for the libraries" )
@@ -32,7 +34,7 @@ install(DIRECTORY ${goby_INC_DIR}/ DESTINATION /usr/local/include)
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules/")
 
 ## copy to goby/include
-file(GLOB_RECURSE INCLUDE_FILES RELATIVE ${goby_SRC_DIR} src/*.h src/*.proto)
+file(GLOB_RECURSE INCLUDE_FILES RELATIVE ${goby_SRC_DIR} src/*.h src/*.proto src/*.xsd)
 foreach(I ${INCLUDE_FILES})
   configure_file(${goby_SRC_DIR}/${I} ${goby_INC_DIR}/goby/${I} COPYONLY)
 endforeach()

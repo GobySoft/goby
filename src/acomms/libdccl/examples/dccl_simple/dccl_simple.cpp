@@ -29,16 +29,18 @@ int main()
     // we only need one map.
     std::map<std::string, goby::acomms::DCCLMessageVal> val_map;
 
-    //  initialize output hexadecimal
-    std::string hex;
+    //  initialize output bytes
+    std::string bytes;
     
     std::cout << "loading xml file: xml/simple.xml" << std::endl;
 
     // instantiate the parser with a single xml file (simple.xml).
     // also pass the schema, relative to simple.xml, for XML validity
     // checking (syntax).
-    goby::acomms::DCCLCodec dccl(DCCL_EXAMPLES_DIR "/dccl_simple/simple.xml",
-                         "../../message_schema.xsd");
+    goby::acomms::DCCLCodec dccl;    
+    goby::acomms::protobuf::DCCLConfig cfg;
+    cfg.add_message_file()->set_path(DCCL_EXAMPLES_DIR "/dccl_simple/simple.xml");
+    dccl.set_cfg(cfg);
     
     // read message content (in this case from the command line)
     std::string input;
@@ -53,16 +55,16 @@ int main()
 
     // we are encoding for message id 1 - given in simple.xml
     unsigned id = 1;
-    dccl.encode(id, hex, val_map);
+    dccl.encode(id, bytes, val_map);
     
-    std::cout << "received hexadecimal string: " << hex << std::endl;
+    std::cout << "received hexadecimal string: " << goby::acomms::hex_encode(bytes) << std::endl;
     
     val_map.clear();
     
     // input contents right back to decoder
-    std::cout << "passed hexadecimal string to decoder: " << hex << std::endl;
+    std::cout << "passed hexadecimal string to decoder: " << goby::acomms::hex_encode(bytes) << std::endl;
 
-    dccl.decode(hex, val_map);
+    dccl.decode(bytes, val_map);
     
     std::cout << "received values:" << std::endl 
               << val_map;

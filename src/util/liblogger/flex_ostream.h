@@ -21,9 +21,13 @@
 
 #include <iostream>
 #include <string>
+#include <iomanip>
 
 #include "flex_ostreambuf.h"
 #include "logger_manipulators.h"
+
+#include <google/protobuf/text_format.h>
+#include <google/protobuf/io/tokenizer.h>
 
 namespace goby
 {
@@ -198,5 +202,57 @@ inline std::ostream& unlock(std::ostream & os)
     goby::util::Logger::mutex.unlock();    
     return os;
 }
+
+class FlexOStreamErrorCollector : public google::protobuf::io::ErrorCollector
+{
+  public:
+  FlexOStreamErrorCollector(const std::string& original)
+      : original_(original),
+        has_warnings_(false),
+        has_errors_(false)
+        { }
+    
+    void AddError(int line, int column, const std::string& message)
+    {
+        print_original(line, column);
+        goby::util::glogger() << warn << "line: " << line << " col: " << column << " " << message << std::endl;
+        has_errors_ = true;
+    }
+    void AddWarning(int line, int column, const std::string& message)
+    {
+        print_original(line, column);
+        goby::util::glogger() << warn << "line: " << line << " col: " << column << " " << message << std::endl;
+        has_warnings_ = true;
+    }
+    
+    void print_original(int line, int column)
+    {
+        std::stringstream ss(original_);
+        std::string line_str;
+
+        //for(int i = 0; i <= line; ++i)
+        //    getline(ss, line_str);
+
+        int i = 0;
+        while(!getline(ss, line_str).eof())
+        {
+            if(i == line)
+                goby::util::glogger() << goby::util::tcolor::lt_red << "[line " << std::setw(3) << i++ << "]" << line_str << goby::util::tcolor::nocolor << std::endl;
+            else
+                goby::util::glogger() << "[line " << std::setw(3) << i++ << "]" << line_str << std::endl;       
+        }
+    }
+
+
+    bool has_errors() { return has_errors_; }
+    bool has_warnings() { return has_warnings_; }
+    
+    
+  private:
+    const std::string& original_;
+    bool has_warnings_;
+    bool has_errors_;
+};
+
 
 #endif

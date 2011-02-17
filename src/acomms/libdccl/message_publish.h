@@ -77,7 +77,7 @@ namespace goby
             std::string get_display() const;
 
             void write_publish(const std::map<std::string,std::vector<DCCLMessageVal> >& vals,
-                               std::multimap<std::string,DCCLMessageVal>& pubsub_vals);
+                               std::multimap<std::string,DCCLMessageVal>* pubsub_vals);
         
         
         

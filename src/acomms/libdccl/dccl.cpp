@@ -27,6 +27,7 @@
 #include "message_xml_callbacks.h"
 #include "goby/util/logger.h"
 #include "goby/util/string.h"
+#include "goby/acomms/protobuf/acomms_proto_helpers.h"
 
 using goby::util::goby_time;
 using goby::util::as;
@@ -36,31 +37,10 @@ using goby::util::as;
 /////////////////////
 goby::acomms::DCCLCodec::DCCLCodec(std::ostream* log /* =0 */)
     : log_(log),
-      start_time_(goby_time()),
-      modem_id_(0)
+      start_time_(goby_time())
 { }
-    
-goby::acomms::DCCLCodec::DCCLCodec(const std::string& file,
-                                   const std::string schema,
-                                   std::ostream* log /* =0 */)
-    : log_(log),
-      start_time_(goby_time()),
-      modem_id_(0)
-{ add_xml_message_file(file, schema); }
-    
-goby::acomms::DCCLCodec::DCCLCodec(const std::set<std::string>& files,
-                                   const std::string schema,
-                                   std::ostream* log /* =0 */)
-    : log_(log),
-      start_time_(goby_time()),
-      modem_id_(0)
-{
-    BOOST_FOREACH(const std::string& s, files)
-        add_xml_message_file(s, schema);
-}
 
-std::set<unsigned> goby::acomms::DCCLCodec::add_xml_message_file(const std::string& xml_file,
-                                                         const std::string xml_schema)
+std::set<unsigned> goby::acomms::DCCLCodec::add_xml_message_file(const std::string& xml_file)
 {
     size_t begin_size = messages_.size();
             
@@ -71,10 +51,8 @@ std::set<unsigned> goby::acomms::DCCLCodec::add_xml_message_file(const std::stri
     // instantiate a parser for the xml message files
     XMLParser parser(content, error);
     // parse(file, [schema])
-    if(xml_schema != "")
-        xml_schema_ = xml_schema;
-    
-    parser.parse(xml_file, xml_schema_);
+
+    parser.parse(xml_file, DCCL_INCLUDE_DIR "/message_schema.xsd");
 
     size_t end_size = messages_.size();
     
@@ -138,10 +116,10 @@ void goby::acomms::DCCLCodec::add_adv_algorithm(const std::string& name, AlgFunc
     ap -> add_algorithm(name, func);
 }
 
-void goby::acomms::DCCLCodec::add_flex_groups(util::FlexOstream& tout)
+void goby::acomms::DCCLCodec::add_flex_groups(util::FlexOstream* tout)
 {
-    tout.add_group("dccl_enc", util::Colors::lt_magenta, "encoder messages (goby_dccl)");
-    tout.add_group("dccl_dec", util::Colors::lt_blue, "decoder messages (goby_dccl)");
+    tout->add_group("dccl_enc", util::Colors::lt_magenta, "encoder messages (goby_dccl)");
+    tout->add_group("dccl_dec", util::Colors::lt_blue, "decoder messages (goby_dccl)");
 }
 
 
@@ -273,9 +251,15 @@ std::vector<goby::acomms::DCCLMessage>::iterator goby::acomms::DCCLCodec::to_ite
 
 
 void goby::acomms::DCCLCodec::encode_private(std::vector<DCCLMessage>::iterator it,
-                                     std::string& out,
-                                     std::map<std::string, std::vector<DCCLMessageVal> > in /* copy */)
+                                             std::string& out,
+                                             std::map<std::string, std::vector<DCCLMessageVal> > in /* copy */)
 {
+    if(manip_manager_.has(it->id(), protobuf::MessageFile::NO_ENCODE))
+    {
+        if(log_) *log_ << group("dccl_enc") << "not encoding DCCL ID: " << it->id() << "; NO_ENCODE manipulator is set" << std::endl;
+        throw(dccl_exception("NO_ENCODE manipulator set"));
+    }
+    
     if(log_)
     {
         *log_ << group("dccl_enc") << "starting encode for " << it->name() << std::endl;        
@@ -294,7 +278,7 @@ void goby::acomms::DCCLCodec::encode_private(std::vector<DCCLMessage>::iterator 
     // 1. encode parts
     std::string body, head;
     
-    it->set_head_defaults(in, modem_id_);
+    it->set_head_defaults(in, cfg_.modem_id());
 
     it->head_encode(head, in);
     it->body_encode(body, in);
@@ -313,8 +297,16 @@ void goby::acomms::DCCLCodec::encode_private(std::vector<DCCLMessage>::iterator 
 
 std::vector<goby::acomms::DCCLMessage>::iterator goby::acomms::DCCLCodec::decode_private(std::string in,
                                                                                          std::map<std::string, std::vector<DCCLMessageVal> >& out)
-{\
-    std::vector<DCCLMessage>::iterator it = to_iterator(unsigned(DCCLHeaderDecoder(in)[head_dccl_id]));
+{
+    std::vector<DCCLMessage>::iterator it = to_iterator(unsigned(DCCLHeaderDecoder(in)[HEAD_DCCL_ID]));
+
+    if(manip_manager_.has(it->id(), protobuf::MessageFile::NO_DECODE))
+    {
+        if(log_) *log_ << group("dccl_enc") << "not decoding DCCL ID: " << it->id() << "; NO_DECODE manipulator is set" << std::endl;
+        throw(dccl_exception("NO_DECODE manipulator set"));
+    }
+
+
     if(log_) *log_ << group("dccl_dec") << "starting decode for " << it->name() << std::endl;        
     
     // 4. hex decode
@@ -353,7 +345,7 @@ std::vector<goby::acomms::DCCLMessage>::iterator goby::acomms::DCCLCodec::decode
 }
         
 void goby::acomms::DCCLCodec::encode_private(std::vector<DCCLMessage>::iterator it,
-                                             ModemMessage& out_msg,
+                                             protobuf::ModemDataTransmission* out_msg,
                                              const std::map<std::string, std::vector<DCCLMessageVal> >& in)
 {
     std::string out;
@@ -361,35 +353,27 @@ void goby::acomms::DCCLCodec::encode_private(std::vector<DCCLMessage>::iterator 
 
     DCCLHeaderDecoder head_dec(out);
 
-    out_msg.set_data(out);
+    out_msg->set_data(out);
     
-    DCCLMessageVal& t = head_dec[head_time];
-    DCCLMessageVal& src = head_dec[head_src_id];
-    DCCLMessageVal& dest = head_dec[head_dest_id];
+    DCCLMessageVal& t = head_dec[HEAD_TIME];
+    DCCLMessageVal& src = head_dec[HEAD_SRC_ID];
+    DCCLMessageVal& dest = head_dec[HEAD_DEST_ID];
 
-    out_msg.set_time(double(t));
-    out_msg.set_src(long(src));
-    out_msg.set_dest(long(dest));
+    out_msg->mutable_base()->set_time(goby::util::as<std::string>(goby::util::unix_double2ptime(double(t))));
+    out_msg->mutable_base()->set_src(long(src));
+    out_msg->mutable_base()->set_dest(long(dest));
 
-    if(log_) *log_ << group("dccl_enc") << "created encoded message: " << out_msg.snip() << std::endl;
+    if(log_) *log_ << group("dccl_enc") << "created encoded message: " << *out_msg << std::endl;
 }
 
-std::vector<goby::acomms::DCCLMessage>::iterator goby::acomms::DCCLCodec::decode_private(const ModemMessage& in_msg,
-                                             std::map<std::string,std::vector<DCCLMessageVal> >& out)
+std::vector<goby::acomms::DCCLMessage>::iterator goby::acomms::DCCLCodec::decode_private(const protobuf::ModemDataTransmission& in_msg, std::map<std::string,std::vector<DCCLMessageVal> >& out)
 {
-    if(log_) *log_ << group("dccl_dec") << "using message for decode: " << in_msg.snip() << std::endl;
+    if(log_) *log_ << group("dccl_dec") << "using message for decode: " << in_msg << std::endl;
 
     return decode_private(in_msg.data(), out);
 }
 
 
-void goby::acomms::DCCLCodec::set_crypto_passphrase(const std::string& s)
-{
-    using namespace CryptoPP;
-
-    SHA256 hash;
-    StringSource unused (s, true, new HashFilter(hash, new StringSink(crypto_key_)));
-}
 
 
 void goby::acomms::DCCLCodec::encrypt(std::string& s, const std::string& nonce)
@@ -426,4 +410,41 @@ void goby::acomms::DCCLCodec::decrypt(std::string& s, const std::string& nonce)
     out.Put((byte*)s.c_str(), s.size());
     out.MessageEnd();
     s = recovered;
+}
+
+void goby::acomms::DCCLCodec::merge_cfg(const protobuf::DCCLConfig& cfg)
+{
+    cfg_.MergeFrom(cfg);
+    process_cfg();
+}
+
+void goby::acomms::DCCLCodec::set_cfg(const protobuf::DCCLConfig& cfg)
+{
+    cfg_.CopyFrom(cfg);
+    process_cfg();
+}
+
+void goby::acomms::DCCLCodec::process_cfg()
+{
+    messages_.clear();
+    name2messages_.clear();
+    id2messages_.clear();
+    manip_manager_.clear();
+
+    for(int i = 0, n = cfg_.message_file_size(); i < n; ++i)
+    {
+        std::set<unsigned> new_ids = add_xml_message_file(cfg_.message_file(i).path());
+        BOOST_FOREACH(unsigned new_id, new_ids)
+        {
+            for(int j = 0, o = cfg_.message_file(i).manipulator_size(); j < o; ++j)
+                manip_manager_.add(new_id, cfg_.message_file(i).manipulator(j));
+        }
+    }
+    
+    using namespace CryptoPP;
+    
+    SHA256 hash;
+    StringSource unused(cfg_.crypto_passphrase(), true, new HashFilter(hash, new StringSink(crypto_key_)));
+
+    if(log_) *log_ << "cryptography enabled with given passphrase" << std::endl;
 }

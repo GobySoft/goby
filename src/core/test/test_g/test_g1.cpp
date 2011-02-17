@@ -14,6 +14,8 @@
 
 using goby::util::goby_time;
 using goby::core::proto::Filter;
+using goby::core::operator<<;
+
 
 namespace dbo = Wt::Dbo;
 
@@ -43,7 +45,7 @@ namespace dbo = Wt::Dbo;
 class TestG1 : public goby::core::ApplicationBase
 {
 public:
-    TestG1() : goby::core::ApplicationBase(&cfg_)
+    TestG1() //: goby::core::ApplicationBase(&cfg_)
         {
             glogger().add_group("foo", Colors::blue);
             subscribe<TestMessage>();

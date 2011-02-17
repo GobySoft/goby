@@ -55,7 +55,6 @@ namespace goby
             static void merge_app_base_cfg(AppBaseConfig* base_cfg,
                                            const boost::program_options::variables_map& var_map);
             
-          private:
             static void get_protobuf_program_options(
                 boost::program_options::options_description& po_desc,
                 const google::protobuf::Descriptor* desc);
@@ -66,16 +65,20 @@ namespace goby
                 const std::string& full_name,
                 const boost::program_options::variable_value& value);
 
-            static void build_description(const google::protobuf::Descriptor* desc,
-                                          std::stringstream& human_desc,
-                                          const std::string& indent = "");
-            
-            static void append_label(std::stringstream& human_desc_ss,
-                                     const google::protobuf::FieldDescriptor* field_desc);
-            
+            static void get_example_cfg_file(google::protobuf::Message* message,
+                                             std::ostream* human_desc_ss,
+                                             const std::string& indent = "");
 
-            static std::string default_as_string(const google::protobuf::FieldDescriptor* field_desc);
             
+          private:
+
+            static void build_description(const google::protobuf::Descriptor* desc,
+                                          std::ostream& human_desc,
+                                          const std::string& indent = "",
+                                          bool use_color = true);
+            
+            static void append_label(std::ostream& human_desc_ss,
+                                     const google::protobuf::FieldDescriptor* field_desc);
             
             template<typename T>
                 static void set_single_option(

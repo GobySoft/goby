@@ -260,7 +260,7 @@ namespace goby
             bool alive_;
     
             // ideal number of characters per line
-            enum { CHARS_PER_LINE = 60 };
+            enum { CHARS_PER_LINE = 85 };
 
             enum { HEAD_Y = 1 };
             enum { FOOTER_Y = 3 }; 

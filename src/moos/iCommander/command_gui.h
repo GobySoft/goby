@@ -13,11 +13,9 @@
 #include "MOOSUtilityLib/MOOSGeodesy.h"
 #include "MOOSLIB/MOOSLib.h"
 
-#include "goby/moos/lib_tes_util/terminalio.h"
-#include "goby/moos/lib_tes_util/tes_string.h"
 #include "commander_cdk.h"
 #include "goby/acomms/dccl.h"
-#include "goby/moos/lib_tes_util/modem_id_convert.h"
+#include "goby/moos/libmoos_util/modem_id_convert.h"
 
 class CommandGui
 {
@@ -27,7 +25,6 @@ class CommandGui
                CMOOSGeodesy & geodesy,
                tes::ModemIdConvert & modem_lookup,
                CMOOSCommClient & comms,
-               std::string & schema,
                goby::acomms::DCCLCodec & dccl,
                std::vector<std::string> & loads,
                std::string & community,
@@ -90,7 +87,6 @@ class CommandGui
     CMOOSGeodesy & geodesy_;
     tes::ModemIdConvert & modem_lookup_;
     CMOOSCommClient & m_Comms;
-    std::string & schema_;
     goby::acomms::DCCLCodec & dccl_;
     std::vector<std::string> & loads_;
     std::string & community_;

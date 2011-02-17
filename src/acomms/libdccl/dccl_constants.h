@@ -25,94 +25,70 @@
 #include <limits>
 #include <vector>
 
-#include <crypto++/filters.h>
-#include <crypto++/hex.h>
-
 #include "goby/acomms/acomms_constants.h"
 
 namespace goby
 {
 
-namespace acomms
-{
+    namespace acomms
+    {
 
 /// Enumeration of DCCL types used for sending messages. dccl_enum and dccl_string primarily map to cpp_string, dccl_bool to cpp_bool, dccl_int to cpp_long, dccl_float to cpp_double
-    enum DCCLType { dccl_static, /*!<  \ref tag_static */
-                    dccl_bool, /*!< \ref tag_bool */
-                    dccl_int, /*!< \ref tag_int */
-                    dccl_float, /*!< \ref tag_float */
-                    dccl_enum, /*!< \ref tag_enum */
-                    dccl_string, /*!< \ref tag_string */
-                    dccl_hex  /*!< \ref tag_hex */
-    };
+        enum DCCLType { dccl_static, /*!<  \ref tag_static */
+                        dccl_bool, /*!< \ref tag_bool */
+                        dccl_int, /*!< \ref tag_int */
+                        dccl_float, /*!< \ref tag_float */
+                        dccl_enum, /*!< \ref tag_enum */
+                        dccl_string, /*!< \ref tag_string */
+                        dccl_hex  /*!< \ref tag_hex */
+        };
 /// Enumeration of C++ types used in DCCL.
-    enum DCCLCppType { cpp_notype,/*!< not one of the C++ types used in DCCL */
-                       cpp_bool,/*!< C++ bool */
-                       cpp_string,/*!< C++ std::string */
-                       cpp_long,/*!< C++ long */
-                       cpp_double/*!< C++ double */
-    };
+        enum DCCLCppType { cpp_notype,/*!< not one of the C++ types used in DCCL */
+                           cpp_bool,/*!< C++ bool */
+                           cpp_string,/*!< C++ std::string */
+                           cpp_long,/*!< C++ long */
+                           cpp_double/*!< C++ double */
+        };
 
 
-    // 2^3 = 8
-    enum { POWER2_BITS_IN_BYTE = 3 };
-    inline unsigned bits2bytes(unsigned bits) { return bits >> POWER2_BITS_IN_BYTE; }
-    inline unsigned bytes2bits(unsigned bytes) { return bytes << POWER2_BITS_IN_BYTE; }
+        // 2^3 = 8
+        enum { POWER2_BITS_IN_BYTE = 3 };
+        inline unsigned bits2bytes(unsigned bits) { return bits >> POWER2_BITS_IN_BYTE; }
+        inline unsigned bytes2bits(unsigned bytes) { return bytes << POWER2_BITS_IN_BYTE; }
     
-    // 2^1 = 2
-    enum { POWER2_NIBS_IN_BYTE = 1 };
-    inline unsigned bytes2nibs(unsigned bytes) { return bytes << POWER2_NIBS_IN_BYTE; }
-    inline unsigned nibs2bytes(unsigned nibs) { return nibs >> POWER2_NIBS_IN_BYTE; }
+        // 2^1 = 2
+        enum { POWER2_NIBS_IN_BYTE = 1 };
+        inline unsigned bytes2nibs(unsigned bytes) { return bytes << POWER2_NIBS_IN_BYTE; }
+        inline unsigned nibs2bytes(unsigned nibs) { return nibs >> POWER2_NIBS_IN_BYTE; }
 
 
-    inline std::string type_to_string(DCCLType type)
-    {
-        switch(type)
+        inline std::string type_to_string(DCCLType type)
         {
-            case dccl_int:    return "int";
-            case dccl_hex:    return "hex";
-            case dccl_bool:   return "bool";
-            case dccl_string: return "string";
-            case dccl_float:  return "float";
-            case dccl_static: return "static";
-            case dccl_enum:   return "enum";
+            switch(type)
+            {
+                case dccl_int:    return "int";
+                case dccl_hex:    return "hex";
+                case dccl_bool:   return "bool";
+                case dccl_string: return "string";
+                case dccl_float:  return "float";
+                case dccl_static: return "static";
+                case dccl_enum:   return "enum";
+            }
+            return "notype";
         }
-        return "notype";
-    }
 
-    inline std::string type_to_string(DCCLCppType type)
-    {
-        switch(type)
+        inline std::string type_to_string(DCCLCppType type)
         {
-            case cpp_long:   return "long";
-            case cpp_double: return "double";
-            case cpp_string: return "string";
-            case cpp_bool:   return "bool";
-            case cpp_notype: return "no_type";
+            switch(type)
+            {
+                case cpp_long:   return "long";
+                case cpp_double: return "double";
+                case cpp_string: return "string";
+                case cpp_bool:   return "bool";
+                case cpp_notype: return "no_type";
+            }
+            return "notype";
         }
-        return "notype";
     }
-
-    inline void hex_decode(std::string& s)
-    {
-        std::string out;
-        CryptoPP::HexDecoder hex(new CryptoPP::StringSink(out));
-        hex.Put((byte*)s.c_str(), s.size());
-        hex.MessageEnd();
-        s = out;
-    }
-    
-    inline void hex_encode(std::string& s)
-    {
-        std::string out;
-        const bool uppercase = false;
-        CryptoPP::HexEncoder hex(new CryptoPP::StringSink(out), uppercase);
-        hex.Put((byte*)s.c_str(), s.size());
-        hex.MessageEnd();
-        s = out;
-    }
-    
-
-}
 }
 #endif

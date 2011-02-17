@@ -1,1 +1,0 @@
-MessageType=SENSOR_DEPLOY,SensorCommandType=0,SourcePlatformId=3,DestinationPlatformId=3,Timestamp=1217508349,DeployLatitude=42.585471,DeployLongitude=10.150446,DeployDepth=25.000000,DeployDuration=12,AbortLatitude=42.585471,AbortLongitude=10.138243,AbortDepth=6.000000,MissionType=4,OperatingRadius=500.000000,DCLFOVStartHeading=270.000000,DCLFOVEndHeading=0 

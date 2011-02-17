@@ -17,8 +17,10 @@
 #ifndef CoreConstants20100813H
 #define CoreConstants20100813H
 
-#include "goby/util/time.h"
 #include <google/protobuf/descriptor.h>
+#include <google/protobuf/message.h>
+#include <google/protobuf/text_format.h>
+#include "goby/util/time.h"
 
 namespace goby
 {
@@ -35,13 +37,18 @@ namespace goby
         const std::string FROM_SERVER_QUEUE_PREFIX = QUEUE_PREFIX + "from_gobyd_to_";
 
     }
+    
+    namespace core
+    {
+        /// provides stream output operator for Google Protocol Buffers Message 
+        inline std::ostream& operator<<(std::ostream& out, const google::protobuf::Message& msg)
+        {
+            return (out << "### " << msg.GetDescriptor()->full_name() << " ###\n" << msg.DebugString());
+        }
+    }
+
 }
 
-/// provides stream output operator for Google Protocol Buffers Message 
-inline std::ostream& operator<<(std::ostream& out, const google::protobuf::Message& msg)
-{
-    return (out << "### " << msg.GetDescriptor()->full_name() << " ###\n" << msg.DebugString());
-}
 
 
 #endif

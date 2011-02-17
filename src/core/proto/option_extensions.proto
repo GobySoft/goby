@@ -1,16 +1,19 @@
 import "google/protobuf/descriptor.proto";
 
-message extend
-{
+//message extend
+//{
     // currently a dummy message so i can get FileDescriptorProto
-}
+//}
 
 extend .google.protobuf.FieldOptions
 {       
-    optional double dccl_max = 5000;
-    optional double dccl_min = 5001;
-    optional string description = 5002;
-    optional string example = 5003;
-    // optional string cli_short = 5003;
+    optional double dccl_max = 50000;
+    optional double dccl_min = 50001;
+    optional string description = 50002;
+    optional string example = 50003;
+
+    // used in tes_moos_app.proto
+    optional string moos_global = 50100;
+    
 }
 

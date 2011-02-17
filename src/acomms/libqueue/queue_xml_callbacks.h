@@ -29,6 +29,7 @@
 #include <xercesc/sax2/Attributes.hpp>
 #include <xercesc/sax2/DefaultHandler.hpp>
 
+#include "goby/acomms/protobuf/queue.pb.h"
 #include "goby/acomms/xml/xerces_strings.h"
 #include "goby/acomms/xml/tags.h"
 #include "queue_manager.h"
@@ -42,7 +43,7 @@ namespace goby
 // notifications about the beginnings and ends of elements 
         class QueueContentHandler : public xercesc::DefaultHandler {
           public:
-          QueueContentHandler(std::vector<QueueConfig>& q)
+          QueueContentHandler(std::vector<protobuf::QueueConfig>& q)
               : q_(q)
             { xml::initialize_tags(tags_map_); }
         
@@ -74,7 +75,7 @@ namespace goby
             { return xml::in_publish(parents_); }
  
           private:
-            std::vector<QueueConfig>& q_;
+            std::vector<protobuf::QueueConfig>& q_;
             XercesString current_text;
         
             std::set<xml::Tag> parents_;

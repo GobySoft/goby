@@ -85,7 +85,7 @@ void goby::util::FlexNCurses::update_size()
     getmaxyx(stdscr, ymax_, xmax_);
     ymax_ -= FOOTER_Y;
     
-    xwinN_ = std::max(1, xmax_ / 60);
+    xwinN_ = std::max(1, xmax_ / CHARS_PER_LINE );
     ywinN_ = (panels_.size() % xwinN_) ? panels_.size() / xwinN_ + 1 : panels_.size() / xwinN_;
 
     line_buffer_.resize(xwinN_);

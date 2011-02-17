@@ -17,11 +17,12 @@
 // queues two messages from the DCCL library
 
 #include "goby/acomms/queue.h"
+#include "goby/acomms/connect.h"
 #include <iostream>
 
 using goby::acomms::operator<<;
 
-void received_data(goby::acomms::QueueKey, const goby::acomms::ModemMessage&);
+void received_data(const goby::acomms::protobuf::ModemDataTransmission&);
 
 int main()
 {
@@ -31,41 +32,44 @@ int main()
     
     // create a QueueManager for all our queues
     // and at the same time add our message as a DCCL queue
-    goby::acomms::QueueManager q_manager(QUEUE_EXAMPLES_DIR "/queue_simple/simple.xml",
-                                  "../../../libdccl/message_schema.xsd", &std::cerr);
+    goby::acomms::QueueManager q_manager(&std::cerr);
     
     unsigned our_id = 1;
-    q_manager.set_modem_id(our_id);
 
+    goby::acomms::protobuf::QueueManagerConfig cfg;
+    cfg.set_modem_id(our_id);
+    cfg.add_message_file()->set_path(QUEUE_EXAMPLES_DIR "/queue_simple/simple.xml");
+    q_manager.set_cfg(cfg);
+    
     // set up the callback to handle received DCCL messages
-    q_manager.set_callback_receive(&received_data);
+    goby::acomms::connect(&q_manager.signal_receive, &received_data);
 
     // 
     //  2. Push a message to a queue 
     //
     
     // let's make a message to store in the queue
-    goby::acomms::ModemMessage msg;
-
+    goby::acomms::protobuf::ModemDataTransmission data_msg;
     unsigned dest = 0;
 
-    msg.set_dest(dest);
+    data_msg.mutable_base()->set_dest(dest);
     // typically grab these data from DCCLCodec::encode, but here we'll just enter an example
     // hexadecimal string
-    msg.set_data("2000802500000102030405060708091011121314151617181920212223242526");
+    data_msg.set_data(goby::acomms::hex_decode("200080250000010203040506070809101112131415161718192021222324252A"));
 
     // push to queue 1 (which is the Simple message <id/>)
-    q_manager.push_message(1, msg);
+    data_msg.mutable_queue_key()->set_id(1);
+    q_manager.push_message(data_msg);
 
-    std::cout << "pushing message to queue 1: " << msg << std::endl;
-    std::cout << "\t" << "data: " <<  msg.data() << std::endl;
-
-    msg.set_dest(goby::acomms::BROADCAST_ID);
-    msg.set_data("2000802500002625242322212019181716151413121110090807060504030201");
-    q_manager.push_message(1, msg);
+    std::cout << "pushing message to queue 1: " << data_msg << std::endl;
+    std::cout << "\t" << "data as hex: " <<  goby::acomms::hex_encode(data_msg.data()) << std::endl;
     
-    std::cout << "pushing message to queue 1: " << msg << std::endl;
-    std::cout << "\t" << "data: " <<  msg.data() << std::endl;
+    data_msg.mutable_base()->set_dest(goby::acomms::BROADCAST_ID);
+    data_msg.set_data(goby::acomms::hex_decode("200080250000262524232221201918171615141312111009080706050403020B"));
+    q_manager.push_message(data_msg);
+    
+    std::cout << "pushing message to queue 1: " << data_msg << std::endl;
+    std::cout << "\t" << "data as hex: " <<  goby::acomms::hex_encode(data_msg.data()) << std::endl;
     
     //
     //  3. Create a loopback to simulate the Link Layer (libmodemdriver & modem firmware) 
@@ -74,21 +78,24 @@ int main()
     std::cout << "executing loopback (simulating sending a message to ourselves over the modem link)" << std::endl;
     
     // pretend the modem is requesting data of up to 64 bytes
-    msg.clear();
-    msg.set_max_size(64);
+    goby::acomms::protobuf::ModemDataRequest request_msg;
+    request_msg.set_max_bytes(64);
+    data_msg.Clear();
     
-    q_manager.handle_modem_data_request(msg);
+    q_manager.handle_modem_data_request(request_msg, &data_msg);
 
     // we set the incoming message equal to the outgoing message to create the loopback.
 
-    std::cout << "link_layer: " << msg.serialize() << std::endl;
-    std::cout << "link_layer: " << goby::util::hex_string2binary_string(msg.data()) << std::endl; 
+    std::cout << "link_layer: " << data_msg << std::endl;
+    std::cout << "link_layer: "
+              << goby::acomms::hex_encode(data_msg.data())
+              << std::endl; 
     
     // 
     //  4. Pass the received message to the QueueManager 
     //
     
-    q_manager.handle_modem_receive(msg);
+    q_manager.handle_modem_receive(data_msg);
     
     return 0;
 }
@@ -96,9 +103,9 @@ int main()
 //
 //  5. Do something with the received messages  
 //
-void received_data(goby::acomms::QueueKey key, const goby::acomms::ModemMessage& app_layer_message_in)
+void received_data(const goby::acomms::protobuf::ModemDataTransmission& app_layer_message_in)
 {
-    std::cout << "received message (key is " << key << "): " << app_layer_message_in << std::endl;
-    std::cout << "\t" << "data: " <<  app_layer_message_in.data() << std::endl;
+    std::cout << "received message: " << app_layer_message_in << std::endl;
+    std::cout << "\t" << "data as hex: " <<  goby::acomms::hex_encode(app_layer_message_in.data()) << std::endl;
 }
 

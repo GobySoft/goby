@@ -3,7 +3,7 @@
 #ifndef SIMULATORH
 #define SIMULATORH
 
-#include <MOOSLIB/MOOSApp.h>
+#include "MOOSLIB/MOOSApp.h"
 #include "goby/core/libmoosmimic/cmoosapp_mimic.h"
 
 class CSimulator : public goby::core::CMOOSApp

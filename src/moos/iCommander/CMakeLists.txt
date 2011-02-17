@@ -10,7 +10,7 @@ add_executable(iCommander
 target_link_libraries(iCommander
   m
   pthread
-  tes_util
+  goby_moos_util
   goby_dccl
   cdk
   ncurses

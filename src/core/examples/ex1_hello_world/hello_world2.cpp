@@ -1,6 +1,8 @@
 #include "goby/core/core.h"
 #include "hello_world.pb.h"
 
+using goby::core::operator<<;
+
 class HelloWorld2 : public goby::core::ApplicationBase
 {
 public:

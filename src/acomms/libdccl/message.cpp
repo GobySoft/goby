@@ -35,21 +35,21 @@ goby::acomms::DCCLMessage::DCCLMessage():size_(0),
                          repeat_(1)
 {
     header_.resize(DCCL_NUM_HEADER_PARTS);
-    header_[head_ccl_id] =
+    header_[HEAD_CCL_ID] =
         boost::shared_ptr<DCCLMessageVar>(new DCCLMessageVarCCLID());
-    header_[head_dccl_id] =
+    header_[HEAD_DCCL_ID] =
         boost::shared_ptr<DCCLMessageVar>(new DCCLMessageVarDCCLID());
-    header_[head_time] =
+    header_[HEAD_TIME] =
         boost::shared_ptr<DCCLMessageVar>(new DCCLMessageVarTime());
-    header_[head_src_id] =
+    header_[HEAD_SRC_ID] =
         boost::shared_ptr<DCCLMessageVar>(new DCCLMessageVarSrc());
-    header_[head_dest_id] =
+    header_[HEAD_DEST_ID] =
         boost::shared_ptr<DCCLMessageVar>(new DCCLMessageVarDest());
-    header_[head_multimessage_flag] =
+    header_[HEAD_MULTIMESSAGE_FLAG] =
         boost::shared_ptr<DCCLMessageVar>(new DCCLMessageVarMultiMessageFlag());
-    header_[head_broadcast_flag] =
+    header_[HEAD_BROADCAST_FLAG] =
         boost::shared_ptr<DCCLMessageVar>(new DCCLMessageVarBroadcastFlag());
-    header_[head_unused] =
+    header_[HEAD_UNUSED] =
         boost::shared_ptr<DCCLMessageVar>(new DCCLMessageVarUnused());
 }
 

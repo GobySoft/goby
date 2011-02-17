@@ -524,6 +524,8 @@ template<typename App>
         std::cerr << "uncaught exception: " << e.what() << std::endl;
         return 2;
     }
+
+    return 0;
 }
 
 

@@ -20,6 +20,7 @@
 
 #include "goby/util/liblogger/term_color.h"
 #include "exception.h"
+#include <google/protobuf/dynamic_message.h>
 
 // brings std::ostream& red, etc. into scope
 using namespace goby::util::tcolor;
@@ -140,11 +141,11 @@ void goby::core::ConfigReader::set_protobuf_program_option(const boost::program_
         switch(field_desc->cpp_type())
         {
             case google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE:
-                BOOST_FOREACH(std::string v,
-                              value.as<std::vector<std::string> >())
+                BOOST_FOREACH(std::string v,value.as<std::vector<std::string> >())
                 {
-                    google::protobuf::TextFormat::MergeFromString(
-                        v, refl->AddMessage(&message, field_desc));
+                    google::protobuf::TextFormat::Parser parser;
+                    parser.AllowPartialMessage(true);   
+                    parser.MergeFromString(v, refl->AddMessage(&message, field_desc));
                 }
                 
                 break;    
@@ -215,10 +216,12 @@ void goby::core::ConfigReader::set_protobuf_program_option(const boost::program_
         switch(field_desc->cpp_type())
         {
             case google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE:
-                google::protobuf::TextFormat::MergeFromString(
-                    value.as<std::string>(),
-                    refl->MutableMessage(&message, field_desc));
+            {
+                google::protobuf::TextFormat::Parser parser;
+                parser.AllowPartialMessage(true);
+                parser.MergeFromString(value.as<std::string>(),refl->MutableMessage(&message, field_desc));
                 break;    
+            }
                     
             case google::protobuf::FieldDescriptor::CPPTYPE_INT32:
                 refl->SetInt32(&message, field_desc, value.as<boost::int_least32_t>());
@@ -266,6 +269,13 @@ void goby::core::ConfigReader::set_protobuf_program_option(const boost::program_
     }
 }
 
+void goby::core::ConfigReader::get_example_cfg_file(google::protobuf::Message* message, std::ostream* stream, const std::string& indent /*= ""*/)
+{
+    build_description(message->GetDescriptor(), *stream, indent, false);
+    *stream << std::endl;
+}
+
+
 void  goby::core::ConfigReader::get_protobuf_program_options(boost::program_options::options_description& po_desc,
                                                              const google::protobuf::Descriptor* desc)
 {
@@ -276,9 +286,9 @@ void  goby::core::ConfigReader::get_protobuf_program_options(boost::program_opti
         
         std::string cli_name = field_name;
         std::stringstream human_desc_ss;
-        human_desc_ss << util::esc_green << field_desc->options().GetExtension(::description) << util::esc_nocolor;
-
+        human_desc_ss << util::esc_lt_blue << field_desc->options().GetExtension(::description);
         append_label(human_desc_ss, field_desc);
+        human_desc_ss << util::esc_nocolor;
         
         switch(field_desc->cpp_type())
         {
@@ -389,108 +399,102 @@ void  goby::core::ConfigReader::get_protobuf_program_options(boost::program_opti
 
 
 void goby::core::ConfigReader::build_description(const google::protobuf::Descriptor* desc,
-                                                 std::stringstream& human_desc_ss,
-                                                 const std::string& indent /*= ""*/)
+                                                 std::ostream& stream,
+                                                 const std::string& indent /*= ""*/,
+                                                 bool use_color /* = true */ )
 {
+    google::protobuf::DynamicMessageFactory factory;
+    const google::protobuf::Message* default_msg = factory.GetPrototype(desc);
+
     for(int i = 0, n = desc->field_count(); i < n; ++i)
     {
         const google::protobuf::FieldDescriptor* field_desc = desc->field(i);
 
         if(field_desc->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE)
         {
+            stream << "\n" << indent << field_desc->name() << " {  ";
+
+            if(use_color)
+                stream << util::esc_green;
+            else
+                stream << "# ";
             
-            human_desc_ss << "\n" << indent << field_desc->name() << " {  \t" <<
-                util::esc_blue << field_desc->options().GetExtension(::description) << util::esc_nocolor;
-            append_label(human_desc_ss, field_desc);
+            stream << field_desc->options().GetExtension(::description);
+            append_label(stream, field_desc);
 
-            build_description(field_desc->message_type(), human_desc_ss, indent + "  ");
-            human_desc_ss << "\n" << indent << "}";
-
-
+            if(use_color)
+                stream << util::esc_nocolor;
+            
+            build_description(field_desc->message_type(), stream, indent + "  ", use_color);
+            stream << "\n" << indent << "}";
         }
         else
         {
-            human_desc_ss << "\n" << indent;
+            stream << "\n" << indent;
 
             std::string example;
             if(field_desc->has_default_value())
-                example = default_as_string(field_desc);
+                google::protobuf::TextFormat::PrintFieldValueToString(*default_msg, field_desc, -1, &example);
             else
-                example = field_desc->options().GetExtension(::example); 
-
-            if(field_desc->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_STRING)
-                example = "\"" + example + "\""; 
-
+            {
+                example = field_desc->options().GetExtension(::example);
+                if(field_desc->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_STRING)
+                    example = "\"" + example + "\""; 
+            }
             
-            human_desc_ss << field_desc->name() << ": "
+            stream << field_desc->name() << ": "
                           << example;
+
+            stream << "  ";
+            if(use_color)
+                stream << util::esc_green;
+            else
+                stream << "# ";
             
-            human_desc_ss << "  \t" << util::esc_blue << field_desc->options().GetExtension(::description) << util::esc_nocolor;
-            append_label(human_desc_ss, field_desc);
+            stream << field_desc->options().GetExtension(::description);
+
+            if(field_desc->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_ENUM)
+            {
+                stream << " (";
+                for(int i = 0, n = field_desc->enum_type()->value_count(); i < n; ++i)
+                {
+                    if(i) stream << ", ";
+                    stream << field_desc->enum_type()->value(i)->name();
+                }
+                
+                stream << ")";
+            }
+            
+            append_label(stream, field_desc);
+            
 
             if(field_desc->has_default_value())
-                human_desc_ss << " (default)";
+                stream << " (default=" << example << ")";
+
+            if(use_color)
+                stream << util::esc_nocolor;
         
         }
     }
 }
 
 
-void goby::core::ConfigReader::append_label(std::stringstream& human_desc_ss,
+void goby::core::ConfigReader::append_label(std::ostream& human_desc_ss,
                                             const google::protobuf::FieldDescriptor* field_desc)
 {
     switch(field_desc->label())
     {
         case google::protobuf::FieldDescriptor::LABEL_REQUIRED:
-            human_desc_ss << util::esc_red << " (req)" << util::esc_nocolor;
+            human_desc_ss << " (req)";
             break;
             
         case google::protobuf::FieldDescriptor::LABEL_OPTIONAL:
-            human_desc_ss << util::esc_lt_magenta << " (opt)" << util::esc_nocolor;
+            human_desc_ss << " (opt)";
             break;
             
         case google::protobuf::FieldDescriptor::LABEL_REPEATED:
-            human_desc_ss << util::esc_lt_cyan << " (repeat)"  << util::esc_nocolor;
+            human_desc_ss << " (repeat)";
             break;
-    }
-}
-
-
-std::string goby::core::ConfigReader::default_as_string(const google::protobuf::FieldDescriptor* field_desc)
-{
-    switch(field_desc->cpp_type())
-    {
-        case google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE:
-            return "";
-        
-        case google::protobuf::FieldDescriptor::CPPTYPE_INT32:                    
-            return util::as<std::string>(field_desc->default_value_int32());
-                    
-        case google::protobuf::FieldDescriptor::CPPTYPE_INT64:
-            return util::as<std::string>(field_desc->default_value_int64());
-
-        case google::protobuf::FieldDescriptor::CPPTYPE_UINT32:
-            return util::as<std::string>(field_desc->default_value_uint32());
-                                
-        case google::protobuf::FieldDescriptor::CPPTYPE_UINT64:
-            return util::as<std::string>(field_desc->default_value_uint64());
-                        
-        case google::protobuf::FieldDescriptor::CPPTYPE_BOOL:
-            return util::as<std::string>(field_desc->default_value_bool());
-                    
-        case google::protobuf::FieldDescriptor::CPPTYPE_STRING:
-            return field_desc->default_value_string();
-            
-        case google::protobuf::FieldDescriptor::CPPTYPE_FLOAT:
-            return util::as<std::string>(field_desc->default_value_float());
-                        
-        case google::protobuf::FieldDescriptor::CPPTYPE_DOUBLE:
-            return util::as<std::string>(field_desc->default_value_double());
-                
-        case google::protobuf::FieldDescriptor::CPPTYPE_ENUM:
-            return field_desc->default_value_enum()->name();
-            
-                                      
     }
 }
 

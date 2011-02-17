@@ -109,6 +109,8 @@ namespace goby
                     verbosity_(verbosity)
                     { }
                 
+                void set_verbosity(Logger::Verbosity verbosity) {  verbosity_ = verbosity; }
+
                 std::ostream* os() const { return os_; }
                 Logger::Verbosity verbosity() const { return verbosity_; }
                 

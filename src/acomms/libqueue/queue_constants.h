@@ -28,12 +28,15 @@ namespace goby
         // smallest allowed id - 0 is reserved for non-existent message
         const unsigned MIN_ID = 1;
         // largest allowed id 
-        const unsigned MAX_ID = 1 << head_dccl_id_size;
+        const unsigned MAX_ID = 1 << HEAD_DCCL_ID_SIZE;
         
         const unsigned MULTIMESSAGE_MASK = 1 << 7;
         const unsigned BROADCAST_MASK = 1 << 6;
         const unsigned VAR_ID_MASK = 0xFF ^ MULTIMESSAGE_MASK ^ BROADCAST_MASK;
 
+        // number of bytes used to store the size of the following user frame
+        const unsigned USER_FRAME_NEXT_SIZE_BYTES = 1;
+        
         // how old an on_demand message can be before re-encoding
         const boost::posix_time::time_duration ON_DEMAND_SKEW = boost::posix_time::seconds(1);    
     }

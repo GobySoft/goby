@@ -23,13 +23,19 @@
 
 #include "pREMUSCodec.h"
 
-using namespace std;
-using namespace tes;
+#include "goby/util/string.h"
+#include "boost/algorithm/string.hpp"
+#include "goby/acomms/protobuf/modem_message.pb.h"
+#include "goby/moos/libmoos_util/moos_protobuf_helpers.h"
 
-#include <boost/algorithm/string.hpp>
+using namespace std;
+using goby::util::as;
+
+
 
 // Construction / Destruction
 CpREMUSCodec::CpREMUSCodec()
+    : my_id(0)
 {
   got_x =false;
   got_y = false;
@@ -80,100 +86,46 @@ for(MOOSMSG_LIST::iterator p = NewMail.begin(); p != NewMail.end(); p++)
         string msg_community = msg.GetCommunity();
 	
 
-	if(MOOSStrCmp(key, mdat_state_var)) // case insensitive
-	  {
-	    // first get rid of header if present
-	    string bite;
-	    if ( !MOOSValFromString(bite,sval,"data") )
-	      bite = sval;
-
+	if(MOOSStrCmp(key, mdat_state_var) || MOOSStrCmp(key, mdat_ranger_var)
+           || MOOSStrCmp(key, mdat_redirect_var) || MOOSStrCmp(key, mdat_alert_var)
+            || MOOSStrCmp(key, mdat_alert2_var)) // case insensitive
+        {
+            goby::acomms::protobuf::ModemDataTransmission msg_in;
+            parse_for_moos(sval, &msg_in);
+            
 	    vector<unsigned int> bytes;
-	    for (int i=0; i<32; i++)
-	      bytes.push_back(0);
-
-            hex_to_int_array(bite, bytes);
-	    int node =atoi(msg_community.c_str());
+	    for (unsigned i=0; i<32; i++)
+            {
+                if(i < msg_in.data().size())
+                    bytes.push_back(msg_in.data().at(i));
+                else
+                    bytes.push_back(0);
+            }
+            
+	    int node = msg_in.base().src();
             string name = modem_lookup[atoi(msg_community.c_str())].name;
             string type = modem_lookup[atoi(msg_community.c_str())].type;
+
+            string human;
             
-            string human = decode_mdat_state(bytes, node, name, type);
-            m_Comms.Notify("NODE_REPORT", human);
+            if(MOOSStrCmp(key, mdat_state_var))
+            {
+                human = decode_mdat_state(bytes, node, name, type);
+                m_Comms.Notify("NODE_REPORT", human);
+            }
+            else if(MOOSStrCmp(key, mdat_ranger_var))
+            {
+                human = decode_mdat_ranger(bytes, node, name, type);
+                m_Comms.Notify("NODE_REPORT", human);
+            }
+            else if(MOOSStrCmp(key, mdat_redirect_var))
+                human = decode_mdat_redirect(bytes, node, name, type);
+            else if(MOOSStrCmp(key, mdat_alert_var))
+                human = decode_mdat_alert(bytes, node, name, type);
+            else if(MOOSStrCmp(key, mdat_alert2_var))
+                human = decode_mdat_alert2(bytes, node, name, type);
 	  }
-	else if(MOOSStrCmp(key, mdat_ranger_var)) // case insensitive
-	  {
-	    // first get rid of header if present
-	    string bite;
-	    if ( !MOOSValFromString(bite,sval,"data") )
-	      bite = sval;
-
-	    vector<unsigned int> bytes;
-	    for (int i=0; i<32; i++)
-	      bytes.push_back(0);
-
-            hex_to_int_array(bite, bytes);
-	    int node =atoi(msg_community.c_str());
-            string name = modem_lookup[atoi(msg_community.c_str())].name;
-            string type = modem_lookup[atoi(msg_community.c_str())].type;
-            
-            string human = decode_mdat_ranger(bytes, node, name, type);
-            m_Comms.Notify("NODE_REPORT", human);
-	  }
-	else if(MOOSStrCmp(key, mdat_redirect_var)) // case insensitive
-	  {
-	    // first get rid of header if present
-
-	    string bite;
-	    if ( !MOOSValFromString(bite,sval,"data") )
-	      bite = sval;
-
-            vector<unsigned int> bytes;
-	    for (int i=0; i<32; i++)
-	      bytes.push_back(0);
-
-            hex_to_int_array(bite, bytes);
-	    int node =atoi(msg_community.c_str());
-            string name = modem_lookup[atoi(msg_community.c_str())].name;
-            string type = modem_lookup[atoi(msg_community.c_str())].type;
-            
-            string human = decode_mdat_redirect(bytes, node, name, type);
-	  }
-	else if(MOOSStrCmp(key, mdat_alert_var)) // case insensitive
-	  {
-	    // first get rid of header if present
-	    string bite;
-	    if ( !MOOSValFromString(bite,sval,"data") )
-	      bite = sval;
-
-            vector<unsigned int> bytes;
-	    for (int i=0; i<32; i++)
-	      bytes.push_back(0);
-
-            hex_to_int_array(bite, bytes);
-	    int node =atoi(msg_community.c_str());
-            string name = modem_lookup[atoi(msg_community.c_str())].name;
-            string type = modem_lookup[atoi(msg_community.c_str())].type;
-            
-            string human = decode_mdat_alert(bytes, node, name, type);
-	  }
-	else if(MOOSStrCmp(key, mdat_alert2_var)) // case insensitive
-	  {
-	    // first get rid of header if present
-	    string bite;
-	    if ( !MOOSValFromString(bite,sval,"data") )
-	      bite = sval;
-
-            vector<unsigned int> bytes;
-	    for (int i=0; i<32; i++)
-	      bytes.push_back(0);
-
-            hex_to_int_array(bite, bytes);
-	    int node =atoi(msg_community.c_str());
-            string name = modem_lookup[atoi(msg_community.c_str())].name;
-            string type = modem_lookup[atoi(msg_community.c_str())].type;
-            
-            string human = decode_mdat_alert2(bytes, node, name, type);
-	  }
-	else if(MOOSStrCmp(key,"VEHICLE_ID"))
+	else if(MOOSStrCmp(key,"MODEM_ID"))
 	  {	 
 	    my_id = atoi(sval.c_str());
 	  } 
@@ -209,14 +161,26 @@ for(MOOSMSG_LIST::iterator p = NewMail.begin(); p != NewMail.end(); p++)
 	    if (parseRedirect(msg.m_sVal, dest_id))
 	      {
 		MOOSTrace("parseRedirect: dest_id= %d\n", dest_id);
-		vector<unsigned int> bytes;
+
+                vector<unsigned int> bytes;
 		for (int i=0; i<32; i++)
-		  bytes.push_back(0);
+                    bytes.push_back(0);
 		if (encode_mdat_redirect(bytes))
-		  {
-                      string out = "src=" + intToString(my_id) + ",dest=" + intToString(dest_id) + ",data=" + int_array_to_hex(bytes);
-                      m_Comms.Notify(mdat_redirect_out, out);
-		  }
+                {
+                    goby::acomms::protobuf::ModemDataTransmission msg_out;
+                    
+                    for (int i=0, n=bytes.size(); i<n; i++)
+                        msg_out.mutable_data()->append(1, char(bytes[i]));
+
+                    msg_out.mutable_base()->set_src(my_id);
+                    msg_out.mutable_base()->set_dest(dest_id);
+
+                    std::string out;
+                    serialize_for_moos(&out, msg_out);
+
+                    std::cerr << "publishing to " << mdat_redirect_out << " " << out << std::endl;
+                    m_Comms.Notify(mdat_redirect_out, out);
+                }
 	      }
 	  } 
     }  
@@ -247,9 +211,21 @@ bool CpREMUSCodec::Iterate()
 	bytes.push_back(0);
       if (encode_mdat_state(bytes))
 	{
-	  string out = "dest=" + intToString(0) + ",data=" + int_array_to_hex(bytes);
-	  m_Comms.Notify(mdat_state_out, out);
-	  status_time = curr_time;
+            goby::acomms::protobuf::ModemDataTransmission msg_out;
+            
+            for (int i=0, n=bytes.size(); i<n; i++)
+                msg_out.mutable_data()->append(1, char(bytes[i]));
+
+            msg_out.mutable_base()->set_src(my_id);
+            msg_out.mutable_base()->set_dest(0);
+            
+            std::string out;
+            serialize_for_moos(&out, msg_out);
+
+            std::cerr << "publishing to " << mdat_state_out << " " << out << std::endl;
+
+            m_Comms.Notify(mdat_state_out, out);
+            status_time = curr_time;
 	}
     }
   
@@ -280,7 +256,7 @@ void CpREMUSCodec::RegisterVariables()
     m_Comms.Register(mdat_alert_out, 0);
     m_Comms.Register(mdat_alert2_var, 0);
     m_Comms.Register(mdat_alert2_out, 0);
-    m_Comms.Register("VEHICLE_ID", 0);
+    m_Comms.Register("MODEM_ID", 0);
     m_Comms.Register("NAV_X", 0);
     m_Comms.Register("NAV_Y", 0);
     m_Comms.Register("NAV_SPEED", 0);
@@ -294,20 +270,12 @@ void CpREMUSCodec::RegisterVariables()
 // parameter keys are case insensitive
 bool CpREMUSCodec::ReadConfiguration()
 {
-    m_io.SetProcessName("pREMUSCodec");
-
-    // if the user doesn't tell us otherwise, we're talking!
-    m_verbosity = "verbose";
-    if (!m_MissionReader.GetConfigurationParam("verbosity", m_verbosity))
-	m_io.EchoWarn("verbosity not specified in configuration. using verbose mode.");
-    
-    m_io.SetVerbosity(m_verbosity);
 
     string create_status;
     // do we want to generate Remus CCL Status reports
     remus_status = false;
     if (!m_MissionReader.GetConfigurationParam("create_status", create_status))
-	m_io.EchoWarn("create_status not specified. Will not generate Remus status");
+        std::cerr << "create_status not specified. Will not generate Remus status" << std::endl;
     else
       remus_status = MOOSStrCmp(create_status, "true");
 
@@ -315,7 +283,7 @@ bool CpREMUSCodec::ReadConfiguration()
     // for reading global values, use m_MissionReader.GetValue(parameter, variable)
 
     if (!m_MissionReader.GetValue("mdat_state_var", bufstr))
-      MOOSTrace("mdat_state_var not specified in .moos file. Using default.%s\n",mdat_state_var.c_str());
+        MOOSTrace("mdat_state_var not specified in .moos file. Using default.%s\n",mdat_state_var.c_str());
     else
       mdat_state_var = bufstr;
 
@@ -434,16 +402,27 @@ bool CpREMUSCodec::ReadConfiguration()
 
     double latOrigin, longOrigin;
     if (!m_MissionReader.GetValue("LatOrigin", latOrigin))
-        m_io.EchoDie("LatOrigin not set in *.moos file.\n");
+    {
+        std::cerr << "LatOrigin not set in *.moos file." << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    
     south = (latOrigin < 0.0);
     
     if (!m_MissionReader.GetValue("LongOrigin", longOrigin))
-        m_io.EchoDie("LongOrigin not set in *.moos file\n");
+    {
+        std::cerr << "LongOrigin not set in *.moos file" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    
     west = (longOrigin < 0.0);
     
     // initialize m_geodesy
     if (!m_geodesy.Initialise(latOrigin, longOrigin))
-        m_io.EchoDie("Geodesy init failed.\n");
+    {
+        std::cerr << "Geodesy init failed." << std::endl;
+        exit(EXIT_FAILURE);
+    }
     
     return true;
 }
@@ -508,13 +487,13 @@ string CpREMUSCodec::decode_mdat_ranger(vector<unsigned int> c, int node, string
   // Create human-readable version
   
   string ccl_status = "MessageType=CCL_STATUS" ;
-  ccl_status += ",Node=" + intToString(node);
-  ccl_status += ",Timestamp=" + doubleToString(MOOSTime());
-  ccl_status += ",Latitude=" + doubleToString(dlat);
-  ccl_status += ",Longitude=" + doubleToString(dlon);
-  ccl_status += ",Speed=" + doubleToString(dspd);
-  ccl_status += ",Heading=" + doubleToString(dhdg);
-  ccl_status += ",Depth=" + doubleToString(ddepth);
+  ccl_status += ",Node=" + as<string>(node);
+  ccl_status += ",Timestamp=" + as<string>(MOOSTime());
+  ccl_status += ",Latitude=" + as<string>(dlat);
+  ccl_status += ",Longitude=" + as<string>(dlon);
+  ccl_status += ",Speed=" + as<string>(dspd);
+  ccl_status += ",Heading=" + as<string>(dhdg);
+  ccl_status += ",Depth=" + as<string>(ddepth);
   
   m_Comms.Notify("STATUS_REPORT_IN",ccl_status);
   
@@ -543,15 +522,15 @@ string CpREMUSCodec::decode_mdat_ranger(vector<unsigned int> c, int node, string
   
   return assemble_NODE_REPORT(sender,
 		     type,
-		     intToString(-1),
-		     doubleToString(MOOSTime()),
-		     doubleToString(x),
-		     doubleToString(y),
-		     doubleToString(dlat),
-		     doubleToString(dlon),
-		     doubleToString(dspd),
-		     doubleToString(dhdg),
-		     doubleToString(ddepth),doubleToString(dhdg-360));
+		     as<string>(-1),
+		     as<string>(MOOSTime()),
+		     as<string>(x),
+		     as<string>(y),
+		     as<string>(dlat),
+		     as<string>(dlon),
+		     as<string>(dspd),
+		     as<string>(dhdg),
+		     as<string>(ddepth),as<string>(dhdg-360));
   
 }
 
@@ -661,19 +640,19 @@ string CpREMUSCodec::decode_mdat_state(vector<unsigned int> c, int node, string 
     // Create human-readable version
 
     string ccl_status = "MessageType=CCL_STATUS" ;
-    ccl_status += ",Node=" + intToString(node);
-    ccl_status += ",Timestamp=" + doubleToString(MOOSTime());
-    ccl_status += ",Latitude=" + doubleToString(dlat);
-    ccl_status += ",Longitude=" + doubleToString(dlon);
-    ccl_status += ",Speed=" + doubleToString(dspd);
-    ccl_status += ",Heading=" + doubleToString(dhdg);
-    ccl_status += ",Depth=" + doubleToString(ddepth);
-    ccl_status += ",GoalLatitude=" + doubleToString(glat);
-    ccl_status += ",GoalLongitude=" + doubleToString(glon);
-    ccl_status += ",Batterypercent=" + intToString((int) c[29]);
-    ccl_status += ",GFI=" + doubleToString((double) fGFI);
-    ccl_status += ",Pitch=" + doubleToString((double) fPitch);
-    ccl_status += ",Oil=" + doubleToString((double) fOil);
+    ccl_status += ",Node=" + as<string>(node);
+    ccl_status += ",Timestamp=" + as<string>(MOOSTime());
+    ccl_status += ",Latitude=" + as<string>(dlat);
+    ccl_status += ",Longitude=" + as<string>(dlon);
+    ccl_status += ",Speed=" + as<string>(dspd);
+    ccl_status += ",Heading=" + as<string>(dhdg);
+    ccl_status += ",Depth=" + as<string>(ddepth);
+    ccl_status += ",GoalLatitude=" + as<string>(glat);
+    ccl_status += ",GoalLongitude=" + as<string>(glon);
+    ccl_status += ",Batterypercent=" + as<string>((int) c[29]);
+    ccl_status += ",GFI=" + as<string>((double) fGFI);
+    ccl_status += ",Pitch=" + as<string>((double) fPitch);
+    ccl_status += ",Oil=" + as<string>((double) fOil);
 
     m_Comms.Notify("STATUS_REPORT_IN",ccl_status);
 
@@ -702,15 +681,15 @@ string CpREMUSCodec::decode_mdat_state(vector<unsigned int> c, int node, string 
   
     return assemble_NODE_REPORT(sender,
                        type,
-                       intToString(-1),
-                       doubleToString(MOOSTime()),
-                       doubleToString(x),
-                       doubleToString(y),
-                       doubleToString(dlat),
-                       doubleToString(dlon),
-                       doubleToString(dspd),
-                       doubleToString(dhdg),
-                       doubleToString(ddepth),doubleToString(dhdg-360));
+                       as<string>(-1),
+                       as<string>(MOOSTime()),
+                       as<string>(x),
+                       as<string>(y),
+                       as<string>(dlat),
+                       as<string>(dlon),
+                       as<string>(dspd),
+                       as<string>(dhdg),
+                       as<string>(ddepth),as<string>(dhdg-360));
 }
 
 // replaces assembleAIS. mfallon dec2010
@@ -891,24 +870,24 @@ string CpREMUSCodec::decode_mdat_redirect(vector<unsigned int> c, int node, stri
     // Create human-readable version
 
     string ccl_redirect = "MessageType=CCL_REDIRECT" ;
-    ccl_redirect += ",DestinationPlatformId=" + intToString(node);
-    ccl_redirect += ",Timestamp=" + doubleToString(MOOSTime());
-    ccl_redirect += ",Latitude=" + doubleToString(dlat);
-    ccl_redirect += ",Longitude=" + doubleToString(dlon);
+    ccl_redirect += ",DestinationPlatformId=" + as<string>(node);
+    ccl_redirect += ",Timestamp=" + as<string>(MOOSTime());
+    ccl_redirect += ",Latitude=" + as<string>(dlat);
+    ccl_redirect += ",Longitude=" + as<string>(dlon);
     ccl_redirect += ",SpeedDepthFlags=" + spd_dep_flags;
-    ccl_redirect += ",TransitSpeed=" + doubleToString(dtspd);
-    ccl_redirect += ",TransitDepth=" + doubleToString(dtdepth);
-    ccl_redirect += ",TransitCommand=" + intToString((int) tcomm);
-    ccl_redirect += ",SurveySpeed=" + doubleToString(dsspd);
-    ccl_redirect += ",SurveyDepth=" + doubleToString(dsdepth);
-    ccl_redirect += ",SurveyCommand=" + intToString((int) scomm);
-    ccl_redirect += ",NumberOfRows=" + intToString((int) nrows);
-    ccl_redirect += ",RowLength=" + intToString((int) rowlen);
-    ccl_redirect += ",RowSpacing0=" + intToString((int) rowspace0);
-    ccl_redirect += ",RowSpacing1=" + intToString((int) rowspace1);
-    ccl_redirect += ",RowHeading=" + doubleToString(dshdg);
-    ccl_redirect += ",StartLatitude=" + doubleToString(dslat);
-    ccl_redirect += ",StartLongitude=" + doubleToString(dslon);
+    ccl_redirect += ",TransitSpeed=" + as<string>(dtspd);
+    ccl_redirect += ",TransitDepth=" + as<string>(dtdepth);
+    ccl_redirect += ",TransitCommand=" + as<string>((int) tcomm);
+    ccl_redirect += ",SurveySpeed=" + as<string>(dsspd);
+    ccl_redirect += ",SurveyDepth=" + as<string>(dsdepth);
+    ccl_redirect += ",SurveyCommand=" + as<string>((int) scomm);
+    ccl_redirect += ",NumberOfRows=" + as<string>((int) nrows);
+    ccl_redirect += ",RowLength=" + as<string>((int) rowlen);
+    ccl_redirect += ",RowSpacing0=" + as<string>((int) rowspace0);
+    ccl_redirect += ",RowSpacing1=" + as<string>((int) rowspace1);
+    ccl_redirect += ",RowHeading=" + as<string>(dshdg);
+    ccl_redirect += ",StartLatitude=" + as<string>(dslat);
+    ccl_redirect += ",StartLongitude=" + as<string>(dslon);
 
 
     m_Comms.Notify("CCL_REDIRECT_IN",ccl_redirect);
@@ -1046,11 +1025,11 @@ string CpREMUSCodec::decode_mdat_position(vector<unsigned int> c, int node, stri
     // Create human-readable version
 
     string ccl_status = "MessageType=CCL_POSITION" ;
-    ccl_status += ",Node=" + intToString(node);
+    ccl_status += ",Node=" + as<string>(node);
     ccl_status += ",Type=" + sType;
-    ccl_status += ",Timestamp=" + doubleToString(MOOSTime());
-    ccl_status += ",Latitude=" + doubleToString(dlat);
-    ccl_status += ",Longitude=" + doubleToString(dlon);
+    ccl_status += ",Timestamp=" + as<string>(MOOSTime());
+    ccl_status += ",Latitude=" + as<string>(dlat);
+    ccl_status += ",Longitude=" + as<string>(dlon);
     // make sure label is terminated
     //c[28] = 0;
     ccl_status += ",Label=" ;
@@ -1081,15 +1060,15 @@ string CpREMUSCodec::decode_mdat_position(vector<unsigned int> c, int node, stri
     
     return assemble_NODE_REPORT(sender,
                        type,
-                       intToString(-1),
-                       doubleToString(MOOSTime()),
-                       doubleToString(x),
-                       doubleToString(y),
-                       doubleToString(dlat),
-                       doubleToString(dlon),
-                       doubleToString(dspd),
-                       doubleToString(dhdg),
-                       doubleToString(ddepth),doubleToString(dhdg-360));
+                       as<string>(-1),
+                       as<string>(MOOSTime()),
+                       as<string>(x),
+                       as<string>(y),
+                       as<string>(dlat),
+                       as<string>(dlon),
+                       as<string>(dspd),
+                       as<string>(dhdg),
+                       as<string>(ddepth),as<string>(dhdg-360));
 
 }
 
@@ -1143,26 +1122,26 @@ string CpREMUSCodec::decode_mdat_alert(vector<unsigned int> c, int node, string 
   double dhdg = Decode_heading(hdg);
 
   string ccl_alert = "MessageType=CCL_ALERT" ;
-  ccl_alert += ",Node=" + intToString(node);
-  ccl_alert += ",Timestamp=" + doubleToString(double(oasis_time));
-  ccl_alert += ",Latitude=" + doubleToString(dlat);
-  ccl_alert += ",Longitude=" + doubleToString(dlon);
-  ccl_alert += ",Heading=" + doubleToString(dhdg);
-  ccl_alert += ",Contact1Id=" + intToString( c[12] + (c[13]*256) );
-  ccl_alert += ",Contact1Age=" + intToString( c[14] );
-  ccl_alert += ",Contact1Bearing=" + intToString( c[15] );
-  ccl_alert += ",Contact1Signature1=" + intToString( c[16] );
-  ccl_alert += ",Contact1Signature2=" + intToString( c[17] );
-  ccl_alert += ",Contact2Id=" + intToString( c[18] + (c[19]*256) );
-  ccl_alert += ",Contact2Age=" + intToString( c[20] );
-  ccl_alert += ",Contact2Bearing=" + intToString( c[21] );
-  ccl_alert += ",Contact2Signature1=" + intToString( c[22] );
-  ccl_alert += ",Contact2Signature2=" + intToString( c[23] );
-  ccl_alert += ",Contact3Id=" + intToString( c[24] + (c[25]*256) );
-  ccl_alert += ",Contact3Age=" + intToString( c[26] );
-  ccl_alert += ",Contact3Bearing=" + intToString( c[27] );
-  ccl_alert += ",Contact3Signature1=" + intToString( c[28] );
-  ccl_alert += ",Contact3Signature2=" + intToString( c[29] );
+  ccl_alert += ",Node=" + as<string>(node);
+  ccl_alert += ",Timestamp=" + as<string>(double(oasis_time));
+  ccl_alert += ",Latitude=" + as<string>(dlat);
+  ccl_alert += ",Longitude=" + as<string>(dlon);
+  ccl_alert += ",Heading=" + as<string>(dhdg);
+  ccl_alert += ",Contact1Id=" + as<string>( c[12] + (c[13]*256) );
+  ccl_alert += ",Contact1Age=" + as<string>( c[14] );
+  ccl_alert += ",Contact1Bearing=" + as<string>( c[15] );
+  ccl_alert += ",Contact1Signature1=" + as<string>( c[16] );
+  ccl_alert += ",Contact1Signature2=" + as<string>( c[17] );
+  ccl_alert += ",Contact2Id=" + as<string>( c[18] + (c[19]*256) );
+  ccl_alert += ",Contact2Age=" + as<string>( c[20] );
+  ccl_alert += ",Contact2Bearing=" + as<string>( c[21] );
+  ccl_alert += ",Contact2Signature1=" + as<string>( c[22] );
+  ccl_alert += ",Contact2Signature2=" + as<string>( c[23] );
+  ccl_alert += ",Contact3Id=" + as<string>( c[24] + (c[25]*256) );
+  ccl_alert += ",Contact3Age=" + as<string>( c[26] );
+  ccl_alert += ",Contact3Bearing=" + as<string>( c[27] );
+  ccl_alert += ",Contact3Signature1=" + as<string>( c[28] );
+  ccl_alert += ",Contact3Signature2=" + as<string>( c[29] );
     
   m_Comms.Notify("CCL_ALERT_IN",ccl_alert);
   
@@ -1208,31 +1187,31 @@ string CpREMUSCodec::decode_mdat_alert2(vector<unsigned int> c, int node, string
     hdgtyp3 = "Absolute";
 
   string ccl_alert2 = "MessageType=CCL_ALERT2" ;
-  ccl_alert2 += ",Node=" + intToString(node);
-  ccl_alert2 += ",Timestamp=" + doubleToString(double(oasis_time));
-  ccl_alert2 += ",Latitude=" + doubleToString(dlat);
-  ccl_alert2 += ",Longitude=" + doubleToString(dlon);
-  ccl_alert2 += ",Contact1Id=" + intToString( c[11] + (c[12]*256) );
-  ccl_alert2 += ",Contact1Age=" + intToString( c[13] );
-  ccl_alert2 += ",Contact1Bearing=" + intToString( c[14] );
+  ccl_alert2 += ",Node=" + as<string>(node);
+  ccl_alert2 += ",Timestamp=" + as<string>(double(oasis_time));
+  ccl_alert2 += ",Latitude=" + as<string>(dlat);
+  ccl_alert2 += ",Longitude=" + as<string>(dlon);
+  ccl_alert2 += ",Contact1Id=" + as<string>( c[11] + (c[12]*256) );
+  ccl_alert2 += ",Contact1Age=" + as<string>( c[13] );
+  ccl_alert2 += ",Contact1Bearing=" + as<string>( c[14] );
   ccl_alert2 += ",Contact1HeadingType=" + hdgtyp1;
-  ccl_alert2 += ",Contact1Heading=" + doubleToString(dhdg1);
-  ccl_alert2 += ",Contact1Signature1=" + intToString( c[16] );
-  ccl_alert2 += ",Contact1Signature2=" + intToString( c[17] );
-  ccl_alert2 += ",Contact2Id=" + intToString( c[18] + (c[19]*256) );
-  ccl_alert2 += ",Contact2Age=" + intToString( c[20] );
-  ccl_alert2 += ",Contact2Bearing=" + intToString( c[21] );
+  ccl_alert2 += ",Contact1Heading=" + as<string>(dhdg1);
+  ccl_alert2 += ",Contact1Signature1=" + as<string>( c[16] );
+  ccl_alert2 += ",Contact1Signature2=" + as<string>( c[17] );
+  ccl_alert2 += ",Contact2Id=" + as<string>( c[18] + (c[19]*256) );
+  ccl_alert2 += ",Contact2Age=" + as<string>( c[20] );
+  ccl_alert2 += ",Contact2Bearing=" + as<string>( c[21] );
   ccl_alert2 += ",Contact2HeadingType=" + hdgtyp2;
-  ccl_alert2 += ",Contact2Heading=" + doubleToString(dhdg2);
-  ccl_alert2 += ",Contact2Signature1=" + intToString( c[23] );
-  ccl_alert2 += ",Contact2Signature2=" + intToString( c[24] );
-  ccl_alert2 += ",Contact3Id=" + intToString( c[25] + (c[26]*256) );
-  ccl_alert2 += ",Contact3Age=" + intToString( c[27] );
-  ccl_alert2 += ",Contact3Bearing=" + intToString( c[28] );
+  ccl_alert2 += ",Contact2Heading=" + as<string>(dhdg2);
+  ccl_alert2 += ",Contact2Signature1=" + as<string>( c[23] );
+  ccl_alert2 += ",Contact2Signature2=" + as<string>( c[24] );
+  ccl_alert2 += ",Contact3Id=" + as<string>( c[25] + (c[26]*256) );
+  ccl_alert2 += ",Contact3Age=" + as<string>( c[27] );
+  ccl_alert2 += ",Contact3Bearing=" + as<string>( c[28] );
   ccl_alert2 += ",Contact3HeadingType=" + hdgtyp3;
-  ccl_alert2 += ",Contact3Heading=" + doubleToString(dhdg3);
-  ccl_alert2 += ",Contact3Signature1=" + intToString( c[30] );
-  ccl_alert2 += ",Contact3Signature2=" + intToString( c[31] );
+  ccl_alert2 += ",Contact3Heading=" + as<string>(dhdg3);
+  ccl_alert2 += ",Contact3Signature1=" + as<string>( c[30] );
+  ccl_alert2 += ",Contact3Signature2=" + as<string>( c[31] );
     
   m_Comms.Notify("CCL_ALERT2_IN",ccl_alert2);
   

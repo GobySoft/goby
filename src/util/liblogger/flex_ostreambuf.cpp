@@ -44,8 +44,8 @@ boost::mutex goby::util::Logger::mutex;
 
 goby::util::FlexOStreamBuf::FlexOStreamBuf(): name_("no name"),
                                               die_flag_(false),
-                                              debug_flag_(false),
                                               warn_flag_(false),
+                                              debug_flag_(false),
 #ifdef HAS_NCURSES
                                               curses_(0),
 #endif
@@ -54,7 +54,7 @@ goby::util::FlexOStreamBuf::FlexOStreamBuf(): name_("no name"),
                                               is_gui_(false)
                                               
 {
-    Group no_group("", "warnings and ungrouped messages");
+    Group no_group("", "Ungrouped messages");
     groups_[""] = no_group;    
 }
 
@@ -68,11 +68,20 @@ goby::util::FlexOStreamBuf::~FlexOStreamBuf()
 void goby::util::FlexOStreamBuf::add_stream(Logger::Verbosity verbosity, std::ostream* os)
 {
     //check that this stream doesn't exist
-    BOOST_FOREACH(const StreamConfig& sc, streams_)
+    // if so, update its verbosity and return
+    bool stream_exists = false;
+    BOOST_FOREACH(StreamConfig& sc, streams_)
     {
         if(sc.os() == os)
-            return;
+        {
+            sc.set_verbosity(verbosity);
+            stream_exists = true;
+        }
     }
+
+    if(!stream_exists)
+        streams_.push_back(StreamConfig(os, verbosity));
+    
 
     if(verbosity == Logger::gui)
     {
@@ -102,7 +111,6 @@ void goby::util::FlexOStreamBuf::add_stream(Logger::Verbosity verbosity, std::os
     else if(verbosity != Logger::quiet)
     {
         is_quiet_ = false;
-        streams_.push_back(StreamConfig(os, verbosity));
     }
 }
 

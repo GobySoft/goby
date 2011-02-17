@@ -14,5 +14,17 @@
         <max_length>26</max_length>
       </string>      
     </layout>
+
+    <!-- only used by pAcommsHandler (publish/subscribe)-->
+    <trigger>publish</trigger> <!-- pack -->
+    <trigger_var>OUT_MESSAGE</trigger_var>
+    <on_receipt> <!-- unpack -->
+      <publish>
+        <publish_var>IN_MESSAGE</publish_var>
+        <message_var>message</message_var>
+      </publish>
+    </on_receipt>
+    <!-- end used by pAcommsHandler -->
+
   </message>
 </message_set>

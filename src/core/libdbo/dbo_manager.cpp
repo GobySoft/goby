@@ -87,7 +87,7 @@ void goby::core::DBOManager::add_file(const google::protobuf::Descriptor* descri
 
 void goby::core::DBOManager::add_file(const google::protobuf::FileDescriptorProto& proto)
 {
-    const google::protobuf::FileDescriptor* new_file_descriptor = descriptor_pool.BuildFile(proto); 
+    descriptor_pool.BuildFile(proto); 
     // for(int i = 0, n = new_file_descriptor->message_type_count(); i < n; ++i)
     //     add_type(new_file_descriptor->message_type(i));
 }

@@ -35,7 +35,9 @@ namespace goby
     {
         /// \name Binary encoding
         //@{
-    
+
+        
+        
         /// \brief converts a char (byte) array into a hex string
         ///
         /// \param c pointer to array of char

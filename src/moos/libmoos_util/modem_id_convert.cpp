@@ -20,10 +20,15 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
+
 #include "modem_id_convert.h"
+#include <string>
+#include <vector>
+#include "goby/util/string.h"
+#include <boost/algorithm/string.hpp>
 
 using namespace std;
-
+using goby::util::as;
 
 namespace tes
 {
@@ -76,7 +81,9 @@ namespace tes
             // ignore blank lines
             if(sline != "")
             {
-                vector<string> line_parsed = tes::explode(sline, ',');
+                vector<string> line_parsed;
+                boost::algorithm::split(line_parsed, sline, boost::is_any_of(","));
+                
                 if(line_parsed.size() < 3)
                     ss << "invalid line: " <<  sline << endl;
                 else
@@ -117,7 +124,7 @@ namespace tes
         if(names.count(id))
             return names[id]; // return the found name
         else
-            return tes::intToString(id); // if not in the lookup table, just give the number back as a string
+            return as<string>(id); // if not in the lookup table, just give the number back as a string
     }
     
     
@@ -134,19 +141,18 @@ namespace tes
         if(locations.count(id))
             return locations[id];
         else
-            return tes::intToString(id);
+            return as<string>(id);
     }
     
     int ModemIdConvert::get_id_from_name(string name)
     {
-        
         for (map<int,string>::iterator it = names.begin(); it != names.end(); ++it)
         {
-            if(tes::stricmp(it->second, name))
+            if(goby::util::stricmp(it->second, name))
                 return it->first;
         }
-
-        return atoi(name.c_str());
         
+        
+        return int(as<double>(name));
     }
 }

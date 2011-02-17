@@ -195,11 +195,11 @@ namespace Wt
         // Tells Wt::Dbo use this overload of `persist` if the object
         // is derived from google::protobuf::Message
         template <typename C>
-        struct persist<C, typename boost::enable_if<boost::is_base_of<google::protobuf::Message, C> >::type>
+            struct persist<C, typename boost::enable_if<boost::is_base_of<google::protobuf::Message, C> >::type>
         {
             template<typename A>
-            static void apply(C& obj, A& action)
-                { protobuf_message_persist(obj, action); }
+                static void apply(C& obj, A& action)
+            { protobuf_message_persist(obj, action); }
         };
         
     }

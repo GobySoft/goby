@@ -29,8 +29,6 @@
 #include<vector>
 
 #include "MOOSLIB/MOOSLib.h"
-#include "goby/moos/lib_tes_util/terminalio.h"
-//#include "MBUtils.h"
 #include "WhoiUtil.h"
 #include "MOOSUtilityLib/MOOSGeodesy.h"
 
@@ -68,11 +66,6 @@ class CpREMUSCodec : public CMOOSApp
     bool encode_mdat_redirect(std::vector<unsigned int>&  c);
     bool encode_mdat_position(std::vector<unsigned int>&  c);
     bool parseRedirect(std::string msg, int& node);
-
-    
-    CMOOSTermIO m_io;
-
-    std::string m_verbosity;
 
     std::string mdat_state_var;
     std::string mdat_state_out;

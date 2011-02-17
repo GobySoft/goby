@@ -27,6 +27,8 @@
 #include <boost/lexical_cast.hpp>
 #include <iostream>
 #include <limits>
+#include <boost/utility.hpp>
+#include <boost/type_traits.hpp>
 
 namespace goby
 {
@@ -35,13 +37,29 @@ namespace goby
     {   
         /// \name String
         //@{
+        
 
+        /// compare two characters regardless of case
+        /// \param a first character
+        /// \param b second character
+        /// \return a == b (ignoring case)
+        inline bool charicmp(char a, char b) { return(tolower(a) == tolower(b)); }
+        /// compare two strings regardless of case
+        /// \param s1 first string
+        /// \param s2 second string
+        /// \return s1 == s2 (ignoring case)
+        inline bool stricmp(const std::string & s1, const std::string & s2)
+        {
+            return((s1.size() == s2.size()) &&
+                   equal(s1.begin(), s1.end(), s2.begin(), charicmp));
+        }
+        
         /// \brief non-throwing lexical cast (e.g. assert(as<double>("3.2") == 3.2))
         /// \param from value to cast from 
         /// \return to value to cast to
         /// \throw none
         template<typename To, typename From>
-            To as(From from)
+            To as(From from, typename boost::enable_if<boost::is_fundamental<To> >::type* dummy = 0)
         {
             try { return boost::lexical_cast<To>(from); }
             catch(boost::bad_lexical_cast&)
@@ -53,14 +71,34 @@ namespace goby
             }
         }
 
+        // non fundamental types
+        template<typename To, typename From>
+            To as(From from, typename boost::disable_if<boost::is_fundamental<To> >::type* dummy = 0)
+        {
+            try { return boost::lexical_cast<To>(from); }
+            catch(boost::bad_lexical_cast&)
+            {
+                return To();
+            }
+        }
+        
+        /// specialization of as() for string -> bool
+        template <>
+            inline bool as<bool, std::string>(std::string from, void* dummy)
+        {
+            return (stricmp(from, "true") || stricmp(from, "1"));
+        }
+        
         /// specialization of as() for bool -> string
         template <>
-            inline std::string as<std::string, bool>(bool from)
+            inline std::string as<std::string, bool>(bool from, void* dummy)
         {
             std::stringstream ss;
             ss << std::boolalpha << from;
             return ss.str();
         }
+
+
         
         /// remove all blanks from string s    
         inline void stripblanks(std::string& s)
@@ -111,22 +149,6 @@ namespace goby
             return out;
         }
 
-
-        /// compare two characters regardless of case
-        /// \param a first character
-        /// \param b second character
-        /// \return a == b (ignoring case)
-        inline bool charicmp(char a, char b) { return(tolower(a) == tolower(b)); }
-        /// compare two strings regardless of case
-        /// \param s1 first string
-        /// \param s2 second string
-        /// \return s1 == s2 (ignoring case)
-        inline bool stricmp(const std::string & s1, const std::string & s2)
-        {
-            return((s1.size() == s2.size()) &&
-                   equal(s1.begin(), s1.end(), s2.begin(), charicmp));
-        }
-        
         /// find `key` in `str` and if successful put it in out
         /// and return true
         /// deal with these basic forms:

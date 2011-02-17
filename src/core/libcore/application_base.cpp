@@ -26,8 +26,8 @@
 #include "goby/util/time.h"
 #include "goby/core/libcore/configuration_reader.h"
 #include "goby/core/libdbo/dbo_manager.h"
-#include "goby/core/proto/app_base_config.pb.h"
-#include "goby/core/proto/header.pb.h"
+#include "goby/protobuf/app_base_config.pb.h"
+#include "goby/protobuf/header.pb.h"
 
 #include "application_base.h"
 

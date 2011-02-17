@@ -25,7 +25,7 @@
 
 #include "goby/core/dbo.h"
 #include "goby/core/core.h"
-#include "goby/core/proto/config.pb.h"
+#include "goby/protobuf/config.pb.h"
 
 namespace goby
 {

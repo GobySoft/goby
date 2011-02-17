@@ -35,6 +35,7 @@
 	<value>BISTATIC</value>
 	<value>TRAIL</value>
         <value>BISTATIC_RATE</value>
+        <value>STATION_KEEP</value>
       </enum>
       <enum>
         <name>Depth_Mode</name>
@@ -180,7 +181,7 @@
       </publish>
       <publish>
         <moos_var>DEPLOY_STATION</moos_var>
-        <format>points=%1%,%2%</format>
+        <format>point=%1%,%2%</format>
         <message_var>Deploy_X</message_var>
         <message_var>Deploy_Y</message_var>
       </publish>

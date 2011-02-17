@@ -23,7 +23,7 @@
 
 #include "iCommander.h"
 #include "goby/moos/libmoos_util/tes_moos_app.h"
-#include "goby/acomms/protobuf/modem_message.pb.h"
+#include "goby/protobuf/modem_message.pb.h"
 
 using namespace std;
 using boost::trim_copy;

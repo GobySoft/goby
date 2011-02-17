@@ -35,8 +35,8 @@
 #include "message.h"
 #include "message_val.h"
 #include "dccl_exception.h"
-#include "goby/acomms/protobuf/dccl.pb.h"
-#include "goby/acomms/protobuf/modem_message.pb.h"
+#include "goby/protobuf/dccl.pb.h"
+#include "goby/protobuf/modem_message.pb.h"
 #include "goby/acomms/acomms_helpers.h"
 
 namespace goby

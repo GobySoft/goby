@@ -1,6 +1,6 @@
-import "goby/core/proto/header.proto";
-import "goby/core/proto/app_base_config.proto";
-import "goby/core/proto/config.proto";
+import "goby/protobuf/header.proto";
+import "goby/protobuf/app_base_config.proto";
+import "goby/protobuf/config.proto";
 
 message NodeReport
 {

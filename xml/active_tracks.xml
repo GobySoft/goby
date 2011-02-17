@@ -205,7 +205,7 @@
       <!-- Track 3 AIS Report -->
       <publish>
         <moos_var>NODE_REPORT</moos_var>
-        <format>NAME=TRK_%1%_%2%,TYPE=buoy,UTC_TIME=%3$.0lf,X=%4%,Y=%5%,LAT=%6$lf,LON=%7$lf,SPD=0,HDG=0,DEPTH=%8%</format>
+        <format>NAME=TRK_%1%_%2%,TYPE=track,UTC_TIME=%3$.0lf,X=%4%,Y=%5%,LAT=%6$lf,LON=%7$lf,SPD=0,HDG=0,DEPTH=%8%</format>
         <message_var>trk3_id</message_var>
         <message_var>platform_id</message_var>
         <message_var>time</message_var>
@@ -218,7 +218,7 @@
       <!-- Track 2 AIS Report -->
       <publish>
         <moos_var>NODE_REPORT</moos_var>
-        <format>NAME=TRK_%1%_%2%,TYPE=buoy,UTC_TIME=%3$.0lf,X=%4%,Y=%5%,LAT=%6$lf,LON=%7$lf,SPD=0,HDG=0,DEPTH=%8%</format>
+        <format>NAME=TRK_%1%_%2%,TYPE=track,UTC_TIME=%3$.0lf,X=%4%,Y=%5%,LAT=%6$lf,LON=%7$lf,SPD=0,HDG=0,DEPTH=%8%</format>
         <message_var>trk2_id</message_var>
         <message_var>platform_id</message_var>
         <message_var>time</message_var>
@@ -231,7 +231,7 @@
       <!-- Track 1 AIS Report -->
       <publish>
         <moos_var>NODE_REPORT</moos_var>
-        <format>NAME=TRK_%1%_%2%,TYPE=buoy,UTC_TIME=%3$.0lf,X=%4%,Y=%5%,LAT=%6$lf,LON=%7$lf,SPD=0,HDG=0,DEPTH=%8%</format>
+        <format>NAME=TRK_%1%_%2%,TYPE=track,UTC_TIME=%3$.0lf,X=%4%,Y=%5%,LAT=%6$lf,LON=%7$lf,SPD=0,HDG=0,DEPTH=%8%</format>
         <message_var>trk1_id</message_var>
         <message_var>platform_id</message_var>
         <message_var>time</message_var>

@@ -18,7 +18,7 @@
 
 #include <boost/lexical_cast.hpp>
 
-#include "goby/core/proto/cmoosmsg_mimic.pb.h"
+#include "goby/protobuf/cmoosmsg_mimic.pb.h"
 
 namespace goby
 {

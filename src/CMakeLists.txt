@@ -53,6 +53,7 @@ mark_as_advanced(CURSES_CURSES_H_PATH CURSES_FORM_LIBRARY CURSES_HAVE_CURSES_H)
 option(build_util "Build the Goby Utility libraries and applications" ON)
 option(build_acomms "Build the Goby Acoustic Communications libraries and applications" ON)
 option(build_core "Build the Goby Core libraries and applications" ON)  
+option(build_protobuf "Build the Goby Google Protocol buffers library" ON)  
 option(build_moos "Build the Acoustic Communications MOOS apps (pAcommsHandler, etc.)" OFF)
 option(build_test "Build test applications" OFF)
 
@@ -67,6 +68,11 @@ endif()
 if(build_core)
   add_subdirectory(core)
 endif()
+
+if(build_protobuf)
+  add_subdirectory(protobuf)
+endif()
+
 
 if(build_moos)
   add_subdirectory(moos)

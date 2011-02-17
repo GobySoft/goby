@@ -27,7 +27,7 @@
 #include "message_xml_callbacks.h"
 #include "goby/util/logger.h"
 #include "goby/util/string.h"
-#include "goby/acomms/protobuf/acomms_proto_helpers.h"
+#include "goby/protobuf/acomms_proto_helpers.h"
 
 using goby::util::goby_time;
 using goby::util::as;

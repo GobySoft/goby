@@ -1,4 +1,4 @@
-import "goby/core/proto/header.proto";
+import "goby/protobuf/header.proto";
 
 message NMEASentence
 {

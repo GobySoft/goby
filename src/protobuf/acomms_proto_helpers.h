@@ -20,8 +20,8 @@
 
 #include <sstream>
 
-#include "goby/acomms/protobuf/modem_message.pb.h"
-#include "goby/acomms/protobuf/queue.pb.h"
+#include "goby/protobuf/modem_message.pb.h"
+#include "goby/protobuf/queue.pb.h"
 #include "goby/util/time.h"
 
 namespace goby

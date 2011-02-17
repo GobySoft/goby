@@ -21,7 +21,7 @@
 #include <boost/thread.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include "goby/core/proto/interprocess_notification.pb.h"
+#include "goby/protobuf/interprocess_notification.pb.h"
 #include "goby/core/core_constants.h"
 #include "goby/core/libcore/message_queue_util.h"
 

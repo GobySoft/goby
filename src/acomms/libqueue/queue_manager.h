@@ -28,8 +28,8 @@
 
 #include "goby/acomms/xml/xml_parser.h"
 #include "goby/acomms/dccl.h"
-#include "goby/acomms/protobuf/queue.pb.h"
-#include "goby/acomms/protobuf/acomms_proto_helpers.h"
+#include "goby/protobuf/queue.pb.h"
+#include "goby/protobuf/acomms_proto_helpers.h"
 
 #include <map>
 #include <deque>

@@ -1,4 +1,4 @@
-import "goby/acomms/protobuf/driver_base.proto";
+import "goby/protobuf/driver_base.proto";
 
 message MicroModemConfig
 {

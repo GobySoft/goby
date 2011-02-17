@@ -1,4 +1,4 @@
-import "goby/acomms/protobuf/queue.proto";
+import "goby/protobuf/queue.proto";
 // TODO(tes) consider using extensions to handle different modem characteristics
 
 package goby.acomms.protobuf;

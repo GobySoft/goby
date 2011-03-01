@@ -32,13 +32,19 @@ namespace goby
             SerialClient(const std::string& name = "",
                          unsigned baud = 9600,
                          const std::string& delimiter = "\r\n");
-
+            
             void set_name(const std::string& name) { name_ = name; }
             void set_baud(unsigned baud) { baud_ = baud; }
 
             std::string name() const { return name_; }
             unsigned baud() const { return baud_; }            
-            
+
+            boost::asio::serial_port& socket() { return serial_port_; }
+            // our serial port 
+            std::string local_endpoint() { return name_; }
+            // who knows?
+            std::string remote_endpoint() { return ""; }
+
           private:
             bool start_specific();        
   

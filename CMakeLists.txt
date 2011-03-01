@@ -33,6 +33,7 @@ install(DIRECTORY ${goby_INC_DIR}/ DESTINATION /usr/local/include)
 ## allows us to write custom modules or modifying existing ones
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules/")
 
+
 ## copy to goby/include
 file(GLOB_RECURSE INCLUDE_FILES RELATIVE ${goby_SRC_DIR} src/*.h src/*.proto src/*.xsd)
 foreach(I ${INCLUDE_FILES})

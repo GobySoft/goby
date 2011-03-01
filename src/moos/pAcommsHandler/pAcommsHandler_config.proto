@@ -16,7 +16,7 @@ message pAcommsHandlerConfig
   required int32 modem_id = 2 [(description)="Unique number 1-31 to identify this node", (example)="1"];
 
   // driver
-  enum DriverType { DRIVER_NONE = 1; DRIVER_WHOI_MICROMODEM = 2; }
+  enum DriverType { DRIVER_NONE = 1; DRIVER_WHOI_MICROMODEM = 2; DRIVER_ABC_EXAMPLE_MODEM = 3;}
   optional DriverType driver_type = 3 [default = DRIVER_NONE, (description)="Corresponding driver for the type of physical acoustic modem used"];
   optional goby.acomms.protobuf.DriverConfig driver_cfg = 4 [(description)="Configure the acoustic modem driver"]; // see driver_base.proto & mm_driver.proto
 

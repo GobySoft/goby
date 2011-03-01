@@ -79,15 +79,18 @@ namespace goby
         /// use this for displaying a human readable version of this STL object
         std::ostream& operator<< (std::ostream& out, const std::set<std::string>& s);
 
+        /// \class DCCLCodec dccl.h goby/acomms/dccl.h
+        /// \brief provides an API to the Dynamic CCL Codec.
+        /// \ingroup acomms_api
+        /// \sa  dccl.proto and modem_message.proto for definition of Google Protocol Buffers messages (namespace goby::acomms::protobuf).
 
-    
-        /// provides an API to the Dynamic CCL Codec.
         class DCCLCodec 
         {
           public:
             /// \name Constructors/Destructor
             //@{         
             /// \brief Instantiate optionally with a ostream logger (for human readable output)
+            /// \param log std::ostream object or FlexOstream to capture all humanly readable runtime and debug information (optional).
             DCCLCodec(std::ostream* log = 0);
 
             /// destructor
@@ -99,8 +102,11 @@ namespace goby
             /// These methods are intended to be called before doing any work with the class. However,
             /// they may be called at any time as desired.
             //@{
-            
+
+            /// \brief Set (and overwrite completely if present) the current configuration. (protobuf::DCCLConfig defined in dccl.proto)
             void set_cfg(const protobuf::DCCLConfig& cfg);
+
+            /// \brief Set (and merge "repeat" fields) the current configuration. (protobuf::DCCLConfig defined in dccl.proto)
             void merge_cfg(const protobuf::DCCLConfig& cfg);
         
             /// \brief Add an algorithm callback for a MessageVal. The return value is stored back into the input parameter (MessageVal). See test.cpp for an example.
@@ -124,7 +130,7 @@ namespace goby
             void add_adv_algorithm(const std::string& name, AlgFunction2 func);
 
             /// Registers the group names used for the FlexOstream logger
-            void add_flex_groups(util::FlexOstream* tout);
+            static void add_flex_groups(util::FlexOstream* tout);
             
             //@}
         
@@ -135,10 +141,10 @@ namespace goby
             /// \brief Encode a message.
             ///
             /// \param k can either be std::string (the name of the message) or unsigned (the id of the message)
-            /// \param hex location for the encoded hexadecimal to be stored. this is suitable for sending to the Micro-Modem
+            /// \param bytes location for the encoded bytes to be stored. this is suitable for sending to the Micro-Modem
             /// \param m map of std::string (\ref tag_name) to a vector of MessageVal representing the values to encode. No fields can be arrays using this call. If fields are arrays, all values but the first in the array will be set to NaN or blank.
             template<typename Key>
-                void encode(const Key& k, std::string& hex,
+                void encode(const Key& k, std::string& bytes,
                             const std::map<std::string, DCCLMessageVal>& m)
             {
                 std::map<std::string, std::vector<DCCLMessageVal> > vm;
@@ -147,31 +153,31 @@ namespace goby
                 BOOST_FOREACH(const P& p, m)
                     vm.insert(std::pair<std::string,std::vector<DCCLMessageVal> >(p.first, p.second));
             
-                encode_private(to_iterator(k), hex, vm);
+                encode_private(to_iterator(k), bytes, vm);
             }
 
             /// \brief Encode a message.
             ///
             /// \param k can either be std::string (the name of the message) or unsigned (the id of the message)
-            /// \param hex location for the encoded hexadecimal to be stored. this is suitable for sending to the Micro-Modem
+            /// \param bytes location for the encoded bytes to be stored. this is suitable for sending to the Micro-Modem
             /// \param m map of std::string (\ref tag_name) to a vector of MessageVal representing the values to encode. Fields can be arrays.
             template<typename Key>
-                void encode(const Key& k, std::string& hex,
+                void encode(const Key& k, std::string& bytes,
                             const std::map<std::string, std::vector<DCCLMessageVal> >& m)
-            { encode_private(to_iterator(k), hex, m); }
+            { encode_private(to_iterator(k), bytes, m); }
 
         
             /// \brief Decode a message.
             ///
             /// \param k can either be std::string (the name of the message) or unsigned (the id of the message
-            /// \param hex the hexadecimal to be decoded.
+            /// \param bytes the bytes to be decoded.
             /// \param m map of std::string (\ref tag_name) to MessageVal to store the values to be decoded. No fields can be arrays using this call. If fields are arrays, only the first value is returned.
-            void decode(const std::string& hex,
+            void decode(const std::string& bytes,
                         std::map<std::string, DCCLMessageVal>& m)
             {
                 std::map<std::string, std::vector<DCCLMessageVal> > vm;
                 
-                decode_private(hex, vm);
+                decode_private(bytes, vm);
             
                 typedef std::pair<std::string,std::vector<DCCLMessageVal> > P;
                 BOOST_FOREACH(const P& p, vm)
@@ -181,11 +187,11 @@ namespace goby
             /// \brief Decode a message.
             ///
             /// \param k can either be std::string (the name of the message) or unsigned (the id of the message
-            /// \param hex the hexadecimal to be decoded.
+            /// \param bytes the bytes to be decoded.
             /// \param m map of std::string (\ref tag_name) to MessageVal to store the values to be decoded
-            void decode(const std::string& hex,
+            void decode(const std::string& bytes,
                         std::map<std::string, std::vector<DCCLMessageVal> >& m)
-            { decode_private(hex, m); }
+            { decode_private(bytes, m); }
             
         
             //@}
@@ -266,7 +272,7 @@ namespace goby
             /// In comparison, using the normal encode you would pass vals["myint"] = 32
             ///
             /// \param k can either be std::string (the name of the message) or unsigned (the id of the message)
-            /// \param msg ModemMessage or std::string for encoded message to be stored.
+            /// \param msg location for the encoded message to be stored (protobuf::ModemDataTransmission defined in modem_message.proto)
             /// \param vals map of source variable name to MessageVal values. 
             template<typename Key>
                 void pubsub_encode(const Key& k,
@@ -330,7 +336,7 @@ namespace goby
             /// either based on the "type" parameter of the \ref tag_publish_var tag (e.g. \<publish_var type="long"\>SOMEVAR\</publish_var\> will be placed as a long). If no type parameter is given and the variable is numeric (e.g. "23242.23") it will be considered a double. If not numeric, it will be considered a string.
             ///
             /// \param k can either be std::string (the name of the message) or unsigned (the id of the message)
-            /// \param msg ModemMessage or std::string to be decode.
+            /// \param msg message to be decoded. (protobuf::ModemDataTransmission defined in modem_message.proto)
             /// \param vals pointer to std::multimap of publish variable name to std::string values.
             void pubsub_decode(const protobuf::ModemDataTransmission& msg,
                                std::multimap<std::string, DCCLMessageVal>* pubsub_vals)
@@ -408,6 +414,7 @@ namespace goby
             // provides
             std::vector<DCCLMessage>& messages() {return messages_;}
 
+            // grab a reference to the manipulator manager used by the loaded XML messages
             const ManipulatorManager& manip_manager() const { return manip_manager_; }
 
             /// \example libdccl/examples/dccl_simple/dccl_simple.cpp

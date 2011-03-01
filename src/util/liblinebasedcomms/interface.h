@@ -27,6 +27,7 @@
 #include <boost/asio.hpp>
 
 #include "goby/util/time.h"
+#include "goby/protobuf/linebasedcomms.pb.h"
 
 #include <string>
 
@@ -45,45 +46,62 @@ namespace goby
             // is the connection alive and well?
             bool active() { return active_; }
             
-            // returns line with delimiter
-            // returns "" if no data to read  because there is a always
-            // at least a non-empty delimiter in a valid line
-            std::string readline()
-            { return readline_oldest(); }
 
-            bool readline(std::string* s)
+            enum AccessOrder { NEWEST_FIRST, OLDEST_FIRST };
+
+            /// \brief returns string line (including delimiter)
+            ///
+            /// \return true if data was read, false if no data to read
+            bool readline(std::string* s, AccessOrder order = OLDEST_FIRST)
             {
-                *s = readline_oldest();
-                return !s->empty();
+                static protobuf::Datagram datagram;
+                datagram.Clear();
+                bool is_data = readline(&datagram, order);
+                *s = datagram.data();
+                return is_data;
             }
             
             
-            // write a line to the buffer
-            void write(const std::string& msg);
+            bool readline(protobuf::Datagram* msg, AccessOrder order = OLDEST_FIRST);
 
-            // allows FIFO access (default)
-            std::string readline_oldest();
-            // allows FILO access
-            std::string readline_newest();
+            // write a line to the buffer
+            void write(const std::string& s)
+            {
+                static protobuf::Datagram datagram;
+                datagram.Clear();
+                datagram.set_data(s);
+                write(datagram);
+            }
+            
+            
+            void write(const protobuf::Datagram& msg);
 
             // empties the read buffer
             void clear();
             
+            void set_delimiter(const std::string& s) { delimiter_ = s; }
+            std::string delimiter() const { return delimiter_; }
+            
+
+            
           protected:            
-            LineBasedInterface();
+            LineBasedInterface(const std::string& delimiter);
             
             // all implementors of this line based interface must provide do_start, do_write, do_close, and put all read data into "in_"
             virtual void do_start() = 0;
-            virtual void do_write(const std::string & line) = 0;
+            virtual void do_write(const protobuf::Datagram& line) = 0;
             virtual void do_close(const boost::system::error_code& error) = 0;            
 
             void set_active(bool active) { active_ = active; }
             
-            boost::asio::io_service io_service_; // the main IO service that runs this connection
-            std::deque<std::string> in_; // buffered read data
-            boost::mutex in_mutex_;
-            
+            static std::string delimiter_;
+            static boost::asio::io_service io_service_; // the main IO service that runs this connection
+            static std::deque<protobuf::Datagram> in_; // buffered read data
+            static boost::mutex in_mutex_;
+
+
           private:
+            
             boost::asio::io_service::work work_;
             bool active_; // remains true while this object is still operating
             

@@ -16,21 +16,18 @@
 
 #include "tcp_server.h"
 
-boost::shared_ptr<goby::util::TCPConnection> goby::util::TCPConnection::create(boost::asio::io_service& io_service,
-                                                                   std::deque<std::string>& in,
-                                                                   boost::mutex& in_mutex,
-                                                                   const std::string& delimiter)
+boost::shared_ptr<goby::util::TCPConnection> goby::util::TCPConnection::create()
 {
-    return boost::shared_ptr<TCPConnection>(new TCPConnection(io_service, in, in_mutex, delimiter));
+    return boost::shared_ptr<TCPConnection>(new TCPConnection());
 }        
 
-void goby::util::TCPConnection::socket_write(const std::string& line) // give it a string
-{ // callback to handle write call from outside this class
-    bool write_in_progress = !out_.empty(); // is there anything currently being written?
-    out_.push_back(line); // store in write buffer
+void goby::util::TCPConnection::socket_write(const protobuf::Datagram& line) // give it a string
+{
+    bool write_in_progress = !out().empty(); // is there anything currently being written?
+    out().push_back(line); // store in write buffer
     if (!write_in_progress) // if nothing is currently being written, then start
         write_start();
-}    
+}
 
 void goby::util::TCPConnection::socket_close(const boost::system::error_code& error)
 { // something has gone wrong, so close the socket & make this object inactive
@@ -42,7 +39,7 @@ void goby::util::TCPConnection::socket_close(const boost::system::error_code& er
 }
 
     
-void goby::util::TCPServer::do_write(const std::string& line)
+void goby::util::TCPServer::do_write(const protobuf::Datagram& line)
 {
     BOOST_FOREACH(boost::shared_ptr<TCPConnection> c, connections_)
         c->write(line);
@@ -57,7 +54,7 @@ void goby::util::TCPServer::do_close(const boost::system::error_code& error)
 
 void goby::util::TCPServer::start_accept()
 {
-    new_connection_ = TCPConnection::create(acceptor_.io_service(), in_, in_mutex_, delimiter_);
+    new_connection_ = TCPConnection::create();
     acceptor_.async_accept(new_connection_->socket(),
                            boost::bind(&TCPServer::handle_accept, this, new_connection_, boost::asio::placeholders::error));
 }

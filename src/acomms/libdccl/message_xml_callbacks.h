@@ -100,7 +100,7 @@ namespace goby
                 std::stringstream ss;
                 ss << "message xml parsing error on line " << line << ": " << std::endl << toNative(e.getMessage());
             
-                throw dccl_exception(ss.str());
+                throw DCCLException(ss.str());
             }
             void fatalError(const xercesc::SAXParseException& e) 
             {

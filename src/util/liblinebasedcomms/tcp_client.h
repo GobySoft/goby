@@ -19,6 +19,7 @@
 #define TCPClientH
 
 #include "client_base.h"
+#include "goby/util/string.h"
 
 namespace goby
 {
@@ -30,11 +31,12 @@ namespace goby
             TCPClient(const std::string& server,
                       unsigned port,
                       const std::string& delimiter = "\r\n");
-
-
-            std::string local_ip() { return socket_.local_endpoint().address().to_string(); }
             
-            
+            boost::asio::ip::tcp::socket& socket() { return socket_; }
+
+            std::string local_endpoint() { return goby::util::as<std::string>(socket_.local_endpoint()); }
+            std::string remote_endpoint() { return goby::util::as<std::string>(socket_.remote_endpoint()); }
+
           private:
             bool start_specific();
 

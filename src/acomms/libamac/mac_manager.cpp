@@ -188,7 +188,7 @@ void goby::acomms::MACManager::send_poll(const boost::system::error_code& e)
             if(it==(*current_slot_))
                 *log_ << " " << green;
             
-            switch(s.type())
+            switch(it->second.type())
             {
                 case protobuf::SLOT_DATA: *log_ << "d"; break;
                 case protobuf::SLOT_PING: *log_ << "p"; break;

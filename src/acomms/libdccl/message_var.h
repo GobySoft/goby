@@ -143,7 +143,7 @@ namespace goby
           private:
             void bad_overload(const std::string& s) const
             {
-                throw(dccl_exception(std::string(s + " not supported by this DCCLMessageVar: " + name() + " (" + type_to_string(type()) + ")")));
+                throw(DCCLException(std::string(s + " not supported by this DCCLMessageVar: " + name() + " (" + type_to_string(type()) + ")")));
             }        
 
             // helper to avoid copy-paste code

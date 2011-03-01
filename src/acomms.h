@@ -28,5 +28,6 @@
 #include "goby/acomms/modem_driver.h"
 #include "goby/acomms/amac.h"
 
+/// \defgroup acomms_api API classes for the acoustic communications libraries.
 
 #endif

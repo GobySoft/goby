@@ -1,4 +1,4 @@
-// copyright 2009 t. schneider tes@mit.edu
+// copyright 2009-2011 t. schneider tes@mit.edu
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,8 +21,7 @@
 // 
 // > driver_simple /dev/tty_of_modem_B 2
 //
-// be careful of collisions if you start them at the same time
-
+// be careful of collisions if you start them at the same time (this is why libamac exists!)
 
 #include "goby/acomms/modem_driver.h"
 #include "goby/acomms/connect.h"
@@ -38,36 +37,53 @@ void handle_data_receive(const goby::acomms::protobuf::ModemDataTransmission& da
 
 int main(int argc, char* argv[])
 {
-    if(argc != 3)
+    if(argc < 3)
     {
-        std::cout << "usage: driver_simple /dev/tty_of_modem modem_id" << std::endl;
+        std::cout << "usage: driver_simple /dev/tty_of_modem modem_id [type: MMDriver (default)|ABCDriver]" << std::endl;
         return 1;
-    }    
+    }
 
     //
-    // 1. Create and initialize the driver we want (currently WHOI Micro-Modem)
+    // 1. Create and initialize the driver we want 
     //
-    
-    goby::acomms::MMDriver mm_driver(&std::cerr);
-
+    goby::acomms::ModemDriverBase* driver = 0;
     goby::acomms::protobuf::DriverConfig cfg;
-    
+
     // set the serial port given on the command line
     cfg.set_serial_port(argv[1]);
-
+    using google::protobuf::uint32;
     // set the source id of this modem
-    std::string our_id = argv[2];
-    cfg.AddExtension(MicroModemConfig::nvram_cfg, "SRC," + our_id);
+    uint32 our_id = goby::util::as<uint32>(argv[2]);
+    cfg.set_modem_id(our_id);
+
+    if(argc == 4)
+    {
+        if(goby::util::stricmp(argv[3],"ABCDriver"))
+        {
+            std::cout << "Starting Example driver ABCDriver" << std::endl;
+            driver = new goby::acomms::ABCDriver(&std::clog);
+        }
+    }
+
+    // default to WHOI MicroModem
+    if(!driver)
+    {
+        std::cout << "Starting WHOI Micro-Modem MMDriver" << std::endl;
+        driver = new goby::acomms::MMDriver(&std::clog);
+        // turn data quality factor message on
+        // (example of setting NVRAM configuration)
+        cfg.AddExtension(MicroModemConfig::nvram_cfg, "DQF,1");
+    }
     
+
     // for handling $CADRQ
-    goby::acomms::connect(&mm_driver.signal_receive, &handle_data_receive);
-    goby::acomms::connect(&mm_driver.signal_data_request, &handle_data_request);
+    goby::acomms::connect(&driver->signal_receive, &handle_data_receive);
+    goby::acomms::connect(&driver->signal_data_request, &handle_data_request);
     
     //
     // 2. Startup the driver
-    //
-    
-    mm_driver.startup(cfg);
+    //    
+    driver->startup(cfg);
 
     //
     // 3. Initiate a transmission cycle
@@ -76,24 +92,29 @@ int main(int argc, char* argv[])
     goby::acomms::protobuf::ModemMsgBase transmit_init_message;
     transmit_init_message.set_src(goby::util::as<unsigned>(our_id));
     transmit_init_message.set_dest(goby::acomms::BROADCAST_ID);
-    // one frame @ 32 bytes
     transmit_init_message.set_rate(0);
 
     std::cout << transmit_init_message << std::endl;
     
-    mm_driver.handle_initiate_transmission(&transmit_init_message);
+    driver->handle_initiate_transmission(&transmit_init_message);
 
     //
     // 4. Run the driver
     //
 
     // 10 hz is good
+    int i = 0;
     while(1)
     {
-        mm_driver.do_work();
+        ++i;
+        driver->do_work();
 
+        // send another transmission every 60 seconds
+        if(!(i % 600))
+            driver->handle_initiate_transmission(&transmit_init_message);
+            
         // in here you can initiate more transmissions as you want
-        usleep(100);
+        usleep(100000);
     }    
     return 0;
 }

@@ -86,7 +86,7 @@ void goby::acomms::DCCLMessage::add_publish()
 void goby::acomms::DCCLMessage::preprocess()
 {
     if(requested_bytes_total() <= bytes_head())
-        throw(dccl_exception(std::string("<size> must be larger than the header size of " + as<std::string>(bytes_head()))));
+        throw(DCCLException(std::string("<size> must be larger than the header size of " + as<std::string>(bytes_head()))));
 
     // calculate number of repeated messages that will fit and put this in `repeat_`.
     if(repeat_enabled_)
@@ -94,7 +94,7 @@ void goby::acomms::DCCLMessage::preprocess()
         BOOST_FOREACH(boost::shared_ptr<DCCLMessageVar> mv, layout_)
         {
         if(mv->array_length() != 1)
-            throw(dccl_exception("<repeat> is not allowed on messages with arrays (<array_length> not 1)"));
+            throw(DCCLException("<repeat> is not allowed on messages with arrays (<array_length> not 1)"));
         }
         
         // crank up the repeat until we go over
@@ -118,7 +118,7 @@ void goby::acomms::DCCLMessage::preprocess()
     
     if(body_bits_ > requested_bits_body() || repeat_ == 0)
     {
-        throw dccl_exception(std::string("DCCL: " + get_display() + "the message [" + name_ + "] will not fit within specified size. remove parameters, tighten bounds, or increase allowed size. details of the offending message are printed above."));
+        throw DCCLException(std::string("DCCL: " + get_display() + "the message [" + name_ + "] will not fit within specified size. remove parameters, tighten bounds, or increase allowed size. details of the offending message are printed above."));
     }
 
     // iterate over publishes_
@@ -292,7 +292,7 @@ boost::shared_ptr<goby::acomms::DCCLMessageVar> goby::acomms::DCCLMessage::name2
         if(mv->name() == name) return mv;
     }
 
-    throw dccl_exception(std::string("DCCL: no such name \"" + name + "\" found in <layout> or <header>"));
+    throw DCCLException(std::string("DCCL: no such name \"" + name + "\" found in <layout> or <header>"));
     
     return boost::shared_ptr<DCCLMessageVar>();
 }

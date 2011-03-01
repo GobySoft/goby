@@ -30,7 +30,9 @@ Acomms
 --- DriverBase and supporting messaging is more streamlined to remove the remaining WHOI Micro-Modem bias from the design of Goby. Goby should now easily support other manufacturers' modems by subclassing goby::acomms::DriverBase (goby/src/acomms/libmodemdriver/driver_base.*). No new drivers are including in this release, though some are in the works soon.
 --- Fixed CCL queuing functionality in libqueue
 --- Improved error handling messages for CCL functionality
+--- Improved buffering in the WHOI Micro-Modem driver to anticipate the $CADRQ during the cycle init ($CC/CACYC)
 --- Support for REMUS LBL beacon ranging in the WHOI Micro-Modem ($SNTTA, etc.)
+--- Support for one-way synchronous time-of-flight in the WHOI Micro-Modem ($CATOA)
 --- Fixed bug where some variables using Algorithms in the DCCL header were being overwritten by the default for that field. DCCL layout variables were not affected.
 
 Core (still in development / testing)

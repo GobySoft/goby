@@ -31,15 +31,17 @@ namespace goby
     namespace acomms
     {
 
-        /// provides an API to the WHOI Micro-Modem driver
+        /// \class MMDriver mm_driver.h goby/acomms/modem_driver.h
+        /// \ingroup acomms_api
+        /// \brief provides an API to the WHOI Micro-Modem driver
         class MMDriver : public ModemDriverBase
         {
           public:
             /// \brief Default constructor.
             ///
-            /// \param out std::ostream object or FlexOstream to capture all humanly
+            /// \param log std::ostream object or FlexOstream to capture all humanly
             /// readable runtime and debug information (optional).
-            MMDriver(std::ostream* out = 0);
+            MMDriver(std::ostream* log = 0);
             /// Destructor.
             ~MMDriver();
 
@@ -86,7 +88,11 @@ namespace goby
             // ranging (pings)
             void mpr(const util::NMEASentence& nmea, protobuf::ModemRangingReply* ranging_msg); // $CAMPR
             void tta(const util::NMEASentence& nmea, protobuf::ModemRangingReply* ranging_msg); // $SNTTA, why not $CATTA?
+            void toa(const util::NMEASentence& nmea, protobuf::ModemRangingReply* ranging_msg); // $CATOA?
+            // send toa once we actually know who the message is from 
+            void flush_toa(const protobuf::ModemMsgBase& base_msg, protobuf::ModemRangingReply* ranging_msg);
 
+            
             // local modem
             void rev(const util::NMEASentence& nmea); // $CAREV
             void err(const util::NMEASentence& nmea); // $CAERR
@@ -157,9 +163,9 @@ namespace goby
             // has the clock been properly set. we must reset the clock after reboot ($CAREV,INIT)
             bool clock_set_;
 
-            enum TalkerIDs { front_not_defined,CA,CC,SN,GP};
+            enum TalkerIDs { TALKER_NOT_DEFINED = 0,CA,CC,SN,GP};
 
-            enum SentenceIDs  { back_not_defined,
+            enum SentenceIDs  { SENTENCE_NOT_DEFINED = 0,
                                 ACK,DRQ,RXA,RXD,
                                 RXP,TXD,TXA,TXP,
                                 TXF,CYC,MPC,MPA,
@@ -170,7 +176,8 @@ namespace goby
                                 CLK,CFG,AGC,BBD,
                                 CFR,CST,MSG,REV,
                                 DQF,SHF,SNR,DOP,
-                                DBG,FFL,FST,ERR};
+                                DBG,FFL,FST,ERR,
+                                TOA};
             
             std::map<std::string, TalkerIDs> talker_id_map_;
             std::map<std::string, SentenceIDs> sentence_id_map_;

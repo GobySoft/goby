@@ -15,7 +15,7 @@
 
 // usage: connect two modems and then run
 // > chat /dev/tty_modem_A 1 2 log_file_A
-// > chat /dev/tty_modem_A 2 1 log_file_B
+// > chat /dev/tty_modem_B 2 1 log_file_B
 
 // type into a window and hit enter to send a message. messages will be queued
 // and sent on a fixed rotating cycle
@@ -33,19 +33,18 @@
 
 #include "chat_curses.h"
 
-using namespace goby::acomms;
-using namespace goby::util;
+using goby::util::as;
 
 int startup_failure();
-void received_data(const protobuf::ModemDataTransmission&);
-void received_ack(const protobuf::ModemDataAck&);
+void received_data(const goby::acomms::protobuf::ModemDataTransmission&);
+void received_ack(const goby::acomms::protobuf::ModemDataAck&);
 std::string decode_received(const std::string& data);
 
 std::ofstream fout_;
-DCCLCodec dccl_;
-QueueManager q_manager_(&fout_);
-MMDriver mm_driver_(&fout_);
-MACManager mac_(&fout_);
+goby::acomms::DCCLCodec dccl_;
+goby::acomms::QueueManager q_manager_(&fout_);
+goby::acomms::MMDriver mm_driver_(&fout_);
+goby::acomms::MACManager mac_(&fout_);
 ChatCurses curses_;
 
 
@@ -109,7 +108,7 @@ int main(int argc, char* argv[])
     // Initiate medium access control (libamac)
     //
     goby::acomms::protobuf::MACConfig mac_cfg;
-    mac_cfg.set_type(protobuf::MAC_FIXED_DECENTRALIZED);
+    mac_cfg.set_type(goby::acomms::protobuf::MAC_FIXED_DECENTRALIZED);
     mac_cfg.set_modem_id(my_id);
 
     goby::acomms::protobuf::Slot my_slot;
@@ -166,7 +165,7 @@ int main(int argc, char* argv[])
 
         if(!line.empty())
         {
-            std::map<std::string, DCCLMessageVal> vals;
+            std::map<std::string, goby::acomms::DCCLMessageVal> vals;
             vals["message"] = line;
 
             std::string bytes_out;
@@ -174,7 +173,7 @@ int main(int argc, char* argv[])
             unsigned message_id = 1;
             dccl_.encode(message_id, bytes_out, vals);
             
-            protobuf::ModemDataTransmission message_out;
+            goby::acomms::protobuf::ModemDataTransmission message_out;
             message_out.set_data(bytes_out);
             // send this message to my buddy!
             message_out.mutable_base()->set_dest(buddy_id);
@@ -205,12 +204,12 @@ int startup_failure()
     return 1;
 }
 
-void received_data(const protobuf::ModemDataTransmission& message_in)
+void received_data(const goby::acomms::protobuf::ModemDataTransmission& message_in)
 {    
     curses_.post_message(message_in.base().src(), decode_received(message_in.data()));
 }
 
-void received_ack(const protobuf::ModemDataAck& ack_message)
+void received_ack(const goby::acomms::protobuf::ModemDataAck& ack_message)
 {   
     curses_.post_message
         (ack_message.base().src(),
@@ -220,7 +219,7 @@ void received_ack(const protobuf::ModemDataAck& ack_message)
 
 std::string decode_received(const std::string& data)
 {
-    std::map<std::string, DCCLMessageVal> vals;
+    std::map<std::string, goby::acomms::DCCLMessageVal> vals;
     dccl_.decode(data, vals);
     return vals["message"];
 }

@@ -41,7 +41,6 @@
 #include "goby/moos/libmoos_util/modem_id_convert.h"
 #include "goby/moos/libmoos_util/tes_moos_app.h"
 
-
 #include "pAcommsHandler_config.pb.h"
 
 

@@ -20,9 +20,9 @@
 
     \textit{forthcoming...}
 
-    \subsection flexostream Configurable extension of std::ostream - libflexostream
+    \subsection flexostream Configurable extension of std::ostream - liblogger
     \textit{forthcoming...}
 
-    \section serial Serial port communications - libserial
+    \section linebasedcomms Serial port communications - liblinebasedcomms
 
 */

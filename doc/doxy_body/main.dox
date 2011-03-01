@@ -28,7 +28,7 @@
 
   \section main_papers Publications
   <ul>
-    <li> <a href=http://aubergine.whoi.edu/goby-bzr/doc/papers/dccl_oceans10.pdf>The Dynamic Compact Control Language: A Compact Marshalling Scheme for Acoustic Communications</a>. IEEE OCEANS'10 / Sydney.
+    <li> <a href=http://gobysoft.com/goby-bzr/doc/papers/dccl_oceans10.pdf>The Dynamic Compact Control Language: A Compact Marshalling Scheme for Acoustic Communications</a>. IEEE OCEANS'10 / Sydney.
   </ul>
 
   \section install Installing Goby
@@ -40,14 +40,14 @@
   </ul>
 <li> Check out a branch of the goby project:
   <ul>
-    <li> Read-only (users of goby): \verbatim bzr checkout lp:goby \endverbatim (Please note that the following message that is displayed is \a not an error, as you are only attempting to gain read access to goby (not write):  <tt> You have not informed bzr of your Launchpad ID, and you must do this to
+    <li> Read-only (users of goby - stable series 1.0): \verbatim bzr checkout lp:goby/1.0 goby \endverbatim (Please note that the following message that is displayed by bzr is \a not an error, as you are only attempting to gain read access to goby (not write):  <tt> You have not informed bzr of your Launchpad ID, and you must do this to
 write to Launchpad or access private data.  See "bzr help launchpad-login". </tt>)
     <li> Read / write (developers of goby):
       <ol>
         <li> Register or login to launchpad: <https://launchpad.net/goby/+login>
         <li> Contact <https://launchpad.net/~tes> for access to the goby project
         <li> Let bzr know your launchpad id (replacing <tt>tes</tt> with your new launchpad id): \verbatim bzr launchpad-login tes \endverbatim
-        <li> Checkout a copy of goby: \verbatim bzr checkout lp:goby \endverbatim
+        <li> Checkout a copy of goby (trunk): \verbatim bzr checkout lp:goby \endverbatim
       </ol>
   </ul>
 <li> Satisfy third-party library dependences (boost, etc.):
@@ -57,7 +57,7 @@ write to Launchpad or access private data.  See "bzr help launchpad-login". </tt
   </ul>    
 <li> Compile to goby/bin, goby/lib, and goby/include: \verbatim cd goby; ./INSTALL \endverbatim
 To install to /usr/local (optional): \verbatim sudo ./INSTALL \endverbatim
-<li> Fine tuning of build system (optional):
+<li> Enable / disable building of components and fine tuning of build system (optional):
   <ol>
     <li> \verbatim sudo apt-get install cmake-gui \endverbatim
     <li> \verbatim cmake-gui goby/build \endverbatim
@@ -68,7 +68,7 @@ To install to /usr/local (optional): \verbatim sudo ./INSTALL \endverbatim
 
   \section main_goby_elsewhere  Goby components in other projects
   <ul>
-  <li> pAcommsHandler is a MOOS acoustic communications process that is based on the goby-acomms libraries. pAcommsHandler is now maintained in the goby repository in goby/src/moos. For documentation and more information on pAcommsHandler, please contact Toby <https://launchpad.net/~tes>. To learn about the MOOS and MOOS-IvP projects, visit <http://www.robots.ox.ac.uk/~mobile/MOOS/wiki/pmwiki.php> and <http://www.moos-ivp.com/> </li>
+  <li> pAcommsHandler is a MOOS acoustic communications process that is based on the goby-acomms libraries. pAcommsHandler is now maintained in the goby repository in goby/src/moos. For documentation and more information on pAcommsHandler, please contact Toby <https://launchpad.net/~tes>. To learn about the MOOS and MOOS-IvP projects, visit <http://www.robots.ox.ac.uk/~mobile/MOOS/wiki/pmwiki.php> and <http://www.moos-ivp.org/> </li>
   </ul>
 
 \section authors Authors
@@ -95,6 +95,7 @@ Goby appreciates the availability of the following open source projects (listed 
 <li>asynchronous networking and serial communications library: asio <http://think-async.com/Asio/asio-1.4.1/doc/>
 <li>cryptography: crypto++ <http://www.cryptopp.com>
 <li>custom message structures: google protocol buffers <http://code.google.com/apis/protocolbuffers/docs/overview.html>
+<li>web applications in C++: Wt <http://www.webtoolkit.eu/wt>
 </ul>
 
  

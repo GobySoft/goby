@@ -30,7 +30,6 @@
 
 int goby::acomms::QueueManager::modem_id_ = 0;
 
-
 goby::acomms::QueueManager::QueueManager(std::ostream* log /* =0 */)
     : log_(log),
       packet_ack_(0),
@@ -169,9 +168,11 @@ std::ostream& goby::acomms::operator<< (std::ostream& out, const QueueManager& d
 // priority value, or given a tie, pick the one with the oldest last_send_time
 void goby::acomms::QueueManager::handle_modem_data_request(const protobuf::ModemDataRequest& request_msg, protobuf::ModemDataTransmission* data_msg)
 {
+    data_msg->mutable_base()->set_src(modem_id_);
     if(request_msg.frame() == 0)
     {
         clear_packet();
+        data_msg->mutable_base()->set_dest(request_msg.base().dest());
     }
     else
     {
@@ -491,7 +492,7 @@ bool goby::acomms::QueueManager::unstitch_recursive(std::string* data, protobuf:
     if(multimessage_flag)
     {
         // extract frame_size
-        // TODO(tes): Make this work properly for strings larger than one byte
+        // TODO (tes): Make this work properly for strings larger than one byte 
         unsigned frame_size = data->substr(DCCL_NUM_HEADER_BYTES, USER_FRAME_NEXT_SIZE_BYTES)[0];
         
         // erase the frame size byte

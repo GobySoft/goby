@@ -732,14 +732,14 @@ pAcommsHandler provides a(n):
 \item allows management of WHOI CCL message types as well as DCCL queuing. 
 \end{itemize}
 \item Modem Driver: handles all Micro-Modem serial communications. The driver (goby-acomms \verb|modemdriver| library) can be used with other modems besides the WHOI Micro-Modem (see \url{http://gobysoft.com/doc/acomms__driver.html#acomms_writedriver} for information on writing a new driver). 
-\item MAC Manager: provides medium access control in the form of a simple slotted time division-multiple access (TDMA) scheme or flexible centralized polling.
+\item MAC Manager: provides medium access control in the form of a simple slotted time division-multiple access (TDMA) scheme or flexible centralized polling (goby-acomms \verb|amac| library).
 \end{enumerate}
 
 \subsection{Limitations}
 pAcommsHandler \textit{does not}:
 
 \begin{itemize}
-\item provide any multi-hop routing. The sender and receiver must be directly in acoustic communications.
+\item presently provide any multi-hop routing. The sender and receiver must be directly connected acoustically.
 \item split user messages into packets. The user must provide data that are small enough to fit into the modem frame desired (32 - 256 bytes for the WHOI Micro-Modem).
 \end{itemize} 
 
@@ -977,7 +977,7 @@ Many of the parameters are sufficiently explained in the above list of configura
 \begin{itemize}
 \item \verb|common|: Parameters that can be set for any of the Goby MOOS applications. Here you can control logging to a text file, terminal verbosity. You can also initialize a variable in the MOOS database at startup. Many of these parameters will automatically be set to a global MOOS variable (specified outside any ProcessConfig block) if left empty. For example, the global MOOS variable \verb|LatOrigin| will set the pAcommsHandler variable \verb|common::lat_origin|. This allows pAcommsHandler to conform to MOOS \textit{de facto} conventions.
 \begin{itemize}
-\item \verb|verbosity|: choose \verb|VERBOSITY_VERBOSE| for full text terminal output, \verb|VERBOSITY_WARN| for warnings only, and \verb|VERBOSITY_QUIET| for no terminal output. \verb|VERBOSITY_GUI| opens an NCurses GUI helpful to debugging and visualizing the many data flows of pAcommsHandler. See figure \ref{fig:scope} for a screenshot of pAcommsHandler in \verb|VERBOSITY_GUI| mode. 
+\item \verb|verbosity|: choose \verb|VERBOSITY_VERBOSE| for full text terminal output, \verb|VERBOSITY_WARN| for warnings only, and \verb|VERBOSITY_QUIET| for no terminal output. \verb|VERBOSITY_GUI| opens an NCurses GUI helpful to debugging and visualizing the many data flows of pAcommsHandler. 
 \item \verb|initializer|: since many times it is useful to have a MOOS variable including in a message that remains static for a given mission (vehicle name, etc), we give the option to publish initial MOOS variables here (for later use in messages [until overwritten, of course]). If \verb|global_cfg_var| is set, pAcommsHandler looks for a global (i.e. specified at the top of the MOOS file or outside any \verb|ProcessConfig| blocks) value in the .moos file with the name to the right of the colon and publishes it to a MOOS variable with the name to the left of the colon. For example:
 \begin{verbatim}
 initializer { global_cfg_var: "LatOrigin" moos_var: "LAT_ORIGIN" } 
@@ -999,12 +999,6 @@ looks for a variable in the .moos file called \verb|LatOrigin| and publishes it 
 \resetbvlinenumber
 \end{itemize}
 
-
-\begin{figure}[tp]
-  \centering 
-  \includegraphics[scale=1]{pAcommsHandler_scope.eps}
-\caption{pAcommsHandler running with \texttt{verbosity = scope}. \label{fig:scope}}
-\end{figure}
 
 \paragraph{Encoding/Decoding (DCCL) Parameters (\texttt{dccl\_cfg})} \label{dccl_param}
 \begin{itemize}
@@ -1079,7 +1073,7 @@ An example queuing block (for DCCL messages):
 \resetbvlinenumber
 \end{small}
 
-\paragraph{Modem Driver Parameters \texttt{driver\_cfg}}
+\paragraph{Modem Driver Parameters (\texttt{driver\_cfg})}
 \begin{itemize}
 \item \verb|driver_type|: The only real driver implemented is the \verb|DRIVER_WHOI_MICROMODEM|. \verb|DRIVER_ABC_EXAMPLE_MODEM| is a simple test ``modem''. \verb|DRIVER_NONE| disables the modem driver.
 \item \verb|connection_type|: type of connection to make to the modem (\verb|CONNECTION_SERIAL|, \verb|CONNECTION_TCP_AS_CLIENT|, \verb|CONNECTION_TCP_AS_SERVER|).
@@ -1095,39 +1089,20 @@ Extensions for the WHOI Micro-Modem
 \item  \verb|[MicroModemConfig.hydroid_gateway_id]|: Set to the HYDROID gateway id (1 or 2) \textit{only if using a HYDROID gateway buoy}. Omit for a normal WHOI Micro-Modem.
 \end{itemize} 
 
-\paragraph{Medium Access Control (MAC) Parameters \texttt{mac\_cfg}}
+\paragraph{Medium Access Control (MAC) Parameters (\texttt{mac\_cfg})}
 \begin{itemize}
-\item \verb|mac|: type of Medium Access Control. Values can be \verb|slotted|, \verb|polled|, \verb|fixed_slotted| or \verb|none|.
-\item \verb|slot_time|: length, in seconds, of each communication slot for the \verb|mac=slotted| MAC option.
-\item \verb|rate|: rate for the \verb|mac=slotted| MAC option. 0 is a single 32 byte packet (FSK), 2 is three frames of 64 bytes (PSK), 3 is two frames of 256 bytes (PSK), and 5 is eight frames of 256 bytes (PSK)
-\item \verb|initializer.string|: use the MOOS variable \verb|ACOMMS_MAC_CYCLE_UPDATE| to adjust the TDMA schedule for the  \verb|mac=polled| or \verb|mac=fixed_slotted| MAC option. To set a few initial values, you can use the \verb|initializer| key to ``poke'' this MOOS variable on startup. The format of \verb|ACOMMS_MAC_CYCLE_UPDATE| is a string of comma delimited \verb|key=value| pairs, where \# is an incrementing number for each slot specified in the message. See table \ref{tab:pAcommsHandler:poll} for all the keys and values.
-
-\begin{table}
-\centering
-\footnotesize
-\begin{tabular}{|c|c|c|}
-\hline key & value \\ \hline
-\hline destination & modem\_id of poller to update  \\ 
-\hline update\_type & enum\{add,replace,remove\}  \\ 
-\hline slot\_\#\_type & enum\{data,ping\} \\ 
-\hline slot\_\#\_from & modem\_id of the sender  \\ 
-\hline slot\_\#\_to & modem\_id of the receiver  \\ 
-\hline slot\_\#\_rate & rate to poll at  \\ 
-\hline slot\_\#\_wait & seconds for the slot to last before next poll \\ 
-\hline 
-\end{tabular} 
-\caption{Parameters of \texttt{mac=polled} and \texttt{mac=fixed\_slotted} reconfiguration message (to \texttt{ACOMMS\_MAC\_CYCLE\_UPDATE})} \label{tab:pAcommsHandler:poll}
-\end{table}
-
-for example:
-\begin{small}
-\begin{boxedverbatim}
-destination=1,update_type=add,slot_1_type=data,slot_1_from=1,slot_1_to=0,
-slot_1_rate=0,slot_1_wait=15
-\end{boxedverbatim}
-\resetbvlinenumber
-\end{small}
-
+\item \verb|type|: type of Medium Access Control. See \url{http://gobysoft.com/doc/acomms__mac.html#amac_schemes} for an explanation of the various MAC schemes.
+\item \verb|slot_seconds|: length, in seconds, of each communication slot for the \verb|type: MAC_AUTO_DECENTRALIZED| MAC option.
+\item \verb|rate|: rate for the \verb|type: MAC_AUTO_DECENTRALIZED| MAC option. For the WHOI Micro-Modem 0 is a single 32 byte packet (FSK), 2 is three frames of 64 bytes (PSK), 3 is two frames of 256 bytes (PSK), and 5 is eight frames of 256 bytes (PSK)
+\item \verb|expire_cycles|: number of consecutive cycles in which a vehicle can be silent before being removed from the cycle for the \verb|type: MAC_AUTO_DECENTRALIZED| MAC option.
+\item \verb|slot|: use this repeated field to specify a manual polling or fixed TDMA cycle for the  \verb|type: MAC_FIXED_DECENTRALIZED| and  \verb|type: MAC_POLLED|. 
+\begin{itemize}
+\item \verb|src|: The sending \verb|modem_id| for this slot.
+\item \verb|dest|: The receiving \verb|modem_id| for this slot.
+\item \verb|rate|: Bit-rate code for this slot (0-5).
+\item \verb|type|: Type of transaction to occur in this slot. Can be \verb|SLOT_DATA| (send a datagram), \verb|SLOT_PING| (send a ranging two-way ping to another modem), \verb|SLOT_REMUS_LBL| (ping a REMUS LBL network (WHOI Micro-Modem only)).
+\item \verb|slot_seconds|: The duration of this slot, in seconds.
+\end{itemize} 
 \end{itemize} 
 
 \subsubsection{MOOS variables subscribed to by pAcommsHandler}
@@ -1155,10 +1130,12 @@ ACOMMS\_MAC\_CYCLE\_UPDATE & \$ & Updates to the mac=polled or mac=fixed\_slotte
  \caption{MOOS Variables Subscribed to by pAcommsHandler} \label{tab:pAcommsHandler:subscribe}
 \end{table}
 
-Some variables are configurable in the .moos file and/or message XML files as described in
-section \ref{sec:pAcommsHandler:config}. For example, if
-\verb| send = OUT_CTD_HEX_30B, ...| is set in the .moos file (or \\ \verb|<outgoing_hex_moos_var>OUT_CTD_HEX_30B</outgoing_hex_moos_var>| in a message XML file), then
-\verb|OUT_CTD_HEX_30B| is the variable actually subscribed. See section \ref{sec:ex_xml} and beyond for details on filling out and interpreting these XML files. See table \ref{tab:pAcommsHandler:subscribe} for a full list of the subscribed variables.
+Except for DCCL \xmltag{src\_var}s and \xmltag{trigger\_var}s, pAcommsHandler uses the Google Protocol Buffers TextFormat class (\url{http://code.google.com/apis/protocolbuffers/docs/reference/cpp/google.protobuf.text_format.html}) for serializing and parsing to and from MOOS strings. This saves significant effort in manually parsing strings. You should use these same facilities for creating and reading messages. Two helper functions are provided in 
+
+\begin{itemize}
+\item \verb|DCCL|: Most variables subscribed to by pAcommsHandler are configured in the message XML files and are designated by the tags \xmltag{src\_var} (used to fetch data for a particular \verb|message_var| within a DCCL message) and \xmltag{trigger\_var} (used to trigger the creatinon of a particular DCCL message and possibly provide some data for that message. See \label{sec:dccl_overview} for details on the XML configuration. 
+\item \verb||: 
+See table \ref{tab:pAcommsHandler:subscribe} for a full list of the subscribed variables.
 
 \subsubsection{MOOS variables published by pAcommsHandler}
 

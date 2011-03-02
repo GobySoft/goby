@@ -1,0 +1,15 @@
+to run:
+
+(virtual serial ports)
+> sudo $SHELL
+(located in moos-ivp-local/bin)
+> loopbacks
+
+(probably other windows / workspaces)
+> pAntler mm1.moos
+> pAntler mm2.moos
+
+
+this example demonstrates both CCL (pREMUSCodec + pAcommsHandler) and DCCL functionality (pAcommsHandler)
+mm1 sends DCCL "SIMPLE_STATUS" messages to mm2
+mm2 sends CCL "REMUS_STATE" messages to mm1

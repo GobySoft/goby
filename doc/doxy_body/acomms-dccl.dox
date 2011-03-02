@@ -198,6 +198,7 @@ Children of \ref tag_message needed for normal goby::acomms::DCCLCodec::encode a
 <li> \ref tag_name
 <li> \ref tag_id
 <li> \ref tag_size
+<li> \ref tag_repeat
 <li> \ref tag_header
 <ul>
 <li> \ref tag_time
@@ -223,12 +224,15 @@ Children of \ref tag_message needed for normal goby::acomms::DCCLCodec::encode a
 <li> \ref tag_bool
 <ul>
 <li> \ref tag_name
+<li> \ref tag_array_length
 </ul>
 <li> \ref tag_int
 <ul>
 <li> \ref tag_name
 <li> \ref tag_max
 <li> \ref tag_min
+<li> \ref tag_array_length
+<li> \ref tag_max_delta
 </ul>
 <li> \ref tag_float
 <ul>
@@ -236,21 +240,26 @@ Children of \ref tag_message needed for normal goby::acomms::DCCLCodec::encode a
 <li> \ref tag_max
 <li> \ref tag_min
 <li> \ref tag_precision
+<li> \ref tag_array_length
+<li> \ref tag_max_delta
 </ul>
 <li> \ref tag_string
 <ul>
 <li> \ref tag_name
 <li> \ref tag_max_length
+<li> \ref tag_array_length
 </ul>
 <li> \ref tag_enum
 <ul>
 <li> \ref tag_name
 <li> \ref tag_value
+<li> \ref tag_array_length
 </ul>
 <li> \ref tag_hex
 <ul>
 <li> \ref tag_name
 <li> \ref tag_num_bytes
+<li> \ref tag_array_length
 </ul>
 </ul>
 </ul>
@@ -561,6 +570,39 @@ and thus the whole message (zero padded from the most significant bits to the cl
 \b Description:
 Equivalent to \ref tag_message_var for all the \textit{message_var}s in the message. This is a shortcut when you want to publish all the data in a human readable string. [optional, one allowed].
 
+\subsection tag_array_length <array_length>
+\b Syntax:
+
+\verbatim
+<?xml version="1.0" encoding="UTF-8"?>
+<message_set>
+  <message>
+    <layout>
+      <int>
+        <array_length>5</array_length>
+      </int>
+      <string>
+        <array_length>5</array_length>
+      </string>
+      <float>
+        <array_length>5</array_length>
+      </float>
+      <bool>
+        <array_length>5</array_length>
+      </bool>
+      <hex>
+        <array_length>5</array_length>
+      </hex>
+      <enum>
+        <array_length>5</array_length>
+      </enum>
+    </layout>
+  </message>
+</message_set>
+\endverbatim
+
+\b Description: If larger than 1, this makes an array of values instead of a single value.
+
 \subsection tag_bool <bool>
 \verbatim
 \b Syntax:
@@ -578,7 +620,7 @@ Equivalent to \ref tag_message_var for all the \textit{message_var}s in the mess
 </message_set>
 \endverbatim
 
-\b Description: a boolean (true or false) \textit{message_var}  The optional parameter \texttt{algorithm} allows you to perform certain algorithms on the data before encoding. See below. [optional, one or more allowed]. 
+\b Description: a boolean (true or false) \textit{message_var}  The optional parameter \texttt{algorithm} allows you to perform certain algorithms on the data before encoding. See libdccl/examples/test/test.cpp [optional, one or more allowed]. 
 
 
 \subsection tag_dest_id <dest_id>
@@ -734,7 +776,7 @@ architecture variable to find where this message should be sent. Specify attribu
 </message_set>
 \endverbatim
 
-\b Description: an unsigned six bit integer (0-63) that identifies this message within a network. very similar to the CCL identifier, but for DCCL messages. The CCL identifier occupies the most significant byte (MSB) of the message followed by this id which takes the part of the second MSB (two flags, multimessage and broadcast, use the remainder of the second MSB). \textit{This must be unique within a network}. [mandatory, one allowed]
+\b Description: an unsigned nine bit integer (0-511)g that identifies this message within a network. very similar to the CCL identifier, but for DCCL messages. The CCL identifier occupies the most significant byte (MSB) of the message followed by this id which takes the part of the second MSB (two flags, multimessage and broadcast, use the remainder of the second MSB). \textit{This must be unique within a network}. [mandatory, one allowed]
 
 \subsection tag_int <int>
 \b Syntax:
@@ -817,6 +859,26 @@ architecture variable to find where this message should be sent. Specify attribu
 
 \b Description: the maximum value this field can take. [mandatory, one allowed].
 
+\subsection tag_max_delta <max_delta>
+\b Syntax:
+\verbatim
+<?xml version="1.0" encoding="UTF-8"?>
+<message_set>
+  <message>
+    <layout>
+      <int>
+        <max_delta>10</max_delta>
+      </int>
+      <float>
+        <max_delta>100</max_delta>
+      </float>
+    </layout>
+  </message>
+</message_set>
+\endverbatim
+
+\b Description: if specified, delta-difference encoding is done of the \ref tag_repeat ed message or the values in the array (for \ref tag_array_length > 1). The first value is used as a key for the remaining values which are sent as a difference to this key. The number specified here is the maximum expected difference between the first value (key) and any of the remaining values in the message. [optional, if omitted, delta-difference encoding is not performed].
+
 \subsection tag_message_set <message_set>
 \b Syntax:
 \verbatim
@@ -847,7 +909,7 @@ architecture variable to find where this message should be sent. Specify attribu
 </message_set>
 \endverbatim
 
-\b Description: the name (\ref tag_name above) of a \textit{message_var} contained in this message (i.e. an \ref tag_int, \ref tag_bool, etc.) the values of these fields upon receipt of a message will be used to populate the format string and the result will be published to \ref tag_publish_var. The optional parameter \texttt{algorithm} allows you to perform certain algorithms on the data after receipt before publishing. See below. [mandatory unless \ref tag_all used, one or more allowed].
+\b Description: the name (\ref tag_name above) of a \textit{message_var} contained in this message (i.e. an \ref tag_int, \ref tag_bool, etc.) the values of these fields upon receipt of a message will be used to populate the format string and the result will be published to \ref tag_publish_var. The optional parameter \texttt{algorithm} allows you to perform certain algorithms on the data after receipt before publishing. [mandatory unless \ref tag_all used, one or more allowed].
 
 \subsection tag_message <message>
 \b Syntax:
@@ -1010,6 +1072,20 @@ the number of bytes for this field. The string provided should be twice as many 
 
 \b Description: the name of the architecture variable to publish to. If desired, a format string is allowed here as well (e.g. \texttt{\%1\%_NAV_X} will fill \texttt{\%1\%} with the first \textit{message_var}). See the \ref tag_format tag description for more info. [mandatory, one allowed].
 
+\subsection tag_repeat <repeat>
+\b Syntax:
+\verbatim
+<?xml version="1.0" encoding="UTF-8"?>
+<message_set>
+  <message>
+    ...
+    <repeat/>
+  </message>
+</message_set>
+\endverbatim
+
+\b Description: Including this empty tag tells DCCL to make as many copies of the message structure defined in \ref tag_layout as will fit in the message \ref tag_size. No message will be sent until the message is full. For example, if the message is 32 bytes and the layout is 8 bytes, three copies of the message will be stored before sending (32-6-3*8 = 0). That is, three messages will be triggered, packed and sent as a single DCCL message. [optional, if omitted only a single copy is made]. <em>If \ref tag_repeat is specified, \ref tag_array_length must omitted for all \textit{message\_vars}}. That is, you cannot have repeated messages that contain arrays.</em>
+
 \subsection tag_size <size>
 \b Syntax:
 \verbatim
@@ -1021,7 +1097,7 @@ the number of bytes for this field. The string provided should be twice as many 
 </message_set>
 \endverbatim
 
-\b Description: the size of the message in bytes. There are eight bits (binary digits) to a byte. Use N here for messages passed to the Micro-Modem where N is the desired Micro-Modem frame size (N=32, 64, or 256 depending on the rate). If the \ref tag_layout of the message exceeds this size, pGeneralCodec will exit on startup with information about sizes, from which you can remove or reduce the size of certain \textit{message_var}s.
+\b Description: the size of the message in bytes. There are eight bits (binary digits) to a byte. Use N here for messages passed to the Micro-Modem where N is the desired Micro-Modem frame size (N=32, 64, or 256 depending on the rate). If the \ref tag_layout of the message exceeds this size, DCCL will exit on startup with information about sizes, from which you can remove or reduce the size of certain \textit{message_var}s.
 
 
 \subsection tag_src_id <src_id>
@@ -1131,7 +1207,7 @@ the number of bytes for this field. The string provided should be twice as many 
 </message_set>
 \endverbatim
 
-\b Description: Allows setting a name other than the default ("_time") and a \ref tag_src_var for the time field of the header. Note that the value of the \ref tag_src_var should be a UNIX timestamp (seconds since 1/1/1970 00:00:00).
+\b Description: Allows setting a name other than the default ("_time") and a \ref tag_src_var for the time field of the header. Note that the value of the \ref tag_src_var should be a UNIX timestamp (seconds since 1/1/1970 00:00:00). In the DCCL encoding, this reduced to seconds since the start of the day, with precision of one second. Upon decoding, assuming the message arrives within twelve hours of its creation, it is properly restored to a full UNIX time.
 
 
 \subsection tag_trigger_var <trigger_var>

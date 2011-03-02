@@ -1,0 +1,14 @@
+to run:
+
+(virtual serial ports)
+> sudo $SHELL
+(located in moos-ivp-local/bin)
+> loopbacks
+
+(probably other windows / workspaces)
+> pAntler mm1.moos
+> pAntler mm2.moos
+
+scope on IN_TEST_32B
+> uXMS mm2.moos -c IN_TEST_32B
+> uXMS mm1.moos -c IN_TEST_32B

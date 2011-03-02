@@ -19,6 +19,7 @@
 \usepackage{threeparttable}
 \usepackage[cmex10]{amsmath}
 \usepackage{color}
+\usepackage[font=footnotesize]{subfig}
 \definecolor{goby_orange}{RGB}{227,96,52}
 \renewcommand{\colorchapnum}{\color{goby_orange}}
 \renewcommand{\colorchaptitle}{\color{goby_orange}}
@@ -743,13 +744,12 @@ pAcommsHandler \textit{does not}:
 \item split user messages into packets. The user must provide data that are small enough to fit into the modem frame desired (32 - 256 bytes for the WHOI Micro-Modem).
 \end{itemize} 
 
-\subsection{Usage}
-\subsubsection{Compilation}
+\subsection{Compilation}
 pAcommsHandler depends on the Goby and MOOS libraries. See goby/DEPENDENCIES for help resolving the dependencies on your system.
 
-\subsubsection{Parameters for the pAcommsHandler Configuration Block}\label{sec:pAcommsHandler:config}
+\subsection{Parameters for the pAcommsHandler Configuration Block}\label{sec:pAcommsHandler:config}
 
-\paragraph{Example moos file}
+\subsubsection{Example moos file}
 
 You can always get a complete listing of MOOS file parameters with their syntax by running
 \begin{verbatim}
@@ -970,7 +970,7 @@ ProcessConfig = pAcommsHandler
 \end{boxedverbatim}%$
 \resetbvlinenumber
 
-\paragraph{Filling out the .moos file}
+\subsubsection{Filling out the .moos file}
 
 Many of the parameters are sufficiently explained in the above list of configuration parameters. What follows is a detailed explanation of the parameters that need further explanation.
 
@@ -1105,77 +1105,112 @@ Extensions for the WHOI Micro-Modem
 \end{itemize} 
 \end{itemize} 
 
-\subsubsection{MOOS variables subscribed to by pAcommsHandler}
-\begin{table}
-\centering
-\footnotesize
-\begin{tabular}{|p{0.3\textwidth}|c|p{0.4\textwidth}|p{0.15\textwidth}|}
-\hline MOOS variable or .moos file key or XML tag specifying a MOOS variable & Type & Description
-& Published by \\  \hline\hline
-\textbf{DCCL} &&& \\ \hline\hline
-$<$destination\_moos\_var key="destkey"/$>$ & \$ or D & Contains the modem\_id to send this message from. Can either be double (ex: 3) or string (ex: ...,destkey=3,...) & many \\ \hline
-$<$trigger\_moos\_var/$>$ & \$ or D & A publish here triggers the creation of this message. The contents may contain message parts or not. & many \\ \hline
-$<$moos\_var key="somekey"/$>$ & \$ or D & Data for a given \textit{message\_var}. Can either be double (ex: 3.234) or string (ex: ``bob'' or ``3.234'') or keyed string (ex: ...,somekey=3.234,...). & many \\ \hline
-\hline \textbf{Queue} &&& \\ \hline\hline
-send= &&&\\  outgoing\_hex\_moos\_var,... & \$ & outgoing\_hex\_moos\_var contains
-hexadecimal string to queue (and eventually send). & Various Codecs
-(pCTDCodec, pBTRCodec, etc.)\\ \hline
-$<$outgoing\_hex\_moos\_var/$>$ & \$ & outgoing\_hex\_moos\_var contains
-hexadecimal string to queue (and eventually send). \textbf{Only subscribed for when DCCL encoding is disabled in pAcommsHandler.} & pGeneralCodec \\ \hline
-\hline \textbf{Driver} &&& \\ \hline\hline
-ACOMMS\_NMEA\_OUT & \$ & Raw messages to send to the modem & \\ \hline
-\hline \textbf{MAC} &&& \\ \hline\hline
-ACOMMS\_MAC\_CYCLE\_UPDATE & \$ & Updates to the mac=polled or mac=fixed\_slotted TDMA cycle &  \\ \hline
- \end{tabular}
- \caption{MOOS Variables Subscribed to by pAcommsHandler} \label{tab:pAcommsHandler:subscribe}
-\end{table}
+\subsection{MOOS variables subscribed to by pAcommsHandler}
 
-Except for DCCL \xmltag{src\_var}s and \xmltag{trigger\_var}s, pAcommsHandler uses the Google Protocol Buffers TextFormat class (\url{http://code.google.com/apis/protocolbuffers/docs/reference/cpp/google.protobuf.text_format.html}) for serializing and parsing to and from MOOS strings. This saves significant effort in manually parsing strings. You should use these same facilities for creating and reading messages. Two helper functions are provided in 
+Except for DCCL \xmltag{src\_var}s and \xmltag{trigger\_var}s, pAcommsHandler uses the \href{http://code.google.com/apis/protocolbuffers/docs/reference/cpp/google.protobuf.text_format.html}{Google Protocol Buffers TextFormat} class for parsing from MOOS strings. This saves significant effort in manually parsing strings. You should use these same facilities for creating and reading messages. Two helper functions are provided in \\ \href{http://gobysoft.com/doc/moos__protobuf__helpers_8h.html}{goby/moos/libmoos\_util/moos\_protobuf\_helpers} will help you serialize and parse these messages. See \url{http://gobysoft.com/doc/acomms.html#protobuf} for a brief overview of Google Protocol Buffers as used in Goby.
 
 \begin{itemize}
-\item \verb|DCCL|: Most variables subscribed to by pAcommsHandler are configured in the message XML files and are designated by the tags \xmltag{src\_var} (used to fetch data for a particular \verb|message_var| within a DCCL message) and \xmltag{trigger\_var} (used to trigger the creatinon of a particular DCCL message and possibly provide some data for that message. See \label{sec:dccl_overview} for details on the XML configuration. 
-\item \verb||: 
-See table \ref{tab:pAcommsHandler:subscribe} for a full list of the subscribed variables.
+\item \verb|DCCL|: Most variables subscribed to by pAcommsHandler are configured in the message XML files and are designated by the tags \xmltag{src\_var} (used to fetch data for a particular \verb|message_var| within a DCCL message) and \xmltag{trigger\_var} (used to trigger the creatinon of a particular DCCL message and possibly provide some data for that message. See \ref{sec:dccl_overview} for details on the XML configuration. 
+\item \verb|Queue|:
+\begin{itemize}
+\item Subscribes to the variables given in \verb|queue_cfg.queue.in_pubsub_var| for CCL queue sending. The contents of this MOOS variable should be a serialized \href{http://gobysoft.com/doc/modem__message_8proto_source.html}{ModemDataTransmission}). 
+\item \verb|ACOMMS_RANGE_COMMAND| (type: \href{http://gobysoft.com/doc/modem__message_8proto_source.html}{ModemRangingRequest}): You write this to initiate a ranging request outside the MAC schedule. Note in general it is preferable to use the MAC cycle to coordinate data and ranging.
+\end{itemize}
+\item \verb|MAC|: \verb|ACOMMS_MAC_CYCLE_UPDATE| (type: \href{http://gobysoft.com/doc/amac_8proto_source.html}{MACUpdate}) You write this to update the MAC cycle for \verb|MAC_FIXED_DECENTRALIZED| and \verb|MAC_POLLED| modes of operation.
+\end{itemize}
 
-\subsubsection{MOOS variables published by pAcommsHandler}
+For example, to publish a \verb|ACOMMS_MAC_CYCLE_UPDATE|, you would use code like this:
+\begin{boxedverbatim}
+// provides serialize_for_moos
+#include <goby/moos/libmoos_util/moos_protobuf_helpers.h>
+// provides goby::acomms::protobuf::MACUpdate
+#include <goby/protobuf/amac.pb.h>
 
-\begin{table}
-\centering
-\footnotesize
-\begin{tabular}{|p{0.25\textwidth}|c|p{0.4\textwidth}|p{0.2\textwidth}|}
-\hline MOOS variable or .moos file key or XML tag specifying a MOOS variable & Type & Description & Format \\ \hline 
-\hline \textbf{DCCL} &&& \\ \hline\hline
-$<$publish$>$ $<$moos\_var type="string"/$>$ $<$/publish$>$& \$ & (string) Message created from decoded hexadecimal string. & Defined by \xmltag{format} \\ \hline
-$<$publish$>$ $<$moos\_var type="double"/$>$ $<$/publish$>$& D & (double) Message created from decoded hexadecimal string. & Defined by \xmltag{format} \\ \hline
-$<$outgoing\_hex\_moos\_var/$>$ & \$ & Encoded hexadecimal string. &  \\ \hline
-\hline \textbf{Queue} &&& \\ \hline\hline
-receive= &&&\\incoming\_hex\_moos\_var,... & \$ & incoming\_hex\_moos\_var contains a hexadecimal string from the micromodem to route to this queue. & see below \\ 
-\hline $<$incoming\_hex\_moos\_var/$>$ & \$ & incoming\_hex\_moos\_var contains a hexadecimal string from the micromodem to route to this queue. & see below \\  \hline
-ACOMMS\_ACK& \$ & Notification of acknowledged messages &  \\ \hline
-ACOMMS\_EXPIRE& \$ & Notification of expired messages (ttl exceeded) &  \\ \hline
-ACOMMS\_SQSIZE\_name & \$ & Notification of change in queue size (push or pop) & New size of queue (number of messages) \\ \hline
-\hline \textbf{Driver} &&& \\ \hline\hline
-ACOMMS\_NMEA\_IN & \$ & Incoming NMEA messages from the modem & See WHOI Micro-Modem Software Interface Guide \\ \hline
-ACOMMS\_NMEA\_OUT & \$ & Outgoing NMEA messages to the modem & See WHOI Micro-Modem Software Interface Guide \\ \hline
-\hline \textbf{MAC} &&& \\ \hline\hline
- \end{tabular}
- \caption{MOOS Variables Published by pAcommsHandler} \label{tab:pAcommsHandler:publish}
-\end{table}
+...
 
-Similarly to the subscriptions, the some publishes done by pAcommsHandler
-are defined in the .moos file or in message XML files. Again, instead of MOOS variables,
-the table below sometimes indicates the .moos file keys or XML tags for which one can define
-the publishes. See table \ref{tab:pAcommsHandler:publish} for a full list of the published variables.
+MyMOOSApp::Iterate()
+{
+  if(do_update_mac)
+  { 
+    using namespace goby::acomms::protobuf;
+    MACUpdate mac_update;
+    mac_update.set_dest(1); // update for us if modem_id == 1
+    // add slot to end of existing cycle
+    mac_update.set_update_type(MACUpdate::ADD);
+    Slot* new_slot = mac_update.add_slot();
+    new_slot->set_src(1);  // send from us
+    new_slot->set_dest(3); // send to vehicle 3
+    new_slot->set_rate(0);
+    new_slot->set_slot_seconds(15);
+    new_slot->set_type(SLOT_DATA);
+    
+    std::string serialized;
+    serialize_for_moos (&serialized, mac_update);
+    m_Comms.Notify("ACOMMS_MAC_CYCLE_UPDATE", serialized);
+  }
+}
+\end{boxedverbatim}
+\resetbvlinenumber
 
-\subsubsection{DCCL Encoding/Decoding Unit: Overview} \label{sec:dccl_overview}
+\subsection{MOOS variables published by pAcommsHandler}
 
-\paragraph{Example message XML file} \label{sec:ex_xml}
+Except for DCCL \xmltag{publish\_var}s (which use a printf style syntax), pAcommsHandler uses the Google Protocol Buffers TextFormat class for serializing to MOOS strings. 
+
+\begin{itemize}
+\item \verb|DCCL|: Most variables published by pAcommsHandler are configured in the message XML files and are designated by the tags \xmltag{publish\_var} within a \xmltag{publish} block. See \ref{sec:dccl_overview} for details on the XML configuration. 
+\item \verb|Queue|:
+\begin{itemize}
+\item \verb|ACOMMS_INCOMING_DATA| (type: \href{http://gobysoft.com/doc/modem__message_8proto_source.html}{ModemDataTransmission}) written for all received messages containing a data payload
+\item \verb|ACOMMS_OUTGOING_DATA| (type: \href{http://gobysoft.com/doc/modem__message_8proto_source.html}{ModemDataTransmission}) written for all queued messages containing a data payload
+\item \verb|ACOMMS_RANGE_RESPONSE| (type: \href{http://gobysoft.com/doc/modem__message_8proto_source.html}{ModemRangingReply}) written in response to ranging request (to another modem or LBL beacons)
+\item \verb|ACOMMS_ACK| (type: \href{http://gobysoft.com/doc/modem__message_8proto_source.html}{ModemDataAck}) written when received data is acknowledged acoustically by a third party. Contains the original message.
+\item \verb|ACOMMS_EXPIRE| (type: \href{http://gobysoft.com/doc/modem__message_8proto_source.html}{ModemDataExpire}) written when a message expires (time-to-live [ttl] exceeded) from the queue before being sent (ack = false) or acknowledged (ack = true)
+\item \verb|ACOMMS_QSIZE| (type: \href{http://gobysoft.com/doc/queue_8proto_source.html}{QueueSize}) written when a queue changes size (pop or push) with the new size of the queue.
+\end{itemize}
+\item \verb|MAC|: Does not publish anything.
+\item \verb|ModemDriver|: 
+\begin{itemize}
+\item \verb|ACOMMS_NMEA_IN| (type: string), ModemMsgBase::raw() for all incoming messages ("\$CA..." for WHOI Micro-Modem)
+\item \verb|ACOMMS_NMEA_OUT| (type: string), ModemMsgBase::raw() for all outgoing messages ("\$CC..." for WHOI Micro-Modem)
+\end{itemize}
+\end{itemize}
+
+For example, to read an \verb|ACOMMS_RANGE_RESPONSE|, you would use code like this:
+\begin{boxedverbatim}
+// provides parse_for_moos
+#include <goby/moos/libmoos_util/moos_protobuf_helpers.h>
+// provides goby::acomms::protobuf::ModemRangeReply
+#include <goby/protobuf/modem_message.pb.h>
+
+...
+
+MyMOOSApp::OnNewMail()
+{
+  ...
+  if(moos_msg.GetKey() == "ACOMMS_RANGE_RESPONSE")
+  {
+    using namespace goby::acomms::protobuf;
+    ModemRangeReply range_response;
+    parse_for_moos (serialized, &range_response);
+    
+    // now do what you want to with the nice `range_response` object
+    std::cout << "one way travel time to " << range_response.base().dest() 
+              << " is " << range_response.one_way_travel_time(0) << std::endl;
+  }
+}
+\end{boxedverbatim}
+\resetbvlinenumber
+
+
+\subsection{DCCL Encoding/Decoding Unit: Overview} \label{sec:dccl_overview}
+
+\subsubsection{Example message XML file} \label{sec:ex_xml}
 
  First, let us give a brief background on XML (e\textbf{X}tensible \textbf{M}arkup
  \textbf{L}anguage). XML files contain tags (like
  \xmltag{name}) that are considered ``metadata'' and define both
  the structure of the following data and the contents. Order of the
- tags does not matter for a given level unless explicitly
+ tags does not matter for a given level unless otherwise
  specified. Text data resides both in the tags (like
  \xmltag{name$>$bob$<$/name} or as attributes of the tag (such as
  \xmltag{name id="1245"$><$/name}). XML files can be edited with any
@@ -1184,24 +1219,22 @@ the publishes. See table \ref{tab:pAcommsHandler:publish} for a full list of the
  format for storing data that can be both read by both people and
  computers. Also see section \ref{sec:ex} for further examples. Let's call this file example1.xml, which we will use in two following examples:
 
-\begin{small}
-\input{includes/example1.xml}
-\end{small}
+\boxedverbatiminput{includes/example1.xml}
+\resetbvlinenumber
 
-\subsubsection{DCCL Encoding/Decoding Unit: Designing Messages}
+\subsection{DCCL Encoding/Decoding Unit: Designing Messages}
 
-\paragraph{Designing a publish triggered message}  \label{sec:design}
+\subsubsection{Designing a publish triggered message}  \label{sec:design}
 We will look at two scenarios and detail how to design a proper message file for each scenario. We will reference the example file given in section \ref{sec:ex_xml} for both scenarios.
 
 Scenario: you want to command an surface craft to move to a new location:
 \begin{enumerate}
 \item Identify the data: location (x (\verb|goto_x|) and y (\verb|goto_y|) on a local grid). you also want to specify a speed (\verb|goto_speed|) at which it should transit, whether it should have lights (\verb|lights_on|) on or not, and finally a string (\verb|special_instructions|) with possible special instructions. All these data will come in to a moos variable \verb|OUTGOING_COMMAND| on a string like: 
 \begin{small}
-\begin{boxedverbatim}
+\begin{verbatim}
 OUTGOING_COMMAND: Destination=3,CommandType=GoTo,goto_x=351,goto_y=294,
                   lights_on=true,special_instructions=make_toast,goto_speed=2.3
-\end{boxedverbatim}
-\resetbvlinenumber
+\end{verbatim}
 \end{small}
 \item Type the data (i.e. is it an int, a float, a string?) and give the ranges and precisions needed: 
 \begin{itemize}
@@ -1211,7 +1244,7 @@ OUTGOING_COMMAND: Destination=3,CommandType=GoTo,goto_x=351,goto_y=294,
 \item \verb|lights_on|: simply a flag (boolean value) whether to have our lights on or off. thus, we need a \verb|bool| \textit{message\_var}.
 \item \verb|special_instructions|: We want a field that can hold any string of characters, but we know it will not exceed ten characters. thus, we need a \verb|string| \textit{message\_var}.
 \end{itemize}
-\item Putting all this together, we can define the \xmltag{layout} portion of the first message defined in section \ref{sec:ex_xml}. We do not need any \xmltag{moos\_var} tags within the \textit{message\_var}s since all the data are contained in the contents of the trigger variable message (\verb|OUTGOING_COMMAND|). That is, when we leave out the \xmltag{moos\_var}, pGeneralCodec will insert \xmltag{moos\_var$>$OUTGOING\_COMMAND$<$/moos\_var}, which is exactly what we want. For example, taking one of the \textit{message\_var}s:
+\item Putting all this together, we can define the \xmltag{layout} portion of the first message defined in section \ref{sec:ex_xml}. We do not need any \xmltag{src\_var} tags within the \textit{message\_var}s since all the data are contained in the contents of the trigger variable message (\verb|OUTGOING_COMMAND|). That is, when we leave out the \xmltag{src\_var}, pAcommsHandler will insert \xmltag{src\_var$>$OUTGOING\_COMMAND$<$/src\_var}, which is exactly what we want. For example, taking one of the \textit{message\_var}s:
 \begin{small}
 \begin{boxedverbatim}
       <int>
@@ -1227,7 +1260,7 @@ is exactly the same as saying
 \begin{boxedverbatim}
       <int>
         <name>goto_x</name>
-        <moos_var>OUTGOING_COMMAND</moos_var>
+        <src_var>OUTGOING_COMMAND</src_var>
         <max>10000</max>
         <min>0</min>
       </int>
@@ -1238,40 +1271,21 @@ is exactly the same as saying
 \item Now we can fill out the rest of the tags on the \xmltag{message} level:
 \begin{itemize}
 \item \xmltag{name$>$GoToCommand$<$/name}: just a name so we can identify this message quickly when reading through the XML.
-\item \xmltag{outgoing\_hex\_moos\_var$>$OUT\_GOTO\_HEX$<$/outgoing\_hex\_moos\_var}: we will publish our hex strings here for consumption by the low level modem stack processes (probably pAcommsHandler \verb|send=OUT_GOTO_HEX...|). the publishes will look a bit like:
-\begin{small}
-\begin{boxedverbatim}
-OUT_GOTO_HEX: Dest=3,HexData=a9385bc098109830a9385bc0981098a9385bc098109830a9385bc0981098
-\end{boxedverbatim}
-\resetbvlinenumber
-\end{small}
-
-\item \xmltag{incoming\_hex\_moos\_var$>$IN\_GOTO\_HEX$<$/incoming\_hex\_moos\_var}: where we expect to receive incoming messages to decode (probably from pAcommsHandler \verb|receive=IN_GOTO_HEX...|). messages should be pure hex with the community set to the sending \textit{modem\_id}. An example for the received message on \textit{modem\_id}=3 if the sending node (say a topside command computer) is \textit{modem\_id}=1:
-\begin{small}
-\begin{boxedverbatim}
-IN_GOTO_HEX: a9385bc098109830a9385bc0981098a9385bc098109830a9385bc0981098 
-{Community=1}
-\end{boxedverbatim}
-\resetbvlinenumber
-\end{small}
 \item \xmltag{trigger$>$publish$<$/trigger}: we are creating this message on a \textbf{publish} (to \verb|OUTGOING_COMMAND|).
-\item \xmltag{trigger\_moos\_var mandatory\_content="CommandType=GoTo"$>$OUTGOING\_COMMAND$<$/trigger\_moos\_var}: \verb|OUTGOING_COMMAND| is the trigger variable and it must contain the substring \verb|CommandType=GoTo|. That is, other commands might be published here (e.g. \verb|CommandType=Loiter|, \verb|CommandType=Track|) and we do not define the message structure of those here (this particular \xmltag{message$><$/message} is only for a GoTo message). Other messages can be created to encode/decode these other command types.
-\item \xmltag{size$>$30$<$/size}: we want this message to fit in a WHOI micromodem FSK frame (32 bytes) and thus we have 30 bytes to work with (pAcommsHandler needs 2 bytes of header).
+\item \xmltag{trigger\_var mandatory\_content="CommandType=GoTo"$>$ OUTGOING\_COMMAND $<$/trigger\_var}: \verb|OUTGOING_COMMAND| is the trigger variable and it must contain the substring \verb|CommandType=GoTo|. That is, other commands might be published here (e.g. \verb|CommandType=Loiter|, \verb|CommandType=Track|) and we do not define the message structure of those here (this particular \xmltag{message} is only for a GoTo message). Other messages can be created to encode/decode these other command types.
+\item \xmltag{size$>$32$<$/size}: we want this message to fit in a WHOI micromodem FSK frame (32 bytes).
 \end{itemize}
-\item Finally, we fill out the \xmltag{publish} section which indicates where (i.e. what moos variables) and how (what format and which part(s) of the message) pGeneralCodec should publish decoded messages upon receipt of hex from other vehicles. Each \xmltag{publish} indicates a separate action that is taken upon receipt of a message. As many \xmltag{publish} sections as desired may be included for a given message. So, for our example message, we want to replicate the original string (a common practice):
-\begin{small}
-\begin{boxedverbatim}
+\item Finally, we fill out the \xmltag{publish} section which indicates where (i.e. what moos variables) and how (what format and which part(s) of the message) pAcommsHandler should publish decoded messages upon receipt of hex from other vehicles. Each \xmltag{publish} indicates a separate action that is taken upon receipt of a message. As many \xmltag{publish} sections as desired may be included for a given message. So, for our example message, we want to replicate the original string (a common practice):
+\begin{verbatim}
 INCOMING_COMMAND: CommandType=GoTo,goto_x=351,goto_y=294,
                   lights_on=true,special_instructions=make_toast,goto_speed=2.3
-\end{boxedverbatim}
-\resetbvlinenumber
-\end{small}
+\end{verbatim}
 to do this we fill out a publish \xmltag{all}. This is the simplest form of the \xmltag{publish} section:
 \begin{small}
 \begin{boxedverbatim}
     <on_receipt>
       <publish>
-        <moos_var>INCOMING_COMMAND</moos_var>
+        <publish_var>INCOMING_COMMAND</publish_var>
         <all />
       </publish>
     </on_receipt>
@@ -1283,7 +1297,7 @@ this says to take every \textit{message\_var} and make a ``key=value'' comma-del
 \begin{boxedverbatim}
     <on_receipt>
       <publish>
-        <moos_var>INCOMING_COMMAND</moos_var>
+        <publish_var>INCOMING_COMMAND</publish_var>
         <format>type=goto,goto_x=%1%,goto_y=%2%,lights_on=%3%,
         special_instructions=%4%,goto_speed=%5%</format>
         <message_var>goto_x</message_var>
@@ -1299,17 +1313,14 @@ this says to take every \textit{message\_var} and make a ``key=value'' comma-del
 These two blocks are functionally identical.
 
 We may want to also publish the \verb|special_instructions| to another moos variable, so that:
-\begin{small}
-\begin{boxedverbatim}
+\begin{verbatim}
 SPECIAL_INSTRUCTIONS: special_instructions=make_toast,lights_on=true
-\end{boxedverbatim}
-\resetbvlinenumber
-\end{small}
+\end{verbatim}
 we can do this with another publish block:
 \begin{small}
 \begin{boxedverbatim}
     <publish>
-      <moos_var>SPECIAL_INSTRUCTIONS</moos_var>
+      <publish_var>SPECIAL_INSTRUCTIONS</publish_var>
       <format>special_instructions=%1%,lights_on=%2%</format>
       <message_var>new_instructions</message_var>
       <message_var>lights_on</message_var>
@@ -1339,211 +1350,86 @@ instead of
 \begin{small}
 \begin{boxedverbatim}
     <trigger>publish</trigger>
-    <trigger_moos_var mandatory_content="CommandType=GoTo">OUTGOING_COMMAND</trigger_moos_var>
+    <trigger_var mandatory_content="CommandType=GoTo"> 
+      OUTGOING_COMMAND
+    </trigger_var>
 \end{boxedverbatim}
 \resetbvlinenumber
 \end{small}
-this indicates that a message should be made on a time interval (given by \xmltag{trigger\_time}, which is every 30 seconds here), rather than on a publish to some moos variable.
-\item you will notice that all the \textit{message\_var}s have a \xmltag{moos\_var} tag, which was omitted in the previous example since we were taking data from the trigger variable. Obviously, there is no trigger variable now so we must specify a location for the data to come from (in the moos db). The newest available value will be used when the message needs to be made. This means there is no guarantee that the data is fresh. Thus, you should use moos variables that are often updated for a \xmltag{trigger$>$time$<$/trigger} message. If this is not the case, a \xmltag{trigger$>$publish$<$/trigger} message (see previous scenario) may be a better choice.
-\item the format of the value read from the \xmltag{moos\_var} can have several options. First, if the \textit{message\_var} is of a numeric type (\xmltag{int}, \xmltag{float}, \xmltag{bool}) and the \xmltag{moos\_var} is a double, the value of the double is used as is (with appropriate rounding and type casting). If the \textit{message\_var} is a string, two options are available. First, the pGeneralCodec looks for a substring of the form:
-\begin{small}
-\begin{boxedverbatim}
+this indicates that a message should be made on a time interval (given by \xmltag{trigger\_time}, which is every 30 seconds here), rather than on a publish to some MOOS variable.
+\item you will notice that all the \textit{message\_var}s have a \xmltag{src\_var} tag, which was omitted in the previous example since we were taking data from the trigger variable. Obviously, there is no trigger variable now so we must specify a location for the data to come from (in the MOOSDB). The newest available value will be used when the message needs to be made. This means there is no guarantee that the data is fresh. Thus, you should use MOOS variables that are often updated for a \xmltag{trigger$>$time$<$/trigger} message. If this is not the case, a \xmltag{trigger$>$publish$<$/trigger} message (see previous scenario) may be a better choice.
+\item the format of the value read from the \xmltag{src\_var} can have several options. First, if the \textit{message\_var} is of a numeric type (\xmltag{int}, \xmltag{float}, \xmltag{bool}) and the \xmltag{moos\_var} is a double, the value of the double is used as is (with appropriate rounding and type casting). If the \textit{message\_var} is a string, two options are available. First, pAcommsHandler looks for a substring of the form:
+\begin{verbatim}
 name=value
-\end{boxedverbatim}
-\resetbvlinenumber
-\end{small}
-within the string and picks out the value to send for the message. If there is no such \verb|name=| substring, the entire string is converted to the appropriate form. An example: we have a \xmltag{float} called \xmltag{name$>$my\_float$<$/name} that has a tag \xmltag{moos\_var$>$SOME\_FLOAT\_VARIABLE$<$/moos\_var}: 
+\end{verbatim}
+within the string and picks out \verb|value| to send for the message. If there is no such \verb|name=| substring, the entire string is converted to the appropriate form. An example: we have a \xmltag{float} called \xmltag{name$>$my\_float$<$/name} that has a tag \xmltag{moos\_var$>$SOME\_FLOAT\_VARIABLE$<$/moos\_var}: 
 \begin{itemize}
 \item if
-\begin{small}
 \begin{boxedverbatim}
 (double)SOME_FLOAT_VARIABLE: 3.56
 \end{boxedverbatim}
-\resetbvlinenumber
-\end{small}
 then 3.56 is sent.
 \item if instead 
-\begin{small}
 \begin{boxedverbatim}
 (string)SOME_FLOAT_VARIABLE: "my_float=3.56"
 \end{boxedverbatim}
-\resetbvlinenumber
-\end{small}
 then 3.56 is still sent.
 \item if instead
-\begin{small}
 \begin{boxedverbatim}
 (string)SOME_FLOAT_VARIABLE: "3.56"
 \end{boxedverbatim}
-\resetbvlinenumber
-\end{small}
 again, 3.56 is sent.
 \item Finally, if some other string like
-\begin{small}
 \begin{boxedverbatim}
 (string)SOME_FLOAT_VARIABLE: "blah=3.56"
 \end{boxedverbatim}
 \resetbvlinenumber
-\end{small}
-then \verb|blah=3.56| is converted (using streams) to a float, which will probably be zero or something else undesired. In other words, this case is not what you want, whereas the above three are fine.
+then \verb|blah=3.56| is converted to a float, which will probably be zero or something else undesired. In other words, case \verb|4| is not what you want, whereas \verb|1-3| are fine.
 \end{itemize}
 \end{itemize}
 \paragraph{Further examples} \label{sec:ex}
 \begin{itemize}
-\item I currently store our working message files in \verb|moos-ivp-local/data/acomms|. look for .xml files in this directory for further examples.
-\item Probably the simplest message you can make (for a single string MOOS variable published to \verb|MY_STRING| that gets truncated at 30 chars (need two bytes for CCL and DCCL ids) and sent to broadcast):
-\begin{small}
-\begin{boxedverbatim}
-<?XML version="1.0" encoding="UTF-8"?>
-<message_set>
-  <message>
-    <name>SimpleStringSender</name>
-    <id>1</id>    
-    <trigger>publish</trigger>
-    <trigger_moos_var>MY_STRING</trigger_moos_var>
-    <size>32</size>
-    <layout>
-      <string>
-        <name>my_string</name>
-        <max_length>30</max_length>
-      </string>
-    <on_receipt>
-      <publish>
-        <moos_var>INCOMING_COMMAND</moos_var>
-        <all />
-      </publish>
-    <on_receipt>
-  </message>
-</message_set>
-\end{boxedverbatim}
+\item I currently store some example working message files in \verb|goby/xml|. look for .xml files in this directory for further examples.
+\item Probably the simplest message you can make (for a single string MOOS variable published to \verb|IN_MESSAGE| that gets truncated at 26 chars (need six bytes for the DCCL header) and sent to broadcast):
+\boxedverbatiminput{../../src/acomms/examples/chat/chat.xml}
 \resetbvlinenumber
-\end{small}
 \end{itemize}
 
 
-\subsubsection{DCCL Encoding/Decoding Unit: XML Tag Reference}
+\subsection{DCCL Encoding/Decoding Unit: XML Tag Reference}
 
-\begin{figure}
-\centering
-\includegraphics[width=0.8\textwidth]{dccl-header.eps}
-\caption{Layout of the DCCL header, showing the fixed size (in bits) of each header field. The user cannot modify the size of these header fields, but can access and set the data inside through the same methods used for the customizable data fields specified in \xmltag{layout}. The flags are not used by DCCL, but are included for use by the lower level networking.}
-\label{fig:header}
-\end{figure}
+The XML tag reference is now part of the Goby Developers documentation (\url{http://gobysoft.com/doc}:
+\begin{itemize}
+\item See \url{http://gobysoft.com/doc/acomms__dccl.html#dccl_tags} for a structure of all the allowed tags.
+\item Visit \url{http://gobysoft.com/doc/acomms__dccl.html#dccl_tags_details} for an up-to-date reference of all the DCCL tags with a description of their usage.
+\end{itemize}  
 
-\paragraph{Message XML file reference: allowed tags} Let us now give a description of all the allowed tags:
-
-\begin{itemize}
-\item \xmltag{?xml version="1.0" encoding="UTF-8"?}: specifies the file is XML. All you need to know is that this must be the first line of every message XML file.
-\item \xmltag{message\_set}: the root element. All XML files must have a single root element. Since we are define a set of messages (one or more per file), this is a logical choice of name for the root element. [mandatory, one allowed].
-\item \xmltag{message}: defines the start of a message. [mandatory, one or more allowed].
-\begin{itemize}
-\item \xmltag{name}: a human readable name for the message. This is not used internally at this point in time. [mandatory, one allowed]
-\item \xmltag{size}: the maximum allowed size of the message in bytes. There are eight bits (binary digits) to a byte. Use $N$ here for messages passed to the micromodem where $N$ is the desired micromodem frame size ($N=$32, 64, or 256 depending on the rate). If the \xmltag{layout} of the message exceeds this size, pAcommsHandler will exit on startup with information about sizes, from which you can remove or reduce the size of certain \textit{message\_var}s.
-\item \xmltag{repeat}: make as many copies of the message structure defined in \xmltag{layout} as will fit in the message \xmltag{size}. No message will be sent until the message is full. For example, if the message is 32 bytes and the layout is 8 bytes, three copies of the message will be stored before sending ($32-6-3*8 = 0$). That is, three messages will be triggered, packed and sent as a single DCCL message. [optional, if omitted only a single copy is made]. \textit{If \xmltag{repeat} is specified, \textit{array\_length} must omitted for all \textit{message\_vars}}. That is, you cannot have repeated messages that contain arrays.
-\item \xmltag{header}: the children of this tag allow the user to rename the header parts of the DCCL message. See Fig.~\ref{fig:header} for a sketch of the DCCL header format. These names are used when passing values at encode time for the various header fields.
-\begin{itemize}
-\item \xmltag{id}: an unsigned nine bit integer (1-511) that identifies this message within a network. very similar to the CCL identifier, but for DCCL messages. The CCL identifier occupies the most significant byte (MSB) of the message followed by this id which takes the second MSB. \textit{This must be unique within a network as this id determines the message decoding} [mandatory, one allowed]
-\item \xmltag{time}: seconds elapsed since 1/1/1970 (``UNIX time''). In the DCCL encoding, this reduced to seconds since the start of the day, with precision of one second. Upon decoding, assuming the message arrives within twelve hours of its creation, it is properly restored to a full UNIX time.
-\begin{itemize}
-\item \xmltag{name}: the name of this field; optional, the default is ``\_time''. [\verb|string|]
-\end{itemize}
-\item \xmltag{src\_id}: a unique address (\xmltag{src\_id} $\in [0,31]$) of the sender of this message. For a given experiment these short unique identifiers can be mapped on to more global keys (such as vehicle name, type, ethernet MAC address, etc.).
-\begin{itemize}
-\item \xmltag{name}: default is ``\_src\_id''. [\verb|string|]
-\end{itemize}
-\item \xmltag{dest\_id}: the eventual destination of this message (also an \verb|unsigned integer| in the range [0,31]). If this destination exists on the same subnet as the sender, this will also be the hardware layer destination id number.
-\begin{itemize}
-\item \xmltag{name}: default is ``\_dest\_id''. [\verb|string|]
-\end{itemize}
-\end{itemize}
-\item \xmltag{layout}: defines the message structure itself (what fields [the message variables or \textit{message\_var}s] the message contains and how they are to be encoded). [mandatory, one allowed].
-\begin{itemize}
-\item \xmltag{static}: a \textit{message\_var} that is not actually sent with the message but can be used to include in received messages (\textit{publishes}). [optional, one or more allowed]. 
-\begin{itemize}
-\item \xmltag{name}: the name of this \textit{message\_var}. [mandatory, one allowed].
-\item \xmltag{value}: the value of this static variable. [mandatory, one allowed].
-\end{itemize}
-\item \xmltag{bool algorithm=""}: a boolean (true or false) \textit{message\_var}  The optional parameter \verb|algorithm| allows you to perform certain algorithms on the data before encoding. See below. [optional, one or more allowed]. 
-\begin{itemize}
-\item \xmltag{name}
-\item \xmltag{moos\_var}: the moos variable from which to pull the value of this field. [optional if \xmltag{trigger$>$publish$<$/trigger}: default is trigger\_moos\_var; mandatory if \xmltag{trigger$>$time$<$/trigger}, one allowed]. 
-\item \xmltag{array\_length}: if larger than 1, this makes a bool array instead of a single bool. [optional, default is  1].
-\end{itemize}
-\item \xmltag{int algorithm=""}: an integer \textit{message\_var} [optional, one or more allowed]. 
-\begin{itemize}
-\item \xmltag{name}
-\item \xmltag{moos\_var}
-\item \xmltag{max}: the maximum value this field can take. [mandatory, one allowed].
-\item \xmltag{min}: the minimum value this field can take. [mandatory, one allowed].
-\item \xmltag{array\_length}
-\item \xmltag{max\_delta}: if specified, delta-difference encoding is done of the \xmltag{repeat}ed message or the values in the array (for \xmltag{array\_length} $>$ 1). The first value is used as a key for the remaining values which are sent as a difference to this key. The number specified here is the maximum expected difference between the first value (key) and any of the remaining values in the message. [optional, if omitted, delta-difference encoding is not performed].
-\end{itemize}
-\item \xmltag{float algorithm=""}: a floating point \textit{message\_var} [optional, one or more allowed].
-\begin{itemize}
-\item \xmltag{name}
-\item \xmltag{moos\_var}
-\item \xmltag{max}
-\item \xmltag{min}
-\item \xmltag{precision}: an integer that specifies the number of decimal digits to preserve. Negatives are allowed. For example, \xmltag{precision$>$2$<$/precision} rounds 1042.1234 to 1042.12; \xmltag{precision$>$-1$<$/precision} rounds 1042.1234 to 1.04e3. [mandatory, one allowed].
-\item \xmltag{array\_length}
-\item \xmltag{max\_delta}
-\end{itemize}
-\item \xmltag{string algorithm=""}: an ASCII string \textit{message\_var} [optional, one or more allowed].
-\begin{itemize}
-\item \xmltag{name}
-\item \xmltag{moos\_var}
-\item \xmltag{max\_length}: the length of the string value in this field. Longer strings are truncated. \xmltag{max\_length$>$4$<$/max\_length} means ``ABCDEFG'' is sent as ``ABCD''. [mandatory, one allowed].
-\item \xmltag{array\_length}
-\end{itemize}
-\item \xmltag{enum algorithm=""}: an enumeration \textit{message\_var} [optional, one or more allowed].
-\begin{itemize}
-\item \xmltag{name}
-\item \xmltag{moos\_var}
-\item \xmltag{value}: a possible value (string) the enum can take. Any number of values can be specified. [mandatory, one or more allowed].
-\item \xmltag{array\_length}
-\end{itemize}
-\item \xmltag{hex}: a message variable represented pre-encoded hexadecimal to add to the message. This field is useful if another source is encoding part or all of a DCCL message. [optional, one or more allowed]. 
-\begin{itemize}
-\item \xmltag{name}: the name of this \textit{message\_var}. [mandatory, one allowed].
-\item \xmltag{moos\_var}
-\item \xmltag{num\_bytes}: the number of bytes for this field. The string provided should be twice as many characters as \xmltag{num\_bytes} since each character of a hexadecimal string is one nibble (4 bits or 1/2 byte). [mandatory, one allowed].
-\item \xmltag{array\_length}
-\end{itemize}
-\end{itemize}
-\item \xmltag{on\_receipt}: begins a set of actions to be performed when a message of this type is received from another vehicle. [mandatory, one allowed].
-\begin{itemize}
-\item \xmltag{publish}: defines a single output value upon receipt of a message. Any number of publishes containing any subset of the \textit{message\_var}s can be specified. [mandatory, one or more allowed].
-\begin{itemize}
-\item \xmltag{moos\_var}: the name of the moos variable to publish to. If desired, a format string is allowed here as well (e.g. \verb|\%1\%_NAV_X| will fill \verb|\%1\%| with the first \textit{message\_var}). See the \xmltag{format} tag description for more info. [mandatory, one allowed].
-\item \xmltag{format}: a string conforming to the format string syntax of the boost::format \footnote{see the syntax of the \textbf{format-string} at \textit{http://www.boost.org/doc/libs/1\_37\_0/libs/format/doc/format.html\#syntax}} library. This field will specify the format of the string published to the moos variable defined in \xmltag{moos\_var}. At its simplest it is a string of incrementing numbers surrounded by \%\%. Or, instead, you may also use a printf style string, using \%d for int  \textit{message\_var}, \%lf for floats, and \%s for strings, bools and enums. [optional: default is \verb|name1=\%1\%,name2=\%2\%,name3=\%3\%|, where \verb|name1| is the name of the first \xmltag{message\_var} field to follow, \verb|name2| is the second, etc. exception: default is \verb|\%1\%| if only a single \xmltag{message\_var} defined. one allowed].
-\item \xmltag{message\_var algorithm=""}: the name (\xmltag{name} above) of a \textit{message\_var} contained in this message (i.e. an \xmltag{int}, \xmltag{bool}, etc.) the values of these fields upon receipt of a message will be used to populate the format string and the result will be published to \xmltag{moos\_var}. The optional parameter \verb|algorithm| allows you to perform certain algorithms on the data after receipt before publishing. See below. [mandatory unless \xmltag{all} used, one or more allowed].
-\item \xmltag{all}: equivalent to \xmltag{message\_var} for all the \textit{message\_var}s in the message. This is a shortcut when you want to publish all the data in a human readable string. [optional, one allowed].
-\end{itemize}
-\end{itemize}
-\item \xmltag{queuing}: optional section used by pAcommsHandler to handle message queuing. See section \ref{sec:xmlqueue} for details.
-\item \xmltag{trigger}: how the message is created. Currently this field must take the value ``publish'' (meaning a message is created on a publish event to a certain moos variable) or ``time'' (a message is created on a certain time interval). [mandatory, one allowed]
-\item \xmltag{trigger\_var}: used if \xmltag{trigger$>$publish$<$/trigger}, this field gives the MOOS variable that publishes to will trigger the creation of this message [mandatory if and only if \xmltag{trigger$>$publish$<$/trigger}]. optional attribute \verb|mandatory_content| specifies a string that must be a substring of the contents of the trigger variable in order to trigger the creation of a message. For example, if you wanted to create a certain message every time \verb|COMMAND| contained the string \verb|CommandType=GoTo...| but no other time, you would specify \\ \verb|mandatory_content="CommandType=GoTo"| within this tag.
-\item \xmltag{trigger\_time}: used if \xmltag{trigger$>$time$<$/trigger}, this field gives the time interval pGeneralCodec should create this message. For example, a value of \\ \xmltag{trigger\_time$>$10$<$/trigger\_time} would mean a message was created every ten seconds. [mandatory if and only if \xmltag{trigger$>$time$<$/trigger}].
-\item \xmltag{destination\_var}: moos variable to find where this message should be sent. Specify attribute ``key='' to specify a substring to look for within the value of this moos variable. For example, if \verb|COMMAND| contained the string \verb|Destination=3| and you want this message sent to modem\_id 3, then you should set \verb|key=Destination| to properly parse that string. [optional: default is 0 (broadcast), one allowed].
-\item \xmltag{incoming\_hex\_moos\_var}: where to look for messages (hex string) to decode. [optional, one allowed. default is \verb|IN_<name/>_HEX_<size/>B|].
-\item \xmltag{outgoing\_hex\_moos\_var}: where to publish the encoded message (as a hexadecimal string). [optional, one allowed. default is \verb|OUT_<name/>_HEX_<size/>B|].
-\end{itemize}
-\end{itemize}
-
-\paragraph{Algorithms}
+\subsubsection{Algorithms}
 You can perform a number of simple algorithms on data either before encoding (specified in the \textbf{message\_var} tag (e.g. \xmltag{string algorithm=""}) or after receipt (specified in the \xmltag{message\_var} tag. You can apply more than one algorithm by separating them with commas and they are processed in the order given. The currently implemented algorithms include:
 \begin{itemize}
 \item \verb|to_upper|: converts string, enum, or bool to uppercase
 \item \verb|to_lower|: converts string, enum, or bool to lowercase
 \item \verb|angle_0_360|: wraps float or int angle in degrees into the range of [0, 360)
 \item \verb|angle_-180_180|: wraps float or int angle in degrees into the range of [-180, 180)
-\item \verb|lon2utm_x|: converts longitude to a local utm coordinate (meters) used by LAMSS\footnote{we define a latitude/longitude origin near our basis of operations. From this datum we calculate the UTM northings (y) and eastings (x). All further UTM calculations are the offset from this datum point. This offset is what is returned by this algorithm. Contact me if you need more information on this.}. Requires \verb|LatOrigin| and \verb|LongOrigin| to be specified at the top of the moos file. Since a UTM conversion requires a lon/lat pair, you must specify the latitude variable here to pair with by adding a colon after this algorithm followed by the name of the latitude variable. e.g. \xmltag{message\_var algorithm="lon2utm\_x:our\_lat"$>$our\_lon$<$/message\_var} converts \verb|our_lon| to a local x (easting) using \verb|our_lat| as the latitude point.
-\item \verb|lat2utm_y|: similar to \verb|lon2utm_x| but for latitude. \\ e.g. \xmltag{message\_var algorithm="lat2utm\_y:our\_lon"$>$our\_lat$<$/message\_var} converts \verb|our_lat| to a local y (northing) using \verb|our_lon| as the longitude point.
-\item \verb|utm_x2lon|: the reverse conversion from x to longitude. similarly to the latitude, longitude to x,y conversion you must pair x and y. e.g., \\ \xmltag{message\_var algorithm="utm\_x2lon:our\_y"$>$our\_x$<$/message\_var}
-\item \verb|utm_y2lat|: example: \xmltag{message\_var algorithm="utm\_y2lat:our\_x"$>$our\_y$<$/message\_var}
-\item \verb|modem_id2name|: converts a WHOI modem\_id to a vehicle name. requires a file (path given in the .moos as \verb|modem_id_lookup_path=/path/to/modemidlookup.txt|. an example file:
+\item \verb|lon2utm_x|: converts longitude to a local utm coordinate (meters) used by LAMSS\footnote{we define a latitude/longitude origin near our basis of operations. From this datum we calculate the UTM northings (y) and eastings (x). All further UTM calculations are the offset from this datum point. This offset is what is returned by this algorithm. Contact me if you need more information on this.}. Requires \verb|LatOrigin| and \verb|LongOrigin| to be specified at the top of the moos file. Since a UTM conversion requires a lon/lat pair, you must specify the latitude variable here to pair with by adding a colon after this algorithm followed by the name of the latitude variable. e.g.
+\begin{verbatim}
+<message_var algorithm="lon2utm_x:our_lat">our_lon</message_var>
+\end{verbatim}
+converts \verb|our_lon| to a local x (easting) using \verb|our_lat| as the latitude point.
+\item \verb|lat2utm_y|: similar to \verb|lon2utm_x| but for latitude. e.g. 
+\begin{verbatim}
+<message_var algorithm="lat2utm_y:our_lon">our_lat</message_var>
+\end{verbatim}
+converts \verb|our_lat| to a local y (northing) using \verb|our_lon| as the longitude point.
+\item \verb|utm_x2lon|: the reverse conversion from x to longitude. similarly to the latitude, longitude to x,y conversion you must pair x and y. e.g., 
+\begin{verbatim}<message_var algorithm="utm_x2lon:our_y">our_x</message_var}\end{verbatim}
+\item \verb|utm_y2lat|: example: 
+\begin{verbatim}
+<message_var algorithm="utm_y2lat:our_x">our_y</message_var}
+\end{verbatim}
+\item \verb|modem_id2name|: converts a WHOI \verb|modem_id| to a vehicle name. requires a file (path given in the .moos as \verb|modem_id_lookup_path: "/path/to/modemidlookup.txt"|. an example file:
 \begin{boxedverbatim}
-// modem_id, vehicle name (should be community name), vehicle type, other aliases
+// modem_id, vehicle name (should be community name), vehicle type
 0, broadcast, broadcast
 1, endeavor, ship
 3, unicorn, auv
@@ -1555,253 +1441,143 @@ if no match is found, the modem\_id is returned as a string (e.g. "10").
 \item \verb|modem_id2type|: similar to \verb|modem_id2name| but returns the type of the vehicle (ship, auv, etc.)
 \item \verb|power_to_dB|: takes $10\log_{10}$ of the value.
 \item \verb|dB_to_power|: takes power antilog of the value.
-\item \verb|alg_TSD_to_soundspeed|: applied to temperature, with references to salinity and depth, calculates the speed of sound using the Mackenzie equation. For example: \xmltag{message\_var algorithm="alg\_TSD\_to\_soundspeed:sal:depth"$>$temp$<$/message\_var}
+\item \verb|alg_TSD_to_soundspeed|: applied to temperature, with references to salinity and depth, calculates the speed of sound using the Mackenzie equation. For example:
+\begin{verbatim}<message_var algorithm="alg_TSD_to_soundspeed:sal:depth">temp</message_var>\end{verbatim}
 \item \verb|add|: adds the reference \xmltag{message\_var} to the current \xmltag{message\_var}. example: \xmltag{message\_var algorithm="add:b"$>$a$<$/message\_var} adds b to a.
 \item \verb|subtract|: subtracts the reference \xmltag{message\_var} from the current \xmltag{message\_var}.
 \end{itemize}
 
-\subsubsection{DCCL Encoding/Decoding Unit: Under the Hood}
+\subsection{DCCL Encoding/Decoding Unit: Under the Hood}
 
-\paragraph{Bitwise Layout of the Messages}
+See \url{http://gobysoft.com/doc/acomms__dccl.html#dccl_how} and \cite{dccl_oceans10} for details on how the DCCL encoding is done.
 
-We may want to know the actual layout of the binary/hex message. Let us explain it with an example; for the first example message in \verb|example1.xml| given in section \ref{sec:ex_xml}, if we run pGeneralCodec we get information about that message:
-\begin{small}
-\begin{boxedverbatim}
-        type (static):
-                value: {goto}
-                size [bits]: [0]
-        goto_x (int):
-                source: {OUTGOING_COMMAND}
-                [min, max] = [0,10000]
-                size [bits]: [14]
-        goto_y (int):
-                source: {OUTGOING_COMMAND}
-                [min, max] = [0,10000]
-                size [bits]: [14]
-        lights_on (bool):
-                source: {OUTGOING_COMMAND}
-                size [bits]: [1]
-        new_instructions (string):
-                source: {SPECIAL_INSTRUCTIONS}
-                max_length: {10}
-                size [bits]: [80]
-        goto_speed (float):
-                source: {OUTGOING_COMMAND}
-                [min, max] = [0,3]
-                precision: {2}
-                size [bits]: [9]
-\end{boxedverbatim}
-\resetbvlinenumber
-\end{small}
-the calculated sizes are used to pack the message like so (\verb|{\#}| equals size of field in bits), where left to right is the same as reading the hex string from left to right:
-\begin{small}
-\begin{boxedverbatim}
-[[0 {122}][goto_x {14}][goto_y {14}][lights_on {1}][new_instructions {80}][goto_speed {9}]]
-\end{boxedverbatim}
-\resetbvlinenumber
-\end{small}
-where \verb|[0 {122}]| means zero fill the front of the message to the full size (30 bytes = 240 bits minus 118 for other fields = 122). Byte boundaries are dissolved and encoded as a string ``ABCDEF...'' where the most significant byte (MSB, or leftmost 8 bits) is 0xAB, second MSB is 0xCD, etc. 
+\subsection{Priority Message Queuing Unit}
 
+pAcommsHandler takes all the configured queues and maintains a stack of messages for each queue. when it is prompted by data by the modem, it has a priority "contest" between the queues. the queue with the current highest priority (as determined by the \verb|value_base| and \verb|ttl| fields) is selected. The next message in that queue is then provided to the MicroModem to send. For modem messages with multiple frames per packet, each frame is a separate contest. Thus a single packet may contain frames from different
+ queues (e.g. a rate 5 PSK packet has eight 256 byte frames. frame 1 might grab a STATUS message since that has the current highest queue. then frame 2 may grab a BTR message and frames 3-8 are filled up with CTD messages (e.g. STATUS is in blackout, BTR queue is empty)). See \url{http://gobysoft.com/doc/acomms__queue.html#queue_priority} for more
 
-The encoding of each \textit{message\_var} is done as an unsigned integer, with the exception of strings, which are store as ASCII. The value 0 (all bits zero) always indicates "not specified" or "Not a Number" (nan). This means that the user did not specify any value for this field, specified a value causing overflow (\xmltag{int} or \xmltag{float} greater than \xmltag{max} or less than \xmltag{min}), or provided a value for an \xmltag{enum} that did not match any of the enumerate's \xmltag{value} options. Along with this rule, the method for encoding and decoding is given in Table \ref{tab:dccl_enc}. An example is provided in Fig. \ref{fig:dccl_example}. 
+For messages with \verb|ack: true| (acknowledge requested), the last message continues to be re-sent (that is, it is not popped from the message queue) until the ACK is received from the modem (thus blocking the sending of other messages). Messages with \verb|ack: false| are popped and discarded when they are sent (no retries).
 
-\begin{table}[!t]
-\centering
-\begin{threeparttable}
-\setlength{\extrarowheight}{2pt}
-\caption{Formulas for encoding the DCCL types.}
-\label{tab:dccl_enc}
-\begin{tabular}{m{0.1\textwidth}|m{0.3\textwidth}|m{0.5\textwidth}}
-\hline DCCL Type & Size (bits) & Encode\tnote{a}  \\ \hline
-\hline \xmltag{bool} & 2 & 
-$x_{enc} = \left\{ 
-\begin{array}{l l}
-  2 & \quad \text{if $x$ is true}\\
-  1 & \quad \text{if $x$ is false}\\
-  0 & \quad \text{if $x$ is undefined}\\
-\end{array} \right.$
-\\ 
-\hline \xmltag{enum} & $\lceil \hbox{log}_2(1+\sum{\epsilon_i}) \rceil$ & $x_{enc} =  \left\{ 
-\begin{array}{l l}
-  i+1 & \quad \text{if $x \in \{\epsilon_i\}$ }\\
-  0 & \quad \text{otherwise}\\
-\end{array} \right.$   \\ 
-\hline \xmltag{string} & $length \cdot 8$ & ASCII\tnote{b} \\ 
-\hline \xmltag{int} & $\lceil \hbox{log}_2(max-min + 2) \rceil$ & $x_{enc} =  \left\{ 
-\begin{array}{l l}
-  \hbox{nint}(x - min) + 1  & \quad \text{if $x \in [min,max]$ }\\
-  0 & \quad \text{otherwise} \\
-\end{array} \right.$   \\ 
-\hline \xmltag{float} & $\lceil \hbox{log}_2((max-min)\cdot 10^{precision} + 2) \rceil$ &  $x_{enc} =  \left\{ 
-\begin{array}{l l}
-  \hbox{nint}((x - min)\cdot 10^{precision})+1 & \quad \text{if $x \in [min,max]$ }\\
-  0 & \quad \text{otherwise} \\
-\end{array} \right.$   \\ 
-\hline \xmltag{hex} & $num\_bytes \cdot 8$ & $x_{enc}$ = $x$ \\ 
-\hline 
-\end{tabular}
-\begin{tablenotes}
-\item $\cdot$ $x$ is the original (and decoded) value; $x_{enc}$ is the encoded value. 
-\item $\cdot$ $min$, $max$, $length$, $precision$, $num\_bytes$ are the contents of the \xmltag{min}, \xmltag{max}, \xmltag{max\_length}, \xmltag{precision}, and \xmltag{num\_bytes} tags, respectively. $\epsilon_i$ is the $i$th \xmltag{value} child of the \xmltag{enum} tag (where $i = 0, 1, 2, \ldots$).
-\item $\cdot$ nint($x$) means round $x$ to the nearest integer.
-\item[a] for all types except \xmltag{string} and \xmltag{hex}, if data are not provided or they are out of range (e.g. $x > max$), they are encoded as zero ($x_{enc} = 0$) and decoded as not-a-number (NaN).
-\item[b] the end of the string is padded with zeros to $length$ before encoding if necessary.
-\end{tablenotes}
-\end{threeparttable}
-\end{table}
+If you do not wish for dynamic growth of the priorities, simply set the \verb|ttl| to the special value 0. Then the priorities grow as $P = V\_{base}$ and messages never expire. Note that this is the same as setting \verb|ttl| = $\infty$.
 
+\paragraph{Messages not to us are ignored} We choose modem id 0 as broadcast. thus messages with the destination field = 0 will always be read by all nodes and reported to the
+  appropriate moos variable. Otherwise, we ignore messages unless they correspond to our modem id. so if you send a message to modem id 10, pAcommsHandler for modem ids $1 \rightarrow 9$, $11\rightarrow N$  will ignore that. This is not the default behavior of the WHOI Micro-Modem, which always reports data, regardless of the sender's ID.
+  
+The XML tag reference is now part of the Goby Developers documentation (\url{http://gobysoft.com/doc}:
+\begin{itemize}
+\item See \url{http://gobysoft.com/doc/acomms__queue.html#queue_tags} for a structure of all the allowed tags.
+\item \url{http://gobysoft.com/doc/acomms__queue.html#queue_tags_details} provides an up-to-date reference of all the Queue tags with a description of their usage.
+\end{itemize}  
+
+\subsection{Modem Driver Unit}
+
+The Modem driver unit current supports the WHOI Micro-Modem acoustic modem and is extensible to other acoustic modems. To directly monitor the modem feed, subscribe to ACOMMS\_NMEA\_IN and ACOMMS\_NMEA\_OUT. For a complete list of supported commands of the WHOI Micro-Modem, see \url{http://gobysoft.com/doc/acomms__driver.html#acomms_mmdriver}.
+
+\subsection{Medium Access Control (MAC) Unit}
+
+The MAC unit uses time division (TDMA) to attempt to ensure a collision-free acoustic channel.
+
+pAcommsHandler supports two variants of the TDMA MAC scheme: centralized and decentralized. As the names suggest, Centralized TDMA (\verb|type: MAC_POLLED|) involves control of the entire cycle from a single master node, whereas each node's respective slot is controlled by that node in Decentralized TDMA. Within decentralized TDMA, Goby supports both a fixed (preprogrammed) cycle (\verb|type: MAC_FIXED_DECENTRALIZED|) and an autodiscovery mode (\verb|type: MAC_AUTO_DECENTRALIZED|). To disable the pAcommsHandler MAC, use (\verb|type: MAC_NONE|)
+
+\subsubsection{Centralized TDMA (Polling)}
+
+Centralized TDMA involves a master node (usually aboard the Research Vessel or on land) which initiates every transmission for the entire communcations cycle (i.e. ``polls'' each node for data). Thus, the other nodes are not required to maintain synchronized clocks as the timing is all performed on the master node.
+
+This style of MAC has been widely used for small AUV operations using the WHOI Micro-Modem. Its principal advantages are that it has 1) no requirement for synchronized clocks, 2) full control over the communications cycle at runtime (assuming the master is accessible to the vehicle operators, as is usually the case); and 3) a master who can acknowledge ``broadcast'' messages. 
+
+However, centralized TDMA has a number of substantial disadvantages. In order for a third-party master to initiate a transmission, an acoustic packet must be sent for this initialization. This additional ``cycle initialization'' packet, like any acoustic message, has a high chance of being lost (after which the data are never sent because the sending node did not receive a cycle initialization message), consumes power, and lengthens the time of the communications slot. See Fig. \ref{fig:slots} for the various parts of the communication cycle with (for Centralized TDMA) and without (for Decentralized TDMA) the cycle initialization message. The additional time required for each slot of Centralized TDMA is
+\begin{equation}\label{eq:mac_time}
+\tau_{ci} + r_{max}/c
+\end{equation}
+where $\tau_{ci}$ is the length (in seconds) of the cycle initalization packet (about one second for the WHOI Micro-Modem), $r_{max}$ is the maximum range of the network (typically of order 1000s of meters), and $c$ is the compressional speed of sound (nominally 1500 m/s).
+
+\begin{figure}
+	\centering
+\centerline{\subfloat[Centralized TDMA]{\includegraphics[width=0.2\textwidth]{slots_polled.eps}\label{fig:slots_polled}}\hfil
+	\subfloat[Decentralized TDMA]{\includegraphics[width=0.2\textwidth]{slots_decentralized.eps}\label{fig:slots_decentralized}}}
+\caption{Comparison of the time needed for a single slot for the two types of TDMA supported by pAcommsHandler. Eq. \ref{eq:mac_time} gives the additional length of time required by the Centralized variant.}
+\label{fig:slots}
+\end{figure}
 
 \begin{figure}
 \centering
-\includegraphics[width=0.8\textwidth]{dccl_example}
-\caption{Example of the DCCL encoding process. The process of encoding starts with the DCCL XML file (a). Data are provided by the application (b). \textit{libdccl} encodes these data to binary via the algorithms given in Table~\ref{tab:dccl_enc} to form the header (c) and layout (d), concatenates and zero fills the encoded layout from most significant bit to closest byte (e) to produce the full encoded message (f). Finally, this point the message is encrypted (if desired). }
-\label{fig:dccl_example}
+\includegraphics[width=0.5\textwidth]{slots.eps}
+\caption{Graphical example of auto discovery for three nodes launched at the same time. Each circle represents the vehicle's cycle at each time step (represented by horizontal rows) based on the vehicle's current knowledge of the world. In the first row, all vehicles only know of themselves and put the blank slot in the last slot; thus, all communications collide and no discoveries are made. In the second row, vehicle 1's blank is moved (by pseudo-chance) to the penultimate (first) slot, so vehicles 2 and 3 discover 1. Then, in the third row vehicles 2 and 3 are discovered by the others because vehicle 3 moves its blank slot. By the fourth row all vehicles have discovered the others and continue to transmit without collision following the cycle diagrammed on this row.} 
+\label{fig:decentralized_cycles}
 \end{figure}
 
+\subsubsection{Decentralized TDMA with passive auto-discovery}
 
+Decentralized TDMA removes the cycle initialization packet and thus reduces the length of each slot and the chance of errors. However, it introduces the constraint of synchronized clocks\footnote{the accuracy of the clock synchronization can be  low relative to other timing needs such as bi-static sonar. Generally, accuracy better than 0.1 seconds is acceptable; higher inaccuracies can be handled by increasing the guard time on both sides of each slot.} for all nodes, which can be somewhat tricky to maintain underwater.
 
+Decentralized TDMA gives each vehicle a single slot in which it transmits. Each vehicle initiates its own transmission at the start of its slot. Collisions are avoided by each vehicle following the same rules about slot placement within the time window (based on the time of day). All slots are ordered by ascending acoustic MAC address (or ``modem identification number''), which is an unsigned integer unique for each network.
 
-%\paragraph{Message XML reference sheet}
-%This is a quick reference of all the allowed tags with some comments about their use:
-%
-%\begin{small}
-%\input{includes/message_xml_cheatsheet.xml}
-%\end{small}
+During the runtime of the network, it is often desirable to add or remove nodes. Since the MAC is spread throughout the nodes, there is no easy way to change the cycle during runtime. \textit{libamac} supports passive auto-discovery (and subsequent expiration) of nodes to provide a solution to this problem. This auto-discovery is passive because it requires no control messaging beyond the normal communications between nodes.
 
-\subsubsection{Priority Message Queuing Unit}
+Vehicles are discovered by shifting a blank slot in each cycle based on their knowledge of the world and the time of day. If a new vehicle is heard from during the blank, it is added to the listening vehicle's knowledge of the world and hence their cycle. In the simplified situation (which is really a worst case scenario) discovery is defined by a single vehicle transmitting during a cycle and all the others silent (the current slot is not equal to each vehicle's acoustic MAC address).
 
-pAcommsHandler takes all the configured queues and maintains a stack of messages for each
-  queue. when it is prompted by data by iMicroModem, it has a priority
-  "contest" between the queues. the queue with the current highest
-  priority (as determined by the \verb|priority| and
-  \verb|priority_time_const| fields) is selected. The next message in
-  that queue is then provided to the MicroModem to send. For modem
-  messages with multiple frames per packet, each frame is a separate
-  contest. Thus a single packet may contain frames from different
-  queues (e.g. a rate 5 PSK packet has eight 256 byte frames. frame 1
-  might grab a STATUS message since that has the current highest
-  queue. then frame 2 may grab a BTR message and frames 3-8 are filled
-  up with CTD messages (e.g. STATUS is in blackout, BTR queue is
-  empty)).
+\begin{table}
+\centering
+\begin{tabular}{|c|c|c|c|}
+\hline time & vehicle 1 & vehicle 2 & result \\ 
+\hline 0   & send       & send  & collision \\ 
+\hline 15  & blank      & blank & nothing \\ 
+\hline 30  & blank      & send  & success: 1 discovers 2 \\ 
+\hline 45  & cycle wait & blank & nothing \\ 
+\hline 60  & cycle wait & send  & success \\ 
+\hline 75  & cycle wait & blank & nothing \\ 
+\hline 90  & send       & blank & success: 2 discovers 1 \\ 
+\hline 105 & listen for 2 & cycle wait & nothing \\ 
+\hline 120 & blank & cycle wait & nothing \\ 
+\hline 135 & send & listen for 1 & success \\ 
+\hline 150 & listen for 2 & send & success \\ 
+\hline 165 & blank & blank & nothing \\ 
+\hline 180 & send & listen for 1 & success \\ 
+\hline 195 & blank & blank & nothing \\ 
+\hline 210 & listen for 2 & send & success \\ 
+\hline 
+\end{tabular} 
+\caption{Example initialization for the Decentralized TDMA with autodiscovery. By 135 seconds, both vehicles have discovered each other and are synchronized. Thus, no more collisions will occur. This scenario assumes that both vehicles always have some data to send during their slot.}
+\end{table}
 
-For messages with \verb|ack=1| (acknowledge requested), the last
-  message continues to be re-sent (that is, it is not popped from the
-  message queue) until the ACK is received from the modem (thus
-  blocking the sending of other messages). Perhaps i will add max
-  retries at some point soon. Messages with \verb|ack=0| are popped
-  and discarded when they are sent (no retries).
+\subsection{Simple complete example MOOS files}
 
-If you do not wish for dynamic growth of the priorities, simply
-  set the \verb|ttl| to the special value 0. Then the priorities grow as $P = V\_{base}$ and messages never expire. Note that this is the same as setting \verb|ttl| = $\infty$.
+\subsubsection{Example 1: Basic CCL (goby/cfg/MOOS/basic\_ccl)}
+This example sends the bytes \verb|0x020304| from node 1 (\verb|mm1|) to node 2 (\verb|mm2|). It shows use of all the parts of pAcommsHandler except the DCCL encoding / decoding unit. I use \verb|iModemSim| here to simulate the WHOI Micro-Modem. This process is available in moos-ivp-local (\url{http://oceanai.mit.edu/moos-ivp/pmwiki/pmwiki.php?n=Support.Milocal}). You can also easily substitute real modems by removing iModemSim references and changing the \verb|serial_port|.
 
-\paragraph{Messages not to us are ignored} We choose modem id 0 as broadcast. thus messages with the destination
-  field = 0 will always be read by all nodes and reported to the
-  appropriate moos variable. Otherwise, we ignore messages unless they
-  correspond to our modem id. so if you send a message to modem id 10,
-  pAcommsHandler for modem ids $1 \rightarrow 9$, $11\rightarrow N$
-  will ignore that. This is not the default behavior of the modem,
-  which always reports data, regardless of the sender's ID.
-  
-\paragraph{Input (to pAcommsHandler) formats}\label{inputformat}
-
-pAcommsHandler accepts several formats for the strings placed in the
-various \verb|outgoing_hex_moos_var| moos variables (outgoing message queues). The
-simplest is just a hexadecimal string of the appropriate length ($N-2$
-bytes where $N=32, 64, \hbox{ or } 256$ depending on the modem
-rate). This message will be queued to send to broadcast (modem id
-0\footnote{the WHOI micromodem does not treat certain modem IDs
-  specially (such as zero). All data are reported to the control
-  computer, regardless of whether that machine is the intended
-  recipient. However, the communications structure defined by
-  pAcommsHandler and other \textit{tes} processes treat modem ID 0 as
-  broadcast (much like xxx.xxx.xxx.255 is used for broadcast on TCP/IP
-  networks). This means that incoming messages are read if they are to
-  our modem ID or to modem ID 0.}). An example:
-\begin{boxedverbatim}
-OUT_CTD_HEX_32B: 20086850a232ccd2be62e1f36e6b02fffa92385bce8fa2109efa8902ddf3a02
-\end{boxedverbatim}
-\resetbvlinenumber
-would queue a CTD message to be sent to broadcast (modem ID 0), given the above configuration file.
-
-pAcommsHandler also accepts a string of key=value, comma delimited
-fields allowing for more flexibility. Currently, the only fields
-supported are \verb|data=| (required, of course) and \verb|dest=|
-for the intended destination modem\_id:
-\begin{boxedverbatim}
-OUT_CTD_HEX_32B: dest=3,data=20086850a232ccd2be62e1f36e6b02fffa92385bce8fa2109efa8902ddf3a02
-\end{boxedverbatim}
-\resetbvlinenumber
-would queue a CTD message to be sent to id 3.
-
-
-\paragraph{Output (from pAcommsHandler) formats} 
-
-Upon receipt of a message from the Micro-Modem, the first byte of the message is
-checked against the moos CCL type (0x20) and any of the additional
-\verb|receive_CCL| \verb|CCLIdentifierByte| given in the .moos
-file. if none of these match, the message is disregarded. If the
-message matches the moos CCL type (0x20), the second byte is examined
-for the \verb|id|. If the \verb|id| matches one of the
-\verb|receive| fields in the .moos file, the hexadecimal string is
-stripped of its first two bytes and placed in the correspoding
-\verb|incoming_hex_moos_var| moos variable. The community name is set to the
-sender's variable ID\footnote{use CMOOSMsg::GetCommunity() to extract
-  the community}. For example, the modem reports:\footnote{see Micro-Modem Mainboard Software Interface
-  Guide at \url{http://acomms.whoi.edu/umodem/documentation.html} for
-  details on these messages}
-\begin{boxedverbatim}
-$CARXD,3,0,0,1,20016850a232ccd2be62e1f36e6b02fffa92385bce8fa2109efa8902ddf3a02
-\end{boxedverbatim}
-\resetbvlinenumber %$
-
-pAcommsHandler places the message in the appropriate moos variable, which
-for the example .moos file here is \verb|IN_CTD_HEX_32B|:
-
-\begin{boxedverbatim}
-IN_CTD_HEX_32B: 20016850a232ccd2be62e1f36e6b02fffa92385bce8fa2109efa8902ddf3a02 
-{Community=3}
-\end{boxedverbatim}
+\paragraph{MOOS file for Node 1: goby/cfg/MOOS/basic\_ccl/mm1.moos}
+\boxedverbatiminput{"../../cfg/MOOS/basic_ccl/mm1.moos"}
 \resetbvlinenumber
 
-from here either pGeneralCodec or pAcommsHandler's DCCL unit will decode the message (or pREMUSCodec for CCL messages). 
+\paragraph{MOOS file for Node 2: goby/cfg/MOOS/basic\_ccl/mm2.moos}
+\boxedverbatiminput{"../../cfg/MOOS/basic_ccl/mm2.moos"}
+\resetbvlinenumber
 
-\subsubsection{Modem Driver Unit}
+\subsubsection{Example 2: DCCL and CCL (goby/cfg/MOOS/ccl\_and\_dccl)}
+This example sends the DCCL ``Simple Status'' messsage from node 1 (\verb|mm1|) to node 2 (\verb|mm2|). \verb|mm2| sends the REMUS CCL State message to \verb|mm1|. It thus uses all the components of pAcommsHandler. As in the previous example, you can use real modems by removing iModemSim and changing the \verb|serial_port| to the proper real serial port.
 
-The Modem driver unit current supports the WHOI Micro-Modem acoustic modem. It is tested to work with revision 0.93.0.30 of the Micro-Modem firmware, but is known to work with older firmware (at least 0.92.0.85). The following commands of the WHOI Micro-Modem are implemented:
+\paragraph{MOOS file for Node 1: goby/cfg/MOOS/ccl\_and\_dccl/mm1.moos}
+\boxedverbatiminput{"../../cfg/MOOS/ccl_and_dccl/mm1.moos"}
+\resetbvlinenumber
 
-Modem to Control Computer (\$CA):
-\begin{itemize}
-\item \$CAACK - acknowledgement of sent message. 
-\item \$CADRQ - data request. 
-\item \$CARXD - received hexadecimal data.
-\item \$CAREV - revision number and heartbeat. Used to check for correct clock time and modem reboots.
-\item \$CAERR - error message.
-\end{itemize}
+\paragraph{MOOS file for Node 2: goby/cfg/MOOS/ccl\_and\_dccl/mm2.moos}
+\boxedverbatiminput{"../../cfg/MOOS/ccl_and_dccl/mm2.moos"}
+\resetbvlinenumber
 
-Control Computer to Modem (\$CC). Also implemented is the NMEA acknowledge (e.g. \$CACYC for \$CCCYC):
-\begin{itemize}
-\item \$CCTXD - transmit data. 
-\item \$CCCYC - initiate a cycle.
-\item \$CCCLK - set the clock. The clock is set on startup until a suitably value within 1 second of the computer time is reported back. If the modem reboots (\$CAREV,...,INIT), the clock is set again.
-\item \$CCCFG - configure NVRAM value. All values passed to \verb|cfg=| will be passed to \$CCCFG at startup. 
-\item \$CCCFQ - query configuration values. \$CCCFQ,ALL is sent after all the \$CCCFG lines to log the NVRAM parameters.
-\end{itemize}
+\paragraph{XML definition of Simple Status: goby/xml/simple\_status.xml}
+\boxedverbatiminput{"../../xml/simple_status.xml"}
+\resetbvlinenumber
 
-To directly monitor the modem feed, subscribe to ACOMMS\_NMEA\_IN and ACOMMS\_NMEA\_OUT. If you wish to control the modem directly, write a valid \$CC NMEA string (without newline or carriage return) to ACOMMS\_NMEA\_OUT.
-
-\subsubsection{Medium Access Control (MAC) Unit}
-
-...documentation coming soon...
+\paragraph{Modem Lookup Table: goby/cfg/MOOS/ccl\_and\_dccl/modemidlookup.txt}
+\boxedverbatiminput{"../../cfg/MOOS/ccl_and_dccl/modemidlookup.txt"}
+\resetbvlinenumber
 
 
-\subsection{iCommander}
-
-
-\subsection{iCommander}\label{sec:icommander} 
+\section{iCommander}\label{sec:icommander} 
 
 \verb|iCommander| is a topside command and control (C2) tool which provides a simple
 console for issuing commands through the acoustic network. By sharing
-message configuration (XML) files with \verb|pAcommsHandler| and \verb|pGeneralCodec| it automatically adapts to the current message set,
+message configuration (XML) files with \verb|pAcommsHandler| it automatically adapts to the current message set,
 without any need to change software code.
 
 \subsubsection{Parameters for the iCommander Configuration Block}

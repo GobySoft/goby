@@ -1,13 +1,12 @@
-\begin{verbatim}
 <?xml version="1.0" encoding="ASCII" standalone="yes"?>
 <message_set>
   <message>
     <name>GoToCommand</name>
     <id>1</id>
-    <outgoing_hex_moos_var>OUT_GOTO_HEX</outgoing_hex_moos_var>
-    <incoming_hex_moos_var>IN_GOTO_HEX</incoming_hex_moos_var>
     <trigger>publish</trigger>
-    <trigger_moos_var mandatory_content="CommandType=GoTo">OUTGOING_COMMAND</trigger_moos_var>
+    <trigger_var mandatory_content="CommandType=GoTo">
+      OUTGOING_COMMAND
+    </trigger_var>
     <size>32</size>
     <header>
       <dest_id>
@@ -46,11 +45,11 @@
     </layout>
     <on_receipt>
       <publish>
-        <moos_var>INCOMING_COMMAND</moos_var>
+        <publish_var>INCOMING_COMMAND</publish_var>
         <all />
       </publish>
       <publish>
-        <moos_var>SPECIAL_INSTRUCTIONS</moos_var>
+        <publish_var>SPECIAL_INSTRUCTIONS</publish_var>
         <format>special_instructions=%1%,lights_on=%2%</format>
         <message_var>new_instructions</message_var>
         <message_var>lights_on</message_var>
@@ -62,27 +61,25 @@
     <id>2</id>
     <trigger>time</trigger>
     <trigger_time>30</trigger_time>
-    <outgoing_hex_moos_var>OUT_STATUS_HEX</outgoing_hex_moos_var>
-    <incoming_hex_moos_var>IN_STATUS_HEX</incoming_hex_moos_var>
     <size>32</size>
     <layout>
       <float>
         <name>nav_x</name>
-        <moos_var>NAV_X</moos_var>
+        <src_var>NAV_X</src_var>
         <max>1000</max>
         <min>0</min>
         <precision>1</precision>
       </float>
       <float>
         <name>nav_y</name>
-        <moos_var>NAV_Y</moos_var>
+        <src_var>NAV_Y</src_var>
         <max>1000</max>
         <min>0</min>
         <precision>1</precision>
       </float>
       <enum>
         <name>health</name>
-        <moos_var>VEHICLE_HEALTH</moos_var>
+        <src_var>VEHICLE_HEALTH</src_var>
         <value>good</value>
         <value>low_battery</value>
         <value>abort</value>
@@ -90,10 +87,9 @@
     </layout>
     <on_receipt>
       <publish>
-        <moos_var>STATUS_SUMMARY</moos_var>
+        <publish_var>STATUS_SUMMARY</publish_var>
         <all />
       </publish>
     </on_receipt>
   </message>
 </message_set>
-\end{verbatim}

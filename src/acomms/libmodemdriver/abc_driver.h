@@ -27,9 +27,13 @@ namespace goby
 {
     namespace acomms
     {
+        /// \brief provides an API to the imaginary ABC modem (as an example how to write drivers)
+        /// \ingroup acomms_api
+        /// 
         class ABCDriver : public ModemDriverBase
         {
           public:
+            /// Instantiate with an optional logger object
             ABCDriver(std::ostream* log = 0);
             void startup(const protobuf::DriverConfig& cfg);
             void shutdown();            
@@ -41,7 +45,6 @@ namespace goby
                           std::map<std::string, std::string>* out);
             void signal_and_write(const std::string& raw,
                                   protobuf::ModemMsgBase* base_msg = 0);
-            
             
           private:
             enum { DEFAULT_BAUD = 4800 };

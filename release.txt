@@ -4,8 +4,10 @@ Goby Release Notes
 *****************
 Version 1.0
 
+~~~Features
+
 MOOS (pAcommsHandler)
---- Most MOOS messages originating from pAcommsHandler (ACOMMS_*) now use the Protocol Buffers TextFormat class to serialize and parse from string (to send through MOOS) to the various Protocol Buffers messages defined in goby/src/acomms/protobuf/*.proto (primarily modem_message.proto)
+--- Most MOOS messages originating from pAcommsHandler (ACOMMS_*) now use the Protocol Buffers TextFormat class to serialize and parse from string (to send through MOOS) to the various Protocol Buffers messages defined in goby/src/protobuf/*.proto (primarily modem_message.proto). You should use goby/src/moos/libmoos_util/moos_protobuf_helpers.h to serialize and parse from the MOOS strings posted.
 	* Informational *
 	--- ACOMMS_NMEA_IN (type: string), ModemMsgBase::raw() for all incoming messages ("$CA..." for WHOI Micro-Modem)
 	--- ACOMMS_NMEA_OUT (type: string), ModemMsgBase::raw() for all outgoing messages ("$CC..." for WHOI Micro-Modem)
@@ -22,25 +24,34 @@ MOOS (pAcommsHandler)
 --- All .moos file configuration settings can be set at runtime using the command line. run "pAcommsHandler -h" for a list of available options and their syntax. For example, 
 > pAcommsHandler last.moos --driver_cfg 'serial_port: "/dev/ttyUSB1"'
 runs pAcommsHandler with the serial port set to /dev/ttyUSB1. Command line options overwrite .moos file options if both are set.
---- Configuration (.moos) is type checked and syntax checked for common mistakes including extraneous parameters (often misspelled parameters), duplicate parameters (for non-repeat fields) and missing required parameters.
+--- Configuration (.moos) is type checked and syntax checked for common mistakes including extraneous parameters (often misspelled parameters), duplicate parameters (for non-"repeat" fields) and missing required parameters.
 --- Running "pAcommsHandler -e" outputs an example .moos ProcessConfig block with all the available options for configuring pAcommsHandler and an example. Where applicable, defaults are indicated with "(default)".
 
 Acomms
 --- Replaced generic ModemMessage class with a variety of Google Protocol Buffers messages (see http://code.google.com/p/protobuf/) for all internal signals and slots. Replaced callback handling of asynchronous events with a more general signal/slot mechanism based on boost::signals.
---- DriverBase and supporting messaging is more streamlined to remove the remaining WHOI Micro-Modem bias from the design of Goby. Goby should now easily support other manufacturers' modems by subclassing goby::acomms::DriverBase (goby/src/acomms/libmodemdriver/driver_base.*). No new drivers are including in this release, though some are in the works soon.
+--- DriverBase and supporting messaging is more streamlined to remove the remaining WHOI Micro-Modem bias from the design of Goby. Goby should now easily support other manufacturers' modems by subclassing goby::acomms::DriverBase (goby/src/acomms/libmodemdriver/driver_base.*).  Wrote an example toy driver for a fake modem "ABC Modem". The new driver is abc_driver.h/cpp. You can simulate this new "modem" over TCP using the abc_modem_simulator tool and socat.
 --- Fixed CCL queuing functionality in libqueue
 --- Improved error handling messages for CCL functionality
 --- Improved buffering in the WHOI Micro-Modem driver to anticipate the $CADRQ during the cycle init ($CC/CACYC)
 --- Support for REMUS LBL beacon ranging in the WHOI Micro-Modem ($SNTTA, etc.)
 --- Support for one-way synchronous time-of-flight in the WHOI Micro-Modem ($CATOA)
---- Fixed bug where some variables using Algorithms in the DCCL header were being overwritten by the default for that field. DCCL layout variables were not affected.
 
 Core (still in development / testing)
 --- Implemented basic functionality for all core elements (message passing, logging, base application superclass).
 --- Wrote two examples in goby/src/core/examples that are documented partially in goby/doc/user_manual
 
 Util
+--- Implemented point-to-point messaging for the TCP Server in liblinebasedcomms (previously the TCP server was essentially a one-to-many hub). This makes use of the new protobuf message type Datagram for `src` and `dest` addressing. For TCP `src` and `dest` are ip:port endpoints (e.g. 127.0.0.1:54321). For serial, `src` is the current serial port name. `dest` has no meaning over a serial connection (we don't know where the other end is plugged in!)
+
+~~~Bug Fixes
+
+Acomms
+--- Fixed bug where some variables using Algorithms in the DCCL header were being overwritten by the default for that field. DCCL layout variables were not affected.
+--- Fixed bug where removing entire polling or fixed TDMA cycle crashed libamac
+
+Util
 --- Fixed miscellaneous bugs in liblogger
+
 
 
 

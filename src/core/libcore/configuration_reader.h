@@ -72,13 +72,28 @@ namespace goby
             
           private:
 
+            enum { MAX_CHAR_PER_LINE = 66 };
+            enum { MIN_CHAR = 20 };
+            
             static void build_description(const google::protobuf::Descriptor* desc,
                                           std::ostream& human_desc,
                                           const std::string& indent = "",
                                           bool use_color = true);
+
+            static void build_description_field(const google::protobuf::FieldDescriptor* desc,
+                                                std::ostream& human_desc,
+                                                const std::string& indent,
+                                                bool use_color);
+
+            static void wrap_description(std::string* description,
+                                         int num_blanks);
+
             
-            static void append_label(std::ostream& human_desc_ss,
-                                     const google::protobuf::FieldDescriptor* field_desc);
+            static std::string label(const google::protobuf::FieldDescriptor* field_desc);
+
+
+            static std::string word_wrap(std::string s, unsigned width,
+                                         const std::string & delim);
             
             template<typename T>
                 static void set_single_option(

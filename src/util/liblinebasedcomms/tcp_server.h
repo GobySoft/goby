@@ -39,9 +39,15 @@ namespace goby
     namespace util
     {
         class TCPConnection;
+        
+        /// provides a basic TCP server for line by line text based communications to a one or more remote TCP clients  
         class TCPServer : public LineBasedInterface
         {
           public:
+            /// \brief create a TCP server
+            ///
+            /// \param port port of the server (use 50000+ to avoid problems with special system ports)
+            /// \param delimiter string used to split lines
           TCPServer(unsigned port,
                     const std::string& delimiter = "\r\n")
               : LineBasedInterface(delimiter),
@@ -49,6 +55,7 @@ namespace goby
                           boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), port))
                 {  }
 
+            /// \brief string representation of the local endpoint (e.g. 192.168.1.105:54230
             std::string local_endpoint() { return goby::util::as<std::string>(acceptor_.local_endpoint()); }
 
             

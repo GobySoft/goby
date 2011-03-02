@@ -14,7 +14,7 @@
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
 //
-// Usage: run
+// Usage (WHOI Micro-Modem): run
 // > driver_simple /dev/tty_of_modem_A 1
 //
 // wait a few seconds
@@ -22,6 +22,11 @@
 // > driver_simple /dev/tty_of_modem_B 2
 //
 // be careful of collisions if you start them at the same time (this is why libamac exists!)
+
+// Usage (example ABCModem): run
+// > driver_simple /dev/tty_of_modem_A 1 ABCDriver
+// > driver_simple /dev/tty_of_modem_B 2 ABCDriver
+// Also see abc_modem_simulator.cpp
 
 #include "goby/acomms/modem_driver.h"
 #include "goby/acomms/connect.h"

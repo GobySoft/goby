@@ -392,8 +392,8 @@ void goby::acomms::MMDriver::process_receive(const NMEASentence& nmea)
             init_msg.Clear();
             cyc(nmea, &init_msg);
             this_base_msg = init_msg.mutable_base();
-            // can't trust ADR1 to be SRC
-            // flush_toa(*this_base_msg, &ranging_msg);
+            // can't trust ADR1 to be SRC, so we trash this CATOA
+            ranging_msg.Clear();
             break;
         }
 
@@ -544,7 +544,9 @@ void goby::acomms::MMDriver::clk(const NMEASentence& nmea, protobuf::ModemMsgBas
                                          nmea.as<int>(5),
                                          nmea.as<int>(6),
                                          0));
-
+    if(log_) *log_ << "reported time: " << reported << std::endl;
+    
+    
     base_msg->set_time(as<std::string>(reported));
     base_msg->set_time_source(protobuf::ModemMsgBase::MODEM_TIME);
     

@@ -114,9 +114,10 @@ namespace goby
             { return(add_escape_code(os, esc_nocolor)); }    
         }
 
-        /// Represents the eight available terminal colors (and bold variants)
+        /// \brief Represents the eight available terminal colors (and bold variants)
         struct Colors
         {
+            /// \brief The eight terminal colors (and bold or "light" variants)
             enum Color { nocolor,
                          red,     lt_red,
                          green,   lt_green,
@@ -127,7 +128,7 @@ namespace goby
                          white,   lt_white };
         };
 
-        /// Converts between string, escape code, and enumeration representations of the terminal colors
+        /// \brief Converts between string, escape code, and enumeration representations of the terminal colors
         class TermColor
         {
           public:

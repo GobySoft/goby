@@ -21,6 +21,8 @@
 #include "goby/util/liblogger/term_color.h"
 #include "exception.h"
 #include <google/protobuf/dynamic_message.h>
+#include <algorithm>
+#include <boost/algorithm/string.hpp>
 
 // brings std::ostream& red, etc. into scope
 using namespace goby::util::tcolor;
@@ -287,7 +289,7 @@ void  goby::core::ConfigReader::get_protobuf_program_options(boost::program_opti
         std::string cli_name = field_name;
         std::stringstream human_desc_ss;
         human_desc_ss << util::esc_lt_blue << field_desc->options().GetExtension(::description);
-        append_label(human_desc_ss, field_desc);
+        human_desc_ss << label(field_desc);
         human_desc_ss << util::esc_nocolor;
         
         switch(field_desc->cpp_type())
@@ -403,98 +405,124 @@ void goby::core::ConfigReader::build_description(const google::protobuf::Descrip
                                                  const std::string& indent /*= ""*/,
                                                  bool use_color /* = true */ )
 {
-    google::protobuf::DynamicMessageFactory factory;
-    const google::protobuf::Message* default_msg = factory.GetPrototype(desc);
-
     for(int i = 0, n = desc->field_count(); i < n; ++i)
     {
         const google::protobuf::FieldDescriptor* field_desc = desc->field(i);
+        build_description_field(field_desc, stream, indent, use_color);
+    }
+}
 
-        if(field_desc->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE)
-        {
-            stream << "\n" << indent << field_desc->name() << " {  ";
+void goby::core::ConfigReader::build_description_field(
+    const google::protobuf::FieldDescriptor* field_desc,
+    std::ostream& stream,
+    const std::string& indent,
+    bool use_color)   
+{
+    google::protobuf::DynamicMessageFactory factory;
+    const google::protobuf::Message* default_msg = factory.GetPrototype(field_desc->containing_type());
+    
+    if(field_desc->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE)
+    {
+        std::string before_description = indent + field_desc->name() + " {  ";
+        stream << "\n" << before_description;
 
-            if(use_color)
-                stream << util::esc_green;
-            else
-                stream << "# ";
+        std::string description;
+        if(use_color)
+            description += util::esc_green;
+        else
+            description += "# ";
+
+        description += field_desc->options().GetExtension(::description)
+            + label(field_desc);
             
-            stream << field_desc->options().GetExtension(::description);
-            append_label(stream, field_desc);
+        if(use_color)
+            description += util::esc_nocolor;
 
-            if(use_color)
-                stream << util::esc_nocolor;
+        if(!use_color)
+            wrap_description(&description, before_description.size());
+
+        stream << description;            
             
-            build_description(field_desc->message_type(), stream, indent + "  ", use_color);
-            stream << "\n" << indent << "}";
-        }
+        build_description(field_desc->message_type(), stream, indent + "  ", use_color);
+        stream << "\n" << indent << "}";
+    }
+    else
+    {
+        stream << "\n";
+
+        std::string before_description = indent;
+            
+        std::string example;
+        if(field_desc->has_default_value())
+            google::protobuf::TextFormat::PrintFieldValueToString(*default_msg, field_desc, -1, &example);
         else
         {
-            stream << "\n" << indent;
-
-            std::string example;
-            if(field_desc->has_default_value())
-                google::protobuf::TextFormat::PrintFieldValueToString(*default_msg, field_desc, -1, &example);
-            else
-            {
-                example = field_desc->options().GetExtension(::example);
-                if(field_desc->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_STRING)
-                    example = "\"" + example + "\""; 
-            }
-            
-            stream << field_desc->name() << ": "
-                          << example;
-
-            stream << "  ";
-            if(use_color)
-                stream << util::esc_green;
-            else
-                stream << "# ";
-            
-            stream << field_desc->options().GetExtension(::description);
-
-            if(field_desc->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_ENUM)
-            {
-                stream << " (";
-                for(int i = 0, n = field_desc->enum_type()->value_count(); i < n; ++i)
-                {
-                    if(i) stream << ", ";
-                    stream << field_desc->enum_type()->value(i)->name();
-                }
-                
-                stream << ")";
-            }
-            
-            append_label(stream, field_desc);
-            
-
-            if(field_desc->has_default_value())
-                stream << " (default=" << example << ")";
-
-            if(use_color)
-                stream << util::esc_nocolor;
-        
+            example = field_desc->options().GetExtension(::example);
+            if(field_desc->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_STRING)
+                example = "\"" + example + "\""; 
         }
+            
+        before_description += field_desc->name() + ": " + example;
+
+        before_description += "  ";
+
+            
+        stream << before_description;            
+
+        std::string description;
+
+        if(use_color)
+            description +=  util::esc_green;
+        else
+            description += "# ";
+            
+        description += field_desc->options().GetExtension(::description);
+        if(field_desc->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_ENUM)
+        {
+            description += " (";
+            for(int i = 0, n = field_desc->enum_type()->value_count(); i < n; ++i)
+            {
+                if(i) description +=  ", ";
+                description += field_desc->enum_type()->value(i)->name();
+            }
+                
+            description += ")";
+        }
+            
+        description += label(field_desc);
+            
+
+        if(field_desc->has_default_value())
+            description += " (default=" + example + ")";
+
+        if(field_desc->options().HasExtension(::moos_global))
+            description += " (can also set MOOS global \"" + field_desc->options().GetExtension(::moos_global) + "=\")";
+            
+        if(!use_color)
+            wrap_description(&description, before_description.size());
+            
+        stream << description;            
+            
+        if(use_color)
+            stream << util::esc_nocolor;
+        
     }
 }
 
 
-void goby::core::ConfigReader::append_label(std::ostream& human_desc_ss,
-                                            const google::protobuf::FieldDescriptor* field_desc)
+
+std::string goby::core::ConfigReader::label(const google::protobuf::FieldDescriptor* field_desc)
 {
     switch(field_desc->label())
     {
         case google::protobuf::FieldDescriptor::LABEL_REQUIRED:
-            human_desc_ss << " (req)";
-            break;
+            return " (req)";
             
         case google::protobuf::FieldDescriptor::LABEL_OPTIONAL:
-            human_desc_ss << " (opt)";
-            break;
+            return " (opt)";
             
         case google::protobuf::FieldDescriptor::LABEL_REPEATED:
-            human_desc_ss << " (repeat)";
-            break;
+            return " (repeat)";
     }
 }
 
@@ -518,3 +546,56 @@ void goby::core::ConfigReader::merge_app_base_cfg(AppBaseConfig* base_cfg,
         }
     }
 }
+
+
+
+std::string goby::core::ConfigReader::word_wrap(std::string s, unsigned width,
+                                                const std::string & delim)
+{
+    std::string out;
+            
+    while(s.length() > width)
+    {            
+        std::string::size_type pos_newline = s.find("\n");
+        std::string::size_type pos_delim = s.substr(0, width).find_last_of(delim);
+        if(pos_newline < width)
+        {
+            out += s.substr(0, pos_newline);
+            s = s.substr(pos_newline+1);
+        }
+        else if (pos_delim != std::string::npos)
+        {
+            out += s.substr(0, pos_delim+1);
+            s = s.substr(pos_delim+1);
+        }
+        else
+        {
+            out += s.substr(0, width);
+            s = s.substr(width);
+        }
+        out += "\n";
+
+        // std::cout << "width: " << width << " " << out << std::endl;
+    }
+    out += s;
+            
+    return out;
+}
+            
+void goby::core::ConfigReader::wrap_description(std::string* description, int num_blanks)
+{
+    *description = word_wrap(*description,
+                            std::max(MAX_CHAR_PER_LINE -
+                                     num_blanks, (int)MIN_CHAR), " ");
+
+    if(MIN_CHAR > MAX_CHAR_PER_LINE - num_blanks)
+    {
+        *description = "\n" + description->substr(2);
+        num_blanks =  MAX_CHAR_PER_LINE - MIN_CHAR;
+    }
+    
+    std::string spaces(num_blanks, ' ');
+    spaces += "# ";
+    boost::replace_all(*description, "\n", "\n" + spaces);
+}
+

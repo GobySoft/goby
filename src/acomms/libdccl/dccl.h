@@ -39,6 +39,7 @@
 #include "goby/protobuf/modem_message.pb.h"
 #include "goby/acomms/acomms_helpers.h"
 
+/// The global namespace for the Goby project.
 namespace goby
 {
     namespace util

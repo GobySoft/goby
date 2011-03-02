@@ -235,45 +235,21 @@ The steps to writing a new driver include:
 <li>Fully understand the basic usage of the new acoustic modem manually using minicom or other terminal emulator. Have a copy of the modem software interface manual handy.
 <li>Figure out what type of configuration the modem will need. For example, the WHOI Micro-Modem is configured using string values (e.g. "SNV,1"). Extend \link driver_base.proto goby::acomms::protobuf::DriverConfig\endlink to accomodate these configuration options. You will need to claim a group of extension field numbers that do not overlap with any of the drivers. The WHOI Micro-Modem driver goby::acomms::MMDriver uses extension field numbers 1000-1100 (see mm_driver.proto). You can read more about extensions in the official Google Protobuf documentation here: <http://code.google.com/apis/protocolbuffers/docs/proto.html#extensions>.
 
-For example, if I was writing a new driver for the ABC Modem that needs to be configured using a few boolean flags, I might create a new message abc_driver.proto with the following fields:
+For example, if I was writing a new driver for the ABC Modem that needs to be configured using a few boolean flags, I might create a new message abc_driver.proto:
 
-\verbatim
-import "goby/protobuf/driver_base.proto"; // load up message DriverBaseConfig
-
-message ABCDriverConfig
-{
-  extend goby.acomms.protobuf.DriverConfig
-  {
-    optional bool enable_foo = 1201 [ default = true ];
-    optional bool enable_bar = 1202 [ default = false ];
-  }
-}
-\endverbatim
+\include abc_driver.proto
 
 make a note in driver_base.proto claiming extension numbers 1201 and 1202 (and others you may expect to need in the future). Extension field numbers can go up to 536,870,911 so don't worry about running out.
-<li> Subclass goby::acomms::ModemDriverBase and overload the pure virtual methods (goby::acomms::ModemDriverBase::handle_initiate_ranging is optional). Your interface should like like this:
-\code
-namespace goby { 
-namespace acomms {
+<li> Subclass goby::acomms::ModemDriverBase and overload the pure virtual methods (goby::acomms::ModemDriverBase::handle_initiate_ranging is optional). Your interface should look like this:
 
-class ABCDriver : public ModemDriverBase
-{
-  public:
-    ABCDriver(std::ostream* log = 0);
-    void startup(const protobuf::DriverConfig& cfg);
-    void shutdown();            
-    void do_work();
-    void handle_initiate_transmission(protobuf::ModemMsgBase* m);        
-
-  private:
-    protobuf::DriverConfig driver_cfg_; // configuration given to you at launch
-    std::ostream* log_; // place to log all human readable debugging messages
-    // rest is up to you!
-};
-
-}
-}
-\endcode
+\dontinclude abc_driver.h
+\skip namespace
+\until private
+\skipline driver_cfg_
+\until }
+\until }
+\until }
+             
 <li> Fill in the methods. You are responsible for emitting the goby::acomms::ModemDriverBase signals at the appropriate times. Read on and all should be clear.
 <ul>
 <li>Minimally your constructor should store a local copy of the ostream logger:
@@ -285,134 +261,42 @@ goby::acomms::ABCDriver::ABCDriver() : ModemDriverBase(log),
 }
 \endcode
 <li>At startup() you get your configuration from the application (pAcommsHandler or other)
-\code
-void goby::acomms::ABCDriver::startup(const protobuf::DriverConfig& cfg)
-{
-    driver_cfg_ = cfg;
-    // check `driver_cfg_` to your satisfaction and then start the modem physical interface
 
-    // log_ is allowed to be 0 (NULL), so always check it first
-    if(log_) *log_ << "ABCDriver configuration good. Starting modem..." << std::endl;
-    ModemDriverBase::modem_start(driver_cfg_);
-
-    // set your local modem id (MAC address) 
-    driver_cfg_.modem_id();
-    {
-      std::stringstream raw;
-      raw << "CONF,MAC:" << driver_cfg_.modem_id() << "\r\n";
-      ModemDriverBase::modem_write(raw.str());
-    }
-
-
-    // now set our special configuration values
-    {
-      std::stringstream raw;
-      raw << "CONF,FOO:" << driver_cfg_.GetExtension(ABCConfig::enable_foo) << "\r\n";
-      ModemDriverBase::modem_write(raw.str());
-    }
-    {
-      std::stringstream raw;
-      raw << "CONF,BAR:" << driver_cfg_.GetExtension(ABCConfig::enable_bar) << "\r\n";
-      ModemDriverBase::modem_write(raw.str());
-    }
-}
-\endcode
+\dontinclude abc_driver.cpp
+\skipline startup
+\until startup
 <li>At shutdown() you should make yourself ready to startup() again if necessary and stop the modem:
-\code
-void goby::acomms::ABCDriver::shutdown()
-{
-    // put the modem in a low power state?
-    // ...
-    ModemDriverBase::modem_close();
-}
-\endcode
+\dontinclude abc_driver.cpp
+\skipline shutdown
+\until shutdown
 <li>handle_initiate_transmission() is called when you are expected to initiate a transmission. It *does not* contain data, you are required to request data using the goby::acomms::ModemDriverBase::signal_data_request signal. Once you have data, you are responsible for sending it. I think a bit of code will make this clearer:
-\code
-void goby::acomms::ABCDriver::handle_initiate_transmission(protobuf::ModemMsgBase* base_msg)
-{
-  if(log_)
-  {
-    // base_msg->rate() can be 0 (lowest), 1, 2, 3, 4, or 5 (lowest). Map these integers onto real bit-rates
-    // in a meaningful way (on the WHOI Micro-Modem 0 ~= 80 bps, 5 ~= 5000 bps).
-    *log_ << "We were asked to transmit from " << base_msg->src() << " to " << base_msg->dest() << " at bitrate code " << base_msg->rate();
-  } 
-
-  protobuf::ModemDataRequest request_msg; // used to request data from libqueue
-  protobuf::ModemDataRequest data_msg; // used to store the requested data
-
-  // set up request_msg
-  request_msg.mutable_base()->set_src(base_msg->src());
-  request_msg.mutable_base()->set_dest(base_msg->dest());
-  // let's say ABC modem uses 500 byte packet
-  request_msg.set_max_bytes(500);
-
-  ModemDriverBase::signal_data_request(request_msg, &data_msg);
-
-  if(log_)
-  {
-    *log_ << "Sending these data now: " << data_msg << std::endl;
-  }
-  
-  // let's say we can send at three bitrates with ABC modem: map these onto 0-5
-  const unsigned BITRATE [] { 100, 1000, 10000, 10000, 10000, 10000};
-
-  // I'm making up a syntax for the wire protocol...
-  std::stringstream raw;
-  raw << "SEND,TO:" << base_msg->dest() << ",FROM:" << base_msg->src() << ",HEX:" << hex_encode(data_msg.data()) ",BITRATE:" << BITRATE[base_msg->rate()] << "\r\n";
-
-  // let anyone who is interested know
-  base_msg->set_raw(raw.str());
-  ModemDriverBase::signal_all_outgoing(*base_msg);    
-
-  // finally tell the modem
-  ModemDriverBase::modem_write(raw.str());
-}
-\endcode
+\dontinclude abc_driver.cpp
+\skipline handle_initiate_transmission
+\until handle_initiate_transmission
 <li> Finally, you can use do_work() to do continuous work. You can count on it being called at 5 Hz or more (in pAcommsHandler, it is called on the MOOS AppTick). Here's where you want to read the modem incoming stream.
-\code
-void goby::acomms::ABCDriver::do_work()
-{
-    std::string in;
-    while(modem_read(&in))
-    {
-        std::map<std::string, std::string> parsed;
-
-        // breaks `in`: "RECV,TO:3,FROM:6,HEX:ABCD015910"
-        //   into `parsed`: "KEY"=>"RECV", "TO"=>"3", "FROM"=>"6", "HEX"=>"ABCD015910"
-        parse_in(in, &parsed);
-
-        protobuf::ModemMsgBase base_msg;
-        base_msg.set_raw(in);
-
-        using google::protobuf::int32;
-        base_msg.set_src(goby::util::as<int32>(parsed["FROM"]));
-        base_msg.set_dest(goby::util::as<int32>(parsed["TO"]));
-        base_msg.set_time(goby::util::as<std::string>(goby_time()));
-        
-        ModemDriverBase::signal_all_incoming(base_msg);
-        
-        if(parsed["KEY"] == "RECV")
-        {
-          protobuf::ModemDataTransmission data_msg;
-          data_msg->mutable_base()->CopyFrom(base_msg);
-          data_msg.set_data(hex_decode(parsed["HEX"]));
-          ModemDriverBase::signal_receive(data_msg);
-        }
-        else if(parsed["KEY"] == "ACKN")
-        {
-          protobuf::ModemDataAck ack_msg;
-          ack_msg->mutable_base()->CopyFrom(base_msg);
-          ModemDriverBase::signal_ack(ack_msg);
-        }
-    }
-}
-\endcode
+\dontinclude abc_driver.cpp
+\skipline do_work
+\until do_work
 <li> Add your driver header to goby/src/acomms/modem_driver.h
 <li> Modify libmodemdriver/examples/driver_simple/driver_simple.cpp to work with your new driver.
 <li> Add your driver to the pAcommsHandler_config.proto DriverType enumeration.
 <li> Add your driver to the pAcommsHandler.cpp driver object creation.
 </ul>
 </ul>
+
+The full ABC Modem example driver exists in acomms/libmodemdriver/abc_driver.h and acomms/libmodemdriver/abc_driver.cpp. A simulator for the ABC Modem exists that uses TCP to mimic a very basic set of modem commands (send data and acknowledgment). To use the ABC Modem using the driver_simple example, run this set of commands (`socat` is available in most package managers or at <http://www.dest-unreach.org/socat/>):
+
+\verbatim
+1. run abc_modem_simulator running on same port (as TCP server)
+> abc_modem_simulator 54321
+2. create fake tty terminals connected to TCP as client to port 54321
+> socat -d -d -v pty,raw,echo=0,link=/tmp/ttyFAKE1 TCP:localhost:54321
+> socat -d -d -v pty,raw,echo=0,link=/tmp/ttyFAKE2 TCP:localhost:54321
+3. start up driver_simple
+> driver_simple /tmp/ttyFAKE1 1 ABCDriver
+// wait a few seconds to avoid collisions
+> driver_simple /tmp/ttyFAKE2 2 ABCDriver
+\endverbatim
 
 Notes:
 <ul>

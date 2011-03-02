@@ -61,14 +61,14 @@ void goby::acomms::ABCDriver::startup(const protobuf::DriverConfig& cfg)
         raw << "CONF,BAR:" << driver_cfg_.GetExtension(ABCDriverConfig::enable_bar) << "\r\n";
         signal_and_write(raw.str());
     }
-}
+} // startup
 
 void goby::acomms::ABCDriver::shutdown()
 {
     // put the modem in a low power state?
     // ...
     ModemDriverBase::modem_close();
-}
+} // shutdown
 
 void goby::acomms::ABCDriver::handle_initiate_transmission(protobuf::ModemMsgBase* base_msg)
 {
@@ -114,7 +114,7 @@ void goby::acomms::ABCDriver::handle_initiate_transmission(protobuf::ModemMsgBas
 
     // let anyone who is interested know
     signal_and_write(raw.str(), base_msg);    
-}
+} // handle_initiate_transmission
 
 void goby::acomms::ABCDriver::do_work()
 {
@@ -163,7 +163,7 @@ void goby::acomms::ABCDriver::do_work()
             if(log_) *log_ << warn << "Exception: " << e.what() << std::endl;
         }
     }
-}
+} // do_work
 
 void goby::acomms::ABCDriver::signal_and_write(const std::string& raw, protobuf::ModemMsgBase* base_msg /* = 0 */)
 {

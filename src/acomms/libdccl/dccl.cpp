@@ -441,5 +441,5 @@ void goby::acomms::DCCLCodec::process_cfg()
     SHA256 hash;
     StringSource unused(cfg_.crypto_passphrase(), true, new HashFilter(hash, new StringSink(crypto_key_)));
 
-    if(log_) *log_ << "cryptography enabled with given passphrase" << std::endl;
+    if(log_) *log_ << group("dccl_enc") << "cryptography enabled with given passphrase" << std::endl;
 }

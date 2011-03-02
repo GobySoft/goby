@@ -445,10 +445,11 @@ bool goby::acomms::MACManager::remove_slot(const protobuf::Slot& s)
         }
     }
 
-    process_cycle_size_change();
     
     if(slot_order_.empty())
         stop_timer();
+    else
+        process_cycle_size_change();
 
     if(removed_a_slot)
         current_slot_ = slot_order_.begin();

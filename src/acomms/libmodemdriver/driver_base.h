@@ -45,15 +45,15 @@ namespace goby
             /// \name Control
             //@{
 
-            /// \brief Starts the modem driver. Must be called before do_work(). see derived classes (e.g. MMDriver) for examples.
+            /// \brief Starts the modem driver. Must be called before do_work(). 
             ///
             /// \param cfg Startup configuration for the driver and modem. DriverConfig is defined in driver_base.proto. Derived classes can define extensions (see http://code.google.com/apis/protocolbuffers/docs/proto.html#extensions) to DriverConfig to handle modem specific configuration.
             virtual void startup(const protobuf::DriverConfig& cfg) = 0;
 
-            /// \brief Shuts down the modem driver. see derived classes (e.g. MMDriver) for examples.
+            /// \brief Shuts down the modem driver. 
             virtual void shutdown() = 0;
 
-            /// \brief Allows the modem driver to do its work. See derived classes (e.g. MMDriver) for examples.
+            /// \brief Allows the modem driver to do its work. 
             ///
             /// Should be called regularly to perform the work of the driver as the driver *does not* run in its own thread. This allows us to guarantee that no signals are called except inside this do_work method.
             virtual void do_work() = 0;
@@ -61,11 +61,11 @@ namespace goby
 
             /// \name MAC Slots
             //@{
-            /// \brief Virtual initiate_transmission method. Typically connected to MACManager::signal_initiate_transmission() using bind(). See derived classes (e.g. MMDriver) for examples.
+            /// \brief Virtual initiate_transmission method. Typically connected to MACManager::signal_initiate_transmission() using bind().
             ///
             /// \param m ModemMsgBase (defined in modem_message.proto) containing the details of the transmission to be started. This does *not* contain data, which will be requested when the driver calls the data request signal (ModemDriverBase::signal_data_request)
             virtual void handle_initiate_transmission(protobuf::ModemMsgBase* m) = 0;            
-            /// \brief Virtual initiate_ranging method.  Typically connected to MACManager::signal_initiate_ranging() using bind(). See derived classes (e.g. MMDriver) for examples.
+            /// \brief Virtual initiate_ranging method.  Typically connected to MACManager::signal_initiate_ranging() using bind().
             ///
             /// \param m ModemRangingRequest (defined in modem_message.proto) containing the details of the ranging request to be started: source, destination, type, etc.
             virtual void handle_initiate_ranging(protobuf::ModemRangingRequest* m) {};

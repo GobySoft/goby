@@ -8,7 +8,7 @@
 
 /*! \mainpage Goby Underwater Autonomy Project
  
- \image html goby_m.gif
+ \image html gobysoft_logo_image_only_medium.png
 
  The Goby Underwater Autonomy Project aims to create a unified framework for multiple scientific autonomous marine vehicle collaboration, seamlessly incorporating acoustic, ethernet, wifi, and serial communications. Presently the main thrust of the project is developing a set of robust acoustic networking libraries. Goby is currently written entirely in C++, and licensed under the GNU General Public License v3 <http://www.gnu.org/licenses/gpl.html>.
 
@@ -23,7 +23,7 @@
   \section main_manual Developer manual
   <ul>
   <li> \ref acomms - tackle the extremely rate limited acoustic networking problem. These libraries were designed together but can operate independently for a developer looking integrate a specific component (e.g. just encoding/decoding) without committing to the entire goby-acomms stack.</li>
-<!--  <li> \ref util - provide utility functions for tasks such as logging, scientific calculations, string parsing, and serial device i/o. Goby also relies on the boost libraries <http://www.boost.org/> for many utility tasks to fill in areas where the C++ Standard Library is insufficient or unelegant.</li> -->
+  <li> \ref util - provide utility functions for tasks such as logging, scientific calculations, string parsing, and serial device i/o. Goby also relies on the boost libraries <http://www.boost.org/> for many utility tasks to fill in areas where the C++ Standard Library is insufficient or unelegant.</li>
   </ul>  
 
   \section main_papers Publications
@@ -57,7 +57,7 @@ write to Launchpad or access private data.  See "bzr help launchpad-login". </tt
   </ul>    
 <li> Compile to goby/bin, goby/lib, and goby/include: \verbatim cd goby; ./INSTALL \endverbatim
 To install to /usr/local (optional): \verbatim sudo ./INSTALL \endverbatim
-<li> Enable / disable building of components and fine tuning of build system (optional):
+<li> Enable / disable building of components (such as examples and tools) and fine tuning of build system (optional):
   <ol>
     <li> \verbatim sudo apt-get install cmake-gui \endverbatim
     <li> \verbatim cmake-gui goby/build \endverbatim

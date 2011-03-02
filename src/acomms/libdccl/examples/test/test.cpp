@@ -66,7 +66,7 @@ int main()
     std::cout << "loading xml file: test.xml" << std::endl;
 
     // instantiate the parser with a single xml file
-    goby::acomms::DCCLCodec dccl;    
+    goby::acomms::DCCLCodec dccl(&std::cerr);    
     goby::acomms::protobuf::DCCLConfig cfg;
     cfg.add_message_file()->set_path(DCCL_EXAMPLES_DIR "/test/test.xml");
     // must be kept secret!

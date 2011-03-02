@@ -14,13 +14,14 @@
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
 //
-// Usage: create fake tty terminals
+// Usage:
+// 1. run abc_modem_simulator running on same port (as TCP server)
+// > abc_modem_simulator 54321
+// 2. create fake tty terminals connected to TCP as client to port 54321
 // > socat -d -d -v pty,raw,echo=0,link=/tmp/ttyFAKE1 TCP:localhost:54321
 // > socat -d -d -v pty,raw,echo=0,link=/tmp/ttyFAKE2 TCP:localhost:54321
 // > ...
-// > abc_modem_simulator 54321
-//
-// run your application connecting to /tmp/ttyFAKE1, /tmp/ttyFAKE2, etc. They will all be in the same "broadcast" pool
+// 3. run your application connecting to /tmp/ttyFAKE1, /tmp/ttyFAKE2, etc. They will all act in the same "broadcast" pool
 
 #include <map>
 #include <string>

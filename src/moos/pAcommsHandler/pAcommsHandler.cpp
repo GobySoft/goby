@@ -34,13 +34,21 @@
 
 using namespace goby::util::tcolor;
 using goby::acomms::operator<<;
-using goby::util::as;
 using goby::util::glogger;
+using goby::util::as;
 using google::protobuf::uint32;
 using goby::acomms::NaN;
 using goby::acomms::DCCLMessageVal;
 
 pAcommsHandlerConfig CpAcommsHandler::cfg_;
+CpAcommsHandler* CpAcommsHandler::inst_ = 0;
+
+CpAcommsHandler* CpAcommsHandler::get_instance()
+{
+    if(!inst_)
+        inst_ = new CpAcommsHandler();
+    return inst_;
+}
 
 CpAcommsHandler::CpAcommsHandler()
     : TesMoosApp(&cfg_),

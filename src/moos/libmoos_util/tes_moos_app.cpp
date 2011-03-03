@@ -113,11 +113,11 @@ bool TesMoosApp::OnStartUp()
 }
 
 
-void TesMoosApp::subscribe(const std::string& var,  InboxFunc handler /* = InboxFunc() */, int blackout /* = 0 */ )
+void TesMoosApp::subscribe(const std::string& var,  InboxFunc handler, int blackout /* = 0 */ )
 {
     pending_subscriptions_.push_back(std::make_pair(var, blackout));
     try_subscribing();
-    mail_handlers_[var] = handler ? handler : boost::bind(&TesMoosApp::inbox, this, _1);
+    mail_handlers_[var] = handler;
 }
 
 void TesMoosApp::try_subscribing()
@@ -134,5 +134,110 @@ void TesMoosApp::do_subscriptions()
         m_Comms.Register(pending_subscriptions_.front().first,
                          pending_subscriptions_.front().second);
         pending_subscriptions_.pop_front();
+    }
+}
+
+
+void TesMoosApp::fetch_moos_globals(google::protobuf::Message* msg,
+                                    CMOOSFileReader& moos_file_reader)
+{
+    const google::protobuf::Descriptor* desc = msg->GetDescriptor();
+    const google::protobuf::Reflection* refl = msg->GetReflection();
+
+    for(int i = 0, n = desc->field_count(); i < n; ++i)
+    {
+        const google::protobuf::FieldDescriptor* field_desc = desc->field(i);
+        if(field_desc->is_repeated())
+            continue;
+        
+        std::string moos_global = field_desc->options().GetExtension(::moos_global);
+        
+        switch(field_desc->cpp_type())
+        {
+            case google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE:
+                fetch_moos_globals(refl->MutableMessage(msg, field_desc), moos_file_reader);
+                break;    
+                    
+            case google::protobuf::FieldDescriptor::CPPTYPE_INT32:
+            {
+                int result;
+                if(moos_file_reader.GetValue(moos_global, result))
+                    refl->SetInt32(msg, field_desc, result);
+                break;
+            }
+            
+            case google::protobuf::FieldDescriptor::CPPTYPE_INT64:
+            {
+                int result;
+                if(moos_file_reader.GetValue(moos_global, result))
+                    refl->SetInt64(msg, field_desc, result);
+                break;
+            }
+
+            case google::protobuf::FieldDescriptor::CPPTYPE_UINT32:
+            {
+                unsigned result;
+                if(moos_file_reader.GetValue(moos_global, result))
+                    refl->SetUInt32(msg, field_desc, result);
+                break;
+            }
+
+            case google::protobuf::FieldDescriptor::CPPTYPE_UINT64:
+            {
+                unsigned result;
+                if(moos_file_reader.GetValue(moos_global, result))
+                    refl->SetUInt64(msg, field_desc, result);
+                break;
+            }
+                        
+            case google::protobuf::FieldDescriptor::CPPTYPE_BOOL:
+            {
+                bool result;
+                if(moos_file_reader.GetValue(moos_global, result))
+                    refl->SetBool(msg, field_desc, result);
+                break;
+            }
+                    
+            case google::protobuf::FieldDescriptor::CPPTYPE_STRING:
+            {
+                std::string result;
+                if(moos_file_reader.GetValue(moos_global, result))
+                    refl->SetString(msg, field_desc, result);
+                break;
+            }
+                
+            case google::protobuf::FieldDescriptor::CPPTYPE_FLOAT:
+            {
+                float result;
+                if(moos_file_reader.GetValue(moos_global, result))
+                    refl->SetFloat(msg, field_desc, result);
+                break;
+            }
+
+            case google::protobuf::FieldDescriptor::CPPTYPE_DOUBLE:
+            {
+                double result;
+                if(moos_file_reader.GetValue(moos_global, result))
+                    refl->SetDouble(msg, field_desc, result);
+                break;
+            }
+                
+            case google::protobuf::FieldDescriptor::CPPTYPE_ENUM:
+            {
+                std::string result;
+                if(moos_file_reader.GetValue(moos_global, result))
+                {                
+                    const google::protobuf::EnumValueDescriptor* enum_desc =
+                        refl->GetEnum(*msg, field_desc)->type()->FindValueByName(result);
+                    if(!enum_desc)
+                        throw(std::runtime_error(std::string("invalid enumeration " +
+                                                             result + " for field " +
+                                                             field_desc->name())));
+                    
+                    refl->SetEnum(msg, field_desc, enum_desc);
+                }
+                break;
+            }
+        }
     }
 }

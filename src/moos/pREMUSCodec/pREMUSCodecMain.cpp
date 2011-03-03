@@ -23,29 +23,7 @@
 
 #include "pREMUSCodec.h"
  
-int main(int argc, char * argv[])
+int main(int argc, char* argv[])
 {
-    // default parameters file
-    const char * sMissionFile = "pREMUSCodec.moos";
-        
-    // under what name should the application register with the MOOSDB?
-    const char * sMOOSName = "pREMUSCodec";
-  
-    switch(argc)
-    {
-        case 3:
-            // command line says don't register with default name
-            sMOOSName = argv[2];
-        case 2:
-            // command line says don't use default config file
-            sMissionFile = argv[1];
-    }
-  
-    // make an application
-    CpREMUSCodec pREMUSCodecApp;
-    
-    // run it
-    pREMUSCodecApp.Run(sMOOSName,sMissionFile);
-
-    return 0;
+    return goby::moos::run<CpREMUSCodec>(argc, argv);
 }

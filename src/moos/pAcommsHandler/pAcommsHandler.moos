@@ -1,25 +1,3 @@
-modem_id = 1    
-modem_id_lookup_path = modem_id_lookup.txt
-
-ProcessConfig = pAcommsHandler
-{
-  //////////////////////
-  // MOOSApp reads this
-  //////////////////////
-  AppTick    = 10
-  CommsTick  = 10  
-
-  //////////////////////
-  // pAcommsHandler Config
-  //////////////////////
-  
-  \begin{pAcommsHandler_config}
-  
-  
-
-  
- 
-  \end{pAcommsHandler_config} 
-
-  
-}
+run
+> pAcommsHandler -e 
+to generate a complete example .moos file. See ~/goby/cfg/MOOS for some examples.

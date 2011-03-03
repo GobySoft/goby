@@ -28,205 +28,148 @@
 using namespace std;
 using boost::trim_copy;
 using namespace goby::acomms;
+using goby::util::glogger;
+
+iCommanderConfig CiCommander::cfg_;
+CommanderCdk CiCommander::gui_;
+CMOOSGeodesy CiCommander::geodesy_;
+tes::ModemIdConvert CiCommander::modem_lookup_;
+goby::acomms::DCCLCodec CiCommander::dccl_;
+boost::mutex CiCommander::gui_mutex_;
+CiCommander* CiCommander::inst_ = 0;
+
+
+CiCommander* CiCommander::get_instance()
+{
+    if(!inst_)
+        inst_ = new CiCommander();
+    return inst_;
+}
 
 // Construction / Destruction
 CiCommander::CiCommander()
-    : command_gui_(gui_, gui_mutex_, geodesy_, modem_lookup_, m_Comms, dccl_, loads_, community_, xy_only_),
+    : TesMoosApp(&cfg_),
       command_gui_thread_(boost::bind(&CommandGui::run, &command_gui_)),
-      start_time_(MOOSTime())
-{ }
+      start_time_(MOOSTime()),
+      is_started_up_(false)
+{
+
+    if (!cfg_.common().has_lat_origin() || !cfg_.common().has_lon_origin())
+    {
+        glogger() << die << "no lat_origin or lon_origin specified in configuration. this is required for geodesic conversion" << std::endl;
+    }
+    else
+    {
+        if(geodesy_.Initialise(cfg_.common().lat_origin(), cfg_.common().lon_origin()))
+            glogger() << "success!" << std::endl;
+        else
+            glogger() << die << "could not initialize geodesy" << std::endl;
+    }
+
+    if(cfg_.has_modem_id_lookup_path())
+        glogger() << modem_lookup_.read_lookup_file(cfg_.modem_id_lookup_path()) << std::endl;
+    else
+        glogger() << warn << "no modem_id_lookup_path in moos file. this is required for conversions between modem_id and vehicle name / type." << std::endl;    
+    
+    dccl_.merge_cfg(cfg_.dccl_cfg());
+
+
+    for(int i = 0, n = cfg_.show_variable_size(); i < n; ++i)
+    {
+        show_vars_[cfg_.show_variable(i)] = "";
+        subscribe(cfg_.show_variable(i), &CiCommander::inbox, this);
+    }
+    
+    
+    subscribe("ACOMMS_ACK", &CiCommander::inbox, this);
+    subscribe("ACOMMS_EXPIRE", &CiCommander::inbox, this);
+}
+
 CiCommander::~CiCommander()
 { }
 
 // OnNewMail: called when new mail (previously registered for)
 // has arrived.
-bool CiCommander::OnNewMail(MOOSMSG_LIST & NewMail)
+void CiCommander::inbox(const CMOOSMsg& msg)
 {        
-    for(MOOSMSG_LIST::iterator p = NewMail.begin(); p != NewMail.end(); p++)
+    string key   = msg.GetKey(); 	
+    bool is_dbl  = msg.IsDouble();
+    //    bool is_str  = p->IsString();
+    
+    double dval  = msg.GetDouble();
+    string sval  = msg.GetString();
+    
+    // uncomment as needed
+    // double msg_time = msg.GetTime();
+    // string msg_src  = msg.GetSource();
+    // string msg_community = msg.GetCommunity();
+    
+    if(msg.GetTime() < start_time_)
     {
-        string key   = p->GetKey(); 	
-        bool is_dbl  = p->IsDouble();
-        //    bool is_str  = p->IsString();
+        std::cerr << "ignoring normal mail from " << msg.GetKey() << " from before we started" << std::endl;
+    }
+    else if(MOOSStrCmp("ACOMMS_ACK", key))
+    {   
+        goby::acomms::protobuf::ModemDataAck ack_msg;
+        parse_for_moos(sval, &ack_msg);
         
-        double dval  = p->GetDouble();
-        string sval  = p->GetString();
-        
-        // uncomment as needed
-        // double msg_time = msg.GetTime();
-        // string msg_src  = msg.GetSource();
-        // string msg_community = msg.GetCommunity();
-        
-        if((*p).GetTime() < start_time_)
+        try
         {
-            std::cerr << "ignoring normal mail from " << p->GetKey() << " from before we started" << std::endl;
-        }
-        else if(MOOSStrCmp("ACOMMS_ACK", key))
-        {   
-            goby::acomms::protobuf::ModemDataAck ack_msg;
-            parse_for_moos(sval, &ack_msg);
-
-            try
-            {
-                vector<string> mesg;
-                DCCLHeaderDecoder head_decoder(ack_msg.orig_msg().data());
-                mesg.push_back(string("</B>Message </40>acknowledged<!40> from queue: " + dccl_.id2name(ack_msg.orig_msg().queue_key().id())));
-                mesg.push_back(string(" for destination: " + modem_lookup_.get_name_from_id(ack_msg.orig_msg().base().dest())));
-                mesg.push_back(string(" at time: " + ack_msg.orig_msg().base().time()));
-                gui_.disp_info(mesg);
-            }
-            catch(...)
-            { }
-            
-        
-        }
-        else if(MOOSStrCmp("ACOMMS_EXPIRE", key))
-        {
-            goby::acomms::protobuf::ModemDataExpire expire_msg;
-            parse_for_moos(sval, &expire_msg);
-
-            try
-            {
-                vector<string> mesg;
-                DCCLHeaderDecoder head_decoder(expire_msg.orig_msg().data());
-                mesg.push_back(string("</B>Message </16>expired<!16> from queue: " + dccl_.id2name(expire_msg.orig_msg().queue_key().id())));
-                mesg.push_back(string(" for destination: " + modem_lookup_.get_name_from_id(expire_msg.orig_msg().base().dest())));
-                mesg.push_back(string(" at time: " + expire_msg.orig_msg().base().time()));
-                gui_.disp_info(mesg);
-            }
-            catch(...)
-            { }
-            
-        }
-        else
-        {
-            map<string, string>::iterator it = show_vars_.find(key);
-            if(it != show_vars_.end()) 
-            {
-                if(is_dbl)
-                    show_vars_[key] = goby::util::as<string>(dval);
-                else
-                    show_vars_[key] = sval;
-            }
             vector<string> mesg;
-            for(map<string, string>::iterator it = show_vars_.begin(), n = show_vars_.end(); it!=n; ++it)
-                mesg.push_back(string(it->first + ": " + it->second));
-            //gui_.disp_lower_info(mesg);            
-         }
+            DCCLHeaderDecoder head_decoder(ack_msg.orig_msg().data());
+            mesg.push_back(string("</B>Message </40>acknowledged<!40> from queue: " + dccl_.id2name(ack_msg.orig_msg().queue_key().id())));
+            mesg.push_back(string(" for destination: " + modem_lookup_.get_name_from_id(ack_msg.orig_msg().base().dest())));
+            mesg.push_back(string(" at time: " + ack_msg.orig_msg().base().time()));
+            gui_.disp_info(mesg);
+        }
+        catch(...)
+        { }
+        
         
     }
-    
-    return true;
-}
-
-// OnConnectToServer: called when connection to the MOOSDB is
-// complete
-bool CiCommander::OnConnectToServer()
-{
-    if (!ReadConfiguration())
-	return false;
- 
-    RegisterVariables();   
-
-    MOOSPause(1000);
-
-    command_gui_.initialize();
-    gui_.set_lower_box_size(show_vars_.size()+2);    
-    
-    return true;
-}
-
-// Iterate: called AppTick times per second
-bool CiCommander::Iterate()
-{ return true; }
-
-// OnStartUp: called when program is run
-bool CiCommander::OnStartUp()
-{ return true; }
-
-// RegisterVariables: register for variables we want to get mail for
-void CiCommander::RegisterVariables()
-{
-    m_Comms.Register("ACOMMS_ACK", 0);
-    m_Comms.Register("ACOMMS_EXPIRE", 0);
-
-    for(map<string, string>::iterator it = show_vars_.begin(), n = show_vars_.end(); it!=n; ++it)
-        m_Comms.Register(it->first, 0);
-}
-
-// ReadConfiguration: reads in configuration values from the .moos file
-// parameter keys are case insensitive
-bool CiCommander::ReadConfiguration()
-{
-
-
-    double latOrigin, longOrigin;
-    std::cerr << "reading in geodesy information: " << std::endl;
-    if (!m_MissionReader.GetValue("LatOrigin", latOrigin) || !m_MissionReader.GetValue("LongOrigin", longOrigin))
+    else if(MOOSStrCmp("ACOMMS_EXPIRE", key))
     {
-        std::cerr << "no LatOrigin and/or LongOrigin in moos file. this is required for geodesic conversion" << std::endl;
-    }
-    else if (!geodesy_.Initialise(latOrigin, longOrigin))
-    {
-        std::cerr << "CMOOSGeodesy initialization failed." << std::endl;
-        exit(EXIT_FAILURE);
-    }
-
-    string path;
-    if (!m_MissionReader.GetValue("modem_id_lookup_path", path))
-    {
-        std::cerr << "no modem_id_lookup_path in moos file. this is required for modem_id conversion" << std::endl;
-        exit(EXIT_FAILURE);
+        goby::acomms::protobuf::ModemDataExpire expire_msg;
+        parse_for_moos(sval, &expire_msg);
+        
+        try
+        {
+            vector<string> mesg;
+            DCCLHeaderDecoder head_decoder(expire_msg.orig_msg().data());
+            mesg.push_back(string("</B>Message </16>expired<!16> from queue: " + dccl_.id2name(expire_msg.orig_msg().queue_key().id())));
+            mesg.push_back(string(" for destination: " + modem_lookup_.get_name_from_id(expire_msg.orig_msg().base().dest())));
+            mesg.push_back(string(" at time: " + expire_msg.orig_msg().base().time()));
+            gui_.disp_info(mesg);
+        }
+        catch(...)
+        { }
+        
     }
     else
     {
-        string message = modem_lookup_.read_lookup_file(path);
-
-        while(message != "")
+        map<string, string>::iterator it = show_vars_.find(key);
+        if(it != show_vars_.end()) 
         {
-            string line = MOOSChomp(message, "\n");
-            std::cerr << line << std::endl;
+            if(is_dbl)
+                show_vars_[key] = goby::util::as<string>(dval);
+            else
+                show_vars_[key] = sval;
         }
-    }
-
-    if (!m_MissionReader.GetValue("Community", community_))
-    {
-        std::cerr << "no Community in moos file. this is required for special:community" << std::endl;
-    }
-    
-    xy_only_ = false;
-    m_MissionReader.GetConfigurationParam("force_xy_only", xy_only_);
-    
-    list<string> params;
-    if(m_MissionReader.GetConfiguration(GetAppName(), params))
-    {
-        params.reverse();        
-
-        for(list<string>::iterator it = params.begin(); it !=params.end(); ++it)
-        {
-            // trim_copy is from boost
-            string value = trim_copy(*it);
-            string key = trim_copy(MOOSChomp(value, "="));
-
-            if(goby::util::stricmp(key, "message_file"))
-            {
-                std::cerr << "try to parse file: " << value << std::endl;
-                // parse the message file
-                protobuf::DCCLConfig cfg;
-                cfg.add_message_file()->set_path(value);
-                dccl_.merge_cfg(cfg);
-                std::cerr << "success!" << std::endl;
-            }
-            else if(goby::util::stricmp(key, "load"))
-            {
-                loads_.push_back(value);
-            }                
-            else if(goby::util::stricmp(key, "show_variable"))
-            {
-                show_vars_[value] = "";
-            }                
-        }
-    }
-    
-    return true;
+        vector<string> mesg;
+        for(map<string, string>::iterator it = show_vars_.begin(), n = show_vars_.end(); it!=n; ++it)
+            mesg.push_back(string(it->first + ": " + it->second));
+        //gui_.disp_lower_info(mesg);            
+    }    
 }
 
+
+void CiCommander::loop()
+{
+    if(!is_started_up_)
+    {
+        command_gui_.initialize();
+        gui_.set_lower_box_size(show_vars_.size()+2);    
+        is_started_up_ = true;
+        
+    }
+}

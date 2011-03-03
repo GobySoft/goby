@@ -11,6 +11,8 @@ LatOrigin =  42.35
 LongOrigin = -70.95
 
 NoNetwork = true
+modem_id_lookup_path = modemidlookup.txt
+
     
 ProcessConfig = ANTLER
 {
@@ -22,21 +24,15 @@ ProcessConfig = ANTLER
     Run = iModemSim             @ NewConsole = true, XConfig=3
 
     1 = -geometry,80x15+0+0
-    2 = -geometry,80x23+0+230
+    2 = -geometry,80x100+0+230
     3 = -geometry,80x15+0+570
 }
 
 ProcessConfig = pREMUSCodec
 {
-  AppTick    = 4
-  CommsTick  = 4
-  
-  verbosity = verbose
-  mdat_state_var = IN_REMUS_STATUS
-  mdat_state_out = OUT_REMUS_STATUS
-  modem_id_lookup_path = modemidlookup.txt
-
-  create_status = false
+  mdat_state_var: "IN_REMUS_STATUS"
+  mdat_state_out: "OUT_REMUS_STATUS"
+  create_status: false
 }
 
 
@@ -57,12 +53,11 @@ ProcessConfig = pAcommsHandler
     }
 
     modem_id: 1
-    modem_id_lookup_path: "modemidlookup.txt"
 
     driver_type: DRIVER_WHOI_MICROMODEM
     driver_cfg
     { 
-      serial_port: "/dev/ttyLOOPA2"
+      serial_port: "/tmp/ttyLOOPA2"
 # doesn't work with iModemSim, set to true for real ops
       [MicroModemConfig.reset_nvram]: false
     }
@@ -90,10 +85,7 @@ ProcessConfig = pAcommsHandler
 
     dccl_cfg
     {
-        message_file { path: "/home/toby/goby/xml/simple_status.xml" }
-        
-      // relative to location of xml files!
-      schema: "../src/acomms/libdccl/message_schema.xsd"
+        message_file { path: "/home/toby/goby/xml/simple_status.xml" }          
     }
 }
 
@@ -105,7 +97,7 @@ ProcessConfig = iModemSim
 	AppTick   = 4
 	CommsTick = 4
 
-	Port = /dev/ttyLOOPA1
+	Port = /tmp/ttyLOOPA1
 	Speed = 19200
 	
 	IPPort = 49234

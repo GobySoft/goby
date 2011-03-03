@@ -26,21 +26,17 @@ ProcessConfig = ANTLER
     Run = iModemSim             @ NewConsole = true, XConfig=3
 
     1 = -geometry,80x15-0+0
-    2 = -geometry,80x23-0+230
+    2 = -geometry,80x100-0+230
     3 = -geometry,80x15-0+570
 }
 
 ProcessConfig = pREMUSCodec
 {
-  AppTick    = 4
-  CommsTick  = 4
-
-  create_status = true
+  create_status: true
   
-  verbosity = verbose
-  mdat_state_var = IN_REMUS_STATUS
-  mdat_state_out = OUT_REMUS_STATUS
-  modem_id_lookup_path = modemidlookup.txt
+  mdat_state_var: "IN_REMUS_STATUS"
+  mdat_state_out: "OUT_REMUS_STATUS"
+  modem_id_lookup_path: "modemidlookup.txt"
 }
     
 ProcessConfig = pAcommsHandler
@@ -65,7 +61,7 @@ ProcessConfig = pAcommsHandler
     driver_type: DRIVER_WHOI_MICROMODEM
     driver_cfg
     { 
-        serial_port: "/dev/ttyLOOPB2"
+        serial_port: "/tmp/ttyLOOPB2"
     # doesn't work with iModemSim, set to true for real ops
         [MicroModemConfig.reset_nvram]: false
     }
@@ -103,7 +99,7 @@ ProcessConfig = iModemSim
 	AppTick   = 4
 	CommsTick = 4
 
-	Port = /dev/ttyLOOPB1
+	Port = /tmp/ttyLOOPB1
 	Speed = 19200
 	
 	IPPort = 49234

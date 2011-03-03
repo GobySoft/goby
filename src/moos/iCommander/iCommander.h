@@ -37,37 +37,40 @@
 #include "MOOSUtilityLib/MOOSGeodesy.h"
 #include "goby/acomms/dccl.h"
 #include "command_gui.h"
+#include "iCommander_config.pb.h"
 
-class CiCommander : public CMOOSApp  
+#include "goby/moos/libmoos_util/tes_moos_app.h"
+
+class CiCommander : public TesMoosApp
 {
   public:
+    static CiCommander* get_instance();
+    
+  private:
     CiCommander();
     virtual ~CiCommander();
 
-    
-  private:
-    bool OnNewMail(MOOSMSG_LIST &NewMail);
-    bool Iterate();
-    bool OnConnectToServer();
-    bool OnStartUp();
+    friend class CommandGui;
 
-    void RegisterVariables();
-    bool ReadConfiguration();
+    void loop(); // from TesMoosApp
+    void inbox(const CMOOSMsg& msg);
 
-    CommanderCdk gui_;
-    CMOOSGeodesy geodesy_;
-    tes::ModemIdConvert modem_lookup_;
-    goby::acomms::DCCLCodec dccl_;
-    std::vector<std::string> loads_;
-    std::string community_;
-    bool xy_only_;
+    static CommanderCdk gui_;
+    static CMOOSGeodesy geodesy_;
+    static tes::ModemIdConvert modem_lookup_;
+    static goby::acomms::DCCLCodec dccl_;
 
     CommandGui command_gui_;
     boost::thread command_gui_thread_;
-    boost::mutex gui_mutex_;
+    static boost::mutex gui_mutex_;
     
     double start_time_;
-    std::map<std::string, std::string> show_vars_;    
+    std::map<std::string, std::string> show_vars_;
+
+    bool is_started_up_;
+    
+    static iCommanderConfig cfg_;
+    static CiCommander* inst_;
 };
 
 

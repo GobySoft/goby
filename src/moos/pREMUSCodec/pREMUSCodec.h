@@ -32,28 +32,34 @@
 #include "WhoiUtil.h"
 #include "MOOSUtilityLib/MOOSGeodesy.h"
 
+#include "pREMUSCodec_config.pb.h"
+#include "goby/moos/libmoos_util/tes_moos_app.h"
+#include "goby/moos/libmoos_util/modem_id_convert.h"
+
 // CCL frame types
 
-#define MDAT_REDIRECT       (7)     /* VIP */
-#define MDAT_POSITION       (8)     /* VIP */
-#define MDAT_STATE          (14)    /* REMUS */
-#define MDAT_RANGER         (16)    /* REMUS */
-#define MDAT_OASIS          (31)    /* OASIS Array data */
+const unsigned MDAT_REDIRECT  = 7;     /* VIP */
+const unsigned MDAT_POSITION  = 8;     /* VIP */
+const unsigned MDAT_STATE = 14;    /* REMUS */
+const unsigned MDAT_RANGER = 16;    /* REMUS */
+const unsigned MDAT_OASIS = 31;    /* OASIS Array data */
 
-class CpREMUSCodec : public CMOOSApp  
+class CpREMUSCodec : public TesMoosApp
 {
   public:
+    static CpREMUSCodec* get_instance();
+    
+  private:
     CpREMUSCodec();
     virtual ~CpREMUSCodec();
+    void loop(); // from TesMoosApp
+    void inbox(const CMOOSMsg& msg);
 
-  private:
-    bool OnNewMail(MOOSMSG_LIST &NewMail);
-    bool Iterate();
-    bool OnConnectToServer();
-    bool OnStartUp();
-
-    void RegisterVariables();
-    bool ReadConfiguration();
+    void subscribe(const std::string& var)
+    {
+        TesMoosApp::subscribe(var, &CpREMUSCodec::inbox, this);
+    }
+    
     bool hex_to_int_array(std::string h, std::vector<unsigned int>& c );
     std::string int_array_to_hex(std::vector<unsigned int> c );
     std::string decode_mdat_state(std::vector<unsigned int>  c , int node, std::string name, std::string type);
@@ -67,30 +73,20 @@ class CpREMUSCodec : public CMOOSApp
     bool encode_mdat_position(std::vector<unsigned int>&  c);
     bool parseRedirect(std::string msg, int& node);
 
-    std::string mdat_state_var;
-    std::string mdat_state_out;
-    std::string mdat_ranger_var;
-    std::string mdat_ranger_out;
-    std::string mdat_redirect_var;
-    std::string mdat_redirect_out;
-    std::string mdat_alert_var;
-    std::string mdat_alert_out;
-    std::string mdat_alert2_var;
-    std::string mdat_alert2_out;
-
-		// Replaces assembleAIS mfallon
+    // Replaces assembleAIS mfallon
     std::string assemble_NODE_REPORT(std::string,std::string,std::string, \
-														std::string,std::string,std::string,std::string, \
-														std::string,std::string,std::string,std::string, \
-														std::string);
-
+                                     std::string,std::string,std::string,std::string, \
+                                     std::string,std::string,std::string,std::string, \
+                                     std::string);
+    
     struct vehicle_nametype 
     {
         std::string name;
         std::string type;
     };
-    // lookup read from a file for modem id -> name and type
-    std::map<int, vehicle_nametype> modem_lookup;
+    
+    tes::ModemIdConvert modem_lookup_;
+
     unsigned int my_id;
     // for lat long conversion
     CMOOSGeodesy m_geodesy;
@@ -109,7 +105,6 @@ class CpREMUSCodec : public CMOOSApp
     bool got_depth;
     bool got_speed;
     bool got_heading;
-    bool remus_status;
     bool west;
     bool south;
 
@@ -135,9 +130,8 @@ class CpREMUSCodec : public CMOOSApp
     unsigned short survey_rows;
     unsigned short survey_command;
 
-
-
-
+    static pREMUSCodecConfig cfg_;
+    static CpREMUSCodec* inst_;
 };
 
 #endif 

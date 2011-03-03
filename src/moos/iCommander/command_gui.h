@@ -20,28 +20,11 @@
 class CommandGui
 {
   public:
-    CommandGui(CommanderCdk & gui,
-               boost::mutex & gui_mutex,
-               CMOOSGeodesy & geodesy,
-               tes::ModemIdConvert & modem_lookup,
-               CMOOSCommClient & comms,
-               goby::acomms::DCCLCodec & dccl,
-               std::vector<std::string> & loads,
-               std::string & community,
-               bool xy_only);
-    
+    CommandGui();
     ~CommandGui();
 
     bool run();
-    void initialize()
-    {
-        gui_.initialize();
-
-        for(std::vector<std::string>::size_type i = 0, n = loads_.size(); i < n; ++i)
-            do_open(loads_[i]);
-
-        initialized_ = true;
-    }    
+    void initialize();
 
     std::string microsec_simple_time_of_day()
     { return boost::posix_time::to_simple_string(boost::posix_time::microsec_clock::universal_time().time_of_day()); }
@@ -81,16 +64,6 @@ class CommandGui
     std::vector< boost::shared_ptr<goby::acomms::DCCLMessageVar> > fetch_message_vars(goby::acomms::DCCLMessage*);
 
     bool initialized_;
-
-    CommanderCdk & gui_;
-    boost::mutex & gui_mutex_;
-    CMOOSGeodesy & geodesy_;
-    tes::ModemIdConvert & modem_lookup_;
-    CMOOSCommClient & m_Comms;
-    goby::acomms::DCCLCodec & dccl_;
-    std::vector<std::string> & loads_;
-    std::string & community_;
-    bool xy_only_;
     
     bool refresh_;
     

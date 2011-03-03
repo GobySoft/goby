@@ -116,12 +116,12 @@ IP(const std::string& ip = "", unsigned port = DEFAULT_TCP_SHARE_PORT)
 class CpAcommsHandler : public TesMoosApp
 {
   public:
-    CpAcommsHandler();
-    ~CpAcommsHandler();
+    static CpAcommsHandler* get_instance();
     
   private:
-    // from TesMoosApp
-    void loop();    
+    CpAcommsHandler();
+    ~CpAcommsHandler();
+    void loop();     // from TesMoosApp
     void do_subscriptions();
     void process_configuration();
 
@@ -230,6 +230,7 @@ class CpAcommsHandler : public TesMoosApp
     std::map<IP, goby::util::TCPClient*> tcp_share_map_;
     goby::util::TCPServer* tcp_share_server_;
 
+    static CpAcommsHandler* inst_;    
 };
 
 inline bool operator<(const IP& a, const IP& b)

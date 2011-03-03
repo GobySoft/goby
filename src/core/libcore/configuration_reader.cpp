@@ -524,6 +524,8 @@ std::string goby::core::ConfigReader::label(const google::protobuf::FieldDescrip
         case google::protobuf::FieldDescriptor::LABEL_REPEATED:
             return " (repeat)";
     }
+
+    return "";
 }
 
 void goby::core::ConfigReader::merge_app_base_cfg(AppBaseConfig* base_cfg,

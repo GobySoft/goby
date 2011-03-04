@@ -16,8 +16,8 @@
   <ul>
   <li> Home page: <http://gobysoft.com>
   <li> Code, bug tracking, and answers: <https://launchpad.net/goby>.</li>
-  <li> Manual: <a href=http://gobysoft.com>(html)</a> <a href=http://gobysoft.com/goby-bzr/doc/goby-dev.pdf>(pdf)</a>.</li>
-  <li> Wiki: <forthcoming>.</li>
+  <li> User Manual:<a href=http://gobysoft.com/goby-bzr/doc/user_manual/user_manual.pdf>(pdf)</a>.</li>
+  <li> Developers' Manual: <a href=http://gobysoft.com>(html)</a> <a href=http://gobysoft.com/goby-bzr/doc/goby-dev.pdf>(pdf)</a>.</li>
   </ul>
 
   \section main_manual Developer manual

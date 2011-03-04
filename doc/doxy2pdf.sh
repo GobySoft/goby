@@ -4,9 +4,9 @@ this_dir=`pwd`
 
 for i in *.doxy
 do
-    #(cat $i; bzr version-info --custom --template="PROJECT_NUMBER = \"Series {branch_nick} revision: {revno} \"") | doxygen -
+    (cat $i; bzr version-info --custom --template="PROJECT_NUMBER = \"Series: {branch_nick}, revision: {revno}, released on {date} \"") | doxygen -
 
-    doxygen $i
+    #doxygen $i
    
 
     pushd ../build/latex

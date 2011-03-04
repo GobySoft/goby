@@ -1,0 +1,3 @@
+\chapter{The GPS Driver example}
+\MakeShortVerb{\!} % makes !foo! == !foo!
+

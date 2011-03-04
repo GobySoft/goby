@@ -34,6 +34,7 @@
 #include "goby/core/libcore/configuration_reader.h"
 #include "goby/core/libcore/exception.h"
 #include "moos_protobuf_helpers.h"
+#include "goby/version.h"
 
 namespace goby
 {
@@ -157,7 +158,8 @@ TesMoosApp::TesMoosApp(ProtobufConfig* cfg)
             ("help,h", "writes this help message")
             ("moos_file,c", boost::program_options::value<std::string>(&mission_file_), "path to .moos file")
             ("moos_name,a", boost::program_options::value<std::string>(&application_name_), "name to register with MOOS")
-            ("example_config,e", "writes an example .moos ProcessConfig block");
+            ("example_config,e", "writes an example .moos ProcessConfig block")
+            ("version,V", "writes the current version");
         
     
         boost::program_options::options_description od_both("Typically given in the .moos file, but may be specified on the command line");
@@ -187,6 +189,14 @@ TesMoosApp::TesMoosApp(ProtobufConfig* cfg)
             std::cout << "ProcessConfig = " << application_name_ << "\n{";
             goby::core::ConfigReader::get_example_cfg_file(cfg, &std::cout, "  ");
             std::cout << "}" << std::endl;
+            exit(EXIT_SUCCESS);            
+        }
+        else if(var_map.count("version"))
+        {
+            std::cout << "This is Version " << goby::VERSION_STRING
+                      << " of the Goby Underwater Autonomy Project released on "
+                      << goby::VERSION_DATE
+                      << ".\nSee https://launchpad.net/goby to search for updates." << std::endl;
             exit(EXIT_SUCCESS);            
         }
         

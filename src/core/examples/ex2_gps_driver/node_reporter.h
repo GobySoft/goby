@@ -15,7 +15,8 @@ public:
     
     
 private:
-    void create_node_report(const GPSSentenceGGA& gga, const DepthReading& depth);
+    void create_node_report(const GPSSentenceGGA& gga,
+                            const DepthReading& depth);
     
     void handle_depth(const DepthReading& reading)
     {

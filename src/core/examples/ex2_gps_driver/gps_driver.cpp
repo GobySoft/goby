@@ -41,7 +41,8 @@ void GPSDriver::loop()
         }
         catch (bad_nmea_sentence& e)
         {
-            glogger() << warn << "bad NMEA sentence: " << e.what() << std::endl;
+            glogger() << warn << "bad NMEA sentence: " << e.what()
+                      << std::endl;
         }
 
         if(nmea.sentence_id() == "GGA")
@@ -50,7 +51,8 @@ void GPSDriver::loop()
 
             // create the message we send on the wire
             GPSSentenceGGA gga;
-            // copy the raw message (in case later users want to do their own parsing)
+            // copy the raw message (in case later users want to do their
+            // own parsing)
             gga.mutable_nmea()->CopyFrom(nmea);
             
             try
@@ -59,7 +61,8 @@ void GPSDriver::loop()
 
                 // parse the time stamp
                 boost::posix_time::ptime t = nmea_time2ptime(nmea.part(1));
-                gga.mutable_header()->set_iso_time(boost::posix_time::to_iso_string(t));
+                gga.mutable_header()->set_iso_time(
+                    boost::posix_time::to_iso_string(t));
                 
                 glogger() << gga << std::flush;
                 
@@ -67,7 +70,8 @@ void GPSDriver::loop()
             }
             catch(bad_gga_sentence& e)
             {
-                glogger() << warn << "bad GGA sentence: " << e.what() << std::endl;
+                glogger() << warn << "bad GGA sentence: " << e.what()
+                          << std::endl;
             }
             
         }
@@ -88,11 +92,12 @@ void GPSDriver::loop()
 //                                1 = GPS fix (SPS)
 //                                2 = DGPS fix
 //                                3 = PPS fix
-// 			       4 = Real Time Kinematic
-// 			       5 = Float RTK
-//                                6 = estimated (dead reckoning) (2.3 feature)
-// 			       7 = Manual input mode
-// 			       8 = Simulation mode
+// 			          4 = Real Time Kinematic
+// 			          5 = Float RTK
+//                                6 = estimated (dead reckoning)
+//                                    (2.3 feature)
+// 			          7 = Manual input mode
+// 			          8 = Simulation mode
 //      08           Number of satellites being tracked
 //      0.9          Horizontal dilution of position
 //      545.4,M      Altitude, Meters, above mean sea level
@@ -101,17 +106,22 @@ void GPSDriver::loop()
 //      (empty field) time in seconds since last DGPS update
 //      (empty field) DGPS station ID number
 //      *47          the checksum data, always begins with *
-// If the height of geoid is missing then the altitude should be suspect. Some non-standard implementations report altitude with respect to the ellipsoid rather than geoid altitude. Some units do not report negative altitudes at all. This is the only sentence that reports altitude.        
+// If the height of geoid is missing then the altitude should be suspect.
+// Some non-standard implementations report altitude with respect to the
+// ellipsoid rather than geoid altitude. Some units do not report negative
+// altitudes at all. This is the only sentence that reports altitude.
+
 void GPSDriver::set_gga_specific_fields(GPSSentenceGGA* gga)
 {
+    using goby::util::as;
     const NMEASentence& nmea = gga->nmea();
     
     const std::string& lat_string = nmea.part(2);
                 
     if(lat_string.length() > 2)
     {
-        double lat_deg = goby::util::as<double>(lat_string.substr(0, 2));
-        double lat_min = goby::util::as<double>(lat_string.substr(2, lat_string.size()));
+        double lat_deg = as<double>(lat_string.substr(0, 2));
+        double lat_min = as<double>(lat_string.substr(2, lat_string.size()));
         double lat = lat_deg + lat_min / 60;
         gga->set_lat((nmea.part(3) == "S") ? -lat : lat);
     }
@@ -123,8 +133,8 @@ void GPSDriver::set_gga_specific_fields(GPSSentenceGGA* gga)
     const std::string& lon_string = nmea.part(4);
     if(lon_string.length() > 2)
     {
-        double lon_deg = goby::util::as<double>(lon_string.substr(0, 3));
-        double lon_min = goby::util::as<double>(lon_string.substr(3, nmea.part(4).size()));
+        double lon_deg = as<double>(lon_string.substr(0, 3));
+        double lon_min = as<double>(lon_string.substr(3, nmea.part(4).size()));
         double lon = lon_deg + lon_min / 60;
         gga->set_lon((nmea.part(5) == "W") ? -lon : lon);
     }
@@ -138,7 +148,8 @@ void GPSDriver::set_gga_specific_fields(GPSSentenceGGA* gga)
         case 1: gga->set_fix_quality(GPSSentenceGGA::GPS_FIX); break;
         case 2: gga->set_fix_quality(GPSSentenceGGA::DGPS_FIX); break;
         case 3: gga->set_fix_quality(GPSSentenceGGA::PPS_FIX); break;
-        case 4: gga->set_fix_quality(GPSSentenceGGA::REAL_TIME_KINEMATIC); break;
+        case 4: gga->set_fix_quality(GPSSentenceGGA::REAL_TIME_KINEMATIC);
+            break;
         case 5: gga->set_fix_quality(GPSSentenceGGA::FLOAT_RTK); break;
         case 6: gga->set_fix_quality(GPSSentenceGGA::ESTIMATED); break;
         case 7: gga->set_fix_quality(GPSSentenceGGA::MANUAL_MODE); break;
@@ -165,7 +176,8 @@ void GPSDriver::string2nmea_sentence(std::string in, NMEASentence* out)
         throw bad_nmea_sentence("no $: '" + in + "'.");
     // Check if the checksum exists and is correctly placed, and strip it.
     // If it's not correctly placed, we'll interpret it as part of message.
-    // NMEA spec doesn't seem to say that * is forbidden elsewhere? (should be)
+    // NMEA spec doesn't seem to say that * is forbidden elsewhere?
+    // (should be)
     if (in.size() > 3 && in.at(in.size()-3) == '*') {
       std::string hex_csum = in.substr(in.size()-2);
       int cs;
@@ -197,9 +209,12 @@ void GPSDriver::string2nmea_sentence(std::string in, NMEASentence* out)
 }
 
 
-// converts the time stamp used by GPS messages of the format HHMMSS.SSS for arbitrary precision fractional
-// seconds into a boost::ptime object (much more usable class representation of for dates and times)
-// *CAVEAT* this assumes that the message was received "today" for the date part of the returned ptime.
+// converts the time stamp used by GPS messages of the format HHMMSS.SSS
+// for arbitrary precision fractional
+// seconds into a boost::ptime object (much more usable class
+// representation of for dates and times)
+// *CAVEAT* this assumes that the message was received "today" for the
+// date part of the returned ptime.
 boost::posix_time::ptime GPSDriver::nmea_time2ptime(const std::string& mt)
 {   
     using namespace boost::posix_time;
@@ -210,7 +225,8 @@ boost::posix_time::ptime GPSDriver::nmea_time2ptime(const std::string& mt)
         return ptime(not_a_date_time);  
     else
     {
-        std::string s_hour = mt.substr(0,2), s_min = mt.substr(2,2), s_sec = mt.substr(4,2), s_fs = "0";
+        std::string s_hour = mt.substr(0,2), s_min = mt.substr(2,2),
+            s_sec = mt.substr(4,2), s_fs = "0";
 
         // has some fractional seconds
         if(mt.length() > 7)
@@ -221,9 +237,12 @@ boost::posix_time::ptime GPSDriver::nmea_time2ptime(const std::string& mt)
             int hour = boost::lexical_cast<int>(s_hour);
             int min = boost::lexical_cast<int>(s_min);
             int sec = boost::lexical_cast<int>(s_sec);
-            int micro_sec = boost::lexical_cast<int>(s_fs)*pow(10, 6-s_fs.size());
+            int micro_sec = boost::lexical_cast<int>(s_fs)*
+                pow(10, 6-s_fs.size());
             
-            return (ptime(date(day_clock::universal_day()), time_duration(hour, min, sec, 0)) + microseconds(micro_sec));
+            return (ptime(date(day_clock::universal_day()),
+                          time_duration(hour, min, sec, 0)) +
+                    microseconds(micro_sec));
         }
         catch (boost::bad_lexical_cast&)
         {

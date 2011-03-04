@@ -26,19 +26,21 @@ NodeReporter::~NodeReporter()
 { }
 
 
-void NodeReporter::create_node_report(const GPSSentenceGGA& gga, const DepthReading& depth_reading)
+void NodeReporter::create_node_report(const GPSSentenceGGA& gga,
+                                      const DepthReading& depth_reading)
 {
     if(!(gga.IsInitialized() && depth_reading.IsInitialized()))
     {
-        glogger() << warn << "need both GPSSentenceGGA and DepthReading message to proceed" << std::endl;
+        glogger() << warn << "need both GPSSentenceGGA and DepthReading "
+                  << "message to proceed" << std::endl;
         return;
     }
 
     glogger() << gga << depth_reading << std::flush;
     
     
-    // make an abstracted position and pose aggregate from the newest readings
-    // for consumption by other processes
+    // make an abstracted position and pose aggregate from the newest
+    // readings for consumption by other processes
     NodeReport report;
 
     // use the time from the GGA message as the base message time
@@ -60,11 +62,13 @@ void NodeReporter::create_node_report(const GPSSentenceGGA& gga, const DepthRead
     // set the depth sensor data
     global_fix->set_depth(depth_reading.depth());
     global_fix->set_depth_source(SIMULATION);
-    global_fix->set_depth_time_lag(gga.header().unix_time()-depth_reading.header().unix_time());
+    global_fix->set_depth_time_lag(gga.header().unix_time()
+                                   -depth_reading.header().unix_time());
 
     // TODO(tes): compute the local coordinates
 
-    // in a better world we would want data for altitude, speed and Euler angles too!
+    // in a better world we would want data for altitude, speed and
+    // Euler angles too!
     glogger() << report << std::flush;
 
     publish(report);

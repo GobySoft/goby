@@ -16,7 +16,8 @@ private:
     void loop()
         {
             static int i = 0;
-            // create a message of type HelloWorldMsg (defined in hello_world.proto)
+            // create a message of type HelloWorldMsg (defined in
+            // hello_world.proto)
             HelloWorldMsg msg;
             // set the fields we need
             msg.set_telegram("hello world!");
@@ -31,6 +32,7 @@ private:
 
 int main(int argc, char* argv[])
 {
-    // start up our application (ApplicationBase will read argc and argv for us)
+    // start up our application (ApplicationBase will read argc and
+    // argv for us)
     return goby::run<HelloWorld1>(argc, argv);
 }

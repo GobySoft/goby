@@ -39,7 +39,7 @@ message Platform
     
   required string name = 1 [(description)="unique name of the node",
                             (example)="AUV-23"];
-  required VehicleType type = 2 [(description)="type of the node"];
+  optional VehicleType type = 2 [(description)="type of the node", default=AUV];
 
   optional AcousticModemInfo acomms = 3 [(description)="acoustic connectivity"];
   optional EthernetInfo ether = 4 [(description)="ethernet connectivity"];

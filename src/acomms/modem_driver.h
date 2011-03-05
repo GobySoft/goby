@@ -25,4 +25,7 @@
 // WHOI Micro-Modem driver
 #include "goby/acomms/libmodemdriver/mm_driver.h"
 
+// toy example "ABC" driver
+#include "goby/acomms/libmodemdriver/abc_driver.h"
+
 #endif

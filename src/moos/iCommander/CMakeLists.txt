@@ -1,10 +1,12 @@
+file(GLOB PROTOS *.proto)
+protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${PROTOS})
 
 
 add_executable(iCommander 
   iCommanderMain.cpp
   iCommander.cpp 
   commander_cdk.cpp
-  command_gui.cpp)
+  command_gui.cpp ${PROTO_SRCS} ${PROTO_HDRS})
 
     
 target_link_libraries(iCommander
@@ -15,4 +17,5 @@ target_link_libraries(iCommander
   cdk
   ncurses
   ${MOOS_LIBRARIES}
-  ${Boost_LIBRARIES})
+  ${Boost_LIBRARIES}
+  ${PROTOBUF_LIBRARY})

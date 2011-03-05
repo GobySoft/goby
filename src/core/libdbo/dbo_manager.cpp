@@ -115,7 +115,6 @@ void goby::core::DBOManager::add_type(const google::protobuf::Descriptor* descri
     reset_session();
     dbo_map.insert(boost::bimap<int, std::string>::value_type(index_, descriptor->full_name()));
 
-
     std::string mangled_name = descriptor->full_name();
     std::replace(mangled_name.begin(), mangled_name.end(), '.', '_');
     mangle_map_.insert(std::make_pair(index_, mangled_name));
@@ -127,9 +126,11 @@ void goby::core::DBOManager::add_type(const google::protobuf::Descriptor* descri
     catch(Wt::Dbo::Exception& e)
     {
         glogger(lock) << warn << e.what() << std::endl << unlock;
-    }    
+    }
     
-    glogger(lock) <<group("dbo") << "created tables for  " << descriptor->full_name() << std::endl << unlock;
+    glogger(lock) <<group("dbo") << "created table for " << descriptor->full_name() << std::endl << unlock;
+
+    reset_session();
 
     // remap all the tables
     for(boost::bimap<int, std::string>::left_iterator it = dbo_map.left.begin(),
@@ -137,8 +138,7 @@ void goby::core::DBOManager::add_type(const google::protobuf::Descriptor* descri
         it != n;
         ++it)
     {
-        if(it->second != descriptor->full_name())
-            map_type(descriptor_pool.FindMessageTypeByName(it->second));
+        map_type(descriptor_pool.FindMessageTypeByName(it->second));
     }
 }
 

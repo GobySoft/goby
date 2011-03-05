@@ -1,10 +1,10 @@
 import "goby/moos/libmoos_util/tes_moos_app.proto";
-import "goby/acomms/protobuf/driver_base.proto";
-import "goby/acomms/protobuf/queue.proto";
-import "goby/acomms/protobuf/amac.proto";
-import "goby/acomms/protobuf/dccl.proto";
-import "goby/acomms/protobuf/modem_message.proto";
-import "goby/core/proto/option_extensions.proto";
+import "goby/protobuf/driver_base.proto";
+import "goby/protobuf/queue.proto";
+import "goby/protobuf/amac.proto";
+import "goby/protobuf/dccl.proto";
+import "goby/protobuf/modem_message.proto";
+import "goby/protobuf/option_extensions.proto";
 
 
 message pAcommsHandlerConfig
@@ -16,7 +16,7 @@ message pAcommsHandlerConfig
   required int32 modem_id = 2 [(description)="Unique number 1-31 to identify this node", (example)="1"];
 
   // driver
-  enum DriverType { DRIVER_NONE = 1; DRIVER_WHOI_MICROMODEM = 2; }
+  enum DriverType { DRIVER_NONE = 1; DRIVER_WHOI_MICROMODEM = 2; DRIVER_ABC_EXAMPLE_MODEM = 3;}
   optional DriverType driver_type = 3 [default = DRIVER_NONE, (description)="Corresponding driver for the type of physical acoustic modem used"];
   optional goby.acomms.protobuf.DriverConfig driver_cfg = 4 [(description)="Configure the acoustic modem driver"]; // see driver_base.proto & mm_driver.proto
 
@@ -34,7 +34,7 @@ message pAcommsHandlerConfig
   //   modem_id,name,type
   // for example
   //   3,unicorn,auv
-  optional string modem_id_lookup_path = 101 [(description)="Path to file containing mapping between modem_id and vehicle name & type"];
+  optional string modem_id_lookup_path = 101 [(description)="Path to file containing mapping between modem_id and vehicle name & type",(moos_global) = "modem_id_lookup_path"];
 
   optional bool tcp_share_enable = 200 [default = false, (description)="Enable TCP Sharing (Experimental)"];
   optional uint32 tcp_share_port = 201 [default = 11000, (description)="Port to listen on for TCP Sharing (Experimental)"];

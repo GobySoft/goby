@@ -11,7 +11,6 @@ option(build_core_examples "Build the Core Examples" OFF)
 if(build_core_lib)
   add_subdirectory(libdbo)
   add_subdirectory(libcore)
-  add_subdirectory(proto)
 
   option(build_core_moosmimic "Build the Core MOOS Mimic Library (requires MOOS)" OFF)
   if(build_core_moosmimic)

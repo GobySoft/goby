@@ -29,7 +29,7 @@
 #include <xercesc/sax2/Attributes.hpp>
 #include <xercesc/sax2/DefaultHandler.hpp>
 
-#include "goby/acomms/protobuf/queue.pb.h"
+#include "goby/protobuf/queue.pb.h"
 #include "goby/acomms/xml/xerces_strings.h"
 #include "goby/acomms/xml/tags.h"
 #include "queue_manager.h"

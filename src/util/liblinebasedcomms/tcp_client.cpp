@@ -22,7 +22,7 @@
 goby::util::TCPClient::TCPClient(const std::string& server,
                                  unsigned port,
                                  const std::string& delimiter /*= "\r\n"*/)
-    : LineBasedClient<boost::asio::ip::tcp::socket>(socket_, delimiter),
+    : LineBasedClient<boost::asio::ip::tcp::socket>(delimiter),
       socket_(io_service_),
       server_(server),
       port_(as<std::string>(port))

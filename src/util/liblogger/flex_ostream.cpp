@@ -19,11 +19,11 @@
 #include "flex_ostream.h"
 #include "logger_manipulators.h"
 
-goby::util::FlexOstream* goby::util::FlexOstream::inst_ = 0;
+boost::shared_ptr<goby::util::FlexOstream> goby::util::FlexOstream::inst_;
 
 goby::util::FlexOstream& goby::util::glogger(logger_lock::LockAction lock_action /*= none*/)
 {    
-    if(!FlexOstream::inst_) FlexOstream::inst_ = new FlexOstream();
+    if(!FlexOstream::inst_) FlexOstream::inst_.reset(new FlexOstream());
     
     if(lock_action == logger_lock::lock)
     {

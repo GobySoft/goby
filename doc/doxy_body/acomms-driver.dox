@@ -1,7 +1,7 @@
-// copyright 2009 t. schneider tes@mit.edu
+// copyright 2009-2011 t. schneider tes@mit.edu
 // 
 // goby software and documentation is distributed under the GNU General
-// Public License.
+// Public License v3.
 //
 // You should have received a copy of the GNU General Public License
 // along with this software (see goby/COPYING).  If not, see <http://www.gnu.org/licenses/>.
@@ -18,42 +18,54 @@ Table of contents for libmodemdriver:
 
 Return to \ref acomms.
 
-\section acomms_driverbase Abstract class: DriverBase
+\section acomms_driverbase Abstract class: ModemDriverBase
 
-modem::DriverBase defines the core functionality for an acoustic %modem. It provides
+goby::acomms::ModemDriverBase defines the core functionality for an acoustic %modem. It provides
 
 <ul>
-<li>a serial class (and methods to configure it) that reads the serial port data into a buffer for use by the modem::DriverBase derived class (e.g. micromodem::MMDriver). These methods are modem::DriverBase::set_serial_port and modem::DriverBase::set_baud.
-<li>methods to set all six callbacks provided by the derived class (receive, acknowledgement, data request, parsed incoming message, raw incoming message, raw outgoing message). 
-At the application layer, either bind the %modem driver to a queue::QueueManager (acomms_util::bind(modem::DriverBase&, queue::QueueManager&) or pass custom function pointers or objects to the driver layer callbacks: modem::DriverBase::set_receive_cb, modem::DriverBase::set_ack_cb, modem::DriverBase::set_datarequest_cb. The parsed incoming message callback is used by the amac::MACManager to "discover" vehicles so this callback should be bound to the amac::MACManager (using acomms_util::bind(amac::MACManager&, modem::DriverBase&)). The remaining two callbacks (raw incoming and raw outgoing) are for use by the application layer if desired to monitor the functionality of the %modem.
-<li>three virtual functions: for starting the driver (modem::DriverBase::startup), running the driver (modem::DriverBase::do_work), and initiating the transmission of a message (modem::DriverBase::initiate_transmission).
-<li>a method to set configuration values for the acoustic %modem (modem::DriverBase::set_cfg). this configuration takes the form of a vector of strings, the details of which depend on the specific %modem.
+<li><b>A serial or serial-like (over TCP or UDP) reader</b>. This is an instantiation of an appropriate derivative of the goby::util::LineBasedInterface class which reads the physical interface (serial, TCP or UDP) to the acoustic modem. The data (assumed to be ASCII lines offset by a delimiter such as NMEA0183 or the Hayes command set [AT]) are read into a buffer for use by the goby::acomms::ModemDriverBase derived class (e.g. goby::acomms::MMDriver). The type of interface is configured using a \link driver_base.proto goby::acomms::protobuf::DriverConfig\endlink. The modem is accessed by the derived class using goby::acomms::ModemDriverBase::modem_start, goby::acomms::ModemDriverBase::modem_read, goby::acomms::ModemDriverBase::modem_write, and goby::acomms::ModemDriverBase::modem_close.
+<li>\b Signals to be called at the appropriate time by the derived class (goby::acomms::ModemDriverBase::signal_receive, goby::acomms::ModemDriverBase::signal_data_request, goby::acomms::ModemDriverBase::range_reply, goby::acomms::ModemDriverBase::signal_ack, goby::acomms::ModemDriverBase::signal_all_incoming, goby::acomms::ModemDriverBase::signal_all_outgoing).
+At the application layer, either bind the %modem driver to a goby::acomms::QueueManager (goby::acomms::bind(goby::acomms::ModemDriverBase&, goby::acomms::QueueManager&) or connect custom function pointers or objects to the driver layer signals. The goby::acomms::ModemDriverBase::signal_all_incoming is used by the goby::acomms::MACManager to "discover" vehicles so this signal should be connected to the goby::acomms::MACManager (using goby::acomms::bind(goby::acomms::MACManager&, goby::acomms::ModemDriverBase&)). The goby::acomms::ModemDriverBase::signal_all_incoming and goby::acomms::ModemDriverBase::signal_all_outgoing signals are for use by the application layer if desired to monitor the functionality of the %modem.
+<li><b>Virtual functions</b>  for starting the driver (goby::acomms::ModemDriverBase::startup), running the driver (goby::acomms::ModemDriverBase::do_work), and initiating the transmission of a message (goby::acomms::ModemDriverBase::handle_initiate_transmission). If the modem supports it, ranging (via an acoustic ping) can also be initiated (goby::acomms::ModemDriverBase::handle_initiate_ranging). These last two slots are typically bound to the corresponding signals from the goby::acomms::MACManager.
 </ul>
 
 \section acomms_mmdriver WHOI Micro-Modem Driver: MMDriver
 
-The micromodem::MMDriver extends the DriverBase for the WHOI Micro-Modem acoustic %modem. It is tested to work with revision 0.93.0.30 of the Micro-Modem firmware, but is known to work with older firmware (at least 0.92.0.85). The following commands of the WHOI Micro-Modem are implemented:
+The goby::acomms::MMDriver extends the goby::acomms::ModemDriverBase for the WHOI Micro-Modem acoustic %modem. It is tested to work with revision 0.93.0.30 of the Micro-Modem firmware, but is known to work with older firmware (at least 0.92.0.85), as well as newer (WHOI firmware 0.93.0.35 to 0.93.0.51 has a critical bug, however, where XST should be set to 0). The following commands of the WHOI Micro-Modem are implemented:
 
-Modem to Control Computer ($CA):
+Modem to Control Computer ($CA / $SN):
 <ul>
-<li>$CAACK - acknowledgement of sent message. Will be transformed into a modem::Message and passed to the callback provided to modem::DriverBase::set_ack_cb.
-<li>$CADRQ - data request. Will be transformed into a modem::Message and passed to the callback provided to modem::DriverBase::set_datarequest_cb. The second parameter of that callback holds a reference to a modem::Message into which the callback should place the requested data.
-<li>$CARXD - received hexadecimal data. Will be transformed into a modem::Message and passed to the callback provided to modem::DriverBase::set_receive_cb.
+<li>$CAACK - acknowledgment of sent message. Will be transformed into a \link modem_message.proto goby::acomms::protobuf::ModemDataAck\endlink and signaled on goby::acomms::ModemDriverBase::signal_ack.
+<li>$CADRQ - data request. Data will be provided that has been buffered previously on the necessary number of calls of the signal goby::acomms::ModemDriverBase::signal_data_request. See $CCCYC for this buffering behavior.
+<li>$CARXD - received hexadecimal data. Will be transformed into a \link modem_message.proto goby::acomms::protobuf::ModemDataTransmission\endlink and signaled on goby::acomms::ModemDriverBase::signal_receive.
 <li>$CAREV - revision number and heartbeat. Used to check for correct clock time and %modem reboots.
-<li>$CAERR - error message. The error message is logged to the std::ostream provided to micromodem::MMDriver at instantiation.
+<li>$CAERR - error message. The error message is logged to the std::ostream provided to goby::acomms::MMDriver at instantiation.
+<li>$CACYC - response to cycle initialization request. If data as has not yet been buffered because the cycle ($CCCYC) was initiated elsewhere, the signal goby::acomms::ModemDriverBase::signal_data_request will be called N times, where N is the number of frames for the given rate (rate 0 = 1 frame, rate 2 = 3 frames, rate 3 = 2 frames, rate 5 = 8 frames).
+<li>$CAMPR - response to two-way modem ping. Transformed into \link modem_message.proto goby::acomms::protobuf::ModemRangingReply\endlink and signaled on goby::acomms::ModemDriverBase::signal_range_reply.
+<li>$SNTTA - response to REMUS LBL ping. Transformed into \link modem_message.proto goby::acomms::protobuf::ModemRangingReply\endlink and signaled on goby::acomms::ModemDriverBase::signal_range_reply.
+<li>$CATOA - one way synchronous ranging. Requires an accurate PPS signal on the WHOI Micro-Modem, and setting of NVRAM parameters "SNV,1" and "TOA,1". See http://acomms.whoi.edu/documents/Synchronous%20Navigation%20With%20MicroModem%20RevD.pdf for details of configuration and usage. Transformed into \link modem_message.proto goby::acomms::protobuf::ModemRangingReply\endlink and signaled on goby::acomms::ModemDriverBase::signal_range_reply.
 </ul>
 
-Control Computer to Modem ($CC). Also implemented is the NMEA acknowledge (e.g. $CACYC for $CCCYC):
+Control Computer to Modem ($CC). Also implemented is the NMEA acknowledge (e.g. $CACLK for $CCCLK):
 <ul>
-<li>$CCTXD - transmit data. Sent using the second parameter of the callback provided to modem::DriverBase::set_datarequest_cb (see $CADRQ).
-<li>$CCCYC - initiate a cycle. Sent on response to a call of micromodem::MMDriver::initiate_transmission.
+<li>$CCTXD - transmit data. Sent using data buffered by calls of the signal goby::acomms::ModemDriverBase::signal_data_request. See $CCCYC for this buffering behavioron. Sent in response to $CADRQ.
+<li>$CCCYC - initiate a cycle. Sent on response to a call of goby::acomms::MMDriver::initiate_transmission. If the $CCCYC is local (that is, the ADR1 is the same as this vehicle's modem id), the signal goby::acomms::ModemDriverBase::signal_data_request will be called N times, where N is the number of frames for the given rate (rate 0 = 1 frame, rate 2 = 3 frames, rate 3 = 2 frames, rate 5 = 8 frames). If the $CCCYC is for a third party request (ADR1 is *not* this platform), no buffering is done. This buffering will happen on the ADR1 node after it hears the $CACYC. The reason we buffer on the $CCCYC if we can instead of always on the $CACYC is that we can avoid sending the $CCCYC at all if we have no data.
 <li>$CCCLK - set the clock. The clock is set on startup until a suitably value within 1 second of the computer time is reported back. If the %modem reboots ($CAREV,...,INIT), the clock is set again.
-<li>$CCCFG - configure NVRAM value. All values passed to modem::DriverBase::set_cfg will be passed to $CACFG at startup. For example, to send $CACFG,SRC,3, place the string "SRC,3" in the vector passed to modem::DriverBase::set_cfg.
-<li>$CCCFQ - query configuration values. $CCCFQ,ALL is sent after all the $CCCFG lines to log the NVRAM parameters.
+<li>$CCCFG - configure NVRAM value. All values passed to the extension \link mm_driver.proto MicroModemConfig::nvram_cfg\endlink of \link driver_base.proto goby::acomms::protobuf::DriverConfig\endlink will be passed to $CCCFG. Thus, to send "$CCCFG,SNR,1", put "SNR,1" in \link mm_driver.proto MicroModemConfig::nvram_cfg\endlink. That is:
+\code
+goby::acomms::protobuf::DriverConfig cfg;
+cfg.AddExtension(MicroModemConfig::nvram_cfg, "SNR,1");
+mm_driver.startup(cfg);
+\endcode
+NVRAM parameters SRC and ALL will be set automatically as needed. Set \link mm_driver.proto MicroModemConfig::reset_nvram\endlink to true to send "$CCCFG,ALL,0". Setting modem_id in \link driver_base.proto goby::acomms::protobuf::DriverConfig\endlink will set SRC to the same value. 
+<li>$CCMPC - ping another modem. Sent when goby::acomms::ModemDriverBase::handle_initiate_ranging is called with \link modem_message.proto goby::acomms::protobuf::ModemRangingReply::type == goby::acomms::protobuf::RANGING_MODEM_TWO_WAY_PING\endlink. The destination of the ping is \link modem_message.proto goby::acomms::protobuf::ModemRangingReply::ModemMsgBase::dest\endlink.
+<li>$CCPDT - ping REMUS digital transponder. Sent when goby::acomms::ModemDriverBase::handle_initiate_ranging is called with \link modem_message.proto goby::acomms::protobuf::ModemRangingReply::type == goby::acomms::protobuf::REMUS_LBL_RANGING\endlink. 
 </ul>
 
-Mapping between modem::Message and NMEA fields (see http://acomms.whoi.edu/documents/uModem%20Software%20Interface%20Guide.pdf for NMEA fields of the WHOI Micro-Modem):
-<table>
+Mapping between modem_message.proto messages and NMEA fields (see http://acomms.whoi.edu/documents/uModem%20Software%20Interface%20Guide.pdf for NMEA fields of the WHOI Micro-Modem):
+
+Modem to Control Computer ($CA / $SN):
+<table border=1>
 <tr>
 <td>NMEA talker</td>
 <td>Mapping</td>
@@ -61,102 +73,234 @@ Mapping between modem::Message and NMEA fields (see http://acomms.whoi.edu/docum
 <tr>
 <td>$CAACK</td>
 <td>
-modem::Message::src = SRC<br>
-modem::Message::dest = DEST<br>
-modem::Message::frame = Frame#<br>
-modem::Message::ack = A<br>
+\link modem_message.proto goby::acomms::protobuf::ModemDataAck.base().src()\endlink = SRC<br>
+\link modem_message.proto goby::acomms::protobuf::ModemDataAck.base().dest()\endlink = DEST<br>
+\link modem_message.proto goby::acomms::protobuf::ModemDataAck.frame()\endlink = Frame#-1 (Goby starts counting at frame 0, WHOI starts with frame 1)<br>
 </td>
 </tr>
 <tr>
 <td>$CADRQ</td>
 <td>
-modem::Message::src = SRC<br>
-modem::Message::dest = DEST<br>
-modem::Message::ack = ACK<br>
-modem::Message::size = N<br>
-modem::Message::frame = F#<br>
+Data request is anticipated from the $CCCYC or $CACYC and buffered. Thus it is not translated into any of the modem_message.proto messages.
 </td>
 </tr>
 <tr>
 <td>$CARXD</td>
 <td>
-modem::Message::src = SRC<br>
-modem::Message::dest = DEST<br>
-modem::Message::ack = ACK<br>
-modem::Message::frame = F#<br>
-modem::Message::data = HH...HH <br>
-modem::Message::size = number of bytes in HH...HH<br>
+\link modem_message.proto goby::acomms::protobuf::ModemDataTransmission.base().src()\endlink = SRC<br>
+\link modem_message.proto goby::acomms::protobuf::ModemDataTransmission.base().dest()\endlink = DEST<br>
+\link modem_message.proto goby::acomms::protobuf::ModemDataTransmission.ack_requested()\endlink = ACK<br>
+\link modem_message.proto goby::acomms::protobuf::ModemDataTransmission.frame()\endlink = F#<br>
+\link modem_message.proto goby::acomms::protobuf::ModemDataTransmission.data()\endlink = goby::acomms::hex_decode(HH...HH) <br>
 </td>
 </tr>
 <tr>
+<td>$CACYC</td>
+<td>
+If we did not send $CCCYC, buffer data for $CADRQ by sending this message n = 0 to Nframes times:<br>
+\link modem_message.proto goby::acomms::protobuf::ModemDataRequest.base().src()\endlink = ADR1<br>
+\link modem_message.proto goby::acomms::protobuf::ModemDataRequest.base().dest()\endlink = ADR2<br>
+\link modem_message.proto goby::acomms::protobuf::ModemDataRequest.max_bytes()\endlink = 32 for Packet Type == 0, 64 for Packet Type == 2, 256 for Packet Type == 3 or 5<br>
+\link modem_message.proto goby::acomms::protobuf::ModemDataRequest.frame()\endlink = n <br>
+</td>
+</tr> 
+<tr>
 <td>$CAREV</td>
-<td>not translated into a modem::Message.</td>
+<td>Not translated into any of the modem_message.proto messages.</td>
 </tr>
 <tr>
 <td>$CAERR</td>
-<td>not translated into a modem::Message.</td>
+<td>Not translated into any of the modem_message.proto messages.</td>
 </tr>
+<tr>
+<td>$CAMPR</td>
+<td>
+\link modem_message.proto goby::acomms::protobuf::ModemRangingReply.base().dest()\endlink = SRC (SRC and DEST flipped to be SRC and DEST of $CCMPC)<br>
+\link modem_message.proto goby::acomms::protobuf::ModemRangingReply.base().src()\endlink = DEST<br>
+\link modem_message.proto goby::acomms::protobuf::ModemRangingReply.one_way_travel_time(0)\endlink = Travel Time<br>
+\link modem_message.proto goby::acomms::protobuf::ModemRangingReply.type()\endlink = goby::acomms::protobuf::MODEM_TWO_WAY_PING<br>
+</td>
+</tr>
+<tr>
+<td>$SNTTA</td>
+<td>
+\link modem_message.proto goby::acomms::protobuf::ModemRangingReply.base().src()\endlink = modem_id<br>
+\link modem_message.proto goby::acomms::protobuf::ModemRangingReply.one_way_travel_time(0)\endlink = TA<br>
+\link modem_message.proto goby::acomms::protobuf::ModemRangingReply.one_way_travel_time(1)\endlink = TB<br>
+\link modem_message.proto goby::acomms::protobuf::ModemRangingReply.one_way_travel_time(2)\endlink = TC<br>
+\link modem_message.proto goby::acomms::protobuf::ModemRangingReply.one_way_travel_time(3)\endlink = TD<br>
+\link modem_message.proto goby::acomms::protobuf::ModemRangingReply.type()\endlink = goby::acomms::protobuf::REMUS_LBL_RANGING<br>
+</td>
+</tr>
+<tr>
+<td><a href="http://acomms.whoi.edu/documents/Synchronous%20Navigation%20With%20MicroModem%20RevD.pdf">$CATOA</a></td>
+<td>
+\link modem_message.proto goby::acomms::protobuf::ModemRangingReply.base().src()\endlink = SRC (of related $CARXD, $CAACK)<br>
+\link modem_message.proto goby::acomms::protobuf::ModemRangingReply.base().dest()\endlink = DEST (of related $CARXD, $CAACK)<br>
+Travel times are ambiguous: have to figure it out from knowledge we don't have here
+\link modem_message.proto goby::acomms::protobuf::ModemRangingReply.one_way_travel_time(0)\endlink = 0.SSSS<br>
+\link modem_message.proto goby::acomms::protobuf::ModemRangingReply.one_way_travel_time(1)\endlink = 1.SSSS<br>
+\link modem_message.proto goby::acomms::protobuf::ModemRangingReply.one_way_travel_time(2)\endlink = 2.SSSS<br>
+\link modem_message.proto goby::acomms::protobuf::ModemRangingReply.one_way_travel_time(n)\endlink = n.SSSS (n = floor(10000 m / 1500 m/s) since 10km is a sensible upper bound on the WHOI Micro-Modem performance) <br>
+\link modem_message.proto goby::acomms::protobuf::ModemRangingReply.type()\endlink = goby::acomms::protobuf::MODEM_ONE_WAY_SYNCHRONOUS<br>
+</td>
+</tr>
+</table>
+
+Control Computer to Modem ($CC):
+<table border=1>
 <tr>
 <td>$CCTXD</td>
 <td>
-SRC = modem::Message::src<br>
-DEST = modem::Message::dest<br>
-A = modem::Message::ack<br>
-HH...HH = modem::Message::data<br>
+SRC = \link modem_message.proto goby::acomms::protobuf::ModemDataTransmission.base().src()\endlink<br>
+DEST = \link modem_message.proto goby::acomms::protobuf::ModemDataTransmission.base().dest()\endlink<br>
+A = \link modem_message.proto goby::acomms::protobuf::ModemDataTransmission.ack_requested()\endlink<br>
+HH...HH = goby::acomms::hex_encode(\link modem_message.proto goby::acomms::protobuf::ModemDataTransmission.data()\endlink)<br>
 </td>
 </tr>
 <tr>
 <td>$CCCYC</td>
 <td>
-CMD = 0<br>
-ADR1 = modem::Message::src<br>
-ADR2 = modem::Message::dest<br>
-Packet Type = modem::Message::rate<br>
-ACK = modem::Message::ack<br>
-Nframes = modem::Message::frame<br>
+CMD = 0 (deprecated field)<br>
+ADR1 = \link modem_message.proto goby::acomms::protobuf::ModemDataInit.base().src()\endlink<br>
+ADR2 = \link modem_message.proto goby::acomms::protobuf::ModemDataInit.base().dest()\endlink<br>
+Packet Type = \link modem_message.proto goby::acomms::protobuf::ModemDataInit.base().rate()\endlink<br>
+ACK = 0 (deprecated field)<br> 
+Nframes = \link modem_message.proto goby::acomms::protobuf::ModemDataInit.num_frames()\endlink<br><br>
+If ADR1 == modem_id, buffer data for later $CADRQ by sending this message n = 0 to Nframes times:<br>
+\link modem_message.proto goby::acomms::protobuf::ModemDataRequest.base().src()\endlink = ADR1<br>
+\link modem_message.proto goby::acomms::protobuf::ModemDataRequest.base().dest()\endlink = ADR2<br>
+\link modem_message.proto goby::acomms::protobuf::ModemDataRequest.max_bytes()\endlink = 32 for Packet Type == 0, 64 for Packet Type == 2, 256 for Packet Type == 3 or 5<br>
+\link modem_message.proto goby::acomms::protobuf::ModemDataRequest.frame()\endlink = n <br>
 </td>
 </tr> 
 <tr>
 <td>$CCCLK</td>
-<td>not translated from a modem::Message (taken from the system time using the boost::date_time library)</td>
+<td>Not translated from any of the modem_message.proto messages. (taken from the system time using the boost::date_time library)</td>
 </tr>
 <tr>
 <td>$CCCFG</td>
-<td>not translated from a modem::Message. (taken from the std::vector<std::string> passed to modem::DriverBase::set_cfg)</td>
+<td>Not translated from any of the modem_message.proto messages. (taken from values passed to the extension \link mm_driver.proto MicroModemConfig::nvram_cfg\endlink of \link driver_base.proto goby::acomms::protobuf::DriverConfig\endlink)</td>
 </tr>
 <tr>
 <td>$CCCFQ</td>
-<td>not translated from a modem::Message. $CCCFG,ALL sent at startup.</td>
+<td>Not translated from any of the modem_message.proto messages. $CCCFQ,ALL sent at startup.</td>
+</tr>
+<tr>
+<td>$CCMPC</td>
+<td>
+protobuf::MODEM_TWO_WAY_PING == \link modem_message.proto goby::acomms::protobuf::ModemRangingRequest.type()\endlink<br>
+SRC = \link modem_message.proto goby::acomms::protobuf::ModemRangingRequest.base().src()\endlink<br>
+DEST = \link modem_message.proto goby::acomms::protobuf::ModemRangingRequest.base().dest()\endlink<br>
+</td>
+</tr>
+<tr>
+<td>$CCPDT</td>
+<td>
+protobuf::REMUS_LBL_RANGING == \link modem_message.proto goby::acomms::protobuf::ModemRangingRequest.type()\endlink<br>
+GRP = 1<br>
+CHANNEL = modem_id % 4 + 1 (use four consecutive modem_ids if you need multiple vehicles pinging)<br>
+SF = 0<br>
+STO = 0<br>
+Timeout = \link modem_message.proto goby::acomms::protobuf::ModemRangingRequest.max_range()\endlink m *2/ 1500 m/s * 1000 ms/s<br>
+\link modem_message.proto goby::acomms::protobuf::ModemRangingRequest.enable_beacons()\endlink is a set of four bit flags where the least significant bit is AF enable, most significant bit is DF enable. Thus b1111 == 0x0F enables all beacons <br>
+AF = \link modem_message.proto goby::acomms::protobuf::ModemRangingRequest.enable_beacons()\endlink >> 0 & 1<br>
+BF = \link modem_message.proto goby::acomms::protobuf::ModemRangingRequest.enable_beacons()\endlink >> 1 & 1<br>
+CF = \link modem_message.proto goby::acomms::protobuf::ModemRangingRequest.enable_beacons()\endlink >> 2 & 1<br>
+DF = \link modem_message.proto goby::acomms::protobuf::ModemRangingRequest.enable_beacons()\endlink >> 3 & 1<br>
+</td>
 </tr>
 </table>
 
 \section acomms_writedriver Writing a new driver
 
-Most of goby-acomms is intended to be agnostic of which physical %modem is used. However, since the whole system was designed for the WHOI Micro-Modem initially, it will probably take some work to initially incorporate a different device. 
+All of goby-acomms is designed to be agnostic of which physical %modem is used. Different modems can be supported by subclassing goby::acomms::ModemDriverBase.
 
-These are the assumptions of the acoustic %modem:
-
+These are the requirements of the acoustic %modem:
 <ul>
-<li>it communicates using a line based duplex serial connection.
-<li>it is configurable using string values.
+<li>it communicates using a line based text duplex connection using either serial or TCP (either client or server). NMEA0183 and AT (Hayes) protocols fulfill this requirement, for example.
+<li>it is capable of sending and verifying the accuracy (using a cyclic redundancy check or similar error checking) of fixed size datagrams (note that modems capable of variable sized datagrams also fit into this category).
 </ul>
 
-
-The new driver must provide this functionality:
+Optionally, it can also support
 <ul>
-<li>Overload the three pure virtual functions:
-<ol>
-<li>modem::DriverBase::startup: do any initialization here you need to do before the %modem is ready to do work. Probably the place to read and set the values in std::vector<std::string> cfg_.
-<li>modem::DriverBase::do_work: this is called periodically (say at 10 Hz) by the application layer. You should read all the messages in the serial buffer by calling modem::DriverBase::serial_read until it returns false indicating no more lines to read. 
-<li>modem::DriverBase::initiate_transmission: this is called when the application wants to send a message. The modem::Message provided here <i>does not</i> contain the data to be sent. To get data, you must call modem::DriverBase::callback_datarequest where the first parameter is the modem::Message of the request and the second parameter is a reference to a modem::Message that will contain the data to be sent. The modem::Message provided to initiate_transmission may request multiple frames (modem::Message::frame). You can, <i>but are not required to</i>, call as many instances of modem::DriverBase::callback_datarequest as frames requested. It will be important to map the hardware packet sizes to the sizes requested in modem::Message::size of the first parameter of modem::DriverBase::callback_datarequest. This will obviously depend on the specifics of the %modem and the data rate requested. For the WHOI Micro-Modem, for example, there are six possible data rates, four of which are implemented, each with a different frame size and number of frames (rate 0 = 1x 32 byte frame, rate 2 = 3x 64 byte frames, rate 3 = 2x 256 byte frames, rate 5 = 8x 256 byte frames). For example, if your modem uses a single 512 byte frame, call modem::DriverBase::callback_datarequest(modem::Message("size=512")). On the other hand, if it uses 3x 128 byte frames, call modem::DriverBase::callback_datarequest(modem::Message("size=128")) three different times, one for each frame. If your %modem has variable length packets, pick a reasonable size for which the duration of the packet in the water is on the order of several seconds. 
-</ol>
-<li>Call callback_decoded with a modem::Message mapped for each incoming acoustic sourced message (acknowledgement, data packet, control message, anything). Ideally should contain at least a modem::Message::src and modem::Message::dest, and intelligent mappings to the other fields of modem::Message where possible or for which the probability of reception is acceptably high.
-<li>Call callback_ack with the a modem::Message containing modem::Message::src, modem::Message::dest, and modem::Message::frame for each frame acknowledged. You should acknowledge any data that is to be acknowledged before requesting the next set of frames. That is, do not leave a frame 1 unacknowledged (assuming \ref tag_ack is set true for that %queue) and request another frame 1.
-<li>Call callback_receive with any received data. This should include at least a modem::Message::src, modem::Message::dest, and modem::Message::data. 
+<li>Acoustic acknowledgment of proper message receipt.
+<li>Ranging to another acoustic modem or LBL beacons using time of flight measurements
+<li>User selectable bit rates
 </ul>
 
-Modem bit rates need to be mapped onto a set of unsigned integers from 0 to 5 where 0 is the lowest (and thus presumably most robust) bit rate and 5 is the highest. All vehicles in the network must be identified by unsigned integers (in the range 0-std::numeric_limits<unsigned>::max). 
+The steps to writing a new driver include:
 
-See micromodem::MMDriver for an example implementation.
+<ul>
+<li>Fully understand the basic usage of the new acoustic modem manually using minicom or other terminal emulator. Have a copy of the modem software interface manual handy.
+<li>Figure out what type of configuration the modem will need. For example, the WHOI Micro-Modem is configured using string values (e.g. "SNV,1"). Extend \link driver_base.proto goby::acomms::protobuf::DriverConfig\endlink to accomodate these configuration options. You will need to claim a group of extension field numbers that do not overlap with any of the drivers. The WHOI Micro-Modem driver goby::acomms::MMDriver uses extension field numbers 1000-1100 (see mm_driver.proto). You can read more about extensions in the official Google Protobuf documentation here: <http://code.google.com/apis/protocolbuffers/docs/proto.html#extensions>.
 
+For example, if I was writing a new driver for the ABC Modem that needs to be configured using a few boolean flags, I might create a new message abc_driver.proto:
+
+\include abc_driver.proto
+
+make a note in driver_base.proto claiming extension numbers 1201 and 1202 (and others you may expect to need in the future). Extension field numbers can go up to 536,870,911 so don't worry about running out.
+<li> Subclass goby::acomms::ModemDriverBase and overload the pure virtual methods (goby::acomms::ModemDriverBase::handle_initiate_ranging is optional). Your interface should look like this:
+
+\dontinclude abc_driver.h
+\skip namespace
+\until private
+\skipline driver_cfg_
+\until }
+\until }
+\until }
+             
+<li> Fill in the methods. You are responsible for emitting the goby::acomms::ModemDriverBase signals at the appropriate times. Read on and all should be clear.
+<ul>
+<li>Minimally your constructor should store a local copy of the ostream logger:
+\code
+goby::acomms::ABCDriver::ABCDriver() : ModemDriverBase(log),
+                         log_(log)
+{
+  // other initialization you can do before you have your goby::acomms::DriverConfig configuration object
+}
+\endcode
+<li>At startup() you get your configuration from the application (pAcommsHandler or other)
+
+\dontinclude abc_driver.cpp
+\skipline startup
+\until startup
+<li>At shutdown() you should make yourself ready to startup() again if necessary and stop the modem:
+\dontinclude abc_driver.cpp
+\skipline shutdown
+\until shutdown
+<li>handle_initiate_transmission() is called when you are expected to initiate a transmission. It *does not* contain data, you are required to request data using the goby::acomms::ModemDriverBase::signal_data_request signal. Once you have data, you are responsible for sending it. I think a bit of code will make this clearer:
+\dontinclude abc_driver.cpp
+\skipline handle_initiate_transmission
+\until handle_initiate_transmission
+<li> Finally, you can use do_work() to do continuous work. You can count on it being called at 5 Hz or more (in pAcommsHandler, it is called on the MOOS AppTick). Here's where you want to read the modem incoming stream.
+\dontinclude abc_driver.cpp
+\skipline do_work
+\until do_work
+<li> Add your driver header to goby/src/acomms/modem_driver.h
+<li> Modify libmodemdriver/examples/driver_simple/driver_simple.cpp to work with your new driver.
+<li> Add your driver to the pAcommsHandler_config.proto DriverType enumeration.
+<li> Add your driver to the pAcommsHandler.cpp driver object creation.
+</ul>
+</ul>
+
+The full ABC Modem example driver exists in acomms/libmodemdriver/abc_driver.h and acomms/libmodemdriver/abc_driver.cpp. A simulator for the ABC Modem exists that uses TCP to mimic a very basic set of modem commands (send data and acknowledgment). To use the ABC Modem using the driver_simple example, run this set of commands (`socat` is available in most package managers or at <http://www.dest-unreach.org/socat/>):
+
+\verbatim
+1. run abc_modem_simulator running on same port (as TCP server)
+> abc_modem_simulator 54321
+2. create fake tty terminals connected to TCP as client to port 54321
+> socat -d -d -v pty,raw,echo=0,link=/tmp/ttyFAKE1 TCP:localhost:54321
+> socat -d -d -v pty,raw,echo=0,link=/tmp/ttyFAKE2 TCP:localhost:54321
+3. start up driver_simple
+> driver_simple /tmp/ttyFAKE1 1 ABCDriver
+// wait a few seconds to avoid collisions
+> driver_simple /tmp/ttyFAKE2 2 ABCDriver
+\endverbatim
+
+Notes:
+<ul>
+<li>See goby::acomms::MMDriver for an example real implementation.
+<li>When a message is sent to goby::acomms::BROADCAST_ID (0), it should be broadcast if the modem supports such functionality. Otherwise, the driver should throw an goby::acomms::driver_exception indicating that it does not support broadcast allowing the user to reconfigure their MAC / addressing scheme.
+</ul>
 */

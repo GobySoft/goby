@@ -1,4 +1,5 @@
 #include "command_gui.h"
+#include "iCommander.h"
 
 using namespace std;
 using boost::trim_copy;
@@ -10,25 +11,8 @@ using goby::util::as;
 //using namespace boost::posix_time;
 
 // Construction / Destruction
-CommandGui::CommandGui(CommanderCdk & gui,
-                       boost::mutex & gui_mutex,
-                       CMOOSGeodesy & geodesy,
-                       tes::ModemIdConvert & modem_lookup,
-                       CMOOSCommClient & comms,
-                       DCCLCodec & dccl,
-                       std::vector<std::string> & loads,
-                       std::string & community,
-                       bool xy_only)
+CommandGui::CommandGui()
     : initialized_(false),
-      gui_(gui),
-      gui_mutex_(gui_mutex),
-      geodesy_(geodesy),
-      modem_lookup_(modem_lookup),
-      m_Comms(comms),
-      dccl_(dccl),
-      loads_(loads),
-      community_(community),
-      xy_only_(xy_only),
       refresh_(false),
       curr_mess_vals_(NULL),
       screen_initialized_(false),
@@ -55,7 +39,7 @@ void CommandGui::do_run()
 {
     if(!screen_initialized_)
     {            
-        gui_.refresh();
+        CiCommander::gui_.refresh();
         state_ = s_menu;
         screen_initialized_ = true;
     }
@@ -84,7 +68,7 @@ void CommandGui::do_run()
             break;
                 
         case s_exit:
-            gui_.cleanup();
+            CiCommander::gui_.cleanup();
             exit(EXIT_SUCCESS);            
             break;
                 
@@ -117,7 +101,7 @@ void CommandGui::main_menu()
 
     string title = string("<C></B>iCommander: Vehicle Command Message Sender\n") +
         string("<C> (C) 2009 t. schneider tes@mit.edu \n") +
-        string("<C>") + boost::lexical_cast<std::string>(dccl_.message_count()) + string(" message(s) loaded.\n") +
+        string("<C>") + boost::lexical_cast<std::string>(CiCommander::dccl_.message_count()) + string(" message(s) loaded.\n") +
         string("</B/40>Main Menu:<!40>");
 
 //    for(int i = 0; i < 64; ++i)
@@ -134,7 +118,7 @@ void CommandGui::main_menu()
     buttons.push_back("Exit");
 
     int selection;
-    gui_.disp_scroll(title, buttons, selection);
+    CiCommander::gui_.disp_scroll(title, buttons, selection);
     
     
     if (curr_mess_vals_ == NULL || curr_mess_vals_->empty())
@@ -146,9 +130,9 @@ void CommandGui::main_menu()
 
 void CommandGui::new_message()
 {
-    if(!dccl_.message_count())
+    if(!CiCommander::dccl_.message_count())
     {
-        gui_.disp_scroll(string("No messages defined. Import a message file or specify them in the moos file"), vector<string>(1, "OK"));
+        CiCommander::gui_.disp_scroll(string("No messages defined. Import a message file or specify them in the moos file"), vector<string>(1, "OK"));
         state_ = s_menu;
         return;
     }
@@ -157,14 +141,14 @@ void CommandGui::new_message()
     string label = "Message to create: ";
     vector<string> items;
     
-    for (vector<DCCLMessage>::iterator it = dccl_.messages().begin(), n = dccl_.messages().end(); it != n; ++it)
+    for (vector<DCCLMessage>::iterator it = CiCommander::dccl_.messages().begin(), n = CiCommander::dccl_.messages().end(); it != n; ++it)
         items.push_back(it->name());
 
     int selected;
-    if(gui_.disp_alphalist(title, label, items, selected))
+    if(CiCommander::gui_.disp_alphalist(title, label, items, selected))
     {
         curr_mess_vals_ = &open_mess_vals_[selected];
-        curr_message_ = &dccl_.messages()[selected];
+        curr_message_ = &CiCommander::dccl_.messages()[selected];
         state_ = s_editing;
     }
     else
@@ -179,8 +163,8 @@ void CommandGui::open_message()
     string label = "File name: ";
     string filename;
 
-    if(gui_.disp_fselect(title, label, filename) && do_open(filename))
-        gui_.disp_scroll(string("File read in:\n" + filename), vector<string>(1, "OK"));        
+    if(CiCommander::gui_.disp_fselect(title, label, filename) && do_open(filename))
+        CiCommander::gui_.disp_scroll(string("File read in:\n" + filename), vector<string>(1, "OK"));        
     
     state_ = s_menu;
 }
@@ -192,19 +176,19 @@ void CommandGui::save_message()
 
     string filename;
 
-    if(gui_.disp_fselect(title, label, filename))
+    if(CiCommander::gui_.disp_fselect(title, label, filename))
     {        
        
         vector<string> v;
         v.push_back("Save");
         v.push_back("Cancel");
         int selection;
-        gui_.disp_scroll(string("Confirm save message to:\n" + filename), v, selection);    
+        CiCommander::gui_.disp_scroll(string("Confirm save message to:\n" + filename), v, selection);    
         if(selection == 0)
         {
             if(do_save(filename))
             {
-                gui_.disp_scroll(string("Message saved to:\n" + filename), vector<string>(1, "OK"));
+                CiCommander::gui_.disp_scroll(string("Message saved to:\n" + filename), vector<string>(1, "OK"));
             }
         }
     }
@@ -228,7 +212,7 @@ bool CommandGui::do_save(string filename)
         for(std::map<int, std::vector<std::string> >::iterator it = open_mess_vals_.begin(), n = open_mess_vals_.end(); it != n; ++it)
         {
             save_curr_mess_vals = &(it->second);
-            save_curr_message = &dccl_.messages()[it->first];
+            save_curr_message = &CiCommander::dccl_.messages()[it->first];
             fout << "message::" << save_curr_message->name() << endl;
             std::map<std::string, std::string> vals;
             vector<string> unused;
@@ -269,8 +253,8 @@ bool CommandGui::do_open(string filename)
         string::size_type pos = line.find("%%% iCommander message save file: ");
         if(pos == string::npos)
         {
-            if(gui_.initialized())
-                gui_.disp_scroll(string("Invalid file:\n" + filename), vector<string>(1, "OK"));
+            if(CiCommander::gui_.initialized())
+                CiCommander::gui_.disp_scroll(string("Invalid file:\n" + filename), vector<string>(1, "OK"));
             state_ = s_menu;
             return false;
         }
@@ -282,12 +266,12 @@ bool CommandGui::do_open(string filename)
             {
                 string new_message = line.substr(string("message::").length());
                 
-                for(vector<DCCLMessage>::size_type i = 0, n = dccl_.messages().size(); i < n; ++i)
+                for(vector<DCCLMessage>::size_type i = 0, n = CiCommander::dccl_.messages().size(); i < n; ++i)
                 {
-                    if(new_message == dccl_.messages()[i].name())
+                    if(new_message == CiCommander::dccl_.messages()[i].name())
                     {
                         open_curr_mess_vals = &open_mess_vals_[i];
-                        open_curr_message = &dccl_.messages()[i];
+                        open_curr_message = &CiCommander::dccl_.messages()[i];
                         open_curr_mess_vals->clear();
                     }
                 }
@@ -328,7 +312,7 @@ void CommandGui::import_xml()
     string label = "File name: ";
 
     string filename;
-    if(gui_.disp_fselect(title, label, filename))
+    if(CiCommander::gui_.disp_fselect(title, label, filename))
     {
         
         
@@ -336,12 +320,12 @@ void CommandGui::import_xml()
         {
             protobuf::DCCLConfig cfg;
             cfg.add_message_file()->set_path(filename);
-            dccl_.merge_cfg(cfg);
-            gui_.disp_scroll(string("Imported:\n" + filename), vector<string>(1, "OK"));
+            CiCommander::dccl_.merge_cfg(cfg);
+            CiCommander::gui_.disp_scroll(string("Imported:\n" + filename), vector<string>(1, "OK"));
         }
         catch(exception & e)
         {
-            gui_.disp_scroll(string("Invalid xml file:\n" + filename), vector<string>(1, "OK"));
+            CiCommander::gui_.disp_scroll(string("Invalid xml file:\n" + filename), vector<string>(1, "OK"));
         }
     }
 
@@ -448,7 +432,7 @@ void CommandGui::edit()
     int startx = CENTER;
     int starty = 4;
 
-    gui_.disp_matrix(title,
+    CiCommander::gui_.disp_matrix(title,
                      rows,
                      cols,
                      maxwidth,
@@ -459,7 +443,7 @@ void CommandGui::edit()
                      post,
                      startx,
                      starty);
-    gui_.cursor_off();    
+    CiCommander::gui_.cursor_off();    
 }
 
 int CommandGui::edit_popup()
@@ -480,19 +464,19 @@ int CommandGui::edit_popup()
     buttons.push_back("Fix resized screen [shortcut: ESC]");
     
     int selection;
-    gui_.disp_scroll(title, buttons, selection);
+    CiCommander::gui_.disp_scroll(title, buttons, selection);
     
     return selection;
 }
 
 bool CommandGui::edit_precallback(int row, int col, string & val, chtype & input)
 {
-    if(xy_only_)
+    if(CiCommander::cfg_.force_xy_only())
     {
         for(vector<string>::size_type i = 0, n = rowtitle_.size(); i < n; ++i)
         {
             string aval;
-            gui_.get_matrix_val(i+1, 1, aval);
+            CiCommander::gui_.get_matrix_val(i+1, 1, aval);
             string::size_type aposy = aval.find("_y:");
             string::size_type aposx = aval.find("_x:");
             if(aposy == string::npos && aposx == string::npos)
@@ -501,14 +485,14 @@ bool CommandGui::edit_precallback(int row, int col, string & val, chtype & input
                 find_lat_lon_rows(i+1, lat_row, lon_row);
                 if(lat_row && lon_row)
                 {
-                    gui_.set_matrix_val(lon_row, 1, "_x:");
-                    gui_.set_matrix_val(lat_row, 1, "_y:");
+                    CiCommander::gui_.set_matrix_val(lon_row, 1, "_x:");
+                    CiCommander::gui_.set_matrix_val(lat_row, 1, "_y:");
                 }
             }
         }
     }
     
-    gui_.cursor_off();
+    CiCommander::gui_.cursor_off();
 
     vector< boost::shared_ptr<DCCLMessageVar> > message_vars =
         fetch_message_vars(curr_message_);
@@ -574,7 +558,7 @@ bool CommandGui::edit_menu(int row, std::string & val, DCCLType type)
                 
         case 7: // insert special: community
             if (type == dccl_string)
-                val = community_;
+                val = CiCommander::cfg_.common().community();
             return false;
             break;
                 
@@ -590,7 +574,7 @@ bool CommandGui::edit_menu(int row, std::string & val, DCCLType type)
             break;
 
         case 10: //resize
-            gui_.resize();
+            CiCommander::gui_.resize();
             break;
                     
     }        
@@ -719,12 +703,12 @@ bool CommandGui::edit_backspace(int row, std::string & val, DCCLType type)
             {
                 int lat_row, lon_row;
                 find_lat_lon_rows(row, lat_row, lon_row);
-                if(!xy_only_)
+                if(!CiCommander::cfg_.force_xy_only())
                     val = "";
-                if(lat_row && lon_row && !xy_only_)
+                if(lat_row && lon_row && !CiCommander::cfg_.force_xy_only())
                 {
-                    gui_.set_matrix_val(lon_row, 1, "");
-                    gui_.set_matrix_val(lat_row, 1, "");
+                    CiCommander::gui_.set_matrix_val(lon_row, 1, "");
+                    CiCommander::gui_.set_matrix_val(lat_row, 1, "");
                 }                        
                 return false;
             }
@@ -822,7 +806,7 @@ bool CommandGui::edit_postcallback(int row, int col, string & val, chtype & inpu
     {
         vector<string> a;
         a.push_back("resize");
-        gui_.disp_lower_info(a);
+        CiCommander::gui_.disp_lower_info(a);
 
         return false;
     }
@@ -852,11 +836,11 @@ bool CommandGui::edit_postcallback(int row, int col, string & val, chtype & inpu
         line = "(static) you cannot change the value of this field";
 
     if(type == dccl_string || type == dccl_float || type == dccl_int)
-        gui_.cursor_on();
+        CiCommander::gui_.cursor_on();
     
     mesg.push_back(line);
     
-    gui_.disp_info(mesg);
+    CiCommander::gui_.disp_info(mesg);
 
     return true;
 }
@@ -919,7 +903,7 @@ void CommandGui::preview()
     buttons.push_back("Send");
 
     int selection;
-    gui_.disp_scroll(mesg, buttons, selection, true);
+    CiCommander::gui_.disp_scroll(mesg, buttons, selection, true);
     if (selection == 1)
         state_ = s_send;
     else
@@ -939,7 +923,7 @@ void CommandGui::send()
     buttons.push_back("Main menu");
 
     int selection;
-    gui_.disp_scroll(mesg, buttons, selection, true);
+    CiCommander::gui_.disp_scroll(mesg, buttons, selection, true);
     if (selection == 0)
         state_ = s_editing;
     else
@@ -958,7 +942,7 @@ void CommandGui::assemble_message_display(std::string & mesg)
         const string & variable = it->first;
         const string & contents = it->second;
         
-        m_Comms.Notify(variable, contents);
+        CiCommander::get_instance()->publish(variable, contents);
         mesg += "</56>" + variable + "<!56>" + ": " + contents + "\n";
     }
 
@@ -1014,7 +998,7 @@ void CommandGui::insert_specials(string & s)
 
         double lat, lon;
 
-        geodesy_.UTM2LatLong(dxval, dyval, lat, lon);
+        CiCommander::geodesy_.UTM2LatLong(dxval, dyval, lat, lon);
 
         
         // order matters
@@ -1039,19 +1023,19 @@ int CommandGui::insert_modem_id()
     string title = "Choose vehicle to insert id for:";
     vector<string> buttons;
 
-    for(int i = 0,  n = modem_lookup_.max_id(); i <= n; ++i)
+    for(int i = 0,  n = CiCommander::modem_lookup_.max_id(); i <= n; ++i)
     {
         buttons.push_back(
             string(
                 as<string>(i) + ": " +
-                modem_lookup_.get_name_from_id(i) +
-                " (" + modem_lookup_.get_type_from_id(i) + ")"
+                CiCommander::modem_lookup_.get_name_from_id(i) +
+                " (" + CiCommander::modem_lookup_.get_type_from_id(i) + ")"
                 )
             );
     }
     
     int selection;
-    gui_.disp_scroll(title, buttons, selection);
+    CiCommander::gui_.disp_scroll(title, buttons, selection);
     return selection;
 }
 
@@ -1103,17 +1087,17 @@ void CommandGui::quick_switch()
     for(std::map<int, std::vector<std::string> >::iterator it = open_mess_vals_.begin(), n = open_mess_vals_.end(); it != n; ++it)
     {
         buttons.push_back(
-            dccl_.messages().at(it->first).name()
+            CiCommander::dccl_.messages().at(it->first).name()
             );
 
         mapping.push_back(it->first);
     }
 
     int selected;
-    gui_.disp_scroll(title, buttons, selected);
+    CiCommander::gui_.disp_scroll(title, buttons, selected);
 
     curr_mess_vals_ = &open_mess_vals_[mapping.at(selected)];
-    curr_message_ = &dccl_.messages()[mapping.at(selected)];
+    curr_message_ = &CiCommander::dccl_.messages()[mapping.at(selected)];
 }
 
 void CommandGui::check_specials(string & val, chtype input, int row)
@@ -1133,12 +1117,12 @@ void CommandGui::check_specials(string & val, chtype input, int row)
             if(lat_row == row)
             {
                 val = "_y:";
-                gui_.set_matrix_val(lon_row, 1, "_x:");
+                CiCommander::gui_.set_matrix_val(lon_row, 1, "_x:");
             }
             else if(lon_row == row)
             {
                 val = "_x:";
-                gui_.set_matrix_val(lat_row, 1, "_y:");
+                CiCommander::gui_.set_matrix_val(lat_row, 1, "_y:");
             }    
         }
         
@@ -1283,3 +1267,13 @@ vector< boost::shared_ptr<DCCLMessageVar> > CommandGui::fetch_message_vars(DCCLM
 
     return message_vars;
 }
+
+void CommandGui::initialize()
+{
+    CiCommander::gui_.initialize();
+    
+    for(int i = 0, n = CiCommander::cfg_.load_size(); i < n; ++i)
+        do_open(CiCommander::cfg_.load(i));
+    
+    initialized_ = true;
+}    

@@ -34,7 +34,7 @@
 #include "goby/util/time.h"
 #include "goby/util/string.h"
 
-#include "goby/acomms/protobuf/queue.pb.h"
+#include "goby/protobuf/queue.pb.h"
 #include "goby/acomms/acomms_helpers.h"
 
 typedef std::list<goby::acomms::protobuf::ModemDataTransmission>::iterator messages_it;

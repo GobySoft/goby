@@ -30,7 +30,6 @@
 
 int goby::acomms::QueueManager::modem_id_ = 0;
 
-
 goby::acomms::QueueManager::QueueManager(std::ostream* log /* =0 */)
     : log_(log),
       packet_ack_(0),
@@ -169,9 +168,11 @@ std::ostream& goby::acomms::operator<< (std::ostream& out, const QueueManager& d
 // priority value, or given a tie, pick the one with the oldest last_send_time
 void goby::acomms::QueueManager::handle_modem_data_request(const protobuf::ModemDataRequest& request_msg, protobuf::ModemDataTransmission* data_msg)
 {
+    data_msg->mutable_base()->set_src(modem_id_);
     if(request_msg.frame() == 0)
     {
         clear_packet();
+        data_msg->mutable_base()->set_dest(request_msg.base().dest());
     }
     else
     {
@@ -204,13 +205,13 @@ bool goby::acomms::QueueManager::stitch_recursive(const protobuf::ModemDataReque
     // new user frame (e.g. 32B)
     protobuf::ModemDataTransmission next_data_msg = winning_queue->give_data(request_msg);
 
-    // message should never be empty
-    if(next_data_msg.data().empty()) throw (queue_exception("empty message!"));
-
     if(log_) *log_<< group("q_out") << "sending data to firmware from: "
                   << winning_queue->cfg().name() 
                   << ": " << next_data_msg << std::endl;
-     
+
+    //
+    // ACK
+    // 
     // insert ack if desired
     if(next_data_msg.ack_requested())
         waiting_for_ack_.insert(std::pair<unsigned, Queue*>(complete_data_msg->frame(), winning_queue));
@@ -220,6 +221,14 @@ bool goby::acomms::QueueManager::stitch_recursive(const protobuf::ModemDataReque
         qsize(winning_queue); // notify change in queue size
     }
 
+    // if an ack been set, do not unset these
+    if (packet_ack_ == false) packet_ack_ = next_data_msg.ack_requested();
+    
+
+    //
+    // DEST
+    // 
+    // update destination address
     if(request_msg.frame() == 0)
     {
         // discipline the destination of the packet if initially unset
@@ -233,28 +242,29 @@ bool goby::acomms::QueueManager::stitch_recursive(const protobuf::ModemDataReque
     {
         complete_data_msg->mutable_base()->set_dest(packet_dest_);
     }
-        
-    // if an ack been set, do not unset these
-    if (packet_ack_ == false) packet_ack_ = next_data_msg.ack_requested();
-    
+
+    //
+    // DCCL
+    //
     if(winning_queue->cfg().key().type() == protobuf::QUEUE_DCCL)
     {   
         // e.g. 32B
         std::string new_data = next_data_msg.data();
         
-        // insert the size of the next field (e.g. 33B) right after the header
+        // insert the size of the next field (e.g. 32B) right after the header
         std::string frame_size(USER_FRAME_NEXT_SIZE_BYTES,
-                               (next_data_msg.data().size()-DCCL_NUM_HEADER_BYTES));
+                               static_cast<char>((next_data_msg.data().size()-DCCL_NUM_HEADER_BYTES)));
         new_data.insert(DCCL_NUM_HEADER_BYTES, frame_size);
         
-        // append without the CCL ID (old size + 32B)
+        // append without the CCL ID (old size + 31B)
         *(complete_data_msg->mutable_data()) += new_data.substr(CCL_ID_BYTES);
         
         bool is_last_user_frame = true;
-        // if true, we may be able to add more user-frames to this message
+        // if remaining bytes is greater than the DCCL header, we have a chance of adding another user-frame
         if((request_msg.max_bytes() - complete_data_msg->data().size()) > DCCL_NUM_HEADER_BYTES
            && winning_queue->cfg().key().type() != protobuf::QUEUE_CCL)
         {
+            // fetch the next candidate
             winning_queue = find_next_sender(request_msg, *complete_data_msg, false);
             if(winning_queue) is_last_user_frame = false;
         }
@@ -277,6 +287,9 @@ bool goby::acomms::QueueManager::stitch_recursive(const protobuf::ModemDataReque
             return true;
         }
     }
+    //
+    // CCL
+    //
     else
     {
         // not DCCL, copy the msg and we are done
@@ -491,7 +504,7 @@ bool goby::acomms::QueueManager::unstitch_recursive(std::string* data, protobuf:
     if(multimessage_flag)
     {
         // extract frame_size
-        // TODO(tes): Make this work properly for strings larger than one byte
+        // TODO (tes): Make this work properly for strings larger than one byte 
         unsigned frame_size = data->substr(DCCL_NUM_HEADER_BYTES, USER_FRAME_NEXT_SIZE_BYTES)[0];
         
         // erase the frame size byte

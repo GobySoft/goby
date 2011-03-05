@@ -28,8 +28,8 @@
 #include <boost/bind.hpp>
 #include <boost/asio.hpp>
 
-#include "goby/acomms/protobuf/modem_message.pb.h"
-#include "goby/acomms/protobuf/amac.pb.h"
+#include "goby/protobuf/modem_message.pb.h"
+#include "goby/protobuf/amac.pb.h"
 #include "goby/acomms/modem_driver.h"
 #include "goby/util/time.h"
 #include "goby/util/string.h"
@@ -46,7 +46,10 @@ namespace goby
         /// \name Acoustic MAC Library callback function type definitions
         //@{
 
-        /// provides an API to the goby-acomms MAC library.
+        /// \class MACManager mac_manager.h goby/acomms/amac.h
+        /// \ingroup acomms_api
+        /// \brief provides an API to the goby-acomms MAC library.
+        /// \sa  amac.proto and modem_message.proto for definition of Google Protocol Buffers messages (namespace goby::acomms::protobuf).
         class MACManager
         {
             
@@ -56,43 +59,70 @@ namespace goby
             //@{         
             /// \brief Default constructor.
             ///
-            /// \param os std::ostream object or FlexOstream to capture all humanly readable runtime and debug information (optional).
+            /// \param log std::ostream object or FlexOstream to capture all humanly readable runtime and debug information (optional).
             MACManager(std::ostream* log = 0);
             ~MACManager();
             //@}
         
-            /// \brief Starts the MAC
+            /// \name Control
+            //@{
+
+            /// \brief Starts the MAC with given configuration
+            ///
+            /// \param cfg Initial configuration values (protobuf::MACConfig defined in amac.proto)
             void startup(const protobuf::MACConfig& cfg);
 
             /// \brief Shutdown the MAC
             void shutdown();
             
-            /// \brief Must be called regularly for the MAC to perform its work
+            /// \brief Must be called regularly for the MAC to perform its work (10 Hertz or so is fine)
             void do_work();
 
-            /// \brief Manually initiate a transmission out of the normal cycle. This is not normally called by the user of MACManager
-            void send_poll(const boost::system::error_code&);
+            //@}
 
-            /// \brief Call every time a message is received from vehicle to "discover" this vehicle or reset the expire timer. Only needed when the type is amac::mac_auto_decentralized.
+
+            /// \name Modem Slots
+            //@{
+            /// \brief Call every time a message is received from vehicle to "discover" this vehicle or reset the expire timer. Only needed when the type is amac::mac_auto_decentralized. Typically connected to ModemDriverBase::signal_all_incoming using bind().
             ///
-            /// \param message the new message (used to detect vehicles)
+            /// \param m the new incoming message (used to detect vehicles). (protobuf::ModemMsgBase defined in modem_message.proto)
             void handle_modem_all_incoming(const protobuf::ModemMsgBase& m);
-            
-            void add_flex_groups(util::FlexOstream* tout);
-            
+            //@}
+
+
+            /// \name Modem Signals
+            //@{
+            /// \brief Signals when it is time for this platform to begin transmission of an acoustic message at the start of its TDMA slot. Typically connected to ModemDriverBase::handle_initiate_transmission() using bind().
+            ///
+            /// \param m a message containing details of the transmission to be initated.  (protobuf::ModemMsgBase defined in modem_message.proto)
+            boost::signal<void (protobuf::ModemMsgBase* m)> signal_initiate_transmission;
+
+            /// \brief Signals when it is time for this platform to begin an acoustic ranging transmission to another vehicle or ranging beacon(s). Typically connected to ModemDriverBase::handle_initiate_ranging() using bind().
+            ///
+            /// \param m parameters of the ranging request to be performed (protobuf::ModemRangingRequest defined in modem_message.proto).
+            boost::signal<void (protobuf::ModemRangingRequest* m)> signal_initiate_ranging;
+            //@}
+
             /// \name Manipulate slots
             //@{
             /// \return iterator to newly added slot
             std::map<int, protobuf::Slot>::iterator add_slot(const protobuf::Slot& s);
-            /// \brief removes any slots in the cycle where amac::operator==(const protobuf::Slot&, const protobuf::Slot&) is true.
+            /// \brief removes any slots in the cycle where protobuf::operator==(const protobuf::Slot&, const protobuf::Slot&) is true.
             ///
             /// \return true if one or more slots are removed
             bool remove_slot(const protobuf::Slot& s);
+
+            /// \brief clears all slots from communications cycle.
             void clear_all_slots() { id2slot_.clear(); slot_order_.clear(); }    
             //@}            
-            
-            boost::signal<void (protobuf::ModemMsgBase* m)> signal_initiate_transmission;
-            boost::signal<void (protobuf::ModemRangingRequest* m)> signal_initiate_ranging;
+
+            /// \name Other
+            //@{
+            /// \brief Adds groups for a FlexOstream logger.
+            static void add_flex_groups(util::FlexOstream* tout);            
+            //@}
+
+
             
             /// \example libamac/examples/amac_simple/amac_simple.cpp
             /// amac_simple.cpp
@@ -100,6 +130,7 @@ namespace goby
             /// \example acomms/examples/chat/chat.cpp
         
           private:
+            void send_poll(const boost::system::error_code&);
             boost::posix_time::ptime next_cycle_time();
 
             void restart_timer();
@@ -143,14 +174,14 @@ namespace goby
             bool startup_done_;
         };
 
-        ///
+        /// Contains Google Protocol Buffers messages and helper functions. See specific .proto files for definition of the actual messages (e.g. modem_message.proto).
         namespace protobuf
         {
             
             inline bool operator<(const std::map<int, protobuf::Slot>::iterator& a, const std::map<int, protobuf::Slot>::iterator& b)
             { return a->second.src() < b->second.src(); }
             
-            /// Are two amac::protobuf::Slot equal?
+            /// \brief Are two Slots equal?
             inline bool operator==(const protobuf::Slot& a, const protobuf::Slot& b)
             {
                 return (a.src() == b.src() &&

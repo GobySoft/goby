@@ -30,7 +30,7 @@
       <max_queue>100</max_queue>
       <newest_first>false</newest_first>
       <value_base>10</value_base>
-      <ttl>30</ttl>
+      <ttl>300</ttl>
     </queuing>
   </message>
 </message_set>

@@ -1,0 +1,80 @@
+ProcessConfig = iCommander
+{
+  common {  # Configuration common to all Goby MOOS applications 
+            # (opt)
+    log: true  # Should we write a text log of the terminal 
+               # output? (opt) (default=true) (can also set MOOS 
+               # global "log=")
+    log_path: "./"  # Directory path to write the text log of the 
+                    # terminal output (if log=true) (opt) 
+                    # (default="./") (can also set MOOS global 
+                    # "log_path=")
+    community: "AUV23"  # The vehicle's name (opt) (can also set 
+                        # MOOS global "Community=")
+    lat_origin: 42.5  # Latitude in decimal degrees of the local 
+                      # cartesian datum (opt) (can also set MOOS 
+                      # global "LatOrigin=")
+    lon_origin: 10.9  # Longitude in decimal degrees of the local 
+                      # cartesian datum (opt) (can also set MOOS 
+                      # global "LongOrigin=")
+    app_tick: 10  # Frequency at which to run Iterate(). (opt) 
+                  # (default=10)
+    comm_tick: 10  # Frequency at which to call into the MOOSDB 
+                   # for mail. (opt) (default=10)
+    verbosity: VERBOSITY_VERBOSE  # Verbosity of the terminal 
+                                  # window output (VERBOSITY_QUIET, 
+                                  # VERBOSITY_WARN, 
+                                  # VERBOSITY_VERBOSE, 
+                                  # VERBOSITY_DEBUG, VERBOSITY_GUI) 
+                                  # (opt) 
+                                  # (default=VERBOSITY_VERBOSE)
+    initializer {  # Publish a constant value to the MOOSDB at 
+                   # startup (repeat)
+      type: INI_DOUBLE  # type of MOOS variable to publish 
+                        # (INI_DOUBLE, INI_STRING) (req)
+      moos_var: "SOME_MOOS_VAR"  # name of MOOS variable to 
+                                 # publish to (req)
+      global_cfg_var: "LatOrigin"  # Optionally, instead of 
+                                   # giving `sval` or `dval`, give 
+                                   # a name here of a global MOOS 
+                                   # variable (one at the top of 
+                                   # the file) whose contents 
+                                   # should be written to 
+                                   # `moos_var` (opt)
+      dval: 3.454  # Value to write for type==INI_DOUBLE (opt)
+      sval: "a string"  # Value to write for type==INI_STRING 
+                        # (opt)
+    }
+  }
+  dccl_cfg {  # Configure the DCCL Encoder (opt)
+    modem_id: 1  # Unique number 1-31 to identify this node (req)
+    message_file {  # XML message file containing one or more 
+                    # DCCL message descriptions (repeat)
+      path: "/home/toby/goby/src/acomms/examples/chat/chat.xml"  
+                                              # path to the 
+                                              # message XML file 
+                                              # (req)
+      manipulator: NO_MANIP  # manipulators to modify the 
+                             # encoding and queuing behavior of the 
+                             # messages in this file (NO_MANIP, 
+                             # NO_ENCODE, NO_DECODE, NO_QUEUE, 
+                             # LOOPBACK, ON_DEMAND, TCP_SHARE_IN) 
+                             # (repeat)
+    }
+    crypto_passphrase: "twinkletoes%24"  # If given, encrypt all 
+                                         # communications with this 
+                                         # passphrase using AES. 
+                                         # Omit for unencrypted 
+                                         # communications. (opt)
+  }
+  modem_id_lookup_path: ""  # Path to file containing mapping 
+                            # between modem_id and vehicle name & 
+                            # type (opt) (can also set MOOS global 
+                            # "modem_id_lookup_path=")
+  load: ""  # Path to iCommander save file to load automatically 
+            # on startup (repeat)
+  show_variable: ""  # MOOS Variable to scope on the GUI (repeat)
+  force_xy_only: false  # Set true to set all Latitude/Longitude 
+                        # fields to use x/y values instead (opt) 
+                        # (default=false)
+}

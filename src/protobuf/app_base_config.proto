@@ -1,0 +1,28 @@
+import "goby/protobuf/option_extensions.proto";
+
+message AppBaseConfig
+{
+  required string platform_name = 1 [(example)="AUV-23",
+                                     (description) = "same as self.name for gobyd cfg"];
+  
+  optional string app_name = 3 [(example)="myapp_g",
+                                (description) = "default is compiled name - change this to run multiple instances"];
+
+  enum Verbosity
+  {
+    QUIET = 1;
+    WARN = 2;
+    VERBOSE = 3;
+    DEBUG = 4;
+    GUI = 5;
+  }
+  
+  optional Verbosity verbosity = 4 [default = QUIET,
+                                    (description)="Terminal verbosity"];    
+
+
+  // used only by ApplicationBase, ignored by gobyd
+  optional float loop_freq = 100 [default = 10,
+                                  (description) = "the frequency (Hz) used to run loop()"]; 
+}
+

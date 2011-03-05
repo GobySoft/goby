@@ -1,0 +1,111 @@
+// t. schneider tes@mit.edu 3.2.11
+
+// bare bones acoustic communications
+// stack for topside receiver
+
+ServerHost = localhost
+ServerPort = 9101
+Community  = mm1
+
+LatOrigin =  42.35
+LongOrigin = -70.95
+
+NoNetwork = true
+modem_id_lookup_path = modemidlookup.txt
+
+    
+ProcessConfig = ANTLER
+{
+    MSBetweenLaunches = 10
+    Run = MOOSDB		@ NewConsole = false
+    
+    Run = pREMUSCodec           @ NewConsole = true, XConfig=1
+    Run = pAcommsHandler        @ NewConsole = true, XConfig=2
+    Run = iModemSim             @ NewConsole = true, XConfig=3
+
+    1 = -geometry,80x15+0+0
+    2 = -geometry,80x100+0+230
+    3 = -geometry,80x15+0+570
+}
+
+ProcessConfig = pREMUSCodec
+{
+  mdat_state_var: "IN_REMUS_STATUS"
+  mdat_state_out: "OUT_REMUS_STATUS"
+  create_status: false
+}
+
+
+ProcessConfig = pAcommsHandler
+{
+    common
+    {
+      verbosity: VERBOSITY_GUI
+        initializer { type: INI_DOUBLE  global_cfg_var: "LatOrigin"  moos_var: "LAT_ORIGIN" }
+        initializer { type: INI_DOUBLE  global_cfg_var: "LongOrigin" moos_var: "LONG_ORIGIN" }
+        initializer { type: INI_STRING  moos_var: "VEHICLE_TYPE" sval: "topside" }
+        initializer { type: INI_STRING  moos_var: "VEHICLE_NAME" sval: "mm1" }
+        initializer { type: INI_DOUBLE  moos_var: "NAV_X"  dval: 100 }
+        initializer { type: INI_DOUBLE  moos_var: "NAV_Y"  dval: 300 }
+        initializer { type: INI_DOUBLE  moos_var: "NAV_HEADING" dval: 150 }
+        initializer { type: INI_DOUBLE  moos_var: "NAV_SPEED" dval: 0 }
+        initializer { type: INI_DOUBLE  moos_var: "NAV_DEPTH" dval: 0 }
+    }
+
+    modem_id: 1
+
+    driver_type: DRIVER_WHOI_MICROMODEM
+    driver_cfg
+    { 
+      serial_port: "/tmp/ttyLOOPA2"
+# doesn't work with iModemSim, set to true for real ops
+      [MicroModemConfig.reset_nvram]: false
+    }
+
+    mac_cfg
+    {
+        type: MAC_FIXED_DECENTRALIZED
+        slot { src: 1  dest: 2  rate: 0  type: SLOT_DATA  slot_seconds: 10 } # downlink
+        slot { src: 2  dest: 1  rate: 0  type: SLOT_DATA  slot_seconds: 10 } # uplink
+    }
+
+    queue_cfg
+    {
+        queue
+        {
+            key {
+                type: QUEUE_CCL
+                id: 14 # decimal CCL id (first byte)
+            }
+            in_pubsub_var: "IN_REMUS_STATUS"
+            out_pubsub_var: "OUT_REMUS_STATUS"
+            name: "Remus_State"
+        }
+    }
+
+    dccl_cfg
+    {
+        message_file { path: "/home/toby/goby/xml/simple_status.xml" }          
+    }
+}
+
+// must set serial_loopbacks to use
+// as root run the shell script (in moos-ivp-local/src/bin)
+// > loopbacks
+ProcessConfig = iModemSim
+{
+	AppTick   = 4
+	CommsTick = 4
+
+	Port = /tmp/ttyLOOPA1
+	Speed = 19200
+	
+	IPPort = 49234
+	BroadcastAddr = 127.0.0.1
+
+        InputLocType = constant_local
+        ConstantPosX = 0
+        ConstantPosY = 0
+        ConstantDepth = 0
+}
+

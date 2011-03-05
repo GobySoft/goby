@@ -1,0 +1,10 @@
+import "goby/protobuf/option_extensions.proto";
+
+package goby.util.protobuf;
+
+message Datagram
+{
+  required string data = 1;
+  optional string src = 2;
+  optional string dest = 3;
+}

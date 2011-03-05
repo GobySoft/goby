@@ -34,6 +34,7 @@
 #include "goby/core/libcore/configuration_reader.h"
 #include "goby/core/libcore/exception.h"
 #include "moos_protobuf_helpers.h"
+#include "goby/version.h"
 
 namespace goby
 {
@@ -68,7 +69,7 @@ class TesMoosApp : public CMOOSApp
     void subscribe(const std::string& var,
                    InboxFunc handler,
                    int blackout = 0);    
-        
+    
     template<typename V, typename A1>
         void subscribe(const std::string& var,
                        void(V::*mem_func)(A1),
@@ -80,9 +81,8 @@ class TesMoosApp : public CMOOSApp
     
     template<typename App>
         friend int ::goby::moos::run(int argc, char* argv[]);
-    
+
     virtual void loop() = 0;
-    virtual void inbox(const CMOOSMsg& msg) { }    
     
   private:
     // from CMOOSApp
@@ -93,7 +93,9 @@ class TesMoosApp : public CMOOSApp
     void try_subscribing();
     void do_subscriptions();
     
-
+    void fetch_moos_globals(google::protobuf::Message* msg,
+                            CMOOSFileReader& moos_file_reader);
+    
   private:
     
     // when we started (seconds since UNIX)
@@ -156,7 +158,8 @@ TesMoosApp::TesMoosApp(ProtobufConfig* cfg)
             ("help,h", "writes this help message")
             ("moos_file,c", boost::program_options::value<std::string>(&mission_file_), "path to .moos file")
             ("moos_name,a", boost::program_options::value<std::string>(&application_name_), "name to register with MOOS")
-            ("example_config,e", "writes an example .moos ProcessConfig block");
+            ("example_config,e", "writes an example .moos ProcessConfig block")
+            ("version,V", "writes the current version");
         
     
         boost::program_options::options_description od_both("Typically given in the .moos file, but may be specified on the command line");
@@ -186,6 +189,14 @@ TesMoosApp::TesMoosApp(ProtobufConfig* cfg)
             std::cout << "ProcessConfig = " << application_name_ << "\n{";
             goby::core::ConfigReader::get_example_cfg_file(cfg, &std::cout, "  ");
             std::cout << "}" << std::endl;
+            exit(EXIT_SUCCESS);            
+        }
+        else if(var_map.count("version"))
+        {
+            std::cout << "This is Version " << goby::VERSION_STRING
+                      << " of the Goby Underwater Autonomy Project released on "
+                      << goby::VERSION_DATE
+                      << ".\nSee https://launchpad.net/goby to search for updates." << std::endl;
             exit(EXIT_SUCCESS);            
         }
         
@@ -260,104 +271,10 @@ TesMoosApp::TesMoosApp(ProtobufConfig* cfg)
     
     CMOOSFileReader moos_file_reader;
     moos_file_reader.SetFile(mission_file_);
+    fetch_moos_globals(cfg, moos_file_reader);
 
-    const google::protobuf::Descriptor* desc = cfg->common().GetDescriptor();
-    const google::protobuf::Reflection* refl = cfg->common().GetReflection();
-    for(int i = 0, n = desc->field_count(); i < n; ++i)
-    {
-        const google::protobuf::FieldDescriptor* field_desc = desc->field(i);
-        
-        std::string moos_global = field_desc->options().GetExtension(::moos_global);
-        
-        switch(field_desc->cpp_type())
-        {
-            case google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE:
-                break;    
-                    
-            case google::protobuf::FieldDescriptor::CPPTYPE_INT32:
-            {
-                int result;
-                if(moos_file_reader.GetValue(moos_global, result))
-                    refl->SetInt32(cfg->mutable_common(), field_desc, result);
-                break;
-            }
-            
-            case google::protobuf::FieldDescriptor::CPPTYPE_INT64:
-            {
-                int result;
-                if(moos_file_reader.GetValue(moos_global, result))
-                    refl->SetInt64(cfg->mutable_common(), field_desc, result);
-                break;
-            }
 
-            case google::protobuf::FieldDescriptor::CPPTYPE_UINT32:
-            {
-                unsigned result;
-                if(moos_file_reader.GetValue(moos_global, result))
-                    refl->SetUInt32(cfg->mutable_common(), field_desc, result);
-                break;
-            }
-
-            case google::protobuf::FieldDescriptor::CPPTYPE_UINT64:
-            {
-                unsigned result;
-                if(moos_file_reader.GetValue(moos_global, result))
-                    refl->SetUInt64(cfg->mutable_common(), field_desc, result);
-                break;
-            }
-                        
-            case google::protobuf::FieldDescriptor::CPPTYPE_BOOL:
-            {
-                bool result;
-                if(moos_file_reader.GetValue(moos_global, result))
-                    refl->SetBool(cfg->mutable_common(), field_desc, result);
-                break;
-            }
-                    
-            case google::protobuf::FieldDescriptor::CPPTYPE_STRING:
-            {
-                std::string result;
-                if(moos_file_reader.GetValue(moos_global, result))
-                    refl->SetString(cfg->mutable_common(), field_desc, result);
-                break;
-            }
-                
-            case google::protobuf::FieldDescriptor::CPPTYPE_FLOAT:
-            {
-                float result;
-                if(moos_file_reader.GetValue(moos_global, result))
-                    refl->SetFloat(cfg->mutable_common(), field_desc, result);
-                break;
-            }
-
-            case google::protobuf::FieldDescriptor::CPPTYPE_DOUBLE:
-            {
-                double result;
-                if(moos_file_reader.GetValue(moos_global, result))
-                    refl->SetDouble(cfg->mutable_common(), field_desc, result);
-                break;
-            }
-                
-            case google::protobuf::FieldDescriptor::CPPTYPE_ENUM:
-            {
-                std::string result;
-                if(moos_file_reader.GetValue(moos_global, result))
-                {                
-                    const google::protobuf::EnumValueDescriptor* enum_desc =
-                        refl->GetEnum(cfg->common(), field_desc)->type()->FindValueByName(result);
-                    if(!enum_desc)
-                        throw(std::runtime_error(std::string("invalid enumeration " +
-                                                             result + " for field " +
-                                                             field_desc->name())));
-                    
-                    refl->SetEnum(cfg->mutable_common(), field_desc, enum_desc);
-                }
-                break;
-            }
-        }
-    }    
-
-    // add / overwrite any options that are specified in the cfg file with those given on the command line
+// add / overwrite any options that are specified in the cfg file with those given on the command line
     typedef std::pair<std::string, boost::program_options::variable_value> P;
     BOOST_FOREACH(const P&p, var_map)
     {
@@ -438,8 +355,8 @@ int goby::moos::run(int argc, char* argv[])
 
     try
     {
-        App app;
-        app.Run(App::application_name_.c_str(), App::mission_file_.c_str());
+        App* app = App::get_instance();
+        app->Run(App::application_name_.c_str(), App::mission_file_.c_str());
     }
     catch(goby::ConfigException& e)
     {

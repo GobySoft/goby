@@ -188,7 +188,7 @@ void goby::acomms::MACManager::send_poll(const boost::system::error_code& e)
             if(it==(*current_slot_))
                 *log_ << " " << green;
             
-            switch(s.type())
+            switch(it->second.type())
             {
                 case protobuf::SLOT_DATA: *log_ << "d"; break;
                 case protobuf::SLOT_PING: *log_ << "p"; break;
@@ -445,10 +445,11 @@ bool goby::acomms::MACManager::remove_slot(const protobuf::Slot& s)
         }
     }
 
-    process_cycle_size_change();
     
     if(slot_order_.empty())
         stop_timer();
+    else
+        process_cycle_size_change();
 
     if(removed_a_slot)
         current_slot_ = slot_order_.begin();

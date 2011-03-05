@@ -29,6 +29,8 @@
 #include <boost/foreach.hpp>
 #include <boost/asio.hpp>
 
+#include "goby/util/string.h"
+
 #include "interface.h"
 #include "connection.h"
 
@@ -37,22 +39,35 @@ namespace goby
     namespace util
     {
         class TCPConnection;
+        
+        /// provides a basic TCP server for line by line text based communications to a one or more remote TCP clients  
         class TCPServer : public LineBasedInterface
         {
           public:
+            /// \brief create a TCP server
+            ///
+            /// \param port port of the server (use 50000+ to avoid problems with special system ports)
+            /// \param delimiter string used to split lines
           TCPServer(unsigned port,
                     const std::string& delimiter = "\r\n")
-              : acceptor_(io_service_, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), port)),
-                delimiter_(delimiter)
+              : LineBasedInterface(delimiter),
+                acceptor_(LineBasedInterface::io_service_,
+                          boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), port))
                 {  }
 
-            std::string local_ip() { return acceptor_.local_endpoint().address().to_string(); }
+            /// \brief string representation of the local endpoint (e.g. 192.168.1.105:54230
+            std::string local_endpoint() { return goby::util::as<std::string>(acceptor_.local_endpoint()); }
+
             
+
+            // for access to static members of LineBasedInterface
+            friend class TCPConnection;
+            friend class LineBasedConnection<boost::asio::ip::tcp::socket>;
           private:
             void do_start()
             { start_accept(); }
         
-            void do_write(const std::string& line);
+            void do_write(const protobuf::Datagram& line);
             void do_close(const boost::system::error_code& error);
             
           private:
@@ -65,9 +80,7 @@ namespace goby
             std::string server_;
             boost::asio::ip::tcp::acceptor acceptor_;
             boost::shared_ptr<TCPConnection> new_connection_;
-            std::set< boost::shared_ptr<TCPConnection> > connections_;
-            std::string delimiter_;
-    
+            std::set< boost::shared_ptr<TCPConnection> > connections_;    
         };
 
 
@@ -75,10 +88,7 @@ namespace goby
             public LineBasedConnection<boost::asio::ip::tcp::socket>
             {
               public:
-                static boost::shared_ptr<TCPConnection> create(boost::asio::io_service& io_service,
-                                                               std::deque<std::string>& in,
-                                                               boost::mutex& in_mutex,
-                                                               const std::string& delimiter);
+                static boost::shared_ptr<TCPConnection> create();
                 
                 boost::asio::ip::tcp::socket& socket()
                 { return socket_; }
@@ -86,29 +96,26 @@ namespace goby
                 void start()
                 { socket_.get_io_service().post(boost::bind(&TCPConnection::read_start, this)); }
 
-                void write(const std::string& msg)
+                void write(const protobuf::Datagram& msg)
                 { socket_.get_io_service().post(boost::bind(&TCPConnection::socket_write, this, msg)); }    
 
                 void close(const boost::system::error_code& error)
                 { socket_.get_io_service().post(boost::bind(&TCPConnection::socket_close, this, error)); }
-        
+                
+                std::string local_endpoint() { return goby::util::as<std::string>(socket_.local_endpoint()); }
+                std::string remote_endpoint() { return goby::util::as<std::string>(socket_.remote_endpoint()); }
+                
               private:
-                void socket_write(const std::string& line);
+                void socket_write(const protobuf::Datagram& line);
                 void socket_close(const boost::system::error_code& error);
     
-              TCPConnection(boost::asio::io_service& io_service,
-                            std::deque<std::string>& in,
-                            boost::mutex& in_mutex,
-                            const std::string& delimiter)
-                  : LineBasedConnection<boost::asio::ip::tcp::socket>(socket_, out_, in, in_mutex, delimiter),
-                    socket_(io_service)
-                    { }
+              TCPConnection()
+                  : socket_(LineBasedInterface::io_service_)
+                { }
     
 
               private:
                 boost::asio::ip::tcp::socket socket_;
-                std::deque<std::string> out_; // buffered write data
-    
             };
     }
 

@@ -25,11 +25,12 @@
 goby::util::SerialClient::SerialClient(const std::string& name,
                                        unsigned baud,
                                        const std::string& delimiter)
-    : LineBasedClient<boost::asio::serial_port>(serial_port_, delimiter),
+    : LineBasedClient<boost::asio::serial_port>(delimiter),
       serial_port_(io_service_),
       name_(name),
       baud_(baud)
-{ }
+{
+}
 
 bool goby::util::SerialClient::start_specific()
 {

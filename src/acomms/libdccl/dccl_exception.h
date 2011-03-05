@@ -22,16 +22,23 @@
 
 #include "goby/core/libcore/exception.h"
 
-/// \brief simple exception class for libdccl
-// TODO(tes): bring into goby::acomms namespace
-class dccl_exception : public goby::Exception
+namespace goby
 {
-  public:
-  dccl_exception(const std::string& s)
-      : Exception(s)
-    { }
+    namespace acomms
+    {
+        /// \brief Exception class for libdccl
+        class DCCLException : public goby::Exception
+        {
+          public:
+          DCCLException(const std::string& s)
+              : Exception(s)
+            { }
 
-};
+        };
+
+    }
+}
+
 
 #endif
 

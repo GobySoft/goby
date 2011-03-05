@@ -21,7 +21,12 @@
 #include <google/protobuf/io/tokenizer.h>
 #include "goby/util/liblogger/flex_ostream.h"
 
+/// \file moos_protobuf_helpers.h Helpers for MOOS applications for serializing and parsed Google Protocol buffers messages
 
+/// \brief Converts the Google Protocol Buffers message `msg` into a suitable (human readable) string `out` for sending via MOOS
+///
+/// \param out pointer to std::string to store serialized result
+/// \param msg Google Protocol buffers message to serialize
 inline void serialize_for_moos(std::string* out, const google::protobuf::Message& msg)
 {
     google::protobuf::TextFormat::Printer printer;
@@ -30,6 +35,10 @@ inline void serialize_for_moos(std::string* out, const google::protobuf::Message
 }
 
 
+/// \brief Parses the string `in` to Google Protocol Buffers message `msg`. All errors are written to the goby::util::glogger().
+///
+/// \param in std::string to parse
+/// \param msg Google Protocol buffers message to store result
 inline void parse_for_moos(const std::string& in, google::protobuf::Message* msg)
 {
     google::protobuf::TextFormat::Parser parser;

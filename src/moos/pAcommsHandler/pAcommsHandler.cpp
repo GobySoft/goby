@@ -34,13 +34,21 @@
 
 using namespace goby::util::tcolor;
 using goby::acomms::operator<<;
-using goby::util::as;
 using goby::util::glogger;
+using goby::util::as;
 using google::protobuf::uint32;
 using goby::acomms::NaN;
 using goby::acomms::DCCLMessageVal;
 
 pAcommsHandlerConfig CpAcommsHandler::cfg_;
+CpAcommsHandler* CpAcommsHandler::inst_ = 0;
+
+CpAcommsHandler* CpAcommsHandler::get_instance()
+{
+    if(!inst_)
+        inst_ = new CpAcommsHandler();
+    return inst_;
+}
 
 CpAcommsHandler::CpAcommsHandler()
     : TesMoosApp(&cfg_),
@@ -109,7 +117,7 @@ void CpAcommsHandler::dccl_loop()
     if(cfg_.tcp_share_enable() && tcp_share_server_)
     {
         std::string s;
-        while(!(s = tcp_share_server_->readline()).empty())
+        while(tcp_share_server_->readline(&s))
         {
             goby::acomms::protobuf::ModemDataTransmission msg;
             parse_for_moos(s, &msg);
@@ -376,6 +384,10 @@ void CpAcommsHandler::process_configuration()
             driver_ = new goby::acomms::MMDriver(&glogger());
             break;
 
+        case pAcommsHandlerConfig::DRIVER_ABC_EXAMPLE_MODEM:
+            driver_ = new goby::acomms::ABCDriver(&glogger());
+            break;
+            
         case pAcommsHandlerConfig::DRIVER_NONE: break;
     }
 
@@ -661,7 +673,7 @@ void CpAcommsHandler::handle_tcp_share(goby::acomms::protobuf::ModemDataTransmis
             if(p.second->active())
             {
                 std::stringstream ss;
-                ss << p.second->local_ip() << ":" << cfg_.tcp_share_port();
+                ss << p.second->local_endpoint() << ":" << cfg_.tcp_share_port();
                 modem_message->AddExtension(pAcommsHandlerExtensions::seen_ip, ss.str());                
                 
                 std::string serialized;

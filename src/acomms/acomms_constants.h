@@ -33,7 +33,9 @@ namespace goby
         // one hex char is a nibble (4 bits), two nibbles per byte
         const unsigned NIBS_IN_BYTE = 2;
 
+        /// special modem id for the broadcast destination - no one is assigned this address. Analogous to 192.168.1.255 on a 192.168.1.0 subnet
         const int BROADCAST_ID = 0;
+        /// special modem id used internally to goby-acomms for indicating that the MAC layer (libamac) is agnostic to the next destination. The next destination is thus set by the data provider (typically libqueue).
         const int QUERY_DESTINATION_ID = -1;
         
         const unsigned char DCCL_CCL_HEADER = 32;

@@ -28,8 +28,8 @@
 
 #include "goby/acomms/xml/xml_parser.h"
 #include "goby/acomms/dccl.h"
-#include "goby/acomms/protobuf/queue.pb.h"
-#include "goby/acomms/protobuf/acomms_proto_helpers.h"
+#include "goby/protobuf/queue.pb.h"
+#include "goby/protobuf/acomms_proto_helpers.h"
 
 #include <map>
 #include <deque>
@@ -48,7 +48,10 @@ namespace goby
     
     namespace acomms
     {
-        /// provides an API to the goby-acomms Queuing Library.
+        /// \class QueueManager queue.h goby/acomms/queue.h
+        /// \brief provides an API to the goby-acomms Queuing Library.
+        /// \ingroup acomms_api
+        /// \sa queue.proto and modem_message.proto for definition of Google Protocol Buffers messages (namespace goby::acomms::protobuf).
         class QueueManager
         {
           public:
@@ -56,8 +59,8 @@ namespace goby
             //@{         
             /// \brief Default constructor.
             ///
-            /// \param os std::ostream object or FlexOstream to capture all humanly readable runtime and debug information (optional).
-            QueueManager(std::ostream* os = 0);
+            /// \param log std::ostream object or FlexOstream to capture all humanly readable runtime and debug information (optional).
+            QueueManager(std::ostream* log = 0);
 
             /// Destructor.
             ~QueueManager() { }
@@ -69,11 +72,19 @@ namespace goby
             /// These methods are intended to be called before doing any work with the class.
             //@{
 
-
+            /// \brief Set (and overwrite completely if present) the current configuration. (protobuf::QueueManagerConfig defined in queue.proto)
             void set_cfg(const protobuf::QueueManagerConfig& cfg);
+
+            /// \brief Set (and merge "repeat" fields) the current configuration. (protobuf::QueueManagerConfig defined in queue.proto)
             void merge_cfg(const protobuf::QueueManagerConfig& cfg);
 
-            void add_flex_groups(util::FlexOstream* tout);
+            //@}
+            
+            /// \name Static helpers
+            //@{
+
+            /// Registers the group names used for the FlexOstream logger
+            static void add_flex_groups(util::FlexOstream* tout);
             
             
             //@}
@@ -91,7 +102,7 @@ namespace goby
             void push_message(const protobuf::ModemDataTransmission& new_message);        
             //@}
         
-            /// \name Modem Driver level Push/Receive Methods
+            /// \name Modem Slots
             ///
             /// These methods are the interface to the QueueManager from the %modem driver.
             //@{
@@ -119,10 +130,11 @@ namespace goby
             //@}
 
 
-            /// \name Active methods
+            /// \name Control
             ///
-            /// Call these methods when you want the QueueManager to perform time sensitive tasks
+            /// Call these methods when you want the QueueManager to perform time sensitive tasks (such as expiring old messages)
             //@{
+            /// \brief Calculates which messages have expired and emits the goby::acomms::QueueManager::signal_expire as necessary.
             void do_work();
 
             //@}
@@ -139,6 +151,40 @@ namespace goby
             
             //@}
         
+            /// \name Application Signals
+            //@{
+            /// \brief Signals when acknowledgment of proper message receipt has been received. This is only sent for queues with QueueConfig::ack() == true with an explicit destination (ModemMessageBase::dest() != 0)
+            ///
+            /// \param ack_msg a message containing details of the acknowledgment and the acknowledged transmission. (protobuf::ModemMsgAck is defined in modem_message.proto)        
+            boost::signal<void (const protobuf::ModemDataAck& ack_msg)> signal_ack;
+            /// \brief Signals when a DCCL message is received.
+            ///
+            /// \param msg the received transmission. (protobuf::ModemDataTransmission is defined in modem_message.proto)
+            boost::signal<void (const protobuf::ModemDataTransmission& msg)> signal_receive;
+
+            /// \brief Signals when a CCL message is received.
+            ///
+            /// \param msg the received transmission. (protobuf::ModemDataTransmission is defined in modem_message.proto)
+            boost::signal<void (const protobuf::ModemDataTransmission& msg)> signal_receive_ccl;
+            
+            /// \brief Signals when a message is expires (exceeds its time-to-live or ttl) before being sent (if QueueConfig::ack() == false) or before being acknowledged (if QueueConfig::ack() == true).
+            ///
+            /// \param expire_msg the expired transmission. (protobuf::ModemDataExpire is defined in modem_message.proto)
+            boost::signal<void (const protobuf::ModemDataExpire& expire_msg)> signal_expire;
+            
+            /// \brief Forwards the data request to the application layer. This advanced feature is used with the ON_DEMAND manipulator and allows for the application to provide data immediately before it is actually sent (for highly time sensitive data)
+            ///
+            /// \param request_msg the details of the requested data. (protobuf::ModemDataRequest is defined in modem_message.proto)
+            /// \param data_msg pointer to store the supplied data. (protobuf::ModemDataTransmission is defined in modem_message.proto)
+            boost::signal<void (const protobuf::ModemDataRequest& request_msg,
+                                protobuf::ModemDataTransmission* data_msg)> signal_data_on_demand;
+
+            /// \brief Signals when any queue changes size (message is popped or pushed)
+            ///
+            /// \param size message containing the queue that changed size and its new size (protobuf::QueueSize is defined in queue.proto).
+            boost::signal<void (protobuf::QueueSize size)> signal_queue_size_change;
+            //@}
+
             /// \example libqueue/examples/queue_simple/queue_simple.cpp
             /// simple.xml
             /// \verbinclude queue_simple/simple.xml
@@ -147,18 +193,14 @@ namespace goby
 
             /// \example acomms/examples/chat/chat.cpp
 
-            static int modem_id_;
 
-            boost::signal<void (const protobuf::ModemDataAck& ack_msg)> signal_ack;
-            boost::signal<void (const protobuf::ModemDataTransmission& msg)> signal_receive;
-            boost::signal<void (const protobuf::ModemDataTransmission& msg)> signal_receive_ccl;
-            boost::signal<void (const protobuf::ModemDataExpire& expire_msg)> signal_expire;
-            boost::signal<void (const protobuf::ModemDataRequest& request_msg,
-                                protobuf::ModemDataTransmission* data_msg)> signal_data_on_demand;
-            boost::signal<void (protobuf::QueueSize size)> signal_queue_size_change;
             
           private:
-            /// \brief Add more %queues by configuration XML files (typically contained in DCCL message XML files).
+            friend class Queue;
+            static int modem_id_;
+            
+
+/// \brief Add more %queues by configuration XML files (typically contained in DCCL message XML files).
             ///
             /// \param xml_file path to the XML file to parse and add to this codec.
             std::set<unsigned> add_xml_queue_file(const std::string& xml_file);

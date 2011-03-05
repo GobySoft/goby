@@ -17,7 +17,8 @@ public:
     void loop()
         {
             DepthReading reading;
-            // just post the depth given in the configuration file plus a small random offset
+            // just post the depth given in the configuration file plus a
+            // small random offset
             reading.set_depth(cfg_.depth() + (rand() % 10) / 10.0);
 
             glogger() << reading << std::flush;

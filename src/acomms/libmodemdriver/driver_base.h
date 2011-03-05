@@ -24,47 +24,55 @@
 #include <boost/signal.hpp>
 
 #include "goby/acomms/acomms_constants.h"
-#include "goby/acomms/protobuf/modem_message.pb.h"
-#include "goby/acomms/protobuf/driver_base.pb.h"
+#include "goby/protobuf/modem_message.pb.h"
+#include "goby/protobuf/driver_base.pb.h"
 #include "goby/util/linebasedcomms.h"
-#include "goby/acomms/protobuf/acomms_proto_helpers.h"
+#include "goby/protobuf/acomms_proto_helpers.h"
 
 namespace goby
 {
     namespace util { class FlexOstream; }    
 
     namespace acomms
-    {         
-        /// provides an abstract base class for acoustic modem drivers. This is subclassed by the various drivers for different manufacturers' modems.
+    {
+        /// \class ModemDriverBase driver_base.h goby/acomms/modem_driver.h
+        /// \ingroup acomms_api
+        /// \brief provides an abstract base class for acoustic modem drivers. This is subclassed by the various drivers for different manufacturers' modems.
+        /// \sa driver_base.proto and modem_message.proto for definition of Google Protocol Buffers messages (namespace goby::acomms::protobuf).
         class ModemDriverBase
         {
           public:
-            /// \name Pure virtual
+            /// \name Control
             //@{
 
-            /// \brief Virtual startup method. see derived classes (e.g. MMDriver) for examples.
+            /// \brief Starts the modem driver. Must be called before do_work(). 
             ///
             /// \param cfg Startup configuration for the driver and modem. DriverConfig is defined in driver_base.proto. Derived classes can define extensions (see http://code.google.com/apis/protocolbuffers/docs/proto.html#extensions) to DriverConfig to handle modem specific configuration.
             virtual void startup(const protobuf::DriverConfig& cfg) = 0;
 
+            /// \brief Shuts down the modem driver. 
             virtual void shutdown() = 0;
 
-            /// \brief Virtual do_work method. See derived classes (e.g. MMDriver) for examples.
+            /// \brief Allows the modem driver to do its work. 
             ///
             /// Should be called regularly to perform the work of the driver as the driver *does not* run in its own thread. This allows us to guarantee that no signals are called except inside this do_work method.
             virtual void do_work() = 0;
-            /// \brief Virtual initiate_transmission method. See derived classes (e.g. MMDriver) for examples.
+            //@}
+
+            /// \name MAC Slots
+            //@{
+            /// \brief Virtual initiate_transmission method. Typically connected to MACManager::signal_initiate_transmission() using bind().
             ///
             /// \param m ModemMsgBase (defined in modem_message.proto) containing the details of the transmission to be started. This does *not* contain data, which will be requested when the driver calls the data request signal (ModemDriverBase::signal_data_request)
             virtual void handle_initiate_transmission(protobuf::ModemMsgBase* m) = 0;            
-            /// \brief Virtual initiate_ranging method. see derived classes (e.g. MMDriver) for examples.
+            /// \brief Virtual initiate_ranging method.  Typically connected to MACManager::signal_initiate_ranging() using bind().
             ///
             /// \param m ModemRangingRequest (defined in modem_message.proto) containing the details of the ranging request to be started: source, destination, type, etc.
-            virtual void handle_initiate_ranging(protobuf::ModemRangingRequest* m) = 0;
+            virtual void handle_initiate_ranging(protobuf::ModemRangingRequest* m) {};
             
             //@}
 
-            /// \name Signals
+            /// \name MAC / Queue Signals
             //@{
 
             /// \brief Called when a binary data transmission is received from the modem
@@ -78,7 +86,6 @@ namespace goby
             /// You should connect one or more slots (a function or member function) to this signal to handle data requests. Use the goby::acomms::connect family of functions to do this. This signal will only be called during a call to do_work. ModemDataRequest and ModemDataTransmission are defined in modem_message.proto.
             boost::signal<void (const protobuf::ModemDataRequest& msg_request, protobuf::ModemDataTransmission* msg_data)>
                 signal_data_request;
-
             
             /// \brief Called when the modem receives ranging information (time of flight to another vehicle or LBL ranging beacons)
             ///
@@ -86,13 +93,13 @@ namespace goby
             boost::signal<void (const protobuf::ModemRangingReply& message)>
                 signal_range_reply;
 
-            /// \brief Called when the modem receives an acknowledgment of proper receipt of a prior data transmission. The frame number of the acknowledgment must match the frame number of the original message.
+            /// \brief Called when the modem receives an acknowledgment of proper receipt of a prior data transmission. The frame number of the acknowledgment must match the frame number of the original message. The modem driver is only responsible for the base (source, destination, timestamp) and acknowledged frame number in ModemDataAck.
             ///
             /// You should connect one or more slots (a function or member function) to this signal to handle acknowledgments. Use the goby::acomms::connect family of functions to do this. This signal will only be called during a call to do_work. ModemDataAck is defined in modem_message.proto.
             boost::signal<void (const protobuf::ModemDataAck& message)>
                 signal_ack;
 
-            /// \brief Called after any message is received from the modem by the driver. Useful for higher level analysis and debugging of the transactions between the driver and the modem.
+            /// \brief Called after any message is received from the modem by the driver. Used by the MACManager for auto-discovery of vehicles. Also useful for higher level analysis and debugging of the transactions between the driver and the modem.
             ///
             /// If desired, you should connect one or more slots (a function or member function) to this signal to listen on incoming transactions. Use the goby::acomms::connect family of functions to do this. This signal will only be called during a call to do_work. ModemMsgBase is defined in modem_message.proto.
             boost::signal<void (const protobuf::ModemMsgBase& msg_data)>
@@ -120,7 +127,6 @@ namespace goby
             /// \brief Constructor
             ///
             /// \param log pointer to std::ostream to log human readable debugging and runtime information
-            /// \param line_delimiter string indicating the end-of-line character(s) from the serial port (usually newline ("\n") or carriage-return and newline ("\r\n"))
             ModemDriverBase(std::ostream* log = 0);
             /// Destructor
             ~ModemDriverBase();
@@ -143,9 +149,11 @@ namespace goby
             /// \return true if a line was available, false if no line available
             bool modem_read(std::string* in);
 
-            /// \brief start the serial port. must be called before DriverBase::modem_read() or DriverBase::modem_write()
+            /// \brief start the physical connection to the modem (serial port, TCP, etc.). must be called before ModemDriverBase::modem_read() or ModemDriverBase::modem_write()
             ///
-            /// \throw std::runtime_error Serial port could not be opened.
+            /// \param cfg Configuration including the parameters for the physical connection. (protobuf::DriverConfig is defined in driver_base.proto).
+            /// \throw driver_exception Problem opening the physical connection.
+            /// 
             void modem_start(const protobuf::DriverConfig& cfg);
 
             /// \brief closes the serial port. Use modem_start to reopen the port.

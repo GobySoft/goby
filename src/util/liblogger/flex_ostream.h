@@ -29,6 +29,8 @@
 #include <google/protobuf/text_format.h>
 #include <google/protobuf/io/tokenizer.h>
 
+#include <boost/shared_ptr.hpp>
+
 namespace goby
 {
     namespace util
@@ -139,6 +141,9 @@ namespace goby
             
             friend FlexOstream& glogger(logger_lock::LockAction lock_action);
 
+            template<typename T>
+                friend void boost::checked_delete(T*);
+            
             friend std::ostream& operator<< (FlexOstream& out, char c );
             friend std::ostream& operator<< (FlexOstream& out, signed char c );
             friend std::ostream& operator<< (FlexOstream& out, unsigned char c );
@@ -153,7 +158,7 @@ namespace goby
             FlexOstream& operator = (const FlexOstream&);            
 
           private:
-            static FlexOstream* inst_;
+            static boost::shared_ptr<goby::util::FlexOstream> inst_;
             FlexOStreamBuf sb_;
         };        
         /// \name Logger

@@ -22,11 +22,11 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/format.hpp>
 
-#include "goby/core/proto/interprocess_notification.pb.h"
-#include "goby/core/proto/option_extensions.pb.h"
+#include "goby/protobuf/interprocess_notification.pb.h"
+#include "goby/protobuf/option_extensions.pb.h"
 #include "goby/core/core_constants.h"
 #include "goby/core/libcore/message_queue_util.h"
-#include "goby/core/proto/app_base_config.pb.h"
+#include "goby/protobuf/app_base_config.pb.h"
 
 #include "goby/util/logger.h"
 

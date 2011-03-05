@@ -1,6 +1,5 @@
 // see http://code.google.com/apis/protocolbuffers/docs/cpptutorial.html
-// and http://code.google.com/apis/protocolbuffers/docs/proto.html
-// and http://code.google.com/apis/protocolbuffers/docs/reference/cpp-generated.html
+// http://code.google.com/apis/protocolbuffers/docs/proto.html
 
 message HelloWorldMsg
 {

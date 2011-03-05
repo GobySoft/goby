@@ -247,7 +247,6 @@ namespace goby
             return true;            
         }        
         //@}
-
     }
 }
 #endif

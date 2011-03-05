@@ -17,35 +17,27 @@
 #ifndef ASIOLineBasedConnection20100715H
 #define ASIOLineBasedConnection20100715H
 
+
 namespace goby
 {
     namespace util
     {
 
 // template for type of client socket (asio::serial_port, asio::ip::tcp::socket)
+        
         template<typename ASIOAsyncReadStream>
             class LineBasedConnection
         {
-          public:
-            void set_delimiter(const std::string& s) { delimiter_ = s; }
-            std::string delimiter() const { return delimiter_; }            
-            
+
           protected:
-          LineBasedConnection(ASIOAsyncReadStream& socket,
-                              std::deque<std::string>& out,
-                              std::deque<std::string>& in,
-                              boost::mutex& in_mutex,
-                              const std::string& delimiter)
-              : socket_(socket),
-                out_(out),
-                in_(in),
-                in_mutex_(in_mutex),
-                delimiter_(delimiter)
-                { }
+            LineBasedConnection<ASIOAsyncReadStream>()
+            {}
+            
+            virtual ASIOAsyncReadStream& socket () = 0;
             
             void read_start()
             {
-                async_read_until(socket_, buffer_, delimiter_,
+                async_read_until(socket(), buffer_, LineBasedInterface::delimiter_,
                                  boost::bind(&LineBasedConnection::read_complete,
                                              this,
                                              boost::asio::placeholders::error));
@@ -53,12 +45,20 @@ namespace goby
             
             void write_start()
             { // Start an asynchronous write and call write_complete when it completes or fails
-                
-                boost::asio::async_write(socket_,
-                                         boost::asio::buffer(out_.front()),
-                                         boost::bind(&LineBasedConnection::write_complete,
-                                                     this,
-                                                     boost::asio::placeholders::error));
+                // don't write if it has a dest and the id doesn't match
+                if(!(out_.front().has_dest() && out_.front().dest() != remote_endpoint()))
+                {
+                    boost::asio::async_write(socket(),
+                                             boost::asio::buffer(out_.front().data()),
+                                             boost::bind(&LineBasedConnection::write_complete,
+                                                         this,
+                                                         boost::asio::placeholders::error));
+                }
+                else
+                {
+                    // discard message not for our remote endpoint
+                    out_.pop_front();
+                }
             }
             
             void read_complete(const boost::system::error_code& error)
@@ -66,16 +66,22 @@ namespace goby
                 if(error) return socket_close(error);
 
                 std::istream is(&buffer_);
-                std::string line;
-                
-                char last = delimiter_.at(delimiter_.length()-1);
+
+                std::string& line = *in_datagram_.mutable_data();
+
+                if(!remote_endpoint().empty())
+                    in_datagram_.set_src(remote_endpoint());
+                if(!local_endpoint().empty())
+                    in_datagram_.set_dest(local_endpoint());
+
+                char last = LineBasedInterface::delimiter_.at(LineBasedInterface::delimiter_.length()-1);
                 while(!std::getline(is, line, last).eof())
                 {
                     line = extra_ + line + last;
                     // grab a lock on the in_ deque because the user can modify    
-                    boost::mutex::scoped_lock lock(in_mutex_);
+                    boost::mutex::scoped_lock lock(LineBasedInterface::in_mutex_);
                     
-                    in_.push_back(line);
+                    LineBasedInterface::in_.push_back(in_datagram_);
                     
                     extra_.clear();
                 }
@@ -96,16 +102,20 @@ namespace goby
             }
 
             virtual void socket_close(const boost::system::error_code& error) = 0;
-
-          private:
-            ASIOAsyncReadStream& socket_;
-            std::deque<std::string>& out_; // buffered write data
-            std::deque<std::string>& in_; // buffered read data
-            boost::mutex& in_mutex_;
             
+            virtual std::string local_endpoint() = 0;
+            virtual std::string remote_endpoint() = 0;
+            
+            std::deque<protobuf::Datagram>& out() { return out_; }
+            
+            
+          private:
             boost::asio::streambuf buffer_; 
-            std::string delimiter_;
             std::string extra_;
+            protobuf::Datagram in_datagram_;
+            std::deque<protobuf::Datagram> out_; // buffered write data
+                
+            
         };
     }
 }

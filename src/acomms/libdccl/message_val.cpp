@@ -105,7 +105,7 @@ goby::acomms::DCCLMessageVal::DCCLMessageVal(bool b)
 goby::acomms::DCCLMessageVal::DCCLMessageVal(const std::vector<DCCLMessageVal>& vm)
 {
     if(vm.size() != 1)
-        throw(dccl_exception("vector cast to DCCLMessageVal failed: vector is not size 1"));
+        throw(DCCLException("vector cast to DCCLMessageVal failed: vector is not size 1"));
     else
         *this = vm[0];
 }

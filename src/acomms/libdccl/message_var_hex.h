@@ -59,9 +59,9 @@ namespace goby
                 if(s.length() == bytes2nibs(num_bytes_))
                     return util::hex_string2dyn_bitset(s, calc_size());
                 else if(s.length() < bytes2nibs(num_bytes_))
-                    throw(dccl_exception(std::string("Passed hex value (" + s + ") is too short. Should be " + util::as<std::string>(num_bytes_) +  " bytes")));
+                    throw(DCCLException(std::string("Passed hex value (" + s + ") is too short. Should be " + util::as<std::string>(num_bytes_) +  " bytes")));
                 else if(s.length() > bytes2nibs(num_bytes_))
-                    throw(dccl_exception(std::string("Passed hex value (" + s + ") is too long. Should be " + util::as<std::string>(num_bytes_) +  " bytes")));
+                    throw(DCCLException(std::string("Passed hex value (" + s + ") is too long. Should be " + util::as<std::string>(num_bytes_) +  " bytes")));
                 else
                     return boost::dynamic_bitset<unsigned char>();
             

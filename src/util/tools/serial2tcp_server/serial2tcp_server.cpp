@@ -45,12 +45,12 @@ int main(int argc, char* argv[])
     for(;;)
     {
         std::string s;
-        while(!(s = serial_client.readline()).empty())
+        while(serial_client.readline(&s))
         {
             std::cout << "serial->tcp: " << s << std::flush;
             tcp_server.write(s);
         }
-        while(!(s = tcp_server.readline()).empty())
+        while(tcp_server.readline(&s))
         {
             std::cout << "tcp->serial: " << s << std::flush;
             serial_client.write(s);

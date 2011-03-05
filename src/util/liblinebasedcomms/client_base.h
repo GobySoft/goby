@@ -30,35 +30,38 @@ namespace goby
         template<typename ASIOAsyncReadStream>
             class LineBasedClient : public LineBasedInterface, public LineBasedConnection<ASIOAsyncReadStream>
         {
-          protected:
-            enum { RETRY_INTERVAL = 10 };
             
-          LineBasedClient(ASIOAsyncReadStream& socket,
-                           const std::string& delimiter)
-              : LineBasedInterface(),
-                LineBasedConnection<ASIOAsyncReadStream>(socket, out_, in_, in_mutex_, delimiter),
-                socket_(socket)
-                { }
+          protected:
+          LineBasedClient(const std::string& delimiter)
+              : LineBasedInterface(delimiter),
+                LineBasedConnection<ASIOAsyncReadStream>()
+                { }            
 
+            enum { RETRY_INTERVAL = 10 };            
+
+            virtual ASIOAsyncReadStream& socket () = 0;
+            virtual std::string local_endpoint() = 0;
+            virtual std::string remote_endpoint() = 0;
+            
             // from LineBasedInterface
             void do_start()                     
             {
                 last_start_time_ = goby_time();
                 
                 set_active(start_specific());
-
+                
                 LineBasedConnection<ASIOAsyncReadStream>::read_start();
-                if(!out_.empty())
+                if(!LineBasedConnection<ASIOAsyncReadStream>::out().empty())
                     LineBasedConnection<ASIOAsyncReadStream>::write_start();
             }
             
             virtual bool start_specific() = 0;
 
             // from LineBasedInterface
-            void do_write(const std::string & line)
+            void do_write(const protobuf::Datagram& line)
             { 
-                bool write_in_progress = !out_.empty();
-                out_.push_back(line);
+                bool write_in_progress = !LineBasedConnection<ASIOAsyncReadStream>::out().empty();
+                LineBasedConnection<ASIOAsyncReadStream>::out().push_back(line);
                 if (!write_in_progress) LineBasedConnection<ASIOAsyncReadStream>::write_start();
             }
 
@@ -69,7 +72,7 @@ namespace goby
                     return; // ignore it because the connection cancelled the timer
                 
                 set_active(false);
-                socket_.close();
+                socket().close();
                 
                 using namespace boost::posix_time;
                 ptime now  = goby_time();
@@ -82,11 +85,10 @@ namespace goby
             // same as do_close in this case
             void socket_close(const boost::system::error_code& error)
             { do_close(error); }
-            
-                
+
+            //for static members of LineBasedInterface
+            friend class LineBasedConnection<ASIOAsyncReadStream>;
           private:        
-            ASIOAsyncReadStream& socket_;
-            std::deque<std::string> out_; // buffered write data
             boost::posix_time::ptime last_start_time_;
             
             LineBasedClient(const LineBasedClient&);

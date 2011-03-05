@@ -17,9 +17,9 @@
 
 const float UPPER_WIN_FRAC = 0.75;
 const float LOWER_WIN_FRAC = 1-UPPER_WIN_FRAC;
-const unsigned MAX_LINE = 30; // fixed in chat.xml
+const unsigned MAX_LINE = 26; // fixed in chat.xml
 
-/// provides a terminal GUI for a chat window (lower box to type and upper box to receive messages)
+/// provides a terminal GUI for a chat window (lower box to type and upper box to receive messages). Part of the chat.cpp example.
 class ChatCurses
 {
   public:
@@ -43,6 +43,8 @@ class ChatCurses
 
     /// add a message to the upper window (the chat log)
     void post_message(unsigned id, const std::string& line);
+    void post_message(const std::string& line);
+    
 
   private:
     void update_size();

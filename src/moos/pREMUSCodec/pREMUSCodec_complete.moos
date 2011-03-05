@@ -1,0 +1,116 @@
+ProcessConfig = pREMUSCodec
+{
+  common {  # Configuration common to all Goby MOOS applications 
+            # (opt)
+    log: true  # Should we write a text log of the terminal 
+               # output? (opt) (default=true) (can also set MOOS 
+               # global "log=")
+    log_path: "./"  # Directory path to write the text log of the 
+                    # terminal output (if log=true) (opt) 
+                    # (default="./") (can also set MOOS global 
+                    # "log_path=")
+    community: "AUV23"  # The vehicle's name (opt) (can also set 
+                        # MOOS global "Community=")
+    lat_origin: 42.5  # Latitude in decimal degrees of the local 
+                      # cartesian datum (opt) (can also set MOOS 
+                      # global "LatOrigin=")
+    lon_origin: 10.9  # Longitude in decimal degrees of the local 
+                      # cartesian datum (opt) (can also set MOOS 
+                      # global "LongOrigin=")
+    app_tick: 10  # Frequency at which to run Iterate(). (opt) 
+                  # (default=10)
+    comm_tick: 10  # Frequency at which to call into the MOOSDB 
+                   # for mail. (opt) (default=10)
+    verbosity: VERBOSITY_VERBOSE  # Verbosity of the terminal 
+                                  # window output (VERBOSITY_QUIET, 
+                                  # VERBOSITY_WARN, 
+                                  # VERBOSITY_VERBOSE, 
+                                  # VERBOSITY_DEBUG, VERBOSITY_GUI) 
+                                  # (opt) 
+                                  # (default=VERBOSITY_VERBOSE)
+    initializer {  # Publish a constant value to the MOOSDB at 
+                   # startup (repeat)
+      type: INI_DOUBLE  # type of MOOS variable to publish 
+                        # (INI_DOUBLE, INI_STRING) (req)
+      moos_var: "SOME_MOOS_VAR"  # name of MOOS variable to 
+                                 # publish to (req)
+      global_cfg_var: "LatOrigin"  # Optionally, instead of 
+                                   # giving `sval` or `dval`, give 
+                                   # a name here of a global MOOS 
+                                   # variable (one at the top of 
+                                   # the file) whose contents 
+                                   # should be written to 
+                                   # `moos_var` (opt)
+      dval: 3.454  # Value to write for type==INI_DOUBLE (opt)
+      sval: "a string"  # Value to write for type==INI_STRING 
+                        # (opt)
+    }
+  }
+  create_status: false  # Will generate REMUS State message if 
+                        # true (opt) (default=false)
+  mdat_state_var: "IN_REMUS_STATUS_HEX_30B"  # MOOS variable for 
+                                             # incoming REMUS state 
+                                             # messages (raw) (opt) 
+                                             # (default="IN_REMUS_ST
+                                             # ATUS_HEX_30B")
+  mdat_state_out: "OUT_REMUS_STATUS_HEX_30B"  # MOOS variable for 
+                                              # outgoing REMUS 
+                                              # state messages 
+                                              # (raw) (opt) 
+                                              # (default="OUT_REMUS_
+                                              # STATUS_HEX_30B")
+  mdat_ranger_var: "IN_REMUS_RANGER_HEX_30B"  # MOOS variable for 
+                                              # incoming REMUS 
+                                              # ranger messages 
+                                              # (raw) (opt) 
+                                              # (default="IN_REMUS_R
+                                              # ANGER_HEX_30B")
+  mdat_ranger_out: "OUT_REMUS_RANGER_HEX_30B"  
+                                              # MOOS variable for 
+                                              # outgoing REMUS 
+                                              # ranger messages 
+                                              # (raw) (opt) 
+                                              # (default="OUT_REMUS_
+                                              # RANGER_HEX_30B")
+  mdat_redirect_var: "IN_REMUS_REDIRECT_HEX_30B"  
+                                              # MOOS variable for 
+                                              # incoming REMUS 
+                                              # redirect messages 
+                                              # (raw) (opt) 
+                                              # (default="IN_REMUS_R
+                                              # EDIRECT_HEX_30B")
+  mdat_redirect_out: "OUT_REMUS_REDIRECT_HEX_30B"  
+                                              # MOOS variable for 
+                                              # outgoing REMUS 
+                                              # redirect messages 
+                                              # (raw) (opt) 
+                                              # (default="OUT_REMUS_
+                                              # REDIRECT_HEX_30B")
+  mdat_alert_var: "IN_REMUS_ALERT_HEX_30B"  # MOOS variable for 
+                                            # incoming REMUS alert 
+                                            # messages (raw) (opt) 
+                                            # (default="IN_REMUS_ALE
+                                            # RT_HEX_30B")
+  mdat_alert_out: "OUT_REMUS_ALERT_HEX_30B"  # MOOS variable for 
+                                             # outgoing REMUS alert 
+                                             # messages (raw) (opt) 
+                                             # (default="OUT_REMUS_A
+                                             # LERT_HEX_30B")
+  mdat_alert2_var: "IN_REMUS_ALERT2_HEX_30B"  # MOOS variable for 
+                                              # incoming REMUS 
+                                              # alert2 messages 
+                                              # (raw) (opt) 
+                                              # (default="IN_REMUS_A
+                                              # LERT2_HEX_30B")
+  mdat_alert2_out: "OUT_REMUS_ALERT2_HEX_30B"  
+                                              # MOOS variable for 
+                                              # outgoing REMUS 
+                                              # alert2 messages 
+                                              # (raw) (opt) 
+                                              # (default="OUT_REMUS_
+                                              # ALERT2_HEX_30B")
+  modem_id_lookup_path: ""  # Path to file containing mapping 
+                            # between modem_id and vehicle name & 
+                            # type (opt) (can also set MOOS global 
+                            # "modem_id_lookup_path=")
+}

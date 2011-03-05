@@ -25,8 +25,8 @@
 #include <crypto++/filters.h>
 #include <crypto++/hex.h>
 
-#include "goby/acomms/protobuf/modem_message.pb.h"
-#include "goby/acomms/protobuf/xml_config.pb.h"
+#include "goby/protobuf/modem_message.pb.h"
+#include "goby/protobuf/xml_config.pb.h"
 #include "goby/core/core_constants.h"
 
 namespace goby

@@ -27,7 +27,7 @@
 #include "message_xml_callbacks.h"
 #include "goby/util/logger.h"
 #include "goby/util/string.h"
-#include "goby/acomms/protobuf/acomms_proto_helpers.h"
+#include "goby/protobuf/acomms_proto_helpers.h"
 
 using goby::util::goby_time;
 using goby::util::as;
@@ -213,7 +213,7 @@ void goby::acomms::DCCLCodec::check_duplicates()
             
         std::map<unsigned, std::vector<DCCLMessage>::iterator>::const_iterator id_it = all_ids.find(id);
         if(id_it != all_ids.end())
-            throw dccl_exception(std::string("DCCL: duplicate variable id " + as<std::string>(id) + " specified for " + it->name() + " and " + id_it->second->name()));
+            throw DCCLException(std::string("DCCL: duplicate variable id " + as<std::string>(id) + " specified for " + it->name() + " and " + id_it->second->name()));
             
         all_ids.insert(std::pair<unsigned, std::vector<DCCLMessage>::iterator>(id, it));
     }
@@ -224,21 +224,21 @@ std::vector<goby::acomms::DCCLMessage>::const_iterator goby::acomms::DCCLCodec::
     if(name2messages_.count(message_name))
         return messages_.begin() + name2messages_.find(message_name)->second;
     else
-        throw dccl_exception(std::string("DCCL: attempted an operation on message [" + message_name + "] which is not loaded"));
+        throw DCCLException(std::string("DCCL: attempted an operation on message [" + message_name + "] which is not loaded"));
 }
 std::vector<goby::acomms::DCCLMessage>::iterator goby::acomms::DCCLCodec::to_iterator(const std::string& message_name)
 {
     if(name2messages_.count(message_name))
         return messages_.begin() + name2messages_.find(message_name)->second;
     else
-        throw dccl_exception(std::string("DCCL: attempted an operation on message [" + message_name + "] which is not loaded"));
+        throw DCCLException(std::string("DCCL: attempted an operation on message [" + message_name + "] which is not loaded"));
 }
 std::vector<goby::acomms::DCCLMessage>::const_iterator goby::acomms::DCCLCodec::to_iterator(const unsigned& id) const
 {
     if(id2messages_.count(id))
         return messages_.begin() + id2messages_.find(id)->second;
     else
-        throw dccl_exception(std::string("DCCL: attempted an operation on message [" + as<std::string>(id) + "] which is not loaded"));
+        throw DCCLException(std::string("DCCL: attempted an operation on message [" + as<std::string>(id) + "] which is not loaded"));
 }
 
 std::vector<goby::acomms::DCCLMessage>::iterator goby::acomms::DCCLCodec::to_iterator(const unsigned& id)
@@ -246,7 +246,7 @@ std::vector<goby::acomms::DCCLMessage>::iterator goby::acomms::DCCLCodec::to_ite
     if(id2messages_.count(id))
         return messages_.begin() + id2messages_.find(id)->second;
     else
-        throw dccl_exception(std::string("DCCL: attempted an operation on message [" + as<std::string>(id) + "] which is not loaded"));
+        throw DCCLException(std::string("DCCL: attempted an operation on message [" + as<std::string>(id) + "] which is not loaded"));
 }
 
 
@@ -257,7 +257,7 @@ void goby::acomms::DCCLCodec::encode_private(std::vector<DCCLMessage>::iterator 
     if(manip_manager_.has(it->id(), protobuf::MessageFile::NO_ENCODE))
     {
         if(log_) *log_ << group("dccl_enc") << "not encoding DCCL ID: " << it->id() << "; NO_ENCODE manipulator is set" << std::endl;
-        throw(dccl_exception("NO_ENCODE manipulator set"));
+        throw(DCCLException("NO_ENCODE manipulator set"));
     }
     
     if(log_)
@@ -289,10 +289,8 @@ void goby::acomms::DCCLCodec::encode_private(std::vector<DCCLMessage>::iterator 
     // 3. join head and body
     out = head + body;
 
-    // 4. hex encode
-    hex_encode(out);
     
-    if(log_) *log_ << group("dccl_enc") << "finished encode of " << it->name() << std::endl;    
+    if(log_) *log_ << group("dccl_enc") << "finished encode of " << it->name() <<  std::endl;    
 }
 
 std::vector<goby::acomms::DCCLMessage>::iterator goby::acomms::DCCLCodec::decode_private(std::string in,
@@ -303,15 +301,12 @@ std::vector<goby::acomms::DCCLMessage>::iterator goby::acomms::DCCLCodec::decode
     if(manip_manager_.has(it->id(), protobuf::MessageFile::NO_DECODE))
     {
         if(log_) *log_ << group("dccl_enc") << "not decoding DCCL ID: " << it->id() << "; NO_DECODE manipulator is set" << std::endl;
-        throw(dccl_exception("NO_DECODE manipulator set"));
+        throw(DCCLException("NO_DECODE manipulator set"));
     }
 
 
     if(log_) *log_ << group("dccl_dec") << "starting decode for " << it->name() << std::endl;        
     
-    // 4. hex decode
-    hex_decode(in);
-
     // clean up any ending junk added by modem
     in.resize(in.find_last_not_of(char(0))+1);
     
@@ -446,5 +441,5 @@ void goby::acomms::DCCLCodec::process_cfg()
     SHA256 hash;
     StringSource unused(cfg_.crypto_passphrase(), true, new HashFilter(hash, new StringSink(crypto_key_)));
 
-    if(log_) *log_ << "cryptography enabled with given passphrase" << std::endl;
+    if(log_) *log_ << group("dccl_enc") << "cryptography enabled with given passphrase" << std::endl;
 }

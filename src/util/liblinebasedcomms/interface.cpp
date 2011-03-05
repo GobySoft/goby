@@ -15,11 +15,33 @@
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "interface.h"
+#include "goby/core/libcore/exception.h"
+
+std::string goby::util::LineBasedInterface::delimiter_;
+boost::asio::io_service goby::util::LineBasedInterface::io_service_;
+std::deque<goby::util::protobuf::Datagram> goby::util::LineBasedInterface::in_;
+boost::mutex goby::util::LineBasedInterface::in_mutex_;
+
+
+            
+
+goby::util::LineBasedInterface::LineBasedInterface(const std::string& delimiter)
+    : work_(io_service_),
+      active_(false)
+{
+    if(delimiter.empty())
+        throw Exception("Line based comms started with null string as delimiter!");
+    
+    delimiter_ = delimiter;
+    boost::thread t(boost::bind(&boost::asio::io_service::run, &io_service_));
+}
+
 
 void goby::util::LineBasedInterface::start()
 {
     if(active_) return;
-    
+
+    active_ = true;
     io_service_.post(boost::bind(&LineBasedInterface::do_start, this));
 }
 
@@ -29,41 +51,34 @@ void goby::util::LineBasedInterface::clear()
     in_.clear();
 }
 
-
-std::string goby::util::LineBasedInterface::readline_oldest()
+bool goby::util::LineBasedInterface::readline(protobuf::Datagram* msg, AccessOrder order /* = OLDEST_FIRST */)   
 {
-    boost::mutex::scoped_lock lock(in_mutex_);
-    if(in_.empty()) return "";
+    if(in_.empty())
+    {
+        return false;
+    }
     else
     {
-        std::string in = in_.front();
-        in_.pop_front();
-        return in;
+        boost::mutex::scoped_lock lock(in_mutex_);
+        switch(order)
+        {
+            case NEWEST_FIRST:
+                msg->CopyFrom(in_.back());
+                in_.pop_back(); 
+                break;
+                
+            case OLDEST_FIRST:
+                msg->CopyFrom(in_.front());
+                in_.pop_front();       
+                break;
+        }       
+        return true;
     }
 }
 
-std::string goby::util::LineBasedInterface::readline_newest()
-{
-    boost::mutex::scoped_lock lock(in_mutex_);
-    if(in_.empty()) return "";
-    else
-    {
-        std::string in = in_.back();
-        in_.pop_back();
-        return in;
-    }
-}
-            
-
-goby::util::LineBasedInterface::LineBasedInterface()
-    : work_(io_service_),
-      active_(false)
-{
-    boost::thread t(boost::bind(&boost::asio::io_service::run, &io_service_));
-}
 
 // pass the write data via the io service in the other thread
-void goby::util::LineBasedInterface::write(const std::string& msg)
+void goby::util::LineBasedInterface::write(const protobuf::Datagram& msg)
 { io_service_.post(boost::bind(&LineBasedInterface::do_write, this, msg)); }
 
 // call the do_close function via the io service in the other thread

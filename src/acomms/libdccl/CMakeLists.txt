@@ -5,7 +5,7 @@ add_library(goby_dccl SHARED ${dccl_src})
 goby_find_required_package(Cryptopp "libcrypto++-dev")
 
 # icuuc needed by xerces
-target_link_libraries(goby_dccl goby_logger goby_acomms_protobuf xerces-c icuuc crypto++ ${Boost_LIBRARIES} ${PROTOBUF_LIBRARIES})
+target_link_libraries(goby_dccl goby_logger goby_protobuf xerces-c icuuc crypto++ ${Boost_LIBRARIES})
 
 if(build_acomms_examples)
   add_subdirectory(examples)

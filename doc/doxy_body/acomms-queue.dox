@@ -1,7 +1,7 @@
-// copyright 2009 t. schneider tes@mit.edu
+// copyright 2009-2011 t. schneider tes@mit.edu
 // 
 // goby software and documentation is distributed under the GNU General
-// Public License.
+// Public License v3.
 //
 // You should have received a copy of the GNU General Public License
 // along with this software (see goby/COPYING).  If not, see <http://www.gnu.org/licenses/>.
@@ -13,11 +13,16 @@ Table of Contents for libqueue:
 <li> \ref queue_priority
 <li> \ref queue_tags
 <li> \ref queue_manager
+<ul>
+<li> \ref queue_manager_instantiate
+<li> \ref queue_manager_signals
+<li> \ref queue_manager_operation
+</ul>
 <li> \ref queue_tags_details
 </ul>
 Return to \ref acomms.
 
-\section queue_priority Understanding priority queuing 
+\section queue_priority Understanding dynamic priority queuing 
 
 Each %queue has a base value (\f$V_{base}\f$) and a time-to-live (\f$ttl\f$) that create the priority (\f$P(t)\f$) at any given time (\f$t\f$):
  \f[
@@ -58,31 +63,43 @@ This section gives a brief outline of the tag structure of an XML file for defin
 
 \section queue_manager Interacting with the QueueManager
 
-The queue::QueueManager is configured similarly to the dccl::DCCLCodec. You need to add queues to the QueueManager which is done by feeding it either XML files (for DCCL queues with queue::QueueManager::add_xml_queue_file) or queue::QueueConfig objects (for CCL queues with queue::QueueManager::add_queue). You can instantiate the queue::QueueManager (optionally with XML files) like
+\subsection queue_manager_instantiate Instantiate and configure
+
+The goby::acomms::QueueManager is configured similarly to the goby::acomms::DCCLCodec. You need to add queues to the \link queue.proto goby::acomms::protobuf::QueueManagerConfig \endlink which is done by feeding it either XML files or \link queue.proto goby::acomms::protobuf::QueueConfig \endlink objects. You also need to set a unique identification number in the range 1-31 for this platform (the "modem_id"). This is analogous to a MAC address.
 
 \code
-queue::QueueManager q_manager("/path/to/file.xml","/path/to/message_schema.xsd");
+goby::acomms::QueueManager q_manager(&std::clog);
+goby::acomms::protobuf::QueueManagerConfig cfg;
+cfg.add_message_file()->set_path("path/to/file.xml");
+cfg.set_modem_id(1); // unique id 1-31 for each platform
+q_manager.set_cfg(cfg);
 \endcode
+
+\subsection queue_manager_signals Signals and (application layer) slots
 
 Then, you need to do a few more initialization chores:
 <ul>
-<li> Set the %modem id for the current vehicle: queue::QueueManager::set_modem_id
-<li> Pass function pointers or function objects for these callbacks (any of these are optional if you do not need their functionality):
+<li> Connect (using goby::acomms::connect()) QueueManager signals to your application layer slots (functions or member functions that match the signal's signature). You do not need to connect a slot to a given signal if you do not need its functionality. See \ref signal_slot for more on using signals and slots:
 <ul>
-<li> Received DCCL data: queue::QueueManager::set_receive_cb
-<li> Received CCL data: queue::QueueManager::set_receive_ccl_cb
-<li> Received acknowledgements: queue::QueueManager::set_ack_cb
+<li> Received DCCL data: goby::acomms::QueueManager::signal_receive
+<li> Received CCL data: goby::acomms::QueueManager::signal_receive_ccl
+<li> Received acknowledgements: goby::acomms::QueueManager::signal_ack
+<li> Expired messages (ttl exceeded): goby::acomms::QueueManager::signal_expire
 </ul>
-<li> Optional advanced features
+<li> Additional advanced features
 <ul>
-<li> Set a callback for every time a %queue size changes due to a new message being pushed or a message being sent: queue::QueueManager::set_queue_size_change_cb 
-<li> Request that a %queue be <i>on_demand</i>, that is, request data from the application layer every time the %modem layer requests data. This effectively bypasses the %queue and forwards the modem's data request to the application layer. Use this for sending highly time sensitive data which needs to be encoded immediately prior to sending: queue::QueueManager::set_on_demand. You must also provide a function callback that will be executed each time data is request: queue::QueueManager::set_data_on_demand_cb.
+<li> Connect a slot to learn every time a %queue size changes due to a new message being pushed or a message being sent: goby::acomms::QueueManager::signal_queue_size_change
+<li> Request that a %queue be <i>on_demand</i>, that is, request data from the application layer every time the %modem layer requests data (DCCL messages only). This effectively bypasses the %queue and forwards the modem's data request to the application layer. Use this for sending highly time sensitive data which needs to be encoded immediately prior to sending. Set the \link xml_config.proto ON_DEMAND manipulator \endlink for that particular XML file in \link queue.proto goby::acomms::protobuf::QueueManagerConfig \endlink. You must also connect a slot that will be executed each time data is request to the signal goby::acomms::QueueManager::signal_data_on_demand.
 </ul>
 </ul>
 
-At this point the queue::QueueManager is ready to use. At the application layer, new messages are pushed to the queues for sending using queue::QueueManager::push_message. Each %queue is identified by a unique queue::QueueKey, which is simply the identification number of the %queue (\ref tag_id for DCCL queues or the decimal representation of the first byte of a CCL message) and the %queue type (queue::queue_dccl or queue::queue_ccl).
+\subsection queue_manager_operation Operation
 
-At the driver layer, messages are requested using queue::QueueManager::provide_outgoing_modem_data, incoming messages are published using queue::QueueManager::receive_incoming_modem_data, and queue::QueueManager::acknowledgements are given using queue::QueueManager::handle_modem_ack. If using the goby-acomms drivers (i.e. some class derived from modem::DriverBase), simply call acomms_util::bind(modem::DriverBase&, queue::QueueManager&) and these methods will be invoked automatically from the proper driver callbacks.
+At this point the goby::acomms::QueueManager is ready to use. At the application layer, new messages are pushed to the queues for sending using goby::acomms::QueueManager::push_message. Each %queue is identified by a unique \link queue.proto goby::acomms::protobuf::QueueKey \endlink, which is simply the identification number of the %queue (\ref tag_id for DCCL queues or the decimal representation of the first byte of a CCL message) and the %queue type (\link queue.proto goby::acomms::protobuf::QUEUE_DCCL or goby::acomms::protobuf::QUEUE_CCL \endlink).
+
+At the driver layer, messages are requested using goby::acomms::QueueManager::handle_modem_data_request, incoming messages are published using goby::acomms::QueueManager::handle_modem_receive, and acknowledgements are given using goby::acomms::QueueManager::handle_modem_ack. If using the goby-acomms drivers (i.e. some class derived from goby::acomms::ModemDriverBase), simply call goby::acomms::bind (ModemDriverBase&, QueueManager&) and these methods (slots) will be invoked automatically from the proper driver signals.
+
+You must run goby::acomms::QueueManager::do_work() regularly (faster than 1 Hz; 10 Hertz is good) to process expired messages (goby::acomms::QueueManager::signal_expire). All other signals are emitted in response to a driver level signal (and thus are called during a call to goby::acomms::ModemDriverBase::do_work()).
 
 \section queue_tags_details Queuing XML Tags Reference
 
@@ -102,7 +119,7 @@ At the driver layer, messages are requested using queue::QueueManager::provide_o
 
 \b Description: boolean flag (1=true, 0=false) whether to request an
   acoustic acknowledgment on all sent messages from this field. If
-  omitted, default of 0 (false, no ack) is used.
+  omitted, default of 1 (true, request ack) is used. Note that if a message has a destination of 0 (broadcast), an ack will never be requested regardless of the value set here.
 
 \subsection tag_blackout_time <blackout_time>
 \b Syntax:
@@ -140,7 +157,7 @@ At the driver layer, messages are requested using queue::QueueManager::provide_o
 \b Description: number of messages allowed in the queue before
   discarding messages. If \ref tag_newest_first is set to true, the
   oldest message in the queue is discarded to make room for the new
-  message. Otherwise, any new messages are disregarded until the space
+  message. Otherwise, any new messages are discarded until the space
   in the queue opens up.
 
 \subsection tag_newest_first <newest_first>
@@ -201,7 +218,7 @@ At the driver layer, messages are requested using queue::QueueManager::provide_o
 </message_set>
 \endcode
 
-\b Description: the time in seconds a message lives after its creation before being discarded. This time-to-live also factors into the growth in priority of a queue. see \ref tag_value_base for the main discussion on this. 0 is a special value indicating no infinite live (i.e. \xmltag{ttl,0} is effectively the same as \xmltag{ttl,\f$\infty\f$}).
+\b Description: the time in seconds a message lives after its creation before being discarded. This time-to-live also factors into the growth in priority of a queue. see \ref tag_value_base for the main discussion on this. 0 is a special value indicating infinite life (i.e. \xmltag{ttl,0} is effectively the same as \xmltag{ttl,\f$\infty\f$}).
 
 \subsection tag_queuing <queuing>
 \b Syntax:
@@ -221,6 +238,6 @@ At the driver layer, messages are requested using queue::QueueManager::provide_o
 </message_set>
 \endcode
 
-\b Description: Represents the XML embodiment of the queue::QueueConfig.
+\b Description: Represents the XML embodiment of the \link queue.proto goby::acomms::protobuf::QueueConfig \endlink.
 
 */

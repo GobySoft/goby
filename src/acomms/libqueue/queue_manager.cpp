@@ -266,7 +266,6 @@ bool goby::acomms::QueueManager::stitch_recursive(const protobuf::ModemDataReque
         {
             // fetch the next candidate
             winning_queue = find_next_sender(request_msg, *complete_data_msg, false);
-            if(log_) *log_ << "winning_queue " << winning_queue << std::endl;
             if(winning_queue) is_last_user_frame = false;
         }
         

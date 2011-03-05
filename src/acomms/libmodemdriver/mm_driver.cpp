@@ -248,7 +248,7 @@ void goby::acomms::MMDriver::try_send()
             if(present_fail_count_ == RETRIES)
             {
                 if(log_) *log_  << group("modem_out") << warn << "modem did not respond to our command even after " << RETRIES << " retries. continuing onwards anyway..." << std::endl;
-                out_.clear();
+                out_.pop_front();
                 return;
             }
         }

@@ -95,7 +95,13 @@ void ChatCurses::cleanup()
 void ChatCurses::post_message(unsigned id, const std::string& line)
 {
     std::stringstream ss;
-    ss << "[" << id << "]: " << line << "\n";
-    waddstr(upper_win_, ss.str().c_str());
+    ss << "[" << id << "]: " << line;
+    post_message(ss.str());
+}
+
+void ChatCurses::post_message(const std::string& line)
+{
+    std::string line_plus_end = line + "\n";
+    waddstr(upper_win_, line_plus_end.c_str());
     wrefresh(upper_win_);
 }

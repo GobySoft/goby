@@ -28,24 +28,29 @@
 #include "goby/acomms/amac.h"
 #include "goby/acomms/bind.h"
 #include "goby/util/string.h"
+#include "goby/util/time.h"
 
 #include <boost/lexical_cast.hpp>
 
 #include "chat_curses.h"
 
 using goby::util::as;
+using goby::util::goby_time;
 
 int startup_failure();
 void received_data(const goby::acomms::protobuf::ModemDataTransmission&);
 void received_ack(const goby::acomms::protobuf::ModemDataAck&);
 std::string decode_received(const std::string& data);
+void monitor_mac(const goby::acomms::protobuf::ModemMsgBase* mac_msg);
 
 std::ofstream fout_;
-goby::acomms::DCCLCodec dccl_;
+goby::acomms::DCCLCodec dccl_(&fout_);
 goby::acomms::QueueManager q_manager_(&fout_);
 goby::acomms::MMDriver mm_driver_(&fout_);
 goby::acomms::MACManager mac_(&fout_);
 ChatCurses curses_;
+int my_id_;
+int buddy_id_;
 
 
 int main(int argc, char* argv[])
@@ -57,12 +62,10 @@ int main(int argc, char* argv[])
     if(argc != 5) return startup_failure();
     
     std::string serial_port = argv[1];
-    int my_id;
-    int buddy_id;
     try
     {
-        my_id = boost::lexical_cast<int>(argv[2]);
-        buddy_id = boost::lexical_cast<int>(argv[3]);
+        my_id_ = boost::lexical_cast<int>(argv[2]);
+        buddy_id_ = boost::lexical_cast<int>(argv[3]);
     }
     catch(boost::bad_lexical_cast&)
     {
@@ -91,7 +94,7 @@ int main(int argc, char* argv[])
     // Initiate queue manager (libqueue)
     //
     goby::acomms::protobuf::QueueManagerConfig q_manager_cfg;
-    q_manager_cfg.set_modem_id(my_id);
+    q_manager_cfg.set_modem_id(my_id_);
     goby::acomms::connect(&q_manager_.signal_receive, &received_data);
     goby::acomms::connect(&q_manager_.signal_ack, &received_ack);
     for(int i = 0, n = dccl_cfg.message_file_size(); i < n; ++i)
@@ -101,31 +104,33 @@ int main(int argc, char* argv[])
     // Initiate modem driver (libmodemdriver)
     //
     goby::acomms::protobuf::DriverConfig driver_cfg;
+    driver_cfg.set_modem_id(my_id_);
     driver_cfg.set_serial_port(serial_port);
-    driver_cfg.AddExtension(MicroModemConfig::nvram_cfg, "SRC," + as<std::string>(my_id));
+    driver_cfg.AddExtension(MicroModemConfig::nvram_cfg, "SRC," + as<std::string>(my_id_));
 
     //
     // Initiate medium access control (libamac)
     //
     goby::acomms::protobuf::MACConfig mac_cfg;
     mac_cfg.set_type(goby::acomms::protobuf::MAC_FIXED_DECENTRALIZED);
-    mac_cfg.set_modem_id(my_id);
-
+    mac_cfg.set_modem_id(my_id_);
+    goby::acomms::connect(&mac_.signal_initiate_transmission, &monitor_mac);
+    
     goby::acomms::protobuf::Slot my_slot;
-    my_slot.set_src(my_id);
-    my_slot.set_dest(buddy_id);
+    my_slot.set_src(my_id_);
+    my_slot.set_dest(buddy_id_);
     my_slot.set_rate(0);
     my_slot.set_slot_seconds(12);  
     my_slot.set_type(goby::acomms::protobuf::SLOT_DATA);
     
     goby::acomms::protobuf::Slot buddy_slot;
-    buddy_slot.set_src(buddy_id);
-    buddy_slot.set_dest(my_id);
+    buddy_slot.set_src(buddy_id_);
+    buddy_slot.set_dest(my_id_);
     buddy_slot.set_rate(0);
     buddy_slot.set_slot_seconds(12);
     buddy_slot.set_type(goby::acomms::protobuf::SLOT_DATA);
 
-    if(my_id < buddy_id)
+    if(my_id_ < buddy_id_)
     {
         mac_cfg.add_slot()->CopyFrom(my_slot);
         mac_cfg.add_slot()->CopyFrom(buddy_slot);
@@ -152,7 +157,7 @@ int main(int argc, char* argv[])
         return startup_failure();
     }
     
-    curses_.set_modem_id(my_id);    
+    curses_.set_modem_id(my_id_);    
     curses_.startup();
     
     //
@@ -176,7 +181,9 @@ int main(int argc, char* argv[])
             goby::acomms::protobuf::ModemDataTransmission message_out;
             message_out.set_data(bytes_out);
             // send this message to my buddy!
-            message_out.mutable_base()->set_dest(buddy_id);
+            message_out.mutable_base()->set_dest(buddy_id_);
+            // set the time of this message
+            message_out.mutable_base()->set_time(as<std::string>(goby_time()));
 
             message_out.mutable_queue_key()->set_id(message_id);
             q_manager_.push_message(message_out);
@@ -186,6 +193,7 @@ int main(int argc, char* argv[])
         {
             mm_driver_.do_work();
             mac_.do_work();
+            q_manager_.do_work();
         }
         catch(std::runtime_error& e)
         {
@@ -202,6 +210,14 @@ int startup_failure()
 {
     std::cerr << "usage: chat /dev/tty_modem my_id buddy_id log_file" << std::endl;
     return 1;
+}
+
+void monitor_mac(const goby::acomms::protobuf::ModemMsgBase* mac_msg)
+{
+    if(mac_msg->src() == my_id_)
+        curses_.post_message("{control} starting send to my buddy");
+    else if(mac_msg->src() == buddy_id_)
+        curses_.post_message("{control} my buddy might be sending to me now");
 }
 
 void received_data(const goby::acomms::protobuf::ModemDataTransmission& message_in)

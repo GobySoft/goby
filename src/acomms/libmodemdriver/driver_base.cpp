@@ -66,6 +66,8 @@ void goby::acomms::ModemDriverBase::modem_close()
 
 void goby::acomms::ModemDriverBase::modem_start(const protobuf::DriverConfig& cfg)
 {        
+    if(!cfg.has_modem_id())
+        throw(driver_exception("missing modem_id in configuration"));
     
     switch(cfg.connection_type())
     {

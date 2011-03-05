@@ -43,6 +43,8 @@ class ChatCurses
 
     /// add a message to the upper window (the chat log)
     void post_message(unsigned id, const std::string& line);
+    void post_message(const std::string& line);
+    
 
   private:
     void update_size();

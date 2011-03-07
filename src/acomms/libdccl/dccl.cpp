@@ -50,9 +50,9 @@ std::set<unsigned> goby::acomms::DCCLCodec::add_xml_message_file(const std::stri
     DCCLMessageErrorHandler error;
     // instantiate a parser for the xml message files
     XMLParser parser(content, error);
-    // parse(file, [schema])
+    // parse(file)
 
-    parser.parse(xml_file, DCCL_INCLUDE_DIR "/message_schema.xsd");
+    parser.parse(xml_file);
 
     size_t end_size = messages_.size();
     

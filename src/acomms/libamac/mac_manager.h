@@ -124,10 +124,10 @@ namespace goby
 
 
             
-            /// \example libamac/examples/amac_simple/amac_simple.cpp
+            /// \example libamac/amac_simple/amac_simple.cpp
             /// amac_simple.cpp
         
-            /// \example acomms/examples/chat/chat.cpp
+            /// \example acomms/chat/chat.cpp
         
           private:
             void send_poll(const boost::system::error_code&);

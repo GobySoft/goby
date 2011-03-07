@@ -1,7 +1,4 @@
-
-
 option(build_util_lib "Build Goby Utility libraries" ON)
-option(build_util_examples "Build the Utility examples" OFF)
 option(build_util_tools "Build the Utility tools" OFF)
 
 if(build_util_lib) 
@@ -12,8 +9,3 @@ endif()
 if(build_util_tools)
   add_subdirectory(tools)
 endif()
-
-if(build_util_examples)
-  add_subdirectory(examples)
-endif()
-

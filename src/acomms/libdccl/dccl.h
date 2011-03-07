@@ -418,29 +418,29 @@ namespace goby
             // grab a reference to the manipulator manager used by the loaded XML messages
             const ManipulatorManager& manip_manager() const { return manip_manager_; }
 
-            /// \example libdccl/examples/dccl_simple/dccl_simple.cpp
+            /// \example libdccl/dccl_simple/dccl_simple.cpp
             /// simple.xml
             /// \verbinclude dccl_simple/simple.xml
             /// dccl_simple.cpp
             
-            /// \example libdccl/examples/plusnet/plusnet.cpp
+            /// \example libdccl/plusnet/plusnet.cpp
             /// nafcon_command.xml
             /// \verbinclude nafcon_command.xml
             /// nafcon_report.xml
             /// \verbinclude nafcon_report.xml
             /// plusnet.cpp
         
-            /// \example libdccl/examples/test/test.cpp
+            /// \example libdccl/test/test.cpp
             /// test.xml
             /// \verbinclude test.xml 
             /// test.cpp
         
-            /// \example libdccl/examples/two_message/two_message.cpp
+            /// \example libdccl/two_message/two_message.cpp
             /// two_message.xml
             /// \verbinclude two_message.xml
             /// two_message.cpp
 
-            /// \example acomms/examples/chat/chat.cpp
+            /// \example acomms/chat/chat.cpp
         
           private:
             /// \brief Add more messages to this instance of the codec.

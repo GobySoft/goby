@@ -185,13 +185,13 @@ namespace goby
             boost::signal<void (protobuf::QueueSize size)> signal_queue_size_change;
             //@}
 
-            /// \example libqueue/examples/queue_simple/queue_simple.cpp
+            /// \example libqueue/queue_simple/queue_simple.cpp
             /// simple.xml
             /// \verbinclude queue_simple/simple.xml
             /// queue_simple.cpp
 
 
-            /// \example acomms/examples/chat/chat.cpp
+            /// \example acomms/chat/chat.cpp
 
 
             

@@ -8,12 +8,23 @@
 
 cmake_minimum_required(VERSION 2.6.0 FATAL_ERROR)
 project(goby)
+
+set(GOBY_VERSION_MAJOR "1")
+set(GOBY_VERSION_MINOR "0")
+set(GOBY_VERSION_PATCH "0")
+set(GOBY_VERSION "${GOBY_VERSION_MAJOR}.${GOBY_VERSION_MINOR}.${GOBY_VERSION_PATCH}")
+set(GOBY_VERSION_DATE "2011 Mar 03")
+set(GOBY_SOVERSION "1")
+
+add_definitions(-DDEFINITION_GOBY_VERSION="${GOBY_VERSION}")
+add_definitions(-DDEFINITION_GOBY_VERSION_DATE="${GOBY_VERSION_DATE}")
      
 ## fetch all the local directories for generated code
 get_filename_component(goby_LIB_DIR lib ABSOLUTE)
 get_filename_component(goby_BIN_DIR bin ABSOLUTE)
 get_filename_component(goby_INC_DIR include ABSOLUTE)
 get_filename_component(goby_SRC_DIR src ABSOLUTE)
+get_filename_component(goby_SHARE_DIR share ABSOLUTE)
 get_filename_component(goby_BUILD_DIR build ABSOLUTE)
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall")
@@ -25,17 +36,18 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${goby_BIN_DIR} CACHE PATH
   "Output directory for the binaries" )
 
 ## set instructions for `make install`
-install(DIRECTORY ${goby_BIN_DIR}/ DESTINATION /usr/local/bin 
+install(DIRECTORY ${goby_BIN_DIR}/ DESTINATION ${CMAKE_INSTALL_PREFIX}/bin 
   FILE_PERMISSIONS WORLD_EXECUTE)
-install(DIRECTORY ${goby_LIB_DIR}/ DESTINATION /usr/local/lib)
-install(DIRECTORY ${goby_INC_DIR}/ DESTINATION /usr/local/include)
+install(DIRECTORY ${goby_LIB_DIR}/ DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
+install(DIRECTORY ${goby_SHARE_DIR}/ DESTINATION ${CMAKE_INSTALL_PREFIX}/share/goby)
+install(DIRECTORY ${goby_INC_DIR}/ DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
+
 
 ## allows us to write custom modules or modifying existing ones
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules/")
 
-
 ## copy to goby/include
-file(GLOB_RECURSE INCLUDE_FILES RELATIVE ${goby_SRC_DIR} src/*.h src/*.proto src/*.xsd)
+file(GLOB_RECURSE INCLUDE_FILES RELATIVE ${goby_SRC_DIR} src/*.h src/*.proto)
 foreach(I ${INCLUDE_FILES})
   configure_file(${goby_SRC_DIR}/${I} ${goby_INC_DIR}/goby/${I} COPYONLY)
 endforeach()

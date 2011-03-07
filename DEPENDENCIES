@@ -27,6 +27,8 @@ set -e -u
 #   others will have to download Wt and compile from source:
 #   http://www.webtoolkit.eu/wt#/download
 
+
+
 if [[ $UID -ne 0 ]]; then
     printf "You must run this script as root. Use 'sudo' in Ubuntu. \n" 1>&2
     exit 1
@@ -90,3 +92,14 @@ fi
 
 #redhat_packages=\
 #""
+
+# OpenSuSe Notes
+# zypper install -t pattern devel_C_C++
+# zypper install cmake
+# zypper install boost-devel
+# zypper install libxerces-c-devel
+# (crypto++ from src)
+# zypper install protobuf-devel
+# zypper install cdk-devel
+# zypper install wt-devel
+

@@ -25,6 +25,7 @@
 #include <iostream>     // cout
 #include <memory>       // auto_ptr
 #include <vector>
+#include <fstream>
 
 #include <xercesc/sax2/SAX2XMLReader.hpp>
 #include <xercesc/sax2/XMLReaderFactory.hpp>
@@ -32,7 +33,7 @@
 #include <xercesc/sax2/DefaultHandler.hpp>
 
 #include "xerces_strings.h" 
-
+#include "message_schema.xsd.h"
 
     
 // RAII utility that initializes the parser and frees resources
@@ -54,19 +55,25 @@ class XMLParser {
         error_(error) 
         { }
         
-    bool parse(const std::string& file, const std::string& schema = "")
+    bool parse(const std::string& file)
     {
         // Initialize Xerces and obtain parser
         XercesInitializer init; 
         std::auto_ptr<xercesc::SAX2XMLReader> parser(xercesc::XMLReaderFactory::createXMLReader());
+
+        // write XML schema to file
+        const std::string schema = "/tmp/dccl_message_schema.xsd";
+        std::ofstream fout;
+        fout.open(schema.c_str());
+        for(int i = 0; i < message_schema_xsd_len; ++i)
+            fout << message_schema_xsd[i];
+        fout.close();
         
-        if(schema != "")
-        {
-            const XercesString xs_schema = fromNative(schema);
-            const XMLCh * const schema_location = xs_schema.c_str();            
-            parser->setFeature(xercesc::XMLUni::fgSAX2CoreValidation, true);
-            parser->setProperty(xercesc::XMLUni::fgXercesSchemaExternalNoNameSpaceSchemaLocation, (void*)schema_location);
-        }
+        const XercesString xs_schema = fromNative(schema);
+        const XMLCh * const schema_location = xs_schema.c_str();
+        parser->setFeature(xercesc::XMLUni::fgSAX2CoreValidation, true);
+        parser->setProperty(xercesc::XMLUni::fgXercesSchemaExternalNoNameSpaceSchemaLocation, (void*)schema_location);
+        
         parser->setContentHandler(&content_);
         parser->setErrorHandler(&error_);
         

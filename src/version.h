@@ -23,11 +23,8 @@
 
 namespace goby
 {
-    const unsigned VERSION_MAJOR = 1;
-    const unsigned VERSION_MINOR = 0;
-    const unsigned VERSION_PATCH = 0;
-    const std::string VERSION_STRING = "1.0.0";
-    const std::string VERSION_DATE = "2011 March 04";
+    const std::string VERSION_STRING = DEFINITION_GOBY_VERSION;
+    const std::string VERSION_DATE = DEFINITION_GOBY_VERSION_DATE;
 }
 
 #endif

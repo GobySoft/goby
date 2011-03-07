@@ -6,7 +6,6 @@ endif()
 
 option(build_core_lib "Build the Core Libraries" ON)
 option(build_core_bin "Build the Core Binaries" ON)
-option(build_core_examples "Build the Core Examples" OFF)
 
 if(build_core_lib)
   add_subdirectory(libdbo)
@@ -20,9 +19,4 @@ endif()
 
 if(build_core_bin)
   add_subdirectory(gobyd)
-endif()
-
-
-if(build_core_examples)
-  add_subdirectory(examples)
 endif()

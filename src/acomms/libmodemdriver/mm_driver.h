@@ -104,9 +104,9 @@ namespace goby
             static boost::posix_time::ptime nmea_time2ptime(const std::string& mt);
 
             // doxygen
-            /// \example libmodemdriver/examples/driver_simple/driver_simple.cpp
+            /// \example libmodemdriver/driver_simple/driver_simple.cpp
             
-            /// \example acomms/examples/chat/chat.cpp            
+            /// \example acomms/chat/chat.cpp            
         
           private:
             // for the serial connection ($CCCFG,BR1,3)

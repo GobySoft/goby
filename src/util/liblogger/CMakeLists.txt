@@ -8,6 +8,7 @@ else()
   message(WARNING "Missing NCurses so building goby_logger without verbosity=gui support")
   add_library(goby_logger SHARED ${SRC})
   target_link_libraries(goby_logger ${Boost_LIBRARIES})
+  set_target_properties(goby_logger PROPERTIES VERSION "${GOBY_VERSION}" SOVERSION "${GOBY_SOVERSION}")
 endif()
 
 

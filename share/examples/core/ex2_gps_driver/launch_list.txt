@@ -1,0 +1,5 @@
+./fake_gps.sh nmea.txt
+gobyd gobyd.cfg -v
+./gps_driver_g gps_driver_g.cfg -v
+./depth_simulator_g depth_simulator_g.cfg -v
+./node_reporter_g node_reporter_g.cfg -v

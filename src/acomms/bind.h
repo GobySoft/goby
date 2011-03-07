@@ -71,7 +71,7 @@ namespace goby
         }
         
         // examples
-        /// \example acomms/examples/chat/chat.cpp
+        /// \example acomms/chat/chat.cpp
         /// chat.xml
         /// \verbinclude chat.xml
         /// chat.cpp        

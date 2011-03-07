@@ -71,12 +71,9 @@ std::set<unsigned> goby::acomms::QueueManager::add_xml_queue_file(const std::str
     QueueErrorHandler error;
     // instantiate a parser for the xml message files
     XMLParser parser(content, error);
-    // parse(file, [schema])    
-
-    
     std::set<unsigned> added_ids;
     
-    parser.parse(xml_file, DCCL_INCLUDE_DIR "/message_schema.xsd");
+    parser.parse(xml_file);
     BOOST_FOREACH(const protobuf::QueueConfig& c, cfgs)
     {
         add_queue(c);

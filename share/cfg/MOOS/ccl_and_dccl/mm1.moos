@@ -85,7 +85,7 @@ ProcessConfig = pAcommsHandler
 
     dccl_cfg
     {
-        message_file { path: "/home/toby/goby/share/xml/simple_status.xml" }          
+        message_file { path: "../../../xml/simple_status.xml" }          
     }
 }
 

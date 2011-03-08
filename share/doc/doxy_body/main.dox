@@ -28,7 +28,7 @@
 
   \section main_papers Publications
   <ul>
-    <li> <a href=http://gobysoft.com/goby-bzr/doc/papers/dccl_oceans10.pdf>The Dynamic Compact Control Language: A Compact Marshalling Scheme for Acoustic Communications</a>. IEEE OCEANS'10 / Sydney.
+    <li> <a href=http://gobysoft.com/dl/dccl_oceans10.pdf>The Dynamic Compact Control Language: A Compact Marshalling Scheme for Acoustic Communications</a>. IEEE OCEANS'10 / Sydney.
   </ul>
 
 \section install Installing Goby - Stable Release (Recommended)

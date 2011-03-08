@@ -1,9 +1,9 @@
 to run:
 
 (virtual serial ports)
-> sudo $SHELL
-(located in moos-ivp-local/bin)
-> loopbacks
+(> sudo apt-get install socat)
+> socat -d -d -v pty,raw,echo=0,link=/tmp/ttyLOOPA1 pty,raw,echo=0,link=/tmp/ttyLOOPA2
+> socat -d -d -v pty,raw,echo=0,link=/tmp/ttyLOOPB1 pty,raw,echo=0,link=/tmp/ttyLOOPB2
 
 (probably other windows / workspaces)
 > pAntler mm1.moos

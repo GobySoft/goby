@@ -11,7 +11,6 @@ if(CURSES_FOUND)
   add_definitions(-DHAS_NCURSES)
 endif()
 
-
 link_directories(${GOBY_LIBRARY_PATH})
 include_directories(${GOBY_INCLUDE_DIRS})
 

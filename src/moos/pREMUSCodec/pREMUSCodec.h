@@ -56,9 +56,7 @@ class CpREMUSCodec : public TesMoosApp
     void inbox(const CMOOSMsg& msg);
 
     void subscribe(const std::string& var)
-    {
-        TesMoosApp::subscribe(var, &CpREMUSCodec::inbox, this);
-    }
+    { TesMoosApp::subscribe(var, &CpREMUSCodec::inbox, this); }
     
     bool hex_to_int_array(std::string h, std::vector<unsigned int>& c );
     std::string int_array_to_hex(std::vector<unsigned int> c );

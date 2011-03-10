@@ -15,9 +15,6 @@ set(GOBY_VERSION_PATCH "1")
 set(GOBY_VERSION "${GOBY_VERSION_MAJOR}.${GOBY_VERSION_MINOR}.${GOBY_VERSION_PATCH}")
 set(GOBY_VERSION_DATE "2011 Mar 03")
 set(GOBY_SOVERSION "1")
-
-add_definitions(-DDEFINITION_GOBY_VERSION="${GOBY_VERSION}")
-add_definitions(-DDEFINITION_GOBY_VERSION_DATE="${GOBY_VERSION_DATE}")
      
 ## fetch all the local directories for generated code
 get_filename_component(goby_LIB_DIR lib ABSOLUTE)

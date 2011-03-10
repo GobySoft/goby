@@ -33,7 +33,7 @@ message QueueKey
 
 message QueueManagerConfig
 {
-  required int32 modem_id = 1 [(description)="Unique number 1-31 to identify this node", (example)="1"];
+  optional int32 modem_id = 1 [(description)="Unique number 1-31 to identify this node", (example)="1"];
   repeated MessageFile message_file = 2 [(description)="XML message file containing one or more DCCL message descriptions. Use for specifying DCCL queues."];
   repeated QueueConfig queue = 3 [(description)="Use for specifying CCL queues; use message_file for DCCL queues."];
 }

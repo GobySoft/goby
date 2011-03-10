@@ -455,12 +455,7 @@ void CpAcommsHandler::process_configuration()
         if(!exists)
             cfg_.mutable_dccl_cfg()->add_message_file()->CopyFrom(cfg_.queue_cfg().message_file(i));
         
-    }
-
-    
-    // check finalized configuration
-    glogger() << cfg_.DebugString() << std::endl;
-    cfg_.CheckInitialized();
+    }    
 
     // start goby-acomms classes
     if(driver_) driver_->startup(cfg_.driver_cfg());

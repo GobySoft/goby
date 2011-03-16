@@ -3,7 +3,6 @@ project(goby-examples)
 
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules")
 find_package(Goby REQUIRED)
-find_package(ProtobufGobyExamples REQUIRED)
 
 set(CURSES_NEED_NCURSES TRUE)
 find_package(Curses)

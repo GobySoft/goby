@@ -99,7 +99,7 @@ void goby::core::ConfigReader::read_cfg(int argc,
             parser.AllowPartialMessage(true);
             parser.Parse(&is, message);
         }
-        
+         
         // add / overwrite any options that are specified in the cfg file with those given on the command line
         typedef std::pair<std::string, boost::program_options::variable_value> P;
         BOOST_FOREACH(const P&p, *var_map)

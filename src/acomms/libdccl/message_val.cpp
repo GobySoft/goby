@@ -157,9 +157,9 @@ bool goby::acomms::DCCLMessageVal::get(bool& b) const
     switch(type_)
     {
         case cpp_string:
-            if(util::stricmp(sval_, "true") || util::stricmp(sval_, "1"))
+            if(boost::iequals(sval_, "true") || boost::iequals(sval_, "1"))
                 b = true;
-            else if(util::stricmp(sval_, "false") || util::stricmp(sval_, "0"))
+            else if(boost::iequals(sval_, "false") || boost::iequals(sval_, "0"))
                 b = false;
             else
                 return false;
@@ -196,9 +196,9 @@ bool goby::acomms::DCCLMessageVal::get(long& t) const
             }
             catch (...)
             {
-                if(util::stricmp(sval_, "true"))
+                if(boost::iequals(sval_, "true"))
                     t = 1;
-                else if(util::stricmp(sval_, "false"))
+                else if(boost::iequals(sval_, "false"))
                     t = 0;
                 else
                     return false;
@@ -231,9 +231,9 @@ bool goby::acomms::DCCLMessageVal::get(double& d) const
             try { d = boost::lexical_cast<double>(sval_); }
             catch (boost::bad_lexical_cast &)
             {
-                if(util::stricmp(sval_, "true"))
+                if(boost::iequals(sval_, "true"))
                     d = 1;
-                else if(util::stricmp(sval_, "false"))
+                else if(boost::iequals(sval_, "false"))
                     d = 0;
                 else
                     return false;

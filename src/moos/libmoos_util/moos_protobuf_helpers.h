@@ -18,6 +18,7 @@
 #ifndef MOOSPROTOBUFHELPERS20110216H
 #define MOOSPROTOBUFHELPERS20110216H
 
+#include "google/protobuf/io/printer.h"
 #include <google/protobuf/io/tokenizer.h>
 #include "goby/util/liblogger/flex_ostream.h"
 

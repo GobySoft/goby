@@ -3,7 +3,6 @@
 
 using namespace std;
 using boost::trim_copy;
-using goby::util::stricmp;
 
 using namespace goby::acomms;
 using goby::util::as;

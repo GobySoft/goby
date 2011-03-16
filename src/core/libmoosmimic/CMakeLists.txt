@@ -1,4 +1,4 @@
-goby_find_required_package(MOOS "moos")
+goby_find_required_package(MOOS)
 include_directories(${MOOS_INCLUDE_DIRS})
 
 file(GLOB SRC *.cpp)

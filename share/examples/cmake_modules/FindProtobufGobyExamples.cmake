@@ -51,6 +51,18 @@
 # (To distributed this file outside of CMake, substitute the full
 #  License text for the above reference.)
 
+function(PROTOBUF_INCLUDE_DIRS)
+  if(NOT ARGN)
+    message(SEND_ERROR "Error: PROTOBUF_INCLUDE_DIRS() called without any directories")
+    return()
+  endif()  
+
+  foreach(DIR ${ARGN})
+    set(ALL_PROTOBUF_INCLUDE_DIRS "${ALL_PROTOBUF_INCLUDE_DIRS};-I${DIR}" PARENT_SCOPE)
+    message(${ALL_PROTOBUF_INCLUDE_DIRS})
+  endforeach()
+endfunction()
+
 function(PROTOBUF_GENERATE_CPP SRCS HDRS)
   if(NOT ARGN)
     message(SEND_ERROR "Error: PROTOBUF_GENERATE_CPP() called without any proto files")
@@ -64,13 +76,13 @@ function(PROTOBUF_GENERATE_CPP SRCS HDRS)
     get_filename_component(FIL_WE ${FIL} NAME_WE)
     
     list(APPEND ${SRCS} "${CMAKE_CURRENT_BINARY_DIR}/${FIL_WE}.pb.cc")
-    list(APPEND ${HDRS} "${CMAKE_CURRENT_BINARY_DIR}/${FIL_WE}.pb.h")
-
+    list(APPEND ${HDRS} "${CMAKE_CURRENT_BINARY_DIR}/${FIL_WE}.pb.h")   
+    
     add_custom_command(
       OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${FIL_WE}.pb.cc"
              "${CMAKE_CURRENT_BINARY_DIR}/${FIL_WE}.pb.h"
       COMMAND  ${PROTOBUF_PROTOC_EXECUTABLE}
-      ARGS --cpp_out  ${CMAKE_CURRENT_BINARY_DIR} --proto_path ${CMAKE_CURRENT_SOURCE_DIR} ${ABS_FIL}  -I  ${GOBY_INCLUDE_DIRS} -I ${PROTOBUF_INCLUDE_DIRS} -I ${CMAKE_CURRENT_SOURCE_DIR}
+      ARGS --cpp_out ${CMAKE_CURRENT_BINARY_DIR} ${ABS_FIL} ${ALL_PROTOBUF_INCLUDE_DIRS} "-I${CMAKE_CURRENT_SOURCE_DIR}"
       DEPENDS ${ABS_FIL}
       COMMENT "Running C++ protocol buffer compiler on ${FIL}"
       VERBATIM )
@@ -83,6 +95,10 @@ endfunction()
 
 
 find_path(PROTOBUF_INCLUDE_DIR google/protobuf/service.h)
+
+# so that we can use Google's included descriptor.proto
+list(APPEND ALL_PROTOBUF_INCLUDE_DIRS "-I${PROTOBUF_INCLUDE_DIR}")
+
 
 # Google's provided vcproj files generate libraries with a "lib"
 # prefix on Windows
@@ -112,7 +128,7 @@ if(WIN32)
 endif()
 
 include(FindPackageHandleStandardArgs)
-FIND_PACKAGE_HANDLE_STANDARD_ARGS(ProtobufGobyExamples DEFAULT_MSG
+FIND_PACKAGE_HANDLE_STANDARD_ARGS(PROTOBUF DEFAULT_MSG
     PROTOBUF_LIBRARY PROTOBUF_INCLUDE_DIR)
 
 if(PROTOBUF_FOUND)

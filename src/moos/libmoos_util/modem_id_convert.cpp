@@ -148,7 +148,7 @@ namespace tes
     {
         for (map<int,string>::iterator it = names.begin(); it != names.end(); ++it)
         {
-            if(goby::util::stricmp(it->second, name))
+            if(boost::iequals(it->second, name))
                 return it->first;
         }
         

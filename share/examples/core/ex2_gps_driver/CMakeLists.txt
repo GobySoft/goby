@@ -4,6 +4,7 @@ protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS
   gps_nmea.proto 
   config.proto 
   depth_reading.proto)
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 # add these executables to the project
 add_executable(gps_driver_g gps_driver.cpp ${PROTO_SRCS} ${PROTO_HDRS})

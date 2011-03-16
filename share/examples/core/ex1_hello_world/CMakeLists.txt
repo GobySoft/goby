@@ -1,5 +1,7 @@
 # tells CMake to generate the *.pb.h and *.pb.cc files from the *.proto
 protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS hello_world.proto)
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
+
 
 # add these executables to the project
 add_executable(hello_world1_g hello_world1.cpp ${PROTO_SRCS} ${PROTO_HDRS})

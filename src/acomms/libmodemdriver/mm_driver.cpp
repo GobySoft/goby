@@ -237,20 +237,14 @@ void goby::acomms::MMDriver::try_send()
         {
             if(log_) *log_ << group("modem_out") << warn << "resending last command; no serial ack in " << (goby_time() - last_write_time_).total_seconds() << " second(s). " << std::endl;
             ++global_fail_count_;
-            ++present_fail_count_;
             if(global_fail_count_ == MAX_FAILS_BEFORE_DEAD)
             {
                 modem_close();
                 throw(driver_exception("modem appears to not be responding!"));
             }
             
-                
-            if(present_fail_count_ == RETRIES)
-            {
-                if(log_) *log_  << group("modem_out") << warn << "modem did not respond to our command even after " << RETRIES << " retries. continuing onwards anyway..." << std::endl;
-                out_.pop_front();
-                return;
-            }
+            increment_present_fail();
+            
         }
         
         mm_write(base_msg);
@@ -598,6 +592,14 @@ void goby::acomms::MMDriver::rev(const NMEASentence& nmea)
 void goby::acomms::MMDriver::err(const NMEASentence& nmea)
 {
     *log_ << group("modem_out") << warn << "modem reports error: " << nmea.message() << std::endl;
+
+    
+    // recover quicker if old firmware does not understand one of our commands
+    if(nmea.at(2) == "NMEA")
+    {
+        waiting_for_modem_ = false;
+        increment_present_fail();
+    }
 }
 
 void goby::acomms::MMDriver::cyc(const NMEASentence& nmea, protobuf::ModemDataInit* init_msg)
@@ -888,4 +890,13 @@ void goby::acomms::MMDriver::set_hydroid_gateway_prefix(int id)
     if(log_) *log_ << "Setting the hydroid_gateway buoy prefix: out=" << hydroid_gateway_modem_prefix_ << std::endl;
 }
 
-
+void goby::acomms::MMDriver::increment_present_fail()
+{
+    ++present_fail_count_;
+    if(present_fail_count_ == RETRIES)
+    {
+        if(log_) *log_  << group("modem_out") << warn << "modem did not respond to our command even after " << RETRIES << " retries. continuing onwards anyway..." << std::endl;
+        out_.pop_front();
+        return;
+    }
+}

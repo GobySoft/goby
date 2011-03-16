@@ -1,3 +1,10 @@
+
+# for buggy cdk headers
+include_directories(/opt/local/include/cdk)
+include_directories(/usr/include/cdk)
+include_directories(/sw/include/cdk)
+
+
 file(GLOB PROTOS *.proto)
 protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${PROTOS})
 

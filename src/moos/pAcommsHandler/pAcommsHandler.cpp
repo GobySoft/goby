@@ -32,6 +32,8 @@
 #include "pAcommsHandler.h"
 #include "goby/util/sci.h"
 
+#include <boost/math/special_functions/fpclassify.hpp>
+
 using namespace goby::util::tcolor;
 using goby::acomms::operator<<;
 using goby::util::glogger;
@@ -787,7 +789,7 @@ void CpAcommsHandler::alg_lat2utm_y(DCCLMessageVal& mv,
     double x = NaN;
     double y = NaN;
         
-    if(!isnan(lat) && !isnan(lon)) geodesy_.LatLong2LocalUTM(lat, lon, y, x);        
+    if(!(boost::math::isnan)(lat) && !(boost::math::isnan)(lon)) geodesy_.LatLong2LocalUTM(lat, lon, y, x);        
     mv = y;
 }
 
@@ -799,7 +801,7 @@ void CpAcommsHandler::alg_lon2utm_x(DCCLMessageVal& mv,
     double x = NaN;
     double y = NaN;
 
-    if(!isnan(lat) && !isnan(lon)) geodesy_.LatLong2LocalUTM(lat, lon, y, x);
+    if(!(boost::math::isnan)(lat) && !(boost::math::isnan)(lon)) geodesy_.LatLong2LocalUTM(lat, lon, y, x);
     mv = x;
 }
 
@@ -812,7 +814,7 @@ void CpAcommsHandler::alg_utm_x2lon(DCCLMessageVal& mv,
 
     double lat = NaN;
     double lon = NaN;
-    if(!isnan(y) && !isnan(x)) geodesy_.UTM2LatLong(x, y, lat, lon);    
+    if(!(boost::math::isnan)(y) && !(boost::math::isnan)(x)) geodesy_.UTM2LatLong(x, y, lat, lon);    
     mv = lon;
 }
 
@@ -824,7 +826,7 @@ void CpAcommsHandler::alg_utm_y2lat(DCCLMessageVal& mv,
     
     double lat = NaN;
     double lon = NaN;
-    if(!isnan(x) && !isnan(y)) geodesy_.UTM2LatLong(x, y, lat, lon);    
+    if(!(boost::math::isnan)(x) && !(boost::math::isnan)(y)) geodesy_.UTM2LatLong(x, y, lat, lon);    
     mv = lat;
 }
 

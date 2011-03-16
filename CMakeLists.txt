@@ -52,6 +52,16 @@ endforeach()
 ## let cmake know where the headers are
 include_directories(${goby_INC_DIR})
 
+## for MAC OS X 
+if(${CMAKE_SYSTEM_NAME} MATCHES Darwin)
+  ## MacPorts
+  include_directories(/opt/local/include)
+  link_directories(/opt/local/lib)
+  ## Fink
+  include_directories(/sw/include)
+  link_directories(/sw/lib)
+endif()
+
 ## start adding subdirectories
 add_subdirectory(src)
 

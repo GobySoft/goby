@@ -24,6 +24,8 @@
 
 #include "message_var.h"
 
+#include <boost/math/special_functions/fpclassify.hpp>
+
 namespace goby
 {
     namespace acomms
@@ -76,7 +78,7 @@ namespace goby
             { return using_delta_differencing() && !is_key_frame_; }
         
             bool using_delta_differencing() const
-            { return !isnan(max_delta_); }
+            { return !(boost::math::isnan)(max_delta_); }
         
             boost::dynamic_bitset<unsigned char> encode_specific(const DCCLMessageVal& v);
             DCCLMessageVal decode_specific(boost::dynamic_bitset<unsigned char>& b);

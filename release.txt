@@ -1,5 +1,12 @@
 Goby Release Notes
 
+*****************
+Version 1.0.2
+-- Made some changes to the CMake build system to better support MAC OS X (using MacPorts)
+
+*****************
+Version 1.0.1
+-- Made some structural changes to examples and configuration to allow Debian packaging
 
 *****************
 Version 1.0
@@ -51,8 +58,6 @@ Acomms
 
 Util
 --- Fixed miscellaneous bugs in liblogger
-
-
 
 
 *****************

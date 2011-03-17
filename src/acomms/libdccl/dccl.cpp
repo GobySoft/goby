@@ -18,10 +18,10 @@
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <boost/foreach.hpp>
-#include <crypto++/filters.h>
-#include <crypto++/sha.h>
-#include <crypto++/modes.h>
-#include <crypto++/aes.h>
+#include <cryptopp/filters.h>
+#include <cryptopp/sha.h>
+#include <cryptopp/modes.h>
+#include <cryptopp/aes.h>
 
 #include "dccl.h"
 #include "message_xml_callbacks.h"

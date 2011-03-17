@@ -33,7 +33,6 @@
 #include "pAcommsHandler.h"
 #include "goby/util/sci.h"
 
-
 using namespace goby::util::tcolor;
 using goby::acomms::operator<<;
 using goby::util::glogger;

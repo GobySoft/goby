@@ -809,25 +809,25 @@ Vehicles are discovered by shifting a blank slot in each cycle based on their kn
 
 \subsection{Simple complete example MOOS files}
 
-\subsubsection{Example 1: Basic CCL (goby/cfg/MOOS/basic\_ccl)}\label{sec:moos_example_1}
+\subsubsection{Example 1: Basic CCL (goby/share/cfg/MOOS/basic\_ccl)}\label{sec:moos_example_1}
 This example sends the bytes !0x020304! from node 1 (!mm1!) to node 2 (!mm2!). It shows use of all the parts of pAcommsHandler except the DCCL encoding / decoding unit. I use !iModemSim! here to simulate the WHOI Micro-Modem. This process is available in moos-ivp-local (\url{http://oceanai.mit.edu/moos-ivp/pmwiki/pmwiki.php?n=Support.Milocal}). You can also easily substitute real modems by removing iModemSim references and changing the !serial_port!.
 
-\paragraph{MOOS file for Node 1: goby/cfg/MOOS/basic\_ccl/mm1.moos}
+\paragraph{MOOS file for Node 1: goby/share/cfg/MOOS/basic\_ccl/mm1.moos}
 \boxedverbatiminput{"../../cfg/MOOS/basic_ccl/mm1.moos"}
 \resetbvlinenumber
 
-\paragraph{MOOS file for Node 2: goby/cfg/MOOS/basic\_ccl/mm2.moos}
+\paragraph{MOOS file for Node 2: goby/share/cfg/MOOS/basic\_ccl/mm2.moos}
 \boxedverbatiminput{"../../cfg/MOOS/basic_ccl/mm2.moos"}
 \resetbvlinenumber
 
-\subsubsection{Example 2: DCCL and CCL (goby/cfg/MOOS/ccl\_and\_dccl)}
+\subsubsection{Example 2: DCCL and CCL (goby/share/cfg/MOOS/ccl\_and\_dccl)}
 This example sends the DCCL ``Simple Status'' messsage from node 1 (!mm1!) to node 2 (!mm2!). !mm2! sends the REMUS CCL State message to !mm1!. It thus uses all the components of pAcommsHandler. As in the previous example, you can use real modems by removing iModemSim and changing the !serial_port! to the proper real serial port.
 
-\paragraph{MOOS file for Node 1: goby/cfg/MOOS/ccl\_and\_dccl/mm1.moos}
+\paragraph{MOOS file for Node 1: goby/share/cfg/MOOS/ccl\_and\_dccl/mm1.moos}
 \boxedverbatiminput{"../../cfg/MOOS/ccl_and_dccl/mm1.moos"}
 \resetbvlinenumber
 
-\paragraph{MOOS file for Node 2: goby/cfg/MOOS/ccl\_and\_dccl/mm2.moos}
+\paragraph{MOOS file for Node 2: goby/share/cfg/MOOS/ccl\_and\_dccl/mm2.moos}
 \boxedverbatiminput{"../../cfg/MOOS/ccl_and_dccl/mm2.moos"}
 \resetbvlinenumber
 
@@ -835,7 +835,7 @@ This example sends the DCCL ``Simple Status'' messsage from node 1 (!mm1!) to no
 \boxedverbatiminput{"../../xml/simple_status.xml"}
 \resetbvlinenumber
 
-\paragraph{Modem Lookup Table: goby/cfg/MOOS/ccl\_and\_dccl/modemidlookup.txt}
+\paragraph{Modem Lookup Table: goby/share/cfg/MOOS/ccl\_and\_dccl/modemidlookup.txt}
 \boxedverbatiminput{"../../cfg/MOOS/ccl_and_dccl/modemidlookup.txt"}
 \resetbvlinenumber
 

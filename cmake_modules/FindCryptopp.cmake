@@ -1,7 +1,7 @@
-find_path(Cryptopp_INCLUDE_DIR crypto++/aes.h)
+find_path(Cryptopp_INCLUDE_DIR cryptopp/aes.h)
 
-find_library(Cryptopp_LIBRARY NAMES crypto++
-  DOC "The Crypto++ Encrpytion library")
+find_library(Cryptopp_LIBRARY NAMES cryptopp
+  DOC "The Cryptopp Encrpytion library")
 
 mark_as_advanced(Cryptopp_INCLUDE_DIR
   Cryptopp_LIBRARY)

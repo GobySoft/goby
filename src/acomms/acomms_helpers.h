@@ -22,8 +22,8 @@
 #include <limits>
 #include <bitset>
 
-#include <crypto++/filters.h>
-#include <crypto++/hex.h>
+#include <cryptopp/filters.h>
+#include <cryptopp/hex.h>
 
 #include "goby/protobuf/modem_message.pb.h"
 #include "goby/protobuf/xml_config.pb.h"

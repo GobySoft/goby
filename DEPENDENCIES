@@ -4,7 +4,11 @@ set -e -u
 # third-party dependencies
 # ~~~~~~~~~~~~~~~~~~~~~~~~
 
-# most other distributions will have the appropriate
+# LINUX
+# This script will attempt to install packages using `apt-get` for
+# Debian (and derivatives)
+# 
+# Most other distributions will have the appropriate
 # package as well; it's up to you to find out what it is.
 # if you don't know what a package is or does,
 # search for it on http://packages.ubuntu.com/
@@ -27,7 +31,22 @@ set -e -u
 #   others will have to download Wt and compile from source:
 #   http://www.webtoolkit.eu/wt#/download
 
+# OpenSuSe Notes
+# zypper install -t pattern devel_C_C++
+# zypper install cmake
+# zypper install boost-devel
+# zypper install libxerces-c-devel
+# (crypto++ from src)
+# zypper install protobuf-devel
+# zypper install cdk-devel
+# zypper install wt-devel
 
+# MAC OS X
+# Use MacPorts to install the needed dependencies. You will have 
+# to install Wt from source to /opt/local 
+
+# Windows
+# Goby does not currently build on Windows
 
 if [[ $UID -ne 0 ]]; then
     printf "You must run this script as root. Use 'sudo' in Ubuntu. \n" 1>&2
@@ -92,14 +111,3 @@ fi
 
 #redhat_packages=\
 #""
-
-# OpenSuSe Notes
-# zypper install -t pattern devel_C_C++
-# zypper install cmake
-# zypper install boost-devel
-# zypper install libxerces-c-devel
-# (crypto++ from src)
-# zypper install protobuf-devel
-# zypper install cdk-devel
-# zypper install wt-devel
-

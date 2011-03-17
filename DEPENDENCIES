@@ -44,6 +44,20 @@ set -e -u
 # MAC OS X
 # Use MacPorts to install the needed dependencies. You will have 
 # to install Wt from source to /opt/local 
+# I believe these are the ports necessary to compile moos-ivp,
+# moos-ivp-local, and goby:
+# 
+# boost +universal
+# cmake
+# jpeg +universal
+# libcryptopp +universal
+# ncurses +universal
+# ncursesw
+# protobuf-cpp
+# socat
+# tiff +universal
+# xercesc
+# zlib +universal
 
 # Windows
 # Goby does not currently build on Windows

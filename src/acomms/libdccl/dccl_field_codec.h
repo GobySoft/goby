@@ -43,68 +43,129 @@ namespace goby
             // non-repeated
             void encode(Bitset* bits,
                         const boost::any& field_value,
-                        const google::protobuf::FieldDescriptor* field);
+                        const google::protobuf::FieldDescriptor* field = 0);
             
             void decode(Bitset* bits,
                         boost::any* field_value,
-                        const google::protobuf::FieldDescriptor* field);
+                        const google::protobuf::FieldDescriptor* field= 0);
 
             // repeated
             void encode(Bitset* bits,
                         const std::vector<boost::any>& field_values,
-                        const google::protobuf::FieldDescriptor* field);
+                        const google::protobuf::FieldDescriptor* field = 0);
             
             void decode(Bitset* bits,
                         std::vector<boost::any>* field_values,
-                        const google::protobuf::FieldDescriptor* field);
+                        const google::protobuf::FieldDescriptor* field = 0);
 
             // size in bits
-            unsigned size(const google::protobuf::FieldDescriptor* field);
+            unsigned size(const google::protobuf::Message* msg = 0,
+                          const google::protobuf::FieldDescriptor* field = 0);
 
-            void validate(const google::protobuf::FieldDescriptor* field)
-            { _validate(field); }
+            void validate(const google::protobuf::Message* msg = 0,
+                          const google::protobuf::FieldDescriptor* field = 0);
             
 
-            static void set_message(const google::protobuf::Message* msg) { msg_ = msg; }
-            static const google::protobuf::Message* message() { return msg_; }            
-
-            static void set_in_header(bool in_header) { in_header_ = in_header; }
+            static void set_in_header(bool in_header) { in_header_ = in_header;}
             static bool in_header() { return in_header_; } 
 
             
           protected:
-            virtual void _validate(const google::protobuf::FieldDescriptor* field)
+            static const google::protobuf::Message* root_message()
+            { return root_msg_const_; }
+
+            static google::protobuf::Message* mutable_root_message()
+            { return root_msg_; }
+            
+            // for: 
+            // message Foo
+            // {
+            //    int32 bar = 1;
+            //    FooBar baz = 2;
+            // }
+            // returns Descriptor for Foo if field == 0
+            // returns Descriptor for Foo if field == FieldDescriptor for bar
+            // returns Descriptor for FooBar if field == FieldDescriptor for baz
+            static const google::protobuf::Message* this_message()
+            { return this_msg_const_ ? this_msg_const_ : this_msg_; }  
+            static google::protobuf::Message* mutable_this_message()
+            { return this_msg_; }
+            
+            const google::protobuf::FieldDescriptor* this_field()
+            { return this_field_; }  
+            
+            virtual void _validate()
             { }
 
-            virtual Bitset _encode(const boost::any& field_value,
-                                   const google::protobuf::FieldDescriptor* field) = 0;
+            // field == 0 for root message!
+            virtual Bitset _encode(const boost::any& field_value) = 0;
             
-            virtual boost::any _decode(const Bitset& bits,
-                                       const google::protobuf::FieldDescriptor* field) = 0;
+            // field == 0 for root message!
+            virtual boost::any _decode(Bitset* bits) = 0;
                 
 
             // size in bits
-            virtual unsigned _size(const google::protobuf::FieldDescriptor* field) = 0;
+            // field == 0 for root message!
+            virtual unsigned _size() = 0;
             
             
             virtual goby::acomms::Bitset
-                repeated_encode(const std::vector<boost::any>& field_values,
-                                const google::protobuf::FieldDescriptor* field);
+                _encode_repeated(const std::vector<boost::any>& field_values);
 
             virtual std::vector<boost::any>
-                repeated_decode(Bitset* repeated_bits,
-                                const google::protobuf::FieldDescriptor* field);
+                _decode_repeated(Bitset* repeated_bits);
             
-            virtual unsigned repeated_size(const google::protobuf::FieldDescriptor* field);
+            virtual unsigned _size_repeated();
             
             
           private:
-            void encode_common(Bitset* new_bits, Bitset* bits, unsigned size);
-            void decode_common(Bitset* these_bits, Bitset* bits, unsigned size);
+            
+            class Counter
+            {
+              public:
+                Counter()
+                {
+                    ++i_;
+                }
+                ~Counter()
+                {
+                    --i_;
+                }
+                bool first() 
+                {
+                    return (i_ == 1);
+                }
+                static int i_;
+            };
+            
+            void __encode_common(Bitset* new_bits, Bitset* bits, unsigned size);
+            void __decode_common(Bitset* these_bits, Bitset* bits, unsigned size);
+            void __try_set_this(const google::protobuf::FieldDescriptor* field);
 
-
+            void __set_root_message(const google::protobuf::Message* msg)
+            {
+                root_msg_const_ = msg;
+                this_msg_const_ = msg;
+                this_field_ = 0;
+            }
+            
+            void __set_root_message(google::protobuf::Message* msg)
+            {
+                root_msg_ = msg;
+                this_msg_ = msg;
+                const google::protobuf::Message* const_msg = msg;
+                __set_root_message(const_msg);
+            }
+            
           private:
-            static const google::protobuf::Message* msg_;
+            static const google::protobuf::Message* root_msg_const_;
+            static const google::protobuf::Message* this_msg_const_;
+
+            static google::protobuf::Message* root_msg_;
+            static google::protobuf::Message* this_msg_;
+
+            const google::protobuf::FieldDescriptor* this_field_;
+            
             static bool in_header_;
             
         };

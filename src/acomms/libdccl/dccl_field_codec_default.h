@@ -30,7 +30,7 @@
 #include "goby/acomms/acomms_constants.h"
 #include <boost/utility.hpp>
 #include <boost/type_traits.hpp>
-
+#include "dccl.h"
 
 namespace goby
 {
@@ -41,17 +41,19 @@ namespace goby
         {
           protected:
             
-            virtual Bitset _encode(const boost::any& field_value,
-                                   const google::protobuf::FieldDescriptor* field)
+            virtual Bitset _encode(const boost::any& field_value)
             {
                 if(field_value.empty())
                     return Bitset();
                 
                 try
                 {
-                    const double min = field->options().GetExtension(dccl::min);
-                    const double max = field->options().GetExtension(dccl::max);
-                    const double precision = field->options().GetExtension(dccl::precision);
+                    const double min =
+                        this_field()->options().GetExtension(dccl::min);
+                    const double max =
+                        this_field()->options().GetExtension(dccl::max);
+                    const double precision =
+                        this_field()->options().GetExtension(dccl::precision);
                     
                     T t = boost::any_cast<T>(field_value);
                     if(t < min || t > max)
@@ -59,7 +61,7 @@ namespace goby
                     
                     t -= min;
                     t *= pow(10.0, precision);
-                    return Bitset(_size(field), static_cast<unsigned long>(t)+1);
+                    return Bitset(_size(), static_cast<unsigned long>(t)+1);
                 }
                 catch(boost::bad_any_cast& e)
                 {
@@ -67,34 +69,36 @@ namespace goby
                 }
             }
             
-            virtual boost::any _decode(const Bitset& bits,
-                                       const google::protobuf::FieldDescriptor* field)
+            virtual boost::any _decode(Bitset* bits)
             {
-                const double precision = field->options().GetExtension(dccl::precision);
-                const double min = field->options().GetExtension(dccl::min);
-                unsigned long t = bits.to_ulong();
+                const google::protobuf::FieldDescriptor* f = this_field();
+                const double precision = f->options().GetExtension(dccl::precision);
+                const double min = f->options().GetExtension(dccl::min);
+                unsigned long t = bits->to_ulong();
                 if(!t) return boost::any();
 
                 --t;
                 return static_cast<T>(t / (std::pow(10.0, precision)) + min);
             }
             
-            virtual unsigned _size(const google::protobuf::FieldDescriptor* field)
+            virtual unsigned _size()
             {
-                const double min = field->options().GetExtension(dccl::min);
-                const double max = field->options().GetExtension(dccl::max);
-                const double precision = field->options().GetExtension(dccl::precision);
+                const google::protobuf::FieldDescriptor* f = this_field();
+                const double min = f->options().GetExtension(dccl::min);
+                const double max = f->options().GetExtension(dccl::max);
+                const double precision = f->options().GetExtension(dccl::precision);
                 return std::ceil(std::log((max-min)*std::pow(10.0, precision)+2)/std::log(2));
             }
 
-            virtual void _validate(const google::protobuf::FieldDescriptor* field)
+            virtual void _validate()
             {
-                if(!field->options().HasExtension(dccl::min))
-                    throw(DCCLException("Field " + field->name() + " missing option extension `dccl.min`"));
-                else if(!field->options().HasExtension(dccl::max))
-                    throw(DCCLException("Field " + field->name() + " missing option extension `dccl.max`"));
-                else if(field->options().GetExtension(dccl::min) > field->options().GetExtension(dccl::max))
-                    throw(DCCLException("Field " + field->name() + "`dccl.min` > `dccl.max`"));
+                const google::protobuf::FieldDescriptor* f = this_field();
+                if(!f->options().HasExtension(dccl::min))
+                    throw(DCCLException("Field " + f->name() + " missing option extension `dccl.min`"));
+                else if(!f->options().HasExtension(dccl::max))
+                    throw(DCCLException("Field " + f->name() + " missing option extension `dccl.max`"));
+                else if(f->options().GetExtension(dccl::min) > f->options().GetExtension(dccl::max))
+                    throw(DCCLException("Field " + f->name() + "`dccl.min` > `dccl.max`"));
             }
             
         };        
@@ -103,60 +107,10 @@ namespace goby
         {
           protected:
             
-            virtual Bitset _encode(const boost::any& field_value,
-                                   const google::protobuf::FieldDescriptor*)
-            {
-                const google::protobuf::Message* msg =
-                    boost::any_cast<const google::protobuf::Message*>(field_value);
-                
-                const Descriptor* desc = msg->GetDescriptor();
-                const Reflection* refl = msg->GetReflection();       
-                for(int i = 0, n = desc->field_count(); i < n; ++i)
-                {
-                    const FieldDescriptor* field_desc = desc->field(i);
-                    std::string field_codec = field_desc->options().GetExtension(dccl::codec);
-        
-                    if(field_desc->options().GetExtension(dccl::omit)
-                       || (is_header() && !field_desc->options().GetExtension(dccl::in_head))
-                       || (!is_header() && field_desc->options().GetExtension(dccl::in_head)))
-                    {
-                        continue;
-                    }
-                    else
-                    {
-                        if(field_desc->is_repeated())
-                        {
-                            std::vector<boost::any> field_values;
-                            for(int j = 0, m = refl->FieldSize(msg, field_desc); j < m; ++j)
-                                field_values.push_back(cpptype_helper_[field_desc->cpp_type()]->
-                                                       get_repeated_value(field_desc, msg, j));
-                            
-                            field_codecs()->[field_desc->cpp_type()][field_codec]->
-                                encode(bits, field_values, field_desc);
-                        }
-                        else
-                        {
-                            field_codecs()->[field_desc->cpp_type()][field_codec]->
-                                encode(bits,cpptype_helper_[field_desc->cpp_type()]->
-                                       get_value(field_desc, msg),
-                                       field_desc);
-                        }
-                    }
-                }
-            }
-            
-            virtual boost::any _decode(const Bitset& bits,
-                                       const google::protobuf::FieldDescriptor* field)
-            {
-            }
-            
-            virtual unsigned _size(const google::protobuf::FieldDescriptor* field)
-            {
-            }
-
-            virtual void _validate(const google::protobuf::FieldDescriptor* field)
-            {
-            }  
+            virtual Bitset _encode(const boost::any& field_value);
+            virtual boost::any _decode(Bitset* bits);     
+            virtual unsigned _size();
+            virtual void _validate();
         };
 
         
@@ -182,86 +136,37 @@ namespace goby
         
         class DCCLTimeCodec : public DCCLFieldCodec
         {
-            Bitset _encode(const boost::any& field_value,
-                           const google::protobuf::FieldDescriptor* field)
-            {
-                if(field_value.empty())
-                    return Bitset(_size(field));
-                
-                try
-                {
-                    // trim to time of day
-                    boost::posix_time::time_duration time_of_day =
-                        util::as<boost::posix_time::ptime>(
-                            boost::any_cast<std::string>(field_value)
-                            ).time_of_day();
-                
-                    return Bitset(_size(field),
-                                  static_cast<unsigned long>(
-                                      util::unbiased_round(
-                                          util::time_duration2double(time_of_day), 0)));
-                }
-                catch(boost::bad_any_cast& e)
-                {
-                    throw(DCCLException("Bad type given to encode"));
-                }
-            }
-            
-            boost::any _decode(const Bitset& bits,
-                               const google::protobuf::FieldDescriptor* field)
-            {
-                // add the date back in (assumes message sent the same day received)
-                unsigned long v = bits.to_ulong();
+            Bitset _encode(const boost::any& field_value);
 
-                using namespace boost::posix_time;
-                using namespace boost::gregorian;
-                
-                ptime now = util::goby_time();
-                date day_sent;
-                
-                // this logic will break if there is a separation between message sending and
-                // message receipt of greater than 1/2 day (twelve hours)
+            boost::any _decode(Bitset* bits);
             
-                // if message is from part of the day removed from us by 12 hours, we assume it
-                // was sent yesterday
-                if(abs(now.time_of_day().total_seconds() - v) > hours(12).total_seconds())
-                    day_sent = now.date() - days(1);
-                else // otherwise figure it was sent today
-                    day_sent = now.date();
-                
-                return util::as<std::string>(ptime(day_sent,seconds(v)));
-            }
-            
-            unsigned _size(const google::protobuf::FieldDescriptor* field)
+            unsigned _size()
             {
                 return HEAD_TIME_SIZE;
             }            
         };
 
-
-
         template<typename T>
             class DCCLStaticCodec : public DCCLFieldCodec
         {
-            Bitset _encode(const boost::any& field_value,
-                           const google::protobuf::FieldDescriptor* field)
+            Bitset _encode(const boost::any& field_value)
             {
-                return Bitset(_size(field));
+                return Bitset(_size());
             }
             
-            boost::any _decode(const Bitset& bits,
-                               const google::protobuf::FieldDescriptor* field)
+            boost::any _decode(Bitset* bits)
             {
-                return util::as<T>(field->options().GetExtension(dccl::static_value));
+                return util::as<T>(
+                    this_field()->options().GetExtension(dccl::static_value));
             }
 
-            unsigned _size(const google::protobuf::FieldDescriptor* field)
+            unsigned _size()
             { return 0; }
             
-            void _validate(const google::protobuf::FieldDescriptor* field)
+            void _validate()
             {
-                if(!field->options().HasExtension(dccl::static_value))
-                    throw(DCCLException("Field " + field->name() + " missing option extension `dccl.static_value`"));
+                if(!this_field()->options().HasExtension(dccl::static_value))
+                    throw(DCCLException("Field " + this_field()->name() + " missing option extension `dccl.static_value`"));
             }
             
         };
@@ -271,14 +176,13 @@ namespace goby
         // TODO(tes): THIS IS A PLACEHOLDER
         class DCCLModemIdConverterCodec : public DCCLDefaultFieldCodec<google::protobuf::int32>
         {
-            Bitset _encode(const boost::any& field_value,
-                           const google::protobuf::FieldDescriptor* field)
+            Bitset _encode(const boost::any& field_value)
             {
                 int v = 1;
                 
                 try
                 {
-                    return DCCLDefaultFieldCodec<google::protobuf::int32>::_encode(v, field);
+                    return DCCLDefaultFieldCodec<google::protobuf::int32>::_encode(v);
                 }
                 catch(boost::bad_any_cast& e)
                 {
@@ -286,8 +190,7 @@ namespace goby
                 }
             }
             
-            boost::any _decode(const Bitset& bits,
-                               const google::protobuf::FieldDescriptor* field)
+            boost::any _decode(Bitset* bits)
             {
                 return "unicorn";
             }            

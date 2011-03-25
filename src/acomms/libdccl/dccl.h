@@ -67,7 +67,7 @@ namespace goby
             //@{
             /// \brief Instantiate optionally with a ostream logger (for human readable output)
             /// \param log std::ostream object or FlexOstream to capture all humanly readable runtime and debug information (optional).
-            DCCLCodec(std::ostream* log = 0);
+            DCCLCodec();
 
             /// destructor
             ~DCCLCodec() {}
@@ -90,24 +90,35 @@ namespace goby
             {
               public:
                 template<typename T, template <typename T> class Codec>
-                    void add_field_codec(const char* name)
-                {
-                
-                    const google::protobuf::FieldDescriptor::CppType cpp_type = ToProtoCppType<T>::as_enum();
-    
-                    if(!codecs_[cpp_type].count(name))
-                        codecs_[cpp_type][name] = boost::shared_ptr<DCCLFieldCodec>(new Codec<T>());
-                    else
-                    {
-                        if(log_)
-                            *log_ << warn << "Ignoring duplicate codec " << name << " for CppType " << cpptype_helper_[cpp_type]->as_str() << std::endl;
-                    }
-                }                
+                    void add(const char* name);
 
+                const boost::shared_ptr<DCCLFieldCodec> find(
+                    google::protobuf::FieldDescriptor::CppType cpp_type,
+                    const std::string& name) const;
+                
               private:
-                std::map<google::protobuf::FieldDescriptor::CppType,
-                    std::map<std::string, boost::shared_ptr<DCCLFieldCodec> > > codecs_;
+                typedef std::map<std::string, boost::shared_ptr<DCCLFieldCodec> > InsideMap;
+                
+                std::map<google::protobuf::FieldDescriptor::CppType, InsideMap> codecs_;
             };
+
+            class CppTypeHelper
+            {
+              public:
+                CppTypeHelper();
+                const boost::shared_ptr<FromProtoCppTypeBase> find(google::protobuf::FieldDescriptor::CppType cpptype) const;
+                
+                boost::shared_ptr<FromProtoCppTypeBase> find(google::protobuf::FieldDescriptor::CppType cpptype);
+
+                        
+              private:
+              typedef std::map<google::protobuf::FieldDescriptor::CppType,
+              boost::shared_ptr<FromProtoCppTypeBase> > Map;
+              Map map_;
+            
+            };
+            
+            
             
             
             /// \brief Messages must be validated before they can be encoded/decoded
@@ -126,6 +137,12 @@ namespace goby
             bool decode(const std::string& bytes, google::protobuf::Message* msg); 
             //@}
 
+            static const FieldCodecManager& codec_manager()
+            { return codec_manager_; }
+            static const CppTypeHelper& cpptype_helper()
+            { return cpptype_helper_; }
+            
+            static void set_log(std::ostream* log) { log_ = log; }            
             /// \example acomms/chat/chat.cpp
             
           private:
@@ -145,17 +162,12 @@ namespace goby
                 from_block_range(str.rbegin(), str.rend(), *bits);
             }
 
-            void encode_recursive(Bitset* bits,
-                                  const google::protobuf::Message& msg,
-                                  bool is_header);
             void decode_recursive(Bitset* bits,
                                   google::protobuf::Message* msg,
                                   bool is_header);
             
             void validate_recursive(const google::protobuf::Descriptor* desc);
             
-            unsigned size_recursive(const google::protobuf::Message& msg, bool is_header);
-
             // more efficient way to do ceil(total_bits / 8)
             // to get the number of bytes rounded up.
             enum { BYTE_MASK = 7 }; // 00000111
@@ -172,20 +184,35 @@ namespace goby
                    
           private:
             static const char* DEFAULT_CODEC_NAME;
-
-            std::ostream* log_;
+            static std::ostream* log_;
             protobuf::DCCLConfig cfg_;
             // SHA256 hash of the crypto passphrase
             std::string crypto_key_;
 
             // maps protocol buffers CppTypes to a map of field codec names & codecs themselves
             static FieldCodecManager codec_manager_;
-            
-            std::map<google::protobuf::FieldDescriptor::CppType, boost::shared_ptr<FromProtoCppTypeBase> >
-                cpptype_helper_;
+            static CppTypeHelper cpptype_helper_;
             
             google::protobuf::DynamicMessageFactory message_factory_;
         };
+    }
+}
+
+template<typename T, template <typename T> class Codec>
+    void goby::acomms::DCCLCodec::FieldCodecManager::add(const char* name)
+{
+    
+    const google::protobuf::FieldDescriptor::CppType cpp_type = ToProtoCppType<T>::as_enum();
+    
+    if(!codecs_[cpp_type].count(name))
+        codecs_[cpp_type][name] = boost::shared_ptr<DCCLFieldCodec>(new Codec<T>());
+    else
+    {
+        if(log_)
+            *log_ << warn << "Ignoring duplicate codec " << name
+                  << " for CppType "
+                  << cpptype_helper_.find(cpp_type)->as_str()
+                  << std::endl;
     }
 }
 

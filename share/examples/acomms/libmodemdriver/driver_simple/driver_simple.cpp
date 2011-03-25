@@ -63,7 +63,7 @@ int main(int argc, char* argv[])
 
     if(argc == 4)
     {
-        if(goby::util::stricmp(argv[3],"ABCDriver"))
+        if(boost::iequals(argv[3],"ABCDriver"))
         {
             std::cout << "Starting Example driver ABCDriver" << std::endl;
             driver = new goby::acomms::ABCDriver(&std::clog);

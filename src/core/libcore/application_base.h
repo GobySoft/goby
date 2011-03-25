@@ -35,6 +35,7 @@
 #include "goby/protobuf/interprocess_notification.pb.h"
 #include "goby/protobuf/config.pb.h"
 #include "goby/protobuf/app_base_config.pb.h"
+#include "goby/protobuf/header.pb.h"
 
 #include "message_queue_util.h"
 #include "filter.h"
@@ -107,7 +108,10 @@ namespace goby
             //@{
             
             /// \brief Interplatform publishing options. `self` publishes only to the local gobyd, `other` also attempts to transmit to the name other platform, and `all` attempts to transmit to all known platforms
-            enum PublishDestination { self, other, all };
+            enum PublishDestination { self = ::Header::PUBLISH_SELF,
+                                      other = ::Header::PUBLISH_OTHER,
+                                      all = ::Header::PUBLISH_ALL };
+            
 
             /// \brief Publish a message (of any type derived from google::protobuf::Message)
             ///
@@ -483,7 +487,7 @@ template<typename ProtoBufMessage>
 const ProtoBufMessage& goby::core::ApplicationBase::newest(const proto::Filter& filter
                                                            /* = proto::Filter()*/)
 {
-    // RTTI needed so we can store subscriptions with a common (non-template) basebut also
+    // RTTI needed so we can store subscriptions with a common (non-template) base but also
     // return the subclass requested
     const std::string full_name = ProtoBufMessage::descriptor()->full_name();
     typedef boost::unordered_multimap<std::string, boost::shared_ptr<SubscriptionBase> >

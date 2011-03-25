@@ -1,0 +1,92 @@
+import "goby/protobuf/dccl_option_extensions.proto";
+import "goby/protobuf/queue_option_extensions.proto";
+import "goby/protobuf/header.proto";
+
+
+enum Enum1
+{
+  ENUM_A = 1;
+  ENUM_B = 2;
+  ENUM_C = 3;
+}
+
+message EmbeddedMsg1
+{
+  optional double val = 1;
+  optional EmbeddedMsg2 msg = 2;
+}
+
+message EmbeddedMsg2
+{
+  optional double val = 1 [(dccl.min)=0,
+                           (dccl.max)=126];
+}
+
+message BasicTestMsg
+{
+  option (dccl.id) = 1;
+  option (dccl.max_bytes) = 32;
+
+  optional double double_default = 1 [(dccl.min)=0,
+                                      (dccl.max)=126];
+
+  //  optional Header head = 2;
+}
+
+
+
+message TestMsg
+{
+  option (dccl.id) = 1;
+  option (dccl.max_bytes) = 32;
+
+  // test default enc/dec
+  optional double double_default = 1;
+  optional float float_default = 2;
+  
+  optional int32 int32_default = 3;
+  optional int64 int64_default = 4;
+  optional uint32 uint32_default = 5;
+  optional uint64 uint64_default = 6;
+  optional sint32 sint32_default = 7;
+  optional sint64 sint64_default = 8;
+  optional fixed32 fixed32_default = 9;
+  optional fixed64 fixed64_default = 10;
+  optional sfixed32 sfixed32_default = 11;
+  optional sfixed64 sfixed64_default = 12;
+
+  optional bool bool_default = 13;
+
+  optional string string_default = 14;
+  optional bytes bytes_default = 15;
+
+  optional Enum1 enum_default = 16;
+
+  optional EmbeddedMsg1 msg_default = 17;
+
+  
+  repeated double double_default_repeat = 101;
+  repeated float float_default_repeat = 102;
+
+  repeated int32 int32_default_repeat = 103;
+  repeated int64 int64_default_repeat = 104;
+  repeated uint32 uint32_default_repeat = 105;
+  repeated uint64 uint64_default_repeat = 106;
+  repeated sint32 sint32_default_repeat = 107;
+  repeated sint64 sint64_default_repeat = 108;
+  repeated fixed32 fixed32_default_repeat = 109;
+  repeated fixed64 fixed64_default_repeat = 110;
+  repeated sfixed32 sfixed32_default_repeat = 111;
+  repeated sfixed64 sfixed64_default_repeat = 112;
+
+  repeated bool bool_default_repeat = 113;
+
+  repeated string string_default_repeat = 114;
+  repeated bytes bytes_default_repeat = 115;
+
+  repeated Enum1 enum_default_repeat = 116;
+
+  repeated EmbeddedMsg1 msg_default_repeat = 117;
+
+}
+

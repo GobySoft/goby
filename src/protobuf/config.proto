@@ -25,9 +25,9 @@ message Platform
   }
   message AcousticModemInfo
   {
-    required uint32 mm_id = 1 [(description)="Micro-Modem id ($CCCFQ,SRC)",
+    required uint32 modem_id = 1 [(description)="Micro-Modem id ($CCCFQ,SRC)",
                                (example)="1"];
-    required SerialInfo mm_serial = 2;
+    required SerialInfo modem_serial = 2;
     optional bool has_coproc = 3 [default=true,
                                   (description)="can handle high-rate PSK"];
   }

@@ -27,7 +27,6 @@
 #include "goby/core/libcore/configuration_reader.h"
 #include "goby/core/libdbo/dbo_manager.h"
 #include "goby/protobuf/app_base_config.pb.h"
-#include "goby/protobuf/header.pb.h"
 
 #include "application_base.h"
 
@@ -361,35 +360,18 @@ void goby::core::ApplicationBase::finalize_header(
         const google::protobuf::FieldDescriptor* field_desc = desc->field(i);
         if(field_desc->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE && field_desc->message_type() == ::Header::descriptor())
         {
-            
             Header* header = dynamic_cast<Header*>(refl->MutableMessage(msg, field_desc));
-            
 
-            bool has_unix_time = header->has_unix_time();
-            bool has_iso_time = header->has_iso_time();
-
-            // derived app has set neither time, use current time
-            if(!(has_unix_time || has_iso_time))
+            if(!header)
             {
-                boost::posix_time::ptime now = goby_time();
-                header->set_unix_time(ptime2unix_double(now));
-                header->set_iso_time(boost::posix_time::to_iso_string(now));
-            }
-            // derived app has set iso time, use this to set unix time
-            else if(has_iso_time)
-            {
-                header->set_unix_time(ptime2unix_double(
-                                          boost::posix_time::from_iso_string(
-                                              header->iso_time())));
-            }
-            // derived app has set unix time, use this to set iso time
-            else if(has_unix_time)
-            {
-                header->set_iso_time(boost::posix_time::to_iso_string(
-                                         unix_double2ptime(
-                                             header->unix_time())));
+                glogger() << warn << "Dynamic cast of Header failed!" << std::endl;
+                return;
             }
             
+            // derived app has not set neither time, use current time
+            if(!header->has_time())
+                header->set_time(goby::util::as<std::string>(goby_time()));
+
             
             if(!header->has_source_app())
                 header->set_source_app(base_cfg_.app_name());
@@ -397,24 +379,7 @@ void goby::core::ApplicationBase::finalize_header(
             if(!header->has_source_platform())
                 header->set_source_platform(base_cfg_.platform_name());
 
-            switch(dest_type)
-            {
-                case goby::core::ApplicationBase::self:
-                    header->set_dest_type(Header::self);
-                    break;
-                    
-                case goby::core::ApplicationBase::other:
-                    header->set_dest_type(Header::other);
-                    header->set_dest_platform(dest_platform);
-                    break;
-
-                case goby::core::ApplicationBase::all:
-                    header->set_dest_type(Header::all);
-                    break;
-
-            }
-            
-            
+            header->set_dest_type(static_cast<Header::PublishDestination>(dest_type));
         }
     }
 }

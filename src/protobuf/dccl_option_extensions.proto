@@ -1,0 +1,38 @@
+import "google/protobuf/descriptor.proto";
+
+package dccl;
+
+extend .google.protobuf.FieldOptions
+{
+  // what encoder / decoder should we use?
+  optional string codec = 50000 [default = "_default"];
+  // leave this field out of DCCL tranmissions (has_field() will be false on receipt)
+  optional bool omit = 50001 [default = false];
+  // set true for fields in the header (will *not* be encrypted)
+  optional bool in_head = 50002 [default = false];
+  
+  
+  // double, float
+  optional int32 precision = 50010 [default = 0];
+  optional uint32 sigfig = 50011;
+  // int, double, float
+  optional double max = 50012;
+  optional double min = 50013;
+  optional double max_delta = 50014;
+
+  // static
+  optional string static_value = 50015;
+  
+  // string, bytes
+  optional uint32 max_length = 50020;  
+
+  // any `repeated` field
+  optional uint32 max_repeat = 50030;
+}
+
+extend .google.protobuf.MessageOptions {
+  required int32 id = 50040;
+  required int32 max_bytes = 50041;
+
+  optional string message_codec = 50042 [default = "_default"];
+}

@@ -44,7 +44,7 @@ void NodeReporter::create_node_report(const GPSSentenceGGA& gga,
     NodeReport report;
 
     // use the time from the GGA message as the base message time
-    report.mutable_header()->set_iso_time(gga.header().iso_time());
+    report.mutable_header()->set_time(gga.header().time());
     report.set_name(cfg_.base().platform_name());
     report.set_type(global_cfg().self().type());
 
@@ -62,8 +62,12 @@ void NodeReporter::create_node_report(const GPSSentenceGGA& gga,
     // set the depth sensor data
     global_fix->set_depth(depth_reading.depth());
     global_fix->set_depth_source(SIMULATION);
-    global_fix->set_depth_time_lag(gga.header().unix_time()
-                                   -depth_reading.header().unix_time());
+
+    using namespace boost::posix_time;
+    using goby::util::as;
+    time_duration lag = as<ptime>(gga.header().time())-as<ptime>(depth_reading.header().time());
+    
+    global_fix->set_depth_time_lag(lag.total_nanoseconds()/1.0e9);
 
     // TODO(tes): compute the local coordinates
 

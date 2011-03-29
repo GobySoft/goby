@@ -23,8 +23,8 @@
 
 namespace goby
 {
-    const std::string VERSION_STRING = "1.0.2";
-    const std::string VERSION_DATE = "2011 Mar 16";  
+    const std::string VERSION_STRING = "1.0.2b";
+    const std::string VERSION_DATE = "2011 Mar 29";  
 }
 
 #endif

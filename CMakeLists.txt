@@ -11,9 +11,9 @@ project(goby)
 
 set(GOBY_VERSION_MAJOR "1")
 set(GOBY_VERSION_MINOR "0")
-set(GOBY_VERSION_PATCH "2")
+set(GOBY_VERSION_PATCH "2b")
 set(GOBY_VERSION "${GOBY_VERSION_MAJOR}.${GOBY_VERSION_MINOR}.${GOBY_VERSION_PATCH}")
-set(GOBY_VERSION_DATE "2011 Mar 16")
+set(GOBY_VERSION_DATE "2011 Mar 29")
 set(GOBY_SOVERSION "1")
      
 ## fetch all the local directories for generated code
@@ -53,7 +53,7 @@ endforeach()
 include_directories(${goby_INC_DIR})
 
 ## for MAC OS X 
-if(${CMAKE_SYSTEM_NAME} MATCHES Darwin)
+if(${APPLE})
   ## MacPorts
   include_directories(/opt/local/include)
   link_directories(/opt/local/lib)

@@ -14,7 +14,6 @@ extend .google.protobuf.FieldOptions
   
   // double, float
   optional int32 precision = 50010 [default = 0];
-  optional uint32 sigfig = 50011;
   // int, double, float
   optional double max = 50012;
   optional double min = 50013;

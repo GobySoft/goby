@@ -48,19 +48,12 @@ namespace goby
                 
                 try
                 {
-                    const double min =
-                        this_field()->options().GetExtension(dccl::min);
-                    const double max =
-                        this_field()->options().GetExtension(dccl::max);
-                    const double precision =
-                        this_field()->options().GetExtension(dccl::precision);
-                    
                     T t = boost::any_cast<T>(field_value);
-                    if(t < min || t > max)
+                    if(t < get(dccl::min) || t > get(dccl::max))
                         return Bitset();
                     
-                    t -= min;
-                    t *= pow(10.0, precision);
+                    t -= get(dccl::min);
+                    t *= pow(10.0, get(dccl::precision));
                     return Bitset(_size(), static_cast<unsigned long>(t)+1);
                 }
                 catch(boost::bad_any_cast& e)
@@ -71,37 +64,27 @@ namespace goby
             
             virtual boost::any _decode(Bitset* bits)
             {
-                const google::protobuf::FieldDescriptor* f = this_field();
-                const double precision = f->options().GetExtension(dccl::precision);
-                const double min = f->options().GetExtension(dccl::min);
                 unsigned long t = bits->to_ulong();
                 if(!t) return boost::any();
 
                 --t;
-                return static_cast<T>(t / (std::pow(10.0, precision)) + min);
+                return static_cast<T>(t / (std::pow(10.0, get(dccl::precision)))
+                                      + get(dccl::min));
             }
             
             virtual unsigned _size()
             {
-                const google::protobuf::FieldDescriptor* f = this_field();
-                const double min = f->options().GetExtension(dccl::min);
-                const double max = f->options().GetExtension(dccl::max);
-                const double precision = f->options().GetExtension(dccl::precision);
-                return std::ceil(std::log((max-min)*std::pow(10.0, precision)+2)/std::log(2));
+                return std::ceil(std::log((get(dccl::max)-get(dccl::min))*
+                                          std::pow(10.0, get(dccl::precision))+2)/std::log(2));
             }
 
             virtual void _validate()
             {
-                const google::protobuf::FieldDescriptor* f = this_field();
-                if(!f->options().HasExtension(dccl::min))
-                    throw(DCCLException("Field " + f->name() + " missing option extension `dccl.min`"));
-                else if(!f->options().HasExtension(dccl::max))
-                    throw(DCCLException("Field " + f->name() + " missing option extension `dccl.max`"));
-                else if(f->options().GetExtension(dccl::min) > f->options().GetExtension(dccl::max))
-                    throw(DCCLException("Field " + f->name() + "`dccl.min` > `dccl.max`"));
+                require(dccl::min, "dccl.min");
+                require(dccl::max, "dccl.max");
             }
             
-        };        
+        };
 
         class DCCLDefaultMessageCodec : public DCCLFieldCodec
         {
@@ -155,20 +138,15 @@ namespace goby
             }
             
             boost::any _decode(Bitset* bits)
-            {
-                return util::as<T>(
-                    this_field()->options().GetExtension(dccl::static_value));
-            }
-
+            { return goby::util::as<T>(get(dccl::static_value)); }
+            
             unsigned _size()
             { return 0; }
             
             void _validate()
             {
-                if(!this_field()->options().HasExtension(dccl::static_value))
-                    throw(DCCLException("Field " + this_field()->name() + " missing option extension `dccl.static_value`"));
+                require(dccl::static_value, "dccl.static_value");                
             }
-            
         };
 
 

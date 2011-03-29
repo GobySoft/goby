@@ -83,7 +83,7 @@ unsigned goby::acomms::DCCLFieldCodec::size(const google::protobuf::Message* msg
         }
         else
         {
-            throw(DCCLException("Validate called with NULL Message"));
+            throw(DCCLException("Size called with NULL Message"));
         }
     }
     else
@@ -139,7 +139,7 @@ void goby::acomms::DCCLFieldCodec::decode(Bitset* bits,
     Counter c;
     if(c.first())
     {
-        const google::protobuf::Message* msg = boost::any_cast<const google::protobuf::Message*>(*field_value);
+        google::protobuf::Message* msg = boost::any_cast<google::protobuf::Message*>(*field_value);
         if(msg)
             __set_root_message(msg);
         else

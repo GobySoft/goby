@@ -29,8 +29,8 @@ message BasicTestMsg
 
   optional double double_default = 1 [(dccl.min)=0,
                                       (dccl.max)=126];
-
-  //  optional Header head = 2;
+  
+  optional Header head = 2;
 }
 
 

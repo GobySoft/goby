@@ -45,23 +45,25 @@ std::ostream*  goby::acomms::DCCLCodec::log_ = 0;
 
 goby::acomms::DCCLCodec::FieldCodecManager goby::acomms::DCCLCodec::codec_manager_;
 goby::acomms::DCCLCodec::CppTypeHelper goby::acomms::DCCLCodec::cpptype_helper_;
-
+goby::acomms::protobuf::DCCLConfig goby::acomms::DCCLCodec::cfg_;
+std::string goby::acomms::DCCLCodec::crypto_key_;
+bool goby::acomms::DCCLCodec::default_codecs_set_ = false;
 
 //
 // DCCLCodec
 //
 
-goby::acomms::DCCLCodec::DCCLCodec()
-{
-    
+void goby::acomms::DCCLCodec::set_default_codecs()
+{    
     codec_manager_.add<double, DCCLDefaultFieldCodec>(DEFAULT_CODEC_NAME);
-    codec_manager_.add<google::protobuf::int32, DCCLDefaultFieldCodec>(DEFAULT_CODEC_NAME);    
-
+    codec_manager_.add<google::protobuf::int32, DCCLDefaultFieldCodec>(DEFAULT_CODEC_NAME);
     codec_manager_.add<google::protobuf::Message, DCCLDefaultFieldCodec>(DEFAULT_CODEC_NAME);
-    
-//    add_field_codec<FieldDescriptor::CPPTYPE_STRING, DCCLTimeCodec>("_time");
+
+    //    add_field_codec<FieldDescriptor::CPPTYPE_STRING, DCCLTimeCodec>("_time");
 //    add_field_codec<FieldDescriptor::CPPTYPE_STRING, DCCLModemIdConverterCodec>(
     //"_platform<->modem_id");
+
+    default_codecs_set_ = true;
 }
 
 void goby::acomms::DCCLCodec::add_flex_groups(util::FlexOstream* tout)
@@ -73,6 +75,9 @@ void goby::acomms::DCCLCodec::add_flex_groups(util::FlexOstream* tout)
 
 bool goby::acomms::DCCLCodec::encode(std::string* bytes, const google::protobuf::Message& msg)
 {
+    if(!default_codecs_set_)
+        set_default_codecs();
+    
     //fixed header
     Bitset ccl_id_bits(HEAD_CCL_ID_SIZE + HEAD_DCCL_ID_SIZE, DCCL_CCL_HEADER);
     Bitset dccl_id_bits(HEAD_CCL_ID_SIZE + HEAD_DCCL_ID_SIZE, msg.GetDescriptor()->options().GetExtension(dccl::id));
@@ -98,7 +103,7 @@ bool goby::acomms::DCCLCodec::encode(std::string* bytes, const google::protobuf:
             throw(DCCLException("Failed to find dccl.message_codec `" + desc->options().GetExtension(dccl::message_codec) + "`"));
         }
     }
-    catch(DCCLException& e)
+    catch(std::exception& e)
     {
         if(log_) *log_ << warn << "Message " << desc->full_name() << " failed to encode. Reason: " << e.what() << std::endl;
         return false;
@@ -121,15 +126,18 @@ bool goby::acomms::DCCLCodec::encode(std::string* bytes, const google::protobuf:
 
 bool goby::acomms::DCCLCodec::decode(const std::string& bytes, google::protobuf::Message* msg)   
 {
+    if(!default_codecs_set_)
+        set_default_codecs();
+    
     const Descriptor* desc = msg->GetDescriptor();
     boost::shared_ptr<DCCLFieldCodec> codec =
         codec_manager_.find(FieldDescriptor::CPPTYPE_MESSAGE,
                             desc->options().GetExtension(dccl::message_codec));
     
     DCCLFieldCodec::set_in_header(true);
-    unsigned head_size_bits = codec->size(0) + HEAD_CCL_ID_SIZE + HEAD_DCCL_ID_SIZE;
-    DCCLFieldCodec::set_in_header(false);    
-    unsigned body_size_bits = codec->size(0);
+    unsigned head_size_bits = codec->size(msg) + HEAD_CCL_ID_SIZE + HEAD_DCCL_ID_SIZE;
+    DCCLFieldCodec::set_in_header(false);  
+    unsigned body_size_bits = codec->size(msg);
 
     unsigned head_size_bytes = ceil_bits2bytes(head_size_bits);
     unsigned body_size_bytes = ceil_bits2bytes(body_size_bits);
@@ -161,21 +169,20 @@ bool goby::acomms::DCCLCodec::decode(const std::string& bytes, google::protobuf:
     
     try
     {
-        
         if(codec)
         {
             boost::any a(msg);
             DCCLFieldCodec::set_in_header(true);
-            codec->decode(&body_bits, &a, 0);
+            codec->decode(&body_bits, &a);
             DCCLFieldCodec::set_in_header(false);
-            codec->encode(&body_bits, &a, 0);
+            codec->decode(&body_bits, &a);
         }
         else
         {
             throw(DCCLException("Failed to find dccl.message_codec `" + desc->options().GetExtension(dccl::message_codec) + "`"));
         }
     }
-    catch(DCCLException& e)
+    catch(std::exception& e)
     {
         const Descriptor* desc = msg->GetDescriptor();
         if(log_) *log_ << warn << "Message " << desc->full_name() << " failed to decode. Reason: " << e.what() << std::endl;
@@ -184,16 +191,14 @@ bool goby::acomms::DCCLCodec::decode(const std::string& bytes, google::protobuf:
     return true;
 }
 
-
-void goby::acomms::DCCLCodec::decode_recursive(Bitset* bits, google::protobuf::Message* msg, bool is_header)
-{
-
-}
-
 // makes sure we can actual encode / decode a message of this descriptor given the loaded FieldCodecs
 // checks all bounds on the message
-bool goby::acomms::DCCLCodec::validate(const Descriptor* desc)
+bool goby::acomms::DCCLCodec::validate(const google::protobuf::Message& msg)
 {
+    if(!default_codecs_set_)
+        set_default_codecs();
+
+    const Descriptor* desc = msg.GetDescriptor();
     try
     {
         if(!desc->options().HasExtension(dccl::id))
@@ -204,7 +209,7 @@ bool goby::acomms::DCCLCodec::validate(const Descriptor* desc)
         boost::shared_ptr<DCCLFieldCodec> codec =
             codec_manager_.find(FieldDescriptor::CPPTYPE_MESSAGE,
                                 desc->options().GetExtension(dccl::message_codec));
-//        codec->validate(msg, field);
+        codec->validate(&msg);
     }
     catch(DCCLException& e)
     {
@@ -265,13 +270,21 @@ void goby::acomms::DCCLCodec::set_cfg(const protobuf::DCCLConfig& cfg)
 }
 
 void goby::acomms::DCCLCodec::process_cfg()
-{    
-    using namespace CryptoPP;
+{
+    if(cfg_.has_crypto_passphrase())
+    {
+        using namespace CryptoPP;
+        
+        SHA256 hash;
+        StringSource unused(cfg_.crypto_passphrase(), true, new HashFilter(hash, new StringSink(crypto_key_)));
+        
+        if(log_) *log_ << group("dccl_enc") << "cryptography enabled with given passphrase" << std::endl;
+    }
+    else
+    {
+        if(log_) *log_ << group("dccl_enc") << "cryptography disabled, set crypto_passphrase to enable." << std::endl;
+    }
     
-    SHA256 hash;
-    StringSource unused(cfg_.crypto_passphrase(), true, new HashFilter(hash, new StringSink(crypto_key_)));
-
-    if(log_) *log_ << group("dccl_enc") << "cryptography enabled with given passphrase" << std::endl;
 }
 
 //
@@ -284,7 +297,7 @@ goby::acomms::DCCLCodec::FieldCodecManager::find(
     google::protobuf::FieldDescriptor::CppType cpp_type, const std::string& name) const
 {
     typedef InsideMap::const_iterator InsideIterator;
-    typedef  std::map<google::protobuf::FieldDescriptor::CppType, InsideMap>::const_iterator Iterator;
+    typedef std::map<google::protobuf::FieldDescriptor::CppType, InsideMap>::const_iterator Iterator;
                     
     Iterator it = codecs_.find(cpp_type);
     if(it != codecs_.end())
@@ -295,7 +308,7 @@ goby::acomms::DCCLCodec::FieldCodecManager::find(
             return inside_it->second;
         }
     }                    
-    return boost::shared_ptr<DCCLFieldCodec>();
+    throw(DCCLException("No codec by the name `" + name + "` found for type: " + DCCLCodec::cpptype_helper().find(cpp_type)->as_str()));
 }
 
 

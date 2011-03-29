@@ -23,11 +23,10 @@ using goby::acomms::operator<<;
 
 int main()
 {
-    goby::acomms::DCCLCodec dccl;
-    dccl.set_log(&std::cerr);    
+    goby::acomms::DCCLCodec::set_log(&std::cerr);    
     goby::acomms::protobuf::DCCLConfig cfg;
 //    cfg.set_crypto_passphrase("my_passphrase!");
-    dccl.set_cfg(cfg);
+    goby::acomms::DCCLCodec::set_cfg(cfg);
 
     BasicTestMsg msg_in1, msg_out1;    
 
@@ -36,15 +35,15 @@ int main()
     
     std::cout << "Message 1 in:\n" << msg_in1 << std::endl;
 
-    assert(dccl.validate(msg_in1.descriptor()));
+    assert(goby::acomms::DCCLCodec::validate(msg_in1));
 
     std::cout << "Try encode..." << std::endl;
     std::string bytes;
-    dccl.encode(&bytes, msg_in1);
+    goby::acomms::DCCLCodec::encode(&bytes, msg_in1);
     std::cout << "... got bytes (hex): " << goby::acomms::hex_encode(bytes) << std::endl;
 
     std::cout << "Try decode..." << std::endl;
-    dccl.decode(bytes, &msg_out1);
+    goby::acomms::DCCLCodec::decode(bytes, &msg_out1);
     std::cout << "... got Message 1 out:\n" << msg_out1 << std::endl;
 
     

@@ -38,13 +38,14 @@ namespace goby
     {   
         /// \name String
         //@{
-        
+
         /// \brief non-throwing lexical cast (e.g. assert(as<double>("3.2") == 3.2)). For fundamental types (double, int, etc.)
         /// \param from value to cast from 
         /// \return to value to cast to
         /// \throw none
         template<typename To, typename From>
-            To as(From from, typename boost::enable_if<boost::is_fundamental<To> >::type* dummy = 0)
+            typename boost::enable_if<boost::is_fundamental<To>, To>::type
+            as(From from)
         {
             try { return boost::lexical_cast<To>(from); }
             catch(boost::bad_lexical_cast&)
@@ -61,7 +62,8 @@ namespace goby
         /// \return to value to cast to
         /// \throw none
         template<typename To, typename From>
-            To as(From from, typename boost::disable_if<boost::is_fundamental<To> >::type* dummy = 0)
+            typename boost::disable_if<boost::is_fundamental<To>, To>::type
+            as(From from)
         {
             try { return boost::lexical_cast<To>(from); }
             catch(boost::bad_lexical_cast&)
@@ -72,21 +74,24 @@ namespace goby
         
         /// specialization of as() for string -> bool
         template <>
-            inline bool as<bool, std::string>(std::string from, void* dummy)
+            inline bool as<bool, std::string>(std::string from)
         {
             return (boost::iequals(from, "true") || boost::iequals(from, "1"));
         }
         
         /// specialization of as() for bool -> string
         template <>
-            inline std::string as<std::string, bool>(bool from, void* dummy)
+            inline std::string as<std::string, bool>(bool from)
         {
             std::stringstream ss;
             ss << std::boolalpha << from;
             return ss.str();
         }
 
-
+        /* /// specialization of as() when To and From are the same type */
+        /* template <typename T> */
+        /*     inline T as(T from) */
+        /* { return from; }      */
         
         /// remove all blanks from string s    
         inline void stripblanks(std::string& s)

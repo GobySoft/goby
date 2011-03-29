@@ -48,9 +48,7 @@ goby::acomms::Bitset goby::acomms::DCCLDefaultMessageCodec::_encode(const boost:
                 DCCLCodec::cpptype_helper().find(field_desc->cpp_type());
 
             if(field_desc->is_repeated())
-            {
-                
-                    
+            {    
                 std::vector<boost::any> field_values;
                 for(int j = 0, m = refl->FieldSize(*msg, field_desc); j < m; ++j)
                 {
@@ -109,6 +107,8 @@ boost::any goby::acomms::DCCLDefaultMessageCodec::_decode(Bitset* bits)
             } 
         }    
     }
+    return msg;
+    
 }
 
 
@@ -131,8 +131,8 @@ unsigned goby::acomms::DCCLDefaultMessageCodec::_size()
         }
         else
         {
-            sum += DCCLCodec::codec_manager().find(
-                field_desc->cpp_type(),field_codec)->size(this_message(), field_desc);
+            sum += DCCLCodec::codec_manager().find(field_desc->cpp_type(),field_codec)->
+                size(DCCLFieldCodec::this_message(), field_desc);
         }
     }
     
@@ -140,9 +140,26 @@ unsigned goby::acomms::DCCLDefaultMessageCodec::_size()
 }
 void goby::acomms::DCCLDefaultMessageCodec::_validate()
 {
-}  
+    const google::protobuf::Descriptor* desc =
+        DCCLFieldCodec::this_message()->GetDescriptor();
+    for(int i = 0, n = desc->field_count(); i < n; ++i)
+    {
+        const google::protobuf::FieldDescriptor* field_desc = desc->field(i);
+        std::string field_codec = field_desc->options().GetExtension(dccl::codec);
 
-
+        if(field_desc->options().GetExtension(dccl::omit)
+           || (in_header() && !field_desc->options().GetExtension(dccl::in_head))
+           || (!in_header() && field_desc->options().GetExtension(dccl::in_head)))
+        {
+            continue;
+        }
+        else
+        {
+            DCCLCodec::codec_manager().find(field_desc->cpp_type(),field_codec)->
+                validate(DCCLFieldCodec::this_message(), field_desc);
+        }
+    }    
+}
 
 goby::acomms::Bitset goby::acomms::DCCLTimeCodec::_encode(const boost::any& field_value)
 {

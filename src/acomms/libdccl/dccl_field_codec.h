@@ -30,6 +30,8 @@
 #include <google/protobuf/descriptor.h>
 
 #include "dccl_constants.h"
+#include "dccl_exception.h"
+#include "goby/util/string.h"
 
 namespace goby
 {
@@ -65,10 +67,9 @@ namespace goby
             void validate(const google::protobuf::Message* msg = 0,
                           const google::protobuf::FieldDescriptor* field = 0);
             
-
+            
             static void set_in_header(bool in_header) { in_header_ = in_header;}
-            static bool in_header() { return in_header_; } 
-
+            static bool in_header() { return in_header_; }            
             
           protected:
             static const google::protobuf::Message* root_message()
@@ -92,7 +93,23 @@ namespace goby
             { return this_msg_; }
             
             const google::protobuf::FieldDescriptor* this_field()
-            { return this_field_; }  
+            { return this_field_; }
+
+            template<typename Extension>
+                typename Extension::TypeTraits::ConstType get(const Extension& e)
+            { return this_field()->options().GetExtension(e); }
+            
+            template<typename Extension>
+                bool has(const Extension& e)
+            { return this_field()->options().HasExtension(e); }
+            
+            template<typename Extension>
+                void require(const Extension& e, const std::string& name)
+            {
+                if(!this_field()->options().HasExtension(e))
+                    throw(DCCLException("Field " + this_field()->name() + " missing option extension called `" + name + "`"));
+            }            
+
             
             virtual void _validate()
             { }

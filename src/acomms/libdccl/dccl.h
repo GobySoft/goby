@@ -61,18 +61,7 @@ namespace goby
         /// \sa  dccl.proto and modem_message.proto for definition of Google Protocol Buffers messages (namespace goby::acomms::protobuf).
         class DCCLCodec  // TODO(tes): Make singleton class
         {
-          public:
-            
-            /// \name Constructors/Destructor
-            //@{
-            /// \brief Instantiate optionally with a ostream logger (for human readable output)
-            /// \param log std::ostream object or FlexOstream to capture all humanly readable runtime and debug information (optional).
-            DCCLCodec();
-
-            /// destructor
-            ~DCCLCodec() {}
-            //@}
-        
+          public:        
             /// \name Initialization Methods.
             ///
             /// These methods are intended to be called before doing any work with the class. However,
@@ -80,10 +69,10 @@ namespace goby
             //@{
 
             /// \brief Set (and overwrite completely if present) the current configuration. (protobuf::DCCLConfig defined in dccl.proto)
-            void set_cfg(const protobuf::DCCLConfig& cfg);
-
+            static void set_cfg(const protobuf::DCCLConfig& cfg);
+            
             /// \brief Set (and merge "repeat" fields) the current configuration. (protobuf::DCCLConfig defined in dccl.proto)
-            void merge_cfg(const protobuf::DCCLConfig& cfg);
+            static void merge_cfg(const protobuf::DCCLConfig& cfg);
             
 
             class FieldCodecManager
@@ -118,11 +107,8 @@ namespace goby
             
             };
             
-            
-            
-            
             /// \brief Messages must be validated before they can be encoded/decoded
-            bool validate(const google::protobuf::Descriptor* desc);
+            static bool validate(const google::protobuf::Message& msg);
             
             /// Registers the group names used for the FlexOstream logger
             static void add_flex_groups(util::FlexOstream* tout);
@@ -133,8 +119,8 @@ namespace goby
             ///
             /// This is where the real work happens.
             //@{
-            bool encode(std::string* bytes, const google::protobuf::Message& msg);
-            bool decode(const std::string& bytes, google::protobuf::Message* msg); 
+            static bool encode(std::string* bytes, const google::protobuf::Message& msg);
+            static bool decode(const std::string& bytes, google::protobuf::Message* msg); 
             //@}
 
             static const FieldCodecManager& codec_manager()
@@ -142,42 +128,61 @@ namespace goby
             static const CppTypeHelper& cpptype_helper()
             { return cpptype_helper_; }
             
-            static void set_log(std::ostream* log) { log_ = log; }            
+            static void set_log(std::ostream* log)
+            {
+                log_ = log;
+
+                util::FlexOstream* flex_log = dynamic_cast<util::FlexOstream*>(log);
+                if(flex_log)
+                    add_flex_groups(flex_log);
+            }  
             /// \example acomms/chat/chat.cpp
             
           private:
-            void encrypt(std::string* s, const std::string& nonce);
-            void decrypt(std::string* s, const std::string& nonce);
-            void process_cfg();
+
+            /// \name Constructors/Destructor
+            //@{
+            /// \brief Instantiate optionally with a ostream logger (for human readable output)
+            /// \param log std::ostream object or FlexOstream to capture all humanly readable runtime and debug information (optional).
+            DCCLCodec() { }
             
-            void bitset2string(const Bitset& bits, std::string* str)
+            /// destructor
+            ~DCCLCodec() { }
+            
+
+            DCCLCodec(const DCCLCodec&);
+            DCCLCodec& operator= (const DCCLCodec&);
+            //@}
+
+            static void set_default_codecs();
+            
+            
+            static void encrypt(std::string* s, const std::string& nonce);
+            static void decrypt(std::string* s, const std::string& nonce);
+            static void process_cfg();
+            
+            static void bitset2string(const Bitset& bits, std::string* str)
             {
                 str->resize(bits.num_blocks()); // resize the string to fit the bitset
                 to_block_range(bits, str->rbegin());
             }
             
-            void string2bitset(Bitset* bits, const std::string& str)
+            static void string2bitset(Bitset* bits, const std::string& str)
             {
                 bits->resize(str.size() * BITS_IN_BYTE);
                 from_block_range(str.rbegin(), str.rend(), *bits);
             }
-
-            void decode_recursive(Bitset* bits,
-                                  google::protobuf::Message* msg,
-                                  bool is_header);
-            
-            void validate_recursive(const google::protobuf::Descriptor* desc);
             
             // more efficient way to do ceil(total_bits / 8)
             // to get the number of bytes rounded up.
             enum { BYTE_MASK = 7 }; // 00000111
-            unsigned ceil_bits2bytes(unsigned bits)
+            static unsigned ceil_bits2bytes(unsigned bits)
             {
                 return (bits& BYTE_MASK) ?
                     floor_bits2bytes(bits) + 1 :
                     floor_bits2bytes(bits);
             }
-            unsigned floor_bits2bytes(unsigned bits)
+            static unsigned floor_bits2bytes(unsigned bits)
             { return bits >> 3; }
             
             
@@ -185,15 +190,17 @@ namespace goby
           private:
             static const char* DEFAULT_CODEC_NAME;
             static std::ostream* log_;
-            protobuf::DCCLConfig cfg_;
+            static protobuf::DCCLConfig cfg_;
             // SHA256 hash of the crypto passphrase
-            std::string crypto_key_;
+            static std::string crypto_key_;
 
             // maps protocol buffers CppTypes to a map of field codec names & codecs themselves
             static FieldCodecManager codec_manager_;
             static CppTypeHelper cpptype_helper_;
             
-            google::protobuf::DynamicMessageFactory message_factory_;
+            static google::protobuf::DynamicMessageFactory message_factory_;
+
+            static bool default_codecs_set_;
         };
     }
 }
@@ -201,11 +208,18 @@ namespace goby
 template<typename T, template <typename T> class Codec>
     void goby::acomms::DCCLCodec::FieldCodecManager::add(const char* name)
 {
-    
     const google::protobuf::FieldDescriptor::CppType cpp_type = ToProtoCppType<T>::as_enum();
     
     if(!codecs_[cpp_type].count(name))
+    {
         codecs_[cpp_type][name] = boost::shared_ptr<DCCLFieldCodec>(new Codec<T>());
+        if(log_)
+            *log_ << "Adding codec " << name
+                  << " for CppType "
+                  << cpptype_helper_.find(cpp_type)->as_str()
+                  << std::endl;
+    }
+    
     else
     {
         if(log_)

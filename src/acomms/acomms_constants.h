@@ -29,6 +29,12 @@ namespace goby
 
     namespace acomms
     {
+
+        typedef google::protobuf::uint32 uint32;
+        typedef google::protobuf::int32 int32;
+        typedef google::protobuf::uint64 uint64;
+        typedef google::protobuf::int64 int64;
+
         const unsigned BITS_IN_BYTE = 8;
         // one hex char is a nibble (4 bits), two nibbles per byte
         const unsigned NIBS_IN_BYTE = 2;

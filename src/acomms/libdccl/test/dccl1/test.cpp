@@ -31,10 +31,14 @@ int main()
     BasicTestMsg msg_in1, msg_out1;    
 
     msg_in1.set_double_default(14);
+    msg_in1.mutable_msg_default()->set_val(16);
+    msg_in1.mutable_msg_default()->set_sval("foo");
 //    msg_in1.mutable_head()->set_time(goby::util::as<std::string>(goby::util::goby_time));
+
+    goby::acomms::DCCLCodec::info(msg_in1, &std::cout);
     
     std::cout << "Message 1 in:\n" << msg_in1 << std::endl;
-
+    
     assert(goby::acomms::DCCLCodec::validate(msg_in1));
 
     std::cout << "Try encode..." << std::endl;
@@ -46,6 +50,7 @@ int main()
     goby::acomms::DCCLCodec::decode(bytes, &msg_out1);
     std::cout << "... got Message 1 out:\n" << msg_out1 << std::endl;
 
+    assert(msg_in1.SerializeAsString() == msg_out1.SerializeAsString());
     
     std::cout << "all tests passed" << std::endl;
 

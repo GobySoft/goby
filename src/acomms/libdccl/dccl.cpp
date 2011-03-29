@@ -56,7 +56,14 @@ bool goby::acomms::DCCLCodec::default_codecs_set_ = false;
 void goby::acomms::DCCLCodec::set_default_codecs()
 {    
     codec_manager_.add<double, DCCLDefaultFieldCodec>(DEFAULT_CODEC_NAME);
-    codec_manager_.add<google::protobuf::int32, DCCLDefaultFieldCodec>(DEFAULT_CODEC_NAME);
+    codec_manager_.add<float, DCCLDefaultFieldCodec>(DEFAULT_CODEC_NAME);
+    codec_manager_.add<bool, DCCLDefaultFieldCodec>(DEFAULT_CODEC_NAME);
+    codec_manager_.add<int32, DCCLDefaultFieldCodec>(DEFAULT_CODEC_NAME);
+    codec_manager_.add<int64, DCCLDefaultFieldCodec>(DEFAULT_CODEC_NAME);
+    codec_manager_.add<uint32, DCCLDefaultFieldCodec>(DEFAULT_CODEC_NAME);
+    codec_manager_.add<uint64, DCCLDefaultFieldCodec>(DEFAULT_CODEC_NAME);
+    codec_manager_.add<std::string, DCCLDefaultFieldCodec>(DEFAULT_CODEC_NAME);
+    codec_manager_.add<google::protobuf::EnumDescriptor, DCCLDefaultFieldCodec>(DEFAULT_CODEC_NAME);
     codec_manager_.add<google::protobuf::Message, DCCLDefaultFieldCodec>(DEFAULT_CODEC_NAME);
 
     //    add_field_codec<FieldDescriptor::CPPTYPE_STRING, DCCLTimeCodec>("_time");
@@ -135,9 +142,9 @@ bool goby::acomms::DCCLCodec::decode(const std::string& bytes, google::protobuf:
                             desc->options().GetExtension(dccl::message_codec));
     
     DCCLFieldCodec::set_in_header(true);
-    unsigned head_size_bits = codec->size(msg) + HEAD_CCL_ID_SIZE + HEAD_DCCL_ID_SIZE;
+    unsigned head_size_bits = codec->max_size(msg, 0) + HEAD_CCL_ID_SIZE + HEAD_DCCL_ID_SIZE;
     DCCLFieldCodec::set_in_header(false);  
-    unsigned body_size_bits = codec->size(msg);
+    unsigned body_size_bits = codec->max_size(msg, 0);
 
     unsigned head_size_bytes = ceil_bits2bytes(head_size_bits);
     unsigned body_size_bytes = ceil_bits2bytes(body_size_bits);
@@ -148,7 +155,7 @@ bool goby::acomms::DCCLCodec::decode(const std::string& bytes, google::protobuf:
     std::cout << "body is " << body_size_bytes << " bytes" << std::endl;
 
     std::string head_bytes = bytes.substr(0, head_size_bytes);
-    std::string body_bytes = bytes.substr(head_size_bytes, body_size_bytes);
+    std::string body_bytes = bytes.substr(head_size_bytes);
 
     std::cout << "head is " << hex_encode(head_bytes) << std::endl;
     std::cout << "body is " << hex_encode(body_bytes) << std::endl;
@@ -161,7 +168,6 @@ bool goby::acomms::DCCLCodec::decode(const std::string& bytes, google::protobuf:
     string2bitset(&body_bits, body_bytes);
 
     head_bits.resize(head_size_bits - HEAD_CCL_ID_SIZE + HEAD_DCCL_ID_SIZE);
-    body_bits.resize(body_size_bits);
     
     
     std::cout << "head: " << head_bits << std::endl;
@@ -173,9 +179,9 @@ bool goby::acomms::DCCLCodec::decode(const std::string& bytes, google::protobuf:
         {
             boost::any a(msg);
             DCCLFieldCodec::set_in_header(true);
-            codec->decode(&body_bits, &a);
+            codec->decode(&body_bits, &a, 0);
             DCCLFieldCodec::set_in_header(false);
-            codec->decode(&body_bits, &a);
+            codec->decode(&body_bits, &a, 0);
         }
         else
         {
@@ -209,7 +215,15 @@ bool goby::acomms::DCCLCodec::validate(const google::protobuf::Message& msg)
         boost::shared_ptr<DCCLFieldCodec> codec =
             codec_manager_.find(FieldDescriptor::CPPTYPE_MESSAGE,
                                 desc->options().GetExtension(dccl::message_codec));
-        codec->validate(&msg);
+
+        const unsigned bit_size = codec->max_size(&msg, 0);
+        const unsigned byte_size = ceil_bits2bytes(bit_size);
+
+        if(byte_size > desc->options().GetExtension(dccl::max_bytes))
+            throw(DCCLException("Actual maximum size of message exceeds allowed maximum (dccl.max_bytes). Tighten bounds, remove fields, improve codecs, or increase the allowed dccl.max_bytes"));
+        
+        codec->validate(&msg, 0);
+        
     }
     catch(DCCLException& e)
     {
@@ -218,6 +232,39 @@ bool goby::acomms::DCCLCodec::validate(const google::protobuf::Message& msg)
     }
 
     return true;
+}
+
+void goby::acomms::DCCLCodec::info(const google::protobuf::Message& msg, std::ostream* os)
+{
+    if(!default_codecs_set_)
+        set_default_codecs();
+    
+    const Descriptor* desc = msg.GetDescriptor();   
+    try
+    {   
+        boost::shared_ptr<DCCLFieldCodec> codec =
+            codec_manager_.find(FieldDescriptor::CPPTYPE_MESSAGE,
+                                desc->options().GetExtension(dccl::message_codec));
+
+        const unsigned bit_size = codec->max_size(&msg, 0);
+        const unsigned byte_size = ceil_bits2bytes(bit_size);
+
+        const unsigned allowed_byte_size = desc->options().GetExtension(dccl::max_bytes);
+        const unsigned allowed_bit_size = allowed_byte_size * BITS_IN_BYTE;
+        
+        *os << "== Begin " << desc->full_name() << " ==\n"
+            << "Actual maximum size of message: " << byte_size << " bytes / " << bit_size << " bits\n"
+            << "Allowed maximum size of message: " << allowed_byte_size << " bytes / " << allowed_bit_size << " bits\n";
+        
+        codec->info(&msg, 0, os);
+        
+        *os << "== End " << desc->full_name() << " ==" << std::endl;
+    }
+    catch(DCCLException& e)
+    {
+        if(log_) *log_ << warn << "Message " << desc->full_name() << " cannot provide information due to invalid configuration. Reason: " << e.what() << std::endl;
+    }
+        
 }
 
 

@@ -306,6 +306,13 @@ namespace goby
             static google::protobuf::FieldDescriptor::CppType as_enum()
             { return google::protobuf::FieldDescriptor::CPPTYPE_DOUBLE; }
         };
+       template<>
+            class ToProtoCppType<float>
+        {
+          public:
+            static google::protobuf::FieldDescriptor::CppType as_enum()
+            { return google::protobuf::FieldDescriptor::CPPTYPE_FLOAT; }
+        };
         template<>
             class ToProtoCppType<google::protobuf::int32>
         {
@@ -313,13 +320,57 @@ namespace goby
             static google::protobuf::FieldDescriptor::CppType as_enum()
             { return google::protobuf::FieldDescriptor::CPPTYPE_INT32; }
         };
-        template<>
-            class ToProtoCppType<google::protobuf::Message>
+       template<>
+            class ToProtoCppType<google::protobuf::uint32>
         {
           public:
             static google::protobuf::FieldDescriptor::CppType as_enum()
-            { return google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE; }
+            { return google::protobuf::FieldDescriptor::CPPTYPE_UINT32; }
         };
+        template<>
+            class ToProtoCppType<google::protobuf::int64>
+        {
+          public:
+            static google::protobuf::FieldDescriptor::CppType as_enum()
+            { return google::protobuf::FieldDescriptor::CPPTYPE_INT64; }
+        };
+       template<>
+            class ToProtoCppType<google::protobuf::uint64>
+        {
+          public:
+            static google::protobuf::FieldDescriptor::CppType as_enum()
+            { return google::protobuf::FieldDescriptor::CPPTYPE_UINT64; }
+        };
+       template<>
+           class ToProtoCppType<std::string>
+        {
+          public:
+            static google::protobuf::FieldDescriptor::CppType as_enum()
+            { return google::protobuf::FieldDescriptor::CPPTYPE_STRING; }
+        };
+       template<>
+           class ToProtoCppType<google::protobuf::EnumDescriptor>
+       {
+         public:
+           static google::protobuf::FieldDescriptor::CppType as_enum()
+           { return google::protobuf::FieldDescriptor::CPPTYPE_ENUM; }
+       };
+       
+       template<>
+           class ToProtoCppType<bool>
+       {
+         public:
+           static google::protobuf::FieldDescriptor::CppType as_enum()
+           { return google::protobuf::FieldDescriptor::CPPTYPE_BOOL; }
+       };
+       
+       template<>
+           class ToProtoCppType<google::protobuf::Message>
+       {
+         public:
+           static google::protobuf::FieldDescriptor::CppType as_enum()
+           { return google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE; }
+       };
     }
 }
 

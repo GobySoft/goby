@@ -32,7 +32,35 @@ namespace goby
 
     namespace acomms
     {
-        typedef boost::dynamic_bitset<unsigned char> Bitset;        
+        typedef boost::dynamic_bitset<unsigned char> Bitset;
+
+            
+        inline void bitset2string(const Bitset& bits, std::string* str)
+        {
+            str->resize(bits.num_blocks()); // resize the string to fit the bitset
+            to_block_range(bits, str->rbegin());
+        }
+            
+        inline void string2bitset(Bitset* bits, const std::string& str)
+        {
+            bits->resize(str.size() * BITS_IN_BYTE);
+            from_block_range(str.rbegin(), str.rend(), *bits);
+        }
+
+                    
+        // more efficient way to do ceil(total_bits / 8)
+        // to get the number of bytes rounded up.
+        enum { BYTE_MASK = 7 }; // 00000111
+        inline unsigned floor_bits2bytes(unsigned bits)
+        { return bits >> 3; }
+        inline unsigned ceil_bits2bytes(unsigned bits)
+        {
+            return (bits& BYTE_MASK) ?
+                floor_bits2bytes(bits) + 1 :
+                floor_bits2bytes(bits);
+        }
+            
+        
     }
 }
 #endif

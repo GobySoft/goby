@@ -109,6 +109,9 @@ namespace goby
             
             /// \brief Messages must be validated before they can be encoded/decoded
             static bool validate(const google::protobuf::Message& msg);
+
+            static void info(const google::protobuf::Message& msg, std::ostream* os);
+
             
             /// Registers the group names used for the FlexOstream logger
             static void add_flex_groups(util::FlexOstream* tout);
@@ -136,6 +139,9 @@ namespace goby
                 if(flex_log)
                     add_flex_groups(flex_log);
             }  
+
+            static std::ostream* log_;
+
             /// \example acomms/chat/chat.cpp
             
           private:
@@ -160,36 +166,13 @@ namespace goby
             static void encrypt(std::string* s, const std::string& nonce);
             static void decrypt(std::string* s, const std::string& nonce);
             static void process_cfg();
+
+
             
-            static void bitset2string(const Bitset& bits, std::string* str)
-            {
-                str->resize(bits.num_blocks()); // resize the string to fit the bitset
-                to_block_range(bits, str->rbegin());
-            }
-            
-            static void string2bitset(Bitset* bits, const std::string& str)
-            {
-                bits->resize(str.size() * BITS_IN_BYTE);
-                from_block_range(str.rbegin(), str.rend(), *bits);
-            }
-            
-            // more efficient way to do ceil(total_bits / 8)
-            // to get the number of bytes rounded up.
-            enum { BYTE_MASK = 7 }; // 00000111
-            static unsigned ceil_bits2bytes(unsigned bits)
-            {
-                return (bits& BYTE_MASK) ?
-                    floor_bits2bytes(bits) + 1 :
-                    floor_bits2bytes(bits);
-            }
-            static unsigned floor_bits2bytes(unsigned bits)
-            { return bits >> 3; }
-            
-            
-                   
+
           private:
             static const char* DEFAULT_CODEC_NAME;
-            static std::ostream* log_;
+
             static protobuf::DCCLConfig cfg_;
             // SHA256 hash of the crypto passphrase
             static std::string crypto_key_;

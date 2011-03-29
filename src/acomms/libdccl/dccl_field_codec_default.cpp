@@ -19,18 +19,156 @@
 
 #include "dccl_field_codec_default.h"
 
+#include <sstream>
 
+//
+// DCCLDefaultBoolCodec
+//
+
+goby::acomms::Bitset goby::acomms::DCCLDefaultBoolCodec::_encode(const boost::any& field_value)
+{
+    if(field_value.empty())
+        return Bitset(_max_size());
+    
+    try
+    {
+        bool b = boost::any_cast<bool>(field_value);
+        return Bitset(_max_size(), (b ? 1 : 0) + 1);
+    }
+    catch(boost::bad_any_cast& e)
+    {
+        throw(DCCLException("Bad type given to encode"));
+    }
+}
+
+boost::any goby::acomms::DCCLDefaultBoolCodec::_decode(Bitset* bits)
+{
+    unsigned long t = bits->to_ulong();
+    if(t)
+    {
+        --t;
+        return static_cast<bool>(t);
+    }
+    else
+    {
+        return boost::any();
+    }
+}
+
+
+unsigned goby::acomms::DCCLDefaultBoolCodec::_max_size()
+{    
+    // true and false
+    const unsigned BOOL_VALUES = 2;
+    // if field unspecified
+    const unsigned NULL_VALUE = 1;
+    
+    return std::ceil(std::log(BOOL_VALUES + NULL_VALUE)/std::log(2));
+}
+
+void goby::acomms::DCCLDefaultBoolCodec::_validate()
+{ }
+
+//
+// DCCLDefaultStringCodec
+//
+
+goby::acomms::Bitset goby::acomms::DCCLDefaultStringCodec::_encode(const boost::any& field_value)
+{
+    try
+    {
+        std::string s = boost::any_cast<std::string>(field_value);
+
+        Bitset bits;
+        string2bitset(&bits, s);
+
+        Bitset length_bits(_min_size(), s.length());
+
+        // adds to MSBs
+        for(int i = 0, n = length_bits.size(); i < n; ++i)
+            bits.push_back(length_bits[i]);
+
+        return bits;
+    }
+    catch(boost::bad_any_cast& e)
+    {
+        throw(DCCLException("Bad type given to encode"));
+    }
+}
+
+boost::any goby::acomms::DCCLDefaultStringCodec::_decode(Bitset* bits)
+{
+    *DCCLCodec::log_ << debug << "Length of string is = " << bits->to_ulong() << std::endl;
+    
+    
+}
+
+unsigned goby::acomms::DCCLDefaultStringCodec::_max_size()
+{
+    // string length + actual string
+    return _min_size() + get(dccl::max_length) * BITS_IN_BYTE;
+}
+
+unsigned goby::acomms::DCCLDefaultStringCodec::_min_size()
+{
+    return std::ceil(std::log(MAX_STRING_LENGTH+1)/std::log(2));
+}
+
+
+void goby::acomms::DCCLDefaultStringCodec::_validate()
+{
+    require(dccl::max_length, "dccl.max_length");
+    require(get(dccl::max_length) <= MAX_STRING_LENGTH,
+            "dccl.max_length must be <= " + goby::util::as<std::string>(static_cast<int>(MAX_STRING_LENGTH)));
+}
+
+//
+// DCCLDefaultEnumCodec
+//
+
+goby::acomms::Bitset goby::acomms::DCCLDefaultEnumCodec::_encode(const boost::any& field_value)
+{
+    
+}
+
+boost::any goby::acomms::DCCLDefaultEnumCodec::_decode(Bitset* bits)
+{
+}
+
+
+unsigned goby::acomms::DCCLDefaultEnumCodec::_max_size()
+{    
+}
+
+void goby::acomms::DCCLDefaultEnumCodec::_validate()
+{
+
+}
+
+
+
+//
+// DCCLDefaultMessageCodec
+//
 
 goby::acomms::Bitset goby::acomms::DCCLDefaultMessageCodec::_encode(const boost::any& field_value)
 {
     goby::acomms::Bitset bits;
         
     const google::protobuf::Message* msg = DCCLFieldCodec::this_message();
+
+   if(DCCLCodec::log_)
+       *DCCLCodec::log_ << debug << "Looking to encode Message " << msg->GetDescriptor()->full_name() << std::endl;
+
     
     const google::protobuf::Descriptor* desc = msg->GetDescriptor();
     const google::protobuf::Reflection* refl = msg->GetReflection();       
     for(int i = 0, n = desc->field_count(); i < n; ++i)
     {
+        if(DCCLCodec::log_)
+            *DCCLCodec::log_ << debug << "Looking to encode " << desc->field(i)->DebugString();
+
+        
         const google::protobuf::FieldDescriptor* field_desc = desc->field(i);
         std::string field_codec = field_desc->options().GetExtension(dccl::codec);
 
@@ -71,14 +209,20 @@ boost::any goby::acomms::DCCLDefaultMessageCodec::_decode(Bitset* bits)
 {
     google::protobuf::Message* msg = DCCLFieldCodec::mutable_this_message();
     
-    const google::protobuf::Descriptor* desc = msg->GetDescriptor();
-    const google::protobuf::Reflection* refl = msg->GetReflection();
-    
-    for(int i = desc->field_count()-1, n = 0; i >= n; --i)
+    if(DCCLCodec::log_)
+        *DCCLCodec::log_ << debug << "Looking to decode Message " << msg->GetDescriptor()->full_name() << std::endl;
+
+
+    const google::protobuf::Descriptor* desc = msg->GetDescriptor();    
+    for(int i = 0, n = desc->field_count(); i < n; ++i)
     {
+        if(DCCLCodec::log_)
+            *DCCLCodec::log_ << debug << "Looking to decode " << desc->field(i)->DebugString();
+
+        
         const google::protobuf::FieldDescriptor* field_desc = desc->field(i);
         std::string field_codec = field_desc->options().GetExtension(dccl::codec);
-            
+        
         if(field_desc->options().GetExtension(dccl::omit)
            || (in_header() && !field_desc->options().GetExtension(dccl::in_head))
            || (!in_header() && field_desc->options().GetExtension(dccl::in_head)))
@@ -112,14 +256,22 @@ boost::any goby::acomms::DCCLDefaultMessageCodec::_decode(Bitset* bits)
 }
 
 
-unsigned goby::acomms::DCCLDefaultMessageCodec::_size()
+unsigned goby::acomms::DCCLDefaultMessageCodec::_max_size()
 {
     unsigned sum = 0;
+
+    if(DCCLCodec::log_)
+        *DCCLCodec::log_ << debug << "Looking for max size of " << this_message()->GetDescriptor()->full_name() << std::endl;
     
     const google::protobuf::Descriptor* desc =
         DCCLFieldCodec::this_message()->GetDescriptor();
     for(int i = 0, n = desc->field_count(); i < n; ++i)
     {
+        
+        if(DCCLCodec::log_)
+            *DCCLCodec::log_ << debug << "Looking to get max size of field " << desc->field(i)->DebugString();
+
+        
         const google::protobuf::FieldDescriptor* field_desc = desc->field(i);
         std::string field_codec = field_desc->options().GetExtension(dccl::codec);
 
@@ -132,7 +284,7 @@ unsigned goby::acomms::DCCLDefaultMessageCodec::_size()
         else
         {
             sum += DCCLCodec::codec_manager().find(field_desc->cpp_type(),field_codec)->
-                size(DCCLFieldCodec::this_message(), field_desc);
+                max_size(DCCLFieldCodec::this_message(), field_desc);
         }
     }
     
@@ -161,10 +313,47 @@ void goby::acomms::DCCLDefaultMessageCodec::_validate()
     }    
 }
 
+std::string goby::acomms::DCCLDefaultMessageCodec::_info()
+{
+    std::stringstream ss;
+    
+    const google::protobuf::Descriptor* desc =
+        DCCLFieldCodec::this_message()->GetDescriptor();
+
+    
+    ss << desc->full_name() << " {\n";
+    
+    for(int i = 0, n = desc->field_count(); i < n; ++i)
+    {
+        const google::protobuf::FieldDescriptor* field_desc = desc->field(i);
+        std::string field_codec = field_desc->options().GetExtension(dccl::codec);
+
+        if(field_desc->options().GetExtension(dccl::omit)
+           || (in_header() && !field_desc->options().GetExtension(dccl::in_head))
+           || (!in_header() && field_desc->options().GetExtension(dccl::in_head)))
+        {
+            continue;
+        }
+        else
+        {
+            DCCLCodec::codec_manager().find(field_desc->cpp_type(),field_codec)->
+                info(DCCLFieldCodec::this_message(), field_desc, &ss);
+        }
+    }
+    ss << "}\n";
+    return ss.str();
+}
+
+
+
+//
+// DCCLTimeCodec
+//
+
 goby::acomms::Bitset goby::acomms::DCCLTimeCodec::_encode(const boost::any& field_value)
 {
     if(field_value.empty())
-        return Bitset(_size());
+        return Bitset(_max_size());
                 
     try
     {
@@ -174,7 +363,7 @@ goby::acomms::Bitset goby::acomms::DCCLTimeCodec::_encode(const boost::any& fiel
                 boost::any_cast<std::string>(field_value)
                 ).time_of_day();
                 
-        return Bitset(_size(),
+        return Bitset(_max_size(),
                       static_cast<unsigned long>(
                           util::unbiased_round(
                               util::time_duration2double(time_of_day), 0)));
@@ -184,7 +373,8 @@ goby::acomms::Bitset goby::acomms::DCCLTimeCodec::_encode(const boost::any& fiel
         throw(DCCLException("Bad type given to encode"));
     }
 }
-            
+
+
 boost::any goby::acomms::DCCLTimeCodec::_decode(Bitset* bits)
 {
     // add the date back in (assumes message sent the same day received)
@@ -198,13 +388,7 @@ boost::any goby::acomms::DCCLTimeCodec::_decode(Bitset* bits)
                 
     // this logic will break if there is a separation between message sending and
     // message receipt of greater than 1/2 day (twelve hours)
-            
-    // if message is from part of the day removed from us by 12 hours, we assume it
-    // was sent yesterday
-    if(abs(now.time_of_day().total_seconds() - v) > hours(12).total_seconds())
-        day_sent = now.date() - days(1);
-    else // otherwise figure it was sent today
-        day_sent = now.date();
+
                 
     return util::as<std::string>(ptime(day_sent,seconds(v)));
 }

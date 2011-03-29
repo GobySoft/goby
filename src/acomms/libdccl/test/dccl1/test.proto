@@ -20,6 +20,7 @@ message EmbeddedMsg2
 {
   optional double val = 1 [(dccl.min)=0,
                            (dccl.max)=126];
+  optional string sval = 2 [(dccl.max_length)=10];
 }
 
 message BasicTestMsg
@@ -30,7 +31,7 @@ message BasicTestMsg
   optional double double_default = 1 [(dccl.min)=0,
                                       (dccl.max)=126];
   
-  optional Header head = 2;
+  optional EmbeddedMsg2 msg_default = 2;
 }
 
 

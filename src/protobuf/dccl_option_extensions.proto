@@ -15,8 +15,8 @@ extend .google.protobuf.FieldOptions
   // double, float
   optional int32 precision = 50010 [default = 0];
   // int, double, float
-  optional double max = 50012;
-  optional double min = 50013;
+  optional double min = 50012;
+  optional double max = 50013;
   optional double max_delta = 50014;
 
   // static
@@ -31,7 +31,7 @@ extend .google.protobuf.FieldOptions
 
 extend .google.protobuf.MessageOptions {
   required int32 id = 50040;
-  required int32 max_bytes = 50041;
+  required uint32 max_bytes = 50041;
 
   optional string message_codec = 50042 [default = "_default"];
 }

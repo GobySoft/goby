@@ -139,6 +139,8 @@ namespace goby
             virtual Bitset _encode(const boost::any& field_value);
             virtual boost::any _decode(Bitset* bits);     
             virtual unsigned _max_size();
+            virtual unsigned _min_size();
+            virtual bool _variable_size() { return true; }
             virtual void _validate();
             virtual std::string _info();            
         };

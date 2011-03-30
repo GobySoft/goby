@@ -79,16 +79,16 @@ goby::acomms::Bitset goby::acomms::DCCLDefaultStringCodec::_encode(const boost::
     {
         std::string s = boost::any_cast<std::string>(field_value);
 
-        Bitset bits;
-        string2bitset(&bits, s);
+        Bitset value_bits;
+        string2bitset(&value_bits, s);
 
         Bitset length_bits(_min_size(), s.length());
 
         // adds to MSBs
-        for(int i = 0, n = length_bits.size(); i < n; ++i)
-            bits.push_back(length_bits[i]);
+        for(int i = 0, n = value_bits.size(); i < n; ++i)
+            length_bits.push_back(value_bits[i]);
 
-        return bits;
+        return length_bits;
     }
     catch(boost::bad_any_cast& e)
     {
@@ -98,9 +98,27 @@ goby::acomms::Bitset goby::acomms::DCCLDefaultStringCodec::_encode(const boost::
 
 boost::any goby::acomms::DCCLDefaultStringCodec::_decode(Bitset* bits)
 {
-    *DCCLCodec::log_ << debug << "Length of string is = " << bits->to_ulong() << std::endl;
+    unsigned value_length = bits->to_ulong();
+    unsigned header_length = _min_size();
     
+    if(DCCLCodec::log_)
+        *DCCLCodec::log_ << debug << "Length of string is = " << value_length << std::endl;
+
+    if(DCCLCodec::log_)
+        *DCCLCodec::log_ << debug << "bits before get_more_bits " << *bits << std::endl;    
+
+    // grabs more bits to add to the MSBs of `bits`
+    get_more_bits(value_length*BITS_IN_BYTE);
+
+    if(DCCLCodec::log_)
+        *DCCLCodec::log_ << debug << "bits after get_more_bits " << *bits << std::endl;    
+
+    *bits >>= header_length;
+    bits->resize(bits->size() - header_length);
     
+    std::string value;
+    bitset2string(*bits, &value);
+    return value;
 }
 
 unsigned goby::acomms::DCCLDefaultStringCodec::_max_size()
@@ -290,6 +308,42 @@ unsigned goby::acomms::DCCLDefaultMessageCodec::_max_size()
     
     return sum;    
 }
+
+unsigned goby::acomms::DCCLDefaultMessageCodec::_min_size()
+{
+    unsigned sum = 0;
+
+    if(DCCLCodec::log_)
+        *DCCLCodec::log_ << debug << "Looking for min size of " << this_message()->GetDescriptor()->full_name() << std::endl;
+    
+    const google::protobuf::Descriptor* desc =
+        DCCLFieldCodec::this_message()->GetDescriptor();
+    for(int i = 0, n = desc->field_count(); i < n; ++i)
+    {
+        
+        if(DCCLCodec::log_)
+            *DCCLCodec::log_ << debug << "Looking to get min size of field " << desc->field(i)->DebugString();
+
+        
+        const google::protobuf::FieldDescriptor* field_desc = desc->field(i);
+        std::string field_codec = field_desc->options().GetExtension(dccl::codec);
+
+        if(field_desc->options().GetExtension(dccl::omit)
+           || (in_header() && !field_desc->options().GetExtension(dccl::in_head))
+           || (!in_header() && field_desc->options().GetExtension(dccl::in_head)))
+        {
+            continue;
+        }
+        else
+        {
+            sum += DCCLCodec::codec_manager().find(field_desc->cpp_type(),field_codec)->
+                min_size(DCCLFieldCodec::this_message(), field_desc);
+        }
+    }
+    
+    return sum;    
+}
+
 void goby::acomms::DCCLDefaultMessageCodec::_validate()
 {
     const google::protobuf::Descriptor* desc =

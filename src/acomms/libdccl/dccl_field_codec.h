@@ -25,6 +25,7 @@
 
 #include <boost/any.hpp>
 #include <boost/dynamic_bitset.hpp>
+#include <boost/signals.hpp>
 #include <google/protobuf/message.h>
 #include <google/protobuf/descriptor.pb.h>
 #include <google/protobuf/descriptor.h>
@@ -65,6 +66,11 @@ namespace goby
             unsigned max_size(const google::protobuf::Message* msg,
                           const google::protobuf::FieldDescriptor* field);
 
+            // min_size in bits
+            unsigned min_size(const google::protobuf::Message* msg,
+                              const google::protobuf::FieldDescriptor* field);
+
+            
             // write information about this field
             void info(const google::protobuf::Message* msg,
                       const google::protobuf::FieldDescriptor* field,
@@ -160,13 +166,15 @@ namespace goby
                 _decode_repeated(Bitset* repeated_bits);
             
             virtual unsigned _max_size_repeated();
+            virtual unsigned _min_size_repeated();
 
             
             virtual bool _variable_size() { return false; }
 
             
-            
-            void _get_bits(Bitset* bits, unsigned size);
+
+            static boost::signal<void (unsigned size)> get_more_bits;
+            void _get_bits(Bitset* these_bits, Bitset* bits, unsigned size);
             
           private:
             void _prepend_bits(const Bitset& new_bits, Bitset* bits);
@@ -215,8 +223,7 @@ namespace goby
             
           private:
             static bool in_header_;
-            const google::protobuf::FieldDescriptor* field_;                
-            Bitset* bits_;
+            const google::protobuf::FieldDescriptor* field_;
         };
         
     }

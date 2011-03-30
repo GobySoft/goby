@@ -45,54 +45,64 @@ namespace goby
         {
           protected:
             virtual Bitset _encode(const boost::any& field_value)
-            {
-                if(field_value.empty())
-                    return Bitset(_max_size());
-                
-                try
-                {
-                    T t = boost::any_cast<T>(field_value);
-                    if(t < get(dccl::min) || t > get(dccl::max))
-                        return Bitset(_max_size());
-
-                    t = goby::util::unbiased_round(t, get(dccl::precision));
-
-                    if(DCCLCodec::log_)
-                        *DCCLCodec::log_ << debug << "using value " << t << std::endl;
-        
-                    
-                    t -= get(dccl::min);
-                    t *= std::pow(10.0, get(dccl::precision));
-                    return Bitset(_max_size(), static_cast<unsigned long>(t)+1);
-                }
-                catch(boost::bad_any_cast& e)
-                {
-                    throw(DCCLException("Bad type given to encode"));
-                }
-            }
+            { return _encode(field_value, get(dccl::max), get(dccl::min), get(dccl::precision)); }
             
             virtual boost::any _decode(Bitset* bits)
-            {
-                unsigned long t = bits->to_ulong();
-                if(!t) return boost::any();
-
-                --t;
-                return static_cast<T>(t / (std::pow(10.0, get(dccl::precision)))
-                                      + get(dccl::min));
-            }
+            { return _decode(bits, get(dccl::max), get(dccl::min), get(dccl::precision));}
             
             virtual unsigned _max_size()
-            {
-                // leave one value for unspecified (always encoded as 0)
-                const unsigned NULL_VALUE = 1;
-                return std::ceil(std::log((get(dccl::max)-get(dccl::min))*
-                                          std::pow(10.0, get(dccl::precision))+1 + NULL_VALUE)/std::log(2));
-            }
+            { return _max_size(get(dccl::max), get(dccl::min), get(dccl::precision)); }
 
             virtual void _validate()
             {
                 require(dccl::min, "dccl.min");
                 require(dccl::max, "dccl.max");
+            }
+
+            Bitset _encode(const boost::any& field_value, double max, double min, double precision = 0)
+            {
+                std::cerr << "starting encode of field with max " << max << ", min " << min << ", prec " << precision << std::endl;
+                
+                if(field_value.empty())
+                    return Bitset(_max_size(max, min, precision));
+                
+                try
+                {
+                    T t = boost::any_cast<T>(field_value);
+                    if(t < min || t > max)
+                        return Bitset(_max_size(max, min, precision));
+
+                    t = goby::util::unbiased_round(t, precision);
+
+                    if(DCCLCodec::log_)
+                        *DCCLCodec::log_ << debug << "using value " << t << std::endl;
+        
+                    
+                    t -= min;
+                    t *= std::pow(10.0, precision);
+                    return Bitset(_max_size(max, min, precision), static_cast<unsigned long>(t)+1);
+                }
+                catch(boost::bad_any_cast& e)
+                {
+                    throw(DCCLException("Bad type given to encode"));
+                }                
+            }
+
+            boost::any _decode(Bitset* bits, double max, double min, double precision = 0)
+            {
+                unsigned long t = bits->to_ulong();
+                if(!t) return boost::any();
+
+                --t;
+                return static_cast<T>(t / (std::pow(10.0, precision))
+                                      + min);
+            }
+
+            unsigned _max_size(double max, double min, double precision = 0)
+            {
+                // leave one value for unspecified (always encoded as 0)
+                const unsigned NULL_VALUE = 1;
+                return std::ceil(std::log((max-min)*std::pow(10.0, precision)+1 + NULL_VALUE)/std::log(2));
             }
             
         };
@@ -122,7 +132,7 @@ namespace goby
             
         };
 
-        class DCCLDefaultEnumCodec : public DCCLFieldCodec
+        class DCCLDefaultEnumCodec : public DCCLDefaultArithmeticFieldCodec<int32>
         {
           protected:
             
@@ -130,6 +140,12 @@ namespace goby
             virtual boost::any _decode(Bitset* bits);     
             virtual unsigned _max_size();
             virtual void _validate();
+
+          private:
+            double max(const google::protobuf::EnumDescriptor* e)
+            { return e->value_count()-1; }
+            double min(const google::protobuf::EnumDescriptor* e)
+            { return 0; }
         };
         
         class DCCLDefaultMessageCodec : public DCCLFieldCodec
@@ -201,17 +217,17 @@ namespace goby
         { };
         
         
-        class DCCLTimeCodec : public DCCLFieldCodec
-        {
-            Bitset _encode(const boost::any& field_value);
+        /* class DCCLTimeCodec : public DCCLFieldCodec */
+        /* { */
+        /*     Bitset _encode(const boost::any& field_value); */
 
-            boost::any _decode(Bitset* bits);
+        /*     boost::any _decode(Bitset* bits); */
             
-            unsigned _max_size()
-            {
-                return HEAD_TIME_SIZE;
-            }            
-        };
+        /*     unsigned _max_size() */
+        /*     { */
+        /*         return HEAD_TIME_SIZE; */
+        /*     }             */
+        /* }; */
 
         template<typename T>
             class DCCLStaticCodec : public DCCLFieldCodec

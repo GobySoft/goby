@@ -111,19 +111,24 @@ namespace goby
             
             const google::protobuf::FieldDescriptor* field()
             { return field_; }
-
+            
             template<typename Extension>
                 typename Extension::TypeTraits::ConstType get(const Extension& e)
-            { return field()->options().GetExtension(e); }
+            {
+                return field()->options().GetExtension(e);
+            }
+
             
             template<typename Extension>
                 bool has(const Extension& e)
-            { return field()->options().HasExtension(e); }
+            {
+                return field()->options().HasExtension(e);
+            }
             
             template<typename Extension>
                 void require(const Extension& e, const std::string& name)
             {
-                if(!field()->options().HasExtension(e))
+                if(!has(e))
                     throw(DCCLException("Field " + field()->name() + " missing option extension called `" + name + "`."));
             }            
             

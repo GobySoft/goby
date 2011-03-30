@@ -33,10 +33,7 @@ namespace goby
           public:
             virtual std::string as_str() { return "CPPTYPE_UNKNOWN"; }
 
-            virtual boost::any get_value_specific(
-                const google::protobuf::FieldDescriptor* field,
-                const google::protobuf::Message& msg)
-            { return boost::any(); }            
+   
 
             boost::any get_value(const google::protobuf::FieldDescriptor* field,
                                  const google::protobuf::Message& msg)
@@ -45,14 +42,16 @@ namespace goby
                 if(!refl->HasField(msg, field))
                     return boost::any();
                 else
-                    return get_value_specific(field, msg);
+                    return _get_value(field, msg);
             }
 
-            virtual boost::any get_repeated_value(
+            
+            boost::any get_repeated_value(
                 const google::protobuf::FieldDescriptor* field,
                 const google::protobuf::Message& msg,
                 int index)
-            { return boost::any(); }
+            { return _get_repeated_value(field, msg, index); }
+            
 
             void set_value(const google::protobuf::FieldDescriptor* field,
                            google::protobuf::Message* msg,
@@ -61,7 +60,7 @@ namespace goby
                 if(value.empty())
                     return;
                 else
-                    set_value_specific(field, msg, value);
+                    _set_value(field, msg, value);
             }
 
             void add_value(const google::protobuf::FieldDescriptor* field,
@@ -71,19 +70,29 @@ namespace goby
                 if(value.empty())
                     return;
                 else
-                    add_value_specific(field, msg, value);
+                    _add_value(field, msg, value);
             }
             
-            virtual void set_value_specific(const google::protobuf::FieldDescriptor* field,
+            virtual void _set_value(const google::protobuf::FieldDescriptor* field,
                                             google::protobuf::Message* msg,
                                             boost::any value)
             { return; }
 
-            virtual void add_value_specific(const google::protobuf::FieldDescriptor* field,
+            virtual void _add_value(const google::protobuf::FieldDescriptor* field,
                                             google::protobuf::Message* msg,
                                             boost::any value)
             { return; }
 
+            virtual boost::any _get_repeated_value(
+                const google::protobuf::FieldDescriptor* field,
+                const google::protobuf::Message& msg,
+                int index)
+            { return boost::any(); }
+
+            virtual boost::any _get_value(
+                const google::protobuf::FieldDescriptor* field,
+                const google::protobuf::Message& msg)
+            { return boost::any(); }
         };        
         
         template<google::protobuf::FieldDescriptor::CppType> class FromProtoCppType { };
@@ -91,194 +100,203 @@ namespace goby
             : public FromProtoCppTypeBase
         {
           public:
-            typedef double type;
+            typedef double const_type;
+            typedef const_type mutable_type;
             std::string as_str() { return "CPPTYPE_DOUBLE"; }
-            boost::any get_value_specific(
+            boost::any _get_value(
                 const google::protobuf::FieldDescriptor* field,
                 const google::protobuf::Message& msg)
             { return msg.GetReflection()->GetDouble(msg, field); }
-            boost::any get_repeated_value(
+            boost::any _get_repeated_value(
                 const google::protobuf::FieldDescriptor* field,
                 const google::protobuf::Message& msg,
                 int index)
             { return msg.GetReflection()->GetRepeatedDouble(msg, field, index); }
-            void set_value_specific(const google::protobuf::FieldDescriptor* field,
+            void _set_value(const google::protobuf::FieldDescriptor* field,
                                     google::protobuf::Message* msg,
                                     boost::any value)
-            { msg->GetReflection()->SetDouble(msg, field, boost::any_cast<type>(value)); }
-            void add_value_specific(const google::protobuf::FieldDescriptor* field,
+            { msg->GetReflection()->SetDouble(msg, field, boost::any_cast<const_type>(value)); }
+            void _add_value(const google::protobuf::FieldDescriptor* field,
                                     google::protobuf::Message* msg,
                                     boost::any value)
-            { msg->GetReflection()->AddDouble(msg, field, boost::any_cast<type>(value)); }
+            { msg->GetReflection()->AddDouble(msg, field, boost::any_cast<const_type>(value)); }
         };
 
         template<> class FromProtoCppType<google::protobuf::FieldDescriptor::CPPTYPE_FLOAT>
             : public FromProtoCppTypeBase
         {
           public:
-            typedef float type;
+            typedef float const_type;
+            typedef const_type mutable_type;
             std::string as_str() { return "CPPTYPE_FLOAT"; }
-            boost::any get_value_specific(
+            boost::any _get_value(
                 const google::protobuf::FieldDescriptor* field,
                 const google::protobuf::Message& msg)
             { return msg.GetReflection()->GetFloat(msg, field); }
-            boost::any get_repeated_value(
+            boost::any _get_repeated_value(
                 const google::protobuf::FieldDescriptor* field,
                 const google::protobuf::Message& msg,
                 int index)
             { return msg.GetReflection()->GetRepeatedFloat(msg, field, index); }
-            void set_value_specific(const google::protobuf::FieldDescriptor* field,
+            void _set_value(const google::protobuf::FieldDescriptor* field,
                                     google::protobuf::Message* msg,
                                     boost::any value)
-            { msg->GetReflection()->SetFloat(msg, field, boost::any_cast<type>(value)); }
-            void add_value_specific(const google::protobuf::FieldDescriptor* field,
+            { msg->GetReflection()->SetFloat(msg, field, boost::any_cast<const_type>(value)); }
+            void _add_value(const google::protobuf::FieldDescriptor* field,
                                     google::protobuf::Message* msg,
                                     boost::any value)
-            { msg->GetReflection()->AddFloat(msg, field, boost::any_cast<type>(value)); }
+            { msg->GetReflection()->AddFloat(msg, field, boost::any_cast<const_type>(value)); }
         };
         template<> class FromProtoCppType<google::protobuf::FieldDescriptor::CPPTYPE_INT32>
             : public FromProtoCppTypeBase
         {
           public:
-            typedef google::protobuf::int32 type;
+            typedef google::protobuf::int32 const_type;
+            typedef const_type mutable_type;
             std::string as_str() { return "CPPTYPE_INT32"; }
-            boost::any get_value_specific(
+            boost::any _get_value(
                 const google::protobuf::FieldDescriptor* field,
                 const google::protobuf::Message& msg)
             { return msg.GetReflection()->GetInt32(msg, field); }
-            boost::any get_repeated_value(
+            boost::any _get_repeated_value(
                 const google::protobuf::FieldDescriptor* field,
                 const google::protobuf::Message& msg,
                 int index)
             { return msg.GetReflection()->GetRepeatedInt32(msg, field, index); }
-            void set_value_specific(const google::protobuf::FieldDescriptor* field,
+            void _set_value(const google::protobuf::FieldDescriptor* field,
                                     google::protobuf::Message* msg,
                                     boost::any value)
-            { msg->GetReflection()->SetInt32(msg, field, boost::any_cast<type>(value)); }
-            void add_value_specific(const google::protobuf::FieldDescriptor* field,
+            { msg->GetReflection()->SetInt32(msg, field, boost::any_cast<const_type>(value)); }
+            void _add_value(const google::protobuf::FieldDescriptor* field,
                                     google::protobuf::Message* msg,
                                     boost::any value)
-            { msg->GetReflection()->AddInt32(msg, field, boost::any_cast<type>(value)); }
+            { msg->GetReflection()->AddInt32(msg, field, boost::any_cast<const_type>(value)); }
         };
         template<> class FromProtoCppType<google::protobuf::FieldDescriptor::CPPTYPE_INT64>
             : public FromProtoCppTypeBase
         {
           public:
-            typedef google::protobuf::int64 type;
+            typedef google::protobuf::int64 const_type;
+            typedef const_type mutable_type;
             std::string as_str() { return "CPPTYPE_INT64"; }
-            boost::any get_value_specific(
+            boost::any _get_value(
                 const google::protobuf::FieldDescriptor* field,
                 const google::protobuf::Message& msg)
             { return msg.GetReflection()->GetInt64(msg, field); }
-            boost::any get_repeated_value(
+            boost::any _get_repeated_value(
                 const google::protobuf::FieldDescriptor* field,
                 const google::protobuf::Message& msg,
                 int index)
             { return msg.GetReflection()->GetRepeatedInt64(msg, field, index); }
-            void set_value_specific(const google::protobuf::FieldDescriptor* field,
+            void _set_value(const google::protobuf::FieldDescriptor* field,
                                     google::protobuf::Message* msg,
                                     boost::any value)
-            { msg->GetReflection()->SetInt64(msg, field, boost::any_cast<type>(value)); }
-            void add_value_specific(const google::protobuf::FieldDescriptor* field,
+            { msg->GetReflection()->SetInt64(msg, field, boost::any_cast<const_type>(value)); }
+            void _add_value(const google::protobuf::FieldDescriptor* field,
                                     google::protobuf::Message* msg,
                                     boost::any value)
-            { msg->GetReflection()->AddInt64(msg, field, boost::any_cast<type>(value)); }
+            { msg->GetReflection()->AddInt64(msg, field, boost::any_cast<const_type>(value)); }
         };
         template<> class FromProtoCppType<google::protobuf::FieldDescriptor::CPPTYPE_UINT32>
             : public FromProtoCppTypeBase
         {
           public:
-            typedef google::protobuf::uint32 type;
+            typedef google::protobuf::uint32 const_type;
+            typedef const_type mutable_type;
             std::string as_str() { return "CPPTYPE_UINT32"; }
-            boost::any get_value_specific(
+            boost::any _get_value(
                 const google::protobuf::FieldDescriptor* field,
                 const google::protobuf::Message& msg)
             { return msg.GetReflection()->GetUInt32(msg, field); }
-            boost::any get_repeated_value(
+            boost::any _get_repeated_value(
                 const google::protobuf::FieldDescriptor* field,
                 const google::protobuf::Message& msg,
                 int index)
             { return msg.GetReflection()->GetRepeatedUInt32(msg, field, index); }
-            void set_value_specific(const google::protobuf::FieldDescriptor* field,
+            void _set_value(const google::protobuf::FieldDescriptor* field,
                                     google::protobuf::Message* msg,
                                     boost::any value)
-            { msg->GetReflection()->SetUInt32(msg, field, boost::any_cast<type>(value)); }
-            void add_value_specific(const google::protobuf::FieldDescriptor* field,
+            { msg->GetReflection()->SetUInt32(msg, field, boost::any_cast<const_type>(value)); }
+            void _add_value(const google::protobuf::FieldDescriptor* field,
                                     google::protobuf::Message* msg,
                                     boost::any value)
-            { msg->GetReflection()->AddUInt32(msg, field, boost::any_cast<type>(value)); }
+            { msg->GetReflection()->AddUInt32(msg, field, boost::any_cast<const_type>(value)); }
         };
         template<> class FromProtoCppType<google::protobuf::FieldDescriptor::CPPTYPE_UINT64>
             : public FromProtoCppTypeBase
         {
           public:
-            typedef google::protobuf::uint64 type;
+            typedef google::protobuf::uint64 const_type;
+            typedef const_type mutable_type;
+
             std::string as_str() { return "CPPTYPE_UINT64"; }
-            boost::any get_value_specific(
+            boost::any _get_value(
                 const google::protobuf::FieldDescriptor* field,
                 const google::protobuf::Message& msg)
             { return msg.GetReflection()->GetUInt64(msg, field); }
-            boost::any get_repeated_value(
+            boost::any _get_repeated_value(
                 const google::protobuf::FieldDescriptor* field,
                 const google::protobuf::Message& msg,
                 int index)
             { return msg.GetReflection()->GetRepeatedUInt64(msg, field, index); }
-            void set_value_specific(const google::protobuf::FieldDescriptor* field,
+            void _set_value(const google::protobuf::FieldDescriptor* field,
                                     google::protobuf::Message* msg,
                                     boost::any value)
-            { msg->GetReflection()->SetUInt64(msg, field, boost::any_cast<type>(value)); }
-            void add_value_specific(const google::protobuf::FieldDescriptor* field,
+            { msg->GetReflection()->SetUInt64(msg, field, boost::any_cast<const_type>(value)); }
+            void _add_value(const google::protobuf::FieldDescriptor* field,
                                     google::protobuf::Message* msg,
                                     boost::any value)
-            { msg->GetReflection()->AddUInt64(msg, field, boost::any_cast<type>(value)); }
+            { msg->GetReflection()->AddUInt64(msg, field, boost::any_cast<const_type>(value)); }
         };
         template<> class FromProtoCppType<google::protobuf::FieldDescriptor::CPPTYPE_BOOL>
             : public FromProtoCppTypeBase
         {
           public:
-            typedef bool type;
+            typedef bool const_type;
+            typedef const_type mutable_type;
             std::string as_str() { return "CPPTYPE_BOOL"; }
-            boost::any get_value_specific(
+            boost::any _get_value(
                 const google::protobuf::FieldDescriptor* field,
                 const google::protobuf::Message& msg)
             { return msg.GetReflection()->GetBool(msg, field); }
-            boost::any get_repeated_value(
+            boost::any _get_repeated_value(
                 const google::protobuf::FieldDescriptor* field,
                 const google::protobuf::Message& msg,
                 int index)
             { return msg.GetReflection()->GetRepeatedBool(msg, field, index); }
-            void set_value_specific(const google::protobuf::FieldDescriptor* field,
+            void _set_value(const google::protobuf::FieldDescriptor* field,
                                     google::protobuf::Message* msg,
                                     boost::any value)
-            { msg->GetReflection()->SetBool(msg, field, boost::any_cast<type>(value)); }
-            void add_value_specific(const google::protobuf::FieldDescriptor* field,
+            { msg->GetReflection()->SetBool(msg, field, boost::any_cast<const_type>(value)); }
+            void _add_value(const google::protobuf::FieldDescriptor* field,
                                     google::protobuf::Message* msg,
                                     boost::any value)
-            { msg->GetReflection()->AddBool(msg, field, boost::any_cast<type>(value)); }
+            { msg->GetReflection()->AddBool(msg, field, boost::any_cast<const_type>(value)); }
         };
         template<> class FromProtoCppType<google::protobuf::FieldDescriptor::CPPTYPE_STRING>
             : public FromProtoCppTypeBase
         {
           public:
-            typedef std::string type;
+            typedef std::string const_type;
+            typedef const_type mutable_type;
             std::string as_str() { return "CPPTYPE_STRING"; }
-            boost::any get_value_specific(
+            boost::any _get_value(
                 const google::protobuf::FieldDescriptor* field,
                 const google::protobuf::Message& msg)
             { return msg.GetReflection()->GetString(msg, field); }
-            boost::any get_repeated_value(
+            boost::any _get_repeated_value(
                 const google::protobuf::FieldDescriptor* field,
                 const google::protobuf::Message& msg,
                 int index)
             { return msg.GetReflection()->GetRepeatedString(msg, field, index); }
-            void set_value_specific(const google::protobuf::FieldDescriptor* field,
+            void _set_value(const google::protobuf::FieldDescriptor* field,
                                     google::protobuf::Message* msg,
                                     boost::any value)
-            { msg->GetReflection()->SetString(msg, field, boost::any_cast<type>(value)); }
-            void add_value_specific(const google::protobuf::FieldDescriptor* field,
+            { msg->GetReflection()->SetString(msg, field, boost::any_cast<const_type>(value)); }
+            void _add_value(const google::protobuf::FieldDescriptor* field,
                                     google::protobuf::Message* msg,
                                     boost::any value)
-            { msg->GetReflection()->AddString(msg, field, boost::any_cast<type>(value)); }
+            { msg->GetReflection()->AddString(msg, field, boost::any_cast<const_type>(value)); }
         };
         
 
@@ -286,13 +304,58 @@ namespace goby
             : public FromProtoCppTypeBase
         {
           public:
+            typedef const google::protobuf::Message* const_type;
+            typedef google::protobuf::Message* mutable_type;
             std::string as_str() { return "CPPTYPE_MESSAGE"; }
+            boost::any _get_value(
+                const google::protobuf::FieldDescriptor* field,
+                const google::protobuf::Message& msg)
+            { return &(msg.GetReflection()->GetMessage(msg, field)); }
+            boost::any _get_repeated_value(
+                const google::protobuf::FieldDescriptor* field,
+                const google::protobuf::Message& msg,
+                int index)
+            { return &(msg.GetReflection()->GetRepeatedMessage(msg, field, index)); }
+            void _set_value(const google::protobuf::FieldDescriptor* field,
+                            google::protobuf::Message* msg,
+                            boost::any value)
+            {
+               // msg->GetReflection()->MutableMessage(msg, field)->CopyFrom(*boost::any_cast<const_type>(value));
+            }
+            void _add_value(const google::protobuf::FieldDescriptor* field,
+                                    google::protobuf::Message* msg,
+                                    boost::any value)
+            {
+                // msg->GetReflection()->AddMessage(msg, field)->CopyFrom(*boost::any_cast<const_type>(value));
+            }
+            
         };
         template<> class FromProtoCppType<google::protobuf::FieldDescriptor::CPPTYPE_ENUM>
             : public FromProtoCppTypeBase
         {
           public:
+            typedef const google::protobuf::EnumValueDescriptor* const_type;
+            typedef google::protobuf::EnumValueDescriptor* mutable_type;
+            
             std::string as_str() { return "CPPTYPE_ENUM"; }
+            boost::any _get_value(
+                const google::protobuf::FieldDescriptor* field,
+                const google::protobuf::Message& msg)
+            { return msg.GetReflection()->GetEnum(msg, field); }
+            boost::any _get_repeated_value(
+                const google::protobuf::FieldDescriptor* field,
+                const google::protobuf::Message& msg,
+                int index)
+            { return msg.GetReflection()->GetRepeatedEnum(msg, field, index); }
+            void _set_value(const google::protobuf::FieldDescriptor* field,
+                            google::protobuf::Message* msg,
+                            boost::any value)
+            { msg->GetReflection()->SetEnum(msg, field, boost::any_cast<const_type>(value)); }
+            void _add_value(const google::protobuf::FieldDescriptor* field,
+                                    google::protobuf::Message* msg,
+                                    boost::any value)
+            { msg->GetReflection()->AddEnum(msg, field, boost::any_cast<const_type>(value)); }
+            
         };
         
         

@@ -17,6 +17,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
+#include <algorithm>
+
 #include <boost/foreach.hpp>
 #include <boost/assign.hpp>
 #include <crypto++/filters.h>
@@ -48,6 +50,8 @@ goby::acomms::DCCLCodec::CppTypeHelper goby::acomms::DCCLCodec::cpptype_helper_;
 goby::acomms::protobuf::DCCLConfig goby::acomms::DCCLCodec::cfg_;
 std::string goby::acomms::DCCLCodec::crypto_key_;
 bool goby::acomms::DCCLCodec::default_codecs_set_ = false;
+std::map<google::protobuf::int32, const google::protobuf::Descriptor*> goby::acomms::DCCLCodec::id2desc_;
+google::protobuf::DynamicMessageFactory goby::acomms::DCCLCodec::message_factory_;
 
 //
 // DCCLCodec
@@ -80,21 +84,27 @@ void goby::acomms::DCCLCodec::add_flex_groups(util::FlexOstream* tout)
 }
 
 
-bool goby::acomms::DCCLCodec::encode(std::string* bytes, const google::protobuf::Message& msg)
+std::string goby::acomms::DCCLCodec::encode(const google::protobuf::Message& msg)
 {
-    if(!default_codecs_set_)
-        set_default_codecs();
-    
-    //fixed header
-    Bitset ccl_id_bits(HEAD_CCL_ID_SIZE + HEAD_DCCL_ID_SIZE, DCCL_CCL_HEADER);
-    Bitset dccl_id_bits(HEAD_CCL_ID_SIZE + HEAD_DCCL_ID_SIZE, msg.GetDescriptor()->options().GetExtension(dccl::id));
-    ccl_id_bits <<= HEAD_DCCL_ID_SIZE;    
-    Bitset head_bits = ccl_id_bits | dccl_id_bits;
-    Bitset body_bits;
-    
     const Descriptor* desc = msg.GetDescriptor();
+
     try
     {
+        if(!id2desc_.count(desc->options().GetExtension(dccl::id)))
+            throw(DCCLException("Message id " +
+                                as<std::string>(desc->options().GetExtension(dccl::id))+
+                                " has not been validated. Call validate() before encoding this type."));
+    
+
+        //fixed header
+        Bitset ccl_id_bits(HEAD_CCL_ID_SIZE + HEAD_DCCL_ID_SIZE, DCCL_CCL_HEADER);
+        Bitset dccl_id_bits(HEAD_CCL_ID_SIZE + HEAD_DCCL_ID_SIZE,
+                            msg.GetDescriptor()->options().GetExtension(dccl::id));
+        ccl_id_bits <<= HEAD_DCCL_ID_SIZE;    
+        Bitset head_bits = ccl_id_bits | dccl_id_bits;
+        Bitset body_bits;
+    
+
         boost::shared_ptr<DCCLFieldCodec> codec =
             codec_manager_.find(FieldDescriptor::CPPTYPE_MESSAGE,
                                 desc->options().GetExtension(dccl::message_codec));
@@ -109,72 +119,109 @@ bool goby::acomms::DCCLCodec::encode(std::string* bytes, const google::protobuf:
         {
             throw(DCCLException("Failed to find dccl.message_codec `" + desc->options().GetExtension(dccl::message_codec) + "`"));
         }
+
+        // given header of not even byte size (e.g. 01011), make even byte size (e.g. 00001011)
+        // and shift bytes to MSB (e.g. 01011000).
+        unsigned head_byte_size = ceil_bits2bytes(head_bits.size());
+        unsigned head_bits_diff = head_byte_size * BITS_IN_BYTE - head_bits.size();
+        head_bits.resize(head_byte_size * BITS_IN_BYTE);
+        head_bits <<= head_bits_diff;        
+        
+        std::string head_bytes, body_bytes;
+        bitset2string(head_bits, &head_bytes);
+        bitset2string(body_bits, &body_bytes);
+    
+        if(!crypto_key_.empty())
+            encrypt(&body_bytes, head_bytes);
+
+        // reverse so the body reads LSB->MSB such that extra chars at
+        // the end of the string get tacked on to the MSB, not the LSB where they would cause trouble
+        std::reverse(body_bytes.begin(), body_bytes.end());
+
+        std::cout << "head: " << head_bits << std::endl;
+        std::cout << "body: " << body_bits << std::endl;
+        return head_bytes + body_bytes;
     }
     catch(std::exception& e)
     {
-        if(log_) *log_ << warn << "Message " << desc->full_name() << " failed to encode. Reason: " << e.what() << std::endl;
-        return false;
+        std::stringstream ss;
+        
+        ss << "Message " << desc->full_name() << " failed to encode. Reason: " << e.what() << std::endl;
+
+        if(log_) *log_ << warn <<  ss.str();        
+        throw(DCCLException(ss.str()));
     }
-
-    std::string head_bytes, body_bytes;
-    bitset2string(head_bits, &head_bytes);
-    bitset2string(body_bits, &body_bytes);
-    
-    if(!crypto_key_.empty())
-        encrypt(&body_bytes, head_bytes);
-
-    *bytes = head_bytes + body_bytes;
-
-    std::cout << "head: " << head_bits << std::endl;
-    std::cout << "body: " << body_bits << std::endl;    
-    
-    return true;
 }
 
-bool goby::acomms::DCCLCodec::decode(const std::string& bytes, google::protobuf::Message* msg)   
+google::protobuf::Message* goby::acomms::DCCLCodec::decode(const std::string& bytes)   
 {
-    if(!default_codecs_set_)
-        set_default_codecs();
-    
-    const Descriptor* desc = msg->GetDescriptor();
-    boost::shared_ptr<DCCLFieldCodec> codec =
-        codec_manager_.find(FieldDescriptor::CPPTYPE_MESSAGE,
-                            desc->options().GetExtension(dccl::message_codec));
-    
-    DCCLFieldCodec::set_in_header(true);
-    unsigned head_size_bits = codec->max_size(msg, 0) + HEAD_CCL_ID_SIZE + HEAD_DCCL_ID_SIZE;
-    DCCLFieldCodec::set_in_header(false);  
-    unsigned body_size_bits = codec->max_size(msg, 0);
-
-    unsigned head_size_bytes = ceil_bits2bytes(head_size_bits);
-    unsigned body_size_bytes = ceil_bits2bytes(body_size_bits);
-    
-    std::cout << "head is " << head_size_bits << " bits" << std::endl;
-    std::cout << "body is " << body_size_bits << " bits" << std::endl;
-    std::cout << "head is " << head_size_bytes << " bytes" << std::endl;
-    std::cout << "body is " << body_size_bytes << " bytes" << std::endl;
-
-    std::string head_bytes = bytes.substr(0, head_size_bytes);
-    std::string body_bytes = bytes.substr(head_size_bytes);
-
-    std::cout << "head is " << hex_encode(head_bytes) << std::endl;
-    std::cout << "body is " << hex_encode(body_bytes) << std::endl;
-
-    if(!crypto_key_.empty())
-        decrypt(&body_bytes, head_bytes);
-    
-    Bitset head_bits, body_bits;
-    string2bitset(&head_bits, head_bytes);
-    string2bitset(&body_bits, body_bytes);
-
-    head_bits.resize(head_size_bits - HEAD_CCL_ID_SIZE + HEAD_DCCL_ID_SIZE);
-    
-    
-    std::cout << "head: " << head_bits << std::endl;
-    std::cout << "body: " << body_bits << std::endl;    
-    
     try
     {
+        unsigned fixed_header_bytes = ceil_bits2bytes(HEAD_CCL_ID_SIZE+HEAD_DCCL_ID_SIZE);
+
+        if(bytes.length() < fixed_header_bytes)
+            throw(DCCLException("Bytes passed (hex: " + hex_encode(bytes) + ") is too small to be a valid DCCL message"));
+        
+        Bitset fixed_header_bits;
+        string2bitset(&fixed_header_bits, bytes.substr(0, fixed_header_bytes));
+
+        std::cout << fixed_header_bits << std::endl;
+
+        unsigned ccl_id = (fixed_header_bits >> (fixed_header_bits.size()-HEAD_CCL_ID_SIZE)).to_ulong();
+        unsigned id = (fixed_header_bits >> (fixed_header_bits.size()-HEAD_CCL_ID_SIZE-HEAD_DCCL_ID_SIZE)).to_ulong() & Bitset(std::string(HEAD_DCCL_ID_SIZE, '1')).to_ulong();
+
+        if(ccl_id != DCCL_CCL_HEADER)
+            throw(DCCLException("CCL ID (left-most byte in bytes string) must be " +
+                                as<std::string>(DCCL_CCL_HEADER) + " but was given " + as<std::string>(ccl_id)));
+        
+        if(!id2desc_.count(id))
+            throw(DCCLException("Message id " + as<std::string>(id) + " has not been validated. Call validate() before decoding this type."));
+
+        // ownership of this object goes to the caller of decode()
+        google::protobuf::Message* msg = message_factory_.GetPrototype(id2desc_.find(id)->second)->New();
+        
+        const Descriptor* desc = msg->GetDescriptor();
+    
+    
+        boost::shared_ptr<DCCLFieldCodec> codec =
+            codec_manager_.find(FieldDescriptor::CPPTYPE_MESSAGE,
+                                desc->options().GetExtension(dccl::message_codec));
+    
+        DCCLFieldCodec::set_in_header(true);
+        unsigned head_size_bits = codec->max_size(msg, 0) + HEAD_CCL_ID_SIZE + HEAD_DCCL_ID_SIZE;
+        DCCLFieldCodec::set_in_header(false);  
+        unsigned body_size_bits = codec->max_size(msg, 0);
+
+        unsigned head_size_bytes = ceil_bits2bytes(head_size_bits);
+        unsigned body_size_bytes = ceil_bits2bytes(body_size_bits);
+    
+        std::cout << "head is " << head_size_bits << " bits" << std::endl;
+        std::cout << "body is " << body_size_bits << " bits" << std::endl;
+        std::cout << "head is " << head_size_bytes << " bytes" << std::endl;
+        std::cout << "body is " << body_size_bytes << " bytes" << std::endl;
+
+        std::string head_bytes = bytes.substr(0, head_size_bytes);
+        std::string body_bytes = bytes.substr(head_size_bytes);
+        // we had reversed the bytes so extraneous zeros will not cause trouble. undo this reversal.
+        std::reverse(body_bytes.begin(), body_bytes.end());
+        
+        std::cout << "head is " << hex_encode(head_bytes) << std::endl;
+        std::cout << "body is " << hex_encode(body_bytes) << std::endl;
+
+        if(!crypto_key_.empty())
+            decrypt(&body_bytes, head_bytes);
+    
+        Bitset head_bits, body_bits;
+        string2bitset(&head_bits, head_bytes);
+        string2bitset(&body_bits, body_bytes);
+
+    
+        std::cout << "head: " << head_bits << std::endl;
+        std::cout << "body: " << body_bits << std::endl;    
+
+        
+        head_bits.resize(head_size_bits - HEAD_CCL_ID_SIZE - HEAD_DCCL_ID_SIZE);    
+        
         if(codec)
         {
             boost::any a(msg);
@@ -187,14 +234,18 @@ bool goby::acomms::DCCLCodec::decode(const std::string& bytes, google::protobuf:
         {
             throw(DCCLException("Failed to find dccl.message_codec `" + desc->options().GetExtension(dccl::message_codec) + "`"));
         }
+
+        return msg;
     }
     catch(std::exception& e)
     {
-        const Descriptor* desc = msg->GetDescriptor();
-        if(log_) *log_ << warn << "Message " << desc->full_name() << " failed to decode. Reason: " << e.what() << std::endl;
-        return false;
-    }
-    return true;
+        std::stringstream ss;
+        
+        ss << "Message " << hex_encode(bytes) <<  " failed to decode. Reason: " << e.what() << std::endl;
+
+        if(log_) *log_ << warn <<  ss.str();        
+        throw(DCCLException(ss.str()));
+    }    
 }
 
 // makes sure we can actual encode / decode a message of this descriptor given the loaded FieldCodecs
@@ -203,14 +254,14 @@ bool goby::acomms::DCCLCodec::validate(const google::protobuf::Message& msg)
 {
     if(!default_codecs_set_)
         set_default_codecs();
-
+    
     const Descriptor* desc = msg.GetDescriptor();
     try
     {
         if(!desc->options().HasExtension(dccl::id))
             throw(DCCLException("Missing message option `dccl.id`. Specify a unique id (e.g. 3) in the body of your .proto message using \"option (dccl.id) = 3\""));
         else if(!desc->options().HasExtension(dccl::max_bytes))
-            throw(DCCLException("Missing message option `dccl.max_bytes`. Specify a maximum (encoded) message size in bytes (e.g. 32) in the body of your .proto message using \"option (dccl.max_bytes) = 32\"")); 
+            throw(DCCLException("Missing message option `dccl.max_bytes`. Specify a maximum (encoded) message size in bytes (e.g. 32) in the body of your .proto message using \"option (dccl.max_bytes) = 32\""));
         
         boost::shared_ptr<DCCLFieldCodec> codec =
             codec_manager_.find(FieldDescriptor::CPPTYPE_MESSAGE,
@@ -223,11 +274,25 @@ bool goby::acomms::DCCLCodec::validate(const google::protobuf::Message& msg)
             throw(DCCLException("Actual maximum size of message exceeds allowed maximum (dccl.max_bytes). Tighten bounds, remove fields, improve codecs, or increase the allowed dccl.max_bytes"));
         
         codec->validate(&msg, 0);
-        
+
+        unsigned dccl_id = desc->options().GetExtension(dccl::id);
+        if(id2desc_.count(dccl_id) && desc != id2desc_.find(dccl_id)->second)
+            throw(DCCLException("`dccl.id` " + as<std::string>(dccl_id) + " is already in use by Message " + id2desc_.find(dccl_id)->second->full_name()));
+        else
+            id2desc_.insert(std::make_pair(desc->options().GetExtension(dccl::id), desc));
     }
     catch(DCCLException& e)
     {
-        if(log_) *log_ << warn << "Message " << desc->full_name() << " failed validation. Reason: " << e.what() << std::endl;
+        try
+        {
+            if(log_) info(msg, log_);
+        }
+        catch(DCCLException& e)
+        { }
+        
+        if(log_) *log_ << warn << "Message " << desc->full_name() << " failed validation. Reason: "
+                       << e.what() <<  "\n"
+                       << "If possible, information about the Message are printed above. " << std::endl;
         return false;
     }
 

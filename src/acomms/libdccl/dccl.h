@@ -109,7 +109,6 @@ namespace goby
             
             /// \brief Messages must be validated before they can be encoded/decoded
             static bool validate(const google::protobuf::Message& msg);
-
             static void info(const google::protobuf::Message& msg, std::ostream* os);
 
             
@@ -122,8 +121,8 @@ namespace goby
             ///
             /// This is where the real work happens.
             //@{
-            static bool encode(std::string* bytes, const google::protobuf::Message& msg);
-            static bool decode(const std::string& bytes, google::protobuf::Message* msg); 
+            static std::string encode(const google::protobuf::Message& msg);
+            static google::protobuf::Message* decode(const std::string& bytes);
             //@}
 
             static const FieldCodecManager& codec_manager()
@@ -183,6 +182,9 @@ namespace goby
             
             static google::protobuf::DynamicMessageFactory message_factory_;
 
+            // maps `dccl.id`s onto Message Descriptors
+            static std::map<int32, const google::protobuf::Descriptor*> id2desc_;
+            
             static bool default_codecs_set_;
         };
     }

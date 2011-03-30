@@ -42,10 +42,11 @@ namespace goby
         /// special modem id for the broadcast destination - no one is assigned this address. Analogous to 192.168.1.255 on a 192.168.1.0 subnet
         const int BROADCAST_ID = 0;
         /// special modem id used internally to goby-acomms for indicating that the MAC layer (libamac) is agnostic to the next destination. The next destination is thus set by the data provider (typically libqueue).
-        const int QUERY_DESTINATION_ID = -1;
-        
+        const int QUERY_DESTINATION_ID = -1;        
+
         const unsigned char DCCL_CCL_HEADER = 32;
-    
+
+        
         const double NaN = std::numeric_limits<double>::quiet_NaN();
         
         /* const unsigned DCCL_NUM_HEADER_BYTES = 6; */
@@ -78,17 +79,8 @@ namespace goby
 
         
         enum DCCLHeaderBits { HEAD_CCL_ID_SIZE = 8,
-                              HEAD_DCCL_ID_SIZE = 9,
-                              HEAD_TIME_SIZE = 17,
-                              HEAD_SRC_ID_SIZE = 5,
-                              HEAD_DEST_ID_SIZE = 5,
-                              HEAD_FLAG_SIZE = 1,
-                              HEAD_UNUSED_SIZE = 2
-        };
-
-
+                              HEAD_DCCL_ID_SIZE = 9 };
         
-                
         
     }
 }

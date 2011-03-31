@@ -378,9 +378,19 @@ goby::acomms::DCCLFieldCodec::MessageHandler::MessageHandler(const google::proto
     
     if(field && field->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE)
     {
-        if(mutable_this_message())
-            push(mutable_this_message()->GetReflection()->MutableMessage(mutable_this_message(), field));
+        if(field->is_repeated())
+        {
+            if(mutable_this_message())
+                push(mutable_this_message()->GetReflection()->AddMessage(mutable_this_message(), field));
+            else
+                push(&this_message()->GetReflection()->GetRepeatedMessage(*this_message(), field, 0));
+        }
         else
-            push(&(this_message()->GetReflection()->GetMessage(*this_message(), field)));
+        {
+            if(mutable_this_message())
+                push(mutable_this_message()->GetReflection()->MutableMessage(mutable_this_message(), field));
+            else
+                push(&this_message()->GetReflection()->GetMessage(*this_message(), field));
+        }
     }
 }

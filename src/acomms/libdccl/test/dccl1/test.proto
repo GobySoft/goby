@@ -83,28 +83,51 @@ message TestMsg
   optional EmbeddedMsg1 msg_default = 17;
 
   
-  // repeated double double_default_repeat = 101;
-  // repeated float float_default_repeat = 102;
+  repeated double double_default_repeat = 101 [(dccl.min)=0,
+                                               (dccl.max)=100,
+                                               (dccl.max_repeat)=4];
+  repeated float float_default_repeat = 102 [(dccl.min)=0,
+                                               (dccl.max)=100,
+                                               (dccl.max_repeat)=4];
 
-  // repeated int32 int32_default_repeat = 103;
-  // repeated int64 int64_default_repeat = 104;
-  // repeated uint32 uint32_default_repeat = 105;
-  // repeated uint64 uint64_default_repeat = 106;
-  // repeated sint32 sint32_default_repeat = 107;
-  // repeated sint64 sint64_default_repeat = 108;
-  // repeated fixed32 fixed32_default_repeat = 109;
-  // repeated fixed64 fixed64_default_repeat = 110;
-  // repeated sfixed32 sfixed32_default_repeat = 111;
-  // repeated sfixed64 sfixed64_default_repeat = 112;
+  repeated int32 int32_default_repeat = 103 [(dccl.min)=0,
+                                             (dccl.max)=100,
+                                             (dccl.max_repeat)=4];
+  repeated int64 int64_default_repeat = 104 [(dccl.min)=0,
+                                             (dccl.max)=100,
+                                             (dccl.max_repeat)=4];
+  repeated uint32 uint32_default_repeat = 105 [(dccl.min)=0,
+                                               (dccl.max)=100,
+                                               (dccl.max_repeat)=4];
+  repeated uint64 uint64_default_repeat = 106 [(dccl.min)=0,
+                                               (dccl.max)=100,
+                                               (dccl.max_repeat)=4];
+  repeated sint32 sint32_default_repeat = 107 [(dccl.min)=0,
+                                               (dccl.max)=100,
+                                               (dccl.max_repeat)=4];
+  repeated sint64 sint64_default_repeat = 108 [(dccl.min)=0,
+                                               (dccl.max)=100,
+                                               (dccl.max_repeat)=4];
+  repeated fixed32 fixed32_default_repeat = 109 [(dccl.min)=0,
+                                                 (dccl.max)=100,
+                                                 (dccl.max_repeat)=4];
+  repeated fixed64 fixed64_default_repeat = 110 [(dccl.min)=0,
+                                                 (dccl.max)=100,
+                                                 (dccl.max_repeat)=4];
+  repeated sfixed32 sfixed32_default_repeat = 111 [(dccl.min)=0,
+                                                   (dccl.max)=100,
+                                                   (dccl.max_repeat)=4];
+  repeated sfixed64 sfixed64_default_repeat = 112 [(dccl.min)=0,
+                                                   (dccl.max)=100,
+                                                   (dccl.max_repeat)=4];
+  
+  repeated bool bool_default_repeat = 113 [(dccl.max_repeat)=4];
 
-  // repeated bool bool_default_repeat = 113;
+  repeated string string_default_repeat = 114 [(dccl.max_length)=4, (dccl.max_repeat)=4];
+  repeated bytes bytes_default_repeat = 115 [(dccl.max_length)=4, (dccl.max_repeat)=4];
+  
+  repeated Enum1 enum_default_repeat = 116 [(dccl.max_repeat)=4];
 
-  // repeated string string_default_repeat = 114;
-  // repeated bytes bytes_default_repeat = 115;
-
-  // repeated Enum1 enum_default_repeat = 116;
-
-  // repeated EmbeddedMsg1 msg_default_repeat = 117;
-
+  repeated EmbeddedMsg1 msg_default_repeat = 117 [(dccl.max_repeat)=4];
 }
 

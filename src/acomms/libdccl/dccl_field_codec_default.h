@@ -24,6 +24,7 @@
 
 #include <boost/utility.hpp>
 #include <boost/type_traits.hpp>
+#include <boost/static_assert.hpp>
 
 #include <google/protobuf/descriptor.h>
 
@@ -59,7 +60,7 @@ namespace goby
                 require(dccl::max, "dccl.max");
             }
 
-            Bitset _encode(const boost::any& field_value, double max, double min, double precision = 0)
+            Bitset _encode(const boost::any& field_value, double max, double min, int32 precision = 0)
             {
                 std::cerr << "starting encode of field with max " << max << ", min " << min << ", prec " << precision << std::endl;
                 
@@ -80,7 +81,7 @@ namespace goby
                     
                     t -= min;
                     t *= std::pow(10.0, precision);
-                    return Bitset(_max_size(max, min, precision), static_cast<unsigned long>(t)+1);
+                    return Bitset(_max_size(max, min, precision), goby::util::as<unsigned long>(t)+1);
                 }
                 catch(boost::bad_any_cast& e)
                 {
@@ -88,17 +89,18 @@ namespace goby
                 }                
             }
 
-            boost::any _decode(Bitset* bits, double max, double min, double precision = 0)
+            boost::any _decode(Bitset* bits, double max, double min, int32 precision = 0)
             {
                 unsigned long t = bits->to_ulong();
                 if(!t) return boost::any();
 
                 --t;
-                return static_cast<T>(t / (std::pow(10.0, precision))
-                                      + min);
+                return goby::util::as<T>(
+                    goby::util::unbiased_round(
+                        t / (std::pow(10.0, precision)) + min, precision));
             }
 
-            unsigned _max_size(double max, double min, double precision = 0)
+            unsigned _max_size(double max, double min, int32 precision = 0)
             {
                 // leave one value for unspecified (always encoded as 0)
                 const unsigned NULL_VALUE = 1;
@@ -164,7 +166,9 @@ namespace goby
         
         template<typename T>
             class DCCLDefaultFieldCodec
-        { };
+        {
+            BOOST_STATIC_ASSERT(sizeof(T) == 0);
+        };
         
         template<>
             class DCCLDefaultFieldCodec<double>

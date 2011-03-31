@@ -30,6 +30,10 @@
 #include <boost/utility.hpp>
 #include <boost/type_traits.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/static_assert.hpp>
+#include <boost/mpl/and.hpp>
+#include <boost/mpl/logical.hpp>
+#include <boost/numeric/conversion/cast.hpp>
 
 namespace goby
 {
@@ -38,32 +42,24 @@ namespace goby
     {   
         /// \name String
         //@{
-
-        /// \brief non-throwing lexical cast (e.g. assert(as<double>("3.2") == 3.2)). For fundamental types (double, int, etc.)
-        /// \param from value to cast from 
-        /// \return to value to cast to
-        /// \throw none
-        template<typename To, typename From>
+        
+        template<typename To>
             typename boost::enable_if<boost::is_fundamental<To>, To>::type
-            as(From from)
+            _as_from_string(const std::string& from)
         {
             try { return boost::lexical_cast<To>(from); }
             catch(boost::bad_lexical_cast&)
             {
-                // return NaN or minimum value supported by the type
+                // return NaN or maximum value supported by the type
                 return std::numeric_limits<To>::has_quiet_NaN
                     ? std::numeric_limits<To>::quiet_NaN()
-                    : std::numeric_limits<To>::min();
+                    : std::numeric_limits<To>::max();
             }
         }
-
-        /// \brief non-throwing lexical cast (e.g. assert(as<double>("3.2") == 3.2)) for non-fundamental types (MyClass(), etc.)
-        /// \param from value to cast from 
-        /// \return to value to cast to
-        /// \throw none
-        template<typename To, typename From>
+        
+        template<typename To>
             typename boost::disable_if<boost::is_fundamental<To>, To>::type
-            as(From from)
+            _as_from_string(const std::string& from)
         {
             try { return boost::lexical_cast<To>(from); }
             catch(boost::bad_lexical_cast&)
@@ -71,27 +67,83 @@ namespace goby
                 return To();
             }
         }
-        
-        /// specialization of as() for string -> bool
+
         template <>
-            inline bool as<bool, std::string>(std::string from)
+            inline bool _as_from_string<bool>(const std::string& from)
         {
             return (boost::iequals(from, "true") || boost::iequals(from, "1"));
+        }        
+
+        template <>
+            inline std::string _as_from_string<std::string>(const std::string& from)
+        {
+            return from;
+        }
+        
+        template<typename To, typename From>
+            std::string _as_to_string(const From& from)
+        {
+            try { return boost::lexical_cast<std::string>(from); }
+            catch(boost::bad_lexical_cast&)
+            {
+                return std::string();
+            }
         }
         
         /// specialization of as() for bool -> string
         template <>
-            inline std::string as<std::string, bool>(bool from)
+            inline std::string _as_to_string<std::string, bool>(const bool& from)
         {
-            std::stringstream ss;
-            ss << std::boolalpha << from;
-            return ss.str();
+            return from ? "true" : "false";
         }
 
-        /* /// specialization of as() when To and From are the same type */
-        /* template <typename T> */
-        /*     inline T as(T from) */
-        /* { return from; }      */
+        template <>
+            inline std::string _as_to_string<std::string, std::string>(const std::string& from)
+        {
+            return from;
+        }
+        
+        template<typename To, typename From>
+            typename boost::disable_if<boost::is_same<To,From>, To>::type
+            _as_numeric(const From& from)
+        {
+            try { return boost::numeric_cast<To>(from); }
+            catch(boost::bad_numeric_cast&)
+            {
+                // return NaN or maximum value supported by the type
+                return std::numeric_limits<To>::has_quiet_NaN
+                    ? std::numeric_limits<To>::quiet_NaN()
+                    : std::numeric_limits<To>::max();
+            }
+        }        
+        
+        template<typename To, typename From>
+            typename boost::enable_if<boost::is_same<To,From>, To>::type
+            _as_numeric(const From& from)
+        {
+            return from;
+        }
+
+        template<typename To>
+            To as(const std::string& from)
+        {
+            return _as_from_string<To>(from);
+        }
+
+        template<typename To, typename From>
+            typename boost::enable_if<boost::is_same<To, std::string>, To>::type
+            as(const From& from)
+        {
+            return _as_to_string<To,From>(from);
+        }
+
+        template<typename To, typename From>
+            typename boost::enable_if<boost::mpl::and_<boost::is_arithmetic<To>,
+            boost::is_arithmetic<From> >, To>::type
+            as(const From& from)
+        {
+            return _as_numeric<To, From>(from);
+        }
         
         /// remove all blanks from string s    
         inline void stripblanks(std::string& s)

@@ -320,13 +320,21 @@ namespace goby
                             google::protobuf::Message* msg,
                             boost::any value)
             {
-               // msg->GetReflection()->MutableMessage(msg, field)->CopyFrom(*boost::any_cast<const_type>(value));
+                /* const google::protobuf::Message* msg_value = boost::any_cast<const_type>(value); */
+                /* if(!msg_value) */
+                /*     msg_value = boost::any_cast<mutable_type>(value); */
+                
+                /* msg->GetReflection()->MutableMessage(msg, field)->CopyFrom(*msg_value); */
             }
             void _add_value(const google::protobuf::FieldDescriptor* field,
                                     google::protobuf::Message* msg,
                                     boost::any value)
             {
-                // msg->GetReflection()->AddMessage(msg, field)->CopyFrom(*boost::any_cast<const_type>(value));
+                /* const google::protobuf::Message* msg_value = boost::any_cast<const_type>(value); */
+                /* if(!msg_value) */
+                /*     msg_value = boost::any_cast<mutable_type>(value); */
+                
+                /* msg->GetReflection()->AddMessage(msg, field)->CopyFrom(*msg_value); */
             }
             
         };

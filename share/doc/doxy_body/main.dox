@@ -14,10 +14,10 @@
 
   \section main_resources Resources
   <ul>
-  <li> Home page: <http://gobysoft.com>
-  <li> Code, bug tracking, and answers: <https://launchpad.net/goby>.</li>
+  <li> Home page, code, bug tracking, and answers: <https://launchpad.net/goby>.</li>
   <li> User Manual: <a href=http://gobysoft.com/goby-bzr/share/doc/user_manual/user_manual.pdf>(pdf)</a>.</li>
   <li> Developers' Manual: <a href=http://gobysoft.com>(html)</a> <a href=http://gobysoft.com/goby-bzr/share/doc/goby-dev.pdf>(pdf)</a>.</li>
+  <li> Wiki: <http://gobysoft.com/wiki>.</li>
   </ul>
 
   \section main_manual Developer manual
@@ -32,11 +32,12 @@
   </ul>
 
 \section install Installing Goby - Stable Release (Recommended)
-Goby is known to work properly on newer versions of Ubuntu (10.04+) and Debian (5+). It may also work properly on other UNIX / Linux derivatives. It does not currently support Windows. 
+Goby is known to work properly on newer versions of Ubuntu (10.04+) and Debian (5+), and on MAC OS X using the MacPorts package manager. It may also work properly on other UNIX / Linux derivatives. It does not currently support Windows. 
 
 \subsection install_deb Installing from Package Manager (Ubuntu only) (Recommended)
 \verbatim 
 sudo add-apt-repository ppa:goby-dev/ppa
+sudo add-apt-repository ppa:pgquiles/wt
 sudo apt-get update
 sudo apt-get install libgoby1-dev goby1-core
 // optional (pAcommsHandler, iCommander, etc.)

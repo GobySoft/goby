@@ -108,8 +108,8 @@ namespace goby
             };
             
             /// \brief Messages must be validated before they can be encoded/decoded
-            static bool validate(const google::protobuf::Message& msg);
-            static void info(const google::protobuf::Message& msg, std::ostream* os);
+            static bool validate(const google::protobuf::Descriptor* desc);
+            static void info(const google::protobuf::Descriptor* desc, std::ostream* os);
 
             
             /// Registers the group names used for the FlexOstream logger
@@ -122,7 +122,7 @@ namespace goby
             /// This is where the real work happens.
             //@{
             static std::string encode(const google::protobuf::Message& msg);
-            static google::protobuf::Message* decode(const std::string& bytes);
+            static boost::shared_ptr<google::protobuf::Message> decode(const std::string& bytes);
             //@}
 
             static const FieldCodecManager& codec_manager()
@@ -140,6 +140,8 @@ namespace goby
             }  
 
             static std::ostream* log_;
+            static google::protobuf::DynamicMessageFactory message_factory_;
+
 
             /// \example acomms/chat/chat.cpp
             
@@ -166,9 +168,13 @@ namespace goby
             static void decrypt(std::string* s, const std::string& nonce);
             static void process_cfg();
 
-
+            static unsigned fixed_head_size()
+            {
+                return HEAD_CCL_ID_SIZE + HEAD_DCCL_ID_SIZE;
+            }
             
-
+            
+            
           private:
             static const char* DEFAULT_CODEC_NAME;
 
@@ -180,8 +186,6 @@ namespace goby
             static FieldCodecManager codec_manager_;
             static CppTypeHelper cpptype_helper_;
             
-            static google::protobuf::DynamicMessageFactory message_factory_;
-
             // maps `dccl.id`s onto Message Descriptors
             static std::map<int32, const google::protobuf::Descriptor*> id2desc_;
             

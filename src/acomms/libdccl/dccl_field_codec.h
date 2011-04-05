@@ -24,6 +24,7 @@
 #include <string>
 
 #include <boost/any.hpp>
+#include <boost/bind.hpp>
 #include <boost/dynamic_bitset.hpp>
 #include <boost/signals.hpp>
 #include <google/protobuf/message.h>
@@ -37,59 +38,53 @@
 namespace goby
 {
     namespace acomms
-    {
-        
+    {        
         class DCCLFieldCodec
         {
           public:
-          DCCLFieldCodec() { }
+            DCCLFieldCodec() { }
             
-            // non-repeated
+            enum MessagePart
+            {
+                HEAD,
+                BODY
+            };
+            
             void encode(Bitset* bits,
-                        const boost::any& field_value,
-                        const google::protobuf::FieldDescriptor* field);
+                        const google::protobuf::Message& msg,
+                        MessagePart part);
+            void encode(Bitset* bits,
+                         const boost::any& field_value,
+                         const google::protobuf::FieldDescriptor* field);
+            void encode_repeated(Bitset* bits,
+                                 const std::vector<boost::any>& field_values,
+                                 const google::protobuf::FieldDescriptor* field);
             
             void decode(Bitset* bits,
-                        boost::any* field_value,
-                        const google::protobuf::FieldDescriptor* field);
-
-            // repeated
-            void encode(Bitset* bits,
-                        const std::vector<boost::any>& field_values,
-                        const google::protobuf::FieldDescriptor* field);
-            
+                        boost::shared_ptr<google::protobuf::Message> msg,
+                        MessagePart part);
             void decode(Bitset* bits,
-                        std::vector<boost::any>* field_values,
-                        const google::protobuf::FieldDescriptor* field);
-
-            // max_size in bits
-            unsigned max_size(const google::protobuf::Message* msg,
-                          const google::protobuf::FieldDescriptor* field);
-
-            // min_size in bits
-            unsigned min_size(const google::protobuf::Message* msg,
-                              const google::protobuf::FieldDescriptor* field);
+                         boost::any* field_value,
+                         const google::protobuf::FieldDescriptor* field);            
+            void decode_repeated(Bitset* bits,
+                                 std::vector<boost::any>* field_values,
+                                 const google::protobuf::FieldDescriptor* field);
+            
+            unsigned max_size(const google::protobuf::Descriptor* desc, MessagePart part);
+            unsigned max_size(const google::protobuf::FieldDescriptor* field);
 
             
-            // write information about this field
-            void info(const google::protobuf::Message* msg,
-                      const google::protobuf::FieldDescriptor* field,
-                      std::ostream* os);
+            unsigned min_size(const google::protobuf::Descriptor* desc, MessagePart part);
+            unsigned min_size(const google::protobuf::FieldDescriptor* field);
             
-            void validate(const google::protobuf::Message* msg,
-                          const google::protobuf::FieldDescriptor* field);
+            void validate(const google::protobuf::Descriptor* desc, MessagePart part);
+            void validate(const google::protobuf::FieldDescriptor* field);
             
+            void info(const google::protobuf::Descriptor* desc, std::ostream* os, MessagePart part);  
+            void info(const google::protobuf::FieldDescriptor* field, std::ostream* os);
             
-            static void set_in_header(bool in_header) { in_header_ = in_header;}
-            static bool in_header() { return in_header_; }            
 
           protected:
-            static const google::protobuf::Message* root_message()
-            { return MessageHandler::msg_const_.at(0); }
-
-            static google::protobuf::Message* mutable_root_message()
-            { return MessageHandler::msg_.at(0); }
-            
             // for: 
             // message Foo
             // {
@@ -99,43 +94,41 @@ namespace goby
             // returns Descriptor for Foo if field == 0
             // returns Descriptor for Foo if field == FieldDescriptor for bar
             // returns Descriptor for FooBar if field == FieldDescriptor for baz
-            static const google::protobuf::Message* this_message()
+            static const google::protobuf::Descriptor* this_descriptor()
             {
-                return !MessageHandler::msg_const_.empty() ? MessageHandler::msg_const_.back() : 0;
+                return !MessageHandler::desc_.empty() ? MessageHandler::desc_.back() : 0;
+            }
+
+            const google::protobuf::FieldDescriptor* this_field()
+            {
+                return !MessageHandler::field_.empty() ? MessageHandler::field_.back() : 0;
             }
             
-            static google::protobuf::Message* mutable_this_message()
-            {
-                return !MessageHandler::msg_.empty() ? MessageHandler::msg_.back() : 0;
-            }
-            
-            const google::protobuf::FieldDescriptor* field()
-            { return field_; }
             
             template<typename Extension>
                 typename Extension::TypeTraits::ConstType get(const Extension& e)
             {
-                return field()->options().GetExtension(e);
+                return this_field()->options().GetExtension(e);
             }
 
             
             template<typename Extension>
                 bool has(const Extension& e)
             {
-                return field()->options().HasExtension(e);
+                return this_field()->options().HasExtension(e);
             }
             
             template<typename Extension>
                 void require(const Extension& e, const std::string& name)
             {
                 if(!has(e))
-                    throw(DCCLException("Field " + field()->name() + " missing option extension called `" + name + "`."));
+                    throw(DCCLException("Field " + this_field()->name() + " missing option extension called `" + name + "`."));
             }            
             
             void require(bool b, const std::string& description)
             {
                 if(!b)
-                    throw(DCCLException("Field " + field()->name() + " failed validation: " + description));
+                    throw(DCCLException("Field " + this_field()->name() + " failed validation: " + description));
             }
             
                 
@@ -150,7 +143,7 @@ namespace goby
             
             // field == 0 for root message!
             virtual boost::any _decode(Bitset* bits) = 0;
-                
+            
 
             // max_size in bits
             // field == 0 for root message!
@@ -160,7 +153,7 @@ namespace goby
                 if(!_variable_size())
                     return _max_size();
                 else
-                    throw(DCCLException("Field " + field()->name() + " is variable sized but did not overload _min_size"));
+                    throw(DCCLException("Field " + this_field()->name() + " is variable sized but did not overload _min_size"));
             }
             
             
@@ -172,63 +165,83 @@ namespace goby
             
             virtual unsigned _max_size_repeated();
             virtual unsigned _min_size_repeated();
-
             
             virtual bool _variable_size() { return false; }
 
-            
 
             static boost::signal<void (unsigned size)> get_more_bits;
-            void _get_bits(Bitset* these_bits, Bitset* bits, unsigned size);
+
+            class BitsHandler
+            {
+              public:
+                BitsHandler(Bitset* out_pool, Bitset* in_pool)
+                    : in_pool_(in_pool),
+                    out_pool_(out_pool)
+                    {
+                        connection_ = get_more_bits.connect(
+                            boost::bind(&BitsHandler::transfer_bits, this, _1),
+                            boost::signals::at_back);
+                    }
+                
+                ~BitsHandler()
+                {
+                    connection_.disconnect();
+                }
+                void transfer_bits(unsigned size);
+
+              private:
+                Bitset* in_pool_;
+                Bitset* out_pool_;
+                boost::signals::connection connection_;
+            };
+            
+
             
           private:
-            void _prepend_bits(const Bitset& new_bits, Bitset* bits);
+            bool __check_field(const google::protobuf::FieldDescriptor* field);
+            void __encode_prepend_bits(const Bitset& new_bits, Bitset* bits);
+            
 
             //RAII handler for the current Message recursion stack
             class MessageHandler
             {
               public:
-                MessageHandler(const google::protobuf::FieldDescriptor* field);
+                MessageHandler(const google::protobuf::FieldDescriptor* field = 0);
                 
                 ~MessageHandler()
                 {
-                    for(int i = 0; i < messages_pushed_; ++i)
-                        __pop();
+                    for(int i = 0; i < descriptors_pushed_; ++i)
+                        __pop_desc();
+                    
+                    for(int i = 0; i < fields_pushed_; ++i)
+                        __pop_field();
                 }
                 bool first() 
                 {
-                    return msg_const_.empty();
+                    return desc_.empty();
                 }
 
                 int count() 
                 {
-                    return msg_const_.size();
+                    return desc_.size();
                 }
 
-                void push(const google::protobuf::Message* msg);
+                void push(const google::protobuf::Descriptor* desc);
+                void push(const google::protobuf::FieldDescriptor* field);
 
-                void push(google::protobuf::Message* msg)
-                {
-                    msg_.push_back(msg);                
-                    const google::protobuf::Message* const_msg = msg;
-                    push(const_msg);
-                }
-
-                
                 friend class DCCLFieldCodec;
               private:
-
-                void __pop();
+                void __pop_desc();
+                void __pop_field();
                 
-                
-                static std::vector<const google::protobuf::Message*> msg_const_;
-                static std::vector<google::protobuf::Message*> msg_;
-                int messages_pushed_;
+                static std::vector<const google::protobuf::Descriptor*> desc_;
+                static std::vector<const google::protobuf::FieldDescriptor*> field_;
+                int descriptors_pushed_;
+                int fields_pushed_;
             };
             
           private:
-            static bool in_header_;
-            const google::protobuf::FieldDescriptor* field_;
+            static MessagePart part_;
         };
         
     }

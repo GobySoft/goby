@@ -6,7 +6,7 @@ import "goby/protobuf/header.proto";
 enum Enum1
 {
   ENUM_A = 1;
-  ENUM_B = 22;
+  ENUM_B = 2;
   ENUM_C = 3;
 }
 
@@ -27,19 +27,6 @@ message EmbeddedMsg2
   optional Enum1 enum_default = 3;  
 }
 
-message BasicTestMsg
-{
-  option (dccl.id) = 1;
-  option (dccl.max_bytes) = 32;
-
-  optional double double_default = 1 [(dccl.min)=0,
-                                      (dccl.max)=126];
-  
-  optional EmbeddedMsg2 msg_default = 2;
-}
-
-
-
 message TestMsg
 {
   option (dccl.id) = 2;
@@ -48,7 +35,8 @@ message TestMsg
   // test default enc/dec
   optional double double_default = 1 [(dccl.min)=-100,
                                       (dccl.max)=126,
-                                      (dccl.precision)=2];
+                                      (dccl.precision)=2,
+                                      (dccl.in_head)=true];
   optional float float_default = 2 [(dccl.min)=-20,
                                       (dccl.max)=150,
                                       (dccl.precision)=3];
@@ -85,27 +73,30 @@ message TestMsg
   
   repeated double double_default_repeat = 101 [(dccl.min)=0,
                                                (dccl.max)=100,
+                                               (dccl.precision)=3,
                                                (dccl.max_repeat)=4];
   repeated float float_default_repeat = 102 [(dccl.min)=0,
                                                (dccl.max)=100,
+                                               (dccl.precision)=3,
                                                (dccl.max_repeat)=4];
 
   repeated int32 int32_default_repeat = 103 [(dccl.min)=0,
                                              (dccl.max)=100,
                                              (dccl.max_repeat)=4];
-  repeated int64 int64_default_repeat = 104 [(dccl.min)=0,
+  repeated int64 int64_default_repeat = 104 [(dccl.min)=-100,
                                              (dccl.max)=100,
                                              (dccl.max_repeat)=4];
   repeated uint32 uint32_default_repeat = 105 [(dccl.min)=0,
                                                (dccl.max)=100,
-                                               (dccl.max_repeat)=4];
+                                               (dccl.max_repeat)=4,
+                                               (dccl.in_head)=true];
   repeated uint64 uint64_default_repeat = 106 [(dccl.min)=0,
                                                (dccl.max)=100,
                                                (dccl.max_repeat)=4];
-  repeated sint32 sint32_default_repeat = 107 [(dccl.min)=0,
+  repeated sint32 sint32_default_repeat = 107 [(dccl.min)=-60,
                                                (dccl.max)=100,
                                                (dccl.max_repeat)=4];
-  repeated sint64 sint64_default_repeat = 108 [(dccl.min)=0,
+  repeated sint64 sint64_default_repeat = 108 [(dccl.min)=-600,
                                                (dccl.max)=100,
                                                (dccl.max_repeat)=4];
   repeated fixed32 fixed32_default_repeat = 109 [(dccl.min)=0,
@@ -117,7 +108,7 @@ message TestMsg
   repeated sfixed32 sfixed32_default_repeat = 111 [(dccl.min)=0,
                                                    (dccl.max)=100,
                                                    (dccl.max_repeat)=4];
-  repeated sfixed64 sfixed64_default_repeat = 112 [(dccl.min)=0,
+  repeated sfixed64 sfixed64_default_repeat = 112 [(dccl.min)=-50,
                                                    (dccl.max)=100,
                                                    (dccl.max_repeat)=4];
   

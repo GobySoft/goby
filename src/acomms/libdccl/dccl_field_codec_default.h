@@ -153,7 +153,6 @@ namespace goby
         class DCCLDefaultMessageCodec : public DCCLFieldCodec
         {
           protected:
-            
             virtual Bitset _encode(const boost::any& field_value);
             virtual boost::any _decode(Bitset* bits);     
             virtual unsigned _max_size();

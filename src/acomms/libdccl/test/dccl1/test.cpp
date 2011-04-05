@@ -28,104 +28,76 @@ int main()
     cfg.set_crypto_passphrase("my_passphrase!");
     goby::acomms::DCCLCodec::set_cfg(cfg);
 
-    BasicTestMsg msg_in1;
-
-    msg_in1.set_double_default(14);
-    msg_in1.mutable_msg_default()->set_val(16);
-    msg_in1.mutable_msg_default()->set_sval("foo");
-    msg_in1.mutable_msg_default()->set_enum_default(ENUM_B);
-//    msg_in1.mutable_head()->set_time(goby::util::as<std::string>(goby::util::goby_time));
-
-    goby::acomms::DCCLCodec::info(msg_in1, &std::cout);
-
-    
-    std::cout << "Message 1 in:\n" << msg_in1 << std::endl;
-    
-    assert(goby::acomms::DCCLCodec::validate(msg_in1));
-
-    std::cout << "Try encode..." << std::endl;
-    std::string bytes1 = goby::acomms::DCCLCodec::encode(msg_in1);
-    std::cout << "... got bytes1 (hex): " << goby::acomms::hex_encode(bytes1) << std::endl;
-
-    std::cout << "Try decode..." << std::endl;
-
-    boost::shared_ptr<google::protobuf::Message> msg_out1(goby::acomms::DCCLCodec::decode(bytes1));
-    std::cout << "... got Message 1 out:\n" << *msg_out1 << std::endl;
-
-    assert(msg_in1.SerializeAsString() == msg_out1->SerializeAsString());
-    
- 
-    
-    TestMsg msg_in2;
+    TestMsg msg_in;
     int i = 0;
-    msg_in2.set_double_default(++i + 0.1);
-    msg_in2.set_float_default(++i + 0.2);
+    msg_in.set_double_default(++i + 0.1);
+    msg_in.set_float_default(++i + 0.2);
 
-    msg_in2.set_int32_default(++i);
-    msg_in2.set_int64_default(-++i);
-    msg_in2.set_uint32_default(++i);
-    msg_in2.set_uint64_default(++i);
-    msg_in2.set_sint32_default(-++i);
-    msg_in2.set_sint64_default(++i);
-    msg_in2.set_fixed32_default(++i);
-    msg_in2.set_fixed64_default(++i);
-    msg_in2.set_sfixed32_default(++i);
-    msg_in2.set_sfixed64_default(-++i);
+    msg_in.set_int32_default(++i);
+    msg_in.set_int64_default(-++i);
+    msg_in.set_uint32_default(++i);
+    msg_in.set_uint64_default(++i);
+    msg_in.set_sint32_default(-++i);
+    msg_in.set_sint64_default(++i);
+    msg_in.set_fixed32_default(++i);
+    msg_in.set_fixed64_default(++i);
+    msg_in.set_sfixed32_default(++i);
+    msg_in.set_sfixed64_default(-++i);
 
-    msg_in2.set_bool_default(true);
+    msg_in.set_bool_default(true);
 
-    msg_in2.set_string_default("abc123");
-    msg_in2.set_bytes_default(goby::acomms::hex_decode("aabbcc1234"));
+    msg_in.set_string_default("abc123");
+    msg_in.set_bytes_default(goby::acomms::hex_decode("aabbcc1234"));
     
-    msg_in2.set_enum_default(ENUM_C);
-    msg_in2.mutable_msg_default()->set_val(++i + 0.3);
-    msg_in2.mutable_msg_default()->mutable_msg()->set_val(++i);
+    msg_in.set_enum_default(ENUM_C);
+    msg_in.mutable_msg_default()->set_val(++i + 0.3);
+    msg_in.mutable_msg_default()->mutable_msg()->set_val(++i);
 
     for(int j = 0; j < 2; ++j)
     {
-        msg_in2.add_double_default_repeat(++i + 0.1);
-        msg_in2.add_float_default_repeat(++i + 0.2);
+        msg_in.add_double_default_repeat(++i + 0.1);
+        msg_in.add_float_default_repeat(++i + 0.2);
         
-        msg_in2.add_int32_default_repeat(++i);
-        msg_in2.add_int64_default_repeat(-++i);
-        msg_in2.add_uint32_default_repeat(++i);
-        msg_in2.add_uint64_default_repeat(++i);
-        msg_in2.add_sint32_default_repeat(-++i);
-        msg_in2.add_sint64_default_repeat(++i);
-        msg_in2.add_fixed32_default_repeat(++i);
-        msg_in2.add_fixed64_default_repeat(++i);
-        msg_in2.add_sfixed32_default_repeat(++i);
-        msg_in2.add_sfixed64_default_repeat(-++i);
+        msg_in.add_int32_default_repeat(++i);
+        msg_in.add_int64_default_repeat(-++i);
+        msg_in.add_uint32_default_repeat(++i);
+        msg_in.add_uint64_default_repeat(++i);
+        msg_in.add_sint32_default_repeat(-++i);
+        msg_in.add_sint64_default_repeat(++i);
+        msg_in.add_fixed32_default_repeat(++i);
+        msg_in.add_fixed64_default_repeat(++i);
+        msg_in.add_sfixed32_default_repeat(++i);
+        msg_in.add_sfixed64_default_repeat(-++i);
         
-        msg_in2.add_bool_default_repeat(true);
+        msg_in.add_bool_default_repeat(true);
         
-        msg_in2.add_string_default_repeat("abc123");
-        msg_in2.add_bytes_default_repeat(goby::acomms::hex_decode("aabbcc1234"));
+        msg_in.add_string_default_repeat("abc123");
+        msg_in.add_bytes_default_repeat(goby::acomms::hex_decode("aabbcc1234"));
         
-        msg_in2.add_enum_default_repeat(static_cast<Enum1>((++i % 3) + 1));
-        EmbeddedMsg1* em_msg = msg_in2.add_msg_default_repeat();
+        msg_in.add_enum_default_repeat(static_cast<Enum1>((++i % 3) + 1));
+        EmbeddedMsg1* em_msg = msg_in.add_msg_default_repeat();
         em_msg->set_val(++i + 0.3);
         em_msg->mutable_msg()->set_val(++i);
     }
 
 
-    goby::acomms::DCCLCodec::info(msg_in2, &std::cout);    
+    goby::acomms::DCCLCodec::info(msg_in.GetDescriptor(), &std::cout);    
     
-    std::cout << "Message 2 in:\n" << msg_in2 << std::endl;
+    std::cout << "Message in:\n" << msg_in.DebugString() << std::endl;
     
-    assert(goby::acomms::DCCLCodec::validate(msg_in2));
+    assert(goby::acomms::DCCLCodec::validate(msg_in.GetDescriptor()));
 
     std::cout << "Try encode..." << std::endl;
-    std::string bytes2 = goby::acomms::DCCLCodec::encode(msg_in2);
-    std::cout << "... got bytes (hex): " << goby::acomms::hex_encode(bytes2) << std::endl;
+    std::string bytes = goby::acomms::DCCLCodec::encode(msg_in);
+    std::cout << "... got bytes (hex): " << goby::acomms::hex_encode(bytes) << std::endl;
 
     std::cout << "Try decode..." << std::endl;
 
-    google::protobuf::Message* msg_out2 = goby::acomms::DCCLCodec::decode(bytes2);
+    boost::shared_ptr<google::protobuf::Message> msg_out = goby::acomms::DCCLCodec::decode(bytes);
 
-    std::cout << "... got Message 2 out:\n" << *msg_out2 << std::endl;
+    std::cout << "... got Message out:\n" << msg_out->DebugString() << std::endl;
     
-    assert(msg_in2.SerializeAsString() == msg_out2->SerializeAsString());
+    assert(msg_in.SerializeAsString() == msg_out->SerializeAsString());
     
     std::cout << "all tests passed" << std::endl;
 }

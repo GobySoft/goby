@@ -52,7 +52,7 @@ namespace goby
                 int index)
             { return _get_repeated_value(field, msg, index); }
             
-
+            
             void set_value(const google::protobuf::FieldDescriptor* field,
                            google::protobuf::Message* msg,
                            boost::any value)
@@ -74,13 +74,13 @@ namespace goby
             }
             
             virtual void _set_value(const google::protobuf::FieldDescriptor* field,
-                                            google::protobuf::Message* msg,
-                                            boost::any value)
+                                    google::protobuf::Message* msg,
+                                    boost::any value)
             { return; }
 
             virtual void _add_value(const google::protobuf::FieldDescriptor* field,
-                                            google::protobuf::Message* msg,
-                                            boost::any value)
+                                    google::protobuf::Message* msg,
+                                    boost::any value)
             { return; }
 
             virtual boost::any _get_repeated_value(
@@ -265,8 +265,8 @@ namespace goby
                 int index)
             { return msg.GetReflection()->GetRepeatedBool(msg, field, index); }
             void _set_value(const google::protobuf::FieldDescriptor* field,
-                                    google::protobuf::Message* msg,
-                                    boost::any value)
+                            google::protobuf::Message* msg,
+                            boost::any value)
             { msg->GetReflection()->SetBool(msg, field, boost::any_cast<const_type>(value)); }
             void _add_value(const google::protobuf::FieldDescriptor* field,
                                     google::protobuf::Message* msg,
@@ -305,7 +305,7 @@ namespace goby
         {
           public:
             typedef const google::protobuf::Message* const_type;
-            typedef google::protobuf::Message* mutable_type;
+            typedef boost::shared_ptr<google::protobuf::Message> mutable_type;
             std::string as_str() { return "CPPTYPE_MESSAGE"; }
             boost::any _get_value(
                 const google::protobuf::FieldDescriptor* field,
@@ -320,21 +320,32 @@ namespace goby
                             google::protobuf::Message* msg,
                             boost::any value)
             {
-                /* const google::protobuf::Message* msg_value = boost::any_cast<const_type>(value); */
-                /* if(!msg_value) */
-                /*     msg_value = boost::any_cast<mutable_type>(value); */
+                try
+                {
+                    const_type p = boost::any_cast<const_type>(value);
+                    msg->GetReflection()->MutableMessage(msg, field)->MergeFrom(*p); 
+                }
+                catch(boost::bad_any_cast& e)
+                {
+                    mutable_type p = boost::any_cast<mutable_type>(value);
+                    msg->GetReflection()->MutableMessage(msg, field)->MergeFrom(*p);
+                }
                 
-                /* msg->GetReflection()->MutableMessage(msg, field)->CopyFrom(*msg_value); */
             }
             void _add_value(const google::protobuf::FieldDescriptor* field,
-                                    google::protobuf::Message* msg,
-                                    boost::any value)
+                            google::protobuf::Message* msg,
+                            boost::any value)
             {
-                /* const google::protobuf::Message* msg_value = boost::any_cast<const_type>(value); */
-                /* if(!msg_value) */
-                /*     msg_value = boost::any_cast<mutable_type>(value); */
-                
-                /* msg->GetReflection()->AddMessage(msg, field)->CopyFrom(*msg_value); */
+                try
+                {
+                    const_type p = boost::any_cast<const_type>(value);
+                    msg->GetReflection()->AddMessage(msg, field)->MergeFrom(*p);
+                }
+                catch(boost::bad_any_cast& e)
+                {
+                    mutable_type p = boost::any_cast<mutable_type>(value);
+                    msg->GetReflection()->AddMessage(msg, field)->MergeFrom(*p);
+                }
             }
             
         };

@@ -100,6 +100,13 @@ namespace goby
             void cfg(const util::NMEASentence& nmea, protobuf::ModemMsgBase* base_msg); // $CACFG
             void clk(const util::NMEASentence& nmea, protobuf::ModemMsgBase* base_msg); // $CACLK
             void drq(const util::NMEASentence& nmea); // $CADRQ
+
+            bool validate_data(const protobuf::ModemDataRequest& request,
+                               protobuf::ModemDataTransmission* data);
+            
+            bool is_valid_destination(int dest) 
+            { return dest >= BROADCAST_ID; }
+            
             
             // utility    
             static boost::posix_time::ptime nmea_time2ptime(const std::string& mt);

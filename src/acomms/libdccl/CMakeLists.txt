@@ -9,6 +9,6 @@ if(build_acomms_tools)
 #  add_subdirectory(tools)
 endif()
 
-if(build_test)
+if(BUILD_TESTING)
   add_subdirectory(test)
 endif()

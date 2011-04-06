@@ -39,7 +39,6 @@ option(build_acomms "Build the Goby Acoustic Communications libraries and applic
 option(build_core "Build the Goby Core libraries and applications" ON)  
 option(build_protobuf "Build the Goby Google Protocol buffers library" ON)  
 option(build_moos "Build the Acoustic Communications MOOS apps (pAcommsHandler, etc.)" OFF)
-option(build_test "Build test applications" OFF)
 
 if(build_util)
   add_subdirectory(util)

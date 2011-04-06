@@ -97,7 +97,6 @@ int main()
 
     msg_in1.set_a(10);
     msg_in1.set_b(true);
-
     goby::acomms::DCCLCodec::info(msg_in1.GetDescriptor(), &std::cout);    
     std::cout << "Message in:\n" << msg_in1.DebugString() << std::endl;
     assert(goby::acomms::DCCLCodec::validate(msg_in1.GetDescriptor()));
@@ -125,7 +124,7 @@ int main()
     boost::shared_ptr<google::protobuf::Message> msg_out2 = goby::acomms::DCCLCodec::decode(bytes2);
     std::cout << "... got Message out:\n" << msg_out2->DebugString() << std::endl;
     assert(msg_in2.SerializeAsString() == msg_out2->SerializeAsString());
-
+    
     std::cout << "all tests passed" << std::endl;
 }
 

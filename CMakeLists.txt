@@ -9,6 +9,9 @@
 cmake_minimum_required(VERSION 2.6.0 FATAL_ERROR)
 project(goby)
 
+enable_testing()
+include(CTest)
+
 set(GOBY_VERSION_MAJOR "1")
 set(GOBY_VERSION_MINOR "0")
 set(GOBY_VERSION_PATCH "1")

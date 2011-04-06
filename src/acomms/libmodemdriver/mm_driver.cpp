@@ -158,17 +158,23 @@ void goby::acomms::MMDriver::handle_initiate_transmission(protobuf::ModemMsgBase
     cache_outgoing_data(init_msg);
     
     // don't start a local cycle if we have no data
-    if(!cached_data_msgs_.empty())
+    const bool is_local_cycle = init_msg.base().src() == driver_cfg_.modem_id();
+    if(!(is_local_cycle && cached_data_msgs_.empty()))
     {
         //$CCCYC,CMD,ADR1,ADR2,Packet Type,ACK,Npkt*CS
         NMEASentence nmea("$CCCYC", NMEASentence::IGNORE);
         nmea.push_back(0); // CMD: deprecated field
         nmea.push_back(init_msg.base().src()); // ADR1
-
-        nmea.push_back(cached_data_msgs_.front().base().dest()); // ADR2
+        
+        
+        nmea.push_back(is_local_cycle
+                       ? cached_data_msgs_.front().base().dest()
+                       : init_msg.base().dest()); // ADR2        
         
         nmea.push_back(init_msg.base().rate()); // Packet Type (transmission rate)
-        nmea.push_back(static_cast<int>(cached_data_msgs_.front().ack_requested())); // ACK: deprecated field, but still dictates the value provided by CADRQ
+        nmea.push_back(is_local_cycle
+                       ? static_cast<int>(cached_data_msgs_.front().ack_requested())
+                       : 0); // ACK: deprecated field, but still dictates the value provided by CADRQ
         nmea.push_back(init_msg.num_frames()); // number of frames we want
 
         append_to_write_queue(nmea, base_msg);
@@ -624,7 +630,16 @@ void goby::acomms::MMDriver::err(const NMEASentence& nmea)
     if(nmea.at(2) == "NMEA")
     {
         waiting_for_modem_ = false;
-        increment_present_fail();
+
+        try
+        {
+            increment_present_fail(); 
+        }
+        catch(driver_exception& e)
+        {
+            if(log_) *log_  << group("modem_out") << warn << "modem did not respond to our command even after " << RETRIES << " retries. continuing onwards anyway..." << std::endl;
+            out_.pop_front();
+        }
     }
 }
 
@@ -954,7 +969,7 @@ void goby::acomms::MMDriver::set_hydroid_gateway_prefix(int id)
 void goby::acomms::MMDriver::increment_present_fail()
 {
     ++present_fail_count_;
-    if(present_fail_count_ == RETRIES)
+    if(present_fail_count_ >= RETRIES)
         throw(driver_exception("Fail count exceeds RETRIES"));
 }
 

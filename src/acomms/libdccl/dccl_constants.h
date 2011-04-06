@@ -34,7 +34,16 @@ namespace goby
     {
         typedef boost::dynamic_bitset<unsigned char> Bitset;
 
-            
+
+        inline Bitset operator+(const Bitset& a, const Bitset& b)
+        {
+            Bitset out(a);
+            for(int i = 0, n = b.size(); i < n; ++i)
+                out.push_back(b[i]);
+            return out;
+        }
+
+        
         inline void bitset2string(const Bitset& bits, std::string* str)
         {
             str->resize(bits.num_blocks()); // resize the string to fit the bitset

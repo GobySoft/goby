@@ -42,6 +42,8 @@ namespace goby
         class DCCLFieldCodec
         {
           public:
+            typedef goby::acomms::Bitset Bitset;
+            
             DCCLFieldCodec() { }
             
             enum MessagePart
@@ -51,7 +53,7 @@ namespace goby
             };
             
             void encode(Bitset* bits,
-                        const google::protobuf::Message& msg,
+                        const boost::any& field_value,
                         MessagePart part);
             void encode(Bitset* bits,
                          const boost::any& field_value,
@@ -61,7 +63,7 @@ namespace goby
                                  const google::protobuf::FieldDescriptor* field);
             
             void decode(Bitset* bits,
-                        boost::shared_ptr<google::protobuf::Message> msg,
+                        boost::any* field_value,
                         MessagePart part);
             void decode(Bitset* bits,
                          boost::any* field_value,
@@ -69,10 +71,16 @@ namespace goby
             void decode_repeated(Bitset* bits,
                                  std::vector<boost::any>* field_values,
                                  const google::protobuf::FieldDescriptor* field);
+
+            unsigned size(const google::protobuf::Message& msg, MessagePart part);
+            unsigned size(const boost::any& field_value,
+                          const google::protobuf::FieldDescriptor* field);
+            unsigned size_repeated(const std::vector<boost::any>& field_values,
+                                   const google::protobuf::FieldDescriptor* field);
             
             unsigned max_size(const google::protobuf::Descriptor* desc, MessagePart part);
             unsigned max_size(const google::protobuf::FieldDescriptor* field);
-
+            
             
             unsigned min_size(const google::protobuf::Descriptor* desc, MessagePart part);
             unsigned min_size(const google::protobuf::FieldDescriptor* field);
@@ -103,32 +111,49 @@ namespace goby
             {
                 return !MessageHandler::field_.empty() ? MessageHandler::field_.back() : 0;
             }
-            
+
+            static MessagePart part() { return part_; }
             
             template<typename Extension>
                 typename Extension::TypeTraits::ConstType get(const Extension& e)
             {
-                return this_field()->options().GetExtension(e);
+                if(this_field())
+                    return this_field()->options().GetExtension(e);
+                else
+                    return typename Extension::TypeTraits::ConstType();
             }
 
             
             template<typename Extension>
                 bool has(const Extension& e)
             {
-                return this_field()->options().HasExtension(e);
+                if(this_field())
+                    return this_field()->options().HasExtension(e);
+                else
+                    return false;
             }
             
             template<typename Extension>
                 void require(const Extension& e, const std::string& name)
             {
                 if(!has(e))
-                    throw(DCCLException("Field " + this_field()->name() + " missing option extension called `" + name + "`."));
+                {
+                    if(this_field())
+                        throw(DCCLException("Field " + this_field()->name() + " missing option extension called `" + name + "`."));
+                }
+                
             }            
             
             void require(bool b, const std::string& description)
             {
                 if(!b)
-                    throw(DCCLException("Field " + this_field()->name() + " failed validation: " + description));
+                {
+                    if(this_field())
+                        throw(DCCLException("Field " + this_field()->name() + " failed validation: " + description));
+                    else
+                        throw(DCCLException("Message " + this_descriptor()->name() + " failed validation: " + description));
+                }
+                
             }
             
                 
@@ -137,36 +162,29 @@ namespace goby
 
             virtual std::string _info();
             
-            
-            // field == 0 for root message!
             virtual Bitset _encode(const boost::any& field_value) = 0;
             
-            // field == 0 for root message!
             virtual boost::any _decode(Bitset* bits) = 0;
-            
 
-            // max_size in bits
-            // field == 0 for root message!
-            virtual unsigned _max_size() = 0;
-            virtual unsigned _min_size()
-            {
-                if(!_variable_size())
-                    return _max_size();
-                else
-                    throw(DCCLException("Field " + this_field()->name() + " is variable sized but did not overload _min_size"));
-            }
-            
-            
             virtual goby::acomms::Bitset
                 _encode_repeated(const std::vector<boost::any>& field_values);
 
             virtual std::vector<boost::any>
-                _decode_repeated(Bitset* repeated_bits);
+                _decode_repeated(Bitset* repeated_bits);            
             
+            // max_size in bits
+            // field == 0 for root message!
+            virtual unsigned _size(const boost::any& field_value) = 0;
+            virtual unsigned _size_repeated(const std::vector<boost::any>& field_values);
+            
+            virtual unsigned _max_size() = 0;
+            virtual unsigned _min_size() = 0;            
+
             virtual unsigned _max_size_repeated();
             virtual unsigned _min_size_repeated();
+
             
-            virtual bool _variable_size() { return false; }
+            virtual bool _variable_size() { return true; }
 
 
             static boost::signal<void (unsigned size)> get_more_bits;
@@ -197,6 +215,8 @@ namespace goby
             
 
             
+            
+            friend class DCCLCodec;
           private:
             bool __check_field(const google::protobuf::FieldDescriptor* field);
             void __encode_prepend_bits(const Bitset& new_bits, Bitset* bits);
@@ -242,6 +262,36 @@ namespace goby
             
           private:
             static MessagePart part_;
+        };
+
+            class DCCLFixedFieldCodec : public DCCLFieldCodec
+            {
+          protected:
+            virtual unsigned _size() = 0;
+            virtual unsigned _size_repeated();
+            
+          private:
+            unsigned _size(const boost::any& field_value)
+            { return _size(); }
+
+            unsigned _max_size()
+            { return _size(); }
+
+            unsigned _min_size()
+            { return _size(); }
+            
+            bool _variable_size() { return false; }
+
+            unsigned _size_repeated(const std::vector<boost::any>& field_values)
+            { return _size_repeated(); }
+
+            unsigned _max_size_repeated()
+            { return _size_repeated(); }
+
+            unsigned _min_size_repeated()
+            { return _size_repeated(); }
+
+            
         };
         
     }

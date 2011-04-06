@@ -42,11 +42,8 @@ using google::protobuf::Descriptor;
 using google::protobuf::Reflection;
 
 
-const char* goby::acomms::DCCLCodec::DEFAULT_CODEC_NAME = "_default";
+const std::string goby::acomms::DCCLCodec::DEFAULT_CODEC_NAME = "_default";
 std::ostream*  goby::acomms::DCCLCodec::log_ = 0;
-
-goby::acomms::DCCLCodec::FieldCodecManager goby::acomms::DCCLCodec::codec_manager_;
-goby::acomms::DCCLCodec::CppTypeHelper goby::acomms::DCCLCodec::cpptype_helper_;
 goby::acomms::protobuf::DCCLConfig goby::acomms::DCCLCodec::cfg_;
 std::string goby::acomms::DCCLCodec::crypto_key_;
 bool goby::acomms::DCCLCodec::default_codecs_set_ = false;
@@ -58,17 +55,22 @@ google::protobuf::DynamicMessageFactory goby::acomms::DCCLCodec::message_factory
 //
 
 void goby::acomms::DCCLCodec::set_default_codecs()
-{    
-    codec_manager_.add<double, DCCLDefaultFieldCodec>(DEFAULT_CODEC_NAME);
-    codec_manager_.add<float, DCCLDefaultFieldCodec>(DEFAULT_CODEC_NAME);
-    codec_manager_.add<bool, DCCLDefaultFieldCodec>(DEFAULT_CODEC_NAME);
-    codec_manager_.add<int32, DCCLDefaultFieldCodec>(DEFAULT_CODEC_NAME);
-    codec_manager_.add<int64, DCCLDefaultFieldCodec>(DEFAULT_CODEC_NAME);
-    codec_manager_.add<uint32, DCCLDefaultFieldCodec>(DEFAULT_CODEC_NAME);
-    codec_manager_.add<uint64, DCCLDefaultFieldCodec>(DEFAULT_CODEC_NAME);
-    codec_manager_.add<std::string, DCCLDefaultFieldCodec>(DEFAULT_CODEC_NAME);
-    codec_manager_.add<google::protobuf::EnumDescriptor, DCCLDefaultFieldCodec>(DEFAULT_CODEC_NAME);
-    codec_manager_.add<google::protobuf::Message, DCCLDefaultFieldCodec>(DEFAULT_CODEC_NAME);
+{
+    TypeHelper::initialize();
+    
+    
+    using google::protobuf::FieldDescriptor;
+    FieldCodecManager::add<double, DCCLDefaultArithmeticFieldCodec>(DEFAULT_CODEC_NAME);
+    FieldCodecManager::add<float, DCCLDefaultArithmeticFieldCodec>(DEFAULT_CODEC_NAME);
+    FieldCodecManager::add<bool, DCCLDefaultBoolCodec>(DEFAULT_CODEC_NAME);
+    FieldCodecManager::add<int32, DCCLDefaultArithmeticFieldCodec>(DEFAULT_CODEC_NAME);
+    FieldCodecManager::add<int64, DCCLDefaultArithmeticFieldCodec>(DEFAULT_CODEC_NAME);
+    FieldCodecManager::add<uint32, DCCLDefaultArithmeticFieldCodec>(DEFAULT_CODEC_NAME);
+    FieldCodecManager::add<uint64, DCCLDefaultArithmeticFieldCodec>(DEFAULT_CODEC_NAME);
+    FieldCodecManager::add<FieldDescriptor::TYPE_STRING, DCCLDefaultStringCodec>(DEFAULT_CODEC_NAME);
+    FieldCodecManager::add<FieldDescriptor::TYPE_BYTES, DCCLDefaultBytesCodec>(DEFAULT_CODEC_NAME);
+    FieldCodecManager::add<google::protobuf::EnumDescriptor, DCCLDefaultEnumCodec>(DEFAULT_CODEC_NAME);
+    FieldCodecManager::add<google::protobuf::Message, DCCLDefaultMessageCodec>(DEFAULT_CODEC_NAME);
 
     //    add_field_codec<FieldDescriptor::CPPTYPE_STRING, DCCLTimeCodec>("_time");
 //    add_field_codec<FieldDescriptor::CPPTYPE_STRING, DCCLModemIdConverterCodec>(
@@ -105,12 +107,16 @@ std::string goby::acomms::DCCLCodec::encode(const google::protobuf::Message& msg
         Bitset head_bits, body_bits;
 
         boost::shared_ptr<DCCLFieldCodec> codec =
-            codec_manager_.find(FieldDescriptor::CPPTYPE_MESSAGE,
-                                desc->options().GetExtension(dccl::message_codec));
+            FieldCodecManager::find(desc, desc->options().GetExtension(dccl::message_codec));
+        boost::shared_ptr<FromProtoCppTypeBase> helper =
+            TypeHelper::find(desc);
+
         if(codec)
         {
-            codec->encode(&head_bits, msg, DCCLFieldCodec::HEAD);
-            codec->encode(&body_bits, msg, DCCLFieldCodec::BODY);
+            DCCLFieldCodec::MessageHandler msg_handler;
+            msg_handler.push(msg.GetDescriptor());
+            codec->encode(&head_bits, helper->get_value(msg), DCCLFieldCodec::HEAD);
+            codec->encode(&body_bits, helper->get_value(msg), DCCLFieldCodec::BODY);
         }
         else
         {
@@ -182,9 +188,11 @@ boost::shared_ptr<google::protobuf::Message> goby::acomms::DCCLCodec::decode(con
         
     
         boost::shared_ptr<DCCLFieldCodec> codec =
-            codec_manager_.find(FieldDescriptor::CPPTYPE_MESSAGE,
-                                desc->options().GetExtension(dccl::message_codec));
-    
+            FieldCodecManager::find(desc, desc->options().GetExtension(dccl::message_codec));
+        boost::shared_ptr<FromProtoCppTypeBase> helper =
+            TypeHelper::find(desc);
+
+        
         unsigned head_size_bits = codec->max_size(desc, DCCLFieldCodec::HEAD) + fixed_head_size();
         unsigned body_size_bits = codec->max_size(desc, DCCLFieldCodec::BODY);
 
@@ -222,9 +230,15 @@ boost::shared_ptr<google::protobuf::Message> goby::acomms::DCCLCodec::decode(con
 
         if(codec)
         {
-            codec->decode(&head_bits, msg, DCCLFieldCodec::HEAD);
+            DCCLFieldCodec::MessageHandler msg_handler;
+            msg_handler.push(msg->GetDescriptor());
+
+            boost::any value(msg);
+            codec->decode(&head_bits, &value, DCCLFieldCodec::HEAD);
+            helper->set_value(msg.get(), value);
             std::cout << "after header decode, message is: " << *msg << std::endl;
-            codec->decode(&body_bits, msg, DCCLFieldCodec::BODY);
+            codec->decode(&body_bits, &value, DCCLFieldCodec::BODY);
+            helper->set_value(msg.get(), value);
             std::cout << "after header & body decode, message is: " << *msg << std::endl;
         }
         else
@@ -259,8 +273,7 @@ bool goby::acomms::DCCLCodec::validate(const google::protobuf::Descriptor* desc)
             throw(DCCLException("Missing message option `dccl.max_bytes`. Specify a maximum (encoded) message size in bytes (e.g. 32) in the body of your .proto message using \"option (dccl.max_bytes) = 32\""));
         
         boost::shared_ptr<DCCLFieldCodec> codec =
-            codec_manager_.find(FieldDescriptor::CPPTYPE_MESSAGE,
-                                desc->options().GetExtension(dccl::message_codec));
+            FieldCodecManager::find(desc, desc->options().GetExtension(dccl::message_codec));
 
         
         const unsigned head_bit_size = codec->max_size(desc, DCCLFieldCodec::HEAD) + fixed_head_size();
@@ -306,8 +319,7 @@ void goby::acomms::DCCLCodec::info(const google::protobuf::Descriptor* desc, std
     try
     {   
         boost::shared_ptr<DCCLFieldCodec> codec =
-            codec_manager_.find(FieldDescriptor::CPPTYPE_MESSAGE,
-                                desc->options().GetExtension(dccl::message_codec));
+            FieldCodecManager::find(desc, desc->options().GetExtension(dccl::message_codec));
 
         const unsigned config_head_bit_size = codec->max_size(desc, DCCLFieldCodec::HEAD);
         const unsigned body_bit_size = codec->max_size(desc, DCCLFieldCodec::BODY);
@@ -408,79 +420,4 @@ void goby::acomms::DCCLCodec::process_cfg()
     
 }
 
-//
-// FieldCodecManager
-//
 
-
-const boost::shared_ptr<goby::acomms::DCCLFieldCodec>
-goby::acomms::DCCLCodec::FieldCodecManager::find(
-    google::protobuf::FieldDescriptor::CppType cpp_type, const std::string& name) const
-{
-    typedef InsideMap::const_iterator InsideIterator;
-    typedef std::map<google::protobuf::FieldDescriptor::CppType, InsideMap>::const_iterator Iterator;
-                    
-    Iterator it = codecs_.find(cpp_type);
-    if(it != codecs_.end())
-    {
-        InsideIterator inside_it = it->second.find(name);
-        if(inside_it != it->second.end())
-        {
-            return inside_it->second;
-        }
-    }                    
-    throw(DCCLException("No codec by the name `" + name + "` found for type: " + DCCLCodec::cpptype_helper().find(cpp_type)->as_str()));
-}
-
-
-
-//
-// CppTypeHelper
-//
-
-goby::acomms::DCCLCodec::CppTypeHelper::CppTypeHelper()                
-{
-    using namespace google::protobuf;    
-    using boost::shared_ptr;
-    boost::assign::insert (map_)
-        (static_cast<FieldDescriptor::CppType>(0),
-         shared_ptr<FromProtoCppTypeBase>(new FromProtoCppTypeBase))
-        (FieldDescriptor::CPPTYPE_DOUBLE,
-         shared_ptr<FromProtoCppTypeBase>(new FromProtoCppType<FieldDescriptor::CPPTYPE_DOUBLE>))
-        (FieldDescriptor::CPPTYPE_FLOAT,
-         shared_ptr<FromProtoCppTypeBase>(new FromProtoCppType<FieldDescriptor::CPPTYPE_FLOAT>))
-        (FieldDescriptor::CPPTYPE_UINT64,
-         shared_ptr<FromProtoCppTypeBase>(new FromProtoCppType<FieldDescriptor::CPPTYPE_UINT64>))
-        (FieldDescriptor::CPPTYPE_UINT32,
-         shared_ptr<FromProtoCppTypeBase>(new FromProtoCppType<FieldDescriptor::CPPTYPE_UINT32>))
-        (FieldDescriptor::CPPTYPE_INT32,
-         shared_ptr<FromProtoCppTypeBase>(new FromProtoCppType<FieldDescriptor::CPPTYPE_INT32>))
-        (FieldDescriptor::CPPTYPE_INT64,
-         shared_ptr<FromProtoCppTypeBase>(new FromProtoCppType<FieldDescriptor::CPPTYPE_INT64>))
-        (FieldDescriptor::CPPTYPE_BOOL,
-         shared_ptr<FromProtoCppTypeBase>(new FromProtoCppType<FieldDescriptor::CPPTYPE_BOOL>))
-        (FieldDescriptor::CPPTYPE_STRING,
-         shared_ptr<FromProtoCppTypeBase>(new FromProtoCppType<FieldDescriptor::CPPTYPE_STRING>))
-        (FieldDescriptor::CPPTYPE_MESSAGE,
-         shared_ptr<FromProtoCppTypeBase>(new FromProtoCppType<FieldDescriptor::CPPTYPE_MESSAGE>))
-        (FieldDescriptor::CPPTYPE_ENUM,
-         shared_ptr<FromProtoCppTypeBase>(new FromProtoCppType<FieldDescriptor::CPPTYPE_ENUM>));
-}
-
-boost::shared_ptr<goby::acomms::FromProtoCppTypeBase> goby::acomms::DCCLCodec::CppTypeHelper::find(google::protobuf::FieldDescriptor::CppType cpptype)
-{
-    Map::iterator it = map_.find(cpptype);
-    if(it != map_.end())
-        return it->second;
-    else
-        return boost::shared_ptr<FromProtoCppTypeBase>();
-}
-
-const boost::shared_ptr<goby::acomms::FromProtoCppTypeBase> goby::acomms::DCCLCodec::CppTypeHelper::find(google::protobuf::FieldDescriptor::CppType cpptype) const
-{
-    Map::const_iterator it = map_.find(cpptype);
-    if(it != map_.end())
-        return it->second;
-    else
-        return boost::shared_ptr<FromProtoCppTypeBase>();
-}

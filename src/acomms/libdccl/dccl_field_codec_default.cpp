@@ -20,6 +20,7 @@
 #include "dccl_field_codec_default.h"
 
 #include <sstream>
+#include <algorithm>
 
 //
 // DCCLDefaultBoolCodec
@@ -28,12 +29,12 @@
 goby::acomms::Bitset goby::acomms::DCCLDefaultBoolCodec::_encode(const boost::any& field_value)
 {
     if(field_value.empty())
-        return Bitset(_max_size());
+        return Bitset(_size());
     
     try
     {
         bool b = boost::any_cast<bool>(field_value);
-        return Bitset(_max_size(), (b ? 1 : 0) + 1);
+        return Bitset(_size(), (b ? 1 : 0) + 1);
     }
     catch(boost::bad_any_cast& e)
     {
@@ -56,7 +57,7 @@ boost::any goby::acomms::DCCLDefaultBoolCodec::_decode(Bitset* bits)
 }
 
 
-unsigned goby::acomms::DCCLDefaultBoolCodec::_max_size()
+unsigned goby::acomms::DCCLDefaultBoolCodec::_size()
 {    
     // true and false
     const unsigned BOOL_VALUES = 2;
@@ -134,6 +135,23 @@ boost::any goby::acomms::DCCLDefaultStringCodec::_decode(Bitset* bits)
     
 }
 
+unsigned goby::acomms::DCCLDefaultStringCodec::_size(const boost::any& field_value)
+{
+    try
+    {
+        if(field_value.empty())
+            return _min_size();
+        
+        std::string s = boost::any_cast<std::string>(field_value);
+        return std::min(_min_size() + static_cast<unsigned>(s.length()*BITS_IN_BYTE), _max_size());
+    }
+    catch(boost::bad_any_cast& e)
+    {
+        throw(DCCLException("Bad type given to encode, expecting std::string"));
+    }
+}
+
+
 unsigned goby::acomms::DCCLDefaultStringCodec::_max_size()
 {
     // string length + actual string
@@ -151,6 +169,80 @@ void goby::acomms::DCCLDefaultStringCodec::_validate()
     require(dccl::max_length, "dccl.max_length");
     require(get(dccl::max_length) <= MAX_STRING_LENGTH,
             "dccl.max_length must be <= " + goby::util::as<std::string>(static_cast<int>(MAX_STRING_LENGTH)));
+}
+
+//
+// DCCLDefaultBytesCodec
+//
+
+goby::acomms::Bitset goby::acomms::DCCLDefaultBytesCodec::_encode(const boost::any& field_value)
+{
+    try
+    {
+        if(field_value.empty())
+            return Bitset(_min_size(), 0);
+
+        std::string s = boost::any_cast<std::string>(field_value);
+
+        Bitset bits;
+        string2bitset(&bits, s);
+        bits.resize(_max_size());
+        bits <<= _min_size();
+        bits.set(0, true);
+        
+        return bits;
+    }
+    catch(boost::bad_any_cast& e)
+    {
+        throw(DCCLException("Bad type given to encode, expecting std::string"));
+    }
+}
+
+unsigned goby::acomms::DCCLDefaultBytesCodec::_size(const boost::any& field_value)
+{
+    if(field_value.empty())
+        return _min_size();
+    else
+        return _max_size();
+}
+
+
+boost::any goby::acomms::DCCLDefaultBytesCodec::_decode(Bitset* bits)
+{
+    bool presence_flag = bits->to_ulong();
+    if(presence_flag)
+    {
+        // grabs more bits to add to the MSBs of `bits`
+        get_more_bits(_max_size()-_min_size());
+
+        *bits >>= _min_size();
+        bits->resize(bits->size() - _min_size());
+        
+        std::string value;
+        bitset2string(*bits, &value);
+        return value;
+    }
+    else
+    {
+        return boost::any();
+    }
+    
+}
+
+unsigned goby::acomms::DCCLDefaultBytesCodec::_max_size()
+{
+    return _min_size() + get(dccl::max_length) * BITS_IN_BYTE;
+}
+
+unsigned goby::acomms::DCCLDefaultBytesCodec::_min_size()
+{
+    // presence bit
+    return 1;
+}
+
+void goby::acomms::DCCLDefaultBytesCodec::_validate()
+{
+    require(dccl::max_length, "dccl.max_length");
 }
 
 //
@@ -196,10 +288,10 @@ boost::any goby::acomms::DCCLDefaultEnumCodec::_decode(Bitset* bits)
 }
 
 
-unsigned goby::acomms::DCCLDefaultEnumCodec::_max_size()
+unsigned goby::acomms::DCCLDefaultEnumCodec::_size()
 {
     const google::protobuf::EnumDescriptor* e = this_field()->enum_type();
-    return DCCLDefaultArithmeticFieldCodec<int32>::_max_size(max(e), min(e));
+    return DCCLDefaultArithmeticFieldCodec<int32>::_size(max(e), min(e));
 }
 
 void goby::acomms::DCCLDefaultEnumCodec::_validate()
@@ -221,27 +313,31 @@ goby::acomms::Bitset goby::acomms::DCCLDefaultMessageCodec::_encode(const boost:
         goby::acomms::Bitset bits;
         
         const google::protobuf::Message* msg = boost::any_cast<const google::protobuf::Message*>(field_value);
-
-        if(DCCLCodec::log_)
-            *DCCLCodec::log_ << debug << "Looking to encode Message " << msg->GetDescriptor()->full_name() << std::endl;
+        
+        // if(DCCLCodec::log_)
+        //     *DCCLCodec::log_ << debug << "Looking to encode Message " << msg->GetDescriptor()->full_name() << std::endl;
 
     
         const google::protobuf::Descriptor* desc = msg->GetDescriptor();
         const google::protobuf::Reflection* refl = msg->GetReflection();       
         for(int i = 0, n = desc->field_count(); i < n; ++i)
         {
-            if(DCCLCodec::log_)
-                *DCCLCodec::log_ << debug << "Looking to encode " << desc->field(i)->DebugString();
-
+            // if(DCCLCodec::log_)
+            //     *DCCLCodec::log_ << debug << "Looking to encode " << desc->field(i)->DebugString();
         
             const google::protobuf::FieldDescriptor* field_desc = desc->field(i);
-            std::string field_codec = field_desc->options().GetExtension(dccl::codec);
 
+            if(!__check_field(field_desc))
+                continue;
+            
+            std::string field_codec = __find_codec(field_desc);
+            
             boost::shared_ptr<DCCLFieldCodec> codec =
-                DCCLCodec::codec_manager().find(field_desc->cpp_type(), field_codec);
+                FieldCodecManager::find(field_desc, field_codec);
             boost::shared_ptr<FromProtoCppTypeBase> helper =
-                DCCLCodec::cpptype_helper().find(field_desc->cpp_type());
+                TypeHelper::find(field_desc);
 
+            
             if(field_desc->is_repeated())
             {    
                 std::vector<boost::any> field_values;
@@ -266,29 +362,84 @@ goby::acomms::Bitset goby::acomms::DCCLDefaultMessageCodec::_encode(const boost:
     }
 }
 
+unsigned goby::acomms::DCCLDefaultMessageCodec::_size(const boost::any& field_value)
+{
+    if(field_value.empty())
+        return _min_size();
+
+    unsigned out;
+    try
+    {
+        const google::protobuf::Message* msg = boost::any_cast<const google::protobuf::Message*>(field_value);
+    
+        const google::protobuf::Descriptor* desc = msg->GetDescriptor();
+        const google::protobuf::Reflection* refl = msg->GetReflection();       
+        for(int i = 0, n = desc->field_count(); i < n; ++i)
+        {
+            const google::protobuf::FieldDescriptor* field_desc = desc->field(i);
+
+            if(!__check_field(field_desc))
+                continue;
+
+            
+            std::string field_codec = __find_codec(field_desc);
+            
+            boost::shared_ptr<DCCLFieldCodec> codec =
+                FieldCodecManager::find(field_desc, field_codec);
+            boost::shared_ptr<FromProtoCppTypeBase> helper =
+                TypeHelper::find(field_desc);
+            
+            if(field_desc->is_repeated())
+            {    
+                std::vector<boost::any> field_values;
+                for(int j = 0, m = refl->FieldSize(*msg, field_desc); j < m; ++j)
+                {
+                    field_values.push_back(helper->get_repeated_value(field_desc,
+                                                                      *msg, j));
+                }
+                    
+                out += codec->size_repeated(field_values, field_desc);
+            }
+            else
+            {
+                out += codec->size(helper->get_value(field_desc, *msg), field_desc);
+            }
+        }
+        return out;
+    }
+    catch(boost::bad_any_cast& e)
+    {
+        throw(DCCLException("Bad type given to encode, expecting const google::protobuf::Message*"));
+    }
+}
+
+
 boost::any goby::acomms::DCCLDefaultMessageCodec::_decode(Bitset* bits)
 {
     boost::shared_ptr<google::protobuf::Message> msg(
         DCCLCodec::message_factory_.GetPrototype(DCCLFieldCodec::this_descriptor())->New());
     
-    if(DCCLCodec::log_)
-        *DCCLCodec::log_ << debug << "Looking to decode Message " << msg->GetDescriptor()->full_name() << std::endl;
+//    if(DCCLCodec::log_)
+//        *DCCLCodec::log_ << debug << "Looking to decode Message " << msg->GetDescriptor()->full_name() << std::endl;
 
 
     const google::protobuf::Descriptor* desc = msg->GetDescriptor();
     for(int i = 0, n = desc->field_count(); i < n; ++i)
     {
-        if(DCCLCodec::log_)
-            *DCCLCodec::log_ << debug << "Looking to decode " << desc->field(i)->DebugString();
-
+//        if(DCCLCodec::log_)
+//            *DCCLCodec::log_ << debug << "Looking to decode " << desc->field(i)->DebugString();
         
         const google::protobuf::FieldDescriptor* field_desc = desc->field(i);
-        std::string field_codec = field_desc->options().GetExtension(dccl::codec);
+
+        if(!__check_field(field_desc))
+            continue;
+
+        std::string field_codec = __find_codec(field_desc);
         
         boost::shared_ptr<DCCLFieldCodec> codec =
-            DCCLCodec::codec_manager().find(field_desc->cpp_type(), field_codec);
+            FieldCodecManager::find(field_desc, field_codec);
         boost::shared_ptr<FromProtoCppTypeBase> helper =
-            DCCLCodec::cpptype_helper().find(field_desc->cpp_type());
+            TypeHelper::find(field_desc);
 
         if(field_desc->is_repeated())
         {   
@@ -315,22 +466,26 @@ unsigned goby::acomms::DCCLDefaultMessageCodec::_max_size()
 {
     unsigned sum = 0;
 
-    if(DCCLCodec::log_)
-        *DCCLCodec::log_ << debug << "Looking for max size of " << this_descriptor()->full_name() << std::endl;
+//    if(DCCLCodec::log_)
+//        *DCCLCodec::log_ << debug << "Looking for max size of " << this_descriptor()->full_name() << std::endl;
     
     const google::protobuf::Descriptor* desc =
         DCCLFieldCodec::this_descriptor();
     for(int i = 0, n = desc->field_count(); i < n; ++i)
     {
         
-        if(DCCLCodec::log_)
-            *DCCLCodec::log_ << debug << "Looking to get max size of field " << desc->field(i)->DebugString();
+        // if(DCCLCodec::log_)
+        //     *DCCLCodec::log_ << debug << "Looking to get max size of field " << desc->field(i)->DebugString();
 
         
         const google::protobuf::FieldDescriptor* field_desc = desc->field(i);
-        std::string field_codec = field_desc->options().GetExtension(dccl::codec);
 
-        sum += DCCLCodec::codec_manager().find(field_desc->cpp_type(),field_codec)->
+        if(!__check_field(field_desc))
+            continue;
+
+        std::string field_codec = __find_codec(field_desc);
+
+        sum += FieldCodecManager::find(field_desc,field_codec)->
             max_size(field_desc);
     }
     
@@ -341,22 +496,24 @@ unsigned goby::acomms::DCCLDefaultMessageCodec::_min_size()
 {
     unsigned sum = 0;
 
-    if(DCCLCodec::log_)
-        *DCCLCodec::log_ << debug << "Looking for min size of " << this_descriptor()->full_name() << std::endl;
+    // if(DCCLCodec::log_)
+    //     *DCCLCodec::log_ << debug << "Looking for min size of " << this_descriptor()->full_name() << std::endl;
     
     const google::protobuf::Descriptor* desc =
         DCCLFieldCodec::this_descriptor();
     for(int i = 0, n = desc->field_count(); i < n; ++i)
     {
         
-        if(DCCLCodec::log_)
-            *DCCLCodec::log_ << debug << "Looking to get min size of field " << desc->field(i)->DebugString();
-
-        
+        // if(DCCLCodec::log_)
+        //     *DCCLCodec::log_ << debug << "Looking to get min size of field " << desc->field(i)->DebugString();
         const google::protobuf::FieldDescriptor* field_desc = desc->field(i);
-        std::string field_codec = field_desc->options().GetExtension(dccl::codec);
 
-        sum += DCCLCodec::codec_manager().find(field_desc->cpp_type(),field_codec)->
+        if(!__check_field(field_desc))
+            continue;
+        
+        std::string field_codec = __find_codec(field_desc);
+
+        sum += FieldCodecManager::find(field_desc,field_codec)->
             min_size(field_desc);
     }
     
@@ -370,9 +527,13 @@ void goby::acomms::DCCLDefaultMessageCodec::_validate()
     for(int i = 0, n = desc->field_count(); i < n; ++i)
     {
         const google::protobuf::FieldDescriptor* field_desc = desc->field(i);
-        std::string field_codec = field_desc->options().GetExtension(dccl::codec);
 
-        DCCLCodec::codec_manager().find(field_desc->cpp_type(),field_codec)->
+        if(!__check_field(field_desc))
+            continue;
+
+        std::string field_codec = __find_codec(field_desc);
+
+        FieldCodecManager::find(field_desc,field_codec)->
             validate(field_desc);
     }    
 }
@@ -390,14 +551,41 @@ std::string goby::acomms::DCCLDefaultMessageCodec::_info()
     for(int i = 0, n = desc->field_count(); i < n; ++i)
     {
         const google::protobuf::FieldDescriptor* field_desc = desc->field(i);
-        std::string field_codec = field_desc->options().GetExtension(dccl::codec);
 
-        DCCLCodec::codec_manager().find(field_desc->cpp_type(),field_codec)->
+        if(!__check_field(field_desc))
+            continue;
+
+        std::string field_codec = __find_codec(field_desc);
+
+        FieldCodecManager::find(field_desc,field_codec)->
             info(field_desc, &ss);
     }
     ss << "}\n";
     return ss.str();
 }
+
+bool goby::acomms::DCCLDefaultMessageCodec::__check_field(const google::protobuf::FieldDescriptor* field)
+{
+    if(!field)
+        return true;
+    else if(field->options().GetExtension(dccl::omit)
+            || (part() == HEAD && !field->options().GetExtension(dccl::in_head))
+            || (part() == BODY && field->options().GetExtension(dccl::in_head)))
+        return false;
+    else
+        return true;
+}
+
+std::string goby::acomms::DCCLDefaultMessageCodec::__find_codec(const google::protobuf::FieldDescriptor* field)
+{
+    if(field->options().HasExtension(dccl::codec))
+        return field->options().GetExtension(dccl::codec);
+    else if(field->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE)
+        return field->message_type()->options().GetExtension(dccl::message_codec);
+    else
+        return field->options().GetExtension(dccl::codec);
+}
+
 
 
 
@@ -408,7 +596,7 @@ std::string goby::acomms::DCCLDefaultMessageCodec::_info()
 // goby::acomms::Bitset goby::acomms::DCCLTimeCodec::_encode(const boost::any& field_value)
 // {
 //     if(field_value.empty())
-//         return Bitset(_max_size());
+//         return Bitset(_size());
                 
 //     try
 //     {
@@ -418,7 +606,7 @@ std::string goby::acomms::DCCLDefaultMessageCodec::_info()
 //                 boost::any_cast<std::string>(field_value)
 //                 ).time_of_day();
                 
-//         return Bitset(_max_size(),
+//         return Bitset(_size(),
 //                       static_cast<unsigned long>(
 //                           util::unbiased_round(
 //                               util::time_duration2double(time_of_day), 0)));

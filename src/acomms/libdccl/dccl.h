@@ -32,6 +32,7 @@
 
 #include <boost/shared_ptr.hpp>
 
+
 #include "goby/util/time.h"
 #include "goby/util/logger.h"
 #include "goby/core/core_constants.h"
@@ -42,19 +43,21 @@
 
 #include "dccl_exception.h"
 #include "dccl_field_codec.h"
+#include "dccl_type_helper.h"
+#include "dccl_field_codec_manager.h"
 
 /// The global namespace for the Goby project.
 namespace goby
 {
     namespace util
     { class FlexOstream; }
-    
-
+ 
+ 
     /// Objects pertaining to acoustic communications (acomms)
     namespace acomms
     {
         class DCCLFieldCodec;
-        
+  
         /// \class DCCLCodec dccl.h goby/acomms/dccl.h
         /// \brief provides an API to the Dynamic CCL Codec.
         /// \ingroup acomms_api
@@ -75,38 +78,6 @@ namespace goby
             static void merge_cfg(const protobuf::DCCLConfig& cfg);
             
 
-            class FieldCodecManager
-            {
-              public:
-                template<typename T, template <typename T> class Codec>
-                    void add(const char* name);
-
-                const boost::shared_ptr<DCCLFieldCodec> find(
-                    google::protobuf::FieldDescriptor::CppType cpp_type,
-                    const std::string& name) const;
-                
-              private:
-                typedef std::map<std::string, boost::shared_ptr<DCCLFieldCodec> > InsideMap;
-                
-                std::map<google::protobuf::FieldDescriptor::CppType, InsideMap> codecs_;
-            };
-
-            class CppTypeHelper
-            {
-              public:
-                CppTypeHelper();
-                const boost::shared_ptr<FromProtoCppTypeBase> find(google::protobuf::FieldDescriptor::CppType cpptype) const;
-                
-                boost::shared_ptr<FromProtoCppTypeBase> find(google::protobuf::FieldDescriptor::CppType cpptype);
-
-                        
-              private:
-              typedef std::map<google::protobuf::FieldDescriptor::CppType,
-              boost::shared_ptr<FromProtoCppTypeBase> > Map;
-              Map map_;
-            
-            };
-            
             /// \brief Messages must be validated before they can be encoded/decoded
             static bool validate(const google::protobuf::Descriptor* desc);
             static void info(const google::protobuf::Descriptor* desc, std::ostream* os);
@@ -125,10 +96,6 @@ namespace goby
             static boost::shared_ptr<google::protobuf::Message> decode(const std::string& bytes);
             //@}
 
-            static const FieldCodecManager& codec_manager()
-            { return codec_manager_; }
-            static const CppTypeHelper& cpptype_helper()
-            { return cpptype_helper_; }
             
             static void set_log(std::ostream* log)
             {
@@ -176,48 +143,20 @@ namespace goby
             
             
           private:
-            static const char* DEFAULT_CODEC_NAME;
+            static const std::string DEFAULT_CODEC_NAME;
 
             static protobuf::DCCLConfig cfg_;
             // SHA256 hash of the crypto passphrase
             static std::string crypto_key_;
-
-            // maps protocol buffers CppTypes to a map of field codec names & codecs themselves
-            static FieldCodecManager codec_manager_;
-            static CppTypeHelper cpptype_helper_;
             
             // maps `dccl.id`s onto Message Descriptors
             static std::map<int32, const google::protobuf::Descriptor*> id2desc_;
             
             static bool default_codecs_set_;
         };
+                                      
+        
     }
 }
-
-template<typename T, template <typename T> class Codec>
-    void goby::acomms::DCCLCodec::FieldCodecManager::add(const char* name)
-{
-    const google::protobuf::FieldDescriptor::CppType cpp_type = ToProtoCppType<T>::as_enum();
-    
-    if(!codecs_[cpp_type].count(name))
-    {
-        codecs_[cpp_type][name] = boost::shared_ptr<DCCLFieldCodec>(new Codec<T>());
-        if(log_)
-            *log_ << "Adding codec " << name
-                  << " for CppType "
-                  << cpptype_helper_.find(cpp_type)->as_str()
-                  << std::endl;
-    }
-    
-    else
-    {
-        if(log_)
-            *log_ << warn << "Ignoring duplicate codec " << name
-                  << " for CppType "
-                  << cpptype_helper_.find(cpp_type)->as_str()
-                  << std::endl;
-    }
-}
-
 
 #endif

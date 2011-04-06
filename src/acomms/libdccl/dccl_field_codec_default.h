@@ -42,7 +42,7 @@ namespace goby
     namespace acomms
     {
         template<typename T>
-            class DCCLDefaultArithmeticFieldCodec : public DCCLFieldCodec
+            class DCCLDefaultArithmeticFieldCodec : public DCCLFixedFieldCodec
         {
           protected:
             virtual Bitset _encode(const boost::any& field_value)
@@ -51,8 +51,8 @@ namespace goby
             virtual boost::any _decode(Bitset* bits)
             { return _decode(bits, get(dccl::max), get(dccl::min), get(dccl::precision));}
             
-            virtual unsigned _max_size()
-            { return _max_size(get(dccl::max), get(dccl::min), get(dccl::precision)); }
+            virtual unsigned _size()
+            { return _size(get(dccl::max), get(dccl::min), get(dccl::precision)); }
 
             virtual void _validate()
             {
@@ -65,13 +65,13 @@ namespace goby
                 std::cerr << "starting encode of field with max " << max << ", min " << min << ", prec " << precision << std::endl;
                 
                 if(field_value.empty())
-                    return Bitset(_max_size(max, min, precision));
+                    return Bitset(_size(max, min, precision));
                 
                 try
                 {
                     T t = boost::any_cast<T>(field_value);
                     if(t < min || t > max)
-                        return Bitset(_max_size(max, min, precision));
+                        return Bitset(_size(max, min, precision));
 
                     t = goby::util::unbiased_round(t, precision);
 
@@ -81,7 +81,7 @@ namespace goby
                     
                     t -= min;
                     t *= std::pow(10.0, precision);
-                    return Bitset(_max_size(max, min, precision), goby::util::as<unsigned long>(t)+1);
+                    return Bitset(_size(max, min, precision), goby::util::as<unsigned long>(t)+1);
                 }
                 catch(boost::bad_any_cast& e)
                 {
@@ -100,7 +100,7 @@ namespace goby
                         t / (std::pow(10.0, precision)) + min, precision));
             }
 
-            unsigned _max_size(double max, double min, int32 precision = 0)
+            unsigned _size(double max, double min, int32 precision = 0)
             {
                 // leave one value for unspecified (always encoded as 0)
                 const unsigned NULL_VALUE = 1;
@@ -109,41 +109,51 @@ namespace goby
             
         };
 
-        class DCCLDefaultBoolCodec : public DCCLFieldCodec
+        class DCCLDefaultBoolCodec : public DCCLFixedFieldCodec
         {
-          protected:
-            
-            virtual Bitset _encode(const boost::any& field_value);
-            virtual boost::any _decode(Bitset* bits);     
-            virtual unsigned _max_size();
-            virtual void _validate();
+          private:
+            Bitset _encode(const boost::any& field_value);
+            boost::any _decode(Bitset* bits);     
+            unsigned _size();
+            void _validate();
         };
         
         class DCCLDefaultStringCodec : public DCCLFieldCodec
         {
-          protected:
-            virtual Bitset _encode(const boost::any& field_value);
-            virtual boost::any _decode(Bitset* bits);     
-            virtual unsigned _max_size();
-            virtual unsigned _min_size();
-            virtual void _validate();
-            virtual bool _variable_size() { return true; }
-
+          private:
+            Bitset _encode(const boost::any& field_value);
+            boost::any _decode(Bitset* bits);     
+            unsigned _size(const boost::any& field_value);
+            unsigned _max_size();
+            unsigned _min_size();
+            void _validate();
+            bool _variable_size() { return true; }
           private:
             enum { MAX_STRING_LENGTH = 255 };
             
         };
 
+        class DCCLDefaultBytesCodec : public DCCLFieldCodec
+        {
+          private:
+            Bitset _encode(const boost::any& field_value);
+            boost::any _decode(Bitset* bits);     
+            unsigned _size(const boost::any& field_value);
+            unsigned _max_size();
+            unsigned _min_size();
+            bool _variable_size() { return true; }
+            void _validate();
+        };
+
+        
         class DCCLDefaultEnumCodec : public DCCLDefaultArithmeticFieldCodec<int32>
         {
-          protected:
-            
-            virtual Bitset _encode(const boost::any& field_value);
-            virtual boost::any _decode(Bitset* bits);     
-            virtual unsigned _max_size();
-            virtual void _validate();
-
           private:
+            Bitset _encode(const boost::any& field_value);
+            boost::any _decode(Bitset* bits);     
+            unsigned _size();
+            void _validate();
+            
             double max(const google::protobuf::EnumDescriptor* e)
             { return e->value_count()-1; }
             double min(const google::protobuf::EnumDescriptor* e)
@@ -152,98 +162,43 @@ namespace goby
         
         class DCCLDefaultMessageCodec : public DCCLFieldCodec
         {
-          protected:
-            virtual Bitset _encode(const boost::any& field_value);
-            virtual boost::any _decode(Bitset* bits);     
-            virtual unsigned _max_size();
-            virtual unsigned _min_size();
-            virtual bool _variable_size() { return true; }
-            virtual void _validate();
-            virtual std::string _info();            
-        };
-
-        
-        template<typename T>
-            class DCCLDefaultFieldCodec
-        {
-            BOOST_STATIC_ASSERT(sizeof(T) == 0);
+          private:
+            Bitset _encode(const boost::any& field_value);
+            boost::any _decode(Bitset* bits);     
+            unsigned _max_size();
+            unsigned _min_size();
+            unsigned _size(const boost::any& field_value);
+            bool _variable_size() { return true; }
+            void _validate();
+            std::string _info();
+            bool __check_field(const google::protobuf::FieldDescriptor* field);
+            std::string __find_codec(const google::protobuf::FieldDescriptor* field);
         };
         
-        template<>
-            class DCCLDefaultFieldCodec<double>
-            : public DCCLDefaultArithmeticFieldCodec<double>
-        { };
-
-        template<>
-            class DCCLDefaultFieldCodec<float>
-            : public DCCLDefaultArithmeticFieldCodec<float>
-        { };
-
-        template<>
-            class DCCLDefaultFieldCodec<int32>
-            : public DCCLDefaultArithmeticFieldCodec<int32>
-        { };
-
-        template<>
-            class DCCLDefaultFieldCodec<int64>
-            : public DCCLDefaultArithmeticFieldCodec<int64>
-        { };
-
-        template<>
-            class DCCLDefaultFieldCodec<uint32>
-            : public DCCLDefaultArithmeticFieldCodec<uint32>
-        { };
-
-        template<>
-            class DCCLDefaultFieldCodec<uint64>
-            : public DCCLDefaultArithmeticFieldCodec<uint64>
-        { };        
-
-        template<> 
-            class DCCLDefaultFieldCodec<bool>
-            : public DCCLDefaultBoolCodec
-        { };
-
-        template<> 
-            class DCCLDefaultFieldCodec<std::string>
-            : public DCCLDefaultStringCodec
-        { };
-
-        template<> 
-            class DCCLDefaultFieldCodec<google::protobuf::EnumDescriptor>
-            : public DCCLDefaultEnumCodec
-        { };
-
-        template<> 
-            class DCCLDefaultFieldCodec<google::protobuf::Message>
-            : public DCCLDefaultMessageCodec
-        { };
-        
-        
-        /* class DCCLTimeCodec : public DCCLFieldCodec */
+        /* class DCCLTimeCodec : public DCCLFixedFieldCodec */
         /* { */
         /*     Bitset _encode(const boost::any& field_value); */
 
         /*     boost::any _decode(Bitset* bits); */
             
-        /*     unsigned _max_size() */
+        /*     unsigned _size() */
         /*     { */
         /*         return HEAD_TIME_SIZE; */
         /*     }             */
         /* }; */
 
         template<typename T>
-            class DCCLStaticCodec : public DCCLFieldCodec
+            class DCCLStaticCodec : public DCCLFixedFieldCodec
         {
             Bitset _encode(const boost::any& field_value)
             {
-                return Bitset(_max_size());
+                return Bitset(_size());
             }
             
             boost::any _decode(Bitset* bits)
             { return goby::util::as<T>(get(dccl::static_value)); }
             
-            unsigned _max_size()
+            unsigned _size()
             { return 0; }
             
             void _validate()
@@ -255,7 +210,7 @@ namespace goby
 
         
         // TODO(tes): THIS IS A PLACEHOLDER
-        class DCCLModemIdConverterCodec : public DCCLDefaultFieldCodec<int32>
+        class DCCLModemIdConverterCodec : public DCCLDefaultArithmeticFieldCodec<int32>
         {
             Bitset _encode(const boost::any& field_value)
             {
@@ -263,7 +218,7 @@ namespace goby
                 
                 try
                 {
-                    return DCCLDefaultFieldCodec<int32>::_encode(v);
+                    return DCCLDefaultArithmeticFieldCodec<int32>::_encode(v);
                 }
                 catch(boost::bad_any_cast& e)
                 {
@@ -276,10 +231,6 @@ namespace goby
                 return "unicorn";
             }            
         };
-
-        
-
-
         
     }
 }

@@ -21,6 +21,7 @@
 
 using goby::acomms::operator<<;
 
+
 int main()
 {
     goby::acomms::DCCLCodec::set_log(&std::cerr);    
@@ -47,7 +48,7 @@ int main()
     msg_in.set_bool_default(true);
 
     msg_in.set_string_default("abc123");
-    msg_in.set_bytes_default(goby::acomms::hex_decode("aabbcc1234"));
+    msg_in.set_bytes_default(goby::acomms::hex_decode("00112233aabbcc1234"));
     
     msg_in.set_enum_default(ENUM_C);
     msg_in.mutable_msg_default()->set_val(++i + 0.3);
@@ -72,7 +73,7 @@ int main()
         msg_in.add_bool_default_repeat(true);
         
         msg_in.add_string_default_repeat("abc123");
-        msg_in.add_bytes_default_repeat(goby::acomms::hex_decode("aabbcc1234"));
+        msg_in.add_bytes_default_repeat(goby::acomms::hex_decode("aabbcc12"));
         
         msg_in.add_enum_default_repeat(static_cast<Enum1>((++i % 3) + 1));
         EmbeddedMsg1* em_msg = msg_in.add_msg_default_repeat();

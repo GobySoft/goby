@@ -14,6 +14,9 @@
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
 
+// tests custom message codec
+// tests cryptography
+
 #include "goby/acomms/dccl.h"
 #include "test.pb.h"
 #include "goby/util/string.h"
@@ -84,46 +87,46 @@ private:
 
 int main()
 {
-    goby::acomms::DCCLCodec::set_log(&std::cerr);    
+    
+    goby::acomms::DCCLCommon::set_log(&std::cerr);
+    goby::acomms::DCCLFieldCodecManager::add<CustomMsg, CustomCodec>("custom_codec");
 
-    goby::acomms::FieldCodecManager::add<CustomMsg, CustomCodec>("custom_codec");
-
-
+    goby::acomms::DCCLCodec* codec = goby::acomms::DCCLCodec::get();
     goby::acomms::protobuf::DCCLConfig cfg;
     cfg.set_crypto_passphrase("my_passphrase!");
-    goby::acomms::DCCLCodec::set_cfg(cfg);
+    codec->set_cfg(cfg);
 
     CustomMsg msg_in1;
 
     msg_in1.set_a(10);
     msg_in1.set_b(true);
-    goby::acomms::DCCLCodec::info(msg_in1.GetDescriptor(), &std::cout);    
+    codec->info(msg_in1.GetDescriptor(), &std::cout);    
     std::cout << "Message in:\n" << msg_in1.DebugString() << std::endl;
-    assert(goby::acomms::DCCLCodec::validate(msg_in1.GetDescriptor()));
+    assert(codec->validate(msg_in1.GetDescriptor()));
     std::cout << "Try encode..." << std::endl;
-    std::string bytes1 = goby::acomms::DCCLCodec::encode(msg_in1);
+    std::string bytes1 = codec->encode(msg_in1);
     std::cout << "... got bytes (hex): " << goby::acomms::hex_encode(bytes1) << std::endl;
     std::cout << "Try decode..." << std::endl;
-    boost::shared_ptr<google::protobuf::Message> msg_out1 = goby::acomms::DCCLCodec::decode(bytes1);
+    boost::shared_ptr<google::protobuf::Message> msg_out1 = codec->decode(bytes1);
     std::cout << "... got Message out:\n" << msg_out1->DebugString() << std::endl;
     assert(msg_in1.SerializeAsString() == msg_out1->SerializeAsString());
 
 
-    CustomMsg2 msg_in2;
+    CustomMsg2 msg_in2, msg_out2;
 
     msg_in2.mutable_msg()->set_a(10);
     msg_in2.mutable_msg()->set_b(true);
 
-    goby::acomms::DCCLCodec::info(msg_in2.GetDescriptor(), &std::cout);    
+    codec->info(msg_in2.GetDescriptor(), &std::cout);    
     std::cout << "Message in:\n" << msg_in2.DebugString() << std::endl;
-    assert(goby::acomms::DCCLCodec::validate(msg_in2.GetDescriptor()));
+    assert(codec->validate(msg_in2.GetDescriptor()));
     std::cout << "Try encode..." << std::endl;
-    std::string bytes2 = goby::acomms::DCCLCodec::encode(msg_in2);
+    std::string bytes2 = codec->encode(msg_in2);
     std::cout << "... got bytes (hex): " << goby::acomms::hex_encode(bytes2) << std::endl;
     std::cout << "Try decode..." << std::endl;
-    boost::shared_ptr<google::protobuf::Message> msg_out2 = goby::acomms::DCCLCodec::decode(bytes2);
-    std::cout << "... got Message out:\n" << msg_out2->DebugString() << std::endl;
-    assert(msg_in2.SerializeAsString() == msg_out2->SerializeAsString());
+    msg_out2 = codec->decode<CustomMsg2>(bytes2);
+    std::cout << "... got Message out:\n" << msg_out2.DebugString() << std::endl;
+    assert(msg_in2.SerializeAsString() == msg_out2.SerializeAsString());
     
     std::cout << "all tests passed" << std::endl;
 }

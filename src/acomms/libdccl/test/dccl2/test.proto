@@ -1,6 +1,5 @@
 import "goby/protobuf/dccl_option_extensions.proto";
 import "goby/protobuf/queue_option_extensions.proto";
-import "goby/protobuf/header.proto";
 
 
 message CustomMsg

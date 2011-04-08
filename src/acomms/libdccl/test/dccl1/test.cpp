@@ -14,6 +14,10 @@
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
 
+// tests all protobuf types with _default codecs, repeat and non repeat
+
+#include <google/protobuf/descriptor.pb.h>
+
 #include "goby/acomms/dccl.h"
 #include "test.pb.h"
 #include "goby/util/string.h"
@@ -21,13 +25,13 @@
 
 using goby::acomms::operator<<;
 
-
 int main()
 {
-    goby::acomms::DCCLCodec::set_log(&std::cerr);    
+    goby::acomms::DCCLCommon::set_log(&std::cerr);
+    
     goby::acomms::protobuf::DCCLConfig cfg;
-    cfg.set_crypto_passphrase("my_passphrase!");
-    goby::acomms::DCCLCodec::set_cfg(cfg);
+    goby::acomms::DCCLCodec* codec = goby::acomms::DCCLCodec::get();
+    codec->set_cfg(cfg);
 
     TestMsg msg_in;
     int i = 0;
@@ -82,21 +86,27 @@ int main()
     }
 
 
-    goby::acomms::DCCLCodec::info(msg_in.GetDescriptor(), &std::cout);    
+    codec->info(msg_in.GetDescriptor(), &std::cout);    
     
     std::cout << "Message in:\n" << msg_in.DebugString() << std::endl;
-    
-    assert(goby::acomms::DCCLCodec::validate(msg_in.GetDescriptor()));
+     
+    assert(codec->validate(msg_in.GetDescriptor()));
 
     std::cout << "Try encode..." << std::endl;
-    std::string bytes = goby::acomms::DCCLCodec::encode(msg_in);
+    std::string bytes = codec->encode(msg_in);
     std::cout << "... got bytes (hex): " << goby::acomms::hex_encode(bytes) << std::endl;
 
     std::cout << "Try decode..." << std::endl;
 
-    boost::shared_ptr<google::protobuf::Message> msg_out = goby::acomms::DCCLCodec::decode(bytes);
+    boost::shared_ptr<google::protobuf::Message> msg_out = codec->decode(bytes);
 
     std::cout << "... got Message out:\n" << msg_out->DebugString() << std::endl;
+
+
+    // truncate to "max_length" as codec should do
+    msg_in.set_string_default_repeat(0,"abc1");
+    msg_in.set_string_default_repeat(1,"abc1");
+
     
     assert(msg_in.SerializeAsString() == msg_out->SerializeAsString());
     

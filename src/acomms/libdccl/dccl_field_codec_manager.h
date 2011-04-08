@@ -27,7 +27,9 @@ namespace goby
 {
     namespace acomms
     {
-        class FieldCodecManager
+
+        /// \todo (tes) Make sanity check for newly added FieldCodecs
+        class DCCLFieldCodecManager
         {
           public:
             template<typename T, template <typename T> class Codec>
@@ -73,17 +75,17 @@ namespace goby
                 
             
           private:
-            FieldCodecManager() { }
-            ~FieldCodecManager() { }
-            FieldCodecManager(const FieldCodecManager&);
-            FieldCodecManager& operator= (const FieldCodecManager&);
+            DCCLFieldCodecManager() { }
+            ~DCCLFieldCodecManager() { }
+            DCCLFieldCodecManager(const DCCLFieldCodecManager&);
+            DCCLFieldCodecManager& operator= (const DCCLFieldCodecManager&);
 
             
             static boost::shared_ptr<DCCLFieldCodec> __find(
                 google::protobuf::FieldDescriptor::Type type,
                 const std::string& codec_name,
                 const std::string& type_name = "");
-                
+            
             static std::string __mangle_name(const std::string& codec_name,
                                       const std::string& type_name) 
             { return type_name.empty() ? codec_name : codec_name + "@@" + type_name; }
@@ -99,7 +101,7 @@ namespace goby
 }
 
 template<typename T, template <typename T> class Codec>
-    void goby::acomms::FieldCodecManager::add(const std::string& name)
+    void goby::acomms::DCCLFieldCodecManager::add(const std::string& name)
 {
     add<T, Codec<T> >(name);
 }
@@ -111,11 +113,11 @@ template<typename T, class Codec>
     boost::mpl::not_<boost::is_same<google::protobuf::Message, T> >
     >,
     void>::type 
-    goby::acomms::FieldCodecManager::add(const std::string& name)
+    goby::acomms::DCCLFieldCodecManager::add(const std::string& name)
 {
     __add<Codec>(__mangle_name(name, T::descriptor()->full_name()),
                  google::protobuf::FieldDescriptor::TYPE_MESSAGE);
-    TypeHelper::add<T>();
+    DCCLTypeHelper::add<T>();
 }
 
 template<typename T, class Codec>
@@ -125,7 +127,7 @@ template<typename T, class Codec>
     boost::mpl::not_<boost::is_same<google::protobuf::Message, T> >
     >,
     void>::type
-    goby::acomms::FieldCodecManager::add(const std::string& name)
+    goby::acomms::DCCLFieldCodecManager::add(const std::string& name)
 {
     using google::protobuf::FieldDescriptor;
     const FieldDescriptor::CppType cpp_type = ToProtoCppType<T>::as_enum();
@@ -141,35 +143,33 @@ template<typename T, class Codec>
 }
 
 template<google::protobuf::FieldDescriptor::Type type, class Codec>
-    void goby::acomms::FieldCodecManager::add(const std::string& name)
+    void goby::acomms::DCCLFieldCodecManager::add(const std::string& name)
 {
     __add<Codec>(name, type);
 }
 
 
 template<class Codec>
-void goby::acomms::FieldCodecManager::__add(const std::string& name, google::protobuf::FieldDescriptor::Type type)
+void goby::acomms::DCCLFieldCodecManager::__add(const std::string& name, google::protobuf::FieldDescriptor::Type type)
 {
     using google::protobuf::FieldDescriptor;    
-    //const FieldDescriptor::CppType cpp_type = FieldDescriptor::TypeToCppType(type);
+    const FieldDescriptor::CppType cpp_type = FieldDescriptor::TypeToCppType(type);
     if(!codecs_[type].count(name))
     {
         codecs_[type][name] = boost::shared_ptr<DCCLFieldCodec>(new Codec());
-        /* if(log_) */
-        /*     *log_ << "Adding codec " << name */
-        /*           << " for Type " */
-        /*           << type_helper_.find(type)->as_str() */
-        /*           << " (" << type_helper_.find(cpp_type)->as_str() << ")"  */
-        /*           << std::endl; */
+        DCCLCommon::logger() << "Adding codec " << name
+                             << " for Type "
+                             << DCCLTypeHelper::find(type)->as_str()
+                             << " (" << DCCLTypeHelper::find(cpp_type)->as_str() << ")"
+                             << std::endl;
     }            
     else
     {
-        /* if(log_) */
-        /*     *log_ << warn << "Ignoring duplicate codec " << name */
-        /*           << " for Type " */
-        /*           << type_helper_.find(type)->as_str() */
-        /*           << " (" << type_helper_.find(cpp_type)->as_str() << ")" */
-        /*           << std::endl; */
+        DCCLCommon::logger() << warn << "Ignoring duplicate codec " << name
+                             << " for Type "
+                             << DCCLTypeHelper::find(type)->as_str()
+                             << " (" << DCCLTypeHelper::find(cpp_type)->as_str() << ")"
+                             << std::endl;
     }
 }
 

@@ -19,11 +19,11 @@
 
 #include "dccl_field_codec_manager.h"
 
-std::map<google::protobuf::FieldDescriptor::Type, goby::acomms::FieldCodecManager::InsideMap> goby::acomms::FieldCodecManager::codecs_;
+std::map<google::protobuf::FieldDescriptor::Type, goby::acomms::DCCLFieldCodecManager::InsideMap> goby::acomms::DCCLFieldCodecManager::codecs_;
 
 
 boost::shared_ptr<goby::acomms::DCCLFieldCodec>
-goby::acomms::FieldCodecManager::__find(google::protobuf::FieldDescriptor::Type type,
+goby::acomms::DCCLFieldCodecManager::__find(google::protobuf::FieldDescriptor::Type type,
                                                  const std::string& codec_name,
                                                  const std::string& type_name /* = "" */)
 {
@@ -45,7 +45,7 @@ goby::acomms::FieldCodecManager::__find(google::protobuf::FieldDescriptor::Type 
             return inside_it->second;
     }
     
-    throw(DCCLException("No codec by the name `" + codec_name + "` found for type: " + TypeHelper::find(type)->as_str()));
+    throw(DCCLException("No codec by the name `" + codec_name + "` found for type: " + DCCLTypeHelper::find(type)->as_str()));
 }
 
 

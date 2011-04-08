@@ -25,6 +25,7 @@
 #include <boost/utility.hpp>
 #include <boost/type_traits.hpp>
 #include <boost/static_assert.hpp>
+#include <boost/bimap.hpp>
 
 #include <google/protobuf/descriptor.h>
 
@@ -35,7 +36,6 @@
 #include "goby/acomms/acomms_constants.h"
 
 #include "dccl_field_codec.h"
-#include "dccl.h"
 
 namespace goby
 {
@@ -62,7 +62,7 @@ namespace goby
 
             Bitset _encode(const boost::any& field_value, double max, double min, int32 precision = 0)
             {
-                std::cerr << "starting encode of field with max " << max << ", min " << min << ", prec " << precision << std::endl;
+                DCCLCommon::logger() << "starting encode of field with max " << max << ", min " << min << ", prec " << precision << std::endl;
                 
                 if(field_value.empty())
                     return Bitset(_size(max, min, precision));
@@ -74,9 +74,8 @@ namespace goby
                         return Bitset(_size(max, min, precision));
 
                     t = goby::util::unbiased_round(t, precision);
-
-                    if(DCCLCodec::log_)
-                        *DCCLCodec::log_ << debug << "using value " << t << std::endl;
+                    
+                    DCCLCommon::logger() << debug << "using value " << t << std::endl;
         
                     
                     t -= min;
@@ -175,17 +174,23 @@ namespace goby
             std::string __find_codec(const google::protobuf::FieldDescriptor* field);
         };
         
-        /* class DCCLTimeCodec : public DCCLFixedFieldCodec */
-        /* { */
-        /*     Bitset _encode(const boost::any& field_value); */
-
-        /*     boost::any _decode(Bitset* bits); */
+        class DCCLTimeCodec : public DCCLDefaultArithmeticFieldCodec<int32>
+        {
+            Bitset _encode(const boost::any& field_value);
+            boost::any _decode(Bitset* bits);
+            void _validate() 
+            { }
             
-        /*     unsigned _size() */
-        /*     { */
-        /*         return HEAD_TIME_SIZE; */
-        /*     }             */
-        /* }; */
+            unsigned _size();
+
+            double max()
+            { return HOURS_IN_DAY*SECONDS_IN_HOUR; }
+            double min()
+            { return 0; }
+            enum { HOURS_IN_DAY = 24 };
+            enum { SECONDS_IN_HOUR = 3600 };
+
+        };
 
         template<typename T>
             class DCCLStaticCodec : public DCCLFixedFieldCodec
@@ -199,37 +204,43 @@ namespace goby
             { return goby::util::as<T>(get(dccl::static_value)); }
             
             unsigned _size()
-            { return 0; }
+            {
+                return 0;
+            }
+            
             
             void _validate()
             {
                 require(dccl::static_value, "dccl.static_value");                
             }
+            
         };
 
 
         
-        // TODO(tes): THIS IS A PLACEHOLDER
+        /// \todo (tes): THIS IS A PLACEHOLDER
         class DCCLModemIdConverterCodec : public DCCLDefaultArithmeticFieldCodec<int32>
         {
-            Bitset _encode(const boost::any& field_value)
+          public:
+            static void add(std::string platform, int32 id)
             {
-                int v = 1;
-                
-                try
-                {
-                    return DCCLDefaultArithmeticFieldCodec<int32>::_encode(v);
-                }
-                catch(boost::bad_any_cast& e)
-                {
-                    throw(DCCLException("Bad type given to encode"));
-                }
+                platform2modem_id_.left.insert(std::make_pair(platform, id));
             }
             
-            boost::any _decode(Bitset* bits)
-            {
-                return "unicorn";
-            }            
+          private:
+            Bitset _encode(const boost::any& field_value);
+            boost::any _decode(Bitset* bits);
+            unsigned _size();
+            
+            void _validate()
+            { }
+            double max()
+            { return 30; }
+            double min()
+            { return 0; }
+
+          private:
+            static boost::bimap<std::string, int32> platform2modem_id_;
         };
         
     }

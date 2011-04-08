@@ -25,6 +25,9 @@
 #include <limits>
 #include <vector>
 
+#include <google/protobuf/dynamic_message.h>
+#include <boost/dynamic_bitset.hpp>
+
 #include "goby/acomms/acomms_constants.h"
 #include "goby/util/logger.h"
 
@@ -56,41 +59,6 @@ namespace goby
             bits->resize(str.size() * BITS_IN_BYTE);
             from_block_range(str.rbegin(), str.rend(), *bits);
         }
-
-        class DCCLCommon
-        {
-          public:
-            static void set_log(std::ostream* log)
-            {
-                log_ = log;
-                
-                util::FlexOstream* flex_log = dynamic_cast<util::FlexOstream*>(log);
-                if(flex_log)
-                    add_flex_groups(flex_log);
-            }
-
-            static std::ostream& logger()
-            { return *log_; }
-
-            static void initialize()
-            {
-                null_.open("/dev/null");
-                log_ = &null_;
-            }
-            
-            static void add_flex_groups(util::FlexOstream* tout)
-            {
-                tout->add_group("dccl_enc", util::Colors::lt_magenta, "encoder messages (goby_dccl)");
-                tout->add_group("dccl_dec", util::Colors::lt_blue, "decoder messages (goby_dccl)");
-            }
-            
-
-            
-          private:
-            static google::protobuf::DynamicMessageFactory message_factory_;
-            static std::ostream* log_;
-            static std::ofstream null_;
-        };
         
         // more efficient way to do ceil(total_bits / 8)
         // to get the number of bytes rounded up.
@@ -103,7 +71,26 @@ namespace goby
                 floor_bits2bytes(bits) + 1 :
                 floor_bits2bytes(bits);
         }
-            
+        
+        class DCCLCommon
+        {
+          public:
+            static void set_log(std::ostream* log);
+            static std::ostream& logger()
+            { return *log_; }
+            static void add_flex_groups(util::FlexOstream* tout);
+            static google::protobuf::DynamicMessageFactory& message_factory()
+            { return *message_factory_; }
+
+            friend class DCCLCodec;
+          private:
+            static void initialize();
+            static void shutdown();
+
+            static google::protobuf::DynamicMessageFactory* message_factory_;
+            static std::ostream* log_;
+            static std::ofstream null_;
+        };
         
     }
 }

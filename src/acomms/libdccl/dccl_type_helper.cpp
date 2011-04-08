@@ -21,15 +21,15 @@
 
 #include <boost/assign.hpp>
 
-goby::acomms::TypeHelper::TypeMap goby::acomms::TypeHelper::type_map_;
-goby::acomms::TypeHelper::CppTypeMap goby::acomms::TypeHelper::cpptype_map_;
-goby::acomms::TypeHelper::CustomMessageMap goby::acomms::TypeHelper::custom_message_map_;
+goby::acomms::DCCLTypeHelper::TypeMap goby::acomms::DCCLTypeHelper::type_map_;
+goby::acomms::DCCLTypeHelper::CppTypeMap goby::acomms::DCCLTypeHelper::cpptype_map_;
+goby::acomms::DCCLTypeHelper::CustomMessageMap goby::acomms::DCCLTypeHelper::custom_message_map_;
 
 //
-// TypeHelper
+// DCCLTypeHelper
 //
 
-void goby::acomms::TypeHelper::initialize()
+void goby::acomms::DCCLTypeHelper::initialize()
 {
     using namespace google::protobuf;    
     using boost::shared_ptr;
@@ -100,7 +100,7 @@ void goby::acomms::TypeHelper::initialize()
 
 }
 
-boost::shared_ptr<goby::acomms::FromProtoCppTypeBase> goby::acomms::TypeHelper::find(google::protobuf::FieldDescriptor::CppType cpptype, const std::string& type_name /*= ""*/)
+boost::shared_ptr<goby::acomms::FromProtoCppTypeBase> goby::acomms::DCCLTypeHelper::find(google::protobuf::FieldDescriptor::CppType cpptype, const std::string& type_name /*= ""*/)
 {
     if(!type_name.empty())
     {
@@ -116,25 +116,8 @@ boost::shared_ptr<goby::acomms::FromProtoCppTypeBase> goby::acomms::TypeHelper::
         return boost::shared_ptr<FromProtoCppTypeBase>();
 }
 
-// const boost::shared_ptr<goby::acomms::FromProtoCppTypeBase> goby::acomms::TypeHelper::find(google::protobuf::FieldDescriptor::CppType cpptype, const std::string& type_name /* = ""*/) const
-// {
-//     if(!type_name.empty())
-//     {
-//         CustomMessageMap::const_iterator it = custom_message_map_.find(type_name);
-//         if(it != custom_message_map_.end())
-//             return it->second;
-//     }
-    
-//     CppTypeMap::const_iterator it = cpptype_map_.find(cpptype);
-//     if(it != cpptype_map_.end())
-//         return it->second;
-//     else
-//         return boost::shared_ptr<FromProtoCppTypeBase>();
-// }
 
-
-
-boost::shared_ptr<goby::acomms::FromProtoTypeBase> goby::acomms::TypeHelper::find(google::protobuf::FieldDescriptor::Type type)
+boost::shared_ptr<goby::acomms::FromProtoTypeBase> goby::acomms::DCCLTypeHelper::find(google::protobuf::FieldDescriptor::Type type)
 {
     TypeMap::iterator it = type_map_.find(type);
     if(it != type_map_.end())
@@ -142,14 +125,4 @@ boost::shared_ptr<goby::acomms::FromProtoTypeBase> goby::acomms::TypeHelper::fin
     else
         return boost::shared_ptr<FromProtoTypeBase>();
 }
-
-// const boost::shared_ptr<goby::acomms::FromProtoTypeBase> goby::acomms::TypeHelper::find(google::protobuf::FieldDescriptor::Type type) const
-// {
-//     TypeMap::const_iterator it = type_map_.find(type);
-//     if(it != type_map_.end())
-//         return it->second;
-//     else
-//         return boost::shared_ptr<FromProtoTypeBase>();
-// }
-
 

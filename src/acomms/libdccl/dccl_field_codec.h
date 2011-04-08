@@ -31,7 +31,7 @@
 #include <google/protobuf/descriptor.pb.h>
 #include <google/protobuf/descriptor.h>
 
-#include "dccl_constants.h"
+#include "dccl_common.h"
 #include "dccl_exception.h"
 #include "goby/util/string.h"
 
@@ -45,6 +45,7 @@ namespace goby
             typedef goby::acomms::Bitset Bitset;
             
             DCCLFieldCodec() { }
+            virtual ~DCCLFieldCodec() { }
             
             enum MessagePart
             {

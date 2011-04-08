@@ -17,8 +17,6 @@ message Header
   // source
   //
   required string source_platform = 11 [(dccl.codec)="_platform<->modem_id",
-                                        (dccl.max)=31,
-                                        (dccl.min)=0,
                                         (dccl.in_head)=true];
   optional string source_app = 12 [(dccl.omit)=true];
   
@@ -26,11 +24,9 @@ message Header
   // destination
   //
   enum PublishDestination { PUBLISH_SELF = 1; PUBLISH_OTHER = 2; PUBLISH_ALL = 3; }
-  optional PublishDestination dest_type = 13 [default = PUBLISH_SELF];
+  optional PublishDestination dest_type = 13 [default = PUBLISH_SELF, (dccl.in_head)=true];
   
   optional string dest_platform = 14 [(dccl.codec)="_platform<->modem_id",
-                                      (dccl.max)=31,
-                                      (dccl.min)=0,
                                       (dccl.in_head)=true]; // required if dest_type == other
 
 }

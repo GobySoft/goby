@@ -36,7 +36,7 @@ namespace goby
     namespace acomms
     {
 
-        class TypeHelper
+        class DCCLTypeHelper
         {
           public:
             /* static const boost::shared_ptr<FromProtoTypeBase> find(google::protobuf::FieldDescriptor::Type type); */
@@ -75,19 +75,19 @@ namespace goby
             static boost::shared_ptr<goby::acomms::FromProtoCppTypeBase> find(google::protobuf::FieldDescriptor::CppType cpptype, const std::string& type_name = "");
 
                 
-            template<typename CustomMessage>
+            template<typename ProtobufMessage>
                 static void add()
             {
-                custom_message_map_.insert(std::make_pair(CustomMessage::descriptor()->full_name(), boost::shared_ptr<FromProtoCppTypeBase>(new FromProtoCustomMessage<CustomMessage>)));
+                custom_message_map_.insert(std::make_pair(ProtobufMessage::descriptor()->full_name(), boost::shared_ptr<FromProtoCppTypeBase>(new FromProtoCustomMessage<ProtobufMessage>)));
             }
 
             static void initialize();
             
           private:
-            TypeHelper() { }            
-            ~TypeHelper() { }
-            TypeHelper(const TypeHelper&);
-            TypeHelper& operator= (const TypeHelper&);
+            DCCLTypeHelper() { }            
+            ~DCCLTypeHelper() { }
+            DCCLTypeHelper(const DCCLTypeHelper&);
+            DCCLTypeHelper& operator= (const DCCLTypeHelper&);
                 
                 
           private:

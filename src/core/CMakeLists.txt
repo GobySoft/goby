@@ -18,5 +18,5 @@ if(build_core_lib)
 endif()
 
 if(build_core_bin)
-  add_subdirectory(gobyd)
+ # add_subdirectory(gobyd)
 endif()

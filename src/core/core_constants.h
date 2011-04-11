@@ -26,17 +26,34 @@ namespace goby
 {
     namespace core
     {
-        const unsigned MAX_MSG_BUFFER_SIZE = 1 << 19;
-        const unsigned MAX_NUM_MSG = 10;
-
+        enum MarshallingScheme
+        {
+            MARSHALLING_PROTOBUF = 1,
+            MARSHALLING_CCL = 2,
+            MARSHALLING_MOOS = 3,
+            MARSHALLING_DCCL = 4,
+            MARSHALLING_LCM = 5
+        };
+        
+        
+        //const unsigned MAX_MSG_BUFFER_SIZE = 1 << 19;
+        //const unsigned MAX_NUM_MSG = 10;
+        
         // see message_queue_util.h
-        const std::string QUEUE_PREFIX = "goby_";        
-        const std::string CONNECT_LISTEN_QUEUE_PREFIX = QUEUE_PREFIX + "connect_listen_";
-        const std::string CONNECT_RESPONSE_QUEUE_PREFIX = QUEUE_PREFIX + "connect_response_";
-        const std::string TO_SERVER_QUEUE_PREFIX = QUEUE_PREFIX + "to_gobyd_from_";
-        const std::string FROM_SERVER_QUEUE_PREFIX = QUEUE_PREFIX + "from_gobyd_to_";
+        //const std::string QUEUE_PREFIX = "goby_";        
+        /* const std::string CONNECT_LISTEN_QUEUE_PREFIX = QUEUE_PREFIX + "connect_listen_"; */
+        /* const std::string CONNECT_RESPONSE_QUEUE_PREFIX = QUEUE_PREFIX + "connect_response_"; */
+        /* const std::string TO_SERVER_QUEUE_PREFIX = QUEUE_PREFIX + "to_gobyd_from_"; */
+        /* const std::string FROM_SERVER_QUEUE_PREFIX = QUEUE_PREFIX + "from_gobyd_to_"; */
 
+        //inline std::string make_ipc_name(const std::string& self_name,
+        //                            const std::string& type_name)
+        //{ return "ipc://" + QUEUE_PREFIX + type_name + "_" + self_name; }
+
+        
+        
     }
+
     
     namespace core
     {

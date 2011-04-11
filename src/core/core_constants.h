@@ -31,12 +31,17 @@ namespace goby
 
         // see message_queue_util.h
         const std::string QUEUE_PREFIX = "goby_";        
-        const std::string CONNECT_LISTEN_QUEUE_PREFIX = QUEUE_PREFIX + "connect_listen_";
-        const std::string CONNECT_RESPONSE_QUEUE_PREFIX = QUEUE_PREFIX + "connect_response_";
-        const std::string TO_SERVER_QUEUE_PREFIX = QUEUE_PREFIX + "to_gobyd_from_";
-        const std::string FROM_SERVER_QUEUE_PREFIX = QUEUE_PREFIX + "from_gobyd_to_";
+        /* const std::string CONNECT_LISTEN_QUEUE_PREFIX = QUEUE_PREFIX + "connect_listen_"; */
+        /* const std::string CONNECT_RESPONSE_QUEUE_PREFIX = QUEUE_PREFIX + "connect_response_"; */
+        /* const std::string TO_SERVER_QUEUE_PREFIX = QUEUE_PREFIX + "to_gobyd_from_"; */
+        /* const std::string FROM_SERVER_QUEUE_PREFIX = QUEUE_PREFIX + "from_gobyd_to_"; */
+
+        inline std::string make_ipc_name(const std::string& self_name,
+                                    const std::string& type_name)
+        { return "ipc://" + QUEUE_PREFIX + type_name + "_" + self_name; }
 
     }
+
     
     namespace core
     {

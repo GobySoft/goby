@@ -33,7 +33,6 @@
 
 using namespace goby::core;
 using namespace goby::util;
-using boost::interprocess::message_queue;
 using boost::shared_ptr;
 
 const boost::posix_time::time_duration goby::core::ApplicationBase::CONNECTION_WAIT_INTERVAL =
@@ -46,9 +45,8 @@ goby::core::ApplicationBase::ApplicationBase(
     google::protobuf::Message* cfg /*= 0*/,
     bool skip_cfg_checks /* = false */)
     : loop_period_(boost::posix_time::milliseconds(100)),
-      connected_(false),
-      db_connection_(0),
-      db_session_(0)
+      context_(1),
+      alive_(true)
 {
     //
     // read the configuration
@@ -131,188 +129,72 @@ goby::core::ApplicationBase::ApplicationBase(
 
     if(base_cfg_.IsInitialized())
     {
-        connect();
-
+        // we are started
+        t_start_ = goby_time();
+        // start the loop() on the next even second
+        t_next_loop_ = boost::posix_time::second_clock::universal_time() +
+            boost::posix_time::seconds(1);
+        
         // notify the server of our configuration for logging purposes
         if(cfg) publish(*cfg);
-        
-        // start up SQL
-        db_connection_ = new Wt::Dbo::backend::Sqlite3(daemon_cfg_.log().sqlite().path());
-        db_session_ = new Wt::Dbo::Session;
-        db_session_->setConnection(*db_connection_);
     }
     
 }
 
 goby::core::ApplicationBase::~ApplicationBase()
 {
-    glogger() << debug <<"ApplicationBase destructing..." << std::endl;
-    
-    if(db_connection_) delete db_connection_;
-    if(db_session_) delete db_session_;
-
-    if(connected_) disconnect();
-}
-
-void goby::core::ApplicationBase::connect()
-{
-    try
-    {
-        glogger() << debug << "trying to connect..." <<  std::endl;
-        
-        // set up queues to wait for response from server
-        message_queue::remove(name_connect_response(base_cfg_.platform_name(),
-                                                    base_cfg_.app_name()).c_str());
-
-        message_queue response_queue(
-            boost::interprocess::create_only,
-            name_connect_response(base_cfg_.platform_name(), base_cfg_.app_name()).c_str(),
-            1, MAX_MSG_BUFFER_SIZE);
-        
-        // make connection
-        message_queue listen_queue(boost::interprocess::open_only,
-                                   name_connect_listen(base_cfg_.platform_name()).c_str());
-        
-        // populate server request for connection
-        notification_.Clear();
-        notification_.set_notification_type(proto::Notification::CONNECT_REQUEST);
-        notification_.set_application_name(base_cfg_.app_name());
-
-        // serialize and send the server request
-        send(listen_queue, notification_, buffer_, sizeof(buffer_));  
-        
-        // wait for response
-        if(!timed_receive(response_queue,
-                          notification_,
-                          goby_time() + CONNECTION_WAIT_INTERVAL,
-                          buffer_,
-                          &buffer_msg_size_))
-        {
-            // no response
-            glogger() << die << "no response to connection request. make sure gobyd is alive."
-                    <<  std::endl;        
-        }        
-
-        // good response
-        if(notification_.notification_type() == proto::Notification::CONNECTION_ACCEPTED)
-        {
-            connected_ = true;
-            glogger() << debug << "connection succeeded." <<  std::endl;
-            daemon_cfg_.ParseFromString(notification_.embedded_msg().body());
-            glogger() << debug <<"Daemon configuration: \n" << daemon_cfg_ << std::endl;
-        }
-        else // bad response
-        {
-            glogger() << die << "server did not connect us: " << "\n"
-                    << notification_ << std::endl;
-        }
-
-        // remove this so that future applications with the same name can (try) to connect
-        message_queue::remove(name_connect_response(base_cfg_.platform_name(),
-                                                    base_cfg_.app_name()).c_str());
-
-    }
-    catch(boost::interprocess::interprocess_exception &ex)
-    {
-        // no queues set up by gobyd
-        glogger() << die << "could not open message queue(s) with gobyd. check to make sure gobyd is alive. " << ex.what() << std::endl;
-    }
-    
-
-    // open the queues that gobyd promises to create upon connection
-    to_server_queue_ = shared_ptr<message_queue>(
-        new message_queue(
-            boost::interprocess::open_only,
-            name_to_server(base_cfg_.platform_name(), base_cfg_.app_name()).c_str()));
-    
-    from_server_queue_ = shared_ptr<message_queue>(
-        new message_queue(
-            boost::interprocess::open_only,
-            name_from_server(base_cfg_.platform_name(), base_cfg_.app_name()).c_str()));
-
-    // we are started
-    t_start_ = goby_time();
-    // start the loop() on the next even second
-    t_next_loop_ = boost::posix_time::second_clock::universal_time() +
-        boost::posix_time::seconds(1);
-
-}
-
-
-void goby::core::ApplicationBase::disconnect()
-{
-    try
-    {
-        // make disconnection
-        message_queue listen_queue(boost::interprocess::open_only,
-                                   name_connect_listen(base_cfg_.platform_name()).c_str());
-    
-        // populate server request for connection
-        notification_.Clear();
-        notification_.set_notification_type(proto::Notification::DISCONNECT_REQUEST);
-        notification_.set_application_name(base_cfg_.app_name());
-
-        glogger() << debug <<notification_ << std::endl;
-        
-        // serialize and send the server request
-        send(listen_queue, notification_, buffer_, sizeof(buffer_));
-        connected_ = false;
-    }
-    catch(boost::interprocess::interprocess_exception &ex)
-    {
-        glogger() << warn << ex.what() << std::endl;
-    }
+    glogger() << debug <<"ApplicationBase destructing..." << std::endl;    
 }
 
 
 void goby::core::ApplicationBase::run()
 {
-    // continue to run while we have a connection
-    while(connected_)
+    // continue to run while we are alive (quit() has not been called)
+    while(alive_)
     {
-        // sit and wait on a message until the next time to call loop() is up
-        if(timed_receive(*from_server_queue_,
-                         notification_,
-                         t_next_loop_,
-                         buffer_,
-                         &buffer_msg_size_))
+        //  Initialize poll set
+        zmq::pollitem_t items [subscribers_.size()];
+        for(int i = 0, n = subscribers_.size(); i < n; ++i)
         {
-            // we have a message from gobyd
-            glogger() << debug <<"> " << notification_ << std::endl;
-
-            // what type of message?
-            switch(notification_.notification_type())
-            {
-                case proto::Notification::HEARTBEAT:
-                {
-                    // reply with same message to let gobyd know we're ok
-                    send(*to_server_queue_, buffer_, buffer_msg_size_);
-                }
-                break;
-
-                // someone else's publish, this is our subscription
-                case proto::Notification::PUBLISH_REQUEST:
-                {
-                    typedef boost::unordered_multimap<std::string, shared_ptr<SubscriptionBase> >::const_iterator c_it;
-                    std::pair<c_it, c_it> equal_it_pair =
-                        subscriptions_.equal_range(notification_.embedded_msg().type());
-    
-                    for(c_it it = equal_it_pair.first; it != equal_it_pair.second; ++it)
-                        it->second->post(notification_.embedded_msg().body());
-                }
-                break;
-                        
-                default: break;
-            }
+            items[i].socket = *subscribers_[i]; 
+            items[i].fd = 0;
+            items[i].events = ZMQ_POLLIN;
+            items[i].revents = 0;
         }
-        else
+        
+        // sit and wait on a message until the next time to call loop() is up
+        
+        long timeout = (t_next_loop_-goby_time()).total_microseconds();
+        if(timeout < 0)
+            timeout = 0;
+        
+        bool had_events = false;
+        try
         {
-            // no message, time to call loop()            
-            loop();
-            t_next_loop_ += loop_period_;
-        }            
+            zmq::poll (&items [0], subscribers_.size(), timeout);
+            for(int i = 0, n = subscribers_.size(); i < n; ++i)
+            {
+                if (items[i].revents & ZMQ_POLLIN) 
+                {
+                    zmq::message_t message;
+                    subscribers_[i]->recv(&message);
+                    subscriptions_.find(subscribers_[i])->second->post(message.data(), message.size());
+                    had_events = true;
+                }
+            }
+            if(!had_events)
+            {
+                // no message, time to call loop()            
+                loop();
+                t_next_loop_ += loop_period_;
+            }
+            
+        }
+        catch(std::exception& e)
+        {
+            glogger() << warn << e.what() << std::endl;
+        }
     }
-
 }
 
 bool goby::core::ApplicationBase::is_valid_filter(const google::protobuf::Descriptor* descriptor, const proto::Filter& filter)
@@ -342,7 +224,7 @@ void goby::core::ApplicationBase::insert_file_descriptor_proto(const google::pro
     // copy descriptor for the new subscription type to the notification message
     if(!registered_file_descriptors_.count(file_descriptor))
     {
-        file_descriptor->CopyTo(notification_.add_file_descriptor_proto());
+        //file_descriptor->CopyTo(notification_.add_file_descriptor_proto());
         registered_file_descriptors_.insert(file_descriptor);
     }
 }

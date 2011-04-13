@@ -1,0 +1,33 @@
+import "google/protobuf/descriptor.proto";
+import "goby/protobuf/interprocess_notification.proto";
+
+package goby.core.protobuf;
+
+message DatabaseRequest
+{
+  enum RequestType
+  { 
+    NEW_PUBLISH = 1;
+    SQL_QUERY = 2; 
+  }
+  required RequestType request_type = 1;
+
+  // used to inform gobyd of the google protobuf type used for a 
+  // given publish request
+  optional string publish_protobuf_full_name = 2;
+  repeated .google.protobuf.FileDescriptorProto file_descriptor_proto = 3;
+}
+
+message DatabaseResponse
+{
+  enum ResponseType
+  { 
+    NEW_PUBLISH_ACCEPTED = 1;
+    NEW_PUBLISH_DENIED = 2;
+    SQL_QUERY_RESULT = 3; 
+    SQL_QUERY_INVALID = 3; 
+  }
+  required ResponseType response_type = 1;
+  
+  repeated EmbeddedMessage sql_result = 2;
+}

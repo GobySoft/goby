@@ -26,6 +26,8 @@
 #include <boost/thread.hpp>
 #include <boost/shared_ptr.hpp>
 
+#include "goby/protobuf/app_base_config.pb.h"
+
 #include "term_color.h"
 
 class Group;
@@ -41,7 +43,11 @@ namespace goby
         struct Logger
         {
             static boost::mutex mutex;
-            enum Verbosity { quiet, warn, verbose, debug, gui };
+            enum Verbosity { quiet = AppBaseConfig::QUIET,
+                             warn = AppBaseConfig::WARN,
+                             verbose = AppBaseConfig::VERBOSE,
+                             debug = AppBaseConfig::DEBUG,
+                             gui = AppBaseConfig::GUI };
         };        
         
         

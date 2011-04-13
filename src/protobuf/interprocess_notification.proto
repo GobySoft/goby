@@ -1,6 +1,6 @@
 import "google/protobuf/descriptor.proto";
 
-package goby.core.proto;
+package goby.core.protobuf;
 
 // used to filter messages on their contents
 // instead of just type
@@ -29,32 +29,32 @@ message EmbeddedMessage
   optional Filter filter = 3;
 }
 
-message Notification
-{
-  enum NotificationType
-  { 
-    HEARTBEAT = 1; 
-    CONNECT_REQUEST = 2;
-    DISCONNECT_REQUEST = 3;
-    CONNECTION_ACCEPTED = 4;
-    CONNECTION_DENIED = 5;
-    PUBLISH_REQUEST = 6;
-    SUBSCRIBE_REQUEST = 7;
-  }
-  required NotificationType notification_type = 1;
+// message Notification
+// {
+//   enum NotificationType
+//   { 
+//     HEARTBEAT = 1; 
+//     CONNECT_REQUEST = 2;
+//     DISCONNECT_REQUEST = 3;
+//     CONNECTION_ACCEPTED = 4;
+//     CONNECTION_DENIED = 5;
+//     PUBLISH_REQUEST = 6;
+//     SUBSCRIBE_REQUEST = 7;
+//   }
+//   required NotificationType notification_type = 1;
 
-  // required for connection only
-  optional string application_name = 2;
+//   // required for connection only
+//   optional string application_name = 2;
 
-  // used to inform gobyd of the google protobuf type used for a 
-  // given publish or subscribe request
-  repeated .google.protobuf.FileDescriptorProto file_descriptor_proto = 3;
+//   // used to inform gobyd of the google protobuf type used for a 
+//   // given publish or subscribe request
+//   repeated .google.protobuf.FileDescriptorProto file_descriptor_proto = 3;
 
-  // information about the payload
-  optional EmbeddedMessage embedded_msg = 4;
+//   // information about the payload
+//   optional EmbeddedMessage embedded_msg = 4;
 
-  // human readable explanation of this message (usually
-  // used to report error reasoning)
-  optional string explanation = 5;
-}
+//   // human readable explanation of this message (usually
+//   // used to report error reasoning)
+//   optional string explanation = 5;
+// }
 

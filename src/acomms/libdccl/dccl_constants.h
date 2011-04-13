@@ -26,69 +26,85 @@
 #include <vector>
 
 #include "goby/acomms/acomms_constants.h"
+#include "goby/util/logger.h"
 
 namespace goby
 {
 
     namespace acomms
     {
-
-/// Enumeration of DCCL types used for sending messages. dccl_enum and dccl_string primarily map to cpp_string, dccl_bool to cpp_bool, dccl_int to cpp_long, dccl_float to cpp_double
-        enum DCCLType { dccl_static, /*!<  \ref tag_static */
-                        dccl_bool, /*!< \ref tag_bool */
-                        dccl_int, /*!< \ref tag_int */
-                        dccl_float, /*!< \ref tag_float */
-                        dccl_enum, /*!< \ref tag_enum */
-                        dccl_string, /*!< \ref tag_string */
-                        dccl_hex  /*!< \ref tag_hex */
-        };
-/// Enumeration of C++ types used in DCCL.
-        enum DCCLCppType { cpp_notype,/*!< not one of the C++ types used in DCCL */
-                           cpp_bool,/*!< C++ bool */
-                           cpp_string,/*!< C++ std::string */
-                           cpp_long,/*!< C++ long */
-                           cpp_double/*!< C++ double */
-        };
+        typedef boost::dynamic_bitset<unsigned char> Bitset;
 
 
-        // 2^3 = 8
-        enum { POWER2_BITS_IN_BYTE = 3 };
-        inline unsigned bits2bytes(unsigned bits) { return bits >> POWER2_BITS_IN_BYTE; }
-        inline unsigned bytes2bits(unsigned bytes) { return bytes << POWER2_BITS_IN_BYTE; }
-    
-        // 2^1 = 2
-        enum { POWER2_NIBS_IN_BYTE = 1 };
-        inline unsigned bytes2nibs(unsigned bytes) { return bytes << POWER2_NIBS_IN_BYTE; }
-        inline unsigned nibs2bytes(unsigned nibs) { return nibs >> POWER2_NIBS_IN_BYTE; }
-
-
-        inline std::string type_to_string(DCCLType type)
+        inline Bitset operator+(const Bitset& a, const Bitset& b)
         {
-            switch(type)
-            {
-                case dccl_int:    return "int";
-                case dccl_hex:    return "hex";
-                case dccl_bool:   return "bool";
-                case dccl_string: return "string";
-                case dccl_float:  return "float";
-                case dccl_static: return "static";
-                case dccl_enum:   return "enum";
-            }
-            return "notype";
+            Bitset out(a);
+            for(int i = 0, n = b.size(); i < n; ++i)
+                out.push_back(b[i]);
+            return out;
         }
 
-        inline std::string type_to_string(DCCLCppType type)
+        
+        inline void bitset2string(const Bitset& bits, std::string* str)
         {
-            switch(type)
-            {
-                case cpp_long:   return "long";
-                case cpp_double: return "double";
-                case cpp_string: return "string";
-                case cpp_bool:   return "bool";
-                case cpp_notype: return "no_type";
-            }
-            return "notype";
+            str->resize(bits.num_blocks()); // resize the string to fit the bitset
+            to_block_range(bits, str->rbegin());
         }
+            
+        inline void string2bitset(Bitset* bits, const std::string& str)
+        {
+            bits->resize(str.size() * BITS_IN_BYTE);
+            from_block_range(str.rbegin(), str.rend(), *bits);
+        }
+
+        class DCCLCommon
+        {
+          public:
+            static void set_log(std::ostream* log)
+            {
+                log_ = log;
+                
+                util::FlexOstream* flex_log = dynamic_cast<util::FlexOstream*>(log);
+                if(flex_log)
+                    add_flex_groups(flex_log);
+            }
+
+            static std::ostream& logger()
+            { return *log_; }
+
+            static void initialize()
+            {
+                null_.open("/dev/null");
+                log_ = &null_;
+            }
+            
+            static void add_flex_groups(util::FlexOstream* tout)
+            {
+                tout->add_group("dccl_enc", util::Colors::lt_magenta, "encoder messages (goby_dccl)");
+                tout->add_group("dccl_dec", util::Colors::lt_blue, "decoder messages (goby_dccl)");
+            }
+            
+
+            
+          private:
+            static google::protobuf::DynamicMessageFactory message_factory_;
+            static std::ostream* log_;
+            static std::ofstream null_;
+        };
+        
+        // more efficient way to do ceil(total_bits / 8)
+        // to get the number of bytes rounded up.
+        enum { BYTE_MASK = 7 }; // 00000111
+        inline unsigned floor_bits2bytes(unsigned bits)
+        { return bits >> 3; }
+        inline unsigned ceil_bits2bytes(unsigned bits)
+        {
+            return (bits& BYTE_MASK) ?
+                floor_bits2bytes(bits) + 1 :
+                floor_bits2bytes(bits);
+        }
+            
+        
     }
 }
 #endif

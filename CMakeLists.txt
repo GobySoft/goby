@@ -9,6 +9,9 @@
 cmake_minimum_required(VERSION 2.6.0 FATAL_ERROR)
 project(goby)
 
+enable_testing()
+include(CTest)
+
 set(GOBY_VERSION_MAJOR "1")
 set(GOBY_VERSION_MINOR "0")
 set(GOBY_VERSION_PATCH "2")
@@ -24,7 +27,9 @@ get_filename_component(goby_SRC_DIR src ABSOLUTE)
 get_filename_component(goby_SHARE_DIR share ABSOLUTE)
 get_filename_component(goby_BUILD_DIR build ABSOLUTE)
 
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -fprofile-arcs -ftest-coverage")
+set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -Wall -fprofile-arcs -ftest-coverage")
+set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -fprofile-arcs -ftest-coverage")
 
 ## set the cmake defaults for libraries and binaries
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${goby_LIB_DIR} CACHE PATH 

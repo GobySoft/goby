@@ -33,17 +33,16 @@
 
 
 // must be define since we are using the preprocessor
-#define GOBY_MAX_PROTOBUF_TYPES 16
+#define GOBY_MAX_PROTOBUF_TYPES 128
 
-google::protobuf::DynamicMessageFactory goby::core::DBOManager::msg_factory;
-google::protobuf::DescriptorPool goby::core::DBOManager::descriptor_pool;
+google::protobuf::DynamicMessageFactory* goby::core::DBOManager::msg_factory_ = 0;
+google::protobuf::DescriptorPool* goby::core::DBOManager::descriptor_pool_ = 0;
 boost::bimap<int, std::string> goby::core::DBOManager::dbo_map;
 
 goby::core::DBOManager* goby::core::DBOManager::inst_ = 0;
 
 using goby::util::goby_time;
 using goby::util::glogger;
-using goby::util::logger_lock::lock;
 
 
 // singleton class, use this to get pointer
@@ -66,7 +65,6 @@ goby::core::DBOManager::DBOManager()
       transaction_(0),
       t_last_commit_(goby_time())
 {
-    boost::mutex::scoped_lock lock(glogger().mutex());
     glogger().add_group("dbo", goby::util::Colors::lt_green, "database");
 }
 
@@ -77,40 +75,20 @@ goby::core::DBOManager::~DBOManager()
     if(session_) delete session_;
 }
 
-void goby::core::DBOManager::add_file(const google::protobuf::Descriptor* descriptor)
-{
-    google::protobuf::FileDescriptorProto proto_file;
-    descriptor->file()->CopyTo(&proto_file);
-    add_file(proto_file);
-}
-    
-
-void goby::core::DBOManager::add_file(const google::protobuf::FileDescriptorProto& proto)
-{
-    descriptor_pool.BuildFile(proto); 
-    // for(int i = 0, n = new_file_descriptor->message_type_count(); i < n; ++i)
-    //     add_type(new_file_descriptor->message_type(i));
-}
-
-void goby::core::DBOManager::add_type(const std::string& name)
-{
-    add_type(descriptor_pool.FindMessageTypeByName(name));
-}
-
-// add check for type if name already exists in the database!
 void goby::core::DBOManager::add_type(const google::protobuf::Descriptor* descriptor)
 {
     using goby::util::as;
     
     if(dbo_map.right.count(descriptor->full_name()))
     {
-        glogger(lock) << group("dbo") << "type with name " << descriptor->full_name() << " already exists" << std::endl << unlock;
+        glogger() << group("dbo") << "type with name " << descriptor->full_name() << " already exists" << std::endl;
+        
         return;
     }
 
-    glogger(lock) << group("dbo") << "adding type: "
-                       << descriptor->DebugString() << "\n"
-                       << "with index: " << index_ << std::endl << unlock;
+    glogger() << group("dbo") << "adding type: "
+              << descriptor->DebugString() << "\n"
+              << "with index: " << index_ << std::endl;
     
     reset_session();
     dbo_map.insert(boost::bimap<int, std::string>::value_type(index_, descriptor->full_name()));
@@ -125,11 +103,10 @@ void goby::core::DBOManager::add_type(const google::protobuf::Descriptor* descri
     try{ session_->createTables(); }
     catch(Wt::Dbo::Exception& e)
     {
-        glogger(lock) << warn << e.what() << std::endl << unlock;
+        glogger() << warn << e.what() << std::endl;
     }
     
-    glogger(lock) <<group("dbo") << "created table for " << descriptor->full_name() << std::endl << unlock;
-
+    glogger() <<group("dbo") << "created table for " << descriptor->full_name() << std::endl;
     reset_session();
 
     // remap all the tables
@@ -138,7 +115,7 @@ void goby::core::DBOManager::add_type(const google::protobuf::Descriptor* descri
         it != n;
         ++it)
     {
-        map_type(descriptor_pool.FindMessageTypeByName(it->second));
+        map_type(descriptor_pool_->FindMessageTypeByName(it->second));
     }
 }
 
@@ -146,8 +123,7 @@ void goby::core::DBOManager::map_type(const google::protobuf::Descriptor* descri
 {
     using goby::util::as;
 
-    glogger(lock) <<group("dbo") << "mapping type: " << descriptor->full_name() << std::endl << unlock;
-
+    glogger() <<group("dbo") << "mapping type: " << descriptor->full_name() << std::endl;
     
     // allows us to select compile time type to use at runtime
     switch(dbo_map.right.at(descriptor->full_name()))
@@ -158,26 +134,18 @@ void goby::core::DBOManager::map_type(const google::protobuf::Descriptor* descri
 #define BOOST_PP_LOCAL_LIMITS (0, GOBY_MAX_PROTOBUF_TYPES)
 #include BOOST_PP_LOCAL_ITERATE()
         // end preprocessor `for` loop
-
+        
         default: throw(std::runtime_error(std::string("exceeded maximum number of types allowed: " + as<std::string>(GOBY_MAX_PROTOBUF_TYPES)))); break;
     }
 }
 
 
-// void goby::core::DBOManager::add_message(const std::string& name, const std::string& serialized_message)
-// {
-//     google::protobuf::Message* msg = new_msg_from_name(name);
-//     msg->ParseFromString(serialized_message);
-//     add_message(msg);
-// }
 
 void goby::core::DBOManager::add_message(boost::shared_ptr<google::protobuf::Message> msg)
 {
     using goby::util::as;
     
-    
-    glogger(lock) << group("dbo") << "adding message of type: "
-                       << msg->GetTypeName() << std::endl << unlock;
+    glogger() << group("dbo") << "adding message of type: " << msg->GetTypeName() << std::endl;
     
     switch(dbo_map.right.at(msg->GetTypeName()))
     {
@@ -195,13 +163,11 @@ void goby::core::DBOManager::add_message(boost::shared_ptr<google::protobuf::Mes
 
 void goby::core::DBOManager::commit()
 {
-    glogger(lock) << group("dbo") << "starting commit"
-                       << std::endl << unlock;
+    glogger() << group("dbo") << "starting commit" << std::endl;
         
     transaction_->commit();
         
-    glogger(lock) << group("dbo") << "finished commit"
-                       << std::endl << unlock;
+    glogger() << group("dbo") << "finished commit" << std::endl;
 
     t_last_commit_ = goby_time();
 
@@ -209,13 +175,6 @@ void goby::core::DBOManager::commit()
     transaction_ = new Wt::Dbo::Transaction(*session_);
 }
 
-
-boost::shared_ptr<google::protobuf::Message> goby::core::DBOManager::new_msg_from_name(const std::string& name)
-{
-    return boost::shared_ptr<google::protobuf::Message>(
-        msg_factory.GetPrototype(
-            descriptor_pool.FindMessageTypeByName(name))->New());
-}
 
 
 void goby::core::DBOManager::connect(const std::string& db_name /* = "" */)
@@ -235,12 +194,11 @@ void goby::core::DBOManager::connect(const std::string& db_name /* = "" */)
 
 void goby::core::DBOManager::reset_session()
 {
-    using goby::util::logger_lock::lock;
     using goby::util::glogger;
-                
+
     commit();
-    glogger(lock) << "resetting session" 
-                  << std::endl << unlock;
+    glogger() << "resetting session" 
+              << std::endl;
     connect();
 }
             

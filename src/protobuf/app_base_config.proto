@@ -2,12 +2,16 @@ import "goby/protobuf/option_extensions.proto";
 
 message AppBaseConfig
 {
-  required string platform_name = 1 [(example)="AUV-23",
+  optional string ethernet_address = 1 [default = "127.0.0.1", (description)="primary IP address of the interface to multicast over"];
+  optional string multicast_address = 2 [default = "239.255.7.15", (description)="multicast IP address to use; 239.252.0.0-239.255.255.255 is recommended (site-local). See also http://www.iana.org/assignments/multicast-addresses/multicast-addresses.xml"];
+  optional uint32 ethernet_port = 3 [default = 11142];
+  
+  optional string platform_name = 4 [default="unnamed_goby_platform",
                                      (description) = "same as self.name for gobyd cfg"];
   
-  optional string app_name = 3 [(example)="myapp_g",
+  optional string app_name = 5 [(example)="myapp_g",
                                 (description) = "default is compiled name - change this to run multiple instances"];
-
+  
   enum Verbosity
   {
     QUIET = 1;
@@ -17,12 +21,16 @@ message AppBaseConfig
     GUI = 5;
   }
   
-  optional Verbosity verbosity = 4 [default = QUIET,
-                                    (description)="Terminal verbosity"];    
+  optional Verbosity verbosity = 6 [default = QUIET,
+                                    (description)="Terminal verbosity"];
 
-
+  optional bool using_database = 10 [default = true, (description)="True if using goby_database, false if no database is to be run"];
+  optional string database_address = 11 [(example)="127.0.0.1",
+                                         (description)="TCP address to send database requests on. If omitted and using_database==true, `ethernet_address` is used"];
+  optional uint32 database_port = 12 [(example)="11142",
+                                      (description)="TCP port to send database requests on. If omitted and using_database==true, `ethernet_port` is used"];  
+  
   // used only by ApplicationBase, ignored by gobyd
   optional float loop_freq = 100 [default = 10,
-                                  (description) = "the frequency (Hz) used to run loop()"]; 
+                                  (description) = "the frequency (Hz) used to run loop()"];
 }
-

@@ -140,7 +140,7 @@ namespace Wt
                         {
                             long long tmp = refl->GetUInt64(obj, field_desc);
                             Wt::Dbo::field(action, tmp, field_name);
-                            refl->SetInt64(&obj, field_desc, tmp);
+                            refl->SetUInt64(&obj, field_desc, tmp);
                         }
                         break;
                         

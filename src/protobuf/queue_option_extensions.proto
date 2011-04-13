@@ -1,0 +1,12 @@
+import "google/protobuf/descriptor.proto";
+
+package queue;
+
+extend google.protobuf.MessageOptions {
+  optional bool ack = 50050;  
+  optional uint32 blackout_time = 50051;
+  optional uint32 max_queue = 50052;
+  optional bool newest_first = 50053;
+  optional int32 ttl = 50054;
+  optional double value_base = 50055;
+}

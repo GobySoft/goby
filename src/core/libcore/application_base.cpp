@@ -1,4 +1,4 @@
-// copyright 2010 t. schneider tes@mit.edu
+// copyright 2010-2011 t. schneider tes@mit.edu
 //
 //
 // This program is free software: you can redistribute it and/or modify
@@ -24,10 +24,8 @@
 #include <Wt/Dbo/Exception>
 
 #include "goby/util/time.h"
-#include "goby/core/libcore/configuration_reader.h"
 #include "goby/core/libdbo/dbo_manager.h"
 #include "goby/protobuf/app_base_config.pb.h"
-#include "goby/protobuf/header.pb.h"
 
 #include "application_base.h"
 
@@ -35,120 +33,24 @@ using namespace goby::core;
 using namespace goby::util;
 using boost::shared_ptr;
 
-int goby::core::ApplicationBase::argc_ = 0;
-char** goby::core::ApplicationBase::argv_ = 0;
 
-goby::core::ApplicationBase::ApplicationBase(
-    google::protobuf::Message* cfg /*= 0*/,
-    bool skip_cfg_checks /* = false */)
-    : loop_period_(boost::posix_time::milliseconds(100)),
-      context_(1),
-      publisher_(context_, ZMQ_PUB),
-      subscriber_(context_, ZMQ_SUB),
-      alive_(true)
+goby::core::ApplicationBase::ApplicationBase(google::protobuf::Message* cfg /*= 0*/)
+    : ProtobufApplicationBase(cfg),
+      loop_period_(boost::posix_time::milliseconds(100)),
+      database_client_(zmq_context(), ZMQ_REQ)
 {
-    //
-    // read the configuration
-    //
-    boost::program_options::options_description od("Allowed options");
-    boost::program_options::variables_map var_map;
-    try
-    {
-        std::string application_name;
-        ConfigReader::read_cfg(argc_, argv_, cfg, &application_name, &od, &var_map);
-        base_cfg_.set_app_name(application_name);
-
-        // extract the AppBaseConfig assuming the user provided it in their configuration
-        // .proto file
-        if(cfg)
-        {
-            const google::protobuf::Descriptor* desc = cfg->GetDescriptor();
-            for (int i = 0, n = desc->field_count(); i < n; ++i)
-            {
-                const google::protobuf::FieldDescriptor* field_desc = desc->field(i);
-                if(field_desc->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE && field_desc->message_type() == ::AppBaseConfig::descriptor())
-                {
-                    base_cfg_.MergeFrom(cfg->GetReflection()->GetMessage(*cfg, field_desc));
-                }
-            }
-        }
-
-        
-        // determine the name of this platform
-        std::string self_name;
-        if(var_map.count("platform_name"))
-            self_name = var_map["platform_name"].as<std::string>();
-        else if(base_cfg_.has_platform_name())
-            self_name = base_cfg_.platform_name();
-        else
-            throw(ConfigException("missing platform_name"));
-        base_cfg_.set_platform_name(self_name);
-        
-        // incorporate some parts of the AppBaseConfig that are common
-        // with gobyd (e.g. Verbosity)
-        ConfigReader::merge_app_base_cfg(&base_cfg_, var_map);
-        
-        set_loop_freq(base_cfg_.loop_freq());
-    }
-    catch(ConfigException& e)
-    {
-        if(!skip_cfg_checks)
-        {
-            // output all the available command line options
-            std::cerr << od << "\n";
-            if(e.error())
-                std::cerr << "Problem parsing command-line configuration: \n"
-                          << e.what() << "\n";
-            
-            throw;
-        }
-    }
+    set_loop_freq(base_cfg().loop_freq());
     
-    // set up the logger
-    glogger().set_name(application_name());
-
-    switch(base_cfg_.verbosity())
-    {
-        case AppBaseConfig::QUIET:
-            glogger().add_stream(Logger::quiet, &std::cout);
-            break;            
-        case AppBaseConfig::WARN:
-            glogger().add_stream(Logger::warn, &std::cout);
-            break;
-        case AppBaseConfig::VERBOSE:
-            glogger().add_stream(Logger::verbose, &std::cout);
-            break;
-        case AppBaseConfig::DEBUG:
-            glogger().add_stream(Logger::debug, &std::cout);
-            break;
-        case AppBaseConfig::GUI:
-            glogger().add_stream(Logger::gui, &std::cout);
-            break;    
-    }
-
-    if(base_cfg_.IsInitialized())
-    {
-        std::string pgm_socket_addr = "epgm://localhost;239.192.1.1:5555";
-        try
-        {
-            publisher_.connect(pgm_socket_addr.c_str());
-            subscriber_.connect(pgm_socket_addr.c_str());
-        }
-        catch(std::exception& e)
-        {
-            std::cout << "error connecting to: " << pgm_socket_addr << ": " << e.what() << std::endl;
-        }
-        
-        // we are started
-        t_start_ = goby_time();
-        // start the loop() on the next even second
-        t_next_loop_ = boost::posix_time::second_clock::universal_time() +
-            boost::posix_time::seconds(1);
-        
-        // notify others of our configuration for logging purposes
-        if(cfg) publish(*cfg);
-    }
+    __set_up_sockets();
     
+    // we are started
+    t_start_ = goby_time();
+    // start the loop() on the next even second
+    t_next_loop_ = boost::posix_time::second_clock::universal_time() +
+        boost::posix_time::seconds(1);
+    
+    // notify others of our configuration for logging purposes
+    if(cfg) publish(*cfg);
 }
 
 goby::core::ApplicationBase::~ApplicationBase()
@@ -157,97 +59,43 @@ goby::core::ApplicationBase::~ApplicationBase()
 }
 
 
-void goby::core::ApplicationBase::__run()
-{
-    // continue to run while we are alive (quit() has not been called)
-    while(alive_)
-    {
-        //  Initialize poll set
-        std::vector<zmq::pollitem_t> items;
-        zmq::pollitem_t item = { subscriber_, 0, ZMQ_POLLIN, 0 };
-        items.push_back(item);
-        
-        // sit and wait on a message until the next time to call loop() is up        
-        long timeout = (t_next_loop_-goby_time()).total_microseconds();
-        if(timeout < 0)
-            timeout = 0;
 
-        glogger() << debug << "timeout set to: " << timeout << " microseconds." << std::endl;
+void goby::core::ApplicationBase::__set_up_sockets()
+{
+    if(!base_cfg().using_database())        
+        glogger() << warn << "Not using `goby_database`. You will want to ensure you are logging your runtime data somehow" << std::endl;
+    else
+    {
+        std::string database_connection = "tcp://";
+
+        if(base_cfg().has_database_address())
+            database_connection += base_cfg().database_address();
+        else
+            database_connection += base_cfg().ethernet_address();
+
+        database_connection += ":";
         
-        bool had_events = false;
+        if(base_cfg().has_database_port())
+            database_connection += as<std::string>(base_cfg().database_port());
+        else
+            database_connection += as<std::string>(base_cfg().ethernet_port());
+
         try
         {
-            zmq::poll (&items[0], items.size(), timeout);
-            if (items[0].revents & ZMQ_POLLIN) 
-            {
-                int i = 0;
-                std::string protobuf_type_name;
-
-                while (1) {
-                    zmq::message_t message;
-                    subscriber_.recv(&message);
-                    
-                    std::string bytes(static_cast<const char*>(message.data()),
-                                      message.size());
-                    glogger() << debug << "got a message: " << goby::acomms::hex_encode(bytes) << std::endl;
-                    
-                    if(i == 0)
-                    {
-                        if(bytes.size() <  BITS_IN_UINT32 / BITS_IN_BYTE)
-                            throw(std::runtime_error("Message header is too small"));
-                        
-                        google::protobuf::uint32 marshalling_scheme = 0;
-                        for(int i = BITS_IN_UINT32/ BITS_IN_BYTE-1, n = 0; i >= n; --i)
-                        {
-                            marshalling_scheme <<= BITS_IN_BYTE;
-                            marshalling_scheme ^= bytes[i];
-                        }
-
-                        marshalling_scheme = boost::asio::detail::socket_ops::network_to_host_long(marshalling_scheme);                        
-                        
-                        if(static_cast<MarshallingScheme>(marshalling_scheme) != MARSHALLING_PROTOBUF)
-                        {
-                            throw(std::runtime_error("Unknown Marshalling Scheme; should be MARSHALLING_PROTOBUF, got: " + as<std::string>(marshalling_scheme)));
-                        }
-                        
-                        
-                        protobuf_type_name = bytes.substr(BITS_IN_UINT32 / BITS_IN_BYTE);
-                        glogger() << "Got message of tpe: " << protobuf_type_name << std::endl;
-                    }
-                    else if(i == 1)
-                    {
-                        subscriptions_.find(protobuf_type_name)->
-                            second->post(message.data(), message.size());
-                        had_events = true;
-                    }
-                    else
-                    {
-                        throw(std::runtime_error("Got more parts to the message than expecting (expecting only 2"));    
-                    }
-                    
-                    int64_t more;
-                    size_t more_size = sizeof (more);
-                    zmq_getsockopt(subscriber_, ZMQ_RCVMORE, &more, &more_size);
-                    if (!more)
-                        break;      //  Last message part
-                    ++i;
-                }
-            }
-            if(!had_events)
-            {
-                // no message, time to call loop()            
-                loop();
-                t_next_loop_ += loop_period_;
-            }
+            database_client_.connect(database_connection.c_str());
+            glogger() << debug << "connected (database requests line) to: "
+                      << database_connection << std::endl;
         }
         catch(std::exception& e)
         {
-            glogger() << warn << e.what() << std::endl;
+            glogger() << die << "cannot bind to: "
+                      << database_connection << ": " << e.what()
+                      << " check AppBaseConfig::database_address, AppBaseConfig::database_port" << std::endl;
         }
     }
 }
 
-bool goby::core::ApplicationBase::__is_valid_filter(const google::protobuf::Descriptor* descriptor, const proto::Filter& filter)
+bool goby::core::ApplicationBase::__is_valid_filter(const google::protobuf::Descriptor* descriptor, const protobuf::Filter& filter)
 {
     using namespace google::protobuf;
     // check filter for exclusions
@@ -263,20 +111,19 @@ bool goby::core::ApplicationBase::__is_valid_filter(const google::protobuf::Desc
     return true;
 }
 
-
-void goby::core::ApplicationBase::__insert_file_descriptor_proto(const google::protobuf::FileDescriptor* file_descriptor)
+void goby::core::ApplicationBase::__insert_file_descriptor_proto(const google::protobuf::FileDescriptor* file_descriptor, protobuf::DatabaseRequest* request)
 {
-    // // copy file descriptor for all dependencies of the new file
-    // for(int i = 0, n = file_descriptor->dependency_count(); i < n; ++i)
-    //     // recursively add dependencies
-    //     insert_file_descriptor_proto(file_descriptor->dependency(i));
+    // copy file descriptor for all dependencies of the new file
+    for(int i = 0, n = file_descriptor->dependency_count(); i < n; ++i)
+        // recursively add dependencies
+        __insert_file_descriptor_proto(file_descriptor->dependency(i), request);
     
-    // // copy descriptor for the new subscription type to the notification message
-    // if(!registered_file_descriptors_.count(file_descriptor))
-    // {
-    //     //file_descriptor->CopyTo(notification_.add_file_descriptor_proto());
-    //     registered_file_descriptors_.insert(file_descriptor);
-    // }
+    // copy descriptor for the new subscription type to the notification message
+    if(!registered_file_descriptors_.count(file_descriptor))
+    {
+        file_descriptor->CopyTo(request->add_file_descriptor_proto());
+        registered_file_descriptors_.insert(file_descriptor);
+    }    
 }
 
 void goby::core::ApplicationBase::__finalize_header(
@@ -293,99 +140,99 @@ void goby::core::ApplicationBase::__finalize_header(
         const google::protobuf::FieldDescriptor* field_desc = desc->field(i);
         if(field_desc->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE && field_desc->message_type() == ::Header::descriptor())
         {
-            
             Header* header = dynamic_cast<Header*>(refl->MutableMessage(msg, field_desc));
-            
 
-            bool has_unix_time = header->has_unix_time();
-            bool has_iso_time = header->has_iso_time();
-
-            // derived app has set neither time, use current time
-            if(!(has_unix_time || has_iso_time))
+            if(!header)
             {
-                boost::posix_time::ptime now = goby_time();
-                header->set_unix_time(ptime2unix_double(now));
-                header->set_iso_time(boost::posix_time::to_iso_string(now));
-            }
-            // derived app has set iso time, use this to set unix time
-            else if(has_iso_time)
-            {
-                header->set_unix_time(ptime2unix_double(
-                                          boost::posix_time::from_iso_string(
-                                              header->iso_time())));
-            }
-            // derived app has set unix time, use this to set iso time
-            else if(has_unix_time)
-            {
-                header->set_iso_time(boost::posix_time::to_iso_string(
-                                         unix_double2ptime(
-                                             header->unix_time())));
+                glogger() << warn << "Dynamic cast of Header failed!" << std::endl;
+                return;
             }
             
+            // derived app has not set neither time, use current time
+            if(!header->has_time())
+                header->set_time(goby::util::as<std::string>(goby_time()));
+
             
             if(!header->has_source_app())
-                header->set_source_app(base_cfg_.app_name());
+                header->set_source_app(base_cfg().app_name());
 
             if(!header->has_source_platform())
-                header->set_source_platform(base_cfg_.platform_name());
+                header->set_source_platform(base_cfg().platform_name());
 
-            switch(dest_type)
-            {
-                case goby::core::ApplicationBase::self:
-                    header->set_dest_type(Header::self);
-                    break;
-                    
-                case goby::core::ApplicationBase::other:
-                    header->set_dest_type(Header::other);
-                    header->set_dest_platform(dest_platform);
-                    break;
-
-                case goby::core::ApplicationBase::all:
-                    header->set_dest_type(Header::all);
-                    break;
-
-            }
-            
-            
+            header->set_dest_type(static_cast<Header::PublishDestination>(dest_type));
         }
     }
 }
 
-std::string goby::core::ApplicationBase::__make_zmq_header(const std::string& protobuf_type_name)
-{
-    std::string zmq_filter;
-    
-    // we are subscribing for a Protobuf type
-    google::protobuf::uint32 marshalling_scheme = boost::asio::detail::socket_ops::host_to_network_long(static_cast<google::protobuf::uint32>(MARSHALLING_PROTOBUF));
-    
-    for(int i = 0, n = BITS_IN_UINT32 / BITS_IN_BYTE; i < n; ++i)
-    {
-        zmq_filter.push_back(marshalling_scheme & 0xFF);
-        marshalling_scheme >>= BITS_IN_BYTE;
-    }
-    zmq_filter += protobuf_type_name;
-
-    glogger() << debug << "zmq header: " << goby::acomms::hex_encode(zmq_filter) << std::endl;
-
-    return zmq_filter;
-}
-
 void goby::core::ApplicationBase::__publish(google::protobuf::Message& msg, const std::string& platform_name, PublishDestination dest)
 {
+    const std::string& protobuf_type_name = msg.GetDescriptor()->full_name();
+
+    if(base_cfg().using_database() && !registered_file_descriptors_.count(msg.GetDescriptor()->file()))
+    {
+        // request permission to being publishing
+        // (so that we *know* the database has all entries)
+        static protobuf::DatabaseRequest proto_request;
+        static protobuf::DatabaseResponse proto_response;
+        proto_request.Clear();
+        __insert_file_descriptor_proto(msg.GetDescriptor()->file(), &proto_request);
+        proto_request.set_request_type(protobuf::DatabaseRequest::NEW_PUBLISH);
+        proto_request.set_publish_protobuf_full_name(protobuf_type_name);
+        
+        zmq::message_t zmq_request(proto_request.ByteSize());
+        proto_request.SerializeToArray(zmq_request.data(), zmq_request.size());    
+        database_client_.send(zmq_request);
+
+        glogger() << debug << "Sending request to goby_database: " << proto_request << "\n"
+                  << "...waiting on response" << std::endl;
+
+        zmq::message_t zmq_response;
+        database_client_.recv(&zmq_response);
+        proto_response.ParseFromArray(zmq_response.data(), zmq_response.size());
+        glogger() << debug << "Got response: " << proto_response << std::endl;
+
+        if(!proto_response.response_type() == protobuf::DatabaseResponse::NEW_PUBLISH_ACCEPTED)
+            glogger() << die << "Database publish was denied!" << std::endl;        
+
+    }
+
+    
     // adds, as needed, required fields of Header
     __finalize_header(&msg, dest, platform_name);
 
-    const std::string& protobuf_type_name = msg.GetDescriptor()->full_name();
-
-    std::string header = __make_zmq_header(protobuf_type_name); 
-    zmq::message_t msg_header(header.size()); 
-    memcpy(msg_header.data(), header.c_str(), header.size());
-    goby::util::glogger() << debug << "header hex: " << goby::acomms::hex_encode(std::string(static_cast<const char*>(header.data()),header.size())) << std::endl;    
-    publisher_.send(msg_header, ZMQ_SNDMORE);
-    
-    zmq::message_t buffer(msg.ByteSize());
-    msg.SerializeToArray(buffer.data(), buffer.size());    
+    int size = msg.ByteSize();
+    char buffer[size];
+    msg.SerializeToArray(&buffer, size);
     goby::util::glogger() << debug << "< " << msg << std::endl;
-    goby::util::glogger() << debug << "body hex: " << goby::acomms::hex_encode(std::string(static_cast<const char*>(buffer.data()),buffer.size())) << std::endl;
-    publisher_.send(buffer);
+    MinimalApplicationBase::publish(MARSHALLING_PROTOBUF, protobuf_type_name, &buffer, size);
+}
+
+void goby::core::ApplicationBase::iterate()
+{
+    // sit and wait on a message until the next time to call loop() is up        
+    long timeout = (t_next_loop_-goby_time()).total_microseconds();
+    if(timeout < 0)
+        timeout = 0;
+    
+    glogger() << debug << "timeout set to: " << timeout << " microseconds." << std::endl;
+    bool had_events = MinimalApplicationBase::poll(timeout);
+    if(!had_events)
+    {
+        // no message, time to call loop()            
+        loop();
+        t_next_loop_ += loop_period_;
+    }
+}
+
+
+void goby::core::ApplicationBase::inbox(const std::string& protobuf_type_name,
+                                        const void* data,
+                                        int size)
+{
+    boost::unordered_map<std::string, boost::shared_ptr<SubscriptionBase> >::iterator it = subscriptions_.find(protobuf_type_name);
+    
+    if(it != subscriptions_.end())
+        it->second->post(data, size);
+    else
+        throw(std::runtime_error("No subscription to protobuf type: " + protobuf_type_name));
 }

@@ -8,7 +8,7 @@ message NodeReport
   required string name = 2;
 
   // defined in goby/core/proto/config.proto
-  required goby.core.proto.VehicleType type = 3;
+  optional goby.core.proto.VehicleType type = 3;
   
   // lat, lon, depth
   required GeodeticCoordinate global_fix = 4;  

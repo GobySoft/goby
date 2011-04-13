@@ -1,4 +1,4 @@
-// copyright 2009 t. schneider tes@mit.edu
+// copyright 2009-2011 t. schneider tes@mit.edu
 // 
 // this file is part of the Dynamic Compact Control Language (DCCL),
 // the goby-acomms codec. goby-acomms is a collection of libraries 
@@ -17,361 +17,380 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
+#include <algorithm>
+
 #include <boost/foreach.hpp>
-#include <cryptopp/filters.h>
-#include <cryptopp/sha.h>
-#include <cryptopp/modes.h>
-#include <cryptopp/aes.h>
+#include <boost/assign.hpp>
+#include <crypto++/filters.h>
+#include <crypto++/sha.h>
+#include <crypto++/modes.h>
+#include <crypto++/aes.h>
 
 #include "dccl.h"
-#include "message_xml_callbacks.h"
-#include "goby/util/logger.h"
+#include "dccl_field_codec_default.h"
+
 #include "goby/util/string.h"
 #include "goby/protobuf/acomms_proto_helpers.h"
+#include "goby/protobuf/dccl_option_extensions.pb.h"
+#include "goby/protobuf/header.pb.h"
 
 using goby::util::goby_time;
 using goby::util::as;
+using google::protobuf::FieldDescriptor;
+using google::protobuf::Descriptor;
+using google::protobuf::Reflection;
 
-/////////////////////
-// public methods (general use)
-/////////////////////
-goby::acomms::DCCLCodec::DCCLCodec(std::ostream* log /* =0 */)
-    : log_(log),
-      start_time_(goby_time())
-{ }
+boost::shared_ptr<goby::acomms::DCCLCodec> goby::acomms::DCCLCodec::inst_(new DCCLCodec());
 
-std::set<unsigned> goby::acomms::DCCLCodec::add_xml_message_file(const std::string& xml_file)
+//
+// DCCLCodec
+//
+
+goby::acomms::DCCLCodec::DCCLCodec()
+    : DEFAULT_CODEC_NAME("_default")
 {
-    size_t begin_size = messages_.size();
-            
+    DCCLTypeHelper::initialize();    
+    DCCLCommon::initialize();
+    
+    using google::protobuf::FieldDescriptor;
+    DCCLFieldCodecManager::add<double, DCCLDefaultArithmeticFieldCodec>(DEFAULT_CODEC_NAME);
+    DCCLFieldCodecManager::add<float, DCCLDefaultArithmeticFieldCodec>(DEFAULT_CODEC_NAME);
+    DCCLFieldCodecManager::add<bool, DCCLDefaultBoolCodec>(DEFAULT_CODEC_NAME);
+    DCCLFieldCodecManager::add<int32, DCCLDefaultArithmeticFieldCodec>(DEFAULT_CODEC_NAME);
+    DCCLFieldCodecManager::add<int64, DCCLDefaultArithmeticFieldCodec>(DEFAULT_CODEC_NAME);
+    DCCLFieldCodecManager::add<uint32, DCCLDefaultArithmeticFieldCodec>(DEFAULT_CODEC_NAME);
+    DCCLFieldCodecManager::add<uint64, DCCLDefaultArithmeticFieldCodec>(DEFAULT_CODEC_NAME);
+    DCCLFieldCodecManager::add<FieldDescriptor::TYPE_STRING, DCCLDefaultStringCodec>(DEFAULT_CODEC_NAME);
+    DCCLFieldCodecManager::add<FieldDescriptor::TYPE_BYTES, DCCLDefaultBytesCodec>(DEFAULT_CODEC_NAME);
+    DCCLFieldCodecManager::add<google::protobuf::EnumDescriptor, DCCLDefaultEnumCodec>(DEFAULT_CODEC_NAME);
+    DCCLFieldCodecManager::add<google::protobuf::Message, DCCLDefaultMessageCodec>(DEFAULT_CODEC_NAME);
+
+    DCCLFieldCodecManager::add<std::string, DCCLTimeCodec>("_time");
+    DCCLFieldCodecManager::add<std::string, DCCLModemIdConverterCodec>("_platform<->modem_id");
+}
+
+
+std::string goby::acomms::DCCLCodec::encode(const google::protobuf::Message& msg)
+{
+    const Descriptor* desc = msg.GetDescriptor();
+
+    try
+    {
+        if(!id2desc_.count(desc->options().GetExtension(dccl::id)))
+            throw(DCCLException("Message id " +
+                                as<std::string>(desc->options().GetExtension(dccl::id))+
+                                " has not been validated. Call validate() before encoding this type."));
+    
+
+        //fixed header
+        Bitset ccl_id_bits(fixed_head_size(), DCCL_CCL_HEADER);
+        Bitset dccl_id_bits(fixed_head_size(),
+                            msg.GetDescriptor()->options().GetExtension(dccl::id));
+        ccl_id_bits <<= HEAD_DCCL_ID_SIZE;    
+        Bitset fixed_head_bits = ccl_id_bits | dccl_id_bits;
+        Bitset head_bits, body_bits;
+
+        boost::shared_ptr<DCCLFieldCodec> codec =
+            DCCLFieldCodecManager::find(desc, desc->options().GetExtension(dccl::message_codec));
+        boost::shared_ptr<FromProtoCppTypeBase> helper =
+            DCCLTypeHelper::find(desc);
+
+        if(codec)
+        {
+            DCCLFieldCodec::MessageHandler msg_handler;
+            msg_handler.push(msg.GetDescriptor());
+            codec->encode(&head_bits, helper->get_value(msg), DCCLFieldCodec::HEAD);
+            codec->encode(&body_bits, helper->get_value(msg), DCCLFieldCodec::BODY);
+        }
+        else
+        {
+            throw(DCCLException("Failed to find dccl.message_codec `" + desc->options().GetExtension(dccl::message_codec) + "`"));
+        }
         
-    // Register handlers for XML parsing
-    DCCLMessageContentHandler content(messages_);
-    DCCLMessageErrorHandler error;
-    // instantiate a parser for the xml message files
-    XMLParser parser(content, error);
-    // parse(file)
-
-    parser.parse(xml_file);
-
-    size_t end_size = messages_.size();
-    
-    check_duplicates();
-
-    std::set<unsigned> added_ids;
-    
-    for(size_t i = 0, n = end_size - begin_size; i < n; ++i)
-    {
-        // map name/id to position in messages_ vector for later use
-        size_t new_index = messages_.size()-i-1;
-        name2messages_.insert(std::pair<std::string, size_t>(messages_[new_index].name(), new_index));
-        id2messages_.insert(std::pair<unsigned, size_t>(messages_[new_index].id(), new_index));
-        added_ids.insert(messages_[new_index].id());
-    }
-    
-    return added_ids;
-}
-
-std::set<unsigned> goby::acomms::DCCLCodec::all_message_ids()
-{
-    std::set<unsigned> s;
-    BOOST_FOREACH(const DCCLMessage &msg, messages_)
-        s.insert(msg.id());
-    return s;
-}    
-std::set<std::string> goby::acomms::DCCLCodec::all_message_names()
-{
-    std::set<std::string> s;
-    BOOST_FOREACH(const DCCLMessage &msg, messages_)
-        s.insert(msg.name());
-    return s;
-}
-
-    
-std::string goby::acomms::DCCLCodec::summary() const	
-{ 
-    std::string out;
-    for(std::vector<DCCLMessage>::const_iterator it = messages_.begin(), n = messages_.end(); it != n; ++it)
-        out += it->get_display();
-    return out;
-}
-
-std::string goby::acomms::DCCLCodec::brief_summary() const	
-{ 
-    std::string out;
-    for(std::vector<DCCLMessage>::const_iterator it = messages_.begin(), n = messages_.end(); it != n; ++it)
-        out += it->get_short_display();
-    return out;
-}
-
-void goby::acomms::DCCLCodec::add_algorithm(const std::string& name, AlgFunction1 func)
-{
-    DCCLAlgorithmPerformer* ap = DCCLAlgorithmPerformer::getInstance();
-    ap -> add_algorithm(name, func);
-}
-
-void goby::acomms::DCCLCodec::add_adv_algorithm(const std::string& name, AlgFunction2 func)
-{
-    DCCLAlgorithmPerformer* ap = DCCLAlgorithmPerformer::getInstance();
-    ap -> add_algorithm(name, func);
-}
-
-void goby::acomms::DCCLCodec::add_flex_groups(util::FlexOstream* tout)
-{
-    tout->add_group("dccl_enc", util::Colors::lt_magenta, "encoder messages (goby_dccl)");
-    tout->add_group("dccl_dec", util::Colors::lt_blue, "decoder messages (goby_dccl)");
-}
-
-
-std::ostream& goby::acomms::operator<< (std::ostream& out, const DCCLCodec& d)
-{
-    out << d.summary();
-    return out;
-}
-
-
-std::ostream& goby::acomms::operator<< (std::ostream& out, const std::set<std::string>& s)
-{
-    out << "std::set<std::string>:" << std::endl;
-    for (std::set<std::string>::const_iterator it = s.begin(), n = s.end(); it != n; ++it)
-        out << (*it) << std::endl;
-    return out;
-}
-
-std::ostream& goby::acomms::operator<< (std::ostream& out, const std::set<unsigned>& s)
-{
-    out << "std::set<unsigned>:" << std::endl;
-    for (std::set<unsigned>::const_iterator it = s.begin(), n = s.end(); it != n; ++it)
-        out << (*it) << std::endl;
-    return out;
-}
-
-
-/////////////////////
-// public methods (more MOOS specific, but still could be general use)
-/////////////////////
-
-// <trigger_var mandatory_content="string"></trigger_var>
-// mandatory content is a string that must be contained in the
-// *contents* of the trigger publish in order for the trigger
-// to be processed. this allows the SAME moos trigger variable
-// to be used to trigger creation of different messages based on the
-// contents of the trigger message itself.
-bool goby::acomms::DCCLCodec::is_publish_trigger(std::set<unsigned>& id, const std::string& key, const std::string& value)
-{
-    for (std::vector<DCCLMessage>::const_iterator it = messages_.begin(), n = messages_.end(); it != n; ++it)
-    {
-        if(key == it->trigger_var() && (it->trigger_mandatory() == "" || value.find(it->trigger_mandatory()) != std::string::npos))
-            id.insert(it->id());
-    }
-    return (id.empty()) ? false : true;
-}
-
-bool goby::acomms::DCCLCodec::is_time_trigger(std::set<unsigned>& id)
-{
-    using boost::posix_time::seconds;
-    
-    for (std::vector<DCCLMessage>::iterator it = messages_.begin(), n = messages_.end(); it != n; ++it)
-    {
-        if(it->trigger_type() == "time" &&
-           goby_time() > (start_time_ + seconds(it->trigger_number() * it->trigger_time())))
-        {
-            id.insert(it->id());
-            // increment message counter
-            ++(*it);
-        }        
-    }
-
-    return (id.empty()) ? false : true;
-}
-
-    
-bool goby::acomms::DCCLCodec::is_incoming(unsigned& id, const std::string& key)
-{
-    for (std::vector<DCCLMessage>::const_iterator it = messages_.begin(), n = messages_.end(); it != n; ++it)
-    {
-        if (key == it->in_var())
-        {
-            id = it->id();
-            return true;
-        }
-    }
-    return false;
-}
-
-/////////////////////
-// private methods
-/////////////////////
-
-
-void goby::acomms::DCCLCodec::check_duplicates()
-{
-    std::map<unsigned, std::vector<DCCLMessage>::iterator> all_ids;
-    for(std::vector<DCCLMessage>::iterator it = messages_.begin(), n = messages_.end(); it != n; ++it)
-    {
-        unsigned id = it->id();
-            
-        std::map<unsigned, std::vector<DCCLMessage>::iterator>::const_iterator id_it = all_ids.find(id);
-        if(id_it != all_ids.end())
-            throw DCCLException(std::string("DCCL: duplicate variable id " + as<std::string>(id) + " specified for " + it->name() + " and " + id_it->second->name()));
-            
-        all_ids.insert(std::pair<unsigned, std::vector<DCCLMessage>::iterator>(id, it));
-    }
-}
-
-std::vector<goby::acomms::DCCLMessage>::const_iterator goby::acomms::DCCLCodec::to_iterator(const std::string& message_name) const
-{
-    if(name2messages_.count(message_name))
-        return messages_.begin() + name2messages_.find(message_name)->second;
-    else
-        throw DCCLException(std::string("DCCL: attempted an operation on message [" + message_name + "] which is not loaded"));
-}
-std::vector<goby::acomms::DCCLMessage>::iterator goby::acomms::DCCLCodec::to_iterator(const std::string& message_name)
-{
-    if(name2messages_.count(message_name))
-        return messages_.begin() + name2messages_.find(message_name)->second;
-    else
-        throw DCCLException(std::string("DCCL: attempted an operation on message [" + message_name + "] which is not loaded"));
-}
-std::vector<goby::acomms::DCCLMessage>::const_iterator goby::acomms::DCCLCodec::to_iterator(const unsigned& id) const
-{
-    if(id2messages_.count(id))
-        return messages_.begin() + id2messages_.find(id)->second;
-    else
-        throw DCCLException(std::string("DCCL: attempted an operation on message [" + as<std::string>(id) + "] which is not loaded"));
-}
-
-std::vector<goby::acomms::DCCLMessage>::iterator goby::acomms::DCCLCodec::to_iterator(const unsigned& id)
-{
-    if(id2messages_.count(id))
-        return messages_.begin() + id2messages_.find(id)->second;
-    else
-        throw DCCLException(std::string("DCCL: attempted an operation on message [" + as<std::string>(id) + "] which is not loaded"));
-}
-
-
-void goby::acomms::DCCLCodec::encode_private(std::vector<DCCLMessage>::iterator it,
-                                             std::string& out,
-                                             std::map<std::string, std::vector<DCCLMessageVal> > in /* copy */)
-{
-    if(manip_manager_.has(it->id(), protobuf::MessageFile::NO_ENCODE))
-    {
-        if(log_) *log_ << group("dccl_enc") << "not encoding DCCL ID: " << it->id() << "; NO_ENCODE manipulator is set" << std::endl;
-        throw(DCCLException("NO_ENCODE manipulator set"));
-    }
-    
-    if(log_)
-    {
-        *log_ << group("dccl_enc") << "starting encode for " << it->name() << std::endl;        
-
-        typedef std::pair<std::string, std::vector<DCCLMessageVal> > P;
-        BOOST_FOREACH(const P& p, in)                    
-        {
-            if(!p.first.empty())
-            {
-                BOOST_FOREACH(const DCCLMessageVal& mv, p.second)
-                    *log_ << group("dccl_enc") << "\t" << p.first << ": "<< mv << std::endl;
-            }
-        }
-    }
-    
-    // 1. encode parts
-    std::string body, head;
-    
-    it->set_head_defaults(in, cfg_.modem_id());
-
-    it->head_encode(head, in);
-    it->body_encode(body, in);
-    
-    // 2. encrypt
-    if(!crypto_key_.empty()) encrypt(body, head);
- 
-    // 3. join head and body
-    out = head + body;
-
-    
-    if(log_) *log_ << group("dccl_enc") << "finished encode of " << it->name() <<  std::endl;    
-}
-
-std::vector<goby::acomms::DCCLMessage>::iterator goby::acomms::DCCLCodec::decode_private(std::string in,
-                                                                                         std::map<std::string, std::vector<DCCLMessageVal> >& out)
-{
-    std::vector<DCCLMessage>::iterator it = to_iterator(unsigned(DCCLHeaderDecoder(in)[HEAD_DCCL_ID]));
-
-    if(manip_manager_.has(it->id(), protobuf::MessageFile::NO_DECODE))
-    {
-        if(log_) *log_ << group("dccl_enc") << "not decoding DCCL ID: " << it->id() << "; NO_DECODE manipulator is set" << std::endl;
-        throw(DCCLException("NO_DECODE manipulator set"));
-    }
-
-
-    if(log_) *log_ << group("dccl_dec") << "starting decode for " << it->name() << std::endl;        
-    
-    // clean up any ending junk added by modem
-    in.resize(in.find_last_not_of(char(0))+1);
-    
-    // 3. split body and header (avoid substr::out_of_range)
-    std::string body = (DCCL_NUM_HEADER_BYTES < in.size()) ?
-        in.substr(DCCL_NUM_HEADER_BYTES) : "";
-    std::string head = in.substr(0, DCCL_NUM_HEADER_BYTES);
-    
-    // 2. decrypt
-    if(!crypto_key_.empty()) decrypt(body, head);
-    
-    // 1. decode parts
-    it->head_decode(head, out);
-    it->body_decode(body, out);
-    
-    if(log_)
-    {
-        typedef std::pair<std::string, std::vector<DCCLMessageVal> > P;
-        BOOST_FOREACH(const P& p, out)                    
-        {
-            if(!p.first.empty())
-            {
-                BOOST_FOREACH(const DCCLMessageVal& mv, p.second)
-                    *log_ << group("dccl_dec") << "\t" << p.first << ": "<< mv << std::endl;
-            }
-        }
-        *log_ << group("dccl_dec") << "finished decode of "<< it->name() << std::endl;
-    }
-
-    return it;
-}
+        // given header of not even byte size (e.g. 01011), make even byte size (e.g. 00001011)
+        // and shift bytes to MSB (e.g. 01011000).
+        unsigned head_byte_size = ceil_bits2bytes(head_bits.size() + fixed_head_bits.size());
+        unsigned head_bits_diff = head_byte_size * BITS_IN_BYTE - (head_bits.size() + + fixed_head_bits.size());
+        head_bits.resize(head_bits.size() + head_bits_diff);
+        for(int i = 0, n = fixed_head_bits.size(); i < n; ++i)
+            head_bits.push_back(fixed_head_bits[i]);
         
-void goby::acomms::DCCLCodec::encode_private(std::vector<DCCLMessage>::iterator it,
-                                             protobuf::ModemDataTransmission* out_msg,
-                                             const std::map<std::string, std::vector<DCCLMessageVal> >& in)
+        std::string head_bytes, body_bytes;
+        bitset2string(head_bits, &head_bytes);
+        bitset2string(body_bits, &body_bytes);
+    
+        if(!crypto_key_.empty())
+            encrypt(&body_bytes, head_bytes);
+
+        // reverse so the body reads LSB->MSB such that extra chars at
+        // the end of the string get tacked on to the MSB, not the LSB where they would cause trouble
+        std::reverse(body_bytes.begin(), body_bytes.end());
+
+        DCCLCommon::logger() << "head: " << head_bits << std::endl;
+        DCCLCommon::logger() << "body: " << body_bits << std::endl;
+        return head_bytes + body_bytes;
+    }
+    catch(std::exception& e)
+    {
+        std::stringstream ss;
+        
+        ss << "Message " << desc->full_name() << " failed to encode. Reason: " << e.what() << std::endl;
+
+        DCCLCommon::logger() << warn <<  ss.str();        
+        throw(DCCLException(ss.str()));
+    }
+}
+
+boost::shared_ptr<google::protobuf::Message> goby::acomms::DCCLCodec::decode(const std::string& bytes)   
+{
+    try
+    {
+        unsigned fixed_header_bytes = ceil_bits2bytes(fixed_head_size());
+
+        if(bytes.length() < fixed_header_bytes)
+            throw(DCCLException("Bytes passed (hex: " + hex_encode(bytes) + ") is too small to be a valid DCCL message"));
+        
+        Bitset fixed_header_bits;
+        string2bitset(&fixed_header_bits, bytes.substr(0, fixed_header_bytes));
+
+        DCCLCommon::logger() << fixed_header_bits << std::endl;
+
+        unsigned ccl_id = (fixed_header_bits >> (fixed_header_bits.size()-HEAD_CCL_ID_SIZE)).to_ulong();
+        unsigned id = (fixed_header_bits >> (fixed_header_bits.size()-fixed_head_size())).to_ulong() & Bitset(std::string(HEAD_DCCL_ID_SIZE, '1')).to_ulong();
+
+        if(ccl_id != DCCL_CCL_HEADER)
+            throw(DCCLException("CCL ID (left-most byte in bytes string) must be " +
+                                as<std::string>(DCCL_CCL_HEADER) + " but was given " + as<std::string>(ccl_id)));
+        
+        if(!id2desc_.count(id))
+            throw(DCCLException("Message id " + as<std::string>(id) + " has not been validated. Call validate() before decoding this type."));
+
+        // ownership of this object goes to the caller of decode()
+        boost::shared_ptr<google::protobuf::Message> msg(
+            DCCLCommon::message_factory().GetPrototype(id2desc_.find(id)->second)->New());
+        
+        const Descriptor* desc = msg->GetDescriptor();
+        
+    
+        boost::shared_ptr<DCCLFieldCodec> codec =
+            DCCLFieldCodecManager::find(desc, desc->options().GetExtension(dccl::message_codec));
+        boost::shared_ptr<FromProtoCppTypeBase> helper =
+            DCCLTypeHelper::find(desc);
+
+        
+        unsigned head_size_bits = codec->max_size(desc, DCCLFieldCodec::HEAD) + fixed_head_size();
+        unsigned body_size_bits = codec->max_size(desc, DCCLFieldCodec::BODY);
+
+        unsigned head_size_bytes = ceil_bits2bytes(head_size_bits);
+        unsigned body_size_bytes = ceil_bits2bytes(body_size_bits);
+    
+        DCCLCommon::logger() << "head is " << head_size_bits << " bits" << std::endl;
+        DCCLCommon::logger() << "body is " << body_size_bits << " bits" << std::endl;
+        DCCLCommon::logger() << "head is " << head_size_bytes << " bytes" << std::endl;
+        DCCLCommon::logger() << "body is " << body_size_bytes << " bytes" << std::endl;
+
+        std::string head_bytes = bytes.substr(0, head_size_bytes);
+        std::string body_bytes = bytes.substr(head_size_bytes);
+        // we had reversed the bytes so extraneous zeros will not cause trouble. undo this reversal.
+        std::reverse(body_bytes.begin(), body_bytes.end());
+        
+        DCCLCommon::logger() << "head is " << hex_encode(head_bytes) << std::endl;
+        DCCLCommon::logger() << "body is " << hex_encode(body_bytes) << std::endl;
+
+        if(!crypto_key_.empty())
+            decrypt(&body_bytes, head_bytes);
+    
+        Bitset head_bits, body_bits;
+        string2bitset(&head_bits, head_bytes);
+        string2bitset(&body_bits, body_bytes);
+    
+        DCCLCommon::logger() << "head: " << head_bits << std::endl;
+        DCCLCommon::logger() << "body: " << body_bits << std::endl;
+        
+        head_bits.resize(head_size_bits - fixed_head_size());
+
+        DCCLCommon::logger() << "head after removing fixed portion: " << head_bits << std::endl;
+
+        if(codec)
+        {
+            DCCLFieldCodec::MessageHandler msg_handler;
+            msg_handler.push(msg->GetDescriptor());
+
+            boost::any value(msg);
+            codec->decode(&head_bits, &value, DCCLFieldCodec::HEAD);
+            helper->set_value(msg.get(), value);
+            DCCLCommon::logger() << "after header decode, message is: " << *msg << std::endl;
+            codec->decode(&body_bits, &value, DCCLFieldCodec::BODY);
+            helper->set_value(msg.get(), value);
+            DCCLCommon::logger() << "after header & body decode, message is: " << *msg << std::endl;
+        }
+        else
+        {
+            throw(DCCLException("Failed to find dccl.message_codec `" + desc->options().GetExtension(dccl::message_codec) + "`"));
+        }
+        return msg;
+    }
+    catch(std::exception& e)
+    {
+        std::stringstream ss;
+        
+        ss << "Message " << hex_encode(bytes) <<  " failed to decode. Reason: " << e.what() << std::endl;
+
+        DCCLCommon::logger() << warn <<  ss.str();        
+        throw(DCCLException(ss.str()));
+    }    
+}
+
+// makes sure we can actual encode / decode a message of this descriptor given the loaded FieldCodecs
+// checks all bounds on the message
+bool goby::acomms::DCCLCodec::validate(const google::protobuf::Descriptor* desc)
+{
+    
+    try
+    {
+        if(!desc->options().HasExtension(dccl::id))
+            throw(DCCLException("Missing message option `dccl.id`. Specify a unique id (e.g. 3) in the body of your .proto message using \"option (dccl.id) = 3\""));
+        else if(!desc->options().HasExtension(dccl::max_bytes))
+            throw(DCCLException("Missing message option `dccl.max_bytes`. Specify a maximum (encoded) message size in bytes (e.g. 32) in the body of your .proto message using \"option (dccl.max_bytes) = 32\""));
+        
+        boost::shared_ptr<DCCLFieldCodec> codec =
+            DCCLFieldCodecManager::find(desc, desc->options().GetExtension(dccl::message_codec));
+        
+        const unsigned head_bit_size = codec->max_size(desc, DCCLFieldCodec::HEAD) + fixed_head_size();
+        const unsigned body_bit_size = codec->max_size(desc, DCCLFieldCodec::BODY);
+        
+        const unsigned byte_size = ceil_bits2bytes(head_bit_size) + ceil_bits2bytes(body_bit_size);
+
+        if(byte_size > desc->options().GetExtension(dccl::max_bytes))
+            throw(DCCLException("Actual maximum size of message exceeds allowed maximum (dccl.max_bytes). Tighten bounds, remove fields, improve codecs, or increase the allowed dccl.max_bytes"));
+        
+        codec->validate(desc, DCCLFieldCodec::HEAD);
+        codec->validate(desc, DCCLFieldCodec::BODY);
+
+        unsigned dccl_id = desc->options().GetExtension(dccl::id);
+        if(id2desc_.count(dccl_id) && desc != id2desc_.find(dccl_id)->second)
+            throw(DCCLException("`dccl.id` " + as<std::string>(dccl_id) + " is already in use by Message " + id2desc_.find(dccl_id)->second->full_name()));
+        else
+            id2desc_.insert(std::make_pair(desc->options().GetExtension(dccl::id), desc));
+    }
+    catch(DCCLException& e)
+    {
+        try
+        {
+            info(desc, &DCCLCommon::logger());
+        }
+        catch(DCCLException& e)
+        { }
+        
+        DCCLCommon::logger() << warn << "Message " << desc->full_name() << " failed validation. Reason: "
+                             << e.what() <<  "\n"
+                             << "If possible, information about the Message are printed above. " << std::endl;
+        return false;
+    }
+
+    return true;
+}
+
+unsigned goby::acomms::DCCLCodec::size(const google::protobuf::Message* msg)
+{
+    const Descriptor* desc = msg->GetDescriptor();
+
+    boost::shared_ptr<DCCLFieldCodec> codec =
+        DCCLFieldCodecManager::find(desc, desc->options().GetExtension(dccl::message_codec));
+    
+    const unsigned head_size_bits = codec->size(*msg, DCCLFieldCodec::HEAD) + fixed_head_size();
+    const unsigned body_size_bits = codec->size(*msg, DCCLFieldCodec::BODY);
+    
+    const unsigned head_size_bytes = ceil_bits2bytes(head_size_bits);
+    const unsigned body_size_bytes = ceil_bits2bytes(body_size_bits);
+
+    DCCLCommon::logger() << "head size bytes: " << head_size_bytes << std::endl;
+    DCCLCommon::logger() << "body size bytes: " << body_size_bytes << std::endl;
+    
+    return head_size_bytes + body_size_bytes;
+}
+
+void goby::acomms::DCCLCodec::info(const google::protobuf::Descriptor* desc, std::ostream* os)
+{
+    try
+    {   
+        boost::shared_ptr<DCCLFieldCodec> codec =
+            DCCLFieldCodecManager::find(desc, desc->options().GetExtension(dccl::message_codec));
+
+        const unsigned config_head_bit_size = codec->max_size(desc, DCCLFieldCodec::HEAD);
+        const unsigned body_bit_size = codec->max_size(desc, DCCLFieldCodec::BODY);
+        const unsigned bit_size = fixed_head_size() + config_head_bit_size + body_bit_size;
+        
+        const unsigned byte_size = ceil_bits2bytes(config_head_bit_size + fixed_head_size())
+            + ceil_bits2bytes(body_bit_size);
+        
+        const unsigned allowed_byte_size = desc->options().GetExtension(dccl::max_bytes);
+        const unsigned allowed_bit_size = allowed_byte_size * BITS_IN_BYTE;
+        
+        *os << "== Begin " << desc->full_name() << " ==\n"
+            << "Actual maximum size of message: " << byte_size << " bytes / "
+            << byte_size*BITS_IN_BYTE  << " bits [fixed head: " << fixed_head_size()
+            << ", user head: " << config_head_bit_size << ", body: "
+            << body_bit_size << ", padding: " << byte_size * BITS_IN_BYTE - bit_size << "]\n"
+            << "Allowed maximum size of message: " << allowed_byte_size << " bytes / "
+            << allowed_bit_size << " bits\n";
+
+        *os << "= Header =" << std::endl;
+        codec->info(desc, os, DCCLFieldCodec::HEAD);
+        *os << "= Body =" << std::endl;
+        codec->info(desc, os, DCCLFieldCodec::BODY);
+        
+        *os << "== End " << desc->full_name() << " ==" << std::endl;
+    }
+    catch(DCCLException& e)
+    {
+        DCCLCommon::logger() << warn << "Message " << desc->full_name() << " cannot provide information due to invalid configuration. Reason: " << e.what() << std::endl;
+    }
+        
+}
+
+bool goby::acomms::DCCLCodec::validate_repeated(std::list<const google::protobuf::Descriptor*> desc)
+{
+    bool out = true;
+    BOOST_FOREACH(const google::protobuf::Descriptor* p, desc)
+        out &= validate(p);
+    return out;
+}
+
+void goby::acomms::DCCLCodec::info_repeated(std::list<const google::protobuf::Descriptor*> desc, std::ostream* os)
+{
+    BOOST_FOREACH(const google::protobuf::Descriptor* p, desc)
+        info(p, os);
+}
+
+std::string goby::acomms::DCCLCodec::encode_repeated(std::list<const google::protobuf::Message*> msgs)
 {
     std::string out;
-    encode_private(it, out, in);
-
-    DCCLHeaderDecoder head_dec(out);
-
-    out_msg->set_data(out);
+    BOOST_FOREACH(const google::protobuf::Message* p, msgs)
+    {
+        out += encode(*p);
+        DCCLCommon::logger() << "out: " << hex_encode(out) << std::endl;
+    }
     
-    DCCLMessageVal& t = head_dec[HEAD_TIME];
-    DCCLMessageVal& src = head_dec[HEAD_SRC_ID];
-    DCCLMessageVal& dest = head_dec[HEAD_DEST_ID];
-
-    out_msg->mutable_base()->set_time(goby::util::as<std::string>(goby::util::unix_double2ptime(double(t))));
-    out_msg->mutable_base()->set_src(long(src));
-    out_msg->mutable_base()->set_dest(long(dest));
-
-    if(log_) *log_ << group("dccl_enc") << "created encoded message: " << *out_msg << std::endl;
+    return out;
 }
 
-std::vector<goby::acomms::DCCLMessage>::iterator goby::acomms::DCCLCodec::decode_private(const protobuf::ModemDataTransmission& in_msg, std::map<std::string,std::vector<DCCLMessageVal> >& out)
+std::list<boost::shared_ptr<google::protobuf::Message> > goby::acomms::DCCLCodec::decode_repeated(const std::string& orig_bytes)
 {
-    if(log_) *log_ << group("dccl_dec") << "using message for decode: " << in_msg << std::endl;
-
-    return decode_private(in_msg.data(), out);
+    std::string bytes = orig_bytes;
+    std::list<boost::shared_ptr<google::protobuf::Message> > out;
+    while(!bytes.empty())
+    {
+        out.push_back(decode(bytes));
+        unsigned last_size = size(out.back().get());
+        DCCLCommon::logger() << "last message size was: " << last_size << std::endl;
+        bytes.erase(0, last_size);
+    }
+    return out;
 }
 
 
-
-
-void goby::acomms::DCCLCodec::encrypt(std::string& s, const std::string& nonce)
+void goby::acomms::DCCLCodec::encrypt(std::string* s, const std::string& nonce /* message head */)
 {
     using namespace CryptoPP;
 
@@ -384,12 +403,12 @@ void goby::acomms::DCCLCodec::encrypt(std::string& s, const std::string& nonce)
 
     std::string cipher;
     StreamTransformationFilter in(encryptor, new StringSink(cipher));
-    in.Put((byte*)s.c_str(), s.size());
+    in.Put((byte*)s->c_str(), s->size());
     in.MessageEnd();
-    s = cipher;
+    *s = cipher;
 }
 
-void goby::acomms::DCCLCodec::decrypt(std::string& s, const std::string& nonce)
+void goby::acomms::DCCLCodec::decrypt(std::string* s, const std::string& nonce)
 {
     using namespace CryptoPP;
 
@@ -401,10 +420,11 @@ void goby::acomms::DCCLCodec::decrypt(std::string& s, const std::string& nonce)
     decryptor.SetKeyWithIV((byte*)crypto_key_.c_str(), crypto_key_.size(), (byte*)iv.c_str());
     
     std::string recovered;
+
     StreamTransformationFilter out(decryptor, new StringSink(recovered));
-    out.Put((byte*)s.c_str(), s.size());
+    out.Put((byte*)s->c_str(), s->size());
     out.MessageEnd();
-    s = recovered;
+    *s = recovered;
 }
 
 void goby::acomms::DCCLCodec::merge_cfg(const protobuf::DCCLConfig& cfg)
@@ -421,25 +441,20 @@ void goby::acomms::DCCLCodec::set_cfg(const protobuf::DCCLConfig& cfg)
 
 void goby::acomms::DCCLCodec::process_cfg()
 {
-    messages_.clear();
-    name2messages_.clear();
-    id2messages_.clear();
-    manip_manager_.clear();
-
-    for(int i = 0, n = cfg_.message_file_size(); i < n; ++i)
+    if(cfg_.has_crypto_passphrase())
     {
-        std::set<unsigned> new_ids = add_xml_message_file(cfg_.message_file(i).path());
-        BOOST_FOREACH(unsigned new_id, new_ids)
-        {
-            for(int j = 0, o = cfg_.message_file(i).manipulator_size(); j < o; ++j)
-                manip_manager_.add(new_id, cfg_.message_file(i).manipulator(j));
-        }
+        using namespace CryptoPP;
+        
+        SHA256 hash;
+        StringSource unused(cfg_.crypto_passphrase(), true, new HashFilter(hash, new StringSink(crypto_key_)));
+        
+        DCCLCommon::logger() << group("dccl_enc") << "cryptography enabled with given passphrase" << std::endl;
+    }
+    else
+    {
+        DCCLCommon::logger() << group("dccl_enc") << "cryptography disabled, set crypto_passphrase to enable." << std::endl;
     }
     
-    using namespace CryptoPP;
-    
-    SHA256 hash;
-    StringSource unused(cfg_.crypto_passphrase(), true, new HashFilter(hash, new StringSink(crypto_key_)));
-
-    if(log_) *log_ << group("dccl_enc") << "cryptography enabled with given passphrase" << std::endl;
 }
+
+

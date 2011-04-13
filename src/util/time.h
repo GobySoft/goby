@@ -21,6 +21,7 @@
 #include <ctime>
 
 #include <boost/date_time.hpp>
+#include "goby/util/string.h"
 
 /// All objects related to the Goby Underwater Autonomy Project
 namespace goby
@@ -35,13 +36,13 @@ namespace goby
         inline boost::posix_time::ptime goby_time()
         {
             using namespace boost::posix_time;
-            return ptime(microsec_clock::universal_time());
+            return microsec_clock::universal_time();
         }
 
         /// Simple string representation of goby_time()
         inline std::string goby_time_as_string(const boost::posix_time::ptime& t = goby_time())
-        { return boost::posix_time::to_simple_string(t); }
-
+        { return goby::util::as<std::string>(t); }
+        
         /// ISO string representation of goby_time()
         inline std::string goby_file_timestamp()
         {

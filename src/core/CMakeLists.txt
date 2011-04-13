@@ -1,6 +1,6 @@
 
 if(build_test)
-  add_subdirectory(test)
+  #add_subdirectory(test)
 endif()
 
 
@@ -13,10 +13,11 @@ if(build_core_lib)
 
   option(build_core_moosmimic "Build the Core MOOS Mimic Library (requires MOOS)" OFF)
   if(build_core_moosmimic)
-    add_subdirectory(libmoosmimic)
+    #add_subdirectory(libmoosmimic)
   endif()
 endif()
 
 if(build_core_bin)
  # add_subdirectory(gobyd)
+  add_subdirectory(goby_database)
 endif()

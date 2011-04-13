@@ -155,48 +155,6 @@ void Daemon::init_logger()
     glogger() << cfg_ << std::endl;
 }
 
-void Daemon::init_sql()
-{
-    boost::mutex::scoped_lock db_lock(dbo_mutex);
-    
-    try
-    {
-        cfg_.mutable_log()->mutable_sqlite()->set_path(
-            format_filename(cfg_.log().sqlite().path()));
-        
-        dbo_manager_->connect(std::string(cfg_.log().sqlite().path()));
-            
-    }
-    catch(std::exception& e)
-    {
-        cfg_.mutable_log()->mutable_sqlite()->clear_path();
-        cfg_.mutable_log()->mutable_sqlite()->set_path(
-            format_filename(cfg_.log().sqlite().path()));
-        
-        glogger(lock) << warn << "db connection failed: "
-                      << e.what() << std::endl << unlock;
-        std::string default_file = cfg_.log().sqlite().path();
-            
-        glogger(lock) << "trying again with defaults: "
-                         << default_file << std::endl << unlock;
-
-        dbo_manager_->connect(default_file);
-    }    
-    
-    // add files of core static types for dynamic messages
-    // order matters! must add a proto before adding any for which it is an import
-    // #include <google/protobuf/descriptor.pb.h>
-    dbo_manager_->add_file(google::protobuf::FileDescriptorProto::descriptor());
-
-    // #include "goby/core/proto/option_extensions.pb.h"
-    // dbo_manager_->add_file(::extend::descriptor());
-    // #include "goby/core/proto/interprocess_notification.pb.h"
-    // dbo_manager_->add_file(proto::Notification::descriptor());
-    // #include "goby/core/proto/app_base_config.pb.h"
-    // dbo_manager_->add_file(::AppBaseConfig::descriptor());
-    // #include "goby/core/proto/config.pb.h"
-    // dbo_manager_->add_file(proto::Config::descriptor());
-}
 
 void Daemon::init_listener()
 {

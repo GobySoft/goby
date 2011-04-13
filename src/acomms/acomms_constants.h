@@ -29,6 +29,12 @@ namespace goby
 
     namespace acomms
     {
+
+        typedef google::protobuf::uint32 uint32;
+        typedef google::protobuf::int32 int32;
+        typedef google::protobuf::uint64 uint64;
+        typedef google::protobuf::int64 int64;
+
         const unsigned BITS_IN_BYTE = 8;
         // one hex char is a nibble (4 bits), two nibbles per byte
         const unsigned NIBS_IN_BYTE = 2;
@@ -36,53 +42,45 @@ namespace goby
         /// special modem id for the broadcast destination - no one is assigned this address. Analogous to 192.168.1.255 on a 192.168.1.0 subnet
         const int BROADCAST_ID = 0;
         /// special modem id used internally to goby-acomms for indicating that the MAC layer (libamac) is agnostic to the next destination. The next destination is thus set by the data provider (typically libqueue).
-        const int QUERY_DESTINATION_ID = -1;
-        
+        const int QUERY_DESTINATION_ID = -1;        
+
         const unsigned char DCCL_CCL_HEADER = 32;
-    
+
+        
         const double NaN = std::numeric_limits<double>::quiet_NaN();
         
-        const unsigned DCCL_NUM_HEADER_BYTES = 6;
+        /* const unsigned DCCL_NUM_HEADER_BYTES = 6; */
 
-        const unsigned DCCL_NUM_HEADER_PARTS = 8;
+        /* const unsigned DCCL_NUM_HEADER_PARTS = 8; */
 
-        enum DCCLHeaderPart { HEAD_CCL_ID = 0,
-                              HEAD_DCCL_ID = 1,
-                              HEAD_TIME = 2,
-                              HEAD_SRC_ID = 3,
-                              HEAD_DEST_ID = 4,
-                              HEAD_MULTIMESSAGE_FLAG = 5,
-                              HEAD_BROADCAST_FLAG = 6,
-                              HEAD_UNUSED = 7
-        };
+        /* enum DCCLHeaderPart { HEAD_CCL_ID = 0, */
+        /*                       HEAD_DCCL_ID = 1, */
+        /*                       HEAD_TIME = 2, */
+        /*                       HEAD_SRC_ID = 3, */
+        /*                       HEAD_DEST_ID = 4, */
+        /*                       HEAD_MULTIMESSAGE_FLAG = 5, */
+        /*                       HEAD_BROADCAST_FLAG = 6, */
+        /*                       HEAD_UNUSED = 7 */
+        /* }; */
     
-        const std::string DCCL_HEADER_NAMES [] = { "_ccl_id",
-                                                   "_id",
-                                                   "_time",
-                                                   "_src_id",
-                                                   "_dest_id",
-                                                   "_multimessage_flag",
-                                                   "_broadcast_flag",
-                                                   "_unused",
-        };
-        inline std::string to_str(DCCLHeaderPart p)
-        {
-            return DCCL_HEADER_NAMES[p];
-        }
+        /* const std::string DCCL_HEADER_NAMES [] = { "_ccl_id", */
+        /*                                            "_id", */
+        /*                                            "_time", */
+        /*                                            "_src_id", */
+        /*                                            "_dest_id", */
+        /*                                            "_multimessage_flag", */
+        /*                                            "_broadcast_flag", */
+        /*                                            "_unused", */
+        /* }; */
+        /* inline std::string to_str(DCCLHeaderPart p) */
+        /* { */
+        /*     return DCCL_HEADER_NAMES[p]; */
+        /* } */
 
         
         enum DCCLHeaderBits { HEAD_CCL_ID_SIZE = 8,
-                              HEAD_DCCL_ID_SIZE = 9,
-                              HEAD_TIME_SIZE = 17,
-                              HEAD_SRC_ID_SIZE = 5,
-                              HEAD_DEST_ID_SIZE = 5,
-                              HEAD_FLAG_SIZE = 1,
-                              HEAD_UNUSED_SIZE = 2
-        };
-
-
+                              HEAD_DCCL_ID_SIZE = 9 };
         
-                
         
     }
 }

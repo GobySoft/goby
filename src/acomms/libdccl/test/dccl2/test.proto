@@ -1,0 +1,24 @@
+import "goby/protobuf/dccl_option_extensions.proto";
+import "goby/protobuf/queue_option_extensions.proto";
+
+
+message CustomMsg
+{
+  option (dccl.id) = 3;
+  option (dccl.max_bytes) = 256;
+  option (dccl.message_codec) = "custom_codec";
+  
+  // test default enc/dec
+  optional uint32 a = 1;
+  optional bool b = 2;
+}
+
+
+message CustomMsg2
+{
+  option (dccl.id) = 4;
+  option (dccl.max_bytes) = 256;
+
+  optional CustomMsg msg = 1;
+}
+

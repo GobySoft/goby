@@ -1,0 +1,12 @@
+import "goby/protobuf/dccl_option_extensions.proto";
+import "goby/protobuf/queue_option_extensions.proto";
+
+message HelloAcommsMsg
+{
+  option (dccl.id) = 1;
+  option (dccl.max_bytes) = 32;
+  
+  required string telegram = 1; 
+  required uint32 count = 2;
+}
+

@@ -20,7 +20,7 @@
 
 #include "filter.h"
 
-bool goby::core::clears_filter(const google::protobuf::Message& msg, const goby::core::proto::Filter& filter)
+bool goby::core::clears_filter(const google::protobuf::Message& msg, const goby::core::protobuf::Filter& filter)
 {
     using goby::util::as;
     

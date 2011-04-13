@@ -28,13 +28,19 @@ namespace goby
     {
         enum MarshallingScheme
         {
+            MARSHALLING_UNKNOWN = 0,
             MARSHALLING_PROTOBUF = 1,
             MARSHALLING_CCL = 2,
             MARSHALLING_MOOS = 3,
             MARSHALLING_DCCL = 4,
-            MARSHALLING_LCM = 5
+            MARSHALLING_LCM = 5,
+            MARSHALLING_MAX = 5
         };
-        
+
+        const int BITS_IN_UINT32 = 32;
+        const int BITS_IN_BYTE = 8;
+
+
         
         //const unsigned MAX_MSG_BUFFER_SIZE = 1 << 19;
         //const unsigned MAX_NUM_MSG = 10;
@@ -55,14 +61,6 @@ namespace goby
     }
 
     
-    namespace core
-    {
-        /// provides stream output operator for Google Protocol Buffers Message 
-        inline std::ostream& operator<<(std::ostream& out, const google::protobuf::Message& msg)
-        {
-            return (out << "### " << msg.GetDescriptor()->full_name() << " ###\n" << msg.DebugString());
-        }
-    }
 
 }
 

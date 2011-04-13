@@ -1,4 +1,4 @@
-// copyright 2010 t. schneider tes@mit.edu
+// copyright 2010-2011 t. schneider tes@mit.edu
 // 
 //
 // This program is free software: you can redistribute it and/or modify
@@ -22,65 +22,42 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/date_time.hpp>
 #include <boost/unordered_map.hpp>
-#include <boost/asio/detail/socket_ops.hpp>
-
-#include <zmq.hpp>
 
 #include <google/protobuf/descriptor.h>
 #include <google/protobuf/descriptor.pb.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
 
 #include "goby/util/logger.h"
-#include "goby/core/core_constants.h"
-#include "goby/acomms/acomms_helpers.h"
+#include "goby/core/core_helpers.h"
 
 #include "goby/protobuf/config.pb.h"
-#include "goby/protobuf/app_base_config.pb.h"
+#include "goby/protobuf/core_database_request.pb.h"
+#include "goby/protobuf/header.pb.h"
 
 #include "filter.h"
-#include "exception.h"
+#include "subscription.h"
+#include "protobuf_application_base.h"
 
-
-
-namespace google
-{
-    namespace protobuf
-    {
-        class Message;
-    }
-}
-
-
+namespace google { namespace protobuf { class Message; } }
 namespace goby
 {
-    /// \brief Run a Goby application derived from ApplicationBase.
-    /// blocks caller until ApplicationBase::run() returns
-    /// \param argc same as int main(int argc, char* argv)
-    /// \param argv same as int main(int argc, char* argv)
-    /// \return same as int main(int argc, char* argv)
-    template<typename App>
-        int run(int argc, char* argv[]);
         
     /// Contains objects relating to the core publish / subscribe architecture provided by Goby.
     namespace core
     {
         /// Base class provided for users to generate applications that participate in the Goby publish/subscribe architecture.
-        class ApplicationBase
+        class ApplicationBase : public ProtobufApplicationBase
         {
           protected:
             // make these more accessible
-            typedef goby::core::proto::Filter Filter;
+            typedef goby::core::protobuf::Filter Filter;
             typedef goby::util::Colors Colors;
             
             /// \name Constructors / Destructor
             //@{
             /// \param cfg pointer to object derived from google::protobuf::Message that defines the configuration for this Application. This constructor will use the Description of `cfg` to read the command line parameters and configuration file (if given) and use these values to populate `cfg`. `cfg` must be a static member of the subclass or global object since member objects will be constructed *after* the ApplicationBase constructor is called.
-            /// \param skip_cfg_checks Do not use (used by goby::core::CMOOSApp to work around shortcomings of original MOOS)
-            ApplicationBase(google::protobuf::Message* cfg = 0,
-                            bool skip_cfg_checks = false);
+            ApplicationBase(google::protobuf::Message* cfg = 0);
             virtual ~ApplicationBase();
-            /// \brief Requests a clean (return 0) exit.
-            void quit() { alive_ = false; }
             //@}
             
             /// \name Virtual Methods
@@ -88,14 +65,17 @@ namespace goby
             /// \brief Override this virtual to do any synchronous work.
             /// 
             /// Called repeatedly at a frequency given by ApplicationBase::loop_freq()
-            virtual void loop() { }
+            virtual void loop() = 0;
             //@}
             
             /// \name Publish / Subscribe
             //@{
             
-            /// \brief Interplatform publishing options. `self` publishes only to the local gobyd, `other` also attempts to transmit to the name other platform, and `all` attempts to transmit to all known platforms
-            enum PublishDestination { self, other, all };
+            /// \brief Interplatform publishing options. `self` publishes only to the local multicast group, `other` also attempts to transmit to the named other platform, and `all` attempts to transmit to all known platforms
+            enum PublishDestination { self = ::Header::PUBLISH_SELF,
+                                      other = ::Header::PUBLISH_OTHER,
+                                      all = ::Header::PUBLISH_ALL };
+            
 
             /// \brief Publish a message (of any type derived from google::protobuf::Message)
             ///
@@ -120,7 +100,7 @@ namespace goby
                 void subscribe(
                     boost::function<void (const ProtoBufMessage&)> handler =
                     boost::function<void (const ProtoBufMessage&)>(),
-                    const proto::Filter& filter = proto::Filter());
+                    const protobuf::Filter& filter = protobuf::Filter());
 
             /// \brief Subscribe for a type using a class member function as the handler
             /// 
@@ -130,18 +110,21 @@ namespace goby
             template<typename ProtoBufMessage, class C>
                 void subscribe(void(C::*mem_func)(const ProtoBufMessage&),
                                C* obj,
-                               const proto::Filter& filter = proto::Filter())
+                               const protobuf::Filter& filter = protobuf::Filter())
             { subscribe<ProtoBufMessage>(boost::bind(mem_func, obj, _1), filter); }
 
             /// \brief Subscribe for a type without a handler but with a filter
             template<typename ProtoBufMessage>
-                void subscribe(const proto::Filter& filter)
-                {
-                    subscribe<ProtoBufMessage>(boost::function<void (const ProtoBufMessage&)>(),
-                                               filter);
-                }
+                void subscribe(const protobuf::Filter& filter)
+            {
+                subscribe<ProtoBufMessage>(boost::function<void (const ProtoBufMessage&)>(),
+                                           filter);
+            }
+            
             //@}
 
+            
+            
             /// \name Message Accessors
             //@{
             /// \brief Fetchs the newest received message of this type (that optionally passes the Filter given)
@@ -149,9 +132,7 @@ namespace goby
             /// You must subscribe() for this type before using this method
             template<typename ProtoBufMessage>
                 const ProtoBufMessage& newest(const Filter& filter = Filter());
-            //@}
-
-            
+            //@}            
             
             /// \name Setters
             //@{
@@ -161,7 +142,6 @@ namespace goby
             void set_loop_period(boost::posix_time::time_duration p)
             {
                 loop_period_ = p;
-                base_cfg_.set_loop_freq(1000/p.total_milliseconds());
             }
             /// \brief set the interval in milliseconds between calls to loop. Alternative to set_loop_freq().
             ///
@@ -179,12 +159,6 @@ namespace goby
     
             /// \name Getters
             //@{
-            /// name of this application (from AppBaseConfig::app_name). E.g. "garmin_gps_g"
-            std::string application_name()
-            { return base_cfg_.app_name(); }
-            /// name of this platform (from AppBaseConfig::platform_name). E.g. "AUV-23" or "unicorn"
-            std::string platform_name()
-            { return base_cfg_.platform_name(); }
             /// interval between calls to loop()
             boost::posix_time::time_duration loop_period()
             { return loop_period_; }
@@ -194,9 +168,6 @@ namespace goby
             /// \return absolute time that this application was launched
             boost::posix_time::ptime t_start()
             { return t_start_; }
-
-
-            const goby::core::proto::Config& global_cfg() { return daemon_cfg_; }
             
             //@}
 
@@ -230,100 +201,40 @@ namespace goby
             
             
           private:
-            // This class is a special singleton that can only be accessed through (friend) goby::run()
             ApplicationBase(const ApplicationBase&);
             ApplicationBase& operator= (const ApplicationBase&);
-            
-            void __set_application_name(const std::string& s)
-            { base_cfg_.set_app_name(s); }
-            void __set_platform_name(const std::string& s)
-            { base_cfg_.set_platform_name(s); }
-            
 
-            // main loop that exits on disconnect. called by goby::run()
-            void __run();
-
+            void iterate();
+            void inbox(const std::string& protobuf_type_name,
+                       const void* data,
+                       int size);
+            
+            void __set_up_sockets();
 
             // returns true if the Filter provided is valid with the given descriptor
             // an example of failure (return false) would be if the descriptor given
             // does not contain the key provided by the filter
             bool __is_valid_filter(const google::protobuf::Descriptor* descriptor,
-                                 const proto::Filter& filter);
+                                 const protobuf::Filter& filter);
 
 
             // add the protobuf description of the given descriptor (essentially the
             // instructions on how to make the descriptor or message meta-data)
             // to the notification_ message. 
-            void __insert_file_descriptor_proto(const google::protobuf::FileDescriptor* file_descriptor);
+            void __insert_file_descriptor_proto(
+                const google::protobuf::FileDescriptor* file_descriptor,
+                protobuf::DatabaseRequest* request);
+            
 
             // adds required fields to the Header if not given by the derived application
             void __finalize_header(
                 google::protobuf::Message* msg,
                 const goby::core::ApplicationBase::PublishDestination dest_type,
                 const std::string& dest_platform);
-
-            std::string __make_zmq_header(const std::string& protobuf_type_name);
             
             void __publish(google::protobuf::Message& msg, const std::string& platform_name,  PublishDestination dest);
             
-
-                
-            template<typename App>
-                friend int ::goby::run(int argc, char* argv[]);
-            /// Provides an interface to applications using original MOOS calls
-            friend class CMOOSApp;
-            
           private:
-            // forms a non-template base for the Subscription class, allowing us
-            // use a common pointer type.
-            class SubscriptionBase
-            {
-              public:
-                virtual void post(const void* data, int size) = 0;
-                virtual const proto::Filter& filter() const = 0;
-                virtual const google::protobuf::Message& newest() const = 0;
-                virtual const std::string& type_name() const = 0;
-            };
-
-            // forms the concept of a subscription to a given Google Protocol Buffers
-            // type ProtoBufMessage (possibly with a filter)
-            // An instantiation of this is created for each call to ApplicationBase::subscribe()
-            template<typename ProtoBufMessage>
-                class Subscription : public SubscriptionBase
-            {
-              public:
-              Subscription(boost::function<void (const ProtoBufMessage&)>& handler,
-                           const proto::Filter& filter,
-                           const std::string& type_name)
-                  : handler_(handler),
-                    filter_(filter),
-                    type_name_(type_name)
-                    { }
-                
-                // handle an incoming message (serialized using the google::protobuf
-                // library calls)
-                void post(const void* data, int size)
-                {
-                    static ProtoBufMessage msg;
-                    msg.ParseFromArray(data, size);
-                    if(clears_filter(msg, filter_))
-                    {
-                        newest_msg_ = msg;
-                        if(handler_) handler_(newest_msg_);
-                    }
-                }
-
-                // getters
-                const proto::Filter& filter() const { return filter_; }
-                const google::protobuf::Message& newest() const { return newest_msg_; }
-                const std::string& type_name() const { return type_name_; }
-                
-              private:
-                boost::function<void (const ProtoBufMessage&)> handler_;
-                ProtoBufMessage newest_msg_;
-                const proto::Filter filter_;
-                const std::string type_name_;
-            };
             
             // how long to wait between calls to loop()
             boost::posix_time::time_duration loop_period_;
@@ -338,30 +249,9 @@ namespace goby
             // time of the next call to loop()
             boost::posix_time::ptime t_next_loop_;
 
-            zmq::context_t context_;
-            zmq::socket_t publisher_;
-            zmq::socket_t subscriber_;
-
-            // copies of the "real" argc, argv that are used
-            // to give ApplicationBase access without requiring the subclasses of
-            // ApplicationBase to pass them through their constructors
-            static int argc_;
-            static char** argv_;
-
-            // gobyd/global configuration
-            // populated at connection time
-            // defined in #include "goby/core/proto/config.pb.h"
-            goby::core::proto::Config daemon_cfg_;
-
-            // configuration relevant to all applications (loop frequency, for example)
-            // defined in #include "goby/core/proto/app_base_config.pb.h"
-            AppBaseConfig base_cfg_;
-
-            bool alive_;
-
-            enum { BITS_IN_UINT32 = 32 };
-            enum { BITS_IN_BYTE = 8 };
-            
+            // database related things
+            zmq::socket_t database_client_;
+            std::set<const google::protobuf::FileDescriptor*> registered_file_descriptors_;
         };
     }
 }
@@ -370,11 +260,10 @@ template<typename ProtoBufMessage>
     void goby::core::ApplicationBase::subscribe(
         boost::function<void (const ProtoBufMessage&)> handler
         /*= boost::function<void (const ProtoBufMessage&)>()*/,
-        const proto::Filter& filter /* = proto::Filter() */)
+        const protobuf::Filter& filter /* = protobuf::Filter() */)
 {
 
     const std::string& protobuf_type_name = ProtoBufMessage::descriptor()->full_name();
-
 
     glogger() << debug << "subscribing for " << protobuf_type_name << " with filter: " << filter << std::endl;
     
@@ -384,8 +273,9 @@ template<typename ProtoBufMessage>
     {
         if(protobuf_type_name == p.second->type_name() && p.second->filter() == filter)
         {
-            goby::util::glogger() << warn << "already have subscription for type: " << protobuf_type_name
-                                  << " and filter: " << filter << std::endl;
+            goby::util::glogger() << warn <<
+                "already have subscription for type: " <<
+                protobuf_type_name << " and filter: " << filter << std::endl;
             return;
         }
     }
@@ -395,15 +285,14 @@ template<typename ProtoBufMessage>
         new Subscription<ProtoBufMessage>(handler, filter, protobuf_type_name));
     subscriptions_.insert(std::make_pair(protobuf_type_name, subscription));
 
-    // subscribe for this type (protobuf)
-    std::string zmq_filter = __make_zmq_header(protobuf_type_name);
-    subscriber_.setsockopt(ZMQ_SUBSCRIBE, zmq_filter.c_str(), zmq_filter.size());
+    
+    MinimalApplicationBase::subscribe(MARSHALLING_PROTOBUF, protobuf_type_name);
 }
 
-/// See goby::core::ApplicationBase::newest(const proto::Filter& filter = proto::Filter())
+/// See goby::core::ApplicationBase::newest(const protobuf::Filter& filter = protobuf::Filter())
 template<typename ProtoBufMessage>
-const ProtoBufMessage& goby::core::ApplicationBase::newest(const proto::Filter& filter
-                                                           /* = proto::Filter()*/)
+const ProtoBufMessage& goby::core::ApplicationBase::newest(const protobuf::Filter& filter
+                                                           /* = protobuf::Filter()*/)
 {
     // RTTI needed so we can store subscriptions with a common (non-template) base but also
     // return the subclass requested
@@ -420,33 +309,5 @@ const ProtoBufMessage& goby::core::ApplicationBase::newest(const proto::Filter& 
     // this shouldn't happen if we properly create our Subscriptions
     throw(std::runtime_error("Invalid message or filter given for call to newest()"));
 }
-
-template<typename App>
-        int goby::run(int argc, char* argv[])
-{
-    // avoid making the user pass these through their Ctor...
-    App::argc_ = argc;
-    App::argv_ = argv;
-    
-    try
-    {
-        App app;
-        app.__run();
-    }
-    catch(goby::ConfigException& e)
-    {
-        // no further warning as the ApplicationBase Ctor handles this
-        return 1;
-    }
-    catch(std::exception& e)
-    {
-        // some other exception
-        std::cerr << "uncaught exception: " << e.what() << std::endl;
-        return 2;
-    }
-
-    return 0;
-}
-
 
 #endif

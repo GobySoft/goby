@@ -59,27 +59,18 @@ namespace goby
             /// \brief if desired, this will release all resources (use right before exiting)
             static void shutdown();
 
-            /// \brief add the entire .proto file in which descriptor is defined
-            ///
-            /// this does not add all the types contained within this file. You must add each type you want persisted by calling add_type() for each
-            /// \param descriptor Descriptor (meta-data) of the message whose containing file you wish to add
-            void add_file(const google::protobuf::Descriptor* descriptor);
-            /// \brief add the entire .proto file given by this FileDescriptorProto
-            ///
-            /// this does not add all the types contained within this file. You must add each type you want persisted by calling add_type() for each
-            /// \param proto FileDescriptorProto representation of a .proto file. This object can be transmitted on the wire like any other google::protobuf::Message
-            void add_file(const google::protobuf::FileDescriptorProto& proto);
+            static void set_dynamic_message_factory(
+                google::protobuf::DynamicMessageFactory* factory)
+            { msg_factory_ = factory; }
 
+            static void set_descriptor_pool(google::protobuf::DescriptorPool* pool)
+            { descriptor_pool_= pool; }
+            
             /// \brief add a type (given by its descriptor) to the Wt::Dbo SQL database
             ///
             /// you must have already added the .proto file in which this type resides using add_file()
             void add_type(const google::protobuf::Descriptor* descriptor);
-            /// \brief add a type (given by its full name as defined by Descriptor::full_name()) to the Wt::Dbo SQL database 
-            ///
-            /// you must have already added the .proto file in which this type resides using add_file()
-            void add_type(const std::string& name);
-            
-//            void add_message(const std::string& name, const std::string& serialized_message);
+ 
             /// \brief add a message to the Wt::Dbo SQL database
             ///
             /// This is not written to the database until commit() is called
@@ -87,10 +78,6 @@ namespace goby
 
             /// \brief commit all changes to the Wt::Dbo SQL database
             void commit();
-            
-            /// \brief create a blank message of the type given by its name (as defined by Descriptor::full_name())
-            static boost::shared_ptr<google::protobuf::Message>
-                new_msg_from_name(const std::string& name);            
 
             /// \brief connect to the Wt::Dbo SQL database
             void connect(const std::string& db_name = "");            
@@ -115,8 +102,8 @@ namespace goby
                     // create new blank message if none given
                     if(!p)
                     {
-                        p_.reset(msg_factory.GetPrototype
-                                 (descriptor_pool.FindMessageTypeByName
+                        p_.reset(msg_factory_->GetPrototype
+                                 (descriptor_pool_->FindMessageTypeByName
                                   (dbo_map.left.at(i)))->New());
                     }
                 }
@@ -126,14 +113,7 @@ namespace goby
               private:
                 boost::shared_ptr<google::protobuf::Message> p_;
             };
-
-            // see google::protobuf documentation: this assists in
-            // creating messages at runtime
-            static google::protobuf::DynamicMessageFactory msg_factory;
-            // see google::protobuf documentation: this assists in
-            // creating messages at runtime
-            static google::protobuf::DescriptorPool descriptor_pool;
-
+            
           private:
             void map_type(const google::protobuf::Descriptor* descriptor);
             void reset_session();
@@ -166,6 +146,9 @@ namespace goby
             Wt::Dbo::Transaction* transaction_;
 
             boost::posix_time::ptime t_last_commit_;
+
+            static google::protobuf::DescriptorPool* descriptor_pool_;
+            static google::protobuf::DynamicMessageFactory* msg_factory_;
             
         };
 

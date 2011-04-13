@@ -149,7 +149,6 @@ namespace goby
             // ServerRequest objects passed through here
             boost::shared_ptr<boost::interprocess::message_queue> listen_queue_;
             
-            DBOManager* dbo_manager_;
             
             // key = client name, value = ConnectedClient deals with this client
             boost::unordered_map<std::string, boost::shared_ptr<ConnectedClient> > clients_;

@@ -7,7 +7,6 @@ package goby.acomms.protobuf;
 message DCCLConfig
 {
   optional int32 modem_id = 1 [(description)="Unique number 1-31 to identify this node", (example)="1"];
-  repeated MessageFile message_file = 2 [(description)="XML message file containing one or more DCCL message descriptions"];
-  optional string crypto_passphrase = 3 [(description)="If given, encrypt all communications with this passphrase using AES. Omit for unencrypted communications.", (example)="twinkletoes%24"];
+  optional string crypto_passphrase = 2 [(description)="If given, encrypt all communications with this passphrase using AES. Omit for unencrypted communications.", (example)="twinkletoes%24"];
 }
 

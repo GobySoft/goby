@@ -18,6 +18,9 @@ private:
             // print to the log the newest received "HelloWorldMsg"
             glogger() << "received: " << msg << std::endl;
         }
+
+    void loop()
+        { }    
 };
 
 int main(int argc, char* argv[])

@@ -1,0 +1,26 @@
+import "goby/protobuf/option_extensions.proto";
+import "goby/protobuf/app_base_config.proto";
+
+
+package goby.core.protobuf;
+
+message DatabaseConfig
+{
+  optional AppBaseConfig base = 1 [(description)="params shared with all goby applications"];
+
+  enum SQLBackend
+  {
+    SQLITE = 1;
+  }
+  optional SQLBackend backend = 2 [default=SQLITE];
+    
+  message SQLiteInfo
+  {       
+    // %1% gets expanded into platform name
+    // %2% gets expanded to iso date-time stamp
+    optional string path = 2 [default="./%1%_%2%_goby.db"];
+  }
+  // only needed if backend == SQLITE
+  optional SQLiteInfo sqlite = 3;
+  
+}

@@ -60,10 +60,8 @@ void GPSDriver::loop()
                 set_gga_specific_fields(&gga);
 
                 // parse the time stamp
-                boost::posix_time::ptime t = nmea_time2ptime(nmea.part(1));
-                gga.mutable_header()->set_iso_time(
-                    boost::posix_time::to_iso_string(t));
-                
+                using goby::util::as;
+                gga.mutable_header()->set_time(as<std::string>(nmea_time2ptime(nmea.part(1))));
                 glogger() << gga << std::flush;
                 
                 publish(gga);

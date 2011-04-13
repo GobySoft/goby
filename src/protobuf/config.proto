@@ -25,9 +25,9 @@ message Platform
   }
   message AcousticModemInfo
   {
-    required uint32 mm_id = 1 [(description)="Micro-Modem id ($CCCFQ,SRC)",
+    required uint32 modem_id = 1 [(description)="Micro-Modem id ($CCCFQ,SRC)",
                                (example)="1"];
-    required SerialInfo mm_serial = 2;
+    required SerialInfo modem_serial = 2;
     optional bool has_coproc = 3 [default=true,
                                   (description)="can handle high-rate PSK"];
   }
@@ -80,7 +80,7 @@ message Config
   optional AppBaseConfig base = 1 [(description)="params shared with all goby applications"];
   optional Platform self = 2 [(description)="this platform"];
   repeated Platform other = 3 [(description)="the known world of platforms"];
-  optional LogConfig log = 4 [(description)="SQL log configuration"];
+  //  optional LogConfig log = 4 [(description)="SQL log configuration"];
 
   optional LocalCartesianDatum origin = 5 [(description)="Convenient origin for local cartesian coordinate transformations"];
 }

@@ -1,0 +1,123 @@
+import "goby/protobuf/dccl_option_extensions.proto";
+import "goby/protobuf/queue_option_extensions.proto";
+
+
+enum Enum1
+{
+  ENUM_A = 1;
+  ENUM_B = 2;
+  ENUM_C = 3;
+}
+
+message EmbeddedMsg1
+{
+  optional double val = 1 [(dccl.min)=0,
+                           (dccl.max)=126,
+                           (dccl.precision)=3];
+  optional EmbeddedMsg2 msg = 2;
+}
+
+message EmbeddedMsg2
+{
+  optional double val = 1 [(dccl.min)=0,
+                           (dccl.max)=126,
+                           (dccl.precision)=2];
+  optional string sval = 2 [(dccl.max_length)=10];
+  optional Enum1 enum_default = 3;  
+}
+
+message TestMsg
+{
+  option (dccl.id) = 2;
+  option (dccl.max_bytes) = 256;
+
+  // test default enc/dec
+  optional double double_default = 1 [(dccl.min)=-100,
+                                      (dccl.max)=126,
+                                      (dccl.precision)=2,
+                                      (dccl.in_head)=true];
+  optional float float_default = 2 [(dccl.min)=-20,
+                                      (dccl.max)=150,
+                                      (dccl.precision)=3];
+  optional int32 int32_default = 3 [(dccl.min)=-20,
+                                      (dccl.max)=3000];
+  optional int64 int64_default = 4 [(dccl.min)=-710,
+                                      (dccl.max)=3000];
+  optional uint32 uint32_default = 5 [(dccl.min)=-100,
+                                      (dccl.max)=3000];
+  optional uint64 uint64_default = 6 [(dccl.min)=5,
+                                      (dccl.max)=3000];
+  optional sint32 sint32_default = 7 [(dccl.min)=-60,
+                                      (dccl.max)=3000];
+  optional sint64 sint64_default = 8 [(dccl.min)=-70,
+                                      (dccl.max)=3000];
+  optional fixed32 fixed32_default = 9 [(dccl.min)=0, 
+                                      (dccl.max)=400];
+  optional fixed64 fixed64_default = 10 [(dccl.min)=0,
+                                      (dccl.max)=3000];
+  optional sfixed32 sfixed32_default = 11 [(dccl.min)=11,
+                                      (dccl.max)=3000]; 
+  optional sfixed64 sfixed64_default = 12 [(dccl.min)=-12,
+                                      (dccl.max)=3000]; 
+
+  optional bool bool_default = 13;
+
+  optional string string_default = 14 [(dccl.max_length)=8];
+  optional bytes bytes_default = 15 [(dccl.max_length)=9];
+
+  optional Enum1 enum_default = 16;
+
+  optional EmbeddedMsg1 msg_default = 17;
+
+  
+  repeated double double_default_repeat = 101 [(dccl.min)=0,
+                                               (dccl.max)=100,
+                                               (dccl.precision)=3,
+                                               (dccl.max_repeat)=4];
+  repeated float float_default_repeat = 102 [(dccl.min)=0,
+                                               (dccl.max)=100,
+                                               (dccl.precision)=3,
+                                               (dccl.max_repeat)=4];
+
+  repeated int32 int32_default_repeat = 103 [(dccl.min)=0,
+                                             (dccl.max)=100,
+                                             (dccl.max_repeat)=4];
+  repeated int64 int64_default_repeat = 104 [(dccl.min)=-100,
+                                             (dccl.max)=100,
+                                             (dccl.max_repeat)=4];
+  repeated uint32 uint32_default_repeat = 105 [(dccl.min)=0,
+                                               (dccl.max)=100,
+                                               (dccl.max_repeat)=4,
+                                               (dccl.in_head)=true];
+  repeated uint64 uint64_default_repeat = 106 [(dccl.min)=0,
+                                               (dccl.max)=100,
+                                               (dccl.max_repeat)=4];
+  repeated sint32 sint32_default_repeat = 107 [(dccl.min)=-60,
+                                               (dccl.max)=100,
+                                               (dccl.max_repeat)=4];
+  repeated sint64 sint64_default_repeat = 108 [(dccl.min)=-600,
+                                               (dccl.max)=100,
+                                               (dccl.max_repeat)=4];
+  repeated fixed32 fixed32_default_repeat = 109 [(dccl.min)=0,
+                                                 (dccl.max)=100,
+                                                 (dccl.max_repeat)=4];
+  repeated fixed64 fixed64_default_repeat = 110 [(dccl.min)=0,
+                                                 (dccl.max)=100,
+                                                 (dccl.max_repeat)=4];
+  repeated sfixed32 sfixed32_default_repeat = 111 [(dccl.min)=0,
+                                                   (dccl.max)=100,
+                                                   (dccl.max_repeat)=4];
+  repeated sfixed64 sfixed64_default_repeat = 112 [(dccl.min)=-50,
+                                                   (dccl.max)=100,
+                                                   (dccl.max_repeat)=4];
+  
+  repeated bool bool_default_repeat = 113 [(dccl.max_repeat)=4];
+
+  repeated string string_default_repeat = 114 [(dccl.max_length)=4, (dccl.max_repeat)=4];
+  repeated bytes bytes_default_repeat = 115 [(dccl.max_length)=4, (dccl.max_repeat)=4];
+  
+  repeated Enum1 enum_default_repeat = 116 [(dccl.max_repeat)=4];
+
+  repeated EmbeddedMsg1 msg_default_repeat = 117 [(dccl.max_repeat)=4];
+}
+

@@ -35,7 +35,7 @@ namespace goby
         /// \param msg Google Protocol Buffers message to check
         /// \param filter Filter to check message against
         /// \return true if `msg` passes through `filter`
-        bool clears_filter(const google::protobuf::Message& msg, const goby::core::proto::Filter& filter);
+        bool clears_filter(const google::protobuf::Message& msg, const goby::core::protobuf::Filter& filter);
 
         /// \brief gives the boolean value for t1 and t2 for the given comparison operation
         ///
@@ -45,26 +45,26 @@ namespace goby
         template<typename T>
             bool filter_comp(const T& t1,
                              const T& t2,
-                             goby::core::proto::Filter::Operation op)
+                             goby::core::protobuf::Filter::Operation op)
         {
             switch(op)
             {
-                case goby::core::proto::Filter::EQUAL: return t1 == t2;
-                case goby::core::proto::Filter::NOT_EQUAL: return t1 != t2;    
+                case goby::core::protobuf::Filter::EQUAL: return t1 == t2;
+                case goby::core::protobuf::Filter::NOT_EQUAL: return t1 != t2;    
                 default: return false;
             }
         }
         
-        inline bool operator==(const goby::core::proto::Filter& f1,
-                               const goby::core::proto::Filter& f2)
+        inline bool operator==(const goby::core::protobuf::Filter& f1,
+                               const goby::core::protobuf::Filter& f2)
         {
             return f1.key() == f2.key() &&
             f1.operation() == f2.operation() &&
             f1.value() == f2.value();
         }        
 
-        inline bool operator!=(const goby::core::proto::Filter& f1,
-                               const goby::core::proto::Filter& f2)
+        inline bool operator!=(const goby::core::protobuf::Filter& f1,
+                               const goby::core::protobuf::Filter& f2)
         { return !(f1==f2); }
 
         //@}

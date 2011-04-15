@@ -1,0 +1,10 @@
+import "goby/protobuf/option_extensions.proto";
+
+package goby.moos.protobuf;
+
+message MOOSGatewayConfig
+{
+
+
+}
+

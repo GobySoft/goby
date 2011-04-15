@@ -1,7 +1,5 @@
 // copyright 2010-2011 t. schneider tes@mit.edu
 // 
-// the file is the goby daemon, part of the core goby autonomy system
-//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -24,9 +22,9 @@
 #include "goby/core/libcore/protobuf_application_base.h"
 #include "goby/core/libdbo/dbo_manager.h"
 
-#include "hello_world.pb.h"
+
 #include "goby/protobuf/core_database_request.pb.h"
-#include "goby/protobuf/core_database_config.pb.h"
+#include "database_config.pb.h"
 
 namespace goby
 {
@@ -71,7 +69,6 @@ namespace goby
             zmq::socket_t database_server_;
             DBOManager* dbo_manager_;
             
-
             // how long to wait between calls to loop()
             boost::posix_time::time_duration loop_period_;
             // time of the next call to loop()
@@ -85,6 +82,9 @@ namespace goby
             // see google::protobuf documentation: this assists in
             // creating messages at runtime
             static google::protobuf::DescriptorPool descriptor_pool_;
+
+            enum { MAX_LOOP_FREQ = 1 };
+            
         };
         
     }

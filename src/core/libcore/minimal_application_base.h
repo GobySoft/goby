@@ -18,80 +18,104 @@
 #define MINIMALAPPLICATIONBASE20110413H
 
 #include <iostream>
-#include <string>
-#include <boost/bind.hpp>
-#include <boost/function.hpp>
 
-#include <zmq.hpp>
+#include "exception.h"
 
-#include "goby/core/core_constants.h"
+#include "goby/protobuf/app_base_config.pb.h"
+
 
 namespace goby
 {
+    /// \brief Run a Goby application derived from MinimalApplicationBase.
+    /// blocks caller until MinimalApplicationBase::__run() returns
+    /// \param argc same as int main(int argc, char* argv)
+    /// \param argv same as int main(int argc, char* argv)
+    /// \return same as int main(int argc, char* argv)
+    template<typename App>
+        int run(int argc, char* argv[]);
+
     namespace core
     {
         class MinimalApplicationBase
         {
           public:
-            MinimalApplicationBase(std::ostream* log = 0);
+            MinimalApplicationBase(google::protobuf::Message* cfg = 0);
             virtual ~MinimalApplicationBase();
 
-            virtual void inbox(MarshallingScheme marshalling_scheme,
-                               const std::string& identifier,
-                               const void* data,
-                               int size) = 0;
-            
-            void subscribe(MarshallingScheme marshalling_scheme,
-                           const std::string& identifier);
-            
-            void publish(MarshallingScheme marshalling_scheme,
-                         const std::string& identifier,
-                         const void* data,
-                         int size);
-            
-            void start_sockets(const std::string& multicast_connection =
-                               "epgm://127.0.0.1;239.255.7.15:11142");
-            
-            bool poll(long timeout = -1);
+            /// \brief Requests a clean (return 0) exit.
+            void quit() { alive_ = false; }
 
-            template<class C>
-                void register_poll_item(
-                    const zmq::pollitem_t& item,                    
-                    void(C::*mem_func)(const void*, int, int),
-                    C* obj)
-            { register_poll_item(item, boost::bind(mem_func, obj, _1, _2, _3)); }
-            
+            virtual void iterate() = 0;
 
-            void register_poll_item(
-                const zmq::pollitem_t& item,
-                boost::function<void (const void* data, int size, int message_part)> callback)
-            {
-                poll_items_.push_back(item);
-                poll_callbacks_.insert(std::make_pair(poll_items_.size()-1, callback));
-            }
+            /// name of this application (from AppBaseConfig::app_name). E.g. "garmin_gps_g"
+            std::string application_name()
+            { return base_cfg_.app_name(); }
+            /// name of this platform (from AppBaseConfig::platform_name). E.g. "AUV-23" or "unicorn"
+            std::string platform_name()
+            { return base_cfg_.platform_name(); }
             
-            zmq::context_t& zmq_context() { return context_; }
+            template<typename App>
+                friend int ::goby::run(int argc, char* argv[]);
+
+            const AppBaseConfig& base_cfg()
+            { return base_cfg_; }
+
+          private:
+            
+            // main loop that exits on disconnect. called by goby::run()
+            void __run();
+            
+            void __set_application_name(const std::string& s)
+            { base_cfg_.set_app_name(s); }
+            void __set_platform_name(const std::string& s)
+            { base_cfg_.set_platform_name(s); }
+            
             
           private:
-            std::ostream& logger() { return *log_; }
-            std::string make_header(MarshallingScheme marshalling_scheme,
-                                    const std::string& protobuf_type_name);
+                
+            // copies of the "real" argc, argv that are used
+            // to give ApplicationBase access without requiring the subclasses of
+            // ApplicationBase to pass them through their constructors
+            static int argc_;
+            static char** argv_;
 
-            void handle_subscribed_message(const void* data, int size, int message_part);
-            
-          private:
-            std::ofstream* null_;
-            std::ostream* log_;
+            // configuration relevant to all applications (loop frequency, for example)
+            // defined in #include "goby/core/proto/app_base_config.pb.h"
+            AppBaseConfig base_cfg_;
 
-            zmq::context_t context_;
-            zmq::socket_t publisher_;
-            zmq::socket_t subscriber_;
-            std::vector<zmq::pollitem_t> poll_items_;
+            bool alive_;            
 
-            // maps poll_items_ index to a callback function
-            std::map<size_t, boost::function<void (const void* data, int size, int message_part)> > poll_callbacks_;
         };
     }
+}
+
+
+
+template<typename App>
+int goby::run(int argc, char* argv[])
+{
+    // avoid making the user pass these through their Ctor...
+    App::argc_ = argc;
+    App::argv_ = argv;
+    
+    try
+    {
+        App app;
+        app.__run();
+    }
+    catch(goby::ConfigException& e)
+    {
+        // no further warning as the ApplicationBase Ctor handles this
+        return 1;
+    }
+    catch(std::exception& e)
+    {
+        // some other exception
+        std::cerr << "uncaught exception: " << e.what() << std::endl;
+        return 2;
+    }
+
+    return 0;
 }
 
 

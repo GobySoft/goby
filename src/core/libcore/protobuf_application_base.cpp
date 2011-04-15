@@ -18,78 +18,22 @@
 
 #include "goby/util/logger.h"
 
-#include "goby/core/libcore/configuration_reader.h"
-
 using goby::util::glogger;
 using goby::util::as;
 
 
-int goby::core::ProtobufApplicationBase::argc_ = 0;
-char** goby::core::ProtobufApplicationBase::argv_ = 0;
-
-
-
 goby::core::ProtobufApplicationBase::ProtobufApplicationBase(google::protobuf::Message* cfg /*= 0*/)
-    : MinimalApplicationBase(&glogger()),
-      alive_(true)
+    : ZeroMQNode(&glogger()),
+      MinimalApplicationBase(cfg)
 {
-    //
-    // read the configuration
-    //
-    boost::program_options::options_description od("Allowed options");
-    boost::program_options::variables_map var_map;
-    try
-    {
-        std::string application_name;
-        ConfigReader::read_cfg(argc_, argv_, cfg, &application_name, &od, &var_map);
-        base_cfg_.set_app_name(application_name);
-
-        // extract the AppBaseConfig assuming the user provided it in their configuration
-        // .proto file
-        if(cfg)
-        {
-            const google::protobuf::Descriptor* desc = cfg->GetDescriptor();
-            for (int i = 0, n = desc->field_count(); i < n; ++i)
-            {
-                const google::protobuf::FieldDescriptor* field_desc = desc->field(i);
-                if(field_desc->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE && field_desc->message_type() == ::AppBaseConfig::descriptor())
-                {
-                    base_cfg_.MergeFrom(cfg->GetReflection()->GetMessage(*cfg, field_desc));
-                }
-            }
-        }        
-        
-        // incorporate some parts of the AppBaseConfig that are common
-        // with gobyd (e.g. Verbosity)
-        ConfigReader::merge_app_base_cfg(&base_cfg_, var_map);
-    }
-    catch(ConfigException& e)
-    {
-        // output all the available command line options
-        std::cerr << od << "\n";
-        if(e.error())
-            std::cerr << "Problem parsing command-line configuration: \n"
-                      << e.what() << "\n";        
-        throw;
-    }
-    
-    // set up the logger
-    glogger().set_name(application_name());
-    glogger().add_stream(static_cast<util::Logger::Verbosity>(base_cfg_.verbosity()),
-                         &std::cout);
-
-    if(!base_cfg_.IsInitialized())
-        throw(ConfigException("Invalid base configuration"));    
-
-    std::string multicast_connection = "epgm://" + base_cfg_.ethernet_address() + ";" +
-        base_cfg_.multicast_address() + ":" + as<std::string>(base_cfg_.ethernet_port());
+    std::string multicast_connection = "epgm://" + base_cfg().ethernet_address() + ";" +
+        base_cfg().multicast_address() + ":" + as<std::string>(base_cfg().ethernet_port());
 
     start_sockets(multicast_connection);
 }
 
 goby::core::ProtobufApplicationBase::~ProtobufApplicationBase()
 {
-    glogger() << debug <<"ProtobufApplicationBase destructing..." << std::endl;    
 }
 
 
@@ -107,21 +51,5 @@ void goby::core::ProtobufApplicationBase::inbox(MarshallingScheme marshalling_sc
     else
     {
         inbox(identifier, data, size);
-    }
-}
-
-void goby::core::ProtobufApplicationBase::__run()
-{
-    // continue to run while we are alive (quit() has not been called)
-    while(alive_)
-    {        
-        try
-        {
-            iterate();
-        }
-        catch(std::exception& e)
-        {
-            glogger() << warn << e.what() << std::endl;
-        }
     }
 }

@@ -16,189 +16,90 @@
 
 #include "minimal_application_base.h"
 
-#include "goby/acomms/acomms_helpers.h" // for goby::acomms::hex_encode
-#include "goby/util/logger.h" // for manipulators die, warn, group(), etc.
-#include "goby/util/string.h" // for goby::util::as
 
-#include <boost/asio/detail/socket_ops.hpp> // for network_to_host_long
+#include "goby/util/logger.h"
 
+#include "goby/core/libcore/configuration_reader.h"
+
+using goby::util::glogger;
 using goby::util::as;
 
-goby::core::MinimalApplicationBase::MinimalApplicationBase(std::ostream* log /* = 0 */)
-    : null_(new std::ofstream("/dev/null", std::ios_base::out)),
-      log_(log),
-      context_(1),
-      publisher_(context_, ZMQ_PUB),
-      subscriber_(context_, ZMQ_SUB)
+
+int goby::core::MinimalApplicationBase::argc_ = 0;
+char** goby::core::MinimalApplicationBase::argv_ = 0;
+
+goby::core::MinimalApplicationBase::MinimalApplicationBase(google::protobuf::Message* cfg /*= 0*/)
+    : alive_(true)
 {
-    if(!log_) log_ = null_;
+    //
+    // read the configuration
+    //
+    boost::program_options::options_description od("Allowed options");
+    boost::program_options::variables_map var_map;
+    try
+    {
+        std::string application_name;
+        ConfigReader::read_cfg(argc_, argv_, cfg, &application_name, &od, &var_map);
+        base_cfg_.set_app_name(application_name);
+
+        // extract the AppBaseConfig assuming the user provided it in their configuration
+        // .proto file
+        if(cfg)
+        {
+            const google::protobuf::Descriptor* desc = cfg->GetDescriptor();
+            for (int i = 0, n = desc->field_count(); i < n; ++i)
+            {
+                const google::protobuf::FieldDescriptor* field_desc = desc->field(i);
+                if(field_desc->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE && field_desc->message_type() == ::AppBaseConfig::descriptor())
+                {
+                    base_cfg_.MergeFrom(cfg->GetReflection()->GetMessage(*cfg, field_desc));
+                }
+            }
+        }        
+        
+        // incorporate some parts of the AppBaseConfig that are common
+        // with gobyd (e.g. Verbosity)
+        ConfigReader::merge_app_base_cfg(&base_cfg_, var_map);
+    }
+    catch(ConfigException& e)
+    {
+        // output all the available command line options
+        std::cerr << od << "\n";
+        if(e.error())
+            std::cerr << "Problem parsing command-line configuration: \n"
+                      << e.what() << "\n";        
+        throw;
+    }
+    
+    // set up the logger
+    glogger().set_name(application_name());
+    glogger().add_stream(static_cast<util::Logger::Verbosity>(base_cfg_.verbosity()),
+                         &std::cout);
+
+    if(!base_cfg_.IsInitialized())
+        throw(ConfigException("Invalid base configuration"));
+
+
 }
 
 goby::core::MinimalApplicationBase::~MinimalApplicationBase()
 {
-    delete null_;
+    glogger() << debug <<"MinimalApplicationBase destructing..." << std::endl;    
 }
 
-
-void goby::core::MinimalApplicationBase::subscribe(MarshallingScheme marshalling_scheme,
-                                                   const std::string& identifier)
+void goby::core::MinimalApplicationBase::__run()
 {
-    std::string zmq_filter = make_header(marshalling_scheme, identifier);
-    subscriber_.setsockopt(ZMQ_SUBSCRIBE, zmq_filter.c_str(), zmq_filter.size());
-}
-
-void goby::core::MinimalApplicationBase::publish(MarshallingScheme marshalling_scheme,
-                                                 const std::string& identifier,
-                                                 const void* data,
-                                                 int size)
-{
-    std::string header = make_header(marshalling_scheme, identifier); 
-    zmq::message_t msg_header(header.size());
-    memcpy(msg_header.data(), header.c_str(), header.size());
-    logger() << debug << "header hex: " << goby::acomms::hex_encode(std::string(static_cast<const char*>(header.data()),header.size())) << std::endl;    
-    publisher_.send(msg_header, ZMQ_SNDMORE);
-    
-    zmq::message_t buffer(size);
-    memcpy(buffer.data(), data, size);
-    logger() << debug << "body hex: " << goby::acomms::hex_encode(std::string(static_cast<const char*>(buffer.data()),buffer.size())) << std::endl;
-    publisher_.send(buffer);
-}
-
-void goby::core::MinimalApplicationBase::start_sockets(const std::string& multicast_connection
-                                                       /*= "epgm://127.0.0.1;239.255.7.15:11142"*/)
-{
-    try
+    // continue to run while we are alive (quit() has not been called)
+    while(alive_)
     {
-        publisher_.connect(multicast_connection.c_str());
-        subscriber_.connect(multicast_connection.c_str());        
-        
-        // epgm seems to swallow first message...
-        zmq::message_t blank(10);
-        sprintf((char *)blank.data(), "%05d", 1);
-        publisher_.send(blank);
-
-        logger() << debug << "connected to: "
-                 << multicast_connection << std::endl;
-    }
-    catch(std::exception& e)
-    {
-        logger() << die << "cannot connect to: "
-                 << multicast_connection << ": " << e.what() << std::endl;
-    }
-
-    //  Initialize poll set
-    zmq::pollitem_t item = { subscriber_, 0, ZMQ_POLLIN, 0 };
-    register_poll_item(item,
-                       &goby::core::MinimalApplicationBase::handle_subscribed_message,
-                       this);
-
-}
-void goby::core::MinimalApplicationBase::handle_subscribed_message(const void* data,
-                                                                   int size,
-                                                                   int message_part)
-{
-    std::string bytes(static_cast<const char*>(data),
-                      size);
-    
-    logger() << debug
-             << "got a message: " << goby::acomms::hex_encode(bytes) << std::endl;
-    
-    
-    static MarshallingScheme marshalling_scheme = MARSHALLING_UNKNOWN;
-    static std::string identifier;
-
-    switch(message_part)
-    {
-        case 0:
+        try
         {
-            if(bytes.size() <  BITS_IN_UINT32 / BITS_IN_BYTE)
-                throw(std::runtime_error("Message header is too small"));
-                    
-            google::protobuf::uint32 marshalling_int = 0;
-            for(int i = BITS_IN_UINT32/ BITS_IN_BYTE-1, n = 0; i >= n; --i)
-            {
-                marshalling_int <<= BITS_IN_BYTE;
-                marshalling_int ^= bytes[i];
-            }
-                    
-            marshalling_int = boost::asio::detail::socket_ops::network_to_host_long(
-                marshalling_int);                        
-                    
-            if(marshalling_int >= MARSHALLING_UNKNOWN &&
-               marshalling_int <= MARSHALLING_MAX)
-                marshalling_scheme = static_cast<MarshallingScheme>(marshalling_int);
-            else
-                throw(std::runtime_error("Invalid marshalling value = "
-                                         + as<std::string>(marshalling_int)));
-                    
-                    
-            identifier = bytes.substr(BITS_IN_UINT32 / BITS_IN_BYTE);
-            logger() << debug << "Got message of type: " << identifier << std::endl;
+            iterate();
         }
-        break;
-                
-        case 1:
+        catch(std::exception& e)
         {
-            inbox(marshalling_scheme, identifier, data, size);
-        }
-        break;
-
-        default:
-            throw(std::runtime_error("Got more parts to the message than expecting (expecting only 2"));    
-            break;
-    }
-}
-
-bool goby::core::MinimalApplicationBase::poll(long timeout /* = -1 */)
-{
-    bool had_events = false;
-    zmq::poll (&poll_items_[0], poll_items_.size(), timeout);
-    for(int i = 0, n = poll_items_.size(); i < n; ++i)
-    {
-        if (poll_items_[i].revents & ZMQ_POLLIN) 
-        {
-            int message_part = 0;
-            int64_t more;
-            size_t more_size = sizeof more;
-            do {
-                /* Create an empty ØMQ message to hold the message part */
-                zmq_msg_t part;
-                int rc = zmq_msg_init (&part);
-                // assert (rc == 0);
-                /* Block until a message is available to be received from socket */
-                rc = zmq_recv (poll_items_[i].socket, &part, 0);
-                poll_callbacks_[i](zmq_msg_data(&part), zmq_msg_size(&part), message_part);
-                // assert (rc == 0);
-                /* Determine if more message parts are to follow */
-                rc = zmq_getsockopt (poll_items_[i].socket, ZMQ_RCVMORE, &more, &more_size);
-                // assert (rc == 0);
-                zmq_msg_close (&part);
-                ++message_part;
-            } while (more);
-            had_events = true;
+            glogger() << warn << e.what() << std::endl;
         }
     }
-    return had_events;
 }
-
-
-std::string goby::core::MinimalApplicationBase::make_header(MarshallingScheme marshalling_scheme,
-                                                                  const std::string& identifier)
-{
-    std::string zmq_filter;
-    
-    google::protobuf::uint32 marshalling_int = boost::asio::detail::socket_ops::host_to_network_long(static_cast<google::protobuf::uint32>(marshalling_scheme));
-    
-    for(int i = 0, n = BITS_IN_UINT32 / BITS_IN_BYTE; i < n; ++i)
-    {
-        zmq_filter.push_back(marshalling_int & 0xFF);
-        marshalling_int >>= BITS_IN_BYTE;
-    }
-    zmq_filter += identifier;
-
-    logger() << debug << "zmq header: " << goby::acomms::hex_encode(zmq_filter) << std::endl;
-
-    return zmq_filter;
-}
-
 

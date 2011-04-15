@@ -38,15 +38,18 @@ goby::core::ApplicationBase::ApplicationBase(google::protobuf::Message* cfg /*= 
     : ProtobufApplicationBase(cfg),
       database_client_(zmq_context(), ZMQ_REQ)
 {
-    set_loop_freq(base_cfg().loop_freq());
     
     __set_up_sockets();
-    
+
+
+    set_loop_freq(base_cfg().loop_freq());
+
     // we are started
     t_start_ = goby_time();
     // start the loop() on the next even second
     t_next_loop_ = boost::posix_time::second_clock::universal_time() +
         boost::posix_time::seconds(1);
+    
     
     // notify others of our configuration for logging purposes
     if(cfg) publish(*cfg);
@@ -167,33 +170,33 @@ void goby::core::ApplicationBase::__publish(google::protobuf::Message& msg, cons
 {
     const std::string& protobuf_type_name = msg.GetDescriptor()->full_name();
 
-    // if(base_cfg().using_database() && !registered_file_descriptors_.count(msg.GetDescriptor()->file()))
-    // {
-    //     // request permission to being publishing
-    //     // (so that we *know* the database has all entries)
-    //     static protobuf::DatabaseRequest proto_request;
-    //     static protobuf::DatabaseResponse proto_response;
-    //     proto_request.Clear();
-    //     __insert_file_descriptor_proto(msg.GetDescriptor()->file(), &proto_request);
-    //     proto_request.set_request_type(protobuf::DatabaseRequest::NEW_PUBLISH);
-    //     proto_request.set_publish_protobuf_full_name(protobuf_type_name);
+    if(base_cfg().using_database() && !registered_file_descriptors_.count(msg.GetDescriptor()->file()))
+    {
+        // request permission to being publishing
+        // (so that we *know* the database has all entries)
+        static protobuf::DatabaseRequest proto_request;
+        static protobuf::DatabaseResponse proto_response;
+        proto_request.Clear();
+        __insert_file_descriptor_proto(msg.GetDescriptor()->file(), &proto_request);
+        proto_request.set_request_type(protobuf::DatabaseRequest::NEW_PUBLISH);
+        proto_request.set_publish_protobuf_full_name(protobuf_type_name);
         
-    //     zmq::message_t zmq_request(proto_request.ByteSize());
-    //     proto_request.SerializeToArray(zmq_request.data(), zmq_request.size());    
-    //     database_client_.send(zmq_request);
+        zmq::message_t zmq_request(proto_request.ByteSize());
+        proto_request.SerializeToArray(zmq_request.data(), zmq_request.size());    
+        database_client_.send(zmq_request);
 
-    //     glogger() << debug << "Sending request to goby_database: " << proto_request << "\n"
-    //               << "...waiting on response" << std::endl;
+        glogger() << debug << "Sending request to goby_database: " << proto_request << "\n"
+                  << "...waiting on response" << std::endl;
 
-    //     zmq::message_t zmq_response;
-    //     database_client_.recv(&zmq_response);
-    //     proto_response.ParseFromArray(zmq_response.data(), zmq_response.size());
-    //     glogger() << debug << "Got response: " << proto_response << std::endl;
+        zmq::message_t zmq_response;
+        database_client_.recv(&zmq_response);
+        proto_response.ParseFromArray(zmq_response.data(), zmq_response.size());
+        glogger() << debug << "Got response: " << proto_response << std::endl;
 
-    //     if(!proto_response.response_type() == protobuf::DatabaseResponse::NEW_PUBLISH_ACCEPTED)
-    //         glogger() << die << "Database publish was denied!" << std::endl;        
+        if(!proto_response.response_type() == protobuf::DatabaseResponse::NEW_PUBLISH_ACCEPTED)
+            glogger() << die << "Database publish was denied!" << std::endl;        
 
-    // }
+    }
 
     
     // adds, as needed, required fields of Header
@@ -203,7 +206,7 @@ void goby::core::ApplicationBase::__publish(google::protobuf::Message& msg, cons
     char buffer[size];
     msg.SerializeToArray(&buffer, size);
     goby::util::glogger() << debug << "< " << msg << std::endl;
-    MinimalApplicationBase::publish(MARSHALLING_PROTOBUF, protobuf_type_name, &buffer, size);
+    ZeroMQNode::publish(MARSHALLING_PROTOBUF, protobuf_type_name, &buffer, size);
     
 }
 
@@ -215,7 +218,7 @@ void goby::core::ApplicationBase::iterate()
         timeout = 0;
     
     glogger() << debug << "timeout set to: " << timeout << " microseconds." << std::endl;
-    bool had_events = MinimalApplicationBase::poll(timeout);
+    bool had_events = ZeroMQNode::poll(timeout);
     if(!had_events)
     {
         // no message, time to call loop()            

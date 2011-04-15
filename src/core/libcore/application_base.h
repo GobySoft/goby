@@ -252,6 +252,9 @@ namespace goby
             // database related things
             zmq::socket_t database_client_;
             std::set<const google::protobuf::FileDescriptor*> registered_file_descriptors_;
+
+            
+
         };
     }
 }
@@ -286,7 +289,7 @@ template<typename ProtoBufMessage>
     subscriptions_.insert(std::make_pair(protobuf_type_name, subscription));
 
     
-    MinimalApplicationBase::subscribe(MARSHALLING_PROTOBUF, protobuf_type_name);
+    ZeroMQNode::subscribe(MARSHALLING_PROTOBUF, protobuf_type_name);
 }
 
 /// See goby::core::ApplicationBase::newest(const protobuf::Filter& filter = protobuf::Filter())

@@ -38,12 +38,13 @@ int main(int argc, char* argv[])
 
 goby::core::Database::Database()
     : ProtobufApplicationBase(&cfg_),
-      database_server_(MinimalApplicationBase::zmq_context(), ZMQ_REP),
+      database_server_(ZeroMQNode::zmq_context(), ZMQ_REP),
       dbo_manager_(DBOManager::get_instance()),
-      loop_period_(boost::posix_time::milliseconds(1000.0/cfg_.base().loop_freq()))
+      loop_period_(boost::posix_time::milliseconds(1000.0/std::min(cfg_.base().loop_freq(),
+                                                                   static_cast<float>(MAX_LOOP_FREQ))))
 {
     if(!cfg_.base().using_database())
-        glogger() << die << "AppBaseConfig::using_database == false. Since we aren't wanting, we aren't starting (set to true to enable use of the database)!" << std::endl;    
+        glogger() << die << "AppBaseConfig::using_database == false. Since we aren't wanting, we aren't starting (set to true to enable use of the database)!" << std::endl;
 
     std::string database_binding = "tcp://*:";
     if(cfg_.base().has_database_port())
@@ -71,9 +72,9 @@ goby::core::Database::Database()
 
 
     zmq::pollitem_t item = { database_server_, 0, ZMQ_POLLIN, 0 };
-    MinimalApplicationBase::register_poll_item(item,
-                                               &goby::core::Database::handle_database_request,
-                                               this);    
+    ZeroMQNode::register_poll_item(item,
+                                   &goby::core::Database::handle_database_request,
+                                   this);    
 
     // we are started
     t_start_ = goby_time();
@@ -196,7 +197,7 @@ void goby::core::Database::iterate()
         timeout = 0;
     }
     
-    bool had_events = MinimalApplicationBase::poll(timeout);
+    bool had_events = ZeroMQNode::poll(timeout);
     if(!had_events)
     {
         dbo_manager_->commit();

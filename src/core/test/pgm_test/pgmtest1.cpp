@@ -21,7 +21,7 @@ int main (int argc, char *argv[])
 
     try
     {
-        publisher.connect("epgm://127.0.0.1;239.255.7.15:11142");
+        publisher.connect("epgm://eth0;239.255.7.15:11142");
     }
     catch(std::exception& e)
     {
@@ -32,15 +32,39 @@ int main (int argc, char *argv[])
     publisher.setsockopt(ZMQ_RATE, &rate, sizeof(rate));
     
 
-    int i = 0;
-    while (1)
+    //  int i = 0;
+
+    for(int i = 0, n = 2; i < n; ++i)
     {
-        ++i;
-        zmq::message_t message(20);
-        sprintf((char *)message.data(), "%05d", i);
-        publisher.send(message);
-        std::cout << i << std::endl;
-        usleep(10000);
+        
+        zmq_msg_t part1;
+        int rc = zmq_msg_init_size (&part1, 1);
+        assert (rc == 0);
+        /* Fill in message content with unsigned char 1 */
+        memset (zmq_msg_data (&part1), 1, 1);
+        /* Send the message to the socket */
+        rc = zmq_send (publisher, &part1, ZMQ_SNDMORE);
+        assert (rc == 0);
+        
+        zmq_msg_t part2;
+        rc = zmq_msg_init_size (&part2, 1);
+        assert (rc == 0);
+/* Fill in message content with unsigned char 2 */
+        memset (zmq_msg_data (&part2), 2, 1);
+/* Send the message to the socket */
+        rc = zmq_send (publisher, &part2, ZMQ_SNDMORE);
+        assert (rc == 0);
+
+        zmq_msg_t part3;
+        rc = zmq_msg_init_size (&part3, 1);
+        assert (rc == 0);
+/* Fill in message content with unsigned char 2 */
+        memset (zmq_msg_data (&part3), 3, 1);
+/* Send the message to the socket */
+        rc = zmq_send (publisher, &part3, 0);
+        assert (rc == 0);
+
     }
+    
     return 0;
 }

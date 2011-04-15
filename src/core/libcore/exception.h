@@ -17,6 +17,9 @@
 #ifndef CoreException20101005H
 #define CoreException20101005H
 
+#include <exception>
+#include <stdexcept>
+
 namespace goby
 {
     

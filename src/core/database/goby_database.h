@@ -21,7 +21,7 @@
 #include <map>
 #include <boost/unordered_map.hpp>
 
-#include "goby/core/libcore/minimal_application_base.h"
+#include "goby/core/libcore/protobuf_application_base.h"
 #include "goby/core/libdbo/dbo_manager.h"
 
 #include "hello_world.pb.h"
@@ -32,29 +32,6 @@ namespace goby
 {
     namespace core
     {
-        class ArbitraryTypeSubscription
-        {
-          public:
-            typedef boost::function<void (boost::shared_ptr<google::protobuf::Message>)> HandlerType;
-            
-            ArbitraryTypeSubscription();
-            
-            // handle an incoming message (serialized using the google::protobuf
-            // library calls)
-            void post(const void* data, int size, boost::shared_ptr<google::protobuf::Message> msg);
-            
-            void set_handler(const HandlerType& handler)
-            { handler_ = handler; }
-            
-            HandlerType handler() const { return handler_; }
-            bool has_valid_handler() const { return handler_; }
-            
-            
-          private:
-            HandlerType handler_;
-
-        };
-
         
         class ArbitraryProtobufApplicationBase : public ProtobufApplicationBase
         {
@@ -62,19 +39,21 @@ namespace goby
 
         };
 
-
-
-        class Database : public ArbitraryProtobufApplicationBase
+        class Database : public ProtobufApplicationBase
         {
           public:
             Database();
-            void run();
           private:
-            void loop();
-            void inbox(boost::shared_ptr<google::protobuf::Message> msg);
+            void iterate();
+            void inbox(const std::string& protobuf_type_name,
+                       const void* data,
+                       int size);
+            
             void init_sql();
             std::string format_filename(const std::string& in);
 
+            void handle_database_request(const void* data, int size, int message_part);
+            
             boost::shared_ptr<google::protobuf::Message> new_protobuf_message(
                 const std::string& protobuf_type_name);
             const google::protobuf::FileDescriptor* add_protobuf_file(
@@ -89,8 +68,16 @@ namespace goby
 
           private:
             static protobuf::DatabaseConfig cfg_;
-            DBOManager* dbo_manager_;
             zmq::socket_t database_server_;
+            DBOManager* dbo_manager_;
+            
+
+            // how long to wait between calls to loop()
+            boost::posix_time::time_duration loop_period_;
+            // time of the next call to loop()
+            boost::posix_time::ptime t_next_loop_;
+            boost::posix_time::ptime t_start_;
+
             
             // see google::protobuf documentation: this assists in
             // creating messages at runtime

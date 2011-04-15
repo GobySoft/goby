@@ -36,7 +36,6 @@ using boost::shared_ptr;
 
 goby::core::ApplicationBase::ApplicationBase(google::protobuf::Message* cfg /*= 0*/)
     : ProtobufApplicationBase(cfg),
-      loop_period_(boost::posix_time::milliseconds(100)),
       database_client_(zmq_context(), ZMQ_REQ)
 {
     set_loop_freq(base_cfg().loop_freq());
@@ -168,33 +167,33 @@ void goby::core::ApplicationBase::__publish(google::protobuf::Message& msg, cons
 {
     const std::string& protobuf_type_name = msg.GetDescriptor()->full_name();
 
-    if(base_cfg().using_database() && !registered_file_descriptors_.count(msg.GetDescriptor()->file()))
-    {
-        // request permission to being publishing
-        // (so that we *know* the database has all entries)
-        static protobuf::DatabaseRequest proto_request;
-        static protobuf::DatabaseResponse proto_response;
-        proto_request.Clear();
-        __insert_file_descriptor_proto(msg.GetDescriptor()->file(), &proto_request);
-        proto_request.set_request_type(protobuf::DatabaseRequest::NEW_PUBLISH);
-        proto_request.set_publish_protobuf_full_name(protobuf_type_name);
+    // if(base_cfg().using_database() && !registered_file_descriptors_.count(msg.GetDescriptor()->file()))
+    // {
+    //     // request permission to being publishing
+    //     // (so that we *know* the database has all entries)
+    //     static protobuf::DatabaseRequest proto_request;
+    //     static protobuf::DatabaseResponse proto_response;
+    //     proto_request.Clear();
+    //     __insert_file_descriptor_proto(msg.GetDescriptor()->file(), &proto_request);
+    //     proto_request.set_request_type(protobuf::DatabaseRequest::NEW_PUBLISH);
+    //     proto_request.set_publish_protobuf_full_name(protobuf_type_name);
         
-        zmq::message_t zmq_request(proto_request.ByteSize());
-        proto_request.SerializeToArray(zmq_request.data(), zmq_request.size());    
-        database_client_.send(zmq_request);
+    //     zmq::message_t zmq_request(proto_request.ByteSize());
+    //     proto_request.SerializeToArray(zmq_request.data(), zmq_request.size());    
+    //     database_client_.send(zmq_request);
 
-        glogger() << debug << "Sending request to goby_database: " << proto_request << "\n"
-                  << "...waiting on response" << std::endl;
+    //     glogger() << debug << "Sending request to goby_database: " << proto_request << "\n"
+    //               << "...waiting on response" << std::endl;
 
-        zmq::message_t zmq_response;
-        database_client_.recv(&zmq_response);
-        proto_response.ParseFromArray(zmq_response.data(), zmq_response.size());
-        glogger() << debug << "Got response: " << proto_response << std::endl;
+    //     zmq::message_t zmq_response;
+    //     database_client_.recv(&zmq_response);
+    //     proto_response.ParseFromArray(zmq_response.data(), zmq_response.size());
+    //     glogger() << debug << "Got response: " << proto_response << std::endl;
 
-        if(!proto_response.response_type() == protobuf::DatabaseResponse::NEW_PUBLISH_ACCEPTED)
-            glogger() << die << "Database publish was denied!" << std::endl;        
+    //     if(!proto_response.response_type() == protobuf::DatabaseResponse::NEW_PUBLISH_ACCEPTED)
+    //         glogger() << die << "Database publish was denied!" << std::endl;        
 
-    }
+    // }
 
     
     // adds, as needed, required fields of Header
@@ -205,6 +204,7 @@ void goby::core::ApplicationBase::__publish(google::protobuf::Message& msg, cons
     msg.SerializeToArray(&buffer, size);
     goby::util::glogger() << debug << "< " << msg << std::endl;
     MinimalApplicationBase::publish(MARSHALLING_PROTOBUF, protobuf_type_name, &buffer, size);
+    
 }
 
 void goby::core::ApplicationBase::iterate()

@@ -27,6 +27,10 @@ private:
 
             // publish it to `gobyd` who will send to all subscribers 
             publish(msg);
+
+            if(i > 10)
+                exit(1);
+            
         }
 };
 

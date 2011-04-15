@@ -19,6 +19,7 @@
 #include <boost/format.hpp>
 
 #include "goby/util/logger.h"
+#include "goby/core/core_helpers.h"
 
 #include "goby_database.h"
 
@@ -28,32 +29,21 @@ google::protobuf::DescriptorPool goby::core::Database::descriptor_pool_;
 
 using goby::util::as;
 using goby::util::glogger;
+using goby::util::goby_time;
 
 int main(int argc, char* argv[])
 {
-    goby::run<Database>(argc, argv);
+    goby::run<goby::core::Database>(argc, argv);
 }
-
-
-goby::core::ArbitraryTypeSubscription::ArbitraryTypeSubscription()
-{ }
-
-void goby::core::ArbitraryTypeSubscription::post(const void* data, int size, boost::shared_ptr<google::protobuf::Message> msg)
-{
-    msg->ParseFromArray(data, size);
-    if(handler_) handler_(msg);
-}
-
-
 
 goby::core::Database::Database()
-    : MinimalApplicationBase(&glogger()),
-      database_server_(ApplicationBase::zmq_context(), ZMQ_REP),
-      dbo_manager_(DBOManager::get_instance())
+    : ProtobufApplicationBase(&cfg_),
+      database_server_(MinimalApplicationBase::zmq_context(), ZMQ_REP),
+      dbo_manager_(DBOManager::get_instance()),
+      loop_period_(boost::posix_time::milliseconds(1000.0/cfg_.base().loop_freq()))
 {
     if(!cfg_.base().using_database())
-        glogger() << die << "AppBaseConfig::using_database == false. Since we aren't wanting, we aren't starting (set to true to enable use of the database)!" << std::endl;
-    
+        glogger() << die << "AppBaseConfig::using_database == false. Since we aren't wanting, we aren't starting (set to true to enable use of the database)!" << std::endl;    
 
     std::string database_binding = "tcp://*:";
     if(cfg_.base().has_database_port())
@@ -77,15 +67,26 @@ goby::core::Database::Database()
 
     // subscribe for everything
     subscribe(MARSHALLING_PROTOBUF, "");
-    set_subscribe_advanced_handler(&goby::core::Database::inbox, this);
-
     init_sql();
+
+
+    zmq::pollitem_t item = { database_server_, 0, ZMQ_POLLIN, 0 };
+    MinimalApplicationBase::register_poll_item(item,
+                                               &goby::core::Database::handle_database_request,
+                                               this);    
+
+    // we are started
+    t_start_ = goby_time();
+    // start the loop() on the next even second
+    t_next_loop_ = boost::posix_time::second_clock::universal_time() +
+        boost::posix_time::seconds(1);
+
 }
 
 void goby::core::Database::init_sql()
 {
-    dbo_manager_->set_dynamic_message_factory(&ApplicationBase::msg_factory());
-    dbo_manager_->set_descriptor_pool(&ApplicationBase::descriptor_pool());    
+    dbo_manager_->set_dynamic_message_factory(&msg_factory());
+    dbo_manager_->set_descriptor_pool(&descriptor_pool());    
     
     try
     {
@@ -109,8 +110,7 @@ void goby::core::Database::init_sql()
     }
     
     // #include <google/protobuf/descriptor.pb.h>
-    const google::protobuf::FileDescriptor* file_desc =
-        add_protobuf_file(google::protobuf::FileDescriptorProto::descriptor());
+    add_protobuf_file(google::protobuf::FileDescriptorProto::descriptor());
 
 }
 
@@ -125,91 +125,83 @@ std::string goby::core::Database::format_filename(const std::string& in)
 }
 
 
-void inbox(MarshallingScheme marshalling_scheme,
-           const std::string& identifier,
-           const void* data,
-           int size)
+void goby::core::Database::inbox(const std::string& protobuf_type_name,
+                                 const void* data,
+                                 int size)
 {
-    if(static_cast<MarshallingScheme>(marshalling_scheme) != MARSHALLING_PROTOBUF)
-    {
-        throw(std::runtime_error("Unknown Marshalling Scheme; should be MARSHALLING_PROTOBUF, got: " + as<std::string>(marshalling_scheme)));
-    }
-
-    if(arbitrary_type_subscription_.has_valid_handler())
-        arbitrary_type_subscription_.post(message.data(),
-                                          message.size(),
-                                          new_protobuf_message(protobuf_type_name));
-}
-
-
-void goby::core::Database::inbox(boost::shared_ptr<google::protobuf::Message> msg)
-{
+    boost::shared_ptr<google::protobuf::Message> msg = new_protobuf_message(protobuf_type_name);
+    msg->ParseFromArray(data, size);
     glogger() << *msg << std::endl;
     dbo_manager_->add_message(msg);
 }
 
-void goby::core::Database::run()
-{  
-    for(;;)
-    {
-        
-    }
-}
-
-void goby::core::Database::loop()
+void goby::core::Database::handle_database_request(const void* request_data,
+                                                   int request_size,
+                                                   int message_part)
 {
     static protobuf::DatabaseRequest proto_request;
     static protobuf::DatabaseResponse proto_response;
+
+    proto_request.ParseFromArray(request_data, request_size);
+    glogger() << debug << "Got request: " << proto_request << std::endl;
     
-    for(;;)
+    switch(proto_request.request_type())
     {
-        zmq::message_t zmq_request;
-
-        bool rc = database_server_.recv(&zmq_request, ZMQ_NOBLOCK);
-        if(!rc) break;
-        
-        proto_request.ParseFromArray(zmq_request.data(), zmq_request.size());
-        glogger() << debug << "Got request: " << proto_request << std::endl;
-
-        switch(proto_request.request_type())
+        case protobuf::DatabaseRequest::NEW_PUBLISH:
         {
-            case protobuf::DatabaseRequest::NEW_PUBLISH:
+            for(int i = 0, n = proto_request.file_descriptor_proto_size(); i < n; ++i)
             {
-                for(int i = 0, n = proto_request.file_descriptor_proto_size(); i < n; ++i)
-                {
-                    const google::protobuf::FileDescriptor* file_desc =
-                        add_protobuf_file(proto_request.file_descriptor_proto(i));
+                add_protobuf_file(proto_request.file_descriptor_proto(i));
                         
-                    const google::protobuf::Descriptor* desc =
-                        descriptor_pool().FindMessageTypeByName(
-                            proto_request.publish_protobuf_full_name());
-                    proto_response.Clear();
+                const google::protobuf::Descriptor* desc =
+                    descriptor_pool().FindMessageTypeByName(
+                        proto_request.publish_protobuf_full_name());
+                proto_response.Clear();
                     
-                    if(!desc)
-                    {
-                        proto_response.set_response_type(protobuf::DatabaseResponse::NEW_PUBLISH_DENIED);
-                    } 
-                    else
-                    {
-                        dbo_manager_->add_type(desc);
-                        proto_response.set_response_type(protobuf::DatabaseResponse::NEW_PUBLISH_ACCEPTED);
-                    }
+                if(!desc)
+                {
+                    proto_response.set_response_type(
+                        protobuf::DatabaseResponse::NEW_PUBLISH_DENIED);
+                } 
+                else
+                {
+                    dbo_manager_->add_type(desc);
+                    proto_response.set_response_type(
+                        protobuf::DatabaseResponse::NEW_PUBLISH_ACCEPTED);
                 }
-
-                zmq::message_t zmq_response(proto_response.ByteSize());
-                proto_response.SerializeToArray(zmq_response.data(), zmq_response.size());    
-                database_server_.send(zmq_response);
-                glogger() << debug << "Send response: " << proto_response << std::endl;
             }
-            break;
-            
-            case protobuf::DatabaseRequest::SQL_QUERY:
-                // unimplemented
-                break;
-        }            
-    }
 
-    dbo_manager_->commit();
+            zmq::message_t zmq_response(proto_response.ByteSize());
+            proto_response.SerializeToArray(zmq_response.data(), zmq_response.size());    
+            database_server_.send(zmq_response);
+            glogger() << debug << "Sent response: " << proto_response << std::endl;
+        }
+        break;
+            
+        case protobuf::DatabaseRequest::SQL_QUERY:
+            // unimplemented
+            break;
+    }
+}
+
+
+
+
+void goby::core::Database::iterate()
+{
+    long timeout = (t_next_loop_-goby_time()).total_microseconds();
+    if(timeout < 0)
+    {
+        glogger() << warn << "Database appears to be backlogged. Increase `loop_freq` to attempt to handle the load" << std::endl;
+        timeout = 0;
+    }
+    
+    bool had_events = MinimalApplicationBase::poll(timeout);
+    if(!had_events)
+    {
+        dbo_manager_->commit();
+        t_next_loop_ += loop_period_;
+    }
 }
 
 
@@ -221,7 +213,7 @@ boost::shared_ptr<google::protobuf::Message> goby::core::Database::new_protobuf_
         return boost::shared_ptr<google::protobuf::Message>(
             msg_factory_.GetPrototype(desc)->New());
     else
-        throw(std::runtime_error("Unknown type " + name + ", be sure it is loaded with call to ApplicationBase::add_protobuf_file()"));
+        throw(std::runtime_error("Unknown type " + protobuf_type_name + ", be sure it is loaded with call to ApplicationBase::add_protobuf_file()"));
 }
 
 

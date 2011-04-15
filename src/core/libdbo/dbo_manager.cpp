@@ -33,7 +33,7 @@
 
 
 // must be define since we are using the preprocessor
-#define GOBY_MAX_PROTOBUF_TYPES 128
+#define GOBY_MAX_PROTOBUF_TYPES 16
 
 google::protobuf::DynamicMessageFactory* goby::core::DBOManager::msg_factory_ = 0;
 google::protobuf::DescriptorPool* goby::core::DBOManager::descriptor_pool_ = 0;

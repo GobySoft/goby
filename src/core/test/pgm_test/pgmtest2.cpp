@@ -8,18 +8,21 @@
 #include <zmq.hpp>
 #include <iostream>
 #include <sstream>
+#include <stdio.h>
+#include "goby/acomms/acomms_helpers.h"
 
 int main (int argc, char *argv[])
 {
     zmq::context_t context (1);
 
     //  Socket to talk to server
-    std::cout << "Collecting updates from weather server…\n" << std::endl;
     zmq::socket_t subscriber (context, ZMQ_SUB);
+//    zmq::socket_t publisher (context, ZMQ_PUB);
 
     try
     {
-        subscriber.connect("epgm://wlan0;239.192.1.1:5555");
+        //      publisher.connect("epgm://127.0.0.1;239.255.7.15:11142");
+        subscriber.connect("epgm://127.0.0.1;239.255.7.15:11142");
     }
     catch(std::exception& e)
     {
@@ -27,18 +30,26 @@ int main (int argc, char *argv[])
     }
 
     subscriber.setsockopt(ZMQ_SUBSCRIBE, 0, 0);
-
-    for (;;)
+    
+    for(;;)
     {
+        
         zmq::message_t update;
-        int zipcode, temperature, relhumidity;
-
         subscriber.recv(&update);
-
-        std::istringstream iss(static_cast<char*>(update.data()));
-        iss >> zipcode >> temperature >> relhumidity ;
-
-        std::cout     << "temperature: " << temperature << std::endl;
+        
+        std::string in(static_cast<const char*>(update.data()), update.size());
+        std::cout << goby::acomms::hex_encode(in) << std::endl;
     }
+    
+    return 1;
+    
+    
+    // int i;
+    // sscanf(in.c_str(), "%d", &i);
+    
+    // std::cout << i << std::endl;
+
+    // assert(i == 1);
+    
     return 0;
 }

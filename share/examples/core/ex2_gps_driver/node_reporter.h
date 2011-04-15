@@ -28,6 +28,8 @@ private:
         create_node_report(gga, newest<DepthReading>());
     }
     
+    void loop() {}
+
     static NodeReporterConfig cfg_;    
 };
 

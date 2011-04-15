@@ -19,6 +19,8 @@
 
 #include <iostream>
 #include <string>
+#include <boost/bind.hpp>
+#include <boost/function.hpp>
 
 #include <zmq.hpp>
 
@@ -52,12 +54,30 @@ namespace goby
             
             bool poll(long timeout = -1);
 
+            template<class C>
+                void register_poll_item(
+                    const zmq::pollitem_t& item,                    
+                    void(C::*mem_func)(const void*, int, int),
+                    C* obj)
+            { register_poll_item(item, boost::bind(mem_func, obj, _1, _2, _3)); }
+            
+
+            void register_poll_item(
+                const zmq::pollitem_t& item,
+                boost::function<void (const void* data, int size, int message_part)> callback)
+            {
+                poll_items_.push_back(item);
+                poll_callbacks_.insert(std::make_pair(poll_items_.size()-1, callback));
+            }
+            
             zmq::context_t& zmq_context() { return context_; }
             
           private:
             std::ostream& logger() { return *log_; }
             std::string make_header(MarshallingScheme marshalling_scheme,
                                     const std::string& protobuf_type_name);
+
+            void handle_subscribed_message(const void* data, int size, int message_part);
             
           private:
             std::ofstream* null_;
@@ -67,6 +87,9 @@ namespace goby
             zmq::socket_t publisher_;
             zmq::socket_t subscriber_;
             std::vector<zmq::pollitem_t> poll_items_;
+
+            // maps poll_items_ index to a callback function
+            std::map<size_t, boost::function<void (const void* data, int size, int message_part)> > poll_callbacks_;
         };
     }
 }

@@ -85,30 +85,6 @@ namespace goby
             const protobuf::Filter filter_;
             const std::string type_name_;
         };
-
-
-        class ArbitraryTypeSubscription
-        {
-          public:
-            typedef boost::function<void (boost::shared_ptr<google::protobuf::Message>)> HandlerType;
-            
-            ArbitraryTypeSubscription();
-            
-            // handle an incoming message (serialized using the google::protobuf
-            // library calls)
-            void post(const void* data, int size, boost::shared_ptr<google::protobuf::Message> msg);
-            
-            void set_handler(const HandlerType& handler)
-            { handler_ = handler; }
-            
-            HandlerType handler() const { return handler_; }
-            bool has_valid_handler() const { return handler_; }
-            
-            
-          private:
-            HandlerType handler_;
-
-        };
     }
 }
 

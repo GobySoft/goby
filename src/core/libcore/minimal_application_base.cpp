@@ -32,7 +32,6 @@ goby::core::MinimalApplicationBase::MinimalApplicationBase(std::ostream* log /* 
       subscriber_(context_, ZMQ_SUB)
 {
     if(!log_) log_ = null_;
-    
 }
 
 goby::core::MinimalApplicationBase::~MinimalApplicationBase()
@@ -71,10 +70,11 @@ void goby::core::MinimalApplicationBase::start_sockets(const std::string& multic
     try
     {
         publisher_.connect(multicast_connection.c_str());
-        subscriber_.connect(multicast_connection.c_str());
-
+        subscriber_.connect(multicast_connection.c_str());        
+        
         // epgm seems to swallow first message...
-        zmq::message_t blank(0); 
+        zmq::message_t blank(10);
+        sprintf((char *)blank.data(), "%05d", 1);
         publisher_.send(blank);
 
         logger() << debug << "connected to: "
@@ -88,83 +88,98 @@ void goby::core::MinimalApplicationBase::start_sockets(const std::string& multic
 
     //  Initialize poll set
     zmq::pollitem_t item = { subscriber_, 0, ZMQ_POLLIN, 0 };
-    poll_items_.push_back(item);
+    register_poll_item(item,
+                       &goby::core::MinimalApplicationBase::handle_subscribed_message,
+                       this);
 
 }
+void goby::core::MinimalApplicationBase::handle_subscribed_message(const void* data,
+                                                                   int size,
+                                                                   int message_part)
+{
+    std::string bytes(static_cast<const char*>(data),
+                      size);
+    
+    logger() << debug
+             << "got a message: " << goby::acomms::hex_encode(bytes) << std::endl;
+    
+    
+    static MarshallingScheme marshalling_scheme = MARSHALLING_UNKNOWN;
+    static std::string identifier;
 
+    switch(message_part)
+    {
+        case 0:
+        {
+            if(bytes.size() <  BITS_IN_UINT32 / BITS_IN_BYTE)
+                throw(std::runtime_error("Message header is too small"));
+                    
+            google::protobuf::uint32 marshalling_int = 0;
+            for(int i = BITS_IN_UINT32/ BITS_IN_BYTE-1, n = 0; i >= n; --i)
+            {
+                marshalling_int <<= BITS_IN_BYTE;
+                marshalling_int ^= bytes[i];
+            }
+                    
+            marshalling_int = boost::asio::detail::socket_ops::network_to_host_long(
+                marshalling_int);                        
+                    
+            if(marshalling_int >= MARSHALLING_UNKNOWN &&
+               marshalling_int <= MARSHALLING_MAX)
+                marshalling_scheme = static_cast<MarshallingScheme>(marshalling_int);
+            else
+                throw(std::runtime_error("Invalid marshalling value = "
+                                         + as<std::string>(marshalling_int)));
+                    
+                    
+            identifier = bytes.substr(BITS_IN_UINT32 / BITS_IN_BYTE);
+            logger() << debug << "Got message of type: " << identifier << std::endl;
+        }
+        break;
+                
+        case 1:
+        {
+            inbox(marshalling_scheme, identifier, data, size);
+        }
+        break;
+
+        default:
+            throw(std::runtime_error("Got more parts to the message than expecting (expecting only 2"));    
+            break;
+    }
+}
 
 bool goby::core::MinimalApplicationBase::poll(long timeout /* = -1 */)
 {
     bool had_events = false;
     zmq::poll (&poll_items_[0], poll_items_.size(), timeout);
-    if (poll_items_[0].revents & ZMQ_POLLIN) 
+    for(int i = 0, n = poll_items_.size(); i < n; ++i)
     {
-        int message_part = 0;
-        MarshallingScheme marshalling_scheme = MARSHALLING_UNKNOWN;
-        std::string identifier;
-        int64_t more = 0;
-        do
+        if (poll_items_[i].revents & ZMQ_POLLIN) 
         {
-            zmq::message_t message;
-            subscriber_.recv(&message);
-            std::string bytes(static_cast<const char*>(message.data()),
-                              message.size());
-            
-            logger() << debug
-                     << "got a message: " << goby::acomms::hex_encode(bytes) << std::endl;
-            
-            switch(message_part)
-            {
-                case 0:
-                {
-                    if(bytes.size() <  BITS_IN_UINT32 / BITS_IN_BYTE)
-                        throw(std::runtime_error("Message header is too small"));
-                    
-                    google::protobuf::uint32 marshalling_int = 0;
-                    for(int i = BITS_IN_UINT32/ BITS_IN_BYTE-1, n = 0; i >= n; --i)
-                    {
-                        marshalling_int <<= BITS_IN_BYTE;
-                        marshalling_int ^= bytes[i];
-                    }
-                    
-                    marshalling_int = boost::asio::detail::socket_ops::network_to_host_long(
-                        marshalling_int);                        
-                    
-                    if(marshalling_int >= MARSHALLING_UNKNOWN &&
-                       marshalling_int <= MARSHALLING_MAX)
-                        marshalling_scheme = static_cast<MarshallingScheme>(marshalling_int);
-                    else
-                        throw(std::runtime_error("Invalid marshalling value = "
-                                                 + as<std::string>(marshalling_int)));
-                    
-                    
-                    identifier = bytes.substr(BITS_IN_UINT32 / BITS_IN_BYTE);
-                    logger() << debug << "Got message of type: " << identifier << std::endl;
-                }
-                break;
-                
-                case 1:
-                {
-                    inbox(marshalling_scheme, identifier, message.data(), message.size());
-                    had_events = true;
-                }
-                break;
-
-                default:
-                    throw(std::runtime_error("Got more parts to the message than expecting (expecting only 2"));    
-                    break;
-            }
-            
-            size_t more_size = sizeof(more);
-            zmq_getsockopt(subscriber_, ZMQ_RCVMORE, &more, &more_size);
-            ++message_part;
-        } while(more);
+            int message_part = 0;
+            int64_t more;
+            size_t more_size = sizeof more;
+            do {
+                /* Create an empty ØMQ message to hold the message part */
+                zmq_msg_t part;
+                int rc = zmq_msg_init (&part);
+                // assert (rc == 0);
+                /* Block until a message is available to be received from socket */
+                rc = zmq_recv (poll_items_[i].socket, &part, 0);
+                poll_callbacks_[i](zmq_msg_data(&part), zmq_msg_size(&part), message_part);
+                // assert (rc == 0);
+                /* Determine if more message parts are to follow */
+                rc = zmq_getsockopt (poll_items_[i].socket, ZMQ_RCVMORE, &more, &more_size);
+                // assert (rc == 0);
+                zmq_msg_close (&part);
+                ++message_part;
+            } while (more);
+            had_events = true;
+        }
     }
-
     return had_events;
 }
-
-
 
 
 std::string goby::core::MinimalApplicationBase::make_header(MarshallingScheme marshalling_scheme,

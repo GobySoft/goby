@@ -1,6 +1,6 @@
 
 if(build_test)
-  #add_subdirectory(test)
+  add_subdirectory(test)
 endif()
 
 
@@ -19,5 +19,5 @@ endif()
 
 if(build_core_bin)
  # add_subdirectory(gobyd)
-  add_subdirectory(goby_database)
+  add_subdirectory(database)
 endif()

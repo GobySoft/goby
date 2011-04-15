@@ -153,7 +153,7 @@ namespace goby
             ///
             /// \param hertz new frequency for loop()
             void set_loop_freq(double hertz)
-            { set_loop_period(boost::posix_time::milliseconds(1000/hertz)); }
+            { set_loop_period(boost::posix_time::milliseconds(1000.0/hertz)); }
             //@}
             
     

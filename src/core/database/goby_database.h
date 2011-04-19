@@ -19,7 +19,8 @@
 #include <map>
 #include <boost/unordered_map.hpp>
 
-#include "goby/core/libcore/protobuf_application_base.h"
+#include "goby/core/libcore/zeromq_application_base.h"
+#include "goby/core/libcore/protobuf_node.h"
 #include "goby/core/libdbo/dbo_manager.h"
 
 
@@ -31,21 +32,21 @@ namespace goby
     namespace core
     {
         
-        class ArbitraryProtobufApplicationBase : public ProtobufApplicationBase
-        {
+        /* class ArbitraryProtobufApplicationBase : public ProtobufApplicationBase */
+        /* { */
             
 
-        };
+        /* }; */
 
-        class Database : public ProtobufApplicationBase
+        class Database : public ZeroMQApplicationBase, public ProtobufNode
         {
           public:
             Database();
           private:
-            void iterate();
-            void inbox(const std::string& protobuf_type_name,
-                       const void* data,
-                       int size);
+            void loop();
+            void protobuf_inbox(const std::string& protobuf_type_name,
+                                const void* data,
+                                int size);
             
             void init_sql();
             std::string format_filename(const std::string& in);
@@ -68,13 +69,6 @@ namespace goby
             static protobuf::DatabaseConfig cfg_;
             zmq::socket_t database_server_;
             DBOManager* dbo_manager_;
-            
-            // how long to wait between calls to loop()
-            boost::posix_time::time_duration loop_period_;
-            // time of the next call to loop()
-            boost::posix_time::ptime t_next_loop_;
-            boost::posix_time::ptime t_start_;
-
             
             // see google::protobuf documentation: this assists in
             // creating messages at runtime

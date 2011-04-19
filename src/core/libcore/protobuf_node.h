@@ -15,24 +15,34 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
-#include "minimal_application_base.h"
+#ifndef PROTOBUFNODE20110418H
+#define PROTOBUFNODE20110418H
+
 #include "zero_mq_node.h"
 
 namespace goby
 {
-
     namespace core
     {
-        
-        class ProtobufApplicationBase : public ZeroMQNode, public MinimalApplicationBase
+        class ProtobufNode : public virtual ZeroMQNode
         {
           protected:
-            ProtobufApplicationBase(google::protobuf::Message* cfg = 0);
-            virtual ~ProtobufApplicationBase();
+            ProtobufNode()
+            {
+                ZeroMQNode::connect_inbox_slot(&ProtobufNode::inbox, this);
+            }
+            
+            virtual ~ProtobufNode()
+            { }
+            
 
-            virtual void inbox(const std::string& protobuf_type_name,
-                               const void* data,
-                               int size) = 0;
+            virtual void protobuf_inbox(const std::string& protobuf_type_name,
+                                        const void* data,
+                                        int size) = 0;
+
+            void publish(const google::protobuf::Message& msg);
+            
+            void subscribe(const std::string& identifier);
             
           private:
 
@@ -44,3 +54,5 @@ namespace goby
         };
     }    
 }
+
+#endif

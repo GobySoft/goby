@@ -35,21 +35,11 @@ using boost::shared_ptr;
 
 
 goby::core::ApplicationBase::ApplicationBase(google::protobuf::Message* cfg /*= 0*/)
-    : ProtobufApplicationBase(cfg),
+    : ZeroMQApplicationBase(cfg),
       database_client_(zmq_context(), ZMQ_REQ)
 {
     
     __set_up_sockets();
-
-
-    set_loop_freq(base_cfg().loop_freq());
-
-    // we are started
-    t_start_ = goby_time();
-    // start the loop() on the next even second
-    t_next_loop_ = boost::posix_time::second_clock::universal_time() +
-        boost::posix_time::seconds(1);
-    
     
     // notify others of our configuration for logging purposes
     if(cfg) publish(*cfg);
@@ -202,35 +192,14 @@ void goby::core::ApplicationBase::__publish(google::protobuf::Message& msg, cons
     // adds, as needed, required fields of Header
     __finalize_header(&msg, dest, platform_name);
 
-    int size = msg.ByteSize();
-    char buffer[size];
-    msg.SerializeToArray(&buffer, size);
     goby::util::glogger() << debug << "< " << msg << std::endl;
-    ZeroMQNode::publish(MARSHALLING_PROTOBUF, protobuf_type_name, &buffer, size);
-    
-}
-
-void goby::core::ApplicationBase::iterate()
-{
-    // sit and wait on a message until the next time to call loop() is up        
-    long timeout = (t_next_loop_-goby_time()).total_microseconds();
-    if(timeout < 0)
-        timeout = 0;
-    
-    glogger() << debug << "timeout set to: " << timeout << " microseconds." << std::endl;
-    bool had_events = ZeroMQNode::poll(timeout);
-    if(!had_events)
-    {
-        // no message, time to call loop()            
-        loop();
-        t_next_loop_ += loop_period_;
-    }
+    ProtobufNode::publish(msg);
 }
 
 
-void goby::core::ApplicationBase::inbox(const std::string& protobuf_type_name,
-                                        const void* data,
-                                        int size)
+void goby::core::ApplicationBase::protobuf_inbox(const std::string& protobuf_type_name,
+                                                 const void* data,
+                                                 int size)
 {
     boost::unordered_map<std::string, boost::shared_ptr<SubscriptionBase> >::iterator it = subscriptions_.find(protobuf_type_name);
     

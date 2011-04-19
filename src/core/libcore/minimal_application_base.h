@@ -19,6 +19,8 @@
 
 #include <iostream>
 
+#include <boost/shared_ptr.hpp>
+
 #include "exception.h"
 
 #include "goby/protobuf/app_base_config.pb.h"
@@ -49,16 +51,16 @@ namespace goby
 
             /// name of this application (from AppBaseConfig::app_name). E.g. "garmin_gps_g"
             std::string application_name()
-            { return base_cfg_.app_name(); }
+            { return base_cfg_->app_name(); }
             /// name of this platform (from AppBaseConfig::platform_name). E.g. "AUV-23" or "unicorn"
             std::string platform_name()
-            { return base_cfg_.platform_name(); }
+            { return base_cfg_->platform_name(); }
             
             template<typename App>
                 friend int ::goby::run(int argc, char* argv[]);
 
             const AppBaseConfig& base_cfg()
-            { return base_cfg_; }
+            { return *base_cfg_; }
 
           private:
             
@@ -66,9 +68,9 @@ namespace goby
             void __run();
             
             void __set_application_name(const std::string& s)
-            { base_cfg_.set_app_name(s); }
+            { base_cfg_->set_app_name(s); }
             void __set_platform_name(const std::string& s)
-            { base_cfg_.set_platform_name(s); }
+            { base_cfg_->set_platform_name(s); }
             
             
           private:
@@ -81,7 +83,7 @@ namespace goby
 
             // configuration relevant to all applications (loop frequency, for example)
             // defined in #include "goby/core/proto/app_base_config.pb.h"
-            AppBaseConfig base_cfg_;
+            boost::shared_ptr<AppBaseConfig> base_cfg_;
 
             bool alive_;            
 
@@ -117,6 +119,5 @@ int goby::run(int argc, char* argv[])
 
     return 0;
 }
-
 
 #endif

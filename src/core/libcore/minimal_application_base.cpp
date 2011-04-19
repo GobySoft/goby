@@ -40,8 +40,7 @@ goby::core::MinimalApplicationBase::MinimalApplicationBase(google::protobuf::Mes
     {
         std::string application_name;
         ConfigReader::read_cfg(argc_, argv_, cfg, &application_name, &od, &var_map);
-        base_cfg_.set_app_name(application_name);
-
+        
         // extract the AppBaseConfig assuming the user provided it in their configuration
         // .proto file
         if(cfg)
@@ -52,33 +51,41 @@ goby::core::MinimalApplicationBase::MinimalApplicationBase(google::protobuf::Mes
                 const google::protobuf::FieldDescriptor* field_desc = desc->field(i);
                 if(field_desc->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE && field_desc->message_type() == ::AppBaseConfig::descriptor())
                 {
-                    base_cfg_.MergeFrom(cfg->GetReflection()->GetMessage(*cfg, field_desc));
+                    base_cfg_.reset(dynamic_cast<AppBaseConfig*>(cfg->GetReflection()->MutableMessage(cfg, field_desc)));
                 }
             }
-        }        
+        }
+
+        if(!base_cfg_)
+            base_cfg_.reset(new AppBaseConfig());
         
+        base_cfg_->set_app_name(application_name);        
         // incorporate some parts of the AppBaseConfig that are common
         // with gobyd (e.g. Verbosity)
-        ConfigReader::merge_app_base_cfg(&base_cfg_, var_map);
+        ConfigReader::merge_app_base_cfg(base_cfg_.get(), var_map);
+
     }
     catch(ConfigException& e)
     {
         // output all the available command line options
-        std::cerr << od << "\n";
         if(e.error())
+        {
+            std::cerr << od << "\n";
             std::cerr << "Problem parsing command-line configuration: \n"
-                      << e.what() << "\n";        
+                      << e.what() << "\n";
+        }
         throw;
     }
     
     // set up the logger
     glogger().set_name(application_name());
-    glogger().add_stream(static_cast<util::Logger::Verbosity>(base_cfg_.verbosity()),
+    glogger().add_stream(static_cast<util::Logger::Verbosity>(base_cfg_->verbosity()),
                          &std::cout);
 
-    if(!base_cfg_.IsInitialized())
+    if(!base_cfg_->IsInitialized())
         throw(ConfigException("Invalid base configuration"));
-
+    
+    glogger() << debug << "App name is " << application_name() << std::endl;
 
 }
 
@@ -93,7 +100,7 @@ void goby::core::MinimalApplicationBase::__run()
     while(alive_)
     {
         try
-        {
+        {            
             iterate();
         }
         catch(std::exception& e)

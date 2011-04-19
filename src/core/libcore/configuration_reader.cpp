@@ -51,6 +51,7 @@ void goby::core::ConfigReader::read_cfg(int argc,
         ("help,h", "writes this help message")
         ("platform_name,p", boost::program_options::value<std::string>(), "name of this platform (same as gobyd configuration value `self.name`)")
         ("app_name,a", boost::program_options::value<std::string>(), app_name_desc.c_str())
+        ("example_config,e", "writes an example .pb.cfg file")
         ("verbose,v", boost::program_options::value<std::string>()->implicit_value("")->multitoken(), "output useful information to std::cout. -v is verbosity: verbose, -vv is verbosity: debug, -vvv is verbosity: gui");
     
     std::string od_both_desc = "Typically given in " + *application_name + " configuration file, but may be specified on the command line";
@@ -68,14 +69,28 @@ void goby::core::ConfigReader::read_cfg(int argc,
     p.add("platform_name", 2);
     p.add("app_name", 3);
     
-        
-    boost::program_options::store(boost::program_options::command_line_parser(argc, argv).
-                                  options(*od_all).positional(p).run(), *var_map);
+    try
+    {        
+        boost::program_options::store(boost::program_options::command_line_parser(argc, argv).
+                                      options(*od_all).positional(p).run(), *var_map);
+    }
+    catch(std::exception& e)
+    {
+        throw(ConfigException(e.what()));
+    }
     
     if (var_map->count("help"))
     {
         ConfigException e("");
         e.set_error(false);
+        std::cerr << *od_all << "\n";
+        throw(e);
+    }
+    else if(var_map->count("example_config"))
+    {
+        ConfigException e("");
+        e.set_error(false);
+        get_example_cfg_file(message, &std::cout);    
         throw(e);
     }
     
@@ -123,7 +138,8 @@ void goby::core::ConfigReader::read_cfg(int argc,
             err_msg << "Make sure you specified a proper `cfg_path` to the configuration file.";
             throw(ConfigException(err_msg.str()));
         }
-    }        
+    }
+    
 }
 
 

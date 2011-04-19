@@ -36,7 +36,8 @@
 
 #include "filter.h"
 #include "subscription.h"
-#include "protobuf_application_base.h"
+#include "zeromq_application_base.h"
+#include "protobuf_node.h"
 
 namespace google { namespace protobuf { class Message; } }
 namespace goby
@@ -46,7 +47,7 @@ namespace goby
     namespace core
     {
         /// Base class provided for users to generate applications that participate in the Goby publish/subscribe architecture.
-        class ApplicationBase : public ProtobufApplicationBase
+        class ApplicationBase : public ProtobufNode, public ZeroMQApplicationBase
         {
           protected:
             // make these more accessible
@@ -133,43 +134,6 @@ namespace goby
             template<typename ProtoBufMessage>
                 const ProtoBufMessage& newest(const Filter& filter = Filter());
             //@}            
-            
-            /// \name Setters
-            //@{
-            /// \brief set the interval (with a boost::posix_time::time_duration) between calls to loop. Alternative to set_loop_freq().
-            ///
-            /// \param p new interval between calls to loop()
-            void set_loop_period(boost::posix_time::time_duration p)
-            {
-                loop_period_ = p;
-            }
-            /// \brief set the interval in milliseconds between calls to loop. Alternative to set_loop_freq().
-            ///
-            /// \param milliseconds new period for loop() synchronous event
-            void set_loop_period(long milliseconds)
-            { set_loop_period(boost::posix_time::milliseconds(milliseconds)); }
-            
-            /// \brief set the frequency with which loop() is called. Alternative to set_loop_period().
-            ///
-            /// \param hertz new frequency for loop()
-            void set_loop_freq(double hertz)
-            { set_loop_period(boost::posix_time::milliseconds(1000.0/hertz)); }
-            //@}
-            
-    
-            /// \name Getters
-            //@{
-            /// interval between calls to loop()
-            boost::posix_time::time_duration loop_period()
-            { return loop_period_; }
-            /// frequency of calls to loop() in Hertz
-            long loop_freq()
-            { return 1000/loop_period_.total_milliseconds(); }
-            /// \return absolute time that this application was launched
-            boost::posix_time::ptime t_start()
-            { return t_start_; }
-            
-            //@}
 
             /// \name Utility
             //@{
@@ -204,10 +168,9 @@ namespace goby
             ApplicationBase(const ApplicationBase&);
             ApplicationBase& operator= (const ApplicationBase&);
 
-            void iterate();
-            void inbox(const std::string& protobuf_type_name,
-                       const void* data,
-                       int size);
+            void protobuf_inbox(const std::string& protobuf_type_name,
+                                const void* data,
+                                int size);
             
             void __set_up_sockets();
 
@@ -236,19 +199,11 @@ namespace goby
             
           private:
             
-            // how long to wait between calls to loop()
-            boost::posix_time::time_duration loop_period_;
             
             // key = type of var
             // value = Subscription object for all the subscriptions, containing filter,
             //    handler, newest message, etc.
             boost::unordered_map<std::string, boost::shared_ptr<SubscriptionBase> > subscriptions_;            
-            
-            // time this process was started
-            boost::posix_time::ptime t_start_;
-            // time of the next call to loop()
-            boost::posix_time::ptime t_next_loop_;
-
             // database related things
             zmq::socket_t database_client_;
             std::set<const google::protobuf::FileDescriptor*> registered_file_descriptors_;
@@ -289,7 +244,7 @@ template<typename ProtoBufMessage>
     subscriptions_.insert(std::make_pair(protobuf_type_name, subscription));
 
     
-    ZeroMQNode::subscribe(MARSHALLING_PROTOBUF, protobuf_type_name);
+    ProtobufNode::subscribe(protobuf_type_name);
 }
 
 /// See goby::core::ApplicationBase::newest(const protobuf::Filter& filter = protobuf::Filter())

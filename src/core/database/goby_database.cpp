@@ -37,12 +37,15 @@ int main(int argc, char* argv[])
 }
 
 goby::core::Database::Database()
-    : ProtobufApplicationBase(&cfg_),
-      database_server_(ZeroMQNode::zmq_context(), ZMQ_REP),
-      dbo_manager_(DBOManager::get_instance()),
-      loop_period_(boost::posix_time::milliseconds(1000.0/std::min(cfg_.base().loop_freq(),
-                                                                   static_cast<float>(MAX_LOOP_FREQ))))
+    : ZeroMQApplicationBase(&cfg_),
+      database_server_(zmq_context(), ZMQ_REP),
+      dbo_manager_(DBOManager::get_instance())
 {
+    if(cfg_.base().loop_freq() > MAX_LOOP_FREQ)
+        cfg_.mutable_base()->set_loop_freq(MAX_LOOP_FREQ);
+    
+
+    
     if(!cfg_.base().using_database())
         glogger() << die << "AppBaseConfig::using_database == false. Since we aren't wanting, we aren't starting (set to true to enable use of the database)!" << std::endl;
 
@@ -67,21 +70,14 @@ goby::core::Database::Database()
     }
 
     // subscribe for everything
-    subscribe(MARSHALLING_PROTOBUF, "");
+    ProtobufNode::subscribe("");
     init_sql();
 
 
     zmq::pollitem_t item = { database_server_, 0, ZMQ_POLLIN, 0 };
     ZeroMQNode::register_poll_item(item,
                                    &goby::core::Database::handle_database_request,
-                                   this);    
-
-    // we are started
-    t_start_ = goby_time();
-    // start the loop() on the next even second
-    t_next_loop_ = boost::posix_time::second_clock::universal_time() +
-        boost::posix_time::seconds(1);
-
+                                   this);
 }
 
 void goby::core::Database::init_sql()
@@ -118,7 +114,7 @@ void goby::core::Database::init_sql()
 std::string goby::core::Database::format_filename(const std::string& in)
 {   
     boost::format f(in);
-    // don't thrown if user doesn't need some or all of format fields
+    // don't throw if user doesn't need some or all of format fields
     f.exceptions(boost::io::all_error_bits^(
                      boost::io::too_many_args_bit | boost::io::too_few_args_bit));
     f % cfg_.base().platform_name() % goby::util::goby_file_timestamp();
@@ -126,9 +122,9 @@ std::string goby::core::Database::format_filename(const std::string& in)
 }
 
 
-void goby::core::Database::inbox(const std::string& protobuf_type_name,
-                                 const void* data,
-                                 int size)
+void goby::core::Database::protobuf_inbox(const std::string& protobuf_type_name,
+                                          const void* data,
+                                          int size)
 {
     boost::shared_ptr<google::protobuf::Message> msg = new_protobuf_message(protobuf_type_name);
     msg->ParseFromArray(data, size);
@@ -188,21 +184,9 @@ void goby::core::Database::handle_database_request(const void* request_data,
 
 
 
-void goby::core::Database::iterate()
+void goby::core::Database::loop()
 {
-    long timeout = (t_next_loop_-goby_time()).total_microseconds();
-    if(timeout < 0)
-    {
-        glogger() << warn << "Database appears to be backlogged. Increase `loop_freq` to attempt to handle the load" << std::endl;
-        timeout = 0;
-    }
-    
-    bool had_events = ZeroMQNode::poll(timeout);
-    if(!had_events)
-    {
-        dbo_manager_->commit();
-        t_next_loop_ += loop_period_;
-    }
+    dbo_manager_->commit();
 }
 
 

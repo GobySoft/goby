@@ -154,7 +154,7 @@ void goby::util::FlexOStreamBuf::display(std::string & s)
 {
 
 #ifdef HAS_NCURSES    
-    if(is_gui_)
+    if(is_gui_ && !debug_flag_)
     {
         if(!die_flag_)
         {
@@ -177,7 +177,7 @@ void goby::util::FlexOStreamBuf::display(std::string & s)
             curses_->cleanup();
             
             std::cout << TermColor::esc_code_from_col(groups_[group_name_].color()) << name_ << esc_nocolor << ": " << s << esc_nocolor << std::endl;
-        }           
+        }
     }
 #endif
     

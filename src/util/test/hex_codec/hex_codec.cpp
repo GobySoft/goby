@@ -1,4 +1,4 @@
-b#include "goby/util/binary.h"
+#include "goby/util/binary.h"
 
 #include <iostream>
 #include <sstream>

@@ -25,6 +25,7 @@
 
 #include "goby/protobuf/app_base_config.pb.h"
 
+#include "goby/util/logger.h"
 
 namespace goby
 {
@@ -61,6 +62,16 @@ namespace goby
 
             const AppBaseConfig& base_cfg()
             { return *base_cfg_; }
+
+            /// \name Utility
+            //@{
+            /// see goby::util::glogger()
+            goby::util::FlexOstream& glogger(goby::util::logger_lock::LockAction action =
+                                             goby::util::logger_lock::none)
+            { return goby::util::glogger(action); } 
+
+            //@}
+            
 
           private:
             

@@ -54,7 +54,7 @@ namespace goby
                 acceptor_(LineBasedInterface::io_service_,
                           boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), port))
                 {  }
-
+            
             /// \brief string representation of the local endpoint (e.g. 192.168.1.105:54230
             std::string local_endpoint() { return goby::util::as<std::string>(acceptor_.local_endpoint()); }
 

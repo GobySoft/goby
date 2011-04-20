@@ -31,52 +31,25 @@ namespace goby
 {
     namespace core
     {
-        
-        /* class ArbitraryProtobufApplicationBase : public ProtobufApplicationBase */
-        /* { */
-            
-
-        /* }; */
-
-        class Database : public ZeroMQApplicationBase, public ProtobufNode
+        class Database : public ZeroMQApplicationBase
         {
           public:
             Database();
           private:
             void loop();
-            void protobuf_inbox(const std::string& protobuf_type_name,
-                                const void* data,
-                                int size);
             
             void init_sql();
             std::string format_filename(const std::string& in);
 
             void handle_database_request(const void* data, int size, int message_part);
             
-            boost::shared_ptr<google::protobuf::Message> new_protobuf_message(
-                const std::string& protobuf_type_name);
-            const google::protobuf::FileDescriptor* add_protobuf_file(
-                const google::protobuf::Descriptor* descriptor);
-            const google::protobuf::FileDescriptor* add_protobuf_file(
-                const google::protobuf::FileDescriptorProto& proto);
             
-            static google::protobuf::DynamicMessageFactory& msg_factory()
-            { return msg_factory_; }
-            static google::protobuf::DescriptorPool& descriptor_pool()
-            { return descriptor_pool_; }
-
           private:
             static protobuf::DatabaseConfig cfg_;
             zmq::socket_t database_server_;
             DBOManager* dbo_manager_;
-            
-            // see google::protobuf documentation: this assists in
-            // creating messages at runtime
-            static google::protobuf::DynamicMessageFactory msg_factory_;
-            // see google::protobuf documentation: this assists in
-            // creating messages at runtime
-            static google::protobuf::DescriptorPool descriptor_pool_;
-
+            int last_unique_id_;
+  
             enum { MAX_LOOP_FREQ = 1 };
             
         };

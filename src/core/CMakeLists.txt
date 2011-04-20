@@ -11,9 +11,14 @@ if(build_core_lib)
   add_subdirectory(libdbo)
   add_subdirectory(libcore)
 
-  option(build_core_moosmimic "Build the Core MOOS Mimic Library (requires MOOS)" OFF)
+  if(MOOS_FOUND)
+    option(build_core_moosmimic "Build the Core MOOS Mimic Library (requires MOOS)" ON)
+  else()
+    option(build_core_moosmimic "Build the Core MOOS Mimic Library (requires MOOS)" OFF)
+  endif()
+
   if(build_core_moosmimic)
-    #add_subdirectory(libmoosmimic)
+#    add_subdirectory(libmoosmimic)
   endif()
 endif()
 

@@ -24,8 +24,6 @@
 #include "goby_database.h"
 
 goby::core::protobuf::DatabaseConfig goby::core::Database::cfg_;
-google::protobuf::DynamicMessageFactory goby::core::Database::msg_factory_;
-google::protobuf::DescriptorPool goby::core::Database::descriptor_pool_;
 
 using goby::util::as;
 using goby::util::glogger;
@@ -39,11 +37,16 @@ int main(int argc, char* argv[])
 goby::core::Database::Database()
     : ZeroMQApplicationBase(&cfg_),
       database_server_(zmq_context(), ZMQ_REP),
-      dbo_manager_(DBOManager::get_instance())
+      dbo_manager_(DBOManager::get_instance()),
+      last_unique_id_(-1)
 {
-    if(cfg_.base().loop_freq() > MAX_LOOP_FREQ)
-        cfg_.mutable_base()->set_loop_freq(MAX_LOOP_FREQ);
     
+    
+    if(cfg_.base().loop_freq() > MAX_LOOP_FREQ)
+    {
+        glogger() << warn << "Setting loop frequency back to MAX_LOOP_FREQ = " << MAX_LOOP_FREQ << std::endl;
+        set_loop_freq(MAX_LOOP_FREQ);
+    }
 
     
     if(!cfg_.base().using_database())
@@ -70,7 +73,7 @@ goby::core::Database::Database()
     }
 
     // subscribe for everything
-    ProtobufNode::subscribe("");
+    ZeroMQNode::subscribe_all();
     init_sql();
 
 
@@ -78,13 +81,13 @@ goby::core::Database::Database()
     ZeroMQNode::register_poll_item(item,
                                    &goby::core::Database::handle_database_request,
                                    this);
+
+    ZeroMQNode::connect_inbox_slot(&DBOManager::add_raw, dbo_manager_);
+
 }
 
 void goby::core::Database::init_sql()
-{
-    dbo_manager_->set_dynamic_message_factory(&msg_factory());
-    dbo_manager_->set_descriptor_pool(&descriptor_pool());    
-    
+{    
     try
     {
         cfg_.mutable_sqlite()->set_path(format_filename(cfg_.sqlite().path()));        
@@ -107,7 +110,8 @@ void goby::core::Database::init_sql()
     }
     
     // #include <google/protobuf/descriptor.pb.h>
-    add_protobuf_file(google::protobuf::FileDescriptorProto::descriptor());
+    DynamicProtobufManager::add_protobuf_file(google::protobuf::FileDescriptorProto::descriptor());
+    dbo_manager_->add_type(google::protobuf::FileDescriptorProto::descriptor());
 
 }
 
@@ -122,15 +126,6 @@ std::string goby::core::Database::format_filename(const std::string& in)
 }
 
 
-void goby::core::Database::protobuf_inbox(const std::string& protobuf_type_name,
-                                          const void* data,
-                                          int size)
-{
-    boost::shared_ptr<google::protobuf::Message> msg = new_protobuf_message(protobuf_type_name);
-    msg->ParseFromArray(data, size);
-    glogger() << *msg << std::endl;
-    dbo_manager_->add_message(msg);
-}
 
 void goby::core::Database::handle_database_request(const void* request_data,
                                                    int request_size,
@@ -148,10 +143,11 @@ void goby::core::Database::handle_database_request(const void* request_data,
         {
             for(int i = 0, n = proto_request.file_descriptor_proto_size(); i < n; ++i)
             {
-                add_protobuf_file(proto_request.file_descriptor_proto(i));
-                        
+                DynamicProtobufManager::add_protobuf_file(proto_request.file_descriptor_proto(i));
+                dbo_manager_->add_message(-1, proto_request.file_descriptor_proto(i));
+                
                 const google::protobuf::Descriptor* desc =
-                    descriptor_pool().FindMessageTypeByName(
+                    DynamicProtobufManager::descriptor_pool().FindMessageTypeByName(
                         proto_request.publish_protobuf_full_name());
                 proto_response.Clear();
                     
@@ -187,32 +183,5 @@ void goby::core::Database::handle_database_request(const void* request_data,
 void goby::core::Database::loop()
 {
     dbo_manager_->commit();
-}
-
-
-boost::shared_ptr<google::protobuf::Message> goby::core::Database::new_protobuf_message(const std::string& protobuf_type_name)
-{
-    const google::protobuf::Descriptor* desc = descriptor_pool_.FindMessageTypeByName(protobuf_type_name);
-
-    if(desc)
-        return boost::shared_ptr<google::protobuf::Message>(
-            msg_factory_.GetPrototype(desc)->New());
-    else
-        throw(std::runtime_error("Unknown type " + protobuf_type_name + ", be sure it is loaded with call to ApplicationBase::add_protobuf_file()"));
-}
-
-
-
-const google::protobuf::FileDescriptor* goby::core::Database::add_protobuf_file(const google::protobuf::Descriptor* descriptor)
-{
-    google::protobuf::FileDescriptorProto proto_file;
-    descriptor->file()->CopyTo(&proto_file);
-    return add_protobuf_file(proto_file);
-}
-    
-
-const google::protobuf::FileDescriptor* goby::core::Database::add_protobuf_file(const google::protobuf::FileDescriptorProto& proto)
-{
-    return descriptor_pool_.BuildFile(proto); 
 }
 

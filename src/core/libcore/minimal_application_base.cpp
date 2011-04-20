@@ -17,7 +17,6 @@
 #include "minimal_application_base.h"
 
 
-#include "goby/util/logger.h"
 
 #include "goby/core/libcore/configuration_reader.h"
 

@@ -14,7 +14,7 @@
 // along with this software.  If not, see <http://www.gnu.org/licenses/>
 
 #ifndef CoreHelpers20110411H
-#define CoreHelpers20100411H
+#define CoreHelpers20110411H
 
 
 namespace goby
@@ -26,9 +26,6 @@ namespace goby
         {
             return (out << "### " << msg.GetDescriptor()->full_name() << " ###\n" << msg.DebugString());
         }
-
-
-
     }
 }
 

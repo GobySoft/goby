@@ -17,14 +17,9 @@
 #ifndef GOBYAPPBASE20100908H
 #define GOBYAPPBASE20100908H
 
-#include <boost/function.hpp>
-#include <boost/bind.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/date_time.hpp>
-#include <boost/unordered_map.hpp>
 
-#include <google/protobuf/descriptor.h>
-#include <google/protobuf/descriptor.pb.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
 
 #include "goby/util/logger.h"
@@ -34,8 +29,6 @@
 #include "goby/protobuf/core_database_request.pb.h"
 #include "goby/protobuf/header.pb.h"
 
-#include "filter.h"
-#include "subscription.h"
 #include "zeromq_application_base.h"
 #include "protobuf_node.h"
 
@@ -47,11 +40,10 @@ namespace goby
     namespace core
     {
         /// Base class provided for users to generate applications that participate in the Goby publish/subscribe architecture.
-        class ApplicationBase : public ProtobufNode, public ZeroMQApplicationBase
+        class ApplicationBase : public StaticProtobufNode, public ZeroMQApplicationBase
         {
           protected:
             // make these more accessible
-            typedef goby::core::protobuf::Filter Filter;
             typedef goby::util::Colors Colors;
             
             /// \name Constructors / Destructor
@@ -59,15 +51,7 @@ namespace goby
             /// \param cfg pointer to object derived from google::protobuf::Message that defines the configuration for this Application. This constructor will use the Description of `cfg` to read the command line parameters and configuration file (if given) and use these values to populate `cfg`. `cfg` must be a static member of the subclass or global object since member objects will be constructed *after* the ApplicationBase constructor is called.
             ApplicationBase(google::protobuf::Message* cfg = 0);
             virtual ~ApplicationBase();
-            //@}
-            
-            /// \name Virtual Methods
-            //@{
-            /// \brief Override this virtual to do any synchronous work.
-            /// 
-            /// Called repeatedly at a frequency given by ApplicationBase::loop_freq()
-            virtual void loop() = 0;
-            //@}
+            //@}            
             
             /// \name Publish / Subscribe
             //@{
@@ -82,103 +66,26 @@ namespace goby
             ///
             /// \param msg Message to publish
             /// \param platform_name Platform to send to as well as `self` if PublishDestination == other
-            template<PublishDestination dest, typename ProtoBufMessage>
-                void publish(ProtoBufMessage& msg, const std::string& platform_name = "")
+            template<PublishDestination dest>
+                void publish(google::protobuf::Message& msg, const std::string& platform_name = "")
             { __publish(msg, platform_name, dest); }            
 
             /// \brief Publish a message (of any type derived from google::protobuf::Message) to all local subscribers (self)
             ///
             /// \param msg Message to publish
-            template<typename ProtoBufMessage>
-                void publish(ProtoBufMessage& msg)
-            { publish<self>(msg); }
+            void publish(google::protobuf::Message& msg)
+            { __publish(msg, "", self); }
 
-            /// \brief Subscribe to a message (of any type derived from google::protobuf::Message)            
-            ///
-            /// \param handler Function object to be called as soon as possible upon receipt of a message of this type (and passing this filter, if provided). The signature of `handler` must match: void handler(const ProtoBufMessage& msg). if `handler` is omitted, no handler is called and only the newest message buffer is updated upon message receipt (for calls to newest<ProtoBufMessage>())
-            /// \param filter Filter object to reject some subset of messages of type ProtoBufMessage. if `filter` is omitted. all messages of this type are subscribed for unfiltered
-            template<typename ProtoBufMessage>
-                void subscribe(
-                    boost::function<void (const ProtoBufMessage&)> handler =
-                    boost::function<void (const ProtoBufMessage&)>(),
-                    const protobuf::Filter& filter = protobuf::Filter());
-
-            /// \brief Subscribe for a type using a class member function as the handler
-            /// 
-            /// \param mem_func Member function (method) of class C with a signature of void C::mem_func(const ProtoBufMessage& msg)
-            /// \param obj pointer to the object whose member function (mem_func) to call
-            /// \param filter (optional) Filter object to reject some subset of ProtoBufMessages.
-            template<typename ProtoBufMessage, class C>
-                void subscribe(void(C::*mem_func)(const ProtoBufMessage&),
-                               C* obj,
-                               const protobuf::Filter& filter = protobuf::Filter())
-            { subscribe<ProtoBufMessage>(boost::bind(mem_func, obj, _1), filter); }
-
-            /// \brief Subscribe for a type without a handler but with a filter
-            template<typename ProtoBufMessage>
-                void subscribe(const protobuf::Filter& filter)
-            {
-                subscribe<ProtoBufMessage>(boost::function<void (const ProtoBufMessage&)>(),
-                                           filter);
-            }
-            
             //@}
 
-            
-            
-            /// \name Message Accessors
-            //@{
-            /// \brief Fetchs the newest received message of this type (that optionally passes the Filter given)
-            ///
-            /// You must subscribe() for this type before using this method
-            template<typename ProtoBufMessage>
-                const ProtoBufMessage& newest(const Filter& filter = Filter());
-            //@}            
-
-            /// \name Utility
-            //@{
-            /// see goby::util::glogger()
-            goby::util::FlexOstream& glogger(goby::util::logger_lock::LockAction action =
-                                             goby::util::logger_lock::none)
-            { return goby::util::glogger(action); } 
-
-            /// \brief Helper function for creating a message Filter
-            ///
-            /// \param key name of the field for which this Filter will act on (left hand side of expression)
-            /// \param op operation (EQUAL, NOT_EQUAL)
-            /// \param value (right hand side of expression)
-            ///
-            /// For example make_filter("name", Filter::EQUAL, "joe"), makes a filter that requires the field
-            /// "name" always equal "joe" (or the message is rejected).
-            static Filter make_filter(const std::string& key,
-                                      Filter::Operation op,
-                                      const std::string& value)
-            {
-                Filter filter;
-                filter.set_key(key);
-                filter.set_operation(op);
-                filter.set_value(value);
-                return filter;
-            }
-            //@}
-            
             
             
           private:
             ApplicationBase(const ApplicationBase&);
             ApplicationBase& operator= (const ApplicationBase&);
 
-            void protobuf_inbox(const std::string& protobuf_type_name,
-                                const void* data,
-                                int size);
             
             void __set_up_sockets();
-
-            // returns true if the Filter provided is valid with the given descriptor
-            // an example of failure (return false) would be if the descriptor given
-            // does not contain the key provided by the filter
-            bool __is_valid_filter(const google::protobuf::Descriptor* descriptor,
-                                 const protobuf::Filter& filter);
 
 
             // add the protobuf description of the given descriptor (essentially the
@@ -198,74 +105,13 @@ namespace goby
             void __publish(google::protobuf::Message& msg, const std::string& platform_name,  PublishDestination dest);
             
           private:
-            
-            
-            // key = type of var
-            // value = Subscription object for all the subscriptions, containing filter,
-            //    handler, newest message, etc.
-            boost::unordered_map<std::string, boost::shared_ptr<SubscriptionBase> > subscriptions_;            
             // database related things
             zmq::socket_t database_client_;
             std::set<const google::protobuf::FileDescriptor*> registered_file_descriptors_;
-
             
 
         };
     }
-}
-
-template<typename ProtoBufMessage>
-    void goby::core::ApplicationBase::subscribe(
-        boost::function<void (const ProtoBufMessage&)> handler
-        /*= boost::function<void (const ProtoBufMessage&)>()*/,
-        const protobuf::Filter& filter /* = protobuf::Filter() */)
-{
-
-    const std::string& protobuf_type_name = ProtoBufMessage::descriptor()->full_name();
-
-    glogger() << debug << "subscribing for " << protobuf_type_name << " with filter: " << filter << std::endl;
-    
-    // enforce one handler for each type / filter combination            
-    typedef std::pair <std::string, boost::shared_ptr<SubscriptionBase> > P;
-    BOOST_FOREACH(const P&p, subscriptions_)
-    {
-        if(protobuf_type_name == p.second->type_name() && p.second->filter() == filter)
-        {
-            goby::util::glogger() << warn <<
-                "already have subscription for type: " <<
-                protobuf_type_name << " and filter: " << filter << std::endl;
-            return;
-        }
-    }
-    
-    // machinery so we can call the proper handler upon receipt of this type
-    boost::shared_ptr<SubscriptionBase> subscription(
-        new Subscription<ProtoBufMessage>(handler, filter, protobuf_type_name));
-    subscriptions_.insert(std::make_pair(protobuf_type_name, subscription));
-
-    
-    ProtobufNode::subscribe(protobuf_type_name);
-}
-
-/// See goby::core::ApplicationBase::newest(const protobuf::Filter& filter = protobuf::Filter())
-template<typename ProtoBufMessage>
-const ProtoBufMessage& goby::core::ApplicationBase::newest(const protobuf::Filter& filter
-                                                           /* = protobuf::Filter()*/)
-{
-    // RTTI needed so we can store subscriptions with a common (non-template) base but also
-    // return the subclass requested
-    const std::string full_name = ProtoBufMessage::descriptor()->full_name();
-    typedef boost::unordered_map<std::string, boost::shared_ptr<SubscriptionBase> >
-        Map;
-
-    for(Map::const_iterator it = subscriptions_.begin(), n = subscriptions_.end(); it != n; ++it)
-    {
-        if(it->second->type_name() == full_name && it->second->filter() == filter)
-            return dynamic_cast<const ProtoBufMessage&>(it->second->newest());
-    }
-
-    // this shouldn't happen if we properly create our Subscriptions
-    throw(std::runtime_error("Invalid message or filter given for call to newest()"));
 }
 
 #endif

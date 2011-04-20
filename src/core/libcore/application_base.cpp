@@ -87,21 +87,6 @@ void goby::core::ApplicationBase::__set_up_sockets()
     }
 }
 
-bool goby::core::ApplicationBase::__is_valid_filter(const google::protobuf::Descriptor* descriptor, const protobuf::Filter& filter)
-{
-    using namespace google::protobuf;
-    // check filter for exclusions
-    const FieldDescriptor* field_descriptor = descriptor->FindFieldByName(filter.key());
-    if(!field_descriptor // make sure it exists
-       || (field_descriptor->cpp_type() == FieldDescriptor::CPPTYPE_ENUM || // exclude enums
-           field_descriptor->cpp_type() == FieldDescriptor::CPPTYPE_MESSAGE) // exclude embedded
-       || field_descriptor->is_repeated()) // no repeated fields for filter
-    {
-        glogger() << die << "bad filter: " << filter << "for message descriptor: " << descriptor->DebugString() << std::endl;
-        return false;
-    }
-    return true;
-}
 
 void goby::core::ApplicationBase::__insert_file_descriptor_proto(const google::protobuf::FileDescriptor* file_descriptor, protobuf::DatabaseRequest* request)
 {
@@ -162,7 +147,7 @@ void goby::core::ApplicationBase::__publish(google::protobuf::Message& msg, cons
 
     if(base_cfg().using_database() && !registered_file_descriptors_.count(msg.GetDescriptor()->file()))
     {
-        // request permission to being publishing
+        // request permission to begin publishing
         // (so that we *know* the database has all entries)
         static protobuf::DatabaseRequest proto_request;
         static protobuf::DatabaseResponse proto_response;
@@ -197,14 +182,3 @@ void goby::core::ApplicationBase::__publish(google::protobuf::Message& msg, cons
 }
 
 
-void goby::core::ApplicationBase::protobuf_inbox(const std::string& protobuf_type_name,
-                                                 const void* data,
-                                                 int size)
-{
-    boost::unordered_map<std::string, boost::shared_ptr<SubscriptionBase> >::iterator it = subscriptions_.find(protobuf_type_name);
-    
-    if(it != subscriptions_.end())
-        it->second->post(data, size);
-    else
-        throw(std::runtime_error("No subscription to protobuf type: " + protobuf_type_name));
-}

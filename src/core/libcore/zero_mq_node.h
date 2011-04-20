@@ -52,6 +52,7 @@ namespace goby
                                       int size)> slot)
             { inbox_signal_.connect(slot); }
 
+            void subscribe_all();
             
             void subscribe(MarshallingScheme marshalling_scheme,
                            const std::string& identifier);

@@ -36,7 +36,10 @@ goby::core::ZeroMQNode::~ZeroMQNode()
 {
 }
 
-
+void goby::core::ZeroMQNode::subscribe_all()
+{
+    subscriber_.setsockopt(ZMQ_SUBSCRIBE, 0, 0);
+}
 void goby::core::ZeroMQNode::subscribe(MarshallingScheme marshalling_scheme,
                                                    const std::string& identifier)
 {

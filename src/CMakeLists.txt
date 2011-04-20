@@ -9,7 +9,7 @@ macro(goby_find_required_package package_name)
 endmacro()
   
 macro(missing_optional_library lib_name)
-  message(WARNING "missing optional external library: ${package_name}. Goby will function without the support of this library. See http://gobysoft/doc for more information.")
+  message(WARNING "missing optional external library: ${lib_name}. Goby will function without the support of this library. See http://gobysoft/doc for more information.")
 endmacro()
 
 ## find external packages, libraries, and headers for the entire goby project
@@ -19,26 +19,33 @@ goby_find_required_package(Boost 1.36.0 COMPONENTS system date_time thread regex
 include_directories(${Boost_INCLUDE_DIRS})
 
 goby_find_required_package(ProtobufGoby)
-message(${PROTOBUF_INCLUDE_DIRS})
 
 ## ncurses
 set(CURSES_NEED_NCURSES TRUE)
 find_package(Curses)
 if(CURSES_FOUND)
   add_definitions(-DHAS_NCURSES)
-endif()
-
-if(NOT CURSES_FOUND)
+else()
   missing_optional_library(CURSES)
 endif()
 mark_as_advanced(CURSES_CURSES_H_PATH CURSES_FORM_LIBRARY CURSES_HAVE_CURSES_H)
+
 
 ## set flags
 option(build_util "Build the Goby Utility libraries and applications" ON)
 option(build_acomms "Build the Goby Acoustic Communications libraries and applications" ON)
 option(build_core "Build the Goby Core libraries and applications" ON)  
 option(build_protobuf "Build the Goby Google Protocol buffers library" ON)  
-option(build_moos "Build the Acoustic Communications MOOS apps (pAcommsHandler, etc.)" OFF)
+
+find_package(MOOS)
+if(MOOS_FOUND)
+  include_directories(${MOOS_INCLUDE_DIRS})
+  add_definitions(-DHAS_MOOS)
+  option(build_moos "Build the Acoustic Communications MOOS apps (pAcommsHandler, etc.)" ON)
+else()
+  missing_optional_library(MOOS)
+  option(build_moos "Build the Acoustic Communications MOOS apps (pAcommsHandler, etc.)" OFF)
+endif()
 
 if(build_util)
   add_subdirectory(util)

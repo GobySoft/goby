@@ -134,7 +134,7 @@ namespace goby
             bool warn_flag_;
             bool debug_flag_;
 
-#if HAS_NCURSES
+#ifdef HAS_NCURSES
             FlexNCurses* curses_;
 #endif            
             boost::shared_ptr<boost::thread> input_thread_;

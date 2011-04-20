@@ -25,11 +25,17 @@
 
 #include <google/protobuf/message.h>
 #include <google/protobuf/descriptor.h>
-#include <google/protobuf/dynamic_message.h>
+#include "goby/core/libcore/dynamic_protobuf_manager.h"
+
+#include "goby/core/core_constants.h"
 
 #include <Wt/Dbo/Dbo>
 
 #include "goby/util/time.h"
+
+#ifdef HAS_MOOS
+#include "goby/moos/libmoos_util/moos_serializer.h"
+#endif
 
 namespace Wt
 {
@@ -48,7 +54,27 @@ namespace Wt
 namespace goby
 {
     namespace core
-    {        
+    {
+        struct RawEntry
+        {
+            MarshallingScheme marshalling_scheme;
+            std::string identifier;
+            std::vector<unsigned char> bytes;
+            std::string time;
+            int unique_id;
+            
+            template<class Action>
+            void persist(Action& a)
+                {
+                    Wt::Dbo::field(a, unique_id, "raw_id");
+                    Wt::Dbo::field(a, time, "time_written");
+                    Wt::Dbo::field(a, marshalling_scheme, "marshalling_scheme");
+                    Wt::Dbo::field(a, identifier, "identifier");
+                    Wt::Dbo::field(a, bytes, "bytes");
+                }
+        };
+        
+
         /// \brief provides a way for Wt::Dbo to work with arbitrary
         /// (run-time provided) Google Protocol Buffers types
         class DBOManager
@@ -59,12 +85,6 @@ namespace goby
             /// \brief if desired, this will release all resources (use right before exiting)
             static void shutdown();
 
-            static void set_dynamic_message_factory(
-                google::protobuf::DynamicMessageFactory* factory)
-            { msg_factory_ = factory; }
-
-            static void set_descriptor_pool(google::protobuf::DescriptorPool* pool)
-            { descriptor_pool_= pool; }
             
             /// \brief add a type (given by its descriptor) to the Wt::Dbo SQL database
             ///
@@ -74,8 +94,19 @@ namespace goby
             /// \brief add a message to the Wt::Dbo SQL database
             ///
             /// This is not written to the database until commit() is called
-            void add_message(boost::shared_ptr<google::protobuf::Message> msg);
+            void add_message(int unique_id, boost::shared_ptr<google::protobuf::Message> msg);
+            void add_message(int unique_id, const google::protobuf::Message& msg);
 
+#ifdef HAS_MOOS
+            void add_message(int unique_id, CMOOSMsg& msg);
+#endif
+            
+            void add_raw(MarshallingScheme marshalling_scheme,
+                         const std::string& identifier,
+                         const void* data,
+                         int size);
+            
+            
             /// \brief commit all changes to the Wt::Dbo SQL database
             void commit();
 
@@ -86,7 +117,7 @@ namespace goby
             /// (designated by id number i) so that we can use it with Wt::Dbo
             ///
             /// Wt:Dbo requires each type to be "persisted" or stored in the database
-            /// to have a compile-time type. Since gobyd does not know about the types
+            /// to have a compile-time type. Since goby_database does not know about the types
             /// we want to use at compile-time, we have use this placeholder (ProtoBufWrapper)
             /// which creates a new type for each value of i. At runtime we map
             /// the Protocol Buffers types onto a given value of i and use Reflection
@@ -95,29 +126,35 @@ namespace goby
                 class ProtoBufWrapper
             {
               public:
-              ProtoBufWrapper(boost::shared_ptr<google::protobuf::Message> p =
+              ProtoBufWrapper(int unique_id = -1,
+                              boost::shared_ptr<google::protobuf::Message> p =
                               boost::shared_ptr<google::protobuf::Message>())
-                  : p_(p)
+                  : unique_id_(unique_id),
+                    p_(p)
                 {
                     // create new blank message if none given
                     if(!p)
                     {
-                        p_.reset(msg_factory_->GetPrototype
-                                 (descriptor_pool_->FindMessageTypeByName
-                                  (dbo_map.left.at(i)))->New());
+                        p_.reset(DynamicProtobufManager::msg_factory().GetPrototype(
+                                     DynamicProtobufManager::descriptor_pool().FindMessageTypeByName(
+                                         dbo_map.left.at(i)))->New());
                     }
                 }
                 
                 google::protobuf::Message& msg(){ return *p_; }                
+                int& unique_id() { return unique_id_; }
+                
                 
               private:
+                int unique_id_;
                 boost::shared_ptr<google::protobuf::Message> p_;
             };
             
           private:
             void map_type(const google::protobuf::Descriptor* descriptor);
             void reset_session();
-
+            void map_static_types();
+            
           private:    
             static DBOManager* inst_;
             DBOManager();
@@ -147,8 +184,8 @@ namespace goby
 
             boost::posix_time::ptime t_last_commit_;
 
-            static google::protobuf::DescriptorPool* descriptor_pool_;
-            static google::protobuf::DynamicMessageFactory* msg_factory_;
+
+            bool static_tables_created_;
             
         };
 
@@ -168,10 +205,16 @@ namespace Wt
         {
             template<typename A>
                 static void apply(goby::core::DBOManager::ProtoBufWrapper<i>& wrapper, A& action)
-            { protobuf_message_persist(wrapper.msg(), action); }
+            {
+                Wt::Dbo::field(action, wrapper.unique_id(), "id");
+                protobuf_message_persist(wrapper.msg(), action);
+            }
         };
+
+
     }
 }
 
 
-#endif
+
+#endif // DBOMANAGER20100901H

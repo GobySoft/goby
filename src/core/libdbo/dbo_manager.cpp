@@ -28,6 +28,7 @@
 #include "goby/util/time.h"
 #include "goby/util/logger.h"
 
+
 #include "wt_dbo_overloads.h"
 #include "dbo_manager.h"
 
@@ -35,8 +36,6 @@
 // must be define since we are using the preprocessor
 #define GOBY_MAX_PROTOBUF_TYPES 16
 
-google::protobuf::DynamicMessageFactory* goby::core::DBOManager::msg_factory_ = 0;
-google::protobuf::DescriptorPool* goby::core::DBOManager::descriptor_pool_ = 0;
 boost::bimap<int, std::string> goby::core::DBOManager::dbo_map;
 
 goby::core::DBOManager* goby::core::DBOManager::inst_ = 0;
@@ -63,7 +62,8 @@ goby::core::DBOManager::DBOManager()
       connection_(0),
       session_(0),
       transaction_(0),
-      t_last_commit_(goby_time())
+      t_last_commit_(goby_time()),
+      static_tables_created_(false)
 {
     glogger().add_group("dbo", goby::util::Colors::lt_green, "database");
 }
@@ -74,6 +74,56 @@ goby::core::DBOManager::~DBOManager()
     if(connection_) delete connection_;
     if(session_) delete session_;
 }
+
+
+void goby::core::DBOManager::add_raw(MarshallingScheme marshalling_scheme,
+                                     const std::string& identifier,
+                                     const void* data,
+                                     int size)
+{
+    static int i = 0;
+    RawEntry *new_entry = new RawEntry();
+    new_entry->marshalling_scheme = marshalling_scheme;
+    new_entry->identifier = identifier;
+    new_entry->unique_id = i;
+
+    std::string bytes = std::string(static_cast<const char*>(data), size);
+    new_entry->bytes = std::vector<unsigned char>(bytes.begin(), bytes.end());
+    new_entry->time = goby::util::as<std::string>(goby::util::goby_time());
+                
+    session_->add(new_entry);
+
+    switch(marshalling_scheme)
+    {
+        case MARSHALLING_PROTOBUF:
+        {
+            const std::string protobuf_type_name = identifier.substr(0, identifier.find("/"));
+        
+            boost::shared_ptr<google::protobuf::Message> msg =
+                DynamicProtobufManager::new_protobuf_message(protobuf_type_name);
+            msg->ParseFromArray(data, size);
+        
+            add_message(i, msg);
+        }
+        break;
+
+#ifdef HAS_MOOS
+        case MARSHALLING_MOOS:
+        {
+            CMOOSMsg msg;
+            std::string bytes(static_cast<const char*>(data), size);
+            goby::moos::MOOSSerializer::parse(&msg, bytes);
+            add_message(i, msg);
+        }
+        break;
+#endif            
+        
+        default: break;
+    }
+    ++i;
+}
+            
+            
 
 void goby::core::DBOManager::add_type(const google::protobuf::Descriptor* descriptor)
 {
@@ -110,12 +160,13 @@ void goby::core::DBOManager::add_type(const google::protobuf::Descriptor* descri
     reset_session();
 
     // remap all the tables
+    map_static_types();
     for(boost::bimap<int, std::string>::left_iterator it = dbo_map.left.begin(),
             n = dbo_map.left.end();
         it != n;
         ++it)
     {
-        map_type(descriptor_pool_->FindMessageTypeByName(it->second));
+        map_type(DynamicProtobufManager::descriptor_pool().FindMessageTypeByName(it->second));
     }
 }
 
@@ -141,7 +192,14 @@ void goby::core::DBOManager::map_type(const google::protobuf::Descriptor* descri
 
 
 
-void goby::core::DBOManager::add_message(boost::shared_ptr<google::protobuf::Message> msg)
+void goby::core::DBOManager::add_message(int unique_id, const google::protobuf::Message& msg)
+{
+    boost::shared_ptr<google::protobuf::Message> new_msg(msg.New());
+    new_msg->CopyFrom(msg);
+    add_message(unique_id, new_msg);
+}
+
+void goby::core::DBOManager::add_message(int unique_id, boost::shared_ptr<google::protobuf::Message> msg)
 {
     using goby::util::as;
     
@@ -152,7 +210,7 @@ void goby::core::DBOManager::add_message(boost::shared_ptr<google::protobuf::Mes
 
         // preprocessor `for` loop from 0 to GOBY_MAX_PROTOBUF_TYPES
 #define BOOST_PP_LOCAL_MACRO(n)                                         \
-        case n: session_->add(new ProtoBufWrapper<n>(msg)); break;
+        case n: session_->add(new ProtoBufWrapper<n>(unique_id, msg)); break;
 #define BOOST_PP_LOCAL_LIMITS (0, GOBY_MAX_PROTOBUF_TYPES)
 #include BOOST_PP_LOCAL_ITERATE()
         // end preprocessor `for` loop
@@ -160,6 +218,13 @@ void goby::core::DBOManager::add_message(boost::shared_ptr<google::protobuf::Mes
         default: throw(std::runtime_error(std::string("exceeded maximum number of types allowed: " + as<std::string>(GOBY_MAX_PROTOBUF_TYPES)))); break;
     }
 }
+
+#ifdef HAS_MOOS
+void goby::core::DBOManager::add_message(int unique_id, CMOOSMsg& msg)
+{
+    session_->add(new CMOOSMsg(msg));
+}
+#endif
 
 void goby::core::DBOManager::commit()
 {
@@ -190,16 +255,42 @@ void goby::core::DBOManager::connect(const std::string& db_name /* = "" */)
     session_->setConnection(*connection_);
     // transaction deleted by session
     transaction_ = new Wt::Dbo::Transaction(*session_);
+    
+    if(!static_tables_created_)
+    {
+        map_static_types();
+        try{ session_->createTables(); }
+        catch(Wt::Dbo::Exception& e)
+        {
+            glogger() << warn << e.what() << std::endl;
+        }
+        
+        glogger() <<group("dbo") << "created table for static types" << std::endl;
+        static_tables_created_ = true;
+        reset_session();
+    }
+    
+    
 }
 
 void goby::core::DBOManager::reset_session()
 {
-    using goby::util::glogger;
 
+    using goby::util::glogger;
     commit();
     glogger() << "resetting session" 
               << std::endl;
     connect();
 }
             
+
+void goby::core::DBOManager::map_static_types()
+{
+    session_->mapClass<RawEntry>("_raw");
+
+#ifdef HAS_MOOS
+    session_->mapClass<CMOOSMsg>("CMOOSMsg");
+#endif
+}
+
 

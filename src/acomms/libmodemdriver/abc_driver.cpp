@@ -17,7 +17,10 @@
 #include "driver_exception.h"
 
 #include "goby/util/logger.h"
+#include "goby/util/binary.h"
 
+using goby::util::hex_encode;
+using goby::util::hex_decode;
 
 
 goby::acomms::ABCDriver::ABCDriver(std::ostream* log /*= 0*/)

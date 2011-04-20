@@ -22,6 +22,7 @@
 #include "test.pb.h"
 #include "goby/util/string.h"
 #include "goby/util/time.h"
+#include "goby/util/binary.h"
 
 using goby::acomms::operator<<;
 
@@ -52,7 +53,7 @@ int main()
     msg_in.set_bool_default(true);
 
     msg_in.set_string_default("abc123");
-    msg_in.set_bytes_default(goby::acomms::hex_decode("00112233aabbcc1234"));
+    msg_in.set_bytes_default(goby::util::hex_decode("00112233aabbcc1234"));
     
     msg_in.set_enum_default(ENUM_C);
     msg_in.mutable_msg_default()->set_val(++i + 0.3);
@@ -77,7 +78,7 @@ int main()
         msg_in.add_bool_default_repeat(true);
         
         msg_in.add_string_default_repeat("abc123");
-        msg_in.add_bytes_default_repeat(goby::acomms::hex_decode("aabbcc12"));
+        msg_in.add_bytes_default_repeat(goby::util::hex_decode("aabbcc12"));
         
         msg_in.add_enum_default_repeat(static_cast<Enum1>((++i % 3) + 1));
         EmbeddedMsg1* em_msg = msg_in.add_msg_default_repeat();
@@ -94,7 +95,7 @@ int main()
 
     std::cout << "Try encode..." << std::endl;
     std::string bytes = codec->encode(msg_in);
-    std::cout << "... got bytes (hex): " << goby::acomms::hex_encode(bytes) << std::endl;
+    std::cout << "... got bytes (hex): " << goby::util::hex_encode(bytes) << std::endl;
 
     std::cout << "Try decode..." << std::endl;
 

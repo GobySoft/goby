@@ -16,7 +16,7 @@ private:
     void receive_msg(const HelloWorldMsg& msg)
         {
             // print to the log the newest received "HelloWorldMsg"
-            glogger() << "received: " << msg << std::endl;
+            goby::glog << "received: " << msg << std::endl;
         }
 
     void loop()

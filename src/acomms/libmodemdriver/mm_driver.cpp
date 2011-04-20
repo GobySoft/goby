@@ -24,12 +24,15 @@
 #include <boost/algorithm/string.hpp>
 
 #include "goby/util/logger.h"
+#include "goby/util/binary.h"
 
 #include "mm_driver.h"
 #include "driver_exception.h"
 
 using goby::util::NMEASentence;
 using goby::util::goby_time;
+using goby::util::hex_encode;
+using goby::util::hex_decode;
 using goby::util::ptime2unix_double;
 using goby::util::as;
 using google::protobuf::uint32;

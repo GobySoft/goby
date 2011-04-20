@@ -44,14 +44,13 @@ boost::mutex goby::util::Logger::mutex;
 
 goby::util::FlexOStreamBuf::FlexOStreamBuf(): name_("no name"),
                                               die_flag_(false),
-                                              warn_flag_(false),
-                                              debug_flag_(false),
+                                              current_verbosity_(Logger::VERBOSE),
 #ifdef HAS_NCURSES
                                               curses_(0),
 #endif
                                               start_time_(goby_time()),
-                                              is_quiet_(true),
-                                              is_gui_(false)
+                                              is_gui_(false),
+                                              highest_verbosity_(Logger::QUIET)
                                               
 {
     Group no_group("", "Ungrouped messages");
@@ -81,9 +80,11 @@ void goby::util::FlexOStreamBuf::add_stream(Logger::Verbosity verbosity, std::os
 
     if(!stream_exists)
         streams_.push_back(StreamConfig(os, verbosity));
-    
 
-    if(verbosity == Logger::gui)
+    if(verbosity > highest_verbosity_)
+        highest_verbosity_ = verbosity;
+
+    if(verbosity == Logger::GUI)
     {
 #ifdef HAS_NCURSES    
         if(is_gui_) return;
@@ -107,10 +108,6 @@ void goby::util::FlexOStreamBuf::add_stream(Logger::Verbosity verbosity, std::os
 #else
         throw(goby::Exception("Tried to use verbosity==gui without compiling against NCurses. Install NCurses and recompile goby or use a different verbosity"));
 #endif
-    }
-    else if(verbosity != Logger::quiet)
-    {
-        is_quiet_ = false;
     }
 }
 
@@ -142,9 +139,7 @@ int goby::util::FlexOStreamBuf::sync()
     
     group_name_.erase();
 
-
-    debug_flag_ = false;
-    warn_flag_ = false;
+    current_verbosity_ = Logger::VERBOSE;
     
     if(die_flag_) exit(EXIT_FAILURE);
     return 0;
@@ -154,7 +149,7 @@ void goby::util::FlexOStreamBuf::display(std::string & s)
 {
 
 #ifdef HAS_NCURSES    
-    if(is_gui_ && !debug_flag_)
+    if(is_gui_ && current_verbosity_ <= Logger::GUI)
     {
         if(!die_flag_)
         {
@@ -188,13 +183,17 @@ void goby::util::FlexOStreamBuf::display(std::string & s)
             switch(cfg.verbosity())
             {
                 default:
-                case Logger::quiet:
-                    break;
-                case Logger::warn:
-                    if(!warn_flag_) break;
-                case Logger::verbose:
-                    if(debug_flag_) break;
-                case Logger::debug:
+                case Logger::QUIET:
+                    if(current_verbosity_ > Logger::QUIET) break;
+                case Logger::WARN:
+                    if(current_verbosity_ > Logger::WARN) break;
+                case Logger::VERBOSE:
+                    if(current_verbosity_ > Logger::VERBOSE) break;
+                case Logger::DEBUG1:
+                    if(current_verbosity_ > Logger::DEBUG1) break;
+                case Logger::DEBUG2:
+                    if(current_verbosity_ > Logger::DEBUG2) break;
+                case Logger::DEBUG3:
                     *cfg.os() << TermColor::esc_code_from_col(groups_[group_name_].color()) << name_ << esc_nocolor << " (" << boost::posix_time::to_iso_string(goby_time()) << "): " << s << esc_nocolor << std::endl;
                     break;        
             }
@@ -204,13 +203,17 @@ void goby::util::FlexOStreamBuf::display(std::string & s)
             switch(cfg.verbosity())
             {
                 default:
-                case Logger::quiet:
-                    break;
-                case Logger::warn:
-                    if(!warn_flag_) break;
-                case Logger::verbose:
-                    if(debug_flag_) break;
-                case Logger::debug:
+                case Logger::QUIET:
+                    if(current_verbosity_ > Logger::QUIET) break;
+                case Logger::WARN:
+                    if(current_verbosity_ > Logger::WARN) break;
+                case Logger::VERBOSE:
+                    if(current_verbosity_ > Logger::VERBOSE) break;
+                case Logger::DEBUG1:
+                    if(current_verbosity_ > Logger::DEBUG1) break;
+                case Logger::DEBUG2:
+                    if(current_verbosity_ > Logger::DEBUG2) break;
+                case Logger::DEBUG3:
                     basic_log_header(*cfg.os(), group_name_);
                     strip_escapes(s);
                     *cfg.os() << s << std::endl;

@@ -184,10 +184,12 @@ template<typename ProtoBufMessage>
         /*= boost::function<void (const ProtoBufMessage&)>()*/,
         const protobuf::Filter& filter /* = protobuf::Filter() */)
 {
-
+    using goby::glog;
+    
     const std::string& protobuf_type_name = ProtoBufMessage::descriptor()->full_name();
 
-    goby::util::glogger() << debug << "subscribing for " << protobuf_type_name << " with filter: " << filter << std::endl;
+    glog.is(debug1) && 
+        glog << "subscribing for " << protobuf_type_name << " with filter: " << filter << std::endl;
     
     // enforce one handler for each type / filter combination            
     typedef std::pair <std::string, boost::shared_ptr<SubscriptionBase> > P;
@@ -195,9 +197,9 @@ template<typename ProtoBufMessage>
     {
         if(protobuf_type_name == p.second->type_name() && p.second->filter() == filter)
         {
-            goby::util::glogger() << warn <<
-                "already have subscription for type: " <<
-                protobuf_type_name << " and filter: " << filter << std::endl;
+            glog.is(warn) &&
+                glog << "already have subscription for type: "
+                     << protobuf_type_name << " and filter: " << filter << std::endl;
             return;
         }
     }

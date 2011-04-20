@@ -30,12 +30,17 @@
 #include "dccl_field_codec_default.h"
 
 #include "goby/util/string.h"
+#include "goby/util/binary.h"
 #include "goby/protobuf/acomms_proto_helpers.h"
 #include "goby/protobuf/dccl_option_extensions.pb.h"
 #include "goby/protobuf/header.pb.h"
 
 using goby::util::goby_time;
 using goby::util::as;
+using goby::util::hex_encode;
+using goby::util::hex_decode;
+
+
 using google::protobuf::FieldDescriptor;
 using google::protobuf::Descriptor;
 using google::protobuf::Reflection;

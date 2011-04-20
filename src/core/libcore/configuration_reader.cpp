@@ -52,7 +52,8 @@ void goby::core::ConfigReader::read_cfg(int argc,
         ("platform_name,p", boost::program_options::value<std::string>(), "name of this platform (same as gobyd configuration value `self.name`)")
         ("app_name,a", boost::program_options::value<std::string>(), app_name_desc.c_str())
         ("example_config,e", "writes an example .pb.cfg file")
-        ("verbose,v", boost::program_options::value<std::string>()->implicit_value("")->multitoken(), "output useful information to std::cout. -v is verbosity: verbose, -vv is verbosity: debug, -vvv is verbosity: gui");
+        ("verbose,v", boost::program_options::value<std::string>()->implicit_value("")->multitoken(), "output useful information to std::cout. -v is verbosity: verbose, -vv is verbosity: debug1, -vvv is verbosity: debug2, -vvvv is verbosity: debug3")
+        ("ncurses,n", boost::program_options::value<std::string>(), "output useful information to an NCurses GUI instead of stdout.");
     
     std::string od_both_desc = "Typically given in " + *application_name + " configuration file, but may be specified on the command line";
     boost::program_options::options_description od_both(od_both_desc.c_str());
@@ -547,22 +548,30 @@ std::string goby::core::ConfigReader::label(const google::protobuf::FieldDescrip
 void goby::core::ConfigReader::merge_app_base_cfg(AppBaseConfig* base_cfg,
                         const boost::program_options::variables_map& var_map)
 {
-    if (var_map.count("verbose"))
+    if(var_map.count("ncurses"))
+    {
+        base_cfg->set_verbosity(AppBaseConfig::GUI);
+    }
+    else if (var_map.count("verbose"))
     {
         switch(var_map["verbose"].as<std::string>().size())
         {
+            default:
             case 0:
                 base_cfg->set_verbosity(AppBaseConfig::VERBOSE);
                 break;
             case 1:
-                base_cfg->set_verbosity(AppBaseConfig::DEBUG);
+                base_cfg->set_verbosity(AppBaseConfig::DEBUG1);
                 break;
-            default:
             case 2:
-                base_cfg->set_verbosity(AppBaseConfig::GUI);
+                base_cfg->set_verbosity(AppBaseConfig::DEBUG2);
+                break;
+            case 3:
+                base_cfg->set_verbosity(AppBaseConfig::DEBUG3);
                 break;
         }
     }
+
 }
 
 

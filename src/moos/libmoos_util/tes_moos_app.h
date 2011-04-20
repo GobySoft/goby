@@ -139,7 +139,7 @@ TesMoosApp::TesMoosApp(ProtobufConfig* cfg)
     connected_(false),
     started_up_(false)
 {
-    using goby::util::glogger;
+    using goby::glog;
 
     boost::filesystem::path launch_path(argv_[0]);
     application_name_ = launch_path.filename();
@@ -200,8 +200,8 @@ TesMoosApp::TesMoosApp(ProtobufConfig* cfg)
             exit(EXIT_SUCCESS);            
         }
         
-        glogger().set_name(application_name_);
-        glogger().add_stream("verbose", &std::cout);
+        glog.set_name(application_name_);
+        glog.add_stream("verbose", &std::cout);
     
     
         std::string protobuf_text;
@@ -229,29 +229,36 @@ TesMoosApp::TesMoosApp(ProtobufConfig* cfg)
             }
 
             if(!in_process_config)
-                glogger() << die << "no ProcessConfig block for " << application_name_ << std::endl;
+            {
+                glog.is(die) &&
+                    glog << "no ProcessConfig block for " << application_name_ << std::endl;
 
-            // trim off "ProcessConfig = __ {"
-            protobuf_text.erase(0, protobuf_text.find_first_of('{')+1);
+                // trim off "ProcessConfig = __ {"
+                protobuf_text.erase(0, protobuf_text.find_first_of('{')+1);
             
-            // trim off last "}" and anything that follows
-            protobuf_text.erase(protobuf_text.find_last_of('}'));
+                // trim off last "}" and anything that follows
+                protobuf_text.erase(protobuf_text.find_last_of('}'));
             
-            // convert "//" to "#" for comments
-            boost::algorithm::replace_all(protobuf_text, "//", "#");
+                // convert "//" to "#" for comments
+                boost::algorithm::replace_all(protobuf_text, "//", "#");
             
-            google::protobuf::TextFormat::Parser parser;
-            FlexOStreamErrorCollector error_collector(protobuf_text);
-            parser.RecordErrorsTo(&error_collector);
-            parser.AllowPartialMessage(true);
-            parser.ParseFromString(protobuf_text, cfg);
-            if(error_collector.has_errors())
-                glogger() << die << "fatal configuration errors (see above)" << std::endl;    
-        
+                google::protobuf::TextFormat::Parser parser;
+                FlexOStreamErrorCollector error_collector(protobuf_text);
+                parser.RecordErrorsTo(&error_collector);
+                parser.AllowPartialMessage(true);
+                parser.ParseFromString(protobuf_text, cfg);
+                if(error_collector.has_errors())
+                {
+                    glog.is(die) && 
+                        glog << "fatal configuration errors (see above)" << std::endl;    
+                }
+            }
+            
         }
         else
         {
-            glogger() << warn << "failed to open " << mission_file_ << std::endl;
+            glog.is(warn) &&
+                glog << "failed to open " << mission_file_ << std::endl;
         }
     
         fin.close();
@@ -259,7 +266,7 @@ TesMoosApp::TesMoosApp(ProtobufConfig* cfg)
         CMOOSFileReader moos_file_reader;
         moos_file_reader.SetFile(mission_file_);
         fetch_moos_globals(cfg, moos_file_reader);
-
+        
 
 // add / overwrite any options that are specified in the cfg file with those given on the command line
         typedef std::pair<std::string, boost::program_options::variable_value> P;
@@ -310,19 +317,19 @@ TesMoosApp::TesMoosApp(ProtobufConfig* cfg)
     switch(cfg->common().verbosity())
     {
         case TesMoosAppConfig::VERBOSITY_VERBOSE:
-            glogger().add_stream(goby::util::Logger::verbose, &std::cout);
+            glog.add_stream(goby::util::Logger::VERBOSE, &std::cout);
             break;
         case TesMoosAppConfig::VERBOSITY_WARN:
-            glogger().add_stream(goby::util::Logger::warn, &std::cout);
+            glog.add_stream(goby::util::Logger::WARN, &std::cout);
             break;
         case TesMoosAppConfig::VERBOSITY_DEBUG:
-            glogger().add_stream(goby::util::Logger::debug, &std::cout);
+            glog.add_stream(goby::util::Logger::DEBUG1, &std::cout);
             break;
         case TesMoosAppConfig::VERBOSITY_GUI:
-            glogger().add_stream(goby::util::Logger::gui, &std::cout);
+            glog.add_stream(goby::util::Logger::GUI, &std::cout);
             break;
         case TesMoosAppConfig::VERBOSITY_QUIET:
-            glogger().add_stream(goby::util::Logger::quiet, &std::cout);
+            glog.add_stream(goby::util::Logger::QUIET, &std::cout);
             break;
     }    
 
@@ -331,15 +338,17 @@ TesMoosApp::TesMoosApp(ProtobufConfig* cfg)
     {
         if(!cfg->common().has_log_path())
         {
-            glogger() << warn << "logging all terminal output to default directory (" << cfg->common().log_path() << ")." << "set log_path for another path " << std::endl;
+            glog.is(warn) &&
+                glog << "logging all terminal output to default directory (" << cfg->common().log_path() << ")." << "set log_path for another path " << std::endl;
         }
 
         if(!cfg->common().log_path().empty())
         {
             using namespace boost::posix_time;
             std::string file_name = application_name_ + "_" + cfg->common().community() + "_" + to_iso_string(second_clock::universal_time()) + ".txt";
-            
-            glogger() << "logging output to file: " << file_name << std::endl;
+
+            glog.is(verbose) &&
+                glog << "logging output to file: " << file_name << std::endl;
             
             fout_.open(std::string(cfg->common().log_path() + "/" + file_name).c_str());
         
@@ -347,18 +356,22 @@ TesMoosApp::TesMoosApp(ProtobufConfig* cfg)
             if(!fout_.is_open())
             {
                 fout_.open(std::string("./" + file_name).c_str());
-                glogger() << warn << "logging to current directory because given directory is unwritable!" << std::endl;
+                glog.is(warn) &&
+                    glog << "logging to current directory because given directory is unwritable!" << std::endl;
             }
             // if still no go, quit
             if(!fout_.is_open())
-                glogger() << die << "cannot write to current directory, so cannot log." << std::endl;
-
-            glogger().add_stream(goby::util::Logger::verbose, &fout_);
+            {
+                
+                glog.is(die) && glog << die << "cannot write to current directory, so cannot log." << std::endl;
+            }
+            
+            glog.add_stream(goby::util::Logger::VERBOSE, &fout_);
         }
     }
 
 
-    glogger() << cfg->DebugString() << std::endl;
+    glog.is(verbose) && glog << cfg->DebugString() << std::endl;
 }
 
 

@@ -9,3 +9,7 @@ endif()
 if(build_util_tools)
   add_subdirectory(tools)
 endif()
+
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()

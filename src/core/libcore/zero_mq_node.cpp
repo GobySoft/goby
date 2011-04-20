@@ -16,14 +16,16 @@
 
 #include <boost/asio/detail/socket_ops.hpp> // for network_to_host_long
 
-#include "goby/acomms/acomms_helpers.h" // for goby::acomms::hex_encode
-#include "goby/util/logger.h" // for glogger & manipulators die, warn, group(), etc.
+#include "goby/util/binary.h" // for hex_encode
+#include "goby/util/logger.h" // for glog & manipulators die, warn, group(), etc.
 #include "goby/util/string.h" // for goby::util::as
 
 #include "zero_mq_node.h"
 
 using goby::util::as;
-using goby::util::glogger;
+using goby::glog;
+using goby::util::hex_encode;
+
 
 goby::core::ZeroMQNode::ZeroMQNode()
     : context_(1),
@@ -60,7 +62,9 @@ void goby::core::ZeroMQNode::publish(MarshallingScheme marshalling_scheme,
     zmq::message_t msg(header.size() + body_size);
     memcpy(msg.data(), header.c_str(), header.size()); // insert header
     memcpy(static_cast<char*>(msg.data()) + header.size(), body_data, body_size); // insert body
-    glogger() << debug << "message hex: " << goby::acomms::hex_encode(std::string(static_cast<const char*>(msg.data()),msg.size())) << std::endl;
+
+    glog.is(debug2) &&
+        glog << "message hex: " << hex_encode(std::string(static_cast<const char*>(msg.data()),msg.size())) << std::endl;
     publisher_.send(msg);
 }
 
@@ -72,13 +76,13 @@ void goby::core::ZeroMQNode::start_sockets(const std::string& multicast_connecti
         publisher_.connect(multicast_connection.c_str());
         subscriber_.connect(multicast_connection.c_str());        
         
-        glogger() << debug << "connected to: "
-                 << multicast_connection << std::endl;
+        glog.is(debug1) &&
+            glog << "connected to: " << multicast_connection << std::endl;
     }
     catch(std::exception& e)
     {
-        glogger() << die << "cannot connect to: "
-                 << multicast_connection << ": " << e.what() << std::endl;
+        glog.is(die) &&
+            glog << "cannot connect to: " << multicast_connection << ": " << e.what() << std::endl;
     }
 
     //  Initialize poll set
@@ -95,8 +99,9 @@ void goby::core::ZeroMQNode::handle_subscribed_message(const void* data,
     std::string bytes(static_cast<const char*>(data),
                       size);
     
-    glogger() << debug
-             << "got a message: " << goby::acomms::hex_encode(bytes) << std::endl;
+
+    glog.is(debug2) &&
+        glog << "got a message: " << goby::util::hex_encode(bytes) << std::endl;
     
     
     static MarshallingScheme marshalling_scheme = MARSHALLING_UNKNOWN;
@@ -133,12 +138,14 @@ void goby::core::ZeroMQNode::handle_subscribed_message(const void* data,
             std::string::size_type null_pos = identifier.find_first_of('\0');
             
             identifier.erase(null_pos);
-            glogger() << debug << "Got message of type: [" << identifier << "]" << std::endl;
+            glog.is(debug1) &&
+                glog << "Got message of type: [" << identifier << "]" << std::endl;
 
             std::string body(static_cast<const char*>(data)+header_size(),
                              size-header_size());
 
-            glogger() << debug << "Body [" << goby::acomms::hex_encode(body)<< "]" << std::endl;
+            glog.is(debug2) &&
+                glog << "Body [" << goby::util::hex_encode(body)<< "]" << std::endl;
             
             inbox_signal_(marshalling_scheme,
                           identifier,
@@ -201,7 +208,8 @@ std::string goby::core::ZeroMQNode::make_header(MarshallingScheme marshalling_sc
     }
     zmq_filter += identifier;
 
-    glogger() << debug << "zmq header: " << goby::acomms::hex_encode(zmq_filter) << std::endl;
+    glog.is(debug2) &&
+        glog << "zmq header: " << goby::util::hex_encode(zmq_filter) << std::endl;
 
     return zmq_filter;
 }

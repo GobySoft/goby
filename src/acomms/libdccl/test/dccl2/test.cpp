@@ -21,6 +21,7 @@
 #include "test.pb.h"
 #include "goby/util/string.h"
 #include "goby/util/time.h"
+#include "goby/util/binary.h"
 
 using goby::acomms::operator<<;
 using goby::acomms::operator+;
@@ -105,7 +106,7 @@ int main()
     assert(codec->validate(msg_in1.GetDescriptor()));
     std::cout << "Try encode..." << std::endl;
     std::string bytes1 = codec->encode(msg_in1);
-    std::cout << "... got bytes (hex): " << goby::acomms::hex_encode(bytes1) << std::endl;
+    std::cout << "... got bytes (hex): " << goby::util::hex_encode(bytes1) << std::endl;
     std::cout << "Try decode..." << std::endl;
     boost::shared_ptr<google::protobuf::Message> msg_out1 = codec->decode(bytes1);
     std::cout << "... got Message out:\n" << msg_out1->DebugString() << std::endl;
@@ -122,7 +123,7 @@ int main()
     assert(codec->validate(msg_in2.GetDescriptor()));
     std::cout << "Try encode..." << std::endl;
     std::string bytes2 = codec->encode(msg_in2);
-    std::cout << "... got bytes (hex): " << goby::acomms::hex_encode(bytes2) << std::endl;
+    std::cout << "... got bytes (hex): " << goby::util::hex_encode(bytes2) << std::endl;
     std::cout << "Try decode..." << std::endl;
     msg_out2 = codec->decode<CustomMsg2>(bytes2);
     std::cout << "... got Message out:\n" << msg_out2.DebugString() << std::endl;

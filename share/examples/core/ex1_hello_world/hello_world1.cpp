@@ -23,7 +23,7 @@ private:
             msg.set_telegram("hello world!");
             msg.set_count(++i);
 
-            glogger() << "sending: " << msg << std::endl;
+            goby::glog << "sending: " << msg << std::endl;
 
             // publish it to `gobyd` who will send to all subscribers 
             publish(msg);

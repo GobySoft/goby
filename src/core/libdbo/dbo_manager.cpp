@@ -41,7 +41,7 @@ boost::bimap<int, std::string> goby::core::DBOManager::dbo_map;
 goby::core::DBOManager* goby::core::DBOManager::inst_ = 0;
 
 using goby::util::goby_time;
-using goby::util::glogger;
+using goby::glog;
 
 
 // singleton class, use this to get pointer
@@ -65,7 +65,7 @@ goby::core::DBOManager::DBOManager()
       t_last_commit_(goby_time()),
       static_tables_created_(false)
 {
-    glogger().add_group("dbo", goby::util::Colors::lt_green, "database");
+    glog.add_group("dbo", goby::util::Colors::lt_green, "database");
 }
 
 goby::core::DBOManager::~DBOManager()
@@ -131,14 +131,16 @@ void goby::core::DBOManager::add_type(const google::protobuf::Descriptor* descri
     
     if(dbo_map.right.count(descriptor->full_name()))
     {
-        glogger() << group("dbo") << "type with name " << descriptor->full_name() << " already exists" << std::endl;
-        
+        glog.is(verbose) &&
+            glog << group("dbo") << "type with name " << descriptor->full_name()
+                 << " already exists" << std::endl;
         return;
     }
 
-    glogger() << group("dbo") << "adding type: "
-              << descriptor->DebugString() << "\n"
-              << "with index: " << index_ << std::endl;
+    glog.is(verbose) &&
+        glog << group("dbo") << "adding type: "
+             << descriptor->DebugString() << "\n"
+             << "with index: " << index_ << std::endl;
     
     reset_session();
     dbo_map.insert(boost::bimap<int, std::string>::value_type(index_, descriptor->full_name()));
@@ -153,10 +155,12 @@ void goby::core::DBOManager::add_type(const google::protobuf::Descriptor* descri
     try{ session_->createTables(); }
     catch(Wt::Dbo::Exception& e)
     {
-        glogger() << warn << e.what() << std::endl;
+        glog.is(warn) &&
+            glog << e.what() << std::endl;
     }
     
-    glogger() <<group("dbo") << "created table for " << descriptor->full_name() << std::endl;
+    glog.is(verbose) &&
+        glog << group("dbo") << "created table for " << descriptor->full_name() << std::endl;
     reset_session();
 
     // remap all the tables
@@ -173,8 +177,9 @@ void goby::core::DBOManager::add_type(const google::protobuf::Descriptor* descri
 void goby::core::DBOManager::map_type(const google::protobuf::Descriptor* descriptor)
 {
     using goby::util::as;
-
-    glogger() <<group("dbo") << "mapping type: " << descriptor->full_name() << std::endl;
+    
+    glog.is(verbose) &&
+        glog <<group("dbo") << "mapping type: " << descriptor->full_name() << std::endl;
     
     // allows us to select compile time type to use at runtime
     switch(dbo_map.right.at(descriptor->full_name()))
@@ -202,8 +207,9 @@ void goby::core::DBOManager::add_message(int unique_id, const google::protobuf::
 void goby::core::DBOManager::add_message(int unique_id, boost::shared_ptr<google::protobuf::Message> msg)
 {
     using goby::util::as;
-    
-    glogger() << group("dbo") << "adding message of type: " << msg->GetTypeName() << std::endl;
+
+    glog.is(verbose) &&
+        glog << group("dbo") << "adding message of type: " << msg->GetTypeName() << std::endl;
     
     switch(dbo_map.right.at(msg->GetTypeName()))
     {
@@ -228,11 +234,13 @@ void goby::core::DBOManager::add_message(int unique_id, CMOOSMsg& msg)
 
 void goby::core::DBOManager::commit()
 {
-    glogger() << group("dbo") << "starting commit" << std::endl;
+    glog.is(verbose) &&
+        glog << group("dbo") << "starting commit" << std::endl;
         
     transaction_->commit();
         
-    glogger() << group("dbo") << "finished commit" << std::endl;
+    glog.is(verbose) &&
+        glog << group("dbo") << "finished commit" << std::endl;
 
     t_last_commit_ = goby_time();
 
@@ -262,10 +270,12 @@ void goby::core::DBOManager::connect(const std::string& db_name /* = "" */)
         try{ session_->createTables(); }
         catch(Wt::Dbo::Exception& e)
         {
-            glogger() << warn << e.what() << std::endl;
+            glog.is(warn) &&
+                glog << e.what() << std::endl;
         }
-        
-        glogger() <<group("dbo") << "created table for static types" << std::endl;
+
+        glog.is(verbose) &&
+            glog << group("dbo") << "created table for static types" << std::endl;
         static_tables_created_ = true;
         reset_session();
     }
@@ -276,10 +286,9 @@ void goby::core::DBOManager::connect(const std::string& db_name /* = "" */)
 void goby::core::DBOManager::reset_session()
 {
 
-    using goby::util::glogger;
     commit();
-    glogger() << "resetting session" 
-              << std::endl;
+    glog.is(verbose) &&
+        glog << "resetting session" << std::endl;
     connect();
 }
             

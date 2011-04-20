@@ -33,6 +33,7 @@
 
 namespace goby
 {
+
     namespace util
     {
         namespace logger_lock
@@ -45,6 +46,21 @@ namespace goby
         class FlexOstream : public std::ostream
         {
           public:
+          FlexOstream()
+              : std::ostream(&sb_)
+            {
+                ++instances_;
+                if(instances_ > 1)
+                {
+                    std::cerr << "Fatal error: cannot create more than one instance of FlexOstream. Use global object goby::glog to access the Goby Logger. Do not instantiate the FlexOstream directly." << std::endl;
+                    exit(EXIT_FAILURE);
+                }
+            }
+            ~FlexOstream() { }
+            FlexOstream(const FlexOstream&);
+            FlexOstream& operator = (const FlexOstream&);            
+
+
             /// \name Initialization
             //@{
             /// Add another group to the logger. A group provides related manipulator for categorizing log messages.
@@ -58,24 +74,26 @@ namespace goby
             {
                 sb_.name(s);
             }
-
+            
+            bool is(std::ostream& (*pf) (std::ostream&), logger_lock::LockAction lock_action = logger_lock::none); 
+            
             void add_stream(const std::string& verbosity, std::ostream* os = 0)
             {
                 if(verbosity == "scope" || verbosity == "gui")        
-                    add_stream(goby::util::Logger::gui, os);
+                    add_stream(goby::util::Logger::GUI, os);
                 else if(verbosity == "quiet")        
-                    add_stream(goby::util::Logger::quiet, os);
+                    add_stream(goby::util::Logger::QUIET, os);
                 else if(verbosity == "terse" || verbosity == "warn")        
-                    add_stream(goby::util::Logger::warn, os);
+                    add_stream(goby::util::Logger::WARN, os);
                 else if(verbosity == "debug")        
-                    add_stream(goby::util::Logger::debug, os);
+                    add_stream(goby::util::Logger::DEBUG1, os);
                 else
-                    add_stream(goby::util::Logger::verbose, os);
+                    add_stream(goby::util::Logger::VERBOSE, os);
             }
             
             
             /// Attach a stream object (e.g. std::cout, std::ofstream, ...) to the logger with desired verbosity
-            void add_stream(Logger::Verbosity verbosity = Logger::verbose, std::ostream* os = 0)
+            void add_stream(Logger::Verbosity verbosity = Logger::VERBOSE, std::ostream* os = 0)
             {
                 sb_.add_stream(verbosity, os);
             }            
@@ -139,7 +157,7 @@ namespace goby
             { return (sb_.is_quiet()); }
             
             
-            friend FlexOstream& glogger(logger_lock::LockAction lock_action);
+            friend FlexOstream& glogger();
 
             template<typename T>
                 friend void boost::checked_delete(T*);
@@ -152,36 +170,11 @@ namespace goby
             friend std::ostream& operator<< (FlexOstream& out, const unsigned char* s );
 
           private:
-          FlexOstream() : std::ostream(&sb_) {}
-            ~FlexOstream() { }
-            FlexOstream(const FlexOstream&);
-            FlexOstream& operator = (const FlexOstream&);            
+            static int instances_;
 
           private:
-            static boost::shared_ptr<goby::util::FlexOstream> inst_;
             FlexOStreamBuf sb_;
         };        
-        /// \name Logger
-        //@{
-        /// \brief Access the Goby logger through this function. 
-        /// 
-        /// For normal (non thread safe use), do not pass any parameters:
-        /// glogger() << "some text" << std::endl;
-        ///
-        /// To group messages, pass the group(group_name) manipulator, where group_name
-        /// is a previously defined group (by call to glogger().add_group(Group)).
-        /// For example:
-        /// glogger() << group("incoming") << "received message foo" << std::endl;
-        ///
-        /// For thread safe use, use glogger(lock) and then insert the "unlock" manipulator
-        /// when relinquishing the lock. The "unlock" manipulator MUST be inserted before
-        /// the next call to glogger(lock). \b Nothing must throw exceptions between
-        /// glogger(lock)  and unlock.
-        /// For example:
-        /// glogger(lock) << "my thread is the best" << std::endl << unlock;
-        /// \param lock_action logger_lock::lock to lock access to the logger (for thread safety) or logger_lock::none for no mutex action (typical)
-        /// \return reference to Goby logger (std::ostream derived class FlexOstream)
-        FlexOstream& glogger(logger_lock::LockAction lock_action = logger_lock::none);
         
         inline std::ostream& operator<< (FlexOstream& out, char c )
         { return std::operator<<(out, c); }
@@ -198,6 +191,12 @@ namespace goby
         //@}
 
     }
+
+    /// \name Logger
+    //@{
+    /// \brief Access the Goby logger through this object. 
+    extern util::FlexOstream glog;
+    //@}
 }
 
 
@@ -220,13 +219,13 @@ class FlexOStreamErrorCollector : public google::protobuf::io::ErrorCollector
     void AddError(int line, int column, const std::string& message)
     {
         print_original(line, column);
-        goby::util::glogger() << warn << "line: " << line << " col: " << column << " " << message << std::endl;
+        goby::glog << warn << "line: " << line << " col: " << column << " " << message << std::endl;
         has_errors_ = true;
     }
     void AddWarning(int line, int column, const std::string& message)
     {
         print_original(line, column);
-        goby::util::glogger() << warn << "line: " << line << " col: " << column << " " << message << std::endl;
+        goby::glog << warn << "line: " << line << " col: " << column << " " << message << std::endl;
         has_warnings_ = true;
     }
     
@@ -242,9 +241,9 @@ class FlexOStreamErrorCollector : public google::protobuf::io::ErrorCollector
         while(!getline(ss, line_str).eof())
         {
             if(i == line)
-                goby::util::glogger() << goby::util::tcolor::lt_red << "[line " << std::setw(3) << i++ << "]" << line_str << goby::util::tcolor::nocolor << std::endl;
+                goby::glog << goby::util::tcolor::lt_red << "[line " << std::setw(3) << i++ << "]" << line_str << goby::util::tcolor::nocolor << std::endl;
             else
-                goby::util::glogger() << "[line " << std::setw(3) << i++ << "]" << line_str << std::endl;       
+                goby::glog << "[line " << std::setw(3) << i++ << "]" << line_str << std::endl;       
         }
     }
 

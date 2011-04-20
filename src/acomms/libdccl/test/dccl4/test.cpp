@@ -21,6 +21,7 @@
 #include "test.pb.h"
 #include "goby/util/string.h"
 #include "goby/util/time.h"
+#include "goby/util/binary.h"
 
 using goby::acomms::operator<<;
 
@@ -65,7 +66,7 @@ int main()
 
     std::cout << "Try encode..." << std::endl;
     std::string bytes1 = codec->encode_repeated(msgs);
-    std::cout << "... got bytes (hex): " << goby::acomms::hex_encode(bytes1) << std::endl;
+    std::cout << "... got bytes (hex): " << goby::util::hex_encode(bytes1) << std::endl;
     std::cout << "Try decode..." << std::endl;
 
     std::list< boost::shared_ptr<google::protobuf::Message> > msgs_out = codec->decode_repeated(bytes1);

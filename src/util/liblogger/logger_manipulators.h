@@ -26,17 +26,29 @@
 
 namespace goby { namespace util { class FlexOstream; } }
            
-/// label stream as "error" and exit after next std::flush or std::endl.
+/// label stream as "error"
 inline std::ostream& die(std::ostream & os)
 { return (os << goby::util::tcolor::red << "(Error): " << goby::util::tcolor::nocolor); }
 
-/// label stream as "warning" until next std::flush or std::endl.
+/// label stream as "warning"
 inline std::ostream& warn(std::ostream & os)
 { return (os << goby::util::tcolor::red << "(Warning): " << goby::util::tcolor::nocolor); }
 
-/// label stream as "debug" until next std::flush or std::endl.
-inline std::ostream& debug(std::ostream & os)
+/// label stream as "verbose"
+inline std::ostream& verbose(std::ostream & os)
+{ return (os); }
+
+/// label stream as "debug1"
+inline std::ostream& debug1(std::ostream & os)
 { return (os << "(Debug): "); }
+
+/// label stream as "debug2"
+inline std::ostream& debug2(std::ostream & os)
+{ return (os << "(Debug2): "); }
+
+/// label stream as "debug3"
+inline std::ostream& debug3(std::ostream & os)
+{ return (os << "(Debug3): "); }
 
 /// Defines a group of messages to be sent to the Goby logger. For Verbosity == verbose streams, all entries appear interleaved, but each group is offset with a different color. For Verbosity == gui streams, all groups have a separate subwindow.
 class Group

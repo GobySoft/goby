@@ -19,7 +19,7 @@
 #include "goby/util/logger.h"
 #include "dynamic_protobuf_manager.h"
 
-using goby::util::glogger;
+using goby::glog;
 using goby::util::as;
 
 void goby::core::ProtobufNode::inbox(MarshallingScheme marshalling_scheme,
@@ -57,7 +57,8 @@ bool goby::core::StaticProtobufNode::__is_valid_filter(const google::protobuf::D
            field_descriptor->cpp_type() == FieldDescriptor::CPPTYPE_MESSAGE) // exclude embedded
        || field_descriptor->is_repeated()) // no repeated fields for filter
     {
-        glogger() << die << "bad filter: " << filter << "for message descriptor: " << descriptor->DebugString() << std::endl;
+        glog.is(die) &&
+            glog << "bad filter: " << filter << "for message descriptor: " << descriptor->DebugString() << std::endl;
         return false;
     }
     return true;

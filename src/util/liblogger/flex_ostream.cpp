@@ -19,19 +19,17 @@
 #include "flex_ostream.h"
 #include "logger_manipulators.h"
 
-boost::shared_ptr<goby::util::FlexOstream> goby::util::FlexOstream::inst_;
+// boost::shared_ptr<goby::util::FlexOstream> goby::util::FlexOstream::inst_;
 
-goby::util::FlexOstream& goby::util::glogger(logger_lock::LockAction lock_action /*= none*/)
-{    
-    if(!FlexOstream::inst_) FlexOstream::inst_.reset(new FlexOstream());
-    
-    if(lock_action == logger_lock::lock)
-    {
-        goby::util::Logger::mutex.lock(); 
-    }
+// goby::util::FlexOstream& goby::util::glogger()
+// {    
+//     if(!FlexOstream::inst_) FlexOstream::inst_.reset(new FlexOstream());    
+//     return(*FlexOstream::inst_);
+// }
 
-    return(*FlexOstream::inst_);
-}
+int goby::util::FlexOstream::instances_ = 0 ;
+
+goby::util::FlexOstream goby::glog;
 
 void goby::util::FlexOstream::add_group(const std::string& name,
                                         Colors::Color color /*= Colors::nocolor*/,
@@ -58,9 +56,38 @@ void goby::util::FlexOstream::add_group(const std::string& name,
 std::ostream& goby::util::FlexOstream::operator<<(std::ostream& (*pf) (std::ostream&))
 {
     if(pf == die)   sb_.set_die_flag(true);
-    if(pf == debug) sb_.set_debug_flag(true);
-    if(pf == warn)  sb_.set_warn_flag(true);
-
     return std::ostream::operator<<(pf);
 }            
 
+bool goby::util::FlexOstream::is(std::ostream& (*pf) (std::ostream&), logger_lock::LockAction lock_action /*= none*/)
+{
+    Logger::Verbosity verbosity = Logger::QUIET;
+    if(pf == debug1)
+        verbosity = Logger::DEBUG1;
+    else if(pf == debug2)
+        verbosity = Logger::DEBUG2;
+    else if(pf == debug3)
+        verbosity = Logger::DEBUG3;
+    else if(pf == warn)
+        verbosity = Logger::WARN;                
+    else if(pf == verbose)
+        verbosity = Logger::VERBOSE;  
+                
+    bool display = (sb_.highest_verbosity() >= verbosity);
+
+    if(display)
+    {
+        if(lock_action == logger_lock::lock)
+        {
+            goby::util::Logger::mutex.lock(); 
+        }
+        
+        if(pf == die)
+            sb_.set_die_flag(true);
+
+        *this << pf;
+        sb_.set_verbosity_depth(verbosity);
+    }
+                
+    return display;
+}

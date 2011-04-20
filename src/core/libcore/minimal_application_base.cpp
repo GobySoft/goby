@@ -20,7 +20,7 @@
 
 #include "goby/core/libcore/configuration_reader.h"
 
-using goby::util::glogger;
+using goby::glog;
 using goby::util::as;
 
 
@@ -77,20 +77,20 @@ goby::core::MinimalApplicationBase::MinimalApplicationBase(google::protobuf::Mes
     }
     
     // set up the logger
-    glogger().set_name(application_name());
-    glogger().add_stream(static_cast<util::Logger::Verbosity>(base_cfg_->verbosity()),
+    glog.set_name(application_name());
+    glog.add_stream(static_cast<util::Logger::Verbosity>(base_cfg_->verbosity()),
                          &std::cout);
 
     if(!base_cfg_->IsInitialized())
         throw(ConfigException("Invalid base configuration"));
     
-    glogger() << debug << "App name is " << application_name() << std::endl;
+    glog.is(debug1) && glog << "App name is " << application_name() << std::endl;
 
 }
 
 goby::core::MinimalApplicationBase::~MinimalApplicationBase()
 {
-    glogger() << debug <<"MinimalApplicationBase destructing..." << std::endl;    
+    glog.is(debug1) && glog <<"MinimalApplicationBase destructing..." << std::endl;    
 }
 
 void goby::core::MinimalApplicationBase::__run()
@@ -104,7 +104,8 @@ void goby::core::MinimalApplicationBase::__run()
         }
         catch(std::exception& e)
         {
-            glogger() << warn << e.what() << std::endl;
+            glog.is(warn) &&
+                glog << e.what() << std::endl;
         }
     }
 }

@@ -58,21 +58,26 @@ int main(int argc, char* argv[])
 }
 
 
-using goby::util::glogger;
+using goby::glog;
 
 goby::moos::MOOSGateway::MOOSGateway()
     : ZeroMQApplicationBase(&cfg_)
 {
     CMOOSCommClient::Run(cfg_.moos_server_host().c_str(), cfg_.moos_server_port(), cfg_.base().app_name().c_str(), cfg_.moos_comm_tick());
-    
-    glogger() << "Waiting to connect to MOOSDB ... " << std::endl;
+
+    glog.is(verbose) &&
+        glog << "Waiting to connect to MOOSDB ... " << std::endl;
 
     int i = 0;
     while(!CMOOSCommClient::IsConnected())
     {
         i++;
         if(i > MAX_CONNECTION_TIMEOUT)
-            glogger() << die << "Failed to connect to MOOSDB in " << MAX_CONNECTION_TIMEOUT << " seconds. Check `moos_server_host` and `moos_server_port`" << std::endl;
+        {
+            glog.is(die) &&
+                glog << "Failed to connect to MOOSDB in " << MAX_CONNECTION_TIMEOUT << " seconds. Check `moos_server_host` and `moos_server_port`" << std::endl;
+        }
+        
         sleep(1);
     }
 
@@ -80,8 +85,8 @@ goby::moos::MOOSGateway::MOOSGateway()
         MOOSNode::subscribe(cfg_.goby_subscribe_filter(i));
 
 
-    glogger().add_group("from_moos", util::Colors::lt_magenta, "MOOS -> Goby");
-    glogger().add_group("to_moos", util::Colors::lt_green, "Goby -> MOOS");
+    glog.add_group("from_moos", util::Colors::lt_magenta, "MOOS -> Goby");
+    glog.add_group("to_moos", util::Colors::lt_green, "Goby -> MOOS");
 }
 
 
@@ -100,8 +105,9 @@ void goby::moos::MOOSGateway::moos_inbox(CMOOSMsg& msg)
     msg.SetSourceAux(msg.GetSourceAux() +
                      (msg.GetSourceAux().size() ? "/" : "")
                      + application_name());
-    
-    glogger() << group("to_moos") << msg << std::endl;
+
+    glog.is(verbose) &&
+        glog << group("to_moos") << msg << std::endl;
     
     CMOOSCommClient::Post(msg);
 }
@@ -126,7 +132,8 @@ void goby::moos::MOOSGateway::loop()
                          (msg.GetSourceAux().size() ? "/" : "")
                          + application_name());
 
-        glogger() << group("from_moos") << msg << std::endl;    
+        glog.is(verbose) &&
+            glog << group("from_moos") << msg << std::endl;    
 
         MOOSNode::publish(msg);
     }
@@ -147,7 +154,8 @@ void goby::moos::MOOSGateway::check_for_new_moos_variables()
         {
             if(InMail.size()!=1)
             {
-                glogger() << warn << "ServerRequest for VAR_SUMMARY returned incorrect mail size (should be one)";
+                glog.is(warn) &&
+                    glog << "ServerRequest for VAR_SUMMARY returned incorrect mail size (should be one)";
                 return;
             }
             
@@ -157,12 +165,14 @@ void goby::moos::MOOSGateway::check_for_new_moos_variables()
 
             BOOST_FOREACH(const std::string& s, all_var)
             {
-                glogger() << s << std::endl;
+                glog.is(debug1) &&
+                    glog << s << std::endl;
                 if(!subscribed_vars_.count(s))
                 {
                     if(clears_subscribe_filters(s))
                     {
-                        glogger() << "CMOOSCommClient::Register for " << s << std::endl;
+                        glog.is(verbose) &&
+                            glog << "CMOOSCommClient::Register for " << s << std::endl;
                         CMOOSCommClient::Register(s, 0);
                         subscribed_vars_.insert(s);
                     }

@@ -31,7 +31,7 @@ void GPSDriver::loop()
     std::string in;
     while(serial_.readline(&in))
     {
-        glogger() << "raw NMEA: " << in << std::flush;
+        goby::glog << "raw NMEA: " << in << std::flush;
         
         // parse
         NMEASentence nmea;
@@ -41,13 +41,13 @@ void GPSDriver::loop()
         }
         catch (bad_nmea_sentence& e)
         {
-            glogger() << warn << "bad NMEA sentence: " << e.what()
-                      << std::endl;
+            goby::glog << warn << "bad NMEA sentence: " << e.what()
+                       << std::endl;
         }
 
         if(nmea.sentence_id() == "GGA")
         {
-            glogger() << "This is a GGA type message." << std::endl;
+            goby::glog << "This is a GGA type message." << std::endl;
 
             // create the message we send on the wire
             GPSSentenceGGA gga;
@@ -62,14 +62,14 @@ void GPSDriver::loop()
                 // parse the time stamp
                 using goby::util::as;
                 gga.mutable_header()->set_time(as<std::string>(nmea_time2ptime(nmea.part(1))));
-                glogger() << gga << std::flush;
+                goby::glog << gga << std::flush;
                 
                 publish(gga);
             }
             catch(bad_gga_sentence& e)
             {
-                glogger() << warn << "bad GGA sentence: " << e.what()
-                          << std::endl;
+                goby::glog << warn << "bad GGA sentence: " << e.what()
+                           << std::endl;
             }
             
         }

@@ -86,13 +86,15 @@ namespace goby
           private:
             void iterate()
             {
+                using goby::glog;
+                
                 // sit and wait on a message until the next time to call loop() is up        
                 long timeout = (t_next_loop_-goby::util::goby_time()).total_microseconds();
                 if(timeout < 0)
                     timeout = 0;
-    
-                goby::util::glogger() << debug << "timeout set to: " << timeout
-                                      << " microseconds." << std::endl;
+
+                glog.is(debug2) &&
+                    glog << "timeout set to: " << timeout << " microseconds." << std::endl;
                 bool had_events = ZeroMQNode::poll(timeout);
                 if(!had_events)
                 {

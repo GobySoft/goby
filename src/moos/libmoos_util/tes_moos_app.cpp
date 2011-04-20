@@ -24,7 +24,7 @@
 
 #include "goby/util/string.h"
 
-using goby::util::glogger;
+using goby::glog;
 using goby::util::as;
 
 std::string TesMoosApp::mission_file_;
@@ -41,7 +41,7 @@ bool TesMoosApp::Iterate()
     // MOOS has stopped talking by first Iterate()
     if(!cout_cleared_)
     {
-        glogger().refresh();
+        glog.refresh();
         cout_cleared_ = true;
     }
 
@@ -58,13 +58,20 @@ bool TesMoosApp::OnNewMail(MOOSMSG_LIST &NewMail)
         dynamic_vars().update_moos_vars(msg);   
 
         if(msg.GetTime() < start_time_)
-            glogger() << warn << "ignoring normal mail from " << msg.GetKey()
-                  << " from before we started (dynamics still updated)"
-                  << std::endl;
+        {
+            glog.is(warn) &&
+                glog << "ignoring normal mail from " << msg.GetKey()
+                          << " from before we started (dynamics still updated)"
+                          << std::endl;
+        }
         else if(mail_handlers_.count(msg.GetKey()))
             mail_handlers_[msg.GetKey()](msg);
         else
-            glogger() << die << "received mail that we have no handler for!" << std::endl;
+        {
+            glog.is(die) &&
+                glog << "received mail that we have no handler for!" << std::endl;
+        }
+        
     }
     
     return true;    
@@ -115,7 +122,8 @@ bool TesMoosApp::OnStartUp()
 
 void TesMoosApp::subscribe(const std::string& var,  InboxFunc handler, int blackout /* = 0 */ )
 {
-    glogger() << "subscribing for MOOS variable: " << var << " @ " << blackout << std::endl;
+    glog.is(verbose) &&
+        glog << "subscribing for MOOS variable: " << var << " @ " << blackout << std::endl;
     
     pending_subscriptions_.push_back(std::make_pair(var, blackout));
     try_subscribing();
@@ -135,7 +143,8 @@ void TesMoosApp::do_subscriptions()
         // variable name, blackout
         m_Comms.Register(pending_subscriptions_.front().first,
                          pending_subscriptions_.front().second);
-        glogger() << "subscribed for: " << pending_subscriptions_.front().first << std::endl;
+        glog.is(verbose) &&
+            glog << "subscribed for: " << pending_subscriptions_.front().first << std::endl;
         pending_subscriptions_.pop_front();
     }
 }

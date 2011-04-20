@@ -31,12 +31,12 @@ void NodeReporter::create_node_report(const GPSSentenceGGA& gga,
 {
     if(!(gga.IsInitialized() && depth_reading.IsInitialized()))
     {
-        glogger() << warn << "need both GPSSentenceGGA and DepthReading "
+        goby::glog << warn << "need both GPSSentenceGGA and DepthReading "
                   << "message to proceed" << std::endl;
         return;
     }
 
-    glogger() << gga << depth_reading << std::flush;
+    goby::glog << gga << "\n" << depth_reading << std::endl;
     
     
     // make an abstracted position and pose aggregate from the newest
@@ -73,7 +73,7 @@ void NodeReporter::create_node_report(const GPSSentenceGGA& gga,
 
     // in a better world we would want data for altitude, speed and
     // Euler angles too!
-    glogger() << report << std::flush;
+    goby::glog << report << std::flush;
 
     publish(report);
     

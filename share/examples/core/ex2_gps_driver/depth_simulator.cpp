@@ -21,7 +21,7 @@ public:
             // small random offset
             reading.set_depth(cfg_.depth() + (rand() % 10) / 10.0);
             
-            glogger() << reading << std::flush;
+            goby::glog << reading << std::flush;
             publish(reading);    
         }
 

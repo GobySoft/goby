@@ -32,7 +32,7 @@
 using namespace goby::core;
 using namespace goby::util;
 using boost::shared_ptr;
-
+using goby::glog;
 
 goby::core::ApplicationBase::ApplicationBase(google::protobuf::Message* cfg /*= 0*/)
     : ZeroMQApplicationBase(cfg),
@@ -47,7 +47,8 @@ goby::core::ApplicationBase::ApplicationBase(google::protobuf::Message* cfg /*= 
 
 goby::core::ApplicationBase::~ApplicationBase()
 {
-    glogger() << debug <<"ApplicationBase destructing..." << std::endl;    
+    glog.is(debug1) &&
+        glog << "ApplicationBase destructing..." << std::endl;    
 }
 
 
@@ -55,7 +56,10 @@ goby::core::ApplicationBase::~ApplicationBase()
 void goby::core::ApplicationBase::__set_up_sockets()
 {
     if(!base_cfg().using_database())        
-        glogger() << warn << "Not using `goby_database`. You will want to ensure you are logging your runtime data somehow" << std::endl;
+    {
+        glog.is(warn) &&
+            glog << "Not using `goby_database`. You will want to ensure you are logging your runtime data somehow" << std::endl;
+    }
     else
     {
         std::string database_connection = "tcp://";
@@ -75,14 +79,16 @@ void goby::core::ApplicationBase::__set_up_sockets()
         try
         {
             database_client_.connect(database_connection.c_str());
-            glogger() << debug << "connected (database requests line) to: "
-                      << database_connection << std::endl;
+            glog.is(debug1) &&
+                glog << "connected (database requests line) to: "
+                     << database_connection << std::endl;
         }
         catch(std::exception& e)
         {
-            glogger() << die << "cannot bind to: "
-                      << database_connection << ": " << e.what()
-                      << " check AppBaseConfig::database_address, AppBaseConfig::database_port" << std::endl;
+            glog.is(die) &&
+                glog << "cannot bind to: "
+                     << database_connection << ": " << e.what()
+                     << " check AppBaseConfig::database_address, AppBaseConfig::database_port" << std::endl;
         }
     }
 }
@@ -121,7 +127,7 @@ void goby::core::ApplicationBase::__finalize_header(
 
             if(!header)
             {
-                glogger() << warn << "Dynamic cast of Header failed!" << std::endl;
+                glog.is(warn) && glog << "Dynamic cast of Header failed!" << std::endl;
                 return;
             }
             
@@ -160,16 +166,22 @@ void goby::core::ApplicationBase::__publish(google::protobuf::Message& msg, cons
         proto_request.SerializeToArray(zmq_request.data(), zmq_request.size());    
         database_client_.send(zmq_request);
 
-        glogger() << debug << "Sending request to goby_database: " << proto_request << "\n"
-                  << "...waiting on response" << std::endl;
+        glog.is(debug1) &&
+            glog << "Sending request to goby_database: " << proto_request << "\n"
+                 << "...waiting on response" << std::endl;
 
         zmq::message_t zmq_response;
         database_client_.recv(&zmq_response);
         proto_response.ParseFromArray(zmq_response.data(), zmq_response.size());
-        glogger() << debug << "Got response: " << proto_response << std::endl;
+
+        glog.is(debug1) &&
+            glog << "Got response: " << proto_response << std::endl;
 
         if(!proto_response.response_type() == protobuf::DatabaseResponse::NEW_PUBLISH_ACCEPTED)
-            glogger() << die << "Database publish was denied!" << std::endl;        
+        {
+            glog.is(die) && glog << die << "Database publish was denied!" << std::endl;
+        }
+        
 
     }
 
@@ -177,8 +189,7 @@ void goby::core::ApplicationBase::__publish(google::protobuf::Message& msg, cons
     // adds, as needed, required fields of Header
     __finalize_header(&msg, dest, platform_name);
 
-    goby::util::glogger() << debug << "< " << msg << std::endl;
+    glog.is(debug1) &&
+        glog << "< " << msg << std::endl;
     ProtobufNode::publish(msg);
 }
-
-

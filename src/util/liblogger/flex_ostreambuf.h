@@ -43,12 +43,14 @@ namespace goby
         struct Logger
         {
             static boost::mutex mutex;
-            enum Verbosity { quiet = AppBaseConfig::QUIET,
-                             warn = AppBaseConfig::WARN,
-                             verbose = AppBaseConfig::VERBOSE,
-                             debug = AppBaseConfig::DEBUG,
-                             gui = AppBaseConfig::GUI };
-        };        
+            enum Verbosity { QUIET = AppBaseConfig::QUIET,
+                             WARN = AppBaseConfig::WARN,
+                             VERBOSE = AppBaseConfig::VERBOSE,
+                             GUI = AppBaseConfig::GUI,
+                             DEBUG1 = AppBaseConfig::DEBUG1,
+                             DEBUG2 = AppBaseConfig::DEBUG2,
+                             DEBUG3 = AppBaseConfig::DEBUG3 };
+        };
         
         
         /// Class derived from std::stringbuf that allows us to insert things before the stream and control output. This is the string buffer used by goby::util::FlexOstream for the Goby Logger (glogger)
@@ -70,11 +72,17 @@ namespace goby
 
             /// do all attached streams have Verbosity == quiet?
             bool is_quiet()
-            { return is_quiet_; }    
+            { return highest_verbosity_ == Logger::QUIET; }    
 
             /// is there an attached stream with Verbosity == gui (ncurses GUI)
             bool is_gui()
             { return is_gui_; }
+
+            Logger::Verbosity highest_verbosity()
+            {
+                return highest_verbosity_;
+            }
+            
             
             /// current group name (last insertion of group("") into the stream)
             void group_name(const std::string & s)
@@ -84,13 +92,8 @@ namespace goby
             void set_die_flag(bool b)
             { die_flag_ = b; }
 
-            /// label stream contents as "debug" until the next call to sync()
-            void set_debug_flag(bool b)
-            { debug_flag_ = b; }
-
-            /// label stream contents as "warning" until the next call to sync()
-            void set_warn_flag(bool b)
-            { warn_flag_ = b; }
+            void set_verbosity_depth(Logger::Verbosity depth)
+            { current_verbosity_ = depth; }
 
             /// add a new group
             void add_group(const std::string& name, Group g);
@@ -131,9 +134,8 @@ namespace goby
             std::map<std::string, Group> groups_;
 
             bool die_flag_;
-            bool warn_flag_;
-            bool debug_flag_;
-
+            Logger::Verbosity current_verbosity_;
+            
 #ifdef HAS_NCURSES
             FlexNCurses* curses_;
 #endif            
@@ -143,9 +145,9 @@ namespace goby
 
             std::vector<StreamConfig> streams_;
 
-            bool is_quiet_;
             bool is_gui_;
-            
+
+            Logger::Verbosity highest_verbosity_;            
         };
     }
 }

@@ -26,7 +26,7 @@
 goby::core::protobuf::DatabaseConfig goby::core::Database::cfg_;
 
 using goby::util::as;
-using goby::util::glogger;
+using goby::glog;
 using goby::util::goby_time;
 
 int main(int argc, char* argv[])
@@ -44,14 +44,18 @@ goby::core::Database::Database()
     
     if(cfg_.base().loop_freq() > MAX_LOOP_FREQ)
     {
-        glogger() << warn << "Setting loop frequency back to MAX_LOOP_FREQ = " << MAX_LOOP_FREQ << std::endl;
+        glog.is(warn) && 
+            glog << "Setting loop frequency back to MAX_LOOP_FREQ = " << MAX_LOOP_FREQ << std::endl;
         set_loop_freq(MAX_LOOP_FREQ);
     }
 
     
     if(!cfg_.base().using_database())
-        glogger() << die << "AppBaseConfig::using_database == false. Since we aren't wanting, we aren't starting (set to true to enable use of the database)!" << std::endl;
-
+    {
+        glog.is(die) &&
+            glog << "AppBaseConfig::using_database == false. Since we aren't wanting, we aren't starting (set to true to enable use of the database)!" << std::endl;
+    }
+    
     std::string database_binding = "tcp://*:";
     if(cfg_.base().has_database_port())
         database_binding += as<std::string>(cfg_.base().database_port());
@@ -61,15 +65,15 @@ goby::core::Database::Database()
     try
     {
         database_server_.bind(database_binding.c_str());
-        glogger() << debug << "bound (requests line) to: "
-                  << database_binding << std::endl;
+        glog.is(debug1) &&
+            glog << "bound (requests line) to: " << database_binding << std::endl;
         
     }
     catch(std::exception& e)
     {
-        glogger() << die << "cannot bind to: "
-                  << database_binding << ": " << e.what()
-                  << " check AppBaseConfig::database_port";
+        glog.is(die) &&
+            glog << "cannot bind to: " << database_binding << ": " << e.what()
+                      << " check AppBaseConfig::database_port";
     }
 
     // subscribe for everything
@@ -98,13 +102,13 @@ void goby::core::Database::init_sql()
     {
         cfg_.mutable_sqlite()->clear_path();
         cfg_.mutable_sqlite()->set_path(format_filename(cfg_.sqlite().path()));
-        
-        glogger() << warn << "db connection failed: "
-                  << e.what() << std::endl;
+
+        glog.is(warn) &&
+            glog << "db connection failed: " << e.what() << std::endl;
         std::string default_file = cfg_.sqlite().path();
             
-        glogger() << "trying again with defaults: "
-                  << default_file << std::endl;
+        glog.is(verbose) &&
+            glog << "trying again with defaults: " << default_file << std::endl;
 
         dbo_manager_->connect(default_file);
     }
@@ -135,7 +139,9 @@ void goby::core::Database::handle_database_request(const void* request_data,
     static protobuf::DatabaseResponse proto_response;
 
     proto_request.ParseFromArray(request_data, request_size);
-    glogger() << debug << "Got request: " << proto_request << std::endl;
+
+    glog.is(debug1) &&
+        glog << "Got request: " << proto_request << std::endl;
     
     switch(proto_request.request_type())
     {
@@ -167,7 +173,9 @@ void goby::core::Database::handle_database_request(const void* request_data,
             zmq::message_t zmq_response(proto_response.ByteSize());
             proto_response.SerializeToArray(zmq_response.data(), zmq_response.size());    
             database_server_.send(zmq_response);
-            glogger() << debug << "Sent response: " << proto_response << std::endl;
+
+            glog.is(debug1) &&
+                glog<< "Sent response: " << proto_response << std::endl;
         }
         break;
             

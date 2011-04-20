@@ -36,111 +36,86 @@ namespace goby
         /// \name Binary encoding
         //@{
 
-        
-        
-        /// \brief converts a char (byte) array into a hex string
-        ///
-        /// \param c pointer to array of char
-        /// \param s reference to string to put char into as hex
-        /// \param n length of c
-        /// the first two hex chars in s are the 0 index in c
-        inline bool char_array2hex_string(const unsigned char* c, std::string& s, const unsigned int n)
+        inline void hex_decode(const std::string& in, std::string* out)
         {
-            std::stringstream ss;
-            for (unsigned int i=0; i<n; i++)
-                ss << std::hex << std::setw(2) << std::setfill('0') << static_cast<unsigned int>(c[i]);
-        
-            s = ss.str();
-            return true;
-        }
+            static const short char0_9_to_number = 48;
+            static const short charA_F_to_number = 55; 
+            static const short chara_f_to_number = 87; 
+   
+            int in_size = in.size();
+            int out_size = in_size >> 1;
+            if(in_size & 1)
+                ++out_size;
 
-        /// \brief turns a string of hex chars ABCDEF into a character array reading  each byte 0xAB,0xCD, 0xEF, etc.
-        inline bool hex_string2char_array(unsigned char* c, const std::string& s, const unsigned int n)
-        {
-            for (unsigned int i = 0; i<n; i++)
+            out->assign(out_size, '\0');
+            for(int i = (in_size & 1) ? -1 : 0, n = in_size;
+                i < n;
+                i += 2)
             {
-                std::stringstream ss;
-                unsigned int in;
-                ss <<  s.substr(2*i, 2);
-                ss >> std::hex >> in;
-                c[i] = static_cast<unsigned char>(in); 
-            }
-            return true;
+                int out_i = (in_size & 1) ? (i+1) / 2 : i/2;
+        
+                if(i >= 0)
+                {
+                    if(in[i] >= '0' && in[i] <= '9')
+                        (*out)[out_i] |= ((in[i]-char0_9_to_number) & 0x0f) << 4;
+                    else if(in[i] >= 'A' && in[i] <= 'F')
+                        (*out)[out_i] |= ((in[i]-charA_F_to_number) & 0x0f) << 4;
+                    else if(in[i] >= 'a' && in[i] <= 'f')
+                        (*out)[out_i] |= ((in[i]-chara_f_to_number) & 0x0f) << 4;
+                }
+        
+                if(in[i+1] >= '0' && in[i+1] <= '9')
+                    (*out)[out_i] |= (in[i+1]-char0_9_to_number) & 0x0f;
+                else if(in[i+1] >= 'A' && in[i+1] <= 'F')
+                    (*out)[out_i] |= (in[i+1]-charA_F_to_number) & 0x0f;
+                else if(in[i+1] >= 'a' && in[i+1] <= 'f')
+                    (*out)[out_i] |= (in[i+1]-chara_f_to_number) & 0x0f;
+            }    
         }
 
-        /// \brief return a string represented the binary value of `l` for `bits` number of bits which reads MSB -> LSB
-        inline std::string long2binary_string(unsigned long l, unsigned short bits)
+        inline std::string hex_decode(const std::string& in)
         {
-            char s [bits+1];
-            for (unsigned int i=0; i<bits; i++)
+            std::string out;
+            hex_decode(in, &out);
+            return out;
+        }
+
+
+        inline void hex_encode(const std::string& in, std::string* out, bool upper_case = false)
+        {
+            static const short char0_9_to_number = 48;
+            static const short charA_F_to_number = 55; 
+            static const short chara_f_to_number = 87; 
+
+            int in_size = in.size();
+            int out_size = in_size << 1;
+    
+            out->resize(out_size);
+            for(int i = 0, n = in_size;
+                i < n;
+                ++i)
             {
-                s[bits-i-1] = (l&1) ? '1' : '0';
-                l >>= 1;
+                short msn = (in[i] >> 4) & 0x0f;
+                short lsn = in[i] & 0x0f;
+
+                if(msn >= 0 && msn <= 9)
+                    (*out)[2*i] = msn + char0_9_to_number;
+                else if(msn >= 10 && msn <= 15)
+                    (*out)[2*i] = msn + (upper_case ? charA_F_to_number : chara_f_to_number);
+        
+                if(lsn >= 0 && lsn <= 9)
+                    (*out)[2*i+1] = lsn + char0_9_to_number;
+                else if(lsn >= 10 && lsn <= 15)
+                    (*out)[2*i+1] = lsn + (upper_case ? charA_F_to_number : chara_f_to_number);
+
             }
-            s[bits] = '\0';    
-            return (std::string)s;
-        }
-    
-        /// \brief converts a binary string ("1000101010101010") into a hex string ("8AAA")
-        inline std::string binary_string2hex_string(const std::string & bs)
-        {
-            std::string hs;
-            unsigned int bytes = (unsigned int)(ceil(bs.length()/8.0));
-            unsigned char c[bytes];
-    
-            for(size_t i = 0; i < bytes; ++i)
-            {
-                std::bitset<8> b(bs.substr(i*8,8));    
-                c[i] = (char)b.to_ulong();
-            }
-
-            char_array2hex_string(c, hs, bytes);
-
-            return hs;
         }
 
-        /// \brief converts a boost::dynamic_bitset (similar to std::bitset but without compile time size requirements) into a hex string
-        inline std::string dyn_bitset2hex_string(const boost::dynamic_bitset<unsigned char>& bits, unsigned trim_to_bytes_size = 0)
+        inline std::string hex_encode(const std::string& in)
         {
-            std::stringstream binary;
-            binary << bits;
-            std::string out = binary_string2hex_string(binary.str());
-
-            if(trim_to_bytes_size)
-                return out.substr(out.length() - trim_to_bytes_size*2);
-            else
-                return out;
-        }
-    
-        /// \brief converts a hex string ("8AAA") into a binary string ("1000101010101010")
-        ///
-        /// only works on whole byte string (even number of nibbles)
-        inline std::string hex_string2binary_string(const std::string & bs)
-        {
-            int bytes = bs.length()/2;
-            unsigned char c[bytes];
-    
-            hex_string2char_array(c, bs, bytes);
-
-            std::string hs;
-    
-            for (size_t i = 0; i < (size_t)bytes; i++)
-                hs += long2binary_string((unsigned long)c[i], 8);
-
-            return hs;
-        }
-
-
-        /// \brief converts a hex string ("8AAA") into a dynamic_bitset
-        inline boost::dynamic_bitset<unsigned char> hex_string2dyn_bitset(const std::string & hs, unsigned bits_size = 0)
-        {
-            boost::dynamic_bitset<unsigned char> bits;
-            std::stringstream bin_str;
-            bin_str << hex_string2binary_string(hs);       
-            bin_str >> bits;
-
-            if(bits_size) bits.resize(bits_size);        
-            return bits;
+            std::string out;
+            hex_encode(in, &out);
+            return out;
         }
 
         /// \brief attempts to convert a hex string into a numerical representation (of type T)

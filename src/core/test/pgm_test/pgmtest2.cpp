@@ -9,7 +9,7 @@
 #include <iostream>
 #include <sstream>
 #include <stdio.h>
-#include "goby/acomms/acomms_helpers.h"
+#include "goby/util/binary.h"
 
 int main (int argc, char *argv[])
 {
@@ -35,7 +35,7 @@ int main (int argc, char *argv[])
         subscriber.recv(&update);
         
         std::string in(static_cast<const char*>(update.data()), update.size());
-        std::cout << goby::acomms::hex_encode(in) << std::endl;
+        std::cout << goby::util::hex_encode(in) << std::endl;
     }
     
     return 0;

@@ -75,7 +75,7 @@ namespace goby
 
                     t = goby::util::unbiased_round(t, precision);
                     
-                    DCCLCommon::logger() << debug << "using value " << t << std::endl;
+                    DCCLCommon::logger() << debug1 << "using value " << t << std::endl;
         
                     
                     t -= min;

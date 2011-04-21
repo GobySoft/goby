@@ -119,16 +119,16 @@ boost::any goby::acomms::DCCLDefaultStringCodec::_decode(Bitset* bits)
         unsigned header_length = _min_size();
     
         
-        DCCLCommon::logger() << debug << "Length of string is = " << value_length << std::endl;
+        DCCLCommon::logger() << debug1 << "Length of string is = " << value_length << std::endl;
 
         
-        DCCLCommon::logger() << debug << "bits before get_more_bits " << *bits << std::endl;    
+        DCCLCommon::logger() << debug1 << "bits before get_more_bits " << *bits << std::endl;    
 
         // grabs more bits to add to the MSBs of `bits`
         get_more_bits(value_length*BITS_IN_BYTE);
 
         
-        DCCLCommon::logger() << debug << "bits after get_more_bits " << *bits << std::endl;    
+        DCCLCommon::logger() << debug1 << "bits after get_more_bits " << *bits << std::endl;    
 
         *bits >>= header_length;
         bits->resize(bits->size() - header_length);

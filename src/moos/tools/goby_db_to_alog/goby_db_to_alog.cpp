@@ -109,7 +109,7 @@ public:
             else
                 msgs = session.find<CMOOSMsg>().orderBy("moosmsg_time ASC");
             
-            glogger() << "We have " << msgs.size() << " messages:" << std::endl;
+            goby::glog << "We have " << msgs.size() << " messages:" << std::endl;
 
             SpoofLogger spoof_logger;
 

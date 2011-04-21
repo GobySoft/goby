@@ -46,7 +46,7 @@ void goby::acomms::DCCLFieldCodec::encode(Bitset* bits,
     //     const google::protobuf::Message* msg = boost::any_cast<const google::protobuf::Message*>(field_value);
     //     msg_handler.push(msg->GetDescriptor());
 
-    //         DCCLCommon::logger() << debug << "Starting encode for root message (in header = "
+    //         DCCLCommon::logger() << debug1 << "Starting encode for root message (in header = "
     //                          << std::boolalpha
     //                          << (part_ == HEAD) << "): "
     //                          << msg->GetDescriptor()->full_name() << std::endl;
@@ -124,7 +124,7 @@ void goby::acomms::DCCLFieldCodec::decode(Bitset* bits,
     //         boost::any_cast<boost::shared_ptr<google::protobuf::Message> >(*field_value);
     //     msg_handler.push(msg->GetDescriptor());
 
-    //         DCCLCommon::logger() << debug << "Starting decode for root message (in header = "
+    //         DCCLCommon::logger() << debug1 << "Starting decode for root message (in header = "
     //                          << std::boolalpha
     //                          << (part_ == HEAD) << "): "
     //                          << msg->GetDescriptor()->full_name() << std::endl;
@@ -154,7 +154,7 @@ void goby::acomms::DCCLFieldCodec::decode(Bitset* bits,
         throw(DCCLException("Decode called with NULL Bitset"));    
     
     if(field)
-        DCCLCommon::logger() << debug << "Starting decode for field: " << field->DebugString();
+        DCCLCommon::logger() << debug1 << "Starting decode for field: " << field->DebugString();
 
     Bitset these_bits;
     BitsHandler bits_handler(&these_bits, bits);
@@ -178,7 +178,7 @@ void goby::acomms::DCCLFieldCodec::decode_repeated(Bitset* bits,
         throw(DCCLException("Decode called with NULL Bitset"));    
     
     if(field)
-        DCCLCommon::logger() << debug << "Starting repeated decode for field: " << field->DebugString();
+        DCCLCommon::logger() << debug1 << "Starting repeated decode for field: " << field->DebugString();
     
     Bitset these_bits;
     BitsHandler bits_handler(&these_bits, bits);
@@ -341,7 +341,7 @@ std::string goby::acomms::DCCLFieldCodec::_info()
 
 void goby::acomms::DCCLFieldCodec::BitsHandler::transfer_bits(unsigned size)
 {
-    //     DCCLCommon::logger() << debug << "_get_bits from (" << in_pool_ << ") " << *in_pool_ << " to add to (" << out_pool_ << ") " << *out_pool_ << " number: " << size << std::endl;
+    //     DCCLCommon::logger() << debug1 << "_get_bits from (" << in_pool_ << ") " << *in_pool_ << " to add to (" << out_pool_ << ") " << *out_pool_ << " number: " << size << std::endl;
     
     for(int i = 0, n = size; i < n; ++i)
         out_pool_->push_back((*in_pool_)[i]);
@@ -441,7 +441,7 @@ void goby::acomms::DCCLFieldCodec::MessageHandler::push(const google::protobuf::
 
     ++descriptors_pushed_;
     
-    //     DCCLCommon::logger() << debug << "Added descriptor  " << desc->full_name() << std::endl;
+    //     DCCLCommon::logger() << debug1 << "Added descriptor  " << desc->full_name() << std::endl;
 }
 
 void goby::acomms::DCCLFieldCodec::MessageHandler::push(const google::protobuf::FieldDescriptor* field)
@@ -449,13 +449,13 @@ void goby::acomms::DCCLFieldCodec::MessageHandler::push(const google::protobuf::
     field_.push_back(field);
     ++fields_pushed_;
     
-    //     DCCLCommon::logger() << debug << "Added field  " << field->name() << std::endl;
+    //     DCCLCommon::logger() << debug1 << "Added field  " << field->name() << std::endl;
 }
 
 
 void goby::acomms::DCCLFieldCodec::MessageHandler::__pop_desc()
 {
-    //     DCCLCommon::logger() << debug << "Removed descriptor  " << desc_.back()->full_name() << std::endl;
+    //     DCCLCommon::logger() << debug1 << "Removed descriptor  " << desc_.back()->full_name() << std::endl;
 
     if(!desc_.empty())
         desc_.pop_back();
@@ -463,7 +463,7 @@ void goby::acomms::DCCLFieldCodec::MessageHandler::__pop_desc()
 
 void goby::acomms::DCCLFieldCodec::MessageHandler::__pop_field()
 {
-    //     DCCLCommon::logger() << debug << "Removed field  " << field_.back()->name() << std::endl;
+    //     DCCLCommon::logger() << debug1 << "Removed field  " << field_.back()->name() << std::endl;
 
     if(!field_.empty())
         field_.pop_back();

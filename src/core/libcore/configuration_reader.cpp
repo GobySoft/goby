@@ -45,15 +45,15 @@ void goby::core::ConfigReader::read_cfg(int argc,
 
     std::string cfg_path_desc = "path to " + *application_name + " configuration file (typically " + *application_name + ".cfg)";
     
-    std::string app_name_desc = "name to use when connecting to gobyd (default: " + std::string(argv[0]) + ")";
+    std::string app_name_desc = "name to use while communicating in goby (default: " + std::string(argv[0]) + ")";
     od_cli_only.add_options()
         ("cfg_path,c", boost::program_options::value<std::string>(&cfg_path), cfg_path_desc.c_str())
         ("help,h", "writes this help message")
-        ("platform_name,p", boost::program_options::value<std::string>(), "name of this platform (same as gobyd configuration value `self.name`)")
         ("app_name,a", boost::program_options::value<std::string>(), app_name_desc.c_str())
         ("example_config,e", "writes an example .pb.cfg file")
         ("verbose,v", boost::program_options::value<std::string>()->implicit_value("")->multitoken(), "output useful information to std::cout. -v is verbosity: verbose, -vv is verbosity: debug1, -vvv is verbosity: debug2, -vvvv is verbosity: debug3")
-        ("ncurses,n", boost::program_options::value<std::string>(), "output useful information to an NCurses GUI instead of stdout.");
+        ("ncurses,n", "output useful information to an NCurses GUI instead of stdout. If set, this parameter overrides --verbose settings.")
+        ("no_db,d", "disables the check for goby_database before publishing. You must set this if not running the goby_database.");
     
     std::string od_both_desc = "Typically given in " + *application_name + " configuration file, but may be specified on the command line";
     boost::program_options::options_description od_both(od_both_desc.c_str());
@@ -67,8 +67,7 @@ void goby::core::ConfigReader::read_cfg(int argc,
     
     boost::program_options::positional_options_description p;
     p.add("cfg_path", 1);
-    p.add("platform_name", 2);
-    p.add("app_name", 3);
+    p.add("app_name", 2);
     
     try
     {        
@@ -93,6 +92,11 @@ void goby::core::ConfigReader::read_cfg(int argc,
         e.set_error(false);
         get_example_cfg_file(message, &std::cout);    
         throw(e);
+    }
+
+    if (var_map->count("app_name"))
+    {
+        *application_name = (*var_map)["app_name"].as<std::string>();
     }
     
     boost::program_options::notify(*var_map);
@@ -572,6 +576,8 @@ void goby::core::ConfigReader::merge_app_base_cfg(AppBaseConfig* base_cfg,
         }
     }
 
+    if(var_map.count("no_db"))
+       base_cfg->set_using_database(false);
 }
 
 

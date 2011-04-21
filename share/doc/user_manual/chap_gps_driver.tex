@@ -2,9 +2,9 @@
 \MakeShortVerb{\!} % makes !foo! == !foo!
 \epigraph{\textit{Man is the best computer we can put aboard a spacecraft, and the only one that can be mass produced with unskilled labor.}}{Werner von Braun}
 
-Robots, like people, need to know where they are. The simplest way now is to use a GPS receiver. While this works only when the robot is on the surface of the ocean, it is one of the most accurate forms of positioning available and thus used as a starting point for undersea dead reckoning using Doppler Velocity Loggers (DVLs) or Inertial Measurement Units (IMUs). Therefore, reading a GPS receiver's output into a usable form for decision making is a useful and necessary ability for our marine robot. This example shows how we might do this using Goby.
+Robots, like people, need to know where they are. The simplest way now is to use a GPS receiver. While this works only when the robot is on the surface of the ocean, it is one of the most accurate forms of positioning available and thus used as a starting point for undersea dead reckoning using Doppler Velocity Loggers (DVLs) or Inertial Measurement Units (IMUs). Therefore, reading a GPS receiver's output into a usable form for decision making is a useful and necessary ability for our marine robot. This example shows how we might do this using Goby by making an application !gps_driver_g!.
 
-Typically we might also need to know the depth of our vehicle. This is often determined by measuring the ambient pressure. In this example, we will simulate the scalar depth reading of such a pressure sensor.
+Typically we might also need to know the depth of our vehicle. This is often determined by measuring the ambient pressure. In this example, we will simulate the scalar depth reading of such a pressure sensor in !depth_simulator_g!.
 
 Finally, it is often useful to have an aggregate of the vehicle's status that includes a snapshot of the vehicle's location, orientation, speed, heading, and perhaps other factors such as battery life and health. For this example, we call such a message a !NodeReport! and provide an application !node_reporter_g! that compiles the reports from the GPS and the depth sensor into a single message. To extend this example, we could add data from other sources, such as an inertial measurement unit (IMU) or Doppler Velocity Logger (DVL).
 
@@ -12,9 +12,9 @@ As the first example, the files for this example are located at the end of the c
 
 \section{Reading \textit{configuration} from files and command line: DepthSimulator}
 
-``DepthSimulator'' is reads a starting depth value from a configuration file and reports that value as the current depth, perturbed slightly by a random value. It's a primitive constant depth simulator, but allows us to illustrate another feature of Goby, the configuration file reader.
+!DepthSimulator! reads a starting depth value from a configuration file and reports that value as the current depth, perturbed slightly by a random value. It's a primitive constant depth simulator, but allows us to illustrate another feature of Goby, the configuration file reader.
 
-Goby reads configuration text files and the command line using \gls{protobuf}, in a similar manner messages are defined for passing between applications. The Goby application author provides a .proto file containing a protobuf message that defines all possible valid configuration values for the given application in the form of a protobuf message. Then the application instantiates a copy of this configuration message and passes it to the !goby::core::ApplicationBase! constructor with reads the configuration text file and/or command line options. If the configuration text file and/or command line options properly populate the provided proper configuration protobuf message, the message is returned to the derived class (the Goby application). Otherwise, execution of the application ends with a useful error message for the user explaining the errors involved with the passed configuration. 
+Goby reads configuration text files and the command line using \gls{protobuf}, in a similar manner messages are defined for passing between applications. The Goby application author provides a !.proto! file containing a protobuf message that defines all possible valid configuration values for the given application in the form of a protobuf message. Then the application instantiates a copy of this configuration message and passes it to the !goby::core::ApplicationBase! constructor with reads the configuration text file and/or command line options. If the configuration text file and/or command line options properly populate the provided proper configuration protobuf message, the message is returned to the derived class (the Goby application). Otherwise, execution of the application ends with a useful error message for the user explaining the errors involved with the passed configuration. 
 
 Thus, for the !DepthSimulator! we define a protobuf message called !DepthSimulatorConfig!:
 \begin{boxedverbatim}
@@ -26,7 +26,7 @@ message DepthSimulatorConfig
 \end{boxedverbatim}
 \resetbvlinenumber
 
-An embedded message of type !AppBaseConfig! is always provided for configuring parameters common for all Goby applications, such as the frequency that the virtual method !loop()! is called, the name of the application to use with !gobyd! (if different from the compiled name), and the name of the platform that this application belongs on (and thus which !gobyd! to connect to if multiple !gobyd!s are running on a single computer). The !AppBaseConfig! message is defined in goby/src/core/proto/app\_base\_config.proto.
+An embedded message of type !AppBaseConfig! is always provided for configuring parameters common for all Goby applications, such as the frequency that the virtual method !loop()! is called, the name (alias) that the application is to use to communicate (if different from the compiled name), and the connection details (IP addresses, ports, etc.). The !AppBaseConfig! message is defined in goby/src/core/proto/app\_base\_config.proto.
 
 Specifically, for our !DepthSimulator!, we only have one other configuration parameter, a double called `depth'. It is required, so our application will fail to run without a depth provided.
 
@@ -39,7 +39,7 @@ class DepthSimulator : public goby::core::ApplicationBase
 };
 \end{boxedverbatim}
 \resetbvlinenumber
-which must either be a global object or a static member of our class\footnote{The configuration object must be a static member so that it is instantiated \textit{before} the \texttt{goby::core::ApplicationBase} since normal members of our \texttt{DepthSimulator} class would be instantiated \textit{after} \texttt{ApplicationBase}, which would lead to trouble when \texttt{ApplicationBase} tried to use the object}.
+which must either be a global object or a static member of our class\footnote{The configuration object must be a static member so that it is instantiated \textit{before} the \texttt{goby::core::ApplicationBase} since normal members of our \texttt{DepthSimulator} class would be instantiated \textit{after} \texttt{ApplicationBase}, which would lead to trouble when \texttt{ApplicationBase} tried to use the object.}.
 
 Then, all we must do is pass a pointer to that object to the constructor of the base class:
 \begin{boxedverbatim}
@@ -47,41 +47,87 @@ Then, all we must do is pass a pointer to that object to the constructor of the 
         : goby::core::ApplicationBase(&cfg_)
 \end{boxedverbatim}
 \resetbvlinenumber
-!goby::core::ApplicationBase! will take of the rest. To see what configuration values can be used in our compiled !depth_simulator_g!, we can run it with the !-h! (or equivalently, !--help!) flag:
+!goby::core::ApplicationBase! will take of the rest. To see what configuration values (with the correct syntax) can be used in our compiled !depth_simulator_g!, we can run it with the !-e! flag:
+
+\begin{boxedverbatim}
+> depth_simulator_g -e
+\end{boxedverbatim}
+\resetbvlinenumber
+
+which gives us a good list of options to choose from. For many of these, the defaults will be fine for now.
+\begin{boxedverbatim}
+base {  #  (req)
+  ethernet_address: "127.0.0.1"  # primary IP address of the 
+                                 # interface to multicast over 
+                                 # (opt) (default="127.0.0.1")
+  multicast_address: "239.255.7.15"  # multicast IP address to 
+                                     # use; 
+                                     # 239.252.0.0-239.255.255.255 
+                                     # is recommended (site-local). 
+                                     # See also 
+                                     # http://www.iana.org/assignmen
+                                     # ts/multicast-addresses/multic
+                                     # ast-addresses.xml (opt) 
+                                     # (default="239.255.7.15")
+  ethernet_port: 11142  #  (opt) (default=11142)
+  platform_name: "unnamed_goby_platform"  # same as self.name for 
+                                          # gobyd cfg (opt) 
+                                          # (default="unnamed_goby_p
+                                          # latform")
+  app_name: "myapp_g"  # default is compiled name - change this 
+                       # to run multiple instances (opt)
+  verbosity: QUIET  # Terminal verbosity (QUIET, WARN, VERBOSE, 
+                    # GUI, DEBUG1, DEBUG2, DEBUG3) (opt) 
+                    # (default=QUIET)
+  using_database: true  # True if using goby_database, false if 
+                        # no database is to be run (opt) 
+                        # (default=true)
+  database_address: "127.0.0.1"  # TCP address to send database 
+                                 # requests on. If omitted and 
+                                 # using_database==true, 
+                                 # `ethernet_address` is used (opt)
+  database_port: 11142  # TCP port to send database requests on. 
+                        # If omitted and using_database==true, 
+                        # `ethernet_port` is used (opt)
+  loop_freq: 10  # the frequency (Hz) used to run loop() (opt) 
+                 # (default=10)
+}
+depth:   #  (req)
+\end{boxedverbatim}
+\resetbvlinenumber
+
+
+
+Similarly, to see the allowed command line parameters we can run it with the !-h! (or equivalently, !--help!) flag:
 \begin{boxedverbatim}
 > depth_simulator_g --help
 \end{boxedverbatim}
 \resetbvlinenumber
 
-which should provides output 
+which should provides output\footnote{Some of the options are removed for brevity}:
 \begin{boxedverbatim}
 Allowed options:
 
 Typically given in depth_simulator_g configuration file,
 but may be specified on the command line:
-  --base arg             (req)
-                          platform_name: "AUV-23"  same as self.name for 
-                                                   gobyd cfg (req)
-                          app_name: "myapp_g"  default is compiled name - 
-                                               change this to run multiple 
-                                               instances (opt)
-                          verbosity: QUIET  Terminal verbosity 
-                                            (opt) (default)
-                          loop_freq: 10  the frequency (Hz) used to run 
-                                         loop() (opt) (default)
   --depth arg            (req)
 
 Given on command line only:
-  -c [ --cfg_path ] arg      path to depth_simulator_g configuration file 
-                             (typically depth_simulator_g.cfg)
-  -h [ --help ]              writes this help message
-  -p [ --platform_name ] arg name of this platform (same as gobyd configuration
-                             value `self.name`)
-  -a [ --app_name ] arg      name to use when connecting to gobyd (default: 
-                             depth_simulator_g)
-  -v [ --verbose ] arg       output useful information to std::cout. -v is 
-                             verbosity: verbose, -vv is verbosity: debug, -vvv 
-                             is verbosity: gui
+  -c [ --cfg_path ] arg    path to depth_simulator_g configuration file 
+                           (typically depth_simulator_g.cfg)
+  -h [ --help ]            writes this help message
+  -a [ --app_name ] arg    name to use while communicating in goby (default: 
+                           ./depth_simulator_g)
+  -e [ --example_config ]  writes an example .pb.cfg file
+  -v [ --verbose ] arg     output useful information to std::cout. -v is 
+                           verbosity: verbose, -vv is verbosity: debug1, -vvv 
+                           is verbosity: debug2, -vvvv is verbosity: debug3
+  -n [ --ncurses ]         output useful information to an NCurses GUI instead 
+                           of stdout. If set, this parameter overrides 
+                           --verbose settings.
+  -d [ --no_db ]           disables the check for goby_database before 
+                           publishing. You must set this if not running the 
+                           goby_database.
 \end{boxedverbatim}
 \resetbvlinenumber
 
@@ -153,11 +199,11 @@ message DepthReading
 \end{boxedverbatim}
 \resetbvlinenumber
 
-`Header' (defined in goby/src/core/proto/header.proto) provides commonly used fields such as time and source / destination addressing. It is highly recommended to include this in messages sent through Goby, but not required. !goby::core::ApplicationBase! will populate any required fields in `Header' not given by DepthSimulator. For example, if neither time field (`unix\_time' nor `iso\_time') is set, !goby::core::ApplicationBase! will set the time based on the time !publish()! was called. However either `unix\_time' or `iso\_time' should be set if the calling application has a better time stamp for the message than the publish time.
+`Header' (defined in goby/src/core/proto/header.proto) provides commonly used fields such as time and source / destination addressing. It is highly recommended to include this in messages sent through Goby, but not required. !goby::core::ApplicationBase! will populate any required fields in `Header' not given by DepthSimulator. For example, if the `time' is not set, !goby::core::ApplicationBase! will set the time based on the time !publish()! was called. However `time' should be set if the calling application has a better time stamp for the message than the publish time (for example, the time a sensor's sample was taken).
 
 \section{Our first \textit{useful} application: \texttt{GPSDriver}}
 
-!GPSDriver! doesn't introduce any new features of Goby, but it attempts to be the first non-trivial application we have seen thus far. !GPSDriver! connects to a NMEA-0183 compatible GPS receiver over a serial port, reads all the messages and parses the GGA sentence into a useful protobuf message for posting to the database (via !gobyd!). 
+!GPSDriver! doesn't introduce any new features of Goby, but it attempts to be the first non-trivial application we have seen thus far. !GPSDriver! connects to a NMEA-0183 compatible GPS receiver over a serial port, reads all the messages and parses the GGA sentence into a useful protobuf message for posting to the database.
 
 \subsection{Configuration}
 The configuration needed for !GPSDriver! all pertains to how the serial GPS receiver is connected and how it communicates:
@@ -192,7 +238,7 @@ The !NodeReport! provides
 \item Name of the platform
 \item Type of the platform (e.g. AUV, buoy)
 \item The global position of the vehicle in geodetic coordinates (latitude, longitude, depth)
-\item The local position of the vehicle in a local cartesian coordinate system (x, y, z) based off the datum defined in the configuration for !gobyd!. This is generally more useful for vehicle operators than the global fix.
+\item The local position of the vehicle in a local cartesian coordinate system (x, y, z) based off the datum defined in the configuration. This is generally more useful for vehicle operators than the global fix.
 \item The Euler angles of the current vehicle pose: roll, pitch, yaw (heading). 
 \item The speed of the vehicle.
 \end{enumerate}

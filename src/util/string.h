@@ -29,6 +29,7 @@
 #include <limits>
 #include <boost/utility.hpp>
 #include <boost/type_traits.hpp>
+#include <boost/algorithm/string.hpp>
 
 namespace goby
 {
@@ -38,23 +39,7 @@ namespace goby
         /// \name String
         //@{
         
-
-        /// compare two characters regardless of case
-        /// \param a first character
-        /// \param b second character
-        /// \return a == b (ignoring case)
-        inline bool charicmp(char a, char b) { return(tolower(a) == tolower(b)); }
-        /// compare two strings regardless of case
-        /// \param s1 first string
-        /// \param s2 second string
-        /// \return s1 == s2 (ignoring case)
-        inline bool stricmp(const std::string & s1, const std::string & s2)
-        {
-            return((s1.size() == s2.size()) &&
-                   equal(s1.begin(), s1.end(), s2.begin(), charicmp));
-        }
-        
-        /// \brief non-throwing lexical cast (e.g. assert(as<double>("3.2") == 3.2))
+        /// \brief non-throwing lexical cast (e.g. assert(as<double>("3.2") == 3.2)). For fundamental types (double, int, etc.)
         /// \param from value to cast from 
         /// \return to value to cast to
         /// \throw none
@@ -71,7 +56,10 @@ namespace goby
             }
         }
 
-        // non fundamental types
+        /// \brief non-throwing lexical cast (e.g. assert(as<double>("3.2") == 3.2)) for non-fundamental types (MyClass(), etc.)
+        /// \param from value to cast from 
+        /// \return to value to cast to
+        /// \throw none
         template<typename To, typename From>
             To as(From from, typename boost::disable_if<boost::is_fundamental<To> >::type* dummy = 0)
         {
@@ -86,7 +74,7 @@ namespace goby
         template <>
             inline bool as<bool, std::string>(std::string from, void* dummy)
         {
-            return (stricmp(from, "true") || stricmp(from, "1"));
+            return (boost::iequals(from, "true") || boost::iequals(from, "1"));
         }
         
         /// specialization of as() for bool -> string
@@ -110,45 +98,6 @@ namespace goby
             }
         }
         
-        /// "explodes" a string on a delimiter into a vector of strings. name take from equivalent php function
-        /// TODO(tes): remove in favor of boost::split
-        template<typename T>
-            inline void explode(std::string s, std::vector<T>& rs, char d, bool do_stripblanks)
-        {
-            std::string::size_type pos;
-    
-            pos = s.find(d);
-            while(pos != std::string::npos)
-            {
-                std::string p = s.substr(0, pos);
-                if(do_stripblanks)
-                    stripblanks(p);
-            
-            
-                rs.push_back(p);
-            
-                if (pos+1 < s.length())
-                    s = s.substr(pos+1);
-                else
-                    return;
-                pos = s.find(d);
-            }
-        
-            // last piece
-            if(do_stripblanks)
-                stripblanks(s);
-        
-            rs.push_back(s);
-        }
-
-        /// variation on explode that returns the vector (instead of storing to the passed reference)
-        inline std::vector<std::string> explode(const std::string& s, char d, bool do_stripblanks)
-        {
-            std::vector<std::string> out;
-            explode(s, out, d, do_stripblanks);
-            return out;
-        }
-
         /// find `key` in `str` and if successful put it in out
         /// and return true
         /// deal with these basic forms:
@@ -232,10 +181,6 @@ namespace goby
             return true;            
         }
         
-        /// convert string to bool including "true" and "false"
-        /// \return true if in == "true" (ignoring case) or in == "1"; false otherwise
-        inline bool string2bool(const std::string & in)
-        { return (stricmp(in, "true") || stricmp(in, "1")) ? true : false; }
 
         /// specialization of val_from_string for boolean `out`
         inline bool val_from_string(bool& out, const std::string& str, const std::string & key)
@@ -243,7 +188,7 @@ namespace goby
             std::string s;
             if(!val_from_string(s, str, key)) return false;
 
-            out = string2bool(s);
+            out = as<bool>(s);
             return true;            
         }        
         //@}

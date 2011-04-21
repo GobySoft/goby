@@ -28,11 +28,10 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/numeric/conversion/cast.hpp>
 #include <boost/foreach.hpp>
+#include <boost/math/special_functions/fpclassify.hpp>
 
 #include "pAcommsHandler.h"
 #include "goby/util/sci.h"
-
-#include <boost/math/special_functions/fpclassify.hpp>
 
 using namespace goby::util::tcolor;
 using goby::acomms::operator<<;
@@ -457,12 +456,7 @@ void CpAcommsHandler::process_configuration()
         if(!exists)
             cfg_.mutable_dccl_cfg()->add_message_file()->CopyFrom(cfg_.queue_cfg().message_file(i));
         
-    }
-
-    
-    // check finalized configuration
-    glogger() << cfg_.DebugString() << std::endl;
-    cfg_.CheckInitialized();
+    }    
 
     // start goby-acomms classes
     if(driver_) driver_->startup(cfg_.driver_cfg());

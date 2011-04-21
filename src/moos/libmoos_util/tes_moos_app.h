@@ -49,7 +49,7 @@ class TesMoosApp : public CMOOSApp
 {   
   protected:
     typedef boost::function<void (const CMOOSMsg& msg)> InboxFunc;
-
+    
     template<typename ProtobufConfig>
         explicit TesMoosApp(ProtobufConfig* cfg);
     
@@ -200,7 +200,90 @@ TesMoosApp::TesMoosApp(ProtobufConfig* cfg)
             exit(EXIT_SUCCESS);            
         }
         
+        glogger().set_name(application_name_);
+        glogger().add_stream("verbose", &std::cout);
+    
+    
+        std::string protobuf_text;
+        std::ifstream fin;
+        fin.open(mission_file_.c_str());
+        if(fin.is_open())
+        {
+            std::string line;
+            bool in_process_config = false;
+            while(!getline(fin, line).eof())
+            {
+                std::string no_blanks_line = boost::algorithm::erase_all_copy(line, " ");
+                if(boost::algorithm::istarts_with(no_blanks_line, "PROCESSCONFIG=" +  application_name_))
+                {
+                    in_process_config = true;
+                }
+                else if(in_process_config &&
+                        !boost::algorithm::ifind_first(line, "PROCESSCONFIG").empty())
+                {
+                    break;
+                }
+
+                if(in_process_config)
+                    protobuf_text += line + "\n";
+            }
+
+            if(!in_process_config)
+                glogger() << die << "no ProcessConfig block for " << application_name_ << std::endl;
+
+            // trim off "ProcessConfig = __ {"
+            protobuf_text.erase(0, protobuf_text.find_first_of('{')+1);
+            
+            // trim off last "}" and anything that follows
+            protobuf_text.erase(protobuf_text.find_last_of('}'));
+            
+            // convert "//" to "#" for comments
+            boost::algorithm::replace_all(protobuf_text, "//", "#");
+            
+            google::protobuf::TextFormat::Parser parser;
+            FlexOStreamErrorCollector error_collector(protobuf_text);
+            parser.RecordErrorsTo(&error_collector);
+            parser.AllowPartialMessage(true);
+            parser.ParseFromString(protobuf_text, cfg);
+            if(error_collector.has_errors())
+                glogger() << die << "fatal configuration errors (see above)" << std::endl;    
         
+        }
+        else
+        {
+            glogger() << warn << "failed to open " << mission_file_ << std::endl;
+        }
+    
+        fin.close();
+    
+        CMOOSFileReader moos_file_reader;
+        moos_file_reader.SetFile(mission_file_);
+        fetch_moos_globals(cfg, moos_file_reader);
+
+
+// add / overwrite any options that are specified in the cfg file with those given on the command line
+        typedef std::pair<std::string, boost::program_options::variable_value> P;
+        BOOST_FOREACH(const P&p, var_map)
+        {
+            // let protobuf deal with the defaults
+            if(!p.second.defaulted())
+                goby::core::ConfigReader::set_protobuf_program_option(var_map, *cfg, p.first, p.second);
+        }
+
+        // now the proto message must have all required fields
+        if(!cfg->IsInitialized())
+        {
+            std::vector< std::string > errors;
+            cfg->FindInitializationErrors(&errors);
+                
+            std::stringstream err_msg;
+            err_msg << "Configuration is missing required parameters: \n";
+            BOOST_FOREACH(const std::string& s, errors)
+                err_msg << goby::util::esc_red << s << "\n" << goby::util::esc_nocolor;
+                
+            err_msg << "Make sure you specified a proper .moos file";
+            throw(goby::ConfigException(err_msg.str()));
+        }
         
     }
     catch(goby::ConfigException& e)
@@ -213,76 +296,8 @@ TesMoosApp::TesMoosApp(ProtobufConfig* cfg)
         
         throw;
     }
-    glogger().set_name(application_name_);
-    glogger().add_stream("verbose", &std::cout);
+
     
-    
-    std::string protobuf_text;
-    std::ifstream fin;
-    fin.open(mission_file_.c_str());
-    if(fin.is_open())
-    {
-        std::string line;
-        bool in_process_config = false;
-        while(!getline(fin, line).eof())
-        {
-            std::string no_blanks_line = boost::algorithm::erase_all_copy(line, " ");
-            if(boost::algorithm::istarts_with(no_blanks_line, "PROCESSCONFIG=" +  application_name_))
-            {
-                in_process_config = true;
-            }
-            else if(in_process_config &&
-                    !boost::algorithm::ifind_first(line, "PROCESSCONFIG").empty())
-            {
-                break;
-            }
-
-            if(in_process_config)
-                protobuf_text += line + "\n";
-        }
-
-        if(!in_process_config)
-            glogger() << die << "no ProcessConfig block for " << application_name_ << std::endl;
-
-        // trim off "ProcessConfig = __ {"
-        protobuf_text.erase(0, protobuf_text.find_first_of('{')+1);
-            
-        // trim off last "}" and anything that follows
-        protobuf_text.erase(protobuf_text.find_last_of('}'));
-            
-        // convert "//" to "#" for comments
-        boost::algorithm::replace_all(protobuf_text, "//", "#");
-            
-        google::protobuf::TextFormat::Parser parser;
-        FlexOStreamErrorCollector error_collector(protobuf_text);
-        parser.RecordErrorsTo(&error_collector);
-        parser.AllowPartialMessage(true);
-        parser.ParseFromString(protobuf_text, cfg);
-        if(error_collector.has_errors())
-            glogger() << die << "fatal configuration errors (see above)" << std::endl;    
-        
-    }
-    else
-    {
-        glogger() << warn << "failed to open " << mission_file_ << std::endl;
-    }
-    
-    fin.close();
-    
-    CMOOSFileReader moos_file_reader;
-    moos_file_reader.SetFile(mission_file_);
-    fetch_moos_globals(cfg, moos_file_reader);
-
-
-// add / overwrite any options that are specified in the cfg file with those given on the command line
-    typedef std::pair<std::string, boost::program_options::variable_value> P;
-    BOOST_FOREACH(const P&p, var_map)
-    {
-        // let protobuf deal with the defaults
-        if(!p.second.defaulted())
-            goby::core::ConfigReader::set_protobuf_program_option(var_map, *cfg, p.first, p.second);
-    }
-
     
     // keep a copy for ourselves
     common_cfg_ = cfg->common();
@@ -342,6 +357,8 @@ TesMoosApp::TesMoosApp(ProtobufConfig* cfg)
         }
     }
 
+
+    glogger() << cfg->DebugString() << std::endl;
 }
 
 

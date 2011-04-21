@@ -153,9 +153,17 @@ void goby::acomms::DCCLMessageVar::read_pubsub_vars(std::map<std::string,std::ve
             // if we're expecting a vector,
             // split up vector quantities and add to vector
             if(array_length_ > 1)
-                util::explode(val, vals[name_], ',', false);
+            {
+                std::string sval = val;
+                std::vector<std::string> vec;
+                boost::split(vec, sval, boost::is_any_of(","));
+                BOOST_FOREACH(const std::string& s, vec)
+                    vals[name_].push_back(s);
+            }
             else // otherwise just use the value as is
+            {
                 vals[name_] = val;
+            }
         }        
     }
 }

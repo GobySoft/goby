@@ -68,7 +68,15 @@ void goby::acomms::DCCLMessageContentHandler::startElement(
         case tag_enum:
             messages.back().add_message_var(toNative(localname));
             if((val = attrs.getValue(algorithm.c_str())) != 0)
-                messages.back().last_message_var().set_algorithms(util::explode(toNative(val),',',true));
+            {
+                std::vector<std::string> vec;
+                std::string str = boost::erase_all_copy(toNative(val), " ");
+                boost::split(vec,
+                             str,
+                             boost::is_any_of(","));
+                messages.back().last_message_var().set_algorithms(vec);
+            }
+            
             break;
 
             
@@ -111,28 +119,60 @@ void goby::acomms::DCCLMessageContentHandler::startElement(
             if(in_publish())
             {
                 if((val = attrs.getValue(algorithm.c_str())) != 0)
-                    messages.back().last_publish().add_algorithms(util::explode(toNative(val),',',true));
+                {
+                    std::vector<std::string> vec;
+                    std::string str = boost::erase_all_copy(toNative(val), " ");
+                    boost::split(vec,
+                                 str,
+                                 boost::is_any_of(","));
+                    messages.back().last_publish().add_algorithms(vec);
+                }
                 else
+                {
                     messages.back().last_publish().add_algorithms(std::vector<std::string>());
+                }
             }
             break;
 
         case tag_time:
             curr_head_piece_ = HEAD_TIME;
             if((val = attrs.getValue(algorithm.c_str())) != 0)
-                messages.back().header_var(curr_head_piece_).set_algorithms(util::explode(toNative(val),',',true));
+            {
+                std::vector<std::string> vec;
+                std::string str = boost::erase_all_copy(toNative(val), " ");
+                boost::split(vec,
+                             str,
+                             boost::is_any_of(","));
+
+                messages.back().header_var(curr_head_piece_).set_algorithms(vec);
+            }
             break;
 
         case tag_src_id:
             curr_head_piece_ = HEAD_SRC_ID;
             if((val = attrs.getValue(algorithm.c_str())) != 0)
-                messages.back().header_var(curr_head_piece_).set_algorithms(util::explode(toNative(val),',',true));
+            {
+                std::vector<std::string> vec;
+                std::string str = boost::erase_all_copy(toNative(val), " ");
+                boost::split(vec,
+                             str,
+                             boost::is_any_of(","));
+                messages.back().header_var(curr_head_piece_).set_algorithms(vec);
+            }
+            
             break;
 
         case tag_dest_id:
             curr_head_piece_ = HEAD_DEST_ID;
             if((val = attrs.getValue(algorithm.c_str())) != 0)
-                messages.back().header_var(curr_head_piece_).set_algorithms(util::explode(toNative(val),',',true));
+            {
+                std::vector<std::string> vec;
+                std::string str = boost::erase_all_copy(toNative(val), " ");
+                boost::split(vec,
+                             str,
+                             boost::is_any_of(","));
+                messages.back().header_var(curr_head_piece_).set_algorithms(vec);
+            }
             break;
 
             // legacy

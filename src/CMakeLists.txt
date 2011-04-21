@@ -1,41 +1,25 @@
-## find a package manager
-# find_program(aptitude_FOUND aptitude)
-# mark_as_advanced(aptitude_FOUND)
-
 ## set up function for external libraries errors
 # e.g. Boost libboost-dev 1.36 REQUIRED ... 
-macro(goby_find_required_package package_name apt_name)
+macro(goby_find_required_package package_name)
   find_package(${package_name} ${ARGN})
-
-  if(NOT ${package_name}_FOUND)
-#    message("missing required external library: ${package_name}.")
-#    if(aptitude_FOUND)
-#      message("Attempting to install using ${apt_name} using aptitude: ")
-#      execute_process(COMMAND sudo ${aptitude_FOUND} -y install ${apt_name} RESULT_VARIABLE package_INSTALLED)
-#    else()
-      set(package_INSTALLED 1)
-#    endif()
-    
-    # error is package_INSTALLED != 0 (return code)
-    if(package_INSTALLED)
-      message(FATAL_ERROR "Could not install package automatically. Please read the goby/DEPENDENCIES file to resolve.")
-    else()
-#      find_package(${package_name} ${ARGN})
-    endif()
+  string(TOUPPER ${package_name} package_name_upper)
+  if(NOT ${package_name_upper}_FOUND AND NOT ${package_name}_FOUND)
+    message(FATAL_ERROR "missing required external library: ${package_name}. Please read the goby/DEPENDENCIES file to resolve.")
   endif()
 endmacro()
   
-function(missing_optional_library lib_name)
+macro(missing_optional_library lib_name)
   message(WARNING "missing optional external library: ${package_name}. Goby will function without the support of this library. See http://gobysoft/doc for more information.")
-endfunction()
+endmacro()
 
 ## find external packages, libraries, and headers for the entire goby project
 # mandatory
 ## boost
-goby_find_required_package(Boost "libboost-dev libboost-system-dev libboost-date-time-dev libboost libboost-thread-dev libboost-regex-dev libboost-program-options-dev libboost-signals-dev libfilesystem-dev" 1.36.0 REQUIRED system date_time thread regex program_options signals filesystem)
+goby_find_required_package(Boost 1.36.0 COMPONENTS system date_time thread regex program_options signals filesystem)
 include_directories(${Boost_INCLUDE_DIRS})
 
-goby_find_required_package(ProtobufGoby "libprotobuf-c0-dev" REQUIRED)
+goby_find_required_package(ProtobufGoby)
+message(${PROTOBUF_INCLUDE_DIRS})
 
 ## ncurses
 set(CURSES_NEED_NCURSES TRUE)

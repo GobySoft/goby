@@ -42,7 +42,9 @@ void goby::acomms::DCCLAlgorithmPerformer::algorithm(DCCLMessageVal& in, unsigne
 
 // algo_name:ref_variable_name1:ref_variable_name2...
     
-    std::vector<std::string>ref_vars = util::explode(algorithm, ':', true);
+    std::vector<std::string>ref_vars;
+    std::string algorithm_deblanked = boost::erase_all_copy(algorithm, " ");
+    boost::split(ref_vars, algorithm_deblanked, boost::is_any_of(":"));
 
     std::string alg;
     std::vector<DCCLMessageVal> tied_vals;
@@ -78,7 +80,9 @@ void goby::acomms::DCCLAlgorithmPerformer::check_algorithm(const std::string& al
 {
     if(alg.empty()) return;
     
-    std::vector<std::string>ref_vars = util::explode(alg, ':', true);
+    std::vector<std::string>ref_vars;
+    std::string algorithm_deblanked = boost::erase_all_copy(alg, " ");
+    boost::split(ref_vars, algorithm_deblanked, boost::is_any_of(":"));
 
     // check if the algorithm exists
     // but ignore if no algorithms loaded (to use for testing tools)

@@ -75,7 +75,7 @@ bool TesMoosApp::OnConnectToServer()
     std::cout << m_MissionReader.GetAppName() << ", connected to server." << std::endl;
     connected_ = true;
     try_subscribing();
-
+    
     BOOST_FOREACH(const TesMoosAppConfig::Initializer& ini,
                   common_cfg_.initializer())
     {   
@@ -115,6 +115,8 @@ bool TesMoosApp::OnStartUp()
 
 void TesMoosApp::subscribe(const std::string& var,  InboxFunc handler, int blackout /* = 0 */ )
 {
+    glogger() << "subscribing for MOOS variable: " << var << " @ " << blackout << std::endl;
+    
     pending_subscriptions_.push_back(std::make_pair(var, blackout));
     try_subscribing();
     mail_handlers_[var] = handler;
@@ -133,6 +135,7 @@ void TesMoosApp::do_subscriptions()
         // variable name, blackout
         m_Comms.Register(pending_subscriptions_.front().first,
                          pending_subscriptions_.front().second);
+        glogger() << "subscribed for: " << pending_subscriptions_.front().first << std::endl;
         pending_subscriptions_.pop_front();
     }
 }

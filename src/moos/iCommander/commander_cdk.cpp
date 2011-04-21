@@ -271,7 +271,7 @@ bool CommanderCdk::disp_alphalist(const string title,
     // check if valid message
     for (vector<string>::size_type i = 0, n = items.size(); i < n; ++i)
     {
-        if (goby::util::stricmp(items[i], selected_message))
+        if(boost::iequals(items[i], selected_message))
             selected = i;
     }
 

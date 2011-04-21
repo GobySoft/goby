@@ -31,7 +31,7 @@ enum MACType {
 
 message MACConfig
 {
-  required int32 modem_id = 1 [(description)="Unique number 1-31 to identify this node",
+  optional int32 modem_id = 1 [(description)="Unique number 1-31 to identify this node",
                                (example)="1"];
   
   optional MACType type = 2 [default = MAC_NONE,

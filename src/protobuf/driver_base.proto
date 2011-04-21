@@ -4,7 +4,7 @@ package goby.acomms.protobuf;
 
 message DriverConfig
 {
-  required int32 modem_id = 1 [(description)="Unique number 1-31 to identify this node", (example)="1"];
+  optional int32 modem_id = 1 [(description)="Unique number 1-31 to identify this node", (example)="1"];
   
   enum ConnectionType { CONNECTION_SERIAL = 1; // Modem is connected by a tty serial line (e.g. RS-232)
                         CONNECTION_TCP_AS_CLIENT = 2; // Modem is connected by ethernet and is serving clients

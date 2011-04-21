@@ -232,7 +232,7 @@ class FlexOStreamErrorCollector : public google::protobuf::io::ErrorCollector
     
     void print_original(int line, int column)
     {
-        std::stringstream ss(original_);
+        std::stringstream ss(original_ + "\n");
         std::string line_str;
 
         //for(int i = 0; i <= line; ++i)

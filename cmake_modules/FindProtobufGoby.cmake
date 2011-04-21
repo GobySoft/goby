@@ -118,7 +118,7 @@ if(WIN32)
 endif()
 
 find_library(PROTOBUF_LIBRARY NAMES protobuf
-             DOC "The Google Protocol Buffers Library"
+  DOC "The Google Protocol Buffers Library"
 )
 find_library(PROTOBUF_PROTOC_LIBRARY NAMES protoc
              DOC "The Google Protocol Buffers Compiler Library"
@@ -138,12 +138,11 @@ if(WIN32)
 endif()
 
 include(FindPackageHandleStandardArgs)
-FIND_PACKAGE_HANDLE_STANDARD_ARGS(PROTOBUF DEFAULT_MSG
-    PROTOBUF_LIBRARY PROTOBUF_INCLUDE_DIR)
+FIND_PACKAGE_HANDLE_STANDARD_ARGS(ProtobufGoby DEFAULT_MSG
+    PROTOBUF_LIBRARY PROTOBUF_INCLUDE_DIR PROTOBUF_PROTOC_EXECUTABLE)
 
-set(ProtobufGoby_FOUND ${PROTOBUF_FOUND})
-
-if(PROTOBUF_FOUND)
+if(PROTOBUFGOBY_FOUND)
     set(PROTOBUF_INCLUDE_DIRS ${PROTOBUF_INCLUDE_DIR})
     set(PROTOBUF_LIBRARIES    ${PROTOBUF_LIBRARY})
 endif()
+

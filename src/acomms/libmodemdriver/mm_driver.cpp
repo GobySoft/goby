@@ -158,24 +158,33 @@ void goby::acomms::MMDriver::handle_initiate_transmission(protobuf::ModemMsgBase
     cache_outgoing_data(init_msg);
     
     // don't start a local cycle if we have no data
-    if(init_msg.base().src() != driver_cfg_.modem_id() || !cached_data_msgs_.empty())
+    const bool is_local_cycle = init_msg.base().src() == driver_cfg_.modem_id();
+    if(!(is_local_cycle && cached_data_msgs_.empty()))
     {
         //$CCCYC,CMD,ADR1,ADR2,Packet Type,ACK,Npkt*CS
         NMEASentence nmea("$CCCYC", NMEASentence::IGNORE);
         nmea.push_back(0); // CMD: deprecated field
         nmea.push_back(init_msg.base().src()); // ADR1
-
-        if(!cached_data_msgs_.empty())
-            nmea.push_back(cached_data_msgs_.front().base().dest()); // ADR2
-        else
-            nmea.push_back(init_msg.base().dest()); // ADR2
+        
+        
+        nmea.push_back(is_local_cycle
+                       ? cached_data_msgs_.front().base().dest()
+                       : init_msg.base().dest()); // ADR2        
         
         nmea.push_back(init_msg.base().rate()); // Packet Type (transmission rate)
-        nmea.push_back(0); // ACK: deprecated field, this bit may be used for something that's not related to the ack
+        nmea.push_back(is_local_cycle
+                       ? static_cast<int>(cached_data_msgs_.front().ack_requested())
+                       : 0); // ACK: deprecated field, but still dictates the value provided by CADRQ
         nmea.push_back(init_msg.num_frames()); // number of frames we want
 
         append_to_write_queue(nmea, base_msg);
     }
+    else
+    {
+        if(log_)
+            *log_ << group("modem_out") << "Not initiating transmission because we have no data to send" << std::endl;
+    }
+    
 }
 
 void goby::acomms::MMDriver::handle_initiate_ranging(protobuf::ModemRangingRequest* request_msg)
@@ -231,32 +240,30 @@ void goby::acomms::MMDriver::try_send()
     const protobuf::ModemMsgBase& base_msg = out_.front().second;
     
     bool resend = waiting_for_modem_ && (last_write_time_ <= (goby_time() - MODEM_WAIT));
-    if(!waiting_for_modem_ || resend)
+    if(!waiting_for_modem_)
     {
-        if(resend)
+        mm_write(base_msg);
+    }
+    else if(resend)
+    {
+        if(log_) *log_ << group("modem_out") << warn << "resending last command; no serial ack in " << (goby_time() - last_write_time_).total_seconds() << " second(s). " << std::endl;
+        ++global_fail_count_;
+        if(global_fail_count_ == MAX_FAILS_BEFORE_DEAD)
         {
-            if(log_) *log_ << group("modem_out") << warn << "resending last command; no serial ack in " << (goby_time() - last_write_time_).total_seconds() << " second(s). " << std::endl;
-            ++global_fail_count_;
-            ++present_fail_count_;
-            if(global_fail_count_ == MAX_FAILS_BEFORE_DEAD)
-            {
-                modem_close();
-                throw(driver_exception("modem appears to not be responding!"));
-            }
-            
-                
-            if(present_fail_count_ == RETRIES)
-            {
-                if(log_) *log_  << group("modem_out") << warn << "modem did not respond to our command even after " << RETRIES << " retries. continuing onwards anyway..." << std::endl;
-                out_.pop_front();
-                return;
-            }
+            modem_close();
+            throw(driver_exception("modem appears to not be responding!"));
         }
         
-        mm_write(base_msg);
-        
-        waiting_for_modem_ = true;
-        last_write_time_ = goby_time();
+        try
+        {
+            increment_present_fail();
+            mm_write(base_msg);
+        }
+        catch(driver_exception& e)
+        {
+            if(log_) *log_  << group("modem_out") << warn << "modem did not respond to our command even after " << RETRIES << " retries. continuing onwards anyway..." << std::endl;
+            out_.pop_front();
+        }
     }
 }
 
@@ -269,6 +276,9 @@ void goby::acomms::MMDriver::mm_write(const protobuf::ModemMsgBase& base_msg)
     signal_all_outgoing(base_msg);    
  
     modem_write(hydroid_gateway_modem_prefix_ + base_msg.raw() + "\r\n");
+
+    waiting_for_modem_ = true;
+    last_write_time_ = goby_time();
 }
 
 
@@ -361,8 +371,15 @@ void goby::acomms::MMDriver::query_all_cfg()
 
 void goby::acomms::MMDriver::process_receive(const NMEASentence& nmea)
 {
-    global_fail_count_ = 0; 
+    // need to print this first so raw log messages appear causal (as they are)
+    if(log_)
+    {
+        *log_ << group("modem_in") << nmea.message() << std::endl;
+        if(description_map_.count(nmea.front()))
+            *log_ << group("modem_in") << "^ " << blue << description_map_[nmea.front()] << nocolor << std::endl;
+    }
 
+    global_fail_count_ = 0;
     
     protobuf::ModemMsgBase* this_base_msg = 0;
     static protobuf::ModemMsgBase base_msg;
@@ -457,13 +474,13 @@ void goby::acomms::MMDriver::process_receive(const NMEASentence& nmea)
 
     if(!this_base_msg) this_base_msg = &base_msg;
 
+    if(log_ && this_base_msg->has_description())
+        *log_ << group("modem_in") << "^ " << blue << this_base_msg->description() << nocolor << std::endl;
+    
     this_base_msg->set_raw(nmea.message());
     if(!this_base_msg->has_description() && description_map_.count(nmea.front()))
         this_base_msg->set_description(description_map_[nmea.front()]);
     
-    if(log_) *log_ << group("modem_in") << this_base_msg->raw() << "\n"
-                   << "^ " << blue << this_base_msg->description() << nocolor << std::endl;
-
     signal_all_incoming(*this_base_msg);
     
     // clear the last send given modem acknowledgement
@@ -483,23 +500,32 @@ void goby::acomms::MMDriver::ack(const NMEASentence& nmea, protobuf::ModemDataAc
 }
 
 void goby::acomms::MMDriver::drq(const NMEASentence& nmea_in)
-{    
-    // use the cached data
+{
+    //$CADRQ,HHMMSS,SRC,DEST,ACK,N,F#*CS
+
+    NMEASentence nmea_out("$CCTXD", NMEASentence::IGNORE);        
+
     if(!cached_data_msgs_.empty())
     {
-        NMEASentence nmea_out("$CCTXD", NMEASentence::IGNORE);
-
+        // use the cached data
         protobuf::ModemDataTransmission& data_msg = cached_data_msgs_.front();    
         nmea_out.push_back(data_msg.base().src());
         nmea_out.push_back(data_msg.base().dest());
         nmea_out.push_back(int(data_msg.ack_requested()));
         nmea_out.push_back(hex_encode(data_msg.data()));
         cached_data_msgs_.pop_front();
-
-        static protobuf::ModemMsgBase base_msg;
-        base_msg.Clear();
-        append_to_write_queue(nmea_out, &base_msg);
     }
+    else
+    {
+        // send a blank message to supress further DRQ
+        nmea_out.push_back(nmea_in[2]); // SRC
+        nmea_out.push_back(nmea_in[3]); // DEST
+        nmea_out.push_back(nmea_in[4]); // ACK
+        nmea_out.push_back(""); // no data
+    }
+    static protobuf::ModemMsgBase base_msg;
+    base_msg.Clear();
+    append_to_write_queue(nmea_out, &base_msg);    
 }
 
 void goby::acomms::MMDriver::rxd(const NMEASentence& nmea, protobuf::ModemDataTransmission* m)
@@ -598,6 +624,23 @@ void goby::acomms::MMDriver::rev(const NMEASentence& nmea)
 void goby::acomms::MMDriver::err(const NMEASentence& nmea)
 {
     *log_ << group("modem_out") << warn << "modem reports error: " << nmea.message() << std::endl;
+
+    
+    // recover quicker if old firmware does not understand one of our commands
+    if(nmea.at(2) == "NMEA")
+    {
+        waiting_for_modem_ = false;
+
+        try
+        {
+            increment_present_fail(); 
+        }
+        catch(driver_exception& e)
+        {
+            if(log_) *log_  << group("modem_out") << warn << "modem did not respond to our command even after " << RETRIES << " retries. continuing onwards anyway..." << std::endl;
+            out_.pop_front();
+        }
+    }
 }
 
 void goby::acomms::MMDriver::cyc(const NMEASentence& nmea, protobuf::ModemDataInit* init_msg)
@@ -645,14 +688,49 @@ void goby::acomms::MMDriver::cache_outgoing_data(const protobuf::ModemDataInit& 
             data_msg.Clear();
             
             signal_data_request(request_msg, &data_msg);
-        
 
-            cached_data_msgs_.push_back(data_msg);
+            if(!validate_data(request_msg, &data_msg))
+               continue;
+
             // no more data to send
-            if(data_msg.data().empty()) break;
+            if(data_msg.data().empty())
+                break;
+                
+            cached_data_msgs_.push_back(data_msg);
         }
     }
 }
+
+
+
+bool goby::acomms::MMDriver::validate_data(const protobuf::ModemDataRequest& request_msg,
+                                           protobuf::ModemDataTransmission* data_msg)
+{
+    if(!data_msg->base().has_src())
+    {
+        data_msg->mutable_base()->set_src(request_msg.base().src());
+    }
+    else if(data_msg->base().src() != request_msg.base().src())
+    {
+        if(log_)
+            *log_ << warn << "ModemDataTransmission::ModemMsgBase::src must equal ModemDataRequest::ModemMsgBase::dest" << std::endl;
+        return false;
+    }
+            
+    if(!data_msg->base().has_dest())
+    {
+        data_msg->mutable_base()->set_dest(request_msg.base().dest());
+    }
+    else if(!is_valid_destination(data_msg->base().dest()))
+    {
+        if(log_)
+            *log_ << warn << "ModemDataTransmission::ModemMsgBase::src must equal ModemDataRequest::ModemMsgBase::dest" << std::endl;
+        return false;
+    }
+    
+    return true;
+}
+
 
 void goby::acomms::MMDriver::toa(const NMEASentence& nmea, protobuf::ModemRangingReply* m)
 {
@@ -886,6 +964,13 @@ void goby::acomms::MMDriver::set_hydroid_gateway_prefix(int id)
     hydroid_gateway_modem_prefix_ = "#M" + as<std::string>(id);
     
     if(log_) *log_ << "Setting the hydroid_gateway buoy prefix: out=" << hydroid_gateway_modem_prefix_ << std::endl;
+}
+
+void goby::acomms::MMDriver::increment_present_fail()
+{
+    ++present_fail_count_;
+    if(present_fail_count_ >= RETRIES)
+        throw(driver_exception("Fail count exceeds RETRIES"));
 }
 
 

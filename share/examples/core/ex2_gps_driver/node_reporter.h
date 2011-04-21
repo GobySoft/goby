@@ -1,7 +1,7 @@
 #ifndef NODEREPORTER20101225H
 #define NODEREPORTER20101225H
 
-#include "goby/core/core.h"
+#include "goby/core.h"
 #include "config.pb.h"
 
 #include "gps_nmea.pb.h"

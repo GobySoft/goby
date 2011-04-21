@@ -1,30 +1,40 @@
 \chapter{Introduction}
+\setlength{\epigraphwidth}{0.5\textwidth}
+\epigraph{\textit{Il semble que la perfection soit atteinte non quand il n'y a plus rien à ajouter, mais quand il n'y a plus rien à retrancher.} (Perfection is achieved, not when there is nothing more to add, but when there is nothing left to take away.)}{Antoine de Saint-Exupéry, \textit{Terre des Hommes} (1939)}
 
 \section{What is Goby?}
 
-The Goby Underwater Autonomy Project is an \gls{autonomy architecture} tailored for marine robotics. It can be considered a direct descendant of the MOOS \cite{moos}, with inspiration from LCM \cite{lcm}. The motivation for Goby was the desire to seamlessly integrate \gls{acoustic networking} (and other low bandwidth channels found in marine robotics) into the autonomy middleware. 
-
-The Goby autonomy architecture (\verb|goby-core|) is still in rapid experimental development but you are welcome to begin playing with it. The Goby Acoustic Communications libraries (\verb|goby-acomms|) form the majority of the stable contribution for Version 1.0. See the Developers' documentation for details on these libraries at \cite{goby-doc}. Users of the MOOS application \verb|pAcommsHandler| should see Appendix \ref{chap:MOOS}.
-
-Goby allows you to
+The Goby Underwater Autonomy Project allows your robotics software to \textit{communicate}: 
 \begin{itemize}
-\item create custom \glspl{application} (hereafter Goby applications) that communicate with other Goby applications in a \gls{pubsub} manner using custom designed message objects provided by the \gls{protobuf} project \cite{protobuf}. This message passing is mediated by an application called the Goby \gls{daemon} (\verb|gobyd|)
-\item log message data using a choice of \gls{sql} backends (SQLite3 \cite{sqlite} or PostgreSQL \cite{postgres}), allowing a choice between simplicity and power. This \gls{sql} logger is seamlessly integrated with the \gls{protobuf} messaging. \gls{sql} provides a well-known and standards compliant way to easily access data at runtime and during post-processing.
-\item log debugging output in a flexible manner to either the terminal window or a file or both, with fine-grained control over the verbosity.
-\item robustly configure your Goby applications both using a text configuration file and/or command line options by writing a configuration schema in \gls{protobuf}. Gone are the days of manual command line and configuration file parsing and validity checking. Only fields allowed in the schema are accepted by the parser, greatly reducing syntax errors in the configuration files.
+\item between \glspl{application} on a single robot.
+\item between robots (over common links, e.g. ethernet or more exotic links, e.g. acoustic modems)
+\item between software written by collaborators in a different \gls{autonomy architecture}, like the MOOS \cite{moos} or LCM \cite{lcm}. 
+\end{itemize}
+
+In Goby, you are free to design your applications as you like from scratch in your choice of programming language, or take advantage of the rich base applications provided in C++.
+
+\section{Why Goby?}
+
+Goby is designed to be easy to approach but not to limit you once you comprehend it. 
+\begin{itemize}
+\item It leverages a handful of open source projects to give reliable results when you need them on your expensive robots. 
+\item It gives you the tools to do your work without selling your soul to a particular ``right way'' of doing things. 
 \end{itemize}
 
 \section{Structure of this Manual}
-This manual is designed to start slow with introductory features and then ramp up to more powerful features for advanced users. Please read as far as you wish and then as soon as possible get your feet wet. In fact, you may want to go download and install Goby now before reading further: \url{https://launchpad.net/goby}. Once you are familiar with the workings of Goby, you will be interested in reading the separate Developers' manual available at \cite{goby-doc}.
+This manual is structured with the beginner material towards the beginning and the advanced material at the back. 
+In the beginning we will guide you but by the end you are free to design your own systems, accepting or rejecting our advice. Please read as far as you wish and then as soon as possible get your feet wet. In fact, you may want to go download and install Goby now before reading further from the Goby home page at \url{https://launchpad.net/goby}. Once you are familiar with the workings of Goby, you will be interested in reading the separate Developers' manual available at \cite{goby-doc}.
+
+If you are already familiar with other \glspl{autonomy architecture} and want to see what advantages Goby can add to your project, you may want to skip ahead to Chapter \ref{chap:underpinnings} where we explain the workings of Goby from the bottom up.
 
 \section{How to get help}
-The Goby community is here to support you. This is an open source project so we have limited time and resources, but you will find that many are willing to contribute their help, with the hope that you will do the same as you gain experience. Please consult these resources and people, probably in this order of preference:
+The Goby community is here to support you. This is an open source project so we have limited time and resources, but you will find that many are willing to contribute their help, with the hope that you will do the same as you gain experience. Please consult these resources and people:
 
-\begin{enumerate}
-\item This user manual. % TODO(tes) put in link this manual
+\begin{itemize}
+\item The Goby Wiki: \url{http://gobysoft.com/wiki}.
 \item Questions and Answers on Launchpad: \url{https://answers.launchpad.net/goby}.
 \item The developers' documentation: \url{http://gobysoft.com/doc}.
 \item Email the listserver \href{mailto:goby@mit.edu}{goby@mit.edu}. Please sign up first: \url{http://mailman.mit.edu/mailman/listinfo/goby}.
 \item Email the lead developer (T. Schneider): \href{mailto:tes@mit.edu}{tes@mit.edu}.
-\end{enumerate}
+\end{itemize}
 

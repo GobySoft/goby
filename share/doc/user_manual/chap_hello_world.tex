@@ -1,19 +1,27 @@
 \chapter{The Hello World example}
+\epigraph{\textit{``It's a dangerous business, Frodo, going out of your door,'' he used to say. ``You step into the Road, and if you don't keep your feet, there is no knowing where you might be swept off to.''}}{J.R.R. Tolkien, \textit{The Fellowship of the Ring} (1954)}
+
+
+
 \MakeShortVerb{\!} % makes \verb|foo| == !foo!
 
-Goby is currently written entirely in C++. We hope to support more languages in the future, but we feel that C++ is a good blend of elegance, speed, and power. While the core of Goby is based on a number of advanced C++ techniques, you only need a small amount of C++ knowledge to get started writing your own Goby application. If you are new to programming and C++, we recommend Prata's \textit{C++ Primer Plus} \cite{Prata:2001:CPP:515923}. If you are experienced in programming but new to C++, we recommend Stroustrup's \textit{The C++ Programming Language} \cite{Stroustrup:2000:CPL:518791}. The website \url{www.cplusplus.com} is an excellent online reference.
+Goby provides a number of useful classes and applications that are written entirely in C++. For next few chapters we will cover these tools. If you wish to use Goby with another programming language, please refer to Chapter \ref{chap:underpinnings}. We feel that C++ is a good blend of elegance, speed, and expressiveness, and we hope that you will come to agree.
 
-This complete example is located at the end of this chapter in section \ref{sec:hello_example_code}. It's probably a good idea to download and install Goby now so you can try this out for yourself: \url{https://launchpad.net/goby}.
+While the core of Goby is based on a number of advanced C++ techniques, you only need a small amount of C++ knowledge to get started writing your own Goby application. If you are new to programming and C++, we recommend Prata's \textit{C++ Primer Plus} \cite{Prata:2001:CPP:515923}. If you are experienced in programming but new to C++, we recommend Stroustrup's \textit{The C++ Programming Language} \cite{Stroustrup:2000:CPL:518791}. The website \url{www.cplusplus.com} is an excellent online reference.
 
-This example involves passing a single type of message (class HelloWorldMsg) from one Goby application (!hello_world1_g!\footnote{you can name your applications whatever you want, but we like appending ``\_g'' to the end to indicate that this is a Goby application.}) to another (!hello_world2_g!). Since Goby has a \gls{star topology}, !gobyd! will mediate this transaction.
+This complete example is located at the end of this chapter in section \ref{sec:hello_example_code}. It's probably a good idea to download and install Goby now so you can try this out for yourself: \url{https://launchpad.net/goby}. There's really no substitute for trying (and breaking) things yourself.
 
-For this example we will write two Goby applications and one \gls{protobuf} message. See Fig. \ref{fig:hello_world_structure} for the software structure of this example.
+This example involves passing a single type of message (class HelloWorldMsg) from one Goby application (!hello_world1_g!\footnote{you can name your applications whatever you want, but we like appending ``\_g'' to the end to indicate that this is a Goby application.}) to another (!hello_world2_g!). Since the default configuration for Goby uses multicast communications, there is no \gls{daemon} or server to concern ourselves with. A good analogy to this multicast group is a meeting amongst peers. Everyone is in the same room, but no one explicitly controls the conversation. People tune in (!subscribe!) for topics (messages) that interest them and ignore those that do not.
+
+!hello_world1_g! and !hello_world2_g! reside on the same \gls{platform}, which for now we will assume is the same computer. We will learn about inter-platform communication later on.
+
+For this example we will write two Goby applications and one \gls{protobuf} message. See Fig. \ref{fig:hello_world_sketch} for a sketch of this example.
 
 \begin{figure}
 \centering
-\includegraphics[scale=0.9]{hello_world_structure}
-\caption{Structure diagram of the Hello World example showing the classes and dependencies. \texttt{HelloWorld1} and \texttt{HelloWorld2} are both Goby applications and thus are classes derived (solid arrows) from \texttt{goby::core::ApplicationBase}. Both of them (dashed arrows) depend on the Protocol Buffers message \texttt{HelloWorldMsg} because they use it to communicate. They also both depend on \texttt{goby::core::Daemon} (\texttt{gobyd}) for passing this message. See Fig. \ref{fig:hello_world_sequence} for the sequence of sending a message in this example.}
-\label{fig:hello_world_structure}
+\includegraphics[width=\textwidth]{hello_world_sketch}
+\caption{In this example \texttt{hello\_world1\_g} publishes messages of type \texttt{HelloWorldMsg} to the subscriber \texttt{hello\_world2\_g}.}
+\label{fig:hello_world_sketch}
 \end{figure}
 
 \section{Meeting goby::core::ApplicationBase}
@@ -21,30 +29,30 @@ For this example we will write two Goby applications and one \gls{protobuf} mess
 !goby::core::ApplicationBase! is the building block (\gls{base class}) upon which we will make our Goby applications (which will be \glspl{derived class} of ApplicationBase). !ApplicationBase! provides us with a number of tools; the main ones are:
 
 \begin{itemize}
-\item a constructor !ApplicationBase()! that reads the command line and configuration (we will learn about this later) and connects to the Goby \gls{daemon} (!gobyd!) for us.
+\item a constructor !ApplicationBase()! that reads the command line parameters and the configuration (we will learn about this in Chapter \ref{chap:gps_driver}) and connects to the multicast group for us.
 \item a virtual method !loop()! that is called at a regular frequency (10 Hertz by default).
 \item a method !subscribe()! which tells !gobyd! that we wish to receive all messages of this type.
 \item a method !newest()! which returns the newest (latest received) message of a given type that we have previously called !subscribe()! for. We will learn how to filter the subscriptions later.
-\item a method !publish()! allowing us to publish messages to !gobyd! and thereby to any subscribers of that type.
-\item a method !glogger()! which acts just like std::cout\footnote{\texttt{glogger()} accesses an instantiation of goby::util::FlexOstream, a derived class of std::ostream. std::cout is also a derived class of std::ostream.} and lets us write to the debug (terminal window / text file) \textit{g}oby \textit{logger}.
+\item a method !publish()! allowing us to publish messages to the multicast group and thereby to any subscribers of that type.
+\item an object !goby::glog! which acts just like std::cout and lets us write to our choice of debug logs (terminal window / text file) with fine grained control over the verbosity of the output.
 \end{itemize}
-
-
-\begin{figure}
-\centering
-\includegraphics[scale=0.9]{hello_world_sequence}
-\caption{Sequence diagram of the Hello World example. \texttt{HelloWorld2} subscribes for all messages of type \texttt{HelloWorldMsg} after which \texttt{HelloWorld1} publishes repeatedly a \texttt{HelloWorldMsg} that is processed and sent by \texttt{gobyd} to all subscribers (in this case just \texttt{HelloWorld2}).}
-\label{fig:hello_world_sequence}
-\end{figure}
-
 
 \section{Creating a simple Google Protocol Buffers Message: HelloWorldMsg}\label{sec:proto_ex}
 
-\glsreset{protobuf} \gls{protobuf} allows us to create custom objects for holding and transmitting data in a structured fashion. Transmitting data typically is done in a long string of bytes. However, humans do not view the world as a string of bytes. We think and communicate using tangible and intangible objects. For example, a baseball might be described by its diameter, color, weight, and materials. Goby (using protobuf objects) allows messages to be formed using this more natural object-based representation.
+\glsreset{protobuf} \gls{protobuf} allows us to create custom objects for holding and transmitting data in a structured fashion. Transmitting data typically is done in a long string of bytes. However, humans do not view the world as a string of bytes. We think and communicate using tangible and intangible objects. For example, a baseball might be described by its diameter, color, weight, and materials. Similarly, a sample from a CTD\footnote{Conductivity-Temperature-Depth} sensor can be thought of as an object containing a number of floating point values representing salinity, temperature, pressure, etc. Goby (using protobuf objects) allows messages to be formed using this more natural object-based representation.
 
-The \gls{protobuf} language is simple with a syntax similar to that of C. Protobuf messages are written in .proto files and passed to the protobuf compiler (!protoc!) which generates C++ code to pass to the C++ compiler (!gcc! on Linux). Protobuf messages can contain a number of basic types (or vectors of these types) as well as nested messages. Fields are labeled as required, optional or repeated (essentially a vector). Required fields must be filled in; clearly, optional fields can be omitted. This might be a good time to read the Protocol Buffers tutorial \cite{proto-tutorial} to get a feel for the language and usage.
+The \gls{protobuf} language is simple with a syntax similar to that of C. Protobuf messages are written in .proto files and passed to the protobuf compiler (!protoc!) which generates C++ code to pass to the C++ compiler (!c++!, !gcc! on Linux). See Fig. \ref{fig:hello_world_compile} for a graphical representation of this compilation process. 
 
-As you become familiar with using \gls{protobuf}, the language reference \cite{proto-lang-ref} will help you in creating .proto files and the generated code reference \cite{proto-gen-code} will assist you in accessing the C++ classes created by the .proto files when passed through !protoc!.
+\begin{figure}
+\centering
+\includegraphics[width=\textwidth]{hello_world_compile}
+\caption{The steps of compiling \texttt{hello\_world1\_g.}}
+\label{fig:hello_world_compile}
+\end{figure}
+
+Protobuf messages can contain a number of basic types (or vectors of these types) as well as nested messages. Fields are labeled as required, optional or repeated (essentially a vector). Required fields must be filled in; clearly, optional fields can be omitted. This might be a good time to read the excellent Protocol Buffers tutorial \cite{proto-tutorial} to get a feel for the language and usage.
+
+As you become familiar with using \gls{protobuf}, the language reference \cite{proto-lang-ref} will help you in creating .proto files and the generated code reference \cite{proto-gen-code} will assist you in accessing the C++ classes created by the !.proto! files when passed through !protoc!.
 
 For this example, we wish to send ``hello world'' (of course) so we need a string to hold our message that we will call `telegram': 
 \begin{verbatim}
@@ -83,27 +91,31 @@ std::cout << msg.telegram() << ": " << msg.count() << std::endl;
 To create a Goby application, one needs to
 
 \begin{itemize}
-\item create a derived class of !goby::core::ApplicationBase!. We also must include the goby core header (!#include "goby/core/core.h"!).
+\item create a derived class of !goby::core::ApplicationBase!. We also must include the goby core header (!#include "goby/core.h"!).
+\item create an overloaded !loop()! method (which can do nothing).
 \item run the application using the !goby::run()! function. Because goby::core::ApplicationBase reads our configuration (including command line options) for us, we also pass !argv! and !argc! to !run()!.
 \end{itemize}
 
 That is all one needs to create a valid working Goby application. All together the ``bare-bones'' Goby application looks like:
 
 \begin{boxedverbatim}
-#include "goby/core/core.h"
+#include "goby/core.h"
 
-class HelloWorld1 : public goby::core::ApplicationBase {};
+class DoNothingApplication : public goby::core::ApplicationBase 
+{
+  void loop() {}
+};
 
 int main(int argc, char* argv[])
 {   
-    return goby::run<HelloWorld1>(argc, argv);
+    return goby::run<DoNothingApplication>(argc, argv);
 }
 \end{boxedverbatim}
 \resetbvlinenumber
 
 However, we would like our application to do a little bit more.
 
-ApplicationBase provides a \gls{virtual} method called !loop()! that is called on some regular interval (it is the \textit{\gls{synchronous} event} in Goby), by default 10 Hertz. By overloading !loop()! in our derived class !HelloWorld1!, we can do any kind of synchronous work that needs to be done without tying up the CPU all the time\footnote{in between calls to \texttt{loop()}, ApplicationBase handles incoming subscribed messages}. In this example, we will create a simple message (of type HelloWorldMsg which we previously designed in chapter \ref{sec:proto_ex}) and publish it to !gobyd! and thus all subscribers (we create a subscriber in chapter \ref{sec:sub_ex}). 
+ApplicationBase provides a pure \gls{virtual} method called !loop()! that is called on some regular interval (it is the \textit{\gls{synchronous} event} in Goby), by default 10 Hertz. By overloading !loop()! in our derived class !HelloWorld1!, we can do any kind of synchronous work that needs to be done without tying up the CPU all the time\footnote{in between calls to \texttt{loop()}, ApplicationBase handles incoming subscribed messages}. In this example, we will create a simple message (of type !HelloWorldMsg! which we previously designed in section \ref{sec:proto_ex}) and publish it to all subscribers (we create a subscriber in section \ref{sec:sub_ex}). 
 
 Let's walk through each line of our !loop()! method:
 
@@ -114,20 +126,27 @@ void loop()
    HelloWorldMsg msg;
    msg.set_telegram("hello world!");
    msg.set_count(++i);
-   glogger() << "sending: " << msg << std::endl;
+   goby::glog << "sending: " << msg << std::endl;
    publish(msg);
 }
 \end{boxedverbatim}
 \resetbvlinenumber
 
-Line !1!: !loop()! takes no arguments and returns nothing (void). We declare (line !3!) a static integer\footnote{static in this context means that the variable will keep its value across calls to the function \texttt{loop()}.} to keep track of how many times we have looped and thus print an increasing integer value. Then we create a HelloWorldMsg called msg (line !4!) and set the values of its fields (lines !5! and !6!). We then publish a human debugging log message using !glogger()! (just like std::cout or other std::ostreams), which will be put to the terminal window in verbose mode\footnote{goby provides operator<< for google::protobuf::Message objects as a wrapper for google::protobuf::Message::DebugString()}. Finally, we publish our message (line !8!). The entirety of the code for !hello_world1_g! is listed in section \ref{sec:hello_world1.cpp}.
+\begin{itemize}
+\item Line !1!: !loop()! takes no arguments and returns nothing (void). 
+\item Line !3!: We declare a static integer\footnote{static in this context means that the variable will keep its value across calls to the function \texttt{loop()}.} to keep track of how many times we have looped and thus print an increasing integer value. 
+\item Line !4!: We create an instantiation of !HelloWorldMsg! called !msg!.
+\item Line !5!: We set the `telegram` field of the !HelloWorldMsg! named !msg!
+\item Line !6!: We set the `count` field of !msg!.
+\item Line !7!: We publish a human debugging log message using !goby::glog! (just like std::cout or other std::ostreams), which will be put to the terminal window in verbose mode\footnote{goby provides operator<< for google::protobuf::Message objects as a wrapper for google::protobuf::Message::DebugString()}. 
+\item Line !8!: Finally, we publish our message. The entirety of the code for !hello_world1_g! is listed in section \ref{sec:hello_world1.cpp}.
 
 \section{Learning how to \textit{subscribe}: HelloWorld2} \label{sec:sub_ex}
 
 Now that our !hello_world1_g! application is publishing a message, we would like to create an application that subscribes for it. To subscribe for a message, we typically provide two things:
 \begin{itemize}
 \item The type of the message we want to subscribe for (e.g. !HelloWorldMsg!).
-\item A method or function that should be called when we receive that type (a callback).
+\item A method or function that should be called when we receive a message of that type (a callback).
 \end{itemize}
 
 Subscriptions typically take place in the constructor (here, !HelloWorld2::HelloWorld2()!), but can happen at any time as needed (within !loop()!, for example). You subscribe for a type once, and then you will continue to receive all other applications' publishes to that type.
@@ -158,7 +177,7 @@ In these cases, !receive_msg()! is called as soon as the blocking method returns
 \begin{boxedverbatim}
 void receive_msg(const HelloWorldMsg& msg)
 {
-   glogger() << "received: " << msg << std::endl;
+   goby::glog << "received: " << msg << std::endl;
 }
 \end{boxedverbatim}
 \resetbvlinenumber
@@ -184,16 +203,11 @@ Adding !hello_world2_g! is directly analogous.
 
 Now, assuming you've compiled everything, we can run the example.
 
-You'll need three terminal windows, one for !gobyd!, and one for each of our ``hello world'' applications. You need to start !gobyd! first
-\begin{boxedverbatim}
-> gobyd -p hello_auv
-\end{boxedverbatim}
-\resetbvlinenumber
-I've gone ahead and named this platform ``hello\_auv''. The platform name is a unique identifier for both intra- and inter-vehicle communications in Goby. Now we can launch our two applications (order doesn't matter), with the added ``-v'' flag to indicate we want verbose terminal output:
+You'll need two terminal windows, one for each of our ``hello world'' applications. Now we can launch our two applications (order doesn't matter), with the added ``-v'' flag to indicate we want verbose terminal output:
 
 \begin{boxedverbatim}
-> hello_world1_g -p hello_auv -v
-> hello_world2_g -p hello_auv -v
+> hello_world1_g -v
+> hello_world2_g -v
 \end{boxedverbatim}
 \resetbvlinenumber
 

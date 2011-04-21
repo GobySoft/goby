@@ -1,7 +1,7 @@
 #ifndef GPSDRIVER20101014H
 #define GPSDRIVER20101014H
 
-#include "goby/core/core.h"
+#include "goby/core.h"
 #include "goby/util/time.h"
 // for serial driver
 #include "goby/util/linebasedcomms.h"

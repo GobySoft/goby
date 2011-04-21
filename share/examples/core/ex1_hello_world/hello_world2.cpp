@@ -1,4 +1,4 @@
-#include "goby/core/core.h"
+#include "goby/core.h"
 #include "hello_world.pb.h"
 
 using goby::core::operator<<;

@@ -1,7 +1,8 @@
-\chapter{The GPS Driver example}
+\chapter{The GPS Driver example} \label{chap:gps_driver}
 \MakeShortVerb{\!} % makes !foo! == !foo!
+\epigraph{\textit{Man is the best computer we can put aboard a spacecraft, and the only one that can be mass produced with unskilled labor.}}{Werner von Braun}
 
-Marine robots need to know where they are. The simplest way now is to use a GPS receiver. While this works only when the robot is on the surface of the ocean, it is one of the most accurate forms of positioning available and thus used as a starting point for undersea dead reckoning using Doppler Velocity Loggers (DVLs) or Inertial Measurement Units (IMUs). Therefore, reading a GPS receiver's output into a usable form for decision making is a useful and necessary ability for our marine robot. This example shows how we might do this using Goby.
+Robots, like people, need to know where they are. The simplest way now is to use a GPS receiver. While this works only when the robot is on the surface of the ocean, it is one of the most accurate forms of positioning available and thus used as a starting point for undersea dead reckoning using Doppler Velocity Loggers (DVLs) or Inertial Measurement Units (IMUs). Therefore, reading a GPS receiver's output into a usable form for decision making is a useful and necessary ability for our marine robot. This example shows how we might do this using Goby.
 
 Typically we might also need to know the depth of our vehicle. This is often determined by measuring the ambient pressure. In this example, we will simulate the scalar depth reading of such a pressure sensor.
 

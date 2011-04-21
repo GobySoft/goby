@@ -1,6 +1,6 @@
 #include <cstdlib> // for rand
 
-#include "goby/core/core.h"
+#include "goby/core.h"
 
 #include "config.pb.h"
 #include "depth_reading.pb.h"

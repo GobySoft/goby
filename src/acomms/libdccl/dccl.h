@@ -89,7 +89,8 @@ namespace goby
             void info_repeated(std::list<const google::protobuf::Descriptor*> desc, std::ostream* os);
             // in bytes
             unsigned size(const google::protobuf::Message* msg);
-            
+            unsigned size_repeated(std::list<const google::protobuf::Message*> msgs);
+
             //@}
         
             /// \name Codec functions.

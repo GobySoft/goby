@@ -12,12 +12,12 @@ project(goby)
 enable_testing()
 include(CTest)
 
-set(GOBY_VERSION_MAJOR "1")
+set(GOBY_VERSION_MAJOR "2")
 set(GOBY_VERSION_MINOR "0")
-set(GOBY_VERSION_PATCH "2")
+set(GOBY_VERSION_PATCH "1")
 set(GOBY_VERSION "${GOBY_VERSION_MAJOR}.${GOBY_VERSION_MINOR}.${GOBY_VERSION_PATCH}")
 set(GOBY_VERSION_DATE "2011 Mar 16")
-set(GOBY_SOVERSION "1")
+set(GOBY_SOVERSION "2")
      
 ## fetch all the local directories for generated code
 get_filename_component(goby_LIB_DIR lib ABSOLUTE)

@@ -30,7 +30,7 @@
 
 using namespace std;
 using goby::util::as;
-using goby::util::glogger;
+using goby::glog;
 
 pREMUSCodecConfig CpREMUSCodec::cfg_;
 CpREMUSCodec* CpREMUSCodec::inst_ = 0;
@@ -55,9 +55,9 @@ CpREMUSCodec::CpREMUSCodec()
       status_time(10) 
 {
     if(cfg_.has_modem_id_lookup_path())
-        glogger() << modem_lookup_.read_lookup_file(cfg_.modem_id_lookup_path()) << std::endl;
+        glog << modem_lookup_.read_lookup_file(cfg_.modem_id_lookup_path()) << std::endl;
     else
-        glogger() << warn << "no modem_id_lookup_path in moos file. this is required for conversions between modem_id and vehicle name / type." << std::endl;
+        glog << warn << "no modem_id_lookup_path in moos file. this is required for conversions between modem_id and vehicle name / type." << std::endl;
 
 
     south = (cfg_.common().lat_origin() < 0.0);
@@ -66,7 +66,7 @@ CpREMUSCodec::CpREMUSCodec()
     // initialize m_geodesy
     if (!m_geodesy.Initialise(cfg_.common().lat_origin(), cfg_.common().lon_origin()))
     {
-        glogger() << die << "Geodesy init failed." << std::endl;
+        glog << die << "Geodesy init failed." << std::endl;
     }
 
     subscribe(cfg_.mdat_state_var());

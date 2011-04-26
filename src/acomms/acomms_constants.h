@@ -45,7 +45,6 @@ namespace goby
         const int QUERY_DESTINATION_ID = -1;        
 
         const unsigned char DCCL_CCL_HEADER = 32;
-
         
         const double NaN = std::numeric_limits<double>::quiet_NaN();
         

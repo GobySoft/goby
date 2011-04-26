@@ -22,9 +22,6 @@
 #include <limits>
 #include <bitset>
 
-#include <cryptopp/filters.h>
-#include <cryptopp/hex.h>
-
 #include "goby/protobuf/modem_message.pb.h"
 #include "goby/protobuf/xml_config.pb.h"
 #include "goby/core/core_constants.h"
@@ -34,48 +31,6 @@ namespace goby
 
     namespace acomms
     {            
-        /* inline void hex_decode(const std::string& in, std::string* out) */
-        /* { */
-        /*     int in_size = in.size(); */
-        /*     int out_size = in_size >> 1; */
-        /*     if(in_size & 1) */
-        /*         ++out_size; */
-            
-        /*     out->resize(out_size); */
-        /*     std::stringstream ss; */
-        /*     for(int i = 0, n = in.size(); */
-        /*         i < n; */
-        /*         i += 2) */
-        /*     { */
-        /*         ss << std::hex << in.substr(i, 2); */
-        /*         int test; */
-        /*         ss >> test; */
-        /*         std::cout << test << std::endl; */
-        /*     } */
-        /* } */
-
-        /* inline std::string hex_decode(const std::string& in) */
-        /* { */
-        /*     std::string out; */
-        /*     hex_decode(in, &out); */
-        /*     return out; */
-        /* } */
-    
-        /* inline void hex_encode(const std::string& in, std::string* out) */
-        /* { */
-        /*     const bool uppercase = false; */
-        /*     CryptoPP::HexEncoder hex(new CryptoPP::StringSink(*out), uppercase); */
-        /*     hex.Put((byte*)in.c_str(), in.size()); */
-        /*     hex.MessageEnd(); */
-        /* } */
-
-        /* inline std::string hex_encode(const std::string& in) */
-        /* { */
-        /*     std::string out; */
-        /*     hex_encode(in, &out); */
-        /*     return out; */
-        /* } */
-        
         // provides stream output operator for Google Protocol Buffers Message 
         inline std::ostream& operator<<(std::ostream& out, const google::protobuf::Message& msg)
         {

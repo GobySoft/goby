@@ -19,14 +19,17 @@
 
 #include <boost/foreach.hpp>
 
-#include "goby/acomms/xml/xml_parser.h"
 #include "goby/util/logger.h"
 #include "goby/util/time.h"
 #include "goby/util/binary.h"
 
+#include "goby/acomms/dccl.h"
+#include "goby/protobuf/dccl_option_extensions.pb.h"
+#include "goby/protobuf/queue_option_extensions.pb.h"
+
 #include "queue_manager.h"
 #include "queue_constants.h"
-#include "queue_xml_callbacks.h"
+
 
 int goby::acomms::QueueManager::modem_id_ = 0;
 
@@ -38,7 +41,7 @@ goby::acomms::QueueManager::QueueManager(std::ostream* log /* =0 */)
 
 void goby::acomms::QueueManager::add_queue(const protobuf::QueueConfig& cfg)
 {
-    Queue q(cfg, log_, modem_id_);
+    Queue q(cfg, log_);
     
     if(queues_.count(cfg.key()))
     {
@@ -62,46 +65,24 @@ void goby::acomms::QueueManager::add_queue(const protobuf::QueueConfig& cfg)
     
 }
 
-std::set<unsigned> goby::acomms::QueueManager::add_xml_queue_file(const std::string& xml_file)
-{
-    std::vector<protobuf::QueueConfig> cfgs;
-
-    // Register handlers for XML parsing
-    QueueContentHandler content(cfgs);
-    QueueErrorHandler error;
-    // instantiate a parser for the xml message files
-    XMLParser parser(content, error);
-    std::set<unsigned> added_ids;
-    
-    parser.parse(xml_file);
-    BOOST_FOREACH(const protobuf::QueueConfig& c, cfgs)
-    {
-        add_queue(c);
-        added_ids.insert(c.key().id());
-    }
-    
-    return added_ids;
-}
-
 void goby::acomms::QueueManager::do_work()
 {
     typedef std::pair<const protobuf::QueueKey, Queue> P;
     for(std::map<protobuf::QueueKey, Queue>::iterator it = queues_.begin(), n = queues_.end(); it != n; ++it)
     {
-        std::vector<protobuf::ModemDataTransmission> expired_msgs = it->second.expire();
+        std::vector<boost::shared_ptr<google::protobuf::Message> >expired_msgs =
+            it->second.expire();
 
-        protobuf::ModemDataExpire expire;
-        protobuf::ModemDataTransmission* data_msg = expire.mutable_orig_msg();
-        BOOST_FOREACH(*data_msg, expired_msgs)
+        BOOST_FOREACH(boost::shared_ptr<google::protobuf::Message> expire, expired_msgs)
         {
-            //expire.mutable_orig_msg()->mutable_queue_key()->CopyFrom(it->first);
-            signal_expire(expire);
+            signal_expire(*expire);
         }
         
     }
     
 }
 
+// for CCL
 void goby::acomms::QueueManager::push_message(const protobuf::ModemDataTransmission& data_msg)
 {
     // message is to us, auto-loopback
@@ -111,24 +92,10 @@ void goby::acomms::QueueManager::push_message(const protobuf::ModemDataTransmiss
         
         handle_modem_receive(data_msg);
     }
-// we have a queue with this key, so push message for sending
     else if(queues_.count(data_msg.queue_key()))
     {
-        if(data_msg.queue_key().type() == protobuf::QUEUE_DCCL && manip_manager_.has(data_msg.queue_key().id(), protobuf::MessageFile::NO_QUEUE))
-        {
-            if(log_) *log_ << group("q_out") << "not queuing DCCL ID: " << data_msg.queue_key().id() << "; NO_QUEUE manipulator is set" << std::endl;
-        }
-        else
-        {
-            queues_[data_msg.queue_key()].push_message(data_msg);
-            qsize(&queues_[data_msg.queue_key()]);
-        }        
-
-        if(data_msg.queue_key().type() == protobuf::QUEUE_DCCL && manip_manager_.has(data_msg.queue_key().id(), protobuf::MessageFile::LOOPBACK))
-        {
-            if(log_) *log_ << group("q_out") << data_msg.queue_key() << " LOOPBACK manipulator set, sending back to decoder" << std::endl;
-            handle_modem_receive(data_msg);
-        }        
+        queues_[data_msg.queue_key()].push_message(data_msg);
+        qsize(&queues_[data_msg.queue_key()]);
     }
     else
     {
@@ -136,6 +103,104 @@ void goby::acomms::QueueManager::push_message(const protobuf::ModemDataTransmiss
         ss << "no queue for key: " << data_msg.queue_key();
         throw queue_exception(ss.str());
     }
+}
+
+void goby::acomms::QueueManager::push_message(const google::protobuf::Message& data_msg)
+{
+    // // message is to us, auto-loopback
+    // if(data_msg.base().dest() == modem_id_)
+    // {
+    //     if(log_) *log_<< group("q_out") << "outgoing message is for us: using loopback, not physical interface" << std::endl;
+        
+    //     signal_receive(data_msg);
+    // }
+    //else
+
+    const google::protobuf::Descriptor* desc = data_msg.GetDescriptor();
+    
+    protobuf::QueueKey key;
+    key.set_type(protobuf::QUEUE_DCCL);
+    key.set_id(desc->options().GetExtension(dccl::id));
+    
+
+    if(!queues_.count(key))
+    {
+        goby::acomms::DCCLCodec* codec = goby::acomms::DCCLCodec::get();
+
+        try
+        {
+            //validate with DCCL first
+            codec->validate(desc);
+        }
+        catch(DCCLException& e)
+        {
+            throw(queue_exception("could not create queue for message: " + desc->full_name() + " because it failed DCCL validation: " + e.what()));
+        }
+
+        protobuf::QueueConfig queue_cfg;
+        if(!desc->options().HasExtension(queue::ack))
+        {
+            if(log_) *log_ << warn << "using default value of " << queue_cfg.ack() << " for queue::ack" << std::endl;
+        }
+        else
+        {
+            queue_cfg.set_ack(desc->options().GetExtension(queue::ack));    
+        }
+        if(!desc->options().HasExtension(queue::blackout_time))
+        {
+            if(log_) *log_ << warn << "using default value of " << queue_cfg.blackout_time() << " for queue::blackout_time" << std::endl;
+        }
+        else
+        {
+            queue_cfg.set_blackout_time(desc->options().GetExtension(queue::blackout_time));    
+        }
+
+
+        if(!desc->options().HasExtension(queue::max_queue))
+        {
+            if(log_) *log_ << warn << "using default value of " << queue_cfg.max_queue() << " for queue::max_queue" << std::endl;
+        }
+        else
+        {
+            queue_cfg.set_max_queue(desc->options().GetExtension(queue::max_queue));    
+        }
+        
+        if(!desc->options().HasExtension(queue::newest_first))
+        {
+            if(log_) *log_ << warn << "using default value of " << queue_cfg.newest_first() << " for queue::newest_first" << std::endl;
+        }
+        else
+        {
+            queue_cfg.set_newest_first(desc->options().GetExtension(queue::newest_first));    
+        }
+
+        if(!desc->options().HasExtension(queue::ttl))
+        {
+            if(log_) *log_ << warn << "using default value of " << queue_cfg.ttl() << " for queue::ttl" << std::endl;
+        }
+        else
+        {
+            queue_cfg.set_ttl(desc->options().GetExtension(queue::ttl));    
+        }
+
+        if(!desc->options().HasExtension(queue::value_base))
+        {
+            if(log_) *log_ << warn << "using default value of " << queue_cfg.value_base() << " for queue::value_base" << std::endl;
+        }
+        else
+        {
+            queue_cfg.set_value_base(desc->options().GetExtension(queue::value_base));    
+        }
+        queue_cfg.mutable_key()->CopyFrom(key);
+
+        // add the newly generated queue
+        add_queue(queue_cfg);
+    }
+
+    // add the message
+    queues_[key].push_message(data_msg);
+    qsize(&queues_[key]);
+
 }
 
 
@@ -191,26 +256,32 @@ void goby::acomms::QueueManager::handle_modem_data_request(const protobuf::Modem
     }
     else
     {
-        stitch_recursive(request_msg, data_msg, winning_queue);
+        std::list<const google::protobuf::Message*> dccl_msgs;
+        stitch_recursive(request_msg, data_msg, winning_queue, &dccl_msgs);
     }
 }
 
-bool goby::acomms::QueueManager::stitch_recursive(const protobuf::ModemDataRequest& request_msg, protobuf::ModemDataTransmission* complete_data_msg, Queue* winning_queue)
+bool goby::acomms::QueueManager::stitch_recursive(
+    const protobuf::ModemDataRequest& request_msg,
+    protobuf::ModemDataTransmission* complete_data_msg,
+    Queue* winning_queue,
+    std::list<const google::protobuf::Message*>* dccl_msgs)
 {
     const unsigned CCL_ID_BYTES = HEAD_CCL_ID_SIZE / BITS_IN_BYTE;
     
     // new user frame (e.g. 32B)
-    protobuf::ModemDataTransmission next_data_msg = winning_queue->give_data(request_msg);
+
+    QueuedMessage next_msg = winning_queue->give_data(request_msg);
 
     if(log_) *log_<< group("q_out") << "sending data to firmware from: "
                   << winning_queue->cfg().name() 
-                  << ": " << next_data_msg << std::endl;
-
+                  << ": " << next_msg.encoded_msg << std::endl;
+    
     //
     // ACK
     // 
     // insert ack if desired
-    if(next_data_msg.ack_requested())
+    if(next_msg.encoded_msg.ack_requested())
         waiting_for_ack_.insert(std::pair<unsigned, Queue*>(complete_data_msg->frame(), winning_queue));
     else
     {
@@ -219,7 +290,7 @@ bool goby::acomms::QueueManager::stitch_recursive(const protobuf::ModemDataReque
     }
 
     // if an ack been set, do not unset these
-    if (packet_ack_ == false) packet_ack_ = next_data_msg.ack_requested();
+    if (packet_ack_ == false) packet_ack_ = next_msg.encoded_msg.ack_requested();
     
 
     //
@@ -230,7 +301,7 @@ bool goby::acomms::QueueManager::stitch_recursive(const protobuf::ModemDataReque
     {
         // discipline the destination of the packet if initially unset
         if(complete_data_msg->base().dest() == QUERY_DESTINATION_ID)
-            complete_data_msg->mutable_base()->set_dest(next_data_msg.base().dest());
+            complete_data_msg->mutable_base()->set_dest(next_msg.encoded_msg.base().dest());
 
         if(packet_dest_ == BROADCAST_ID)
             packet_dest_ = complete_data_msg->base().dest();
@@ -245,20 +316,21 @@ bool goby::acomms::QueueManager::stitch_recursive(const protobuf::ModemDataReque
     //
     if(winning_queue->cfg().key().type() == protobuf::QUEUE_DCCL)
     {   
-        // e.g. 32B
-        std::string new_data = next_data_msg.data();
+        // // e.g. 32B
+        // std::string new_data = next_msg.data();
         
-        // insert the size of the next field (e.g. 32B) right after the header
-        std::string frame_size(USER_FRAME_NEXT_SIZE_BYTES,
-                               static_cast<char>((next_data_msg.data().size()-DCCL_NUM_HEADER_BYTES)));
-        new_data.insert(DCCL_NUM_HEADER_BYTES, frame_size);
+        // // insert the size of the next field (e.g. 32B) right after the header
+        // std::string frame_size(USER_FRAME_NEXT_SIZE_BYTES,
+        //                        static_cast<char>((next_msg.data().size()-DCCL_NUM_HEADER_BYTES)));
+        // new_data.insert(DCCL_NUM_HEADER_BYTES, frame_size);
         
         // append without the CCL ID (old size + 31B)
-        *(complete_data_msg->mutable_data()) += new_data.substr(CCL_ID_BYTES);
+        goby::acomms::DCCLCodec* codec = goby::acomms::DCCLCodec::get();
+        complete_data_msg->mutable_data()->resize(codec->size_repeated(*dccl_msgs));    
         
         bool is_last_user_frame = true;
-        // if remaining bytes is greater than the DCCL header, we have a chance of adding another user-frame
-        if((request_msg.max_bytes() - complete_data_msg->data().size()) > DCCL_NUM_HEADER_BYTES
+        // if remaining bytes is greater than 0, we have a chance of adding another user-frame
+        if((request_msg.max_bytes() - complete_data_msg->data().size()) > 0
            && winning_queue->cfg().key().type() != protobuf::QUEUE_CCL)
         {
             // fetch the next candidate
@@ -268,18 +340,21 @@ bool goby::acomms::QueueManager::stitch_recursive(const protobuf::ModemDataReque
         
         if(!is_last_user_frame)
         {
-            replace_header(false, complete_data_msg, next_data_msg, new_data);
-            return stitch_recursive(request_msg, complete_data_msg, winning_queue);
+            //replace_header(false, complete_data_msg, next_msg, new_data);
+            return stitch_recursive(request_msg, complete_data_msg, winning_queue, dccl_msgs);
         }
         else
         {
-            replace_header(true, complete_data_msg, next_data_msg, new_data);
-            // add the CCL ID back on to the message (e.g. 33B)
-            complete_data_msg->mutable_data()->insert(0, std::string(1, DCCL_CCL_HEADER));
-            // remove the size of the next field from the last user-frame (e.g. 32B).
-            complete_data_msg->mutable_data()->erase(complete_data_msg->data().size()-new_data.size()+DCCL_NUM_HEADER_BYTES, USER_FRAME_NEXT_SIZE_BYTES);
+            // replace_header(true, complete_data_msg, next_msg, new_data);
+            // // add the CCL ID back on to the message (e.g. 33B)
+            // complete_data_msg->mutable_data()->insert(0, std::string(1, DCCL_CCL_HEADER));
+            // // remove the size of the next field from the last user-frame (e.g. 32B).
+            // complete_data_msg->mutable_data()->erase(complete_data_msg->data().size()-new_data.size()+DCCL_NUM_HEADER_BYTES, USER_FRAME_NEXT_SIZE_BYTES);
             // set the ack to conform to the entire message
+            
             complete_data_msg->set_ack_requested(packet_ack_);
+            // finally actually encode the message
+            *(complete_data_msg->mutable_data()) = codec->encode_repeated(*dccl_msgs);
             
             return true;
         }
@@ -290,32 +365,32 @@ bool goby::acomms::QueueManager::stitch_recursive(const protobuf::ModemDataReque
     else
     {
         // not DCCL, copy the msg and we are done
-        complete_data_msg->CopyFrom(next_data_msg);
+        complete_data_msg->CopyFrom(next_msg.encoded_msg);
         return true;
     }
 }
 
-void goby::acomms::QueueManager::replace_header(bool is_last_user_frame, protobuf::ModemDataTransmission* data_msg, const protobuf::ModemDataTransmission& next_data_msg, const std::string& new_data)
-{
-    // decode the header so that we can modify the flags
-    DCCLHeaderDecoder head_decoder(new_data);
+// void goby::acomms::QueueManager::replace_header(bool is_last_user_frame, protobuf::ModemDataTransmission* data_msg, const protobuf::ModemDataTransmission& next_data_msg, const std::string& new_data)
+// {
+//     // decode the header so that we can modify the flags
+//     DCCLHeaderDecoder head_decoder(new_data);
 
-    // don't put the multimessage flag on the last user-frame
-    head_decoder[HEAD_MULTIMESSAGE_FLAG] =
-        (!is_last_user_frame) ? true : false;
-    // put the broadcast flag on if needed 
-    head_decoder[HEAD_BROADCAST_FLAG] =
-        (next_data_msg.base().dest() == BROADCAST_ID) ? true : false;
+//     // don't put the multimessage flag on the last user-frame
+//     head_decoder[HEAD_MULTIMESSAGE_FLAG] =
+//         (!is_last_user_frame) ? true : false;
+//     // put the broadcast flag on if needed 
+//     head_decoder[HEAD_BROADCAST_FLAG] =
+//         (next_data_msg.base().dest() == BROADCAST_ID) ? true : false;
 
-    // re-encode the header
-    DCCLHeaderEncoder head_encoder(head_decoder.get());
+//     // re-encode the header
+//     DCCLHeaderEncoder head_encoder(head_decoder.get());
 
-    // replace the header without the CCL ID
-    const unsigned CCL_ID_BYTES = HEAD_CCL_ID_SIZE / BITS_IN_BYTE;
-    data_msg->mutable_data()->replace(data_msg->data().size()-new_data.size()+CCL_ID_BYTES,
-                                      head_encoder.str().size()-CCL_ID_BYTES,
-                                      head_encoder.str().substr(CCL_ID_BYTES));
-}
+//     // replace the header without the CCL ID
+//     const unsigned CCL_ID_BYTES = HEAD_CCL_ID_SIZE / BITS_IN_BYTE;
+//     data_msg->mutable_data()->replace(data_msg->data().size()-new_data.size()+CCL_ID_BYTES,
+//                                       head_encoder.str().size()-CCL_ID_BYTES,
+//                                       head_encoder.str().substr(CCL_ID_BYTES));
+// }
 
 
 void goby::acomms::QueueManager::clear_packet()
@@ -349,16 +424,16 @@ goby::acomms::Queue* goby::acomms::QueueManager::find_next_sender(const protobuf
     {
         Queue& oq = it->second;
         
-        // encode on demand
-        if(oq.cfg().key().type() == protobuf::QUEUE_DCCL &&
-           manip_manager_.has(oq.cfg().key().id(), protobuf::MessageFile::ON_DEMAND) &&
-           (!oq.size() || oq.newest_msg_time() + ON_DEMAND_SKEW < util::goby_time()))
-        {
-            protobuf::ModemDataTransmission data_msg;
-            data_msg.mutable_queue_key()->CopyFrom(it->first);
-            signal_data_on_demand(request_msg, &data_msg);
-            push_message(data_msg);
-        }
+        // // encode on demand
+        // if(oq.cfg().key().type() == protobuf::QUEUE_DCCL &&
+        //    manip_manager_.has(oq.cfg().key().id(), protobuf::MessageFile::ON_DEMAND) &&
+        //    (!oq.size() || oq.newest_msg_time() + ON_DEMAND_SKEW < util::goby_time()))
+        // {
+        //     protobuf::ModemDataTransmission data_msg;
+        //     data_msg.mutable_queue_key()->CopyFrom(it->first);
+        //     signal_data_on_demand(request_msg, &data_msg);
+        //     push_message(data_msg);
+        // }
         
         double priority;
         boost::posix_time::ptime last_send_time;
@@ -390,9 +465,8 @@ goby::acomms::Queue* goby::acomms::QueueManager::find_next_sender(const protobuf
 }    
 
 
-void goby::acomms::QueueManager::handle_modem_ack(const protobuf::ModemDataAck& orig_ack_msg)
+void goby::acomms::QueueManager::handle_modem_ack(const protobuf::ModemDataAck& ack_msg)
 {
-    protobuf::ModemDataAck ack_msg(orig_ack_msg);
     
     if(ack_msg.base().dest() != modem_id_)
     {
@@ -417,8 +491,8 @@ void goby::acomms::QueueManager::handle_modem_ack(const protobuf::ModemDataAck& 
         while(it != waiting_for_ack_.end())
         {
             Queue* oq = it->second;
-
-            protobuf::ModemDataTransmission* removed_msg = ack_msg.mutable_orig_msg();
+            
+            boost::shared_ptr<google::protobuf::Message> removed_msg;
             if(!oq->pop_message_ack(ack_msg.frame(), removed_msg))
             {
                 if(log_) *log_<< group("q_in") << warn
@@ -429,7 +503,7 @@ void goby::acomms::QueueManager::handle_modem_ack(const protobuf::ModemDataAck& 
             {
                 qsize(oq);
                 //ack_msg.mutable_orig_msg()->mutable_queue_key()->CopyFrom(oq->cfg().key());
-                signal_ack(ack_msg);
+                signal_ack(ack_msg, *removed_msg);
                 
             }
 
@@ -457,16 +531,21 @@ void goby::acomms::QueueManager::handle_modem_receive(const protobuf::ModemDataT
                   << ": " << message << std::endl;
 
     std::string data = message.data();
-    if(data.size() < DCCL_NUM_HEADER_BYTES)
+    if(data.size() < HEAD_CCL_ID_SIZE / BITS_IN_BYTE)
+    {
+        if(log_) *log_<< warn << "message is too small!" << std::endl;
         return;
+    }
     
-    DCCLHeaderDecoder head_decoder(data);
-    int ccl_id = head_decoder[HEAD_CCL_ID];
+ 
+    int ccl_id = data[0];
 
     // check for queue_dccl type
     if(ccl_id == DCCL_CCL_HEADER)
     {
-        unstitch_recursive(&data, &message);
+        goby::acomms::DCCLCodec* codec = goby::acomms::DCCLCodec::get();
+        std::list<boost::shared_ptr<google::protobuf::Message> > dccl_msgs =
+            codec->decode_repeated(data);
     }
     // check for ccl type
     else
@@ -489,51 +568,55 @@ void goby::acomms::QueueManager::handle_modem_receive(const protobuf::ModemDataT
     }
 }
 
-bool goby::acomms::QueueManager::unstitch_recursive(std::string* data, protobuf::ModemDataTransmission* data_msg)
-{
-    unsigned original_dest = data_msg->base().dest();
-    DCCLHeaderDecoder head_decoder(*data);
-    bool multimessage_flag = head_decoder[HEAD_MULTIMESSAGE_FLAG];
-    bool broadcast_flag = head_decoder[HEAD_BROADCAST_FLAG];
-    unsigned dccl_id = head_decoder[HEAD_DCCL_ID];
-    
-    // test multimessage bit
-    if(multimessage_flag)
-    {
-        // extract frame_size
-        // TODO (tes): Make this work properly for strings larger than one byte 
-        unsigned frame_size = data->substr(DCCL_NUM_HEADER_BYTES, USER_FRAME_NEXT_SIZE_BYTES)[0];
-        
-        // erase the frame size byte
-        data->erase(DCCL_NUM_HEADER_BYTES, USER_FRAME_NEXT_SIZE_BYTES);
-        
-        // extract the data for this user-frame
-        data_msg->set_data(data->substr(0, (frame_size + DCCL_NUM_HEADER_BYTES)));
-        
-        data->erase(USER_FRAME_NEXT_SIZE_BYTES,
-                    (frame_size + DCCL_NUM_HEADER_BYTES-USER_FRAME_NEXT_SIZE_BYTES));
-    }
-    else
-    {
-        data_msg->set_data(*data);
-    }
-    
-    // reset these flags
-    head_decoder[HEAD_MULTIMESSAGE_FLAG] = false;
-    head_decoder[HEAD_BROADCAST_FLAG] = false;
-    
-    DCCLHeaderEncoder head_encoder(head_decoder.get());
-    data_msg->mutable_data()->replace(0, DCCL_NUM_HEADER_BYTES, head_encoder.str());
-    // overwrite destination as BROADCAST if broadcast bit is set
-    data_msg->mutable_base()->set_dest(broadcast_flag ? BROADCAST_ID : original_dest);
-    publish_incoming_piece(data_msg, dccl_id); 
-    
-    // put the destination back
-    data_msg->mutable_base()->set_dest(original_dest);
+// bool goby::acomms::QueueManager::unstitch_recursive(std::string* data, protobuf::ModemDataTransmission* data_msg)
+// {
+//     std::list<boost::shared_ptr<google::protobuf::Message> > dccl_msgs =
+//         codec->decode_repeated();
 
-    // unstitch until the multimessage flag is no longer set
-    return multimessage_flag ? unstitch_recursive(data, data_msg) : true;
-}
+
+//     unsigned original_dest = data_msg->base().dest();
+//     DCCLHeaderDecoder head_decoder(*data);
+//     bool multimessage_flag = head_decoder[HEAD_MULTIMESSAGE_FLAG];
+//     bool broadcast_flag = head_decoder[HEAD_BROADCAST_FLAG];
+//     unsigned dccl_id = head_decoder[HEAD_DCCL_ID];
+    
+//     // test multimessage bit
+//     if(multimessage_flag)
+//     {
+//         // extract frame_size
+//         // TODO (tes): Make this work properly for strings larger than one byte 
+//         unsigned frame_size = data->substr(DCCL_NUM_HEADER_BYTES, USER_FRAME_NEXT_SIZE_BYTES)[0];
+        
+//         // erase the frame size byte
+//         data->erase(DCCL_NUM_HEADER_BYTES, USER_FRAME_NEXT_SIZE_BYTES);
+        
+//         // extract the data for this user-frame
+//         data_msg->set_data(data->substr(0, (frame_size + DCCL_NUM_HEADER_BYTES)));
+        
+//         data->erase(USER_FRAME_NEXT_SIZE_BYTES,
+//                     (frame_size + DCCL_NUM_HEADER_BYTES-USER_FRAME_NEXT_SIZE_BYTES));
+//     }
+//     else
+//     {
+//         data_msg->set_data(*data);
+//     }
+    
+//     // reset these flags
+//     head_decoder[HEAD_MULTIMESSAGE_FLAG] = false;
+//     head_decoder[HEAD_BROADCAST_FLAG] = false;
+    
+//     DCCLHeaderEncoder head_encoder(head_decoder.get());
+//     data_msg->mutable_data()->replace(0, DCCL_NUM_HEADER_BYTES, head_encoder.str());
+//     // overwrite destination as BROADCAST if broadcast bit is set
+//     data_msg->mutable_base()->set_dest(broadcast_flag ? BROADCAST_ID : original_dest);
+//     publish_incoming_piece(data_msg, dccl_id); 
+    
+//     // put the destination back
+//     data_msg->mutable_base()->set_dest(original_dest);
+
+//     // unstitch until the multimessage flag is no longer set
+//     return multimessage_flag ? unstitch_recursive(data, data_msg) : true;
+// }
 
 bool goby::acomms::QueueManager::publish_incoming_piece(protobuf::ModemDataTransmission* message, const unsigned incoming_var_id)
 {
@@ -590,17 +673,6 @@ void goby::acomms::QueueManager::process_cfg()
 {
     queues_.clear();
     waiting_for_ack_.clear();
-    manip_manager_.clear();
-    
-    for(int i = 0, n = cfg_.message_file_size(); i < n; ++i)
-    {
-        std::set<unsigned> new_ids = add_xml_queue_file(cfg_.message_file(i).path());
-        BOOST_FOREACH(unsigned new_id, new_ids)
-        {
-            for(int j = 0, o = cfg_.message_file(i).manipulator_size(); j < o; ++j)
-                manip_manager_.add(new_id, cfg_.message_file(i).manipulator(j));
-        }
-    }
     
     for(int i = 0, n = cfg_.queue_size(); i < n; ++i)
         add_queue(cfg_.queue(i));

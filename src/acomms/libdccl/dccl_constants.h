@@ -25,6 +25,9 @@
 #include <limits>
 #include <vector>
 
+#include <boost/dynamic_bitset.hpp>
+#include <google/protobuf/dynamic_message.h>
+
 #include "goby/acomms/acomms_constants.h"
 #include "goby/util/logger.h"
 

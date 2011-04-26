@@ -368,6 +368,17 @@ void goby::acomms::DCCLCodec::info_repeated(std::list<const google::protobuf::De
         info(p, os);
 }
 
+unsigned goby::acomms::DCCLCodec::size_repeated(std::list<const google::protobuf::Message*> msgs)
+{
+    unsigned out;
+    BOOST_FOREACH(const google::protobuf::Message* p, msgs)
+    {
+        out += size(p);
+    }
+    return out;
+}
+
+
 std::string goby::acomms::DCCLCodec::encode_repeated(std::list<const google::protobuf::Message*> msgs)
 {
     std::string out;

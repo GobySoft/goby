@@ -1,5 +1,4 @@
 // provides MessageFile
-import "goby/protobuf/xml_config.proto";
 import "goby/protobuf/option_extensions.proto";
 
 package goby.acomms.protobuf;
@@ -22,7 +21,6 @@ message QueueConfig
   required string name = 8 [(description)="Human readable name for this queue", (example)="Remus_State"];
   optional string in_pubsub_var = 9 [(description)="Publish subscribe architecture variable for posting incoming data to", (example)="REMUS_STATE_RAW_IN"];
   optional string out_pubsub_var = 10 [(description)="Publish subscribe architecture variable for fetching outgoing data from", (example)="REMUS_STATE_RAW_OUT"];
-  
 }
 
 message QueueKey
@@ -34,8 +32,7 @@ message QueueKey
 message QueueManagerConfig
 {
   optional int32 modem_id = 1 [(description)="Unique number 1-31 to identify this node", (example)="1"];
-  repeated MessageFile message_file = 2 [(description)="XML message file containing one or more DCCL message descriptions. Use for specifying DCCL queues."];
-  repeated QueueConfig queue = 3 [(description)="Use for specifying CCL queues; use message_file for DCCL queues."];
+  repeated QueueConfig queue = 2 [(description)="Use for specifying CCL queues; DCCL queues are automatically generated from the .proto definition for that message"];
 }
 
 

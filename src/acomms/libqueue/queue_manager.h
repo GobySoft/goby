@@ -26,7 +26,6 @@
 #include <boost/bind.hpp>
 #include <boost/signal.hpp>
 
-#include "goby/acomms/xml/xml_parser.h"
 #include "goby/acomms/dccl.h"
 #include "goby/protobuf/queue.pb.h"
 #include "goby/protobuf/acomms_proto_helpers.h"
@@ -99,9 +98,10 @@ namespace goby
             ///
             /// \param key QueueKey that references the %queue to push the message to.
             /// \param new_message ModemMessage to push.
-            void push_message(const protobuf::ModemDataTransmission& new_message);        
+            void push_message(const protobuf::ModemDataTransmission& new_message);
+            void push_message(const google::protobuf::Message& new_message);
             //@}
-        
+            
             /// \name Modem Slots
             ///
             /// These methods are the interface to the QueueManager from the %modem driver.
@@ -113,7 +113,8 @@ namespace goby
             /// \param message_in The ModemMessage containing the details of the request (source, destination, size, etc.)
             /// \param message_out The packed ModemMessage ready for sending by the modem. This will be populated by this function.
             /// \return true if successful in finding data to send, false if no data is available
-            void handle_modem_data_request(const protobuf::ModemDataRequest& msg_request, protobuf::ModemDataTransmission* msg_data);
+            void handle_modem_data_request(const protobuf::ModemDataRequest& request_msg,
+                                           protobuf::ModemDataTransmission* data_msg);
 
             /// \brief Receive incoming data from the %modem.
             ///
@@ -156,11 +157,13 @@ namespace goby
             /// \brief Signals when acknowledgment of proper message receipt has been received. This is only sent for queues with QueueConfig::ack() == true with an explicit destination (ModemMessageBase::dest() != 0)
             ///
             /// \param ack_msg a message containing details of the acknowledgment and the acknowledged transmission. (protobuf::ModemMsgAck is defined in modem_message.proto)        
-            boost::signal<void (const protobuf::ModemDataAck& ack_msg)> signal_ack;
+            boost::signal<void (const protobuf::ModemDataAck& ack_msg,
+                                const google::protobuf::Message& orig_msg)> signal_ack;
+
             /// \brief Signals when a DCCL message is received.
             ///
-            /// \param msg the received transmission. (protobuf::ModemDataTransmission is defined in modem_message.proto)
-            boost::signal<void (const protobuf::ModemDataTransmission& msg)> signal_receive;
+            /// \param msg the received transmission.
+            boost::signal<void (const google::protobuf::Message& msg) > signal_receive;
 
             /// \brief Signals when a CCL message is received.
             ///
@@ -170,26 +173,20 @@ namespace goby
             /// \brief Signals when a message is expires (exceeds its time-to-live or ttl) before being sent (if QueueConfig::ack() == false) or before being acknowledged (if QueueConfig::ack() == true).
             ///
             /// \param expire_msg the expired transmission. (protobuf::ModemDataExpire is defined in modem_message.proto)
-            boost::signal<void (const protobuf::ModemDataExpire& expire_msg)> signal_expire;
+            boost::signal<void (const google::protobuf::Message& orig_msg)> signal_expire;
             
             /// \brief Forwards the data request to the application layer. This advanced feature is used with the ON_DEMAND manipulator and allows for the application to provide data immediately before it is actually sent (for highly time sensitive data)
             ///
             /// \param request_msg the details of the requested data. (protobuf::ModemDataRequest is defined in modem_message.proto)
             /// \param data_msg pointer to store the supplied data. (protobuf::ModemDataTransmission is defined in modem_message.proto)
             boost::signal<void (const protobuf::ModemDataRequest& request_msg,
-                                protobuf::ModemDataTransmission* data_msg)> signal_data_on_demand;
+                                boost::shared_ptr<google::protobuf::Message> data_msg)> signal_data_on_demand;
 
             /// \brief Signals when any queue changes size (message is popped or pushed)
             ///
             /// \param size message containing the queue that changed size and its new size (protobuf::QueueSize is defined in queue.proto).
             boost::signal<void (protobuf::QueueSize size)> signal_queue_size_change;
             //@}
-
-            /// \example libqueue/queue_simple/queue_simple.cpp
-            /// simple.xml
-            /// \verbinclude queue_simple/simple.xml
-            /// queue_simple.cpp
-
 
             /// \example acomms/chat/chat.cpp
 
@@ -199,11 +196,6 @@ namespace goby
             friend class Queue;
             static int modem_id_;
             
-
-/// \brief Add more %queues by configuration XML files (typically contained in DCCL message XML files).
-            ///
-            /// \param xml_file path to the XML file to parse and add to this codec.
-            std::set<unsigned> add_xml_queue_file(const std::string& xml_file);
 
             /// \brief Add more Queues.
             ///
@@ -223,7 +215,12 @@ namespace goby
             Queue* find_next_sender(const protobuf::ModemDataRequest& message, const protobuf::ModemDataTransmission& data_msg, bool first_user_frame);
         
             // combine multiple "user" frames into a single "modem" frame
-            bool stitch_recursive(const protobuf::ModemDataRequest& request_msg, protobuf::ModemDataTransmission* data_msg, Queue* winning_var);
+            bool stitch_recursive(
+                const protobuf::ModemDataRequest& request_msg,
+                protobuf::ModemDataTransmission* complete_data_msg,
+                Queue* winning_queue,
+                std::list<const google::protobuf::Message*>* dccl_msgs);
+
             bool unstitch_recursive(std::string* data, protobuf::ModemDataTransmission* message);
 
             void replace_header(bool is_last_user_frame, protobuf::ModemDataTransmission* data_msg, const protobuf::ModemDataTransmission& next_data_msg, const std::string& new_data);

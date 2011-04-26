@@ -218,7 +218,6 @@ namespace goby
 
 
         
-        /// \todo (tes): THIS IS A PLACEHOLDER
         class DCCLModemIdConverterCodec : public DCCLDefaultArithmeticFieldCodec<int32>
         {
           public:

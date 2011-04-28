@@ -1,5 +1,5 @@
 
-if(build_test)
+if(BUILD_TESTING)
   add_subdirectory(test)
 endif()
 

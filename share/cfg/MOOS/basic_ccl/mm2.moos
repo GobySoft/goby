@@ -33,7 +33,7 @@ ProcessConfig = pAcommsHandler
 
     driver_cfg
     { 
-        serial_port: "/dev/ttyLOOPB2"
+        serial_port: "/tmp/ttyLOOPB2"
     # doesn't work with iModemSim, set to true for real ops
         [MicroModemConfig.reset_nvram]: false
     }
@@ -75,7 +75,7 @@ ProcessConfig = iModemSim
 	AppTick   = 4
 	CommsTick = 4
 
-	Port = /dev/ttyLOOPB1
+	Port = /tmp/ttyLOOPB1
 	Speed = 19200
 	
 	IPPort = 49234

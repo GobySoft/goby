@@ -12,6 +12,10 @@
 # to install to system
 # > sudo ./INSTALL
 
+if [ ! -e build/CMakeCache.txt ]; then
+    ./CONFIGURE
+fi
+
 pushd build
 if [[ $UID -ne 0 ]]; then
     # if user is not root, build to goby/bin, goby/include, and goby/lib:

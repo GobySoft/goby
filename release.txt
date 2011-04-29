@@ -1,15 +1,49 @@
 Goby Release Notes
 
 *****************
+Version 1.0.3
+-- 
+
+> bzr log --line -n0 -r 112..
+118: toby 2011-04-28 fix for Bug 772640 pertaining to finding MOOS with CMake
+117: toby 2011-04-21 [merge] merged changes from trunk to WHOI Micro-Modem Driver mm_driver
+  60.2.30: toby 2011-04-06 removed regression with Polling MAC on WHOI Micro-Modem
+  60.2.29: toby 2011-04-06 streamlined DRQ process and added more logic sanity checks
+  60.2.28: toby 2011-03-22 added REMUS LBL ranging example
+  60.2.27: toby 2011-03-17 [merge] merged MAC OS X building changes from 1.0 series
+  60.2.26: toby 2011-03-16 improved package finding for examples, removed some goby/util/string.h code where a Boost solution exists
+  60.2.25: toby 2011-03-10 [merge] minor fixes to CMake build
+  60.2.24: toby 2011-03-09 cleaned up CMakeLists.txt slightly
+  60.2.23: toby 2011-03-08 [merge] merged changes needed for .deb packaging 1.0
+116: toby 2011-04-06 turned off unneeded MOOS test from building
+115: toby 2011-04-06 Added basic configure / build testing using CTest/CDash
+114: Chris Murphy 2011-04-05 Switching int with unsigned int on an incrementer variable to silence a comparison warning.
+113: toby 2011-04-04 added example for WHOI REMUS LBL ranging, added link to new wiki to doc page, other minor front page documentation edits
+112: toby 2011-03-29 release 1.0.2b - working install on MAC OSX (with MacPorts)
+
+*****************
 Version 1.0.2
 -- Made some changes to the CMake build system to better support MAC OS X (using MacPorts)
 
-*****************
-Version 1.0.1
--- Made some structural changes to examples and configuration to allow Debian packaging
+> bzr log --line -n0 -r 101..
+112: toby 2011-03-29 release 1.0.2b - working install on MAC OSX (with MacPorts)
+111: toby 2011-03-21 typo in basic_ccl example with serial port paths
+110: toby 2011-03-20 fixed bug in doxygen where includes were being missed
+109: toby 2011-03-17 updated DEPENDENCIES with list of MacPorts required
+108: toby 2011-03-17 moved find_package for Crytopp from DCCL to acomms because modemdriver needs it
+107: toby 2011-03-16 updated release notes for 1.0.2
+106: toby 2011-03-16 incremented version #
+105: toby 2011-03-16 Made minor changes to CMake build system to allow building with MacPorts on OS X
+104: toby 2011-03-10 fixed typo in user_manual.pdf (goby/cfg -> goby/share/cfg)
+103: toby 2011-03-09 version explicitly defined
+102: toby 2011-03-08 patched from downstream debian-changes-1.0.1-1gobydev1~maverick1
+101: toby 2011-03-07 missing SOVERSION on liblogger
+
 
 *****************
-Version 1.0
+Version 1.0.1
+
+This is release v1.0 of Goby
 
 ~~~Features
 
@@ -58,6 +92,39 @@ Acomms
 
 Util
 --- Fixed miscellaneous bugs in liblogger
+
+-- Made some structural changes to examples and configuration to allow Debian packaging
+
+> bzr log --line -n0 -r 60.2.6..
+101: toby 2011-03-07 missing SOVERSION on liblogger
+100: toby 2011-03-07 updated ubuntu package names
+99: toby 2011-03-07 changed example ccl_and_dccl to use *relative* path for xml files
+98: toby 2011-03-07 minor typo in README
+97: toby 2011-03-07 fixes to User Manual with change to example paths
+96: toby 2011-03-07 [merge] merged changes from trunk to make .deb packaging feasible
+  60.2.22: toby 2011-03-07 moved examples, documentation, xml to goby/share
+95: toby 2011-03-04 [merge] merged changes from trunk for release 1.0.0
+  60.2.21: toby 2011-03-04 Fixed a few bugs in chat example, finalized installing documentation
+  60.2.20: toby 2011-03-04 added user manual PDF
+  60.2.19: toby 2011-03-04 Updated doxy2pdf to include release version and date
+  60.2.18: toby 2011-03-04 finished release V1.0 version of the User Manual, including updates to the Goby-Core examples
+  60.2.17: toby 2011-03-03 updated pREMUSCodec and iCommander to use new MOOS configuration. Fixed bug that was causing seg fault in libqueue due to bug in GCC with string constructors
+  60.2.16: toby 2011-03-02 Added some basic MOOS files and included them in the User Manual
+  60.2.15: toby 2011-03-02 continued work on User Manual
+  60.2.14: toby 2011-03-02 documented moos_protobuf_helpers
+  60.2.13: toby 2011-03-02 Work on User Manual in advance of release 1.0
+  60.2.12: toby 2011-02-28 substantial updates to documentation in advance of v1.0, updates to linebasedcomms to support more flexible TCP networking (addressing with TCP Server) and groundwork for later goby-core work with TCP networking, wrote a 'fake' driver ABCDriver and corresponding modem simulator (abc_modem_simulator) in order to demonstrate basic modem driver functionality
+  60.2.11: toby 2011-02-18 moved LAMSS specific xml messages to missions-lamss repository
+  60.2.10: toby 2011-02-17 updated build for moos script to add libcore
+  60.2.9: toby 2011-02-17 moved all .proto files to common goby_protobuf library
+  60.2.8: toby 2011-02-17 [merge] merged pre-release v1.0
+94: toby 2011-02-17 fixed bug with improper destination addressing and acknowledge on frames > 0
+93: toby 2011-02-17 added release notes and fixed small parsing error with command-line configuration
+92: toby 2011-02-17 [merge] merged changes from trunk
+  60.2.7: toby 2011-02-17 [merge] added XML files for DCCL
+    60.4.1: toby schneider 2011-02-17 [merge] updated DEPENDENCIES for Debian 6
+      60.3.1: toby schneider 2011-02-17 updated DEPENDENCIES for Debian 6
+  60.2.6: toby 2011-02-17 fixed error in DEPENDENCIES script with Ubuntu PPA for Wt
 
 
 *****************

@@ -2,7 +2,8 @@ Goby Release Notes
 
 *****************
 Version 1.0.3
--- 
+-- Improvements to WHOI Micro-Modem Driver DRQ process
+-- fixes / improvements to CMake build
 
 > bzr log --line -n0 -r 112..
 118: toby 2011-04-28 fix for Bug 772640 pertaining to finding MOOS with CMake

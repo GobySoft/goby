@@ -10,7 +10,7 @@
  
  \image html gobysoft_logo_image_only_medium.png
 
- The Goby Underwater Autonomy Project aims to create a unified framework for multiple scientific autonomous marine vehicle collaboration, seamlessly incorporating acoustic, ethernet, wifi, and serial communications. Presently the main thrust of the project is developing a set of robust acoustic networking libraries. Goby is currently written entirely in C++, and licensed under the GNU General Public License v3 <http://www.gnu.org/licenses/gpl.html>.
+ The Goby Underwater Autonomy Project aims to create a unified framework for multiple scientific autonomous marine vehicle collaboration, seamlessly incorporating acoustic, ethernet, wifi, and serial communications. Presently the main thrust of the project is developing a set of robust acoustic networking libraries. Goby is licensed under the GNU General Public License v3 <http://www.gnu.org/licenses/gpl.html>.
 
   \section main_resources Resources
   <ul>
@@ -31,110 +31,16 @@
     <li> <a href=http://gobysoft.com/dl/dccl_oceans10.pdf>The Dynamic Compact Control Language: A Compact Marshalling Scheme for Acoustic Communications</a>. IEEE OCEANS'10 / Sydney.
   </ul>
 
-\section install Installing Goby - Stable Release (Recommended)
-Goby is known to work properly on newer versions of Ubuntu (10.04+) and Debian (5+), and on MAC OS X using the MacPorts package manager. It may also work properly on other UNIX / Linux derivatives. It does not currently support Windows. 
+\section install Download and Install Goby
 
-\subsection install_deb Installing from Package Manager (Ubuntu only) (Recommended)
-\verbatim 
-sudo add-apt-repository ppa:goby-dev/ppa
-sudo add-apt-repository ppa:pgquiles/wt
-sudo apt-get update
-sudo apt-get install libgoby1-dev goby1-core
-// optional (pAcommsHandler, iCommander, etc.)
-sudo apt-get install goby1-moos
-\endverbatim
-
-\subsection install_src Installing from Source (All UNIX / Linux)
-
-<ol>
-<li> Download the latest release from: https://launchpad.net/goby/+download
-<li> Uncompress the tar.gz %file: \verbatim tar -xfvz goby*.tgz \endverbatim
-<li> Satisfy third-party library dependences (boost, etc.):
-  <ul>
-    <li> Ubuntu/Debian: \verbatim cd goby; sudo ./DEPENDENCIES \endverbatim
-    <li> Everyone else: \verbatim cd goby; less DEPENDENCIES \endverbatim
-  </ul>    
-<li> Configure using CMake: \verbatim ./CONFIGURE \endverbatim
-      Optionally enable / disable building of components (such as examples and tools) and fine tuning of build system:
-  <ol>
-    <li> \verbatim sudo apt-get install cmake-gui \endverbatim
-    <li> \verbatim cmake-gui goby/build \endverbatim
-  </ol>
-<li> Compile to goby/bin, goby/lib, and goby/include: \verbatim cd goby; ./INSTALL \endverbatim
-To install to /usr/local (optional): \verbatim sudo ./INSTALL \endverbatim
-</ol>
-
-\section install_dev Installing Goby - Developers' Channel
-
-If you want the cutting edge version of Goby, use the instructions here. Please note that this code is likely to contain bugs.
-
-<ol>
-<li> Install bazaar (bzr) version control system:
-  <ul>
-    <li> Ubuntu/Debian: \verbatim sudo apt-get install bzr \endverbatim
-    <li> Everyone else: <http://wiki.bazaar.canonical.com/Download>
-  </ul>
-<li> Check out a branch of the goby project (trunk):
-  <ul>
-    <li> Read-only: \verbatim bzr checkout lp:goby \endverbatim (Please note that the following message that is displayed by bzr is \a not an error, as you are only attempting to gain read access to goby (not write):  <tt> You have not informed bzr of your Launchpad ID, and you must do this to
-write to Launchpad or access private data.  See "bzr help launchpad-login". </tt>)
-  </ul>
-<li> Read / write (developers of goby):
-      <ol>
-        <li> Register or login to launchpad: <https://launchpad.net/goby/+login>
-        <li> Contact <https://launchpad.net/~tes> for access to the goby project
-        <li> Let bzr know your launchpad id (replacing <tt>tes</tt> with your new launchpad id): \verbatim bzr launchpad-login tes \endverbatim
-        <li> Checkout a copy of goby (trunk): \verbatim bzr checkout lp:goby \endverbatim
-      </ol>
-<li> Follow the instructions for \ref install_src from "Satisfy third-party dependencies".
-</ol>
-
- \section main_goby_elsewhere  Goby components in other projects
-  <ul>
-  <li> pAcommsHandler is a MOOS acoustic communications process that is based on the goby-acomms libraries. pAcommsHandler is now maintained in the goby repository in goby/src/moos. For documentation and more information on pAcommsHandler, please contact Toby <https://launchpad.net/~tes>. To learn about the MOOS and MOOS-IvP projects, visit <http://www.robots.ox.ac.uk/~mobile/MOOS/wiki/pmwiki.php> and <http://www.moos-ivp.org/> </li>
-  </ul>
+Please visit <http://gobysoft.com/wiki/InstallingGoby> for help on obtaining and installing Goby.
 
 \section build_example Building Examples
 
-Goby provides a number of examples that are stored in either 
-\verbatim
-goby/share/examples (build locally)
-/usr/share/goby/examples (package or "make install")
-\endverbatim
-
-To build these examples you will need Goby (obviously) and CMake. Go into the examples directory and type
-\verbatim
-cmake .
-make 
-\endverbatim
-to compile the examples.
+Please visit <http://gobysoft.com/wiki/Examples> for to learn about the available code examples for Goby.
 
 \section authors Authors
 
-Goby is developed by T. Schneider (https://launchpad.net/~tes) with input and suggestions from many people, including but not limited to:
-- H. Schmidt
-- C. Murphy (https://launchpad.net/~chrismurf)
-- K. Cockrell
-- S. Petillo
-- L. Freitag
-- M. Grund
-- M. Fallon (https://launchpad.net/~mfallon)
+Goby is developed by the Goby Developers group (https://launchpad.net/~goby-dev). The lead developer is Toby Schneider (http://gobysoft.com)
 
-\section main_3rd_party_ack Third party projects used in Goby
-
-Goby appreciates the availability of the following open source projects (listed with best available documentation):
-
-<ul>
-<li>version control: bzr <http://wiki.bazaar.canonical.com/Documentation>
-<li>build system: cmake <http://www.cmake.org/cmake/help/cmake2.6docs.html>
-<li>general purpose libraries: boost <http://www.boost.org/doc/libs/1_34_0>
-<li>terminal GUI library: ncurses <http://www.c-for-dummies.com/ncurses/>
-<li>XML parsing library: Xerces-C <http://xerces.apache.org/xerces-c/program-3.html>
-<li>asynchronous networking and serial communications library: asio <http://think-async.com/Asio/asio-1.4.1/doc/>
-<li>cryptography: crypto++ <http://www.cryptopp.com>
-<li>custom message structures: google protocol buffers <http://code.google.com/apis/protocolbuffers/docs/overview.html>
-<li>web applications in C++: Wt <http://www.webtoolkit.eu/wt>
-</ul>
-
- 
 */

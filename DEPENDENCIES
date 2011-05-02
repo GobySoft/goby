@@ -96,6 +96,12 @@ libprotobuf-dev
 protobuf-compiler
 libcdk5-dev"
 
+debian_doc_packages=\
+"graphviz
+doxygen
+texlive-xetex
+ttf-sil-gentium"
+
 debian_wt_packages=\
 "libwt-dev
 libwtdbo-dev
@@ -104,8 +110,8 @@ libwtdbosqlite-dev"
 if [ -e "`which apt-get`" ]; then
     if [ -z "`apt-cache search ${debian_wt_packages}`" ]; then
 	if [ -e "`which add-apt-repository`" ]; then
-            echo "adding ppa:pgquiles/wt for Wt packages"
-            add-apt-repository ppa:pgquiles/wt
+            echo "adding ppa:goby-dev/ppa for Wt packages"
+            add-apt-repository ppa:goby-dev/ppa
 	    apt-get update
 	fi
     fi 

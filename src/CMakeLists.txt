@@ -67,3 +67,13 @@ endif()
 if(build_moos)
   add_subdirectory(moos)
 endif()
+
+# latex, for documentation
+find_package(LATEX)
+
+option(build_doc "Build documentation (requires Doxygen, LaTeX, XeLaTeX, and certain fonts)" false)
+
+if(build_doc)
+  add_subdirectory(doc)
+endif()
+

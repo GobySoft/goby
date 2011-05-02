@@ -197,6 +197,15 @@ namespace goby
     /// \brief Access the Goby logger through this object. 
     extern util::FlexOstream glog;
     //@}
+
+    namespace util
+    {
+        // for compatibility with Goby1
+        inline FlexOstream& glogger()
+        {
+            return goby::glog;
+        }
+    }
 }
 
 

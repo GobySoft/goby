@@ -1,0 +1,26 @@
+#!/bin/bash
+
+cd /home/toby/nightly/goby/1.0/build
+rm -rf *
+cmake .. -Dbuild_moos=true
+ctest -D NightlyStart
+ctest -D NightlyUpdate
+ctest -D NightlyConfigure
+ctest -D NightlyBuild
+#ctest -D NightlyTest
+#ctest -D NightlyMemCheck
+#ctest -D NightlyCoverage
+ctest -D NightlySubmit
+
+
+cd /home/toby/nightly/goby/2.0/build
+rm -rf *
+cmake .. -Dbuild_moos=false
+ctest -D NightlyStart
+ctest -D NightlyUpdate
+ctest -D NightlyConfigure
+ctest -D NightlyBuild
+ctest -D NightlyTest
+ctest -D NightlyMemCheck
+ctest -D NightlyCoverage
+ctest -D NightlySubmit

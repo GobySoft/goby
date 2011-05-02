@@ -39,7 +39,7 @@ PROJECT_NAME           = "Goby Underwater Autonomy Project"
 # If a relative path is entered, it will be relative to the location 
 # where doxygen was started. If left blank the current directory will be used.
 
-OUTPUT_DIRECTORY       = ../../build
+OUTPUT_DIRECTORY       = @CMAKE_BINARY_DIR@
 
 # If the CREATE_SUBDIRS tag is set to YES, then doxygen will create 
 # 4096 sub-directories (in 2 levels) under the output directory of each output 
@@ -125,7 +125,7 @@ FULL_PATH_NAMES        = YES
 # If left blank the directory from which doxygen is run is used as the 
 # path to strip.
 
-STRIP_FROM_PATH        = ../../src
+STRIP_FROM_PATH        = @CMAKE_SOURCE_DIR@/src
 
 # The STRIP_FROM_INC_PATH tag can be used to strip a user-defined part of 
 # the path mentioned in the documentation of a class, which tells 
@@ -134,7 +134,7 @@ STRIP_FROM_PATH        = ../../src
 # definition is used. Otherwise one should specify the include paths that 
 # are normally passed to the compiler using the -I flag.
 
-STRIP_FROM_INC_PATH    = ../../src
+STRIP_FROM_INC_PATH    = @CMAKE_SOURCE_DIR@/src
 
 # If the SHORT_NAMES tag is set to YES, doxygen will generate much shorter 
 # (but less readable) file names. This can be useful is your file systems 
@@ -579,14 +579,7 @@ WARN_LOGFILE           =
 # directories like "/usr/src/myproject". Separate the files or directories 
 # with spaces.
 
-INPUT                  = ../../src \
-                         doxy_body/main.dox  \
-                         doxy_body/acomms.dox  \
-                         doxy_body/acomms-dccl.dox \
-                         doxy_body/acomms-queue.dox \
-                         doxy_body/acomms-driver.dox \
-                         doxy_body/acomms-mac.dox \
-                         doxy_body/util.dox 
+INPUT                  = @CMAKE_SOURCE_DIR@/src
                          
 
 # This tag can be used to specify the character encoding of the source files 
@@ -653,7 +646,8 @@ FILE_PATTERNS          = *.c \
                          *.F \
                          *.VHD \
                          *.VHDL \
-                         *.proto
+                         *.proto \
+                         *.doxy
 
 # The RECURSIVE tag can be used to turn specify whether or not subdirectories 
 # should be searched for input files as well. Possible values are YES and NO. 
@@ -693,8 +687,8 @@ EXCLUDE_SYMBOLS        =
 # directories that contain example code fragments that are included (see 
 # the \include command).
 
-EXAMPLE_PATH           = ../examples \
-                         ../../src
+EXAMPLE_PATH           = @CMAKE_SOURCE_DIR@/share/examples \
+                         @CMAKE_SOURCE_DIR@/src
 
 # If the value of the EXAMPLE_PATH tag contains directories, you can use the 
 # EXAMPLE_PATTERNS tag to specify one or more wildcard pattern (like *.cpp 
@@ -714,7 +708,7 @@ EXAMPLE_RECURSIVE      = YES
 # directories that contain image that are included in the documentation (see 
 # the \image command).
 
-IMAGE_PATH             = images
+IMAGE_PATH             = @CMAKE_CURRENT_SOURCE_DIR@/../images
 
 # The INPUT_FILTER tag can be used to specify a program that doxygen should 
 # invoke to filter for each input file. Doxygen will invoke the filter program 
@@ -836,7 +830,7 @@ GENERATE_HTML          = YES
 # If a relative path is entered the value of OUTPUT_DIRECTORY will be 
 # put in front of it. If left blank `html' will be used as the default path.
 
-HTML_OUTPUT            = html
+HTML_OUTPUT            = @goby_SHARE_DIR@/doc/html
 
 # The HTML_FILE_EXTENSION tag can be used to specify the file extension for 
 # each generated HTML page (for example: .htm,.php,.asp). If it is left blank 
@@ -848,13 +842,13 @@ HTML_FILE_EXTENSION    = .html
 # each generated HTML page. If it is left blank doxygen will generate a 
 # standard header.
 
-HTML_HEADER            = doxy_style/header.html
+HTML_HEADER            = @CMAKE_CURRENT_SOURCE_DIR@/doxy_style/header.html
 
 # The HTML_FOOTER tag can be used to specify a personal HTML footer for 
 # each generated HTML page. If it is left blank doxygen will generate a 
 # standard footer.
 
-HTML_FOOTER            = doxy_style/footer.html
+HTML_FOOTER            = @CMAKE_CURRENT_SOURCE_DIR@/doxy_style/footer.html
 
 # The HTML_STYLESHEET tag can be used to specify a user-defined cascading 
 # style sheet that is used by each HTML page. It can be used to 
@@ -863,7 +857,7 @@ HTML_FOOTER            = doxy_style/footer.html
 # the style sheet file to the HTML output directory, so don't put your own 
 # stylesheet in the HTML output directory as well, or it will be erased!
 
-HTML_STYLESHEET        = doxy_style/doxygen.css
+HTML_STYLESHEET        = @CMAKE_CURRENT_SOURCE_DIR@/doxy_style/doxygen.css
 
 # If the HTML_ALIGN_MEMBERS tag is set to YES, the members of classes, 
 # files or namespaces will be aligned in HTML using tables. If set to 
@@ -1053,7 +1047,7 @@ GENERATE_LATEX         = YES
 # If a relative path is entered the value of OUTPUT_DIRECTORY will be 
 # put in front of it. If left blank `latex' will be used as the default path.
 
-LATEX_OUTPUT           = latex
+LATEX_OUTPUT           = @CMAKE_CURRENT_BINARY_DIR@/latex
 
 # The LATEX_CMD_NAME tag can be used to specify the LaTeX command name to be 
 # invoked. If left blank `latex' will be used as the default command name.

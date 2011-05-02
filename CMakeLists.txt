@@ -9,6 +9,9 @@
 cmake_minimum_required(VERSION 2.6.0 FATAL_ERROR)
 project(goby)
 
+## allows us to write custom modules or modifying existing ones
+set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules/")
+
 enable_testing()
 include(CTest)
 
@@ -45,9 +48,6 @@ install(DIRECTORY ${goby_LIB_DIR}/ DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
 install(DIRECTORY ${goby_SHARE_DIR}/ DESTINATION ${CMAKE_INSTALL_PREFIX}/share/goby)
 install(DIRECTORY ${goby_INC_DIR}/ DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
 
-
-## allows us to write custom modules or modifying existing ones
-set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules/")
 
 ## copy to goby/include
 file(GLOB_RECURSE INCLUDE_FILES RELATIVE ${goby_SRC_DIR} src/*.h src/*.proto)

@@ -7,14 +7,22 @@
 
 set -e
 
+CMAKE_CURRENT_SOURCE_DIR=$2
+CMAKE_CURRENT_BINARY_DIR=$3
+OUTPUT=$4
+
 if [[ "$1" == "quick" ]]; then
-    xelatex -halt-on-error user_manual.tex
-else
-    rm -f user_manual.aux
+    xelatex -halt-on-error ${CMAKE_CURRENT_BINARY_DIR}/user_manual.tex
+    cp user_manual.pdf $OUTPUT
+else    
+    rm -f ${CMAKE_CURRENT_BINARY_DIR}/user_manual.aux
+    pushd ${CMAKE_CURRENT_BINARY_DIR}
     xelatex user_manual.tex -halt-on-error -no-pdf
     bibtex user_manual
     makeglossaries user_manual
     xelatex user_manual.tex -halt-on-error -no-pdf
     xelatex user_manual.tex
-    gnome-open user_manual.pdf
+    cp user_manual.pdf $OUTPUT
+    popd
 fi
+

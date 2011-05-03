@@ -15,8 +15,8 @@
   \section main_resources Resources
   <ul>
   <li> Home page, code, bug tracking, and answers: <https://launchpad.net/goby>.</li>
-  <li> User Manual: <a href=http://gobysoft.com/goby-bzr/share/doc/user_manual/user_manual.pdf>(pdf)</a>.</li>
-  <li> Developers' Manual: <a href=http://gobysoft.com>(html)</a> <a href=http://gobysoft.com/goby-bzr/share/doc/goby-dev.pdf>(pdf)</a>.</li>
+  <li> User Manual: <a href=http://gobysoft.com/dl/goby1-user-manual.pdf>(pdf)</a>.</li>
+  <li> Developers' Manual: <a href=http://gobysoft.com/doc/1.0>(html)</a> <a href=http://gobysoft.com/dl/goby1-dev.pdf>(pdf)</a>.</li>
   <li> Wiki: <http://gobysoft.com/wiki>.</li>
   </ul>
 

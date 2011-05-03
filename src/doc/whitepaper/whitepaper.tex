@@ -18,7 +18,7 @@
 \usepackage{sectsty} 
 \usepackage{float}
 \usepackage{graphicx} 
-\graphicspath{{../images/}}
+\graphicspath{{@CMAKE_CURRENT_SOURCE_DIR@/../images/}}
 \usepackage[normalem]{ulem} 
 \sectionfont{\rmfamily\mdseries\upshape\Large}
 \subsectionfont{\rmfamily\bfseries\upshape\normalsize} 
@@ -29,6 +29,7 @@
 \usepackage[dvipdfm, bookmarks, colorlinks, breaklinks, pdftitle={Goby Underwater Autonomy Project Whitepaper},pdfauthor={Toby Schneider}]{hyperref}  
 \hypersetup{linkcolor=blue,citecolor=blue,filecolor=black,urlcolor=blue} 
 \newcommand{\xmltag}[1]{{$<$\tt #1$>$}}
+
 
 
 % DOCUMENT
@@ -50,7 +51,7 @@ MIT / WHOI Joint Program in Oceanography \& Ocean Engineering
 \hfill
 \begin{minipage}[b]{0.3\linewidth}
 \begin{flushright}
-\includegraphics[width=2in]{gobysoft_logo} 
+\includegraphics[width=2in]{gobysoft_logo.eps} 
 \end{flushright}
 \end{minipage}
 \end{figure}

@@ -30,3 +30,4 @@ endif()
 
 add_subdirectory(dev_manual)
 add_subdirectory(user_manual)
+#add_subdirectory(whitepaper)

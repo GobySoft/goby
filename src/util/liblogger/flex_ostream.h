@@ -23,19 +23,22 @@
 #include <string>
 #include <iomanip>
 
-#include "flex_ostreambuf.h"
-#include "logger_manipulators.h"
 
 #include <google/protobuf/text_format.h>
 #include <google/protobuf/io/tokenizer.h>
 
-#include <boost/shared_ptr.hpp>
+#include <boost/static_assert.hpp>
+#include <boost/static_assert.hpp>
+
+#include "flex_ostreambuf.h"
+#include "logger_manipulators.h"
 
 namespace goby
 {
 
     namespace util
     {
+        
         namespace logger_lock
         {
             /// Mutex actions available to the Goby logger (glogger)
@@ -157,8 +160,6 @@ namespace goby
             { return (sb_.is_quiet()); }
             
             
-            friend FlexOstream& glogger();
-
             template<typename T>
                 friend void boost::checked_delete(T*);
             
@@ -197,7 +198,6 @@ namespace goby
     /// \brief Access the Goby logger through this object. 
     extern util::FlexOstream glog;
     //@}
-
     namespace util
     {
         // for compatibility with Goby1

@@ -31,8 +31,6 @@ int goby::util::FlexOstream::instances_ = 0 ;
 
 goby::util::FlexOstream goby::glog;
 
-
-
 void goby::util::FlexOstream::add_group(const std::string& name,
                                         Colors::Color color /*= Colors::nocolor*/,
                                         const std::string& description /*= ""*/)

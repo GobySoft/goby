@@ -20,3 +20,6 @@ cmake_install.cmake
 *.pb.h
 *.pb.cc
 CMakeCache.txt
+share/doc/html
+share/*.pdf
+share/doc/*.pdf

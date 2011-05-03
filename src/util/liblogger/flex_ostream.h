@@ -59,7 +59,10 @@ namespace goby
                     exit(EXIT_FAILURE);
                 }
             }
-            ~FlexOstream() { }
+            ~FlexOstream()
+            {
+                google::protobuf::ShutdownProtobufLibrary();
+            }
             FlexOstream(const FlexOstream&);
             FlexOstream& operator = (const FlexOstream&);            
 

@@ -85,11 +85,11 @@ namespace goby
 
             void info(const google::protobuf::Descriptor* desc, std::ostream* os);            
 
-            bool validate_repeated(std::list<const google::protobuf::Descriptor*> desc);
-            void info_repeated(std::list<const google::protobuf::Descriptor*> desc, std::ostream* os);
+            bool validate_repeated(const std::list<const google::protobuf::Descriptor*>& desc);
+            void info_repeated(const std::list<const google::protobuf::Descriptor*>& desc, std::ostream* os);
             // in bytes
             unsigned size(const google::protobuf::Message* msg);
-            unsigned size_repeated(std::list<const google::protobuf::Message*> msgs);
+            unsigned size_repeated(const std::list<boost::shared_ptr<google::protobuf::Message> >& msgs);
 
             //@}
         
@@ -108,7 +108,7 @@ namespace goby
                 return msg;
             }
 
-            std::string encode_repeated(std::list<const google::protobuf::Message*> msgs);
+            std::string encode_repeated(const std::list<boost::shared_ptr<google::protobuf::Message> >& msgs);
             std::list<boost::shared_ptr<google::protobuf::Message> > decode_repeated(const std::string& bytes);
 
 

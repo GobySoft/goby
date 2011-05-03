@@ -2,7 +2,7 @@
 
 cd /home/toby/nightly/goby/1.0/build
 rm -rf *
-cmake .. -Dbuild_moos=true
+cmake .. -Dbuild_moos=ON -DCMAKE_BUILD_TYPE=Debug
 ctest -D NightlyStart
 ctest -D NightlyUpdate
 ctest -D NightlyConfigure
@@ -15,7 +15,7 @@ ctest -D NightlySubmit
 
 cd /home/toby/nightly/goby/2.0/build
 rm -rf *
-cmake .. -Dbuild_moos=false
+cmake .. -DCMAKE_BUILD_TYPE=Debug -Dbuild_doc=ON
 ctest -D NightlyStart
 ctest -D NightlyUpdate
 ctest -D NightlyConfigure

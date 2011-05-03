@@ -354,7 +354,7 @@ void goby::acomms::DCCLCodec::info(const google::protobuf::Descriptor* desc, std
         
 }
 
-bool goby::acomms::DCCLCodec::validate_repeated(std::list<const google::protobuf::Descriptor*> desc)
+bool goby::acomms::DCCLCodec::validate_repeated(const std::list<const google::protobuf::Descriptor*>& desc)
 {
     bool out = true;
     BOOST_FOREACH(const google::protobuf::Descriptor* p, desc)
@@ -362,29 +362,27 @@ bool goby::acomms::DCCLCodec::validate_repeated(std::list<const google::protobuf
     return out;
 }
 
-void goby::acomms::DCCLCodec::info_repeated(std::list<const google::protobuf::Descriptor*> desc, std::ostream* os)
+void goby::acomms::DCCLCodec::info_repeated(const std::list<const google::protobuf::Descriptor*>& desc, std::ostream* os)
 {
     BOOST_FOREACH(const google::protobuf::Descriptor* p, desc)
         info(p, os);
 }
 
-unsigned goby::acomms::DCCLCodec::size_repeated(std::list<const google::protobuf::Message*> msgs)
+unsigned goby::acomms::DCCLCodec::size_repeated(const std::list<boost::shared_ptr<google::protobuf::Message> >& msgs)
 {
-    unsigned out;
-    BOOST_FOREACH(const google::protobuf::Message* p, msgs)
-    {
-        out += size(p);
-    }
+    unsigned out = 0;
+    BOOST_FOREACH(const boost::shared_ptr<google::protobuf::Message>& msg, msgs)
+        out += size(msg.get());
     return out;
 }
 
 
-std::string goby::acomms::DCCLCodec::encode_repeated(std::list<const google::protobuf::Message*> msgs)
+std::string goby::acomms::DCCLCodec::encode_repeated(const std::list<boost::shared_ptr<google::protobuf::Message> >& msgs)
 {
     std::string out;
-    BOOST_FOREACH(const google::protobuf::Message* p, msgs)
+    BOOST_FOREACH(const boost::shared_ptr<google::protobuf::Message>& msg, msgs)
     {
-        out += encode(*p);
+        out += encode(*msg);
         DCCLCommon::logger() << "out: " << hex_encode(out) << std::endl;
     }
     

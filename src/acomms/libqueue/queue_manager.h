@@ -39,12 +39,6 @@
 
 namespace goby
 {
-    namespace util
-    {
-        class FlexOstream;
-    }
-        
-    
     namespace acomms
     {
         /// \class QueueManager queue.h goby/acomms/queue.h
@@ -59,7 +53,7 @@ namespace goby
             /// \brief Default constructor.
             ///
             /// \param log std::ostream object or FlexOstream to capture all humanly readable runtime and debug information (optional).
-            QueueManager(std::ostream* log = 0);
+            QueueManager();
 
             /// Destructor.
             ~QueueManager() { }
@@ -77,15 +71,6 @@ namespace goby
             /// \brief Set (and merge "repeat" fields) the current configuration. (protobuf::QueueManagerConfig defined in queue.proto)
             void merge_cfg(const protobuf::QueueManagerConfig& cfg);
 
-            //@}
-            
-            /// \name Static helpers
-            //@{
-
-            /// Registers the group names used for the FlexOstream logger
-            static void add_flex_groups(util::FlexOstream* tout);
-            
-            
             //@}
 
             /// \name Application level Push/Receive Methods
@@ -200,8 +185,9 @@ namespace goby
             /// \brief Add more Queues.
             ///
             /// \param QueueConfig& cfg: configuration object for the new %queue.
-            void add_queue(const protobuf::QueueConfig& cfg);
-        
+            void add_queue(const protobuf::QueueConfig& cfg);            
+            void add_flex_groups();
+            
             
             void qsize(Queue* q)
             {
@@ -214,31 +200,13 @@ namespace goby
             // finds the %queue with the highest priority
             Queue* find_next_sender(const protobuf::ModemDataRequest& message, const protobuf::ModemDataTransmission& data_msg, bool first_user_frame);
         
-            // combine multiple "user" frames into a single "modem" frame
-            bool stitch_recursive(
-                const protobuf::ModemDataRequest& request_msg,
-                protobuf::ModemDataTransmission* complete_data_msg,
-                Queue* winning_queue,
-                std::list<const google::protobuf::Message*>* dccl_msgs);
-
-            bool unstitch_recursive(std::string* data, protobuf::ModemDataTransmission* message);
-
-            void replace_header(bool is_last_user_frame, protobuf::ModemDataTransmission* data_msg, const protobuf::ModemDataTransmission& next_data_msg, const std::string& new_data);
-       
             // clears the destination and ack values for the packet to reset for next $CADRQ
-            void clear_packet();
-            
-            // slave function to receive_incoming_modem_data that actually writes a piece of the message (called for each user-frame)
-            bool publish_incoming_piece(protobuf::ModemDataTransmission* message, const unsigned incoming_var_id);
-            
-        
+            void clear_packet(); 
             void process_cfg();
             
           private:
             std::map<goby::acomms::protobuf::QueueKey, Queue> queues_;
             
-            std::ostream* log_;
-
             // map frame number onto %queue pointer that contains
             // the data for this ack
             std::multimap<unsigned, Queue*> waiting_for_ack_;

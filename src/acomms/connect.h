@@ -29,7 +29,6 @@ namespace goby
     namespace acomms
     {   
 
-        /// connect a signal to a function slot (non-member of a class)
         template<typename Signal, typename Slot>
             void connect(Signal* signal, Slot slot)
         { signal->connect(slot); }

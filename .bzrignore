@@ -23,3 +23,13 @@ CMakeCache.txt
 share/doc/html
 share/*.pdf
 share/doc/*.pdf
+share/examples/acomms/chat/goby_chat
+share/examples/acomms/libamac/amac_simple/amac_simple
+share/examples/acomms/libdccl/dccl_simple/dccl_simple
+share/examples/acomms/libdccl/plusnet/plusnet
+share/examples/acomms/libdccl/test/dccl_test
+share/examples/acomms/libdccl/two_message/two_message
+share/examples/acomms/libmodemdriver/driver_simple/driver_simple
+share/examples/acomms/libmodemdriver/whoi_ranging/whoi_ranging
+share/examples/acomms/libqueue/multimessage/queue_multimessage
+share/examples/acomms/libqueue/queue_simple/queue_simple

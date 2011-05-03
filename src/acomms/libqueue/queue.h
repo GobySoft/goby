@@ -55,8 +55,7 @@ namespace goby
         {
           public:
 
-            Queue(const protobuf::QueueConfig cfg = protobuf::QueueConfig(),
-                  std::ostream* log = 0);
+            Queue(const protobuf::QueueConfig cfg = protobuf::QueueConfig());
 
             bool push_message(const protobuf::ModemDataTransmission& encoded_msg,
                               boost::shared_ptr<google::protobuf::Message> dccl_msg =  boost::shared_ptr<google::protobuf::Message>());
@@ -109,8 +108,6 @@ namespace goby
             const protobuf::QueueConfig cfg_;
         
             boost::posix_time::ptime last_send_time_;    
-            
-            std::ostream* log_;
 
             
             std::list<QueuedMessage> messages_;

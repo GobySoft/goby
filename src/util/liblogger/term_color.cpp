@@ -32,13 +32,8 @@ std::ostream& goby::util::tcolor::add_escape_code(std::ostream& os, const std::s
 }
 
 
-goby::util::TermColor* goby::util::TermColor::inst_ = 0;
+boost::shared_ptr<goby::util::TermColor> goby::util::TermColor::inst_(new TermColor());
 
-goby::util::TermColor* goby::util::TermColor::get_instance()
-{
-    if(!inst_) inst_ = new TermColor();
-    return(inst_);
-}
 
 goby::util::TermColor::TermColor()
 {

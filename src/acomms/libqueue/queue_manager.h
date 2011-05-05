@@ -45,6 +45,7 @@ namespace goby
         /// \brief provides an API to the goby-acomms Queuing Library.
         /// \ingroup acomms_api
         /// \sa queue.proto and modem_message.proto for definition of Google Protocol Buffers messages (namespace goby::acomms::protobuf).
+        /// \todo turn into singleton a la DCCLCodec
         class QueueManager
         {
           public:
@@ -71,6 +72,7 @@ namespace goby
             /// \brief Set (and merge "repeat" fields) the current configuration. (protobuf::QueueManagerConfig defined in queue.proto)
             void merge_cfg(const protobuf::QueueManagerConfig& cfg);
 
+            void add_queue(const google::protobuf::Message& msg);
             //@}
 
             /// \name Application level Push/Receive Methods
@@ -121,6 +123,7 @@ namespace goby
             /// Call these methods when you want the QueueManager to perform time sensitive tasks (such as expiring old messages)
             //@{
             /// \brief Calculates which messages have expired and emits the goby::acomms::QueueManager::signal_expire as necessary.
+            /// \todo (tes) turn into "poll" method
             void do_work();
 
             //@}

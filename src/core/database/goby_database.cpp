@@ -50,17 +50,14 @@ goby::core::Database::Database()
     }
 
     
-    if(!cfg_.base().using_database())
+    if(!cfg_.base().database_config().using_database())
     {
         glog.is(die) &&
             glog << "AppBaseConfig::using_database == false. Since we aren't wanting, we aren't starting (set to true to enable use of the database)!" << std::endl;
     }
     
     std::string database_binding = "tcp://*:";
-    if(cfg_.base().has_database_port())
-        database_binding += as<std::string>(cfg_.base().database_port());
-    else
-        database_binding += as<std::string>(cfg_.base().ethernet_port());
+    database_binding += as<std::string>(cfg_.base().database_config().database_port());
 
     try
     {

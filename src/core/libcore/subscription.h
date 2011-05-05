@@ -23,8 +23,6 @@
 #include <google/protobuf/dynamic_message.h>
 
 
-#include "filter.h"
-
 
 namespace goby
 {
@@ -36,14 +34,13 @@ namespace goby
         {
           public:
             virtual void post(const void* data, int size) = 0;
-            virtual const protobuf::Filter& filter() const = 0;
             virtual const google::protobuf::Message& newest() const = 0;
             virtual const std::string& type_name() const = 0;
             virtual bool has_valid_handler() const = 0;
         };
 
         // forms the concept of a subscription to a given Google Protocol Buffers
-        // type ProtoBufMessage (possibly with a filter)
+        // type ProtoBufMessage
         // An instantiation of this is created for each call to ApplicationBase::subscribe()
         template<typename ProtoBufMessage>
             class Subscription : public SubscriptionBase
@@ -52,10 +49,8 @@ namespace goby
             typedef boost::function<void (const ProtoBufMessage&)> HandlerType;
 
           Subscription(HandlerType& handler,
-                       const protobuf::Filter& filter,
                        const std::string& type_name)
               : handler_(handler),
-                filter_(filter),
                 type_name_(type_name)
                 { }
             
@@ -65,15 +60,12 @@ namespace goby
             {
                 static ProtoBufMessage msg;
                 msg.ParseFromArray(data, size);
-                if(clears_filter(msg, filter_))
-                {
-                    newest_msg_ = msg;
-                    if(handler_) handler_(newest_msg_);
-                }
+                newest_msg_ = msg;
+                if(handler_) handler_(newest_msg_);
+
             }
 
             // getters
-            const protobuf::Filter& filter() const { return filter_; }
             const google::protobuf::Message& newest() const { return newest_msg_; }
             const std::string& type_name() const { return type_name_; }
             bool has_valid_handler() const { return handler_; }
@@ -82,7 +74,6 @@ namespace goby
           private:
             HandlerType handler_;
             ProtoBufMessage newest_msg_;
-            const protobuf::Filter filter_;
             const std::string type_name_;
         };
     }

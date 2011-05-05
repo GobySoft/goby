@@ -29,12 +29,13 @@ namespace goby
         enum MarshallingScheme
         {
             MARSHALLING_UNKNOWN = 0,
-            MARSHALLING_PROTOBUF = 1,
-            MARSHALLING_CCL = 2,
-            MARSHALLING_MOOS = 3,
-            MARSHALLING_DCCL = 4,
-            MARSHALLING_LCM = 5,
-            MARSHALLING_MAX = 5
+            MARSHALLING_CSTR = 1,
+            MARSHALLING_PROTOBUF = 2,
+            MARSHALLING_CCL = 3,
+            MARSHALLING_MOOS = 4,
+            MARSHALLING_DCCL = 5,
+            MARSHALLING_LCM = 6,
+            MARSHALLING_MAX = 6
         };
 
         const int BITS_IN_UINT32 = 32;

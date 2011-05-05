@@ -37,6 +37,8 @@
 #include "goby/protobuf/dccl.pb.h"
 #include "goby/protobuf/modem_message.pb.h"
 #include "goby/acomms/acomms_helpers.h"
+#include "goby/util/binary.h"
+
 
 #include "protobuf_cpp_type_helpers.h"
 #include "dccl_exception.h"
@@ -89,7 +91,18 @@ namespace goby
             void info_repeated(const std::list<const google::protobuf::Descriptor*>& desc, std::ostream* os);
             // in bytes
             unsigned size(const google::protobuf::Message* msg);
-            unsigned size_repeated(const std::list<boost::shared_ptr<google::protobuf::Message> >& msgs);
+
+
+            template<typename GoogleProtobufMessagePointer>
+                unsigned size_repeated(const std::list<GoogleProtobufMessagePointer>& msgs)
+            {
+                unsigned out = 0;
+                BOOST_FOREACH(const GoogleProtobufMessagePointer& msg, msgs)
+                    out += size(&(*msg));
+                return out;
+            }
+
+            
 
             //@}
         
@@ -107,8 +120,20 @@ namespace goby
                 msg.CopyFrom(*decode(bytes));
                 return msg;
             }
-
-            std::string encode_repeated(const std::list<boost::shared_ptr<google::protobuf::Message> >& msgs);
+            
+            template<typename GoogleProtobufMessagePointer>
+                std::string encode_repeated(const std::list<GoogleProtobufMessagePointer>& msgs)
+            {
+                std::string out;
+                BOOST_FOREACH(const GoogleProtobufMessagePointer& msg, msgs)
+                {
+                    out += encode(*msg);
+                    DCCLCommon::logger() << "out: " << goby::util::hex_encode(out) << std::endl;
+                }
+    
+                return out;
+            }
+            
             std::list<boost::shared_ptr<google::protobuf::Message> > decode_repeated(const std::string& bytes);
 
 

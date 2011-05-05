@@ -132,7 +132,7 @@ goby::acomms::QueuedMessage goby::acomms::Queue::give_data(const protobuf::Modem
     // broadcast cannot acknowledge
     if(it_to_give->encoded_msg.base().dest() == BROADCAST_ID && ack == true)
     {
-        glog.is(warn) && glog << group("queue.pop") << "overriding ack request and setting ack = false because dest = BROADCAST (0) cannot acknowledge messages" << std::endl;
+        glog.is(warn) && glog << group("queue.pop") << cfg_.name() << ": overriding ack request and setting ack = false because dest = BROADCAST (0) cannot acknowledge messages" << std::endl;
         ack = false;
     }
 

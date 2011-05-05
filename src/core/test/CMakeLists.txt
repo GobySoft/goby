@@ -1,6 +1,3 @@
+add_subdirectory(zero_mq_node1)
+add_subdirectory(zero_mq_node2)
 
-#add_subdirectory(proto_test)
-#add_subdirectory(test_g)
-
-#add_subdirectory(MOOS)
-add_subdirectory(pgm_test)

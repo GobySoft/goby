@@ -43,6 +43,65 @@ goby::acomms::QueueManager::QueueManager()
     add_flex_groups();    
 }
 
+void goby::acomms::QueueManager::add_queue(const google::protobuf::Message& msg)
+{
+    goby::acomms::DCCLCodec* codec = goby::acomms::DCCLCodec::get();
+    const google::protobuf::Descriptor* desc = msg.GetDescriptor();
+
+    protobuf::QueueKey key;
+    key.set_type(protobuf::QUEUE_DCCL);
+    key.set_id(desc->options().GetExtension(dccl::id));
+    
+    try
+    {
+        //validate with DCCL first
+        codec->validate(desc);
+    }
+    catch(DCCLException& e)
+    {
+        throw(queue_exception("could not create queue for message: " + desc->full_name() + " because it failed DCCL validation: " + e.what()));
+    }
+
+    protobuf::QueueConfig queue_cfg;
+    queue_cfg.set_name(desc->full_name());
+        
+    if(!desc->options().HasExtension(queue::ack))
+        glog.is(warn) && glog << queue_cfg.name() << ": using default value of " << queue_cfg.ack() << " for queue::ack" << std::endl;
+    else
+        queue_cfg.set_ack(desc->options().GetExtension(queue::ack));    
+
+    if(!desc->options().HasExtension(queue::blackout_time))
+        glog.is(warn) && glog << queue_cfg.name() << ": " << "using default value of " << queue_cfg.blackout_time() << " for queue::blackout_time" << std::endl;
+    else
+        queue_cfg.set_blackout_time(desc->options().GetExtension(queue::blackout_time));
+
+
+    if(!desc->options().HasExtension(queue::max_queue))
+        glog.is(warn) && glog << queue_cfg.name() << ": "  << "using default value of " << queue_cfg.max_queue() << " for queue::max_queue" << std::endl;
+    else
+        queue_cfg.set_max_queue(desc->options().GetExtension(queue::max_queue));    
+        
+    if(!desc->options().HasExtension(queue::newest_first))
+        glog.is(warn) && glog << queue_cfg.name() << ": " << "using default value of " << queue_cfg.newest_first() << " for queue::newest_first" << std::endl;
+    else
+        queue_cfg.set_newest_first(desc->options().GetExtension(queue::newest_first));    
+
+    if(!desc->options().HasExtension(queue::ttl))
+        glog.is(warn) && glog << queue_cfg.name() << ": "  << "using default value of " << queue_cfg.ttl() << " for queue::ttl" << std::endl;
+    else
+        queue_cfg.set_ttl(desc->options().GetExtension(queue::ttl));    
+
+    if(!desc->options().HasExtension(queue::value_base))
+        glog.is(warn) && glog  << queue_cfg.name() << ": "  << "using default value of " << queue_cfg.value_base() << " for queue::value_base" << std::endl;
+    else
+        queue_cfg.set_value_base(desc->options().GetExtension(queue::value_base));    
+
+    queue_cfg.mutable_key()->CopyFrom(key);
+    // add the newly generated queue
+    add_queue(queue_cfg);
+}
+
+
 void goby::acomms::QueueManager::add_queue(const protobuf::QueueConfig& cfg)
 {
     Queue q(cfg);
@@ -126,87 +185,15 @@ void goby::acomms::QueueManager::push_message(const google::protobuf::Message& d
     key.set_type(protobuf::QUEUE_DCCL);
     key.set_id(desc->options().GetExtension(dccl::id));
     
-
     if(!queues_.count(key))
-    {
-        goby::acomms::DCCLCodec* codec = goby::acomms::DCCLCodec::get();
-
-        try
-        {
-            //validate with DCCL first
-            codec->validate(desc);
-        }
-        catch(DCCLException& e)
-        {
-            throw(queue_exception("could not create queue for message: " + desc->full_name() + " because it failed DCCL validation: " + e.what()));
-        }
-
-        protobuf::QueueConfig queue_cfg;
-        if(!desc->options().HasExtension(queue::ack))
-        {
-            glog.is(warn) && glog << "using default value of " << queue_cfg.ack() << " for queue::ack" << std::endl;
-        }
-        else
-        {
-            queue_cfg.set_ack(desc->options().GetExtension(queue::ack));    
-        }
-        if(!desc->options().HasExtension(queue::blackout_time))
-        {
-            glog.is(warn) && glog << "using default value of " << queue_cfg.blackout_time() << " for queue::blackout_time" << std::endl;
-        }
-        else
-        {
-            queue_cfg.set_blackout_time(desc->options().GetExtension(queue::blackout_time));    
-        }
-
-
-        if(!desc->options().HasExtension(queue::max_queue))
-        {
-            glog.is(warn) && glog  << "using default value of " << queue_cfg.max_queue() << " for queue::max_queue" << std::endl;
-        }
-        else
-        {
-            queue_cfg.set_max_queue(desc->options().GetExtension(queue::max_queue));    
-        }
-        
-        if(!desc->options().HasExtension(queue::newest_first))
-        {
-            glog.is(warn) && glog << "using default value of " << queue_cfg.newest_first() << " for queue::newest_first" << std::endl;
-        }
-        else
-        {
-            queue_cfg.set_newest_first(desc->options().GetExtension(queue::newest_first));    
-        }
-
-        if(!desc->options().HasExtension(queue::ttl))
-        {
-            glog.is(warn) && glog  << "using default value of " << queue_cfg.ttl() << " for queue::ttl" << std::endl;
-        }
-        else
-        {
-            queue_cfg.set_ttl(desc->options().GetExtension(queue::ttl));    
-        }
-
-        if(!desc->options().HasExtension(queue::value_base))
-        {
-            glog.is(warn) && glog  << "using default value of " << queue_cfg.value_base() << " for queue::value_base" << std::endl;
-        }
-        else
-        {
-            queue_cfg.set_value_base(desc->options().GetExtension(queue::value_base));    
-        }
-        queue_cfg.mutable_key()->CopyFrom(key);
-        queue_cfg.set_name(desc->full_name());
-        // add the newly generated queue
-        add_queue(queue_cfg);
-    }
+        add_queue(data_msg);
 
     // add the message
     queues_[key].push_message(data_msg);
     qsize(&queues_[key]);
 
 }
-
+ 
 
 std::string goby::acomms::QueueManager::summary() const
 {

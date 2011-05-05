@@ -2,6 +2,9 @@ cmake_minimum_required(VERSION 2.6.0 FATAL_ERROR)
 project(goby-examples)
 
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules")
+
+
+set(CMAKE_PREFIX_PATH "${CMAKE_SOURCE_DIR}/../..;${CMAKE_PREFIX_PATH}")
 find_package(Goby REQUIRED)
 
 set(CURSES_NEED_NCURSES TRUE)

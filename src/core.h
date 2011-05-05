@@ -20,7 +20,7 @@
 #ifndef CORECOURTESY20100922H
 #define CORECOURTESY20100922H
 
-#include "goby/core/libcore/application_base.h"
+#include "goby/core/libcore/application.h"
 #include "goby/core/libcore/configuration_reader.h"
 #include "goby/core/libcore/filter.h"
 

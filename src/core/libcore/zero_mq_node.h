@@ -23,6 +23,8 @@
 #include <boost/function.hpp>
 #include <boost/signals.hpp>
 
+#include "goby/protobuf/zero_mq_node_config.pb.h"
+
 #include <zmq.hpp>
 
 #include "goby/core/core_constants.h"
@@ -36,34 +38,39 @@ namespace goby
           public:
             ZeroMQNode();
             virtual ~ZeroMQNode();
-
-
+            
             template<class C>
                 void connect_inbox_slot(
-                    void(C::*mem_func)(MarshallingScheme, const std::string&, const void*, int),
+                    void(C::*mem_func)(MarshallingScheme,
+                                       const std::string&,
+                                       const void*,
+                                       int,
+                                       int),
                     C* obj)
-            { connect_inbox_slot(boost::bind(mem_func, obj, _1, _2, _3, _4)); }
-            
+            { connect_inbox_slot(boost::bind(mem_func, obj, _1, _2, _3, _4, _5)); }
+
+            void set_cfg(const protobuf::ZeroMQNodeConfig& cfg);
             
             void connect_inbox_slot(
                 boost::function<void (MarshallingScheme marshalling_scheme,
                                       const std::string& identifier,
                                       const void* data,
-                                      int size)> slot)
+                                      int size,
+                                      int socket_id)> slot)
             { inbox_signal_.connect(slot); }
 
-            void subscribe_all();
+            void subscribe_all(int socket_id);            
             
+            void send(MarshallingScheme marshalling_scheme,
+                      const std::string& identifier,
+                      const void* data,
+                      int size,
+                      int socket_id);
+
             void subscribe(MarshallingScheme marshalling_scheme,
-                           const std::string& identifier);
-            
-            void publish(MarshallingScheme marshalling_scheme,
-                         const std::string& identifier,
-                         const void* data,
-                         int size);
-            
-            void start_sockets(const std::string& multicast_connection =
-                               "epgm://127.0.0.1;239.255.7.15:11142");
+                           const std::string& identifier,
+                           int socket_id);
+
             
             bool poll(long timeout = -1);
             
@@ -81,34 +88,38 @@ namespace goby
             {
                 poll_items_.push_back(item);
                 poll_callbacks_.insert(std::make_pair(poll_items_.size()-1, callback));
+                //glog.is(debug2) && glog << "Registering poll item " << poll_items_.size()-1 << std::endl;
             }
             
             zmq::context_t& zmq_context() { return context_; }
 
-            enum { FIXED_IDENTIFIER_SIZE = 255 };
-
-            unsigned header_size() 
-            { return BITS_IN_UINT32 / BITS_IN_BYTE + FIXED_IDENTIFIER_SIZE; }
             
           private:
             std::string make_header(MarshallingScheme marshalling_scheme,
                                     const std::string& protobuf_type_name);
 
-            void handle_subscribed_message(const void* data, int size, int message_part);
+            void handle_receive(const void* data, int size, int message_part, int socket_id);
+
+            int socket_type(protobuf::ZeroMQNodeConfig::Socket::SocketType type);
+            
+            boost::shared_ptr<zmq::socket_t> socket_from_id(int socket_id);
+
             
           private:
             zmq::context_t context_;
-            zmq::socket_t publisher_;
-            zmq::socket_t subscriber_;
+            std::map<int, boost::shared_ptr<zmq::socket_t> > sockets_;
             std::vector<zmq::pollitem_t> poll_items_;
 
+            protobuf::ZeroMQNodeConfig cfg_;
+            
             // maps poll_items_ index to a callback function
             std::map<size_t, boost::function<void (const void* data, int size, int message_part)> > poll_callbacks_;
             
             boost::signal<void (MarshallingScheme marshalling_scheme,
                                 const std::string& identifier,
                                 const void* data,
-                                int size)> inbox_signal_;
+                                int size,
+                                int socket_id)> inbox_signal_;
 
         };
     }

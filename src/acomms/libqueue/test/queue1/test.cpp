@@ -33,7 +33,7 @@ int main(int argc, char* argv[])
     goby::glog.add_stream(goby::util::Logger::DEBUG3, &std::cerr);
     goby::glog.set_name(argv[0]);
     
-    goby::acomms::QueueManager::QueueManager q_manager;
+    goby::acomms::QueueManager q_manager;
     goby::acomms::protobuf::QueueManagerConfig cfg;
     const int MY_MODEM_ID = 1;
     cfg.set_modem_id(MY_MODEM_ID);

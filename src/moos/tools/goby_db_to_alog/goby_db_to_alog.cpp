@@ -18,7 +18,7 @@
 
 #include "goby/core/libdbo/wt_dbo_overloads.h"
 #include "goby/moos/libmoos_util/moos_node.h"
-#include "goby/core/libcore/minimal_application_base.h"
+#include "goby/core/libcore/application_base.h"
 
 #include "MOOSGenLib/MOOSGenLibGlobalHelper.h"
 
@@ -74,11 +74,11 @@ private:
 };
 
 
-class GobyDbToAlog : public goby::core::MinimalApplicationBase
+class GobyDbToAlog : public goby::core::ApplicationBase
 {
 public:
     GobyDbToAlog()
-        : MinimalApplicationBase(&cfg_)
+        : ApplicationBase(&cfg_)
         {
             std::ofstream moos_alog_ofstream;
             std::ostream* moos_alog_file;

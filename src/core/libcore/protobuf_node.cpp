@@ -25,43 +25,26 @@ using goby::util::as;
 void goby::core::ProtobufNode::inbox(MarshallingScheme marshalling_scheme,
                                      const std::string& identifier,
                                      const void* data,
-                                     int size)
+                                     int size,
+                                     int socket_id)
 {
     if(marshalling_scheme == MARSHALLING_PROTOBUF)
         protobuf_inbox(identifier.substr(0, identifier.find("/")), data, size);
 }
 
 
-void goby::core::ProtobufNode::publish(const google::protobuf::Message& msg)
+void goby::core::ProtobufNode::send(const google::protobuf::Message& msg, int socket_id)
 {
     int size = msg.ByteSize();
     char buffer[size];
     msg.SerializeToArray(&buffer, size);
-    ZeroMQNode::publish(MARSHALLING_PROTOBUF, msg.GetDescriptor()->full_name() + "/",
-                        &buffer, size);
+    ZeroMQNode::send(MARSHALLING_PROTOBUF, msg.GetDescriptor()->full_name() + "/",
+                     &buffer, size, socket_id);
 }
             
-void goby::core::ProtobufNode::subscribe(const std::string& identifier)
+void goby::core::ProtobufNode::subscribe(const std::string& identifier, int socket_id)
 {
-    ZeroMQNode::subscribe(MARSHALLING_PROTOBUF, identifier);
-}
-
-
-bool goby::core::StaticProtobufNode::__is_valid_filter(const google::protobuf::Descriptor* descriptor, const protobuf::Filter& filter)
-{
-    using namespace google::protobuf;
-    // check filter for exclusions
-    const FieldDescriptor* field_descriptor = descriptor->FindFieldByName(filter.key());
-    if(!field_descriptor // make sure it exists
-       || (field_descriptor->cpp_type() == FieldDescriptor::CPPTYPE_ENUM || // exclude enums
-           field_descriptor->cpp_type() == FieldDescriptor::CPPTYPE_MESSAGE) // exclude embedded
-       || field_descriptor->is_repeated()) // no repeated fields for filter
-    {
-        glog.is(die) &&
-            glog << "bad filter: " << filter << "for message descriptor: " << descriptor->DebugString() << std::endl;
-        return false;
-    }
-    return true;
+    ZeroMQNode::subscribe(MARSHALLING_PROTOBUF, identifier, socket_id);
 }
 
 void goby::core::StaticProtobufNode::protobuf_inbox(const std::string& protobuf_type_name,

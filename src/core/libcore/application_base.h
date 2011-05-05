@@ -14,104 +14,112 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef GOBYAPPBASE20100908H
-#define GOBYAPPBASE20100908H
+#ifndef MINIMALAPPLICATIONBASE20110413H
+#define MINIMALAPPLICATIONBASE20110413H
+
+#include <iostream>
 
 #include <boost/shared_ptr.hpp>
-#include <boost/date_time.hpp>
 
-#include <google/protobuf/io/zero_copy_stream_impl.h>
+#include "exception.h"
+
+#include "goby/protobuf/app_base_config.pb.h"
 
 #include "goby/util/logger.h"
-#include "goby/core/core_helpers.h"
 
-#include "goby/protobuf/config.pb.h"
-#include "goby/protobuf/core_database_request.pb.h"
-#include "goby/protobuf/header.pb.h"
-
-#include "zeromq_application_base.h"
-#include "protobuf_node.h"
-
-namespace google { namespace protobuf { class Message; } }
 namespace goby
 {
-        
-    /// Contains objects relating to the core publish / subscribe architecture provided by Goby.
+    /// \brief Run a Goby application derived from MinimalApplicationBase.
+    /// blocks caller until MinimalApplicationBase::__run() returns
+    /// \param argc same as int main(int argc, char* argv)
+    /// \param argv same as int main(int argc, char* argv)
+    /// \return same as int main(int argc, char* argv)
+    template<typename App>
+        int run(int argc, char* argv[]);
+
     namespace core
     {
-        /// Base class provided for users to generate applications that participate in the Goby publish/subscribe architecture.
-        class ApplicationBase : public StaticProtobufNode, public ZeroMQApplicationBase
+        class ApplicationBase
         {
-          protected:
-            // make these more accessible
-            typedef goby::util::Colors Colors;
-            
-            /// \name Constructors / Destructor
-            //@{
-            /// \param cfg pointer to object derived from google::protobuf::Message that defines the configuration for this Application. This constructor will use the Description of `cfg` to read the command line parameters and configuration file (if given) and use these values to populate `cfg`. `cfg` must be a static member of the subclass or global object since member objects will be constructed *after* the ApplicationBase constructor is called.
+          public:
             ApplicationBase(google::protobuf::Message* cfg = 0);
             virtual ~ApplicationBase();
-            //@}            
+
+            /// \brief Requests a clean (return 0) exit.
+            void quit() { alive_ = false; }
+
+            virtual void iterate() = 0;
+
+            /// name of this application (from AppBaseConfig::app_name). E.g. "garmin_gps_g"
+            std::string application_name()
+            { return base_cfg_->app_name(); }
+            /// name of this platform (from AppBaseConfig::platform_name). E.g. "AUV-23" or "unicorn"
+            std::string platform_name()
+            { return base_cfg_->platform_name(); }
             
-            /// \name Publish / Subscribe
-            //@{
+            template<typename App>
+                friend int ::goby::run(int argc, char* argv[]);
+
+            const AppBaseConfig& base_cfg()
+            { return *base_cfg_; }
+
+
+          private:
             
-            /// \brief Interplatform publishing options. `self` publishes only to the local multicast group, `other` also attempts to transmit to the named other platform, and `all` attempts to transmit to all known platforms
-            enum PublishDestination { self = ::Header::PUBLISH_SELF,
-                                      other = ::Header::PUBLISH_OTHER,
-                                      all = ::Header::PUBLISH_ALL };
+            // main loop that exits on disconnect. called by goby::run()
+            void __run();
             
-
-            /// \brief Publish a message (of any type derived from google::protobuf::Message)
-            ///
-            /// \param msg Message to publish
-            /// \param platform_name Platform to send to as well as `self` if PublishDestination == other
-            template<PublishDestination dest>
-                void publish(google::protobuf::Message& msg, const std::string& platform_name = "")
-            { __publish(msg, platform_name, dest); }            
-
-            /// \brief Publish a message (of any type derived from google::protobuf::Message) to all local subscribers (self)
-            ///
-            /// \param msg Message to publish
-            void publish(google::protobuf::Message& msg)
-            { __publish(msg, "", self); }
-
-            //@}
-
+            void __set_application_name(const std::string& s)
+            { base_cfg_->set_app_name(s); }
+            void __set_platform_name(const std::string& s)
+            { base_cfg_->set_platform_name(s); }
             
             
           private:
-            ApplicationBase(const ApplicationBase&);
-            ApplicationBase& operator= (const ApplicationBase&);
+                
+            // copies of the "real" argc, argv that are used
+            // to give ApplicationBase access without requiring the subclasses of
+            // ApplicationBase to pass them through their constructors
+            static int argc_;
+            static char** argv_;
 
-            
-            void __set_up_sockets();
+            // configuration relevant to all applications (loop frequency, for example)
+            // defined in #include "goby/core/proto/app_base_config.pb.h"
+            boost::shared_ptr<AppBaseConfig> base_cfg_;
 
-
-            // add the protobuf description of the given descriptor (essentially the
-            // instructions on how to make the descriptor or message meta-data)
-            // to the notification_ message. 
-            void __insert_file_descriptor_proto(
-                const google::protobuf::FileDescriptor* file_descriptor,
-                protobuf::DatabaseRequest* request);
-            
-
-            // adds required fields to the Header if not given by the derived application
-            void __finalize_header(
-                google::protobuf::Message* msg,
-                const goby::core::ApplicationBase::PublishDestination dest_type,
-                const std::string& dest_platform);
-            
-            void __publish(google::protobuf::Message& msg, const std::string& platform_name,  PublishDestination dest);
-            
-          private:
-            // database related things
-            zmq::socket_t database_client_;
-            std::set<const google::protobuf::FileDescriptor*> registered_file_descriptors_;
-            
+            bool alive_;            
 
         };
     }
+}
+
+
+
+template<typename App>
+int goby::run(int argc, char* argv[])
+{
+    // avoid making the user pass these through their Ctor...
+    App::argc_ = argc;
+    App::argv_ = argv;
+    
+    try
+    {
+        App app;
+        app.__run();
+    }
+    catch(goby::ConfigException& e)
+    {
+        // no further warning as the ApplicationBase Ctor handles this
+        return 1;
+    }
+    catch(std::exception& e)
+    {
+        // some other exception
+        std::cerr << "uncaught exception: " << e.what() << std::endl;
+        return 2;
+    }
+
+    return 0;
 }
 
 #endif

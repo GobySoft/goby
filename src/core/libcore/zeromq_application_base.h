@@ -18,7 +18,7 @@
 #define ZEROMQAPPLICATIONBASE20110418H
 
 #include "goby/core/libcore/zero_mq_node.h"
-#include "goby/core/libcore/minimal_application_base.h"
+#include "goby/core/libcore/application_base.h"
 
 #include "goby/util/logger.h"
 #include "goby/util/time.h"
@@ -27,19 +27,14 @@ namespace goby
 {
     namespace core
     {
-        class ZeroMQApplicationBase : public goby::core::MinimalApplicationBase, public virtual goby::core::ZeroMQNode
+        class ZeroMQApplicationBase : public virtual goby::core::ZeroMQNode, public goby::core::ApplicationBase
         {
             
           protected:
           ZeroMQApplicationBase(google::protobuf::Message* cfg = 0)
-              : goby::core::MinimalApplicationBase(cfg)
+              : ApplicationBase(cfg)
             {
                 set_loop_freq(base_cfg().loop_freq());
-                
-                std::string multicast_connection = "epgm://" + base_cfg().ethernet_address() + ";" +
-                    base_cfg().multicast_address() + ":" + goby::util::as<std::string>(base_cfg().ethernet_port());
-                
-                ZeroMQNode::start_sockets(multicast_connection);
                 
                 // we are started
                 t_start_ = goby::util::goby_time();

@@ -21,6 +21,7 @@
 #include "goby/util/string.h" // for goby::util::as
 
 #include "zero_mq_node.h"
+#include "exception.h"
 
 using goby::util::as;
 using goby::glog;
@@ -28,73 +29,181 @@ using goby::util::hex_encode;
 
 
 goby::core::ZeroMQNode::ZeroMQNode()
-    : context_(1),
-      publisher_(context_, ZMQ_PUB),
-      subscriber_(context_, ZMQ_SUB)
+    : context_(1)
 {
+}
+
+void goby::core::ZeroMQNode::set_cfg(const protobuf::ZeroMQNodeConfig& cfg)
+{
+    cfg_.CopyFrom(cfg);
+    for(int i = 0, n = cfg_.socket_size(); i < n; ++i)
+    {
+        if(!sockets_.count(cfg_.socket(i).socket_id()))
+        {
+            // TODO (tes) - check for compatible socket type
+            boost::shared_ptr<zmq::socket_t> new_socket(
+                new zmq::socket_t(context_, socket_type(cfg_.socket(i).socket_type())));
+            
+            sockets_.insert(std::make_pair(cfg_.socket(i).socket_id(), new_socket));
+
+            //  Initialize poll set
+            zmq::pollitem_t item = { *new_socket, 0, ZMQ_POLLIN, 0 };
+
+            // publish sockets can't receive
+            if(cfg_.socket(i).socket_type() != protobuf::ZeroMQNodeConfig::Socket::PUBLISH)
+            {
+                register_poll_item(item,
+                                   boost::bind(&goby::core::ZeroMQNode::handle_receive,
+                                               this, _1, _2, _3, cfg_.socket(i).socket_id()));
+            }
+        }
+
+        boost::shared_ptr<zmq::socket_t> this_socket = socket_from_id(cfg_.socket(i).socket_id());
+        
+        if(cfg_.socket(i).connect_or_bind() == protobuf::ZeroMQNodeConfig::Socket::CONNECT)
+        {
+            std::string endpoint;
+            switch(cfg_.socket(i).transport())
+            {
+                case protobuf::ZeroMQNodeConfig::Socket::INPROC:
+                    endpoint = "inproc://" + cfg_.socket(i).socket_name();
+                    break;
+                    
+                case protobuf::ZeroMQNodeConfig::Socket::IPC:
+                    endpoint = "ipc://" + cfg_.socket(i).socket_name();
+                    break;
+                    
+                case protobuf::ZeroMQNodeConfig::Socket::TCP:
+                    endpoint = "tcp://" + cfg_.socket(i).ethernet_address() + ":"
+                        + as<std::string>(cfg_.socket(i).ethernet_port());
+                    break;
+                    
+                case protobuf::ZeroMQNodeConfig::Socket::PGM:
+                    endpoint = "pgm://" + cfg_.socket(i).ethernet_address() + ";"
+                        + cfg_.socket(i).multicast_address() + ":" + as<std::string>(cfg_.socket(i).ethernet_port());
+                break;
+                    
+                case protobuf::ZeroMQNodeConfig::Socket::EPGM:
+                    endpoint = "epgm://" + cfg_.socket(i).ethernet_address() + ";"
+                        + cfg_.socket(i).multicast_address() + ":" + as<std::string>(cfg_.socket(i).ethernet_port());
+                    break;
+            }
+
+            try
+            {
+                this_socket->connect(endpoint.c_str());
+                glog.is(debug1) && glog << cfg_.socket(i).ShortDebugString() << " connected to endpoint - " << endpoint << std::endl;
+            }    
+            catch(std::exception& e)
+            {
+                glog.is(die) &&
+                    glog << "cannot connect to: " << endpoint << ": " << e.what() << std::endl;
+            }
+        }
+        else if(cfg_.socket(i).connect_or_bind() == protobuf::ZeroMQNodeConfig::Socket::BIND)
+        {
+            std::string endpoint;
+            switch(cfg_.socket(i).transport())
+            {
+                case protobuf::ZeroMQNodeConfig::Socket::INPROC:
+                    endpoint = "inproc://" + cfg_.socket(i).socket_name();
+                    break;
+                    
+                case protobuf::ZeroMQNodeConfig::Socket::IPC:
+                    endpoint = "ipc://" + cfg_.socket(i).socket_name();
+                    break;
+                    
+                case protobuf::ZeroMQNodeConfig::Socket::TCP:
+                    endpoint = "tcp://*:" + as<std::string>(cfg_.socket(i).ethernet_port());
+                    break;
+                    
+                case protobuf::ZeroMQNodeConfig::Socket::PGM:
+                    throw(goby::Exception("Cannot BIND to PGM socket (use CONNECT)"));
+                    break;
+                    
+                case protobuf::ZeroMQNodeConfig::Socket::EPGM:
+                    throw(goby::Exception("Cannot BIND to EPGM socket (use CONNECT)"));
+                    break;
+            }            
+
+            try
+            {
+                this_socket->bind(endpoint.c_str());
+                glog.is(debug1) && glog << cfg_.socket(i).ShortDebugString() << "bound to endpoint - " << endpoint << std::endl;
+            }    
+            catch(std::exception& e)
+            {
+                glog.is(die) &&
+                    glog << "cannot bind to: " << endpoint << ": " << e.what() << std::endl;
+            }
+
+        }
+    }
 }
 
 goby::core::ZeroMQNode::~ZeroMQNode()
 {
 }
 
-void goby::core::ZeroMQNode::subscribe_all()
+int goby::core::ZeroMQNode::socket_type(protobuf::ZeroMQNodeConfig::Socket::SocketType type)
 {
-    subscriber_.setsockopt(ZMQ_SUBSCRIBE, 0, 0);
-}
-void goby::core::ZeroMQNode::subscribe(MarshallingScheme marshalling_scheme,
-                                                   const std::string& identifier)
-{
-    std::string zmq_filter = make_header(marshalling_scheme, identifier);
-    subscriber_.setsockopt(ZMQ_SUBSCRIBE, zmq_filter.c_str(), zmq_filter.size());
+    switch(type)
+    {
+        case protobuf::ZeroMQNodeConfig::Socket::PUBLISH: return ZMQ_PUB;
+        case protobuf::ZeroMQNodeConfig::Socket::SUBSCRIBE: return ZMQ_SUB;
+        case protobuf::ZeroMQNodeConfig::Socket::REPLY: return ZMQ_REP;
+        case protobuf::ZeroMQNodeConfig::Socket::REQUEST: return ZMQ_REQ;
+//        case protobuf::ZeroMQNodeConfig::Socket::ZMQ_PUSH: return ZMQ_PUSH;
+//        case protobuf::ZeroMQNodeConfig::Socket::ZMQ_PULL: return ZMQ_PULL;
+//        case protobuf::ZeroMQNodeConfig::Socket::ZMQ_DEALER: return ZMQ_DEALER;
+//        case protobuf::ZeroMQNodeConfig::Socket::ZMQ_ROUTER: return ZMQ_ROUTER;
+    }
+    throw(goby::Exception("Invalid SocketType"));
 }
 
-void goby::core::ZeroMQNode::publish(MarshallingScheme marshalling_scheme,
-                                                 const std::string& identifier,
-                                                 const void* body_data,
-                                                 int body_size)
+boost::shared_ptr<zmq::socket_t> goby::core::ZeroMQNode::socket_from_id(int socket_id)
+{
+    std::map<int, boost::shared_ptr<zmq::socket_t> >::iterator it = sockets_.find(socket_id);
+    if(it != sockets_.end())
+        return it->second;
+    else
+        throw(goby::Exception("Attempted to access socket_id " + as<std::string>(socket_id) + " which does not exist"));
+}
+
+void goby::core::ZeroMQNode::subscribe_all(int socket_id)
+{
+    socket_from_id(socket_id)->setsockopt(ZMQ_SUBSCRIBE, 0, 0);
+}
+void goby::core::ZeroMQNode::subscribe(MarshallingScheme marshalling_scheme,
+                                       const std::string& identifier,
+                                       int socket_id)
+{
+    std::string zmq_filter = make_header(marshalling_scheme, identifier);
+    socket_from_id(socket_id)->setsockopt(ZMQ_SUBSCRIBE, zmq_filter.c_str(), zmq_filter.size());
+}
+
+void goby::core::ZeroMQNode::send(MarshallingScheme marshalling_scheme,
+                                  const std::string& identifier,
+                                  const void* body_data,
+                                  int body_size,
+                                  int socket_id)
 {
     std::string header = make_header(marshalling_scheme, identifier);
 
-    // pad with nulls to fixed identifier size
-    header += std::string(header_size() - header.size(), '\0');
-    
     zmq::message_t msg(header.size() + body_size);
     memcpy(msg.data(), header.c_str(), header.size()); // insert header
     memcpy(static_cast<char*>(msg.data()) + header.size(), body_data, body_size); // insert body
 
     glog.is(debug2) &&
         glog << "message hex: " << hex_encode(std::string(static_cast<const char*>(msg.data()),msg.size())) << std::endl;
-    publisher_.send(msg);
+    socket_from_id(socket_id)->send(msg);
 }
 
-void goby::core::ZeroMQNode::start_sockets(const std::string& multicast_connection
-                                                       /*= "epgm://127.0.0.1;239.255.7.15:11142"*/)
-{
-    try
-    {
-        publisher_.connect(multicast_connection.c_str());
-        subscriber_.connect(multicast_connection.c_str());        
-        
-        glog.is(debug1) &&
-            glog << "connected to: " << multicast_connection << std::endl;
-    }
-    catch(std::exception& e)
-    {
-        glog.is(die) &&
-            glog << "cannot connect to: " << multicast_connection << ": " << e.what() << std::endl;
-    }
 
-    //  Initialize poll set
-    zmq::pollitem_t item = { subscriber_, 0, ZMQ_POLLIN, 0 };
-    register_poll_item(item,
-                       &goby::core::ZeroMQNode::handle_subscribed_message,
-                       this);
-
-}
-void goby::core::ZeroMQNode::handle_subscribed_message(const void* data,
-                                                                   int size,
-                                                                   int message_part)
+void goby::core::ZeroMQNode::handle_receive(const void* data,
+                                            int size,
+                                            int message_part,
+                                            int socket_id)
 {
     std::string bytes(static_cast<const char*>(data),
                       size);
@@ -111,18 +220,22 @@ void goby::core::ZeroMQNode::handle_subscribed_message(const void* data,
     {
         case 0:
         {
-            if(bytes.size() < header_size())
+            // byte size of marshalling id
+            const unsigned MARSHALLING_SIZE = BITS_IN_UINT32 / BITS_IN_BYTE;
+
+            if(bytes.size() < MARSHALLING_SIZE)
                 throw(std::runtime_error("Message is too small"));
-        
+
+            
             google::protobuf::uint32 marshalling_int = 0;
-            for(int i = BITS_IN_UINT32/ BITS_IN_BYTE-1, n = 0; i >= n; --i)
+            for(int i = MARSHALLING_SIZE-1, n = 0; i >= n; --i)
             {
                 marshalling_int <<= BITS_IN_BYTE;
                 marshalling_int ^= bytes[i];
             }
         
             marshalling_int = boost::asio::detail::socket_ops::network_to_host_long(
-                marshalling_int);                        
+                marshalling_int);                 
         
             if(marshalling_int >= MARSHALLING_UNKNOWN &&
                marshalling_int <= MARSHALLING_MAX)
@@ -132,25 +245,25 @@ void goby::core::ZeroMQNode::handle_subscribed_message(const void* data,
                                          + as<std::string>(marshalling_int)));
         
             
-            identifier = bytes.substr(BITS_IN_UINT32 / BITS_IN_BYTE, FIXED_IDENTIFIER_SIZE);
+            identifier = bytes.substr(MARSHALLING_SIZE,
+                                      bytes.find('\0', MARSHALLING_SIZE)-MARSHALLING_SIZE);
 
-            // remove trailing nulls
-            std::string::size_type null_pos = identifier.find_first_of('\0');
-            
-            identifier.erase(null_pos);
             glog.is(debug1) &&
                 glog << "Got message of type: [" << identifier << "]" << std::endl;
 
-            std::string body(static_cast<const char*>(data)+header_size(),
-                             size-header_size());
-
+            // +1 for null terminator
+            const int HEADER_SIZE = MARSHALLING_SIZE+identifier.size() + 1;
+            std::string body(static_cast<const char*>(data)+HEADER_SIZE,
+                             size-HEADER_SIZE);
+            
             glog.is(debug2) &&
                 glog << "Body [" << goby::util::hex_encode(body)<< "]" << std::endl;
             
             inbox_signal_(marshalling_scheme,
                           identifier,
-                          static_cast<const char*>(data)+header_size(),
-                          size-header_size());
+                          static_cast<const char*>(data)+HEADER_SIZE,
+                          size-HEADER_SIZE,
+                          socket_id);
         }
         break;
             
@@ -163,6 +276,7 @@ void goby::core::ZeroMQNode::handle_subscribed_message(const void* data,
 
 bool goby::core::ZeroMQNode::poll(long timeout /* = -1 */)
 {
+    glog.is(debug2) && glog << "Have " << poll_items_.size() << " items to poll" << std::endl;   
     bool had_events = false;
     zmq::poll (&poll_items_[0], poll_items_.size(), timeout);
     for(int i = 0, n = poll_items_.size(); i < n; ++i)
@@ -179,6 +293,7 @@ bool goby::core::ZeroMQNode::poll(long timeout /* = -1 */)
                 // assert (rc == 0);
                 /* Block until a message is available to be received from socket */
                 rc = zmq_recv (poll_items_[i].socket, &part, 0);
+                glog.is(debug2) && glog << "Had event for poll item " << i << std::endl;
                 poll_callbacks_[i](zmq_msg_data(&part), zmq_msg_size(&part), message_part);
                 // assert (rc == 0);
                 /* Determine if more message parts are to follow */
@@ -195,7 +310,7 @@ bool goby::core::ZeroMQNode::poll(long timeout /* = -1 */)
 
 
 std::string goby::core::ZeroMQNode::make_header(MarshallingScheme marshalling_scheme,
-                                                                  const std::string& identifier)
+                                                const std::string& identifier)
 {
     std::string zmq_filter;
     
@@ -206,7 +321,7 @@ std::string goby::core::ZeroMQNode::make_header(MarshallingScheme marshalling_sc
         zmq_filter.push_back(marshalling_int & 0xFF);
         marshalling_int >>= BITS_IN_BYTE;
     }
-    zmq_filter += identifier;
+    zmq_filter += identifier + '\0';
 
     glog.is(debug2) &&
         glog << "zmq header: " << goby::util::hex_encode(zmq_filter) << std::endl;

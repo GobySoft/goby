@@ -30,7 +30,6 @@
 #include "dccl_field_codec_default.h"
 
 #include "goby/util/string.h"
-#include "goby/util/binary.h"
 #include "goby/protobuf/acomms_proto_helpers.h"
 #include "goby/protobuf/dccl_option_extensions.pb.h"
 #include "goby/protobuf/header.pb.h"
@@ -368,26 +367,8 @@ void goby::acomms::DCCLCodec::info_repeated(const std::list<const google::protob
         info(p, os);
 }
 
-unsigned goby::acomms::DCCLCodec::size_repeated(const std::list<boost::shared_ptr<google::protobuf::Message> >& msgs)
-{
-    unsigned out = 0;
-    BOOST_FOREACH(const boost::shared_ptr<google::protobuf::Message>& msg, msgs)
-        out += size(msg.get());
-    return out;
-}
 
 
-std::string goby::acomms::DCCLCodec::encode_repeated(const std::list<boost::shared_ptr<google::protobuf::Message> >& msgs)
-{
-    std::string out;
-    BOOST_FOREACH(const boost::shared_ptr<google::protobuf::Message>& msg, msgs)
-    {
-        out += encode(*msg);
-        DCCLCommon::logger() << "out: " << hex_encode(out) << std::endl;
-    }
-    
-    return out;
-}
 
 std::list<boost::shared_ptr<google::protobuf::Message> > goby::acomms::DCCLCodec::decode_repeated(const std::string& orig_bytes)
 {

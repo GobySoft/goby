@@ -38,15 +38,16 @@ namespace goby
             // not const because CMOOSMsg requires mutable for many const calls...
             virtual void moos_inbox(CMOOSMsg& msg) = 0;
             
-            void publish(CMOOSMsg& msg);
-            void subscribe(const std::string& full_or_partial_moos_name);
+            void send(CMOOSMsg& msg, int socket_id);
+            void subscribe(const std::string& full_or_partial_moos_name, int socket_id);
             
             
           private:
             void inbox(goby::core::MarshallingScheme marshalling_scheme,
                        const std::string& identifier,
                        const void* data,
-                       int size);
+                       int size,
+                       int socket_id);
             
             
         };

@@ -43,13 +43,13 @@ namespace goby
         struct Logger
         {
             static boost::mutex mutex;
-            enum Verbosity { QUIET = AppBaseConfig::QUIET,
-                             WARN = AppBaseConfig::WARN,
-                             VERBOSE = AppBaseConfig::VERBOSE,
-                             GUI = AppBaseConfig::GUI,
-                             DEBUG1 = AppBaseConfig::DEBUG1,
-                             DEBUG2 = AppBaseConfig::DEBUG2,
-                             DEBUG3 = AppBaseConfig::DEBUG3 };
+            enum Verbosity { QUIET = GLogConfig::QUIET,
+                             WARN = GLogConfig::WARN,
+                             VERBOSE = GLogConfig::VERBOSE,
+                             GUI = GLogConfig::GUI,
+                             DEBUG1 = GLogConfig::DEBUG1,
+                             DEBUG2 = GLogConfig::DEBUG2,
+                             DEBUG3 = GLogConfig::DEBUG3 };
         };
         
         

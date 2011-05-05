@@ -45,7 +45,7 @@ void goby::core::ZeroMQNode::set_cfg(const protobuf::ZeroMQNodeConfig& cfg)
                 new zmq::socket_t(context_, socket_type(cfg_.socket(i).socket_type())));
             
             sockets_.insert(std::make_pair(cfg_.socket(i).socket_id(), new_socket));
-
+            
             //  Initialize poll set
             zmq::pollitem_t item = { *new_socket, 0, ZMQ_POLLIN, 0 };
 

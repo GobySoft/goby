@@ -134,7 +134,7 @@ namespace goby
 
             /// \return human readable summary of all loaded %queues
             std::string summary() const;
-            const ManipulatorManager& manip_manager() const { return manip_manager_; }
+            //const ManipulatorManager& manip_manager() const { return manip_manager_; }
 
             
             
@@ -220,7 +220,7 @@ namespace goby
  
             protobuf::QueueManagerConfig cfg_;
             
-            ManipulatorManager manip_manager_;
+//            ManipulatorManager manip_manager_;
         };
 
         /// outputs information about all available messages (same as std::string summary())

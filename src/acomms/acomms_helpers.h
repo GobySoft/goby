@@ -37,39 +37,39 @@ namespace goby
         }
 
 
-        class ManipulatorManager
-        {
-          public:
-            void add(unsigned id, goby::acomms::protobuf::MessageFile::Manipulator manip)
-            {
-                manips_.insert(std::make_pair(id, manip));
-            }            
+        /* class ManipulatorManager */
+        /* { */
+        /*   public: */
+        /*     void add(unsigned id, goby::acomms::protobuf::MessageFile::Manipulator manip) */
+        /*     { */
+        /*         manips_.insert(std::make_pair(id, manip)); */
+        /*     }             */
             
-            bool has(unsigned id, goby::acomms::protobuf::MessageFile::Manipulator manip) const
-            {
-                typedef std::multimap<unsigned, goby::acomms::protobuf::MessageFile::Manipulator>::const_iterator iterator;
-                std::pair<iterator,iterator> p = manips_.equal_range(id);
+        /*     bool has(unsigned id, goby::acomms::protobuf::MessageFile::Manipulator manip) const */
+        /*     { */
+        /*         typedef std::multimap<unsigned, goby::acomms::protobuf::MessageFile::Manipulator>::const_iterator iterator; */
+        /*         std::pair<iterator,iterator> p = manips_.equal_range(id); */
 
-                for(iterator it = p.first; it != p.second; ++it)
-                {
-                    if(it->second == manip)
-                        return true;
-                }
+        /*         for(iterator it = p.first; it != p.second; ++it) */
+        /*         { */
+        /*             if(it->second == manip) */
+        /*                 return true; */
+        /*         } */
 
-                return false;
-            }
+        /*         return false; */
+        /*     } */
 
-            void clear()
-            {
-                manips_.clear();
-            }
+        /*     void clear() */
+        /*     { */
+        /*         manips_.clear(); */
+        /*     } */
             
-          private:
-            // manipulator multimap (no_encode, no_decode, etc)
-            // maps DCCL ID (unsigned) onto Manipulator enumeration (xml_config.proto)
-            std::multimap<unsigned, goby::acomms::protobuf::MessageFile::Manipulator> manips_;
+        /*   private: */
+        /*     // manipulator multimap (no_encode, no_decode, etc) */
+        /*     // maps DCCL ID (unsigned) onto Manipulator enumeration (xml_config.proto) */
+        /*     std::multimap<unsigned, goby::acomms::protobuf::MessageFile::Manipulator> manips_; */
 
-        };
+        /* }; */
         
         
 

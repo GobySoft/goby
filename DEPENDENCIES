@@ -94,7 +94,8 @@ debian_other_packages=\
 libncurses-dev
 libprotobuf-dev
 protobuf-compiler
-libcdk5-dev"
+libcdk5-dev
+libzmq-dev"
 
 debian_doc_packages=\
 "graphviz
@@ -106,6 +107,7 @@ debian_wt_packages=\
 "libwt-dev
 libwtdbo-dev
 libwtdbosqlite-dev"
+
 
 if [ -e "`which apt-get`" ]; then
     if [ -z "`apt-cache search ${debian_wt_packages}`" ]; then

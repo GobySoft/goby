@@ -234,7 +234,7 @@ You can always get a complete listing of MOOS file parameters with their syntax 
 
 This is a complete list of all the configuration values pAcommsHandler accepts. Most of the time you will need far fewer configuration options to use it.
 
-\boxedverbatiminput{"@CMAKE_SOURCE_DIR@/src/moos/pAcommsHandler/pAcommsHandler_complete.moos"}
+\boxedverbatiminput{"@RELATIVE_CMAKE_SOURCE_DIR@/src/moos/pAcommsHandler/pAcommsHandler_complete.moos"}
 \resetbvlinenumber
 
 \subsubsection{Filling out the .moos file}\label{sec:pAcommsHandler_moos_file}
@@ -486,7 +486,7 @@ MyMOOSApp::OnNewMail()
  format for storing data that can be both read by both people and
  computers. Also see section \ref{sec:ex} for further examples. Let's call this file example1.xml, which we will use in two following examples:
 
-\boxedverbatiminput{@CMAKE_CURRENT_SOURCE_DIR@/includes/example1.xml}
+\boxedverbatiminput{@RELATIVE_CMAKE_CURRENT_SOURCE_DIR@/includes/example1.xml}
 \resetbvlinenumber
 
 \subsection{DCCL Encoding/Decoding Unit: Designing Messages}
@@ -658,7 +658,7 @@ then !blah=3.56! is converted to a float, which will probably be zero or somethi
 \begin{itemize}
 \item I currently store some example working message files in !goby/xml!. look for .xml files in this directory for further examples.
 \item Probably the simplest message you can make (for a single string MOOS variable published to !IN_MESSAGE! that gets truncated at 26 chars (need six bytes for the DCCL header) and sent to broadcast):
-\boxedverbatiminput{@CMAKE_SOURCE_DIR@/share/examples/acomms/chat/chat.xml}
+\boxedverbatiminput{@RELATIVE_CMAKE_SOURCE_DIR@/share/examples/acomms/chat/chat.xml}
 \resetbvlinenumber
 \end{itemize}
 
@@ -813,30 +813,30 @@ Vehicles are discovered by shifting a blank slot in each cycle based on their kn
 This example sends the bytes !0x020304! from node 1 (!mm1!) to node 2 (!mm2!). It shows use of all the parts of pAcommsHandler except the DCCL encoding / decoding unit. I use !iModemSim! here to simulate the WHOI Micro-Modem. This process is available in moos-ivp-local (\url{http://oceanai.mit.edu/moos-ivp/pmwiki/pmwiki.php?n=Support.Milocal}). You can also easily substitute real modems by removing iModemSim references and changing the !serial_port!.
 
 \paragraph{MOOS file for Node 1: goby/share/cfg/MOOS/basic\_ccl/mm1.moos}
-\boxedverbatiminput{"@CMAKE_SOURCE_DIR@/share/cfg/MOOS/basic_ccl/mm1.moos"}
+\boxedverbatiminput{"@RELATIVE_CMAKE_SOURCE_DIR@/share/cfg/MOOS/basic_ccl/mm1.moos"}
 \resetbvlinenumber
 
 \paragraph{MOOS file for Node 2: goby/share/cfg/MOOS/basic\_ccl/mm2.moos}
-\boxedverbatiminput{"@CMAKE_SOURCE_DIR@/share/cfg/MOOS/basic_ccl/mm2.moos"}
+\boxedverbatiminput{"@RELATIVE_CMAKE_SOURCE_DIR@/share/cfg/MOOS/basic_ccl/mm2.moos"}
 \resetbvlinenumber
 
 \subsubsection{Example 2: DCCL and CCL (goby/share/cfg/MOOS/ccl\_and\_dccl)}
 This example sends the DCCL ``Simple Status'' messsage from node 1 (!mm1!) to node 2 (!mm2!). !mm2! sends the REMUS CCL State message to !mm1!. It thus uses all the components of pAcommsHandler. As in the previous example, you can use real modems by removing iModemSim and changing the !serial_port! to the proper real serial port.
 
 \paragraph{MOOS file for Node 1: goby/share/cfg/MOOS/ccl\_and\_dccl/mm1.moos}
-\boxedverbatiminput{"@CMAKE_SOURCE_DIR@/share/cfg/MOOS/ccl_and_dccl/mm1.moos"}
+\boxedverbatiminput{"@RELATIVE_CMAKE_SOURCE_DIR@/share/cfg/MOOS/ccl_and_dccl/mm1.moos"}
 \resetbvlinenumber
 
 \paragraph{MOOS file for Node 2: goby/share/cfg/MOOS/ccl\_and\_dccl/mm2.moos}
-\boxedverbatiminput{"@CMAKE_SOURCE_DIR@/share/cfg/MOOS/ccl_and_dccl/mm2.moos"}
+\boxedverbatiminput{"@RELATIVE_CMAKE_SOURCE_DIR@/share/cfg/MOOS/ccl_and_dccl/mm2.moos"}
 \resetbvlinenumber
 
 \paragraph{XML definition of Simple Status: goby/xml/simple\_status.xml}
-\boxedverbatiminput{"@CMAKE_SOURCE_DIR@/share/xml/simple_status.xml"}
+\boxedverbatiminput{"@RELATIVE_CMAKE_SOURCE_DIR@/share/xml/simple_status.xml"}
 \resetbvlinenumber
 
 \paragraph{Modem Lookup Table: goby/share/cfg/MOOS/ccl\_and\_dccl/modemidlookup.txt}
-\boxedverbatiminput{"@CMAKE_SOURCE_DIR@/share/cfg/MOOS/ccl_and_dccl/modemidlookup.txt"}
+\boxedverbatiminput{"@RELATIVE_CMAKE_SOURCE_DIR@/share/cfg/MOOS/ccl_and_dccl/modemidlookup.txt"}
 \resetbvlinenumber
 
 \section{iCommander}\label{sec:icommander} 
@@ -850,7 +850,7 @@ without any need to change code.
 \paragraph{Example .moos file}
 The moos file is simple since the bulk of the configuration is stored in separate XML files (see section \ref{sec:dccl_overview} for the configuration of these files):
 
-\boxedverbatiminput{"@CMAKE_SOURCE_DIR@/src/moos/iCommander/iCommander_complete.moos"}
+\boxedverbatiminput{"@RELATIVE_CMAKE_SOURCE_DIR@/src/moos/iCommander/iCommander_complete.moos"}
 \resetbvlinenumber
 As with pAcommsHandler, the above configuration file can be generated at any time with the command:
 \begin{boxedverbatim}
@@ -992,7 +992,7 @@ Similarly, expired messages (messages that exceed their \textit{ttl} without bei
 
 \paragraph{Example .moos file}
 
-\boxedverbatiminput{"@CMAKE_SOURCE_DIR@/src/moos/pREMUSCodec/pREMUSCodec_complete.moos"}
+\boxedverbatiminput{"@RELATIVE_CMAKE_SOURCE_DIR@/src/moos/pREMUSCodec/pREMUSCodec_complete.moos"}
 \resetbvlinenumber
 As with pAcommsHandler, the above configuration file can be generated at any time with the command:
 \begin{boxedverbatim}

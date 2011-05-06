@@ -23,7 +23,7 @@
 
 namespace goby
 {
-    const std::string VERSION_STRING = "2.0.1";
+    const std::string VERSION_STRING = "2.0.0~PRE-RELEASE";
     const std::string VERSION_DATE = "Unreleased";  
 }
 

@@ -105,9 +105,10 @@ public:
             Msgs msgs;
 
             if(cfg_.has_where())
-                msgs = session.find<CMOOSMsg>().orderBy("moosmsg_time ASC").where(cfg_.where());
+                msgs = session.find<CMOOSMsg>("order by moosmsg_time ASC where"  +cfg_.where());
             else
-                msgs = session.find<CMOOSMsg>().orderBy("moosmsg_time ASC");
+                msgs = session.find<CMOOSMsg>("order by moosmsg_time ASC");
+            
             
             goby::glog << "We have " << msgs.size() << " messages:" << std::endl;
 

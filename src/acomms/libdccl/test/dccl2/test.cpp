@@ -87,12 +87,11 @@ private:
 
 
 int main()
-{
-    
+{    
     goby::acomms::DCCLCommon::set_log(&std::cerr);
+    goby::acomms::DCCLCodec* codec = goby::acomms::DCCLCodec::get();
     goby::acomms::DCCLFieldCodecManager::add<CustomMsg, CustomCodec>("custom_codec");
 
-    goby::acomms::DCCLCodec* codec = goby::acomms::DCCLCodec::get();
     goby::acomms::protobuf::DCCLConfig cfg;
     cfg.set_crypto_passphrase("my_passphrase!");
     codec->set_cfg(cfg);

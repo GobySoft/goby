@@ -67,7 +67,11 @@ namespace goby
           public:
             static DCCLCodec* get()
             {
-                return inst_.get();
+                // set these now so that the user has a chance of setting the logger
+                if(!inst_->default_codecs_set_)
+                    inst_->set_default_codecs();
+
+                return inst_.get();    
             }
             
             /// \name Initialization Methods.
@@ -92,6 +96,11 @@ namespace goby
             // in bytes
             unsigned size(const google::protobuf::Message* msg);
 
+            void call_hooks(const google::protobuf::Message* msg);
+
+            
+            
+            
 
             template<typename GoogleProtobufMessagePointer>
                 unsigned size_repeated(const std::list<GoogleProtobufMessagePointer>& msgs)
@@ -101,7 +110,6 @@ namespace goby
                     out += size(&(*msg));
                 return out;
             }
-
             
 
             //@}
@@ -175,6 +183,8 @@ namespace goby
             void decrypt(std::string* s, const std::string& nonce);
             void process_cfg();
 
+            void set_default_codecs();
+            
             unsigned fixed_head_size()
             { return HEAD_CCL_ID_SIZE + HEAD_DCCL_ID_SIZE; }            
             
@@ -188,7 +198,9 @@ namespace goby
             std::string crypto_key_;
             
             // maps `dccl.id`s onto Message Descriptors
-            std::map<int32, const google::protobuf::Descriptor*> id2desc_;            
+            std::map<int32, const google::protobuf::Descriptor*> id2desc_;
+
+            bool default_codecs_set_;
         };
                                       
         

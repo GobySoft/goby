@@ -32,28 +32,39 @@ namespace goby
         class DCCLFieldCodecManager
         {
           public:
-            template<typename T, template <typename T> class Codec>
+            // field type == wire type
+            template<typename FieldType, template <typename FieldType> class Codec>
                 static void add(const std::string& name);
-
-            template<typename T, class Codec>
+            
+            template<typename FieldType, class Codec>
                 typename boost::enable_if<
-                boost::mpl::and_<boost::is_base_of<google::protobuf::Message, T>,
-                boost::mpl::not_<boost::is_same<google::protobuf::Message, T> >
+                boost::mpl::and_<boost::is_base_of<google::protobuf::Message, FieldType>,
+                boost::mpl::not_<boost::is_same<google::protobuf::Message, FieldType> >
                 >,
                 void>::type 
                 static add(const std::string& name);
                 
-            template<typename T, class Codec>
+            template<typename FieldType, class Codec>
                 typename boost::disable_if<
-                boost::mpl::and_<boost::is_base_of<google::protobuf::Message, T>,
-                boost::mpl::not_<boost::is_same<google::protobuf::Message, T> >
+                boost::mpl::and_<boost::is_base_of<google::protobuf::Message, FieldType>,
+                boost::mpl::not_<boost::is_same<google::protobuf::Message, FieldType> >
                 >,
                 void>::type
                 static add(const std::string& name);
                 
             template<google::protobuf::FieldDescriptor::Type type, class Codec>
                 static void add(const std::string& name);
-                
+
+
+            // field type != wire type
+            template<typename FieldType, typename WireType, class Codec>
+                static void add(const std::string& name);
+            
+            template<typename FieldType, typename WireType,
+                template <typename FieldType, typename WireType> class Codec>
+                static void add(const std::string& name);
+
+            
             static boost::shared_ptr<DCCLFieldCodec> find(
                 const google::protobuf::FieldDescriptor* field,
                 const std::string& name)
@@ -91,7 +102,9 @@ namespace goby
             { return type_name.empty() ? codec_name : codec_name + "@@" + type_name; }
                 
             template<class Codec>
-                static void __add(const std::string& name, google::protobuf::FieldDescriptor::Type type);
+                static void __add(const std::string& name,
+                                  google::protobuf::FieldDescriptor::Type field_type,
+                                  google::protobuf::FieldDescriptor::CppType wire_type);
           private:
             
             typedef std::map<std::string, boost::shared_ptr<DCCLFieldCodec> > InsideMap;
@@ -100,75 +113,98 @@ namespace goby
     }
 }
 
-template<typename T, template <typename T> class Codec>
+template<typename FieldType, template <typename FieldType> class Codec>
     void goby::acomms::DCCLFieldCodecManager::add(const std::string& name)
 {
-    add<T, Codec<T> >(name);
+    add<FieldType, Codec<FieldType> >(name);
 }
 
-template<typename T, class Codec>
+
+template<typename FieldType, class Codec>
     typename boost::enable_if<
     boost::mpl::and_<
-    boost::is_base_of<google::protobuf::Message, T>,
-    boost::mpl::not_<boost::is_same<google::protobuf::Message, T> >
+    boost::is_base_of<google::protobuf::Message, FieldType>,
+    boost::mpl::not_<boost::is_same<google::protobuf::Message, FieldType> >
     >,
     void>::type 
     goby::acomms::DCCLFieldCodecManager::add(const std::string& name)
 {
-    __add<Codec>(__mangle_name(name, T::descriptor()->full_name()),
-                 google::protobuf::FieldDescriptor::TYPE_MESSAGE);
-    DCCLTypeHelper::add<T>();
+    DCCLTypeHelper::add<FieldType>();
+    __add<Codec>(__mangle_name(name, FieldType::descriptor()->full_name()),
+                 google::protobuf::FieldDescriptor::TYPE_MESSAGE,
+                 google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE);
 }
 
-template<typename T, class Codec>
+template<typename FieldType, class Codec>
     typename boost::disable_if<
     boost::mpl::and_<
-    boost::is_base_of<google::protobuf::Message, T>,
-    boost::mpl::not_<boost::is_same<google::protobuf::Message, T> >
+    boost::is_base_of<google::protobuf::Message, FieldType>,
+    boost::mpl::not_<boost::is_same<google::protobuf::Message, FieldType> >
     >,
     void>::type
     goby::acomms::DCCLFieldCodecManager::add(const std::string& name)
 {
-    using google::protobuf::FieldDescriptor;
-    const FieldDescriptor::CppType cpp_type = ToProtoCppType<T>::as_enum();
-
-    for(int i = 1, n = FieldDescriptor::MAX_TYPE; i <= n; ++i)
-    {
-        FieldDescriptor::Type type = static_cast<FieldDescriptor::Type>(i);
-        if(FieldDescriptor::TypeToCppType(type) == cpp_type)
-        {
-            __add<Codec>(name, type);
-        }
-    }    
+    add<FieldType, FieldType, Codec>(name);
 }
 
 template<google::protobuf::FieldDescriptor::Type type, class Codec>
     void goby::acomms::DCCLFieldCodecManager::add(const std::string& name)
 {
-    __add<Codec>(name, type);
+    __add<Codec>(name, type, google::protobuf::FieldDescriptor::TypeToCppType(type));
 }
 
 
+template<typename FieldType, typename WireType,
+    template <typename FieldType, typename WireType> class Codec>
+    void goby::acomms::DCCLFieldCodecManager::add(const std::string& name)
+{
+    add<FieldType, WireType, Codec<FieldType, WireType> >(name);
+}
+
+
+template<typename FieldType, typename WireType, class Codec>
+    void goby::acomms::DCCLFieldCodecManager::add(const std::string& name)
+{
+    using google::protobuf::FieldDescriptor;
+    const FieldDescriptor::CppType cpp_field_type = ToProtoCppType<FieldType>::as_enum();
+    const FieldDescriptor::CppType cpp_wire_type = ToProtoCppType<WireType>::as_enum();
+
+    for(int i = 1, n = FieldDescriptor::MAX_TYPE; i <= n; ++i)
+    {
+        FieldDescriptor::Type field_type = static_cast<FieldDescriptor::Type>(i);
+        if(FieldDescriptor::TypeToCppType(field_type) == cpp_field_type)
+        {            
+            __add<Codec>(name, field_type, cpp_wire_type);
+        }
+    }
+}
+
 template<class Codec>
-void goby::acomms::DCCLFieldCodecManager::__add(const std::string& name, google::protobuf::FieldDescriptor::Type type)
+void goby::acomms::DCCLFieldCodecManager::__add(const std::string& name,
+                                                google::protobuf::FieldDescriptor::Type field_type,
+                                                google::protobuf::FieldDescriptor::CppType wire_type)
 {
     using google::protobuf::FieldDescriptor;    
-    const FieldDescriptor::CppType cpp_type = FieldDescriptor::TypeToCppType(type);
-    if(!codecs_[type].count(name))
+    if(!codecs_[field_type].count(name))
     {
-        codecs_[type][name] = boost::shared_ptr<DCCLFieldCodec>(new Codec());
-        DCCLCommon::logger() << "Adding codec " << name
-                             << " for Type "
-                             << DCCLTypeHelper::find(type)->as_str()
-                             << " (" << DCCLTypeHelper::find(cpp_type)->as_str() << ")"
-                             << std::endl;
+        boost::shared_ptr<DCCLFieldCodec> new_field_codec(new Codec());
+        new_field_codec->set_name(name);
+        new_field_codec->set_field_type(field_type);
+        new_field_codec->set_wire_type(wire_type);
+        
+        codecs_[field_type][name] = new_field_codec;
+        DCCLCommon::logger() << "Adding codec " << *new_field_codec << std::endl;
     }            
     else
     {
-        DCCLCommon::logger() << warn << "Ignoring duplicate codec " << name
-                             << " for Type "
-                             << DCCLTypeHelper::find(type)->as_str()
-                             << " (" << DCCLTypeHelper::find(cpp_type)->as_str() << ")"
+        boost::shared_ptr<DCCLFieldCodec> new_field_codec(new Codec());
+        new_field_codec->set_name(name);
+        new_field_codec->set_field_type(field_type);
+        new_field_codec->set_wire_type(wire_type);
+        
+        DCCLCommon::logger() << warn << "Trying to add: " << *new_field_codec
+                             << ", but already have duplicate codec (For `name`/`field type` pair) "
+                             << *(codecs_[field_type].find(name)->second)
                              << std::endl;
     }
 }

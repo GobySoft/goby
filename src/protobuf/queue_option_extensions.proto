@@ -10,3 +10,4 @@ extend google.protobuf.MessageOptions {
   optional int32 ttl = 50054;
   optional double value_base = 50055;
 }
+

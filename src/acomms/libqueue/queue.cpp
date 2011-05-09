@@ -40,6 +40,9 @@ bool goby::acomms::Queue::push_message(const google::protobuf::Message& dccl_msg
     
     goby::acomms::DCCLCodec* codec = goby::acomms::DCCLCodec::get();
     data_msg.mutable_data()->resize(codec->size(&dccl_msg));
+
+    // look for header parts
+    
     
     return push_message(data_msg, new_dccl_msg);
 }

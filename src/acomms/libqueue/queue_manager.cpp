@@ -75,7 +75,6 @@ void goby::acomms::QueueManager::add_queue(const google::protobuf::Message& msg)
     else
         queue_cfg.set_blackout_time(desc->options().GetExtension(queue::blackout_time));
 
-
     if(!desc->options().HasExtension(queue::max_queue))
         glog.is(warn) && glog << queue_cfg.name() << ": "  << "using default value of " << queue_cfg.max_queue() << " for queue::max_queue" << std::endl;
     else
@@ -168,7 +167,7 @@ void goby::acomms::QueueManager::push_message(const protobuf::ModemDataTransmiss
     }
 }
 
-void goby::acomms::QueueManager::push_message(const google::protobuf::Message& data_msg)
+void goby::acomms::QueueManager::push_message(const google::protobuf::Message& dccl_msg)
 {
     // // message is to us, auto-loopback
     // if(data_msg.base().dest() == modem_id_)
@@ -179,17 +178,17 @@ void goby::acomms::QueueManager::push_message(const google::protobuf::Message& d
     // }
     //else
 
-    const google::protobuf::Descriptor* desc = data_msg.GetDescriptor();
+    const google::protobuf::Descriptor* desc = dccl_msg.GetDescriptor();
     
     protobuf::QueueKey key;
     key.set_type(protobuf::QUEUE_DCCL);
     key.set_id(desc->options().GetExtension(dccl::id));
     
     if(!queues_.count(key))
-        add_queue(data_msg);
+        add_queue(dccl_msg);
 
     // add the message
-    queues_[key].push_message(data_msg);
+    queues_[key].push_message(dccl_msg);
     qsize(&queues_[key]);
 
 }

@@ -64,7 +64,7 @@ void goby::acomms::DCCLFieldCodec::encode(Bitset* bits,
                                           const google::protobuf::FieldDescriptor* field)
 {
     MessageHandler msg_handler(field);
-    Bitset new_bits = _encode(field_value);
+    Bitset new_bits = _encode(pre_encode(field_value));
     __encode_prepend_bits(new_bits, bits);
 }
 
@@ -73,24 +73,26 @@ void goby::acomms::DCCLFieldCodec::encode_repeated(Bitset* bits,
                                                    const google::protobuf::FieldDescriptor* field)
 {
     MessageHandler msg_handler(field);
-    Bitset new_bits = _encode_repeated(field_values);
+    Bitset new_bits = _encode_repeated(pre_encode(field_values));
     __encode_prepend_bits(new_bits, bits);
 }
 
 
             
-unsigned goby::acomms::DCCLFieldCodec::size(const google::protobuf::Message& msg,
-                                            MessagePart part)
+void goby::acomms::DCCLFieldCodec::size(unsigned* bit_size,
+                                        const google::protobuf::Message& msg,
+                                        MessagePart part)
 {
     part_ = part;
     MessageHandler msg_handler;
     msg_handler.push(msg.GetDescriptor());
     
-    return size(&msg, 0);
+    size(bit_size, &msg, 0);
 }
 
-unsigned goby::acomms::DCCLFieldCodec::size(const boost::any& field_value,
-                                            const google::protobuf::FieldDescriptor* field)
+void goby::acomms::DCCLFieldCodec::size(unsigned* bit_size,
+                                        const boost::any& field_value,
+                                        const google::protobuf::FieldDescriptor* field)
 {
     MessageHandler msg_handler(field);
 
@@ -98,14 +100,15 @@ unsigned goby::acomms::DCCLFieldCodec::size(const boost::any& field_value,
         DCCLCommon::logger() << "field: " << field->DebugString() << "size: " << _size(field_value) << std::endl;
     
     
-    return _size(field_value);
+    *bit_size += _size(field_value);
 }
 
-unsigned goby::acomms::DCCLFieldCodec::size_repeated(const std::vector<boost::any>& field_values,
-                                                     const google::protobuf::FieldDescriptor* field)
+void  goby::acomms::DCCLFieldCodec::size_repeated(unsigned* bit_size,
+                                                  const std::vector<boost::any>& field_values,
+                                                  const google::protobuf::FieldDescriptor* field)
 {
     MessageHandler msg_handler(field);
-    return _size_repeated(field_values);
+    *bit_size += _size_repeated(field_values);
 }
 
 
@@ -163,7 +166,7 @@ void goby::acomms::DCCLFieldCodec::decode(Bitset* bits,
     
     DCCLCommon::logger() << "using these bits: " << these_bits << std::endl;
     
-    *field_value = _decode(&these_bits);    
+    *field_value = post_decode(_decode(&these_bits));    
 }
 
 void goby::acomms::DCCLFieldCodec::decode_repeated(Bitset* bits,
@@ -186,7 +189,7 @@ void goby::acomms::DCCLFieldCodec::decode_repeated(Bitset* bits,
     
     DCCLCommon::logger() << "using these bits: " << these_bits << std::endl;
     
-    *field_values = _decode_repeated(&these_bits);
+    *field_values = post_decode(_decode_repeated(&these_bits));
 }
 
 

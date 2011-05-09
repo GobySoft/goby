@@ -51,11 +51,15 @@ boost::shared_ptr<goby::acomms::DCCLCodec> goby::acomms::DCCLCodec::inst_(new DC
 //
 
 goby::acomms::DCCLCodec::DCCLCodec()
-    : DEFAULT_CODEC_NAME("_default")
+    : DEFAULT_CODEC_NAME("_default"),
+      default_codecs_set_(false)
 {
     DCCLTypeHelper::initialize();    
     DCCLCommon::initialize();
-    
+}
+
+void goby::acomms::DCCLCodec::set_default_codecs()
+{
     using google::protobuf::FieldDescriptor;
     DCCLFieldCodecManager::add<double, DCCLDefaultArithmeticFieldCodec>(DEFAULT_CODEC_NAME);
     DCCLFieldCodecManager::add<float, DCCLDefaultArithmeticFieldCodec>(DEFAULT_CODEC_NAME);
@@ -69,9 +73,12 @@ goby::acomms::DCCLCodec::DCCLCodec()
     DCCLFieldCodecManager::add<google::protobuf::EnumDescriptor, DCCLDefaultEnumCodec>(DEFAULT_CODEC_NAME);
     DCCLFieldCodecManager::add<google::protobuf::Message, DCCLDefaultMessageCodec>(DEFAULT_CODEC_NAME);
 
-    DCCLFieldCodecManager::add<std::string, DCCLTimeCodec>("_time");
-    DCCLFieldCodecManager::add<std::string, DCCLModemIdConverterCodec>("_platform<->modem_id");
+    DCCLFieldCodecManager::add<std::string, int32, DCCLTimeCodec>("_time");
+    DCCLFieldCodecManager::add<std::string, int32, DCCLModemIdConverterCodec>("_platform<->modem_id");
+
+    default_codecs_set_ = true;
 }
+
 
 
 std::string goby::acomms::DCCLCodec::encode(const google::protobuf::Message& msg)
@@ -302,8 +309,11 @@ unsigned goby::acomms::DCCLCodec::size(const google::protobuf::Message* msg)
     boost::shared_ptr<DCCLFieldCodec> codec =
         DCCLFieldCodecManager::find(desc, desc->options().GetExtension(dccl::message_codec));
     
-    const unsigned head_size_bits = codec->size(*msg, DCCLFieldCodec::HEAD) + fixed_head_size();
-    const unsigned body_size_bits = codec->size(*msg, DCCLFieldCodec::BODY);
+    unsigned head_size_bits = fixed_head_size();
+    codec->size(&head_size_bits, *msg, DCCLFieldCodec::HEAD);
+    
+    unsigned body_size_bits = 0;
+    codec->size(&body_size_bits, *msg, DCCLFieldCodec::BODY);
     
     const unsigned head_size_bytes = ceil_bits2bytes(head_size_bits);
     const unsigned body_size_bytes = ceil_bits2bytes(body_size_bits);

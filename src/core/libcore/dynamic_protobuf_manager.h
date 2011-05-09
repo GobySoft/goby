@@ -16,6 +16,8 @@
 #ifndef DYNAMICPROTOBUFMANAGER20110419H
 #define DYNAMICPROTOBUFMANAGER20110419H
 
+#include <set>
+
 #include <google/protobuf/descriptor.h>
 #include <google/protobuf/descriptor.pb.h>
 #include <google/protobuf/dynamic_message.h>
@@ -31,7 +33,8 @@ namespace goby
           public:
             static boost::shared_ptr<google::protobuf::Message> new_protobuf_message(
                 const std::string& protobuf_type_name);
-            static const google::protobuf::FileDescriptor* add_protobuf_file_with_dependencies(
+            static std::set<const google::protobuf::FileDescriptor*>
+                add_protobuf_file_with_dependencies(
                 const google::protobuf::FileDescriptor* file_descriptor);
             static const google::protobuf::FileDescriptor* add_protobuf_file(
                 const google::protobuf::FileDescriptor* file_descriptor);

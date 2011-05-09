@@ -36,7 +36,6 @@ int main(int argc, char* argv[])
 
 goby::core::Database::Database()
     : ZeroMQApplicationBase(&cfg_),
-      database_server_(zmq_context(), ZMQ_REP),
       dbo_manager_(DBOManager::get_instance()),
       last_unique_id_(-1)
 {
@@ -55,35 +54,49 @@ goby::core::Database::Database()
         glog.is(die) &&
             glog << "AppBaseConfig::using_database == false. Since we aren't wanting, we aren't starting (set to true to enable use of the database)!" << std::endl;
     }
+
+    pubsub_node_.set_cfg(cfg_.base().pubsub_config());
     
-    std::string database_binding = "tcp://*:";
-    database_binding += as<std::string>(cfg_.base().database_config().database_port());
+    using goby::core::protobuf::ZeroMQNodeConfig;
+    ZeroMQNodeConfig socket_cfg;
+    ZeroMQNodeConfig::Socket* reply_socket = socket_cfg.add_socket();
+    reply_socket->set_socket_type(ZeroMQNodeConfig::Socket::REPLY);
+    reply_socket->set_transport(ZeroMQNodeConfig::Socket::TCP);
+    reply_socket->set_socket_id(DATABASE_SERVER_SOCKET_ID);
+    reply_socket->set_connect_or_bind(ZeroMQNodeConfig::Socket::BIND);
+
+    if(cfg_.base().database_config().has_database_port())
+        reply_socket->set_ethernet_port(cfg_.base().database_config().database_port());
+    else
+        reply_socket->set_ethernet_port(cfg_.base().pubsub_config().ethernet_port());
 
     try
     {
-        database_server_.bind(database_binding.c_str());
+        ZeroMQNode::get()->merge_cfg(socket_cfg);
+
         glog.is(debug1) &&
-            glog << "bound (requests line) to: " << database_binding << std::endl;
+            glog << "bound (requests line) to: " << *reply_socket << std::endl;
         
     }
     catch(std::exception& e)
     {
         glog.is(die) &&
-            glog << "cannot bind to: " << database_binding << ": " << e.what()
+            glog << "cannot bind to: " << *reply_socket << ": " << e.what()
                       << " check AppBaseConfig::database_port";
     }
 
+    
+    
     // subscribe for everything
-    ZeroMQNode::subscribe_all();
+    pubsub_node_.subscribe_all();
     init_sql();
 
 
-    zmq::pollitem_t item = { database_server_, 0, ZMQ_POLLIN, 0 };
-    ZeroMQNode::register_poll_item(item,
-                                   &goby::core::Database::handle_database_request,
-                                   this);
-
-    ZeroMQNode::connect_inbox_slot(&DBOManager::add_raw, dbo_manager_);
+    protobuf_node_.on_receipt<protobuf::DatabaseRequest>(DATABASE_SERVER_SOCKET_ID,
+                                                         &goby::core::Database::handle_database_request,
+                                                         this);
+    
+    ZeroMQNode::get()->connect_inbox_slot(&DBOManager::add_raw, dbo_manager_);
 
 }
 
@@ -111,7 +124,7 @@ void goby::core::Database::init_sql()
     }
     
     // #include <google/protobuf/descriptor.pb.h>
-    DynamicProtobufManager::add_protobuf_file(google::protobuf::FileDescriptorProto::descriptor());
+    DynamicProtobufManager::add_protobuf_file_with_dependencies(google::protobuf::FileDescriptorProto::descriptor()->file());
     dbo_manager_->add_type(google::protobuf::FileDescriptorProto::descriptor());
 
 }
@@ -128,18 +141,12 @@ std::string goby::core::Database::format_filename(const std::string& in)
 
 
 
-void goby::core::Database::handle_database_request(const void* request_data,
-                                                   int request_size,
-                                                   int message_part)
+void goby::core::Database::handle_database_request(const protobuf::DatabaseRequest& proto_request)
 {
-    static protobuf::DatabaseRequest proto_request;
-    static protobuf::DatabaseResponse proto_response;
-
-    proto_request.ParseFromArray(request_data, request_size);
-
     glog.is(debug1) &&
         glog << "Got request: " << proto_request << std::endl;
     
+    static protobuf::DatabaseResponse proto_response;
     switch(proto_request.request_type())
     {
         case protobuf::DatabaseRequest::NEW_PUBLISH:
@@ -167,15 +174,13 @@ void goby::core::Database::handle_database_request(const void* request_data,
                 }
             }
 
-            zmq::message_t zmq_response(proto_response.ByteSize());
-            proto_response.SerializeToArray(zmq_response.data(), zmq_response.size());    
-            database_server_.send(zmq_response);
+            protobuf_node_.send(proto_response, DATABASE_SERVER_SOCKET_ID);
 
             glog.is(debug1) &&
                 glog<< "Sent response: " << proto_response << std::endl;
         }
         break;
-            
+        
         case protobuf::DatabaseRequest::SQL_QUERY:
             // unimplemented
             break;

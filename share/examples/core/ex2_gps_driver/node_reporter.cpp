@@ -13,7 +13,7 @@ int main(int argc, char* argv[])
 }
 
 NodeReporter::NodeReporter()
-    : goby::core::ApplicationBase(&cfg_)
+    : goby::core::Application(&cfg_)
 {
     // from Pressure Sensor Simulator
     subscribe<DepthReading>(&NodeReporter::handle_depth, this);

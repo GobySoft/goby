@@ -26,6 +26,8 @@
 
 #include "goby/protobuf/core_database_request.pb.h"
 #include "database_config.pb.h"
+#include "goby/core/libcore/protobuf_node.h"
+#include "goby/core/libcore/pubsub_node.h"
 
 namespace goby
 {
@@ -40,16 +42,18 @@ namespace goby
             
             void init_sql();
             std::string format_filename(const std::string& in);
-
-            void handle_database_request(const void* data, int size, int message_part);
-            
+            void handle_database_request(const protobuf::DatabaseRequest& proto_request);
             
           private:
             static protobuf::DatabaseConfig cfg_;
-            zmq::socket_t database_server_;
+
+            PubSubNode pubsub_node_;
+            StaticProtobufNode protobuf_node_;
+            
             DBOManager* dbo_manager_;
             int last_unique_id_;
-  
+
+            enum { DATABASE_SERVER_SOCKET_ID = 103996 };
             enum { MAX_LOOP_FREQ = 1 };
             
         };

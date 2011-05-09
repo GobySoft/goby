@@ -7,7 +7,7 @@
 #include "gps_nmea.pb.h"
 #include "depth_reading.pb.h"
 
-class NodeReporter : public goby::core::ApplicationBase
+class NodeReporter : public goby::core::Application
 {
 public:
     NodeReporter();

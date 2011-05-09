@@ -27,7 +27,7 @@ namespace goby
 {
     namespace core
     {
-        class ZeroMQApplicationBase : public virtual goby::core::ZeroMQNode, public goby::core::ApplicationBase
+        class ZeroMQApplicationBase : public goby::core::ApplicationBase
         {
             
           protected:
@@ -90,7 +90,7 @@ namespace goby
 
                 glog.is(debug2) &&
                     glog << "timeout set to: " << timeout << " microseconds." << std::endl;
-                bool had_events = ZeroMQNode::poll(timeout);
+                bool had_events = ZeroMQNode::get()->poll(timeout);
                 if(!had_events)
                 {
                     // no message, time to call loop()            

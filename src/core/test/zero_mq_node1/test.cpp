@@ -20,7 +20,7 @@
 
 #include <boost/thread.hpp>
 
-void node2_inbox(goby::core::MarshallingScheme marshalling_scheme,
+void node_inbox(goby::core::MarshallingScheme marshalling_scheme,
                  const std::string& identifier,
                  const void* data,
                  int size,
@@ -31,7 +31,7 @@ int inbox_count_ = 0;
 const char data_ [] = {'h', 'i', '\0'};
 
 enum {
-    SOCKET_SUBSCRIBE = 0, SOCKET_PUBLISH = 1 
+    SOCKET_SUBSCRIBE = 240, SOCKET_PUBLISH = 211
 };
     
 
@@ -39,29 +39,34 @@ int main(int argc, char* argv[])
 {
     goby::glog.add_stream(goby::util::Logger::DEBUG3, &std::cerr);
     goby::glog.set_name(argv[0]);
-
-
-    goby::core::ZeroMQNode node1;
-    goby::core::ZeroMQNode node2;
+    
+    goby::core::ZeroMQNode& node = *goby::core::ZeroMQNode::get();
 
     goby::core::protobuf::ZeroMQNodeConfig pubsub_cfg;
-    goby::core::protobuf::ZeroMQNodeConfig::Socket* subscriber_socket = pubsub_cfg.add_socket();
-    subscriber_socket->set_socket_type(goby::core::protobuf::ZeroMQNodeConfig::Socket::SUBSCRIBE);
-    subscriber_socket->set_socket_id(SOCKET_SUBSCRIBE);
-    subscriber_socket->set_ethernet_address("127.0.0.1");
-    std::cout << subscriber_socket->DebugString() << std::endl;
 
-    goby::core::protobuf::ZeroMQNodeConfig::Socket* publisher_socket = pubsub_cfg.add_socket();
-    publisher_socket->set_socket_type(goby::core::protobuf::ZeroMQNodeConfig::Socket::PUBLISH);
-    publisher_socket->set_ethernet_address("127.0.0.1");
-    publisher_socket->set_socket_id(SOCKET_PUBLISH);
+    {
+            
+        goby::core::protobuf::ZeroMQNodeConfig::Socket* subscriber_socket = pubsub_cfg.add_socket();
+        subscriber_socket->set_socket_type(goby::core::protobuf::ZeroMQNodeConfig::Socket::SUBSCRIBE);
+        subscriber_socket->set_socket_id(SOCKET_SUBSCRIBE);
+        subscriber_socket->set_ethernet_address("127.0.0.1");
+        std::cout << subscriber_socket->DebugString() << std::endl;
+    }
 
-    std::cout << publisher_socket->DebugString() << std::endl;
+    {
+            
+        goby::core::protobuf::ZeroMQNodeConfig::Socket* publisher_socket = pubsub_cfg.add_socket();
+        publisher_socket->set_socket_type(goby::core::protobuf::ZeroMQNodeConfig::Socket::PUBLISH);
+        publisher_socket->set_ethernet_address("127.0.0.1");
+        publisher_socket->set_socket_id(SOCKET_PUBLISH);
+        std::cout << publisher_socket->DebugString() << std::endl;
+    }
     
-    node1.set_cfg(pubsub_cfg);
-    node2.set_cfg(pubsub_cfg);
-    node2.connect_inbox_slot(&node2_inbox);
-    node2.subscribe_all(SOCKET_SUBSCRIBE);
+
+    
+    node.set_cfg(pubsub_cfg);
+    node.connect_inbox_slot(&node_inbox);
+    node.subscribe_all(SOCKET_SUBSCRIBE);
 
     usleep(1e3);
 
@@ -69,8 +74,8 @@ int main(int argc, char* argv[])
     for(int i = 0; i < test_count; ++i)
     {
         std::cout << "publishing " << data_ << std::endl;
-        node1.send(goby::core::MARSHALLING_CSTR, identifier_, &data_, 3, SOCKET_PUBLISH);
-        node2.poll(1e6);
+        node.send(goby::core::MARSHALLING_CSTR, identifier_, &data_, 3, SOCKET_PUBLISH);
+        node.poll(1e6);
     }
 
     assert(inbox_count_ == test_count);
@@ -79,7 +84,7 @@ int main(int argc, char* argv[])
 }
 
 
-void node2_inbox(goby::core::MarshallingScheme marshalling_scheme,
+void node_inbox(goby::core::MarshallingScheme marshalling_scheme,
                  const std::string& identifier,
                  const void* data,
                  int size,
@@ -88,6 +93,7 @@ void node2_inbox(goby::core::MarshallingScheme marshalling_scheme,
     assert(identifier == identifier_);
     assert(marshalling_scheme == goby::core::MARSHALLING_CSTR);
     assert(!strcmp(static_cast<const char*>(data), data_));
+    assert(socket_id == SOCKET_SUBSCRIBE);
     
     std::cout << "Received: " << static_cast<const char*>(data) << std::endl;
     ++inbox_count_;

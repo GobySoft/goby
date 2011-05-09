@@ -15,7 +15,7 @@ int main(int argc, char* argv[])
 }
 
 GPSDriver::GPSDriver()
-    : goby::core::ApplicationBase(&cfg_),
+    : goby::core::Application(&cfg_),
       serial_(cfg_.serial_port(), cfg_.serial_baud(), cfg_.end_line())
 {
     serial_.start();

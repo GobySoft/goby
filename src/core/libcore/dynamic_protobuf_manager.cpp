@@ -32,12 +32,22 @@ boost::shared_ptr<google::protobuf::Message> goby::core::DynamicProtobufManager:
         throw(std::runtime_error("Unknown type " + protobuf_type_name + ", be sure it is loaded with call to add_protobuf_file()"));
 }
 
+const google::protobuf::FileDescriptor* goby::core::DynamicProtobufManager::add_protobuf_file_with_dependencies(const google::protobuf::FileDescriptor* file_descriptor)
+{
+    for(int i = 0, n = file_descriptor->dependency_count(); i < n; ++i)
+    {
+        google::protobuf::FileDescriptorProto proto_file;
+        file_descriptor->dependency(i)->CopyTo(&proto_file);
+        add_protobuf_file(proto_file);
+    }
+    add_protobuf_file(file_descriptor);
+}
 
 
-const google::protobuf::FileDescriptor* goby::core::DynamicProtobufManager::add_protobuf_file(const google::protobuf::Descriptor* descriptor)
+const google::protobuf::FileDescriptor* goby::core::DynamicProtobufManager::add_protobuf_file(const google::protobuf::FileDescriptor* file_descriptor)
 {
     google::protobuf::FileDescriptorProto proto_file;
-    descriptor->file()->CopyTo(&proto_file);
+    file_descriptor->CopyTo(&proto_file);
     return add_protobuf_file(proto_file);
 }
     

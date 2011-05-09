@@ -79,7 +79,8 @@ goby::core::DBOManager::~DBOManager()
 void goby::core::DBOManager::add_raw(MarshallingScheme marshalling_scheme,
                                      const std::string& identifier,
                                      const void* data,
-                                     int size)
+                                     int size,
+                                     int socket_id)
 {
     static int i = 0;
     RawEntry *new_entry = new RawEntry();

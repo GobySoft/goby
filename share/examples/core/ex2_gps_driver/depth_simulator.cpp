@@ -7,11 +7,11 @@
 
 using goby::core::operator<<;
 
-class DepthSimulator : public goby::core::ApplicationBase
+class DepthSimulator : public goby::core::Application
 {
 public:
     DepthSimulator()
-        : goby::core::ApplicationBase(&cfg_)
+        : goby::core::Application(&cfg_)
         { }
 
     void loop()

@@ -3,7 +3,7 @@
 
 using goby::core::operator<<;
 
-class HelloWorld2 : public goby::core::ApplicationBase
+class HelloWorld2 : public goby::core::Application
 {
 public:
     HelloWorld2()

@@ -104,7 +104,8 @@ namespace goby
             void add_raw(MarshallingScheme marshalling_scheme,
                          const std::string& identifier,
                          const void* data,
-                         int size);
+                         int size,
+                         int socket_id);
             
             
             /// \brief commit all changes to the Wt::Dbo SQL database
@@ -135,9 +136,7 @@ namespace goby
                     // create new blank message if none given
                     if(!p)
                     {
-                        p_.reset(DynamicProtobufManager::msg_factory().GetPrototype(
-                                     DynamicProtobufManager::descriptor_pool().FindMessageTypeByName(
-                                         dbo_map.left.at(i)))->New());
+                        p_ = DynamicProtobufManager::new_protobuf_message(dbo_map.left.at(i));
                     }
                 }
                 
@@ -206,7 +205,7 @@ namespace Wt
             template<typename A>
                 static void apply(goby::core::DBOManager::ProtoBufWrapper<i>& wrapper, A& action)
             {
-                Wt::Dbo::field(action, wrapper.unique_id(), "id");
+                Wt::Dbo::field(action, wrapper.unique_id(), "raw_id");
                 protobuf_message_persist(wrapper.msg(), action);
             }
         };

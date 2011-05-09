@@ -17,20 +17,15 @@
 #ifndef APPLICATION20100908H
 #define APPLICATION20100908H
 
-#include <boost/shared_ptr.hpp>
-#include <boost/date_time.hpp>
-
-#include <google/protobuf/io/zero_copy_stream_impl.h>
-
 #include "goby/util/logger.h"
 #include "goby/core/core_helpers.h"
 
 #include "goby/protobuf/config.pb.h"
-#include "goby/protobuf/core_database_request.pb.h"
 #include "goby/protobuf/header.pb.h"
 
+#include "database_client.h"
+#include "pubsub_node.h"
 #include "zeromq_application_base.h"
-#include "protobuf_node.h"
 
 namespace google { namespace protobuf { class Message; } }
 namespace goby
@@ -40,7 +35,7 @@ namespace goby
     namespace core
     {
         /// Base class provided for users to generate applications that participate in the Goby publish/subscribe architecture.
-        class Application : public StaticProtobufNode, public ZeroMQApplicationBase
+        class Application : public ZeroMQApplicationBase
         {
           protected:
             // make these more accessible
@@ -52,7 +47,8 @@ namespace goby
             Application(google::protobuf::Message* cfg = 0);
             virtual ~Application();
             //@}            
-            
+
+
             /// \name Publish / Subscribe
             //@{
             
@@ -78,7 +74,7 @@ namespace goby
 
             //@}
 
-
+            
             /// \brief Subscribe to a message (of any type derived from google::protobuf::Message)            
             ///
             /// \param handler Function object to be called as soon as possible upon receipt of a message of this type. The signature of `handler` must match: void handler(const ProtoBufMessage& msg). if `handler` is omitted, no handler is called and only the newest message buffer is updated upon message receipt (for calls to newest<ProtoBufMessage>())
@@ -88,14 +84,7 @@ namespace goby
                     boost::function<void (const ProtoBufMessage&)>()
                     )
              {
-                 if(base_cfg().pubsub_config().using_pubsub())
-                 {
-                     glog.is(warn) && glog << "Ignoring subscribe since we have `base.pubsub_config.using_pubsub`=false" << std::endl;
-                     return;
-                 }
-    
-                 StaticProtobufNode::subscribe<ProtoBufMessage>(
-                     SOCKET_SUBSCRIBE, handler);
+                 pubsub_node_.subscribe<ProtoBufMessage>(handler);
              }
              
             
@@ -106,26 +95,28 @@ namespace goby
             template<typename ProtoBufMessage, class C>
                 void subscribe(void(C::*mem_func)(const ProtoBufMessage&),
                                C* obj)
-            { subscribe<ProtoBufMessage>(boost::bind(mem_func, obj, _1)); }
+            { pubsub_node_.subscribe<ProtoBufMessage>(boost::bind(mem_func, obj, _1)); }
+            
+            /// \name Message Accessors
+            //@{
+            /// \brief Fetchs the newest received message of this type 
+            ///
+            /// You must subscribe() for this type before using this method
+            template<typename ProtoBufMessage>
+                const ProtoBufMessage& newest()
+            {
+                return pubsub_node_.newest<ProtoBufMessage>();
+            }
+            
+            //@}
+
             
             
           private:
             Application(const Application&);
             Application& operator= (const Application&);
 
-            enum {
-                SOCKET_SUBSCRIBE = 103998, SOCKET_PUBLISH = 103999
-            };
             void __set_up_sockets();
-
-
-            // add the protobuf description of the given descriptor (essentially the
-            // instructions on how to make the descriptor or message meta-data)
-            // to the notification_ message. 
-            void __insert_file_descriptor_proto(
-                const google::protobuf::FileDescriptor* file_descriptor,
-                protobuf::DatabaseRequest* request);
-            
 
             // adds required fields to the Header if not given by the derived application
             void __finalize_header(
@@ -133,14 +124,13 @@ namespace goby
                 const goby::core::Application::PublishDestination dest_type,
                 const std::string& dest_platform);
             
+            
             void __publish(google::protobuf::Message& msg, const std::string& platform_name,  PublishDestination dest);
+
             
           private:
-            // database related things
-            zmq::socket_t database_client_;
-            std::set<const google::protobuf::FileDescriptor*> registered_file_descriptors_;
-            
-
+            DatabaseClient database_client_;
+            PubSubNode pubsub_node_;
         };
     }
 }

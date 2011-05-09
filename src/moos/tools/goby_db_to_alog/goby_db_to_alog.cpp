@@ -137,7 +137,7 @@ public:
         }
 
 private:
-    void iterate() { }
+    void iterate() { assert(false); }
 
 private:
     static GobyDbToAlogConfig cfg_;

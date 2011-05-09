@@ -28,71 +28,73 @@ using goby::glog;
 using goby::util::hex_encode;
 
 
+boost::shared_ptr<goby::core::ZeroMQNode> goby::core::ZeroMQNode::inst_(new ZeroMQNode());
+
+
 goby::core::ZeroMQNode::ZeroMQNode()
     : context_(1)
 {
 }
 
-void goby::core::ZeroMQNode::set_cfg(const protobuf::ZeroMQNodeConfig& cfg)
+void goby::core::ZeroMQNode::process_cfg(const protobuf::ZeroMQNodeConfig& cfg)
 {
-    cfg_.CopyFrom(cfg);
-    for(int i = 0, n = cfg_.socket_size(); i < n; ++i)
+    for(int i = 0, n = cfg.socket_size(); i < n; ++i)
     {
-        if(!sockets_.count(cfg_.socket(i).socket_id()))
+        if(!sockets_.count(cfg.socket(i).socket_id()))
         {
             // TODO (tes) - check for compatible socket type
             boost::shared_ptr<zmq::socket_t> new_socket(
-                new zmq::socket_t(context_, socket_type(cfg_.socket(i).socket_type())));
+                new zmq::socket_t(context_, socket_type(cfg.socket(i).socket_type())));
             
-            sockets_.insert(std::make_pair(cfg_.socket(i).socket_id(), new_socket));
+            sockets_.insert(std::make_pair(cfg.socket(i).socket_id(), new_socket));
             
             //  Initialize poll set
             zmq::pollitem_t item = { *new_socket, 0, ZMQ_POLLIN, 0 };
 
             // publish sockets can't receive
-            if(cfg_.socket(i).socket_type() != protobuf::ZeroMQNodeConfig::Socket::PUBLISH)
+            if(cfg.socket(i).socket_type() != protobuf::ZeroMQNodeConfig::Socket::PUBLISH)
             {
                 register_poll_item(item,
                                    boost::bind(&goby::core::ZeroMQNode::handle_receive,
-                                               this, _1, _2, _3, cfg_.socket(i).socket_id()));
+                                               this, _1, _2, _3, cfg.socket(i).socket_id()));
             }
         }
 
-        boost::shared_ptr<zmq::socket_t> this_socket = socket_from_id(cfg_.socket(i).socket_id());
+        boost::shared_ptr<zmq::socket_t> this_socket = socket_from_id(cfg.socket(i).socket_id());
         
-        if(cfg_.socket(i).connect_or_bind() == protobuf::ZeroMQNodeConfig::Socket::CONNECT)
+        if(cfg.socket(i).connect_or_bind() == protobuf::ZeroMQNodeConfig::Socket::CONNECT)
         {
             std::string endpoint;
-            switch(cfg_.socket(i).transport())
+            switch(cfg.socket(i).transport())
             {
                 case protobuf::ZeroMQNodeConfig::Socket::INPROC:
-                    endpoint = "inproc://" + cfg_.socket(i).socket_name();
+                    endpoint = "inproc://" + cfg.socket(i).socket_name();
                     break;
                     
                 case protobuf::ZeroMQNodeConfig::Socket::IPC:
-                    endpoint = "ipc://" + cfg_.socket(i).socket_name();
+                    endpoint = "ipc://" + cfg.socket(i).socket_name();
                     break;
                     
                 case protobuf::ZeroMQNodeConfig::Socket::TCP:
-                    endpoint = "tcp://" + cfg_.socket(i).ethernet_address() + ":"
-                        + as<std::string>(cfg_.socket(i).ethernet_port());
+                    endpoint = "tcp://" + cfg.socket(i).ethernet_address() + ":"
+                        + as<std::string>(cfg.socket(i).ethernet_port());
                     break;
                     
                 case protobuf::ZeroMQNodeConfig::Socket::PGM:
-                    endpoint = "pgm://" + cfg_.socket(i).ethernet_address() + ";"
-                        + cfg_.socket(i).multicast_address() + ":" + as<std::string>(cfg_.socket(i).ethernet_port());
+                    endpoint = "pgm://" + cfg.socket(i).ethernet_address() + ";"
+                        + cfg.socket(i).multicast_address() + ":" + as<std::string>(cfg.socket(i).ethernet_port());
                 break;
                     
                 case protobuf::ZeroMQNodeConfig::Socket::EPGM:
-                    endpoint = "epgm://" + cfg_.socket(i).ethernet_address() + ";"
-                        + cfg_.socket(i).multicast_address() + ":" + as<std::string>(cfg_.socket(i).ethernet_port());
+                    endpoint = "epgm://" + cfg.socket(i).ethernet_address() + ";"
+                        + cfg.socket(i).multicast_address() + ":" + as<std::string>(cfg.socket(i).ethernet_port());
                     break;
             }
 
             try
             {
                 this_socket->connect(endpoint.c_str());
-                glog.is(debug1) && glog << cfg_.socket(i).ShortDebugString() << " connected to endpoint - " << endpoint << std::endl;
+                glog.is(debug1) && glog << cfg.socket(i).ShortDebugString() << " connected to endpoint - " << endpoint << std::endl;
             }    
             catch(std::exception& e)
             {
@@ -100,21 +102,21 @@ void goby::core::ZeroMQNode::set_cfg(const protobuf::ZeroMQNodeConfig& cfg)
                     glog << "cannot connect to: " << endpoint << ": " << e.what() << std::endl;
             }
         }
-        else if(cfg_.socket(i).connect_or_bind() == protobuf::ZeroMQNodeConfig::Socket::BIND)
+        else if(cfg.socket(i).connect_or_bind() == protobuf::ZeroMQNodeConfig::Socket::BIND)
         {
             std::string endpoint;
-            switch(cfg_.socket(i).transport())
+            switch(cfg.socket(i).transport())
             {
                 case protobuf::ZeroMQNodeConfig::Socket::INPROC:
-                    endpoint = "inproc://" + cfg_.socket(i).socket_name();
+                    endpoint = "inproc://" + cfg.socket(i).socket_name();
                     break;
                     
                 case protobuf::ZeroMQNodeConfig::Socket::IPC:
-                    endpoint = "ipc://" + cfg_.socket(i).socket_name();
+                    endpoint = "ipc://" + cfg.socket(i).socket_name();
                     break;
                     
                 case protobuf::ZeroMQNodeConfig::Socket::TCP:
-                    endpoint = "tcp://*:" + as<std::string>(cfg_.socket(i).ethernet_port());
+                    endpoint = "tcp://*:" + as<std::string>(cfg.socket(i).ethernet_port());
                     break;
                     
                 case protobuf::ZeroMQNodeConfig::Socket::PGM:
@@ -129,7 +131,7 @@ void goby::core::ZeroMQNode::set_cfg(const protobuf::ZeroMQNodeConfig& cfg)
             try
             {
                 this_socket->bind(endpoint.c_str());
-                glog.is(debug1) && glog << cfg_.socket(i).ShortDebugString() << "bound to endpoint - " << endpoint << std::endl;
+                glog.is(debug1) && glog << cfg.socket(i).ShortDebugString() << "bound to endpoint - " << endpoint << std::endl;
             }    
             catch(std::exception& e)
             {
@@ -178,8 +180,17 @@ void goby::core::ZeroMQNode::subscribe(MarshallingScheme marshalling_scheme,
                                        const std::string& identifier,
                                        int socket_id)
 {
+    pre_subscribe_hooks(marshalling_scheme, identifier, socket_id);
+    
     std::string zmq_filter = make_header(marshalling_scheme, identifier);
+    int NULL_TERMINATOR_SIZE = 1;
+    zmq_filter.resize(zmq_filter.size() - NULL_TERMINATOR_SIZE);
     socket_from_id(socket_id)->setsockopt(ZMQ_SUBSCRIBE, zmq_filter.c_str(), zmq_filter.size());
+    
+    glog.is(debug1) && glog << "Subscribed for marshalling " << marshalling_scheme << " with identifier: " << identifier << "using zmq_filter: " << goby::util::hex_encode(zmq_filter) << std::endl;
+
+        
+    post_send_hooks(marshalling_scheme, identifier, socket_id);
 }
 
 void goby::core::ZeroMQNode::send(MarshallingScheme marshalling_scheme,
@@ -188,6 +199,8 @@ void goby::core::ZeroMQNode::send(MarshallingScheme marshalling_scheme,
                                   int body_size,
                                   int socket_id)
 {
+    pre_send_hooks(marshalling_scheme, identifier, socket_id);
+    
     std::string header = make_header(marshalling_scheme, identifier);
 
     zmq::message_t msg(header.size() + body_size);
@@ -197,6 +210,8 @@ void goby::core::ZeroMQNode::send(MarshallingScheme marshalling_scheme,
     glog.is(debug2) &&
         glog << "message hex: " << hex_encode(std::string(static_cast<const char*>(msg.data()),msg.size())) << std::endl;
     socket_from_id(socket_id)->send(msg);
+
+    post_send_hooks(marshalling_scheme, identifier, socket_id);
 }
 
 

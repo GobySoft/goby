@@ -1,14 +1,7 @@
 import "goby/protobuf/option_extensions.proto";
 import "goby/protobuf/zero_mq_node_config.proto";
-
-message PubSubSocketConfig
-{
-  optional bool using_pubsub = 1 [default = true, (description)="Set false to disable the publish / subscribe functionality of this node"]; 
- optional string ethernet_address = 2 [default = "127.0.0.1", (description)="primary IP address of the interface to multicast over"];
-  optional string multicast_address = 3 [default = "239.255.7.15", (description)="multicast IP address to use; 239.252.0.0-239.255.255.255 is recommended (site-local). See also http://www.iana.org/assignments/multicast-addresses/multicast-addresses.xml"];
-  optional uint32 ethernet_port = 4 [default = 11142];
-
-}
+import "goby/protobuf/pubsub_node_config.proto";
+import "goby/protobuf/core_database_request.proto";
 
 message GLogConfig
 {
@@ -36,15 +29,6 @@ message GLogConfig
   
 }
 
-message DatabaseConfig
-{
-  optional bool using_database = 10 [default = true, (description)="True if using goby_database, false if no database is to be run"];
-  optional string database_address = 11 [(example)="127.0.0.1",
-                                         (description)="TCP address to send database requests on. If omitted and using_database==true, `ethernet_address` is used"];
-  optional uint32 database_port = 12 [(example)="11142",
-                                      (description)="TCP port to send database requests on. If omitted and using_database==true, `ethernet_port` is used"];  
-}
-
 
 message AppBaseConfig
 {
@@ -57,9 +41,9 @@ message AppBaseConfig
   optional string platform_name = 3 [default="unnamed_goby_platform",
                                      (description) = "a unique name for this platform (a platform in this context is a ship, AUV, workstation, etc.)"];
   
-  optional PubSubSocketConfig pubsub_config = 10 [(description)="configure the connection to the publish / subscribe message passing architecture"];
+  optional goby.core.protobuf.PubSubSocketConfig pubsub_config = 10 [(description)="configure the connection to the publish / subscribe message passing architecture"];
   optional GLogConfig glog_config = 11 [(description)="configure the Goby Logger (TTY terminal and file debugging logger)"];
-  optional DatabaseConfig database_config = 12 [(description)="configure the Goby Database (SQL Database) to log the publish/subscribe transactions"];
+  optional goby.core.protobuf.DatabaseClientConfig database_config = 12 [(description)="configure the Goby Database (SQL Database) to log the publish/subscribe transactions"];
   
   // advanced options
   optional goby.core.protobuf.ZeroMQNodeConfig additional_socket_config = 100 [(description)= "open other ZeroMQ sockets, note that `socket_id`s 103998 and 103999 are reserved for the publish / subscribe functionality"];

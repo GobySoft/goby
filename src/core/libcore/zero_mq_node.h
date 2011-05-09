@@ -36,8 +36,11 @@ namespace goby
         class ZeroMQNode
         {
           public:
-            ZeroMQNode();
-            virtual ~ZeroMQNode();
+           static ZeroMQNode* get()
+            {
+                return inst_.get();
+            }
+            
             
             template<class C>
                 void connect_inbox_slot(
@@ -49,7 +52,16 @@ namespace goby
                     C* obj)
             { connect_inbox_slot(boost::bind(mem_func, obj, _1, _2, _3, _4, _5)); }
 
-            void set_cfg(const protobuf::ZeroMQNodeConfig& cfg);
+            void set_cfg(const protobuf::ZeroMQNodeConfig& cfg)
+            {
+                process_cfg(cfg);
+                cfg_.CopyFrom(cfg);
+            }
+            void merge_cfg(const protobuf::ZeroMQNodeConfig& cfg)
+            {
+                process_cfg(cfg);
+                cfg_.MergeFrom(cfg);
+            }
             
             void connect_inbox_slot(
                 boost::function<void (MarshallingScheme marshalling_scheme,
@@ -66,7 +78,7 @@ namespace goby
                       const void* data,
                       int size,
                       int socket_id);
-
+            
             void subscribe(MarshallingScheme marshalling_scheme,
                            const std::string& identifier,
                            int socket_id);
@@ -93,8 +105,34 @@ namespace goby
             
             zmq::context_t& zmq_context() { return context_; }
 
+
+            boost::signal<void (MarshallingScheme marshalling_scheme,
+                                const std::string& identifier,
+                                int socket_id)> pre_send_hooks;
+
+            boost::signal<void (MarshallingScheme marshalling_scheme,
+                                const std::string& identifier,
+                                int socket_id)> pre_subscribe_hooks;
+
+            boost::signal<void (MarshallingScheme marshalling_scheme,
+                                const std::string& identifier,
+                                int socket_id)> post_send_hooks;
+
+            boost::signal<void (MarshallingScheme marshalling_scheme,
+                                const std::string& identifier,
+                                int socket_id)> post_subscribe_hooks;
+            
+            
             
           private:
+            ZeroMQNode();
+            virtual ~ZeroMQNode();
+
+            ZeroMQNode(const ZeroMQNode&);
+            ZeroMQNode& operator= (const ZeroMQNode&);
+            
+            void process_cfg(const protobuf::ZeroMQNodeConfig& cfg);
+
             std::string make_header(MarshallingScheme marshalling_scheme,
                                     const std::string& protobuf_type_name);
 
@@ -104,8 +142,12 @@ namespace goby
             
             boost::shared_ptr<zmq::socket_t> socket_from_id(int socket_id);
 
-            
+            // so we can use shared_ptr to hold the singleton
+            template<typename T>
+                friend void boost::checked_delete(T*);
           private:
+            static boost::shared_ptr<ZeroMQNode> inst_;
+                        
             zmq::context_t context_;
             std::map<int, boost::shared_ptr<zmq::socket_t> > sockets_;
             std::vector<zmq::pollitem_t> poll_items_;

@@ -31,8 +31,10 @@ namespace goby
           public:
             static boost::shared_ptr<google::protobuf::Message> new_protobuf_message(
                 const std::string& protobuf_type_name);
+            static const google::protobuf::FileDescriptor* add_protobuf_file_with_dependencies(
+                const google::protobuf::FileDescriptor* file_descriptor);
             static const google::protobuf::FileDescriptor* add_protobuf_file(
-                const google::protobuf::Descriptor* descriptor);
+                const google::protobuf::FileDescriptor* file_descriptor);
             static const google::protobuf::FileDescriptor* add_protobuf_file(
                 const google::protobuf::FileDescriptorProto& proto);
             

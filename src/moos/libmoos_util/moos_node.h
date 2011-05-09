@@ -23,10 +23,8 @@
 namespace goby
 {
     namespace moos
-    {
-        
-        
-        class MOOSNode : public virtual goby::core::ZeroMQNode
+    {        
+        class MOOSNode
         {
           protected:
             MOOSNode();

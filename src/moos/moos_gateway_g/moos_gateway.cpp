@@ -134,7 +134,7 @@ void goby::moos::MOOSGateway::loop()
 
         glog.is(verbose) &&
             glog << group("from_moos") << msg << std::endl;    
-
+        
         MOOSNode::publish(msg);
     }
     

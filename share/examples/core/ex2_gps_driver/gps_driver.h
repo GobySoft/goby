@@ -11,7 +11,7 @@
 class NMEASentence;
 class GPSSentenceGGA;
 
-class GPSDriver : public goby::core::ApplicationBase
+class GPSDriver : public goby::core::Application
 {
 public:
     GPSDriver();

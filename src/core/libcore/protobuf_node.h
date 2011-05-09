@@ -25,17 +25,19 @@
 
 #include "subscription.h"
 #include "zero_mq_node.h"
+#include "dynamic_protobuf_manager.h"
 
 namespace goby
 {
     namespace core
     {
-        class ProtobufNode : public virtual ZeroMQNode
+        class ProtobufNode
         {
+
           protected:
             ProtobufNode()
             {
-                ZeroMQNode::connect_inbox_slot(&ProtobufNode::inbox, this);
+                ZeroMQNode::get()->connect_inbox_slot(&ProtobufNode::inbox, this);
             }
 
             
@@ -45,9 +47,11 @@ namespace goby
 
             virtual void protobuf_inbox(const std::string& protobuf_type_name,
                                         const void* data,
-                                        int size) = 0;
+                                        int size,
+                                        int socket_id) = 0;
 
             void send(const google::protobuf::Message& msg, int socket_id);
+
             
             void subscribe(const std::string& identifier, int socket_id);
 
@@ -62,14 +66,13 @@ namespace goby
 
         class StaticProtobufNode : public ProtobufNode
         {
-          protected:
-
+          public:
             StaticProtobufNode()
             { }
                         
             virtual ~StaticProtobufNode()
             { }
-
+            
             
             /// \brief Subscribe to a message (of any type derived from google::protobuf::Message)            
             ///
@@ -102,7 +105,11 @@ namespace goby
                                 C* obj)
             { on_receipt<ProtoBufMessage>(socket_id, boost::bind(mem_func, obj, _1)); }
 
-             
+
+            void send(const google::protobuf::Message& msg, int socket_id)
+            {
+                ProtobufNode::send(msg, socket_id);
+            }
              
             
             /// \name Message Accessors
@@ -120,7 +127,8 @@ namespace goby
           private:
             void protobuf_inbox(const std::string& protobuf_type_name,
                                 const void* data,
-                                int size);
+                                int size,
+                                int socket_id);
             
 
           private:
@@ -132,20 +140,20 @@ namespace goby
 
         class DynamicProtobufNode : public ProtobufNode
         {
-          protected:
-            
+          protected:  
             DynamicProtobufNode()
             { }
             
             virtual ~DynamicProtobufNode()
             { }
-
-            virtual void dynamic_protobuf_inbox(boost::shared_ptr<google::protobuf::Message> msg) = 0;
+            
+            virtual void dynamic_protobuf_inbox(boost::shared_ptr<google::protobuf::Message> msg, int socket_id) = 0;
             
           private:
             void protobuf_inbox(const std::string& protobuf_type_name,
                                 const void* data,
-                                int size);
+                                int size,
+                                int socket_id);
 
         };
         
@@ -160,6 +168,8 @@ void goby::core::StaticProtobufNode::on_receipt(
     boost::function<void (const ProtoBufMessage&)> handler
     /*= boost::function<void (const ProtoBufMessage&)>()*/)
 {
+    DynamicProtobufManager::add_protobuf_file_with_dependencies(ProtoBufMessage::descriptor()->file());
+    
     using goby::glog;
     
     const std::string& protobuf_type_name = ProtoBufMessage::descriptor()->full_name();

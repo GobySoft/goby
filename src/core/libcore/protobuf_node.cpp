@@ -29,34 +29,38 @@ void goby::core::ProtobufNode::inbox(MarshallingScheme marshalling_scheme,
                                      int socket_id)
 {
     if(marshalling_scheme == MARSHALLING_PROTOBUF)
-        protobuf_inbox(identifier.substr(0, identifier.find("/")), data, size);
+        protobuf_inbox(identifier.substr(0, identifier.find("/")), data, size, socket_id);
 }
 
 
 void goby::core::ProtobufNode::send(const google::protobuf::Message& msg, int socket_id)
 {
+    DynamicProtobufManager::add_protobuf_file_with_dependencies(msg.GetDescriptor()->file());
+    
     int size = msg.ByteSize();
     char buffer[size];
     msg.SerializeToArray(&buffer, size);
-    ZeroMQNode::send(MARSHALLING_PROTOBUF, msg.GetDescriptor()->full_name() + "/",
-                     &buffer, size, socket_id);
+    ZeroMQNode::get()->send(MARSHALLING_PROTOBUF, msg.GetDescriptor()->full_name() + "/",
+                            &buffer, size, socket_id);
 }
             
 void goby::core::ProtobufNode::subscribe(const std::string& identifier, int socket_id)
 {
-    ZeroMQNode::subscribe(MARSHALLING_PROTOBUF, identifier, socket_id);
+    glog.is(debug1) && glog << "Subscribing for MARSHALLING_PROTOBUF type: " << identifier << std::endl;
+    ZeroMQNode::get()->subscribe(MARSHALLING_PROTOBUF, identifier, socket_id);
 }
 
 void goby::core::StaticProtobufNode::protobuf_inbox(const std::string& protobuf_type_name,
                                                     const void* data,
-                                                    int size)
+                                                    int size,
+                                                    int socket_id)
 {
     boost::unordered_map<std::string, boost::shared_ptr<SubscriptionBase> >::iterator it = subscriptions_.find(protobuf_type_name);
     
     if(it != subscriptions_.end())
         it->second->post(data, size);
     else
-        throw(std::runtime_error("No subscription to protobuf type: " + protobuf_type_name));
+        glog.is(debug1) && glog << warn << "No handler for static protobuf type: " << protobuf_type_name << " from socket id: " << socket_id << std::endl;
 }
 
 
@@ -64,12 +68,13 @@ void goby::core::StaticProtobufNode::protobuf_inbox(const std::string& protobuf_
 
 void goby::core::DynamicProtobufNode::protobuf_inbox(const std::string& protobuf_type_name,
                                                      const void* data,
-                                                     int size)
+                                                     int size,
+                                                     int socket_id)
 {
     boost::shared_ptr<google::protobuf::Message> msg =
         DynamicProtobufManager::new_protobuf_message(protobuf_type_name);
     msg->ParseFromArray(data, size);
-    dynamic_protobuf_inbox(msg);
+    dynamic_protobuf_inbox(msg, socket_id);
 }
 
 

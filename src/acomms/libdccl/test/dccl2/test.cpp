@@ -29,12 +29,12 @@ using goby::acomms::operator+;
 class CustomCodec : public goby::acomms::DCCLFixedFieldCodec
 {
 private:
-    unsigned _size()
+    unsigned size()
         {
             return (part() == HEAD) ? 0 : A_SIZE + B_SIZE;                
         }
     
-    Bitset _encode(const boost::any& field_value)
+    Bitset any_encode(const boost::any& field_value)
         {
             if(part() == HEAD)
             {
@@ -55,7 +55,7 @@ private:
         }
     
     
-    boost::any _decode(Bitset* bits)
+    boost::any any_decode(Bitset* bits)
         {
             if(part() == HEAD)
             {
@@ -77,7 +77,7 @@ private:
         }
     
     
-    void _validate()
+    void validate()
         {
         }
 

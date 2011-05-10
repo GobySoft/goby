@@ -64,7 +64,7 @@ void goby::acomms::DCCLFieldCodecBase::base_encode(Bitset* bits,
                                           const google::protobuf::FieldDescriptor* field)
 {
     MessageHandler msg_handler(field);
-    Bitset new_bits = _encode(base_pre_encode(field_value));
+    Bitset new_bits = any_encode(base_pre_encode(field_value));
     __encode_prepend_bits(new_bits, bits);
 }
 
@@ -73,7 +73,7 @@ void goby::acomms::DCCLFieldCodecBase::base_encode_repeated(Bitset* bits,
                                                    const google::protobuf::FieldDescriptor* field)
 {
     MessageHandler msg_handler(field);
-    Bitset new_bits = _encode_repeated(base_pre_encode_repeated(field_values));
+    Bitset new_bits = any_encode_repeated(base_pre_encode_repeated(field_values));
     __encode_prepend_bits(new_bits, bits);
 }
 
@@ -97,10 +97,10 @@ void goby::acomms::DCCLFieldCodecBase::base_size(unsigned* bit_size,
     MessageHandler msg_handler(field);
 
     if(field)
-        DCCLCommon::logger() << "field: " << field->DebugString() << "size: " << _size(field_value) << std::endl;
+        DCCLCommon::logger() << "field: " << field->DebugString() << "size: " << any_size(field_value) << std::endl;
     
     
-    *bit_size += _size(field_value);
+    *bit_size += any_size(field_value);
 }
 
 void  goby::acomms::DCCLFieldCodecBase::base_size_repeated(unsigned* bit_size,
@@ -108,7 +108,7 @@ void  goby::acomms::DCCLFieldCodecBase::base_size_repeated(unsigned* bit_size,
                                                   const google::protobuf::FieldDescriptor* field)
 {
     MessageHandler msg_handler(field);
-    *bit_size += _size_repeated(field_values);
+    *bit_size += any_size_repeated(field_values);
 }
 
 
@@ -166,7 +166,7 @@ void goby::acomms::DCCLFieldCodecBase::base_decode(Bitset* bits,
     
     DCCLCommon::logger() << "using these bits: " << these_bits << std::endl;
     
-    *field_value = base_post_decode(_decode(&these_bits));    
+    *field_value = base_post_decode(any_decode(&these_bits));    
 }
 
 void goby::acomms::DCCLFieldCodecBase::base_decode_repeated(Bitset* bits,
@@ -189,7 +189,7 @@ void goby::acomms::DCCLFieldCodecBase::base_decode_repeated(Bitset* bits,
     
     DCCLCommon::logger() << "using these bits: " << these_bits << std::endl;
     
-    *field_values = base_post_decode_repeated(_decode_repeated(&these_bits));
+    *field_values = base_post_decode_repeated(any_decode_repeated(&these_bits));
 }
 
 
@@ -212,9 +212,9 @@ unsigned goby::acomms::DCCLFieldCodecBase::base_max_size(const google::protobuf:
     MessageHandler msg_handler(field);
     
     if(this_field())
-        return this_field()->is_repeated() ? _max_size_repeated() : _max_size();
+        return this_field()->is_repeated() ? max_size_repeated() : max_size();
     else
-        return _max_size();
+        return max_size();
 }
 
 
@@ -239,9 +239,9 @@ unsigned goby::acomms::DCCLFieldCodecBase::base_min_size(const google::protobuf:
     MessageHandler msg_handler(field);
     
     if(this_field())
-        return this_field()->is_repeated() ? _min_size_repeated() : _min_size();
+        return this_field()->is_repeated() ? min_size_repeated() : min_size();
     else
-        return _min_size();
+        return min_size();
 }
 
             
@@ -264,10 +264,10 @@ void goby::acomms::DCCLFieldCodecBase::base_validate(const google::protobuf::Fie
 {
     MessageHandler msg_handler(field);
 
-    if(field && (field->options().GetExtension(dccl::in_head) && _variable_size()))
+    if(field && (field->options().GetExtension(dccl::in_head) && variable_size()))
         throw(DCCLException("Variable size codec used in header - header fields must be encoded with fixed size codec."));
     
-    _validate();
+    validate();
 }
             
 void goby::acomms::DCCLFieldCodecBase::base_info(const google::protobuf::Descriptor* desc, std::ostream* os, MessagePart part)
@@ -298,12 +298,12 @@ void goby::acomms::DCCLFieldCodecBase::base_info(const google::protobuf::FieldDe
     else
         indent = "";
 
-    std::string specific_info = _info();
+    std::string specific_info = info();
 
     if(!specific_info.empty())
-        s += boost::trim_copy(_info()) + "\n";
+        s += boost::trim_copy(info()) + "\n";
 
-    if(_variable_size())
+    if(variable_size())
     {
         unsigned max_sz = base_max_size(field);
         unsigned min_sz = base_min_size(field);
@@ -336,7 +336,7 @@ void goby::acomms::DCCLFieldCodecBase::base_info(const google::protobuf::FieldDe
 // DCCLFieldCodecBase protected
 //
 
-std::string goby::acomms::DCCLFieldCodecBase::_info()
+std::string goby::acomms::DCCLFieldCodecBase::info()
 {
     return std::string();
 }
@@ -355,7 +355,7 @@ void goby::acomms::DCCLFieldCodecBase::BitsHandler::transfer_bits(unsigned size)
 
 
 goby::acomms::Bitset
-goby::acomms::DCCLFieldCodecBase::_encode_repeated(const std::vector<boost::any>& field_values)
+goby::acomms::DCCLFieldCodecBase::any_encode_repeated(const std::vector<boost::any>& field_values)
 {
     Bitset out_bits;
     // out_bits = [field_values[2]][field_values[1]][field_values[0]]
@@ -363,9 +363,9 @@ goby::acomms::DCCLFieldCodecBase::_encode_repeated(const std::vector<boost::any>
     {
         Bitset new_bits;
         if(i < field_values.size())
-            new_bits = _encode(field_values[i]);
+            new_bits = any_encode(field_values[i]);
         else
-            new_bits = _encode(boost::any());
+            new_bits = any_encode(boost::any());
         __encode_prepend_bits(new_bits, &out_bits);
     }    
     return out_bits;
@@ -373,7 +373,7 @@ goby::acomms::DCCLFieldCodecBase::_encode_repeated(const std::vector<boost::any>
 }
 
 std::vector<boost::any>
-goby::acomms::DCCLFieldCodecBase::_decode_repeated(Bitset* repeated_bits)
+goby::acomms::DCCLFieldCodecBase::any_decode_repeated(Bitset* repeated_bits)
 {
     std::vector<boost::any> out_values;
     for(int i = 0, n = this_field()->options().GetExtension(dccl::max_repeat); i < n; ++i)
@@ -381,41 +381,41 @@ goby::acomms::DCCLFieldCodecBase::_decode_repeated(Bitset* repeated_bits)
         Bitset these_bits;
 
         BitsHandler bits_handler(&these_bits, repeated_bits);
-        bits_handler.transfer_bits(_min_size());
+        bits_handler.transfer_bits(min_size());
 
-        boost::any value = _decode(&these_bits);
+        boost::any value = any_decode(&these_bits);
         out_values.push_back(value);
     }
     return out_values;
 }
 
-unsigned goby::acomms::DCCLFieldCodecBase::_size_repeated(const std::vector<boost::any>& field_values)
+unsigned goby::acomms::DCCLFieldCodecBase::any_size_repeated(const std::vector<boost::any>& field_values)
 {
     unsigned out = 0;
     for(unsigned i = 0, n = this_field()->options().GetExtension(dccl::max_repeat); i < n; ++i)
     {
         if(i < field_values.size())
-            out += _size(field_values[i]);
+            out += any_size(field_values[i]);
         else
-            out += _size(boost::any());
+            out += any_size(boost::any());
     }    
     return out;
 }
 
-unsigned goby::acomms::DCCLFieldCodecBase::_max_size_repeated()
+unsigned goby::acomms::DCCLFieldCodecBase::max_size_repeated()
 {    
     if(!this_field()->options().HasExtension(dccl::max_repeat))
         throw(DCCLException("Missing dccl.max_repeat option on `repeated` field"));
     else
-        return _max_size() * this_field()->options().GetExtension(dccl::max_repeat);
+        return max_size() * this_field()->options().GetExtension(dccl::max_repeat);
 }
 
-unsigned goby::acomms::DCCLFieldCodecBase::_min_size_repeated()
+unsigned goby::acomms::DCCLFieldCodecBase::min_size_repeated()
 {    
     if(!this_field()->options().HasExtension(dccl::max_repeat))
         throw(DCCLException("Missing dccl.max_repeat option on `repeated` field"));
     else
-        return _min_size() * this_field()->options().GetExtension(dccl::max_repeat);
+        return min_size() * this_field()->options().GetExtension(dccl::max_repeat);
 }
 
 //
@@ -489,11 +489,11 @@ goby::acomms::DCCLFieldCodecBase::MessageHandler::MessageHandler(const google::p
 //
 
 
-unsigned goby::acomms::DCCLFixedFieldCodec::_size_repeated()
+unsigned goby::acomms::DCCLFixedFieldCodec::size_repeated()
 {    
     if(!this_field()->options().HasExtension(dccl::max_repeat))
         throw(DCCLException("Missing dccl.max_repeat option on `repeated` field"));
     else
-        return _size() * this_field()->options().GetExtension(dccl::max_repeat);
+        return size() * this_field()->options().GetExtension(dccl::max_repeat);
 }
 

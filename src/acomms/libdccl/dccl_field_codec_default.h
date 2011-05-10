@@ -56,24 +56,24 @@ namespace goby
             virtual double precision()
             { return has(dccl::precision) ? get(dccl::precision) : 0; }
             
-            virtual void _validate()
+            virtual void validate()
             {
                 require(dccl::min, "dccl.min");
                 require(dccl::max, "dccl.max");
             }
 
-            Bitset _encode(const boost::any& wire_value)
+            Bitset any_encode(const boost::any& wire_value)
             {
                 DCCLCommon::logger() << "starting encode of field with max " << max() << ", min " << min() << ", prec " << precision() << std::endl;
                 
                 if(wire_value.empty())
-                    return Bitset(_size());
+                    return Bitset(size());
                 
                 try
                 {
                     T t = boost::any_cast<T>(wire_value);
                     if(t < min() || t > max())
-                        return Bitset(_size());
+                        return Bitset(size());
 
                     t = goby::util::unbiased_round(t, precision());
                     
@@ -82,7 +82,7 @@ namespace goby
                     
                     t -= min();
                     t *= std::pow(10.0, precision());
-                    return Bitset(_size(), goby::util::as<unsigned long>(t)+1);
+                    return Bitset(size(), goby::util::as<unsigned long>(t)+1);
                 }
                 catch(boost::bad_any_cast& e)
                 {
@@ -90,7 +90,7 @@ namespace goby
                 }                
             }
 
-            boost::any _decode(Bitset* bits)
+            boost::any any_decode(Bitset* bits)
             {
                 unsigned long t = bits->to_ulong();
                 if(!t) return boost::any();
@@ -101,7 +101,7 @@ namespace goby
                         t / (std::pow(10.0, precision())) + min(), precision()));
             }
 
-            unsigned _size()
+            unsigned size()
             {
                 // leave one value for unspecified (always encoded as 0)
                 const unsigned NULL_VALUE = 1;
@@ -113,22 +113,22 @@ namespace goby
         class DCCLDefaultBoolCodec : public DCCLFixedFieldCodec
         {
           private:
-            Bitset _encode(const boost::any& wire_value);
-            boost::any _decode(Bitset* bits);     
-            unsigned _size();
-            void _validate();
+            Bitset any_encode(const boost::any& wire_value);
+            boost::any any_decode(Bitset* bits);     
+            unsigned size();
+            void validate();
         };
         
         class DCCLDefaultStringCodec : public DCCLFieldCodecBase
         {
           private:
-            Bitset _encode(const boost::any& wire_value);
-            boost::any _decode(Bitset* bits);     
-            unsigned _size(const boost::any& field_value);
-            unsigned _max_size();
-            unsigned _min_size();
-            void _validate();
-            bool _variable_size() { return true; }
+            Bitset any_encode(const boost::any& wire_value);
+            boost::any any_decode(Bitset* bits);     
+            unsigned any_size(const boost::any& field_value);
+            unsigned max_size();
+            unsigned min_size();
+            void validate();
+            bool variable_size() { return true; }
           private:
             enum { MAX_STRING_LENGTH = 255 };
             
@@ -137,24 +137,24 @@ namespace goby
         class DCCLDefaultBytesCodec : public DCCLFieldCodecBase
         {
           private:
-            Bitset _encode(const boost::any& wire_value);
-            boost::any _decode(Bitset* bits);     
-            unsigned _size(const boost::any& field_value);
-            unsigned _max_size();
-            unsigned _min_size();
-            bool _variable_size() { return true; }
-            void _validate();
+            Bitset any_encode(const boost::any& wire_value);
+            boost::any any_decode(Bitset* bits);     
+            unsigned any_size(const boost::any& field_value);
+            unsigned max_size();
+            unsigned min_size();
+            bool variable_size() { return true; }
+            void validate();
         };
 
         
         class DCCLDefaultEnumCodec : public DCCLDefaultArithmeticFieldCodec<int32>
         {
           public:
-            boost::any _pre_encode(const boost::any& field_value);
-            boost::any _post_decode(const boost::any& wire_value);
+            boost::any any_pre_encode(const boost::any& field_value);
+            boost::any any_post_decode(const boost::any& wire_value);
 
           private:
-            void _validate() { }
+            void validate() { }
             
             double max()
             {
@@ -169,11 +169,11 @@ namespace goby
         class DCCLTimeCodec : public DCCLDefaultArithmeticFieldCodec<int32>
         {
           public:
-            boost::any _pre_encode(const boost::any& field_value);
-            boost::any _post_decode(const boost::any& wire_value);
+            boost::any any_pre_encode(const boost::any& field_value);
+            boost::any any_post_decode(const boost::any& wire_value);
 
           private:
-            void _validate() { }
+            void validate() { }
 
             double max() { return HOURS_IN_DAY*SECONDS_IN_HOUR; }
             double min() { return 0; }
@@ -187,20 +187,20 @@ namespace goby
         template<typename T>
             class DCCLStaticCodec : public DCCLFixedFieldCodec
         {
-            Bitset _encode(const boost::any& wire_value)
+            Bitset any_encode(const boost::any& wire_value)
             {
-                return Bitset(_size());
+                return Bitset(size());
             }
             
-            boost::any _decode(Bitset* bits)
+            boost::any any_decode(Bitset* bits)
             { return goby::util::as<T>(get(dccl::static_value)); }
             
-            unsigned _size()
+            unsigned size()
             {
                 return 0;
             }
             
-            void _validate()
+            void validate()
             {
                 require(dccl::static_value, "dccl.static_value");                
             }
@@ -214,12 +214,12 @@ namespace goby
                 platform2modem_id_.left.insert(std::make_pair(platform, id));
             }
             
-            boost::any _pre_encode(const boost::any& field_value);
-            boost::any _post_decode(const boost::any& wire_value);
+            boost::any any_pre_encode(const boost::any& field_value);
+            boost::any any_post_decode(const boost::any& wire_value);
             
 
           private:  
-            void _validate() { }
+            void validate() { }
             double max() { return 30; }
             double min() { return 0; }
 

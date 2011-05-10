@@ -56,10 +56,10 @@ namespace goby
             };
 
             boost::any base_pre_encode(const boost::any& field_value)
-            { return _pre_encode(field_value); }
+            { return any_pre_encode(field_value); }
             std::vector<boost::any> base_pre_encode_repeated(const std::vector<boost::any>& field_values)
             {
-                return _pre_encode_repeated(field_values);
+                return any_pre_encode_repeated(field_values);
             }
             
             // traverse const 
@@ -67,8 +67,8 @@ namespace goby
                         const boost::any& field_value,
                         MessagePart part);
             void base_encode(Bitset* bits,
-                         const boost::any& field_value,
-                         const google::protobuf::FieldDescriptor* field);
+                             const boost::any& field_value,
+                             const google::protobuf::FieldDescriptor* field);
             void base_encode_repeated(Bitset* bits,
                                  const std::vector<boost::any>& field_values,
                                  const google::protobuf::FieldDescriptor* field);
@@ -91,11 +91,11 @@ namespace goby
                                  const google::protobuf::FieldDescriptor* field);
 
             boost::any base_post_decode(const boost::any& wire_value)
-            { return _post_decode(wire_value); }
+            { return any_post_decode(wire_value); }
             std::vector<boost::any> base_post_decode_repeated(
                 const std::vector<boost::any>& wire_values)
             {
-                return _post_decode_repeated(wire_values);
+                return any_post_decode_repeated(wire_values);
             }
             
             
@@ -198,54 +198,50 @@ namespace goby
             }
             
                 
-            virtual void _validate()
+            virtual void validate()
             { }
-
-            virtual std::string _info();
+            virtual std::string info();
             
-            virtual Bitset _encode(const boost::any& field_value) = 0;
-            virtual boost::any _decode(Bitset* bits) = 0;
+            virtual Bitset any_encode(const boost::any& field_value) = 0;
+            virtual boost::any any_decode(Bitset* bits) = 0;
 
             virtual goby::acomms::Bitset
-                _encode_repeated(const std::vector<boost::any>& field_values);
-
+                any_encode_repeated(const std::vector<boost::any>& field_values);
             virtual std::vector<boost::any>
-                _decode_repeated(Bitset* repeated_bits);            
-            
-            // max_size in bits
-            // field == 0 for root message!
-            virtual unsigned _size(const boost::any& field_value) = 0;
-            virtual unsigned _size_repeated(const std::vector<boost::any>& field_values);
-            
-            virtual unsigned _max_size() = 0;
-            virtual unsigned _min_size() = 0;            
+                any_decode_repeated(Bitset* repeated_bits);
 
-            virtual unsigned _max_size_repeated();
-            virtual unsigned _min_size_repeated();
-            
-            virtual bool _variable_size() { return true; }
-
-            virtual boost::any _pre_encode(const boost::any& field_value)
+            virtual boost::any any_pre_encode(const boost::any& field_value)
             { return field_value; }
-            virtual std::vector<boost::any> _pre_encode_repeated(const std::vector<boost::any>& field_values)
+            virtual boost::any any_post_decode(const boost::any& wire_value)
+            { return wire_value; }
+
+            virtual std::vector<boost::any> any_pre_encode_repeated(const std::vector<boost::any>& field_values)
             {
                 std::vector<boost::any> return_values;
                 BOOST_FOREACH(const boost::any& field_value, field_values)
-                    return_values.push_back(_pre_encode(field_value));
+                    return_values.push_back(any_pre_encode(field_value));
                 return return_values;
             }
-
-            virtual boost::any _post_decode(const boost::any& wire_value)
-            { return wire_value; }
-            virtual std::vector<boost::any> _post_decode_repeated(
+            virtual std::vector<boost::any> any_post_decode_repeated(
                 const std::vector<boost::any>& wire_values)
             {
                 std::vector<boost::any> return_values;
                 BOOST_FOREACH(const boost::any& wire_value, wire_values)
-                    return_values.push_back(_post_decode(wire_value));
+                    return_values.push_back(any_post_decode(wire_value));
                 return return_values;
             }
 
+            
+            virtual unsigned any_size(const boost::any& field_value) = 0;
+            virtual unsigned any_size_repeated(const std::vector<boost::any>& field_values);
+            
+            virtual unsigned max_size() = 0;
+            virtual unsigned min_size() = 0;            
+
+            virtual unsigned max_size_repeated();
+            virtual unsigned min_size_repeated();
+            
+            virtual bool variable_size() { return true; }
 
             static boost::signal<void (unsigned size)> get_more_bits;
 
@@ -332,9 +328,6 @@ namespace goby
             google::protobuf::FieldDescriptor::Type field_type_;
             google::protobuf::FieldDescriptor::CppType wire_type_;
 
-
-            
-
         };
 
         inline std::ostream& operator<<(std::ostream& os, const DCCLFieldCodecBase& field_codec )
@@ -349,29 +342,29 @@ namespace goby
         class DCCLFixedFieldCodec : public DCCLFieldCodecBase
         {
           protected:
-            virtual unsigned _size() = 0;
-            virtual unsigned _size_repeated();
+            virtual unsigned size() = 0;
+            virtual unsigned size_repeated();
             
           private:
-            unsigned _size(const boost::any& field_value)
-            { return _size(); }
+            unsigned any_size(const boost::any& field_value)
+            { return size(); }
 
-            unsigned _max_size()
-            { return _size(); }
+            unsigned max_size()
+            { return size(); }
 
-            unsigned _min_size()
-            { return _size(); }
+            unsigned min_size()
+            { return size(); }
             
-            bool _variable_size() { return false; }
+            bool variable_size() { return false; }
 
-            unsigned _size_repeated(const std::vector<boost::any>& field_values)
-            { return _size_repeated(); }
+            unsigned any_size_repeated(const std::vector<boost::any>& field_values)
+            { return size_repeated(); }
 
-            unsigned _max_size_repeated()
-            { return _size_repeated(); }
+            unsigned max_size_repeated()
+            { return size_repeated(); }
 
-            unsigned _min_size_repeated()
-            { return _size_repeated(); }
+            unsigned min_size_repeated()
+            { return size_repeated(); }
 
             
         };

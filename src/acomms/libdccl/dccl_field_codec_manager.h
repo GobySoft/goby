@@ -65,7 +65,7 @@ namespace goby
                 static void add(const std::string& name);
 
             
-            static boost::shared_ptr<DCCLFieldCodec> find(
+            static boost::shared_ptr<DCCLFieldCodecBase> find(
                 const google::protobuf::FieldDescriptor* field,
                 const std::string& name)
             {
@@ -76,7 +76,7 @@ namespace goby
             }
                 
 
-            static boost::shared_ptr<DCCLFieldCodec> find(
+            static boost::shared_ptr<DCCLFieldCodecBase> find(
                 const google::protobuf::Descriptor* desc,
                 const std::string& name)
             {
@@ -92,7 +92,7 @@ namespace goby
             DCCLFieldCodecManager& operator= (const DCCLFieldCodecManager&);
 
             
-            static boost::shared_ptr<DCCLFieldCodec> __find(
+            static boost::shared_ptr<DCCLFieldCodecBase> __find(
                 google::protobuf::FieldDescriptor::Type type,
                 const std::string& codec_name,
                 const std::string& type_name = "");
@@ -107,7 +107,7 @@ namespace goby
                                   google::protobuf::FieldDescriptor::CppType wire_type);
           private:
             
-            typedef std::map<std::string, boost::shared_ptr<DCCLFieldCodec> > InsideMap;
+            typedef std::map<std::string, boost::shared_ptr<DCCLFieldCodecBase> > InsideMap;
             static std::map<google::protobuf::FieldDescriptor::Type, InsideMap> codecs_;
         };
     }
@@ -187,7 +187,7 @@ void goby::acomms::DCCLFieldCodecManager::__add(const std::string& name,
     using google::protobuf::FieldDescriptor;    
     if(!codecs_[field_type].count(name))
     {
-        boost::shared_ptr<DCCLFieldCodec> new_field_codec(new Codec());
+        boost::shared_ptr<DCCLFieldCodecBase> new_field_codec(new Codec());
         new_field_codec->set_name(name);
         new_field_codec->set_field_type(field_type);
         new_field_codec->set_wire_type(wire_type);
@@ -197,7 +197,7 @@ void goby::acomms::DCCLFieldCodecManager::__add(const std::string& name,
     }            
     else
     {
-        boost::shared_ptr<DCCLFieldCodec> new_field_codec(new Codec());
+        boost::shared_ptr<DCCLFieldCodecBase> new_field_codec(new Codec());
         new_field_codec->set_name(name);
         new_field_codec->set_field_type(field_type);
         new_field_codec->set_wire_type(wire_type);

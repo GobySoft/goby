@@ -17,7 +17,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
-// implements DCCLFieldCodec for all the basic DCCL types
+// implements DCCLFieldCodecBase for all the basic DCCL types
 
 #ifndef DCCLFIELDCODECDEFAULT20110322H
 #define DCCLFIELDCODECDEFAULT20110322H
@@ -35,7 +35,7 @@
 #include "goby/util/time.h"
 #include "goby/acomms/acomms_constants.h"
 
-#include "dccl_field_codec_manager.h"
+#include "dccl_field_codec_default_message.h"
 #include "dccl_field_codec.h"
 
 namespace goby
@@ -119,7 +119,7 @@ namespace goby
             void _validate();
         };
         
-        class DCCLDefaultStringCodec : public DCCLFieldCodec
+        class DCCLDefaultStringCodec : public DCCLFieldCodecBase
         {
           private:
             Bitset _encode(const boost::any& wire_value);
@@ -134,7 +134,7 @@ namespace goby
             
         };
 
-        class DCCLDefaultBytesCodec : public DCCLFieldCodec
+        class DCCLDefaultBytesCodec : public DCCLFieldCodecBase
         {
           private:
             Bitset _encode(const boost::any& wire_value);
@@ -146,42 +146,12 @@ namespace goby
             void _validate();
         };
 
-        class DCCLDefaultMessageCodec : public DCCLFieldCodec
-        {
-          private:
-
-            Bitset _encode(const boost::any& wire_value);
-            boost::any _decode(Bitset* bits);     
-            unsigned _max_size();
-            unsigned _min_size();
-            unsigned _size(const boost::any& field_value);
-            bool _variable_size() { return true; }
-            void _validate();
-            std::string _info();
-            bool __check_field(const google::protobuf::FieldDescriptor* field);
-            std::string __find_codec(const google::protobuf::FieldDescriptor* field);
-
-            
-            template<typename ReturnType>
-                ReturnType traverse_const(
-                    const boost::any& wire_value,
-                    void(DCCLFieldCodec::*mem_func)(ReturnType*,
-                                                    const boost::any& field_value,
-                                                    const google::protobuf::FieldDescriptor* field),
-                    void(DCCLFieldCodec::*mem_func_repeated)(ReturnType*,
-                                                             const std::vector<boost::any>& field_values,
-                                                             const google::protobuf::FieldDescriptor* field)
-                    );
-            
-        };
-
-        
         
         class DCCLDefaultEnumCodec : public DCCLDefaultArithmeticFieldCodec<int32>
         {
           public:
-            boost::any pre_encode(const boost::any& field_value);
-            boost::any post_decode(const boost::any& wire_value);
+            boost::any _pre_encode(const boost::any& field_value);
+            boost::any _post_decode(const boost::any& wire_value);
 
           private:
             void _validate() { }
@@ -199,8 +169,8 @@ namespace goby
         class DCCLTimeCodec : public DCCLDefaultArithmeticFieldCodec<int32>
         {
           public:
-            boost::any pre_encode(const boost::any& field_value);
-            boost::any post_decode(const boost::any& wire_value);
+            boost::any _pre_encode(const boost::any& field_value);
+            boost::any _post_decode(const boost::any& wire_value);
 
           private:
             void _validate() { }
@@ -244,8 +214,8 @@ namespace goby
                 platform2modem_id_.left.insert(std::make_pair(platform, id));
             }
             
-            boost::any pre_encode(const boost::any& field_value);
-            boost::any post_decode(const boost::any& wire_value);
+            boost::any _pre_encode(const boost::any& field_value);
+            boost::any _post_decode(const boost::any& wire_value);
             
 
           private:  
@@ -260,75 +230,5 @@ namespace goby
         
     }
 }
-
-// encode, size, etc.
-template<typename ReturnType>
-ReturnType goby::acomms::DCCLDefaultMessageCodec::traverse_const(
-    const boost::any& wire_value,
-    void(DCCLFieldCodec::*mem_func)(ReturnType*,
-                                    const boost::any& field_value,
-                                    const google::protobuf::FieldDescriptor* field),
-    void(DCCLFieldCodec::*mem_func_repeated)(ReturnType*,
-                                             const std::vector<boost::any>& field_values,
-                                             const google::protobuf::FieldDescriptor* field)
-    )
-
-{
-    try
-    {
-        ReturnType return_value = ReturnType();
-        
-        const google::protobuf::Message* msg = boost::any_cast<const google::protobuf::Message*>(wire_value);
-        
-        // 
-        //     DCCLCommon::logger() << debug << "Looking to encode Message " << msg->GetDescriptor()->full_name() << std::endl;
-
-    
-        const google::protobuf::Descriptor* desc = msg->GetDescriptor();
-        const google::protobuf::Reflection* refl = msg->GetReflection();       
-        for(int i = 0, n = desc->field_count(); i < n; ++i)
-        {
-            // 
-            //     DCCLCommon::logger() << debug << "Looking to encode " << desc->field(i)->DebugString();
-        
-            const google::protobuf::FieldDescriptor* field_desc = desc->field(i);
-
-            if(!__check_field(field_desc))
-                continue;
-            
-            std::string field_codec = __find_codec(field_desc);
-            
-            boost::shared_ptr<DCCLFieldCodec> codec =
-                DCCLFieldCodecManager::find(field_desc, field_codec);
-            boost::shared_ptr<FromProtoCppTypeBase> helper =
-                DCCLTypeHelper::find(field_desc);
-
-            
-            if(field_desc->is_repeated())
-            {    
-                std::vector<boost::any> wire_values;
-                for(int j = 0, m = refl->FieldSize(*msg, field_desc); j < m; ++j)
-                    wire_values.push_back(helper->get_repeated_value(field_desc, *msg, j));
-                    
-                boost::bind(mem_func_repeated,
-                            boost::ref(codec), &return_value, wire_values, field_desc)();
-            }
-            else
-            {
-                boost::bind(mem_func,
-                            boost::ref(codec), &return_value, helper->get_value(field_desc, *msg), field_desc)();
-            }
-        }
-        return return_value;
-    }
-    catch(boost::bad_any_cast& e)
-    {
-        throw(DCCLException("Bad type given to encode, expecting const google::protobuf::Message*"));
-    }
-
-}
-
-
-
 
 #endif

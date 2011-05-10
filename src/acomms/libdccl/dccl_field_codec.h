@@ -41,13 +41,13 @@ namespace goby
 {
     namespace acomms
     {        
-        class DCCLFieldCodec
+        class DCCLFieldCodecBase
         {
           public:
             typedef goby::acomms::Bitset Bitset;
             
-            DCCLFieldCodec() { }
-            virtual ~DCCLFieldCodec() { }
+            DCCLFieldCodecBase() { }
+            virtual ~DCCLFieldCodecBase() { }
             
             enum MessagePart
             {
@@ -55,66 +55,62 @@ namespace goby
                 BODY
             };
 
-            virtual boost::any pre_encode(const boost::any& field_value)
-            { return field_value; }
-            virtual std::vector<boost::any> pre_encode(const std::vector<boost::any>& field_values)
+            boost::any base_pre_encode(const boost::any& field_value)
+            { return _pre_encode(field_value); }
+            std::vector<boost::any> base_pre_encode_repeated(const std::vector<boost::any>& field_values)
             {
-                std::vector<boost::any> return_values;
-                BOOST_FOREACH(const boost::any& field_value, field_values)
-                    return_values.push_back(pre_encode(field_value));
-                return return_values;
+                return _pre_encode_repeated(field_values);
             }
             
             // traverse const 
-            void encode(Bitset* bits,
+            void base_encode(Bitset* bits,
                         const boost::any& field_value,
                         MessagePart part);
-            void encode(Bitset* bits,
+            void base_encode(Bitset* bits,
                          const boost::any& field_value,
                          const google::protobuf::FieldDescriptor* field);
-            void encode_repeated(Bitset* bits,
+            void base_encode_repeated(Bitset* bits,
                                  const std::vector<boost::any>& field_values,
                                  const google::protobuf::FieldDescriptor* field);
 
-            void size(unsigned* bit_size, const google::protobuf::Message& msg, MessagePart part);
-            void size(unsigned* bit_size, const boost::any& field_value,
+            void base_size(unsigned* bit_size, const google::protobuf::Message& msg, MessagePart part);
+            void base_size(unsigned* bit_size, const boost::any& field_value,
                       const google::protobuf::FieldDescriptor* field);
-            void size_repeated(unsigned* bit_size, const std::vector<boost::any>& field_values,
+            void base_size_repeated(unsigned* bit_size, const std::vector<boost::any>& field_values,
                                const google::protobuf::FieldDescriptor* field);
 
             // traverse mutable
-            void decode(Bitset* bits,
+            void base_decode(Bitset* bits,
                         boost::any* field_value,
                         MessagePart part);
-            void decode(Bitset* bits,
+            void base_decode(Bitset* bits,
                          boost::any* field_value,
                          const google::protobuf::FieldDescriptor* field);            
-            void decode_repeated(Bitset* bits,
+            void base_decode_repeated(Bitset* bits,
                                  std::vector<boost::any>* field_values,
                                  const google::protobuf::FieldDescriptor* field);
 
-            virtual boost::any post_decode(const boost::any& wire_value) { return wire_value; }
-            virtual std::vector<boost::any> post_decode(const std::vector<boost::any>& wire_values)
+            boost::any base_post_decode(const boost::any& wire_value)
+            { return _post_decode(wire_value); }
+            std::vector<boost::any> base_post_decode_repeated(
+                const std::vector<boost::any>& wire_values)
             {
-                std::vector<boost::any> return_values;
-                BOOST_FOREACH(const boost::any& wire_value, wire_values)
-                    return_values.push_back(post_decode(wire_value));
-                return return_values;
+                return _post_decode_repeated(wire_values);
             }
             
             
             // traverse schema (Descriptor)
-            unsigned max_size(const google::protobuf::Descriptor* desc, MessagePart part);
-            unsigned max_size(const google::protobuf::FieldDescriptor* field);
+            unsigned base_max_size(const google::protobuf::Descriptor* desc, MessagePart part);
+            unsigned base_max_size(const google::protobuf::FieldDescriptor* field);
             
-            unsigned min_size(const google::protobuf::Descriptor* desc, MessagePart part);
-            unsigned min_size(const google::protobuf::FieldDescriptor* field);
+            unsigned base_min_size(const google::protobuf::Descriptor* desc, MessagePart part);
+            unsigned base_min_size(const google::protobuf::FieldDescriptor* field);
             
-            void validate(const google::protobuf::Descriptor* desc, MessagePart part);
-            void validate(const google::protobuf::FieldDescriptor* field);
+            void base_validate(const google::protobuf::Descriptor* desc, MessagePart part);
+            void base_validate(const google::protobuf::FieldDescriptor* field);
             
-            void info(const google::protobuf::Descriptor* desc, std::ostream* os, MessagePart part);  
-            void info(const google::protobuf::FieldDescriptor* field, std::ostream* os);
+            void base_info(const google::protobuf::Descriptor* desc, std::ostream* os, MessagePart part);  
+            void base_info(const google::protobuf::FieldDescriptor* field, std::ostream* os);
 
 
             // codec information
@@ -206,10 +202,8 @@ namespace goby
             { }
 
             virtual std::string _info();
-
             
             virtual Bitset _encode(const boost::any& field_value) = 0;
-            
             virtual boost::any _decode(Bitset* bits) = 0;
 
             virtual goby::acomms::Bitset
@@ -228,9 +222,29 @@ namespace goby
 
             virtual unsigned _max_size_repeated();
             virtual unsigned _min_size_repeated();
-
             
             virtual bool _variable_size() { return true; }
+
+            virtual boost::any _pre_encode(const boost::any& field_value)
+            { return field_value; }
+            virtual std::vector<boost::any> _pre_encode_repeated(const std::vector<boost::any>& field_values)
+            {
+                std::vector<boost::any> return_values;
+                BOOST_FOREACH(const boost::any& field_value, field_values)
+                    return_values.push_back(_pre_encode(field_value));
+                return return_values;
+            }
+
+            virtual boost::any _post_decode(const boost::any& wire_value)
+            { return wire_value; }
+            virtual std::vector<boost::any> _post_decode_repeated(
+                const std::vector<boost::any>& wire_values)
+            {
+                std::vector<boost::any> return_values;
+                BOOST_FOREACH(const boost::any& wire_value, wire_values)
+                    return_values.push_back(_post_decode(wire_value));
+                return return_values;
+            }
 
 
             static boost::signal<void (unsigned size)> get_more_bits;
@@ -296,7 +310,7 @@ namespace goby
                 void push(const google::protobuf::Descriptor* desc);
                 void push(const google::protobuf::FieldDescriptor* field);
 
-                friend class DCCLFieldCodec;
+                friend class DCCLFieldCodecBase;
               private:
                 void __pop_desc();
                 void __pop_field();
@@ -323,7 +337,7 @@ namespace goby
 
         };
 
-        inline std::ostream& operator<<(std::ostream& os, const DCCLFieldCodec& field_codec )
+        inline std::ostream& operator<<(std::ostream& os, const DCCLFieldCodecBase& field_codec )
         {
             using google::protobuf::FieldDescriptor;
             return os << "[FieldCodec '" << field_codec.name() << "']: field type: "
@@ -332,7 +346,7 @@ namespace goby
                       << ") | wire type: " << DCCLTypeHelper::find(field_codec.wire_type())->as_str();
         }
 
-        class DCCLFixedFieldCodec : public DCCLFieldCodec
+        class DCCLFixedFieldCodec : public DCCLFieldCodecBase
         {
           protected:
             virtual unsigned _size() = 0;

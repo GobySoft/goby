@@ -22,7 +22,7 @@
 std::map<google::protobuf::FieldDescriptor::Type, goby::acomms::DCCLFieldCodecManager::InsideMap> goby::acomms::DCCLFieldCodecManager::codecs_;
 
 
-boost::shared_ptr<goby::acomms::DCCLFieldCodec>
+boost::shared_ptr<goby::acomms::DCCLFieldCodecBase>
 goby::acomms::DCCLFieldCodecManager::__find(google::protobuf::FieldDescriptor::Type type,
                                                  const std::string& codec_name,
                                                  const std::string& type_name /* = "" */)

@@ -36,6 +36,15 @@ namespace goby
 
         };
 
+        // used to signal null value in field codecs
+        class DCCLNullValueException : public DCCLException
+        {
+          public:
+          DCCLNullValueException()
+              : DCCLException("NULL Value")
+            { }    
+        };
+        
     }
 }
 

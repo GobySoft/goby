@@ -21,7 +21,6 @@
 
 #include "dccl_field_codec.h"
 #include "dccl_exception.h"
-#include "goby/protobuf/dccl_option_extensions.pb.h"
 #include "dccl.h"
 
 goby::acomms::DCCLFieldCodecBase::MessagePart goby::acomms::DCCLFieldCodecBase::part_ =

@@ -32,9 +32,16 @@ namespace goby
         class DCCLFieldCodecManager
         {
           public:
+            template<class Codec>
+                static void add(const std::string& name)
+            {
+                __add<typename Codec::field_type, typename Codec::wire_type, Codec>(name);
+            }
+            
+            
             // field type == wire type
-            template<typename FieldType, template <typename FieldType> class Codec>
-                static void add(const std::string& name);
+            /* template<typename FieldType, template <typename FieldType> class Codec> */
+            /*     static void add(const std::string& name); */
             
             template<typename FieldType, class Codec>
                 typename boost::enable_if<
@@ -57,12 +64,10 @@ namespace goby
 
 
             // field type != wire type
-            template<typename FieldType, typename WireType, class Codec>
-                static void add(const std::string& name);
             
-            template<typename FieldType, typename WireType,
-                template <typename FieldType, typename WireType> class Codec>
-                static void add(const std::string& name);
+            /* template<typename FieldType, typename WireType, */
+            /*     template <typename FieldType, typename WireType> class Codec> */
+            /*     static void add(const std::string& name); */
 
             
             static boost::shared_ptr<DCCLFieldCodecBase> find(
@@ -101,6 +106,10 @@ namespace goby
                                       const std::string& type_name) 
             { return type_name.empty() ? codec_name : codec_name + "@@" + type_name; }
                 
+
+            template<typename FieldType, typename WireType, class Codec> 
+                static void __add(const std::string& name); 
+
             template<class Codec>
                 static void __add(const std::string& name,
                                   google::protobuf::FieldDescriptor::Type field_type,
@@ -113,11 +122,11 @@ namespace goby
     }
 }
 
-template<typename FieldType, template <typename FieldType> class Codec>
-    void goby::acomms::DCCLFieldCodecManager::add(const std::string& name)
-{
-    add<FieldType, Codec<FieldType> >(name);
-}
+/* template<typename FieldType, template <typename FieldType> class Codec> */
+/*     void goby::acomms::DCCLFieldCodecManager::add(const std::string& name) */
+/* { */
+/*     add<FieldType, Codec<FieldType> >(name); */
+/* } */
 
 
 template<typename FieldType, class Codec>
@@ -144,26 +153,26 @@ template<typename FieldType, class Codec>
     void>::type
     goby::acomms::DCCLFieldCodecManager::add(const std::string& name)
 {
-    add<FieldType, FieldType, Codec>(name);
+    __add<FieldType, FieldType, Codec>(name);
 }
 
-template<google::protobuf::FieldDescriptor::Type type, class Codec>
-    void goby::acomms::DCCLFieldCodecManager::add(const std::string& name)
-{
-    __add<Codec>(name, type, google::protobuf::FieldDescriptor::TypeToCppType(type));
-}
+ template<google::protobuf::FieldDescriptor::Type type, class Codec> 
+     void goby::acomms::DCCLFieldCodecManager::add(const std::string& name) 
+ { 
+     __add<Codec>(name, type, google::protobuf::FieldDescriptor::TypeToCppType(type));
+ }
 
 
-template<typename FieldType, typename WireType,
-    template <typename FieldType, typename WireType> class Codec>
-    void goby::acomms::DCCLFieldCodecManager::add(const std::string& name)
-{
-    add<FieldType, WireType, Codec<FieldType, WireType> >(name);
-}
+/* template<typename FieldType, typename WireType, */
+/*     template <typename FieldType, typename WireType> class Codec> */
+/*     void goby::acomms::DCCLFieldCodecManager::add(const std::string& name) */
+/* { */
+/*     add<FieldType, WireType, Codec<FieldType, WireType> >(name); */
+/* } */
 
 
 template<typename FieldType, typename WireType, class Codec>
-    void goby::acomms::DCCLFieldCodecManager::add(const std::string& name)
+    void goby::acomms::DCCLFieldCodecManager::__add(const std::string& name)
 {
     using google::protobuf::FieldDescriptor;
     const FieldDescriptor::CppType cpp_field_type = ToProtoCppType<FieldType>::as_enum();

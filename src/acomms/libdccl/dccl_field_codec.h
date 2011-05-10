@@ -34,6 +34,7 @@
 
 #include "dccl_common.h"
 #include "dccl_exception.h"
+#include "goby/protobuf/dccl_option_extensions.pb.h"
 #include "goby/util/string.h"
 #include "dccl_type_helper.h"
 
@@ -64,31 +65,31 @@ namespace goby
             
             // traverse const 
             void base_encode(Bitset* bits,
-                        const boost::any& field_value,
-                        MessagePart part);
+                             const boost::any& field_value,
+                             MessagePart part);
             void base_encode(Bitset* bits,
                              const boost::any& field_value,
                              const google::protobuf::FieldDescriptor* field);
             void base_encode_repeated(Bitset* bits,
-                                 const std::vector<boost::any>& field_values,
-                                 const google::protobuf::FieldDescriptor* field);
+                                      const std::vector<boost::any>& field_values,
+                                      const google::protobuf::FieldDescriptor* field);
 
             void base_size(unsigned* bit_size, const google::protobuf::Message& msg, MessagePart part);
             void base_size(unsigned* bit_size, const boost::any& field_value,
-                      const google::protobuf::FieldDescriptor* field);
+                           const google::protobuf::FieldDescriptor* field);
             void base_size_repeated(unsigned* bit_size, const std::vector<boost::any>& field_values,
-                               const google::protobuf::FieldDescriptor* field);
+                                    const google::protobuf::FieldDescriptor* field);
 
             // traverse mutable
             void base_decode(Bitset* bits,
-                        boost::any* field_value,
-                        MessagePart part);
+                             boost::any* field_value,
+                             MessagePart part);
             void base_decode(Bitset* bits,
-                         boost::any* field_value,
-                         const google::protobuf::FieldDescriptor* field);            
+                             boost::any* field_value,
+                             const google::protobuf::FieldDescriptor* field);            
             void base_decode_repeated(Bitset* bits,
-                                 std::vector<boost::any>* field_values,
-                                 const google::protobuf::FieldDescriptor* field);
+                                      std::vector<boost::any>* field_values,
+                                      const google::protobuf::FieldDescriptor* field);
 
             boost::any base_post_decode(const boost::any& wire_value)
             { return any_post_decode(wire_value); }
@@ -148,12 +149,13 @@ namespace goby
                 return !MessageHandler::desc_.empty() ? MessageHandler::desc_.back() : 0;
             }
 
+            static MessagePart part() { return part_; }
+
             const google::protobuf::FieldDescriptor* this_field()
             {
                 return !MessageHandler::field_.empty() ? MessageHandler::field_.back() : 0;
             }
 
-            static MessagePart part() { return part_; }
             
             template<typename Extension>
                 typename Extension::TypeTraits::ConstType get(const Extension& e)
@@ -248,8 +250,8 @@ namespace goby
             class BitsHandler
             {
               public:
-                BitsHandler(Bitset* out_pool, Bitset* in_pool)
-                    : in_pool_(in_pool),
+              BitsHandler(Bitset* out_pool, Bitset* in_pool)
+                  : in_pool_(in_pool),
                     out_pool_(out_pool)
                     {
                         connection_ = get_more_bits.connect(
@@ -339,6 +341,152 @@ namespace goby
                       << ") | wire type: " << DCCLTypeHelper::find(field_codec.wire_type())->as_str();
         }
 
+        inline DCCLException type_error(const std::string& action,
+                                        const std::type_info& expected,
+                                        const std::type_info& got)
+        {
+            std::string e = "error " + action + ", expected: ";
+            e += expected.name();
+            e += ", got ";
+            e += got.name();
+            return DCCLException(e);
+        }
+          
+
+        
+        template <typename WireType, typename FieldType, class Enable = void> 
+            class DCCLFieldCodecSwitcher : public DCCLFieldCodecBase
+            { };
+
+        // if not the same WireType and FieldType, add these extra methods
+        template <typename WireType, typename FieldType>
+            class DCCLFieldCodecSwitcher<WireType, FieldType,
+            typename boost::disable_if<boost::is_same<WireType, FieldType> >::type>
+            : public DCCLFieldCodecBase
+            {
+              protected:
+                virtual WireType pre_encode(const FieldType& field_value) = 0;
+                virtual FieldType post_decode(const WireType& wire_value) = 0;
+
+              private:
+                virtual boost::any any_pre_encode(const boost::any& field_value)
+                {
+                    try
+                    {
+                        if(!field_value.empty())
+                            return pre_encode(boost::any_cast<FieldType>(field_value));
+                        else
+                            return field_value;
+                    }
+                    catch(boost::bad_any_cast&)
+                    {
+                        throw(type_error("pre_encode", typeid(FieldType), field_value.type()));
+                    }
+                    catch(DCCLNullValueException&)
+                    {
+                        return boost::any();
+                    }
+                }
+          
+                virtual boost::any any_post_decode(const boost::any& wire_value)
+                {
+                    try
+                    {
+                        if(!wire_value.empty())
+                            return post_decode(boost::any_cast<WireType>(wire_value));
+                        else
+                            return wire_value;
+                  
+                    }
+                    catch(boost::bad_any_cast&)
+                    {
+                        throw(type_error("post_decode", typeid(WireType), wire_value.type()));
+                    }
+                    catch(DCCLNullValueException&)
+                    {
+                        return boost::any();
+                    }
+                }
+
+
+            };
+
+        
+        template<typename WireType, typename FieldType = WireType>
+            class DCCLTypedFixedFieldCodec : public DCCLFieldCodecSwitcher<WireType, FieldType>
+        {
+          public:
+          typedef WireType wire_type;
+          typedef FieldType field_type;
+            
+          protected:
+          virtual unsigned size() = 0;
+          virtual unsigned size_repeated()          
+          {
+              if(!DCCLFieldCodecBase::this_field()->options().HasExtension(dccl::max_repeat))
+                  throw(DCCLException("Missing dccl.max_repeat option on `repeated` field"));
+              else
+                  return size() * DCCLFieldCodecBase::this_field()->options().GetExtension(dccl::max_repeat);
+          }
+
+          virtual Bitset encode() = 0;          
+          virtual Bitset encode(const WireType& wire_value) = 0;
+          virtual WireType decode(Bitset* bits) = 0;
+          
+          
+          private:
+          Bitset any_encode(const boost::any& field_value)
+          {
+              try
+              {
+                  if(field_value.empty())
+                      return encode();
+                  else
+                      return encode(boost::any_cast<WireType>(field_value));
+              }
+              catch(boost::bad_any_cast&)
+              {
+                  throw(type_error("encode", typeid(WireType), field_value.type()));
+              }
+          }
+          
+          boost::any any_decode(Bitset* bits)
+          {
+              try
+              {
+                  return decode(bits);
+              }
+              catch(DCCLNullValueException&)
+              {
+                  return boost::any();
+              }
+          }
+          
+
+          unsigned any_size(const boost::any& field_value)
+          { return size(); }
+          
+          unsigned max_size()
+          { return size(); }
+          
+          unsigned min_size()
+          { return size(); }
+          
+          bool variable_size() { return false; }
+          
+          unsigned any_size_repeated(const std::vector<boost::any>& field_values)
+          { return size_repeated(); }
+          
+          unsigned max_size_repeated()
+          { return size_repeated(); }
+
+          unsigned min_size_repeated()
+          { return size_repeated(); }
+
+          
+        };
+        
+        
         class DCCLFixedFieldCodec : public DCCLFieldCodecBase
         {
           protected:

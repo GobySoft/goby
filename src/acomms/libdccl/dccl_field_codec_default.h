@@ -42,79 +42,77 @@ namespace goby
 {
     namespace acomms
     {
-        template<typename T>
-            class DCCLDefaultArithmeticFieldCodec : public DCCLFixedFieldCodec
+        template<typename WireType, typename FieldType = WireType>
+            class DCCLDefaultArithmeticFieldCodec : public DCCLTypedFixedFieldCodec<WireType, FieldType>
         {
           protected:
 
-            virtual double max()
-            { return get(dccl::max); }
+          virtual double max()
+          { return DCCLFieldCodecBase::get(dccl::max); }
 
-            virtual double min()
-            { return get(dccl::min); }
+          virtual double min()
+          { return DCCLFieldCodecBase::get(dccl::min); }
 
-            virtual double precision()
-            { return has(dccl::precision) ? get(dccl::precision) : 0; }
+          virtual double precision()
+          { return DCCLFieldCodecBase::has(dccl::precision) ? DCCLFieldCodecBase::get(dccl::precision) : 0; }
             
-            virtual void validate()
-            {
-                require(dccl::min, "dccl.min");
-                require(dccl::max, "dccl.max");
-            }
+          virtual void validate()
+          {
+              DCCLFieldCodecBase::require(dccl::min, "dccl.min");
+              DCCLFieldCodecBase::require(dccl::max, "dccl.max");
+          }
 
-            Bitset any_encode(const boost::any& wire_value)
-            {
-                DCCLCommon::logger() << "starting encode of field with max " << max() << ", min " << min() << ", prec " << precision() << std::endl;
+          Bitset encode()
+          {
+              return Bitset(size());
+          }
+          
+          
+          Bitset encode(const WireType& value)
+          {
+              WireType wire_value = value;
+              
+              DCCLCommon::logger() << "starting encode of field with max " << max() << ", min " << min() << ", prec " << precision() << std::endl;
                 
-                if(wire_value.empty())
-                    return Bitset(size());
-                
-                try
-                {
-                    T t = boost::any_cast<T>(wire_value);
-                    if(t < min() || t > max())
-                        return Bitset(size());
+              if(wire_value < min() || wire_value > max())
+                  return Bitset(size());
+              
+              wire_value = goby::util::unbiased_round(wire_value, precision());
+              
+              DCCLCommon::logger() << debug1 << "using value " << wire_value << std::endl;
+              
+              
+              wire_value -= min();
+              wire_value *= std::pow(10.0, precision());
+              return Bitset(size(), goby::util::as<unsigned long>(wire_value)+1);
+          }
 
-                    t = goby::util::unbiased_round(t, precision());
-                    
-                    DCCLCommon::logger() << debug1 << "using value " << t << std::endl;
-        
-                    
-                    t -= min();
-                    t *= std::pow(10.0, precision());
-                    return Bitset(size(), goby::util::as<unsigned long>(t)+1);
-                }
-                catch(boost::bad_any_cast& e)
-                {
-                    throw(DCCLException("Bad type given to encode"));
-                }                
-            }
+          WireType decode(Bitset* bits)
+          {
+              unsigned long t = bits->to_ulong();
+              if(!t) throw(DCCLNullValueException());
 
-            boost::any any_decode(Bitset* bits)
-            {
-                unsigned long t = bits->to_ulong();
-                if(!t) return boost::any();
+              --t;
+              return goby::util::unbiased_round(
+                  t / (std::pow(10.0, precision())) + min(), precision());
+              
+          }
 
-                --t;
-                return goby::util::as<T>(
-                    goby::util::unbiased_round(
-                        t / (std::pow(10.0, precision())) + min(), precision()));
-            }
-
-            unsigned size()
-            {
-                // leave one value for unspecified (always encoded as 0)
-                const unsigned NULL_VALUE = 1;
-                return std::ceil(std::log((max()-min())*std::pow(10.0, precision())+1 + NULL_VALUE)/std::log(2));
-            }
+          unsigned size()
+          {
+              // leave one value for unspecified (always encoded as 0)
+              const unsigned NULL_VALUE = 1;
+              return std::ceil(std::log((max()-min())*std::pow(10.0, precision())+1 + NULL_VALUE)/std::log(2));
+          }
             
         };
 
-        class DCCLDefaultBoolCodec : public DCCLFixedFieldCodec
+        class DCCLDefaultBoolCodec : public DCCLTypedFixedFieldCodec<bool>
         {
           private:
-            Bitset any_encode(const boost::any& wire_value);
-            boost::any any_decode(Bitset* bits);     
+            Bitset encode(const bool& wire_value);
+            Bitset encode();
+            bool decode(Bitset* bits);
             unsigned size();
             void validate();
         };
@@ -147,11 +145,11 @@ namespace goby
         };
 
         
-        class DCCLDefaultEnumCodec : public DCCLDefaultArithmeticFieldCodec<int32>
+        class DCCLDefaultEnumCodec : public DCCLDefaultArithmeticFieldCodec<int32, const google::protobuf::EnumValueDescriptor*>
         {
           public:
-            boost::any any_pre_encode(const boost::any& field_value);
-            boost::any any_post_decode(const boost::any& wire_value);
+            int32 pre_encode(const google::protobuf::EnumValueDescriptor* const& field_value);
+            const google::protobuf::EnumValueDescriptor* post_decode(const int32& wire_value);
 
           private:
             void validate() { }
@@ -166,12 +164,12 @@ namespace goby
         };
         
         
-        class DCCLTimeCodec : public DCCLDefaultArithmeticFieldCodec<int32>
+        class DCCLTimeCodec : public DCCLDefaultArithmeticFieldCodec<int32, std::string>
         {
           public:
-            boost::any any_pre_encode(const boost::any& field_value);
-            boost::any any_post_decode(const boost::any& wire_value);
-
+            int32 pre_encode(const std::string& field_value);
+            std::string post_decode(const int32& wire_value);
+ 
           private:
             void validate() { }
 
@@ -185,15 +183,20 @@ namespace goby
         
         
         template<typename T>
-            class DCCLStaticCodec : public DCCLFixedFieldCodec
+            class DCCLStaticCodec : public DCCLTypedFixedFieldCodec<T>
         {
-            Bitset any_encode(const boost::any& wire_value)
+            Bitset encode(const T&)
             {
                 return Bitset(size());
             }
-            
-            boost::any any_decode(Bitset* bits)
-            { return goby::util::as<T>(get(dccl::static_value)); }
+
+            Bitset encode()
+            {
+                return Bitset(size());
+            }
+
+            T decode(Bitset* bits)
+            { return goby::util::as<T>(DCCLFieldCodecBase::get(dccl::static_value)); }
             
             unsigned size()
             {
@@ -202,11 +205,11 @@ namespace goby
             
             void validate()
             {
-                require(dccl::static_value, "dccl.static_value");                
+                DCCLFieldCodecBase::require(dccl::static_value, "dccl.static_value");
             }
             
         };
-        class DCCLModemIdConverterCodec : public DCCLDefaultArithmeticFieldCodec<int32>
+        class DCCLModemIdConverterCodec : public DCCLDefaultArithmeticFieldCodec<int32, std::string>
         {
           public:
             static void add(std::string platform, int32 id)
@@ -214,8 +217,8 @@ namespace goby
                 platform2modem_id_.left.insert(std::make_pair(platform, id));
             }
             
-            boost::any any_pre_encode(const boost::any& field_value);
-            boost::any any_post_decode(const boost::any& wire_value);
+            int32 pre_encode(const std::string& field_value);
+            std::string post_decode(const int32& wire_value);
             
 
           private:  

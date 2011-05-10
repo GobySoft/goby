@@ -28,33 +28,27 @@
 // DCCLDefaultBoolCodec
 //
 
-goby::acomms::Bitset goby::acomms::DCCLDefaultBoolCodec::any_encode(const boost::any& wire_value)
+goby::acomms::Bitset goby::acomms::DCCLDefaultBoolCodec::encode()
 {
-    if(wire_value.empty())
-        return Bitset(size());
-    
-    try
-    {
-        bool b = boost::any_cast<bool>(wire_value);
-        return Bitset(size(), (b ? 1 : 0) + 1);
-    }
-    catch(boost::bad_any_cast& e)
-    {
-        throw(DCCLException("Bad type given to encode"));
-    }
+    return Bitset(size());
 }
 
-boost::any goby::acomms::DCCLDefaultBoolCodec::any_decode(Bitset* bits)
+goby::acomms::Bitset goby::acomms::DCCLDefaultBoolCodec::encode(const bool& wire_value)
+{
+    return Bitset(size(), (wire_value ? 1 : 0) + 1);
+}
+
+bool goby::acomms::DCCLDefaultBoolCodec::decode(Bitset* bits)
 {
     unsigned long t = bits->to_ulong();
     if(t)
     {
         --t;
-        return static_cast<bool>(t);
+        return t;
     }
     else
     {
-        return boost::any();
+        throw(DCCLNullValueException());
     }
 }
 
@@ -256,41 +250,20 @@ void goby::acomms::DCCLDefaultBytesCodec::validate()
 //
 // DCCLDefaultEnumCodec
 //
-
-boost::any goby::acomms::DCCLDefaultEnumCodec::any_pre_encode(const boost::any& field_value)
+goby::acomms::int32 goby::acomms::DCCLDefaultEnumCodec::pre_encode(const google::protobuf::EnumValueDescriptor* const& field_value)
 {
-    try
-    {
-        if(!field_value.empty())
-        {
-            const google::protobuf::EnumValueDescriptor* ev =
-                boost::any_cast<const google::protobuf::EnumValueDescriptor*>(field_value);
-
-            return goby::util::as<int32>(ev->index());
-        }        
-        else
-        {
-            return boost::any();
-        }
-    }
-    catch(boost::bad_any_cast& e)
-    {
-        throw(DCCLException("Bad type given to encode, expecting const google::protobuf::EnumValueDescriptor*"));
-    }
+    return field_value->index();
 }
 
-boost::any goby::acomms::DCCLDefaultEnumCodec::any_post_decode(const boost::any& wire_value)
+const google::protobuf::EnumValueDescriptor* goby::acomms::DCCLDefaultEnumCodec::post_decode(const int32& wire_value)
 {
     const google::protobuf::EnumDescriptor* e = this_field()->enum_type();
-    if(!wire_value.empty())
-    {
-        int32 index = boost::any_cast<int32>(wire_value);
-        return e->value(index);
-    }
+    const google::protobuf::EnumValueDescriptor* return_value = e->value(wire_value);
+
+    if(return_value)
+        return return_value;
     else
-    {
-        return boost::any();
-    }
+        throw(DCCLNullValueException());
 }
 
 
@@ -299,90 +272,52 @@ boost::any goby::acomms::DCCLDefaultEnumCodec::any_post_decode(const boost::any&
 //
 // DCCLTimeCodec
 //
-
-boost::any goby::acomms::DCCLTimeCodec::any_pre_encode(const boost::any& field_value)
+goby::acomms::int32 goby::acomms::DCCLTimeCodec::pre_encode(const std::string& field_value)
 {
-    try
-    {
-        // trim to time of day
-        return util::as<int32>(util::as<boost::posix_time::ptime>(
-                                   boost::any_cast<std::string>(field_value)
-                                   ).time_of_day().total_seconds());
-    }
-    catch(boost::bad_any_cast& e)
-    {
-        throw(DCCLException("Bad type given to pre-encode, expecting std::string"));
-    }
+    return util::as<boost::posix_time::ptime>(field_value).time_of_day().total_seconds();
 }
 
-boost::any goby::acomms::DCCLTimeCodec::any_post_decode(const boost::any& wire_value)
+std::string goby::acomms::DCCLTimeCodec::post_decode(const int32& wire_value)
 {
-    if(!wire_value.empty())
-    {
-        // add the date back in (assumes message sent the same day received)
-        int32 v = boost::any_cast<int32>(wire_value);
-
-        using namespace boost::posix_time;
-        using namespace boost::gregorian;
+    using namespace boost::posix_time;
+    using namespace boost::gregorian;
+        
+    ptime now = util::goby_time();
+    date day_sent;
+    // if message is from part of the day removed from us by 12 hours, we assume it
+    // was sent yesterday
+    if(abs(now.time_of_day().total_seconds() - double(wire_value)) > hours(12).total_seconds())
+        day_sent = now.date() - days(1);
+    else // otherwise figure it was sent today
+        day_sent = now.date();
                 
-        ptime now = util::goby_time();
-        date day_sent;
-        // if message is from part of the day removed from us by 12 hours, we assume it
-        // was sent yesterday
-        if(abs(now.time_of_day().total_seconds() - double(v)) > hours(12).total_seconds())
-            day_sent = now.date() - days(1);
-        else // otherwise figure it was sent today
-            day_sent = now.date();
-                
-        // this logic will break if there is a separation between message sending and
-        // message receipt of greater than 1/2 day (twelve hours)               
-        return util::as<std::string>(ptime(day_sent,seconds(v)));
-    }
-    else
-    {
-        return boost::any();
-    }
+    // this logic will break if there is a separation between message sending and
+    // message receipt of greater than 1/2 day (twelve hours)               
+    return util::as<std::string>(ptime(day_sent,seconds(wire_value)));
 }
 //
 // DCCLModemIdConverterCodec
 //
 
 boost::bimap<std::string, goby::acomms::int32> goby::acomms::DCCLModemIdConverterCodec::platform2modem_id_;
-boost::any goby::acomms::DCCLModemIdConverterCodec::any_pre_encode(const boost::any& field_value)
-{
-    try
-    {
-        std::string s = boost::any_cast<std::string>(field_value);
 
-        int32 v = BROADCAST_ID;
-        if(platform2modem_id_.left.count(s))
-            v = platform2modem_id_.left.at(s);
-        
-        return v;
-    }
-    catch(boost::bad_any_cast& e)
-    {
-        throw(DCCLException("Bad type given to encode, expecting std::string"));
-    }    
+goby::acomms::int32 goby::acomms::DCCLModemIdConverterCodec::pre_encode(const std::string& field_value)
+{
+    int32 v = BROADCAST_ID;
+    if(platform2modem_id_.left.count(field_value))
+        v = platform2modem_id_.left.at(field_value);
+    
+    return v;
 }
             
-boost::any goby::acomms::DCCLModemIdConverterCodec::any_post_decode(const boost::any& wire_value)
+std::string goby::acomms::DCCLModemIdConverterCodec::post_decode(const int32& wire_value)
 {
-    if(!wire_value.empty())
-    {
-        int32 v = boost::any_cast<int32>(wire_value);
-
-        if(v == BROADCAST_ID)
-            return "broadcast";
-        else if(platform2modem_id_.right.count(v))
-            return platform2modem_id_.right.at(v);
-        else
-            return boost::any();
-    }
+    if(wire_value == BROADCAST_ID)
+        return "broadcast";
+    else if(platform2modem_id_.right.count(wire_value))
+        return platform2modem_id_.right.at(wire_value);
     else
-    {
-        return boost::any();
-    }
+        throw DCCLNullValueException();
 }            
 
 

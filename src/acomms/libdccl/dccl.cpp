@@ -61,20 +61,20 @@ goby::acomms::DCCLCodec::DCCLCodec()
 void goby::acomms::DCCLCodec::set_default_codecs()
 {
     using google::protobuf::FieldDescriptor;
-    DCCLFieldCodecManager::add<double, DCCLDefaultArithmeticFieldCodec>(DEFAULT_CODEC_NAME);
-    DCCLFieldCodecManager::add<float, DCCLDefaultArithmeticFieldCodec>(DEFAULT_CODEC_NAME);
-    DCCLFieldCodecManager::add<bool, DCCLDefaultBoolCodec>(DEFAULT_CODEC_NAME);
-    DCCLFieldCodecManager::add<int32, DCCLDefaultArithmeticFieldCodec>(DEFAULT_CODEC_NAME);
-    DCCLFieldCodecManager::add<int64, DCCLDefaultArithmeticFieldCodec>(DEFAULT_CODEC_NAME);
-    DCCLFieldCodecManager::add<uint32, DCCLDefaultArithmeticFieldCodec>(DEFAULT_CODEC_NAME);
-    DCCLFieldCodecManager::add<uint64, DCCLDefaultArithmeticFieldCodec>(DEFAULT_CODEC_NAME);
+    DCCLFieldCodecManager::add<DCCLDefaultArithmeticFieldCodec<double> >(DEFAULT_CODEC_NAME);
+    DCCLFieldCodecManager::add<DCCLDefaultArithmeticFieldCodec<float> >(DEFAULT_CODEC_NAME);
+    DCCLFieldCodecManager::add<DCCLDefaultBoolCodec>(DEFAULT_CODEC_NAME);
+    DCCLFieldCodecManager::add<DCCLDefaultArithmeticFieldCodec<int32> >(DEFAULT_CODEC_NAME);
+    DCCLFieldCodecManager::add<DCCLDefaultArithmeticFieldCodec<int64> >(DEFAULT_CODEC_NAME);
+    DCCLFieldCodecManager::add<DCCLDefaultArithmeticFieldCodec<uint32> >(DEFAULT_CODEC_NAME);
+    DCCLFieldCodecManager::add<DCCLDefaultArithmeticFieldCodec<uint64> >(DEFAULT_CODEC_NAME);
     DCCLFieldCodecManager::add<FieldDescriptor::TYPE_STRING, DCCLDefaultStringCodec>(DEFAULT_CODEC_NAME);
     DCCLFieldCodecManager::add<FieldDescriptor::TYPE_BYTES, DCCLDefaultBytesCodec>(DEFAULT_CODEC_NAME);
     DCCLFieldCodecManager::add<google::protobuf::EnumDescriptor, DCCLDefaultEnumCodec>(DEFAULT_CODEC_NAME);
     DCCLFieldCodecManager::add<google::protobuf::Message, DCCLDefaultMessageCodec>(DEFAULT_CODEC_NAME);
 
-    DCCLFieldCodecManager::add<std::string, int32, DCCLTimeCodec>("_time");
-    DCCLFieldCodecManager::add<std::string, int32, DCCLModemIdConverterCodec>("_platform<->modem_id");
+    DCCLFieldCodecManager::add<DCCLTimeCodec>("_time");
+    DCCLFieldCodecManager::add<DCCLModemIdConverterCodec>("_platform<->modem_id");
 
     default_codecs_set_ = true;
 }

@@ -26,24 +26,26 @@
 using goby::acomms::operator<<;
 using goby::acomms::operator+;
 
-class CustomCodec : public goby::acomms::DCCLFixedFieldCodec
+class CustomCodec : public goby::acomms::DCCLTypedFixedFieldCodec<CustomMsg>
 {
 private:
     unsigned size()
         {
             return (part() == HEAD) ? 0 : A_SIZE + B_SIZE;                
         }
+    Bitset encode()
+        {
+            return Bitset(size());
+        }
     
-    Bitset any_encode(const boost::any& field_value)
+    Bitset encode(const CustomMsg& msg)
         {
             if(part() == HEAD)
             {
-                return Bitset();
+                return encode();
             }
             else
             {
-                const CustomMsg& msg = boost::any_cast<const CustomMsg&>(field_value);
-                
                 Bitset a(A_SIZE, static_cast<unsigned long>(msg.a()));
                 Bitset b(B_SIZE, static_cast<unsigned long>(msg.b()));
                 
@@ -55,11 +57,11 @@ private:
         }
     
     
-    boost::any any_decode(Bitset* bits)
+    CustomMsg decode(Bitset* bits)
         {
             if(part() == HEAD)
             {
-                return boost::any();
+                throw(goby::acomms::DCCLNullValueException());
             }
             else
             {

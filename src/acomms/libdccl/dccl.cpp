@@ -68,10 +68,10 @@ void goby::acomms::DCCLCodec::set_default_codecs()
     DCCLFieldCodecManager::add<DCCLDefaultArithmeticFieldCodec<int64> >(DEFAULT_CODEC_NAME);
     DCCLFieldCodecManager::add<DCCLDefaultArithmeticFieldCodec<uint32> >(DEFAULT_CODEC_NAME);
     DCCLFieldCodecManager::add<DCCLDefaultArithmeticFieldCodec<uint64> >(DEFAULT_CODEC_NAME);
-    DCCLFieldCodecManager::add<FieldDescriptor::TYPE_STRING, DCCLDefaultStringCodec>(DEFAULT_CODEC_NAME);
-    DCCLFieldCodecManager::add<FieldDescriptor::TYPE_BYTES, DCCLDefaultBytesCodec>(DEFAULT_CODEC_NAME);
-    DCCLFieldCodecManager::add<google::protobuf::EnumDescriptor, DCCLDefaultEnumCodec>(DEFAULT_CODEC_NAME);
-    DCCLFieldCodecManager::add<google::protobuf::Message, DCCLDefaultMessageCodec>(DEFAULT_CODEC_NAME);
+    DCCLFieldCodecManager::add<DCCLDefaultStringCodec, FieldDescriptor::TYPE_STRING>(DEFAULT_CODEC_NAME);
+    DCCLFieldCodecManager::add<DCCLDefaultBytesCodec, FieldDescriptor::TYPE_BYTES>(DEFAULT_CODEC_NAME);
+    DCCLFieldCodecManager::add<DCCLDefaultEnumCodec>(DEFAULT_CODEC_NAME);
+    DCCLFieldCodecManager::add<DCCLDefaultMessageCodec, FieldDescriptor::TYPE_MESSAGE>(DEFAULT_CODEC_NAME);
 
     DCCLFieldCodecManager::add<DCCLTimeCodec>("_time");
     DCCLFieldCodecManager::add<DCCLModemIdConverterCodec>("_platform<->modem_id");
@@ -323,6 +323,18 @@ unsigned goby::acomms::DCCLCodec::size(const google::protobuf::Message* msg)
     
     return head_size_bytes + body_size_bytes;
 }
+
+void goby::acomms::DCCLCodec::run_hooks(const google::protobuf::Message* msg)
+{
+    const Descriptor* desc = msg->GetDescriptor();
+
+    boost::shared_ptr<DCCLFieldCodecBase> codec =
+        DCCLFieldCodecManager::find(desc, desc->options().GetExtension(dccl::message_codec));
+    
+    codec->base_run_hooks(*msg, DCCLFieldCodecBase::HEAD);
+    codec->base_run_hooks(*msg, DCCLFieldCodecBase::BODY);
+}
+
 
 void goby::acomms::DCCLCodec::info(const google::protobuf::Descriptor* desc, std::ostream* os)
 {

@@ -11,3 +11,9 @@ extend google.protobuf.MessageOptions {
   optional double value_base = 50055;
 }
 
+extend .google.protobuf.FieldOptions
+{
+  optional bool is_src = 50060 [default = false];
+  optional bool is_dest = 50061 [default = false];
+  optional bool is_time = 50062 [default = false];
+}

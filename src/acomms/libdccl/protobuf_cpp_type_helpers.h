@@ -638,7 +638,7 @@ namespace goby
             { return google::protobuf::FieldDescriptor::CPPTYPE_STRING; }
         };
        template<>
-           class ToProtoCppType<google::protobuf::EnumDescriptor>
+           class ToProtoCppType<const google::protobuf::EnumValueDescriptor*>
        {
          public:
            static google::protobuf::FieldDescriptor::CppType as_enum()

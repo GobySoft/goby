@@ -74,6 +74,11 @@ namespace goby
                                       const std::vector<boost::any>& field_values,
                                       const google::protobuf::FieldDescriptor* field);
 
+            void base_run_hooks(const google::protobuf::Message& msg, MessagePart part);
+            void base_run_hooks(const boost::any& field_value,
+                                const google::protobuf::FieldDescriptor* field);
+
+            
             void base_size(unsigned* bit_size, const google::protobuf::Message& msg, MessagePart part);
             void base_size(unsigned* bit_size, const boost::any& field_value,
                            const google::protobuf::FieldDescriptor* field);
@@ -127,11 +132,13 @@ namespace goby
             google::protobuf::FieldDescriptor::CppType wire_type() const  { return wire_type_; }
 
 
-            static void register_wire_value_hook(
-                int field_option_extension_id,
-                boost::function<void (const boost::any& wire_value, const boost::any& extension_value)>& callback)
+
+            template<typename Extension>
+                static void register_wire_value_hook(
+                    boost::function<void (const boost::any& wire_value, const boost::any& extension_value)> callback)
             {
-                wire_value_hooks_[field_option_extension_id].connect(callback);
+                Extension ex;
+                wire_value_hooks_[ex.number()].connect(callback);
             }
 
           protected:
@@ -155,7 +162,7 @@ namespace goby
             {
                 return !MessageHandler::field_.empty() ? MessageHandler::field_.back() : 0;
             }
-
+            
             
             template<typename Extension>
                 typename Extension::TypeTraits::ConstType get(const Extension& e)
@@ -199,43 +206,25 @@ namespace goby
                 
             }
             
-                
-            virtual void validate()
-            { }
-            virtual std::string info();
-            
+            // 
+            // VIRTUAL
+            //
+
+            // contain boost::any
             virtual Bitset any_encode(const boost::any& field_value) = 0;
             virtual boost::any any_decode(Bitset* bits) = 0;
-
-            virtual goby::acomms::Bitset
-                any_encode_repeated(const std::vector<boost::any>& field_values);
-            virtual std::vector<boost::any>
-                any_decode_repeated(Bitset* repeated_bits);
 
             virtual boost::any any_pre_encode(const boost::any& field_value)
             { return field_value; }
             virtual boost::any any_post_decode(const boost::any& wire_value)
             { return wire_value; }
 
-            virtual std::vector<boost::any> any_pre_encode_repeated(const std::vector<boost::any>& field_values)
-            {
-                std::vector<boost::any> return_values;
-                BOOST_FOREACH(const boost::any& field_value, field_values)
-                    return_values.push_back(any_pre_encode(field_value));
-                return return_values;
-            }
-            virtual std::vector<boost::any> any_post_decode_repeated(
-                const std::vector<boost::any>& wire_values)
-            {
-                std::vector<boost::any> return_values;
-                BOOST_FOREACH(const boost::any& wire_value, wire_values)
-                    return_values.push_back(any_post_decode(wire_value));
-                return return_values;
-            }
-
-            
             virtual unsigned any_size(const boost::any& field_value) = 0;
-            virtual unsigned any_size_repeated(const std::vector<boost::any>& field_values);
+            virtual void any_run_hooks(const boost::any& field_value);
+
+            // no boost::any
+            virtual void validate() { }
+            virtual std::string info();
             
             virtual unsigned max_size() = 0;
             virtual unsigned min_size() = 0;            
@@ -244,6 +233,22 @@ namespace goby
             virtual unsigned min_size_repeated();
             
             virtual bool variable_size() { return true; }
+
+            
+
+            // TODO (tes): make these virtual for end user
+            goby::acomms::Bitset
+                any_encode_repeated(const std::vector<boost::any>& field_values);
+            std::vector<boost::any>
+                any_decode_repeated(Bitset* repeated_bits);
+
+            std::vector<boost::any> any_pre_encode_repeated(const std::vector<boost::any>& field_values);
+            
+            std::vector<boost::any> any_post_decode_repeated(
+                const std::vector<boost::any>& wire_values);
+            
+            unsigned any_size_repeated(const std::vector<boost::any>& field_values);
+            
 
             static boost::signal<void (unsigned size)> get_more_bits;
 
@@ -410,43 +415,51 @@ namespace goby
 
 
             };
-
         
         template<typename WireType, typename FieldType = WireType>
-            class DCCLTypedFixedFieldCodec : public DCCLFieldCodecSwitcher<WireType, FieldType>
+            class DCCLTypedFieldCodec : public DCCLFieldCodecSwitcher<WireType, FieldType>
         {
           public:
           typedef WireType wire_type;
           typedef FieldType field_type;
             
-          protected:
-          virtual unsigned size() = 0;
-          virtual unsigned size_repeated()          
-          {
-              if(!DCCLFieldCodecBase::this_field()->options().HasExtension(dccl::max_repeat))
-                  throw(DCCLException("Missing dccl.max_repeat option on `repeated` field"));
-              else
-                  return size() * DCCLFieldCodecBase::this_field()->options().GetExtension(dccl::max_repeat);
-          }
 
+          protected:
           virtual Bitset encode() = 0;          
           virtual Bitset encode(const WireType& wire_value) = 0;
           virtual WireType decode(Bitset* bits) = 0;
-          
+          virtual unsigned size() = 0;
+          virtual unsigned size(const FieldType& wire_value) = 0;
           
           private:
-          Bitset any_encode(const boost::any& field_value)
+          unsigned any_size(const boost::any& field_value)
           {
               try
               {
                   if(field_value.empty())
-                      return encode();
+                      return size();
                   else
-                      return encode(boost::any_cast<WireType>(field_value));
+                      return size(boost::any_cast<FieldType>(field_value));
               }
               catch(boost::bad_any_cast&)
               {
-                  throw(type_error("encode", typeid(WireType), field_value.type()));
+                  throw(type_error("size", typeid(FieldType), field_value.type()));
+              }
+          }
+          
+
+          Bitset any_encode(const boost::any& wire_value)
+          {
+              try
+              {
+                  if(wire_value.empty())
+                      return encode();
+                  else
+                      return encode(boost::any_cast<WireType>(wire_value));
+              }
+              catch(boost::bad_any_cast&)
+              {
+                  throw(type_error("encode", typeid(WireType), wire_value.type()));
               }
           }
           
@@ -463,58 +476,7 @@ namespace goby
           }
           
 
-          unsigned any_size(const boost::any& field_value)
-          { return size(); }
-          
-          unsigned max_size()
-          { return size(); }
-          
-          unsigned min_size()
-          { return size(); }
-          
-          bool variable_size() { return false; }
-          
-          unsigned any_size_repeated(const std::vector<boost::any>& field_values)
-          { return size_repeated(); }
-          
-          unsigned max_size_repeated()
-          { return size_repeated(); }
 
-          unsigned min_size_repeated()
-          { return size_repeated(); }
-
-          
-        };
-        
-        
-        class DCCLFixedFieldCodec : public DCCLFieldCodecBase
-        {
-          protected:
-            virtual unsigned size() = 0;
-            virtual unsigned size_repeated();
-            
-          private:
-            unsigned any_size(const boost::any& field_value)
-            { return size(); }
-
-            unsigned max_size()
-            { return size(); }
-
-            unsigned min_size()
-            { return size(); }
-            
-            bool variable_size() { return false; }
-
-            unsigned any_size_repeated(const std::vector<boost::any>& field_values)
-            { return size_repeated(); }
-
-            unsigned max_size_repeated()
-            { return size_repeated(); }
-
-            unsigned min_size_repeated()
-            { return size_repeated(); }
-
-            
         };
         
     }

@@ -1,4 +1,5 @@
 import "goby/protobuf/dccl_option_extensions.proto";
+import "goby/protobuf/queue_option_extensions.proto";
 
 // required fields will be filled in for you by ApplicationBase
 // if you choose not to do so yourself
@@ -11,13 +12,15 @@ message Header
   // result of goby::util::as<std::string>(goby_time())
   // e.g. "2002-01-20 23:59:59.000"
   required string time = 10 [(dccl.codec)="_time",
-                             (dccl.in_head)=true];
+                             (dccl.in_head)=true,
+                             (queue.is_time)=true];
 
   //
   // source
   //
   required string source_platform = 11 [(dccl.codec)="_platform<->modem_id",
-                                        (dccl.in_head)=true];
+                                        (dccl.in_head)=true,
+                                        (queue.is_src)=true];
   optional string source_app = 12 [(dccl.omit)=true];
   
   //
@@ -27,6 +30,7 @@ message Header
   optional PublishDestination dest_type = 13 [default = PUBLISH_SELF, (dccl.in_head)=true];
   
   optional string dest_platform = 14 [(dccl.codec)="_platform<->modem_id",
-                                      (dccl.in_head)=true]; // required if dest_type == other
+                                      (dccl.in_head)=true,
+                                      (queue.is_dest)=true]; // required if dest_type == other
 
 }

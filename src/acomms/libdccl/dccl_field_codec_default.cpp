@@ -70,39 +70,34 @@ void goby::acomms::DCCLDefaultBoolCodec::validate()
 // DCCLDefaultStringCodec
 //
 
-goby::acomms::Bitset goby::acomms::DCCLDefaultStringCodec::any_encode(const boost::any& wire_value)
+goby::acomms::Bitset goby::acomms::DCCLDefaultStringCodec::encode()
 {
-    try
-    {
-        if(wire_value.empty())
-            return Bitset(min_size());
-
-        std::string s = boost::any_cast<std::string>(wire_value);
-        if(s.size() > get(dccl::max_length))
-        {
-            DCCLCommon::logger() << warn << "String " << s <<  " exceeds `dccl.max_length`, truncating" << std::endl;
-            s.resize(get(dccl::max_length)); 
-        }
-        
-            
-        Bitset value_bits;
-        string2bitset(&value_bits, s);
-        
-        Bitset length_bits(min_size(), s.length());
-
-        // adds to MSBs
-        for(int i = 0, n = value_bits.size(); i < n; ++i)
-            length_bits.push_back(value_bits[i]);
-
-        return length_bits;
-    }
-    catch(boost::bad_any_cast& e)
-    {
-        throw(DCCLException("Bad type given to encode, expecting std::string"));
-    }
+    return Bitset(min_size());
 }
 
-boost::any goby::acomms::DCCLDefaultStringCodec::any_decode(Bitset* bits)
+goby::acomms::Bitset goby::acomms::DCCLDefaultStringCodec::encode(const std::string& wire_value)
+{
+    std::string s = wire_value;
+    if(s.size() > get(dccl::max_length))
+    {
+        DCCLCommon::logger() << warn << "String " << s <<  " exceeds `dccl.max_length`, truncating" << std::endl;
+        s.resize(get(dccl::max_length)); 
+    }
+        
+            
+    Bitset value_bits;
+    string2bitset(&value_bits, s);
+        
+    Bitset length_bits(min_size(), s.length());
+
+    // adds to MSBs
+    for(int i = 0, n = value_bits.size(); i < n; ++i)
+        length_bits.push_back(value_bits[i]);
+
+    return length_bits;
+}
+
+std::string goby::acomms::DCCLDefaultStringCodec::decode(Bitset* bits)
 {
     unsigned value_length = bits->to_ulong();
 
@@ -110,7 +105,6 @@ boost::any goby::acomms::DCCLDefaultStringCodec::any_decode(Bitset* bits)
     {
         
         unsigned header_length = min_size();
-    
         
         DCCLCommon::logger() << debug1 << "Length of string is = " << value_length << std::endl;
 
@@ -132,25 +126,19 @@ boost::any goby::acomms::DCCLDefaultStringCodec::any_decode(Bitset* bits)
     }
     else
     {
-        return boost::any();
+        throw(DCCLNullValueException());
     }
     
 }
 
-unsigned goby::acomms::DCCLDefaultStringCodec::any_size(const boost::any& field_value)
+unsigned goby::acomms::DCCLDefaultStringCodec::size()
 {
-    try
-    {
-        if(field_value.empty())
-            return min_size();
-        
-        std::string s = boost::any_cast<std::string>(field_value);
-        return std::min(min_size() + static_cast<unsigned>(s.length()*BITS_IN_BYTE), max_size());
-    }
-    catch(boost::bad_any_cast& e)
-    {
-        throw(DCCLException("Bad type given to encode, expecting std::string"));
-    }
+    return min_size();
+}
+
+unsigned goby::acomms::DCCLDefaultStringCodec::size(const std::string& field_value)
+{
+    return std::min(min_size() + static_cast<unsigned>(field_value.length()*BITS_IN_BYTE), max_size());
 }
 
 
@@ -176,40 +164,36 @@ void goby::acomms::DCCLDefaultStringCodec::validate()
 //
 // DCCLDefaultBytesCodec
 //
-
-goby::acomms::Bitset goby::acomms::DCCLDefaultBytesCodec::any_encode(const boost::any& wire_value)
+goby::acomms::Bitset goby::acomms::DCCLDefaultBytesCodec::encode()
 {
-    try
-    {
-        if(wire_value.empty())
-            return Bitset(min_size(), 0);
+    return Bitset(min_size(), 0);
+}
 
-        std::string s = boost::any_cast<std::string>(wire_value);
 
-        Bitset bits;
-        string2bitset(&bits, s);
-        bits.resize(max_size());
-        bits <<= min_size();
-        bits.set(0, true);
+goby::acomms::Bitset goby::acomms::DCCLDefaultBytesCodec::encode(const std::string& wire_value)
+{
+    Bitset bits;
+    string2bitset(&bits, wire_value);
+    bits.resize(max_size());
+    bits <<= min_size();
+    bits.set(0, true);
         
-        return bits;
-    }
-    catch(boost::bad_any_cast& e)
-    {
-        throw(DCCLException("Bad type given to encode, expecting std::string"));
-    }
+    return bits;
 }
 
-unsigned goby::acomms::DCCLDefaultBytesCodec::any_size(const boost::any& field_value)
+unsigned goby::acomms::DCCLDefaultBytesCodec::size()
 {
-    if(field_value.empty())
-        return min_size();
-    else
-        return max_size();
+    return min_size();    
 }
 
 
-boost::any goby::acomms::DCCLDefaultBytesCodec::any_decode(Bitset* bits)
+unsigned goby::acomms::DCCLDefaultBytesCodec::size(const std::string& field_value)
+{
+    return max_size();
+}
+
+
+std::string goby::acomms::DCCLDefaultBytesCodec::decode(Bitset* bits)
 {
     bool presence_flag = bits->to_ulong();
     if(presence_flag)
@@ -226,7 +210,7 @@ boost::any goby::acomms::DCCLDefaultBytesCodec::any_decode(Bitset* bits)
     }
     else
     {
-        return boost::any();
+        throw(DCCLNullValueException());
     }
     
 }

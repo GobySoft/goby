@@ -43,6 +43,7 @@
 #include "protobuf_cpp_type_helpers.h"
 #include "dccl_exception.h"
 #include "dccl_field_codec.h"
+#include "dccl_field_codec_fixed.h"
 #include "dccl_type_helper.h"
 #include "dccl_field_codec_manager.h"
 
@@ -88,13 +89,15 @@ namespace goby
 
             /// \brief Messages must be validated before they can be encoded/decoded
             bool validate(const google::protobuf::Descriptor* desc);
-
             void info(const google::protobuf::Descriptor* desc, std::ostream* os);            
 
+            
             bool validate_repeated(const std::list<const google::protobuf::Descriptor*>& desc);
             void info_repeated(const std::list<const google::protobuf::Descriptor*>& desc, std::ostream* os);
             // in bytes
             unsigned size(const google::protobuf::Message* msg);
+            // run hooks previously registered to DCCLFieldCodec::register_wire_value_hook
+            void run_hooks(const google::protobuf::Message* msg);
 
             void call_hooks(const google::protobuf::Message* msg);
 

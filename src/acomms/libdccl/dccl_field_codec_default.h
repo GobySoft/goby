@@ -36,6 +36,7 @@
 #include "goby/acomms/acomms_constants.h"
 
 #include "dccl_field_codec_default_message.h"
+#include "dccl_field_codec_fixed.h"
 #include "dccl_field_codec.h"
 
 namespace goby
@@ -117,12 +118,14 @@ namespace goby
             void validate();
         };
         
-        class DCCLDefaultStringCodec : public DCCLFieldCodecBase
+        class DCCLDefaultStringCodec : public DCCLTypedFieldCodec<std::string>
         {
           private:
-            Bitset any_encode(const boost::any& wire_value);
-            boost::any any_decode(Bitset* bits);     
-            unsigned any_size(const boost::any& field_value);
+            Bitset encode();
+            Bitset encode(const std::string& wire_value);
+            std::string decode(Bitset* bits);
+            unsigned size();
+            unsigned size(const std::string& field_value);
             unsigned max_size();
             unsigned min_size();
             void validate();
@@ -132,12 +135,14 @@ namespace goby
             
         };
 
-        class DCCLDefaultBytesCodec : public DCCLFieldCodecBase
+        class DCCLDefaultBytesCodec : public DCCLTypedFieldCodec<std::string>
         {
           private:
-            Bitset any_encode(const boost::any& wire_value);
-            boost::any any_decode(Bitset* bits);     
-            unsigned any_size(const boost::any& field_value);
+            Bitset encode();
+            Bitset encode(const std::string& wire_value);
+            std::string decode(Bitset* bits);
+            unsigned size();
+            unsigned size(const std::string& field_value);
             unsigned max_size();
             unsigned min_size();
             bool variable_size() { return true; }
@@ -145,7 +150,8 @@ namespace goby
         };
 
         
-        class DCCLDefaultEnumCodec : public DCCLDefaultArithmeticFieldCodec<int32, const google::protobuf::EnumValueDescriptor*>
+        class DCCLDefaultEnumCodec
+            : public DCCLDefaultArithmeticFieldCodec<int32, const google::protobuf::EnumValueDescriptor*>
         {
           public:
             int32 pre_encode(const google::protobuf::EnumValueDescriptor* const& field_value);

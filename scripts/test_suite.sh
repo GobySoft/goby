@@ -1,6 +1,7 @@
 #!/bin/bash
 
 pushd ../build
+make clean
 rm -rf *
 cmake .. -DCMAKE_BUILD_TYPE=Debug -Dbuild_doc=ON
 ctest -D ExperimentalStart

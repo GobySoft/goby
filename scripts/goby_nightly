@@ -1,6 +1,7 @@
 #!/bin/bash
 
 cd /home/toby/nightly/goby/1.0/build
+
 rm -rf *
 cmake .. -Dbuild_moos=ON -DCMAKE_BUILD_TYPE=Debug
 ctest -D NightlyStart

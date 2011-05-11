@@ -29,32 +29,52 @@ using goby::acomms::operator<<;
 using goby::acomms::int32;
 
 bool found_dest = false;
+bool found_source = false;
+bool found_time = false;
+
+boost::posix_time::ptime current_time = boost::posix_time::second_clock::universal_time();
 
 void dest(const boost::any& wire_value, const boost::any& extension_value)
 {
-    found_dest = true;
     std::cout << "dest: type: `" << wire_value.type().name() << "`, wire_value: " << boost::any_cast<int32>(wire_value) << std::endl;
     
     assert(boost::any_cast<bool>(extension_value) == true);
     assert(boost::any_cast<int32>(wire_value) == 3);    
+    found_dest = true;
 }
 
 
-// template< ::google::protobuf::internal::ExtensionIdentifier ex>
-// void number()
-// {
-// //    Extension ex;
-// //    std::cout << "!!" << ex.number() << std::endl;
-// }
+void source(const boost::any& wire_value, const boost::any& extension_value)
+{
+    std::cout << "source: type: `" << wire_value.type().name() << "`, wire_value: " << boost::any_cast<int32>(wire_value) << std::endl;
+    
+    assert(boost::any_cast<bool>(extension_value) == true);
+    assert(boost::any_cast<int32>(wire_value) == 1);    
+    found_source = true;
+}
 
+void tm(const boost::any& wire_value, const boost::any& extension_value)
+{
+    std::cout << "time: type: `" << wire_value.type().name() << "`, wire_value: " << boost::any_cast<std::string>(wire_value) << std::endl;
+    
+    assert(boost::any_cast<bool>(extension_value) == true);
+    assert(boost::any_cast<std::string>(wire_value) == goby::util::as<std::string>(current_time));
+    found_time = true;
+}
 
 int main()
 {
-//    goby::acomms::DCCLFieldCodecBase::register_wire_value_hook<queue::is_dest>(&dest);
-//    number<queue::is_dest>();
+    goby::acomms::protobuf::HookKey dest_key;
+    dest_key.set_field_option_extension_number(queue::is_dest.number());
+    goby::acomms::DCCLFieldCodecBase::register_wire_value_hook(dest_key, &dest);
 
-    std::cout <<     queue::is_dest.number()<< std::endl;
-    
+    goby::acomms::protobuf::HookKey source_key;
+    source_key.set_field_option_extension_number(queue::is_src.number());
+    goby::acomms::DCCLFieldCodecBase::register_wire_value_hook(source_key, &source);
+
+    goby::acomms::DCCLFieldCodecBase::register_wire_value_hook(
+        make_hook_key(queue::is_time.number(), goby::acomms::protobuf::HookKey::FIELD_VALUE),
+        &tm);
     
     goby::acomms::DCCLCommon::set_log(&std::cerr);
 
@@ -70,14 +90,15 @@ int main()
 
     msg_in1.set_telegram("hello!");
     msg_in1.mutable_header()->set_time(
-        goby::util::as<std::string>(boost::posix_time::second_clock::universal_time()));
+        goby::util::as<std::string>(current_time));
     msg_in1.mutable_header()->set_source_platform("topside");
     msg_in1.mutable_header()->set_dest_platform("unicorn");
     msg_in1.mutable_header()->set_dest_type(Header::PUBLISH_OTHER);
 
     codec->run_hooks(&msg_in1);
     assert(found_dest);
-
+    assert(found_source);
+    assert(found_time);
     
     codec->info(msg_in1.GetDescriptor(), &std::cout);    
     std::cout << "Message in:\n" << msg_in1.DebugString() << std::endl;

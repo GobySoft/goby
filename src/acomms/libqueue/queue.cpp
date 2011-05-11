@@ -22,35 +22,59 @@
 
 #include "queue.h"
 #include "queue_manager.h"
+#include "goby/protobuf/queue_option_extensions.pb.h"
 
 using goby::util::goby_time;
+
+goby::acomms::protobuf::ModemDataTransmission goby::acomms::Queue::latest_data_msg_;
+bool goby::acomms::Queue::hooks_set_ = false;
+
 
 goby::acomms::Queue::Queue(const protobuf::QueueConfig cfg /* = 0 */)
     : cfg_(cfg),
       last_send_time_(goby_time())
-{}
+{
+    if(!hooks_set_)
+    {
+        goby::acomms::DCCLFieldCodecBase::register_wire_value_hook(
+            make_hook_key(queue::is_dest.number(), goby::acomms::protobuf::HookKey::WIRE_VALUE),
+            boost::bind(&Queue::set_latest_dest, this, _1, _2));
+
+        goby::acomms::DCCLFieldCodecBase::register_wire_value_hook(
+            make_hook_key(queue::is_src.number(), goby::acomms::protobuf::HookKey::WIRE_VALUE),
+            boost::bind(&Queue::set_latest_src, this, _1, _2));
+
+        goby::acomms::DCCLFieldCodecBase::register_wire_value_hook(
+            make_hook_key(queue::is_time.number(), goby::acomms::protobuf::HookKey::FIELD_VALUE),
+            boost::bind(&Queue::set_latest_time, this, _1, _2));
+        hooks_set_ = true;
+        
+    }
+}
 
 
 bool goby::acomms::Queue::push_message(const google::protobuf::Message& dccl_msg)
-{
+{    
+
     boost::shared_ptr<google::protobuf::Message> new_dccl_msg(dccl_msg.New());
     new_dccl_msg->CopyFrom(dccl_msg);
 
-    protobuf::ModemDataTransmission data_msg;
+    latest_data_msg_.Clear();
     
     goby::acomms::DCCLCodec* codec = goby::acomms::DCCLCodec::get();
-    data_msg.mutable_data()->resize(codec->size(&dccl_msg));
-
-    // look for header parts
+    latest_data_msg_.mutable_data()->resize(codec->size(&dccl_msg));
+    codec->run_hooks(&dccl_msg);
+    glog.is(debug2) && glog << "post hooks: " << latest_data_msg_ << std::endl;    
     
-    
-    return push_message(data_msg, new_dccl_msg);
+    return push_message(latest_data_msg_, new_dccl_msg);
 }
 
 
 
 // add a new message
-bool goby::acomms::Queue::push_message(const protobuf::ModemDataTransmission& encoded_msg, boost::shared_ptr<google::protobuf::Message> dccl_msg /* =  boost::shared_ptr<google::protobuf::Message> */)
+bool goby::acomms::Queue::push_message(const protobuf::ModemDataTransmission& encoded_msg,
+                                       boost::shared_ptr<google::protobuf::Message> dccl_msg
+                                       /* =  boost::shared_ptr<google::protobuf::Message> */)
 {
     if(encoded_msg.data().empty())
     {
@@ -104,12 +128,14 @@ bool goby::acomms::Queue::push_message(const protobuf::ModemDataTransmission& en
                             << cfg_.max_queue() << "): ";
     
     if(cfg_.key().type() == protobuf::QUEUE_DCCL)
-        glog.is(debug1) && glog << *dccl_msg;
+    {
+        glog.is(debug1) && glog << *dccl_msg << std::endl;
+        glog.is(debug2) && glog << encoded_msg << std::endl;
+    }
     else
-        glog.is(debug1) && glog << encoded_msg;
-    
-    glog.is(debug1) && glog << std::endl;
-
+    {
+        glog.is(debug1) && glog << encoded_msg << std::endl;
+    }
     
     return true;     
 }
@@ -183,10 +209,10 @@ bool goby::acomms::Queue::priority_values(double& priority,
         return false;
     }
     // wrong destination
-    else if((data_msg.base().has_dest()
-             && data_msg.base().dest() != QUERY_DESTINATION_ID
-             && next_msg.base().dest() != BROADCAST_ID
-             && data_msg.base().dest() != next_msg.base().dest()))
+    else if((data_msg.base().has_dest() &&
+             !(data_msg.base().dest() == QUERY_DESTINATION_ID // can set to a real destination
+               || next_msg.base().dest() == BROADCAST_ID // can switch to a real destination
+               || data_msg.base().dest() == next_msg.base().dest()))) // same as real destination
     {
         glog.is(debug1) && glog << group("queue.priority") << "\t" <<  cfg_.name() << " next message has wrong destination  (must be BROADCAST (0) or same as first user-frame)" << std::endl;
         return false; 
@@ -210,23 +236,29 @@ bool goby::acomms::Queue::priority_values(double& priority,
 }
 
 bool goby::acomms::Queue::pop_message(unsigned frame)
-{   
-    if (cfg_.newest_first() && !messages_.back().encoded_msg.ack_requested())
-    {
-        stream_for_pop(*messages_.back().dccl_msg);
-        messages_.pop_back();
-    }
-    else if(!cfg_.newest_first() && !messages_.front().encoded_msg.ack_requested())
-    {
-        stream_for_pop(*messages_.front().dccl_msg);
-        messages_.pop_front();
-    }
-    else
-    {
-        return false;
-    }    
+{
+    std::list<QueuedMessage>::iterator back_it = messages_.end();
+    --back_it;  // gives us "back" iterator
+    std::list<QueuedMessage>::iterator front_it = messages_.begin();
+    
+    // find the first message that isn't waiting for an ack
+    std::list<QueuedMessage>::iterator it = cfg_.newest_first() ? back_it : front_it;
 
-    return true;
+    while(true)
+    {
+        if(!it->encoded_msg.ack_requested())
+        {
+            stream_for_pop(*it->dccl_msg);
+            messages_.erase(it);
+            return true;
+        }
+        
+        if(it == (cfg_.newest_first() ? front_it : back_it))
+            return false;
+        
+        cfg_.newest_first() ? --it: ++it;
+    }
+    return false;
 }
 
 bool goby::acomms::Queue::pop_message_ack(unsigned frame, boost::shared_ptr<google::protobuf::Message>& removed_msg)

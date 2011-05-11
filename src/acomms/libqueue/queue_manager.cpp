@@ -268,16 +268,26 @@ void goby::acomms::QueueManager::handle_modem_data_request(const protobuf::Modem
             glog.is(debug1) && glog << group("queue.out") << "sending data to firmware from: "
                                     << winning_queue->cfg().name()
                                     << ": "<< *(next_user_frame.dccl_msg) << std::endl;
-    
+            
             //
             // ACK
             // 
             // insert ack if desired
             if(next_user_frame.encoded_msg.ack_requested())
-                waiting_for_ack_.insert(std::pair<unsigned, Queue*>(data_msg->frame(), winning_queue));
+            {
+                glog.is(debug2) &&
+                    glog << "inserting ack for queue: " << *winning_queue << std::endl;
+                waiting_for_ack_.insert(std::pair<unsigned, Queue*>(data_msg->frame(),
+                                                                    winning_queue));
+            }
             else
             {
-                winning_queue->pop_message(data_msg->frame());
+                glog.is(debug2) &&
+                    glog << "no ack, popping from queue: " << *winning_queue << std::endl;
+                if(!winning_queue->pop_message(data_msg->frame()))
+                    glog.is(warn) &&
+                        glog << "failed to pop from queue: " << *winning_queue << std::endl;
+
                 qsize(winning_queue); // notify change in queue size
             }
 
@@ -487,13 +497,6 @@ void goby::acomms::QueueManager::handle_modem_receive(const protobuf::ModemDataT
         return;
     }
     
-    if(message.base().dest() != BROADCAST_ID && message.base().dest() != modem_id_)
-    {
-        glog.is(warn) && glog<< group("queue.in") << "ignoring message for modem_id = "
-                      << message.base().dest() << std::endl;
-        return;
-    }
-
     int ccl_id = data[0];
     // check for queue_dccl type
     if(ccl_id == DCCL_CCL_HEADER)
@@ -501,17 +504,36 @@ void goby::acomms::QueueManager::handle_modem_receive(const protobuf::ModemDataT
         goby::acomms::DCCLCodec* codec = goby::acomms::DCCLCodec::get();
         std::list<boost::shared_ptr<google::protobuf::Message> > dccl_msgs =
             codec->decode_repeated(data);
-
+        
         BOOST_FOREACH(boost::shared_ptr<google::protobuf::Message> msg, dccl_msgs)
-        {       
+        {
+            Queue::latest_data_msg_.Clear();
+            codec->run_hooks(msg.get());
 
-            signal_receive(*msg);
+            int32 dest = Queue::latest_data_msg_.base().dest();
+            if(dest != BROADCAST_ID && dest != modem_id_)
+            {
+                glog.is(warn) && glog << group("queue.in")
+                                      << "ignoring DCCL message for modem_id = "
+                                      << message.base().dest() << std::endl;
+            }
+            else
+            {
+                signal_receive(*msg);
+            }
         }
         
     }
     // check for ccl type
     else
     {
+        if(message.base().dest() != BROADCAST_ID && message.base().dest() != modem_id_)
+        {
+            glog.is(warn) && glog << group("queue.in") << "ignoring CCL message for modem_id = "
+                                  << message.base().dest() << std::endl;
+            return;
+        }
+
         protobuf::QueueKey key;
         key.set_type(protobuf::QUEUE_CCL);
         key.set_id(ccl_id);

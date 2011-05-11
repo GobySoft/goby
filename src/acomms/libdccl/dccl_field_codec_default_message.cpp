@@ -174,8 +174,8 @@ void goby::acomms::DCCLDefaultMessageCodec::any_run_hooks(const boost::any& fiel
                 boost::shared_ptr<FromProtoCppTypeBase> helper =
                     DCCLTypeHelper::find(field_desc);
 
-                
-                codec->base_run_hooks(helper->get_value(field_desc, *msg), field_desc);
+                if(!field_desc->is_repeated())
+                    codec->base_run_hooks(helper->get_value(field_desc, *msg), field_desc);
             }
         }
         catch(boost::bad_any_cast& e)

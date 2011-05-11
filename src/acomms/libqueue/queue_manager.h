@@ -114,7 +114,6 @@ namespace goby
             /// If using one of the classes inheriting ModemDriverBase, this method should be bound and passed to ModemDriverBase::set_ack_cb.
             /// \param message The ModemMessage corresponding to the acknowledgement (dest, src, frame#)
             void handle_modem_ack(const protobuf::ModemDataAck& message);
-        
             //@}
 
 

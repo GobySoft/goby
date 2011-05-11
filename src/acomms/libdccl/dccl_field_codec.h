@@ -34,6 +34,8 @@
 
 #include "dccl_common.h"
 #include "dccl_exception.h"
+#include "goby/protobuf/dccl.pb.h"
+#include "goby/protobuf/acomms_proto_helpers.h"
 #include "goby/protobuf/dccl_option_extensions.pb.h"
 #include "goby/util/string.h"
 #include "dccl_type_helper.h"
@@ -133,12 +135,12 @@ namespace goby
 
 
 
-            template<typename Extension>
-                static void register_wire_value_hook(
-                    boost::function<void (const boost::any& wire_value, const boost::any& extension_value)> callback)
+            static void register_wire_value_hook(
+                const protobuf::HookKey& key,
+                boost::function<void (const boost::any& wire_value,
+                                      const boost::any& extension_value)> callback)
             {
-                Extension ex;
-                wire_value_hooks_[ex.number()].connect(callback);
+                wire_value_hooks_[key].connect(callback);
             }
 
           protected:
@@ -328,7 +330,7 @@ namespace goby
             static MessagePart part_;
             // maps protobuf extension number for FieldOption onto a hook (signal) to call
             // if such a FieldOption is set, during the call to "size()"
-            static boost::ptr_map<int, boost::signal<void (const boost::any& wire_value, const boost::any& extension_value)> >  wire_value_hooks_;
+            static boost::ptr_map<protobuf::HookKey, boost::signal<void (const boost::any& wire_value, const boost::any& extension_value)> >  wire_value_hooks_;
             
             
             std::string name_;

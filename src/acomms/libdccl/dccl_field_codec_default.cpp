@@ -261,6 +261,7 @@ goby::acomms::int32 goby::acomms::DCCLTimeCodec::pre_encode(const std::string& f
     return util::as<boost::posix_time::ptime>(field_value).time_of_day().total_seconds();
 }
 
+
 std::string goby::acomms::DCCLTimeCodec::post_decode(const int32& wire_value)
 {
     using namespace boost::posix_time;

@@ -69,7 +69,7 @@ namespace goby
           }
           
           
-          Bitset encode(const WireType& value)
+          virtual Bitset encode(const WireType& value)
           {
               WireType wire_value = value;
               
@@ -87,8 +87,8 @@ namespace goby
               wire_value *= std::pow(10.0, precision());
               return Bitset(size(), goby::util::as<unsigned long>(wire_value)+1);
           }
-
-          WireType decode(Bitset* bits)
+          
+          virtual WireType decode(Bitset* bits)
           {
               unsigned long t = bits->to_ulong();
               if(!t) throw(DCCLNullValueException());
@@ -174,7 +174,7 @@ namespace goby
         {
           public:
             int32 pre_encode(const std::string& field_value);
-            std::string post_decode(const int32& wire_value);
+            std::string post_decode(const int32& wire_value);            
  
           private:
             void validate() { }

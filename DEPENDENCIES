@@ -67,7 +67,6 @@ if [[ $UID -ne 0 ]]; then
     exit 1
 fi
 
-
 red="\33[1;31m"
 nc="\33[1;0m"
 green="\33[1;32m"
@@ -119,7 +118,6 @@ if [ -e "`which apt-get`" ]; then
     fi 
 
     if [ -z "`apt-cache search ${debian_xerces_package}`" ]; then
-	 
         debian_xerces_package="libxerces-c2-dev"
     fi 
     
@@ -127,8 +125,8 @@ if [ -e "`which apt-get`" ]; then
     apt-get -y install $debian_boost_packages || printf $red"Could not install boost packages: see http://www.boost.org/\n"$nc
     apt-get -y install $debian_xerces_package || printf $red"Could not install xerces package\n"$nc
     apt-get -y install $debian_other_packages || printf $red"Could not install some packages: read the top of this file (DEPENDENCIES)\n"$nc
-    apt-get -y install $debian_wt_packages || printf $red"Could not install Wt packages: you need to download from source. See http://www.webtoolkit.eu/wt#/download\n"$nc
-fi
+    apt-get -y install $debian_wt_packages || printf $red"Could not install Wt packages: you need to download from source. See http://www.webtoolkit.eu/wt#/download\n"$nc        
+fi 
 
 
 #redhat_packages=\

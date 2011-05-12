@@ -36,8 +36,9 @@ namespace goby
             DatabaseClient()
             {
                 goby::acomms::connect(&ZeroMQNode::get()->pre_send_hooks, this, &DatabaseClient::pre_send);
-                
-                protobuf_node_.on_receipt<protobuf::DatabaseResponse>(DATABASE_REQUEST_SOCKET_ID,
+
+                if(cfg_.using_database())
+                    protobuf_node_.on_receipt<protobuf::DatabaseResponse>(DATABASE_REQUEST_SOCKET_ID,
                                                                       &DatabaseClient::response_inbox,
                                                                       this);
                 
@@ -49,28 +50,32 @@ namespace goby
             {
                 cfg_ = cfg;
 
-
-                using goby::core::protobuf::ZeroMQNodeConfig;
-                ZeroMQNodeConfig socket_cfg;
-                ZeroMQNodeConfig::Socket* request_socket = socket_cfg.add_socket();
-                request_socket->set_socket_type(ZeroMQNodeConfig::Socket::REQUEST);
-                request_socket->set_transport(ZeroMQNodeConfig::Socket::TCP);
-                request_socket->set_socket_id(DATABASE_REQUEST_SOCKET_ID);
-                request_socket->set_connect_or_bind(ZeroMQNodeConfig::Socket::CONNECT);
-                request_socket->set_ethernet_address(cfg_.database_address());
-                request_socket->set_ethernet_port(cfg_.database_port());
-                ZeroMQNode::get()->merge_cfg(socket_cfg);
-
-                try
+                if(cfg_.using_database())
                 {
+                    
+                    using goby::core::protobuf::ZeroMQNodeConfig;
+                    ZeroMQNodeConfig socket_cfg;
+                    ZeroMQNodeConfig::Socket* request_socket = socket_cfg.add_socket();
+                    request_socket->set_socket_type(ZeroMQNodeConfig::Socket::REQUEST);
+                    request_socket->set_transport(ZeroMQNodeConfig::Socket::TCP);
+                    request_socket->set_socket_id(DATABASE_REQUEST_SOCKET_ID);
+                    request_socket->set_connect_or_bind(ZeroMQNodeConfig::Socket::CONNECT);
+                    request_socket->set_ethernet_address(cfg_.database_address());
+                    request_socket->set_ethernet_port(cfg_.database_port());
                     ZeroMQNode::get()->merge_cfg(socket_cfg);
+                    
+                    try
+                    {
+                        ZeroMQNode::get()->merge_cfg(socket_cfg);
+                    }
+                    catch(std::exception& e)
+                    {
+                        glog.is(die) &&
+                            glog << "cannot connect to: "
+                                 << *request_socket << ": " << e.what() << std::endl;
+                    }
                 }
-                catch(std::exception& e)
-                {
-                    glog.is(die) &&
-                        glog << "cannot connect to: "
-                             << *request_socket << ": " << e.what() << std::endl;
-                }
+                
             }
             
             

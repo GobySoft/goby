@@ -49,17 +49,14 @@ namespace goby
         class QueueManager
         {
           public:
-            /// \name Constructors/Destructor
-            //@{         
-            /// \brief Default constructor.
-            ///
-            /// \param log std::ostream object or FlexOstream to capture all humanly readable runtime and debug information (optional).
-            QueueManager();
+            static QueueManager* get()
+            {
+                // set these now so that the user has a chance of setting the logger
+                if(!inst_)
+                    inst_.reset(new QueueManager);
 
-            /// Destructor.
-            ~QueueManager() { }
-        
-            //@}
+                return inst_.get();    
+            }
         
             /// \name Initialization Methods
             ///
@@ -180,8 +177,19 @@ namespace goby
 
             
           private:
-            friend class Queue;
-            static int modem_id_;
+            QueueManager();
+
+            // so we can use shared_ptr to hold the singleton
+            template<typename T>
+                friend void boost::checked_delete(T*);
+            /// destructor
+            ~QueueManager()
+            { }
+
+            QueueManager(const QueueManager&);
+            QueueManager& operator= (const QueueManager&);
+            //@}
+
             
 
             /// \brief Add more Queues.
@@ -207,6 +215,10 @@ namespace goby
             void process_cfg();
             
           private:
+            static boost::shared_ptr<QueueManager> inst_;
+            
+            friend class Queue;
+            static int modem_id_;
             std::map<goby::acomms::protobuf::QueueKey, Queue> queues_;
             
             // map frame number onto %queue pointer that contains

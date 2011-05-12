@@ -26,10 +26,12 @@
 using goby::acomms::operator<<;
 
 
-int main()
-{    
-    goby::acomms::DCCLCommon::set_log(&std::cerr);
 
+int main(int argc, char* argv[])
+{
+    goby::glog.add_stream(goby::util::Logger::DEBUG3, &std::cerr);
+    goby::glog.set_name(argv[0]);
+    
     goby::acomms::DCCLModemIdConverterCodec::add("unicorn", 3);
     goby::acomms::DCCLModemIdConverterCodec::add("topside", 1);
     

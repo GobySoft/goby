@@ -72,25 +72,6 @@ namespace goby
                 floor_bits2bytes(bits);
         }
         
-        class DCCLCommon
-        {
-          public:
-            static void set_log(std::ostream* log);
-            static std::ostream& logger()
-            { return *log_; }
-            static void add_flex_groups(util::FlexOstream* tout);
-            static google::protobuf::DynamicMessageFactory& message_factory()
-            { return *message_factory_; }
-
-            friend class DCCLCodec;
-          private:
-            static void initialize();
-            static void shutdown();
-
-            static google::protobuf::DynamicMessageFactory* message_factory_;
-            static std::ostream* log_;
-            static std::ofstream null_;
-        };
         
     }
 }

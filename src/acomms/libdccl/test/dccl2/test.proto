@@ -8,7 +8,6 @@ message CustomMsg
   option (dccl.max_bytes) = 256;
   option (dccl.message_codec) = "custom_codec";
   
-  // test default enc/dec
   optional uint32 a = 1;
   optional bool b = 2;
 }

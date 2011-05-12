@@ -29,23 +29,21 @@ GobyMessage msg_in1;
 void handle_receive(const google::protobuf::Message &msg);
 
 int main(int argc, char* argv[])
-{
-    goby::acomms::DCCLCommon::set_log(&std::cerr);
-    
+{    
     goby::glog.add_stream(goby::util::Logger::DEBUG3, &std::cerr);
     goby::glog.set_name(argv[0]);
     
-    goby::acomms::QueueManager q_manager;
+    goby::acomms::QueueManager* q_manager = goby::acomms::QueueManager::get();
     goby::acomms::protobuf::QueueManagerConfig cfg;
     const int MY_MODEM_ID = 1;
     const int UNICORN_MODEM_ID = 3;
     cfg.set_modem_id(MY_MODEM_ID);
-    q_manager.set_cfg(cfg);
+    q_manager->set_cfg(cfg);
     
     goby::acomms::DCCLModemIdConverterCodec::add("unicorn", UNICORN_MODEM_ID);
     goby::acomms::DCCLModemIdConverterCodec::add("topside", MY_MODEM_ID);
     
-    goby::acomms::connect(&q_manager.signal_receive, &handle_receive);
+    goby::acomms::connect(&q_manager->signal_receive, &handle_receive);
 
     msg_in1.set_telegram("hello!");
     msg_in1.mutable_header()->set_time(
@@ -56,7 +54,7 @@ int main(int argc, char* argv[])
     
 
     std::cout << "Pushed: " << msg_in1 << std::endl;
-    q_manager.push_message(msg_in1);
+    q_manager->push_message(msg_in1);
 
 
     goby::acomms::protobuf::ModemDataRequest request_msg;
@@ -64,7 +62,7 @@ int main(int argc, char* argv[])
     request_msg.mutable_base()->set_dest(UNICORN_MODEM_ID);
     
     goby::acomms::protobuf::ModemDataTransmission data_msg;
-    q_manager.handle_modem_data_request(request_msg, &data_msg);
+    q_manager->handle_modem_data_request(request_msg, &data_msg);
     
 
     std::cout << "requesting data, got: " << data_msg << std::endl;
@@ -77,16 +75,16 @@ int main(int argc, char* argv[])
     
 
     // feed back the modem layer - this will be rejected
-    q_manager.handle_modem_receive(data_msg);
+    q_manager->handle_modem_receive(data_msg);
     assert(receive_count == 0);
 
     
     // pretend we're now Unicorn
     cfg.set_modem_id(UNICORN_MODEM_ID);
-    q_manager.set_cfg(cfg);
+    q_manager->set_cfg(cfg);
     
     // feed back the modem layer
-    q_manager.handle_modem_receive(data_msg);
+    q_manager->handle_modem_receive(data_msg);
     
     assert(receive_count == 1);
     

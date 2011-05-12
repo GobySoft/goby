@@ -25,6 +25,9 @@ goby::acomms::DCCLTypeHelper::TypeMap goby::acomms::DCCLTypeHelper::type_map_;
 goby::acomms::DCCLTypeHelper::CppTypeMap goby::acomms::DCCLTypeHelper::cpptype_map_;
 goby::acomms::DCCLTypeHelper::CustomMessageMap goby::acomms::DCCLTypeHelper::custom_message_map_;
 
+// used to construct, initialize, and delete a copy of this object
+boost::shared_ptr<goby::acomms::DCCLTypeHelper> goby::acomms::DCCLTypeHelper::inst_(new goby::acomms::DCCLTypeHelper);
+
 //
 // DCCLTypeHelper
 //

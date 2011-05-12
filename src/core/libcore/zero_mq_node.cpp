@@ -28,7 +28,7 @@ using goby::glog;
 using goby::util::hex_encode;
 
 
-boost::shared_ptr<goby::core::ZeroMQNode> goby::core::ZeroMQNode::inst_(new ZeroMQNode());
+boost::shared_ptr<goby::core::ZeroMQNode> goby::core::ZeroMQNode::inst_;
 
 
 goby::core::ZeroMQNode::ZeroMQNode()

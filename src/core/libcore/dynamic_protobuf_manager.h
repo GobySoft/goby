@@ -32,6 +32,8 @@ namespace goby
         {
           public:
             static boost::shared_ptr<google::protobuf::Message> new_protobuf_message(
+                const google::protobuf::Descriptor* desc);
+            static boost::shared_ptr<google::protobuf::Message> new_protobuf_message(
                 const std::string& protobuf_type_name);
             static std::set<const google::protobuf::FileDescriptor*>
                 add_protobuf_file_with_dependencies(
@@ -42,19 +44,50 @@ namespace goby
                 const google::protobuf::FileDescriptorProto& proto);
             
             static google::protobuf::DynamicMessageFactory& msg_factory()
-            { return msg_factory_; }
+            {
+                return *get_instance()->msg_factory_;
+            }
             static google::protobuf::DescriptorPool& descriptor_pool()
-            { return descriptor_pool_; }
+            {
+                return *get_instance()->descriptor_pool_;
+            }
 
+          private:
+            // so we can use shared_ptr to hold the singleton
+            template<typename T>
+                friend void boost::checked_delete(T*);
+            static boost::shared_ptr<DynamicProtobufManager> inst_;
+
+            static DynamicProtobufManager* get_instance()
+            {
+                if(!inst_)
+                    inst_.reset(new DynamicProtobufManager);
+                return inst_.get();
+            }
+            
+            DynamicProtobufManager()
+            {
+                msg_factory_ = new google::protobuf::DynamicMessageFactory();
+                descriptor_pool_ = new google::protobuf::DescriptorPool();
+            }
+            ~DynamicProtobufManager()
+            {
+                delete msg_factory_;
+                delete descriptor_pool_;
+                google::protobuf::ShutdownProtobufLibrary();
+            }
+
+            DynamicProtobufManager(const DynamicProtobufManager&);
+            DynamicProtobufManager& operator= (const DynamicProtobufManager&);
             
           private:
-                      
+            
             // see google::protobuf documentation: this assists in
             // creating messages at runtime
-            static google::protobuf::DynamicMessageFactory msg_factory_;
+            google::protobuf::DynamicMessageFactory* msg_factory_;
             // see google::protobuf documentation: this assists in
             // creating messages at runtime
-            static google::protobuf::DescriptorPool descriptor_pool_;
+            google::protobuf::DescriptorPool* descriptor_pool_;
             
         };
         

@@ -33,25 +33,25 @@ int main(int argc, char* argv[])
     goby::glog.add_stream(goby::util::Logger::DEBUG3, &std::cerr);
     goby::glog.set_name(argv[0]);
     
-    goby::acomms::QueueManager q_manager;
+    goby::acomms::QueueManager* q_manager = goby::acomms::QueueManager::get();
     goby::acomms::protobuf::QueueManagerConfig cfg;
     const int MY_MODEM_ID = 1;
     cfg.set_modem_id(MY_MODEM_ID);
-    q_manager.set_cfg(cfg);
+    q_manager->set_cfg(cfg);
     
-    goby::acomms::connect(&q_manager.signal_receive, &handle_receive);
+    goby::acomms::connect(&q_manager->signal_receive, &handle_receive);
 
     test_msg1.set_double_default(1.23);
     test_msg1.set_float_default(0.2);
 
     std::cout << "Pushed: " << test_msg1 << std::endl;
-    q_manager.push_message(test_msg1);
+    q_manager->push_message(test_msg1);
 
 
     goby::acomms::protobuf::ModemDataRequest request_msg;
     request_msg.set_max_bytes(256);
     goby::acomms::protobuf::ModemDataTransmission data_msg;
-    q_manager.handle_modem_data_request(request_msg, &data_msg);
+    q_manager->handle_modem_data_request(request_msg, &data_msg);
     
 
     std::cout << "requesting data, got: " << data_msg << std::endl;
@@ -63,7 +63,7 @@ int main(int argc, char* argv[])
     assert(data_msg.ack_requested() == false);
 
     // feed back the modem layer
-    q_manager.handle_modem_receive(data_msg);
+    q_manager->handle_modem_receive(data_msg);
 
     assert(receive_count == 1);
 

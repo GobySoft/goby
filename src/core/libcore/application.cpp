@@ -53,6 +53,7 @@ void goby::core::Application::__set_up_sockets()
     }
     else
     {
+        database_client_.reset(new DatabaseClient);
         protobuf::DatabaseClientConfig database_config = base_cfg().database_config();
         if(!database_config.has_database_address())
             database_config.set_database_address(base_cfg().pubsub_config().ethernet_address());
@@ -60,11 +61,20 @@ void goby::core::Application::__set_up_sockets()
         if(!database_config.has_database_port())
             database_config.set_database_port(base_cfg().pubsub_config().ethernet_port());
 
-        database_client_.set_cfg(database_config);
+        database_client_->set_cfg(database_config);
     }
 
-    pubsub_node_.set_cfg(base_cfg().pubsub_config());
-
+    if(!base_cfg().pubsub_config().using_pubsub()) 
+    {
+        glog.is(warn) &&
+            glog << "Not using `goby_database`. You will want to ensure you are logging your runtime data somehow" << std::endl;
+    }
+    else
+    {
+        pubsub_node_.reset(new PubSubNode);
+        pubsub_node_->set_cfg(base_cfg().pubsub_config());
+    }
+    
     ZeroMQNode::get()->merge_cfg(base_cfg().additional_socket_config());
 }
 
@@ -116,5 +126,7 @@ void goby::core::Application::__publish(google::protobuf::Message& msg, const st
     glog.is(debug1) &&
         glog << "< " << msg << std::endl;
 
-    pubsub_node_.publish(msg);
+    if(pubsub_node_)
+        pubsub_node_->publish(msg);
+
 }

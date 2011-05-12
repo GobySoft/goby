@@ -49,7 +49,7 @@ namespace goby
                 if(marshalling_scheme == MARSHALLING_PROTOBUF)
                 {
                     const std::string& protobuf_type_name = msg.GetDescriptor()->full_name();
-                
+                    
                     if(cfg_.using_database() && !registered_file_descriptors_.count(msg.GetDescriptor()->file()))
                     {
                         // request permission to begin publishing

@@ -26,9 +26,10 @@
 
 using goby::acomms::operator<<;
 
-int main()
+int main(int argc, char* argv[])
 {
-    goby::acomms::DCCLCommon::set_log(&std::cerr);
+    goby::glog.add_stream(goby::util::Logger::DEBUG3, &std::cerr);
+    goby::glog.set_name(argv[0]);
     
     goby::acomms::protobuf::DCCLConfig cfg;
     goby::acomms::DCCLCodec* codec = goby::acomms::DCCLCodec::get();

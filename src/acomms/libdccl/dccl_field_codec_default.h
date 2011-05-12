@@ -73,14 +73,14 @@ namespace goby
           {
               WireType wire_value = value;
               
-              DCCLCommon::logger() << "starting encode of field with max " << max() << ", min " << min() << ", prec " << precision() << std::endl;
+              goby::glog << "starting encode of field with max " << max() << ", min " << min() << ", prec " << precision() << std::endl;
                 
               if(wire_value < min() || wire_value > max())
                   return Bitset(size());
               
               wire_value = goby::util::unbiased_round(wire_value, precision());
               
-              DCCLCommon::logger() << debug1 << "using value " << wire_value << std::endl;
+              goby::glog << debug1 << "using value " << wire_value << std::endl;
               
               
               wire_value -= min();

@@ -44,22 +44,20 @@ void handle_ack(const goby::acomms::protobuf::ModemDataAck& ack_msg,
 
 
 int main(int argc, char* argv[])
-{
-    goby::acomms::DCCLCommon::set_log(&std::cerr);
-    
+{    
     goby::glog.add_stream(goby::util::Logger::DEBUG3, &std::cout);
     goby::glog.set_name(argv[0]);
     
-    goby::acomms::QueueManager q_manager;
+    goby::acomms::QueueManager* q_manager = goby::acomms::QueueManager::get();
     cfg.set_modem_id(MY_MODEM_ID);
-    q_manager.set_cfg(cfg);
+    q_manager->set_cfg(cfg);
     
     goby::acomms::DCCLModemIdConverterCodec::add("unicorn", UNICORN_MODEM_ID);
     goby::acomms::DCCLModemIdConverterCodec::add("topside", MY_MODEM_ID);
     
-    goby::acomms::connect(&q_manager.signal_receive, &handle_receive);
-    goby::acomms::connect(&q_manager.signal_queue_size_change, &qsize);
-    goby::acomms::connect(&q_manager.signal_ack, &handle_ack);
+    goby::acomms::connect(&q_manager->signal_receive, &handle_receive);
+    goby::acomms::connect(&q_manager->signal_queue_size_change, &qsize);
+    goby::acomms::connect(&q_manager->signal_ack, &handle_ack);
 
     msg_in1.set_telegram("hello uni!");
     msg_in1.mutable_header()->set_time(
@@ -76,11 +74,11 @@ int main(int argc, char* argv[])
     msg_in2.mutable_header()->set_dest_type(Header::PUBLISH_ALL);
 
     std::cout << "Pushed: " << msg_in1 << std::endl;
-    q_manager.push_message(msg_in1);
+    q_manager->push_message(msg_in1);
     assert(goby_message_qsize == 1);
     
     std::cout << "Pushed: " << msg_in2 << std::endl;
-    q_manager.push_message(msg_in2);
+    q_manager->push_message(msg_in2);
     assert(goby_message_qsize == 2);
 
     goby::acomms::protobuf::ModemDataRequest request_msg;
@@ -88,7 +86,7 @@ int main(int argc, char* argv[])
     request_msg.mutable_base()->set_dest(goby::acomms::QUERY_DESTINATION_ID);
     
     goby::acomms::protobuf::ModemDataTransmission data_msg;
-    q_manager.handle_modem_data_request(request_msg, &data_msg);
+    q_manager->handle_modem_data_request(request_msg, &data_msg);
 
     // one ack, one not
     assert(goby_message_qsize == 1);
@@ -108,24 +106,24 @@ int main(int argc, char* argv[])
     assert(data_msg.ack_requested() == true);    
 
     // feed back the modem layer - the unicorn message will be rejected
-    q_manager.handle_modem_receive(data_msg);
+    q_manager->handle_modem_receive(data_msg);
     assert(receive_count == 1);
 
     // fake an ack from unicorn
     goby::acomms::protobuf::ModemDataAck ack;
     ack.mutable_base()->set_src(UNICORN_MODEM_ID);
     ack.mutable_base()->set_dest(MY_MODEM_ID);
-    q_manager.handle_modem_ack(ack);
+    q_manager->handle_modem_ack(ack);
 
     assert(goby_message_qsize == 0);
     assert(handle_ack_called);
     
     // pretend we're now Unicorn
     cfg.set_modem_id(UNICORN_MODEM_ID);
-    q_manager.set_cfg(cfg);
+    q_manager->set_cfg(cfg);
     
     // feed back the modem layer
-    q_manager.handle_modem_receive(data_msg);
+    q_manager->handle_modem_receive(data_msg);
     
     assert(receive_count == 3);
 

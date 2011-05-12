@@ -81,16 +81,19 @@ namespace goby
                 custom_message_map_.insert(std::make_pair(ProtobufMessage::descriptor()->full_name(), boost::shared_ptr<FromProtoCppTypeBase>(new FromProtoCustomMessage<ProtobufMessage>)));
             }
 
-            static void initialize();
-            
           private:
-            DCCLTypeHelper() { }            
+            DCCLTypeHelper() { initialize(); }            
             ~DCCLTypeHelper() { }
             DCCLTypeHelper(const DCCLTypeHelper&);
             DCCLTypeHelper& operator= (const DCCLTypeHelper&);
-                
+            void initialize();    
                 
           private:
+            // so we can use shared_ptr to hold the singleton
+            template<typename T>
+                friend void boost::checked_delete(T*);
+            static boost::shared_ptr<DCCLTypeHelper> inst_;
+            
             typedef std::map<google::protobuf::FieldDescriptor::Type,
                 boost::shared_ptr<FromProtoTypeBase> > TypeMap;
             static TypeMap type_map_;

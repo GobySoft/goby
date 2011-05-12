@@ -30,6 +30,10 @@ std::vector<const google::protobuf::FieldDescriptor*> goby::acomms::DCCLFieldCod
 std::vector<const google::protobuf::Descriptor*> goby::acomms::DCCLFieldCodecBase::MessageHandler::desc_;
 boost::ptr_map<goby::acomms::protobuf::HookKey, boost::signal<void (const boost::any& wire_value, const boost::any& extension_value)> >   goby::acomms::DCCLFieldCodecBase::wire_value_hooks_;
 
+
+using goby::glog;
+
+
 //
 // DCCLFieldCodecBase public
 //
@@ -76,7 +80,7 @@ void goby::acomms::DCCLFieldCodecBase::base_size(unsigned* bit_size,
 {
     MessageHandler msg_handler(field);
     // if(field)
-    //     DCCLCommon::logger() << "field: " << field->DebugString() << "size: " << any_size(field_value) << std::endl;    
+    //     glog.is(debug1) && glog  << "field: " << field->DebugString() << "size: " << any_size(field_value) << std::endl;    
     *bit_size += any_size(field_value);
 }
 
@@ -93,7 +97,7 @@ void goby::acomms::DCCLFieldCodecBase::base_run_hooks(const boost::any& field_va
     MessageHandler msg_handler(field);
 
     if(field)
-        DCCLCommon::logger() << "field: " << field->DebugString() << std::endl;
+        glog.is(debug1) && glog  << "field: " << field->DebugString() << std::endl;
 
     any_run_hooks(field_value);    
 }
@@ -123,7 +127,7 @@ void goby::acomms::DCCLFieldCodecBase::base_decode(Bitset* bits,
     //         boost::any_cast<boost::shared_ptr<google::protobuf::Message> >(*field_value);
     //     msg_handler.push(msg->GetDescriptor());
 
-    //         DCCLCommon::logger() << debug1 << "Starting decode for root message (in header = "
+    //         glog.is(debug1) && glog  <<  "Starting decode for root message (in header = "
     //                          << std::boolalpha
     //                          << (part_ == HEAD) << "): "
     //                          << msg->GetDescriptor()->full_name() << std::endl;
@@ -131,7 +135,7 @@ void goby::acomms::DCCLFieldCodecBase::base_decode(Bitset* bits,
     // }
     // catch(boost::bad_any_cast& e)
     // {
-    //         DCCLCommon::logger() << warn << "Initial message must be custom message" << std::endl;
+    //         glog.is(debug1) && glog  << warn << "Initial message must be custom message" << std::endl;
     // }    
 
     //boost::any a(msg);
@@ -153,14 +157,14 @@ void goby::acomms::DCCLFieldCodecBase::base_decode(Bitset* bits,
         throw(DCCLException("Decode called with NULL Bitset"));    
     
     if(field)
-        DCCLCommon::logger() << debug1 << "Starting decode for field: " << field->DebugString();
+        glog.is(debug1) && glog  <<  "Starting decode for field: " << field->DebugString();
 
     Bitset these_bits;
     BitsHandler bits_handler(&these_bits, bits);
     bits_handler.transfer_bits(base_min_size(field));
     
     
-    DCCLCommon::logger() << "using these bits: " << these_bits << std::endl;
+    glog.is(debug1) && glog  << "using these bits: " << these_bits << std::endl;
     
     *field_value = base_post_decode(any_decode(&these_bits));    
 }
@@ -177,13 +181,13 @@ void goby::acomms::DCCLFieldCodecBase::base_decode_repeated(Bitset* bits,
         throw(DCCLException("Decode called with NULL Bitset"));    
     
     if(field)
-        DCCLCommon::logger() << debug1 << "Starting repeated decode for field: " << field->DebugString();
+        glog.is(debug1) && glog  <<  "Starting repeated decode for field: " << field->DebugString();
     
     Bitset these_bits;
     BitsHandler bits_handler(&these_bits, bits);
     bits_handler.transfer_bits(base_min_size(field));    
     
-    DCCLCommon::logger() << "using these bits: " << these_bits << std::endl;
+    glog.is(debug1) && glog  << "using these bits: " << these_bits << std::endl;
     
     *field_values = base_post_decode_repeated(any_decode_repeated(&these_bits));
 }
@@ -340,7 +344,7 @@ std::string goby::acomms::DCCLFieldCodecBase::info()
 
 void goby::acomms::DCCLFieldCodecBase::BitsHandler::transfer_bits(unsigned size)
 {
-    //     DCCLCommon::logger() << debug1 << "_get_bits from (" << in_pool_ << ") " << *in_pool_ << " to add to (" << out_pool_ << ") " << *out_pool_ << " number: " << size << std::endl;
+    //     glog.is(debug1) && glog  <<  "_get_bits from (" << in_pool_ << ") " << *in_pool_ << " to add to (" << out_pool_ << ") " << *out_pool_ << " number: " << size << std::endl;
     
     for(int i = 0, n = size; i < n; ++i)
         out_pool_->push_back((*in_pool_)[i]);
@@ -401,9 +405,9 @@ unsigned goby::acomms::DCCLFieldCodecBase::any_size_repeated(const std::vector<b
 void goby::acomms::DCCLFieldCodecBase::any_run_hooks(const boost::any& field_value)   
 {
     if(this_field())
-        DCCLCommon::logger() << "running hooks for " << this_field()->DebugString() << std::endl;
+        glog.is(debug1) && glog  << "running hooks for " << this_field()->DebugString() << std::endl;
     else
-        DCCLCommon::logger() << "running hooks for base message" << std::endl;
+        glog.is(debug1) && glog  << "running hooks for base message" << std::endl;
 
 
     typedef boost::ptr_map<protobuf::HookKey,
@@ -431,12 +435,12 @@ void goby::acomms::DCCLFieldCodecBase::any_run_hooks(const boost::any& field_val
                 else if(i->first.value_requested() == protobuf::HookKey::FIELD_VALUE)
                     i->second->operator()(field_value, extension_value);
                 
-                DCCLCommon::logger() << "Found : " << i->first << ": " << extension_desc->DebugString() << std::endl;
+                glog.is(debug1) && glog  << "Found : " << i->first << ": " << extension_desc->DebugString() << std::endl;
             }
             
             catch(std::exception& e)
             {
-                DCCLCommon::logger() << warn << "failed to run hook for " << i->first << ", exception: " << e.what() << std::endl;
+                glog.is(debug1) && glog  << warn << "failed to run hook for " << i->first << ", exception: " << e.what() << std::endl;
             }
         }
     }
@@ -489,7 +493,7 @@ std::vector<boost::any> goby::acomms::DCCLFieldCodecBase::any_post_decode_repeat
 
 void goby::acomms::DCCLFieldCodecBase::__encode_prepend_bits(const Bitset& new_bits, Bitset* bits)
 {
-    DCCLCommon::logger() << "got these " << new_bits.size() << " bits: " << new_bits << std::endl;
+    glog.is(debug1) && glog  << "got these " << new_bits.size() << " bits: " << new_bits << std::endl;
     
     for(int i = 0, n = new_bits.size(); i < n; ++i)
         bits->push_back(new_bits[i]);
@@ -508,7 +512,7 @@ void goby::acomms::DCCLFieldCodecBase::MessageHandler::push(const google::protob
 
     ++descriptors_pushed_;
     
-    DCCLCommon::logger() << debug1 << "Added descriptor  " << desc->full_name() << std::endl;
+    glog.is(debug1) && glog  <<  "Added descriptor  " << desc->full_name() << std::endl;
 }
 
 void goby::acomms::DCCLFieldCodecBase::MessageHandler::push(const google::protobuf::FieldDescriptor* field)
@@ -516,13 +520,13 @@ void goby::acomms::DCCLFieldCodecBase::MessageHandler::push(const google::protob
     field_.push_back(field);
     ++fields_pushed_;
     
-    //     DCCLCommon::logger() << debug1 << "Added field  " << field->name() << std::endl;
+    //     glog.is(debug1) && glog  <<  "Added field  " << field->name() << std::endl;
 }
 
 
 void goby::acomms::DCCLFieldCodecBase::MessageHandler::__pop_desc()
 {
-    //     DCCLCommon::logger() << debug1 << "Removed descriptor  " << desc_.back()->full_name() << std::endl;
+    //     glog.is(debug1) && glog  <<  "Removed descriptor  " << desc_.back()->full_name() << std::endl;
 
     if(!desc_.empty())
         desc_.pop_back();
@@ -530,7 +534,7 @@ void goby::acomms::DCCLFieldCodecBase::MessageHandler::__pop_desc()
 
 void goby::acomms::DCCLFieldCodecBase::MessageHandler::__pop_field()
 {
-    //     DCCLCommon::logger() << debug1 << "Removed field  " << field_.back()->name() << std::endl;
+    //     glog.is(debug1) && glog  <<  "Removed field  " << field_.back()->name() << std::endl;
 
     if(!field_.empty())
         field_.pop_back();

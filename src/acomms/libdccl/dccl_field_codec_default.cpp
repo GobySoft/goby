@@ -80,7 +80,7 @@ goby::acomms::Bitset goby::acomms::DCCLDefaultStringCodec::encode(const std::str
     std::string s = wire_value;
     if(s.size() > get(dccl::max_length))
     {
-        DCCLCommon::logger() << warn << "String " << s <<  " exceeds `dccl.max_length`, truncating" << std::endl;
+        goby::glog.is(warn) && goby::glog << "String " << s <<  " exceeds `dccl.max_length`, truncating" << std::endl;
         s.resize(get(dccl::max_length)); 
     }
         
@@ -106,16 +106,16 @@ std::string goby::acomms::DCCLDefaultStringCodec::decode(Bitset* bits)
         
         unsigned header_length = min_size();
         
-        DCCLCommon::logger() << debug1 << "Length of string is = " << value_length << std::endl;
+        goby::glog.is(debug2) && goby::glog << "Length of string is = " << value_length << std::endl;
 
         
-        DCCLCommon::logger() << debug1 << "bits before get_more_bits " << *bits << std::endl;    
+        goby::glog.is(debug2) && goby::glog << "bits before get_more_bits " << *bits << std::endl;    
 
         // grabs more bits to add to the MSBs of `bits`
         get_more_bits(value_length*BITS_IN_BYTE);
 
         
-        DCCLCommon::logger() << debug1 << "bits after get_more_bits " << *bits << std::endl;    
+        goby::glog.is(debug2) && goby::glog << "bits after get_more_bits " << *bits << std::endl;    
 
         *bits >>= header_length;
         bits->resize(bits->size() - header_length);

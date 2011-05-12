@@ -27,7 +27,7 @@
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 
-#include "goby/acomms/libdccl/dccl_constants.h"
+#include "goby/acomms/libdccl/dccl_common.h"
 #include "goby/util/logger.h"
 #include "goby/acomms/acomms_helpers.h"
 

@@ -84,7 +84,8 @@ namespace goby
                     boost::function<void (const ProtoBufMessage&)>()
                     )
              {
-                 pubsub_node_.subscribe<ProtoBufMessage>(handler);
+                 if(pubsub_node_)
+                     pubsub_node_->subscribe<ProtoBufMessage>(handler);
              }
              
             
@@ -95,7 +96,10 @@ namespace goby
             template<typename ProtoBufMessage, class C>
                 void subscribe(void(C::*mem_func)(const ProtoBufMessage&),
                                C* obj)
-            { pubsub_node_.subscribe<ProtoBufMessage>(boost::bind(mem_func, obj, _1)); }
+            {
+                if(pubsub_node_)
+                    pubsub_node_->subscribe<ProtoBufMessage>(boost::bind(mem_func, obj, _1));
+            }
             
             /// \name Message Accessors
             //@{
@@ -105,12 +109,13 @@ namespace goby
             template<typename ProtoBufMessage>
                 const ProtoBufMessage& newest()
             {
-                return pubsub_node_.newest<ProtoBufMessage>();
+                if(pubsub_node_)
+                    return pubsub_node_->newest<ProtoBufMessage>();
+                else
+                    throw(std::runtime_error("not using pubsub, can't call newest"));
             }
             
-            //@}
-
-            
+            //@}            
             
           private:
             Application(const Application&);
@@ -129,8 +134,8 @@ namespace goby
 
             
           private:
-            DatabaseClient database_client_;
-            PubSubNode pubsub_node_;
+            boost::shared_ptr<DatabaseClient> database_client_;
+            boost::shared_ptr<PubSubNode> pubsub_node_;
         };
     }
 }

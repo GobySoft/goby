@@ -17,20 +17,24 @@
 
 #include "exception.h"
 
-google::protobuf::DynamicMessageFactory goby::core::DynamicProtobufManager::msg_factory_;
-google::protobuf::DescriptorPool goby::core::DynamicProtobufManager::descriptor_pool_;
-
+boost::shared_ptr<goby::core::DynamicProtobufManager> goby::core::DynamicProtobufManager::inst_;
 
 boost::shared_ptr<google::protobuf::Message> goby::core::DynamicProtobufManager::new_protobuf_message(const std::string& protobuf_type_name)
 {
-    const google::protobuf::Descriptor* desc = descriptor_pool_.FindMessageTypeByName(protobuf_type_name);
+    const google::protobuf::Descriptor* desc = descriptor_pool().FindMessageTypeByName(protobuf_type_name);
 
     if(desc)
-        return boost::shared_ptr<google::protobuf::Message>(
-            msg_factory_.GetPrototype(desc)->New());
+        return new_protobuf_message(desc);
     else
         throw(std::runtime_error("Unknown type " + protobuf_type_name + ", be sure it is loaded with call to add_protobuf_file()"));
 }
+
+boost::shared_ptr<google::protobuf::Message> goby::core::DynamicProtobufManager::new_protobuf_message(
+    const google::protobuf::Descriptor* desc)
+{
+    return boost::shared_ptr<google::protobuf::Message>(msg_factory().GetPrototype(desc)->New());
+}
+
 
 std::set<const google::protobuf::FileDescriptor*> goby::core::DynamicProtobufManager::add_protobuf_file_with_dependencies(const google::protobuf::FileDescriptor* file_descriptor)
 {
@@ -43,6 +47,7 @@ std::set<const google::protobuf::FileDescriptor*> goby::core::DynamicProtobufMan
         return_set.insert(add_protobuf_file(proto_file));
     }
     return_set.insert(add_protobuf_file(file_descriptor));
+    return return_set;
 }
 
 
@@ -56,5 +61,5 @@ const google::protobuf::FileDescriptor* goby::core::DynamicProtobufManager::add_
 
 const google::protobuf::FileDescriptor* goby::core::DynamicProtobufManager::add_protobuf_file(const google::protobuf::FileDescriptorProto& proto)
 {
-    return descriptor_pool_.BuildFile(proto); 
+    return descriptor_pool().BuildFile(proto); 
 }

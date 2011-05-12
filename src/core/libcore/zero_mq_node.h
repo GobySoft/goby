@@ -38,6 +38,8 @@ namespace goby
           public:
            static ZeroMQNode* get()
             {
+                if(!inst_)
+                    inst_.reset(new ZeroMQNode);
                 return inst_.get();
             }
             

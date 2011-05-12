@@ -35,6 +35,7 @@
 using goby::glog;
 
 int goby::acomms::QueueManager::modem_id_ = 0;
+boost::shared_ptr<goby::acomms::QueueManager> goby::acomms::QueueManager::inst_;
 
 goby::acomms::QueueManager::QueueManager()
     : packet_ack_(0),
@@ -66,32 +67,32 @@ void goby::acomms::QueueManager::add_queue(const google::protobuf::Message& msg)
     queue_cfg.set_name(desc->full_name());
         
     if(!desc->options().HasExtension(queue::ack))
-        glog.is(warn) && glog << queue_cfg.name() << ": using default value of " << queue_cfg.ack() << " for queue::ack" << std::endl;
+        glog.is(verbose) && glog << queue_cfg.name() << ": using default value of " << queue_cfg.ack() << " for queue::ack" << std::endl;
     else
         queue_cfg.set_ack(desc->options().GetExtension(queue::ack));    
 
     if(!desc->options().HasExtension(queue::blackout_time))
-        glog.is(warn) && glog << queue_cfg.name() << ": " << "using default value of " << queue_cfg.blackout_time() << " for queue::blackout_time" << std::endl;
+        glog.is(verbose) && glog << queue_cfg.name() << ": " << "using default value of " << queue_cfg.blackout_time() << " for queue::blackout_time" << std::endl;
     else
         queue_cfg.set_blackout_time(desc->options().GetExtension(queue::blackout_time));
 
     if(!desc->options().HasExtension(queue::max_queue))
-        glog.is(warn) && glog << queue_cfg.name() << ": "  << "using default value of " << queue_cfg.max_queue() << " for queue::max_queue" << std::endl;
+        glog.is(verbose) && glog << queue_cfg.name() << ": "  << "using default value of " << queue_cfg.max_queue() << " for queue::max_queue" << std::endl;
     else
         queue_cfg.set_max_queue(desc->options().GetExtension(queue::max_queue));    
         
     if(!desc->options().HasExtension(queue::newest_first))
-        glog.is(warn) && glog << queue_cfg.name() << ": " << "using default value of " << queue_cfg.newest_first() << " for queue::newest_first" << std::endl;
+        glog.is(verbose) && glog << queue_cfg.name() << ": " << "using default value of " << queue_cfg.newest_first() << " for queue::newest_first" << std::endl;
     else
         queue_cfg.set_newest_first(desc->options().GetExtension(queue::newest_first));    
 
     if(!desc->options().HasExtension(queue::ttl))
-        glog.is(warn) && glog << queue_cfg.name() << ": "  << "using default value of " << queue_cfg.ttl() << " for queue::ttl" << std::endl;
+        glog.is(verbose) && glog << queue_cfg.name() << ": "  << "using default value of " << queue_cfg.ttl() << " for queue::ttl" << std::endl;
     else
         queue_cfg.set_ttl(desc->options().GetExtension(queue::ttl));    
 
     if(!desc->options().HasExtension(queue::value_base))
-        glog.is(warn) && glog  << queue_cfg.name() << ": "  << "using default value of " << queue_cfg.value_base() << " for queue::value_base" << std::endl;
+        glog.is(verbose) && glog  << queue_cfg.name() << ": "  << "using default value of " << queue_cfg.value_base() << " for queue::value_base" << std::endl;
     else
         queue_cfg.set_value_base(desc->options().GetExtension(queue::value_base));    
 
@@ -375,9 +376,9 @@ goby::acomms::Queue* goby::acomms::QueueManager::find_next_sender(const protobuf
 
     Queue* winning_queue = 0;
     
-    glog.is(debug1) && glog<< group("queue.priority") << "starting priority contest\n"
-                  << "requesting: " << request_msg << "\n"
-                  << "have " << data_msg.data().size() << "/" << request_msg.max_bytes() << "B: " << data_msg << std::endl;
+    glog.is(verbose) && glog<< group("queue.priority") << "starting priority contest\n"
+                           << "requesting: " << request_msg << "\n"
+                           << "have " << data_msg.data().size() << "/" << request_msg.max_bytes() << "B: " << data_msg << std::endl;
 
     
     for(std::map<protobuf::QueueKey, Queue>::iterator it = queues_.begin(), n = queues_.end(); it != n; ++it)
@@ -412,13 +413,18 @@ goby::acomms::Queue* goby::acomms::QueueManager::find_next_sender(const protobuf
         }
     }
 
-    glog.is(debug1) && glog<< group("queue.priority") << "\t"
+    glog.is(verbose) && glog<< group("queue.priority") << "\t"
                   << "all other queues have no messages" << std::endl;
 
     if(winning_queue)
     {
-        glog.is(debug1) && glog<< group("queue.priority") << winning_queue->cfg().name()
+        glog.is(verbose) && glog<< group("queue.priority") << winning_queue->cfg().name()
                       << " has highest priority." << std::endl;
+    }
+    else
+    {
+        glog.is(verbose) && glog<< group("queue.priority") 
+                                << "ending priority contest" << std::endl;    
     }
     
     return winning_queue;
@@ -444,7 +450,7 @@ void goby::acomms::QueueManager::handle_modem_ack(const protobuf::ModemDataAck& 
     {
         
         // got an ack, let's pop this!
-        glog.is(debug1) && glog<< group("queue.in") << "received ack for this id" << std::endl;
+        glog.is(verbose) && glog<< group("queue.in") << "received ack for this id" << std::endl;
         
         
         std::multimap<unsigned, Queue *>::iterator it = waiting_for_ack_.find(ack_msg.frame());
@@ -467,7 +473,7 @@ void goby::acomms::QueueManager::handle_modem_ack(const protobuf::ModemDataAck& 
                 
             }
 
-            glog.is(debug1) && glog<< group("queue.in") << ack_msg << std::endl;
+            glog.is(verbose) && glog<< group("queue.in") << ack_msg << std::endl;
             
             waiting_for_ack_.erase(it);
             
@@ -487,7 +493,7 @@ void goby::acomms::QueueManager::handle_modem_receive(const protobuf::ModemDataT
     // copy so we can modify in various ways 
     protobuf::ModemDataTransmission message = m;
     
-    glog.is(debug1) && glog<< group("queue.in") << "received message"
+    glog.is(verbose) && glog<< group("queue.in") << "received message"
                   << ": " << message << std::endl;
 
     std::string data = message.data();

@@ -18,6 +18,9 @@
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "dccl_field_codec_default_message.h"
+#include "goby/core/libcore/dynamic_protobuf_manager.h"
+
+using goby::glog;
 
 //
 // DCCLDefaultMessageCodec
@@ -37,7 +40,7 @@ goby::acomms::Bitset goby::acomms::DCCLDefaultMessageCodec::any_encode(const boo
             const google::protobuf::Message* msg = boost::any_cast<const google::protobuf::Message*>(wire_value);
        
             // 
-            //     DCCLCommon::logger() << debug << "Looking to encode Message " << msg->GetDescriptor()->full_name() << std::endl;
+            //     glog.is(debug1) && glog  << debug << "Looking to encode Message " << msg->GetDescriptor()->full_name() << std::endl;
 
    
             const google::protobuf::Descriptor* desc = msg->GetDescriptor();
@@ -45,7 +48,7 @@ goby::acomms::Bitset goby::acomms::DCCLDefaultMessageCodec::any_encode(const boo
             for(int i = 0, n = desc->field_count(); i < n; ++i)
             {
                 // 
-                //     DCCLCommon::logger() << debug << "Looking to encode " << desc->field(i)->DebugString();
+                //     glog.is(debug1) && glog  << debug << "Looking to encode " << desc->field(i)->DebugString();
        
                 const google::protobuf::FieldDescriptor* field_desc = desc->field(i);
 
@@ -97,7 +100,7 @@ unsigned goby::acomms::DCCLDefaultMessageCodec::any_size(const boost::any& field
             const google::protobuf::Message* msg = boost::any_cast<const google::protobuf::Message*>(field_value);
        
             // 
-            //     DCCLCommon::logger() << debug << "Looking to encode Message " << msg->GetDescriptor()->full_name() << std::endl;
+            //     glog.is(debug1) && glog  << debug << "Looking to encode Message " << msg->GetDescriptor()->full_name() << std::endl;
 
    
             const google::protobuf::Descriptor* desc = msg->GetDescriptor();
@@ -105,7 +108,7 @@ unsigned goby::acomms::DCCLDefaultMessageCodec::any_size(const boost::any& field
             for(int i = 0, n = desc->field_count(); i < n; ++i)
             {
                 // 
-                //     DCCLCommon::logger() << debug << "Looking to encode " << desc->field(i)->DebugString();
+                //     glog.is(debug1) && glog  << debug << "Looking to encode " << desc->field(i)->DebugString();
        
                 const google::protobuf::FieldDescriptor* field_desc = desc->field(i);
 
@@ -152,7 +155,7 @@ void goby::acomms::DCCLDefaultMessageCodec::any_run_hooks(const boost::any& fiel
             const google::protobuf::Message* msg = boost::any_cast<const google::protobuf::Message*>(field_value);
        
              
-            DCCLCommon::logger() << debug1 << "Looking to run hooks on Message " << msg->GetDescriptor()->full_name() << std::endl;
+            glog.is(debug1) && glog  <<  "Looking to run hooks on Message " << msg->GetDescriptor()->full_name() << std::endl;
 
    
             const google::protobuf::Descriptor* desc = msg->GetDescriptor();
@@ -160,7 +163,7 @@ void goby::acomms::DCCLDefaultMessageCodec::any_run_hooks(const boost::any& fiel
             for(int i = 0, n = desc->field_count(); i < n; ++i)
             {
                 // 
-                DCCLCommon::logger() << debug1 << "Looking to run hooks " << desc->field(i)->DebugString();
+                glog.is(debug1) && glog  <<  "Looking to run hooks " << desc->field(i)->DebugString();
        
                 const google::protobuf::FieldDescriptor* field_desc = desc->field(i);
 
@@ -188,11 +191,11 @@ void goby::acomms::DCCLDefaultMessageCodec::any_run_hooks(const boost::any& fiel
 
 boost::any goby::acomms::DCCLDefaultMessageCodec::any_decode(Bitset* bits)
 {
-    boost::shared_ptr<google::protobuf::Message> msg(
-        DCCLCommon::message_factory().GetPrototype(DCCLFieldCodecBase::this_descriptor())->New());
+    boost::shared_ptr<google::protobuf::Message> msg =
+        goby::core::DynamicProtobufManager::new_protobuf_message(DCCLFieldCodecBase::this_descriptor());
     
    
-    //DCCLCommon::logger() << debug << "Looking to decode Message " << msg->GetDescriptor()->full_name() << std::endl;
+    //glog.is(debug1) && glog  << debug << "Looking to decode Message " << msg->GetDescriptor()->full_name() << std::endl;
 
 
     const google::protobuf::Descriptor* desc = msg->GetDescriptor();
@@ -200,7 +203,7 @@ boost::any goby::acomms::DCCLDefaultMessageCodec::any_decode(Bitset* bits)
     for(int i = 0, n = desc->field_count(); i < n; ++i)
     {
 //        
-//            DCCLCommon::logger() << debug << "Looking to decode " << desc->field(i)->DebugString();
+//            glog.is(debug1) && glog  << debug << "Looking to decode " << desc->field(i)->DebugString();
         
         const google::protobuf::FieldDescriptor* field_desc = desc->field(i);
 
@@ -240,7 +243,7 @@ unsigned goby::acomms::DCCLDefaultMessageCodec::max_size()
     unsigned sum = 0;
 
 //    
-//        DCCLCommon::logger() << debug << "Looking for max size of " << this_descriptor()->full_name() << std::endl;
+//        glog.is(debug1) && glog  << debug << "Looking for max size of " << this_descriptor()->full_name() << std::endl;
     
     const google::protobuf::Descriptor* desc =
         DCCLFieldCodecBase::this_descriptor();
@@ -248,7 +251,7 @@ unsigned goby::acomms::DCCLDefaultMessageCodec::max_size()
     {
         
         // 
-        //     DCCLCommon::logger() << debug << "Looking to get max size of field " << desc->field(i)->DebugString();
+        //     glog.is(debug1) && glog  << debug << "Looking to get max size of field " << desc->field(i)->DebugString();
 
         
         const google::protobuf::FieldDescriptor* field_desc = desc->field(i);
@@ -270,7 +273,7 @@ unsigned goby::acomms::DCCLDefaultMessageCodec::min_size()
     unsigned sum = 0;
 
     // 
-    //     DCCLCommon::logger() << debug << "Looking for min size of " << this_descriptor()->full_name() << std::endl;
+    //     glog.is(debug1) && glog  << debug << "Looking for min size of " << this_descriptor()->full_name() << std::endl;
     
     const google::protobuf::Descriptor* desc =
         DCCLFieldCodecBase::this_descriptor();
@@ -278,7 +281,7 @@ unsigned goby::acomms::DCCLDefaultMessageCodec::min_size()
     {
         
         // 
-        //     DCCLCommon::logger() << debug << "Looking to get min size of field " << desc->field(i)->DebugString();
+        //     glog.is(debug1) && glog  << debug << "Looking to get min size of field " << desc->field(i)->DebugString();
         const google::protobuf::FieldDescriptor* field_desc = desc->field(i);
 
         if(!check_field(field_desc))
@@ -307,8 +310,8 @@ void goby::acomms::DCCLDefaultMessageCodec::validate()
         
         std::string field_codec = find_codec(field_desc);
 
-        DCCLCommon::logger() << "field is " << field_desc->DebugString();
-        DCCLCommon::logger() << "codec is " << field_codec << "\n" << std::endl;
+        glog.is(debug1) && glog  << "field is " << field_desc->DebugString();
+        glog.is(debug1) && glog  << "codec is " << field_codec << "\n" << std::endl;
         
         DCCLFieldCodecManager::find(field_desc,field_codec)->
             base_validate(field_desc);

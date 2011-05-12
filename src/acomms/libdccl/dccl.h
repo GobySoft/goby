@@ -69,8 +69,8 @@ namespace goby
             static DCCLCodec* get()
             {
                 // set these now so that the user has a chance of setting the logger
-                if(!inst_->default_codecs_set_)
-                    inst_->set_default_codecs();
+                if(!inst_)
+                    inst_.reset(new DCCLCodec);
 
                 return inst_.get();    
             }
@@ -87,8 +87,13 @@ namespace goby
             /// \brief Set (and merge "repeat" fields) the current configuration. (protobuf::DCCLConfig defined in dccl.proto)
             void merge_cfg(const protobuf::DCCLConfig& cfg);
 
-            /// \brief Messages must be validated before they can be encoded/decoded
+            /// \brief Messages must be validated before they can be encoded/decoded            
             bool validate(const google::protobuf::Descriptor* desc);
+
+            template<typename ProtobufMessage>
+                bool validate()
+            { return validate(ProtobufMessage::descriptor()); }
+
             void info(const google::protobuf::Descriptor* desc, std::ostream* os);            
 
             
@@ -139,7 +144,7 @@ namespace goby
                 BOOST_FOREACH(const GoogleProtobufMessagePointer& msg, msgs)
                 {
                     out += encode(*msg);
-                    DCCLCommon::logger() << "out: " << goby::util::hex_encode(out) << std::endl;
+                    goby::glog.is(debug2) && goby::glog << "out: " << goby::util::hex_encode(out) << std::endl;
                 }
     
                 return out;
@@ -170,13 +175,7 @@ namespace goby
                 friend void boost::checked_delete(T*);
             /// destructor
             ~DCCLCodec()
-            {
-                // free memory used by static objects; not really needed
-                // memory profiling more clean
-                DCCLCommon::shutdown();
-                google::protobuf::ShutdownProtobufLibrary();
-            }
-            
+            { }
 
             DCCLCodec(const DCCLCodec&);
             DCCLCodec& operator= (const DCCLCodec&);
@@ -193,7 +192,7 @@ namespace goby
             
           private:
             static boost::shared_ptr<DCCLCodec> inst_;
-
+            
             const std::string DEFAULT_CODEC_NAME;
 
             protobuf::DCCLConfig cfg_;
@@ -203,7 +202,6 @@ namespace goby
             // maps `dccl.id`s onto Message Descriptors
             std::map<int32, const google::protobuf::Descriptor*> id2desc_;
 
-            bool default_codecs_set_;
         };
                                       
         

@@ -55,6 +55,9 @@ foreach(I ${INCLUDE_FILES})
   configure_file(${goby_SRC_DIR}/${I} ${goby_INC_DIR}/goby/${I} COPYONLY)
 endforeach()
 
+set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES ${goby_INC_DIR}/goby)
+
+
 ## let cmake know where the headers are
 include_directories(${goby_INC_DIR})
 

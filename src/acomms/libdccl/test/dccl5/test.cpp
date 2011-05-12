@@ -62,8 +62,12 @@ void tm(const boost::any& wire_value, const boost::any& extension_value)
     found_time = true;
 }
 
-int main()
+int main(int argc, char* argv[])
 {
+    goby::glog.add_stream(goby::util::Logger::DEBUG3, &std::cerr);
+    goby::glog.set_name(argv[0]);
+
+
     goby::acomms::protobuf::HookKey dest_key;
     dest_key.set_field_option_extension_number(queue::is_dest.number());
     goby::acomms::DCCLFieldCodecBase::register_wire_value_hook(dest_key, &dest);
@@ -76,8 +80,7 @@ int main()
         make_hook_key(queue::is_time.number(), goby::acomms::protobuf::HookKey::FIELD_VALUE),
         &tm);
     
-    goby::acomms::DCCLCommon::set_log(&std::cerr);
-
+    
     goby::acomms::DCCLModemIdConverterCodec::add("unicorn", 3);
     goby::acomms::DCCLModemIdConverterCodec::add("topside", 1);
     

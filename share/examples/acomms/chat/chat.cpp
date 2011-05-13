@@ -39,7 +39,7 @@ using goby::util::as;
 using goby::util::goby_time;
 
 int startup_failure();
-void received_data(const goby::acomms::protobuf::ModemDataTransmission&);
+void received_data(const google::protobuf::Message&);
 void received_ack(const goby::acomms::protobuf::ModemDataAck&,
                   const google::protobuf::Message&);
 void monitor_mac(const goby::acomms::protobuf::ModemMsgBase* mac_msg);
@@ -91,13 +91,17 @@ int main(int argc, char* argv[])
 
     
     // bind the signals of these libraries
-    bind(mm_driver_, q_manager_, mac_);
+    bind(mm_driver_, *q_manager_, mac_);
     
     //
     // Initiate DCCL (libdccl)
     //
     goby::acomms::protobuf::DCCLConfig dccl_cfg;
     dccl_cfg.set_crypto_passphrase("secret");
+
+    if(!dccl_->validate<ChatMessage>())
+        exit(1);
+    
     
     //
     // Initiate queue manager (libqueue)
@@ -181,7 +185,8 @@ int main(int argc, char* argv[])
             message_out.set_telegram(line);
             
             // send this message to my buddy!
-            message_out.mutable_base()->set_dest(buddy_id_);
+            message_out.set_destination(buddy_id_);
+            message_out.set_source(my_id_);
             
             q_manager_->push_message(message_out);
         }
@@ -230,8 +235,8 @@ void received_ack(const goby::acomms::protobuf::ModemDataAck& ack_message,
     ChatMessage typed_original_message;
     typed_original_message.CopyFrom(original_message);
     
-    curses_.post_message
-        (ack_message.base().src(),
-         std::string("{ acknowledged receiving message starting with: "
-                     + typed_original_message.telegram()).substr(0,5) + " }");
+    curses_.post_message(
+        ack_message.base().src(),
+        std::string("{ acknowledged receiving message starting with: "
+                    + typed_original_message.telegram().substr(0,5) + " }"));
 }

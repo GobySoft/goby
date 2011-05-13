@@ -65,7 +65,11 @@ bool goby::acomms::Queue::push_message(const google::protobuf::Message& dccl_msg
     latest_data_msg_.mutable_data()->resize(codec->size(&dccl_msg));
     codec->run_hooks(&dccl_msg);
     glog.is(debug2) && glog << "post hooks: " << latest_data_msg_ << std::endl;    
+
+    if(!latest_data_msg_.base().has_time())
+        latest_data_msg_.mutable_base()->set_time(util::as<std::string>(goby::util::goby_time()));
     
+        
     return push_message(latest_data_msg_, new_dccl_msg);
 }
 

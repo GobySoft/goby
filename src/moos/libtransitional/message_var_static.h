@@ -23,7 +23,7 @@
 #include "message_var.h"
 namespace goby
 {
-    namespace acomms
+    namespace transitional
     {   
         class DCCLMessageVarStatic : public DCCLMessageVar
         {

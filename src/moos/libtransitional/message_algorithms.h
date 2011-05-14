@@ -30,7 +30,7 @@
 #include <boost/function.hpp>
 namespace goby
 {
-    namespace acomms
+    namespace transitional
     {
         class DCCLMessageVal;
         class DCCLMessage;

@@ -21,12 +21,12 @@
 
 #include "goby/util/string.h"
 #include "message.h"
-#include "dccl_exception.h"
+#include "goby/acomms/libdccl/dccl_exception.h"
 
 using goby::util::as;
 
 
-goby::acomms::DCCLMessage::DCCLMessage():size_(0),
+goby::transitional::DCCLMessage::DCCLMessage():size_(0),
                          trigger_number_(1), 
                          body_bits_(0),
                          id_(0),
@@ -55,7 +55,7 @@ goby::acomms::DCCLMessage::DCCLMessage():size_(0),
 
     
 // add a new message_var to the current messages vector
-void goby::acomms::DCCLMessage::add_message_var(const std::string& type)
+void goby::transitional::DCCLMessage::add_message_var(const std::string& type)
 {
     if(type == "static")
         layout_.push_back(boost::shared_ptr<DCCLMessageVar>(new DCCLMessageVarStatic()));
@@ -75,7 +75,7 @@ void goby::acomms::DCCLMessage::add_message_var(const std::string& type)
 
 // add a new publish, i.e. a set of parameters to publish
 // upon receipt of an incoming (hex) message
-void goby::acomms::DCCLMessage::add_publish()
+void goby::transitional::DCCLMessage::add_publish()
 {
     DCCLPublish p;
     publishes_.push_back(p);
@@ -83,10 +83,10 @@ void goby::acomms::DCCLMessage::add_publish()
 
 // a number of tasks to perform after reading in an entire <message> from
 // the xml file
-void goby::acomms::DCCLMessage::preprocess()
+void goby::transitional::DCCLMessage::preprocess()
 {
     if(requested_bytes_total() <= bytes_head())
-        throw(DCCLException(std::string("<size> must be larger than the header size of " + as<std::string>(bytes_head()))));
+        throw(goby::acomms::DCCLException(std::string("<size> must be larger than the header size of " + as<std::string>(bytes_head()))));
 
     // calculate number of repeated messages that will fit and put this in `repeat_`.
     if(repeat_enabled_)
@@ -94,7 +94,7 @@ void goby::acomms::DCCLMessage::preprocess()
         BOOST_FOREACH(boost::shared_ptr<DCCLMessageVar> mv, layout_)
         {
         if(mv->array_length() != 1)
-            throw(DCCLException("<repeat> is not allowed on messages with arrays (<array_length> not 1)"));
+            throw(goby::acomms::DCCLException("<repeat> is not allowed on messages with arrays (<array_length> not 1)"));
         }
         
         // crank up the repeat until we go over
@@ -118,7 +118,7 @@ void goby::acomms::DCCLMessage::preprocess()
     
     if(body_bits_ > requested_bits_body() || repeat_ == 0)
     {
-        throw DCCLException(std::string("DCCL: " + get_display() + "the message [" + name_ + "] will not fit within specified size. remove parameters, tighten bounds, or increase allowed size. details of the offending message are printed above."));
+        throw goby::acomms::DCCLException(std::string("DCCL: " + get_display() + "the message [" + name_ + "] will not fit within specified size. remove parameters, tighten bounds, or increase allowed size. details of the offending message are printed above."));
     }
 
     // iterate over publishes_
@@ -132,14 +132,14 @@ void goby::acomms::DCCLMessage::preprocess()
         out_var_ = "OUT_" + boost::to_upper_copy(name_) + "_HEX_" + as<std::string>(size_) + "B";   
 }
 
-void goby::acomms::DCCLMessage::set_repeat_array_length()
+void goby::transitional::DCCLMessage::set_repeat_array_length()
 {
     // set array_length_ for repeated messages for all DCCLMessageVars
     BOOST_FOREACH(boost::shared_ptr<DCCLMessageVar> mv, layout_)
         mv->set_array_length(repeat_);
 }
 
-unsigned goby::acomms::DCCLMessage::calc_total_size()
+unsigned goby::transitional::DCCLMessage::calc_total_size()
 {
     unsigned body_bits = 0;
     // iterate over layout_
@@ -154,7 +154,7 @@ unsigned goby::acomms::DCCLMessage::calc_total_size()
 
 
 
-std::map<std::string, std::string> goby::acomms::DCCLMessage::message_var_names() const
+std::map<std::string, std::string> goby::transitional::DCCLMessage::message_var_names() const
 {
     std::map<std::string, std::string> s;
     BOOST_FOREACH(const boost::shared_ptr<DCCLMessageVar> mv, layout_)
@@ -162,7 +162,7 @@ std::map<std::string, std::string> goby::acomms::DCCLMessage::message_var_names(
     return s;
 }
 
-std::set<std::string> goby::acomms::DCCLMessage::get_pubsub_encode_vars()
+std::set<std::string> goby::transitional::DCCLMessage::get_pubsub_encode_vars()
 {
     std::set<std::string> s = get_pubsub_src_vars();
     if(trigger_type_ == "publish")
@@ -170,14 +170,14 @@ std::set<std::string> goby::acomms::DCCLMessage::get_pubsub_encode_vars()
     return s;
 }
 
-std::set<std::string> goby::acomms::DCCLMessage::get_pubsub_decode_vars()
+std::set<std::string> goby::transitional::DCCLMessage::get_pubsub_decode_vars()
 {
     std::set<std::string> s;
     s.insert(in_var_);
     return s;
 }
     
-std::set<std::string> goby::acomms::DCCLMessage::get_pubsub_all_vars()
+std::set<std::string> goby::transitional::DCCLMessage::get_pubsub_all_vars()
 {
     std::set<std::string> s_enc = get_pubsub_encode_vars();
     std::set<std::string> s_dec = get_pubsub_decode_vars();
@@ -188,7 +188,7 @@ std::set<std::string> goby::acomms::DCCLMessage::get_pubsub_all_vars()
     return s;
 }
     
-std::set<std::string> goby::acomms::DCCLMessage::get_pubsub_src_vars()
+std::set<std::string> goby::transitional::DCCLMessage::get_pubsub_src_vars()
 {
     std::set<std::string> s;
 
@@ -201,7 +201,7 @@ std::set<std::string> goby::acomms::DCCLMessage::get_pubsub_src_vars()
 }
 
     
-void goby::acomms::DCCLMessage::body_encode(std::string& body, std::map<std::string, std::vector<DCCLMessageVal> >& in)
+void goby::transitional::DCCLMessage::body_encode(std::string& body, std::map<std::string, std::vector<DCCLMessageVal> >& in)
 {
     boost::dynamic_bitset<unsigned char> body_bits(bytes2bits(used_bytes_body()));
 
@@ -221,7 +221,7 @@ void goby::acomms::DCCLMessage::body_encode(std::string& body, std::map<std::str
     body.resize(body.find_last_not_of(char(0))+1);
 }
 
-void goby::acomms::DCCLMessage::body_decode(std::string& body, std::map<std::string, std::vector<DCCLMessageVal> >& out)
+void goby::transitional::DCCLMessage::body_decode(std::string& body, std::map<std::string, std::vector<DCCLMessageVal> >& out)
 {
     boost::dynamic_bitset<unsigned char> body_bits(bytes2bits(used_bytes_body()));       
     
@@ -241,7 +241,7 @@ void goby::acomms::DCCLMessage::body_decode(std::string& body, std::map<std::str
     }
 }
 
-void goby::acomms::DCCLMessage::set_head_defaults(std::map<std::string, std::vector<DCCLMessageVal> >& in, unsigned modem_id)
+void goby::transitional::DCCLMessage::set_head_defaults(std::map<std::string, std::vector<DCCLMessageVal> >& in, unsigned modem_id)
 {
     for (std::vector< boost::shared_ptr<DCCLMessageVar> >::iterator it = header_.begin(),
              n = header_.end();
@@ -252,7 +252,7 @@ void goby::acomms::DCCLMessage::set_head_defaults(std::map<std::string, std::vec
     }
 }
 
-void goby::acomms::DCCLMessage::head_encode(std::string& head, std::map<std::string, std::vector<DCCLMessageVal> >& in)
+void goby::transitional::DCCLMessage::head_encode(std::string& head, std::map<std::string, std::vector<DCCLMessageVal> >& in)
 {    
     boost::dynamic_bitset<unsigned char> head_bits(bytes2bits(DCCL_NUM_HEADER_BYTES));
 
@@ -268,7 +268,7 @@ void goby::acomms::DCCLMessage::head_encode(std::string& head, std::map<std::str
     bitset2string(head_bits, head);
 }
 
-void goby::acomms::DCCLMessage::head_decode(const std::string& head, std::map<std::string, std::vector<DCCLMessageVal> >& out)
+void goby::transitional::DCCLMessage::head_decode(const std::string& head, std::map<std::string, std::vector<DCCLMessageVal> >& out)
 {
     boost::dynamic_bitset<unsigned char> head_bits(bytes2bits(DCCL_NUM_HEADER_BYTES));
     string2bitset(head_bits, head);
@@ -281,7 +281,7 @@ void goby::acomms::DCCLMessage::head_decode(const std::string& head, std::map<st
     }
 }
 
-boost::shared_ptr<goby::acomms::DCCLMessageVar> goby::acomms::DCCLMessage::name2message_var(const std::string& name) const 
+boost::shared_ptr<goby::transitional::DCCLMessageVar> goby::transitional::DCCLMessage::name2message_var(const std::string& name) const 
 {
     BOOST_FOREACH(boost::shared_ptr<DCCLMessageVar> mv, layout_)
     {
@@ -292,7 +292,7 @@ boost::shared_ptr<goby::acomms::DCCLMessageVar> goby::acomms::DCCLMessage::name2
         if(mv->name() == name) return mv;
     }
 
-    throw DCCLException(std::string("DCCL: no such name \"" + name + "\" found in <layout> or <header>"));
+    throw goby::acomms::DCCLException(std::string("DCCL: no such name \"" + name + "\" found in <layout> or <header>"));
     
     return boost::shared_ptr<DCCLMessageVar>();
 }
@@ -303,7 +303,7 @@ boost::shared_ptr<goby::acomms::DCCLMessageVar> goby::acomms::DCCLMessage::name2
 
     
 // a long visual display of all the parameters for a DCCLMessage
-std::string goby::acomms::DCCLMessage::get_display() const
+std::string goby::transitional::DCCLMessage::get_display() const
 {
     const unsigned int num_stars = 20;
 
@@ -366,7 +366,7 @@ std::string goby::acomms::DCCLMessage::get_display() const
 }
 
 // a much shorter rundown of the Message parameters
-std::string goby::acomms::DCCLMessage::get_short_display() const
+std::string goby::transitional::DCCLMessage::get_short_display() const
 {
     std::stringstream ss;
 
@@ -391,8 +391,42 @@ std::string goby::acomms::DCCLMessage::get_short_display() const
 }
     
 // overloaded <<
-std::ostream& goby::acomms::operator<< (std::ostream& out, const DCCLMessage& message)
+std::ostream& goby::transitional::operator<< (std::ostream& out, const DCCLMessage& message)
 {
     out << message.get_display();
     return out;
 }
+
+// Added in Goby2 for transition to Protobuf structure
+void goby::transitional::DCCLMessage::write_schema_to_dccl2(std::ofstream* proto_file)
+{
+    *proto_file << "import \"goby/protobuf/dccl_option_extensions.proto\";" << std::endl;
+    *proto_file << "import \"goby/protobuf/queue_option_extensions.proto\";" << std::endl;
+    *proto_file << "message " << name_ << " { " << std::endl;
+    *proto_file << "\t" << "option (dccl.id) = " << id_ << ";" << std::endl;
+    *proto_file << "\t" << "option (dccl.max_bytes) = " << size_ << ";" << std::endl;
+    
+    int sequence_number = 0;
+    
+    
+    
+    header_[HEAD_TIME]->write_schema_to_dccl2(proto_file, ++sequence_number);
+    header_[HEAD_SRC_ID]->write_schema_to_dccl2(proto_file, ++sequence_number);
+    header_[HEAD_DEST_ID]->write_schema_to_dccl2(proto_file, ++sequence_number);
+    
+    BOOST_FOREACH(boost::shared_ptr<DCCLMessageVar> mv, layout_)
+        mv->write_schema_to_dccl2(proto_file, ++sequence_number);
+    
+    *proto_file << "} " << std::endl;
+}
+
+void goby::transitional::DCCLMessage::write_data_to_dccl2(google::protobuf::Message*)
+{
+
+}
+
+void goby::transitional::DCCLMessage::read_data_from_dccl2(const google::protobuf::Message&)
+{
+
+}
+

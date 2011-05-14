@@ -14,42 +14,45 @@
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
 
-#include "goby/acomms/dccl.h"
+#include "goby/acomms/libdccl/dccl.h"
+#include "goby/moos/libtransitional/dccl_transitional.h"
+
 #include <iostream>
 #include <cassert>
 
 using namespace goby;
 using goby::acomms::operator<<;
+using goby::transitional::operator<<;
 
-void plus1(acomms::DCCLMessageVal& mv)
+void plus1(transitional::DCCLMessageVal& mv)
 {
     long l = mv;
     ++l;
     mv = l;
 }
 
-void times2(acomms::DCCLMessageVal& mv)
+void times2(transitional::DCCLMessageVal& mv)
 {
     double d = mv;
     d *= 2;
     mv = d;
 }
 
-void prepend_fat(acomms::DCCLMessageVal& mv)
+void prepend_fat(transitional::DCCLMessageVal& mv)
 {
     std::string s = mv;
     s = "fat_" + s;
     mv = s;
 }
 
-void invert(acomms::DCCLMessageVal& mv)
+void invert(transitional::DCCLMessageVal& mv)
 {
     bool b = mv;
     b ^= 1;
     mv = b;
 }
 
-void algsum(acomms::DCCLMessageVal& mv, const std::vector<acomms::DCCLMessageVal>& ref_vals)
+void algsum(transitional::DCCLMessageVal& mv, const std::vector<transitional::DCCLMessageVal>& ref_vals)
 {
     double d = 0;
     // index 0 is the name ("sum"), so start at 1
@@ -60,70 +63,85 @@ void algsum(acomms::DCCLMessageVal& mv, const std::vector<acomms::DCCLMessageVal
     mv = d;
 }
 
-
-int main()
+int main(int argc, char* argv[])
 {
-    std::cout << "loading xml file: " << DCCL_EXAMPLES_DIR "/test/test.xml" << std::endl;
+    goby::glog.add_stream(goby::util::Logger::DEBUG3, &std::cerr);
+    goby::glog.set_name(argv[0]);
+    
+    std::cout << "loading xml file: " << DCCL_EXAMPLES_DIR "transitional1/test.xml" << std::endl;
 
     // instantiate the parser with a single xml file
-    goby::acomms::DCCLCodec dccl(&std::cerr);    
-    goby::acomms::protobuf::DCCLConfig cfg;
-    cfg.add_message_file()->set_path(DCCL_EXAMPLES_DIR "/test/test.xml");
+    goby::transitional::DCCLTransitionalCodec transitional_dccl(&std::cerr);    
+    goby::transitional::protobuf::DCCLTransitionalConfig cfg;
+    cfg.add_message_file()->set_path(DCCL_EXAMPLES_DIR "/transitional1/test.xml");
+
     // must be kept secret!
     cfg.set_crypto_passphrase("my_passphrase!");
-    dccl.set_cfg(cfg);
+    transitional_dccl.set_cfg(cfg);
 
-    std::cout << dccl << std::endl;
+    std::cout << transitional_dccl << std::endl;
+
+    goby::acomms::DCCLCodec* dccl = goby::acomms::DCCLCodec::get();
+    
+    const google::protobuf::Descriptor* desc =
+        transitional_dccl.convert_to_protobuf_descriptor(4, "/tmp/foo.proto");
+
+    assert(desc != 0);
+
+    std::cout << desc->DebugString() << std::endl;
+bzr
+    assert(dccl->validate(desc));
+
     
     // load up the algorithms    
-    dccl.add_algorithm("prepend_fat", &prepend_fat);
-    dccl.add_algorithm("+1", &plus1);
-    dccl.add_algorithm("*2", &times2);
-    dccl.add_algorithm("invert", &invert);
-    dccl.add_adv_algorithm("sum", &algsum);
+    transitional_dccl.add_algorithm("prepend_fat", &prepend_fat);
+    transitional_dccl.add_algorithm("+1", &plus1);
+    transitional_dccl.add_algorithm("*2", &times2);
+    transitional_dccl.add_algorithm("invert", &invert);
+    transitional_dccl.add_adv_algorithm("sum", &algsum);
 
     
-    std::map<std::string, std::vector<acomms::DCCLMessageVal> > in;
+    std::map<std::string, std::vector<transitional::DCCLMessageVal> > in;
     
     bool b = true; 
-    std::vector<acomms::DCCLMessageVal> e;
+    std::vector<transitional::DCCLMessageVal> e;
     e.push_back("dog");
     e.push_back("cat");
     e.push_back("emu");
     
     std::string s = "raccoon";  
-    std::vector<acomms::DCCLMessageVal> i;
+    std::vector<transitional::DCCLMessageVal> i;
     i.push_back(30);
     i.push_back(40);
-    std::vector<acomms::DCCLMessageVal> f;
+    std::vector<transitional::DCCLMessageVal> f;
     f.push_back(-12.5);
     f.push_back(1);
     
     std::string h = "abcd1234"; 
-    std::vector<acomms::DCCLMessageVal> sum(2,0);
+    std::vector<transitional::DCCLMessageVal> sum(2,0);
     
     
-    in["B"] = std::vector<acomms::DCCLMessageVal>(1,b);
+    in["B"] = std::vector<transitional::DCCLMessageVal>(1,b);
     in["E"] = e;
-    in["S"] = std::vector<acomms::DCCLMessageVal>(1,s);
+    in["S"] = std::vector<transitional::DCCLMessageVal>(1,s);
     in["I"] = i;
     in["F"] = f;
-    in["H"] = std::vector<acomms::DCCLMessageVal>(1,h);
+    in["H"] = std::vector<transitional::DCCLMessageVal>(1,h);
     in["SUM"] = sum;
 
     std::string bytes;
     std::cout << "sent values:" << std::endl 
               << in;
 
-    dccl.encode(4, bytes, in);
+    transitional_dccl.encode(4, bytes, in);
     
-    std::cout << "hex out: " << goby::acomms::hex_encode(bytes) << std::endl;
+    std::cout << "hex out: " << goby::util::hex_encode(bytes) << std::endl;
     bytes.resize(bytes.length() + 20, '0');
-    std::cout << "hex in: " << goby::acomms::hex_encode(bytes) << std::endl;    
+    std::cout << "hex in: " << goby::util::hex_encode(bytes) << std::endl;    
     
-    std::map<std::string, std::vector<acomms::DCCLMessageVal> > out;
+    std::map<std::string, std::vector<transitional::DCCLMessageVal> > out;
     
-    dccl.decode(bytes, out);
+    transitional_dccl.decode(bytes, out);
     
     std::cout << "received values:" << std::endl 
               << out;    
@@ -133,7 +151,7 @@ int main()
     i[0] = int(i[0]) + 1;
     i[1] = int(i[1]) + 1;
     
-    acomms::DCCLMessageVal tmp = b;
+    transitional::DCCLMessageVal tmp = b;
     invert(tmp);
     b = tmp;
     

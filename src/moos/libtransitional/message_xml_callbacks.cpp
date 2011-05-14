@@ -19,13 +19,14 @@
 
 #include "message_xml_callbacks.h"
 
+
 #include "goby/util/string.h"
 
 using namespace xercesc;
-using namespace goby::acomms::xml;
+using namespace goby::transitional::xml;
 
 // this is called when the parser encounters the start tag, e.g. <message>
-void goby::acomms::DCCLMessageContentHandler::startElement( 
+void goby::transitional::DCCLMessageContentHandler::startElement( 
     const XMLCh *const uri,        // namespace URI
     const XMLCh *const localname,  // tagname w/ out NS prefix
     const XMLCh *const qname,      // tagname + NS pefix
@@ -185,7 +186,7 @@ void goby::acomms::DCCLMessageContentHandler::startElement(
     current_text.clear(); // starting a new tag, clear any old CDATA
 }
 
-void goby::acomms::DCCLMessageContentHandler::endElement(          
+void goby::transitional::DCCLMessageContentHandler::endElement(          
     const XMLCh *const uri,        // namespace URI
     const XMLCh *const localname,  // tagname w/ out NS prefix
     const XMLCh *const qname )     // tagname + NS pefix

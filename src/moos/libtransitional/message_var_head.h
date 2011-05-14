@@ -27,7 +27,7 @@
 
 namespace goby
 {
-    namespace acomms
+    namespace transitional
     {    
         class DCCLMessageVarHead : public DCCLMessageVarInt
         {
@@ -69,8 +69,8 @@ namespace goby
         {
           public:
           DCCLMessageVarTime():
-            DCCLMessageVarHead(acomms::DCCL_HEADER_NAMES[acomms::HEAD_TIME],
-                               acomms::HEAD_TIME_SIZE)
+            DCCLMessageVarHead(transitional::DCCL_HEADER_NAMES[transitional::HEAD_TIME],
+                               transitional::HEAD_TIME_SIZE)
             { }
 
             void set_defaults_specific(DCCLMessageVal& v, unsigned modem_id, unsigned id)
@@ -111,14 +111,23 @@ namespace goby
                 v.set(double(v) + util::ptime2unix_double(ptime(day_sent,seconds(0))));
                 return v;
             }
+
+            void write_schema_to_dccl2(std::ofstream* proto_file,
+                                               int sequence_number)
+            {
+                *proto_file << "\t" << "optional string " << name() << " = " << sequence_number << " [(dccl.codec)=\"_time\", (queue.is_time)=true];" << std::endl;
+            }
+            
+
+            
         };
 
         class DCCLMessageVarCCLID : public DCCLMessageVarHead
         {
           public:
           DCCLMessageVarCCLID():
-            DCCLMessageVarHead(acomms::DCCL_HEADER_NAMES[acomms::HEAD_CCL_ID],
-                               acomms::HEAD_CCL_ID_SIZE) { }        
+            DCCLMessageVarHead(transitional::DCCL_HEADER_NAMES[transitional::HEAD_CCL_ID],
+                               transitional::HEAD_CCL_ID_SIZE) { }        
 
             void set_defaults_specific(DCCLMessageVal& v, unsigned modem_id, unsigned id)
             {
@@ -130,8 +139,8 @@ namespace goby
         {
           public:
           DCCLMessageVarDCCLID()
-              : DCCLMessageVarHead(acomms::DCCL_HEADER_NAMES[acomms::HEAD_DCCL_ID],
-                                   acomms::HEAD_DCCL_ID_SIZE)
+              : DCCLMessageVarHead(transitional::DCCL_HEADER_NAMES[transitional::HEAD_DCCL_ID],
+                                   transitional::HEAD_DCCL_ID_SIZE)
             { }
         
             void set_defaults_specific(DCCLMessageVal& v, unsigned modem_id, unsigned id)
@@ -144,35 +153,44 @@ namespace goby
         {
           public:
           DCCLMessageVarSrc()
-              : DCCLMessageVarHead(acomms::DCCL_HEADER_NAMES[acomms::HEAD_SRC_ID],
-                                   acomms::HEAD_SRC_ID_SIZE)
+              : DCCLMessageVarHead(transitional::DCCL_HEADER_NAMES[transitional::HEAD_SRC_ID],
+                                   transitional::HEAD_SRC_ID_SIZE)
             { }
         
             void set_defaults_specific(DCCLMessageVal& v, unsigned modem_id, unsigned id)
             {
                 v = (!v.empty()) ? v : DCCLMessageVal(long(modem_id));
             }
+
+            virtual std::string additional_option_extensions()
+            { return "(queue.is_src)=true"; }
+
+            
         };
 
         class DCCLMessageVarDest : public DCCLMessageVarHead
         {
           public:
           DCCLMessageVarDest():
-            DCCLMessageVarHead(acomms::DCCL_HEADER_NAMES[acomms::HEAD_DEST_ID],
-                               acomms::HEAD_DEST_ID_SIZE) { }
+            DCCLMessageVarHead(transitional::DCCL_HEADER_NAMES[transitional::HEAD_DEST_ID],
+                               transitional::HEAD_DEST_ID_SIZE) { }
 
             void set_defaults_specific(DCCLMessageVal& v, unsigned modem_id, unsigned id)
             {
                 v = (!v.empty()) ? v : DCCLMessageVal(long(acomms::BROADCAST_ID));
             }
+
+            virtual std::string additional_option_extensions()
+            { return "(queue.is_dest)=true"; }
+            
         };
 
         class DCCLMessageVarMultiMessageFlag : public DCCLMessageVarHead
         {
           public:
           DCCLMessageVarMultiMessageFlag():
-            DCCLMessageVarHead(acomms::DCCL_HEADER_NAMES[acomms::HEAD_MULTIMESSAGE_FLAG],
-                               acomms::HEAD_FLAG_SIZE) { }
+            DCCLMessageVarHead(transitional::DCCL_HEADER_NAMES[transitional::HEAD_MULTIMESSAGE_FLAG],
+                               transitional::HEAD_FLAG_SIZE) { }
         
             boost::dynamic_bitset<unsigned char> encode_specific(const DCCLMessageVal& v)
             { return boost::dynamic_bitset<unsigned char>(calc_size(), bool(v)); }
@@ -186,8 +204,8 @@ namespace goby
         {
           public:
           DCCLMessageVarBroadcastFlag():
-            DCCLMessageVarHead(acomms::DCCL_HEADER_NAMES[acomms::HEAD_BROADCAST_FLAG],
-                               acomms::HEAD_FLAG_SIZE) { }
+            DCCLMessageVarHead(transitional::DCCL_HEADER_NAMES[transitional::HEAD_BROADCAST_FLAG],
+                               transitional::HEAD_FLAG_SIZE) { }
 
             boost::dynamic_bitset<unsigned char> encode_specific(const DCCLMessageVal& v)
             { return boost::dynamic_bitset<unsigned char>(calc_size(), bool(v)); }
@@ -201,8 +219,8 @@ namespace goby
         {
           public:
           DCCLMessageVarUnused():
-            DCCLMessageVarHead(acomms::DCCL_HEADER_NAMES[acomms::HEAD_UNUSED],
-                               acomms::HEAD_UNUSED_SIZE) { }
+            DCCLMessageVarHead(transitional::DCCL_HEADER_NAMES[transitional::HEAD_UNUSED],
+                               transitional::HEAD_UNUSED_SIZE) { }
 
 
         };

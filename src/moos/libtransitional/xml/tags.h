@@ -26,7 +26,7 @@
 
 namespace goby
 {
-    namespace acomms
+    namespace transitional
     {    
         namespace xml
         {

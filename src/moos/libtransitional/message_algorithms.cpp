@@ -22,21 +22,21 @@
 #include "message_algorithms.h"
 #include "message_val.h"
 #include "message.h"
-#include "dccl_exception.h"
+#include "goby/acomms/libdccl/dccl_exception.h"
 
 #include "goby/util/string.h"
 
-goby::acomms::DCCLAlgorithmPerformer* goby::acomms::DCCLAlgorithmPerformer::inst_ = 0;
+goby::transitional::DCCLAlgorithmPerformer* goby::transitional::DCCLAlgorithmPerformer::inst_ = 0;
 
 // singleton class, use this to get pointer
-goby::acomms::DCCLAlgorithmPerformer* goby::acomms::DCCLAlgorithmPerformer::getInstance()
+goby::transitional::DCCLAlgorithmPerformer* goby::transitional::DCCLAlgorithmPerformer::getInstance()
 {
     if(!inst_) inst_ = new DCCLAlgorithmPerformer();
 
     return(inst_);
 }
 
-void goby::acomms::DCCLAlgorithmPerformer::algorithm(DCCLMessageVal& in, unsigned array_index, const std::string& algorithm, const std::map<std::string,std::vector<DCCLMessageVal> >& vals)
+void goby::transitional::DCCLAlgorithmPerformer::algorithm(DCCLMessageVal& in, unsigned array_index, const std::string& algorithm, const std::map<std::string,std::vector<DCCLMessageVal> >& vals)
 {
     if(in.empty()) return;
 
@@ -76,7 +76,7 @@ void goby::acomms::DCCLAlgorithmPerformer::algorithm(DCCLMessageVal& in, unsigne
 }
 
 // check validity of algorithm name and references
-void goby::acomms::DCCLAlgorithmPerformer::check_algorithm(const std::string& alg, const DCCLMessage& msg)
+void goby::transitional::DCCLAlgorithmPerformer::check_algorithm(const std::string& alg, const DCCLMessage& msg)
 {
     if(alg.empty()) return;
     
@@ -87,7 +87,7 @@ void goby::acomms::DCCLAlgorithmPerformer::check_algorithm(const std::string& al
     // check if the algorithm exists
     // but ignore if no algorithms loaded (to use for testing tools)
     if ((adv_map1_.size() || adv_map2_.size()) && !adv_map1_.count(ref_vars.at(0)) && !adv_map2_.count(ref_vars.at(0)))
-        throw(DCCLException(std::string(msg.get_display() + "unknown algorithm defined: " + ref_vars.at(0))));
+        throw(goby::acomms::DCCLException(std::string(msg.get_display() + "unknown algorithm defined: " + ref_vars.at(0))));
 
     
     for(std::vector<std::string>::size_type i = 1, n = ref_vars.size();
@@ -114,6 +114,6 @@ void goby::acomms::DCCLAlgorithmPerformer::check_algorithm(const std::string& al
         }
 
         if(!ref_found)
-            throw(DCCLException(std::string(msg.get_display() + "no such reference message variable " + ref_vars.at(i) + " used in algorithm: " + ref_vars.at(0))));
+            throw(goby::acomms::DCCLException(std::string(msg.get_display() + "no such reference message variable " + ref_vars.at(i) + " used in algorithm: " + ref_vars.at(0))));
     }
 }

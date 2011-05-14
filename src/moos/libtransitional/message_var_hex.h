@@ -21,14 +21,15 @@
 #define MESSAGE_VAR_HEX20100317H
 
 #include "message_var.h"
-#include "dccl_exception.h"
+#include "goby/acomms/libdccl/dccl_exception.h"
 
+#include "dccl_constants.h"
 #include "goby/util/binary.h"
 #include "goby/util/string.h"
 
 namespace goby
 {
-    namespace acomms
+    namespace transitional
     {   
         class DCCLMessageVarHex : public DCCLMessageVar
         {
@@ -57,11 +58,11 @@ namespace goby
                 std::string s = v;
             
                 if(s.length() == bytes2nibs(num_bytes_))
-                    return util::hex_string2dyn_bitset(s, calc_size());
+                    return transitional::hex_string2dyn_bitset(s, calc_size());
                 else if(s.length() < bytes2nibs(num_bytes_))
-                    throw(DCCLException(std::string("Passed hex value (" + s + ") is too short. Should be " + util::as<std::string>(num_bytes_) +  " bytes")));
+                    throw(goby::acomms::DCCLException(std::string("Passed hex value (" + s + ") is too short. Should be " + util::as<std::string>(num_bytes_) +  " bytes")));
                 else if(s.length() > bytes2nibs(num_bytes_))
-                    throw(DCCLException(std::string("Passed hex value (" + s + ") is too long. Should be " + util::as<std::string>(num_bytes_) +  " bytes")));
+                    throw(goby::acomms::DCCLException(std::string("Passed hex value (" + s + ") is too long. Should be " + util::as<std::string>(num_bytes_) +  " bytes")));
                 else
                     return boost::dynamic_bitset<unsigned char>();
             
@@ -69,7 +70,7 @@ namespace goby
 
             DCCLMessageVal decode_specific(boost::dynamic_bitset<unsigned char>& b)
             {
-                return DCCLMessageVal(util::dyn_bitset2hex_string(b, num_bytes_));
+                return DCCLMessageVal(transitional::dyn_bitset2hex_string(b, num_bytes_));
             }
 
             void get_display_specific(std::stringstream& ss) const

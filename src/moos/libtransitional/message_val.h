@@ -26,7 +26,7 @@
 
 namespace goby
 {
-    namespace acomms
+    namespace transitional
     {
     
 /// defines a DCCL value
@@ -46,7 +46,7 @@ namespace goby
             /// construct with char* value
             DCCLMessageVal(const char* s);
         
-            /// construct with double value, optionally giving the precision of the double (number of decimal places) which is used if a cast to std::string is required in the future.
+            /// construct with double value, optionally givig the precision of the double (number of decimal places) which is used if a cast to std::string is required in the future.
             DCCLMessageVal(double d, int p = MAX_DBL_PRECISION);
         
             /// construct with long value
@@ -170,8 +170,8 @@ namespace goby
             DCCLCppType type_;
         };
 
-        std::ostream& operator<<(std::ostream& os, const acomms::DCCLMessageVal& mv);
-        std::ostream& operator<<(std::ostream& os, const std::vector<acomms::DCCLMessageVal>& vm);
+        std::ostream& operator<<(std::ostream& os, const DCCLMessageVal& mv);
+        std::ostream& operator<<(std::ostream& os, const std::vector<DCCLMessageVal>& vm);
     }
 
 }

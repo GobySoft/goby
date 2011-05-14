@@ -29,12 +29,12 @@
 #include "goby/util/sci.h"
 
 #include "message_val.h"
-#include "dccl_exception.h"
+#include "goby/acomms/libdccl/dccl_exception.h"
 
 using goby::util::as;
 
 
-void goby::acomms::DCCLMessageVal::init()
+void goby::transitional::DCCLMessageVal::init()
 {
     sval_ = "";
     dval_ = 0;
@@ -45,11 +45,11 @@ void goby::acomms::DCCLMessageVal::init()
 }
 
 
-goby::acomms::DCCLMessageVal::DCCLMessageVal()
+goby::transitional::DCCLMessageVal::DCCLMessageVal()
 { init(); }
 
 
-goby::acomms::DCCLMessageVal::DCCLMessageVal(const std::string& s)
+goby::transitional::DCCLMessageVal::DCCLMessageVal(const std::string& s)
 {
     init();
     sval_ = s;
@@ -57,7 +57,7 @@ goby::acomms::DCCLMessageVal::DCCLMessageVal(const std::string& s)
 }
 
 
-goby::acomms::DCCLMessageVal::DCCLMessageVal(const char* s)
+goby::transitional::DCCLMessageVal::DCCLMessageVal(const char* s)
 {
     init();
     sval_ = s;
@@ -65,7 +65,7 @@ goby::acomms::DCCLMessageVal::DCCLMessageVal(const char* s)
 }
 
 
-goby::acomms::DCCLMessageVal::DCCLMessageVal(double d, int p /* = MAX_DBL_PRECISION*/ )
+goby::transitional::DCCLMessageVal::DCCLMessageVal(double d, int p /* = MAX_DBL_PRECISION*/ )
 {
     init();
     dval_ = d;
@@ -73,28 +73,28 @@ goby::acomms::DCCLMessageVal::DCCLMessageVal(double d, int p /* = MAX_DBL_PRECIS
     type_ = cpp_double;
 }
 
-goby::acomms::DCCLMessageVal::DCCLMessageVal(float f)
+goby::transitional::DCCLMessageVal::DCCLMessageVal(float f)
 {
     init();
     dval_ = f;
     type_ = cpp_double;
 }
 
-goby::acomms::DCCLMessageVal::DCCLMessageVal(long l)
+goby::transitional::DCCLMessageVal::DCCLMessageVal(long l)
 {
     init();
     lval_ = l;
     type_ = cpp_long;
 }        
 
-goby::acomms::DCCLMessageVal::DCCLMessageVal(int i)
+goby::transitional::DCCLMessageVal::DCCLMessageVal(int i)
 {
     init();
     lval_ = i;
     type_ = cpp_long;
 }        
 
-goby::acomms::DCCLMessageVal::DCCLMessageVal(bool b)
+goby::transitional::DCCLMessageVal::DCCLMessageVal(bool b)
 {
     init();
     bval_ = b;
@@ -102,26 +102,26 @@ goby::acomms::DCCLMessageVal::DCCLMessageVal(bool b)
 }        
 
 
-goby::acomms::DCCLMessageVal::DCCLMessageVal(const std::vector<DCCLMessageVal>& vm)
+goby::transitional::DCCLMessageVal::DCCLMessageVal(const std::vector<DCCLMessageVal>& vm)
 {
     if(vm.size() != 1)
-        throw(DCCLException("vector cast to DCCLMessageVal failed: vector is not size 1"));
+        throw(goby::acomms::DCCLException("vector cast to DCCLMessageVal failed: vector is not size 1"));
     else
         *this = vm[0];
 }
 
 
-void goby::acomms::DCCLMessageVal::set(std::string sval)
+void goby::transitional::DCCLMessageVal::set(std::string sval)
 { sval_ = sval; type_ = cpp_string; }
-void goby::acomms::DCCLMessageVal::set(double dval, int precision /* = MAX_DBL_PRECISION */)
+void goby::transitional::DCCLMessageVal::set(double dval, int precision /* = MAX_DBL_PRECISION */)
 { dval_ = dval; type_ = cpp_double; precision_ = precision; }
-void goby::acomms::DCCLMessageVal::set(long lval)
+void goby::transitional::DCCLMessageVal::set(long lval)
 { lval_ = lval; type_ = cpp_long; }
-void goby::acomms::DCCLMessageVal::set(bool bval)
+void goby::transitional::DCCLMessageVal::set(bool bval)
 { bval_ = bval; type_ = cpp_bool; }
 
 
-bool goby::acomms::DCCLMessageVal::get(std::string& s) const
+bool goby::transitional::DCCLMessageVal::get(std::string& s) const
 {
     std::stringstream ss;
     switch(type_)
@@ -152,7 +152,7 @@ bool goby::acomms::DCCLMessageVal::get(std::string& s) const
     }
 }
 
-bool goby::acomms::DCCLMessageVal::get(bool& b) const
+bool goby::transitional::DCCLMessageVal::get(bool& b) const
 {
     switch(type_)
     {
@@ -184,7 +184,7 @@ bool goby::acomms::DCCLMessageVal::get(bool& b) const
     }
 }    
 
-bool goby::acomms::DCCLMessageVal::get(long& t) const
+bool goby::transitional::DCCLMessageVal::get(long& t) const
 {
     switch(type_)
     {
@@ -223,7 +223,7 @@ bool goby::acomms::DCCLMessageVal::get(long& t) const
     }
 }        
         
-bool goby::acomms::DCCLMessageVal::get(double& d) const
+bool goby::transitional::DCCLMessageVal::get(double& d) const
 {
     switch(type_)
     {
@@ -262,7 +262,7 @@ bool goby::acomms::DCCLMessageVal::get(double& d) const
 
 
 
-goby::acomms::DCCLMessageVal::operator double() const
+goby::transitional::DCCLMessageVal::operator double() const
 {
     double d;
     if(get(d)) return d;
@@ -270,48 +270,48 @@ goby::acomms::DCCLMessageVal::operator double() const
 }
 
 
-goby::acomms::DCCLMessageVal::operator bool() const
+goby::transitional::DCCLMessageVal::operator bool() const
 {
     bool b;
     if(get(b)) return b;
     else return false;
 }
 
-goby::acomms::DCCLMessageVal::operator std::string() const
+goby::transitional::DCCLMessageVal::operator std::string() const
 {
     std::string s;
     if(get(s)) return s;
     else return "";
 }
 
-goby::acomms::DCCLMessageVal::operator long() const
+goby::transitional::DCCLMessageVal::operator long() const
 {
     long l;
     if(get(l)) return l;
     else return 0;
 }
 
-goby::acomms::DCCLMessageVal::operator int() const
+goby::transitional::DCCLMessageVal::operator int() const
 {
     return long(*this);
 }
 
-goby::acomms::DCCLMessageVal::operator unsigned() const
+goby::transitional::DCCLMessageVal::operator unsigned() const
 {
     return long(*this);
 }
 
-goby::acomms::DCCLMessageVal::operator float() const
+goby::transitional::DCCLMessageVal::operator float() const
 {
     return double(*this);
 }
 
-goby::acomms::DCCLMessageVal::operator std::vector<DCCLMessageVal>() const
+goby::transitional::DCCLMessageVal::operator std::vector<DCCLMessageVal>() const
 {
     return std::vector<DCCLMessageVal>(1, *this);
 }
 
-bool goby::acomms::DCCLMessageVal::operator==(const DCCLMessageVal& mv) const
+bool goby::transitional::DCCLMessageVal::operator==(const DCCLMessageVal& mv) const
 {
     switch(mv.type_)
     {
@@ -323,25 +323,25 @@ bool goby::acomms::DCCLMessageVal::operator==(const DCCLMessageVal& mv) const
     }
 }
 
-bool goby::acomms::DCCLMessageVal::operator==(const std::string& s)  const
+bool goby::transitional::DCCLMessageVal::operator==(const std::string& s)  const
 {
     std::string us;
     return get(us) && us == s;
 }
 
-bool goby::acomms::DCCLMessageVal::operator==(double d) const
+bool goby::transitional::DCCLMessageVal::operator==(double d) const
 {
     double us;
     return get(us) && us == d;
 }
 
-bool goby::acomms::DCCLMessageVal::operator==(long l) const
+bool goby::transitional::DCCLMessageVal::operator==(long l) const
 {
     long us;
     return get(us) && us == l;
 }
 
-bool goby::acomms::DCCLMessageVal::operator==(bool b) const
+bool goby::transitional::DCCLMessageVal::operator==(bool b) const
 {
     bool us;
     return get(us) && us == b;
@@ -349,7 +349,7 @@ bool goby::acomms::DCCLMessageVal::operator==(bool b) const
 
 
 
-std::ostream& goby::acomms::operator<<(std::ostream& os, const goby::acomms::DCCLMessageVal& mv)
+std::ostream& goby::transitional::operator<<(std::ostream& os, const goby::transitional::DCCLMessageVal& mv)
 {
     switch(mv.type_)
     {
@@ -362,7 +362,7 @@ std::ostream& goby::acomms::operator<<(std::ostream& os, const goby::acomms::DCC
 }
 
     
-std::ostream& goby::acomms::operator<<(std::ostream& os, const std::vector<goby::acomms::DCCLMessageVal>& vm)
+std::ostream& goby::transitional::operator<<(std::ostream& os, const std::vector<goby::transitional::DCCLMessageVal>& vm)
 {
     int j=0;
     BOOST_FOREACH(const DCCLMessageVal& m, vm)

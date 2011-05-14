@@ -24,17 +24,17 @@
 #include "message_var.h"
 #include "message.h"
 #include "message_val.h"
-#include "dccl_constants.h"
+#include "goby/acomms/libdccl/dccl_constants.h"
 #include "message_algorithms.h"
 
-goby::acomms::DCCLMessageVar::DCCLMessageVar()
+goby::transitional::DCCLMessageVar::DCCLMessageVar()
     : array_length_(1),
       is_key_frame_(true),
       source_set_(false),
       ap_(DCCLAlgorithmPerformer::getInstance())
 { }
 
-void goby::acomms::DCCLMessageVar::initialize(const DCCLMessage& msg)
+void goby::transitional::DCCLMessageVar::initialize(const DCCLMessage& msg)
 {
     // add trigger_var_ as source_var for any message_vars without a source
     if(!source_set_)
@@ -47,7 +47,7 @@ void goby::acomms::DCCLMessageVar::initialize(const DCCLMessage& msg)
 
 }
 
-void goby::acomms::DCCLMessageVar::set_defaults(std::map<std::string,std::vector<DCCLMessageVal> >& vals, unsigned modem_id, unsigned id)
+void goby::transitional::DCCLMessageVar::set_defaults(std::map<std::string,std::vector<DCCLMessageVal> >& vals, unsigned modem_id, unsigned id)
 {
     vals[name_].resize(array_length_);    
 
@@ -59,7 +59,7 @@ void goby::acomms::DCCLMessageVar::set_defaults(std::map<std::string,std::vector
 }
 
     
-void goby::acomms::DCCLMessageVar::var_encode(std::map<std::string,std::vector<DCCLMessageVal> >& vals, boost::dynamic_bitset<unsigned char>& bits)
+void goby::transitional::DCCLMessageVar::var_encode(std::map<std::string,std::vector<DCCLMessageVal> >& vals, boost::dynamic_bitset<unsigned char>& bits)
 {    
     // ensure that every DCCLMessageVar has the full number of (maybe blank) DCCLMessageVals
     vals[name_].resize(array_length_);
@@ -91,7 +91,7 @@ void goby::acomms::DCCLMessageVar::var_encode(std::map<std::string,std::vector<D
     encode_value(key_val_, bits);
 }
 
-void goby::acomms::DCCLMessageVar::encode_value(const DCCLMessageVal& val, boost::dynamic_bitset<unsigned char>& bits)
+void goby::transitional::DCCLMessageVar::encode_value(const DCCLMessageVal& val, boost::dynamic_bitset<unsigned char>& bits)
 {
     bits <<= calc_size();
     
@@ -102,7 +102,7 @@ void goby::acomms::DCCLMessageVar::encode_value(const DCCLMessageVal& val, boost
 }
 
 
-void goby::acomms::DCCLMessageVar::var_decode(std::map<std::string,std::vector<DCCLMessageVal> >& vals, boost::dynamic_bitset<unsigned char>& bits)
+void goby::transitional::DCCLMessageVar::var_decode(std::map<std::string,std::vector<DCCLMessageVal> >& vals, boost::dynamic_bitset<unsigned char>& bits)
 {
     vals[name_].resize(array_length_);
     
@@ -128,10 +128,10 @@ void goby::acomms::DCCLMessageVar::var_decode(std::map<std::string,std::vector<D
 }
 
 
-void goby::acomms::DCCLMessageVar::read_pubsub_vars(std::map<std::string,std::vector<DCCLMessageVal> >& vals,
+void goby::transitional::DCCLMessageVar::read_pubsub_vars(std::map<std::string,std::vector<DCCLMessageVal> >& vals,
                                         const std::map<std::string,std::vector<DCCLMessageVal> >& in)
 {
-    const std::map<std::string, std::vector<goby::acomms::DCCLMessageVal> >::const_iterator it =
+    const std::map<std::string, std::vector<goby::transitional::DCCLMessageVal> >::const_iterator it =
         in.find(source_var_);
     
     if(it != in.end())
@@ -170,7 +170,7 @@ void goby::acomms::DCCLMessageVar::read_pubsub_vars(std::map<std::string,std::ve
 
 
 // deal with cases where key=value exists within the string
-std::string goby::acomms::DCCLMessageVar::parse_string_val(const std::string& sval)
+std::string goby::transitional::DCCLMessageVar::parse_string_val(const std::string& sval)
 {
     std::string pieceval;
 
@@ -191,7 +191,7 @@ std::string goby::acomms::DCCLMessageVar::parse_string_val(const std::string& sv
         return sval;
 }
 
-std::string goby::acomms::DCCLMessageVar::get_display() const
+std::string goby::transitional::DCCLMessageVar::get_display() const
 {
     std::stringstream ss;    
     ss << "\t" << name_ << " (" << type_to_string(type()) << "):" << std::endl;    
@@ -233,8 +233,119 @@ std::string goby::acomms::DCCLMessageVar::get_display() const
 }
 
 
-std::ostream& goby::acomms::operator<< (std::ostream& out, const DCCLMessageVar& mv)
+std::ostream& goby::transitional::operator<< (std::ostream& out, const DCCLMessageVar& mv)
 {
     out << mv.get_display();
     return out;
 }
+void goby::transitional::DCCLMessageVar::write_schema_to_dccl2(std::ofstream* proto_file, int sequence_number)
+{
+    *proto_file << "\t";
+
+    if(array_length_ == 1)
+        *proto_file << "optional ";
+    else
+        *proto_file  << "repeated ";
+
+    std::string enum_name;
+    if(type() == dccl_enum)
+    {
+        enum_name = name_ + "Enum";
+        enum_name[0] = toupper(enum_name[0]);
+        *proto_file << enum_name;
+    }
+    else
+    {
+        *proto_file << type_to_protobuf_type(type());
+    }
+
+    *proto_file << " " << name_ << " = " << sequence_number;
+
+
+    int count = 0;
+    try
+    {
+        double max_tmp = max();
+
+        *proto_file << (count ? ", " : " [");
+        ++count;
+        *proto_file << "(dccl.max)=" << max_tmp;
+    }
+    catch(...) { }
+    try
+    {
+        double min_tmp = min();
+        *proto_file << (count ? ", " : " [");
+        ++count;
+        *proto_file << "(dccl.min)=" << min_tmp;
+    }
+    catch(...) { }
+    try
+    {
+        int precision_tmp = precision();
+        *proto_file << (count ? ", " : " [");
+        ++count;
+        *proto_file << "(dccl.precision)=" << precision_tmp;
+    }
+    catch(...) { }
+    try
+    {
+        unsigned max_length_tmp = max_length();
+        *proto_file << (count ? ", " : " [");
+        ++count;
+        *proto_file << "(dccl.max_length)=" << max_length_tmp;        
+    }
+    catch(...) { }
+    try
+    {
+        unsigned num_bytes_tmp = num_bytes();
+        *proto_file << (count ? ", " : " [");
+        ++count;
+        *proto_file << "(dccl.max_length)=" << num_bytes_tmp;        
+    }
+    catch(...) { }
+    try
+    {
+        std::string static_val_tmp = static_val();
+        *proto_file << (count ? ", " : " [");
+        ++count;
+        *proto_file << "(dccl.static_value)=\"" << static_val_tmp << "\", " << "(dccl.codec)=\"_static\"";      
+    }
+    catch(...) { }
+
+    if(array_length_ != 1)
+    {
+        *proto_file << (count ? ", " : " [");
+        ++count;
+        *proto_file << "(dccl.max_repeat)=" << array_length_;        
+
+    }
+
+    
+    std::string more_options = additional_option_extensions();
+    if(!more_options.empty())
+    {
+        *proto_file << (count ? ", " : " [");
+        ++count;
+        *proto_file << more_options;
+    }
+    
+    
+ 
+    if(count)
+        *proto_file << "]";
+
+    *proto_file << ";" <<  std::endl;
+
+    if(type() == dccl_enum)
+    {
+        *proto_file << "\t" << "enum " << enum_name << "{ \n";
+
+        int enum_value = 0;
+        BOOST_FOREACH(const std::string& e, *enums())
+            *proto_file << "\t\t " << e << " = " << enum_value++ << "; \n";
+
+        *proto_file << "\t} \n";
+    }
+}
+

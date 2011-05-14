@@ -32,12 +32,12 @@
 #include "goby/acomms/xml/xerces_strings.h"
 
 #include "message.h"
-#include "dccl_exception.h"
-#include "goby/acomms/xml/tags.h"
+#include "goby/acomms/libdccl/dccl_exception.h"
+#include "goby/moos/libtransitional/xml/tags.h"
 
 namespace goby
 {
-    namespace acomms
+    namespace transitional
     {
     
 // Implements callbacks that receive character data and
@@ -81,7 +81,7 @@ namespace goby
             std::set<xml::Tag> parents_;
             std::map<std::string, xml::Tag> tags_map_;
 
-            acomms::DCCLHeaderPart curr_head_piece_;
+            transitional::DCCLHeaderPart curr_head_piece_;
         
         };
 
@@ -100,7 +100,7 @@ namespace goby
                 std::stringstream ss;
                 ss << "message xml parsing error on line " << line << ": " << std::endl << toNative(e.getMessage());
             
-                throw DCCLException(ss.str());
+                throw goby::acomms::DCCLException(ss.str());
             }
             void fatalError(const xercesc::SAXParseException& e) 
             {

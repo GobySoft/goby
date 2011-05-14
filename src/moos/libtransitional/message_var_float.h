@@ -28,7 +28,7 @@
 
 namespace goby
 {
-    namespace acomms
+    namespace transitional
     {   
         class DCCLMessageVarFloat : public DCCLMessageVar
         {

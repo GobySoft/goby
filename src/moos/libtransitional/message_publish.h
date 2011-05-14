@@ -33,7 +33,7 @@
 
 namespace goby
 {
-    namespace acomms
+    namespace transitional
     {
         class DCCLMessage;
     

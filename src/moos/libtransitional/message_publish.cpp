@@ -20,12 +20,12 @@
 #include <boost/foreach.hpp>
 
 #include "message_publish.h"
-#include "dccl_exception.h"
+#include "goby/acomms/libdccl/dccl_exception.h"
 #include "message.h"
 
 using goby::acomms::NaN;
 
-void goby::acomms::DCCLPublish::initialize(const DCCLMessage& msg)
+void goby::transitional::DCCLPublish::initialize(const DCCLMessage& msg)
 {
     repeat_ = msg.repeat();
 
@@ -110,7 +110,7 @@ void goby::acomms::DCCLPublish::initialize(const DCCLMessage& msg)
 }
 
 
-void goby::acomms::DCCLPublish::fill_format(const std::map<std::string,std::vector<DCCLMessageVal> >& vals,
+void goby::transitional::DCCLPublish::fill_format(const std::map<std::string,std::vector<DCCLMessageVal> >& vals,
                                             std::string& key,
                                             std::string& value,
                                             unsigned repeat_index)
@@ -155,7 +155,7 @@ void goby::acomms::DCCLPublish::fill_format(const std::map<std::string,std::vect
     }
     catch (std::exception& e)
     {
-        throw DCCLException(std::string(e.what() + (std::string)"\n decode failed. check format string for this <publish />: \n" + get_display()));
+        throw goby::acomms::DCCLException(std::string(e.what() + (std::string)"\n decode failed. check format string for this <publish />: \n" + get_display()));
     }
 
     // split filled_value back into variable and value
@@ -171,7 +171,7 @@ void goby::acomms::DCCLPublish::fill_format(const std::map<std::string,std::vect
 
     
 
-void goby::acomms::DCCLPublish::write_publish(const std::map<std::string,std::vector<DCCLMessageVal> >& vals, std::multimap<std::string,DCCLMessageVal>* pubsub_vals)
+void goby::transitional::DCCLPublish::write_publish(const std::map<std::string,std::vector<DCCLMessageVal> >& vals, std::multimap<std::string,DCCLMessageVal>* pubsub_vals)
 
 {
     for(unsigned i = 0, n = repeat_;
@@ -223,7 +223,7 @@ void goby::acomms::DCCLPublish::write_publish(const std::map<std::string,std::ve
 }
 
     
-std::string goby::acomms::DCCLPublish::get_display() const
+std::string goby::transitional::DCCLPublish::get_display() const
 {
     std::stringstream ss;
     
@@ -251,7 +251,7 @@ std::string goby::acomms::DCCLPublish::get_display() const
 }
 
 // overloaded <<
-std::ostream& goby::acomms::operator<< (std::ostream& out, const DCCLPublish& publish)
+std::ostream& goby::transitional::operator<< (std::ostream& out, const DCCLPublish& publish)
 {
     out << publish.get_display();
     return out;

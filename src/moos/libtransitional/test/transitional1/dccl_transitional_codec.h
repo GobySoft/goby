@@ -1,4 +1,4 @@
-// copyright 2008, 2009 t. schneider tes@mit.edu
+// copyright 2011 t. schneider tes@mit.edu
 // 
 // this file is part of the Dynamic Compact Control Language (DCCL),
 // the goby-acomms codec. goby-acomms is a collection of libraries 
@@ -17,28 +17,37 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef MESSAGE_VAR_INT20100317H
-#define MESSAGE_VAR_INT20100317H
+#ifndef DCCLTRANSITIONALCODEC20110513H
+#define DCCLTRANSITIONALCODEC20110513H
 
-#include "message_var_float.h"
+#include "goby/acomms/libdccl/dccl_field_codec_default.h"
+
+
 namespace goby
 {
     namespace transitional
     {
-        // <int> is a <float> with <precision>0</precision>
-        class DCCLMessageVarInt : public DCCLMessageVarFloat
+        
+
+        class DCCL1TimeCodec : public DCCLDefaultArithmeticFieldCodec<int32, std::string>
         {
           public:
-          DCCLMessageVarInt(long max = std::numeric_limits<long>::max(), long min = 0)
-              : DCCLMessageVarFloat(max, min)
-            { }
-
-            virtual DCCLType type() const { return dccl_int; }
-        
+            int32 pre_encode(const std::string& field_value);
+            std::string post_decode(const int32& wire_value);            
+ 
           private:
-            DCCLMessageVal cast(double d, int precision) { return long(d); }
-        
-        };    
+            void validate() { }
+
+            double max() { return HOURS_IN_DAY*SECONDS_IN_HOUR; }
+            double min() { return 0; }
+            enum { HOURS_IN_DAY = 24 };
+            enum { SECONDS_IN_HOUR = 3600 };
+
+        };
+
     }
 }
+
+
+
 #endif

@@ -33,11 +33,11 @@
 #include <boost/lexical_cast.hpp>
 
 #include "dccl_constants.h"
-#include "dccl_exception.h"
+#include "goby/acomms/libdccl/dccl_exception.h"
 #include "message_val.h"
 namespace goby
 {
-    namespace acomms
+    namespace transitional
     {
         class DCCLMessageVal;
         class DCCLMessage;
@@ -47,6 +47,10 @@ namespace goby
         class DCCLMessageVar
         {
           public:
+            // Added in Goby2 for transition to new Protobuf structure
+            virtual void write_schema_to_dccl2(std::ofstream* proto_file,
+                                       int sequence_number);
+
             DCCLMessageVar();
         
             // set
@@ -127,11 +131,14 @@ namespace goby
             { return calc_size() * array_length_; }        
         
 
-        
+            
           protected:
             virtual void initialize_specific() = 0;
 
             virtual void pre_encode(DCCLMessageVal& val) { }
+
+            virtual std::string additional_option_extensions()
+            { return ""; }
              
             virtual boost::dynamic_bitset<unsigned char> encode_specific(const DCCLMessageVal& v) = 0;
             virtual DCCLMessageVal decode_specific(boost::dynamic_bitset<unsigned char>& bits) = 0;
@@ -143,7 +150,7 @@ namespace goby
           private:
             void bad_overload(const std::string& s) const
             {
-                throw(DCCLException(std::string(s + " not supported by this DCCLMessageVar: " + name() + " (" + type_to_string(type()) + ")")));
+                throw(goby::acomms::DCCLException(std::string(s + " not supported by this DCCLMessageVar: " + name() + " (" + type_to_string(type()) + ")")));
             }        
 
             // helper to avoid copy-paste code

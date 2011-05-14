@@ -47,13 +47,21 @@
 
 namespace goby
 {
-    namespace acomms
+    namespace transitional
     {
     
 // the DCCLMessage itself
         class DCCLMessage 
         {
           public:
+
+            // Added in Goby2 for transition to new Protobuf structure
+            void write_schema_to_dccl2(std::ofstream* proto_file);
+            void write_data_to_dccl2(google::protobuf::Message*);
+            void read_data_from_dccl2(const google::protobuf::Message&);
+            
+
+            
             DCCLMessage();
         
             // set
@@ -112,7 +120,7 @@ namespace goby
             unsigned repeat() const               { return repeat_; }
 
             DCCLMessageVar& last_message_var()        { return *layout_.back(); }
-            DCCLMessageVar& header_var(acomms::DCCLHeaderPart p) { return *header_[p]; }
+            DCCLMessageVar& header_var(transitional::DCCLHeaderPart p) { return *header_[p]; }
             DCCLPublish& last_publish()               { return publishes_.back(); }        
         
             std::vector< boost::shared_ptr<DCCLMessageVar> >& layout()     { return layout_; }
@@ -159,9 +167,9 @@ namespace goby
         
           private:
             unsigned bytes_head() const
-            { return acomms::DCCL_NUM_HEADER_BYTES; }
+            { return transitional::DCCL_NUM_HEADER_BYTES; }
             unsigned bits_head() const
-            { return bytes2bits(acomms::DCCL_NUM_HEADER_BYTES); }
+            { return bytes2bits(transitional::DCCL_NUM_HEADER_BYTES); }
 
             // more efficient way to do ceil(total_bits / 8)
             // to get the number of bytes rounded up.
@@ -184,13 +192,13 @@ namespace goby
             { return bits_head() + used_bits_body(); }
         
             unsigned requested_bytes_body() const
-            { return size_ - acomms::DCCL_NUM_HEADER_BYTES; }
+            { return size_ - transitional::DCCL_NUM_HEADER_BYTES; }
 
             unsigned requested_bytes_total() const
             { return size_; }
 
             unsigned requested_bits_body() const
-            { return bytes2bits(size_ - acomms::DCCL_NUM_HEADER_BYTES); } 
+            { return bytes2bits(size_ - transitional::DCCL_NUM_HEADER_BYTES); } 
 
             unsigned requested_bits_total() const
             { return bytes2bits(size_); }

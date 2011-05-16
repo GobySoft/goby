@@ -59,9 +59,7 @@ namespace goby
             Queue(const protobuf::QueueConfig cfg = protobuf::QueueConfig());
 
             bool push_message(const protobuf::ModemDataTransmission& encoded_msg,
-                              boost::shared_ptr<google::protobuf::Message> dccl_msg =  boost::shared_ptr<google::protobuf::Message>());
-            
-            bool push_message(const google::protobuf::Message& dccl_msg);
+                              boost::shared_ptr<google::protobuf::Message> dccl_msg =  boost::shared_ptr<google::protobuf::Message>());            
 
             goby::acomms::QueuedMessage give_data(const protobuf::ModemDataRequest& request_msg);
             bool pop_message(unsigned frame);
@@ -105,41 +103,11 @@ namespace goby
             waiting_for_ack_it find_ack_value(messages_it it_to_find);
             messages_it next_message_it();    
 
-            void set_latest_dest(const boost::any& wire_value,
-                                 const boost::any& extension_value)
-            {
-                goby::glog.is(debug2) &&
-                    goby::glog << "setting dest to " << boost::any_cast<int32>(wire_value) << std::endl;
-                
-                latest_data_msg_.mutable_base()->set_dest(boost::any_cast<int32>(wire_value));
-            }
-            
-            void set_latest_src(const boost::any& wire_value,
-                                const boost::any& extension_value)
-            {
-                goby::glog.is(debug2) &&
-                    goby::glog << "setting source to " << boost::any_cast<int32>(wire_value) << std::endl;
-                
-                latest_data_msg_.mutable_base()->set_src(boost::any_cast<int32>(wire_value));
-            }
-            
-            void set_latest_time(const boost::any& wire_value,
-                                 const boost::any& extension_value)
-            {
-                goby::glog.is(debug2) &&
-                    goby::glog << "setting time to " << boost::any_cast<std::string>(wire_value) << std::endl;
-                
-                latest_data_msg_.mutable_base()->set_time(boost::any_cast<std::string>(wire_value));
-            }
-
-            friend class QueueManager;
           private:
             const protobuf::QueueConfig cfg_;
         
             boost::posix_time::ptime last_send_time_;    
 
-            static protobuf::ModemDataTransmission latest_data_msg_;
-            static bool hooks_set_;
             
             std::list<QueuedMessage> messages_;
             

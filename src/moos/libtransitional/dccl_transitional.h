@@ -156,7 +156,7 @@ namespace goby
                 typedef std::pair<std::string,DCCLMessageVal> P;
                 BOOST_FOREACH(const P& p, m)
                     vm.insert(std::pair<std::string,std::vector<DCCLMessageVal> >(p.first, p.second));
-            
+                
                 encode_private(to_iterator(k), bytes, vm);
             }
 
@@ -485,12 +485,12 @@ namespace goby
         
             std::vector<DCCLMessage>::iterator decode_private(const goby::acomms::protobuf::ModemDataTransmission& in_msg,
                                 std::map<std::string, std::vector<DCCLMessageVal> >& out);
-        
+            
             void check_duplicates();
             
             const google::protobuf::Descriptor* convert_to_protobuf_descriptor_private(std::vector<DCCLMessage>::iterator it,
                                                                                        const std::string& proto_file_to_write);
-        
+            
             void encrypt(std::string& s, const std::string& nonce);
             void decrypt(std::string& s, const std::string& nonce);
 

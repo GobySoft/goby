@@ -426,7 +426,7 @@ void goby::acomms::DCCLFieldCodecBase::any_run_hooks(const boost::any& field_val
 
         boost::any extension_value = helper->get_value(extension_desc, this_field()->options());
 
-        if(!extension_value.empty())
+        if(!(extension_value.empty() || field_value.empty()))
         {
             try
             {

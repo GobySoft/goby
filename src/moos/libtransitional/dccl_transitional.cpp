@@ -263,8 +263,8 @@ std::vector<goby::transitional::DCCLMessage>::iterator goby::transitional::DCCLT
 
 
 void goby::transitional::DCCLTransitionalCodec::encode_private(std::vector<DCCLMessage>::iterator it,
-                                             std::string& out,
-                                             std::map<std::string, std::vector<DCCLMessageVal> > in /* copy */)
+                                                               std::string& out,
+                                                               std::map<std::string, std::vector<DCCLMessageVal> > in /* copy */)
 {
     if(manip_manager_.has(it->id(), protobuf::MessageFile::NO_ENCODE))
     {

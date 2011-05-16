@@ -213,10 +213,40 @@ namespace goby
             // clears the destination and ack values for the packet to reset for next $CADRQ
             void clear_packet(); 
             void process_cfg();
+
+
+            void set_latest_dest(const boost::any& wire_value,
+                                 const boost::any& extension_value)
+            {
+                goby::glog.is(debug2) &&
+                    goby::glog << "setting dest to " << boost::any_cast<int32>(wire_value) << std::endl;
+                
+                latest_data_msg_.mutable_base()->set_dest(boost::any_cast<int32>(wire_value));
+            }
+            
+            void set_latest_src(const boost::any& wire_value,
+                                const boost::any& extension_value)
+            {
+                goby::glog.is(debug2) &&
+                    goby::glog << "setting source to " << boost::any_cast<int32>(wire_value) << std::endl;
+                
+                latest_data_msg_.mutable_base()->set_src(boost::any_cast<int32>(wire_value));
+            }
+            
+            void set_latest_time(const boost::any& wire_value,
+                                 const boost::any& extension_value)
+            {
+                goby::glog.is(debug2) &&
+                    goby::glog << "setting time to " << boost::any_cast<std::string>(wire_value) << std::endl;
+                
+                latest_data_msg_.mutable_base()->set_time(boost::any_cast<std::string>(wire_value));
+            }
+
             
           private:
             static boost::shared_ptr<QueueManager> inst_;
-            
+            static protobuf::ModemDataTransmission latest_data_msg_;
+
             friend class Queue;
             static int modem_id_;
             std::map<goby::acomms::protobuf::QueueKey, Queue> queues_;

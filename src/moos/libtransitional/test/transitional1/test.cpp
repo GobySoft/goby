@@ -89,7 +89,7 @@ int main(int argc, char* argv[])
     assert(desc != 0);
 
     std::cout << desc->DebugString() << std::endl;
-bzr
+
     assert(dccl->validate(desc));
 
     

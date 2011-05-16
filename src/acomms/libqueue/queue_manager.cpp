@@ -36,12 +36,25 @@ using goby::glog;
 
 int goby::acomms::QueueManager::modem_id_ = 0;
 boost::shared_ptr<goby::acomms::QueueManager> goby::acomms::QueueManager::inst_;
+goby::acomms::protobuf::ModemDataTransmission goby::acomms::QueueManager::latest_data_msg_;
 
 goby::acomms::QueueManager::QueueManager()
     : packet_ack_(0),
       packet_dest_(BROADCAST_ID)
 {
-    add_flex_groups();    
+    add_flex_groups();
+
+    goby::acomms::DCCLFieldCodecBase::register_wire_value_hook(
+        make_hook_key(queue::is_dest.number(), goby::acomms::protobuf::HookKey::WIRE_VALUE),
+        boost::bind(&QueueManager::set_latest_dest, this, _1, _2));
+
+    goby::acomms::DCCLFieldCodecBase::register_wire_value_hook(
+        make_hook_key(queue::is_src.number(), goby::acomms::protobuf::HookKey::WIRE_VALUE),
+        boost::bind(&QueueManager::set_latest_src, this, _1, _2));
+
+    goby::acomms::DCCLFieldCodecBase::register_wire_value_hook(
+        make_hook_key(queue::is_time.number(), goby::acomms::protobuf::HookKey::FIELD_VALUE),
+        boost::bind(&QueueManager::set_latest_time, this, _1, _2));
 }
 
 void goby::acomms::QueueManager::add_queue(const google::protobuf::Message& msg)
@@ -170,15 +183,6 @@ void goby::acomms::QueueManager::push_message(const protobuf::ModemDataTransmiss
 
 void goby::acomms::QueueManager::push_message(const google::protobuf::Message& dccl_msg)
 {
-    // // message is to us, auto-loopback
-    // if(data_msg.base().dest() == modem_id_)
-    // {
-    //     glog.is(debug1) && glog<< group("queue.out") << "outgoing message is for us: using loopback, not physical interface" << std::endl;
-        
-    //     signal_receive(data_msg);
-    // }
-    //else
-
     const google::protobuf::Descriptor* desc = dccl_msg.GetDescriptor();
     
     protobuf::QueueKey key;
@@ -187,11 +191,34 @@ void goby::acomms::QueueManager::push_message(const google::protobuf::Message& d
     
     if(!queues_.count(key))
         add_queue(dccl_msg);
+    
+    boost::shared_ptr<google::protobuf::Message> new_dccl_msg(dccl_msg.New());
+    new_dccl_msg->CopyFrom(dccl_msg);
 
-    // add the message
-    queues_[key].push_message(dccl_msg);
-    qsize(&queues_[key]);
-
+    latest_data_msg_.Clear();
+    
+    goby::acomms::DCCLCodec* codec = goby::acomms::DCCLCodec::get();
+    latest_data_msg_.mutable_data()->resize(codec->size(&dccl_msg));
+    codec->run_hooks(&dccl_msg);
+    glog.is(debug2) && glog << "post hooks: " << latest_data_msg_ << std::endl;
+    
+    // message is to us, auto-loopback
+    if(latest_data_msg_.base().dest() == modem_id_)
+    {
+        glog.is(debug1) && glog<< group("queue.out") << "outgoing message is for us: using loopback, not physical interface" << std::endl;
+        
+        signal_receive(*new_dccl_msg);
+    }
+    else
+    {
+        if(!latest_data_msg_.base().has_time())
+            latest_data_msg_.mutable_base()->set_time(util::as<std::string>(goby::util::goby_time()));
+        
+        // add the message
+        queues_[key].push_message(latest_data_msg_, new_dccl_msg);
+        qsize(&queues_[key]);
+    }
+     
 }
  
 
@@ -243,7 +270,7 @@ void goby::acomms::QueueManager::handle_modem_data_request(const protobuf::Modem
         data_msg->set_ack_requested(packet_ack_);
         data_msg->mutable_base()->set_dest(packet_dest_);
         glog.is(debug1) && glog<< group("queue.out") << "no data found. sending blank to firmware" 
-                      << ": " << *data_msg << std::endl; 
+                               << ": " << *data_msg << std::endl; 
     }
     else if(winning_queue->cfg().key().type() == protobuf::QUEUE_CCL)
     {
@@ -251,8 +278,8 @@ void goby::acomms::QueueManager::handle_modem_data_request(const protobuf::Modem
         QueuedMessage next_user_frame = winning_queue->give_data(request_msg);
 
         glog.is(debug1) && glog << group("queue.out") << "sending data to firmware from: "
-             << winning_queue->cfg().name()
-             << ": " << next_user_frame.encoded_msg << std::endl;
+                                << winning_queue->cfg().name()
+                                << ": " << next_user_frame.encoded_msg << std::endl;
 
         // not DCCL, copy the msg and we are done
         data_msg->CopyFrom(next_user_frame.encoded_msg);
@@ -377,8 +404,8 @@ goby::acomms::Queue* goby::acomms::QueueManager::find_next_sender(const protobuf
     Queue* winning_queue = 0;
     
     glog.is(verbose) && glog<< group("queue.priority") << "starting priority contest\n"
-                           << "requesting: " << request_msg << "\n"
-                           << "have " << data_msg.data().size() << "/" << request_msg.max_bytes() << "B: " << data_msg << std::endl;
+                            << "requesting: " << request_msg << "\n"
+                            << "have " << data_msg.data().size() << "/" << request_msg.max_bytes() << "B: " << data_msg << std::endl;
 
     
     for(std::map<protobuf::QueueKey, Queue>::iterator it = queues_.begin(), n = queues_.end(); it != n; ++it)
@@ -414,12 +441,12 @@ goby::acomms::Queue* goby::acomms::QueueManager::find_next_sender(const protobuf
     }
 
     glog.is(verbose) && glog<< group("queue.priority") << "\t"
-                  << "all other queues have no messages" << std::endl;
+                            << "all other queues have no messages" << std::endl;
 
     if(winning_queue)
     {
         glog.is(verbose) && glog<< group("queue.priority") << winning_queue->cfg().name()
-                      << " has highest priority." << std::endl;
+                                << " has highest priority." << std::endl;
     }
     else
     {
@@ -437,13 +464,13 @@ void goby::acomms::QueueManager::handle_modem_ack(const protobuf::ModemDataAck& 
     if(ack_msg.base().dest() != modem_id_)
     {
         glog.is(warn) && glog<< group("queue.in")
-                      << "ignoring ack for modem_id = " << ack_msg.base().dest() << std::endl;
+                             << "ignoring ack for modem_id = " << ack_msg.base().dest() << std::endl;
         return;
     }
     else if(!waiting_for_ack_.count(ack_msg.frame()))
     {
         glog.is(debug1) && glog<< group("queue.in")
-                      << "got ack but we were not expecting one" << std::endl;
+                               << "got ack but we were not expecting one" << std::endl;
         return;
     }
     else
@@ -462,8 +489,8 @@ void goby::acomms::QueueManager::handle_modem_ack(const protobuf::ModemDataAck& 
             if(!oq->pop_message_ack(ack_msg.frame(), removed_msg))
             {
                 glog.is(warn) && glog<< group("queue.in") 
-                              << "failed to pop message from "
-                              << oq->cfg().name() << std::endl;
+                                     << "failed to pop message from "
+                                     << oq->cfg().name() << std::endl;
             }
             else
             {
@@ -494,7 +521,7 @@ void goby::acomms::QueueManager::handle_modem_receive(const protobuf::ModemDataT
     protobuf::ModemDataTransmission message = m;
     
     glog.is(verbose) && glog<< group("queue.in") << "received message"
-                  << ": " << message << std::endl;
+                            << ": " << message << std::endl;
 
     std::string data = message.data();
     if(data.size() < HEAD_CCL_ID_SIZE / BITS_IN_BYTE)
@@ -513,10 +540,10 @@ void goby::acomms::QueueManager::handle_modem_receive(const protobuf::ModemDataT
         
         BOOST_FOREACH(boost::shared_ptr<google::protobuf::Message> msg, dccl_msgs)
         {
-            Queue::latest_data_msg_.Clear();
+            latest_data_msg_.Clear();
             codec->run_hooks(msg.get());
 
-            int32 dest = Queue::latest_data_msg_.base().dest();
+            int32 dest = latest_data_msg_.base().dest();
             if(dest != BROADCAST_ID && dest != modem_id_)
             {
                 glog.is(warn) && glog << group("queue.in")

@@ -19,7 +19,7 @@ goby_find_required_package(Boost 1.36.0 COMPONENTS system date_time thread regex
 include_directories(${Boost_INCLUDE_DIRS})
 
 goby_find_required_package(ProtobufGoby)
-message(${PROTOBUF_INCLUDE_DIRS})
+#message(${PROTOBUF_INCLUDE_DIRS})
 
 ## ncurses
 set(CURSES_NEED_NCURSES TRUE)

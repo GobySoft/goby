@@ -97,8 +97,8 @@ function(PROTOBUF_GENERATE_CPP SRCS HDRS)
   # copy headers for generated headers
   file(GLOB_RECURSE INCLUDE_FILES RELATIVE ${goby_BUILD_DIR}/proto build/proto/*.h)
   foreach(I ${INCLUDE_FILES})
-    message(STATUS ${goby_BUILD_DIR}/proto/${I})
-    message(STATUS ${goby_INC_DIR}/${I})
+    #message(STATUS ${goby_BUILD_DIR}/proto/${I})
+    #message(STATUS ${goby_INC_DIR}/${I})
     configure_file(${goby_BUILD_DIR}/proto/${I} ${goby_INC_DIR}/${I} COPYONLY)
   endforeach()
   

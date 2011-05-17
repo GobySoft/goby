@@ -59,7 +59,7 @@ function(PROTOBUF_INCLUDE_DIRS)
 
   foreach(DIR ${ARGN})
     set(ALL_PROTOBUF_INCLUDE_DIRS "${ALL_PROTOBUF_INCLUDE_DIRS};-I${DIR}" PARENT_SCOPE)
-    message(${ALL_PROTOBUF_INCLUDE_DIRS})
+    #message(${ALL_PROTOBUF_INCLUDE_DIRS})
   endforeach()
 endfunction()
 

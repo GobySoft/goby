@@ -26,10 +26,6 @@ set -e -u
 # xerces: Apache XML parser: http://xerces.apache.org/xerces-c/
 # crypto++: Cryptography: http://www.cryptopp.com/
 # protobuf: Google Protocol Buffers: http://code.google.com/p/protobuf/
-# wt*: Web Toolkit: http://www.webtoolkit.eu/wt
-#   packages are provided on Ubuntu 10.10 (maverick) only, 
-#   others will have to download Wt and compile from source:
-#   http://www.webtoolkit.eu/wt#/download
 
 # OpenSuSe Notes
 # zypper install -t pattern devel_C_C++
@@ -39,7 +35,6 @@ set -e -u
 # (crypto++ from src)
 # zypper install protobuf-devel
 # zypper install cdk-devel
-# zypper install wt-devel
 
 # MAC OS X
 # Use MacPorts to install the needed dependencies. You will have 
@@ -95,10 +90,6 @@ libprotobuf-dev
 protobuf-compiler
 libcdk5-dev"
 
-debian_wt_packages=\
-"libwt-dev
-libwtdbo-dev
-libwtdbosqlite-dev"
 
 # Ubuntu
 if [ -e "`which add-apt-repository`" ]; then
@@ -116,7 +107,6 @@ elif [ -e "`which apt-get`" ]; then
     apt-get -y install $debian_boost_packages || printf $red"Could not install boost packages: see http://www.boost.org/\n"$nc
     apt-get -y install $debian_xerces_package || printf $red"Could not install xerces package\n"$nc
     apt-get -y install $debian_other_packages || printf $red"Could not install some packages: read the top of this file (DEPENDENCIES)\n"$nc
-    apt-get -y install $debian_wt_packages || printf $red"Could not install Wt packages: you need to download from source. See http://www.webtoolkit.eu/wt#/download\n"$nc        
 fi 
 
 

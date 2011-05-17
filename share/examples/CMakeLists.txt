@@ -14,5 +14,4 @@ link_directories(${GOBY_LIBRARY_PATH})
 include_directories(${GOBY_INCLUDE_DIRS})
 
 add_subdirectory(acomms)
-add_subdirectory(core)
 add_subdirectory(util)

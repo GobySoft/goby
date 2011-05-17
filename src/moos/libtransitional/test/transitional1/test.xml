@@ -60,10 +60,10 @@
         <max_delta>10</max_delta>
       </int>
 
-<!--      <hex>
+      <hex>
         <name>H</name>
         <num_bytes>4</num_bytes>
-      </hex> -->
+      </hex>
 
     </layout>
   </message>

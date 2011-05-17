@@ -38,7 +38,9 @@
 #include "goby/protobuf/transitional.pb.h"
 #include "goby/protobuf/modem_message.pb.h"
 #include "goby/acomms/acomms_helpers.h"
+#include "goby/acomms/dccl.h"
 
+#include <google/protobuf/dynamic_message.h>
 #include <google/protobuf/compiler/importer.h>
 #include <google/protobuf/descriptor.h>
 
@@ -148,7 +150,7 @@ namespace goby
             /// \param bytes location for the encoded bytes to be stored. this is suitable for sending to the Micro-Modem
             /// \param m map of std::string (\ref tag_name) to a vector of MessageVal representing the values to encode. No fields can be arrays using this call. If fields are arrays, all values but the first in the array will be set to NaN or blank.
             template<typename Key>
-                void encode(const Key& k, std::string& bytes,
+                void encode(const Key& k, boost::shared_ptr<google::protobuf::Message>& msg,
                             const std::map<std::string, DCCLMessageVal>& m)
             {
                 std::map<std::string, std::vector<DCCLMessageVal> > vm;
@@ -157,7 +159,7 @@ namespace goby
                 BOOST_FOREACH(const P& p, m)
                     vm.insert(std::pair<std::string,std::vector<DCCLMessageVal> >(p.first, p.second));
                 
-                encode_private(to_iterator(k), bytes, vm);
+                encode_private(to_iterator(k), msg, vm);
             }
 
             /// \brief Encode a message.
@@ -166,9 +168,9 @@ namespace goby
             /// \param bytes location for the encoded bytes to be stored. this is suitable for sending to the Micro-Modem
             /// \param m map of std::string (\ref tag_name) to a vector of MessageVal representing the values to encode. Fields can be arrays.
             template<typename Key>
-                void encode(const Key& k, std::string& bytes,
+                void encode(const Key& k, boost::shared_ptr<google::protobuf::Message>& msg,
                             const std::map<std::string, std::vector<DCCLMessageVal> >& m)
-            { encode_private(to_iterator(k), bytes, m); }
+            { encode_private(to_iterator(k), msg, m); }
 
         
             /// \brief Decode a message.
@@ -176,12 +178,12 @@ namespace goby
             /// \param k can either be std::string (the name of the message) or unsigned (the id of the message
             /// \param bytes the bytes to be decoded.
             /// \param m map of std::string (\ref tag_name) to MessageVal to store the values to be decoded. No fields can be arrays using this call. If fields are arrays, only the first value is returned.
-            void decode(const std::string& bytes,
+            void decode(const google::protobuf::Message& msg,
                         std::map<std::string, DCCLMessageVal>& m)
             {
                 std::map<std::string, std::vector<DCCLMessageVal> > vm;
                 
-                decode_private(bytes, vm);
+                decode_private(msg, vm);
             
                 typedef std::pair<std::string,std::vector<DCCLMessageVal> > P;
                 BOOST_FOREACH(const P& p, vm)
@@ -193,9 +195,9 @@ namespace goby
             /// \param k can either be std::string (the name of the message) or unsigned (the id of the message
             /// \param bytes the bytes to be decoded.
             /// \param m map of std::string (\ref tag_name) to MessageVal to store the values to be decoded
-            void decode(const std::string& bytes,
+            void decode(const google::protobuf::Message& msg,
                         std::map<std::string, std::vector<DCCLMessageVal> >& m)
-            { decode_private(bytes, m); }
+            { decode_private(msg, m); }
             
         
             //@}
@@ -220,7 +222,9 @@ namespace goby
                 void write_schema_to_dccl2(const Key& k, std::ofstream* proto_file)
             {  to_iterator(k)->write_schema_to_dccl2(proto_file); }
 
-            
+            template<typename Key>
+                const google::protobuf::Descriptor* descriptor(const Key& k)
+            {  return to_iterator(k)->descriptor(); }            
 
             template<typename Key>
                 const google::protobuf::Descriptor* convert_to_protobuf_descriptor(const Key& k,
@@ -293,7 +297,7 @@ namespace goby
             /// \param vals map of source variable name to MessageVal values. 
             template<typename Key>
                 void pubsub_encode(const Key& k,
-                                   goby::acomms::protobuf::ModemDataTransmission* msg,
+                                   boost::shared_ptr<google::protobuf::Message>& msg,
                                    const std::map<std::string, std::vector<DCCLMessageVal> >& pubsub_vals)
             {
                 std::vector<DCCLMessage>::iterator it = to_iterator(k);
@@ -334,7 +338,7 @@ namespace goby
             /// Use this version if you do not have vectors of src_var values
             template<typename Key>
                 void pubsub_encode(const Key& k,
-                                   goby::acomms::protobuf::ModemDataTransmission* msg,
+                                   boost::shared_ptr<google::protobuf::Message>& msg,
                                    const std::map<std::string, DCCLMessageVal>& pubsub_vals)
             {
                 std::map<std::string, std::vector<DCCLMessageVal> > vm;
@@ -355,7 +359,7 @@ namespace goby
             /// \param k can either be std::string (the name of the message) or unsigned (the id of the message)
             /// \param msg message to be decoded. (goby::acomms::protobuf::ModemDataTransmission defined in modem_message.proto)
             /// \param vals pointer to std::multimap of publish variable name to std::string values.
-            void pubsub_decode(const goby::acomms::protobuf::ModemDataTransmission& msg,
+            void pubsub_decode(const google::protobuf::Message& msg,
                                std::multimap<std::string, DCCLMessageVal>* pubsub_vals)
                                
             {
@@ -472,34 +476,26 @@ namespace goby
 
             // in map not passed by reference because we want to be able to modify it
             void encode_private(std::vector<DCCLMessage>::iterator it,
-                                std::string& out,
+                                boost::shared_ptr<google::protobuf::Message>& proto_msg,
                                 std::map<std::string, std::vector<DCCLMessageVal> > in);
 
             // in string not passed by reference because we want to be able to modify it
-            std::vector<DCCLMessage>::iterator decode_private(std::string in,
-                                std::map<std::string, std::vector<DCCLMessageVal> >& out);
+            std::vector<DCCLMessage>::iterator decode_private(const google::protobuf::Message& proto_msg, std::map<std::string, std::vector<DCCLMessageVal> >& out);
         
-            void encode_private(std::vector<DCCLMessage>::iterator it,
-                                goby::acomms::protobuf::ModemDataTransmission* out_msg,
-                                const std::map<std::string, std::vector<DCCLMessageVal> >& in);
-        
-            std::vector<DCCLMessage>::iterator decode_private(const goby::acomms::protobuf::ModemDataTransmission& in_msg,
-                                std::map<std::string, std::vector<DCCLMessageVal> >& out);
-            
             void check_duplicates();
             
             const google::protobuf::Descriptor* convert_to_protobuf_descriptor_private(std::vector<DCCLMessage>::iterator it,
                                                                                        const std::string& proto_file_to_write);
             
-            void encrypt(std::string& s, const std::string& nonce);
-            void decrypt(std::string& s, const std::string& nonce);
 
             void process_cfg();
             
           private:
             std::ostream* log_;
-            
+            goby::acomms::DCCLCodec* dccl_;
+
             std::vector<DCCLMessage> messages_;
+
             std::map<std::string, size_t>  name2messages_;
             std::map<unsigned, size_t>     id2messages_;
 
@@ -507,8 +503,6 @@ namespace goby
 
             boost::posix_time::ptime start_time_;
 
-            // SHA256 hash of the crypto passphrase
-            std::string crypto_key_;
             
             ManipulatorManager manip_manager_;    
 

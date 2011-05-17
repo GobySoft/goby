@@ -74,17 +74,16 @@ int main(int argc, char* argv[])
     goby::transitional::DCCLTransitionalCodec transitional_dccl(&std::cerr);    
     goby::transitional::protobuf::DCCLTransitionalConfig cfg;
     cfg.add_message_file()->set_path(DCCL_EXAMPLES_DIR "/transitional1/test.xml");
-
-    // must be kept secret!
-    cfg.set_crypto_passphrase("my_passphrase!");
     transitional_dccl.set_cfg(cfg);
 
     std::cout << transitional_dccl << std::endl;
 
     goby::acomms::DCCLCodec* dccl = goby::acomms::DCCLCodec::get();
+
+    const google::protobuf::Descriptor* desc = transitional_dccl.descriptor(4);
     
-    const google::protobuf::Descriptor* desc =
-        transitional_dccl.convert_to_protobuf_descriptor(4, "/tmp/foo.proto");
+    // const google::protobuf::Descriptor* desc =
+    //     transitional_dccl.convert_to_protobuf_descriptor(4, "/tmp/foo.proto");
 
     assert(desc != 0);
 
@@ -117,7 +116,7 @@ int main(int argc, char* argv[])
     f.push_back(-12.5);
     f.push_back(1);
     
-    std::string h = "abcd1234"; 
+    std::string h = goby::util::hex_decode("abcd1234"); 
     std::vector<transitional::DCCLMessageVal> sum(2,0);
     
     
@@ -133,15 +132,20 @@ int main(int argc, char* argv[])
     std::cout << "sent values:" << std::endl 
               << in;
 
-    transitional_dccl.encode(4, bytes, in);
+    boost::shared_ptr<google::protobuf::Message> proto_msg;
+    transitional_dccl.encode(4, proto_msg, in);
+    bytes = dccl->encode(*proto_msg);
+
     
     std::cout << "hex out: " << goby::util::hex_encode(bytes) << std::endl;
     bytes.resize(bytes.length() + 20, '0');
     std::cout << "hex in: " << goby::util::hex_encode(bytes) << std::endl;    
     
     std::map<std::string, std::vector<transitional::DCCLMessageVal> > out;
+
     
-    transitional_dccl.decode(bytes, out);
+    proto_msg = dccl->decode(bytes);
+    transitional_dccl.decode(*proto_msg, out);
     
     std::cout << "received values:" << std::endl 
               << out;    
@@ -178,7 +182,7 @@ int main(int argc, char* argv[])
     assert(out["SUM"][1] == sum[1]);
     assert(out["I"][0] == i[0]);
     assert(out["I"][1] == i[1]);
-    //assert(out["H"][0] == h);
+    assert(out["H"][0] == h);
     
     std::cout << "all tests passed" << std::endl;
 }

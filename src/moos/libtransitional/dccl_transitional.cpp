@@ -22,6 +22,7 @@
 #include <cryptopp/sha.h>
 #include <cryptopp/modes.h>
 #include <cryptopp/aes.h>
+#include <boost/filesystem.hpp>
 
 #include "dccl_transitional.h"
 #include "message_xml_callbacks.h"
@@ -31,9 +32,10 @@
 #include <google/protobuf/descriptor.pb.h>
 #include "goby/protobuf/dccl_option_extensions.pb.h"
 #include "goby/protobuf/queue_option_extensions.pb.h"
+#include "goby/core/libcore/dynamic_protobuf_manager.h"
 
 using goby::util::goby_time;
-using goby::util::as;
+using goby::util::as;           
 using goby::acomms::operator<<;
 
 /////////////////////
@@ -41,6 +43,7 @@ using goby::acomms::operator<<;
 /////////////////////
 goby::transitional::DCCLTransitionalCodec::DCCLTransitionalCodec(std::ostream* log /* =0 */)
     : log_(log),
+      dccl_(goby::acomms::DCCLCodec::get()),
       start_time_(goby_time()),
       source_database_(&disk_source_tree_),
       generated_database_(*google::protobuf::DescriptorPool::generated_pool()),
@@ -78,6 +81,14 @@ std::set<unsigned> goby::transitional::DCCLTransitionalCodec::add_xml_message_fi
         size_t new_index = messages_.size()-i-1;
         name2messages_.insert(std::pair<std::string, size_t>(messages_[new_index].name(), new_index));
         id2messages_.insert(std::pair<unsigned, size_t>(messages_[new_index].id(), new_index));
+
+        boost::filesystem::path xml_file_path(xml_file);
+        std::string proto_name =  cfg_.generated_proto_dir() + "/" + xml_file_path.stem() + "_" + messages_[new_index].name() + ".proto";
+        
+        to_iterator(messages_[new_index].id())->set_descriptor(
+            convert_to_protobuf_descriptor(messages_[new_index].id(),
+                                           proto_name));
+        
         added_ids.insert(messages_[new_index].id());
     }
     
@@ -263,7 +274,7 @@ std::vector<goby::transitional::DCCLMessage>::iterator goby::transitional::DCCLT
 
 
 void goby::transitional::DCCLTransitionalCodec::encode_private(std::vector<DCCLMessage>::iterator it,
-                                                               std::string& out,
+                                                               boost::shared_ptr<google::protobuf::Message>& proto_msg,
                                                                std::map<std::string, std::vector<DCCLMessageVal> > in /* copy */)
 {
     if(manip_manager_.has(it->id(), protobuf::MessageFile::NO_ENCODE))
@@ -287,28 +298,164 @@ void goby::transitional::DCCLTransitionalCodec::encode_private(std::vector<DCCLM
         }
     }
     
-    // 1. encode parts
     std::string body, head;
     
     it->set_head_defaults(in, cfg_.modem_id());
 
-    it->head_encode(head, in);
-    it->body_encode(body, in);
-    
-    // 2. encrypt
-    if(!crypto_key_.empty()) encrypt(body, head);
- 
-    // 3. join head and body
-    out = head + body;
+    proto_msg = goby::core::DynamicProtobufManager::new_protobuf_message(it->descriptor());
 
+    std::map<std::string, std::vector<DCCLMessageVal> > out_vals = in;
+    
+    it->pre_encode(in, out_vals);
+    
+    if(log_)
+        *log_ << group("dccl_enc") << "MessageVals after pre-encode: " << out_vals << std::endl;
+
+
+    
+    const google::protobuf::Descriptor* desc = proto_msg->GetDescriptor();
+    const google::protobuf::Reflection* refl = proto_msg->GetReflection();
+    
+    for(int i = 0, n = desc->field_count(); i < n; ++i)
+    {
+        const google::protobuf::FieldDescriptor* field_desc = desc->field(i);
+        const std::string& field_name = field_desc->name();
+        
+        if(field_desc->is_repeated())
+        {
+            BOOST_FOREACH(const DCCLMessageVal& val, out_vals[field_name])
+            {
+                if(val.empty())
+                    continue;
+                
+                switch(field_desc->cpp_type())
+                {
+                    default:
+                        break;    
+                    
+                    case google::protobuf::FieldDescriptor::CPPTYPE_INT32:
+                        refl->AddInt32(proto_msg.get(), field_desc, long(val));
+                        break;
+                        
+                    case google::protobuf::FieldDescriptor::CPPTYPE_INT64:
+                        refl->AddInt64(proto_msg.get(), field_desc, long(val));
+                        break;
+
+                    case google::protobuf::FieldDescriptor::CPPTYPE_UINT32:
+                        refl->AddUInt32(proto_msg.get(), field_desc, long(val));
+                        break;
+
+                    case google::protobuf::FieldDescriptor::CPPTYPE_UINT64:
+                        refl->AddUInt64(proto_msg.get(), field_desc, long(val));
+                        break;
+                        
+                    case google::protobuf::FieldDescriptor::CPPTYPE_BOOL:
+                        refl->AddBool(proto_msg.get(), field_desc, bool(val));
+                        break;
+                    
+                    case google::protobuf::FieldDescriptor::CPPTYPE_STRING:
+                        refl->AddString(proto_msg.get(), field_desc, std::string(val));
+                        break;                    
+                
+                    case google::protobuf::FieldDescriptor::CPPTYPE_FLOAT:
+                        refl->AddFloat(proto_msg.get(), field_desc, double(val));
+                        break;
+                
+                    case google::protobuf::FieldDescriptor::CPPTYPE_DOUBLE:
+                        refl->AddDouble(proto_msg.get(), field_desc, double(val));
+                        break;
+                
+                    case google::protobuf::FieldDescriptor::CPPTYPE_ENUM:
+                    {
+                        std::string enum_val_name = boost::to_upper_copy(field_name);
+                        enum_val_name += "_" + std::string(val);
+                        
+                        const google::protobuf::EnumValueDescriptor* enum_desc =
+                            field_desc->enum_type()->FindValueByName(enum_val_name);
+                        if(!enum_desc)
+                            glog.is(warn) && glog << "invalid enumeration " << enum_val_name <<  " for field " << field_name << std::endl;
+                        else
+                            refl->AddEnum(proto_msg.get(), field_desc, enum_desc);
+                        
+                    }
+                    break;
+                }
+                
+            }
+        }
+        else
+        {
+            const DCCLMessageVal& val = out_vals[field_name].at(0);
+
+            if(!val.empty())
+            {
+                switch(field_desc->cpp_type())
+                {
+                    default:
+                        break;    
+         
+                    case google::protobuf::FieldDescriptor::CPPTYPE_INT32:
+                        refl->SetInt32(proto_msg.get(), field_desc, long(val));
+                        break;
+                        
+                    case google::protobuf::FieldDescriptor::CPPTYPE_INT64:
+                        refl->SetInt64(proto_msg.get(), field_desc, long(val));
+                        break;
+
+                    case google::protobuf::FieldDescriptor::CPPTYPE_UINT32:
+                        refl->SetUInt32(proto_msg.get(), field_desc, long(val));
+                        break;
+
+                    case google::protobuf::FieldDescriptor::CPPTYPE_UINT64:
+                        refl->SetUInt64(proto_msg.get(), field_desc, long(val));
+                        break;
+                        
+                    case google::protobuf::FieldDescriptor::CPPTYPE_BOOL:
+                        refl->SetBool(proto_msg.get(), field_desc, bool(val));
+                        break;
+                    
+                    case google::protobuf::FieldDescriptor::CPPTYPE_STRING:
+                        refl->SetString(proto_msg.get(), field_desc, std::string(val));
+                        break;                    
+                
+                    case google::protobuf::FieldDescriptor::CPPTYPE_FLOAT:
+                        refl->SetFloat(proto_msg.get(), field_desc, double(val));
+                        break;
+                
+                    case google::protobuf::FieldDescriptor::CPPTYPE_DOUBLE:
+                        refl->SetDouble(proto_msg.get(), field_desc, double(val));
+                        break;
+                        
+                    case google::protobuf::FieldDescriptor::CPPTYPE_ENUM:
+                    {
+                        std::string enum_val_name = boost::to_upper_copy(field_name);
+                        enum_val_name += "_" + std::string(val);
+
+                        const google::protobuf::EnumValueDescriptor* enum_desc =
+                            field_desc->enum_type()->FindValueByName(enum_val_name);
+                        if(!enum_desc)
+                            glog.is(warn) && glog << "invalid enumeration " << enum_val_name <<  " for field " << field_name << std::endl;
+                        else
+                            refl->SetEnum(proto_msg.get(), field_desc, enum_desc);
+                        
+                    }
+                    break;
+                }
+            }    
+        }
+    }
+    
+    
+    
+    if(log_)
+        *log_ << group("dccl_enc") << "Protobuf message after translation: " << proto_msg->DebugString() << std::endl;
     
     if(log_) *log_ << group("dccl_enc") << "finished encode of " << it->name() <<  std::endl;    
 }
 
-std::vector<goby::transitional::DCCLMessage>::iterator goby::transitional::DCCLTransitionalCodec::decode_private(std::string in,
-                                                                                         std::map<std::string, std::vector<DCCLMessageVal> >& out)
+std::vector<goby::transitional::DCCLMessage>::iterator goby::transitional::DCCLTransitionalCodec::decode_private(const google::protobuf::Message& proto_msg, std::map<std::string, std::vector<DCCLMessageVal> >& out)
 {
-    std::vector<DCCLMessage>::iterator it = to_iterator(unsigned(DCCLHeaderDecoder(in)[HEAD_DCCL_ID]));
+    std::vector<DCCLMessage>::iterator it = to_iterator(proto_msg.GetDescriptor()->options().GetExtension(dccl::id));
 
     if(manip_manager_.has(it->id(), protobuf::MessageFile::NO_DECODE))
     {
@@ -318,21 +465,131 @@ std::vector<goby::transitional::DCCLMessage>::iterator goby::transitional::DCCLT
 
 
     if(log_) *log_ << group("dccl_dec") << "starting decode for " << it->name() << std::endl;        
+
+    if(log_)
+        *log_ << group("dccl_enc") << "Protobuf message after decoding: " << proto_msg.DebugString() << std::endl; // 
+
+    std::map<std::string, std::vector<DCCLMessageVal> > raw_out;
+
+    it->set_head_defaults(raw_out, cfg_.modem_id());
+
+
+    const google::protobuf::Descriptor* desc = proto_msg.GetDescriptor();
+    const google::protobuf::Reflection* refl = proto_msg.GetReflection();
     
-    // clean up any ending junk added by modem
-    in.resize(in.find_last_not_of(char(0))+1);
-    
-    // 3. split body and header (avoid substr::out_of_range)
-    std::string body = (DCCL_NUM_HEADER_BYTES < in.size()) ?
-        in.substr(DCCL_NUM_HEADER_BYTES) : "";
-    std::string head = in.substr(0, DCCL_NUM_HEADER_BYTES);
-    
-    // 2. decrypt
-    if(!crypto_key_.empty()) decrypt(body, head);
-    
-    // 1. decode parts
-    it->head_decode(head, out);
-    it->body_decode(body, out);
+    for(int i = 0, n = desc->field_count(); i < n; ++i)
+    {
+        const google::protobuf::FieldDescriptor* field_desc = desc->field(i);
+        const std::string& field_name = field_desc->name();
+        
+        if(field_desc->is_repeated())
+        {
+            for(int j = 0, m = refl->FieldSize(proto_msg, field_desc); j < m; ++j)
+            {                
+                switch(field_desc->cpp_type())
+                {
+                    default:
+                        break;    
+                    
+                    case google::protobuf::FieldDescriptor::CPPTYPE_INT32:
+                        raw_out[field_name].push_back(long(refl->GetRepeatedInt32(proto_msg, field_desc, j)));
+                        break;
+                        
+                    case google::protobuf::FieldDescriptor::CPPTYPE_INT64:
+                        raw_out[field_name].push_back(long(refl->GetRepeatedInt64(proto_msg, field_desc, j)));
+                        break;
+
+                    case google::protobuf::FieldDescriptor::CPPTYPE_UINT32:
+                        raw_out[field_name].push_back(long(refl->GetRepeatedUInt32(proto_msg, field_desc, j)));
+                        break;
+
+                    case google::protobuf::FieldDescriptor::CPPTYPE_UINT64:
+                        raw_out[field_name].push_back(long(refl->GetRepeatedUInt64(proto_msg, field_desc, j)));
+                        break;
+                        
+                    case google::protobuf::FieldDescriptor::CPPTYPE_BOOL:
+                        raw_out[field_name].push_back(bool(refl->GetRepeatedBool(proto_msg, field_desc, j)));
+                        break;
+                    
+                    case google::protobuf::FieldDescriptor::CPPTYPE_STRING:
+                        raw_out[field_name].push_back(std::string(refl->GetRepeatedString(proto_msg, field_desc, j)));
+                        break;                    
+                
+                    case google::protobuf::FieldDescriptor::CPPTYPE_FLOAT:
+                        raw_out[field_name].push_back(double(refl->GetRepeatedFloat(proto_msg, field_desc, j)));
+                        break;
+                
+                    case google::protobuf::FieldDescriptor::CPPTYPE_DOUBLE:
+                        raw_out[field_name].push_back(double(refl->GetRepeatedDouble(proto_msg, field_desc, j)));
+                        break;
+                
+                    case google::protobuf::FieldDescriptor::CPPTYPE_ENUM:
+                    {
+                        std::string enum_val_name = refl->GetRepeatedEnum(proto_msg, field_desc, j)->name();
+                        raw_out[field_name].push_back(enum_val_name.substr(enum_val_name.find("_") + 1));
+                    }
+                    break;
+                }
+                
+            }
+        }
+        else
+        {
+            if(refl->HasField(proto_msg, field_desc))
+            {
+                switch(field_desc->cpp_type())
+                {
+                    default:
+                        break;
+                        
+                    case google::protobuf::FieldDescriptor::CPPTYPE_INT32:
+                        raw_out[field_name].assign(1, long(refl->GetInt32(proto_msg, field_desc)));
+                        break;
+                        
+                    case google::protobuf::FieldDescriptor::CPPTYPE_INT64:
+                        raw_out[field_name].assign(1, long(refl->GetInt64(proto_msg, field_desc)));
+                        break;
+
+                    case google::protobuf::FieldDescriptor::CPPTYPE_UINT32:
+                        raw_out[field_name].assign(1, long(refl->GetUInt32(proto_msg, field_desc)));
+                        break;
+
+                    case google::protobuf::FieldDescriptor::CPPTYPE_UINT64:
+                        raw_out[field_name].assign(1, long(refl->GetUInt64(proto_msg, field_desc)));
+                        break;
+                        
+                    case google::protobuf::FieldDescriptor::CPPTYPE_BOOL:
+                        raw_out[field_name].assign(1, bool(refl->GetBool(proto_msg, field_desc)));
+                        break;
+                    
+                    case google::protobuf::FieldDescriptor::CPPTYPE_STRING:
+                        raw_out[field_name].assign(1, std::string(refl->GetString(proto_msg, field_desc)));
+                        break;                    
+                
+                    case google::protobuf::FieldDescriptor::CPPTYPE_FLOAT:
+                        raw_out[field_name].assign(1, double(refl->GetFloat(proto_msg, field_desc)));
+                        break;
+                
+                    case google::protobuf::FieldDescriptor::CPPTYPE_DOUBLE:
+                        raw_out[field_name].assign(1, double(refl->GetDouble(proto_msg, field_desc)));
+                        break;
+                
+                    case google::protobuf::FieldDescriptor::CPPTYPE_ENUM:
+                        std::string enum_val_name = refl->GetEnum(proto_msg, field_desc)->name();
+                        raw_out[field_name].assign(1, enum_val_name.substr(enum_val_name.find("_") + 1));
+                        break;
+                }
+            }    
+        }
+    }
+
+    if(log_)
+        *log_ << group("dccl_enc") << "MessageVals before post-decode: " << raw_out << std::endl;
+
+
+    out = raw_out;
+
+    it->post_decode(raw_out, out);
     
     if(log_)
     {
@@ -350,74 +607,9 @@ std::vector<goby::transitional::DCCLMessage>::iterator goby::transitional::DCCLT
 
     return it;
 }
-        
-void goby::transitional::DCCLTransitionalCodec::encode_private(std::vector<DCCLMessage>::iterator it,
-                                             goby::acomms::protobuf::ModemDataTransmission* out_msg,
-                                             const std::map<std::string, std::vector<DCCLMessageVal> >& in)
-{
-    std::string out;
-    encode_private(it, out, in);
-
-    DCCLHeaderDecoder head_dec(out);
-
-    out_msg->set_data(out);
-    
-    DCCLMessageVal& t = head_dec[HEAD_TIME];
-    DCCLMessageVal& src = head_dec[HEAD_SRC_ID];
-    DCCLMessageVal& dest = head_dec[HEAD_DEST_ID];
-
-    out_msg->mutable_base()->set_time(goby::util::as<std::string>(goby::util::unix_double2ptime(double(t))));
-    out_msg->mutable_base()->set_src(long(src));
-    out_msg->mutable_base()->set_dest(long(dest));
-
-    if(log_) *log_ << group("dccl_enc") << "created encoded message: " << out_msg->ShortDebugString() << std::endl;
-}
-
-std::vector<goby::transitional::DCCLMessage>::iterator goby::transitional::DCCLTransitionalCodec::decode_private(const goby::acomms::protobuf::ModemDataTransmission& in_msg, std::map<std::string,std::vector<DCCLMessageVal> >& out)
-{
-    if(log_) *log_ << group("dccl_dec") << "using message for decode: " << in_msg.ShortDebugString() << std::endl;
-
-    return decode_private(in_msg.data(), out);
-}
 
 
 
-
-void goby::transitional::DCCLTransitionalCodec::encrypt(std::string& s, const std::string& nonce)
-{
-    using namespace CryptoPP;
-
-    std::string iv;
-    SHA256 hash;
-    StringSource unused(nonce, true, new HashFilter(hash, new StringSink(iv)));
-    
-    CTR_Mode<AES>::Encryption encryptor;
-    encryptor.SetKeyWithIV((byte*)crypto_key_.c_str(), crypto_key_.size(), (byte*)iv.c_str());
-
-    std::string cipher;
-    StreamTransformationFilter in(encryptor, new StringSink(cipher));
-    in.Put((byte*)s.c_str(), s.size());
-    in.MessageEnd();
-    s = cipher;
-}
-
-void goby::transitional::DCCLTransitionalCodec::decrypt(std::string& s, const std::string& nonce)
-{
-    using namespace CryptoPP;
-
-    std::string iv;
-    SHA256 hash;
-    StringSource unused(nonce, true, new HashFilter(hash, new StringSink(iv)));
-    
-    CTR_Mode<AES>::Decryption decryptor;    
-    decryptor.SetKeyWithIV((byte*)crypto_key_.c_str(), crypto_key_.size(), (byte*)iv.c_str());
-    
-    std::string recovered;
-    StreamTransformationFilter out(decryptor, new StringSink(recovered));
-    out.Put((byte*)s.c_str(), s.size());
-    out.MessageEnd();
-    s = recovered;
-}
 
 void goby::transitional::DCCLTransitionalCodec::merge_cfg(const protobuf::DCCLTransitionalConfig& cfg)
 {
@@ -448,32 +640,32 @@ void goby::transitional::DCCLTransitionalCodec::process_cfg()
         }
     }
     
-    using namespace CryptoPP;
-    
-    SHA256 hash;
-    StringSource unused(cfg_.crypto_passphrase(), true, new HashFilter(hash, new StringSink(crypto_key_)));
-
-    if(log_) *log_ << group("dccl_enc") << "cryptography enabled with given passphrase" << std::endl;
 }
 
 
-const google::protobuf::Descriptor* goby::transitional::DCCLTransitionalCodec::convert_to_protobuf_descriptor_private(std::vector<DCCLMessage>::iterator it,
-                                                                                                                      const std::string& proto_file_to_write)
+const google::protobuf::Descriptor* goby::transitional::DCCLTransitionalCodec::convert_to_protobuf_descriptor_private(std::vector<DCCLMessage>::iterator it, const std::string& proto_file_to_write)
 {
     std::ofstream fout(proto_file_to_write.c_str());
 
     if(!fout.is_open())
         throw(goby::acomms::DCCLException("Could not open " + proto_file_to_write + " for writing"));
-
+    
     write_schema_to_dccl2(it->id(), &fout);
     fout.close();
     
     const google::protobuf::FileDescriptor* file_desc = descriptor_pool_.FindFileByName(proto_file_to_write);
 
+    
     if(file_desc)
+    {
+        dccl_->validate(file_desc->FindMessageTypeByName(it->name()));
         return file_desc->FindMessageTypeByName(it->name());
+    }
     else
+    {
         return 0;
+    }
+    
     
 }
 

@@ -129,7 +129,9 @@ void goby::transitional::DCCLMessage::preprocess()
     if(in_var_ == "")
         in_var_ = "IN_" + boost::to_upper_copy(name_) + "_HEX_" + as<std::string>(size_) + "B";
     if(out_var_ == "")
-        out_var_ = "OUT_" + boost::to_upper_copy(name_) + "_HEX_" + as<std::string>(size_) + "B";   
+        out_var_ = "OUT_" + boost::to_upper_copy(name_) + "_HEX_" + as<std::string>(size_) + "B";
+
+    
 }
 
 void goby::transitional::DCCLMessage::set_repeat_array_length()
@@ -420,13 +422,46 @@ void goby::transitional::DCCLMessage::write_schema_to_dccl2(std::ofstream* proto
     *proto_file << "} " << std::endl;
 }
 
-void goby::transitional::DCCLMessage::write_data_to_dccl2(google::protobuf::Message*)
+void goby::transitional::DCCLMessage::pre_encode(
+    const std::map<std::string, std::vector<DCCLMessageVal> >& in,
+    std::map<std::string, std::vector<DCCLMessageVal> >& out)
 {
+    for (std::vector< boost::shared_ptr<DCCLMessageVar> >::iterator it = header_.begin(),
+             n = header_.end();
+         it != n;
+         ++it)
+    {
+        (*it)->var_pre_encode(in, out);
+    }    
 
+    for (std::vector< boost::shared_ptr<DCCLMessageVar> >::iterator it = layout_.begin(),
+             n = layout_.end();
+         it != n;
+         ++it)
+    {
+        (*it)->var_pre_encode(in, out);
+    }    
 }
 
-void goby::transitional::DCCLMessage::read_data_from_dccl2(const google::protobuf::Message&)
+
+
+void goby::transitional::DCCLMessage::post_decode(
+    const std::map<std::string, std::vector<DCCLMessageVal> >& in,
+    std::map<std::string, std::vector<DCCLMessageVal> >& out)
 {
+    for (std::vector< boost::shared_ptr<DCCLMessageVar> >::iterator it = header_.begin(),
+             n = header_.end();
+         it != n;
+         ++it)
+    {
+        (*it)->var_post_decode(in, out);
+    }    
 
+    for (std::vector< boost::shared_ptr<DCCLMessageVar> >::iterator it = layout_.begin(),
+             n = layout_.end();
+         it != n;
+         ++it)
+    {
+        (*it)->var_post_decode(in, out);
+    }    
 }
-

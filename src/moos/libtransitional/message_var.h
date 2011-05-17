@@ -118,7 +118,16 @@ namespace goby
                                   const std::map<std::string,std::vector<DCCLMessageVal> >& in);
         
             std::string parse_string_val(const std::string& sval);
-        
+
+            void var_pre_encode(
+                const std::map<std::string,std::vector<DCCLMessageVal> >& in_vals,
+                std::map<std::string,std::vector<DCCLMessageVal> >& out_vals);
+
+             void var_post_decode(
+                const std::map<std::string,std::vector<DCCLMessageVal> >& in_vals,
+                std::map<std::string,std::vector<DCCLMessageVal> >& out_vals);
+            
+            
             void var_encode(std::map<std::string,std::vector<DCCLMessageVal> >& vals,
                             boost::dynamic_bitset<unsigned char>& bits);
             void var_decode(std::map<std::string,std::vector<DCCLMessageVal> >& vals,
@@ -136,6 +145,7 @@ namespace goby
             virtual void initialize_specific() = 0;
 
             virtual void pre_encode(DCCLMessageVal& val) { }
+            virtual void post_decode(DCCLMessageVal& val) { }
 
             virtual std::string additional_option_extensions()
             { return ""; }

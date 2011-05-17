@@ -38,7 +38,7 @@ int main(int argc, char* argv[])
     
     goby::acomms::DCCLCodec* codec = goby::acomms::DCCLCodec::get();
     goby::acomms::protobuf::DCCLConfig cfg;
-    cfg.set_crypto_passphrase("hmmm");
+//    cfg.set_crypto_passphrase("hmmm");
     codec->set_cfg(cfg);
 
     GobyMessage msg_in1, msg_out1;
@@ -56,6 +56,10 @@ int main(int argc, char* argv[])
     std::cout << "Try encode..." << std::endl;
     std::string bytes1 = codec->encode(msg_in1);
     std::cout << "... got bytes (hex): " << goby::util::hex_encode(bytes1) << std::endl;
+
+    // test that adding garbage to the end does not affect decoding
+    bytes1 += std::string(10, '\0');
+    
     std::cout << "Try decode..." << std::endl;
     msg_out1 = codec->decode<GobyMessage>(bytes1);
     std::cout << "... got Message out:\n" << msg_out1.DebugString() << std::endl;

@@ -70,8 +70,9 @@ namespace goby
           protected:
             virtual DCCLMessageVal cast(double d, int precision) { return DCCLMessageVal(d, precision); }
             virtual void initialize_specific();
-
-            void pre_encode(DCCLMessageVal& v);            
+            
+            virtual void pre_encode(DCCLMessageVal& v);
+            
             
           private:
             bool is_delta() const

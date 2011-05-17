@@ -344,7 +344,7 @@ std::string goby::acomms::DCCLFieldCodecBase::info()
 
 void goby::acomms::DCCLFieldCodecBase::BitsHandler::transfer_bits(unsigned size)
 {
-    //     glog.is(debug1) && glog  <<  "_get_bits from (" << in_pool_ << ") " << *in_pool_ << " to add to (" << out_pool_ << ") " << *out_pool_ << " number: " << size << std::endl;
+    glog.is(debug2) && glog  <<  "_get_bits from (" << in_pool_ << ") " << *in_pool_ << " to add to (" << out_pool_ << ") " << *out_pool_ << " number: " << size << std::endl;
     
     for(int i = 0, n = size; i < n; ++i)
         out_pool_->push_back((*in_pool_)[i]);

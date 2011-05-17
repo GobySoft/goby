@@ -58,6 +58,39 @@ void goby::transitional::DCCLMessageVar::set_defaults(std::map<std::string,std::
 
 }
 
+
+    
+void goby::transitional::DCCLMessageVar::var_pre_encode(
+    const std::map<std::string,std::vector<DCCLMessageVal> >& in_vals,
+    std::map<std::string,std::vector<DCCLMessageVal> >& out_vals)
+{    
+    // ensure that every DCCLMessageVar has the full number of (maybe blank) DCCLMessageVals
+    out_vals[name_].resize(array_length_);
+    
+    // modify the original vals to be used before running algorithms and encoding
+    for(std::vector<DCCLMessageVal>::size_type i = 0, n = out_vals[name_].size(); i < n; ++i)
+        pre_encode(out_vals[name_][i]);
+    
+    std::vector<DCCLMessageVal>& vm = out_vals[name_];
+    
+    for(std::vector<DCCLMessageVal>::size_type i = 0, n = vm.size(); i < n; ++i)
+    {
+        for(std::vector<std::string>::size_type j = 0, m = algorithms_.size(); j < m; ++j)
+            ap_->algorithm(vm[i], i, algorithms_[j], in_vals);
+    }
+    
+}
+
+void goby::transitional::DCCLMessageVar::var_post_decode(
+    const std::map<std::string,std::vector<DCCLMessageVal> >& in_vals,
+    std::map<std::string,std::vector<DCCLMessageVal> >& out_vals)
+{    
+    // modify the original vals to be used before running algorithms and encoding
+    for(std::vector<DCCLMessageVal>::size_type i = 0, n = out_vals[name_].size(); i < n; ++i)
+        post_decode(out_vals[name_][i]);
+}
+
+
     
 void goby::transitional::DCCLMessageVar::var_encode(std::map<std::string,std::vector<DCCLMessageVal> >& vals, boost::dynamic_bitset<unsigned char>& bits)
 {    
@@ -343,7 +376,7 @@ void goby::transitional::DCCLMessageVar::write_schema_to_dccl2(std::ofstream* pr
 
         int enum_value = 0;
         BOOST_FOREACH(const std::string& e, *enums())
-            *proto_file << "\t\t " << e << " = " << enum_value++ << "; \n";
+            *proto_file << "\t\t " << boost::to_upper_copy(name_) << "_" << e << " = " << enum_value++ << "; \n";
 
         *proto_file << "\t} \n";
     }

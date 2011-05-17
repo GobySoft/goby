@@ -46,6 +46,7 @@ namespace goby
             
         
           private:
+            
             void initialize_specific()
             {
                 if(default_name_ == name_) source_var_.clear();
@@ -78,6 +79,19 @@ namespace goby
                 double d;
                 v = (!v.empty() && v.get(d)) ? v : DCCLMessageVal(util::ptime2unix_double(util::goby_time()));
             }
+
+            void pre_encode(DCCLMessageVal& v)
+            {
+                double d;
+                v = (!v.empty() && v.get(d)) ? DCCLMessageVal(goby::util::as<std::string>(goby::util::unix_double2ptime(d))) : v;
+            }
+            
+            void post_decode(DCCLMessageVal& v)
+            {
+                std::string s;
+                v = (!v.empty() && v.get(s)) ? DCCLMessageVal(goby::util::ptime2unix_double(goby::util::as<boost::posix_time::ptime>(s))) : v;
+            }
+            
         
             boost::dynamic_bitset<unsigned char> encode_specific(const DCCLMessageVal& v)
             {

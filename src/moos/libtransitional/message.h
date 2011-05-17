@@ -57,8 +57,6 @@ namespace goby
 
             // Added in Goby2 for transition to new Protobuf structure
             void write_schema_to_dccl2(std::ofstream* proto_file);
-            void write_data_to_dccl2(google::protobuf::Message*);
-            void read_data_from_dccl2(const google::protobuf::Message&);
             
 
             
@@ -106,6 +104,11 @@ namespace goby
             void add_message_var(const std::string& type);        
             void add_publish();
 
+            void set_descriptor(const google::protobuf::Descriptor* descriptor)
+            { descriptor_ = descriptor; }
+            
+
+            
             //get
             std::string name() const              { return name_; }
             unsigned id() const                   { return id_; }
@@ -138,6 +141,9 @@ namespace goby
 
             boost::shared_ptr<DCCLMessageVar> name2message_var(const std::string& name) const;
         
+            const google::protobuf::Descriptor* descriptor()
+            { return descriptor_; }
+            
         
             //other
             std::string get_display() const;
@@ -148,7 +154,13 @@ namespace goby
             unsigned calc_total_size();
         
             void set_head_defaults(std::map<std::string, std::vector<DCCLMessageVal> >& in, unsigned modem_id);
-        
+            void pre_encode(const std::map<std::string, std::vector<DCCLMessageVal> >& in,
+                            std::map<std::string, std::vector<DCCLMessageVal> >& out);
+
+            void post_decode(const std::map<std::string, std::vector<DCCLMessageVal> >& in,
+                             std::map<std::string, std::vector<DCCLMessageVal> >& out);
+
+            
     
             void head_encode(std::string& head, std::map<std::string, std::vector<DCCLMessageVal> >& in);
             void head_decode(const std::string& head, std::map<std::string, std::vector<DCCLMessageVal> >& out);
@@ -232,6 +244,7 @@ namespace goby
         
             std::vector<DCCLPublish> publishes_;
 
+            const google::protobuf::Descriptor* descriptor_;
         };
 
 

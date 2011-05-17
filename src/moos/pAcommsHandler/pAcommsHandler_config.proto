@@ -3,6 +3,7 @@ import "goby/protobuf/driver_base.proto";
 import "goby/protobuf/queue.proto";
 import "goby/protobuf/amac.proto";
 import "goby/protobuf/dccl.proto";
+import "goby/protobuf/transitional.proto";
 import "goby/protobuf/modem_message.proto";
 import "goby/protobuf/option_extensions.proto";
 
@@ -28,6 +29,8 @@ message pAcommsHandlerConfig
 
   // for dccl
   optional goby.acomms.protobuf.DCCLConfig dccl_cfg = 7 [(description)="Configure the Dynamic Compact Control Language Encoding/Decoding unit"];  // see dccl.proto
+
+  optional goby.transitional.protobuf.DCCLTransitionalConfig transitional_cfg = 8 [(description)="Backwards compatibility for DCCLv1 XML file"]; // see transitional.proto
 
   
   // path to text file with entries:

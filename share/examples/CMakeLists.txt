@@ -10,6 +10,11 @@ if(CURSES_FOUND)
   add_definitions(-DHAS_NCURSES)
 endif()
 
+find_package(Boost 1.36.0 COMPONENTS system date_time thread regex program_options signals filesystem)
+include_directories(${Boost_INCLUDE_DIRS})
+
+find_package(Cryptopp REQUIRED)
+
 link_directories(${GOBY_LIBRARY_PATH})
 include_directories(${GOBY_INCLUDE_DIRS})
 

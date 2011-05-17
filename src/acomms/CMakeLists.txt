@@ -1,5 +1,4 @@
 goby_find_required_package(Xerces)
-goby_find_required_package(Cryptopp)
 
 option(build_acomms_lib "Build the Acoustic Communications libraries" ON)
 option(build_acomms_tools "Build the Acoustic Communications tools" ON)

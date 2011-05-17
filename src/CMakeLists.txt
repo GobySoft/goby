@@ -21,6 +21,8 @@ include_directories(${Boost_INCLUDE_DIRS})
 goby_find_required_package(ProtobufGoby)
 #message(${PROTOBUF_INCLUDE_DIRS})
 
+goby_find_required_package(Cryptopp)
+
 ## ncurses
 set(CURSES_NEED_NCURSES TRUE)
 find_package(Curses)

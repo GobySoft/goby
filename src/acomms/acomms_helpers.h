@@ -22,8 +22,13 @@
 #include <limits>
 #include <bitset>
 
+#ifdef CRYPTOPP_PATH_USES_PLUS_SIGN
+#include <crypto++/filters.h>
+#include <crypto++/hex.h>
+#else
 #include <cryptopp/filters.h>
 #include <cryptopp/hex.h>
+#endif
 
 #include "goby/protobuf/modem_message.pb.h"
 #include "goby/protobuf/xml_config.pb.h"

@@ -275,7 +275,7 @@ void goby::util::FlexNCurses::putline(const std::string &s, unsigned scrn, bool 
         static const std::string esc = "\33[";
         static const std::string m = "m";
         
-        size_t esc_pos = -1, m_pos = -1, last_m_pos = -1;
+        int esc_pos = -1, m_pos = -1, last_m_pos = -1;
         size_t length = s.length();
         while((esc_pos = s.find(esc, esc_pos+1)) != std::string::npos
               && (m_pos = s.find(m, esc_pos)) != std::string::npos)

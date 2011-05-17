@@ -69,7 +69,7 @@ namespace goby
         }
 
         /// \brief return a string represented the binary value of `l` for `bits` number of bits which reads MSB -> LSB
-        inline std::string long2binary_string(unsigned long l, short bits)
+        inline std::string long2binary_string(unsigned long l, unsigned short bits)
         {
             char s [bits+1];
             for (unsigned int i=0; i<bits; i++)

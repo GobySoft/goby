@@ -52,8 +52,8 @@ void goby::acomms::QueueContentHandler::endElement(
     const XMLCh *const localname,  // tagname w/ out NS prefix
     const XMLCh *const qname )     // tagname + NS pefix
 {        
-    std::string trimmed_data = boost::trim_copy(toNative(current_text));
-
+    std::string trimmed_data = boost::trim_copy(current_text);
+    
     Tag current_tag = tags_map_[toNative(localname)];
     parents_.erase(current_tag);
 

@@ -60,10 +60,10 @@ namespace goby
 
 #if XERCES_VERSION_MAJOR < 3
             void characters(const XMLCh* const chars, const unsigned int length)
-            { current_text.append(chars, length); }
+	      { current_text.append(toNative(chars), 0, length); }
 #else
             void characters(const XMLCh* const chars, const XMLSize_t length )
-            { current_text.append(chars, length); }
+	      { current_text.append(toNative(chars), 0, length); }
 #endif
     
           private:
@@ -76,7 +76,7 @@ namespace goby
  
           private:
             std::vector<protobuf::QueueConfig>& q_;
-            XercesString current_text;
+            std::string current_text;
         
             std::set<xml::Tag> parents_;
             std::map<std::string, xml::Tag> tags_map_;

@@ -18,5 +18,10 @@ find_package(Cryptopp REQUIRED)
 link_directories(${GOBY_LIBRARY_PATH})
 include_directories(${GOBY_INCLUDE_DIRS})
 
+option(workaround_2_4_kernel "Apply workarounds for Linux 2.4 kernel" OFF)
+if(workaround_2_4_kernel)
+	add_definitions(-DBOOST_ASIO_DISABLE_EPOLL)
+endif()
+
 add_subdirectory(acomms)
 add_subdirectory(util)

@@ -15,7 +15,7 @@ endmacro()
 ## find external packages, libraries, and headers for the entire goby project
 # mandatory
 ## boost
-goby_find_required_package(Boost 1.36.0 COMPONENTS system date_time thread program_options signals filesystem)
+goby_find_required_package(Boost 1.36.0 COMPONENTS system date_time thread regex program_options signals filesystem)
 include_directories(${Boost_INCLUDE_DIRS})
 
 goby_find_required_package(ProtobufGoby)
@@ -34,6 +34,12 @@ if(NOT CURSES_FOUND)
   missing_optional_library(CURSES)
 endif()
 mark_as_advanced(CURSES_CURSES_H_PATH CURSES_FORM_LIBRARY CURSES_HAVE_CURSES_H)
+
+option(workaround_2_4_kernel "Apply workarounds for Linux 2.4 kernel" OFF)
+if(workaround_2_4_kernel)
+	add_definitions(-DBOOST_ASIO_DISABLE_EPOLL)
+endif()
+
 
 ## set flags
 option(build_util "Build the Goby Utility libraries and applications" ON)

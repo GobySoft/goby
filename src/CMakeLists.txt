@@ -19,7 +19,7 @@ goby_find_required_package(Boost 1.36.0 COMPONENTS system date_time thread progr
 include_directories(${Boost_INCLUDE_DIRS})
 
 goby_find_required_package(ProtobufGoby)
-#message(${PROTOBUF_INCLUDE_DIRS})
+include_directories(${PROTOBUF_INCLUDE_DIRS})
 
 goby_find_required_package(Cryptopp)
 

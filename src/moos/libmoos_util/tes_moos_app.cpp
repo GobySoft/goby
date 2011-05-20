@@ -57,7 +57,7 @@ bool TesMoosApp::OnNewMail(MOOSMSG_LIST &NewMail)
         // also the one referenced in the call to inbox()
         dynamic_vars().update_moos_vars(msg);   
 
-        if(msg.GetTime() < start_time_)
+        if(msg.GetTime() < start_time_ && ignore_stale_)
             glogger() << warn << "ignoring normal mail from " << msg.GetKey()
                   << " from before we started (dynamics still updated)"
                   << std::endl;

@@ -2,20 +2,17 @@
 
 \section{What is Goby?}
 
-The Goby Underwater Autonomy Project is an \gls{autonomy architecture} tailored for marine robotics. It can be considered a direct descendant of the MOOS \cite{moos}, with inspiration from LCM \cite{lcm}. The motivation for Goby was the desire to seamlessly integrate \gls{acoustic networking} (and other low bandwidth channels found in marine robotics) into the autonomy middleware. 
+The Goby Underwater Autonomy Project is an \gls{autonomy architecture} tailored for marine robotics with a focus on intervehicle communication.
 
-The Goby autonomy architecture (\verb|goby-core|) is still in rapid experimental development but you are welcome to begin playing with it. The Goby Acoustic Communications libraries (\verb|goby-acomms|) form the majority of the stable contribution for Version 1.0. See the Developers' documentation for details on these libraries at \cite{goby-doc}. Users of the MOOS application \verb|pAcommsHandler| should see Appendix \ref{chap:MOOS}.
+Currently, Goby has two major parts:
 
-Goby allows you to
 \begin{itemize}
-\item create custom \glspl{application} (hereafter Goby applications) that communicate with other Goby applications in a \gls{pubsub} manner using custom designed message objects provided by the \gls{protobuf} project \cite{protobuf}. This message passing is mediated by an application called the Goby \gls{daemon} (\verb|gobyd|)
-\item log message data using a choice of \gls{sql} backends (SQLite3 \cite{sqlite} or PostgreSQL \cite{postgres}), allowing a choice between simplicity and power. This \gls{sql} logger is seamlessly integrated with the \gls{protobuf} messaging. \gls{sql} provides a well-known and standards compliant way to easily access data at runtime and during post-processing.
-\item log debugging output in a flexible manner to either the terminal window or a file or both, with fine-grained control over the verbosity.
-\item robustly configure your Goby applications both using a text configuration file and/or command line options by writing a configuration schema in \gls{protobuf}. Gone are the days of manual command line and configuration file parsing and validity checking. Only fields allowed in the schema are accepted by the parser, greatly reducing syntax errors in the configuration files.
+\item Goby-Acomms: The Goby Acoustic Communications libraries (\verb|goby-acomms|) are provided for Version 1.1. See the Developers' documentation for details on these libraries at \cite{goby-doc}. Users of the MOOS application \verb|pAcommsHandler| should see Chapter \ref{chap:MOOS}.
+\item Goby-Core: An \gls{autonomy architecture} that ties together various marshalling schemes (Google Protocol Buffers, MOOS, LCM, etc.) and provides a message passing middleware based on ZeroMQ (for ethernet) and Goby-DCCL (for acoustic communications). Goby-Core will be provided in release version 2.0.
 \end{itemize}
 
 \section{Structure of this Manual}
-This manual is designed to start slow with introductory features and then ramp up to more powerful features for advanced users. Please read as far as you wish and then as soon as possible get your feet wet. In fact, you may want to go download and install Goby now before reading further: \url{https://launchpad.net/goby}. Once you are familiar with the workings of Goby, you will be interested in reading the separate Developers' manual available at \cite{goby-doc}.
+This manual covers the MOOS Applications that use Goby-Acomms release version 1.1. If you are interested in the C++ Goby-Acomms libraries directly, please read the online Developers' documentation at \cite{goby-doc} In fact, you may want to go download and install Goby now before reading further: \url{https://launchpad.net/goby}.
 
 \section{How to get help}
 The Goby community is here to support you. This is an open source project so we have limited time and resources, but you will find that many are willing to contribute their help, with the hope that you will do the same as you gain experience. Please consult these resources and people, probably in this order of preference:

@@ -83,6 +83,10 @@ class TesMoosApp : public CMOOSApp
         friend int ::goby::moos::run(int argc, char* argv[]);
 
     virtual void loop() = 0;
+
+    bool ignore_stale() { return ignore_stale_; }
+    void set_ignore_stale(bool b) { ignore_stale_ = b; }
+
     
   private:
     // from CMOOSApp
@@ -122,7 +126,7 @@ class TesMoosApp : public CMOOSApp
 
     TesMoosAppConfig common_cfg_;
 
-    
+    bool ignore_stale_;
     
     static int argc_;
     static char** argv_;
@@ -137,7 +141,8 @@ TesMoosApp::TesMoosApp(ProtobufConfig* cfg)
     configuration_read_(false),
     cout_cleared_(false),
     connected_(false),
-    started_up_(false)
+    started_up_(false),
+    ignore_stale_(true)
 {
     using goby::util::glogger;
 

@@ -47,7 +47,8 @@ void goby::transitional::DCCLPublish::initialize(const DCCLMessage& msg)
         BOOST_FOREACH(const boost::shared_ptr<DCCLMessageVar> mv, msg.header_const())
         {
             // ignore header pieces not explicitly overloaded by the <name> tag
-            if(!mv->name().empty() && !(mv->name()[0] == '_'))
+            if(!mv->name().empty() && !(mv->name()[0] == '_') &&
+               !std::count(names_.begin(), names_.end(), mv->name()))
             {
                 add_message_var(mv);
                 // add an empty std::vector for algorithms (no algorithms allowed for <all/> tag)
@@ -57,9 +58,12 @@ void goby::transitional::DCCLPublish::initialize(const DCCLMessage& msg)
         
         BOOST_FOREACH(const boost::shared_ptr<DCCLMessageVar> mv, msg.layout_const())
         {
-            add_message_var(mv);
-            // add an empty std::vector for algorithms (no algorithms allowed for <all/> tag)
-            add_algorithms(std::vector<std::string>());
+            if(!std::count(names_.begin(), names_.end(), mv->name()))
+            {
+                add_message_var(mv);
+                // add an empty std::vector for algorithms (no algorithms allowed for <all/> tag)
+                add_algorithms(std::vector<std::string>());
+            }
         }
     }
     

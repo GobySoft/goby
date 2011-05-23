@@ -77,8 +77,8 @@ namespace goby
             
                 for (size_t j = 0; j < max_length_; ++j)
                 {
-                    s[max_length_-j-1] = (b & boost::dynamic_bitset<unsigned char>(calc_size(), 0xff)).to_ulong();
-                    b >>= acomms::BITS_IN_BYTE;
+		  s[max_length_-j-1] = (b & boost::dynamic_bitset<unsigned char>(static_cast<size_t>(calc_size()), static_cast<unsigned long>(0xff))).to_ulong();
+		  b >>= acomms::BITS_IN_BYTE;
                 }
             
                 if(!std::string(s).empty())

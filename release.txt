@@ -1,6 +1,14 @@
 Goby Release Notes
 
 *****************
+
+Version 1.1.0
+-- Improvement to build system - added environmental variables "GOBY_CMAKE_FLAGS" and "GOBY_MAKE_FLAGS" to control build. Removed "INSTALL" and "CONFIGURE" in favor of a single script "BUILD"
+-- DCCL - </all> tag does not try to add any fields given explicitly by <message_var> tags.
+-- Numerous minor changes to support GCC-3.3 (on Debian Sarge).
+
+
+*****************
 Version 1.0.3
 -- Improvements to WHOI Micro-Modem Driver DRQ process
 -- fixes / improvements to CMake build

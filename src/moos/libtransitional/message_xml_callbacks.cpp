@@ -35,10 +35,10 @@ void goby::transitional::DCCLMessageContentHandler::startElement(
     const XMLCh* val;
 
     // tag parameters
-    static XercesString algorithm = fromNative("algorithm");
-    static XercesString mandatory_content = fromNative("mandatory_content");
-    static XercesString key = fromNative("key");
-    static XercesString stype = fromNative("type");
+    static const XMLCh* algorithm = fromNative("algorithm");
+    static const XMLCh* mandatory_content = fromNative("mandatory_content");
+    static const XMLCh* key = fromNative("key");
+    static const XMLCh* stype = fromNative("type");
 
     Tag current_tag = tags_map_[toNative(localname)];
     parents_.insert(current_tag);
@@ -68,7 +68,7 @@ void goby::transitional::DCCLMessageContentHandler::startElement(
         case tag_static:
         case tag_enum:
             messages.back().add_message_var(toNative(localname));
-            if((val = attrs.getValue(algorithm.c_str())) != 0)
+            if((val = attrs.getValue(algorithm)) != 0)
             {
                 std::vector<std::string> vec;
                 std::string str = boost::erase_all_copy(toNative(val), " ");
@@ -82,7 +82,7 @@ void goby::transitional::DCCLMessageContentHandler::startElement(
 
             
         case tag_trigger_var:
-            if((val = attrs.getValue(mandatory_content.c_str())) != 0)
+            if((val = attrs.getValue(mandatory_content)) != 0)
                 messages.back().set_trigger_mandatory(toNative(val));
             break;
 
@@ -99,11 +99,11 @@ void goby::transitional::DCCLMessageContentHandler::startElement(
         case tag_src_var:
         case tag_publish_var:
         case tag_moos_var:
-            if(in_message_var() && ((val = attrs.getValue(key.c_str())) != 0))
+            if(in_message_var() && ((val = attrs.getValue(key)) != 0))
                 messages.back().last_message_var().set_source_key(toNative(val));
-            else if(in_header_var()  && ((val = attrs.getValue(key.c_str())) != 0))
+            else if(in_header_var()  && ((val = attrs.getValue(key)) != 0))
                 messages.back().header_var(curr_head_piece_).set_source_key(toNative(val));
-            else if(in_publish() && ((val = attrs.getValue(stype.c_str())) != 0))
+            else if(in_publish() && ((val = attrs.getValue(stype)) != 0))
             {
                 if(toNative(val) == "double")
                     messages.back().last_publish().set_type(cpp_double);
@@ -119,7 +119,7 @@ void goby::transitional::DCCLMessageContentHandler::startElement(
         case tag_message_var:
             if(in_publish())
             {
-                if((val = attrs.getValue(algorithm.c_str())) != 0)
+                if((val = attrs.getValue(algorithm)) != 0)
                 {
                     std::vector<std::string> vec;
                     std::string str = boost::erase_all_copy(toNative(val), " ");
@@ -137,7 +137,7 @@ void goby::transitional::DCCLMessageContentHandler::startElement(
 
         case tag_time:
             curr_head_piece_ = HEAD_TIME;
-            if((val = attrs.getValue(algorithm.c_str())) != 0)
+            if((val = attrs.getValue(algorithm)) != 0)
             {
                 std::vector<std::string> vec;
                 std::string str = boost::erase_all_copy(toNative(val), " ");
@@ -151,7 +151,7 @@ void goby::transitional::DCCLMessageContentHandler::startElement(
 
         case tag_src_id:
             curr_head_piece_ = HEAD_SRC_ID;
-            if((val = attrs.getValue(algorithm.c_str())) != 0)
+            if((val = attrs.getValue(algorithm)) != 0)
             {
                 std::vector<std::string> vec;
                 std::string str = boost::erase_all_copy(toNative(val), " ");
@@ -165,7 +165,7 @@ void goby::transitional::DCCLMessageContentHandler::startElement(
 
         case tag_dest_id:
             curr_head_piece_ = HEAD_DEST_ID;
-            if((val = attrs.getValue(algorithm.c_str())) != 0)
+            if((val = attrs.getValue(algorithm)) != 0)
             {
                 std::vector<std::string> vec;
                 std::string str = boost::erase_all_copy(toNative(val), " ");
@@ -178,7 +178,7 @@ void goby::transitional::DCCLMessageContentHandler::startElement(
 
             // legacy
         case tag_destination_var:
-            if((val = attrs.getValue(key.c_str())) != 0)
+            if((val = attrs.getValue(key)) != 0)
                 messages.back().header_var(HEAD_DEST_ID).set_name(toNative(val));
             break;            
     }
@@ -191,7 +191,7 @@ void goby::transitional::DCCLMessageContentHandler::endElement(
     const XMLCh *const localname,  // tagname w/ out NS prefix
     const XMLCh *const qname )     // tagname + NS pefix
 {        
-    std::string trimmed_data = boost::trim_copy(toNative(current_text));
+    std::string trimmed_data = boost::trim_copy(current_text);
 
     Tag current_tag = tags_map_[toNative(localname)];
     parents_.erase(current_tag);

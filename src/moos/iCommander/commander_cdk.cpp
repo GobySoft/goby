@@ -348,9 +348,9 @@ bool CommanderCdk::disp_matrix(const string title,
         getmaxyx(cursesWin_, max_y, max_x);
 // visible columns / rows
         // each row takes width + 2 + title length + 4  + 6 for safety
-        vcols = (int)min((double)cols, floor((max_x - 4 - 6 - max_rowtitlelength) / (fieldwidth+2)));
+        vcols = (int)min((double)cols, floor(static_cast<double>((max_x - 4 - 6 - max_rowtitlelength) / (fieldwidth+2))));
         // each row takes 3 + title length + 3 constant + 4 for safety
-        vrows = (int)min((double)rows, floor((max_y - lower_box_size_ - 3 - 4 - (title_newlines + 1)) / (3)));
+        vrows = (int)min((double)rows, floor(static_cast<double>((max_y - lower_box_size_ - 3 - 4 - (title_newlines + 1)) / (3))));
         if(vcols<=0 || vrows<=0)
             disp_scroll("You must enlarge your window!", vector<string>(1, "OK"));
     }

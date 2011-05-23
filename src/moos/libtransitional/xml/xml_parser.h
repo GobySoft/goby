@@ -69,8 +69,8 @@ class XMLParser {
             fout << message_schema_xsd[i];
         fout.close();
         
-        const XercesString xs_schema = fromNative(schema);
-        const XMLCh * const schema_location = xs_schema.c_str();
+        const XMLCh* xs_schema = fromNative(schema.c_str());
+        const XMLCh* const schema_location = xs_schema;
         parser->setFeature(xercesc::XMLUni::fgSAX2CoreValidation, true);
         parser->setProperty(xercesc::XMLUni::fgXercesSchemaExternalNoNameSpaceSchemaLocation, (void*)schema_location);
         

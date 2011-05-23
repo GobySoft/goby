@@ -306,7 +306,7 @@ goby::transitional::DCCLMessageVal::operator float() const
     return double(*this);
 }
 
-goby::transitional::DCCLMessageVal::operator std::vector<DCCLMessageVal>() const
+goby::transitional::DCCLMessageVal::operator std::vector<goby::transitional::DCCLMessageVal>() const
 {
     return std::vector<DCCLMessageVal>(1, *this);
 }

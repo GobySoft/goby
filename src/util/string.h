@@ -154,6 +154,8 @@ namespace goby
                     s.erase(it);
             }
         }
+
+        
         
         /// find `key` in `str` and if successful put it in out
         /// and return true

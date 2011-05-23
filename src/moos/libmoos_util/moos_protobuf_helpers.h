@@ -21,6 +21,7 @@
 #include "google/protobuf/io/printer.h"
 #include <google/protobuf/io/tokenizer.h>
 #include "goby/util/liblogger/flex_ostream.h"
+#include "goby/util/string.h"
 
 /// \file moos_protobuf_helpers.h Helpers for MOOS applications for serializing and parsed Google Protocol buffers messages
 
@@ -47,6 +48,353 @@ inline void parse_for_moos(const std::string& in, google::protobuf::Message* msg
     parser.RecordErrorsTo(&error_collector);
     parser.ParseFromString(in, msg);
 }
+
+inline void from_moos_comma_equals_string_field(google::protobuf::Message* proto_msg, const google::protobuf::FieldDescriptor* field_desc, const std::vector<std::string>& values, int value_key = 0)
+{
+    if(values.size() == 0)
+        return;
+    
+    
+    const google::protobuf::Reflection* refl = proto_msg->GetReflection();
+    if(field_desc->is_repeated())
+    {
+        for(int j = 0, m = values.size(); j < m; ++j)
+        {
+            const std::string& v = values[j];
+
+            switch(field_desc->cpp_type())
+            {
+                case google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE:
+                    break;    
+                        
+                case google::protobuf::FieldDescriptor::CPPTYPE_INT32:
+                    refl->AddInt32(proto_msg, field_desc, goby::util::as<google::protobuf::int32>(v));
+                    break;
+                            
+                case google::protobuf::FieldDescriptor::CPPTYPE_INT64:
+                    refl->AddInt64(proto_msg, field_desc, goby::util::as<google::protobuf::int64>(v));
+                    break;
+                            
+                case google::protobuf::FieldDescriptor::CPPTYPE_UINT32:
+                    refl->AddUInt32(proto_msg, field_desc, goby::util::as<google::protobuf::uint32>(v));
+                    break;
+                            
+                case google::protobuf::FieldDescriptor::CPPTYPE_UINT64:
+                    refl->AddUInt64(proto_msg, field_desc, goby::util::as<google::protobuf::uint64>(v));
+                    break;
+                            
+                case google::protobuf::FieldDescriptor::CPPTYPE_BOOL:
+                    refl->AddBool(proto_msg, field_desc, goby::util::as<bool>(v));
+                    break;
+                            
+                case google::protobuf::FieldDescriptor::CPPTYPE_STRING:
+                    refl->AddString(proto_msg, field_desc, v);
+                    break;                    
+                            
+                case google::protobuf::FieldDescriptor::CPPTYPE_FLOAT:
+                    refl->AddFloat(proto_msg, field_desc, goby::util::as<float>(v));
+                    break;
+                            
+                case google::protobuf::FieldDescriptor::CPPTYPE_DOUBLE:
+                    refl->AddDouble(proto_msg, field_desc, goby::util::as<double>(v));
+                    break;
+                            
+                case google::protobuf::FieldDescriptor::CPPTYPE_ENUM:
+                {
+                    const google::protobuf::EnumValueDescriptor* enum_desc =
+                        refl->GetEnum(*proto_msg, field_desc)->type()->FindValueByName(v);
+                    if(enum_desc)
+                        refl->AddEnum(proto_msg, field_desc, enum_desc);
+                }
+                break;
+                
+            }                
+        }
+    }
+    else
+    {
+        const std::string& v = values[value_key];
+        switch(field_desc->cpp_type())
+        {
+            case google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE:
+                break;
+                        
+            case google::protobuf::FieldDescriptor::CPPTYPE_INT32:
+                refl->SetInt32(proto_msg, field_desc, goby::util::as<google::protobuf::int32>(v));
+                break;
+                        
+            case google::protobuf::FieldDescriptor::CPPTYPE_INT64:
+                refl->SetInt64(proto_msg, field_desc, goby::util::as<google::protobuf::int64>(v));                        
+                break;
+
+            case google::protobuf::FieldDescriptor::CPPTYPE_UINT32:
+                refl->SetUInt32(proto_msg, field_desc, goby::util::as<google::protobuf::uint32>(v));
+                break;
+
+            case google::protobuf::FieldDescriptor::CPPTYPE_UINT64:
+                refl->SetUInt64(proto_msg, field_desc, goby::util::as<google::protobuf::uint64>(v));
+                break;
+                        
+            case google::protobuf::FieldDescriptor::CPPTYPE_BOOL:
+                refl->SetBool(proto_msg, field_desc, goby::util::as<bool>(v));
+                break;
+                    
+            case google::protobuf::FieldDescriptor::CPPTYPE_STRING:
+                refl->SetString(proto_msg, field_desc, v);
+                break;                    
+                
+            case google::protobuf::FieldDescriptor::CPPTYPE_FLOAT:
+                refl->SetFloat(proto_msg, field_desc, goby::util::as<float>(v));
+                break;
+                
+            case google::protobuf::FieldDescriptor::CPPTYPE_DOUBLE:
+                refl->SetDouble(proto_msg, field_desc, goby::util::as<double>(v));
+                break;
+                
+            case google::protobuf::FieldDescriptor::CPPTYPE_ENUM:
+            {
+                const google::protobuf::EnumValueDescriptor* enum_desc =
+                    refl->GetEnum(*proto_msg, field_desc)->type()->FindValueByName(v);
+                if(enum_desc)
+                    refl->SetEnum(proto_msg, field_desc, enum_desc);
+            }
+            break;
+        }
+    }
+}
+
+inline void from_moos_comma_equals_string(google::protobuf::Message* proto_msg, const std::string& in)
+{
+    const google::protobuf::Descriptor* desc = proto_msg->GetDescriptor();
+    const google::protobuf::Reflection* refl = proto_msg->GetReflection();
+
+    
+    for(int i = 0, n = desc->field_count(); i < n; ++i)
+    {
+        const google::protobuf::FieldDescriptor* field_desc = desc->field(i);
+
+        switch(field_desc->cpp_type())
+        {
+            default:
+            {
+                std::string val;
+                if(goby::util::val_from_string(val, in, field_desc->name()))
+                {
+                    std::vector<std::string> vals;
+                    boost::split(vals, val, boost::is_any_of(","));
+                    from_moos_comma_equals_string_field(proto_msg, field_desc, vals);
+                }
+            }
+            break;
+
+            case google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE:
+                if(field_desc->is_repeated())
+                {
+                    for(int k = 0, o = field_desc->message_type()->field_count(); k < o; ++k)
+                    {
+                        std::string val;
+                        if(goby::util::val_from_string(val, in, field_desc->name() + "_" + field_desc->message_type()->field(k)->name()))
+                        {
+                            std::vector<std::string> vals;
+                            boost::split(vals, val, boost::is_any_of(","));
+                            
+                            for(int j = 0, m = vals.size(); j < m; ++j)
+                            {
+
+                                google::protobuf::Message* embedded_msg =
+                                    (refl->FieldSize(*proto_msg, field_desc) < j+1) ?
+                                    refl->AddMessage(proto_msg, field_desc) :
+                                    refl->MutableRepeatedMessage(proto_msg, field_desc, j);     
+                                from_moos_comma_equals_string_field(embedded_msg, embedded_msg->GetDescriptor()->field(k), vals, j);
+                            }
+                        }
+                    }   
+                }
+                else
+                {
+                    for(int k = 0, o = field_desc->message_type()->field_count(); k < o; ++ k)
+                    {
+                        std::string val;
+                        if(goby::util::val_from_string(val, in, field_desc->name() + "_" + field_desc->message_type()->field(k)->name()))
+                        {
+                            std::vector<std::string> vals;
+                            boost::split(vals, val, boost::is_any_of(","));
+
+                            google::protobuf::Message* embedded_msg = refl->MutableMessage(proto_msg, field_desc);     
+                            from_moos_comma_equals_string_field(embedded_msg, embedded_msg->GetDescriptor()->field(k), vals);
+                        }
+                    }
+                }
+                break;
+        }
+    }    
+}
+
+inline std::string to_moos_comma_equals_string_field(const google::protobuf::Message& proto_msg, const google::protobuf::FieldDescriptor* field_desc, bool write_key = true)
+{
+    const google::protobuf::Reflection* refl = proto_msg.GetReflection();
+
+    std::stringstream out;
+    const std::string& field_name = field_desc->name();
+        
+    if(field_desc->is_repeated())
+    {
+        if(write_key)
+            out << field_name << "={";
+
+        for(int j = 0, m = refl->FieldSize(proto_msg, field_desc); j < m; ++j)
+        {
+            if(j) out << ",";
+            
+            switch(field_desc->cpp_type())
+            {
+                case google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE:
+                    break;    
+                        
+                case google::protobuf::FieldDescriptor::CPPTYPE_INT32:
+                    out << refl->GetRepeatedInt32(proto_msg, field_desc, j);
+                    break;
+                            
+                case google::protobuf::FieldDescriptor::CPPTYPE_INT64:
+                    out << refl->GetRepeatedInt64(proto_msg, field_desc, j);
+                    break;
+                            
+                case google::protobuf::FieldDescriptor::CPPTYPE_UINT32:
+                    out << refl->GetRepeatedUInt32(proto_msg, field_desc, j);
+                    break;
+                            
+                case google::protobuf::FieldDescriptor::CPPTYPE_UINT64:
+                    out << refl->GetRepeatedUInt64(proto_msg, field_desc, j);
+                    break;
+                            
+                case google::protobuf::FieldDescriptor::CPPTYPE_BOOL:
+                    out << std::boolalpha << refl->GetRepeatedBool(proto_msg, field_desc, j);
+                    break;
+                            
+                case google::protobuf::FieldDescriptor::CPPTYPE_STRING:
+                    out << refl->GetRepeatedString(proto_msg, field_desc, j);
+                    break;                    
+                            
+                case google::protobuf::FieldDescriptor::CPPTYPE_FLOAT:
+                    out << refl->GetRepeatedFloat(proto_msg, field_desc, j);
+                    break;
+                            
+                case google::protobuf::FieldDescriptor::CPPTYPE_DOUBLE:
+                    out << std::setprecision(15) << refl->GetRepeatedDouble(proto_msg, field_desc, j);
+                    break;
+                            
+                case google::protobuf::FieldDescriptor::CPPTYPE_ENUM:
+                    out << refl->GetRepeatedEnum(proto_msg, field_desc, j)->name();
+                    break;
+                            
+            }
+                
+        }
+        if(write_key)
+            out << "}";
+    }
+    else
+    {
+        if(write_key)
+            out << field_name << "=";
+        switch(field_desc->cpp_type())
+        {
+            case google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE:
+                break;
+                        
+            case google::protobuf::FieldDescriptor::CPPTYPE_INT32:
+                out << refl->GetInt32(proto_msg, field_desc);
+                break;
+                        
+            case google::protobuf::FieldDescriptor::CPPTYPE_INT64:
+                out << refl->GetInt64(proto_msg, field_desc);                        
+                break;
+
+            case google::protobuf::FieldDescriptor::CPPTYPE_UINT32:
+                out << refl->GetUInt32(proto_msg, field_desc);
+                break;
+
+            case google::protobuf::FieldDescriptor::CPPTYPE_UINT64:
+                out << refl->GetUInt64(proto_msg, field_desc);
+                break;
+                        
+            case google::protobuf::FieldDescriptor::CPPTYPE_BOOL:
+                out << std::boolalpha << refl->GetBool(proto_msg, field_desc);
+                break;
+                    
+            case google::protobuf::FieldDescriptor::CPPTYPE_STRING:
+                out << refl->GetString(proto_msg, field_desc);
+                break;                    
+                
+            case google::protobuf::FieldDescriptor::CPPTYPE_FLOAT:
+                out << refl->GetFloat(proto_msg, field_desc);
+                break;
+                
+            case google::protobuf::FieldDescriptor::CPPTYPE_DOUBLE:
+                out << std::setprecision(15) << refl->GetDouble(proto_msg, field_desc);
+                break;
+                
+            case google::protobuf::FieldDescriptor::CPPTYPE_ENUM:
+                out << refl->GetEnum(proto_msg, field_desc)->name();
+                break;
+        }
+    }
+    return out.str();
+}
+
+inline void to_moos_comma_equals_string(const google::protobuf::Message& proto_msg, std::string* out)
+{
+    std::stringstream out_ss;
+    const google::protobuf::Descriptor* desc = proto_msg.GetDescriptor();
+    const google::protobuf::Reflection* refl = proto_msg.GetReflection();
+    
+    for(int i = 0, n = desc->field_count(); i < n; ++i)
+    {
+        const google::protobuf::FieldDescriptor* field_desc = desc->field(i);
+        if(i) out_ss << ",";
+
+        const std::string& field_name = field_desc->name();
+
+        switch(field_desc->cpp_type())
+        {
+            default:
+                out_ss << to_moos_comma_equals_string_field(proto_msg, field_desc);
+                break;
+
+            case google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE:
+                if(field_desc->is_repeated())
+                {
+                    for(int k = 0, o = field_desc->message_type()->field_count(); k < o; ++ k)
+                    {
+                        if(k) out_ss << ",";
+                        out_ss << field_name << "_" << field_desc->message_type()->field(k)->name() << "={";
+                        for(int j = 0, m = refl->FieldSize(proto_msg, field_desc); j < m; ++j)
+                        {
+                            if(j) out_ss << ",";
+                            const google::protobuf::Message& embedded_msg = refl->GetRepeatedMessage(proto_msg, field_desc, j);
+                            out_ss << to_moos_comma_equals_string_field(embedded_msg, embedded_msg.GetDescriptor()->field(k), false);
+                        }
+                        out_ss << "}";
+                    }
+                }
+                
+                else
+                {
+                    for(int k = 0, o = field_desc->message_type()->field_count(); k < o; ++ k)
+                    {
+                        if(k) out_ss << ",";
+                        out_ss << field_name << "_" << field_desc->message_type()->field(k)->name() << "=";
+                        const google::protobuf::Message& embedded_msg = refl->GetMessage(proto_msg, field_desc);
+                        out_ss << to_moos_comma_equals_string_field(embedded_msg, embedded_msg.GetDescriptor()->field(k), false);
+                    }
+                }
+                
+                break;
+        }
+    }    
+    *out = out_ss.str();
+}
+
 
 
 #endif

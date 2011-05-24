@@ -32,6 +32,7 @@
 #endif
 
 #include "dccl.h"
+#include "goby/acomms/xml/xml_parser.h"
 #include "message_xml_callbacks.h"
 #include "goby/util/logger.h"
 #include "goby/util/string.h"

@@ -26,7 +26,6 @@
 #include <boost/bind.hpp>
 #include <boost/signal.hpp>
 
-#include "goby/acomms/xml/xml_parser.h"
 #include "goby/acomms/dccl.h"
 #include "goby/protobuf/queue.pb.h"
 #include "goby/protobuf/acomms_proto_helpers.h"

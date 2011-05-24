@@ -27,7 +27,6 @@
 #include <stdexcept>
 #include <vector>
 
-#include "goby/acomms/xml/xml_parser.h"
 #include "goby/util/time.h"
 #include "goby/util/logger.h"
 

@@ -24,6 +24,7 @@
 #include "goby/util/time.h"
 #include "goby/util/binary.h"
 
+#include "goby/acomms/xml/xml_parser.h"
 #include "queue_manager.h"
 #include "queue_constants.h"
 #include "queue_xml_callbacks.h"

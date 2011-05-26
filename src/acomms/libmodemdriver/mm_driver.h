@@ -77,6 +77,7 @@ namespace goby
             void append_to_write_queue(const util::NMEASentence& nmea, protobuf::ModemMsgBase* base_msg); // add a message
             void mm_write(const protobuf::ModemMsgBase& base_msg); // actually write a message (appends hydroid prefix if needed)
             void increment_present_fail();
+            void present_fail_exceeds_retries();
             
             // input
             void process_receive(const util::NMEASentence& nmea); // parse a receive message and call proper method

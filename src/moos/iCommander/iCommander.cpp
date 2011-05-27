@@ -114,7 +114,11 @@ void CiCommander::inbox(const CMOOSMsg& msg)
         {
             vector<string> mesg;
             mesg.push_back(string("</B>Message </40>acknowledged<!40>. Original Message:"));
-            mesg.push_back(sval.substr(0,30) + "...");
+            boost::replace_all(sval, ": ", ":");
+            vector<string> orig_parts;
+            boost::split(orig_parts, sval, boost::is_any_of(" "));
+            mesg.resize(mesg.size() + orig_parts.size());
+            std::copy(orig_parts.begin(), orig_parts.end(), mesg.begin() + 1);
             gui_.disp_info(mesg);
         }
         catch(...)
@@ -128,7 +132,11 @@ void CiCommander::inbox(const CMOOSMsg& msg)
         {
             vector<string> mesg;
             mesg.push_back(string("</B>Message </16>expired<!16> Original Message:"));
-            mesg.push_back(sval.substr(0,30) + "...");
+            boost::replace_all(sval, ": ", ":");
+            vector<string> orig_parts;
+            boost::split(orig_parts, sval, boost::is_any_of(" "));
+            mesg.resize(mesg.size() + orig_parts.size());
+            std::copy(orig_parts.begin(), orig_parts.end(), mesg.begin() + 1);
             gui_.disp_info(mesg);
         }
         catch(...)

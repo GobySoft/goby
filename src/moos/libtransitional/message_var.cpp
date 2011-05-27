@@ -20,6 +20,7 @@
 #include <boost/foreach.hpp>
 
 #include "goby/util/string.h"
+#include "goby/moos/libmoos_util/moos_string.h"
 
 #include "message_var.h"
 #include "message.h"
@@ -148,7 +149,7 @@ std::string goby::transitional::DCCLMessageVar::parse_string_val(const std::stri
     // use source_key if specified, otherwise try the name
     std::string subkey = (source_key_ == "") ? name_ : source_key_;
         
-    in_str = util::val_from_string(pieceval, sval, subkey);        
+    in_str = moos::val_from_string(pieceval, sval, subkey);        
     //pick the substring from the string
     if(in_str)
         return pieceval;

@@ -22,6 +22,8 @@
 #include <google/protobuf/io/tokenizer.h>
 #include "goby/util/liblogger/flex_ostream.h"
 #include "goby/util/string.h"
+#include "goby/moos/libmoos_util/moos_string.h"
+
 
 /// \file moos_protobuf_helpers.h Helpers for MOOS applications for serializing and parsed Google Protocol buffers messages
 
@@ -178,7 +180,7 @@ inline void from_moos_comma_equals_string(google::protobuf::Message* proto_msg, 
             default:
             {
                 std::string val;
-                if(goby::util::val_from_string(val, in, field_desc->name()))
+                if(goby::moos::val_from_string(val, in, field_desc->name()))
                 {
                     std::vector<std::string> vals;
                     boost::split(vals, val, boost::is_any_of(","));
@@ -193,7 +195,7 @@ inline void from_moos_comma_equals_string(google::protobuf::Message* proto_msg, 
                     for(int k = 0, o = field_desc->message_type()->field_count(); k < o; ++k)
                     {
                         std::string val;
-                        if(goby::util::val_from_string(val, in, field_desc->name() + "_" + field_desc->message_type()->field(k)->name()))
+                        if(goby::moos::val_from_string(val, in, field_desc->name() + "_" + field_desc->message_type()->field(k)->name()))
                         {
                             std::vector<std::string> vals;
                             boost::split(vals, val, boost::is_any_of(","));
@@ -215,7 +217,7 @@ inline void from_moos_comma_equals_string(google::protobuf::Message* proto_msg, 
                     for(int k = 0, o = field_desc->message_type()->field_count(); k < o; ++ k)
                     {
                         std::string val;
-                        if(goby::util::val_from_string(val, in, field_desc->name() + "_" + field_desc->message_type()->field(k)->name()))
+                        if(goby::moos::val_from_string(val, in, field_desc->name() + "_" + field_desc->message_type()->field(k)->name()))
                         {
                             std::vector<std::string> vals;
                             boost::split(vals, val, boost::is_any_of(","));

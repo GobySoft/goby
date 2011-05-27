@@ -29,38 +29,12 @@ namespace transitional
     class DCCLMessageVarBool : public DCCLMessageVar
     {
       public:
-        int calc_size() const
-        { return 1 + 1; }
-
         DCCLType type() const { return dccl_bool; }
         
       private:
         void initialize_specific()
         { }
         
-        
-        boost::dynamic_bitset<unsigned char> encode_specific(const DCCLMessageVal& v)
-        {
-            bool b;
-            if(v.get(b))
-                return boost::dynamic_bitset<unsigned char>(calc_size(), ((b) ? 1 : 0) + 1);
-            else
-                return boost::dynamic_bitset<unsigned char>();
-        }
-        
-
-        DCCLMessageVal decode_specific(boost::dynamic_bitset<unsigned char>& b)
-        {
-
-            unsigned long t = b.to_ulong();
-            if(t)
-            {
-                --t;
-                return DCCLMessageVal(bool(t));
-            }
-            else
-                return DCCLMessageVal();
-        }
 
         void get_display_specific(std::stringstream& ss) const
         { }        

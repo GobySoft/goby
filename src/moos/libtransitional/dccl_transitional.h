@@ -36,6 +36,7 @@
 #include "message_val.h"
 #include "goby/acomms/libdccl/dccl_exception.h"
 #include "goby/protobuf/transitional.pb.h"
+#include "goby/protobuf/queue.pb.h"
 #include "goby/protobuf/modem_message.pb.h"
 #include "goby/acomms/acomms_helpers.h"
 #include "goby/acomms/dccl.h"
@@ -218,19 +219,17 @@ namespace goby
                 std::string brief_summary(const Key& k) const
             { return to_iterator(k)->get_short_display(); }
 
-            template<typename Key>
-                void write_schema_to_dccl2(const Key& k, std::ofstream* proto_file)
-            {  to_iterator(k)->write_schema_to_dccl2(proto_file); }
+            /* template<typename Key> */
+            /*     void write_schema_to_dccl2(const Key& k, std::ofstream* proto_file) */
+            /* { */
+            /*     to_iterator(k)->write_schema_to_dccl2(proto_file); */
+                
+            /* } */
 
             template<typename Key>
                 const google::protobuf::Descriptor* descriptor(const Key& k)
             {  return to_iterator(k)->descriptor(); }            
 
-            template<typename Key>
-                const google::protobuf::Descriptor* convert_to_protobuf_descriptor(const Key& k,
-                                                                                   const std::string& proto_file_to_write)
-            {  return convert_to_protobuf_descriptor_private(to_iterator(k), proto_file_to_write); }
-            
                 
             /// brief summary of a message for all loaded messages
             std::string brief_summary() const;
@@ -484,8 +483,8 @@ namespace goby
         
             void check_duplicates();
             
-            const google::protobuf::Descriptor* convert_to_protobuf_descriptor_private(std::vector<DCCLMessage>::iterator it,
-                                                                                       const std::string& proto_file_to_write);
+            void convert_to_protobuf_descriptor(const std::vector<unsigned>& added_ids, const std::string& proto_file_to_write, const std::vector<goby::acomms::protobuf::QueueConfig>& queue_cfg);
+            
             
 
             void process_cfg();
@@ -530,41 +529,6 @@ namespace goby
         /// outputs information about all available messages (same as std::string summary())
         std::ostream& operator<< (std::ostream& out, const DCCLTransitionalCodec& d);
 
-
-        class DCCLHeaderEncoder
-        {
-          public:
-            DCCLHeaderEncoder(const std::map<std::string, std::vector<DCCLMessageVal> >& in)
-            {
-                std::map<std::string, std::vector<DCCLMessageVal> > in_copy = in;
-                msg_.head_encode(encoded_, in_copy);
-            }
-            std::string& str() { return encoded_; }
-            
-          private:
-            DCCLMessage msg_;
-            std::string encoded_;        
-        };
-
-        class DCCLHeaderDecoder
-        {
-          public:
-            DCCLHeaderDecoder(const std::string& in_orig)
-            {
-                std::string in = in_orig.substr(0, DCCL_NUM_HEADER_BYTES);
-                msg_.head_decode(in, decoded_);
-            }   
-            std::map<std::string, std::vector<DCCLMessageVal> >& get() { return decoded_; }
-            DCCLMessageVal& operator[] (const std::string& s)
-            { return decoded_[s][0]; }
-            DCCLMessageVal& operator[] (DCCLHeaderPart p)
-            { return decoded_[to_str(p)][0]; }
-
-        
-          private:
-            DCCLMessage msg_;
-            std::map<std::string, std::vector<DCCLMessageVal> > decoded_;
-        };
     }
 }
 

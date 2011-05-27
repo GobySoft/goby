@@ -39,7 +39,8 @@ namespace goby
 {
     namespace transitional
     {
-    
+        class DCCLMessage;
+        
 // Implements callbacks that receive character data and
 // notifications about the beginnings and ends of elements 
         class DCCLMessageContentHandler : public xercesc::DefaultHandler {

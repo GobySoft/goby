@@ -29,8 +29,6 @@ namespace goby
         class DCCLMessageVarEnum : public DCCLMessageVar
         {
           public:
-            int calc_size() const
-            { return ceil(log(enums_.size()+1)/log(2)); }        
         
             void add_enum(std::string senum) {enums_.push_back(senum);}
 
@@ -42,49 +40,6 @@ namespace goby
             void initialize_specific()
             { }
         
-            boost::dynamic_bitset<unsigned char> encode_specific(const DCCLMessageVal& v)
-            {
-                std::string s = v;
-                // find the iterator within the std::vector of enumerator values for *this* enumerator value
-                std::vector<std::string>::iterator pos;
-                pos = find(enums_.begin(), enums_.end(), s);
-            
-                // now convert that iterator into a number (think traditional array index)
-                unsigned long t = (unsigned long)distance(enums_.begin(), pos);
-            
-                if(pos == enums_.end())
-                    t = 0;
-                else
-                    ++t;
-            
-                return boost::dynamic_bitset<unsigned char>(calc_size(), t);            
-            }        
-
-            DCCLMessageVal decode_specific(boost::dynamic_bitset<unsigned char>& b)
-            {
-                unsigned long t = b.to_ulong();
-                if(t)
-                {
-                    --t;
-                    return DCCLMessageVal(enums_.at(t));
-                }
-                else
-                    return DCCLMessageVal();            
-            }
-
-            void get_display_specific(std::stringstream& ss) const
-            {
-                ss << "\t\tvalues:{"; 
-                for (std::vector<std::string>::size_type j = 0, m = enums_.size(); j < m; ++j)
-                {
-                    if(j)
-                        ss << ",";
-                    ss << enums_[j];
-                }
-            
-                ss << "}" << std::endl;
-            }
-
           private:
             std::vector<std::string> enums_;
         };

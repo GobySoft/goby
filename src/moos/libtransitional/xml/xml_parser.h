@@ -65,7 +65,7 @@ class XMLParser {
         const std::string schema = "/tmp/dccl_message_schema.xsd";
         std::ofstream fout;
         fout.open(schema.c_str());
-        for(int i = 0; i < message_schema_xsd_len; ++i)
+        for(unsigned i = 0; i < message_schema_xsd_len; ++i)
             fout << message_schema_xsd[i];
         fout.close();
         

@@ -86,79 +86,11 @@ void goby::transitional::DCCLMessageVar::var_post_decode(
     std::map<std::string,std::vector<DCCLMessageVal> >& out_vals)
 {    
     // modify the original vals to be used before running algorithms and encoding
+    out_vals[name_].resize(array_length_);
     for(std::vector<DCCLMessageVal>::size_type i = 0, n = out_vals[name_].size(); i < n; ++i)
         post_decode(out_vals[name_][i]);
 }
 
-
-    
-void goby::transitional::DCCLMessageVar::var_encode(std::map<std::string,std::vector<DCCLMessageVal> >& vals, boost::dynamic_bitset<unsigned char>& bits)
-{    
-    // ensure that every DCCLMessageVar has the full number of (maybe blank) DCCLMessageVals
-    vals[name_].resize(array_length_);
-
-    // modify the original vals to be used before running algorithms and encoding
-    for(std::vector<DCCLMessageVal>::size_type i = 0, n = vals[name_].size(); i < n; ++i)
-        pre_encode(vals[name_][i]);
-    
-    // copy so algorithms can modify directly and not affect other algorithms' use of original values
-    std::vector<DCCLMessageVal> vm = vals[name_];
-    
-    // write all the delta values first
-    is_key_frame_ = false;
-    
-    for(std::vector<DCCLMessageVal>::size_type i = 0, n = vm.size(); i < n; ++i)
-    {
-        for(std::vector<std::string>::size_type j = 0, m = algorithms_.size(); j < m; ++j)
-            ap_->algorithm(vm[i], i, algorithms_[j], vals);
-
-        // read the first value as the key
-        if(i == 0) key_val_ = vm[i];
-        // otherwise add the bits to the stream
-        else encode_value(vm[i], bits);
-    }
-
-    is_key_frame_ = true;
-    
-    // insert the key at the end of the bitstream
-    encode_value(key_val_, bits);
-}
-
-void goby::transitional::DCCLMessageVar::encode_value(const DCCLMessageVal& val, boost::dynamic_bitset<unsigned char>& bits)
-{
-    bits <<= calc_size();
-    
-    boost::dynamic_bitset<unsigned char> add_bits = encode_specific(val);
-    add_bits.resize(bits.size());
-    
-    bits |= add_bits;
-}
-
-
-void goby::transitional::DCCLMessageVar::var_decode(std::map<std::string,std::vector<DCCLMessageVal> >& vals, boost::dynamic_bitset<unsigned char>& bits)
-{
-    vals[name_].resize(array_length_);
-    
-    // count down from one-past-the-end to 1, because we'll put the key at the beginning (array position 0)
-    for(unsigned i = array_length_, n = 0; i > n; --i)
-    {
-        is_key_frame_ = (i == array_length_) ? true : false;
-        
-        boost::dynamic_bitset<unsigned char> remove_bits = bits;
-        remove_bits.resize(calc_size());
-
-        DCCLMessageVal val = decode_specific(remove_bits);
-        
-        bits >>= calc_size();
-
-        // read the key first on the reverse bitstream
-        if(is_key_frame_) key_val_ = val;
-        else vals[name_][i] = val;
-    }
-
-    // insert the key at the beginning of the return vector
-    vals[name_][0] = key_val_;    
-}
 
 
 void goby::transitional::DCCLMessageVar::read_pubsub_vars(std::map<std::string,std::vector<DCCLMessageVal> >& vals,
@@ -224,53 +156,7 @@ std::string goby::transitional::DCCLMessageVar::parse_string_val(const std::stri
         return sval;
 }
 
-std::string goby::transitional::DCCLMessageVar::get_display() const
-{
-    std::stringstream ss;    
-    ss << "\t" << name_ << " (" << type_to_string(type()) << "):" << std::endl;    
-    
-    for(std::vector<std::string>::size_type j = 0, m = algorithms_.size(); j < m; ++j)
-    {
-        if(!j)
-            ss << "\t\talgorithm(s): ";
-        else
-            ss << ", ";
-        ss << algorithms_[j];
-        if (j==(m-1))
-            ss << std::endl;
-    }    
 
-    if(source_var_ != "")
-    {
-        ss << "\t\t" << "source: {";
-        ss << source_var_;
-        ss  << "}";
-        if(source_key_ != "")
-            ss << " key: " << source_key_;
-        ss << std::endl;
-    }
-
-    if(array_length_ > 1)
-        ss << "\t\tarray length: " << array_length_ << std::endl;
-    
-    get_display_specific(ss);
-
-    
-    if(array_length_ > 1)
-        ss << "\t\telement size [bits]: [" << calc_size() << "]" << std::endl;
-    
-
-    ss << "\t\ttotal size [bits]: [" << calc_total_size() << "]" << std::endl;
-
-    return ss.str();
-}
-
-
-std::ostream& goby::transitional::operator<< (std::ostream& out, const DCCLMessageVar& mv)
-{
-    out << mv.get_display();
-    return out;
-}
 void goby::transitional::DCCLMessageVar::write_schema_to_dccl2(std::ofstream* proto_file, int sequence_number)
 {
     *proto_file << "\t";

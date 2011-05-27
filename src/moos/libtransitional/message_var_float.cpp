@@ -29,15 +29,6 @@ goby::transitional::DCCLMessageVarFloat::DCCLMessageVarFloat(double max /*= std:
       max_delta_(acomms::NaN)
 { }
 
-int goby::transitional::DCCLMessageVarFloat::calc_total_size() const
-{
-    if(using_delta_differencing())
-        // key frame + N-1 delta frames
-        return key_size() + (array_length_-1)*delta_size();
-    else
-        // size of array * bits / element
-        return array_length_*key_size();
-}
         
 void goby::transitional::DCCLMessageVarFloat::initialize_specific()
 {
@@ -59,50 +50,3 @@ void goby::transitional::DCCLMessageVarFloat::pre_encode(DCCLMessageVal& v)
     if(v.get(r)) v = util::unbiased_round(r,precision_);
 }
 
-
-boost::dynamic_bitset<unsigned char> goby::transitional::DCCLMessageVarFloat::encode_specific(const DCCLMessageVal& v)
-{
-    double r;
-    
-    if(!v.get(r) || (r < min() || r > max())) return boost::dynamic_bitset<unsigned char>();
-    
-    // delta-differencing
-    if(is_delta())
-    {
-        r += max_delta_ - double(key_val_);
-        if(r > 2*max_delta_ || r < 0) return boost::dynamic_bitset<unsigned char>();
-    }
-    else
-    {
-        r -= min_;
-    }
-    
-    r *= pow(10.0, double(precision_));
-    //r = util::unbiased_round(r, 0);
-    
-    return boost::dynamic_bitset<unsigned char>(calc_size(), static_cast<unsigned long>(r)+1);
-}        
-        
-goby::transitional::DCCLMessageVal goby::transitional::DCCLMessageVarFloat::decode_specific(boost::dynamic_bitset<unsigned char>& b)
-{            
-    unsigned long t = b.to_ulong();
-    if(!t) return DCCLMessageVal();
-    
-    --t;
-    if(is_delta())
-        return cast(double(t) / (pow(10.0, double(precision_))) - double(max_delta_) + double(key_val_), precision_);
-    else
-        return cast(double(t) / (pow(10.0, double(precision_))) + min_, precision_);
-}
-
-void goby::transitional::DCCLMessageVarFloat::get_display_specific(std::stringstream& ss) const
-{
-    ss << "\t\t[min, max] = [" << min_ << "," << max_ << "]" << std::endl;
-    ss << "\t\tprecision: {" << precision_ << "}" << std::endl;   
-
-    if(using_delta_differencing())
-    {
-        ss << "\t\tmax_delta: {" << max_delta_ << "}" << std::endl;
-        ss << "\t\tdelta element size [bits]: [" << delta_size() << "]" << std::endl;
-    }
-}        

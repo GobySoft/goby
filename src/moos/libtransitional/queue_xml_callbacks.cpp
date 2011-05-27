@@ -20,10 +20,10 @@
 #include "queue_xml_callbacks.h"
 
 using namespace xercesc;
-using namespace goby::acomms::xml;
+using namespace goby::transitional::xml;
 
 // this is called when the parser encounters the start tag, e.g. <message>
-void goby::acomms::QueueContentHandler::startElement( 
+void goby::transitional::QueueContentHandler::startElement( 
     const XMLCh *const uri,        // namespace URI
     const XMLCh *const localname,  // tagname w/ out NS prefix
     const XMLCh *const qname,      // tagname + NS pefix
@@ -39,15 +39,15 @@ void goby::acomms::QueueContentHandler::startElement(
             break;            
             
         case tag_message:
-            q_.push_back(protobuf::QueueConfig());
-            q_.back().mutable_key()->set_type(protobuf::QUEUE_DCCL);
+            q_.push_back(goby::acomms::protobuf::QueueConfig());
+            q_.back().mutable_key()->set_type(goby::acomms::protobuf::QUEUE_DCCL);
             break;
     }
     
     current_text.clear();
 }
 
-void goby::acomms::QueueContentHandler::endElement(          
+void goby::transitional::QueueContentHandler::endElement(          
     const XMLCh *const uri,        // namespace URI
     const XMLCh *const localname,  // tagname w/ out NS prefix
     const XMLCh *const qname )     // tagname + NS pefix

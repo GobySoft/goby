@@ -36,9 +36,6 @@ namespace goby
                 max_length_(0)
                 { }
 
-            int calc_size() const
-            { return max_length_*acomms::BITS_IN_BYTE; }
-
             void set_max_length(unsigned max_length) {max_length_ = max_length;}
             void set_max_length(const std::string& s) { set_max_length(util::as<unsigned>(s)); }
 
@@ -50,43 +47,6 @@ namespace goby
             void initialize_specific()
             { }
         
-            boost::dynamic_bitset<unsigned char> encode_specific(const DCCLMessageVal& v)
-            {
-                unsigned size = calc_size();            
-                boost::dynamic_bitset<unsigned char> bits(size);
-
-                std::string s = v;
-            
-                // tack on null terminators (probably a byte of zeros in ASCII)
-                s += std::string(max_length_, '\0');
-            
-                // one byte per char
-                for (size_t j = 0; j < (size_t)max_length_; ++j)
-                {
-                    bits <<= acomms::BITS_IN_BYTE;
-                    bits |= boost::dynamic_bitset<unsigned char>(size, s[j]);;
-                }
-                return bits;
-            }
-        
-
-            DCCLMessageVal decode_specific(boost::dynamic_bitset<unsigned char>& b)
-            {
-                char s[max_length_+1];
-                s[max_length_] = '\0';
-            
-                for (size_t j = 0; j < max_length_; ++j)
-                {
-		  s[max_length_-j-1] = (b & boost::dynamic_bitset<unsigned char>(static_cast<size_t>(calc_size()), static_cast<unsigned long>(0xff))).to_ulong();
-		  b >>= acomms::BITS_IN_BYTE;
-                }
-            
-                if(!std::string(s).empty())
-                    return DCCLMessageVal(std::string(s));
-                else
-                    return DCCLMessageVal();
-            }
-
             void get_display_specific(std::stringstream& ss) const
             { }        
 

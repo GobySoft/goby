@@ -37,12 +37,6 @@ namespace goby
                 bit_size_(bit_size),
                 default_name_(default_name)
                 { set_name(default_name); }
-
-            int calc_size() const
-            { return bit_size_; }        
-
-            int calc_total_size() const
-            { return bit_size_; }
             
         
           private:
@@ -52,15 +46,9 @@ namespace goby
                 if(default_name_ == name_) source_var_.clear();
             }
 
-            virtual void set_defaults_specific(DCCLMessageVal& v, unsigned modem_id, unsigned id)
-            { }
-        
-            virtual boost::dynamic_bitset<unsigned char> encode_specific(const DCCLMessageVal& v)
-            { return boost::dynamic_bitset<unsigned char>(calc_size(), long(v)); }
-        
-            virtual DCCLMessageVal decode_specific(boost::dynamic_bitset<unsigned char>& b)
-            { return DCCLMessageVal(long(b.to_ulong())); }
-        
+             virtual void set_defaults_specific(DCCLMessageVal& v, unsigned modem_id, unsigned id)
+            { } 
+
           protected:
             int bit_size_;
             std::string default_name_;
@@ -93,39 +81,6 @@ namespace goby
             }
             
         
-            boost::dynamic_bitset<unsigned char> encode_specific(const DCCLMessageVal& v)
-            {
-                // trim to time of day
-                boost::posix_time::time_duration time_of_day = util::unix_double2ptime(v).time_of_day();
-                
-                return boost::dynamic_bitset<unsigned char>(calc_size(), long(util::unbiased_round(util::time_duration2double(time_of_day), 0)));    
-            }
-        
-            DCCLMessageVal decode_specific(boost::dynamic_bitset<unsigned char>& b)
-            {
-                // add the date back in (assumes message sent the same day received)
-                DCCLMessageVal v(long(b.to_ulong()));
-
-                using namespace boost::posix_time;
-                using namespace boost::gregorian;
-            
-                ptime now = util::goby_time();
-                date day_sent;
-
-                // this logic will break if there is a separation between message sending and
-                // message receipt of greater than 1/2 day (twelve hours)
-            
-                // if message is from part of the day removed from us by 12 hours, we assume it
-                // was sent yesterday
-                if(abs(now.time_of_day().total_seconds() - double(v)) > hours(12).total_seconds())
-                    day_sent = now.date() - days(1);
-                else // otherwise figure it was sent today
-                    day_sent = now.date();
-            
-                v.set(double(v) + util::ptime2unix_double(ptime(day_sent,seconds(0))));
-                return v;
-            }
-
             void write_schema_to_dccl2(std::ofstream* proto_file,
                                                int sequence_number)
             {
@@ -206,12 +161,6 @@ namespace goby
             DCCLMessageVarHead(transitional::DCCL_HEADER_NAMES[transitional::HEAD_MULTIMESSAGE_FLAG],
                                transitional::HEAD_FLAG_SIZE) { }
         
-            boost::dynamic_bitset<unsigned char> encode_specific(const DCCLMessageVal& v)
-            { return boost::dynamic_bitset<unsigned char>(calc_size(), bool(v)); }
-        
-            DCCLMessageVal decode_specific(boost::dynamic_bitset<unsigned char>& b)
-            { return DCCLMessageVal(bool(b.to_ulong())); }        
-
         };
     
         class DCCLMessageVarBroadcastFlag : public DCCLMessageVarHead
@@ -221,11 +170,6 @@ namespace goby
             DCCLMessageVarHead(transitional::DCCL_HEADER_NAMES[transitional::HEAD_BROADCAST_FLAG],
                                transitional::HEAD_FLAG_SIZE) { }
 
-            boost::dynamic_bitset<unsigned char> encode_specific(const DCCLMessageVal& v)
-            { return boost::dynamic_bitset<unsigned char>(calc_size(), bool(v)); }
-        
-            DCCLMessageVal decode_specific(boost::dynamic_bitset<unsigned char>& b)
-            { return DCCLMessageVal(bool(b.to_ulong())); }        
 
         };
 

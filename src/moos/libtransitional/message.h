@@ -31,6 +31,8 @@
 #include <boost/foreach.hpp>
 #include <boost/shared_ptr.hpp>
 
+#include "goby/protobuf/queue.pb.h"
+
 #include "message_var.h"
 #include "message_var_int.h"
 #include "message_var_float.h"
@@ -44,7 +46,6 @@
 #include "message_publish.h"
 #include "dccl_constants.h"
 
-
 namespace goby
 {
     namespace transitional
@@ -56,7 +57,7 @@ namespace goby
           public:
 
             // Added in Goby2 for transition to new Protobuf structure
-            void write_schema_to_dccl2(std::ofstream* proto_file);
+            void write_schema_to_dccl2(std::ofstream* proto_file, const goby::acomms::protobuf::QueueConfig& queue_cfg);
             
 
             
@@ -152,6 +153,8 @@ namespace goby
             void preprocess();
             void set_repeat_array_length();
             unsigned calc_total_size();
+            
+            
         
             void set_head_defaults(std::map<std::string, std::vector<DCCLMessageVal> >& in, unsigned modem_id);
             void pre_encode(const std::map<std::string, std::vector<DCCLMessageVal> >& in,
@@ -161,12 +164,6 @@ namespace goby
                              std::map<std::string, std::vector<DCCLMessageVal> >& out);
 
             
-    
-            void head_encode(std::string& head, std::map<std::string, std::vector<DCCLMessageVal> >& in);
-            void head_decode(const std::string& head, std::map<std::string, std::vector<DCCLMessageVal> >& out);
-        
-            void body_encode(std::string& body, std::map<std::string, std::vector<DCCLMessageVal> >& in);
-            void body_decode(std::string& body, std::map<std::string, std::vector<DCCLMessageVal> >& out);
 
             // increment, means increase trigger number
             // prefix ++DCCLMessage
@@ -178,42 +175,6 @@ namespace goby
         
         
           private:
-            unsigned bytes_head() const
-            { return transitional::DCCL_NUM_HEADER_BYTES; }
-            unsigned bits_head() const
-            { return bytes2bits(transitional::DCCL_NUM_HEADER_BYTES); }
-
-            // more efficient way to do ceil(total_bits / 8)
-            // to get the number of bytes rounded up.
-        
-            enum { BYTE_MASK = 7 }; // 00000111
-            unsigned used_bytes_body() const
-            {
-                return (body_bits_& BYTE_MASK) ?
-                    bits2bytes(body_bits_) + 1 :
-                    bits2bytes(body_bits_);
-            }
-
-            unsigned used_bytes_total() const
-            { return bytes_head() + used_bytes_body(); }
-
-            unsigned used_bits_body() const
-            { return body_bits_; }
-        
-            unsigned used_bits_total() const
-            { return bits_head() + used_bits_body(); }
-        
-            unsigned requested_bytes_body() const
-            { return size_ - transitional::DCCL_NUM_HEADER_BYTES; }
-
-            unsigned requested_bytes_total() const
-            { return size_; }
-
-            unsigned requested_bits_body() const
-            { return bytes2bits(size_ - transitional::DCCL_NUM_HEADER_BYTES); } 
-
-            unsigned requested_bits_total() const
-            { return bytes2bits(size_); }
         
         
           private:
@@ -222,7 +183,7 @@ namespace goby
         
             unsigned trigger_number_;
             // actual used bits in body part of message (not including header bits)
-            unsigned body_bits_;
+            // unsigned body_bits_;
 
             unsigned id_;
             unsigned modem_id_;

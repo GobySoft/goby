@@ -171,8 +171,7 @@ boost::shared_ptr<google::protobuf::Message> goby::acomms::DCCLCodec::decode(con
         unsigned id = (fixed_header_bits >> (fixed_header_bits.size()-fixed_head_size())).to_ulong() & Bitset(std::string(HEAD_DCCL_ID_SIZE, '1')).to_ulong();
 
         if(ccl_id != DCCL_CCL_HEADER)
-            throw(DCCLException("CCL ID (left-most byte in bytes string) must be " +
-                                as<std::string>(DCCL_CCL_HEADER) + " but was given " + as<std::string>(ccl_id)));
+            throw(DCCLException("CCL ID (left-most byte in bytes string) must be " + goby::util::as<std::string>(static_cast<int>(DCCL_CCL_HEADER)) + " but was given " + as<std::string>(ccl_id)));
         
         if(!id2desc_.count(id))
             throw(DCCLException("Message id " + as<std::string>(id) + " has not been validated. Call validate() before decoding this type."));
@@ -325,6 +324,8 @@ unsigned goby::acomms::DCCLCodec::size(const google::protobuf::Message* msg)
     return head_size_bytes + body_size_bytes;
 }
 
+
+
 void goby::acomms::DCCLCodec::run_hooks(const google::protobuf::Message* msg)
 {
     const Descriptor* desc = msg->GetDescriptor();
@@ -399,10 +400,23 @@ std::list<boost::shared_ptr<google::protobuf::Message> > goby::acomms::DCCLCodec
     std::list<boost::shared_ptr<google::protobuf::Message> > out;
     while(!bytes.empty())
     {
-        out.push_back(decode(bytes));
-        unsigned last_size = size(out.back().get());
-        glog.is(debug1) && glog  << "last message size was: " << last_size << std::endl;
-        bytes.erase(0, last_size);
+        try
+        {
+            out.push_back(decode(bytes));
+            unsigned last_size = size(out.back().get());
+            glog.is(debug1) && glog  << "last message size was: " << last_size << std::endl;
+            bytes.erase(0, last_size);
+        }
+        catch(DCCLException& e)
+        {
+            if(out.empty())
+                throw(e);
+            else
+            {
+                glog.is(warn) && glog << "failed to decode " << goby::util::hex_encode(bytes) << " but returning parts already decoded"  << std::endl;
+                return out;
+            }
+        }        
     }
     return out;
 }

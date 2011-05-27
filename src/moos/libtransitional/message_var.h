@@ -112,7 +112,7 @@ namespace goby
 
             // other
             void initialize(const DCCLMessage& msg);
-            std::string get_display() const;
+            //         std::string get_display() const;
 
             void read_pubsub_vars(std::map<std::string,std::vector<DCCLMessageVal> >& vals,
                                   const std::map<std::string,std::vector<DCCLMessageVal> >& in);
@@ -127,18 +127,10 @@ namespace goby
                 const std::map<std::string,std::vector<DCCLMessageVal> >& in_vals,
                 std::map<std::string,std::vector<DCCLMessageVal> >& out_vals);
             
-            
-            void var_encode(std::map<std::string,std::vector<DCCLMessageVal> >& vals,
-                            boost::dynamic_bitset<unsigned char>& bits);
-            void var_decode(std::map<std::string,std::vector<DCCLMessageVal> >& vals,
-                            boost::dynamic_bitset<unsigned char>& bits);
 
             void set_defaults(std::map<std::string,std::vector<DCCLMessageVal> >& vals, unsigned modem_id, unsigned id);  
         
-            virtual int calc_size() const = 0;
-            virtual int calc_total_size() const
-            { return calc_size() * array_length_; }        
-        
+
 
             
           protected:
@@ -150,9 +142,6 @@ namespace goby
             virtual std::string additional_option_extensions()
             { return ""; }
              
-            virtual boost::dynamic_bitset<unsigned char> encode_specific(const DCCLMessageVal& v) = 0;
-            virtual DCCLMessageVal decode_specific(boost::dynamic_bitset<unsigned char>& bits) = 0;
-            virtual void get_display_specific(std::stringstream& ss) const = 0;
         
             virtual void set_defaults_specific(DCCLMessageVal& v, unsigned modem_id, unsigned id) { bad_overload("set_defaults_specific()"); }
 
@@ -162,9 +151,6 @@ namespace goby
             {
                 throw(goby::acomms::DCCLException(std::string(s + " not supported by this DCCLMessageVar: " + name() + " (" + type_to_string(type()) + ")")));
             }        
-
-            // helper to avoid copy-paste code
-            void encode_value(const DCCLMessageVal& val, boost::dynamic_bitset<unsigned char>& bits);
         
         
           protected:        
@@ -182,7 +168,7 @@ namespace goby
         };
 
 
-        std::ostream& operator<< (std::ostream& out, const DCCLMessageVar& m);
+//        std::ostream& operator<< (std::ostream& out, const DCCLMessageVar& m);
     }
 }
 #endif

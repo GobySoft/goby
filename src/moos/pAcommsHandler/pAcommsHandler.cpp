@@ -35,7 +35,6 @@
 
 using namespace goby::util::tcolor;
 using goby::acomms::operator<<;
-using goby::util::glogger;
 using goby::util::as;
 using google::protobuf::uint32;
 using goby::acomms::NaN;
@@ -54,11 +53,11 @@ CpAcommsHandler* CpAcommsHandler::get_instance()
 
 CpAcommsHandler::CpAcommsHandler()
     : TesMoosApp(&cfg_),
-      transitional_dccl_(&glogger()),
+      transitional_dccl_(&glog),
       dccl_(goby::acomms::DCCLCodec::get()),
       queue_manager_(goby::acomms::QueueManager::get()),
       driver_(0),
-      mac_(&glogger())
+      mac_(&glog)
 {
     process_configuration();
 
@@ -117,27 +116,6 @@ void CpAcommsHandler::dccl_loop()
             pack(id, mm);
         }
     }
-    // if(cfg_.tcp_share_enable() && tcp_share_server_)
-    // {
-    //     std::string s;
-    //     while(tcp_share_server_->readline(&s))
-    //     {
-    //         goby::acomms::protobuf::ModemDataTransmission msg;
-    //         parse_for_moos(s, &msg);
-            
-    //         glog << group("tcp") << "incoming: " << msg << std::endl;
-            
-    //         // post for others to use as needed in MOOS
-
-    //         goby::acomms::DCCLHeaderDecoder decoder(msg.data());
-    //         unsigned dccl_id = decoder[goby::acomms::HEAD_DCCL_ID]; 
-    //         std::string in_var = transitional_dccl_.get_incoming_hex_var(dccl_id);
-            
-    //         publish(in_var,s);
-    //         unpack(msg);
-    //     }
-    // }
-    
 }
 
 
@@ -204,26 +182,18 @@ void CpAcommsHandler::do_subscriptions()
 
 void CpAcommsHandler::dccl_inbox(const CMOOSMsg& msg)
 {            
-    const std::string& key = msg.GetKey(); 	
-    bool is_str = msg.IsString();
+    const std::string& key = msg.GetKey();
     const std::string& sval = msg.GetString();
     
     std::set<unsigned> ids;    
-    unsigned id;
     if(transitional_dccl_.is_publish_trigger(ids, key, sval))
     {
         BOOST_FOREACH(unsigned id, ids)
         {
             boost::shared_ptr<google::protobuf::Message> mm;
             pack(id, mm);
-        }
+        } 
     }
-    // else if(transitional_dccl_.is_incoming(id, key) && is_str && msg.GetSource() != GetAppName())
-    // {
-    //     goby::acomms::protobuf::ModemDataTransmission mm;
-    //     mm.ParseFromString(sval);
-    //     unpack(mm);
-    // }
 }
 
 void CpAcommsHandler::handle_ranging_request(const CMOOSMsg& msg)
@@ -310,7 +280,7 @@ void CpAcommsHandler::queue_ack(const goby::acomms::protobuf::ModemDataAck& ack_
                                 const google::protobuf::Message& orig_msg)
 {
     std::string serialized;
-    serialize_for_moos(&serialized, ack_msg);
+    serialize_for_moos(&serialized, orig_msg);
     
     publish(MOOS_VAR_ACK, serialized);
 }
@@ -462,41 +432,6 @@ void CpAcommsHandler::process_configuration()
     }
     
 
-    // tcp share
-    if(cfg_.tcp_share_enable())
-    {
-        glog << group("tcp") << "tcp_share_port is: " << cfg_.tcp_share_port() << std::endl;
-        
-        tcp_share_server_ = new goby::util::TCPServer(cfg_.tcp_share_port());
-        tcp_share_server_->start(); 
-        glog << group("tcp") << "starting TCP server on: " << cfg_.tcp_share_port() << std::endl;        
-    }
-
-    BOOST_FOREACH(const std::string& full_ip, cfg_.tcp_share_to_ip())
-    {
-        if(!cfg_.tcp_share_enable())
-        {            
-            glog << group("tcp") << "tcp_share_in_address given but tcp_enable is false" << std::endl;
-        }
-        else
-        {
-            std::string ip;
-            unsigned port = cfg_.tcp_share_port();
-
-            std::string::size_type colon_pos = full_ip.find(":");
-            if(colon_pos == std::string::npos)
-                ip = full_ip;
-            else
-            {
-                ip = full_ip.substr(0, colon_pos);
-                port = boost::lexical_cast<unsigned>(full_ip.substr(colon_pos+1));
-            }
-            IP ip_and_port(ip, port);
-            tcp_share_map_[ip_and_port] = new goby::util::TCPClient(ip, port);
-            tcp_share_map_[ip_and_port]->start();
-            glog << group("tcp") << "starting TCP client to "<<  ip << ":" << port << std::endl;
-        }
-    }
     
     // set up algorithms
     transitional_dccl_.add_algorithm("power_to_dB", boost::bind(&CpAcommsHandler::alg_power_to_dB, this, _1));
@@ -570,7 +505,6 @@ void CpAcommsHandler::pack(unsigned dccl_id, boost::shared_ptr<google::protobuf:
             
             queue_manager_->push_message(*msg);
             
-            //handle_tcp_share(modem_message);
         }
         catch(std::exception& e)
         {
@@ -591,8 +525,6 @@ void CpAcommsHandler::pack(unsigned dccl_id, boost::shared_ptr<google::protobuf:
 
 void CpAcommsHandler::unpack(const google::protobuf::Message& msg)
 {
-    //handle_tcp_share(&msg);
-
     try
     {
         std::multimap<std::string, DCCLMessageVal> out;
@@ -626,52 +558,9 @@ void CpAcommsHandler::unpack(const google::protobuf::Message& msg)
 
 
 
-// void CpAcommsHandler::handle_tcp_share(goby::acomms::protobuf::ModemDataTransmission* modem_message)
-// {
-//     goby::acomms::DCCLHeaderDecoder decoder(modem_message->data());
-//     unsigned dccl_id = decoder[goby::acomms::HEAD_DCCL_ID];
-    
-//     if(cfg_.tcp_share_enable() && transitional_dccl_.manip_manager().has(dccl_id, goby::acomms::protobuf::MessageFile::TCP_SHARE_IN))
-//     {
-//         typedef std::pair<IP, goby::util::TCPClient*> P;
-//         BOOST_FOREACH(const P&p, tcp_share_map_)
-//         {
-//             if(p.second->active())
-//             {
-//                 std::stringstream ss;
-//                 ss << p.second->local_endpoint() << ":" << cfg_.tcp_share_port();
-//                 modem_message->AddExtension(pAcommsHandlerExtensions::seen_ip, ss.str());                
-                
-//                 std::string serialized;
-//                 serialize_for_moos(&serialized, *modem_message);
-
-//                 bool ip_seen = false;
-//                 for(int i = 0, n = modem_message->ExtensionSize(pAcommsHandlerExtensions::seen_ip); i < n; ++i)
-//                 {
-//                     if(modem_message->GetExtension(pAcommsHandlerExtensions::seen_ip, i) == p.first.ip_and_port())
-//                         ip_seen = true;
-//                 }
-                
-                
-//                 if(!ip_seen)
-//                 {
-//                     glog << group("tcp") << "dccl_id: " << dccl_id << ": " << *modem_message << " to " << p.first.ip << ":" << p.first.port << std::endl;
-//                     p.second->write(serialized + "\r\n");
-//                 }
-//                 else
-//                 {
-//                     glog << group("tcp") << p.first.ip << ":" << p.first.port << " has already seen this message, so not sending." << std::endl;
-//                 }
-//             }
-//             else
-//                 glog << group("tcp") << warn << p.first.ip << ":" << p.first.port << " is not connected." << std::endl;
-//         }
-//     }    
-// }
-
 
 //
-// DCCL ALGORITHMS
+// DCCL Transitional ALGORITHMS
 //
 
 

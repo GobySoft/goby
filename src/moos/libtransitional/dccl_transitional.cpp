@@ -26,6 +26,7 @@
 
 #include "dccl_transitional.h"
 #include "message_xml_callbacks.h"
+#include "queue_xml_callbacks.h"
 #include "goby/util/logger.h"
 #include "goby/util/string.h"
 #include "goby/protobuf/acomms_proto_helpers.h"
@@ -61,38 +62,48 @@ std::set<unsigned> goby::transitional::DCCLTransitionalCodec::add_xml_message_fi
             
         
     // Register handlers for XML parsing
-    DCCLMessageContentHandler content(messages_);
-    DCCLMessageErrorHandler error;
+    DCCLMessageContentHandler message_content(messages_);
+    DCCLMessageErrorHandler message_error;
     // instantiate a parser for the xml message files
-    XMLParser parser(content, error);
-    // parse(file)
+    XMLParser message_parser(message_content, message_error);
 
-    parser.parse(xml_file);
-
+    std::vector<goby::acomms::protobuf::QueueConfig> queue_cfgs;
+    QueueContentHandler queue_content(queue_cfgs);
+    QueueErrorHandler queue_error;
+    // instantiate a parser for the xml message files
+    XMLParser queue_parser(queue_content, queue_error);
+    
+    message_parser.parse(xml_file);
+    queue_parser.parse(xml_file);
+    
     size_t end_size = messages_.size();
     
     check_duplicates();
 
-    std::set<unsigned> added_ids;
+    std::vector<unsigned> added_ids;
+    std::set<unsigned> set_added_ids;
+
+    boost::filesystem::path xml_file_path(xml_file);
+    std::string proto_name =  cfg_.generated_proto_dir() + "/" + xml_file_path.stem() + ".proto";
     
     for(size_t i = 0, n = end_size - begin_size; i < n; ++i)
     {
         // map name/id to position in messages_ vector for later use
-        size_t new_index = messages_.size()-i-1;
+        size_t new_index = messages_.size()-(n-i);
         name2messages_.insert(std::pair<std::string, size_t>(messages_[new_index].name(), new_index));
         id2messages_.insert(std::pair<unsigned, size_t>(messages_[new_index].id(), new_index));
-
-        boost::filesystem::path xml_file_path(xml_file);
-        std::string proto_name =  cfg_.generated_proto_dir() + "/" + xml_file_path.stem() + "_" + messages_[new_index].name() + ".proto";
-        
-        to_iterator(messages_[new_index].id())->set_descriptor(
-            convert_to_protobuf_descriptor(messages_[new_index].id(),
-                                           proto_name));
-        
-        added_ids.insert(messages_[new_index].id());
+ 
+        set_added_ids.insert(messages_[new_index].id());
+        added_ids.push_back( messages_[new_index].id());
     }
+
+       
+    convert_to_protobuf_descriptor(added_ids,
+                                   proto_name,
+                                   queue_cfgs);
     
-    return added_ids;
+    
+    return set_added_ids;
 }
 
 std::set<unsigned> goby::transitional::DCCLTransitionalCodec::all_message_ids()
@@ -642,30 +653,43 @@ void goby::transitional::DCCLTransitionalCodec::process_cfg()
     
 }
 
-
-const google::protobuf::Descriptor* goby::transitional::DCCLTransitionalCodec::convert_to_protobuf_descriptor_private(std::vector<DCCLMessage>::iterator it, const std::string& proto_file_to_write)
+void goby::transitional::DCCLTransitionalCodec::convert_to_protobuf_descriptor(const std::vector<unsigned>& added_ids, const std::string& proto_file_to_write, const std::vector<goby::acomms::protobuf::QueueConfig>& queue_cfg)
 {
-    std::ofstream fout(proto_file_to_write.c_str());
-
+    std::ofstream fout(proto_file_to_write.c_str(), std::ios::out);
+    
     if(!fout.is_open())
         throw(goby::acomms::DCCLException("Could not open " + proto_file_to_write + " for writing"));
+
+    fout << "import \"goby/protobuf/dccl_option_extensions.proto\";" << std::endl;
+    fout << "import \"goby/protobuf/queue_option_extensions.proto\";" << std::endl;
+
+    for(int i = 0, n = added_ids.size(); i < n; ++i)
+    {
+        to_iterator(added_ids[i])->write_schema_to_dccl2(&fout, queue_cfg[i]);
+    }
     
-    write_schema_to_dccl2(it->id(), &fout);
     fout.close();
     
-    const google::protobuf::FileDescriptor* file_desc = descriptor_pool_.FindFileByName(proto_file_to_write);
+    const google::protobuf::FileDescriptor* file_desc = descriptor_pool_.FindFileByName(proto_file_to_write);    
 
+    glog.is(debug2) && glog << file_desc->DebugString() << std::flush;
     
     if(file_desc)
     {
-        dccl_->validate(file_desc->FindMessageTypeByName(it->name()));
-        return file_desc->FindMessageTypeByName(it->name());
+        BOOST_FOREACH(unsigned id, added_ids)
+        {
+            const google::protobuf::Descriptor* desc = file_desc->FindMessageTypeByName(to_iterator(id)->name());
+
+            if(desc)
+                dccl_->validate(desc);
+            else
+            {
+                glog << die << "No descriptor with name " << to_iterator(id)->name() << " found!" << std::endl;
+            }
+
+            to_iterator(id)->set_descriptor(desc);
+        }
     }
-    else
-    {
-        return 0;
-    }
-    
     
 }
 

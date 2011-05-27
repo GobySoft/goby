@@ -149,7 +149,7 @@ void goby::transitional::DCCLPublish::fill_format(const std::map<std::string,std
                 // only run algorithms once on a given variable
                 for(std::vector<std::string>::size_type l = 0; l < num_algs; ++l)
                     ap_->algorithm(vm[eff_index], i, algorithms_[k][l], vals);
-                
+
                 std::string s =  vm[eff_index];
                 f % s;
             }

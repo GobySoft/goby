@@ -35,10 +35,6 @@ namespace goby
           public:
             DCCLMessageVarFloat(double max = std::numeric_limits<double>::max(), double min = 0, double precision = 0);
 
-            virtual int calc_size() const
-            { return is_delta() ? delta_size() : key_size(); }
-
-            virtual int calc_total_size() const;
         
             void set_max(double max) {max_ = max;}
             void set_max(const std::string& s) { set_max(util::as<double>(s)); }
@@ -61,11 +57,6 @@ namespace goby
 
             virtual DCCLType type() const { return dccl_float; }
 
-            unsigned key_size() const
-            { return ceil(log((max_-min_)*pow(10.0,static_cast<double>(precision_))+2)/log(2)); }
-
-            unsigned delta_size() const
-            { return ceil(log((2*max_delta_)*pow(10.0,static_cast<double>(precision_))+2)/log(2)); }
 
           protected:
             virtual DCCLMessageVal cast(double d, int precision) { return DCCLMessageVal(d, precision); }
@@ -80,11 +71,7 @@ namespace goby
         
             bool using_delta_differencing() const
             { return !(boost::math::isnan)(max_delta_); }
-        
-            boost::dynamic_bitset<unsigned char> encode_specific(const DCCLMessageVal& v);
-            DCCLMessageVal decode_specific(boost::dynamic_bitset<unsigned char>& b);
 
-            void get_display_specific(std::stringstream& ss) const;
         
           private:
             double max_;

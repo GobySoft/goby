@@ -20,7 +20,7 @@ target_link_libraries(iCommander
   m
   pthread
   goby_moos_util
-  goby_dccl
+  goby_transitional
   cdk
   ncurses
   ${MOOS_LIBRARIES}

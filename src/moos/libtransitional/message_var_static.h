@@ -28,9 +28,6 @@ namespace goby
         class DCCLMessageVarStatic : public DCCLMessageVar
         {
           public:
-            int calc_size() const
-            { return 0; }
-
             void set_static_val(const std::string& static_val)
             { static_val_ = static_val; }
 
@@ -41,16 +38,6 @@ namespace goby
           private:
             void initialize_specific()
             { }
-        
-            boost::dynamic_bitset<unsigned char> encode_specific(const DCCLMessageVal& v)
-            {
-                return boost::dynamic_bitset<unsigned char>();
-            }        
-
-            DCCLMessageVal decode_specific(boost::dynamic_bitset<unsigned char>& b)
-            {
-                return DCCLMessageVal(static_val_);
-            }
 
             void get_display_specific(std::stringstream& ss) const
             {

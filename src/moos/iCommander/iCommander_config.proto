@@ -1,5 +1,5 @@
 import "goby/moos/libmoos_util/tes_moos_app.proto";
-import "goby/protobuf/dccl.proto";
+import "goby/protobuf/transitional.proto";
 import "goby/protobuf/option_extensions.proto";
 
 message iCommanderConfig
@@ -7,7 +7,7 @@ message iCommanderConfig
   optional TesMoosAppConfig common = 1 [(description)="Configuration common to all Goby MOOS applications"]; // see tes_moos_app.proto
 
   // for dccl
-  optional goby.acomms.protobuf.DCCLConfig dccl_cfg = 2 [(description)="Configure the DCCL Encoder"];  // see dccl.proto
+  optional goby.transitional.protobuf.DCCLTransitionalConfig transitional_cfg = 2 [(description)="Configure the Goby 1 Transitional DCCL Encoder"];  // see transitional.proto
   
   // path to text file with entries:
   //   modem_id,name,type

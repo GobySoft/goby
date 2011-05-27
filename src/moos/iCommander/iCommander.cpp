@@ -27,14 +27,14 @@
 
 using namespace std;
 using boost::trim_copy;
-using namespace goby::acomms;
+using namespace goby::transitional;
 using goby::util::glogger;
 
 iCommanderConfig CiCommander::cfg_;
 CommanderCdk CiCommander::gui_;
 CMOOSGeodesy CiCommander::geodesy_;
 tes::ModemIdConvert CiCommander::modem_lookup_;
-goby::acomms::DCCLCodec CiCommander::dccl_;
+goby::transitional::DCCLTransitionalCodec CiCommander::dccl_;
 boost::mutex CiCommander::gui_mutex_;
 CiCommander* CiCommander::inst_ = 0;
 
@@ -71,7 +71,7 @@ CiCommander::CiCommander()
     else
         glogger() << warn << "no modem_id_lookup_path in moos file. this is required for conversions between modem_id and vehicle name / type." << std::endl;    
     
-    dccl_.merge_cfg(cfg_.dccl_cfg());
+    dccl_.merge_cfg(cfg_.transitional_cfg());
 
 
     for(int i = 0, n = cfg_.show_variable_size(); i < n; ++i)
@@ -110,16 +110,11 @@ void CiCommander::inbox(const CMOOSMsg& msg)
     }
     else if(MOOSStrCmp("ACOMMS_ACK", key))
     {   
-        goby::acomms::protobuf::ModemDataAck ack_msg;
-        parse_for_moos(sval, &ack_msg);
-        
         try
         {
             vector<string> mesg;
-            DCCLHeaderDecoder head_decoder(ack_msg.orig_msg().data());
-            mesg.push_back(string("</B>Message </40>acknowledged<!40> from queue: " + dccl_.id2name(ack_msg.orig_msg().queue_key().id())));
-            mesg.push_back(string(" for destination: " + modem_lookup_.get_name_from_id(ack_msg.orig_msg().base().dest())));
-            mesg.push_back(string(" at time: " + ack_msg.orig_msg().base().time()));
+            mesg.push_back(string("</B>Message </40>acknowledged<!40>. Original Message:"));
+            mesg.push_back(sval.substr(0,30) + "...");
             gui_.disp_info(mesg);
         }
         catch(...)
@@ -129,16 +124,11 @@ void CiCommander::inbox(const CMOOSMsg& msg)
     }
     else if(MOOSStrCmp("ACOMMS_EXPIRE", key))
     {
-        goby::acomms::protobuf::ModemDataExpire expire_msg;
-        parse_for_moos(sval, &expire_msg);
-        
         try
         {
             vector<string> mesg;
-            DCCLHeaderDecoder head_decoder(expire_msg.orig_msg().data());
-            mesg.push_back(string("</B>Message </16>expired<!16> from queue: " + dccl_.id2name(expire_msg.orig_msg().queue_key().id())));
-            mesg.push_back(string(" for destination: " + modem_lookup_.get_name_from_id(expire_msg.orig_msg().base().dest())));
-            mesg.push_back(string(" at time: " + expire_msg.orig_msg().base().time()));
+            mesg.push_back(string("</B>Message </16>expired<!16> Original Message:"));
+            mesg.push_back(sval.substr(0,30) + "...");
             gui_.disp_info(mesg);
         }
         catch(...)

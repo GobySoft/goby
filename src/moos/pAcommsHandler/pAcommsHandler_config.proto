@@ -39,15 +39,4 @@ message pAcommsHandlerConfig
   //   3,unicorn,auv
   optional string modem_id_lookup_path = 101 [(description)="Path to file containing mapping between modem_id and vehicle name & type",(moos_global) = "modem_id_lookup_path"];
 
-  optional bool tcp_share_enable = 200 [default = false, (description)="Enable TCP Sharing (Experimental)"];
-  optional uint32 tcp_share_port = 201 [default = 11000, (description)="Port to listen on for TCP Sharing (Experimental)"];
-  repeated string tcp_share_to_ip = 202 [(description)="internet_address:port to share incoming messages to (Experimental)."]; // e.g. "192.168.1.42:11000"
-}
-
-message pAcommsHandlerExtensions
-{
-  extend goby.acomms.protobuf.ModemDataTransmission
-  {
-    repeated string seen_ip = 1000;
-  }
 }

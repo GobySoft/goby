@@ -14,6 +14,7 @@ target_link_libraries(pAcommsHandler
   goby_amac
   goby_modemdriver
   goby_logger
+  goby_transitional
   ${MOOS_LIBRARIES}
   ${Boost_LIBRARIES}
   ${PROTOBUF_LIBRARY})

@@ -802,8 +802,11 @@ boost::posix_time::ptime goby::acomms::MMDriver::nmea_time2ptime(const std::stri
             int min = boost::lexical_cast<int>(s_min);
             int sec = boost::lexical_cast<int>(s_sec);
             int micro_sec = boost::lexical_cast<int>(s_fs)*pow(10, 6-s_fs.size());
-            
-            return (ptime(date(day_clock::universal_day()), time_duration(hour, min, sec, 0)) + microseconds(micro_sec));
+           
+	    boost::gregorian::date return_date(boost::gregorian::day_clock::universal_day());
+	    boost::posix_time::time_duration return_duration(boost::posix_time::time_duration(hour, min, sec, 0) + microseconds(micro_sec));
+	    boost::posix_time::ptime return_time(return_date, return_duration);
+            return return_time;
         }
         catch (boost::bad_lexical_cast&)
         {

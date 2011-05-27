@@ -1,0 +1,2 @@
+add_executable(analyze_dccl_xml analyze_dccl_xml.cpp)
+target_link_libraries(analyze_dccl_xml goby_transitional)

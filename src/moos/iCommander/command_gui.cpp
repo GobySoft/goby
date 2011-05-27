@@ -4,7 +4,7 @@
 using namespace std;
 using boost::trim_copy;
 
-using namespace goby::acomms;
+using namespace goby::transitional;
 using goby::util::as;
 
 //using namespace boost::posix_time;
@@ -317,7 +317,7 @@ void CommandGui::import_xml()
         
         try
         {
-            protobuf::DCCLConfig cfg;
+            protobuf::DCCLTransitionalConfig cfg;
             cfg.add_message_file()->set_path(filename);
             CiCommander::dccl_.merge_cfg(cfg);
             CiCommander::gui_.disp_scroll(string("Imported:\n" + filename), vector<string>(1, "OK"));
@@ -362,6 +362,11 @@ void CommandGui::edit()
         int width;
         switch(type)
         {
+            case dccl_hex:
+                stype = "</24>hex<!24>";
+                width = mp->max_length();
+                break;
+                
             case dccl_string:
                 stype = "</24>string<!24>";
                 width = mp->max_length();
@@ -1067,7 +1072,7 @@ bool CommandGui::field_check(string & s, boost::shared_ptr<DCCLMessageVar> mp)
             
         s = as<string>(dnum);
     }
-    else if (type == dccl_string && ((int)s.length() > mp->max_length()))
+    else if (type == dccl_string && (s.length() > mp->max_length()))
     {
         ok = false;
         s = s.substr(0,mp->max_length());
@@ -1254,11 +1259,11 @@ vector< boost::shared_ptr<DCCLMessageVar> > CommandGui::fetch_message_vars(DCCLM
     vector< boost::shared_ptr<DCCLMessageVar> > message_vars;
 
     // set src_id and dest_id, all the rest should be automatic
-    if(msg->header()[goby::acomms::HEAD_SRC_ID]->name() != goby::acomms::DCCL_HEADER_NAMES[goby::acomms::HEAD_SRC_ID])
-        message_vars.push_back(msg->header()[goby::acomms::HEAD_SRC_ID]);
+    if(msg->header()[goby::transitional::HEAD_SRC_ID]->name() != goby::transitional::DCCL_HEADER_NAMES[goby::transitional::HEAD_SRC_ID])
+        message_vars.push_back(msg->header()[goby::transitional::HEAD_SRC_ID]);
 
-    if(msg->header()[goby::acomms::HEAD_DEST_ID]->name() != goby::acomms::DCCL_HEADER_NAMES[goby::acomms::HEAD_DEST_ID])
-        message_vars.push_back(msg->header()[goby::acomms::HEAD_DEST_ID]);
+    if(msg->header()[goby::transitional::HEAD_DEST_ID]->name() != goby::transitional::DCCL_HEADER_NAMES[goby::transitional::HEAD_DEST_ID])
+        message_vars.push_back(msg->header()[goby::transitional::HEAD_DEST_ID]);
     
     message_vars.insert(message_vars.end(),
                         msg->layout().begin(),

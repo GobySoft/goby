@@ -172,7 +172,7 @@ namespace goby
                 if(this_field())
                     return this_field()->options().GetExtension(e);
                 else
-                    return typename Extension::TypeTraits::ConstType();
+                    throw(DCCLException("Cannot call get on base message (has no *field* option extension"));                
             }
 
             

@@ -58,7 +58,7 @@ class CiCommander : public TesMoosApp
     static CommanderCdk gui_;
     static CMOOSGeodesy geodesy_;
     static tes::ModemIdConvert modem_lookup_;
-    static goby::acomms::DCCLCodec dccl_;
+    static goby::transitional::DCCLTransitionalCodec dccl_;
 
     CommandGui command_gui_;
     boost::thread command_gui_thread_;

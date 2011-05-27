@@ -213,10 +213,68 @@ namespace goby
             // clears the destination and ack values for the packet to reset for next $CADRQ
             void clear_packet(); 
             void process_cfg();
+
+
+            void set_latest_dest(const boost::any& wire_value,
+                                 const boost::any& extension_value)
+            {
+                int dest = BROADCAST_ID;
+                if(wire_value.type() == typeid(int32))
+                    dest = boost::any_cast<int32>(wire_value);
+                else if(wire_value.type() == typeid(int64))
+                    dest = boost::any_cast<int64>(wire_value);
+                else if(wire_value.type() == typeid(uint32))
+                    dest = boost::any_cast<uint32>(wire_value);
+                else if(wire_value.type() == typeid(uint64))
+                    dest = boost::any_cast<uint64>(wire_value);
+                else
+                    throw(queue_exception("Invalid type " + std::string(wire_value.type().name()) + " given for queue.is_dest. Expected integer type"));
+                
+                goby::glog.is(debug2) &&
+                    goby::glog << "setting dest to " << dest << std::endl;
+                
+                latest_data_msg_.mutable_base()->set_dest(dest);
+            }
+            
+            void set_latest_src(const boost::any& wire_value,
+                                const boost::any& extension_value)
+            {
+                int src = BROADCAST_ID;
+                if(wire_value.type() == typeid(int32))
+                    src = boost::any_cast<int32>(wire_value);
+                else if(wire_value.type() == typeid(int64))
+                    src = boost::any_cast<int64>(wire_value);
+                else if(wire_value.type() == typeid(uint32))
+                    src = boost::any_cast<uint32>(wire_value);
+                else if(wire_value.type() == typeid(uint64))
+                    src = boost::any_cast<uint64>(wire_value);
+                else
+                    throw(queue_exception("Invalid type " + std::string(wire_value.type().name()) + " given for queue.is_src. Expected integer type"));
+
+                goby::glog.is(debug2) &&
+                    goby::glog << "setting source to " << src << std::endl;
+                
+                latest_data_msg_.mutable_base()->set_src(src);
+            }
+            
+            void set_latest_time(const boost::any& wire_value,
+                                 const boost::any& extension_value)
+            {
+
+                if(wire_value.type() != typeid(std::string))
+                    throw(queue_exception("Invalid type " + std::string(wire_value.type().name()) + " given for queue.is_time. Expected std::string containing goby::util::as<std::string>(boost::posix_time::ptime)"));
+
+                goby::glog.is(debug2) &&
+                    goby::glog << "setting time to " << boost::any_cast<std::string>(wire_value) << std::endl;
+                
+                latest_data_msg_.mutable_base()->set_time(boost::any_cast<std::string>(wire_value));
+            }
+
             
           private:
             static boost::shared_ptr<QueueManager> inst_;
-            
+            static protobuf::ModemDataTransmission latest_data_msg_;
+
             friend class Queue;
             static int modem_id_;
             std::map<goby::acomms::protobuf::QueueKey, Queue> queues_;

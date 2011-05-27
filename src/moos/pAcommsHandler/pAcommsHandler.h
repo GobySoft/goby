@@ -33,6 +33,7 @@
 
 #include "goby/acomms.h"
 #include "goby/util.h"
+#include "goby/moos/libtransitional/dccl_transitional.h"
 
 #include "MOOSLIB/MOOSLib.h"
 #include "MOOSUtilityLib/MOOSGeodesy.h"
@@ -42,7 +43,6 @@
 #include "goby/moos/libmoos_util/tes_moos_app.h"
 
 #include "pAcommsHandler_config.pb.h"
-
 
 namespace goby {
     namespace acomms {
@@ -133,11 +133,15 @@ class CpAcommsHandler : public TesMoosApp
     // void read_queue_parameters(CProcessConfigReader& config);
     
     // from QueueManager
-    void queue_incoming_data(const goby::acomms::protobuf::ModemDataTransmission& message);
-    void queue_ack(const goby::acomms::protobuf::ModemDataAck & message);
-    void queue_on_demand(const goby::acomms::protobuf::ModemDataRequest& request_msg,
-                         goby::acomms::protobuf::ModemDataTransmission* data_msg);
-    void queue_expire(const goby::acomms::protobuf::ModemDataExpire& message);
+    void queue_receive_ccl(const goby::acomms::protobuf::ModemDataTransmission& message);
+    void queue_receive(const google::protobuf::Message& msg);
+
+    void queue_ack(const goby::acomms::protobuf::ModemDataAck& ack_msg,
+                   const google::protobuf::Message& orig_msg);
+    
+//void queue_on_demand(const goby::acomms::protobuf::ModemDataRequest& request_msg,
+    //                     goby::acomms::protobuf::ModemDataTransmission* data_msg);
+    void queue_expire(const google::protobuf::Message& orig_msg);
     void queue_qsize(const goby::acomms::protobuf::QueueSize& size);
     
     void handle_mac_cycle_update(const CMOOSMsg& msg);
@@ -156,44 +160,44 @@ class CpAcommsHandler : public TesMoosApp
     void dccl_inbox(const CMOOSMsg& msg);
     void dccl_loop();
 
-    void pack(unsigned dccl_id, goby::acomms::protobuf::ModemDataTransmission* modem_message);
-    void unpack(goby::acomms::protobuf::ModemDataTransmission modem_message);
+    void pack(unsigned dccl_id, boost::shared_ptr<google::protobuf::Message>& msg);
+    void unpack(const google::protobuf::Message& msg);
 
-    void handle_tcp_share(goby::acomms::protobuf::ModemDataTransmission* modem_message);
+//    void handle_tcp_share(goby::acomms::protobuf::ModemDataTransmission* modem_message);
     
-    void alg_power_to_dB(goby::acomms::DCCLMessageVal& val_to_mod);
-    void alg_dB_to_power(goby::acomms::DCCLMessageVal& val_to_mod);
+    void alg_power_to_dB(goby::transitional::DCCLMessageVal& val_to_mod);
+    void alg_dB_to_power(goby::transitional::DCCLMessageVal& val_to_mod);
 
-    void alg_to_upper(goby::acomms::DCCLMessageVal& val_to_mod);
-    void alg_to_lower(goby::acomms::DCCLMessageVal& val_to_mod);
-    void alg_angle_0_360(goby::acomms::DCCLMessageVal& angle);
-    void alg_angle_n180_180(goby::acomms::DCCLMessageVal& angle);
+    void alg_to_upper(goby::transitional::DCCLMessageVal& val_to_mod);
+    void alg_to_lower(goby::transitional::DCCLMessageVal& val_to_mod);
+    void alg_angle_0_360(goby::transitional::DCCLMessageVal& angle);
+    void alg_angle_n180_180(goby::transitional::DCCLMessageVal& angle);
 
-    void alg_TSD_to_soundspeed(goby::acomms::DCCLMessageVal& val,
-                               const std::vector<goby::acomms::DCCLMessageVal>& ref_vals);
+    void alg_TSD_to_soundspeed(goby::transitional::DCCLMessageVal& val,
+                               const std::vector<goby::transitional::DCCLMessageVal>& ref_vals);
     
 
-    void alg_add(goby::acomms::DCCLMessageVal& val,
-                 const std::vector<goby::acomms::DCCLMessageVal>& ref_vals);
+    void alg_add(goby::transitional::DCCLMessageVal& val,
+                 const std::vector<goby::transitional::DCCLMessageVal>& ref_vals);
     
-    void alg_subtract(goby::acomms::DCCLMessageVal& val,
-                      const std::vector<goby::acomms::DCCLMessageVal>& ref_vals);
+    void alg_subtract(goby::transitional::DCCLMessageVal& val,
+                      const std::vector<goby::transitional::DCCLMessageVal>& ref_vals);
     
-    void alg_lat2utm_y(goby::acomms::DCCLMessageVal& val,
-                       const std::vector<goby::acomms::DCCLMessageVal>& ref_vals);
+    void alg_lat2utm_y(goby::transitional::DCCLMessageVal& val,
+                       const std::vector<goby::transitional::DCCLMessageVal>& ref_vals);
 
-    void alg_lon2utm_x(goby::acomms::DCCLMessageVal& val,
-                       const std::vector<goby::acomms::DCCLMessageVal>& ref_vals);
+    void alg_lon2utm_x(goby::transitional::DCCLMessageVal& val,
+                       const std::vector<goby::transitional::DCCLMessageVal>& ref_vals);
 
-    void alg_utm_x2lon(goby::acomms::DCCLMessageVal& val,
-                       const std::vector<goby::acomms::DCCLMessageVal>& ref_vals);
+    void alg_utm_x2lon(goby::transitional::DCCLMessageVal& val,
+                       const std::vector<goby::transitional::DCCLMessageVal>& ref_vals);
     
-    void alg_utm_y2lat(goby::acomms::DCCLMessageVal& val,
-                       const std::vector<goby::acomms::DCCLMessageVal>& ref_vals);
+    void alg_utm_y2lat(goby::transitional::DCCLMessageVal& val,
+                       const std::vector<goby::transitional::DCCLMessageVal>& ref_vals);
 
-    void alg_modem_id2name(goby::acomms::DCCLMessageVal& in);
-    void alg_modem_id2type(goby::acomms::DCCLMessageVal& in);
-    void alg_name2modem_id(goby::acomms::DCCLMessageVal& in);
+    void alg_modem_id2name(goby::transitional::DCCLMessageVal& in);
+    void alg_modem_id2type(goby::transitional::DCCLMessageVal& in);
+    void alg_name2modem_id(goby::transitional::DCCLMessageVal& in);
 
     
   private:
@@ -203,11 +207,14 @@ class CpAcommsHandler : public TesMoosApp
 
     static pAcommsHandlerConfig cfg_;
     
-    //DCCL parsing
-    goby::acomms::DCCLCodec dccl_;
+    //Old style XML DCCL1 parsing
+    goby::transitional::DCCLTransitionalCodec transitional_dccl_;
 
+    // new DCCL2 codec
+    goby::acomms::DCCLCodec* dccl_;
+    
     // manages queues and does additional packing
-    goby::acomms::QueueManager queue_manager_;
+    goby::acomms::QueueManager* queue_manager_;
     
     // driver class that interfaces to the modem
     goby::acomms::ModemDriverBase* driver_;
@@ -224,7 +231,7 @@ class CpAcommsHandler : public TesMoosApp
 
     // buffer for <repeat> messages
     // maps message <id> onto pubsub encoding map
-    std::map<unsigned, std::map<std::string, std::vector<goby::acomms::DCCLMessageVal> > > repeat_buffer_;
+    std::map<unsigned, std::map<std::string, std::vector<goby::transitional::DCCLMessageVal> > > repeat_buffer_;
     std::map<unsigned, unsigned> repeat_count_;
 
     std::map<IP, goby::util::TCPClient*> tcp_share_map_;

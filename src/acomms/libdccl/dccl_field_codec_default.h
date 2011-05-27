@@ -202,7 +202,10 @@ namespace goby
             }
 
             T decode(Bitset* bits)
-            { return goby::util::as<T>(DCCLFieldCodecBase::get(dccl::static_value)); }
+            {
+                std::string t = DCCLFieldCodecBase::get(dccl::static_value);
+                return t;
+            }
             
             unsigned size()
             {

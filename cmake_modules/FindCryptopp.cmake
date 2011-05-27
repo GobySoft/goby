@@ -1,6 +1,11 @@
 find_path(Cryptopp_INCLUDE_DIR cryptopp/aes.h)
 
-find_library(Cryptopp_LIBRARY NAMES cryptopp
+if(NOT ${Cryptopp_INCLUDE_DIR})
+	find_path(Cryptopp_INCLUDE_DIR crypto++/aes.h)
+	add_definitions(-DCRYPTOPP_PATH_USES_PLUS_SIGN=1)
+endif()
+
+find_library(Cryptopp_LIBRARY NAMES cryptopp crypto++
   DOC "The Cryptopp Encrpytion library")
 
 mark_as_advanced(Cryptopp_INCLUDE_DIR

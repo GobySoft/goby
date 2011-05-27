@@ -14,7 +14,7 @@
 #include "MOOSLIB/MOOSLib.h"
 
 #include "commander_cdk.h"
-#include "goby/acomms/dccl.h"
+#include "goby/moos/libtransitional/dccl_transitional.h"
 #include "goby/moos/libmoos_util/modem_id_convert.h"
 
 class CommandGui
@@ -44,24 +44,24 @@ class CommandGui
     int edit_popup();
     void send();
     void insert_specials(std::string & s);
-    bool field_check(std::string & s, boost::shared_ptr<goby::acomms::DCCLMessageVar> mp);
+    bool field_check(std::string & s, boost::shared_ptr<goby::transitional::DCCLMessageVar> mp);
     void quick_switch();
     void clear_message() { curr_mess_vals_->clear();}
     void check_specials(std::string & val, chtype input, int row);    
     bool edit_precallback(int, int, std::string &, chtype &);
-    bool edit_menu(int, std::string &, goby::acomms::DCCLType);
-    bool edit_isprint(int, std::string &, chtype, goby::acomms::DCCLType, boost::shared_ptr<goby::acomms::DCCLMessageVar>);
-    bool edit_backspace(int, std::string &, goby::acomms::DCCLType);
-    bool edit_leftright(int, std::string &, chtype, goby::acomms::DCCLType, boost::shared_ptr<goby::acomms::DCCLMessageVar>);
+    bool edit_menu(int, std::string &, goby::transitional::DCCLType);
+    bool edit_isprint(int, std::string &, chtype, goby::transitional::DCCLType, boost::shared_ptr<goby::transitional::DCCLMessageVar>);
+    bool edit_backspace(int, std::string &, goby::transitional::DCCLType);
+    bool edit_leftright(int, std::string &, chtype, goby::transitional::DCCLType, boost::shared_ptr<goby::transitional::DCCLMessageVar>);
     bool edit_postcallback(int, int, std::string &, chtype &);
-    void prepare_message(std::map<std::string, std::string> & vals, std::vector<std::string> & out_of_range, bool do_substitutes = true, std::vector<std::string> * curr_vals = NULL, goby::acomms::DCCLMessage * curr_message = NULL);
+    void prepare_message(std::map<std::string, std::string> & vals, std::vector<std::string> & out_of_range, bool do_substitutes = true, std::vector<std::string> * curr_vals = NULL, goby::transitional::DCCLMessage * curr_message = NULL);
     void preview();
     int insert_modem_id();
     void find_lat_lon_rows(int row, int & lat_row, int & lon_row);
     void assemble_message_display(std::string & mesg);    
     
   private:
-    std::vector< boost::shared_ptr<goby::acomms::DCCLMessageVar> > fetch_message_vars(goby::acomms::DCCLMessage*);
+    std::vector< boost::shared_ptr<goby::transitional::DCCLMessageVar> > fetch_message_vars(goby::transitional::DCCLMessage*);
 
     bool initialized_;
     
@@ -78,9 +78,9 @@ class CommandGui
     
     std::map<int, std::vector<std::string> > open_mess_vals_;
     int curr_field_;
-    goby::acomms::DCCLMessage * curr_message_;
+    goby::transitional::DCCLMessage * curr_message_;
 
-    std::map<goby::acomms::DCCLMessage*, int> current_xy_num_;
+    std::map<goby::transitional::DCCLMessage*, int> current_xy_num_;
     
     enum state {s_new, s_open, s_save, s_import, s_exit, s_return, s_menu, s_editing, s_preview, s_send, s_quick_switch, s_clear};
     state state_;    

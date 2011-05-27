@@ -87,7 +87,7 @@ namespace goby
             DCCLTypeHelper(const DCCLTypeHelper&);
             DCCLTypeHelper& operator= (const DCCLTypeHelper&);
             void initialize();    
-                
+            
           private:
             // so we can use shared_ptr to hold the singleton
             template<typename T>

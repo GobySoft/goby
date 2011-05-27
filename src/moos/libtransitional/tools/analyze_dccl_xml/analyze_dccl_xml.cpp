@@ -13,7 +13,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
-#include "goby/acomms/dccl.h"
+#include "goby/moos/libtransitional/dccl_transitional.h"
 #include <iostream>
 
 using goby::acomms::operator<<;
@@ -32,10 +32,10 @@ int main(int argc, char* argv[])
             exit(EXIT_FAILURE);
     }
 
-    std::cout << "creating DCCLCodec using xml file: [" << xml_file << "]" << std::endl;
+    std::cout << "creating DCCLTransitionalCodec using xml file: [" << xml_file << "]" << std::endl;
     
-    goby::acomms::DCCLCodec dccl;    
-    goby::acomms::protobuf::DCCLConfig cfg;
+    goby::transitional::DCCLTransitionalCodec dccl;    
+    goby::transitional::protobuf::DCCLTransitionalConfig cfg;
     cfg.add_message_file()->set_path(xml_file);
     dccl.set_cfg(cfg);
 

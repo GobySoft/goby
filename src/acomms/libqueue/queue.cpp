@@ -26,53 +26,14 @@
 
 using goby::util::goby_time;
 
-goby::acomms::protobuf::ModemDataTransmission goby::acomms::Queue::latest_data_msg_;
-bool goby::acomms::Queue::hooks_set_ = false;
 
 
 goby::acomms::Queue::Queue(const protobuf::QueueConfig cfg /* = 0 */)
     : cfg_(cfg),
       last_send_time_(goby_time())
 {
-    if(!hooks_set_)
-    {
-        goby::acomms::DCCLFieldCodecBase::register_wire_value_hook(
-            make_hook_key(queue::is_dest.number(), goby::acomms::protobuf::HookKey::WIRE_VALUE),
-            boost::bind(&Queue::set_latest_dest, this, _1, _2));
 
-        goby::acomms::DCCLFieldCodecBase::register_wire_value_hook(
-            make_hook_key(queue::is_src.number(), goby::acomms::protobuf::HookKey::WIRE_VALUE),
-            boost::bind(&Queue::set_latest_src, this, _1, _2));
-
-        goby::acomms::DCCLFieldCodecBase::register_wire_value_hook(
-            make_hook_key(queue::is_time.number(), goby::acomms::protobuf::HookKey::FIELD_VALUE),
-            boost::bind(&Queue::set_latest_time, this, _1, _2));
-        hooks_set_ = true;
-        
-    }
 }
-
-
-bool goby::acomms::Queue::push_message(const google::protobuf::Message& dccl_msg)
-{    
-
-    boost::shared_ptr<google::protobuf::Message> new_dccl_msg(dccl_msg.New());
-    new_dccl_msg->CopyFrom(dccl_msg);
-
-    latest_data_msg_.Clear();
-    
-    goby::acomms::DCCLCodec* codec = goby::acomms::DCCLCodec::get();
-    latest_data_msg_.mutable_data()->resize(codec->size(&dccl_msg));
-    codec->run_hooks(&dccl_msg);
-    glog.is(debug2) && glog << "post hooks: " << latest_data_msg_ << std::endl;    
-
-    if(!latest_data_msg_.base().has_time())
-        latest_data_msg_.mutable_base()->set_time(util::as<std::string>(goby::util::goby_time()));
-    
-        
-    return push_message(latest_data_msg_, new_dccl_msg);
-}
-
 
 
 // add a new message
@@ -106,7 +67,8 @@ bool goby::acomms::Queue::push_message(const protobuf::ModemDataTransmission& en
         new_data_msg->set_ack_requested(cfg_.ack());
     
     // needed for CCL messages
-    new_data_msg->mutable_base()->set_src(QueueManager::modem_id_);
+    if(!new_data_msg->base().has_src())
+        new_data_msg->mutable_base()->set_src(QueueManager::modem_id_);
     
     // pop messages off the stack if the queue is full
     if(cfg_.max_queue() && messages_.size() > cfg_.max_queue())

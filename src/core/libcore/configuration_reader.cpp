@@ -223,7 +223,7 @@ void goby::core::ConfigReader::set_protobuf_program_option(const boost::program_
                               value.as<std::vector<std::string> >())
                 {
                     const google::protobuf::EnumValueDescriptor* enum_desc =
-                        refl->GetEnum(message, field_desc)->type()->FindValueByName(v);
+                        field_desc->enum_type()->FindValueByName(v);
                     if(!enum_desc)
                         throw(ConfigException(std::string("invalid enumeration " + v + " for field " + full_name)));
                     
@@ -280,7 +280,7 @@ void goby::core::ConfigReader::set_protobuf_program_option(const boost::program_
                 
             case google::protobuf::FieldDescriptor::CPPTYPE_ENUM:
                 const google::protobuf::EnumValueDescriptor* enum_desc =
-                    refl->GetEnum(message, field_desc)->type()->FindValueByName(value.as<std::string>());
+                    field_desc->enum_type()->FindValueByName(value.as<std::string>());
                 if(!enum_desc)
                     throw(ConfigException(std::string("invalid enumeration " + value.as<std::string>() + " for field "
                                                          + full_name)));

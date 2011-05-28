@@ -47,19 +47,179 @@ namespace goby
             std::string info();
             bool check_field(const google::protobuf::FieldDescriptor* field);
             std::string find_codec(const google::protobuf::FieldDescriptor* field);
+
+
+            struct Size
+            {
+                static void repeated(boost::shared_ptr<DCCLFieldCodecBase> codec,
+                                     unsigned* return_value,
+                                     const std::vector<boost::any>& field_values,
+                                     const google::protobuf::FieldDescriptor* field_desc)
+                    {
+                        codec->base_size_repeated(return_value, field_values, field_desc);
+                    }
+                
+                static void single(boost::shared_ptr<DCCLFieldCodecBase> codec,
+                                   unsigned* return_value,
+                                   const boost::any& field_value,
+                                   const google::protobuf::FieldDescriptor* field_desc)
+                    {
+                        codec->base_size(return_value, field_value, field_desc);
+                    }
+                
+            };
             
+            struct Encoder
+            {
+                static void repeated(boost::shared_ptr<DCCLFieldCodecBase> codec,
+                                     Bitset* return_value,
+                                     const std::vector<boost::any>& field_values,
+                                     const google::protobuf::FieldDescriptor* field_desc)
+                    {
+                        codec->base_encode_repeated(return_value, field_values, field_desc);
+                    }
+                
+                static void single(boost::shared_ptr<DCCLFieldCodecBase> codec,
+                                   Bitset* return_value,
+                                   const boost::any& field_value,
+                                   const google::protobuf::FieldDescriptor* field_desc)
+                    {
+                        codec->base_encode(return_value, field_value, field_desc);
+                    }
+            };
+
+            
+            struct RunHooks
+            {
+                static void repeated(boost::shared_ptr<DCCLFieldCodecBase> codec,
+                                     bool* return_value,
+                                     const std::vector<boost::any>& field_values,
+                                     const google::protobuf::FieldDescriptor* field_desc)
+                    {
+                        goby::glog.is(debug1) && glog << warn << "Hooks not run on repeated message: " << field_desc->DebugString() << std::endl;
+                    }
+                
+                static void single(boost::shared_ptr<DCCLFieldCodecBase> codec,
+                                   bool* return_value,
+                                   const boost::any& field_value,
+                                   const google::protobuf::FieldDescriptor* field_desc)
+                    {
+                        codec->base_run_hooks(return_value, field_value, field_desc);
+                    }
+                
+            };
+
+
+            struct MaxSize
+            {
+                static void field(boost::shared_ptr<DCCLFieldCodecBase> codec,
+                                  unsigned* return_value,
+                                  const google::protobuf::FieldDescriptor* field_desc)
+                    {
+                        codec->base_max_size(return_value, field_desc);
+                    }
+            };
+
+            struct MinSize
+            {
+                static void field(boost::shared_ptr<DCCLFieldCodecBase> codec,
+                                  unsigned* return_value,
+                                  const google::protobuf::FieldDescriptor* field_desc)
+                    {
+                        codec->base_min_size(return_value, field_desc);
+                    }
+            };
+            
+            
+            struct Validate
+            {
+                static void field(boost::shared_ptr<DCCLFieldCodecBase> codec,
+                                  bool* return_value,
+                                  const google::protobuf::FieldDescriptor* field_desc)
+                    {
+                        codec->base_validate(return_value, field_desc);
+                    }
+            };
+
+            struct Info
+            {
+                static void field(boost::shared_ptr<DCCLFieldCodecBase> codec,
+                                  std::stringstream* return_value,
+                                  const google::protobuf::FieldDescriptor* field_desc)
+                    {
+                        codec->base_info(return_value, field_desc);
+                    }
+            };
+            
+            
+            template<typename Action, typename ReturnType>
+                void traverse_descriptor(ReturnType* return_value)
+            {
+                const google::protobuf::Descriptor* desc =
+                    DCCLFieldCodecBase::this_descriptor();
+                for(int i = 0, n = desc->field_count(); i < n; ++i)
+                {
+                    const google::protobuf::FieldDescriptor* field_desc = desc->field(i);
+                    
+                    if(!check_field(field_desc))
+                        continue;
+
+                    std::string field_codec = find_codec(field_desc);
+
+                    Action::field(DCCLFieldCodecManager::find(field_desc,field_codec),
+                                  return_value, field_desc);                    
+                }
+            }
+            
+
+            template<typename Action, typename ReturnType>
+                ReturnType traverse_const_message(const boost::any& wire_value)
+            {
+                try
+                {
+                    ReturnType return_value = ReturnType();
+       
+                    const google::protobuf::Message* msg = boost::any_cast<const google::protobuf::Message*>(wire_value);
+                    const google::protobuf::Descriptor* desc = msg->GetDescriptor();
+                    const google::protobuf::Reflection* refl = msg->GetReflection();
+                    for(int i = 0, n = desc->field_count(); i < n; ++i)
+                    {       
+                        const google::protobuf::FieldDescriptor* field_desc = desc->field(i);
+
+                        if(!check_field(field_desc))
+                            continue;
            
-            /* template<typename ReturnType> */
-            /*     ReturnType traverse( */
-            /*         const boost::any& wire_value, */
-            /*         void(DCCLFieldCodecBase::*mem_func)(ReturnType*, */
-            /*                                         const boost::any& field_value, */
-            /*                                         const google::protobuf::FieldDescriptor* field), */
-            /*         void(DCCLFieldCodecBase::*mem_func_repeated)(ReturnType*, */
-            /*                                                  const std::vector<boost::any>& field_values, */
-            /*                                                  const google::protobuf::FieldDescriptor* field) */
-            /*         ); */
+                        std::string field_codec = find_codec(field_desc);
+           
+                        boost::shared_ptr<DCCLFieldCodecBase> codec =
+                            DCCLFieldCodecManager::find(field_desc, field_codec);
+                        boost::shared_ptr<FromProtoCppTypeBase> helper =
+                            DCCLTypeHelper::find(field_desc);
             
+            
+                        if(field_desc->is_repeated())
+                        {
+                            std::vector<boost::any> field_values;
+                            for(int j = 0, m = refl->FieldSize(*msg, field_desc); j < m; ++j)
+                                field_values.push_back(helper->get_repeated_value(field_desc, *msg, j));
+                   
+                            Action::repeated(codec, &return_value, field_values, field_desc);
+                        }
+                        else
+                        {
+                            Action::single(codec, &return_value, helper->get_value(field_desc, *msg), field_desc);
+                        }
+                    }
+                    return return_value;
+                }
+                catch(boost::bad_any_cast& e)
+                {
+                    throw(DCCLException("Bad type given to traverse, expecting const google::protobuf::Message*"));
+                }
+
+            }
+
+
         };
 
 
@@ -67,73 +227,7 @@ namespace goby
 }
 
 
-// encode, size, etc.
-/* template<typename ReturnType> */
-/* ReturnType goby::acomms::DCCLDefaultMessageCodec::traverse( */
-/*     const boost::any& wire_value, */
-/*     void(DCCLFieldCodecBase::*mem_func)(ReturnType*, */
-/*                                     const boost::any& field_value, */
-/*                                     const google::protobuf::FieldDescriptor* field), */
-/*     void(DCCLFieldCodecBase::*mem_func_repeated)(ReturnType*, */
-/*                                                  const std::vector<boost::any>& field_values, */
-/*                                                  const google::protobuf::FieldDescriptor* field) */
-/*     ) */
-
-/* { */
-/*     try */
-/*     { */
-/*         ReturnType return_value = ReturnType(); */
-       
-/*         const google::protobuf::Message* msg = boost::any_cast<const google::protobuf::Message*>(wire_value); */
-       
-/*         //  */
-/*         //     DCCLCommon::logger() << debug << "Looking to encode Message " << msg->GetDescriptor()->full_name() << std::endl; */
-
-   
-/*         const google::protobuf::Descriptor* desc = msg->GetDescriptor(); */
-/*         const google::protobuf::Reflection* refl = msg->GetReflection();        */
-/*         for(int i = 0, n = desc->field_count(); i < n; ++i) */
-/*         { */
-/*             //  */
-/*             //     DCCLCommon::logger() << debug << "Looking to encode " << desc->field(i)->DebugString(); */
-       
-/*             const google::protobuf::FieldDescriptor* field_desc = desc->field(i); */
-
-/*             if(!check_field(field_desc)) */
-/*                 continue; */
-           
-/*             std::string field_codec = find_codec(field_desc); */
-           
-/*             boost::shared_ptr<DCCLFieldCodecBase> codec = */
-/*                 DCCLFieldCodecManager::find(field_desc, field_codec); */
-/*             boost::shared_ptr<FromProtoCppTypeBase> helper = */
-/*                 DCCLTypeHelper::find(field_desc); */
-            
-            
-/*             if(field_desc->is_repeated()) */
-/*             {     */
-/*                 std::vector<boost::any> wire_values; */
-/*                 for(int j = 0, m = refl->FieldSize(*msg, field_desc); j < m; ++j) */
-/*                     wire_values.push_back(helper->get_repeated_value(field_desc, *msg, j)); */
-                   
-/*                 boost::bind(mem_func_repeated, */
-/*                             boost::ref(codec), &return_value, wire_values, field_desc)(); */
-/*             } */
-/*             else */
-/*             { */
-/*                 boost::bind(mem_func, */
-/*                             boost::ref(codec), &return_value, helper->get_value(field_desc, *msg), field_desc)(); */
-/*             } */
-/*         } */
-/*         return return_value; */
-/*     } */
-/*     catch(boost::bad_any_cast& e) */
-/*     { */
-/*         throw(DCCLException("Bad type given to encode, expecting const google::protobuf::Message*")); */
-/*     } */
-
-/* } */
-
+//encode, size, etc.
 
 
 

@@ -88,10 +88,12 @@ void goby::acomms::DCCLFieldCodecBase::base_run_hooks(const google::protobuf::Me
                                                       MessagePart part)
 {
     part_ = part;
-    base_run_hooks(&msg, 0);
+    bool b = false;
+    base_run_hooks(&b, &msg, 0);
 }
 
-void goby::acomms::DCCLFieldCodecBase::base_run_hooks(const boost::any& field_value,
+void goby::acomms::DCCLFieldCodecBase::base_run_hooks(bool* b,
+                                                      const boost::any& field_value,
                                                       const google::protobuf::FieldDescriptor* field)
 {
     MessageHandler msg_handler(field);
@@ -99,7 +101,7 @@ void goby::acomms::DCCLFieldCodecBase::base_run_hooks(const boost::any& field_va
     if(field)
         glog.is(debug1) && glog  << "field: " << field->DebugString() << std::endl;
 
-    any_run_hooks(field_value);    
+    any_run_hooks(field_value);
 }
 
 
@@ -161,7 +163,10 @@ void goby::acomms::DCCLFieldCodecBase::base_decode(Bitset* bits,
 
     Bitset these_bits;
     BitsHandler bits_handler(&these_bits, bits);
-    bits_handler.transfer_bits(base_min_size(field));
+
+    unsigned bits_to_transfer = 0;
+    base_min_size(&bits_to_transfer, field);
+    bits_handler.transfer_bits(bits_to_transfer);
     
     
     glog.is(debug1) && glog  << "using these bits: " << these_bits << std::endl;
@@ -185,7 +190,10 @@ void goby::acomms::DCCLFieldCodecBase::base_decode_repeated(Bitset* bits,
     
     Bitset these_bits;
     BitsHandler bits_handler(&these_bits, bits);
-    bits_handler.transfer_bits(base_min_size(field));    
+    
+    unsigned bits_to_transfer = 0;
+    base_min_size(&bits_to_transfer, field);
+    bits_handler.transfer_bits(bits_to_transfer);
     
     glog.is(debug1) && glog  << "using these bits: " << these_bits << std::endl;
     
@@ -193,8 +201,9 @@ void goby::acomms::DCCLFieldCodecBase::base_decode_repeated(Bitset* bits,
 }
 
 
-unsigned goby::acomms::DCCLFieldCodecBase::base_max_size(const google::protobuf::Descriptor* desc,
-                                                MessagePart part)
+void goby::acomms::DCCLFieldCodecBase::base_max_size(unsigned* bit_size,
+                                                         const google::protobuf::Descriptor* desc,
+                                                         MessagePart part)
 {
     part_ = part;
 
@@ -204,23 +213,25 @@ unsigned goby::acomms::DCCLFieldCodecBase::base_max_size(const google::protobuf:
     else
         throw(DCCLException("Max Size called with NULL Descriptor"));
     
-    return base_max_size(static_cast<google::protobuf::FieldDescriptor*>(0));
+    base_max_size(bit_size, static_cast<google::protobuf::FieldDescriptor*>(0));
 }
 
-unsigned goby::acomms::DCCLFieldCodecBase::base_max_size(const google::protobuf::FieldDescriptor* field)
+void goby::acomms::DCCLFieldCodecBase::base_max_size(unsigned* bit_size,
+                                                         const google::protobuf::FieldDescriptor* field)
 {
     MessageHandler msg_handler(field);
     
     if(this_field())
-        return this_field()->is_repeated() ? max_size_repeated() : max_size();
+        *bit_size += this_field()->is_repeated() ? max_size_repeated() : max_size();
     else
-        return max_size();
+        *bit_size += max_size();
 }
 
 
             
-unsigned goby::acomms::DCCLFieldCodecBase::base_min_size(const google::protobuf::Descriptor* desc,
-                                                MessagePart part)
+void goby::acomms::DCCLFieldCodecBase::base_min_size(unsigned* bit_size,
+                                                     const google::protobuf::Descriptor* desc,
+                                                     MessagePart part)
 {
     part_ = part;
 
@@ -230,23 +241,24 @@ unsigned goby::acomms::DCCLFieldCodecBase::base_min_size(const google::protobuf:
     else
         throw(DCCLException("Min Size called with NULL Descriptor"));
 
-    return base_min_size(static_cast<google::protobuf::FieldDescriptor*>(0));
+    base_min_size(bit_size, static_cast<google::protobuf::FieldDescriptor*>(0));
 }
 
-unsigned goby::acomms::DCCLFieldCodecBase::base_min_size(const google::protobuf::FieldDescriptor* field)
+void goby::acomms::DCCLFieldCodecBase::base_min_size(unsigned* bit_size,
+                                                         const google::protobuf::FieldDescriptor* field)
     
 {
     MessageHandler msg_handler(field);
     
     if(this_field())
-        return this_field()->is_repeated() ? min_size_repeated() : min_size();
+        *bit_size += this_field()->is_repeated() ? min_size_repeated() : min_size();
     else
-        return min_size();
+        *bit_size += min_size();
 }
 
             
 void goby::acomms::DCCLFieldCodecBase::base_validate(const google::protobuf::Descriptor* desc,
-                                            MessagePart part)
+                                                     MessagePart part)
 {
     part_ = part;
 
@@ -256,11 +268,13 @@ void goby::acomms::DCCLFieldCodecBase::base_validate(const google::protobuf::Des
     else
         throw(DCCLException("Validate called with NULL Descriptor"));
 
-    base_validate(static_cast<google::protobuf::FieldDescriptor*>(0));
+    bool b = false;
+    base_validate(&b, static_cast<google::protobuf::FieldDescriptor*>(0));
 }
 
 
-void goby::acomms::DCCLFieldCodecBase::base_validate(const google::protobuf::FieldDescriptor* field)
+void goby::acomms::DCCLFieldCodecBase::base_validate(bool* b,
+                                                     const google::protobuf::FieldDescriptor* field)
 {
     MessageHandler msg_handler(field);
 
@@ -270,7 +284,7 @@ void goby::acomms::DCCLFieldCodecBase::base_validate(const google::protobuf::Fie
     validate();
 }
             
-void goby::acomms::DCCLFieldCodecBase::base_info(const google::protobuf::Descriptor* desc, std::ostream* os, MessagePart part)
+void goby::acomms::DCCLFieldCodecBase::base_info(std::ostream* os, const google::protobuf::Descriptor* desc, MessagePart part)
 {
     part_ = part;
 
@@ -280,12 +294,12 @@ void goby::acomms::DCCLFieldCodecBase::base_info(const google::protobuf::Descrip
     else
         throw(DCCLException("info called with NULL Descriptor"));
 
-    base_info(static_cast<google::protobuf::FieldDescriptor*>(0), os);
+    base_info(os, static_cast<google::protobuf::FieldDescriptor*>(0));
 }
 
 
-void goby::acomms::DCCLFieldCodecBase::base_info(const google::protobuf::FieldDescriptor* field,
-                                        std::ostream* os)
+void goby::acomms::DCCLFieldCodecBase::base_info(std::ostream* os,
+                                                 const google::protobuf::FieldDescriptor* field)
 {
     MessageHandler msg_handler(field);
 
@@ -305,8 +319,9 @@ void goby::acomms::DCCLFieldCodecBase::base_info(const google::protobuf::FieldDe
 
     if(variable_size())
     {
-        unsigned max_sz = base_max_size(field);
-        unsigned min_sz = base_min_size(field);
+        unsigned max_sz = 0, min_sz = 0;
+        base_max_size(&max_sz, field);
+        base_min_size(&min_sz, field);
         if(max_sz != min_sz)
         {
             s += ":: min size = " + goby::util::as<std::string>(min_sz) + " bit(s)\n"
@@ -319,7 +334,8 @@ void goby::acomms::DCCLFieldCodecBase::base_info(const google::protobuf::FieldDe
     }
     else
     {
-        unsigned sz = base_max_size(field);
+        unsigned sz = 0;
+        base_max_size(&sz, field);
         s += ":: size = " + goby::util::as<std::string>(sz) + " bit(s)";
     }
     

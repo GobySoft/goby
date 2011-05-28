@@ -77,7 +77,8 @@ namespace goby
                                       const google::protobuf::FieldDescriptor* field);
 
             void base_run_hooks(const google::protobuf::Message& msg, MessagePart part);
-            void base_run_hooks(const boost::any& field_value,
+            void base_run_hooks(bool* b,
+                                const boost::any& field_value,
                                 const google::protobuf::FieldDescriptor* field);
 
             
@@ -108,17 +109,17 @@ namespace goby
             
             
             // traverse schema (Descriptor)
-            unsigned base_max_size(const google::protobuf::Descriptor* desc, MessagePart part);
-            unsigned base_max_size(const google::protobuf::FieldDescriptor* field);
+            void base_max_size(unsigned* bit_size, const google::protobuf::Descriptor* desc, MessagePart part);
+            void base_max_size(unsigned* bit_size, const google::protobuf::FieldDescriptor* field);
             
-            unsigned base_min_size(const google::protobuf::Descriptor* desc, MessagePart part);
-            unsigned base_min_size(const google::protobuf::FieldDescriptor* field);
+            void base_min_size(unsigned* bit_size, const google::protobuf::Descriptor* desc, MessagePart part);
+            void base_min_size(unsigned* bit_size, const google::protobuf::FieldDescriptor* field);
             
             void base_validate(const google::protobuf::Descriptor* desc, MessagePart part);
-            void base_validate(const google::protobuf::FieldDescriptor* field);
+            void base_validate(bool* b, const google::protobuf::FieldDescriptor* field);
             
-            void base_info(const google::protobuf::Descriptor* desc, std::ostream* os, MessagePart part);  
-            void base_info(const google::protobuf::FieldDescriptor* field, std::ostream* os);
+            void base_info(std::ostream* os, const google::protobuf::Descriptor* desc, MessagePart part);  
+            void base_info(std::ostream* os, const google::protobuf::FieldDescriptor* field);
 
 
             // codec information

@@ -189,8 +189,9 @@ boost::shared_ptr<google::protobuf::Message> goby::acomms::DCCLCodec::decode(con
             DCCLTypeHelper::find(desc);
 
         
-        unsigned head_size_bits = codec->base_max_size(desc, DCCLFieldCodecBase::HEAD) + fixed_head_size();
-        unsigned body_size_bits = codec->base_max_size(desc, DCCLFieldCodecBase::BODY);
+        unsigned head_size_bits = fixed_head_size(), body_size_bits = 0;
+        codec->base_max_size(&head_size_bits, desc, DCCLFieldCodecBase::HEAD);
+        codec->base_max_size(&body_size_bits, desc, DCCLFieldCodecBase::BODY);
 
         unsigned head_size_bytes = ceil_bits2bytes(head_size_bits);
         unsigned body_size_bytes = ceil_bits2bytes(body_size_bits);
@@ -266,11 +267,12 @@ bool goby::acomms::DCCLCodec::validate(const google::protobuf::Descriptor* desc)
         
         boost::shared_ptr<DCCLFieldCodecBase> codec =
             DCCLFieldCodecManager::find(desc, desc->options().GetExtension(dccl::message_codec));
+
+        unsigned head_size_bits = fixed_head_size(), body_size_bits = 0;
+        codec->base_max_size(&head_size_bits, desc, DCCLFieldCodecBase::HEAD);
+        codec->base_max_size(&body_size_bits, desc, DCCLFieldCodecBase::BODY);
         
-        const unsigned head_bit_size = codec->base_max_size(desc, DCCLFieldCodecBase::HEAD) + fixed_head_size();
-        const unsigned body_bit_size = codec->base_max_size(desc, DCCLFieldCodecBase::BODY);
-        
-        const unsigned byte_size = ceil_bits2bytes(head_bit_size) + ceil_bits2bytes(body_bit_size);
+        const unsigned byte_size = ceil_bits2bytes(head_size_bits) + ceil_bits2bytes(body_size_bits);
 
         if(byte_size > desc->options().GetExtension(dccl::max_bytes))
             throw(DCCLException("Actual maximum size of message exceeds allowed maximum (dccl.max_bytes). Tighten bounds, remove fields, improve codecs, or increase the allowed dccl.max_bytes"));
@@ -345,8 +347,10 @@ void goby::acomms::DCCLCodec::info(const google::protobuf::Descriptor* desc, std
         boost::shared_ptr<DCCLFieldCodecBase> codec =
             DCCLFieldCodecManager::find(desc, desc->options().GetExtension(dccl::message_codec));
 
-        const unsigned config_head_bit_size = codec->base_max_size(desc, DCCLFieldCodecBase::HEAD);
-        const unsigned body_bit_size = codec->base_max_size(desc, DCCLFieldCodecBase::BODY);
+        unsigned config_head_bit_size = 0, body_bit_size = 0;
+        codec->base_max_size(&config_head_bit_size, desc, DCCLFieldCodecBase::HEAD);
+        codec->base_max_size(&body_bit_size, desc, DCCLFieldCodecBase::BODY);
+        
         const unsigned bit_size = fixed_head_size() + config_head_bit_size + body_bit_size;
         
         const unsigned byte_size = ceil_bits2bytes(config_head_bit_size + fixed_head_size())
@@ -364,9 +368,9 @@ void goby::acomms::DCCLCodec::info(const google::protobuf::Descriptor* desc, std
             << allowed_bit_size << " bits\n";
 
         *os << "= Header =" << std::endl;
-        codec->base_info(desc, os, DCCLFieldCodecBase::HEAD);
+        codec->base_info(os, desc, DCCLFieldCodecBase::HEAD);
         *os << "= Body =" << std::endl;
-        codec->base_info(desc, os, DCCLFieldCodecBase::BODY);
+        codec->base_info(os, desc, DCCLFieldCodecBase::BODY);
         
         *os << "== End " << desc->full_name() << " ==" << std::endl;
     }

@@ -1,8 +1,5 @@
 
-include(UseLATEX)
-
 find_package(Doxygen REQUIRED)
-find_package(LATEX REQUIRED)
 
 find_program(XELATEX_EXECUTABLE xelatex)
 

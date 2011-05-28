@@ -127,7 +127,9 @@ unsigned goby::transitional::DCCLMessage::calc_total_size()
 {
     boost::shared_ptr<acomms::DCCLFieldCodecBase> codec =
         acomms::DCCLFieldCodecManager::find(descriptor_, descriptor_->options().GetExtension(dccl::message_codec));
-    return codec->base_max_size(descriptor_, acomms::DCCLFieldCodecBase::BODY);
+    unsigned u = 0;
+    codec->base_max_size(&u, descriptor_, acomms::DCCLFieldCodecBase::BODY);
+    return u;
 }
 
 

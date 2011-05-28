@@ -52,7 +52,7 @@ namespace goby
     { class FlexOstream; }
 
 
-    /// Objects pertaining to acoustic communications (acomms)
+    /// Objects pertaining to transitioning from DCCLv1 to DCCLv2
     namespace transitional
     {
         /// use this for displaying a human readable version

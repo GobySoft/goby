@@ -1,5 +1,7 @@
 #!/bin/bash
 
+PATH=${PATH}:/home/toby/nightly/goby/2.0/bin
+
 cd /home/toby/nightly/goby/1.0/build
 make clean
 rm -rf *

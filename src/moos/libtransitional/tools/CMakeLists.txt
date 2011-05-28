@@ -1,1 +1,2 @@
 add_subdirectory(analyze_dccl_xml)
+add_subdirectory(dccl_xml_to_dccl_proto)

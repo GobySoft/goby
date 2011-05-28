@@ -84,7 +84,13 @@ std::set<unsigned> goby::transitional::DCCLTransitionalCodec::add_xml_message_fi
     std::set<unsigned> set_added_ids;
 
     boost::filesystem::path xml_file_path(xml_file);
-    std::string proto_name =  cfg_.generated_proto_dir() + "/" + xml_file_path.stem() + ".proto";
+
+
+    std::string generated_proto_dir = cfg_.generated_proto_dir();
+    if(!generated_proto_dir.empty() && generated_proto_dir[generated_proto_dir.size() - 1] != '/')
+        generated_proto_dir += "/";
+    
+    boost::filesystem::path proto_file_path( generated_proto_dir + xml_file_path.stem() + ".proto");
     
     for(size_t i = 0, n = end_size - begin_size; i < n; ++i)
     {
@@ -99,7 +105,7 @@ std::set<unsigned> goby::transitional::DCCLTransitionalCodec::add_xml_message_fi
 
        
     convert_to_protobuf_descriptor(added_ids,
-                                   proto_name,
+                                   boost::filesystem::complete(proto_file_path).string(),
                                    queue_cfgs);
     
     

@@ -143,6 +143,23 @@ void goby::acomms::QueueManager::push_message(const protobuf::ModemDataTransmiss
 }
 
 
+void goby::acomms::QueueManager::flush_queue(const protobuf::QueueFlush& flush)
+{
+    std::map<goby::acomms::protobuf::QueueKey, Queue>::iterator it = queues_.find(flush.key());
+    
+    if(it != queues_.end())
+    {
+        it->second.flush();
+        if(log_) *log_ << group("q_out") <<  " flushed queue: " << flush << std::endl;
+        qsize(&it->second);
+    }    
+    else
+    {
+        if(log_) *log_ << group("q_out") << warn << " cannot find queue to flush: " << flush << std::endl;
+    }
+}
+
+
 std::string goby::acomms::QueueManager::summary() const
 {
     std::string s;
@@ -612,3 +629,10 @@ void goby::acomms::QueueManager::process_cfg()
     modem_id_ = cfg_.modem_id();
 }
 
+void goby::acomms::QueueManager::qsize(Queue* q)            
+{
+    protobuf::QueueSize size;
+    size.mutable_key()->CopyFrom(q->cfg().key());
+    size.set_size(q->size());
+    signal_queue_size_change(size);
+}

@@ -158,7 +158,9 @@ void CpAcommsHandler::do_subscriptions()
     // update comms cycle
     subscribe(MOOS_VAR_CYCLE_UPDATE, &CpAcommsHandler::handle_mac_cycle_update, this);
     subscribe(MOOS_VAR_POLLER_UPDATE, &CpAcommsHandler::handle_mac_cycle_update, this);
-
+    
+    subscribe(MOOS_VAR_FLUSH_QUEUE, &CpAcommsHandler::handle_flush_queue, this);
+    
     
     std::set<std::string> enc_vars, dec_vars;
 
@@ -231,6 +233,22 @@ void CpAcommsHandler::handle_ranging_request(const CMOOSMsg& msg)
     glogger() << "ranging request: " << request_msg << std::endl;
     if(driver_) driver_->handle_initiate_ranging(&request_msg);
 }
+
+void CpAcommsHandler::handle_flush_queue(const CMOOSMsg& msg)
+{
+    goby::acomms::protobuf::QueueFlush flush;
+    std::string moos_string = boost::trim_copy(msg.GetString());
+    // if contains no spaces, assume it is a "key=value," string
+    if(moos_string.find(" ") == std::string::npos)
+        from_moos_comma_equals_string(&flush, moos_string);
+    // assume it is a TextFormat protobuf message
+    else
+        parse_for_moos(moos_string, &flush);
+    
+    glogger() << "queue flush request: " << flush << std::endl;
+    queue_manager_.flush_queue(flush);
+}
+
 
 void CpAcommsHandler::handle_message_push(const CMOOSMsg& msg)
 {

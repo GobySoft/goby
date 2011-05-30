@@ -92,6 +92,9 @@ const std::string MOOS_VAR_QSIZE = "ACOMMS_QSIZE";
 const std::string MOOS_VAR_CYCLE_UPDATE = "ACOMMS_MAC_CYCLE_UPDATE"; // preferred
 const std::string MOOS_VAR_POLLER_UPDATE = "ACOMMS_POLLER_UPDATE"; // legacy
 
+const std::string MOOS_VAR_FLUSH_QUEUE = "ACOMMS_FLUSH_QUEUE"; 
+
+
 
 struct IP
 {
@@ -143,6 +146,7 @@ class CpAcommsHandler : public TesMoosApp
     void handle_mac_cycle_update(const CMOOSMsg& msg);
     void handle_ranging_request(const CMOOSMsg& msg);
     void handle_message_push(const CMOOSMsg& msg);
+    void handle_flush_queue(const CMOOSMsg& msg);
     
     // from MMDriver
     // publish raw NMEA stream from the modem ($CA)

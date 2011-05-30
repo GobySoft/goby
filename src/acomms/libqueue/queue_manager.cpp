@@ -54,10 +54,13 @@ void goby::acomms::QueueManager::add_queue(const protobuf::QueueConfig& cfg)
     }
     else
     {
-        queues_.insert(std::make_pair(cfg.key(), q));
+        std::pair<std::map<goby::acomms::protobuf::QueueKey, Queue>::iterator,bool> new_q_pair =
+            queues_.insert(std::make_pair(cfg.key(), q));
+        qsize(&((new_q_pair.first)->second));
     }
-    
 
+    
+    
     if(log_) *log_<< group("q_out") << "added new queue: \n" << q << std::endl;
     
 }

@@ -133,9 +133,11 @@ void goby::acomms::QueueManager::add_queue(const protobuf::QueueConfig& cfg)
     }
     else
     {
-        queues_.insert(std::make_pair(cfg.key(), q));
+        std::pair<std::map<goby::acomms::protobuf::QueueKey, Queue>::iterator,bool> new_q_pair =
+            queues_.insert(std::make_pair(cfg.key(), q));
+
+        qsize(&((new_q_pair.first)->second));
     }
-    
 
     glog.is(debug1) && glog<< group("queue.out") << "added new queue: \n" << q << std::endl;
     
@@ -305,14 +307,14 @@ void goby::acomms::QueueManager::handle_modem_data_request(const protobuf::Modem
             {
                 glog.is(debug2) &&
                     glog << "inserting ack for queue: " << *winning_queue << std::endl;
-                waiting_for_ack_.insert(std::pair<unsigned, Queue*>(data_msg->frame(),
+                waiting_for_ack_.insert(std::pair<unsigned, Queue*>(request_msg.frame(),
                                                                     winning_queue));
             }
             else
             {
                 glog.is(debug2) &&
                     glog << "no ack, popping from queue: " << *winning_queue << std::endl;
-                if(!winning_queue->pop_message(data_msg->frame()))
+                if(!winning_queue->pop_message(request_msg.frame()))
                     glog.is(warn) &&
                         glog << "failed to pop from queue: " << *winning_queue << std::endl;
 

@@ -59,6 +59,20 @@ CpAcommsHandler::CpAcommsHandler()
       driver_(0),
       mac_(&glog)
 {
+ 
+    goby::acomms::connect(&queue_manager_->signal_receive,
+                          this, &CpAcommsHandler::queue_receive);
+    goby::acomms::connect(&queue_manager_->signal_receive_ccl,
+                          this, &CpAcommsHandler::queue_receive_ccl);
+goby::acomms::connect(&queue_manager_->signal_ack,
+                          this, &CpAcommsHandler::queue_ack);
+    // goby::acomms::connect(&queue_manager_->signal_data_on_demand,
+    //                       this, &CpAcommsHandler::queue_on_demand);
+    goby::acomms::connect(&queue_manager_->signal_queue_size_change,
+                          this, &CpAcommsHandler::queue_qsize);
+    goby::acomms::connect(&queue_manager_->signal_expire,
+                          this, &CpAcommsHandler::queue_expire);
+
     process_configuration();
 
     // bind the lower level pieces of goby-acomms together
@@ -77,19 +91,6 @@ CpAcommsHandler::CpAcommsHandler()
     }
     
     
-    goby::acomms::connect(&queue_manager_->signal_receive,
-                          this, &CpAcommsHandler::queue_receive);
-    goby::acomms::connect(&queue_manager_->signal_receive_ccl,
-                          this, &CpAcommsHandler::queue_receive_ccl);
-    goby::acomms::connect(&queue_manager_->signal_ack,
-                          this, &CpAcommsHandler::queue_ack);
-    // goby::acomms::connect(&queue_manager_->signal_data_on_demand,
-    //                       this, &CpAcommsHandler::queue_on_demand);
-    goby::acomms::connect(&queue_manager_->signal_queue_size_change,
-                          this, &CpAcommsHandler::queue_qsize);
-    goby::acomms::connect(&queue_manager_->signal_expire,
-                          this, &CpAcommsHandler::queue_expire);
-
     do_subscriptions();
 }
 
@@ -263,6 +264,8 @@ void CpAcommsHandler::handle_mac_cycle_update(const CMOOSMsg& msg)
 //
 void CpAcommsHandler::queue_qsize(const goby::acomms::protobuf::QueueSize& size)
 {
+    glog << "New qsize: " << size << std::endl;
+    
     std::string serialized;
     serialize_for_moos(&serialized, size);
     

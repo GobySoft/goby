@@ -215,10 +215,10 @@ bool goby::acomms::QueueManager::stitch_recursive(const protobuf::ModemDataReque
     // 
     // insert ack if desired
     if(next_data_msg.ack_requested())
-        waiting_for_ack_.insert(std::pair<unsigned, Queue*>(complete_data_msg->frame(), winning_queue));
+        waiting_for_ack_.insert(std::pair<unsigned, Queue*>(request_msg.frame(), winning_queue));
     else
     {
-        winning_queue->pop_message(complete_data_msg->frame());
+        winning_queue->pop_message(request_msg.frame());
         qsize(winning_queue); // notify change in queue size
     }
 

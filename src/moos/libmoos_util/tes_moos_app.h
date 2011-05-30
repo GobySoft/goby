@@ -57,11 +57,24 @@ class TesMoosApp : public CMOOSApp
     virtual ~TesMoosApp() { }    
   
     void publish(CMOOSMsg& msg)
-    { m_Comms.Post(msg); }
+    {
+        if(connected_)
+            m_Comms.Post(msg);
+        else
+            msg_buffer_.push_back(msg);
+    }
     
-    template<typename T>
-        void publish(const std::string& key, const T& value)
-    { m_Comms.Notify(key, value); }
+    void publish(const std::string& key, const std::string& value)
+    {
+        CMOOSMsg msg(MOOS_NOTIFY, key, value);
+        publish(msg);
+    }
+    
+    void publish(const std::string& key, double value)
+    {
+        CMOOSMsg msg(MOOS_NOTIFY, key, value);
+        publish(msg);
+    }    
     
     tes::DynamicMOOSVars& dynamic_vars() { return dynamic_vars_; }
     double start_time() const { return start_time_; }
@@ -121,6 +134,8 @@ class TesMoosApp : public CMOOSApp
     // CMOOSApp::OnStartUp()
     bool started_up_;
 
+    std::deque<CMOOSMsg> msg_buffer_;
+    
     // MOOS Variable name, blackout time
     std::deque<std::pair<std::string, int> > pending_subscriptions_;
 

@@ -25,7 +25,6 @@
 #include "message_var.h"
 #include "message.h"
 #include "message_val.h"
-#include "goby/acomms/libdccl/dccl_constants.h"
 #include "message_algorithms.h"
 
 goby::transitional::DCCLMessageVar::DCCLMessageVar()

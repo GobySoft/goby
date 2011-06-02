@@ -221,7 +221,7 @@ void CpAcommsHandler::dccl_inbox(const CMOOSMsg& msg)
     else if(dccl_.is_incoming(id, key) && is_str && !(msg.GetSource() == GetAppName() && msg.GetCommunity() == goby::util::as<std::string>(cfg_.modem_id())))
     {
         goby::acomms::protobuf::ModemDataTransmission mm;
-        mm.ParseFromString(sval);
+        parse_for_moos(sval, &mm);
         unpack(mm);
     }
 }

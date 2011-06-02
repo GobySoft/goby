@@ -20,7 +20,7 @@
 #ifndef XMLTags20091211H
 #define XMLTags20091211H
 
-#include "goby/acomms/xml/xerces_strings.h"
+#include "goby/moos/libtransitional/xml/xerces_strings.h"
 
 #include <boost/assign.hpp>
 

@@ -55,10 +55,14 @@ void goby::acomms::QueueManager::add_queue(const protobuf::QueueConfig& cfg)
     }
     else
     {
-        queues_.insert(std::make_pair(cfg.key(), q));
-    }
-    
+        std::pair<std::map<goby::acomms::protobuf::QueueKey, Queue>::iterator,bool> new_q_pair =
+            queues_.insert(std::make_pair(cfg.key(), q));
 
+        qsize(&((new_q_pair.first)->second));
+    }
+
+    
+    
     if(log_) *log_<< group("q_out") << "added new queue: \n" << q << std::endl;
     
 }
@@ -140,6 +144,23 @@ void goby::acomms::QueueManager::push_message(const protobuf::ModemDataTransmiss
 }
 
 
+void goby::acomms::QueueManager::flush_queue(const protobuf::QueueFlush& flush)
+{
+    std::map<goby::acomms::protobuf::QueueKey, Queue>::iterator it = queues_.find(flush.key());
+    
+    if(it != queues_.end())
+    {
+        it->second.flush();
+        if(log_) *log_ << group("q_out") <<  " flushed queue: " << flush << std::endl;
+        qsize(&it->second);
+    }    
+    else
+    {
+        if(log_) *log_ << group("q_out") << warn << " cannot find queue to flush: " << flush << std::endl;
+    }
+}
+
+
 std::string goby::acomms::QueueManager::summary() const
 {
     std::string s;
@@ -212,10 +233,10 @@ bool goby::acomms::QueueManager::stitch_recursive(const protobuf::ModemDataReque
     // 
     // insert ack if desired
     if(next_data_msg.ack_requested())
-        waiting_for_ack_.insert(std::pair<unsigned, Queue*>(complete_data_msg->frame(), winning_queue));
+        waiting_for_ack_.insert(std::pair<unsigned, Queue*>(request_msg.frame(), winning_queue));
     else
     {
-        winning_queue->pop_message(complete_data_msg->frame());
+        winning_queue->pop_message(request_msg.frame());
         qsize(winning_queue); // notify change in queue size
     }
 
@@ -609,3 +630,10 @@ void goby::acomms::QueueManager::process_cfg()
     modem_id_ = cfg_.modem_id();
 }
 
+void goby::acomms::QueueManager::qsize(Queue* q)            
+{
+    protobuf::QueueSize size;
+    size.mutable_key()->CopyFrom(q->cfg().key());
+    size.set_size(q->size());
+    signal_queue_size_change(size);
+}

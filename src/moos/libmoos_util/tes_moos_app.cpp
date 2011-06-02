@@ -45,6 +45,14 @@ bool TesMoosApp::Iterate()
         cout_cleared_ = true;
     }
 
+    while(connected_ && !msg_buffer_.empty())
+    {
+        glogger() << "writing from buffer: " << msg_buffer_.front().GetKey() << ": " << msg_buffer_.front().GetAsString() << std::endl;
+        m_Comms.Post(msg_buffer_.front());
+        msg_buffer_.pop_front();
+    }
+    
+    
     loop();
     return true;
 }    

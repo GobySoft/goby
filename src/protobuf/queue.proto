@@ -44,3 +44,8 @@ message QueueSize
   required QueueKey key = 1;
   required uint32 size = 2;
 }
+
+message QueueFlush
+{
+  required QueueKey key = 1;
+}

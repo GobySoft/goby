@@ -58,6 +58,19 @@ CpAcommsHandler::CpAcommsHandler()
       driver_(0),
       mac_(&glogger())
 {
+    goby::acomms::connect(&queue_manager_.signal_receive,
+                          this, &CpAcommsHandler::queue_incoming_data);
+    goby::acomms::connect(&queue_manager_.signal_receive_ccl,
+                          this, &CpAcommsHandler::queue_incoming_data);
+    goby::acomms::connect(&queue_manager_.signal_ack,
+                          this, &CpAcommsHandler::queue_ack);
+    goby::acomms::connect(&queue_manager_.signal_data_on_demand,
+                          this, &CpAcommsHandler::queue_on_demand);
+    goby::acomms::connect(&queue_manager_.signal_queue_size_change,
+                          this, &CpAcommsHandler::queue_qsize);
+    goby::acomms::connect(&queue_manager_.signal_expire,
+                          this, &CpAcommsHandler::queue_expire);
+
     process_configuration();
 
     // bind the lower level pieces of goby-acomms together
@@ -76,19 +89,6 @@ CpAcommsHandler::CpAcommsHandler()
     }
     
     
-    goby::acomms::connect(&queue_manager_.signal_receive,
-                          this, &CpAcommsHandler::queue_incoming_data);
-    goby::acomms::connect(&queue_manager_.signal_receive_ccl,
-                          this, &CpAcommsHandler::queue_incoming_data);
-    goby::acomms::connect(&queue_manager_.signal_ack,
-                          this, &CpAcommsHandler::queue_ack);
-    goby::acomms::connect(&queue_manager_.signal_data_on_demand,
-                          this, &CpAcommsHandler::queue_on_demand);
-    goby::acomms::connect(&queue_manager_.signal_queue_size_change,
-                          this, &CpAcommsHandler::queue_qsize);
-    goby::acomms::connect(&queue_manager_.signal_expire,
-                          this, &CpAcommsHandler::queue_expire);
-
     do_subscriptions();
 }
 
@@ -158,7 +158,9 @@ void CpAcommsHandler::do_subscriptions()
     // update comms cycle
     subscribe(MOOS_VAR_CYCLE_UPDATE, &CpAcommsHandler::handle_mac_cycle_update, this);
     subscribe(MOOS_VAR_POLLER_UPDATE, &CpAcommsHandler::handle_mac_cycle_update, this);
-
+    
+    subscribe(MOOS_VAR_FLUSH_QUEUE, &CpAcommsHandler::handle_flush_queue, this);
+    
     
     std::set<std::string> enc_vars, dec_vars;
 
@@ -232,6 +234,22 @@ void CpAcommsHandler::handle_ranging_request(const CMOOSMsg& msg)
     if(driver_) driver_->handle_initiate_ranging(&request_msg);
 }
 
+void CpAcommsHandler::handle_flush_queue(const CMOOSMsg& msg)
+{
+    goby::acomms::protobuf::QueueFlush flush;
+    std::string moos_string = boost::trim_copy(msg.GetString());
+    // if contains no spaces, assume it is a "key=value," string
+    if(moos_string.find(" ") == std::string::npos)
+        from_moos_comma_equals_string(&flush, moos_string);
+    // assume it is a TextFormat protobuf message
+    else
+        parse_for_moos(moos_string, &flush);
+    
+    glogger() << "queue flush request: " << flush << std::endl;
+    queue_manager_.flush_queue(flush);
+}
+
+
 void CpAcommsHandler::handle_message_push(const CMOOSMsg& msg)
 {
     goby::acomms::protobuf::ModemDataTransmission new_message;
@@ -291,6 +309,8 @@ void CpAcommsHandler::handle_mac_cycle_update(const CMOOSMsg& msg)
 //
 void CpAcommsHandler::queue_qsize(const goby::acomms::protobuf::QueueSize& size)
 {
+    glogger() << "New qsize: " << size << std::endl;
+    
     std::string serialized;
     serialize_for_moos(&serialized, size);
     

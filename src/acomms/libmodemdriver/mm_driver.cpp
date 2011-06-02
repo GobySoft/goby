@@ -413,7 +413,7 @@ void goby::acomms::MMDriver::handle_initiate_transmission(protobuf::ModemMsgBase
         nmea.push_back(init_msg.base().rate()); // Packet Type (transmission rate)
         nmea.push_back(is_local_cycle
                        ? static_cast<int>(cached_data_msgs_.front().ack_requested())
-                       : 0); // ACK: deprecated field, but still dictates the value provided by CADRQ
+                       : 1); // ACK: deprecated field, but still dictates the value provided by CADRQ
         nmea.push_back(init_msg.num_frames()); // number of frames we want
 
         append_to_write_queue(nmea, base_msg);

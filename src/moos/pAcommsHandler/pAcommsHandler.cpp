@@ -218,7 +218,8 @@ void CpAcommsHandler::dccl_inbox(const CMOOSMsg& msg)
             pack(id, &mm);
         }
     }
-    else if(dccl_.is_incoming(id, key) && is_str && !(msg.GetSource() == GetAppName() && msg.GetCommunity() == goby::util::as<std::string>(cfg_.modem_id())))
+    else if(dccl_.is_incoming(id, key) && is_str &&
+            !(msg.GetSource() == GetAppName() && msg.GetCommunity() == goby::util::as<std::string>(cfg_.common().community())))
     {
         goby::acomms::protobuf::ModemDataTransmission mm;
         parse_for_moos(sval, &mm);
@@ -339,15 +340,12 @@ void CpAcommsHandler::queue_incoming_data(const goby::acomms::protobuf::ModemDat
     std::string serialized;
     serialize_for_moos(&serialized, message);        
     CMOOSMsg m(MOOS_NOTIFY, MOOS_VAR_INCOMING_DATA, serialized, -1);
-    m.m_sOriginatingCommunity = boost::lexical_cast<std::string>(message.base().src());    
     publish(m);
 
     // we know what this type is
     if(in_queue2moos_var_.count(message.queue_key()))
     {
-        // post message and set originating community to modem id 
         CMOOSMsg m_specific(MOOS_NOTIFY, in_queue2moos_var_[message.queue_key()], serialized, -1);
-        m_specific.m_sOriginatingCommunity = boost::lexical_cast<std::string>(message.base().src());
         
         publish(m_specific);
     
@@ -656,14 +654,12 @@ void CpAcommsHandler::unpack(goby::acomms::protobuf::ModemDataTransmission modem
             {
                 double dval = p.second;
                 CMOOSMsg m(MOOS_NOTIFY, p.first, dval, -1);
-                m.m_sOriginatingCommunity = boost::lexical_cast<std::string>(modem_message.base().src());
                 publish(m);
             }
             else
             {
                 std::string sval = p.second;
                 CMOOSMsg m(MOOS_NOTIFY, p.first, sval, -1);
-                m.m_sOriginatingCommunity = boost::lexical_cast<std::string>(modem_message.base().src());
                 publish(m);   
             }
         }

@@ -212,8 +212,14 @@ namespace goby
 
             // cache the appropriate amount of data upon CCCYC request (initiate_transmission)
             // for immediate use upon the DRQ message
-            std::deque<protobuf::ModemDataTransmission> cached_data_msgs_;
+            // maps frame number to DataTransmission object
+            std::map<unsigned, protobuf::ModemDataTransmission> cached_data_msgs_;
 
+            // keep track of which frames we've sent and are awaiting acks for. This
+            // way we have a chance of intercepting unexpected behavior of the modem
+            // relating to ACKs
+            std::set<unsigned> frames_waiting_for_ack_;
+            
             // true if we initiated the last cycle ($CCCYC) (and thereby cache data for it)?
             // false if a third party initiated the last cycle
             bool local_cccyc_;

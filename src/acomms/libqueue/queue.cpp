@@ -290,6 +290,7 @@ void goby::acomms::Queue::flush()
 {
     if(log_) *log_ << group("pop") << "flushing stack " << cfg_.name() << " (qsize 0)" << std::endl;
     messages_.clear();
+    waiting_for_ack_.clear();
 }        
 
 

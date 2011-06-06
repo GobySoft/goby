@@ -407,12 +407,12 @@ void goby::acomms::MMDriver::handle_initiate_transmission(protobuf::ModemMsgBase
         
         
         nmea.push_back(is_local_cycle
-                       ? cached_data_msgs_.front().base().dest()
+                       ? cached_data_msgs_.begin()->second.base().dest()
                        : init_msg.base().dest()); // ADR2        
         
         nmea.push_back(init_msg.base().rate()); // Packet Type (transmission rate)
         nmea.push_back(is_local_cycle
-                       ? static_cast<int>(cached_data_msgs_.front().ack_requested())
+                       ? static_cast<int>(cached_data_msgs_.begin()->second.ack_requested())
                        : 1); // ACK: deprecated field, but still dictates the value provided by CADRQ
         nmea.push_back(init_msg.num_frames()); // number of frames we want
 
@@ -700,13 +700,26 @@ void goby::acomms::MMDriver::process_receive(const NMEASentence& nmea)
 
 void goby::acomms::MMDriver::ack(const NMEASentence& nmea, protobuf::ModemDataAck* m)
 {
-    m->mutable_base()->set_time(as<std::string>(goby_time()));
-    m->mutable_base()->set_src(as<uint32>(nmea[1]));
-    m->mutable_base()->set_dest(as<uint32>(nmea[2]));
-    // WHOI counts starting at 1, Goby counts starting at 0
-    m->set_frame(as<uint32>(nmea[3])-1);
+    uint32 frame = as<uint32>(nmea[3])-1;
     
-    signal_ack(*m);
+    if(frames_waiting_for_ack_.count(frame))
+    {
+        
+        m->mutable_base()->set_time(as<std::string>(goby_time()));
+        m->mutable_base()->set_src(as<uint32>(nmea[1]));
+        m->mutable_base()->set_dest(as<uint32>(nmea[2]));
+        // WHOI counts starting at 1, Goby counts starting at 0
+        m->set_frame(frame);
+        
+        signal_ack(*m);
+
+        frames_waiting_for_ack_.erase(frame);
+    }
+    else
+    {
+        if(log_)
+            *log_ << warn << "Received acknowledgement for Micro-Modem frame " << frame + 1 << " (Goby frame " << frame << ") that we were not expected.";
+    }
 }
 
 void goby::acomms::MMDriver::drq(const NMEASentence& nmea_in)
@@ -715,15 +728,23 @@ void goby::acomms::MMDriver::drq(const NMEASentence& nmea_in)
 
     NMEASentence nmea_out("$CCTXD", NMEASentence::IGNORE);        
 
-    if(!cached_data_msgs_.empty())
+    // WHOI counts frames from 1, we count from 0
+    int frame = as<int>(nmea_in[6])-1;
+    std::map<unsigned, protobuf::ModemDataTransmission>::iterator it =
+        cached_data_msgs_.find(frame);
+    
+    if(it != cached_data_msgs_.end())
     {
         // use the cached data
-        protobuf::ModemDataTransmission& data_msg = cached_data_msgs_.front();    
+        protobuf::ModemDataTransmission& data_msg = it->second;
         nmea_out.push_back(data_msg.base().src());
         nmea_out.push_back(data_msg.base().dest());
         nmea_out.push_back(int(data_msg.ack_requested()));
         nmea_out.push_back(hex_encode(data_msg.data()));
-        cached_data_msgs_.pop_front();
+        cached_data_msgs_.erase(it);
+        
+        if(data_msg.ack_requested())
+            frames_waiting_for_ack_.insert(frame);
     }
     else
     {
@@ -881,6 +902,13 @@ void goby::acomms::MMDriver::cache_outgoing_data(const protobuf::ModemDataInit& 
             if(log_) *log_ << warn << "flushing " << cached_data_msgs_.size() << " messages that were never sent in response to a $CADRQ." << std::endl;
             cached_data_msgs_.clear();
         }
+
+        if(!frames_waiting_for_ack_.empty())
+        {
+            if(log_) *log_ << warn << "flushing " << frames_waiting_for_ack_.size() << " expected acknowledgments that were never received." << std::endl;
+            frames_waiting_for_ack_.clear();
+        }
+        
     
         static protobuf::ModemDataRequest request_msg;
         request_msg.Clear();
@@ -906,8 +934,8 @@ void goby::acomms::MMDriver::cache_outgoing_data(const protobuf::ModemDataInit& 
             // no more data to send
             if(data_msg.data().empty())
                 break;
-                
-            cached_data_msgs_.push_back(data_msg);
+            
+            cached_data_msgs_[i] = data_msg;
         }
     }
 }

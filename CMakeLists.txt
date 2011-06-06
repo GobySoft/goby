@@ -13,10 +13,10 @@ enable_testing()
 include(CTest)
 
 set(GOBY_VERSION_MAJOR "1")
-set(GOBY_VERSION_MINOR "0")
-set(GOBY_VERSION_PATCH "2b")
+set(GOBY_VERSION_MINOR "1")
+set(GOBY_VERSION_PATCH "0")
 set(GOBY_VERSION "${GOBY_VERSION_MAJOR}.${GOBY_VERSION_MINOR}.${GOBY_VERSION_PATCH}")
-set(GOBY_VERSION_DATE "2011 Mar 29")
+set(GOBY_VERSION_DATE "2011 Jun 06")
 set(GOBY_SOVERSION "1")
      
 ## fetch all the local directories for generated code
@@ -49,7 +49,7 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules/")
 ## copy to goby/include
 file(GLOB_RECURSE INCLUDE_FILES RELATIVE ${goby_SRC_DIR} src/*.h src/*.proto)
 foreach(I ${INCLUDE_FILES})
-  configure_file(${goby_SRC_DIR}/${I} ${goby_INC_DIR}/goby/${I} COPYONLY)
+  configure_file(${goby_SRC_DIR}/${I} ${goby_INC_DIR}/goby/${I} @ONLY)
 endforeach()
 
 ## let cmake know where the headers are

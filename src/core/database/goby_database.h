@@ -47,8 +47,9 @@ namespace goby
           private:
             static protobuf::DatabaseConfig cfg_;
 
-            PubSubNode pubsub_node_;
+            ZeroMQNode zeromq_service_;
             StaticProtobufNode protobuf_node_;
+            PubSubStaticProtobufNode pubsub_node_;
             
             DBOManager* dbo_manager_;
             int last_unique_id_;

@@ -17,19 +17,32 @@
 #ifndef PUBSUBNODE20110506H
 #define PUBSUBNODE20110506H
 
-#include "protobuf_node.h"
+#include <google/protobuf/message.h>
+#include "node_interface.h"
 #include "goby/protobuf/header.pb.h"
+
 namespace goby
 {
     namespace core
     {
-        // provides hooks for using the Goby Database
-        class PubSubNode : public StaticProtobufNode
+        
+        template<typename NodeTypeBase>
+            class PubSubNode
         {
           public:
-            PubSubNode()
+          PubSubNode(NodeInterface<NodeTypeBase>* node)
+              : node_(node)
+            { }
+
+          PubSubNode()
+              : node_(0)
+            { }
+
+            void set_node(NodeInterface<NodeTypeBase>* node)
             {
+                node_ = node;
             }
+            
             virtual ~PubSubNode()
             { }
             
@@ -63,12 +76,12 @@ namespace goby
                     glog.is(debug1) && glog << "Not using publish / subscribe." << std::endl;
                 }
                 
-                ZeroMQNode::get()->merge_cfg(pubsub_cfg);
+                node_->zeromq_service()->merge_cfg(pubsub_cfg);
             }
 
 
             void subscribe_all()
-            { ZeroMQNode::get()->subscribe_all(SOCKET_SUBSCRIBE); }
+            { node_->zeromq_service()->subscribe_all(SOCKET_SUBSCRIBE); }
             
             
             /// \name Publish / Subscribe
@@ -77,7 +90,7 @@ namespace goby
             /// \brief Publish a message (of any type derived from google::protobuf::Message)
             ///
             /// \param msg Message to publish
-            void publish(google::protobuf::Message& msg)
+            void publish(const NodeTypeBase& msg)
             {
                 if(!cfg_.using_pubsub())
                 {
@@ -85,39 +98,69 @@ namespace goby
                     return;
                 }
                 
-                StaticProtobufNode::send(msg, SOCKET_PUBLISH);
+                node_->send(msg, SOCKET_PUBLISH);
             }
 
 
-
-            /// \brief Subscribe to a message (of any type derived from google::protobuf::Message)            
-            ///
-            /// \param handler Function object to be called as soon as possible upon receipt of a message of this type. The signature of `handler` must match: void handler(const ProtoBufMessage& msg). if `handler` is omitted, no handler is called and only the newest message buffer is updated upon message receipt (for calls to newest<ProtoBufMessage>())
-             template<typename ProtoBufMessage>
-                void subscribe(
-                    boost::function<void (const ProtoBufMessage&)> handler =
-                    boost::function<void (const ProtoBufMessage&)>()
-                    )
-             {
-                 if(!cfg_.using_pubsub())
+            void subscribe(const std::string& identifier)
+            {
+                if(!cfg_.using_pubsub())
                  {
                      glog.is(warn) && glog << "Ignoring subscribe since we have `using_pubsub`=false" << std::endl;
                      return;
                  }
-    
-                 StaticProtobufNode::subscribe<ProtoBufMessage>(SOCKET_SUBSCRIBE, handler);
-             }
-            //@}
-             
+                 
+                node_->subscribe(identifier, SOCKET_SUBSCRIBE);
+            }
 
-          private:
+          protected:
+            const protobuf::PubSubSocketConfig& cfg() const
+            { return cfg_; }
             
             enum {
                 SOCKET_SUBSCRIBE = 103998, SOCKET_PUBLISH = 103999
             };
             
+          private:
+            NodeInterface<NodeTypeBase>* node_;
+            
             protobuf::PubSubSocketConfig cfg_;
-        };  
+        };
+    
+      class PubSubStaticProtobufNode : public PubSubNode<google::protobuf::Message>
+        {
+          public:
+          PubSubStaticProtobufNode(StaticProtobufNode* node)
+              : PubSubNode<google::protobuf::Message>(node)
+            { }
+
+            ~PubSubStaticProtobufNode()
+            { }
+
+            template<typename ProtoBufMessage>
+                void subscribe(boost::function<void (const ProtoBufMessage&)> handler)
+            {
+                if(!cfg().using_pubsub())
+                {
+                    glog.is(warn) && glog << "Ignoring subscribe since we have `using_pubsub`=false" << std::endl;
+                    return;
+                }    
+                node_->subscribe<ProtoBufMessage>(SOCKET_SUBSCRIBE, handler);
+            }
+
+            template<typename ProtoBufMessage>
+                const ProtoBufMessage& newest() const
+            {
+                return node_->newest<ProtoBufMessage>();
+            }
+            
+
+          private:
+            StaticProtobufNode* node_;
+        };
+        
+        
+
     }
 }
 

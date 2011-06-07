@@ -27,7 +27,7 @@ using boost::shared_ptr;
 using goby::glog;
 
 goby::core::Application::Application(google::protobuf::Message* cfg /*= 0*/)
-    : ZeroMQApplicationBase(cfg)
+    : ZeroMQApplicationBase(&zeromq_service_, cfg)
 {
     
     __set_up_sockets();
@@ -53,7 +53,7 @@ void goby::core::Application::__set_up_sockets()
     }
     else
     {
-        database_client_.reset(new DatabaseClient);
+        database_client_.reset(new DatabaseClient(&zeromq_service_));
         protobuf::DatabaseClientConfig database_config = base_cfg().database_config();
         if(!database_config.has_database_address())
             database_config.set_database_address(base_cfg().pubsub_config().ethernet_address());
@@ -71,11 +71,12 @@ void goby::core::Application::__set_up_sockets()
     }
     else
     {
-        pubsub_node_.reset(new PubSubNode);
+        protobuf_node_.reset(new StaticProtobufNode(&zeromq_service_));
+        pubsub_node_.reset(new PubSubStaticProtobufNode(protobuf_node_.get()));
         pubsub_node_->set_cfg(base_cfg().pubsub_config());
     }
     
-    ZeroMQNode::get()->merge_cfg(base_cfg().additional_socket_config());
+    zeromq_service_.merge_cfg(base_cfg().additional_socket_config());
 }
 
 
@@ -102,7 +103,7 @@ void goby::core::Application::__finalize_header(
                 return;
             }
             
-            // derived app has not set neither time, use current time
+            // derived app has not set time, use current time
             if(!header->has_time())
                 header->set_time(goby::util::as<std::string>(goby::util::goby_time()));
 

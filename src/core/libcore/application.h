@@ -134,8 +134,10 @@ namespace goby
 
             
           private:
+            ZeroMQNode zeromq_service_;
             boost::shared_ptr<DatabaseClient> database_client_;
-            boost::shared_ptr<PubSubNode> pubsub_node_;
+            boost::shared_ptr<StaticProtobufNode> protobuf_node_;
+            boost::shared_ptr<PubSubStaticProtobufNode> pubsub_node_;
         };
     }
 }

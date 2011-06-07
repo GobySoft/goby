@@ -18,16 +18,18 @@
 
 
 #include "moos_serializer.h"
+
+#include "goby/core/libcore/node_interface.h"
 #include "goby/core/libcore/zero_mq_node.h"
 
 namespace goby
 {
     namespace moos
     {        
-        class MOOSNode
+        class MOOSNode : public goby::core::NodeInterface<CMOOSMsg>
         {
           protected:
-            MOOSNode();
+            MOOSNode(goby::core::ZeroMQNode* service);
             
             virtual ~MOOSNode()
             { }
@@ -46,6 +48,7 @@ namespace goby
                        const void* data,
                        int size,
                        int socket_id);
+
             
             
         };

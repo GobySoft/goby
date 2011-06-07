@@ -16,6 +16,7 @@
 #include "dynamic_protobuf_manager.h"
 
 #include "exception.h"
+#include "goby/util/logger.h"
 
 boost::shared_ptr<goby::core::DynamicProtobufManager> goby::core::DynamicProtobufManager::inst_;
 
@@ -42,10 +43,11 @@ std::set<const google::protobuf::FileDescriptor*> goby::core::DynamicProtobufMan
     
     for(int i = 0, n = file_descriptor->dependency_count(); i < n; ++i)
     {
-        google::protobuf::FileDescriptorProto proto_file;
-        file_descriptor->dependency(i)->CopyTo(&proto_file);
-        return_set.insert(add_protobuf_file(proto_file));
+        std::set<const google::protobuf::FileDescriptor*> dependencies =
+            add_protobuf_file_with_dependencies(file_descriptor->dependency(i));
+        return_set.insert(dependencies.begin(), dependencies.end());
     }
+    
     return_set.insert(add_protobuf_file(file_descriptor));
     return return_set;
 }
@@ -61,5 +63,7 @@ const google::protobuf::FileDescriptor* goby::core::DynamicProtobufManager::add_
 
 const google::protobuf::FileDescriptor* goby::core::DynamicProtobufManager::add_protobuf_file(const google::protobuf::FileDescriptorProto& proto)
 {
+    goby::glog.is(debug3) && goby::glog << "adding protobuf file: " << proto.ShortDebugString() << std::endl;
+    
     return descriptor_pool().BuildFile(proto); 
 }

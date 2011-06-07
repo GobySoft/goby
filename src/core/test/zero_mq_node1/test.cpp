@@ -40,7 +40,7 @@ int main(int argc, char* argv[])
     goby::glog.add_stream(goby::util::Logger::DEBUG3, &std::cerr);
     goby::glog.set_name(argv[0]);
     
-    goby::core::ZeroMQNode& node = *goby::core::ZeroMQNode::get();
+    goby::core::ZeroMQNode node;
 
     goby::core::protobuf::ZeroMQNodeConfig pubsub_cfg;
 

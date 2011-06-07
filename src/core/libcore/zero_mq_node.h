@@ -36,14 +36,9 @@ namespace goby
         class ZeroMQNode
         {
           public:
-           static ZeroMQNode* get()
-            {
-                if(!inst_)
-                    inst_.reset(new ZeroMQNode);
-                return inst_.get();
-            }
-            
-            
+            ZeroMQNode();
+            virtual ~ZeroMQNode();
+
             template<class C>
                 void connect_inbox_slot(
                     void(C::*mem_func)(MarshallingScheme,
@@ -128,9 +123,6 @@ namespace goby
             
             
           private:
-            ZeroMQNode();
-            virtual ~ZeroMQNode();
-
             ZeroMQNode(const ZeroMQNode&);
             ZeroMQNode& operator= (const ZeroMQNode&);
             
@@ -145,12 +137,7 @@ namespace goby
             
             boost::shared_ptr<zmq::socket_t> socket_from_id(int socket_id);
 
-            // so we can use shared_ptr to hold the singleton
-            template<typename T>
-                friend void boost::checked_delete(T*);
           private:
-            static boost::shared_ptr<ZeroMQNode> inst_;
-                        
             zmq::context_t context_;
             std::map<int, boost::shared_ptr<zmq::socket_t> > sockets_;
             std::vector<zmq::pollitem_t> poll_items_;

@@ -721,7 +721,7 @@ void goby::acomms::MMDriver::ack(const NMEASentence& nmea, protobuf::ModemDataAc
     else
     {
         if(log_)
-            *log_ << warn << "Received acknowledgement for Micro-Modem frame " << frame + 1 << " (Goby frame " << frame << ") that we were not expected.";
+            *log_ << warn << "Received acknowledgement for Micro-Modem frame " << frame + 1 << " (Goby frame " << frame << ") that we were not expecting." << std::endl;
     }
 }
 

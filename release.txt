@@ -6,7 +6,43 @@ Version 1.1.0
 -- Improvement to build system - added environmental variables "GOBY_CMAKE_FLAGS" and "GOBY_MAKE_FLAGS" to control build. Removed "INSTALL" and "CONFIGURE" in favor of a single script "BUILD"
 -- DCCL - </all> tag does not try to add any fields given explicitly by <message_var> tags.
 -- Numerous minor changes to support GCC-3.3 (on Debian Sarge).
+-- Bug fixes pertaining to multi-message handling
+-- Improved robustness of ACK handling in MMDriver
+-- Post first field trial testing of Goby v1
 
+ bzr log --line -n0 -r 118..
+
+142: toby 2011-06-06 version 1.1.0
+141: toby 2011-06-06 improved robustness for matching Micro-Modem CADRQ to Goby frame so that only frames we expect to be ack'd will be popped. removed setting CMOOSMsg Community to originating modem id so that we can properly identify whether the local pAcommsHandler published IN_HEX_*_B or not
+140: toby 2011-06-02 fixed bug for third-party 'pokes' of IN_*_HEX_*B messages in pAcommsHandler
+139: Henrik Schmidt 2011-06-02 fix so that pAcommsHandler does not reject messages sent by another community's pAcommsHandler
+138: toby 2011-06-02 [merge] merged changes from bf9 cruise
+  135.1.6: toby 2011-05-30 fixed bug in WHOI Micro-Modem driver where multi-frame messages initiated via a third-party were not being properly acked if the number of frames sent < total number of frames / packet
+  135.1.5: toby 2011-05-30 added feature to flush queues from topside
+  135.1.4: toby 2011-05-30 fixed regression on multi-frame message ack
+  135.1.3: toby 2011-05-30 buffer publish data when there's no MOOS connection for later sending
+  135.1.2: toby 2011-05-30 qsize posts on startup
+  135.1.1: mituser 2011-05-20 build issues resolved for gcc-33
+137: Toby Schneider 2011-05-26 improved handling of CAERR,NMEA to avoid segmentation fault if multiple CAERR,NMEA posted for a given outgoing message
+136: Toby Schneider 2011-05-24 moved XML related headers to .cpp files
+135: Stephanie Petillo 2011-05-20 fixed build for moos
+134: toby 2011-05-20 updated manual for release 1.1 and a few changes to support pViewMessage in TesMoosApp; also changed <all> in DCCL to not try to add already added message_var
+133: toby 2011-05-18 recommitted removal of unneeded dependencies on boost::regex
+132: toby 2011-05-18 fixed regression in flex_ncurses
+131: toby 2011-05-18 moved to single BUILD script instead of CONFIGURE/INSTALL and added GOBY_CMAKE_FLAGS and GOBY_MAKE_FLAGS environmental variable options
+130: Toby Schneider 2011-05-17 workaround for ASIO problem with epoll in 2.4.27 kernel and more fixes for gcc-3.3
+129: Toby Schneider 2011-05-17 added option to turn off building of certain MOOS apps
+128: toby 2011-05-17 fixed queue_xml for changes to support gcc-3.3
+127: Toby Schneider 2011-05-17 tentative work on supporting gcc-3.3
+126: toby 2011-05-17 removed unneeded dep on boost regex
+125: toby 2011-05-17 removed unfinished goby-core components - all development of goby-core is happening in lp:goby/2.0
+124: Toby Schneider 2011-05-11 updated AUTHORS file to point to launchpad team
+123: toby 2011-05-09 switched DEPENDENCIES for ubuntu to apt-get build-dep
+122: Toby Schneider 2011-05-02 updated doc locations
+121: Toby Schneider 2011-05-02 updated main.dox Documentation page removing items available now in the wiki
+120: Toby Schneider 2011-04-29 release 1.0.3
+119: Toby Schneider 2011-04-29 Updated release notes for 1.0.3
+118: toby 2011-04-28 fix for Bug 772640 pertaining to finding MOOS with CMake
 
 *****************
 Version 1.0.3

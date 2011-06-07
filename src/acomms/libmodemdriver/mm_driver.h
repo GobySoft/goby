@@ -77,6 +77,7 @@ namespace goby
             void append_to_write_queue(const util::NMEASentence& nmea, protobuf::ModemMsgBase* base_msg); // add a message
             void mm_write(const protobuf::ModemMsgBase& base_msg); // actually write a message (appends hydroid prefix if needed)
             void increment_present_fail();
+            void present_fail_exceeds_retries();
             
             // input
             void process_receive(const util::NMEASentence& nmea); // parse a receive message and call proper method
@@ -211,8 +212,14 @@ namespace goby
 
             // cache the appropriate amount of data upon CCCYC request (initiate_transmission)
             // for immediate use upon the DRQ message
-            std::deque<protobuf::ModemDataTransmission> cached_data_msgs_;
+            // maps frame number to DataTransmission object
+            std::map<unsigned, protobuf::ModemDataTransmission> cached_data_msgs_;
 
+            // keep track of which frames we've sent and are awaiting acks for. This
+            // way we have a chance of intercepting unexpected behavior of the modem
+            // relating to ACKs
+            std::set<unsigned> frames_waiting_for_ack_;
+            
             // true if we initiated the last cycle ($CCCYC) (and thereby cache data for it)?
             // false if a third party initiated the last cycle
             bool local_cccyc_;

@@ -42,7 +42,11 @@ goby::acomms::QueueManager::QueueManager()
     : packet_ack_(0),
       packet_dest_(BROADCAST_ID)
 {
-    add_flex_groups();
+    goby::glog.add_group("queue.push", util::Colors::lt_cyan, "stack push - outgoing messages (goby_queue)");
+    goby::glog.add_group("queue.pop",  util::Colors::lt_green, "stack pop - outgoing messages (goby_queue)");
+    goby::glog.add_group("queue.priority",  util::Colors::yellow, "priority contest (goby_queue)");
+    goby::glog.add_group("queue.out",  util::Colors::cyan, "outgoing queuing messages (goby_queue)");
+    goby::glog.add_group("queue.in",  util::Colors::green, "incoming queuing messages (goby_queue)");
 
     goby::acomms::DCCLFieldCodecBase::register_wire_value_hook(
         make_hook_key(queue::is_dest.number(), goby::acomms::protobuf::HookKey::WIRE_VALUE),
@@ -223,6 +227,23 @@ void goby::acomms::QueueManager::push_message(const google::protobuf::Message& d
      
 }
  
+
+void goby::acomms::QueueManager::flush_queue(const protobuf::QueueFlush& flush)
+{
+    std::map<goby::acomms::protobuf::QueueKey, Queue>::iterator it = queues_.find(flush.key());
+    
+    if(it != queues_.end())
+    {
+        it->second.flush();
+        glog.is(verbose) && glog << group("q_out") <<  " flushed queue: " << flush << std::endl;
+        qsize(&it->second);
+    }    
+    else
+    {
+        glog.is(verbose) && glog << group("q_out") << warn << " cannot find queue to flush: " << flush << std::endl;
+    }
+}
+
 
 std::string goby::acomms::QueueManager::summary() const
 {
@@ -587,15 +608,6 @@ void goby::acomms::QueueManager::handle_modem_receive(const protobuf::ModemDataT
     }
 }
 
-void goby::acomms::QueueManager::add_flex_groups()
-{
-    goby::glog.add_group("queue.push", util::Colors::lt_cyan, "stack push - outgoing messages (goby_queue)");
-    goby::glog.add_group("queue.pop",  util::Colors::lt_green, "stack pop - outgoing messages (goby_queue)");
-    goby::glog.add_group("queue.priority",  util::Colors::yellow, "priority contest (goby_queue)");
-    goby::glog.add_group("queue.out",  util::Colors::cyan, "outgoing queuing messages (goby_queue)");
-    goby::glog.add_group("queue.in",  util::Colors::green, "incoming queuing messages (goby_queue)");
-}
-
 
 void goby::acomms::QueueManager::set_cfg(const protobuf::QueueManagerConfig& cfg)
 {
@@ -621,3 +633,10 @@ void goby::acomms::QueueManager::process_cfg()
     modem_id_ = cfg_.modem_id();
 }
 
+void goby::acomms::QueueManager::qsize(Queue* q)            
+{
+    protobuf::QueueSize size;
+    size.mutable_key()->CopyFrom(q->cfg().key());
+    size.set_size(q->size());
+    signal_queue_size_change(size);
+}

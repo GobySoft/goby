@@ -311,6 +311,7 @@ void goby::acomms::Queue::flush()
 {
     glog.is(verbose) && glog  << group("queue.pop") << "flushing stack " << cfg_.name() << " (qsize 0)" << std::endl;
     messages_.clear();
+    waiting_for_ack_.clear();
 }        
 
 

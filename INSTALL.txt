@@ -6,6 +6,8 @@ satisfy the third party dependencies in DEPENDENCIES:
 > ./DEPENDENCIES
 configure using cmake and install locally (goby/bin, goby/include, goby/lib)
 > ./BUILD
+(optional) run unit tests
+> ./BUILD test
 to install to system (/usr/local/* by default)
 > ./BUILD install
 to install to some other location (e.g. /home/me/test/usr)

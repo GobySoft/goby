@@ -27,14 +27,10 @@
 #include "goby/util/string.h"
 #include "goby/util/time.h"
 #include "goby/util/logger.h"
-
-
 #include "wt_dbo_overloads.h"
-#include "dbo_manager.h"
+#include "goby/core/libdbo/dbo_manager.h"
 
 
-// must be define since we are using the preprocessor
-#define GOBY_MAX_PROTOBUF_TYPES 16
 
 boost::bimap<int, std::string> goby::core::DBOManager::dbo_map;
 

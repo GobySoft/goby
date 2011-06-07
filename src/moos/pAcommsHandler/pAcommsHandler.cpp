@@ -139,7 +139,9 @@ void CpAcommsHandler::do_subscriptions()
     // update comms cycle
     subscribe(MOOS_VAR_CYCLE_UPDATE, &CpAcommsHandler::handle_mac_cycle_update, this);
     subscribe(MOOS_VAR_POLLER_UPDATE, &CpAcommsHandler::handle_mac_cycle_update, this);
-
+    
+    subscribe(MOOS_VAR_FLUSH_QUEUE, &CpAcommsHandler::handle_flush_queue, this);
+    
     
     std::set<std::string> enc_vars, dec_vars;
 
@@ -204,6 +206,22 @@ void CpAcommsHandler::handle_ranging_request(const CMOOSMsg& msg)
     glog << "ranging request: " << request_msg << std::endl;
     if(driver_) driver_->handle_initiate_ranging(&request_msg);
 }
+
+void CpAcommsHandler::handle_flush_queue(const CMOOSMsg& msg)
+{
+    goby::acomms::protobuf::QueueFlush flush;
+    std::string moos_string = boost::trim_copy(msg.GetString());
+    // if contains no spaces, assume it is a "key=value," string
+    if(moos_string.find(" ") == std::string::npos)
+        from_moos_comma_equals_string(&flush, moos_string);
+    // assume it is a TextFormat protobuf message
+    else
+        parse_for_moos(moos_string, &flush);
+    
+    glog << "queue flush request: " << flush << std::endl;
+    queue_manager_->flush_queue(flush);
+}
+
 
 void CpAcommsHandler::handle_message_push(const CMOOSMsg& msg)
 {
@@ -295,15 +313,12 @@ void CpAcommsHandler::queue_receive_ccl(const goby::acomms::protobuf::ModemDataT
     std::string serialized;
     serialize_for_moos(&serialized, message);        
     CMOOSMsg m(MOOS_NOTIFY, MOOS_VAR_INCOMING_DATA, serialized, -1);
-    m.m_sOriginatingCommunity = boost::lexical_cast<std::string>(message.base().src());    
     publish(m);
 
     // we know what this type is
     if(in_queue2moos_var_.count(message.queue_key()))
     {
-        // post message and set originating community to modem id 
         CMOOSMsg m_specific(MOOS_NOTIFY, in_queue2moos_var_[message.queue_key()], serialized, -1);
-        m_specific.m_sOriginatingCommunity = boost::lexical_cast<std::string>(message.base().src());
         
         publish(m_specific);
     
@@ -541,14 +556,12 @@ void CpAcommsHandler::unpack(const google::protobuf::Message& msg)
             {
                 double dval = p.second;
                 CMOOSMsg m(MOOS_NOTIFY, p.first, dval, -1);
-//                m.m_sOriginatingCommunity = boost::lexical_cast<std::string>(msg.base().src());
                 publish(m);
             }
             else
             {
                 std::string sval = p.second;
                 CMOOSMsg m(MOOS_NOTIFY, p.first, sval, -1);
-//                m.m_sOriginatingCommunity = boost::lexical_cast<std::string>(msg.base().src());
                 publish(m);   
             }
         }

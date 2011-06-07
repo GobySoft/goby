@@ -84,6 +84,11 @@ namespace goby
             /// \param new_message ModemMessage to push.
             void push_message(const protobuf::ModemDataTransmission& new_message);
             void push_message(const google::protobuf::Message& new_message);
+
+            /// \brief Flush (delete all messages in) a queue
+            ///
+            /// \param QueueFlush flush: object containing details about queues to flush
+            void flush_queue(const protobuf::QueueFlush& flush);
             //@}
             
             /// \name Modem Slots
@@ -196,16 +201,8 @@ namespace goby
             ///
             /// \param QueueConfig& cfg: configuration object for the new %queue.
             void add_queue(const protobuf::QueueConfig& cfg);            
-            void add_flex_groups();
             
-            
-            void qsize(Queue* q)
-            {
-                protobuf::QueueSize size;
-                size.mutable_key()->CopyFrom(q->cfg().key());
-                size.set_size(q->size());
-                signal_queue_size_change(size);
-            }
+            void qsize(Queue* q);
         
             // finds the %queue with the highest priority
             Queue* find_next_sender(const protobuf::ModemDataRequest& message, const protobuf::ModemDataTransmission& data_msg, bool first_user_frame);

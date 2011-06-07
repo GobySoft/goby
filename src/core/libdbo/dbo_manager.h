@@ -37,6 +37,9 @@
 #include "goby/moos/libmoos_util/moos_serializer.h"
 #endif
 
+// must be define since we are using the preprocessor
+#define GOBY_MAX_PROTOBUF_TYPES @GOBY_DBO_MAX_PROTOBUF_TYPES@
+
 namespace Wt
 {
     namespace Dbo

@@ -28,7 +28,6 @@
 
 #include "dccl.h"
 #include "dccl_field_codec_default.h"
-
 #include "goby/util/string.h"
 #include "goby/protobuf/acomms_proto_helpers.h"
 #include "goby/protobuf/dccl_option_extensions.pb.h"

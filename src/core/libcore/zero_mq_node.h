@@ -59,6 +59,7 @@ namespace goby
                 process_cfg(cfg);
                 cfg_.CopyFrom(cfg);
             }
+            
             void merge_cfg(const protobuf::ZeroMQNodeConfig& cfg)
             {
                 process_cfg(cfg);

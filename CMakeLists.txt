@@ -48,15 +48,6 @@ install(DIRECTORY ${goby_SHARE_DIR}/ DESTINATION ${CMAKE_INSTALL_PREFIX}/share/g
 install(DIRECTORY ${goby_INC_DIR}/ DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
 
 
-## copy to goby/include
-file(GLOB_RECURSE INCLUDE_FILES RELATIVE ${goby_SRC_DIR} src/*.h src/*.proto)
-foreach(I ${INCLUDE_FILES})
-  configure_file(${goby_SRC_DIR}/${I} ${goby_INC_DIR}/goby/${I} @ONLY)
-endforeach()
-
-set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES ${goby_INC_DIR}/goby)
-
-
 ## let cmake know where the headers are
 include_directories(${goby_INC_DIR})
 
@@ -73,3 +64,11 @@ endif()
 ## start adding subdirectories
 add_subdirectory(src)
 
+
+## copy to goby/include
+file(GLOB_RECURSE INCLUDE_FILES RELATIVE ${goby_SRC_DIR} src/*.h src/*.proto)
+foreach(I ${INCLUDE_FILES})
+  configure_file(${goby_SRC_DIR}/${I} ${goby_INC_DIR}/goby/${I} @ONLY)
+endforeach()
+
+set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES ${goby_INC_DIR}/goby)

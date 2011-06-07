@@ -33,9 +33,11 @@ namespace goby
         class DatabaseClient
         {
           public:
-            DatabaseClient()
+            DatabaseClient(ZeroMQNode* service)
+                : zeromq_service_(service),
+                protobuf_node_(service)
             {
-                goby::acomms::connect(&ZeroMQNode::get()->pre_send_hooks, this, &DatabaseClient::pre_send);
+                goby::acomms::connect(&zeromq_service_->pre_send_hooks, this, &DatabaseClient::pre_send);
 
                 if(cfg_.using_database())
                     protobuf_node_.on_receipt<protobuf::DatabaseResponse>(DATABASE_REQUEST_SOCKET_ID,
@@ -62,11 +64,11 @@ namespace goby
                     request_socket->set_connect_or_bind(ZeroMQNodeConfig::Socket::CONNECT);
                     request_socket->set_ethernet_address(cfg_.database_address());
                     request_socket->set_ethernet_port(cfg_.database_port());
-                    ZeroMQNode::get()->merge_cfg(socket_cfg);
+                    zeromq_service_->merge_cfg(socket_cfg);
                     
                     try
                     {
-                        ZeroMQNode::get()->merge_cfg(socket_cfg);
+                        zeromq_service_->merge_cfg(socket_cfg);
                     }
                     catch(std::exception& e)
                     {
@@ -122,7 +124,7 @@ namespace goby
                         
                         waiting_on_response_.push_back(protobuf_type_name);
                         while(waiting_on_response_.size() != 0 && waiting_on_response_.back() == protobuf_type_name)
-                            ZeroMQNode::get()->poll();
+                            zeromq_service_->poll();
                     }
                 }
             }
@@ -148,6 +150,8 @@ namespace goby
             }
                 
           private:
+            ZeroMQNode* zeromq_service_;
+
             enum { DATABASE_REQUEST_SOCKET_ID = 103997 };
             
             std::vector<std::string> waiting_on_response_;

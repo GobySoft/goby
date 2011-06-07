@@ -22,9 +22,10 @@
 using goby::core::ZeroMQNode;
 using goby::glog;
 
-goby::moos::MOOSNode::MOOSNode()
+goby::moos::MOOSNode::MOOSNode(ZeroMQNode* service)
+    : goby::core::NodeInterface<CMOOSMsg>(service)
 {
-    ZeroMQNode::get()->connect_inbox_slot(&goby::moos::MOOSNode::inbox, this);
+    zeromq_service()->connect_inbox_slot(&goby::moos::MOOSNode::inbox, this);
         
     glog.add_group("in_hex", util::Colors::green, "Goby MOOS (hex) - Incoming");
     glog.add_group("out_hex", util::Colors::magenta, "Goby MOOS (hex) - Outgoing");
@@ -60,11 +61,11 @@ void goby::moos::MOOSNode::send(CMOOSMsg& msg, int socket_id)
     glog.is(debug2) &&
         glog << group("out_hex") << goby::util::hex_encode(bytes) << std::endl;
 
-    ZeroMQNode::get()->send(goby::core::MARSHALLING_MOOS, "CMOOSMsg/" + msg.GetKey() + "/", &bytes[0], bytes.size(), socket_id);
+    zeromq_service()->send(goby::core::MARSHALLING_MOOS, "CMOOSMsg/" + msg.GetKey() + "/", &bytes[0], bytes.size(), socket_id);
 }
 
 void goby::moos::MOOSNode::subscribe(const std::string& full_or_partial_moos_name, int socket_id)
 {
-    ZeroMQNode::get()->subscribe(goby::core::MARSHALLING_MOOS, full_or_partial_moos_name, socket_id);
+    zeromq_service()->subscribe(goby::core::MARSHALLING_MOOS, full_or_partial_moos_name, socket_id);
 }
 

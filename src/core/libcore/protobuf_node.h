@@ -23,23 +23,21 @@
 #include "goby/util/logger.h"
 #include "goby/core/core_helpers.h"
 
+#include "node_interface.h"
 #include "subscription.h"
-#include "zero_mq_node.h"
 #include "dynamic_protobuf_manager.h"
 
 namespace goby
 {
     namespace core
     {
-        class ProtobufNode
+        class ProtobufNode : public NodeInterface<google::protobuf::Message>
         {
 
           protected:
-            ProtobufNode()
-            {
-                ZeroMQNode::get()->connect_inbox_slot(&ProtobufNode::inbox, this);
-            }
-
+          ProtobufNode(ZeroMQNode* service)
+              : NodeInterface<google::protobuf::Message>(service)
+            { }
             
             virtual ~ProtobufNode()
             { }
@@ -51,23 +49,24 @@ namespace goby
                                         int socket_id) = 0;
 
             void send(const google::protobuf::Message& msg, int socket_id);
-
-            
             void subscribe(const std::string& identifier, int socket_id);
 
+            
           private:
             void inbox(MarshallingScheme marshalling_scheme,
                        const std::string& identifier,
                        const void* data,
                        int size,
                        int socket_id);
+            
 
         };
 
         class StaticProtobufNode : public ProtobufNode
         {
           public:
-            StaticProtobufNode()
+            StaticProtobufNode(ZeroMQNode* service)
+                : ProtobufNode(service)
             { }
                         
             virtual ~StaticProtobufNode()
@@ -87,8 +86,8 @@ namespace goby
 
             template<typename ProtoBufMessage, class C>
                 void subscribe(int socket_id,
-                                void(C::*mem_func)(const ProtoBufMessage&),
-                                C* obj)
+                               void(C::*mem_func)(const ProtoBufMessage&),
+                               C* obj)
             { subscribe<ProtoBufMessage>(socket_id, boost::bind(mem_func, obj, _1)); }
 
              
@@ -118,7 +117,7 @@ namespace goby
             ///
             /// You must subscribe() for this type before using this method
             template<typename ProtoBufMessage>
-                const ProtoBufMessage& newest();
+                const ProtoBufMessage& newest() const;
             
             //@}
             
@@ -141,7 +140,8 @@ namespace goby
         class DynamicProtobufNode : public ProtobufNode
         {
           protected:  
-            DynamicProtobufNode()
+            DynamicProtobufNode(ZeroMQNode* service)
+                : ProtobufNode(service)
             { }
             
             virtual ~DynamicProtobufNode()
@@ -209,7 +209,7 @@ void goby::core::StaticProtobufNode::subscribe(
 
 /// See goby::core::StaticProtobufNode::newest()
 template<typename ProtoBufMessage>
-const ProtoBufMessage& goby::core::StaticProtobufNode::newest()
+const ProtoBufMessage& goby::core::StaticProtobufNode::newest() const 
 {
     // RTTI needed so we can store subscriptions with a common (non-template) base but also
     // return the subclass requested

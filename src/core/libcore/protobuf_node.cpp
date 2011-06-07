@@ -40,14 +40,14 @@ void goby::core::ProtobufNode::send(const google::protobuf::Message& msg, int so
     int size = msg.ByteSize();
     char buffer[size];
     msg.SerializeToArray(&buffer, size);
-    ZeroMQNode::get()->send(MARSHALLING_PROTOBUF, msg.GetDescriptor()->full_name() + "/",
+    zeromq_service()->send(MARSHALLING_PROTOBUF, msg.GetDescriptor()->full_name() + "/",
                             &buffer, size, socket_id);
 }
             
 void goby::core::ProtobufNode::subscribe(const std::string& identifier, int socket_id)
 {
     glog.is(debug1) && glog << "Subscribing for MARSHALLING_PROTOBUF type: " << identifier << std::endl;
-    ZeroMQNode::get()->subscribe(MARSHALLING_PROTOBUF, identifier, socket_id);
+    zeromq_service()->subscribe(MARSHALLING_PROTOBUF, identifier, socket_id);
 }
 
 void goby::core::StaticProtobufNode::protobuf_inbox(const std::string& protobuf_type_name,

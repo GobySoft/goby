@@ -35,7 +35,9 @@ int main(int argc, char* argv[])
 }
 
 goby::core::Database::Database()
-    : ZeroMQApplicationBase(&cfg_),
+    : ZeroMQApplicationBase(&zeromq_service_, &cfg_),
+      protobuf_node_(&zeromq_service_),
+      pubsub_node_(&protobuf_node_),
       dbo_manager_(DBOManager::get_instance()),
       last_unique_id_(-1)
 {
@@ -72,7 +74,7 @@ goby::core::Database::Database()
 
     try
     {
-        ZeroMQNode::get()->merge_cfg(socket_cfg);
+        zeromq_service_.merge_cfg(socket_cfg);
 
         glog.is(debug1) &&
             glog << "bound (requests line) to: " << *reply_socket << std::endl;
@@ -96,7 +98,7 @@ goby::core::Database::Database()
                                                          &goby::core::Database::handle_database_request,
                                                          this);
     
-    ZeroMQNode::get()->connect_inbox_slot(&DBOManager::add_raw, dbo_manager_);
+    zeromq_service_.connect_inbox_slot(&DBOManager::add_raw, dbo_manager_);
 
 }
 

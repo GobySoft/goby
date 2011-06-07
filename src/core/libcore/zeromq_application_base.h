@@ -31,8 +31,9 @@ namespace goby
         {
             
           protected:
-          ZeroMQApplicationBase(google::protobuf::Message* cfg = 0)
-              : ApplicationBase(cfg)
+          ZeroMQApplicationBase( ZeroMQNode* service, google::protobuf::Message* cfg = 0 )
+              : ApplicationBase(cfg),
+                zeromq_service_(service)
             {
                 set_loop_freq(base_cfg().loop_freq());
                 
@@ -90,7 +91,7 @@ namespace goby
 
                 glog.is(debug2) &&
                     glog << "timeout set to: " << timeout << " microseconds." << std::endl;
-                bool had_events = ZeroMQNode::get()->poll(timeout);
+                bool had_events = zeromq_service_->poll(timeout);
                 if(!had_events)
                 {
                     // no message, time to call loop()            
@@ -100,6 +101,8 @@ namespace goby
             }
 
           private:
+            ZeroMQNode* zeromq_service_;
+
             // how long to wait between calls to loop()
             boost::posix_time::time_duration loop_period_;
             

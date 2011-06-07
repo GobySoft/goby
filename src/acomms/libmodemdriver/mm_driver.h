@@ -57,6 +57,9 @@ namespace goby
             /// \brief Initiate a transmission to the modem.
             void handle_initiate_transmission(protobuf::ModemMsgBase* m);
 
+            /// \brief Initiate a mini-packet transmission to the modem
+            void handle_initiate_mini_transmission(protobuf::ModemMiniTransmission* m);
+
             /// \brief Initiate ranging ("ping") to the modem. 
             void handle_initiate_ranging(protobuf::ModemRangingRequest* m);
 
@@ -77,7 +80,6 @@ namespace goby
             void append_to_write_queue(const util::NMEASentence& nmea, protobuf::ModemMsgBase* base_msg); // add a message
             void mm_write(const protobuf::ModemMsgBase& base_msg); // actually write a message (appends hydroid prefix if needed)
             void increment_present_fail();
-            void present_fail_exceeds_retries();
             
             // input
             void process_receive(const util::NMEASentence& nmea); // parse a receive message and call proper method
@@ -86,6 +88,9 @@ namespace goby
             void cyc(const util::NMEASentence& nmea, protobuf::ModemDataInit* init_msg); // $CACYC 
             void rxd(const util::NMEASentence& nmea, protobuf::ModemDataTransmission* data_msg); // $CARXD
             void ack(const util::NMEASentence& nmea, protobuf::ModemDataAck* ack_msg); // $CAACK
+        
+            // mini packet
+            void mua(const util::NMEASentence& nmea, protobuf::ModemMiniTransmission* data_msg); // $CAMUA
 
             // ranging (pings)
             void mpr(const util::NMEASentence& nmea, protobuf::ModemRangingReply* ranging_msg); // $CAMPR
@@ -212,14 +217,8 @@ namespace goby
 
             // cache the appropriate amount of data upon CCCYC request (initiate_transmission)
             // for immediate use upon the DRQ message
-            // maps frame number to DataTransmission object
-            std::map<unsigned, protobuf::ModemDataTransmission> cached_data_msgs_;
+            std::deque<protobuf::ModemDataTransmission> cached_data_msgs_;
 
-            // keep track of which frames we've sent and are awaiting acks for. This
-            // way we have a chance of intercepting unexpected behavior of the modem
-            // relating to ACKs
-            std::set<unsigned> frames_waiting_for_ack_;
-            
             // true if we initiated the last cycle ($CCCYC) (and thereby cache data for it)?
             // false if a third party initiated the last cycle
             bool local_cccyc_;

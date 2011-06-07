@@ -7,6 +7,7 @@ enum SlotType
   SLOT_DATA = 1;
   SLOT_PING = 2;
   SLOT_REMUS_LBL = 3;
+  SLOT_MINI = 4;
 };
 
 message Slot

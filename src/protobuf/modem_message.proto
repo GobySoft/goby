@@ -55,6 +55,13 @@ message ModemDataInit
   optional uint32 num_frames = 2 [default = 1];
 }
 
+// mini-packet
+message ModemMiniTransmission
+{
+    optional ModemMsgBase base = 1;
+    optional bytes data = 3; //data (encoded as a byte string - eight bits to the character)
+}
+
 // ranging
 enum RangingType
 {
@@ -76,6 +83,7 @@ message ModemRangingReply
   // seconds
   repeated double one_way_travel_time = 2;  
   optional RangingType type = 3;
+  optional uint32 mode = 4;
 }
 
 message ModemRangingRequest

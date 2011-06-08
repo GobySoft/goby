@@ -31,18 +31,9 @@ namespace goby
         {
           public:
           PubSubNode(NodeInterface<NodeTypeBase>* node)
-              : node_(node)
+              : node_(*node)
             { }
 
-          PubSubNode()
-              : node_(0)
-            { }
-
-            void set_node(NodeInterface<NodeTypeBase>* node)
-            {
-                node_ = node;
-            }
-            
             virtual ~PubSubNode()
             { }
             
@@ -76,12 +67,12 @@ namespace goby
                     glog.is(debug1) && glog << "Not using publish / subscribe." << std::endl;
                 }
                 
-                node_->zeromq_service()->merge_cfg(pubsub_cfg);
+                node_.zeromq_service()->merge_cfg(pubsub_cfg);
             }
 
 
             void subscribe_all()
-            { node_->zeromq_service()->subscribe_all(SOCKET_SUBSCRIBE); }
+            { node_.zeromq_service()->subscribe_all(SOCKET_SUBSCRIBE); }
             
             
             /// \name Publish / Subscribe
@@ -98,7 +89,7 @@ namespace goby
                     return;
                 }
                 
-                node_->send(msg, SOCKET_PUBLISH);
+                node_.send(msg, SOCKET_PUBLISH);
             }
 
 
@@ -110,7 +101,7 @@ namespace goby
                      return;
                  }
                  
-                node_->subscribe(identifier, SOCKET_SUBSCRIBE);
+                node_.subscribe(identifier, SOCKET_SUBSCRIBE);
             }
 
           protected:
@@ -122,7 +113,7 @@ namespace goby
             };
             
           private:
-            NodeInterface<NodeTypeBase>* node_;
+            NodeInterface<NodeTypeBase>& node_;
             
             protobuf::PubSubSocketConfig cfg_;
         };
@@ -131,7 +122,8 @@ namespace goby
         {
           public:
           PubSubStaticProtobufNode(StaticProtobufNode* node)
-              : PubSubNode<google::protobuf::Message>(node)
+              : PubSubNode<google::protobuf::Message>(node),
+                node_(*node)
             { }
 
             ~PubSubStaticProtobufNode()
@@ -145,18 +137,18 @@ namespace goby
                     glog.is(warn) && glog << "Ignoring subscribe since we have `using_pubsub`=false" << std::endl;
                     return;
                 }    
-                node_->subscribe<ProtoBufMessage>(SOCKET_SUBSCRIBE, handler);
+                node_.subscribe<ProtoBufMessage>(SOCKET_SUBSCRIBE, handler);
             }
 
             template<typename ProtoBufMessage>
                 const ProtoBufMessage& newest() const
             {
-                return node_->newest<ProtoBufMessage>();
+                return node_.newest<ProtoBufMessage>();
             }
             
 
           private:
-            StaticProtobufNode* node_;
+            StaticProtobufNode& node_;
         };
         
         

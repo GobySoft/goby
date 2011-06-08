@@ -29,6 +29,7 @@
 // Also see abc_modem_simulator.cpp
 
 #include "goby/acomms/modem_driver.h"
+#include "goby/util/binary.h"
 #include "goby/acomms/connect.h"
 
 #include <iostream>
@@ -131,7 +132,7 @@ int main(int argc, char* argv[])
 void handle_data_request(const goby::acomms::protobuf::ModemDataRequest& request_msg,
                          goby::acomms::protobuf::ModemDataTransmission* data_msg)
 {
-    data_msg->set_data(goby::acomms::hex_decode("aa1100bbccddef0987654321"));
+    data_msg->set_data(goby::util::hex_decode("aa1100bbccddef0987654321"));
     data_msg->set_ack_requested(false);
 }
 

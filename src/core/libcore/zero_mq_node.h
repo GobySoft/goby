@@ -98,7 +98,6 @@ namespace goby
             {
                 poll_items_.push_back(item);
                 poll_callbacks_.insert(std::make_pair(poll_items_.size()-1, callback));
-                //glog.is(debug2) && glog << "Registering poll item " << poll_items_.size()-1 << std::endl;
             }
             
             zmq::context_t& zmq_context() { return context_; }

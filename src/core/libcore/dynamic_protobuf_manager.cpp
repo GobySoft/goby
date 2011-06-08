@@ -20,6 +20,9 @@
 
 boost::shared_ptr<goby::core::DynamicProtobufManager> goby::core::DynamicProtobufManager::inst_;
 
+boost::signal<void (const google::protobuf::FileDescriptor*)> goby::core::DynamicProtobufManager::new_descriptor_hooks;
+
+
 boost::shared_ptr<google::protobuf::Message> goby::core::DynamicProtobufManager::new_protobuf_message(const std::string& protobuf_type_name)
 {
     const google::protobuf::Descriptor* desc = descriptor_pool().FindMessageTypeByName(protobuf_type_name);
@@ -64,6 +67,8 @@ const google::protobuf::FileDescriptor* goby::core::DynamicProtobufManager::add_
 const google::protobuf::FileDescriptor* goby::core::DynamicProtobufManager::add_protobuf_file(const google::protobuf::FileDescriptorProto& proto)
 {
     goby::glog.is(debug3) && goby::glog << "adding protobuf file: " << proto.ShortDebugString() << std::endl;
-    
-    return descriptor_pool().BuildFile(proto); 
+
+    const google::protobuf::FileDescriptor* return_desc = descriptor_pool().BuildFile(proto);
+    new_descriptor_hooks(return_desc);
+    return return_desc; 
 }

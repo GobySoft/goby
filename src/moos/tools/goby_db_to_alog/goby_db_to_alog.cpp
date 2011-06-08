@@ -16,7 +16,7 @@
 #include <iostream>
 #include <fstream>
 
-#include "goby/core/libdbo/wt_dbo_overloads.h"
+#include "goby/core/libdbo/moos_dbo_helper.h"
 #include "goby/moos/libmoos_util/moos_node.h"
 #include "goby/core/libcore/application_base.h"
 

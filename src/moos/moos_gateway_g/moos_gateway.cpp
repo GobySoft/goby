@@ -18,6 +18,7 @@
 #include "goby/moos/libmoos_util/moos_node.h"
 #include "goby/util/logger.h"
 #include "goby/core/libcore/zeromq_application_base.h"
+#include "goby/core/libcore/pubsub_node_wrapper.h"
 #include "goby/util/liblogger/term_color.h"
 
 #include "moos_gateway_config.pb.h"
@@ -26,7 +27,7 @@ namespace goby
 {
     namespace moos
     {
-        class MOOSGateway : public goby::core::ZeroMQApplicationBase, public MOOSNode, public CMOOSCommClient
+        class MOOSGateway : public goby::core::ZeroMQApplicationBase, public MOOSNode
         {
         public:
             MOOSGateway();
@@ -41,6 +42,10 @@ namespace goby
             
             
         private:
+            static goby::core::ZeroMQService zeromq_service_;
+            goby::core::PubSubNodeWrapper<CMOOSMsg> goby_moos_pubsub_client_;
+            CMOOSCommClient moos_client_;
+            
             enum { MAX_CONNECTION_TIMEOUT = 10 };
             
             static protobuf::MOOSGatewayConfig cfg_;
@@ -50,6 +55,7 @@ namespace goby
     }
 }
 
+goby::core::ZeroMQService goby::moos::MOOSGateway::zeromq_service_;
 goby::moos::protobuf::MOOSGatewayConfig goby::moos::MOOSGateway::cfg_;
 
 int main(int argc, char* argv[])
@@ -61,15 +67,17 @@ int main(int argc, char* argv[])
 using goby::glog;
 
 goby::moos::MOOSGateway::MOOSGateway()
-    : ZeroMQApplicationBase(&cfg_)
+    : ZeroMQApplicationBase(&zeromq_service_, &cfg_),
+      MOOSNode(&zeromq_service_),
+      goby_moos_pubsub_client_(this, cfg_.base().pubsub_config())
 {
-    CMOOSCommClient::Run(cfg_.moos_server_host().c_str(), cfg_.moos_server_port(), cfg_.base().app_name().c_str(), cfg_.moos_comm_tick());
+    moos_client_.Run(cfg_.moos_server_host().c_str(), cfg_.moos_server_port(), cfg_.base().app_name().c_str(), cfg_.moos_comm_tick());
 
     glog.is(verbose) &&
         glog << "Waiting to connect to MOOSDB ... " << std::endl;
 
     int i = 0;
-    while(!CMOOSCommClient::IsConnected())
+    while(!moos_client_.IsConnected())
     {
         i++;
         if(i > MAX_CONNECTION_TIMEOUT)
@@ -82,7 +90,7 @@ goby::moos::MOOSGateway::MOOSGateway()
     }
 
     for(int i = 0, n = cfg_.goby_subscribe_filter_size(); i < n; ++i)
-        MOOSNode::subscribe(cfg_.goby_subscribe_filter(i));
+        goby_moos_pubsub_client_.subscribe(cfg_.goby_subscribe_filter(i));
 
 
     glog.add_group("from_moos", util::Colors::lt_magenta, "MOOS -> Goby");
@@ -109,7 +117,7 @@ void goby::moos::MOOSGateway::moos_inbox(CMOOSMsg& msg)
     glog.is(verbose) &&
         glog << group("to_moos") << msg << std::endl;
     
-    CMOOSCommClient::Post(msg);
+    moos_client_.Post(msg);
 }
 
     
@@ -120,7 +128,7 @@ void goby::moos::MOOSGateway::loop()
     check_for_new_moos_variables();
     std::list<CMOOSMsg> moos_msgs;
     
-    CMOOSCommClient::Fetch(moos_msgs);
+    moos_client_.Fetch(moos_msgs);
 
     BOOST_FOREACH(CMOOSMsg& msg, moos_msgs)
     {
@@ -135,10 +143,8 @@ void goby::moos::MOOSGateway::loop()
         glog.is(verbose) &&
             glog << group("from_moos") << msg << std::endl;    
         
-        MOOSNode::publish(msg);
-    }
-    
-    
+        goby_moos_pubsub_client_.publish(msg);
+    }    
 }
 
 // adapted from CMOOSLogger::HandleWildCardLogging
@@ -150,7 +156,7 @@ void goby::moos::MOOSGateway::check_for_new_moos_variables()
     if(MOOSTime()-dfLastWildCardTime > DEFAULT_WILDCARD_TIME)
     {
         MOOSMSG_LIST InMail;
-        if(CMOOSCommClient::ServerRequest("VAR_SUMMARY", InMail, 2.0, false))
+        if(moos_client_.ServerRequest("VAR_SUMMARY", InMail, 2.0, false))
         {
             if(InMail.size()!=1)
             {
@@ -172,8 +178,8 @@ void goby::moos::MOOSGateway::check_for_new_moos_variables()
                     if(clears_subscribe_filters(s))
                     {
                         glog.is(verbose) &&
-                            glog << "CMOOSCommClient::Register for " << s << std::endl;
-                        CMOOSCommClient::Register(s, 0);
+                            glog << "moos_client_.Register for " << s << std::endl;
+                        moos_client_.Register(s, 0);
                         subscribed_vars_.insert(s);
                     }
                 }

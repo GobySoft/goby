@@ -14,7 +14,7 @@
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
 
-// tests basic publish/subscribe over EPGM functionality of ZeroMQNode class
+// tests basic publish/subscribe over EPGM functionality of ZeroMQService class
 
 #include "goby/core.h"
 
@@ -40,14 +40,14 @@ int main(int argc, char* argv[])
     goby::glog.add_stream(goby::util::Logger::DEBUG3, &std::cerr);
     goby::glog.set_name(argv[0]);
     
-    goby::core::ZeroMQNode node;
+    goby::core::ZeroMQService node;
 
-    goby::core::protobuf::ZeroMQNodeConfig pubsub_cfg;
+    goby::core::protobuf::ZeroMQServiceConfig pubsub_cfg;
 
     {
             
-        goby::core::protobuf::ZeroMQNodeConfig::Socket* subscriber_socket = pubsub_cfg.add_socket();
-        subscriber_socket->set_socket_type(goby::core::protobuf::ZeroMQNodeConfig::Socket::SUBSCRIBE);
+        goby::core::protobuf::ZeroMQServiceConfig::Socket* subscriber_socket = pubsub_cfg.add_socket();
+        subscriber_socket->set_socket_type(goby::core::protobuf::ZeroMQServiceConfig::Socket::SUBSCRIBE);
         subscriber_socket->set_socket_id(SOCKET_SUBSCRIBE);
         subscriber_socket->set_ethernet_address("127.0.0.1");
         std::cout << subscriber_socket->DebugString() << std::endl;
@@ -55,8 +55,8 @@ int main(int argc, char* argv[])
 
     {
             
-        goby::core::protobuf::ZeroMQNodeConfig::Socket* publisher_socket = pubsub_cfg.add_socket();
-        publisher_socket->set_socket_type(goby::core::protobuf::ZeroMQNodeConfig::Socket::PUBLISH);
+        goby::core::protobuf::ZeroMQServiceConfig::Socket* publisher_socket = pubsub_cfg.add_socket();
+        publisher_socket->set_socket_type(goby::core::protobuf::ZeroMQServiceConfig::Socket::PUBLISH);
         publisher_socket->set_ethernet_address("127.0.0.1");
         publisher_socket->set_socket_id(SOCKET_PUBLISH);
         std::cout << publisher_socket->DebugString() << std::endl;

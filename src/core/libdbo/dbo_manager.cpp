@@ -30,6 +30,7 @@
 #include "wt_dbo_overloads.h"
 #include "goby/core/libdbo/dbo_manager.h"
 
+#include "dbo_plugin.h"
 
 
 boost::bimap<int, std::string> goby::core::DBOManager::dbo_map;
@@ -62,6 +63,9 @@ goby::core::DBOManager::DBOManager()
       static_tables_created_(false)
 {
     glog.add_group("dbo", goby::util::Colors::lt_green, "database");
+    plugin_factory_.add_library("/home/toby/goby/2.0/lib/libgoby_moos_util.so.2");
+    plugin_factory_.add_plugin(&protobuf_plugin_);
+    DynamicProtobufManager::new_descriptor_hooks.connect(boost::bind(&DBOManager::add_file_descriptor, this, _1));
 }
 
 goby::core::DBOManager::~DBOManager()
@@ -78,11 +82,14 @@ void goby::core::DBOManager::add_raw(MarshallingScheme marshalling_scheme,
                                      int size,
                                      int socket_id)
 {
-    static int i = 0;
+    static int i = -1;
+    ++i;
+    
     RawEntry *new_entry = new RawEntry();
     new_entry->marshalling_scheme = marshalling_scheme;
     new_entry->identifier = identifier;
     new_entry->unique_id = i;
+    new_entry->socket_id = socket_id;
 
     std::string bytes = std::string(static_cast<const char*>(data), size);
     new_entry->bytes = std::vector<unsigned char>(bytes.begin(), bytes.end());
@@ -90,37 +97,24 @@ void goby::core::DBOManager::add_raw(MarshallingScheme marshalling_scheme,
                 
     session_->add(new_entry);
 
-    switch(marshalling_scheme)
-    {
-        case MARSHALLING_PROTOBUF:
-        {
-            const std::string protobuf_type_name = identifier.substr(0, identifier.find("/"));
-        
-            boost::shared_ptr<google::protobuf::Message> msg =
-                DynamicProtobufManager::new_protobuf_message(protobuf_type_name);
-            msg->ParseFromArray(data, size);
-        
-            add_message(i, msg);
-        }
-        break;
-
-#ifdef HAS_MOOS
-        case MARSHALLING_MOOS:
-        {
-            CMOOSMsg msg;
-            std::string bytes(static_cast<const char*>(data), size);
-            goby::moos::MOOSSerializer::parse(&msg, bytes);
-            add_message(i, msg);
-        }
-        break;
-#endif            
-        
-        default: break;
-    }
-    ++i;
+    DBOPlugin* plugin = plugin_factory_.plugin(marshalling_scheme);
+    if(plugin)
+        plugin->add_message(session_, i, identifier, data, size);
 }
-            
-            
+
+void goby::core::DBOManager::add_file_descriptor(const google::protobuf::FileDescriptor* file_descriptor)
+{
+    for(int i = 0, n = file_descriptor->message_type_count(); i < n; ++i)
+    {
+        const google::protobuf::Descriptor* desc = file_descriptor->message_type(i);
+        for(int j = 0, m = desc->nested_type_count(); j < m; ++j)
+            add_type(desc->nested_type(j));
+        add_type(desc);
+    }
+    
+    
+}
+
 
 void goby::core::DBOManager::add_type(const google::protobuf::Descriptor* descriptor)
 {
@@ -222,13 +216,6 @@ void goby::core::DBOManager::add_message(int unique_id, boost::shared_ptr<google
     }
 }
 
-#ifdef HAS_MOOS
-void goby::core::DBOManager::add_message(int unique_id, CMOOSMsg& msg)
-{
-    session_->add(new CMOOSMsg(msg));
-}
-#endif
-
 void goby::core::DBOManager::commit()
 {
     glog.is(verbose) &&
@@ -294,9 +281,7 @@ void goby::core::DBOManager::map_static_types()
 {
     session_->mapClass<RawEntry>("_raw");
 
-#ifdef HAS_MOOS
-    session_->mapClass<CMOOSMsg>("CMOOSMsg");
-#endif
+    DBOPlugin* plugin = plugin_factory_.plugin(MARSHALLING_MOOS);
+    if(plugin)
+        plugin->map_type(session_);
 }
-
-

@@ -20,7 +20,7 @@
 #include "moos_serializer.h"
 
 #include "goby/core/libcore/node_interface.h"
-#include "goby/core/libcore/zero_mq_node.h"
+#include "goby/core/libcore/zeromq_service.h"
 
 namespace goby
 {
@@ -29,7 +29,7 @@ namespace goby
         class MOOSNode : public goby::core::NodeInterface<CMOOSMsg>
         {
           protected:
-            MOOSNode(goby::core::ZeroMQNode* service);
+            MOOSNode(goby::core::ZeroMQService* service);
             
             virtual ~MOOSNode()
             { }
@@ -38,7 +38,8 @@ namespace goby
             // not const because CMOOSMsg requires mutable for many const calls...
             virtual void moos_inbox(CMOOSMsg& msg) = 0;
             
-            void send(CMOOSMsg& msg, int socket_id);
+            
+            void send(const CMOOSMsg& msg, int socket_id);
             void subscribe(const std::string& full_or_partial_moos_name, int socket_id);
             
             

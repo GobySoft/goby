@@ -19,44 +19,59 @@
 
 #include <google/protobuf/message.h>
 #include "node_interface.h"
+#include "protobuf_node.h"
 #include "goby/protobuf/header.pb.h"
 
 namespace goby
 {
     namespace core
     {
-        
-        template<typename NodeTypeBase>
-            class PubSubNode
+
+        class PubSubNodeWrapperBase
         {
           public:
-          PubSubNode(NodeInterface<NodeTypeBase>* node)
-              : node_(*node)
-            { }
-
-            virtual ~PubSubNode()
-            { }
+          PubSubNodeWrapperBase(ZeroMQService* service, const protobuf::PubSubSocketConfig& cfg)
+              : zeromq_service_(*service)
+            {
+                set_cfg(cfg);
+            }
             
+            virtual ~PubSubNodeWrapperBase()
+            { }
+          
+            void subscribe_all()
+            { zeromq_service_.subscribe_all(SOCKET_SUBSCRIBE); }
+
+          protected:
+            const protobuf::PubSubSocketConfig& cfg() const
+            { return cfg_; }
+            
+            enum {
+                SOCKET_SUBSCRIBE = 103998, SOCKET_PUBLISH = 103999
+            };
+
+          private:
+
             void set_cfg(const protobuf::PubSubSocketConfig& cfg)
             {
                 cfg_ = cfg;
-
-                goby::core::protobuf::ZeroMQNodeConfig pubsub_cfg;
+              
+                goby::core::protobuf::ZeroMQServiceConfig pubsub_cfg;
 
                 using goby::glog;
                 if(cfg.using_pubsub())
                 {
                     glog.is(debug1) && glog << "Using publish / subscribe." << std::endl;
-                    goby::core::protobuf::ZeroMQNodeConfig::Socket* subscriber_socket = pubsub_cfg.add_socket();
-                    subscriber_socket->set_socket_type(goby::core::protobuf::ZeroMQNodeConfig::Socket::SUBSCRIBE);
+                    goby::core::protobuf::ZeroMQServiceConfig::Socket* subscriber_socket = pubsub_cfg.add_socket();
+                    subscriber_socket->set_socket_type(goby::core::protobuf::ZeroMQServiceConfig::Socket::SUBSCRIBE);
                     subscriber_socket->set_socket_id(SOCKET_SUBSCRIBE);
                     subscriber_socket->set_ethernet_address(cfg.ethernet_address());
                     subscriber_socket->set_multicast_address(cfg.multicast_address());
                     subscriber_socket->set_ethernet_port(cfg.ethernet_port());
                     std::cout << subscriber_socket->DebugString() << std::endl;
 
-                    goby::core::protobuf::ZeroMQNodeConfig::Socket* publisher_socket = pubsub_cfg.add_socket();
-                    publisher_socket->set_socket_type(goby::core::protobuf::ZeroMQNodeConfig::Socket::PUBLISH);
+                    goby::core::protobuf::ZeroMQServiceConfig::Socket* publisher_socket = pubsub_cfg.add_socket();
+                    publisher_socket->set_socket_type(goby::core::protobuf::ZeroMQServiceConfig::Socket::PUBLISH);
                     publisher_socket->set_socket_id(SOCKET_PUBLISH);
                     publisher_socket->set_ethernet_address(cfg.ethernet_address());
                     publisher_socket->set_multicast_address(cfg.multicast_address());
@@ -67,12 +82,26 @@ namespace goby
                     glog.is(debug1) && glog << "Not using publish / subscribe." << std::endl;
                 }
                 
-                node_.zeromq_service()->merge_cfg(pubsub_cfg);
+                zeromq_service_.merge_cfg(pubsub_cfg);
             }
+            
+          private:
+            ZeroMQService& zeromq_service_;
+            protobuf::PubSubSocketConfig cfg_;
+        };
 
+        
+        template<typename NodeTypeBase>
+            class PubSubNodeWrapper : public PubSubNodeWrapperBase
+        {
+          public:
+            PubSubNodeWrapper(NodeInterface<NodeTypeBase>* node, const protobuf::PubSubSocketConfig& cfg)
+                : PubSubNodeWrapperBase(node->zeromq_service(), cfg),
+                node_(*node)
+                { }
 
-            void subscribe_all()
-            { node_.zeromq_service()->subscribe_all(SOCKET_SUBSCRIBE); }
+            virtual ~PubSubNodeWrapper()
+            { }
             
             
             /// \name Publish / Subscribe
@@ -83,7 +112,7 @@ namespace goby
             /// \param msg Message to publish
             void publish(const NodeTypeBase& msg)
             {
-                if(!cfg_.using_pubsub())
+                if(!cfg().using_pubsub())
                 {
                     glog.is(warn) && glog << "Ignoring publish since we have `using_pubsub`=false" << std::endl;
                     return;
@@ -95,38 +124,30 @@ namespace goby
 
             void subscribe(const std::string& identifier)
             {
-                if(!cfg_.using_pubsub())
-                 {
-                     glog.is(warn) && glog << "Ignoring subscribe since we have `using_pubsub`=false" << std::endl;
-                     return;
-                 }
+                if(!cfg().using_pubsub())
+                {
+                    glog.is(warn) && glog << "Ignoring subscribe since we have `using_pubsub`=false" << std::endl;
+                    return;
+                }
                  
                 node_.subscribe(identifier, SOCKET_SUBSCRIBE);
             }
 
           protected:
-            const protobuf::PubSubSocketConfig& cfg() const
-            { return cfg_; }
-            
-            enum {
-                SOCKET_SUBSCRIBE = 103998, SOCKET_PUBLISH = 103999
-            };
             
           private:
             NodeInterface<NodeTypeBase>& node_;
-            
-            protobuf::PubSubSocketConfig cfg_;
         };
-    
-      class PubSubStaticProtobufNode : public PubSubNode<google::protobuf::Message>
+        
+        class StaticProtobufPubSubNodeWrapper : public PubSubNodeWrapper<google::protobuf::Message>
         {
           public:
-          PubSubStaticProtobufNode(StaticProtobufNode* node)
-              : PubSubNode<google::protobuf::Message>(node),
+          StaticProtobufPubSubNodeWrapper(StaticProtobufNode* node, const protobuf::PubSubSocketConfig& cfg)
+              : PubSubNodeWrapper<google::protobuf::Message>(node, cfg),
                 node_(*node)
-            { }
-
-            ~PubSubStaticProtobufNode()
+                { }
+            
+            ~StaticProtobufPubSubNodeWrapper()
             { }
 
             template<typename ProtoBufMessage>

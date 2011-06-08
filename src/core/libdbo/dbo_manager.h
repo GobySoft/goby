@@ -32,10 +32,7 @@
 #include <Wt/Dbo/Dbo>
 
 #include "goby/util/time.h"
-
-#ifdef HAS_MOOS
-#include "goby/moos/libmoos_util/moos_serializer.h"
-#endif
+#include "dbo_plugin.h"
 
 // must be define since we are using the preprocessor
 #define GOBY_MAX_PROTOBUF_TYPES @GOBY_DBO_MAX_PROTOBUF_TYPES@
@@ -65,18 +62,19 @@ namespace goby
             std::vector<unsigned char> bytes;
             std::string time;
             int unique_id;
+            int socket_id;
             
             template<class Action>
             void persist(Action& a)
                 {
                     Wt::Dbo::field(a, unique_id, "raw_id");
+                    Wt::Dbo::field(a, socket_id, "socket_id");
                     Wt::Dbo::field(a, time, "time_written");
                     Wt::Dbo::field(a, marshalling_scheme, "marshalling_scheme");
                     Wt::Dbo::field(a, identifier, "identifier");
                     Wt::Dbo::field(a, bytes, "bytes");
                 }
         };
-        
 
         /// \brief provides a way for Wt::Dbo to work with arbitrary
         /// (run-time provided) Google Protocol Buffers types
@@ -92,6 +90,8 @@ namespace goby
             /// \brief add a type (given by its descriptor) to the Wt::Dbo SQL database
             ///
             /// you must have already added the .proto file in which this type resides using add_file()
+            
+            void add_file_descriptor(const google::protobuf::FileDescriptor* file_descriptor);
             void add_type(const google::protobuf::Descriptor* descriptor);
  
             /// \brief add a message to the Wt::Dbo SQL database
@@ -100,9 +100,6 @@ namespace goby
             void add_message(int unique_id, boost::shared_ptr<google::protobuf::Message> msg);
             void add_message(int unique_id, const google::protobuf::Message& msg);
 
-#ifdef HAS_MOOS
-            void add_message(int unique_id, CMOOSMsg& msg);
-#endif
             
             void add_raw(MarshallingScheme marshalling_scheme,
                          const std::string& identifier,
@@ -156,6 +153,9 @@ namespace goby
             void map_type(const google::protobuf::Descriptor* descriptor);
             void reset_session();
             void map_static_types();
+
+            // FOR TESTING
+            friend class ProtobufDBOPlugin;            
             
           private:    
             static DBOManager* inst_;
@@ -188,7 +188,9 @@ namespace goby
 
 
             bool static_tables_created_;
-            
+
+            DBOPluginFactory plugin_factory_;
+            ProtobufDBOPlugin protobuf_plugin_;
         };
 
 

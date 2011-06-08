@@ -35,7 +35,7 @@ namespace goby
         {
 
           protected:
-          ProtobufNode(ZeroMQNode* service)
+          ProtobufNode(ZeroMQService* service)
               : NodeInterface<google::protobuf::Message>(service)
             { }
             
@@ -65,7 +65,7 @@ namespace goby
         class StaticProtobufNode : public ProtobufNode
         {
           public:
-            StaticProtobufNode(ZeroMQNode* service)
+            StaticProtobufNode(ZeroMQService* service)
                 : ProtobufNode(service)
             { }
                         
@@ -140,7 +140,7 @@ namespace goby
         class DynamicProtobufNode : public ProtobufNode
         {
           protected:  
-            DynamicProtobufNode(ZeroMQNode* service)
+            DynamicProtobufNode(ZeroMQService* service)
                 : ProtobufNode(service)
             { }
             

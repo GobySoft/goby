@@ -46,5 +46,5 @@ message AppBaseConfig
   optional goby.core.protobuf.DatabaseClientConfig database_config = 12 [(description)="configure the Goby Database (SQL Database) to log the publish/subscribe transactions"];
   
   // advanced options
-  optional goby.core.protobuf.ZeroMQNodeConfig additional_socket_config = 100 [(description)= "open other ZeroMQ sockets, note that `socket_id`s 103998 and 103999 are reserved for the publish / subscribe functionality"];
+  optional goby.core.protobuf.ZeroMQServiceConfig additional_socket_config = 100 [(description)= "open other ZeroMQ sockets, note that `socket_id`s 103998 and 103999 are reserved for the publish / subscribe functionality"];
 }

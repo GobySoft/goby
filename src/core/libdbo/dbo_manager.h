@@ -20,25 +20,15 @@
 
 #include <stdexcept>
 
-#include <boost/bimap.hpp>
 #include <boost/shared_ptr.hpp>
-
-#include <google/protobuf/message.h>
-#include <google/protobuf/descriptor.h>
-#include "goby/core/libcore/dynamic_protobuf_manager.h"
 
 #include "goby/core/core_constants.h"
 
 #include <Wt/Dbo/Dbo>
 
 #include "goby/util/time.h"
+#include "dbo_plugin.h"
 
-#ifdef HAS_MOOS
-#include "goby/moos/libmoos_util/moos_serializer.h"
-#endif
-
-// must be define since we are using the preprocessor
-#define GOBY_MAX_PROTOBUF_TYPES @GOBY_DBO_MAX_PROTOBUF_TYPES@
 
 namespace Wt
 {
@@ -65,18 +55,19 @@ namespace goby
             std::vector<unsigned char> bytes;
             std::string time;
             int unique_id;
+            int socket_id;
             
             template<class Action>
             void persist(Action& a)
                 {
                     Wt::Dbo::field(a, unique_id, "raw_id");
+                    Wt::Dbo::field(a, socket_id, "socket_id");
                     Wt::Dbo::field(a, time, "time_written");
                     Wt::Dbo::field(a, marshalling_scheme, "marshalling_scheme");
                     Wt::Dbo::field(a, identifier, "identifier");
                     Wt::Dbo::field(a, bytes, "bytes");
                 }
         };
-        
 
         /// \brief provides a way for Wt::Dbo to work with arbitrary
         /// (run-time provided) Google Protocol Buffers types
@@ -86,23 +77,7 @@ namespace goby
             /// \brief singleton class: use this to get a pointer
             static DBOManager* get_instance();
             /// \brief if desired, this will release all resources (use right before exiting)
-            static void shutdown();
-
-            
-            /// \brief add a type (given by its descriptor) to the Wt::Dbo SQL database
-            ///
-            /// you must have already added the .proto file in which this type resides using add_file()
-            void add_type(const google::protobuf::Descriptor* descriptor);
- 
-            /// \brief add a message to the Wt::Dbo SQL database
-            ///
-            /// This is not written to the database until commit() is called
-            void add_message(int unique_id, boost::shared_ptr<google::protobuf::Message> msg);
-            void add_message(int unique_id, const google::protobuf::Message& msg);
-
-#ifdef HAS_MOOS
-            void add_message(int unique_id, CMOOSMsg& msg);
-#endif
+            static void shutdown();            
             
             void add_raw(MarshallingScheme marshalling_scheme,
                          const std::string& identifier,
@@ -116,47 +91,15 @@ namespace goby
 
             /// \brief connect to the Wt::Dbo SQL database
             void connect(const std::string& db_name = "");            
+
             
-            /// \brief wraps a particular type of Google Protocol Buffers message
-            /// (designated by id number i) so that we can use it with Wt::Dbo
-            ///
-            /// Wt:Dbo requires each type to be "persisted" or stored in the database
-            /// to have a compile-time type. Since goby_database does not know about the types
-            /// we want to use at compile-time, we have use this placeholder (ProtoBufWrapper)
-            /// which creates a new type for each value of i. At runtime we map
-            /// the Protocol Buffers types onto a given value of i and use Reflection
-            /// to properly store the fields
-            template <int i>
-                class ProtoBufWrapper
-            {
-              public:
-              ProtoBufWrapper(int unique_id = -1,
-                              boost::shared_ptr<google::protobuf::Message> p =
-                              boost::shared_ptr<google::protobuf::Message>())
-                  : unique_id_(unique_id),
-                    p_(p)
-                {
-                    // create new blank message if none given
-                    if(!p)
-                    {
-                        p_ = DynamicProtobufManager::new_protobuf_message(dbo_map.left.at(i));
-                    }
-                }
-                
-                google::protobuf::Message& msg(){ return *p_; }                
-                int& unique_id() { return unique_id_; }
-                
-                
-              private:
-                int unique_id_;
-                boost::shared_ptr<google::protobuf::Message> p_;
-            };
-            
-          private:
-            void map_type(const google::protobuf::Descriptor* descriptor);
             void reset_session();
-            void map_static_types();
-            
+            void map_types();
+            Wt::Dbo::Session* session() { return session_; }
+
+            DBOPluginFactory& plugin_factory()
+            { return plugin_factory_; }
+
           private:    
             static DBOManager* inst_;
             DBOManager();
@@ -165,17 +108,6 @@ namespace goby
             
             DBOManager(const DBOManager&);
             DBOManager& operator = (const DBOManager&);
-
-            // used to map runtime provided type (name, std::string) onto the compile time
-            // templated integers (incrementing int) for Wt::Dbo    
-            // key = integer (order type was declared)
-            // value = string full name of protobuf type
-            static boost::bimap<int, std::string> dbo_map;
-            // key = integer (order type was declared)
-            // value = string name for database table
-            std::map<int, std::string> mangle_map_;
-            // next integer to use for new incoming type
-            int index_;
 
             std::string db_name_;
 
@@ -186,36 +118,15 @@ namespace goby
 
             boost::posix_time::ptime t_last_commit_;
 
-
             bool static_tables_created_;
-            
+
+            DBOPluginFactory plugin_factory_;
         };
 
 
     }
 }
 
-// provide a special overload of `persist` for the ProtoBufWrapper class so that
-// Wt::Dbo knows how to handle ProtoBufWrapper types (and then through that class, google::protobuf::Message types)
-namespace Wt
-{
-    namespace Dbo
-    {
-        template <>
-            template <int i>
-            struct persist<goby::core::DBOManager::ProtoBufWrapper<i> >
-        {
-            template<typename A>
-                static void apply(goby::core::DBOManager::ProtoBufWrapper<i>& wrapper, A& action)
-            {
-                Wt::Dbo::field(action, wrapper.unique_id(), "raw_id");
-                protobuf_message_persist(wrapper.msg(), action);
-            }
-        };
-
-
-    }
-}
 
 
 

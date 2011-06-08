@@ -36,20 +36,17 @@ int main(int argc, char* argv[])
 
 goby::core::Database::Database()
     : ZeroMQApplicationBase(&zeromq_service_, &cfg_),
-      protobuf_node_(&zeromq_service_),
-      pubsub_node_(&protobuf_node_),
+      req_rep_protobuf_node_(&zeromq_service_),
+      pubsub_node_(&zeromq_service_, cfg_.base().pubsub_config()),
       dbo_manager_(DBOManager::get_instance()),
       last_unique_id_(-1)
-{
-    
-    
+{    
     if(cfg_.base().loop_freq() > MAX_LOOP_FREQ)
     {
         glog.is(warn) && 
             glog << "Setting loop frequency back to MAX_LOOP_FREQ = " << MAX_LOOP_FREQ << std::endl;
         set_loop_freq(MAX_LOOP_FREQ);
     }
-
     
     if(!cfg_.base().database_config().using_database())
     {
@@ -57,15 +54,19 @@ goby::core::Database::Database()
             glog << "AppBaseConfig::using_database == false. Since we aren't wanting, we aren't starting (set to true to enable use of the database)!" << std::endl;
     }
 
-    pubsub_node_.set_cfg(cfg_.base().pubsub_config());
+    for(int i = 0, n = cfg_.plugin_library_size(); i < n; ++i)
+        dbo_manager_->plugin_factory().add_library(cfg_.plugin_library(i));
+    dbo_manager_->plugin_factory().add_plugin(&protobuf_plugin_);
+
     
-    using goby::core::protobuf::ZeroMQNodeConfig;
-    ZeroMQNodeConfig socket_cfg;
-    ZeroMQNodeConfig::Socket* reply_socket = socket_cfg.add_socket();
-    reply_socket->set_socket_type(ZeroMQNodeConfig::Socket::REPLY);
-    reply_socket->set_transport(ZeroMQNodeConfig::Socket::TCP);
+    
+    using goby::core::protobuf::ZeroMQServiceConfig;
+    ZeroMQServiceConfig socket_cfg;
+    ZeroMQServiceConfig::Socket* reply_socket = socket_cfg.add_socket();
+    reply_socket->set_socket_type(ZeroMQServiceConfig::Socket::REPLY);
+    reply_socket->set_transport(ZeroMQServiceConfig::Socket::TCP);
     reply_socket->set_socket_id(DATABASE_SERVER_SOCKET_ID);
-    reply_socket->set_connect_or_bind(ZeroMQNodeConfig::Socket::BIND);
+    reply_socket->set_connect_or_bind(ZeroMQServiceConfig::Socket::BIND);
 
     if(cfg_.base().database_config().has_database_port())
         reply_socket->set_ethernet_port(cfg_.base().database_config().database_port());
@@ -94,7 +95,7 @@ goby::core::Database::Database()
     init_sql();
 
 
-    protobuf_node_.on_receipt<protobuf::DatabaseRequest>(DATABASE_SERVER_SOCKET_ID,
+    req_rep_protobuf_node_.on_receipt<protobuf::DatabaseRequest>(DATABASE_SERVER_SOCKET_ID,
                                                          &goby::core::Database::handle_database_request,
                                                          this);
     
@@ -127,7 +128,7 @@ void goby::core::Database::init_sql()
     
     // #include <google/protobuf/descriptor.pb.h>
     DynamicProtobufManager::add_protobuf_file_with_dependencies(google::protobuf::FileDescriptorProto::descriptor()->file());
-    dbo_manager_->add_type(google::protobuf::FileDescriptorProto::descriptor());
+//    dbo_manager_->add_type(google::protobuf::FileDescriptorProto::descriptor());
 
 }
 
@@ -156,7 +157,7 @@ void goby::core::Database::handle_database_request(const protobuf::DatabaseReque
             for(int i = 0, n = proto_request.file_descriptor_proto_size(); i < n; ++i)
             {
                 DynamicProtobufManager::add_protobuf_file(proto_request.file_descriptor_proto(i));
-                dbo_manager_->add_message(-1, proto_request.file_descriptor_proto(i));
+//                dbo_manager_->add_message(-1, proto_request.file_descriptor_proto(i));
                 
                 const google::protobuf::Descriptor* desc =
                     DynamicProtobufManager::descriptor_pool().FindMessageTypeByName(
@@ -170,13 +171,13 @@ void goby::core::Database::handle_database_request(const protobuf::DatabaseReque
                 } 
                 else
                 {
-                    dbo_manager_->add_type(desc);
+//                    dbo_manager_->add_type(desc);
                     proto_response.set_response_type(
                         protobuf::DatabaseResponse::NEW_PUBLISH_ACCEPTED);
                 }
             }
 
-            protobuf_node_.send(proto_response, DATABASE_SERVER_SOCKET_ID);
+            req_rep_protobuf_node_.send(proto_response, DATABASE_SERVER_SOCKET_ID);
 
             glog.is(debug1) &&
                 glog<< "Sent response: " << proto_response << std::endl;

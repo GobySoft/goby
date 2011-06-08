@@ -66,8 +66,6 @@ namespace goby
                 key.set_value_requested(value_requested);
                 return key;    
             }
-
-            
         }
     }
 }

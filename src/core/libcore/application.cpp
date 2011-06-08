@@ -72,8 +72,7 @@ void goby::core::Application::__set_up_sockets()
     else
     {
         protobuf_node_.reset(new StaticProtobufNode(&zeromq_service_));
-        pubsub_node_.reset(new PubSubStaticProtobufNode(protobuf_node_.get()));
-        pubsub_node_->set_cfg(base_cfg().pubsub_config());
+        pubsub_node_.reset(new StaticProtobufPubSubNodeWrapper(protobuf_node_.get(), base_cfg().pubsub_config()));
     }
     
     zeromq_service_.merge_cfg(base_cfg().additional_socket_config());

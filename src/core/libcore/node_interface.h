@@ -16,7 +16,7 @@
 #ifndef PROTOBUFNODE20110607H
 #define PROTOBUFNODE20110607H
 
-#include "zero_mq_node.h"
+#include "zeromq_service.h"
 
 namespace goby
 {
@@ -26,12 +26,12 @@ namespace goby
             class NodeInterface
         {
           public:
-            ZeroMQNode* zeromq_service() { return zeromq_service_; }
+            ZeroMQService* zeromq_service() { return zeromq_service_; }
             virtual void send(const NodeTypeBase& msg, int socket_id) = 0;
             virtual void subscribe(const std::string& identifier, int socket_id) = 0;
 
           protected:
-          NodeInterface(ZeroMQNode* service)
+          NodeInterface(ZeroMQService* service)
               : zeromq_service_(service)
             {
                 zeromq_service_->connect_inbox_slot(&NodeInterface<NodeTypeBase>::inbox, this);
@@ -43,7 +43,7 @@ namespace goby
                                int size,
                                int socket_id) = 0;
           private:
-            ZeroMQNode* zeromq_service_;
+            ZeroMQService* zeromq_service_;
             
         };
     }

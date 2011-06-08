@@ -27,7 +27,7 @@
 #include "goby/protobuf/core_database_request.pb.h"
 #include "database_config.pb.h"
 #include "goby/core/libcore/protobuf_node.h"
-#include "goby/core/libcore/pubsub_node.h"
+#include "goby/core/libcore/pubsub_node_wrapper.h"
 
 namespace goby
 {
@@ -47,18 +47,18 @@ namespace goby
           private:
             static protobuf::DatabaseConfig cfg_;
 
-            ZeroMQNode zeromq_service_;
-            StaticProtobufNode protobuf_node_;
-            PubSubStaticProtobufNode pubsub_node_;
+            ZeroMQService zeromq_service_;
+            StaticProtobufNode req_rep_protobuf_node_;
+            PubSubNodeWrapperBase pubsub_node_;
             
             DBOManager* dbo_manager_;
             int last_unique_id_;
 
             enum { DATABASE_SERVER_SOCKET_ID = 103996 };
             enum { MAX_LOOP_FREQ = 1 };
-            
+
+            ProtobufDBOPlugin protobuf_plugin_;
         };
-        
     }
 }
 

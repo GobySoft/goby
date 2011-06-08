@@ -11,7 +11,6 @@ message MOOSGatewayConfig
   optional uint32 moos_server_port = 3 [default = 9000];
   optional uint32 moos_comm_tick = 4 [default = 5];
   repeated string moos_subscribe_filter = 5 [(description)="Substring filter for all MOOS subscriptions; 'NAV_' matches 'NAV_X', 'NAV_Y', etc.; '' matches everything."];
-  repeated string goby_subscribe_filter = 6 [(description)="Substring filter for all Goby (ZeroMQ) subscriptions; 'NAV_' matches 'NAV_X', 'NAV_Y', etc.; '' matches everything."];
-  
+  repeated string goby_subscribe_filter = 6 [(description)="Substring filter for all Goby (ZeroMQ) subscriptions; 'NAV_' matches 'NAV_X', 'NAV_Y', etc.; '' matches everything."];  
   
 }

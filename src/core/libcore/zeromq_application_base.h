@@ -17,7 +17,7 @@
 #ifndef ZEROMQAPPLICATIONBASE20110418H
 #define ZEROMQAPPLICATIONBASE20110418H
 
-#include "goby/core/libcore/zero_mq_node.h"
+#include "goby/core/libcore/zeromq_service.h"
 #include "goby/core/libcore/application_base.h"
 
 #include "goby/util/logger.h"
@@ -31,9 +31,9 @@ namespace goby
         {
             
           protected:
-          ZeroMQApplicationBase( ZeroMQNode* service, google::protobuf::Message* cfg = 0 )
+          ZeroMQApplicationBase(ZeroMQService* service, google::protobuf::Message* cfg = 0 )
               : ApplicationBase(cfg),
-                zeromq_service_(service)
+                zeromq_service_(*service)
             {
                 set_loop_freq(base_cfg().loop_freq());
                 
@@ -91,7 +91,7 @@ namespace goby
 
                 glog.is(debug2) &&
                     glog << "timeout set to: " << timeout << " microseconds." << std::endl;
-                bool had_events = zeromq_service_->poll(timeout);
+                bool had_events = zeromq_service_.poll(timeout);
                 if(!had_events)
                 {
                     // no message, time to call loop()            
@@ -101,7 +101,7 @@ namespace goby
             }
 
           private:
-            ZeroMQNode* zeromq_service_;
+            ZeroMQService& zeromq_service_;
 
             // how long to wait between calls to loop()
             boost::posix_time::time_duration loop_period_;

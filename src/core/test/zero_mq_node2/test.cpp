@@ -14,7 +14,7 @@
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
 
-// tests basic REP/REQ functionality of ZeroMQNode class
+// tests basic REP/REQ functionality of ZeroMQService class
 
 #include "goby/core.h"
 
@@ -44,27 +44,27 @@ int main(int argc, char* argv[])
     goby::glog.add_stream(goby::util::Logger::DEBUG3, &std::cerr);
     goby::glog.set_name(argv[0]);
 
-    goby::core::ZeroMQNode node;
+    goby::core::ZeroMQService node;
 
     {
-        using goby::core::protobuf::ZeroMQNodeConfig;
+        using goby::core::protobuf::ZeroMQServiceConfig;
         
-        ZeroMQNodeConfig requestor_cfg;
-        ZeroMQNodeConfig::Socket* requestor_socket = requestor_cfg.add_socket();
-        requestor_socket->set_socket_type(ZeroMQNodeConfig::Socket::REQUEST);
-        requestor_socket->set_transport(ZeroMQNodeConfig::Socket::TCP);
+        ZeroMQServiceConfig requestor_cfg;
+        ZeroMQServiceConfig::Socket* requestor_socket = requestor_cfg.add_socket();
+        requestor_socket->set_socket_type(ZeroMQServiceConfig::Socket::REQUEST);
+        requestor_socket->set_transport(ZeroMQServiceConfig::Socket::TCP);
         requestor_socket->set_socket_id(SOCKET_REQUESTOR);
         requestor_socket->set_ethernet_address("127.0.0.1");
         requestor_socket->set_ethernet_port(54321);
-        requestor_socket->set_connect_or_bind(ZeroMQNodeConfig::Socket::CONNECT);
+        requestor_socket->set_connect_or_bind(ZeroMQServiceConfig::Socket::CONNECT);
         std::cout << requestor_socket->DebugString() << std::endl;
 
-        ZeroMQNodeConfig replier_cfg;
-        ZeroMQNodeConfig::Socket* replier_socket = replier_cfg.add_socket();
-        replier_socket->set_socket_type(ZeroMQNodeConfig::Socket::REPLY);
-        replier_socket->set_transport(ZeroMQNodeConfig::Socket::TCP);
+        ZeroMQServiceConfig replier_cfg;
+        ZeroMQServiceConfig::Socket* replier_socket = replier_cfg.add_socket();
+        replier_socket->set_socket_type(ZeroMQServiceConfig::Socket::REPLY);
+        replier_socket->set_transport(ZeroMQServiceConfig::Socket::TCP);
         replier_socket->set_ethernet_port(54321);
-        replier_socket->set_connect_or_bind(ZeroMQNodeConfig::Socket::BIND);
+        replier_socket->set_connect_or_bind(ZeroMQServiceConfig::Socket::BIND);
         replier_socket->set_socket_id(SOCKET_REPLIER);
 
         std::cout << replier_socket->DebugString() << std::endl;

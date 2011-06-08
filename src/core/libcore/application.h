@@ -24,7 +24,7 @@
 #include "goby/protobuf/header.pb.h"
 
 #include "database_client.h"
-#include "pubsub_node.h"
+#include "pubsub_node_wrapper.h"
 #include "zeromq_application_base.h"
 
 namespace google { namespace protobuf { class Message; } }
@@ -134,10 +134,10 @@ namespace goby
 
             
           private:
-            ZeroMQNode zeromq_service_;
+            ZeroMQService zeromq_service_;
             boost::shared_ptr<DatabaseClient> database_client_;
             boost::shared_ptr<StaticProtobufNode> protobuf_node_;
-            boost::shared_ptr<PubSubStaticProtobufNode> pubsub_node_;
+            boost::shared_ptr<StaticProtobufPubSubNodeWrapper> pubsub_node_;
         };
     }
 }

@@ -25,8 +25,10 @@ namespace goby
         class MOOSSerializer
         {
           public:
-            static void serialize(CMOOSMsg& msg, std::string* data)
+            static void serialize(const CMOOSMsg& const_msg, std::string* data)
             {
+                // copy because Serialize wants to modify the CMOOSMsg
+                CMOOSMsg msg(const_msg);
                 // adapted from MOOSCommPkt.cpp
                 const unsigned PKT_TMP_BUFFER_SIZE = 40000;
                 int serialized_size = PKT_TMP_BUFFER_SIZE;

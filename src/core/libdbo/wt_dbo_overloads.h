@@ -30,10 +30,6 @@
 #include <Wt/Dbo/Dbo>
 #include <Wt/Dbo/backend/Sqlite3>
 
-#ifdef HAS_MOOS
-#include "MOOSLIB/MOOSMsg.h"
-#endif
-
 
 namespace Wt
 {
@@ -206,35 +202,6 @@ namespace Wt
                 static void apply(C& obj, A& action)
             { protobuf_message_persist(obj, action); }
         };
-
-#ifdef HAS_MOOS
-        template <>
-        struct persist<CMOOSMsg>
-        {
-            template<typename A>
-                static void apply(CMOOSMsg& msg, A& action)
-            {
-                std::string msg_type(1, msg.m_cMsgType);
-                Wt::Dbo::field(action, msg_type, "msg_type");
-                msg.m_cMsgType = msg_type[0];
-                
-                std::string data_type(1, msg.m_cDataType);
-                Wt::Dbo::field(action, data_type, "data_type");
-                msg.m_cDataType = data_type[0];
-
-                
-                Wt::Dbo::field(action, msg.m_sKey, "key");
-                Wt::Dbo::field(action, msg.m_nID, "moosmsg_id");
-                Wt::Dbo::field(action, msg.m_dfTime, "moosmsg_time");
-                Wt::Dbo::field(action, msg.m_dfVal, "double_value");
-                Wt::Dbo::field(action, msg.m_sVal, "string_value");
-                Wt::Dbo::field(action, msg.m_sSrc, "source");
-                Wt::Dbo::field(action, msg.m_sSrcAux, "source_auxilary");
-                Wt::Dbo::field(action, msg.m_sOriginatingCommunity, "originating_community");
-            }
-        };
-
-#endif // HAS_MOOS
 
 
         

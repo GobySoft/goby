@@ -16,7 +16,7 @@
 #include <iostream>
 #include <fstream>
 
-#include "goby/core/libdbo/wt_dbo_overloads.h"
+#include "goby/core/libdbo/moos_dbo_helper.h"
 #include "goby/moos/libmoos_util/moos_node.h"
 #include "goby/core/libcore/application_base.h"
 
@@ -105,7 +105,7 @@ public:
             Msgs msgs;
 
             if(cfg_.has_where())
-                msgs = session.find<CMOOSMsg>("order by moosmsg_time ASC where"  +cfg_.where());
+                msgs = session.find<CMOOSMsg>("where "  + cfg_.where() + " order by moosmsg_time ASC");
             else
                 msgs = session.find<CMOOSMsg>("order by moosmsg_time ASC");
             

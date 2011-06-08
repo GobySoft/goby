@@ -19,10 +19,10 @@
 
 #include "goby/util/binary.h"
 
-using goby::core::ZeroMQNode;
+using goby::core::ZeroMQService;
 using goby::glog;
 
-goby::moos::MOOSNode::MOOSNode(ZeroMQNode* service)
+goby::moos::MOOSNode::MOOSNode(ZeroMQService* service)
     : goby::core::NodeInterface<CMOOSMsg>(service)
 {
     zeromq_service()->connect_inbox_slot(&goby::moos::MOOSNode::inbox, this);
@@ -52,7 +52,7 @@ void goby::moos::MOOSNode::inbox(core::MarshallingScheme marshalling_scheme,
     
 }
 
-void goby::moos::MOOSNode::send(CMOOSMsg& msg, int socket_id)
+void goby::moos::MOOSNode::send(const CMOOSMsg& msg, int socket_id)
 {            
 
     std::string bytes;

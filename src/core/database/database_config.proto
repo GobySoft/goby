@@ -22,5 +22,6 @@ message DatabaseConfig
   }
   // only needed if backend == SQLITE
   optional SQLiteInfo sqlite = 3;
-  
+
+  repeated string plugin_library = 4 [(example)="/path/to/dbo_plugin.so", (description)="name of dynamic library containing an implementation of goby::core::DBOPlugin"];
 }

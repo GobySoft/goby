@@ -33,7 +33,7 @@ namespace goby
         class DatabaseClient
         {
           public:
-            DatabaseClient(ZeroMQNode* service)
+            DatabaseClient(ZeroMQService* service)
                 : zeromq_service_(service),
                 protobuf_node_(service)
             {
@@ -55,13 +55,13 @@ namespace goby
                 if(cfg_.using_database())
                 {
                     
-                    using goby::core::protobuf::ZeroMQNodeConfig;
-                    ZeroMQNodeConfig socket_cfg;
-                    ZeroMQNodeConfig::Socket* request_socket = socket_cfg.add_socket();
-                    request_socket->set_socket_type(ZeroMQNodeConfig::Socket::REQUEST);
-                    request_socket->set_transport(ZeroMQNodeConfig::Socket::TCP);
+                    using goby::core::protobuf::ZeroMQServiceConfig;
+                    ZeroMQServiceConfig socket_cfg;
+                    ZeroMQServiceConfig::Socket* request_socket = socket_cfg.add_socket();
+                    request_socket->set_socket_type(ZeroMQServiceConfig::Socket::REQUEST);
+                    request_socket->set_transport(ZeroMQServiceConfig::Socket::TCP);
                     request_socket->set_socket_id(DATABASE_REQUEST_SOCKET_ID);
-                    request_socket->set_connect_or_bind(ZeroMQNodeConfig::Socket::CONNECT);
+                    request_socket->set_connect_or_bind(ZeroMQServiceConfig::Socket::CONNECT);
                     request_socket->set_ethernet_address(cfg_.database_address());
                     request_socket->set_ethernet_port(cfg_.database_port());
                     zeromq_service_->merge_cfg(socket_cfg);
@@ -150,7 +150,7 @@ namespace goby
             }
                 
           private:
-            ZeroMQNode* zeromq_service_;
+            ZeroMQService* zeromq_service_;
 
             enum { DATABASE_REQUEST_SOCKET_ID = 103997 };
             

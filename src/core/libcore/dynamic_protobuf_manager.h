@@ -22,6 +22,7 @@
 #include <google/protobuf/descriptor.pb.h>
 #include <google/protobuf/dynamic_message.h>
 
+#include <boost/signals.hpp>
 #include <boost/shared_ptr.hpp>
 
 namespace goby
@@ -52,6 +53,8 @@ namespace goby
                 return *get_instance()->descriptor_pool_;
             }
 
+            static boost::signal<void (const google::protobuf::FileDescriptor*) > new_descriptor_hooks;
+            
           private:
             // so we can use shared_ptr to hold the singleton
             template<typename T>

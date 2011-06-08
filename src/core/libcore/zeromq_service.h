@@ -33,11 +33,11 @@ namespace goby
 {
     namespace core
     {
-        class ZeroMQNode
+        class ZeroMQService
         {
           public:
-            ZeroMQNode();
-            virtual ~ZeroMQNode();
+            ZeroMQService();
+            virtual ~ZeroMQService();
 
             template<class C>
                 void connect_inbox_slot(
@@ -49,13 +49,13 @@ namespace goby
                     C* obj)
             { connect_inbox_slot(boost::bind(mem_func, obj, _1, _2, _3, _4, _5)); }
 
-            void set_cfg(const protobuf::ZeroMQNodeConfig& cfg)
+            void set_cfg(const protobuf::ZeroMQServiceConfig& cfg)
             {
                 process_cfg(cfg);
                 cfg_.CopyFrom(cfg);
             }
             
-            void merge_cfg(const protobuf::ZeroMQNodeConfig& cfg)
+            void merge_cfg(const protobuf::ZeroMQServiceConfig& cfg)
             {
                 process_cfg(cfg);
                 cfg_.MergeFrom(cfg);
@@ -122,17 +122,17 @@ namespace goby
             
             
           private:
-            ZeroMQNode(const ZeroMQNode&);
-            ZeroMQNode& operator= (const ZeroMQNode&);
+            ZeroMQService(const ZeroMQService&);
+            ZeroMQService& operator= (const ZeroMQService&);
             
-            void process_cfg(const protobuf::ZeroMQNodeConfig& cfg);
+            void process_cfg(const protobuf::ZeroMQServiceConfig& cfg);
 
             std::string make_header(MarshallingScheme marshalling_scheme,
                                     const std::string& protobuf_type_name);
 
             void handle_receive(const void* data, int size, int message_part, int socket_id);
 
-            int socket_type(protobuf::ZeroMQNodeConfig::Socket::SocketType type);
+            int socket_type(protobuf::ZeroMQServiceConfig::Socket::SocketType type);
             
             boost::shared_ptr<zmq::socket_t> socket_from_id(int socket_id);
 
@@ -141,7 +141,7 @@ namespace goby
             std::map<int, boost::shared_ptr<zmq::socket_t> > sockets_;
             std::vector<zmq::pollitem_t> poll_items_;
 
-            protobuf::ZeroMQNodeConfig cfg_;
+            protobuf::ZeroMQServiceConfig cfg_;
             
             // maps poll_items_ index to a callback function
             std::map<size_t, boost::function<void (const void* data, int size, int message_part)> > poll_callbacks_;

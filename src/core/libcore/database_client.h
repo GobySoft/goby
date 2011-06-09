@@ -36,15 +36,15 @@ namespace goby
             DatabaseClient(ZeroMQService* service)
                 : zeromq_service_(service),
                 protobuf_node_(service)
-            {
-                goby::acomms::connect(&zeromq_service_->pre_send_hooks, this, &DatabaseClient::pre_send);
+                {
+                    goby::acomms::connect(&zeromq_service_->pre_send_hooks, this, &DatabaseClient::pre_send);
 
-                if(cfg_.using_database())
-                    protobuf_node_.on_receipt<protobuf::DatabaseResponse>(DATABASE_REQUEST_SOCKET_ID,
-                                                                      &DatabaseClient::response_inbox,
-                                                                      this);
+                    if(cfg_.using_database())
+                        protobuf_node_.on_receipt<protobuf::DatabaseResponse>(DATABASE_REQUEST_SOCKET_ID,
+                                                                              &DatabaseClient::response_inbox,
+                                                                              this);
                 
-            }
+                }
             virtual ~DatabaseClient()
             { }
             

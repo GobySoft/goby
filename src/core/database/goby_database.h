@@ -13,8 +13,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef GOBYD20100914H
-#define GOBYD20100914H
+#ifndef GOBYDATABASE20100914H
+#define GOBYDATABASE20100914H
 
 #include <map>
 #include <boost/unordered_map.hpp>

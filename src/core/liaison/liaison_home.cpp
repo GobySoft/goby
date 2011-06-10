@@ -1,6 +1,5 @@
-// copyright 2010 t. schneider tes@mit.edu
+// copyright 2011 t. schneider tes@mit.edu
 // 
-//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -14,13 +13,15 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
+#include "liaison_home.h"
 
-// courtesy header for the goby core library
+using namespace Wt;
 
-#ifndef CORECOURTESY20100922H
-#define CORECOURTESY20100922H
 
-#include "goby/core/libcore/application.h"
-#include "goby/core/libcore/configuration_reader.h"
+goby::core::LiaisonHome::LiaisonHome()
+{
+    addWidget(new WText("Welcome to Goby Liaison: an extensible tool for commanding and comprehending this Goby platform."));
+    addWidget(new WBreak());
+    addWidget(new WText("<i>liaison (n): one that establishes and maintains communication for mutual understanding and cooperation</i>"));
+}
 
-#endif

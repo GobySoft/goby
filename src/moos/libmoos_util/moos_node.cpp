@@ -21,12 +21,15 @@
 
 using goby::core::ZeroMQService;
 using goby::glog;
+using namespace goby::util::logger_lock;
+
 
 goby::moos::MOOSNode::MOOSNode(ZeroMQService* service)
     : goby::core::NodeInterface<CMOOSMsg>(service)
 {
     zeromq_service()->connect_inbox_slot(&goby::moos::MOOSNode::inbox, this);
-        
+
+    boost::mutex::scoped_lock lock(glog.mutex());    
     glog.add_group("in_hex", util::Colors::green, "Goby MOOS (hex) - Incoming");
     glog.add_group("out_hex", util::Colors::magenta, "Goby MOOS (hex) - Outgoing");
 
@@ -44,8 +47,8 @@ void goby::moos::MOOSNode::inbox(core::MarshallingScheme marshalling_scheme,
         CMOOSMsg msg;
         std::string bytes(static_cast<const char*>(data), size);
 
-        glog.is(debug2) && 
-            glog << group("in_hex") << goby::util::hex_encode(bytes) << std::endl;
+        glog.is(debug2, lock) && 
+            glog << group("in_hex") << goby::util::hex_encode(bytes) << std::endl << unlock;
         MOOSSerializer::parse(&msg, bytes);
         moos_inbox(msg);
     }
@@ -58,8 +61,8 @@ void goby::moos::MOOSNode::send(const CMOOSMsg& msg, int socket_id)
     std::string bytes;
     MOOSSerializer::serialize(msg, &bytes);
 
-    glog.is(debug2) &&
-        glog << group("out_hex") << goby::util::hex_encode(bytes) << std::endl;
+    glog.is(debug2, lock) &&
+        glog << group("out_hex") << goby::util::hex_encode(bytes) << std::endl << unlock;
 
     zeromq_service()->send(goby::core::MARSHALLING_MOOS, "CMOOSMsg/" + msg.GetKey() + "/", &bytes[0], bytes.size(), socket_id);
 }

@@ -38,7 +38,34 @@ namespace goby
             
             virtual ~PubSubNodeWrapperBase()
             { }
-          
+
+            void publish(MarshallingScheme marshalling_scheme,
+                         const std::string& identifier,
+                         const void* data,
+                         int size)
+            {
+                if(!cfg().using_pubsub())
+                {
+                    glog.is(warn) && glog << "Ignoring publish since we have `using_pubsub`=false" << std::endl;
+                    return;
+                }
+                
+                zeromq_service_.send(marshalling_scheme, identifier, data, size, SOCKET_PUBLISH);
+            }
+
+            void subscribe(MarshallingScheme marshalling_scheme,
+                           const std::string& identifier)
+            {
+                if(!cfg().using_pubsub())
+                {
+                    glog.is(warn) && glog << "Ignoring subscribe since we have `using_pubsub`=false" << std::endl;
+                    return;
+                }
+                
+                zeromq_service_.subscribe(marshalling_scheme, identifier, SOCKET_SUBSCRIBE);
+            }
+            
+            
             void subscribe_all()
             { zeromq_service_.subscribe_all(SOCKET_SUBSCRIBE); }
 
@@ -57,7 +84,7 @@ namespace goby
                 cfg_ = cfg;
               
                 goby::core::protobuf::ZeroMQServiceConfig pubsub_cfg;
-
+                
                 using goby::glog;
                 if(cfg.using_pubsub())
                 {

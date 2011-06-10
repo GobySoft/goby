@@ -1,0 +1,44 @@
+/* general */
+
+body { font-size:100%; }
+.header { font-size: 1.3em;}
+* { font-family: Gentium, serif; }
+html { min-height: 100%; margin-bottom: 1px; }
+
+ul.menu
+{
+    margin: 0px;
+    padding: 10px;
+    text-indent:0px;
+    list-style:none;
+    overflow: auto    
+}
+
+
+ul.menu li
+{
+    padding: 10px;
+}
+
+
+div.content
+{
+   padding: 20px;
+}
+
+a { outline:0; }
+a:link { color:#006a94; }
+a:hover, a:hover img,  div:hover.do_hover { background:#EEE; }
+a:active {color:#E36034}
+
+a:visited, a:link
+{
+    text-decoration:none;
+    border-bottom:1px dotted #aaa;
+}
+
+a.no_ul
+{
+    text-decoration:none;
+    border-bottom:0px; 
+}

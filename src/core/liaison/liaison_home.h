@@ -1,6 +1,5 @@
-// copyright 2010 t. schneider tes@mit.edu
+// copyright 2011 t. schneider tes@mit.edu
 // 
-//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -14,13 +13,27 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
+#ifndef LIAISONHOME20110609H
+#define LIAISONHOME20110609H
 
-// courtesy header for the goby core library
+#include <Wt/WText>
+#include <Wt/WCssDecorationStyle>
+#include <Wt/WBorder>
+#include <Wt/WColor>
 
-#ifndef CORECOURTESY20100922H
-#define CORECOURTESY20100922H
+#include "liaison.h"
 
-#include "goby/core/libcore/application.h"
-#include "goby/core/libcore/configuration_reader.h"
+namespace goby
+{
+    namespace core
+    {
+        class LiaisonHome : public LiaisonContainer
+        {
+          public:
+            LiaisonHome();
+            
+        };
+    }
+}
 
 #endif

@@ -20,36 +20,112 @@
 #include "liaison_config.pb.h"
 #include <Wt/WEnvironment>
 #include <Wt/WApplication>
+#include <Wt/WString>
+#include <Wt/WMenu>
 #include <Wt/WServer>
+#include <Wt/WContainerWidget>
 
 namespace goby
 {
     namespace core
     {
-        class Liaison : public Application
+        /* class LiaisonContainerWrapper : public Wt::WContainerWidget */
+        /* { */
+        /*   public: */
+        /*     LiaisonContainerWrapper() */
+        /*     { */
+        /*         setStyleClass("wrapper"); */
+        /*     } */
+        /*     virtual ~LiaisonContainerWrapper() { }             */
+        /* }; */
+
+            
+        class LiaisonContainer : public  Wt::WContainerWidget
+        {
+          public:
+          LiaisonContainer()
+              : name_(new Wt::WText())
+            {
+                setStyleClass("content");
+                addWidget(new Wt::WText("<hr/>"));
+                addWidget(name_);
+                addWidget(new Wt::WText("<hr/>"));
+            }
+
+            void set_name(const Wt::WString& name)
+            {
+                name_->setText(name);
+            }
+            
+            virtual ~LiaisonContainer() { }
+
+          private:
+            Wt::WText* name_;
+        };        
+
+        
+        class Liaison : public ZeroMQApplicationBase
         {
           public:
             Liaison();
             ~Liaison() { }
 
-            class LiaisonWtApplication : public Wt::WApplication
+            void inbox(MarshallingScheme marshalling_scheme,
+                       const std::string& identifier,
+                       const void* data,
+                       int size,
+                       int socket_id);
+
+            enum 
             {
-              public:
-                LiaisonWtApplication(const Wt::WEnvironment& env);
-                
+                LIAISON_INTERNAL_PUBLISH_SOCKET = 1,
+                LIAISON_INTERNAL_SUBSCRIBE_SOCKET = 2
             };
+
+            static const std::string LIAISON_INTERNAL_PUBLISH_SOCKET_NAME;
+            static const std::string LIAISON_INTERNAL_SUBSCRIBE_SOCKET_NAME; 
             
+
             void loop();
+
+            static boost::shared_ptr<zmq::context_t> zmq_context() { return zmq_context_; }
+
+            friend class LiaisonWtThread;
           private:
             static protobuf::LiaisonConfig cfg_;
             Wt::WServer wt_server_;
+            static boost::shared_ptr<zmq::context_t> zmq_context_;
+            ZeroMQService zeromq_service_;
+            PubSubNodeWrapperBase pubsub_node_;
+
+            // add a database client
         };
 
-        Wt::WApplication* create_wt_application(const Wt::WEnvironment& env)
+        class LiaisonWtThread : public Wt::WApplication
         {
-            return new Liaison::LiaisonWtApplication(env);
-        }
+          public:
+            LiaisonWtThread(const Wt::WEnvironment& env);
 
+            void inbox(MarshallingScheme marshalling_scheme,
+                       const std::string& identifier,
+                       const void* data,
+                       int size,
+                       int socket_id);
+                
+            void loop();
+                
+          private:
+            void add_to_menu(Wt::WMenu* menu, const Wt::WString& name, LiaisonContainer* container);
+          private:
+            Wt::WStackedWidget* contents_stack_;
+            ZeroMQService zeromq_service_;
+        };
+
+        
+        inline Wt::WApplication* create_wt_application(const Wt::WEnvironment& env)
+        {
+            return new LiaisonWtThread(env);
+        }
 
     }
 }

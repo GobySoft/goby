@@ -37,6 +37,7 @@ namespace goby
         {
           public:
             ZeroMQService();
+            ZeroMQService(boost::shared_ptr<zmq::context_t> context);
             virtual ~ZeroMQService();
 
             template<class C>
@@ -100,7 +101,7 @@ namespace goby
                 poll_callbacks_.insert(std::make_pair(poll_items_.size()-1, callback));
             }
             
-            zmq::context_t& zmq_context() { return context_; }
+            boost::shared_ptr<zmq::context_t> zmq_context() { return context_; }
 
 
             boost::signal<void (MarshallingScheme marshalling_scheme,
@@ -119,8 +120,6 @@ namespace goby
                                 const std::string& identifier,
                                 int socket_id)> post_subscribe_hooks;
             
-            
-            
           private:
             ZeroMQService(const ZeroMQService&);
             ZeroMQService& operator= (const ZeroMQService&);
@@ -137,7 +136,7 @@ namespace goby
             boost::shared_ptr<zmq::socket_t> socket_from_id(int socket_id);
 
           private:
-            zmq::context_t context_;
+            boost::shared_ptr<zmq::context_t> context_;
             std::map<int, boost::shared_ptr<zmq::socket_t> > sockets_;
             std::vector<zmq::pollitem_t> poll_items_;
 

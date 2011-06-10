@@ -29,10 +29,14 @@ using goby::util::hex_encode;
 using namespace goby::util::logger_lock;
 
 
+goby::core::ZeroMQService::ZeroMQService(boost::shared_ptr<zmq::context_t> context)
+    : context_(context)
+{
+}
 
 goby::core::ZeroMQService::ZeroMQService()
-    : context_(1)
-{
+    : context_(new zmq::context_t(2))
+{    
 }
 
 void goby::core::ZeroMQService::process_cfg(const protobuf::ZeroMQServiceConfig& cfg)
@@ -43,7 +47,7 @@ void goby::core::ZeroMQService::process_cfg(const protobuf::ZeroMQServiceConfig&
         {
             // TODO (tes) - check for compatible socket type
             boost::shared_ptr<zmq::socket_t> new_socket(
-                new zmq::socket_t(context_, socket_type(cfg.socket(i).socket_type())));
+                new zmq::socket_t(*context_, socket_type(cfg.socket(i).socket_type())));
             
             sockets_.insert(std::make_pair(cfg.socket(i).socket_id(), new_socket));
             
@@ -236,7 +240,7 @@ void goby::core::ZeroMQService::handle_receive(const void* data,
         {
             // byte size of marshalling id
             const unsigned MARSHALLING_SIZE = BITS_IN_UINT32 / BITS_IN_BYTE;
-
+            
             if(bytes.size() < MARSHALLING_SIZE)
                 throw(std::runtime_error("Message is too small"));
 

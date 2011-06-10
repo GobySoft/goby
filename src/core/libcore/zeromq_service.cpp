@@ -231,8 +231,8 @@ void goby::core::ZeroMQService::handle_receive(const void* data,
         glog << "got a message: " << goby::util::hex_encode(bytes) << std::endl << unlock;
     
     
-    static MarshallingScheme marshalling_scheme = MARSHALLING_UNKNOWN;
-    static std::string identifier;
+    MarshallingScheme marshalling_scheme = MARSHALLING_UNKNOWN;
+    std::string identifier;
 
     switch(message_part)
     {

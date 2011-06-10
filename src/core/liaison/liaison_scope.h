@@ -35,7 +35,7 @@ namespace goby
     namespace core
     {
         class LiaisonScope : public LiaisonContainer, public goby::moos::MOOSNode
-        {
+        
           public:
             LiaisonScope(ZeroMQService* service);
             

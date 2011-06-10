@@ -30,49 +30,50 @@ goby::core::LiaisonScope::LiaisonScope(ZeroMQService* service)
 {
     text_ = new Wt::WText("placeholder", this);
     
-    int topLevelRows = 5;
-    int secondLevelRows = 7;
-    int thirdLevelRows = 3;
+    // int topLevelRows = 5;
+    // int secondLevelRows = 7;
+    // int thirdLevelRows = 3;
 
-    model_ = new Wt::WStandardItemModel(0,1, this);
-    Wt::WStandardItem *root = model_->invisibleRootItem();
+    // //model_ = new Wt::WStandardItemModel(0,1, this);
+    // model_ = new Wt::WStandardItemModel();
+    // Wt::WStandardItem *root = model_->invisibleRootItem();
     
-    model_->setHeaderData(0, Horizontal, std::string("Type Name"));  
+    // //model_->setHeaderData(0, Horizontal, std::string("Type Name"));  
 
     
-    for (int row = 0; row < topLevelRows; ++row) {
-        Wt::WStandardItem *topLevel = new Wt::WStandardItem();
-        topLevel->setText("Item " + boost::lexical_cast<std::string>(row));
-        for (int row2 = 0; row2 < secondLevelRows; ++row2) {
-            Wt::WStandardItem *item = new Wt::WStandardItem();
-            item->setText("Item " + boost::lexical_cast<std::string>(row)
-                          + ": " + boost::lexical_cast<std::string>(row2));
-            for (int row3 = 0; row3 < thirdLevelRows; ++row3) {
-                Wt::WStandardItem *item2 = new Wt::WStandardItem();
-                item2->setText("Item " + boost::lexical_cast<std::string>(row)
-                              + ": " + boost::lexical_cast<std::string>(row2)
-                              + ": " + boost::lexical_cast<std::string>(row3));
-                item->appendRow(item2);
-            }
-            topLevel->appendRow(item);
-        }
-        root->appendRow(topLevel);
-    }    
+    // for (int row = 0; row < topLevelRows; ++row) {
+    //     Wt::WStandardItem *topLevel = new Wt::WStandardItem();
+    //     topLevel->setText("Item " + boost::lexical_cast<std::string>(row));
+    //     // for (int row2 = 0; row2 < secondLevelRows; ++row2) {
+    //     //     Wt::WStandardItem *item = new Wt::WStandardItem();
+    //     //     item->setText("Item " + boost::lexical_cast<std::string>(row)
+    //     //                   + ": " + boost::lexical_cast<std::string>(row2));
+    //     //     for (int row3 = 0; row3 < thirdLevelRows; ++row3) {
+    //     //         Wt::WStandardItem *item2 = new Wt::WStandardItem();
+    //     //         item2->setText("Item " + boost::lexical_cast<std::string>(row)
+    //     //                       + ": " + boost::lexical_cast<std::string>(row2)
+    //     //                       + ": " + boost::lexical_cast<std::string>(row3));
+    //     //         item->appendRow(item2);
+    //     //     }
+    //     //     topLevel->appendRow(item);
+    //     // }
+    //     root->appendRow(topLevel);
+    // }    
 
     // Create the WTreeView
-    Wt::WTreeView *gitView = new Wt::WTreeView(this);
+//    Wt::WTreeView *gitView = new Wt::WTreeView(this);
 //    gitView->resize(Wt::WLength::Auto, Wt::WLength::Auto);
-    gitView->setModel(model_);
-    gitView->setSelectionMode(Wt::SingleSelection);
+//    gitView->setModel(model_);
+//    gitView->setSelectionMode(Wt::SingleSelection);
 
 
-    WSortFilterProxyModel* filteredSortedCocktails = new WSortFilterProxyModel(this);
-    filteredSortedCocktails->setSourceModel(model_);
-    filteredSortedCocktails->setDynamicSortFilter(true);
-    filteredSortedCocktails->setFilterKeyColumn(0);
-    filteredSortedCocktails->setFilterRole(Wt::DisplayRole);
-    filteredSortedCocktails->setFilterRegExp(".*");
-    filteredSortedCocktails->sort(0);
+    // WSortFilterProxyModel* filteredSortedCocktails = new WSortFilterProxyModel(this);
+    // filteredSortedCocktails->setSourceModel(model_);
+    // filteredSortedCocktails->setDynamicSortFilter(true);
+    // filteredSortedCocktails->setFilterKeyColumn(0);
+    // filteredSortedCocktails->setFilterRole(Wt::DisplayRole);
+    // filteredSortedCocktails->setFilterRegExp(".*");
+    // filteredSortedCocktails->sort(0);
     
     // // Create the WTreeView
     // Wt::WTreeView *gitView2 = new Wt::WTreeView(this);
@@ -81,6 +82,10 @@ goby::core::LiaisonScope::LiaisonScope(ZeroMQService* service)
     // gitView2->setSelectionMode(Wt::SingleSelection);
     
 //    addWidget(gitView);
+
+
+
+    
 }
 
 
@@ -93,14 +98,14 @@ void goby::core::LiaisonScope::moos_inbox(CMOOSMsg& msg)
     glog.is(debug1, lock) && glog << "LiaisonScope: got message:  " << msg << std::endl << unlock;
 
 
-    // exclusive access to app state
-    Wt::WStandardItem* root = model_->invisibleRootItem();
-    Wt::WStandardItem* topLevel = new Wt::WStandardItem();
-    std::stringstream ss;
-    ss << msg;
-    topLevel->setText(ss.str());
-    model_->setItem(0, 0, topLevel);
+    // // exclusive access to app state
+    // Wt::WStandardItem* root = model_->invisibleRootItem();
+    // Wt::WStandardItem* topLevel = new Wt::WStandardItem();
+    // std::stringstream ss;
+    // ss << msg;
+    // topLevel->setText(ss.str());
+    // model_->setItem(0, 0, topLevel);
         
-    text_->setText(ss.str());
+    // text_->setText(ss.str());
 }
 

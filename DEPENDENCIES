@@ -75,7 +75,6 @@ debian_boost_packages=\
 libboost-system-dev
 libboost-date-time-dev
 libboost-thread-dev
-libboost-regex-dev
 libboost-program-options-dev
 libboost-signals-dev
 libboost-filesystem-dev"
@@ -92,11 +91,12 @@ libcdk5-dev"
 
 
 # Ubuntu
-if [ -e "`which add-apt-repository`" ]; then
+if [[ -e "`which add-apt-repository`" && ! "`lsb_release -sc`" = "lucid" ]]; then
     echo "adding ppa:goby-dev/ppa for Ubuntu Dependencies"
     add-apt-repository ppa:goby-dev/ppa
     apt-get update
     apt-get build-dep libgoby1-dev
+    apt-get -y install $debian_base_packages
 # Debian
 elif [ -e "`which apt-get`" ]; then
     if [ -z "`apt-cache search ${debian_xerces_package}`" ]; then

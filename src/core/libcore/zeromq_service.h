@@ -71,6 +71,7 @@ namespace goby
             { inbox_signal_.connect(slot); }
 
             void subscribe_all(int socket_id);            
+            void unsubscribe_all(int socket_id);            
             
             void send(MarshallingScheme marshalling_scheme,
                       const std::string& identifier,
@@ -82,6 +83,11 @@ namespace goby
                            const std::string& identifier,
                            int socket_id);
 
+            void unsubscribe(MarshallingScheme marshalling_scheme,
+                           const std::string& identifier,
+                           int socket_id);
+
+            
             
             bool poll(long timeout = -1);
             

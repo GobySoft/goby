@@ -30,6 +30,7 @@
 
 using goby::glog;
 using namespace Wt;    
+    using namespace goby::util::logger_lock;
 
 goby::core::protobuf::LiaisonConfig goby::core::Liaison::cfg_;
 boost::shared_ptr<zmq::context_t> goby::core::Liaison::zmq_context_(new zmq::context_t(1));
@@ -108,7 +109,7 @@ void goby::core::Liaison::inbox(MarshallingScheme marshalling_scheme,
                                 int size,
                                 int socket_id)
 {
-    glog << "Liaison: got message with identifier: " << identifier << std::endl;    
+    glog.is(debug2, lock) && glog << "Liaison: got message with identifier: " << identifier << std::endl << unlock;    
     zeromq_service_.send(marshalling_scheme, identifier, data, size, LIAISON_INTERNAL_PUBLISH_SOCKET);
 }
 
@@ -117,70 +118,6 @@ goby::core::LiaisonWtThread::LiaisonWtThread(const Wt::WEnvironment& env)
     : Wt::WApplication(env),
       zeromq_service_(Liaison::zmq_context())
 {    
-    Wt::WString title_text("goby liaison: " + Liaison::cfg_.base().platform_name());
-    setTitle(title_text);
-
-    useStyleSheet(std::string("css/fonts.css?" + util::goby_file_timestamp()));
-    useStyleSheet(std::string("css/liaison.css?" + util::goby_file_timestamp()));
-//    setCssTheme("");
-    
-
-    contents_stack_ = new WStackedWidget();
-    // Show scrollbars when needed ...
-    contents_stack_->setOverflow(WContainerWidget::OverflowAuto);
-    // ... and work around a bug in IE (see setOverflow() documentation)
-    contents_stack_->setPositionScheme(Relative);
-    contents_stack_->setStyleClass("contents");
-    
-    /*
-     * Setup the menu
-     */
-    WMenu *menu = new WMenu(contents_stack_, Vertical, 0);
-    menu->setRenderAsList(true);
-    menu->setStyleClass("menu");
-    menu->setInternalPathEnabled();
-    menu->setInternalBasePath("/");
-    
-    add_to_menu(menu, "Home", new LiaisonHome());
-    add_to_menu(menu, "Scope", new LiaisonScope(&zeromq_service_));
-//    add_to_menu(menu, "scope2", new LiaisonScope("hello 2"));
-
-    
-    /*
-     * Add it all inside a layout
-     */
-    WVBoxLayout *vertLayout1 = new WVBoxLayout(root());
-    WHBoxLayout *horizLayout1 = new WHBoxLayout; 
-    WVBoxLayout *vertLayout2 = new WVBoxLayout;
-    WHBoxLayout *horizLayout2 = new WHBoxLayout;
-
-    WText* header = new WText(title_text);
-    header->setStyleClass("header");
-    
-    vertLayout1->addWidget(header, 0, AlignCenter | AlignTop);
-    vertLayout1->addLayout(horizLayout1, 1);
-    horizLayout1->addWidget(menu);
-    horizLayout1->setResizable(0, true);
-    horizLayout1->addLayout(vertLayout2, 1);
-    vertLayout2->addWidget(contents_stack_);
-
-    WImage* goby_lp_image = new WImage("images/goby-lp.png");
-    WImage* goby_logo = new WImage("images/gobysoft_logo_dot_org_small.png");
-
-    WAnchor* goby_lp_image_a = new WAnchor("https://launchpad.net/goby", goby_lp_image);
-    WAnchor* goby_logo_a = new WAnchor("http://gobysoft.org/#/software/goby", goby_logo);
-    goby_lp_image_a->setStyleClass("no_ul");
-    goby_logo_a->setStyleClass("no_ul");
-    goby_lp_image_a->setTarget(TargetNewWindow);
-    goby_logo_a->setTarget(TargetNewWindow);
-    
-    vertLayout1->addLayout(horizLayout2, 0);
-    horizLayout2->addWidget(goby_lp_image_a, 0, AlignLeft | AlignBottom);
-    horizLayout2->addWidget(goby_logo_a, 0, AlignRight | AlignBottom);
-
-
-
-    
 //    zeromq_service_.connect_inbox_slot(&LiaisonWtThread::inbox, this);
 
     protobuf::ZeroMQServiceConfig ipc_sockets;
@@ -192,10 +129,105 @@ goby::core::LiaisonWtThread::LiaisonWtThread(const Wt::WEnvironment& env)
     internal_publish_socket->set_socket_name(Liaison::LIAISON_INTERNAL_PUBLISH_SOCKET_NAME);
 
     zeromq_service_.merge_cfg(ipc_sockets);    
-    zeromq_service_.subscribe_all(Liaison::LIAISON_INTERNAL_PUBLISH_SOCKET);
+//    zeromq_service_.subscribe(MARSHALLING_MOOS, "CMOOSMsg/DB", Liaison::LIAISON_INTERNAL_PUBLISH_SOCKET);
+
+
+
+    Wt::WString title_text("goby liaison: " + Liaison::cfg_.base().platform_name());
+    setTitle(title_text);
+
+    useStyleSheet(std::string("css/fonts.css?" + util::goby_file_timestamp()));
+    useStyleSheet(std::string("css/liaison.css?" + util::goby_file_timestamp()));
+//    setCssTheme("");
+    
+
+    root()->setId("main");
+    
+    /*
+     * Set up the title
+     */
+    WContainerWidget* header_div = new WContainerWidget(root());
+    header_div->setId("header");
+    
+    WImage* goby_lp_image = new WImage("images/goby-lp.png");
+    WImage* goby_logo = new WImage("images/gobysoft_logo_dot_org_small.png");
+
+    
+    WAnchor* goby_lp_image_a = new WAnchor("https://launchpad.net/goby", goby_lp_image, header_div);
+    WText* header = new WText(title_text, header_div);
+    header->setId("header");
+
+    WAnchor* goby_logo_a = new WAnchor("http://gobysoft.org/#/software/goby", goby_logo, header_div);
+    goby_lp_image_a->setId("lp_logo");
+    goby_logo_a->setId("goby_logo");
+    goby_lp_image_a->setStyleClass("no_ul");
+    goby_logo_a->setStyleClass("no_ul");
+    goby_lp_image_a->setTarget(TargetNewWindow);
+    goby_logo_a->setTarget(TargetNewWindow);
+    
+
+    new WText("<hr/>", root());
+
+    
+    WContainerWidget* menu_div = new WContainerWidget(root());
+    menu_div->setStyleClass("menu");
+
+    WContainerWidget* contents_div = new WContainerWidget(root());
+    contents_div->setId("contents");
+    contents_stack_ = new WStackedWidget(contents_div);
+    contents_stack_->setStyleClass("fill");
+    
+    /*
+     * Setup the menu
+     */
+    WMenu *menu = new WMenu(contents_stack_, Vertical, menu_div);
+    menu->setRenderAsList(true);
+    menu->setStyleClass("menu");
+    menu->setInternalPathEnabled();
+    menu->setInternalBasePath("/");
+    
+    add_to_menu(menu, "Home", new LiaisonHome());
+    add_to_menu(menu, "Scope", new LiaisonScope(&zeromq_service_));
+//    add_to_menu(menu, "scope2", new LiaisonScope("hello 2"));
+
+
+    
+
+    
+//    WVBoxLayout *vertLayout1 = new WVBoxLayout(root());
+//    WHBoxLayout *horizLayout1 = new WHBoxLayout; 
+//    WVBoxLayout *vertLayout2 = new WVBoxLayout;
+//    WHBoxLayout *horizLayout2 = new WHBoxLayout;
+
+    
+//     vertLayout1->addWidget(header, 0, AlignCenter | AlignTop);
+//     vertLayout1->addLayout(horizLayout1, 1);
+// //    vertLayout1->setResizable(0, true);
+// //    vertLayout1->setResizable(1, true);
+//     horizLayout1->addWidget(menu);
+//     horizLayout1->setResizable(0, true);
+//     horizLayout1->addLayout(vertLayout2, 1);
+// //    vertLayout2->addWidget(contents_stack_, 0, AlignTop);
+//     vertLayout2->addWidget(contents_stack_, 0, AlignJustify);
+    
+    
+//     vertLayout1->addLayout(horizLayout2, 0);
+//     horizLayout2->addWidget(goby_lp_image_a, 0, AlignLeft | AlignBottom);
+//     horizLayout2->addWidget(goby_logo_a, 0, AlignRight | AlignBottom);
+
+//     root()->resize(WLength::Auto, 600);
+//     Wt::WGridLayout* grid_layout = new Wt::WGridLayout(root());
+    
+//     grid_layout->addWidget(header, 0, 0, 3, 1, AlignCenter | AlignTop);
+// //    grid_layout->addWidget(new Wt::WText("Item 0 1"), 0, 1);
+//     grid_layout->addWidget(menu, 1, 0);
+//     grid_layout->addWidget(contents_stack_, 1,1, 2,1);
+
+    
+    
 
     Wt::WTimer *timer = new Wt::WTimer();
-    timer->setInterval(100);
+    timer->setInterval(1000);
     timer->timeout().connect(this, &LiaisonWtThread::loop);
     timer->start();
 }
@@ -209,11 +241,12 @@ void goby::core::LiaisonWtThread::add_to_menu(WMenu* menu, const WString& name,
 
 void goby::core::LiaisonWtThread::loop()
 {
-    using namespace goby::util::logger_lock;
 
     glog.is(debug2, lock) && glog << "LiaisonWtThread: polling" << std::endl << unlock;
     while(zeromq_service_.poll(0))
-    { }    
+    { }
+
+    
 }
 
 void goby::core::LiaisonWtThread::inbox(MarshallingScheme marshalling_scheme,
@@ -222,8 +255,6 @@ void goby::core::LiaisonWtThread::inbox(MarshallingScheme marshalling_scheme,
                                                       int size,
                                                       int socket_id)
 {
-    using namespace goby::util::logger_lock;
-    
     glog.is(debug1, lock) && glog << "LiaisonWtThread: got message with identifier: " << identifier << std::endl << unlock;
     
 }

@@ -46,10 +46,10 @@ namespace goby
           LiaisonContainer()
               : name_(new Wt::WText())
             {
-                setStyleClass("content");
-                addWidget(new Wt::WText("<hr/>"));
-                addWidget(name_);
-                addWidget(new Wt::WText("<hr/>"));
+                setStyleClass("fill");
+                /* addWidget(new Wt::WText("<hr/>")); */
+                /* addWidget(name_); */
+                /* addWidget(new Wt::WText("<hr/>")); */
             }
 
             void set_name(const Wt::WString& name)
@@ -91,6 +91,7 @@ namespace goby
             static boost::shared_ptr<zmq::context_t> zmq_context() { return zmq_context_; }
 
             friend class LiaisonWtThread;
+            friend class LiaisonScope;
           private:
             static protobuf::LiaisonConfig cfg_;
             Wt::WServer wt_server_;

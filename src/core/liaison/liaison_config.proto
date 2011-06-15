@@ -16,3 +16,14 @@ message LiaisonConfig
 
   extensions 1000 to max;
 }
+
+extend LiaisonConfig
+{
+  optional MOOSScopeConfig moos_scope_config = 1000;
+}
+
+
+message MOOSScopeConfig
+{
+  repeated string subscription = 1;
+}

@@ -19,6 +19,7 @@
 #include "configuration_reader.h"
 
 #include "goby/util/liblogger/term_color.h"
+#include "goby/util/liblogger/flex_ostream.h"
 #include "exception.h"
 #include <google/protobuf/dynamic_message.h>
 #include <algorithm>
@@ -111,13 +112,30 @@ void goby::core::ConfigReader::read_cfg(int argc,
             fin.open(cfg_path.c_str(), std::ifstream::in);
             if(!fin.is_open())
                 throw(ConfigException(std::string("could not open '" + cfg_path + "' for reading. check value of --cfg_path")));   
-                
-            google::protobuf::io::IstreamInputStream is(&fin);
-                
+
+            
+//            google::protobuf::io::IstreamInputStream is(&fin);
+            std::string protobuf_text((std::istreambuf_iterator<char>(fin)),
+                                      std::istreambuf_iterator<char>());
+            
             google::protobuf::TextFormat::Parser parser;
             // maybe the command line will fill in the missing pieces
+            glog.set_name(*application_name);
+            glog.add_stream("verbose", &std::cout);
+            FlexOStreamErrorCollector error_collector(protobuf_text);
+            parser.RecordErrorsTo(&error_collector);
             parser.AllowPartialMessage(true);
-            parser.Parse(&is, message);
+            parser.ParseFromString(protobuf_text, message);
+
+            //parser.Parse(&is, message);
+
+            if(error_collector.has_errors())
+            {
+                glog.is(die) && 
+                    glog << "fatal configuration errors (see above)" << std::endl;    
+            }            
+
+            
         }
          
         // add / overwrite any options that are specified in the cfg file with those given on the command line
@@ -431,6 +449,14 @@ void goby::core::ConfigReader::build_description(const google::protobuf::Descrip
         const google::protobuf::FieldDescriptor* field_desc = desc->field(i);
         build_description_field(field_desc, stream, indent, use_color);
     }
+
+    std::vector<const google::protobuf::FieldDescriptor*> extensions;
+    google::protobuf::DescriptorPool::generated_pool()->FindAllExtensions(desc, &extensions);
+    for(int i = 0, n = extensions.size(); i < n; ++i)
+    {
+        const google::protobuf::FieldDescriptor* field_desc = extensions[i];
+        build_description_field(field_desc, stream, indent, use_color);
+    }    
 }
 
 void goby::core::ConfigReader::build_description_field(
@@ -444,7 +470,24 @@ void goby::core::ConfigReader::build_description_field(
     
     if(field_desc->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE)
     {
-        std::string before_description = indent + field_desc->name() + " {  ";
+        std::string before_description = indent;
+        
+        if(field_desc->is_extension())
+        {
+            if(field_desc->extension_scope())
+                before_description += "[" + field_desc->extension_scope()->full_name() + ".";
+            else
+                before_description += "[" + field_desc->full_name();
+        }
+        else
+        {
+            before_description += field_desc->name();
+        }
+
+        if(field_desc->is_extension())
+            before_description += "]";
+        
+        before_description += " {  ";
         stream << "\n" << before_description;
 
         std::string description;
@@ -483,8 +526,25 @@ void goby::core::ConfigReader::build_description_field(
                 example = "\"" + example + "\""; 
         }
             
-        before_description += field_desc->name() + ": " + example;
+        
+        if(field_desc->is_extension())
+        {
+            if(field_desc->extension_scope())
+                before_description += "[" + field_desc->extension_scope()->full_name() + ".";
+            else
+                before_description += "[" + field_desc->full_name();
+        }
+        else
+        {
+            before_description += field_desc->name();
+        }
+        
+        
+        if(field_desc->is_extension())
+            before_description += "]";
 
+        before_description += ": ";
+        before_description += example;
         before_description += "  ";
 
             

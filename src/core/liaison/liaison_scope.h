@@ -35,17 +35,33 @@ namespace goby
     namespace core
     {
         class LiaisonScope : public LiaisonContainer, public goby::moos::MOOSNode
-        
+        {
+            
           public:
             LiaisonScope(ZeroMQService* service);
             
             void moos_inbox(CMOOSMsg& msg);
+            std::vector< Wt::WStandardItem * > create_row(CMOOSMsg& msg);
+
+          private:
+            void handle_add_subscription();
+            void handle_remove_subscription(Wt::WPushButton* clicked_anchor);
+
+            void add_subscription(const std::string& type);
             
           private:
             Wt::WStandardItemModel* model_;
-            Wt::WText* text_;
-        };
-    }
+            Wt::WSortFilterProxyModel* proxy_;
+            Wt::WTreeView* scope_tree_view_;
+
+            Wt::WLineEdit* subscribe_filter_text_;
+            Wt::WContainerWidget* subscriptions_div_;
+            
+        // maps CMOOSMsg::GetKey into column
+            std::map<std::string, int> msg_map_;
+        
+    };
+}
 }
 
 #endif

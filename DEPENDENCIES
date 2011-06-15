@@ -92,6 +92,7 @@ debian_other_packages=\
 "libcrypto++-dev
 libncurses-dev
 libprotobuf-dev
+libprotoc-dev
 protobuf-compiler
 libcdk5-dev
 libzmq-dev"

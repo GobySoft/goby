@@ -179,6 +179,12 @@ void goby::core::ZeroMQService::subscribe_all(int socket_id)
 {
     socket_from_id(socket_id)->setsockopt(ZMQ_SUBSCRIBE, 0, 0);
 }
+
+void goby::core::ZeroMQService::unsubscribe_all(int socket_id)
+{
+    socket_from_id(socket_id)->setsockopt(ZMQ_UNSUBSCRIBE, 0, 0);
+}
+
 void goby::core::ZeroMQService::subscribe(MarshallingScheme marshalling_scheme,
                                        const std::string& identifier,
                                        int socket_id)
@@ -190,11 +196,26 @@ void goby::core::ZeroMQService::subscribe(MarshallingScheme marshalling_scheme,
     zmq_filter.resize(zmq_filter.size() - NULL_TERMINATOR_SIZE);
     socket_from_id(socket_id)->setsockopt(ZMQ_SUBSCRIBE, zmq_filter.c_str(), zmq_filter.size());
     
-    glog.is(debug1, lock) && glog << "Subscribed for marshalling " << marshalling_scheme << " with identifier: " << identifier << "using zmq_filter: " << goby::util::hex_encode(zmq_filter) << std::endl << unlock;
+    glog.is(debug1, lock) && glog << "subscribed for marshalling " << marshalling_scheme << " with identifier: [" << identifier << "] using zmq_filter: " << goby::util::hex_encode(zmq_filter) << std::endl << unlock;
 
         
-    post_send_hooks(marshalling_scheme, identifier, socket_id);
+    post_subscribe_hooks(marshalling_scheme, identifier, socket_id);
 }
+
+void goby::core::ZeroMQService::unsubscribe(MarshallingScheme marshalling_scheme,
+                                       const std::string& identifier,
+                                       int socket_id)
+{
+    std::string zmq_filter = make_header(marshalling_scheme, identifier);
+    int NULL_TERMINATOR_SIZE = 1;
+    zmq_filter.resize(zmq_filter.size() - NULL_TERMINATOR_SIZE);
+    socket_from_id(socket_id)->setsockopt(ZMQ_UNSUBSCRIBE, zmq_filter.c_str(), zmq_filter.size());
+    
+    glog.is(debug1, lock) && glog << "unsubscribed for marshalling " << marshalling_scheme << " with identifier: [" << identifier << "] using zmq_filter: " << goby::util::hex_encode(zmq_filter) << std::endl << unlock;
+
+        
+}
+
 
 void goby::core::ZeroMQService::send(MarshallingScheme marshalling_scheme,
                                   const std::string& identifier,

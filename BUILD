@@ -12,7 +12,7 @@ set -e -u
 echo "Configuring Goby"
 echo "cmake .. ${GOBY_CMAKE_FLAGS}"
 pushd build >& /dev/null
-cmake .. ${GOBY_CMAKE_FLAGS}
+cmake .. "${GOBY_CMAKE_FLAGS}"
 echo "Building Goby"
 echo "make ${GOBY_MAKE_FLAGS} $@"
 make ${GOBY_MAKE_FLAGS} $@

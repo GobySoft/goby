@@ -17,8 +17,8 @@ set(GOBY_VERSION_MINOR "1")
 set(GOBY_VERSION_PATCH "0")
 set(GOBY_VERSION "${GOBY_VERSION_MAJOR}.${GOBY_VERSION_MINOR}.${GOBY_VERSION_PATCH}")
 set(GOBY_VERSION_DATE "2011 Jun 06")
-set(GOBY_SOVERSION "1")
-     
+set(GOBY_SOVERSION "2")
+
 ## fetch all the local directories for generated code
 get_filename_component(goby_LIB_DIR lib ABSOLUTE)
 get_filename_component(goby_BIN_DIR bin ABSOLUTE)

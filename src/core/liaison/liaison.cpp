@@ -118,6 +118,11 @@ goby::core::LiaisonWtThread::LiaisonWtThread(const Wt::WEnvironment& env)
     : Wt::WApplication(env),
       zeromq_service_(Liaison::zmq_context())
 {    
+    timer_ = new Wt::WTimer();
+    timer_->setInterval(1/Liaison::cfg_.update_freq()*1.0e3);
+    timer_->timeout().connect(this, &LiaisonWtThread::loop);
+    timer_->start();
+
 //    zeromq_service_.connect_inbox_slot(&LiaisonWtThread::inbox, this);
 
     protobuf::ZeroMQServiceConfig ipc_sockets;
@@ -187,7 +192,7 @@ goby::core::LiaisonWtThread::LiaisonWtThread(const Wt::WEnvironment& env)
     menu->setInternalBasePath("/");
     
     add_to_menu(menu, "Home", new LiaisonHome());
-    add_to_menu(menu, "Scope", new LiaisonScope(&zeromq_service_));
+    add_to_menu(menu, "Scope", new LiaisonScope(&zeromq_service_, timer_));
 //    add_to_menu(menu, "scope2", new LiaisonScope("hello 2"));
 
 
@@ -223,13 +228,6 @@ goby::core::LiaisonWtThread::LiaisonWtThread(const Wt::WEnvironment& env)
 //     grid_layout->addWidget(menu, 1, 0);
 //     grid_layout->addWidget(contents_stack_, 1,1, 2,1);
 
-    
-    
-
-    Wt::WTimer *timer = new Wt::WTimer();
-    timer->setInterval(1000);
-    timer->timeout().connect(this, &LiaisonWtThread::loop);
-    timer->start();
 }
 
 void goby::core::LiaisonWtThread::add_to_menu(WMenu* menu, const WString& name,

@@ -119,6 +119,8 @@ namespace goby
             void add_to_menu(Wt::WMenu* menu, const Wt::WString& name, LiaisonContainer* container);
           private:
             Wt::WStackedWidget* contents_stack_;
+            Wt::WTimer* timer_;
+            
             ZeroMQService zeromq_service_;
         };
 

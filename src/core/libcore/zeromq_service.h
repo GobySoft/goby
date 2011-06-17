@@ -28,27 +28,86 @@
 #include <zmq.hpp>
 
 #include "goby/core/core_constants.h"
+#include "goby/util/logger.h"
 
 namespace goby
 {
     namespace core
     {
+        class ZeroMQSocket
+        {
+          public:
+          ZeroMQSocket()
+              : global_blackout_(boost::posix_time::not_a_date_time),
+                local_blackout_set_(false),
+                global_blackout_set_(false)
+           { }
+
+          ZeroMQSocket(boost::shared_ptr<zmq::socket_t> socket)
+              : socket_(socket),
+                global_blackout_(boost::posix_time::not_a_date_time),
+                local_blackout_set_(false),
+                global_blackout_set_(false)
+                { }
+
+            void set_global_blackout(boost::posix_time::time_duration duration);
+            void set_blackout(MarshallingScheme marshalling_scheme,
+                              const std::string& identifier,
+                              boost::posix_time::time_duration duration);
+
+            void clear_blackout(MarshallingScheme marshalling_scheme,
+                                const std::string& identifier)
+            {
+                blackout_info_.erase(std::make_pair(marshalling_scheme, identifier));
+                local_blackout_set_ = false;
+            } 
+            void clear_global_blackout()
+            {
+                global_blackout_ = boost::posix_time::not_a_date_time;
+                global_blackout_set_ = false;
+            }   
+
+            // true means go ahead and post this message
+            // false means in blackout
+            bool check_blackout(MarshallingScheme marshalling_scheme,
+                                const std::string& identifier);
+            
+            
+
+            void set_socket(boost::shared_ptr<zmq::socket_t> socket)
+            { socket_ = socket; }
+            
+            boost::shared_ptr<zmq::socket_t>& socket()
+            { return socket_; }            
+            
+          private:
+            struct BlackoutInfo
+            {
+            BlackoutInfo(boost::posix_time::time_duration interval =
+                         boost::posix_time::not_a_date_time)
+                : blackout_interval(interval),
+                    last_post_time(boost::posix_time::neg_infin)
+                    { }
+                
+                boost::posix_time::time_duration blackout_interval;
+                boost::posix_time::ptime last_post_time;
+            };
+
+            boost::shared_ptr<zmq::socket_t> socket_;
+
+            boost::posix_time::time_duration global_blackout_;
+            bool local_blackout_set_;
+            bool global_blackout_set_;
+            std::map<std::pair<MarshallingScheme, std::string>, BlackoutInfo> blackout_info_;
+        };
+
+        
         class ZeroMQService
         {
           public:
             ZeroMQService();
             ZeroMQService(boost::shared_ptr<zmq::context_t> context);
             virtual ~ZeroMQService();
-
-            template<class C>
-                void connect_inbox_slot(
-                    void(C::*mem_func)(MarshallingScheme,
-                                       const std::string&,
-                                       const void*,
-                                       int,
-                                       int),
-                    C* obj)
-            { connect_inbox_slot(boost::bind(mem_func, obj, _1, _2, _3, _4, _5)); }
 
             void set_cfg(const protobuf::ZeroMQServiceConfig& cfg)
             {
@@ -61,14 +120,6 @@ namespace goby
                 process_cfg(cfg);
                 cfg_.MergeFrom(cfg);
             }
-            
-            void connect_inbox_slot(
-                boost::function<void (MarshallingScheme marshalling_scheme,
-                                      const std::string& identifier,
-                                      const void* data,
-                                      int size,
-                                      int socket_id)> slot)
-            { inbox_signal_.connect(slot); }
 
             void subscribe_all(int socket_id);            
             void unsubscribe_all(int socket_id);            
@@ -86,10 +137,35 @@ namespace goby
             void unsubscribe(MarshallingScheme marshalling_scheme,
                            const std::string& identifier,
                            int socket_id);
+            
+            template<class C>
+                void connect_inbox_slot(
+                    void(C::*mem_func)(MarshallingScheme,
+                                       const std::string&,
+                                       const void*,
+                                       int,
+                                       int),
+                    C* obj)
+            {
+                goby::glog.is(debug1, util::logger_lock::lock) &&
+                    goby::glog << "ZeroMQService: made connection for: "
+                               << typeid(obj).name() << std::endl << unlock;
+                connect_inbox_slot(boost::bind(mem_func, obj, _1, _2, _3, _4, _5));
+            }
 
             
+            void connect_inbox_slot(
+                boost::function<void (MarshallingScheme marshalling_scheme,
+                                      const std::string& identifier,
+                                      const void* data,
+                                      int size,
+                                      int socket_id)> slot)
+            { inbox_signal_.connect(slot); }
+
             
             bool poll(long timeout = -1);
+
+            ZeroMQSocket& socket_from_id(int socket_id);
             
             template<class C>
                 void register_poll_item(
@@ -139,11 +215,10 @@ namespace goby
 
             int socket_type(protobuf::ZeroMQServiceConfig::Socket::SocketType type);
             
-            boost::shared_ptr<zmq::socket_t> socket_from_id(int socket_id);
 
           private:
             boost::shared_ptr<zmq::context_t> context_;
-            std::map<int, boost::shared_ptr<zmq::socket_t> > sockets_;
+            std::map<int, ZeroMQSocket > sockets_;
             std::vector<zmq::pollitem_t> poll_items_;
 
             protobuf::ZeroMQServiceConfig cfg_;

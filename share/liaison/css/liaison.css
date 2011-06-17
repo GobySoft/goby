@@ -79,7 +79,7 @@ div.fill
 }
 
 
-input.basic_line_edit
+input
 {
   width: 30em;
 }
@@ -88,7 +88,17 @@ a#goby_logo { display:block; position: absolute; right:0px; top:0px;}
 a#lp_logo { display:block; position: absolute; left:0px; top:41px;}
 
 /*.fl { float:left; }*/
+table.basic_small 
+{
+ border-collapse:collapse;
+ font-size:80%;
+}
 
+table.basic_small td, table.basic_small th
+{ 
+padding: 3px;
+border: 1px solid black;
+}
 
 
 a { outline:0; }

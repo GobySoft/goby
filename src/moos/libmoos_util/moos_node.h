@@ -43,21 +43,6 @@ namespace goby
             void subscribe(const std::string& full_or_partial_moos_name, int socket_id);
             void unsubscribe(const std::string& full_or_partial_moos_name, int socket_id);
             
-            void set_global_blackout(boost::posix_time::time_duration duration);
-            void set_blackout(const std::string& key,
-                              boost::posix_time::time_duration duration);
-
-            void clear_blackout(const std::string& key)
-            {
-                blackout_.erase(key);
-            }
-            
-            
-            void set_blackout(const std::string& key,
-                              unsigned long milliseconds)
-            {
-                set_blackout(key, boost::posix_time::milliseconds(milliseconds));
-            }
             
             
             CMOOSMsg& newest(const std::string& key);
@@ -70,9 +55,6 @@ namespace goby
                        int socket_id);
 
           private:
-            boost::posix_time::time_duration global_blackout_;
-            std::map<std::string, boost::posix_time::time_duration> blackout_;
-            std::map<std::string, boost::posix_time::ptime> last_posted_;
             std::map<std::string, boost::shared_ptr<CMOOSMsg> > newest_vars;
             
         };

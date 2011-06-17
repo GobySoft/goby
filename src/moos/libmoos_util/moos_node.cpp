@@ -25,11 +25,8 @@ using namespace goby::util::logger_lock;
 
 
 goby::moos::MOOSNode::MOOSNode(ZeroMQService* service)
-    : goby::core::NodeInterface<CMOOSMsg>(service),
-      global_blackout_(boost::posix_time::not_a_date_time)
+    : goby::core::NodeInterface<CMOOSMsg>(service)
 {
-    zeromq_service()->connect_inbox_slot(&goby::moos::MOOSNode::inbox, this);
-
     boost::mutex::scoped_lock lock(glog.mutex());    
     glog.add_group("in_hex", util::Colors::green, "Goby MOOS (hex) - Incoming");
     glog.add_group("out_hex", util::Colors::magenta, "Goby MOOS (hex) - Outgoing");
@@ -54,27 +51,8 @@ void goby::moos::MOOSNode::inbox(core::MarshallingScheme marshalling_scheme,
 
         const std::string& key = msg->GetKey();
         newest_vars[key] = msg;
-        
-        boost::posix_time::ptime this_time = goby::util::unix_double2ptime(msg->GetTime());
-        const boost::posix_time::ptime& last_post_time = last_posted_[key];
-        // check blackout conditions
-        if(last_post_time.is_not_a_date_time() || // first post
-           (blackout_.count(key) && // no local blackout
-            this_time - last_post_time > blackout_[key]) || // passes local blackout
-           (global_blackout_.is_not_a_date_time() || // no global blackout
-            this_time - last_post_time  > global_blackout_)) // passes global blackout
-        {
-            last_posted_[key] = this_time;
-            moos_inbox(*msg);
-        }
-        else
-        {
-            glog.is(debug2, lock) && 
-                glog << "Message is in blackout: this time:" << this_time << ", last time: " << last_post_time << ", global blackout: " << global_blackout_ << ", local blackout: " << blackout_[key] << std::endl << unlock;
-        }
-        
+        moos_inbox(*msg);
     }
-    
 }
 
 void goby::moos::MOOSNode::send(const CMOOSMsg& msg, int socket_id)
@@ -136,18 +114,3 @@ CMOOSMsg& goby::moos::MOOSNode::newest(const std::string& key)
     return *newest_vars[key];
 }
 
-void goby::moos::MOOSNode::set_global_blackout(boost::posix_time::time_duration duration)
-{
-    glog.is(debug2, lock) &&
-        glog << "Global blackout set to " << duration << std::endl << unlock;
-    global_blackout_ = duration;
-}
-
-
-void goby::moos::MOOSNode::set_blackout(const std::string& key,
-                                        boost::posix_time::time_duration duration)            
-{
-    glog.is(debug2, lock) &&
-        glog << "Blackout for key "  << key << " set to " << duration << std::endl << unlock;
-    blackout_[key] = duration;
-}

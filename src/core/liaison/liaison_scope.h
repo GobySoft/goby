@@ -20,6 +20,9 @@
 #include <Wt/WCssDecorationStyle>
 #include <Wt/WBorder>
 #include <Wt/WColor>
+#include <Wt/WTreeView>
+#include <Wt/WStandardItemModel>
+#include <Wt/WEvent>
 
 #include "goby/moos/libmoos_util/moos_node.h"
 
@@ -38,30 +41,88 @@ namespace goby
         {
             
           public:
-            LiaisonScope(ZeroMQService* service);
+            LiaisonScope(ZeroMQService* service, Wt::WTimer* timer_);
             
             void moos_inbox(CMOOSMsg& msg);
             std::vector< Wt::WStandardItem * > create_row(CMOOSMsg& msg);
 
           private:
+            void handle_play_pause(bool toggle_state);
+
             void handle_add_subscription();
             void handle_remove_subscription(Wt::WPushButton* clicked_anchor);
+            void add_subscription(std::string type);
 
-            void add_subscription(const std::string& type);
+            void handle_set_regex_filter();
+            void handle_clear_regex_filter();
+            void toggle_regex_examples_table();
             
+            void handle_add_history();
+            void handle_remove_history(std::string type);
+            void add_history(const goby::core::protobuf::MOOSScopeConfig::HistoryConfig& config);
+            void toggle_history_plot(Wt::WWidget* plot);
+
+            void handle_global_key(Wt::WKeyEvent event);
+
           private:
+            const protobuf::MOOSScopeConfig& moos_scope_config_;
+
+            Wt::WTimer* timer_;
+            bool is_paused_;
+            Wt::WText* play_state_;
+            
+            Wt::WVBoxLayout* main_layout_;
+            int last_main_layout_index_;
+            
             Wt::WStandardItemModel* model_;
             Wt::WSortFilterProxyModel* proxy_;
             Wt::WTreeView* scope_tree_view_;
+            // maps CMOOSMsg::GetKey into column
+            std::map<std::string, int> msg_map_;
 
             Wt::WLineEdit* subscribe_filter_text_;
             Wt::WContainerWidget* subscriptions_div_;
+
+            Wt::WLineEdit* regex_filter_text_;
+            Wt::WContainerWidget* regex_filter_div_;
+            Wt::WComboBox* regex_column_select_;
+            Wt::WTable* regex_examples_table_;
+
+            Wt::WContainerWidget* history_div_;
+//            Wt::WContainerWidget* history_tree_div_;
+//            Wt::WVBoxLayout* history_layout_;
+//            int last_history_layout_index_;
+            Wt::WComboBox* history_box_;
             
-        // maps CMOOSMsg::GetKey into column
-            std::map<std::string, int> msg_map_;
+
+            struct MVC
+            {
+                std::string key;
+                Wt::WContainerWidget* container;
+                Wt::WStandardItemModel* model;
+                Wt::WTreeView* tree;
+                Wt::WSortFilterProxyModel* proxy;
+            };
+            
+            std::map<std::string, MVC> history_models_;
+            
         
-    };
-}
+        };
+
+      class LiaisonScopeMOOSTreeView : public Wt::WTreeView
+        {
+          public:
+            LiaisonScopeMOOSTreeView(const protobuf::MOOSScopeConfig& moos_scope_config, Wt::WContainerWidget* parent = 0); 
+        };
+
+        class LiaisonScopeMOOSModel : public Wt::WStandardItemModel
+        {
+          public:
+            LiaisonScopeMOOSModel(const protobuf::MOOSScopeConfig& moos_scope_config, Wt::WContainerWidget* parent = 0); 
+        };
+
+
+    }
 }
 
 #endif

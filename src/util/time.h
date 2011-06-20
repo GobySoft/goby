@@ -20,6 +20,7 @@
 
 #include <ctime>
 
+#include <stdint.h>
 #include <boost/date_time.hpp>
 
 /// All objects related to the Goby Underwater Autonomy Project
@@ -30,6 +31,13 @@ namespace goby
     {
         ///\name Time
         //@{
+
+        //Time since unix epoch in microseconds.  Signed to make math easy.
+        inline int64_t microtime() {
+            struct timeval tv;
+            gettimeofday(&tv, NULL);
+            return tv.tv_sec*1e6 + tv.tv_usec;
+        }
 
         /// Always use for current time within the Goby project
         inline boost::posix_time::ptime goby_time()

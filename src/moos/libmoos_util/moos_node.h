@@ -28,16 +28,11 @@ namespace goby
     {        
         class MOOSNode : public goby::core::NodeInterface<CMOOSMsg>
         {
-          protected:
+          public:
             MOOSNode(goby::core::ZeroMQService* service);
             
             virtual ~MOOSNode()
             { }
-            
-            
-            // not const because CMOOSMsg requires mutable for many const calls...
-            virtual void moos_inbox(CMOOSMsg& msg) = 0;
-            
             
             void send(const CMOOSMsg& msg, int socket_id);
             void subscribe(const std::string& full_or_partial_moos_name, int socket_id);
@@ -46,6 +41,12 @@ namespace goby
             
             
             CMOOSMsg& newest(const std::string& key);
+            
+          protected:
+            // not const because CMOOSMsg requires mutable for many const calls...
+            virtual void moos_inbox(CMOOSMsg& msg) = 0;
+            
+            
             
           private:
             void inbox(goby::core::MarshallingScheme marshalling_scheme,

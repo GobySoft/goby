@@ -47,64 +47,138 @@ namespace goby
             std::vector< Wt::WStandardItem * > create_row(CMOOSMsg& msg);
 
           private:
-            void handle_play_pause(bool toggle_state);
-
-            void handle_add_subscription();
-            void handle_remove_subscription(Wt::WPushButton* clicked_anchor);
-            void add_subscription(std::string type);
-
-            void handle_set_regex_filter();
-            void handle_clear_regex_filter();
-            void toggle_regex_examples_table();
-            
-            void handle_add_history();
-            void handle_remove_history(std::string type);
-            void add_history(const goby::core::protobuf::MOOSScopeConfig::HistoryConfig& config);
-            void toggle_history_plot(Wt::WWidget* plot);
+ 
+           
 
             void handle_global_key(Wt::WKeyEvent event);
 
           private:
             const protobuf::MOOSScopeConfig& moos_scope_config_;
 
-            Wt::WTimer* timer_;
-            bool is_paused_;
-            Wt::WText* play_state_;
-            
-            Wt::WVBoxLayout* main_layout_;
-            int last_main_layout_index_;
-            
             Wt::WStandardItemModel* model_;
             Wt::WSortFilterProxyModel* proxy_;
+
+            Wt::WVBoxLayout* main_layout_;
+
+            struct ControlsContainer : Wt::WContainerWidget
+            {
+                ControlsContainer(Wt::WTimer* timer,
+                                  bool is_paused,
+                                  Wt::WContainerWidget* parent = 0);
+
+                void handle_play_pause(bool toggle_state);
+
+                
+                Wt::WTimer* timer_;
+                bool is_paused_;
+
+                Wt::WPushButton* play_pause_button_;
+                Wt::WText* play_state_;
+            };
+            
+            ControlsContainer* controls_div_;
+
+            struct SubscriptionsContainer : Wt::WContainerWidget
+            {
+                SubscriptionsContainer(MOOSNode* node,
+                                       Wt::WStandardItemModel* model,
+                                       std::map<std::string, int>& msg_map,
+                                       Wt::WContainerWidget* parent = 0);
+
+                void handle_add_subscription();
+                void handle_remove_subscription(Wt::WPushButton* clicked_anchor);
+                void add_subscription(std::string type);
+
+                MOOSNode* node_;
+                Wt::WStandardItemModel* model_;
+                std::map<std::string, int>& msg_map_;
+                
+                Wt::WText* add_text_;
+                Wt::WLineEdit* subscribe_filter_text_;
+                Wt::WPushButton* subscribe_filter_button_;
+                Wt::WBreak* subscribe_break_;
+                Wt::WText* remove_text_;
+            };
+
+            SubscriptionsContainer* subscriptions_div_;
+
+            struct HistoryContainer : Wt::WContainerWidget
+            {
+                HistoryContainer(MOOSNode* node,
+                                 Wt::WVBoxLayout* main_layout,
+                                 Wt::WAbstractItemModel* model,
+                                 const protobuf::MOOSScopeConfig& moos_scope_config,
+                                 Wt::WContainerWidget* parent = 0);
+
+                void handle_add_history();
+                void handle_remove_history(std::string type);
+                void add_history(const goby::core::protobuf::MOOSScopeConfig::HistoryConfig& config);
+                void toggle_history_plot(Wt::WWidget* plot);
+
+
+                struct MVC
+                {
+                    std::string key;
+                    Wt::WContainerWidget* container;
+                    Wt::WStandardItemModel* model;
+                    Wt::WTreeView* tree;
+                    Wt::WSortFilterProxyModel* proxy;
+                };
+            
+
+                MOOSNode* node_;
+                Wt::WVBoxLayout* main_layout_;
+                
+                const protobuf::MOOSScopeConfig& moos_scope_config_;
+                std::map<std::string, MVC> history_models_;                
+                Wt::WText* hr_;
+                Wt::WText* add_text_;
+                Wt::WComboBox* history_box_;
+                Wt::WPushButton* history_button_;
+            };
+            
+            HistoryContainer* history_header_div_;
+
+            struct RegexFilterContainer : Wt::WContainerWidget
+            {
+                RegexFilterContainer(
+                    Wt::WStandardItemModel* model,
+                    Wt::WSortFilterProxyModel* proxy,
+                    const protobuf::MOOSScopeConfig& moos_scope_config,
+                    Wt::WContainerWidget* parent = 0);
+
+                void handle_set_regex_filter();
+                void handle_clear_regex_filter();
+                void toggle_regex_examples_table();
+                
+                Wt::WStandardItemModel* model_;
+                Wt::WSortFilterProxyModel* proxy_;
+                
+                Wt::WText* hr_;
+                Wt::WText* set_text_;
+                Wt::WComboBox* regex_column_select_;
+                Wt::WText* expression_text_;
+                Wt::WLineEdit* regex_filter_text_;
+                Wt::WPushButton* regex_filter_button_;
+                Wt::WPushButton* regex_filter_clear_;
+                Wt::WPushButton* regex_filter_examples_;
+
+                Wt::WBreak* break_;
+                Wt::WTable* regex_examples_table_;
+
+            };
+            
+            RegexFilterContainer* regex_filter_div_;
+
+
             Wt::WTreeView* scope_tree_view_;
+
             // maps CMOOSMsg::GetKey into column
             std::map<std::string, int> msg_map_;
 
-            Wt::WLineEdit* subscribe_filter_text_;
-            Wt::WContainerWidget* subscriptions_div_;
+            WContainerWidget* bottom_fill_;
 
-            Wt::WLineEdit* regex_filter_text_;
-            Wt::WContainerWidget* regex_filter_div_;
-            Wt::WComboBox* regex_column_select_;
-            Wt::WTable* regex_examples_table_;
-
-            Wt::WContainerWidget* history_div_;
-//            Wt::WContainerWidget* history_tree_div_;
-//            Wt::WVBoxLayout* history_layout_;
-//            int last_history_layout_index_;
-            Wt::WComboBox* history_box_;
             
-
-            struct MVC
-            {
-                std::string key;
-                Wt::WContainerWidget* container;
-                Wt::WStandardItemModel* model;
-                Wt::WTreeView* tree;
-                Wt::WSortFilterProxyModel* proxy;
-            };
-            
-            std::map<std::string, MVC> history_models_;
             
         
         };

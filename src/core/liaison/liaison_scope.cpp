@@ -30,7 +30,6 @@
 #include <Wt/WDateTime>
 #include "liaison.h"
 
-#include "TreeViewExample.h"
 
 using namespace Wt;
 using namespace goby::util::logger_lock;

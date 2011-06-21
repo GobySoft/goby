@@ -116,6 +116,12 @@ namespace goby
             }
             
             //@}            
+
+            ZeroMQService& zeromq_service()
+            {
+                return zeromq_service_;
+            }
+
             
           private:
             Application(const Application&);

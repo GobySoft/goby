@@ -1,1 +1,1 @@
-add_subdirectory(goby_db_to_alog)
+add_subdirectory(alog_to_goby_db)

@@ -1,0 +1,26 @@
+import "google/protobuf/descriptor.proto";
+
+//  NAME=micromodem_gateway,TYPE=buoy,MOOSDB_TIME=-1,UTC_TIME=1280590801,X=8253.23267727019,Y=5141.96691871993,LAT=42.5012616666667,LON=10.976775,SPD=1.51866999982235e-06,HDG=0,DEPTH=0
+package moos;
+
+message NodeReport
+{
+  option (format_string) = "NAME=%1%,tpe=%2%,MOOSDB_TIME=%3%,UTC_TIME=%4%,X=%5%,Y=%6%,LAT=%7%,LON=%8%,SPD=%9%,HDG=%10%,DEPTH=%11%";
+  
+  optional string name = 1;
+  optional string type = 2;
+  optional double moosdb_time = 3;
+  optional double utc_time = 4;
+  optional double x = 5;
+  optional double y = 6;
+  optional double lat = 7;
+  optional double lon = 8;
+  optional double spd = 9;
+  optional double hdg = 10;
+  optional double depth = 11; 
+}
+
+extend google.protobuf.MessageOptions {
+  optional string format_string = 50100;
+}
+

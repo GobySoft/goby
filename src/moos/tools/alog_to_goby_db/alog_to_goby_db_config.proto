@@ -1,0 +1,18 @@
+import "goby/protobuf/option_extensions.proto";
+import "goby/protobuf/app_base_config.proto";
+
+message AlogToGobyDbConfig
+{
+  required string goby_log = 1 [(description)="Name of Goby Db file to write."];
+  optional string moos_alog = 2 [(description)="Name of .alog file to read."];
+  optional bool dump_alog = 3 [(description)="Write entire alog file (as CMOOSMsg)", default=true];
+
+  message ParseAction
+  {
+    required string protobuf_type_name = 1 [(description)="Full name of protobuf type used to parse this field. Must have `option (format_string)` defined"];
+    required string sql_where_clause = 2 [(description)="Portion of SQL query on CMOOSMsg table following `WHERE` used to select rows for parsing", (example)="key = 'NODE_REPORT' AND string_value LIKE 'NAME=unicorn%'"];
+  }
+
+  repeated ParseAction parse_action = 4 [(description)="Optional set of parse actions to take: query the CMOOSMsg table and parse into a true Google Protobuf object representation"];
+  
+}

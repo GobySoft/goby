@@ -172,9 +172,10 @@ namespace Wt
                         
                         case google::protobuf::FieldDescriptor::CPPTYPE_DOUBLE:
                         {
-                            double tmp = refl->GetDouble(obj, field_desc);
+                            // need boost::optional to handle NaN (as NULL)
+                            boost::optional<double> tmp(refl->GetDouble(obj, field_desc));
                             Wt::Dbo::field(action, tmp, field_name);
-                            refl->SetDouble(&obj, field_desc, tmp);
+                            refl->SetDouble(&obj, field_desc, tmp.get());
                         }
                         break;
 

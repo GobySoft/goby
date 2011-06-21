@@ -19,6 +19,7 @@
 #include "goby/moos/libmoos_util/moos_dbo_helper.h"
 #include "goby/moos/libmoos_util/moos_node.h"
 #include "goby/core/libcore/application_base.h"
+#include "goby/core/libdbo/dbo_manager.h"
 
 #include "MOOSGenLib/MOOSGenLibGlobalHelper.h"
 
@@ -35,10 +36,14 @@ public:
     AlogToGobyDb()
         : ApplicationBase(&cfg_)
         {
-            Wt::Dbo::backend::Sqlite3 connection(cfg_.goby_log());
-            Wt::Dbo::Session session;
-            session.setConnection(connection);
-            session.mapClass<CMOOSMsg>("CMOOSMsg");
+            goby::moos::MOOSDBOPlugin moos_plugin;
+            goby::core::ProtobufDBOPlugin protobuf_plugin;
+            
+            goby::core::DBOManager* dbo_manager = goby::core::DBOManager::get_instance();
+            dbo_manager->plugin_factory().add_plugin(&moos_plugin);
+            dbo_manager->plugin_factory().add_plugin(&protobuf_plugin);
+            dbo_manager->connect(cfg_.goby_log());
+
             
             if(cfg_.dump_alog())
             {
@@ -57,23 +62,13 @@ public:
                 moos_alog_ifstream >> buff >> buff >> alog_start_time;
 
 
-                try
-                {
-                    session.createTables();
-                }
-                catch(Wt::Dbo::Exception& e)
-                {
-                    throw(std::runtime_error("Could not create CMOOSMsg table, are you sure this database doesn't already have a CMOOSMsg table?"));
-                }
-                
-                
                 std::string line;
-                 Wt::Dbo::Transaction transaction(session);
 
                 int i = 0;
                 while(getline(moos_alog_ifstream,line))
                 {
-                    goby::glog.is(verbose) && goby::glog << "parsing alog line " << i++ << std::endl;
+                    if(!(i % 1000))
+                        goby::glog.is(verbose) && goby::glog << "parsing alog line " << i << std::endl;
                     
                     std::stringstream ss;
                     double time_since_file_start;
@@ -100,40 +95,54 @@ public:
                     // no setter in CMOOSMsg
                     msg->m_sSrc = source;
                 
-
+                    moos_plugin.add_message(i++, *msg);
                 }
-                transaction.commit();
+                dbo_manager->commit();
             }
 
-            // for(int i = 0, n = cfg_.parse_action_size(); i < n; ++i)
-            // {
-            //     Wt::Dbo::Transaction transaction(session);
+            dbo_manager->commit();
+            for(int i = 0, n = cfg_.parse_action_size(); i < n; ++i)
+            {
+                const AlogToGobyDbConfig::ParseAction& action = cfg_.parse_action(i);
 
-            //     const AlogToGobyDbConfig::ParseAction& action = cfg_.parse_action(i);
-
-            //     goby::glog.is(verbose) && goby::glog << "Running parse action:" << action.ShortDebugString() << std::endl;
-            //     const google::protobuf::Descriptor* desc = google::protobuf::DescriptorPool::generated_pool()->FindMessageTypeByName(action.protobuf_type_name());
-            //     if(!desc)
-            //         throw(std::runtime_error("Unknown type " + action.protobuf_type_name() + " are you sure this is compiled in?"));
+                goby::glog.is(verbose) && goby::glog << "Running parse action: " << action.ShortDebugString() << std::endl;
+                const google::protobuf::Descriptor* desc = google::protobuf::DescriptorPool::generated_pool()->FindMessageTypeByName(action.protobuf_type_name());
+                
+                goby::core::DynamicProtobufManager::add_protobuf_file_with_dependencies(desc->file());
+                
+                if(!desc)
+                    throw(std::runtime_error("Unknown type " + action.protobuf_type_name() + " are you sure this is compiled in?"));
 
                 
-            //     typedef Wt::Dbo::collection< Wt::Dbo::ptr<CMOOSMsg> > Msgs;
+                typedef Wt::Dbo::collection< Wt::Dbo::ptr<CMOOSMsg> > Msgs;
                 
-            //     Msgs msgs;
+                Msgs msgs;
                 
-            //     msgs = session.find<CMOOSMsg>("where "  + action.sql_where_clause() + " order by moosmsg_time ASC");
-            //     goby::glog.is(verbose) && goby::glog << "We have " << msgs.size() << " messages:" << std::endl;
+                msgs = dbo_manager->session()->find<CMOOSMsg>("where "  + action.sql_where_clause() + " order by moosmsg_time ASC");
+                goby::glog.is(verbose) && goby::glog << "We have " << msgs.size() << " messages:" << std::endl;
 
-            //     for (Msgs::const_iterator it = msgs.begin(), n = msgs.end(); it != n; ++it)
-            //     {
-            //         boost::shared_ptr<google::protobuf::Message> msg = goby::core::DynamicProtobufManager::new_protobuf_message(desc);
-            //         goby::glog.is(debug1) && goby::glog << **it << std::endl;
-            //         parse((**it).GetString(), msg.get());
-            //         goby::glog.is(debug1) && goby::glog << msg->DebugString() << std::endl;
-            //     }
+                std::vector<boost::shared_ptr<google::protobuf::Message> > proto_msgs;
+                for (Msgs::const_iterator it = msgs.begin(), n = msgs.end(); it != n; ++it)
+                {
+                    boost::shared_ptr<google::protobuf::Message> msg = goby::core::DynamicProtobufManager::new_protobuf_message(desc);
+                    goby::glog.is(debug1) && goby::glog << **it << std::endl;
+                    parse((**it).GetString(), msg.get());
+                    goby::glog.is(debug1) && goby::glog << msg->DebugString() << std::endl;
+                    proto_msgs.push_back(msg);
+                }
+                dbo_manager->commit();
 
-            //     transaction.commit();
-            // }
+                for(int i = 0, n = proto_msgs.size(); i < n; ++i)
+                {
+                    protobuf_plugin.add_message(-1, proto_msgs[i]);
+
+                    goby::glog.is(verbose) && goby::glog << proto_msgs[i]->ShortDebugString() << std::endl;
+                    
+//                    if(!(i % 10))
+//                        dbo_manager->commit();
+                }
+                dbo_manager->commit();
+            }
             
             quit();
 
@@ -152,9 +161,9 @@ private:
             boost::to_lower(format);
             std::string lower_str = boost::to_lower_copy(str);
 
-            goby::glog << "Format: " << format << std::endl;
-            goby::glog << "String: " << str << std::endl;
-            goby::glog << "Lower String: " << lower_str << std::endl;
+            goby::glog.is(debug1) && goby::glog << "Format: " << format << std::endl;
+            goby::glog.is(debug1) && goby::glog << "String: " << str << std::endl;
+            goby::glog.is(debug1) && goby::glog << "Lower String: " << lower_str << std::endl;
             
             std::string::const_iterator i = format.begin();
             while (i != format.end())

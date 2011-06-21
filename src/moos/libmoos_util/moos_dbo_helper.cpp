@@ -22,6 +22,12 @@ void goby::moos::MOOSDBOPlugin::add_message(int unique_id, const std::string& id
     CMOOSMsg msg;
     std::string bytes(static_cast<const char*>(data), size);
     goby::moos::MOOSSerializer::parse(&msg, bytes);
+    add_message(unique_id, msg);
+    
+}
+
+void goby::moos::MOOSDBOPlugin::add_message(int unique_id, const CMOOSMsg& msg)
+{
     goby::core::DBOManager::get_instance()->session()->add(new CMOOSMsg(msg));
 }
 

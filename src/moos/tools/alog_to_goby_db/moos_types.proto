@@ -1,11 +1,16 @@
 import "google/protobuf/descriptor.proto";
+import "goby/protobuf/option_extensions.proto";
 
 //  NAME=micromodem_gateway,TYPE=buoy,MOOSDB_TIME=-1,UTC_TIME=1280590801,X=8253.23267727019,Y=5141.96691871993,LAT=42.5012616666667,LON=10.976775,SPD=1.51866999982235e-06,HDG=0,DEPTH=0
 package moos;
 
+extend google.protobuf.MessageOptions {
+  optional string format_string = 50100;
+}
+
 message NodeReport
 {
-  option (format_string) = "NAME=%1%,tpe=%2%,MOOSDB_TIME=%3%,UTC_TIME=%4%,X=%5%,Y=%6%,LAT=%7%,LON=%8%,SPD=%9%,HDG=%10%,DEPTH=%11%";
+  option (format_string) = "NAME=%1%,type=%2%,UTC_TIME=%4%,X=%5%,Y=%6%,LAT=%7%,LON=%8%,SPD=%9%,HDG=%10%,DEPTH=%11%";
   
   optional string name = 1;
   optional string type = 2;
@@ -20,7 +25,42 @@ message NodeReport
   optional double depth = 11; 
 }
 
-extend google.protobuf.MessageOptions {
-  optional string format_string = 50100;
+
+message WHOIMicroModemCACST
+{
+  option (format_string) = "$CACST,%1%,%2%,%3%,%4%,%5%,%6%,%7%,%8%,%9%,%10%,%11%,%12%,%13%,%14%,%15%,%16%,%17%,%18%,%19%,%20%,%21%,%22%,%23%,%24%,%25%,%26%,%27%,%28%,%29%*%100%";
+
+  optional int32 mode = 1 [(description)="0 if good, 1 if bad CRCs, 2 if packet timeout"];
+  optional double time = 2 [(description)="Time of Arrival"];
+  optional int32 toa_mode = 3 [(description)="Clock status"];
+  optional int32 mfd_peak = 4;
+  optional int32 mfd_power = 5;
+  optional int32 mfd_ratio = 6;
+  optional int32 spl = 7;
+  optional int32 shf_agn = 8;
+  optional int32 shf_ainpshift = 9;
+  optional int32 shf_ainshift = 10; 
+  optional int32 shf_mfdshift = 11;
+  optional int32 shf_p2bshift = 12;
+  optional int32 rate = 13;
+  optional int32 source = 14;
+  optional int32 dest = 15;
+  optional int32 psk_error_code = 16;
+  optional int32 packet_type = 17;
+  optional int32 number_frames = 18;
+  optional int32 number_bad_frames = 19;
+  optional int32 snr_rss = 20;
+  optional int32 snr_in = 21;
+  optional int32 snr_out = 22;
+  optional int32 snr_symbols = 23;
+  optional int32 mse_equalizer = 24;
+  optional int32 data_quality_factor = 25;
+  optional int32 doppler = 26;
+  optional int32 stddev_noise = 27;
+  optional int32 carrier_freq = 28;
+  optional int32 bandwidth = 29;
+
+  optional int32 checksum = 100;
 }
+
 

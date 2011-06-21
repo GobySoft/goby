@@ -34,7 +34,6 @@ void goby::core::DBOPluginFactory::add_plugin(DBOPlugin* plugin)
     plugins_[new_plugin_library->plugin()->provides()] = new_plugin_library;
 }
 
-
 void goby::core::DBOPluginFactory::add_library(const std::string& lib_name)
 {
     // create an instance of the class
@@ -101,7 +100,11 @@ void goby::core::ProtobufDBOPlugin::add_message(int unique_id, const std::string
     boost::shared_ptr<google::protobuf::Message> msg =
         DynamicProtobufManager::new_protobuf_message(protobuf_type_name);
     msg->ParseFromArray(data, size);
-            
+    add_message(unique_id, msg);
+}
+
+void goby::core::ProtobufDBOPlugin::add_message(int unique_id, boost::shared_ptr<google::protobuf::Message> msg)
+{
     using goby::util::as;
     
     if(!dbo_map.right.count(msg->GetDescriptor()->full_name()))

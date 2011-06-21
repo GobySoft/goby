@@ -59,6 +59,7 @@ namespace goby
     {
         class MOOSDBOPlugin : public goby::core::DBOPlugin
         {
+          public:
             goby::core::MarshallingScheme provides()
             {
                 return goby::core::MARSHALLING_MOOS;
@@ -66,6 +67,8 @@ namespace goby
             
             void add_message(int unique_id, const std::string& identifier, const void* data, int size);
             void map_types();
+
+            void add_message(int unique_id, const CMOOSMsg& msg);
         };
     }
 }

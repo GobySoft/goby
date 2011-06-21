@@ -26,7 +26,7 @@ boost::signal<void (const google::protobuf::FileDescriptor*)> goby::core::Dynami
 boost::shared_ptr<google::protobuf::Message> goby::core::DynamicProtobufManager::new_protobuf_message(const std::string& protobuf_type_name)
 {
     const google::protobuf::Descriptor* desc = descriptor_pool().FindMessageTypeByName(protobuf_type_name);
-
+    
     if(desc)
         return new_protobuf_message(desc);
     else

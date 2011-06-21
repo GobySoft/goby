@@ -57,10 +57,13 @@ namespace goby
             
             ~ProtobufDBOPlugin() { }
 
+            // implements DBOPlugin
             MarshallingScheme provides();
             void add_message(int unique_id, const std::string& identifier, const void* data, int size);
             void map_types();
 
+            // extra for direct users
+            void add_message(int unique_id, boost::shared_ptr<google::protobuf::Message> msg);
 
             /// \brief wraps a particular type of Google Protocol Buffers message
             /// (designated by id number i) so that we can use it with Wt::Dbo
@@ -103,7 +106,6 @@ namespace goby
             /// \brief add a message to the Wt::Dbo SQL database
             ///
             /// This is not written to the database until commit() is called
-            //void add_message(int unique_id, boost::shared_ptr<google::protobuf::Message> msg);
             //void add_message(int unique_id, const google::protobuf::Message& msg);
 
 

@@ -173,9 +173,24 @@ namespace Wt
                         case google::protobuf::FieldDescriptor::CPPTYPE_DOUBLE:
                         {
                             // need boost::optional to handle NaN (as NULL)
-                            boost::optional<double> tmp(refl->GetDouble(obj, field_desc));
+                            // support for boost::optional broken in Wt versions before 3.1.4
+#if WT_VERSION >= (((3 & 0xff) << 24) | ((1 & 0xff) << 16) | ((4 & 0xff) << 8))
+                            boost::optional<double> tmp(refl->GetDouble(obj, field_desc));                   
                             Wt::Dbo::field(action, tmp, field_name);
                             refl->SetDouble(&obj, field_desc, tmp.get());
+#else
+                            double tmp(refl->GetDouble(obj, field_desc));
+
+                            // Wt::Dbo creates field schema with "NOT NULL"
+                            // but SQLite3 interprets NaN as NULL leading
+                            // to a NULL field. We work around this by
+                            // setting double to max if NaN
+                            if(std::isnan(tmp))
+                                tmp = std::numeric_limits<double>::max();
+                            
+                            Wt::Dbo::field(action, tmp, field_name);
+                            refl->SetDouble(&obj, field_desc, tmp);
+#endif
                         }
                         break;
 

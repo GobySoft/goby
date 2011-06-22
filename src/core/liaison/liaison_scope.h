@@ -24,6 +24,8 @@
 #include <Wt/WStandardItemModel>
 #include <Wt/WEvent>
 #include <Wt/WSortFilterProxyModel>
+#include <Wt/WBoxLayout>
+#include <Wt/WVBoxLayout>
 
 #include "goby/moos/libmoos_util/moos_node.h"
 

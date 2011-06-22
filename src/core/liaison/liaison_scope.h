@@ -23,6 +23,7 @@
 #include <Wt/WTreeView>
 #include <Wt/WStandardItemModel>
 #include <Wt/WEvent>
+#include <Wt/WSortFilterProxyModel>
 
 #include "goby/moos/libmoos_util/moos_node.h"
 

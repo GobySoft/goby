@@ -119,6 +119,9 @@ namespace goby
             /// \param tout pointer to util::FlexOstream stream object to add groups to.
             static void add_flex_groups(util::FlexOstream* tout);
             //@}
+
+            /// Public Destructor
+            virtual ~ModemDriverBase();
             
           protected:
             /// \name Constructors/Destructor
@@ -128,8 +131,6 @@ namespace goby
             ///
             /// \param log pointer to std::ostream to log human readable debugging and runtime information
             ModemDriverBase(std::ostream* log = 0);
-            /// Destructor
-            virtual ~ModemDriverBase();
 
             //@}
 

@@ -129,7 +129,7 @@ namespace goby
             /// \param log pointer to std::ostream to log human readable debugging and runtime information
             ModemDriverBase(std::ostream* log = 0);
             /// Destructor
-            ~ModemDriverBase();
+            virtual ~ModemDriverBase();
 
             //@}
 

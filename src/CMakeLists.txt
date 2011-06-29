@@ -9,7 +9,7 @@ macro(goby_find_required_package package_name)
 endmacro()
   
 macro(missing_optional_library lib_name)
-  message(WARNING "missing optional external library: ${lib_name}. Goby will function without the support of this library. See http://gobysoft/doc for more information.")
+  message(WARNING "missing optional external library: ${lib_name}. Goby will function without the support of this library, but certain modules will not be built. See http://gobysoft.org/doc for more information.")
 endmacro()
 
 ## find external packages, libraries, and headers for the entire goby project
@@ -40,41 +40,55 @@ endif()
 
 
 ## set flags
-option(build_util "Build the Goby Utility libraries and applications" ON)
-option(build_acomms "Build the Goby Acoustic Communications libraries and applications" ON)
-option(build_core "Build the Goby Core libraries and applications" ON)  
 option(build_protobuf "Build the Goby Google Protocol buffers library" ON)  
 
-find_package(MOOS)
-if(MOOS_FOUND)
-  include_directories(${MOOS_INCLUDE_DIRS})
-  add_definitions(-DHAS_MOOS)
-  option(build_moos "Build the Acoustic Communications MOOS apps (pAcommsHandler, etc.)" ON)
-else()
-  missing_optional_library(MOOS)
-  option(build_moos "Build the Acoustic Communications MOOS apps (pAcommsHandler, etc.)" OFF)
-endif()
-
-if(build_util)
-  add_subdirectory(util)
-endif()
-
-if(build_acomms)
-  add_subdirectory(acomms)
-endif()
-
-if(build_core)
-  add_subdirectory(core)
-endif()
-
+# module dependencies
+# you can optionally build up to any point in this chain
+# protobuf -> util -> acomms -> core -> moos
 if(build_protobuf)
   add_subdirectory(protobuf)
-endif()
+
+  option(build_util "Build the Goby Utility libraries and applications (requires goby-protobuf)" ON)
+  if(build_util)
+    add_subdirectory(util)
+
+    option(build_acomms "Build the Goby Acoustic Communications libraries and applications (requires goby-util)" ON)
+    if(build_acomms)
+      add_subdirectory(acomms)
+
+      find_package(ZeroMQ)
+      if(ZEROMQ_FOUND)
+        include_directories(${ZEROMQ_INCLUDE_DIRS})
+        option(build_core "Build the Goby Core libraries and applications" ON)  
+      else()
+        missing_optional_library(ZeroMQ)
+        option(build_core "Build the Goby Core libraries and applications" OFF)  
+      endif()
+
+      if(build_core)
+        add_subdirectory(core)
+
+        # MOOS requires core, so don't try to build if core is not built
+        find_package(MOOS)
+        if(MOOS_FOUND)
+          include_directories(${MOOS_INCLUDE_DIRS})
+          add_definitions(-DHAS_MOOS)
+          option(build_moos "Build the Acoustic Communications MOOS apps (pAcommsHandler, etc.)" ON)
+        else()
+          missing_optional_library(MOOS)
+          option(build_moos "Build the Acoustic Communications MOOS apps (pAcommsHandler, etc.)" OFF)
+        endif()
+
+        if(build_moos)
+          add_subdirectory(moos)
+        endif(build_moos)
+      endif(build_core)
+    endif(build_acomms)
+  endif(build_util)
+endif(build_protobuf)
 
 
-if(build_moos)
-  add_subdirectory(moos)
-endif()
+
 
 # latex, for documentation
 find_package(LATEX)

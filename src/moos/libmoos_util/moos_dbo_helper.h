@@ -45,7 +45,7 @@ namespace Wt
                 Wt::Dbo::field(action, msg.m_dfVal, "double_value");
                 Wt::Dbo::field(action, msg.m_sVal, "string_value");
                 Wt::Dbo::field(action, msg.m_sSrc, "source");
-                Wt::Dbo::field(action, msg.m_sSrcAux, "source_auxilary");
+                Wt::Dbo::field(action, msg.m_sSrcAux, "source_auxiliary");
                 Wt::Dbo::field(action, msg.m_sOriginatingCommunity, "originating_community");
             }
         };

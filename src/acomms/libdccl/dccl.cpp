@@ -31,7 +31,7 @@
 #include "goby/util/string.h"
 #include "goby/protobuf/acomms_proto_helpers.h"
 #include "goby/protobuf/dccl_option_extensions.pb.h"
-#include "goby/core/libcore/dynamic_protobuf_manager.h"
+#include "goby/protobuf/dynamic_protobuf_manager.h"
 #include "goby/protobuf/header.pb.h"
 
 using goby::util::goby_time;
@@ -94,11 +94,7 @@ std::string goby::acomms::DCCLCodec::encode(const google::protobuf::Message& msg
     
 
         //fixed header
-        Bitset ccl_id_bits(fixed_head_size(), DCCL_CCL_HEADER);
-        Bitset dccl_id_bits(fixed_head_size(),
-                            msg.GetDescriptor()->options().GetExtension(dccl::id));
-        ccl_id_bits <<= HEAD_DCCL_ID_SIZE;    
-        Bitset fixed_head_bits = ccl_id_bits | dccl_id_bits;
+        Bitset fixed_id_bits = encode_id(msg.GetDescriptor()->options().GetExtension(dccl::id));
         Bitset head_bits, body_bits;
 
         boost::shared_ptr<DCCLFieldCodecBase> codec =
@@ -120,12 +116,12 @@ std::string goby::acomms::DCCLCodec::encode(const google::protobuf::Message& msg
         
         // given header of not even byte size (e.g. 01011), make even byte size (e.g. 00001011)
         // and shift bytes to MSB (e.g. 01011000).
-        unsigned head_byte_size = ceil_bits2bytes(head_bits.size() + fixed_head_bits.size());
-        unsigned head_bits_diff = head_byte_size * BITS_IN_BYTE - (head_bits.size() + + fixed_head_bits.size());
+        unsigned head_byte_size = ceil_bits2bytes(head_bits.size() + fixed_id_bits.size());
+        unsigned head_bits_diff = head_byte_size * BITS_IN_BYTE - (head_bits.size() + fixed_id_bits.size());
         head_bits.resize(head_bits.size() + head_bits_diff);
-        for(int i = 0, n = fixed_head_bits.size(); i < n; ++i)
-            head_bits.push_back(fixed_head_bits[i]);
-        
+        for(int i = 0, n = fixed_id_bits.size(); i < n; ++i)
+            head_bits.push_back(fixed_id_bits[i]);
+
         std::string head_bytes, body_bytes;
         bitset2string(head_bits, &head_bytes);
         bitset2string(body_bits, &body_bytes);
@@ -137,8 +133,8 @@ std::string goby::acomms::DCCLCodec::encode(const google::protobuf::Message& msg
         // the end of the string get tacked on to the MSB, not the LSB where they would cause trouble
         std::reverse(body_bytes.begin(), body_bytes.end());
 
-        glog.is(debug1) && glog  << "head: " << head_bits << std::endl;
-        glog.is(debug1) && glog  << "body: " << body_bits << std::endl;
+        glog.is(debug1) && glog  << "(encode) head: " << head_bits << std::endl;
+        glog.is(debug1) && glog  << "(encode) body: " << body_bits << std::endl;
         return head_bytes + body_bytes;
     }
     catch(std::exception& e)
@@ -156,31 +152,24 @@ boost::shared_ptr<google::protobuf::Message> goby::acomms::DCCLCodec::decode(con
 {
     try
     {
-        unsigned fixed_header_bytes = ceil_bits2bytes(fixed_head_size());
-
-        if(bytes.length() < fixed_header_bytes)
+        if(bytes.length() < SHORT_FORM_ID_BYTES)
             throw(DCCLException("Bytes passed (hex: " + hex_encode(bytes) + ") is too small to be a valid DCCL message"));
         
         Bitset fixed_header_bits;
-        string2bitset(&fixed_header_bits, bytes.substr(0, fixed_header_bytes));
+        string2bitset(&fixed_header_bits, bytes.substr(0, LONG_FORM_ID_BYTES));
 
         glog.is(debug1) && glog  << fixed_header_bits << std::endl;
 
-        unsigned ccl_id = (fixed_header_bits >> (fixed_header_bits.size()-HEAD_CCL_ID_SIZE)).to_ulong();
-        unsigned id = (fixed_header_bits >> (fixed_header_bits.size()-fixed_head_size())).to_ulong() & Bitset(std::string(HEAD_DCCL_ID_SIZE, '1')).to_ulong();
-
-        if(ccl_id != DCCL_CCL_HEADER)
-            throw(DCCLException("CCL ID (left-most byte in bytes string) must be " + goby::util::as<std::string>(static_cast<int>(DCCL_CCL_HEADER)) + " but was given " + as<std::string>(ccl_id)));
+        unsigned id = decode_id(fixed_header_bits);
         
         if(!id2desc_.count(id))
             throw(DCCLException("Message id " + as<std::string>(id) + " has not been validated. Call validate() before decoding this type."));
 
         // ownership of this object goes to the caller of decode()
         boost::shared_ptr<google::protobuf::Message> msg = 
-            goby::core::DynamicProtobufManager::new_protobuf_message(id2desc_.find(id)->second);
+            goby::protobuf::DynamicProtobufManager::new_protobuf_message(id2desc_.find(id)->second);
         
-        const Descriptor* desc = msg->GetDescriptor();
-        
+        const Descriptor* desc = msg->GetDescriptor();        
     
         boost::shared_ptr<DCCLFieldCodecBase> codec =
             DCCLFieldCodecManager::find(desc, desc->options().GetExtension(dccl::message_codec));
@@ -188,25 +177,25 @@ boost::shared_ptr<google::protobuf::Message> goby::acomms::DCCLCodec::decode(con
             DCCLTypeHelper::find(desc);
 
         
-        unsigned head_size_bits = fixed_head_size(), body_size_bits = 0;
+        unsigned head_size_bits = size_id(id), body_size_bits = 0;
         codec->base_max_size(&head_size_bits, desc, DCCLFieldCodecBase::HEAD);
         codec->base_max_size(&body_size_bits, desc, DCCLFieldCodecBase::BODY);
 
         unsigned head_size_bytes = ceil_bits2bytes(head_size_bits);
         unsigned body_size_bytes = ceil_bits2bytes(body_size_bits);
     
-        glog.is(debug1) && glog  << "head is " << head_size_bits << " bits" << std::endl;
-        glog.is(debug1) && glog  << "body is " << body_size_bits << " bits" << std::endl;
-        glog.is(debug1) && glog  << "head is " << head_size_bytes << " bytes" << std::endl;
-        glog.is(debug1) && glog  << "body is " << body_size_bytes << " bytes" << std::endl;
+        glog.is(debug1) && glog  << "(decode) head is " << head_size_bits << " bits" << std::endl;
+        glog.is(debug1) && glog  << "(decode) body is " << body_size_bits << " bits" << std::endl;
+        glog.is(debug1) && glog  << "(decode) head is " << head_size_bytes << " bytes" << std::endl;
+        glog.is(debug1) && glog  << "(decode) body is " << body_size_bytes << " bytes" << std::endl;
 
         std::string head_bytes = bytes.substr(0, head_size_bytes);
         std::string body_bytes = bytes.substr(head_size_bytes);
         // we had reversed the bytes so extraneous zeros will not cause trouble. undo this reversal.
         std::reverse(body_bytes.begin(), body_bytes.end());
         
-        glog.is(debug1) && glog  << "head is " << hex_encode(head_bytes) << std::endl;
-        glog.is(debug1) && glog  << "body is " << hex_encode(body_bytes) << std::endl;
+        glog.is(debug1) && glog  << "(decode) head is " << hex_encode(head_bytes) << std::endl;
+        glog.is(debug1) && glog  << "(decode) body is " << hex_encode(body_bytes) << std::endl;
 
         if(!crypto_key_.empty())
             decrypt(&body_bytes, head_bytes);
@@ -218,7 +207,7 @@ boost::shared_ptr<google::protobuf::Message> goby::acomms::DCCLCodec::decode(con
         glog.is(debug1) && glog  << "head: " << head_bits << std::endl;
         glog.is(debug1) && glog  << "body: " << body_bits << std::endl;
         
-        head_bits.resize(head_size_bits - fixed_head_size());
+        head_bits.resize(head_size_bits - size_id(id));
 
         glog.is(debug1) && glog  << "head after removing fixed portion: " << head_bits << std::endl;
 
@@ -267,7 +256,8 @@ bool goby::acomms::DCCLCodec::validate(const google::protobuf::Descriptor* desc)
         boost::shared_ptr<DCCLFieldCodecBase> codec =
             DCCLFieldCodecManager::find(desc, desc->options().GetExtension(dccl::message_codec));
 
-        unsigned head_size_bits = fixed_head_size(), body_size_bits = 0;
+        unsigned dccl_id = desc->options().GetExtension(dccl::id);
+        unsigned head_size_bits = size_id(dccl_id), body_size_bits = 0;
         codec->base_max_size(&head_size_bits, desc, DCCLFieldCodecBase::HEAD);
         codec->base_max_size(&body_size_bits, desc, DCCLFieldCodecBase::BODY);
         
@@ -279,7 +269,6 @@ bool goby::acomms::DCCLCodec::validate(const google::protobuf::Descriptor* desc)
         codec->base_validate(desc, DCCLFieldCodecBase::HEAD);
         codec->base_validate(desc, DCCLFieldCodecBase::BODY);
 
-        unsigned dccl_id = desc->options().GetExtension(dccl::id);
         if(id2desc_.count(dccl_id) && desc != id2desc_.find(dccl_id)->second)
             throw(DCCLException("`dccl.id` " + as<std::string>(dccl_id) + " is already in use by Message " + id2desc_.find(dccl_id)->second->full_name()));
         else
@@ -310,7 +299,8 @@ unsigned goby::acomms::DCCLCodec::size(const google::protobuf::Message* msg)
     boost::shared_ptr<DCCLFieldCodecBase> codec =
         DCCLFieldCodecManager::find(desc, desc->options().GetExtension(dccl::message_codec));
     
-    unsigned head_size_bits = fixed_head_size();
+    unsigned id = desc->options().GetExtension(dccl::id);
+    unsigned head_size_bits = size_id(id);
     codec->base_size(&head_size_bits, *msg, DCCLFieldCodecBase::HEAD);
     
     unsigned body_size_bits = 0;
@@ -349,10 +339,11 @@ void goby::acomms::DCCLCodec::info(const google::protobuf::Descriptor* desc, std
         unsigned config_head_bit_size = 0, body_bit_size = 0;
         codec->base_max_size(&config_head_bit_size, desc, DCCLFieldCodecBase::HEAD);
         codec->base_max_size(&body_bit_size, desc, DCCLFieldCodecBase::BODY);
+
+        unsigned id = desc->options().GetExtension(dccl::id);
+        const unsigned bit_size = size_id(id) + config_head_bit_size + body_bit_size;
         
-        const unsigned bit_size = fixed_head_size() + config_head_bit_size + body_bit_size;
-        
-        const unsigned byte_size = ceil_bits2bytes(config_head_bit_size + fixed_head_size())
+        const unsigned byte_size = ceil_bits2bytes(config_head_bit_size + size_id(id))
             + ceil_bits2bytes(body_bit_size);
         
         const unsigned allowed_byte_size = desc->options().GetExtension(dccl::max_bytes);
@@ -360,7 +351,7 @@ void goby::acomms::DCCLCodec::info(const google::protobuf::Descriptor* desc, std
         
         *os << "== Begin " << desc->full_name() << " ==\n"
             << "Actual maximum size of message: " << byte_size << " bytes / "
-            << byte_size*BITS_IN_BYTE  << " bits [fixed head: " << fixed_head_size()
+            << byte_size*BITS_IN_BYTE  << " bits [dccl.id head: " << size_id(id)
             << ", user head: " << config_head_bit_size << ", body: "
             << body_bit_size << ", padding: " << byte_size * BITS_IN_BYTE - bit_size << "]\n"
             << "Allowed maximum size of message: " << allowed_byte_size << " bytes / "
@@ -422,6 +413,58 @@ std::list<boost::shared_ptr<google::protobuf::Message> > goby::acomms::DCCLCodec
         }        
     }
     return out;
+}
+
+
+goby::acomms::Bitset goby::acomms::DCCLCodec::encode_id(int id)
+{
+    if(id <= ONE_BYTE_MAX_ID)
+    {
+        return(Bitset(size_id(id), id));
+    }                
+    else
+    {
+        Bitset return_bits(size_id(id), id);
+        // set MSB to indicate long header form
+        return_bits.set(return_bits.size()-1);
+        return return_bits;
+    }
+}
+
+int goby::acomms::DCCLCodec::size_id(int id)
+{
+    if(id < 0 || id > TWO_BYTE_MAX_ID)
+        throw(DCCLException("dccl.id provided (" + goby::util::as<std::string>(id) + ") is less than 0 or exceeds maximum: " + goby::util::as<std::string>(int(TWO_BYTE_MAX_ID))));
+    
+    return (id <= ONE_BYTE_MAX_ID) ?
+        SHORT_FORM_ID_BYTES*BITS_IN_BYTE :
+        LONG_FORM_ID_BYTES*BITS_IN_BYTE;
+}
+
+
+int goby::acomms::DCCLCodec::decode_id(Bitset bits)
+{
+    if(bits.test(bits.size()-1))
+    {
+        // long header
+        if(bits.size() > LONG_FORM_ID_BYTES*BITS_IN_BYTE)
+        {
+            bits >>= bits.size()-LONG_FORM_ID_BYTES*BITS_IN_BYTE;
+            bits.resize(LONG_FORM_ID_BYTES*BITS_IN_BYTE);
+        }
+        bits.set(bits.size()-1, false);
+        return bits.to_ulong();
+    }
+    else
+    {
+        // short header
+        if(bits.size() > SHORT_FORM_ID_BYTES*BITS_IN_BYTE)
+        {
+            bits >>= bits.size()-SHORT_FORM_ID_BYTES*BITS_IN_BYTE;
+            bits.resize(SHORT_FORM_ID_BYTES*BITS_IN_BYTE);
+        }
+        return bits.to_ulong();
+    }   
 }
 
 

@@ -21,11 +21,11 @@
 #include <boost/unordered_map.hpp>
 
 #include "goby/util/logger.h"
+#include "goby/protobuf/dynamic_protobuf_manager.h"
 #include "goby/core/core_helpers.h"
 
 #include "node_interface.h"
 #include "subscription.h"
-#include "dynamic_protobuf_manager.h"
 
 namespace goby
 {
@@ -168,7 +168,7 @@ void goby::core::StaticProtobufNode::on_receipt(
     boost::function<void (const ProtoBufMessage&)> handler
     /*= boost::function<void (const ProtoBufMessage&)>()*/)
 {
-    DynamicProtobufManager::add_protobuf_file_with_dependencies(ProtoBufMessage::descriptor()->file());
+    goby::protobuf::DynamicProtobufManager::add_protobuf_file_with_dependencies(ProtoBufMessage::descriptor()->file());
     
     using goby::glog;
     

@@ -127,7 +127,7 @@ void goby::core::Database::init_sql()
     }
     
     // #include <google/protobuf/descriptor.pb.h>
-    DynamicProtobufManager::add_protobuf_file_with_dependencies(google::protobuf::FileDescriptorProto::descriptor()->file());
+    goby::protobuf::DynamicProtobufManager::add_protobuf_file_with_dependencies(google::protobuf::FileDescriptorProto::descriptor()->file());
 //    dbo_manager_->add_type(google::protobuf::FileDescriptorProto::descriptor());
 
 }
@@ -156,11 +156,11 @@ void goby::core::Database::handle_database_request(const protobuf::DatabaseReque
         {
             for(int i = 0, n = proto_request.file_descriptor_proto_size(); i < n; ++i)
             {
-                DynamicProtobufManager::add_protobuf_file(proto_request.file_descriptor_proto(i));
+                goby::protobuf::DynamicProtobufManager::add_protobuf_file(proto_request.file_descriptor_proto(i));
 //                dbo_manager_->add_message(-1, proto_request.file_descriptor_proto(i));
                 
                 const google::protobuf::Descriptor* desc =
-                    DynamicProtobufManager::descriptor_pool().FindMessageTypeByName(
+                    goby::protobuf::DynamicProtobufManager::descriptor_pool().FindMessageTypeByName(
                         proto_request.publish_protobuf_full_name());
                 proto_response.Clear();
                     

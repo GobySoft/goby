@@ -21,8 +21,8 @@
 #include "goby/core/libdbo/dbo_manager.h"
 #include "goby/protobuf/core_database_request.pb.h"
 #include "goby/protobuf/zero_mq_node_config.pb.h"
+#include "goby/protobuf/dynamic_protobuf_manager.h"
 
-#include "dynamic_protobuf_manager.h"
 #include "protobuf_node.h"
 
 namespace goby
@@ -102,7 +102,7 @@ namespace goby
                 if(marshalling_scheme == MARSHALLING_PROTOBUF)
                 {
                     const std::string& protobuf_type_name = identifier.substr(0, identifier.find_first_of("/"));
-                    boost::shared_ptr<google::protobuf::Message> msg = DynamicProtobufManager::new_protobuf_message(protobuf_type_name);
+                    boost::shared_ptr<google::protobuf::Message> msg = goby::protobuf::DynamicProtobufManager::new_protobuf_message(protobuf_type_name);
                     
                     if(cfg_.using_database() && !registered_file_descriptors_.count(msg->GetDescriptor()->file()))
                     {

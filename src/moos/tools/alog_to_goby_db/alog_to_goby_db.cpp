@@ -18,6 +18,7 @@
 
 #include "goby/moos/libmoos_util/moos_dbo_helper.h"
 #include "goby/moos/libmoos_util/moos_node.h"
+#include "goby/moos/libmoos_util/moos_protobuf_helpers.h"
 #include "goby/core/libcore/application_base.h"
 #include "goby/core/libdbo/dbo_manager.h"
 
@@ -108,35 +109,38 @@ public:
                 goby::glog.is(verbose) && goby::glog << "Running parse action: " << action.ShortDebugString() << std::endl;
                 const google::protobuf::Descriptor* desc = google::protobuf::DescriptorPool::generated_pool()->FindMessageTypeByName(action.protobuf_type_name());
                 
-                goby::core::DynamicProtobufManager::add_protobuf_file_with_dependencies(desc->file());
+                goby::protobuf::DynamicProtobufManager::add_protobuf_file_with_dependencies(desc->file());
                 
                 if(!desc)
                     throw(std::runtime_error("Unknown type " + action.protobuf_type_name() + " are you sure this is compiled in?"));
 
                 
                 typedef Wt::Dbo::collection< Wt::Dbo::ptr<CMOOSMsg> > Msgs;
-                
                 Msgs msgs;
                 
                 msgs = dbo_manager->session()->find<CMOOSMsg>("where "  + action.sql_where_clause() + " order by moosmsg_time ASC");
                 goby::glog.is(verbose) && goby::glog << "We have " << msgs.size() << " messages:" << std::endl;
 
-                std::vector<boost::shared_ptr<google::protobuf::Message> > proto_msgs;
+                std::map<int, boost::shared_ptr<google::protobuf::Message> > proto_msgs;
                 for (Msgs::const_iterator it = msgs.begin(), n = msgs.end(); it != n; ++it)
                 {
-                    boost::shared_ptr<google::protobuf::Message> msg = goby::core::DynamicProtobufManager::new_protobuf_message(desc);
+                    boost::shared_ptr<google::protobuf::Message> msg = goby::protobuf::DynamicProtobufManager::new_protobuf_message(desc);
                     goby::glog.is(debug1) && goby::glog << **it << std::endl;
-                    parse((**it).GetString(), msg.get());
-                    goby::glog.is(debug1) && goby::glog << msg->DebugString() << std::endl;
-                    proto_msgs.push_back(msg);
+
+                    if(action.is_key_equals_value_string())
+                        from_moos_comma_equals_string(msg.get(), boost::to_lower_copy((**it).GetString()));
+                    else
+                        parse(action.format(), (**it).GetString(), msg.get());
+                    
+                    goby::glog.is(debug1) && goby::glog << "[[" << msg->GetDescriptor()->full_name() << "]] " << msg->DebugString() << std::endl;
+                    proto_msgs[it->id()] = msg;
                 }
                 dbo_manager->commit();
 
-                for(int i = 0, n = proto_msgs.size(); i < n; ++i)
+                for(std::map<int, boost::shared_ptr<google::protobuf::Message> >::const_iterator it = proto_msgs.begin(), n = proto_msgs.end(); it != n; ++it)
                 {
-                    protobuf_plugin.add_message(-1, proto_msgs[i]);
-
-                    goby::glog.is(verbose) && goby::glog << proto_msgs[i]->ShortDebugString() << std::endl;
+                    protobuf_plugin.add_message(it->first, it->second);
+                    goby::glog.is(verbose) && goby::glog << it->second->ShortDebugString() << std::endl;
                     
 //                    if(!(i % 10))
 //                        dbo_manager->commit();
@@ -152,12 +156,12 @@ private:
     void iterate() { assert(false); }
     
 
-    void parse(std::string str,
+    void parse(std::string format,
+               std::string str,
                google::protobuf::Message* msg)
         {
             const google::protobuf::Descriptor* desc = msg->GetDescriptor();
             const google::protobuf::Reflection* refl = msg->GetReflection();
-            std::string format = desc->options().GetExtension(moos::format_string);
             boost::to_lower(format);
             std::string lower_str = boost::to_lower_copy(str);
 

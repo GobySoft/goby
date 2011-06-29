@@ -2,5 +2,3 @@
 - Write vector<Message> encode and make non-repeated fields repeated
 - Delta encode for numeric types
 - Check that DCCL bounds are sane for the given c++ type
-- Allow codec selection based on protobuf type? ( bytes versus string )
-- Codec selection on particular subclass of google::protobuf::Message (for specialized codecs)

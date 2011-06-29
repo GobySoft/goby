@@ -1,0 +1,41 @@
+import "goby/protobuf/dccl_option_extensions.proto";
+import "goby/protobuf/queue_option_extensions.proto";
+
+message ShortIDMsg
+{
+  option (dccl.id) = 2;
+  option (dccl.max_bytes) = 1;
+}
+
+message ShortIDMsgWithData
+{
+  option (dccl.id) = 3;
+  option (dccl.max_bytes) = 10;
+
+  optional int32 in_head = 1 [(dccl.in_head)=true, (dccl.min)=0, (dccl.max)=100];
+  optional int32 in_body = 2 [(dccl.in_head)=true, (dccl.min)=0, (dccl.max)=100];
+}
+
+message LongIDMsg
+{
+  option (dccl.id) = 10000;
+  option (dccl.max_bytes) = 2;
+}
+
+message TooLongIDMsg
+{
+  option (dccl.id) = 32768;
+  option (dccl.max_bytes) = 32;
+}
+
+message LongIDEdgeMsg
+{
+  option (dccl.id) = 128;
+  option (dccl.max_bytes) = 2;
+}
+
+message ShortIDEdgeMsg
+{
+  option (dccl.id) = 127;
+  option (dccl.max_bytes) = 1;
+}

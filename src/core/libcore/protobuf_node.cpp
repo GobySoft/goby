@@ -17,7 +17,6 @@
 #include "protobuf_node.h"
 
 #include "goby/util/logger.h"
-#include "dynamic_protobuf_manager.h"
 
 using goby::glog;
 using goby::util::as;
@@ -35,7 +34,7 @@ void goby::core::ProtobufNode::inbox(MarshallingScheme marshalling_scheme,
 
 void goby::core::ProtobufNode::send(const google::protobuf::Message& msg, int socket_id)
 {
-    DynamicProtobufManager::add_protobuf_file_with_dependencies(msg.GetDescriptor()->file());
+    goby::protobuf::DynamicProtobufManager::add_protobuf_file_with_dependencies(msg.GetDescriptor()->file());
     
     int size = msg.ByteSize();
     char buffer[size];
@@ -72,7 +71,7 @@ void goby::core::DynamicProtobufNode::protobuf_inbox(const std::string& protobuf
                                                      int socket_id)
 {
     boost::shared_ptr<google::protobuf::Message> msg =
-        DynamicProtobufManager::new_protobuf_message(protobuf_type_name);
+        goby::protobuf::DynamicProtobufManager::new_protobuf_message(protobuf_type_name);
     msg->ParseFromArray(data, size);
     dynamic_protobuf_inbox(msg, socket_id);
 }

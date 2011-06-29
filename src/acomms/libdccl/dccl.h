@@ -101,15 +101,13 @@ namespace goby
             void info_repeated(const std::list<const google::protobuf::Descriptor*>& desc, std::ostream* os);
             // in bytes
             unsigned size(const google::protobuf::Message* msg);
+
             // run hooks previously registered to DCCLFieldCodec::register_wire_value_hook
             void run_hooks(const google::protobuf::Message* msg);
-
-            void call_hooks(const google::protobuf::Message* msg);
-
+            void call_hooks(const google::protobuf::Message* msg);            
             
             
-            
-
+            // can take a list of anything that acts like a pointer (has operator*) to a google::protobuf::Message (smart pointers included)
             template<typename GoogleProtobufMessagePointer>
                 unsigned size_repeated(const std::list<GoogleProtobufMessagePointer>& msgs)
             {
@@ -137,6 +135,7 @@ namespace goby
                 return msg;
             }
             
+            // can take a list of anything that acts like a pointer (has operator*) to a google::protobuf::Message (smart pointers included)
             template<typename GoogleProtobufMessagePointer>
                 std::string encode_repeated(const std::list<GoogleProtobufMessagePointer>& msgs)
             {
@@ -155,12 +154,7 @@ namespace goby
 
             //@}
 
-
-
             /// \example acomms/chat/chat.cpp
-
-
-            
           private:
 
             /// \name Constructors/Destructor
@@ -185,10 +179,20 @@ namespace goby
             void decrypt(std::string* s, const std::string& nonce);
             void process_cfg();
 
-            void set_default_codecs();
+            // maximum id we can fit in short or long header (MSB reserved to indicate
+            // short or long header)
+            enum { ONE_BYTE_MAX_ID = (1 << 7) - 1,
+                   TWO_BYTE_MAX_ID = (1 << 15) - 1};
+
+            enum { SHORT_FORM_ID_BYTES = 1,
+                   LONG_FORM_ID_BYTES = 2 };
             
-            unsigned fixed_head_size()
-            { return HEAD_CCL_ID_SIZE + HEAD_DCCL_ID_SIZE; }            
+            
+            Bitset encode_id(int id);
+            int decode_id(Bitset bits);
+            int size_id(int id);
+                
+            void set_default_codecs();            
             
           private:
             static boost::shared_ptr<DCCLCodec> inst_;

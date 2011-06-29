@@ -23,10 +23,9 @@
 
 #include "goby/core/core_constants.h"
 #include <boost/bimap.hpp>
-#include "goby/core/libcore/dynamic_protobuf_manager.h"
 #include <google/protobuf/message.h>
 #include <google/protobuf/descriptor.h>
-#include "goby/core/libcore/dynamic_protobuf_manager.h"
+#include "goby/protobuf/dynamic_protobuf_manager.h"
 
 // must be define since we are using the preprocessor
 #define GOBY_MAX_PROTOBUF_TYPES @GOBY_DBO_MAX_PROTOBUF_TYPES@
@@ -87,7 +86,7 @@ namespace goby
                     // create new blank message if none given
                     if(!p)
                     {
-                        p_ = DynamicProtobufManager::new_protobuf_message(dbo_map.left.at(i));
+                        p_ = goby::protobuf::DynamicProtobufManager::new_protobuf_message(dbo_map.left.at(i));
                     }
                 }
                 

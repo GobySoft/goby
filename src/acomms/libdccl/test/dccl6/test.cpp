@@ -32,26 +32,26 @@ int main(int argc, char* argv[])
     assert(codec->validate(short_id_msg.GetDescriptor()));
     codec->info(short_id_msg.GetDescriptor(), &goby::glog);
     codec->decode(codec->encode(short_id_msg));
-    assert(codec->size(&short_id_msg) == 1);
+    assert(codec->size(short_id_msg) == 1);
 
     LongIDMsg long_id_msg;
     assert(codec->validate(long_id_msg.GetDescriptor()));
     codec->info(long_id_msg.GetDescriptor(), &goby::glog);
     codec->decode(codec->encode(long_id_msg));
-    assert(codec->size(&long_id_msg) == 2);
+    assert(codec->size(long_id_msg) == 2);
     
 
     ShortIDEdgeMsg short_id_edge_msg;
     assert(codec->validate(short_id_edge_msg.GetDescriptor()));
     codec->info(short_id_edge_msg.GetDescriptor(), &goby::glog);
     codec->decode(codec->encode(short_id_edge_msg));
-    assert(codec->size(&short_id_edge_msg) == 1);
+    assert(codec->size(short_id_edge_msg) == 1);
 
     LongIDEdgeMsg long_id_edge_msg;
     assert(codec->validate(long_id_edge_msg.GetDescriptor()));
     codec->info(long_id_edge_msg.GetDescriptor(), &goby::glog);
     codec->decode(codec->encode(long_id_edge_msg));
-    assert(codec->size(&long_id_edge_msg) == 2);
+    assert(codec->size(long_id_edge_msg) == 2);
 
     TooLongIDMsg too_long_id_msg;
     // should fail validation

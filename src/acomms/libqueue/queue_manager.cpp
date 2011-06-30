@@ -204,8 +204,8 @@ void goby::acomms::QueueManager::push_message(const google::protobuf::Message& d
     latest_data_msg_.Clear();
     
     goby::acomms::DCCLCodec* codec = goby::acomms::DCCLCodec::get();
-    latest_data_msg_.mutable_data()->resize(codec->size(&dccl_msg));
-    codec->run_hooks(&dccl_msg);
+    latest_data_msg_.mutable_data()->resize(codec->size(dccl_msg));
+    codec->run_hooks(dccl_msg);
     glog.is(debug2) && glog << "post hooks: " << latest_data_msg_ << std::endl;
     
     // message is to us, auto-loopback
@@ -564,7 +564,7 @@ void goby::acomms::QueueManager::handle_modem_receive(const protobuf::ModemDataT
         BOOST_FOREACH(boost::shared_ptr<google::protobuf::Message> msg, dccl_msgs)
         {
             latest_data_msg_.Clear();
-            codec->run_hooks(msg.get());
+            codec->run_hooks(*msg);
 
             int32 dest = latest_data_msg_.base().dest();
             if(dest != BROADCAST_ID && dest != modem_id_)

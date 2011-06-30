@@ -98,7 +98,7 @@ int main(int argc, char* argv[])
     msg_in1.mutable_header()->set_dest_platform("unicorn");
     msg_in1.mutable_header()->set_dest_type(Header::PUBLISH_OTHER);
 
-    codec->run_hooks(&msg_in1);
+    codec->run_hooks(msg_in1);
     assert(found_dest);
     assert(found_source);
     assert(found_time);

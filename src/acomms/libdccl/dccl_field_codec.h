@@ -361,7 +361,7 @@ namespace goby
         }
           
 
-        
+        // if WireType == FieldType, we don't have to add anything
         template <typename WireType, typename FieldType, class Enable = void> 
             class DCCLFieldCodecSwitcher : public DCCLFieldCodecBase
             { };

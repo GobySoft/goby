@@ -292,19 +292,19 @@ bool goby::acomms::DCCLCodec::validate(const google::protobuf::Descriptor* desc)
     return true;
 }
 
-unsigned goby::acomms::DCCLCodec::size(const google::protobuf::Message* msg)
+unsigned goby::acomms::DCCLCodec::size(const google::protobuf::Message& msg)
 {
-    const Descriptor* desc = msg->GetDescriptor();
+    const Descriptor* desc = msg.GetDescriptor();
 
     boost::shared_ptr<DCCLFieldCodecBase> codec =
         DCCLFieldCodecManager::find(desc, desc->options().GetExtension(dccl::message_codec));
     
     unsigned id = desc->options().GetExtension(dccl::id);
     unsigned head_size_bits = size_id(id);
-    codec->base_size(&head_size_bits, *msg, DCCLFieldCodecBase::HEAD);
+    codec->base_size(&head_size_bits, msg, DCCLFieldCodecBase::HEAD);
     
     unsigned body_size_bits = 0;
-    codec->base_size(&body_size_bits, *msg, DCCLFieldCodecBase::BODY);
+    codec->base_size(&body_size_bits, msg, DCCLFieldCodecBase::BODY);
     
     const unsigned head_size_bytes = ceil_bits2bytes(head_size_bits);
     const unsigned body_size_bytes = ceil_bits2bytes(body_size_bits);
@@ -317,15 +317,15 @@ unsigned goby::acomms::DCCLCodec::size(const google::protobuf::Message* msg)
 
 
 
-void goby::acomms::DCCLCodec::run_hooks(const google::protobuf::Message* msg)
+void goby::acomms::DCCLCodec::run_hooks(const google::protobuf::Message& msg)
 {
-    const Descriptor* desc = msg->GetDescriptor();
+    const Descriptor* desc = msg.GetDescriptor();
 
     boost::shared_ptr<DCCLFieldCodecBase> codec =
         DCCLFieldCodecManager::find(desc, desc->options().GetExtension(dccl::message_codec));
     
-    codec->base_run_hooks(*msg, DCCLFieldCodecBase::HEAD);
-    codec->base_run_hooks(*msg, DCCLFieldCodecBase::BODY);
+    codec->base_run_hooks(msg, DCCLFieldCodecBase::HEAD);
+    codec->base_run_hooks(msg, DCCLFieldCodecBase::BODY);
 }
 
 
@@ -397,7 +397,7 @@ std::list<boost::shared_ptr<google::protobuf::Message> > goby::acomms::DCCLCodec
         try
         {
             out.push_back(decode(bytes));
-            unsigned last_size = size(out.back().get());
+            unsigned last_size = size(*out.back());
             glog.is(debug1) && glog  << "last message size was: " << last_size << std::endl;
             bytes.erase(0, last_size);
         }

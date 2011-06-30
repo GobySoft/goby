@@ -100,9 +100,9 @@ int main(int argc, char* argv[])
 
     std::cout << "Try decode..." << std::endl;
 
-    boost::shared_ptr<google::protobuf::Message> msg_out = codec->decode(bytes);
-
-    std::cout << "... got Message out:\n" << msg_out->DebugString() << std::endl;
+    TestMsg msg_out = codec->decode<TestMsg>(bytes);
+    
+    std::cout << "... got Message out:\n" << msg_out.DebugString() << std::endl;
 
 
     // truncate to "max_length" as codec should do
@@ -110,7 +110,7 @@ int main(int argc, char* argv[])
     msg_in.set_string_default_repeat(1,"abc1");
 
     
-    assert(msg_in.SerializeAsString() == msg_out->SerializeAsString());
+    assert(msg_in.SerializeAsString() == msg_out.SerializeAsString());
     
     std::cout << "all tests passed" << std::endl;
 }

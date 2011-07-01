@@ -87,9 +87,9 @@ namespace goby
         std::ostream& operator<< (std::ostream& out, const std::set<std::string>& s);
 
         /// \class DCCLTransitionalCodec dccl.h goby/acomms/dccl.h
-        /// \brief provides an API to the Dynamic CCL Codec.
+        /// \brief provides an API to the Transitional Dynamic CCL Codec (looks like DCCLv1, but calls DCCLv2). This is for legacy support only, new applications should use DCCLCodec directly.
         /// \ingroup acomms_api
-        /// \sa  dccl.proto and modem_message.proto for definition of Google Protocol Buffers messages (namespace goby::transitional::protobuf).
+        /// \sa transitional.proto and modem_message.proto for definition of Google Protocol Buffers messages (namespace goby::transitional::protobuf).
 
         class DCCLTransitionalCodec 
         {
@@ -436,30 +436,6 @@ namespace goby
 
             // grab a reference to the manipulator manager used by the loaded XML messages
             const ManipulatorManager& manip_manager() const { return manip_manager_; }
-
-            /// \example libdccl/dccl_simple/dccl_simple.cpp
-            /// simple.xml
-            /// \verbinclude dccl_simple/simple.xml
-            /// dccl_simple.cpp
-            
-            /// \example libdccl/plusnet/plusnet.cpp
-            /// nafcon_command.xml
-            /// \verbinclude nafcon_command.xml
-            /// nafcon_report.xml
-            /// \verbinclude nafcon_report.xml
-            /// plusnet.cpp
-        
-            /// \example libdccl/test/test.cpp
-            /// test.xml
-            /// \verbinclude test.xml 
-            /// test.cpp
-        
-            /// \example libdccl/two_message/two_message.cpp
-            /// two_message.xml
-            /// \verbinclude two_message.xml
-            /// two_message.cpp
-
-            /// \example acomms/chat/chat.cpp
         
           private:
             /// \brief Add more messages to this instance of the codec.

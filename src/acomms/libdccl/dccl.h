@@ -63,6 +63,25 @@ namespace goby
         /// \brief provides an API to the Dynamic CCL Codec.
         /// \ingroup acomms_api
         /// \sa dccl.proto and modem_message.proto for definition of Google Protocol Buffers messages (namespace goby::acomms::protobuf).
+        ///
+        /// Simple usage example:
+        /// 1. Define a Google Protobuf message with DCCL extensions:
+        /// \verbinclude simple.proto
+        /// 2. Write a bit of code like this:
+        /// \code
+        /// goby::acomms::DCCLCodec* dccl = goby::acomms::DCCLCodec::get();
+        /// dccl->validate<Simple>();
+        /// Simple message_out;
+        /// message_out.set_telegram("Hello!");
+        /// std::string bytes = dccl->encode(message);
+        /// \\ send bytes across some network
+        /// Simple message_in = dccl->decode<Simple>(bytes);
+        /// \endcode
+        /// \example acomms/chat/chat.cpp
+        /// \example acomms/libdccl/dccl_simple/dccl_simple.cpp
+        /// simple.proto
+        /// \verbinclude simple.proto
+        /// dccl_simple.cpp
         class DCCLCodec
         {
           public:
@@ -223,8 +242,6 @@ namespace goby
             void run_hooks(const google::protobuf::Message& msg);
             //@}           
             
-            /// \example acomms/chat/chat.cpp
-            /// \example acomms/libdccl/dccl_simple.cpp/dccl_simple.cpp
 
           private:
 

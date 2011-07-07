@@ -20,6 +20,7 @@
 
 #include <ctime>
 
+#include <stdint.h>
 #include <boost/date_time.hpp>
 #include "goby/util/string.h"
 

@@ -122,6 +122,8 @@ int main(int argc, char* argv[])
         // in here you can initiate more transmissions as you want
         usleep(100000);
     }    
+
+    delete driver;
     return 0;
 }
 

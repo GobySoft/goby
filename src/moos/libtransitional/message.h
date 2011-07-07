@@ -113,6 +113,7 @@ namespace goby
             //get
             std::string name() const              { return name_; }
             unsigned id() const                   { return id_; }
+            unsigned size() const                 { return size_; }
             std::string trigger_var() const       { return trigger_var_; }
             std::string trigger_mandatory() const { return trigger_mandatory_; }
             double trigger_time() const           { return trigger_time_; }

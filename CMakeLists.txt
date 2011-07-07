@@ -20,7 +20,7 @@ exec_program(${CMAKE_CXX_COMPILER}
 
 
 ## allows us to write custom modules or modifying existing ones
-set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules/")
+set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules/")
 
 enable_testing()
 include(CTest)

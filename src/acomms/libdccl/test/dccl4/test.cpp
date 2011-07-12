@@ -14,7 +14,7 @@
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
 
-// tests functionality of std::set<const google::protobuf::Message*> calls
+// tests functionality of std::list<const google::protobuf::Message*> calls
 
 #include "goby/acomms/dccl.h"
 #include "goby/acomms/libdccl/dccl_field_codec_default.h"
@@ -79,7 +79,7 @@ int main(int argc, char* argv[])
     {
         static int i = 0;
         std::cout << "... got Message " << ++i << " out:\n" << p->DebugString() << std::endl;
-        //    assert((*in_it)->SerializeAsString() == p->SerializeAsString());
+        assert((*in_it)->SerializeAsString() == p->SerializeAsString());
         ++in_it;
     }
     

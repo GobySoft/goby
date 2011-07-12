@@ -176,7 +176,9 @@ goby::acomms::Bitset goby::acomms::DCCLDefaultBytesCodec::encode(const std::stri
     string2bitset(&bits, wire_value);
     bits.resize(max_size());
     bits <<= min_size();
-    bits.set(0, true);
+
+    if(!this_field()->is_required())
+        bits.set(0, true); // presence bit
         
     return bits;
 }
@@ -195,8 +197,8 @@ unsigned goby::acomms::DCCLDefaultBytesCodec::size(const std::string& field_valu
 
 std::string goby::acomms::DCCLDefaultBytesCodec::decode(Bitset* bits)
 {
-    bool presence_flag = bits->to_ulong();
-    if(presence_flag)
+    bool present = (this_field()->is_required()) ? true : bits->to_ulong();
+    if(present)
     {
         // grabs more bits to add to the MSBs of `bits`
         get_more_bits(max_size()- min_size());
@@ -222,8 +224,10 @@ unsigned goby::acomms::DCCLDefaultBytesCodec::max_size()
 
 unsigned goby::acomms::DCCLDefaultBytesCodec::min_size()
 {
-    // presence bit
-    return 1;
+    if(this_field()->is_required())
+        return 0;
+    else
+        return 1; // presence bit
 }
 
 void goby::acomms::DCCLDefaultBytesCodec::validate()

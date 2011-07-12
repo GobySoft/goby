@@ -148,19 +148,24 @@ std::string goby::acomms::DCCLCodec::encode(const google::protobuf::Message& msg
     }
 }
 
+unsigned goby::acomms::DCCLCodec::id_from_encoded(const std::string& bytes)
+{
+    if(bytes.length() < SHORT_FORM_ID_BYTES)
+        throw(DCCLException("Bytes passed (hex: " + hex_encode(bytes) + ") is too small to be a valid DCCL message"));
+        
+    Bitset fixed_header_bits;
+    string2bitset(&fixed_header_bits, bytes.substr(0, LONG_FORM_ID_BYTES));
+
+    glog.is(debug1) && glog  << fixed_header_bits << std::endl;
+    return decode_id(fixed_header_bits);
+}
+
+
 boost::shared_ptr<google::protobuf::Message> goby::acomms::DCCLCodec::decode(const std::string& bytes)   
 {
     try
     {
-        if(bytes.length() < SHORT_FORM_ID_BYTES)
-            throw(DCCLException("Bytes passed (hex: " + hex_encode(bytes) + ") is too small to be a valid DCCL message"));
-        
-        Bitset fixed_header_bits;
-        string2bitset(&fixed_header_bits, bytes.substr(0, LONG_FORM_ID_BYTES));
-
-        glog.is(debug1) && glog  << fixed_header_bits << std::endl;
-
-        unsigned id = decode_id(fixed_header_bits);
+        unsigned id = id_from_encoded(bytes);   
         
         if(!id2desc_.count(id))
             throw(DCCLException("Message id " + as<std::string>(id) + " has not been validated. Call validate() before decoding this type."));

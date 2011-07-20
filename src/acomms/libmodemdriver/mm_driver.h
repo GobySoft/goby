@@ -90,13 +90,15 @@ namespace goby
             void ack(const util::NMEASentence& nmea, protobuf::ModemDataAck* ack_msg); // $CAACK
         
             // mini packet
-            void mua(const util::NMEASentence& nmea, protobuf::ModemMiniTransmission* data_msg, int *tod); // $CAMUA
+            void mua(const util::NMEASentence& nmea, protobuf::ModemMiniTransmission* data_msg); // $CAMUA
 
             // ranging (pings)
             void mpr(const util::NMEASentence& nmea, protobuf::ModemRangingReply* ranging_msg); // $CAMPR
             void tta(const util::NMEASentence& nmea, protobuf::ModemRangingReply* ranging_msg); // $SNTTA, why not $CATTA?
             void toa(const util::NMEASentence& nmea, protobuf::ModemRangingReply* ranging_msg); // $CATOA?
-            // send toa once we actually know who the message is from 
+            // send toa once we actually know who the message is from
+            // if time_of_depart is negative, flush_toa returns the fractional
+            // part of the second 
             void flush_toa(const protobuf::ModemMsgBase& base_msg, protobuf::ModemRangingReply* ranging_msg, int time_of_depart);
 
             

@@ -77,7 +77,8 @@ message ModemMiniTransmission
     optional ModemMsgBase base = 1;
     optional MiniType type = 2 [default = MINI_USER]; //default to normal message
     optional ClockMode clk_mode = 3;
-    optional uint32 data = 4; // mini packets only allow 13bits
+    optional int32 time_of_depart = 4 [default = -1];
+    optional uint32 data = 5; // mini packets only allow 13bits
 }
 
 // ranging
@@ -102,7 +103,8 @@ message ModemRangingReply
   optional double received_time = 2;
   repeated double one_way_travel_time = 3; 
   optional RangingType type = 4;
-  optional ClockMode clk_mode = 5;
+  optional ClockMode receiver_clk_mode = 5;
+  optional ClockMode sender_clk_mode = 6;
 }
 
 message ModemRangingRequest

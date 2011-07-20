@@ -90,14 +90,14 @@ namespace goby
             void ack(const util::NMEASentence& nmea, protobuf::ModemDataAck* ack_msg); // $CAACK
         
             // mini packet
-            void mua(const util::NMEASentence& nmea, protobuf::ModemMiniTransmission* data_msg); // $CAMUA
+            void mua(const util::NMEASentence& nmea, protobuf::ModemMiniTransmission* data_msg, int *tod); // $CAMUA
 
             // ranging (pings)
             void mpr(const util::NMEASentence& nmea, protobuf::ModemRangingReply* ranging_msg); // $CAMPR
             void tta(const util::NMEASentence& nmea, protobuf::ModemRangingReply* ranging_msg); // $SNTTA, why not $CATTA?
             void toa(const util::NMEASentence& nmea, protobuf::ModemRangingReply* ranging_msg); // $CATOA?
             // send toa once we actually know who the message is from 
-            void flush_toa(const protobuf::ModemMsgBase& base_msg, protobuf::ModemRangingReply* ranging_msg);
+            void flush_toa(const protobuf::ModemMsgBase& base_msg, protobuf::ModemRangingReply* ranging_msg, int time_of_depart);
 
             
             // local modem
@@ -173,6 +173,9 @@ namespace goby
             // keeps track of number of failures on the present talker and moves on to the next talker
             // if exceeded
             unsigned present_fail_count_;
+
+            // keeps track of clock mode, necessary for synchronous navigation
+            int clk_mode_;
 
             // has the clock been properly set. we must reset the clock after reboot ($CAREV,INIT)
             bool clock_set_;

@@ -88,8 +88,10 @@ void goby::acomms::MMDriver::startup(const protobuf::DriverConfig& cfg)
 
     
     modem_start(driver_cfg_);
-    
+   
+    // some clock stuff -- set clk_mode_ zeros for starters 
     set_clock();
+    clk_mode_ = 0;
     
     write_cfg();
     
@@ -190,11 +192,63 @@ void goby::acomms::MMDriver::handle_initiate_transmission(protobuf::ModemMsgBase
 void
 goby::acomms::MMDriver::handle_initiate_mini_transmission(protobuf::ModemMiniTransmission* mini_msg)
 {
+    /*********************************************
+     mini packet has range 0x0000 - 0x1FFF (13 bits)
+     we define the packet header (3bits) as:
+        | msg_type (3bits) |
+
+     so that a typical packet is of the form
+        | header (3bits) | user (10bits) |
+
+     furthermore, if msg_type = MINI_OWTT we steal 6 more bits for TOD;
+        | header (3bits) | clock mode (2bits) | tod (4bits) | user (4bits) |
+    *********************************************/
+ 
+    std::cout << "time to handle initiate mini transmission" << std::endl
+        << *mini_msg << std::endl;
+
+    // add message header bits 
+    if (!mini_msg->has_clk_mode())
+        mini_msg->set_clk_mode((protobuf::ClockMode) clk_mode_);
+
+    int type = mini_msg->type();
+    int clk_mode = mini_msg->clk_mode();
+
+    // get top of second for owtt packet 
+    boost::posix_time::ptime p = goby_time();
+    int tod = int(p.time_of_day().seconds()) % 10;
+    std::cout << "top of the second is " << std::dec << tod << std::endl;
+
+    // pack mini packet with header and user information
+    int packet = 0, user = 0;
+    switch (type) 
+    {
+        case protobuf::MINI_OWTT:
+        {
+            // make sure user data is only 4bits
+            user = mini_msg->data() & 0x0F;
+            packet = (type<<10) + (clk_mode<<8) + (tod<<4) + user;
+            break;
+        }
+        case protobuf::MINI_ABORT:
+        case protobuf::MINI_USER:
+        default:
+        {
+            // make sure user data is only 10bits
+            user   = mini_msg->data() & 0x3FF;
+            packet = (type<<10) + user;
+        }
+    }
+    std::cout << "packing packet: " << std::hex << packet << std::endl;
+
+    char packet_bytes[16];
+    snprintf (packet_bytes, sizeof packet_bytes, "%04x", packet);
+
     //$CCMUC,SRC,DEST,HHHH*CS
     NMEASentence nmea("$CCMUC", NMEASentence::IGNORE);
     nmea.push_back(mini_msg->base().src()); // ADR1
     nmea.push_back(mini_msg->base().dest()); // ADR2
-    nmea.push_back(mini_msg->data()); //HHHH    
+    nmea.push_back(packet_bytes); //HHHH    
 
     append_to_write_queue(nmea, mini_msg->mutable_base());
 }
@@ -432,16 +486,17 @@ void goby::acomms::MMDriver::process_receive(const NMEASentence& nmea)
             data_msg.Clear();
             rxd(nmea, &data_msg);
             this_base_msg = data_msg.mutable_base();
-            flush_toa(*this_base_msg, &ranging_msg);
+            flush_toa(*this_base_msg, &ranging_msg, 0);
             break;
         }
        
         case MUA:  // mini-packet receive
         {
             mini_msg.Clear();
-            mua(nmea, &mini_msg);
+            int tod = 0;
+            mua(nmea, &mini_msg, &tod);
             this_base_msg = mini_msg.mutable_base(); 
-            flush_toa(*this_base_msg, &ranging_msg);
+            flush_toa(*this_base_msg, &ranging_msg, tod);
             break;
         }
 
@@ -450,7 +505,7 @@ void goby::acomms::MMDriver::process_receive(const NMEASentence& nmea)
             ack_msg.Clear();
             ack(nmea, &ack_msg);
             this_base_msg = ack_msg.mutable_base();
-            flush_toa(*this_base_msg, &ranging_msg);
+            flush_toa(*this_base_msg, &ranging_msg, 0);
             break;
         }
 
@@ -489,6 +544,10 @@ void goby::acomms::MMDriver::process_receive(const NMEASentence& nmea)
                 ranging_msg.Clear();
             }
         }    
+//        case XST:
+//        {
+//            // get clock status from transmit statistics message
+//        }
 
         
         default: break;
@@ -566,12 +625,65 @@ void goby::acomms::MMDriver::rxd(const NMEASentence& nmea, protobuf::ModemDataTr
     signal_receive(*m);
 }
 
-void goby::acomms::MMDriver::mua(const NMEASentence& nmea, protobuf::ModemMiniTransmission* m)
+void goby::acomms::MMDriver::mua(const NMEASentence& nmea, protobuf::ModemMiniTransmission* m, int *tod)
 {
+    /*********************************************
+     mini packet has range 0x0000 - 0x1FFF (13 bits)
+     we define the packet header (3bits) as:
+        | msg_type (3bits) |
+
+     so that a typical packet is of the form
+        | header (3bits) | user (10bits) |
+
+     furthermore, if msg_type = MINI_OWTT we steal 6 more bits for TOD;
+        | header (3bits) | clock mode (2bits) | tod (4bits) | user (4bits) |
+    *********************************************/
+ 
     m->mutable_base()->set_time(as<std::string>(goby_time()));
     m->mutable_base()->set_src(as<uint32>(nmea[1]));
     m->mutable_base()->set_dest(as<uint32>(nmea[2]));
-    m->set_data(nmea[3]);
+
+    // get user and header bits    
+    int data          = as<uint32>(nmea[3]); 
+    int decode_user   = data & 0x3FF;
+    int decode_type   = data>>10; 
+
+    std::cout << "received mini      " << std::hex << data << std::endl;
+    std::cout << "received mini type " << std::hex << decode_type << std::endl;
+    std::cout << "received mini user " << std::hex << decode_user << std::endl;
+
+    if (protobuf::MiniType_IsValid (decode_type))
+        m->set_type((protobuf::MiniType) decode_type);
+
+    // decode user data -- need to do something with time of launch
+    int user = 0;
+    switch (decode_type) 
+    {
+        case protobuf::MINI_OWTT:
+        {
+            user = decode_user & 0x0F;
+            *tod = (decode_user>>4) & 0x0F;
+            int decode_clk_mode = (decode_user>>8) & 0x03; 
+            if (protobuf::ClockMode_IsValid (decode_clk_mode))
+                m->set_clk_mode((protobuf::ClockMode) decode_clk_mode);
+       
+            std::cout << "received mini clk_mode " << std::hex 
+                << decode_clk_mode << std::endl;
+            std::cout << "received mini tod      " << std::hex 
+                << *tod << std::endl;
+            std::cout << "received mini user     " << std::hex 
+                << user << std::endl;
+ 
+            break;
+        }
+        case protobuf::MINI_ABORT:
+        case protobuf::MINI_USER:
+        default:
+        {
+            user = decode_user;
+        }
+    }
+    m->set_data(user);
 
     signal_mini_receive(*m);
 }
@@ -769,33 +881,44 @@ bool goby::acomms::MMDriver::validate_data(const protobuf::ModemDataRequest& req
 
 void goby::acomms::MMDriver::toa(const NMEASentence& nmea, protobuf::ModemRangingReply* m)
 {
-    const unsigned SYNCHED_TO_PPS_AND_CCCLK_GOOD = 3;
-    const unsigned SYNCHED_TO_PPS_AND_CCCLK_BAD  = 2;
-    
     // timing relative to synched pps is good, if ccclk is bad, and range is
     // known to be less than ~1500m, range is still usable
-    if(nmea.as<unsigned>(2) == SYNCHED_TO_PPS_AND_CCCLK_GOOD ||
-       nmea.as<unsigned>(2) == SYNCHED_TO_PPS_AND_CCCLK_BAD)
+    clk_mode_ = nmea.as<unsigned>(2);
+    if(clk_mode_ == protobuf::SYNC_TO_PPS_AND_CCCLK_GOOD ||
+       clk_mode_ == protobuf::SYNC_TO_PPS_AND_CCCLK_BAD)
     {
         boost::posix_time::ptime toa = nmea_time2ptime(nmea[1]);
+        int received_sec = int(toa.time_of_day().seconds()) % 10;
         double frac_sec = double(toa.time_of_day().fractional_seconds())/toa.time_of_day().ticks_per_second();
-        //ambiguous because we don't know when the message was sent, for now
-        //send fractional part of time and let user determine owtt
-        m->add_one_way_travel_time(frac_sec);
+        // record toa seconds, flush_toa determines owtt
+        m->set_received_time (double(received_sec) + frac_sec);
 
-        m->set_mode(nmea.as<unsigned>(2));
+        m->set_clk_mode((protobuf::ClockMode) clk_mode_);
         m->set_type(protobuf::MODEM_ONE_WAY_SYNCHRONOUS);
         m->mutable_base()->set_time(as<std::string>(toa));
         m->mutable_base()->set_time_source(protobuf::ModemMsgBase::MODEM_TIME);
     }
 }
 
-void goby::acomms::MMDriver::flush_toa(const protobuf::ModemMsgBase& base_msg, protobuf::ModemRangingReply* ranging_msg)
+void goby::acomms::MMDriver::flush_toa(const protobuf::ModemMsgBase& base_msg, protobuf::ModemRangingReply* ranging_msg, int time_of_depart)
 {
     if(ranging_msg->type() == protobuf::MODEM_ONE_WAY_SYNCHRONOUS)
     {
         ranging_msg->mutable_base()->set_dest(driver_cfg_.modem_id());
         ranging_msg->mutable_base()->set_src(base_msg.src());
+
+        // compute owtt -- send fractional part of sec if we have no
+        // information about transmitting tod
+        double time_of_arrive = ranging_msg->received_time();
+        if (!time_of_depart)
+            time_of_depart = int ( floor (time_of_arrive) );
+
+        if (time_of_arrive < double(time_of_depart))
+            time_of_arrive += 10;
+ 
+        double owtt = time_of_arrive - double(time_of_depart); 
+        ranging_msg->add_one_way_travel_time(owtt);
+
         signal_range_reply(*ranging_msg);
         ranging_msg->Clear();
     }

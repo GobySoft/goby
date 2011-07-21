@@ -1,4 +1,4 @@
-query = 'select * from cmoosmsg where key = "NAV_DEPTH" and double_value > 0'
+query = 'select * from cmoosmsg where key = "NAV_DEPTH"'
 database = 'simple.db';
 
 moosmsg_nav_depth = sqlite_reader(query, database);

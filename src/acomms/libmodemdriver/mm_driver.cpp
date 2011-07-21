@@ -212,7 +212,8 @@ goby::acomms::MMDriver::handle_initiate_mini_transmission(protobuf::ModemMiniTra
     int clk_mode = mini_msg->clk_mode();
 
     // get top of second for owtt packet -- we add one because the packet will
-    // not be sent until the next second
+    // not be sent until the next second (section 2.3, Sync Navigation with
+    // MM, Revision D)
     boost::posix_time::ptime p = goby_time();
     int tod = int(p.time_of_day().seconds()+1) % 10;
 
@@ -458,6 +459,7 @@ void goby::acomms::MMDriver::process_receive(const NMEASentence& nmea)
         //
         // local modem
         //
+        case XST: xst(nmea); break; // transmit stats for clock mode
         case REV: rev(nmea); break; // software revision
         case ERR: err(nmea); break; // error message
         case DRQ: drq(nmea); break; // data request
@@ -540,11 +542,6 @@ void goby::acomms::MMDriver::process_receive(const NMEASentence& nmea)
                 ranging_msg.Clear();
             }
         }    
-//        case XST:
-//        {
-//            // get clock status from transmit statistics message
-//        }
-
         
         default: break;
     }
@@ -739,6 +736,11 @@ void goby::acomms::MMDriver::mpr(const NMEASentence& nmea, protobuf::ModemRangin
 
     
     signal_range_reply(*m);
+}
+
+void goby::acomms::MMDriver::xst(const NMEASentence& nmea)
+{
+    clk_mode_ = nmea.as<unsigned>(3);
 }
 
 void goby::acomms::MMDriver::rev(const NMEASentence& nmea)
@@ -981,7 +983,7 @@ void goby::acomms::MMDriver::initialize_talkers()
         ("CFR",CFR)("CST",CST)("MSG",MSG)("REV",REV) 
         ("DQF",DQF)("SHF",SHF)("MFD",MFD)("SNR",SNR) 
         ("DOP",DOP)("DBG",DBG)("FFL",FFL)("FST",FST) 
-        ("ERR",ERR)("TOA",TOA);
+        ("ERR",ERR)("TOA",TOA)("XST",XST);
 
     boost::assign::insert (talker_id_map_)
         ("CC",CC)("CA",CA)("SN",SN)("GP",GP); 

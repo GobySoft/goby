@@ -103,6 +103,7 @@ namespace goby
 
             
             // local modem
+            void xst(const util::NMEASentence& nmea); // $CAXST
             void rev(const util::NMEASentence& nmea); // $CAREV
             void err(const util::NMEASentence& nmea); // $CAERR
             void cfg(const util::NMEASentence& nmea, protobuf::ModemMsgBase* base_msg); // $CACFG
@@ -196,7 +197,7 @@ namespace goby
                                 CFR,CST,MSG,REV,
                                 DQF,SHF,SNR,DOP,
                                 DBG,FFL,FST,ERR,
-                                TOA};
+                                TOA,XST};
             
             std::map<std::string, TalkerIDs> talker_id_map_;
             std::map<std::string, SentenceIDs> sentence_id_map_;

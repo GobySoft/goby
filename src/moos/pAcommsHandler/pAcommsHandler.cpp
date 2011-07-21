@@ -124,11 +124,10 @@ void CpAcommsHandler::do_subscriptions()
 // RegisterVariables: register for variables we want to get mail for
 {
     // non dccl
-    typedef std::pair<std::string, goby::acomms::protobuf::QueueKey> P;
+    typedef std::pair<std::string, unsigned> P;
     BOOST_FOREACH(const P& p, out_moos_var2queue_)
     {
-        if(p.second.type() != goby::acomms::protobuf::QUEUE_DCCL)
-            subscribe(p.first, &CpAcommsHandler::handle_message_push, this);
+        subscribe(p.first, &CpAcommsHandler::handle_message_push, this);
     }
         
 
@@ -225,25 +224,25 @@ void CpAcommsHandler::handle_flush_queue(const CMOOSMsg& msg)
 
 void CpAcommsHandler::handle_message_push(const CMOOSMsg& msg)
 {
-    goby::acomms::protobuf::ModemDataTransmission new_message;
-    parse_for_moos(msg.GetString(), &new_message);
+    // goby::acomms::protobuf::ModemDataTransmission new_message;
+    // parse_for_moos(msg.GetString(), &new_message);
 
-    if(!new_message.base().has_time())
-        new_message.mutable_base()->set_time(as<std::string>(goby::util::goby_time()));
+    // if(!new_message.base().has_time())
+    //     new_message.mutable_base()->set_time(as<std::string>(goby::util::goby_time()));
         
-    goby::acomms::protobuf::QueueKey& qk = out_moos_var2queue_[msg.GetKey()];
+    // unsigned dccl_id = out_moos_var2queue_[msg.GetKey()];
     
-    if(new_message.data().empty())
-        glog << warn << "message is either empty or contains invalid data" << std::endl;
-    else if(!(qk.type() == goby::acomms::protobuf::QUEUE_DCCL))
-    {
-        new_message.mutable_queue_key()->CopyFrom(out_moos_var2queue_[msg.GetKey()]);
+    // if(new_message.data().empty())
+    //     glog << warn << "message is either empty or contains invalid data" << std::endl;
+    // else if(!(qk.type() == goby::transitional::protobuf::QUEUE_DCCL))
+    // {
+    //     new_message.set_dccl_id(out_moos_var2queue_[msg.GetKey()].id());
         
-        std::string serialized;
-        serialize_for_moos(&serialized, new_message);
-        publish(MOOS_VAR_OUTGOING_DATA, serialized);
-        queue_manager_->push_message(new_message);
-    }
+    //     std::string serialized;
+    //     serialize_for_moos(&serialized, new_message);
+    //     publish(MOOS_VAR_OUTGOING_DATA, serialized);
+    //     queue_manager_->push_message(new_message);
+    // }
 }
 
 
@@ -316,14 +315,14 @@ void CpAcommsHandler::queue_receive_ccl(const goby::acomms::protobuf::ModemDataT
     publish(m);
 
     // we know what this type is
-    if(in_queue2moos_var_.count(message.queue_key()))
+    if(in_queue2moos_var_.count(message.dccl_id()))
     {
-        CMOOSMsg m_specific(MOOS_NOTIFY, in_queue2moos_var_[message.queue_key()], serialized, -1);
+        CMOOSMsg m_specific(MOOS_NOTIFY, in_queue2moos_var_[message.dccl_id()], serialized, -1);
         
         publish(m_specific);
     
         glog << group("q_in") << "published received data to "
-                  << in_queue2moos_var_[message.queue_key()] << ": " << message << std::endl;
+             << in_queue2moos_var_[message.dccl_id()] << ": " << message << std::endl;
 
     }
 }
@@ -434,21 +433,9 @@ void CpAcommsHandler::process_configuration()
     std::set<unsigned> ids = transitional_dccl_.all_message_ids();
     BOOST_FOREACH(unsigned id, ids)
     {
-        goby::acomms::protobuf::QueueKey key;
-        key.set_type(goby::acomms::protobuf::QUEUE_DCCL);
-        key.set_id(id);
-        out_moos_var2queue_[transitional_dccl_.get_outgoing_hex_var(id)] = key;
-        in_queue2moos_var_[key] = transitional_dccl_.get_incoming_hex_var(id);
-    }
-    
-    for(int i = 0, n = cfg_.queue_cfg().queue_size(); i < n; ++i)
-    {
-        in_queue2moos_var_[cfg_.queue_cfg().queue(i).key()] = cfg_.queue_cfg().queue(i).in_pubsub_var();
-        out_moos_var2queue_[cfg_.queue_cfg().queue(i).out_pubsub_var()] =
-            cfg_.queue_cfg().queue(i).key();
-
-    }
-    
+        out_moos_var2queue_[transitional_dccl_.get_outgoing_hex_var(id)] = id;
+        in_queue2moos_var_[id] = transitional_dccl_.get_incoming_hex_var(id);
+    }    
 
     
     // set up algorithms

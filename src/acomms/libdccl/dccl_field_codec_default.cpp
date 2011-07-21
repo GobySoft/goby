@@ -238,7 +238,7 @@ void goby::acomms::DCCLDefaultBytesCodec::validate()
 //
 // DCCLDefaultEnumCodec
 //
-goby::acomms::int32 goby::acomms::DCCLDefaultEnumCodec::pre_encode(const google::protobuf::EnumValueDescriptor* const& field_value)
+goby::int32 goby::acomms::DCCLDefaultEnumCodec::pre_encode(const google::protobuf::EnumValueDescriptor* const& field_value)
 {
     return field_value->index();
 }
@@ -260,7 +260,7 @@ const google::protobuf::EnumValueDescriptor* goby::acomms::DCCLDefaultEnumCodec:
 //
 // DCCLTimeCodec
 //
-goby::acomms::int32 goby::acomms::DCCLTimeCodec::pre_encode(const std::string& field_value)
+goby::int32 goby::acomms::DCCLTimeCodec::pre_encode(const std::string& field_value)
 {
     return util::as<boost::posix_time::ptime>(field_value).time_of_day().total_seconds();
 }
@@ -288,9 +288,9 @@ std::string goby::acomms::DCCLTimeCodec::post_decode(const int32& wire_value)
 // DCCLModemIdConverterCodec
 //
 
-boost::bimap<std::string, goby::acomms::int32> goby::acomms::DCCLModemIdConverterCodec::platform2modem_id_;
+boost::bimap<std::string, goby::int32> goby::acomms::DCCLModemIdConverterCodec::platform2modem_id_;
 
-goby::acomms::int32 goby::acomms::DCCLModemIdConverterCodec::pre_encode(const std::string& field_value)
+goby::int32 goby::acomms::DCCLModemIdConverterCodec::pre_encode(const std::string& field_value)
 {
     int32 v = BROADCAST_ID;
     if(platform2modem_id_.left.count(field_value))

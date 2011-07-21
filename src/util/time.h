@@ -20,8 +20,9 @@
 
 #include <ctime>
 
-#include <stdint.h>
 #include <boost/date_time.hpp>
+
+#include "goby/util/primitive_types.h"
 #include "goby/util/string.h"
 
 /// All objects related to the Goby Underwater Autonomy Project
@@ -34,7 +35,7 @@ namespace goby
         //@{
 
         //Time since unix epoch in microseconds.  Signed to make math easy.
-        inline int64_t microtime() {
+        inline int64 microtime() {
             struct timeval tv;
             gettimeofday(&tv, NULL);
             return tv.tv_sec*1e6 + tv.tv_usec;

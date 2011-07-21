@@ -277,11 +277,7 @@ namespace goby
                 Bitset* in_pool_;
                 Bitset* out_pool_;
                 boost::signals::connection connection_;
-            };
-            
-
-
-            
+            };            
             
             friend class DCCLCodec;
           private:

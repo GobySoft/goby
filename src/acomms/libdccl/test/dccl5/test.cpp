@@ -26,7 +26,7 @@
 #include "goby/util/binary.h"
 
 using goby::acomms::operator<<;
-using goby::acomms::int32;
+using goby::int32;
 
 bool found_dest = false;
 bool found_source = false;

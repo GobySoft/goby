@@ -525,10 +525,9 @@ void goby::acomms::DCCLFieldCodecBase::MessageHandler::push(const google::protob
  
 {
     desc_.push_back(desc);
-
     ++descriptors_pushed_;
     
-    glog.is(debug1) && glog  <<  "Added descriptor  " << desc->full_name() << std::endl;
+//    glog.is(debug1) && glog  <<  "Added descriptor  " << desc->full_name() << std::endl;
 }
 
 void goby::acomms::DCCLFieldCodecBase::MessageHandler::push(const google::protobuf::FieldDescriptor* field)

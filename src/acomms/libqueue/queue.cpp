@@ -28,8 +28,8 @@ using goby::util::goby_time;
 
 
 
-goby::acomms::Queue::Queue(const protobuf::QueueConfig cfg /* = 0 */)
-    : cfg_(cfg),
+goby::acomms::Queue::Queue(const google::protobuf::Descriptor* desc /*= 0*/)
+    : desc_(desc),
       last_send_time_(goby_time())
 {
 
@@ -38,25 +38,15 @@ goby::acomms::Queue::Queue(const protobuf::QueueConfig cfg /* = 0 */)
 
 // add a new message
 bool goby::acomms::Queue::push_message(const protobuf::ModemDataTransmission& encoded_msg,
-                                       boost::shared_ptr<google::protobuf::Message> dccl_msg
-                                       /* =  boost::shared_ptr<google::protobuf::Message> */)
+                                       boost::shared_ptr<google::protobuf::Message> dccl_msg)
 {
     if(encoded_msg.data().empty())
     {
         goby::glog.is(warn) && glog << group("queue.out") 
                                     << "empty message attempted to be pushed to queue "
-                                    << cfg_.name() << std::endl;
+                                    << name() << std::endl;
         return false;
     }
-    else if(cfg_.key().type() == protobuf::QUEUE_CCL && encoded_msg.data()[0] != char(cfg_.key().id()))
-    {
-        goby::glog.is(warn) && glog << group("queue.out") 
-                                    << "CCL message attempted to be pushed to queue "
-                                    << cfg_.name() << " that doesn't have proper CCL byte. " 
-                                    << "expecting: " << cfg_.key().id() << ", given: " << int(encoded_msg.data()[0])
-                                    << std::endl;
-        return false;
-    }    
     
     messages_.push_back(QueuedMessage());
     messages_.back().encoded_msg.CopyFrom(encoded_msg);
@@ -64,17 +54,14 @@ bool goby::acomms::Queue::push_message(const protobuf::ModemDataTransmission& en
     protobuf::ModemDataTransmission* new_data_msg = &messages_.back().encoded_msg;
 
     if(!new_data_msg->has_ack_requested())
-        new_data_msg->set_ack_requested(cfg_.ack());
+        new_data_msg->set_ack_requested(get_msg_opt(queue::ack));
     
-    // needed for CCL messages
-    if(!new_data_msg->base().has_src())
-        new_data_msg->mutable_base()->set_src(QueueManager::modem_id_);
     
     // pop messages off the stack if the queue is full
-    if(cfg_.max_queue() && messages_.size() > cfg_.max_queue())
+    if(get_msg_opt(queue::max_queue) && messages_.size() > get_msg_opt(queue::max_queue))
     {        
         messages_it it_to_erase =
-            cfg_.newest_first() ? messages_.begin() : messages_.end();
+            get_msg_opt(queue::newest_first) ? messages_.begin() : messages_.end();
 
         // want "back" iterator not "end"
         if(it_to_erase == messages_.end()) --it_to_erase;
@@ -83,25 +70,18 @@ bool goby::acomms::Queue::push_message(const protobuf::ModemDataTransmission& en
         waiting_for_ack_it it = find_ack_value(it_to_erase);
         if(it != waiting_for_ack_.end()) waiting_for_ack_.erase(it);        
         
-        glog.is(verbose) && glog << group("queue.pop") << "queue exceeded for " << cfg_.name() <<
+        glog.is(verbose) && glog << group("queue.pop") << "queue exceeded for " << name() <<
             ". removing: " << it_to_erase->encoded_msg << std::endl;
 
         messages_.erase(it_to_erase);
     }
     
     glog.is(verbose) && glog << group("queue.push") << "pushing" << " to send stack "
-                            << cfg_.name() << " (qsize " << size() <<  "/"
-                            << cfg_.max_queue() << "): ";
+                            << name() << " (qsize " << size() <<  "/"
+                            << get_msg_opt(queue::max_queue) << "): ";
     
-    if(cfg_.key().type() == protobuf::QUEUE_DCCL)
-    {
-        glog.is(verbose) && glog << *dccl_msg << std::endl;
-        glog.is(debug2) && glog << encoded_msg << std::endl;
-    }
-    else
-    {
-        glog.is(verbose) && glog << encoded_msg << std::endl;
-    }
+    glog.is(verbose) && glog << *dccl_msg << std::endl;
+    glog.is(debug2) && glog << encoded_msg << std::endl;    
     
     return true;     
 }
@@ -109,12 +89,12 @@ bool goby::acomms::Queue::push_message(const protobuf::ModemDataTransmission& en
 goby::acomms::messages_it goby::acomms::Queue::next_message_it()
 {
     messages_it it_to_give =
-        cfg_.newest_first() ? messages_.end() : messages_.begin();
+        get_msg_opt(queue::newest_first) ? messages_.end() : messages_.begin();
     if(it_to_give == messages_.end()) --it_to_give; // want "back" iterator not "end"    
     
     // find a value that isn't already waiting to be acknowledged
     while(find_ack_value(it_to_give) != waiting_for_ack_.end())
-        cfg_.newest_first() ? --it_to_give : ++it_to_give;
+        get_msg_opt(queue::newest_first) ? --it_to_give : ++it_to_give;
 
     return it_to_give;
 }
@@ -127,7 +107,7 @@ goby::acomms::QueuedMessage goby::acomms::Queue::give_data(const protobuf::Modem
     // broadcast cannot acknowledge
     if(it_to_give->encoded_msg.base().dest() == BROADCAST_ID && ack == true)
     {
-        glog.is(verbose) && glog << group("queue.pop") << cfg_.name() << ": overriding ack request and setting ack = false because dest = BROADCAST (0) cannot acknowledge messages" << std::endl;
+        glog.is(verbose) && glog << group("queue.pop") << name() << ": overriding ack request and setting ack = false because dest = BROADCAST (0) cannot acknowledge messages" << std::endl;
         ack = false;
     }
 
@@ -145,33 +125,34 @@ goby::acomms::QueuedMessage goby::acomms::Queue::give_data(const protobuf::Modem
 
 
 // gives priority values. returns false if in blackout interval or if no data or if messages of wrong size, true if not in blackout
-bool goby::acomms::Queue::priority_values(double& priority,
-                                          boost::posix_time::ptime& last_send_time,
-                                          const protobuf::ModemDataRequest& request_msg,
-                                          const protobuf::ModemDataTransmission& data_msg)
+bool goby::acomms::Queue::get_priority_values(double* priority,
+                                              boost::posix_time::ptime* last_send_time,
+                                              const protobuf::ModemDataRequest& request_msg,
+                                              const protobuf::ModemDataTransmission& data_msg)
 {
-    priority = util::time_duration2double((goby_time()-last_send_time_))/cfg_.ttl()*cfg_.value_base();
-    
-    last_send_time = last_send_time_;
+    *priority = util::time_duration2double((goby_time()-last_send_time_))/get_msg_opt(queue::ttl)*get_msg_opt(queue::value_base);
+
+    *last_send_time = last_send_time_;
 
     // no messages left to send
-    if(messages_.size() <= waiting_for_ack_.size()) return false;
+    if(messages_.size() <= waiting_for_ack_.size())
+        return false;
     
     protobuf::ModemDataTransmission& next_msg = next_message_it()->encoded_msg;
 
     // for followup user-frames, destination must be either zero (broadcast)
     // or the same as the first user-frame
 
-    if (last_send_time_ + boost::posix_time::seconds(cfg_.blackout_time()) > goby_time())
+    if (last_send_time_ + boost::posix_time::seconds(get_msg_opt(queue::blackout_time)) > goby_time())
     {
-        glog.is(verbose) && glog << group("queue.priority") << "\t" << cfg_.name() << " is in blackout" << std::endl;
+        glog.is(verbose) && glog << group("queue.priority") << "\t" << name() << " is in blackout" << std::endl;
         return false;
     }
     // wrong size
     else if(request_msg.has_max_bytes() &&
             (next_msg.data().size() > (request_msg.max_bytes() - data_msg.data().size())))
     {
-        glog.is(verbose) && glog << group("queue.priority") << "\t" << cfg_.name() << " next message is too large {" << next_msg.data().size() << "}" << std::endl;
+        glog.is(verbose) && glog << group("queue.priority") << "\t" << name() << " next message is too large {" << next_msg.data().size() << "}" << std::endl;
         return false;
     }
     // wrong destination
@@ -180,22 +161,22 @@ bool goby::acomms::Queue::priority_values(double& priority,
                || next_msg.base().dest() == BROADCAST_ID // can switch to a real destination
                || data_msg.base().dest() == next_msg.base().dest()))) // same as real destination
     {
-        glog.is(verbose) && glog << group("queue.priority") << "\t" <<  cfg_.name() << " next message has wrong destination  (must be BROADCAST (0) or same as first user-frame)" << std::endl;
+        glog.is(verbose) && glog << group("queue.priority") << "\t" <<  name() << " next message has wrong destination  (must be BROADCAST (0) or same as first user-frame)" << std::endl;
         return false; 
     }
     // wrong ack value UNLESS message can be broadcast
     else if((data_msg.has_ack_requested() && !data_msg.ack_requested() &&
              next_msg.ack_requested() && data_msg.base().dest() != acomms::BROADCAST_ID))
     {
-        glog.is(verbose) && glog << group("queue.priority") << "\t" <<  cfg_.name() << " next message requires ACK and the packet does not" << std::endl;
+        glog.is(verbose) && glog << group("queue.priority") << "\t" <<  name() << " next message requires ACK and the packet does not" << std::endl;
         return false; 
     }
     else // ok!
     {
-        glog.is(verbose) && glog << group("queue.priority") << "\t" << cfg().name()
+        glog.is(verbose) && glog << group("queue.priority") << "\t" << name()
                                 << " (" << next_msg.data().size()
                                 << "B) has priority value"
-                                << ": " << priority << std::endl;
+                                << ": " << *priority << std::endl;
         return true;
     }
     
@@ -208,7 +189,7 @@ bool goby::acomms::Queue::pop_message(unsigned frame)
     std::list<QueuedMessage>::iterator front_it = messages_.begin();
     
     // find the first message that isn't waiting for an ack
-    std::list<QueuedMessage>::iterator it = cfg_.newest_first() ? back_it : front_it;
+    std::list<QueuedMessage>::iterator it = get_msg_opt(queue::newest_first) ? back_it : front_it;
 
     while(true)
     {
@@ -219,10 +200,10 @@ bool goby::acomms::Queue::pop_message(unsigned frame)
             return true;
         }
         
-        if(it == (cfg_.newest_first() ? front_it : back_it))
+        if(it == (get_msg_opt(queue::newest_first) ? front_it : back_it))
             return false;
         
-        cfg_.newest_first() ? --it: ++it;
+        get_msg_opt(queue::newest_first) ? --it: ++it;
     }
     return false;
 }
@@ -254,8 +235,8 @@ bool goby::acomms::Queue::pop_message_ack(unsigned frame, boost::shared_ptr<goog
 void goby::acomms::Queue::stream_for_pop(const google::protobuf::Message& dccl_msg)
 {
     glog.is(verbose) && glog  << group("queue.pop") <<  "popping" << " from send stack "
-                             << cfg_.name() << " (qsize " << size()-1
-                             <<  "/" << cfg_.max_queue() << "): "  << dccl_msg << std::endl;
+                              << name() << " (qsize " << size()-1
+                              <<  "/" << get_msg_opt(queue::max_queue) << "): "  << dccl_msg << std::endl;
 }
 
 std::vector<boost::shared_ptr<google::protobuf::Message> > goby::acomms::Queue::expire()
@@ -265,12 +246,12 @@ std::vector<boost::shared_ptr<google::protobuf::Message> > goby::acomms::Queue::
     while(!messages_.empty())
     {
         if((goby::util::as<boost::posix_time::ptime>(messages_.front().encoded_msg.base().time())
-            + boost::posix_time::seconds(cfg_.ttl())) < goby_time())
+            + boost::posix_time::seconds(get_msg_opt(queue::ttl))) < goby_time())
         {
             expired_msgs.push_back(messages_.front().dccl_msg);
             glog.is(verbose) && glog  << group("queue.pop") <<  "expiring" << " from send stack "
-                                     << cfg_.name() << " (qsize " << size()-1
-                                     <<  "/" << cfg_.max_queue() << "): "  << messages_.front().dccl_msg << std::endl;
+                                      << name() << " (qsize " << size()-1
+                                      <<  "/" << get_msg_opt(queue::max_queue) << "): "  << messages_.front().dccl_msg << std::endl;
             // if we were waiting for an ack for this, erase that too
             waiting_for_ack_it it = find_ack_value(messages_.begin());
             if(it != waiting_for_ack_.end()) waiting_for_ack_.erase(it);
@@ -298,18 +279,16 @@ goby::acomms::waiting_for_ack_it goby::acomms::Queue::find_ack_value(messages_it
 }
 
 
-std::string goby::acomms::Queue::summary() const 
+void goby::acomms::Queue::info(std::ostream* os) const
 {
-    std::stringstream ss;
-    ss << cfg_ << "\n"
-       << "\tcontains " << messages_.size() << " message(s)";
-    return ss.str();
+    *os << "Queue [[" << name() << "]] contains " << messages_.size() << " message(s)." << "\n"
+        << "Configured options: \n" << desc_->options().DebugString();
 }
 
 
 void goby::acomms::Queue::flush()
 {
-    glog.is(verbose) && glog  << group("queue.pop") << "flushing stack " << cfg_.name() << " (qsize 0)" << std::endl;
+    glog.is(verbose) && glog  << group("queue.pop") << "flushing stack " << name() << " (qsize 0)" << std::endl;
     messages_.clear();
     waiting_for_ack_.clear();
 }        
@@ -317,7 +296,7 @@ void goby::acomms::Queue::flush()
 
 std::ostream& goby::acomms::operator<< (std::ostream& os, const goby::acomms::Queue& oq)
 {
-    os << oq.summary();
+    oq.info(&os);
     return os;
 }
 

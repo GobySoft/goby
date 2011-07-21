@@ -27,6 +27,7 @@
 #include "goby/protobuf/dccl_option_extensions.pb.h"
 #include "goby/protobuf/queue_option_extensions.pb.h"
 #include "goby/util/logger.h"
+#include "goby/protobuf/dynamic_protobuf_manager.h"
 
 #include "queue_manager.h"
 #include "queue_constants.h"
@@ -61,15 +62,10 @@ goby::acomms::QueueManager::QueueManager()
         boost::bind(&QueueManager::set_latest_time, this, _1, _2));
 }
 
-void goby::acomms::QueueManager::add_queue(const google::protobuf::Message& msg)
+void goby::acomms::QueueManager::add_queue(const google::protobuf::Descriptor* desc)
 {
     goby::acomms::DCCLCodec* codec = goby::acomms::DCCLCodec::get();
-    const google::protobuf::Descriptor* desc = msg.GetDescriptor();
 
-    protobuf::QueueKey key;
-    key.set_type(protobuf::QUEUE_DCCL);
-    key.set_id(desc->options().GetExtension(dccl::id));
-    
     try
     {
         //validate with DCCL first
@@ -79,78 +75,35 @@ void goby::acomms::QueueManager::add_queue(const google::protobuf::Message& msg)
     {
         throw(queue_exception("could not create queue for message: " + desc->full_name() + " because it failed DCCL validation: " + e.what()));
     }
-
-    protobuf::QueueConfig queue_cfg;
-    queue_cfg.set_name(desc->full_name());
-        
-    if(!desc->options().HasExtension(queue::ack))
-        glog.is(verbose) && glog << queue_cfg.name() << ": using default value of " << queue_cfg.ack() << " for queue::ack" << std::endl;
-    else
-        queue_cfg.set_ack(desc->options().GetExtension(queue::ack));    
-
-    if(!desc->options().HasExtension(queue::blackout_time))
-        glog.is(verbose) && glog << queue_cfg.name() << ": " << "using default value of " << queue_cfg.blackout_time() << " for queue::blackout_time" << std::endl;
-    else
-        queue_cfg.set_blackout_time(desc->options().GetExtension(queue::blackout_time));
-
-    if(!desc->options().HasExtension(queue::max_queue))
-        glog.is(verbose) && glog << queue_cfg.name() << ": "  << "using default value of " << queue_cfg.max_queue() << " for queue::max_queue" << std::endl;
-    else
-        queue_cfg.set_max_queue(desc->options().GetExtension(queue::max_queue));    
-        
-    if(!desc->options().HasExtension(queue::newest_first))
-        glog.is(verbose) && glog << queue_cfg.name() << ": " << "using default value of " << queue_cfg.newest_first() << " for queue::newest_first" << std::endl;
-    else
-        queue_cfg.set_newest_first(desc->options().GetExtension(queue::newest_first));    
-
-    if(!desc->options().HasExtension(queue::ttl))
-        glog.is(verbose) && glog << queue_cfg.name() << ": "  << "using default value of " << queue_cfg.ttl() << " for queue::ttl" << std::endl;
-    else
-        queue_cfg.set_ttl(desc->options().GetExtension(queue::ttl));    
-
-    if(!desc->options().HasExtension(queue::value_base))
-        glog.is(verbose) && glog  << queue_cfg.name() << ": "  << "using default value of " << queue_cfg.value_base() << " for queue::value_base" << std::endl;
-    else
-        queue_cfg.set_value_base(desc->options().GetExtension(queue::value_base));    
-
-    queue_cfg.mutable_key()->CopyFrom(key);
+    
     // add the newly generated queue
-    add_queue(queue_cfg);
-}
-
-
-void goby::acomms::QueueManager::add_queue(const protobuf::QueueConfig& cfg)
-{
-    Queue q(cfg);
-    
-    if(queues_.count(cfg.key()))
+    unsigned dccl_id = desc->options().GetExtension(dccl::id);
+    if(queues_.count(dccl_id))
     {
         std::stringstream ss;
-        ss << "Queue: duplicate key specified for key: " << cfg.key();
-        throw queue_exception(ss.str());
-    }
-    else if((q.cfg().key().id() > MAX_ID || q.cfg().key().id() < MIN_ID) && q.cfg().key().type() == protobuf::QUEUE_DCCL)
-    {
-        std::stringstream ss;
-        ss << "Queue: key (" << cfg.key() << ") is out of bounds for use with libqueue. Use a id from " << MIN_ID << " to " << MAX_ID;
+        ss << "Queue: duplicate message specified for DCCL ID: " << dccl_id;
         throw queue_exception(ss.str());
     }
     else
     {
-        std::pair<std::map<goby::acomms::protobuf::QueueKey, Queue>::iterator,bool> new_q_pair =
-            queues_.insert(std::make_pair(cfg.key(), q));
+        std::pair<std::map<unsigned, Queue>::iterator,bool> new_q_pair =
+            queues_.insert(std::make_pair(dccl_id, Queue(desc)));
 
-        qsize(&((new_q_pair.first)->second));
+        Queue& new_q = (new_q_pair.first)->second;
+        
+        qsize(&new_q);
+        
+        glog.is(debug1) && glog<< group("queue.out") << "added new queue: \n" << new_q << std::endl;
+        
     }
 
-    glog.is(debug1) && glog<< group("queue.out") << "added new queue: \n" << q << std::endl;
-    
 }
+
 
 void goby::acomms::QueueManager::do_work()
 {
-    typedef std::pair<const protobuf::QueueKey, Queue> P;
-    for(std::map<protobuf::QueueKey, Queue>::iterator it = queues_.begin(), n = queues_.end(); it != n; ++it)
+    typedef std::pair<unsigned, Queue> P;
+    for(std::map<unsigned, Queue>::iterator it = queues_.begin(), n = queues_.end(); it != n; ++it)
     {
         std::vector<boost::shared_ptr<google::protobuf::Message> >expired_msgs =
             it->second.expire();
@@ -164,39 +117,15 @@ void goby::acomms::QueueManager::do_work()
     
 }
 
-// for CCL
-void goby::acomms::QueueManager::push_message(const protobuf::ModemDataTransmission& data_msg)
-{
-    // message is to us, auto-loopback
-    if(data_msg.base().dest() == modem_id_)
-    {
-        glog.is(debug1) && glog<< group("queue.out") << "outgoing message is for us: using loopback, not physical interface" << std::endl;
-        
-        handle_modem_receive(data_msg);
-    }
-    else if(queues_.count(data_msg.queue_key()))
-    {
-        queues_[data_msg.queue_key()].push_message(data_msg);
-        qsize(&queues_[data_msg.queue_key()]);
-    }
-    else
-    {
-        std::stringstream ss;
-        ss << "no queue for key: " << data_msg.queue_key();
-        throw queue_exception(ss.str());
-    }
-}
 
 void goby::acomms::QueueManager::push_message(const google::protobuf::Message& dccl_msg)
 {
     const google::protobuf::Descriptor* desc = dccl_msg.GetDescriptor();
+
+    unsigned dccl_id = desc->options().GetExtension(dccl::id);    
     
-    protobuf::QueueKey key;
-    key.set_type(protobuf::QUEUE_DCCL);
-    key.set_id(desc->options().GetExtension(dccl::id));
-    
-    if(!queues_.count(key))
-        add_queue(dccl_msg);
+    if(!queues_.count(dccl_id))
+        add_queue(dccl_msg.GetDescriptor());
     
     boost::shared_ptr<google::protobuf::Message> new_dccl_msg(dccl_msg.New());
     new_dccl_msg->CopyFrom(dccl_msg);
@@ -221,8 +150,8 @@ void goby::acomms::QueueManager::push_message(const google::protobuf::Message& d
             latest_data_msg_.mutable_base()->set_time(util::as<std::string>(goby::util::goby_time()));
         
         // add the message
-        queues_[key].push_message(latest_data_msg_, new_dccl_msg);
-        qsize(&queues_[key]);
+        queues_[dccl_id].push_message(latest_data_msg_, new_dccl_msg);
+        qsize(&queues_[dccl_id]);
     }
      
 }
@@ -230,7 +159,7 @@ void goby::acomms::QueueManager::push_message(const google::protobuf::Message& d
 
 void goby::acomms::QueueManager::flush_queue(const protobuf::QueueFlush& flush)
 {
-    std::map<goby::acomms::protobuf::QueueKey, Queue>::iterator it = queues_.find(flush.key());
+    std::map<unsigned, Queue>::iterator it = queues_.find(flush.dccl_id());
     
     if(it != queues_.end())
     {
@@ -244,21 +173,31 @@ void goby::acomms::QueueManager::flush_queue(const protobuf::QueueFlush& flush)
     }
 }
 
-
-std::string goby::acomms::QueueManager::summary() const
+void goby::acomms::QueueManager::info_all(std::ostream* os) const
 {
-    std::string s;
-    typedef std::pair<const protobuf::QueueKey, Queue> P;
-    BOOST_FOREACH(const P& p, queues_)
-        s += p.second.summary();
-
-    return s;
+    *os << "QueueManager [[" << queues_.size() << " queues total]]:" << std::endl;
+    for(std::map<unsigned, Queue>::const_iterator it = queues_.begin(), n = queues_.end(); it != n; ++it)
+        info(it->second.descriptor(), os);
 }
 
+
+
+void goby::acomms::QueueManager::info(const google::protobuf::Descriptor* desc, std::ostream* os) const
+{
+    std::map<unsigned, Queue>::const_iterator it = queues_.find(desc->options().GetExtension(dccl::id));
+
+    if(it != queues_.end())
+        it->second.info(os);
+    else
+        *os << "No such queue [[" << desc->full_name() << "]] loaded" << "\n";
+    
+    goby::acomms::DCCLCodec* codec = goby::acomms::DCCLCodec::get();
+    codec->info(desc, os);
+}
     
 std::ostream& goby::acomms::operator<< (std::ostream& out, const QueueManager& d)
 {
-    out << d.summary();
+    d.info_all(&out);
     return out;
 }
 
@@ -295,19 +234,7 @@ void goby::acomms::QueueManager::handle_modem_data_request(const protobuf::Modem
         glog.is(debug1) && glog<< group("queue.out") << "no data found. sending blank to firmware" 
                                << ": " << *data_msg << std::endl; 
     }
-    else if(winning_queue->cfg().key().type() == protobuf::QUEUE_CCL)
-    {
-        // new user frame (e.g. 32B)
-        QueuedMessage next_user_frame = winning_queue->give_data(request_msg);
-
-        glog.is(debug1) && glog << group("queue.out") << "sending data to firmware from: "
-                                << winning_queue->cfg().name()
-                                << ": " << next_user_frame.encoded_msg << std::endl;
-
-        // not DCCL, copy the msg and we are done
-        data_msg->CopyFrom(next_user_frame.encoded_msg);
-    }
-    else if(winning_queue->cfg().key().type() == protobuf::QUEUE_DCCL)
+    else
     {
         goby::acomms::DCCLCodec* codec = goby::acomms::DCCLCodec::get();
         std::list<boost::shared_ptr<google::protobuf::Message> > dccl_msgs;
@@ -317,7 +244,7 @@ void goby::acomms::QueueManager::handle_modem_data_request(const protobuf::Modem
             QueuedMessage next_user_frame = winning_queue->give_data(request_msg);
 
             glog.is(debug1) && glog << group("queue.out") << "sending data to firmware from: "
-                                    << winning_queue->cfg().name()
+                                    << winning_queue->name()
                                     << ": "<< *(next_user_frame.dccl_msg) << std::endl;
             
             //
@@ -431,34 +358,35 @@ goby::acomms::Queue* goby::acomms::QueueManager::find_next_sender(const protobuf
                             << "have " << data_msg.data().size() << "/" << request_msg.max_bytes() << "B: " << data_msg << std::endl;
 
     
-    for(std::map<protobuf::QueueKey, Queue>::iterator it = queues_.begin(), n = queues_.end(); it != n; ++it)
+    for(std::map<unsigned, Queue>::iterator it = queues_.begin(), n = queues_.end(); it != n; ++it)
     {
-        Queue& oq = it->second;
+        Queue& q = it->second;
         
-        // // encode on demand
-        // if(oq.cfg().key().type() == protobuf::QUEUE_DCCL &&
-        //    manip_manager_.has(oq.cfg().key().id(), protobuf::MessageFile::ON_DEMAND) &&
-        //    (!oq.size() || oq.newest_msg_time() + ON_DEMAND_SKEW < util::goby_time()))
-        // {
-        //     protobuf::ModemDataTransmission data_msg;
-        //     data_msg.mutable_queue_key()->CopyFrom(it->first);
-        //     signal_data_on_demand(request_msg, &data_msg);
-        //     push_message(data_msg);
-        // }
+         // encode on demand
+        if(q.get_msg_opt(queue::encode_on_demand) && 
+           (!q.size() ||
+            q.newest_msg_time() +
+            boost::posix_time::microseconds(q.get_msg_opt(queue::on_demand_skew_seconds) * 1e6) <
+            util::goby_time()))
+        {
+            boost::shared_ptr<google::protobuf::Message> new_msg = goby::protobuf::DynamicProtobufManager::new_protobuf_message(q.descriptor());
+            signal_data_on_demand(request_msg, new_msg);
+            
+            if(new_msg->IsInitialized())
+                push_message(*new_msg);
+        }
         
         double priority;
         boost::posix_time::ptime last_send_time;
-        if(oq.priority_values(priority, last_send_time, request_msg, data_msg))
+        if(q.get_priority_values(&priority, &last_send_time, request_msg, data_msg))
         {
             // no winner, better winner, or equal & older winner
-            // AND not CCL when not the first user-frame
             if((!winning_queue || priority > winning_priority ||
-                (priority == winning_priority && last_send_time < winning_last_send_time))
-               && !(oq.cfg().key().type() == protobuf::QUEUE_CCL && !first_user_frame))
+                (priority == winning_priority && last_send_time < winning_last_send_time)))
             {
                 winning_priority = priority;
                 winning_last_send_time = last_send_time;
-                winning_queue = &oq;
+                winning_queue = &q;
             }
         }
     }
@@ -468,7 +396,7 @@ goby::acomms::Queue* goby::acomms::QueueManager::find_next_sender(const protobuf
 
     if(winning_queue)
     {
-        glog.is(verbose) && glog<< group("queue.priority") << winning_queue->cfg().name()
+        glog.is(verbose) && glog<< group("queue.priority") << winning_queue->name()
                                 << " has highest priority." << std::endl;
     }
     else
@@ -506,19 +434,18 @@ void goby::acomms::QueueManager::handle_modem_ack(const protobuf::ModemDataAck& 
         std::multimap<unsigned, Queue *>::iterator it = waiting_for_ack_.find(ack_msg.frame());
         while(it != waiting_for_ack_.end())
         {
-            Queue* oq = it->second;
+            Queue* q = it->second;
             
             boost::shared_ptr<google::protobuf::Message> removed_msg;
-            if(!oq->pop_message_ack(ack_msg.frame(), removed_msg))
+            if(!q->pop_message_ack(ack_msg.frame(), removed_msg))
             {
                 glog.is(warn) && glog<< group("queue.in") 
                                      << "failed to pop message from "
-                                     << oq->cfg().name() << std::endl;
+                                     << q->name() << std::endl;
             }
             else
             {
-                qsize(oq);
-                //ack_msg.mutable_orig_msg()->mutable_queue_key()->CopyFrom(oq->cfg().key());
+                qsize(q);
                 signal_ack(ack_msg, *removed_msg);
                 
             }
@@ -538,74 +465,33 @@ void goby::acomms::QueueManager::handle_modem_ack(const protobuf::ModemDataAck& 
 // parses and publishes incoming data
 // by matching the variableID field with the variable specified
 // in a "receive = " line of the configuration file
-void goby::acomms::QueueManager::handle_modem_receive(const protobuf::ModemDataTransmission& m)
-{
-    // copy so we can modify in various ways 
-    protobuf::ModemDataTransmission message = m;
-    
+void goby::acomms::QueueManager::handle_modem_receive(const protobuf::ModemDataTransmission& message)
+{    
     glog.is(verbose) && glog<< group("queue.in") << "received message"
                             << ": " << message << std::endl;
 
-    std::string data = message.data();
-    if(data.size() < HEAD_CCL_ID_SIZE / BITS_IN_BYTE)
-    {
-        glog.is(warn) && glog << "message is too small!" << std::endl;
-        return;
-    }
+    goby::acomms::DCCLCodec* codec = goby::acomms::DCCLCodec::get();
+    std::list<boost::shared_ptr<google::protobuf::Message> > dccl_msgs =
+        codec->decode_repeated(message.data());
     
-    int ccl_id = data[0];
-    // check for queue_dccl type
-    if(ccl_id == DCCL_CCL_HEADER)
+    BOOST_FOREACH(boost::shared_ptr<google::protobuf::Message> msg, dccl_msgs)
     {
-        goby::acomms::DCCLCodec* codec = goby::acomms::DCCLCodec::get();
-        std::list<boost::shared_ptr<google::protobuf::Message> > dccl_msgs =
-            codec->decode_repeated(data);
+        latest_data_msg_.Clear();
+        codec->run_hooks(*msg);
         
-        BOOST_FOREACH(boost::shared_ptr<google::protobuf::Message> msg, dccl_msgs)
+        int32 dest = latest_data_msg_.base().dest();
+        if(dest != BROADCAST_ID && dest != modem_id_)
         {
-            latest_data_msg_.Clear();
-            codec->run_hooks(*msg);
-
-            int32 dest = latest_data_msg_.base().dest();
-            if(dest != BROADCAST_ID && dest != modem_id_)
-            {
-                glog.is(warn) && glog << group("queue.in")
-                                      << "ignoring DCCL message for modem_id = "
-                                      << message.base().dest() << std::endl;
-            }
-            else
-            {
-                signal_receive(*msg);
-            }
-        }
-        
-    }
-    // check for ccl type
-    else
-    {
-        if(message.base().dest() != BROADCAST_ID && message.base().dest() != modem_id_)
-        {
-            glog.is(warn) && glog << group("queue.in") << "ignoring CCL message for modem_id = "
+            glog.is(warn) && glog << group("queue.in")
+                                  << "ignoring DCCL message for modem_id = "
                                   << message.base().dest() << std::endl;
-            return;
-        }
-
-        protobuf::QueueKey key;
-        key.set_type(protobuf::QUEUE_CCL);
-        key.set_id(ccl_id);
-        
-        std::map<protobuf::QueueKey, Queue>::iterator it = queues_.find(key);
-        
-        if (it != queues_.end())
-        {
-            message.mutable_queue_key()->CopyFrom(key);
-            signal_receive_ccl(message);
         }
         else
         {
-            glog.is(warn) && glog << group("queue.in") << "incoming data string is not for us (not DCCL or known CCL)." << std::endl;
+            signal_receive(*msg);
         }
     }
+        
 }
 
 
@@ -624,19 +510,13 @@ void goby::acomms::QueueManager::merge_cfg(const protobuf::QueueManagerConfig& c
 
 void goby::acomms::QueueManager::process_cfg()
 {
-    queues_.clear();
-    waiting_for_ack_.clear();
-    
-    for(int i = 0, n = cfg_.queue_size(); i < n; ++i)
-        add_queue(cfg_.queue(i));
-
     modem_id_ = cfg_.modem_id();
 }
 
 void goby::acomms::QueueManager::qsize(Queue* q)            
 {
     protobuf::QueueSize size;
-    size.mutable_key()->CopyFrom(q->cfg().key());
+    size.set_dccl_id(q->descriptor()->options().GetExtension(dccl::id));
     size.set_size(q->size());
     signal_queue_size_change(size);
 }

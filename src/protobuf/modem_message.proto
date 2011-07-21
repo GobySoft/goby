@@ -24,8 +24,7 @@ message ModemDataTransmission
   //  optional uint32 max_bytes = 3;
   optional bytes data = 4;
   optional uint32 frame = 5 [default = 0];  // frame number if the modem supports multiple frames per packet
-  optional QueueKey queue_key = 6;
-  // TODO(tes) put DCCL header in here if DCCL
+  optional uint32 dccl_id = 6;
 
   extensions 1000 to max;
 }

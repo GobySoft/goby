@@ -55,11 +55,10 @@ namespace goby
         class Queue
         {
           public:
-
-            Queue(const protobuf::QueueConfig cfg = protobuf::QueueConfig());
+            Queue(const google::protobuf::Descriptor* desc = 0);
 
             bool push_message(const protobuf::ModemDataTransmission& encoded_msg,
-                              boost::shared_ptr<google::protobuf::Message> dccl_msg =  boost::shared_ptr<google::protobuf::Message>());            
+                              boost::shared_ptr<google::protobuf::Message> dccl_msg);
 
             goby::acomms::QueuedMessage give_data(const protobuf::ModemDataRequest& request_msg);
             bool pop_message(unsigned frame);
@@ -69,10 +68,10 @@ namespace goby
             std::vector<boost::shared_ptr<google::protobuf::Message> > expire();
             
           
-            bool priority_values(double& priority,
-                                 boost::posix_time::ptime& last_send_time,
-                                 const protobuf::ModemDataRequest& request_msg,
-                                 const protobuf::ModemDataTransmission& data_msg);
+            bool get_priority_values(double* priority,
+                                     boost::posix_time::ptime* last_send_time,
+                                     const protobuf::ModemDataRequest& request_msg,
+                                     const protobuf::ModemDataTransmission& data_msg);
         
             void clear_ack_queue()
             { waiting_for_ack_.clear(); }
@@ -94,17 +93,30 @@ namespace goby
                     : boost::posix_time::ptime();
             }
             
-            const protobuf::QueueConfig cfg() const
-            { return cfg_; }
-        
-            std::string summary() const;
+            void info(std::ostream* os) const;
+
+            std::string name() const
+            {
+                return desc_->full_name();
+            }
+            
+            
+            template<typename Extension>
+                typename Extension::TypeTraits::ConstType get_msg_opt(const Extension& e) const
+            {
+                return desc_->options().GetExtension(e);
+            }
+            
+            const google::protobuf::Descriptor* descriptor() const {return desc_;}
+
             
           private:
             waiting_for_ack_it find_ack_value(messages_it it_to_find);
             messages_it next_message_it();    
 
+
           private:
-            const protobuf::QueueConfig cfg_;
+            const google::protobuf::Descriptor* desc_;
         
             boost::posix_time::ptime last_send_time_;    
 

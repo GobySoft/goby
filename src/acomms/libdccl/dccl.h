@@ -39,7 +39,6 @@
 #include "goby/acomms/acomms_helpers.h"
 #include "goby/util/binary.h"
 
-
 #include "protobuf_cpp_type_helpers.h"
 #include "dccl_exception.h"
 #include "dccl_field_codec.h"

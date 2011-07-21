@@ -39,8 +39,8 @@ void goby::transitional::QueueContentHandler::startElement(
             break;            
             
         case tag_message:
-            q_.push_back(goby::acomms::protobuf::QueueConfig());
-            q_.back().mutable_key()->set_type(goby::acomms::protobuf::QUEUE_DCCL);
+            q_.push_back(goby::transitional::protobuf::QueueConfig());
+            q_.back().mutable_key()->set_type(goby::transitional::protobuf::QUEUE_DCCL);
             break;
     }
     

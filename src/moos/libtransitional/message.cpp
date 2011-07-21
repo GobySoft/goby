@@ -287,7 +287,7 @@ std::ostream& goby::transitional::operator<< (std::ostream& out, const DCCLMessa
 }
 
 // Added in Goby2 for transition to Protobuf structure
-void goby::transitional::DCCLMessage::write_schema_to_dccl2(std::ofstream* proto_file, const goby::acomms::protobuf::QueueConfig& queue_cfg)
+void goby::transitional::DCCLMessage::write_schema_to_dccl2(std::ofstream* proto_file, const goby::transitional::protobuf::QueueConfig& queue_cfg)
 {
     
     *proto_file << "message " << name_ << " { " << std::endl;

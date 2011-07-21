@@ -34,7 +34,7 @@
 
 #include "goby/util/string.h"
 #include "goby/core/libcore/exception.h"
-#include "goby/protobuf/queue.pb.h"
+#include "goby/protobuf/transitional.pb.h"
 #include "goby/moos/libtransitional/xml/tags.h"
 
 namespace goby
@@ -46,7 +46,7 @@ namespace goby
 // notifications about the beginnings and ends of elements 
         class QueueContentHandler : public xercesc::DefaultHandler {
           public:
-          QueueContentHandler(std::vector<goby::acomms::protobuf::QueueConfig>& q)
+          QueueContentHandler(std::vector<goby::transitional::protobuf::QueueConfig>& q)
               : q_(q)
             { xml::initialize_tags(tags_map_); }
         
@@ -78,7 +78,7 @@ namespace goby
             { return xml::in_publish(parents_); }
  
           private:
-            std::vector<goby::acomms::protobuf::QueueConfig>& q_;
+            std::vector<goby::transitional::protobuf::QueueConfig>& q_;
             std::string current_text;
         
             std::set<xml::Tag> parents_;

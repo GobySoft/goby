@@ -226,8 +226,8 @@ class CpAcommsHandler : public TesMoosApp
     // MAC
     goby::acomms::MACManager mac_;
 
-    std::map<std::string, goby::acomms::protobuf::QueueKey> out_moos_var2queue_;
-    std::map<goby::acomms::protobuf::QueueKey, std::string> in_queue2moos_var_;
+    std::map<std::string, unsigned> out_moos_var2queue_;
+    std::map<unsigned, std::string> in_queue2moos_var_;
     
     CMOOSGeodesy geodesy_;
     

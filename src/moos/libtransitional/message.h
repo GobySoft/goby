@@ -57,7 +57,8 @@ namespace goby
           public:
 
             // Added in Goby2 for transition to new Protobuf structure
-            void write_schema_to_dccl2(std::ofstream* proto_file, const goby::acomms::protobuf::QueueConfig& queue_cfg);
+            void write_schema_to_dccl2(std::ofstream* proto_file,
+                                       const goby::transitional::protobuf::QueueConfig& queue_cfg);
             
 
             

@@ -459,7 +459,7 @@ namespace goby
         
             void check_duplicates();
             
-            void convert_to_protobuf_descriptor(const std::vector<unsigned>& added_ids, const std::string& proto_file_to_write, const std::vector<goby::acomms::protobuf::QueueConfig>& queue_cfg);
+            void convert_to_protobuf_descriptor(const std::vector<unsigned>& added_ids, const std::string& proto_file_to_write, const std::vector<goby::transitional::protobuf::QueueConfig>& queue_cfg);
             
             
 

@@ -31,25 +31,6 @@ namespace goby
     {        
         namespace protobuf
         {
-            
-            inline bool operator<(const goby::acomms::protobuf::QueueKey& a,
-                                  const goby::acomms::protobuf::QueueKey& b)
-            { return (a.id() == b.id()) ? a.type() < b.type() : a.id() < b.id(); }
-
-            inline bool operator>(const goby::acomms::protobuf::QueueKey& a,
-                                  const goby::acomms::protobuf::QueueKey& b)
-            { return (a.id() == b.id()) ? a.type() > b.type() : a.id() > b.id(); }
-            inline bool operator>=(const goby::acomms::protobuf::QueueKey& a,
-                                   const goby::acomms::protobuf::QueueKey& b)
-            { return !(a<b); }
-            inline bool operator<=(const goby::acomms::protobuf::QueueKey& a,
-                                   const goby::acomms::protobuf::QueueKey& b)
-            { return !(a>b); }
-            inline bool operator==(const goby::acomms::protobuf::QueueKey& a,
-                                   const goby::acomms::protobuf::QueueKey& b)
-            { return (a.id() == b.id()) && (a.type() == b.type()); }
-
-
             inline bool operator<(const goby::acomms::protobuf::HookKey& a,
                                   const goby::acomms::protobuf::HookKey& b)
             { return (a.field_option_extension_number() == b.field_option_extension_number())

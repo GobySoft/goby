@@ -67,7 +67,7 @@ std::set<unsigned> goby::transitional::DCCLTransitionalCodec::add_xml_message_fi
     // instantiate a parser for the xml message files
     XMLParser message_parser(message_content, message_error);
 
-    std::vector<goby::acomms::protobuf::QueueConfig> queue_cfgs;
+    std::vector<goby::transitional::protobuf::QueueConfig> queue_cfgs;
     QueueContentHandler queue_content(queue_cfgs);
     QueueErrorHandler queue_error;
     // instantiate a parser for the xml message files
@@ -659,7 +659,7 @@ void goby::transitional::DCCLTransitionalCodec::process_cfg()
     
 }
 
-void goby::transitional::DCCLTransitionalCodec::convert_to_protobuf_descriptor(const std::vector<unsigned>& added_ids, const std::string& proto_file_to_write, const std::vector<goby::acomms::protobuf::QueueConfig>& queue_cfg)
+void goby::transitional::DCCLTransitionalCodec::convert_to_protobuf_descriptor(const std::vector<unsigned>& added_ids, const std::string& proto_file_to_write, const std::vector<goby::transitional::protobuf::QueueConfig>& queue_cfg)
 {
     std::ofstream fout(proto_file_to_write.c_str(), std::ios::out);
     

@@ -3,20 +3,6 @@ import "goby/protobuf/option_extensions.proto";
 
 package goby.acomms.protobuf;
 
-// message QueueConfig
-// {
-//   optional bool ack = 1 [default = true, (description)="Require acoustic acknowledgments of messages sent from this queue"];
-//   optional uint32 blackout_time = 2 [default = 0, (description)="Time in seconds to ignore this queue after the last send from it."];
-//   optional uint32 max_queue = 3 [default = 0, (description)="Maximum allowed messages in this queue (0 means infinity)."];
-//   optional bool newest_first = 4 [default = true, (description)="true = FILO queue, false = FIFO queue"];
-//   optional double value_base = 5 [default = 1, (description)="Base value (general importance) of the messages in this queue"];
-//   optional uint32 ttl = 6 [default = 1800, (description)="Time to live in seconds; messages exceeding this time are discarded. Also factors into priority equation"];
-//   optional uint32 dccl_id = 7;
-//   required string name = 8 [(description)="Human readable name for this queue", (example)="Remus_State"];
-//   optional string in_pubsub_var = 9 [(description)="Publish subscribe architecture variable for posting incoming data to", (example)="REMUS_STATE_RAW_IN"];
-//   optional string out_pubsub_var = 10 [(description)="Publish subscribe architecture variable for fetching outgoing data from", (example)="REMUS_STATE_RAW_OUT"];
-// }
-
 message QueueManagerConfig
 {
   optional int32 modem_id = 1 [(description)="Unique number 1-31 to identify this node", (example)="1"];

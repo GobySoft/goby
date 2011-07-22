@@ -4,12 +4,12 @@ import "goby/protobuf/header.proto";
 
 message GobyMessage
 {
-  option (dccl.id) = 4;
-  option (dccl.max_bytes) = 32;
-  option (queue.encode_on_demand) = true;
-  option (queue.on_demand_skew_seconds) = 0.1;
+  option (dccl_msg).id = 4;
+  option (dccl_msg).max_bytes = 32;
+  option (queue_msg).encode_on_demand = true;
+  option (queue_msg).on_demand_skew_seconds = 0.1;
 
   // one byte
-  required int32 telegram = 1 [(dccl.min)=0, (dccl.max)=254];  
+  required int32 telegram = 1 [(dccl_field).min=0, (dccl_field).max=254];  
 }
 

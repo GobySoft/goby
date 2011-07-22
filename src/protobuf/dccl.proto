@@ -9,14 +9,3 @@ message DCCLConfig
   optional string crypto_passphrase = 2 [(description)="If given, encrypt all communications with this passphrase using AES. Omit for unencrypted communications.", (example)="twinkletoes%24"];
 }
 
-message HookKey
-{ 
-  required int32 field_option_extension_number = 1;
-  enum ValueRequested
-  {
-    WIRE_VALUE = 2;
-    FIELD_VALUE = 1;
-  }
-  optional ValueRequested value_requested = 2 [default=WIRE_VALUE];
-}
-

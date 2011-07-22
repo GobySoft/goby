@@ -472,7 +472,7 @@ void goby::transitional::DCCLTransitionalCodec::encode_private(std::vector<DCCLM
 
 std::vector<goby::transitional::DCCLMessage>::iterator goby::transitional::DCCLTransitionalCodec::decode_private(const google::protobuf::Message& proto_msg, std::map<std::string, std::vector<DCCLMessageVal> >& out)
 {
-    std::vector<DCCLMessage>::iterator it = to_iterator(proto_msg.GetDescriptor()->options().GetExtension(dccl::id));
+    std::vector<DCCLMessage>::iterator it = to_iterator(dccl_->id(proto_msg.GetDescriptor()));
 
     if(manip_manager_.has(it->id(), protobuf::MessageFile::NO_DECODE))
     {

@@ -4,11 +4,11 @@ import "goby/protobuf/header.proto";
 
 message GobyMessage
 {
-  option (dccl.id) = 4;
-  option (dccl.max_bytes) = 32;
-  option (queue.newest_first) = false;
+  option (dccl_msg).id = 4;
+  option (dccl_msg).max_bytes = 32;
+  option (queue_msg).newest_first = false;
   
-  required string telegram = 1 [(dccl.max_length)=10]; 
+  required string telegram = 1 [(dccl_field).max_length=10]; 
   required Header header = 2;
 }
 

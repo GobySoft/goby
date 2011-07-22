@@ -31,27 +31,9 @@ namespace goby
     {        
         namespace protobuf
         {
-            inline bool operator<(const goby::acomms::protobuf::HookKey& a,
-                                  const goby::acomms::protobuf::HookKey& b)
-            { return (a.field_option_extension_number() == b.field_option_extension_number())
-                    ? a.value_requested() < b.value_requested()
-                    : a.field_option_extension_number() < b.field_option_extension_number(); }
-
-            inline goby::acomms::protobuf::HookKey
-                make_hook_key(int field_option_extension_number,
-                              protobuf::HookKey::ValueRequested value_requested =
-                              protobuf::HookKey::WIRE_VALUE)
-            {
-                protobuf::HookKey key;
-                key.set_field_option_extension_number(field_option_extension_number);
-                key.set_value_requested(value_requested);
-                return key;    
-            }
         }
     }
-}
-
-        
+}       
 
 
 

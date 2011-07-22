@@ -28,7 +28,7 @@ goby::acomms::DCCLFieldCodecBase::MessagePart goby::acomms::DCCLFieldCodecBase::
 boost::signal<void (unsigned size)> goby::acomms::DCCLFieldCodecBase::get_more_bits;
 std::vector<const google::protobuf::FieldDescriptor*> goby::acomms::DCCLFieldCodecBase::MessageHandler::field_;
 std::vector<const google::protobuf::Descriptor*> goby::acomms::DCCLFieldCodecBase::MessageHandler::desc_;
-boost::ptr_map<goby::acomms::protobuf::HookKey, boost::signal<void (const boost::any& wire_value, const boost::any& extension_value)> >   goby::acomms::DCCLFieldCodecBase::wire_value_hooks_;
+boost::ptr_map<int, boost::signal<void (const boost::any& field_value, const boost::any& wire_value, const boost::any& extension_value)> >   goby::acomms::DCCLFieldCodecBase::wire_value_hooks_;
 
 
 using goby::glog;
@@ -426,16 +426,16 @@ void goby::acomms::DCCLFieldCodecBase::any_run_hooks(const boost::any& field_val
         glog.is(debug1) && glog  << "running hooks for base message" << std::endl;
 
 
-    typedef boost::ptr_map<protobuf::HookKey,
-                           boost::signal<void (const boost::any& wire_value,
-                                               const boost::any& extension_value)> > hook_map;
+    typedef boost::ptr_map<int, boost::signal<void (const boost::any& field_value,
+                                                    const boost::any& wire_value,
+                                                    const boost::any& extension_value)> > hook_map;
 
     for(hook_map::const_iterator i = wire_value_hooks_.begin(), e = wire_value_hooks_.end();
         i != e;
         ++i )
     {
         
-        const google::protobuf::FieldDescriptor * extension_desc = this_field()->options().GetReflection()->FindKnownExtensionByNumber(i->first.field_option_extension_number());
+        const google::protobuf::FieldDescriptor * extension_desc = this_field()->options().GetReflection()->FindKnownExtensionByNumber(i->first);
         
         boost::shared_ptr<FromProtoCppTypeBase> helper =
             DCCLTypeHelper::find(extension_desc);
@@ -446,11 +446,7 @@ void goby::acomms::DCCLFieldCodecBase::any_run_hooks(const boost::any& field_val
         {
             try
             {
-                if(i->first.value_requested() == protobuf::HookKey::WIRE_VALUE)
-                    i->second->operator()(base_pre_encode(field_value), extension_value);
-                else if(i->first.value_requested() == protobuf::HookKey::FIELD_VALUE)
-                    i->second->operator()(field_value, extension_value);
-                
+                i->second->operator()(field_value, base_pre_encode(field_value), extension_value);   
                 glog.is(debug1) && glog  << "Found : " << i->first << ": " << extension_desc->DebugString() << std::endl;
             }
             

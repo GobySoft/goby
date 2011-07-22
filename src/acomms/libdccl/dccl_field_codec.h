@@ -137,9 +137,9 @@ namespace goby
 
 
             static void register_wire_value_hook(
-                const protobuf::HookKey& key,
-                boost::function<void (const boost::any& wire_value,
-                                      const boost::any& extension_value)> callback)
+                int key, boost::function<void (const boost::any& field_value,
+                                               const boost::any& wire_value,
+                                               const boost::any& extension_value)> callback)
             {
                 wire_value_hooks_[key].connect(callback);
             }
@@ -336,7 +336,7 @@ namespace goby
             static MessagePart part_;
             // maps protobuf extension number for FieldOption onto a hook (signal) to call
             // if such a FieldOption is set, during the call to "size()"
-            static boost::ptr_map<protobuf::HookKey, boost::signal<void (const boost::any& wire_value, const boost::any& extension_value)> >  wire_value_hooks_;
+            static boost::ptr_map<int, boost::signal<void (const boost::any& field_value, const boost::any& wire_value, const boost::any& extension_value)> >  wire_value_hooks_;
             
             
             std::string name_;

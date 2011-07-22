@@ -34,32 +34,36 @@ bool found_time = false;
 
 boost::posix_time::ptime current_time = boost::posix_time::second_clock::universal_time();
 
-void dest(const boost::any& wire_value, const boost::any& extension_value)
+void process_queue_field(const boost::any& field_value,
+                         const boost::any& wire_value,
+                         const boost::any& extension_value)
 {
-    std::cout << "dest: type: `" << wire_value.type().name() << "`, wire_value: " << boost::any_cast<int32>(wire_value) << std::endl;
+    std::cout << extension_value.type().name() << std::endl;
     
-    assert(boost::any_cast<bool>(extension_value) == true);
-    assert(boost::any_cast<int32>(wire_value) == 3);    
-    found_dest = true;
-}
+    const google::protobuf::Message* options_msg = boost::any_cast<const google::protobuf::Message*>(extension_value);
 
-
-void source(const boost::any& wire_value, const boost::any& extension_value)
-{
-    std::cout << "source: type: `" << wire_value.type().name() << "`, wire_value: " << boost::any_cast<int32>(wire_value) << std::endl;
+    QueueFieldOptions field_options;
+    field_options.CopyFrom(*options_msg);
     
-    assert(boost::any_cast<bool>(extension_value) == true);
-    assert(boost::any_cast<int32>(wire_value) == 1);    
-    found_source = true;
-}
-
-void tm(const boost::any& wire_value, const boost::any& extension_value)
-{
-    std::cout << "time: type: `" << wire_value.type().name() << "`, wire_value: " << boost::any_cast<std::string>(wire_value) << std::endl;
-    
-    assert(boost::any_cast<bool>(extension_value) == true);
-    assert(boost::any_cast<std::string>(wire_value) == goby::util::as<std::string>(current_time));
-    found_time = true;
+    if(field_options.is_dest())
+    {
+        std::cout << "dest: type: `" << wire_value.type().name() << "`, wire_value: " << boost::any_cast<int32>(wire_value) << std::endl;
+        assert(boost::any_cast<int32>(wire_value) == 3);    
+        found_dest = true;
+    }
+    else if(field_options.is_src())
+    {
+        std::cout << "source: type: `" << wire_value.type().name() << "`, wire_value: " << boost::any_cast<int32>(wire_value) << std::endl;
+        
+        assert(boost::any_cast<int32>(wire_value) == 1);    
+        found_source = true;
+    }
+    else if(field_options.is_time())
+    {
+        std::cout << "time: type: `" << field_value.type().name() << "`, field_value: " << boost::any_cast<std::string>(field_value) << std::endl;        
+        assert(boost::any_cast<std::string>(field_value) == goby::util::as<std::string>(current_time));
+        found_time = true;
+    }
 }
 
 int main(int argc, char* argv[])
@@ -68,18 +72,7 @@ int main(int argc, char* argv[])
     goby::glog.set_name(argv[0]);
 
 
-    goby::acomms::protobuf::HookKey dest_key;
-    dest_key.set_field_option_extension_number(queue::is_dest.number());
-    goby::acomms::DCCLFieldCodecBase::register_wire_value_hook(dest_key, &dest);
-
-    goby::acomms::protobuf::HookKey source_key;
-    source_key.set_field_option_extension_number(queue::is_src.number());
-    goby::acomms::DCCLFieldCodecBase::register_wire_value_hook(source_key, &source);
-
-    goby::acomms::DCCLFieldCodecBase::register_wire_value_hook(
-        make_hook_key(queue::is_time.number(), goby::acomms::protobuf::HookKey::FIELD_VALUE),
-        &tm);
-    
+    goby::acomms::DCCLFieldCodecBase::register_wire_value_hook(queue_field.number(), &process_queue_field);
     
     goby::acomms::DCCLModemIdConverterCodec::add("unicorn", 3);
     goby::acomms::DCCLModemIdConverterCodec::add("topside", 1);

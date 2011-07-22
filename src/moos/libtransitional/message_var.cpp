@@ -188,7 +188,7 @@ void goby::transitional::DCCLMessageVar::write_schema_to_dccl2(std::ofstream* pr
 
         *proto_file << (count ? ", " : " [");
         ++count;
-        *proto_file << "(dccl.max)=" << max_tmp;
+        *proto_file << "(dccl_field).max=" << max_tmp;
     }
     catch(...) { }
     try
@@ -196,7 +196,7 @@ void goby::transitional::DCCLMessageVar::write_schema_to_dccl2(std::ofstream* pr
         double min_tmp = min();
         *proto_file << (count ? ", " : " [");
         ++count;
-        *proto_file << "(dccl.min)=" << min_tmp;
+        *proto_file << "(dccl_field).min=" << min_tmp;
     }
     catch(...) { }
     try
@@ -204,7 +204,7 @@ void goby::transitional::DCCLMessageVar::write_schema_to_dccl2(std::ofstream* pr
         int precision_tmp = precision();
         *proto_file << (count ? ", " : " [");
         ++count;
-        *proto_file << "(dccl.precision)=" << precision_tmp;
+        *proto_file << "(dccl_field).precision=" << precision_tmp;
     }
     catch(...) { }
     try
@@ -212,7 +212,7 @@ void goby::transitional::DCCLMessageVar::write_schema_to_dccl2(std::ofstream* pr
         unsigned max_length_tmp = max_length();
         *proto_file << (count ? ", " : " [");
         ++count;
-        *proto_file << "(dccl.max_length)=" << max_length_tmp;        
+        *proto_file << "(dccl_field).max_length=" << max_length_tmp;        
     }
     catch(...) { }
     try
@@ -220,7 +220,7 @@ void goby::transitional::DCCLMessageVar::write_schema_to_dccl2(std::ofstream* pr
         unsigned num_bytes_tmp = num_bytes();
         *proto_file << (count ? ", " : " [");
         ++count;
-        *proto_file << "(dccl.max_length)=" << num_bytes_tmp;        
+        *proto_file << "(dccl_field).max_length=" << num_bytes_tmp;        
     }
     catch(...) { }
     try
@@ -228,7 +228,7 @@ void goby::transitional::DCCLMessageVar::write_schema_to_dccl2(std::ofstream* pr
         std::string static_val_tmp = static_val();
         *proto_file << (count ? ", " : " [");
         ++count;
-        *proto_file << "(dccl.static_value)=\"" << static_val_tmp << "\", " << "(dccl.codec)=\"_static\"";      
+        *proto_file << "(dccl_field).static_value=\"" << static_val_tmp << "\", " << "(dccl_field).codec=\"_static\"";      
     }
     catch(...) { }
 
@@ -236,7 +236,7 @@ void goby::transitional::DCCLMessageVar::write_schema_to_dccl2(std::ofstream* pr
     {
         *proto_file << (count ? ", " : " [");
         ++count;
-        *proto_file << "(dccl.max_repeat)=" << array_length_;        
+        *proto_file << "(dccl_field).max_repeat=" << array_length_;        
 
     }
 

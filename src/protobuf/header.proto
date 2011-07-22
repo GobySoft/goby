@@ -13,14 +13,14 @@ message Header
   // e.g. "2002-01-20 23:59:59.000"
   required string time = 10 [(dccl_field).codec="_time",
                              (dccl_field).in_head=true,
-                             (queue.is_time)=true];
+                             (queue_field).is_time=true];
 
   //
   // source
   //
   required string source_platform = 11 [(dccl_field).codec="_platform<->modem_id",
                                         (dccl_field).in_head=true,
-                                        (queue.is_src)=true];
+                                        (queue_field).is_src=true];
   optional string source_app = 12 [(dccl_field).omit=true];
   
   //
@@ -31,6 +31,6 @@ message Header
   
   optional string dest_platform = 14 [(dccl_field).codec="_platform<->modem_id",
                                       (dccl_field).in_head=true,
-                                      (queue.is_dest)=true]; // required if dest_type == other
+                                      (queue_field).is_dest=true]; // required if dest_type == other
 
 }

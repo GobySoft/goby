@@ -1,21 +1,30 @@
 import "google/protobuf/descriptor.proto";
 
-package queue;
 
-extend google.protobuf.MessageOptions {
-  optional bool ack = 50050 [default = true];  
-  optional uint32 blackout_time = 50051 [default = 0];
-  optional uint32 max_queue = 50052 [default = 0];
-  optional bool newest_first = 50053 [default = true];
-  optional int32 ttl = 50054 [default = 1800];
-  optional double value_base = 50055 [default = 1];
-  optional bool encode_on_demand = 50056 [default = false];
-  optional double on_demand_skew_seconds = 50057 [default = 1];
+message QueueFieldOptions
+{
+  optional bool is_src = 1 [default = false];
+  optional bool is_dest = 2 [default = false];
+  optional bool is_time = 3 [default = false];
 }
 
 extend .google.protobuf.FieldOptions
 {
-  optional bool is_src = 50060 [default = false];
-  optional bool is_dest = 50061 [default = false];
-  optional bool is_time = 50062 [default = false];
+  optional QueueFieldOptions queue_field = 50001;
+}
+
+message QueueMessageOptions
+{
+  optional bool ack = 1 [default = true];  
+  optional uint32 blackout_time = 2 [default = 0];
+  optional uint32 max_queue = 3 [default = 0];
+  optional bool newest_first = 4 [default = true];
+  optional int32 ttl = 5 [default = 1800];
+  optional double value_base = 6 [default = 1];
+  optional bool encode_on_demand = 7 [default = false];
+  optional double on_demand_skew_seconds = 8 [default = 1];
+}
+
+extend google.protobuf.MessageOptions {
+  optional QueueMessageOptions queue_msg = 50001;
 }

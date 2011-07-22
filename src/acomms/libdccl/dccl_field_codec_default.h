@@ -49,18 +49,20 @@ namespace goby
           protected:
 
           virtual double max()
-          { return DCCLFieldCodecBase::get(dccl::max); }
+          { return DCCLFieldCodecBase::dccl_field_options().max(); }
 
           virtual double min()
-          { return DCCLFieldCodecBase::get(dccl::min); }
+          { return DCCLFieldCodecBase::dccl_field_options().min(); }
 
           virtual double precision()
-          { return DCCLFieldCodecBase::has(dccl::precision) ? DCCLFieldCodecBase::get(dccl::precision) : 0; }
+          { return DCCLFieldCodecBase::dccl_field_options().precision(); }
             
           virtual void validate()
           {
-              DCCLFieldCodecBase::require(dccl::min, "dccl.min");
-              DCCLFieldCodecBase::require(dccl::max, "dccl.max");
+              DCCLFieldCodecBase::require(DCCLFieldCodecBase::dccl_field_options().has_min(),
+                      "missing (dccl_field).min");
+              DCCLFieldCodecBase::require(DCCLFieldCodecBase::dccl_field_options().has_max(),
+                      "missing (dccl_field).max");
           }
 
           Bitset encode()
@@ -203,7 +205,7 @@ namespace goby
 
             T decode(Bitset* bits)
             {
-                std::string t = DCCLFieldCodecBase::get(dccl::static_value);
+                std::string t = DCCLFieldCodecBase::dccl_field_options().static_value();
                 return t;
             }
             
@@ -214,7 +216,7 @@ namespace goby
             
             void validate()
             {
-                DCCLFieldCodecBase::require(dccl::static_value, "dccl.static_value");
+                DCCLFieldCodecBase::require(DCCLFieldCodecBase::dccl_field_options().has_static_value(), "missing (dccl_field).static_value");
             }
             
         };

@@ -166,36 +166,45 @@ namespace goby
                 return !MessageHandler::field_.empty() ? MessageHandler::field_.back() : 0;
             }
             
-            
-            template<typename Extension>
-                typename Extension::TypeTraits::ConstType get(const Extension& e)
+
+            DCCLFieldOptions dccl_field_options()
             {
                 if(this_field())
-                    return this_field()->options().GetExtension(e);
+                    return this_field()->options().GetExtension(dccl_field);
                 else
-                    throw(DCCLException("Cannot call get on base message (has no *field* option extension"));                
+                    throw(DCCLException("Cannot call dccl_field on base message (has no *field* option extension"));                
+                
             }
+            
+            /* template<typename Extension> */
+            /*     typename Extension::TypeTraits::ConstType get(const Extension& e) */
+            /* { */
+            /*     if(this_field()) */
+            /*         return this_field()->options().GetExtension(e); */
+            /*     else */
+            /*         throw(DCCLException("Cannot call get on base message (has no *field* option extension"));                 */
+            /* } */
 
             
-            template<typename Extension>
-                bool has(const Extension& e)
-            {
-                if(this_field())
-                    return this_field()->options().HasExtension(e);
-                else
-                    return false;
-            }
+            /* template<typename Extension> */
+            /*     bool has(const Extension& e) */
+            /* { */
+            /*     if(this_field()) */
+            /*         return this_field()->options().HasExtension(e); */
+            /*     else */
+            /*         return false; */
+            /* } */
             
-            template<typename Extension>
-                void require(const Extension& e, const std::string& name)
-            {
-                if(!has(e))
-                {
-                    if(this_field())
-                        throw(DCCLException("Field " + this_field()->name() + " missing option extension called `" + name + "`."));
-                }
+            /* template<typename Extension> */
+            /*     void require(const Extension& e, const std::string& name) */
+            /* { */
+            /*     if(!has(e)) */
+            /*     { */
+            /*         if(this_field()) */
+            /*             throw(DCCLException("Field " + this_field()->name() + " missing option extension called `" + name + "`.")); */
+            /*     } */
                 
-            }            
+            /* }             */
             
             void require(bool b, const std::string& description)
             {

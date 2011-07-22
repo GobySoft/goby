@@ -11,26 +11,26 @@ message Header
 
   // result of goby::util::as<std::string>(goby_time())
   // e.g. "2002-01-20 23:59:59.000"
-  required string time = 10 [(dccl.codec)="_time",
-                             (dccl.in_head)=true,
+  required string time = 10 [(dccl_field).codec="_time",
+                             (dccl_field).in_head=true,
                              (queue.is_time)=true];
 
   //
   // source
   //
-  required string source_platform = 11 [(dccl.codec)="_platform<->modem_id",
-                                        (dccl.in_head)=true,
+  required string source_platform = 11 [(dccl_field).codec="_platform<->modem_id",
+                                        (dccl_field).in_head=true,
                                         (queue.is_src)=true];
-  optional string source_app = 12 [(dccl.omit)=true];
+  optional string source_app = 12 [(dccl_field).omit=true];
   
   //
   // destination
   //
   enum PublishDestination { PUBLISH_SELF = 1; PUBLISH_OTHER = 2; PUBLISH_ALL = 3; }
-  optional PublishDestination dest_type = 13 [default = PUBLISH_SELF, (dccl.in_head)=true];
+  optional PublishDestination dest_type = 13 [default = PUBLISH_SELF, (dccl_field).in_head=true];
   
-  optional string dest_platform = 14 [(dccl.codec)="_platform<->modem_id",
-                                      (dccl.in_head)=true,
+  optional string dest_platform = 14 [(dccl_field).codec="_platform<->modem_id",
+                                      (dccl_field).in_head=true,
                                       (queue.is_dest)=true]; // required if dest_type == other
 
 }

@@ -78,10 +78,10 @@ goby::acomms::Bitset goby::acomms::DCCLDefaultStringCodec::encode()
 goby::acomms::Bitset goby::acomms::DCCLDefaultStringCodec::encode(const std::string& wire_value)
 {
     std::string s = wire_value;
-    if(s.size() > get(dccl::max_length))
+    if(s.size() > dccl_field_options().max_length())
     {
         goby::glog.is(warn) && goby::glog << "String " << s <<  " exceeds `dccl.max_length`, truncating" << std::endl;
-        s.resize(get(dccl::max_length)); 
+        s.resize(dccl_field_options().max_length()); 
     }
         
             
@@ -145,7 +145,7 @@ unsigned goby::acomms::DCCLDefaultStringCodec::size(const std::string& field_val
 unsigned goby::acomms::DCCLDefaultStringCodec::max_size()
 {
     // string length + actual string
-    return min_size() + get(dccl::max_length) * BITS_IN_BYTE;
+    return min_size() + dccl_field_options().max_length() * BITS_IN_BYTE;
 }
 
 unsigned goby::acomms::DCCLDefaultStringCodec::min_size()
@@ -156,8 +156,8 @@ unsigned goby::acomms::DCCLDefaultStringCodec::min_size()
 
 void goby::acomms::DCCLDefaultStringCodec::validate()
 {
-    require(dccl::max_length, "dccl.max_length");
-    require(get(dccl::max_length) <= MAX_STRING_LENGTH,
+    require(dccl_field_options().has_max_length(), "missing (dccl_field).max_length");
+    require(dccl_field_options().max_length() <= MAX_STRING_LENGTH,
             "dccl.max_length must be <= " + goby::util::as<std::string>(static_cast<int>(MAX_STRING_LENGTH)));
 }
 
@@ -219,7 +219,7 @@ std::string goby::acomms::DCCLDefaultBytesCodec::decode(Bitset* bits)
 
 unsigned goby::acomms::DCCLDefaultBytesCodec::max_size()
 {
-    return min_size() + get(dccl::max_length) * BITS_IN_BYTE;
+    return min_size() + dccl_field_options().max_length() * BITS_IN_BYTE;
 }
 
 unsigned goby::acomms::DCCLDefaultBytesCodec::min_size()
@@ -232,7 +232,7 @@ unsigned goby::acomms::DCCLDefaultBytesCodec::min_size()
 
 void goby::acomms::DCCLDefaultBytesCodec::validate()
 {
-    require(dccl::max_length, "dccl.max_length");
+    require(dccl_field_options().has_max_length(), "missing (dccl_field).max_length");
 }
 
 //

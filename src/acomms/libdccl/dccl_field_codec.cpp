@@ -278,7 +278,7 @@ void goby::acomms::DCCLFieldCodecBase::base_validate(bool* b,
 {
     MessageHandler msg_handler(field);
 
-    if(field && (field->options().GetExtension(dccl::in_head) && variable_size()))
+    if(field && dccl_field_options().in_head() && variable_size())
         throw(DCCLException("Variable size codec used in header - header fields must be encoded with fixed size codec."));
     
     validate();
@@ -375,7 +375,7 @@ goby::acomms::DCCLFieldCodecBase::any_encode_repeated(const std::vector<boost::a
 {
     Bitset out_bits;
     // out_bits = [field_values[2]][field_values[1]][field_values[0]]
-    for(unsigned i = 0, n = this_field()->options().GetExtension(dccl::max_repeat); i < n; ++i)
+    for(unsigned i = 0, n = dccl_field_options().max_repeat(); i < n; ++i)
     {
         Bitset new_bits;
         if(i < field_values.size())
@@ -392,7 +392,7 @@ std::vector<boost::any>
 goby::acomms::DCCLFieldCodecBase::any_decode_repeated(Bitset* repeated_bits)
 {
     std::vector<boost::any> out_values;
-    for(int i = 0, n = this_field()->options().GetExtension(dccl::max_repeat); i < n; ++i)
+    for(int i = 0, n = dccl_field_options().max_repeat(); i < n; ++i)
     {
         Bitset these_bits;
 
@@ -408,7 +408,7 @@ goby::acomms::DCCLFieldCodecBase::any_decode_repeated(Bitset* repeated_bits)
 unsigned goby::acomms::DCCLFieldCodecBase::any_size_repeated(const std::vector<boost::any>& field_values)
 {
     unsigned out = 0;
-    for(unsigned i = 0, n = this_field()->options().GetExtension(dccl::max_repeat); i < n; ++i)
+    for(unsigned i = 0, n = dccl_field_options().max_repeat(); i < n; ++i)
     {
         if(i < field_values.size())
             out += any_size(field_values[i]);
@@ -471,18 +471,18 @@ void goby::acomms::DCCLFieldCodecBase::any_run_hooks(const boost::any& field_val
 
 unsigned goby::acomms::DCCLFieldCodecBase::max_size_repeated()
 {    
-    if(!this_field()->options().HasExtension(dccl::max_repeat))
-        throw(DCCLException("Missing dccl.max_repeat option on `repeated` field"));
+    if(!dccl_field_options().has_max_repeat())
+        throw(DCCLException("Missing (dccl_field).max_repeat option on `repeated` field"));
     else
-        return max_size() * this_field()->options().GetExtension(dccl::max_repeat);
+        return max_size() * dccl_field_options().max_repeat();
 }
 
 unsigned goby::acomms::DCCLFieldCodecBase::min_size_repeated()
 {    
-    if(!this_field()->options().HasExtension(dccl::max_repeat))
-        throw(DCCLException("Missing dccl.max_repeat option on `repeated` field"));
+    if(!dccl_field_options().has_max_repeat())
+        throw(DCCLException("Missing (dccl_field).max_repeat option on `repeated` field"));
     else
-        return min_size() * this_field()->options().GetExtension(dccl::max_repeat);
+        return min_size() * dccl_field_options().max_repeat();
 }
 
 std::vector<boost::any> goby::acomms::DCCLFieldCodecBase::any_pre_encode_repeated(const std::vector<boost::any>& field_values)

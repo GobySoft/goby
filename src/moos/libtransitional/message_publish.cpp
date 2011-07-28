@@ -23,7 +23,7 @@
 #include "goby/acomms/libdccl/dccl_exception.h"
 #include "message.h"
 
-using goby::acomms::NaN;
+
 
 void goby::transitional::DCCLPublish::initialize(const DCCLMessage& msg)
 {

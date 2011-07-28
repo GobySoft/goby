@@ -37,9 +37,10 @@ using namespace goby::util::tcolor;
 using goby::acomms::operator<<;
 using goby::util::as;
 using google::protobuf::uint32;
-using goby::acomms::NaN;
 using goby::transitional::DCCLMessageVal;
 using goby::glog;
+
+const double NaN = std::numeric_limits<double>::quiet_NaN();
 
 pAcommsHandlerConfig CpAcommsHandler::cfg_;
 CpAcommsHandler* CpAcommsHandler::inst_ = 0;

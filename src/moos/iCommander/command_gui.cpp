@@ -1066,7 +1066,7 @@ bool CommandGui::field_check(string & s, boost::shared_ptr<DCCLMessageVar> mp)
         // check max, min
         if(dnum > mp->max() || dnum < mp->min() || s.empty())
         {
-            dnum = goby::acomms::NaN;
+            dnum = std::numeric_limits<double>::quiet_NaN();
             ok = false;
         }        
             

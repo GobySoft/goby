@@ -87,6 +87,9 @@ std::string goby::acomms::DCCLCodec::encode(const google::protobuf::Message& msg
 
     try
     {
+        if(!msg.IsInitialized())
+            throw(DCCLException("Message is not properly initialized. All `required` fields must be set."));
+        
         if(!id2desc_.count(desc->options().GetExtension(dccl::id)))
             throw(DCCLException("Message id " +
                                 as<std::string>(desc->options().GetExtension(dccl::id))+

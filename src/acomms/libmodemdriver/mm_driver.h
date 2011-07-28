@@ -57,6 +57,9 @@ namespace goby
             /// \brief Initiate a transmission to the modem.
             void handle_initiate_transmission(protobuf::ModemMsgBase* m);
 
+            /// \brief Initiate a mini-packet transmission to the modem
+            void handle_initiate_mini_transmission(protobuf::ModemMiniTransmission* m);
+
             /// \brief Initiate ranging ("ping") to the modem. 
             void handle_initiate_ranging(protobuf::ModemRangingRequest* m);
 
@@ -78,6 +81,7 @@ namespace goby
             void mm_write(const protobuf::ModemMsgBase& base_msg); // actually write a message (appends hydroid prefix if needed)
             void increment_present_fail();
             void present_fail_exceeds_retries();
+
             
             // input
             void process_receive(const util::NMEASentence& nmea); // parse a receive message and call proper method
@@ -86,16 +90,22 @@ namespace goby
             void cyc(const util::NMEASentence& nmea, protobuf::ModemDataInit* init_msg); // $CACYC 
             void rxd(const util::NMEASentence& nmea, protobuf::ModemDataTransmission* data_msg); // $CARXD
             void ack(const util::NMEASentence& nmea, protobuf::ModemDataAck* ack_msg); // $CAACK
+        
+            // mini packet
+            void mua(const util::NMEASentence& nmea, protobuf::ModemMiniTransmission* data_msg); // $CAMUA
 
             // ranging (pings)
             void mpr(const util::NMEASentence& nmea, protobuf::ModemRangingReply* ranging_msg); // $CAMPR
             void tta(const util::NMEASentence& nmea, protobuf::ModemRangingReply* ranging_msg); // $SNTTA, why not $CATTA?
             void toa(const util::NMEASentence& nmea, protobuf::ModemRangingReply* ranging_msg); // $CATOA?
-            // send toa once we actually know who the message is from 
-            void flush_toa(const protobuf::ModemMsgBase& base_msg, protobuf::ModemRangingReply* ranging_msg);
+            // send toa once we actually know who the message is from
+            // if time_of_depart is negative, flush_toa returns the fractional
+            // part of the second 
+            void flush_toa(const protobuf::ModemMsgBase& base_msg, protobuf::ModemRangingReply* ranging_msg, int time_of_depart);
 
             
             // local modem
+            void xst(const util::NMEASentence& nmea); // $CAXST
             void rev(const util::NMEASentence& nmea); // $CAREV
             void err(const util::NMEASentence& nmea); // $CAERR
             void cfg(const util::NMEASentence& nmea, protobuf::ModemMsgBase* base_msg); // $CACFG
@@ -132,8 +142,8 @@ namespace goby
             static boost::posix_time::time_duration MODEM_WAIT; 
             // seconds to wait after modem reboot
             static boost::posix_time::time_duration WAIT_AFTER_REBOOT;
-            // allowed time skew between our clock and the modem clock
-            static boost::posix_time::time_duration ALLOWED_SKEW;
+            // allowed time diff in millisecs between our clock and the modem clock
+            static int ALLOWED_MS_DIFF;
             
             static std::string SERIAL_DELIMITER;
             // number of frames for a given packet type
@@ -169,6 +179,9 @@ namespace goby
             // if exceeded
             unsigned present_fail_count_;
 
+            // keeps track of clock mode, necessary for synchronous navigation
+            int clk_mode_;
+
             // has the clock been properly set. we must reset the clock after reboot ($CAREV,INIT)
             bool clock_set_;
 
@@ -186,7 +199,7 @@ namespace goby
                                 CFR,CST,MSG,REV,
                                 DQF,SHF,SNR,DOP,
                                 DBG,FFL,FST,ERR,
-                                TOA};
+                                TOA,XST};
             
             std::map<std::string, TalkerIDs> talker_id_map_;
             std::map<std::string, SentenceIDs> sentence_id_map_;

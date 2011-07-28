@@ -41,7 +41,7 @@ using namespace goby::util::tcolor;
 
 boost::posix_time::time_duration goby::acomms::MMDriver::MODEM_WAIT = boost::posix_time::seconds(3);
 boost::posix_time::time_duration goby::acomms::MMDriver::WAIT_AFTER_REBOOT = boost::posix_time::seconds(2);
-boost::posix_time::time_duration goby::acomms::MMDriver::ALLOWED_SKEW = boost::posix_time::seconds(2);
+int goby::acomms::MMDriver::ALLOWED_MS_DIFF = 2000;
 boost::posix_time::time_duration goby::acomms::MMDriver::HYDROID_GATEWAY_GPS_REQUEST_INTERVAL = boost::posix_time::seconds(30);
 std::string goby::acomms::MMDriver::SERIAL_DELIMITER = "\r";
 unsigned goby::acomms::MMDriver::PACKET_FRAME_COUNT [] = { 1, 3, 3, 2, 2, 8 };
@@ -91,9 +91,11 @@ void goby::acomms::MMDriver::startup(const protobuf::DriverConfig& cfg)
 
     
     modem_start(driver_cfg_);
-    
+
+    // some clock stuff -- set clk_mode_ zeros for starters
     set_clock();
-    
+    clk_mode_ = 0;
+
     write_cfg();
     
     // so that we know what the modem has for all the NVRAM values, not just the ones we set
@@ -119,7 +121,7 @@ void goby::acomms::MMDriver::initialize_talkers()
         ("CFR",CFR)("CST",CST)("MSG",MSG)("REV",REV) 
         ("DQF",DQF)("SHF",SHF)("MFD",MFD)("SNR",SNR) 
         ("DOP",DOP)("DBG",DBG)("FFL",FFL)("FST",FST) 
-        ("ERR",ERR)("TOA",TOA);
+        ("ERR",ERR)("TOA",TOA)("XST",XST);
 
     boost::assign::insert (talker_id_map_)
         ("CC",CC)("CA",CA)("SN",SN)("GP",GP); 
@@ -247,6 +249,7 @@ void goby::acomms::MMDriver::initialize_talkers()
         ("TXP","Turn on start of transmit message")
         ("TXF","Turn on end of transmit message")
         ("XST","Turn on transmit stats message, CAXST");    
+    
     
 }
 
@@ -429,6 +432,68 @@ void goby::acomms::MMDriver::handle_initiate_transmission(protobuf::ModemMsgBase
     
 }
 
+void
+goby::acomms::MMDriver::handle_initiate_mini_transmission(protobuf::ModemMiniTransmission* mini_msg)
+{
+    /*********************************************
+     mini packet has range 0x0000 - 0x1FFF (13 bits)
+     we define the packet header (3bits) as:
+        | msg_type (3bits) |
+
+     so that a typical packet is of the form
+        | header (3bits) | user (10bits) |
+
+     furthermore, if msg_type = MINI_OWTT we steal 6 more bits for TOD;
+        | header (3bits) | clock mode (2bits) | tod (4bits) | user (4bits) |
+    *********************************************/
+ 
+    // add message header bits 
+    if (!mini_msg->has_clk_mode())
+        mini_msg->set_clk_mode((protobuf::ClockMode) clk_mode_);
+
+    int type = mini_msg->type();
+    int clk_mode = mini_msg->clk_mode();
+
+    // get top of second for owtt packet -- we add one because the packet will
+    // not be sent until the next second (section 2.3, Sync Navigation with
+    // MM, Revision D)
+    boost::posix_time::ptime p = goby_time();
+    int tod = int(p.time_of_day().seconds()+1) % 10;
+
+    // pack mini packet with header and user information
+    int packet = 0, user = 0;
+    switch (type) 
+    {
+        case protobuf::MINI_OWTT:
+        {
+            // make sure user data is only 4bits
+            user = mini_msg->data() & 0x0F;
+            packet = (type<<10) + (clk_mode<<8) + (tod<<4) + user;
+            break;
+        }
+        case protobuf::MINI_ABORT:
+        case protobuf::MINI_USER:
+        default:
+        {
+            // make sure user data is only 10bits
+            user   = mini_msg->data() & 0x3FF;
+            packet = (type<<10) + user;
+        }
+    }
+
+    char packet_bytes[16];
+    snprintf (packet_bytes, sizeof packet_bytes, "%04x", packet);
+
+    //$CCMUC,SRC,DEST,HHHH*CS
+    NMEASentence nmea("$CCMUC", NMEASentence::IGNORE);
+    nmea.push_back(mini_msg->base().src()); // ADR1
+    nmea.push_back(mini_msg->base().dest()); // ADR2
+    nmea.push_back(packet_bytes); //HHHH    
+
+    append_to_write_queue(nmea, mini_msg->mutable_base());
+}
+
+
 void goby::acomms::MMDriver::handle_initiate_ranging(protobuf::ModemRangingRequest* request_msg)
 {
     switch(request_msg->type())
@@ -600,6 +665,7 @@ void goby::acomms::MMDriver::process_receive(const NMEASentence& nmea)
     static protobuf::ModemDataTransmission data_msg;
     static protobuf::ModemDataAck ack_msg;
     static protobuf::ModemRangingReply ranging_msg;
+    static protobuf::ModemMiniTransmission mini_msg;
     
     base_msg.Clear();
     // look at the sentence id (last three characters of the NMEA 0183 talker)
@@ -613,6 +679,8 @@ void goby::acomms::MMDriver::process_receive(const NMEASentence& nmea)
         case DRQ: drq(nmea); break; // data request
         case CFG: cfg(nmea, &base_msg); break; // configuration
         case CLK: clk(nmea, &base_msg); break; // clock
+        case XST: xst(nmea); break; // transmit stats for clock mode
+
             
         //
         // data cycle
@@ -632,16 +700,29 @@ void goby::acomms::MMDriver::process_receive(const NMEASentence& nmea)
             data_msg.Clear();
             rxd(nmea, &data_msg);
             this_base_msg = data_msg.mutable_base();
-            flush_toa(*this_base_msg, &ranging_msg);
+            flush_toa(*this_base_msg, &ranging_msg, -1);
             break;
         }
+
+        
+        case MUA:  // mini-packet receive
+        {
+            mini_msg.Clear();
+            mua(nmea, &mini_msg);
+            ranging_msg.set_sender_clk_mode(mini_msg.clk_mode());
+            this_base_msg = mini_msg.mutable_base(); 
+            flush_toa(*this_base_msg, &ranging_msg, mini_msg.time_of_depart());
+            break;
+        }
+ 
+
         
         case ACK:  // acknowledge
         {
             ack_msg.Clear();
             ack(nmea, &ack_msg);
             this_base_msg = ack_msg.mutable_base();
-            flush_toa(*this_base_msg, &ranging_msg);
+            flush_toa(*this_base_msg, &ranging_msg, -1);
             break;
         }
 
@@ -776,6 +857,58 @@ void goby::acomms::MMDriver::rxd(const NMEASentence& nmea, protobuf::ModemDataTr
 }
 
 
+void goby::acomms::MMDriver::mua(const NMEASentence& nmea, protobuf::ModemMiniTransmission* m)
+{
+    /*********************************************
+     mini packet has range 0x0000 - 0x1FFF (13 bits)
+     we define the packet header (3bits) as:
+        | msg_type (3bits) |
+
+     so that a typical packet is of the form
+        | header (3bits) | user (10bits) |
+
+     furthermore, if msg_type = MINI_OWTT we steal 6 more bits for TOD;
+        | header (3bits) | clock mode (2bits) | tod (4bits) | user (4bits) |
+    *********************************************/
+ 
+    m->mutable_base()->set_time(as<std::string>(goby_time()));
+    m->mutable_base()->set_src(as<uint32>(nmea[1]));
+    m->mutable_base()->set_dest(as<uint32>(nmea[2]));
+
+    // get user and header bits
+    int data; 
+    sscanf ((char*) nmea[3].c_str(), "%04x", &data);
+    int decode_user   = data & 0x3FF;
+    int decode_type   = data>>10; 
+
+    if (protobuf::MiniType_IsValid (decode_type))
+        m->set_type((protobuf::MiniType) decode_type);
+
+    // decode user data -- need to do something with time of launch
+    int user = 0;
+    switch (decode_type) 
+    {
+        case protobuf::MINI_OWTT:
+        {
+            user = decode_user & 0x0F;
+            m->set_time_of_depart((decode_user>>4) & 0x0F);
+            int decode_clk_mode = (decode_user>>8) & 0x03; 
+            if (protobuf::ClockMode_IsValid (decode_clk_mode))
+                m->set_clk_mode((protobuf::ClockMode) decode_clk_mode);
+            break;
+        }
+        case protobuf::MINI_ABORT:
+        case protobuf::MINI_USER:
+        default:
+        {
+            user = decode_user;
+        }
+    }
+    m->set_data(user);
+
+    signal_mini_receive(*m);
+}
+
 void goby::acomms::MMDriver::cfg(const NMEASentence& nmea, protobuf::ModemMsgBase* base_msg)
 {
     nvram_cfg_[nmea[1]] = nmea.as<int>(2);
@@ -802,7 +935,7 @@ void goby::acomms::MMDriver::clk(const NMEASentence& nmea, protobuf::ModemMsgBas
                                 nmea.as<int>(3)),
                            time_duration(nmea.as<int>(4),
                                          nmea.as<int>(5),
-                                         nmea.as<int>(6),
+                                         nmea.as<int>(6)+1,
                                          0));
     if(log_) *log_ << "reported time: " << reported << std::endl;
     
@@ -812,10 +945,17 @@ void goby::acomms::MMDriver::clk(const NMEASentence& nmea, protobuf::ModemMsgBas
     
     // make sure the modem reports its time as set at the right time
     // we may end up oversetting the clock, but better safe than sorry...
-    if(reported >= (expected - ALLOWED_SKEW))
-        clock_set_ = true;    
-    
+     boost::posix_time::time_duration t_diff = (reported - expected);
+ 
+     if( abs( int( t_diff.total_milliseconds())) < ALLOWED_MS_DIFF )
+         clock_set_ = true;    
 }
+
+void goby::acomms::MMDriver::xst(const NMEASentence& nmea)
+{
+    clk_mode_ = nmea.as<unsigned>(3);
+}
+
 
 void goby::acomms::MMDriver::mpr(const NMEASentence& nmea, protobuf::ModemRangingReply* m)
 {
@@ -850,7 +990,9 @@ void goby::acomms::MMDriver::rev(const NMEASentence& nmea)
         ptime expected = goby_time();
         ptime reported = nmea_time2ptime(nmea[1]);
 
-        if(reported < (expected - ALLOWED_SKEW))
+        boost::posix_time::time_duration t_diff = (reported - expected);
+        
+        if( abs( int( t_diff.total_milliseconds())) > ALLOWED_MS_DIFF )
             clock_set_ = false;
     }
 }
@@ -976,28 +1118,44 @@ bool goby::acomms::MMDriver::validate_data(const protobuf::ModemDataRequest& req
 
 void goby::acomms::MMDriver::toa(const NMEASentence& nmea, protobuf::ModemRangingReply* m)
 {
-    const unsigned SYNCHED_TO_PPS_AND_CCCLK_GOOD = 3;
-    if(nmea.as<unsigned>(2) == SYNCHED_TO_PPS_AND_CCCLK_GOOD) // good timing
+    // timing relative to synched pps is good, if ccclk is bad, and range is
+    // known to be less than ~1500m, range is still usable
+    clk_mode_ = nmea.as<unsigned>(2);
+    if(clk_mode_ == protobuf::SYNC_TO_PPS_AND_CCCLK_GOOD ||
+       clk_mode_ == protobuf::SYNC_TO_PPS_AND_CCCLK_BAD)
     {
         boost::posix_time::ptime toa = nmea_time2ptime(nmea[1]);
+        int received_sec = int(toa.time_of_day().seconds()) % 10;
         double frac_sec = double(toa.time_of_day().fractional_seconds())/toa.time_of_day().ticks_per_second();
-        //ambiguous because we don't know when the message was sent. report out to MAX_RANGE and the user has to have a smarter way to differentiate
-        const int MAX_RANGE = 10000;
-        for(int i = 0; i <= MAX_RANGE / ROUGH_SPEED_OF_SOUND; ++i)
-            m->add_one_way_travel_time(frac_sec + i);
+        // record toa seconds, flush_toa determines owtt
+        m->set_received_time (double(received_sec) + frac_sec);
 
+        m->set_receiver_clk_mode((protobuf::ClockMode) clk_mode_);
         m->set_type(protobuf::MODEM_ONE_WAY_SYNCHRONOUS);
         m->mutable_base()->set_time(as<std::string>(toa));
         m->mutable_base()->set_time_source(protobuf::ModemMsgBase::MODEM_TIME);
     }
 }
 
-void goby::acomms::MMDriver::flush_toa(const protobuf::ModemMsgBase& base_msg, protobuf::ModemRangingReply* ranging_msg)
+void goby::acomms::MMDriver::flush_toa(const protobuf::ModemMsgBase& base_msg, protobuf::ModemRangingReply* ranging_msg, int time_of_depart)
 {
     if(ranging_msg->type() == protobuf::MODEM_ONE_WAY_SYNCHRONOUS)
     {
         ranging_msg->mutable_base()->set_dest(driver_cfg_.modem_id());
         ranging_msg->mutable_base()->set_src(base_msg.src());
+
+        // compute owtt -- send fractional part of sec if we have no
+        // information about transmitting tod
+        double time_of_arrive = ranging_msg->received_time();
+        if (time_of_depart < 0)
+            time_of_depart = int ( floor (time_of_arrive) );
+
+        if (time_of_arrive < double(time_of_depart))
+            time_of_arrive += 10;
+ 
+        double owtt = time_of_arrive - double(time_of_depart); 
+        ranging_msg->add_one_way_travel_time(owtt);
+
         signal_range_reply(*ranging_msg);
         ranging_msg->Clear();
     }

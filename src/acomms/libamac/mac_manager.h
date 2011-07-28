@@ -113,12 +113,7 @@ namespace goby
             bool remove_slot(const protobuf::Slot& s);
 
             /// \brief clears all slots from communications cycle.
-            void clear_all_slots()
-            {
-                id2slot_.clear();
-                slot_order_.clear();
-                stop_timer();
-            }  
+            void clear_all_slots(); 
             //@}            
 
             /// \name Other

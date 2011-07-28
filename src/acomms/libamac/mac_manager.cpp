@@ -80,6 +80,10 @@ void goby::acomms::MACManager::startup(const protobuf::MACConfig& cfg)
     // create a copy for us
     cfg_ = cfg;
     
+
+    // in case someone added slots before we started
+    process_cycle_size_change();
+
     switch(cfg_.type())
     {
         case protobuf::MAC_AUTO_DECENTRALIZED:
@@ -262,6 +266,8 @@ void goby::acomms::MACManager::increment_slot()
         case protobuf::MAC_POLLED:
             next_slot_t_ +=
                 boost::posix_time::microseconds((*current_slot_)->second.slot_seconds()*1e6);
+            if(log_) *log_ << "next slot at " << next_slot_t_ << std::endl;
+            
             ++current_slot_;
             if (current_slot_ == slot_order_.end()) current_slot_ = slot_order_.begin();
             break;
@@ -375,13 +381,17 @@ void goby::acomms::MACManager::process_cycle_size_change()
                  << next_slot_t_ << std::endl;
     
     // if we can start cycles in the middle, do it
-    if(cfg_.start_cycle_in_middle() && cfg_.type() != protobuf::MAC_AUTO_DECENTRALIZED)
+    if(cfg_.start_cycle_in_middle() &&
+       slot_order_.size() > 1 &&
+       cfg_.type() == protobuf::MAC_FIXED_DECENTRALIZED)
     {
         if(log_) *log_ << group("mac") << "starting next available slot (in middle of cycle)"
                        << std::endl;
 
         // step back a cycle
         next_slot_t_ -= boost::posix_time::microseconds(cycle_duration()*1e6);
+        if(log_) *log_ << "next slot at " << next_slot_t_ << std::endl;
+
         
         boost::posix_time::ptime now = goby_time();
 
@@ -415,6 +425,12 @@ double goby::acomms::MACManager::cycle_duration()
     return length;
 }
  
+void goby::acomms::MACManager::clear_all_slots()
+{
+    id2slot_.clear();
+    slot_order_.clear();
+    stop_timer();
+}
 
 void goby::acomms::MACManager::position_blank()
 {

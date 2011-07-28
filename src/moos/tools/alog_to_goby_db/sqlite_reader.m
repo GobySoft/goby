@@ -3,6 +3,14 @@ function [out] = sqlite_reader(query, database)
 dbid = mksqlite(0, 'open', database);
 % array of struct
 result = mksqlite(dbid, query);
+
+if(isempty(result))
+    out = [];
+    return;
+end
+
+    
+
 names = fieldnames(result);
 mksqlite(dbid, 'close');
 

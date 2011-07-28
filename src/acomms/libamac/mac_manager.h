@@ -113,7 +113,12 @@ namespace goby
             bool remove_slot(const protobuf::Slot& s);
 
             /// \brief clears all slots from communications cycle.
-            void clear_all_slots() { id2slot_.clear(); slot_order_.clear(); }    
+            void clear_all_slots()
+            {
+                id2slot_.clear();
+                slot_order_.clear();
+                stop_timer();
+            }  
             //@}            
 
             /// \name Other
@@ -128,19 +133,22 @@ namespace goby
             /// amac_simple.cpp
         
             /// \example acomms/chat/chat.cpp
-        
+
+            unsigned cycle_count() { return slot_order_.size(); }
+            double cycle_duration();
+            
           private:
-            void send_poll(const boost::system::error_code&);
+            void begin_slot(const boost::system::error_code&);
             boost::posix_time::ptime next_cycle_time();
 
+            void increment_slot();
+            
             void restart_timer();
             void stop_timer();
     
             void expire_ids();
             void process_cycle_size_change();
 
-            unsigned cycle_count() { return slot_order_.size(); }
-            unsigned cycle_length();
             unsigned cycle_sum();
             void position_blank();
     

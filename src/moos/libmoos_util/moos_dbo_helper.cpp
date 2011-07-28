@@ -28,12 +28,19 @@ void goby::moos::MOOSDBOPlugin::add_message(int unique_id, const std::string& id
 
 void goby::moos::MOOSDBOPlugin::add_message(int unique_id, const CMOOSMsg& msg)
 {
-    goby::core::DBOManager::get_instance()->session()->add(new CMOOSMsg(msg));
+    goby::core::DBOManager::get_instance()->session()->add(new std::pair<int, CMOOSMsg>(std::make_pair(unique_id, msg)));
 }
 
 void goby::moos::MOOSDBOPlugin::map_types()
 {
-    goby::core::DBOManager::get_instance()->session()->mapClass<CMOOSMsg>("CMOOSMsg");
+    goby::core::DBOManager::get_instance()->session()->mapClass<std::pair<int, CMOOSMsg> >(table_name_.c_str());
+}
+
+void goby::moos::MOOSDBOPlugin::create_indices()
+{
+    goby::core::DBOManager::get_instance()->session()->execute("CREATE UNIQUE INDEX IF NOT EXISTS " + table_name_ + "_raw_id_index" + " ON " + table_name_ + " (raw_id)");
+
+    goby::core::DBOManager::get_instance()->session()->execute("CREATE INDEX IF NOT EXISTS " + table_name_ + "_moosmsg_time_index" + " ON " + table_name_ + " (moosmsg_time)");
 }
 
 extern "C" goby::core::DBOPlugin* create_goby_dbo_plugin()

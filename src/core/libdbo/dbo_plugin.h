@@ -46,6 +46,9 @@ namespace goby
             virtual MarshallingScheme provides() = 0;
             virtual void add_message(int unique_id, const std::string& identifier, const void* data, int size) = 0;
             virtual void map_types() = 0;
+            virtual void set_table_prefix(const std::string& s) = 0;
+
+            virtual void create_indices() { }
         };
 
         class ProtobufDBOPlugin : public DBOPlugin
@@ -61,6 +64,8 @@ namespace goby
             void add_message(int unique_id, const std::string& identifier, const void* data, int size);
             void map_types();
 
+            void set_table_prefix(const std::string& s) { table_prefix_ = s; }
+            
             // extra for direct users
             void add_message(int unique_id, boost::shared_ptr<google::protobuf::Message> msg);
 
@@ -119,7 +124,8 @@ namespace goby
             static boost::bimap<int, std::string> dbo_map;
             // key = integer (order type was declared)
             // value = string name for database table
-            std::map<int, std::string> mangle_map_;
+            std::map<int, std::string> table_names_;
+            std::string table_prefix_;
             // next integer to use for new incoming type
             int index_;
         };

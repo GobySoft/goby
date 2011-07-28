@@ -6,7 +6,6 @@ extend .google.protobuf.FieldOptions
   optional string example = 50111;
   
   // used in tes_moos_app.proto
-  optional string moos_global = 50100;
-    
+  optional string moos_global = 50100;  
 }
 

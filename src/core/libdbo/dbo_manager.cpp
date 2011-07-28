@@ -53,7 +53,8 @@ goby::core::DBOManager::DBOManager()
         session_(0),
         transaction_(0),
         t_last_commit_(goby_time()),
-        static_tables_created_(false)
+        static_tables_created_(false),
+        raw_id_table_name_("_raw")
 {
     glog.add_group("dbo", goby::util::Colors::lt_green, "database");
 }
@@ -127,20 +128,22 @@ void goby::core::DBOManager::connect(const std::string& db_name /* = "" */)
     if(!static_tables_created_)
     {
         map_types();
-        try{ session_->createTables(); }
+
+        try { session_->createTables(); }
         catch(Wt::Dbo::Exception& e)
         {
             glog.is(warn) &&
-                glog << e.what() << std::endl;
+                glog << "Could not create static type tables; reason: " << e.what() << std::endl;
         }
 
         glog.is(verbose) &&
-            glog << group("dbo") << "created table for static types" << std::endl;
+            glog << group("dbo") << "created tables for static types" << std::endl;
         static_tables_created_ = true;
-//        reset_session();
+        commit();
+        create_indices();
+            
+//       reset_session();
     }
-    
-    
 }
 
 void goby::core::DBOManager::reset_session()
@@ -154,12 +157,38 @@ void goby::core::DBOManager::reset_session()
 
 void goby::core::DBOManager::map_types()
 {
-    session_->mapClass<RawEntry>("_raw");
-
+    session_->mapClass<RawEntry>(raw_id_table_name_.c_str());
+    
     std::set<DBOPlugin*> plugins = plugin_factory_.plugins();
     BOOST_FOREACH(DBOPlugin* plugin, plugins)    
     {
         if(plugin)
             plugin->map_types();
+    }
+}
+
+void goby::core::DBOManager::create_indices()
+{
+    goby::core::DBOManager::get_instance()->session()->execute("CREATE INDEX IF NOT EXISTS " + raw_id_table_name_ + "_id_index ON " + raw_id_table_name_ + " (raw_id)");
+    
+    std::set<DBOPlugin*> plugins = plugin_factory_.plugins();
+    BOOST_FOREACH(DBOPlugin* plugin, plugins)    
+    {
+        if(plugin)
+            plugin->create_indices();
+    }
+}
+
+
+void goby::core::DBOManager::set_table_prefix(const std::string& prefix)
+{
+    raw_id_table_name_ = prefix + "_raw";
+    
+    
+    std::set<DBOPlugin*> plugins = plugin_factory_.plugins();
+    BOOST_FOREACH(DBOPlugin* plugin, plugins)    
+    {
+        if(plugin)
+            plugin->set_table_prefix(prefix);
     }
 }

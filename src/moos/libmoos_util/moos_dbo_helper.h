@@ -25,11 +25,14 @@ namespace Wt
     namespace Dbo
     {
         template <>
-        struct persist<CMOOSMsg>
+            struct persist<std::pair<int, CMOOSMsg> >
         {
             template<typename A>
-                static void apply(CMOOSMsg& msg, A& action)
+                static void apply(std::pair<int, CMOOSMsg>& msg_pair, A& action)
             {
+                Wt::Dbo::field(action, msg_pair.first, "raw_id");
+
+                CMOOSMsg& msg = msg_pair.second;
                 std::string msg_type(1, msg.m_cMsgType);
                 Wt::Dbo::field(action, msg_type, "msg_type");
                 msg.m_cMsgType = msg_type[0];
@@ -60,6 +63,10 @@ namespace goby
         class MOOSDBOPlugin : public goby::core::DBOPlugin
         {
           public:
+          MOOSDBOPlugin()
+              : table_name_("CMOOSMsg")
+            { }
+            
             goby::core::MarshallingScheme provides()
             {
                 return goby::core::MARSHALLING_MOOS;
@@ -67,8 +74,14 @@ namespace goby
             
             void add_message(int unique_id, const std::string& identifier, const void* data, int size);
             void map_types();
+            void create_indices();
+            
+            void set_table_prefix(const std::string& s) { table_name_ = s + "CMOOSMsg"; }
 
             void add_message(int unique_id, const CMOOSMsg& msg);
+
+          private:
+            std::string table_name_;
         };
     }
 }

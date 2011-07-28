@@ -15,7 +15,7 @@ message Slot
   optional int32 dest = 2 [ default = -1, (description)="destination modem id for this transmission; 0 means broadcast, -1 means query the queuing layer for next available message"];
   optional uint32 rate = 3 [ default = 0, (description)="bit rate (integer from 0-5, 0 is slowest)" ];
   required SlotType type = 4 [ default = SLOT_DATA, (description)="type of message to initiate in this slot"] ;
-  optional uint32 slot_seconds = 5 [(description)="length of this slot in seconds", (example)="15"];
+  optional double slot_seconds = 5 [(description)="length of this slot in seconds", (example)="15"];
 
   // "2011-Jan-22 12:08:06.887950"
   // which is produced by operator<< for boost::posix_time::ptime
@@ -43,10 +43,14 @@ message MACConfig
   // only required for MAC_AUTO_DECENTRALIZED - specify these in `cycle` (above) for other types
   optional uint32 rate = 4 [default = 0,
                             (description)="Set rate to use for MAC_AUTO_DECENTALIZED. Use `slot` for other MACTypes"];
-  optional uint32 slot_seconds = 5 [default = 15,
+  optional double slot_seconds = 5 [default = 15,
                                     (description)="Set duration of the slot for MAC_AUTO_DECENTRALIZED. Use `slot` for other MACTypes"];
   optional uint32 expire_cycles = 6 [default = 30,
                                      (description)="Set number of quiet cycles for discarding a node from the cycle for MAC_AUTO_DECENTRALIZED."];
+
+  optional bool start_cycle_in_middle = 7 [default = true,
+                                           (description)="If true, cycle will start / restart at the next slot, even if its the middle of the cycle. If false, any changes to the cycle will reset it to the first slot."];
+  
   
 }
 

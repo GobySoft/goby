@@ -1,0 +1,96 @@
+// copyright 2011 t. schneider tes@mit.edu
+// 
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This software is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this software.  If not, see <http://www.gnu.org/licenses/>.
+
+
+// tests fixed TDMA
+
+#include "goby/acomms/amac.h"
+#include "goby/util/logger.h"
+#include "goby/util/sci.h"
+#include "goby/acomms/connect.h"
+
+goby::acomms::MACManager mac(&goby::glog);
+const int num_cycles_check = 3;
+int first_cycle = -1;
+int current_cycle = -1;
+
+using goby::acomms::operator<<;
+
+void initiate_transmission(goby::acomms::protobuf::ModemMsgBase* msg)
+{
+    std::cout << "We were told to start transmission of " << *msg << std::endl;
+    assert(msg->src() == 1);
+    double cycles_since_day = (goby::util::goby_time().time_of_day().total_milliseconds() / 1000.0) / mac.cycle_duration();
+    
+    std::cout << std::setprecision(15) << cycles_since_day << std::endl;
+    std::cout << std::setprecision(15) << goby::util::unbiased_round(cycles_since_day,0)
+              << std::endl;
+
+    current_cycle = cycles_since_day;
+    if(first_cycle == -1)
+        first_cycle = current_cycle;
+    
+    
+    assert(goby::util::unbiased_round(cycles_since_day - goby::util::unbiased_round(cycles_since_day,0), 2) == 0);
+    
+}
+
+
+int main(int argc, char* argv[])
+{
+    goby::glog.add_stream(goby::util::Logger::DEBUG3, &std::cerr);
+    goby::glog.set_name(argv[0]);
+
+    goby::acomms::protobuf::MACConfig cfg;
+    cfg.set_modem_id(1);
+    cfg.set_type(goby::acomms::protobuf::MAC_FIXED_DECENTRALIZED);
+
+    goby::acomms::protobuf::Slot* downlink_slot = cfg.add_slot();
+    downlink_slot->set_src(1);
+    downlink_slot->set_rate(0);
+    downlink_slot->set_type(goby::acomms::protobuf::SLOT_DATA);
+    downlink_slot->set_slot_seconds(0.1);
+
+
+    goby::acomms::protobuf::Slot* uplink3_slot = cfg.add_slot();
+    uplink3_slot->set_src(3);
+    uplink3_slot->set_rate(0);
+    uplink3_slot->set_type(goby::acomms::protobuf::SLOT_DATA);
+    uplink3_slot->set_slot_seconds(0.1);
+
+
+    goby::acomms::protobuf::Slot* uplink4_slot = cfg.add_slot();
+    uplink4_slot->set_src(4);
+    uplink4_slot->set_rate(0);
+    uplink4_slot->set_type(goby::acomms::protobuf::SLOT_DATA);
+    uplink4_slot->set_slot_seconds(0.1);
+
+    goby::acomms::connect(&mac.signal_initiate_transmission,
+                          &initiate_transmission);
+    
+    
+    mac.startup(cfg);
+    
+    
+    while(first_cycle == -1 || (current_cycle < first_cycle + num_cycles_check))
+    {
+        mac.do_work();
+        usleep(1e2);
+    }
+    
+    
+    std::cout << "all tests passed" << std::endl;
+}
+

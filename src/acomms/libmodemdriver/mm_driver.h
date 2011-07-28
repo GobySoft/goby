@@ -140,8 +140,8 @@ namespace goby
             static boost::posix_time::time_duration MODEM_WAIT; 
             // seconds to wait after modem reboot
             static boost::posix_time::time_duration WAIT_AFTER_REBOOT;
-            // allowed time skew between our clock and the modem clock
-            static boost::posix_time::time_duration ALLOWED_SKEW;
+            // allowed time diff in millisecs between our clock and the modem clock
+            static int ALLOWED_MS_DIFF;
             
             static std::string SERIAL_DELIMITER;
             // number of frames for a given packet type

@@ -38,9 +38,9 @@ using namespace goby::util::tcolor;
 
 boost::posix_time::time_duration goby::acomms::MMDriver::MODEM_WAIT = boost::posix_time::seconds(3);
 boost::posix_time::time_duration goby::acomms::MMDriver::WAIT_AFTER_REBOOT = boost::posix_time::seconds(2);
-boost::posix_time::time_duration goby::acomms::MMDriver::ALLOWED_SKEW = boost::posix_time::seconds(2);
 boost::posix_time::time_duration goby::acomms::MMDriver::HYDROID_GATEWAY_GPS_REQUEST_INTERVAL = boost::posix_time::seconds(30);
 std::string goby::acomms::MMDriver::SERIAL_DELIMITER = "\r";
+int goby::acomms::MMDriver::ALLOWED_MS_DIFF = 2000;
 unsigned goby::acomms::MMDriver::PACKET_FRAME_COUNT [] = { 1, 3, 3, 2, 2, 8 };
 unsigned goby::acomms::MMDriver::PACKET_SIZE [] = { 32, 32, 64, 256, 256, 256 };
 
@@ -372,14 +372,24 @@ void goby::acomms::MMDriver::set_clock()
 {
     NMEASentence nmea("$CCCLK", NMEASentence::IGNORE);
     boost::posix_time::ptime p = goby_time();
-    
+
+    // for sync nav, let's make sure to send the ccclk at the beginning of the
+    // second: between 10ms-150ms after the top of the second
+    double frac_sec = double(p.time_of_day().fractional_seconds())/p.time_of_day().ticks_per_second();
+    while ( frac_sec > 0.15 || frac_sec < 0.01)
+    {
+        usleep (10000);
+        p = goby_time();
+        frac_sec = double(p.time_of_day().fractional_seconds())/p.time_of_day().ticks_per_second();
+    }   
+
     nmea.push_back(int(p.date().year()));
     nmea.push_back(int(p.date().month()));
     nmea.push_back(int(p.date().day()));
     nmea.push_back(int(p.time_of_day().hours()));
     nmea.push_back(int(p.time_of_day().minutes()));
     nmea.push_back(int(p.time_of_day().seconds()));
-    
+
     static protobuf::ModemMsgBase base_msg;
     base_msg.Clear();
     base_msg.set_time(as<std::string>(p));
@@ -656,14 +666,6 @@ void goby::acomms::MMDriver::mua(const NMEASentence& nmea, protobuf::ModemMiniTr
             int decode_clk_mode = (decode_user>>8) & 0x03; 
             if (protobuf::ClockMode_IsValid (decode_clk_mode))
                 m->set_clk_mode((protobuf::ClockMode) decode_clk_mode);
-       
-            std::cout << "received mini clk_mode " << std::hex 
-                << decode_clk_mode << std::endl;
-            std::cout << "received mini tod      " << std::hex 
-                << m->time_of_depart() << std::endl;
-            std::cout << "received mini user     " << std::hex 
-                << user << std::endl;
- 
             break;
         }
         case protobuf::MINI_ABORT:
@@ -695,29 +697,30 @@ void goby::acomms::MMDriver::clk(const NMEASentence& nmea, protobuf::ModemMsgBas
 {
     if(out_.empty() || out_.front().first.sentence_id() != "CLK")
         return;
-    
+
     using namespace boost::posix_time;
     using namespace boost::gregorian;
     // modem responds to the previous second, which is why we subtract one second from the current time
     ptime expected = goby_time();
     ptime reported = ptime(date(nmea.as<int>(1),
-                                nmea.as<int>(2),
-                                nmea.as<int>(3)),
-                           time_duration(nmea.as<int>(4),
-                                         nmea.as<int>(5),
-                                         nmea.as<int>(6),
-                                         0));
+                nmea.as<int>(2),
+                nmea.as<int>(3)),
+            time_duration(nmea.as<int>(4),
+                nmea.as<int>(5),
+                (nmea.as<int>(6) + 1),
+                0));
     if(log_) *log_ << "reported time: " << reported << std::endl;
-    
-    
+
+
     base_msg->set_time(as<std::string>(reported));
     base_msg->set_time_source(protobuf::ModemMsgBase::MODEM_TIME);
-    
+
     // make sure the modem reports its time as set at the right time
     // we may end up oversetting the clock, but better safe than sorry...
-    if(reported >= (expected - ALLOWED_SKEW))
-        clock_set_ = true;    
-    
+    boost::posix_time::time_duration t_diff = (reported - expected);
+
+    if( abs( int( t_diff.total_milliseconds())) < ALLOWED_MS_DIFF )
+        clock_set_ = true;
 }
 
 void goby::acomms::MMDriver::mpr(const NMEASentence& nmea, protobuf::ModemRangingReply* m)
@@ -753,12 +756,14 @@ void goby::acomms::MMDriver::rev(const NMEASentence& nmea)
     }
     else if(nmea[2] == "AUV")
     {
-        //check the clock
+        //check agreement between cpu and the modem clocks
         using boost::posix_time::ptime;
         ptime expected = goby_time();
         ptime reported = nmea_time2ptime(nmea[1]);
 
-        if(reported < (expected - ALLOWED_SKEW))
+        boost::posix_time::time_duration t_diff = (reported - expected);
+
+        if( abs( int( t_diff.total_milliseconds())) > ALLOWED_MS_DIFF )
             clock_set_ = false;
     }
 }

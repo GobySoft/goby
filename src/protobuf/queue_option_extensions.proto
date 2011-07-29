@@ -1,16 +1,10 @@
 import "google/protobuf/descriptor.proto";
 
-
 message QueueFieldOptions
 {
   optional bool is_src = 1 [default = false];
   optional bool is_dest = 2 [default = false];
   optional bool is_time = 3 [default = false];
-}
-
-extend .google.protobuf.FieldOptions
-{
-  optional QueueFieldOptions queue_field = 50001;
 }
 
 message QueueMessageOptions
@@ -23,8 +17,4 @@ message QueueMessageOptions
   optional double value_base = 6 [default = 1];
   optional bool encode_on_demand = 7 [default = false];
   optional double on_demand_skew_seconds = 8 [default = 1];
-}
-
-extend google.protobuf.MessageOptions {
-  optional QueueMessageOptions queue_msg = 50001;
 }

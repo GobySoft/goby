@@ -170,7 +170,7 @@ namespace goby
             DCCLFieldOptions dccl_field_options()
             {
                 if(this_field())
-                    return this_field()->options().GetExtension(dccl_field);
+                    return this_field()->options().GetExtension(goby::field).dccl();
                 else
                     throw(DCCLException("Cannot call dccl_field on base message (has no *field* option extension"));                
                 
@@ -203,7 +203,7 @@ namespace goby
             /*         if(this_field()) */
             /*             throw(DCCLException("Field " + this_field()->name() + " missing option extension called `" + name + "`.")); */
             /*     } */
-                
+            
             /* }             */
             
             void require(bool b, const std::string& description)

@@ -60,9 +60,9 @@ namespace goby
           virtual void validate()
           {
               DCCLFieldCodecBase::require(DCCLFieldCodecBase::dccl_field_options().has_min(),
-                      "missing (dccl_field).min");
+                      "missing (goby.field).dccl.min");
               DCCLFieldCodecBase::require(DCCLFieldCodecBase::dccl_field_options().has_max(),
-                      "missing (dccl_field).max");
+                      "missing (goby.field).dccl.max");
           }
 
           Bitset encode()
@@ -216,7 +216,7 @@ namespace goby
             
             void validate()
             {
-                DCCLFieldCodecBase::require(DCCLFieldCodecBase::dccl_field_options().has_static_value(), "missing (dccl_field).static_value");
+                DCCLFieldCodecBase::require(DCCLFieldCodecBase::dccl_field_options().has_static_value(), "missing (goby.field).dccl.static_value");
             }
             
         };

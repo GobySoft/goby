@@ -104,7 +104,7 @@ namespace goby
             
             QueueMessageOptions queue_message_options()
             {
-                return desc_->options().GetExtension(queue_msg);
+                return desc_->options().GetExtension(goby::msg).queue();
             }
             
             const google::protobuf::Descriptor* descriptor() const {return desc_;}

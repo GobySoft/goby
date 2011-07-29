@@ -36,10 +36,10 @@ message DatabaseResponse
 
 message DatabaseClientConfig
 {
-  optional bool using_database = 10 [default = true, (description)="True if using goby_database, false if no database is to be run"];
-  optional string database_address = 11 [(example)="127.0.0.1",
-                                         (description)="TCP address to send database requests on. If omitted and using_database==true, `ethernet_address` is used"];
-  optional uint32 database_port = 12 [(example)="11142",
-                                      (description)="TCP port to send database requests on. If omitted and using_database==true, `ethernet_port` is used"];  
+  optional bool using_database = 10 [default = true, (goby.field).description="True if using goby_database, false if no database is to be run"];
+  optional string database_address = 11 [(goby.field).example="127.0.0.1",
+                                         (goby.field).description="TCP address to send database requests on. If omitted and using_database==true, `ethernet_address` is used"];
+  optional uint32 database_port = 12 [(goby.field).example="11142",
+                                      (goby.field).description="TCP port to send database requests on. If omitted and using_database==true, `ethernet_port` is used"];  
 }
 

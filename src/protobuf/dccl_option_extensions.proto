@@ -1,7 +1,3 @@
-import "google/protobuf/descriptor.proto";
-
-//package dccl;
-
 message DCCLFieldOptions
 {
   // what encoder / decoder should we use?
@@ -29,19 +25,10 @@ message DCCLFieldOptions
   optional uint32 max_repeat = 10;
 }
 
-extend .google.protobuf.FieldOptions
-{
-  optional DCCLFieldOptions dccl_field = 50000;
-}
-
 message DCCLMessageOptions
 {
-  required int32 id = 50040;
-  required uint32 max_bytes = 50041;
+  required int32 id = 1;
+  required uint32 max_bytes = 2;
 
-  optional string codec = 50042 [default = "_default"];
-}
-
-extend .google.protobuf.MessageOptions {
-  optional DCCLMessageOptions dccl_msg = 50000;
+  optional string codec = 3 [default = "_default"];
 }

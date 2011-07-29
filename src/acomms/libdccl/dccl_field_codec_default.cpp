@@ -156,9 +156,9 @@ unsigned goby::acomms::DCCLDefaultStringCodec::min_size()
 
 void goby::acomms::DCCLDefaultStringCodec::validate()
 {
-    require(dccl_field_options().has_max_length(), "missing (dccl_field).max_length");
+    require(dccl_field_options().has_max_length(), "missing (goby.field).dccl.max_length");
     require(dccl_field_options().max_length() <= MAX_STRING_LENGTH,
-            "dccl.max_length must be <= " + goby::util::as<std::string>(static_cast<int>(MAX_STRING_LENGTH)));
+            "(goby.field).dccl.max_length must be <= " + goby::util::as<std::string>(static_cast<int>(MAX_STRING_LENGTH)));
 }
 
 //
@@ -232,7 +232,7 @@ unsigned goby::acomms::DCCLDefaultBytesCodec::min_size()
 
 void goby::acomms::DCCLDefaultBytesCodec::validate()
 {
-    require(dccl_field_options().has_max_length(), "missing (dccl_field).max_length");
+    require(dccl_field_options().has_max_length(), "missing (goby.field).dccl.max_length");
 }
 
 //

@@ -1,12 +1,41 @@
 import "google/protobuf/descriptor.proto";
+import "goby/protobuf/dccl_option_extensions.proto";
+import "goby/protobuf/queue_option_extensions.proto";
+
+package goby;
 
 extend .google.protobuf.FieldOptions
-{  
-  optional string description = 50110;
-  optional string example = 50111;
-  
-  // used in tes_moos_app.proto
-  optional string moos_global = 50100;
-    
+{
+  // Email from liujisi@google.com on 7.22.2011: Please use 1009 for all types of options.
+  // --------------------------------
+  // Project:  Goby Underwater Autonomy Project
+  // Contact:  Toby Schneider <tes@mit.edu>
+  // Web site: https://launchpad.net/goby
+  // Extensions: 1009 (all types)
+  // --------------------------------
+  optional GobyFieldOptions field = 1009; 
 }
 
+extend .google.protobuf.MessageOptions
+{  
+  optional GobyMessageOptions msg = 1009;
+}
+
+
+message GobyFieldOptions
+{
+  optional DCCLFieldOptions dccl = 1;
+  optional QueueFieldOptions queue = 2;
+  
+  optional string description = 100;
+  optional string example = 101;
+  
+  // used in tes_moos_app.proto
+  optional string moos_global = 102;
+}
+
+message GobyMessageOptions
+{
+  optional DCCLMessageOptions dccl = 1;
+  optional QueueMessageOptions queue = 2;
+}

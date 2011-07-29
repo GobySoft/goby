@@ -51,7 +51,7 @@ goby::acomms::QueueManager::QueueManager()
     goby::glog.add_group("queue.in",  util::Colors::green, "incoming queuing messages (goby_queue)");
 
     goby::acomms::DCCLFieldCodecBase::register_wire_value_hook(
-        queue_field.number(),
+        goby::field.number(),
         boost::bind(&QueueManager::set_latest_metadata, this, _1, _2, _3));
 }
 
@@ -516,10 +516,11 @@ void goby::acomms::QueueManager::set_latest_metadata(const boost::any& field_val
 {
     const google::protobuf::Message* options_msg = boost::any_cast<const google::protobuf::Message*>(extension_value);
                 
-    QueueFieldOptions field_options;
+    GobyFieldOptions field_options;
     field_options.CopyFrom(*options_msg);
-
-    if(field_options.is_dest())
+    
+    
+    if(field_options.queue().is_dest())
     {
         int dest = BROADCAST_ID;
         if(wire_value.type() == typeid(int32))
@@ -538,7 +539,7 @@ void goby::acomms::QueueManager::set_latest_metadata(const boost::any& field_val
                 
         latest_data_msg_.mutable_base()->set_dest(dest);
     }
-    else if(field_options.is_src())
+    else if(field_options.queue().is_src())
     {
         int src = BROADCAST_ID;
         if(wire_value.type() == typeid(int32))
@@ -558,7 +559,7 @@ void goby::acomms::QueueManager::set_latest_metadata(const boost::any& field_val
         latest_data_msg_.mutable_base()->set_src(src);
 
     }
-    else if(field_options.is_time())
+    else if(field_options.queue().is_time())
     {
 
         if(field_value.type() != typeid(std::string))

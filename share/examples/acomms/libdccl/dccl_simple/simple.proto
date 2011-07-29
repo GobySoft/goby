@@ -1,4 +1,6 @@
 import "goby/protobuf/dccl_option_extensions.proto";
+import "goby/protobuf/option_extensions.proto";
+import "google/protobuf/descriptor.proto";
 
 message Simple
 {

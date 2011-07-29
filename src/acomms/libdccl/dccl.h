@@ -203,7 +203,7 @@ namespace goby
 
             /// \brief Provides the DCCL ID given a DCCL type.
             unsigned id(const google::protobuf::Descriptor* desc) {
-                return desc->options().GetExtension(dccl_msg).id();
+                return desc->options().GetExtension(goby::msg).dccl().id();
             }
             
             /// \brief Returns the encoded size of multiple messages at once (sum of all sizes). You must use this method (instead of N calls to size, where N is msgs.size()) to get the size of messages encoded using encode_repeated as repeated encoding may be more efficient (in terms of the encoded message size) than N calls of encode

@@ -42,7 +42,7 @@ goby::acomms::MACManager::MACManager(std::ostream* log /* =0 */)
       timer_(io_),
       timer_is_running_(false),
       current_slot_(slot_order_.begin()),
-      startup_done_(false)
+      started_up_(false)
 { }
 
 goby::acomms::MACManager::~MACManager()
@@ -71,7 +71,7 @@ void goby::acomms::MACManager::stop_timer()
 
 void goby::acomms::MACManager::startup(const protobuf::MACConfig& cfg)
 {
-    if(startup_done_)
+    if(started_up_)
     {
         if(log_) *log_ << warn << group("mac") << "startup() called but MAC is already started." << std::endl;
         return;
@@ -80,6 +80,7 @@ void goby::acomms::MACManager::startup(const protobuf::MACConfig& cfg)
     // create a copy for us
     cfg_ = cfg;
     
+    started_up_ = true;
 
     // in case someone added slots before we started
     process_cycle_size_change();
@@ -140,7 +141,6 @@ void goby::acomms::MACManager::startup(const protobuf::MACConfig& cfg)
                  << next_slot_t_ << std::endl;
     
 
-    startup_done_ = true;
 }
 
 void goby::acomms::MACManager::shutdown()
@@ -150,7 +150,7 @@ void goby::acomms::MACManager::shutdown()
     slot_order_.clear();
     id2slot_.clear();
     current_slot_ = slot_order_.begin();
-    startup_done_ = false;
+    started_up_ = false;
 }
 
 
@@ -400,7 +400,8 @@ void goby::acomms::MACManager::process_cycle_size_change()
             increment_slot();
     }    
     
-    restart_timer();
+    if(started_up_)
+        restart_timer();
 }
 
 

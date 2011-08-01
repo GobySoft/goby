@@ -64,11 +64,7 @@ namespace goby
             /// \brief Virtual initiate_transmission method. Typically connected to MACManager::signal_initiate_transmission() using bind().
             ///
             /// \param m ModemMsgBase (defined in modem_message.proto) containing the details of the transmission to be started. This does *not* contain data, which will be requested when the driver calls the data request signal (ModemDriverBase::signal_data_request)
-            virtual void handle_initiate_transmission(protobuf::ModemMsgBase* m) = 0;            
-            /// \brief Virtual initiate_mini_transmission method.
-            ///
-            /// \param m ModemMiniTransmission (defined in modem_message.proto) containing the details of the transmission to be started.
-            virtual void handle_initiate_mini_transmission(protobuf::ModemMiniTransmission* m) = 0;            
+            virtual void handle_initiate_transmission(protobuf::ModemDataInit* m) = 0;            
             /// \brief Virtual initiate_ranging method.  Typically connected to MACManager::signal_initiate_ranging() using bind().
             ///
             /// \param m ModemRangingRequest (defined in modem_message.proto) containing the details of the ranging request to be started: source, destination, type, etc.
@@ -84,12 +80,6 @@ namespace goby
             /// You should connect one or more slots (a function or member function) to this signal to receive incoming messages. Use the goby::acomms::connect family of functions to do this. This signal will only be called during a call to do_work. ModemDataTransmission is defined in modem_message.proto.
             boost::signal<void (const protobuf::ModemDataTransmission& message)>
                 signal_receive;
-
-            /// \brief Called when a binary mini packet transmission is received from the modem
-            ///
-            /// You should connect one or more slots (a function or member function) to this signal to receive incoming messages. Use the goby::acomms::connect family of functions to do this. This signal will only be called during a call to do_work. ModemMiniTransmission is defined in modem_message.proto.
-            boost::signal<void (const protobuf::ModemMiniTransmission& message)>
-                signal_mini_receive;
 
             /// \brief Called when the modem or modem driver needs data to send. msg_request contains details on the data request, and the returned data should be stored in msg_data.
             ///

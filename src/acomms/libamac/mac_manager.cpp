@@ -211,11 +211,13 @@ void goby::acomms::MACManager::begin_slot(const boost::system::error_code& e)
         switch(s.type())
         {
             case protobuf::SLOT_DATA:
+            case protobuf::SLOT_MINI:
             {
-                protobuf::ModemMsgBase m;
-                m.set_src(s.src());
-                m.set_dest(s.dest());
-                m.set_rate(s.rate());
+                protobuf::ModemDataInit m;
+                m.mutable_base()->set_src(s.src());
+                m.mutable_base()->set_dest(s.dest());
+                m.mutable_base()->set_rate(s.rate());
+                m.mutable_slot()->CopyFrom(s);
                 signal_initiate_transmission(&m);
                 break;
             }
@@ -235,15 +237,7 @@ void goby::acomms::MACManager::begin_slot(const boost::system::error_code& e)
                 signal_initiate_ranging(&m);
                 break;
             }   
-            case protobuf::SLOT_MINI:
-            {
-                protobuf::ModemMiniTransmission m;
-                m.mutable_base()->set_src(s.src());
-                m.mutable_base()->set_dest(s.dest());
-     
-                signal_initiate_mini_transmission(&m);
-                break;
-            }         
+
             default:
                 break;
         }

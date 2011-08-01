@@ -448,11 +448,11 @@ void goby::acomms::MMDriver::handle_initiate_transmission(protobuf::ModemDataIni
                 protobuf::ModemDataTransmission& data_msg = it->second;
                 data_msg.mutable_data()->resize(MINI_PACKET_SIZE);
             
-                if((data_msg.data()[1] & 0x1F) != data_msg.data()[1])
+                if((data_msg.data()[0] & 0x1F) != data_msg.data()[0])
                 {
                     if(log_)
                         *log_ << group("modem_out") << warn << "MINI transmission can only be 13 bits; top three bits passed were *not* zeros, so discarding. You should AND your two bytes with 0x1FFF to get 13 bits" << std::endl;
-                    data_msg.mutable_data()->at(1) &= 0x1F;
+                    data_msg.mutable_data()->at(0) &= 0x1F;
                 }
 
                 //$CCMUC,SRC,DEST,HHHH*CS
@@ -460,7 +460,9 @@ void goby::acomms::MMDriver::handle_initiate_transmission(protobuf::ModemDataIni
                 nmea.push_back(init_msg->base().src()); // ADR1
                 nmea.push_back(init_msg->base().dest()); // ADR2
                 nmea.push_back(goby::util::hex_encode(data_msg.data())); //HHHH    
-            
+                cached_data_msgs_.erase(it);
+
+                
                 append_to_write_queue(nmea, init_msg->mutable_base());
             }
             else

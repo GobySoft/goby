@@ -395,7 +395,7 @@ void goby::acomms::MMDriver::do_work()
 
 void goby::acomms::MMDriver::handle_initiate_transmission(protobuf::ModemDataInit* init_msg)
 {
-    switch(init_msg->slot().type())
+    switch(init_msg->GetExtension(MicroModem::init_slot).type())
     {
         case protobuf::SLOT_DATA:
         {
@@ -436,44 +436,46 @@ void goby::acomms::MMDriver::handle_initiate_transmission(protobuf::ModemDataIni
         
         case protobuf::SLOT_MINI:
         {
-            static protobuf::ModemDataRequest request_msg;
-            request_msg.Clear();
-            // make a data request for the two bytes
-            request_msg.mutable_base()->set_time(as<std::string>(goby_time()));
-            request_msg.mutable_base()->set_src(init_msg->base().src());
-            request_msg.mutable_base()->set_dest(init_msg->base().dest());
-            request_msg.set_max_bytes(MINI_PACKET_SIZE);
+            const int MINI_NUM_FRAMES = 1;
+            init_msg->set_num_frames(MINI_NUM_FRAMES);
+            cache_outgoing_data(*init_msg);
 
-            static protobuf::ModemDataTransmission data_msg;
-            data_msg.Clear();
+            std::map<unsigned, protobuf::ModemDataTransmission>::iterator it =
+                cached_data_msgs_.find(0);
+    
+            if(it != cached_data_msgs_.end())
+            {
+                protobuf::ModemDataTransmission& data_msg = it->second;
+                data_msg.mutable_data()->resize(MINI_PACKET_SIZE);
             
-            signal_data_request(request_msg, &data_msg);
+                if((data_msg.data()[1] & 0x1F) != data_msg.data()[1])
+                {
+                    if(log_)
+                        *log_ << group("modem_out") << warn << "MINI transmission can only be 13 bits; top three bits passed were *not* zeros, so discarding. You should AND your two bytes with 0x1FFF to get 13 bits" << std::endl;
+                    data_msg.mutable_data()->at(1) &= 0x1F;
+                }
 
-            if(!validate_data(request_msg, &data_msg))
-                break;
-
-            data_msg.mutable_data()->resize(MINI_PACKET_SIZE);
+                //$CCMUC,SRC,DEST,HHHH*CS
+                NMEASentence nmea("$CCMUC", NMEASentence::IGNORE);
+                nmea.push_back(init_msg->base().src()); // ADR1
+                nmea.push_back(init_msg->base().dest()); // ADR2
+                nmea.push_back(goby::util::hex_encode(data_msg.data())); //HHHH    
             
-            if((data_msg.data()[1] & 0x1F) != data_msg.data()[1])
+                append_to_write_queue(nmea, init_msg->mutable_base());
+            }
+            else
             {
                 if(log_)
-                    *log_ << group("modem_out") << warn << "MINI transmission can only be 13 bits; top three bits passed were *not* zeros, so discarding. You should AND your two bytes with 0x1FFF to get 13 bits" << std::endl;
-                data_msg.mutable_data()->at(1) &= 0x1F;
+                    *log_ << group("modem_out") << warn << "MINI transmission failed: no data provided" << std::endl;
+                break;
             }
 
-            //$CCMUC,SRC,DEST,HHHH*CS
-            NMEASentence nmea("$CCMUC", NMEASentence::IGNORE);
-            nmea.push_back(init_msg->base().src()); // ADR1
-            nmea.push_back(init_msg->base().dest()); // ADR2
-            nmea.push_back(goby::util::hex_encode(data_msg.data())); //HHHH    
-            
-            append_to_write_queue(nmea, init_msg->mutable_base());
         }
         break;
 
         default:
             if(log_)
-                *log_ << group("modem_out") << warn << "Not initiating transmission because we were given an invalid SLOT type:" << init_msg->slot() << std::endl;
+                *log_ << group("modem_out") << warn << "Not initiating transmission because we were given an invalid SLOT type:" << init_msg->GetExtension(MicroModem::init_slot) << std::endl;
             break;
             
     }    
@@ -1009,9 +1011,24 @@ void goby::acomms::MMDriver::cache_outgoing_data(const protobuf::ModemDataInit& 
         request_msg.mutable_base()->set_dest(init_msg.base().dest());
     
         // nmea_in[4] == ack
-        request_msg.set_max_bytes(PACKET_SIZE[init_msg.base().rate()]);
+
+        protobuf::SlotType slot_type = init_msg.GetExtension(MicroModem::init_slot).type();
+        if(slot_type == protobuf::SLOT_DATA)
+            request_msg.set_max_bytes(PACKET_SIZE[init_msg.base().rate()]);
+        else if(slot_type == protobuf::SLOT_MINI)
+            request_msg.set_max_bytes(MINI_PACKET_SIZE);
+
+        request_msg.MutableExtension(MicroModem::request_slot)->CopyFrom(init_msg.GetExtension(MicroModem::init_slot));
+
+        // first copy over any frames provided 
+        for(unsigned i = 0, n = init_msg.frame_size(); i < n; ++i)
+        {
+            cached_data_msgs_[i] = init_msg.frame(i);
+        }
+        
+        // now signal data request for the rest
         static protobuf::ModemDataTransmission data_msg;
-        for(unsigned i = 0, n = init_msg.num_frames(); i < n; ++i)
+        for(unsigned i = init_msg.frame_size(), n = init_msg.num_frames(); i < n; ++i)
         {
             request_msg.set_frame(i);
             data_msg.Clear();

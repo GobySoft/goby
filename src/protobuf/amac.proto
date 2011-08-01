@@ -20,7 +20,10 @@ message Slot
 
   // "2011-Jan-22 12:08:06.887950"
   // which is produced by operator<< for boost::posix_time::ptime
-  optional string last_heard_time = 6 [(description)="used internally, no need to configure manually"]; 
+  optional string last_heard_time = 6 [(description)="used internally, no need to configure manually"];
+
+  optional uint32 unique_id = 7;
+  
 }
 
 enum MACType {

@@ -60,6 +60,10 @@ namespace goby
             /// \brief Initiate ranging ("ping") to the modem. 
             void handle_initiate_ranging(protobuf::ModemRangingRequest* m);
 
+            // keeps track of clock mode, necessary for synchronous navigation
+            int clk_mode() { return clk_mode_; }
+
+            
           private:
         
             // startup

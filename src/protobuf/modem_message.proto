@@ -1,11 +1,5 @@
 import "goby/protobuf/queue.proto";
 
-// TODO(tes) rework ModemInitiateTransmission to not use AMAC slot
-import "goby/protobuf/amac.proto"; // temporary for ModemInitiateTransmission
-
- 
-// TODO(tes) consider using extensions to handle different modem characteristics
-
 package goby.acomms.protobuf;
 
 // shared for all messages
@@ -27,8 +21,8 @@ message ModemDataInit
 {
   optional ModemMsgBase base = 1;
   optional uint32 num_frames = 2 [default = 1]; // set by the modem driver for the given rate
-  optional Slot slot = 3; // from amac: TODO(tes): rework to make generic
-
+  repeated ModemDataTransmission frame = 3; // if omitted, you will be queried for data on signal_data_request. You can also set some frames here and the rest will be filled by signalling a data request
+  
   // 1000-1099 taken by MMDriver
   extensions 1000 to max;
 }
@@ -59,7 +53,10 @@ message ModemDataRequest
   optional ModemMsgBase base = 1;
   optional uint32 max_bytes = 2; // omitted means no maximum
   optional uint32 frame = 3 [default = 0]; 
- }
+
+  // 1000-1099 taken by MMDriver
+  extensions 1000 to max;
+}
 
 enum ClockMode
 {

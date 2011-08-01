@@ -1,0 +1,22 @@
+import "goby/protobuf/modem_message.proto";
+
+package perls.protobuf;
+
+// mini-packet
+// supports up to 7 types, for now only have 3
+enum MiniType
+{
+    MINI_USER  = 1;
+    MINI_OWTT  = 2;
+    MINI_ABORT = 3;
+}
+
+
+message ModemMiniTransmission
+{
+  optional goby.acomms.protobuf.ModemMsgBase base = 1;
+  optional MiniType type = 2 [default = MINI_USER]; //default to normal message
+  optional goby.acomms.protobuf.ClockMode clk_mode = 3 [default = UNKNOWN];
+  optional int32 time_of_depart = 4 [default = -1];
+  optional uint32 data = 5; // mini packets only allow 13bits
+}

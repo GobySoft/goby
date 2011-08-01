@@ -217,7 +217,10 @@ void goby::acomms::MACManager::begin_slot(const boost::system::error_code& e)
                 m.mutable_base()->set_src(s.src());
                 m.mutable_base()->set_dest(s.dest());
                 m.mutable_base()->set_rate(s.rate());
-                m.mutable_slot()->CopyFrom(s);
+
+                // Micro-Modem extension wants the slot; make this more general later
+                m.MutableExtension(MicroModem::init_slot)->CopyFrom(s);
+
                 signal_initiate_transmission(&m);
                 break;
             }

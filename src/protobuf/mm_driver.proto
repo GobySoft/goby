@@ -1,6 +1,10 @@
 import "goby/protobuf/driver_base.proto";
 import "goby/protobuf/modem_message.proto";
 
+
+// TODO(tes) rework ModemInitiateTransmission to not use AMAC slot
+import "goby/protobuf/amac.proto"; // temporary for ModemInitiateTransmission
+
 message MicroModemConfig
 {
   extend goby.acomms.protobuf.DriverConfig 
@@ -32,5 +36,16 @@ message MicroModem
   {
     optional PacketType packet_type = 1000;
   }
+
+  extend goby.acomms.protobuf.ModemDataInit
+  {
+    optional goby.acomms.protobuf.Slot init_slot = 1000; // from amac: TODO(tes): rework to make generic
+  }
+
+  extend goby.acomms.protobuf.ModemDataRequest
+  {
+    optional goby.acomms.protobuf.Slot request_slot = 1000; // from amac: TODO(tes): rework to make generic
+  }
+  
 }
 

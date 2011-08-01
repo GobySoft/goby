@@ -393,106 +393,91 @@ void goby::acomms::MMDriver::do_work()
 // HANDLE MAC SIGNALS
 //
 
-void goby::acomms::MMDriver::handle_initiate_transmission(protobuf::ModemMsgBase* base_msg)
+void goby::acomms::MMDriver::handle_initiate_transmission(protobuf::ModemDataInit* init_msg)
 {
-    // we initiated this cycle so don't grab data *again* on the CACYC (in cyc()) 
-    local_cccyc_ = true;
-    protobuf::ModemDataInit init_msg;
-    init_msg.mutable_base()->CopyFrom(*base_msg);
-    init_msg.set_num_frames(PACKET_FRAME_COUNT[base_msg->rate()]);
-    cache_outgoing_data(init_msg);
-    
-    // don't start a local cycle if we have no data
-    const bool is_local_cycle = init_msg.base().src() == driver_cfg_.modem_id();
-    if(!(is_local_cycle && cached_data_msgs_.empty()))
+    switch(init_msg->slot().type())
     {
-        //$CCCYC,CMD,ADR1,ADR2,Packet Type,ACK,Npkt*CS
-        NMEASentence nmea("$CCCYC", NMEASentence::IGNORE);
-        nmea.push_back(0); // CMD: deprecated field
-        nmea.push_back(init_msg.base().src()); // ADR1
-        
-        
-        nmea.push_back(is_local_cycle
-                       ? cached_data_msgs_.begin()->second.base().dest()
-                       : init_msg.base().dest()); // ADR2        
-        
-        nmea.push_back(init_msg.base().rate()); // Packet Type (transmission rate)
-        nmea.push_back(is_local_cycle
-                       ? static_cast<int>(cached_data_msgs_.begin()->second.ack_requested())
-                       : 1); // ACK: deprecated field, but still dictates the value provided by CADRQ
-        nmea.push_back(init_msg.num_frames()); // number of frames we want
-
-        append_to_write_queue(nmea, base_msg);
-    }
-    else
-    {
-        if(log_)
-            *log_ << group("modem_out") << "Not initiating transmission because we have no data to send" << std::endl;
-    }
-    
-}
-
-void
-goby::acomms::MMDriver::handle_initiate_mini_transmission(protobuf::ModemMiniTransmission* mini_msg)
-{
-    /*********************************************
-     mini packet has range 0x0000 - 0x1FFF (13 bits)
-     we define the packet header (3bits) as:
-        | msg_type (3bits) |
-
-     so that a typical packet is of the form
-        | header (3bits) | user (10bits) |
-
-     furthermore, if msg_type = MINI_OWTT we steal 6 more bits for TOD;
-        | header (3bits) | clock mode (2bits) | tod (4bits) | user (4bits) |
-    *********************************************/
- 
-    // add message header bits 
-    if (!mini_msg->has_clk_mode())
-        mini_msg->set_clk_mode((protobuf::ClockMode) clk_mode_);
-
-    int type = mini_msg->type();
-    int clk_mode = mini_msg->clk_mode();
-
-    // get top of second for owtt packet -- we add one because the packet will
-    // not be sent until the next second (section 2.3, Sync Navigation with
-    // MM, Revision D)
-    boost::posix_time::ptime p = goby_time();
-    int tod = int(p.time_of_day().seconds()+1) % 10;
-
-    // pack mini packet with header and user information
-    int packet = 0, user = 0;
-    switch (type) 
-    {
-        case protobuf::MINI_OWTT:
+        case protobuf::SLOT_DATA:
         {
-            // make sure user data is only 4bits
-            user = mini_msg->data() & 0x0F;
-            packet = (type<<10) + (clk_mode<<8) + (tod<<4) + user;
-            break;
+            // we initiated this cycle so don't grab data *again* on the CACYC (in cyc()) 
+            local_cccyc_ = true;
+            init_msg->set_num_frames(PACKET_FRAME_COUNT[init_msg->base().rate()]);
+            cache_outgoing_data(*init_msg);
+    
+            // don't start a local cycle if we have no data
+            const bool is_local_cycle = init_msg->base().src() == driver_cfg_.modem_id();
+            if(!(is_local_cycle && cached_data_msgs_.empty()))
+            {
+                //$CCCYC,CMD,ADR1,ADR2,Packet Type,ACK,Npkt*CS
+                NMEASentence nmea("$CCCYC", NMEASentence::IGNORE);
+                nmea.push_back(0); // CMD: deprecated field
+                nmea.push_back(init_msg->base().src()); // ADR1
+        
+        
+                nmea.push_back(is_local_cycle
+                               ? cached_data_msgs_.begin()->second.base().dest()
+                               : init_msg->base().dest()); // ADR2        
+        
+                nmea.push_back(init_msg->base().rate()); // Packet Type (transmission rate)
+                nmea.push_back(is_local_cycle
+                               ? static_cast<int>(cached_data_msgs_.begin()->second.ack_requested())
+                               : 1); // ACK: deprecated field, but still dictates the value provided by CADRQ
+                nmea.push_back(init_msg->num_frames()); // number of frames we want
+
+                append_to_write_queue(nmea, init_msg->mutable_base());
+            }
+            else
+            {
+                if(log_)
+                    *log_ << group("modem_out") << "Not initiating transmission because we have no data to send" << std::endl;
+            }
+       }
+        break;
+        
+        case protobuf::SLOT_MINI:
+        {
+            static protobuf::ModemDataRequest request_msg;
+            request_msg.Clear();
+            // make a data request for the two bytes
+            request_msg.mutable_base()->set_time(as<std::string>(goby_time()));
+            request_msg.mutable_base()->set_src(init_msg->base().src());
+            request_msg.mutable_base()->set_dest(init_msg->base().dest());
+            request_msg.set_max_bytes(MINI_PACKET_SIZE);
+
+            static protobuf::ModemDataTransmission data_msg;
+            data_msg.Clear();
+            
+            signal_data_request(request_msg, &data_msg);
+
+            if(!validate_data(request_msg, &data_msg))
+                break;
+
+            data_msg.mutable_data()->resize(MINI_PACKET_SIZE);
+            
+            if((data_msg.data()[1] & 0x1F) != data_msg.data()[1])
+            {
+                if(log_)
+                    *log_ << group("modem_out") << warn << "MINI transmission can only be 13 bits; top three bits passed were *not* zeros, so discarding. You should AND your two bytes with 0x1FFF to get 13 bits" << std::endl;
+                data_msg.mutable_data()->at(1) &= 0x1F;
+            }
+
+            //$CCMUC,SRC,DEST,HHHH*CS
+            NMEASentence nmea("$CCMUC", NMEASentence::IGNORE);
+            nmea.push_back(init_msg->base().src()); // ADR1
+            nmea.push_back(init_msg->base().dest()); // ADR2
+            nmea.push_back(goby::util::hex_encode(data_msg.data())); //HHHH    
+            
+            append_to_write_queue(nmea, init_msg->mutable_base());
         }
-        case protobuf::MINI_ABORT:
-        case protobuf::MINI_USER:
+        break;
+
         default:
-        {
-            // make sure user data is only 10bits
-            user   = mini_msg->data() & 0x3FF;
-            packet = (type<<10) + user;
-        }
-    }
-
-    char packet_bytes[16];
-    snprintf (packet_bytes, sizeof packet_bytes, "%04x", packet);
-
-    //$CCMUC,SRC,DEST,HHHH*CS
-    NMEASentence nmea("$CCMUC", NMEASentence::IGNORE);
-    nmea.push_back(mini_msg->base().src()); // ADR1
-    nmea.push_back(mini_msg->base().dest()); // ADR2
-    nmea.push_back(packet_bytes); //HHHH    
-
-    append_to_write_queue(nmea, mini_msg->mutable_base());
+            if(log_)
+                *log_ << group("modem_out") << warn << "Not initiating transmission because we were given an invalid SLOT type:" << init_msg->slot() << std::endl;
+            break;
+            
+    }    
 }
-
 
 void goby::acomms::MMDriver::handle_initiate_ranging(protobuf::ModemRangingRequest* request_msg)
 {
@@ -500,7 +485,7 @@ void goby::acomms::MMDriver::handle_initiate_ranging(protobuf::ModemRangingReque
     {
         case protobuf::MODEM_ONE_WAY_SYNCHRONOUS:
         {
-            if(log_) *log_ << warn << group("modem_out") << "Cannot initiate ONE_WAY_SYNCHRONOUS ping manually. You must enable NVRAM cfg \"TOA,1\" and one-way synchronous messages will be reported on all relevant acoustic transactions" << std::endl;
+            if(log_) *log_ << warn << group("modem_out") << "Cannot initiate ONE_WAY_SYNCHRONOUS ping manually. You must enable NVRAM cfg \"TOA,1\" and \"SNV,1\" and one-way synchronous messages will be reported on all relevant acoustic transactions" << std::endl;
             break;
         }
         
@@ -665,7 +650,6 @@ void goby::acomms::MMDriver::process_receive(const NMEASentence& nmea)
     static protobuf::ModemDataTransmission data_msg;
     static protobuf::ModemDataAck ack_msg;
     static protobuf::ModemRangingReply ranging_msg;
-    static protobuf::ModemMiniTransmission mini_msg;
     
     base_msg.Clear();
     // look at the sentence id (last three characters of the NMEA 0183 talker)
@@ -700,18 +684,17 @@ void goby::acomms::MMDriver::process_receive(const NMEASentence& nmea)
             data_msg.Clear();
             rxd(nmea, &data_msg);
             this_base_msg = data_msg.mutable_base();
-            flush_toa(*this_base_msg, &ranging_msg, -1);
+            flush_toa(*this_base_msg, &ranging_msg);
             break;
         }
 
         
         case MUA:  // mini-packet receive
         {
-            mini_msg.Clear();
-            mua(nmea, &mini_msg);
-            ranging_msg.set_sender_clk_mode(mini_msg.clk_mode());
-            this_base_msg = mini_msg.mutable_base(); 
-            flush_toa(*this_base_msg, &ranging_msg, mini_msg.time_of_depart());
+            data_msg.Clear();
+            mua(nmea, &data_msg);
+            this_base_msg = data_msg.mutable_base(); 
+            flush_toa(*this_base_msg, &ranging_msg);
             break;
         }
  
@@ -722,7 +705,7 @@ void goby::acomms::MMDriver::process_receive(const NMEASentence& nmea)
             ack_msg.Clear();
             ack(nmea, &ack_msg);
             this_base_msg = ack_msg.mutable_base();
-            flush_toa(*this_base_msg, &ranging_msg, -1);
+            flush_toa(*this_base_msg, &ranging_msg);
             break;
         }
 
@@ -852,61 +835,23 @@ void goby::acomms::MMDriver::rxd(const NMEASentence& nmea, protobuf::ModemDataTr
     // WHOI counts from 1, we count from 0
     m->set_frame(as<uint32>(nmea[4])-1);
     m->set_data(hex_decode(nmea[5]));
-
+    
+    m->SetExtension(MicroModem::packet_type, MicroModem::PACKET_DATA);
+    
     signal_receive(*m);
 }
 
 
-void goby::acomms::MMDriver::mua(const NMEASentence& nmea, protobuf::ModemMiniTransmission* m)
+void goby::acomms::MMDriver::mua(const NMEASentence& nmea, protobuf::ModemDataTransmission* m)
 {
-    /*********************************************
-     mini packet has range 0x0000 - 0x1FFF (13 bits)
-     we define the packet header (3bits) as:
-        | msg_type (3bits) |
-
-     so that a typical packet is of the form
-        | header (3bits) | user (10bits) |
-
-     furthermore, if msg_type = MINI_OWTT we steal 6 more bits for TOD;
-        | header (3bits) | clock mode (2bits) | tod (4bits) | user (4bits) |
-    *********************************************/
- 
     m->mutable_base()->set_time(as<std::string>(goby_time()));
     m->mutable_base()->set_src(as<uint32>(nmea[1]));
     m->mutable_base()->set_dest(as<uint32>(nmea[2]));
+    m->set_data(goby::util::hex_decode(nmea[3]));
 
-    // get user and header bits
-    int data; 
-    sscanf ((char*) nmea[3].c_str(), "%04x", &data);
-    int decode_user   = data & 0x3FF;
-    int decode_type   = data>>10; 
-
-    if (protobuf::MiniType_IsValid (decode_type))
-        m->set_type((protobuf::MiniType) decode_type);
-
-    // decode user data -- need to do something with time of launch
-    int user = 0;
-    switch (decode_type) 
-    {
-        case protobuf::MINI_OWTT:
-        {
-            user = decode_user & 0x0F;
-            m->set_time_of_depart((decode_user>>4) & 0x0F);
-            int decode_clk_mode = (decode_user>>8) & 0x03; 
-            if (protobuf::ClockMode_IsValid (decode_clk_mode))
-                m->set_clk_mode((protobuf::ClockMode) decode_clk_mode);
-            break;
-        }
-        case protobuf::MINI_ABORT:
-        case protobuf::MINI_USER:
-        default:
-        {
-            user = decode_user;
-        }
-    }
-    m->set_data(user);
-
-    signal_mini_receive(*m);
+    m->SetExtension(MicroModem::packet_type, MicroModem::PACKET_MINI);
+    
+    signal_receive(*m);
 }
 
 void goby::acomms::MMDriver::cfg(const NMEASentence& nmea, protobuf::ModemMsgBase* base_msg)
@@ -1125,11 +1070,12 @@ void goby::acomms::MMDriver::toa(const NMEASentence& nmea, protobuf::ModemRangin
        clk_mode_ == protobuf::SYNC_TO_PPS_AND_CCCLK_BAD)
     {
         boost::posix_time::ptime toa = nmea_time2ptime(nmea[1]);
-        int received_sec = int(toa.time_of_day().seconds()) % 10;
         double frac_sec = double(toa.time_of_day().fractional_seconds())/toa.time_of_day().ticks_per_second();
-        // record toa seconds, flush_toa determines owtt
-        m->set_received_time (double(received_sec) + frac_sec);
 
+        m->add_one_way_travel_time(frac_sec);
+
+        m->set_ambiguity(protobuf::ModemRangingReply::OWTT_SECOND_AMBIGUOUS);
+        
         m->set_receiver_clk_mode((protobuf::ClockMode) clk_mode_);
         m->set_type(protobuf::MODEM_ONE_WAY_SYNCHRONOUS);
         m->mutable_base()->set_time(as<std::string>(toa));
@@ -1137,25 +1083,12 @@ void goby::acomms::MMDriver::toa(const NMEASentence& nmea, protobuf::ModemRangin
     }
 }
 
-void goby::acomms::MMDriver::flush_toa(const protobuf::ModemMsgBase& base_msg, protobuf::ModemRangingReply* ranging_msg, int time_of_depart)
+void goby::acomms::MMDriver::flush_toa(const protobuf::ModemMsgBase& base_msg, protobuf::ModemRangingReply* ranging_msg)
 {
     if(ranging_msg->type() == protobuf::MODEM_ONE_WAY_SYNCHRONOUS)
     {
         ranging_msg->mutable_base()->set_dest(driver_cfg_.modem_id());
         ranging_msg->mutable_base()->set_src(base_msg.src());
-
-        // compute owtt -- send fractional part of sec if we have no
-        // information about transmitting tod
-        double time_of_arrive = ranging_msg->received_time();
-        if (time_of_depart < 0)
-            time_of_depart = int ( floor (time_of_arrive) );
-
-        if (time_of_arrive < double(time_of_depart))
-            time_of_arrive += 10;
- 
-        double owtt = time_of_arrive - double(time_of_depart); 
-        ranging_msg->add_one_way_travel_time(owtt);
-
         signal_range_reply(*ranging_msg);
         ranging_msg->Clear();
     }

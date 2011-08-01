@@ -55,10 +55,7 @@ namespace goby
             void do_work();
             
             /// \brief Initiate a transmission to the modem.
-            void handle_initiate_transmission(protobuf::ModemMsgBase* m);
-
-            /// \brief Initiate a mini-packet transmission to the modem
-            void handle_initiate_mini_transmission(protobuf::ModemMiniTransmission* m);
+            void handle_initiate_transmission(protobuf::ModemDataInit* m);
 
             /// \brief Initiate ranging ("ping") to the modem. 
             void handle_initiate_ranging(protobuf::ModemRangingRequest* m);
@@ -92,7 +89,7 @@ namespace goby
             void ack(const util::NMEASentence& nmea, protobuf::ModemDataAck* ack_msg); // $CAACK
         
             // mini packet
-            void mua(const util::NMEASentence& nmea, protobuf::ModemMiniTransmission* data_msg); // $CAMUA
+            void mua(const util::NMEASentence& nmea, protobuf::ModemDataTransmission* data_msg); // $CAMUA
 
             // ranging (pings)
             void mpr(const util::NMEASentence& nmea, protobuf::ModemRangingReply* ranging_msg); // $CAMPR
@@ -101,7 +98,7 @@ namespace goby
             // send toa once we actually know who the message is from
             // if time_of_depart is negative, flush_toa returns the fractional
             // part of the second 
-            void flush_toa(const protobuf::ModemMsgBase& base_msg, protobuf::ModemRangingReply* ranging_msg, int time_of_depart);
+            void flush_toa(const protobuf::ModemMsgBase& base_msg, protobuf::ModemRangingReply* ranging_msg);
 
             
             // local modem
@@ -151,6 +148,9 @@ namespace goby
             // size of packet (in bytes) for a given modem rate
             static unsigned PACKET_SIZE [];
 
+            // in bytes
+            enum { MINI_PACKET_SIZE = 2 };
+            
 
             // all startup configuration (DriverConfig defined in driver_base.proto and extended in mm_driver.proto)
             protobuf::DriverConfig driver_cfg_;

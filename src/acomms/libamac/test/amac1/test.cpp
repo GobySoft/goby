@@ -29,10 +29,10 @@ int me = 1;
 
 using goby::acomms::operator<<;
 
-void initiate_transmission(goby::acomms::protobuf::ModemMsgBase* msg)
+void initiate_transmission(goby::acomms::protobuf::ModemDataInit* msg)
 {
     std::cout << "We were told to start transmission of " << *msg << std::endl;
-    assert(msg->src() == me);
+    assert(msg->base().src() == me);
     double cycles_since_day = (goby::util::goby_time().time_of_day().total_milliseconds() / 1000.0) / mac.cycle_duration();
     
     std::cout << std::setprecision(15) << cycles_since_day << std::endl;

@@ -1,4 +1,5 @@
 import "goby/protobuf/driver_base.proto";
+import "goby/protobuf/modem_message.proto";
 
 message MicroModemConfig
 {
@@ -17,6 +18,19 @@ message MicroModemConfig
     // buoy which has a non-standard sentence structure (#M / !M prefixes)
     // *do not set for the normal WHOI Micro-Modem*
     optional uint32 hydroid_gateway_id = 1002 [default = 0]; 
+  }
+}
+
+message MicroModem
+{
+  enum PacketType
+  {
+    PACKET_DATA = 1; // CARXD
+    PACKET_MINI = 2; // CAMUA
+  }
+  extend goby.acomms.protobuf.ModemDataTransmission
+  {
+    optional PacketType packet_type = 1000;
   }
 }
 

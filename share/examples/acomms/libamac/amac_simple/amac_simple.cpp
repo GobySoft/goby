@@ -19,7 +19,7 @@
 
 using goby::acomms::operator<<;
 
-void init_transmission(goby::acomms::protobuf::ModemMsgBase* base_msg);
+void init_transmission(goby::acomms::protobuf::ModemDataInit* base_msg);
 
 int main(int argc, char* argv[])
 {
@@ -82,7 +82,7 @@ int main(int argc, char* argv[])
     return 0;
 }
 
-void init_transmission(goby::acomms::protobuf::ModemMsgBase* init_message)
+void init_transmission(goby::acomms::protobuf::ModemDataInit* init_message)
 {
     std::cout << "starting transmission with these values: " << *init_message << std::endl;
 }

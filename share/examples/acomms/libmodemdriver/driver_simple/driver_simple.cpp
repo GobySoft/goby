@@ -37,8 +37,7 @@
 using goby::acomms::operator<<;
 
 
-void handle_data_request(const goby::acomms::protobuf::ModemDataRequest& request_msg,
-                         goby::acomms::protobuf::ModemDataTransmission* data_msg);
+void handle_data_request(const goby::acomms::protobuf::ModemDataRequest& request_msg, goby::acomms::protobuf::ModemDataTransmission* data_msg);
 void handle_data_receive(const goby::acomms::protobuf::ModemDataTransmission& data_msg);
 
 int main(int argc, char* argv[])

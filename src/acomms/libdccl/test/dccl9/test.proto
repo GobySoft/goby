@@ -1,0 +1,28 @@
+import "goby/protobuf/dccl_option_extensions.proto";
+
+message MiniUser
+{
+  option (dccl.id) = 1000001;
+  option (dccl.max_bytes) = 2;
+  
+  required uint32 user = 1 [(dccl.min)=0, (dccl.max)=1023, (dccl.in_head)=true];
+}
+
+message MiniOWTT
+{
+  option (dccl.id) = 1000002;
+  option (dccl.max_bytes) = 2;
+  
+  required uint32 clock_mode = 1 [(dccl.min)=0, (dccl.max)=3, (dccl.in_head)=true];
+  required uint32 tod = 2 [(dccl.min)=0, (dccl.max)=15, (dccl.in_head)=true];
+  required uint32 user = 3 [(dccl.min)=0, (dccl.max)=15, (dccl.in_head)=true];
+}
+
+message MiniAbort
+{
+  option (dccl.id) = 1000003;
+  option (dccl.max_bytes) = 2;
+  
+  required uint32 user = 1 [(dccl.min)=0, (dccl.max)=1023, (dccl.in_head)=true];
+}
+

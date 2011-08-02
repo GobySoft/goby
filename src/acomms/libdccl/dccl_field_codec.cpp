@@ -175,8 +175,8 @@ void goby::acomms::DCCLFieldCodecBase::base_decode(Bitset* bits,
 }
 
 void goby::acomms::DCCLFieldCodecBase::base_decode_repeated(Bitset* bits,
-                                                   std::vector<boost::any>* field_values,
-                                                   const google::protobuf::FieldDescriptor* field)
+                                                            std::vector<boost::any>* field_values,
+                                                            const google::protobuf::FieldDescriptor* field)
 {
     MessageHandler msg_handler(field);
     
@@ -194,6 +194,7 @@ void goby::acomms::DCCLFieldCodecBase::base_decode_repeated(Bitset* bits,
     unsigned bits_to_transfer = 0;
     base_min_size(&bits_to_transfer, field);
     bits_handler.transfer_bits(bits_to_transfer);
+    
     
     glog.is(debug1) && glog  << "using these bits: " << these_bits << std::endl;
     
@@ -362,10 +363,24 @@ void goby::acomms::DCCLFieldCodecBase::BitsHandler::transfer_bits(unsigned size)
 {
     glog.is(debug2) && glog  <<  "_get_bits from (" << in_pool_ << ") " << *in_pool_ << " to add to (" << out_pool_ << ") " << *out_pool_ << " number: " << size << std::endl;
     
-    for(int i = 0, n = size; i < n; ++i)
-        out_pool_->push_back((*in_pool_)[i]);
-
-    *in_pool_ >>= size;
+    if(lsb_first_)
+    {
+        // grab lowest bits first
+        for(int i = 0, n = size; i < n; ++i)
+            out_pool_->push_back((*in_pool_)[i]);
+        *in_pool_ >>= size;
+    }
+    else
+    {
+        // grab highest bits first
+        out_pool_->resize(out_pool_->size() + size);
+        *out_pool_ <<= size;
+        for(int i = 0, n = size; i < n; ++i)
+        {
+            (*out_pool_)[size-i-1] = (*in_pool_)[in_pool_->size()-i-1];
+        }
+        
+    }
     in_pool_->resize(in_pool_->size()-size);
 }
 

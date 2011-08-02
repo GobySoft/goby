@@ -43,6 +43,7 @@
 #include "dccl_exception.h"
 #include "dccl_field_codec.h"
 #include "dccl_field_codec_fixed.h"
+#include "dccl_field_codec_default.h"
 #include "dccl_type_helper.h"
 #include "dccl_field_codec_manager.h"
 
@@ -260,6 +261,30 @@ namespace goby
             /// \brief run hooks previously registered to DCCLFieldCodec::register_wire_value_hook
             void run_hooks(const google::protobuf::Message& msg);
             //@}           
+
+            /// \name Custom DCCL ID Codecs (Advanced)
+            ///
+            /// Change the underlying DCCL ID codec to optimize your network. Be very careful you know how to identify all your messages though!
+
+            //@{
+            /// \brief Adds a DCCL id codec to be used
+            ///
+            /// \tparam DCCLTypedFieldCodecUint32 Subclass of DCCLTypedFieldCodec<uint32> > that implements encoding / decoding of DCCL IDs
+            template<typename DCCLTypedFieldCodecUint32>
+                void add_id_codec(const std::string& identifier)
+            { id_codec_[identifier] = boost::shared_ptr<DCCLTypedFieldCodec<uint32> > (new DCCLTypedFieldCodecUint32); }
+
+            /// \brief Sets the DCCL id codec currently in use
+            void set_id_codec(const std::string& identifier)
+            { current_id_codec_ = identifier; }
+
+            /// \brief Resets the DCCL id codec currently in use to the default
+            void reset_id_codec()
+            { current_id_codec_ = DEFAULT_CODEC_NAME; }
+            
+            
+            //@}           
+
             
 
           private:
@@ -276,20 +301,7 @@ namespace goby
             void encrypt(std::string* s, const std::string& nonce);
             void decrypt(std::string* s, const std::string& nonce);
             void process_cfg();
-
-            // maximum id we can fit in short or long header (MSB reserved to indicate
-            // short or long header)
-            enum { ONE_BYTE_MAX_ID = (1 << 7) - 1,
-                   TWO_BYTE_MAX_ID = (1 << 15) - 1};
-
-            enum { SHORT_FORM_ID_BYTES = 1,
-                   LONG_FORM_ID_BYTES = 2 };
             
-            
-            Bitset encode_id(int id);
-            int decode_id(Bitset bits);
-            int size_id(int id);
-                
             void set_default_codecs();            
             
           private:
@@ -304,6 +316,8 @@ namespace goby
             // maps `dccl.id`s onto Message Descriptors
             std::map<int32, const google::protobuf::Descriptor*> id2desc_;
 
+            std::string current_id_codec_;
+            std::map<std::string, boost::shared_ptr<DCCLTypedFieldCodec<uint32> > > id_codec_;
         };
                                       
         

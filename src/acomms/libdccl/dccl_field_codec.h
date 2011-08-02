@@ -258,8 +258,9 @@ namespace goby
             class BitsHandler
             {
               public:
-              BitsHandler(Bitset* out_pool, Bitset* in_pool)
-                  : in_pool_(in_pool),
+              BitsHandler(Bitset* out_pool, Bitset* in_pool, bool lsb_first = true)
+                  : lsb_first_(lsb_first),
+                    in_pool_(in_pool),
                     out_pool_(out_pool)
                     {
                         connection_ = get_more_bits.connect(
@@ -274,6 +275,7 @@ namespace goby
                 void transfer_bits(unsigned size);
 
               private:
+                bool lsb_first_;
                 Bitset* in_pool_;
                 Bitset* out_pool_;
                 boost::signals::connection connection_;
@@ -423,7 +425,7 @@ namespace goby
           typedef FieldType field_type;
             
 
-          protected:
+          public:
           virtual Bitset encode() = 0;          
           virtual Bitset encode(const WireType& wire_value) = 0;
           virtual WireType decode(Bitset* bits) = 0;

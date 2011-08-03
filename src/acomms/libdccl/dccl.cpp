@@ -259,8 +259,7 @@ boost::shared_ptr<google::protobuf::Message> goby::acomms::DCCLCodec::decode(con
 // makes sure we can actual encode / decode a message of this descriptor given the loaded FieldCodecs
 // checks all bounds on the message
 bool goby::acomms::DCCLCodec::validate(const google::protobuf::Descriptor* desc)
-{
-    
+{    
     try
     {
         if(!desc->options().HasExtension(dccl::id))

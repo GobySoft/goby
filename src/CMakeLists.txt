@@ -57,11 +57,6 @@ if(build_protobuf)
       add_subdirectory(acomms)
 
       
-      option(build_perls "Build the PERLS project tools" ON)
-      if(build_perls)
-        add_subdirectory(perls)
-      endif()
-      
       find_package(ZeroMQ)
       if(ZEROMQ_FOUND)
         include_directories(${ZEROMQ_INCLUDE_DIRS})

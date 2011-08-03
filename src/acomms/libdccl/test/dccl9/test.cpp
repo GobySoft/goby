@@ -61,7 +61,11 @@ int main(int argc, char* argv[])
     goby::glog.set_name(argv[0]);    
     
     goby::acomms::DCCLCodec* codec = goby::acomms::DCCLCodec::get();
+    goby::acomms::protobuf::DCCLConfig cfg;
+    cfg.set_crypto_passphrase("309ldskjfla39");
+    codec->set_cfg(cfg);
 
+    
     codec->add_id_codec<MicroModemMiniPacketDCCLIDCodec>("mini_id_codec");
     codec->set_id_codec("mini_id_codec");    
 

@@ -60,11 +60,10 @@ message ModemDataRequest
 
 enum ClockMode
 {
-    NO_SYNC_TO_PPS_AND_CCCLK_BAD = 0;
-    NO_SYNC_TO_PPS_AND_CCCLK_GOOD = 1;
-    SYNC_TO_PPS_AND_CCCLK_BAD = 2;
-    SYNC_TO_PPS_AND_CCCLK_GOOD = 3;
-    UNKNOWN = 4;
+  NO_SYNC_TO_PPS_AND_CCCLK_BAD = 0;
+  NO_SYNC_TO_PPS_AND_CCCLK_GOOD = 1;
+  SYNC_TO_PPS_AND_CCCLK_BAD = 2;
+  SYNC_TO_PPS_AND_CCCLK_GOOD = 3;
 }
 
 // ranging
@@ -94,8 +93,8 @@ message ModemRangingReply
   }
   optional OWTTAmbiguity ambiguity = 4 [default = OWTT_EXACT];
   optional RangingType type = 5;
-  optional ClockMode receiver_clk_mode = 6 [default = UNKNOWN];
-  optional ClockMode sender_clk_mode = 7 [default = UNKNOWN];
+  optional ClockMode receiver_clk_mode = 6 [default = NO_SYNC_TO_PPS_AND_CCCLK_BAD];
+  optional ClockMode sender_clk_mode = 7 [default = NO_SYNC_TO_PPS_AND_CCCLK_BAD];
 }
 
 message ModemRangingRequest

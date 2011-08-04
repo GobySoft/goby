@@ -39,6 +39,9 @@ namespace goby
         class LineBasedInterface
         {
           public:
+            LineBasedInterface(const std::string& delimiter);
+            virtual ~LineBasedInterface() { }
+
             // start the connection
             void start();
             // close the connection cleanly
@@ -85,7 +88,6 @@ namespace goby
 
             
           protected:            
-            LineBasedInterface(const std::string& delimiter);
             
             // all implementors of this line based interface must provide do_start, do_write, do_close, and put all read data into "in_"
             virtual void do_start() = 0;

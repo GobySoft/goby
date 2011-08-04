@@ -412,7 +412,7 @@ void goby::acomms::MMDriver::handle_initiate_transmission(protobuf::ModemDataIni
                 NMEASentence nmea("$CCCYC", NMEASentence::IGNORE);
                 nmea.push_back(0); // CMD: deprecated field
                 nmea.push_back(init_msg->base().src()); // ADR1
-        
+                
         
                 nmea.push_back(is_local_cycle
                                ? cached_data_msgs_.begin()->second.base().dest()

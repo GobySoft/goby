@@ -194,6 +194,7 @@ void goby::acomms::MACManager::begin_slot(const boost::system::error_code& e)
                 case protobuf::SLOT_DATA: *log_ << "d"; break;
                 case protobuf::SLOT_PING: *log_ << "p"; break;
                 case protobuf::SLOT_REMUS_LBL: *log_ << "r"; break; 
+                case protobuf::SLOT_NARROWBAND_LBL: *log_ << "n"; break; 
                 case protobuf::SLOT_MINI: *log_ << "m"; break;
             }
 
@@ -226,6 +227,7 @@ void goby::acomms::MACManager::begin_slot(const boost::system::error_code& e)
             }
             
             case protobuf::SLOT_REMUS_LBL:
+            case protobuf::SLOT_NARROWBAND_LBL:
             case protobuf::SLOT_PING:
             {
                 protobuf::ModemRangingRequest m;
@@ -236,6 +238,8 @@ void goby::acomms::MACManager::begin_slot(const boost::system::error_code& e)
                     m.set_type(protobuf::REMUS_LBL_RANGING);
                 else if(s.type() == protobuf::SLOT_PING)
                     m.set_type(protobuf::MODEM_TWO_WAY_PING);
+                else if(s.type() == protobuf::SLOT_NARROWBAND_LBL)
+                    m.set_type(protobuf::NARROWBAND_LBL_RANGING);
                 
                 signal_initiate_ranging(&m);
                 break;

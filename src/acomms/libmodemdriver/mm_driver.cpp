@@ -1,4 +1,5 @@
 // copyright 2009-2011 t. schneider tes@mit.edu
+// copyright 2011 j. walls
 // 
 // this file is part of the goby-acomms WHOI Micro-Modem driver.
 // goby-acomms is a collection of libraries 
@@ -268,6 +269,19 @@ void goby::acomms::MMDriver::set_clock()
 {
     NMEASentence nmea("$CCCLK", NMEASentence::IGNORE);
     boost::posix_time::ptime p = goby_time();
+
+    // for sync nav, let's make sure to send the ccclk at the beginning of the
+    // second: between 1ms-50ms after the top of the second
+    // see WHOI sync nav manual
+    // http://acomms.whoi.edu/documents/Synchronous%20Navigation%20With%20MicroModem%20RevD.pdf
+    double frac_sec = double(p.time_of_day().fractional_seconds())/p.time_of_day().ticks_per_second();
+    while(frac_sec > 50e-3 || frac_sec < 1e-3)
+    {
+        // wait 1 ms
+        usleep(1000);
+        p = goby_time();
+        frac_sec = double(p.time_of_day().fractional_seconds())/p.time_of_day().ticks_per_second();
+    }
     
     nmea.push_back(int(p.date().year()));
     nmea.push_back(int(p.date().month()));

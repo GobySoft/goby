@@ -136,7 +136,6 @@ namespace goby
             // how many retries on a given message
             enum { RETRIES = 3 };
             enum { ROUGH_SPEED_OF_SOUND = 1500 }; // m/s
-            enum { REMUS_LBL_TURN_AROUND_MS = 50 }; // milliseconds
                 
             
             // seconds to wait for modem to respond
@@ -240,6 +239,8 @@ namespace goby
             // true if we initiated the last cycle ($CCCYC) (and thereby cache data for it)?
             // false if a third party initiated the last cycle
             bool local_cccyc_;
+
+            protobuf::RangingType last_ranging_type_;
             
         };
     }

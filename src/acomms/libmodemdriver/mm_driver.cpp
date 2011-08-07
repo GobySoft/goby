@@ -513,6 +513,8 @@ void goby::acomms::MMDriver::handle_initiate_ranging(protobuf::ModemRangingReque
             NMEASentence nmea("$CCMPC", NMEASentence::IGNORE);
             nmea.push_back(request_msg->base().src()); // ADR1
             nmea.push_back(request_msg->base().dest()); // ADR2
+
+            last_ranging_type_ = request_msg->type();
             
             append_to_write_queue(nmea, request_msg->mutable_base());
             break;
@@ -521,6 +523,10 @@ void goby::acomms::MMDriver::handle_initiate_ranging(protobuf::ModemRangingReque
 
         case protobuf::REMUS_LBL_RANGING:
         {
+            uint32 tat = driver_cfg_.GetExtension(MicroModemConfig::remus_turnaround_ms);
+            if(!nvram_cfg_["TAT"] == tat)
+                write_single_cfg("TAT" + as<std::string>(tat));
+
             // $CCPDT,GRP,CHANNEL,SF,STO,Timeout,AF,BF,CF,DF*CS
             NMEASentence nmea("$CCPDT", NMEASentence::IGNORE);
             nmea.push_back(1); // GRP 1 is the only group right now 
@@ -528,16 +534,51 @@ void goby::acomms::MMDriver::handle_initiate_ranging(protobuf::ModemRangingReque
             nmea.push_back(0); // synchronize may not work?
             nmea.push_back(0); // synchronize may not work?
             // REMUS LBL is 50 ms turn-around time, assume 1500 m/s speed of sound
-            nmea.push_back(int((request_msg->max_range()*2.0 / ROUGH_SPEED_OF_SOUND)*1000 + REMUS_LBL_TURN_AROUND_MS));
-            nmea.push_back(request_msg->enable_beacons() >> 0 & 1);
-            nmea.push_back(request_msg->enable_beacons() >> 1 & 1);
-            nmea.push_back(request_msg->enable_beacons() >> 2 & 1);
-            nmea.push_back(request_msg->enable_beacons() >> 3 & 1);
+            nmea.push_back(int((request_msg->lbl_max_range()*2.0 / ROUGH_SPEED_OF_SOUND)*1000 + tat));
+            nmea.push_back(driver_cfg_.GetExtension(MicroModemConfig::remus_enable_beacons) >> 0 & 1);
+            nmea.push_back(driver_cfg_.GetExtension(MicroModemConfig::remus_enable_beacons) >> 1 & 1);
+            nmea.push_back(driver_cfg_.GetExtension(MicroModemConfig::remus_enable_beacons) >> 2 & 1);
+            nmea.push_back(driver_cfg_.GetExtension(MicroModemConfig::remus_enable_beacons) >> 3 & 1);
 
+            last_ranging_type_ = request_msg->type();
+            
             append_to_write_queue(nmea, request_msg->mutable_base());
             break;
         }
-        
+
+        case protobuf::NARROWBAND_LBL_RANGING:
+        {
+            uint32 tat = driver_cfg_.GetExtension(MicroModemConfig::narrowband_turnaround_ms);
+            if(!nvram_cfg_["TAT"] == tat)
+                write_single_cfg("TAT" + as<std::string>(tat));
+
+            // $CCPNT, Ftx, Ttx, Trx, Timeout, FA, FB, FC, FD,Tflag*CS
+            NMEASentence nmea("$CCPNT", NMEASentence::IGNORE);
+            nmea.push_back(driver_cfg_.GetExtension(MicroModemConfig::narrowband_transmit_freq));
+            nmea.push_back(driver_cfg_.GetExtension(MicroModemConfig::narrowband_transmit_ping_ms));
+            nmea.push_back(driver_cfg_.GetExtension(MicroModemConfig::narrowband_receive_ping_ms));
+            nmea.push_back(int((request_msg->lbl_max_range()*2.0 / ROUGH_SPEED_OF_SOUND)*1000 + tat));
+
+            // no more than four allowed
+            const int MAX_NUMBER_RX_BEACONS = 4;
+            
+            int number_rx_freq_provided = std::min(MAX_NUMBER_RX_BEACONS, driver_cfg_.ExtensionSize(MicroModemConfig::narrowband_receive_freq));
+            
+            for(int i = 0, n = std::max(MAX_NUMBER_RX_BEACONS, number_rx_freq_provided); i < n; ++i)
+            {
+                if(i < number_rx_freq_provided)
+                    nmea.push_back(driver_cfg_.GetExtension(MicroModemConfig::narrowband_receive_freq, i));
+                else
+                    nmea.push_back(0);
+            }
+            
+            nmea.push_back((int)driver_cfg_.GetExtension(MicroModemConfig::narrowband_transmit_flag));
+
+            last_ranging_type_ = request_msg->type();
+            
+            append_to_write_queue(nmea, request_msg->mutable_base());
+            break;
+        }
     }
 }
 
@@ -1134,7 +1175,7 @@ void goby::acomms::MMDriver::tta(const NMEASentence& nmea, protobuf::ModemRangin
     m->add_one_way_travel_time(as<double>(nmea[3]));
     m->add_one_way_travel_time(as<double>(nmea[4]));
     
-    m->set_type(protobuf::REMUS_LBL_RANGING);
+    m->set_type(last_ranging_type_);
 
     m->mutable_base()->set_src(driver_cfg_.modem_id());
     m->mutable_base()->set_time(as<std::string>(nmea_time2ptime(nmea[5])));

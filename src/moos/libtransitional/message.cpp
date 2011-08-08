@@ -126,7 +126,7 @@ void goby::transitional::DCCLMessage::set_repeat_array_length()
 unsigned goby::transitional::DCCLMessage::calc_total_size()
 {
     boost::shared_ptr<acomms::DCCLFieldCodecBase> codec =
-        acomms::DCCLFieldCodecManager::find(descriptor_, descriptor_->options().GetExtension(dccl_msg).codec());
+        acomms::DCCLFieldCodecManager::find(descriptor_, descriptor_->options().GetExtension(goby::msg).dccl().codec());
     unsigned u = 0;
     codec->base_max_size(&u, descriptor_, acomms::DCCLFieldCodecBase::BODY);
     return u;
@@ -291,8 +291,8 @@ void goby::transitional::DCCLMessage::write_schema_to_dccl2(std::ofstream* proto
 {
     
     *proto_file << "message " << name_ << " { " << std::endl;
-    *proto_file << "\t" << "option (dccl_msg).id = " << id_ << ";" << std::endl;
-    *proto_file << "\t" << "option (dccl_msg).max_bytes = " << size_ << ";" << std::endl;
+    *proto_file << "\t" << "option (goby.msg).dccl.id = " << id_ << ";" << std::endl;
+    *proto_file << "\t" << "option (goby.msg).dccl.max_bytes = " << size_ << ";" << std::endl;
     
     int sequence_number = 0;
     
@@ -306,22 +306,22 @@ void goby::transitional::DCCLMessage::write_schema_to_dccl2(std::ofstream* proto
         mv->write_schema_to_dccl2(proto_file, ++sequence_number);
 
     if(queue_cfg.has_ack())
-        *proto_file << "\t" <<  "option (queue_msg).ack = " << std::boolalpha << queue_cfg.ack() << ";" << std::endl;
+        *proto_file << "\t" <<  "option (goby.msg).queue.ack = " << std::boolalpha << queue_cfg.ack() << ";" << std::endl;
 
     if(queue_cfg.has_blackout_time())
-        *proto_file << "\t" <<  "option (queue_msg).blackout_time = " << queue_cfg.blackout_time() << ";" << std::endl;
+        *proto_file << "\t" <<  "option (goby.msg).queue.blackout_time = " << queue_cfg.blackout_time() << ";" << std::endl;
 
     if(queue_cfg.has_max_queue())
-        *proto_file << "\t" <<  "option (queue_msg).max_queue = " << queue_cfg.max_queue() << ";" << std::endl;
+        *proto_file << "\t" <<  "option (goby.msg).queue.max_queue = " << queue_cfg.max_queue() << ";" << std::endl;
 
     if(queue_cfg.has_newest_first())
-        *proto_file << "\t" <<  "option (queue_msg).newest_first = " << std::boolalpha << queue_cfg.newest_first() << ";" << std::endl;
+        *proto_file << "\t" <<  "option (goby.msg).queue.newest_first = " << std::boolalpha << queue_cfg.newest_first() << ";" << std::endl;
       
     if(queue_cfg.has_value_base())
-        *proto_file << "\t" <<  "option (queue_msg).value_base = " << queue_cfg.value_base() << ";" << std::endl;
+        *proto_file << "\t" <<  "option (goby.msg).queue.value_base = " << queue_cfg.value_base() << ";" << std::endl;
     
     if(queue_cfg.has_ttl())
-        *proto_file << "\t" <<  "option (queue_msg).ttl = " << queue_cfg.ttl() << ";" << std::endl;
+        *proto_file << "\t" <<  "option (goby.msg).queue.ttl = " << queue_cfg.ttl() << ";" << std::endl;
     
     *proto_file << "} " << std::endl;
 }

@@ -92,9 +92,12 @@ namespace goby
             /// \brief connect to the Wt::Dbo SQL database
             void connect(const std::string& db_name = "");            
 
+            void set_table_prefix(const std::string& prefix);
+
             
             void reset_session();
             void map_types();
+            void create_indices();
             Wt::Dbo::Session* session() { return session_; }
 
             DBOPluginFactory& plugin_factory()
@@ -121,6 +124,8 @@ namespace goby
             bool static_tables_created_;
 
             DBOPluginFactory plugin_factory_;
+
+            std::string raw_id_table_name_;
         };
 
 

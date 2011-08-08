@@ -87,15 +87,24 @@ namespace goby
               
               wire_value -= min();
               wire_value *= std::pow(10.0, precision());
-              return Bitset(size(), goby::util::as<unsigned long>(wire_value)+1);
+
+              // "presence" value (0)
+              if(!DCCLFieldCodecBase::this_field()->is_required())
+                  wire_value += 1;
+              
+              return Bitset(size(), goby::util::as<unsigned long>(wire_value));
           }
           
           virtual WireType decode(Bitset* bits)
           {
               unsigned long t = bits->to_ulong();
-              if(!t) throw(DCCLNullValueException());
-
-              --t;
+              
+              if(!DCCLFieldCodecBase::this_field()->is_required())
+              {
+                  if(!t) throw(DCCLNullValueException());
+                  --t;
+              }
+              
               return goby::util::unbiased_round(
                   t / (std::pow(10.0, precision())) + min(), precision());
               
@@ -103,8 +112,9 @@ namespace goby
 
           unsigned size()
           {
-              // leave one value for unspecified (always encoded as 0)
-              const unsigned NULL_VALUE = 1;
+              // if not required field, leave one value for unspecified (always encoded as 0)
+              const unsigned NULL_VALUE = DCCLFieldCodecBase::this_field()->is_required() ? 0 : 1;
+              
               return std::ceil(std::log((max()-min())*std::pow(10.0, precision())+1 + NULL_VALUE)/std::log(2));
           }
             

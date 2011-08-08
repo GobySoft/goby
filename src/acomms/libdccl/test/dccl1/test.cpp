@@ -37,29 +37,53 @@ int main(int argc, char* argv[])
 
     TestMsg msg_in;
     int i = 0;
-    msg_in.set_double_default(++i + 0.1);
-    msg_in.set_float_default(++i + 0.2);
+    msg_in.set_double_default_optional(++i + 0.1);
+    msg_in.set_float_default_optional(++i + 0.2);
 
-    msg_in.set_int32_default(++i);
-    msg_in.set_int64_default(-++i);
-    msg_in.set_uint32_default(++i);
-    msg_in.set_uint64_default(++i);
-    msg_in.set_sint32_default(-++i);
-    msg_in.set_sint64_default(++i);
-    msg_in.set_fixed32_default(++i);
-    msg_in.set_fixed64_default(++i);
-    msg_in.set_sfixed32_default(++i);
-    msg_in.set_sfixed64_default(-++i);
+    msg_in.set_int32_default_optional(++i);
+    msg_in.set_int64_default_optional(-++i);
+    msg_in.set_uint32_default_optional(++i);
+    msg_in.set_uint64_default_optional(++i);
+    msg_in.set_sint32_default_optional(-++i);
+    msg_in.set_sint64_default_optional(++i);
+    msg_in.set_fixed32_default_optional(++i);
+    msg_in.set_fixed64_default_optional(++i);
+    msg_in.set_sfixed32_default_optional(++i);
+    msg_in.set_sfixed64_default_optional(-++i);
 
-    msg_in.set_bool_default(true);
+    msg_in.set_bool_default_optional(true);
 
-    msg_in.set_string_default("abc123");
-    msg_in.set_bytes_default(goby::util::hex_decode("00112233aabbcc1234"));
+    msg_in.set_string_default_optional("abc123");
+    msg_in.set_bytes_default_optional(goby::util::hex_decode("00112233aabbcc1234"));
     
-    msg_in.set_enum_default(ENUM_C);
-    msg_in.mutable_msg_default()->set_val(++i + 0.3);
-    msg_in.mutable_msg_default()->mutable_msg()->set_val(++i);
+    msg_in.set_enum_default_optional(ENUM_C);
+    msg_in.mutable_msg_default_optional()->set_val(++i + 0.3);
+    msg_in.mutable_msg_default_optional()->mutable_msg()->set_val(++i);
 
+    msg_in.set_double_default_required(++i + 0.1);
+    msg_in.set_float_default_required(++i + 0.2);
+
+    msg_in.set_int32_default_required(++i);
+    msg_in.set_int64_default_required(-++i);
+    msg_in.set_uint32_default_required(++i);
+    msg_in.set_uint64_default_required(++i);
+    msg_in.set_sint32_default_required(-++i);
+    msg_in.set_sint64_default_required(++i);
+    msg_in.set_fixed32_default_required(++i);
+    msg_in.set_fixed64_default_required(++i);
+    msg_in.set_sfixed32_default_required(++i);
+    msg_in.set_sfixed64_default_required(-++i);
+
+    msg_in.set_bool_default_required(true);
+
+    msg_in.set_string_default_required("abc123");
+    msg_in.set_bytes_default_required(goby::util::hex_decode("00112233aabbcc1234"));
+    
+    msg_in.set_enum_default_required(ENUM_C);
+    msg_in.mutable_msg_default_required()->set_val(++i + 0.3);
+    msg_in.mutable_msg_default_required()->mutable_msg()->set_val(++i);
+
+    
     for(int j = 0; j < 2; ++j)
     {
         msg_in.add_double_default_repeat(++i + 0.1);
@@ -79,7 +103,11 @@ int main(int argc, char* argv[])
         msg_in.add_bool_default_repeat(true);
         
         msg_in.add_string_default_repeat("abc123");
-        msg_in.add_bytes_default_repeat(goby::util::hex_decode("aabbcc12"));
+
+        if(j)
+            msg_in.add_bytes_default_repeat(goby::util::hex_decode("aabbcc12"));
+        else
+            msg_in.add_bytes_default_repeat(goby::util::hex_decode("12ccbbaa"));
         
         msg_in.add_enum_default_repeat(static_cast<Enum1>((++i % 3) + 1));
         EmbeddedMsg1* em_msg = msg_in.add_msg_default_repeat();

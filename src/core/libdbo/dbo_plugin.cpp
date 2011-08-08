@@ -111,7 +111,7 @@ void goby::core::ProtobufDBOPlugin::add_message(int unique_id, boost::shared_ptr
         add_type(msg->GetDescriptor());
 
     
-    glog.is(verbose) &&
+    glog.is(debug1) &&
         glog << group("dbo") << "adding message of type: " << msg->GetTypeName() << std::endl;
     
     switch(dbo_map.right.at(msg->GetTypeName()))
@@ -141,9 +141,6 @@ void goby::core::ProtobufDBOPlugin::map_types()
     }
 }
 
-
-
-
 void goby::core::ProtobufDBOPlugin::add_type(const google::protobuf::Descriptor* descriptor)
 {
     using goby::util::as;
@@ -164,22 +161,29 @@ void goby::core::ProtobufDBOPlugin::add_type(const google::protobuf::Descriptor*
     goby::core::DBOManager::get_instance()->reset_session();
     dbo_map.insert(boost::bimap<int, std::string>::value_type(index_, descriptor->full_name()));
 
-    std::string mangled_name = descriptor->full_name();
+    std::string mangled_name = table_prefix_ + descriptor->full_name();
     std::replace(mangled_name.begin(), mangled_name.end(), '.', '_');
-    mangle_map_.insert(std::make_pair(index_, mangled_name));
+    table_names_.insert(std::make_pair(index_, mangled_name));
     ++index_;
 
     map_type(descriptor);
 
-    try{ goby::core::DBOManager::get_instance()->session()->createTables(); }
+    try
+    { goby::core::DBOManager::get_instance()->session()->createTables(); }
     catch(Wt::Dbo::Exception& e)
     {
-        glog.is(warn) &&
-            glog << e.what() << std::endl;
+        glog.is(warn) && glog << group("dbo")
+                             << "Could not create table for " << mangled_name << "; reason: "
+                             << e.what() << std::endl;
     }
     
     glog.is(verbose) &&
-        glog << group("dbo") << "created table for " << descriptor->full_name() << std::endl;
+        glog << group("dbo") << "created table for " << mangled_name << std::endl;
+    
+    // create raw_id index
+    goby::core::DBOManager::get_instance()->session()->execute("CREATE UNIQUE INDEX IF NOT EXISTS " + mangled_name + "_raw_id_index" + " ON " + mangled_name + " (raw_id)");
+
+    
     goby::core::DBOManager::get_instance()->reset_session();
 
     // remap all the tables
@@ -198,7 +202,7 @@ void goby::core::ProtobufDBOPlugin::map_type(const google::protobuf::Descriptor*
     {
         // preprocessor `for` loop from 0 to GOBY_MAX_PROTOBUF_TYPES
 #define BOOST_PP_LOCAL_MACRO(n)                                         \
-        case n: goby::core::DBOManager::get_instance()->session()->mapClass< ProtoBufWrapper<n> >(mangle_map_.find(n)->second.c_str()); break;
+        case n: goby::core::DBOManager::get_instance()->session()->mapClass< ProtoBufWrapper<n> >(table_names_.find(n)->second.c_str()); break;
 #define BOOST_PP_LOCAL_LIMITS (0, GOBY_MAX_PROTOBUF_TYPES)
 #include BOOST_PP_LOCAL_ITERATE()
         // end preprocessor `for` loop

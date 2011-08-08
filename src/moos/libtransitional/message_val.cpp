@@ -266,7 +266,7 @@ goby::transitional::DCCLMessageVal::operator double() const
 {
     double d;
     if(get(d)) return d;
-    else return acomms::NaN;
+    else return std::numeric_limits<double>::quiet_NaN();
 }
 
 

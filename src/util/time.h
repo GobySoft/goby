@@ -91,7 +91,7 @@ namespace goby
             
                 double s = floor(given_time);
                 double micro_s = (given_time - s)*1e6;
-                return time_t_epoch + seconds(static_cast<int>(s)) + microseconds(static_cast<long long>(micro_s));
+                return time_t_epoch + seconds(static_cast<int>(s)) + microseconds(static_cast<int64_t>(micro_s));
             }
         }
 

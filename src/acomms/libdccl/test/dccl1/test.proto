@@ -28,47 +28,84 @@ message EmbeddedMsg2
 message TestMsg
 {
   option (goby.msg).dccl.id = 2;
-  option (goby.msg).dccl.max_bytes = 256;
+  option (goby.msg).dccl.max_bytes = 512;
 
   // test default enc/dec
-  optional double double_default = 1 [(goby.field).dccl.min=-100,
+  optional double double_default_optional = 1 [(goby.field).dccl.min=-100,
                                       (goby.field).dccl.max=126,
                                       (goby.field).dccl.precision=2,
                                       (goby.field).dccl.in_head=true];
-  optional float float_default = 2 [(goby.field).dccl.min=-20,
-                                    (goby.field).dccl.max=150,
-                                    (goby.field).dccl.precision=3];
-  optional int32 int32_default = 3 [(goby.field).dccl.min=-20,
+  optional float float_default_optional = 2 [(goby.field).dccl.min=-20,
+                                      (goby.field).dccl.max=150,
+                                      (goby.field).dccl.precision=3];
+  optional int32 int32_default_optional = 3 [(goby.field).dccl.min=-20,
                                       (goby.field).dccl.max=3000];
-  optional int64 int64_default = 4 [(goby.field).dccl.min=-710,
+  optional int64 int64_default_optional = 4 [(goby.field).dccl.min=-710,
                                       (goby.field).dccl.max=3000];
-  optional uint32 uint32_default = 5 [(goby.field).dccl.min=-100,
+  optional uint32 uint32_default_optional = 5 [(goby.field).dccl.min=-100,
                                       (goby.field).dccl.max=3000];
-  optional uint64 uint64_default = 6 [(goby.field).dccl.min=5,
+  optional uint64 uint64_default_optional = 6 [(goby.field).dccl.min=5,
                                       (goby.field).dccl.max=3000];
-  optional sint32 sint32_default = 7 [(goby.field).dccl.min=-60,
+  optional sint32 sint32_default_optional = 7 [(goby.field).dccl.min=-60,
                                       (goby.field).dccl.max=3000];
-  optional sint64 sint64_default = 8 [(goby.field).dccl.min=-70,
+  optional sint64 sint64_default_optional = 8 [(goby.field).dccl.min=-70,
                                       (goby.field).dccl.max=3000];
-  optional fixed32 fixed32_default = 9 [(goby.field).dccl.min=0, 
+  optional fixed32 fixed32_default_optional = 9 [(goby.field).dccl.min=0, 
                                       (goby.field).dccl.max=400];
-  optional fixed64 fixed64_default = 10 [(goby.field).dccl.min=0,
+  optional fixed64 fixed64_default_optional = 10 [(goby.field).dccl.min=0,
                                       (goby.field).dccl.max=3000];
-  optional sfixed32 sfixed32_default = 11 [(goby.field).dccl.min=11,
+  optional sfixed32 sfixed32_default_optional = 11 [(goby.field).dccl.min=11,
                                       (goby.field).dccl.max=3000]; 
-  optional sfixed64 sfixed64_default = 12 [(goby.field).dccl.min=-12,
+  optional sfixed64 sfixed64_default_optional = 12 [(goby.field).dccl.min=-12,
                                       (goby.field).dccl.max=3000]; 
 
-  optional bool bool_default = 13;
+  optional bool bool_default_optional = 13;
 
-  optional string string_default = 14 [(goby.field).dccl.max_length=8];
-  optional bytes bytes_default = 15 [(goby.field).dccl.max_length=9];
+  optional string string_default_optional = 14 [(goby.field).dccl.max_length=8];
+  optional bytes bytes_default_optional = 15 [(goby.field).dccl.max_length=9];
 
-  optional Enum1 enum_default = 16;
+  optional Enum1 enum_default_optional = 16;
 
-  optional EmbeddedMsg1 msg_default = 17;
+  optional EmbeddedMsg1 msg_default_optional = 17;
 
-  
+
+  required double double_default_required = 21 [(goby.field).dccl.min=-100,
+                                      (goby.field).dccl.max=126,
+                                      (goby.field).dccl.precision=2,
+                                      (goby.field).dccl.in_head=true];
+  required float float_default_required = 22 [(goby.field).dccl.min=-20,
+                                      (goby.field).dccl.max=150,
+                                      (goby.field).dccl.precision=3];
+  required int32 int32_default_required = 23 [(goby.field).dccl.min=-20,
+                                      (goby.field).dccl.max=3000];
+  required int64 int64_default_required = 24 [(goby.field).dccl.min=-710,
+                                      (goby.field).dccl.max=3000];
+  required uint32 uint32_default_required = 25 [(goby.field).dccl.min=-100,
+                                      (goby.field).dccl.max=3000];
+  required uint64 uint64_default_required = 26 [(goby.field).dccl.min=5,
+                                      (goby.field).dccl.max=3000];
+  required sint32 sint32_default_required = 27 [(goby.field).dccl.min=-60,
+                                      (goby.field).dccl.max=3000];
+  required sint64 sint64_default_required = 28 [(goby.field).dccl.min=-70,
+                                      (goby.field).dccl.max=3000];
+  required fixed32 fixed32_default_required = 29 [(goby.field).dccl.min=0, 
+                                      (goby.field).dccl.max=400];
+  required fixed64 fixed64_default_required = 30 [(goby.field).dccl.min=0,
+                                      (goby.field).dccl.max=3000];
+  required sfixed32 sfixed32_default_required = 31 [(goby.field).dccl.min=11,
+                                      (goby.field).dccl.max=3000]; 
+  required sfixed64 sfixed64_default_required = 32 [(goby.field).dccl.min=-120,
+                                      (goby.field).dccl.max=3000]; 
+
+  required bool bool_default_required = 33;
+
+  required string string_default_required = 34 [(goby.field).dccl.max_length=8];
+  required bytes bytes_default_required = 35 [(goby.field).dccl.max_length=9];
+
+  required Enum1 enum_default_required = 36;
+
+  required EmbeddedMsg1 msg_default_required = 37;
+
   repeated double double_default_repeat = 101 [(goby.field).dccl.min=0,
                                                (goby.field).dccl.max=100,
                                                (goby.field).dccl.precision=3,
@@ -106,7 +143,7 @@ message TestMsg
   repeated sfixed32 sfixed32_default_repeat = 111 [(goby.field).dccl.min=0,
                                                    (goby.field).dccl.max=100,
                                                    (goby.field).dccl.max_repeat=4];
-  repeated sfixed64 sfixed64_default_repeat = 112 [(goby.field).dccl.min=-50,
+  repeated sfixed64 sfixed64_default_repeat = 112 [(goby.field).dccl.min=-500,
                                                    (goby.field).dccl.max=100,
                                                    (goby.field).dccl.max_repeat=4];
   

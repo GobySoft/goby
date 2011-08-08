@@ -666,8 +666,7 @@ void goby::transitional::DCCLTransitionalCodec::convert_to_protobuf_descriptor(c
     if(!fout.is_open())
         throw(goby::acomms::DCCLException("Could not open " + proto_file_to_write + " for writing"));
 
-    fout << "import \"goby/protobuf/dccl_option_extensions.proto\";" << std::endl;
-    fout << "import \"goby/protobuf/queue_option_extensions.proto\";" << std::endl;
+    fout << "import \"goby/protobuf/option_extensions.proto\";" << std::endl;
 
     for(int i = 0, n = added_ids.size(); i < n; ++i)
     {

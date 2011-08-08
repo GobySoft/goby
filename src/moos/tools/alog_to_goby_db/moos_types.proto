@@ -33,9 +33,9 @@ message WHOIMicroModemCACST
 {
   // "$CACST,%1%,%2%,%3%,%4%,%5%,%6%,%7%,%8%,%9%,%10%,%11%,%12%,%13%,%14%,%15%,%16%,%17%,%18%,%19%,%20%,%21%,%22%,%23%,%24%,%25%,%26%,%27%,%28%,%29%*%100%";
 
-  optional int32 mode = 1 [(description)="0 if good, 1 if bad CRCs, 2 if packet timeout"];
-  optional double time = 2 [(description)="Time of Arrival"];
-  optional int32 toa_mode = 3 [(description)="Clock status"];
+  optional int32 mode = 1 [(goby.field).description="0 if good, 1 if bad CRCs, 2 if packet timeout"];
+  optional double time = 2 [(goby.field).description="Time of Arrival"];
+  optional int32 toa_mode = 3 [(goby.field).description="Clock status"];
   optional int32 mfd_peak = 4;
   optional int32 mfd_power = 5;
   optional int32 mfd_ratio = 6;

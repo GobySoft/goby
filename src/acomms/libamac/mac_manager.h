@@ -113,7 +113,7 @@ namespace goby
             bool remove_slot(const protobuf::Slot& s);
 
             /// \brief clears all slots from communications cycle.
-            void clear_all_slots() { id2slot_.clear(); slot_order_.clear(); }    
+            void clear_all_slots(); 
             //@}            
 
             /// \name Other
@@ -128,19 +128,22 @@ namespace goby
             /// amac_simple.cpp
         
             /// \example acomms/chat/chat.cpp
-        
+
+            unsigned cycle_count() { return slot_order_.size(); }
+            double cycle_duration();
+            
           private:
-            void send_poll(const boost::system::error_code&);
+            void begin_slot(const boost::system::error_code&);
             boost::posix_time::ptime next_cycle_time();
 
+            void increment_slot();
+            
             void restart_timer();
             void stop_timer();
     
             void expire_ids();
             void process_cycle_size_change();
 
-            unsigned cycle_count() { return slot_order_.size(); }
-            unsigned cycle_length();
             unsigned cycle_sum();
             void position_blank();
     
@@ -171,7 +174,7 @@ namespace goby
             // entropy value used to determine how the "blank" slot moves around relative to the values of the modem ids. determining the proper value for this is a bit of work and i will detail when i have time.
             enum { ENTROPY = 5 };
 
-            bool startup_done_;
+            bool started_up_;
         };
 
         /// Contains Google Protocol Buffers messages and helper functions. See specific .proto files for definition of the actual messages (e.g. modem_message.proto).

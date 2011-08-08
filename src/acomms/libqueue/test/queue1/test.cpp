@@ -41,8 +41,8 @@ int main(int argc, char* argv[])
     
     goby::acomms::connect(&q_manager->signal_receive, &handle_receive);
 
-    test_msg1.set_double_default(1.23);
-    test_msg1.set_float_default(0.2);
+    test_msg1.set_double_default_optional(1.23);
+    test_msg1.set_float_default_optional(0.2);
 
     std::cout << "Pushed: " << test_msg1 << std::endl;
     q_manager->push_message(test_msg1);

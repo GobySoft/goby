@@ -1,0 +1,18 @@
+import "goby/protobuf/option_extensions.proto";
+
+
+message TestMsg
+{
+  option (goby.msg).dccl.id = 2;
+  option (goby.msg).dccl.max_bytes = 32;
+
+  // test default enc/dec
+  optional double double_default_optional = 1 [(goby.field).dccl.min=-100,
+                                               (goby.field).dccl.max=126,
+                                               (goby.field).dccl.precision=2,
+                                               (goby.field).dccl.in_head=true];
+  optional float float_default_optional = 2 [(goby.field).dccl.min=-20,
+                                             (goby.field).dccl.max=150,
+                                             (goby.field).dccl.precision=3];
+}
+

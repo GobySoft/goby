@@ -6,7 +6,7 @@ package goby.core.protobuf;
 
 message DatabaseConfig
 {
-  optional AppBaseConfig base = 1 [(description)="params shared with all goby applications"];
+  optional AppBaseConfig base = 1 [(goby.field).description="params shared with all goby applications"];
 
   enum SQLBackend
   {
@@ -23,5 +23,5 @@ message DatabaseConfig
   // only needed if backend == SQLITE
   optional SQLiteInfo sqlite = 3;
 
-  repeated string plugin_library = 4 [(example)="/path/to/dbo_plugin.so", (description)="name of dynamic library containing an implementation of goby::core::DBOPlugin"];
+  repeated string plugin_library = 4 [(goby.field).example="/path/to/dbo_plugin.so", (goby.field).description="name of dynamic library containing an implementation of goby::core::DBOPlugin"];
 }

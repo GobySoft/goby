@@ -35,13 +35,17 @@ goby::acomms::Bitset goby::acomms::DCCLDefaultBoolCodec::encode()
 
 goby::acomms::Bitset goby::acomms::DCCLDefaultBoolCodec::encode(const bool& wire_value)
 {
-    return Bitset(size(), (wire_value ? 1 : 0) + 1);
+    return Bitset(size(), this_field()->is_required() ? wire_value : wire_value + 1);
 }
 
 bool goby::acomms::DCCLDefaultBoolCodec::decode(Bitset* bits)
 {
     unsigned long t = bits->to_ulong();
-    if(t)
+    if(this_field()->is_required())
+    {
+        return t;
+    }
+    else if(t)
     {
         --t;
         return t;
@@ -58,7 +62,7 @@ unsigned goby::acomms::DCCLDefaultBoolCodec::size()
     // true and false
     const unsigned BOOL_VALUES = 2;
     // if field unspecified
-    const unsigned NULL_VALUE = 1;
+    const unsigned NULL_VALUE = this_field()->is_required() ? 0 : 1;
     
     return std::ceil(std::log(BOOL_VALUES + NULL_VALUE)/std::log(2));
 }

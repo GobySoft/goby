@@ -26,7 +26,7 @@ goby::transitional::DCCLMessageVarFloat::DCCLMessageVarFloat(double max /*= std:
       max_(max),
       min_(min),
       precision_(precision),
-      max_delta_(acomms::NaN)
+      max_delta_(std::numeric_limits<double>::quiet_NaN())
 { }
 
         

@@ -95,7 +95,8 @@ namespace goby
             /// \brief Signals when it is time for this platform to begin transmission of an acoustic message at the start of its TDMA slot. Typically connected to ModemDriverBase::handle_initiate_transmission() using bind().
             ///
             /// \param m a message containing details of the transmission to be initated.  (protobuf::ModemMsgBase defined in modem_message.proto)
-            boost::signal<void (protobuf::ModemMsgBase* m)> signal_initiate_transmission;
+            boost::signal<void (protobuf::ModemDataInit* m)> signal_initiate_transmission;
+
 
             /// \brief Signals when it is time for this platform to begin an acoustic ranging transmission to another vehicle or ranging beacon(s). Typically connected to ModemDriverBase::handle_initiate_ranging() using bind().
             ///

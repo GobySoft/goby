@@ -25,6 +25,76 @@
 #include "dccl_type_helper.h"
 
 //
+// DCCLDefaultIdentifierCodec
+//
+
+goby::acomms::Bitset goby::acomms::DCCLDefaultIdentifierCodec::encode()
+{
+    return encode(0);
+}
+
+goby::acomms::Bitset goby::acomms::DCCLDefaultIdentifierCodec::encode(const uint32& id)
+{
+    if(id <= ONE_BYTE_MAX_ID)
+    {
+        return(goby::acomms::Bitset(size(id), id));
+    }                
+    else
+    {
+        goby::acomms::Bitset return_bits(size(id), id);
+        // set MSB to indicate long header form
+        return_bits.set(return_bits.size()-1);
+        return return_bits;
+    }
+}
+
+goby::uint32 goby::acomms::DCCLDefaultIdentifierCodec::decode(goby::acomms::Bitset* bits)
+{
+    if(bits->test(bits->size()-1))
+    {
+        // long header
+        // grabs more bits to add to the MSBs of `bits`
+        get_more_bits((LONG_FORM_ID_BYTES - SHORT_FORM_ID_BYTES)*BITS_IN_BYTE);        
+        bits->set(bits->size()-1, false);
+        return bits->to_ulong();
+    }
+    else
+    {
+        // short header
+        return bits->to_ulong();
+    }
+}
+
+unsigned goby::acomms::DCCLDefaultIdentifierCodec::size()
+{
+    return size(0);
+}
+
+unsigned goby::acomms::DCCLDefaultIdentifierCodec::size(const uint32& id)
+{
+    if(id < 0 || id > TWO_BYTE_MAX_ID)
+        throw(DCCLException("dccl.id provided (" + goby::util::as<std::string>(id) + ") is less than 0 or exceeds maximum: " + goby::util::as<std::string>(int(TWO_BYTE_MAX_ID))));
+    
+    return (id <= ONE_BYTE_MAX_ID) ?
+        SHORT_FORM_ID_BYTES*BITS_IN_BYTE :
+        LONG_FORM_ID_BYTES*BITS_IN_BYTE;
+
+}
+
+unsigned goby::acomms::DCCLDefaultIdentifierCodec::max_size()
+{
+    return LONG_FORM_ID_BYTES * BITS_IN_BYTE;
+}
+
+unsigned goby::acomms::DCCLDefaultIdentifierCodec::min_size()
+{
+    return SHORT_FORM_ID_BYTES * BITS_IN_BYTE;
+}
+
+
+        
+
+//
 // DCCLDefaultBoolCodec
 //
 

@@ -42,7 +42,7 @@ int startup_failure();
 void received_data(const google::protobuf::Message&);
 void received_ack(const goby::acomms::protobuf::ModemDataAck&,
                   const google::protobuf::Message&);
-void monitor_mac(const goby::acomms::protobuf::ModemMsgBase* mac_msg);
+void monitor_mac(const goby::acomms::protobuf::ModemDataInit* mac_msg);
 
 std::ofstream fout_;
 goby::acomms::DCCLCodec* dccl_ = goby::acomms::DCCLCodec::get();
@@ -214,11 +214,11 @@ int startup_failure()
     return 1;
 }
 
-void monitor_mac(const goby::acomms::protobuf::ModemMsgBase* mac_msg)
+void monitor_mac(const goby::acomms::protobuf::ModemDataInit* mac_msg)
 {
-    if(mac_msg->src() == my_id_)
+    if(mac_msg->base().src() == my_id_)
         curses_.post_message("{control} starting send to my buddy");
-    else if(mac_msg->src() == buddy_id_)
+    else if(mac_msg->base().src() == buddy_id_)
         curses_.post_message("{control} my buddy might be sending to me now");
 }
 

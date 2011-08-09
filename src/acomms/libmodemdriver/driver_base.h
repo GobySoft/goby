@@ -64,7 +64,7 @@ namespace goby
             /// \brief Virtual initiate_transmission method. Typically connected to MACManager::signal_initiate_transmission() using bind().
             ///
             /// \param m ModemMsgBase (defined in modem_message.proto) containing the details of the transmission to be started. This does *not* contain data, which will be requested when the driver calls the data request signal (ModemDriverBase::signal_data_request)
-            virtual void handle_initiate_transmission(protobuf::ModemMsgBase* m) = 0;            
+            virtual void handle_initiate_transmission(protobuf::ModemDataInit* m) = 0;            
             /// \brief Virtual initiate_ranging method.  Typically connected to MACManager::signal_initiate_ranging() using bind().
             ///
             /// \param m ModemRangingRequest (defined in modem_message.proto) containing the details of the ranging request to be started: source, destination, type, etc.

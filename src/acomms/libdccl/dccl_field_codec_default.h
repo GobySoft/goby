@@ -43,6 +43,31 @@ namespace goby
 {
     namespace acomms
     {
+
+        class DCCLDefaultIdentifierCodec : public DCCLTypedFieldCodec<uint32>
+        {
+          private:
+            Bitset encode();
+            Bitset encode(const uint32& wire_value);
+            uint32 decode(Bitset* bits);
+            unsigned size();
+            unsigned size(const uint32& field_value);
+            unsigned max_size();
+            unsigned min_size();
+            void validate() { }
+            bool variable_size() { return true; }
+            
+            // maximum id we can fit in short or long header (MSB reserved to indicate
+            // short or long header)
+            enum { ONE_BYTE_MAX_ID = (1 << 7) - 1,
+                   TWO_BYTE_MAX_ID = (1 << 15) - 1};
+            
+            enum { SHORT_FORM_ID_BYTES = 1,
+                   LONG_FORM_ID_BYTES = 2 };
+        };
+
+        
+
         template<typename WireType, typename FieldType = WireType>
             class DCCLDefaultArithmeticFieldCodec : public DCCLTypedFixedFieldCodec<WireType, FieldType>
         {
@@ -147,6 +172,8 @@ namespace goby
             
         };
 
+
+        
         class DCCLDefaultBytesCodec : public DCCLTypedFieldCodec<std::string>
         {
           private:

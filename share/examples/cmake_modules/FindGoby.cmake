@@ -57,16 +57,6 @@ include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(Goby "Could NOT find Goby. Set GOBY_ROOT_DIR to the path where Goby is on your system (e.g. > cmake -DGOBY_ROOT_DIR=/home/me/goby .)"
   GOBY_DIR 
   GOBY_INCLUDE_DIR
-  GOBY_AMAC_LIBRARY 
-  GOBY_DCCL_LIBRARY
-  GOBY_MODEMDRIVER_LIBRARY
-  GOBY_QUEUE_LIBRARY 
-  GOBY_CORE_LIBRARY
-  GOBY_DBO_LIBRARY
-  GOBY_LOGGER_LIBRARY 
-  GOBY_LINEBASEDCOMMS_LIBRARY
-  GOBY_MOOSUTIL_LIBRARY
-  GOBY_PROTOBUF_LIBRARY
   )
 
 if(GOBY_FOUND)

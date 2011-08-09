@@ -32,6 +32,8 @@ namespace goby
           protected:
             LineBasedConnection<ASIOAsyncReadStream>()
             {}
+            virtual ~LineBasedConnection<ASIOAsyncReadStream>()
+            {}
             
             virtual ASIOAsyncReadStream& socket () = 0;
             

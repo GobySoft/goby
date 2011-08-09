@@ -56,6 +56,7 @@ if(build_protobuf)
     if(build_acomms)
       add_subdirectory(acomms)
 
+      
       find_package(ZeroMQ)
       if(ZEROMQ_FOUND)
         include_directories(${ZEROMQ_INCLUDE_DIRS})

@@ -1,5 +1,4 @@
 import "goby/protobuf/queue.proto";
-// TODO(tes) consider using extensions to handle different modem characteristics
 
 package goby.acomms.protobuf;
 
@@ -16,6 +15,19 @@ message ModemMsgBase
   optional string description = 8; // "Incoming hexadecimal data"
 }
 
+
+// initiate transmission
+message ModemDataInit
+{
+  optional ModemMsgBase base = 1;
+  optional uint32 num_frames = 2 [default = 1]; // set by the modem driver for the given rate
+  repeated ModemDataTransmission frame = 3; // if omitted, you will be queried for data on signal_data_request. You can also set some frames here and the rest will be filled by signalling a data request
+  
+  // 1000-1099 taken by MMDriver
+  extensions 1000 to max;
+}
+
+
 // data 
 message ModemDataTransmission
 {
@@ -25,7 +37,8 @@ message ModemDataTransmission
   optional bytes data = 4;
   optional uint32 frame = 5 [default = 0];  // frame number if the modem supports multiple frames per packet
   optional uint32 dccl_id = 6;
-
+  
+  // 1000-1099 taken by MMDriver
   extensions 1000 to max;
 }
 
@@ -40,12 +53,17 @@ message ModemDataRequest
   optional ModemMsgBase base = 1;
   optional uint32 max_bytes = 2; // omitted means no maximum
   optional uint32 frame = 3 [default = 0]; 
- }
 
-message ModemDataInit
+  // 1000-1099 taken by MMDriver
+  extensions 1000 to max;
+}
+
+enum ClockMode
 {
-  optional ModemMsgBase base = 1;
-  optional uint32 num_frames = 2 [default = 1];
+  NO_SYNC_TO_PPS_AND_CCCLK_BAD = 0;
+  NO_SYNC_TO_PPS_AND_CCCLK_GOOD = 1;
+  SYNC_TO_PPS_AND_CCCLK_BAD = 2;
+  SYNC_TO_PPS_AND_CCCLK_GOOD = 3;
 }
 
 // ranging
@@ -61,14 +79,25 @@ enum RangingType
 
   // modem 1 pings a REMUS network of long baseline (LBL) beacons
   REMUS_LBL_RANGING = 3;
+
+  // modem 1 pings up to four transponders
+  NARROWBAND_LBL_RANGING = 4;
 }
 
 message ModemRangingReply
 {
   optional ModemMsgBase base = 1;
   // seconds
-  repeated double one_way_travel_time = 2;  
-  optional RangingType type = 3;
+  repeated double one_way_travel_time = 3;
+  enum OWTTAmbiguity
+  {
+    OWTT_EXACT = 1; // one_way_travel_time reported is correct and known
+    OWTT_SECOND_AMBIGUOUS = 2; // one way travel time fractional second is correct, but second is unknown
+  }
+  optional OWTTAmbiguity ambiguity = 4 [default = OWTT_EXACT];
+  optional RangingType type = 5;
+  optional ClockMode receiver_clk_mode = 6 [default = NO_SYNC_TO_PPS_AND_CCCLK_BAD];
+  optional ClockMode sender_clk_mode = 7 [default = NO_SYNC_TO_PPS_AND_CCCLK_BAD];
 }
 
 message ModemRangingRequest
@@ -76,10 +105,6 @@ message ModemRangingRequest
   optional ModemMsgBase base = 1;
   optional RangingType type = 2;
 
-  // meters, not used if type == MODEM_RANGING
-  optional uint32 max_range = 3 [default = 1000]; 
-  
-  // LSB->MSB is LBL beacons 1,2,3,... true is enabled, false is disabled
-  // enable four beacons is b1111 == d15 
-  optional uint32 enable_beacons = 4 [default = 15];
+  // meters, used if type == REMUS_LBL_RANGING || type == NARROWBAND_LBL_RANGING
+  optional uint32 lbl_max_range = 3 [default = 1000]; 
 }

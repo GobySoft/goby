@@ -194,6 +194,8 @@ void goby::acomms::MACManager::begin_slot(const boost::system::error_code& e)
                 case protobuf::SLOT_DATA: *log_ << "d"; break;
                 case protobuf::SLOT_PING: *log_ << "p"; break;
                 case protobuf::SLOT_REMUS_LBL: *log_ << "r"; break; 
+                case protobuf::SLOT_NARROWBAND_LBL: *log_ << "n"; break; 
+                case protobuf::SLOT_MINI: *log_ << "m"; break;
             }
 
             *log_ << it->second.src() << "/" << it->second.dest() << "@" << it->second.rate() << " " << nocolor;
@@ -210,16 +212,22 @@ void goby::acomms::MACManager::begin_slot(const boost::system::error_code& e)
         switch(s.type())
         {
             case protobuf::SLOT_DATA:
+            case protobuf::SLOT_MINI:
             {
-                protobuf::ModemMsgBase m;
-                m.set_src(s.src());
-                m.set_dest(s.dest());
-                m.set_rate(s.rate());
+                protobuf::ModemDataInit m;
+                m.mutable_base()->set_src(s.src());
+                m.mutable_base()->set_dest(s.dest());
+                m.mutable_base()->set_rate(s.rate());
+
+                // Micro-Modem extension wants the slot; make this more general later
+                m.MutableExtension(MicroModem::init_slot)->CopyFrom(s);
+
                 signal_initiate_transmission(&m);
                 break;
             }
             
             case protobuf::SLOT_REMUS_LBL:
+            case protobuf::SLOT_NARROWBAND_LBL:
             case protobuf::SLOT_PING:
             {
                 protobuf::ModemRangingRequest m;
@@ -230,10 +238,13 @@ void goby::acomms::MACManager::begin_slot(const boost::system::error_code& e)
                     m.set_type(protobuf::REMUS_LBL_RANGING);
                 else if(s.type() == protobuf::SLOT_PING)
                     m.set_type(protobuf::MODEM_TWO_WAY_PING);
+                else if(s.type() == protobuf::SLOT_NARROWBAND_LBL)
+                    m.set_type(protobuf::NARROWBAND_LBL_RANGING);
                 
                 signal_initiate_ranging(&m);
                 break;
-            }            
+            }   
+
             default:
                 break;
         }
@@ -470,7 +481,7 @@ std::map<int, goby::acomms::protobuf::Slot>::iterator goby::acomms::MACManager::
     if(log_) *log_ << group("mac") << "added new slot " << s << std::endl;
     
     process_cycle_size_change();
-    
+
     return it;
 }
 

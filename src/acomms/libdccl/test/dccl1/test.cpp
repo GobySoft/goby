@@ -105,9 +105,9 @@ int main(int argc, char* argv[])
         msg_in.add_string_default_repeat("abc123");
 
         if(j)
-            msg_in.add_bytes_default_repeat(goby::util::hex_decode("aabbcc12"));
+            msg_in.add_bytes_default_repeat(goby::util::hex_decode("00aabbcc"));
         else
-            msg_in.add_bytes_default_repeat(goby::util::hex_decode("12ccbbaa"));
+            msg_in.add_bytes_default_repeat(goby::util::hex_decode("ffeedd12"));
         
         msg_in.add_enum_default_repeat(static_cast<Enum1>((++i % 3) + 1));
         EmbeddedMsg1* em_msg = msg_in.add_msg_default_repeat();

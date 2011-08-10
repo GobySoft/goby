@@ -24,7 +24,7 @@
 #include "message.h"
 #include "goby/acomms/libdccl/dccl_exception.h"
 
-#include "goby/util/string.h"
+#include "goby/util/as.h"
 
 goby::transitional::DCCLAlgorithmPerformer* goby::transitional::DCCLAlgorithmPerformer::inst_ = 0;
 

@@ -16,7 +16,7 @@
 #include <iostream>
 
 #include "goby/util/linebasedcomms.h"
-#include "goby/util/string.h"
+#include "goby/util/as.h"
 
 using goby::util::as;
 

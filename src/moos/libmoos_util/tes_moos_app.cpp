@@ -22,7 +22,7 @@
 #include <boost/foreach.hpp>
 #include <boost/bind.hpp>
 
-#include "goby/util/string.h"
+#include "goby/util/as.h"
 
 using goby::glog;
 using goby::util::as;

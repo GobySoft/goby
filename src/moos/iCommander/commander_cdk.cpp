@@ -22,7 +22,7 @@
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "commander_cdk.h"
-#include "goby/util/string.h"
+#include "goby/util/as.h"
 
 using namespace std;
 

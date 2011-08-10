@@ -23,7 +23,7 @@
 
 #include "pREMUSCodec.h"
 
-#include "goby/util/string.h"
+#include "goby/util/as.h"
 #include "boost/algorithm/string.hpp"
 #include "goby/protobuf/modem_message.pb.h"
 #include "goby/moos/libmoos_util/moos_protobuf_helpers.h"

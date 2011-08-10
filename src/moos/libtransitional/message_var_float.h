@@ -20,7 +20,7 @@
 #ifndef MESSAGE_VAR_FLOAT20100317H
 #define MESSAGE_VAR_FLOAT20100317H
 
-#include "goby/util/string.h"
+#include "goby/util/as.h"
 
 #include "message_var.h"
 

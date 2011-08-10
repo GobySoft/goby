@@ -28,7 +28,7 @@
 #include "message_xml_callbacks.h"
 #include "queue_xml_callbacks.h"
 #include "goby/util/logger.h"
-#include "goby/util/string.h"
+#include "goby/util/as.h"
 #include "goby/protobuf/acomms_proto_helpers.h"
 #include <google/protobuf/descriptor.pb.h>
 #include "goby/protobuf/dccl_option_extensions.pb.h"

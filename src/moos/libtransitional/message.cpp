@@ -19,7 +19,7 @@
 
 #include <boost/foreach.hpp>
 
-#include "goby/util/string.h"
+#include "goby/util/as.h"
 #include "goby/util/logger.h"
 #include "message.h"
 #include "goby/acomms/libdccl/dccl.h"

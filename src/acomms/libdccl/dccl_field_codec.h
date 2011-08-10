@@ -37,7 +37,7 @@
 #include "goby/protobuf/dccl.pb.h"
 #include "goby/protobuf/acomms_proto_helpers.h"
 #include "goby/protobuf/dccl_option_extensions.pb.h"
-#include "goby/util/string.h"
+#include "goby/util/as.h"
 #include "dccl_type_helper.h"
 
 namespace goby

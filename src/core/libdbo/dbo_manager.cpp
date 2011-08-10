@@ -20,7 +20,7 @@
 
 #include <Wt/Dbo/backend/Sqlite3>
 
-#include "goby/util/string.h"
+#include "goby/util/as.h"
 #include "goby/util/time.h"
 #include "goby/util/logger.h"
 #include "wt_dbo_overloads.h"

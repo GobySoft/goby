@@ -29,7 +29,7 @@
 #include <boost/foreach.hpp>
 #include <boost/asio.hpp>
 
-#include "goby/util/string.h"
+#include "goby/util/as.h"
 
 #include "interface.h"
 #include "connection.h"

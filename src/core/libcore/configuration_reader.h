@@ -34,7 +34,7 @@
 #include <google/protobuf/io/zero_copy_stream_impl.h>
 #include <google/protobuf/text_format.h>
 
-#include "goby/util/string.h"
+#include "goby/util/as.h"
 
 class AppBaseConfig;
 

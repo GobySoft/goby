@@ -27,7 +27,7 @@
 #include <string>
 
 #include "goby/util/linebasedcomms.h"
-#include "goby/util/string.h"
+#include "goby/util/as.h"
 #include "goby/acomms/acomms_constants.h" // for BROADCAST_ID
 
 std::map<int, std::string> modem_id2endpoint;

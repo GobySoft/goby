@@ -26,6 +26,6 @@
 #include "goby/util/time.h"
 #include "goby/util/logger.h"
 #include "goby/util/sci.h"
-#include "goby/util/string.h"
+#include "goby/util/as.h"
 
 #endif

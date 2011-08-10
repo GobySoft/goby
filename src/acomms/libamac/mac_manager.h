@@ -32,7 +32,7 @@
 #include "goby/protobuf/amac.pb.h"
 #include "goby/acomms/modem_driver.h"
 #include "goby/util/time.h"
-#include "goby/util/string.h"
+#include "goby/util/as.h"
 
 namespace goby
 {

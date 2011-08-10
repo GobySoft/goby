@@ -24,7 +24,7 @@
 #include "modem_id_convert.h"
 #include <string>
 #include <vector>
-#include "goby/util/string.h"
+#include "goby/util/as.h"
 #include <boost/algorithm/string.hpp>
 
 using namespace std;

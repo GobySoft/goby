@@ -20,7 +20,7 @@
 #include "message_xml_callbacks.h"
 
 
-#include "goby/util/string.h"
+#include "goby/util/as.h"
 
 using namespace xercesc;
 using namespace goby::transitional::xml;

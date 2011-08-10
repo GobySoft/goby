@@ -19,7 +19,7 @@
 #define TCPClientH
 
 #include "client_base.h"
-#include "goby/util/string.h"
+#include "goby/util/as.h"
 
 namespace goby
 {

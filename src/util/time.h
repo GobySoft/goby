@@ -23,7 +23,7 @@
 #include <boost/date_time.hpp>
 
 #include "goby/util/primitive_types.h"
-#include "goby/util/string.h"
+#include "goby/util/as.h"
 
 /// All objects related to the Goby Underwater Autonomy Project
 namespace goby

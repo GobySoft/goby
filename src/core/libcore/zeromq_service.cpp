@@ -18,7 +18,7 @@
 
 #include "goby/util/binary.h" // for hex_encode
 #include "goby/util/logger.h" // for glog & manipulators die, warn, group(), etc.
-#include "goby/util/string.h" // for goby::util::as
+#include "goby/util/as.h" // for goby::util::as
 
 #include "zeromq_service.h"
 #include "exception.h"

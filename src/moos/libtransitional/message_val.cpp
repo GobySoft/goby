@@ -25,7 +25,7 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/numeric/conversion/cast.hpp>
 
-#include "goby/util/string.h"
+#include "goby/util/as.h"
 #include "goby/util/sci.h"
 
 #include "message_val.h"

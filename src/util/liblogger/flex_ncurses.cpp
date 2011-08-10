@@ -25,7 +25,7 @@
 #include <boost/foreach.hpp>
 #include <boost/algorithm/string.hpp>
 
-#include "goby/util/string.h"
+#include "goby/util/as.h"
 
 #include "logger_manipulators.h"
 

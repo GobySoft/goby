@@ -25,7 +25,7 @@
 
 #include "dccl_constants.h"
 #include "goby/util/binary.h"
-#include "goby/util/string.h"
+#include "goby/util/as.h"
 
 namespace goby
 {

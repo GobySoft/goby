@@ -19,7 +19,7 @@
 
 #include <boost/foreach.hpp>
 
-#include "goby/util/string.h"
+#include "goby/util/as.h"
 #include "goby/moos/libmoos_util/moos_string.h"
 
 #include "message_var.h"

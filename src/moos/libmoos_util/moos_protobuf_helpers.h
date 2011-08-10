@@ -21,7 +21,7 @@
 #include "google/protobuf/io/printer.h"
 #include <google/protobuf/io/tokenizer.h>
 #include "goby/util/liblogger/flex_ostream.h"
-#include "goby/util/string.h"
+#include "goby/util/as.h"
 #include "goby/moos/libmoos_util/moos_string.h"
 
 

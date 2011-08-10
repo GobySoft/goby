@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef CoreException20101005H
-#define CoreException20101005H
+#ifndef Exception20101005H
+#define Exception20101005H
 
 #include <exception>
 #include <stdexcept>
@@ -31,23 +31,6 @@ namespace goby
           : std::runtime_error(s)
         { }
         
-    };
-
-    ///  \brief  indicates a problem with the runtime command line
-    /// or .cfg file configuration (or --help was given)
-    class ConfigException : public Exception
-    {
-      public:
-      ConfigException(const std::string& s)
-          : Exception(s),
-            error_(true)
-        { }
-
-        void set_error(bool b) { error_ = b; }
-        bool error() { return error_; }
-        
-      private:
-        bool error_;
     };
     
     

@@ -40,7 +40,7 @@ namespace goby
 
     namespace util
     {   
-        /// \name String
+        /// \name goby::util::as, a "do-the-right-thing" type casting tool
         //@{
         
         template<typename To>

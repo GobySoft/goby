@@ -20,7 +20,7 @@
 #ifndef DCCLException20100812H
 #define DCCLException20100812H
 
-#include "goby/core/libcore/exception.h"
+#include "goby/util/exception.h"
 
 namespace goby
 {

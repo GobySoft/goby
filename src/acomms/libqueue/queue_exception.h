@@ -20,12 +20,22 @@
 #ifndef QueueException20100812H
 #define QueueException20100812H
 // simple exception class
-class queue_exception : public std::runtime_error
+
+#include "goby/util/exception.h"
+
+namespace goby
 {
-  public:
-  queue_exception(const std::string& s)
-      : std::runtime_error(s)
-    { }
-};
+    namespace acomms
+    {
+        /// \brief Exception class for libdccl
+        class QueueException : public goby::Exception
+        {
+          public:
+          QueueException(const std::string& s)
+              : Exception(s)
+            { }
+        };
+    }
+}
 
 #endif

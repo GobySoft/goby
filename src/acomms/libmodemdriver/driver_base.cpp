@@ -67,7 +67,7 @@ void goby::acomms::ModemDriverBase::modem_close()
 void goby::acomms::ModemDriverBase::modem_start(const protobuf::DriverConfig& cfg)
 {        
     if(!cfg.has_modem_id())
-        throw(driver_exception("missing modem_id in configuration"));
+        throw(ModemDriverException("missing modem_id in configuration"));
     
     switch(cfg.connection_type())
     {
@@ -75,9 +75,9 @@ void goby::acomms::ModemDriverBase::modem_start(const protobuf::DriverConfig& cf
             if(log_) *log_ << group("modem_out") << "opening serial port " << cfg.serial_port() << " @ " << cfg.serial_baud() << std::endl;
 
             if(!cfg.has_serial_port())
-                throw(driver_exception("missing serial port in configuration"));
+                throw(ModemDriverException("missing serial port in configuration"));
             if(!cfg.has_serial_baud())
-                throw(driver_exception("missing serial baud in configuration"));
+                throw(ModemDriverException("missing serial baud in configuration"));
             
             modem_ = new util::SerialClient(cfg.serial_port(), cfg.serial_baud(), cfg.line_delimiter());
             break;
@@ -85,9 +85,9 @@ void goby::acomms::ModemDriverBase::modem_start(const protobuf::DriverConfig& cf
         case protobuf::DriverConfig::CONNECTION_TCP_AS_CLIENT:
             if(log_) *log_ << group("modem_out") << "opening tcp client: " << cfg.tcp_server() << ":" << cfg.tcp_port() << std::endl;
             if(!cfg.has_tcp_server())
-                throw(driver_exception("missing tcp server address in configuration"));
+                throw(ModemDriverException("missing tcp server address in configuration"));
             if(!cfg.has_tcp_port())
-                throw(driver_exception("missing tcp port in configuration"));
+                throw(ModemDriverException("missing tcp port in configuration"));
 
             modem_ = new util::TCPClient(cfg.tcp_server(), cfg.tcp_port(), cfg.line_delimiter());
             break;
@@ -96,12 +96,12 @@ void goby::acomms::ModemDriverBase::modem_start(const protobuf::DriverConfig& cf
             if(log_) *log_ << group("modem_out") << "opening tcp server on port" << cfg.tcp_port() << std::endl;
 
             if(!cfg.has_tcp_port())
-                throw(driver_exception("missing tcp port in configuration"));
+                throw(ModemDriverException("missing tcp port in configuration"));
 
             modem_ = new util::TCPServer(cfg.tcp_port(), cfg.line_delimiter());
 
         case protobuf::DriverConfig::CONNECTION_DUAL_UDP_BROADCAST:
-            throw(driver_exception("unimplemented connection type"));
+            throw(ModemDriverException("unimplemented connection type"));
     }    
 
     modem_->start();

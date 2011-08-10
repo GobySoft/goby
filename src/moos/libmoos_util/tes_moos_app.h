@@ -189,7 +189,7 @@ int goby::moos::run(int argc, char* argv[])
         App* app = App::get_instance();
         app->Run(App::application_name_.c_str(), App::mission_file_.c_str());
     }
-    catch(goby::ConfigException& e)
+    catch(goby::core::ConfigException& e)
     {
         // no further warning as the ApplicationBase Ctor handles this
         return 1;

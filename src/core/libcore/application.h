@@ -19,6 +19,7 @@
 
 #include "goby/util/logger.h"
 #include "goby/core/core_helpers.h"
+#include "goby/util/exception.h"
 
 #include "goby/protobuf/config.pb.h"
 #include "goby/protobuf/header.pb.h"
@@ -26,6 +27,7 @@
 #include "database_client.h"
 #include "pubsub_node_wrapper.h"
 #include "zeromq_application_base.h"
+
 
 namespace google { namespace protobuf { class Message; } }
 namespace goby
@@ -112,7 +114,7 @@ namespace goby
                 if(pubsub_node_)
                     return pubsub_node_->newest<ProtoBufMessage>();
                 else
-                    throw(std::runtime_error("not using pubsub, can't call newest"));
+                    throw(goby::Exception("not using pubsub, can't call newest"));
             }
             
             //@}            

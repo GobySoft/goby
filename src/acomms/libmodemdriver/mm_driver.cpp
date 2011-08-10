@@ -606,7 +606,7 @@ void goby::acomms::MMDriver::try_send()
         if(global_fail_count_ == MAX_FAILS_BEFORE_DEAD)
         {
             modem_close();
-            throw(driver_exception("modem appears to not be responding!"));
+            throw(ModemDriverException("modem appears to not be responding!"));
         }
         
         try
@@ -617,7 +617,7 @@ void goby::acomms::MMDriver::try_send()
             // assuming we're still ok, write the line again
             mm_write(base_msg);
         }
-        catch(driver_exception& e)
+        catch(ModemDriverException& e)
         {
             present_fail_exceeds_retries();
         }
@@ -628,7 +628,7 @@ void goby::acomms::MMDriver::increment_present_fail()
 {
     ++present_fail_count_;
     if(present_fail_count_ >= RETRIES)
-        throw(driver_exception("Fail count exceeds RETRIES"));
+        throw(ModemDriverException("Fail count exceeds RETRIES"));
 }
 
 void goby::acomms::MMDriver::present_fail_exceeds_retries()
@@ -1015,7 +1015,7 @@ void goby::acomms::MMDriver::err(const NMEASentence& nmea)
         {
             increment_present_fail(); 
         }
-        catch(driver_exception& e)
+        catch(ModemDriverException& e)
         {
             present_fail_exceeds_retries();
         }

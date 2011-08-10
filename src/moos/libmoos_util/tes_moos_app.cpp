@@ -304,7 +304,7 @@ void TesMoosApp::read_configuration(google::protobuf::Message* cfg)
         
         if (var_map.count("help"))
         {
-            goby::ConfigException e("");
+            goby::core::ConfigException e("");
             e.set_error(false);
             throw(e);
         }
@@ -418,11 +418,11 @@ void TesMoosApp::read_configuration(google::protobuf::Message* cfg)
                 err_msg << goby::util::esc_red << s << "\n" << goby::util::esc_nocolor;
                 
             err_msg << "Make sure you specified a proper .moos file";
-            throw(goby::ConfigException(err_msg.str()));
+            throw(goby::core::ConfigException(err_msg.str()));
         }
         
     }
-    catch(goby::ConfigException& e)
+    catch(goby::core::ConfigException& e)
     {
         // output all the available command line options
         std::cerr << od_all << "\n";

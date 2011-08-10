@@ -153,7 +153,7 @@ namespace goby
             /// \brief start the physical connection to the modem (serial port, TCP, etc.). must be called before ModemDriverBase::modem_read() or ModemDriverBase::modem_write()
             ///
             /// \param cfg Configuration including the parameters for the physical connection. (protobuf::DriverConfig is defined in driver_base.proto).
-            /// \throw driver_exception Problem opening the physical connection.
+            /// \throw ModemDriverException Problem opening the physical connection.
             /// 
             void modem_start(const protobuf::DriverConfig& cfg);
 

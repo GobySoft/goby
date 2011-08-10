@@ -64,7 +64,7 @@ void goby::acomms::QueueManager::add_queue(const google::protobuf::Descriptor* d
     }
     catch(DCCLException& e)
     {
-        throw(queue_exception("could not create queue for message: " + desc->full_name() + " because it failed DCCL validation: " + e.what()));
+        throw(QueueException("could not create queue for message: " + desc->full_name() + " because it failed DCCL validation: " + e.what()));
     }
     
     // add the newly generated queue
@@ -73,7 +73,7 @@ void goby::acomms::QueueManager::add_queue(const google::protobuf::Descriptor* d
     {
         std::stringstream ss;
         ss << "Queue: duplicate message specified for DCCL ID: " << dccl_id;
-        throw queue_exception(ss.str());
+        throw QueueException(ss.str());
     }
     else
     {
@@ -532,7 +532,7 @@ void goby::acomms::QueueManager::set_latest_metadata(const boost::any& field_val
         else if(wire_value.type() == typeid(uint64))
             dest = boost::any_cast<uint64>(wire_value);
         else
-            throw(queue_exception("Invalid type " + std::string(wire_value.type().name()) + " given for (queue_field).is_dest. Expected integer type"));
+            throw(QueueException("Invalid type " + std::string(wire_value.type().name()) + " given for (queue_field).is_dest. Expected integer type"));
                     
         goby::glog.is(debug2) &&
             goby::glog << "setting dest to " << dest << std::endl;
@@ -551,7 +551,7 @@ void goby::acomms::QueueManager::set_latest_metadata(const boost::any& field_val
         else if(wire_value.type() == typeid(uint64))
             src = boost::any_cast<uint64>(wire_value);
         else
-            throw(queue_exception("Invalid type " + std::string(wire_value.type().name()) + " given for (queue_field).is_src. Expected integer type"));
+            throw(QueueException("Invalid type " + std::string(wire_value.type().name()) + " given for (queue_field).is_src. Expected integer type"));
 
         goby::glog.is(debug2) &&
             goby::glog << "setting source to " << src << std::endl;
@@ -563,7 +563,7 @@ void goby::acomms::QueueManager::set_latest_metadata(const boost::any& field_val
     {
 
         if(field_value.type() != typeid(std::string))
-            throw(queue_exception("Invalid type " + std::string(field_value.type().name()) + " given for (queue_field).is_time. Expected std::string containing goby::util::as<std::string>(boost::posix_time::ptime)"));
+            throw(QueueException("Invalid type " + std::string(field_value.type().name()) + " given for (queue_field).is_time. Expected std::string containing goby::util::as<std::string>(boost::posix_time::ptime)"));
 
         goby::glog.is(debug2) &&
             goby::glog << "setting time to " << boost::any_cast<std::string>(field_value) << std::endl;

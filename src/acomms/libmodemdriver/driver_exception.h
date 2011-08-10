@@ -20,13 +20,21 @@
 #ifndef DriverException20108012H
 #define DriverException20100812H
 
-class driver_exception : public std::runtime_error
-{
-  public:
-  driver_exception(const std::string& s)
-      : std::runtime_error(s)
-    { }
+#include "goby/util/exception.h"
 
-};
+namespace goby
+{
+    namespace acomms
+    {
+        class ModemDriverException : public goby::Exception
+        {
+          public:
+          ModemDriverException(const std::string& s)
+              : Exception(s)
+            { }
+
+        };
+    }
+}
 
 #endif

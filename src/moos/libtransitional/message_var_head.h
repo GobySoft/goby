@@ -84,7 +84,7 @@ namespace goby
             void write_schema_to_dccl2(std::ofstream* proto_file,
                                                int sequence_number)
             {
-                *proto_file << "\t" << "optional string " << name() << " = " << sequence_number << " [(dccl.codec)=\"_time\", (dccl.in_head)=true, (queue.is_time)=true];" << std::endl;
+                *proto_file << "\t" << "optional string " << name() << " = " << sequence_number << " [(goby.field).dccl.codec=\"_time\", (goby.field).dccl.in_head=true, (goby.field).queue.is_time=true];" << std::endl;
             }
             
 
@@ -132,7 +132,7 @@ namespace goby
             }
 
             virtual std::string additional_option_extensions()
-            { return "(dccl.in_head)=true, (queue.is_src)=true"; }
+            { return "(goby.field).dccl.in_head=true, (goby.field).queue.is_src=true"; }
 
             
         };
@@ -150,7 +150,7 @@ namespace goby
             }
 
             virtual std::string additional_option_extensions()
-            { return "(dccl.in_head)=true, (queue.is_dest)=true"; }
+            { return "(goby.field).dccl.in_head=true, (goby.field).queue.is_dest=true"; }
             
         };
 

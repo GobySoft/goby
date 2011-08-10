@@ -48,7 +48,7 @@ int main(int argc, char* argv[])
         fout.open(argv[2]);
         if(fout.is_open())
         {            
-            glogger().add_stream(goby::util::Logger::debug, &fout);
+            glogger().add_stream(goby::util::Logger::DEBUG1, &fout);
         }
         else
         {
@@ -61,35 +61,35 @@ int main(int argc, char* argv[])
     {
         std::cout << "--- testing quiet ---" << std::endl;
         // add a stream with the quiet setting
-        glogger().add_stream(goby::util::Logger::quiet, &std::cout);
+        glogger().add_stream(goby::util::Logger::QUIET, &std::cout);
         output();
     }
     else if(verbosity == "warn")
     {
         std::cout << "--- testing warn ---" << std::endl;
         // add a stream with the quiet setting
-        glogger().add_stream(goby::util::Logger::warn, &std::cout);
+        glogger().add_stream(goby::util::Logger::WARN, &std::cout);
         output();
     }
     else if(verbosity == "verbose")
     {
         std::cout << "--- testing verbose ---" << std::endl;
         // add a stream with the quiet setting
-        glogger().add_stream(goby::util::Logger::verbose, &std::cout);
+        glogger().add_stream(goby::util::Logger::VERBOSE, &std::cout);
         output();
     }
     else if(verbosity == "debug")
     {
-        std::cout << "--- testing debug ---" << std::endl;
+        std::cout << "--- testing debug 1---" << std::endl;
         // add a stream with the quiet setting
-        glogger().add_stream(goby::util::Logger::debug, &std::cout);
+        glogger().add_stream(goby::util::Logger::DEBUG1, &std::cout);
         output();
     }
     else if(verbosity == "gui")
     {
         std::cout << "--- testing gui ---" << std::endl;
         // add a stream with the quiet setting
-        glogger().add_stream(goby::util::Logger::gui, &std::cout);
+        glogger().add_stream(goby::util::Logger::GUI, &std::cout);
         output();
 
         const int CLOSE_TIME = 60;
@@ -118,7 +118,7 @@ void output()
     glogger() << "this is normal text" << std::endl;
     glogger() << lt_blue << "this is light blue text (in color terminals)"
               << nocolor << std::endl;
-    glogger() << debug << "this is debug text" << std::endl;
+    glogger() << debug1 << "this is debug text" << std::endl;
 
     glogger() << group("a") << "this text is related to a" << std::endl;
     glogger() << group("b") << "this text is related to b" << std::endl;

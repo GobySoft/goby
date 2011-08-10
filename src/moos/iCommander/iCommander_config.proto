@@ -4,20 +4,20 @@ import "goby/protobuf/option_extensions.proto";
 
 message iCommanderConfig
 {
-  optional TesMoosAppConfig common = 1 [(description)="Configuration common to all Goby MOOS applications"]; // see tes_moos_app.proto
+  optional TesMoosAppConfig common = 1 [(goby.field).description="Configuration common to all Goby MOOS applications"]; // see tes_moos_app.proto
 
   // for dccl
-  optional goby.transitional.protobuf.DCCLTransitionalConfig transitional_cfg = 2 [(description)="Configure the Goby 1 Transitional DCCL Encoder"];  // see transitional.proto
+  optional goby.transitional.protobuf.DCCLTransitionalConfig transitional_cfg = 2 [(goby.field).description="Configure the Goby 1 Transitional DCCL Encoder"];  // see transitional.proto
   
   // path to text file with entries:
   //   modem_id,name,type
   // for example
   //   3,unicorn,auv
-  optional string modem_id_lookup_path = 101 [(description)="Path to file containing mapping between modem_id and vehicle name & type", (moos_global) = "modem_id_lookup_path"];
+  optional string modem_id_lookup_path = 101 [(goby.field).description="Path to file containing mapping between modem_id and vehicle name & type", (goby.field).moos_global = "modem_id_lookup_path"];
 
-  repeated string load = 200 [(description)="Path to iCommander save file to load automatically on startup"];
+  repeated string load = 200 [(goby.field).description="Path to iCommander save file to load automatically on startup"];
   
-  repeated string show_variable = 201 [(description)="MOOS Variable to scope on the GUI"];
+  repeated string show_variable = 201 [(goby.field).description="MOOS Variable to scope on the GUI"];
 
-  optional bool force_xy_only = 202 [(description)="Set true to set all Latitude/Longitude fields to use x/y values instead", default=false];
+  optional bool force_xy_only = 202 [(goby.field).description="Set true to set all Latitude/Longitude fields to use x/y values instead", default=false];
 }

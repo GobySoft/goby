@@ -10,33 +10,33 @@ import "goby/protobuf/option_extensions.proto";
 
 message pAcommsHandlerConfig
 {
-  optional TesMoosAppConfig common = 1 [(description)="Configuration common to all Goby MOOS applications"]; // see tes_moos_app.proto
+  optional TesMoosAppConfig common = 1 [(goby.field).description="Configuration common to all Goby MOOS applications"]; // see tes_moos_app.proto
 
   // unique identifying integer (1-31) for this vehicle's modem
   // setting this will set the modem_id for all the components of goby-acomms
-  required int32 modem_id = 2 [(description)="Unique number 1-31 to identify this node", (example)="1"];
+  required int32 modem_id = 2 [(goby.field).description="Unique number 1-31 to identify this node", (goby.field).example="1"];
 
   // driver
   enum DriverType { DRIVER_NONE = 1; DRIVER_WHOI_MICROMODEM = 2; DRIVER_ABC_EXAMPLE_MODEM = 3;}
-  optional DriverType driver_type = 3 [default = DRIVER_NONE, (description)="Corresponding driver for the type of physical acoustic modem used"];
-  optional goby.acomms.protobuf.DriverConfig driver_cfg = 4 [(description)="Configure the acoustic modem driver"]; // see driver_base.proto & mm_driver.proto
+  optional DriverType driver_type = 3 [default = DRIVER_NONE, (goby.field).description="Corresponding driver for the type of physical acoustic modem used"];
+  optional goby.acomms.protobuf.DriverConfig driver_cfg = 4 [(goby.field).description="Configure the acoustic modem driver"]; // see driver_base.proto & mm_driver.proto
 
   // amac
-  optional goby.acomms.protobuf.MACConfig mac_cfg = 5 [(description)="Configure the acoustic Medium Access Control"]; // see amac.proto
+  optional goby.acomms.protobuf.MACConfig mac_cfg = 5 [(goby.field).description="Configure the acoustic Medium Access Control"]; // see amac.proto
   
   // for queue
-  optional goby.acomms.protobuf.QueueManagerConfig queue_cfg = 6 [(description)="Configure the Priority Queuing layer"]; // see queue.proto
+  optional goby.acomms.protobuf.QueueManagerConfig queue_cfg = 6 [(goby.field).description="Configure the Priority Queuing layer"]; // see queue.proto
 
   // for dccl
-  optional goby.acomms.protobuf.DCCLConfig dccl_cfg = 7 [(description)="Configure the Dynamic Compact Control Language Encoding/Decoding unit"];  // see dccl.proto
+  optional goby.acomms.protobuf.DCCLConfig dccl_cfg = 7 [(goby.field).description="Configure the Dynamic Compact Control Language Encoding/Decoding unit"];  // see dccl.proto
 
-  optional goby.transitional.protobuf.DCCLTransitionalConfig transitional_cfg = 8 [(description)="Backwards compatibility for DCCLv1 XML file"]; // see transitional.proto
+  optional goby.transitional.protobuf.DCCLTransitionalConfig transitional_cfg = 8 [(goby.field).description="Backwards compatibility for DCCLv1 XML file"]; // see transitional.proto
 
   
   // path to text file with entries:
   //   modem_id,name,type
   // for example
   //   3,unicorn,auv
-  optional string modem_id_lookup_path = 101 [(description)="Path to file containing mapping between modem_id and vehicle name & type",(moos_global) = "modem_id_lookup_path"];
+  optional string modem_id_lookup_path = 101 [(goby.field).description="Path to file containing mapping between modem_id and vehicle name & type",(goby.field).moos_global = "modem_id_lookup_path"];
 
 }

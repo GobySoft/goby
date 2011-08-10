@@ -73,8 +73,10 @@ void goby::acomms::ABCDriver::shutdown()
     ModemDriverBase::modem_close();
 } // shutdown
 
-void goby::acomms::ABCDriver::handle_initiate_transmission(protobuf::ModemMsgBase* base_msg)
+void goby::acomms::ABCDriver::handle_initiate_transmission(protobuf::ModemDataInit* init_msg)
 {
+    protobuf::ModemMsgBase* base_msg = init_msg->mutable_base();
+    
     if(log_)
     {
         // base_msg->rate() can be 0 (lowest), 1, 2, 3, 4, or 5 (lowest). Map these integers onto real bit-rates

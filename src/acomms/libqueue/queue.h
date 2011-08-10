@@ -36,6 +36,7 @@
 #include "goby/util/string.h"
 
 #include "goby/protobuf/queue.pb.h"
+#include "goby/protobuf/queue_option_extensions.pb.h"
 #include "goby/acomms/acomms_helpers.h"
 
 namespace goby
@@ -101,10 +102,9 @@ namespace goby
             }
             
             
-            template<typename Extension>
-                typename Extension::TypeTraits::ConstType get_msg_opt(const Extension& e) const
+            QueueMessageOptions queue_message_options()
             {
-                return desc_->options().GetExtension(e);
+                return desc_->options().GetExtension(goby::msg).queue();
             }
             
             const google::protobuf::Descriptor* descriptor() const {return desc_;}

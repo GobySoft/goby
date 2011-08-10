@@ -43,24 +43,51 @@ namespace goby
 {
     namespace acomms
     {
+
+        class DCCLDefaultIdentifierCodec : public DCCLTypedFieldCodec<uint32>
+        {
+          private:
+            Bitset encode();
+            Bitset encode(const uint32& wire_value);
+            uint32 decode(Bitset* bits);
+            unsigned size();
+            unsigned size(const uint32& field_value);
+            unsigned max_size();
+            unsigned min_size();
+            void validate() { }
+            bool variable_size() { return true; }
+            
+            // maximum id we can fit in short or long header (MSB reserved to indicate
+            // short or long header)
+            enum { ONE_BYTE_MAX_ID = (1 << 7) - 1,
+                   TWO_BYTE_MAX_ID = (1 << 15) - 1};
+            
+            enum { SHORT_FORM_ID_BYTES = 1,
+                   LONG_FORM_ID_BYTES = 2 };
+        };
+
+        
+
         template<typename WireType, typename FieldType = WireType>
             class DCCLDefaultArithmeticFieldCodec : public DCCLTypedFixedFieldCodec<WireType, FieldType>
         {
           protected:
 
           virtual double max()
-          { return DCCLFieldCodecBase::get(dccl::max); }
+          { return DCCLFieldCodecBase::dccl_field_options().max(); }
 
           virtual double min()
-          { return DCCLFieldCodecBase::get(dccl::min); }
+          { return DCCLFieldCodecBase::dccl_field_options().min(); }
 
           virtual double precision()
-          { return DCCLFieldCodecBase::has(dccl::precision) ? DCCLFieldCodecBase::get(dccl::precision) : 0; }
+          { return DCCLFieldCodecBase::dccl_field_options().precision(); }
             
           virtual void validate()
           {
-              DCCLFieldCodecBase::require(dccl::min, "dccl.min");
-              DCCLFieldCodecBase::require(dccl::max, "dccl.max");
+              DCCLFieldCodecBase::require(DCCLFieldCodecBase::dccl_field_options().has_min(),
+                      "missing (goby.field).dccl.min");
+              DCCLFieldCodecBase::require(DCCLFieldCodecBase::dccl_field_options().has_max(),
+                      "missing (goby.field).dccl.max");
           }
 
           Bitset encode()
@@ -145,6 +172,8 @@ namespace goby
             
         };
 
+
+        
         class DCCLDefaultBytesCodec : public DCCLTypedFieldCodec<std::string>
         {
           private:
@@ -213,7 +242,7 @@ namespace goby
 
             T decode(Bitset* bits)
             {
-                std::string t = DCCLFieldCodecBase::get(dccl::static_value);
+                std::string t = DCCLFieldCodecBase::dccl_field_options().static_value();
                 return t;
             }
             
@@ -224,7 +253,7 @@ namespace goby
             
             void validate()
             {
-                DCCLFieldCodecBase::require(dccl::static_value, "dccl.static_value");
+                DCCLFieldCodecBase::require(DCCLFieldCodecBase::dccl_field_options().has_static_value(), "missing (goby.field).dccl.static_value");
             }
             
         };

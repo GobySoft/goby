@@ -22,8 +22,12 @@ exec_program(${CMAKE_CXX_COMPILER}
 ## allows us to write custom modules or modifying existing ones
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules/")
 
-enable_testing()
-include(CTest)
+
+option(ENABLE_TESTING "Enable building of tests" OFF)
+if(ENABLE_TESTING)
+  enable_testing()
+  include(CTest)
+endif()
 
 set(GOBY_VERSION_MAJOR "2")
 set(GOBY_VERSION_MINOR "0")

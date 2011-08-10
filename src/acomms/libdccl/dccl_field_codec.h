@@ -137,9 +137,9 @@ namespace goby
 
 
             static void register_wire_value_hook(
-                const protobuf::HookKey& key,
-                boost::function<void (const boost::any& wire_value,
-                                      const boost::any& extension_value)> callback)
+                int key, boost::function<void (const boost::any& field_value,
+                                               const boost::any& wire_value,
+                                               const boost::any& extension_value)> callback)
             {
                 wire_value_hooks_[key].connect(callback);
             }
@@ -166,36 +166,45 @@ namespace goby
                 return !MessageHandler::field_.empty() ? MessageHandler::field_.back() : 0;
             }
             
-            
-            template<typename Extension>
-                typename Extension::TypeTraits::ConstType get(const Extension& e)
+
+            DCCLFieldOptions dccl_field_options()
             {
                 if(this_field())
-                    return this_field()->options().GetExtension(e);
+                    return this_field()->options().GetExtension(goby::field).dccl();
                 else
-                    throw(DCCLException("Cannot call get on base message (has no *field* option extension"));                
+                    throw(DCCLException("Cannot call dccl_field on base message (has no *field* option extension"));                
+                
             }
+            
+            /* template<typename Extension> */
+            /*     typename Extension::TypeTraits::ConstType get(const Extension& e) */
+            /* { */
+            /*     if(this_field()) */
+            /*         return this_field()->options().GetExtension(e); */
+            /*     else */
+            /*         throw(DCCLException("Cannot call get on base message (has no *field* option extension"));                 */
+            /* } */
 
             
-            template<typename Extension>
-                bool has(const Extension& e)
-            {
-                if(this_field())
-                    return this_field()->options().HasExtension(e);
-                else
-                    return false;
-            }
+            /* template<typename Extension> */
+            /*     bool has(const Extension& e) */
+            /* { */
+            /*     if(this_field()) */
+            /*         return this_field()->options().HasExtension(e); */
+            /*     else */
+            /*         return false; */
+            /* } */
             
-            template<typename Extension>
-                void require(const Extension& e, const std::string& name)
-            {
-                if(!has(e))
-                {
-                    if(this_field())
-                        throw(DCCLException("Field " + this_field()->name() + " missing option extension called `" + name + "`."));
-                }
-                
-            }            
+            /* template<typename Extension> */
+            /*     void require(const Extension& e, const std::string& name) */
+            /* { */
+            /*     if(!has(e)) */
+            /*     { */
+            /*         if(this_field()) */
+            /*             throw(DCCLException("Field " + this_field()->name() + " missing option extension called `" + name + "`.")); */
+            /*     } */
+            
+            /* }             */
             
             void require(bool b, const std::string& description)
             {
@@ -258,8 +267,9 @@ namespace goby
             class BitsHandler
             {
               public:
-              BitsHandler(Bitset* out_pool, Bitset* in_pool)
-                  : in_pool_(in_pool),
+              BitsHandler(Bitset* out_pool, Bitset* in_pool, bool lsb_first = true)
+                  : lsb_first_(lsb_first),
+                    in_pool_(in_pool),
                     out_pool_(out_pool)
                     {
                         connection_ = get_more_bits.connect(
@@ -274,6 +284,7 @@ namespace goby
                 void transfer_bits(unsigned size);
 
               private:
+                bool lsb_first_;
                 Bitset* in_pool_;
                 Bitset* out_pool_;
                 boost::signals::connection connection_;
@@ -327,7 +338,7 @@ namespace goby
             static MessagePart part_;
             // maps protobuf extension number for FieldOption onto a hook (signal) to call
             // if such a FieldOption is set, during the call to "size()"
-            static boost::ptr_map<protobuf::HookKey, boost::signal<void (const boost::any& wire_value, const boost::any& extension_value)> >  wire_value_hooks_;
+            static boost::ptr_map<int, boost::signal<void (const boost::any& field_value, const boost::any& wire_value, const boost::any& extension_value)> >  wire_value_hooks_;
             
             
             std::string name_;
@@ -423,7 +434,7 @@ namespace goby
           typedef FieldType field_type;
             
 
-          protected:
+          public:
           virtual Bitset encode() = 0;          
           virtual Bitset encode(const WireType& wire_value) = 0;
           virtual WireType decode(Bitset* bits) = 0;

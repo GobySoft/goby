@@ -32,6 +32,7 @@ namespace goby
         class FromProtoTypeBase
         {
           public:
+            virtual ~FromProtoTypeBase() { }
             virtual std::string as_str() { return "TYPE_UNKNOWN"; }   
         };        
         
@@ -149,6 +150,9 @@ namespace goby
         class FromProtoCppTypeBase
         {
           public:
+            virtual ~FromProtoCppTypeBase() { }
+            
+            
             virtual std::string as_str() { return "CPPTYPE_UNKNOWN"; }   
 
             boost::any get_value(const google::protobuf::FieldDescriptor* field,

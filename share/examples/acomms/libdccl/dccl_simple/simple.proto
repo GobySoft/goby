@@ -1,10 +1,12 @@
 import "goby/protobuf/dccl_option_extensions.proto";
+import "goby/protobuf/option_extensions.proto";
+import "google/protobuf/descriptor.proto";
 
 message Simple
 {
-  option (dccl.id) = 1;
-  option (dccl.max_bytes) = 32;
+  option (dccl_msg).id = 1;
+  option (dccl_msg).max_bytes = 32;
   
-  required string telegram = 1 [(dccl.max_length)=10];
+  required string telegram = 1 [(dccl_field).max_length=10];
 }
 

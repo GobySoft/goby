@@ -170,7 +170,7 @@ void TesMoosApp::fetch_moos_globals(google::protobuf::Message* msg,
         if(field_desc->is_repeated())
             continue;
         
-        std::string moos_global = field_desc->options().GetExtension(::moos_global);
+        std::string moos_global = field_desc->options().GetExtension(goby::field).moos_global();
         
         switch(field_desc->cpp_type())
         {

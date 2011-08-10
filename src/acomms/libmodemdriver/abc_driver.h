@@ -38,7 +38,7 @@ namespace goby
             void startup(const protobuf::DriverConfig& cfg);
             void shutdown();            
             void do_work();
-            void handle_initiate_transmission(protobuf::ModemMsgBase* m);
+            void handle_initiate_transmission(protobuf::ModemDataInit* m);
 
           private:
             void parse_in(const std::string& in,

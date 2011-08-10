@@ -3,20 +3,20 @@ import "goby/protobuf/app_base_config.proto";
 
 message AlogToGobyDbConfig
 {
-  required string goby_log = 1 [(description)="Name of Goby Db file to write."];
-  repeated string moos_alog = 2 [(description)="Name of .alog file(s) to read."];
-  optional bool dump_alog = 3 [(description)="Write entire alog file (as CMOOSMsg)", default=true];
-  optional string table_prefix = 4 [(description)="String to prepend to all table names (useful for making databases containing several vehicles' data"];
+  required string goby_log = 1 [(goby.field).description="Name of Goby Db file to write."];
+  repeated string moos_alog = 2 [(goby.field).description="Name of .alog file(s) to read."];
+  optional bool dump_alog = 3 [(goby.field).description="Write entire alog file (as CMOOSMsg)", default=true];
+  optional string table_prefix = 4 [(goby.field).description="String to prepend to all table names (useful for making databases containing several vehicles' data"];
   
   message ParseAction
   {
-    required string protobuf_type_name = 1 [(description)="Full name of protobuf type used to parse this field."];
-    required string sql_where_clause = 2 [(description)="Portion of SQL query on CMOOSMsg table following `WHERE` used to select rows for parsing", (example)="key = 'NODE_REPORT' AND string_value LIKE 'NAME=unicorn%'"];
+    required string protobuf_type_name = 1 [(goby.field).description="Full name of protobuf type used to parse this field."];
+    required string sql_where_clause = 2 [(goby.field).description="Portion of SQL query on CMOOSMsg table following `WHERE` used to select rows for parsing", (goby.field).example="key = 'NODE_REPORT' AND string_value LIKE 'NAME=unicorn%'"];
     
     optional bool is_key_equals_value_string = 3 [default=false];
     optional string format = 4;
   }
 
-  repeated ParseAction parse_action = 5 [(description)="Optional set of parse actions to take: query the CMOOSMsg table and parse into a true Google Protobuf object representation"];
+  repeated ParseAction parse_action = 5 [(goby.field).description="Optional set of parse actions to take: query the CMOOSMsg table and parse into a true Google Protobuf object representation"];
   
 }

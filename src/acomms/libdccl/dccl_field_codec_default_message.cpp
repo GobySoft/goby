@@ -132,23 +132,30 @@ bool goby::acomms::DCCLDefaultMessageCodec::check_field(const google::protobuf::
 {
     if(!field)
         return true;
-    else if(field->options().GetExtension(dccl::omit) // omit
-            || (field->cpp_type() != google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE // for non message fields, skip if header / body mismatch
-                && ((part() == HEAD && !field->options().GetExtension(dccl::in_head))
-                    || (part() == BODY && field->options().GetExtension(dccl::in_head)))))
-        return false;
     else
-        return true;
+    {
+        DCCLFieldOptions dccl_field_options = field->options().GetExtension(goby::field).dccl();
+        if(dccl_field_options.omit() // omit
+            || (field->cpp_type() != google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE // for non message fields, skip if header / body mismatch
+                && ((part() == HEAD && !dccl_field_options.in_head())
+                    || (part() == BODY && dccl_field_options.in_head()))))
+            return false;
+        else
+            return true;
+    }
+    
 }
 
 std::string goby::acomms::DCCLDefaultMessageCodec::find_codec(const google::protobuf::FieldDescriptor* field)
 {
-    if(field->options().HasExtension(dccl::codec))
-        return field->options().GetExtension(dccl::codec);
+    DCCLFieldOptions dccl_field_options = field->options().GetExtension(goby::field).dccl();
+    
+    if(dccl_field_options.has_codec())
+        return dccl_field_options.codec();
     else if(field->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE)
-        return field->message_type()->options().GetExtension(dccl::message_codec);
+        return field->message_type()->options().GetExtension(goby::msg).dccl().codec();
     else
-        return field->options().GetExtension(dccl::codec);
+        return dccl_field_options.codec();
 }
 
 

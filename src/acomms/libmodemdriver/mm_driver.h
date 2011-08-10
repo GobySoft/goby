@@ -55,11 +55,15 @@ namespace goby
             void do_work();
             
             /// \brief Initiate a transmission to the modem.
-            void handle_initiate_transmission(protobuf::ModemMsgBase* m);
+            void handle_initiate_transmission(protobuf::ModemDataInit* m);
 
             /// \brief Initiate ranging ("ping") to the modem. 
             void handle_initiate_ranging(protobuf::ModemRangingRequest* m);
 
+            // keeps track of clock mode, necessary for synchronous navigation
+            int clk_mode() { return clk_mode_; }
+
+            
           private:
         
             // startup
@@ -78,6 +82,7 @@ namespace goby
             void mm_write(const protobuf::ModemMsgBase& base_msg); // actually write a message (appends hydroid prefix if needed)
             void increment_present_fail();
             void present_fail_exceeds_retries();
+
             
             // input
             void process_receive(const util::NMEASentence& nmea); // parse a receive message and call proper method
@@ -86,16 +91,22 @@ namespace goby
             void cyc(const util::NMEASentence& nmea, protobuf::ModemDataInit* init_msg); // $CACYC 
             void rxd(const util::NMEASentence& nmea, protobuf::ModemDataTransmission* data_msg); // $CARXD
             void ack(const util::NMEASentence& nmea, protobuf::ModemDataAck* ack_msg); // $CAACK
+        
+            // mini packet
+            void mua(const util::NMEASentence& nmea, protobuf::ModemDataTransmission* data_msg); // $CAMUA
 
             // ranging (pings)
             void mpr(const util::NMEASentence& nmea, protobuf::ModemRangingReply* ranging_msg); // $CAMPR
             void tta(const util::NMEASentence& nmea, protobuf::ModemRangingReply* ranging_msg); // $SNTTA, why not $CATTA?
             void toa(const util::NMEASentence& nmea, protobuf::ModemRangingReply* ranging_msg); // $CATOA?
-            // send toa once we actually know who the message is from 
+            // send toa once we actually know who the message is from
+            // if time_of_depart is negative, flush_toa returns the fractional
+            // part of the second 
             void flush_toa(const protobuf::ModemMsgBase& base_msg, protobuf::ModemRangingReply* ranging_msg);
 
             
             // local modem
+            void xst(const util::NMEASentence& nmea); // $CAXST
             void rev(const util::NMEASentence& nmea); // $CAREV
             void err(const util::NMEASentence& nmea); // $CAERR
             void cfg(const util::NMEASentence& nmea, protobuf::ModemMsgBase* base_msg); // $CACFG
@@ -125,15 +136,14 @@ namespace goby
             // how many retries on a given message
             enum { RETRIES = 3 };
             enum { ROUGH_SPEED_OF_SOUND = 1500 }; // m/s
-            enum { REMUS_LBL_TURN_AROUND_MS = 50 }; // milliseconds
                 
             
             // seconds to wait for modem to respond
             static boost::posix_time::time_duration MODEM_WAIT; 
             // seconds to wait after modem reboot
             static boost::posix_time::time_duration WAIT_AFTER_REBOOT;
-            // allowed time skew between our clock and the modem clock
-            static boost::posix_time::time_duration ALLOWED_SKEW;
+            // allowed time diff in millisecs between our clock and the modem clock
+            static int ALLOWED_MS_DIFF;
             
             static std::string SERIAL_DELIMITER;
             // number of frames for a given packet type
@@ -141,6 +151,9 @@ namespace goby
             // size of packet (in bytes) for a given modem rate
             static unsigned PACKET_SIZE [];
 
+            // in bytes
+            enum { MINI_PACKET_SIZE = 2 };
+            
 
             // all startup configuration (DriverConfig defined in driver_base.proto and extended in mm_driver.proto)
             protobuf::DriverConfig driver_cfg_;
@@ -169,6 +182,9 @@ namespace goby
             // if exceeded
             unsigned present_fail_count_;
 
+            // keeps track of clock mode, necessary for synchronous navigation
+            int clk_mode_;
+
             // has the clock been properly set. we must reset the clock after reboot ($CAREV,INIT)
             bool clock_set_;
 
@@ -186,7 +202,7 @@ namespace goby
                                 CFR,CST,MSG,REV,
                                 DQF,SHF,SNR,DOP,
                                 DBG,FFL,FST,ERR,
-                                TOA};
+                                TOA,XST};
             
             std::map<std::string, TalkerIDs> talker_id_map_;
             std::map<std::string, SentenceIDs> sentence_id_map_;
@@ -223,6 +239,8 @@ namespace goby
             // true if we initiated the last cycle ($CCCYC) (and thereby cache data for it)?
             // false if a third party initiated the last cycle
             bool local_cccyc_;
+
+            protobuf::RangingType last_ranging_type_;
             
         };
     }

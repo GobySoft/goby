@@ -37,8 +37,7 @@
 using goby::acomms::operator<<;
 
 
-void handle_data_request(const goby::acomms::protobuf::ModemDataRequest& request_msg,
-                         goby::acomms::protobuf::ModemDataTransmission* data_msg);
+void handle_data_request(const goby::acomms::protobuf::ModemDataRequest& request_msg, goby::acomms::protobuf::ModemDataTransmission* data_msg);
 void handle_data_receive(const goby::acomms::protobuf::ModemDataTransmission& data_msg);
 
 int main(int argc, char* argv[])
@@ -95,10 +94,10 @@ int main(int argc, char* argv[])
     // 3. Initiate a transmission cycle
     //
     
-    goby::acomms::protobuf::ModemMsgBase transmit_init_message;
-    transmit_init_message.set_src(goby::util::as<unsigned>(our_id));
-    transmit_init_message.set_dest(goby::acomms::BROADCAST_ID);
-    transmit_init_message.set_rate(0);
+    goby::acomms::protobuf::ModemDataInit transmit_init_message;
+    transmit_init_message.mutable_base()->set_src(goby::util::as<unsigned>(our_id));
+    transmit_init_message.mutable_base()->set_dest(goby::acomms::BROADCAST_ID);
+    transmit_init_message.mutable_base()->set_rate(0);
 
     std::cout << transmit_init_message << std::endl;
     

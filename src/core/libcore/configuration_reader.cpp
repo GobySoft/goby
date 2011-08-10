@@ -327,7 +327,7 @@ void  goby::core::ConfigReader::get_protobuf_program_options(boost::program_opti
         
         std::string cli_name = field_name;
         std::stringstream human_desc_ss;
-        human_desc_ss << util::esc_lt_blue << field_desc->options().GetExtension(::description);
+        human_desc_ss << util::esc_lt_blue << field_desc->options().GetExtension(goby::field).description();
         human_desc_ss << label(field_desc);
         human_desc_ss << util::esc_nocolor;
         
@@ -496,7 +496,7 @@ void goby::core::ConfigReader::build_description_field(
         else
             description += "# ";
 
-        description += field_desc->options().GetExtension(::description)
+        description += field_desc->options().GetExtension(goby::field).description()
             + label(field_desc);
             
         if(use_color)
@@ -521,7 +521,7 @@ void goby::core::ConfigReader::build_description_field(
             google::protobuf::TextFormat::PrintFieldValueToString(*default_msg, field_desc, -1, &example);
         else
         {
-            example = field_desc->options().GetExtension(::example);
+            example = field_desc->options().GetExtension(goby::field).example();
             if(field_desc->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_STRING)
                 example = "\"" + example + "\""; 
         }
@@ -557,7 +557,7 @@ void goby::core::ConfigReader::build_description_field(
         else
             description += "# ";
             
-        description += field_desc->options().GetExtension(::description);
+        description += field_desc->options().GetExtension(goby::field).description();
         if(field_desc->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_ENUM)
         {
             description += " (";
@@ -576,8 +576,8 @@ void goby::core::ConfigReader::build_description_field(
         if(field_desc->has_default_value())
             description += " (default=" + example + ")";
 
-        if(field_desc->options().HasExtension(::moos_global))
-            description += " (can also set MOOS global \"" + field_desc->options().GetExtension(::moos_global) + "=\")";
+        if(field_desc->options().GetExtension(goby::field).has_moos_global())
+            description += " (can also set MOOS global \"" + field_desc->options().GetExtension(goby::field).moos_global() + "=\")";
             
         if(!use_color)
             wrap_description(&description, before_description.size());

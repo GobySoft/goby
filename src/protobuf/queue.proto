@@ -5,7 +5,7 @@ package goby.acomms.protobuf;
 
 message QueueManagerConfig
 {
-  optional int32 modem_id = 1 [(description)="Unique number 1-31 to identify this node", (example)="1"];
+  optional int32 modem_id = 1 [(goby.field).description="Unique number 1-31 to identify this node", (goby.field).example="1"];
 }
 
 message QueueSize

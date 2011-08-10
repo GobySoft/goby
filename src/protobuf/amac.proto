@@ -7,19 +7,22 @@ enum SlotType
   SLOT_DATA = 1;
   SLOT_PING = 2;
   SLOT_REMUS_LBL = 3;
+  SLOT_NARROWBAND_LBL = 4;
+  SLOT_MINI = 5;
 };
 
 message Slot
 {
-  required int32 src = 1 [(description)="source modem id for this transmission (initiating platform)", (example)="1"];
-  optional int32 dest = 2 [ default = -1, (description)="destination modem id for this transmission; 0 means broadcast, -1 means query the queuing layer for next available message"];
-  optional uint32 rate = 3 [ default = 0, (description)="bit rate (integer from 0-5, 0 is slowest)" ];
-  required SlotType type = 4 [ default = SLOT_DATA, (description)="type of message to initiate in this slot"] ;
-  optional double slot_seconds = 5 [(description)="length of this slot in seconds", (example)="15"];
+  required int32 src = 1 [(goby.field).description="source modem id for this transmission (initiating platform)", (goby.field).example="1"];
+  optional int32 dest = 2 [ default = -1, (goby.field).description="destination modem id for this transmission; 0 means broadcast, -1 means query the queuing layer for next available message"];
+  optional int32 rate = 3 [ default = 0, (goby.field).description="bit rate (integer from 0-5, 0 is slowest)" ];
+  required SlotType type = 4 [ default = SLOT_DATA, (goby.field).description="type of message to initiate in this slot"] ;
+  optional double slot_seconds = 5 [(goby.field).description="length of this slot in seconds", (goby.field).example="15"];
 
   // "2011-Jan-22 12:08:06.887950"
   // which is produced by operator<< for boost::posix_time::ptime
-  optional string last_heard_time = 6 [(description)="used internally, no need to configure manually"]; 
+  optional string last_heard_time = 6 [(goby.field).description="used internally, no need to configure manually"]; 
+  optional uint32 unique_id = 7;
 }
 
 enum MACType {
@@ -31,26 +34,25 @@ enum MACType {
 
 message MACConfig
 {
-  optional int32 modem_id = 1 [(description)="Unique number 1-31 to identify this node",
-                               (example)="1"];
+  optional int32 modem_id = 1 [(goby.field).description="Unique number 1-31 to identify this node",
+                               (goby.field).example="1"];
   
   optional MACType type = 2 [default = MAC_NONE,
-                             (description)="The type of TDMA MAC scheme to use"];
+                             (goby.field).description="The type of TDMA MAC scheme to use"];
 
   // only required for MAC_FIXED_DECENTRALIZED and MAC_POLLED, specify templates for MAC_AUTO_DECENTRALIZED below
-  repeated Slot slot = 3 [(description)="Configure a slot in the communications cycle. Slots are run in the order they are declared. Omit for MAC_AUTO_DECENTRALIZED."];
+  repeated Slot slot = 3 [(goby.field).description="Configure a slot in the communications cycle. Slots are run in the order they are declared. Omit for MAC_AUTO_DECENTRALIZED."];
   
   // only required for MAC_AUTO_DECENTRALIZED - specify these in `cycle` (above) for other types
   optional uint32 rate = 4 [default = 0,
-                            (description)="Set rate to use for MAC_AUTO_DECENTALIZED. Use `slot` for other MACTypes"];
+                            (goby.field).description="Set rate to use for MAC_AUTO_DECENTALIZED. Use `slot` for other MACTypes"];
   optional double slot_seconds = 5 [default = 15,
-                                    (description)="Set duration of the slot for MAC_AUTO_DECENTRALIZED. Use `slot` for other MACTypes"];
+                                    (goby.field).description="Set duration of the slot for MAC_AUTO_DECENTRALIZED. Use `slot` for other MACTypes"];
   optional uint32 expire_cycles = 6 [default = 30,
-                                     (description)="Set number of quiet cycles for discarding a node from the cycle for MAC_AUTO_DECENTRALIZED."];
+                                     (goby.field).description="Set number of quiet cycles for discarding a node from the cycle for MAC_AUTO_DECENTRALIZED."];
 
   optional bool start_cycle_in_middle = 7 [default = true,
-                                           (description)="If true, cycle will start / restart at the next slot, even if its the middle of the cycle. If false, any changes to the cycle will reset it to the first slot."];
-  
+                                           (goby.field).description="If true, cycle will start / restart at the next slot, even if its the middle of the cycle. If false, any changes to the cycle will reset it to the first slot."];
   
 }
 

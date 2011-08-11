@@ -110,3 +110,10 @@ endif()
 if(enable_testing)
   add_subdirectory(test)
 endif()
+
+
+option(build_apps "Build applications (as well as libraries)" ON)
+
+if(build_apps)
+  add_subdirectory(apps)
+endif()

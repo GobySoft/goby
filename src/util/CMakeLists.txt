@@ -24,13 +24,3 @@ endif()
 target_link_libraries(goby_util goby_protobuf ${Boost_LIBRARIES})
 
 set_target_properties(goby_util PROPERTIES VERSION "${GOBY_VERSION}" SOVERSION "${GOBY_SOVERSION}")
-
-option(build_util_tools "Build the Utility tools" OFF)
-
-if(build_util_tools)
-  add_subdirectory(tools)
-endif()
-
-if(enable_testing)
-  add_subdirectory(test)
-endif()

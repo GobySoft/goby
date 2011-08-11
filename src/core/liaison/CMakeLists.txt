@@ -7,7 +7,6 @@ target_link_libraries(goby_liaison
   ${Boost_LIBRARIES}
   pthread
   goby_core
-  goby_logger
   wt
   wthttp
   goby_moos_util

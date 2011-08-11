@@ -14,7 +14,7 @@
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
 
-#include "goby/acomms/libdccl/dccl.h"
+#include "goby/acomms/dccl/dccl.h"
 #include "goby/moos/libtransitional/dccl_transitional.h"
 
 #include <iostream>

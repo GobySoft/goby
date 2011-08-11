@@ -22,6 +22,6 @@
 #ifndef DCCLCOURTESY20091211H
 #define DCCLCOURTESY20091211H
 
-#include "goby/acomms/libdccl/dccl.h"
+#include "goby/acomms/dccl/dccl.h"
 
 #endif

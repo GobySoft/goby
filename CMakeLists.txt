@@ -40,11 +40,22 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -fprofile-arcs -ftest-
 set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -Wall -fprofile-arcs -ftest-coverage")
 set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -fprofile-arcs -ftest-coverage")
 
+## set type of libraries
+option(make_static_libs "Build static libraries instead of shared." OFF)
+
+if(make_static_libs)
+  set(BUILD_SHARED_LIBS OFF)
+else()
+  set(BUILD_SHARED_LIBS ON)
+endif()
+
 ## set the cmake defaults for libraries and binaries
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${goby_LIB_DIR} CACHE PATH 
-  "Output directory for the libraries" )
+  "Output directory for the dynamic libraries" )
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${goby_BIN_DIR} CACHE PATH
   "Output directory for the binaries" )
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${goby_LIB_DIR} CACHE PATH 
+  "Output directory for the static libraries (archives)" )
 
 ## set instructions for `make install`
 install(DIRECTORY ${goby_BIN_DIR}/ DESTINATION ${CMAKE_INSTALL_PREFIX}/bin 

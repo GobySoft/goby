@@ -22,7 +22,7 @@
 #include "message_algorithms.h"
 #include "message_val.h"
 #include "message.h"
-#include "goby/acomms/libdccl/dccl_exception.h"
+#include "goby/acomms/dccl/dccl_exception.h"
 
 #include "goby/util/as.h"
 

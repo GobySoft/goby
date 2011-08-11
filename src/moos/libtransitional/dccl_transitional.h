@@ -34,7 +34,7 @@
 #include "goby/core/core_constants.h"
 #include "message.h"
 #include "message_val.h"
-#include "goby/acomms/libdccl/dccl_exception.h"
+#include "goby/acomms/dccl/dccl_exception.h"
 #include "goby/protobuf/moos_transitional.pb.h"
 #include "goby/protobuf/acomms_queue.pb.h"
 #include "goby/protobuf/acomms_modem_message.pb.h"

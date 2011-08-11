@@ -29,7 +29,7 @@
 #include "goby/util/sci.h"
 
 #include "message_val.h"
-#include "goby/acomms/libdccl/dccl_exception.h"
+#include "goby/acomms/dccl/dccl_exception.h"
 
 using goby::util::as;
 

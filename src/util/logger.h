@@ -20,7 +20,7 @@
 #ifndef STREAMLOGGERCOURTESY20091211H
 #define STREAMLOGGERCOURTESY20091211H
 
-#include "goby/util/liblogger/flex_ostream.h"
-#include "goby/util/liblogger/logger_manipulators.h"
+#include "goby/util/logger/flex_ostream.h"
+#include "goby/util/logger/logger_manipulators.h"
 
 #endif

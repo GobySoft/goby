@@ -18,8 +18,8 @@
 
 #include "configuration_reader.h"
 
-#include "goby/util/liblogger/term_color.h"
-#include "goby/util/liblogger/flex_ostream.h"
+#include "goby/util/logger/term_color.h"
+#include "goby/util/logger/flex_ostream.h"
 #include "exception.h"
 #include <google/protobuf/dynamic_message.h>
 #include <algorithm>

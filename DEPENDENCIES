@@ -34,6 +34,7 @@ debian-minimal:
 		libboost-thread-dev \
 		libboost-program-options-dev \
 		libboost-filesystem-dev \
+		libboost-signals-dev \
 		libprotobuf-dev \
 		libprotoc-dev \
 		protobuf-compiler \

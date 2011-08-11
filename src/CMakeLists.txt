@@ -15,7 +15,7 @@ endmacro()
 ## find external packages, libraries, and headers for the entire goby project
 # mandatory
 ## boost
-goby_find_required_package(Boost 1.36.0 COMPONENTS system date_time thread program_options filesystem)
+goby_find_required_package(Boost 1.36.0 COMPONENTS system date_time thread program_options filesystem signals)
 include_directories(${Boost_INCLUDE_DIRS})
 
 goby_find_required_package(ProtobufGoby)

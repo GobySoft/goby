@@ -9,19 +9,26 @@ macro(goby_find_required_package package_name)
 endmacro()
   
 macro(missing_optional_library lib_name)
-  message(WARNING "missing optional external library: ${lib_name}. Goby will function without the support of this library, but certain modules will not be built. See http://gobysoft.org/doc for more information.")
+  message(WARNING "missing optional external library: ${lib_name}. Goby will function without the support of this library, but some functionality or libraries will be not be available. See the goby/DEPENDENCIES file for more information.")
 endmacro()
 
 ## find external packages, libraries, and headers for the entire goby project
 # mandatory
 ## boost
-goby_find_required_package(Boost 1.36.0 COMPONENTS system date_time thread program_options signals filesystem)
+goby_find_required_package(Boost 1.36.0 COMPONENTS system date_time thread program_options filesystem)
 include_directories(${Boost_INCLUDE_DIRS})
 
 goby_find_required_package(ProtobufGoby)
 include_directories(${PROTOBUF_INCLUDE_DIRS})
 
-goby_find_required_package(Cryptopp)
+# optional
+## cryptopp
+find_package(Cryptopp)
+if(CRYPTOPP_FOUND)
+  add_definitions(-DHAS_CRYPTOPP)
+else()
+  missing_optional_library(Cryptopp)
+endif()  
 
 ## ncurses
 set(CURSES_NEED_NCURSES TRUE)
@@ -33,9 +40,9 @@ else()
 endif()
 mark_as_advanced(CURSES_CURSES_H_PATH CURSES_FORM_LIBRARY CURSES_HAVE_CURSES_H)
 
-option(workaround_2_4_kernel "Apply workarounds for Linux 2.4 kernel" OFF)
+option(workaround_2_4_kernel "Apply workarounds for Linux 2.4 kernel. Leave OFF for newer (e.g. 2.6) kernels" OFF)
 if(workaround_2_4_kernel)
-	add_definitions(-DBOOST_ASIO_DISABLE_EPOLL)
+  add_definitions(-DBOOST_ASIO_DISABLE_EPOLL)
 endif()
 
 
@@ -94,7 +101,7 @@ endif(build_protobuf)
 # latex, for documentation
 find_package(LATEX)
 
-option(build_doc "Build documentation (requires Doxygen, LaTeX, XeLaTeX, and certain fonts)" false)
+option(build_doc "Build documentation (requires Doxygen, LaTeX, XeLaTeX, and certain fonts)" OFF)
 
 if(build_doc)
   add_subdirectory(doc)

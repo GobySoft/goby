@@ -1,4 +1,11 @@
-
+#
+# Ubuntu patched this compiler to hell
+# gcc (Ubuntu/Linaro 4.4.4-14ubuntu5) 4.4.5
+#
+exec_program(${CMAKE_CXX_COMPILER}
+  ARGS --version
+  OUTPUT_VARIABLE GCC_COMPILER_VERSION
+)
 
 if(GCC_COMPILER_VERSION MATCHES ".*4\\.4\\.4\\-14ubuntu5.*")
   message(" ")
@@ -18,7 +25,7 @@ if(GCC_COMPILER_VERSION MATCHES ".*4\\.4\\.4\\-14ubuntu5.*")
 endif(GCC_COMPILER_VERSION MATCHES ".*4\\.4\\.4\\-14ubuntu5.*")
 
 
-if(BUILD_TESTING)
+if(enable_testing)
   add_subdirectory(test)
 endif()
 

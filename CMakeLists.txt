@@ -9,22 +9,14 @@
 cmake_minimum_required(VERSION 2.6.0 FATAL_ERROR)
 project(goby)
 
-#
-# Ubuntu patched this compiler to hell
-# gcc (Ubuntu/Linaro 4.4.4-14ubuntu5) 4.4.5
-#
-exec_program(${CMAKE_CXX_COMPILER}
-  ARGS --version
-  OUTPUT_VARIABLE GCC_COMPILER_VERSION
-)
 
 
 ## allows us to write custom modules or modifying existing ones
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules/")
 
 
-option(ENABLE_TESTING "Enable building of tests" OFF)
-if(ENABLE_TESTING)
+option(enable_testing "Enable building of tests using CTest (if set to ON, you can run tests with 'make test')" OFF)
+if(enable_testing)
   enable_testing()
   include(CTest)
 endif()

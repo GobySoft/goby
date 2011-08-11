@@ -16,6 +16,7 @@
 #include "moos_dbo_helper.h"
 #include "goby/moos/libmoos_util/moos_serializer.h"
 #include "goby/core/libdbo/dbo_manager.h"
+#include "goby/util/logger.h"
 
 void goby::moos::MOOSDBOPlugin::add_message(int unique_id, const std::string& identifier, const void* data, int size)
 {
@@ -38,9 +39,15 @@ void goby::moos::MOOSDBOPlugin::map_types()
 
 void goby::moos::MOOSDBOPlugin::create_indices()
 {
+    // Session::execute added in Wt 3.1.3
+#if WT_VERSION >= (((3 & 0xff) << 24) | ((1 & 0xff) << 16) | ((3 & 0xff) << 8))
     goby::core::DBOManager::get_instance()->session()->execute("CREATE UNIQUE INDEX IF NOT EXISTS " + table_name_ + "_raw_id_index" + " ON " + table_name_ + " (raw_id)");
-
     goby::core::DBOManager::get_instance()->session()->execute("CREATE INDEX IF NOT EXISTS " + table_name_ + "_moosmsg_time_index" + " ON " + table_name_ + " (moosmsg_time)");
+#else
+    goby::glog.is(warn) &&
+        goby::glog << "execute() call not available in Wt Dbo versions 3.1.2 and older. Not creating any indices on the tables. Please upgrade Wt for automatic indexing support." << std::endl;
+#endif
+    
 }
 
 extern "C" goby::core::DBOPlugin* create_goby_dbo_plugin()

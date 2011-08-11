@@ -21,10 +21,13 @@
 
 #include <boost/foreach.hpp>
 #include <boost/assign.hpp>
+
+#ifdef HAS_CRYPTOPP
 #include <crypto++/filters.h>
 #include <crypto++/sha.h>
 #include <crypto++/modes.h>
 #include <crypto++/aes.h>
+#endif // HAS_CRYPTOPP
 
 #include "dccl.h"
 #include "dccl_field_codec_default.h"
@@ -435,6 +438,7 @@ std::list<boost::shared_ptr<google::protobuf::Message> > goby::acomms::DCCLCodec
 
 void goby::acomms::DCCLCodec::encrypt(std::string* s, const std::string& nonce /* message head */)
 {
+#ifdef HAS_CRYPTOPP
     using namespace CryptoPP;
 
     std::string iv;
@@ -449,10 +453,12 @@ void goby::acomms::DCCLCodec::encrypt(std::string* s, const std::string& nonce /
     in.Put((byte*)s->c_str(), s->size());
     in.MessageEnd();
     *s = cipher;
+#endif
 }
 
 void goby::acomms::DCCLCodec::decrypt(std::string* s, const std::string& nonce)
 {
+#ifdef HAS_CRYPTOPP
     using namespace CryptoPP;
 
     std::string iv;
@@ -468,6 +474,7 @@ void goby::acomms::DCCLCodec::decrypt(std::string* s, const std::string& nonce)
     out.Put((byte*)s->c_str(), s->size());
     out.MessageEnd();
     *s = recovered;
+#endif
 }
 
 void goby::acomms::DCCLCodec::merge_cfg(const protobuf::DCCLConfig& cfg)
@@ -486,12 +493,16 @@ void goby::acomms::DCCLCodec::process_cfg()
 {
     if(cfg_.has_crypto_passphrase())
     {
+#ifdef HAS_CRYPTOPP
         using namespace CryptoPP;
         
         SHA256 hash;
         StringSource unused(cfg_.crypto_passphrase(), true, new HashFilter(hash, new StringSink(crypto_key_)));
         
         glog.is(debug1) && glog << group("dccl.encode") << "cryptography enabled with given passphrase" << std::endl;
+#else
+        glog.is(warn) && glog << group("dccl.encode") << "cryptography disabled because Goby was compiled without support of Crypto++. Install Crypto++ and recompile to enable cryptography." << std::endl;
+#endif
     }
     else
     {

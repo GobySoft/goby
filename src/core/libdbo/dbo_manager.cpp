@@ -169,6 +169,7 @@ void goby::core::DBOManager::map_types()
 
 void goby::core::DBOManager::create_indices()
 {
+#if WT_VERSION >= (((3 & 0xff) << 24) | ((1 & 0xff) << 16) | ((3 & 0xff) << 8))    
     goby::core::DBOManager::get_instance()->session()->execute("CREATE INDEX IF NOT EXISTS " + raw_id_table_name_ + "_id_index ON " + raw_id_table_name_ + " (raw_id)");
     
     std::set<DBOPlugin*> plugins = plugin_factory_.plugins();
@@ -177,6 +178,10 @@ void goby::core::DBOManager::create_indices()
         if(plugin)
             plugin->create_indices();
     }
+#else
+    glog.is(warn) &&
+        glog << "execute() call not available in Wt Dbo versions 3.1.2 and older. Not creating any indices on the tables. Please upgrade Wt for automatic indexing support." << std::endl;
+#endif
 }
 
 

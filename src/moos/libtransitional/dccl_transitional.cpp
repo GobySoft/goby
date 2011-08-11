@@ -18,10 +18,6 @@
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <boost/foreach.hpp>
-#include <cryptopp/filters.h>
-#include <cryptopp/sha.h>
-#include <cryptopp/modes.h>
-#include <cryptopp/aes.h>
 #include <boost/filesystem.hpp>
 
 #include "dccl_transitional.h"

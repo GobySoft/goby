@@ -179,10 +179,16 @@ void goby::core::ProtobufDBOPlugin::add_type(const google::protobuf::Descriptor*
     
     glog.is(verbose) &&
         glog << group("dbo") << "created table for " << mangled_name << std::endl;
-    
-    // create raw_id index
-    goby::core::DBOManager::get_instance()->session()->execute("CREATE UNIQUE INDEX IF NOT EXISTS " + mangled_name + "_raw_id_index" + " ON " + mangled_name + " (raw_id)");
 
+
+    // Session::execute added in Wt 3.1.3
+#if WT_VERSION >= (((3 & 0xff) << 24) | ((1 & 0xff) << 16) | ((3 & 0xff) << 8))
+    // create raw_id index    
+    goby::core::DBOManager::get_instance()->session()->execute("CREATE UNIQUE INDEX IF NOT EXISTS " + mangled_name + "_raw_id_index" + " ON " + mangled_name + " (raw_id)");
+#else
+    glog.is(warn) &&
+        glog << "execute() call not available in Wt Dbo versions 3.1.2 and older. Not creating any indices on the tables. Please upgrade Wt for automatic indexing support." << std::endl;
+#endif
     
     goby::core::DBOManager::get_instance()->reset_session();
 

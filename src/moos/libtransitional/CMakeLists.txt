@@ -12,7 +12,7 @@ if(build_transitional_tools)
   add_subdirectory(tools)
 endif()
 
-if(BUILD_TESTING)
+if(enable_testing)
   add_subdirectory(test)
 endif()
 

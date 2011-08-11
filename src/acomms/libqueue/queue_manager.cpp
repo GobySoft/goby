@@ -24,8 +24,8 @@
 #include "goby/util/binary.h"
 
 #include "goby/acomms/dccl.h"
-#include "goby/protobuf/dccl_option_extensions.pb.h"
-#include "goby/protobuf/queue_option_extensions.pb.h"
+#include "goby/protobuf/acomms_option_extensions.pb.h"
+#include "goby/protobuf/acomms_option_extensions.pb.h"
 #include "goby/util/logger.h"
 #include "goby/protobuf/dynamic_protobuf_manager.h"
 

@@ -94,7 +94,7 @@ test.txt:
 
     \section linebasedcomms TCP and Serial port communications - liblinebasedcomms
     
-    liblinebasedcomms provides a common interface (goby::util::LineBasedInterface) for line-based (defined as blocks of text offset by a common delimiter such as "\\r\\n" or "\\n") text communications over a TCP or serial connection. liblinebasedcomms using the boost::asio library to perform the actual communications.
+    libutil_linebasedcomms.provides a common interface (goby::util::LineBasedInterface) for line-based (defined as blocks of text offset by a common delimiter such as "\\r\\n" or "\\n") text communications over a TCP or serial connection. liblinebasedcomms using the boost::asio library to perform the actual communications.
 
 You should create the proper subclass for your needs:
 <ul>

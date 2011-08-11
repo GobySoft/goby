@@ -34,7 +34,7 @@
 
 #include "goby/util/as.h"
 #include "goby/core/libcore/exception.h"
-#include "goby/protobuf/transitional.pb.h"
+#include "goby/protobuf/moos_transitional.pb.h"
 #include "goby/moos/libtransitional/xml/tags.h"
 
 namespace goby

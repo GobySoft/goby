@@ -24,11 +24,12 @@
 #include <bitset>
 #include <limits>
 #include <vector>
-
-#include "goby/protobuf/transitional.pb.h"
-#include "goby/acomms/acomms_constants.h"
-#include <boost/dynamic_bitset.hpp>
 #include <bitset>
+
+#include <boost/dynamic_bitset.hpp>
+
+#include "goby/protobuf/moos_transitional.pb.h"
+#include "goby/acomms/acomms_constants.h"
 #include "goby/acomms/libdccl/dccl_exception.h"
 
 namespace goby

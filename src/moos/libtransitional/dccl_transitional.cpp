@@ -25,10 +25,8 @@
 #include "queue_xml_callbacks.h"
 #include "goby/util/logger.h"
 #include "goby/util/as.h"
-#include "goby/protobuf/acomms_proto_helpers.h"
 #include <google/protobuf/descriptor.pb.h>
-#include "goby/protobuf/dccl_option_extensions.pb.h"
-#include "goby/protobuf/queue_option_extensions.pb.h"
+#include "goby/protobuf/acomms_option_extensions.pb.h"
 #include "goby/protobuf/dynamic_protobuf_manager.h"
 
 using goby::util::goby_time;

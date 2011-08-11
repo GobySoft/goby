@@ -31,7 +31,7 @@
 #include <boost/foreach.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include "goby/protobuf/queue.pb.h"
+#include "goby/protobuf/acomms_queue.pb.h"
 
 #include "message_var.h"
 #include "message_var_int.h"

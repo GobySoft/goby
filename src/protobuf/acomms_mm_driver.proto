@@ -1,9 +1,9 @@
-import "goby/protobuf/driver_base.proto";
-import "goby/protobuf/modem_message.proto";
+import "goby/protobuf/acomms_driver_base.proto";
+import "goby/protobuf/acomms_modem_message.proto";
 
 
 // TODO(tes) rework ModemInitiateTransmission to not use AMAC slot
-import "goby/protobuf/amac.proto"; // temporary for ModemInitiateTransmission
+import "goby/protobuf/acomms_amac.proto"; // temporary for ModemInitiateTransmission
 
 message MicroModemConfig
 {

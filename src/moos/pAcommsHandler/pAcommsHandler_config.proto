@@ -1,10 +1,10 @@
 import "goby/moos/libmoos_util/tes_moos_app.proto";
-import "goby/protobuf/driver_base.proto";
-import "goby/protobuf/queue.proto";
-import "goby/protobuf/amac.proto";
-import "goby/protobuf/dccl.proto";
-import "goby/protobuf/transitional.proto";
-import "goby/protobuf/modem_message.proto";
+import "goby/protobuf/acomms_driver_base.proto";
+import "goby/protobuf/acomms_queue.proto";
+import "goby/protobuf/acomms_amac.proto";
+import "goby/protobuf/acomms_dccl.proto";
+import "goby/protobuf/acomms_modem_message.proto";
+import "goby/protobuf/moos_transitional.proto";
 import "goby/protobuf/option_extensions.proto";
 
 

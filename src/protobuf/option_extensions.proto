@@ -1,6 +1,5 @@
 import "google/protobuf/descriptor.proto";
-import "goby/protobuf/dccl_option_extensions.proto";
-import "goby/protobuf/queue_option_extensions.proto";
+import "goby/protobuf/acomms_option_extensions.proto";
 
 package goby;
 

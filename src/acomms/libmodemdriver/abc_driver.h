@@ -20,7 +20,7 @@
 #include "goby/util/time.h"
 
 #include "driver_base.h"
-#include "goby/protobuf/abc_driver.pb.h"
+#include "goby/protobuf/acomms_abc_driver.pb.h"
 #include "goby/acomms/acomms_helpers.h"
 
 namespace goby

@@ -1,4 +1,4 @@
-import "goby/protobuf/queue.proto";
+import "goby/protobuf/acomms_queue.proto";
 
 package goby.acomms.protobuf;
 

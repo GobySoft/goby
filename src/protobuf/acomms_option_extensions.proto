@@ -32,3 +32,22 @@ message DCCLMessageOptions
 
   optional string codec = 3 [default = "_default"];
 }
+
+message QueueFieldOptions
+{
+  optional bool is_src = 1 [default = false];
+  optional bool is_dest = 2 [default = false];
+  optional bool is_time = 3 [default = false];
+}
+
+message QueueMessageOptions
+{
+  optional bool ack = 1 [default = true];  
+  optional uint32 blackout_time = 2 [default = 0];
+  optional uint32 max_queue = 3 [default = 0];
+  optional bool newest_first = 4 [default = true];
+  optional int32 ttl = 5 [default = 1800];
+  optional double value_base = 6 [default = 1];
+  optional bool encode_on_demand = 7 [default = false];
+  optional double on_demand_skew_seconds = 8 [default = 1];
+}

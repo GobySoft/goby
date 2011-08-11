@@ -32,8 +32,7 @@
 #include "dccl.h"
 #include "dccl_field_codec_default.h"
 #include "goby/util/as.h"
-#include "goby/protobuf/acomms_proto_helpers.h"
-#include "goby/protobuf/dccl_option_extensions.pb.h"
+#include "goby/protobuf/acomms_option_extensions.pb.h"
 #include "goby/protobuf/dynamic_protobuf_manager.h"
 #include "goby/protobuf/header.pb.h"
 

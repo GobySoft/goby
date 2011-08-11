@@ -20,7 +20,7 @@
 #include <boost/foreach.hpp>
 
 #include "message_publish.h"
-#include "goby/acomms/libdccl/dccl_exception.h"
+#include "goby/acomms/dccl/dccl_exception.h"
 #include "message.h"
 
 

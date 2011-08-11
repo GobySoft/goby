@@ -1,5 +1,5 @@
 file(GLOB dccl_src *.cpp)
-add_library(goby_dccl SHARED ${dccl_src})
+add_library(goby_dccl  ${dccl_src})
 
 target_link_libraries(goby_dccl goby_logger goby_protobuf ${Cryptopp_LIBRARIES} ${Boost_LIBRARIES})
 

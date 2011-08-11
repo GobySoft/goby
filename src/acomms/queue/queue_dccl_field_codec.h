@@ -18,7 +18,7 @@
 #define QUEUEDCCLFIELDCODECDEFAULT20110509H
 
 
-#include "goby/acomms/libdccl/dccl_field_codec.h"
+#include "goby/acomms/dccl/dccl_field_codec.h"
 
 namespace goby
 {

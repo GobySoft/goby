@@ -20,12 +20,12 @@
 #define MODEMDRIVERCOURTESY20091211H
 
 // driver base class
-#include "goby/acomms/libmodemdriver/driver_base.h"
+#include "goby/acomms/modemdriver/driver_base.h"
 
 // WHOI Micro-Modem driver
-#include "goby/acomms/libmodemdriver/mm_driver.h"
+#include "goby/acomms/modemdriver/mm_driver.h"
 
 // toy example "ABC" driver
-#include "goby/acomms/libmodemdriver/abc_driver.h"
+#include "goby/acomms/modemdriver/abc_driver.h"
 
 #endif

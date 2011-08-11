@@ -21,7 +21,7 @@
 #define MESSAGE_VAR_HEX20100317H
 
 #include "message_var.h"
-#include "goby/acomms/libdccl/dccl_exception.h"
+#include "goby/acomms/dccl/dccl_exception.h"
 
 #include "dccl_constants.h"
 #include "goby/util/binary.h"

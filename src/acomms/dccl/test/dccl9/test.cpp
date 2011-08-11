@@ -17,7 +17,7 @@
 // tests usage of a custom DCCL ID codec
 
 #include "goby/acomms/dccl.h"
-#include "goby/acomms/libdccl/dccl_field_codec.h"
+#include "goby/acomms/dccl/dccl_field_codec.h"
 #include "test.pb.h"
 
 using goby::acomms::operator<<;

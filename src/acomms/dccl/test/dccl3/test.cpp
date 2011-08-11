@@ -17,7 +17,7 @@
 // tests proper encoding of standard Goby header
 
 #include "goby/acomms/dccl.h"
-#include "goby/acomms/libdccl/dccl_field_codec_default.h"
+#include "goby/acomms/dccl/dccl_field_codec_default.h"
 #include "test.pb.h"
 #include "goby/util/as.h"
 #include "goby/util/time.h"

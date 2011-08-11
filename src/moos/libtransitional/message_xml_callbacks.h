@@ -32,7 +32,7 @@
 #include "goby/moos/libtransitional/xml/xerces_strings.h"
 
 #include "message.h"
-#include "goby/acomms/libdccl/dccl_exception.h"
+#include "goby/acomms/dccl/dccl_exception.h"
 #include "goby/moos/libtransitional/xml/tags.h"
 
 namespace goby

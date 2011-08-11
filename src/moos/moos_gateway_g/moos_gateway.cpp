@@ -19,7 +19,7 @@
 #include "goby/util/logger.h"
 #include "goby/core/libcore/zeromq_application_base.h"
 #include "goby/core/libcore/pubsub_node_wrapper.h"
-#include "goby/util/liblogger/term_color.h"
+#include "goby/util/logger/term_color.h"
 
 #include "moos_gateway_config.pb.h"
 

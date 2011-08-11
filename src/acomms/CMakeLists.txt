@@ -1,10 +1,20 @@
+add_library(goby_acomms 
+  dccl/dccl.cpp
+  dccl/dccl_field_codec.cpp
+  dccl/dccl_field_codec_default.cpp
+  dccl/dccl_field_codec_default_message.cpp
+  dccl/dccl_field_codec_manager.cpp
+  dccl/dccl_type_helper.cpp
+  queue/queue.cpp
+  queue/queue_dccl_field_codec.cpp
+  queue/queue_manager.cpp
+  amac/mac_manager.cpp
+  modemdriver/abc_driver.cpp
+  modemdriver/driver_base.cpp
+  modemdriver/mm_driver.cpp
+)
 
-option(build_acomms_lib "Build the Acoustic Communications libraries" ON)
-option(build_acomms_tools "Build the Acoustic Communications tools" ON)
+target_link_libraries(goby_acomms goby_util goby_protobuf ${Cryptopp_LIBRARIES} ${Boost_LIBRARIES})
 
-if(build_acomms_lib) 
-  add_subdirectory(libdccl)
-  add_subdirectory(libmodemdriver)
-  add_subdirectory(libqueue)
-  add_subdirectory(libamac)
-endif()
+set_target_properties(goby_acomms PROPERTIES VERSION "${GOBY_VERSION}" SOVERSION "${GOBY_SOVERSION}")
+

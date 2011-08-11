@@ -20,7 +20,7 @@
 #ifndef AMACCOURTESY20091211H
 #define AMACCOURTESY20091211H
 
-#include "goby/acomms/libamac/mac_manager.h"
+#include "goby/acomms/amac/mac_manager.h"
 
 #endif
 

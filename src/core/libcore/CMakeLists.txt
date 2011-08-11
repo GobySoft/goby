@@ -1,7 +1,7 @@
 file(GLOB SRC *.cpp)
-add_library(goby_core SHARED ${SRC})
+add_library(goby_core  ${SRC})
 
-target_link_libraries(goby_core ${Boost_LIBRARIES} pthread goby_protobuf goby_logger zmq ${PROTOBUF_LIBRARIES})
+target_link_libraries(goby_core ${Boost_LIBRARIES} pthread goby_protobuf goby_util ${ZeroMQ_LIBRARIES} ${PROTOBUF_LIBRARIES})
 
 if(NOT ${APPLE})
   target_link_libraries(goby_core rt) 

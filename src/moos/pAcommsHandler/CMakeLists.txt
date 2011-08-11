@@ -8,12 +8,9 @@ add_executable(pAcommsHandler
 target_link_libraries(pAcommsHandler
   m
   pthread
+  goby_acomms
+  goby_util
   goby_moos_util
-  goby_dccl
-  goby_queue
-  goby_amac
-  goby_modemdriver
-  goby_logger
   goby_transitional
   ${MOOS_LIBRARIES}
   ${Boost_LIBRARIES}

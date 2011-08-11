@@ -8,5 +8,4 @@ target_link_libraries(goby_database
   ${Boost_LIBRARIES}
   pthread
   goby_core
-  goby_logger
   goby_dbo)

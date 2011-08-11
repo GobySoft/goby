@@ -1,4 +1,4 @@
-# Dependencies for Goby
+# Dependencies Makefile for Goby
 #
 # At a minimum, Goby-Util and Goby-Acomms can be built in a C++ development environment 
 # that also includes Google Protocol Buffers (http://code.google.com/p/protobuf/)
@@ -14,11 +14,10 @@
 # > sudo make -f DEPENDENCIES ubuntu-suggested
 #
 # LINUX
-# This script will attempt to install packages using `apt-get` for
+# This script will attempt to install packages using your package manager for
 # Debian (and derivatives). Pick a target that fulfills your needs:
-# > make {dist-name}-minimal    |  installs minimal dependencies for using Goby
-# > make {dist-name}-suggested  |  installs dependencies to give Goby more functionality
-#                                  (recommended!)
+# {dist-name}-minimal    |  installs minimal dependencies for using Goby
+# {dist-name}-suggested  |  installs dependencies to give Goby more functionality (recommended!)
 
 # minimal targets
 debian-minimal:

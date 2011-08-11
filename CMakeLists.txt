@@ -9,8 +9,6 @@
 cmake_minimum_required(VERSION 2.6.0 FATAL_ERROR)
 project(goby)
 
-
-
 ## allows us to write custom modules or modifying existing ones
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules/")
 
@@ -26,7 +24,9 @@ set(GOBY_VERSION_MINOR "0")
 set(GOBY_VERSION_PATCH "0~PRE-RELEASE")
 set(GOBY_VERSION "${GOBY_VERSION_MAJOR}.${GOBY_VERSION_MINOR}.${GOBY_VERSION_PATCH}")
 set(GOBY_VERSION_DATE "not yet unreleased")
-set(GOBY_SOVERSION "2")
+
+# give Goby 1 series a few more soversions
+set(GOBY_SOVERSION "10")
      
 ## fetch all the local directories for generated code
 get_filename_component(goby_LIB_DIR lib ABSOLUTE)

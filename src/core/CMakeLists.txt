@@ -25,20 +25,7 @@ if(GCC_COMPILER_VERSION MATCHES ".*4\\.4\\.4\\-14ubuntu5.*")
 endif(GCC_COMPILER_VERSION MATCHES ".*4\\.4\\.4\\-14ubuntu5.*")
 
 
-if(enable_testing)
-  add_subdirectory(test)
-endif()
+add_subdirectory(libdbo)
+add_subdirectory(libcore)  
 
 
-option(build_core_lib "Build the Core Libraries" ON)
-option(build_core_bin "Build the Core Binaries" ON)
-
-if(build_core_lib)
-  add_subdirectory(libdbo)
-  add_subdirectory(libcore)  
-endif()
-
-if(build_core_bin)
-  add_subdirectory(database)
-  add_subdirectory(liaison)
-endif()

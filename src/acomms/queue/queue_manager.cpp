@@ -27,7 +27,7 @@
 #include "goby/protobuf/acomms_option_extensions.pb.h"
 #include "goby/protobuf/acomms_option_extensions.pb.h"
 #include "goby/util/logger.h"
-#include "goby/protobuf/dynamic_protobuf_manager.h"
+#include "goby/util/dynamic_protobuf_manager.h"
 
 #include "queue_manager.h"
 #include "queue_constants.h"
@@ -358,7 +358,7 @@ goby::acomms::Queue* goby::acomms::QueueManager::find_next_sender(const protobuf
             boost::posix_time::microseconds(q.queue_message_options().on_demand_skew_seconds() * 1e6) <
             util::goby_time()))
         {
-            boost::shared_ptr<google::protobuf::Message> new_msg = goby::protobuf::DynamicProtobufManager::new_protobuf_message(q.descriptor());
+            boost::shared_ptr<google::protobuf::Message> new_msg = goby::util::DynamicProtobufManager::new_protobuf_message(q.descriptor());
             signal_data_on_demand(request_msg, new_msg);
             
             if(new_msg->IsInitialized())

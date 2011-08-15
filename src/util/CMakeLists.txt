@@ -8,6 +8,7 @@ set(SRC
   linebasedcomms/serial_client.cpp
   linebasedcomms/tcp_client.cpp
   linebasedcomms/tcp_server.cpp
+  dynamic_protobuf_manager.cpp
   )
 
 set(NCURSES_SRC

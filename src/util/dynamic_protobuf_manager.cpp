@@ -17,12 +17,12 @@
 
 #include "goby/core/libcore/exception.h"
 
-boost::shared_ptr<goby::protobuf::DynamicProtobufManager> goby::protobuf::DynamicProtobufManager::inst_;
+boost::shared_ptr<goby::util::DynamicProtobufManager> goby::util::DynamicProtobufManager::inst_;
 
-boost::signal<void (const google::protobuf::FileDescriptor*)> goby::protobuf::DynamicProtobufManager::new_descriptor_hooks;
+boost::signal<void (const google::protobuf::FileDescriptor*)> goby::util::DynamicProtobufManager::new_descriptor_hooks;
 
 
-boost::shared_ptr<google::protobuf::Message> goby::protobuf::DynamicProtobufManager::new_protobuf_message(const std::string& protobuf_type_name)
+boost::shared_ptr<google::protobuf::Message> goby::util::DynamicProtobufManager::new_protobuf_message(const std::string& protobuf_type_name)
 {
     const google::protobuf::Descriptor* desc = descriptor_pool().FindMessageTypeByName(protobuf_type_name);
     
@@ -32,14 +32,14 @@ boost::shared_ptr<google::protobuf::Message> goby::protobuf::DynamicProtobufMana
         throw(std::runtime_error("Unknown type " + protobuf_type_name + ", be sure it is loaded with call to add_protobuf_file()"));
 }
 
-boost::shared_ptr<google::protobuf::Message> goby::protobuf::DynamicProtobufManager::new_protobuf_message(
+boost::shared_ptr<google::protobuf::Message> goby::util::DynamicProtobufManager::new_protobuf_message(
     const google::protobuf::Descriptor* desc)
 {
     return boost::shared_ptr<google::protobuf::Message>(msg_factory().GetPrototype(desc)->New());
 }
 
 
-std::set<const google::protobuf::FileDescriptor*> goby::protobuf::DynamicProtobufManager::add_protobuf_file_with_dependencies(const google::protobuf::FileDescriptor* file_descriptor)
+std::set<const google::protobuf::FileDescriptor*> goby::util::DynamicProtobufManager::add_protobuf_file_with_dependencies(const google::protobuf::FileDescriptor* file_descriptor)
 {
     std::set<const google::protobuf::FileDescriptor*> return_set;
     
@@ -55,7 +55,7 @@ std::set<const google::protobuf::FileDescriptor*> goby::protobuf::DynamicProtobu
 }
 
 
-const google::protobuf::FileDescriptor* goby::protobuf::DynamicProtobufManager::add_protobuf_file(const google::protobuf::FileDescriptor* file_descriptor)
+const google::protobuf::FileDescriptor* goby::util::DynamicProtobufManager::add_protobuf_file(const google::protobuf::FileDescriptor* file_descriptor)
 {
     google::protobuf::FileDescriptorProto proto_file;
     file_descriptor->CopyTo(&proto_file);
@@ -63,7 +63,7 @@ const google::protobuf::FileDescriptor* goby::protobuf::DynamicProtobufManager::
 }
     
 
-const google::protobuf::FileDescriptor* goby::protobuf::DynamicProtobufManager::add_protobuf_file(const google::protobuf::FileDescriptorProto& proto)
+const google::protobuf::FileDescriptor* goby::util::DynamicProtobufManager::add_protobuf_file(const google::protobuf::FileDescriptorProto& proto)
 {
 
     const google::protobuf::FileDescriptor* return_desc = descriptor_pool().BuildFile(proto);

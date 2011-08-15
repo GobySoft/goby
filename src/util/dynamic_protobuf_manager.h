@@ -27,7 +27,7 @@
 
 namespace goby
 {
-    namespace protobuf
+    namespace util
     {
         class DynamicProtobufManager
         {

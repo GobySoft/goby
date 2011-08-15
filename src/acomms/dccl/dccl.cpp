@@ -33,7 +33,7 @@
 #include "dccl_field_codec_default.h"
 #include "goby/util/as.h"
 #include "goby/protobuf/acomms_option_extensions.pb.h"
-#include "goby/protobuf/dynamic_protobuf_manager.h"
+#include "goby/util/dynamic_protobuf_manager.h"
 #include "goby/protobuf/header.pb.h"
 
 using goby::util::goby_time;
@@ -184,7 +184,7 @@ boost::shared_ptr<google::protobuf::Message> goby::acomms::DCCLCodec::decode(con
 
         // ownership of this object goes to the caller of decode()
         boost::shared_ptr<google::protobuf::Message> msg = 
-            goby::protobuf::DynamicProtobufManager::new_protobuf_message(id2desc_.find(id)->second);
+            goby::util::DynamicProtobufManager::new_protobuf_message(id2desc_.find(id)->second);
         
         const Descriptor* desc = msg->GetDescriptor();        
     

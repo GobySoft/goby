@@ -125,7 +125,7 @@ public:
                 goby::glog.is(verbose) && goby::glog << "Running parse action: " << action.ShortDebugString() << std::endl;
                 const google::protobuf::Descriptor* desc = google::protobuf::DescriptorPool::generated_pool()->FindMessageTypeByName(action.protobuf_type_name());
                 
-                goby::protobuf::DynamicProtobufManager::add_protobuf_file_with_dependencies(desc->file());
+                goby::util::DynamicProtobufManager::add_protobuf_file_with_dependencies(desc->file());
                 
                 if(!desc)
                     throw(std::runtime_error("Unknown type " + action.protobuf_type_name() + " are you sure this is compiled in?"));
@@ -140,7 +140,7 @@ public:
                 std::map<int, boost::shared_ptr<google::protobuf::Message> > proto_msgs;
                 for (Msgs::const_iterator it = msgs.begin(), n = msgs.end(); it != n; ++it)
                 {
-                    boost::shared_ptr<google::protobuf::Message> msg = goby::protobuf::DynamicProtobufManager::new_protobuf_message(desc);
+                    boost::shared_ptr<google::protobuf::Message> msg = goby::util::DynamicProtobufManager::new_protobuf_message(desc);
 
                     const CMOOSMsg& moos_msg = (**it).second;
                     goby::glog.is(debug1) && goby::glog << moos_msg << std::endl;

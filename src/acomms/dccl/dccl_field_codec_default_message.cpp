@@ -18,7 +18,7 @@
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "dccl_field_codec_default_message.h"
-#include "goby/protobuf/dynamic_protobuf_manager.h"
+#include "goby/util/dynamic_protobuf_manager.h"
 
 using goby::glog;
 
@@ -54,7 +54,7 @@ void goby::acomms::DCCLDefaultMessageCodec::any_run_hooks(const boost::any& fiel
 boost::any goby::acomms::DCCLDefaultMessageCodec::any_decode(Bitset* bits)
 {
     boost::shared_ptr<google::protobuf::Message> msg =
-        goby::protobuf::DynamicProtobufManager::new_protobuf_message(DCCLFieldCodecBase::this_descriptor());
+        goby::util::DynamicProtobufManager::new_protobuf_message(DCCLFieldCodecBase::this_descriptor());
     
    
     //glog.is(debug1) && glog  << debug << "Looking to decode Message " << msg->GetDescriptor()->full_name() << std::endl;

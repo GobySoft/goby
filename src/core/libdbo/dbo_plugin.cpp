@@ -98,7 +98,7 @@ void goby::core::ProtobufDBOPlugin::add_message(int unique_id, const std::string
     const std::string protobuf_type_name = identifier.substr(0, identifier.find("/"));
         
     boost::shared_ptr<google::protobuf::Message> msg =
-        goby::protobuf::DynamicProtobufManager::new_protobuf_message(protobuf_type_name);
+        goby::util::DynamicProtobufManager::new_protobuf_message(protobuf_type_name);
     msg->ParseFromArray(data, size);
     add_message(unique_id, msg);
 }
@@ -137,7 +137,7 @@ void goby::core::ProtobufDBOPlugin::map_types()
         it != n;
         ++it)
     {
-        map_type(goby::protobuf::DynamicProtobufManager::descriptor_pool().FindMessageTypeByName(it->second));
+        map_type(goby::util::DynamicProtobufManager::descriptor_pool().FindMessageTypeByName(it->second));
     }
 }
 

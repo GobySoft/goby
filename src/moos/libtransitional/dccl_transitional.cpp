@@ -27,7 +27,7 @@
 #include "goby/util/as.h"
 #include <google/protobuf/descriptor.pb.h>
 #include "goby/protobuf/acomms_option_extensions.pb.h"
-#include "goby/protobuf/dynamic_protobuf_manager.h"
+#include "goby/util/dynamic_protobuf_manager.h"
 
 using goby::util::goby_time;
 using goby::util::as;           
@@ -313,7 +313,7 @@ void goby::transitional::DCCLTransitionalCodec::encode_private(std::vector<DCCLM
     
     it->set_head_defaults(in, cfg_.modem_id());
 
-    proto_msg = goby::protobuf::DynamicProtobufManager::new_protobuf_message(it->descriptor());
+    proto_msg = goby::util::DynamicProtobufManager::new_protobuf_message(it->descriptor());
 
     std::map<std::string, std::vector<DCCLMessageVal> > out_vals = in;
     

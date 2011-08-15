@@ -2,8 +2,32 @@ import "goby/protobuf/acomms_driver_base.proto";
 import "goby/protobuf/acomms_modem_message.proto";
 
 
-// TODO(tes) rework ModemInitiateTransmission to not use AMAC slot
-import "goby/protobuf/acomms_amac.proto"; // temporary for ModemInitiateTransmission
+message NarrowBandLBLParams
+{
+  // for MICROMODEM_NARROWBAND_LBL_RANGING
+  optional uint32 transmit_freq = 1; // in hertz
+  optional uint32 transmit_ping_ms = 2; // length of tx ping
+  repeated uint32 receive_freq = 3; // in hertz, first element (0) == beacon A, etc.
+  optional uint32 receive_ping_ms = 4; // length of rx ping
+    
+  optional uint32 turnaround_ms = 5;
+  optional bool transmit_flag = 6 [default = true]; //Flag to indicate whether the transmit signal is actually sent (1), or whether the ping is initiated with an external synchronization pulse (0).
+  
+  // meters
+  optional uint32 lbl_max_range = 7 [default = 2000]; 
+}
+
+message REMUSLBLParams
+{
+  // for MICROMODEM_REMUS_LBL_RANGING
+  // LSB->MSB is LBL beacons 1,2,3,... true is enabled, false is disabled
+  // enable four beacons is b1111 == d15 
+  optional uint32 enable_beacons = 1 [default = 15];
+  optional uint32 turnaround_ms = 2 [default = 50];
+  
+  // meters
+  optional uint32 lbl_max_range = 3 [default = 1000]; 
+}
 
 message MicroModemConfig
 {
@@ -23,47 +47,139 @@ message MicroModemConfig
     // *do not set for the normal WHOI Micro-Modem*
     optional uint32 hydroid_gateway_id = 1002 [default = 0]; 
 
-    
-    // for REMUS_LBL_RANGING
-    // LSB->MSB is LBL beacons 1,2,3,... true is enabled, false is disabled
-    // enable four beacons is b1111 == d15 
-    optional uint32 remus_enable_beacons = 1003 [default = 15];
-    optional uint32 remus_turnaround_ms = 1004 [default = 50];
+    // LBL parameters can be set globally here or on a per-transmission basis
+    optional NarrowBandLBLParams narrowband_lbl = 1003;
+    optional REMUSLBLParams remus_lbl = 1004;
 
-    // for NARROWBAND_LBL_RANGING
-    optional uint32 narrowband_transmit_freq = 1005; // in hertz
-    optional uint32 narrowband_transmit_ping_ms = 1006; // length of tx ping
-    repeated uint32 narrowband_receive_freq = 1007; // in hertz, first element (0) == beacon A, etc.
-    optional uint32 narrowband_receive_ping_ms = 1008; // length of rx ping
-    
-    optional uint32 narrowband_turnaround_ms = 1009;
-    optional bool narrowband_transmit_flag = 1010 [default = true]; //Flag to indicate whether the transmit signal is actually sent (1), or whether the ping is initiated with an external synchronization pulse (0).
-
-    
   }
 }
 
 message MicroModem
 {
+
+  enum ClockMode
+  {
+    NO_SYNC_TO_PPS_AND_CCCLK_BAD = 0;
+    NO_SYNC_TO_PPS_AND_CCCLK_GOOD = 1;
+    SYNC_TO_PPS_AND_CCCLK_BAD = 2;
+    SYNC_TO_PPS_AND_CCCLK_GOOD = 3;
+  }
+
+  message RangingRequest
+  {
+    // LBL parameters will be merged with configuration parameters. If a parameter
+    // is set in both places, the ones set here take precedence.
+    optional NarrowBandLBLParams narrowband_lbl = 1;
+    optional REMUSLBLParams remus_lbl = 2;
+  }
+   
+  message RangingReply
+  {
+    // seconds
+    repeated double one_way_travel_time = 1;
+    enum OWTTAmbiguity
+    {
+      OWTT_EXACT = 1; // one_way_travel_time reported is correct and known
+      OWTT_SECOND_AMBIGUOUS = 2; // one way travel time fractional second is correct, but second is unknown
+    }
+    optional OWTTAmbiguity ambiguity = 2 [default = OWTT_EXACT];
+    optional bool is_one_way_synchronous = 3 [default = false]; // if false, type given by ModemTransmission.type
+    optional ClockMode receiver_clk_mode = 4 [default = NO_SYNC_TO_PPS_AND_CCCLK_BAD];
+    optional ClockMode sender_clk_mode = 5 [default = NO_SYNC_TO_PPS_AND_CCCLK_BAD];
+  }
+
   enum PacketType
   {
-    PACKET_DATA = 1; // CARXD
-    PACKET_MINI = 2; // CAMUA
-  }
-  extend goby.acomms.protobuf.ModemDataTransmission
-  {
-    optional PacketType packet_type = 1000;
-  }
-
-  extend goby.acomms.protobuf.ModemDataInit
-  {
-    optional goby.acomms.protobuf.Slot init_slot = 1000; // from amac: TODO(tes): rework to make generic
+    PACKET_TYPE_UNKNOWN = -1;
+    FSK = 1;
+    FSK_MINI = 2;
+    PSK = 3;
+    PSK_MINI = 4;
   }
 
-  extend goby.acomms.protobuf.ModemDataRequest
+  enum ReceiveMode
   {
-    optional goby.acomms.protobuf.Slot request_slot = 1000; // from amac: TODO(tes): rework to make generic
+    RECEIVE_GOOD = 0;
+    BAD_CRC = 1;
+    PACKET_TIMEOUT = 2;
   }
+  
+  message ReceiveStatistics
+  {
+    // including in "version 0", or the original CACST
+    optional ReceiveMode mode = 1;
+    optional double time = 2;
+    optional ClockMode clock_mode = 3;
+    optional int32 mfd_peak = 4;
+    optional int32 mfd_power = 5;
+    optional int32 mfd_ratio = 6;
+    optional int32 spl = 7;
+    optional int32 shf_agn = 8;
+    optional int32 shf_ainpshift = 9;
+    optional int32 shf_ainshift = 10; 
+    optional int32 shf_mfdshift = 11;
+    optional int32 shf_p2bshift = 12;
+    optional int32 rate = 13;
+    optional int32 source = 14;
+    optional int32 dest = 15;
+    optional int32 psk_error_code = 16;
+    optional PacketType packet_type = 17;
+    optional int32 number_frames = 18;
+    optional int32 number_bad_frames = 19;
+    optional int32 snr_rss = 20;
+    optional int32 snr_in = 21;
+    optional int32 snr_out = 22;
+    optional int32 snr_symbols = 23;
+    optional int32 mse_equalizer = 24;
+    optional int32 data_quality_factor = 25;
+    optional double doppler = 26;
+    optional int32 stddev_noise = 27;
+    optional int32 carrier_freq = 28;
+    optional int32 bandwidth = 29;
+
+    // new for "version 6+", firmware 0.93.0.52+
+    optional int32 version = 30 [default=0];
+    optional string date = 31;
+    optional int32 pcm = 32;
+  }
+
+  enum TransmitMode
+  {
+    TRANSMIT_SUCCESSFUL = 0;
+    FETS_TOO_HOT = 1;
+    EXTSYNC_TIMEOUT = 2;
+    TX_INHIBITED = 3;
+    DATA_TIMEOUT = 4;
+  }
+  
+  
+  message TransmitStatistics
+  {
+    optional string date = 1;
+    optional double time = 2;
+    optional ClockMode clock_mode = 3;
+    optional TransmitMode mode = 4;
+    optional int32 probe_length = 5;
+    optional int32 bandwidth = 6;
+    optional int32 carrier_freq = 7;
+    optional int32 rate = 8;
+    optional int32 source = 9;
+    optional int32 dest = 10;
+    optional bool ack_requested = 11;
+    optional int32 number_frames_expected = 12;
+    optional int32 number_frames_sent = 13;
+    optional PacketType packet_type = 14;
+    optional int32 number_bytes = 15;
+  }
+
+  extend goby.acomms.protobuf.ModemTransmission 
+  {
+    optional RangingRequest ranging_request = 1000;
+    optional RangingReply ranging_reply = 1001;
+    optional ReceiveStatistics receive_stat = 1002; // $CACST
+    optional TransmitStatistics transmit_stat = 1003; // $CAXST
+  }
+  
   
 }
 

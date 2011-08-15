@@ -51,14 +51,11 @@ namespace goby
             void startup(const protobuf::DriverConfig& cfg);
             void shutdown();
             
-            /// \brief Must be called regularly for the driver to perform its work. 10 Hz is good, but less frequently is fine too. Signals will be emitted only during calls to this method.
-            void do_work();
+            /// \brief See DriverBase::poll()
+            void poll(int timeout);
             
-            /// \brief Initiate a transmission to the modem.
-            void handle_initiate_transmission(protobuf::ModemDataInit* m);
-
-            /// \brief Initiate ranging ("ping") to the modem. 
-            void handle_initiate_ranging(protobuf::ModemRangingRequest* m);
+            /// \brief See DriverBase::handle_initiate_transmission()
+            void handle_initiate_transmission(protobuf::ModemTransmission* m);
 
             // keeps track of clock mode, necessary for synchronous navigation
             int clk_mode() { return clk_mode_; }
@@ -75,11 +72,18 @@ namespace goby
             void set_hydroid_gateway_prefix(int id); // if using the hydroid gateway, set its id number
             
             // output
+
+            void cccyc(protobuf::ModemTransmission* msg);
+            void ccmuc(protobuf::ModemTransmission* msg);
+            void ccmpc(const protobuf::ModemTransmission& msg);
+            void ccpdt(const protobuf::ModemTransmission& msg);
+            void ccpnt(const protobuf::ModemTransmission& msg);
+             
             void try_send(); // try to send another NMEA message to the modem
             void pop_out(); // pop the NMEA send deque upon successful NMEA acknowledgment
-            void cache_outgoing_data(const protobuf::ModemDataInit& init_msg); // cache data upon a CCCYC
-            void append_to_write_queue(const util::NMEASentence& nmea, protobuf::ModemMsgBase* base_msg); // add a message
-            void mm_write(const protobuf::ModemMsgBase& base_msg); // actually write a message (appends hydroid prefix if needed)
+            void cache_outgoing_data(protobuf::ModemTransmission* msg); // cache data upon a CCCYC
+            void append_to_write_queue(const util::NMEASentence& nmea); // add a message
+            void mm_write(const util::NMEASentence& nmea); // actually write a message (appends hydroid prefix if needed)
             void increment_present_fail();
             void present_fail_exceeds_retries();
 
@@ -88,36 +92,29 @@ namespace goby
             void process_receive(const util::NMEASentence& nmea); // parse a receive message and call proper method
             
             // data cycle
-            void cyc(const util::NMEASentence& nmea, protobuf::ModemDataInit* init_msg); // $CACYC 
-            void rxd(const util::NMEASentence& nmea, protobuf::ModemDataTransmission* data_msg); // $CARXD
-            void ack(const util::NMEASentence& nmea, protobuf::ModemDataAck* ack_msg); // $CAACK
+            void cacyc(const util::NMEASentence& nmea, protobuf::ModemTransmission* msg); // $CACYC
+            void carxd(const util::NMEASentence& nmea, protobuf::ModemTransmission* msg); // $CARXD
+            void caack(const util::NMEASentence& nmea, protobuf::ModemDataAck* ack_msg); // $CAACK
         
             // mini packet
-            void mua(const util::NMEASentence& nmea, protobuf::ModemDataTransmission* data_msg); // $CAMUA
+            void camua(const util::NMEASentence& nmea, protobuf::ModemTransmission* msg); // $CAMUA
 
             // ranging (pings)
-            void mpr(const util::NMEASentence& nmea, protobuf::ModemRangingReply* ranging_msg); // $CAMPR
-            void tta(const util::NMEASentence& nmea, protobuf::ModemRangingReply* ranging_msg); // $SNTTA, why not $CATTA?
-            void toa(const util::NMEASentence& nmea, protobuf::ModemRangingReply* ranging_msg); // $CATOA?
-            // send toa once we actually know who the message is from
-            // if time_of_depart is negative, flush_toa returns the fractional
-            // part of the second 
-            void flush_toa(const protobuf::ModemMsgBase& base_msg, protobuf::ModemRangingReply* ranging_msg);
+            void campr(const util::NMEASentence& nmea, protobuf::ModemTransmission* msg); // $CAMPR
+            void sntta(const util::NMEASentence& nmea, protobuf::ModemTransmission* msg); // $SNTTA
 
             
             // local modem
-            void xst(const util::NMEASentence& nmea); // $CAXST
-            void rev(const util::NMEASentence& nmea); // $CAREV
-            void err(const util::NMEASentence& nmea); // $CAERR
-            void cfg(const util::NMEASentence& nmea, protobuf::ModemMsgBase* base_msg); // $CACFG
-            void clk(const util::NMEASentence& nmea, protobuf::ModemMsgBase* base_msg); // $CACLK
-            void drq(const util::NMEASentence& nmea); // $CADRQ
+            void caxst(const util::NMEASentence& nmea, protobuf::ModemTransmission* msg); // $CAXST
+            void cacst(const util::NMEASentence& nmea, protobuf::ModemTransmission* msg); // $CACST
+            void carev(const util::NMEASentence& nmea); // $CAREV
+            void caerr(const util::NMEASentence& nmea); // $CAERR
+            void cacfg(const util::NMEASentence& nmea);
+            void caclk(const util::NMEASentence& nmea); // $CACLK
+            void cadrq(const util::NMEASentence& nmea, const protobuf::ModemTransmission& m); // $CADRQ
 
-            bool validate_data(const protobuf::ModemDataRequest& request,
-                               protobuf::ModemDataTransmission* data);
-            
-            bool is_valid_destination(int dest) 
-            { return dest >= BROADCAST_ID; }
+            void validate_transmission_start(const protobuf::ModemTransmission& message);
+            void validate_data(const protobuf::ModemTransmission& message);
             
             
             // utility    
@@ -160,7 +157,7 @@ namespace goby
 
             // deque for outgoing messages to the modem, we queue them up and send
             // as the modem acknowledges them
-            std::deque< std::pair<util::NMEASentence, protobuf::ModemMsgBase> > out_;
+            std::deque<util::NMEASentence> out_;
 
             // human readable debug log (e.g. &std::cout)
             std::ostream* log_;
@@ -226,10 +223,6 @@ namespace goby
             // NVRAM parameters like SRC, DTO, PTO, etc.
             std::map<std::string, int> nvram_cfg_;
 
-            // cache the appropriate amount of data upon CCCYC request (initiate_transmission)
-            // for immediate use upon the DRQ message
-            // maps frame number to DataTransmission object
-            std::map<unsigned, protobuf::ModemDataTransmission> cached_data_msgs_;
 
             // keep track of which frames we've sent and are awaiting acks for. This
             // way we have a chance of intercepting unexpected behavior of the modem
@@ -240,7 +233,7 @@ namespace goby
             // false if a third party initiated the last cycle
             bool local_cccyc_;
 
-            protobuf::RangingType last_ranging_type_;
+            protobuf::ModemTransmission::TransmissionType last_transmission_type_;
             
         };
     }

@@ -24,10 +24,12 @@
 #include "driver_base.h"
 #include "driver_exception.h"
 
-goby::acomms::ModemDriverBase::ModemDriverBase(std::ostream* log /* = 0 */)
-    : log_(log),
-      modem_(0)
-{ }
+goby::acomms::ModemDriverBase::ModemDriverBase()
+    : modem_(0)
+{
+    goby::glog.add_group("modem_out", util::Colors::lt_magenta, "outgoing micromodem messages (goby_modemdriver)");
+    goby::glog.add_group("modem_in", util::Colors::lt_blue, "incoming micromodem messages (goby_modemdriver)");
+}
 
 goby::acomms::ModemDriverBase::~ModemDriverBase()
 {
@@ -38,7 +40,7 @@ void goby::acomms::ModemDriverBase::modem_write(const std::string& out)
 {
     while(!modem_->active())
     {
-        if(log_) *log_ << group("modem_out") << warn << "modem is closed! (check physical connection)" << std::endl;
+        goby::glog.is(debug1) && goby::glog << group("modem_out") << warn << "modem is closed! (check physical connection)" << std::endl;
         sleep(1);
     }
     
@@ -50,7 +52,7 @@ bool goby::acomms::ModemDriverBase::modem_read(std::string* in)
 {
     while(!modem_->active())
     {
-        if(log_) *log_ << group("modem_in") << warn << "modem is closed! (check physical connection)" << std::endl;
+        goby::glog.is(debug1) && goby::glog << group("modem_in") << warn << "modem is closed! (check physical connection)" << std::endl;
         sleep(1);
     }
 
@@ -72,7 +74,7 @@ void goby::acomms::ModemDriverBase::modem_start(const protobuf::DriverConfig& cf
     switch(cfg.connection_type())
     {
         case protobuf::DriverConfig::CONNECTION_SERIAL:
-            if(log_) *log_ << group("modem_out") << "opening serial port " << cfg.serial_port() << " @ " << cfg.serial_baud() << std::endl;
+            goby::glog.is(debug1) && goby::glog << group("modem_out") << "opening serial port " << cfg.serial_port() << " @ " << cfg.serial_baud() << std::endl;
 
             if(!cfg.has_serial_port())
                 throw(ModemDriverException("missing serial port in configuration"));
@@ -83,7 +85,7 @@ void goby::acomms::ModemDriverBase::modem_start(const protobuf::DriverConfig& cf
             break;
             
         case protobuf::DriverConfig::CONNECTION_TCP_AS_CLIENT:
-            if(log_) *log_ << group("modem_out") << "opening tcp client: " << cfg.tcp_server() << ":" << cfg.tcp_port() << std::endl;
+            goby::glog.is(debug1) && goby::glog << group("modem_out") << "opening tcp client: " << cfg.tcp_server() << ":" << cfg.tcp_port() << std::endl;
             if(!cfg.has_tcp_server())
                 throw(ModemDriverException("missing tcp server address in configuration"));
             if(!cfg.has_tcp_port())
@@ -93,7 +95,7 @@ void goby::acomms::ModemDriverBase::modem_start(const protobuf::DriverConfig& cf
             break;
             
         case protobuf::DriverConfig::CONNECTION_TCP_AS_SERVER:
-            if(log_) *log_ << group("modem_out") << "opening tcp server on port" << cfg.tcp_port() << std::endl;
+            goby::glog.is(debug1) && goby::glog << group("modem_out") << "opening tcp server on port" << cfg.tcp_port() << std::endl;
 
             if(!cfg.has_tcp_port())
                 throw(ModemDriverException("missing tcp port in configuration"));
@@ -105,11 +107,5 @@ void goby::acomms::ModemDriverBase::modem_start(const protobuf::DriverConfig& cf
     }    
 
     modem_->start();
-}
-
-void goby::acomms::ModemDriverBase::add_flex_groups(util::FlexOstream* tout)
-{
-    tout->add_group("modem_out", util::Colors::lt_magenta, "outgoing micromodem messages (goby_modemdriver)");
-    tout->add_group("modem_in", util::Colors::lt_blue, "incoming micromodem messages (goby_modemdriver)");
 }
 

@@ -6,7 +6,7 @@ message ModemMsgBase
 {
   optional int32 src = 1 [default = 0]; //  0 (BROADCAST), 1-31, 
   optional int32 dest = 2 [default = 0]; //  0 (BROADCAST), 1-31, -1 (QUERY_DESTINATION_ID)
-  optional string time = 3; // UTC time output from operator<< of boost::posix_time::ptime: e.g. "2002-Jan-01 14:23:11"
+  optional double time = 3; // seconds and fractional seconds since UNIX (1970-01-01 00:00:00 UTC)
   enum TimeSource { MODEM_TIME = 1; GOBY_TIME = 2; } 
   optional TimeSource time_source = 5 [default = GOBY_TIME]; // source of the timestamp given  
   optional int32 rate = 6 [default = 0]; // 0 (lowest) - 5 (highest), -1 (QUERY_RATE)

@@ -51,7 +51,7 @@ namespace goby
           TCPServer(unsigned port,
                     const std::string& delimiter = "\r\n")
               : LineBasedInterface(delimiter),
-                acceptor_(LineBasedInterface::io_service_,
+                acceptor_(io_service(),
                           boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), port))
                 {  }
             virtual ~TCPServer() 
@@ -62,10 +62,9 @@ namespace goby
             std::string local_endpoint() { return goby::util::as<std::string>(acceptor_.local_endpoint()); }
 
             
-
-            // for access to static members of LineBasedInterface
             friend class TCPConnection;
             friend class LineBasedConnection<boost::asio::ip::tcp::socket>;
+
           private:
             void do_start()
             { start_accept(); }
@@ -79,7 +78,6 @@ namespace goby
                                const boost::system::error_code& error);
             
           private:
-            static std::map<std::string, TCPServer*> inst_;
             std::string server_;
             boost::asio::ip::tcp::acceptor acceptor_;
             boost::shared_ptr<TCPConnection> new_connection_;
@@ -91,7 +89,7 @@ namespace goby
             public LineBasedConnection<boost::asio::ip::tcp::socket>
             {
               public:
-                static boost::shared_ptr<TCPConnection> create();
+                static boost::shared_ptr<TCPConnection> create(LineBasedInterface* interface);
                 
                 boost::asio::ip::tcp::socket& socket()
                 { return socket_; }
@@ -112,11 +110,12 @@ namespace goby
                 void socket_write(const protobuf::Datagram& line);
                 void socket_close(const boost::system::error_code& error);
     
-              TCPConnection()
-                  : socket_(LineBasedInterface::io_service_)
+              TCPConnection(LineBasedInterface* interface)
+                  : LineBasedConnection<boost::asio::ip::tcp::socket>(interface),
+                    socket_(interface->io_service())
                 { }
-    
-
+                
+                
               private:
                 boost::asio::ip::tcp::socket socket_;
             };

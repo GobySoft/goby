@@ -101,6 +101,7 @@ namespace goby
 
             // ranging (pings)
             void campr(const util::NMEASentence& nmea, protobuf::ModemTransmission* msg); // $CAMPR
+            void campa(const util::NMEASentence& nmea, protobuf::ModemTransmission* msg); // $CAMPA
             void sntta(const util::NMEASentence& nmea, protobuf::ModemTransmission* msg); // $SNTTA
 
             
@@ -180,7 +181,7 @@ namespace goby
             unsigned present_fail_count_;
 
             // keeps track of clock mode, necessary for synchronous navigation
-            int clk_mode_;
+            micromodem::protobuf::ClockMode clk_mode_;
 
             // has the clock been properly set. we must reset the clock after reboot ($CAREV,INIT)
             bool clock_set_;

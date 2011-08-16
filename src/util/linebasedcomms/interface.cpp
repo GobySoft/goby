@@ -16,13 +16,6 @@
 
 #include "interface.h"
 #include "goby/core/libcore/exception.h"
-
-std::string goby::util::LineBasedInterface::delimiter_;
-boost::asio::io_service goby::util::LineBasedInterface::io_service_;
-std::deque<goby::util::protobuf::Datagram> goby::util::LineBasedInterface::in_;
-boost::mutex goby::util::LineBasedInterface::in_mutex_;
-
-
             
 
 goby::util::LineBasedInterface::LineBasedInterface(const std::string& delimiter)

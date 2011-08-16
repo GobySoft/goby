@@ -114,6 +114,30 @@ namespace goby
             return (double(time_of_day.total_seconds()) + double(time_of_day.fractional_seconds()) / double(time_duration::ticks_per_second()));
         }
 
+
+        // specialization of `as` for double (assumed seconds since UNIX 1970-01-01 00:00:00 UTC) to ptime
+        template<typename To, typename From>
+            typename boost::enable_if<boost::mpl::and_<
+            boost::is_same<To, double>,
+            boost::is_same<From, boost::posix_time::ptime>
+            >, To>::type
+            as(const From& from)
+        {
+            return goby::util::ptime2unix_double(from); 
+        }
+
+        // specialization of `as` for ptime to double (seconds since UNIX 1970-01-01 00:00:00 UTC)
+        template<typename To, typename From>
+            typename boost::enable_if<boost::mpl::and_<
+            boost::is_same<To, boost::posix_time::ptime>,
+            boost::is_same<From, double>
+            >, To>::type
+            as(const From& from)
+        {
+            return goby::util::unix_double2ptime(from); 
+        }
+
+        
         //@}
 
     }

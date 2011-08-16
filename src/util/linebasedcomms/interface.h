@@ -57,8 +57,7 @@ namespace goby
             /// \return true if data was read, false if no data to read
             bool readline(std::string* s, AccessOrder order = OLDEST_FIRST)
             {
-                static protobuf::Datagram datagram;
-                datagram.Clear();
+                protobuf::Datagram datagram;
                 bool is_data = readline(&datagram, order);
                 *s = datagram.data();
                 return is_data;
@@ -70,8 +69,7 @@ namespace goby
             // write a line to the buffer
             void write(const std::string& s)
             {
-                static protobuf::Datagram datagram;
-                datagram.Clear();
+                protobuf::Datagram datagram;
                 datagram.set_data(s);
                 write(datagram);
             }
@@ -85,8 +83,9 @@ namespace goby
             void set_delimiter(const std::string& s) { delimiter_ = s; }
             std::string delimiter() const { return delimiter_; }
             
-
+            boost::asio::io_service& io_service() { return io_service_; }
             
+
           protected:            
             
             // all implementors of this line based interface must provide do_start, do_write, do_close, and put all read data into "in_"
@@ -96,13 +95,21 @@ namespace goby
 
             void set_active(bool active) { active_ = active; }
             
-            static std::string delimiter_;
-            static boost::asio::io_service io_service_; // the main IO service that runs this connection
-            static std::deque<protobuf::Datagram> in_; // buffered read data
-            static boost::mutex in_mutex_;
+            std::string delimiter_;
+            boost::asio::io_service io_service_; // the main IO service that runs this connection
+            std::deque<protobuf::Datagram> in_; // buffered read data
+            boost::mutex in_mutex_;
 
+            template<typename ASIOAsyncReadStream>
+                friend class LineBasedConnection;
 
+            std::string& delimiter() { return delimiter_; }
+            std::deque<goby::util::protobuf::Datagram>& in() { return in_; }
+            boost::mutex& in_mutex() { return in_mutex_; }
+            
+            
           private:
+            
             
             boost::asio::io_service::work work_;
             bool active_; // remains true while this object is still operating

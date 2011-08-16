@@ -27,6 +27,7 @@
 #include <boost/lexical_cast.hpp>
 #include <iostream>
 #include <limits>
+
 #include <boost/utility.hpp>
 #include <boost/type_traits.hpp>
 #include <boost/algorithm/string.hpp>
@@ -34,6 +35,7 @@
 #include <boost/mpl/and.hpp>
 #include <boost/mpl/logical.hpp>
 #include <boost/numeric/conversion/cast.hpp>
+
 
 namespace goby
 {
@@ -44,7 +46,7 @@ namespace goby
         //@{
         
         template<typename To>
-            typename boost::enable_if<boost::is_fundamental<To>, To>::type
+            typename boost::enable_if<boost::is_arithmetic<To>, To>::type
             _as_from_string(const std::string& from)
         {
             try { return boost::lexical_cast<To>(from); }
@@ -56,9 +58,22 @@ namespace goby
                     : std::numeric_limits<To>::max();
             }
         }
+
+        // only works properly for enums with a defined 0 value
+        template<typename To>
+            typename boost::enable_if<boost::is_enum<To>, To>::type
+            _as_from_string(const std::string& from)
+        {
+            try { return static_cast<To>(boost::lexical_cast<int>(from)); }
+            catch(boost::bad_lexical_cast&)
+            {
+                return static_cast<To>(0);
+            }
+        }
+
         
         template<typename To>
-            typename boost::disable_if<boost::is_fundamental<To>, To>::type
+            typename boost::enable_if<boost::is_class<To>, To>::type
             _as_from_string(const std::string& from)
         {
             try { return boost::lexical_cast<To>(from); }
@@ -144,6 +159,16 @@ namespace goby
         {
             return _as_numeric<To, From>(from);
         }
+
+        // not much better we can do for enums than static cast them ...
+        template<typename To, typename From>
+            typename boost::enable_if<boost::mpl::and_<boost::is_enum<To>,
+            boost::is_arithmetic<From> >, To>::type
+            as(const From& from)
+        {
+            return static_cast<To>(from);
+        }
+
     }
 }
 #endif

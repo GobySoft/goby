@@ -55,7 +55,7 @@ namespace goby
             void poll(int timeout);
             
             /// \brief See DriverBase::handle_initiate_transmission()
-            void handle_initiate_transmission(protobuf::ModemTransmission* m);
+            void handle_initiate_transmission(const protobuf::ModemTransmission& m);
 
             // keeps track of clock mode, necessary for synchronous navigation
             int clk_mode() { return clk_mode_; }
@@ -94,7 +94,9 @@ namespace goby
             // data cycle
             void cacyc(const util::NMEASentence& nmea, protobuf::ModemTransmission* msg); // $CACYC
             void carxd(const util::NMEASentence& nmea, protobuf::ModemTransmission* msg); // $CARXD
-            void caack(const util::NMEASentence& nmea, protobuf::ModemDataAck* ack_msg); // $CAACK
+            void camsg(const util::NMEASentence& nmea, protobuf::ModemTransmission* m);
+
+            void caack(const util::NMEASentence& nmea, protobuf::ModemTransmission* msg); // $CAACK
         
             // mini packet
             void camua(const util::NMEASentence& nmea, protobuf::ModemTransmission* msg); // $CAMUA
@@ -149,9 +151,6 @@ namespace goby
             // size of packet (in bytes) for a given modem rate
             static unsigned PACKET_SIZE [];
 
-            // in bytes
-            enum { MINI_PACKET_SIZE = 2 };
-            
 
             // all startup configuration (DriverConfig defined in driver_base.proto and extended in mm_driver.proto)
             protobuf::DriverConfig driver_cfg_;
@@ -224,12 +223,15 @@ namespace goby
             // NVRAM parameters like SRC, DTO, PTO, etc.
             std::map<std::string, int> nvram_cfg_;
 
+            protobuf::ModemTransmission transmit_msg_;
 
             // keep track of which frames we've sent and are awaiting acks for. This
             // way we have a chance of intercepting unexpected behavior of the modem
             // relating to ACKs
             std::set<unsigned> frames_waiting_for_ack_;
-            
+
+            std::set<unsigned> frames_waiting_to_receive_;
+
             // true if we initiated the last cycle ($CCCYC) (and thereby cache data for it)?
             // false if a third party initiated the last cycle
             bool local_cccyc_;

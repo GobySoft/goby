@@ -6,7 +6,7 @@ message ModemMsgBase
 {
   optional int32 src = 1 [default = 0]; //  0 (BROADCAST), 1-31, 
   optional int32 dest = 2 [default = 0]; //  0 (BROADCAST), 1-31, -1 (QUERY_DESTINATION_ID)
-  optional double time = 3; // seconds and fractional seconds since UNIX (1970-01-01 00:00:00 UTC)
+  optional uint64 time = 3; // microseconds since UNIX (1970-01-01 00:00:00 UTC)
   enum TimeSource { MODEM_TIME = 1; GOBY_TIME = 2; } 
   optional TimeSource time_source = 5 [default = GOBY_TIME]; // source of the timestamp given  
   optional int32 rate = 6 [default = 0]; // 0 (lowest) - 5 (highest), -1 (QUERY_RATE)
@@ -23,7 +23,9 @@ message ModemTransmission
   enum TransmissionType
   {
     // General (DriverBase) types
+    UNKNOWN = 0;
     DATA = 1;
+    ACK = 2;
 
     // 1000-1099 taken by MMDriver - fields used by these types are given as MicroModem Extensions
     // see acomms_mm_driver.proto
@@ -33,10 +35,9 @@ message ModemTransmission
     MICROMODEM_MINI_DATA = 1003; // 13 bits (represented as a 1 frame, 2 byte data transmission where data is AND'd with 0x1ff) mini data transmission
   }
 
-  optional TransmissionType type = 2 [default = DATA];
+  optional TransmissionType type = 2 [default = UNKNOWN];
   
   // for type == DATA
-  optional uint32 rate = 10 [default = 0]; // 0 (lowest) - 5 (highest)
   optional uint32 num_frames = 11 [default = 1]; // set by the modem driver for the given rate
   optional uint32 max_frame_bytes = 12; // set by the modem driver for the given rate, omitted means no maximum
   repeated ModemDataTransmission frame = 13; // if omitted, you will be queried for data on signal_data_request. You can also set some frames here and the rest will be filled by signalling a data request
@@ -54,17 +55,8 @@ message ModemDataTransmission
 
   optional bytes data = 10;
   optional bool ack_requested = 11 [default = true]; // acoustic acknowledgment requested
-  optional uint32 frame = 12 [default = 0];  // frame number if the modem supports multiple frames per packet
+  optional uint32 frame_number = 12 [default = 0];  // frame number if the modem supports multiple frames per packet
   
-  // 1000-1099 taken by MMDriver
-  extensions 1000 to max;
-}
-
-message ModemDataAck
-{
-  optional ModemMsgBase base = 1;
-  optional uint32 frame = 2 [default = 0]; // provided by libmodemdriver
-
   // 1000-1099 taken by MMDriver
   extensions 1000 to max;
 }

@@ -63,14 +63,6 @@ enum ClockMode
   SYNC_TO_PPS_AND_CCCLK_GOOD = 3;
 }
 
-message RangingRequest
-{
-  // LBL parameters will be merged with configuration parameters. If a parameter
-  // is set in both places, the ones set here take precedence.
-  optional NarrowBandLBLParams narrowband_lbl = 1;
-  optional REMUSLBLParams remus_lbl = 2;
-}
-   
 message RangingReply
 {
   // seconds
@@ -172,9 +164,17 @@ message TransmitStatistics
 
 extend goby.acomms.protobuf.ModemTransmission 
 {
-  optional RangingRequest ranging_request = 1000;
-  optional RangingReply ranging_reply = 1001;
-  optional ReceiveStatistics receive_stat = 1002; // $CACST
-  optional TransmitStatistics transmit_stat = 1003; // $CAXST
+  // LBL parameters will be merged with configuration parameters. If a parameter
+  // is set in both places, the ones set here take precedence.
+  optional NarrowBandLBLParams narrowband_lbl = 1001;
+  optional REMUSLBLParams remus_lbl = 1002;
+
+  optional RangingReply ranging_reply = 1003;
+  optional ReceiveStatistics receive_stat = 1004; // $CACST
+  optional TransmitStatistics transmit_stat = 1005; // $CAXST
 }
 
+extend goby.acomms.protobuf.ModemDataTransmission
+{
+  optional bool is_bad_crc = 1001 [default = false];
+}

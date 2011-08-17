@@ -68,8 +68,8 @@ namespace goby
             //@{
             /// \brief Virtual initiate_transmission method. Typically connected to MACManager::signal_initiate_transmission() using bind().
             ///
-            /// \param m ModemMsgBase (defined in acomms_modem_message.proto) containing the details of the transmission to be started. This does *not* contain data, which will be requested when the driver calls the data request signal (ModemDriverBase::signal_data_request)
-            virtual void handle_initiate_transmission(protobuf::ModemTransmission* m) = 0;
+            /// \param m ModemTransmission (defined in acomms_modem_message.proto) containing the details of the transmission to be started. This does may contain data frames. If not, data will be requested when the driver calls the data request signal (ModemDriverBase::signal_data_request)
+            virtual void handle_initiate_transmission(const protobuf::ModemTransmission& m) = 0;
             //@}
 
             /// \name MAC / Queue Signals
@@ -87,19 +87,12 @@ namespace goby
             boost::signal<void (protobuf::ModemTransmission* msg)>
                 signal_data_request;
 
-
             /// \brief Called before the modem driver begins processing a transmission. This allows a third party to modify the parameters of the transmission (such as destination or rate) on the fly.
             ///
             /// You may connect one or more slots (a function or member function) to this signal to handle data requests. Use the goby::acomms::connect family of functions to do this. This signal will only be called during a call to poll. ModemTransmission is defined in acomms_modem_message.proto.
             boost::signal<void (protobuf::ModemTransmission* msg_request)>
                 signal_modify_transmission;
             
-
-            /// \brief Called when the modem receives an acknowledgment of proper receipt of a prior data transmission. The frame number of the acknowledgment must match the frame number of the original message. The modem driver is only responsible for the base (source, destination, timestamp) and acknowledged frame number in ModemDataAck.
-            ///
-            /// You should connect one or more slots (a function or member function) to this signal to handle acknowledgments. Use the goby::acomms::connect family of functions to do this. This signal will only be called during a call to poll. ModemDataAck is defined in acomms_modem_message.proto.
-            boost::signal<void (const protobuf::ModemDataAck& message)>
-                signal_ack;
 
             /// \brief Called after any message is received from the modem by the driver. Used by the MACManager for auto-discovery of vehicles. Also useful for higher level analysis and debugging of the transactions between the driver and the modem.
             ///

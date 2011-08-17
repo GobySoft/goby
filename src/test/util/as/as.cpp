@@ -81,6 +81,11 @@ int main()
     assert(as<std::string>(true) == std::string("true"));
     assert(as<std::string>(false) == std::string("false"));
 
+    // class
+    assert(as<MyClass>("foobar") == MyClass());
+
+    // two-way sanity checks
+    
     is_sane<int, std::string>(3);
     is_sane<double, std::string>(3.56302);
     is_sane<float, std::string>(6.34);
@@ -89,7 +94,6 @@ int main()
     is_sane<MyEnum, std::string>(BAR);
     is_sane<MyClass, std::string>(MyClass(3,"cat"));
 
-    assert(as<MyClass>("foobar") == MyClass());
     
     std::cout << "all tests passed" << std::endl;
     

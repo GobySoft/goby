@@ -30,7 +30,7 @@ using namespace boost::posix_time;
 
 boost::shared_ptr<goby::acomms::MMDriver> driver1, driver2;
 
-static int test_number = 5;
+static int test_number = 0;
 static int check_count = 0;
 
 void handle_data_request1(protobuf::ModemTransmission* msg);
@@ -131,7 +131,7 @@ int main(int argc, char* argv[])
             }    
 
             goby::glog << "Test " << group("test") << test_number << " passed." << std::endl;
-            --test_number;
+            ++test_number;
             check_count = 0;
             
         }

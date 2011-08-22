@@ -1,24 +1,14 @@
 package goby.acomms.protobuf;
 
 
-// shared for all messages
-message ModemMsgBase
+message ModemTransmission
 {
-  optional int32 src = 1 [default = 0]; //  0 (BROADCAST), 1-31, 
-  optional int32 dest = 2 [default = 0]; //  0 (BROADCAST), 1-31, -1 (QUERY_DESTINATION_ID)
+  optional int32 src = 1 [default = -1]; //  0 (BROADCAST), 1-31, 
+  optional int32 dest = 2 [default = -1]; //  0 (BROADCAST), 1-31, -1 (QUERY_DESTINATION_ID)
   optional uint64 time = 3; // microseconds since UNIX (1970-01-01 00:00:00 UTC)
   enum TimeSource { MODEM_TIME = 1; GOBY_TIME = 2; } 
   optional TimeSource time_source = 5 [default = GOBY_TIME]; // source of the timestamp given  
   optional int32 rate = 6 [default = 0]; // 0 (lowest) - 5 (highest), -1 (QUERY_RATE)
-
-  // 1000-1099 taken by MMDriver
-  extensions 1000 to max;
-}
-
-
-message ModemTransmission
-{
-  optional ModemMsgBase base = 1;
  
   enum TransmissionType
   {
@@ -35,31 +25,34 @@ message ModemTransmission
     MICROMODEM_MINI_DATA = 1003; // 13 bits (represented as a 1 frame, 2 byte data transmission where data is AND'd with 0x1ff) mini data transmission
   }
 
-  optional TransmissionType type = 2 [default = UNKNOWN];
+  optional TransmissionType type = 7 [default = UNKNOWN];
   
   // for type == DATA
-  optional uint32 num_frames = 11 [default = 1]; // set by the modem driver for the given rate
+  optional uint32 max_num_frames = 11 [default = 1]; // set by the modem driver for the given rate
   optional uint32 max_frame_bytes = 12; // set by the modem driver for the given rate, omitted means no maximum
-  repeated ModemDataTransmission frame = 13; // if omitted, you will be queried for data on signal_data_request. You can also set some frames here and the rest will be filled by signalling a data request
+  optional bool ack_requested = 13 [default = true]; // acoustic acknowledgment requested
+  repeated bytes frame = 14; // if omitted, you will be queried for data on signal_data_request. You can also set some frames here and the rest will be filled by signalling a data request
 
-  optional uint32 slot_seconds = 20; // length of slot (in seconds) if this transmission is part of a TDMA cycle
+  // for type == ACK
+  repeated int32 acked_frame = 20;
   
   // 1000-1099 taken by MMDriver
+  // 1100-1199 taken by MACManager
   extensions 1000 to max;
 }
 
 // for type == DATA transmissions
-message ModemDataTransmission
-{
-  optional ModemMsgBase base = 1;
-
-  optional bytes data = 10;
-  optional bool ack_requested = 11 [default = true]; // acoustic acknowledgment requested
-  optional uint32 frame_number = 12 [default = 0];  // frame number if the modem supports multiple frames per packet
+//message ModemDataTransmission
+//{
+  // optional int32 src = 1 [default = 0]; //  0 (BROADCAST), 1-31 
+  // optional int32 dest = 2 [default = 0]; //  0 (BROADCAST), 1-31
+  //  optional uint64 time = 3; // microseconds since UNIX (1970-01-01 00:00:00 UTC)
+  // optional bytes data = 10;
+  //  optional uint32 frame_number = 12 [default = 0];  // frame number if the modem supports multiple frames per packet
   
   // 1000-1099 taken by MMDriver
-  extensions 1000 to max;
-}
+  //extensions 1000 to max;
+  //}
 
 message ModemRaw
 {

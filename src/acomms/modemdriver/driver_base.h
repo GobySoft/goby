@@ -52,15 +52,10 @@ namespace goby
             /// \brief Shuts down the modem driver. 
             virtual void shutdown() = 0;
 
-            /// \brief Deprecated: call poll() instead. This function is equivalent to poll(0);
-            void do_work() { poll(0); }
-            
             /// \brief Allows the modem driver to do its work. 
             ///
-            /// Should be called regularly to perform the work of the driver as the driver *does not* run in its own thread. This allows us to guarantee that no signals are called except inside this poll method. Poll acts like POSIX poll and will block for up to timeout milliseconds.
-            ///
-            /// \param timeout milliseconds to wait; a negative value means wait forever.
-            virtual void poll(int timeout) = 0;
+            /// Should be called regularly to perform the work of the driver as the driver *does not* run in its own thread. This allows us to guarantee that no signals are called except inside this method. Does not block. 
+            virtual void do_work() = 0;
             
             //@}
 
@@ -109,6 +104,7 @@ namespace goby
 
             /// Public Destructor
             virtual ~ModemDriverBase();
+
             
           protected:
             /// \name Constructors/Destructor
@@ -147,8 +143,8 @@ namespace goby
             /// \brief closes the serial port. Use modem_start to reopen the port.
             void modem_close();
 
-            const std::string& glog_out_group() { return glog_out_group_; }
-            const std::string& glog_in_group() { return glog_in_group_; }
+            const std::string& glog_out_group() const { return glog_out_group_; }
+            const std::string& glog_in_group() const { return glog_in_group_; }
             
             
             //@}
@@ -160,7 +156,7 @@ namespace goby
 
             std::string glog_out_group_;
             std::string glog_in_group_;
-            
+
         };
     }
 }

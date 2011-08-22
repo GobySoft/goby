@@ -24,7 +24,7 @@
 #include "driver_base.h"
 #include "driver_exception.h"
 
-int goby::acomms::ModemDriverBase::count_;
+int goby::acomms::ModemDriverBase::count_ = 0;
 
 
 goby::acomms::ModemDriverBase::ModemDriverBase()

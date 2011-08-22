@@ -57,25 +57,24 @@ int main(int argc, char* argv[])
     q_manager->push_message(msg_in1);
 
 
-    goby::acomms::protobuf::ModemDataRequest request_msg;
-    request_msg.set_max_bytes(256);
-    request_msg.mutable_base()->set_dest(UNICORN_MODEM_ID);
+    goby::acomms::protobuf::ModemTransmission transmit_msg;
+    transmit_msg.set_max_frame_bytes(256);
+    transmit_msg.set_dest(UNICORN_MODEM_ID);
     
-    goby::acomms::protobuf::ModemDataTransmission data_msg;
-    q_manager->handle_modem_data_request(request_msg, &data_msg);
+    q_manager->handle_modem_data_request(&transmit_msg);
     
 
-    std::cout << "requesting data, got: " << data_msg << std::endl;
-    std::cout << "\tdata as hex: " << goby::util::hex_encode(data_msg.data()) << std::endl;
+    std::cout << "requesting data, got: " << transmit_msg << std::endl;
+    std::cout << "\tdata as hex: " << goby::util::hex_encode(transmit_msg.frame(0)) << std::endl;
 
-    assert(data_msg.data() == goby::acomms::DCCLCodec::get()->encode(msg_in1));
-    assert(data_msg.base().src() == MY_MODEM_ID);
-    assert(data_msg.base().dest() == UNICORN_MODEM_ID);
-    assert(data_msg.ack_requested() == true);
+    assert(transmit_msg.frame(0) == goby::acomms::DCCLCodec::get()->encode(msg_in1));
+    assert(transmit_msg.src() == MY_MODEM_ID);
+    assert(transmit_msg.dest() == UNICORN_MODEM_ID);
+    assert(transmit_msg.ack_requested() == true);
     
 
     // feed back the modem layer - this will be rejected
-    q_manager->handle_modem_receive(data_msg);
+    q_manager->handle_modem_receive(transmit_msg);
     assert(receive_count == 0);
 
     
@@ -84,7 +83,7 @@ int main(int argc, char* argv[])
     q_manager->set_cfg(cfg);
     
     // feed back the modem layer
-    q_manager->handle_modem_receive(data_msg);
+    q_manager->handle_modem_receive(transmit_msg);
     
     assert(receive_count == 1);
     

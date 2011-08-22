@@ -26,7 +26,7 @@ goby::util::LineBasedInterface::LineBasedInterface(const std::string& delimiter)
         throw Exception("Line based comms started with null string as delimiter!");
     
     delimiter_ = delimiter;
-    boost::thread t(boost::bind(&boost::asio::io_service::run, &io_service_));
+    io_launcher_.reset(new IOLauncher(io_service_));
 }
 
 

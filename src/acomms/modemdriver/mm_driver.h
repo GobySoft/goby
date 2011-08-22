@@ -38,10 +38,7 @@ namespace goby
         {
           public:
             /// \brief Default constructor.
-            ///
-            /// \param log std::ostream object or FlexOstream to capture all humanly
-            /// readable runtime and debug information (optional).
-            MMDriver(std::ostream* log = 0);
+            MMDriver();
             /// Destructor.
             ~MMDriver();
 
@@ -51,8 +48,8 @@ namespace goby
             void startup(const protobuf::DriverConfig& cfg);
             void shutdown();
             
-            /// \brief See DriverBase::poll()
-            void poll(int timeout);
+            /// \brief See DriverBase::do_work()
+            void do_work();
             
             /// \brief See DriverBase::handle_initiate_transmission()
             void handle_initiate_transmission(const protobuf::ModemTransmission& m);
@@ -117,8 +114,6 @@ namespace goby
             void cadrq(const util::NMEASentence& nmea, const protobuf::ModemTransmission& m); // $CADRQ
 
             void validate_transmission_start(const protobuf::ModemTransmission& message);
-            void validate_data(const protobuf::ModemTransmission& message);
-            
             
             // utility    
             static boost::posix_time::ptime nmea_time2ptime(const std::string& mt);
@@ -158,9 +153,6 @@ namespace goby
             // deque for outgoing messages to the modem, we queue them up and send
             // as the modem acknowledges them
             std::deque<util::NMEASentence> out_;
-
-            // human readable debug log (e.g. &std::cout)
-            std::ostream* log_;
     
             // time of the last message written. we timeout and resend after MODEM_WAIT seconds
             boost::posix_time::ptime last_write_time_;

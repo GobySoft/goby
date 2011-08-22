@@ -29,7 +29,7 @@ bool handle_ack_called = false;
 int goby_message_qsize = 0;
 GobyMessage msg_in1, msg_in2;
 
-void handle_ack(const goby::acomms::protobuf::ModemDataAck& ack_msg,
+void handle_ack(const goby::acomms::protobuf::ModemTransmission& ack_msg,
                 const google::protobuf::Message& orig_msg);
 
 void qsize(goby::acomms::protobuf::QueueSize size);
@@ -72,39 +72,27 @@ int main(int argc, char* argv[])
     q_manager->push_message(msg_in2);
 
 
-    goby::acomms::protobuf::ModemDataRequest request_msg;
-    request_msg.set_max_bytes(16);
-    request_msg.set_frame(0);
-    request_msg.mutable_base()->set_dest(UNICORN_MODEM_ID);
-    
-    goby::acomms::protobuf::ModemDataTransmission data_msg_0, data_msg_1;
-    q_manager->handle_modem_data_request(request_msg, &data_msg_0);
+    goby::acomms::protobuf::ModemTransmission transmit_msg;
+    transmit_msg.set_max_frame_bytes(16);
+    transmit_msg.set_max_num_frames(2);
+    transmit_msg.set_dest(UNICORN_MODEM_ID);    
+    q_manager->handle_modem_data_request(&transmit_msg);
 
-    request_msg.set_frame(1);
-    q_manager->handle_modem_data_request(request_msg, &data_msg_1);
-    
-
-    std::cout << "requesting data for frame 0, got: " << data_msg_0 << std::endl;
-    std::cout << "\tdata as hex: " << goby::util::hex_encode(data_msg_0.data()) << std::endl;
-    std::cout << "requesting data for frame 1, got: " << data_msg_1 << std::endl;
-    std::cout << "\tdata as hex: " << goby::util::hex_encode(data_msg_1.data()) << std::endl;
+    std::cout << "requesting data, got: " << transmit_msg << std::endl;
+    std::cout << "\tdata frame 0 as hex: " << goby::util::hex_encode(transmit_msg.frame(0)) << std::endl;
+    std::cout << "\tdata frame 1 as hex: " << goby::util::hex_encode(transmit_msg.frame(1)) << std::endl;
 
     // fake an ack from unicorn
-    goby::acomms::protobuf::ModemDataAck ack;
-    ack.mutable_base()->set_src(UNICORN_MODEM_ID);
-    ack.mutable_base()->set_dest(MY_MODEM_ID);
-    ack.set_frame(0);
-    q_manager->handle_modem_ack(ack);
-    assert(goby_message_qsize == 1);
-    assert(handle_ack_called == true);
+    goby::acomms::protobuf::ModemTransmission ack;
+    ack.set_type(goby::acomms::protobuf::ModemTransmission::ACK);
+    ack.set_src(UNICORN_MODEM_ID);
+    ack.set_dest(MY_MODEM_ID);
+    ack.add_acked_frame(0);
+    ack.add_acked_frame(1);
+    q_manager->handle_modem_receive(ack);
 
-    handle_ack_called = false;
-    
-    ack.set_frame(1);
-    q_manager->handle_modem_ack(ack);
     assert(goby_message_qsize == 0);
     assert(handle_ack_called == true);
-    
     
     std::cout << "all tests passed" << std::endl;    
 }
@@ -123,7 +111,7 @@ void qsize(goby::acomms::protobuf::QueueSize size)
 }
 
 
-void handle_ack(const goby::acomms::protobuf::ModemDataAck& ack_msg,
+void handle_ack(const goby::acomms::protobuf::ModemTransmission& ack_msg,
                 const google::protobuf::Message& orig_msg)
 {
     std::cout << "got an ack: " << ack_msg << "\n" 

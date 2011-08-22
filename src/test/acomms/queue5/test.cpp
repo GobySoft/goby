@@ -35,8 +35,8 @@ const int MY_MODEM_ID = 1;
 bool provide_data = true;
 
 
-void handle_encode_on_demand(const goby::acomms::protobuf::ModemDataRequest& request_msg,
-                             boost::shared_ptr<google::protobuf::Message> data_msg);
+void handle_encode_on_demand(const goby::acomms::protobuf::ModemTransmission& request_msg,
+                             google::protobuf::Message* data_msg);
 
 void qsize(goby::acomms::protobuf::QueueSize size);
 
@@ -103,36 +103,34 @@ void request_test(int request_bytes,
     int starting_qsize = goby_message_qsize;
     int starting_encode_count = encode_on_demand_count;
     
-    goby::acomms::protobuf::ModemDataRequest request_msg;
-    request_msg.set_max_bytes(request_bytes);
-    request_msg.set_frame(0);
-    
-    goby::acomms::protobuf::ModemDataTransmission data_msg;
+    goby::acomms::protobuf::ModemTransmission transmit_msg;
+    transmit_msg.set_max_frame_bytes(request_bytes);
+    transmit_msg.set_max_num_frames(1);    
 
-    q_manager->handle_modem_data_request(request_msg, &data_msg);
-    std::cout << "requesting data for frame 0, got: " << data_msg << std::endl;
+    q_manager->handle_modem_data_request(&transmit_msg);
+    std::cout << "requesting data, got: " << transmit_msg << std::endl;
 
     // once for each one that fits, twice for the one that doesn't
     assert(encode_on_demand_count - starting_encode_count == expected_encode_requests);
     
-    std::cout << "\tdata as hex: " << goby::util::hex_encode(data_msg.data()) << std::endl;    
+    std::cout << "\tdata as hex: " << goby::util::hex_encode(transmit_msg.frame(0)) << std::endl;    
 
-    assert(data_msg.base().src() == MY_MODEM_ID);
-    assert(data_msg.base().dest() == goby::acomms::BROADCAST_ID);
-    assert(data_msg.ack_requested() == false);
+    assert(transmit_msg.src() == MY_MODEM_ID);
+    assert(transmit_msg.dest() == goby::acomms::BROADCAST_ID);
+    assert(transmit_msg.ack_requested() == false);
 
     if(provide_data)
         assert(goby_message_qsize == starting_qsize + expected_encode_requests - expected_messages_sent);
     else
         assert(goby_message_qsize == starting_qsize - expected_messages_sent);
 
-    q_manager->handle_modem_receive(data_msg);
+    q_manager->handle_modem_receive(transmit_msg);
 }
 
 
 
-void handle_encode_on_demand(const goby::acomms::protobuf::ModemDataRequest& request_msg,
-                             boost::shared_ptr<google::protobuf::Message> data_msg)
+void handle_encode_on_demand(const goby::acomms::protobuf::ModemTransmission& request_msg,
+                             google::protobuf::Message* data_msg)
 {
     GobyMessage msg;
 

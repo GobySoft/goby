@@ -91,8 +91,7 @@ enum ReceiveMode
 {
   RECEIVE_GOOD = 0;
   BAD_CRC = 1;
-  PACKET_TIMEOUT = 2;
-}
+  PACKET_TIMEOUT = 2;}
   
 message ReceiveStatistics
 {
@@ -172,9 +171,5 @@ extend goby.acomms.protobuf.ModemTransmission
   optional RangingReply ranging_reply = 1003;
   optional ReceiveStatistics receive_stat = 1004; // $CACST
   optional TransmitStatistics transmit_stat = 1005; // $CAXST
-}
-
-extend goby.acomms.protobuf.ModemDataTransmission
-{
-  optional bool is_bad_crc = 1001 [default = false];
+  repeated int32 frame_with_bad_crc = 1006;
 }

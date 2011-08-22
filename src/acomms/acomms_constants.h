@@ -37,6 +37,8 @@ namespace goby
         /// special modem id used internally to goby-acomms for indicating that the MAC layer (libamac) is agnostic to the next destination. The next destination is thus set by the data provider (typically libqueue).
         const int QUERY_DESTINATION_ID = -1;        
 
+        const int QUERY_SOURCE_ID = -1;        
+
         const unsigned char DCCL_CCL_HEADER = 32;
         
         //const double NaN = std::numeric_limits<double>::quiet_NaN();

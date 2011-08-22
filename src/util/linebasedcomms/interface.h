@@ -35,12 +35,14 @@ namespace goby
 {
     namespace util
     {
+
         /// basic interface class for all the derived serial (and networking mimics) line-based nodes (serial, tcp, udp, etc.)
         class LineBasedInterface
         {
           public:
             LineBasedInterface(const std::string& delimiter);
-            virtual ~LineBasedInterface() { }
+            virtual ~LineBasedInterface() {}
+            
 
             // start the connection
             void start();
@@ -109,7 +111,26 @@ namespace goby
             
             
           private:
+            class IOLauncher
+            {
+              public:
+              IOLauncher(boost::asio::io_service& io_service)
+                  : io_service_(io_service),
+                    t_(boost::bind(&boost::asio::io_service::run, &io_service))
+                    { }
             
+                ~IOLauncher()
+                {
+                    io_service_.stop();
+                    t_.join();
+                }
+
+              private:
+                boost::asio::io_service& io_service_;
+                boost::thread t_;
+            };
+            
+            boost::shared_ptr<IOLauncher> io_launcher_;
             
             boost::asio::io_service::work work_;
             bool active_; // remains true while this object is still operating

@@ -89,7 +89,10 @@ namespace goby
 
         template<> inline uint64 goby_time<uint64>()
         { return as<uint64>(goby_time<boost::posix_time::ptime>()); }
-        
+
+        template<> inline std::string goby_time<std::string>()
+        { return as<std::string>(goby_time<boost::posix_time::ptime>()); }
+
         
         /// Simple string representation of goby_time()
         inline std::string goby_time_as_string(const boost::posix_time::ptime& t = goby_time())

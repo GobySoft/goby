@@ -64,8 +64,8 @@ int main(int argc, char* argv[])
     goby::glog.add_group("driver1", goby::util::Colors::green);
     goby::glog.add_group("driver2", goby::util::Colors::yellow);
 
-    driver1.reset(new goby::acomms::MMDriver(&goby::glog));
-    driver2.reset(new goby::acomms::MMDriver(&goby::glog));
+    driver1.reset(new goby::acomms::MMDriver);
+    driver2.reset(new goby::acomms::MMDriver);
     
     try
     {
@@ -78,9 +78,9 @@ int main(int argc, char* argv[])
         cfg1.MutableExtension(micromodem::protobuf::Config::remus_lbl)->set_enable_beacons(7);
 
 
+        // so we can play with the emulator box BNC cables and expect bad CRC'S (otherwise crosstalk is enough to receive everything ok!)
         cfg1.AddExtension(micromodem::protobuf::Config::nvram_cfg, "AGC,0");
         cfg2.AddExtension(micromodem::protobuf::Config::nvram_cfg, "AGC,0");
-
         cfg1.AddExtension(micromodem::protobuf::Config::nvram_cfg, "AGN,0");
         cfg2.AddExtension(micromodem::protobuf::Config::nvram_cfg, "AGN,0");
 
@@ -107,8 +107,8 @@ int main(int argc, char* argv[])
         
         while(((i / 10) < 3))
         {
-            driver1->poll(0);
-            driver2->poll(0);
+            driver1->do_work();
+            driver2->do_work();
         
             usleep(100000);
             ++i;
@@ -153,24 +153,16 @@ void handle_data_request1(protobuf::ModemTransmission* msg)
     switch(test_number)
     {
         case 4:
-        {
-            
-            protobuf::ModemDataTransmission* frame = msg->add_frame();
-            frame->set_data(std::string(32, '5'));
-            frame->mutable_base()->set_dest(2);
-            frame->mutable_base()->set_src(1);
-            frame->set_ack_requested(true);
+        {            
+            msg->add_frame(std::string(32, '5'));
             ++check_count;
         }
         break;
             
         case 5:
         {   
-            protobuf::ModemDataTransmission* frame = msg->add_frame();
-            frame->set_data(std::string(64, '2'));
-            frame->mutable_base()->set_dest(2);
-            frame->mutable_base()->set_src(1);
-            frame->set_ack_requested(false);
+            msg->add_frame(std::string(64, '2'));
+            msg->set_ack_requested(false); 
             ++check_count;
         }
         break;
@@ -197,11 +189,11 @@ void handle_data_receive1(const protobuf::ModemTransmission& msg)
         case 1:
         {
             assert(msg.type() == protobuf::ModemTransmission::MICROMODEM_REMUS_LBL_RANGING);
-            assert(msg.base().src() == 1);
-            assert(!msg.base().has_dest());
+            assert(msg.src() == 1);
+            assert(!msg.has_dest());
 
             ptime now = goby_time();
-            ptime reported = as<ptime>(msg.base().time());                
+            ptime reported = as<ptime>(msg.time());                
             assert(reported < now && reported > now - seconds(2));
             ++check_count;
         }
@@ -210,11 +202,11 @@ void handle_data_receive1(const protobuf::ModemTransmission& msg)
         case 2:
         {
             assert(msg.type() == protobuf::ModemTransmission::MICROMODEM_NARROWBAND_LBL_RANGING);
-            assert(msg.base().src() == 1);
-            assert(!msg.base().has_dest());
+            assert(msg.src() == 1);
+            assert(!msg.has_dest());
 
             ptime now = goby_time();
-            ptime reported = as<ptime>(msg.base().time());                
+            ptime reported = as<ptime>(msg.time());                
             assert(reported < now && reported > now - seconds(2));
             ++check_count;
         }
@@ -223,8 +215,8 @@ void handle_data_receive1(const protobuf::ModemTransmission& msg)
         case 3:
         {
             assert(msg.type() == protobuf::ModemTransmission::MICROMODEM_MINI_DATA);
-            assert(msg.base().src() == 2);
-            assert(msg.base().dest() == 1);
+            assert(msg.src() == 2);
+            assert(msg.dest() == 1);
             assert(msg.frame_size() == 1);
             assert(msg.frame(0).data() == goby::util::hex_decode("0123"));
             ++check_count;
@@ -234,10 +226,9 @@ void handle_data_receive1(const protobuf::ModemTransmission& msg)
         case 4:
         {
             assert(msg.type() == protobuf::ModemTransmission::ACK);
-            assert(msg.base().src() == 2);
-            assert(msg.base().dest() == 1);
-            assert(msg.frame_size() == 1);
-            assert(msg.frame(0).has_frame_number() && msg.frame(0).frame_number() == 0);
+            assert(msg.src() == 2);
+            assert(msg.dest() == 1);
+            assert(msg.acked_frame_size() == 1 && msg.acked_frame(0) == 0);
             ++check_count;
         }
         break;
@@ -261,7 +252,7 @@ void handle_data_request2(protobuf::ModemTransmission* msg)
 
 
         case 3:
-            msg->add_frame()->set_data(goby::util::hex_decode("0123"));
+            msg->add_frame(goby::util::hex_decode("0123"));
             ++check_count;
             break;
             
@@ -292,8 +283,8 @@ void handle_data_receive2(const protobuf::ModemTransmission& msg)
         case 4:
             if(msg.type() == protobuf::ModemTransmission::DATA)
             {
-                assert(msg.base().src() == 1);
-                assert(msg.base().dest() == 2);
+                assert(msg.src() == 1);
+                assert(msg.dest() == 2);
                 assert(msg.frame_size() == 1);
                 assert(msg.frame(0).data() == std::string(32, '5'));
                 ++check_count;
@@ -303,8 +294,8 @@ void handle_data_receive2(const protobuf::ModemTransmission& msg)
         case 5:
             if(msg.type() == protobuf::ModemTransmission::DATA)
             {
-                assert(msg.base().src() == 1);
-                assert(msg.base().dest() == 2);
+                assert(msg.src() == 1);
+                assert(msg.dest() == 2);
                 assert(msg.frame_size() == 2);
                 assert(msg.frame(0).data() == std::string(64, '1'));
                 assert(msg.frame(1).data() == std::string(64, '2'));
@@ -326,16 +317,16 @@ void test0()
     protobuf::ModemTransmission transmit;
     
     transmit.set_type(protobuf::ModemTransmission::MICROMODEM_TWO_WAY_PING);
-    transmit.mutable_base()->set_src(1);
-    transmit.mutable_base()->set_dest(2);
+    transmit.set_src(1);
+    transmit.set_dest(2);
 
     driver1->handle_initiate_transmission(transmit);
 
     int i = 0;
     while(((i / 10) < 10) && check_count < 2)
     {
-        driver1->poll(0);
-        driver2->poll(0);
+        driver1->do_work();
+        driver2->do_work();
         
         usleep(100000);
         ++i;
@@ -351,7 +342,7 @@ void test1()
     protobuf::ModemTransmission transmit;
     
     transmit.set_type(protobuf::ModemTransmission::MICROMODEM_REMUS_LBL_RANGING);
-    transmit.mutable_base()->set_src(1);
+    transmit.set_src(1);
     transmit.MutableExtension(micromodem::protobuf::remus_lbl)->set_lbl_max_range(1000);
     
     driver1->handle_initiate_transmission(transmit);
@@ -359,8 +350,8 @@ void test1()
     int i = 0;
     while(((i / 10) < 10) && check_count < 1)
     {
-        driver1->poll(0);
-        driver2->poll(0);
+        driver1->do_work();
+        driver2->do_work();
         
         usleep(100000);
         ++i;
@@ -375,7 +366,7 @@ void test2()
     protobuf::ModemTransmission transmit;
     
     transmit.set_type(protobuf::ModemTransmission::MICROMODEM_NARROWBAND_LBL_RANGING);
-    transmit.mutable_base()->set_src(1);
+    transmit.set_src(1);
 
     micromodem::protobuf::NarrowBandLBLParams* params = transmit.MutableExtension(micromodem::protobuf::narrowband_lbl);
     params->set_lbl_max_range(1000);
@@ -391,8 +382,8 @@ void test2()
     int i = 0;
     while(((i / 10) < 10) && check_count < 1)
     {
-        driver1->poll(0);
-        driver2->poll(0);
+        driver1->do_work();
+        driver2->do_work();
         
         usleep(100000);
         ++i;
@@ -407,16 +398,16 @@ void test3()
     protobuf::ModemTransmission transmit;
     
     transmit.set_type(protobuf::ModemTransmission::MICROMODEM_MINI_DATA);
-    transmit.mutable_base()->set_src(2);
-    transmit.mutable_base()->set_dest(1);
+    transmit.set_src(2);
+    transmit.set_dest(1);
     
     driver2->handle_initiate_transmission(transmit);
 
     int i = 0;
     while(((i / 10) < 10) && check_count < 2)
     {
-        driver1->poll(0);
-        driver2->poll(0);
+        driver1->do_work();
+        driver2->do_work();
         
         usleep(100000);
         ++i;
@@ -432,17 +423,16 @@ void test4()
     protobuf::ModemTransmission transmit;
     
     transmit.set_type(protobuf::ModemTransmission::DATA);
-    transmit.mutable_base()->set_src(1);
-    transmit.mutable_base()->set_dest(2);
-    transmit.mutable_base()->set_rate(0);
-    
+    transmit.set_src(1);
+    transmit.set_dest(2);
+    transmit.set_rate(0);
     driver1->handle_initiate_transmission(transmit);
 
     int i = 0;
     while(((i / 10) < 10) && check_count < 3)
     {
-        driver1->poll(0);
-        driver2->poll(0);
+        driver1->do_work();
+        driver2->do_work();
         
         usleep(100000);
         ++i;
@@ -457,20 +447,19 @@ void test5()
     protobuf::ModemTransmission transmit;
     
     transmit.set_type(protobuf::ModemTransmission::DATA);
-    transmit.mutable_base()->set_src(1);
-    transmit.mutable_base()->set_dest(2);
-    transmit.mutable_base()->set_rate(2);
-    protobuf::ModemDataTransmission* frame = transmit.add_frame();
-    frame->set_data(std::string(64,'1'));
-    frame->set_ack_requested(false);
+    transmit.set_src(1);
+    transmit.set_dest(2);
+    transmit.set_rate(2);
+    transmit.add_frame(std::string(64,'1'));
+    transmit.set_ack_requested(false);
     
     driver1->handle_initiate_transmission(transmit);
 
     int i = 0;
     while(((i / 10) < 10) && check_count < 2)
     {
-        driver1->poll(0);
-        driver2->poll(0);
+        driver1->do_work();
+        driver2->do_work();
         
         usleep(100000);
         ++i;

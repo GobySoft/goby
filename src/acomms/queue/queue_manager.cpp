@@ -164,12 +164,12 @@ void goby::acomms::QueueManager::flush_queue(const protobuf::QueueFlush& flush)
     if(it != queues_.end())
     {
         it->second.flush();
-        glog.is(verbose) && glog << group(glog_out_group_) <<  " flushed queue: " << flush << std::endl;
+        glog.is(debug1) && glog << group(glog_out_group_) <<  " flushed queue: " << flush << std::endl;
         qsize(&it->second);
     }    
     else
     {
-        glog.is(verbose) && glog << group(glog_out_group_) << warn << " cannot find queue to flush: " << flush << std::endl;
+        glog.is(debug1) && glog << group(glog_out_group_) << warn << " cannot find queue to flush: " << flush << std::endl;
     }
 }
 
@@ -342,7 +342,7 @@ goby::acomms::Queue* goby::acomms::QueueManager::find_next_sender(const protobuf
 
     Queue* winning_queue = 0;
     
-    glog.is(verbose) && glog<< group(glog_priority_group_) << "starting priority contest\n"
+    glog.is(debug1) && glog<< group(glog_priority_group_) << "starting priority contest\n"
                             << "requesting: " << request_msg << "\n"
                             << "have " << data.size() << "/" << request_msg.max_frame_bytes() << "B: " << goby::util::hex_encode(data) << std::endl;
 
@@ -380,17 +380,17 @@ goby::acomms::Queue* goby::acomms::QueueManager::find_next_sender(const protobuf
         }
     }
 
-    glog.is(verbose) && glog<< group(glog_priority_group_) << "\t"
+    glog.is(debug1) && glog<< group(glog_priority_group_) << "\t"
                             << "all other queues have no messages" << std::endl;
 
     if(winning_queue)
     {
-        glog.is(verbose) && glog<< group(glog_priority_group_) << winning_queue->name()
+        glog.is(debug1) && glog<< group(glog_priority_group_) << winning_queue->name()
                                 << " has highest priority." << std::endl;
     }
     else
     {
-        glog.is(verbose) && glog<< group(glog_priority_group_) 
+        glog.is(debug1) && glog<< group(glog_priority_group_) 
                                 << "ending priority contest" << std::endl;    
     }
     
@@ -420,7 +420,7 @@ void goby::acomms::QueueManager::process_modem_ack(const protobuf::ModemTransmis
         {
         
             // got an ack, let's pop this!
-            glog.is(verbose) && glog<< group(glog_in_group_) << "received ack for this id" << std::endl;
+            glog.is(debug1) && glog<< group(glog_in_group_) << "received ack for this id" << std::endl;
         
         
             std::multimap<unsigned, Queue *>::iterator it = waiting_for_ack_.find(frame_number);
@@ -442,7 +442,7 @@ void goby::acomms::QueueManager::process_modem_ack(const protobuf::ModemTransmis
                 
                 }
 
-                glog.is(verbose) && glog<< group(glog_in_group_) << ack_msg << std::endl;
+                glog.is(debug1) && glog<< group(glog_in_group_) << ack_msg << std::endl;
             
                 waiting_for_ack_.erase(it);
             

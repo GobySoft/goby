@@ -43,12 +43,14 @@ namespace goby
 {
     namespace acomms
     {        
+        class DCCLCodec;
+        
         class DCCLFieldCodecBase
         {
           public:
             typedef goby::acomms::Bitset Bitset;
             
-            DCCLFieldCodecBase() { }
+            DCCLFieldCodecBase();
             virtual ~DCCLFieldCodecBase() { }
             
             enum MessagePart
@@ -57,12 +59,12 @@ namespace goby
                 BODY
             };
 
-            boost::any base_pre_encode(const boost::any& field_value)
-            { return any_pre_encode(field_value); }
-            std::vector<boost::any> base_pre_encode_repeated(const std::vector<boost::any>& field_values)
-            {
-                return any_pre_encode_repeated(field_values);
-            }
+            void base_pre_encode(boost::any* wire_value, const boost::any& field_value)
+            { any_pre_encode(wire_value, field_value); }
+            
+            void base_pre_encode_repeated(std::vector<boost::any>* wire_values,
+                                          const std::vector<boost::any>& field_values)
+            { any_pre_encode_repeated(wire_values, field_values); }
             
             // traverse const 
             void base_encode(Bitset* bits,
@@ -98,13 +100,12 @@ namespace goby
                                       std::vector<boost::any>* field_values,
                                       const google::protobuf::FieldDescriptor* field);
 
-            boost::any base_post_decode(const boost::any& wire_value)
-            { return any_post_decode(wire_value); }
-            std::vector<boost::any> base_post_decode_repeated(
-                const std::vector<boost::any>& wire_values)
-            {
-                return any_post_decode_repeated(wire_values);
-            }
+            
+            void base_post_decode(const boost::any& wire_value, boost::any* field_value)
+            { any_post_decode(wire_value, field_value); }
+            void base_post_decode_repeated(const std::vector<boost::any>& wire_values,
+                                           std::vector<boost::any>* field_values)
+            { any_post_decode_repeated(wire_values, field_values); }
             
             
             // traverse schema (Descriptor)
@@ -175,36 +176,6 @@ namespace goby
                 
             }
             
-            /* template<typename Extension> */
-            /*     typename Extension::TypeTraits::ConstType get(const Extension& e) */
-            /* { */
-            /*     if(this_field()) */
-            /*         return this_field()->options().GetExtension(e); */
-            /*     else */
-            /*         throw(DCCLException("Cannot call get on base message (has no *field* option extension"));                 */
-            /* } */
-
-            
-            /* template<typename Extension> */
-            /*     bool has(const Extension& e) */
-            /* { */
-            /*     if(this_field()) */
-            /*         return this_field()->options().HasExtension(e); */
-            /*     else */
-            /*         return false; */
-            /* } */
-            
-            /* template<typename Extension> */
-            /*     void require(const Extension& e, const std::string& name) */
-            /* { */
-            /*     if(!has(e)) */
-            /*     { */
-            /*         if(this_field()) */
-            /*             throw(DCCLException("Field " + this_field()->name() + " missing option extension called `" + name + "`.")); */
-            /*     } */
-            
-            /* }             */
-            
             void require(bool b, const std::string& description)
             {
                 if(!b)
@@ -222,14 +193,17 @@ namespace goby
             //
 
             // contain boost::any
-            virtual Bitset any_encode(const boost::any& field_value) = 0;
-            virtual boost::any any_decode(Bitset* bits) = 0;
+            // bits is *just* the bits from the current operation
+            virtual void any_encode(Bitset* bits, const boost::any& wire_value) = 0;
+            virtual void any_decode(Bitset* bits, boost::any* wire_value) = 0;
 
-            virtual boost::any any_pre_encode(const boost::any& field_value)
-            { return field_value; }
-            virtual boost::any any_post_decode(const boost::any& wire_value)
-            { return wire_value; }
-
+            virtual void any_pre_encode(boost::any* wire_value,
+                                        const boost::any& field_value) 
+            { *wire_value = field_value; }
+            virtual void any_post_decode(const boost::any& wire_value,
+                                               boost::any* field_value)
+            { *field_value = wire_value; }
+            
             virtual unsigned any_size(const boost::any& field_value) = 0;
             virtual void any_run_hooks(const boost::any& field_value);
 
@@ -248,15 +222,14 @@ namespace goby
             
 
             // TODO (tes): make these virtual for end user
-            goby::acomms::Bitset
-                any_encode_repeated(const std::vector<boost::any>& field_values);
-            std::vector<boost::any>
-                any_decode_repeated(Bitset* repeated_bits);
+            void any_encode_repeated(Bitset* bits, const std::vector<boost::any>& field_values);
+            void any_decode_repeated(Bitset* repeated_bits, std::vector<boost::any>* field_values);
 
-            std::vector<boost::any> any_pre_encode_repeated(const std::vector<boost::any>& field_values);
+            void any_pre_encode_repeated(std::vector<boost::any>* wire_values,
+                                    const std::vector<boost::any>& field_values);
             
-            std::vector<boost::any> any_post_decode_repeated(
-                const std::vector<boost::any>& wire_values);
+            void any_post_decode_repeated(const std::vector<boost::any>& wire_values,
+                                     std::vector<boost::any>* field_values);
             
             unsigned any_size_repeated(const std::vector<boost::any>& field_values);
             
@@ -291,9 +264,13 @@ namespace goby
             
             friend class DCCLCodec;
           private:
-            bool __check_field(const google::protobuf::FieldDescriptor* field);
-            void __encode_prepend_bits(const Bitset& new_bits, Bitset* bits);
             
+            void __encode_prepend_bits(const Bitset& new_bits, Bitset* bits)
+            {    
+                for(int i = 0, n = new_bits.size(); i < n; ++i)
+                    bits->push_back(new_bits[i]);
+            }
+
 
             //RAII handler for the current Message recursion stack
             class MessageHandler
@@ -339,7 +316,6 @@ namespace goby
             // if such a FieldOption is set, during the call to "size()"
             static boost::ptr_map<int, boost::signal<void (const boost::any& field_value, const boost::any& wire_value, const boost::any& extension_value)> >  wire_value_hooks_;
             
-            
             std::string name_;
             google::protobuf::FieldDescriptor::Type field_type_;
             google::protobuf::FieldDescriptor::CppType wire_type_;
@@ -369,12 +345,14 @@ namespace goby
 
         // if WireType == FieldType, we don't have to add anything
         template <typename WireType, typename FieldType, class Enable = void> 
-            class DCCLFieldCodecSwitcher : public DCCLFieldCodecBase
+            class DCCLFieldCodecSelector : public DCCLFieldCodecBase
             { };
 
-        // if not the same WireType and FieldType, add these extra methods
+        
+        // if not the same WireType and FieldType, add these extra methods to
+        // handle them 
         template <typename WireType, typename FieldType>
-            class DCCLFieldCodecSwitcher<WireType, FieldType,
+            class DCCLFieldCodecSelector<WireType, FieldType,
             typename boost::disable_if<boost::is_same<WireType, FieldType> >::type>
             : public DCCLFieldCodecBase
             {
@@ -383,14 +361,13 @@ namespace goby
                 virtual FieldType post_decode(const WireType& wire_value) = 0;
 
               private:
-                virtual boost::any any_pre_encode(const boost::any& field_value)
+                virtual void any_pre_encode(boost::any* wire_value,
+                                            const boost::any& field_value) 
                 {
                     try
                     {
                         if(!field_value.empty())
-                            return pre_encode(boost::any_cast<FieldType>(field_value));
-                        else
-                            return field_value;
+                            *wire_value = pre_encode(boost::any_cast<FieldType>(field_value));
                     }
                     catch(boost::bad_any_cast&)
                     {
@@ -398,19 +375,17 @@ namespace goby
                     }
                     catch(DCCLNullValueException&)
                     {
-                        return boost::any();
+                        *wire_value = boost::any();
                     }
                 }
           
-                virtual boost::any any_post_decode(const boost::any& wire_value)
+                virtual void any_post_decode(const boost::any& wire_value,
+                                             boost::any* field_value)
                 {
                     try
                     {
                         if(!wire_value.empty())
-                            return post_decode(boost::any_cast<WireType>(wire_value));
-                        else
-                            return wire_value;
-                  
+                            *field_value = post_decode(boost::any_cast<WireType>(wire_value));
                     }
                     catch(boost::bad_any_cast&)
                     {
@@ -418,25 +393,22 @@ namespace goby
                     }
                     catch(DCCLNullValueException&)
                     {
-                        return boost::any();
+                        *field_value = boost::any();
                     }
                 }
-
-
             };
-        
+
         template<typename WireType, typename FieldType = WireType>
-            class DCCLTypedFieldCodec : public DCCLFieldCodecSwitcher<WireType, FieldType>
+            class DCCLTypedFieldCodecBase : public DCCLFieldCodecSelector<WireType, FieldType>
         {
           public:
           typedef WireType wire_type;
           typedef FieldType field_type;
-            
 
           public:
-          virtual Bitset encode() = 0;          
+          virtual Bitset encode() = 0;
           virtual Bitset encode(const WireType& wire_value) = 0;
-          virtual WireType decode(Bitset* bits) = 0;
+          virtual WireType decode(const Bitset& bits) = 0;
           virtual unsigned size() = 0;
           virtual unsigned size(const FieldType& wire_value) = 0;
           
@@ -444,50 +416,63 @@ namespace goby
           unsigned any_size(const boost::any& field_value)
           {
               try
-              {
-                  if(field_value.empty())
-                      return size();
-                  else
-                      return size(boost::any_cast<FieldType>(field_value));
-              }
+              { return field_value.empty() ? size() : size(boost::any_cast<FieldType>(field_value)); }
               catch(boost::bad_any_cast&)
-              {
-                  throw(type_error("size", typeid(FieldType), field_value.type()));
-              }
-          }
+              { throw(type_error("size", typeid(FieldType), field_value.type())); }
+          }          
           
-
-          Bitset any_encode(const boost::any& wire_value)
+          void any_encode(Bitset* bits, const boost::any& wire_value)
           {
               try
-              {
-                  if(wire_value.empty())
-                      return encode();
-                  else
-                      return encode(boost::any_cast<WireType>(wire_value));
-              }
+              { *bits = wire_value.empty() ? encode() : encode(boost::any_cast<WireType>(wire_value)); }
               catch(boost::bad_any_cast&)
-              {
-                  throw(type_error("encode", typeid(WireType), wire_value.type()));
-              }
+              { throw(type_error("encode", typeid(WireType), wire_value.type())); }
           }
           
-          boost::any any_decode(Bitset* bits)
-          {
-              try
-              {
-                  return decode(bits);
-              }
-              catch(DCCLNullValueException&)
-              {
-                  return boost::any();
-              }
-          }
-          
-
-
         };
         
+        // for all types except embedded messages
+        template<typename WireType, typename FieldType = WireType, class Enable = void>
+            class DCCLTypedFieldCodec : public DCCLTypedFieldCodecBase<WireType, FieldType>
+            {
+              public:
+                virtual WireType decode(const Bitset& bits) = 0;
+
+              private:
+                void any_decode(Bitset* bits, boost::any* wire_value)
+                {
+                    try
+                    { *wire_value = decode(*bits); }
+                    catch(DCCLNullValueException&)
+                    { *wire_value = boost::any(); }
+                }
+          
+            };
+
+
+        // special for embedded messages to work properly with passing pointers (instead of copying)
+        template <typename WireType>
+            class DCCLTypedFieldCodec<WireType, WireType, typename boost::enable_if<boost::is_base_of<google::protobuf::Message, WireType> >::type> : public DCCLTypedFieldCodecBase<WireType, WireType>
+        {          
+              public:
+                virtual WireType decode(const Bitset& bits) = 0;
+
+              private:
+            void any_decode(Bitset* bits, boost::any* wire_value)
+            {
+                try
+                {
+                    google::protobuf::Message* msg = boost::any_cast<google::protobuf::Message* >(*wire_value);  
+                    msg->CopyFrom(decode(*bits));
+                }
+                catch(DCCLNullValueException&)
+                {
+                    if(DCCLFieldCodecBase::this_field())
+                        *wire_value = boost::any();
+                }
+            }            
+        }; 
+          
     }
 }
 

@@ -35,9 +35,9 @@ int main(int argc, char* argv[])
     goby::glog.set_name(argv[0]);
 
 
-    assert(codec->validate<GobyMessage1>());
-    assert(codec->validate<GobyMessage2>());
-    assert(codec->validate<GobyMessage3>());
+    codec->validate<GobyMessage1>();
+    codec->validate<GobyMessage2>();
+    codec->validate<GobyMessage3>();
 
     codec->info<GobyMessage1>(&goby::glog);
     codec->info<GobyMessage2>(&goby::glog);

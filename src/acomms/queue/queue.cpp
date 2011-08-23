@@ -70,17 +70,17 @@ bool goby::acomms::Queue::push_message(const protobuf::QueuedMessageMeta& meta_m
         waiting_for_ack_it it = find_ack_value(it_to_erase);
         if(it != waiting_for_ack_.end()) waiting_for_ack_.erase(it);        
         
-        glog.is(verbose) && glog << group(parent_->glog_pop_group()) << "queue exceeded for " << name() <<
+        glog.is(debug1) && glog << group(parent_->glog_pop_group()) << "queue exceeded for " << name() <<
             ". removing: " << it_to_erase->meta << std::endl;
 
         messages_.erase(it_to_erase);
     }
     
-    glog.is(verbose) && glog << group(parent_->glog_push_group()) << "pushing" << " to send stack "
+    glog.is(debug1) && glog << group(parent_->glog_push_group()) << "pushing" << " to send stack "
                             << name() << " (qsize " << size() <<  "/"
                              << queue_message_options().max_queue() << "): ";
     
-    glog.is(verbose) && glog << *dccl_msg << std::endl;
+    glog.is(debug1) && glog << *dccl_msg << std::endl;
     glog.is(debug2) && glog << meta_msg << std::endl;    
     
     return true;     
@@ -107,7 +107,7 @@ goby::acomms::QueuedMessage goby::acomms::Queue::give_data(unsigned frame)
     // broadcast cannot acknowledge
     if(it_to_give->meta.dest() == BROADCAST_ID && ack == true)
     {
-        glog.is(verbose) && glog << group(parent_->glog_pop_group()) << name() << ": overriding ack request and setting ack = false because dest = BROADCAST (0) cannot acknowledge messages" << std::endl;
+        glog.is(debug1) && glog << group(parent_->glog_pop_group()) << name() << ": overriding ack request and setting ack = false because dest = BROADCAST (0) cannot acknowledge messages" << std::endl;
         ack = false;
     }
 
@@ -144,14 +144,14 @@ bool goby::acomms::Queue::get_priority_values(double* priority,
 
     if (last_send_time_ + boost::posix_time::seconds(queue_message_options().blackout_time()) > goby_time())
     {
-        glog.is(verbose) && glog << group(parent_->glog_priority_group()) << "\t" << name() << " is in blackout" << std::endl;
+        glog.is(debug1) && glog << group(parent_->glog_priority_group()) << "\t" << name() << " is in blackout" << std::endl;
         return false;
     }
     // wrong size
     else if(request_msg.has_max_frame_bytes() &&
             (next_msg.non_repeated_size() > (request_msg.max_frame_bytes() - data.size())))
     {
-        glog.is(verbose) && glog << group(parent_->glog_priority_group()) << "\t" << name() << " next message is too large {" << next_msg.non_repeated_size() << "}" << std::endl;
+        glog.is(debug1) && glog << group(parent_->glog_priority_group()) << "\t" << name() << " next message is too large {" << next_msg.non_repeated_size() << "}" << std::endl;
         return false;
     }
     // wrong destination
@@ -160,19 +160,19 @@ bool goby::acomms::Queue::get_priority_values(double* priority,
                || next_msg.dest() == BROADCAST_ID // can switch to a real destination
                || request_msg.dest() == next_msg.dest()))) // same as real destination
     {
-        glog.is(verbose) && glog << group(parent_->glog_priority_group()) << "\t" <<  name() << " next message has wrong destination  (must be BROADCAST (0) or same as first user-frame)" << std::endl;
+        glog.is(debug1) && glog << group(parent_->glog_priority_group()) << "\t" <<  name() << " next message has wrong destination  (must be BROADCAST (0) or same as first user-frame)" << std::endl;
         return false; 
     }
     // wrong ack value UNLESS message can be broadcast
     else if((request_msg.has_ack_requested() && !request_msg.ack_requested() &&
              next_msg.ack_requested() && request_msg.dest() != acomms::BROADCAST_ID))
     {
-        glog.is(verbose) && glog << group(parent_->glog_priority_group()) << "\t" <<  name() << " next message requires ACK and the packet does not" << std::endl;
+        glog.is(debug1) && glog << group(parent_->glog_priority_group()) << "\t" <<  name() << " next message requires ACK and the packet does not" << std::endl;
         return false; 
     }
     else // ok!
     {
-        glog.is(verbose) && glog << group(parent_->glog_priority_group()) << "\t" << name()
+        glog.is(debug1) && glog << group(parent_->glog_priority_group()) << "\t" << name()
                                 << " (" << next_msg.non_repeated_size()
                                 << "B) has priority value"
                                 << ": " << *priority << std::endl;
@@ -233,7 +233,7 @@ bool goby::acomms::Queue::pop_message_ack(unsigned frame, boost::shared_ptr<goog
 
 void goby::acomms::Queue::stream_for_pop(const google::protobuf::Message& dccl_msg)
 {
-    glog.is(verbose) && glog  << group(parent_->glog_pop_group()) <<  "popping" << " from send stack "
+    glog.is(debug1) && glog  << group(parent_->glog_pop_group()) <<  "popping" << " from send stack "
                               << name() << " (qsize " << size()-1
                               <<  "/" << queue_message_options().max_queue() << "): "  << dccl_msg << std::endl;
 }
@@ -248,7 +248,7 @@ std::vector<boost::shared_ptr<google::protobuf::Message> > goby::acomms::Queue::
             + boost::posix_time::seconds(queue_message_options().ttl())) < goby_time())
         {
             expired_msgs.push_back(messages_.front().dccl_msg);
-            glog.is(verbose) && glog  << group(parent_->glog_pop_group()) <<  "expiring" << " from send stack "
+            glog.is(debug1) && glog  << group(parent_->glog_pop_group()) <<  "expiring" << " from send stack "
                                       << name() << " (qsize " << size()-1
                                       <<  "/" << queue_message_options().max_queue() << "): "  << messages_.front().dccl_msg << std::endl;
             // if we were waiting for an ack for this, erase that too
@@ -287,7 +287,7 @@ void goby::acomms::Queue::info(std::ostream* os) const
 
 void goby::acomms::Queue::flush()
 {
-    glog.is(verbose) && glog  << group(parent_->glog_pop_group()) << "flushing stack " << name() << " (qsize 0)" << std::endl;
+    glog.is(debug1) && glog  << group(parent_->glog_pop_group()) << "flushing stack " << name() << " (qsize 0)" << std::endl;
     messages_.clear();
     waiting_for_ack_.clear();
 }        

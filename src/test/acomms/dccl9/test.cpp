@@ -30,8 +30,8 @@ private:
     goby::acomms::Bitset encode()
         { return encode(MINI_ID_OFFSET); }
     
-    goby::uint32 decode(goby::acomms::Bitset* bits)
-        { return bits->to_ulong() + MINI_ID_OFFSET; }
+    goby::uint32 decode(const goby::acomms::Bitset& bits)
+        { return bits.to_ulong() + MINI_ID_OFFSET; }
     
     unsigned size()
         { return MINI_ID_SIZE; }

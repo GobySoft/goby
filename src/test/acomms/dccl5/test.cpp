@@ -100,7 +100,7 @@ int main(int argc, char* argv[])
     
     codec->info(msg_in1.GetDescriptor(), &std::cout);    
     std::cout << "Message in:\n" << msg_in1.DebugString() << std::endl;
-    assert(codec->validate(msg_in1.GetDescriptor()));
+    codec->validate(msg_in1.GetDescriptor());
 
     // try callbacks
     

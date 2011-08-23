@@ -120,7 +120,7 @@ int main(int argc, char* argv[])
     
     std::cout << "Message in:\n" << msg_in.DebugString() << std::endl;
      
-    assert(codec->validate(msg_in.GetDescriptor()));
+    codec->validate(msg_in.GetDescriptor());
 
     std::cout << "Try encode..." << std::endl;
     std::string bytes = codec->encode(msg_in);

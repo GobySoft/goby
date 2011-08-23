@@ -28,7 +28,7 @@ int main(int argc, char* argv[])
     
     goby::acomms::DCCLCodec* codec = goby::acomms::DCCLCodec::get();
     
-    assert(codec->validate<BytesMsg>());
+    codec->validate<BytesMsg>();
     codec->info<BytesMsg>(&goby::glog);
 
     BytesMsg msg_in;

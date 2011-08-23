@@ -62,7 +62,7 @@ int main(int argc, char* argv[])
         std::cout << "Message " << ++i << " in:\n" << p->DebugString() << std::endl;
     }
     
-    assert(codec->validate_repeated(descs));
+    codec->validate_repeated(descs);
 
     std::cout << "Try encode..." << std::endl;
     std::string bytes1 = codec->encode_repeated(msgs) + std::string(4, '\0');

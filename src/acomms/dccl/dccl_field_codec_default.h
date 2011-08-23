@@ -49,7 +49,7 @@ namespace goby
           private:
             Bitset encode();
             Bitset encode(const uint32& wire_value);
-            uint32 decode(Bitset* bits);
+            uint32 decode(const Bitset& bits);
             unsigned size();
             unsigned size(const uint32& field_value);
             unsigned max_size();
@@ -99,16 +99,13 @@ namespace goby
           virtual Bitset encode(const WireType& value)
           {
               WireType wire_value = value;
-              
-              goby::glog << "starting encode of field with max " << max() << ", min " << min() << ", prec " << precision() << std::endl;
                 
               if(wire_value < min() || wire_value > max())
                   return Bitset(size());
               
               wire_value = goby::util::unbiased_round(wire_value, precision());
               
-              goby::glog << debug1 << "using value " << wire_value << std::endl;
-              
+              goby::glog << debug2 << "(DCCLDefaultArithmeticFieldCodec) Encoding using wire value (=field value) " << wire_value << std::endl;
               
               wire_value -= min();
               wire_value *= std::pow(10.0, precision());
@@ -120,9 +117,9 @@ namespace goby
               return Bitset(size(), goby::util::as<unsigned long>(wire_value));
           }
           
-          virtual WireType decode(Bitset* bits)
+          virtual WireType decode(const Bitset& bits)
           {
-              unsigned long t = bits->to_ulong();
+              unsigned long t = bits.to_ulong();
               
               if(!DCCLFieldCodecBase::this_field()->is_required())
               {
@@ -130,8 +127,12 @@ namespace goby
                   --t;
               }
               
-              return goby::util::unbiased_round(
+              WireType return_value = goby::util::unbiased_round(
                   t / (std::pow(10.0, precision())) + min(), precision());
+
+              goby::glog << debug2 << "(DCCLDefaultArithmeticFieldCodec) Decoding received wire value (=field value) " << return_value << std::endl;
+
+              return return_value;
               
           }
 
@@ -150,7 +151,7 @@ namespace goby
           private:
             Bitset encode(const bool& wire_value);
             Bitset encode();
-            bool decode(Bitset* bits);
+            bool decode(const Bitset& bits);
             unsigned size();
             void validate();
         };
@@ -160,7 +161,7 @@ namespace goby
           private:
             Bitset encode();
             Bitset encode(const std::string& wire_value);
-            std::string decode(Bitset* bits);
+            std::string decode(const Bitset& bits);
             unsigned size();
             unsigned size(const std::string& field_value);
             unsigned max_size();
@@ -179,7 +180,7 @@ namespace goby
           private:
             Bitset encode();
             Bitset encode(const std::string& wire_value);
-            std::string decode(Bitset* bits);
+            std::string decode(const Bitset& bits);
             unsigned size();
             unsigned size(const std::string& field_value);
             unsigned max_size();
@@ -240,7 +241,7 @@ namespace goby
                 return Bitset(size());
             }
 
-            T decode(Bitset* bits)
+            T decode(const Bitset& bits)
             {
                 std::string t = DCCLFieldCodecBase::dccl_field_options().static_value();
                 return t;

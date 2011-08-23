@@ -477,7 +477,7 @@ namespace goby
         {
           public:
             typedef const google::protobuf::Message* const_type;
-            typedef boost::shared_ptr<google::protobuf::Message> mutable_type;
+            typedef google::protobuf::Message* mutable_type;
             std::string as_str() { return "CPPTYPE_MESSAGE"; }
 
           protected:

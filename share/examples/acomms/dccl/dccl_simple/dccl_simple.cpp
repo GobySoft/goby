@@ -25,11 +25,6 @@ using goby::acomms::operator<<;
 
 int main()
 {
-    std::cout << "loading xml file: xml/simple.xml" << std::endl;
-    
-    // instantiate the parser with a single xml file (simple.xml).
-    // also pass the schema, relative to simple.xml, for XML validity
-    // checking (syntax).
     goby::acomms::DCCLCodec* dccl = goby::acomms::DCCLCodec::get();
 
     // validate the Simple protobuf message type as a valid DCCL message type
@@ -43,7 +38,8 @@ int main()
     std::cout << "passing message to encoder:\n" << message << std::endl;
 
     // encode the message to a byte string
-    std::string bytes = dccl->encode(message);
+    std::string bytes;
+    dccl->encode(&bytes, message);
     
     std::cout << "received hexadecimal string: " << goby::util::hex_encode(bytes) << std::endl;
 
@@ -51,7 +47,7 @@ int main()
     // input contents right back to decoder
     std::cout << "passed hexadecimal string to decoder: " << goby::util::hex_encode(bytes) << std::endl;
 
-    message = dccl->decode<Simple>(bytes);
+    dccl->decode(bytes, &message);
     
     std::cout << "received message:" << message << std::endl;
 

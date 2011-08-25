@@ -19,6 +19,7 @@
 
 #include "goby/acomms/modem_driver.h"
 #include "goby/acomms/connect.h"
+#include "goby/util/logger.h"
 
 #include <iostream>
 
@@ -31,7 +32,7 @@ int usage()
 }
 
 
-void handle_ranging_reply(const goby::acomms::protobuf::ModemRangingReply& reply_msg);
+void handle_receive(const goby::acomms::protobuf::ModemTransmission& reply_msg);
 
 int main(int argc, char* argv[])
 {
@@ -41,11 +42,14 @@ int main(int argc, char* argv[])
     std::string type = argv[2];
     if(type != "narrowband" && type != "remus")
         return usage();
+
+    goby::glog.set_name(argv[0]);
+    goby::glog.add_stream(goby::util::Logger::DEBUG1, &std::clog);
     
     //
     // 1. Create and initialize the Micro-Modem driver
     //
-    goby::acomms::MMDriver driver(&std::clog);
+    goby::acomms::MMDriver driver;
     goby::acomms::protobuf::DriverConfig cfg;
 
     // set the serial port given on the command line
@@ -55,26 +59,35 @@ int main(int argc, char* argv[])
     uint32 our_id = 1;
     cfg.set_modem_id(our_id);
 
+    // these parameters could be set on a ping by ping basis as well, we'll set them all here in configuration
     if(type == "remus")
     {
-        cfg.SetExtension(MicroModemConfig::remus_turnaround_ms, 50);
+        micromodem::protobuf::REMUSLBLParams* remus_params =
+            cfg.MutableExtension(micromodem::protobuf::Config::remus_lbl);
+        
+        remus_params->set_turnaround_ms(50);
         // enable all four beacons
-        cfg.SetExtension(MicroModemConfig::remus_enable_beacons, 0x0F);
+        remus_params->set_enable_beacons(0x0F);
+        remus_params->set_lbl_max_range(goby::util::as<unsigned>(argv[3]));
     }
     else if(type == "narrowband")
     {
         // Benthos UAT-376 example from Micro-Modem Software Interface Guide
-        cfg.SetExtension(MicroModemConfig::narrowband_turnaround_ms, 20);
-        cfg.SetExtension(MicroModemConfig::narrowband_transmit_freq, 26000);
-        cfg.SetExtension(MicroModemConfig::narrowband_transmit_ping_ms, 5);
-        cfg.SetExtension(MicroModemConfig::narrowband_receive_ping_ms, 5);
-        cfg.AddExtension(MicroModemConfig::narrowband_receive_freq, 25000);
-        cfg.SetExtension(MicroModemConfig::narrowband_transmit_flag, true);
+        micromodem::protobuf::NarrowBandLBLParams* narrowband_params =
+            cfg.MutableExtension(micromodem::protobuf::Config::narrowband_lbl);
+        
+        narrowband_params->set_turnaround_ms(20);
+        narrowband_params->set_transmit_freq(26000);
+        narrowband_params->set_transmit_ping_ms(5);
+        narrowband_params->set_receive_ping_ms(5);
+        narrowband_params->add_receive_freq(25000);
+        narrowband_params->set_transmit_flag(true);
+        narrowband_params->set_lbl_max_range(goby::util::as<unsigned>(argv[3]));
     }
     
     
 
-    goby::acomms::connect(&driver.signal_range_reply, &handle_ranging_reply);
+    goby::acomms::connect(&driver.signal_receive, &handle_receive);
     
     //
     // 2. Startup the driver
@@ -85,16 +98,17 @@ int main(int argc, char* argv[])
     // 3. Initiate an LBL ping
     //
     
-    goby::acomms::protobuf::ModemRangingRequest request_msg;
-    request_msg.mutable_base()->set_src(our_id);
+    goby::acomms::protobuf::ModemTransmission request_msg;
+    request_msg.set_src(our_id);
     request_msg.set_type((type == "remus") ?
-                         goby::acomms::protobuf::REMUS_LBL_RANGING :
-                         goby::acomms::protobuf::NARROWBAND_LBL_RANGING);
-    request_msg.set_lbl_max_range(goby::util::as<unsigned>(argv[3]));
+                         goby::acomms::protobuf::ModemTransmission::MICROMODEM_REMUS_LBL_RANGING :
+                         goby::acomms::protobuf::ModemTransmission::MICROMODEM_NARROWBAND_LBL_RANGING);
+
+
     
     std::cout << "Sending " << type << " LBL ranging request:\n" << request_msg << std::endl;
     
-    driver.handle_initiate_ranging(&request_msg);
+    driver.handle_initiate_transmission(request_msg);
 
     //
     // 4. Run the driver
@@ -111,7 +125,7 @@ int main(int argc, char* argv[])
         // send another transmission every 60 seconds
         if(!(i % 600))
         {
-            driver.handle_initiate_ranging(&request_msg);
+            driver.handle_initiate_transmission(request_msg);
             std::cout << "Sending " << type << " LBL ranging request:\n" << request_msg << std::endl;
         }
 
@@ -121,7 +135,7 @@ int main(int argc, char* argv[])
     return 0;
 }
 
-void handle_ranging_reply(const goby::acomms::protobuf::ModemRangingReply& reply_msg)
+void handle_receive(const goby::acomms::protobuf::ModemTransmission& reply_msg)
 {
     std::cout << "Received LBL ranging reply:\n" << reply_msg << std::endl;
 }

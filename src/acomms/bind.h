@@ -43,23 +43,14 @@ namespace goby
             
             connect(&driver.signal_data_request,
                     &queue_manager, &QueueManager::handle_modem_data_request);
-            
-            connect(&driver.signal_ack,
-                    &queue_manager, &QueueManager::handle_modem_ack);
         }
-
+        
         /// binds the MAC initiate transmission callback to the driver
         /// and the driver parsed message callback to the MAC
         inline void bind(MACManager& mac, ModemDriverBase& driver)
         {
             connect(&mac.signal_initiate_transmission,
                     &driver, &ModemDriverBase::handle_initiate_transmission);
-            
-            connect(&mac.signal_initiate_ranging,
-                    &driver, &ModemDriverBase::handle_initiate_ranging);
-
-            connect(&driver.signal_all_incoming,
-                    &mac, &MACManager::handle_modem_all_incoming);
         }
     
 

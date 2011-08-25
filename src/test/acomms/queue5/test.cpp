@@ -30,7 +30,7 @@ int goby_message_qsize = 0;
 int last_decoded_count = 0;
 std::deque<int> decode_order;
 //GobyMessage msg_in1, msg_in2;
-goby::acomms::QueueManager* q_manager = goby::acomms::QueueManager::get();
+goby::acomms::QueueManager q_manager;
 const int MY_MODEM_ID = 1;
 bool provide_data = true;
 
@@ -51,17 +51,17 @@ int main(int argc, char* argv[])
 
     goby::acomms::DCCLCodec* codec = goby::acomms::DCCLCodec::get();
     
-    q_manager->add_queue<GobyMessage>();
+    q_manager.add_queue<GobyMessage>();
     
     goby::acomms::protobuf::QueueManagerConfig cfg;
     cfg.set_modem_id(MY_MODEM_ID);
-    q_manager->set_cfg(cfg);
+    q_manager.set_cfg(cfg);
 
-    goby::glog << *q_manager << std::endl;
+    goby::glog << q_manager << std::endl;
     
-    goby::acomms::connect(&q_manager->signal_queue_size_change, &qsize);
-    goby::acomms::connect(&q_manager->signal_data_on_demand, &handle_encode_on_demand);
-    goby::acomms::connect(&q_manager->signal_receive, &handle_receive);
+    goby::acomms::connect(&q_manager.signal_queue_size_change, &qsize);
+    goby::acomms::connect(&q_manager.signal_data_on_demand, &handle_encode_on_demand);
+    goby::acomms::connect(&q_manager.signal_receive, &handle_receive);
     
     // we want to test requesting for a message slightly larger than the expected size
     decode_order.push_back(0);
@@ -107,7 +107,7 @@ void request_test(int request_bytes,
     transmit_msg.set_max_frame_bytes(request_bytes);
     transmit_msg.set_max_num_frames(1);    
 
-    q_manager->handle_modem_data_request(&transmit_msg);
+    q_manager.handle_modem_data_request(&transmit_msg);
     std::cout << "requesting data, got: " << transmit_msg << std::endl;
 
     // once for each one that fits, twice for the one that doesn't
@@ -124,7 +124,7 @@ void request_test(int request_bytes,
     else
         assert(goby_message_qsize == starting_qsize - expected_messages_sent);
 
-    q_manager->handle_modem_receive(transmit_msg);
+    q_manager.handle_modem_receive(transmit_msg);
 }
 
 

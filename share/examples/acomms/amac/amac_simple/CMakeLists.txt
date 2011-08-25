@@ -1,0 +1,2 @@
+add_executable(amac_simple amac_simple.cpp)
+target_link_libraries(amac_simple goby_acomms)

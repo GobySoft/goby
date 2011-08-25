@@ -41,19 +41,19 @@ int main(int argc, char* argv[])
     goby::glog.add_stream(goby::util::Logger::DEBUG3, &std::cerr);
     goby::glog.set_name(argv[0]);
     
-    goby::acomms::QueueManager* q_manager = goby::acomms::QueueManager::get();
+    goby::acomms::QueueManager q_manager;
     goby::acomms::protobuf::QueueManagerConfig cfg;
     const int MY_MODEM_ID = 1;
     const int UNICORN_MODEM_ID = 3;
     cfg.set_modem_id(MY_MODEM_ID);
-    q_manager->set_cfg(cfg);
+    q_manager.set_cfg(cfg);
     
     goby::acomms::DCCLModemIdConverterCodec::add("unicorn", UNICORN_MODEM_ID);
     goby::acomms::DCCLModemIdConverterCodec::add("topside", MY_MODEM_ID);
     
-    goby::acomms::connect(&q_manager->signal_receive, &handle_receive);
-    goby::acomms::connect(&q_manager->signal_queue_size_change, &qsize);
-    goby::acomms::connect(&q_manager->signal_ack, &handle_ack);
+    goby::acomms::connect(&q_manager.signal_receive, &handle_receive);
+    goby::acomms::connect(&q_manager.signal_queue_size_change, &qsize);
+    goby::acomms::connect(&q_manager.signal_ack, &handle_ack);
 
     msg_in1.set_telegram("hello!");
     msg_in1.mutable_header()->set_time(
@@ -67,16 +67,16 @@ int main(int argc, char* argv[])
     msg_in2.set_telegram("hello 2");
     
     std::cout << "Pushed: " << msg_in1 << std::endl;
-    q_manager->push_message(msg_in1);
+    q_manager.push_message(msg_in1);
     std::cout << "Pushed: " << msg_in2 << std::endl;
-    q_manager->push_message(msg_in2);
+    q_manager.push_message(msg_in2);
 
 
     goby::acomms::protobuf::ModemTransmission transmit_msg;
     transmit_msg.set_max_frame_bytes(16);
     transmit_msg.set_max_num_frames(2);
     transmit_msg.set_dest(UNICORN_MODEM_ID);    
-    q_manager->handle_modem_data_request(&transmit_msg);
+    q_manager.handle_modem_data_request(&transmit_msg);
 
     std::cout << "requesting data, got: " << transmit_msg << std::endl;
     std::cout << "\tdata frame 0 as hex: " << goby::util::hex_encode(transmit_msg.frame(0)) << std::endl;
@@ -89,7 +89,7 @@ int main(int argc, char* argv[])
     ack.set_dest(MY_MODEM_ID);
     ack.add_acked_frame(0);
     ack.add_acked_frame(1);
-    q_manager->handle_modem_receive(ack);
+    q_manager.handle_modem_receive(ack);
 
     assert(goby_message_qsize == 0);
     assert(handle_ack_called == true);

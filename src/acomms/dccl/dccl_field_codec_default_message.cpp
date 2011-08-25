@@ -57,7 +57,6 @@ void goby::acomms::DCCLDefaultMessageCodec::any_decode(Bitset* bits, boost::any*
     {
         
         google::protobuf::Message* msg = boost::any_cast<google::protobuf::Message* >(*wire_value);
-        std::cout << msg->GetDescriptor()->full_name() << std::endl;
         
         const google::protobuf::Descriptor* desc = msg->GetDescriptor();
         const google::protobuf::Reflection* refl = msg->GetReflection();

@@ -14,7 +14,7 @@
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
 
-// queues two messages from the DCCL library
+// queues a single message from the DCCL library
 
 #include "goby/acomms/queue.h"
 #include "goby/acomms/connect.h"
@@ -22,32 +22,27 @@
 #include "goby/util/binary.h"
 #include <iostream>
 
+
 using goby::acomms::operator<<;
 
 void received_data(const google::protobuf::Message& msg);
 
-int main(int argc, char* argv[])
+int main()
 {
-    //
-    //  0. Initialize logging
-    //
-    goby::glog.add_stream(goby::util::Logger::VERBOSE, &std::cerr);
-    goby::glog.set_name(argv[0]);
-    
     //
     //  1. Initialize the QueueManager     
     //    
-    goby::acomms::QueueManager* q_manager = goby::acomms::QueueManager::get();
+    goby::acomms::QueueManager q_manager;
     
     // our modem id (arbitrary, but must be unique in the network)
     const int our_id = 1;
 
     goby::acomms::protobuf::QueueManagerConfig cfg;
     cfg.set_modem_id(our_id);
-    q_manager->set_cfg(cfg);
+    q_manager.set_cfg(cfg);
     
     // set up the callback to handle received DCCL messages
-    goby::acomms::connect(&q_manager->signal_receive, &received_data);
+    goby::acomms::connect(&q_manager.signal_receive, &received_data);
     
     // 
     //  2. Push a message to a queue 
@@ -55,18 +50,13 @@ int main(int argc, char* argv[])
     
     // let's make a message to store in the queue
     Simple msg;
-    msg.set_telegram("hello 1!");
-    std::cout << "1.a. pushing message to queue 1: " << msg << std::endl;
-    q_manager->push_message(msg);
+    msg.set_telegram("hello all!");
+    q_manager.push_message(msg);
     
-
-    msg.set_telegram("hello 2!");
-    std::cout << "1.b. pushing message to queue 1: " << msg << std::endl;
-    q_manager->push_message(msg);    
+    std::cout << "1. pushing message to queue 1: " << msg << std::endl;
 
     // see what our QueueManager contains
-    std::cout << "2. " << *q_manager << std::endl;
-
+    std::cout << "2. " << q_manager << std::endl;
     
     //
     //  3. Create a loopback to simulate the Link Layer (libmodemdriver & modem firmware) 
@@ -74,21 +64,21 @@ int main(int argc, char* argv[])
 
     std::cout << "3. executing loopback (simulating sending a message to ourselves over the modem link)" << std::endl;
     
-    // pretend the modem is requesting data of up to 64 bytes
+    // pretend the modem is requesting data of up to 32 bytes
     
-    goby::acomms::protobuf::ModemDataRequest request_msg;
-    request_msg.set_max_bytes(64);
+    goby::acomms::protobuf::ModemTransmission request_msg;
+    request_msg.set_max_frame_bytes(32);
+    request_msg.set_max_num_frames(1);
     
-    goby::acomms::protobuf::ModemDataTransmission encoded_msg;
-    q_manager->handle_modem_data_request(request_msg, &encoded_msg);
+    q_manager.handle_modem_data_request(&request_msg);
     
-    std::cout << "4. requesting data, got: " << encoded_msg << std::endl;
-    std::cout << "\tdata as hex: " << goby::util::hex_encode(encoded_msg.data()) << std::endl;
+    std::cout << "4. requesting data, got: " << request_msg << std::endl;
+    std::cout << "\tdata as hex: " << goby::util::hex_encode(request_msg.frame(0)) << std::endl;
     
     // 
     //  4. Pass the received message to the QueueManager (same as outgoing message) 
     //
-    q_manager->handle_modem_receive(encoded_msg);
+    q_manager.handle_modem_receive(request_msg);
     
     return 0;
 }
@@ -100,5 +90,4 @@ void received_data(const google::protobuf::Message& msg)
 {
     std::cout << "5. received message: " << msg << std::endl;
 }
-
 

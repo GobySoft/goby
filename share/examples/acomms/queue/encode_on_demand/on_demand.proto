@@ -1,0 +1,20 @@
+import "goby/protobuf/option_extensions.proto";
+
+message GobyMessage
+{
+  option (goby.msg).dccl.id = 4;
+  option (goby.msg).dccl.max_bytes = 32;
+
+  // enable "pass through" of data request to the application
+  option (goby.msg).queue.encode_on_demand = true;
+
+  // how fast a newly encoded message goes stale
+  // you may not want to set this to zero or you can waste
+  // a good deal of time encoding if this queue isn't the highest
+  // priority
+  option (goby.msg).queue.on_demand_skew_seconds = 0.1;
+
+  required int32 a = 1 [(goby.field).dccl.min=0, (goby.field).dccl.max=254];  
+  required int32 b = 2 [(goby.field).dccl.min=0, (goby.field).dccl.max=510];  
+}
+

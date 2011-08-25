@@ -48,14 +48,10 @@ namespace goby
          class QueueManager
          {
            public:
-             static QueueManager* get()
-             {
-                 // set these now so that the user has a chance of setting the logger
-                 if(!inst_)
-                     inst_.reset(new QueueManager);
-
-                 return inst_.get();    
-             }
+             QueueManager();
+             /// destructor
+             ~QueueManager()
+             { }
 
              /// \name Initialization Methods
              ///
@@ -199,15 +195,6 @@ namespace goby
 
             
           private:
-            QueueManager();
-
-            // so we can use shared_ptr to hold the singleton
-            template<typename T>
-                friend void boost::checked_delete(T*);
-            /// destructor
-            ~QueueManager()
-            { }
-
             QueueManager(const QueueManager&);
             QueueManager& operator= (const QueueManager&);
             //@}

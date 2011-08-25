@@ -36,7 +36,6 @@
 using goby::glog;
 using goby::util::as;
 
-boost::shared_ptr<goby::acomms::QueueManager> goby::acomms::QueueManager::inst_;
 int goby::acomms::QueueManager::count_ = 0;
 
 goby::acomms::QueueManager::QueueManager()

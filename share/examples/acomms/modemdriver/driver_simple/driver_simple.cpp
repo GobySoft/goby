@@ -30,6 +30,7 @@
 
 #include "goby/acomms/modem_driver.h"
 #include "goby/util/binary.h"
+#include "goby/util/logger.h"
 #include "goby/acomms/connect.h"
 
 #include <iostream>
@@ -37,8 +38,7 @@
 using goby::acomms::operator<<;
 
 
-void handle_data_request(const goby::acomms::protobuf::ModemDataRequest& request_msg, goby::acomms::protobuf::ModemDataTransmission* data_msg);
-void handle_data_receive(const goby::acomms::protobuf::ModemDataTransmission& data_msg);
+void handle_data_receive(const goby::acomms::protobuf::ModemTransmission& data_msg);
 
 int main(int argc, char* argv[])
 {
@@ -61,12 +61,15 @@ int main(int argc, char* argv[])
     uint32 our_id = goby::util::as<uint32>(argv[2]);
     cfg.set_modem_id(our_id);
 
+    goby::glog.set_name(argv[0]);
+    goby::glog.add_stream(goby::util::Logger::DEBUG1, &std::clog);
+    
     if(argc == 4)
     {
         if(boost::iequals(argv[3],"ABCDriver"))
         {
             std::cout << "Starting Example driver ABCDriver" << std::endl;
-            driver = new goby::acomms::ABCDriver(&std::clog);
+            driver = new goby::acomms::ABCDriver;
         }
     }
 
@@ -74,16 +77,14 @@ int main(int argc, char* argv[])
     if(!driver)
     {
         std::cout << "Starting WHOI Micro-Modem MMDriver" << std::endl;
-        driver = new goby::acomms::MMDriver(&std::clog);
+        driver = new goby::acomms::MMDriver;
         // turn data quality factor message on
         // (example of setting NVRAM configuration)
-        cfg.AddExtension(MicroModemConfig::nvram_cfg, "DQF,1");
+        cfg.AddExtension(micromodem::protobuf::Config::nvram_cfg, "DQF,1");
     }
     
 
-    // for handling $CADRQ
     goby::acomms::connect(&driver->signal_receive, &handle_data_receive);
-    goby::acomms::connect(&driver->signal_data_request, &handle_data_request);
     
     //
     // 2. Startup the driver
@@ -91,17 +92,21 @@ int main(int argc, char* argv[])
     driver->startup(cfg);
 
     //
-    // 3. Initiate a transmission cycle
+    // 3. Initiate a transmission cycle with some data
     //
     
-    goby::acomms::protobuf::ModemDataInit transmit_init_message;
-    transmit_init_message.mutable_base()->set_src(goby::util::as<unsigned>(our_id));
-    transmit_init_message.mutable_base()->set_dest(goby::acomms::BROADCAST_ID);
-    transmit_init_message.mutable_base()->set_rate(0);
-
-    std::cout << transmit_init_message << std::endl;
+    goby::acomms::protobuf::ModemTransmission transmit_message;
+    transmit_message.set_type(goby::acomms::protobuf::ModemTransmission::DATA);
+    transmit_message.set_src(goby::util::as<unsigned>(our_id));
+    transmit_message.set_dest(goby::acomms::BROADCAST_ID);
+    transmit_message.set_rate(0);
     
-    driver->handle_initiate_transmission(&transmit_init_message);
+    transmit_message.add_frame("Hello, world!");
+    transmit_message.set_ack_requested(false);
+
+    std::cout << transmit_message << std::endl;
+    
+    driver->handle_initiate_transmission(transmit_message);
 
     //
     // 4. Run the driver
@@ -116,7 +121,7 @@ int main(int argc, char* argv[])
 
         // send another transmission every 60 seconds
         if(!(i % 600))
-            driver->handle_initiate_transmission(&transmit_init_message);
+            driver->handle_initiate_transmission(transmit_message);
             
         // in here you can initiate more transmissions as you want
         usleep(100000);
@@ -127,21 +132,10 @@ int main(int argc, char* argv[])
 }
 
 //
-// 5. Handle the data request ($CADRQ)
+// 5. Post the received data 
 //
 
-void handle_data_request(const goby::acomms::protobuf::ModemDataRequest& request_msg,
-                         goby::acomms::protobuf::ModemDataTransmission* data_msg)
-{
-    data_msg->set_data(goby::util::hex_decode("aa1100bbccddef0987654321"));
-    data_msg->set_ack_requested(false);
-}
-
-//
-// 6. Post the received data 
-//
-
-void handle_data_receive(const goby::acomms::protobuf::ModemDataTransmission& data_msg)
+void handle_data_receive(const goby::acomms::protobuf::ModemTransmission& data_msg)
 {
     std::cout << "got a message: " << data_msg << std::endl;
 }

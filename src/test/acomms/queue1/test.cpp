@@ -56,7 +56,10 @@ int main(int argc, char* argv[])
     std::cout << "requesting data, got: " << msg << std::endl;
     std::cout << "\tdata as hex: " << goby::util::hex_encode(msg.frame(0)) << std::endl;
 
-    assert(msg.frame(0) == goby::acomms::DCCLCodec::get()->encode(test_msg1));
+    std::string encoded;
+    goby::acomms::DCCLCodec::get()->encode(&encoded, test_msg1);
+    
+    assert(msg.frame(0) == encoded);
     assert(msg.src() == MY_MODEM_ID);
     assert(msg.dest() == goby::acomms::BROADCAST_ID);
 

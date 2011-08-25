@@ -157,7 +157,6 @@ void goby::acomms::DCCLFieldCodecBase::base_decode(Bitset* bits,
     glog.is(debug2) && glog  << group(DCCLCodec::glog_decode_group()) << "... using these bits: " << these_bits << std::endl;
 
     boost::any wire_value = *field_value;
-    std::cout << "base_decode type of wire_value: " << wire_value.type().name() << std::endl;
     
     any_decode(&these_bits, &wire_value);
     

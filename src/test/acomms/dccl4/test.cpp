@@ -69,7 +69,7 @@ int main(int argc, char* argv[])
     std::cout << "... got bytes (hex): " << goby::util::hex_encode(bytes1) << std::endl;
     std::cout << "Try decode..." << std::endl;
     
-    std::list< boost::shared_ptr<google::protobuf::Message> > msgs_out = codec->decode_repeated(bytes1);
+    std::list< boost::shared_ptr<google::protobuf::Message> > msgs_out = codec->decode_repeated<boost::shared_ptr<google::protobuf::Message> >(bytes1);
 
     std::list<const google::protobuf::Message*>::const_iterator in_it = msgs.begin();
 

@@ -98,7 +98,7 @@ int main(int argc, char* argv[])
     std::list<const google::protobuf::Message*> msgs;
     msgs.push_back(&msg_in1);
     msgs.push_back(&msg_in2);
-    
+
     assert(transmit_msg.frame(0) == goby::acomms::DCCLCodec::get()->encode_repeated(msgs));
     assert(transmit_msg.src() == MY_MODEM_ID);
     assert(transmit_msg.dest() == UNICORN_MODEM_ID);

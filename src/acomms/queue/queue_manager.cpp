@@ -313,7 +313,7 @@ void goby::acomms::QueueManager::handle_modem_data_request(protobuf::ModemTransm
         
             msg->set_ack_requested(packet_ack_);
             // finally actually encode the message
-            *data = codec_->encode_repeated(dccl_msgs);
+            *data = codec_->encode_repeated<boost::shared_ptr<google::protobuf::Message> >(dccl_msgs);
             
         }
     }
@@ -472,7 +472,8 @@ void goby::acomms::QueueManager::handle_modem_receive(const protobuf::ModemTrans
             ++frame_number)
         {
             std::list<boost::shared_ptr<google::protobuf::Message> > dccl_msgs =
-                codec_->decode_repeated(message.frame(frame_number));
+                codec_->decode_repeated<boost::shared_ptr<google::protobuf::Message> >(
+                    message.frame(frame_number));
     
             BOOST_FOREACH(boost::shared_ptr<google::protobuf::Message> msg, dccl_msgs)
             {

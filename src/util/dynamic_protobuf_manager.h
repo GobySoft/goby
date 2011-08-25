@@ -32,6 +32,11 @@ namespace goby
         class DynamicProtobufManager
         {
           public:
+            template<typename GoogleProtobufMessagePointer>
+                static GoogleProtobufMessagePointer new_protobuf_message(
+                    const google::protobuf::Descriptor* desc)
+            { return GoogleProtobufMessagePointer(msg_factory().GetPrototype(desc)->New()); }
+
             static boost::shared_ptr<google::protobuf::Message> new_protobuf_message(
                 const google::protobuf::Descriptor* desc);
             static boost::shared_ptr<google::protobuf::Message> new_protobuf_message(

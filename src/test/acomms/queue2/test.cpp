@@ -67,7 +67,10 @@ int main(int argc, char* argv[])
     std::cout << "requesting data, got: " << transmit_msg << std::endl;
     std::cout << "\tdata as hex: " << goby::util::hex_encode(transmit_msg.frame(0)) << std::endl;
 
-    assert(transmit_msg.frame(0) == goby::acomms::DCCLCodec::get()->encode(msg_in1));
+    std::string encoded;
+    goby::acomms::DCCLCodec::get()->encode(&encoded, msg_in1);
+    
+    assert(transmit_msg.frame(0) == encoded);
     assert(transmit_msg.src() == MY_MODEM_ID);
     assert(transmit_msg.dest() == UNICORN_MODEM_ID);
     assert(transmit_msg.ack_requested() == true);

@@ -33,7 +33,6 @@
 #include "dccl_field_codec_default.h"
 #include "goby/util/as.h"
 #include "goby/protobuf/acomms_option_extensions.pb.h"
-#include "goby/util/dynamic_protobuf_manager.h"
 #include "goby/protobuf/header.pb.h"
 
 using goby::util::goby_time;
@@ -91,9 +90,8 @@ void goby::acomms::DCCLCodec::set_default_codecs()
 }
 
 
-
-std::string goby::acomms::DCCLCodec::encode(const google::protobuf::Message& msg)
-{    
+void goby::acomms::DCCLCodec::encode(std::string* bytes, const google::protobuf::Message& msg)
+{
     const Descriptor* desc = msg.GetDescriptor();
 
     glog.is(debug1) && glog << group(glog_encode_group_) << "Began encoding message of type: " << desc->full_name() << std::endl;    
@@ -164,7 +162,7 @@ std::string goby::acomms::DCCLCodec::encode(const google::protobuf::Message& msg
 
         glog.is(debug1) && glog << group(glog_encode_group_) << "Successfully encoded message of type: " << desc->full_name() << std::endl;
 
-        return head_bytes + body_bytes;
+        *bytes = head_bytes + body_bytes;
     }
     catch(std::exception& e)
     {
@@ -194,8 +192,7 @@ unsigned goby::acomms::DCCLCodec::id_from_encoded(const std::string& bytes)
     return id_codec_[current_id_codec_]->decode(these_bits);
 }
 
-
-boost::shared_ptr<google::protobuf::Message> goby::acomms::DCCLCodec::decode(const std::string& bytes)   
+void goby::acomms::DCCLCodec::decode(const std::string& bytes, google::protobuf::Message* msg)
 {
     try
     {
@@ -206,10 +203,6 @@ boost::shared_ptr<google::protobuf::Message> goby::acomms::DCCLCodec::decode(con
         if(!id2desc_.count(id))
             throw(DCCLException("Message id " + as<std::string>(id) + " has not been validated. Call validate() before decoding this type."));
 
-        // ownership of this object goes to the caller of decode()
-        boost::shared_ptr<google::protobuf::Message> msg = 
-            goby::util::DynamicProtobufManager::new_protobuf_message(id2desc_.find(id)->second);
-        
         const Descriptor* desc = msg->GetDescriptor();
         
         glog.is(debug1) && glog << group(glog_decode_group_) << "Type name: " << desc->full_name() << std::endl;
@@ -263,15 +256,12 @@ boost::shared_ptr<google::protobuf::Message> goby::acomms::DCCLCodec::decode(con
             DCCLFieldCodecBase::MessageHandler msg_handler;
             msg_handler.push(msg->GetDescriptor());
 
-            boost::any value(msg.get());
-
-            std::cout << "decode type of value: " << value.type().name() << std::endl;
+            boost::any value(msg);
+            
 
             codec->base_decode(&head_bits, &value, DCCLFieldCodecBase::HEAD);
-//            helper->set_value(msg.get(), value);
             glog.is(debug2) && glog << group(glog_decode_group_) << "after header decode, message is: " << *msg << std::endl;
             codec->base_decode(&body_bits, &value, DCCLFieldCodecBase::BODY);
-//            helper->set_value(msg.get(), value);
             glog.is(debug2) && glog << group(glog_decode_group_) << "after header & body decode, message is: " << *msg << std::endl;
         }
         else
@@ -280,8 +270,6 @@ boost::shared_ptr<google::protobuf::Message> goby::acomms::DCCLCodec::decode(con
         }
 
         glog.is(debug1) && glog << group(glog_decode_group_) << "Successfully decoded message of type: " << desc->full_name() << std::endl;
-
-        return msg;
     }
     catch(std::exception& e)
     {
@@ -431,36 +419,6 @@ void goby::acomms::DCCLCodec::info_repeated(const std::list<const google::protob
 {
     BOOST_FOREACH(const google::protobuf::Descriptor* p, desc)
         info(p, os);
-}
-
-
-
-
-std::list<boost::shared_ptr<google::protobuf::Message> > goby::acomms::DCCLCodec::decode_repeated(const std::string& orig_bytes)
-{
-    std::string bytes = orig_bytes;
-    std::list<boost::shared_ptr<google::protobuf::Message> > out;
-    while(!bytes.empty())
-    {
-        try
-        {
-            out.push_back(decode(bytes));
-            unsigned last_size = size(*out.back());
-            glog.is(debug1) && glog  << "last message size was: " << last_size << std::endl;
-            bytes.erase(0, last_size);
-        }
-        catch(DCCLException& e)
-        {
-            if(out.empty())
-                throw(e);
-            else
-            {
-                glog.is(warn) && glog << "failed to decode " << goby::util::hex_encode(bytes) << " but returning parts already decoded"  << std::endl;
-                return out;
-            }
-        }        
-    }
-    return out;
 }
 
 

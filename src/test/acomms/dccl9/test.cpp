@@ -72,28 +72,35 @@ int main(int argc, char* argv[])
     codec->validate<MiniUser>();
     codec->info<MiniUser>(&goby::glog);    
 
-    MiniUser mini_user_msg;
-    mini_user_msg.set_user(876);
-    assert(codec->decode(codec->encode(mini_user_msg))->SerializeAsString() == mini_user_msg.SerializeAsString());
+    MiniUser mini_user_msg_in, mini_user_msg_out;
+    mini_user_msg_in.set_user(876);
+    std::string encoded;
+    codec->encode(&encoded, mini_user_msg_in);
+    codec->decode(encoded, &mini_user_msg_out);
+    assert(mini_user_msg_out.SerializeAsString() == mini_user_msg_in.SerializeAsString());
 
     codec->validate<MiniOWTT>();
     codec->info<MiniOWTT>(&goby::glog);
 
-    MiniOWTT mini_owtt; 
-    mini_owtt.set_clock_mode(3);
-    mini_owtt.set_tod(12);
-    mini_owtt.set_user(13);
-    std::string encoded = codec->encode(mini_owtt);
+    MiniOWTT mini_owtt_in, mini_owtt_out; 
+    mini_owtt_in.set_clock_mode(3);
+    mini_owtt_in.set_tod(12);
+    mini_owtt_in.set_user(13);
+
+    codec->encode(&encoded, mini_owtt_in);
     std::cout << "OWTT as hex: " << goby::util::hex_encode(encoded) << std::endl;
     
-    assert(codec->decode(encoded)->SerializeAsString() == mini_owtt.SerializeAsString());
+    codec->decode(encoded, &mini_owtt_out);
+    assert(mini_owtt_out.SerializeAsString() == mini_owtt_in.SerializeAsString());
     
     codec->validate<MiniAbort>();
     codec->info<MiniAbort>(&goby::glog);
 
-    MiniAbort mini_abort; 
-    mini_abort.set_user(130);
-    assert(codec->decode(codec->encode(mini_abort))->SerializeAsString() == mini_abort.SerializeAsString());
+    MiniAbort mini_abort_in, mini_abort_out; 
+    mini_abort_in.set_user(130);
+    codec->encode(&encoded, mini_abort_in);
+    codec->decode(encoded, &mini_abort_out);
+    assert(mini_abort_out.SerializeAsString() == mini_abort_in.SerializeAsString());
     
     std::cout << "all tests passed" << std::endl;
 }

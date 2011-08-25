@@ -133,6 +133,7 @@ int main(int argc, char* argv[])
             goby::glog << "Test " << group("test") << test_number << " passed." << std::endl;
             ++test_number;
             check_count = 0;
+            sleep(1);
             
         }
     }

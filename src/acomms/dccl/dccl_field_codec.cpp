@@ -26,8 +26,6 @@
 goby::acomms::DCCLFieldCodecBase::MessagePart goby::acomms::DCCLFieldCodecBase::part_ =
     goby::acomms::DCCLFieldCodecBase::BODY;
 boost::signal<void (unsigned size)> goby::acomms::DCCLFieldCodecBase::get_more_bits;
-std::vector<const google::protobuf::FieldDescriptor*> goby::acomms::DCCLFieldCodecBase::MessageHandler::field_;
-std::vector<const google::protobuf::Descriptor*> goby::acomms::DCCLFieldCodecBase::MessageHandler::desc_;
 boost::ptr_map<int, boost::signal<void (const boost::any& field_value, const boost::any& wire_value, const boost::any& extension_value)> >   goby::acomms::DCCLFieldCodecBase::wire_value_hooks_;
 
 
@@ -40,11 +38,16 @@ using goby::glog;
 goby::acomms::DCCLFieldCodecBase::DCCLFieldCodecBase() { }
             
 void goby::acomms::DCCLFieldCodecBase::base_encode(Bitset* bits,
-                                          const boost::any& field_value,
+                                          const google::protobuf::Message& field_value,
                                           MessagePart part)
 {
     part_ = part;    
-    base_encode(bits, field_value, 0);
+
+    // we pass this through the FromProtoCppTypeBase to do dynamic_cast (RTII) for
+    // custom message codecs so that these codecs can be written in the derived class (not google::protobuf::Message)
+    base_encode(bits,
+                DCCLTypeHelper::find(field_value.GetDescriptor())->get_value(field_value),
+                0);
 }
 
 void goby::acomms::DCCLFieldCodecBase::base_encode(Bitset* bits,
@@ -84,6 +87,7 @@ void goby::acomms::DCCLFieldCodecBase::base_size(unsigned* bit_size,
                                         const google::protobuf::Message& msg,
                                         MessagePart part)
 {
+    *bit_size = 0;
     part_ = part;
     base_size(bit_size, &msg, 0);
 }
@@ -125,11 +129,13 @@ void goby::acomms::DCCLFieldCodecBase::base_size_repeated(unsigned* bit_size,
 
 
 void goby::acomms::DCCLFieldCodecBase::base_decode(Bitset* bits,
-                                          boost::any* field_value,
-                                          MessagePart part)
+                                                   google::protobuf::Message* field_value,
+                                                   MessagePart part)
 {
     part_ = part;
-    base_decode(bits, field_value, 0);
+
+    boost::any value(field_value);
+    base_decode(bits, &value, 0);
 }
 
 
@@ -199,6 +205,8 @@ void goby::acomms::DCCLFieldCodecBase::base_max_size(unsigned* bit_size,
                                                          const google::protobuf::Descriptor* desc,
                                                          MessagePart part)
 {
+    *bit_size = 0;
+
     part_ = part;
 
     MessageHandler msg_handler;
@@ -227,6 +235,8 @@ void goby::acomms::DCCLFieldCodecBase::base_min_size(unsigned* bit_size,
                                                      const google::protobuf::Descriptor* desc,
                                                      MessagePart part)
 {
+    *bit_size = 0;
+
     part_ = part;
 
     MessageHandler msg_handler;
@@ -358,34 +368,6 @@ std::string goby::acomms::DCCLFieldCodecBase::info()
 {
     return std::string();
 }
-
-
-void goby::acomms::DCCLFieldCodecBase::BitsHandler::transfer_bits(unsigned size)
-{
-    glog.is(debug3) && glog  <<  "_get_bits from (" << in_pool_ << ") " << *in_pool_ << " to add to (" << out_pool_ << ") " << *out_pool_ << " number: " << size << std::endl;
-    
-    if(lsb_first_)
-    {
-        // grab lowest bits first
-        for(int i = 0, n = size; i < n; ++i)
-            out_pool_->push_back((*in_pool_)[i]);
-        *in_pool_ >>= size;
-    }
-    else
-    {
-        // grab highest bits first
-        out_pool_->resize(out_pool_->size() + size);
-        *out_pool_ <<= size;
-        for(int i = 0, n = size; i < n; ++i)
-        {
-            (*out_pool_)[size-i-1] = (*in_pool_)[in_pool_->size()-i-1];
-        }
-        
-    }
-    in_pool_->resize(in_pool_->size()-size);
-}
-
-
 
 void goby::acomms::DCCLFieldCodecBase::any_encode_repeated(goby::acomms::Bitset* bits, const std::vector<boost::any>& wire_values)
 {
@@ -520,48 +502,4 @@ void goby::acomms::DCCLFieldCodecBase::any_post_decode_repeated(
 //
 // DCCLFieldCodecBase private
 //
-
-
-
-//
-// DCCLFieldCodecBase::MessageHandler
-//
-
-void goby::acomms::DCCLFieldCodecBase::MessageHandler::push(const google::protobuf::Descriptor* desc)
- 
-{
-    desc_.push_back(desc);
-    ++descriptors_pushed_;
-}
-
-void goby::acomms::DCCLFieldCodecBase::MessageHandler::push(const google::protobuf::FieldDescriptor* field)
-{
-    field_.push_back(field);
-    ++fields_pushed_;
-}
-
-
-void goby::acomms::DCCLFieldCodecBase::MessageHandler::__pop_desc()
-{
-    if(!desc_.empty())
-        desc_.pop_back();
-}
-
-void goby::acomms::DCCLFieldCodecBase::MessageHandler::__pop_field()
-{
-    if(!field_.empty())
-        field_.pop_back();
-}
-
-goby::acomms::DCCLFieldCodecBase::MessageHandler::MessageHandler(const google::protobuf::FieldDescriptor* field)
-    : descriptors_pushed_(0),
-      fields_pushed_(0)
-{
-    if(field)
-    {
-        if(field->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE)
-            push(field->message_type());
-        push(field);
-    }
-}
 

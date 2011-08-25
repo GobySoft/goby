@@ -1,6 +1,7 @@
 add_library(goby_acomms 
   dccl/dccl.cpp
   dccl/dccl_field_codec.cpp
+  dccl/dccl_field_codec_helpers.cpp
   dccl/dccl_field_codec_default.cpp
   dccl/dccl_field_codec_default_message.cpp
   dccl/dccl_field_codec_manager.cpp

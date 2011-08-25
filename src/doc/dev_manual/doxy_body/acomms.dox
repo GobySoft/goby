@@ -6,7 +6,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this software (see goby/COPYING).  If not, see <http://www.gnu.org/licenses/>.
 
-/*! \page acomms goby-acomms: Overview of Acoustic Communications Libraries
+/*! \page acomms goby-acomms: Overview of Acoustic Communications Library
 
 Table of Contents for \ref acomms.
 
@@ -40,12 +40,12 @@ To get started using the goby-acomms libraries as quickly as possible:
   <li> If you haven't yet, follow instructions on \ref install "installing Goby".</li>
   <li> Identify which components you need:</li>
   <ul>
-    <li>Encoding and decoding from C++ types to bit-packed messages: \ref dccl "libdccl".</li>
-    <li>Queuing of DCCL and CCL messages with priority based message selection: \ref queue "libqueue".</li>
-    <li>A driver for interacting with the acoustic %modem firmware. Presently the WHOI Micro-Modem <http://acomms.whoi.edu/> is supported: \ref driver "libmodemdriver".</li>
-    <li>Time division multiple access (TDMA) medium access control (MAC): \ref amac "libamac".</li>
+    <li>Encoding and decoding from C++ types to bit-packed messages: \ref dccl "dccl".</li>
+    <li>Queuing of DCCL and CCL messages with priority based message selection: \ref queue "queue".</li>
+    <li>A driver for interacting with the acoustic %modem firmware: \ref driver "modemdriver".</li>
+    <li>Time division multiple access (TDMA) medium access control (MAC): \ref amac "amac".</li>
   </ul> 
-  <li> Look at the "simple" code examples that accompany each library (\ref libdccl/dccl_simple/dccl_simple.cpp "dccl_simple.cpp", \ref libqueue/queue_simple/queue_simple.cpp "queue_simple.cpp", \ref libmodemdriver/driver_simple/driver_simple.cpp "driver_simple.cpp",  \ref libamac/amac_simple/amac_simple.cpp "amac_simple.cpp"). Then look at the example that uses all the libraries together: \ref acomms/chat/chat.cpp "chat.cpp".  The full list of examples is given in \ref OSI_table "this table". </li>
+  <li> Look at the "simple" code examples that accompany each library (\ref dccl/dccl_simple/dccl_simple.cpp "dccl_simple.cpp", \ref queue/queue_simple/queue_simple.cpp "queue_simple.cpp", \ref modemdriver/driver_simple/driver_simple.cpp "driver_simple.cpp",  \ref amac/amac_simple/amac_simple.cpp "amac_simple.cpp"). Then look at the example that uses all the libraries together: \ref acomms/chat/chat.cpp "chat.cpp".  The full list of examples is given in \ref OSI_table "this table". </li>
   <li> Refer to the rest of the documentation as needed.</li>
 </ol>
 
@@ -76,7 +76,7 @@ To start on some (hopefully) common ground, let's begin with an analogy to Open 
     <td>\ref dccl</td>
     <td>goby::acomms::DCCLCodec</td>
     <td>
-      \ref acomms/libdccl/dccl_simple/dccl_simple.cpp "dccl_simple.cpp" <br>
+      \ref acomms/dccl/dccl_simple/dccl_simple.cpp "dccl_simple.cpp" <br>
       \ref acomms/chat/chat.cpp "chat.cpp" <br>
     </td>
   </tr>
@@ -90,7 +90,7 @@ To start on some (hopefully) common ground, let's begin with an analogy to Open 
     <td>\ref queue</td>
     <td>goby::acomms::QueueManager</td>
     <td>
-      \ref libqueue/queue_simple/queue_simple.cpp "queue_simple.cpp" <br>
+      \ref queue/queue_simple/queue_simple.cpp "queue_simple.cpp" <br>
       \ref acomms/chat/chat.cpp "chat.cpp" <br>
     </td>
   </tr>    
@@ -105,7 +105,7 @@ To start on some (hopefully) common ground, let's begin with an analogy to Open 
     <td>\ref driver</td>
     <td>classes derived from goby::acomms::ModemDriverBase; e.g. goby::acomms::MMDriver</td>
     <td>
-      \ref libmodemdriver/driver_simple/driver_simple.cpp "driver_simple.cpp" <br>
+      \ref modemdriver/driver_simple/driver_simple.cpp "driver_simple.cpp" <br>
       \ref acomms/chat/chat.cpp "chat.cpp" <br>
     </td>
   </tr>
@@ -114,7 +114,7 @@ To start on some (hopefully) common ground, let's begin with an analogy to Open 
     <td>\ref amac</td>
     <td>goby::acomms::MACManager</td>
     <td>
-      \ref libamac/amac_simple/amac_simple.cpp "amac_simple.cpp" <br>
+      \ref amac/amac_simple/amac_simple.cpp "amac_simple.cpp" <br>
       \ref acomms/chat/chat.cpp "chat.cpp" <br>
     </td>
   </tr>
@@ -157,7 +157,7 @@ A relatively simple component model for the goby-acomms libraries showing the \l
 
 For a more detailed model, see the \ref acomms_uml section.
 
-\section dccl libdccl: Encoding and decoding
+\section dccl dccl: Encoding and decoding
 
 Dynamic Compact Control Language (DCCL) provides a structure for defining messages to be sent through an acoustic %modem. The messages are configured in XML and are intended to be easily reconfigurable, unlike the original CCL framework used in the REMUS vehicles and others (for information on CCL, see <http://acomms.whoi.edu/ccl/>. DCCL can operate within a CCL network, as the most significant byte (or CCL ID) is 0x20. 
 
@@ -165,26 +165,26 @@ DCCL messages are packed based on boundaries determined with knowledge of the XM
 
 Detailed documentation for \ref acomms_dccl.
 
-\section queue libqueue: Priority based message queuing
+\section queue queue: Priority based message queuing
 
-The goby-acomms queuing library (libqueue) interacts with both the application level process that handles decoding (either through libdccl or other CCL codecs) and the %modem driver process that talks directly to the %modem.
+The goby-acomms queuing library (queue) interacts with both the application level process that handles decoding (either through dccl or other CCL codecs) and the %modem driver process that talks directly to the %modem.
 
-On the application side, libqueue provides the ability for the application level process to push (CCL or DCCL encoded) messages to various queues and receive messages from a remote sender that correspond to messages in the same %queue (e.g. you have a %queue for STATUS_MESSAGE that you can push messages to you and also receive other STATUS_MESSAGEs on). The push feature is called by the application level process and received messages are signaled to all previous bound slots (see \ref signal_slot).
+On the application side, queue provides the ability for the application level process to push (CCL or DCCL encoded) messages to various queues and receive messages from a remote sender that correspond to messages in the same %queue (e.g. you have a %queue for STATUS_MESSAGE that you can push messages to you and also receive other STATUS_MESSAGEs on). The push feature is called by the application level process and received messages are signaled to all previous bound slots (see \ref signal_slot).
 
-On the driver side, libqueue provides the %modem driver with data upon request. It chooses the data to send based on dynamic priorities (and several other configuration parameters). It will also pack several messages from the user into a single frame from the %modem to fully utilize space (e.g. if the %modem frame is 32 bytes and the user's data are in 16 byte DCCL messages, libqueue will pack two user frames for each %modem frame). This packing and unpacking is transparent to the application side user. Note, however, that libqueue will <em>not</em> split a user's data into frames (like TCP/IP). If this functionality is desired, it must be provided at the application layer. Acoustic communications are too unpredictable to reliably stitch together frames.
+On the driver side, queue provides the %modem driver with data upon request. It chooses the data to send based on dynamic priorities (and several other configuration parameters). It will also pack several messages from the user into a single frame from the %modem to fully utilize space (e.g. if the %modem frame is 32 bytes and the user's data are in 16 byte DCCL messages, queue will pack two user frames for each %modem frame). This packing and unpacking is transparent to the application side user. Note, however, that queue will <em>not</em> split a user's data into frames (like TCP/IP). If this functionality is desired, it must be provided at the application layer. Acoustic communications are too unpredictable to reliably stitch together frames.
 
 Detailed documentation for \ref acomms_queue.
 
-\section driver libmodemdriver: Modem driver
+\section driver modemdriver: Modem driver
 
-The goby-acomms Modem driver library (libmodemdriver) provides an interface from the rest of goby-acomms to the acoustic %modem firmware. While currently the only driver available is for the WHOI Micro-Modem, this library is written in such a way that drivers for any acoustic %modem that interfaces over a serial connection and can provide (or provide abstractions for) sending data directly to another %modem on the link should be able to be written. Any one who is interested in writing a %modem driver for another acoustic %modem should get in touch with the goby project <https://launchpad.net/goby> and see \ref acomms_writedriver.
+The goby-acomms Modem driver library (modemdriver) provides an interface from the rest of goby-acomms to the acoustic %modem firmware. While currently the only driver available is for the WHOI Micro-Modem, this library is written in such a way that drivers for any acoustic %modem that interfaces over a serial connection and can provide (or provide abstractions for) sending data directly to another %modem on the link should be able to be written. Any one who is interested in writing a %modem driver for another acoustic %modem should get in touch with the goby project <https://launchpad.net/goby> and see \ref acomms_writedriver.
 
 Detailed documentation for \ref acomms_driver.
 
 
-\section amac libamac: Medium Access Control (MAC)
+\section amac amac: Medium Access Control (MAC)
 
-The goby-acomms MAC library (libamac) handles access to the shared medium, in our case the acoustic channel. We assume that we have a single (frequency) band for transmission so that if vehicles transmit simultaneously, collisions will occur between messaging. Therefore, we use time division multiple access (TDMA) schemes, or "slotting". Networks with multiple frequency bands will have to employ a different MAC scheme or augment libamac for the frequency division multiple access (FDMA) scenario.
+The goby-acomms MAC library (amac) handles access to the shared medium, in our case the acoustic channel. We assume that we have a single (frequency) band for transmission so that if vehicles transmit simultaneously, collisions will occur between messaging. Therefore, we use time division multiple access (TDMA) schemes, or "slotting". Networks with multiple frequency bands will have to employ a different MAC scheme or augment amac for the frequency division multiple access (FDMA) scenario.
 
 The MAC library provides two basic types of TDMA:
 <ul>
@@ -204,7 +204,7 @@ Detailed documentation for \ref acomms_mac.
 
 The layers of goby-acomms use a signal / slot system for asynchronous events such as receipt of an acoustic message. Each signal can be connected (goby::acomms::connect()) to one or more slots, which are functions or member functions matching the signature of the signal. When the signal is emitted, the slots are called in order they were connected. To ensure synchronous behavior and thread-safety throughout goby-acomms, signals are only emitted during a call to a given library's API class do_work method (i.e. goby::acomms::ModemDriverBase::do_work(), goby::acomms::QueueManager::do_work(), goby::acomms::MACManager::do_work()).
 
-For example, if I want to receive data from libqueue, I need to connect to the signal QueueManager::signal_receive. Thus, I need to define a function or class method with the same signature:
+For example, if I want to receive data from queue, I need to connect to the signal QueueManager::signal_receive. Thus, I need to define a function or class method with the same signature:
 
 \code
 void receive_data(const goby::acomms::protobuf::ModemDataTransmission& msg);
@@ -299,7 +299,7 @@ Model that describes the static structure of goby-acomms as a whole:
 Model that gives the sequence for sending a message with goby-acomms:
 
 \image html goby-acomms-send-message-sequence.png
-\image latex goby-acomms-send-message-sequence.eps "UML model that gives the sequence of calls required in sending a message using goby-acomms. The WHOI Micro-Modem is used as example firmware but the specific libmodemdriver-firmware interaction will depend on the acoustic modem used." width=\textwidth
+\image latex goby-acomms-send-message-sequence.eps "UML model that gives the sequence of calls required in sending a message using goby-acomms. The WHOI Micro-Modem is used as example firmware but the specific modemdriver-firmware interaction will depend on the acoustic modem used." width=\textwidth
 
 Model that shows the commands needed to start and keep goby-acomms running:
 

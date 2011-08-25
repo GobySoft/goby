@@ -118,10 +118,10 @@ void goby::acomms::DCCLCodec::encode(std::string* bytes, const google::protobuf:
 
         if(codec)
         {
-            DCCLFieldCodecBase::MessageHandler msg_handler;
+            MessageHandler msg_handler;
             msg_handler.push(msg.GetDescriptor());
-            codec->base_encode(&head_bits, helper->get_value(msg), DCCLFieldCodecBase::HEAD);
-            codec->base_encode(&body_bits, helper->get_value(msg), DCCLFieldCodecBase::BODY);
+            codec->base_encode(&head_bits, msg, DCCLFieldCodecBase::HEAD);
+            codec->base_encode(&body_bits, msg, DCCLFieldCodecBase::BODY);
         }
         else
         {
@@ -179,15 +179,19 @@ void goby::acomms::DCCLCodec::encode(std::string* bytes, const google::protobuf:
 
 unsigned goby::acomms::DCCLCodec::id_from_encoded(const std::string& bytes)
 {
-    if(bytes.length() < id_codec_[current_id_codec_]->min_size() / BITS_IN_BYTE)
+    unsigned id_min_size = 0, id_max_size = 0;
+    id_codec_[current_id_codec_]->base_min_size(&id_min_size, 0);
+    id_codec_[current_id_codec_]->base_max_size(&id_max_size, 0);
+    
+    if(bytes.length() < (id_min_size / BITS_IN_BYTE))
         throw(DCCLException("Bytes passed (hex: " + hex_encode(bytes) + ") is too small to be a valid DCCL message"));
         
     Bitset fixed_header_bits;
-    string2bitset(&fixed_header_bits, bytes.substr(0, std::ceil(double(id_codec_[current_id_codec_]->max_size()) / BITS_IN_BYTE)));
+    string2bitset(&fixed_header_bits, bytes.substr(0, std::ceil(double(id_max_size) / BITS_IN_BYTE)));
 
     Bitset these_bits;
-    DCCLFieldCodecBase::BitsHandler bits_handler(&these_bits, &fixed_header_bits, false);
-    bits_handler.transfer_bits(id_codec_[current_id_codec_]->min_size());
+    BitsHandler bits_handler(&these_bits, &fixed_header_bits, false);
+    bits_handler.transfer_bits(id_min_size);
     
     return id_codec_[current_id_codec_]->decode(these_bits);
 }
@@ -213,10 +217,11 @@ void goby::acomms::DCCLCodec::decode(const std::string& bytes, google::protobuf:
             DCCLTypeHelper::find(desc);
 
         
-        unsigned head_size_bits = id_codec_[current_id_codec_]->size(id), body_size_bits = 0;
+        unsigned head_size_bits, body_size_bits;
         codec->base_max_size(&head_size_bits, desc, DCCLFieldCodecBase::HEAD);
         codec->base_max_size(&body_size_bits, desc, DCCLFieldCodecBase::BODY);
-
+        head_size_bits += id_codec_[current_id_codec_]->size(id);
+        
         unsigned head_size_bytes = ceil_bits2bytes(head_size_bits);
         unsigned body_size_bytes = ceil_bits2bytes(body_size_bits);
     
@@ -253,15 +258,12 @@ void goby::acomms::DCCLCodec::decode(const std::string& bytes, google::protobuf:
 
         if(codec)
         {
-            DCCLFieldCodecBase::MessageHandler msg_handler;
+            MessageHandler msg_handler;
             msg_handler.push(msg->GetDescriptor());
 
-            boost::any value(msg);
-            
-
-            codec->base_decode(&head_bits, &value, DCCLFieldCodecBase::HEAD);
+            codec->base_decode(&head_bits, msg, DCCLFieldCodecBase::HEAD);
             glog.is(debug2) && glog << group(glog_decode_group_) << "after header decode, message is: " << *msg << std::endl;
-            codec->base_decode(&body_bits, &value, DCCLFieldCodecBase::BODY);
+            codec->base_decode(&body_bits, msg, DCCLFieldCodecBase::BODY);
             glog.is(debug2) && glog << group(glog_decode_group_) << "after header & body decode, message is: " << *msg << std::endl;
         }
         else
@@ -298,9 +300,10 @@ void goby::acomms::DCCLCodec::validate(const google::protobuf::Descriptor* desc)
             DCCLFieldCodecManager::find(desc, desc->options().GetExtension(goby::msg).dccl().codec());
 
         unsigned dccl_id = id(desc);
-        unsigned head_size_bits = id_codec_[current_id_codec_]->size(dccl_id), body_size_bits = 0;
+        unsigned head_size_bits, body_size_bits;
         codec->base_max_size(&head_size_bits, desc, DCCLFieldCodecBase::HEAD);
         codec->base_max_size(&body_size_bits, desc, DCCLFieldCodecBase::BODY);
+        head_size_bits += id_codec_[current_id_codec_]->size(dccl_id);
         
         const unsigned byte_size = ceil_bits2bytes(head_size_bits) + ceil_bits2bytes(body_size_bits);
 
@@ -340,10 +343,11 @@ unsigned goby::acomms::DCCLCodec::size(const google::protobuf::Message& msg)
         DCCLFieldCodecManager::find(desc, desc->options().GetExtension(goby::msg).dccl().codec());
     
     unsigned dccl_id = id(desc);
-    unsigned head_size_bits = id_codec_[current_id_codec_]->size(dccl_id);
+    unsigned head_size_bits;
     codec->base_size(&head_size_bits, msg, DCCLFieldCodecBase::HEAD);
+    head_size_bits += id_codec_[current_id_codec_]->size(dccl_id);
     
-    unsigned body_size_bits = 0;
+    unsigned body_size_bits;
     codec->base_size(&body_size_bits, msg, DCCLFieldCodecBase::BODY);
     
     const unsigned head_size_bytes = ceil_bits2bytes(head_size_bits);
@@ -373,7 +377,7 @@ void goby::acomms::DCCLCodec::info(const google::protobuf::Descriptor* desc, std
         boost::shared_ptr<DCCLFieldCodecBase> codec =
             DCCLFieldCodecManager::find(desc, desc->options().GetExtension(goby::msg).dccl().codec());
 
-        unsigned config_head_bit_size = 0, body_bit_size = 0;
+        unsigned config_head_bit_size, body_bit_size;
         codec->base_max_size(&config_head_bit_size, desc, DCCLFieldCodecBase::HEAD);
         codec->base_max_size(&body_bit_size, desc, DCCLFieldCodecBase::BODY);
 

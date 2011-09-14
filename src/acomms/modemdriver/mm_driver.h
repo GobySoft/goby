@@ -44,19 +44,20 @@ namespace goby
 
             /// \brief Starts the driver.
             ///
-            /// \param cfg Configuration for the Micro-Modem driver. DriverConfig is defined in driver_base.proto, and various extensions specific to the WHOI Micro-Modem are defined in mm_driver.proto.
+            /// \param cfg Configuration for the Micro-Modem driver. DriverConfig is defined in acomms_driver_base.proto, and various extensions specific to the WHOI Micro-Modem are defined in acomms_mm_driver.proto.
             void startup(const protobuf::DriverConfig& cfg);
+
+            /// \brief Stops the driver.
             void shutdown();
             
-            /// \brief See DriverBase::do_work()
+            /// \brief See ModemDriverBase::do_work()
             void do_work();
             
-            /// \brief See DriverBase::handle_initiate_transmission()
+            /// \brief See ModemDriverBase::handle_initiate_transmission()
             void handle_initiate_transmission(const protobuf::ModemTransmission& m);
 
-            // keeps track of clock mode, necessary for synchronous navigation
+            /// \brief Current clock mode of the modem, necessary for synchronous navigation. 
             int clk_mode() { return clk_mode_; }
-
             
           private:
         
@@ -119,8 +120,9 @@ namespace goby
             static boost::posix_time::ptime nmea_time2ptime(const std::string& mt);
 
             // doxygen
-            /// \example libmodemdriver/driver_simple/driver_simple.cpp
             
+            /// \example acomms/modemdriver/driver_simple/driver_simple.cpp
+
             /// \example acomms/chat/chat.cpp            
         
           private:
@@ -147,7 +149,7 @@ namespace goby
             static unsigned PACKET_SIZE [];
 
 
-            // all startup configuration (DriverConfig defined in driver_base.proto and extended in mm_driver.proto)
+            // all startup configuration (DriverConfig defined in acomms_driver_base.proto and extended in acomms_mm_driver.proto)
             protobuf::DriverConfig driver_cfg_;
 
             // deque for outgoing messages to the modem, we queue them up and send

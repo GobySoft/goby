@@ -69,10 +69,8 @@ void goby::acomms::DCCLDefaultMessageCodec::any_decode(Bitset* bits, boost::any*
             if(!check_field(field_desc))
                 continue;
 
-            std::string field_codec = find_codec(field_desc);
-        
             boost::shared_ptr<DCCLFieldCodecBase> codec =
-                DCCLFieldCodecManager::find(field_desc, field_codec);
+                DCCLFieldCodecManager::find(field_desc);
             boost::shared_ptr<FromProtoCppTypeBase> helper =
                 DCCLTypeHelper::find(field_desc);
 
@@ -84,7 +82,7 @@ void goby::acomms::DCCLDefaultMessageCodec::any_decode(Bitset* bits, boost::any*
                     for(unsigned j = 0, m = field_desc->options().GetExtension(goby::field).dccl().max_repeat(); j < m; ++j)
                         wire_values.push_back(refl->AddMessage(msg, field_desc));
                     
-                    codec->base_decode_repeated(bits, &wire_values, field_desc);
+                    codec->field_decode_repeated(bits, &wire_values, field_desc);
 
                     for(int j = 0, m = wire_values.size(); j < m; ++j)
                     {
@@ -94,7 +92,7 @@ void goby::acomms::DCCLDefaultMessageCodec::any_decode(Bitset* bits, boost::any*
                 else
                 {
                     // for primitive types
-                    codec->base_decode_repeated(bits, &wire_values, field_desc);
+                    codec->field_decode_repeated(bits, &wire_values, field_desc);
                     for(int j = 0, m = wire_values.size(); j < m; ++j)
                         helper->add_value(field_desc, msg, wire_values[j]);
                 }
@@ -106,13 +104,13 @@ void goby::acomms::DCCLDefaultMessageCodec::any_decode(Bitset* bits, boost::any*
                 {
                     // allows us to propagate pointers instead of making many copies of entire messages
                     wire_value = refl->MutableMessage(msg, field_desc);
-                    codec->base_decode(bits, &wire_value, field_desc);
+                    codec->field_decode(bits, &wire_value, field_desc);
                     if(wire_value.empty()) refl->ClearField(msg, field_desc);    
                 }
                 else
                 {
                     // for primitive types
-                    codec->base_decode(bits, &wire_value, field_desc);
+                    codec->field_decode(bits, &wire_value, field_desc);
                     helper->set_value(field_desc, msg, wire_value);
                 }
             } 
@@ -176,18 +174,4 @@ bool goby::acomms::DCCLDefaultMessageCodec::check_field(const google::protobuf::
     }
     
 }
-
-std::string goby::acomms::DCCLDefaultMessageCodec::find_codec(const google::protobuf::FieldDescriptor* field)
-{
-    DCCLFieldOptions dccl_field_options = field->options().GetExtension(goby::field).dccl();
-    
-    // prefer the codec listed as a field extension
-    if(dccl_field_options.has_codec())
-        return dccl_field_options.codec();
-    else if(field->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE)
-        return field->message_type()->options().GetExtension(goby::msg).dccl().codec();
-    else
-        return dccl_field_options.codec();
-}
-
 

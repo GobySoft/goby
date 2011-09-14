@@ -24,4 +24,6 @@
 
 #include "goby/acomms/dccl/dccl.h"
 
+/// \defgroup dccl_api API classes for the Dynamic Compact Control Language (includes writing custom encoders).
+
 #endif

@@ -44,6 +44,7 @@ namespace goby
     namespace acomms
     {
 
+        /// \brief Provides the default 1 byte or 2 byte DCCL ID codec
         class DCCLDefaultIdentifierCodec : public DCCLTypedFieldCodec<uint32>
         {
           private:
@@ -55,7 +56,6 @@ namespace goby
             unsigned max_size();
             unsigned min_size();
             void validate() { }
-            bool variable_size() { return true; }
             
             // maximum id we can fit in short or long header (MSB reserved to indicate
             // short or long header)
@@ -68,6 +68,9 @@ namespace goby
 
         
 
+        /// \brief Provides a basic bounded arbitrary length numeric (double, float, uint32, uint64, int32, int64) encoder.
+        ///
+        /// Takes ceil(log2((max-min)*10^precision)+1) bits for required fields, ceil(log2((max-min)*10^precision)+2) for optional fields.
         template<typename WireType, typename FieldType = WireType>
             class DCCLDefaultArithmeticFieldCodec : public DCCLTypedFixedFieldCodec<WireType, FieldType>
         {
@@ -146,6 +149,9 @@ namespace goby
             
         };
 
+        /// \brief Provides a bool encoder. Uses 1 bit if field is `required`, 2 bits if `optional`
+        ///
+        /// [presence bit (0 bits if required, 1 bit if optional)][value (1 bit)]
         class DCCLDefaultBoolCodec : public DCCLTypedFixedFieldCodec<bool>
         {
           private:
@@ -156,6 +162,9 @@ namespace goby
             void validate();
         };
         
+        /// \brief Provides an variable length ASCII string encoder. Can encode strings up to 255 bytes by using a length byte preceeding the string.
+        ///
+        /// [length of following string (1 byte)][string (0-255 bytes)]
         class DCCLDefaultStringCodec : public DCCLTypedFieldCodec<std::string>
         {
           private:
@@ -167,14 +176,13 @@ namespace goby
             unsigned max_size();
             unsigned min_size();
             void validate();
-            bool variable_size() { return true; }
           private:
             enum { MAX_STRING_LENGTH = 255 };
             
         };
 
 
-        
+        /// \brief Provides an fixed length byte string encoder.        
         class DCCLDefaultBytesCodec : public DCCLTypedFieldCodec<std::string>
         {
           private:
@@ -185,11 +193,10 @@ namespace goby
             unsigned size(const std::string& field_value);
             unsigned max_size();
             unsigned min_size();
-            bool variable_size() { return true; }
             void validate();
         };
 
-        
+        /// \brief Provides an enum encoder. This converts the enumeration to an integer (based on the enumeration <i>index</i> (<b>not</b> its <i>value</i>) and uses DCCLDefaultArithmeticFieldCodec to encode the integer.
         class DCCLDefaultEnumCodec
             : public DCCLDefaultArithmeticFieldCodec<int32, const google::protobuf::EnumValueDescriptor*>
         {
@@ -210,11 +217,38 @@ namespace goby
         };
         
         
-        class DCCLTimeCodec : public DCCLDefaultArithmeticFieldCodec<int32, std::string>
+        /// \brief Encodes time of day (second precision) for times represented by the string representation of boost::posix_time::ptime (e.g. obtained from goby_time<std::string>()).
+        ///
+        /// \tparam TimeType A type representing time: See the various specializations of goby_time() for allowed types.
+        template<typename TimeType>
+            class DCCLTimeCodec : public DCCLDefaultArithmeticFieldCodec<int32, TimeType>
         {
           public:
-            int32 pre_encode(const std::string& field_value);
-            std::string post_decode(const int32& wire_value);            
+            
+            goby::int32 pre_encode(const TimeType& field_value)
+            {
+                return util::as<boost::posix_time::ptime>(field_value).time_of_day().total_seconds();
+            }
+
+
+            TimeType post_decode(const int32& wire_value)
+            {
+                using namespace boost::posix_time;
+                using namespace boost::gregorian;
+        
+                ptime now = util::goby_time();
+                date day_sent;
+                // if message is from part of the day removed from us by 12 hours, we assume it
+                // was sent yesterday
+                if(abs(now.time_of_day().total_seconds() - double(wire_value)) > hours(12).total_seconds())
+                    day_sent = now.date() - days(1);
+                else // otherwise figure it was sent today
+                    day_sent = now.date();
+                
+                // this logic will break if there is a separation between message sending and
+                // message receipt of greater than 1/2 day (twelve hours)               
+                return util::as<TimeType>(ptime(day_sent,seconds(wire_value)));
+            }
  
           private:
             void validate() { }
@@ -225,32 +259,26 @@ namespace goby
             enum { SECONDS_IN_HOUR = 3600 };
 
         };
-
         
         
+        /// \brief Placeholder codec that takes no space on the wire (0 bits).
         template<typename T>
             class DCCLStaticCodec : public DCCLTypedFixedFieldCodec<T>
         {
             Bitset encode(const T&)
-            {
-                return Bitset(size());
-            }
+            { return Bitset(size()); }
 
             Bitset encode()
-            {
-                return Bitset(size());
-            }
+            { return Bitset(size()); }
 
             T decode(const Bitset& bits)
             {
                 std::string t = DCCLFieldCodecBase::dccl_field_options().static_value();
-                return t;
+                return util::as<T>(t);
             }
             
             unsigned size()
-            {
-                return 0;
-            }
+            { return 0; }
             
             void validate()
             {
@@ -258,13 +286,15 @@ namespace goby
             }
             
         };
+
+        
+        /// \brief Codec that converts string names (e.g. "AUV-Unicorn") to integer MAC addresses (modem ID) and encodes the modem ID using DCCLDefaultArithmeticFieldCodec. The conversion is done using a lookup table.
         class DCCLModemIdConverterCodec : public DCCLDefaultArithmeticFieldCodec<int32, std::string>
         {
           public:
+            /// \brief Add an entry to the lookup table used for conversions. 
             static void add(std::string platform, int32 id)
-            {
-                platform2modem_id_.left.insert(std::make_pair(platform, id));
-            }
+            { platform2modem_id_.left.insert(std::make_pair(platform, id)); }
             
             int32 pre_encode(const std::string& field_value);
             std::string post_decode(const int32& wire_value);

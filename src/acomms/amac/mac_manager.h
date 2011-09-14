@@ -65,7 +65,7 @@ namespace goby
 
             /// \brief Starts the MAC with given configuration
             ///
-            /// \param cfg Initial configuration values (protobuf::MACConfig defined in amac.proto)
+            /// \param cfg Initial configuration values (protobuf::MACConfig defined in acomms_amac.proto)
             void startup(const protobuf::MACConfig& cfg);
 
             /// \brief Shutdown the MAC
@@ -84,12 +84,9 @@ namespace goby
             //@{
             /// \brief Signals when it is time for this platform to begin transmission of an acoustic message at the start of its TDMA slot. Typically connected to ModemDriverBase::handle_initiate_transmission() using bind().
             ///
-            /// \param m a message containing details of the transmission to be initated.  (protobuf::ModemMsgBase defined in modem_message.proto)
+            /// \param m a message containing details of the transmission to be initated.  (protobuf::ModemMsgBase defined in acomms_modem_message.proto)
             boost::signal<void (const protobuf::ModemTransmission& m)> signal_initiate_transmission;
-            
-            /// \example libamac/amac_simple/amac_simple.cpp
-            /// amac_simple.cpp
-        
+            /// \example acomms/amac/amac_simple/amac_simple.cpp        
             /// \example acomms/chat/chat.cpp
 
             unsigned cycle_count() { return std::list<protobuf::ModemTransmission>::size(); }

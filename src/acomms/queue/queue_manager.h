@@ -43,8 +43,7 @@ namespace goby
         /// \class QueueManager queue.h goby/acomms/queue.h
         /// \brief provides an API to the goby-acomms Queuing Library.
         /// \ingroup acomms_api
-        /// \sa queue.proto and modem_message.proto for definition of Google Protocol Buffers messages (namespace goby::acomms::protobuf).
-        /// \todo turn into singleton a la DCCLCodec
+        /// \sa acomms_queue.proto and acomms_modem_message.proto for definition of Google Protocol Buffers messages (namespace goby::acomms::protobuf).
          class QueueManager
          {
            public:
@@ -58,10 +57,10 @@ namespace goby
              /// These methods are intended to be called before doing any work with the class.
              //@{
 
-             /// \brief Set (and overwrite completely if present) the current configuration. (protobuf::QueueManagerConfig defined in queue.proto)
+             /// \brief Set (and overwrite completely if present) the current configuration. (protobuf::QueueManagerConfig defined in acomms_queue.proto)
              void set_cfg(const protobuf::QueueManagerConfig& cfg);
 
-             /// \brief Set (and merge "repeat" fields) the current configuration. (protobuf::QueueManagerConfig defined in queue.proto)
+             /// \brief Set (and merge "repeat" fields) the current configuration. (protobuf::QueueManagerConfig defined in acomms_queue.proto)
              void merge_cfg(const protobuf::QueueManagerConfig& cfg);
 
              /// \brief Add a DCCL queue for use with QueueManager. Note that the queue must be added before receiving messages with QueueManager.
@@ -121,7 +120,6 @@ namespace goby
              /// Call these methods when you want the QueueManager to perform time sensitive tasks (such as expiring old messages)
              //@{
              /// \brief Calculates which messages have expired and emits the goby::acomms::QueueManager::signal_expire as necessary.
-             /// \todo (tes) turn into "poll" method
              void do_work();
 
              //@}
@@ -163,7 +161,7 @@ namespace goby
             //@{
             /// \brief Signals when acknowledgment of proper message receipt has been received. This is only sent for queues with queue.ack == true with an explicit destination (ModemMessageBase::dest() != 0)
             ///
-            /// \param ack_msg a message containing details of the acknowledgment and the acknowledged transmission. (protobuf::ModemMsgAck is defined in modem_message.proto)        
+            /// \param ack_msg a message containing details of the acknowledgment and the acknowledged transmission. (protobuf::ModemMsgAck is defined in acomms_modem_message.proto)        
             boost::signal<void (const protobuf::ModemTransmission& ack_msg,
                                 const google::protobuf::Message& orig_msg)> signal_ack;
 
@@ -174,22 +172,26 @@ namespace goby
             
             /// \brief Signals when a message is expires (exceeds its time-to-live or ttl) before being sent (if queue.ack == false) or before being acknowledged (if queue.ack == true).
             ///
-            /// \param expire_msg the expired transmission. (protobuf::ModemDataExpire is defined in modem_message.proto)
+            /// \param expire_msg the expired transmission. (protobuf::ModemDataExpire is defined in acomms_modem_message.proto)
             boost::signal<void (const google::protobuf::Message& orig_msg)> signal_expire;
             
             /// \brief Forwards the data request to the application layer. This advanced feature is used when queue.encode_on_demand == true and allows for the application to provide data immediately before it is actually sent (for highly time sensitive data)
             ///
-            /// \param request_msg the details of the requested data. (protobuf::ModemDataRequest is defined in modem_message.proto)
+            /// \param request_msg the details of the requested data. (protobuf::ModemDataRequest is defined in acomms_modem_message.proto)
             /// \param data_msg pointer to store the supplied data. The message is of the type for this queue.
             boost::signal<void (const protobuf::ModemTransmission& request_msg,
                                 google::protobuf::Message* data_msg)> signal_data_on_demand;
 
             /// \brief Signals when any queue changes size (message is popped or pushed)
             ///
-            /// \param size message containing the queue that changed size and its new size (protobuf::QueueSize is defined in queue.proto).
+            /// \param size message containing the queue that changed size and its new size (protobuf::QueueSize is defined in acomms_queue.proto).
             boost::signal<void (protobuf::QueueSize size)> signal_queue_size_change;
             //@}
 
+            /// \example acomms/queue/queue_simple/queue_simple.cpp
+            /// simple.proto
+            /// \verbinclude simple.proto
+            /// queue_simple.cpp
             /// \example acomms/chat/chat.cpp
             
 

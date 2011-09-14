@@ -36,26 +36,10 @@ namespace goby
     namespace acomms
     {
 
+        /// \brief Provides FromProtoTypeBase and FromProtoCppTypeBase type identification helper classes for various representations of the underlying field.
         class DCCLTypeHelper
         {
           public:
-            /* static const boost::shared_ptr<FromProtoTypeBase> find(google::protobuf::FieldDescriptor::Type type); */
-                
-            /* static const boost::shared_ptr<FromProtoCppTypeBase> find(const google::protobuf::FieldDescriptor* field) */
-            /* { */
-            /*     if(field->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE) */
-            /*         return find(field->message_type()); */
-            /*     else */
-            /*         return find(field->cpp_type()); */
-   
-            /* } */
-                
-            /* static const boost::shared_ptr<FromProtoCppTypeBase> find(const google::protobuf::Descriptor* desc) */
-            /* { */
-            /*     return find(google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE, */
-            /*                 desc->full_name()); */
-            /* } */
-            
             static boost::shared_ptr<FromProtoTypeBase> find(google::protobuf::FieldDescriptor::Type type);
             static boost::shared_ptr<FromProtoCppTypeBase> find(const google::protobuf::FieldDescriptor* field)
             {
@@ -71,10 +55,11 @@ namespace goby
                             desc->full_name());
             }
                 
-            /* static const boost::shared_ptr<goby::acomms::FromProtoCppTypeBase> find(google::protobuf::FieldDescriptor::CppType cpptype, const std::string& type_name = "") const; */
             static boost::shared_ptr<goby::acomms::FromProtoCppTypeBase> find(google::protobuf::FieldDescriptor::CppType cpptype, const std::string& type_name = "");
 
-                
+
+          private:
+            friend class DCCLFieldCodecManager;            
             template<typename ProtobufMessage>
                 static void add()
             {
@@ -105,7 +90,7 @@ namespace goby
             typedef std::map<std::string,
                 boost::shared_ptr<FromProtoCppTypeBase> > CustomMessageMap;
             static CustomMessageMap custom_message_map_;
-        };                      /*  */
+        };
     }
 }
 #endif

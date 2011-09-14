@@ -36,23 +36,10 @@ message ModemTransmission
   // for type == ACK
   repeated int32 acked_frame = 20;
   
-  // 1000-1099 taken by MMDriver
-  // 1100-1199 taken by MACManager
+  // 1000-1099 taken by MMDriver (see acomms_mm_driver.proto)
+  // 1100-1199 taken by MACManager (see acomms_amac.proto)
   extensions 1000 to max;
 }
-
-// for type == DATA transmissions
-//message ModemDataTransmission
-//{
-  // optional int32 src = 1 [default = 0]; //  0 (BROADCAST), 1-31 
-  // optional int32 dest = 2 [default = 0]; //  0 (BROADCAST), 1-31
-  //  optional uint64 time = 3; // microseconds since UNIX (1970-01-01 00:00:00 UTC)
-  // optional bytes data = 10;
-  //  optional uint32 frame_number = 12 [default = 0];  // frame number if the modem supports multiple frames per packet
-  
-  // 1000-1099 taken by MMDriver
-  //extensions 1000 to max;
-  //}
 
 message ModemRaw
 {

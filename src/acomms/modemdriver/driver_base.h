@@ -37,7 +37,7 @@ namespace goby
         /// \class ModemDriverBase driver_base.h goby/acomms/modem_driver.h
         /// \ingroup acomms_api
         /// \brief provides an abstract base class for acoustic modem drivers. This is subclassed by the various drivers for different manufacturers' modems.
-        /// \sa driver_base.proto and acomms_modem_message.proto for definition of Google Protocol Buffers messages (namespace goby::acomms::protobuf).
+        /// \sa acomms_driver_base.proto and acomms_modem_message.proto for definition of Google Protocol Buffers messages (namespace goby::acomms::protobuf).
         class ModemDriverBase
         {
           public:
@@ -46,7 +46,7 @@ namespace goby
 
             /// \brief Starts the modem driver. Must be called before poll(). 
             ///
-            /// \param cfg Startup configuration for the driver and modem. DriverConfig is defined in driver_base.proto. Derived classes can define extensions (see http://code.google.com/apis/protocolbuffers/docs/proto.html#extensions) to DriverConfig to handle modem specific configuration.
+            /// \param cfg Startup configuration for the driver and modem. DriverConfig is defined in acomms_driver_base.proto. Derived classes can define extensions (see http://code.google.com/apis/protocolbuffers/docs/proto.html#extensions) to DriverConfig to handle modem specific configuration.
             virtual void startup(const protobuf::DriverConfig& cfg) = 0;
 
             /// \brief Shuts down the modem driver. 
@@ -63,7 +63,7 @@ namespace goby
             //@{
             /// \brief Virtual initiate_transmission method. Typically connected to MACManager::signal_initiate_transmission() using bind().
             ///
-            /// \param m ModemTransmission (defined in acomms_modem_message.proto) containing the details of the transmission to be started. This does may contain data frames. If not, data will be requested when the driver calls the data request signal (ModemDriverBase::signal_data_request)
+            /// \param m ModemTransmission (defined in acomms_modem_message.proto) containing the details of the transmission to be started. This may contain data frames. If not, data will be requested when the driver calls the data request signal (ModemDriverBase::signal_data_request)
             virtual void handle_initiate_transmission(const protobuf::ModemTransmission& m) = 0;
             //@}
 
@@ -135,7 +135,7 @@ namespace goby
 
             /// \brief start the physical connection to the modem (serial port, TCP, etc.). must be called before ModemDriverBase::modem_read() or ModemDriverBase::modem_write()
             ///
-            /// \param cfg Configuration including the parameters for the physical connection. (protobuf::DriverConfig is defined in driver_base.proto).
+            /// \param cfg Configuration including the parameters for the physical connection. (protobuf::DriverConfig is defined in acomms_driver_base.proto).
             /// \throw ModemDriverException Problem opening the physical connection.
             /// 
             void modem_start(const protobuf::DriverConfig& cfg);

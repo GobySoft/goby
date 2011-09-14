@@ -29,10 +29,12 @@ namespace goby
 {
     namespace acomms
     {
+        /// \brief Provides various representations of a google::protobuf::FieldDescriptor::Type enumeration. Implementations are provided for all enumerations.
         class FromProtoTypeBase
         {
           public:
             virtual ~FromProtoTypeBase() { }
+            /// string representation of the google::protobuf::FieldDescriptor::Type.
             virtual std::string as_str() { return "TYPE_UNKNOWN"; }   
         };        
         
@@ -147,14 +149,20 @@ namespace goby
         };
 
         
+        /// \brief Provides various representations of a google::protobuf::FieldDescriptor::CppType enumeration, and ways to access the google::protobuf::Reflection object for a given type.
         class FromProtoCppTypeBase
         {
           public:
             virtual ~FromProtoCppTypeBase() { }
             
-            
+            /// string representation
             virtual std::string as_str() { return "CPPTYPE_UNKNOWN"; }   
 
+            /// \brief Get a given field's value from the provided message.
+            ///
+            /// \param field Field to get value for.
+            /// \param msg Message to get value from.
+            /// \return boost::any containing the value. The type is usually the type returned by google::protobuf::Reflection::Get<i>Type</i> where <i>Type</i> is the corresponding google::protobuf::FieldDescriptor::CppType. (See http://code.google.com/apis/protocolbuffers/docs/reference/cpp/google.protobuf.message.html#Reflection).
             boost::any get_value(const google::protobuf::FieldDescriptor* field,
                                  const google::protobuf::Message& msg)
             {
@@ -165,12 +173,18 @@ namespace goby
                     return _get_value(field, msg);
             }
 
+            /// \brief Get the value of the entire base message (only works for CPPTYPE_MESSAGE)
             boost::any get_value(const google::protobuf::Message& msg)
             {
                 return _get_value(0, msg);
             }
             
-            
+            /// \brief Get the value of a repeated field at a given index.
+            ///
+            /// \param field Field to get value for.
+            /// \param msg Message to get value from.
+            /// \param index Index of the repeated array to get value for.
+            /// \return boost::any containing the value. The type is usually the type returned by google::protobuf::Reflection::Get<i>Type</i> where <i>Type</i> is the corresponding google::protobuf::FieldDescriptor::CppType. (See http://code.google.com/apis/protocolbuffers/docs/reference/cpp/google.protobuf.message.html#Reflection).
             boost::any get_repeated_value(
                 const google::protobuf::FieldDescriptor* field,
                 const google::protobuf::Message& msg,
@@ -178,6 +192,11 @@ namespace goby
             { return _get_repeated_value(field, msg, index); }
             
             
+            /// \brief Set a given field's value in the provided message.
+            ///
+            /// \param field Field to set value for.
+            /// \param msg Message to set value in.
+            /// \param value boost::any containing the value to set. The type is usually the type required by google::protobuf::Reflection::Set<i>Type</i> where <i>Type</i> is the corresponding google::protobuf::FieldDescriptor::CppType. (See http://code.google.com/apis/protocolbuffers/docs/reference/cpp/google.protobuf.message.html#Reflection).            
             void set_value(const google::protobuf::FieldDescriptor* field,
                            google::protobuf::Message* msg,
                            boost::any value)
@@ -188,6 +207,7 @@ namespace goby
                     _set_value(field, msg, value);
             }
 
+            /// \brief Set the value of the entire base message (only works for CPPTYPE_MESSAGE)
             void set_value(google::protobuf::Message* msg,
                            boost::any value)
             {
@@ -198,6 +218,11 @@ namespace goby
             }
 
             
+            /// \brief Add a new entry for a repeated field to the back.
+            ///
+            /// \param field Field to set value for.
+            /// \param msg Message to set value in.
+            /// \return boost::any containing the value. The type is usually the type returned by google::protobuf::Reflection::Add<i>Type</i> where <i>Type</i> is the corresponding google::protobuf::FieldDescriptor::CppType. (See http://code.google.com/apis/protocolbuffers/docs/reference/cpp/google.protobuf.message.html#Reflection).
             void add_value(const google::protobuf::FieldDescriptor* field,
                            google::protobuf::Message* msg,
                            boost::any value)
@@ -235,8 +260,7 @@ namespace goby
             : public FromProtoCppTypeBase
         {
           public:
-            typedef double const_type;
-            typedef const_type mutable_type;
+            typedef double type;
             std::string as_str() { return "CPPTYPE_DOUBLE"; }
           private:
             boost::any _get_value(
@@ -251,19 +275,18 @@ namespace goby
             void _set_value(const google::protobuf::FieldDescriptor* field,
                             google::protobuf::Message* msg,
                             boost::any value)
-            { msg->GetReflection()->SetDouble(msg, field, boost::any_cast<const_type>(value)); }
+            { msg->GetReflection()->SetDouble(msg, field, boost::any_cast<type>(value)); }
             void _add_value(const google::protobuf::FieldDescriptor* field,
                             google::protobuf::Message* msg,
                             boost::any value)
-            { msg->GetReflection()->AddDouble(msg, field, boost::any_cast<const_type>(value)); }
+            { msg->GetReflection()->AddDouble(msg, field, boost::any_cast<type>(value)); }
         };
 
         template<> class FromProtoCppType<google::protobuf::FieldDescriptor::CPPTYPE_FLOAT>
             : public FromProtoCppTypeBase
         {
           public:
-            typedef float const_type;
-            typedef const_type mutable_type;
+            typedef float type;
             std::string as_str() { return "CPPTYPE_FLOAT"; }
           private:
             boost::any _get_value(
@@ -278,18 +301,17 @@ namespace goby
             void _set_value(const google::protobuf::FieldDescriptor* field,
                             google::protobuf::Message* msg,
                             boost::any value)
-            { msg->GetReflection()->SetFloat(msg, field, boost::any_cast<const_type>(value)); }
+            { msg->GetReflection()->SetFloat(msg, field, boost::any_cast<type>(value)); }
             void _add_value(const google::protobuf::FieldDescriptor* field,
                             google::protobuf::Message* msg,
                             boost::any value)
-            { msg->GetReflection()->AddFloat(msg, field, boost::any_cast<const_type>(value)); }
+            { msg->GetReflection()->AddFloat(msg, field, boost::any_cast<type>(value)); }
         };
         template<> class FromProtoCppType<google::protobuf::FieldDescriptor::CPPTYPE_INT32>
             : public FromProtoCppTypeBase
         {
           public:
-            typedef google::protobuf::int32 const_type;
-            typedef const_type mutable_type;
+            typedef google::protobuf::int32 type;
             std::string as_str() { return "CPPTYPE_INT32"; }
           private:
             boost::any _get_value(
@@ -304,18 +326,17 @@ namespace goby
             void _set_value(const google::protobuf::FieldDescriptor* field,
                             google::protobuf::Message* msg,
                             boost::any value)
-            { msg->GetReflection()->SetInt32(msg, field, boost::any_cast<const_type>(value)); }
+            { msg->GetReflection()->SetInt32(msg, field, boost::any_cast<type>(value)); }
             void _add_value(const google::protobuf::FieldDescriptor* field,
                             google::protobuf::Message* msg,
                             boost::any value)
-            { msg->GetReflection()->AddInt32(msg, field, boost::any_cast<const_type>(value)); }
+            { msg->GetReflection()->AddInt32(msg, field, boost::any_cast<type>(value)); }
         };
         template<> class FromProtoCppType<google::protobuf::FieldDescriptor::CPPTYPE_INT64>
             : public FromProtoCppTypeBase
         {
           public:
-            typedef google::protobuf::int64 const_type;
-            typedef const_type mutable_type;
+            typedef google::protobuf::int64 type;
             std::string as_str() { return "CPPTYPE_INT64"; }
           private:
             boost::any _get_value(
@@ -330,18 +351,17 @@ namespace goby
             void _set_value(const google::protobuf::FieldDescriptor* field,
                             google::protobuf::Message* msg,
                             boost::any value)
-            { msg->GetReflection()->SetInt64(msg, field, boost::any_cast<const_type>(value)); }
+            { msg->GetReflection()->SetInt64(msg, field, boost::any_cast<type>(value)); }
             void _add_value(const google::protobuf::FieldDescriptor* field,
                             google::protobuf::Message* msg,
                             boost::any value)
-            { msg->GetReflection()->AddInt64(msg, field, boost::any_cast<const_type>(value)); }
+            { msg->GetReflection()->AddInt64(msg, field, boost::any_cast<type>(value)); }
         };
         template<> class FromProtoCppType<google::protobuf::FieldDescriptor::CPPTYPE_UINT32>
             : public FromProtoCppTypeBase
         {
           public:
-            typedef google::protobuf::uint32 const_type;
-            typedef const_type mutable_type;
+            typedef google::protobuf::uint32 type;
             std::string as_str() { return "CPPTYPE_UINT32"; }
           private:
             boost::any _get_value(
@@ -356,18 +376,17 @@ namespace goby
             void _set_value(const google::protobuf::FieldDescriptor* field,
                             google::protobuf::Message* msg,
                             boost::any value)
-            { msg->GetReflection()->SetUInt32(msg, field, boost::any_cast<const_type>(value)); }
+            { msg->GetReflection()->SetUInt32(msg, field, boost::any_cast<type>(value)); }
             void _add_value(const google::protobuf::FieldDescriptor* field,
                             google::protobuf::Message* msg,
                             boost::any value)
-            { msg->GetReflection()->AddUInt32(msg, field, boost::any_cast<const_type>(value)); }
+            { msg->GetReflection()->AddUInt32(msg, field, boost::any_cast<type>(value)); }
         };
         template<> class FromProtoCppType<google::protobuf::FieldDescriptor::CPPTYPE_UINT64>
             : public FromProtoCppTypeBase
         {
           public:
-            typedef google::protobuf::uint64 const_type;
-            typedef const_type mutable_type;
+            typedef google::protobuf::uint64 type;
 
             std::string as_str() { return "CPPTYPE_UINT64"; }
           private:
@@ -383,18 +402,17 @@ namespace goby
             void _set_value(const google::protobuf::FieldDescriptor* field,
                             google::protobuf::Message* msg,
                             boost::any value)
-            { msg->GetReflection()->SetUInt64(msg, field, boost::any_cast<const_type>(value)); }
+            { msg->GetReflection()->SetUInt64(msg, field, boost::any_cast<type>(value)); }
             void _add_value(const google::protobuf::FieldDescriptor* field,
                             google::protobuf::Message* msg,
                             boost::any value)
-            { msg->GetReflection()->AddUInt64(msg, field, boost::any_cast<const_type>(value)); }
+            { msg->GetReflection()->AddUInt64(msg, field, boost::any_cast<type>(value)); }
         };
         template<> class FromProtoCppType<google::protobuf::FieldDescriptor::CPPTYPE_BOOL>
             : public FromProtoCppTypeBase
         {
           public:
-            typedef bool const_type;
-            typedef const_type mutable_type;
+            typedef bool type;
             std::string as_str() { return "CPPTYPE_BOOL"; }
           private:
             boost::any _get_value(
@@ -409,18 +427,17 @@ namespace goby
             void _set_value(const google::protobuf::FieldDescriptor* field,
                             google::protobuf::Message* msg,
                             boost::any value)
-            { msg->GetReflection()->SetBool(msg, field, boost::any_cast<const_type>(value)); }
+            { msg->GetReflection()->SetBool(msg, field, boost::any_cast<type>(value)); }
             void _add_value(const google::protobuf::FieldDescriptor* field,
                             google::protobuf::Message* msg,
                             boost::any value)
-            { msg->GetReflection()->AddBool(msg, field, boost::any_cast<const_type>(value)); }
+            { msg->GetReflection()->AddBool(msg, field, boost::any_cast<type>(value)); }
         };
         template<> class FromProtoCppType<google::protobuf::FieldDescriptor::CPPTYPE_STRING>
             : public FromProtoCppTypeBase
         {
           public:
-            typedef std::string const_type;
-            typedef const_type mutable_type;
+            typedef std::string type;
             std::string as_str() { return "CPPTYPE_STRING"; }
           private:
             boost::any _get_value(
@@ -435,11 +452,11 @@ namespace goby
             void _set_value(const google::protobuf::FieldDescriptor* field,
                             google::protobuf::Message* msg,
                             boost::any value)
-            { msg->GetReflection()->SetString(msg, field, boost::any_cast<const_type>(value)); }
+            { msg->GetReflection()->SetString(msg, field, boost::any_cast<type>(value)); }
             void _add_value(const google::protobuf::FieldDescriptor* field,
                             google::protobuf::Message* msg,
                             boost::any value)
-            { msg->GetReflection()->AddString(msg, field, boost::any_cast<const_type>(value)); }
+            { msg->GetReflection()->AddString(msg, field, boost::any_cast<type>(value)); }
         };
         
         template<> class FromProtoCppType<google::protobuf::FieldDescriptor::CPPTYPE_ENUM>
@@ -471,7 +488,8 @@ namespace goby
             
         };
 
-
+        
+        /// Implements FromProtoCppTypeBase for CPPTYPE_MESSAGE using the dynamic google::protobuf::Message as the underlying class.
         template<> class FromProtoCppType<google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE>
             : public FromProtoCppTypeBase
         {
@@ -540,7 +558,7 @@ namespace goby
             
         };
         
-
+        /// Implements FromProtoCppTypeBase for CPPTYPE_MESSAGE using a specific statically generated Protobuf class.
         template<typename CustomMessage>
             class FromProtoCustomMessage : public FromProtoCppType<google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE>
         {
@@ -581,12 +599,8 @@ namespace goby
                 const_type v = boost::any_cast<const_type>(value);
                 Parent::const_type p = &v;
                 Parent::_add_value(field, msg, p);
-                
             }
-            
         };
-        
-
         
 
         template<typename T>

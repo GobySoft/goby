@@ -45,12 +45,12 @@ void goby::acomms::DCCLFieldCodecBase::base_encode(Bitset* bits,
 
     // we pass this through the FromProtoCppTypeBase to do dynamic_cast (RTII) for
     // custom message codecs so that these codecs can be written in the derived class (not google::protobuf::Message)
-    base_encode(bits,
+    field_encode(bits,
                 DCCLTypeHelper::find(field_value.GetDescriptor())->get_value(field_value),
                 0);
 }
 
-void goby::acomms::DCCLFieldCodecBase::base_encode(Bitset* bits,
+void goby::acomms::DCCLFieldCodecBase::field_encode(Bitset* bits,
                                           const boost::any& field_value,
                                           const google::protobuf::FieldDescriptor* field)
 {
@@ -60,21 +60,21 @@ void goby::acomms::DCCLFieldCodecBase::base_encode(Bitset* bits,
         glog.is(debug1) && glog << group(DCCLCodec::glog_encode_group()) <<  "Starting encode for field: " << field->DebugString() << std::flush;
 
     boost::any wire_value;
-    base_pre_encode(&wire_value, field_value);
+    field_pre_encode(&wire_value, field_value);
     
     Bitset new_bits;
     any_encode(&new_bits, wire_value);
     __encode_prepend_bits(new_bits, bits);
 }
 
-void goby::acomms::DCCLFieldCodecBase::base_encode_repeated(Bitset* bits,
+void goby::acomms::DCCLFieldCodecBase::field_encode_repeated(Bitset* bits,
                                                    const std::vector<boost::any>& field_values,
                                                    const google::protobuf::FieldDescriptor* field)
 {
     MessageHandler msg_handler(field);
 
     std::vector<boost::any> wire_values;
-    base_pre_encode_repeated(&wire_values, field_values);
+    field_pre_encode_repeated(&wire_values, field_values);
     
     Bitset new_bits;
     any_encode_repeated(&new_bits, wire_values);
@@ -89,10 +89,10 @@ void goby::acomms::DCCLFieldCodecBase::base_size(unsigned* bit_size,
 {
     *bit_size = 0;
     part_ = part;
-    base_size(bit_size, &msg, 0);
+    field_size(bit_size, &msg, 0);
 }
 
-void goby::acomms::DCCLFieldCodecBase::base_size(unsigned* bit_size,
+void goby::acomms::DCCLFieldCodecBase::field_size(unsigned* bit_size,
                                         const boost::any& field_value,
                                         const google::protobuf::FieldDescriptor* field)
 {
@@ -105,10 +105,10 @@ void goby::acomms::DCCLFieldCodecBase::base_run_hooks(const google::protobuf::Me
 {
     part_ = part;
     bool b = false;
-    base_run_hooks(&b, &msg, 0);
+    field_run_hooks(&b, &msg, 0);
 }
 
-void goby::acomms::DCCLFieldCodecBase::base_run_hooks(bool* b,
+void goby::acomms::DCCLFieldCodecBase::field_run_hooks(bool* b,
                                                       const boost::any& field_value,
                                                       const google::protobuf::FieldDescriptor* field)
 {
@@ -117,7 +117,7 @@ void goby::acomms::DCCLFieldCodecBase::base_run_hooks(bool* b,
 }
 
 
-void goby::acomms::DCCLFieldCodecBase::base_size_repeated(unsigned* bit_size,
+void goby::acomms::DCCLFieldCodecBase::field_size_repeated(unsigned* bit_size,
                                                   const std::vector<boost::any>& field_values,
                                                   const google::protobuf::FieldDescriptor* field)
 {
@@ -135,11 +135,11 @@ void goby::acomms::DCCLFieldCodecBase::base_decode(Bitset* bits,
     part_ = part;
 
     boost::any value(field_value);
-    base_decode(bits, &value, 0);
+    field_decode(bits, &value, 0);
 }
 
 
-void goby::acomms::DCCLFieldCodecBase::base_decode(Bitset* bits,
+void goby::acomms::DCCLFieldCodecBase::field_decode(Bitset* bits,
                                                    boost::any* field_value,
                                                    const google::protobuf::FieldDescriptor* field)
 {
@@ -157,7 +157,7 @@ void goby::acomms::DCCLFieldCodecBase::base_decode(Bitset* bits,
     BitsHandler bits_handler(&these_bits, bits);
 
     unsigned bits_to_transfer = 0;
-    base_min_size(&bits_to_transfer, field);
+    field_min_size(&bits_to_transfer, field);
     bits_handler.transfer_bits(bits_to_transfer);
     
     glog.is(debug2) && glog  << group(DCCLCodec::glog_decode_group()) << "... using these bits: " << these_bits << std::endl;
@@ -166,10 +166,10 @@ void goby::acomms::DCCLFieldCodecBase::base_decode(Bitset* bits,
     
     any_decode(&these_bits, &wire_value);
     
-    base_post_decode(wire_value, field_value);  
+    field_post_decode(wire_value, field_value);  
 }
 
-void goby::acomms::DCCLFieldCodecBase::base_decode_repeated(Bitset* bits,
+void goby::acomms::DCCLFieldCodecBase::field_decode_repeated(Bitset* bits,
                                                             std::vector<boost::any>* field_values,
                                                             const google::protobuf::FieldDescriptor* field)
 {
@@ -187,7 +187,7 @@ void goby::acomms::DCCLFieldCodecBase::base_decode_repeated(Bitset* bits,
     BitsHandler bits_handler(&these_bits, bits);
     
     unsigned bits_to_transfer = 0;
-    base_min_size(&bits_to_transfer, field);
+    field_min_size(&bits_to_transfer, field);
     bits_handler.transfer_bits(bits_to_transfer);
     
     
@@ -197,7 +197,7 @@ void goby::acomms::DCCLFieldCodecBase::base_decode_repeated(Bitset* bits,
     std::vector<boost::any> wire_values = *field_values;
     any_decode_repeated(&these_bits, &wire_values);
     
-    base_post_decode_repeated(wire_values, field_values);
+    field_post_decode_repeated(wire_values, field_values);
 }
 
 
@@ -215,10 +215,10 @@ void goby::acomms::DCCLFieldCodecBase::base_max_size(unsigned* bit_size,
     else
         throw(DCCLException("Max Size called with NULL Descriptor"));
     
-    base_max_size(bit_size, static_cast<google::protobuf::FieldDescriptor*>(0));
+    field_max_size(bit_size, static_cast<google::protobuf::FieldDescriptor*>(0));
 }
 
-void goby::acomms::DCCLFieldCodecBase::base_max_size(unsigned* bit_size,
+void goby::acomms::DCCLFieldCodecBase::field_max_size(unsigned* bit_size,
                                                          const google::protobuf::FieldDescriptor* field)
 {
     MessageHandler msg_handler(field);
@@ -245,10 +245,10 @@ void goby::acomms::DCCLFieldCodecBase::base_min_size(unsigned* bit_size,
     else
         throw(DCCLException("Min Size called with NULL Descriptor"));
 
-    base_min_size(bit_size, static_cast<google::protobuf::FieldDescriptor*>(0));
+    field_min_size(bit_size, static_cast<google::protobuf::FieldDescriptor*>(0));
 }
 
-void goby::acomms::DCCLFieldCodecBase::base_min_size(unsigned* bit_size,
+void goby::acomms::DCCLFieldCodecBase::field_min_size(unsigned* bit_size,
                                                          const google::protobuf::FieldDescriptor* field)
     
 {
@@ -273,11 +273,11 @@ void goby::acomms::DCCLFieldCodecBase::base_validate(const google::protobuf::Des
         throw(DCCLException("Validate called with NULL Descriptor"));
 
     bool b = false;
-    base_validate(&b, static_cast<google::protobuf::FieldDescriptor*>(0));
+    field_validate(&b, static_cast<google::protobuf::FieldDescriptor*>(0));
 }
 
 
-void goby::acomms::DCCLFieldCodecBase::base_validate(bool* b,
+void goby::acomms::DCCLFieldCodecBase::field_validate(bool* b,
                                                      const google::protobuf::FieldDescriptor* field)
 {
     MessageHandler msg_handler(field);
@@ -298,11 +298,11 @@ void goby::acomms::DCCLFieldCodecBase::base_info(std::ostream* os, const google:
     else
         throw(DCCLException("info called with NULL Descriptor"));
 
-    base_info(os, static_cast<google::protobuf::FieldDescriptor*>(0));
+    field_info(os, static_cast<google::protobuf::FieldDescriptor*>(0));
 }
 
 
-void goby::acomms::DCCLFieldCodecBase::base_info(std::ostream* os,
+void goby::acomms::DCCLFieldCodecBase::field_info(std::ostream* os,
                                                  const google::protobuf::FieldDescriptor* field)
 {
     MessageHandler msg_handler(field);
@@ -331,8 +331,8 @@ void goby::acomms::DCCLFieldCodecBase::base_info(std::ostream* os,
     if(variable_size())
     {
         unsigned max_sz = 0, min_sz = 0;
-        base_max_size(&max_sz, field);
-        base_min_size(&min_sz, field);
+        field_max_size(&max_sz, field);
+        field_min_size(&min_sz, field);
         if(max_sz != min_sz)
         {
             s += ":: min size = " + goby::util::as<std::string>(min_sz) + " bit(s)\n"
@@ -347,7 +347,7 @@ void goby::acomms::DCCLFieldCodecBase::base_info(std::ostream* os,
     else
     {
         unsigned sz = 0;
-        base_max_size(&sz, field);
+        field_max_size(&sz, field);
         if(!sz) is_zero_size = true;
         s += ":: size = " + goby::util::as<std::string>(sz) + " bit(s)";
     }
@@ -445,7 +445,7 @@ void goby::acomms::DCCLFieldCodecBase::any_run_hooks(const boost::any& field_val
             try
             {
                 boost::any wire_value;
-                base_pre_encode(&wire_value, field_value);
+                field_pre_encode(&wire_value, field_value);
                 
                 i->second->operator()(field_value, wire_value, extension_value);   
                 glog.is(debug2) && glog  << "Found : " << i->first << ": " << extension_desc->DebugString() << std::endl;

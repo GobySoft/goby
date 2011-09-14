@@ -1,1 +1,2 @@
 add_subdirectory(dccl_simple)
+add_subdirectory(two_message)

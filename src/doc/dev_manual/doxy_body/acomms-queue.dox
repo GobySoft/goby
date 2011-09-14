@@ -65,7 +65,7 @@ This section gives a brief outline of the tag structure of an XML file for defin
 
 \subsection queue_manager_instantiate Instantiate and configure
 
-The goby::acomms::QueueManager is configured similarly to the goby::acomms::DCCLCodec. You need to add queues to the \link queue.proto goby::acomms::protobuf::QueueManagerConfig \endlink which is done by feeding it either XML files or \link queue.proto goby::acomms::protobuf::QueueConfig \endlink objects. You also need to set a unique identification number in the range 1-31 for this platform (the "modem_id"). This is analogous to a MAC address.
+The goby::acomms::QueueManager is configured similarly to the goby::acomms::DCCLCodec. You need to add queues to the \link acomms_queue.proto goby::acomms::protobuf::QueueManagerConfig \endlink which is done by feeding it either XML files or \link acomms_queue.proto goby::acomms::protobuf::QueueConfig \endlink objects. You also need to set a unique identification number in the range 1-31 for this platform (the "modem_id"). This is analogous to a MAC address.
 
 \code
 goby::acomms::QueueManager q_manager(&std::clog);
@@ -89,13 +89,13 @@ Then, you need to do a few more initialization chores:
 <li> Additional advanced features
 <ul>
 <li> Connect a slot to learn every time a %queue size changes due to a new message being pushed or a message being sent: goby::acomms::QueueManager::signal_queue_size_change
-<li> Request that a %queue be <i>on_demand</i>, that is, request data from the application layer every time the %modem layer requests data (DCCL messages only). This effectively bypasses the %queue and forwards the modem's data request to the application layer. Use this for sending highly time sensitive data which needs to be encoded immediately prior to sending. Set the \link xml_config.proto ON_DEMAND manipulator \endlink for that particular XML file in \link queue.proto goby::acomms::protobuf::QueueManagerConfig \endlink. You must also connect a slot that will be executed each time data is request to the signal goby::acomms::QueueManager::signal_data_on_demand.
+<li> Request that a %queue be <i>on_demand</i>, that is, request data from the application layer every time the %modem layer requests data (DCCL messages only). This effectively bypasses the %queue and forwards the modem's data request to the application layer. Use this for sending highly time sensitive data which needs to be encoded immediately prior to sending. Set the \link xml_config.proto ON_DEMAND manipulator \endlink for that particular XML file in \link acomms_queue.proto goby::acomms::protobuf::QueueManagerConfig \endlink. You must also connect a slot that will be executed each time data is request to the signal goby::acomms::QueueManager::signal_data_on_demand.
 </ul>
 </ul>
 
 \subsection queue_manager_operation Operation
 
-At this point the goby::acomms::QueueManager is ready to use. At the application layer, new messages are pushed to the queues for sending using goby::acomms::QueueManager::push_message. Each %queue is identified by a unique \link queue.proto goby::acomms::protobuf::QueueKey \endlink, which is simply the identification number of the %queue (\ref tag_id for DCCL queues or the decimal representation of the first byte of a CCL message) and the %queue type (\link queue.proto goby::acomms::protobuf::QUEUE_DCCL or goby::acomms::protobuf::QUEUE_CCL \endlink).
+At this point the goby::acomms::QueueManager is ready to use. At the application layer, new messages are pushed to the queues for sending using goby::acomms::QueueManager::push_message. Each %queue is identified by a unique \link acomms_queue.proto goby::acomms::protobuf::QueueKey \endlink, which is simply the identification number of the %queue (\ref tag_id for DCCL queues or the decimal representation of the first byte of a CCL message) and the %queue type (\link acomms_queue.proto goby::acomms::protobuf::QUEUE_DCCL or goby::acomms::protobuf::QUEUE_CCL \endlink).
 
 At the driver layer, messages are requested using goby::acomms::QueueManager::handle_modem_data_request, incoming messages are published using goby::acomms::QueueManager::handle_modem_receive, and acknowledgements are given using goby::acomms::QueueManager::handle_modem_ack. If using the goby-acomms drivers (i.e. some class derived from goby::acomms::ModemDriverBase), simply call goby::acomms::bind (ModemDriverBase&, QueueManager&) and these methods (slots) will be invoked automatically from the proper driver signals.
 
@@ -238,6 +238,6 @@ You must run goby::acomms::QueueManager::do_work() regularly (faster than 1 Hz; 
 </message_set>
 \endcode
 
-\b Description: Represents the XML embodiment of the \link queue.proto goby::acomms::protobuf::QueueConfig \endlink.
+\b Description: Represents the XML embodiment of the \link acomms_queue.proto goby::acomms::protobuf::QueueConfig \endlink.
 
 */

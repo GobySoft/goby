@@ -4,25 +4,24 @@ message DCCLFieldOptions
   optional string codec = 1 [default = "_default"];
   // leave this field out of DCCL tranmissions (has_field() will be false on receipt)
   optional bool omit = 2 [default = false];
-  // set true for fields in the header (will *not* be encrypted)
+  // set true for fields in the header (will *not* be encrypte)d
   optional bool in_head = 3 [default = false];
   
   
   // double, float
   optional int32 precision = 4 [default = 0];
   // int, double, float
-  optional double min = 5;
-  optional double max = 6;
-  optional double max_delta = 7;
+  optional double min = 5 [default = 0];
+  optional double max = 6 [default = 0];
 
   // static
-  optional string static_value = 8;
+  optional string static_value = 8 [default = ""];
   
   // string, bytes
-  optional uint32 max_length = 9;  
+  optional uint32 max_length = 9 [default = 0];  
 
   // any `repeated` field
-  optional uint32 max_repeat = 10;
+  optional uint32 max_repeat = 10 [default = 0];
 }
 
 message DCCLMessageOptions

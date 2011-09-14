@@ -6,29 +6,66 @@
 // You should have received a copy of the GNU General Public License
 // along with this software (see goby/COPYING).  If not, see <http://www.gnu.org/licenses/>.
 
-/*! \page acomms_dccl goby-acomms: libdccl (Dynamic Compact Control Language)
+/*! \page acomms_dccl goby-acomms: DCCL (Dynamic Compact Control Language)
 
 Table of contents for libdccl:
 <ul>
 <li> \ref dccl_designing
-<li> \ref dccl_tags
 <li> \ref dccl_codec
+<li> \ref dccl_options
 <li> \ref dccl_how
 <li> \ref dccl_encrypt
-<li> \ref dccl_tags_details
 </ul>
 
 Return to \ref acomms.
 
 \section dccl_designing Designing a message
 
+DCCL uses the Google Protocol Buffers (Protobuf) language to define messages. DCCL specific components are defined as extensions to the Protobuf language <a href="http://code.google.com/apis/protocolbuffers/docs/proto.html#options">message and field options</a>. You should familiarize yourself with basic Protobuf using before reading the rest of this document: see \ref protobuf and <http://code.google.com/apis/protocolbuffers/docs/overview.html>. 
+
 <b>Scenario 1: Send a string command to a vehicle</b>: 
 
-We need to send an ASCII string command to an underwater vehicle. We thus make the \ref tag_layout section of the message contain a single message variable, a \ref tag_string. We know that a string uses a byte for each character and DCCL uses six header bytes (CCL id, DCCL id, time, src, dest, flags), making the \ref tag_max_length of our string 26 (32-6). We need some sort of name for our string to use internally when encoding and decoding this message, so we'll use \ref tag_name of "s_key" to stand for "string key".
+We need to send an ASCII string command to an underwater vehicle. We thus make a Protobuf message with a single string field (let's call it "telegram") to hold our command:
 
-We want to have the ability to use the lowest rate WHOI Micro-Modem message size, so we pick \ref tag_size to be 32. We have no other DCCL messages currently in the system so we start with an \ref tag_id of 1. Since this is a simple case we choose a "Simple" for our \ref tag_name.
+\verbatim
+message Simple
+{  
+  required string telegram = 1;
+}
+\endverbatim
 
-See \ref libdccl/examples/dccl_simple/dccl_simple.cpp "dccl_simple.cpp" for the final result (simple.xml) and for an example of how to use this message.
+The "= 1" indicates that this is the first field on the wire in our DCCL message. All fields must have a unique index, but otherwise these index values are not particularly important. "required" means a valid "Simple" message always contains something for "telegram" (could be an empty string).
+
+To turn this Protobuf message into a DCCL message, we need to add a few options. All the options are defined in option_extensions.proto so we include that:
+
+\verbatim
+import "goby/protobuf/option_extensions.proto";
+
+message Simple
+{  
+  required string telegram = 1;
+}
+\endverbatim
+
+At a minimum we must give a unique ID for our DCCL message and a maximum number of bytes we allow the message to be before throwing an exception when it is loaded. This allows us to ensure that we are not creating messages larger than we can send with the physical hardware. We want to have the ability to use the lowest rate WHOI Micro-Modem message size, so we pick max_bytes to be 32. We have no other DCCL messages currently in the system so we start with an id of 1. After these additions we have:
+
+\verbatim
+import "goby/protobuf/option_extensions.proto";
+
+message Simple
+{  
+  option (goby.msg).dccl.id = 1;
+  option (goby.msg).dccl.max_bytes = 32;
+
+  required string telegram = 1;
+}
+\endverbatim
+
+Finally, we need to pick an encoder/decoder (codec) for each field in our message. DCCL comes with defaults for all the Protobuf types. So if we don't specifically list a codec for a given field, the default is used. The default "string" codec is goby::acomms::DCCLDefaultStringCodec and is variable length. It uses one byte to list the length of the string and then up to 255 bytes to hold the contents. To ensure we stay within our bounds for the entire message (<tt>(goby.msg).dccl.max_bytes = 32</tt>), we have to give a maximum allowed length for a string when using the DCCLDefaultStringCodec (<tt>(goby.field).dccl.max_length</tt>). 
+
+\include acomms/dccl/dccl_simple/simple.proto
+
+See \ref acomms/dccl/dccl_simple/dccl_simple.cpp "dccl_simple.cpp" for the final result (simple.proto) and for an example of how to use this message.
 
 <b>Scenario 2: Send a more realistic command and receive a status message from the vehicle</b>:
 
@@ -44,25 +81,25 @@ We want to be able to command our vehicle (to which we have assigned an ID numbe
   <tr>
     <td>dest_id</td>
     <td>id number of the vehicle we are commanding</td>
-    <td>integer</td>
-    <td>built into the header [0, 31]</td>
+    <td>int32</td>
+    <td>[0, 31]</td>
   </tr>
   <tr>
     <td>goto_x</td>
     <td>meters east to transit from datum</td>
-    <td>integer</td>
+    <td>int32</td>
     <td>[0, 10000]</td>
   </tr>
   <tr>
     <td>goto_y</td>
     <td>meters north to transit from datum</td>
-    <td>integer</td>
+    <td>int32</td>
     <td>[0, 10000]</td>
   </tr>
   <tr>
     <td>lights_on</td>
     <td>turn on the lights?</td>
-    <td>boolean</td>
+    <td>bool</td>
     <td></td>
   </tr>
   <tr>
@@ -79,11 +116,11 @@ We want to be able to command our vehicle (to which we have assigned an ID numbe
   </tr>
 </table>
 
-Taking all this into account, we form the \ref tag_layout section of the first message (named GoToCommand) in the file two_message.xml (see \ref libdccl/examples/two_message/two_message.cpp "two_message.cpp").
+Taking all this into account, we form the first message (named GoToCommand) in the file two_message.proto (see \ref acomms/dccl/two_message/two_message.cpp "two_message.cpp").
 
-We choose \ref tag_id of 2 to avoid conflicting with the message from Scenario 1 (simple.xml) and a \ref tag_size of 32 bytes to again allow sending in the WHOI Micro-Modem rate 0 packet.
+We choose a <tt>dccl.id</tt> of 2 to avoid conflicting with the message from Scenario 1 (simple.proto) and a <tt>dccl.max_bytes</tt> of 32 bytes to again allow sending in the WHOI Micro-Modem rate 0 packet.
 
-Now, for the second message in two_message.xml. We want to receive the vehicle's present position and its current health, which can either be "good", "low_battery" or "abort". We make a similar table to before:
+Now, for the second message in two_message.proto. We want to receive the vehicle's present position and its current health, which can either be "good", "low_battery" or "abort". We make a similar table to before:
 
 <table border=1>
   <tr>
@@ -112,281 +149,217 @@ Now, for the second message in two_message.xml. We want to receive the vehicle's
   </tr>
 </table>
 
-The resulting message, along with an example of how to use it, can be seen here: \ref libdccl/examples/two_message/two_message.cpp "two_message.cpp".
+The resulting message, along with an example of how to use it, can be seen here: \ref acomms/dccl/two_message/two_message.cpp "two_message.cpp".
 
-You can run <tt>analyze_dccl_xml</tt> to view more information on your messages:
+You can run <tt>analyze_dccl</tt> to view more information on your messages:
 \code
-> analyze_dccl_xml /path/to/two_message.xml
+> analyze_dccl /path/to/two_message.proto
 \endcode
- When I ran the above command I got (omitting parts of the header we're not using to save space):
+ When I ran the above command I got:
 
 \verbatim
-creating DCCLCodec using xml file: [examples/two_message/two_message.xml] and schema: [../../message_schema.xsd]
-schema must be specified with an absolute path or a relative path to the xml file location (not pwd!)
-parsed file ok!
-##############################
-detailed message summary:
-##############################
-********************
-message 2: {GoToCommand}
-requested size {bytes} [bits]: {32} [256]
-actual size {bytes} [bits]: {21} [167]
->>>> HEADER <<<<
-	destination (int):
-		size [bits]: [5]
-		[min, max] = [0,31]
->>>> LAYOUT (message_vars) <<<<
-	type (static):
-		size [bits]: [0]
-		value: "goto"
-	goto_x (int):
-		size [bits]: [14]
-		[min, max] = [0,10000]
-	goto_y (int):
-		size [bits]: [14]
-		[min, max] = [0,10000]
-	lights_on (bool):
-		size [bits]: [2]
-	new_instructions (string):
-		size [bits]: [80]
-	goto_speed (float):
-		size [bits]: [9]
-		[min, max] = [0,3]
-		precision: {2}
-********************
-********************
-message 3: {VehicleStatus}
-requested size {bytes} [bits]: {32} [256]
-actual size {bytes} [bits]: {11} [84]
->>>> LAYOUT (message_vars) <<<<
-	nav_x (float):
-		size [bits]: [17]
-		[min, max] = [0,10000]
-		precision: {1}
-	nav_y (float):
-		size [bits]: [17]
-		[min, max] = [0,10000]
-		precision: {1}
-	health (enum):
-		size [bits]: [2]
-		values:{good,low_battery,abort}
-********************
+read in: /home/toby/goby/2.0-rework-modem-messaging/share/examples/acomms/dccl/two_message/two_message.proto
+=== Begin DCCLCodec ===
+2 messages loaded.
+== Begin GoToCommand ==
+Actual maximum size of message: 18 bytes / 144 bits [dccl.id head: 8, user head: 0, body: 131, padding: 5]
+Allowed maximum size of message: 32 bytes / 256 bits
+= Header =
+= Body =
+GoToCommand
+ required int32 destination = 1;
+ :: size = 5 bit(s)
+ required int32 goto_x = 3;
+ :: size = 14 bit(s)
+ required int32 goto_y = 4;
+ :: size = 14 bit(s)
+ required bool lights_on = 5;
+ :: size = 1 bit(s)
+ required string new_instructions = 6;
+ :: min size = 8 bit(s)
+ :: max size = 88 bit(s)
+ required double goto_speed = 7;
+ :: size = 9 bit(s)
+:: min size = 51 bit(s)
+:: max size = 131 bit(s)
+== End GoToCommand ==
+== Begin VehicleStatus ==
+Actual maximum size of message: 6 bytes / 48 bits [dccl.id head: 8, user head: 0, body: 36, padding: 4]
+Allowed maximum size of message: 32 bytes / 256 bits
+= Header =
+= Body =
+VehicleStatus
+ required double nav_x = 1;
+ :: size = 17 bit(s)
+ required double nav_y = 2;
+ :: size = 17 bit(s)
+ required .VehicleStatus.HealthEnum health = 3;
+ :: size = 2 bit(s)
+:: size = 36 bit(s)
+== End VehicleStatus ==
+=== End DCCLCodec ===
 \endverbatim
 
-Besides validity checking, the most useful feature of <tt>analyze_dccl_xml</tt> is the calculation of the size (in bits) of each message variable. This lets you see which fields in the message are too big. To make fields smaller, tighten up bounds (depending on the type, increase \ref tag_min, decrease \ref tag_max, decrease \ref tag_precision, decrease \ref tag_max_length, decrease \ref tag_num_bytes, or decrease the number of \ref tag_enum \ref tag_value options).
+Besides validity checking, the most useful feature of <tt>analyze_dccl</tt> is the calculation of the size (in bits) of each message variable. This lets you see which fields in the message are too big. To make fields smaller, tighten up bounds.
 
+\section dccl_options DCCL Options
 
-\section dccl_tags DCCL tag structure
+This section gives an overview of the DCCL message and field options available for use with DCCL and the default field codecs. The full list is available in acomms_option_extensions.proto.
 
-This section gives a brief outline of the tag structure of an XML file for defining a DCCL message. See \ref dccl_tags_details for a full description of each tag.
+DCCL message options:
 
-DCCL root tags:
-
-<ul>
-<li> \xmltag{?xml version="1.0" encoding="UTF-8"?}: specifies that the file is XML; must be the first line of every message XML file.
-<li> \ref tag_message_set
-<ul>
-<li> \ref tag_message
-</ul>
-</ul>
-
-Children of \ref tag_message needed for normal goby::acomms::DCCLCodec::encode and goby::acomms::DCCLCodec::decode:
-
-<ul>
-<li> \ref tag_message
-<ul>
-<li> \ref tag_name
-<li> \ref tag_id
-<li> \ref tag_size
-<li> \ref tag_repeat
-<li> \ref tag_header
-<ul>
-<li> \ref tag_time
-<ul>
-<li> \ref tag_name
-</ul>
-<li> \ref tag_src_id
-<ul>
-<li> \ref tag_name
-</ul>
-<li> \ref tag_dest_id
-<ul>
-<li> \ref tag_name
-</ul>
-</ul>
-<li> \ref tag_layout
-<ul>
-<li> \ref tag_static
-<ul>
-<li> \ref tag_name
-<li> \ref tag_value
-</ul>
-<li> \ref tag_bool
-<ul>
-<li> \ref tag_name
-<li> \ref tag_array_length
-</ul>
-<li> \ref tag_int
-<ul>
-<li> \ref tag_name
-<li> \ref tag_max
-<li> \ref tag_min
-<li> \ref tag_array_length
-<li> \ref tag_max_delta
-</ul>
-<li> \ref tag_float
-<ul>
-<li> \ref tag_name
-<li> \ref tag_max
-<li> \ref tag_min
-<li> \ref tag_precision
-<li> \ref tag_array_length
-<li> \ref tag_max_delta
-</ul>
-<li> \ref tag_string
-<ul>
-<li> \ref tag_name
-<li> \ref tag_max_length
-<li> \ref tag_array_length
-</ul>
-<li> \ref tag_enum
-<ul>
-<li> \ref tag_name
-<li> \ref tag_value
-<li> \ref tag_array_length
-</ul>
-<li> \ref tag_hex
-<ul>
-<li> \ref tag_name
-<li> \ref tag_num_bytes
-<li> \ref tag_array_length
-</ul>
-</ul>
-</ul>
-</ul>
-
-Children of \ref tag_message needed (in addition to those above) for publish/subscribe architecture methods goby::acomms::DCCLCodec::pubsub_encode and goby::acomms::DCCLCodec::pubsub_decode (these tags are ignored for calls to goby::acomms::DCCLCodec::encode and goby::acomms::DCCLCodec::decode):
-
-<ul>
-<li> \ref tag_message
-<ul>
-<li> \ref tag_header
-<ul>
-<li> \ref tag_src_id, \ref tag_dest_id, or \ref tag_time
-<ul>
-<li> \ref tag_src_var
-</ul>
-</ul>
-<li> \ref tag_layout
-<ul>
-<li> \ref tag_int, \ref tag_hex, \ref tag_string, \ref tag_float, \ref tag_enum, or \ref tag_bool
-<ul>
-<li> \ref tag_src_var
-</ul>
-</ul>
-<li> \ref tag_trigger
-<li> \ref tag_trigger_var
-<li> \ref tag_trigger_time
-<li> \ref tag_on_receipt
-<ul>
-<li> \ref tag_publish
-<ul>
-<li> \ref tag_publish_var
-<li> \ref tag_format
-<li> \ref tag_message_var
-<li> \ref tag_all
-</ul>
-</ul>
-</ul>
-</ul>
-
-\section dccl_codec Interacting with the DCCLCodec
-
-Using the goby::acomms::DCCLCodec is a fairly straightforward endeavor. First you need to instantiate a copy of this object with the configuration you want (including the XML files you want to be able to use):
-
-\code
-goby::acomms::DCCLCodec dccl(&std::clog);    
-goby::acomms::protobuf::DCCLConfig cfg;
-cfg.add_message_file()->set_path("path/to/file.xml");
-cfg.set_modem_id(1); // unique id 1-31 for each platform
-dccl.set_cfg(cfg);
-\endcode
-
-Then, to encode a message, fill up std::maps of dccl::MessageVal where the key of the map (i.e. the \texttt{it->first} if \texttt{it} is the map iterator) is the \ref tag_name of each message variable, and the value (\texttt{it->second}) is the quantity you wish to encode. All reasonable type conversions will be made by DCCL using dccl::MessageVal (doubles to \ref tag_int, for example), but the most predictable (and fastest) results will be gained by using the following mapping between DCCL message variable types and C++ types:
-
-\anchor dccl_cpp_types_table
 <table border=1>
   <tr>
-    <td><strong>DCCL Message Variable Type</strong></td>
-    <td><strong>C++ Type</strong></td>
-    <td><strong>Example</strong></td>
+    <td><strong>name</strong></td>
+    <td><strong>type</strong></td>
+    <td><strong>default</strong></td>
+    <td><strong>description</strong></td>
   </tr>
   <tr>
-    <td>\ref tag_int</td>
-    <td>long</td>
-    <td>421</td>
+    <td>id</td>
+    <td>uint32</td>
+    <td><i>required</i></td>
+    <td>A unique ID for each DCCL message</td>
   </tr>
   <tr>
-    <td>\ref tag_float</td>
-    <td>double</td>
-    <td>42.1</td>
+    <td>max_bytes</td>
+    <td>uint32</td>
+    <td><i>required</i></td>
+    <td>Maximum allowed size in bytes for the encoded message</td>
   </tr>
   <tr>
-    <td>\ref tag_hex</td>
-    <td>std::string</td>
-    <td>"abc23" or "ABC23" (case does not matter)</td>
-  </tr>
-  <tr>
-    <td>\ref tag_enum</td>
-    <td>std::string</td>
-    <td>"ON" (case matters, this will not match \xmltag{value,on}, but will match \xmltag{value,ON})</td>
-  </tr>
-  <tr>
-    <td>\ref tag_string</td>
-    <td>std::string</td>
-    <td>"i am hungry" (case matters, string cannot contain any null characters in the middle, i.e. '\\0')</td>
-  </tr>
-  <tr>
-    <td>\ref tag_bool</td>
-    <td>bool</td>
-    <td>true</td>
+    <td>codec</td>
+    <td>string</td>
+    <td>"_default"</td>
+    <td>Name of the codec to use for encoding the base message (add more codecs with goby::acomms::DCCLFieldCodecManager::add())</td>
   </tr>
 </table>
 
-After filling up the std::maps, pass pointers to the maps to goby::acomms::DCCLCodec::encode along with a reference to a string in which to store the result:
+
+DCCL field options:
+
+<table border=1>
+  <tr>
+    <td><strong>name</strong></td>
+    <td><strong>type</strong></td>
+    <td><strong>default</strong></td>
+    <td><strong>required for codecs</strong></td>
+    <td><strong>description</strong></td>
+  </tr>
+  <tr>
+    <td>codec</td>
+    <td>string</td>
+    <td>"_default"</td>
+    <td>optional</td>
+    <td>Name of the codec to use for encoding this field</td>
+  </tr>
+  <tr>
+    <td>omit</td>
+    <td>bool</td>
+    <td>false</td>
+    <td>optional</td>
+    <td>Omit this field from all DCCL encoding (has_field() will be false on receipt)</td>
+  </tr>
+  <tr>
+    <td>in_head</td>
+    <td>bool</td>
+    <td>false</td>
+    <td>optional</td>
+    <td>Set true for fields in the header (will <i>not</i> be encrypted, rather will be used to create the encrytion IV).</td>
+  </tr>
+  <tr>
+    <td>precision</td>
+    <td>int32</td>
+    <td>0</td>
+    <td>goby::acomms::DCCLDefaultArithmeticFieldCodec (double, float)</td>
+    <td>Number of decimal digits of precision to keep (can be negative).</td>
+  </tr>
+  <tr>
+    <td>min</td>
+    <td>double</td>
+    <td>0</td>
+    <td>goby::acomms::DCCLDefaultArithmeticFieldCodec (double, float, int32, uint32, int64, uint64, fixed32, fixed64, sfixed32, sfixed64)</td>
+    <td>Minimum value that can be encoded in this field.</td>
+  </tr>
+  <tr>
+    <td>max</td>
+    <td>double</td>
+    <td>0</td>
+    <td>goby::acomms::DCCLDefaultArithmeticFieldCodec (double, float, int32, uint32, int64, uint64, fixed32, fixed64, sfixed32, sfixed64)</td>
+    <td>Maximum value that can be encoded in this field.</td>
+  </tr>
+  <tr>
+    <td>static_value</td>
+    <td>string</td>
+    <td>""</td>
+    <td>goby::acomms::DCCLStaticCodec (any type)</td>
+    <td>The static value for use on decoding this placeholder field.</td>
+  </tr>
+  <tr>
+    <td>max_length</td>
+    <td>uint32</td>
+    <td>0</td>
+    <td>goby::acomms::DCCLDefaultStringCodec, goby::acomms::DCCLDefaultBytesCodec (string)</td>
+    <td>The maximum length of the string that can be stored in this field.</td>
+  </tr>
+  <tr>
+    <td>max_repeat</td>
+    <td>uint32</td>
+    <td>0</td>
+    <td>any `repeated` field</td>
+    <td>The maximum length of the `repeated` array (or vector).</td>
+  </tr>
+</table>
+
+\section dccl_codec Interacting with the DCCLCodec
+
+Using the goby::acomms::DCCLCodec is a fairly straightforward endeavor (this example uses \ref acomms/dccl/dccl_simple/dccl_simple.cpp "dccl_simple.cpp"). First you need to get a pointer to the DCCLCodec singleton:
 
 \code
-std::map<std::string, dccl::MessageVal> vals;
+goby::acomms::DCCLCodec* codec = goby::acomms::DCCLCodec::get();
+\endcode
 
-// code to insert values into map
-// ...
-//
+Validate all messages with the DCCLCodec to ensure all bounding constraints are met:
 
-// store the result here, using the string as a byte container
+\code 
+try 
+{
+  dccl->validate<Simple>();
+}
+catch(DCCLException& e)
+{
+  std::cerr << "Oh no! " << e << std::endl;
+  exit(1);
+}
+\endcode
+
+Then, to encode a message, create a Protobuf message, set its fields and pass it to goby::acomms::DCCLCodec::encode():
+
+\code
+Simple message;
+message.set_telegram("hello");
 std::string bytes;
-
-dccl.encode(id, bytes, vals);
+dccl->encode(&bytes, message);
 \endcode
 
 \texttt{bytes} will now contain the encoded message in the form of a byte string (each char will contain a single byte of the message).
 
-You may now send this message through whatever channel you would like, or pass it to the goby::acomms::QueueManager to queue for sending later.
+You may now send this message through whatever channel you would like.
 
-To decode a message (stored in \texttt{bytes} as a byte string), simply pass hex as a reference along with pointers to the maps to store the results. Based on the maps you provide, values will be cast and stored as the best fit. 
+To decode a message (stored in \texttt{bytes} as a byte string), simply pass bytes as a reference along with pointers to the Protobuf message to store the results.
 
 \code
-std::map<std::string, std::string> vals;
-
-dccl.decode(1, bytes, vals);
+message.Clear();
+dccl->decode(bytes, &message);
 \endcode
 
 For line by line interaction with the goby::acomms::DCCLCodec and for advanced use, investigate the code examples given in the Examples column of this \ref OSI_table "table".
 
 \section dccl_encrypt Encryption
 
-Encryption of all messages can be enabled by providing a secret passphrase to the \link dccl.proto goby::acomms::protobuf::DCCLConfig \endlink object passed to goby::acomms::DCCLCodec::set_cfg(). All parties to the communication must have the same secret key. 
+Encryption of all messages can be enabled by providing a secret passphrase to the \link acomms_dccl.proto goby::acomms::protobuf::DCCLConfig \endlink object passed to goby::acomms::DCCLCodec::set_cfg(). All parties to the communication must have the same secret key. 
 
-DCCL provides AES (Rijndael) encryption for the body (\ref tag_layout) of the message. The header, which is sent in plain text, is hashed to form an initialization vector (IV), and the passphrase is hashed using SHA-256 to form the cipher key. 
+DCCL provides AES (Rijndael) encryption for the body (\ref tag_layout) of the message. The header, which is sent in plain text, is hashed to form an initialization vector (IV), and the passphrase is hashed using SHA-256 to form the cipher key. You will want to make sure the header (designate fields for the header with <tt>(goby.field).dccl.in_head = true</tt>) is a nonce by including a constantly changing value such as time.
 
 AES is considered secure and is used for United States top secret information.
 
@@ -620,7 +593,7 @@ Equivalent to \ref tag_message_var for all the \textit{message_var}s in the mess
 </message_set>
 \endverbatim
 
-\b Description: a boolean (true or false) \textit{message_var}  The optional parameter \texttt{algorithm} allows you to perform certain algorithms on the data before encoding. See libdccl/examples/test/test.cpp [optional, one or more allowed]. 
+\b Description: a boolean (true or false) \textit{message_var}  The optional parameter \texttt{algorithm} allows you to perform certain algorithms on the data before encoding. See dccl/examples/test/test.cpp [optional, one or more allowed]. 
 
 
 \subsection tag_dest_id <dest_id>

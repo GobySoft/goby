@@ -41,11 +41,11 @@ To get started using the goby-acomms libraries as quickly as possible:
   <li> Identify which components you need:</li>
   <ul>
     <li>Encoding and decoding from C++ types to bit-packed messages: \ref dccl "dccl".</li>
-    <li>Queuing of DCCL and CCL messages with priority based message selection: \ref queue "queue".</li>
+    <li>Queuing of DCCL messages with priority based message selection: \ref queue "queue".</li>
     <li>A driver for interacting with the acoustic %modem firmware: \ref driver "modemdriver".</li>
     <li>Time division multiple access (TDMA) medium access control (MAC): \ref amac "amac".</li>
   </ul> 
-  <li> Look at the "simple" code examples that accompany each library (\ref dccl/dccl_simple/dccl_simple.cpp "dccl_simple.cpp", \ref queue/queue_simple/queue_simple.cpp "queue_simple.cpp", \ref modemdriver/driver_simple/driver_simple.cpp "driver_simple.cpp",  \ref amac/amac_simple/amac_simple.cpp "amac_simple.cpp"). Then look at the example that uses all the libraries together: \ref acomms/chat/chat.cpp "chat.cpp".  The full list of examples is given in \ref OSI_table "this table". </li>
+  <li> Look at the "simple" code examples that accompany each component (\ref dccl/dccl_simple/dccl_simple.cpp "dccl_simple.cpp", \ref queue/queue_simple/queue_simple.cpp "queue_simple.cpp", \ref modemdriver/driver_simple/driver_simple.cpp "driver_simple.cpp",  \ref amac/amac_simple/amac_simple.cpp "amac_simple.cpp"). Then look at the example that uses all the components together: \ref acomms/chat/chat.cpp "chat.cpp".  The full list of examples is given in \ref OSI_table "this table". </li>
   <li> Refer to the rest of the documentation as needed.</li>
 </ol>
 
@@ -61,7 +61,7 @@ To start on some (hopefully) common ground, let's begin with an analogy to Open 
 <table border=1>
   <tr>
     <td><strong>OSI Layer</strong></td>
-    <td><strong>Goby library</strong></td>
+    <td><strong>Goby-Acomms library component</strong></td>
     <td><strong>\ref acomms_api "API class(es)" </strong></td>
     <td><strong>Example(s)</strong></td>
   </tr>
@@ -77,6 +77,7 @@ To start on some (hopefully) common ground, let's begin with an analogy to Open 
     <td>goby::acomms::DCCLCodec</td>
     <td>
       \ref acomms/dccl/dccl_simple/dccl_simple.cpp "dccl_simple.cpp" <br>
+      \ref acomms/dccl/two_message/two_message.cpp "two_message.cpp" <br>
       \ref acomms/chat/chat.cpp "chat.cpp" <br>
     </td>
   </tr>
@@ -90,7 +91,7 @@ To start on some (hopefully) common ground, let's begin with an analogy to Open 
     <td>\ref queue</td>
     <td>goby::acomms::QueueManager</td>
     <td>
-      \ref queue/queue_simple/queue_simple.cpp "queue_simple.cpp" <br>
+      \ref acomms/queue/queue_simple/queue_simple.cpp "queue_simple.cpp" <br>
       \ref acomms/chat/chat.cpp "chat.cpp" <br>
     </td>
   </tr>    
@@ -105,7 +106,7 @@ To start on some (hopefully) common ground, let's begin with an analogy to Open 
     <td>\ref driver</td>
     <td>classes derived from goby::acomms::ModemDriverBase; e.g. goby::acomms::MMDriver</td>
     <td>
-      \ref modemdriver/driver_simple/driver_simple.cpp "driver_simple.cpp" <br>
+      \ref acomms/modemdriver/driver_simple/driver_simple.cpp "driver_simple.cpp" <br>
       \ref acomms/chat/chat.cpp "chat.cpp" <br>
     </td>
   </tr>
@@ -114,7 +115,7 @@ To start on some (hopefully) common ground, let's begin with an analogy to Open 
     <td>\ref amac</td>
     <td>goby::acomms::MACManager</td>
     <td>
-      \ref amac/amac_simple/amac_simple.cpp "amac_simple.cpp" <br>
+      \ref acomms/amac/amac_simple/amac_simple.cpp "amac_simple.cpp" <br>
       \ref acomms/chat/chat.cpp "chat.cpp" <br>
     </td>
   </tr>
@@ -122,7 +123,7 @@ To start on some (hopefully) common ground, let's begin with an analogy to Open 
     <td>Physical</td>
     <td>Not part of Goby</td>
     <td></td>
-    <td>Modem Firmware, e.g. WHOI Micro-Modem Firmware (NMEA 0183 on RS-232) (see <a href="http://acomms.whoi.edu/documents/uModem\%20Software\%20Interface\%20Guide.pdf">Interface Guide</a>)</td>
+    <td>Modem Firmware, e.g. WHOI Micro-Modem Firmware (NMEA 0183 on RS-232) (see <a href="http://acomms.whoi.edu/documents/uModem%20Software%20Interface%20Guide.pdf">Interface Guide</a>)</td>
   </tr>
 </table>
 
@@ -133,13 +134,10 @@ Do not take the previous analogy too literally; some things we are doing here fo
 Extremely low throughput means that essentially every efficiency in bit packing messages to the smallest size possible is desirable. The traditional approach of layering (e.g. TCP/IP) creates inefficiencies as each layer wraps the message of the higher layer with its own header. See RFC3439 section 3 ("Layering Considered Harmful") for an interesting discussion of this issue <http://tools.ietf.org/html/rfc3439#page-7>. Thus, the "layers" of goby-acomms are more tightly interrelated than TCP/IP, for example. Higher layers depend on lower layers to carry out functions such as error checking and do not replicate this functionality. 
 
 \subsection why_prioritize Total throughput unrealistic: prioritize data
-The second major difference stemming from this bandwidth constraint is that <em> total throughput is often an unrealistic goal</em>. The quality of the acoustic channel varies widely from place to place, and even from hour to hour as changes in the sea affect propagation of sound. This means that it is also difficult to predict what one's throughput will be at any given time. These two considerations manifest themselves in the goby-acomms design as a priority based queueing system for the transport layer. Messages are placed in different queues based on their priority (which is determined by the designer of the message). This means that 
-<ul>
-  <li>the channel is always utilized (low priority data are sent when the channel quality is high)
-  <li>important messages are not swamped by low priority data
-</ul>
 
-In contrast, TCP/IP considers all packets equally. Packets made from a spam email are given the same consideration as a high priority email from the President. This is a tradeoff in efficiency versus simplicity that makes sense for EM networking, but does not for acoustic communications. 
+The second major difference stemming from this bandwidth constraint is that total throughput is often an unrealistic goal. The quality of the acoustic channel varies widely from place to place, and even from hour to hour as changes in the sea affect propagation of sound. This means that it is also difficult to predict what one's throughput will be at any given time. 
+
+These two considerations manifest themselves in the goby-acomms design as a priority based queuing system for the transport layer. Messages are placed in different queues based on their priority (which is determined by the designer of the message). This means that the channel is always utilized (low priority data are sent when the channel quality is high) but important messages are not swamped by low priority data. In contrast, TCP/IP considers all packets equally. Packets made from a spam email are given the same consideration as a high priority email from the President. This is a trade-off in efficiency versus simplicity that makes sense for EM networking, but does not for acoustic communications.
 
 \subsection simplicity Despite all this, simplicity is good
 The "law of diminishing returns" means that at some point, if we try to optimize excessively, we will end up making the system more complex without substantial gain. Thus, goby-acomms makes some concessions for the sake of simplicity:
@@ -151,7 +149,7 @@ The "law of diminishing returns" means that at some point, if we try to optimize
 
 \subsection acomms_overview_uml Component model
 
-A relatively simple component model for the goby-acomms libraries showing the \link acomms_api interface classes \endlink:
+A relatively simple component model for the goby-acomms library showing the \link acomms_api interface classes \endlink:
 \image html goby-acomms-overview.png
 \image latex goby-acomms-overview.eps "Basic overview of goby-acomms libraries."
 
@@ -159,40 +157,35 @@ For a more detailed model, see the \ref acomms_uml section.
 
 \section dccl dccl: Encoding and decoding
 
-Dynamic Compact Control Language (DCCL) provides a structure for defining messages to be sent through an acoustic %modem. The messages are configured in XML and are intended to be easily reconfigurable, unlike the original CCL framework used in the REMUS vehicles and others (for information on CCL, see <http://acomms.whoi.edu/ccl/>. DCCL can operate within a CCL network, as the most significant byte (or CCL ID) is 0x20. 
+Dynamic Compact Control Language (DCCL) provides a structure for defining messages to be sent through an acoustic %modem. The messages are configured in Google Protocol Buffers and are intended to be easily reconfigurable, unlike the original CCL framework used in the REMUS vehicles and others (for information on CCL, see <http://acomms.whoi.edu/ccl/>. 
 
-DCCL messages are packed based on boundaries determined with knowledge of the XML file. They are not self-describing as this would be prohibitively expensive in terms of data use. Thus, the sender and receiver must have a copy of the same XML file for decoding a given message. Also, each message is defined by an ID that must be unique with a network. 
+Unlike the encoder / decoder provided with Google Protocol Buffers, each field (which could be a primitive type like double, int32, string or an user-defined embedded message like CTDMessage) of a DCCL message can be encoded using a DCCL built-in or user-defined encoder. This allows the codecs to be matched to the data's physical origins and thus make the most of the limited throughput available by making very small encoded messages.
 
 Detailed documentation for \ref acomms_dccl.
 
 \section queue queue: Priority based message queuing
 
-The goby-acomms queuing library (queue) interacts with both the application level process that handles decoding (either through dccl or other CCL codecs) and the %modem driver process that talks directly to the %modem.
+The goby-acomms queuing (\c queue) component interacts with both the application level process that handles decoding (with \c dccl) and the modem driver process that talks directly to the modem.
 
-On the application side, queue provides the ability for the application level process to push (CCL or DCCL encoded) messages to various queues and receive messages from a remote sender that correspond to messages in the same %queue (e.g. you have a %queue for STATUS_MESSAGE that you can push messages to you and also receive other STATUS_MESSAGEs on). The push feature is called by the application level process and received messages are signaled to all previous bound slots (see \ref signal_slot).
+On the application side, \c queue provides the ability for the application level process to DCCL messages to various queues and receive messages from a remote sender that correspond to messages in the same %queue (e.g. you have a %queue for STATUS_MESSAGE that you can push messages to you and also receive other STATUS_MESSAGEs on). The push feature is called by the application level process and received messages are signaled to all previous bound slots (see \ref signal_slot).
 
-On the driver side, queue provides the %modem driver with data upon request. It chooses the data to send based on dynamic priorities (and several other configuration parameters). It will also pack several messages from the user into a single frame from the %modem to fully utilize space (e.g. if the %modem frame is 32 bytes and the user's data are in 16 byte DCCL messages, queue will pack two user frames for each %modem frame). This packing and unpacking is transparent to the application side user. Note, however, that queue will <em>not</em> split a user's data into frames (like TCP/IP). If this functionality is desired, it must be provided at the application layer. Acoustic communications are too unpredictable to reliably stitch together frames.
+On the driver side, \c queue provides the %modem driver with data upon request. It chooses the data to send based on dynamic priorities (and several other configuration parameters). It will also pack as many messages from the user into a single frame from the %modem as possible using the DCCLCodec's repeated encoding functionality. Note, however, that \c queue will <em>not</em> split a user's data into frames (like TCP/IP). If this functionality is desired, it must be provided at the application layer. Acoustic communications are too unpredictable to reliably stitch together frames.
 
 Detailed documentation for \ref acomms_queue.
 
 \section driver modemdriver: Modem driver
 
-The goby-acomms Modem driver library (modemdriver) provides an interface from the rest of goby-acomms to the acoustic %modem firmware. While currently the only driver available is for the WHOI Micro-Modem, this library is written in such a way that drivers for any acoustic %modem that interfaces over a serial connection and can provide (or provide abstractions for) sending data directly to another %modem on the link should be able to be written. Any one who is interested in writing a %modem driver for another acoustic %modem should get in touch with the goby project <https://launchpad.net/goby> and see \ref acomms_writedriver.
+The goby-acomms Modem driver component (\c modemdriver) of the Goby-Acomms library provides an interface from the rest of goby-acomms to the acoustic %modem firmware. While currently the only driver available is for the WHOI Micro-Modem (and for an example toy modem "ABCDriver"), this component is written in such a way that drivers for any acoustic %modem that interfaces over a serial or TCP connection and can provide (or provide abstractions for) sending data directly to another %modem on the link should be able to be written. Any one who is interested in writing a %modem driver for another acoustic %modem should get in touch with the goby project <https://launchpad.net/goby> and see \ref acomms_writedriver.
 
 Detailed documentation for \ref acomms_driver.
 
-
 \section amac amac: Medium Access Control (MAC)
 
-The goby-acomms MAC library (amac) handles access to the shared medium, in our case the acoustic channel. We assume that we have a single (frequency) band for transmission so that if vehicles transmit simultaneously, collisions will occur between messaging. Therefore, we use time division multiple access (TDMA) schemes, or "slotting". Networks with multiple frequency bands will have to employ a different MAC scheme or augment amac for the frequency division multiple access (FDMA) scenario.
+The goby-acomms MAC component (amac) handles access to the shared medium, in our case the acoustic channel. We assume that we have a single (frequency) band for transmission so that if vehicles transmit simultaneously, collisions will occur between messaging. Therefore, we use time division multiple access (TDMA) schemes, or "slotting". Networks with multiple frequency bands will have to employ a different MAC scheme or augment amac for the frequency division multiple access (FDMA) scenario.
 
-The MAC library provides two basic types of TDMA:
+The Goby AMAC provides two basic types of TDMA:
 <ul>
-<li>Decentralized: Each node initiates its own transaction at the appropriate time in the TDMA cycle. This requires reasonably well synchronized clocks (any skew must be included in the time of the slot as a guard, so skews of less than 0.1 seconds are generally acceptable.). Two variants on the decentralized type are provided:
-<ul>
-<li> Fixed: The cycle of which nodes send when is fixed and can only be changed by updating all the nodes manually.
-<li> Auto-discovery: Basic peer discovery and subsequent expiry of peers after a long time of silence. Allows for more flexibility of operations.
-</ul>
+<li>Decentralized: Each node initiates its own transaction at the appropriate time in the TDMA cycle. This requires reasonably well synchronized clocks (any skew must be included in the time of the slot as a guard, so skews of less than 0.1 seconds are generally acceptable.).
 <li>Centralized (also called "polling"): For legacy support, "polling" is also provided. This is a TDMA enforced by a central computer (the "poller"). The "poller" sends a request for data from a list of nodes in sequential order. The advantage of polling is that synchronous clocks are not needed and the MAC scheme can be changed on short notice by the topside operator. Clearly this only works with modem hardware capable of third-party mediation of transmission (such as the WHOI Micro-Modem).
 </ul>
 
@@ -202,7 +195,7 @@ Detailed documentation for \ref acomms_mac.
 
 \subsection signal_slot Signal / Slot model for asynchronous events
 
-The layers of goby-acomms use a signal / slot system for asynchronous events such as receipt of an acoustic message. Each signal can be connected (goby::acomms::connect()) to one or more slots, which are functions or member functions matching the signature of the signal. When the signal is emitted, the slots are called in order they were connected. To ensure synchronous behavior and thread-safety throughout goby-acomms, signals are only emitted during a call to a given library's API class do_work method (i.e. goby::acomms::ModemDriverBase::do_work(), goby::acomms::QueueManager::do_work(), goby::acomms::MACManager::do_work()).
+The layers of goby-acomms use a signal / slot system for asynchronous events such as receipt of an acoustic message. Each signal can be connected (goby::acomms::connect()) to one or more slots, which are functions or member functions matching the signature of the signal. When the signal is emitted, the slots are called in order they were connected. To ensure synchronous behavior and thread-safety throughout goby-acomms, signals are only emitted during a call to a given component's API class do_work method (i.e. goby::acomms::ModemDriverBase::do_work(), goby::acomms::QueueManager::do_work(), goby::acomms::MACManager::do_work()).
 
 For example, if I want to receive data from queue, I need to connect to the signal QueueManager::signal_receive. Thus, I need to define a function or class method with the same signature:
 
@@ -287,7 +280,7 @@ class MyMessage : public google::protobuf::Message
 }
 \endcode
 
-Clearly the .proto representation is more compact and amenable to easy modification. All the Protocol Buffers messages used in goby-acomms are placed in the goby::acomms::protobuf namespace for easy identification. This doxygen documentation does not understand Protocol Buffers language so you will need to look at the source code directly for the .proto (e.g. modem_message.proto).
+Clearly the .proto representation is more compact and amenable to easy modification. All the Protocol Buffers messages used in goby-acomms are placed in the goby::acomms::protobuf namespace for easy identification. This doxygen documentation does not understand Protocol Buffers language so you will need to look at the source code directly for the .proto (e.g. acomms_modem_message.proto).
 
 \section  acomms_uml UML models
 

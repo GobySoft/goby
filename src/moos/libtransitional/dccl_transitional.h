@@ -89,7 +89,7 @@ namespace goby
         /// \class DCCLTransitionalCodec dccl.h goby/acomms/dccl.h
         /// \brief provides an API to the Transitional Dynamic CCL Codec (looks like DCCLv1, but calls DCCLv2). This is for legacy support only, new applications should use DCCLCodec directly.
         /// \ingroup acomms_api
-        /// \sa transitional.proto and modem_message.proto for definition of Google Protocol Buffers messages (namespace goby::transitional::protobuf).
+        /// \sa transitional.proto and acomms_modem_message.proto for definition of Google Protocol Buffers messages (namespace goby::transitional::protobuf).
 
         class DCCLTransitionalCodec 
         {
@@ -110,10 +110,10 @@ namespace goby
             /// they may be called at any time as desired.
             //@{
 
-            /// \brief Set (and overwrite completely if present) the current configuration. (protobuf::DCCLTransitionalConfig defined in dccl.proto)
+            /// \brief Set (and overwrite completely if present) the current configuration. (protobuf::DCCLTransitionalConfig defined in acomms_dccl.proto)
             void set_cfg(const protobuf::DCCLTransitionalConfig& cfg);
 
-            /// \brief Set (and merge "repeat" fields) the current configuration. (protobuf::DCCLTransitionalConfig defined in dccl.proto)
+            /// \brief Set (and merge "repeat" fields) the current configuration. (protobuf::DCCLTransitionalConfig defined in acomms_dccl.proto)
             void merge_cfg(const protobuf::DCCLTransitionalConfig& cfg);
         
             /// \brief Add an algorithm callback for a MessageVal. The return value is stored back into the input parameter (MessageVal). See test.cpp for an example.
@@ -292,7 +292,7 @@ namespace goby
             /// In comparison, using the normal encode you would pass vals["myint"] = 32
             ///
             /// \param k can either be std::string (the name of the message) or unsigned (the id of the message)
-            /// \param msg location for the encoded message to be stored (goby::acomms::protobuf::ModemDataTransmission defined in modem_message.proto)
+            /// \param msg location for the encoded message to be stored (goby::acomms::protobuf::ModemDataTransmission defined in acomms_modem_message.proto)
             /// \param vals map of source variable name to MessageVal values. 
             template<typename Key>
                 void pubsub_encode(const Key& k,
@@ -356,7 +356,7 @@ namespace goby
             /// either based on the "type" parameter of the \ref tag_publish_var tag (e.g. \<publish_var type="long"\>SOMEVAR\</publish_var\> will be placed as a long). If no type parameter is given and the variable is numeric (e.g. "23242.23") it will be considered a double. If not numeric, it will be considered a string.
             ///
             /// \param k can either be std::string (the name of the message) or unsigned (the id of the message)
-            /// \param msg message to be decoded. (goby::acomms::protobuf::ModemDataTransmission defined in modem_message.proto)
+            /// \param msg message to be decoded. (goby::acomms::protobuf::ModemDataTransmission defined in acomms_modem_message.proto)
             /// \param vals pointer to std::multimap of publish variable name to std::string values.
             void pubsub_decode(const google::protobuf::Message& msg,
                                std::multimap<std::string, DCCLMessageVal>* pubsub_vals)
@@ -482,7 +482,6 @@ namespace goby
             ManipulatorManager manip_manager_;    
 
             google::protobuf::compiler::DiskSourceTree disk_source_tree_;
-
 
             class TransitionalErrorCollector: public google::protobuf::compiler::MultiFileErrorCollector
             {

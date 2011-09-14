@@ -331,34 +331,6 @@ const google::protobuf::EnumValueDescriptor* goby::acomms::DCCLDefaultEnumCodec:
 
 
 
-
-//
-// DCCLTimeCodec
-//
-goby::int32 goby::acomms::DCCLTimeCodec::pre_encode(const std::string& field_value)
-{
-    return util::as<boost::posix_time::ptime>(field_value).time_of_day().total_seconds();
-}
-
-
-std::string goby::acomms::DCCLTimeCodec::post_decode(const int32& wire_value)
-{
-    using namespace boost::posix_time;
-    using namespace boost::gregorian;
-        
-    ptime now = util::goby_time();
-    date day_sent;
-    // if message is from part of the day removed from us by 12 hours, we assume it
-    // was sent yesterday
-    if(abs(now.time_of_day().total_seconds() - double(wire_value)) > hours(12).total_seconds())
-        day_sent = now.date() - days(1);
-    else // otherwise figure it was sent today
-        day_sent = now.date();
-                
-    // this logic will break if there is a separation between message sending and
-    // message receipt of greater than 1/2 day (twelve hours)               
-    return util::as<std::string>(ptime(day_sent,seconds(wire_value)));
-}
 //
 // DCCLModemIdConverterCodec
 //

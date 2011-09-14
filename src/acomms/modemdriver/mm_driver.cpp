@@ -1072,7 +1072,7 @@ void goby::acomms::MMDriver::cacyc(const NMEASentence& nmea, protobuf::ModemTran
         }
     }
     // we're receiving
-    else if(as<int32>(nmea[3]) == driver_cfg_.modem_id())
+    else
     {
         unsigned num_frames = as<uint32>(nmea[6]);
         if(!frames_waiting_to_receive_.empty())

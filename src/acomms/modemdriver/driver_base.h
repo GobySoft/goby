@@ -76,7 +76,14 @@ namespace goby
             boost::signal<void (const protobuf::ModemTransmission& message)>
                 signal_receive;
 
-            /// \brief Called when the modem or modem driver needs data to send. The returned data should be stored in ModemTransmission::frame
+
+            /// \brief Called when a transmission is completed.
+            ///
+            /// You should connect one or more slots (a function or member function) to this signal to receive incoming messages. Use the goby::acomms::connect family of functions to do this. This signal will only be called during a call to poll. ModemDataTransmission is defined in acomms_modem_message.proto.
+            boost::signal<void (const protobuf::ModemTransmission& message)>
+                signal_transmit_result;
+
+             /// \brief Called when the modem or modem driver needs data to send. The returned data should be stored in ModemTransmission::frame
             ///
             /// You should connect one or more slots (a function or member function) to this signal to handle data requests. Use the goby::acomms::connect family of functions to do this. This signal will only be called during a call to poll. ModemTransmission is defined in acomms_modem_message.proto.
             boost::signal<void (protobuf::ModemTransmission* msg)>

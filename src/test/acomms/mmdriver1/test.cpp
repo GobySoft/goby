@@ -35,10 +35,12 @@ static int check_count = 0;
 
 void handle_data_request1(protobuf::ModemTransmission* msg);
 void handle_modify_transmission1(protobuf::ModemTransmission* msg);
+void handle_transmit_result1(const protobuf::ModemTransmission& msg);
 void handle_data_receive1(const protobuf::ModemTransmission& msg);
 
 void handle_data_request2(protobuf::ModemTransmission* msg);
 void handle_modify_transmission2(protobuf::ModemTransmission* msg);
+void handle_transmit_result2(const protobuf::ModemTransmission& msg);
 void handle_data_receive2(const protobuf::ModemTransmission& msg);
 
 void test0();
@@ -53,11 +55,18 @@ int main(int argc, char* argv[])
 {
     if(argc < 3)
     {
-        std::cout << "usage: test_mmdriver1 /dev/ttyS0 /dev/ttyS1" << std::endl;
+        std::cout << "usage: test_mmdriver1 /dev/ttyS0 /dev/ttyS1 [file to write]" << std::endl;
         exit(1);
     }
-    
+
     goby::glog.add_stream(goby::util::Logger::DEBUG3, &std::clog);
+    std::ofstream fout;
+    if(argc == 4)
+    {
+        fout.open(argv[3]);
+        goby::glog.add_stream(goby::util::Logger::DEBUG3, &fout);        
+    }
+    
     goby::glog.set_name(argv[0]);    
 
     goby::glog.add_group("test", goby::util::Colors::green);
@@ -89,9 +98,11 @@ int main(int argc, char* argv[])
         cfg2.set_modem_id(2);
 
         goby::acomms::connect(&driver1->signal_receive, &handle_data_receive1);
+        goby::acomms::connect(&driver1->signal_transmit_result, &handle_transmit_result1);
         goby::acomms::connect(&driver1->signal_modify_transmission, &handle_modify_transmission1);
         goby::acomms::connect(&driver1->signal_data_request, &handle_data_request1);
         goby::acomms::connect(&driver2->signal_receive, &handle_data_receive2);
+        goby::acomms::connect(&driver2->signal_transmit_result, &handle_transmit_result2);
         goby::acomms::connect(&driver2->signal_modify_transmission, &handle_modify_transmission2);
         goby::acomms::connect(&driver2->signal_data_request, &handle_data_request2);
 
@@ -163,18 +174,25 @@ void handle_data_request1(protobuf::ModemTransmission* msg)
         case 5:
         {   
             msg->add_frame(std::string(64, '2'));
-            msg->set_ack_requested(false); 
             ++check_count;
         }
         break;
             
     }
+
+    goby::glog << group("driver1") << "Post data request: " << *msg << std::endl;
 }
 
 void handle_modify_transmission1(protobuf::ModemTransmission* msg)
 {
     goby::glog << group("driver1") << "Can modify: " << *msg << std::endl;
 }
+
+void handle_transmit_result1(const protobuf::ModemTransmission& msg)
+{
+    goby::glog << group("driver1") << "Completed transmit: " << msg << std::endl;
+}
+
 
 void handle_data_receive1(const protobuf::ModemTransmission& msg)
 {
@@ -234,6 +252,17 @@ void handle_data_receive1(const protobuf::ModemTransmission& msg)
         }
         break;
 
+        case 5:
+        {
+            assert(msg.type() == protobuf::ModemTransmission::ACK);
+            assert(msg.src() == 2);
+            assert(msg.dest() == 1);
+            assert(msg.acked_frame_size() == 2 && msg.acked_frame(0) == 0 && msg.acked_frame(1) == 1);
+            ++check_count;
+        }
+        break;
+        
+        
         default:
             assert(false);
             break;
@@ -259,11 +288,17 @@ void handle_data_request2(protobuf::ModemTransmission* msg)
             
     }
     
+    goby::glog << group("driver2") << "Post data request: " << *msg << std::endl;
 }
 
 void handle_modify_transmission2(protobuf::ModemTransmission* msg)
 {
     goby::glog << group("driver2") << "Can modify: " << *msg << std::endl;
+}
+
+void handle_transmit_result2(const protobuf::ModemTransmission& msg)
+{
+    goby::glog << group("driver2") << "Completed transmit: " << msg << std::endl;
 }
 
 void handle_data_receive2(const protobuf::ModemTransmission& msg)
@@ -427,6 +462,7 @@ void test4()
     transmit.set_src(1);
     transmit.set_dest(2);
     transmit.set_rate(0);
+    transmit.set_ack_requested(true);
     driver1->handle_initiate_transmission(transmit);
 
     int i = 0;
@@ -452,12 +488,12 @@ void test5()
     transmit.set_dest(2);
     transmit.set_rate(2);
     transmit.add_frame(std::string(64,'1'));
-    transmit.set_ack_requested(false);
+    transmit.set_ack_requested(true);
     
     driver1->handle_initiate_transmission(transmit);
 
     int i = 0;
-    while(((i / 10) < 10) && check_count < 2)
+    while(((i / 10) < 10) && check_count < 3)
     {
         driver1->do_work();
         driver2->do_work();
@@ -465,5 +501,5 @@ void test5()
         usleep(100000);
         ++i;
     }
-    assert(check_count == 2);
+    assert(check_count == 3);
 }

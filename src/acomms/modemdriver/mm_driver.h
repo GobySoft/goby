@@ -115,6 +115,12 @@ namespace goby
             void cadrq(const util::NMEASentence& nmea, const protobuf::ModemTransmission& m); // $CADRQ
 
             void validate_transmission_start(const protobuf::ModemTransmission& message);
+
+            void signal_receive_and_clear(protobuf::ModemTransmission* message)
+            {
+                signal_receive(*message);
+                message->Clear();
+            }
             
             // utility    
             static boost::posix_time::ptime nmea_time2ptime(const std::string& mt);
@@ -218,7 +224,11 @@ namespace goby
             std::map<std::string, int> nvram_cfg_;
 
             protobuf::ModemTransmission transmit_msg_;
-
+            unsigned expected_remaining_caxst_; // used to determine how many CAXST to aggregate (so that bost rate 0 transmissions [CYC and TXD] are provided as a single logical unit)
+            
+            protobuf::ModemTransmission receive_msg_;
+            unsigned expected_remaining_cacst_; // used to determine how many CACST to aggregate (so that rate 0 transmissions [CYC and RXD] are provided as a single logical unit)
+            
             // keep track of which frames we've sent and are awaiting acks for. This
             // way we have a chance of intercepting unexpected behavior of the modem
             // relating to ACKs

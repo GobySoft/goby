@@ -145,7 +145,7 @@ enum TransmitMode
 message TransmitStatistics
 {
   optional string date = 1;
-  optional double time = 2;
+  optional string time = 2;
   optional ClockMode clock_mode = 3;
   optional TransmitMode mode = 4;
   optional int32 probe_length = 5;
@@ -169,7 +169,7 @@ extend goby.acomms.protobuf.ModemTransmission
   optional REMUSLBLParams remus_lbl = 1002;
 
   optional RangingReply ranging_reply = 1003;
-  optional ReceiveStatistics receive_stat = 1004; // $CACST
-  optional TransmitStatistics transmit_stat = 1005; // $CAXST
+  repeated ReceiveStatistics receive_stat = 1004; // $CACST
+  repeated TransmitStatistics transmit_stat = 1005; // $CAXST
   repeated int32 frame_with_bad_crc = 1006;
 }

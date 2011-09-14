@@ -23,7 +23,6 @@ message MACConfig
   optional MACType type = 2 [default = MAC_NONE,
                              (goby.field).description="The type of TDMA MAC scheme to use"];
 
-  // only required for MAC_FIXED_DECENTRALIZED and MAC_POLLED, specify templates for MAC_AUTO_DECENTRALIZED below
   repeated ModemTransmission slot = 3 [(goby.field).description="Configure a slot in the communications cycle. Slots are run in the order they are declared."];
   
   optional bool start_cycle_in_middle = 4 [default = true,

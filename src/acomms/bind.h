@@ -45,8 +45,7 @@ namespace goby
                     &queue_manager, &QueueManager::handle_modem_data_request);
         }
         
-        /// binds the MAC initiate transmission callback to the driver
-        /// and the driver parsed message callback to the MAC
+        /// binds the MAC initiate transmission callback to the driver and the driver parsed message callback to the MAC
         inline void bind(MACManager& mac, ModemDriverBase& driver)
         {
             connect(&mac.signal_initiate_transmission,

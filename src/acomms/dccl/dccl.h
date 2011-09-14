@@ -140,6 +140,10 @@ namespace goby
                 void info(std::ostream* os) const
             { info(ProtobufMessage::descriptor(), os); }
 
+            /// \brief Writes a human readable summary (including field sizes) of all the loaded (validated) DCCL types
+            ///
+            /// \param os Pointer to a stream to write this information            
+            void info_all(std::ostream* os) const;
             
             /// \brief Gives the DCCL id (defined by the custom message option extension "(goby.msg).dccl.id" in the .proto file). This ID is used on the wire to unique identify incoming message types.
             ///
@@ -415,8 +419,6 @@ namespace goby
             template<typename T>
                 friend void boost::checked_delete(T*);
             
-            friend std::ostream& operator<<(std::ostream& os, const DCCLCodec& codec);
-            
             DCCLCodec();
             ~DCCLCodec() { }
             DCCLCodec(const DCCLCodec&);
@@ -449,13 +451,7 @@ namespace goby
 
         inline std::ostream& operator<<(std::ostream& os, const DCCLCodec& codec)
         {
-            os << "=== Begin DCCLCodec ===" << "\n";
-            os << codec.id2desc_.size() << " messages loaded.\n";            
-            
-            for(std::map<int32, const google::protobuf::Descriptor*>::const_iterator it = codec.id2desc_.begin(), n = codec.id2desc_.end(); it != n; ++it)
-                codec.info(it->second, &os);
-                
-            os << "=== End DCCLCodec ===";
+            codec.info_all(&os);
             return os;
         }
     }

@@ -34,7 +34,7 @@ namespace goby
 
         /// special modem id for the broadcast destination - no one is assigned this address. Analogous to 192.168.1.255 on a 192.168.1.0 subnet
         const int BROADCAST_ID = 0;
-        /// special modem id used internally to goby-acomms for indicating that the MAC layer (libamac) is agnostic to the next destination. The next destination is thus set by the data provider (typically libqueue).
+        /// special modem id used internally to goby-acomms for indicating that the MAC layer (\c amac) is agnostic to the next destination. The next destination is thus set by the data provider (typically \c queue).
         const int QUERY_DESTINATION_ID = -1;        
 
         const int QUERY_SOURCE_ID = -1;        

@@ -174,9 +174,10 @@ void goby::acomms::QueueManager::flush_queue(const protobuf::QueueFlush& flush)
 
 void goby::acomms::QueueManager::info_all(std::ostream* os) const
 {
-    *os << "QueueManager [[" << queues_.size() << " queues total]]:" << std::endl;
+    *os << "=== Begin QueueManager [[" << queues_.size() << " queues total]] ===" << std::endl;
     for(std::map<unsigned, Queue>::const_iterator it = queues_.begin(), n = queues_.end(); it != n; ++it)
         info(it->second.descriptor(), os);
+    *os << "=== End QueueManager ===";
 }
 
 

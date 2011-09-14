@@ -13,15 +13,15 @@ Table of contents for libdccl:
 <li> \ref dccl_designing
 <li> \ref dccl_codec
 <li> \ref dccl_options
-<li> \ref dccl_how
 <li> \ref dccl_encrypt
+<li> \ref dccl_examples 
 </ul>
 
 Return to \ref acomms.
 
 \section dccl_designing Designing a message
 
-DCCL uses the Google Protocol Buffers (Protobuf) language to define messages. DCCL specific components are defined as extensions to the Protobuf language <a href="http://code.google.com/apis/protocolbuffers/docs/proto.html#options">message and field options</a>. You should familiarize yourself with basic Protobuf using before reading the rest of this document: see \ref protobuf and <http://code.google.com/apis/protocolbuffers/docs/overview.html>. 
+DCCL uses the Google Protocol Buffers (Protobuf) language to define messages. DCCL specific components are defined as extensions to the Protobuf language \ref dccl_options "message and field options". You should familiarize yourself with basic Protobuf using before reading the rest of this document: see \ref protobuf and <http://code.google.com/apis/protocolbuffers/docs/overview.html>. 
 
 <b>Scenario 1: Send a string command to a vehicle</b>: 
 
@@ -63,9 +63,9 @@ message Simple
 
 Finally, we need to pick an encoder/decoder (codec) for each field in our message. DCCL comes with defaults for all the Protobuf types. So if we don't specifically list a codec for a given field, the default is used. The default "string" codec is goby::acomms::DCCLDefaultStringCodec and is variable length. It uses one byte to list the length of the string and then up to 255 bytes to hold the contents. To ensure we stay within our bounds for the entire message (<tt>(goby.msg).dccl.max_bytes = 32</tt>), we have to give a maximum allowed length for a string when using the DCCLDefaultStringCodec (<tt>(goby.field).dccl.max_length</tt>). 
 
-\include acomms/dccl/dccl_simple/simple.proto
+\verbinclude acomms/dccl/dccl_simple/simple.proto
 
-See \ref acomms/dccl/dccl_simple/dccl_simple.cpp "dccl_simple.cpp" for the final result (simple.proto) and for an example of how to use this message.
+See \ref acomms/dccl/dccl_simple/dccl_simple.cpp "dccl_simple.cpp" for an example of how to use this message.
 
 <b>Scenario 2: Send a more realistic command and receive a status message from the vehicle</b>:
 
@@ -116,7 +116,7 @@ We want to be able to command our vehicle (to which we have assigned an ID numbe
   </tr>
 </table>
 
-Taking all this into account, we form the first message (named GoToCommand) in the file two_message.proto (see \ref acomms/dccl/two_message/two_message.cpp "two_message.cpp").
+Taking all this into account, we form the first message (named GoToCommand) in the file two_message.proto (see \ref dccl_examples_two_message)
 
 We choose a <tt>dccl.id</tt> of 2 to avoid conflicting with the message from Scenario 1 (simple.proto) and a <tt>dccl.max_bytes</tt> of 32 bytes to again allow sending in the WHOI Micro-Modem rate 0 packet.
 
@@ -149,7 +149,7 @@ Now, for the second message in two_message.proto. We want to receive the vehicle
   </tr>
 </table>
 
-The resulting message, along with an example of how to use it, can be seen here: \ref acomms/dccl/two_message/two_message.cpp "two_message.cpp".
+The resulting message, can be seen under \ref dccl_examples_two_message. An example of how to use this message is given under \ref acomms/dccl/two_message/two_message.cpp "two_message.cpp".
 
 You can run <tt>analyze_dccl</tt> to view more information on your messages:
 \code
@@ -202,11 +202,12 @@ VehicleStatus
 
 Besides validity checking, the most useful feature of <tt>analyze_dccl</tt> is the calculation of the size (in bits) of each message variable. This lets you see which fields in the message are too big. To make fields smaller, tighten up bounds.
 
-\section dccl_options DCCL Options
+\section dccl_options DCCL Protobuf Options
 
-This section gives an overview of the DCCL message and field options available for use with DCCL and the default field codecs. The full list is available in acomms_option_extensions.proto.
+This section gives an overview of the DCCL message and field options available for use with DCCL and the default field codecs. The full list is available in acomms_option_extensions.proto (as messages DCCLFieldOptions and DCCLMessageOptions).
 
 DCCL message options:
+
 
 <table border=1>
   <tr>
@@ -234,7 +235,6 @@ DCCL message options:
     <td>Name of the codec to use for encoding the base message (add more codecs with goby::acomms::DCCLFieldCodecManager::add())</td>
   </tr>
 </table>
-
 
 DCCL field options:
 
@@ -363,906 +363,88 @@ DCCL provides AES (Rijndael) encryption for the body (\ref tag_layout) of the me
 
 AES is considered secure and is used for United States top secret information.
 
-\section dccl_how Details of encoding/decoding scheme
-
-We may want to know the actual layout of the binary/hex message. For the first of the two messages in two_message.xml, we can run \texttt{analyze_dccl_xml} to find the sizes of each message variable. The calculated sizes are used to determine the boundaries (which are by bit, not by byte) when the message is packed. Each field is placed in the order it is declared in the XML file such that the message is as follows (where left to right is the same as reading the hex string from left to right):
-\verbatim
-[[header][0 {1}][goto_x {14}][goto_y {14}][lights_on {2}][new_instructions {80}][goto_speed {9}]]
-\endverbatim
-
-where \texttt{[0 {1}]} means zero fill the message to the closest whole byte (15 bytes = 120 bits minus 119 for other fields = 1). Byte boundaries are dissolved and encoded as a string "ABCDEF..." where the most significant byte (MSB, or leftmost 8 bits) is 0xAB, second MSB is 0xCD, etc. Encoding and decoding are done by functions available in tes_utils.h. You will notice that the resulting size is 15 bytes which is short of the 32 bytes specified for the \ref tag_size. This is because the \ref tag_size is a maximum size before a warning is generated, not the actual size always returned by the DCCLCodec. This allows libqueue to pack multiple messages together to form a %modem message frame and thus fit a nearly optimal amount of data into each %modem packet. For example, you could now fit one of the GoToCommand messages \textit{and} another message up to 17 bytes in a single 32 byte WHOI Micro-Modem rate 0 frame.
-
-The encoding of each \textit{message_var} is done as an unsigned integer, with the exception of strings, which are store as ASCII. The value 0 (all bits zero) always indicates "not specified" or "Not a Number" (nan). This means that the user did not specify any value for this field, specified a value causing overflow (\ref tag_int or \ref tag_float greater than \ref tag_max or less than \ref tag_min), or provided a value for an \ref tag_enum that did not match any of the enumerate's \ref tag_value options. Along with this rule, the method for encoding and decoding is summarized below:
-
-<table border=1> 
-  <tr>
-    <td><strong>message_var</strong></td>
-    <td><strong>size (bits)</strong></td>
-    <td><strong>encode</strong></td> 
-    <td><strong>decode</strong></td>
-  </tr>
-  <tr>
-    <td>static</td>
-    <td>0</td>
-    <td>not sent</td> 
-    <td>not sent</td>
-  </tr>
-  <tr>
-    <td>bool</td>
-    <td>2</td>
-    <td>\f$val_{enc} = (val\f$ == to_lower("true") OR \f$val\f$ != 0) ? 2 : 1</td> 
-    <td>\f$ val = (val_{enc}==2) \f$ ? true : false</td>
-  </tr>
-  <tr>
-    <td>enum</td>
-    <td>\f$ceil(log_2(total\_enums + 1))\f$</td>
-    <td>\f$val_{enc}\f$ = 1 + index to array of enum values based on order they were declared</td> 
-    <td>\f$val\f$ = value at index \f$val_{enc} -1\f$</td>
-  </tr>
-  <tr>
-    <td>string</td>
-    <td>\f$max\_length \cdot 8\f$</td>
-    <td>string is filled at end with zeros (\texttt{'\\0'}) to \f$max_length\f$ then encoded using ASCII byte values</td> 
-    <td>ASCII, ignoring null termination chars (if any)</td>
-  </tr>
-  <tr>
-    <td>int</td>
-    <td>\f$ceil(log_2(max-min + 2))\f$</td>
-    <td>\f$val_{enc} = round(val - min, 0) + 1\f$</td> 
-    <td>\f$val = val_{enc} + min-1\f$</td>
-  </tr>
-  <tr>
-    <td>float</td>
-    <td>\f$ceil(log_2((max-min)\cdot 10^{precision} + 2))\f$</td>
-    <td>\f$val_{enc} = round((val - min)\cdot 10^{precision}, 0) + 1\f$</td> 
-    <td>\f$val = (val_{enc} - 1)/10^{precision} + min\f$</td>
-  </tr>
-  <tr>
-    <td>hex</td>
-    <td>\f$num\_bytes \cdot 8\f$</td>
-    <td>\f$val_{enc} = val\f$</td> 
-    <td>\f$val = val_{enc}\f$</td>
-  </tr>
-</table>
-
-where \f$val\f$ is the original (and decoded) value, \f$val_{enc}\f$ is the encoded value, \f$min\f$, \f$max\f$, \f$max\_length\f$, \f$precision\f$ are the contents of the \ref tag_min, \ref tag_max, \ref tag_max_length, and \ref tag_precision tags, respectively, and round(\f$x\f$,0) means round \f$x\f$ to the nearest integer.
-
-An example. Say you have the following XML file:
-\verbatim
-...
-  <id>1</id>
-   <header>
-   <src_id>
-      <name>Src</name>
-    </src_id>
-    <dest_id>
-      <name>Dest</name>
-    </dest_id>
-  </header>
-  <layout>
-    <bool>
-      <name>B</name>
-    </bool>
-    <enum>
-    <name>E</name>
-      <value>cat</value>
-      <value>dog</value>
-      <value>mouse</value>
-    </enum>
-    <string>
-      <name>S</name>
-      <max_length>4</max_length>
-    </string>
-    <int>
-      <name>I</name>
-      <max>100</max>
-      <min>-50</min>	  
-    </int>
-    <float>
-      <name>F</name>
-      <max>100</max>
-      <min>-50</min>	  
-      <precision>2</precision>
-    </float>      
-  </layout>
-...
-\endverbatim
-
-The header is always the same size and is given by (sizes shown in bits):
-\image html dccl-header.png
-\image latex dccl-header.eps "Header for all DCCL messages. Sizes shown in bits" width=0.9\textwidth
-
-Next, the size of each \textit{message_var} (in the \ref tag_layout section) and its encoded value in decimal and binary are calculated for an example set of inputs:
-
-<table border=1> 
-  <tr>
-    <td><strong>message_var</strong></td>
-    <td><strong>example \f$val\f$</strong></td>
-    <td><strong>size (bits)</strong></td>
-    <td><strong>\f$val_{enc}\f$ (decimal)</strong></td> 
-    <td><strong>\f$val_{enc}\f$ (binary) </strong></td>
-  </tr>
-  <tr>
-    <td>B</td>
-    <td>true</td>
-    <td>2</td> 
-    <td>2</td>
-    <td>10</td>
-  </tr>
-  <tr>
-    <td>E</td>
-    <td>cat</td>
-    <td>2</td> 
-    <td>1</td>
-    <td>01</td>
-  </tr>
-  <tr>
-    <td>S</td>
-    <td>FAT</td>
-    <td>32</td> 
-    <td>1178686464</td>
-    <td>01000110 01000001 01010100 00000000</td>
-  </tr>
-  <tr>
-    <td>I</td>
-    <td>34</td>
-    <td>8</td> 
-    <td>85</td>
-    <td>01010101</td>
-  </tr>
-  <tr>
-    <td>F</td>
-    <td>-22.49</td>
-    <td>14</td> 
-    <td>2752</td>
-    <td>00101011000000</td>
-  </tr>
-</table>
-
-and thus the whole message (zero padded from the most significant bits to the closest byte) sent would be \verbatim 00000010 01010001 10010000 01010101 00000000 00010101 01001010 11000000 \endverbatim or \verbatim 0x0251905500154AC0 \endverbatim plus the header, which in this case is 0x2000AA300230, so the full message sent is \verbatim 0x2000AA3002300251905500154AC0 \endverbatim
-
-
-\section dccl_tags_details DCCL XML Tags Reference
-
-\subsection tag_all <all>
-\b Syntax:
-\verbatim
-<?xml version="1.0" encoding="UTF-8"?>
-<message_set>
-  <message>
-    <on_receipt>
-      <publish>
-        ...
-        <all />
-      </publish>
-    </on_receipt>
-  </message>
-</message_set>
-\endverbatim
-
-\b Description:
-Equivalent to \ref tag_message_var for all the \textit{message_var}s in the message. This is a shortcut when you want to publish all the data in a human readable string. [optional, one allowed].
-
-\subsection tag_array_length <array_length>
-\b Syntax:
-
-\verbatim
-<?xml version="1.0" encoding="UTF-8"?>
-<message_set>
-  <message>
-    <layout>
-      <int>
-        <array_length>5</array_length>
-      </int>
-      <string>
-        <array_length>5</array_length>
-      </string>
-      <float>
-        <array_length>5</array_length>
-      </float>
-      <bool>
-        <array_length>5</array_length>
-      </bool>
-      <hex>
-        <array_length>5</array_length>
-      </hex>
-      <enum>
-        <array_length>5</array_length>
-      </enum>
-    </layout>
-  </message>
-</message_set>
-\endverbatim
-
-\b Description: If larger than 1, this makes an array of values instead of a single value.
-
-\subsection tag_bool <bool>
-\verbatim
-\b Syntax:
-<?xml version="1.0" encoding="UTF-8"?>
-<message_set>
-  <message>
-    <layout>
-      ...
-      <bool algorithm="">
-        <src_var></src_var>
-        <name></name>
-      </bool>
-    </layout>
-  </message>
-</message_set>
-\endverbatim
-
-\b Description: a boolean (true or false) \textit{message_var}  The optional parameter \texttt{algorithm} allows you to perform certain algorithms on the data before encoding. See dccl/examples/test/test.cpp [optional, one or more allowed]. 
-
-
-\subsection tag_dest_id <dest_id>
-\b Syntax:
-\verbatim
-<?xml version="1.0" encoding="UTF-8"?>
-<message_set>
-  <message>
-    <header>
-      <dest_id>
-        <name></name>
-        <src_var></src_var>
-      <dest_id>
-    </header>
-  </message>
-</message_set>
-\endverbatim
-
-\b Description: Allows setting a name other than the default ("_dest_id") and a \ref tag_src_var for the destination id field of the header.
-
-
-
-
-\subsection tag_destination_var <destination_var>
-\b Syntax:
-\verbatim
-<?xml version="1.0" encoding="UTF-8"?>
-<message_set>
-  <message>
-    ...
-    <!-- OUT_MESSAGE: destination=abcd,... -->
-    <destination_var key="destination">OUT_MESSAGE</destination_var>
-  </message>
-</message_set>
-\endverbatim
-
-\b Description: deprecated. Use \ref tag_dest_id instead.
-
-architecture variable to find where this message should be sent. Specify attribute "key=" to specify a substring to look for within the value of this architecture variable. For example, if \texttt{COMMAND} contained the string \texttt{Destination=3} and you want this message sent to modem_id 3, then you should set \texttt{key=Destination} to properly parse that string. [optional: default is 0 (broadcast), one allowed].
-
-\subsection tag_enum <enum>
-\b Syntax:
-\verbatim
-<?xml version="1.0" encoding="UTF-8"?>
-<message_set>
-  <message>
-    <layout>
-      ...
-      <enum algorithm="">
-        <src_var></src_var>
-        <name></name>
-        <value></value>
-        <value></value>
-        <value></value>
-      </enum>
-    </layout>
-  </message>
-</message_set>
-\endverbatim
-
-\b Description: an enumeration \textit{message_var} [optional, one or more allowed].
-
-\subsection tag_float <float>
-\b Syntax:
-\verbatim
-<?xml version="1.0" encoding="UTF-8"?>
-<message_set>
-  <message>
-    <layout>
-      ...
-      <float algorithm="">
-        <src_var></src_var>
-        <name></name>
-        <max></max>
-        <min></min>
-        <precision></precision>
-      </float>
-    </layout>
-  </message>
-</message_set>
-\endverbatim
-
-\b Description: a decimal valued real number \textit{message_var} [optional, one or more allowed].
-
-\subsection tag_format <format>
-\b Syntax:
-\verbatim
-<?xml version="1.0" encoding="UTF-8"?>
-<message_set>
-  <message>
-    <on_receipt>
-      <publish>
-        ... 
-        <format>A=%1%,B=%2%</format>
-      </publish>
-    </on_receipt>
-  </message>
-</message_set>
-\endverbatim
-
-\b Description: a string conforming to the format string syntax of the <a href="http://www.boost.org/doc/libs/1_37_0/libs/format/doc/format.html#syntax">boost::format library</a>. This field will specify the format of the string published to the architecture variable defined in \ref tag_publish_var. At its simplest, it is a string of incrementing numbers surrounded by \%\%. Or, instead, you may also use a printf style string, using \%d for int  \textit{message_var}, \%lf for floats, and \%s for strings, bools, enums and hex. [optional: default is \texttt{name1=\%1\%\,name2=\%2\%\,name3=\%3\%}, where \texttt{name1} is the name of the first \ref tag_message_var field to follow, \texttt{name2} is the second, etc. exception: default is \texttt{\%1\%} if only a single \ref tag_message_var defined. one allowed].
-
-
-\subsection tag_header <header>
-\b Syntax:
-\verbatim
-<?xml version="1.0" encoding="UTF-8"?>
-<message_set>
-  <message>
-    <header>
-      <time></time>
-      <src_id></src_id>
-      <dest_id></dest_id>
-    </header>
-    <layout>
-      ...
-    </layout>
-  </message>
-</message_set>
-\endverbatim
-
-\b Description: holds tags allowing some parts of the DCCL header to be referenced by a new name (other than the defaults: "_time", "_src_id", "_dest_id") at encode and decode time. See \ref tag_src_id, \ref tag_dest_id, \ref tag_time.
-
-\subsection tag_hex <hex>
-\b Syntax:
-\verbatim
-<?xml version="1.0" encoding="UTF-8"?>
-<message_set>
-  <message>
-    <layout>
-      ...
-      <hex algorithm="">
-        <src_var></src_var>
-        <name></name>
-        <num_bytes></num_bytes>     
-      </hex>
-    </layout>
-  </message>
-</message_set>
-\endverbatim
-
-\b Description: a message variable represented pre-encoded hexadecimal to add to the message. This field is useful if another source is encoding part or all of a DCCL message. [optional, one or more allowed]. 
-
-\subsection tag_id <id>
-\b Syntax:
-\verbatim
-<?xml version="1.0" encoding="UTF-8"?>
-<message_set>
-  <message>
-    ...
-    <id>23</id>
-  </message>
-</message_set>
-\endverbatim
-
-\b Description: an unsigned nine bit integer (0-511)g that identifies this message within a network. very similar to the CCL identifier, but for DCCL messages. The CCL identifier occupies the most significant byte (MSB) of the message followed by this id which takes the part of the second MSB (two flags, multimessage and broadcast, use the remainder of the second MSB). \textit{This must be unique within a network}. [mandatory, one allowed]
-
-\subsection tag_int <int>
-\b Syntax:
-\verbatim
-<?xml version="1.0" encoding="UTF-8"?>
-<message_set>
-  <message>
-    <layout>
-      ...    
-      <int algorithm="">
-        <src_var></src_var>
-        <name></name>
-        <max></max>
-        <min></min>
-      </int>
-    </layout>
-  </message>
-</message_set>
-\endverbatim
-
-\b Description: an integer \textit{message_var} [optional, one or more allowed].
-
-\subsection tag_layout <layout>
-\b Syntax:
-\verbatim
-<?xml version="1.0" encoding="UTF-8"?>
-<message_set>
-  <message>
-    ...
-    <layout>
-      <int></int>
-      <string></string>
-      <float></float>
-      <bool></bool>
-      <hex></hex>
-      <static></static>
-      <enum></enum>
-    </layout>
-  </message>
-</message_set>
-\endverbatim
-
-\b Description: defines the message structure itself (what fields [the message variables or \textit{message_var}s] the message contains and how they are to be encoded). [mandatory, one allowed].
-
-\subsection tag_max_length <max_length>
-\b Syntax:
-\verbatim
-<?xml version="1.0" encoding="UTF-8"?>
-<message_set>
-  <message>
-    <layout>
-      <string>
-        ...
-        <max_length>10</max_length>
-      </string>
-    </layout>
-  </message>
-</message_set>
-\endverbatim
-
-\b Description: the length of the string value in this field. Longer strings are truncated. \xmltag{max_length,4} means "ABCDEFG" is sent as "ABCD". [mandatory, one allowed].
-
-\subsection tag_max <max>
-\b Syntax:
-\verbatim
-<?xml version="1.0" encoding="UTF-8"?>
-<message_set>
-  <message>
-    <layout>
-      <int>
-        <max>100</max>
-      </int>
-      <float>
-        <max>100</max>
-      </float>
-    </layout>
-  </message>
-</message_set>
-\endverbatim
-
-\b Description: the maximum value this field can take. [mandatory, one allowed].
-
-\subsection tag_max_delta <max_delta>
-\b Syntax:
-\verbatim
-<?xml version="1.0" encoding="UTF-8"?>
-<message_set>
-  <message>
-    <layout>
-      <int>
-        <max_delta>10</max_delta>
-      </int>
-      <float>
-        <max_delta>100</max_delta>
-      </float>
-    </layout>
-  </message>
-</message_set>
-\endverbatim
-
-\b Description: if specified, delta-difference encoding is done of the \ref tag_repeat ed message or the values in the array (for \ref tag_array_length > 1). The first value is used as a key for the remaining values which are sent as a difference to this key. The number specified here is the maximum expected difference between the first value (key) and any of the remaining values in the message. [optional, if omitted, delta-difference encoding is not performed].
-
-\subsection tag_message_set <message_set>
-\b Syntax:
-\verbatim
-<?xml version="1.0" encoding="UTF-8"?>
-<message_set>
-  <message></message>
-  <message></message>
-  <message></message>
-</message_set>
-\endverbatim
-
-\b Description: the root element. All XML files must have a single root element. Since we are define a set of messages (one or more per file), this is a logical choice of name for the root element. [mandatory, one allowed].
-
-\subsection tag_message_var <message_var>
-\b Syntax:
-\verbatim
-<?xml version="1.0" encoding="UTF-8"?>
-<message_set>
-  <message>
-    <on_receipt>
-      <publish>
-        ...
-        <message_var></message_var>
-        <message_var></message_var>
-      </publish>
-    </on_receipt>
-  </message>
-</message_set>
-\endverbatim
-
-\b Description: the name (\ref tag_name above) of a \textit{message_var} contained in this message (i.e. an \ref tag_int, \ref tag_bool, etc.) the values of these fields upon receipt of a message will be used to populate the format string and the result will be published to \ref tag_publish_var. The optional parameter \texttt{algorithm} allows you to perform certain algorithms on the data after receipt before publishing. [mandatory unless \ref tag_all used, one or more allowed].
-
-\subsection tag_message <message>
-\b Syntax:
-\verbatim
-<?xml version="1.0" encoding="UTF-8"?>
-<message_set>
-  <message>
-    <name></name>
-    <id></id>
-    <size></size>
-    <layout></layout>
-    <destination_var key=""></destination_var>
-    <trigger>publish</trigger>
-    <trigger_var mandatory_content=""></trigger_var>
-    <!-- OR -->
-    <trigger>time</trigger>
-    <trigger_time></trigger_time>
-    <on_receipt></on_receipt>  
-    <queuing></queuing>
-  </message>
-  <message>
-    ...
-  </message>
-</message_set>
-\endverbatim
-
-\b Description: defines the start of a message. [mandatory, one or more allowed].
-
-\subsection tag_min <min>
-\b Syntax:
-\verbatim
-<?xml version="1.0" encoding="UTF-8"?>
-<message_set>
-  <message>
-    <layout>
-      <int>
-        <min>-100</min>
-      </int>
-      <float>
-        <min>-100</min>
-      </float>
-    </layout>
-  </message>
-</message_set>
-\endverbatim
-
-\b Description: the minimum value this field can take. [mandatory, one allowed].
-
-\subsection tag_name <name>
-\b Syntax:
-\verbatim
-<message_set>
-  <message>
-    ...
-    <name>STATUS_REPORT</name>
-  </message>
-</message_set>
-\endverbatim
-
-or 
-
-\verbatim
-<?xml version="1.0" encoding="UTF-8"?>
-<message_set>
-  <message>
-    <layout>
-      <int>
-        <name>parameter1</name>
-      </int>
-      <string>
-        <name>parameter2</name>           
-      </string>
-      <float>
-        <name>parameter3</name>           
-      </float>
-      <bool>
-        <name>parameter4</name>           
-      </bool>
-      <hex>
-        <name>parameter5</name>           
-      </hex>
-      <static>
-        <name>parameter6</name>           
-      </static>
-      <enum>
-        <name>parameter7</name>           
-      </enum>
-    </layout>
-  </message>
-</message_set>
-\endverbatim
-
-
-\b Description: (as child of \ref tag_message): a human readable name for the message. [mandatory, one allowed]
-
-(as child of \ref tag_int, \ref tag_hex, \ref tag_string, \ref tag_float, \ref tag_enum, or \ref tag_bool): the name of this \textit{message_var}. [mandatory, one allowed].
-
-\subsection tag_num_bytes <num_bytes>
-the number of bytes for this field. The string provided should be twice as many characters as \ref tag_num_bytes since each character of a hexadecimal string is one nibble (4 bits or 1/2 byte). [mandatory, one allowed].
-
-
-\subsection tag_on_receipt  <on_receipt>
-\b Syntax:
-\verbatim
-<?xml version="1.0" encoding="UTF-8"?>
-\endverbatim
-
-\b Description: contains the various \ref tag_publish options for publishing parts of a message upon receipt when using the publish-subscribe architecture method (goby::acomms::DCCLCodec::encode_to_publish). [optional, one allowed].
-
-\subsection tag_precision  <precision>
-\b Syntax:
-\verbatim
-<?xml version="1.0" encoding="UTF-8"?>
-<message_set>
-  <message>
-    <layout>
-      <float>
-        <precision>3</precision>
-      </float>
-    </layout>
-  </message>
-</message_set>
-\endverbatim
-
-\b Description: an integer that specifies the number of decimal digits to preserve. Negatives are allowed. For example, \xmltag{precision,2} rounds 1042.1234 to 1042.12; \xmltag{precision,-1} rounds 1042.1234 to 1.04e3. [mandatory, one allowed].
-
-\subsection tag_publish <publish>
-\b Syntax:
-\verbatim
-<?xml version="1.0" encoding="UTF-8"?>
-<message_set>
-  <message>
-    <on_receipt>
-      <publish>
-        <publish_var></publish_var>
-        <format></format>
-        <message_var></message_var>
-      </publish>
-    </on_receipt>
-  </message>
-</message_set>
-\endverbatim
-
-\b Description: defines a single output value upon receipt of a message. Any number of publishes containing any subset of the \textit{message_var}s can be specified. [mandatory, one or more allowed].
-
-\subsection tag_publish_var <publish_var>
-\b Syntax:
-\verbatim
-<?xml version="1.0" encoding="UTF-8"?>
-<message_set>
-  <message>
-    <on_receipt>
-      <publish>
-        <publish_var type="string">OUT_STATUS_REPORT</publish_var>
-      </publish>
-    </on_receipt>
-  </message>
-</message_set>
-\endverbatim
-
-\b Description: the name of the architecture variable to publish to. If desired, a format string is allowed here as well (e.g. \texttt{\%1\%_NAV_X} will fill \texttt{\%1\%} with the first \textit{message_var}). See the \ref tag_format tag description for more info. [mandatory, one allowed].
-
-\subsection tag_repeat <repeat>
-\b Syntax:
-\verbatim
-<?xml version="1.0" encoding="UTF-8"?>
-<message_set>
-  <message>
-    ...
-    <repeat/>
-  </message>
-</message_set>
-\endverbatim
-
-\b Description: Including this empty tag tells DCCL to make as many copies of the message structure defined in \ref tag_layout as will fit in the message \ref tag_size. No message will be sent until the message is full. For example, if the message is 32 bytes and the layout is 8 bytes, three copies of the message will be stored before sending (32-6-3*8 = 0). That is, three messages will be triggered, packed and sent as a single DCCL message. [optional, if omitted only a single copy is made]. <em>If \ref tag_repeat is specified, \ref tag_array_length must omitted for all \textit{message\_vars}}. That is, you cannot have repeated messages that contain arrays.</em>
-
-\subsection tag_size <size>
-\b Syntax:
-\verbatim
-<?xml version="1.0" encoding="UTF-8"?>
-<message_set>
-  <message>
-    <size>32</size>
-  </message>
-</message_set>
-\endverbatim
-
-\b Description: the size of the message in bytes. There are eight bits (binary digits) to a byte. Use N here for messages passed to the Micro-Modem where N is the desired Micro-Modem frame size (N=32, 64, or 256 depending on the rate). If the \ref tag_layout of the message exceeds this size, DCCL will exit on startup with information about sizes, from which you can remove or reduce the size of certain \textit{message_var}s.
-
-
-\subsection tag_src_id <src_id>
-\b Syntax:
-\verbatim
-<?xml version="1.0" encoding="UTF-8"?>
-<message_set>
-  <message>
-    <header>
-      <src_id>
-        <name></name>
-        <src_var></src_var>
-      <src_id>
-    </header>
-  </message>
-</message_set>
-\endverbatim
-
-\b Description: Allows setting a name other than the default ("_src_id") and a \ref tag_src_var for the source id field of the header.
-
-
-\subsection tag_src_var <src_var>
-\b Syntax:
-\verbatim
-<?xml version="1.0" encoding="UTF-8"?>
-<message_set>
-  <message>
-    <layout>
-      <!-- OUT_MESSAGE: ...,parameter1=123,parameter2=abc,parameter3=3.42,
-                        parameter4=true,parameter5=ON
-           SOME_OTHER_HEX: 24bbc231  -->
-      <int>
-        <src_var key="parameter1">OUT_MESSAGE</src_var>
-      </int>
-      <string>
-        <src_var key="parameter2">OUT_MESSAGE</src_var>  
-      </string>
-      <float>
-        <src_var key="parameter3">OUT_MESSAGE</src_var>           
-      </float>
-      <bool>
-        <src_var key="parameter4">OUT_MESSAGE</src_var>           
-      </bool>
-      <hex>
-        <src_var>SOME_OTHER_HEX</src_var>
-      </hex>
-      <enum>
-        <src_var key="parameter5>OUT_MESSAGE</src_var>           
-      </enum>
-    </layout>
-  </message>
-</message_set>
-\endverbatim
-
-\b Description: the architecture variable from which to pull the value of this field. [optional if \xmltag{trigger,publish}: default is trigger_var; mandatory if \xmltag{trigger,time}, one allowed]. 
-
-\subsection tag_static <static>
-\b Syntax:
-\verbatim
-<?xml version="1.0" encoding="UTF-8"?>
-<message_set>
-  <message>
-    <layout>
-      <static algorithm="">
-        <name></name>
-        <value></value>
-      </static>
-    </layout>
-  </message>
-</message_set>
-\endverbatim
-
-\b Description: a \textit{message_var} that is not actually sent with the message but can be used to include in received messages (\textit{publishes}). [optional, one or more allowed]. 
-
-\subsection tag_string <string>
-\b Syntax:
-\verbatim
-<?xml version="1.0" encoding="UTF-8"?>
-<message_set>
-  <message>
-    <layout>
-      <string algorithm="">
-        <src_var></src_var>
-        <name></name>
-        <max_length></max_length>
-      </string>
-    </layout>
-  </message>
-</message_set>
-\endverbatim
-
-\b Description: an ASCII string \textit{message_var} [optional, one or more allowed].
-
-\subsection tag_time <time>
-\b Syntax:
-\verbatim
-<?xml version="1.0" encoding="UTF-8"?>
-<message_set>
-  <message>
-    <header>
-      <time>
-        <name></name>
-        <src_var></src_var>
-      </time>
-    </header>
-  </message>
-</message_set>
-\endverbatim
-
-\b Description: Allows setting a name other than the default ("_time") and a \ref tag_src_var for the time field of the header. Note that the value of the \ref tag_src_var should be a UNIX timestamp (seconds since 1/1/1970 00:00:00). In the DCCL encoding, this reduced to seconds since the start of the day, with precision of one second. Upon decoding, assuming the message arrives within twelve hours of its creation, it is properly restored to a full UNIX time.
-
-
-\subsection tag_trigger_var <trigger_var>
-\b Syntax:
-\verbatim
-<?xml version="1.0" encoding="UTF-8"?>
-<message_set>
-  <message>
-    <trigger>publish</trigger>
-    <trigger_var mandatory_content="">OUT_MESSAGE</trigger_var>
-  </message>
-</message_set>
-\endverbatim
-
-\b Description: used if \xmltag{trigger,publish}, this field gives the architecture variable that publishes to will trigger the creation of this message [mandatory if and only if \xmltag{trigger,publish}]. optional attribute \texttt{mandatory_content} specifies a string that must be a substring of the contents of the trigger variable in order to trigger the creation of a message. For example, if you wanted to create a certain message every time \texttt{COMMAND} contained the string \texttt{CommandType=GoTo...} but no other time, you would specify  \texttt{mandatory_content="CommandType=GoTo"} within this tag.
-
-\subsection tag_trigger_time <trigger_time>
-\b Syntax:
-\verbatim
-<?xml version="1.0" encoding="UTF-8"?>
-<message_set>
-  <message>
-    <trigger>time</trigger>
-    <trigger_time>60</trigger_time>
-  </message>
-</message_set>
-\endverbatim
-
-\b Description: used if \xmltag{trigger,time}, this field gives the time interval used to create this message. For example, a value of  \xmltag{trigger_time,10} would mean a message should be created every ten seconds. [mandatory if and only if \xmltag{trigger,time}].
-
-\subsection tag_trigger <trigger>
-\b Syntax:
-\verbatim
-<?xml version="1.0" encoding="UTF-8"?>
-<message_set>
-  <message>
-    <trigger>publish</trigger>
-    <trigger_var mandatory_content=""></trigger_var>
-    <!-- OR -->
-    <trigger>time</trigger>
-    <trigger_time></trigger_time>
-  </message>
-</message_set>
-\endverbatim
-
-\b Description: how the message is created. Currently this field must take the value "publish" (meaning a message is created on a publish event to a certain architecture variable) or "time" (a message is created on a certain time interval). [mandatory, one allowed]
-
-\subsection tag_value <value>
-\b Syntax:
-\verbatim
-<?xml version="1.0" encoding="UTF-8"?>
-<message_set>
-  <message>
-    <layout>
-      <static>
-        <value>my static value</value>
-      </static>
-    </layout>
-  </message>
-</message_set>
-\endverbatim
-
-or 
-
-\verbatim
-<?xml version="1.0" encoding="UTF-8"?>
-<message_set>
-  <message>
-    <layout>
-      <enum>
-        <value>ON</value>
-        <value>OFF</value>
-        <value>IN_BETWEEN</value>
-      </enum>
-    </layout>
-  </message>
-</message_set>
-\endverbatim
-
-\b Description: (as child of \ref tag_static): the value of this static variable. [mandatory, one allowed].
-
-(as child of \ref tag_enum): a possible value (string) the enum can take. Any number of values can be specified. [mandatory, one or more allowed].
+\section dccl_examples Example messages
 
+This section provides a listing of DCCL example Protobuf messages used in the code examples and unit tests.
+
+\subsection dccl_examples_simple Minimal functional DCCL message
+
+simple.proto
+\verbinclude simple.proto
+
+\sa \ref acomms/dccl/dccl_simple/dccl_simple.cpp "dccl_simple.cpp"
+
+
+\subsection dccl_examples_two_message Two Message example
+
+two_message.proto
+\verbinclude two_message.proto
+
+\sa \ref acomms/dccl/two_message/two_message.cpp "two_message.cpp"
+
+<b>Test1 showing all Protobuf types (using default codecs):</b>
+
+dccl1/test.proto
+\verbinclude dccl1/test.proto
+
+\sa \ref dccl1/test.cpp
+
+\subsection dccl_examples_test2 DCCL Test2 showing an embedded message encoded by a custom (non-default) codec
+
+dccl2/test.proto
+\verbinclude dccl2/test.proto
+
+\sa \ref dccl2/test.cpp
+
+\subsection dccl_examples_test3 DCCL Test3
+
+dccl3/test.proto
+\verbinclude dccl3/test.proto
+protobuf/header.proto
+\verbinclude protobuf/header.proto
+
+\sa \ref dccl3/test.cpp
+
+\subsection dccl_examples_test4 DCCL Test4
+
+dccl4/test.proto
+\verbinclude dccl4/test.proto
+
+\sa \ref dccl4/test.cpp
+
+\subsection dccl_examples_test5 DCCL Test5
+
+dccl5/test.proto
+\verbinclude dccl5/test.proto
+
+\sa \ref dccl5/test.cpp
+
+\subsection dccl_examples_test6 DCCL Test6
+
+dccl6/test.proto
+\verbinclude dccl6/test.proto
+
+\sa \ref dccl6/test.cpp
+
+\subsection dccl_examples_test7 DCCL Test7
+
+dccl7/test.proto
+\verbinclude dccl7/test.proto
+
+\sa \ref dccl7/test.cpp
+
+\subsection dccl_examples_test8 DCCL Test8
+
+dccl8/test.proto
+\verbinclude dccl8/test.proto
+
+\sa \ref dccl8/test.cpp
+
+\subsection dccl_examples_test9 DCCL Test9
+
+dccl9/test.proto
+\verbinclude dccl9/test.proto
+
+\sa \ref dccl9/test.cpp
 
 */

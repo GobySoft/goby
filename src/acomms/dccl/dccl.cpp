@@ -498,4 +498,13 @@ void goby::acomms::DCCLCodec::process_cfg()
     
 }
 
-
+void goby::acomms::DCCLCodec::info_all(std::ostream* os) const
+{
+    *os << "=== Begin DCCLCodec ===" << "\n";
+    *os << id2desc_.size() << " messages loaded.\n";            
+            
+    for(std::map<int32, const google::protobuf::Descriptor*>::const_iterator it = id2desc_.begin(), n = id2desc_.end(); it != n; ++it)
+        info(it->second, os);
+                
+    *os << "=== End DCCLCodec ===";
+}

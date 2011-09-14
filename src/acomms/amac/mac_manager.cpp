@@ -41,8 +41,8 @@ using goby::glog;
 int goby::acomms::MACManager::count_;
 
 goby::acomms::MACManager::MACManager()
-    : work_(io_),
-      timer_(io_),
+    : timer_(io_),
+      work_(io_),
       current_slot_(std::list<protobuf::ModemTransmission>::begin()),
       started_up_(false)
 {
@@ -159,6 +159,9 @@ void goby::acomms::MACManager::begin_slot(const boost::system::error_code& e)
                 case protobuf::ModemTransmission::MICROMODEM_REMUS_LBL_RANGING: glog << "r"; break; 
                 case protobuf::ModemTransmission::MICROMODEM_NARROWBAND_LBL_RANGING: glog << "n"; break; 
                 case protobuf::ModemTransmission::MICROMODEM_MINI_DATA: glog << "m"; break;
+                case protobuf::ModemTransmission::ACK:
+                case protobuf::ModemTransmission::UNKNOWN:
+                    break;
             }
         
             glog << it->src() << "/" << it->dest() << "@" << it->rate() << " " << nocolor;

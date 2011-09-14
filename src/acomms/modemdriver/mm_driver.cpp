@@ -837,7 +837,7 @@ void goby::acomms::MMDriver::carxd(const NMEASentence& nmea, protobuf::ModemTran
 
     if(!nmea[5].empty()) // don't add blank messages
     {
-        if(m->frame_size() != frame)
+        if(static_cast<unsigned>(m->frame_size()) != frame)
             glog.is(warn) && glog << group(glog_out_group()) << "frame count mismatch: (modem reqports): " << frame << ", (goby expects): " << m->frame_size();
         else
             m->add_frame(hex_decode(nmea[5]));
@@ -1022,7 +1022,7 @@ void goby::acomms::MMDriver::caerr(const NMEASentence& nmea)
 void goby::acomms::MMDriver::cacyc(const NMEASentence& nmea, protobuf::ModemTransmission* msg)
 {
     // we're sending
-    if(as<uint32>(nmea[2]) == driver_cfg_.modem_id())
+    if(as<int32>(nmea[2]) == driver_cfg_.modem_id())
     {
         // handle a third-party CYC
         if(!local_cccyc_)
@@ -1044,7 +1044,7 @@ void goby::acomms::MMDriver::cacyc(const NMEASentence& nmea, protobuf::ModemTran
         }
     }
     // we're receiving
-    else if(as<uint32>(nmea[3]) == driver_cfg_.modem_id())
+    else if(as<int32>(nmea[3]) == driver_cfg_.modem_id())
     {
         unsigned num_frames = as<uint32>(nmea[6]);
         if(!frames_waiting_to_receive_.empty())
@@ -1053,7 +1053,7 @@ void goby::acomms::MMDriver::cacyc(const NMEASentence& nmea, protobuf::ModemTran
             frames_waiting_to_receive_.clear();
         }
 
-        for(int i = 0; i < num_frames; ++i)
+        for(unsigned i = 0; i < num_frames; ++i)
             frames_waiting_to_receive_.insert(i);
     }
 }

@@ -157,7 +157,7 @@ For a more detailed model, see the \ref acomms_uml section.
 
 \section dccl dccl: Encoding and decoding
 
-Dynamic Compact Control Language (DCCL) provides a structure for defining messages to be sent through an acoustic %modem. The messages are configured in Google Protocol Buffers and are intended to be easily reconfigurable, unlike the original CCL framework used in the REMUS vehicles and others (for information on CCL, see <http://acomms.whoi.edu/ccl/>. 
+The Dynamic Compact Control Language (DCCL) provides a structure for defining messages to be sent through an acoustic %modem. The messages are configured in Google Protocol Buffers and are intended to be easily reconfigurable, unlike the original CCL framework used in the REMUS vehicles and others (for information on CCL, see <http://acomms.whoi.edu/ccl/>. 
 
 Unlike the encoder / decoder provided with Google Protocol Buffers, each field (which could be a primitive type like double, int32, string or an user-defined embedded message like CTDMessage) of a DCCL message can be encoded using a DCCL built-in or user-defined encoder. This allows the codecs to be matched to the data's physical origins and thus make the most of the limited throughput available by making very small encoded messages.
 
@@ -197,7 +197,7 @@ Detailed documentation for \ref acomms_mac.
 
 The layers of goby-acomms use a signal / slot system for asynchronous events such as receipt of an acoustic message. Each signal can be connected (goby::acomms::connect()) to one or more slots, which are functions or member functions matching the signature of the signal. When the signal is emitted, the slots are called in order they were connected. To ensure synchronous behavior and thread-safety throughout goby-acomms, signals are only emitted during a call to a given component's API class do_work method (i.e. goby::acomms::ModemDriverBase::do_work(), goby::acomms::QueueManager::do_work(), goby::acomms::MACManager::do_work()).
 
-For example, if I want to receive data from queue, I need to connect to the signal QueueManager::signal_receive. Thus, I need to define a function or class method with the same signature:
+For example, if I want to receive data from \c queue, I need to connect to the signal QueueManager::signal_receive. Thus, I need to define a function or class method with the same signature:
 
 \code
 void receive_data(const goby::acomms::protobuf::ModemDataTransmission& msg);
@@ -282,7 +282,7 @@ class MyMessage : public google::protobuf::Message
 
 Clearly the .proto representation is more compact and amenable to easy modification. All the Protocol Buffers messages used in goby-acomms are placed in the goby::acomms::protobuf namespace for easy identification. This doxygen documentation does not understand Protocol Buffers language so you will need to look at the source code directly for the .proto (e.g. acomms_modem_message.proto).
 
-\section  acomms_uml UML models
+<!-- \section  acomms_uml UML models
 
 Model that describes the static structure of goby-acomms as a whole:
 
@@ -297,7 +297,7 @@ Model that gives the sequence for sending a message with goby-acomms:
 Model that shows the commands needed to start and keep goby-acomms running:
 
 \image html goby-acomms-background-sequence.png
-\image latex goby-acomms-background-sequence.eps "UML model that illustrates the set of commands needed to start up goby-acomms and keep it running." width=\textwidth
+\image latex goby-acomms-background-sequence.eps "UML model that illustrates the set of commands needed to start up goby-acomms and keep it running." width=\textwidth -->
 
 
 */

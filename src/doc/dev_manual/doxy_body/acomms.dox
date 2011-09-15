@@ -6,7 +6,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this software (see goby/COPYING).  If not, see <http://www.gnu.org/licenses/>.
 
-/*! \page acomms goby-acomms: Overview of Acoustic Communications Library
+/*! \page acomms goby-acomms: An overview of Acoustic Communications Library
 
 Table of Contents for \ref acomms.
 
@@ -282,12 +282,15 @@ class MyMessage : public google::protobuf::Message
 
 Clearly the .proto representation is more compact and amenable to easy modification. All the Protocol Buffers messages used in goby-acomms are placed in the goby::acomms::protobuf namespace for easy identification. This doxygen documentation does not understand Protocol Buffers language so you will need to look at the source code directly for the .proto (e.g. acomms_modem_message.proto).
 
-<!-- \section  acomms_uml UML models
+\section  acomms_uml UML models
 
+<!--
 Model that describes the static structure of goby-acomms as a whole:
 
 \image html goby-acomms-detailed-overview.png
 \image latex goby-acomms-detailed-overview.eps "UML Structure Model of goby-acomms" width=\textwidth
+
+--!>
 
 Model that gives the sequence for sending a message with goby-acomms:
 

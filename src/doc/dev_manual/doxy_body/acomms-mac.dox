@@ -17,7 +17,7 @@ Return to \ref acomms.
 
 \section amac_schemes Supported MAC schemes
 
-The Medium Access Control schemes provided by \c amac are based on Time Division Multiple Access (TDMA) where different communicators share the same bandwidth but transmit at different times to avoid conflicts. Time is divided into slots and each vehicle is given a slot to transmit on. The set of slots comprising all the vehicles is referred to here as a cycle, which repeats itself when it reaches the end. MACManager is implemented as a timer and a std::list of (\link acomms_modem_message.proto goby::acomms::protobuf::ModemTransmission\endlink) objects. This allows you to use \c amac to create a TDMA cycle for any type of transmission (data, ping, LBL, etc.) that your modem supports.
+The Medium Access Control schemes provided by \c amac are based on Time Division Multiple Access (TDMA) where different communicators share the same bandwidth but transmit at different times to avoid conflicts. Time is divided into slots and each vehicle is given a slot to transmit on. The set of slots comprising all the vehicles is referred to here as a cycle, which repeats itself when it reaches the end. MACManager is implemented as a timer and a std::list of \link acomms_modem_message.proto goby::acomms::protobuf::ModemTransmission\endlink objects. This allows you to use \c amac to create a TDMA cycle for any type of transmission (data, ping, LBL, etc.) that your modem supports.
 
 The two variations on this scheme provided by \c amac are:
 

@@ -531,8 +531,8 @@ void goby::acomms::MMDriver::ccpdt(const protobuf::ModemTransmission& msg)
     params.MergeFrom(msg.GetExtension(micromodem::protobuf::remus_lbl));
     
     uint32 tat = params.turnaround_ms();
-    if(!nvram_cfg_["TAT"] == tat)
-        write_single_cfg("TAT" + as<std::string>(tat));
+    if(static_cast<unsigned>(nvram_cfg_["TAT"]) != tat)
+        write_single_cfg("TAT," + as<std::string>(tat));
 
     // $CCPDT,GRP,CHANNEL,SF,STO,Timeout,AF,BF,CF,DF*CS
     NMEASentence nmea("$CCPDT", NMEASentence::IGNORE);
@@ -558,8 +558,8 @@ void goby::acomms::MMDriver::ccpnt(const protobuf::ModemTransmission& msg)
     params.MergeFrom(msg.GetExtension(micromodem::protobuf::narrowband_lbl));
 
     uint32 tat = params.turnaround_ms();
-    if(!nvram_cfg_["TAT"] == tat)
-        write_single_cfg("TAT" + as<std::string>(tat));
+    if(static_cast<unsigned>(nvram_cfg_["TAT"]) != tat)
+        write_single_cfg("TAT," + as<std::string>(tat));
 
     // $CCPNT, Ftx, Ttx, Trx, Timeout, FA, FB, FC, FD,Tflag*CS
     NMEASentence nmea("$CCPNT", NMEASentence::IGNORE);

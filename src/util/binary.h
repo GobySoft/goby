@@ -36,6 +36,10 @@ namespace goby
         /// \name Binary encoding
         //@{
 
+        /// \brief Decodes a hexadecimal string to a byte string.
+        ///
+        /// \param in hexadecimal string (e.g. "544f4d" or "544F4D")
+        /// \param out pointer to string to store result (e.g. "TOM").
         inline void hex_decode(const std::string& in, std::string* out)
         {
             static const short char0_9_to_number = 48;
@@ -80,7 +84,11 @@ namespace goby
             return out;
         }
 
-
+        /// \brief Encodes a hexadecimal string from a byte string.
+        ///
+        /// \param in byte string to encode (e.g. "TOM")
+        /// \param out pointer to string to store result (e.g. "544f4d")
+        /// \param upper_case set true to use upper case for the alphabet characters (i.e. A,B,C,D,E,F), otherwise lowercase is used (a,b,c,d,e,f).
         inline void hex_encode(const std::string& in, std::string* out, bool upper_case = false)
         {
             static const short char0_9_to_number = 48;

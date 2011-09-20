@@ -81,15 +81,19 @@ namespace goby
             inline boost::posix_time::ptime goby_time<boost::posix_time::ptime>()
         { return boost::posix_time::microsec_clock::universal_time(); }
 
+        /// \brief Returns current UTC time as a boost::posix_time::ptime
         inline boost::posix_time::ptime goby_time()
         { return goby_time<boost::posix_time::ptime>(); }
         
+        /// \brief Returns current UTC time as seconds and fractional seconds since 1970-01-01 00:00:00
         template<> inline double goby_time<double>()
         { return as<double>(goby_time<boost::posix_time::ptime>()); }
 
+        /// \brief Returns current UTC time as integer microseconds since 1970-01-01 00:00:00
         template<> inline uint64 goby_time<uint64>()
         { return as<uint64>(goby_time<boost::posix_time::ptime>()); }
 
+        /// \brief Returns current UTC time as a human-readable string
         template<> inline std::string goby_time<std::string>()
         { return as<std::string>(goby_time<boost::posix_time::ptime>()); }
 

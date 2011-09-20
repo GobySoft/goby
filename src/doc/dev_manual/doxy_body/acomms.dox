@@ -45,7 +45,7 @@ To get started using the goby-acomms libraries as quickly as possible:
     <li>A driver for interacting with the acoustic %modem firmware: \ref driver "modemdriver".</li>
     <li>Time division multiple access (TDMA) medium access control (MAC): \ref amac "amac".</li>
   </ul> 
-  <li> Look at the "simple" code examples that accompany each component (\ref dccl/dccl_simple/dccl_simple.cpp "dccl_simple.cpp", \ref queue/queue_simple/queue_simple.cpp "queue_simple.cpp", \ref modemdriver/driver_simple/driver_simple.cpp "driver_simple.cpp",  \ref amac/amac_simple/amac_simple.cpp "amac_simple.cpp"). Then look at the example that uses all the components together: \ref acomms/chat/chat.cpp "chat.cpp".  The full list of examples is given in \ref OSI_table "this table". </li>
+  <li> Look at the "simple" code examples that accompany each component (\ref acomms/dccl/dccl_simple/dccl_simple.cpp "dccl_simple.cpp", \ref acomms/queue/queue_simple/queue_simple.cpp "queue_simple.cpp", \ref acomms/modemdriver/driver_simple/driver_simple.cpp "driver_simple.cpp",  \ref acomms/amac/amac_simple/amac_simple.cpp "amac_simple.cpp"). Then look at the example that uses all the components together: \ref acomms/chat/chat.cpp "chat.cpp".  The full list of examples is given in \ref OSI_table "this table". </li>
   <li> Refer to the rest of the documentation as needed.</li>
 </ol>
 
@@ -165,9 +165,9 @@ Detailed documentation for \ref acomms_dccl.
 
 \section queue queue: Priority based message queuing
 
-The goby-acomms queuing (\c queue) component interacts with both the application level process that handles decoding (with \c dccl) and the modem driver process that talks directly to the modem.
+The goby-acomms queuing (\c queue) component interacts with both the application level process and the modem driver process that talks directly to the modem.
 
-On the application side, \c queue provides the ability for the application level process to DCCL messages to various queues and receive messages from a remote sender that correspond to messages in the same %queue (e.g. you have a %queue for STATUS_MESSAGE that you can push messages to you and also receive other STATUS_MESSAGEs on). The push feature is called by the application level process and received messages are signaled to all previous bound slots (see \ref signal_slot).
+On the application side, \c queue provides the ability for the application level process to push DCCL messages to various queues and receive messages from a remote sender that correspond to messages in the same %queue (e.g. you have a %queue for STATUS_MESSAGE that you can push messages to you and also receive other STATUS_MESSAGEs on). The push feature is called by the application level process and received messages are signaled to all previous bound slots (see \ref signal_slot).
 
 On the driver side, \c queue provides the %modem driver with data upon request. It chooses the data to send based on dynamic priorities (and several other configuration parameters). It will also pack as many messages from the user into a single frame from the %modem as possible using the DCCLCodec's repeated encoding functionality. Note, however, that \c queue will <em>not</em> split a user's data into frames (like TCP/IP). If this functionality is desired, it must be provided at the application layer. Acoustic communications are too unpredictable to reliably stitch together frames.
 
@@ -175,7 +175,7 @@ Detailed documentation for \ref acomms_queue.
 
 \section driver modemdriver: Modem driver
 
-The goby-acomms Modem driver component (\c modemdriver) of the Goby-Acomms library provides an interface from the rest of goby-acomms to the acoustic %modem firmware. While currently the only driver available is for the WHOI Micro-Modem (and for an example toy modem "ABCDriver"), this component is written in such a way that drivers for any acoustic %modem that interfaces over a serial or TCP connection and can provide (or provide abstractions for) sending data directly to another %modem on the link should be able to be written. Any one who is interested in writing a %modem driver for another acoustic %modem should get in touch with the goby project <https://launchpad.net/goby> and see \ref acomms_writedriver.
+The goby-acomms Modem driver component (\c modemdriver) of the Goby-Acomms library provides an interface from the rest of goby-acomms to the acoustic %modem firmware. While currently the only driver publicly available is for the WHOI Micro-Modem (and for an example toy modem "ABCDriver"), this component is written in such a way that drivers for any acoustic %modem that interfaces over a serial or TCP connection and can provide (or provide abstractions for) sending data directly to another %modem on the link should be able to be written. Any one who is interested in writing a %modem driver for another acoustic %modem should get in touch with the goby project <https://launchpad.net/goby> and see \ref acomms_writedriver.
 
 Detailed documentation for \ref acomms_driver.
 

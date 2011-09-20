@@ -298,7 +298,7 @@ namespace goby
             
             /// \brief Decode multiple messages at once. Messages encoded using encode_repeated must be decoded using decode_repeated.
             ///
-            /// \param bytes string of bytes produced by encoded_repeated
+            /// \param orig_bytes string of bytes produced by encoded_repeated
             /// \tparam GoogleProtobufMessagePointer anything that acts like a pointer (has operator*) to a google::protobuf::Message (smart pointers like boost::shared_ptr included)
             /// \throw DCCLException if message(s) cannot be decoded.
             /// \return list of pointers to the decoded messages: you are responsible for deleting these pointers when done with them.

@@ -89,7 +89,7 @@ namespace goby
 
              /// \brief Flush (delete all messages in) a queue
              ///
-             /// \param QueueFlush flush: object containing details about queue to flush
+             /// \param flush QueueFlush object containing details about queue to flush
              void flush_queue(const protobuf::QueueFlush& flush);
              //@}
 
@@ -100,15 +100,14 @@ namespace goby
 
              /// \brief Finds data to send to the %modem.
              /// 
-             /// Data from the highest priority %queue(s) will be combined to form a message equal or less than the size requested in ModemMessage message_in. If using one of the classes inheriting ModemDriverBase, this method should be bound and passed to ModemDriverBase::set_datarequest_cb.
-             /// \param message_in The ModemMessage containing the details of the request (source, destination, size, etc.)
-             /// \param message_out The packed ModemMessage ready for sending by the modem. This will be populated by this function.
+             /// Data from the highest priority %queue(s) will be combined to form a message equal or less than the size requested in ModemMessage message_in. If using one of the classes inheriting ModemDriverBase, this method should be connected to ModemDriverBase::signal_data_request.
+             /// \param msg The ModemTransmission containing information about the data request and is the place where the request data will be stored (in the repeated field ModemTransmission::frame).
              /// \return true if successful in finding data to send, false if no data is available
              void handle_modem_data_request(protobuf::ModemTransmission* msg);
 
              /// \brief Receive incoming data from the %modem.
              ///
-             /// If using one of the classes inheriting ModemDriverBase, this method should be bound and passed to ModemDriverBase::set_receive_cb.
+             /// If using one of the classes inheriting ModemDriverBase, this method should be bound and passed to ModemDriverBase::signal_receive.
              /// \param message The received ModemMessage.
              void handle_modem_receive(const protobuf::ModemTransmission& message);
 
@@ -153,6 +152,8 @@ namespace goby
              const std::string& glog_out_group() { return glog_out_group_; }
              const std::string& glog_in_group(){ return glog_in_group_; }
 
+
+             /// \brief The current modem ID (MAC address) of this node.
             int modem_id() { return modem_id_; }
             
             //@}

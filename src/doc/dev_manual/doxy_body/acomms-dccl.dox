@@ -79,7 +79,7 @@ We want to be able to command our vehicle (to which we have assigned an ID numbe
     <td><strong>bounds</strong></td>
   </tr>
   <tr>
-    <td>dest_id</td>
+    <td>destination</td>
     <td>id number of the vehicle we are commanding</td>
     <td>int32</td>
     <td>[0, 31]</td>
@@ -145,7 +145,7 @@ Now, for the second message in two_message.proto. We want to receive the vehicle
     <td>health</td>
     <td>vehicle state</td>
     <td>enumeration</td>
-    <td>good, low_battery, or abort</td>
+    <td>HEALTH_GOOD, HEALTH_LOW_BATTERY, or HEALTH_ABORT</td>
   </tr>
 </table>
 
@@ -356,10 +356,10 @@ dccl->decode(bytes, &message);
 For line by line interaction with the goby::acomms::DCCLCodec and for advanced use, investigate the code examples given in the Examples column of this \ref OSI_table "table".
 
 \section dccl_encrypt Encryption
-
+         
 Encryption of all messages can be enabled by providing a secret passphrase to the \link acomms_dccl.proto goby::acomms::protobuf::DCCLConfig \endlink object passed to goby::acomms::DCCLCodec::set_cfg(). All parties to the communication must have the same secret key. 
 
-DCCL provides AES (Rijndael) encryption for the body (\ref tag_layout) of the message. The header, which is sent in plain text, is hashed to form an initialization vector (IV), and the passphrase is hashed using SHA-256 to form the cipher key. You will want to make sure the header (designate fields for the header with <tt>(goby.field).dccl.in_head = true</tt>) is a nonce by including a constantly changing value such as time.
+DCCL provides AES (Rijndael) encryption for the body of the message. The header, which is sent in plain text, is hashed to form an initialization vector (IV), and the passphrase is hashed using SHA-256 to form the cipher key. You will want to make sure the header (designate fields for the header with <tt>(goby.field).dccl.in_head = true</tt>) is a nonce by including a constantly changing value such as time.
 
 AES is considered secure and is used for United States top secret information.
 

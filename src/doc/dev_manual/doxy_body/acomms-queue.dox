@@ -3,7 +3,7 @@
 // goby software and documentation is distributed under the GNU General
 // Public License v3.
 //
-// You should have received a copy of the GNU General Public License
+// You should have received a copoy of the GNU General Public License
 // along with this software (see goby/COPYING).  If not, see <http://www.gnu.org/licenses/>.
 
 /*! \page acomms_queue goby-acomms: queue (Message Priority Queuing)
@@ -135,7 +135,7 @@ This section gives an overview of the \c queue message and field options availab
     <td>is_time</td>
     <td>bool</td>
     <td>false</td>
-    <td>Set to true to indicate this field contains the time (the FieldType must be a boost::posix_time::ptime, double or uint64. See goby_time()). If no field has this option set, the message is time-stamped when it is pushed to the queue.</td>
+    <td>Set to true to indicate this field contains the time (the FieldType must be a boost::posix_time::ptime, double or uint64. See goby::util::goby_time()). If no field has this option set, the message is time-stamped when it is pushed to the queue.</td>
   </tr>
 </table>
 
@@ -143,7 +143,7 @@ This section gives an overview of the \c queue message and field options availab
 
 \subsection queue_manager_instantiate Instantiate and configure
 
-The goby::acomms::QueueManager is configured similarly to the goby::acomms::DCCLCodec. You need to set a unique identification number for this platform (the "modem_id") through the \link acomms_queue.proto goby::acomms::protobuf::QueueManagerConfig \endlink. You need to add queues via calls to goby::acomms::QueueManager::add_queue(). Calling add_queue() also calls goby::acomms::DCCLCodec::validate() so you do not need to call that method separately.
+The goby::acomms::QueueManager is configured similarly to the goby::acomms::DCCLCodec. You need to set a unique identification number for this platform (the "modem ID") through the \link acomms_queue.proto goby::acomms::protobuf::QueueManagerConfig \endlink. You need to add queues via calls to goby::acomms::QueueManager::add_queue(). Calling add_queue() also calls goby::acomms::DCCLCodec::validate() so you do not need to call that method separately.
 
 When using goby::acomms::QueueManager you will not likely need to use the goby::acomms::DCCLCodec directly much at all. All messages are pushed to the queues unencoded and are encoded automatically by goby::acomms::QueueManager before sending. Likewise, all messages received are decoded before being provided on the signal goby::acomms::QueueManager::signal_receive.
 
@@ -175,9 +175,9 @@ Then, you need to do a few more initialization chores:
 
 At this point the goby::acomms::QueueManager is ready to use. At the application layer, new messages are pushed to the queues for sending using goby::acomms::QueueManager::push_message. Each %queue is identified by its DCCL (Protobuf) name.
 
-At the driver layer, messages are requested using goby::acomms::QueueManager::handle_modem_data_request, incoming messages are published using goby::acomms::QueueManager::handle_modem_receive, and acknowledgements are given using goby::acomms::QueueManager::handle_modem_ack. If using the goby-acomms drivers (i.e. some class derived from goby::acomms::ModemDriverBase), simply call goby::acomms::bind (ModemDriverBase&, QueueManager&) and these methods (slots) will be invoked automatically from the proper driver signals.
+At the driver layer, messages are requested using goby::acomms::QueueManager::handle_modem_data_request and incoming messages (including acknowledgments) are published using goby::acomms::QueueManager::handle_modem_receive. If using the goby-acomms drivers (i.e. some class derived from goby::acomms::ModemDriverBase), simply call goby::acomms::bind (ModemDriverBase&, QueueManager&) and these methods (slots) will be invoked automatically from the proper driver signals.
 
-You must run goby::acomms::QueueManager::do_work() regularly (faster than 1 Hz; 10 Hertz is good) to process expired messages (goby::acomms::QueueManager::signal_expire). All other signals are emitted in response to a driver level signal (and thus are called during a call to goby::acomms::ModemDriverBase::do_work()).
+You must run goby::acomms::QueueManager::do_work() regularly (faster than 1 Hz; 10 Hertz is good) to process expired messages (goby::acomms::QueueManager::signal_expire). All other signals are emitted in response to a driver level signal (and thus are called during a call to goby::acomms::ModemDriverBase::do_work() if using \ref acomms_driver "the Goby modemdriver").
 
 See \ref acomms/queue/queue_simple/queue_simple.cpp "queue_simple.cpp" for a basic complete example.
 

@@ -23,7 +23,6 @@ The two variations on this scheme provided by \c amac are:
 
 <ol>
 <li> Decentralized: Each vehicle initiates its own transmission at the start of its slot. (\link acomms_amac.proto goby::acomms::protobuf::MAC_FIXED_DECENTRALIZED\endlink): Slots are set at launch and can be updated using the <a href="http://www.cplusplus.com/reference/stl/list/">std::list</a> insert, push, pop, erase, etc. Each vehicle can have more than one slot in the cycle. The cycles must agree across all platforms; the network designer is responsible for this. Most of the time you will want to use this mode.
-</ul>
 <li> Centralized Polling (\link acomms_amac.proto goby::acomms::protobuf::MAC_POLLED \endlink on the master, \link acomms_amac.proto goby::acomms::protobuf::MAC_NONE \endlink on all other nodes): The TDMA cycle is set up and operated by a centralized master modem ("poller"), which is usually the modem connected to the vehicle operator's topside. The poller initiates each transmission and thus the vehicles are not required to maintain synchronous clocks. This mode requires third-party initiation of transmissions to function.
 </ol>
 
@@ -51,6 +50,27 @@ You can also provide a set of slots in the protobuf::MACConfig to initialize the
 The usage of the goby::acomms::MACManager depends now on the type:
 
 <ul>
+<li>\link acomms_amac.proto goby::acomms::protobuf::MAC_FIXED_DECENTRALIZED\endlink: All vehicles must be running \link acomms_amac.proto goby::acomms::protobuf::MAC_FIXED_DECENTRALIZED\endlink and share the same cycle (set of slots). Also, since each vehicle initiates its own transaction, you can use goby::acomms::QUERY_DESTINATION_ID throughout. In this example, I used the std::list push_back instead of adding the slots to the protobuf::MACConfig (see under MAC_POLLED below). Either way, you get the same result, but you can modify the std::list after startup():
+\code
+goby::acomms::protobuf::ModemTransmission slot;
+slot.set_src(1);
+slot.set_dest(goby::acomms::QUERY_DESTINATION_ID);
+slot.set_rate(0);
+slot.set_type(goby::acomms::protobuf::SLOT_DATA);
+slot.set_seconds(10);
+mac.push_back(slot); // 1->-1@0 wait 10
+
+slot.set_src(3);
+mac.push_back(slot); // 3->-1@0 wait 10
+
+slot.set_rate(5);
+mac.push_back(slot); // 3->-1@5 wait 10
+
+slot.set_src(4);
+slot.set_rate(0);
+mac.push_back(slot); // 4->-1@0 wait 10
+mac.update() // important - call update() after any modifying changes to the MACManager underlying std::list!
+\endcode
 <li>\link acomms_amac.proto goby::acomms::protobuf::MAC_POLLED\endlink: On the vehicles, you do not need to run the goby::acomms::MACManager at all, or simply give it the "do nothing" \link acomms_amac.proto goby::acomms::protobuf::MAC_NONE\endlink type. All the MAC is done on the topside (the centralized poller). On the poller, you need to manually set up a list of vehicles to be polled by adding an \link acomms_amac.proto goby::acomms::protobuf::Slot\endlink (in the initial \link acomms_amac.proto goby::acomms::protobuf::MACConfig\endlink object or at runtime via goby::acomms::MACManager::add_slot) for each vehicle to be polled. You can poll the same vehicle multiple times, just add more \link acomms_amac.proto goby::acomms::protobuf::Slot\endlink objects corresponding to that vehicle. Each slot has a source, destination, rate, type (data or ping [not yet implemented]), and length (in seconds). If the source is the poller, you can set the destination to goby::acomms::QUERY_DESTINATION_ID (=-1) to let \c queue determine the next destination (based on the highest priority message to send). All \link acomms_amac.proto goby::acomms::protobuf::Slot\endlink objects for vehicles must have a specified destination (the goby::acomms::BROADCAST_ID is a good choice or the id of the poller). For example:
 \code
 // poll ourselves (for commands, perhaps)
@@ -76,33 +96,12 @@ slot.set_rate(0);
 mac_cfg.add_slot(slot); // 4->0@0 wait 10
 \endcode
 You can remove vehicles by a call to goby::acomms::MACManager::remove_slot or clear out the entire cycle and start over with goby::acomms::MACManager::clear_all_slots.
-<li>\link acomms_amac.proto goby::acomms::protobuf::MAC_FIXED_DECENTRALIZED\endlink: Configured in much the same way as \link acomms_amac.proto goby::acomms::protobuf::MAC_POLLED\endlink. However, all vehicles must now be running \link acomms_amac.proto goby::acomms::protobuf::MAC_FIXED_DECENTRALIZED\endlink and share the same cycle (set of slots). Also, since each vehicle initiates its own transaction, you can use goby::acomms::QUERY_DESTINATION_ID throughout. The same example cycle as for the polled situation above would look like this for this type of decentralized MAC. In this case, I used the std::list push_back instead of adding the slots to the protobuf::MACConfig. Either way, you get the same result, but you can modify the std::list after startup():
-\code
-goby::acomms::protobuf::ModemTransmission slot;
-slot.set_src(1);
-slot.set_dest(goby::acomms::QUERY_DESTINATION_ID);
-slot.set_rate(0);
-slot.set_type(goby::acomms::protobuf::SLOT_DATA);
-slot.set_seconds(10);
-mac.push_back(slot); // 1->-1@0 wait 10
-
-slot.set_src(3);
-mac.push_back(slot); // 3->-1@0 wait 10
-
-slot.set_rate(5);
-mac.push_back(slot); // 3->-1@5 wait 10
-
-slot.set_src(4);
-slot.set_rate(0);
-mac.push_back(slot); // 4->-1@0 wait 10
-mac.update() // important - call update() after any modifying changes to the MACManager underlying std::list!
-\endcode
 </ul>
 
 Then, for either MAC scheme, start the goby::acomms::MACManager running (goby::acomms::MACManager::startup with the \link acomms_amac.proto goby::acomms::protobuf::MACConfig\endlink object), and call goby::acomms::MACManager::do_work() periodically (5 Hz is ok, 10 Hz is better). 
 
 You can modify the MAC scheme while MACManager is running. Simply use the <a href="http://www.cplusplus.com/reference/stl/list/">std::list</a> insert, push, pop, erase methods to changes slots (goby::acomms::protobuf::ModemTransmission objects). After any changes that invalidate std::list iterators (insert, push, pop, erase), you <b>must</b> call goby::acomms::MACManager::update() before the next call to goby::acomms::MACManager::do_work().
 
-See acomms/amac/amac_simple/amac_simple.cpp "amac_simple.cpp" for a basic complete example.
+See \ref acomms/amac/amac_simple/amac_simple.cpp "amac_simple.cpp" for a basic complete example.
 
 */

@@ -118,8 +118,6 @@ namespace goby
             //@{
             
             /// \brief Constructor
-            ///
-            /// \param log pointer to std::ostream to log human readable debugging and runtime information
             ModemDriverBase();
             
             //@}

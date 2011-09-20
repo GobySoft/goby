@@ -54,8 +54,6 @@ namespace goby
             /// \name Constructors/Destructor
             //@{         
             /// \brief Default constructor.
-            ///
-            /// \param log std::ostream object or FlexOstream to capture all humanly readable runtime and debug information (optional).
             MACManager();
             ~MACManager();
             //@}

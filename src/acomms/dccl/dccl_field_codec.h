@@ -144,7 +144,7 @@ namespace goby
             /// \brief Decode part of a message
             ///
             /// \param bits Pointer to a Bitset containing bits to decode. The least significant bits will be consumed first. Any bits not consumed will remain in `bits` after this method returns.
-            /// \param DCCL Message to <i>merge</i> the decoded result into.
+            /// \param msg DCCL Message to <i>merge</i> the decoded result into.
             /// \param part part of the Message to decode         
             void base_decode(Bitset* bits,
                              google::protobuf::Message* msg,
@@ -365,7 +365,7 @@ void field_decode_repeated(Bitset* bits,
             // contain boost::any
             /// \brief Virtual method used to encode
             ///
-            /// \param bits Bitset to store encoded bits. Bits is <i>just</i< the bits from the current operation (unlike base_encode() and field_encode() where bits are added to the most significant end).
+            /// \param bits Bitset to store encoded bits. Bits is <i>just</i> the bits from the current operation (unlike base_encode() and field_encode() where bits are added to the most significant end).
             /// \param wire_value Value to encode (WireType)
             virtual void any_encode(Bitset* bits, const boost::any& wire_value) = 0;
 

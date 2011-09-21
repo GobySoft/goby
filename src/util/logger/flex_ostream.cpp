@@ -19,6 +19,9 @@
 #include "flex_ostream.h"
 #include "logger_manipulators.h"
 
+using namespace goby::util::logger;
+
+
 // boost::shared_ptr<goby::util::FlexOstream> goby::util::FlexOstream::inst_;
 
 // goby::util::FlexOstream& goby::util::glogger()
@@ -59,33 +62,30 @@ std::ostream& goby::util::FlexOstream::operator<<(std::ostream& (*pf) (std::ostr
     return std::ostream::operator<<(pf);
 }            
 
-bool goby::util::FlexOstream::is(std::ostream& (*pf) (std::ostream&), logger_lock::LockAction lock_action /*= none*/)
+bool goby::util::FlexOstream::is(logger::Verbosity verbosity,
+                                 logger_lock::LockAction lock_action /*= none*/)
 {
-    Logger::Verbosity verbosity = Logger::QUIET;
-    if(pf == debug1)
-        verbosity = Logger::DEBUG1;
-    else if(pf == debug2)
-        verbosity = Logger::DEBUG2;
-    else if(pf == debug3)
-        verbosity = Logger::DEBUG3;
-    else if(pf == warn)
-        verbosity = Logger::WARN;                
-    else if(pf == verbose)
-        verbosity = Logger::VERBOSE;  
-                
     bool display = (sb_.highest_verbosity() >= verbosity);
 
     if(display)
     {
         if(lock_action == logger_lock::lock)
         {
-            goby::util::Logger::mutex.lock(); 
+            goby::util::logger::mutex.lock(); 
         }
-        
-        if(pf == die)
-            sb_.set_die_flag(true);
+            
+        switch(verbosity)
+        {
+            case QUIET: break;
+            case WARN: *this << warn; break;
+            case VERBOSE: *this << verbose; break;
+            case GUI: break;
+            case DEBUG1: *this << debug1; break;
+            case DEBUG2: *this << debug2; break;
+            case DEBUG3: *this << debug3; break;
+            case DIE: sb_.set_die_flag(true); break;
+        }
 
-        *this << pf;
         sb_.set_verbosity_depth(verbosity);
     }
                 

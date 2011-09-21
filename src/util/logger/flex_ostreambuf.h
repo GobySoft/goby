@@ -39,17 +39,17 @@ namespace goby
 
         class FlexNCurses;
 
-        /// Holds static objects of the Goby Logger
-        struct Logger
+        namespace logger
         {
-            static boost::mutex mutex;
+            extern boost::mutex mutex;
             enum Verbosity { QUIET = GLogConfig::QUIET,
                              WARN = GLogConfig::WARN,
                              VERBOSE = GLogConfig::VERBOSE,
                              GUI = GLogConfig::GUI,
                              DEBUG1 = GLogConfig::DEBUG1,
                              DEBUG2 = GLogConfig::DEBUG2,
-                             DEBUG3 = GLogConfig::DEBUG3 };
+                             DEBUG3 = GLogConfig::DEBUG3,
+                             DIE };
         };
         
         
@@ -68,17 +68,17 @@ namespace goby
             { name_ = s; }
 
             /// add a stream to the logger
-            void add_stream(Logger::Verbosity verbosity, std::ostream* os);            
+            void add_stream(logger::Verbosity verbosity, std::ostream* os);            
 
             /// do all attached streams have Verbosity == quiet?
             bool is_quiet()
-            { return highest_verbosity_ == Logger::QUIET; }    
+            { return highest_verbosity_ == logger::QUIET; }    
 
             /// is there an attached stream with Verbosity == gui (ncurses GUI)
             bool is_gui()
             { return is_gui_; }
 
-            Logger::Verbosity highest_verbosity()
+            logger::Verbosity highest_verbosity()
             {
                 return highest_verbosity_;
             }
@@ -92,7 +92,7 @@ namespace goby
             void set_die_flag(bool b)
             { die_flag_ = b; }
 
-            void set_verbosity_depth(Logger::Verbosity depth)
+            void set_verbosity_depth(logger::Verbosity depth)
             { current_verbosity_ = depth; }
 
             /// add a new group
@@ -113,19 +113,19 @@ namespace goby
             class StreamConfig
             {
               public:
-                StreamConfig(std::ostream* os, Logger::Verbosity verbosity)
+                StreamConfig(std::ostream* os, logger::Verbosity verbosity)
                     : os_(os),
                     verbosity_(verbosity)
                     { }
                 
-                void set_verbosity(Logger::Verbosity verbosity) {  verbosity_ = verbosity; }
+                void set_verbosity(logger::Verbosity verbosity) {  verbosity_ = verbosity; }
 
                 std::ostream* os() const { return os_; }
-                Logger::Verbosity verbosity() const { return verbosity_; }
+                logger::Verbosity verbosity() const { return verbosity_; }
                 
               private:
                 std::ostream* os_;
-                Logger::Verbosity verbosity_;
+                logger::Verbosity verbosity_;
             };
             
             std::string name_;
@@ -134,7 +134,7 @@ namespace goby
             std::map<std::string, Group> groups_;
 
             bool die_flag_;
-            Logger::Verbosity current_verbosity_;
+            logger::Verbosity current_verbosity_;
             
 #ifdef HAS_NCURSES
             FlexNCurses* curses_;
@@ -147,7 +147,7 @@ namespace goby
 
             bool is_gui_;
 
-            Logger::Verbosity highest_verbosity_;            
+            logger::Verbosity highest_verbosity_;            
         };
     }
 }

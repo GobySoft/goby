@@ -31,7 +31,7 @@ void decode(const std::string& bytes);
 
 int main(int argc, char* argv[])
 {
-    goby::glog.add_stream(goby::util::Logger::DEBUG3, &std::cerr);
+    goby::glog.add_stream(goby::util::logger::DEBUG3, &std::cerr);
     goby::glog.set_name(argv[0]);
 
 

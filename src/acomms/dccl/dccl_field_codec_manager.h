@@ -209,7 +209,7 @@ void goby::acomms::DCCLFieldCodecManager::__add(const std::string& name,
         new_field_codec->set_wire_type(wire_type);
         
         codecs_[field_type][name] = new_field_codec;
-        goby::glog.is(debug1) && goby::glog << "Adding codec " << *new_field_codec << std::endl;
+        goby::glog.is(util::logger::DEBUG1) && goby::glog << "Adding codec " << *new_field_codec << std::endl;
     }            
     else
     {
@@ -218,7 +218,7 @@ void goby::acomms::DCCLFieldCodecManager::__add(const std::string& name,
         new_field_codec->set_field_type(field_type);
         new_field_codec->set_wire_type(wire_type);
         
-        goby::glog.is(debug1) && goby::glog << warn << "Trying to add: " << *new_field_codec
+        goby::glog.is(util::logger::DEBUG1) && goby::glog << "Trying to add: " << *new_field_codec
                              << ", but already have duplicate codec (For `name`/`field type` pair) "
                              << *(codecs_[field_type].find(name)->second)
                              << std::endl;

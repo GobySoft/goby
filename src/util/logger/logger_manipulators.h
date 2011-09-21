@@ -24,31 +24,41 @@
 
 #include "term_color.h"
 
-namespace goby { namespace util { class FlexOstream; } }
-           
-/// label stream as "error"
-inline std::ostream& die(std::ostream & os)
-{ return (os << goby::util::tcolor::red << "(Error): " << goby::util::tcolor::nocolor); }
+namespace goby
+{
+    namespace util
+    {
+        class FlexOstream;
+
+        namespace logger
+        {
+            /// label stream as "error"
+            inline std::ostream& die(std::ostream & os)
+            { return (os << goby::util::tcolor::red << "(Error): " << goby::util::tcolor::nocolor); }
 
 /// label stream as "warning"
-inline std::ostream& warn(std::ostream & os)
-{ return (os << goby::util::tcolor::red << "(Warning): " << goby::util::tcolor::nocolor); }
+            inline std::ostream& warn(std::ostream & os)
+            { return (os << goby::util::tcolor::red << "(Warning): " << goby::util::tcolor::nocolor); }
 
 /// label stream as "verbose"
-inline std::ostream& verbose(std::ostream & os)
-{ return (os); }
+            inline std::ostream& verbose(std::ostream & os)
+            { return (os); }
 
 /// label stream as "debug1"
-inline std::ostream& debug1(std::ostream & os)
-{ return (os << "D: "); }
+            inline std::ostream& debug1(std::ostream & os)
+            { return (os << "D: "); }
 
 /// label stream as "debug2"
-inline std::ostream& debug2(std::ostream & os)
-{ return (os << "D2: "); }
+            inline std::ostream& debug2(std::ostream & os)
+            { return (os << "D2: "); }
 
 /// label stream as "debug3"
-inline std::ostream& debug3(std::ostream & os)
-{ return (os << "D3: "); }
+            inline std::ostream& debug3(std::ostream & os)
+            { return (os << "D3: "); }
+
+        }
+    }
+}
 
 /// Defines a group of messages to be sent to the Goby logger. For Verbosity == verbose streams, all entries appear interleaved, but each group is offset with a different color. For Verbosity == gui streams, all groups have a separate subwindow.
 class Group

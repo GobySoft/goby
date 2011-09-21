@@ -72,32 +72,33 @@ namespace goby
             void add_group(const std::string & name,
                            Colors::Color color = Colors::nocolor,
                            const std::string & description = "");
-            
+
             /// Set the name of the application that the logger is serving.
             void set_name(const std::string & s)
             {
                 sb_.name(s);
             }
             
-            bool is(std::ostream& (*pf) (std::ostream&), logger_lock::LockAction lock_action = logger_lock::none); 
+            bool is(goby::util::logger::Verbosity verbosity,
+                    logger_lock::LockAction lock_action = logger_lock::none); 
             
             void add_stream(const std::string& verbosity, std::ostream* os = 0)
             {
                 if(verbosity == "scope" || verbosity == "gui")        
-                    add_stream(goby::util::Logger::GUI, os);
+                    add_stream(goby::util::logger::GUI, os);
                 else if(verbosity == "quiet")        
-                    add_stream(goby::util::Logger::QUIET, os);
+                    add_stream(goby::util::logger::QUIET, os);
                 else if(verbosity == "terse" || verbosity == "warn")        
-                    add_stream(goby::util::Logger::WARN, os);
+                    add_stream(goby::util::logger::WARN, os);
                 else if(verbosity == "debug")        
-                    add_stream(goby::util::Logger::DEBUG1, os);
+                    add_stream(goby::util::logger::DEBUG1, os);
                 else
-                    add_stream(goby::util::Logger::VERBOSE, os);
+                    add_stream(goby::util::logger::VERBOSE, os);
             }
             
             
             /// Attach a stream object (e.g. std::cout, std::ofstream, ...) to the logger with desired verbosity
-            void add_stream(Logger::Verbosity verbosity = Logger::VERBOSE, std::ostream* os = 0)
+            void add_stream(logger::Verbosity verbosity = logger::VERBOSE, std::ostream* os = 0)
             {
                 sb_.add_stream(verbosity, os);
             }            
@@ -144,7 +145,7 @@ namespace goby
             //@{
             /// Get a reference to the Goby logger mutex for scoped locking
             boost::mutex& mutex()
-            { return Logger::mutex; }
+            { return logger::mutex; }
             //@}
 
             void refresh()
@@ -213,7 +214,7 @@ namespace goby
 /// Unlock the Goby logger after a call to glogger(lock)
 inline std::ostream& unlock(std::ostream & os)
 {
-    goby::util::Logger::mutex.unlock();    
+    goby::util::logger::mutex.unlock();    
     return os;
 }
 
@@ -228,14 +229,18 @@ class FlexOStreamErrorCollector : public google::protobuf::io::ErrorCollector
     
     void AddError(int line, int column, const std::string& message)
     {
+        using goby::util::logger::WARN;
+        
         print_original(line, column);
-        goby::glog << warn << "line: " << line << " col: " << column << " " << message << std::endl;
+        goby::glog.is(WARN) && goby::glog << "line: " << line << " col: " << column << " " << message << std::endl;
         has_errors_ = true;
     }
     void AddWarning(int line, int column, const std::string& message)
     {
+        using goby::util::logger::WARN;
+
         print_original(line, column);
-        goby::glog << warn << "line: " << line << " col: " << column << " " << message << std::endl;
+        goby::glog.is(WARN) && goby::glog << "line: " << line << " col: " << column << " " << message << std::endl;
         has_warnings_ = true;
     }
     

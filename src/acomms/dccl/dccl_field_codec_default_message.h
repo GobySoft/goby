@@ -94,7 +94,7 @@ namespace goby
                                      const std::vector<boost::any>& field_values,
                                      const google::protobuf::FieldDescriptor* field_desc)
                     {
-                        goby::glog.is(debug1) && glog << warn << "Hooks not run on repeated message: " << field_desc->DebugString() << std::endl;
+                        goby::glog.is(util::logger::DEBUG1) && glog << util::logger::warn << "Hooks not run on repeated message: " << field_desc->DebugString() << std::endl;
                     }
                 
                 static void single(boost::shared_ptr<DCCLFieldCodecBase> codec,

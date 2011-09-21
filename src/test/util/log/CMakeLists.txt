@@ -1,3 +1,3 @@
 add_executable(test_log test.cpp)
 target_link_libraries(test_log goby_util)
-add_test(test_log test_log)
+add_test(test_log ${goby_BIN_DIR}/test_log)

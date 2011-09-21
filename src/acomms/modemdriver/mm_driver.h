@@ -116,11 +116,7 @@ namespace goby
 
             void validate_transmission_start(const protobuf::ModemTransmission& message);
 
-            void signal_receive_and_clear(protobuf::ModemTransmission* message)
-            {
-                signal_receive(*message);
-                message->Clear();
-            }
+            void signal_receive_and_clear(protobuf::ModemTransmission* message);
             
             // utility    
             static boost::posix_time::ptime nmea_time2ptime(const std::string& mt);

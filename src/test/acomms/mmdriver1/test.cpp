@@ -33,7 +33,7 @@ boost::shared_ptr<goby::acomms::MMDriver> driver1, driver2;
 static int check_count = 0;
 
 // terminate with -1
-static int tests_to_run [] = { 0,  4,  -1 };
+static int tests_to_run [] = { 0,1,2,3,4,5,-1 };
 static int tests_to_run_index = 0;
 static int test_number = tests_to_run[tests_to_run_index];
 

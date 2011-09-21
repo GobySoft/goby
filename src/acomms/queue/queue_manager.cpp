@@ -471,27 +471,35 @@ void goby::acomms::QueueManager::handle_modem_receive(const protobuf::ModemTrans
             frame_number < total_frames;
             ++frame_number)
         {
-            std::list<boost::shared_ptr<google::protobuf::Message> > dccl_msgs =
-                codec_->decode_repeated<boost::shared_ptr<google::protobuf::Message> >(
-                    message.frame(frame_number));
-    
-            BOOST_FOREACH(boost::shared_ptr<google::protobuf::Message> msg, dccl_msgs)
+            try
             {
-                latest_meta_.Clear();
-                codec_->run_hooks(*msg);
+                std::list<boost::shared_ptr<google::protobuf::Message> > dccl_msgs =
+                    codec_->decode_repeated<boost::shared_ptr<google::protobuf::Message> >(
+                        message.frame(frame_number));
+
+                BOOST_FOREACH(boost::shared_ptr<google::protobuf::Message> msg, dccl_msgs)
+                {
+                    latest_meta_.Clear();
+                    codec_->run_hooks(*msg);
         
-                int32 dest = latest_meta_.dest();
-                if(dest != BROADCAST_ID && dest != modem_id_)
-                {
-                    glog.is(warn) && glog << group(glog_in_group_)
-                                          << "ignoring DCCL message for modem_id = "
-                                          << message.dest() << std::endl;
-                }
-                else
-                {
-                    signal_receive(*msg);
+                    int32 dest = latest_meta_.dest();
+                    if(dest != BROADCAST_ID && dest != modem_id_)
+                    {
+                        glog.is(warn) && glog << group(glog_in_group_)
+                                              << "ignoring DCCL message for modem_id = "
+                                              << message.dest() << std::endl;
+                    }
+                    else
+                    {
+                        signal_receive(*msg);
+                    }
                 }
             }
+            catch(DCCLException& e)
+            {
+                glog.is(warn) && glog << group(glog_in_group_)
+                                      << "failed to decode " << e.what() << std::endl;
+            }            
         }
     }
 }

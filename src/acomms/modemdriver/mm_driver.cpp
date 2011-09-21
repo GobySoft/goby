@@ -388,7 +388,7 @@ void goby::acomms::MMDriver::do_work()
         }
         catch(std::exception& e)
         {
-            glog.is(warn) && glog << group(glog_in_group()) << e.what() << std::endl;
+            glog.is(warn) && glog << group(glog_in_group()) << "Failed to handle message: " << e.what() << std::endl;
         }
     }
 
@@ -749,7 +749,11 @@ void goby::acomms::MMDriver::process_receive(const NMEASentence& nmea)
 }
 
 void goby::acomms::MMDriver::caack(const NMEASentence& nmea, protobuf::ModemTransmission* m)
-{
+{   
+    // ACK has nothing to do with us!
+    if(as<uint32>(nmea[2]) != driver_cfg_.modem_id())
+        return;
+    
     // WHOI counts starting at 1, Goby counts starting at 0
     uint32 frame = as<uint32>(nmea[3])-1;
     
@@ -1246,5 +1250,19 @@ boost::posix_time::ptime goby::acomms::MMDriver::nmea_time2ptime(const std::stri
         {
             return ptime(not_a_date_time);
         }        
+    }
+}
+
+void goby::acomms::MMDriver::signal_receive_and_clear(protobuf::ModemTransmission* message)
+{
+    try
+    {
+        signal_receive(*message);
+        message->Clear();
+    }
+    catch(std::exception& e)
+    {
+        message->Clear();
+        throw;
     }
 }

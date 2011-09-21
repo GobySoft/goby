@@ -330,9 +330,6 @@ void goby::acomms::MMDriver::write_single_cfg(const std::string &s)
     NMEASentence nmea("$CCCFG", NMEASentence::IGNORE);        
     nmea.push_back(boost::to_upper_copy(s));
 
-    // set our map now so we know various values immediately (like SRC)
-    nvram_cfg_[nmea[1]] = nmea.as<int>(2);
-        
     append_to_write_queue(nmea);
 }
 

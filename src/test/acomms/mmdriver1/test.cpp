@@ -30,8 +30,12 @@ using namespace boost::posix_time;
 
 boost::shared_ptr<goby::acomms::MMDriver> driver1, driver2;
 
-static int test_number = 0;
 static int check_count = 0;
+
+// terminate with -1
+static int tests_to_run [] = { 0,  4,  -1 };
+static int tests_to_run_index = 0;
+static int test_number = tests_to_run[tests_to_run_index];
 
 void handle_data_request1(protobuf::ModemTransmission* msg);
 void handle_modify_transmission1(protobuf::ModemTransmission* msg);
@@ -136,13 +140,14 @@ int main(int argc, char* argv[])
                 case 3: test3(); break; 
                 case 4: test4(); break; 
                 case 5: test5(); break; 
-                default:
+                case -1:
                     goby::glog << group("test") << "all tests passed" << std::endl;
                     return 0;
             }    
 
             goby::glog << "Test " << group("test") << test_number << " passed." << std::endl;
-            ++test_number;
+            ++tests_to_run_index;
+            test_number = tests_to_run[tests_to_run_index];
             check_count = 0;
             sleep(1);
             

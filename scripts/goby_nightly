@@ -19,7 +19,7 @@ ctest -D NightlySubmit
 cd /home/toby/nightly/goby/2.0/build
 make clean
 rm -rf *
-cmake .. -DCMAKE_BUILD_TYPE=Debug -Dbuild_doc=ON
+cmake .. -DCMAKE_BUILD_TYPE=Debug -Dbuild_doc=ON -Denable_testing=ON
 ctest -D NightlyStart
 ctest -D NightlyUpdate
 ctest -D NightlyConfigure

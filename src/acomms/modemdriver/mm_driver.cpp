@@ -751,7 +751,7 @@ void goby::acomms::MMDriver::process_receive(const NMEASentence& nmea)
 void goby::acomms::MMDriver::caack(const NMEASentence& nmea, protobuf::ModemTransmission* m)
 {   
     // ACK has nothing to do with us!
-    if(as<uint32>(nmea[2]) != driver_cfg_.modem_id())
+    if(as<int32>(nmea[2]) != driver_cfg_.modem_id())
         return;
     
     // WHOI counts starting at 1, Goby counts starting at 0

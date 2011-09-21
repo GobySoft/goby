@@ -28,6 +28,6 @@ message DriverConfig
   
   extensions 1000 to max;
   // extensions 1000-1100 used by mm_driver.proto
-  // exenstions 1201-1202 used by abc_driver.proto (example driver)
+  // extensions 1201-1202 used by abc_driver.proto (example driver)
 }
 

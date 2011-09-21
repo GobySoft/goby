@@ -1,9 +1,9 @@
 \chapter{Goby MOOS Modules}\label{chap:MOOS}
 \MakeShortVerb{\!} % makes !foo! == !foo!
 
-The acoustic communications portion of Goby was developed originally for the MOOS autonomy architecture. Thus, the relevant MOOS modules !pAcommsHandler! and others are still maintained (in goby/src/moos) for the use of the !MOOS-IvP! community. !MOOS-IvP! is explained in \cite{moos-ivp-jfr} and is available at \url{http://moos-ivp.org}. The usage of these modules is documented here. See \url{http://gobysoft.com/doc/#install} for how to install Goby.
+The acoustic communications portion of Goby was developed originally for the MOOS autonomy architecture. Thus, the relevant MOOS modules !pAcommsHandler! and others are still maintained (in goby/src/moos) for the use of the !MOOS-IvP! community. !MOOS-IvP! is explained in \cite{moos-ivp-jfr} and is available at \url{http://moos-ivp.org}. The usage of these modules is documented here. See \url{http://gobysoft.org/wiki/InstallingGoby} for how to install Goby.
 
-The beginning of this appendix motivates the design, followed by a detailed user manual for the individual MOOS processes.
+The beginning of this chapter motivates the design, followed by a detailed user manual for the individual MOOS processes.
 
 \section{Unified Command and Control for Subsea Autonomous Sensing Networks}
 
@@ -207,7 +207,7 @@ pAcommsHandler provides a(n):
 \item allows configuration of the queue priorities and dynamic growth of the priority over the time since the last sent message.
 \item allows management of WHOI CCL message types as well as DCCL queuing. 
 \end{itemize}
-\item Modem Driver: handles all Micro-Modem serial communications. The driver (goby-acomms !modemdriver! library) can be used with other modems besides the WHOI Micro-Modem (see \url{http://gobysoft.com/doc/acomms__driver.html#acomms_writedriver} for information on writing a new driver). 
+\item Modem Driver: handles all Micro-Modem serial communications. The driver (goby-acomms !modemdriver! library) can be used with other modems besides the WHOI Micro-Modem (see \url{http://gobysoft.com/doc/1.0/acomms__driver.html#acomms_writedriver} for information on writing a new driver). 
 \item MAC Manager: provides medium access control in the form of a simple slotted time division-multiple access (TDMA) scheme or flexible centralized polling (goby-acomms !amac! library).
 \end{enumerate}
 
@@ -254,7 +254,7 @@ looks for a variable in the .moos file called !LatOrigin! and publishes it to th
 \item !log_path!: folder to log all terminal output to for later debugging. Similar to system logs in /var/log.
 \item !log!: boolean to indicate whether to log terminal output or not to files in the path by !log_path!.
 \end{itemize}
-\item !modem_id!: integer that specifies the !modem_id! of this current vehicle / community. For the WHOI Micro-Modem this is the Micro-Modem ``SRC'' configuration parameter (as set by !\$CCCFG,SRC,#! to check). For the remainder of the document, !modem_id! refers to the value !\$CCCFG,SRC,modem_id!. This configuration parameter will be set on startup. Setting this within the main block for pAcommsHandler sets it for all the modems (!driver_cfg!, !dccl_cfg!, !queue_cfg!, !mac_cfg!)
+\item !modem_id!: integer that specifies the !modem_id! of this current vehicle / community. For the WHOI Micro-Modem this is the Micro-Modem ``SRC'' configuration parameter (as set by !\$CCCFG,SRC,#! to check). For the remainder of the document, !modem_id! refers to the value !\$CCCFG,SRC,modem_id!. This configuration parameter will be set on startup. Setting this within the main block for pAcommsHandler sets it for all the modules (!driver_cfg!, !dccl_cfg!, !queue_cfg!, !mac_cfg!)
 \item !modem_id_lookup_path!: path to a text file giving the mapping between !modem_id! and vehicle name and type for a given experiment. This file should look like:
 \begin{boxedverbatim}
 // modem id, vehicle name (should be community name), vehicle type
@@ -358,7 +358,7 @@ Extensions for the WHOI Micro-Modem
 
 \paragraph{Medium Access Control (MAC) Parameters (\texttt{mac\_cfg})}
 \begin{itemize}
-\item !type!: type of Medium Access Control. See \url{http://gobysoft.com/doc/acomms__mac.html#amac_schemes} for an explanation of the various MAC schemes.
+\item !type!: type of Medium Access Control. See \url{http://gobysoft.com/doc/1.0/acomms__mac.html#amac_schemes} for an explanation of the various MAC schemes.
 \item !slot_seconds!: length, in seconds, of each communication slot for the !type: MAC_AUTO_DECENTRALIZED! MAC option.
 \item !rate!: rate for the !type: MAC_AUTO_DECENTRALIZED! MAC option. For the WHOI Micro-Modem 0 is a single 32 byte packet (FSK), 2 is three frames of 64 bytes (PSK), 3 is two frames of 256 bytes (PSK), and 5 is eight frames of 256 bytes (PSK)
 \item !expire_cycles!: number of consecutive cycles in which a vehicle can be silent before being removed from the cycle for the !type: MAC_AUTO_DECENTRALIZED! MAC option.
@@ -374,16 +374,16 @@ Extensions for the WHOI Micro-Modem
 
 \subsection{MOOS variables subscribed to by pAcommsHandler}
 
-Except for DCCL \xmltag{src\_var}s and \xmltag{trigger\_var}s, pAcommsHandler uses the \href{http://code.google.com/apis/protocolbuffers/docs/reference/cpp/google.protobuf.text_format.html}{Google Protocol Buffers TextFormat} class for parsing from MOOS strings. This saves significant effort in manually parsing strings. You should use these same facilities for creating and reading messages. Two helper functions are provided in \\ \href{http://gobysoft.com/doc/moos__protobuf__helpers_8h.html}{goby/moos/libmoos\_util/moos\_protobuf\_helpers} will help you serialize and parse these messages. See \url{http://gobysoft.com/doc/acomms.html#protobuf} for a brief overview of Google Protocol Buffers as used in Goby.
+Except for DCCL \xmltag{src\_var}s and \xmltag{trigger\_var}s, pAcommsHandler uses the \href{http://code.google.com/apis/protocolbuffers/docs/reference/cpp/google.protobuf.text_format.html}{Google Protocol Buffers TextFormat} class for parsing from MOOS strings. This saves significant effort in manually parsing strings. You should use these same facilities for creating and reading messages. Two helper functions are provided in \\ \href{http://gobysoft.com/doc/1.0/moos__protobuf__helpers_8h.html}{goby/moos/libmoos\_util/moos\_protobuf\_helpers} will help you serialize and parse these messages. See \url{http://gobysoft.com/doc/1.0/acomms.html#protobuf} for a brief overview of Google Protocol Buffers as used in Goby.
 
 \begin{itemize}
 \item !DCCL!: Most variables subscribed to by pAcommsHandler are configured in the message XML files and are designated by the tags \xmltag{src\_var} (used to fetch data for a particular !message_var! within a DCCL message) and \xmltag{trigger\_var} (used to trigger the creatinon of a particular DCCL message and possibly provide some data for that message. See \ref{sec:dccl_overview} for details on the XML configuration. 
 \item !Queue!:
 \begin{itemize}
-\item Subscribes to the variables given in !queue_cfg.queue.in_pubsub_var! for CCL queue sending. The contents of this MOOS variable should be a serialized \href{http://gobysoft.com/doc/modem__message_8proto_source.html}{ModemDataTransmission}). 
-\item !ACOMMS_RANGE_COMMAND! (type: \href{http://gobysoft.com/doc/modem__message_8proto_source.html}{ModemRangingRequest}): You write this to initiate a ranging request outside the MAC schedule. Note in general it is preferable to use the MAC cycle to coordinate data and ranging.
+\item Subscribes to the variables given in !queue_cfg.queue.in_pubsub_var! for CCL queue sending. The contents of this MOOS variable should be a serialized \href{http://gobysoft.com/doc/1.0/modem__message_8proto_source.html}{ModemDataTransmission}). 
+\item !ACOMMS_RANGE_COMMAND! (type: \href{http://gobysoft.com/doc/1.0/modem__message_8proto_source.html}{ModemRangingRequest}): You write this to initiate a ranging request outside the MAC schedule. Note in general it is preferable to use the MAC cycle to coordinate data and ranging.
 \end{itemize}
-\item !MAC!: !ACOMMS_MAC_CYCLE_UPDATE! (type: \href{http://gobysoft.com/doc/amac_8proto_source.html}{MACUpdate}) You write this to update the MAC cycle for !MAC_FIXED_DECENTRALIZED! and !MAC_POLLED! modes of operation.
+\item !MAC!: !ACOMMS_MAC_CYCLE_UPDATE! (type: \href{http://gobysoft.com/doc/1.0/amac_8proto_source.html}{MACUpdate}) You write this to update the MAC cycle for !MAC_FIXED_DECENTRALIZED! and !MAC_POLLED! modes of operation.
 \end{itemize}
 
 For example, to publish a !ACOMMS_MAC_CYCLE_UPDATE!, you would use code like this:
@@ -427,12 +427,12 @@ Except for DCCL \xmltag{publish\_var}s (which use a printf style syntax), pAcomm
 \item !DCCL!: Most variables published by pAcommsHandler are configured in the message XML files and are designated by the tags \xmltag{publish\_var} within a \xmltag{publish} block. See \ref{sec:dccl_overview} for details on the XML configuration. 
 \item !Queue!:
 \begin{itemize}
-\item !ACOMMS_INCOMING_DATA! (type: \href{http://gobysoft.com/doc/modem__message_8proto_source.html}{ModemDataTransmission}) written for all received messages containing a data payload
-\item !ACOMMS_OUTGOING_DATA! (type: \href{http://gobysoft.com/doc/modem__message_8proto_source.html}{ModemDataTransmission}) written for all queued messages containing a data payload
-\item !ACOMMS_RANGE_RESPONSE! (type: \href{http://gobysoft.com/doc/modem__message_8proto_source.html}{ModemRangingReply}) written in response to ranging request (to another modem or LBL beacons)
-\item !ACOMMS_ACK! (type: \href{http://gobysoft.com/doc/modem__message_8proto_source.html}{ModemDataAck}) written when received data is acknowledged acoustically by a third party. Contains the original message.
-\item !ACOMMS_EXPIRE! (type: \href{http://gobysoft.com/doc/modem__message_8proto_source.html}{ModemDataExpire}) written when a message expires (time-to-live [ttl] exceeded) from the queue before being sent (ack = false) or acknowledged (ack = true)
-\item !ACOMMS_QSIZE! (type: \href{http://gobysoft.com/doc/queue_8proto_source.html}{QueueSize}) written when a queue changes size (pop or push) with the new size of the queue.
+\item !ACOMMS_INCOMING_DATA! (type: \href{http://gobysoft.com/doc/1.0/modem__message_8proto_source.html}{ModemDataTransmission}) written for all received messages containing a data payload
+\item !ACOMMS_OUTGOING_DATA! (type: \href{http://gobysoft.com/doc/1.0/modem__message_8proto_source.html}{ModemDataTransmission}) written for all queued messages containing a data payload
+\item !ACOMMS_RANGE_RESPONSE! (type: \href{http://gobysoft.com/doc/1.0/modem__message_8proto_source.html}{ModemRangingReply}) written in response to ranging request (to another modem or LBL beacons)
+\item !ACOMMS_ACK! (type: \href{http://gobysoft.com/doc/1.0/modem__message_8proto_source.html}{ModemDataAck}) written when received data is acknowledged acoustically by a third party. Contains the original message.
+\item !ACOMMS_EXPIRE! (type: \href{http://gobysoft.com/doc/1.0/modem__message_8proto_source.html}{ModemDataExpire}) written when a message expires (time-to-live [ttl] exceeded) from the queue before being sent (ack = false) or acknowledged (ack = true)
+\item !ACOMMS_QSIZE! (type: \href{http://gobysoft.com/doc/1.0/queue_8proto_source.html}{QueueSize}) written when a queue changes size (pop or push) with the new size of the queue.
 \end{itemize}
 \item !MAC!: Does not publish anything.
 \item !ModemDriver!: 
@@ -665,10 +665,10 @@ then !blah=3.56! is converted to a float, which will probably be zero or somethi
 
 \subsection{DCCL Encoding/Decoding Unit: XML Tag Reference}
 
-The XML tag reference is now part of the Goby Developers documentation (\url{http://gobysoft.com/doc}:
+The XML tag reference is now part of the Goby Developers documentation (\url{http://gobysoft.com/doc/1.0/}:
 \begin{itemize}
-\item See \url{http://gobysoft.com/doc/acomms__dccl.html#dccl_tags} for a structure of all the allowed tags.
-\item Visit \url{http://gobysoft.com/doc/acomms__dccl.html#dccl_tags_details} for an up-to-date reference of all the DCCL tags with a description of their usage.
+\item See \url{http://gobysoft.com/doc/1.0/acomms__dccl.html#dccl_tags} for a structure of all the allowed tags.
+\item Visit \url{http://gobysoft.com/doc/1.0/acomms__dccl.html#dccl_tags_details} for an up-to-date reference of all the DCCL tags with a description of their usage.
 \end{itemize}  
 
 \subsubsection{Algorithms}
@@ -716,12 +716,12 @@ if no match is found, the modem\_id is returned as a string (e.g. "10").
 
 \subsection{DCCL Encoding/Decoding Unit: Under the Hood}
 
-See \url{http://gobysoft.com/doc/acomms__dccl.html#dccl_how} and \cite{dccl_oceans10} for details on how the DCCL encoding is done.
+See \url{http://gobysoft.com/doc/1.0/acomms__dccl.html#dccl_how} and \cite{dccl_oceans10} for details on how the DCCL encoding is done.
 
 \subsection{Priority Message Queuing Unit}
 
 pAcommsHandler takes all the configured queues and maintains a stack of messages for each queue. when it is prompted by data by the modem, it has a priority "contest" between the queues. the queue with the current highest priority (as determined by the !value_base! and !ttl! fields) is selected. The next message in that queue is then provided to the MicroModem to send. For modem messages with multiple frames per packet, each frame is a separate contest. Thus a single packet may contain frames from different
- queues (e.g. a rate 5 PSK packet has eight 256 byte frames. frame 1 might grab a STATUS message since that has the current highest queue. then frame 2 may grab a BTR message and frames 3-8 are filled up with CTD messages (e.g. STATUS is in blackout, BTR queue is empty)). See \url{http://gobysoft.com/doc/acomms__queue.html#queue_priority} for more
+ queues (e.g. a rate 5 PSK packet has eight 256 byte frames. frame 1 might grab a STATUS message since that has the current highest queue. then frame 2 may grab a BTR message and frames 3-8 are filled up with CTD messages (e.g. STATUS is in blackout, BTR queue is empty)). See \url{http://gobysoft.com/doc/1.0/acomms__queue.html#queue_priority} for more
 
 For messages with !ack: true! (acknowledge requested), the last message continues to be re-sent (that is, it is not popped from the message queue) until the ACK is received from the modem (thus blocking the sending of other messages). Messages with !ack: false! are popped and discarded when they are sent (no retries).
 
@@ -730,15 +730,15 @@ If you do not wish for dynamic growth of the priorities, simply set the !ttl! to
 \paragraph{Messages not to us are ignored} We choose modem id 0 as broadcast. thus messages with the destination field = 0 will always be read by all nodes and reported to the
   appropriate moos variable. Otherwise, we ignore messages unless they correspond to our modem id. so if you send a message to modem id 10, pAcommsHandler for modem ids $1 \rightarrow 9$, $11\rightarrow N$  will ignore that. This is not the default behavior of the WHOI Micro-Modem, which always reports data, regardless of the sender's ID.
   
-The XML tag reference is now part of the Goby Developers documentation (\url{http://gobysoft.com/doc}:
+The XML tag reference is now part of the Goby Developers documentation (\url{http://gobysoft.com/doc/1.0/}:
 \begin{itemize}
-\item See \url{http://gobysoft.com/doc/acomms__queue.html#queue_tags} for a structure of all the allowed tags.
-\item \url{http://gobysoft.com/doc/acomms__queue.html#queue_tags_details} provides an up-to-date reference of all the Queue tags with a description of their usage.
+\item See \url{http://gobysoft.com/doc/1.0/acomms__queue.html#queue_tags} for a structure of all the allowed tags.
+\item \url{http://gobysoft.com/doc/1.0/acomms__queue.html#queue_tags_details} provides an up-to-date reference of all the Queue tags with a description of their usage.
 \end{itemize}  
 
 \subsection{Modem Driver Unit}
 
-The Modem driver unit current supports the WHOI Micro-Modem acoustic modem and is extensible to other acoustic modems. To directly monitor the modem feed, subscribe to ACOMMS\_NMEA\_IN and ACOMMS\_NMEA\_OUT. For a complete list of supported commands of the WHOI Micro-Modem, see \url{http://gobysoft.com/doc/acomms__driver.html#acomms_mmdriver}.
+The Modem driver unit current supports the WHOI Micro-Modem acoustic modem and is extensible to other acoustic modems. To directly monitor the modem feed, subscribe to ACOMMS\_NMEA\_IN and ACOMMS\_NMEA\_OUT. For a complete list of supported commands of the WHOI Micro-Modem, see \url{http://gobysoft.com/doc/1.0/acomms__driver.html#acomms_mmdriver}.
 
 \subsection{Medium Access Control (MAC) Unit}
 

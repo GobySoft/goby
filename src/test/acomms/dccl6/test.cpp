@@ -29,42 +29,55 @@ int main(int argc, char* argv[])
     goby::acomms::DCCLCodec* codec = goby::acomms::DCCLCodec::get();
 
     ShortIDMsg short_id_msg;
-    assert(codec->validate(short_id_msg.GetDescriptor()));
+    codec->validate(short_id_msg.GetDescriptor());
     codec->info(short_id_msg.GetDescriptor(), &goby::glog);
-    codec->decode(codec->encode(short_id_msg));
+
+    std::string encoded;
     assert(codec->size(short_id_msg) == 1);
+    codec->encode(&encoded, short_id_msg);
+    codec->decode(encoded, &short_id_msg);
 
     LongIDMsg long_id_msg;
-    assert(codec->validate(long_id_msg.GetDescriptor()));
+    codec->validate(long_id_msg.GetDescriptor());
     codec->info(long_id_msg.GetDescriptor(), &goby::glog);
-    codec->decode(codec->encode(long_id_msg));
     assert(codec->size(long_id_msg) == 2);
+    codec->encode(&encoded, long_id_msg);
+    codec->decode(encoded, &long_id_msg);
     
 
     ShortIDEdgeMsg short_id_edge_msg;
-    assert(codec->validate(short_id_edge_msg.GetDescriptor()));
+    codec->validate(short_id_edge_msg.GetDescriptor());
     codec->info(short_id_edge_msg.GetDescriptor(), &goby::glog);
-    codec->decode(codec->encode(short_id_edge_msg));
     assert(codec->size(short_id_edge_msg) == 1);
+    codec->encode(&encoded, short_id_edge_msg);
+    codec->decode(encoded, &short_id_edge_msg);
 
     LongIDEdgeMsg long_id_edge_msg;
-    assert(codec->validate(long_id_edge_msg.GetDescriptor()));
+    codec->validate(long_id_edge_msg.GetDescriptor());
     codec->info(long_id_edge_msg.GetDescriptor(), &goby::glog);
-    codec->decode(codec->encode(long_id_edge_msg));
+    codec->encode(&encoded, long_id_edge_msg);
+    codec->decode(encoded, &long_id_edge_msg);
     assert(codec->size(long_id_edge_msg) == 2);
 
     TooLongIDMsg too_long_id_msg;
     // should fail validation
-    assert (!codec->validate(too_long_id_msg.GetDescriptor()));
+    try
+    {
+        codec->validate(too_long_id_msg.GetDescriptor());
+        assert(false);
+    }
+    catch(goby::acomms::DCCLException& e)
+    { }
     
 
     ShortIDMsgWithData short_id_msg_with_data;
-    assert(codec->validate(short_id_msg_with_data.GetDescriptor()));
+    codec->validate(short_id_msg_with_data.GetDescriptor());
     codec->info(short_id_msg_with_data.GetDescriptor(), &goby::glog);
 
     short_id_msg_with_data.set_in_head(42);
     short_id_msg_with_data.set_in_body(37);
-    codec->decode(codec->encode(short_id_msg_with_data));
+    codec->encode(&encoded, short_id_msg_with_data);
+    codec->decode(encoded, &short_id_msg_with_data);
 
     
     std::cout << "all tests passed" << std::endl;

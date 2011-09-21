@@ -48,9 +48,10 @@ namespace goby
           private:
             bool start_specific();
 
-        
+            friend class TCPConnection;
+            friend class LineBasedConnection<boost::asio::ip::tcp::socket>;
+
           private:
-            static std::map<std::string, TCPClient*> inst_;
             boost::asio::ip::tcp::socket socket_;
             std::string server_;
             std::string port_;

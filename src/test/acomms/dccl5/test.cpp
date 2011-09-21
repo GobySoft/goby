@@ -100,15 +100,16 @@ int main(int argc, char* argv[])
     
     codec->info(msg_in1.GetDescriptor(), &std::cout);    
     std::cout << "Message in:\n" << msg_in1.DebugString() << std::endl;
-    assert(codec->validate(msg_in1.GetDescriptor()));
+    codec->validate(msg_in1.GetDescriptor());
 
     // try callbacks
     
     std::cout << "Try encode..." << std::endl;
-    std::string bytes1 = codec->encode(msg_in1);
+    std::string bytes1;
+    codec->encode(&bytes1, msg_in1);
     std::cout << "... got bytes (hex): " << goby::util::hex_encode(bytes1) << std::endl;
     std::cout << "Try decode..." << std::endl;
-    msg_out1 = codec->decode<GobyMessage>(bytes1);
+    codec->decode(bytes1, &msg_out1);
     std::cout << "... got Message out:\n" << msg_out1.DebugString() << std::endl;
     assert(msg_in1.SerializeAsString() == msg_out1.SerializeAsString());
 

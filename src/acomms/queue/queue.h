@@ -43,25 +43,28 @@ namespace goby
 {
     namespace acomms
     {
+        class QueueManager;        
+
         struct QueuedMessage
         {
             boost::shared_ptr<google::protobuf::Message> dccl_msg;
-            protobuf::ModemDataTransmission encoded_msg;
+            protobuf::QueuedMessageMeta meta;
         };
+        
 
         typedef std::list<QueuedMessage>::iterator messages_it;
         typedef std::multimap<unsigned, messages_it>::iterator waiting_for_ack_it;
 
-
+        
         class Queue
         {
           public:
-            Queue(const google::protobuf::Descriptor* desc = 0);
+            Queue(const google::protobuf::Descriptor* desc = 0, QueueManager* parent = 0);
 
-            bool push_message(const protobuf::ModemDataTransmission& encoded_msg,
+            bool push_message(const protobuf::QueuedMessageMeta& encoded_msg,
                               boost::shared_ptr<google::protobuf::Message> dccl_msg);
 
-            goby::acomms::QueuedMessage give_data(const protobuf::ModemDataRequest& request_msg);
+            goby::acomms::QueuedMessage give_data(unsigned frame);
             bool pop_message(unsigned frame);
             bool pop_message_ack(unsigned frame, boost::shared_ptr<google::protobuf::Message>& removed_msg);
             void stream_for_pop(const google::protobuf::Message& dccl_msg);
@@ -71,8 +74,8 @@ namespace goby
           
             bool get_priority_values(double* priority,
                                      boost::posix_time::ptime* last_send_time,
-                                     const protobuf::ModemDataRequest& request_msg,
-                                     const protobuf::ModemDataTransmission& data_msg);
+                                     const protobuf::ModemTransmission& request_msg,
+                                     const std::string& data);
         
             void clear_ack_queue()
             { waiting_for_ack_.clear(); }
@@ -90,7 +93,7 @@ namespace goby
             {
                 return size()
                     ? goby::util::as<boost::posix_time::ptime>(
-                        messages_.back().encoded_msg.base().time())
+                        messages_.back().meta.time())
                     : boost::posix_time::ptime();
             }
             
@@ -117,7 +120,8 @@ namespace goby
 
           private:
             const google::protobuf::Descriptor* desc_;
-        
+            QueueManager* parent_;
+            
             boost::posix_time::ptime last_send_time_;    
 
             

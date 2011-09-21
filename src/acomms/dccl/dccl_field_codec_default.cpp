@@ -48,20 +48,20 @@ goby::acomms::Bitset goby::acomms::DCCLDefaultIdentifierCodec::encode(const uint
     }
 }
 
-goby::uint32 goby::acomms::DCCLDefaultIdentifierCodec::decode(goby::acomms::Bitset* bits)
+goby::uint32 goby::acomms::DCCLDefaultIdentifierCodec::decode(const Bitset& bits)
 {
-    if(bits->test(bits->size()-1))
+    if(bits.test(bits.size()-1))
     {
         // long header
         // grabs more bits to add to the MSBs of `bits`
-        get_more_bits((LONG_FORM_ID_BYTES - SHORT_FORM_ID_BYTES)*BITS_IN_BYTE);        
-        bits->set(bits->size()-1, false);
-        return bits->to_ulong();
+        get_more_bits((LONG_FORM_ID_BYTES - SHORT_FORM_ID_BYTES)*BITS_IN_BYTE);
+        
+        return bits.to_ulong() - (1 << (bits.size()-1));
     }
     else
     {
         // short header
-        return bits->to_ulong();
+        return bits.to_ulong();
     }
 }
 
@@ -108,9 +108,9 @@ goby::acomms::Bitset goby::acomms::DCCLDefaultBoolCodec::encode(const bool& wire
     return Bitset(size(), this_field()->is_required() ? wire_value : wire_value + 1);
 }
 
-bool goby::acomms::DCCLDefaultBoolCodec::decode(Bitset* bits)
+bool goby::acomms::DCCLDefaultBoolCodec::decode(const Bitset& bits)
 {
-    unsigned long t = bits->to_ulong();
+    unsigned long t = bits.to_ulong();
     if(this_field()->is_required())
     {
         return t;
@@ -171,10 +171,10 @@ goby::acomms::Bitset goby::acomms::DCCLDefaultStringCodec::encode(const std::str
     return length_bits;
 }
 
-std::string goby::acomms::DCCLDefaultStringCodec::decode(Bitset* bits)
+std::string goby::acomms::DCCLDefaultStringCodec::decode(const Bitset& bits)
 {
-    unsigned value_length = bits->to_ulong();
-
+    unsigned value_length = bits.to_ulong();
+    
     if(value_length)
     {
         
@@ -183,19 +183,19 @@ std::string goby::acomms::DCCLDefaultStringCodec::decode(Bitset* bits)
         goby::glog.is(debug2) && goby::glog << "Length of string is = " << value_length << std::endl;
 
         
-        goby::glog.is(debug2) && goby::glog << "bits before get_more_bits " << *bits << std::endl;    
+        goby::glog.is(debug2) && goby::glog << "bits before get_more_bits " << bits << std::endl;    
 
         // grabs more bits to add to the MSBs of `bits`
         get_more_bits(value_length*BITS_IN_BYTE);
 
         
-        goby::glog.is(debug2) && goby::glog << "bits after get_more_bits " << *bits << std::endl;    
-
-        *bits >>= header_length;
-        bits->resize(bits->size() - header_length);
+        goby::glog.is(debug2) && goby::glog << "bits after get_more_bits " << bits << std::endl;    
+        Bitset string_body_bits = bits;
+        string_body_bits >>= header_length;
+        string_body_bits.resize(bits.size() - header_length);
     
         std::string value;
-        bitset2string(*bits, &value);
+        bitset2string(string_body_bits, &value);
         return value;
     }
     else
@@ -269,19 +269,20 @@ unsigned goby::acomms::DCCLDefaultBytesCodec::size(const std::string& field_valu
 }
 
 
-std::string goby::acomms::DCCLDefaultBytesCodec::decode(Bitset* bits)
+std::string goby::acomms::DCCLDefaultBytesCodec::decode(const Bitset& bits)
 {
-    bool present = (this_field()->is_required()) ? true : bits->to_ulong();
+    bool present = (this_field()->is_required()) ? true : bits.to_ulong();
     if(present)
     {
         // grabs more bits to add to the MSBs of `bits`
         get_more_bits(max_size()- min_size());
 
-        *bits >>= min_size();
-        bits->resize(bits->size() - min_size());
+        Bitset bytes_body_bits = bits;
+        bytes_body_bits >>= min_size();
+        bytes_body_bits.resize(bits.size() - min_size());
         
         std::string value;
-        bitset2string(*bits, &value);
+        bitset2string(bytes_body_bits, &value);
         return value;
     }
     else
@@ -330,34 +331,6 @@ const google::protobuf::EnumValueDescriptor* goby::acomms::DCCLDefaultEnumCodec:
 
 
 
-
-//
-// DCCLTimeCodec
-//
-goby::int32 goby::acomms::DCCLTimeCodec::pre_encode(const std::string& field_value)
-{
-    return util::as<boost::posix_time::ptime>(field_value).time_of_day().total_seconds();
-}
-
-
-std::string goby::acomms::DCCLTimeCodec::post_decode(const int32& wire_value)
-{
-    using namespace boost::posix_time;
-    using namespace boost::gregorian;
-        
-    ptime now = util::goby_time();
-    date day_sent;
-    // if message is from part of the day removed from us by 12 hours, we assume it
-    // was sent yesterday
-    if(abs(now.time_of_day().total_seconds() - double(wire_value)) > hours(12).total_seconds())
-        day_sent = now.date() - days(1);
-    else // otherwise figure it was sent today
-        day_sent = now.date();
-                
-    // this logic will break if there is a separation between message sending and
-    // message receipt of greater than 1/2 day (twelve hours)               
-    return util::as<std::string>(ptime(day_sent,seconds(wire_value)));
-}
 //
 // DCCLModemIdConverterCodec
 //

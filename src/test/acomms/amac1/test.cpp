@@ -21,7 +21,7 @@
 #include "goby/util/sci.h"
 #include "goby/acomms/connect.h"
 
-goby::acomms::MACManager mac(&goby::glog);
+goby::acomms::MACManager mac;
 const int num_cycles_check = 3;
 int first_cycle = -1;
 int current_cycle = -1;
@@ -29,10 +29,10 @@ int me = 1;
 
 using goby::acomms::operator<<;
 
-void initiate_transmission(goby::acomms::protobuf::ModemDataInit* msg)
+void initiate_transmission(const goby::acomms::protobuf::ModemTransmission& msg)
 {
-    std::cout << "We were told to start transmission of " << *msg << std::endl;
-    assert(msg->base().src() == me);
+    std::cout << "We were told to start transmission of " << msg << std::endl;
+    assert(msg.src() == me);
     double cycles_since_day = (goby::util::goby_time().time_of_day().total_milliseconds() / 1000.0) / mac.cycle_duration();
     
     std::cout << std::setprecision(15) << cycles_since_day << std::endl;
@@ -59,26 +59,26 @@ int main(int argc, char* argv[])
     cfg.set_modem_id(me);
     cfg.set_type(goby::acomms::protobuf::MAC_FIXED_DECENTRALIZED);
 
-    goby::acomms::protobuf::Slot downlink_slot;
+    goby::acomms::protobuf::ModemTransmission downlink_slot;
     downlink_slot.set_src(1);
     downlink_slot.set_rate(0);
-    downlink_slot.set_type(goby::acomms::protobuf::SLOT_DATA);
-    downlink_slot.set_slot_seconds(0.1);
+    downlink_slot.set_type(goby::acomms::protobuf::ModemTransmission::DATA);
+    downlink_slot.SetExtension(goby::acomms::protobuf::slot_seconds, 0.1);
     cfg.add_slot()->CopyFrom(downlink_slot);
 
-    goby::acomms::protobuf::Slot uplink3_slot;
+    goby::acomms::protobuf::ModemTransmission uplink3_slot;
     uplink3_slot.set_src(3);
     uplink3_slot.set_rate(0);
-    uplink3_slot.set_type(goby::acomms::protobuf::SLOT_DATA);
-    uplink3_slot.set_slot_seconds(0.1);
+    uplink3_slot.set_type(goby::acomms::protobuf::ModemTransmission::DATA);
+    uplink3_slot.SetExtension(goby::acomms::protobuf::slot_seconds, 0.1);
     cfg.add_slot()->CopyFrom(uplink3_slot);
 
 
-    goby::acomms::protobuf::Slot uplink4_slot;
+    goby::acomms::protobuf::ModemTransmission uplink4_slot;
     uplink4_slot.set_src(4);
     uplink4_slot.set_rate(0);
-    uplink4_slot.set_type(goby::acomms::protobuf::SLOT_DATA);
-    uplink4_slot.set_slot_seconds(0.1);
+    uplink4_slot.set_type(goby::acomms::protobuf::ModemTransmission::DATA);
+    uplink4_slot.SetExtension(goby::acomms::protobuf::slot_seconds, 0.1);
     cfg.add_slot()->CopyFrom(uplink4_slot);
 
     goby::acomms::connect(&mac.signal_initiate_transmission,
@@ -100,16 +100,16 @@ int main(int argc, char* argv[])
     mac.shutdown();
 
     // add slots not through cfg
-    mac.clear_all_slots();
-    mac.add_slot(downlink_slot);
-    mac.add_slot(uplink3_slot);
-    mac.do_work();
-    usleep(2e5);
-    mac.do_work();
+    mac.clear();
+    mac.push_back(downlink_slot);
+    mac.push_back(uplink3_slot);
+    mac.update();
     
-    mac.add_slot(uplink4_slot);
-    mac.remove_slot(downlink_slot);
-    mac.add_slot(downlink_slot);    
+    mac.push_back(uplink4_slot);
+    mac.remove(downlink_slot);
+    mac.push_back(downlink_slot);    
+    mac.update();
+
     cfg.Clear();
     me = 3;
     
@@ -119,10 +119,7 @@ int main(int argc, char* argv[])
     
     
     while(first_cycle == -1 || (current_cycle < first_cycle + num_cycles_check))
-    {
-        mac.do_work();
-        usleep(1e2);
-    }
+        mac.get_io_service().run_one();
         
     
     std::cout << "all tests passed" << std::endl;

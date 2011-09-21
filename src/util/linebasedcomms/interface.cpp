@@ -16,13 +16,6 @@
 
 #include "interface.h"
 #include "goby/core/libcore/exception.h"
-
-std::string goby::util::LineBasedInterface::delimiter_;
-boost::asio::io_service goby::util::LineBasedInterface::io_service_;
-std::deque<goby::util::protobuf::Datagram> goby::util::LineBasedInterface::in_;
-boost::mutex goby::util::LineBasedInterface::in_mutex_;
-
-
             
 
 goby::util::LineBasedInterface::LineBasedInterface(const std::string& delimiter)
@@ -33,7 +26,7 @@ goby::util::LineBasedInterface::LineBasedInterface(const std::string& delimiter)
         throw Exception("Line based comms started with null string as delimiter!");
     
     delimiter_ = delimiter;
-    boost::thread t(boost::bind(&boost::asio::io_service::run, &io_service_));
+    io_launcher_.reset(new IOLauncher(io_service_));
 }
 
 

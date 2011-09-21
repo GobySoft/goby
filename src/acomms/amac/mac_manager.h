@@ -36,10 +36,6 @@
 
 namespace goby
 {
-    namespace util
-    {
-        class FlexOstream;
-    }
 
     namespace acomms
     {
@@ -48,9 +44,9 @@ namespace goby
 
         /// \class MACManager mac_manager.h goby/acomms/amac.h
         /// \ingroup acomms_api
-        /// \brief provides an API to the goby-acomms MAC library.
-        /// \sa  amac.proto and modem_message.proto for definition of Google Protocol Buffers messages (namespace goby::acomms::protobuf).
-        class MACManager
+        /// \brief provides an API to the goby-acomms MAC library. MACManager is essentially a std::list<protobuf::ModemTransmission> plus a timer.
+        /// \sa acomms_amac.proto and acomms_modem_message.proto for definition of Google Protocol Buffers messages (namespace goby::acomms::protobuf).
+        class MACManager : public std::list<protobuf::ModemTransmission>
         {
             
           public:
@@ -58,9 +54,7 @@ namespace goby
             /// \name Constructors/Destructor
             //@{         
             /// \brief Default constructor.
-            ///
-            /// \param log std::ostream object or FlexOstream to capture all humanly readable runtime and debug information (optional).
-            MACManager(std::ostream* log = 0);
+            MACManager();
             ~MACManager();
             //@}
         
@@ -69,69 +63,37 @@ namespace goby
 
             /// \brief Starts the MAC with given configuration
             ///
-            /// \param cfg Initial configuration values (protobuf::MACConfig defined in amac.proto)
+            /// \param cfg Initial configuration values (protobuf::MACConfig defined in acomms_amac.proto)
             void startup(const protobuf::MACConfig& cfg);
 
             /// \brief Shutdown the MAC
             void shutdown();
             
-            /// \brief Must be called regularly for the MAC to perform its work (10 Hertz or so is fine)
-            void do_work();
+            /// \brief Allows the MAC timer to do its work. Does not block. If you prefer more control you can directly control the underlying boost::asio::io_service (get_io_service()) instead of using this function. This function is equivalent to get_io_service().poll();
+            void do_work() { io_.poll(); }
 
+            /// \brief You must call this after any change to the underlying list that would invalidate iterators or change the size (insert, push_back, erase, etc.).
+            void update();
+
+            
             //@}
-
-
-            /// \name Modem Slots
-            //@{
-            /// \brief Call every time a message is received from vehicle to "discover" this vehicle or reset the expire timer. Only needed when the type is amac::mac_auto_decentralized. Typically connected to ModemDriverBase::signal_all_incoming using bind().
-            ///
-            /// \param m the new incoming message (used to detect vehicles). (protobuf::ModemMsgBase defined in modem_message.proto)
-            void handle_modem_all_incoming(const protobuf::ModemMsgBase& m);
-            //@}
-
 
             /// \name Modem Signals
             //@{
             /// \brief Signals when it is time for this platform to begin transmission of an acoustic message at the start of its TDMA slot. Typically connected to ModemDriverBase::handle_initiate_transmission() using bind().
             ///
-            /// \param m a message containing details of the transmission to be initated.  (protobuf::ModemMsgBase defined in modem_message.proto)
-            boost::signal<void (protobuf::ModemDataInit* m)> signal_initiate_transmission;
-
-
-            /// \brief Signals when it is time for this platform to begin an acoustic ranging transmission to another vehicle or ranging beacon(s). Typically connected to ModemDriverBase::handle_initiate_ranging() using bind().
-            ///
-            /// \param m parameters of the ranging request to be performed (protobuf::ModemRangingRequest defined in modem_message.proto).
-            boost::signal<void (protobuf::ModemRangingRequest* m)> signal_initiate_ranging;
-            //@}
-
-            /// \name Manipulate slots
-            //@{
-            /// \return iterator to newly added slot
-            std::map<int, protobuf::Slot>::iterator add_slot(const protobuf::Slot& s);
-            /// \brief removes any slots in the cycle where protobuf::operator==(const protobuf::Slot&, const protobuf::Slot&) is true.
-            ///
-            /// \return true if one or more slots are removed
-            bool remove_slot(const protobuf::Slot& s);
-
-            /// \brief clears all slots from communications cycle.
-            void clear_all_slots(); 
-            //@}            
-
-            /// \name Other
-            //@{
-            /// \brief Adds groups for a FlexOstream logger.
-            static void add_flex_groups(util::FlexOstream* tout);            
-            //@}
-
-
-            
-            /// \example libamac/amac_simple/amac_simple.cpp
-            /// amac_simple.cpp
-        
+            /// \param m a message containing details of the transmission to be initated.  (protobuf::ModemMsgBase defined in acomms_modem_message.proto)
+            boost::signal<void (const protobuf::ModemTransmission& m)> signal_initiate_transmission;
+            /// \example acomms/amac/amac_simple/amac_simple.cpp        
             /// \example acomms/chat/chat.cpp
 
-            unsigned cycle_count() { return slot_order_.size(); }
+            unsigned cycle_count() { return std::list<protobuf::ModemTransmission>::size(); }
             double cycle_duration();
+            
+            boost::asio::io_service& get_io_service()
+            { return io_; }
+
+            const std::string& glog_mac_group() const { return glog_mac_group_; }
             
           private:
             void begin_slot(const boost::system::error_code&);
@@ -142,60 +104,49 @@ namespace goby
             void restart_timer();
             void stop_timer();
     
-            void expire_ids();
-            void process_cycle_size_change();
-
+    
             unsigned cycle_sum();
             void position_blank();
-    
-          private:
-            std::ostream* log_;
 
+          private:
             protobuf::MACConfig cfg_;
             
             // asynchronous timer
             boost::asio::io_service io_;
             boost::asio::deadline_timer timer_;
-            bool timer_is_running_;
+            // give the io_service some work to do forever
+            boost::asio::io_service::work work_;
     
             boost::posix_time::ptime next_cycle_t_;
             boost::posix_time::ptime next_slot_t_;
 
-            // <id, last time heard from>
-            typedef std::multimap<int, protobuf::Slot>::iterator id2slot_it;
-
-            id2slot_it blank_it_;
-            std::list<id2slot_it> slot_order_;
-            std::multimap<int, protobuf::Slot> id2slot_;
+            std::list<protobuf::ModemTransmission>::iterator current_slot_;
     
-            std::list<id2slot_it>::iterator current_slot_;
-    
-            unsigned cycles_since_day_start_;    
-    
-            // entropy value used to determine how the "blank" slot moves around relative to the values of the modem ids. determining the proper value for this is a bit of work and i will detail when i have time.
-            enum { ENTROPY = 5 };
-
+            unsigned cycles_since_day_start_;
+            
             bool started_up_;
+
+            std::string glog_mac_group_;
+            static int count_;
+
         };
 
-        /// Contains Google Protocol Buffers messages and helper functions. See specific .proto files for definition of the actual messages (e.g. modem_message.proto).
         namespace protobuf
         {
+            bool operator==(const ModemTransmission& a, const ModemTransmission& b)
+            { return a.SerializeAsString() == b.SerializeAsString(); }
             
-            inline bool operator<(const std::map<int, protobuf::Slot>::iterator& a, const std::map<int, protobuf::Slot>::iterator& b)
-            { return a->second.src() < b->second.src(); }
-            
-            /// \brief Are two Slots equal?
-            inline bool operator==(const protobuf::Slot& a, const protobuf::Slot& b)
-            {
-                return (a.src() == b.src() &&
-                        a.dest() == b.dest() &&
-                        a.rate() == b.rate() &&
-                        a.type() == b.type() &&
-                        a.slot_seconds() == b.slot_seconds() &&
-                        a.type() == b.type());
-            }
         }
+        
+        std::ostream& operator<<(std::ostream& os, const MACManager& mac)
+        {
+            for(std::list<protobuf::ModemTransmission>::const_iterator it = mac.begin(), n = mac.end(); it != n; ++it)
+            {
+                os << *it;
+            }
+            return os;
+        }
+        
     }
 }
 

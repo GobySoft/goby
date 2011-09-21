@@ -33,18 +33,16 @@ namespace goby
         class ABCDriver : public ModemDriverBase
         {
           public:
-            /// Instantiate with an optional logger object
-            ABCDriver(std::ostream* log = 0);
+            ABCDriver();
             void startup(const protobuf::DriverConfig& cfg);
             void shutdown();            
             void do_work();
-            void handle_initiate_transmission(protobuf::ModemDataInit* m);
+            void handle_initiate_transmission(const protobuf::ModemTransmission& m);
 
           private:
             void parse_in(const std::string& in,
                           std::map<std::string, std::string>* out);
-            void signal_and_write(const std::string& raw,
-                                  protobuf::ModemMsgBase* base_msg = 0);
+            void signal_and_write(const std::string& raw);
             
           private:
             enum { DEFAULT_BAUD = 4800 };

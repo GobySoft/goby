@@ -18,3 +18,12 @@ message QueueFlush
 {
   required uint32 dccl_id = 1;
 }
+
+message QueuedMessageMeta
+{
+  optional uint32 non_repeated_size = 1;
+  optional bool ack_requested = 2;
+  optional int32 src = 3;
+  optional int32 dest = 4;
+  optional uint64 time = 5;
+}

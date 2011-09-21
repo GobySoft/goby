@@ -1,12 +1,12 @@
 add_library(goby_acomms 
   dccl/dccl.cpp
   dccl/dccl_field_codec.cpp
+  dccl/dccl_field_codec_helpers.cpp
   dccl/dccl_field_codec_default.cpp
   dccl/dccl_field_codec_default_message.cpp
   dccl/dccl_field_codec_manager.cpp
   dccl/dccl_type_helper.cpp
   queue/queue.cpp
-  queue/queue_dccl_field_codec.cpp
   queue/queue_manager.cpp
   amac/mac_manager.cpp
   modemdriver/abc_driver.cpp

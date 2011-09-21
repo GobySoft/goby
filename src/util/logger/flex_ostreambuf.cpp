@@ -194,7 +194,10 @@ void goby::util::FlexOStreamBuf::display(std::string & s)
                 case Logger::DEBUG2:
                     if(current_verbosity_ > Logger::DEBUG2) break;
                 case Logger::DEBUG3:
-                    *cfg.os() << TermColor::esc_code_from_col(groups_[group_name_].color()) << name_ << esc_nocolor << " (" << boost::posix_time::to_iso_string(goby_time()) << "): " << s << esc_nocolor << std::endl;
+                    *cfg.os() << TermColor::esc_code_from_col(groups_[group_name_].color())
+                              << name_ << esc_nocolor <<
+                        " [" << goby::util::goby_time_as_string() << "] "
+                              << "{" << group_name_ << "}: " << s <<  std::endl;
                     break;        
             }
         }

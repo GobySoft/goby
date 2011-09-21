@@ -37,6 +37,7 @@ namespace goby
 
     namespace acomms
     {
+        /// \brief Used for all cases in DCCL when an arbitrary length set of raw bits is needed. boost::dynamic_bitset is similar to std::bitset but allows dynamic length (runtime set) bitsets.
         typedef boost::dynamic_bitset<unsigned char> Bitset;
 
 

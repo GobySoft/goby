@@ -579,7 +579,14 @@ WARN_LOGFILE           =
 # directories like "/usr/src/myproject". Separate the files or directories 
 # with spaces.
 
-INPUT                  = @CMAKE_SOURCE_DIR@/src
+INPUT                  = @CMAKE_SOURCE_DIR@/src/doc/dev_manual/doxy_body/main.dox \
+                         @CMAKE_SOURCE_DIR@/src/doc/dev_manual/doxy_body/acomms.dox \
+                         @CMAKE_SOURCE_DIR@/src/doc/dev_manual/doxy_body/acomms-dccl.dox \
+                         @CMAKE_SOURCE_DIR@/src/doc/dev_manual/doxy_body/acomms-queue.dox \
+                         @CMAKE_SOURCE_DIR@/src/doc/dev_manual/doxy_body/acomms-mac.dox \
+                         @CMAKE_SOURCE_DIR@/src/doc/dev_manual/doxy_body/acomms-driver.dox \
+                         @CMAKE_SOURCE_DIR@/src/doc/dev_manual/doxy_body/util.dox \
+                         @CMAKE_SOURCE_DIR@/src
                          
 
 # This tag can be used to specify the character encoding of the source files 

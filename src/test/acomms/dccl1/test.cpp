@@ -120,15 +120,17 @@ int main(int argc, char* argv[])
     
     std::cout << "Message in:\n" << msg_in.DebugString() << std::endl;
      
-    assert(codec->validate(msg_in.GetDescriptor()));
+    codec->validate(msg_in.GetDescriptor());
 
     std::cout << "Try encode..." << std::endl;
-    std::string bytes = codec->encode(msg_in);
+    std::string bytes;
+    codec->encode(&bytes, msg_in);
     std::cout << "... got bytes (hex): " << goby::util::hex_encode(bytes) << std::endl;
 
     std::cout << "Try decode..." << std::endl;
 
-    TestMsg msg_out = codec->decode<TestMsg>(bytes);
+    TestMsg msg_out;
+    codec->decode(bytes, &msg_out);
     
     std::cout << "... got Message out:\n" << msg_out.DebugString() << std::endl;
 

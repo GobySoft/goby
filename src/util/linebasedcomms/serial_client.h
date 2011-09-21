@@ -60,7 +60,6 @@ namespace goby
             bool start_specific();        
   
           private:
-            static std::map<std::string, SerialClient*> inst_;
             boost::asio::serial_port serial_port_; // the serial port this instance is connected to
             std::string name_;
             unsigned baud_;

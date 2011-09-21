@@ -33,7 +33,7 @@ namespace goby
         // provides stream output operator for Google Protocol Buffers Message 
         inline std::ostream& operator<<(std::ostream& out, const google::protobuf::Message& msg)
         {
-            return (out << "[[" << msg.GetDescriptor()->name() <<"]] " << msg.ShortDebugString());
+            return (out << "[[" << msg.GetDescriptor()->name() <<"]] " << msg.DebugString());
         }
         
 

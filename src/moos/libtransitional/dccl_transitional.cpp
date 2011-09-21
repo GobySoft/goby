@@ -52,8 +52,7 @@ goby::transitional::DCCLTransitionalCodec::DCCLTransitionalCodec(std::ostream* l
 
 std::set<unsigned> goby::transitional::DCCLTransitionalCodec::add_xml_message_file(const std::string& xml_file)
 {
-    size_t begin_size = messages_.size();
-            
+    size_t begin_size = messages_.size();            
         
     // Register handlers for XML parsing
     DCCLMessageContentHandler message_content(messages_);

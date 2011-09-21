@@ -21,11 +21,9 @@
 
 using goby::util::hex_encode;
 using goby::util::hex_decode;
+using goby::glog;
 
-
-goby::acomms::ABCDriver::ABCDriver(std::ostream* log /*= 0*/)
-    : ModemDriverBase(log),
-      log_(log)
+goby::acomms::ABCDriver::ABCDriver()
 {
     // other initialization you can do before you have your goby::acomms::DriverConfig configuration object
 }
@@ -37,16 +35,11 @@ void goby::acomms::ABCDriver::startup(const protobuf::DriverConfig& cfg)
     if(!driver_cfg_.has_serial_baud())
         driver_cfg_.set_serial_baud(DEFAULT_BAUD);
 
-    // log_ is allowed to be 0 (NULL), so always check it first
-    if(log_) *log_ << group("modem_out") << "ABCDriver configuration good. Starting modem..." << std::endl;
+    glog.is(debug1) && glog << group("modem_out") << "ABCDriver configuration good. Starting modem..." << std::endl;
     ModemDriverBase::modem_start(driver_cfg_);
 
-    // set your local modem id (MAC address) 
-    driver_cfg_.modem_id();
-    
-
-    {
-        
+    // set your local modem id (MAC address)
+    {   
         std::stringstream raw;
         raw << "CONF,MAC:" << driver_cfg_.modem_id() << "\r\n";
         signal_and_write(raw.str());
@@ -73,52 +66,41 @@ void goby::acomms::ABCDriver::shutdown()
     ModemDriverBase::modem_close();
 } // shutdown
 
-void goby::acomms::ABCDriver::handle_initiate_transmission(protobuf::ModemDataInit* init_msg)
+void goby::acomms::ABCDriver::handle_initiate_transmission(const protobuf::ModemTransmission& orig_msg)
 {
-    protobuf::ModemMsgBase* base_msg = init_msg->mutable_base();
+    // copy so we can modify
+    protobuf::ModemTransmission msg = orig_msg;
     
-    if(log_)
-    {
-        // base_msg->rate() can be 0 (lowest), 1, 2, 3, 4, or 5 (lowest). Map these integers onto real bit-rates
+    
+        // rate() can be 0 (lowest), 1, 2, 3, 4, or 5 (lowest). Map these integers onto real bit-rates
         // in a meaningful way (on the WHOI Micro-Modem 0 ~= 80 bps, 5 ~= 5000 bps).
-        *log_ <<  group("modem_out") << "We were asked to transmit from " << base_msg->src()
-              << " to " << base_msg->dest()
-              << " at bitrate code " << base_msg->rate() << std::endl;
-    } 
-
-    protobuf::ModemDataRequest request_msg; // used to request data from libqueue
-    protobuf::ModemDataTransmission data_msg; // used to store the requested data
-
-    // set up request_msg
-    request_msg.mutable_base()->set_src(base_msg->src());
-    request_msg.mutable_base()->set_dest(base_msg->dest());
+    glog.is(debug1) && glog <<  group("modem_out") << "We were asked to transmit from "
+                            << msg.src() << " to " << msg.dest()
+                            << " at bitrate code " << msg.rate() << std::endl;
+    
     // let's say ABC modem uses 500 byte packet
-    request_msg.set_max_bytes(500);
+    msg.set_max_frame_bytes(500);
 
-    ModemDriverBase::signal_data_request(request_msg, &data_msg);
-    
-    // do nothing with an empty message
-    if(data_msg.data().empty()) return;
-    
-    if(log_)
-    {
-        *log_ <<  group("modem_out") << "Sending these data now: " << data_msg << std::endl;
-    }
+    // no data given to us, let's ask for some
+    if(msg.frame_size() == 0)
+        ModemDriverBase::signal_data_request(&msg);
+
+    glog.is(debug1) && glog <<  group("modem_out") << "Sending these data now: " << msg.frame(0) << std::endl;
     
     // let's say we can send at three bitrates with ABC modem: map these onto 0-5
     const unsigned BITRATE [] = { 100, 1000, 10000, 10000, 10000, 10000};
 
     // I'm making up a syntax for the wire protocol...
     std::stringstream raw;
-    raw << "SEND,TO:" << data_msg.base().dest()
-        << ",FROM:" << data_msg.base().src()
-        << ",HEX:" << hex_encode(data_msg.data())
-        << ",BITRATE:" << BITRATE[base_msg->rate()]
+    raw << "SEND,TO:" << msg.dest()
+        << ",FROM:" << msg.src()
+        << ",HEX:" << hex_encode(msg.frame(0))
+        << ",BITRATE:" << BITRATE[msg.rate()]
         << ",ACK:TRUE"
         << "\r\n";
 
     // let anyone who is interested know
-    signal_and_write(raw.str(), base_msg);    
+    signal_and_write(raw.str());    
 } // handle_initiate_transmission
 
 void goby::acomms::ABCDriver::do_work()
@@ -134,51 +116,49 @@ void goby::acomms::ABCDriver::do_work()
         {
             boost::trim(in); // get whitespace off from either end
             parse_in(in, &parsed);
-            
-            protobuf::ModemMsgBase base_msg;
-            base_msg.set_raw(in);
-            
-            using google::protobuf::int32;
-            base_msg.set_src(goby::util::as<int32>(parsed["FROM"]));
-            base_msg.set_dest(goby::util::as<int32>(parsed["TO"]));
-            base_msg.set_time(goby::util::as<std::string>(
-                                  goby::util::goby_time()));
 
-            if(log_) *log_ << group("modem_in") << in << std::endl;
-            ModemDriverBase::signal_all_incoming(base_msg);
+            // let others know about the raw feed
+            protobuf::ModemRaw raw;
+            raw.set_raw(in);
+            ModemDriverBase::signal_raw_incoming(raw);
+            
+            protobuf::ModemTransmission msg;
+            msg.set_src(goby::util::as<int32>(parsed["FROM"]));
+            msg.set_dest(goby::util::as<int32>(parsed["TO"]));
+            msg.set_time(goby::util::goby_time<uint64>());
+            
+            glog.is(debug1) && glog << group("modem_in") << in << std::endl;
             
             if(parsed["KEY"] == "RECV")
             {
-                protobuf::ModemDataTransmission data_msg;
-                data_msg.mutable_base()->CopyFrom(base_msg);
-                data_msg.set_data(hex_decode(parsed["HEX"]));
-                if(log_) *log_ << group("modem_in") << "received: " << data_msg << std::endl;
-                ModemDriverBase::signal_receive(data_msg);
+                msg.set_type(protobuf::ModemTransmission::DATA);
+                msg.add_frame(hex_decode(parsed["HEX"]));
+                glog.is(debug1) && glog << group("modem_in") << "received: " << msg << std::endl;
             }
             else if(parsed["KEY"] == "ACKN")
             {
-                protobuf::ModemDataAck ack_msg;
-                ack_msg.mutable_base()->CopyFrom(base_msg);
-                ModemDriverBase::signal_ack(ack_msg);
+                msg.set_type(protobuf::ModemTransmission::ACK);                
             }
+            
+            ModemDriverBase::signal_receive(msg);
+
         }
         catch(std::exception& e)
         {
-            if(log_) *log_ << warn << "Bad line: " << in << std::endl;
-            if(log_) *log_ << warn << "Exception: " << e.what() << std::endl;
+            glog.is(warn) && glog << "Bad line: " << in << std::endl;
+            glog.is(warn) && glog << "Exception: " << e.what() << std::endl;
         }
     }
 } // do_work
 
-void goby::acomms::ABCDriver::signal_and_write(const std::string& raw, protobuf::ModemMsgBase* base_msg /* = 0 */)
+void goby::acomms::ABCDriver::signal_and_write(const std::string& raw)
 {
-    static protobuf::ModemMsgBase local_base_msg;
-    if(!base_msg)
-        base_msg = &local_base_msg;
-    
-    base_msg->set_raw(raw);
-    ModemDriverBase::signal_all_outgoing(*base_msg);    
-    if(log_) *log_ << group("modem_out") << boost::trim_copy(raw) << std::endl;
+
+    protobuf::ModemRaw raw_msg;
+    raw_msg.set_raw(raw);
+    ModemDriverBase::signal_raw_outgoing(raw_msg);
+
+    glog.is(debug1) && glog << group("modem_out") << boost::trim_copy(raw) << std::endl;
     ModemDriverBase::modem_write(raw); 
 }
 

@@ -30,7 +30,8 @@ namespace goby
         {
 
           protected:
-            LineBasedConnection<ASIOAsyncReadStream>()
+            LineBasedConnection<ASIOAsyncReadStream>(LineBasedInterface* interface):
+            interface_(interface)
             {}
             virtual ~LineBasedConnection<ASIOAsyncReadStream>()
             {}
@@ -39,7 +40,7 @@ namespace goby
             
             void read_start()
             {
-                async_read_until(socket(), buffer_, LineBasedInterface::delimiter_,
+                async_read_until(socket(), buffer_, interface_->delimiter(),
                                  boost::bind(&LineBasedConnection::read_complete,
                                              this,
                                              boost::asio::placeholders::error));
@@ -76,14 +77,14 @@ namespace goby
                 if(!local_endpoint().empty())
                     in_datagram_.set_dest(local_endpoint());
 
-                char last = LineBasedInterface::delimiter_.at(LineBasedInterface::delimiter_.length()-1);
+                char last = interface_->delimiter().at(interface_->delimiter().length()-1);
                 while(!std::getline(is, line, last).eof())
                 {
                     line = extra_ + line + last;
                     // grab a lock on the in_ deque because the user can modify    
-                    boost::mutex::scoped_lock lock(LineBasedInterface::in_mutex_);
+                    boost::mutex::scoped_lock lock(interface_->in_mutex());
                     
-                    LineBasedInterface::in_.push_back(in_datagram_);
+                    interface_->in().push_back(in_datagram_);
                     
                     extra_.clear();
                 }
@@ -112,6 +113,7 @@ namespace goby
             
             
           private:
+            LineBasedInterface* interface_;
             boost::asio::streambuf buffer_; 
             std::string extra_;
             protobuf::Datagram in_datagram_;

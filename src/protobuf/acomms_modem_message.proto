@@ -1,110 +1,48 @@
-import "goby/protobuf/acomms_queue.proto";
-
 package goby.acomms.protobuf;
 
-// shared for all messages
-message ModemMsgBase
+
+message ModemTransmission
 {
-  optional int32 src = 1 [default = 0]; //  0 (BROADCAST), 1-31, 
-  optional int32 dest = 2 [default = 0]; //  0 (BROADCAST), 1-31, -1 (QUERY_DESTINATION_ID)
-  optional string time = 3; // UTC time output from operator<< of boost::posix_time::ptime: e.g. "2002-Jan-01 14:23:11"
+  optional int32 src = 1 [default = -1]; //  0 (BROADCAST), 1-31, 
+  optional int32 dest = 2 [default = -1]; //  0 (BROADCAST), 1-31, -1 (QUERY_DESTINATION_ID)
+  optional uint64 time = 3; // microseconds since UNIX (1970-01-01 00:00:00 UTC)
   enum TimeSource { MODEM_TIME = 1; GOBY_TIME = 2; } 
   optional TimeSource time_source = 5 [default = GOBY_TIME]; // source of the timestamp given  
-  optional uint32 rate = 6 [default = 0]; // 0 (lowest) - 5 (highest)
-  optional string raw = 7; // "$CARXD,..."
-  optional string description = 8; // "Incoming hexadecimal data"
-}
-
-
-// initiate transmission
-message ModemDataInit
-{
-  optional ModemMsgBase base = 1;
-  optional uint32 num_frames = 2 [default = 1]; // set by the modem driver for the given rate
-  repeated ModemDataTransmission frame = 3; // if omitted, you will be queried for data on signal_data_request. You can also set some frames here and the rest will be filled by signalling a data request
-  
-  // 1000-1099 taken by MMDriver
-  extensions 1000 to max;
-}
-
-
-// data 
-message ModemDataTransmission
-{
-  optional ModemMsgBase base = 1;
-  optional bool ack_requested = 2 [default = true]; // acoustic acknowledgment requested
-  //  optional uint32 max_bytes = 3;
-  optional bytes data = 4;
-  optional uint32 frame = 5 [default = 0];  // frame number if the modem supports multiple frames per packet
-  optional uint32 dccl_id = 6;
-  
-  // 1000-1099 taken by MMDriver
-  extensions 1000 to max;
-}
-
-message ModemDataAck
-{
-  optional ModemMsgBase base = 1;
-  optional uint32 frame = 2 [default = 0]; // provided by libmodemdriver
-}
-
-message ModemDataRequest
-{
-  optional ModemMsgBase base = 1;
-  optional uint32 max_bytes = 2; // omitted means no maximum
-  optional uint32 frame = 3 [default = 0]; 
-
-  // 1000-1099 taken by MMDriver
-  extensions 1000 to max;
-}
-
-enum ClockMode
-{
-  NO_SYNC_TO_PPS_AND_CCCLK_BAD = 0;
-  NO_SYNC_TO_PPS_AND_CCCLK_GOOD = 1;
-  SYNC_TO_PPS_AND_CCCLK_BAD = 2;
-  SYNC_TO_PPS_AND_CCCLK_GOOD = 3;
-}
-
-// ranging
-enum RangingType
-{
-
-  // modem 1 interrogates modem 2; modem 2 replies and modem 1 computes one way travel time
-  MODEM_TWO_WAY_PING = 1; 
-
-  // modems 1 and 2 have synchronous clocks. modem 2 sends to modem 1 at agreed upon time
-  // and modem 1 computes one way travel time
-  MODEM_ONE_WAY_SYNCHRONOUS = 2;
-
-  // modem 1 pings a REMUS network of long baseline (LBL) beacons
-  REMUS_LBL_RANGING = 3;
-
-  // modem 1 pings up to four transponders
-  NARROWBAND_LBL_RANGING = 4;
-}
-
-message ModemRangingReply
-{
-  optional ModemMsgBase base = 1;
-  // seconds
-  repeated double one_way_travel_time = 3;
-  enum OWTTAmbiguity
+  optional int32 rate = 6 [default = 0]; // 0 (lowest) - 5 (highest), -1 (QUERY_RATE)
+ 
+  enum TransmissionType
   {
-    OWTT_EXACT = 1; // one_way_travel_time reported is correct and known
-    OWTT_SECOND_AMBIGUOUS = 2; // one way travel time fractional second is correct, but second is unknown
+    // General (DriverBase) types
+    UNKNOWN = 0;
+    DATA = 1;
+    ACK = 2;
+
+    // 1000-1099 taken by MMDriver - fields used by these types are given as MicroModem Extensions
+    // see acomms_mm_driver.proto
+    MICROMODEM_TWO_WAY_PING = 1000;   // modem 1 interrogates modem 2; modem 2 replies and modem 1 computes one way travel time: $CCMPC
+    MICROMODEM_REMUS_LBL_RANGING = 1001;     // modem 1 pings a REMUS network of long baseline (LBL) beacons: $CCPDT
+    MICROMODEM_NARROWBAND_LBL_RANGING = 1002;    // modem 1 pings up to four transponders: $CCPNT
+    MICROMODEM_MINI_DATA = 1003; // 13 bits (represented as a 1 frame, 2 byte data transmission where data is AND'd with 0x1ff) mini data transmission
   }
-  optional OWTTAmbiguity ambiguity = 4 [default = OWTT_EXACT];
-  optional RangingType type = 5;
-  optional ClockMode receiver_clk_mode = 6 [default = NO_SYNC_TO_PPS_AND_CCCLK_BAD];
-  optional ClockMode sender_clk_mode = 7 [default = NO_SYNC_TO_PPS_AND_CCCLK_BAD];
+
+  optional TransmissionType type = 7 [default = UNKNOWN];
+  
+  // for type == DATA
+  optional uint32 max_num_frames = 11 [default = 1]; // set by the modem driver for the given rate
+  optional uint32 max_frame_bytes = 12; // set by the modem driver for the given rate, omitted means no maximum
+  optional bool ack_requested = 13 [default = true]; // acoustic acknowledgment requested
+  repeated bytes frame = 14; // if omitted, you will be queried for data on signal_data_request. You can also set some frames here and the rest will be filled by signalling a data request
+
+  // for type == ACK
+  repeated int32 acked_frame = 20;
+  
+  // 1000-1099 taken by MMDriver (see acomms_mm_driver.proto)
+  // 1100-1199 taken by MACManager (see acomms_amac.proto)
+  extensions 1000 to max;
 }
 
-message ModemRangingRequest
+message ModemRaw
 {
-  optional ModemMsgBase base = 1;
-  optional RangingType type = 2;
-
-  // meters, used if type == REMUS_LBL_RANGING || type == NARROWBAND_LBL_RANGING
-  optional uint32 lbl_max_range = 3 [default = 1000]; 
+  required string raw = 7; // "$CARXD,..."
+  optional string description = 8; // "Incoming hexadecimal data"
 }

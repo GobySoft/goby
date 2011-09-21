@@ -11,5 +11,5 @@ if(build_util)
 endif()
 
 if(build_moos)
-  add_subdirectory(moos)
+  # add_subdirectory(moos)
 endif()

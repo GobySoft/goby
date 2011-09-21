@@ -33,37 +33,40 @@ int main(int argc, char* argv[])
     goby::glog.add_stream(goby::util::Logger::DEBUG3, &std::cerr);
     goby::glog.set_name(argv[0]);
     
-    goby::acomms::QueueManager* q_manager = goby::acomms::QueueManager::get();
+    goby::acomms::QueueManager q_manager;
     goby::acomms::protobuf::QueueManagerConfig cfg;
     const int MY_MODEM_ID = 1;
     cfg.set_modem_id(MY_MODEM_ID);
-    q_manager->set_cfg(cfg);
+    q_manager.set_cfg(cfg);
     
-    goby::acomms::connect(&q_manager->signal_receive, &handle_receive);
+    goby::acomms::connect(&q_manager.signal_receive, &handle_receive);
 
     test_msg1.set_double_default_optional(1.23);
     test_msg1.set_float_default_optional(0.2);
 
     std::cout << "Pushed: " << test_msg1 << std::endl;
-    q_manager->push_message(test_msg1);
+    q_manager.push_message(test_msg1);
 
 
-    goby::acomms::protobuf::ModemDataRequest request_msg;
-    request_msg.set_max_bytes(256);
-    goby::acomms::protobuf::ModemDataTransmission data_msg;
-    q_manager->handle_modem_data_request(request_msg, &data_msg);
+    goby::acomms::protobuf::ModemTransmission msg;
+    msg.set_max_frame_bytes(256);
+    q_manager.handle_modem_data_request(&msg);
     
 
-    std::cout << "requesting data, got: " << data_msg << std::endl;
-    std::cout << "\tdata as hex: " << goby::util::hex_encode(data_msg.data()) << std::endl;
+    std::cout << "requesting data, got: " << msg << std::endl;
+    std::cout << "\tdata as hex: " << goby::util::hex_encode(msg.frame(0)) << std::endl;
 
-    assert(data_msg.data() == goby::acomms::DCCLCodec::get()->encode(test_msg1));
-    assert(data_msg.base().src() == MY_MODEM_ID);
-    assert(data_msg.base().dest() == goby::acomms::BROADCAST_ID);
-    assert(data_msg.ack_requested() == false);
+    std::string encoded;
+    goby::acomms::DCCLCodec::get()->encode(&encoded, test_msg1);
+    
+    assert(msg.frame(0) == encoded);
+    assert(msg.src() == MY_MODEM_ID);
+    assert(msg.dest() == goby::acomms::BROADCAST_ID);
+
+    assert(msg.ack_requested() == false);
 
     // feed back the modem layer
-    q_manager->handle_modem_receive(data_msg);
+    q_manager.handle_modem_receive(msg);
 
     assert(receive_count == 1);
 

@@ -3,22 +3,21 @@
 // goby software and documentation is distributed under the GNU General
 // Public License v3.
 //
-// You should have received a copy of the GNU General Public License
+// You should have received a copoy of the GNU General Public License
 // along with this software (see goby/COPYING).  If not, see <http://www.gnu.org/licenses/>.
 
-/*! \page acomms_queue goby-acomms: libqueue (Message Priority Queuing)
+/*! \page acomms_queue goby-acomms: queue (Message Priority Queuing)
 
-Table of Contents for libqueue:
+Table of Contents for \c queue:
 <ul>
 <li> \ref queue_priority
-<li> \ref queue_tags
+<li> \ref queue_options
 <li> \ref queue_manager
 <ul>
 <li> \ref queue_manager_instantiate
 <li> \ref queue_manager_signals
 <li> \ref queue_manager_operation
 </ul>
-<li> \ref queue_tags_details
 </ul>
 Return to \ref acomms.
 
@@ -30,49 +29,129 @@ P(t) = V_{base} \frac{(t-t_{last})}{ttl}
  \f]
  where \f$t_{last}\f$ is the time of the last send from this %queue.
 
-This means for every %queue, the user has control over two variables (\f$V_{base}\f$ and \f$ttl\f$). \f$V_{base}\f$ is intended to capture how important the message type is in general. Higher base values mean the message is of higher importance. The \f$ttl\f$ governs the number of seconds the message lives from creation until it is destroyed by libqueue. The \f$ttl\f$ also factors into the priority calculation since all things being equal (same \f$V_{base}\f$), it is preferable to send more time sensitive messages first. So in these two parameters, the user can capture both overall value (i.e. \f$V_{base}\f$) and latency tolerance (\f$ttl\f$) of the message %queue.
+This means for every %queue, the user has control over two variables (\f$V_{base}\f$ and \f$ttl\f$). \f$V_{base}\f$ is intended to capture how important the message type is in general. Higher base values mean the message is of higher importance. The \f$ttl\f$ governs the number of seconds the message lives from creation until it is destroyed by \c queue. The \f$ttl\f$ also factors into the priority calculation since all things being equal (same \f$V_{base}\f$), it is preferable to send more time sensitive messages first. So in these two parameters, the user can capture both overall value (i.e. \f$V_{base}\f$) and latency tolerance (\f$ttl\f$) of the message %queue.
 
 The following graph illustrates the priority growth over time of three queues with different \f$ttl\f$ and \f$V_{base}\f$. A message is sent every 100 seconds and the %queue that is chosen is marked on the graph.
 
 \image html priority_graph.png
-\image latex priority_graph.eps "Graph of the growth of queueing priorities for libqueue for three different queues. A message is sent every 100 seconds from the %queue with the highest priority (numbered on the graph)." width=0.9\textwidth
+\image latex priority_graph.eps "Graph of the growth of queueing priorities for \c queue for three different queues. A message is sent every 100 seconds from the %queue with the highest priority (numbered on the graph)." width=0.9\textwidth
 
 
-\section queue_tags Queuing tag structure
+\section queue_options Queuing Protobuf Options
 
-This section gives a brief outline of the tag structure of an XML file for defining the queuing for a DCCL message. The tags fit in the same file used for DCCL encoding and decoding; see \ref dccl_tags for more information.
 
-<ul>
-<li> \xmltag{?xml version="1.0" encoding="UTF-8"?}: specifies that the file is XML; must be the first line of every message XML file.
-<li> \ref tag_message_set
-<ul>
-<li> \ref tag_message
-<ul>
-<li> \ref tag_queuing
-<ul>
-<li> \ref tag_ack
-<li> \ref tag_blackout_time
-<li> \ref tag_max_queue
-<li> \ref tag_newest_first
-<li> \ref tag_ttl
-<li> \ref tag_value_base
-</ul>
-</ul>
-</ul>
-</ul>
+This section gives an overview of the \c queue message and field options available. The full list is available in acomms_option_extensions.proto (as messages QueueFieldOptions and QueueMessageOptions).
+
+\c queue message options:
+
+
+<table border=1>
+  <tr>
+    <td><strong>name</strong></td>
+    <td><strong>type</strong></td>
+    <td><strong>default</strong></td>
+    <td><strong>description</strong></td>
+  </tr>
+  <tr>
+    <td>ack</td>
+    <td>bool</td>
+    <td>true</td>
+    <td>Whether an acoustic acknowledgment should be requested for messages sent from this queue.</td>
+  </tr>
+  <tr>
+    <td>blackout_time</td>
+    <td>uint32</td>
+    <td>0</td>
+    <td>Minimum number of seconds allowed between sending messages from this queue.</td>
+  </tr>
+  <tr>
+    <td>max_queue</td>
+    <td>uint32</td>
+    <td>0</td>
+    <td>Allowed size of the queue before overflow. If <i>newest_first</i> is true, the oldest elements are removed upon overflow, else the newest elements are (the queue blocks). 0 is a special value signifying infinity (no maximum).</td>
+  </tr>
+  <tr>
+    <td>newest_first</td>
+    <td>bool</td>
+    <td>true</td>
+    <td> (true=FILO, false=FIFO) whether to send newest messages in the queue first (FILO) or not (FIFO).</td>
+  </tr>
+  <tr>
+    <td>ttl</td>
+    <td>int32</td>
+    <td>1800</td>
+    <td>the time in seconds a message lives after its creation before being discarded. This time-to-live also factors into the growth in priority of a queue. see value_base for the main discussion on this. 0 is a special value indicating infinite life (i.e. ttl = 0 is effectively the same as ttl = \f$\infty\f$)</td>
+  </tr>
+  <tr>
+    <td>value_base</td>
+    <td>double</td>
+    <td>1</td>
+    <td> base priority value for this message
+  queue. priorities are calculated on a request for data by the modem
+  (to send a message). The queue with the highest priority (and isn't
+  in blackout) is chosen. The actual priority (\f$P\f$) is calculated
+  by \f$P(t) = V_{base} \frac{(t-t_{last})}{ttl}\f$ where \f$V_{base}\f$ is
+  the value set here, \f$t\f$ is the current time (in seconds), \f$t_{last}\f$
+  is the time of the last send from this queue, and \f$ttl\f$ is the ttl option. Essentially, a message with low
+  ttl will become effective quickly again
+  after a sent message (the priority line grows faster). See \ref queue_priority for further discussion.</td>
+  </tr>
+  <tr>
+    <td>encode_on_demand</td>
+    <td>bool</td>
+    <td>false</td>
+    <td>(Advanced) enable on-demand encoding where rather than queueing data, the data request is forwarded up to the application level via the signal goby::acomms::QueueManager::signal_data_on_demand</td>
+  </tr>
+  <tr>
+    <td>on_demand_skew_seconds</td>
+    <td>double</td>
+    <td>1</td>
+    <td>(Advanced) if encode_on_demand == true, this sets the number of seconds before data encoded on demand are considering stale and thus must be demanded again with the signal goby::acomms::QueueManager::signal_data_on_demand. Setting this to 0 is unadvisable as it will cause many calls to goby::acomms::QueueManager::signal_data_on_demand and thus waste CPU cycles needlessly encoding.</td>
+  </tr>
+</table>
+
+\c queue field options:
+
+<table border=1>
+  <tr>
+    <td><strong>name</strong></td>
+    <td><strong>type</strong></td>
+    <td><strong>default</strong></td>
+    <td><strong>description</strong></td>
+  </tr>
+  <tr>
+    <td>is_src</td>
+    <td>bool</td>
+    <td>false</td>
+    <td>Set to true to indicate this field contains the source modem ID address (as the WireType, which must be an int32, int64, uint32, or uint64).  If no field has this option set, the message source is set to the goby::acomms::QueueManager::modem_id().</td>
+  </tr>
+  <tr>
+    <td>is_dest</td>
+    <td>bool</td>
+    <td>false</td>
+    <td>Set to true to indicate this field contains the destination modem ID address (as the WireType, which must be an int32, int64, uint32, or uint64).  If no field has this option set, the message destination is set to goby::acomms::BROADCAST_ID.</td>
+  </tr>
+  <tr>
+    <td>is_time</td>
+    <td>bool</td>
+    <td>false</td>
+    <td>Set to true to indicate this field contains the time (the FieldType must be a boost::posix_time::ptime, double or uint64. See goby::util::goby_time()). If no field has this option set, the message is time-stamped when it is pushed to the queue.</td>
+  </tr>
+</table>
 
 \section queue_manager Interacting with the QueueManager
 
 \subsection queue_manager_instantiate Instantiate and configure
 
-The goby::acomms::QueueManager is configured similarly to the goby::acomms::DCCLCodec. You need to add queues to the \link queue.proto goby::acomms::protobuf::QueueManagerConfig \endlink which is done by feeding it either XML files or \link queue.proto goby::acomms::protobuf::QueueConfig \endlink objects. You also need to set a unique identification number in the range 1-31 for this platform (the "modem_id"). This is analogous to a MAC address.
+The goby::acomms::QueueManager is configured similarly to the goby::acomms::DCCLCodec. You need to set a unique identification number for this platform (the "modem ID") through the \link acomms_queue.proto goby::acomms::protobuf::QueueManagerConfig \endlink. You need to add queues via calls to goby::acomms::QueueManager::add_queue(). Calling add_queue() also calls goby::acomms::DCCLCodec::validate() so you do not need to call that method separately.
+
+When using goby::acomms::QueueManager you will not likely need to use the goby::acomms::DCCLCodec directly much at all. All messages are pushed to the queues unencoded and are encoded automatically by goby::acomms::QueueManager before sending. Likewise, all messages received are decoded before being provided on the signal goby::acomms::QueueManager::signal_receive.
 
 \code
-goby::acomms::QueueManager q_manager(&std::clog);
 goby::acomms::protobuf::QueueManagerConfig cfg;
-cfg.add_message_file()->set_path("path/to/file.xml");
-cfg.set_modem_id(1); // unique id 1-31 for each platform
+cfg.set_modem_id(our_id);
 q_manager.set_cfg(cfg);
+q_manager.add_queue<Simple>();
 \endcode
 
 \subsection queue_manager_signals Signals and (application layer) slots
@@ -81,163 +160,59 @@ Then, you need to do a few more initialization chores:
 <ul>
 <li> Connect (using goby::acomms::connect()) QueueManager signals to your application layer slots (functions or member functions that match the signal's signature). You do not need to connect a slot to a given signal if you do not need its functionality. See \ref signal_slot for more on using signals and slots:
 <ul>
-<li> Received DCCL data: goby::acomms::QueueManager::signal_receive
-<li> Received CCL data: goby::acomms::QueueManager::signal_receive_ccl
+<li> Received (and decoded) DCCL data: goby::acomms::QueueManager::signal_receive
 <li> Received acknowledgements: goby::acomms::QueueManager::signal_ack
 <li> Expired messages (ttl exceeded): goby::acomms::QueueManager::signal_expire
 </ul>
 <li> Additional advanced features
 <ul>
 <li> Connect a slot to learn every time a %queue size changes due to a new message being pushed or a message being sent: goby::acomms::QueueManager::signal_queue_size_change
-<li> Request that a %queue be <i>on_demand</i>, that is, request data from the application layer every time the %modem layer requests data (DCCL messages only). This effectively bypasses the %queue and forwards the modem's data request to the application layer. Use this for sending highly time sensitive data which needs to be encoded immediately prior to sending. Set the \link xml_config.proto ON_DEMAND manipulator \endlink for that particular XML file in \link queue.proto goby::acomms::protobuf::QueueManagerConfig \endlink. You must also connect a slot that will be executed each time data is request to the signal goby::acomms::QueueManager::signal_data_on_demand.
+<li> Request that a %queue be <i>on_demand</i>, that is, request data from the application layer every time the %modem layer requests data (DCCL messages only). This effectively bypasses the %queue and forwards the modem's data request to the application layer. Use this for sending highly time sensitive data which needs to be encoded immediately prior to sending. Set the encode_on_demand option to true for that particular Protobuf message (and if desired change the on_demand_skew_seconds). You must also connect a slot that will be executed each time data is requested to the signal goby::acomms::QueueManager::signal_data_on_demand.
 </ul>
 </ul>
 
 \subsection queue_manager_operation Operation
 
-At this point the goby::acomms::QueueManager is ready to use. At the application layer, new messages are pushed to the queues for sending using goby::acomms::QueueManager::push_message. Each %queue is identified by a unique \link queue.proto goby::acomms::protobuf::QueueKey \endlink, which is simply the identification number of the %queue (\ref tag_id for DCCL queues or the decimal representation of the first byte of a CCL message) and the %queue type (\link queue.proto goby::acomms::protobuf::QUEUE_DCCL or goby::acomms::protobuf::QUEUE_CCL \endlink).
+At this point the goby::acomms::QueueManager is ready to use. At the application layer, new messages are pushed to the queues for sending using goby::acomms::QueueManager::push_message. Each %queue is identified by its DCCL (Protobuf) name.
 
-At the driver layer, messages are requested using goby::acomms::QueueManager::handle_modem_data_request, incoming messages are published using goby::acomms::QueueManager::handle_modem_receive, and acknowledgements are given using goby::acomms::QueueManager::handle_modem_ack. If using the goby-acomms drivers (i.e. some class derived from goby::acomms::ModemDriverBase), simply call goby::acomms::bind (ModemDriverBase&, QueueManager&) and these methods (slots) will be invoked automatically from the proper driver signals.
+At the driver layer, messages are requested using goby::acomms::QueueManager::handle_modem_data_request and incoming messages (including acknowledgments) are published using goby::acomms::QueueManager::handle_modem_receive. If using the goby-acomms drivers (i.e. some class derived from goby::acomms::ModemDriverBase), simply call goby::acomms::bind (ModemDriverBase&, QueueManager&) and these methods (slots) will be invoked automatically from the proper driver signals.
 
-You must run goby::acomms::QueueManager::do_work() regularly (faster than 1 Hz; 10 Hertz is good) to process expired messages (goby::acomms::QueueManager::signal_expire). All other signals are emitted in response to a driver level signal (and thus are called during a call to goby::acomms::ModemDriverBase::do_work()).
+You must run goby::acomms::QueueManager::do_work() regularly (faster than 1 Hz; 10 Hertz is good) to process expired messages (goby::acomms::QueueManager::signal_expire). All other signals are emitted in response to a driver level signal (and thus are called during a call to goby::acomms::ModemDriverBase::do_work() if using \ref acomms_driver "the Goby modemdriver").
 
-\section queue_tags_details Queuing XML Tags Reference
-
-\subsection tag_ack <ack>
-\b Syntax:
-\code
-<?xml version="1.0" encoding="UTF-8"?>
-<message_set>
-  <message>
-    <queuing>
-      ...
-      <ack>true</ack>
-    </queuing>    
-  </message>
-</message_set>
-\endcode
-
-\b Description: boolean flag (1=true, 0=false) whether to request an
-  acoustic acknowledgment on all sent messages from this field. If
-  omitted, default of 1 (true, request ack) is used. Note that if a message has a destination of 0 (broadcast), an ack will never be requested regardless of the value set here.
-
-\subsection tag_blackout_time <blackout_time>
-\b Syntax:
-\code
-<?xml version="1.0" encoding="UTF-8"?>
-<message_set>
-  <message>
-    <queuing>
-      ...
-      <blackout_time>0</blackout_time>
-    </queuing>    
-  </message>
-</message_set>
-\endcode
-
-\b Description: time in seconds after sending a message
-  from this queue for which no more messages will be sent. Use this
-  field to stop an always full queue from hogging the channel. If
-  omitted, default of 0 (no blackout) is used.
-
-\subsection tag_max_queue <max_queue>
-\b Syntax:
-\code
-<?xml version="1.0" encoding="UTF-8"?>
-<message_set>
-  <message>
-    <queuing>
-      ...
-      <max_queue>1</max_queue>
-    </queuing>    
-  </message>
-</message_set>
-\endcode
-
-\b Description: number of messages allowed in the queue before
-  discarding messages. If \ref tag_newest_first is set to true, the
-  oldest message in the queue is discarded to make room for the new
-  message. Otherwise, any new messages are discarded until the space
-  in the queue opens up.
-
-\subsection tag_newest_first <newest_first>
-\b Syntax:
-\code
-<?xml version="1.0" encoding="UTF-8"?>
-<message_set>
-  <message>
-    <queuing>
-      ...
-      <newest_first>true</newest_first>
-    </queuing>    
-  </message>
-</message_set>
-\endcode
-
-\b Description: boolean flag (1=true=FILO, 0=false=FIFO)
-  whether to send newest messages in the queue first (FILO) or not
-  (FIFO).
+See \ref acomms/queue/queue_simple/queue_simple.cpp "queue_simple.cpp" for a basic complete example.
 
 
-\subsection tag_value_base <value_base>
-\b Syntax:
-\code
-<?xml version="1.0" encoding="UTF-8"?>
-<message_set>
-  <message>
-    <queuing>
-      ... 
-      <value_base>10</value_base>
-    </queuing>    
-  </message>
-</message_set>
-\endcode
+\section queue_examples Example messages
 
-\b Description: base priority value for this message
-  queue. priorities are calculated on a request for data by the modem
-  (to send a message). The queue with the highest priority (and isn't
-  in blackout) is chosen. The actual priority (\f$P\f$) is calculated
-  by P(t) = \f$V_{base} \frac{(t-t_{last})}{ttl}\f$ where \f$V_{base}\f$ is
-  the value set here, \f$t\f$ is the current time (in seconds), \f$t_{last}\f$
-  is the time of the last send from this queue, and \f$ttl\f$ is the
-  \ref tag_ttl. Essentially, a message with low
-  \ref tag_ttl will become effective quickly again
-  after a sent message (the priority line grows faster). See \ref queue_priority for further discussion.
+This section provides a listing of \c queue example Protobuf messages used in the code examples and unit tests.
 
-\subsection tag_ttl <ttl>
-\b Syntax:
-\code
-<?xml version="1.0" encoding="UTF-8"?>
-<message_set>
-  <message>
-    <queuing>
-      ... 
-      <ttl>120</ttl>
-    </queuing>    
-  </message>
-</message_set>
-\endcode
+\subsection queue_examples_simple Minimal functional DCCL / Queue message
 
-\b Description: the time in seconds a message lives after its creation before being discarded. This time-to-live also factors into the growth in priority of a queue. see \ref tag_value_base for the main discussion on this. 0 is a special value indicating infinite life (i.e. \xmltag{ttl,0} is effectively the same as \xmltag{ttl,\f$\infty\f$}).
+simple.proto
+\verbinclude simple.proto
 
-\subsection tag_queuing <queuing>
-\b Syntax:
-\code
-<?xml version="1.0" encoding="UTF-8"?>
-<message_set>
-  <message>
-    <queuing>
-      <ack></ack>
-      <blackout_time></blackout_time>
-      <max_queue></max_queue>
-      <newest_first></newest_first>
-      <priority_base></priority_base>
-      <priority_time_const></priority_time_const>
-    </queuing>    
-  </message>
-</message_set>
-\endcode
+\subsection queue_examples_test1 Test1
 
-\b Description: Represents the XML embodiment of the \link queue.proto goby::acomms::protobuf::QueueConfig \endlink.
+queue1/test.proto
+\verbinclude queue1/test.proto
+\sa \ref queue1/test.cpp
+
+\subsection queue_examples_test234 Test2, Test3, Test4
+
+dccl3/test.proto
+\verbinclude dccl3/test.proto
+protobuf/header.proto
+\verbinclude protobuf/header.proto
+
+\sa \ref queue2/test.cpp
+\sa \ref queue3/test.cpp
+\sa \ref queue4/test.cpp
+
+\subsection queue_examples_test2 Test5
+
+queue5/test.proto
+\verbinclude queue5/test.proto
+
+\sa \ref queue5/test.cpp
 
 */

@@ -16,9 +16,9 @@
 
 #include "tcp_server.h"
 
-boost::shared_ptr<goby::util::TCPConnection> goby::util::TCPConnection::create()
+boost::shared_ptr<goby::util::TCPConnection> goby::util::TCPConnection::create(LineBasedInterface* interface)
 {
-    return boost::shared_ptr<TCPConnection>(new TCPConnection());
+    return boost::shared_ptr<TCPConnection>(new TCPConnection(interface));
 }        
 
 void goby::util::TCPConnection::socket_write(const protobuf::Datagram& line) // give it a string
@@ -54,7 +54,7 @@ void goby::util::TCPServer::do_close(const boost::system::error_code& error)
 
 void goby::util::TCPServer::start_accept()
 {
-    new_connection_ = TCPConnection::create();
+    new_connection_ = TCPConnection::create(this);
     acceptor_.async_accept(new_connection_->socket(),
                            boost::bind(&TCPServer::handle_accept, this, new_connection_, boost::asio::placeholders::error));
 }

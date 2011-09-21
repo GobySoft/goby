@@ -34,7 +34,7 @@ namespace goby
           protected:
           LineBasedClient(const std::string& delimiter)
               : LineBasedInterface(delimiter),
-                LineBasedConnection<ASIOAsyncReadStream>()
+                LineBasedConnection<ASIOAsyncReadStream>(this)
                 { }            
 
             enum { RETRY_INTERVAL = 10 };            
@@ -86,11 +86,9 @@ namespace goby
             void socket_close(const boost::system::error_code& error)
             { do_close(error); }
 
-            //for static members of LineBasedInterface
-            friend class LineBasedConnection<ASIOAsyncReadStream>;
           private:        
             boost::posix_time::ptime last_start_time_;
-            
+           
             LineBasedClient(const LineBasedClient&);
             LineBasedClient& operator= (const LineBasedClient&);
         

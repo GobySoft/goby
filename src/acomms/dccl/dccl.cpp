@@ -55,7 +55,7 @@ std::string goby::acomms::DCCLCodec::glog_decode_group_;
 //
 
 goby::acomms::DCCLCodec::DCCLCodec()
-    : DEFAULT_CODEC_NAME("_default"),
+    : DEFAULT_CODEC_NAME(""),
       current_id_codec_(DEFAULT_CODEC_NAME)
 {
     id_codec_[current_id_codec_] = boost::shared_ptr<DCCLTypedFieldCodec<uint32> >(new DCCLDefaultIdentifierCodec);

@@ -205,7 +205,9 @@ boost::posix_time::ptime goby::acomms::MACManager::next_cycle_time()
     using namespace boost::gregorian;
     using namespace boost::posix_time;
 
-    long since_day_start = goby_time().time_of_day().total_microseconds();
+    time_duration time_of_day = goby_time().time_of_day();
+    double since_day_start = time_of_day.total_seconds()*1e6
+        + (time_of_day-seconds(time_of_day.total_seconds())).total_microseconds();
 
     
     glog.is(debug1) && glog << group(glog_mac_group_) << "microseconds since day start: "

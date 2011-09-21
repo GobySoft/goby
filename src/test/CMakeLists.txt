@@ -1,7 +1,3 @@
-if(build_core)
-  add_subdirectory(core)
-endif()
-
 if(build_acomms)
   add_subdirectory(acomms)
 endif()

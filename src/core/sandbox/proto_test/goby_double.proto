@@ -1,5 +1,0 @@
- message GobyDouble {
-  optional double value = 1;
-  optional double time = 2;
-  optional int32 foo = 3 [default=3430];
-}

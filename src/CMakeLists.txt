@@ -51,7 +51,7 @@ option(build_protobuf "Build the Goby Google Protocol buffers library" ON)
 
 # module dependencies
 # you can optionally build up to any point in this chain
-# protobuf -> util -> acomms -> core -> moos
+# protobuf -> util -> acomms -> moos
 if(build_protobuf)
   add_subdirectory(protobuf)
 
@@ -61,37 +61,22 @@ if(build_protobuf)
 
     option(build_acomms "Build the Goby Acoustic Communications library and applications (requires goby-util)" ON)
     if(build_acomms)
-      add_subdirectory(acomms)
+      add_subdirectory(acomms)      
 
-      
-      find_package(ZeroMQ)
-      if(ZEROMQ_FOUND)
-        include_directories(${ZEROMQ_INCLUDE_DIRS})
-        option(build_core "Build the Goby Core libraries and applications" ON)  
+      find_package(MOOS)
+      if(MOOS_FOUND)
+        include_directories(${MOOS_INCLUDE_DIRS})
+        add_definitions(-DHAS_MOOS)
+        option(build_moos "Build the Acoustic Communications MOOS apps (pAcommsHandler, etc.)" ON)
       else()
-        missing_optional_library(ZeroMQ)
-        option(build_core "Build the Goby Core libraries and applications" OFF) 
+        missing_optional_library(MOOS)
+        option(build_moos "Build the Acoustic Communications MOOS apps (pAcommsHandler, etc.)" OFF)
       endif()
 
-      if(build_core)
-        add_subdirectory(core)
-
-        # MOOS requires core, so don't try to build if core is not built
-        find_package(MOOS)
-        if(MOOS_FOUND)
-          include_directories(${MOOS_INCLUDE_DIRS})
-          add_definitions(-DHAS_MOOS)
-          option(build_moos "Build the Acoustic Communications MOOS apps (pAcommsHandler, etc.)" ON)
-        else()
-          missing_optional_library(MOOS)
-          option(build_moos "Build the Acoustic Communications MOOS apps (pAcommsHandler, etc.)" OFF)
-        endif()
-
-        if(build_moos)
-          # MOOS support still broken for 2.0 beta1
-          # add_subdirectory(moos)
-        endif(build_moos)
-      endif(build_core)
+      if(build_moos)
+        # MOOS support still broken for 2.0 beta1
+        # add_subdirectory(moos)
+      endif(build_moos)
     endif(build_acomms)
   endif(build_util)
 endif(build_protobuf)

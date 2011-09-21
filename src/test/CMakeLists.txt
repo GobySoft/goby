@@ -1,3 +1,5 @@
+set(CMAKE_SKIP_RPATH OFF)
+
 if(build_acomms)
   add_subdirectory(acomms)
 endif()
@@ -5,3 +7,4 @@ endif()
 if(build_util)
   add_subdirectory(util)
 endif()
+

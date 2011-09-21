@@ -451,7 +451,7 @@ void goby::acomms::MMDriver::cccyc(protobuf::ModemTransmission* msg)
     
     // don't start a local cycle if we have no data
     const bool is_local_cycle = msg->src() == driver_cfg_.modem_id();
-    if(!(is_local_cycle && msg->frame_size() == 0))
+    if(!(is_local_cycle && (msg->frame_size() == 0 || msg->frame(0) == "")))
     {
         //$CCCYC,CMD,ADR1,ADR2,Packet Type,ACK,Npkt*CS
         NMEASentence nmea("$CCCYC", NMEASentence::IGNORE);
@@ -838,7 +838,7 @@ void goby::acomms::MMDriver::carxd(const NMEASentence& nmea, protobuf::ModemTran
     if(!nmea[5].empty()) // don't add blank messages
     {
         if(static_cast<unsigned>(m->frame_size()) != frame)
-            glog.is(warn) && glog << group(glog_out_group()) << "frame count mismatch: (modem reqports): " << frame << ", (goby expects): " << m->frame_size();
+            glog.is(warn) && glog << group(glog_out_group()) << "frame count mismatch: (modem reports): " << frame << ", (goby expects): " << m->frame_size() << std::endl;
         else
             m->add_frame(hex_decode(nmea[5]));
     }

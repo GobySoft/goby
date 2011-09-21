@@ -97,7 +97,6 @@ int main(int argc, char* argv[])
     // Initiate DCCL (libdccl)
     //
     goby::acomms::protobuf::DCCLConfig dccl_cfg;
-    dccl_cfg.set_crypto_passphrase("secret");
     
     dccl_->validate<ChatMessage>();    
     

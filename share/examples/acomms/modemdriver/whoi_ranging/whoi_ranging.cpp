@@ -44,7 +44,7 @@ int main(int argc, char* argv[])
         return usage();
 
     goby::glog.set_name(argv[0]);
-    goby::glog.add_stream(goby::util::Logger::DEBUG1, &std::clog);
+    goby::glog.add_stream(goby::util::logger::DEBUG1, &std::clog);
     
     //
     // 1. Create and initialize the Micro-Modem driver

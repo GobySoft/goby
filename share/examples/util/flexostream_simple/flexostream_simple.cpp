@@ -17,9 +17,10 @@
 #include <boost/asio/deadline_timer.hpp> // for deadline_timer
 #include <fstream>
 
-using goby::util::glogger;
 using goby::util::Colors;
 using namespace goby::util::tcolor; // red, blue, etc.
+using namespace goby::util::logger; // VERBOSE, DEBUG, WARN, etc.
+using goby::glog;
 
 void output();
 
@@ -33,12 +34,12 @@ int main(int argc, char* argv[])
     }
 
     // write our name with each log entry
-    glogger().set_name(argv[0]);
+    goby::glog.set_name(argv[0]);
 
     // set colors and descriptions for the groups
-    glogger().add_group("a", Colors::green, "group a");
-    glogger().add_group("b", Colors::magenta, "group b");
-    glogger().add_group("c", Colors::blue, "group c");
+    goby::glog.add_group("a", Colors::green, "group a");
+    goby::glog.add_group("b", Colors::magenta, "group b");
+    goby::glog.add_group("c", Colors::blue, "group c");
     
     std::string verbosity = argv[1];
 
@@ -48,7 +49,7 @@ int main(int argc, char* argv[])
         fout.open(argv[2]);
         if(fout.is_open())
         {            
-            glogger().add_stream(goby::util::Logger::DEBUG1, &fout);
+            goby::glog.add_stream(goby::util::logger::DEBUG1, &fout);
         }
         else
         {
@@ -61,39 +62,39 @@ int main(int argc, char* argv[])
     {
         std::cout << "--- testing quiet ---" << std::endl;
         // add a stream with the quiet setting
-        glogger().add_stream(goby::util::Logger::QUIET, &std::cout);
+        goby::glog.add_stream(goby::util::logger::QUIET, &std::cout);
         output();
     }
     else if(verbosity == "warn")
     {
         std::cout << "--- testing warn ---" << std::endl;
         // add a stream with the quiet setting
-        glogger().add_stream(goby::util::Logger::WARN, &std::cout);
+        goby::glog.add_stream(goby::util::logger::WARN, &std::cout);
         output();
     }
     else if(verbosity == "verbose")
     {
         std::cout << "--- testing verbose ---" << std::endl;
         // add a stream with the quiet setting
-        glogger().add_stream(goby::util::Logger::VERBOSE, &std::cout);
+        goby::glog.add_stream(goby::util::logger::VERBOSE, &std::cout);
         output();
     }
     else if(verbosity == "debug")
     {
         std::cout << "--- testing debug 1---" << std::endl;
         // add a stream with the quiet setting
-        glogger().add_stream(goby::util::Logger::DEBUG1, &std::cout);
+        goby::glog.add_stream(goby::util::logger::DEBUG1, &std::cout);
         output();
     }
     else if(verbosity == "gui")
     {
         std::cout << "--- testing gui ---" << std::endl;
         // add a stream with the quiet setting
-        glogger().add_stream(goby::util::Logger::GUI, &std::cout);
+        goby::glog.add_stream(goby::util::logger::GUI, &std::cout);
         output();
 
         const int CLOSE_TIME = 60;
-        glogger() << warn << "closing in " << CLOSE_TIME << " seconds!" << std::endl;
+        goby::glog << warn << "closing in " << CLOSE_TIME << " seconds!" << std::endl;
 
         // `sleep` is not thread safe, so we use a boost::asio::deadline_timer
         boost::asio::io_service io_service;
@@ -114,14 +115,13 @@ int main(int argc, char* argv[])
 
 void output()
 {
-    glogger() << warn << "this is warning text" << std::endl;
-    glogger() << "this is normal text" << std::endl;
-    glogger() << lt_blue << "this is light blue text (in color terminals)"
-              << nocolor << std::endl;
-    glogger() << debug1 << "this is debug text" << std::endl;
+    glog.is(WARN) && glog << "this is warning text" << std::endl;
+    glog.is(VERBOSE) && glog << "this is normal text" << std::endl;
+    glog.is(VERBOSE) && glog << lt_blue << "this is light blue text (in color terminals)" << nocolor << std::endl;
+    glog.is(DEBUG1) && glog << "this is debug text" << std::endl;
 
-    glogger() << group("a") << "this text is related to a" << std::endl;
-    glogger() << group("b") << "this text is related to b" << std::endl;
-    glogger() << group("c") << warn << "this warning is related to c" << std::endl;
+    glog.is(VERBOSE) && glog << group("a") << "this text is related to a" << std::endl;
+    glog.is(VERBOSE) && glog << group("b") << "this text is related to b" << std::endl;
+    glog.is(VERBOSE) && glog << group("c") << warn << "this warning is related to c" << std::endl;
 
 }

@@ -62,7 +62,7 @@ int main(int argc, char* argv[])
     cfg.set_modem_id(our_id);
 
     goby::glog.set_name(argv[0]);
-    goby::glog.add_stream(goby::util::Logger::DEBUG1, &std::clog);
+    goby::glog.add_stream(goby::util::logger::DEBUG1, &std::clog);
     
     if(argc == 4)
     {

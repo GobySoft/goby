@@ -26,7 +26,7 @@ void init_transmission(const goby::acomms::protobuf::ModemTransmission& msg);
 int main(int argc, char* argv[])
 {
     goby::glog.set_name(argv[0]);
-    goby::glog.add_stream(goby::util::Logger::DEBUG1, &std::clog);
+    goby::glog.add_stream(goby::util::logger::DEBUG1, &std::clog);
 
     //
     // 1. Create a MACManager

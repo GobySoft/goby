@@ -1,2 +1,2 @@
 add_executable(flexostream_simple flexostream_simple.cpp)
-target_link_libraries(flexostream_simple goby_logger)
+target_link_libraries(flexostream_simple goby_util)

@@ -19,6 +19,5 @@ find_package(ProtobufGobyExamples REQUIRED)
 protobuf_include_dirs(${GOBY_INCLUDE_DIRS})
 
 add_subdirectory(acomms)
-add_subdirectory(core)
 add_subdirectory(util)
 add_subdirectory(moos)

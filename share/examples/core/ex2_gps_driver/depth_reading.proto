@@ -1,8 +1,0 @@
-import "goby/protobuf/header.proto";
-
-message DepthReading
-{
-  // time is in header
-  required Header header = 1;
-  required double depth = 2;
-}

@@ -22,6 +22,8 @@
 #include <limits>
 #include <bitset>
 
+#include <google/protobuf/descriptor.h>
+
 #include "goby/protobuf/acomms_modem_message.pb.h"
 
 namespace goby

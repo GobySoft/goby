@@ -15,7 +15,7 @@
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "interface.h"
-#include "goby/core/libcore/exception.h"
+#include "goby/util/exception.h"
             
 
 goby::util::LineBasedInterface::LineBasedInterface(const std::string& delimiter)

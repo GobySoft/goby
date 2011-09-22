@@ -38,15 +38,8 @@ function(find_goby_library OUTPUT_VARIABLE LIBRARY_NAME GOBY_DIR)
   set(${OUTPUT_VARIABLE} PARENT_SCOPE)
 endfunction()
 
-find_goby_library(GOBY_AMAC_LIBRARY goby_amac ${GOBY_DIR})
-find_goby_library(GOBY_LOGGER_LIBRARY goby_logger ${GOBY_DIR})
-find_goby_library(GOBY_DCCL_LIBRARY goby_dccl ${GOBY_DIR})
-find_goby_library(GOBY_MODEMDRIVER_LIBRARY goby_modemdriver ${GOBY_DIR})
-find_goby_library(GOBY_QUEUE_LIBRARY goby_queue ${GOBY_DIR})
-find_goby_library(GOBY_CORE_LIBRARY goby_core ${GOBY_DIR})
-find_goby_library(GOBY_DBO_LIBRARY goby_dbo ${GOBY_DIR})
-find_goby_library(GOBY_LINEBASEDCOMMS_LIBRARY goby_linebasedcomms ${GOBY_DIR})
-find_goby_library(GOBY_MOOSUTIL_LIBRARY goby_moos_util ${GOBY_DIR})
+find_goby_library(GOBY_ACOMMS_LIBRARY goby_acomms ${GOBY_DIR})
+find_goby_library(GOBY_UTIL_LIBRARY goby_util ${GOBY_DIR})
 find_goby_library(GOBY_PROTOBUF_LIBRARY goby_protobuf ${GOBY_DIR})
 
 #
@@ -62,15 +55,8 @@ find_package_handle_standard_args(Goby "Could NOT find Goby. Set GOBY_ROOT_DIR t
 if(GOBY_FOUND)
   set(GOBY_INCLUDE_DIRS ${GOBY_INCLUDE_DIR})
   set(GOBY_LIBRARIES 
-    ${GOBY_AMAC_LIBRARY}
-    ${GOBY_DCCL_LIBRARY} 
-    ${GOBY_MODEMDRIVER_LIBRARY}
-    ${GOBY_QUEUE_LIBRARY} 
-    ${GOBY_CORE_LIBRARY}
-    ${GOBY_DBO_LIBRARY} 
-    ${GOBY_LOGGER_LIBRARY}
-    ${GOBY_LINEBASEDCOMMS_LIBRARY} 
-    ${GOBY_MOOSUTIL_LIBRARY}
+    ${GOBY_ACOMMS_LIBRARY}
+    ${GOBY_UTIL_LIBRARY}
     ${GOBY_PROTOBUF_LIBRARY}
     )
 

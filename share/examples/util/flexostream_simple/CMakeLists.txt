@@ -1,2 +1,2 @@
 add_executable(flexostream_simple flexostream_simple.cpp)
-target_link_libraries(flexostream_simple goby_util)
+target_link_libraries(flexostream_simple ${GOBY_LIBRARIES} ${Boost_LIBRARIES} ${PROTOBUF_LIBRARIES})

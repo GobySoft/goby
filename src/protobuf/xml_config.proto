@@ -18,6 +18,8 @@ message MessageFile
     NO_QUEUE = 4;
     LOOPBACK = 5;
     ON_DEMAND = 6;
+    LOOPBACK_AS_SENT = 9;
+    PROMISCUOUS = 10;
 
     // currently pAcommsHandler only
     TCP_SHARE_IN = 7;

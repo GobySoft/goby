@@ -228,6 +228,15 @@ bool goby::acomms::QueueManager::stitch_recursive(const protobuf::ModemDataReque
                   << winning_queue->cfg().name() 
                   << ": " << next_data_msg << std::endl;
 
+    if(next_data_msg.queue_key().type() == protobuf::QUEUE_DCCL &&
+       manip_manager_.has(next_data_msg.queue_key().id(),
+                          protobuf::MessageFile::LOOPBACK_AS_SENT))
+    {
+        if(log_) *log_ << group("q_out") << next_data_msg.queue_key() << " LOOPBACK_AS_SENT manipulator set, sending back to decoder" << std::endl;
+        handle_modem_receive(next_data_msg);
+    }
+
+    
     //
     // ACK
     // 
@@ -559,7 +568,8 @@ bool goby::acomms::QueueManager::unstitch_recursive(std::string* data, protobuf:
 
 bool goby::acomms::QueueManager::publish_incoming_piece(protobuf::ModemDataTransmission* message, const unsigned incoming_var_id)
 {
-    if(message->base().dest() != BROADCAST_ID && message->base().dest() != modem_id_)
+    if(message->base().dest() != BROADCAST_ID && message->base().dest() != modem_id_ &&
+       !manip_manager_.has(incoming_var_id, protobuf::MessageFile::PROMISCUOUS))
     {
         if(log_) *log_<< group("q_in") << warn << "ignoring message for modem_id = "
                       << message->base().dest() << std::endl;

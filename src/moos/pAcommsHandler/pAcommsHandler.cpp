@@ -637,7 +637,7 @@ void CpAcommsHandler::unpack(goby::acomms::protobuf::ModemDataTransmission modem
 
     try
     {
-        if(modem_message.base().dest() != cfg_.modem_id() && modem_message.base().dest() != goby::acomms::BROADCAST_ID)
+        if(modem_message.base().dest() != cfg_.modem_id() && modem_message.base().dest() != goby::acomms::BROADCAST_ID && !dccl_.manip_manager().has(modem_message.queue_key().id(), goby::acomms::protobuf::MessageFile::PROMISCUOUS))
         {
             glogger() << group("dccl_dec") << "ignoring message for modem_id " << modem_message.base().dest() << std::endl;
             return;

@@ -91,7 +91,7 @@ libcdk5-dev"
 
 
 # Ubuntu
-if [[ -e "`which add-apt-repository`" && ! "`lsb_release -sc`" = "lucid" ]]; then
+if [[ -e "`which add-apt-repository`" && ! "`lsb_release -sc`" = "lucid" && ! "`lsb_release -sc`" = "oneiric" ]]; then
     echo "adding ppa:goby-dev/ppa for Ubuntu Dependencies"
     add-apt-repository ppa:goby-dev/ppa
     apt-get update

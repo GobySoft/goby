@@ -32,6 +32,8 @@
 using goby::util::goby_time;
 using goby::util::as;           
 using goby::acomms::operator<<;
+using namespace goby::util::logger;
+
 
 /////////////////////
 // public methods (general use)
@@ -383,7 +385,7 @@ void goby::transitional::DCCLTransitionalCodec::encode_private(std::vector<DCCLM
                         const google::protobuf::EnumValueDescriptor* enum_desc =
                             field_desc->enum_type()->FindValueByName(enum_val_name);
                         if(!enum_desc)
-                            glog.is(warn) && glog << "invalid enumeration " << enum_val_name <<  " for field " << field_name << std::endl;
+                            glog.is(WARN) && glog << "invalid enumeration " << enum_val_name <<  " for field " << field_name << std::endl;
                         else
                             refl->AddEnum(proto_msg.get(), field_desc, enum_desc);
                         
@@ -444,7 +446,7 @@ void goby::transitional::DCCLTransitionalCodec::encode_private(std::vector<DCCLM
                         const google::protobuf::EnumValueDescriptor* enum_desc =
                             field_desc->enum_type()->FindValueByName(enum_val_name);
                         if(!enum_desc)
-                            glog.is(warn) && glog << "invalid enumeration " << enum_val_name <<  " for field " << field_name << std::endl;
+                            glog.is(WARN) && glog << "invalid enumeration " << enum_val_name <<  " for field " << field_name << std::endl;
                         else
                             refl->SetEnum(proto_msg.get(), field_desc, enum_desc);
                         
@@ -670,7 +672,7 @@ void goby::transitional::DCCLTransitionalCodec::convert_to_protobuf_descriptor(c
     
     const google::protobuf::FileDescriptor* file_desc = descriptor_pool_.FindFileByName(proto_file_to_write);    
 
-    glog.is(debug2) && glog << file_desc->DebugString() << std::flush;
+    glog.is(DEBUG2) && glog << file_desc->DebugString() << std::flush;
     
     if(file_desc)
     {

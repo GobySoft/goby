@@ -31,7 +31,6 @@
 #include "goby/util/time.h"
 #include "goby/util/logger.h"
 
-#include "goby/core/core_constants.h"
 #include "message.h"
 #include "message_val.h"
 #include "goby/acomms/dccl/dccl_exception.h"

@@ -10,6 +10,7 @@ set(SRC
   linebasedcomms/tcp_client.cpp
   linebasedcomms/tcp_server.cpp
   dynamic_protobuf_manager.cpp
+  configuration_reader.cpp
   )
 
 set(NCURSES_SRC

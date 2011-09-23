@@ -74,8 +74,7 @@ if(build_protobuf)
       endif()
 
       if(build_moos)
-        # MOOS support still broken for 2.0 beta1
-        # add_subdirectory(moos)
+        add_subdirectory(moos)
       endif(build_moos)
     endif(build_acomms)
   endif(build_util)

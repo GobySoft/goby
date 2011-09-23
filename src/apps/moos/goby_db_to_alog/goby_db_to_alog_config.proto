@@ -1,9 +1,0 @@
-import "goby/protobuf/option_extensions.proto";
-
-message GobyDbToAlogConfig
-{
-   required string goby_log = 1 [(description)="Name of Goby SQLite3 log to read", (example)="AUV-1.db"];
-   optional string moos_alog = 2 [(description)="Name of .alog file to write. If omitted, stdout is used"];
-
-   optional string where = 3 [(description)="SQL where statement to exclude portions of the log", (example)="key='DB_CLIENTS' OR key='DB_TIME'"];
-}

@@ -16,9 +16,9 @@
 #include <iostream>
 #include <fstream>
 
-#include "goby/moos/libmoos_util/moos_dbo_helper.h"
-#include "goby/moos/libmoos_util/moos_node.h"
-#include "goby/moos/libmoos_util/moos_protobuf_helpers.h"
+#include "goby/moos/moos_dbo_helper.h"
+#include "goby/moos/moos_node.h"
+#include "goby/moos/moos_protobuf_helpers.h"
 #include "goby/core/libcore/application_base.h"
 #include "goby/core/libdbo/dbo_manager.h"
 
@@ -29,6 +29,7 @@
 
 using goby::moos::operator<<;
 using namespace goby::util::logger;
+
 
 class AlogToGobyDb : public goby::core::ApplicationBase
 {
@@ -123,13 +124,12 @@ public:
                 const AlogToGobyDbConfig::ParseAction& action = cfg_.parse_action(i);
 
                 goby::glog.is(VERBOSE) && goby::glog << "Running parse action: " << action.ShortDebugString() << std::endl;
-                const google::protobuf::Descriptor* desc = google::protobuf::DescriptorPool::generated_pool()->FindMessageTypeByName(action.protobuf_type_name());
-                
-                goby::util::DynamicProtobufManager::add_protobuf_file_with_dependencies(desc->file());
+                const google::protobuf::Descriptor* desc = google::protobuf::DescriptorPool::generated_pool()->FindMessageTypeByName(action.protobuf_type_name());                
                 
                 if(!desc)
                     throw(std::runtime_error("Unknown type " + action.protobuf_type_name() + " are you sure this is compiled in?"));
 
+                goby::util::DynamicProtobufManager::add_protobuf_file_with_dependencies(desc->file());
                 
                 typedef Wt::Dbo::collection< Wt::Dbo::ptr<std::pair<int, CMOOSMsg> > > Msgs;
                 Msgs msgs;

@@ -22,7 +22,7 @@
 #include <google/protobuf/io/tokenizer.h>
 #include "goby/util/logger/flex_ostream.h"
 #include "goby/util/as.h"
-#include "goby/moos/libmoos_util/moos_string.h"
+#include "goby/moos/moos_string.h"
 
 
 /// \file moos_protobuf_helpers.h Helpers for MOOS applications for serializing and parsed Google Protocol buffers messages

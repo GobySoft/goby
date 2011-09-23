@@ -38,7 +38,12 @@ void goby::util::ConfigReader::read_cfg(int argc,
     if(!argv) return;
 
     boost::filesystem::path launch_path(argv[0]);
+    
+#if BOOST_FILESYSTEM_VERSION == 3
+    *application_name = launch_path.filename().string();
+#else
     *application_name = launch_path.filename();
+#endif
     
     std::string cfg_path;    
 

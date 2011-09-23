@@ -34,6 +34,11 @@ using goby::util::as;
 using goby::acomms::operator<<;
 using namespace goby::util::logger;
 
+#if BOOST_FILESYSTEM_VERSION == 3
+namespace bf = boost::filesystem3;
+#else
+namespace bf = boost::filesystem;
+#endif
 
 /////////////////////
 // public methods (general use)
@@ -84,8 +89,14 @@ std::set<unsigned> goby::transitional::DCCLTransitionalCodec::add_xml_message_fi
     std::string generated_proto_dir = cfg_.generated_proto_dir();
     if(!generated_proto_dir.empty() && generated_proto_dir[generated_proto_dir.size() - 1] != '/')
         generated_proto_dir += "/";
-    
-    boost::filesystem::path proto_file_path( generated_proto_dir + xml_file_path.stem() + ".proto");
+
+#if BOOST_FILESYSTEM_VERSION == 3
+    std::string xml_path_stem  = xml_file_path.stem().string();
+#else
+    std::string xml_path_stem  = xml_file_path.stem();
+#endif
+
+    boost::filesystem::path proto_file_path( generated_proto_dir + xml_path_stem + ".proto");
     
     for(size_t i = 0, n = end_size - begin_size; i < n; ++i)
     {
@@ -100,7 +111,7 @@ std::set<unsigned> goby::transitional::DCCLTransitionalCodec::add_xml_message_fi
 
        
     convert_to_protobuf_descriptor(added_ids,
-                                   boost::filesystem::complete(proto_file_path).string(),
+                                   bf::complete(proto_file_path).string(),
                                    queue_cfgs);
     
     

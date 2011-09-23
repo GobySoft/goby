@@ -268,7 +268,13 @@ void TesMoosApp::read_configuration(google::protobuf::Message* cfg)
 {
 
     boost::filesystem::path launch_path(argv_[0]);
+
+#if BOOST_FILESYSTEM_VERSION == 3
+    application_name_ = launch_path.filename().string();
+#else
     application_name_ = launch_path.filename();
+#endif
+
 
     //
     // READ CONFIGURATION

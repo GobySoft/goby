@@ -5,14 +5,3 @@ add_library(goby_transitional  ${transitional_src})
 
 target_link_libraries(goby_transitional goby_acomms xerces-c)
 set_target_properties(goby_transitional PROPERTIES VERSION "${GOBY_VERSION}" SOVERSION "${GOBY_SOVERSION}")
-
-option(build_transitional_tools "Build transitional tools" ON)
-
-if(build_transitional_tools)
-  add_subdirectory(tools)
-endif()
-
-if(enable_testing)
-  add_subdirectory(test)
-endif()
-

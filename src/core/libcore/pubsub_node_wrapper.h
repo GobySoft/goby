@@ -46,7 +46,7 @@ namespace goby
             {
                 if(!cfg().using_pubsub())
                 {
-                    glog.is(warn) && glog << "Ignoring publish since we have `using_pubsub`=false" << std::endl;
+                    glog.is(goby::util::logger::WARN) && glog << "Ignoring publish since we have `using_pubsub`=false" << std::endl;
                     return;
                 }
                 
@@ -58,7 +58,7 @@ namespace goby
             {
                 if(!cfg().using_pubsub())
                 {
-                    glog.is(warn) && glog << "Ignoring subscribe since we have `using_pubsub`=false" << std::endl;
+                    glog.is(goby::util::logger::WARN) && glog << "Ignoring subscribe since we have `using_pubsub`=false" << std::endl;
                     return;
                 }
                 
@@ -88,7 +88,7 @@ namespace goby
                 using goby::glog;
                 if(cfg.using_pubsub())
                 {
-                    glog.is(debug1) && glog << "Using publish / subscribe." << std::endl;
+                    glog.is(goby::util::logger::DEBUG1) && glog << "Using publish / subscribe." << std::endl;
                     goby::core::protobuf::ZeroMQServiceConfig::Socket* subscriber_socket = pubsub_cfg.add_socket();
                     subscriber_socket->set_socket_type(goby::core::protobuf::ZeroMQServiceConfig::Socket::SUBSCRIBE);
                     subscriber_socket->set_socket_id(SOCKET_SUBSCRIBE);
@@ -106,7 +106,7 @@ namespace goby
                 }
                 else
                 {
-                    glog.is(debug1) && glog << "Not using publish / subscribe." << std::endl;
+                    glog.is(goby::util::logger::DEBUG1) && glog << "Not using publish / subscribe." << std::endl;
                 }
                 
                 zeromq_service_.merge_cfg(pubsub_cfg);
@@ -141,7 +141,7 @@ namespace goby
             {
                 if(!cfg().using_pubsub())
                 {
-                    glog.is(warn) && glog << "Ignoring publish since we have `using_pubsub`=false" << std::endl;
+                    glog.is(goby::util::logger::WARN) && glog << "Ignoring publish since we have `using_pubsub`=false" << std::endl;
                     return;
                 }
                 
@@ -153,7 +153,7 @@ namespace goby
             {
                 if(!cfg().using_pubsub())
                 {
-                    glog.is(warn) && glog << "Ignoring subscribe since we have `using_pubsub`=false" << std::endl;
+                    glog.is(goby::util::logger::WARN) && glog << "Ignoring subscribe since we have `using_pubsub`=false" << std::endl;
                     return;
                 }
                  
@@ -182,7 +182,7 @@ namespace goby
             {
                 if(!cfg().using_pubsub())
                 {
-                    glog.is(warn) && glog << "Ignoring subscribe since we have `using_pubsub`=false" << std::endl;
+                    glog.is(goby::util::logger::WARN) && glog << "Ignoring subscribe since we have `using_pubsub`=false" << std::endl;
                     return;
                 }    
                 node_.subscribe<ProtoBufMessage>(SOCKET_SUBSCRIBE, handler);

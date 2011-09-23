@@ -5,6 +5,12 @@
 
 #include "goby/acomms/dccl.h"
 
+#if BOOST_FILESYSTEM_VERSION == 3
+namespace bf = boost::filesystem3;
+#else
+namespace bf = boost::filesystem;
+#endif
+
 google::protobuf::compiler::DiskSourceTree disk_source_tree_;
 
 class ErrorCollector: public google::protobuf::compiler::MultiFileErrorCollector
@@ -33,11 +39,11 @@ int main(int argc, char* argv[])
     source_database_.RecordErrorsTo(&error_collector_);
     disk_source_tree_.MapPath("/", "/");
 
-    boost::filesystem::path proto_file_path(argv[1]);
+    bf::path proto_file_path(argv[1]);
 
     google::protobuf::FileDescriptorProto file_proto;
 
-    std::string full_proto_path = boost::filesystem::complete(proto_file_path).string();
+    std::string full_proto_path = bf::complete(proto_file_path).string();
     source_database_.FindFileByName(
         full_proto_path, &file_proto);
 

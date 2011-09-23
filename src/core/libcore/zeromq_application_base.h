@@ -89,7 +89,7 @@ namespace goby
                 if(timeout < 0)
                     timeout = 0;
 
-                glog.is(debug2) &&
+                glog.is(goby::util::logger::DEBUG2) &&
                     glog << "timeout set to: " << timeout << " microseconds." << std::endl;
                 bool had_events = zeromq_service_.poll(timeout);
                 if(!had_events)

@@ -65,7 +65,7 @@ void algsum(transitional::DCCLMessageVal& mv, const std::vector<transitional::DC
 
 int main(int argc, char* argv[])
 {
-    goby::glog.add_stream(goby::util::Logger::DEBUG3, &std::cerr);
+    goby::glog.add_stream(goby::util::logger::DEBUG3, &std::cerr);
     goby::glog.set_name(argv[0]);
     
     std::cout << "loading xml file: " << DCCL_EXAMPLES_DIR "transitional1/test.xml" << std::endl;
@@ -89,7 +89,7 @@ int main(int argc, char* argv[])
 
     std::cout << desc->DebugString() << std::endl;
 
-    assert(dccl->validate(desc));
+    dccl->validate(desc);
 
     
     // load up the algorithms    
@@ -134,7 +134,7 @@ int main(int argc, char* argv[])
 
     boost::shared_ptr<google::protobuf::Message> proto_msg;
     transitional_dccl.encode(4, proto_msg, in);
-    bytes = dccl->encode(*proto_msg);
+    dccl->encode(&bytes, *proto_msg);
 
     
     std::cout << "hex out: " << goby::util::hex_encode(bytes) << std::endl;
@@ -144,7 +144,7 @@ int main(int argc, char* argv[])
     std::map<std::string, std::vector<transitional::DCCLMessageVal> > out;
 
     
-    proto_msg = dccl->decode(bytes);
+    dccl->decode(bytes, proto_msg.get());
     transitional_dccl.decode(*proto_msg, out);
     
     std::cout << "received values:" << std::endl 

@@ -23,6 +23,8 @@
 
 #include "moos_gateway_config.pb.h"
 
+using namespace goby::util::logger;
+
 namespace goby
 {
     namespace moos
@@ -73,7 +75,7 @@ goby::moos::MOOSGateway::MOOSGateway()
 {
     moos_client_.Run(cfg_.moos_server_host().c_str(), cfg_.moos_server_port(), cfg_.base().app_name().c_str(), cfg_.moos_comm_tick());
 
-    glog.is(verbose) &&
+    glog.is(VERBOSE) &&
         glog << "Waiting to connect to MOOSDB ... " << std::endl;
 
     int i = 0;
@@ -82,7 +84,7 @@ goby::moos::MOOSGateway::MOOSGateway()
         i++;
         if(i > MAX_CONNECTION_TIMEOUT)
         {
-            glog.is(die) &&
+            glog.is(DIE) &&
                 glog << "Failed to connect to MOOSDB in " << MAX_CONNECTION_TIMEOUT << " seconds. Check `moos_server_host` and `moos_server_port`" << std::endl;
         }
         
@@ -114,7 +116,7 @@ void goby::moos::MOOSGateway::moos_inbox(CMOOSMsg& msg)
                      (msg.GetSourceAux().size() ? "/" : "")
                      + application_name());
 
-    glog.is(verbose) &&
+    glog.is(VERBOSE) &&
         glog << group("to_moos") << msg << std::endl;
     
     moos_client_.Post(msg);
@@ -140,7 +142,7 @@ void goby::moos::MOOSGateway::loop()
                          (msg.GetSourceAux().size() ? "/" : "")
                          + application_name());
 
-        glog.is(verbose) &&
+        glog.is(VERBOSE) &&
             glog << group("from_moos") << msg << std::endl;    
         
         goby_moos_pubsub_client_.publish(msg);
@@ -160,7 +162,7 @@ void goby::moos::MOOSGateway::check_for_new_moos_variables()
         {
             if(InMail.size()!=1)
             {
-                glog.is(warn) &&
+                glog.is(WARN) &&
                     glog << "ServerRequest for VAR_SUMMARY returned incorrect mail size (should be one)";
                 return;
             }
@@ -171,13 +173,13 @@ void goby::moos::MOOSGateway::check_for_new_moos_variables()
 
             BOOST_FOREACH(const std::string& s, all_var)
             {
-                glog.is(debug1) &&
+                glog.is(DEBUG1) &&
                     glog << s << std::endl;
                 if(!subscribed_vars_.count(s))
                 {
                     if(clears_subscribe_filters(s))
                     {
-                        glog.is(verbose) &&
+                        glog.is(VERBOSE) &&
                             glog << "moos_client_.Register for " << s << std::endl;
                         moos_client_.Register(s, 0);
                         subscribed_vars_.insert(s);

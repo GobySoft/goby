@@ -86,7 +86,7 @@ int main(int argc, char* argv[])
     //
     //  Initialize logging
     //
-    goby::glog.add_stream(goby::util::Logger::DEBUG1, &fout_);
+    goby::glog.add_stream(goby::util::logger::DEBUG1, &fout_);
     goby::glog.set_name(argv[0]);
 
     

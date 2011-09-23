@@ -1,7 +1,7 @@
 message DCCLFieldOptions
 {
   // what encoder / decoder should we use?
-  optional string codec = 1 [default = "_default"];
+  optional string codec = 1 ;//[default = "_default"];
   // leave this field out of DCCL tranmissions (has_field() will be false on receipt)
   optional bool omit = 2 [default = false];
   // set true for fields in the header (will *not* be encrypte)d
@@ -29,7 +29,7 @@ message DCCLMessageOptions
   required int32 id = 1;
   required uint32 max_bytes = 2;
 
-  optional string codec = 3 [default = "_default"];
+  optional string codec = 3; // [default = "_default"];
 }
 
 message QueueFieldOptions

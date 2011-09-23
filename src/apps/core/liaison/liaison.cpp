@@ -30,7 +30,8 @@
 
 using goby::glog;
 using namespace Wt;    
-    using namespace goby::util::logger_lock;
+using namespace goby::util::logger_lock;
+using namespace goby::util::logger;
 
 goby::core::protobuf::LiaisonConfig goby::core::Liaison::cfg_;
 boost::shared_ptr<zmq::context_t> goby::core::Liaison::zmq_context_(new zmq::context_t(1));
@@ -75,13 +76,13 @@ goby::core::Liaison::Liaison()
                                  goby::core::create_wt_application);
 
         if (!wt_server_.start())
-            glog << die << "Could not start Wt HTTP server." << std::endl;
-        
-
+        {
+            glog.is(DIE) && glog << "Could not start Wt HTTP server." << std::endl;
+        }
     }
     catch (Wt::WServer::Exception& e)
     {
-        glog << die << "Could not start Wt HTTP server. Exception: " << e.what() << std::endl;
+        glog.is(DIE) && glog << "Could not start Wt HTTP server. Exception: " << e.what() << std::endl;
     }
 
 
@@ -109,7 +110,7 @@ void goby::core::Liaison::inbox(MarshallingScheme marshalling_scheme,
                                 int size,
                                 int socket_id)
 {
-    glog.is(debug2, lock) && glog << "Liaison: got message with identifier: " << identifier << std::endl << unlock;    
+    glog.is(DEBUG2, lock) && glog << "Liaison: got message with identifier: " << identifier << std::endl << unlock;    
     zeromq_service_.send(marshalling_scheme, identifier, data, size, LIAISON_INTERNAL_PUBLISH_SOCKET);
 }
 
@@ -240,7 +241,7 @@ void goby::core::LiaisonWtThread::add_to_menu(WMenu* menu, const WString& name,
 void goby::core::LiaisonWtThread::loop()
 {
 
-    glog.is(debug2, lock) && glog << "LiaisonWtThread: polling" << std::endl << unlock;
+    glog.is(DEBUG2, lock) && glog << "LiaisonWtThread: polling" << std::endl << unlock;
     while(zeromq_service_.poll(0))
     { }
 
@@ -253,7 +254,7 @@ void goby::core::LiaisonWtThread::inbox(MarshallingScheme marshalling_scheme,
                                                       int size,
                                                       int socket_id)
 {
-    glog.is(debug1, lock) && glog << "LiaisonWtThread: got message with identifier: " << identifier << std::endl << unlock;
+    glog.is(DEBUG1, lock) && glog << "LiaisonWtThread: got message with identifier: " << identifier << std::endl << unlock;
     
 }
 

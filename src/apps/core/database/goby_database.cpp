@@ -28,6 +28,7 @@ goby::core::protobuf::DatabaseConfig goby::core::Database::cfg_;
 using goby::util::as;
 using goby::glog;
 using goby::util::goby_time;
+using namespace goby::util::logger;
 
 int main(int argc, char* argv[])
 {
@@ -43,14 +44,14 @@ goby::core::Database::Database()
 {    
     if(cfg_.base().loop_freq() > MAX_LOOP_FREQ)
     {
-        glog.is(warn) && 
+        glog.is(WARN) && 
             glog << "Setting loop frequency back to MAX_LOOP_FREQ = " << MAX_LOOP_FREQ << std::endl;
         set_loop_freq(MAX_LOOP_FREQ);
     }
     
     if(!cfg_.base().database_config().using_database())
     {
-        glog.is(die) &&
+        glog.is(DIE) &&
             glog << "AppBaseConfig::using_database == false. Since we aren't wanting, we aren't starting (set to true to enable use of the database)!" << std::endl;
     }
 
@@ -77,13 +78,13 @@ goby::core::Database::Database()
     {
         zeromq_service_.merge_cfg(socket_cfg);
 
-        glog.is(debug1) &&
+        glog.is(DEBUG1) &&
             glog << "bound (requests line) to: " << *reply_socket << std::endl;
         
     }
     catch(std::exception& e)
     {
-        glog.is(die) &&
+        glog.is(DIE) &&
             glog << "cannot bind to: " << *reply_socket << ": " << e.what()
                       << " check AppBaseConfig::database_port";
     }
@@ -116,11 +117,11 @@ void goby::core::Database::init_sql()
         cfg_.mutable_sqlite()->clear_path();
         cfg_.mutable_sqlite()->set_path(format_filename(cfg_.sqlite().path()));
 
-        glog.is(warn) &&
+        glog.is(WARN) &&
             glog << "db connection failed: " << e.what() << std::endl;
         std::string default_file = cfg_.sqlite().path();
             
-        glog.is(verbose) &&
+        glog.is(VERBOSE) &&
             glog << "trying again with defaults: " << default_file << std::endl;
 
         dbo_manager_->connect(default_file);
@@ -146,7 +147,7 @@ std::string goby::core::Database::format_filename(const std::string& in)
 
 void goby::core::Database::handle_database_request(const protobuf::DatabaseRequest& proto_request)
 {
-    glog.is(debug1) &&
+    glog.is(DEBUG1) &&
         glog << "Got request: " << proto_request << std::endl;
     
     static protobuf::DatabaseResponse proto_response;
@@ -179,7 +180,7 @@ void goby::core::Database::handle_database_request(const protobuf::DatabaseReque
 
             req_rep_protobuf_node_.send(proto_response, DATABASE_SERVER_SOCKET_ID);
 
-            glog.is(debug1) &&
+            glog.is(DEBUG1) &&
                 glog<< "Sent response: " << proto_response << std::endl;
         }
         break;

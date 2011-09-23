@@ -1,6 +1,19 @@
 #!/bin/bash
 
-PATH=${PATH}:/home/toby/nightly/goby/2.0/bin
+PATH=/home/toby/nightly/goby/2.0/bin:${PATH}
+
+cd /home/toby/nightly/goby/2.0/build
+make clean
+rm -rf *
+cmake .. -DCMAKE_BUILD_TYPE=Debug -Dbuild_doc=ON -Denable_testing=ON
+ctest -D NightlyStart
+ctest -D NightlyUpdate
+ctest -D NightlyConfigure
+ctest -D NightlyBuild
+ctest -D NightlyTest
+ctest -D NightlyMemCheck
+ctest -D NightlyCoverage
+ctest -D NightlySubmit
 
 cd /home/toby/nightly/goby/1.0/build
 make clean
@@ -16,15 +29,3 @@ ctest -D NightlyBuild
 ctest -D NightlySubmit
 
 
-cd /home/toby/nightly/goby/2.0/build
-make clean
-rm -rf *
-cmake .. -DCMAKE_BUILD_TYPE=Debug -Dbuild_doc=ON
-ctest -D NightlyStart
-ctest -D NightlyUpdate
-ctest -D NightlyConfigure
-ctest -D NightlyBuild
-ctest -D NightlyTest
-ctest -D NightlyMemCheck
-ctest -D NightlyCoverage
-ctest -D NightlySubmit

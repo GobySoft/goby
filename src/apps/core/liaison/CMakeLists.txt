@@ -9,6 +9,7 @@ target_link_libraries(goby_liaison
   goby_core
   wt
   wthttp
-  goby_moos_util
+  goby_moos
+  goby_dbo
   )
 

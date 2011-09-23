@@ -26,6 +26,8 @@
 
 using goby::glog;
 using goby::util::as;
+using namespace goby::util::logger;
+
 
 std::string TesMoosApp::mission_file_;
 std::string TesMoosApp::application_name_;
@@ -67,7 +69,7 @@ bool TesMoosApp::OnNewMail(MOOSMSG_LIST &NewMail)
 
         if(msg.GetTime() < start_time_ && ignore_stale_)
         {
-            glog.is(warn) &&
+            glog.is(WARN) &&
                 glog << "ignoring normal mail from " << msg.GetKey()
                           << " from before we started (dynamics still updated)"
                           << std::endl;
@@ -76,7 +78,7 @@ bool TesMoosApp::OnNewMail(MOOSMSG_LIST &NewMail)
             mail_handlers_[msg.GetKey()](msg);
         else
         {
-            glog.is(die) &&
+            glog.is(DIE) &&
                 glog << "received mail that we have no handler for!" << std::endl;
         }
         
@@ -130,7 +132,7 @@ bool TesMoosApp::OnStartUp()
 
 void TesMoosApp::subscribe(const std::string& var,  InboxFunc handler, int blackout /* = 0 */ )
 {
-    glog.is(verbose) &&
+    glog.is(VERBOSE) &&
         glog << "subscribing for MOOS variable: " << var << " @ " << blackout << std::endl;
     
     pending_subscriptions_.push_back(std::make_pair(var, blackout));
@@ -151,7 +153,7 @@ void TesMoosApp::do_subscriptions()
         // variable name, blackout
         m_Comms.Register(pending_subscriptions_.front().first,
                          pending_subscriptions_.front().second);
-        glog.is(verbose) &&
+        glog.is(VERBOSE) &&
             glog << "subscribed for: " << pending_subscriptions_.front().first << std::endl;
         pending_subscriptions_.pop_front();
     }
@@ -288,7 +290,7 @@ void TesMoosApp::read_configuration(google::protobuf::Message* cfg)
     
         boost::program_options::options_description od_both("Typically given in the .moos file, but may be specified on the command line");
     
-        goby::core::ConfigReader::get_protobuf_program_options(od_both, cfg->GetDescriptor());
+        goby::util::ConfigReader::get_protobuf_program_options(od_both, cfg->GetDescriptor());
         od_all.add(od_both);
         od_all.add(od_cli_only);
 
@@ -304,14 +306,14 @@ void TesMoosApp::read_configuration(google::protobuf::Message* cfg)
         
         if (var_map.count("help"))
         {
-            goby::core::ConfigException e("");
+            goby::util::ConfigException e("");
             e.set_error(false);
             throw(e);
         }
         else if(var_map.count("example_config"))
         {
             std::cout << "ProcessConfig = " << application_name_ << "\n{";
-            goby::core::ConfigReader::get_example_cfg_file(cfg, &std::cout, "  ");
+            goby::util::ConfigReader::get_example_cfg_file(cfg, &std::cout, "  ");
             std::cout << "}" << std::endl;
             exit(EXIT_SUCCESS);            
         }
@@ -356,7 +358,7 @@ void TesMoosApp::read_configuration(google::protobuf::Message* cfg)
 
             if(!in_process_config)
             {
-                glog.is(die) &&
+                glog.is(DIE) &&
                     glog << "no ProcessConfig block for " << application_name_ << std::endl;
             }
             
@@ -378,13 +380,13 @@ void TesMoosApp::read_configuration(google::protobuf::Message* cfg)
             parser.ParseFromString(protobuf_text, cfg);
             if(error_collector.has_errors())
             {
-                glog.is(die) && 
+                glog.is(DIE) && 
                     glog << "fatal configuration errors (see above)" << std::endl;    
             }            
         }
         else
         {
-            glog.is(warn) &&
+            glog.is(WARN) &&
                 glog << "failed to open " << mission_file_ << std::endl;
         }
     
@@ -402,7 +404,7 @@ void TesMoosApp::read_configuration(google::protobuf::Message* cfg)
         {
             // let protobuf deal with the defaults
             if(!p.second.defaulted())
-                goby::core::ConfigReader::set_protobuf_program_option(var_map, *cfg, p.first, p.second);
+                goby::util::ConfigReader::set_protobuf_program_option(var_map, *cfg, p.first, p.second);
         }
 
         
@@ -418,11 +420,11 @@ void TesMoosApp::read_configuration(google::protobuf::Message* cfg)
                 err_msg << goby::util::esc_red << s << "\n" << goby::util::esc_nocolor;
                 
             err_msg << "Make sure you specified a proper .moos file";
-            throw(goby::core::ConfigException(err_msg.str()));
+            throw(goby::util::ConfigException(err_msg.str()));
         }
         
     }
-    catch(goby::core::ConfigException& e)
+    catch(goby::util::ConfigException& e)
     {
         // output all the available command line options
         std::cerr << od_all << "\n";
@@ -453,19 +455,19 @@ void TesMoosApp::process_configuration()
     switch(common_cfg_.verbosity())
     {
         case TesMoosAppConfig::VERBOSITY_VERBOSE:
-            glog.add_stream(goby::util::Logger::VERBOSE, &std::cout);
+            glog.add_stream(goby::util::logger::VERBOSE, &std::cout);
             break;
         case TesMoosAppConfig::VERBOSITY_WARN:
-            glog.add_stream(goby::util::Logger::WARN, &std::cout);
+            glog.add_stream(goby::util::logger::WARN, &std::cout);
             break;
         case TesMoosAppConfig::VERBOSITY_DEBUG:
-            glog.add_stream(goby::util::Logger::DEBUG1, &std::cout);
+            glog.add_stream(goby::util::logger::DEBUG1, &std::cout);
             break;
         case TesMoosAppConfig::VERBOSITY_GUI:
-            glog.add_stream(goby::util::Logger::GUI, &std::cout);
+            glog.add_stream(goby::util::logger::GUI, &std::cout);
             break;
         case TesMoosAppConfig::VERBOSITY_QUIET:
-            glog.add_stream(goby::util::Logger::QUIET, &std::cout);
+            glog.add_stream(goby::util::logger::QUIET, &std::cout);
             break;
     }    
 
@@ -474,7 +476,7 @@ void TesMoosApp::process_configuration()
     {
         if(!common_cfg_.has_log_path())
         {
-            glog.is(warn) &&
+            glog.is(WARN) &&
                 glog << "logging all terminal output to default directory (" << common_cfg_.log_path() << ")." << "set log_path for another path " << std::endl;
         }
 
@@ -483,7 +485,7 @@ void TesMoosApp::process_configuration()
             using namespace boost::posix_time;
             std::string file_name = application_name_ + "_" + common_cfg_.community() + "_" + to_iso_string(second_clock::universal_time()) + ".txt";
 
-            glog.is(verbose) &&
+            glog.is(VERBOSE) &&
                 glog << "logging output to file: " << file_name << std::endl;
             
             fout_.open(std::string(common_cfg_.log_path() + "/" + file_name).c_str());
@@ -492,17 +494,17 @@ void TesMoosApp::process_configuration()
             if(!fout_.is_open())
             {
                 fout_.open(std::string("./" + file_name).c_str());
-                glog.is(warn) &&
+                glog.is(WARN) &&
                     glog << "logging to current directory because given directory is unwritable!" << std::endl;
             }
             // if still no go, quit
             if(!fout_.is_open())
             {
                 
-                glog.is(die) && glog << die << "cannot write to current directory, so cannot log." << std::endl;
+                glog.is(DIE) && glog << die << "cannot write to current directory, so cannot log." << std::endl;
             }
             
-            glog.add_stream(goby::util::Logger::VERBOSE, &fout_);
+            glog.add_stream(goby::util::logger::VERBOSE, &fout_);
         }
     }
 

@@ -28,7 +28,7 @@
 // brings std::ostream& red, etc. into scope
 using namespace goby::util::tcolor;
 
-void goby::core::ConfigReader::read_cfg(int argc,
+void goby::util::ConfigReader::read_cfg(int argc,
                                         char* argv[],
                                         google::protobuf::Message* message,
                                         std::string* application_name,
@@ -131,7 +131,7 @@ void goby::core::ConfigReader::read_cfg(int argc,
 
             if(error_collector.has_errors())
             {
-                glog.is(die) && 
+                glog.is(goby::util::logger::DIE) && 
                     glog << "fatal configuration errors (see above)" << std::endl;    
             }            
 
@@ -166,7 +166,7 @@ void goby::core::ConfigReader::read_cfg(int argc,
 }
 
 
-void goby::core::ConfigReader::set_protobuf_program_option(const boost::program_options::variables_map& var_map,
+void goby::util::ConfigReader::set_protobuf_program_option(const boost::program_options::variables_map& var_map,
                                                            google::protobuf::Message& message,
                                                            const std::string& full_name,
                                                            const boost::program_options::variable_value& value)
@@ -310,14 +310,14 @@ void goby::core::ConfigReader::set_protobuf_program_option(const boost::program_
     }
 }
 
-void goby::core::ConfigReader::get_example_cfg_file(google::protobuf::Message* message, std::ostream* stream, const std::string& indent /*= ""*/)
+void goby::util::ConfigReader::get_example_cfg_file(google::protobuf::Message* message, std::ostream* stream, const std::string& indent /*= ""*/)
 {
     build_description(message->GetDescriptor(), *stream, indent, false);
     *stream << std::endl;
 }
 
 
-void  goby::core::ConfigReader::get_protobuf_program_options(boost::program_options::options_description& po_desc,
+void  goby::util::ConfigReader::get_protobuf_program_options(boost::program_options::options_description& po_desc,
                                                              const google::protobuf::Descriptor* desc)
 {
     for(int i = 0, n = desc->field_count(); i < n; ++i)
@@ -439,7 +439,7 @@ void  goby::core::ConfigReader::get_protobuf_program_options(boost::program_opti
 }
 
 
-void goby::core::ConfigReader::build_description(const google::protobuf::Descriptor* desc,
+void goby::util::ConfigReader::build_description(const google::protobuf::Descriptor* desc,
                                                  std::ostream& stream,
                                                  const std::string& indent /*= ""*/,
                                                  bool use_color /* = true */ )
@@ -459,7 +459,7 @@ void goby::core::ConfigReader::build_description(const google::protobuf::Descrip
     }    
 }
 
-void goby::core::ConfigReader::build_description_field(
+void goby::util::ConfigReader::build_description_field(
     const google::protobuf::FieldDescriptor* field_desc,
     std::ostream& stream,
     const std::string& indent,
@@ -592,7 +592,7 @@ void goby::core::ConfigReader::build_description_field(
 
 
 
-std::string goby::core::ConfigReader::label(const google::protobuf::FieldDescriptor* field_desc)
+std::string goby::util::ConfigReader::label(const google::protobuf::FieldDescriptor* field_desc)
 {
     switch(field_desc->label())
     {
@@ -609,7 +609,7 @@ std::string goby::core::ConfigReader::label(const google::protobuf::FieldDescrip
     return "";
 }
 
-void goby::core::ConfigReader::merge_app_base_cfg(AppBaseConfig* base_cfg,
+void goby::util::ConfigReader::merge_app_base_cfg(AppBaseConfig* base_cfg,
                         const boost::program_options::variables_map& var_map)
 {
     if(var_map.count("ncurses"))
@@ -642,7 +642,7 @@ void goby::core::ConfigReader::merge_app_base_cfg(AppBaseConfig* base_cfg,
 
 
 
-std::string goby::core::ConfigReader::word_wrap(std::string s, unsigned width,
+std::string goby::util::ConfigReader::word_wrap(std::string s, unsigned width,
                                                 const std::string & delim)
 {
     std::string out;
@@ -675,7 +675,7 @@ std::string goby::core::ConfigReader::word_wrap(std::string s, unsigned width,
     return out;
 }
             
-void goby::core::ConfigReader::wrap_description(std::string* description, int num_blanks)
+void goby::util::ConfigReader::wrap_description(std::string* description, int num_blanks)
 {
     *description = word_wrap(*description,
                             std::max(MAX_CHAR_PER_LINE -

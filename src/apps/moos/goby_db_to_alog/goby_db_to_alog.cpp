@@ -97,17 +97,17 @@ public:
             Wt::Dbo::backend::Sqlite3 connection(cfg_.goby_log());
             Wt::Dbo::Session session;
             session.setConnection(connection);
-            session.mapClass<CMOOSMsg>("CMOOSMsg");
+            session.mapClass<std::pair<int, CMOOSMsg> >("CMOOSMsg");
     
             Wt::Dbo::Transaction transaction(session);
-            typedef Wt::Dbo::collection< Wt::Dbo::ptr<CMOOSMsg> > Msgs;
+            typedef Wt::Dbo::collection< Wt::Dbo::ptr<std::pair<int, CMOOSMsg> > > Msgs;
     
             Msgs msgs;
 
             if(cfg_.has_where())
-                msgs = session.find<CMOOSMsg>("where "  + cfg_.where() + " order by moosmsg_time ASC");
+                msgs = session.find<std::pair<int, CMOOSMsg> >("where "  + cfg_.where() + " order by moosmsg_time ASC");
             else
-                msgs = session.find<CMOOSMsg>("order by moosmsg_time ASC");
+                msgs = session.find<std::pair<int, CMOOSMsg> >("order by moosmsg_time ASC");
             
             
             goby::glog << "We have " << msgs.size() << " messages:" << std::endl;
@@ -117,7 +117,9 @@ public:
             int i = 0;
             for (Msgs::const_iterator it = msgs.begin(), n = msgs.end(); it != n; ++it)
             {
-                CMOOSMsg msg(*(*it));
+                std::pair<int, CMOOSMsg> msg_pair(*(*it));
+                CMOOSMsg& msg = msg_pair.second;
+                
                 if(i == 0)
                 {
                     spoof_logger.set_start_time(msg.GetTime());

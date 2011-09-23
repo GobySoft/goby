@@ -174,7 +174,7 @@ void goby::core::StaticProtobufNode::on_receipt(
     
     const std::string& protobuf_type_name = ProtoBufMessage::descriptor()->full_name();
 
-    glog.is(debug1) && 
+    glog.is(goby::util::logger::DEBUG1) && 
         glog << "subscribing for " << protobuf_type_name  << std::endl;
     
     // enforce one handler for each type 
@@ -183,7 +183,7 @@ void goby::core::StaticProtobufNode::on_receipt(
     {
         if(protobuf_type_name == p.second->type_name())
         {
-            glog.is(warn) &&
+            glog.is(goby::util::logger::WARN) &&
                 glog << "already have subscription for type: "
                      << protobuf_type_name << std::endl;
             return;

@@ -23,6 +23,7 @@
 
 using namespace goby::core;
 using namespace goby::util;
+using namespace goby::util::logger;
 using boost::shared_ptr;
 using goby::glog;
 
@@ -38,7 +39,7 @@ goby::core::Application::Application(google::protobuf::Message* cfg /*= 0*/)
 
 goby::core::Application::~Application()
 {
-    glog.is(debug1) &&
+    glog.is(DEBUG1) &&
         glog << "Application destructing..." << std::endl;    
 }
 
@@ -48,7 +49,7 @@ void goby::core::Application::__set_up_sockets()
 {
     if(!base_cfg().database_config().using_database())        
     {
-        glog.is(warn) &&
+        glog.is(WARN) &&
             glog << "Not using `goby_database`. You will want to ensure you are logging your runtime data somehow" << std::endl;
     }
     else
@@ -66,7 +67,7 @@ void goby::core::Application::__set_up_sockets()
 
     if(!base_cfg().pubsub_config().using_pubsub()) 
     {
-        glog.is(warn) &&
+        glog.is(WARN) &&
             glog << "Not using `goby_database`. You will want to ensure you are logging your runtime data somehow" << std::endl;
     }
     else
@@ -98,7 +99,7 @@ void goby::core::Application::__finalize_header(
 
             if(!header)
             {
-                glog.is(warn) && glog << "Dynamic cast of Header failed!" << std::endl;
+                glog.is(WARN) && glog << "Dynamic cast of Header failed!" << std::endl;
                 return;
             }
             
@@ -123,7 +124,7 @@ void goby::core::Application::__publish(google::protobuf::Message& msg, const st
     // adds, as needed, required fields of Header
     __finalize_header(&msg, dest, platform_name);
 
-    glog.is(debug1) &&
+    glog.is(DEBUG1) &&
         glog << "< " << msg << std::endl;
 
     if(pubsub_node_)

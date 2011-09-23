@@ -33,7 +33,6 @@
 
 #include "goby/util/time.h"
 #include "goby/util/logger.h"
-#include "goby/core/core_constants.h"
 #include "goby/protobuf/acomms_dccl.pb.h"
 #include "goby/protobuf/acomms_modem_message.pb.h"
 #include "goby/acomms/acomms_helpers.h"
@@ -290,7 +289,7 @@ namespace goby
                     std::string piece;
                     encode(&piece, *msg);
                     out += piece;
-                    goby::glog.is(debug2) && goby::glog << "out: " << goby::util::hex_encode(out) << std::endl;
+                    goby::glog.is(util::logger::DEBUG2) && goby::glog << "out: " << goby::util::hex_encode(out) << std::endl;
                 }
     
                 return out;
@@ -314,7 +313,7 @@ namespace goby
                         {
                             out.push_back(decode<GoogleProtobufMessagePointer>(bytes));
                             unsigned last_size = size(*out.back());
-                            glog.is(debug1) && glog  << "last message size was: " << last_size << std::endl;
+                            glog.is(util::logger::DEBUG1) && glog  << "last message size was: " << last_size << std::endl;
                             bytes.erase(0, last_size);
                         }
                         catch(DCCLException& e)
@@ -323,7 +322,7 @@ namespace goby
                                 throw(e);
                             else
                             {
-                                glog.is(warn) && glog << "failed to decode " << goby::util::hex_encode(bytes) << " but returning parts already decoded"  << std::endl;
+                                glog.is(util::logger::WARN) && glog << "failed to decode " << goby::util::hex_encode(bytes) << " but returning parts already decoded"  << std::endl;
                                 return out;
                             }
                         }        

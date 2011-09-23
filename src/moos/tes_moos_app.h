@@ -31,8 +31,8 @@
 #include "dynamic_moos_vars.h"
 #include "goby/util/logger.h"
 #include "tes_moos_app.pb.h"
-#include "goby/core/libcore/configuration_reader.h"
-#include "goby/core/libcore/exception.h"
+#include "goby/util/configuration_reader.h"
+#include "goby/util/exception.h"
 #include "moos_protobuf_helpers.h"
 #include "goby/version.h"
 
@@ -172,7 +172,7 @@ TesMoosApp::TesMoosApp(ProtobufConfig* cfg)
 
     process_configuration();
 
-    glog.is(verbose) && glog << cfg->DebugString() << std::endl;
+    glog.is(goby::util::logger::VERBOSE) && glog << cfg->DebugString() << std::endl;
 }
 
 
@@ -189,7 +189,7 @@ int goby::moos::run(int argc, char* argv[])
         App* app = App::get_instance();
         app->Run(App::application_name_.c_str(), App::mission_file_.c_str());
     }
-    catch(goby::core::ConfigException& e)
+    catch(goby::util::ConfigException& e)
     {
         // no further warning as the ApplicationBase Ctor handles this
         return 1;

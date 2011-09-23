@@ -21,7 +21,8 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include "exception.h"
+#include "goby/util/exception.h"
+#include "goby/util/configuration_reader.h"
 
 #include "goby/protobuf/app_base_config.pb.h"
 
@@ -107,7 +108,7 @@ int goby::run(int argc, char* argv[])
         App app;
         app.__run();
     }
-    catch(goby::core::ConfigException& e)
+    catch(goby::util::ConfigException& e)
     {
         // no further warning as the ApplicationBase Ctor handles this
         return 1;

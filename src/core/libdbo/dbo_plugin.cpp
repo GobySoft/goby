@@ -25,6 +25,8 @@
 
 #include <boost/preprocessor.hpp>
 
+using namespace goby::util::logger;
+
 boost::bimap<int, std::string> goby::core::ProtobufDBOPlugin::dbo_map;
 
 void goby::core::DBOPluginFactory::add_plugin(DBOPlugin* plugin)
@@ -111,7 +113,7 @@ void goby::core::ProtobufDBOPlugin::add_message(int unique_id, boost::shared_ptr
         add_type(msg->GetDescriptor());
 
     
-    glog.is(debug1) &&
+    glog.is(DEBUG1) &&
         glog << group("dbo") << "adding message of type: " << msg->GetTypeName() << std::endl;
     
     switch(dbo_map.right.at(msg->GetTypeName()))
@@ -147,13 +149,13 @@ void goby::core::ProtobufDBOPlugin::add_type(const google::protobuf::Descriptor*
     
     if(dbo_map.right.count(descriptor->full_name()))
     {
-        glog.is(verbose) &&
+        glog.is(VERBOSE) &&
             glog << group("dbo") << "type with name " << descriptor->full_name()
                  << " already exists" << std::endl;
         return;
     }
 
-    glog.is(verbose) &&
+    glog.is(VERBOSE) &&
         glog << group("dbo") << "adding type: "
              << descriptor->DebugString() << "\n"
              << "with index: " << index_ << std::endl;
@@ -172,12 +174,12 @@ void goby::core::ProtobufDBOPlugin::add_type(const google::protobuf::Descriptor*
     { goby::core::DBOManager::get_instance()->session()->createTables(); }
     catch(Wt::Dbo::Exception& e)
     {
-        glog.is(warn) && glog << group("dbo")
+        glog.is(WARN) && glog << group("dbo")
                              << "Could not create table for " << mangled_name << "; reason: "
                              << e.what() << std::endl;
     }
     
-    glog.is(verbose) &&
+    glog.is(VERBOSE) &&
         glog << group("dbo") << "created table for " << mangled_name << std::endl;
 
 
@@ -186,7 +188,7 @@ void goby::core::ProtobufDBOPlugin::add_type(const google::protobuf::Descriptor*
     // create raw_id index    
     goby::core::DBOManager::get_instance()->session()->execute("CREATE UNIQUE INDEX IF NOT EXISTS " + mangled_name + "_raw_id_index" + " ON " + mangled_name + " (raw_id)");
 #else
-    glog.is(warn) &&
+    glog.is(WARN) &&
         glog << "execute() call not available in Wt Dbo versions 3.1.2 and older. Not creating any indices on the tables. Please upgrade Wt for automatic indexing support." << std::endl;
 #endif
     
@@ -200,7 +202,7 @@ void goby::core::ProtobufDBOPlugin::map_type(const google::protobuf::Descriptor*
 {
     using goby::util::as;
     
-    glog.is(verbose) &&
+    glog.is(VERBOSE) &&
         glog <<group("dbo") << "mapping type: " << descriptor->full_name() << std::endl;
     
     // allows us to select compile time type to use at runtime

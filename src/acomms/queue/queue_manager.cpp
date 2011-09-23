@@ -35,6 +35,7 @@
 
 using goby::glog;
 using goby::util::as;
+using namespace goby::util::logger;
 
 int goby::acomms::QueueManager::count_ = 0;
 
@@ -92,7 +93,7 @@ void goby::acomms::QueueManager::add_queue(const google::protobuf::Descriptor* d
         
         qsize(&new_q);
         
-        glog.is(debug1) && glog<< group(glog_out_group_) << "added new queue: \n" << new_q << std::endl;
+        glog.is(DEBUG1) && glog<< group(glog_out_group_) << "added new queue: \n" << new_q << std::endl;
         
     }
 
@@ -131,12 +132,12 @@ void goby::acomms::QueueManager::push_message(const google::protobuf::Message& d
     latest_meta_.set_non_repeated_size(codec_->size(dccl_msg));
 
     codec_->run_hooks(dccl_msg);
-    glog.is(debug2) && glog << "post hooks: " << latest_meta_ << std::endl;
+    glog.is(DEBUG2) && glog << "post hooks: " << latest_meta_ << std::endl;
     
     // message is to us, auto-loopback
     if(latest_meta_.dest() == modem_id_)
     {
-        glog.is(debug1) && glog<< group(glog_out_group_) << "outgoing message is for us: using loopback, not physical interface" << std::endl;
+        glog.is(DEBUG1) && glog<< group(glog_out_group_) << "outgoing message is for us: using loopback, not physical interface" << std::endl;
         
         signal_receive(dccl_msg);
     }
@@ -163,12 +164,12 @@ void goby::acomms::QueueManager::flush_queue(const protobuf::QueueFlush& flush)
     if(it != queues_.end())
     {
         it->second.flush();
-        glog.is(debug1) && glog << group(glog_out_group_) <<  " flushed queue: " << flush << std::endl;
+        glog.is(DEBUG1) && glog << group(glog_out_group_) <<  " flushed queue: " << flush << std::endl;
         qsize(&it->second);
     }    
     else
     {
-        glog.is(debug1) && glog << group(glog_out_group_) << warn << " cannot find queue to flush: " << flush << std::endl;
+        glog.is(DEBUG1) && glog << group(glog_out_group_) << warn << " cannot find queue to flush: " << flush << std::endl;
     }
 }
 
@@ -223,7 +224,7 @@ void goby::acomms::QueueManager::handle_modem_data_request(protobuf::ModemTransm
         {
             msg->set_ack_requested(packet_ack_);
             msg->set_dest(packet_dest_);
-            glog.is(debug1) && glog << group(glog_out_group_) << "no data found. sending blank to firmware" 
+            glog.is(DEBUG1) && glog << group(glog_out_group_) << "no data found. sending blank to firmware" 
                                     << ": " << goby::util::hex_encode(*data) << std::endl; 
         }
         else
@@ -234,7 +235,7 @@ void goby::acomms::QueueManager::handle_modem_data_request(protobuf::ModemTransm
                 // new user frame (e.g. 32B)
                 QueuedMessage next_user_frame = winning_queue->give_data(frame_number);
 
-                glog.is(debug1) && glog << group(glog_out_group_) << "sending data to firmware from: "
+                glog.is(DEBUG1) && glog << group(glog_out_group_) << "sending data to firmware from: "
                                         << winning_queue->name()
                                         << ": "<< *(next_user_frame.dccl_msg) << std::endl;
             
@@ -244,17 +245,17 @@ void goby::acomms::QueueManager::handle_modem_data_request(protobuf::ModemTransm
                 // insert ack if desired
                 if(next_user_frame.meta.ack_requested())
                 {
-                    glog.is(debug2) &&
+                    glog.is(DEBUG2) &&
                         glog << "inserting ack for queue: " << *winning_queue << std::endl;
                     waiting_for_ack_.insert(std::pair<unsigned, Queue*>(frame_number,
                                                                         winning_queue));
                 }
                 else
                 {
-                    glog.is(debug2) &&
+                    glog.is(DEBUG2) &&
                         glog << "no ack, popping from queue: " << *winning_queue << std::endl;
                     if(!winning_queue->pop_message(frame_number))
-                        glog.is(warn) &&
+                        glog.is(WARN) &&
                             glog << "failed to pop from queue: " << *winning_queue << std::endl;
 
                     qsize(winning_queue); // notify change in queue size
@@ -296,7 +297,7 @@ void goby::acomms::QueueManager::handle_modem_data_request(protobuf::ModemTransm
                 
                 unsigned repeated_size_bytes = codec_->size_repeated(dccl_msgs);
             
-                glog.is(debug2) && glog << "Size repeated " << repeated_size_bytes << std::endl;
+                glog.is(DEBUG2) && glog << "Size repeated " << repeated_size_bytes << std::endl;
                 data->resize(repeated_size_bytes);
         
                 // if remaining bytes is greater than 0, we have a chance of adding another user-frame
@@ -342,7 +343,7 @@ goby::acomms::Queue* goby::acomms::QueueManager::find_next_sender(const protobuf
 
     Queue* winning_queue = 0;
     
-    glog.is(debug1) && glog<< group(glog_priority_group_) << "starting priority contest\n"
+    glog.is(DEBUG1) && glog<< group(glog_priority_group_) << "starting priority contest\n"
                             << "requesting: " << request_msg << "\n"
                             << "have " << data.size() << "/" << request_msg.max_frame_bytes() << "B: " << goby::util::hex_encode(data) << std::endl;
 
@@ -380,17 +381,17 @@ goby::acomms::Queue* goby::acomms::QueueManager::find_next_sender(const protobuf
         }
     }
 
-    glog.is(debug1) && glog<< group(glog_priority_group_) << "\t"
+    glog.is(DEBUG1) && glog<< group(glog_priority_group_) << "\t"
                             << "all other queues have no messages" << std::endl;
 
     if(winning_queue)
     {
-        glog.is(debug1) && glog<< group(glog_priority_group_) << winning_queue->name()
+        glog.is(DEBUG1) && glog<< group(glog_priority_group_) << winning_queue->name()
                                 << " has highest priority." << std::endl;
     }
     else
     {
-        glog.is(debug1) && glog<< group(glog_priority_group_) 
+        glog.is(DEBUG1) && glog<< group(glog_priority_group_) 
                                 << "ending priority contest" << std::endl;    
     }
     
@@ -406,13 +407,13 @@ void goby::acomms::QueueManager::process_modem_ack(const protobuf::ModemTransmis
         int frame_number = ack_msg.acked_frame(i);
         if(ack_msg.dest() != modem_id_)
         {
-            glog.is(warn) && glog << group(glog_in_group_)
+            glog.is(WARN) && glog << group(glog_in_group_)
                                   << "ignoring ack for modem_id = " << ack_msg.dest() << std::endl;
             return;
         }
         else if(!waiting_for_ack_.count(frame_number))
         {
-            glog.is(debug1) && glog << group(glog_in_group_)
+            glog.is(DEBUG1) && glog << group(glog_in_group_)
                                     << "got ack but we were not expecting one" << std::endl;
             return;
         }
@@ -420,7 +421,7 @@ void goby::acomms::QueueManager::process_modem_ack(const protobuf::ModemTransmis
         {
         
             // got an ack, let's pop this!
-            glog.is(debug1) && glog<< group(glog_in_group_) << "received ack for this id" << std::endl;
+            glog.is(DEBUG1) && glog<< group(glog_in_group_) << "received ack for this id" << std::endl;
         
         
             std::multimap<unsigned, Queue *>::iterator it = waiting_for_ack_.find(frame_number);
@@ -431,7 +432,7 @@ void goby::acomms::QueueManager::process_modem_ack(const protobuf::ModemTransmis
                 boost::shared_ptr<google::protobuf::Message> removed_msg;
                 if(!q->pop_message_ack(frame_number, removed_msg))
                 {
-                    glog.is(warn) && glog<< group(glog_in_group_) 
+                    glog.is(WARN) && glog<< group(glog_in_group_) 
                                          << "failed to pop message from "
                                          << q->name() << std::endl;
                 }
@@ -442,7 +443,7 @@ void goby::acomms::QueueManager::process_modem_ack(const protobuf::ModemTransmis
                 
                 }
 
-                glog.is(debug1) && glog<< group(glog_in_group_) << ack_msg << std::endl;
+                glog.is(DEBUG1) && glog<< group(glog_in_group_) << ack_msg << std::endl;
             
                 waiting_for_ack_.erase(it);
             
@@ -458,7 +459,7 @@ void goby::acomms::QueueManager::process_modem_ack(const protobuf::ModemTransmis
 // in a "receive = " line of the configuration file
 void goby::acomms::QueueManager::handle_modem_receive(const protobuf::ModemTransmission& message)
 {    
-    glog.is(debug1) && glog<< group(glog_in_group_) << "received message"
+    glog.is(DEBUG1) && glog<< group(glog_in_group_) << "received message"
                             << ": " << message << std::endl;
 
     if(message.type() == protobuf::ModemTransmission::ACK)
@@ -485,7 +486,7 @@ void goby::acomms::QueueManager::handle_modem_receive(const protobuf::ModemTrans
                     int32 dest = latest_meta_.dest();
                     if(dest != BROADCAST_ID && dest != modem_id_)
                     {
-                        glog.is(warn) && glog << group(glog_in_group_)
+                        glog.is(WARN) && glog << group(glog_in_group_)
                                               << "ignoring DCCL message for modem_id = "
                                               << message.dest() << std::endl;
                     }
@@ -497,7 +498,7 @@ void goby::acomms::QueueManager::handle_modem_receive(const protobuf::ModemTrans
             }
             catch(DCCLException& e)
             {
-                glog.is(warn) && glog << group(glog_in_group_)
+                glog.is(WARN) && glog << group(glog_in_group_)
                                       << "failed to decode " << e.what() << std::endl;
             }            
         }
@@ -556,7 +557,7 @@ void goby::acomms::QueueManager::set_latest_metadata(const boost::any& field_val
         else
             throw(QueueException("Invalid type " + std::string(wire_value.type().name()) + " given for (queue_field).is_dest. Expected integer type"));
                     
-        goby::glog.is(debug2) &&
+        goby::glog.is(DEBUG2) &&
             goby::glog << "setting dest to " << dest << std::endl;
                 
         latest_meta_.set_dest(dest);
@@ -575,7 +576,7 @@ void goby::acomms::QueueManager::set_latest_metadata(const boost::any& field_val
         else
             throw(QueueException("Invalid type " + std::string(wire_value.type().name()) + " given for (queue_field).is_src. Expected integer type"));
 
-        goby::glog.is(debug2) &&
+        goby::glog.is(DEBUG2) &&
             goby::glog << "setting source to " << src << std::endl;
                 
         latest_meta_.set_src(src);
@@ -592,7 +593,7 @@ void goby::acomms::QueueManager::set_latest_metadata(const boost::any& field_val
         else
             throw(QueueException("Invalid type " + std::string(field_value.type().name()) + " given for (goby.field).queue.is_time. Expected uint64 contained microseconds since UNIX, double containing seconds since UNIX or std::string containing as<std::string>(boost::posix_time::ptime)"));
 
-        goby::glog.is(debug2) &&
+        goby::glog.is(DEBUG2) &&
             goby::glog << "setting time to " << as<boost::posix_time::ptime>(latest_meta_.time()) << std::endl;            
         
     }

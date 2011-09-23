@@ -7,6 +7,18 @@ using goby::util::goby_time;
 using namespace boost::posix_time;
 using namespace boost::gregorian;
 
+bool double_cmp(double a, double b, int precision)
+{
+    int a_whole = a;
+    int b_whole = b;
+
+    int a_part = (a-a_whole)*pow(10.0, precision);
+    int b_part = (b-b_whole)*pow(10.0, precision);
+    
+    return (a_whole == b_whole) && (a_part == b_part);
+}
+
+
 int main()
 {
     // 2011-08-16 19:36:57.523456 UTC
@@ -20,9 +32,12 @@ int main()
     std::cout << "uint64: " << TEST_MICROSEC_TIME << std::endl;
     std::cout << "ptime: " << TEST_PTIME << std::endl;
 
-    assert(goby::util::ptime2unix_double(TEST_PTIME) == TEST_DOUBLE_TIME);
-    assert(as<double>(TEST_PTIME) == TEST_DOUBLE_TIME); // same as previous line
-
+    assert(!double_cmp(5.4, 2.3, 1));
+    
+    
+    assert(double_cmp(goby::util::ptime2unix_double(TEST_PTIME), TEST_DOUBLE_TIME, 6));
+    assert(double_cmp(as<double>(TEST_PTIME), TEST_DOUBLE_TIME, 6)); // same as previous line
+    
     assert(goby::util::unix_double2ptime(TEST_DOUBLE_TIME) == TEST_PTIME);
     assert(as<ptime>(TEST_DOUBLE_TIME) == TEST_PTIME);  // same as previous line
     

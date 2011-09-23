@@ -108,7 +108,7 @@ namespace goby
               
               wire_value = goby::util::unbiased_round(wire_value, precision());
               
-              goby::glog << debug2 << "(DCCLDefaultArithmeticFieldCodec) Encoding using wire value (=field value) " << wire_value << std::endl;
+              goby::glog.is(util::logger::DEBUG2) && goby::glog << "(DCCLDefaultArithmeticFieldCodec) Encoding using wire value (=field value) " << wire_value << std::endl;
               
               wire_value -= min();
               wire_value *= std::pow(10.0, precision());
@@ -132,8 +132,8 @@ namespace goby
               
               WireType return_value = goby::util::unbiased_round(
                   t / (std::pow(10.0, precision())) + min(), precision());
-
-              goby::glog << debug2 << "(DCCLDefaultArithmeticFieldCodec) Decoding received wire value (=field value) " << return_value << std::endl;
+              
+              goby::glog.is(util::logger::DEBUG2) && goby::glog << "(DCCLDefaultArithmeticFieldCodec) Decoding received wire value (=field value) " << return_value << std::endl;
 
               return return_value;
               

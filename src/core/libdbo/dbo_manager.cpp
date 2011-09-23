@@ -28,6 +28,7 @@
 
 #include "dbo_plugin.h"
 
+using namespace goby::util::logger;
 
 goby::core::DBOManager* goby::core::DBOManager::inst_ = 0;
 
@@ -95,12 +96,12 @@ void goby::core::DBOManager::add_raw(MarshallingScheme marshalling_scheme,
 
 void goby::core::DBOManager::commit()
 {
-    glog.is(verbose) &&
+    glog.is(VERBOSE) &&
         glog << group("dbo") << "starting commit" << std::endl;
         
     transaction_->commit();
         
-    glog.is(verbose) &&
+    glog.is(VERBOSE) &&
         glog << group("dbo") << "finished commit" << std::endl;
 
     t_last_commit_ = goby_time();
@@ -132,11 +133,11 @@ void goby::core::DBOManager::connect(const std::string& db_name /* = "" */)
         try { session_->createTables(); }
         catch(Wt::Dbo::Exception& e)
         {
-            glog.is(warn) &&
+            glog.is(WARN) &&
                 glog << "Could not create static type tables; reason: " << e.what() << std::endl;
         }
 
-        glog.is(verbose) &&
+        glog.is(VERBOSE) &&
             glog << group("dbo") << "created tables for static types" << std::endl;
         static_tables_created_ = true;
         commit();
@@ -149,7 +150,7 @@ void goby::core::DBOManager::connect(const std::string& db_name /* = "" */)
 void goby::core::DBOManager::reset_session()
 {
     commit();
-    glog.is(verbose) &&
+    glog.is(VERBOSE) &&
         glog << "resetting session" << std::endl;
     connect();
 }
@@ -179,7 +180,7 @@ void goby::core::DBOManager::create_indices()
             plugin->create_indices();
     }
 #else
-    glog.is(warn) &&
+    glog.is(WARN) &&
         glog << "execute() call not available in Wt Dbo versions 3.1.2 and older. Not creating any indices on the tables. Please upgrade Wt for automatic indexing support." << std::endl;
 #endif
 }

@@ -6,5 +6,5 @@ protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${PROTOS})
 add_executable(moos_gateway_g moos_gateway.cpp ${PROTO_SRCS} ${PROTO_HDRS})
 
 # and link in the goby_core library
-target_link_libraries(moos_gateway_g goby_core goby_moos_util)
+target_link_libraries(moos_gateway_g goby_core goby_moos)
 

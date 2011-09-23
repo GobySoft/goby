@@ -19,6 +19,7 @@
 
 using goby::glog;
 using goby::util::as;
+using namespace goby::util::logger;
 
 int goby::core::ApplicationBase::argc_ = 0;
 char** goby::core::ApplicationBase::argv_ = 0;
@@ -34,7 +35,7 @@ goby::core::ApplicationBase::ApplicationBase(google::protobuf::Message* cfg /*= 
     try
     {
         std::string application_name;
-        ConfigReader::read_cfg(argc_, argv_, cfg, &application_name, &od, &var_map);
+        util::ConfigReader::read_cfg(argc_, argv_, cfg, &application_name, &od, &var_map);
         
         // extract the AppBaseConfig assuming the user provided it in their configuration
         // .proto file
@@ -57,10 +58,10 @@ goby::core::ApplicationBase::ApplicationBase(google::protobuf::Message* cfg /*= 
         base_cfg_->set_app_name(application_name);        
         // incorporate some parts of the AppBaseConfig that are common
         // with gobyd (e.g. Verbosity)
-        ConfigReader::merge_app_base_cfg(base_cfg_.get(), var_map);
+        util::ConfigReader::merge_app_base_cfg(base_cfg_.get(), var_map);
 
     }
-    catch(ConfigException& e)
+    catch(util::ConfigException& e)
     {
         // output all the available command line options
         if(e.error())
@@ -74,19 +75,18 @@ goby::core::ApplicationBase::ApplicationBase(google::protobuf::Message* cfg /*= 
     
     // set up the logger
     glog.set_name(application_name());
-    glog.add_stream(static_cast<util::Logger::Verbosity>(base_cfg_->glog_config().tty_verbosity()),
-                         &std::cout);
+    glog.add_stream(static_cast<util::logger::Verbosity>(base_cfg_->glog_config().tty_verbosity()), &std::cout);
 
     if(!base_cfg_->IsInitialized())
-        throw(ConfigException("Invalid base configuration"));
+        throw(util::ConfigException("Invalid base configuration"));
     
-    glog.is(debug1) && glog << "App name is " << application_name() << std::endl;
-
+    glog.is(DEBUG1) && glog << "App name is " << application_name() << std::endl;
+    
 }
 
 goby::core::ApplicationBase::~ApplicationBase()
 {
-    glog.is(debug1) && glog <<"ApplicationBase destructing..." << std::endl;    
+    glog.is(DEBUG1) && glog <<"ApplicationBase destructing..." << std::endl;    
 }
 
 void goby::core::ApplicationBase::__run()
@@ -100,7 +100,7 @@ void goby::core::ApplicationBase::__run()
         }
         catch(std::exception& e)
         {
-            glog.is(warn) &&
+            glog.is(WARN) &&
                 glog << e.what() << std::endl;
         }
     }

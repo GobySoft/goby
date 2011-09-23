@@ -28,7 +28,7 @@
 #include "moos_types.pb.h"
 
 using goby::moos::operator<<;
-
+using namespace goby::util::logger;
 
 class AlogToGobyDb : public goby::core::ApplicationBase
 {
@@ -78,7 +78,7 @@ public:
                     while(getline(moos_alog_ifstream,line))
                     {
                         if(!(moos_raw_id % 1000))
-                            goby::glog.is(verbose) && goby::glog << "parsing raw id (line# from first alog start) " << moos_raw_id << std::endl;
+                            goby::glog.is(VERBOSE) && goby::glog << "parsing raw id (line# from first alog start) " << moos_raw_id << std::endl;
 
                         std::vector<std::string> parts;
                         boost::split(parts, line, boost::is_any_of(" "), boost::token_compress_on);
@@ -122,7 +122,7 @@ public:
             {
                 const AlogToGobyDbConfig::ParseAction& action = cfg_.parse_action(i);
 
-                goby::glog.is(verbose) && goby::glog << "Running parse action: " << action.ShortDebugString() << std::endl;
+                goby::glog.is(VERBOSE) && goby::glog << "Running parse action: " << action.ShortDebugString() << std::endl;
                 const google::protobuf::Descriptor* desc = google::protobuf::DescriptorPool::generated_pool()->FindMessageTypeByName(action.protobuf_type_name());
                 
                 goby::util::DynamicProtobufManager::add_protobuf_file_with_dependencies(desc->file());
@@ -135,7 +135,7 @@ public:
                 Msgs msgs;
                 
                 msgs = dbo_manager->session()->find<std::pair<int, CMOOSMsg> >("where "  + action.sql_where_clause() + " order by moosmsg_time ASC");
-                goby::glog.is(verbose) && goby::glog << "We have " << msgs.size() << " messages" << std::endl;
+                goby::glog.is(VERBOSE) && goby::glog << "We have " << msgs.size() << " messages" << std::endl;
 
                 std::map<int, boost::shared_ptr<google::protobuf::Message> > proto_msgs;
                 for (Msgs::const_iterator it = msgs.begin(), n = msgs.end(); it != n; ++it)
@@ -143,14 +143,14 @@ public:
                     boost::shared_ptr<google::protobuf::Message> msg = goby::util::DynamicProtobufManager::new_protobuf_message(desc);
 
                     const CMOOSMsg& moos_msg = (**it).second;
-                    goby::glog.is(debug1) && goby::glog << moos_msg << std::endl;
+                    goby::glog.is(DEBUG1) && goby::glog << moos_msg << std::endl;
 
                     if(action.is_key_equals_value_string())
                         from_moos_comma_equals_string(msg.get(), boost::to_lower_copy(moos_msg.GetString()));
                     else
                         parse(action.format(), moos_msg.GetString(), msg.get());
                     
-                    goby::glog.is(debug1) && goby::glog << "[[" << msg->GetDescriptor()->full_name() << "]] " << msg->DebugString() << std::endl;
+                    goby::glog.is(DEBUG1) && goby::glog << "[[" << msg->GetDescriptor()->full_name() << "]] " << msg->DebugString() << std::endl;
                     proto_msgs[(**it).first] = msg;
                 }
                 dbo_manager->commit();
@@ -158,10 +158,10 @@ public:
                 for(std::map<int, boost::shared_ptr<google::protobuf::Message> >::const_iterator it = proto_msgs.begin(), n = proto_msgs.end(); it != n; ++it)
                 {
                     protobuf_plugin.add_message(it->first, it->second);
-                    goby::glog.is(debug1) && goby::glog << it->second->ShortDebugString() << std::endl;
+                    goby::glog.is(DEBUG1) && goby::glog << it->second->ShortDebugString() << std::endl;
                     
                     if(!(i % 100))
-                        goby::glog.is(verbose) && goby::glog << "." << std::flush;
+                        goby::glog.is(VERBOSE) && goby::glog << "." << std::flush;
                 }
                 dbo_manager->commit();
             }
@@ -185,9 +185,9 @@ private:
             boost::to_lower(format);
             std::string lower_str = boost::to_lower_copy(str);
 
-            goby::glog.is(debug1) && goby::glog << "Format: " << format << std::endl;
-            goby::glog.is(debug1) && goby::glog << "String: " << str << std::endl;
-            goby::glog.is(debug1) && goby::glog << "Lower String: " << lower_str << std::endl;
+            goby::glog.is(DEBUG1) && goby::glog << "Format: " << format << std::endl;
+            goby::glog.is(DEBUG1) && goby::glog << "String: " << str << std::endl;
+            goby::glog.is(DEBUG1) && goby::glog << "Lower String: " << lower_str << std::endl;
             
             std::string::const_iterator i = format.begin();
             while (i != format.end())
@@ -272,7 +272,7 @@ private:
                         throw(std::runtime_error("Bad specifier: " + specifier + ", must be an integer. For message: " +  desc->full_name()));
                     }
 
-                    goby::glog.is(debug1) && goby::glog << "field: [" << field_index << "], extract: [" << extract << "]" << std::endl;
+                    goby::glog.is(DEBUG1) && goby::glog << "field: [" << field_index << "], extract: [" << extract << "]" << std::endl;
                 }
                 else
                 {

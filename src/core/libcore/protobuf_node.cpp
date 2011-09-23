@@ -20,6 +20,7 @@
 
 using goby::glog;
 using goby::util::as;
+using namespace goby::util::logger;
 
 void goby::core::ProtobufNode::inbox(MarshallingScheme marshalling_scheme,
                                      const std::string& identifier,
@@ -45,7 +46,7 @@ void goby::core::ProtobufNode::send(const google::protobuf::Message& msg, int so
             
 void goby::core::ProtobufNode::subscribe(const std::string& identifier, int socket_id)
 {
-    glog.is(debug1) && glog << "Subscribing for MARSHALLING_PROTOBUF type: " << identifier << std::endl;
+    glog.is(DEBUG1) && glog << "Subscribing for MARSHALLING_PROTOBUF type: " << identifier << std::endl;
     zeromq_service()->subscribe(MARSHALLING_PROTOBUF, identifier, socket_id);
 }
 
@@ -59,7 +60,7 @@ void goby::core::StaticProtobufNode::protobuf_inbox(const std::string& protobuf_
     if(it != subscriptions_.end())
         it->second->post(data, size);
     else
-        glog.is(debug1) && glog << warn << "No handler for static protobuf type: " << protobuf_type_name << " from socket id: " << socket_id << std::endl;
+        glog.is(DEBUG1) && glog << warn << "No handler for static protobuf type: " << protobuf_type_name << " from socket id: " << socket_id << std::endl;
 }
 
 

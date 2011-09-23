@@ -33,7 +33,7 @@
 
 using namespace Wt;
 using namespace goby::util::logger_lock;
-
+using namespace goby::util::logger;
 
 goby::core::LiaisonScope::LiaisonScope(ZeroMQService* service, WTimer* timer)
     : MOOSNode(service),
@@ -126,7 +126,7 @@ void goby::core::LiaisonScope::moos_inbox(CMOOSMsg& msg)
 
     using goby::moos::operator<<;
     
-    glog.is(debug1, lock) && glog << "LiaisonScope: got message:  " << msg << std::endl << unlock;
+    glog.is(DEBUG1, lock) && glog << "LiaisonScope: got message:  " << msg << std::endl << unlock;
     std::map<std::string, int>::iterator it = msg_map_.find(msg.GetKey());
     if(it != msg_map_.end())
     {
@@ -308,7 +308,7 @@ void goby::core::LiaisonScope::SubscriptionsContainer::handle_remove_subscriptio
         if(remove)
         {            
             msg_map_.erase(text_to_match);
-            glog.is(debug1, lock) && glog << "LiaisonScope: removed " << text_to_match << std::endl << unlock;            
+            glog.is(DEBUG1, lock) && glog << "LiaisonScope: removed " << text_to_match << std::endl << unlock;            
             model_->removeRow(i);
             
             // shift down the remaining indices
@@ -443,7 +443,7 @@ void goby::core::LiaisonScope::HistoryContainer::add_history(const goby::core::p
 
 void goby::core::LiaisonScope::HistoryContainer::handle_remove_history(std::string key)
 {
-    glog.is(debug2, lock) && glog << "LiaisonScope: removing history for: " << key << std::endl << unlock;
+    glog.is(DEBUG2, lock) && glog << "LiaisonScope: removing history for: " << key << std::endl << unlock;
 
     
     main_layout_->removeWidget(history_models_[key].container);    

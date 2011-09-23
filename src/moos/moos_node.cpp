@@ -22,6 +22,7 @@
 using goby::core::ZeroMQService;
 using goby::glog;
 using namespace goby::util::logger_lock;
+using namespace goby::util::logger;
 
 
 goby::moos::MOOSNode::MOOSNode(ZeroMQService* service)
@@ -45,7 +46,7 @@ void goby::moos::MOOSNode::inbox(core::MarshallingScheme marshalling_scheme,
         boost::shared_ptr<CMOOSMsg> msg(new CMOOSMsg);
         std::string bytes(static_cast<const char*>(data), size);
 
-        glog.is(debug2, lock) && 
+        glog.is(DEBUG2, lock) && 
             glog << group("in_hex") << goby::util::hex_encode(bytes) << std::endl << unlock;
         MOOSSerializer::parse(msg.get(), bytes);
 
@@ -61,7 +62,7 @@ void goby::moos::MOOSNode::send(const CMOOSMsg& msg, int socket_id)
     std::string bytes;
     MOOSSerializer::serialize(msg, &bytes);
 
-    glog.is(debug2, lock) &&
+    glog.is(DEBUG2, lock) &&
         glog << group("out_hex") << goby::util::hex_encode(bytes) << std::endl << unlock;
 
     zeromq_service()->send(goby::core::MARSHALLING_MOOS, "CMOOSMsg/" + msg.GetKey() + "/", &bytes[0], bytes.size(), socket_id);
@@ -73,7 +74,7 @@ void goby::moos::MOOSNode::subscribe(const std::string& full_or_partial_moos_nam
     unsigned size = trimmed_name.size();
     if(!size)
     {
-        glog.is(warn, lock) && glog << "Not subscribing for empty string!" << std::endl << unlock;
+        glog.is(WARN, lock) && glog << "Not subscribing for empty string!" << std::endl << unlock;
     }
     else if(trimmed_name[size-1] == '*')
     {
@@ -91,7 +92,7 @@ void goby::moos::MOOSNode::unsubscribe(const std::string& full_or_partial_moos_n
     unsigned size = trimmed_name.size();
     if(!size)
     {
-        glog.is(warn, lock) && glog << warn << "Not unsubscribing for empty string!" << std::endl << unlock;
+        glog.is(WARN, lock) && glog << warn << "Not unsubscribing for empty string!" << std::endl << unlock;
     }
     else if(trimmed_name[size-1] == '*')
     {

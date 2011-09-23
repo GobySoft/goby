@@ -72,7 +72,7 @@ namespace goby
                     }
                     catch(std::exception& e)
                     {
-                        glog.is(die) &&
+                        glog.is(goby::util::logger::DIE) &&
                             glog << "cannot connect to: "
                                  << *request_socket << ": " << e.what() << std::endl;
                     }
@@ -84,12 +84,12 @@ namespace goby
           private:
             void response_inbox(const protobuf::DatabaseResponse& response)
             {
-                goby::glog.is(debug1) &&
+                goby::glog.is(goby::util::logger::DEBUG1) &&
                     goby::glog << "Got response: " << response << std::endl;
 
                 if(!response.response_type() == protobuf::DatabaseResponse::NEW_PUBLISH_ACCEPTED)
                 {
-                    goby::glog.is(die) && goby::glog << die << "Database publish was denied!" << std::endl;
+                    goby::glog.is(goby::util::logger::DIE) && goby::glog<< "Database publish was denied!" << std::endl; 
                 }
                 waiting_on_response_.pop_back();
             }
@@ -118,7 +118,7 @@ namespace goby
                         protobuf_node_.send(proto_request, DATABASE_REQUEST_SOCKET_ID);
 
 
-                        goby::glog.is(debug1) &&
+                        goby::glog.is(goby::util::logger::DEBUG1) &&
                             goby::glog << "Sending request to goby_database: " << proto_request << "\n"
                                        << "...waiting on response" << std::endl;
                         

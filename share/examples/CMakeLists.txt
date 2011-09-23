@@ -12,6 +12,8 @@ if(CURSES_FOUND)
   add_definitions(-DHAS_NCURSES)
 endif()
 
+find_package(Boost 1.36.0 COMPONENTS system date_time thread program_options filesystem signals)
+
 link_directories(${GOBY_LIBRARY_PATH})
 include_directories(${GOBY_INCLUDE_DIRS})
 
@@ -19,6 +21,5 @@ find_package(ProtobufGobyExamples REQUIRED)
 protobuf_include_dirs(${GOBY_INCLUDE_DIRS})
 
 add_subdirectory(acomms)
-add_subdirectory(core)
 add_subdirectory(util)
 add_subdirectory(moos)

@@ -6,4 +6,4 @@ protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ../../dccl/dccl_simple/simple.proto)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 add_executable(queue_multimessage multimessage.cpp ${PROTO_SRCS} ${PROTO_HDRS})
-target_link_libraries(queue_multimessage goby_acomms)
+target_link_libraries(queue_multimessage ${GOBY_LIBRARIES} ${Boost_LIBRARIES} ${PROTOBUF_LIBRARIES})

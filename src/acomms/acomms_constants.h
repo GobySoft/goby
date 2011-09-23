@@ -22,7 +22,6 @@
 #include <limits>
 #include <bitset>
 
-#include "goby/core/core_constants.h"
 
 namespace goby
 {

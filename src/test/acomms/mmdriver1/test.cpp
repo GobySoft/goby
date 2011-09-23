@@ -22,6 +22,7 @@
 #include "goby/acomms/connect.h"
 
 using namespace goby::acomms;
+using namespace goby::util::logger;
 using goby::util::as;
 using goby::util::goby_time;
 using namespace boost::posix_time;
@@ -63,12 +64,12 @@ int main(int argc, char* argv[])
         exit(1);
     }
 
-    goby::glog.add_stream(goby::util::Logger::DEBUG3, &std::clog);
+    goby::glog.add_stream(goby::util::logger::DEBUG3, &std::clog);
     std::ofstream fout;
     if(argc == 4)
     {
         fout.open(argv[3]);
-        goby::glog.add_stream(goby::util::Logger::DEBUG3, &fout);        
+        goby::glog.add_stream(goby::util::logger::DEBUG3, &fout);        
     }
     
     goby::glog.set_name(argv[0]);    

@@ -25,6 +25,9 @@
 #include <limits>
 #include <vector>
 #include <bitset>
+#include <sstream>
+#include <iomanip>
+#include <cmath>
 
 #include <boost/dynamic_bitset.hpp>
 
@@ -203,7 +206,7 @@ namespace goby
         inline std::string binary_string2hex_string(const std::string & bs)
         {
             std::string hs;
-            unsigned int bytes = (unsigned int)(ceil(bs.length()/8.0));
+            unsigned int bytes = (unsigned int)(std::ceil(bs.length()/8.0));
             unsigned char c[bytes];
     
             for(size_t i = 0; i < bytes; ++i)

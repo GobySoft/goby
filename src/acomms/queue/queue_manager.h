@@ -47,6 +47,7 @@ namespace goby
          class QueueManager
          {
            public:
+             /// constructor
              QueueManager();
              /// destructor
              ~QueueManager()

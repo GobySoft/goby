@@ -103,9 +103,9 @@ namespace goby
             }
             
             /// \name Initialization Methods.
-            ///
-            /// These methods are intended to be called before doing any work with the class. However,
-            /// they may be called at any time as desired.
+            // NOTE: uncommented next two lines from doxygen because of bug in v1.7.4 and newer: https://bugzilla.gnome.org/show_bug.cgi?id=660501 
+            // These methods are intended to be called before doing any work with the class. However,
+            // they may be called at any time as desired.
             //@{
 
             /// \brief Set (and overwrite completely if present) the current configuration. (protobuf::DCCLConfig defined in acomms_dccl.proto)

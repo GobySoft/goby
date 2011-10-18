@@ -34,6 +34,7 @@
 #include "goby/util/sci.h"
 
 using namespace goby::util::tcolor;
+using namespace goby::util::logger;
 using goby::acomms::operator<<;
 using goby::util::as;
 using google::protobuf::uint32;
@@ -55,23 +56,18 @@ CpAcommsHandler* CpAcommsHandler::get_instance()
 CpAcommsHandler::CpAcommsHandler()
     : TesMoosApp(&cfg_),
       transitional_dccl_(&glog),
-      dccl_(goby::acomms::DCCLCodec::get()),
-      queue_manager_(goby::acomms::QueueManager::get()),
-      driver_(0),
-      mac_(&glog)
+      dccl_(goby::acomms::DCCLCodec::get())
 {
  
-    goby::acomms::connect(&queue_manager_->signal_receive,
+    goby::acomms::connect(&queue_manager_.signal_receive,
                           this, &CpAcommsHandler::queue_receive);
-    goby::acomms::connect(&queue_manager_->signal_receive_ccl,
-                          this, &CpAcommsHandler::queue_receive_ccl);
-goby::acomms::connect(&queue_manager_->signal_ack,
+    goby::acomms::connect(&queue_manager_.signal_ack,
                           this, &CpAcommsHandler::queue_ack);
-    // goby::acomms::connect(&queue_manager_->signal_data_on_demand,
+    // goby::acomms::connect(&queue_manager_.signal_data_on_demand,
     //                       this, &CpAcommsHandler::queue_on_demand);
-    goby::acomms::connect(&queue_manager_->signal_queue_size_change,
+    goby::acomms::connect(&queue_manager_.signal_queue_size_change,
                           this, &CpAcommsHandler::queue_qsize);
-    goby::acomms::connect(&queue_manager_->signal_expire,
+    goby::acomms::connect(&queue_manager_.signal_expire,
                           this, &CpAcommsHandler::queue_expire);
 
     process_configuration();
@@ -79,16 +75,18 @@ goby::acomms::connect(&queue_manager_->signal_ack,
     // bind the lower level pieces of goby-acomms together
     if(driver_)
     {
-        goby::acomms::bind(*driver_, *queue_manager_);
+        goby::acomms::bind(*driver_, queue_manager_);
         goby::acomms::bind(mac_, *driver_);
 
 // bind our methods to the rest of the goby-acomms signals
-        goby::acomms::connect(&driver_->signal_all_outgoing,
+        goby::acomms::connect(&driver_->signal_raw_outgoing,
                               this, &CpAcommsHandler::modem_raw_out);
-        goby::acomms::connect(&driver_->signal_all_incoming,
+        goby::acomms::connect(&driver_->signal_raw_incoming,
                               this, &CpAcommsHandler::modem_raw_in);    
-        goby::acomms::connect(&driver_->signal_range_reply,
-                              this, &CpAcommsHandler::modem_range_reply);
+        goby::acomms::connect(&driver_->signal_receive,
+                              this, &CpAcommsHandler::modem_receive);
+        goby::acomms::connect(&driver_->signal_transmit_result,
+                              this, &CpAcommsHandler::modem_transmit_result);
     }
     
     
@@ -103,7 +101,7 @@ void CpAcommsHandler::loop()
     dccl_loop();
     if(driver_) driver_->do_work();
     mac_.do_work();
-    queue_manager_->do_work();    
+    queue_manager_.do_work();    
 }
 
 
@@ -130,11 +128,6 @@ void CpAcommsHandler::do_subscriptions()
     {
         subscribe(p.first, &CpAcommsHandler::handle_message_push, this);
     }
-        
-
-
-    // ping
-    subscribe(MOOS_VAR_COMMAND_RANGING, &CpAcommsHandler::handle_ranging_request, this);
 
     // update comms cycle
     subscribe(MOOS_VAR_CYCLE_UPDATE, &CpAcommsHandler::handle_mac_cycle_update, this);
@@ -219,7 +212,7 @@ void CpAcommsHandler::handle_flush_queue(const CMOOSMsg& msg)
         parse_for_moos(moos_string, &flush);
     
     glog << "queue flush request: " << flush << std::endl;
-    queue_manager_->flush_queue(flush);
+    queue_manager_.flush_queue(flush);
 }
 
 
@@ -234,7 +227,7 @@ void CpAcommsHandler::handle_message_push(const CMOOSMsg& msg)
     // unsigned dccl_id = out_moos_var2queue_[msg.GetKey()];
     
     // if(new_message.data().empty())
-    //     glog << warn << "message is either empty or contains invalid data" << std::endl;
+    //     glog.is(WARN) && glog << "message is either empty or contains invalid data" << std::endl;
     // else if(!(qk.type() == goby::transitional::protobuf::QUEUE_DCCL))
     // {
     //     new_message.set_dccl_id(out_moos_var2queue_[msg.GetKey()].id());
@@ -242,7 +235,7 @@ void CpAcommsHandler::handle_message_push(const CMOOSMsg& msg)
     //     std::string serialized;
     //     serialize_for_moos(&serialized, new_message);
     //     publish(MOOS_VAR_OUTGOING_DATA, serialized);
-    //     queue_manager_->push_message(new_message);
+    //     queue_manager_.push_message(new_message);
     // }
 }
 
@@ -259,22 +252,57 @@ void CpAcommsHandler::handle_mac_cycle_update(const CMOOSMsg& msg)
         glog << "update not for us" << std::endl;
         return;
     }
+
+    MACManager::iterator it1 = mac_.begin(), it2 = mac_.begin();
+    
+    for(int i = 0, n = update_msg.first_iterator(); i < n; ++i)
+        ++it1;
+
+    for(int i = 0, n = update_msg.second_iterator(); i < n; ++i)
+        ++it2;
+    
     
     switch(update_msg.update_type())
     {
-        case goby::acomms::protobuf::MACUpdate::REPLACE:
-            mac_.clear_all_slots();
-            // fall through intentional
-        case goby::acomms::protobuf::MACUpdate::ADD:
-            BOOST_FOREACH(const goby::acomms::protobuf::Slot& slot, update_msg.slot())
-                mac_.add_slot(slot);
+        case goby::acomms::protobuf::MACUpdate::ASSIGN:
+            mac_.assign(update_msg.slot().begin(), update_msg.slot().end());
+            break;
+            
+        case goby::acomms::protobuf::MACUpdate::PUSH_BACK:
+            for(int i = 0, n = update_msg.slot_size(); i < n; ++i)
+                mac_.push_back(update_msg.slot(i));
+            break;
+            
+        case goby::acomms::protobuf::MACUpdate::PUSH_FRONT:
+            for(int i = 0, n = update_msg.slot_size(); i < n; ++i)
+                mac_.push_front(update_msg.slot(i));
             break;
 
-        case goby::acomms::protobuf::MACUpdate::REMOVE:
-            BOOST_FOREACH(const goby::acomms::protobuf::Slot& slot, update_msg.slot())
-                mac_.remove_slot(slot);
+        case goby::acomms::protobuf::MACUpdate::POP_BACK:
+            mac_.pop_back();
             break;
+            
+        case goby::acomms::protobuf::MACUpdate::POP_FRONT:
+            mac_.pop_front();
+            break;
+
+        case goby::acomms::protobuf::MACUpdate::INSERT:
+            mac_.assign(it1, update_msg.slot().begin(), update_msg.slot().end());            
+            break;
+            
+        case goby::acomms::protobuf::MACUpdate::ERASE:
+            if(update_msg.second_iterator() != -1)
+                mac_.erase(it1, it2);
+            else
+                mac_.erase(it1);
+            break;
+            
+        case goby::acomms::protobuf::MACUpdate::CLEAR:
+            mac_.clear();
+            break;            
     }
+    mac_.update();
+    
 }
 
 //
@@ -297,35 +325,13 @@ void CpAcommsHandler::queue_expire(const google::protobuf::Message& message)
     publish(MOOS_VAR_EXPIRE, serialized);
 }
 
-void CpAcommsHandler::queue_ack(const goby::acomms::protobuf::ModemDataAck& ack_msg,
+void CpAcommsHandler::queue_ack(const goby::acomms::protobuf::ModemTransmission& ack_msg,
                                 const google::protobuf::Message& orig_msg)
 {
     std::string serialized;
     serialize_for_moos(&serialized, orig_msg);
     
     publish(MOOS_VAR_ACK, serialized);
-}
-
-
-
-void CpAcommsHandler::queue_receive_ccl(const goby::acomms::protobuf::ModemDataTransmission& message)
-{
-    std::string serialized;
-    serialize_for_moos(&serialized, message);        
-    CMOOSMsg m(MOOS_NOTIFY, MOOS_VAR_INCOMING_DATA, serialized, -1);
-    publish(m);
-
-    // we know what this type is
-    if(in_queue2moos_var_.count(message.dccl_id()))
-    {
-        CMOOSMsg m_specific(MOOS_NOTIFY, in_queue2moos_var_[message.dccl_id()], serialized, -1);
-        
-        publish(m_specific);
-    
-        glog << group("q_in") << "published received data to "
-             << in_queue2moos_var_[message.dccl_id()] << ": " << message << std::endl;
-
-    }
 }
 
 void CpAcommsHandler::queue_receive(const google::protobuf::Message& msg)
@@ -341,29 +347,36 @@ void CpAcommsHandler::queue_receive(const google::protobuf::Message& msg)
 
 
 
-void CpAcommsHandler::modem_raw_in(const goby::acomms::protobuf::ModemMsgBase& base_msg)
+void CpAcommsHandler::modem_raw_in(const goby::acomms::protobuf::ModemRaw& raw_msg)
 {
-    if(base_msg.raw().length() < MAX_MOOS_PACKET)
-        publish(MOOS_VAR_NMEA_IN, base_msg.raw());
+    if(raw_msg.raw().length() < MAX_MOOS_PACKET)
+        publish(MOOS_VAR_NMEA_IN, raw_msg.raw());
 }
 
-void CpAcommsHandler::modem_raw_out(const goby::acomms::protobuf::ModemMsgBase& base_msg)
+void CpAcommsHandler::modem_raw_out(const goby::acomms::protobuf::ModemRaw& raw_msg)
 {
     std::string out;
-    serialize_for_moos(&out, base_msg);
+    serialize_for_moos(&out, raw_msg);
         
     if(base_msg.raw().length() < MAX_MOOS_PACKET)
-        publish(MOOS_VAR_NMEA_OUT, base_msg.raw());
+        publish(MOOS_VAR_NMEA_OUT, raw_msg.raw());
     
 }
 
-void CpAcommsHandler::modem_range_reply(const goby::acomms::protobuf::ModemRangingReply& message)
+void CpAcommsHandler::modem_receive(const goby::acomms::protobuf::ModemTransmission& message)
 {
-    glog << "got range reply: " << message << std::endl;    
     std::string serialized;
     serialize_for_moos(&serialized, message);
-    publish(MOOS_VAR_RANGING, serialized);
+    publish(MOOS_VAR_RECEIVE, serialized);
 }
+
+void CpAcommsHandler::modem_transmit_result(const goby::acomms::protobuf::ModemTransmission& message)
+{
+    std::string serialized;
+    serialize_for_moos(&serialized, message);
+    publish(MOOS_VAR_TRANSMIT, serialized);
+}
+
 
 
 //
@@ -395,24 +408,24 @@ void CpAcommsHandler::process_configuration()
     if(cfg_.has_modem_id_lookup_path())
         glog << modem_lookup_.read_lookup_file(cfg_.modem_id_lookup_path()) << std::endl;
     else
-        glog << warn << "no modem_id_lookup_path in moos file. this is required for conversions between modem_id and vehicle name / type." << std::endl;
+        glog.is(WARN) && glog << "no modem_id_lookup_path in moos file. this is required for conversions between modem_id and vehicle name / type." << std::endl;
     
     glog << "reading in geodesy information: " << std::endl;
     if (!cfg_.common().has_lat_origin() || !cfg_.common().has_lon_origin())
     {
-        glog << die << "no lat_origin or lon_origin specified in configuration. this is required for geodesic conversion" << std::endl;
+        glog.is(DIE) && glog << "no lat_origin or lon_origin specified in configuration. this is required for geodesic conversion" << std::endl;
     }
     else
     {
         if(geodesy_.Initialise(cfg_.common().lat_origin(), cfg_.common().lon_origin()))
             glog << "success!" << std::endl;
         else
-            glog << die << "could not initialize geodesy" << std::endl;
+            glog.is(DIE) && glog << "could not initialize geodesy" << std::endl;
     }
 
-    // check and propogate modem id
+    // check and propagate modem id
     if(cfg_.modem_id() == goby::acomms::BROADCAST_ID)
-        glog << die << "modem_id = " << goby::acomms::BROADCAST_ID << " is reserved for broadcast messages. You must specify a modem_id != " << goby::acomms::BROADCAST_ID << " for this vehicle." << std::endl;
+        glog.is(DIE) && glog << "modem_id = " << goby::acomms::BROADCAST_ID << " is reserved for broadcast messages. You must specify a modem_id != " << goby::acomms::BROADCAST_ID << " for this vehicle." << std::endl;
     
     publish("MODEM_ID", cfg_.modem_id());    
     publish("VEHICLE_ID", cfg_.modem_id());    
@@ -426,7 +439,7 @@ void CpAcommsHandler::process_configuration()
     // start goby-acomms classes
     if(driver_) driver_->startup(cfg_.driver_cfg());
     mac_.startup(cfg_.mac_cfg());
-    queue_manager_->set_cfg(cfg_.queue_cfg());
+    queue_manager_.set_cfg(cfg_.queue_cfg());
     dccl_->set_cfg(cfg_.dccl_cfg());
     transitional_dccl_.set_cfg(cfg_.transitional_cfg());    
 
@@ -505,16 +518,15 @@ void CpAcommsHandler::pack(unsigned dccl_id, boost::shared_ptr<google::protobuf:
             std::string out_var = transitional_dccl_.get_outgoing_hex_var(dccl_id);
             
             std::string serialized;
-            serialize_for_moos(&serialized, *msg);        
-            publish(MOOS_VAR_OUTGOING_DATA, serialized);
+            serialize_for_moos(&serialized, *msg);
             publish(out_var, serialized);
             
-            queue_manager_->push_message(*msg);
+            queue_manager_.push_message(*msg);
             
         }
         catch(std::exception& e)
         {
-            glog << group("dccl_enc") << warn << "could not encode message: " << *msg << ", reason: " << e.what() << std::endl;
+            glog.is(WARN) && glog << group("dccl_enc") << "could not encode message: " << *msg << ", reason: " << e.what() << std::endl;
         }
 
         // flush buffer
@@ -556,7 +568,7 @@ void CpAcommsHandler::unpack(const google::protobuf::Message& msg)
     }
     catch(std::exception& e)
     {
-        glog << group("dccl_dec") << warn << "could not decode message: " << msg << ", reason: " << e.what() << std::endl;
+        glog.is(WARN) && glog << group("dccl_dec") << "could not decode message: " << msg << ", reason: " << e.what() << std::endl;
     }    
 }
 

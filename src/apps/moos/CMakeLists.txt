@@ -1,7 +1,7 @@
 option(build_pAcommsHandler "Build pAcommsHandler" ON)
 
 if(build_pAcommsHandler)
-	#add_subdirectory(pAcommsHandler) # boost, xercesc, asio
+  add_subdirectory(pAcommsHandler) # boost, xercesc, asio
 endif()
 
 add_subdirectory(analyze_dccl_xml)

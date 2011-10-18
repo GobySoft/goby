@@ -200,7 +200,7 @@ The layers of goby-acomms use a signal / slot system for asynchronous events suc
 For example, if I want to receive data from \c queue, I need to connect to the signal QueueManager::signal_receive. Thus, I need to define a function or class method with the same signature:
 
 \code
-void receive_data(const goby::acomms::protobuf::ModemDataTransmission& msg);
+void receive_data(const google::protobuf::Message& msg);
 \endcode
 
 At startup, I then connect the signal to the slot:
@@ -214,7 +214,7 @@ If instead, I was using a member function such as
 class MyApplication
 {
   public: 
-      void receive_data(const goby::acomms::protobuf::ModemDataTransmission& msg);
+  void receive_data(const google::protobuf::Message& msg);
 
 };
 \endcode

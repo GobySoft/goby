@@ -1,4 +1,4 @@
-import "goby/moos/libmoos_util/tes_moos_app.proto";
+import "goby/moos/tes_moos_app.proto";
 import "goby/protobuf/acomms_driver_base.proto";
 import "goby/protobuf/acomms_queue.proto";
 import "goby/protobuf/acomms_amac.proto";

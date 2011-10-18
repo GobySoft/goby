@@ -38,9 +38,9 @@
 #include "MOOSLIB/MOOSLib.h"
 #include "MOOSUtilityLib/MOOSGeodesy.h"
 
-#include "goby/moos/libmoos_util/dynamic_moos_vars.h"
-#include "goby/moos/libmoos_util/modem_id_convert.h"
-#include "goby/moos/libmoos_util/tes_moos_app.h"
+#include "goby/moos/dynamic_moos_vars.h"
+#include "goby/moos/modem_id_convert.h"
+#include "goby/moos/tes_moos_app.h"
 
 #include "pAcommsHandler_config.pb.h"
 
@@ -53,8 +53,8 @@ namespace goby {
 }
 
 // data
-const std::string MOOS_VAR_INCOMING_DATA = "ACOMMS_INCOMING_DATA";
-const std::string MOOS_VAR_OUTGOING_DATA = "ACOMMS_OUTGOING_DATA";
+const std::string MOOS_VAR_RECEIVE = "ACOMMS_MODEM_RECEIVE";
+const std::string MOOS_VAR_TRANSMIT = "ACOMMS_MODEM_TRANSMIT";
 
 const bool DEFAULT_NO_ENCODE = true;
 const bool DEFAULT_ENCODE = false;
@@ -73,10 +73,6 @@ const unsigned MAX_MOOS_PACKET = 35000;
 const std::string MOOS_VAR_NMEA_OUT = "ACOMMS_NMEA_OUT";
 const std::string MOOS_VAR_NMEA_IN = "ACOMMS_NMEA_IN";
 
-// ranging responses
-const std::string MOOS_VAR_RANGING = "ACOMMS_RANGE_RESPONSE";
-const std::string MOOS_VAR_COMMAND_RANGING = "ACOMMS_RANGE_COMMAND";
-
 // acoustic acknowledgments get written here
 const std::string MOOS_VAR_ACK = "ACOMMS_ACK";
 
@@ -85,12 +81,7 @@ const std::string MOOS_VAR_EXPIRE = "ACOMMS_EXPIRE";
 
 const std::string MOOS_VAR_QSIZE = "ACOMMS_QSIZE";
 
-
-// communications quality statistics
-// const std::string MOOS_VAR_STATS = "ACOMMS_STATS";
-
-const std::string MOOS_VAR_CYCLE_UPDATE = "ACOMMS_MAC_CYCLE_UPDATE"; // preferred
-const std::string MOOS_VAR_POLLER_UPDATE = "ACOMMS_POLLER_UPDATE"; // legacy
+const std::string MOOS_VAR_CYCLE_UPDATE = "ACOMMS_MAC_CYCLE_UPDATE";
 
 const std::string MOOS_VAR_FLUSH_QUEUE = "ACOMMS_FLUSH_QUEUE"; 
 
@@ -139,11 +130,11 @@ class CpAcommsHandler : public TesMoosApp
     void queue_receive_ccl(const goby::acomms::protobuf::ModemDataTransmission& message);
     void queue_receive(const google::protobuf::Message& msg);
 
-    void queue_ack(const goby::acomms::protobuf::ModemDataAck& ack_msg,
+    void queue_ack(const goby::acomms::protobuf::ModemTransmission& ack_msg,
                    const google::protobuf::Message& orig_msg);
     
-//void queue_on_demand(const goby::acomms::protobuf::ModemDataRequest& request_msg,
-    //                     goby::acomms::protobuf::ModemDataTransmission* data_msg);
+//    void queue_on_demand(const goby::acomms::protobuf::ModemTransmission& request_msg, google::protobuf::Message* data_msg);
+    
     void queue_expire(const google::protobuf::Message& orig_msg);
     void queue_qsize(const goby::acomms::protobuf::QueueSize& size);
     
@@ -154,12 +145,15 @@ class CpAcommsHandler : public TesMoosApp
     
     // from MMDriver
     // publish raw NMEA stream from the modem ($CA)
-    void modem_raw_in(const goby::acomms::protobuf::ModemMsgBase& base_msg);
+    void modem_raw_in(const goby::acomms::protobuf::ModemRaw& raw_msg);
     // publish raw NMEA stream to the modem ($CC)
-    void modem_raw_out(const goby::acomms::protobuf::ModemMsgBase& base_msg);
-    // write ping (ranging) responses
-    void modem_range_reply(const goby::acomms::protobuf::ModemRangingReply& message);
+    void modem_raw_out(const goby::acomms::protobuf::ModemRaw& raw_msg);
 
+    // handle parsed receive from the modem 
+    void modem_receive(const goby::acomms::protobuf::ModemTransmission& message);
+
+    // handle parsed transmit from the modem 
+    void modem_transmit_result(const goby::acomms::protobuf::ModemTransmission& message);
  
     void dccl_inbox(const CMOOSMsg& msg);
     void dccl_loop();
@@ -218,7 +212,7 @@ class CpAcommsHandler : public TesMoosApp
     goby::acomms::DCCLCodec* dccl_;
     
     // manages queues and does additional packing
-    goby::acomms::QueueManager* queue_manager_;
+    goby::acomms::QueueManager queue_manager_;
     
     // driver class that interfaces to the modem
     goby::acomms::ModemDriverBase* driver_;

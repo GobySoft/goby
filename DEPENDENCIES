@@ -50,9 +50,6 @@ debian-suggested: debian-minimal
 	@apt-get install \
 	 	libcrypto++-dev \
 		libncurses-dev \
-		libwt-dev \
-		libwtdbo-dev \
-		libwtdbosqlite-dev \
 		-y
 
 ubuntu-suggested: debian-suggested

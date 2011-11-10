@@ -10,7 +10,7 @@ target_link_libraries(pAcommsHandler
   pthread
   goby_acomms
   goby_util
-  goby_moos_util
+  goby_moos
   goby_transitional
   ${MOOS_LIBRARIES}
   ${Boost_LIBRARIES}

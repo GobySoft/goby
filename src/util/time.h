@@ -99,7 +99,9 @@ namespace goby
         {
             timeval t;
             gettimeofday(&t, 0);
-            return t.tv_sec*1000000 + t.tv_usec;
+	    uint64 whole = t.tv_sec;
+	    uint64 micro = t.tv_usec;
+            return whole*1000000 + micro;
         }
 
         /// \brief Returns current UTC time as a human-readable string

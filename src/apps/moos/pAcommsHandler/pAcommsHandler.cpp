@@ -131,7 +131,6 @@ void CpAcommsHandler::do_subscriptions()
 
     // update comms cycle
     subscribe(MOOS_VAR_CYCLE_UPDATE, &CpAcommsHandler::handle_mac_cycle_update, this);
-    subscribe(MOOS_VAR_POLLER_UPDATE, &CpAcommsHandler::handle_mac_cycle_update, this);
     
     subscribe(MOOS_VAR_FLUSH_QUEUE, &CpAcommsHandler::handle_flush_queue, this);
     
@@ -192,14 +191,6 @@ void CpAcommsHandler::dccl_inbox(const CMOOSMsg& msg)
     }
 }
 
-void CpAcommsHandler::handle_ranging_request(const CMOOSMsg& msg)
-{
-    goby::acomms::protobuf::ModemRangingRequest request_msg;
-    parse_for_moos(msg.GetString(), &request_msg);
-    glog << "ranging request: " << request_msg << std::endl;
-    if(driver_) driver_->handle_initiate_ranging(&request_msg);
-}
-
 void CpAcommsHandler::handle_flush_queue(const CMOOSMsg& msg)
 {
     goby::acomms::protobuf::QueueFlush flush;
@@ -253,7 +244,7 @@ void CpAcommsHandler::handle_mac_cycle_update(const CMOOSMsg& msg)
         return;
     }
 
-    MACManager::iterator it1 = mac_.begin(), it2 = mac_.begin();
+    goby::acomms::MACManager::iterator it1 = mac_.begin(), it2 = mac_.begin();
     
     for(int i = 0, n = update_msg.first_iterator(); i < n; ++i)
         ++it1;
@@ -287,7 +278,7 @@ void CpAcommsHandler::handle_mac_cycle_update(const CMOOSMsg& msg)
             break;
 
         case goby::acomms::protobuf::MACUpdate::INSERT:
-            mac_.assign(it1, update_msg.slot().begin(), update_msg.slot().end());            
+            mac_.insert(it1, update_msg.slot().begin(), update_msg.slot().end());            
             break;
             
         case goby::acomms::protobuf::MACUpdate::ERASE:
@@ -358,7 +349,7 @@ void CpAcommsHandler::modem_raw_out(const goby::acomms::protobuf::ModemRaw& raw_
     std::string out;
     serialize_for_moos(&out, raw_msg);
         
-    if(base_msg.raw().length() < MAX_MOOS_PACKET)
+    if(raw_msg.raw().length() < MAX_MOOS_PACKET)
         publish(MOOS_VAR_NMEA_OUT, raw_msg.raw());
     
 }
@@ -389,20 +380,18 @@ void CpAcommsHandler::process_configuration()
     switch(cfg_.driver_type())
     {
         case pAcommsHandlerConfig::DRIVER_WHOI_MICROMODEM:
-            driver_ = new goby::acomms::MMDriver(&glog);
+            driver_ = new goby::acomms::MMDriver;
             break;
 
         case pAcommsHandlerConfig::DRIVER_ABC_EXAMPLE_MODEM:
-            driver_ = new goby::acomms::ABCDriver(&glog);
+            driver_ = new goby::acomms::ABCDriver;
             break;
             
         case pAcommsHandlerConfig::DRIVER_NONE: break;
     }
 
     // add groups to flexostream human terminal output
-    mac_.add_flex_groups(&glog);
     transitional_dccl_.add_flex_groups(&glog);
-    if(driver_) driver_->add_flex_groups(&glog);
     glog.add_group("tcp", goby::util::Colors::green, "tcp share");
     
     if(cfg_.has_modem_id_lookup_path())

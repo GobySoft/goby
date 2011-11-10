@@ -139,7 +139,6 @@ class CpAcommsHandler : public TesMoosApp
     void queue_qsize(const goby::acomms::protobuf::QueueSize& size);
     
     void handle_mac_cycle_update(const CMOOSMsg& msg);
-    void handle_ranging_request(const CMOOSMsg& msg);
     void handle_message_push(const CMOOSMsg& msg);
     void handle_flush_queue(const CMOOSMsg& msg);
     

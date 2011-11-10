@@ -21,6 +21,11 @@ bool double_cmp(double a, double b, int precision)
 
 int main()
 {
+
+    std::cout << "current double: " << std::setprecision(16) << goby_time<double>() << std::endl;
+    std::cout << "current uint64: " << goby_time<uint64>() << std::endl;
+    std::cout << "current ptime: " << goby_time() << std::endl;
+
     // 2011-08-16 19:36:57.523456 UTC
     const double TEST_DOUBLE_TIME = 1313523417.523456;
     const uint64 TEST_MICROSEC_TIME = TEST_DOUBLE_TIME * 1e6;

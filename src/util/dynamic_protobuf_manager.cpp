@@ -24,12 +24,17 @@ boost::signal<void (const google::protobuf::FileDescriptor*)> goby::util::Dynami
 
 boost::shared_ptr<google::protobuf::Message> goby::util::DynamicProtobufManager::new_protobuf_message(const std::string& protobuf_type_name)
 {
-    const google::protobuf::Descriptor* desc = descriptor_pool().FindMessageTypeByName(protobuf_type_name);
+    // try the compiled pool
+    const google::protobuf::Descriptor* desc = google::protobuf::DescriptorPool::generated_pool()->FindMessageTypeByName(protobuf_type_name);
+        
+    if(desc) return new_protobuf_message(desc);
+
+    // try the user pool
+    desc = descriptor_pool().FindMessageTypeByName(protobuf_type_name);
+
+    if(desc) return new_protobuf_message(desc);
     
-    if(desc)
-        return new_protobuf_message(desc);
-    else
-        throw(std::runtime_error("Unknown type " + protobuf_type_name + ", be sure it is loaded with call to add_protobuf_file()"));
+    throw(std::runtime_error("Unknown type " + protobuf_type_name + ", be sure it is loaded at compile-time, via dlopen, or with a call to add_protobuf_file()"));
 }
 
 boost::shared_ptr<google::protobuf::Message> goby::util::DynamicProtobufManager::new_protobuf_message(

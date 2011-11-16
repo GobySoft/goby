@@ -30,13 +30,64 @@ message pAcommsHandlerConfig
   // for dccl
   optional goby.acomms.protobuf.DCCLConfig dccl_cfg = 7 [(goby.field).description="Configure the Dynamic Compact Control Language Encoding/Decoding unit"];  // see acomms_dccl.proto
 
-  optional goby.transitional.protobuf.DCCLTransitionalConfig transitional_cfg = 8 [(goby.field).description="Backwards compatibility for DCCLv1 XML file"]; // see transitional.proto
 
+  repeated string load_shared_library = 20 [(goby.field).description="Path to a shared library containing compiled DCCL protobuf files. Preferred over load_dccl_proto_file."];
+
+  repeated string load_dccl_proto_file = 21 [(goby.field).description="Path to a DCCL protobuf file. Use load_shared_library when possible."];
+
+  
+  // how to make a message
+  message MOOSProtobufTranslator
+  {
+    required string protobuf_name = 1 [(goby.field).description="Fully qualified name (including package, if any) of a DCCL protobuf message to tag this parser to."];    
+
+    enum ParserSerializerTechnique
+    {
+      TECHNIQUE_PROTOBUF_TEXT_FORMAT = 1;
+      TECHNIQUE_PROTOBUF_NATIVE_ENCODED = 2;
+      TECHNIQUE_COMMA_SEPARATED_KEY_EQUALS_VALUE_PAIRS = 3;
+      TECHNIQUE_FORMAT = 4;
+    }
+
+    message Trigger
+    {
+      enum Type 
+      {
+        TRIGGER_PUBLISH = 1;
+        TRIGGER_TIME = 2;
+      }
+      optional Type type = 1 [default = TRIGGER_PUBLISH];
+      optional string moos_var = 2;
+      optional uint32 time = 3;
+    }
+    optional Trigger trigger = 2;
+
+    message CreateParser
+    {
+      optional ParserSerializerTechnique technique = 1 [default = TECHNIQUE_PROTOBUF_TEXT_FORMAT];
+      required string moos_var = 2;
+      optional string format = 3;
+    }
+
+    repeated CreateParser create = 3;
+
+    message PublishSerializer
+    {
+      optional ParserSerializerTechnique technique = 1 [default = TECHNIQUE_PROTOBUF_TEXT_FORMAT];
+      required string moos_var = 2;
+      optional string format = 3;
+    }
+    repeated PublishSerializer publish = 4;
+  }
+  
+  repeated MOOSProtobufTranslator moos_dccl_translator = 22 [(goby.field).description="Describes how to trigger (generate) a DCCL message from a MOOS event and how to publish the contents of the message upon receipt"];
   
   // path to text file with entries:
   //   modem_id,name,type
   // for example
   //   3,unicorn,auv
   optional string modem_id_lookup_path = 101 [(goby.field).description="Path to file containing mapping between modem_id and vehicle name & type",(goby.field).moos_global = "modem_id_lookup_path"];
+
+  optional goby.transitional.protobuf.DCCLTransitionalConfig transitional_cfg = 200 [(goby.field).description="Backwards compatibility for DCCLv1 XML file"]; // see transitional.proto
 
 }

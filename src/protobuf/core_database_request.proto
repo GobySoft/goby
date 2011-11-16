@@ -1,5 +1,5 @@
 import "google/protobuf/descriptor.proto";
-import "goby/protobuf/interprocess_notification.proto";
+import "goby/protobuf/core_interprocess_notification.proto";
 import "goby/protobuf/option_extensions.proto";
 
 package goby.core.protobuf;

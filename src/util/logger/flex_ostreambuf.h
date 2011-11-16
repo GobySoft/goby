@@ -26,7 +26,7 @@
 #include <boost/thread.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include "goby/protobuf/app_base_config.pb.h"
+#include "goby/protobuf/util_logger.pb.h"
 
 #include "term_color.h"
 
@@ -42,13 +42,13 @@ namespace goby
         namespace logger
         {
             extern boost::mutex mutex;
-            enum Verbosity { QUIET = GLogConfig::QUIET,
-                             WARN = GLogConfig::WARN,
-                             VERBOSE = GLogConfig::VERBOSE,
-                             GUI = GLogConfig::GUI,
-                             DEBUG1 = GLogConfig::DEBUG1,
-                             DEBUG2 = GLogConfig::DEBUG2,
-                             DEBUG3 = GLogConfig::DEBUG3,
+            enum Verbosity { QUIET = protobuf::GLogConfig::QUIET,
+                             WARN = protobuf::GLogConfig::WARN,
+                             VERBOSE = protobuf::GLogConfig::VERBOSE,
+                             GUI = protobuf::GLogConfig::GUI,
+                             DEBUG1 = protobuf::GLogConfig::DEBUG1,
+                             DEBUG2 = protobuf::GLogConfig::DEBUG2,
+                             DEBUG3 = protobuf::GLogConfig::DEBUG3,
                              DIE };
         };
         

@@ -14,7 +14,7 @@
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "goby/protobuf/option_extensions.pb.h"
-#include "goby/protobuf/app_base_config.pb.h"
+// #include "goby/protobuf/app_base_config.pb.h"
 
 #include "configuration_reader.h"
 
@@ -614,6 +614,7 @@ std::string goby::util::ConfigReader::label(const google::protobuf::FieldDescrip
     return "";
 }
 
+/*
 void goby::util::ConfigReader::merge_app_base_cfg(AppBaseConfig* base_cfg,
                         const boost::program_options::variables_map& var_map)
 {
@@ -645,7 +646,7 @@ void goby::util::ConfigReader::merge_app_base_cfg(AppBaseConfig* base_cfg,
         base_cfg->mutable_database_config()->set_using_database(false);
 }
 
-
+*/
 
 std::string goby::util::ConfigReader::word_wrap(std::string s, unsigned width,
                                                 const std::string & delim)

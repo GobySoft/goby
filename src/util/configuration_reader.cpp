@@ -14,7 +14,7 @@
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "goby/protobuf/option_extensions.pb.h"
-#include "goby/protobuf/app_base_config.pb.h"
+#include "goby/protobuf/core_app_base_config.pb.h"
 
 #include "configuration_reader.h"
 
@@ -614,12 +614,13 @@ std::string goby::util::ConfigReader::label(const google::protobuf::FieldDescrip
     return "";
 }
 
+
 void goby::util::ConfigReader::merge_app_base_cfg(AppBaseConfig* base_cfg,
                         const boost::program_options::variables_map& var_map)
 {
     if(var_map.count("ncurses"))
     {
-        base_cfg->mutable_glog_config()->set_tty_verbosity(GLogConfig::GUI);
+        base_cfg->mutable_glog_config()->set_tty_verbosity(protobuf::GLogConfig::GUI);
     }
     else if (var_map.count("verbose"))
     {
@@ -627,16 +628,16 @@ void goby::util::ConfigReader::merge_app_base_cfg(AppBaseConfig* base_cfg,
         {
             default:
             case 0:
-                base_cfg->mutable_glog_config()->set_tty_verbosity(GLogConfig::VERBOSE);
+                base_cfg->mutable_glog_config()->set_tty_verbosity(protobuf::GLogConfig::VERBOSE);
                 break;
             case 1:
-                base_cfg->mutable_glog_config()->set_tty_verbosity(GLogConfig::DEBUG1);
+                base_cfg->mutable_glog_config()->set_tty_verbosity(protobuf::GLogConfig::DEBUG1);
                 break;
             case 2:
-                base_cfg->mutable_glog_config()->set_tty_verbosity(GLogConfig::DEBUG2);
+                base_cfg->mutable_glog_config()->set_tty_verbosity(protobuf::GLogConfig::DEBUG2);
                 break;
             case 3:
-                base_cfg->mutable_glog_config()->set_tty_verbosity(GLogConfig::DEBUG3);
+                base_cfg->mutable_glog_config()->set_tty_verbosity(protobuf::GLogConfig::DEBUG3);
                 break;
         }
     }

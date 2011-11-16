@@ -20,7 +20,7 @@
 #include "goby/acomms/connect.h"
 #include "goby/core/libdbo/dbo_manager.h"
 #include "goby/protobuf/core_database_request.pb.h"
-#include "goby/protobuf/zero_mq_node_config.pb.h"
+#include "goby/protobuf/core_zero_mq_node_config.pb.h"
 #include "goby/util/dynamic_protobuf_manager.h"
 
 #include "protobuf_node.h"

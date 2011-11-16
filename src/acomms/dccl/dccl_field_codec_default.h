@@ -144,7 +144,7 @@ namespace goby
               // if not required field, leave one value for unspecified (always encoded as 0)
               const unsigned NULL_VALUE = DCCLFieldCodecBase::this_field()->is_required() ? 0 : 1;
               
-              return std::ceil(std::log((max()-min())*std::pow(10.0, precision())+1 + NULL_VALUE)/std::log(2));
+              return util::ceil_log2((max()-min())*std::pow(10.0, precision())+1 + NULL_VALUE);
           }
             
         };

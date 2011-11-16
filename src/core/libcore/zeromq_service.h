@@ -23,7 +23,7 @@
 #include <boost/function.hpp>
 #include <boost/signals.hpp>
 
-#include "goby/protobuf/zero_mq_node_config.pb.h"
+#include "goby/protobuf/core_zero_mq_node_config.pb.h"
 
 #include <zmq.hpp>
 

@@ -40,8 +40,8 @@ namespace goby
         /// \return r rounded
         inline double unbiased_round(double r, double dec)
         {
-            double ex = pow(10, dec);
-            double final = floor(r * ex);
+            double ex = std::pow(10.0, dec);
+            double final = std::floor(r * ex);
             double s = (r * ex) - final;
 
             // remainder less than 0.5 or even number next to it
@@ -64,6 +64,18 @@ namespace goby
                 1.340*(S-35) + 1.630e-2*D+1.675e-7*D*D -
                 1.025e-2*T*(S-35)-7.139e-13*T*D*D*D;
         }
+
+
+        /// \return ceil(log2(v))
+        inline unsigned ceil_log2(unsigned v)
+        {
+            // r will be one greater (ceil) if v is not a power of 2
+            unsigned r = ((v & (v - 1)) == 0) ? 0 : 1;
+            while (v >>= 1)
+                r++;
+            return r;
+        }
+        
     }
 
     //@}

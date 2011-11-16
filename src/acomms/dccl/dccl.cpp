@@ -33,7 +33,7 @@
 #include "dccl_field_codec_default.h"
 #include "goby/util/as.h"
 #include "goby/protobuf/acomms_option_extensions.pb.h"
-#include "goby/protobuf/header.pb.h"
+//#include "goby/protobuf/header.pb.h"
 
 using goby::util::goby_time;
 using goby::util::as;

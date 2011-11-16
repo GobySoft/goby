@@ -137,7 +137,7 @@ unsigned goby::acomms::DCCLDefaultBoolCodec::size()
     // if field unspecified
     const unsigned NULL_VALUE = this_field()->is_required() ? 0 : 1;
     
-    return std::ceil(std::log(BOOL_VALUES + NULL_VALUE)/std::log(2));
+    return util::ceil_log2(BOOL_VALUES + NULL_VALUE);
 }
 
 void goby::acomms::DCCLDefaultBoolCodec::validate()
@@ -227,7 +227,7 @@ unsigned goby::acomms::DCCLDefaultStringCodec::max_size()
 
 unsigned goby::acomms::DCCLDefaultStringCodec::min_size()
 {
-    return std::ceil(std::log(MAX_STRING_LENGTH+1)/std::log(2));
+    return util::ceil_log2(MAX_STRING_LENGTH+1);
 }
 
 

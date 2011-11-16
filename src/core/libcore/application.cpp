@@ -17,7 +17,6 @@
 #include <iostream>
 
 #include "goby/util/time.h"
-#include "goby/protobuf/app_base_config.pb.h"
 
 #include "application.h"
 

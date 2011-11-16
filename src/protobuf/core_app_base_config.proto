@@ -1,33 +1,8 @@
 import "goby/protobuf/option_extensions.proto";
-import "goby/protobuf/zero_mq_node_config.proto";
-import "goby/protobuf/pubsub_node_config.proto";
+import "goby/protobuf/core_zero_mq_node_config.proto";
+import "goby/protobuf/core_pubsub_node_config.proto";
 import "goby/protobuf/core_database_request.proto";
-
-message GLogConfig
-{
-  enum Verbosity
-  {
-    QUIET = 1;
-    WARN = 2;
-    VERBOSE = 3;
-    GUI = 4;
-    DEBUG1 = 5;
-    DEBUG2 = 6;
-    DEBUG3 = 7;
-  }
-  
-  optional Verbosity tty_verbosity = 1 [default = QUIET,
-                                        (goby.field).description="Terminal verbosity"];
-
-  message FileLog
-  {
-    required string file_name = 1;
-    optional Verbosity verbosity = 2 [default = VERBOSE,
-                                      (goby.field).description="Verbosity for this file log"];
-  }
-  repeated FileLog file_log = 2 [(goby.field).description="Open one or more files for (debug) logging"];
-  
-}
+import "goby/protobuf/util_logger.proto";
 
 
 message AppBaseConfig
@@ -42,7 +17,7 @@ message AppBaseConfig
                                      (goby.field).description = "a unique name for this platform (a platform in this context is a ship, AUV, workstation, etc.)"];
   
   optional goby.core.protobuf.PubSubSocketConfig pubsub_config = 10 [(goby.field).description="configure the connection to the publish / subscribe message passing architecture"];
-  optional GLogConfig glog_config = 11 [(goby.field).description="configure the Goby Logger (TTY terminal and file debugging logger)"];
+  optional goby.util.protobuf.GLogConfig glog_config = 11 [(goby.field).description="configure the Goby Logger (TTY terminal and file debugging logger)"];
   optional goby.core.protobuf.DatabaseClientConfig database_config = 12 [(goby.field).description="configure the Goby Database (SQL Database) to log the publish/subscribe transactions"];
   
   // advanced options

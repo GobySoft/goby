@@ -50,17 +50,9 @@ debian-suggested: debian-minimal
 	@apt-get install \
 	 	libcrypto++-dev \
 		libncurses-dev \
-		libwt-dev \
-		libwtdbo-dev \
-		libwtdbosqlite-dev \
 		-y
 
 ubuntu-suggested: debian-suggested
-	@add-apt-repository ppa:goby-dev/ppa
-	@apt-get update
-	@apt-get install \
-		libzmq-dev \
-		-y 
 
 
 # extra targets for special purposes

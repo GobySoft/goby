@@ -20,7 +20,7 @@
 #include <google/protobuf/message.h>
 #include "node_interface.h"
 #include "protobuf_node.h"
-#include "goby/protobuf/header.pb.h"
+#include "goby/protobuf/core_header.pb.h"
 
 namespace goby
 {

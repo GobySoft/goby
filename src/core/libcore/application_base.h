@@ -24,7 +24,7 @@
 #include "goby/util/exception.h"
 #include "goby/util/configuration_reader.h"
 
-#include "goby/protobuf/app_base_config.pb.h"
+#include "goby/protobuf/core_app_base_config.pb.h"
 
 #include "goby/util/logger.h"
 

@@ -19,6 +19,7 @@
 #define Time20100713H
 
 #include <ctime>
+#include <sys/time.h>
 
 #include <boost/date_time.hpp>
 #include <boost/static_assert.hpp>
@@ -87,11 +88,21 @@ namespace goby
         
         /// \brief Returns current UTC time as seconds and fractional seconds since 1970-01-01 00:00:00
         template<> inline double goby_time<double>()
-        { return as<double>(goby_time<boost::posix_time::ptime>()); }
+        {
+            timeval t;
+            gettimeofday(&t, 0);
+            return t.tv_sec + t.tv_usec / 1.0e6;
+        }
 
         /// \brief Returns current UTC time as integer microseconds since 1970-01-01 00:00:00
         template<> inline uint64 goby_time<uint64>()
-        { return as<uint64>(goby_time<boost::posix_time::ptime>()); }
+        {
+            timeval t;
+            gettimeofday(&t, 0);
+	    uint64 whole = t.tv_sec;
+	    uint64 micro = t.tv_usec;
+            return whole*1000000 + micro;
+        }
 
         /// \brief Returns current UTC time as a human-readable string
         template<> inline std::string goby_time<std::string>()

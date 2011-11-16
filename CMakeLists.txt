@@ -23,12 +23,12 @@ set(GOBY_VERSION_MAJOR "3")
 set(GOBY_VERSION_MINOR "0")
 set(GOBY_VERSION_PATCH "0-alpha1")
 set(GOBY_VERSION "${GOBY_VERSION_MAJOR}.${GOBY_VERSION_MINOR}.${GOBY_VERSION_PATCH}")
-set(GOBY_VERSION_DATE "2011 Sep 23")
+set(GOBY_VERSION_DATE "2011 Nov 10")
 
 # give Goby 2 series a few more soversions
 set(GOBY_SOVERSION "21")
 
-## fetch all the local directories for generated code
+# fetch all the local directories for generated code
 get_filename_component(goby_LIB_DIR lib ABSOLUTE)
 get_filename_component(goby_BIN_DIR bin ABSOLUTE)
 get_filename_component(goby_INC_DIR include ABSOLUTE)

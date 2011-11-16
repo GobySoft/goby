@@ -133,12 +133,11 @@ namespace goby
 
         namespace protobuf
         {
-            bool operator==(const ModemTransmission& a, const ModemTransmission& b)
+            inline bool operator==(const ModemTransmission& a, const ModemTransmission& b)
             { return a.SerializeAsString() == b.SerializeAsString(); }
-            
         }
         
-        std::ostream& operator<<(std::ostream& os, const MACManager& mac)
+        inline std::ostream& operator<<(std::ostream& os, const MACManager& mac)
         {
             for(std::list<protobuf::ModemTransmission>::const_iterator it = mac.begin(), n = mac.end(); it != n; ++it)
             {

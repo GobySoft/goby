@@ -1,5 +1,5 @@
 import "goby/protobuf/option_extensions.proto";
-import "goby/protobuf/app_base_config.proto";
+import "goby/protobuf/core_app_base_config.proto";
 
 package goby.moos.protobuf;
 

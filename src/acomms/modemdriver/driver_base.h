@@ -24,8 +24,8 @@
 #include <boost/signal.hpp>
 
 #include "goby/acomms/acomms_constants.h"
-#include "goby/common/acomms_modem_message.pb.h"
-#include "goby/common/acomms_driver_base.pb.h"
+#include "goby/acomms/protobuf/modem_message.pb.h"
+#include "goby/acomms/protobuf/driver_base.pb.h"
 #include "goby/util/linebasedcomms.h"
 
 namespace goby

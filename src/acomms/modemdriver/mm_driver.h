@@ -23,7 +23,7 @@
 #include "goby/util/time.h"
 
 #include "driver_base.h"
-#include "goby/common/acomms_mm_driver.pb.h"
+#include "goby/acomms/protobuf/mm_driver.pb.h"
 #include "goby/acomms/acomms_helpers.h"
 
 namespace goby

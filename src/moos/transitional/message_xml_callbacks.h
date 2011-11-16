@@ -29,11 +29,11 @@
 #include <xercesc/sax2/DefaultHandler.hpp> 
 #include <boost/algorithm/string.hpp> // for string functions
 
-#include "goby/moos/libtransitional/xml/xerces_strings.h"
+#include "goby/moos/transitional/xml/xerces_strings.h"
 
 #include "message.h"
 #include "goby/acomms/dccl/dccl_exception.h"
-#include "goby/moos/libtransitional/xml/tags.h"
+#include "goby/moos/transitional/xml/tags.h"
 
 namespace goby
 {

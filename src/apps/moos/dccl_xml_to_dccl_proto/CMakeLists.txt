@@ -1,2 +1,2 @@
 add_executable(dccl_xml_to_dccl_proto dccl_xml_to_dccl_proto.cpp)
-target_link_libraries(dccl_xml_to_dccl_proto goby_transitional)
+target_link_libraries(dccl_xml_to_dccl_proto goby_moos)

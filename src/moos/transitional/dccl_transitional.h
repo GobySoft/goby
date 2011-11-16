@@ -27,16 +27,16 @@
 #include <stdexcept>
 #include <vector>
 
-#include "goby/moos/libtransitional/xml/xml_parser.h"
+#include "goby/moos/transitional/xml/xml_parser.h"
 #include "goby/util/time.h"
 #include "goby/util/logger.h"
 
 #include "message.h"
 #include "message_val.h"
 #include "goby/acomms/dccl/dccl_exception.h"
-#include "goby/common/moos_transitional.pb.h"
-#include "goby/common/acomms_queue.pb.h"
-#include "goby/common/acomms_modem_message.pb.h"
+#include "goby/moos/protobuf/transitional.pb.h"
+#include "goby/acomms/protobuf/queue.pb.h"
+#include "goby/acomms/protobuf/modem_message.pb.h"
 #include "goby/acomms/acomms_helpers.h"
 #include "goby/acomms/dccl.h"
 

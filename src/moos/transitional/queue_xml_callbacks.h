@@ -34,8 +34,8 @@
 
 #include "goby/util/as.h"
 #include "goby/util/exception.h"
-#include "goby/common/moos_transitional.pb.h"
-#include "goby/moos/libtransitional/xml/tags.h"
+#include "goby/moos/protobuf/transitional.pb.h"
+#include "goby/moos/transitional/xml/tags.h"
 
 namespace goby
 {

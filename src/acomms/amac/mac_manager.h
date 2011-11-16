@@ -28,8 +28,8 @@
 #include <boost/bind.hpp>
 #include <boost/asio.hpp>
 
-#include "goby/common/acomms_modem_message.pb.h"
-#include "goby/common/acomms_amac.pb.h"
+#include "goby/acomms/protobuf/modem_message.pb.h"
+#include "goby/acomms/protobuf/amac.pb.h"
 #include "goby/acomms/modem_driver.h"
 #include "goby/util/time.h"
 #include "goby/util/as.h"

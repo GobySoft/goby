@@ -33,7 +33,7 @@
 
 #include "goby/acomms.h"
 #include "goby/util.h"
-#include "goby/moos/libtransitional/dccl_transitional.h"
+#include "goby/moos/transitional/dccl_transitional.h"
 
 #include "MOOSLIB/MOOSLib.h"
 #include "MOOSUtilityLib/MOOSGeodesy.h"

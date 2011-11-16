@@ -31,7 +31,7 @@
 
 #include <boost/dynamic_bitset.hpp>
 
-#include "goby/protobuf/moos_transitional.pb.h"
+#include "goby/common/moos_transitional.pb.h"
 #include "goby/acomms/acomms_constants.h"
 #include "goby/acomms/dccl/dccl_exception.h"
 

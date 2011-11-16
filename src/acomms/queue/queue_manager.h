@@ -27,7 +27,7 @@
 #include <boost/signal.hpp>
 
 #include "goby/acomms/dccl.h"
-#include "goby/protobuf/acomms_queue.pb.h"
+#include "goby/common/acomms_queue.pb.h"
 
 #include <map>
 #include <deque>

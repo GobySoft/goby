@@ -13,8 +13,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
-#include "goby/protobuf/option_extensions.pb.h"
-#include "goby/protobuf/core_app_base_config.pb.h"
+#include "goby/common/option_extensions.pb.h"
+#include "goby/common/core_app_base_config.pb.h"
 
 #include "configuration_reader.h"
 

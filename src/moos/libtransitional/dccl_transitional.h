@@ -34,9 +34,9 @@
 #include "message.h"
 #include "message_val.h"
 #include "goby/acomms/dccl/dccl_exception.h"
-#include "goby/protobuf/moos_transitional.pb.h"
-#include "goby/protobuf/acomms_queue.pb.h"
-#include "goby/protobuf/acomms_modem_message.pb.h"
+#include "goby/common/moos_transitional.pb.h"
+#include "goby/common/acomms_queue.pb.h"
+#include "goby/common/acomms_modem_message.pb.h"
 #include "goby/acomms/acomms_helpers.h"
 #include "goby/acomms/dccl.h"
 

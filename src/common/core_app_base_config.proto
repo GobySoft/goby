@@ -1,8 +1,8 @@
-import "goby/protobuf/option_extensions.proto";
-import "goby/protobuf/core_zero_mq_node_config.proto";
-import "goby/protobuf/core_pubsub_node_config.proto";
-import "goby/protobuf/core_database_request.proto";
-import "goby/protobuf/util_logger.proto";
+import "goby/common/option_extensions.proto";
+import "goby/common/core_zero_mq_node_config.proto";
+import "goby/common/core_pubsub_node_config.proto";
+import "goby/common/core_database_request.proto";
+import "goby/common/util_logger.proto";
 
 
 message AppBaseConfig

@@ -1,5 +1,5 @@
-import "goby/protobuf/acomms_driver_base.proto";
-import "goby/protobuf/acomms_modem_message.proto";
+import "goby/common/acomms_driver_base.proto";
+import "goby/common/acomms_modem_message.proto";
 
 package micromodem.protobuf;
 

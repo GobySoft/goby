@@ -1,6 +1,6 @@
-import "goby/protobuf/header.proto";
-import "goby/protobuf/option_extensions.proto";
-import "goby/protobuf/app_base_config.proto";
+import "goby/common/header.proto";
+import "goby/common/option_extensions.proto";
+import "goby/common/app_base_config.proto";
 
 message Sub
 {

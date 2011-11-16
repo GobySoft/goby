@@ -47,15 +47,15 @@ endif()
 
 
 ## set flags
-option(build_protobuf "Build the Goby Google Protocol buffers library" ON)  
+option(build_common "Build the Goby Common library" ON)  
 
 # module dependencies
 # you can optionally build up to any point in this chain
-# protobuf -> util -> acomms -> core -> moos
-if(build_protobuf)
-  add_subdirectory(protobuf)
+# common -> util -> acomms -> moos
+if(build_common)
+  add_subdirectory(common)
 
-  option(build_util "Build the Goby Utility library and applications (requires goby-protobuf)" ON)
+  option(build_util "Build the Goby Utility library and applications (requires goby-common)" ON)
   if(build_util)
     add_subdirectory(util)
 
@@ -93,7 +93,7 @@ if(build_protobuf)
       endif(build_core)
     endif(build_acomms)
   endif(build_util)
-endif(build_protobuf)
+endif(build_common)
 
 
 

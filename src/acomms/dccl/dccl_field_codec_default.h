@@ -29,7 +29,7 @@
 
 #include <google/protobuf/descriptor.h>
 
-#include "goby/protobuf/acomms_option_extensions.pb.h"
+#include "goby/common/acomms_option_extensions.pb.h"
 #include "goby/util/as.h"
 #include "goby/util/sci.h"
 #include "goby/util/time.h"

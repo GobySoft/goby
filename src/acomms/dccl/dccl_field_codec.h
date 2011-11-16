@@ -34,8 +34,8 @@
 
 #include "dccl_common.h"
 #include "dccl_exception.h"
-#include "goby/protobuf/acomms_dccl.pb.h"
-#include "goby/protobuf/acomms_option_extensions.pb.h"
+#include "goby/common/acomms_dccl.pb.h"
+#include "goby/common/acomms_option_extensions.pb.h"
 #include "goby/util/as.h"
 #include "dccl_type_helper.h"
 #include "dccl_field_codec_helpers.h"

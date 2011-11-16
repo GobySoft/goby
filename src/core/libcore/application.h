@@ -21,8 +21,8 @@
 #include "goby/core/core_helpers.h"
 #include "goby/util/exception.h"
 
-#include "goby/protobuf/core_config.pb.h"
-#include "goby/protobuf/core_header.pb.h"
+#include "goby/common/core_config.pb.h"
+#include "goby/common/core_header.pb.h"
 
 #include "database_client.h"
 #include "pubsub_node_wrapper.h"

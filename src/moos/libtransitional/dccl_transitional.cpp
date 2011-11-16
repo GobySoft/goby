@@ -26,7 +26,7 @@
 #include "goby/util/logger.h"
 #include "goby/util/as.h"
 #include <google/protobuf/descriptor.pb.h>
-#include "goby/protobuf/acomms_option_extensions.pb.h"
+#include "goby/common/acomms_option_extensions.pb.h"
 #include "goby/util/dynamic_protobuf_manager.h"
 
 using goby::util::goby_time;
@@ -672,7 +672,7 @@ void goby::transitional::DCCLTransitionalCodec::convert_to_protobuf_descriptor(c
     if(!fout.is_open())
         throw(goby::acomms::DCCLException("Could not open " + proto_file_to_write + " for writing"));
 
-    fout << "import \"goby/protobuf/option_extensions.proto\";" << std::endl;
+    fout << "import \"goby/common/option_extensions.proto\";" << std::endl;
 
     for(int i = 0, n = added_ids.size(); i < n; ++i)
     {

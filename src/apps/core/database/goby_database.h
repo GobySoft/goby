@@ -24,7 +24,7 @@
 #include "goby/core/libdbo/dbo_manager.h"
 
 
-#include "goby/protobuf/core_database_request.pb.h"
+#include "goby/common/core_database_request.pb.h"
 #include "database_config.pb.h"
 #include "goby/core/libcore/protobuf_node.h"
 #include "goby/core/libcore/pubsub_node_wrapper.h"

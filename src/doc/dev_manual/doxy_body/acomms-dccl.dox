@@ -39,7 +39,7 @@ The "= 1" indicates that this is the first field on the wire in our DCCL message
 To turn this Protobuf message into a DCCL message, we need to add a few options. All the options are defined in option_extensions.proto so we include that:
 
 \verbatim
-import "goby/protobuf/option_extensions.proto";
+import "goby/common/option_extensions.proto";
 
 message Simple
 {  
@@ -50,7 +50,7 @@ message Simple
 At a minimum we must give a unique ID for our DCCL message and a maximum number of bytes we allow the message to be before throwing an exception when it is loaded. This allows us to ensure that we are not creating messages larger than we can send with the physical hardware. We want to have the ability to use the lowest rate WHOI Micro-Modem message size, so we pick max_bytes to be 32. We have no other DCCL messages currently in the system so we start with an id of 1. After these additions we have:
 
 \verbatim
-import "goby/protobuf/option_extensions.proto";
+import "goby/common/option_extensions.proto";
 
 message Simple
 {  

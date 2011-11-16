@@ -1,11 +1,11 @@
 import "goby/moos/tes_moos_app.proto";
-import "goby/protobuf/acomms_driver_base.proto";
-import "goby/protobuf/acomms_queue.proto";
-import "goby/protobuf/acomms_amac.proto";
-import "goby/protobuf/acomms_dccl.proto";
-import "goby/protobuf/acomms_modem_message.proto";
-import "goby/protobuf/moos_transitional.proto";
-import "goby/protobuf/option_extensions.proto";
+import "goby/common/acomms_driver_base.proto";
+import "goby/common/acomms_queue.proto";
+import "goby/common/acomms_amac.proto";
+import "goby/common/acomms_dccl.proto";
+import "goby/common/acomms_modem_message.proto";
+import "goby/common/moos_transitional.proto";
+import "goby/common/option_extensions.proto";
 
 
 message pAcommsHandlerConfig

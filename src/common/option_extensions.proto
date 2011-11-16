@@ -1,5 +1,5 @@
 import "google/protobuf/descriptor.proto";
-import "goby/protobuf/acomms_option_extensions.proto";
+import "goby/common/acomms_option_extensions.proto";
 
 package goby;
 

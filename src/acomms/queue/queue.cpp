@@ -22,7 +22,7 @@
 
 #include "queue.h"
 #include "queue_manager.h"
-#include "goby/protobuf/acomms_option_extensions.pb.h"
+#include "goby/common/acomms_option_extensions.pb.h"
 
 using goby::util::goby_time;
 

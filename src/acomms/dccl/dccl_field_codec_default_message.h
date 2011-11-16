@@ -22,7 +22,7 @@
 
 #include "dccl_field_codec.h"
 #include "dccl_field_codec_manager.h"
-#include "goby/protobuf/acomms_option_extensions.pb.h"
+#include "goby/common/acomms_option_extensions.pb.h"
 
 
 namespace goby

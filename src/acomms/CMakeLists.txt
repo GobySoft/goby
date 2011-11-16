@@ -14,7 +14,7 @@ add_library(goby_acomms
   modemdriver/mm_driver.cpp
 )
 
-target_link_libraries(goby_acomms goby_util goby_protobuf ${Cryptopp_LIBRARIES} ${Boost_LIBRARIES})
+target_link_libraries(goby_acomms goby_util goby_common ${Cryptopp_LIBRARIES} ${Boost_LIBRARIES})
 
 set_target_properties(goby_acomms PROPERTIES VERSION "${GOBY_VERSION}" SOVERSION "${GOBY_SOVERSION}")
 

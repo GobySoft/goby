@@ -15,7 +15,7 @@
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "application_base.h"
-#include "goby/core/libcore/configuration_reader.h"
+#include "goby/util/configuration_reader.h"
 
 using goby::glog;
 using goby::util::as;

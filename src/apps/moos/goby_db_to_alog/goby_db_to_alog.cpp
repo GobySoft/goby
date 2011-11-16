@@ -16,8 +16,8 @@
 #include <iostream>
 #include <fstream>
 
-#include "goby/moos/libmoos_util/moos_dbo_helper.h"
-#include "goby/moos/libmoos_util/moos_node.h"
+#include "goby/moos/moos_dbo_helper.h"
+#include "goby/moos/moos_node.h"
 #include "goby/core/libcore/application_base.h"
 
 #include "MOOSGenLib/MOOSGenLibGlobalHelper.h"
@@ -129,7 +129,6 @@ public:
                 spoof_logger.write_entry(*moos_alog_file, msg);
                 ++i;
             }
-
 
             if(moos_alog_ofstream.is_open())
                 moos_alog_ofstream.close();

@@ -14,7 +14,7 @@
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "moos_dbo_helper.h"
-#include "goby/moos/libmoos_util/moos_serializer.h"
+#include "goby/moos/moos_serializer.h"
 #include "goby/core/libdbo/dbo_manager.h"
 #include "goby/util/logger.h"
 

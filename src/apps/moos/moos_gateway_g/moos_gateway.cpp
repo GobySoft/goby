@@ -15,7 +15,7 @@
 
 #include "MOOSLIB/MOOSCommClient.h"
 
-#include "goby/moos/libmoos_util/moos_node.h"
+#include "goby/moos/moos_node.h"
 #include "goby/util/logger.h"
 #include "goby/core/libcore/zeromq_application_base.h"
 #include "goby/core/libcore/pubsub_node_wrapper.h"

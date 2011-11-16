@@ -27,7 +27,7 @@
 #include <Wt/WBoxLayout>
 #include <Wt/WVBoxLayout>
 
-#include "goby/moos/libmoos_util/moos_node.h"
+#include "goby/moos/moos_node.h"
 
 #include "liaison.h"
 

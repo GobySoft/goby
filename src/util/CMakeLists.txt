@@ -1,3 +1,7 @@
+file(GLOB PROTOS protobuf/*.proto)
+
+protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${PROTOS})
+
 set(SRC
   time.cpp
   logger/flex_ostreambuf.cpp 
@@ -11,6 +15,7 @@ set(SRC
   linebasedcomms/tcp_server.cpp
   dynamic_protobuf_manager.cpp
   configuration_reader.cpp
+  ${PROTO_SRCS} ${PROTO_HDRS}
   )
 
 set(NCURSES_SRC

@@ -26,7 +26,7 @@
 #include <boost/thread.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include "goby/common/util_logger.pb.h"
+#include "goby/util/protobuf/logger.pb.h"
 
 #include "term_color.h"
 

@@ -1,0 +1,56 @@
+import "goby/common/option_extensions.proto";
+import "goby/acomms/protobuf/modem_message.proto";
+
+package goby.acomms.protobuf;
+
+extend ModemTransmission // from acomms_modem_message.proto
+{
+  optional double slot_seconds = 1100 [default = 10]; // length of slot (in seconds) if this transmission is part of a TDMA cycle
+  optional uint32 unique_id = 1101; // used to assign an ID to this slot
+}
+
+enum MACType {
+  MAC_NONE = 1; // no MAC 
+  MAC_FIXED_DECENTRALIZED = 2; // decentralized time division multiple access
+  MAC_POLLED = 4; // centralized polling
+};
+
+message MACConfig
+{
+  optional int32 modem_id = 1 [(goby.field).description="Unique number 1-31 to identify this node",
+                               (goby.field).example="1"];
+  
+  optional MACType type = 2 [default = MAC_NONE,
+                             (goby.field).description="The type of TDMA MAC scheme to use"];
+
+  repeated ModemTransmission slot = 3 [(goby.field).description="Configure a slot in the communications cycle. Slots are run in the order they are declared."];
+  
+  optional bool start_cycle_in_middle = 4 [default = true,
+                                           (goby.field).description="If true, cycle will start / restart at the next slot, even if its the middle of the cycle. If false, any changes to the cycle will reset it to the first slot."];
+  
+}
+
+message MACUpdate
+{
+  enum UpdateType // this are basically the std::list functions
+  {
+    ASSIGN = 1;
+    PUSH_BACK = 2;
+    PUSH_FRONT = 3;
+    POP_BACK = 4;
+    POP_FRONT = 5;
+    INSERT = 6;
+    ERASE = 7;
+    CLEAR = 8;
+  }
+
+  required int32 dest = 1; // modem_id that this update is for
+  optional UpdateType update_type = 2 [default = ASSIGN];
+  repeated ModemTransmission slot = 3;
+  optional int32 first_iterator = 4 [default = 0]; // integer offset from begin()
+  optional int32 second_iterator = 5 [default = -1]; // integer offset from begin()
+
+}
+
+
+

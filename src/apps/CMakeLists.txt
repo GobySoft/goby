@@ -1,5 +1,5 @@
-if(build_core)
-  add_subdirectory(core)
+if(build_pb)
+  add_subdirectory(pb)
 endif()
 
 if(build_acomms)

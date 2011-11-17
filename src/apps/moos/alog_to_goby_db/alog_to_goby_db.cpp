@@ -19,8 +19,8 @@
 #include "goby/moos/moos_dbo_helper.h"
 #include "goby/moos/moos_node.h"
 #include "goby/moos/moos_protobuf_helpers.h"
-#include "goby/core/libcore/application_base.h"
-#include "goby/core/libdbo/dbo_manager.h"
+#include "goby/pb/application_base.h"
+#include "goby/pb/dbo/dbo_manager.h"
 
 #include "MOOSGenLib/MOOSGenLibGlobalHelper.h"
 

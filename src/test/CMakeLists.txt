@@ -12,6 +12,6 @@ if(build_moos)
   add_subdirectory(moos)
 endif()
 
-if(build_core)
-  add_subdirectory(core)
+if(build_pb)
+  add_subdirectory(pb)
 endif()

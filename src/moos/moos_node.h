@@ -19,8 +19,8 @@
 
 #include "moos_serializer.h"
 
-#include "goby/core/libcore/node_interface.h"
-#include "goby/core/libcore/zeromq_service.h"
+#include "goby/pb/node_interface.h"
+#include "goby/pb/zeromq_service.h"
 
 namespace goby
 {

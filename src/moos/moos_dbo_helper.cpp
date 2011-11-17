@@ -15,7 +15,7 @@
 
 #include "moos_dbo_helper.h"
 #include "goby/moos/moos_serializer.h"
-#include "goby/core/libdbo/dbo_manager.h"
+#include "goby/pb/dbo/dbo_manager.h"
 #include "goby/util/logger.h"
 
 void goby::moos::MOOSDBOPlugin::add_message(int unique_id, const std::string& identifier, const void* data, int size)

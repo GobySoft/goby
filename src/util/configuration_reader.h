@@ -69,10 +69,7 @@ namespace goby
                                  google::protobuf::Message* message,
                                  std::string* application_name,
                                  boost::program_options::options_description* od_all,
-                                 boost::program_options::variables_map* var_map);
-            
-             static void merge_app_base_cfg(AppBaseConfig* base_cfg, 
-                                            const boost::program_options::variables_map& var_map); 
+                                 boost::program_options::variables_map* var_map);            
             
             static void get_protobuf_program_options(
                 boost::program_options::options_description& po_desc,

@@ -30,7 +30,7 @@
 
 #include "dynamic_moos_vars.h"
 #include "goby/util/logger.h"
-#include "tes_moos_app.pb.h"
+#include "goby/moos/protobuf/tes_moos_app.pb.h"
 #include "goby/util/configuration_reader.h"
 #include "goby/util/exception.h"
 #include "moos_protobuf_helpers.h"

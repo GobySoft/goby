@@ -1,3 +1,7 @@
+file(GLOB PROTOS protobuf/*.proto)
+
+protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${PROTOS})
+
 add_library(goby_acomms 
   dccl/dccl.cpp
   dccl/dccl_field_codec.cpp
@@ -12,6 +16,7 @@ add_library(goby_acomms
   modemdriver/abc_driver.cpp
   modemdriver/driver_base.cpp
   modemdriver/mm_driver.cpp
+  ${PROTO_SRCS} ${PROTO_HDRS}
 )
 
 target_link_libraries(goby_acomms goby_util goby_common ${Cryptopp_LIBRARIES} ${Boost_LIBRARIES})

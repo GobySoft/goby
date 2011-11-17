@@ -27,7 +27,7 @@
 #include <boost/asio.hpp>
 
 #include "goby/util/time.h"
-#include "goby/common/util_linebasedcomms.pb.h"
+#include "goby/util/protobuf/linebasedcomms.pb.h"
 
 #include <string>
 

@@ -17,7 +17,7 @@
 #ifndef MOOSDBOHELPER20110608H
 #define MOOSDBOHELPER20110608H
 
-#include "goby/core/libdbo/dbo_plugin.h"
+#include "goby/pb/dbo/dbo_plugin.h"
 #include "MOOSLIB/MOOSMsg.h"
 
 namespace Wt

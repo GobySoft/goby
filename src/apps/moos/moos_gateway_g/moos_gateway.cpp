@@ -17,8 +17,8 @@
 
 #include "goby/moos/moos_node.h"
 #include "goby/util/logger.h"
-#include "goby/core/libcore/zeromq_application_base.h"
-#include "goby/core/libcore/pubsub_node_wrapper.h"
+#include "goby/pb/zeromq_application_base.h"
+#include "goby/pb/pubsub_node_wrapper.h"
 #include "goby/util/logger/term_color.h"
 
 #include "moos_gateway_config.pb.h"

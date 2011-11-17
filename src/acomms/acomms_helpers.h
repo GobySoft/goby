@@ -24,7 +24,7 @@
 
 #include <google/protobuf/descriptor.h>
 
-#include "goby/common/acomms_modem_message.pb.h"
+#include "goby/acomms/protobuf/modem_message.pb.h"
 
 namespace goby
 {

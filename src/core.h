@@ -20,6 +20,6 @@
 #ifndef CORECOURTESY20100922H
 #define CORECOURTESY20100922H
 
-#include "goby/core/libcore/application.h"
+#include "goby/pb/application.h"
 
 #endif

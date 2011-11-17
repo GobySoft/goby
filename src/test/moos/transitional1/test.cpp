@@ -15,7 +15,7 @@
 
 
 #include "goby/acomms/dccl/dccl.h"
-#include "goby/moos/libtransitional/dccl_transitional.h"
+#include "goby/moos/transitional/dccl_transitional.h"
 
 #include <iostream>
 #include <cassert>

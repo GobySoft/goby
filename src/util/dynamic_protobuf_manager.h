@@ -34,13 +34,34 @@ namespace goby
           public:
             template<typename GoogleProtobufMessagePointer>
                 static GoogleProtobufMessagePointer new_protobuf_message(
+                    const std::string& protobuf_type_name)
+            {
+                // try the compiled pool
+                const google::protobuf::Descriptor* desc = google::protobuf::DescriptorPool::generated_pool()->FindMessageTypeByName(protobuf_type_name);
+                
+                if(desc) return new_protobuf_message<GoogleProtobufMessagePointer>(desc);
+                
+                // try the user pool
+                desc = descriptor_pool().FindMessageTypeByName(protobuf_type_name);
+                
+                if(desc) return new_protobuf_message<GoogleProtobufMessagePointer>(desc);
+                
+                throw(std::runtime_error("Unknown type " + protobuf_type_name + ", be sure it is loaded at compile-time, via dlopen, or with a call to add_protobuf_file()"));
+            }
+            
+            template<typename GoogleProtobufMessagePointer>
+                static GoogleProtobufMessagePointer new_protobuf_message( 
                     const google::protobuf::Descriptor* desc)
             { return GoogleProtobufMessagePointer(msg_factory().GetPrototype(desc)->New()); }
+            
+            static boost::shared_ptr<google::protobuf::Message> new_protobuf_message(
+                const google::protobuf::Descriptor* desc)
+            { return new_protobuf_message<boost::shared_ptr<google::protobuf::Message> >(desc); }
+            
+            static boost::shared_ptr<google::protobuf::Message> new_protobuf_message(
+                const std::string& protobuf_type_name)
+            { return new_protobuf_message<boost::shared_ptr<google::protobuf::Message> >(protobuf_type_name); }
 
-            static boost::shared_ptr<google::protobuf::Message> new_protobuf_message(
-                const google::protobuf::Descriptor* desc);
-            static boost::shared_ptr<google::protobuf::Message> new_protobuf_message(
-                const std::string& protobuf_type_name);
             static std::set<const google::protobuf::FileDescriptor*>
                 add_protobuf_file_with_dependencies(
                 const google::protobuf::FileDescriptor* file_descriptor);

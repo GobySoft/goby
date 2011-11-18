@@ -387,7 +387,7 @@ void goby::acomms::DCCLCodec::info(const google::protobuf::Descriptor* desc, std
         const unsigned allowed_byte_size = desc->options().GetExtension(goby::msg).dccl().max_bytes();
         const unsigned allowed_bit_size = allowed_byte_size * BITS_IN_BYTE;
         
-        *os << "== Begin " << desc->full_name() << " ==\n"
+        *os << "= Begin " << desc->full_name() << " =\n"
             << "Actual maximum size of message: " << byte_size << " bytes / "
             << byte_size*BITS_IN_BYTE  << " bits [dccl.id head: " << id_bit_size
             << ", user head: " << config_head_bit_size << ", body: "
@@ -395,12 +395,14 @@ void goby::acomms::DCCLCodec::info(const google::protobuf::Descriptor* desc, std
             << "Allowed maximum size of message: " << allowed_byte_size << " bytes / "
             << allowed_bit_size << " bits\n";
 
-        *os << "= Header =" << std::endl;
+        *os << "== Begin Header ==" << std::endl;
         codec->base_info(os, desc, DCCLFieldCodecBase::HEAD);
-        *os << "= Body =" << std::endl;
+        *os << "== End Header ==" << std::endl;
+        *os << "== Begin Body ==" << std::endl;
         codec->base_info(os, desc, DCCLFieldCodecBase::BODY);
+        *os << "== End Body ==" << std::endl;
         
-        *os << "== End " << desc->full_name() << " ==" << std::endl;
+        *os << "= End " << desc->full_name() << " =" << std::endl;
     }
     catch(DCCLException& e)
     {

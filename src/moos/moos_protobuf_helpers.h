@@ -22,6 +22,7 @@
 #include <google/protobuf/io/tokenizer.h>
 #include "goby/util/logger/flex_ostream.h"
 #include "goby/util/as.h"
+#include "goby/util/binary.h"
 #include "goby/moos/moos_string.h"
 
 
@@ -67,6 +68,7 @@ inline void from_moos_comma_equals_string_field(google::protobuf::Message* proto
             switch(field_desc->cpp_type())
             {
                 case google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE:
+                    refl->AddMessage(proto_msg, field_desc)->ParseFromString(goby::util::hex_decode(v));
                     break;    
                         
                 case google::protobuf::FieldDescriptor::CPPTYPE_INT32:
@@ -90,7 +92,10 @@ inline void from_moos_comma_equals_string_field(google::protobuf::Message* proto
                     break;
                             
                 case google::protobuf::FieldDescriptor::CPPTYPE_STRING:
-                    refl->AddString(proto_msg, field_desc, v);
+                    if(field_desc->type() ==  google::protobuf::FieldDescriptor::TYPE_STRING)
+                        refl->AddString(proto_msg, field_desc, v);
+                    else if(field_desc->type() ==  google::protobuf::FieldDescriptor::TYPE_BYTES)
+                        refl->AddString(proto_msg, field_desc, goby::util::hex_decode(v));
                     break;                    
                             
                 case google::protobuf::FieldDescriptor::CPPTYPE_FLOAT:
@@ -104,7 +109,7 @@ inline void from_moos_comma_equals_string_field(google::protobuf::Message* proto
                 case google::protobuf::FieldDescriptor::CPPTYPE_ENUM:
                 {
                     const google::protobuf::EnumValueDescriptor* enum_desc =
-                        refl->GetEnum(*proto_msg, field_desc)->type()->FindValueByName(v);
+                        field_desc->enum_type()->FindValueByName(v);
                     if(enum_desc)
                         refl->AddEnum(proto_msg, field_desc, enum_desc);
                 }
@@ -119,6 +124,7 @@ inline void from_moos_comma_equals_string_field(google::protobuf::Message* proto
         switch(field_desc->cpp_type())
         {
             case google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE:
+                refl->MutableMessage(proto_msg, field_desc)->ParseFromString(goby::util::hex_decode(v));
                 break;
                         
             case google::protobuf::FieldDescriptor::CPPTYPE_INT32:
@@ -142,7 +148,10 @@ inline void from_moos_comma_equals_string_field(google::protobuf::Message* proto
                 break;
                     
             case google::protobuf::FieldDescriptor::CPPTYPE_STRING:
-                refl->SetString(proto_msg, field_desc, v);
+                if(field_desc->type() ==  google::protobuf::FieldDescriptor::TYPE_STRING)
+                    refl->SetString(proto_msg, field_desc, v);
+                else if(field_desc->type() ==  google::protobuf::FieldDescriptor::TYPE_BYTES)
+                    refl->SetString(proto_msg, field_desc, goby::util::hex_decode(v));
                 break;                    
                 
             case google::protobuf::FieldDescriptor::CPPTYPE_FLOAT:
@@ -156,7 +165,7 @@ inline void from_moos_comma_equals_string_field(google::protobuf::Message* proto
             case google::protobuf::FieldDescriptor::CPPTYPE_ENUM:
             {
                 const google::protobuf::EnumValueDescriptor* enum_desc =
-                    refl->GetEnum(*proto_msg, field_desc)->type()->FindValueByName(v);
+                    field_desc->enum_type()->FindValueByName(v);
                 if(enum_desc)
                     refl->SetEnum(proto_msg, field_desc, enum_desc);
             }
@@ -251,7 +260,8 @@ inline std::string to_moos_comma_equals_string_field(const google::protobuf::Mes
             switch(field_desc->cpp_type())
             {
                 case google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE:
-                    break;    
+                    out << goby::util::hex_encode(refl->GetRepeatedMessage(proto_msg, field_desc, j).SerializeAsString());
+                        break;    
                         
                 case google::protobuf::FieldDescriptor::CPPTYPE_INT32:
                     out << refl->GetRepeatedInt32(proto_msg, field_desc, j);
@@ -274,7 +284,10 @@ inline std::string to_moos_comma_equals_string_field(const google::protobuf::Mes
                     break;
                             
                 case google::protobuf::FieldDescriptor::CPPTYPE_STRING:
-                    out << refl->GetRepeatedString(proto_msg, field_desc, j);
+                    if(field_desc->type() ==  google::protobuf::FieldDescriptor::TYPE_STRING)
+                        out << refl->GetRepeatedString(proto_msg, field_desc, j);
+                    else if(field_desc->type() ==  google::protobuf::FieldDescriptor::TYPE_BYTES)
+                        out << goby::util::hex_encode(refl->GetRepeatedString(proto_msg, field_desc, j));    
                     break;                    
                             
                 case google::protobuf::FieldDescriptor::CPPTYPE_FLOAT:
@@ -302,6 +315,7 @@ inline std::string to_moos_comma_equals_string_field(const google::protobuf::Mes
         switch(field_desc->cpp_type())
         {
             case google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE:
+                out << goby::util::hex_encode(refl->GetMessage(proto_msg, field_desc).SerializeAsString());
                 break;
                         
             case google::protobuf::FieldDescriptor::CPPTYPE_INT32:
@@ -325,7 +339,10 @@ inline std::string to_moos_comma_equals_string_field(const google::protobuf::Mes
                 break;
                     
             case google::protobuf::FieldDescriptor::CPPTYPE_STRING:
-                out << refl->GetString(proto_msg, field_desc);
+                if(field_desc->type() ==  google::protobuf::FieldDescriptor::TYPE_STRING)
+                    out << refl->GetString(proto_msg, field_desc);
+                else if(field_desc->type() ==  google::protobuf::FieldDescriptor::TYPE_BYTES)
+                    out << goby::util::hex_encode(refl->GetString(proto_msg, field_desc));
                 break;                    
                 
             case google::protobuf::FieldDescriptor::CPPTYPE_FLOAT:

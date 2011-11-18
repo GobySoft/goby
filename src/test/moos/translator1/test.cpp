@@ -1,0 +1,259 @@
+// t. schneider tes@mit.edu 11.20.09
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This software is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this software.  If not, see <http://www.gnu.org/licenses/>.
+
+#include <iostream>
+
+#include "goby/util/logger.h"
+#include "goby/moos/moos_translator.h"
+#include "test.pb.h"
+#include "goby/util/binary.h"
+
+
+using namespace goby::moos;
+
+void populate_test_msg(TestMsg* msg_in);
+void run_one_in_one_out_test(MOOSTranslator& translator, int i, bool hex_encode);
+
+
+int main(int argc, char* argv[])
+{
+    goby::glog.add_stream(goby::util::logger::DEBUG3, &std::cout);
+    goby::glog.set_name(argv[0]);
+
+    
+    protobuf::TranslatorEntry entry;
+    entry.set_protobuf_name("TestMsg");    
+
+    protobuf::TranslatorEntry::CreateParser* parser = entry.add_create();
+    parser->set_technique(protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_TEXT_FORMAT);
+    parser->set_moos_var("TEST_MSG_1");
+
+    protobuf::TranslatorEntry::PublishSerializer* serializer = entry.add_publish();
+    serializer->set_technique(protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_TEXT_FORMAT);
+    serializer->set_moos_var("TEST_MSG_1");
+
+    MOOSTranslator translator(entry);
+
+    goby::glog << translator << std::endl;    
+    run_one_in_one_out_test(translator, 0, false);
+    
+    
+
+    std::set<protobuf::TranslatorEntry> entries;
+    {                
+        protobuf::TranslatorEntry entry;
+        entry.set_protobuf_name("TestMsg");
+
+        protobuf::TranslatorEntry::CreateParser* parser = entry.add_create();
+        parser->set_technique(protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_NATIVE_ENCODED);
+        parser->set_moos_var("TEST_MSG_1");
+
+        protobuf::TranslatorEntry::PublishSerializer* serializer = entry.add_publish();
+        serializer->set_technique(protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_NATIVE_ENCODED);
+        serializer->set_moos_var("TEST_MSG_1");
+
+        entries.insert(entry);
+    }
+    
+    translator.add_entry(entries);
+
+    goby::glog << translator << std::endl;    
+    run_one_in_one_out_test(translator, 1, true);
+
+
+    {
+        protobuf::TranslatorEntry entry;
+        entry.set_protobuf_name("TestMsg");
+        
+        protobuf::TranslatorEntry::CreateParser* parser = entry.add_create();
+        parser->set_technique(protobuf::TranslatorEntry::TECHNIQUE_COMMA_SEPARATED_KEY_EQUALS_VALUE_PAIRS);
+        parser->set_moos_var("TEST_MSG_1");
+        
+        protobuf::TranslatorEntry::PublishSerializer* serializer = entry.add_publish();
+        serializer->set_technique(protobuf::TranslatorEntry::TECHNIQUE_COMMA_SEPARATED_KEY_EQUALS_VALUE_PAIRS);
+        serializer->set_moos_var("TEST_MSG_1");
+        
+        translator.add_entry(entry);
+    }
+    
+    goby::glog << translator << std::endl;    
+    run_one_in_one_out_test(translator, 2, false);
+
+
+    {
+        protobuf::TranslatorEntry entry;
+        entry.set_protobuf_name("TestMsg");
+        
+        protobuf::TranslatorEntry::CreateParser* parser = entry.add_create();
+        parser->set_technique(protobuf::TranslatorEntry::TECHNIQUE_FORMAT);
+        
+        parser->set_moos_var("TEST_MSG_1");
+        
+        protobuf::TranslatorEntry::PublishSerializer* serializer = entry.add_publish();
+        serializer->set_technique(protobuf::TranslatorEntry::TECHNIQUE_FORMAT);
+        serializer->set_moos_var("TEST_MSG_1");
+        
+        translator.add_entry(entry);
+    }
+
+    goby::glog << translator << std::endl;    
+
+    
+    std::cout << "all tests passed" << std::endl;
+}
+
+void run_one_in_one_out_test(MOOSTranslator& translator, int i, bool hex_encode)
+{
+    TestMsg msg;
+    populate_test_msg(&msg);
+    
+    std::multimap<std::string, CMOOSMsg> moos_msgs = translator.protobuf_to_moos(msg);    
+
+    for(std::multimap<std::string, CMOOSMsg>::const_iterator it = moos_msgs.begin(),
+            n = moos_msgs.end();
+        it != n;
+        ++ it)
+    {
+        goby::glog << "Variable: " << it->first << "\n"
+                   << "Value: " << (hex_encode ? goby::util::hex_encode(it->second.GetString()) : it->second.GetString()) << std::endl;
+
+        switch(i)
+        {
+            case 0:
+            {    
+                std::string test;
+                serialize_for_moos(&test, msg);
+                assert(it->second.GetString() == test);
+                assert(it->first == "TEST_MSG_1");
+                break;
+            }
+            
+           case 1:
+            {
+                assert(it->second.GetString() == msg.SerializeAsString());
+                assert(it->first == "TEST_MSG_1");
+                break;
+            }
+
+            case 2:
+            {
+                std::string test;
+                to_moos_comma_equals_string(msg, &test);
+                assert(it->second.GetString() == test);
+                assert(it->first == "TEST_MSG_1");
+                break;
+            }
+            
+            
+            default:
+                assert(false);
+        };
+        
+        
+        ++i;
+    }
+    
+    typedef std::auto_ptr<google::protobuf::Message> GoogleProtobufMessagePointer;
+    GoogleProtobufMessagePointer msg_out =
+        translator.moos_to_protobuf<GoogleProtobufMessagePointer>(moos_msgs, "TestMsg");
+
+    goby::glog << "Message out: " << std::endl;
+    goby::glog << msg_out->DebugString() << std::endl;    
+    assert(msg_out->SerializeAsString() == msg.SerializeAsString());
+}
+
+
+void populate_test_msg(TestMsg* msg_in)
+{
+    int i = 0;
+    msg_in->set_double_default_optional(++i + 0.1);
+    msg_in->set_float_default_optional(++i + 0.2);
+
+    msg_in->set_int32_default_optional(++i);
+    msg_in->set_int64_default_optional(-++i);
+    msg_in->set_uint32_default_optional(++i);
+    msg_in->set_uint64_default_optional(++i);
+    msg_in->set_sint32_default_optional(-++i);
+    msg_in->set_sint64_default_optional(++i);
+    msg_in->set_fixed32_default_optional(++i);
+    msg_in->set_fixed64_default_optional(++i);
+    msg_in->set_sfixed32_default_optional(++i);
+    msg_in->set_sfixed64_default_optional(-++i);
+
+    msg_in->set_bool_default_optional(true);
+
+    msg_in->set_string_default_optional("abc123");
+    msg_in->set_bytes_default_optional(goby::util::hex_decode("00112233aabbcc1234"));
+    
+    msg_in->set_enum_default_optional(ENUM_C);
+    msg_in->mutable_msg_default_optional()->set_val(++i + 0.3);
+    msg_in->mutable_msg_default_optional()->mutable_msg()->set_val(++i);
+
+    msg_in->set_double_default_required(++i + 0.1);
+    msg_in->set_float_default_required(++i + 0.2);
+
+    msg_in->set_int32_default_required(++i);
+    msg_in->set_int64_default_required(-++i);
+    msg_in->set_uint32_default_required(++i);
+    msg_in->set_uint64_default_required(++i);
+    msg_in->set_sint32_default_required(-++i);
+    msg_in->set_sint64_default_required(++i);
+    msg_in->set_fixed32_default_required(++i);
+    msg_in->set_fixed64_default_required(++i);
+    msg_in->set_sfixed32_default_required(++i);
+    msg_in->set_sfixed64_default_required(-++i);
+
+    msg_in->set_bool_default_required(true);
+
+    msg_in->set_string_default_required("abc123");
+    msg_in->set_bytes_default_required(goby::util::hex_decode("00112233aabbcc1234"));
+    
+    msg_in->set_enum_default_required(ENUM_C);
+    msg_in->mutable_msg_default_required()->set_val(++i + 0.3);
+    msg_in->mutable_msg_default_required()->mutable_msg()->set_val(++i);
+
+    
+    for(int j = 0; j < 2; ++j)
+    {
+        msg_in->add_double_default_repeat(++i + 0.1);
+        msg_in->add_float_default_repeat(++i + 0.2);
+        
+        msg_in->add_int32_default_repeat(++i);
+        msg_in->add_int64_default_repeat(-++i);
+        msg_in->add_uint32_default_repeat(++i);
+        msg_in->add_uint64_default_repeat(++i);
+        msg_in->add_sint32_default_repeat(-++i);
+        msg_in->add_sint64_default_repeat(++i);
+        msg_in->add_fixed32_default_repeat(++i);
+        msg_in->add_fixed64_default_repeat(++i);
+        msg_in->add_sfixed32_default_repeat(++i);
+        msg_in->add_sfixed64_default_repeat(-++i);
+        
+        msg_in->add_bool_default_repeat(true);
+        
+        msg_in->add_string_default_repeat("abc123");
+
+        if(j)
+            msg_in->add_bytes_default_repeat(goby::util::hex_decode("00aabbcc"));
+        else
+            msg_in->add_bytes_default_repeat(goby::util::hex_decode("ffeedd12"));
+        
+        msg_in->add_enum_default_repeat(static_cast<Enum1>((++i % 3) + 1));
+        EmbeddedMsg1* em_msg = msg_in->add_msg_default_repeat();
+        em_msg->set_val(++i + 0.3);
+        em_msg->mutable_msg()->set_val(++i);
+    }
+}
+

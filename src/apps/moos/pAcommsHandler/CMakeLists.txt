@@ -11,7 +11,6 @@ target_link_libraries(pAcommsHandler
   goby_acomms
   goby_util
   goby_moos
-  goby_transitional
   ${MOOS_LIBRARIES}
   ${Boost_LIBRARIES}
   ${PROTOBUF_LIBRARY})

@@ -545,6 +545,7 @@ void CpAcommsHandler::process_configuration()
     dccl_.add_adv_algorithm("TSD_to_soundspeed", boost::bind(&CpAcommsHandler::alg_TSD_to_soundspeed, this, _1, _2));
     dccl_.add_adv_algorithm("subtract", boost::bind(&CpAcommsHandler::alg_subtract, this, _1, _2));
     dccl_.add_adv_algorithm("add", boost::bind(&CpAcommsHandler::alg_add, this, _1, _2));
+    dccl_.add_algorithm("abs", boost::bind(&CpAcommsHandler::alg_abs, this, _1));    
     
     dccl_.add_algorithm("to_lower", boost::bind(&CpAcommsHandler::alg_to_lower, this, _1));
     dccl_.add_algorithm("to_upper", boost::bind(&CpAcommsHandler::alg_to_upper, this, _1));
@@ -558,6 +559,15 @@ void CpAcommsHandler::process_configuration()
     dccl_.add_algorithm("modem_id2name", boost::bind(&CpAcommsHandler::alg_modem_id2name, this, _1));
     dccl_.add_algorithm("modem_id2type", boost::bind(&CpAcommsHandler::alg_modem_id2type, this, _1));
     dccl_.add_algorithm("name2modem_id", boost::bind(&CpAcommsHandler::alg_name2modem_id, this, _1));
+
+    dccl_.add_algorithm("lat2hemisphere_initial", boost::bind(&CpAcommsHandler::alg_lat2hemisphere_initial, this, _1));
+    dccl_.add_algorithm("lon2hemisphere_initial", boost::bind(&CpAcommsHandler::alg_lon2hemisphere_initial, this, _1));
+
+    dccl_.add_algorithm("lat2nmea_lat", boost::bind(&CpAcommsHandler::alg_lat2nmea_lat, this, _1));
+    dccl_.add_algorithm("lon2nmea_lon", boost::bind(&CpAcommsHandler::alg_lon2nmea_lon, this, _1));
+
+    dccl_.add_algorithm("unix_time2nmea_time", boost::bind(&CpAcommsHandler::alg_unix_time2nmea_time, this, _1));
+    
 }
 
 
@@ -876,3 +886,74 @@ void CpAcommsHandler::alg_name2modem_id(DCCLMessageVal& in)
     ss << modem_lookup_.get_id_from_name(std::string(in));
     in = ss.str();
 }
+
+void CpAcommsHandler::alg_lat2hemisphere_initial(goby::acomms::DCCLMessageVal& val_to_mod)
+{
+    double lat = val_to_mod;
+    if(lat < 0)
+        val_to_mod = "S";
+    else
+        val_to_mod = "N";        
+}
+
+void CpAcommsHandler::alg_lon2hemisphere_initial(goby::acomms::DCCLMessageVal& val_to_mod)
+{
+    double lon = val_to_mod;
+    if(lon < 0)
+        val_to_mod = "W";
+    else
+        val_to_mod = "E";
+}
+
+void CpAcommsHandler::alg_abs(goby::acomms::DCCLMessageVal& val_to_mod)
+{
+    val_to_mod = std::abs(double(val_to_mod));
+}
+
+void CpAcommsHandler::alg_unix_time2nmea_time(goby::acomms::DCCLMessageVal& val_to_mod)
+{
+    double unix_time = val_to_mod;
+    boost::posix_time::ptime ptime = goby::util::unix_double2ptime(unix_time);
+
+    // HHMMSS.SSSSSS
+    boost::format f("%02d%02d%02d.%06d");
+    f % ptime.time_of_day().hours() % ptime.time_of_day().minutes() % ptime.time_of_day().seconds() % (ptime.time_of_day().fractional_seconds() * 1000000 / boost::posix_time::time_duration::ticks_per_second());
+    
+    val_to_mod = f.str();
+}
+
+
+void CpAcommsHandler::alg_lat2nmea_lat(goby::acomms::DCCLMessageVal& val_to_mod)
+{
+    double lat = val_to_mod;
+
+    // DDMM.MM
+    boost::format f("%02d%02d.%04d");
+
+    int degrees = std::floor(lat);
+    int minutes = std::floor((lat - degrees) * 60);
+    int ten_thousandth_minutes = std::floor(((lat - degrees) * 60 - minutes) * 10000);
+
+    f % degrees % minutes % ten_thousandth_minutes;
+    
+    val_to_mod = f.str();
+}
+
+
+    
+void CpAcommsHandler::alg_lon2nmea_lon(goby::acomms::DCCLMessageVal& val_to_mod)
+{
+    double lon = val_to_mod;
+
+    // DDDMM.MM
+    boost::format f("%03d%02d.%04d");
+
+    int degrees = std::floor(lon);
+    int minutes = std::floor((lon - degrees) * 60);
+    int ten_thousandth_minutes = std::floor(((lon - degrees) * 60 - minutes) * 10000);
+
+    f % degrees % minutes % ten_thousandth_minutes;
+
+    val_to_mod = f.str();
+}
+

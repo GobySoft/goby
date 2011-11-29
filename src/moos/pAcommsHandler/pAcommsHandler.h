@@ -182,6 +182,8 @@ class CpAcommsHandler : public TesMoosApp
     
     void alg_subtract(goby::acomms::DCCLMessageVal& val,
                       const std::vector<goby::acomms::DCCLMessageVal>& ref_vals);
+
+    void alg_abs(goby::acomms::DCCLMessageVal& val_to_mod);
     
     void alg_lat2utm_y(goby::acomms::DCCLMessageVal& val,
                        const std::vector<goby::acomms::DCCLMessageVal>& ref_vals);
@@ -199,6 +201,13 @@ class CpAcommsHandler : public TesMoosApp
     void alg_modem_id2type(goby::acomms::DCCLMessageVal& in);
     void alg_name2modem_id(goby::acomms::DCCLMessageVal& in);
 
+    void alg_lat2hemisphere_initial(goby::acomms::DCCLMessageVal& val_to_mod);
+    void alg_lon2hemisphere_initial(goby::acomms::DCCLMessageVal& val_to_mod);
+    
+    void alg_unix_time2nmea_time(goby::acomms::DCCLMessageVal& val_to_mod);
+
+    void alg_lat2nmea_lat(goby::acomms::DCCLMessageVal& val_to_mod);
+    void alg_lon2nmea_lon(goby::acomms::DCCLMessageVal& val_to_mod);    
     
   private:
 

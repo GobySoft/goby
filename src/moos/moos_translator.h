@@ -124,6 +124,7 @@ inline std::multimap<std::string, CMOOSMsg> goby::moos::MOOSTranslator::protobuf
                 break;
 
             case protobuf::TranslatorEntry::TECHNIQUE_FORMAT:
+                
                 break;
         }
         moos_msgs.insert(std::make_pair(entry.publish(i).moos_var(),

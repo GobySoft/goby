@@ -415,5 +415,137 @@ inline void to_moos_comma_equals_string(const google::protobuf::Message& proto_m
 }
 
 
+inline void from_format_string(std::string format,
+                               std::string str,
+                               google::protobuf::Message* msg)
+{
+    const google::protobuf::Descriptor* desc = msg->GetDescriptor();
+    const google::protobuf::Reflection* refl = msg->GetReflection();
+    boost::to_lower(format);
+    std::string lower_str = boost::to_lower_copy(str);
+
+//    goby::glog.is(DEBUG1) && goby::glog << "Format: " << format << std::endl;
+//   goby::glog.is(DEBUG1) && goby::glog << "String: " << str << std::endl;
+//    goby::glog.is(DEBUG1) && goby::glog << "Lower String: " << lower_str << std::endl;
+            
+    std::string::const_iterator i = format.begin();
+    while (i != format.end())
+    {
+        if (*i == '%')
+        {
+            ++i; // now *i is the conversion specifier
+            std::string specifier;
+            while(*i != '%')
+                specifier += *i++;                    
+
+            ++i; // now *i is the next separator
+            std::string extract = str.substr(0, lower_str.find(*i));
+
+            int field_index;
+            try
+            {
+                field_index = boost::lexical_cast<int>(specifier);
+
+                const google::protobuf::FieldDescriptor* field_desc = desc->FindFieldByNumber(field_index);
+
+                if(!field_desc)
+                    throw(std::runtime_error("Bad field: " + specifier + " not in message " + desc->full_name()));
+                            
+                switch(field_desc->cpp_type())
+                {
+                    case google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE:
+                        throw(std::runtime_error("Embedded messages are not supported by this parser"));
+                        break;
+                        
+                    case google::protobuf::FieldDescriptor::CPPTYPE_INT32:
+                        field_desc->is_repeated()
+                            ? refl->AddInt32(msg, field_desc, goby::util::as<google::protobuf::int32>(extract))
+                            : refl->SetInt32(msg, field_desc, goby::util::as<google::protobuf::int32>(extract));
+                        break;
+                        
+                    case google::protobuf::FieldDescriptor::CPPTYPE_INT64:
+                        field_desc->is_repeated()
+                            ? refl->AddInt64(msg, field_desc, goby::util::as<google::protobuf::int64>(extract))
+                            : refl->SetInt64(msg, field_desc, goby::util::as<google::protobuf::int64>(extract));                        
+                        break;
+
+                    case google::protobuf::FieldDescriptor::CPPTYPE_UINT32:
+                        field_desc->is_repeated()
+                            ? refl->AddUInt32(msg, field_desc, goby::util::as<google::protobuf::uint32>(extract))
+                            : refl->SetUInt32(msg, field_desc, goby::util::as<google::protobuf::uint32>(extract));
+                        break;
+
+                    case google::protobuf::FieldDescriptor::CPPTYPE_UINT64:
+                        field_desc->is_repeated()
+                            ? refl->AddUInt64(msg, field_desc, goby::util::as<google::protobuf::uint64>(extract))
+                            : refl->SetUInt64(msg, field_desc, goby::util::as<google::protobuf::uint64>(extract));
+                        break;
+                        
+                    case google::protobuf::FieldDescriptor::CPPTYPE_BOOL:
+                        field_desc->is_repeated()                            
+                            ? refl->AddBool(msg, field_desc, goby::util::as<bool>(extract))
+                            : refl->SetBool(msg, field_desc, goby::util::as<bool>(extract));
+                        break;
+                    
+                    case google::protobuf::FieldDescriptor::CPPTYPE_STRING:
+                        field_desc->is_repeated()     
+                            ? refl->AddString(msg, field_desc, extract)
+                            : refl->SetString(msg, field_desc, extract);
+                        break;                    
+                
+                    case google::protobuf::FieldDescriptor::CPPTYPE_FLOAT:
+                        field_desc->is_repeated()     
+                            ? refl->AddFloat(msg, field_desc, goby::util::as<float>(extract))
+                            : refl->SetFloat(msg, field_desc, goby::util::as<float>(extract));
+                        break;
+                
+                    case google::protobuf::FieldDescriptor::CPPTYPE_DOUBLE:
+                        field_desc->is_repeated()
+                            ? refl->AddDouble(msg, field_desc, goby::util::as<double>(extract))
+                            : refl->SetDouble(msg, field_desc, goby::util::as<double>(extract));
+                        break;
+                
+                    case google::protobuf::FieldDescriptor::CPPTYPE_ENUM:
+                    {
+                        const google::protobuf::EnumValueDescriptor* enum_desc =
+                            refl->GetEnum(*msg, field_desc)->type()->FindValueByName(extract);
+
+                        // try upper case
+                        if(!enum_desc)
+                            enum_desc = refl->GetEnum(*msg, field_desc)->type()->FindValueByName(boost::to_upper_copy(extract));
+                        // try lower case
+                        if(!enum_desc)
+                            enum_desc = refl->GetEnum(*msg, field_desc)->type()->FindValueByName(boost::to_lower_copy(extract));
+                        if(enum_desc)
+                        {
+                            field_desc->is_repeated()
+                                ? refl->AddEnum(msg, field_desc, enum_desc)
+                                : refl->SetEnum(msg, field_desc, enum_desc);
+                        }
+                        
+                    }
+                    break;
+                }
+
+            }
+            catch(boost::bad_lexical_cast&)
+            {
+                throw(std::runtime_error("Bad specifier: " + specifier + ", must be an integer. For message: " +  desc->full_name()));
+            }
+
+            // goby::glog.is(DEBUG1) && goby::glog << "field: [" << field_index << "], extract: [" << extract << "]" << std::endl;
+        }
+        else
+        {
+            // if it's not a %, eat!
+            std::string::size_type pos_to_remove = lower_str.find(*i)+1;
+            lower_str.erase(0, pos_to_remove);
+            str.erase(0, pos_to_remove);
+            ++i;
+        }
+    }
+}
+
+
 
 #endif

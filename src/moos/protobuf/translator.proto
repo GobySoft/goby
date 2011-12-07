@@ -21,7 +21,6 @@ message TranslatorEntry
   optional Trigger trigger = 2;
 
 
-
   enum ParserSerializerTechnique
   {
     TECHNIQUE_PROTOBUF_TEXT_FORMAT = 1;

@@ -70,7 +70,7 @@ namespace goby
             {
                 ptime time_t_epoch(date(1970,1,1));        
                 time_duration diff = given_time - time_t_epoch;
-        
+                
                 return (double(diff.total_seconds()) + double(diff.fractional_seconds()) / double(time_duration::ticks_per_second()));
             }
         }

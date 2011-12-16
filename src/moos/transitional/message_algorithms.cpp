@@ -65,13 +65,21 @@ void goby::transitional::DCCLAlgorithmPerformer::algorithm(DCCLMessageVal& in, u
     
     if(ref_vars.size() > 0)
         alg = ref_vars[0];
+
+    run_algorithm(alg, in, tied_vals);
     
+}
+
+void goby::transitional::DCCLAlgorithmPerformer::run_algorithm(const std::string& algorithm,
+                                                               DCCLMessageVal& in,
+                                                               const std::vector<DCCLMessageVal>& ref)
+{        
     // short form for simple algorithms
-    if (adv_map1_.count(alg))
-    { adv_map1_.find(alg)->second(in); }
+    if (adv_map1_.count(algorithm))
+    { adv_map1_.find(algorithm)->second(in); }
     // longer form for more demanding algorithms
-    else if (adv_map2_.count(alg))
-    { adv_map2_.find(alg)->second(in, tied_vals); }
+    else if (adv_map2_.count(algorithm))
+    { adv_map2_.find(algorithm)->second(in, ref); }
 
 }
 

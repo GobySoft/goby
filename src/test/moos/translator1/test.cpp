@@ -18,6 +18,7 @@
 #include "goby/util/logger.h"
 #include "goby/moos/moos_translator.h"
 #include "test.pb.h"
+#include "basic_node_report.pb.h"
 #include "goby/util/binary.h"
 
 
@@ -44,8 +45,15 @@ int main(int argc, char* argv[])
     serializer->set_technique(protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_TEXT_FORMAT);
     serializer->set_moos_var("TEST_MSG_1");
 
-    MOOSTranslator translator(entry);
+    const double LAT_ORIGIN = 42.5;
+    const double LON_ORIGIN = 10.8;
+    
+    MOOSTranslator translator(entry, LAT_ORIGIN, LON_ORIGIN);
 
+    CMOOSGeodesy geodesy;
+    geodesy.Initialise(LAT_ORIGIN, LON_ORIGIN);
+    
+    
     goby::glog << translator << std::endl;    
     run_one_in_one_out_test(translator, 0, false);
     
@@ -92,23 +100,127 @@ int main(int argc, char* argv[])
     run_one_in_one_out_test(translator, 2, false);
 
 
-    {
+
+
+    std::string format_str = "NAME=%1%,X=%202%,Y=%3%";
+   {
         protobuf::TranslatorEntry entry;
-        entry.set_protobuf_name("TestMsg");
+        entry.set_protobuf_name("BasicNodeReport");
         
         protobuf::TranslatorEntry::CreateParser* parser = entry.add_create();
         parser->set_technique(protobuf::TranslatorEntry::TECHNIQUE_FORMAT);
-        
-        parser->set_moos_var("TEST_MSG_1");
+        parser->set_moos_var("NODE_REPORT");
+        parser->set_format(format_str);
         
         protobuf::TranslatorEntry::PublishSerializer* serializer = entry.add_publish();
         serializer->set_technique(protobuf::TranslatorEntry::TECHNIQUE_FORMAT);
-        serializer->set_moos_var("TEST_MSG_1");
+        serializer->set_moos_var("NODE_REPORT");
+        serializer->set_format(format_str);
         
         translator.add_entry(entry);
     }
 
-    goby::glog << translator << std::endl;    
+    goby::glog << translator << std::endl;
+
+    BasicNodeReport report;
+    report.set_name("foo");
+    report.set_x(550);
+    report.set_y(1023.5);
+
+    std::multimap<std::string, CMOOSMsg> moos_msgs = translator.protobuf_to_moos(report);    
+
+    for(std::multimap<std::string, CMOOSMsg>::const_iterator it = moos_msgs.begin(),
+            n = moos_msgs.end();
+        it != n;
+        ++ it)
+    {
+        goby::glog << "Variable: " << it->first << "\n"
+                   << "Value: " << it->second.GetString() << std::endl;
+        assert(it->second.GetString() == "NAME=foo,X=550,Y=1023.5");
+    }
+    
+    typedef std::auto_ptr<google::protobuf::Message> GoogleProtobufMessagePointer;
+    GoogleProtobufMessagePointer report_out =
+        translator.moos_to_protobuf<GoogleProtobufMessagePointer>(moos_msgs, "BasicNodeReport");
+
+    goby::glog << "Message out: " << std::endl;
+    goby::glog << report_out->DebugString() << std::endl;    
+    assert(report_out->SerializeAsString() == report.SerializeAsString());
+    
+
+   {
+        protobuf::TranslatorEntry entry;
+        entry.set_protobuf_name("BasicNodeReport");
+        
+        protobuf::TranslatorEntry::CreateParser* parser = entry.add_create();
+        parser->set_technique(protobuf::TranslatorEntry::TECHNIQUE_FORMAT);
+        parser->set_moos_var("NAV_X");
+        parser->set_format("%202%");
+
+        parser = entry.add_create();
+        parser->set_technique(protobuf::TranslatorEntry::TECHNIQUE_FORMAT);
+        parser->set_moos_var("VEHICLE_NAME");
+        protobuf::TranslatorEntry::CreateParser::Algorithm* algo_in = parser->add_algorithm();
+        algo_in->set_name("to_lower");
+        algo_in->set_primary_field(1);
+
+        parser->set_format("%1%");
+
+        parser = entry.add_create();
+        parser->set_technique(protobuf::TranslatorEntry::TECHNIQUE_FORMAT);
+        parser->set_moos_var("NAV_Y");
+        parser->set_format("%3%");
+
+        protobuf::TranslatorEntry::PublishSerializer* serializer = entry.add_publish();
+        serializer->set_technique(protobuf::TranslatorEntry::TECHNIQUE_FORMAT);
+        serializer->set_moos_var("NODE_REPORT");
+        serializer->set_format(format_str + ",LAT=%100%,LON=%101%");
+        
+        protobuf::TranslatorEntry::PublishSerializer::Algorithm* algo_out = serializer->add_algorithm();
+        algo_out->set_name("utm_x2lon");
+        algo_out->set_output_virtual_field(101);
+        algo_out->set_primary_field(202);
+        algo_out->add_reference_field(3);
+
+        algo_out = serializer->add_algorithm();
+        algo_out->set_name("utm_y2lat");
+        algo_out->set_output_virtual_field(100);
+        algo_out->set_primary_field(3);
+        algo_out->add_reference_field(202);
+
+        translator.add_entry(entry);
+   }
+    
+    goby::glog << translator << std::endl;
+    
+    moos_msgs.clear();
+    moos_msgs.insert(std::make_pair("NAV_X", CMOOSMsg(MOOS_NOTIFY, "NAV_X", report.x())));
+    moos_msgs.insert(std::make_pair("NAV_Y", CMOOSMsg(MOOS_NOTIFY, "NAV_Y", report.y())));
+    moos_msgs.insert(std::make_pair("VEHICLE_NAME", CMOOSMsg(MOOS_NOTIFY, "VEHICLE_NAME", "FOO")));
+
+    report_out =
+        translator.moos_to_protobuf<GoogleProtobufMessagePointer>(moos_msgs, "BasicNodeReport");
+
+    goby::glog << "Message out: " << std::endl;
+    goby::glog << report_out->DebugString() << std::endl;    
+    
+    assert(report_out->SerializeAsString() == report.SerializeAsString());
+
+
+    moos_msgs = translator.protobuf_to_moos(*report_out);
+    
+    for(std::multimap<std::string, CMOOSMsg>::const_iterator it = moos_msgs.begin(),
+            n = moos_msgs.end();
+        it != n;
+        ++ it)
+    {
+        goby::glog << "Variable: " << it->first << "\n"
+                   << "Value: " << it->second.GetString() << std::endl;
+
+        assert(it->second.GetString() == "NAME=foo,X=550,Y=1023.5,LAT=42.5091075598637,LON=10.806955912844");
+    }
+    
+    
 
     
     std::cout << "all tests passed" << std::endl;
@@ -150,7 +262,7 @@ void run_one_in_one_out_test(MOOSTranslator& translator, int i, bool hex_encode)
             case 2:
             {
                 std::string test;
-                to_moos_comma_equals_string(msg, &test);
+                goby::moos::MOOSTranslation<protobuf::TranslatorEntry::TECHNIQUE_COMMA_SEPARATED_KEY_EQUALS_VALUE_PAIRS>::serialize(&test, msg);
                 assert(it->second.GetString() == test);
                 assert(it->first == "TEST_MSG_1");
                 break;

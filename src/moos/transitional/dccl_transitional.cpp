@@ -159,7 +159,7 @@ void goby::transitional::DCCLTransitionalCodec::add_algorithm(const std::string&
 void goby::transitional::DCCLTransitionalCodec::add_adv_algorithm(const std::string& name, AlgFunction2 func)
 {
     DCCLAlgorithmPerformer* ap = DCCLAlgorithmPerformer::getInstance();
-    ap -> add_algorithm(name, func);
+    ap -> add_adv_algorithm(name, func);
 }
 
 void goby::transitional::DCCLTransitionalCodec::add_flex_groups(util::FlexOstream* tout)

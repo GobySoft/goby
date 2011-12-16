@@ -568,6 +568,9 @@ void CpAcommsHandler::unpack(const google::protobuf::Message& msg)
 // DCCL Transitional ALGORITHMS
 //
 
+//
+// Numeric
+//
 
 void CpAcommsHandler::alg_power_to_dB(DCCLMessageVal& val_to_mod)
 {
@@ -605,18 +608,6 @@ void CpAcommsHandler::alg_add(DCCLMessageVal& val,
     BOOST_FOREACH(const::DCCLMessageVal& mv, ref_vals)
         d += double(mv);
     val.set(d, val.precision());
-}
-
-
-
-void CpAcommsHandler::alg_to_upper(DCCLMessageVal& val_to_mod)
-{
-    val_to_mod = boost::algorithm::to_upper_copy(std::string(val_to_mod));
-}
-
-void CpAcommsHandler::alg_to_lower(DCCLMessageVal& val_to_mod)
-{
-    val_to_mod = boost::algorithm::to_lower_copy(std::string(val_to_mod));
 }
 
 void CpAcommsHandler::alg_angle_0_360(DCCLMessageVal& angle)
@@ -687,6 +678,27 @@ void CpAcommsHandler::alg_utm_y2lat(DCCLMessageVal& mv,
     if(!(boost::math::isnan)(x) && !(boost::math::isnan)(y)) geodesy_.UTM2LatLong(x, y, lat, lon);    
     mv = lat;
 }
+
+
+
+//
+// String
+//
+
+void CpAcommsHandler::alg_to_upper(DCCLMessageVal& val_to_mod)
+{
+    val_to_mod = boost::algorithm::to_upper_copy(std::string(val_to_mod));
+}
+
+void CpAcommsHandler::alg_to_lower(DCCLMessageVal& val_to_mod)
+{
+    val_to_mod = boost::algorithm::to_lower_copy(std::string(val_to_mod));
+}
+
+
+//
+// Type Change
+//
 
 
  void CpAcommsHandler::alg_modem_id2name(DCCLMessageVal& in)

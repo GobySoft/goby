@@ -80,8 +80,8 @@ class TesMoosApp : public CMOOSApp
     double start_time() const { return start_time_; }
 
     void subscribe(const std::string& var,
-                   InboxFunc handler,
-                   int blackout = 0);    
+                   InboxFunc handler = InboxFunc(),
+                   int blackout = 0);
     
     template<typename V, typename A1>
         void subscribe(const std::string& var,

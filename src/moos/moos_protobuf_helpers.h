@@ -37,6 +37,59 @@ namespace goby
 {
     namespace moos
     {
+        inline std::map<int, std::string> run_serialize_algorithms(const google::protobuf::Message& in, const google::protobuf::RepeatedPtrField<protobuf::TranslatorEntry::PublishSerializer::Algorithm>& algorithms)
+        {
+            const google::protobuf::Descriptor* desc = in.GetDescriptor();
+            
+            // run algorithms
+            typedef google::protobuf::RepeatedPtrField<protobuf::TranslatorEntry::PublishSerializer::Algorithm>::const_iterator const_iterator;
+
+            std::map<int, std::string> modified_values;
+                
+            for(const_iterator it = algorithms.begin(), n = algorithms.end();
+                it != n; ++it)
+            {
+                const google::protobuf::FieldDescriptor* primary_field_desc =
+                    desc->FindFieldByNumber(it->primary_field());
+
+                if(!primary_field_desc || primary_field_desc->is_repeated())
+                    continue;
+                    
+                std::string primary_val;
+                google::protobuf::TextFormat::PrintFieldValueToString(in, primary_field_desc, -1, &primary_val);
+                    
+                goby::transitional::DCCLMessageVal val(primary_val);
+                std::vector<goby::transitional::DCCLMessageVal> ref;
+                for(int i = 0, m = it->reference_field_size(); i<m; ++i)
+                {
+                    const google::protobuf::FieldDescriptor* field_desc =
+                        desc->FindFieldByNumber(it->reference_field(i));
+
+                    if(field_desc && !field_desc->is_repeated())
+                    {
+                        std::string ref_value;
+                        google::protobuf::TextFormat::PrintFieldValueToString(in, field_desc, -1, &ref_value);    
+                        ref.push_back(ref_value);
+                    }
+                    else
+                    {
+                        throw(std::runtime_error("Reference field given is invalid or repeated (must be optional or required): " + goby::util::as<std::string>(it->reference_field(i))));
+                    }
+                        
+                        
+                    transitional::DCCLAlgorithmPerformer::getInstance()->
+                        run_algorithm(it->name(), val, ref);
+                        
+                    val = std::string(val);
+                }
+                modified_values.insert(std::make_pair(it->output_virtual_field(), val));
+            }
+
+            return modified_values;
+        }
+        
+
+
         template<goby::moos::protobuf::TranslatorEntry::ParserSerializerTechnique technique>
             class MOOSTranslation
         {};
@@ -82,16 +135,24 @@ namespace goby
             class MOOSTranslation <protobuf::TranslatorEntry::TECHNIQUE_COMMA_SEPARATED_KEY_EQUALS_VALUE_PAIRS>
         {
           public:
-            static void serialize(std::string* out, const google::protobuf::Message& in)
+            static void serialize(std::string* out, const google::protobuf::Message& in,
+                                  const google::protobuf::RepeatedPtrField<protobuf::TranslatorEntry::PublishSerializer::Algorithm>& algorithms)
             {
                 std::stringstream out_ss;
+
                 
                 const google::protobuf::Descriptor* desc = in.GetDescriptor();
                 const google::protobuf::Reflection* refl = in.GetReflection();
-    
+                
                 for(int i = 0, n = desc->field_count(); i < n; ++i)
                 {
                     const google::protobuf::FieldDescriptor* field_desc = desc->field(i);
+
+                    // leave out unspecified or empty fields
+                    if((!field_desc->is_repeated() && !refl->HasField(in, field_desc))
+                       || (field_desc->is_repeated() && !refl->FieldSize(in, field_desc)))
+                        continue;
+
                     if(i) out_ss << ",";
                     
                     const std::string& field_name = field_desc->name();
@@ -133,11 +194,39 @@ namespace goby
                             break;
                     }
                 }    
+
+                std::map<int, std::string> additional_values = run_serialize_algorithms(in, algorithms);
+                for(std::map<int, std::string>::const_iterator it = additional_values.begin(),
+                        n = additional_values.end(); it != n; ++it)
+                {
+                    out_ss << ",";
+
+                    std::string key;
+
+                    typedef google::protobuf::RepeatedPtrField<protobuf::TranslatorEntry::PublishSerializer::Algorithm>::const_iterator const_iterator;
+
+                    int primary_field;
+                    for(const_iterator alg_it = algorithms.begin(), alg_n = algorithms.end();
+                        alg_it != alg_n; ++alg_it)
+                    {
+                        if(alg_it->output_virtual_field() == it->first)
+                        {
+                            key += alg_it->name();
+                            primary_field = alg_it->primary_field();
+                        }
+                    }
+                    key += "(" + desc->FindFieldByNumber(primary_field)->name() + ")";
+                    
+                    out_ss << key << "=" << it->second;
+                }
+                
+
                 *out = out_ss.str();
 
             }
             
-            static void parse(const std::string& in, google::protobuf::Message* out)
+            static void parse(const std::string& in, google::protobuf::Message* out,
+                              const google::protobuf::RepeatedPtrField<protobuf::TranslatorEntry::CreateParser::Algorithm>& algorithms)
             {
                 const google::protobuf::Descriptor* desc = out->GetDescriptor();
                 const google::protobuf::Reflection* refl = out->GetReflection();
@@ -152,8 +241,26 @@ namespace goby
                         default:
                         {
                             std::string val;
+
                             if(goby::moos::val_from_string(val, in, field_desc->name()))
                             {
+                                // run algorithms
+                                typedef google::protobuf::RepeatedPtrField<protobuf::TranslatorEntry::CreateParser::Algorithm>::const_iterator const_iterator;
+                            
+                                for(const_iterator it = algorithms.begin(), n = algorithms.end();
+                                    it != n; ++it)
+                                {
+                                    goby::transitional::DCCLMessageVal extract_val(val);
+                                
+                                    if(it->primary_field() == field_desc->number())
+                                        transitional::DCCLAlgorithmPerformer::getInstance()->
+                                            run_algorithm(it->name(),
+                                                          extract_val,
+                                                          std::vector<goby::transitional::DCCLMessageVal>());
+                                
+                                    val = std::string(extract_val);
+                                }
+                                
                                 std::vector<std::string> vals;
                                 boost::split(vals, val, boost::is_any_of(","));
                                 from_moos_comma_equals_string_field(out, field_desc, vals);
@@ -474,51 +581,16 @@ namespace goby
                 
 
                 // run algorithms
-                typedef google::protobuf::RepeatedPtrField<protobuf::TranslatorEntry::PublishSerializer::Algorithm>::const_iterator const_iterator;
+                std::map<int, std::string> modified_values = run_serialize_algorithms(in, algorithms);
 
-                std::map<int, std::string> modified_values;
-                
-                for(const_iterator it = algorithms.begin(), n = algorithms.end();
-                    it != n; ++it)
+                for(std::map<int, std::string>::const_iterator it = modified_values.begin(),
+                        n = modified_values.end(); it != n; ++it)
                 {
-                    const google::protobuf::FieldDescriptor* primary_field_desc =
-                        desc->FindFieldByNumber(it->primary_field());
-
-                    if(!primary_field_desc || primary_field_desc->is_repeated())
-                        continue;
-                    
-                    std::string primary_val;
-                    google::protobuf::TextFormat::PrintFieldValueToString(in, primary_field_desc, -1, &primary_val);
-                    
-                    goby::transitional::DCCLMessageVal val(primary_val);
-                    std::vector<goby::transitional::DCCLMessageVal> ref;
-                    for(int i = 0, m = it->reference_field_size(); i<m; ++i)
-                    {
-                        const google::protobuf::FieldDescriptor* field_desc =
-                            desc->FindFieldByNumber(it->reference_field(i));
-
-                        if(field_desc && !field_desc->is_repeated())
-                        {
-                            std::string ref_value;
-                            google::protobuf::TextFormat::PrintFieldValueToString(in, field_desc, -1, &ref_value);    
-                            ref.push_back(ref_value);
-                        }
-                        else
-                        {
-                            throw(std::runtime_error("Reference field given is invalid or repeated (must be optional or required): " + goby::util::as<std::string>(it->reference_field(i))));
-                        }
-                        
-                        
-                        transitional::DCCLAlgorithmPerformer::getInstance()->
-                            run_algorithm(it->name(), val, ref);
-                        
-                        val = std::string(val);
-                    }
-                    modified_values.insert(std::make_pair(it->output_virtual_field(), val));
-                    if(it->output_virtual_field() > max_field_number)
-                        max_field_number = it->output_virtual_field();
+                    if(it->first > max_field_number)
+                        max_field_number = it->first;
                 }
 
+                
                 boost::format out_format(format);
                 out_format.exceptions( boost::io::all_error_bits ^ ( boost::io::too_many_args_bit | boost::io::too_few_args_bit )); 
 

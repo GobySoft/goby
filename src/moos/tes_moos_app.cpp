@@ -137,7 +137,8 @@ void TesMoosApp::subscribe(const std::string& var,  InboxFunc handler, int black
     
     pending_subscriptions_.push_back(std::make_pair(var, blackout));
     try_subscribing();
-    mail_handlers_[var] = handler;
+    if(handler)
+        mail_handlers_[var] = handler;
 }
 
 void TesMoosApp::try_subscribing()

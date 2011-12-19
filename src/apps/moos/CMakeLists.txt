@@ -1,7 +1,12 @@
 option(build_pAcommsHandler "Build pAcommsHandler" ON)
+option(build_pTranslator "Build pTranslator" ON)
 
 if(build_pAcommsHandler)
   add_subdirectory(pAcommsHandler) # boost, xercesc, asio
+endif()
+
+if(build_pTranslator)
+  add_subdirectory(pTranslator) 
 endif()
 
 add_subdirectory(analyze_dccl_xml)

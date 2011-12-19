@@ -1,0 +1,17 @@
+import "goby/moos/protobuf/tes_moos_app.proto";
+import "goby/moos/protobuf/translator.proto";
+import "goby/common/option_extensions.proto";
+
+
+message pTranslatorConfig
+{
+  optional TesMoosAppConfig common = 1 [(goby.field).description="Configuration common to all Goby MOOS applications"]; // see tes_moos_app.proto
+
+
+  repeated string load_shared_library = 2 [(goby.field).description="Path to a shared library containing compiled Protobuf files. Preferred over load_dccl_proto_file."];
+
+  repeated string load_proto_file = 3 [(goby.field).description="Path to a Protobuf file. Use load_shared_library when possible."];
+  
+  repeated goby.moos.protobuf.TranslatorEntry translator_entry = 4 [(goby.field).description="Describes how to trigger (generate) a Protobuf message from a MOOS event and how to re-publish the result"];  
+
+}

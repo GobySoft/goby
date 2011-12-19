@@ -53,7 +53,7 @@ namespace goby
                     add_entry(entry);
             }
 
-            MOOSTranslator(const std::set<goby::moos::protobuf::TranslatorEntry>& entries,
+            MOOSTranslator(const google::protobuf::RepeatedPtrField<goby::moos::protobuf::TranslatorEntry>& entries,
                            double lat_origin = std::numeric_limits<double>::quiet_NaN(),
                            double lon_origin = std::numeric_limits<double>::quiet_NaN())
             {
@@ -74,10 +74,18 @@ namespace goby
                     ++it)
                 { add_entry(*it); }
             }            
+
+            void add_entry(const google::protobuf::RepeatedPtrField<goby::moos::protobuf::TranslatorEntry>& entries)
+            {
+                for(google::protobuf::RepeatedPtrField<goby::moos::protobuf::TranslatorEntry>::const_iterator it = entries.begin(), n = entries.end();
+                    it != n;
+                    ++it)
+                { add_entry(*it); }
+            }
             
             // ownership of returned pointer goes to caller (must use smart pointer or call delete)
-            template<typename GoogleProtobufMessagePointer> //, template <typename, typename> class Map >
-                GoogleProtobufMessagePointer moos_to_protobuf(const std::multimap<std::string, CMOOSMsg>& moos_variables, const std::string& protobuf_name);
+            template<typename GoogleProtobufMessagePointer, class StringCMOOSMsgMap >
+                GoogleProtobufMessagePointer moos_to_protobuf(const StringCMOOSMsgMap& moos_variables, const std::string& protobuf_name);
             
             std::multimap<std::string, CMOOSMsg> protobuf_to_moos(const google::protobuf::Message& protobuf_msg);
 
@@ -128,7 +136,7 @@ namespace goby
 
         namespace protobuf
         {
-            bool operator<(const protobuf::TranslatorEntry& a, const protobuf::TranslatorEntry& b)
+            inline bool operator<(const protobuf::TranslatorEntry& a, const protobuf::TranslatorEntry& b)
             {
                 return a.protobuf_name() < b.protobuf_name();
             }
@@ -169,7 +177,7 @@ inline std::multimap<std::string, CMOOSMsg> goby::moos::MOOSTranslator::protobuf
                 break;
 
             case protobuf::TranslatorEntry::TECHNIQUE_COMMA_SEPARATED_KEY_EQUALS_VALUE_PAIRS:
-                goby::moos::MOOSTranslation<protobuf::TranslatorEntry::TECHNIQUE_COMMA_SEPARATED_KEY_EQUALS_VALUE_PAIRS>::serialize(&return_string, protobuf_msg);
+                goby::moos::MOOSTranslation<protobuf::TranslatorEntry::TECHNIQUE_COMMA_SEPARATED_KEY_EQUALS_VALUE_PAIRS>::serialize(&return_string, protobuf_msg, entry.publish(i).algorithm());
                 break;
                 
             case protobuf::TranslatorEntry::TECHNIQUE_FORMAT:
@@ -179,18 +187,28 @@ inline std::multimap<std::string, CMOOSMsg> goby::moos::MOOSTranslator::protobuf
                 goby::moos::MOOSTranslation<protobuf::TranslatorEntry::TECHNIQUE_FORMAT>::serialize(&return_string, protobuf_msg, entry.publish(i).algorithm(), entry.publish(i).format(), entry.publish(i).repeated_delimiter());
                 break;
         }
-        moos_msgs.insert(std::make_pair(moos_var,
-                                        CMOOSMsg(MOOS_STRING, entry.publish(i).moos_var(), return_string)));
+
+        
+        try
+        {
+            double return_double = boost::lexical_cast<double>(return_string);
+            moos_msgs.insert(std::make_pair(moos_var,
+                                            CMOOSMsg(MOOS_NOTIFY, entry.publish(i).moos_var(), return_double)));
+        }
+        catch(boost::bad_lexical_cast&)
+        {
+            moos_msgs.insert(std::make_pair(moos_var,
+                                            CMOOSMsg(MOOS_NOTIFY, entry.publish(i).moos_var(), return_string)));
+        }        
     }
     
     return moos_msgs;
 }
 
-template<typename GoogleProtobufMessagePointer>//, template <typename, typename> class Map >
-GoogleProtobufMessagePointer goby::moos::MOOSTranslator::moos_to_protobuf(const std::multimap<std::string, CMOOSMsg>& moos_variables, const std::string& protobuf_name)
+template<typename GoogleProtobufMessagePointer, class StringCMOOSMsgMap >
+GoogleProtobufMessagePointer goby::moos::MOOSTranslator::moos_to_protobuf(const StringCMOOSMsgMap& moos_variables, const std::string& protobuf_name)
 {
-    std::map<std::string, goby::moos::protobuf::TranslatorEntry>::const_iterator it =
-        dictionary_.find(protobuf_name);
+    std::map<std::string, goby::moos::protobuf::TranslatorEntry>::const_iterator it = dictionary_.find(protobuf_name);
     
     if(it == dictionary_.end())
         throw(std::runtime_error("No TranslatorEntry for Protobuf type: " + protobuf_name));
@@ -224,7 +242,7 @@ GoogleProtobufMessagePointer goby::moos::MOOSTranslator::moos_to_protobuf(const 
                 break;
 
             case protobuf::TranslatorEntry::TECHNIQUE_COMMA_SEPARATED_KEY_EQUALS_VALUE_PAIRS:
-                goby::moos::MOOSTranslation<protobuf::TranslatorEntry::TECHNIQUE_COMMA_SEPARATED_KEY_EQUALS_VALUE_PAIRS>::parse(source_string, &*msg);
+                goby::moos::MOOSTranslation<protobuf::TranslatorEntry::TECHNIQUE_COMMA_SEPARATED_KEY_EQUALS_VALUE_PAIRS>::parse(source_string, &*msg, entry.create(i).algorithm());
                 break;
 
             case protobuf::TranslatorEntry::TECHNIQUE_FORMAT:

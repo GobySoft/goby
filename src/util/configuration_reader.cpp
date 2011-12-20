@@ -602,13 +602,13 @@ std::string goby::util::ConfigReader::label(const google::protobuf::FieldDescrip
     switch(field_desc->label())
     {
         case google::protobuf::FieldDescriptor::LABEL_REQUIRED:
-            return " (req)";
+            return " (required)";
             
         case google::protobuf::FieldDescriptor::LABEL_OPTIONAL:
-            return " (opt)";
+            return " (optional)";
             
         case google::protobuf::FieldDescriptor::LABEL_REPEATED:
-            return " (repeat)";
+            return " (repeated)";
     }
 
     return "";

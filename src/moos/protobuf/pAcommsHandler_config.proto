@@ -37,7 +37,7 @@ message pAcommsHandlerConfig
   repeated string load_dccl_proto_file = 21 [(goby.field).description="Path to a DCCL protobuf file. Use load_shared_library when possible."];
   
   
-  repeated goby.moos.protobuf.MOOSProtobufTranslator moos_dccl_translator = 22 [(goby.field).description="Describes how to trigger (generate) a DCCL message from a MOOS event and how to publish the contents of the message upon receipt"];
+  repeated goby.moos.protobuf.TranslatorEntry moos_dccl_translator = 22 [(goby.field).description="Describes how to trigger (generate) a DCCL message from a MOOS event and how to publish the contents of the message upon receipt"];
   
   // path to text file with entries:
   //   modem_id,name,type

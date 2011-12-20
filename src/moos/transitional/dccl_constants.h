@@ -89,7 +89,7 @@ namespace goby
         {
             switch(type)
             {
-                case dccl_int:    return "int64";
+                case dccl_int:    return "int32";
                 case dccl_hex:    return "bytes";
                 case dccl_bool:   return "bool";
                 case dccl_string: return "string";

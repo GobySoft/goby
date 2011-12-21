@@ -161,13 +161,13 @@ namespace goby
             bool is_key_frame_;
             std::string source_var_;
             std::string name_;
+            int sequence_number_;
         
           private:
             bool source_set_;
             DCCLAlgorithmPerformer * ap_;
             std::string source_key_;
             std::vector<std::string> algorithms_;
-            int sequence_number_;
             
         };
 

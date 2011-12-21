@@ -28,6 +28,7 @@
 #include <google/protobuf/descriptor.pb.h>
 #include "goby/common/acomms_option_extensions.pb.h"
 #include "goby/util/dynamic_protobuf_manager.h"
+#include <boost/regex.hpp>
 
 using goby::util::goby_time;
 using goby::util::as;           
@@ -167,12 +168,98 @@ void goby::transitional::DCCLTransitionalCodec::convert_xml_message_file(
 
     BOOST_FOREACH(unsigned id, added_ids)
     {
-        goby::moos::protobuf::TranslatorEntry* entry = translator_entries->Add();
-        entry->set_protobuf_name(to_iterator(id)->name());
         
+        goby::moos::protobuf::TranslatorEntry* entry = translator_entries->Add();
+        std::vector<DCCLMessage>::iterator msg_it = to_iterator(id);
+        entry->set_protobuf_name(msg_it->name());
+
+        if(msg_it->trigger_type() == "time")
+        {
+            entry->mutable_trigger()->set_type(goby::moos::protobuf::TranslatorEntry::Trigger::TRIGGER_TIME);
+            entry->mutable_trigger()->set_period(msg_it->trigger_time());
+        }
+        else if(msg_it->trigger_type() == "publish")
+        {
+            entry->mutable_trigger()->set_type(goby::moos::protobuf::TranslatorEntry::Trigger::TRIGGER_PUBLISH);
+            entry->mutable_trigger()->set_moos_var(msg_it->trigger_var());
+        }
+        
+        std::map<std::string, goby::moos::protobuf::TranslatorEntry::CreateParser*> parser_map;
+        std::map<std::string, int > sequence_map;
+        BOOST_FOREACH(boost::shared_ptr<DCCLMessageVar> var, msg_it->header_const())
+        {
+
+            sequence_map[var->name()] = var->sequence_number();
+            fill_create(var, &parser_map, entry);
+        }
+        BOOST_FOREACH( boost::shared_ptr<DCCLMessageVar> var, msg_it->layout_const())
+        {
+            sequence_map[var->name()] = var->sequence_number();
+            fill_create(var, &parser_map, entry);
+        }
+        BOOST_FOREACH(DCCLPublish& publish, msg_it->publishes())
+        {
+           goby::moos::protobuf::TranslatorEntry::PublishSerializer* serializer = entry->add_publish();
+           serializer->set_technique(goby::moos::protobuf::TranslatorEntry::TECHNIQUE_FORMAT);
+
+           // renumber format numbers
+           boost::regex pattern ("%([0-9]+)",boost::regex_constants::icase|boost::regex_constants::perl);
+           std::string replace ("%_GOBY1TEMP_\\1");
+
+           std::string new_moos_var = boost::regex_replace (publish.var(), pattern, replace);
+
+
+           std::string old_format = publish.format();
+           std::string new_format = boost::regex_replace (old_format, pattern, replace);
+
+           
+           for(int i = 0, n = publish.message_vars().size(); i < n; ++i)
+           {
+               
+               boost::algorithm::replace_all(new_moos_var, "%_GOBY1TEMP_" + goby::util::as<std::string>(i+1),
+                                             "%" + goby::util::as<std::string>(sequence_map[publish.message_vars()[i]->name()]));
+               boost::algorithm::replace_all(new_format, "%_GOBY1TEMP_" + goby::util::as<std::string>(i+1),
+                                             "%" + goby::util::as<std::string>(sequence_map[publish.message_vars()[i]->name()])); 
+
+           }
+
+           serializer->set_moos_var(new_moos_var);
+           serializer->set_format(new_format);
+        }    
     }
     
 }
+
+void goby::transitional::DCCLTransitionalCodec::fill_create(boost::shared_ptr<DCCLMessageVar> var,
+                                                            std::map<std::string, goby::moos::protobuf::TranslatorEntry::CreateParser*>* parser_map,
+                                                            goby::moos::protobuf::TranslatorEntry* entry)
+{
+ 
+    // entry already exists for this type
+    if((*parser_map).count(var->source_var()))
+    {
+        // use key=value parsing
+        (*parser_map)[var->source_var()]->set_technique(goby::moos::protobuf::TranslatorEntry::TECHNIQUE_COMMA_SEPARATED_KEY_EQUALS_VALUE_PAIRS);
+        (*parser_map)[var->source_var()]->clear_format();
+                
+        // add any algorithms
+        //(*parser_map)[var->source_var];
+                
+    }
+    else if(!var->source_var().empty())
+    {
+        (*parser_map)[var->source_var()] = entry->add_create();
+        (*parser_map)[var->source_var()]->set_format("%" + goby::util::as<std::string>(var->sequence_number()) + "%");
+        (*parser_map)[var->source_var()]->set_technique(goby::moos::protobuf::TranslatorEntry::TECHNIQUE_FORMAT);
+        (*parser_map)[var->source_var()]->set_moos_var(var->source_var());
+                
+    }
+
+    
+            
+}
+
+
 
 std::set<unsigned> goby::transitional::DCCLTransitionalCodec::all_message_ids()
 {

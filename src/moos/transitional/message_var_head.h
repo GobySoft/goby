@@ -82,8 +82,9 @@ namespace goby
             
         
             void write_schema_to_dccl2(std::ofstream* proto_file,
-                                               int sequence_number)
+                                       int sequence_number)
             {
+                sequence_number_ = sequence_number;
                 *proto_file << "\t" << "optional string " << name() << " = " << sequence_number << " [(goby.field).dccl.codec=\"_time\", (goby.field).dccl.in_head=true, (goby.field).queue.is_time=true];" << std::endl;
             }
             

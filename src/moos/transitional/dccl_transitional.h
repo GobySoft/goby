@@ -446,6 +446,11 @@ namespace goby
             void convert_xml_message_file(const std::string& xml_file,
                                           std::string* proto_file,
                                           google::protobuf::RepeatedPtrField<goby::moos::protobuf::TranslatorEntry>* translator_entries);
+
+            void fill_create(boost::shared_ptr<DCCLMessageVar> var,
+                             std::map<std::string, goby::moos::protobuf::TranslatorEntry::CreateParser*>* parser_map,
+                             goby::moos::protobuf::TranslatorEntry* entry);
+
             
             std::vector<DCCLMessage>::const_iterator to_iterator(const std::string& message_name) const;
             std::vector<DCCLMessage>::iterator to_iterator(const std::string& message_name);

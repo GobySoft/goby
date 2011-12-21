@@ -15,7 +15,7 @@ message TranslatorEntry
     }
     optional Type type = 1 [default = TRIGGER_PUBLISH];
     optional string moos_var = 2;
-    optional uint32 time = 3;
+    optional uint32 period = 3;
     optional string mandatory_content = 4;
 
   }

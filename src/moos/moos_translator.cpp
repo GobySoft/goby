@@ -22,7 +22,8 @@
 
 const double NaN = std::numeric_limits<double>::quiet_NaN();
 
-void goby::moos::MOOSTranslator::initialize(double lat_origin, double lon_origin)
+void goby::moos::MOOSTranslator::initialize(double lat_origin, double lon_origin,
+                                            const std::string& modem_id_lookup_path)
 {
     transitional::DCCLAlgorithmPerformer* ap = transitional::DCCLAlgorithmPerformer::getInstance();
                 
@@ -35,6 +36,15 @@ void goby::moos::MOOSTranslator::initialize(double lat_origin, double lon_origin
     ap->add_algorithm("angle_0_360", &alg_angle_0_360);
     ap->add_algorithm("angle_-180_180", &alg_angle_n180_180);
 
+
+    if(!modem_id_lookup_path.empty())
+    {
+        goby::glog.is(goby::util::logger::VERBOSE) && goby::glog << modem_lookup_.read_lookup_file(modem_id_lookup_path) << std::flush;
+        ap->add_algorithm("modem_id2name", boost::bind(&MOOSTranslator::alg_modem_id2name, this, _1));
+        ap->add_algorithm("modem_id2type", boost::bind(&MOOSTranslator::alg_modem_id2type, this, _1));
+        ap->add_algorithm("name2modem_id", boost::bind(&MOOSTranslator::alg_name2modem_id, this, _1));
+    }
+    
     if(!(boost::math::isnan)(lat_origin) && !(boost::math::isnan)(lon_origin))
     {
         if(geodesy_.Initialise(lat_origin, lon_origin))
@@ -136,6 +146,48 @@ void goby::moos::MOOSTranslator::alg_utm_y2lat(transitional::DCCLMessageVal& mv,
     
     mv = lat;
 }
+
+
+
+
+ void goby::moos::MOOSTranslator::alg_modem_id2name(transitional::DCCLMessageVal& in)
+ {
+    bool is_numeric = true;
+    BOOST_FOREACH(const char c, std::string(in))
+    {
+        if(!isdigit(c))
+        {
+            is_numeric = false;
+            break;
+        }
+    }
+    if(is_numeric) in = modem_lookup_.get_name_from_id(boost::lexical_cast<unsigned>(std::string(in)));
+ }
+ 
+ void goby::moos::MOOSTranslator::alg_modem_id2type(transitional::DCCLMessageVal& in)
+ {
+    bool is_numeric = true;
+    BOOST_FOREACH(const char c, std::string(in))
+    {
+        if(!isdigit(c))
+        {
+            is_numeric = false;
+            break;
+        }    
+    }
+
+    if(is_numeric) in = modem_lookup_.get_type_from_id(boost::lexical_cast<unsigned>(std::string(in)));
+ }
+
+void goby::moos::MOOSTranslator::alg_name2modem_id(transitional::DCCLMessageVal& in)
+{
+    std::stringstream ss;
+    ss << modem_lookup_.get_id_from_name(std::string(in));
+    in = ss.str();
+}
+
+
+
 
 void goby::moos::alg_to_upper(transitional::DCCLMessageVal& val_to_mod)
 {

@@ -14,4 +14,7 @@ message pTranslatorConfig
   
   repeated goby.moos.protobuf.TranslatorEntry translator_entry = 4 [(goby.field).description="Describes how to trigger (generate) a Protobuf message from a MOOS event and how to re-publish the result"];  
 
+
+  optional string modem_id_lookup_path = 5 [(goby.field).description="Path to file containing mapping between modem_id and vehicle name & type",(goby.field).moos_global = "modem_id_lookup_path"];
+
 }

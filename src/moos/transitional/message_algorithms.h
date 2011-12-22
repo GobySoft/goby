@@ -48,6 +48,7 @@ namespace goby
         {
           public:
             static DCCLAlgorithmPerformer* getInstance();
+            static void deleteInstance();
 
             void algorithm(DCCLMessageVal& in,
                            unsigned array_index,

@@ -36,6 +36,11 @@ goby::transitional::DCCLAlgorithmPerformer* goby::transitional::DCCLAlgorithmPer
     return(inst_);
 }
 
+void goby::transitional::DCCLAlgorithmPerformer::deleteInstance()
+{
+    delete inst_;
+}
+
 void goby::transitional::DCCLAlgorithmPerformer::algorithm(DCCLMessageVal& in, unsigned array_index, const std::string& algorithm, const std::map<std::string,std::vector<DCCLMessageVal> >& vals)
 {
     if(in.empty()) return;

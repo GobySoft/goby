@@ -111,7 +111,9 @@ namespace goby
             std::string source_var() const { return source_var_; }
 
             int sequence_number() const { return sequence_number_; } 
+            const std::vector<std::string>& algorithms()const  { return algorithms_; }
 
+            
             // other
             void initialize(const DCCLMessage& msg);
             //         std::string get_display() const;

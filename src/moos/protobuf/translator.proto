@@ -64,4 +64,7 @@ message TranslatorEntry
     repeated Algorithm algorithm = 5; // only for TECHNIQUE_FORMAT and TECHNIQUE_COMMA_SEPARATED_KEY_EQUALS_VALUE_PAIRS
   }
   repeated PublishSerializer publish = 4;
+
+  optional bool use_short_enum = 5 [default = false];
 }
+

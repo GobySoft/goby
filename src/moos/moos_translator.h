@@ -21,6 +21,7 @@
 #include "goby/moos/protobuf/translator.pb.h"
 #include "goby/util/dynamic_protobuf_manager.h"
 #include "goby/moos/transitional/message_algorithms.h"
+#include "goby/moos/modem_id_convert.h"
 
 
 namespace goby
@@ -46,18 +47,20 @@ namespace goby
           public:
             MOOSTranslator(const goby::moos::protobuf::TranslatorEntry& entry = goby::moos::protobuf::TranslatorEntry(),
                            double lat_origin = std::numeric_limits<double>::quiet_NaN(),
-                           double lon_origin = std::numeric_limits<double>::quiet_NaN())
+                           double lon_origin = std::numeric_limits<double>::quiet_NaN(),
+                           const std::string& modem_id_lookup_path="")
             {
-                initialize(lat_origin, lon_origin);
+                initialize(lat_origin, lon_origin, modem_id_lookup_path);
                 if(entry.IsInitialized())
                     add_entry(entry);
             }
 
             MOOSTranslator(const google::protobuf::RepeatedPtrField<goby::moos::protobuf::TranslatorEntry>& entries,
                            double lat_origin = std::numeric_limits<double>::quiet_NaN(),
-                           double lon_origin = std::numeric_limits<double>::quiet_NaN())
+                           double lon_origin = std::numeric_limits<double>::quiet_NaN(),
+                           const std::string& modem_id_lookup_path="")
             {
-                initialize(lat_origin, lon_origin); 
+                initialize(lat_origin, lon_origin, modem_id_lookup_path); 
                 add_entry(entries);
             }
 
@@ -93,7 +96,9 @@ namespace goby
             
           private:
             void initialize(double lat_origin = std::numeric_limits<double>::quiet_NaN(),
-                            double lon_origin = std::numeric_limits<double>::quiet_NaN());
+                            double lon_origin = std::numeric_limits<double>::quiet_NaN(),
+                            const std::string& modem_id_lookup_path="");
+            
 
             void alg_lat2utm_y(transitional::DCCLMessageVal& mv,
                                const std::vector<transitional::DCCLMessageVal>& ref_vals);
@@ -106,11 +111,16 @@ namespace goby
 
             void alg_utm_y2lat(transitional::DCCLMessageVal& mv,
                                const std::vector<transitional::DCCLMessageVal>& ref_vals);
+            
+            void alg_modem_id2name(transitional::DCCLMessageVal& in);
+            void alg_modem_id2type(transitional::DCCLMessageVal& in);
+            void alg_name2modem_id(transitional::DCCLMessageVal& in);
 
             
           private:
             std::map<std::string, goby::moos::protobuf::TranslatorEntry> dictionary_;
             CMOOSGeodesy geodesy_;
+            tes::ModemIdConvert modem_lookup_;
         };
 
         inline std::ostream& operator<<(std::ostream& os, const MOOSTranslator& tl)
@@ -177,14 +187,14 @@ inline std::multimap<std::string, CMOOSMsg> goby::moos::MOOSTranslator::protobuf
                 break;
 
             case protobuf::TranslatorEntry::TECHNIQUE_COMMA_SEPARATED_KEY_EQUALS_VALUE_PAIRS:
-                goby::moos::MOOSTranslation<protobuf::TranslatorEntry::TECHNIQUE_COMMA_SEPARATED_KEY_EQUALS_VALUE_PAIRS>::serialize(&return_string, protobuf_msg, entry.publish(i).algorithm());
+                goby::moos::MOOSTranslation<protobuf::TranslatorEntry::TECHNIQUE_COMMA_SEPARATED_KEY_EQUALS_VALUE_PAIRS>::serialize(&return_string, protobuf_msg, entry.publish(i).algorithm(), entry.use_short_enum());
                 break;
                 
             case protobuf::TranslatorEntry::TECHNIQUE_FORMAT:
                 // process moos_variable too (can be a format string itself!)
-                goby::moos::MOOSTranslation<protobuf::TranslatorEntry::TECHNIQUE_FORMAT>::serialize(&moos_var, protobuf_msg, entry.publish(i).algorithm(), entry.publish(i).moos_var(), entry.publish(i).repeated_delimiter());
+                goby::moos::MOOSTranslation<protobuf::TranslatorEntry::TECHNIQUE_FORMAT>::serialize(&moos_var, protobuf_msg, entry.publish(i).algorithm(), entry.publish(i).moos_var(), entry.publish(i).repeated_delimiter(), entry.use_short_enum());
                 // now do the format values
-                goby::moos::MOOSTranslation<protobuf::TranslatorEntry::TECHNIQUE_FORMAT>::serialize(&return_string, protobuf_msg, entry.publish(i).algorithm(), entry.publish(i).format(), entry.publish(i).repeated_delimiter());
+                goby::moos::MOOSTranslation<protobuf::TranslatorEntry::TECHNIQUE_FORMAT>::serialize(&return_string, protobuf_msg, entry.publish(i).algorithm(), entry.publish(i).format(), entry.publish(i).repeated_delimiter(), entry.use_short_enum());
                 break;
         }
 
@@ -193,12 +203,12 @@ inline std::multimap<std::string, CMOOSMsg> goby::moos::MOOSTranslator::protobuf
         {
             double return_double = boost::lexical_cast<double>(return_string);
             moos_msgs.insert(std::make_pair(moos_var,
-                                            CMOOSMsg(MOOS_NOTIFY, entry.publish(i).moos_var(), return_double)));
+                                            CMOOSMsg(MOOS_NOTIFY, moos_var, return_double)));
         }
         catch(boost::bad_lexical_cast&)
         {
             moos_msgs.insert(std::make_pair(moos_var,
-                                            CMOOSMsg(MOOS_NOTIFY, entry.publish(i).moos_var(), return_string)));
+                                            CMOOSMsg(MOOS_NOTIFY, moos_var, return_string)));
         }        
     }
     
@@ -242,11 +252,11 @@ GoogleProtobufMessagePointer goby::moos::MOOSTranslator::moos_to_protobuf(const 
                 break;
 
             case protobuf::TranslatorEntry::TECHNIQUE_COMMA_SEPARATED_KEY_EQUALS_VALUE_PAIRS:
-                goby::moos::MOOSTranslation<protobuf::TranslatorEntry::TECHNIQUE_COMMA_SEPARATED_KEY_EQUALS_VALUE_PAIRS>::parse(source_string, &*msg, entry.create(i).algorithm());
+                goby::moos::MOOSTranslation<protobuf::TranslatorEntry::TECHNIQUE_COMMA_SEPARATED_KEY_EQUALS_VALUE_PAIRS>::parse(source_string, &*msg, entry.create(i).algorithm(), entry.use_short_enum());
                 break;
 
             case protobuf::TranslatorEntry::TECHNIQUE_FORMAT:
-                goby::moos::MOOSTranslation<protobuf::TranslatorEntry::TECHNIQUE_FORMAT>::parse(source_string, &*msg, entry.create(i).algorithm(), entry.create(i).format());
+                goby::moos::MOOSTranslation<protobuf::TranslatorEntry::TECHNIQUE_FORMAT>::parse(source_string, &*msg, entry.create(i).algorithm(), entry.create(i).format(), entry.use_short_enum());
                 break;
         }
     }

@@ -54,9 +54,18 @@ namespace goby
 
                 if(!primary_field_desc || primary_field_desc->is_repeated())
                     continue;
-                    
+                
                 std::string primary_val;
-                google::protobuf::TextFormat::PrintFieldValueToString(in, primary_field_desc, -1, &primary_val);
+                
+                if(!modified_values.count(it->output_virtual_field()))
+                {    
+                    google::protobuf::TextFormat::PrintFieldValueToString(in, primary_field_desc, -1, &primary_val);
+                    boost::trim_if(primary_val, boost::is_any_of("\""));
+                }
+                else
+                {
+                    primary_val = modified_values[it->output_virtual_field()];
+                }
                     
                 goby::transitional::DCCLMessageVal val(primary_val);
                 std::vector<goby::transitional::DCCLMessageVal> ref;
@@ -76,19 +85,28 @@ namespace goby
                         throw(std::runtime_error("Reference field given is invalid or repeated (must be optional or required): " + goby::util::as<std::string>(it->reference_field(i))));
                     }
                         
-                        
-                    transitional::DCCLAlgorithmPerformer::getInstance()->
-                        run_algorithm(it->name(), val, ref);
-                        
-                    val = std::string(val);
                 }
-                modified_values.insert(std::make_pair(it->output_virtual_field(), val));
+                        
+                transitional::DCCLAlgorithmPerformer::getInstance()->
+                    run_algorithm(it->name(), val, ref);
+                        
+                val = std::string(val);
+                modified_values[it->output_virtual_field()] = std::string(val);
             }
 
             return modified_values;
         }
         
-
+        inline std::string strip_name_from_enum(const std::string& enum_value, const std::string& field_name)
+        {
+            return boost::ierase_first_copy(enum_value, field_name + "_");
+        }
+        
+        inline std::string add_name_to_enum(const std::string& enum_value, const std::string& field_name)
+        {
+            return boost::to_upper_copy(field_name) + "_" + enum_value;
+        }
+        
 
         template<goby::moos::protobuf::TranslatorEntry::ParserSerializerTechnique technique>
             class MOOSTranslation
@@ -136,7 +154,8 @@ namespace goby
         {
           public:
             static void serialize(std::string* out, const google::protobuf::Message& in,
-                                  const google::protobuf::RepeatedPtrField<protobuf::TranslatorEntry::PublishSerializer::Algorithm>& algorithms)
+                                  const google::protobuf::RepeatedPtrField<protobuf::TranslatorEntry::PublishSerializer::Algorithm>& algorithms,
+                                  bool use_short_enum = false)
             {
                 std::stringstream out_ss;
 
@@ -160,7 +179,7 @@ namespace goby
                     switch(field_desc->cpp_type())
                     {
                         default:
-                            out_ss << to_moos_comma_equals_string_field(in, field_desc);
+                            out_ss << to_moos_comma_equals_string_field(in, field_desc, true, use_short_enum);
                             break;
 
                         case google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE:
@@ -174,7 +193,7 @@ namespace goby
                                     {
                                         if(j) out_ss << ",";
                                         const google::protobuf::Message& embedded_msg = refl->GetRepeatedMessage(in, field_desc, j);
-                                        out_ss << to_moos_comma_equals_string_field(embedded_msg, embedded_msg.GetDescriptor()->field(k), false);
+                                        out_ss << to_moos_comma_equals_string_field(embedded_msg, embedded_msg.GetDescriptor()->field(k), false, use_short_enum);
                                     }
                                     out_ss << "}";
                                 }
@@ -187,7 +206,7 @@ namespace goby
                                     if(k) out_ss << ",";
                                     out_ss << field_name << "_" << field_desc->message_type()->field(k)->name() << "=";
                                     const google::protobuf::Message& embedded_msg = refl->GetMessage(in, field_desc);
-                                    out_ss << to_moos_comma_equals_string_field(embedded_msg, embedded_msg.GetDescriptor()->field(k), false);
+                                    out_ss << to_moos_comma_equals_string_field(embedded_msg, embedded_msg.GetDescriptor()->field(k), false, use_short_enum);
                                 }
                             }
                 
@@ -211,6 +230,9 @@ namespace goby
                     {
                         if(alg_it->output_virtual_field() == it->first)
                         {
+                            if(!key.empty())
+                                key += "+";
+                            
                             key += alg_it->name();
                             primary_field = alg_it->primary_field();
                         }
@@ -226,7 +248,8 @@ namespace goby
             }
             
             static void parse(const std::string& in, google::protobuf::Message* out,
-                              const google::protobuf::RepeatedPtrField<protobuf::TranslatorEntry::CreateParser::Algorithm>& algorithms)
+                              const google::protobuf::RepeatedPtrField<protobuf::TranslatorEntry::CreateParser::Algorithm>& algorithms,
+                              bool use_short_enum = false)
             {
                 const google::protobuf::Descriptor* desc = out->GetDescriptor();
                 const google::protobuf::Reflection* refl = out->GetReflection();
@@ -263,7 +286,7 @@ namespace goby
                                 
                                 std::vector<std::string> vals;
                                 boost::split(vals, val, boost::is_any_of(","));
-                                from_moos_comma_equals_string_field(out, field_desc, vals);
+                                from_moos_comma_equals_string_field(out, field_desc, vals, 0, use_short_enum);
                             }
                         }
                         break;
@@ -286,7 +309,7 @@ namespace goby
                                                 (refl->FieldSize(*out, field_desc) < j+1) ?
                                                 refl->AddMessage(out, field_desc) :
                                                 refl->MutableRepeatedMessage(out, field_desc, j);     
-                                            from_moos_comma_equals_string_field(embedded_msg, embedded_msg->GetDescriptor()->field(k), vals, j);
+                                            from_moos_comma_equals_string_field(embedded_msg, embedded_msg->GetDescriptor()->field(k), vals, j, use_short_enum);
                                         }
                                     }
                                 }   
@@ -302,7 +325,7 @@ namespace goby
                                         boost::split(vals, val, boost::is_any_of(","));
 
                                         google::protobuf::Message* embedded_msg = refl->MutableMessage(out, field_desc);     
-                                        from_moos_comma_equals_string_field(embedded_msg, embedded_msg->GetDescriptor()->field(k), vals);
+                                        from_moos_comma_equals_string_field(embedded_msg, embedded_msg->GetDescriptor()->field(k), vals, 0, use_short_enum);
                                     }
                                 }
                             }
@@ -312,7 +335,8 @@ namespace goby
             }
 
           private:
-            static std::string to_moos_comma_equals_string_field(const google::protobuf::Message& proto_msg, const google::protobuf::FieldDescriptor* field_desc, bool write_key = true)
+            static std::string to_moos_comma_equals_string_field(const google::protobuf::Message& proto_msg, const google::protobuf::FieldDescriptor* field_desc, bool write_key = true,
+                                                                 bool use_short_enum = false)
             {
                 const google::protobuf::Reflection* refl = proto_msg.GetReflection();
 
@@ -370,7 +394,10 @@ namespace goby
                                 break;
                             
                             case google::protobuf::FieldDescriptor::CPPTYPE_ENUM:
-                                out << refl->GetRepeatedEnum(proto_msg, field_desc, j)->name();
+                                out << ((use_short_enum) ?
+                                        strip_name_from_enum(refl->GetRepeatedEnum(proto_msg, field_desc, j)->name(), field_name) :
+                                        refl->GetRepeatedEnum(proto_msg, field_desc, j)->name());
+                                
                                 break;
                             
                         }
@@ -425,17 +452,19 @@ namespace goby
                             break;
                 
                         case google::protobuf::FieldDescriptor::CPPTYPE_ENUM:
-                            out << refl->GetEnum(proto_msg, field_desc)->name();
+                            out << ((use_short_enum) ?
+                                    strip_name_from_enum(refl->GetEnum(proto_msg, field_desc)->name(), field_name) :
+                                    refl->GetEnum(proto_msg, field_desc)->name());
                             break;
                     }
                 }
                 return out.str();
             }
-            static void from_moos_comma_equals_string_field(google::protobuf::Message* proto_msg, const google::protobuf::FieldDescriptor* field_desc, const std::vector<std::string>& values, int value_key = 0)
+            static void from_moos_comma_equals_string_field(google::protobuf::Message* proto_msg, const google::protobuf::FieldDescriptor* field_desc, const std::vector<std::string>& values, int value_key = 0, bool use_short_enum =false)
             {
                 if(values.size() == 0)
                     return;
-    
+                
     
                 const google::protobuf::Reflection* refl = proto_msg->GetReflection();
                 if(field_desc->is_repeated())
@@ -487,8 +516,10 @@ namespace goby
                             
                             case google::protobuf::FieldDescriptor::CPPTYPE_ENUM:
                             {
+                                std::string enum_value = ((use_short_enum) ? add_name_to_enum(v, field_desc->name()) : v);
+                                
                                 const google::protobuf::EnumValueDescriptor* enum_desc =
-                                    field_desc->enum_type()->FindValueByName(v);
+                                    field_desc->enum_type()->FindValueByName(enum_value);
                                 if(enum_desc)
                                     refl->AddEnum(proto_msg, field_desc, enum_desc);
                             }
@@ -538,13 +569,15 @@ namespace goby
                             break;
                 
                         case google::protobuf::FieldDescriptor::CPPTYPE_DOUBLE:
-                            refl->SetDouble(proto_msg, field_desc, goby::util::as<double>(v));
+                            refl->SetDouble(proto_msg, field_desc, goby::util::as<double>(v)); /*  */
                             break;
                 
                         case google::protobuf::FieldDescriptor::CPPTYPE_ENUM:
                         {
+                            std::string enum_value = ((use_short_enum) ? add_name_to_enum(v, field_desc->name()) : v);
+                            
                             const google::protobuf::EnumValueDescriptor* enum_desc =
-                                field_desc->enum_type()->FindValueByName(v);
+                                field_desc->enum_type()->FindValueByName(enum_value);
                             if(enum_desc)
                                 refl->SetEnum(proto_msg, field_desc, enum_desc);
                         }
@@ -563,9 +596,11 @@ namespace goby
             static void serialize(std::string* out, const google::protobuf::Message& in,
                                   const google::protobuf::RepeatedPtrField<protobuf::TranslatorEntry::PublishSerializer::Algorithm>& algorithms,
                                   const std::string& format,
-                                  const std::string& repeated_delimiter)
+                                  const std::string& repeated_delimiter,
+                                  bool use_short_enum = false)
             {
 
+                
                 const google::protobuf::Descriptor* desc = in.GetDescriptor();
                 const google::protobuf::Reflection* refl = in.GetReflection();
 
@@ -648,7 +683,10 @@ namespace goby
                                         break;
                             
                                     case google::protobuf::FieldDescriptor::CPPTYPE_ENUM:
-                                        out_repeated << refl->GetRepeatedEnum(in, field_desc, j)->name();
+                                        out_repeated << ((use_short_enum) ?
+                                                         strip_name_from_enum(refl->GetRepeatedEnum(in, field_desc, j)->name(), field_desc->name()) :
+                                                         refl->GetRepeatedEnum(in, field_desc, j)->name());
+                                        
                                         break;
                         
                                 }
@@ -699,7 +737,10 @@ namespace goby
                                     break;
                 
                                 case google::protobuf::FieldDescriptor::CPPTYPE_ENUM:
-                                    out_format % refl->GetEnum(in, field_desc)->name();
+
+                                    out_format % ((use_short_enum) ?
+                                                  strip_name_from_enum(refl->GetEnum(in, field_desc)->name(), field_desc->name()) :
+                                                  refl->GetEnum(in, field_desc)->name());
                                     break;
                             }
                         }
@@ -715,14 +756,15 @@ namespace goby
                 }
                 
                 *out = out_format.str();
-                    
+                
             }
             
 
             
             static void parse(const std::string& in, google::protobuf::Message* out,
                               const google::protobuf::RepeatedPtrField<protobuf::TranslatorEntry::CreateParser::Algorithm>& algorithms,
-                              std::string format)
+                              std::string format,
+                              bool use_short_enum = false)
             {
                 
                 const google::protobuf::Descriptor* desc = out->GetDescriptor();
@@ -834,15 +876,18 @@ namespace goby
                 
                                 case google::protobuf::FieldDescriptor::CPPTYPE_ENUM:
                                 {
+                                    std::string enum_value = ((use_short_enum) ? add_name_to_enum(extract, field_desc->name()) : extract);
+
+                                    
                                     const google::protobuf::EnumValueDescriptor* enum_desc =
-                                        refl->GetEnum(*out, field_desc)->type()->FindValueByName(extract);
+                                        refl->GetEnum(*out, field_desc)->type()->FindValueByName(enum_value);
 
                                     // try upper case
                                     if(!enum_desc)
-                                        enum_desc = refl->GetEnum(*out, field_desc)->type()->FindValueByName(boost::to_upper_copy(extract));
+                                        enum_desc = refl->GetEnum(*out, field_desc)->type()->FindValueByName(boost::to_upper_copy(enum_value));
                                     // try lower case
                                     if(!enum_desc)
-                                        enum_desc = refl->GetEnum(*out, field_desc)->type()->FindValueByName(boost::to_lower_copy(extract));
+                                        enum_desc = refl->GetEnum(*out, field_desc)->type()->FindValueByName(boost::to_lower_copy(enum_value));
                                     if(enum_desc)
                                     {
                                         field_desc->is_repeated()

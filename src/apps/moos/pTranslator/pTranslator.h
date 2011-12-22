@@ -27,27 +27,36 @@
 #include <google/protobuf/compiler/importer.h>
 #include <google/protobuf/descriptor.h>
 
+#include <boost/asio/deadline_timer.hpp>
+
 #include "goby/util/dynamic_protobuf_manager.h"
 #include "goby/moos/tes_moos_app.h"
 #include "goby/moos/moos_translator.h"
 
 #include "pTranslator_config.pb.h"
 
+extern std::vector<void *> dl_handles;
+
 class CpTranslator : public TesMoosApp
 {
   public:
     static CpTranslator* get_instance();
+    static void delete_instance();
     
   private:
     CpTranslator();
-    ~CpTranslator() { }
-
+    ~CpTranslator();
+    
     void loop();     // from TesMoosApp
 
     void create_on_publish(const CMOOSMsg& trigger_msg, const goby::moos::protobuf::TranslatorEntry& entry);
 
+    void create_on_timer(const boost::system::error_code& error,
+                         const goby::moos::protobuf::TranslatorEntry& entry,
+                         boost::asio::deadline_timer* timer);
     
-    
+    void do_translation(const goby::moos::protobuf::TranslatorEntry& entry);
+
   private:
     google::protobuf::compiler::DiskSourceTree disk_source_tree_;
     google::protobuf::compiler::SourceTreeDescriptorDatabase source_database_;
@@ -56,7 +65,10 @@ class CpTranslator : public TesMoosApp
     {
         void AddError(const std::string & filename, int line, int column, const std::string & message)
         {
-            goby::glog.is(goby::util::logger::WARN) && goby::glog << "File: " << filename << " has error (line: " << line << ", column: " << column << "): " << message << std::endl;
+            goby::glog.is(goby::util::logger::DIE) &&
+                goby::glog << "File: " << filename
+                           << " has error (line: " << line << ", column: " << column << "): "
+                           << message << std::endl;
         }       
     };
                 
@@ -64,6 +76,12 @@ class CpTranslator : public TesMoosApp
 
     goby::moos::MOOSTranslator translator_;
     
+    
+    boost::asio::io_service timer_io_service_;
+    boost::asio::io_service::work work_;
+
+    
+    std::vector<boost::shared_ptr<boost::asio::deadline_timer> > timers_;
     
     static pTranslatorConfig cfg_;    
     static CpTranslator* inst_;    

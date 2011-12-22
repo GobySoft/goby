@@ -385,7 +385,7 @@ void TesMoosApp::read_configuration(google::protobuf::Message* cfg)
             parser.RecordErrorsTo(&error_collector);
             parser.AllowPartialMessage(true);
             parser.ParseFromString(protobuf_text, cfg);
-            if(error_collector.has_errors())
+            if(error_collector.has_errors() || error_collector.has_warnings())
             {
                 glog.is(DIE) && 
                     glog << "fatal configuration errors (see above)" << std::endl;    

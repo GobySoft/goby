@@ -21,37 +21,11 @@ boost::shared_ptr<goby::util::DynamicProtobufManager> goby::util::DynamicProtobu
 
 boost::signal<void (const google::protobuf::FileDescriptor*)> goby::util::DynamicProtobufManager::new_descriptor_hooks;
 
-
-
-
-std::set<const google::protobuf::FileDescriptor*> goby::util::DynamicProtobufManager::add_protobuf_file_with_dependencies(const google::protobuf::FileDescriptor* file_descriptor)
-{
-    std::set<const google::protobuf::FileDescriptor*> return_set;
-    
-    for(int i = 0, n = file_descriptor->dependency_count(); i < n; ++i)
-    {
-        std::set<const google::protobuf::FileDescriptor*> dependencies =
-            add_protobuf_file_with_dependencies(file_descriptor->dependency(i));
-        return_set.insert(dependencies.begin(), dependencies.end());
-    }
-    
-    return_set.insert(add_protobuf_file(file_descriptor));
-    return return_set;
-}
-
-
-const google::protobuf::FileDescriptor* goby::util::DynamicProtobufManager::add_protobuf_file(const google::protobuf::FileDescriptor* file_descriptor)
-{
-    google::protobuf::FileDescriptorProto proto_file;
-    file_descriptor->CopyTo(&proto_file);
-    return add_protobuf_file(proto_file);
-}
-    
-
 const google::protobuf::FileDescriptor* goby::util::DynamicProtobufManager::add_protobuf_file(const google::protobuf::FileDescriptorProto& proto)
 {
-
-    const google::protobuf::FileDescriptor* return_desc = descriptor_pool().BuildFile(proto);
+    simple_database().Add(proto);
+    
+    const google::protobuf::FileDescriptor* return_desc = descriptor_pool().FindFileByName(proto.name());
     new_descriptor_hooks(return_desc);
     return return_desc; 
 }

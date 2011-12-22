@@ -170,7 +170,8 @@ void goby::transitional::DCCLTransitionalCodec::convert_xml_message_file(
     {
         
         goby::moos::protobuf::TranslatorEntry* entry = translator_entries->Add();
-        std::vector<DCCLMessage>::iterator msg_it = to_iterator(id);
+        entry->set_use_short_enum(true);
+        std::vector<DCCLMessage>::const_iterator msg_it = to_iterator(id);
         entry->set_protobuf_name(msg_it->name());
 
         if(msg_it->trigger_type() == "time")
@@ -182,49 +183,89 @@ void goby::transitional::DCCLTransitionalCodec::convert_xml_message_file(
         {
             entry->mutable_trigger()->set_type(goby::moos::protobuf::TranslatorEntry::Trigger::TRIGGER_PUBLISH);
             entry->mutable_trigger()->set_moos_var(msg_it->trigger_var());
+            if(!msg_it->trigger_mandatory().empty())
+                entry->mutable_trigger()->set_mandatory_content(msg_it->trigger_mandatory());
+            
         }
         
         std::map<std::string, goby::moos::protobuf::TranslatorEntry::CreateParser*> parser_map;
         std::map<std::string, int > sequence_map;
+        int max_sequence = 0;
         BOOST_FOREACH(boost::shared_ptr<DCCLMessageVar> var, msg_it->header_const())
         {
-
             sequence_map[var->name()] = var->sequence_number();
+            max_sequence = (var->sequence_number() > max_sequence) ? var->sequence_number() : max_sequence;
+            
             fill_create(var, &parser_map, entry);
         }
         BOOST_FOREACH( boost::shared_ptr<DCCLMessageVar> var, msg_it->layout_const())
         {
             sequence_map[var->name()] = var->sequence_number();
+            max_sequence = (var->sequence_number() > max_sequence) ? var->sequence_number() : max_sequence;
+            
             fill_create(var, &parser_map, entry);
         }
-        BOOST_FOREACH(DCCLPublish& publish, msg_it->publishes())
+
+        max_sequence = ((max_sequence + 100)/100)*100;
+        
+        for(int i = 0, n = msg_it->publishes_const().size(); i < n; ++i)
         {
-           goby::moos::protobuf::TranslatorEntry::PublishSerializer* serializer = entry->add_publish();
+            const DCCLPublish& publish = msg_it->publishes_const()[i];    
+
+            goby::moos::protobuf::TranslatorEntry::PublishSerializer* serializer = entry->add_publish();
            serializer->set_technique(goby::moos::protobuf::TranslatorEntry::TECHNIQUE_FORMAT);
 
            // renumber format numbers
            boost::regex pattern ("%([0-9]+)",boost::regex_constants::icase|boost::regex_constants::perl);
-           std::string replace ("%_GOBY1TEMP_\\1");
+           std::string replace ("%_GOBY1TEMP_\\1_");
 
-           std::string new_moos_var = boost::regex_replace (publish.var(), pattern, replace);
+           std::string new_moos_var = boost::regex_replace(publish.var(), pattern, replace);
 
 
            std::string old_format = publish.format();
-           std::string new_format = boost::regex_replace (old_format, pattern, replace);
+           std::string new_format = boost::regex_replace(old_format, pattern, replace);
 
            
-           for(int i = 0, n = publish.message_vars().size(); i < n; ++i)
+           for(int j = 0, m = publish.message_vars().size(); j < m; ++j)
            {
+               int replacement_field = sequence_map[publish.message_vars()[j]->name()];
                
-               boost::algorithm::replace_all(new_moos_var, "%_GOBY1TEMP_" + goby::util::as<std::string>(i+1),
-                                             "%" + goby::util::as<std::string>(sequence_map[publish.message_vars()[i]->name()]));
-               boost::algorithm::replace_all(new_format, "%_GOBY1TEMP_" + goby::util::as<std::string>(i+1),
-                                             "%" + goby::util::as<std::string>(sequence_map[publish.message_vars()[i]->name()])); 
+               // add any algorithms
+               bool added_algorithms = false;
+               BOOST_FOREACH(const std::string& algorithm, publish.algorithms()[j])
+               {
+                   added_algorithms = true;
+                   goby::moos::protobuf::TranslatorEntry::PublishSerializer::Algorithm * new_alg = serializer->add_algorithm();
+                   std::vector<std::string> algorithm_parts;
+                   boost::split(algorithm_parts, algorithm, boost::is_any_of(":"));
+                   
+                   new_alg->set_name(algorithm_parts[0]);
+                   new_alg->set_primary_field(sequence_map[publish.message_vars()[j]->name()]);
+                   
+                   for(int k = 1, o = algorithm_parts.size(); k < o; ++k)
+                       new_alg->add_reference_field(sequence_map[algorithm_parts[k]]);
+                   
+                   new_alg->set_output_virtual_field(max_sequence);
+               }
 
+               if(added_algorithms)
+               {
+                   replacement_field = max_sequence;
+                   ++max_sequence;
+               }
+                         
+               boost::algorithm::replace_all(new_moos_var, "%_GOBY1TEMP_" + goby::util::as<std::string>(j+1) + "_",
+                                             "%" + goby::util::as<std::string>(replacement_field));
+               boost::algorithm::replace_all(new_format, "%_GOBY1TEMP_" + goby::util::as<std::string>(j+1) + "_",
+                                             "%" + goby::util::as<std::string>(replacement_field));
+           
            }
-
+ 
            serializer->set_moos_var(new_moos_var);
            serializer->set_format(new_format);
+           
+    
+           
         }    
     }
     
@@ -242,8 +283,7 @@ void goby::transitional::DCCLTransitionalCodec::fill_create(boost::shared_ptr<DC
         (*parser_map)[var->source_var()]->set_technique(goby::moos::protobuf::TranslatorEntry::TECHNIQUE_COMMA_SEPARATED_KEY_EQUALS_VALUE_PAIRS);
         (*parser_map)[var->source_var()]->clear_format();
                 
-        // add any algorithms
-        //(*parser_map)[var->source_var];
+ 
                 
     }
     else if(!var->source_var().empty())
@@ -252,10 +292,23 @@ void goby::transitional::DCCLTransitionalCodec::fill_create(boost::shared_ptr<DC
         (*parser_map)[var->source_var()]->set_format("%" + goby::util::as<std::string>(var->sequence_number()) + "%");
         (*parser_map)[var->source_var()]->set_technique(goby::moos::protobuf::TranslatorEntry::TECHNIQUE_FORMAT);
         (*parser_map)[var->source_var()]->set_moos_var(var->source_var());
-                
     }
 
-    
+    // add any algorithms
+    BOOST_FOREACH(const std::string& algorithm, var->algorithms())
+    {
+        
+        goby::moos::protobuf::TranslatorEntry::CreateParser::Algorithm * new_alg = (*parser_map)[var->source_var()]->add_algorithm();
+
+        if(algorithm.find(':') != std::string::npos)
+        {
+            throw(std::runtime_error("Algorithms with reference fields (e.g. subtract:timestamp) are not permitted in Goby v2 --> v1 backwards compatibility. Please redesign the XML message to remove such algorithms. Offending algorithm: " + algorithm + " used in variable: " + var->name()));
+        }
+        
+        
+        new_alg->set_name(algorithm);
+        new_alg->set_primary_field(var->sequence_number());
+    }
             
 }
 

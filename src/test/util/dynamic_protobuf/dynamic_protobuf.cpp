@@ -13,41 +13,64 @@ using namespace goby::util;
 
 int main()
 {
-    // testing compiled in
-    boost::shared_ptr<google::protobuf::Message> adyn_msg = goby::util::DynamicProtobufManager::new_protobuf_message("A");
-    
-    std::cout << adyn_msg->GetDescriptor()->DebugString() << std::endl;
-    
-    // testing dlopen'd
-    dlopen("libtest_dyn_protobuf.so", RTLD_LAZY);
-    boost::shared_ptr<google::protobuf::Message> bdyn_msg = goby::util::DynamicProtobufManager::new_protobuf_message("B");
-    
-    std::cout << bdyn_msg->GetDescriptor()->DebugString() << std::endl;
+    void* dl_handle = dlopen("libtest_dyn_protobuf.so", RTLD_LAZY);
 
-    // test non-existent
-    try
+    google::protobuf::SimpleDescriptorDatabase* simple_database = new google::protobuf::SimpleDescriptorDatabase;
+    goby::util::DynamicProtobufManager::add_database(simple_database);
+    
     {
-        boost::shared_ptr<google::protobuf::Message> cdyn_msg = goby::util::DynamicProtobufManager::new_protobuf_message("C");
-        // should throw
-        assert(false);
-    }
-    catch(std::exception& e)
-    {
-        // expected
-    }
+        // testing compiled in
+        boost::shared_ptr<google::protobuf::Message> adyn_msg = goby::util::DynamicProtobufManager::new_protobuf_message("A");
+    
+        std::cout << adyn_msg->GetDescriptor()->DebugString() << std::endl;
+    
+        // testing dlopen'd
+        boost::shared_ptr<google::protobuf::Message> bdyn_msg = goby::util::DynamicProtobufManager::new_protobuf_message("B");
+    
+        std::cout << bdyn_msg->GetDescriptor()->DebugString() << std::endl;
 
-    // test dynamically loaded
-    google::protobuf::FileDescriptorProto d_proto;
-    std::string d_proto_str = "name: \"goby/test/util/dynamic_protobuf/test_d.proto\" message_type {   name: \"D\"   field {     name: \"d1\"     number: 1     label: LABEL_REQUIRED     type: TYPE_DOUBLE  } } ";
-    
-    google::protobuf::TextFormat::ParseFromString(d_proto_str, &d_proto);
-    goby::util::DynamicProtobufManager::add_protobuf_file(d_proto);
-    
-    boost::shared_ptr<google::protobuf::Message> ddyn_msg = goby::util::DynamicProtobufManager::new_protobuf_message("D");
-    
-    std::cout << ddyn_msg->GetDescriptor()->DebugString() << std::endl;
+        // test non-existent
+        try
+        {
+            boost::shared_ptr<google::protobuf::Message> cdyn_msg = goby::util::DynamicProtobufManager::new_protobuf_message("C");
+            // should throw
+            assert(false);
+        }
+        catch(std::exception& e)
+        {
+            // expected
+        }
 
+        // test dynamically loaded
+        google::protobuf::FileDescriptorProto d_proto;
+        std::string d_proto_str = "name: \"goby/test/util/dynamic_protobuf/test_d.proto\" message_type {   name: \"D\"   field {     name: \"d1\"     number: 1     label: LABEL_REQUIRED     type: TYPE_DOUBLE  } } ";
     
-    std::cout << "all tests passed" << std::endl;
+        google::protobuf::TextFormat::ParseFromString(d_proto_str, &d_proto);
+        goby::util::DynamicProtobufManager::add_protobuf_file(d_proto);
+    
+        boost::shared_ptr<google::protobuf::Message> ddyn_msg = goby::util::DynamicProtobufManager::new_protobuf_message("D");
+    
+        std::cout << ddyn_msg->GetDescriptor()->DebugString() << std::endl;
+
+
+        // test dynamically via separate database
+        google::protobuf::FileDescriptorProto e_proto;
+        std::string e_proto_str = "name: \"goby/test/util/dynamic_protobuf/test_e.proto\" message_type {   name: \"E\"   field {     name: \"e1\"     number: 1     label: LABEL_REQUIRED     type: TYPE_DOUBLE  } } ";
+    
+        google::protobuf::TextFormat::ParseFromString(e_proto_str, &e_proto);
+
+        simple_database->Add(e_proto);
+        
+        boost::shared_ptr<google::protobuf::Message> edyn_msg = goby::util::DynamicProtobufManager::new_protobuf_message("E");
+        std::cout << edyn_msg->GetDescriptor()->DebugString() << std::endl;
+        
+    
+        std::cout << "all tests passed" << std::endl;
+    }
+    delete simple_database;
+
+    goby::util::DynamicProtobufManager::protobuf_shutdown();
+
+    dlclose(dl_handle);
     return 0;
 }

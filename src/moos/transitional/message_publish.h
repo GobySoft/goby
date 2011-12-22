@@ -70,7 +70,7 @@ namespace goby
             bool use_all_names() const {return use_all_names_;}
     
             DCCLCppType type() const {return type_;}
-            std::vector<boost::shared_ptr<DCCLMessageVar> > & message_vars() { return message_vars_; }
+            std::vector<boost::shared_ptr<DCCLMessageVar> > const & message_vars() const { return message_vars_; }
             
 
             std::vector<std::string> const& names() const {return names_;}
@@ -78,7 +78,7 @@ namespace goby
     
         
             std::string get_display() const;
-
+            
             void write_publish(const std::map<std::string,std::vector<DCCLMessageVal> >& vals,
                                std::multimap<std::string,DCCLMessageVal>* pubsub_vals);
         
@@ -86,7 +86,7 @@ namespace goby
         
 
             void initialize(const DCCLMessage& msg);
-
+            
           private:
             void fill_format(const std::map<std::string,std::vector<DCCLMessageVal> >& vals,
                              std::string& key,

@@ -48,7 +48,7 @@ int main(int argc, char* argv[])
     const double LAT_ORIGIN = 42.5;
     const double LON_ORIGIN = 10.8;
     
-    MOOSTranslator translator(entry, LAT_ORIGIN, LON_ORIGIN);
+    MOOSTranslator translator(entry, LAT_ORIGIN, LON_ORIGIN, TRANSLATOR_TEST_DIR "/modemidlookup.txt");
 
     CMOOSGeodesy geodesy;
     geodesy.Initialise(LAT_ORIGIN, LON_ORIGIN);
@@ -123,7 +123,7 @@ int main(int argc, char* argv[])
     goby::glog << translator << std::endl;
 
     BasicNodeReport report;
-    report.set_name("foo");
+    report.set_name("unicorn");
     report.set_x(550);
     report.set_y(1023.5);
     report.set_heading(240);
@@ -137,7 +137,7 @@ int main(int argc, char* argv[])
     {
         goby::glog << "Variable: " << it->first << "\n"
                    << "Value: " << it->second.GetString() << std::endl;
-        assert(it->second.GetString() == "NAME=foo,X=550,Y=1023.5,HEADING=240");
+        assert(it->second.GetString() == "NAME=unicorn,X=550,Y=1023.5,HEADING=240");
     }
     
     typedef std::auto_ptr<google::protobuf::Message> GoogleProtobufMessagePointer;
@@ -196,9 +196,30 @@ int main(int argc, char* argv[])
         algo_out->set_primary_field(3);
         algo_out->add_reference_field(202);
 
+        algo_out = serializer->add_algorithm();
+        algo_out->set_name("name2modem_id");
+        algo_out->set_output_virtual_field(102);
+        algo_out->set_primary_field(1);
+
+        algo_out = serializer->add_algorithm();
+        algo_out->set_name("name2modem_id");
+        algo_out->set_output_virtual_field(103);
+        algo_out->set_primary_field(1);
+        
+        algo_out = serializer->add_algorithm();
+        algo_out->set_name("modem_id2type");
+        algo_out->set_output_virtual_field(103);
+        algo_out->set_primary_field(1);
+        
+        algo_out = serializer->add_algorithm();
+        algo_out->set_name("to_upper");
+        algo_out->set_output_virtual_field(103);
+        algo_out->set_primary_field(1);
+        
         
         protobuf::TranslatorEntry::PublishSerializer* serializer2 = entry.add_publish();
         serializer2->CopyFrom(*serializer);
+        serializer2->clear_format();
         serializer2->set_technique(protobuf::TranslatorEntry::TECHNIQUE_COMMA_SEPARATED_KEY_EQUALS_VALUE_PAIRS);
         serializer2->set_moos_var("NODE_REPORT_KEY_VALUE");
         
@@ -211,7 +232,7 @@ int main(int argc, char* argv[])
    moos_msgs.insert(std::make_pair("NAV_X", CMOOSMsg(MOOS_NOTIFY, "NAV_X", report.x())));
    moos_msgs.insert(std::make_pair("NAV_Y", CMOOSMsg(MOOS_NOTIFY, "NAV_Y", report.y())));
    moos_msgs.insert(std::make_pair("NAV_HEADING", CMOOSMsg(MOOS_NOTIFY, "NAV_HEADING", "heading=-120")));
-   moos_msgs.insert(std::make_pair("VEHICLE_NAME", CMOOSMsg(MOOS_NOTIFY, "VEHICLE_NAME", "FOO")));
+   moos_msgs.insert(std::make_pair("VEHICLE_NAME", CMOOSMsg(MOOS_NOTIFY, "VEHICLE_NAME", "UNICORN")));
 
    report_out =
        translator.moos_to_protobuf<GoogleProtobufMessagePointer>(moos_msgs, "BasicNodeReport");
@@ -235,9 +256,9 @@ int main(int argc, char* argv[])
                   << "Value: " << it->second.GetString() << std::endl;
 
        if(it->first == "NODE_REPORT_FORMAT")
-           assert(it->second.GetString() == "NAME=foo,X=550,Y=1023.5,HEADING=240;LAT=42.5091075598637;LON=10.806955912844");
+           assert(it->second.GetString() == "NAME=unicorn,X=550,Y=1023.5,HEADING=240;LAT=42.5091075598637;LON=10.806955912844");
        else if(it->first == "NODE_REPORT_KEY_VALUE")
-           assert(it->second.GetString() == "name=foo,x=550,y=1023.5,heading=240,utm_y2lat(y)=42.5091075598637,utm_x2lon(x)=10.806955912844");
+           assert(it->second.GetString() == "name=unicorn,x=550,y=1023.5,heading=240,utm_y2lat(y)=42.5091075598637,utm_x2lon(x)=10.806955912844,name2modem_id(name)=3,name2modem_id+modem_id2type+to_upper(name)=AUV");
        
    }
     

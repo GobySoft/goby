@@ -21,9 +21,24 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
+#include <dlfcn.h>
+
 #include "pTranslator.h"
+
+std::vector<void *> dl_handles;
+
  
 int main(int argc, char* argv[])
 {
-    return goby::moos::run<CpTranslator>(argc, argv);
+    int return_value = goby::moos::run<CpTranslator>(argc, argv);
+
+    goby::transitional::DCCLAlgorithmPerformer::deleteInstance();
+    CpTranslator::delete_instance();
+
+    goby::util::DynamicProtobufManager::protobuf_shutdown();
+    for(std::vector<void *>::iterator it = dl_handles.begin(),
+            n = dl_handles.end(); it != n; ++it)
+        dlclose(*it);
+    
+    return return_value;
 }

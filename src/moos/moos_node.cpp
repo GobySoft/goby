@@ -19,14 +19,14 @@
 
 #include "goby/util/binary.h"
 
-using goby::core::ZeroMQService;
+using goby::common::ZeroMQService;
 using goby::glog;
 using namespace goby::util::logger_lock;
 using namespace goby::util::logger;
 
 
 goby::moos::MOOSNode::MOOSNode(ZeroMQService* service)
-    : goby::core::NodeInterface<CMOOSMsg>(service)
+    : goby::common::NodeInterface<CMOOSMsg>(service)
 {
     boost::mutex::scoped_lock lock(glog.mutex());    
     glog.add_group("in_hex", util::Colors::green, "Goby MOOS (hex) - Incoming");
@@ -35,13 +35,13 @@ goby::moos::MOOSNode::MOOSNode(ZeroMQService* service)
 }
 
 
-void goby::moos::MOOSNode::inbox(core::MarshallingScheme marshalling_scheme,
+void goby::moos::MOOSNode::inbox(common::MarshallingScheme marshalling_scheme,
                                  const std::string& identifier,
                                  const void* data,
                                  int size,
                                  int socket_id)
 {
-    if(marshalling_scheme == goby::core::MARSHALLING_MOOS)
+    if(marshalling_scheme == goby::common::MARSHALLING_MOOS)
     {
         boost::shared_ptr<CMOOSMsg> msg(new CMOOSMsg);
         std::string bytes(static_cast<const char*>(data), size);
@@ -65,7 +65,7 @@ void goby::moos::MOOSNode::send(const CMOOSMsg& msg, int socket_id)
     glog.is(DEBUG2, lock) &&
         glog << group("out_hex") << goby::util::hex_encode(bytes) << std::endl << unlock;
 
-    zeromq_service()->send(goby::core::MARSHALLING_MOOS, "CMOOSMsg/" + msg.GetKey() + "/", &bytes[0], bytes.size(), socket_id);
+    zeromq_service()->send(goby::common::MARSHALLING_MOOS, "CMOOSMsg/" + msg.GetKey() + "/", &bytes[0], bytes.size(), socket_id);
 }
 
 void goby::moos::MOOSNode::subscribe(const std::string& full_or_partial_moos_name, int socket_id)
@@ -78,11 +78,11 @@ void goby::moos::MOOSNode::subscribe(const std::string& full_or_partial_moos_nam
     }
     else if(trimmed_name[size-1] == '*')
     {
-        zeromq_service()->subscribe(goby::core::MARSHALLING_MOOS, "CMOOSMsg/" + trimmed_name.substr(0, size-1), socket_id);
+        zeromq_service()->subscribe(goby::common::MARSHALLING_MOOS, "CMOOSMsg/" + trimmed_name.substr(0, size-1), socket_id);
     }
     else
     {
-        zeromq_service()->subscribe(goby::core::MARSHALLING_MOOS, "CMOOSMsg/" + trimmed_name + "/", socket_id);
+        zeromq_service()->subscribe(goby::common::MARSHALLING_MOOS, "CMOOSMsg/" + trimmed_name + "/", socket_id);
     }
 }
 
@@ -96,11 +96,11 @@ void goby::moos::MOOSNode::unsubscribe(const std::string& full_or_partial_moos_n
     }
     else if(trimmed_name[size-1] == '*')
     {
-        zeromq_service()->unsubscribe(goby::core::MARSHALLING_MOOS, "CMOOSMsg/" + trimmed_name.substr(0, size-1), socket_id);
+        zeromq_service()->unsubscribe(goby::common::MARSHALLING_MOOS, "CMOOSMsg/" + trimmed_name.substr(0, size-1), socket_id);
     }
     else
     {
-        zeromq_service()->unsubscribe(goby::core::MARSHALLING_MOOS, "CMOOSMsg/" + trimmed_name + "/", socket_id);
+        zeromq_service()->unsubscribe(goby::common::MARSHALLING_MOOS, "CMOOSMsg/" + trimmed_name + "/", socket_id);
     }
 }
 

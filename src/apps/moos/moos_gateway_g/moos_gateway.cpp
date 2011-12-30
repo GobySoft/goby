@@ -29,7 +29,7 @@ namespace goby
 {
     namespace moos
     {
-        class MOOSGateway : public goby::core::ZeroMQApplicationBase, public MOOSNode
+        class MOOSGateway : public goby::common::ZeroMQApplicationBase, public MOOSNode
         {
         public:
             MOOSGateway();
@@ -44,8 +44,8 @@ namespace goby
             
             
         private:
-            static goby::core::ZeroMQService zeromq_service_;
-            goby::core::PubSubNodeWrapper<CMOOSMsg> goby_moos_pubsub_client_;
+            static goby::common::ZeroMQService zeromq_service_;
+            goby::common::PubSubNodeWrapper<CMOOSMsg> goby_moos_pubsub_client_;
             CMOOSCommClient moos_client_;
             
             enum { MAX_CONNECTION_TIMEOUT = 10 };
@@ -57,7 +57,7 @@ namespace goby
     }
 }
 
-goby::core::ZeroMQService goby::moos::MOOSGateway::zeromq_service_;
+goby::common::ZeroMQService goby::moos::MOOSGateway::zeromq_service_;
 goby::moos::protobuf::MOOSGatewayConfig goby::moos::MOOSGateway::cfg_;
 
 int main(int argc, char* argv[])

@@ -33,17 +33,17 @@ using namespace Wt;
 using namespace goby::util::logger_lock;
 using namespace goby::util::logger;
 
-goby::core::protobuf::LiaisonConfig goby::core::Liaison::cfg_;
-boost::shared_ptr<zmq::context_t> goby::core::Liaison::zmq_context_(new zmq::context_t(1));
-const std::string goby::core::Liaison::LIAISON_INTERNAL_PUBLISH_SOCKET_NAME = "liaison_internal_publish_socket"; 
-const std::string goby::core::Liaison::LIAISON_INTERNAL_SUBSCRIBE_SOCKET_NAME = "liaison_internal_subscribe_socket"; 
+goby::common::protobuf::LiaisonConfig goby::common::Liaison::cfg_;
+boost::shared_ptr<zmq::context_t> goby::common::Liaison::zmq_context_(new zmq::context_t(1));
+const std::string goby::common::Liaison::LIAISON_INTERNAL_PUBLISH_SOCKET_NAME = "liaison_internal_publish_socket"; 
+const std::string goby::common::Liaison::LIAISON_INTERNAL_SUBSCRIBE_SOCKET_NAME = "liaison_internal_subscribe_socket"; 
 
 int main(int argc, char* argv[])
 {
-    return goby::run<goby::core::Liaison>(argc, argv);
+    return goby::run<goby::common::Liaison>(argc, argv);
 }
 
-goby::core::Liaison::Liaison()
+goby::common::Liaison::Liaison()
     : ZeroMQApplicationBase(&zeromq_service_, &cfg_),
       zeromq_service_(zmq_context_),
       pubsub_node_(&zeromq_service_, cfg_.base().pubsub_config())
@@ -73,7 +73,7 @@ goby::core::Liaison::Liaison()
 
         
         wt_server_.addEntryPoint(Wt::Application,
-                                 goby::core::create_wt_application);
+                                 goby::common::create_wt_application);
 
         if (!wt_server_.start())
         {
@@ -100,11 +100,11 @@ goby::core::Liaison::Liaison()
     zeromq_service_.merge_cfg(ipc_sockets);
 }
 
-void goby::core::Liaison::loop()
+void goby::common::Liaison::loop()
 {
 }
 
-void goby::core::Liaison::inbox(MarshallingScheme marshalling_scheme,
+void goby::common::Liaison::inbox(MarshallingScheme marshalling_scheme,
                                 const std::string& identifier,
                                 const void* data,
                                 int size,
@@ -115,7 +115,7 @@ void goby::core::Liaison::inbox(MarshallingScheme marshalling_scheme,
 }
 
 
-goby::core::LiaisonWtThread::LiaisonWtThread(const Wt::WEnvironment& env)
+goby::common::LiaisonWtThread::LiaisonWtThread(const Wt::WEnvironment& env)
     : Wt::WApplication(env),
       zeromq_service_(Liaison::zmq_context())
 {    
@@ -231,14 +231,14 @@ goby::core::LiaisonWtThread::LiaisonWtThread(const Wt::WEnvironment& env)
 
 }
 
-void goby::core::LiaisonWtThread::add_to_menu(WMenu* menu, const WString& name,
+void goby::common::LiaisonWtThread::add_to_menu(WMenu* menu, const WString& name,
                                                             LiaisonContainer* container)
 {
     menu->addItem(name, container);
     container->set_name(name);
 }
 
-void goby::core::LiaisonWtThread::loop()
+void goby::common::LiaisonWtThread::loop()
 {
 
     glog.is(DEBUG2, lock) && glog << "LiaisonWtThread: polling" << std::endl << unlock;
@@ -248,7 +248,7 @@ void goby::core::LiaisonWtThread::loop()
     
 }
 
-void goby::core::LiaisonWtThread::inbox(MarshallingScheme marshalling_scheme,
+void goby::common::LiaisonWtThread::inbox(MarshallingScheme marshalling_scheme,
                                                       const std::string& identifier,
                                                       const void* data,
                                                       int size,

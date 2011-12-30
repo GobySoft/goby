@@ -20,7 +20,7 @@
 
 namespace goby
 {
-    namespace core
+    namespace common
     {
         template<typename NodeTypeBase>
             class NodeInterface

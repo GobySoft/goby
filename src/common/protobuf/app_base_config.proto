@@ -16,16 +16,16 @@ message AppBaseConfig
   optional string platform_name = 3 [default="unnamed_goby_platform",
                                      (goby.field).description = "a unique name for this platform (a platform in this context is a ship, AUV, workstation, etc.)"];
   
-  optional goby.core.protobuf.PubSubSocketConfig pubsub_config = 10 [(goby.field).description="configure the connection to the publish / subscribe message passing architecture"];
+  optional goby.common.protobuf.PubSubSocketConfig pubsub_config = 10 [(goby.field).description="configure the connection to the publish / subscribe message passing architecture"];
 
   // advanced options
-  optional goby.core.protobuf.ZeroMQServiceConfig additional_socket_config = 100 [(goby.field).description= "open other ZeroMQ sockets, note that `socket_id`s 103998 and 103999 are reserved for the publish / subscribe functionality"];
+  optional goby.common.protobuf.ZeroMQServiceConfig additional_socket_config = 100 [(goby.field).description= "open other ZeroMQ sockets, note that `socket_id`s 103998 and 103999 are reserved for the publish / subscribe functionality"];
 
   optional goby.util.protobuf.GLogConfig glog_config = 11 [(goby.field).description="configure the Goby Logger (TTY terminal and file debugging logger)"];
   
   extensions 1000 to max;
 
-  //  optional goby.core.protobuf.DatabaseClientConfig database_config = 12 [(goby.field).description="configure the Goby Database (SQL Database) to log the publish/subscribe transactions"];  
+  //  optional goby.common.protobuf.DatabaseClientConfig database_config = 12 [(goby.field).description="configure the Goby Database (SQL Database) to log the publish/subscribe transactions"];  
 
   
 }

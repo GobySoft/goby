@@ -30,17 +30,17 @@ using namespace goby::util::logger_lock;
 using namespace goby::util::logger;
 
 
-goby::core::ZeroMQService::ZeroMQService(boost::shared_ptr<zmq::context_t> context)
+goby::common::ZeroMQService::ZeroMQService(boost::shared_ptr<zmq::context_t> context)
     : context_(context)
 {
 }
 
-goby::core::ZeroMQService::ZeroMQService()
+goby::common::ZeroMQService::ZeroMQService()
     : context_(new zmq::context_t(2))
 {    
 }
 
-void goby::core::ZeroMQService::process_cfg(const protobuf::ZeroMQServiceConfig& cfg)
+void goby::common::ZeroMQService::process_cfg(const protobuf::ZeroMQServiceConfig& cfg)
 {
     for(int i = 0, n = cfg.socket_size(); i < n; ++i)
     {
@@ -59,7 +59,7 @@ void goby::core::ZeroMQService::process_cfg(const protobuf::ZeroMQServiceConfig&
             if(cfg.socket(i).socket_type() != protobuf::ZeroMQServiceConfig::Socket::PUBLISH)
             {
                 register_poll_item(item,
-                                   boost::bind(&goby::core::ZeroMQService::handle_receive,
+                                   boost::bind(&goby::common::ZeroMQService::handle_receive,
                                                this, _1, _2, _3, cfg.socket(i).socket_id()));
             }
         }
@@ -147,11 +147,11 @@ void goby::core::ZeroMQService::process_cfg(const protobuf::ZeroMQServiceConfig&
     }
 }
 
-goby::core::ZeroMQService::~ZeroMQService()
+goby::common::ZeroMQService::~ZeroMQService()
 {
 }
 
-int goby::core::ZeroMQService::socket_type(protobuf::ZeroMQServiceConfig::Socket::SocketType type)
+int goby::common::ZeroMQService::socket_type(protobuf::ZeroMQServiceConfig::Socket::SocketType type)
 {
     switch(type)
     {
@@ -167,7 +167,7 @@ int goby::core::ZeroMQService::socket_type(protobuf::ZeroMQServiceConfig::Socket
     throw(goby::Exception("Invalid SocketType"));
 }
 
-goby::core::ZeroMQSocket& goby::core::ZeroMQService::socket_from_id(int socket_id)
+goby::common::ZeroMQSocket& goby::common::ZeroMQService::socket_from_id(int socket_id)
 {
     std::map<int, ZeroMQSocket >::iterator it = sockets_.find(socket_id);
     if(it != sockets_.end())
@@ -176,17 +176,17 @@ goby::core::ZeroMQSocket& goby::core::ZeroMQService::socket_from_id(int socket_i
         throw(goby::Exception("Attempted to access socket_id " + as<std::string>(socket_id) + " which does not exist"));
 }
 
-void goby::core::ZeroMQService::subscribe_all(int socket_id)
+void goby::common::ZeroMQService::subscribe_all(int socket_id)
 {
     socket_from_id(socket_id).socket()->setsockopt(ZMQ_SUBSCRIBE, 0, 0);
 }
 
-void goby::core::ZeroMQService::unsubscribe_all(int socket_id)
+void goby::common::ZeroMQService::unsubscribe_all(int socket_id)
 {
     socket_from_id(socket_id).socket()->setsockopt(ZMQ_UNSUBSCRIBE, 0, 0);
 }
 
-void goby::core::ZeroMQService::subscribe(MarshallingScheme marshalling_scheme,
+void goby::common::ZeroMQService::subscribe(MarshallingScheme marshalling_scheme,
                                        const std::string& identifier,
                                        int socket_id)
 {
@@ -203,7 +203,7 @@ void goby::core::ZeroMQService::subscribe(MarshallingScheme marshalling_scheme,
     post_subscribe_hooks(marshalling_scheme, identifier, socket_id);
 }
 
-void goby::core::ZeroMQService::unsubscribe(MarshallingScheme marshalling_scheme,
+void goby::common::ZeroMQService::unsubscribe(MarshallingScheme marshalling_scheme,
                                        const std::string& identifier,
                                        int socket_id)
 {
@@ -218,7 +218,7 @@ void goby::core::ZeroMQService::unsubscribe(MarshallingScheme marshalling_scheme
 }
 
 
-void goby::core::ZeroMQService::send(MarshallingScheme marshalling_scheme,
+void goby::common::ZeroMQService::send(MarshallingScheme marshalling_scheme,
                                   const std::string& identifier,
                                   const void* body_data,
                                   int body_size,
@@ -240,7 +240,7 @@ void goby::core::ZeroMQService::send(MarshallingScheme marshalling_scheme,
 }
 
 
-void goby::core::ZeroMQService::handle_receive(const void* data,
+void goby::common::ZeroMQService::handle_receive(const void* data,
                                             int size,
                                             int message_part,
                                             int socket_id)
@@ -319,7 +319,7 @@ void goby::core::ZeroMQService::handle_receive(const void* data,
     }
 }
 
-bool goby::core::ZeroMQService::poll(long timeout /* = -1 */)
+bool goby::common::ZeroMQService::poll(long timeout /* = -1 */)
 {
     glog.is(DEBUG2, lock) && glog << "Have " << poll_items_.size() << " items to poll" << std::endl << unlock;   
     bool had_events = false;
@@ -354,7 +354,7 @@ bool goby::core::ZeroMQService::poll(long timeout /* = -1 */)
 }
 
 
-std::string goby::core::ZeroMQService::make_header(MarshallingScheme marshalling_scheme,
+std::string goby::common::ZeroMQService::make_header(MarshallingScheme marshalling_scheme,
                                                 const std::string& identifier)
 {
     std::string zmq_filter;
@@ -375,7 +375,7 @@ std::string goby::core::ZeroMQService::make_header(MarshallingScheme marshalling
 }
 
 
-void goby::core::ZeroMQSocket::set_global_blackout(boost::posix_time::time_duration duration)
+void goby::common::ZeroMQSocket::set_global_blackout(boost::posix_time::time_duration duration)
 {
     glog.is(DEBUG2, lock) &&
         glog << "Global blackout set to " << duration << std::endl << unlock;
@@ -384,7 +384,7 @@ void goby::core::ZeroMQSocket::set_global_blackout(boost::posix_time::time_durat
 }
 
 
-void goby::core::ZeroMQSocket::set_blackout(MarshallingScheme marshalling_scheme,
+void goby::common::ZeroMQSocket::set_blackout(MarshallingScheme marshalling_scheme,
                                             const std::string& identifier,
                                             boost::posix_time::time_duration duration)            
 {
@@ -394,7 +394,7 @@ void goby::core::ZeroMQSocket::set_blackout(MarshallingScheme marshalling_scheme
     local_blackout_set_ = true;
 }
 
-bool goby::core::ZeroMQSocket::check_blackout(MarshallingScheme marshalling_scheme,
+bool goby::common::ZeroMQSocket::check_blackout(MarshallingScheme marshalling_scheme,
                                               const std::string& identifier)
 {
     if(!local_blackout_set_ && !global_blackout_set_)

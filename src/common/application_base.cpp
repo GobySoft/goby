@@ -23,10 +23,10 @@ using goby::util::as;
 using goby::glog;
 using namespace goby::util::logger;
 
-int goby::core::ApplicationBase::argc_ = 0;
-char** goby::core::ApplicationBase::argv_ = 0;
+int goby::common::ApplicationBase::argc_ = 0;
+char** goby::common::ApplicationBase::argv_ = 0;
 
-goby::core::ApplicationBase::ApplicationBase(google::protobuf::Message* cfg /*= 0*/)
+goby::common::ApplicationBase::ApplicationBase(google::protobuf::Message* cfg /*= 0*/)
     : alive_(true)
 {
     //
@@ -86,12 +86,12 @@ goby::core::ApplicationBase::ApplicationBase(google::protobuf::Message* cfg /*= 
     
 }
 
-goby::core::ApplicationBase::~ApplicationBase()
+goby::common::ApplicationBase::~ApplicationBase()
 {
 //    glog.is(DEBUG1) && glog <<"ApplicationBase destructing..." << std::endl;    
 }
 
-void goby::core::ApplicationBase::__run()
+void goby::common::ApplicationBase::__run()
 {
     // continue to run while we are alive (quit() has not been called)
     while(alive_)

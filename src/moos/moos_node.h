@@ -27,10 +27,10 @@ namespace goby
 {
     namespace moos
     {        
-        class MOOSNode : public goby::core::NodeInterface<CMOOSMsg>
+        class MOOSNode : public goby::common::NodeInterface<CMOOSMsg>
         {
           public:
-            MOOSNode(goby::core::ZeroMQService* service);
+            MOOSNode(goby::common::ZeroMQService* service);
             
             virtual ~MOOSNode()
             { }
@@ -50,7 +50,7 @@ namespace goby
             
             
           private:
-            void inbox(goby::core::MarshallingScheme marshalling_scheme,
+            void inbox(goby::common::MarshallingScheme marshalling_scheme,
                        const std::string& identifier,
                        const void* data,
                        int size,

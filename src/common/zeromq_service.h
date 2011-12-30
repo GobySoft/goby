@@ -32,7 +32,7 @@
 
 namespace goby
 {
-    namespace core
+    namespace common
     {
         class ZeroMQSocket
         {

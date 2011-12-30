@@ -16,7 +16,7 @@
 #ifndef LIAISON20110609H
 #define LIAISON20110609H
 
-#include "goby/common/application_base.h"
+#include "goby/common/zeromq_application_base.h"
 
 #include "liaison_config.pb.h"
 
@@ -72,7 +72,7 @@ namespace goby
             Liaison();
             ~Liaison() { }
 
-            void inbox(goby::core::MarshallingScheme marshalling_scheme,
+            void inbox(goby::common::MarshallingScheme marshalling_scheme,
                        const std::string& identifier,
                        const void* data,
                        int size,

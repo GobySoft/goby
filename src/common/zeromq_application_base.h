@@ -25,9 +25,9 @@
 
 namespace goby
 {
-    namespace core
+    namespace common
     {
-        class ZeroMQApplicationBase : public goby::core::ApplicationBase
+        class ZeroMQApplicationBase : public goby::common::ApplicationBase
         {
             
           protected:

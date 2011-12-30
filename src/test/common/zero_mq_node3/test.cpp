@@ -20,7 +20,7 @@
 
 #include <boost/thread.hpp>
 
-void node_inbox(goby::core::MarshallingScheme marshalling_scheme,
+void node_inbox(goby::common::MarshallingScheme marshalling_scheme,
                  const std::string& identifier,
                  const void* data,
                  int size,
@@ -40,17 +40,17 @@ int main(int argc, char* argv[])
     goby::glog.add_stream(goby::util::logger::DEBUG3, &std::cerr);
     goby::glog.set_name(argv[0]);
     
-    goby::core::ZeroMQService node1;
+    goby::common::ZeroMQService node1;
     // must share context for ipc
-    goby::core::ZeroMQService node2(node1.zmq_context());
+    goby::common::ZeroMQService node2(node1.zmq_context());
 
-    goby::core::protobuf::ZeroMQServiceConfig publisher_cfg, subscriber_cfg;
+    goby::common::protobuf::ZeroMQServiceConfig publisher_cfg, subscriber_cfg;
     {
             
-        goby::core::protobuf::ZeroMQServiceConfig::Socket* subscriber_socket = subscriber_cfg.add_socket();
-        subscriber_socket->set_socket_type(goby::core::protobuf::ZeroMQServiceConfig::Socket::SUBSCRIBE);
-        subscriber_socket->set_transport(goby::core::protobuf::ZeroMQServiceConfig::Socket::IPC);
-        subscriber_socket->set_connect_or_bind(goby::core::protobuf::ZeroMQServiceConfig::Socket::CONNECT);
+        goby::common::protobuf::ZeroMQServiceConfig::Socket* subscriber_socket = subscriber_cfg.add_socket();
+        subscriber_socket->set_socket_type(goby::common::protobuf::ZeroMQServiceConfig::Socket::SUBSCRIBE);
+        subscriber_socket->set_transport(goby::common::protobuf::ZeroMQServiceConfig::Socket::IPC);
+        subscriber_socket->set_connect_or_bind(goby::common::protobuf::ZeroMQServiceConfig::Socket::CONNECT);
 
         subscriber_socket->set_socket_id(SOCKET_SUBSCRIBE);
         subscriber_socket->set_socket_name("test3_ipc_socket");
@@ -59,10 +59,10 @@ int main(int argc, char* argv[])
 
     {
             
-        goby::core::protobuf::ZeroMQServiceConfig::Socket* publisher_socket = publisher_cfg.add_socket();
-        publisher_socket->set_socket_type(goby::core::protobuf::ZeroMQServiceConfig::Socket::PUBLISH);
-        publisher_socket->set_transport(goby::core::protobuf::ZeroMQServiceConfig::Socket::IPC);
-        publisher_socket->set_connect_or_bind(goby::core::protobuf::ZeroMQServiceConfig::Socket::BIND);
+        goby::common::protobuf::ZeroMQServiceConfig::Socket* publisher_socket = publisher_cfg.add_socket();
+        publisher_socket->set_socket_type(goby::common::protobuf::ZeroMQServiceConfig::Socket::PUBLISH);
+        publisher_socket->set_transport(goby::common::protobuf::ZeroMQServiceConfig::Socket::IPC);
+        publisher_socket->set_connect_or_bind(goby::common::protobuf::ZeroMQServiceConfig::Socket::BIND);
         publisher_socket->set_socket_name("test3_ipc_socket");
         publisher_socket->set_socket_id(SOCKET_PUBLISH);
         std::cout << publisher_socket->DebugString() << std::endl;
@@ -82,7 +82,7 @@ int main(int argc, char* argv[])
     for(int i = 0; i < test_count; ++i)
     {
         std::cout << "publishing " << data_ << std::endl;
-        node1.send(goby::core::MARSHALLING_CSTR, identifier_, &data_, 3, SOCKET_PUBLISH);
+        node1.send(goby::common::MARSHALLING_CSTR, identifier_, &data_, 3, SOCKET_PUBLISH);
         node2.poll(1e6);
     }
 
@@ -92,14 +92,14 @@ int main(int argc, char* argv[])
 }
 
 
-void node_inbox(goby::core::MarshallingScheme marshalling_scheme,
+void node_inbox(goby::common::MarshallingScheme marshalling_scheme,
                  const std::string& identifier,
                  const void* data,
                  int size,
                  int socket_id)
 {
     assert(identifier == identifier_);
-    assert(marshalling_scheme == goby::core::MARSHALLING_CSTR);
+    assert(marshalling_scheme == goby::common::MARSHALLING_CSTR);
     assert(!strcmp(static_cast<const char*>(data), data_));
     assert(socket_id == SOCKET_SUBSCRIBE);
     

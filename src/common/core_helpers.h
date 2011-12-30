@@ -22,7 +22,7 @@
 
 namespace goby
 {
-    namespace core
+    namespace common
     {
         /// provides stream output operator for Google Protocol Buffers Message 
         inline std::ostream& operator<<(std::ostream& out, const google::protobuf::Message& msg)

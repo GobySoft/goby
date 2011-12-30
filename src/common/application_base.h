@@ -38,7 +38,7 @@ namespace goby
     template<typename App>
         int run(int argc, char* argv[]);
 
-    namespace core
+    namespace common
     {
         class ApplicationBase
         {

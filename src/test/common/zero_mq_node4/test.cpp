@@ -16,11 +16,11 @@
 
 // tests blackout functionality of ZeroMQService
 
-#include "goby/core.h"
+#include "goby.common.h"
 
 #include <boost/thread.hpp>
 
-void node_inbox(goby::core::MarshallingScheme marshalling_scheme,
+void node_inbox(goby::common::MarshallingScheme marshalling_scheme,
                  const std::string& identifier,
                  const void* data,
                  int size,
@@ -34,9 +34,9 @@ const std::string identifier_ = "HI/";
 int inbox_count_ = 0;
 const char data_ [] = {'h', 'i', '\0'};
 
-goby::core::ZeroMQService node1_;
+goby::common::ZeroMQService node1_;
 // must share context for ipc
-goby::core::ZeroMQService node2_(node1_.zmq_context());
+goby::common::ZeroMQService node2_(node1_.zmq_context());
 
 enum {
     SOCKET_SUBSCRIBE = 240, SOCKET_PUBLISH = 211
@@ -49,13 +49,13 @@ int main(int argc, char* argv[])
     goby::glog.set_name(argv[0]);
     
 
-    goby::core::protobuf::ZeroMQServiceConfig publisher_cfg, subscriber_cfg;
+    goby::common::protobuf::ZeroMQServiceConfig publisher_cfg, subscriber_cfg;
     {
             
-        goby::core::protobuf::ZeroMQServiceConfig::Socket* subscriber_socket = subscriber_cfg.add_socket();
-        subscriber_socket->set_socket_type(goby::core::protobuf::ZeroMQServiceConfig::Socket::SUBSCRIBE);
-        subscriber_socket->set_transport(goby::core::protobuf::ZeroMQServiceConfig::Socket::IPC);
-        subscriber_socket->set_connect_or_bind(goby::core::protobuf::ZeroMQServiceConfig::Socket::CONNECT);
+        goby::common::protobuf::ZeroMQServiceConfig::Socket* subscriber_socket = subscriber_cfg.add_socket();
+        subscriber_socket->set_socket_type(goby::common::protobuf::ZeroMQServiceConfig::Socket::SUBSCRIBE);
+        subscriber_socket->set_transport(goby::common::protobuf::ZeroMQServiceConfig::Socket::IPC);
+        subscriber_socket->set_connect_or_bind(goby::common::protobuf::ZeroMQServiceConfig::Socket::CONNECT);
 
         subscriber_socket->set_socket_id(SOCKET_SUBSCRIBE);
         subscriber_socket->set_socket_name("test3_ipc_socket");
@@ -64,10 +64,10 @@ int main(int argc, char* argv[])
 
     {
             
-        goby::core::protobuf::ZeroMQServiceConfig::Socket* publisher_socket = publisher_cfg.add_socket();
-        publisher_socket->set_socket_type(goby::core::protobuf::ZeroMQServiceConfig::Socket::PUBLISH);
-        publisher_socket->set_transport(goby::core::protobuf::ZeroMQServiceConfig::Socket::IPC);
-        publisher_socket->set_connect_or_bind(goby::core::protobuf::ZeroMQServiceConfig::Socket::BIND);
+        goby::common::protobuf::ZeroMQServiceConfig::Socket* publisher_socket = publisher_cfg.add_socket();
+        publisher_socket->set_socket_type(goby::common::protobuf::ZeroMQServiceConfig::Socket::PUBLISH);
+        publisher_socket->set_transport(goby::common::protobuf::ZeroMQServiceConfig::Socket::IPC);
+        publisher_socket->set_connect_or_bind(goby::common::protobuf::ZeroMQServiceConfig::Socket::BIND);
         publisher_socket->set_socket_name("test3_ipc_socket");
         publisher_socket->set_socket_id(SOCKET_PUBLISH);
         std::cout << publisher_socket->DebugString() << std::endl;
@@ -85,12 +85,12 @@ int main(int argc, char* argv[])
 
 
     // test local blackout
-    node2_.socket_from_id(SOCKET_SUBSCRIBE).set_blackout(goby::core::MARSHALLING_CSTR, identifier_, boost::posix_time::milliseconds(6));
+    node2_.socket_from_id(SOCKET_SUBSCRIBE).set_blackout(goby::common::MARSHALLING_CSTR, identifier_, boost::posix_time::milliseconds(6));
     run_basic_test(3, 1, 5);
     run_basic_test(8, 4, 4); 
 
     // remove local blackout
-    node2_.socket_from_id(SOCKET_SUBSCRIBE).clear_blackout(goby::core::MARSHALLING_CSTR, identifier_);
+    node2_.socket_from_id(SOCKET_SUBSCRIBE).clear_blackout(goby::common::MARSHALLING_CSTR, identifier_);
     run_basic_test(3, 0, 5);    
     run_basic_test(8, 0, 4); 
     
@@ -107,7 +107,7 @@ int main(int argc, char* argv[])
 
     // test both at once - local blackout will take precedence
     node2_.socket_from_id(SOCKET_SUBSCRIBE).set_global_blackout(boost::posix_time::milliseconds(6));
-    node2_.socket_from_id(SOCKET_SUBSCRIBE).set_blackout(goby::core::MARSHALLING_CSTR, identifier_, boost::posix_time::milliseconds(0));
+    node2_.socket_from_id(SOCKET_SUBSCRIBE).set_blackout(goby::common::MARSHALLING_CSTR, identifier_, boost::posix_time::milliseconds(0));
     run_basic_test(3, 0, 5);
     run_basic_test(8, 0, 4); 
 
@@ -121,7 +121,7 @@ void run_basic_test(int test_count, int expected_blackouts, int ms_wait)
     for(int i = 0; i < test_count; ++i)
     {
         std::cout << "publishing " << data_ << std::endl;
-        node1_.send(goby::core::MARSHALLING_CSTR, identifier_, &data_, 3, SOCKET_PUBLISH);
+        node1_.send(goby::common::MARSHALLING_CSTR, identifier_, &data_, 3, SOCKET_PUBLISH);
         node2_.poll(1e6);
         // wait ms_wait milliseconds
         usleep(ms_wait*1e3);
@@ -131,14 +131,14 @@ void run_basic_test(int test_count, int expected_blackouts, int ms_wait)
 }
 
 
-void node_inbox(goby::core::MarshallingScheme marshalling_scheme,
+void node_inbox(goby::common::MarshallingScheme marshalling_scheme,
                  const std::string& identifier,
                  const void* data,
                  int size,
                  int socket_id)
 {
     assert(identifier == identifier_);
-    assert(marshalling_scheme == goby::core::MARSHALLING_CSTR);
+    assert(marshalling_scheme == goby::common::MARSHALLING_CSTR);
     assert(!strcmp(static_cast<const char*>(data), data_));
     assert(socket_id == SOCKET_SUBSCRIBE);
     

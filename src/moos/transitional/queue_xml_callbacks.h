@@ -33,7 +33,7 @@
 #include <xercesc/sax2/DefaultHandler.hpp>
 
 #include "goby/util/as.h"
-#include "goby/util/exception.h"
+#include "goby/common/exception.h"
 #include "goby/moos/protobuf/transitional.pb.h"
 #include "goby/moos/transitional/xml/tags.h"
 

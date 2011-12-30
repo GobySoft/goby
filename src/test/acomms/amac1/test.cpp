@@ -17,7 +17,7 @@
 // tests fixed TDMA
 
 #include "goby/acomms/amac.h"
-#include "goby/util/logger.h"
+#include "goby/common/logger.h"
 #include "goby/util/sci.h"
 #include "goby/acomms/connect.h"
 

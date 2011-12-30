@@ -1,0 +1,24 @@
+
+@font-face {
+    font-family: 'Gentium';
+    src: url('../fonts/genr102-webfont.eot');
+    src: url('../fonts/genr102-webfont.eot?iefix') format('eot'),
+         url('../fonts/genr102-webfont.woff') format('woff'),
+         url('../fonts/genr102-webfont.ttf') format('truetype'),
+         url('../fonts/genr102-webfont.svg#webfontjCIynuu4') format('svg');
+    font-weight: normal;
+    font-style: normal; 
+
+}
+
+@font-face {
+    font-family: 'Gentium';
+    src: url('../fonts/geni102-webfont.eot');
+    src: url('../fonts/geni102-webfont.eot?iefix') format('eot'),
+         url('../fonts/geni102-webfont.woff') format('woff'),
+         url('../fonts/geni102-webfont.ttf') format('truetype'),
+         url('../fonts/geni102-webfont.svg#webfont5PwQkgug') format('svg');
+    font-weight: normal; 
+    font-style: italic;
+}
+

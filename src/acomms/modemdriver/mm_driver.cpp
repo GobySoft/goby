@@ -24,7 +24,7 @@
 #include <boost/assign.hpp>
 #include <boost/algorithm/string.hpp>
 
-#include "goby/util/logger.h"
+#include "goby/common/logger.h"
 #include "goby/util/binary.h"
 
 #include "mm_driver.h"

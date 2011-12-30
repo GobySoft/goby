@@ -29,10 +29,10 @@
 #include <boost/filesystem.hpp>
 
 #include "dynamic_moos_vars.h"
-#include "goby/util/logger.h"
+#include "goby/common/logger.h"
 #include "goby/moos/protobuf/tes_moos_app.pb.h"
-#include "goby/util/configuration_reader.h"
-#include "goby/util/exception.h"
+#include "goby/common/configuration_reader.h"
+#include "goby/common/exception.h"
 #include "moos_protobuf_helpers.h"
 #include "goby/version.h"
 

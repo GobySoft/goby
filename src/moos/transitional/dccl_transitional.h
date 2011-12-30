@@ -29,7 +29,7 @@
 
 #include "goby/moos/transitional/xml/xml_parser.h"
 #include "goby/util/time.h"
-#include "goby/util/logger.h"
+#include "goby/common/logger.h"
 
 #include "message.h"
 #include "message_val.h"

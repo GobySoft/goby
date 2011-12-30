@@ -30,7 +30,7 @@
 
 #include "goby/util/primitive_types.h"
 #include "goby/acomms/acomms_constants.h"
-#include "goby/util/logger.h"
+#include "goby/common/logger.h"
 
 namespace goby
 {

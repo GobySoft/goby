@@ -16,7 +16,7 @@
 #include "abc_driver.h"
 #include "driver_exception.h"
 
-#include "goby/util/logger.h"
+#include "goby/common/logger.h"
 #include "goby/util/binary.h"
 
 using goby::util::hex_encode;

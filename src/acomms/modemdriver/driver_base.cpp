@@ -19,7 +19,7 @@
 
 #include <boost/thread/mutex.hpp>
 
-#include "goby/util/logger.h"
+#include "goby/common/logger.h"
 
 #include "driver_base.h"
 #include "driver_exception.h"

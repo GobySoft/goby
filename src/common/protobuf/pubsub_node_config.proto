@@ -1,0 +1,13 @@
+import "goby/common/protobuf/option_extensions.proto";
+
+package goby.core.protobuf;
+
+message PubSubSocketConfig
+{
+  optional bool using_pubsub = 1 [default = true, (goby.field).description="Set false to disable the publish / subscribe functionality of this node"]; 
+ optional string ethernet_address = 2 [default = "127.0.0.1", (goby.field).description="primary IP address of the interface to multicast over"];
+  optional string multicast_address = 3 [default = "239.255.7.15", (goby.field).description="multicast IP address to use; 239.252.0.0-239.255.255.255 is recommended (site-local). See also http://www.iana.org/assignments/multicast-addresses/multicast-addresses.xml"];
+  optional uint32 ethernet_port = 4 [default = 11142];
+
+}
+

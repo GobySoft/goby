@@ -52,6 +52,15 @@ option(build_common "Build the Goby Common library" ON)
 # module dependencies
 # you can optionally build up to any point in this chain
 # common -> util -> acomms -> moos
+
+find_package(ZeroMQ)
+if(ZEROMQ_FOUND)
+  include_directories(${ZEROMQ_INCLUDE_DIRS})
+else()
+  missing_optional_library(ZeroMQ)
+endif()
+
+
 if(build_common)
   add_subdirectory(common)
 
@@ -61,21 +70,22 @@ if(build_common)
 
     option(build_acomms "Build the Goby Acoustic Communications library and applications (requires goby-util)" ON)
     if(build_acomms)
-      add_subdirectory(acomms)      
+      add_subdirectory(acomms)
 
-      find_package(MOOS)
-      if(MOOS_FOUND)
-        include_directories(${MOOS_INCLUDE_DIRS})
-        add_definitions(-DHAS_MOOS)
-        option(build_moos "Build the Acoustic Communications MOOS apps (pAcommsHandler, etc.)" ON)
-      else()
-        missing_optional_library(MOOS)
-        option(build_moos "Build the Acoustic Communications MOOS apps (pAcommsHandler, etc.)" OFF)
-      endif()
+  
+        find_package(MOOS)
+        if(MOOS_FOUND)
+          include_directories(${MOOS_INCLUDE_DIRS})
+          add_definitions(-DHAS_MOOS)
+          option(build_moos "Build the Acoustic Communications MOOS apps (pAcommsHandler, etc.)" ON)
+        else()
+          missing_optional_library(MOOS)
+          option(build_moos "Build the Acoustic Communications MOOS apps (pAcommsHandler, etc.)" OFF)
+        endif()
 
-      if(build_moos)
-        add_subdirectory(moos)
-      endif(build_moos)
+        if(build_moos)
+          add_subdirectory(moos)
+        endif(build_moos)
     endif(build_acomms)
   endif(build_util)
 endif(build_common)

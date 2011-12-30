@@ -23,10 +23,10 @@
 #include "dccl_transitional.h"
 #include "message_xml_callbacks.h"
 #include "queue_xml_callbacks.h"
-#include "goby/util/logger.h"
+#include "goby/common/logger.h"
 #include "goby/util/as.h"
 #include <google/protobuf/descriptor.pb.h>
-#include "goby/common/acomms_option_extensions.pb.h"
+#include "goby/common/protobuf/acomms_option_extensions.pb.h"
 #include "goby/util/dynamic_protobuf_manager.h"
 #include <boost/regex.hpp>
 
@@ -135,7 +135,7 @@ void goby::transitional::DCCLTransitionalCodec::convert_xml_message_file(
     if(!fout.is_open())
         throw(goby::acomms::DCCLException("Could not open " + *proto_file + " for writing"));
 
-    fout << "import \"goby/common/option_extensions.proto\";" << std::endl;
+    fout << "import \"goby/common/protobuf/option_extensions.proto\";" << std::endl;
 
     for(int i = 0, n = added_ids.size(); i < n; ++i)
     {

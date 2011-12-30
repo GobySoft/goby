@@ -32,7 +32,7 @@
 #include <boost/shared_ptr.hpp>
 
 #include "goby/util/time.h"
-#include "goby/util/logger.h"
+#include "goby/common/logger.h"
 #include "goby/acomms/protobuf/dccl.pb.h"
 #include "goby/acomms/protobuf/modem_message.pb.h"
 #include "goby/acomms/acomms_helpers.h"

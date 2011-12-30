@@ -218,7 +218,7 @@ The full source listing for !hello_world2_g! can be found in section \ref{sec:he
 \begin{boxedverbatim}
 protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS hello_world.proto)
 add_executable(hello_world1_g hello_world1.cpp ${PROTO_SRCS} ${PROTO_HDRS})
-target_link_libraries(hello_world1_g goby_core)
+target_link_libraries(hello_world1_g goby_pb)
 \end{boxedverbatim}
 \resetbvlinenumber
 

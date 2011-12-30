@@ -20,7 +20,7 @@
 #include <boost/foreach.hpp>
 
 #include "goby/util/as.h"
-#include "goby/util/logger.h"
+#include "goby/common/logger.h"
 #include "message.h"
 #include "goby/acomms/dccl/dccl.h"
 #include "goby/acomms/dccl/dccl_exception.h"

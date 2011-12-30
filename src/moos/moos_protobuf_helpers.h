@@ -23,7 +23,7 @@
 #include <google/protobuf/io/printer.h>
 #include <google/protobuf/io/tokenizer.h>
 
-#include "goby/util/logger/flex_ostream.h"
+#include "goby/common/logger/flex_ostream.h"
 #include "goby/util/as.h"
 #include "goby/util/binary.h"
 #include "goby/moos/moos_string.h"
@@ -248,7 +248,7 @@ namespace goby
             }
             
             static void parse(const std::string& in, google::protobuf::Message* out,
-                              const google::protobuf::RepeatedPtrField<protobuf::TranslatorEntry::CreateParser::Algorithm>& algorithms,
+                              const google::protobuf::RepeatedPtrField<protobuf::TranslatorEntry::CreateParser::Algorithm>& algorithms = google::protobuf::RepeatedPtrField<protobuf::TranslatorEntry::CreateParser::Algorithm>(),
                               bool use_short_enum = false)
             {
                 const google::protobuf::Descriptor* desc = out->GetDescriptor();
@@ -762,8 +762,8 @@ namespace goby
 
             
             static void parse(const std::string& in, google::protobuf::Message* out,
-                              const google::protobuf::RepeatedPtrField<protobuf::TranslatorEntry::CreateParser::Algorithm>& algorithms,
                               std::string format,
+                              const google::protobuf::RepeatedPtrField<protobuf::TranslatorEntry::CreateParser::Algorithm>& algorithms = google::protobuf::RepeatedPtrField<protobuf::TranslatorEntry::CreateParser::Algorithm>(),
                               bool use_short_enum = false)
             {
                 

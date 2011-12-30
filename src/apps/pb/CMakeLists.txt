@@ -25,4 +25,3 @@ if(GCC_COMPILER_VERSION MATCHES ".*4\\.4\\.4\\-14ubuntu5.*")
 endif(GCC_COMPILER_VERSION MATCHES ".*4\\.4\\.4\\-14ubuntu5.*")
 
 add_subdirectory(database)
-add_subdirectory(liaison)

@@ -46,28 +46,28 @@ goby::core::Application::~Application()
 
 void goby::core::Application::__set_up_sockets()
 {
-    if(!base_cfg().database_config().using_database())        
-    {
-        glog.is(WARN) &&
-            glog << "Not using `goby_database`. You will want to ensure you are logging your runtime data somehow" << std::endl;
-    }
-    else
-    {
-        database_client_.reset(new DatabaseClient(&zeromq_service_));
-        protobuf::DatabaseClientConfig database_config = base_cfg().database_config();
-        if(!database_config.has_database_address())
-            database_config.set_database_address(base_cfg().pubsub_config().ethernet_address());
+    // if(!base_cfg().database_config().using_database())        
+    // {
+    //     glog.is(WARN) &&
+    //         glog << "Not using `goby_database`. You will want to ensure you are logging your runtime data somehow" << std::endl;
+    // }
+    // else
+    // {
+    //     database_client_.reset(new DatabaseClient(&zeromq_service_));
+    //     protobuf::DatabaseClientConfig database_config = base_cfg().database_config();
+    //     if(!database_config.has_database_address())
+    //         database_config.set_database_address(base_cfg().pubsub_config().ethernet_address());
 
-        if(!database_config.has_database_port())
-            database_config.set_database_port(base_cfg().pubsub_config().ethernet_port());
+    //     if(!database_config.has_database_port())
+    //         database_config.set_database_port(base_cfg().pubsub_config().ethernet_port());
 
-        database_client_->set_cfg(database_config);
-    }
+    //     database_client_->set_cfg(database_config);
+    // }
 
     if(!base_cfg().pubsub_config().using_pubsub()) 
     {
         glog.is(WARN) &&
-            glog << "Not using `goby_database`. You will want to ensure you are logging your runtime data somehow" << std::endl;
+            glog << "Not using publish subscribe config. You will need to set up your nodes manually" << std::endl;
     }
     else
     {

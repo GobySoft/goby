@@ -16,7 +16,7 @@
 #ifndef CoreHelpers20110411H
 #define CoreHelpers20110411H
 
-#include "goby/pb/protobuf/app_base_config.pb.h"
+#include "goby/common/protobuf/app_base_config.pb.h"
 #include "goby/util/protobuf/logger.pb.h"
 #include <boost/program_options.hpp>
 
@@ -35,32 +35,32 @@ namespace goby
         inline void merge_app_base_cfg(AppBaseConfig* base_cfg,
                                        const boost::program_options::variables_map& var_map)
         {
-            if(var_map.count("ncurses"))
-            {
-                base_cfg->mutable_glog_config()->set_tty_verbosity(util::protobuf::GLogConfig::GUI);
-            }
-            else if (var_map.count("verbose"))
-            {
-                switch(var_map["verbose"].as<std::string>().size())
-                {
-                    default:
-                    case 0:
-                        base_cfg->mutable_glog_config()->set_tty_verbosity(util::protobuf::GLogConfig::VERBOSE);
-                        break;
-                    case 1:
-                        base_cfg->mutable_glog_config()->set_tty_verbosity(util::protobuf::GLogConfig::DEBUG1);
-                        break;
-                    case 2:
-                        base_cfg->mutable_glog_config()->set_tty_verbosity(util::protobuf::GLogConfig::DEBUG2);
-                        break;
-                    case 3:
-                        base_cfg->mutable_glog_config()->set_tty_verbosity(util::protobuf::GLogConfig::DEBUG3);
-                        break;
-                }
-            }
+            /* if(var_map.count("ncurses")) */
+            /* { */
+            /*     base_cfg->mutable_glog_config()->set_tty_verbosity(util::protobuf::GLogConfig::GUI); */
+            /* } */
+            /* else if (var_map.count("verbose")) */
+            /* { */
+            /*     switch(var_map["verbose"].as<std::string>().size()) */
+            /*     { */
+            /*         default: */
+            /*         case 0: */
+            /*             base_cfg->mutable_glog_config()->set_tty_verbosity(util::protobuf::GLogConfig::VERBOSE); */
+            /*             break; */
+            /*         case 1: */
+            /*             base_cfg->mutable_glog_config()->set_tty_verbosity(util::protobuf::GLogConfig::DEBUG1); */
+            /*             break; */
+            /*         case 2: */
+            /*             base_cfg->mutable_glog_config()->set_tty_verbosity(util::protobuf::GLogConfig::DEBUG2); */
+            /*             break; */
+            /*         case 3: */
+            /*             base_cfg->mutable_glog_config()->set_tty_verbosity(util::protobuf::GLogConfig::DEBUG3); */
+            /*             break; */
+            /*     } */
+            /* } */
 
-            if(var_map.count("no_db"))
-                base_cfg->mutable_database_config()->set_using_database(false);
+//            if(var_map.count("no_db"))
+//                base_cfg->mutable_database_config()->set_using_database(false);
         }
 
     }

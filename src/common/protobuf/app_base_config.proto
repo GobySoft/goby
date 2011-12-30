@@ -1,8 +1,8 @@
-import "goby/common/option_extensions.proto";
-import "goby/pb/protobuf/zero_mq_node_config.proto";
-import "goby/pb/protobuf/pubsub_node_config.proto";
-import "goby/pb/protobuf/database_request.proto";
-import "goby/util/protobuf/logger.proto";
+import "goby/common/protobuf/option_extensions.proto";
+import "goby/common/protobuf/zero_mq_node_config.proto";
+import "goby/common/protobuf/pubsub_node_config.proto";
+// import "protobuf/database_request.proto";
+// import "goby/util/protobuf/logger.proto";
 
 
 message AppBaseConfig
@@ -17,9 +17,14 @@ message AppBaseConfig
                                      (goby.field).description = "a unique name for this platform (a platform in this context is a ship, AUV, workstation, etc.)"];
   
   optional goby.core.protobuf.PubSubSocketConfig pubsub_config = 10 [(goby.field).description="configure the connection to the publish / subscribe message passing architecture"];
-  optional goby.util.protobuf.GLogConfig glog_config = 11 [(goby.field).description="configure the Goby Logger (TTY terminal and file debugging logger)"];
-  optional goby.core.protobuf.DatabaseClientConfig database_config = 12 [(goby.field).description="configure the Goby Database (SQL Database) to log the publish/subscribe transactions"];
-  
+
   // advanced options
   optional goby.core.protobuf.ZeroMQServiceConfig additional_socket_config = 100 [(goby.field).description= "open other ZeroMQ sockets, note that `socket_id`s 103998 and 103999 are reserved for the publish / subscribe functionality"];
+
+  extensions 1000 to max;
+
+  //  optional goby.core.protobuf.DatabaseClientConfig database_config = 12 [(goby.field).description="configure the Goby Database (SQL Database) to log the publish/subscribe transactions"];  
+
+  //  optional goby.util.protobuf.GLogConfig glog_config = 11 [(goby.field).description="configure the Goby Logger (TTY terminal and file debugging logger)"];
+  
 }

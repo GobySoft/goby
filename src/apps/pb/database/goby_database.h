@@ -19,7 +19,7 @@
 #include <map>
 #include <boost/unordered_map.hpp>
 
-#include "goby/pb/zeromq_application_base.h"
+#include "goby/common/zeromq_application_base.h"
 #include "goby/pb/protobuf_node.h"
 #include "goby/pb/dbo/dbo_manager.h"
 

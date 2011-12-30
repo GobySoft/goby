@@ -1,5 +1,5 @@
 import "goby/common/header.proto";
-import "goby/common/option_extensions.proto";
+import "goby/common/protobuf/option_extensions.proto";
 import "goby/common/app_base_config.proto";
 
 message Sub

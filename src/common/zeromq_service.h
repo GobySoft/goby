@@ -23,11 +23,11 @@
 #include <boost/function.hpp>
 #include <boost/signals.hpp>
 
-#include "goby/pb/protobuf/zero_mq_node_config.pb.h"
+#include "goby/common/protobuf/zero_mq_node_config.pb.h"
 
 #include <zmq.hpp>
 
-#include "goby/pb/core_constants.h"
+#include "core_constants.h"
 #include "goby/util/logger.h"
 
 namespace goby

@@ -22,7 +22,7 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include "goby/pb/core_constants.h"
+#include "goby/common/core_constants.h"
 
 #include <Wt/Dbo/Dbo>
 

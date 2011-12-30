@@ -19,7 +19,7 @@
 #include <boost/format.hpp>
 
 #include "goby/util/logger.h"
-#include "goby/pb/core_helpers.h"
+#include "goby/common/core_helpers.h"
 
 #include "goby_database.h"
 
@@ -49,11 +49,11 @@ goby::core::Database::Database()
         set_loop_freq(MAX_LOOP_FREQ);
     }
     
-    if(!cfg_.base().database_config().using_database())
-    {
-        glog.is(DIE) &&
-            glog << "AppBaseConfig::using_database == false. Since we aren't wanting, we aren't starting (set to true to enable use of the database)!" << std::endl;
-    }
+    // if(!cfg_.base().database_config().using_database())
+    // {
+    //     glog.is(DIE) &&
+    //         glog << "AppBaseConfig::using_database == false. Since we aren't wanting, we aren't starting (set to true to enable use of the database)!" << std::endl;
+    // }
 
     for(int i = 0, n = cfg_.plugin_library_size(); i < n; ++i)
         dbo_manager_->plugin_factory().add_library(cfg_.plugin_library(i));
@@ -69,10 +69,10 @@ goby::core::Database::Database()
     reply_socket->set_socket_id(DATABASE_SERVER_SOCKET_ID);
     reply_socket->set_connect_or_bind(ZeroMQServiceConfig::Socket::BIND);
 
-    if(cfg_.base().database_config().has_database_port())
-        reply_socket->set_ethernet_port(cfg_.base().database_config().database_port());
-    else
-        reply_socket->set_ethernet_port(cfg_.base().pubsub_config().ethernet_port());
+    // if(cfg_.base().database_config().has_database_port())
+    //     reply_socket->set_ethernet_port(cfg_.base().database_config().database_port());
+    // else
+    //     reply_socket->set_ethernet_port(cfg_.base().pubsub_config().ethernet_port());
 
     try
     {

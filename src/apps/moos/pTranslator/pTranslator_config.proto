@@ -1,6 +1,6 @@
 import "goby/moos/protobuf/tes_moos_app.proto";
 import "goby/moos/protobuf/translator.proto";
-import "goby/common/option_extensions.proto";
+import "goby/common/protobuf/option_extensions.proto";
 
 
 message pTranslatorConfig

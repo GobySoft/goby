@@ -22,9 +22,9 @@
 
 #include "goby/util/logger.h"
 #include "goby/util/dynamic_protobuf_manager.h"
-#include "goby/pb/core_helpers.h"
+#include "goby/common/core_helpers.h"
 
-#include "node_interface.h"
+#include "goby/common/node_interface.h"
 #include "subscription.h"
 
 namespace goby

@@ -18,7 +18,7 @@
 #define APPLICATION20100908H
 
 #include "goby/util/logger.h"
-#include "goby/pb/core_helpers.h"
+#include "goby/common/core_helpers.h"
 #include "goby/util/exception.h"
 
 #include "goby/pb/protobuf/config.pb.h"
@@ -26,7 +26,7 @@
 
 #include "database_client.h"
 #include "pubsub_node_wrapper.h"
-#include "zeromq_application_base.h"
+#include "goby/common/zeromq_application_base.h"
 
 
 namespace google { namespace protobuf { class Message; } }

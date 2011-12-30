@@ -17,8 +17,8 @@
 #ifndef ZEROMQAPPLICATIONBASE20110418H
 #define ZEROMQAPPLICATIONBASE20110418H
 
-#include "goby/pb/zeromq_service.h"
-#include "goby/pb/application_base.h"
+#include "zeromq_service.h"
+#include "application_base.h"
 
 #include "goby/util/logger.h"
 #include "goby/util/time.h"

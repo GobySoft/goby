@@ -60,6 +60,7 @@ else()
   missing_optional_library(ZeroMQ)
 endif()
 
+
 if(build_common)
   add_subdirectory(common)
 

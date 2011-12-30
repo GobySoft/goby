@@ -13,7 +13,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
-#include "goby/common/option_extensions.pb.h"
+#include "goby/common/protobuf/option_extensions.pb.h"
 
 #include "configuration_reader.h"
 

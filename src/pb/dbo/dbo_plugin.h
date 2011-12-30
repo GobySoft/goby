@@ -21,7 +21,7 @@
 #include <Wt/Dbo/Dbo>
 #include <Wt/Dbo/backend/Sqlite3>
 
-#include "goby/pb/core_constants.h"
+#include "goby/common/core_constants.h"
 #include <boost/bimap.hpp>
 #include <google/protobuf/message.h>
 #include <google/protobuf/descriptor.h>

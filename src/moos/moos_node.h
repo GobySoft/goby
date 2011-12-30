@@ -20,8 +20,8 @@
 #include "moos_serializer.h"
 #include "moos_string.h"
 
-#include "goby/pb/node_interface.h"
-#include "goby/pb/zeromq_service.h"
+#include "goby/common/node_interface.h"
+#include "goby/common/zeromq_service.h"
 
 namespace goby
 {

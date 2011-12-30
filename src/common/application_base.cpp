@@ -16,11 +16,9 @@
 
 #include "application_base.h"
 #include "goby/util/configuration_reader.h"
-#include "goby/pb/core_helpers.h"
+#include "core_helpers.h"
 
-using goby::glog;
 using goby::util::as;
-using namespace goby::util::logger;
 
 int goby::core::ApplicationBase::argc_ = 0;
 char** goby::core::ApplicationBase::argv_ = 0;
@@ -75,19 +73,19 @@ goby::core::ApplicationBase::ApplicationBase(google::protobuf::Message* cfg /*= 
     }
     
     // set up the logger
-    glog.set_name(application_name());
-    glog.add_stream(static_cast<util::logger::Verbosity>(base_cfg_->glog_config().tty_verbosity()), &std::cout);
+//    glog.set_name(application_name());
+//    glog.add_stream(static_cast<util::logger::Verbosity>(base_cfg_->glog_config().tty_verbosity()), &std::cout);
 
     if(!base_cfg_->IsInitialized())
         throw(util::ConfigException("Invalid base configuration"));
     
-    glog.is(DEBUG1) && glog << "App name is " << application_name() << std::endl;
+//    glog.is(DEBUG1) && glog << "App name is " << application_name() << std::endl;
     
 }
 
 goby::core::ApplicationBase::~ApplicationBase()
 {
-    glog.is(DEBUG1) && glog <<"ApplicationBase destructing..." << std::endl;    
+//    glog.is(DEBUG1) && glog <<"ApplicationBase destructing..." << std::endl;    
 }
 
 void goby::core::ApplicationBase::__run()
@@ -95,15 +93,15 @@ void goby::core::ApplicationBase::__run()
     // continue to run while we are alive (quit() has not been called)
     while(alive_)
     {
-        try
-        {            
+//        try
+//        {            
             iterate();
-        }
-        catch(std::exception& e)
-        {
-            glog.is(WARN) &&
-                glog << e.what() << std::endl;
-        }
+//        }
+//        catch(std::exception& e)
+//        {
+            // glog.is(WARN) &&
+            //     glog << e.what() << std::endl;
+//        }
     }
 }
 

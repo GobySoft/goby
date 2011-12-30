@@ -18,7 +18,7 @@
 
 #include "goby/moos/moos_dbo_helper.h"
 #include "goby/moos/moos_node.h"
-#include "goby/pb/application_base.h"
+#include "goby/common/application_base.h"
 
 #include "MOOSGenLib/MOOSGenLibGlobalHelper.h"
 

@@ -18,7 +18,7 @@
 #define PUBSUBNODE20110506H
 
 #include <google/protobuf/message.h>
-#include "node_interface.h"
+#include "goby/common/node_interface.h"
 #include "protobuf_node.h"
 #include "goby/pb/protobuf/header.pb.h"
 

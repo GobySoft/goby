@@ -24,9 +24,8 @@
 #include "goby/util/exception.h"
 #include "goby/util/configuration_reader.h"
 
-#include "goby/pb/protobuf/app_base_config.pb.h"
+#include "goby/common/protobuf/app_base_config.pb.h"
 
-#include "goby/util/logger.h"
 
 namespace goby
 {
@@ -85,7 +84,7 @@ namespace goby
             static char** argv_;
 
             // configuration relevant to all applications (loop frequency, for example)
-            // defined in #include "goby/pb/proto/app_base_config.pb.h"
+            // defined in #include "proto/app_base_config.pb.h"
             boost::shared_ptr<AppBaseConfig> base_cfg_;
 
             bool alive_;            

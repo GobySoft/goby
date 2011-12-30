@@ -19,7 +19,6 @@
 
 #include <google/protobuf/message.h>
 #include "goby/common/node_interface.h"
-#include "protobuf_node.h"
 #include "goby/pb/protobuf/header.pb.h"
 
 namespace goby
@@ -165,41 +164,6 @@ namespace goby
           private:
             NodeInterface<NodeTypeBase>& node_;
         };
-        
-        class StaticProtobufPubSubNodeWrapper : public PubSubNodeWrapper<google::protobuf::Message>
-        {
-          public:
-          StaticProtobufPubSubNodeWrapper(StaticProtobufNode* node, const protobuf::PubSubSocketConfig& cfg)
-              : PubSubNodeWrapper<google::protobuf::Message>(node, cfg),
-                node_(*node)
-                { }
-            
-            ~StaticProtobufPubSubNodeWrapper()
-            { }
-
-            template<typename ProtoBufMessage>
-                void subscribe(boost::function<void (const ProtoBufMessage&)> handler)
-            {
-                if(!cfg().using_pubsub())
-                {
-                    glog.is(goby::util::logger::WARN) && glog << "Ignoring subscribe since we have `using_pubsub`=false" << std::endl;
-                    return;
-                }    
-                node_.subscribe<ProtoBufMessage>(SOCKET_SUBSCRIBE, handler);
-            }
-
-            template<typename ProtoBufMessage>
-                const ProtoBufMessage& newest() const
-            {
-                return node_.newest<ProtoBufMessage>();
-            }
-            
-
-          private:
-            StaticProtobufNode& node_;
-        };
-        
-        
 
     }
 }

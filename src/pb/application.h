@@ -25,7 +25,7 @@
 #include "goby/pb/protobuf/header.pb.h"
 
 #include "database_client.h"
-#include "pubsub_node_wrapper.h"
+#include "protobuf_pubsub_node_wrapper.h"
 #include "goby/common/zeromq_application_base.h"
 
 

@@ -37,11 +37,14 @@ int main(int argc, char* argv[])
 
     std::cerr << "creating DCCLTransitionalCodec using xml file: [" << xml_file << "]" << std::endl;
     
-    goby::transitional::DCCLTransitionalCodec dccl;    
-    goby::transitional::protobuf::DCCLTransitionalConfig cfg;
-    cfg.add_message_file()->set_path(xml_file);
-    cfg.set_generated_proto_dir(proto_folder);
-    dccl.set_cfg(cfg);
+    goby::transitional::DCCLTransitionalCodec dccl;
+
+    pAcommsHandlerConfig cfg;    
+    cfg.mutable_transitional_cfg()->add_message_file()->set_path(xml_file);
+    cfg.mutable_transitional_cfg()->set_generated_proto_dir(proto_folder);
+    dccl.convert_to_v2_representation(&cfg);
+
+    std::cout << "received: " << cfg.DebugString();
     
     std::cerr << "wrote proto files" << std::endl;
 }

@@ -15,7 +15,7 @@ endmacro()
 ## find external packages, libraries, and headers for the entire goby project
 # mandatory
 ## boost
-goby_find_required_package(Boost 1.36.0 COMPONENTS system date_time thread program_options filesystem signals)
+goby_find_required_package(Boost 1.36.0 COMPONENTS system date_time thread program_options filesystem signals regex)
 include_directories(${Boost_INCLUDE_DIRS})
 
 goby_find_required_package(ProtobufGoby)
@@ -52,6 +52,14 @@ option(build_common "Build the Goby Common library" ON)
 # module dependencies
 # you can optionally build up to any point in this chain
 # common -> util -> acomms -> moos
+
+find_package(ZeroMQ)
+if(ZEROMQ_FOUND)
+  include_directories(${ZEROMQ_INCLUDE_DIRS})
+else()
+  missing_optional_library(ZeroMQ)
+endif()
+
 if(build_common)
   add_subdirectory(common)
 
@@ -64,12 +72,9 @@ if(build_common)
       add_subdirectory(acomms)
 
       
-      find_package(ZeroMQ)
       if(ZEROMQ_FOUND)
-        include_directories(${ZEROMQ_INCLUDE_DIRS})
         option(build_pb "Build the Goby PB libraries and applications" ON)  
       else()
-        missing_optional_library(ZeroMQ)
         option(build_pb "Build the Goby PB libraries and applications" OFF) 
       endif()
 

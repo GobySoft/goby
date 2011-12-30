@@ -35,8 +35,6 @@ void goby::core::ProtobufNode::inbox(MarshallingScheme marshalling_scheme,
 
 void goby::core::ProtobufNode::send(const google::protobuf::Message& msg, int socket_id)
 {
-    goby::util::DynamicProtobufManager::add_protobuf_file_with_dependencies(msg.GetDescriptor()->file());
-    
     int size = msg.ByteSize();
     char buffer[size];
     msg.SerializeToArray(&buffer, size);

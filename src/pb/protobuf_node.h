@@ -167,9 +167,7 @@ void goby::core::StaticProtobufNode::on_receipt(
     int socket_id,
     boost::function<void (const ProtoBufMessage&)> handler
     /*= boost::function<void (const ProtoBufMessage&)>()*/)
-{
-    goby::util::DynamicProtobufManager::add_protobuf_file_with_dependencies(ProtoBufMessage::descriptor()->file());
-    
+{    
     using goby::glog;
     
     const std::string& protobuf_type_name = ProtoBufMessage::descriptor()->full_name();

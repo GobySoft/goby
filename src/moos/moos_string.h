@@ -18,13 +18,30 @@
 #ifndef MOOSSTRING20110527H
 #define MOOSSTRING20110527H
 
+#include "MOOSLIB/MOOSMsg.h"
+
+
 #include "goby/util/as.h"
+#include "goby/util/time.h"
 
 namespace goby
 {
     namespace moos
     {
         
+        inline std::ostream& operator<<(std::ostream& os, const CMOOSMsg& msg)
+        {
+            os << "[[CMOOSMsg]]" << " Key: " << msg.GetKey()
+               << " Type: "
+               << (msg.IsDouble() ? "double" : "string")
+               << " Value: " << (msg.IsDouble() ? goby::util::as<std::string>(msg.GetDouble()) : msg.GetString())
+               << " Time: " << goby::util::as<boost::posix_time::ptime>(msg.GetTime())
+               << " Community: " << msg.GetCommunity() 
+               << " Source: " << msg.m_sSrc // no getter in CMOOSMsg!!!
+               << " Source Aux: " << msg.GetSourceAux();
+            return os;
+        }
+
         /// find `key` in `str` and if successful put it in out
         /// and return true
         /// deal with these basic forms:

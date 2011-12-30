@@ -47,7 +47,9 @@ namespace tes
         // update a single variable at a time
         void update_moos_vars(const CMOOSMsg& msg)
             { vars[msg.GetKey()] = msg; }
-    
+
+        std::map<std::string, CMOOSMsg>& all() { return vars; }
+        
     private:
         std::map<std::string, CMOOSMsg> vars;
 

@@ -127,9 +127,6 @@ void goby::core::Database::init_sql()
         dbo_manager_->connect(default_file);
     }
     
-    // #include <google/protobuf/descriptor.pb.h>
-    goby::util::DynamicProtobufManager::add_protobuf_file_with_dependencies(google::protobuf::FileDescriptorProto::descriptor()->file());
-//    dbo_manager_->add_type(google::protobuf::FileDescriptorProto::descriptor());
 
 }
 

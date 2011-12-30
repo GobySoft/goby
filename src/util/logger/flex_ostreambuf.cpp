@@ -196,8 +196,10 @@ void goby::util::FlexOStreamBuf::display(std::string & s)
                 case logger::DEBUG3:
                     *cfg.os() << TermColor::esc_code_from_col(groups_[group_name_].color())
                               << name_ << esc_nocolor <<
-                        " [" << goby::util::goby_time_as_string() << "] "
-                              << "{" << group_name_ << "}: " << s <<  std::endl;
+                        " [" << goby::util::goby_time_as_string() << "]";
+                    if(!group_name_.empty())
+                        *cfg.os() << " " << "{" << group_name_ << "}";
+                    *cfg.os() << ": " << s <<  std::endl;
                     break;        
             }
         }

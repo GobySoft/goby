@@ -18,6 +18,7 @@
 
 
 #include "moos_serializer.h"
+#include "moos_string.h"
 
 #include "goby/pb/node_interface.h"
 #include "goby/pb/zeromq_service.h"
@@ -59,19 +60,6 @@ namespace goby
             std::map<std::string, boost::shared_ptr<CMOOSMsg> > newest_vars;
             
         };
-
-        inline std::ostream& operator<<(std::ostream& os, const CMOOSMsg& msg)
-        {
-            os << "[[CMOOSMsg]]" << " Key: " << msg.GetKey()
-               << " Type: "
-               << (msg.IsDouble() ? "double" : "string")
-               << " Value: " << (msg.IsDouble() ? goby::util::as<std::string>(msg.GetDouble()) : msg.GetString())
-               << " Time: " << goby::util::unix_double2ptime(msg.GetTime())
-               << " Community: " << msg.GetCommunity() 
-               << " Source: " << msg.m_sSrc // no getter in CMOOSMsg!!!
-               << " Source Aux: " << msg.GetSourceAux();
-            return os;
-        }
     }
 }
 

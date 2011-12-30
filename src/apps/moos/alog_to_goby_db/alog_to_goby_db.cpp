@@ -128,8 +128,6 @@ public:
                 
                 if(!desc)
                     throw(std::runtime_error("Unknown type " + action.protobuf_type_name() + " are you sure this is compiled in?"));
-
-                goby::util::DynamicProtobufManager::add_protobuf_file_with_dependencies(desc->file());
                 
                 typedef Wt::Dbo::collection< Wt::Dbo::ptr<std::pair<int, CMOOSMsg> > > Msgs;
                 Msgs msgs;
@@ -146,9 +144,9 @@ public:
                     goby::glog.is(DEBUG1) && goby::glog << moos_msg << std::endl;
 
                     if(action.is_key_equals_value_string())
-                        from_moos_comma_equals_string(msg.get(), boost::to_lower_copy(moos_msg.GetString()));
+                        goby::moos::MOOSTranslation<goby::moos::protobuf::TranslatorEntry::TECHNIQUE_COMMA_SEPARATED_KEY_EQUALS_VALUE_PAIRS>::parse(boost::to_lower_copy(moos_msg.GetString()), msg.get());
                     else
-                        parse(action.format(), moos_msg.GetString(), msg.get());
+                        goby::moos::MOOSTranslation<goby::moos::protobuf::TranslatorEntry::TECHNIQUE_FORMAT>::parse(moos_msg.GetString(), msg.get(), action.format());
                     
                     goby::glog.is(DEBUG1) && goby::glog << "[[" << msg->GetDescriptor()->full_name() << "]] " << msg->DebugString() << std::endl;
                     proto_msgs[(**it).first] = msg;

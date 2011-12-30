@@ -1,3 +1,3 @@
 run
 > pAcommsHandler -e 
-to generate a complete example .moos file. See ~/goby/cfg/MOOS for some examples.
+to generate a complete example .moos file. See ~/goby/share/cfg/MOOS for some examples.

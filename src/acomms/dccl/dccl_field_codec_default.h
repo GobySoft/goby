@@ -43,7 +43,7 @@ namespace goby
 {
     namespace acomms
     {
-
+        
         /// \brief Provides the default 1 byte or 2 byte DCCL ID codec
         class DCCLDefaultIdentifierCodec : public DCCLTypedFieldCodec<uint32>
         {

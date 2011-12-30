@@ -64,18 +64,21 @@ namespace goby
             void add_algorithms(const std::vector<std::string> algorithms) {algorithms_.push_back(algorithms);}
     
             //get
-//    std::string var() const {return var_;}
-//    std::string format() const {return format_;}
-//    bool format_set()  const {return format_set_;}
-//    bool use_all_names() const {return use_all_names_;}
+            std::string var() const {return var_;}
+            std::string format() const {return format_;}
+            bool format_set()  const {return format_set_;}
+            bool use_all_names() const {return use_all_names_;}
     
-            DCCLCppType type() {return type_;}
-//    std::vector<std::string> const& names() {return names_;}
-//    std::vector<std::vector<std::string> > const& algorithms(){return algorithms_;}
+            DCCLCppType type() const {return type_;}
+            std::vector<boost::shared_ptr<DCCLMessageVar> > const & message_vars() const { return message_vars_; }
+            
+
+            std::vector<std::string> const& names() const {return names_;}
+            std::vector<std::vector<std::string> > const& algorithms() const {return algorithms_;}
     
         
             std::string get_display() const;
-
+            
             void write_publish(const std::map<std::string,std::vector<DCCLMessageVal> >& vals,
                                std::multimap<std::string,DCCLMessageVal>* pubsub_vals);
         
@@ -83,7 +86,7 @@ namespace goby
         
 
             void initialize(const DCCLMessage& msg);
-
+            
           private:
             void fill_format(const std::map<std::string,std::vector<DCCLMessageVal> >& vals,
                              std::string& key,

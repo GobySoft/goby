@@ -35,6 +35,7 @@
 #include "message_val.h"
 #include "goby/acomms/dccl/dccl_exception.h"
 #include "goby/moos/protobuf/transitional.pb.h"
+#include "goby/moos/protobuf/pAcommsHandler_config.pb.h"
 #include "goby/acomms/protobuf/queue.pb.h"
 #include "goby/acomms/protobuf/modem_message.pb.h"
 #include "goby/acomms/acomms_helpers.h"
@@ -102,7 +103,10 @@ namespace goby
             /// destructor
             ~DCCLTransitionalCodec() {}
             //@}
-        
+
+            void convert_to_v2_representation(pAcommsHandlerConfig* cfg);
+            
+            
             /// \name Initialization Methods.
             ///
             /// These methods are intended to be called before doing any work with the class. However,
@@ -110,17 +114,19 @@ namespace goby
             //@{
 
             /// \brief Set (and overwrite completely if present) the current configuration. (protobuf::DCCLTransitionalConfig defined in acomms_dccl.proto)
-            void set_cfg(const protobuf::DCCLTransitionalConfig& cfg);
+//            void set_cfg(const protobuf::DCCLTransitionalConfig& cfg);
 
             /// \brief Set (and merge "repeat" fields) the current configuration. (protobuf::DCCLTransitionalConfig defined in acomms_dccl.proto)
-            void merge_cfg(const protobuf::DCCLTransitionalConfig& cfg);
-        
+//            void merge_cfg(const protobuf::DCCLTransitionalConfig& cfg);
+            
+
+            
             /// \brief Add an algorithm callback for a MessageVal. The return value is stored back into the input parameter (MessageVal). See test.cpp for an example.
             ///
             /// \param name name of the algorithm (\xmltag{... algorithm="name"})
             /// \param func has the form void name(MessageVal& val_to_edit) (see AdvAlgFunction1). can be a function pointer (&name) or
             /// any function object supported by boost::function (http://www.boost.org/doc/libs/1_34_0/doc/html/function.html)
-            void add_algorithm(const std::string& name, AlgFunction1 func);
+//            void add_algorithm(const std::string& name, AlgFunction1 func);
         
             /// \brief Add an advanced algorithm callback for any DCCL C++ type that may also require knowledge of all the other message variables
             /// and can optionally have additional parameters
@@ -133,10 +139,10 @@ namespace goby
             /// any function object supported by boost::function (http://www.boost.org/doc/libs/1_34_0/doc/html/function.html).
             /// \param params (passed to func) a list of colon separated parameters passed by the user in the XML file. param[0] is the name.
             /// \param vals (passed to func) a map of \ref tag_name to current values for all message variables.
-            void add_adv_algorithm(const std::string& name, AlgFunction2 func);
+//            void add_adv_algorithm(const std::string& name, AlgFunction2 func);
 
             /// Registers the group names used for the FlexOstream logger
-            static void add_flex_groups(util::FlexOstream* tout);
+//            static void add_flex_groups(util::FlexOstream* tout);
             
             //@}
         
@@ -149,28 +155,28 @@ namespace goby
             /// \param k can either be std::string (the name of the message) or unsigned (the id of the message)
             /// \param bytes location for the encoded bytes to be stored. this is suitable for sending to the Micro-Modem
             /// \param m map of std::string (\ref tag_name) to a vector of MessageVal representing the values to encode. No fields can be arrays using this call. If fields are arrays, all values but the first in the array will be set to NaN or blank.
-            template<typename Key>
-                void encode(const Key& k, boost::shared_ptr<google::protobuf::Message>& msg,
-                            const std::map<std::string, DCCLMessageVal>& m)
-            {
-                std::map<std::string, std::vector<DCCLMessageVal> > vm;
+            /* template<typename Key> */
+            /*     void encode(const Key& k, boost::shared_ptr<google::protobuf::Message>& msg, */
+            /*                 const std::map<std::string, DCCLMessageVal>& m) */
+            /* { */
+            /*     std::map<std::string, std::vector<DCCLMessageVal> > vm; */
 
-                typedef std::pair<std::string,DCCLMessageVal> P;
-                BOOST_FOREACH(const P& p, m)
-                    vm.insert(std::pair<std::string,std::vector<DCCLMessageVal> >(p.first, p.second));
+            /*     typedef std::pair<std::string,DCCLMessageVal> P; */
+            /*     BOOST_FOREACH(const P& p, m) */
+            /*         vm.insert(std::pair<std::string,std::vector<DCCLMessageVal> >(p.first, p.second)); */
                 
-                encode_private(to_iterator(k), msg, vm);
-            }
+            /*     encode_private(to_iterator(k), msg, vm); */
+            /* } */
 
             /// \brief Encode a message.
             ///
             /// \param k can either be std::string (the name of the message) or unsigned (the id of the message)
             /// \param bytes location for the encoded bytes to be stored. this is suitable for sending to the Micro-Modem
             /// \param m map of std::string (\ref tag_name) to a vector of MessageVal representing the values to encode. Fields can be arrays.
-            template<typename Key>
-                void encode(const Key& k, boost::shared_ptr<google::protobuf::Message>& msg,
-                            const std::map<std::string, std::vector<DCCLMessageVal> >& m)
-            { encode_private(to_iterator(k), msg, m); }
+            /* template<typename Key> */
+            /*     void encode(const Key& k, boost::shared_ptr<google::protobuf::Message>& msg, */
+            /*                 const std::map<std::string, std::vector<DCCLMessageVal> >& m) */
+            /* { encode_private(to_iterator(k), msg, m); } */
 
         
             /// \brief Decode a message.
@@ -178,26 +184,26 @@ namespace goby
             /// \param k can either be std::string (the name of the message) or unsigned (the id of the message
             /// \param bytes the bytes to be decoded.
             /// \param m map of std::string (\ref tag_name) to MessageVal to store the values to be decoded. No fields can be arrays using this call. If fields are arrays, only the first value is returned.
-            void decode(const google::protobuf::Message& msg,
-                        std::map<std::string, DCCLMessageVal>& m)
-            {
-                std::map<std::string, std::vector<DCCLMessageVal> > vm;
+            /* void decode(const google::protobuf::Message& msg, */
+            /*             std::map<std::string, DCCLMessageVal>& m) */
+            /* { */
+            /*     std::map<std::string, std::vector<DCCLMessageVal> > vm; */
                 
-                decode_private(msg, vm);
+            /*     decode_private(msg, vm); */
             
-                typedef std::pair<std::string,std::vector<DCCLMessageVal> > P;
-                BOOST_FOREACH(const P& p, vm)
-                    m.insert(std::pair<std::string,DCCLMessageVal>(p.first, DCCLMessageVal(p.second)));
-            }
+            /*     typedef std::pair<std::string,std::vector<DCCLMessageVal> > P; */
+            /*     BOOST_FOREACH(const P& p, vm) */
+            /*         m.insert(std::pair<std::string,DCCLMessageVal>(p.first, DCCLMessageVal(p.second))); */
+            /* } */
         
             /// \brief Decode a message.
             ///
             /// \param k can either be std::string (the name of the message) or unsigned (the id of the message
             /// \param bytes the bytes to be decoded.
             /// \param m map of std::string (\ref tag_name) to MessageVal to store the values to be decoded
-            void decode(const google::protobuf::Message& msg,
-                        std::map<std::string, std::vector<DCCLMessageVal> >& m)
-            { decode_private(msg, m); }
+            /* void decode(const google::protobuf::Message& msg, */
+            /*             std::map<std::string, std::vector<DCCLMessageVal> >& m) */
+            /* { decode_private(msg, m); } */
             
         
             //@}
@@ -293,60 +299,60 @@ namespace goby
             /// \param k can either be std::string (the name of the message) or unsigned (the id of the message)
             /// \param msg location for the encoded message to be stored (goby::acomms::protobuf::ModemDataTransmission defined in acomms_modem_message.proto)
             /// \param vals map of source variable name to MessageVal values. 
-            template<typename Key>
-                void pubsub_encode(const Key& k,
-                                   boost::shared_ptr<google::protobuf::Message>& msg,
-                                   const std::map<std::string, std::vector<DCCLMessageVal> >& pubsub_vals)
-            {
-                std::vector<DCCLMessage>::iterator it = to_iterator(k);
+            /* template<typename Key> */
+            /*     void pubsub_encode(const Key& k, */
+            /*                        boost::shared_ptr<google::protobuf::Message>& msg, */
+            /*                        const std::map<std::string, std::vector<DCCLMessageVal> >& pubsub_vals) */
+            /* { */
+            /*     std::vector<DCCLMessage>::iterator it = to_iterator(k); */
                 
-                if(log_)
-                {
-                    *log_ << group("dccl_enc") << "starting publish/subscribe encode for " << it->name() << std::endl;
-                    *log_ << group("dccl_enc") << "publish/subscribe variables are: " << std::endl;
+            /*     if(log_) */
+            /*     { */
+            /*         *log_ << group("dccl_enc") << "starting publish/subscribe encode for " << it->name() << std::endl; */
+            /*         *log_ << group("dccl_enc") << "publish/subscribe variables are: " << std::endl; */
                     
-                    typedef std::pair<std::string, std::vector<DCCLMessageVal> > P;
-                    BOOST_FOREACH(const P& p, pubsub_vals)                    
-                    {
-                        if(!p.first.empty())
-                        {
-                            BOOST_FOREACH(const DCCLMessageVal& mv, p.second)
-                                *log_ << group("dccl_enc") << "\t" << p.first << ": " <<  mv << std::endl;
-                        }   
-                    }                 
-                }
+            /*         typedef std::pair<std::string, std::vector<DCCLMessageVal> > P; */
+            /*         BOOST_FOREACH(const P& p, pubsub_vals)                     */
+            /*         { */
+            /*             if(!p.first.empty()) */
+            /*             { */
+            /*                 BOOST_FOREACH(const DCCLMessageVal& mv, p.second) */
+            /*                     *log_ << group("dccl_enc") << "\t" << p.first << ": " <<  mv << std::endl; */
+            /*             }    */
+            /*         }                  */
+            /*     } */
 
                 
-                std::map<std::string, std::vector<DCCLMessageVal> > vals;
-                // clean the pubsub vals into dccl vals
-                // using <src_var/> tag, do casts from double, pull strings from key=value,key=value, etc.
-                BOOST_FOREACH(boost::shared_ptr<DCCLMessageVar> mv, it->layout())
-                    mv->read_pubsub_vars(vals, pubsub_vals);
-                BOOST_FOREACH(boost::shared_ptr<DCCLMessageVar> mv, it->header())
-                    mv->read_pubsub_vars(vals, pubsub_vals);
+            /*     std::map<std::string, std::vector<DCCLMessageVal> > vals; */
+            /*     // clean the pubsub vals into dccl vals */
+            /*     // using <src_var/> tag, do casts from double, pull strings from key=value,key=value, etc. */
+            /*     BOOST_FOREACH(boost::shared_ptr<DCCLMessageVar> mv, it->layout()) */
+            /*         mv->read_pubsub_vars(vals, pubsub_vals); */
+            /*     BOOST_FOREACH(boost::shared_ptr<DCCLMessageVar> mv, it->header()) */
+            /*         mv->read_pubsub_vars(vals, pubsub_vals); */
             
-                encode_private(it, msg, vals);
+            /*     encode_private(it, msg, vals); */
 
-                if(log_) *log_ << group("dccl_enc") << "message published to variable: " <<
-                            get_outgoing_hex_var(it->id()) << std::endl;
-            }
+            /*     if(log_) *log_ << group("dccl_enc") << "message published to variable: " << */
+            /*                 get_outgoing_hex_var(it->id()) << std::endl; */
+            /* } */
 
             /// \brief Encode a message using \ref tag_src_var tags instead of \ref tag_name tags
             /// 
             /// Use this version if you do not have vectors of src_var values
-            template<typename Key>
-                void pubsub_encode(const Key& k,
-                                   boost::shared_ptr<google::protobuf::Message>& msg,
-                                   const std::map<std::string, DCCLMessageVal>& pubsub_vals)
-            {
-                std::map<std::string, std::vector<DCCLMessageVal> > vm;
+            /* template<typename Key> */
+            /*     void pubsub_encode(const Key& k, */
+            /*                        boost::shared_ptr<google::protobuf::Message>& msg, */
+            /*                        const std::map<std::string, DCCLMessageVal>& pubsub_vals) */
+            /* { */
+            /*     std::map<std::string, std::vector<DCCLMessageVal> > vm; */
 
-                typedef std::pair<std::string,DCCLMessageVal> P;
-                BOOST_FOREACH(const P& p, pubsub_vals)
-                    vm.insert(std::pair<std::string,std::vector<DCCLMessageVal> >(p.first, p.second));
+            /*     typedef std::pair<std::string,DCCLMessageVal> P; */
+            /*     BOOST_FOREACH(const P& p, pubsub_vals) */
+            /*         vm.insert(std::pair<std::string,std::vector<DCCLMessageVal> >(p.first, p.second)); */
             
-                pubsub_encode(k, msg, vm);
-            }
+            /*     pubsub_encode(k, msg, vm); */
+            /* } */
 
         
             /// \brief Decode a message using formatting specified in publish tags.
@@ -357,29 +363,29 @@ namespace goby
             /// \param k can either be std::string (the name of the message) or unsigned (the id of the message)
             /// \param msg message to be decoded. (goby::acomms::protobuf::ModemDataTransmission defined in acomms_modem_message.proto)
             /// \param vals pointer to std::multimap of publish variable name to std::string values.
-            void pubsub_decode(const google::protobuf::Message& msg,
-                               std::multimap<std::string, DCCLMessageVal>* pubsub_vals)
+            /* void pubsub_decode(const google::protobuf::Message& msg, */
+            /*                    std::multimap<std::string, DCCLMessageVal>* pubsub_vals) */
                                
-            {
-                std::map<std::string, std::vector<DCCLMessageVal> > vals;
-                std::vector<DCCLMessage>::iterator it = decode_private(msg, vals);
+            /* { */
+            /*     std::map<std::string, std::vector<DCCLMessageVal> > vals; */
+            /*     std::vector<DCCLMessage>::iterator it = decode_private(msg, vals); */
                 
-                // go through all the publishes_ and fill in the format strings
-                BOOST_FOREACH(DCCLPublish& p, it->publishes())
-                    p.write_publish(vals, pubsub_vals);
+            /*     // go through all the publishes_ and fill in the format strings */
+            /*     BOOST_FOREACH(DCCLPublish& p, it->publishes()) */
+            /*         p.write_publish(vals, pubsub_vals); */
 
-                if(log_)
-                {
-                    *log_ << group("dccl_dec") << "publish/subscribe variables are: " << std::endl;
-                    typedef std::pair<std::string, DCCLMessageVal> P;
-                    BOOST_FOREACH(const P& p, *pubsub_vals)
-                    {
+            /*     if(log_) */
+            /*     { */
+            /*         *log_ << group("dccl_dec") << "publish/subscribe variables are: " << std::endl; */
+            /*         typedef std::pair<std::string, DCCLMessageVal> P; */
+            /*         BOOST_FOREACH(const P& p, *pubsub_vals) */
+            /*         { */
                         
-                        *log_ << group("dccl_dec") << "\t" << p.first << ": " << p.second << std::endl;
-                    }                 
-                    *log_ << group("dccl_dec") << "finished publish/subscribe decode for " << it->name() << std::endl;
-                }
-            }
+            /*             *log_ << group("dccl_dec") << "\t" << p.first << ": " << p.second << std::endl; */
+            /*         }                  */
+            /*         *log_ << group("dccl_dec") << "finished publish/subscribe decode for " << it->name() << std::endl; */
+            /*     } */
+            /* } */
         
         
             /// what moos variables do i need to provide to create a message with a call to encode_using_src_vars
@@ -437,11 +443,14 @@ namespace goby
             const ManipulatorManager& manip_manager() const { return manip_manager_; }
         
           private:
-            /// \brief Add more messages to this instance of the codec.
-            ///
-            /// \param xml_file path to the xml file to parse and add to this codec.
-            /// \return returns id of the last message file parsed. note that there can be more than one message in a file
-            std::set<unsigned> add_xml_message_file(const std::string& xml_file);
+            void convert_xml_message_file(const std::string& xml_file,
+                                          std::string* proto_file,
+                                          google::protobuf::RepeatedPtrField<goby::moos::protobuf::TranslatorEntry>* translator_entries);
+
+            void fill_create(boost::shared_ptr<DCCLMessageVar> var,
+                             std::map<std::string, goby::moos::protobuf::TranslatorEntry::CreateParser*>* parser_map,
+                             goby::moos::protobuf::TranslatorEntry* entry);
+
             
             std::vector<DCCLMessage>::const_iterator to_iterator(const std::string& message_name) const;
             std::vector<DCCLMessage>::iterator to_iterator(const std::string& message_name);
@@ -458,11 +467,10 @@ namespace goby
         
             void check_duplicates();
             
-            void convert_to_protobuf_descriptor(const std::vector<unsigned>& added_ids, const std::string& proto_file_to_write, const std::vector<goby::transitional::protobuf::QueueConfig>& queue_cfg);
             
             
 
-            void process_cfg();
+            //      void process_cfg();
             
           private:
             std::ostream* log_;

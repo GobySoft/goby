@@ -159,6 +159,9 @@ std::string goby::transitional::DCCLMessageVar::parse_string_val(const std::stri
 
 void goby::transitional::DCCLMessageVar::write_schema_to_dccl2(std::ofstream* proto_file, int sequence_number)
 {
+    sequence_number_ = sequence_number;
+
+    
     *proto_file << "\t";
 
     if(array_length_ == 1)

@@ -48,13 +48,22 @@ namespace goby
         {
           public:
             static DCCLAlgorithmPerformer* getInstance();
+            static void deleteInstance();
 
-            void algorithm(DCCLMessageVal& in, unsigned array_index, const std::string& algorithm, const std::map<std::string,std::vector<DCCLMessageVal> >& vals);
-        
+            void algorithm(DCCLMessageVal& in,
+                           unsigned array_index,
+                           const std::string& algorithm,
+                           const std::map<std::string,std::vector<DCCLMessageVal> >& vals);
+
+            void run_algorithm(const std::string& algorithm,
+                               DCCLMessageVal& in,
+                               const std::vector<DCCLMessageVal>& ref);
+            
+            
             void add_algorithm(const std::string& name, AlgFunction1 func)
             { adv_map1_[name] = func; }
 
-            void add_algorithm(const std::string& name, AlgFunction2 func)
+            void add_adv_algorithm(const std::string& name, AlgFunction2 func)
             { adv_map2_[name] = func; }
 
             void check_algorithm(const std::string& alg, const DCCLMessage& msg);
@@ -74,4 +83,6 @@ namespace goby
         };
     }
 }
+
+
 #endif

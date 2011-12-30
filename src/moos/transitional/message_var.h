@@ -110,6 +110,10 @@ namespace goby
             std::string name() const {return name_;}
             std::string source_var() const { return source_var_; }
 
+            int sequence_number() const { return sequence_number_; } 
+            const std::vector<std::string>& algorithms()const  { return algorithms_; }
+
+            
             // other
             void initialize(const DCCLMessage& msg);
             //         std::string get_display() const;
@@ -159,12 +163,14 @@ namespace goby
             bool is_key_frame_;
             std::string source_var_;
             std::string name_;
+            int sequence_number_;
         
           private:
             bool source_set_;
             DCCLAlgorithmPerformer * ap_;
             std::string source_key_;
             std::vector<std::string> algorithms_;
+            
         };
 
 

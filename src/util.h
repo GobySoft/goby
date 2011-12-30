@@ -24,7 +24,7 @@
 #include "goby/util/linebasedcomms.h"
 #include "goby/util/binary.h"
 #include "goby/util/time.h"
-#include "goby/util/logger.h"
+#include "goby/common/logger.h"
 #include "goby/util/sci.h"
 #include "goby/util/as.h"
 

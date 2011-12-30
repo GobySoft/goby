@@ -13,13 +13,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
-#include "goby/common/option_extensions.pb.h"
-// #include "goby/common/app_base_config.pb.h"
+#include "goby/common/protobuf/option_extensions.pb.h"
 
 #include "configuration_reader.h"
 
-#include "goby/util/logger/term_color.h"
-#include "goby/util/logger/flex_ostream.h"
+#include "goby/common/logger/term_color.h"
+#include "goby/common/logger/flex_ostream.h"
 #include "exception.h"
 #include <google/protobuf/dynamic_message.h>
 #include <algorithm>
@@ -614,39 +613,8 @@ std::string goby::util::ConfigReader::label(const google::protobuf::FieldDescrip
     return "";
 }
 
-/*
-void goby::util::ConfigReader::merge_app_base_cfg(AppBaseConfig* base_cfg,
-                        const boost::program_options::variables_map& var_map)
-{
-    if(var_map.count("ncurses"))
-    {
-        base_cfg->mutable_glog_config()->set_tty_verbosity(GLogConfig::GUI);
-    }
-    else if (var_map.count("verbose"))
-    {
-        switch(var_map["verbose"].as<std::string>().size())
-        {
-            default:
-            case 0:
-                base_cfg->mutable_glog_config()->set_tty_verbosity(GLogConfig::VERBOSE);
-                break;
-            case 1:
-                base_cfg->mutable_glog_config()->set_tty_verbosity(GLogConfig::DEBUG1);
-                break;
-            case 2:
-                base_cfg->mutable_glog_config()->set_tty_verbosity(GLogConfig::DEBUG2);
-                break;
-            case 3:
-                base_cfg->mutable_glog_config()->set_tty_verbosity(GLogConfig::DEBUG3);
-                break;
-        }
-    }
 
-    if(var_map.count("no_db"))
-        base_cfg->mutable_database_config()->set_using_database(false);
-}
 
-*/
 
 std::string goby::util::ConfigReader::word_wrap(std::string s, unsigned width,
                                                 const std::string & delim)

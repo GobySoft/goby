@@ -28,7 +28,7 @@
 #include <boost/foreach.hpp>
 
 #include "goby/acomms/dccl/dccl_common.h"
-#include "goby/util/logger.h"
+#include "goby/common/logger.h"
 #include "goby/acomms/acomms_helpers.h"
 
 #include "mac_manager.h"

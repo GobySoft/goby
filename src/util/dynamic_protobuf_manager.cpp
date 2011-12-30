@@ -15,7 +15,7 @@
 
 #include "dynamic_protobuf_manager.h"
 
-#include "goby/util/exception.h"
+#include "goby/common/exception.h"
 
 boost::shared_ptr<goby::util::DynamicProtobufManager> goby::util::DynamicProtobufManager::inst_;
 

@@ -20,7 +20,7 @@
 #ifndef DriverException20108012H
 #define DriverException20100812H
 
-#include "goby/util/exception.h"
+#include "goby/common/exception.h"
 
 namespace goby
 {

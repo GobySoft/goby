@@ -14,7 +14,7 @@ As the first example, the files for this example are located at the end of the c
 
 !DepthSimulator! reads a starting depth value from a configuration file and reports that value as the current depth, perturbed slightly by a random value. It's a primitive constant depth simulator, but allows us to illustrate another feature of Goby, the configuration file reader.
 
-Goby reads configuration text files and the command line using \gls{protobuf}, in a similar manner messages are defined for passing between applications. The Goby application author provides a !.proto! file containing a protobuf message that defines all possible valid configuration values for the given application in the form of a protobuf message. Then the application instantiates a copy of this configuration message and passes it to the !goby::core::ApplicationBase! constructor with reads the configuration text file and/or command line options. If the configuration text file and/or command line options properly populate the provided proper configuration protobuf message, the message is returned to the derived class (the Goby application). Otherwise, execution of the application ends with a useful error message for the user explaining the errors involved with the passed configuration. 
+Goby reads configuration text files and the command line using \gls{protobuf}, in a similar manner messages are defined for passing between applications. The Goby application author provides a !.proto! file containing a protobuf message that defines all possible valid configuration values for the given application in the form of a protobuf message. Then the application instantiates a copy of this configuration message and passes it to the !goby::common::ApplicationBase! constructor with reads the configuration text file and/or command line options. If the configuration text file and/or command line options properly populate the provided proper configuration protobuf message, the message is returned to the derived class (the Goby application). Otherwise, execution of the application ends with a useful error message for the user explaining the errors involved with the passed configuration. 
 
 Thus, for the !DepthSimulator! we define a protobuf message called !DepthSimulatorConfig!:
 \begin{boxedverbatim}
@@ -32,22 +32,22 @@ Specifically, for our !DepthSimulator!, we only have one other configuration par
 
 To use the Goby configuration reader, we create an instantation of our !DepthSimulatorConfig!
 \begin{boxedverbatim}
-class DepthSimulator : public goby::core::ApplicationBase
+class DepthSimulator : public goby::common::ApplicationBase
 { 
 ...
     static DepthSimulatorConfig cfg_;
 };
 \end{boxedverbatim}
 \resetbvlinenumber
-which must either be a global object or a static member of our class\footnote{The configuration object must be a static member so that it is instantiated \textit{before} the \texttt{goby::core::ApplicationBase} since normal members of our \texttt{DepthSimulator} class would be instantiated \textit{after} \texttt{ApplicationBase}, which would lead to trouble when \texttt{ApplicationBase} tried to use the object.}.
+which must either be a global object or a static member of our class\footnote{The configuration object must be a static member so that it is instantiated \textit{before} the \texttt{goby::common::ApplicationBase} since normal members of our \texttt{DepthSimulator} class would be instantiated \textit{after} \texttt{ApplicationBase}, which would lead to trouble when \texttt{ApplicationBase} tried to use the object.}.
 
 Then, all we must do is pass a pointer to that object to the constructor of the base class:
 \begin{boxedverbatim}
     DepthSimulator()
-        : goby::core::ApplicationBase(&cfg_)
+        : goby::common::ApplicationBase(&cfg_)
 \end{boxedverbatim}
 \resetbvlinenumber
-!goby::core::ApplicationBase! will take of the rest. To see what configuration values (with the correct syntax) can be used in our compiled !depth_simulator_g!, we can run it with the !-e! flag:
+!goby::common::ApplicationBase! will take of the rest. To see what configuration values (with the correct syntax) can be used in our compiled !depth_simulator_g!, we can run it with the !-e! flag:
 
 \begin{boxedverbatim}
 > depth_simulator_g -e
@@ -188,7 +188,7 @@ void loop()
 
 You will note that depth\_reading.proto contains an import command and a field of type `Header':
 \begin{boxedverbatim}
-import "goby/core/proto/header.proto";
+import "goby/pb/proto/header.proto";
 
 message DepthReading
 {
@@ -199,7 +199,7 @@ message DepthReading
 \end{boxedverbatim}
 \resetbvlinenumber
 
-`Header' (defined in goby/src/core/proto/header.proto) provides commonly used fields such as time and source / destination addressing. It is highly recommended to include this in messages sent through Goby, but not required. !goby::core::ApplicationBase! will populate any required fields in `Header' not given by DepthSimulator. For example, if the `time' is not set, !goby::core::ApplicationBase! will set the time based on the time !publish()! was called. However `time' should be set if the calling application has a better time stamp for the message than the publish time (for example, the time a sensor's sample was taken).
+`Header' (defined in goby/src/core/proto/header.proto) provides commonly used fields such as time and source / destination addressing. It is highly recommended to include this in messages sent through Goby, but not required. !goby::common::ApplicationBase! will populate any required fields in `Header' not given by DepthSimulator. For example, if the `time' is not set, !goby::common::ApplicationBase! will set the time based on the time !publish()! was called. However `time' should be set if the calling application has a better time stamp for the message than the publish time (for example, the time a sensor's sample was taken).
 
 \section{Our first \textit{useful} application: \texttt{GPSDriver}}
 

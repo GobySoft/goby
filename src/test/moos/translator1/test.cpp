@@ -15,7 +15,7 @@
 
 #include <iostream>
 
-#include "goby/util/logger.h"
+#include "goby/common/logger.h"
 #include "goby/moos/moos_translator.h"
 #include "test.pb.h"
 #include "basic_node_report.pb.h"

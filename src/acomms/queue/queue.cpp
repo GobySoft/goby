@@ -18,11 +18,11 @@
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "goby/acomms/acomms_constants.h"
-#include "goby/util/logger.h"
+#include "goby/common/logger.h"
 
 #include "queue.h"
 #include "queue_manager.h"
-#include "goby/common/acomms_option_extensions.pb.h"
+#include "goby/common/protobuf/acomms_option_extensions.pb.h"
 
 using goby::util::goby_time;
 

@@ -1,4 +1,4 @@
-#include "goby/util/logger.h"
+#include "goby/common/logger.h"
 #include <cassert>
 
 #include <sstream>

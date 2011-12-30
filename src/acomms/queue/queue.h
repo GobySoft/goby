@@ -36,7 +36,7 @@
 #include "goby/util/as.h"
 
 #include "goby/acomms/protobuf/queue.pb.h"
-#include "goby/common/acomms_option_extensions.pb.h"
+#include "goby/common/protobuf/acomms_option_extensions.pb.h"
 #include "goby/acomms/acomms_helpers.h"
 
 namespace goby

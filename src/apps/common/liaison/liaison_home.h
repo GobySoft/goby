@@ -1,7 +1,5 @@
-// copyright 2009 t. schneider tes@mit.edu
+// copyright 2011 t. schneider tes@mit.edu
 // 
-// this file is part of goby-util, a collection of utility libraries
-//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -15,12 +13,27 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
-// courtesy header for the Stream Logging library (libstreamlogger)
+#ifndef LIAISONHOME20110609H
+#define LIAISONHOME20110609H
 
-#ifndef STREAMLOGGERCOURTESY20091211H
-#define STREAMLOGGERCOURTESY20091211H
+#include <Wt/WText>
+#include <Wt/WCssDecorationStyle>
+#include <Wt/WBorder>
+#include <Wt/WColor>
 
-#include "goby/util/logger/flex_ostream.h"
-#include "goby/util/logger/logger_manipulators.h"
+#include "liaison.h"
+
+namespace goby
+{
+    namespace common
+    {
+        class LiaisonHome : public LiaisonContainer
+        {
+          public:
+            LiaisonHome();
+            
+        };
+    }
+}
 
 #endif

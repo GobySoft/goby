@@ -28,7 +28,7 @@
 #include "goby/acomms/queue.h"
 #include "goby/acomms/modem_driver.h"
 #include "goby/acomms/amac.h"
-#include "goby/util/logger.h"
+#include "goby/common/logger.h"
 
 namespace goby
 {

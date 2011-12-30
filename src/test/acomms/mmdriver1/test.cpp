@@ -17,7 +17,7 @@
 // tests functionality of the MMDriver WHOI Micro-Modem driver
 
 #include "goby/acomms/modemdriver/mm_driver.h"
-#include "goby/util/logger.h"
+#include "goby/common/logger.h"
 #include "goby/util/binary.h"
 #include "goby/acomms/connect.h"
 

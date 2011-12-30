@@ -1,3 +1,7 @@
+if(build_common)
+  add_subdirectory(common)
+endif()
+
 if(build_acomms)
   add_subdirectory(acomms)
 endif()

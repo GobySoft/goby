@@ -17,7 +17,7 @@
 #include "goby/acomms/queue.h"
 #include "goby/acomms/connect.h"
 #include "goby/util/binary.h"
-#include "goby/util/logger.h"
+#include "goby/common/logger.h"
 #include "goby/acomms/dccl/dccl_field_codec_default.h"
 
 // tests multi-frame DCCL queuing with non-BROADCAST destination

@@ -9,5 +9,9 @@ if(build_pTranslator)
   add_subdirectory(pTranslator) 
 endif()
 
-add_subdirectory(analyze_dccl_xml)
+
 add_subdirectory(dccl_xml_to_dccl_proto)
+add_subdirectory(moos_gateway_g)
+
+# broken
+# add_subdirectory(analyze_dccl_xml)

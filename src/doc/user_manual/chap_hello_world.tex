@@ -22,9 +22,9 @@ This example involves passing a single type of message (class HelloWorldMsg) fro
 \label{fig:hello_world_sketch}
 \end{figure}
 
-\section{Meeting goby::core::ApplicationBase}
+\section{Meeting goby::common::ApplicationBase}
 
-!goby::core::ApplicationBase! is the building block (\gls{base class}) upon which we will make our Goby applications (which will be \glspl{derived class} of ApplicationBase). !ApplicationBase! provides us with a number of tools; the main ones are:
+!goby::common::ApplicationBase! is the building block (\gls{base class}) upon which we will make our Goby applications (which will be \glspl{derived class} of ApplicationBase). !ApplicationBase! provides us with a number of tools; the main ones are:
 
 \begin{itemize}
 \item a constructor !ApplicationBase()! that reads the command line parameters and the configuration file (we will learn about this in Chapter \ref{chap:gps_driver}) and connects to the \gls{multicast} group for us.
@@ -115,17 +115,17 @@ std::cout << msg.telegram() << ": " << msg.count() << std::endl;
 To create a Goby application, one needs to
 
 \begin{itemize}
-\item create a derived class of !goby::core::ApplicationBase!. We also must include the goby core header (!#include "goby/core.h"!).
+\item create a derived class of !goby::common::ApplicationBase!. We also must include the goby.common header (!#include "goby.common.h"!).
 \item create an overloaded !loop()! method (which can do nothing).
-\item run the application using the !goby::run()! function. Because goby::core::ApplicationBase reads our configuration (including command line options) for us, we also pass !argv! and !argc! to !run()!.
+\item run the application using the !goby::run()! function. Because goby::common::ApplicationBase reads our configuration (including command line options) for us, we also pass !argv! and !argc! to !run()!.
 \end{itemize}
 
 That is all one needs to create a valid working Goby application. All together the ``bare-bones'' Goby application looks like:
 
 \begin{boxedverbatim}
-#include "goby/core.h"
+#include "goby.common.h"
 
-class DoNothingApplication : public goby::core::ApplicationBase 
+class DoNothingApplication : public goby::common::ApplicationBase 
 {
   void loop() {}
 };
@@ -218,11 +218,11 @@ The full source listing for !hello_world2_g! can be found in section \ref{sec:he
 \begin{boxedverbatim}
 protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS hello_world.proto)
 add_executable(hello_world1_g hello_world1.cpp ${PROTO_SRCS} ${PROTO_HDRS})
-target_link_libraries(hello_world1_g goby_core)
+target_link_libraries(hello_world1_g goby_pb)
 \end{boxedverbatim}
 \resetbvlinenumber
 
-Line 1 tells !CMake! to add ``hello\_world.proto'' to the files needed to be pre-compiled by the Google Protocol Buffers compiler !protoc!. protobuf\_generate\_cpp is provided by the CMake module \href{http://bazaar.launchpad.net/~goby-dev/goby/trunk/annotate/head:/cmake_modules/FindProtobufGoby.cmake}{goby/cmake\_modules/FindProtobufGoby.cmake}. Line 2 adds our application !hello_world1_g! to the list to be compiled by the C++ compiler, using the sources !hello_world1.cpp! and the generated Protocol Buffers code. We append ``\_g'' as a convention to quickly recognize Goby applications. Line 3 links our application against the goby\_core library, which provides goby::core::ApplicationBase, our base class. The process of steps !CMake! is using to compile our code is illustrated in Fig. \ref{fig:hello_world_compile}.
+Line 1 tells !CMake! to add ``hello\_world.proto'' to the files needed to be pre-compiled by the Google Protocol Buffers compiler !protoc!. protobuf\_generate\_cpp is provided by the CMake module \href{http://bazaar.launchpad.net/~goby-dev/goby/trunk/annotate/head:/cmake_modules/FindProtobufGoby.cmake}{goby/cmake\_modules/FindProtobufGoby.cmake}. Line 2 adds our application !hello_world1_g! to the list to be compiled by the C++ compiler, using the sources !hello_world1.cpp! and the generated Protocol Buffers code. We append ``\_g'' as a convention to quickly recognize Goby applications. Line 3 links our application against the goby\_core library, which provides goby::common::ApplicationBase, our base class. The process of steps !CMake! is using to compile our code is illustrated in Fig. \ref{fig:hello_world_compile}.
 
 Adding !hello_world2_g! is directly analogous.
 

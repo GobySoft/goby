@@ -19,14 +19,14 @@
 
 #include <boost/foreach.hpp>
 
-#include "goby/util/logger.h"
+#include "goby/common/logger.h"
 #include "goby/util/time.h"
 #include "goby/util/binary.h"
 
 #include "goby/acomms/dccl.h"
-#include "goby/common/acomms_option_extensions.pb.h"
-#include "goby/common/acomms_option_extensions.pb.h"
-#include "goby/util/logger.h"
+#include "goby/common/protobuf/acomms_option_extensions.pb.h"
+#include "goby/common/protobuf/acomms_option_extensions.pb.h"
+#include "goby/common/logger.h"
 #include "goby/util/dynamic_protobuf_manager.h"
 
 #include "queue_manager.h"

@@ -33,7 +33,7 @@
 #include "flex_ostreambuf.h"
 #include "goby/util/sci.h"
 #include "goby/util/time.h"
-#include "goby/util/exception.h"
+#include "goby/common/exception.h"
 #include "logger_manipulators.h"
 
 

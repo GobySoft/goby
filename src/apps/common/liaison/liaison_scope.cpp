@@ -41,7 +41,7 @@ goby::common::LiaisonScope::LiaisonScope(ZeroMQService* service, WTimer* timer)
       model_(new LiaisonScopeMOOSModel(moos_scope_config_, this)),
       proxy_(new Wt::WSortFilterProxyModel(this)),
       main_layout_(new Wt::WVBoxLayout(this)),
-      controls_div_(new ControlsContainer(timer, moos_scope_config_.start_paused())),
+      controls_div_(new ControlsContainer(timer)),
       subscriptions_div_(new SubscriptionsContainer(this, model_, msg_map_)),
       history_header_div_(new HistoryContainer(this, main_layout_, proxy_, moos_scope_config_)),
       regex_filter_div_(new RegexFilterContainer(model_, proxy_, moos_scope_config_)),
@@ -218,11 +218,9 @@ goby::common::LiaisonScopeMOOSModel::LiaisonScopeMOOSModel(const protobuf::MOOSS
 
 
 goby::common::LiaisonScope::ControlsContainer::ControlsContainer(Wt::WTimer* timer,
-                                                               bool is_paused,
-                                                               Wt::WContainerWidget* parent /*= 0*/)
+                                                                 Wt::WContainerWidget* parent /*= 0*/)
     : Wt::WContainerWidget(parent),
       timer_(timer),
-      is_paused_(is_paused),
       play_pause_button_(new WPushButton("Play/Pause", this)),
       play_state_(new Wt::WText(this))
 {
@@ -233,11 +231,12 @@ goby::common::LiaisonScope::ControlsContainer::ControlsContainer(Wt::WTimer* tim
 
 void goby::common::LiaisonScope::ControlsContainer::handle_play_pause(bool toggle_state)
 {
+    bool is_paused = !timer_->isActive();
     if(toggle_state)
-        is_paused_ = !is_paused_;
+        is_paused = !is_paused;
 
-    is_paused_ ? timer_->stop() : timer_->start();
-    play_state_->setText(is_paused_ ? "Paused (any key refreshes). " : "Playing... ");
+    is_paused ? timer_->stop() : timer_->start();
+    play_state_->setText(is_paused ? "Paused (any key refreshes). " : "Playing... ");
 }
 
 goby::common::LiaisonScope::SubscriptionsContainer::SubscriptionsContainer(
@@ -371,7 +370,7 @@ void goby::common::LiaisonScope::HistoryContainer::add_history(const goby::commo
         
         new WText(" (click to remove)", text_container);
         new WBreak(text_container);
-        WPushButton* toggle_plot_button = new WPushButton("Plot", text_container);
+        // WPushButton* toggle_plot_button = new WPushButton("Plot", text_container);
 
         
         text_container->resize(Wt::WLength::Auto, WLength(4, WLength::FontEm));
@@ -383,34 +382,34 @@ void goby::common::LiaisonScope::HistoryContainer::add_history(const goby::commo
         new_proxy->setSourceModel(new_model);
 
         
-        Chart::WCartesianChart* chart = new Chart::WCartesianChart(new_container);
-        toggle_plot_button->clicked().connect(
-            boost::bind(&HistoryContainer::toggle_history_plot, this, chart));
-        chart->setModel(new_model);    
-        chart->setXSeriesColumn(protobuf::MOOSScopeConfig::COLUMN_TIME); 
-        Chart::WDataSeries s(protobuf::MOOSScopeConfig::COLUMN_VALUE, Chart::LineSeries);
-        chart->addSeries(s);        
+        // Chart::WCartesianChart* chart = new Chart::WCartesianChart(new_container);
+        // toggle_plot_button->clicked().connect(
+        //     boost::bind(&HistoryContainer::toggle_history_plot, this, chart));
+        // chart->setModel(new_model);    
+        // chart->setXSeriesColumn(protobuf::MOOSScopeConfig::COLUMN_TIME); 
+        // Chart::WDataSeries s(protobuf::MOOSScopeConfig::COLUMN_VALUE, Chart::LineSeries);
+        // chart->addSeries(s);        
         
-        chart->setType(Chart::ScatterPlot);
-        chart->axis(Chart::XAxis).setScale(Chart::DateTimeScale); 
-        chart->axis(Chart::XAxis).setTitle("Time"); 
-        chart->axis(Chart::YAxis).setTitle(selected_key); 
+        // chart->setType(Chart::ScatterPlot);
+        // chart->axis(Chart::XAxis).setScale(Chart::DateTimeScale); 
+        // chart->axis(Chart::XAxis).setTitle("Time"); 
+        // chart->axis(Chart::YAxis).setTitle(selected_key); 
 
-        WFont font;
-        font.setFamily(WFont::Serif, "Gentium");
-        chart->axis(Chart::XAxis).setTitleFont(font); 
-        chart->axis(Chart::YAxis).setTitleFont(font); 
+        // WFont font;
+        // font.setFamily(WFont::Serif, "Gentium");
+        // chart->axis(Chart::XAxis).setTitleFont(font); 
+        // chart->axis(Chart::YAxis).setTitleFont(font); 
 
         
-        // Provide space for the X and Y axis and title. 
-        chart->setPlotAreaPadding(80, Left);
-        chart->setPlotAreaPadding(40, Top | Bottom);
-        chart->setMargin(10, Top | Bottom);            // add margin vertically
-        chart->setMargin(WLength::Auto, Left | Right); // center horizontally
-        chart->resize(config.plot_width(), config.plot_height());
+        // // Provide space for the X and Y axis and title. 
+        // chart->setPlotAreaPadding(80, Left);
+        // chart->setPlotAreaPadding(40, Top | Bottom);
+        // chart->setMargin(10, Top | Bottom);            // add margin vertically
+        // chart->setMargin(WLength::Auto, Left | Right); // center horizontally
+        // chart->resize(config.plot_width(), config.plot_height());
 
-        if(!config.show_plot())
-            chart->hide();
+        // if(!config.show_plot())
+        //     chart->hide();
         
         Wt::WTreeView* new_tree = new LiaisonScopeMOOSTreeView(moos_scope_config_, new_container);        
         main_layout_->insertWidget(main_layout_->count()-2, new_container);

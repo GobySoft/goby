@@ -120,9 +120,15 @@ namespace goby
                 
           private:
             void add_to_menu(Wt::WMenu* menu, const Wt::WString& name, LiaisonContainer* container);
+            void handle_menu_selection(Wt::WMenuItem * item);
+            
           private:
             Wt::WStackedWidget* contents_stack_;
-            Wt::WTimer* timer_;
+            Wt::WTimer* scope_timer_;
+
+            
+            enum TimerState { ACTIVE = 1, STOPPED = 2, UNKNOWN = 0 };
+            TimerState last_scope_timer_state_;
             
             ZeroMQService zeromq_service_;
         };

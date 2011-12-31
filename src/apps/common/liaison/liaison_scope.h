@@ -66,14 +66,12 @@ namespace goby
             struct ControlsContainer : Wt::WContainerWidget
             {
                 ControlsContainer(Wt::WTimer* timer,
-                                  bool is_paused,
                                   Wt::WContainerWidget* parent = 0);
 
                 void handle_play_pause(bool toggle_state);
 
                 
                 Wt::WTimer* timer_;
-                bool is_paused_;
 
                 Wt::WPushButton* play_pause_button_;
                 Wt::WText* play_state_;

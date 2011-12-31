@@ -27,6 +27,7 @@
 #include "liaison.h"
 #include "liaison_scope.h"
 #include "liaison_home.h"
+#include "liaison_commander.h"
 
 using goby::glog;
 using namespace Wt;    
@@ -117,13 +118,16 @@ void goby::common::Liaison::inbox(MarshallingScheme marshalling_scheme,
 
 goby::common::LiaisonWtThread::LiaisonWtThread(const Wt::WEnvironment& env)
     : Wt::WApplication(env),
+      last_scope_timer_state_(UNKNOWN),
       zeromq_service_(Liaison::zmq_context())
 {    
-    timer_ = new Wt::WTimer();
-    timer_->setInterval(1/Liaison::cfg_.update_freq()*1.0e3);
-    timer_->timeout().connect(this, &LiaisonWtThread::loop);
-    timer_->start();
+    scope_timer_ = new Wt::WTimer();
+    scope_timer_->setInterval(1/Liaison::cfg_.update_freq()*1.0e3);
+    scope_timer_->timeout().connect(this, &LiaisonWtThread::loop);
 
+    if(!Liaison::cfg_.start_paused())
+        scope_timer_->start();
+    
 //    zeromq_service_.connect_inbox_slot(&LiaisonWtThread::inbox, this);
 
     protobuf::ZeroMQServiceConfig ipc_sockets;
@@ -193,42 +197,15 @@ goby::common::LiaisonWtThread::LiaisonWtThread(const Wt::WEnvironment& env)
     menu->setInternalBasePath("/");
     
     add_to_menu(menu, "Home", new LiaisonHome());
-    add_to_menu(menu, "Scope", new LiaisonScope(&zeromq_service_, timer_));
+    add_to_menu(menu, "Commander", new LiaisonCommander()); 
+    add_to_menu(menu, "Scope", new LiaisonScope(&zeromq_service_, scope_timer_));
 //    add_to_menu(menu, "scope2", new LiaisonScope("hello 2"));
 
+    
+    menu->itemSelected().connect(this, &LiaisonWtThread::handle_menu_selection);
 
-    
 
-    
-//    WVBoxLayout *vertLayout1 = new WVBoxLayout(root());
-//    WHBoxLayout *horizLayout1 = new WHBoxLayout; 
-//    WVBoxLayout *vertLayout2 = new WVBoxLayout;
-//    WHBoxLayout *horizLayout2 = new WHBoxLayout;
-
-    
-//     vertLayout1->addWidget(header, 0, AlignCenter | AlignTop);
-//     vertLayout1->addLayout(horizLayout1, 1);
-// //    vertLayout1->setResizable(0, true);
-// //    vertLayout1->setResizable(1, true);
-//     horizLayout1->addWidget(menu);
-//     horizLayout1->setResizable(0, true);
-//     horizLayout1->addLayout(vertLayout2, 1);
-// //    vertLayout2->addWidget(contents_stack_, 0, AlignTop);
-//     vertLayout2->addWidget(contents_stack_, 0, AlignJustify);
-    
-    
-//     vertLayout1->addLayout(horizLayout2, 0);
-//     horizLayout2->addWidget(goby_lp_image_a, 0, AlignLeft | AlignBottom);
-//     horizLayout2->addWidget(goby_logo_a, 0, AlignRight | AlignBottom);
-
-//     root()->resize(WLength::Auto, 600);
-//     Wt::WGridLayout* grid_layout = new Wt::WGridLayout(root());
-    
-//     grid_layout->addWidget(header, 0, 0, 3, 1, AlignCenter | AlignTop);
-// //    grid_layout->addWidget(new Wt::WText("Item 0 1"), 0, 1);
-//     grid_layout->addWidget(menu, 1, 0);
-//     grid_layout->addWidget(contents_stack_, 1,1, 2,1);
-
+    handle_menu_selection(menu->currentItem());
 }
 
 void goby::common::LiaisonWtThread::add_to_menu(WMenu* menu, const WString& name,
@@ -237,6 +214,30 @@ void goby::common::LiaisonWtThread::add_to_menu(WMenu* menu, const WString& name
     menu->addItem(name, container);
     container->set_name(name);
 }
+
+void goby::common::LiaisonWtThread::handle_menu_selection(Wt::WMenuItem * item)
+{    
+    std::cout << "Item selected: " << item->text() << std::endl;
+    std::cout << "Timer state: " <<  last_scope_timer_state_ << std::endl;
+
+    if(item->text() == "Scope")
+    {
+        if(last_scope_timer_state_ == ACTIVE)
+            scope_timer_->start();
+        last_scope_timer_state_ = UNKNOWN;
+    }
+    else
+    {
+        if(last_scope_timer_state_ == UNKNOWN)
+        {
+            last_scope_timer_state_ = scope_timer_->isActive() ? ACTIVE : STOPPED;
+            scope_timer_->stop();
+        }
+    }
+}
+
+
+
 
 void goby::common::LiaisonWtThread::loop()
 {

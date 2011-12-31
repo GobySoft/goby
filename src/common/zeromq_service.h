@@ -121,7 +121,7 @@ namespace goby
                 cfg_.MergeFrom(cfg);
             }
 
-            void subscribe_all(int socket_id);            
+            void subscribe_all(int socket_id);
             void unsubscribe_all(int socket_id);            
             
             void send(MarshallingScheme marshalling_scheme,

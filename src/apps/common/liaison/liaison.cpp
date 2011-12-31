@@ -49,6 +49,30 @@ goby::common::Liaison::Liaison()
       zeromq_service_(zmq_context_),
       pubsub_node_(&zeromq_service_, cfg_.base().pubsub_config())
 {
+
+
+    pubsub_node_.subscribe_all();
+    zeromq_service_.connect_inbox_slot(&Liaison::inbox, this);
+
+    protobuf::ZeroMQServiceConfig ipc_sockets;
+    protobuf::ZeroMQServiceConfig::Socket* internal_publish_socket = ipc_sockets.add_socket();
+    internal_publish_socket->set_socket_type(protobuf::ZeroMQServiceConfig::Socket::PUBLISH);
+    internal_publish_socket->set_socket_id(LIAISON_INTERNAL_PUBLISH_SOCKET);
+    internal_publish_socket->set_transport(protobuf::ZeroMQServiceConfig::Socket::INPROC);
+    internal_publish_socket->set_connect_or_bind(protobuf::ZeroMQServiceConfig::Socket::BIND);
+    internal_publish_socket->set_socket_name(LIAISON_INTERNAL_PUBLISH_SOCKET_NAME);
+
+
+    protobuf::ZeroMQServiceConfig::Socket* internal_subscribe_socket = ipc_sockets.add_socket();
+    internal_subscribe_socket->set_socket_type(protobuf::ZeroMQServiceConfig::Socket::SUBSCRIBE);
+    internal_subscribe_socket->set_socket_id(LIAISON_INTERNAL_SUBSCRIBE_SOCKET);
+    internal_subscribe_socket->set_transport(protobuf::ZeroMQServiceConfig::Socket::INPROC);
+    internal_subscribe_socket->set_connect_or_bind(protobuf::ZeroMQServiceConfig::Socket::BIND);
+    internal_subscribe_socket->set_socket_name(LIAISON_INTERNAL_SUBSCRIBE_SOCKET_NAME);
+    
+    zeromq_service_.merge_cfg(ipc_sockets);
+    zeromq_service_.subscribe_all(LIAISON_INTERNAL_SUBSCRIBE_SOCKET);
+    
     try
     {
         // create a set of fake argc / argv for Wt::WServer
@@ -86,19 +110,6 @@ goby::common::Liaison::Liaison()
         glog.is(DIE) && glog << "Could not start Wt HTTP server. Exception: " << e.what() << std::endl;
     }
 
-
-    pubsub_node_.subscribe_all();
-    zeromq_service_.connect_inbox_slot(&Liaison::inbox, this);
-
-    protobuf::ZeroMQServiceConfig ipc_sockets;
-    protobuf::ZeroMQServiceConfig::Socket* internal_publish_socket = ipc_sockets.add_socket();
-    internal_publish_socket->set_socket_type(protobuf::ZeroMQServiceConfig::Socket::PUBLISH);
-    internal_publish_socket->set_socket_id(LIAISON_INTERNAL_PUBLISH_SOCKET);
-    internal_publish_socket->set_transport(protobuf::ZeroMQServiceConfig::Socket::INPROC);
-    internal_publish_socket->set_connect_or_bind(protobuf::ZeroMQServiceConfig::Socket::BIND);
-    internal_publish_socket->set_socket_name(LIAISON_INTERNAL_PUBLISH_SOCKET_NAME);
-
-    zeromq_service_.merge_cfg(ipc_sockets);
 }
 
 void goby::common::Liaison::loop()
@@ -111,8 +122,14 @@ void goby::common::Liaison::inbox(MarshallingScheme marshalling_scheme,
                                 int size,
                                 int socket_id)
 {
-    glog.is(DEBUG2, lock) && glog << "Liaison: got message with identifier: " << identifier << std::endl << unlock;    
+    glog.is(DEBUG2, lock) && glog << "Liaison: got message with identifier: " << identifier << " from socket: " << socket_id << std::endl << unlock;
     zeromq_service_.send(marshalling_scheme, identifier, data, size, LIAISON_INTERNAL_PUBLISH_SOCKET);
+    
+    if(socket_id == LIAISON_INTERNAL_SUBSCRIBE_SOCKET)
+    {
+        glog.is(DEBUG2, lock) && glog << "Sending to pubsub node: " << identifier << std::endl << unlock;
+        pubsub_node_.publish(marshalling_scheme, identifier, data, size);
+    }
 }
 
 
@@ -138,8 +155,15 @@ goby::common::LiaisonWtThread::LiaisonWtThread(const Wt::WEnvironment& env)
     internal_publish_socket->set_connect_or_bind(protobuf::ZeroMQServiceConfig::Socket::CONNECT);
     internal_publish_socket->set_socket_name(Liaison::LIAISON_INTERNAL_PUBLISH_SOCKET_NAME);
 
+    protobuf::ZeroMQServiceConfig::Socket* internal_subscribe_socket = ipc_sockets.add_socket();
+    internal_subscribe_socket->set_socket_type(protobuf::ZeroMQServiceConfig::Socket::PUBLISH);
+    internal_subscribe_socket->set_socket_id(Liaison::LIAISON_INTERNAL_SUBSCRIBE_SOCKET);
+    internal_subscribe_socket->set_transport(protobuf::ZeroMQServiceConfig::Socket::INPROC);
+    internal_subscribe_socket->set_connect_or_bind(protobuf::ZeroMQServiceConfig::Socket::CONNECT);
+    internal_subscribe_socket->set_socket_name(Liaison::LIAISON_INTERNAL_SUBSCRIBE_SOCKET_NAME);
+
+
     zeromq_service_.merge_cfg(ipc_sockets);    
-//    zeromq_service_.subscribe(MARSHALLING_MOOS, "CMOOSMsg/DB", Liaison::LIAISON_INTERNAL_PUBLISH_SOCKET);
 
 
 
@@ -197,7 +221,7 @@ goby::common::LiaisonWtThread::LiaisonWtThread(const Wt::WEnvironment& env)
     menu->setInternalBasePath("/");
     
     add_to_menu(menu, "Home", new LiaisonHome());
-    add_to_menu(menu, "Commander", new LiaisonCommander()); 
+    add_to_menu(menu, "Commander", new LiaisonCommander(&zeromq_service_)); 
     add_to_menu(menu, "Scope", new LiaisonScope(&zeromq_service_, scope_timer_));
 //    add_to_menu(menu, "scope2", new LiaisonScope("hello 2"));
 

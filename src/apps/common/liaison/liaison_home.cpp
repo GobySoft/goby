@@ -20,6 +20,7 @@ using namespace Wt;
 
 goby::common::LiaisonHome::LiaisonHome()
 {
+
     addWidget(new WText("Welcome to Goby Liaison: an extensible tool for commanding and comprehending this Goby platform."));
     addWidget(new WBreak());
     addWidget(new WText("<i>liaison (n): one that establishes and maintains communication for mutual understanding and cooperation</i>"));

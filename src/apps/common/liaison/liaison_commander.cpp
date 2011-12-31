@@ -18,8 +18,12 @@
 using namespace Wt;
 
 
-goby::common::LiaisonCommander::LiaisonCommander()
+goby::common::LiaisonCommander::LiaisonCommander(ZeroMQService* service)
+    : MOOSNode(service)
+
 {
     addWidget(new WText("Commander"));
+    
+    send(CMOOSMsg(MOOS_NOTIFY, "FOO", "BAR"), Liaison::LIAISON_INTERNAL_SUBSCRIBE_SOCKET);
 }
 

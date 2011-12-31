@@ -22,15 +22,17 @@
 #include <Wt/WColor>
 
 #include "liaison.h"
+#include "goby/moos/moos_node.h"
 
 namespace goby
 {
     namespace common
     {
-        class LiaisonCommander : public LiaisonContainer
+        class LiaisonCommander : public LiaisonContainer, public goby::moos::MOOSNode
         {
           public:
-            LiaisonCommander();
+            LiaisonCommander(ZeroMQService* service);
+            void moos_inbox(CMOOSMsg& msg) { }
             
         };
     }

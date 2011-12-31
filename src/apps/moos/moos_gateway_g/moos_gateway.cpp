@@ -92,7 +92,10 @@ goby::moos::MOOSGateway::MOOSGateway()
     }
 
     for(int i = 0, n = cfg_.goby_subscribe_filter_size(); i < n; ++i)
+    {
         goby_moos_pubsub_client_.subscribe(cfg_.goby_subscribe_filter(i));
+    }
+    
 
 
     glog.add_group("from_moos", util::Colors::lt_magenta, "MOOS -> Goby");
@@ -115,7 +118,7 @@ void goby::moos::MOOSGateway::moos_inbox(CMOOSMsg& msg)
     msg.SetSourceAux(msg.GetSourceAux() +
                      (msg.GetSourceAux().size() ? "/" : "")
                      + application_name());
-
+    
     glog.is(VERBOSE) &&
         glog << group("to_moos") << msg << std::endl;
     
@@ -146,7 +149,8 @@ void goby::moos::MOOSGateway::loop()
             glog << group("from_moos") << msg << std::endl;    
         
         goby_moos_pubsub_client_.publish(msg);
-    }    
+    }
+
 }
 
 // adapted from CMOOSLogger::HandleWildCardLogging
@@ -173,8 +177,6 @@ void goby::moos::MOOSGateway::check_for_new_moos_variables()
 
             BOOST_FOREACH(const std::string& s, all_var)
             {
-                glog.is(DEBUG1) &&
-                    glog << s << std::endl;
                 if(!subscribed_vars_.count(s))
                 {
                     if(clears_subscribe_filters(s))

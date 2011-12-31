@@ -41,6 +41,10 @@ void goby::moos::MOOSNode::inbox(common::MarshallingScheme marshalling_scheme,
                                  int size,
                                  int socket_id)
 {
+
+    glog.is(DEBUG2, lock) && 
+        glog << group("in_hex") << "Received marshalling scheme: " << marshalling_scheme << std::endl << unlock;
+    
     if(marshalling_scheme == goby::common::MARSHALLING_MOOS)
     {
         boost::shared_ptr<CMOOSMsg> msg(new CMOOSMsg);
@@ -62,6 +66,10 @@ void goby::moos::MOOSNode::send(const CMOOSMsg& msg, int socket_id)
     std::string bytes;
     MOOSSerializer::serialize(msg, &bytes);
 
+    glog.is(DEBUG1, lock) &&
+        glog << "Sent: " << "CMOOSMsg/" << msg.GetKey() << "/"  << std::endl << unlock;
+
+
     glog.is(DEBUG2, lock) &&
         glog << group("out_hex") << goby::util::hex_encode(bytes) << std::endl << unlock;
 
@@ -74,7 +82,7 @@ void goby::moos::MOOSNode::subscribe(const std::string& full_or_partial_moos_nam
     unsigned size = trimmed_name.size();
     if(!size)
     {
-        glog.is(WARN, lock) && glog << "Not subscribing for empty string!" << std::endl << unlock;
+        zeromq_service()->subscribe(goby::common::MARSHALLING_MOOS, "CMOOSMsg/", socket_id);
     }
     else if(trimmed_name[size-1] == '*')
     {

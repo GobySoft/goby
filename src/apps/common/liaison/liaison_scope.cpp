@@ -35,8 +35,9 @@ using namespace Wt;
 using namespace goby::util::logger_lock;
 using namespace goby::util::logger;
 
-goby::common::LiaisonScope::LiaisonScope(ZeroMQService* service, WTimer* timer)
-    : MOOSNode(service),
+goby::common::LiaisonScope::LiaisonScope(ZeroMQService* service, WTimer* timer, Wt::WContainerWidget* parent)
+    : LiaisonContainer(parent),
+      MOOSNode(service),
       moos_scope_config_(Liaison::cfg_.GetExtension(protobuf::moos_scope_config)),
       model_(new LiaisonScopeMOOSModel(moos_scope_config_, this)),
       proxy_(new Wt::WSortFilterProxyModel(this)),

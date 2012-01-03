@@ -20,6 +20,7 @@
 #include <Wt/WCssDecorationStyle>
 #include <Wt/WBorder>
 #include <Wt/WColor>
+#include <Wt/WVBoxLayout>
 
 #include "liaison.h"
 
@@ -30,8 +31,11 @@ namespace goby
         class LiaisonHome : public LiaisonContainer
         {
           public:
-            LiaisonHome();
-            
+            LiaisonHome(Wt::WContainerWidget* parent = 0);
+
+          private:
+            Wt::WVBoxLayout* main_layout_;
+
         };
     }
 }

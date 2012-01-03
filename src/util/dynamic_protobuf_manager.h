@@ -37,13 +37,8 @@ namespace goby
                 static GoogleProtobufMessagePointer new_protobuf_message(
                     const std::string& protobuf_type_name)
             {
-                // try the compiled pool
-                const google::protobuf::Descriptor* desc = google::protobuf::DescriptorPool::generated_pool()->FindMessageTypeByName(protobuf_type_name);
-                
-                if(desc) return new_protobuf_message<GoogleProtobufMessagePointer>(desc);
-                
                 // try the user pool
-                desc = descriptor_pool().FindMessageTypeByName(protobuf_type_name);
+                 const google::protobuf::Descriptor* desc = descriptor_pool().FindMessageTypeByName(protobuf_type_name);
                 
                 if(desc) return new_protobuf_message<GoogleProtobufMessagePointer>(desc);
                 
@@ -119,11 +114,13 @@ namespace goby
 
             void shutdown()
             {
+
                 delete msg_factory_;
                 delete descriptor_pool_;
                 delete merged_database_;
                 delete simple_database_;
                 delete generated_database_;
+
                 google::protobuf::ShutdownProtobufLibrary();
             }
             

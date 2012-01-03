@@ -27,6 +27,7 @@
 #include <Wt/WMenu>
 #include <Wt/WServer>
 #include <Wt/WContainerWidget>
+#include <Wt/WTimer>
 
 namespace goby
 {
@@ -46,8 +47,8 @@ namespace goby
         class LiaisonContainer : public  Wt::WContainerWidget
         {
           public:
-          LiaisonContainer()
-              : name_(new Wt::WText())
+          LiaisonContainer(Wt::WContainerWidget* parent)
+              : Wt::WContainerWidget(parent)
             {
                 setStyleClass("fill");
                 /* addWidget(new Wt::WText("<hr/>")); */
@@ -57,13 +58,13 @@ namespace goby
 
             void set_name(const Wt::WString& name)
             {
-                name_->setText(name);
+                name_.setText(name);
             }
             
             virtual ~LiaisonContainer() { }
 
           private:
-            Wt::WText* name_;
+            Wt::WText name_;
         };        
 
         
@@ -95,6 +96,7 @@ namespace goby
 
             friend class LiaisonWtThread;
             friend class LiaisonScope;
+            friend class LiaisonCommander;
           private:
             static protobuf::LiaisonConfig cfg_;
             Wt::WServer wt_server_;
@@ -124,7 +126,7 @@ namespace goby
             
           private:
             Wt::WStackedWidget* contents_stack_;
-            Wt::WTimer* scope_timer_;
+            Wt::WTimer scope_timer_;
 
             
             enum TimerState { ACTIVE = 1, STOPPED = 2, UNKNOWN = 0 };

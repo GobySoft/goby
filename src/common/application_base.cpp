@@ -16,6 +16,8 @@
 
 #include "application_base.h"
 #include "goby/common/configuration_reader.h"
+#include "goby/util/dynamic_protobuf_manager.h"
+
 #include "core_helpers.h"
 
 using goby::util::as;
@@ -49,7 +51,8 @@ goby::common::ApplicationBase::ApplicationBase(google::protobuf::Message* cfg /*
                 const google::protobuf::FieldDescriptor* field_desc = desc->field(i);
                 if(field_desc->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE && field_desc->message_type() == ::AppBaseConfig::descriptor())
                 {
-                    base_cfg_.reset(dynamic_cast<AppBaseConfig*>(cfg->GetReflection()->MutableMessage(cfg, field_desc)));
+                    base_cfg_.reset(new AppBaseConfig());
+                    base_cfg_->CopyFrom(*cfg->GetReflection()->MutableMessage(cfg, field_desc));
                 }
             }
         }
@@ -88,7 +91,7 @@ goby::common::ApplicationBase::ApplicationBase(google::protobuf::Message* cfg /*
 
 goby::common::ApplicationBase::~ApplicationBase()
 {
-//    glog.is(DEBUG1) && glog <<"ApplicationBase destructing..." << std::endl;    
+    glog.is(DEBUG1) && glog <<"ApplicationBase destructing..." << std::endl;    
 }
 
 void goby::common::ApplicationBase::__run()
@@ -106,5 +109,6 @@ void goby::common::ApplicationBase::__run()
             //     glog << e.what() << std::endl;
 //        }
     }
+
 }
 

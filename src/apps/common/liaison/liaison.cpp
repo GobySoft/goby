@@ -20,9 +20,9 @@
 #include <Wt/WStackedWidget>
 #include <Wt/WImage>
 #include <Wt/WAnchor>
-#include <Wt/WTimer>
 
 #include "goby/util/time.h"
+#include "goby/util/dynamic_protobuf_manager.h"
 
 #include "liaison.h"
 #include "liaison_scope.h"
@@ -41,7 +41,9 @@ const std::string goby::common::Liaison::LIAISON_INTERNAL_SUBSCRIBE_SOCKET_NAME 
 
 int main(int argc, char* argv[])
 {
-    return goby::run<goby::common::Liaison>(argc, argv);
+    int return_value = goby::run<goby::common::Liaison>(argc, argv);
+    goby::util::DynamicProtobufManager::protobuf_shutdown();
+    return return_value;
 }
 
 goby::common::Liaison::Liaison()
@@ -114,6 +116,13 @@ goby::common::Liaison::Liaison()
 
 void goby::common::Liaison::loop()
 {
+    // static int i = 0;
+    // i++;
+    // if(i > (20 * cfg_.base().loop_freq()))
+    // {
+    //     wt_server_.stop();
+    //     quit();
+    // }
 }
 
 void goby::common::Liaison::inbox(MarshallingScheme marshalling_scheme,
@@ -138,12 +147,11 @@ goby::common::LiaisonWtThread::LiaisonWtThread(const Wt::WEnvironment& env)
       last_scope_timer_state_(UNKNOWN),
       zeromq_service_(Liaison::zmq_context())
 {    
-    scope_timer_ = new Wt::WTimer();
-    scope_timer_->setInterval(1/Liaison::cfg_.update_freq()*1.0e3);
-    scope_timer_->timeout().connect(this, &LiaisonWtThread::loop);
+    scope_timer_.setInterval(1/Liaison::cfg_.update_freq()*1.0e3);
+    scope_timer_.timeout().connect(this, &LiaisonWtThread::loop);
 
     if(!Liaison::cfg_.start_paused())
-        scope_timer_->start();
+        scope_timer_.start();
     
 //    zeromq_service_.connect_inbox_slot(&LiaisonWtThread::inbox, this);
 
@@ -220,10 +228,9 @@ goby::common::LiaisonWtThread::LiaisonWtThread(const Wt::WEnvironment& env)
     menu->setInternalPathEnabled();
     menu->setInternalBasePath("/");
     
-    add_to_menu(menu, "Home", new LiaisonHome());
+    add_to_menu(menu, "Home", new LiaisonHome);
     add_to_menu(menu, "Commander", new LiaisonCommander(&zeromq_service_)); 
-    add_to_menu(menu, "Scope", new LiaisonScope(&zeromq_service_, scope_timer_));
-//    add_to_menu(menu, "scope2", new LiaisonScope("hello 2"));
+    add_to_menu(menu, "Scope", new LiaisonScope(&zeromq_service_, &scope_timer_));
 
     
     menu->itemSelected().connect(this, &LiaisonWtThread::handle_menu_selection);
@@ -233,7 +240,7 @@ goby::common::LiaisonWtThread::LiaisonWtThread(const Wt::WEnvironment& env)
 }
 
 void goby::common::LiaisonWtThread::add_to_menu(WMenu* menu, const WString& name,
-                                                            LiaisonContainer* container)
+                                                LiaisonContainer* container)
 {
     menu->addItem(name, container);
     container->set_name(name);
@@ -247,15 +254,15 @@ void goby::common::LiaisonWtThread::handle_menu_selection(Wt::WMenuItem * item)
     if(item->text() == "Scope")
     {
         if(last_scope_timer_state_ == ACTIVE)
-            scope_timer_->start();
+            scope_timer_.start();
         last_scope_timer_state_ = UNKNOWN;
     }
     else
     {
         if(last_scope_timer_state_ == UNKNOWN)
         {
-            last_scope_timer_state_ = scope_timer_->isActive() ? ACTIVE : STOPPED;
-            scope_timer_->stop();
+            last_scope_timer_state_ = scope_timer_.isActive() ? ACTIVE : STOPPED;
+            scope_timer_.stop();
         }
     }
 }
@@ -270,7 +277,6 @@ void goby::common::LiaisonWtThread::loop()
     while(zeromq_service_.poll(0))
     { }
 
-    
 }
 
 void goby::common::LiaisonWtThread::inbox(MarshallingScheme marshalling_scheme,

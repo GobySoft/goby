@@ -44,7 +44,8 @@ namespace goby
         {
             
           public:
-            LiaisonScope(ZeroMQService* service, Wt::WTimer* timer_);
+            LiaisonScope(ZeroMQService* service, Wt::WTimer* timer_,
+                         Wt::WContainerWidget* parent = 0);
             
             void moos_inbox(CMOOSMsg& msg);
             std::vector< Wt::WStandardItem * > create_row(CMOOSMsg& msg);

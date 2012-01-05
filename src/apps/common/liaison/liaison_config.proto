@@ -15,18 +15,30 @@ message LiaisonConfig
   optional string additional_wt_http_params = 5 [(goby.field).example="--accesslog=/tmp/access.log"];
   optional float update_freq = 6 [default=5];
 
-  optional bool start_paused = 9 [default = false];
+  repeated string load_shared_library = 7 [(goby.field).description="Path to a shared library containing compiled Protobuf files. Preferred over load_proto_file."];
+  repeated string load_proto_file = 8 [(goby.field).description="Path to a .proto file. Use load_shared_library when possible."];
+  repeated string load_proto_dir = 9 [(goby.field).description="Directory containing .proto files to load. Use load_shared_library when possible."];
+  
+  optional bool start_paused = 10 [default = false];
   
   extensions 1000 to max;
 }
+
+  message Test
+  {
+    optional int32 a =1;
+    required int64 b = 2;
+    
+  }
 
 extend LiaisonConfig
 {
   optional MOOSScopeConfig moos_scope_config = 1000;
 
   optional ProtobufCommanderConfig pb_commander_config = 2000;
-
-  repeated int32 test = 2001;
+  
+  
+  required Test test = 2001;
 }
 
 message ProtobufCommanderConfig

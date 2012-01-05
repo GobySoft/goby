@@ -16,7 +16,6 @@
 #include "goby/common/protobuf/option_extensions.pb.h"
 
 #include "configuration_reader.h"
-#include "goby/util/dynamic_protobuf_manager.h"
 
 #include "goby/common/logger/term_color.h"
 #include "goby/common/logger/flex_ostream.h"
@@ -456,7 +455,7 @@ void goby::util::ConfigReader::build_description(const google::protobuf::Descrip
     }
 
     std::vector<const google::protobuf::FieldDescriptor*> extensions;
-    goby::util::DynamicProtobufManager::descriptor_pool().FindAllExtensions(desc, &extensions);
+    google::protobuf::DescriptorPool::generated_pool()->FindAllExtensions(desc, &extensions);
     for(int i = 0, n = extensions.size(); i < n; ++i)
     {
         const google::protobuf::FieldDescriptor* field_desc = extensions[i];

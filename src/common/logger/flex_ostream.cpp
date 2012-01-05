@@ -65,7 +65,8 @@ std::ostream& goby::util::FlexOstream::operator<<(std::ostream& (*pf) (std::ostr
 bool goby::util::FlexOstream::is(logger::Verbosity verbosity,
                                  logger_lock::LockAction lock_action /*= none*/)
 {
-    bool display = (sb_.highest_verbosity() >= verbosity);
+        
+    bool display = (sb_.highest_verbosity() >= verbosity) || (verbosity == logger::DIE);
 
     if(display)
     {
@@ -83,7 +84,7 @@ bool goby::util::FlexOstream::is(logger::Verbosity verbosity,
             case DEBUG1: *this << debug1; break;
             case DEBUG2: *this << debug2; break;
             case DEBUG3: *this << debug3; break;
-            case DIE: sb_.set_die_flag(true); break;
+            case DIE: *this << die; break;
         }
 
         sb_.set_verbosity_depth(verbosity);

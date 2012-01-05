@@ -16,7 +16,6 @@
 
 #include "application_base.h"
 #include "goby/common/configuration_reader.h"
-#include "goby/util/dynamic_protobuf_manager.h"
 
 #include "core_helpers.h"
 
@@ -29,8 +28,11 @@ int goby::common::ApplicationBase::argc_ = 0;
 char** goby::common::ApplicationBase::argv_ = 0;
 
 goby::common::ApplicationBase::ApplicationBase(google::protobuf::Message* cfg /*= 0*/)
-    : alive_(true)
+    : base_cfg_(0),
+      own_base_cfg_(false),
+      alive_(true)
 {
+
     //
     // read the configuration
     //
@@ -40,7 +42,7 @@ goby::common::ApplicationBase::ApplicationBase(google::protobuf::Message* cfg /*
     {
         std::string application_name;
         util::ConfigReader::read_cfg(argc_, argv_, cfg, &application_name, &od, &var_map);
-        
+
         // extract the AppBaseConfig assuming the user provided it in their configuration
         // .proto file
         if(cfg)
@@ -49,21 +51,25 @@ goby::common::ApplicationBase::ApplicationBase(google::protobuf::Message* cfg /*
             for (int i = 0, n = desc->field_count(); i < n; ++i)
             {
                 const google::protobuf::FieldDescriptor* field_desc = desc->field(i);
-                if(field_desc->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE && field_desc->message_type() == ::AppBaseConfig::descriptor())
+                if(field_desc->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE
+                   && field_desc->message_type() == ::AppBaseConfig::descriptor())
                 {
-                    base_cfg_.reset(new AppBaseConfig());
-                    base_cfg_->CopyFrom(*cfg->GetReflection()->MutableMessage(cfg, field_desc));
+                    base_cfg_ = dynamic_cast<AppBaseConfig*>(cfg->GetReflection()->MutableMessage(cfg, field_desc));
                 }
             }
         }
 
         if(!base_cfg_)
-            base_cfg_.reset(new AppBaseConfig());
+        {
+            base_cfg_ = new AppBaseConfig;
+            own_base_cfg_ = true;
+        }
         
-        base_cfg_->set_app_name(application_name);        
+            
+        base_cfg_->set_app_name(application_name);
         // incorporate some parts of the AppBaseConfig that are common
         // with gobyd (e.g. Verbosity)
-	merge_app_base_cfg(base_cfg_.get(), var_map);
+        merge_app_base_cfg(base_cfg_, var_map);
 
     }
     catch(util::ConfigException& e)
@@ -91,7 +97,10 @@ goby::common::ApplicationBase::ApplicationBase(google::protobuf::Message* cfg /*
 
 goby::common::ApplicationBase::~ApplicationBase()
 {
-    glog.is(DEBUG1) && glog <<"ApplicationBase destructing..." << std::endl;    
+    glog.is(DEBUG1) && glog <<"ApplicationBase destructing..." << std::endl;
+
+    if(own_base_cfg_)
+        delete base_cfg_;
 }
 
 void goby::common::ApplicationBase::__run()

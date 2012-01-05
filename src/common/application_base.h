@@ -86,8 +86,9 @@ namespace goby
 
             // configuration relevant to all applications (loop frequency, for example)
             // defined in #include "proto/app_base_config.pb.h"
-            boost::shared_ptr<AppBaseConfig> base_cfg_;
-
+            AppBaseConfig* base_cfg_;
+            bool own_base_cfg_;
+            
             bool alive_;            
 
         };

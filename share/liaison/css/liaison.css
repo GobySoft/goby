@@ -70,48 +70,11 @@ ul.menu
 
 }
 
-div#contents
+.Wt-treetable table.even
 {
-  width: 90%;
-  position:absolute;
-  display: block;
-  left: 10%;
-  height: 100%;
+    background-color: #fff;
 }
 
-div.fill
-{
-  width: 100%;
-  height: 100%;
-}
-
-
-input
-{
-  width: 20em;
-}
-
-a#goby_logo { display:block; position: absolute; right:0px; top:0px;}
-a#lp_logo { display:block; position: absolute; left:0px; top:41px;}
-
-/*.fl { float:left; }*/
-table.basic_small 
-{
- border-collapse:collapse;
- font-size:80%;
-}
-
-table.basic_small td, table.basic_small th
-{ 
-padding: 3px;
-border: 1px solid black;
-}
-
-
-a { outline:0; }
-a:link { color:#006a94; }
-a:hover, a:hover img,  div:hover.do_hover { background:#EEE; }
-a:active {color:#E36034}
 
 a:visited, a:link
 {

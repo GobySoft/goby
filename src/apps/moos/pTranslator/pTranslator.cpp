@@ -70,9 +70,8 @@ CpTranslator::CpTranslator()
         void* handle = dlopen(cfg_.load_shared_library(i).c_str(), RTLD_LAZY);
         if(!handle)
         {
-            glog.is(DIE) &&
-                glog << "Failed ... check path provided or add to /etc/ld.so.conf "
-                     << "or LD_LIBRARY_PATH" << std::endl;
+            glog << die << "Failed ... check path provided or add to /etc/ld.so.conf "
+                 << "or LD_LIBRARY_PATH" << std::endl;
         }
         dl_handles.push_back(handle);
     }

@@ -25,6 +25,9 @@ using goby::glog;
 const std::string MESSAGE_INCLUDE_TEXT = "include";
 const std::string MESSAGE_REMOVE_TEXT = "remove";
 
+const std::string STRIPE_ODD_CLASS = "odd";
+const std::string STRIPE_EVEN_CLASS = "even";
+
 
 goby::common::LiaisonCommander::LiaisonCommander(ZeroMQService* service,
                                                  Wt::WContainerWidget* parent)
@@ -33,28 +36,33 @@ goby::common::LiaisonCommander::LiaisonCommander(ZeroMQService* service,
       pb_commander_config_(Liaison::cfg_.GetExtension(protobuf::pb_commander_config)),
       main_layout_(new Wt::WVBoxLayout(this)),
       commands_div_(new WStackedWidget),
-      controls_div_(new ControlsContainer(pb_commander_config_, commands_div_))
+      controls_div_(new ControlsContainer(this, pb_commander_config_, commands_div_))
 {
     main_layout_->addWidget(controls_div_);
     main_layout_->addWidget(commands_div_);
     main_layout_->addStretch(1);
 
     
-    // send(CMOOSMsg(MOOS_NOTIFY, "FOO", "BAR"), Liaison::LIAISON_INTERNAL_SUBSCRIBE_SOCKET);
 }
 
 
 goby::common::LiaisonCommander::ControlsContainer::ControlsContainer(
+    MOOSNode* moos_node,
     const protobuf::ProtobufCommanderConfig& pb_commander_config,
     Wt::WStackedWidget* commands_div,
     Wt::WContainerWidget* parent /*=0*/)
-    : pb_commander_config_(pb_commander_config),
+    : moos_node_(moos_node),
+      pb_commander_config_(pb_commander_config),
       command_selection_(new WComboBox(this)),
+      buttons_div_(new WContainerWidget(this)),
+      send_button_(new WPushButton("Send", buttons_div_)),
+      clear_button_(new WPushButton("Clear", buttons_div_)),
       commands_div_(commands_div)
 {
     
     command_selection_->addItem("(Select a command message)");
-
+    send_button_->clicked().connect(this, &ControlsContainer::send_message);
+    clear_button_->clicked().connect(this, &ControlsContainer::clear_message);
     
     for(int i = 0, n = pb_commander_config.load_protobuf_name_size(); i < n; ++i)
     {
@@ -67,6 +75,8 @@ goby::common::LiaisonCommander::ControlsContainer::ControlsContainer(
         else
             command_selection_->addItem(pb_commander_config.load_protobuf_name(i));
     }    
+
+    command_selection_->model()->sort(0);
     
     command_selection_->activated().connect(this, &ControlsContainer::switch_command);
 }
@@ -89,6 +99,52 @@ void goby::common::LiaisonCommander::ControlsContainer::switch_command(int selec
     commands_div_->setCurrentIndex(commands_[protobuf_name]);
 }
 
+void goby::common::LiaisonCommander::ControlsContainer::clear_message()
+{
+
+    Wt::WDialog dialog("Confirm clearing of message: " + command_selection_->currentText());
+    Wt::WPushButton ok("Clear", dialog.contents());
+    Wt::WPushButton cancel("Cancel", dialog.contents());
+
+    dialog.rejectWhenEscapePressed();
+    ok.clicked().connect(&dialog, &Wt::WDialog::accept);
+    cancel.clicked().connect(&dialog, &Wt::WDialog::reject);
+    
+    if (dialog.exec() == Wt::WDialog::Accepted)
+    {
+        CommandContainer* current_command = dynamic_cast<CommandContainer*>(commands_div_->currentWidget());
+        current_command->message_->Clear();
+        current_command->refresh_form();
+    }
+ }
+
+void goby::common::LiaisonCommander::ControlsContainer::send_message()
+{
+    glog.is(VERBOSE, lock) && glog << "Message to be sent!" << std::endl << unlock;
+
+    Wt::WDialog dialog("Confirm sending of message: " + command_selection_->currentText());
+
+    CommandContainer* current_command = dynamic_cast<CommandContainer*>(commands_div_->currentWidget());
+
+    Wt::WText* message_text = new Wt::WText(current_command->message_->DebugString(), dialog.contents());
+    message_text->setTextFormat(Wt::PlainText);
+    Wt::WPushButton ok("Send", dialog.contents());
+    Wt::WPushButton cancel("Cancel", dialog.contents());
+
+    dialog.rejectWhenEscapePressed();
+
+    ok.clicked().connect(&dialog, &Wt::WDialog::accept);
+    cancel.clicked().connect(&dialog, &Wt::WDialog::reject);
+
+    if (dialog.exec() == Wt::WDialog::Accepted)
+    {
+        moos_node_->send(CMOOSMsg(MOOS_NOTIFY, "LIAISON_COMMANDER_OUT", current_command->message_->GetDescriptor()->full_name() + " " + current_command->message_->ShortDebugString()),
+             Liaison::LIAISON_INTERNAL_SUBSCRIBE_SOCKET);
+    }
+
+}
+
+
 goby::common::LiaisonCommander::ControlsContainer::CommandContainer::CommandContainer(
     const protobuf::ProtobufCommanderConfig& pb_commander_config,
     boost::shared_ptr<google::protobuf::Message> message)
@@ -104,12 +160,15 @@ goby::common::LiaisonCommander::ControlsContainer::CommandContainer::CommandCont
     // Create and set the root node
     Wt::WTreeTableNode *root = new Wt::WTreeTableNode(desc->name());
     root->setImagePack("resources/");
+    root->expand();
+    root->setStyleClass(STRIPE_EVEN_CLASS);
+
+    
     treeTable->setTreeRoot(root, "Field");
 
     generate_tree(root, message_.get());
 
 
-    root->expand();
 }
 
 void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::generate_tree(
@@ -133,7 +192,15 @@ void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::genera
     google::protobuf::Message* message,
     const google::protobuf::FieldDescriptor* field_desc)
 {
+    int index = parent->childNodes().size();
     Wt::WTreeTableNode* node = new Wt::WTreeTableNode(field_desc->name(), 0, parent);
+
+    if((parent->styleClass() == STRIPE_ODD_CLASS && index % 2) || (parent->styleClass() == STRIPE_EVEN_CLASS && !(index % 2)))
+        node->setStyleClass(STRIPE_ODD_CLASS);
+    else
+        node->setStyleClass(STRIPE_EVEN_CLASS);
+    
+    
     Wt::WInteractWidget* value_field = 0;
     Wt::WInteractWidget* modify_field = 0;
     if(field_desc->is_repeated())
@@ -157,15 +224,25 @@ void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::genera
         switch(field_desc->cpp_type())
         {
             case google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE:
-            {   
-                Wt::WContainerWidget* div = new Wt::WContainerWidget;
-                WPushButton* button = new WPushButton(MESSAGE_INCLUDE_TEXT, div); 
+            {
+                if(field_desc->is_required())
+                {
+                    generate_tree(node,
+                                  message->GetReflection()->MutableMessage(message, field_desc));
 
-                button->clicked().connect(
-                    boost::bind(&CommandContainer::handle_toggle_single_message,
-                                this, _1, message, field_desc, button, node));
-                
-                modify_field = div;
+                    node->expand();
+                }
+                else
+                {   
+                    Wt::WContainerWidget* div = new Wt::WContainerWidget;
+                    WPushButton* button = new WPushButton(MESSAGE_INCLUDE_TEXT, div); 
+                    
+                    button->clicked().connect(
+                        boost::bind(&CommandContainer::handle_toggle_single_message,
+                                    this, _1, message, field_desc, button, node));
+                    
+                    modify_field = div;
+                }
             }
             break;
                 
@@ -260,6 +337,7 @@ void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::genera
 
     if(modify_field)
         node->setColumnWidget(2, modify_field);
+    
 }
 
 void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::handle_line_field_changed(google::protobuf::Message* message, const google::protobuf::FieldDescriptor* field_desc, Wt::WLineEdit* field, int index)
@@ -372,6 +450,8 @@ Wt::WLineEdit* goby::common::LiaisonCommander::ControlsContainer::CommandContain
     
     line_edit->changed().connect(boost::bind(&CommandContainer::handle_line_field_changed,
                                              this, message, field_desc, line_edit, index));
+
+    widget_map_[field_desc] = line_edit;
     return line_edit;
 }
 
@@ -396,6 +476,7 @@ Wt::WLineEdit* goby::common::LiaisonCommander::ControlsContainer::CommandContain
         boost::bind(&CommandContainer::handle_combo_field_changed,
                     this, message, field_desc, combo_box, index));
 
+    widget_map_[field_desc] = combo_box;
     return combo_box;
 }
 
@@ -414,6 +495,14 @@ void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::handle
         int index = parent->childNodes().size();
         Wt::WTreeTableNode* node =
             new Wt::WTreeTableNode("index: " + goby::util::as<std::string>(index), 0, parent);
+
+        
+        if((parent->styleClass() == STRIPE_ODD_CLASS && index % 2) || (parent->styleClass() == STRIPE_EVEN_CLASS && !(index % 2)))
+            node->setStyleClass(STRIPE_ODD_CLASS);
+        else
+            node->setStyleClass(STRIPE_EVEN_CLASS);
+
+        
         Wt::WLineEdit* line_edit = 0;
         
         switch(field_desc->cpp_type())
@@ -499,7 +588,7 @@ void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::handle
         if(line_edit)
             node->setColumnWidget(1, line_edit);
         parent->expand();
-        
+        node->expand();
     }
 
     // remove nodes
@@ -538,3 +627,42 @@ void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::handle
     }
     
 }
+
+void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::refresh_form()
+{
+
+    for(std::map<const google::protobuf::FieldDescriptor*, Wt::WFormWidget*>::const_iterator it = widget_map_.begin(),
+            n = widget_map_.end();
+        it != n;
+        ++it)
+    {
+        Wt::WLineEdit* line_edit = dynamic_cast<Wt::WLineEdit*>(it->second);
+        if(line_edit)
+            line_edit->setText("");
+        else
+        {
+            Wt::WComboBox* combo_box = dynamic_cast<Wt::WComboBox*>(it->second);
+            if(combo_box)
+                combo_box->setCurrentIndex(0);
+        }
+    }
+    
+
+    // const google::protobuf::Reflection* refl = message_->GetReflection();
+    // std::vector< const google::protobuf::FieldDescriptor * > set_fields;
+    // refl->ListFields(*message_, &set_fields);
+
+    // for(std::vector< const google::protobuf::FieldDescriptor * >::const_iterator it = set_fields.begin(),
+    //         n = set_fields.end();
+    //     it != n;
+    //     ++it)
+    // {
+    //     if((*it)->cpp_type() != google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE)
+    //     {
+    //         std::string new_value;
+    //         google::protobuf::TextFormat::PrintFieldValueToString(*message_, *it, -1, &new_value);
+    //         glog.is(DEBUG1, lock) && glog << "The value is: [" << new_value << "]" <<  std::endl << unlock;
+    //     }
+    // }
+}
+

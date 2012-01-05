@@ -49,7 +49,7 @@ namespace goby
                              DEBUG1 = protobuf::GLogConfig::DEBUG1,
                              DEBUG2 = protobuf::GLogConfig::DEBUG2,
                              DEBUG3 = protobuf::GLogConfig::DEBUG3,
-                             DIE };
+                             DIE = -1 };
         };
         
         

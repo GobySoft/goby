@@ -13,6 +13,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
+#include <dlfcn.h>
 
 #include <Wt/WText>
 #include <Wt/WHBoxLayout>
@@ -38,20 +39,65 @@ goby::common::protobuf::LiaisonConfig goby::common::Liaison::cfg_;
 boost::shared_ptr<zmq::context_t> goby::common::Liaison::zmq_context_(new zmq::context_t(1));
 const std::string goby::common::Liaison::LIAISON_INTERNAL_PUBLISH_SOCKET_NAME = "liaison_internal_publish_socket"; 
 const std::string goby::common::Liaison::LIAISON_INTERNAL_SUBSCRIBE_SOCKET_NAME = "liaison_internal_subscribe_socket"; 
+std::vector<void *> goby::common::Liaison::dl_handles_;
 
 int main(int argc, char* argv[])
 {
     int return_value = goby::run<goby::common::Liaison>(argc, argv);
     goby::util::DynamicProtobufManager::protobuf_shutdown();
+    for(std::vector<void *>::const_iterator it = goby::common::Liaison::dl_handles().begin(),
+            n = goby::common::Liaison::dl_handles().end(); it != n; ++it)
+        dlclose(*it);
+    
     return return_value;
 }
 
 goby::common::Liaison::Liaison()
     : ZeroMQApplicationBase(&zeromq_service_, &cfg_),
       zeromq_service_(zmq_context_),
-      pubsub_node_(&zeromq_service_, cfg_.base().pubsub_config())
+      pubsub_node_(&zeromq_service_, cfg_.base().pubsub_config()),
+      source_database_(&disk_source_tree_)
 {
+    source_database_.RecordErrorsTo(&error_collector_);
+    disk_source_tree_.MapPath("/", "/");
+    goby::util::DynamicProtobufManager::add_database(&source_database_);
 
+
+    // load all shared libraries
+    for(int i = 0, n = cfg_.load_shared_library_size(); i < n; ++i)
+    {
+        glog.is(VERBOSE) &&
+            glog << "Loading shared library: " << cfg_.load_shared_library(i) << std::endl;
+        
+        void* handle = dlopen(cfg_.load_shared_library(i).c_str(), RTLD_LAZY);
+        if(!handle)
+        {
+            glog.is(DIE) &&
+                glog << "Failed ... check path provided or add to /etc/ld.so.conf "
+                     << "or LD_LIBRARY_PATH" << std::endl;
+        }
+        dl_handles_.push_back(handle);
+    }
+    
+    
+    // load all .proto files
+    for(int i = 0, n = cfg_.load_proto_file_size(); i < n; ++i)
+        load_proto_file(cfg_.load_proto_file(i));
+
+    // load all .proto file directories
+    for(int i = 0, n = cfg_.load_proto_dir_size(); i < n; ++i)
+    {
+        boost::filesystem::path current_dir(cfg_.load_proto_dir(i));
+
+        for (boost::filesystem::directory_iterator iter(current_dir), end;
+             iter != end;
+             ++iter)
+        {
+            if(iter->path().extension().string() == ".proto")
+                load_proto_file(iter->path().string());        
+        }
+    }
+    
 
     pubsub_node_.subscribe_all();
     zeromq_service_.connect_inbox_slot(&Liaison::inbox, this);
@@ -113,6 +159,19 @@ goby::common::Liaison::Liaison()
     }
 
 }
+
+void goby::common::Liaison::load_proto_file(const std::string& path)
+{
+    glog.is(VERBOSE) &&
+        glog << "Loading protobuf file: " << path << std::endl;
+
+        
+    if(!goby::util::DynamicProtobufManager::descriptor_pool().FindFileByName(path))
+        glog.is(DIE) &&
+            glog << "Failed to load file." << std::endl;
+}
+
+
 
 void goby::common::Liaison::loop()
 {

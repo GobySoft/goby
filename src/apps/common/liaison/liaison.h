@@ -16,10 +16,8 @@
 #ifndef LIAISON20110609H
 #define LIAISON20110609H
 
-#include "goby/common/zeromq_application_base.h"
-#include "goby/common/pubsub_node_wrapper.h"
-
-#include "liaison_config.pb.h"
+#include <google/protobuf/compiler/importer.h>
+#include <google/protobuf/descriptor.h>
 
 #include <Wt/WEnvironment>
 #include <Wt/WApplication>
@@ -28,6 +26,12 @@
 #include <Wt/WServer>
 #include <Wt/WContainerWidget>
 #include <Wt/WTimer>
+
+#include "goby/common/zeromq_application_base.h"
+#include "goby/common/pubsub_node_wrapper.h"
+
+#include "liaison_config.pb.h"
+
 
 namespace goby
 {
@@ -93,7 +97,11 @@ namespace goby
             void loop();
 
             static boost::shared_ptr<zmq::context_t> zmq_context() { return zmq_context_; }
+            static const std::vector<void *>& dl_handles() { return dl_handles_; }
 
+          private:
+            void load_proto_file(const std::string& path);
+            
             friend class LiaisonWtThread;
             friend class LiaisonScope;
             friend class LiaisonCommander;
@@ -104,6 +112,23 @@ namespace goby
             ZeroMQService zeromq_service_;
             PubSubNodeWrapperBase pubsub_node_;
 
+            google::protobuf::compiler::DiskSourceTree disk_source_tree_;
+            google::protobuf::compiler::SourceTreeDescriptorDatabase source_database_;
+            
+            class LiaisonErrorCollector: public google::protobuf::compiler::MultiFileErrorCollector
+            {
+                void AddError(const std::string & filename, int line, int column, const std::string & message)
+                {
+                    goby::glog.is(goby::util::logger::DIE, goby::util::logger_lock::lock) &&
+                        goby::glog << "File: " << filename
+                                   << " has error (line: " << line << ", column: " << column << "): "
+                                   << message << std::endl << unlock;
+                }       
+            };
+                
+            LiaisonErrorCollector error_collector_;
+            static std::vector<void *> dl_handles_;
+            
             // add a database client
         };
 

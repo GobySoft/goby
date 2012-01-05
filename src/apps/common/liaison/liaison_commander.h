@@ -32,6 +32,8 @@
 #include <Wt/WStringListModel>
 #include <Wt/WAbstractListModel>
 #include <Wt/WPushButton>
+#include <Wt/WBreak>
+#include <Wt/WDialog>
 
 #include "liaison.h"
 #include "goby/moos/moos_node.h"
@@ -56,11 +58,16 @@ namespace goby
             
             struct ControlsContainer : Wt::WContainerWidget
             {
-                ControlsContainer(const protobuf::ProtobufCommanderConfig& pb_commander_config,
+                ControlsContainer(
+                    MOOSNode* moos_node,
+                    const protobuf::ProtobufCommanderConfig& pb_commander_config,
                                   Wt::WStackedWidget* commands_div,
                                   Wt::WContainerWidget* parent = 0);
                 void switch_command(int selection_index);
 
+                void clear_message();
+                void send_message();
+                
                 struct CommandContainer : Wt::WContainerWidget
                 {
                     CommandContainer(const protobuf::ProtobufCommanderConfig& pb_commander_config,
@@ -112,13 +119,20 @@ namespace goby
                         google::protobuf::Message* message,
                         const google::protobuf::FieldDescriptor* field_desc,
                         Wt::WTreeTableNode* parent);
+
+                    void refresh_form();
                     
                     boost::shared_ptr<google::protobuf::Message> message_;
+                    std::map<const google::protobuf::FieldDescriptor*, Wt::WFormWidget*> widget_map_;
                 };
 
+                MOOSNode* moos_node_;
                 const protobuf::ProtobufCommanderConfig& pb_commander_config_;
                 std::map<std::string, int> commands_;
                 Wt::WComboBox* command_selection_;
+                Wt::WContainerWidget* buttons_div_;
+                Wt::WPushButton* send_button_;
+                Wt::WPushButton* clear_button_;
                 Wt::WStackedWidget* commands_div_;
 
             };

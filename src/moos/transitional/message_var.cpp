@@ -231,7 +231,7 @@ void goby::transitional::DCCLMessageVar::write_schema_to_dccl2(std::ofstream* pr
         std::string static_val_tmp = static_val();
         *proto_file << (count ? ", " : " [");
         ++count;
-        *proto_file << "(goby.field).dccl.static_value=\"" << static_val_tmp << "\", " << "(goby.field).dccl.codec=\"_static\"";      
+        *proto_file << "default=\"" << static_val_tmp << "\", (goby.field).dccl.static_value=\"" << static_val_tmp << "\", " << "(goby.field).dccl.codec=\"_static\"";      
     }
     catch(...) { }
 

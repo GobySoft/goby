@@ -162,7 +162,8 @@ namespace goby
                 
                 const google::protobuf::Descriptor* desc = in.GetDescriptor();
                 const google::protobuf::Reflection* refl = in.GetReflection();
-                
+
+                int included_fields = 0;
                 for(int i = 0, n = desc->field_count(); i < n; ++i)
                 {
                     const google::protobuf::FieldDescriptor* field_desc = desc->field(i);
@@ -172,7 +173,8 @@ namespace goby
                        || (field_desc->is_repeated() && !refl->FieldSize(in, field_desc)))
                         continue;
 
-                    if(i) out_ss << ",";
+                    if(included_fields) out_ss << ",";
+                    ++included_fields;
                     
                     const std::string& field_name = field_desc->name();
 
@@ -640,9 +642,9 @@ namespace goby
                             std::stringstream out_repeated;
                             for(int j = 0, m = refl->FieldSize(in, field_desc); j < m; ++j)
                             {                    
+                                if(j) out_repeated << repeated_delimiter;
                                 switch(field_desc->cpp_type())
                                 {
-                                    if(j) out_repeated << repeated_delimiter;
                                     case google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE:
                                         out_repeated << goby::util::hex_encode(refl->GetRepeatedMessage(in, field_desc, j).SerializeAsString());
                                         break;    
@@ -695,54 +697,61 @@ namespace goby
                         }
                         else
                         {
-                            switch(field_desc->cpp_type())
+                            if(!refl->HasField(in, field_desc))
                             {
-                                case google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE:
-                                    out_format % goby::util::hex_encode(refl->GetMessage(in, field_desc).SerializeAsString());
-                                    break;
-                        
-                                case google::protobuf::FieldDescriptor::CPPTYPE_INT32:
-                                    out_format % refl->GetInt32(in, field_desc);
-                                    break;
-                        
-                                case google::protobuf::FieldDescriptor::CPPTYPE_INT64:
-                                    out_format % refl->GetInt64(in, field_desc);                        
-                                    break;
-
-                                case google::protobuf::FieldDescriptor::CPPTYPE_UINT32:
-                                    out_format % refl->GetUInt32(in, field_desc);
-                                    break;
-
-                                case google::protobuf::FieldDescriptor::CPPTYPE_UINT64:
-                                    out_format % refl->GetUInt64(in, field_desc);
-                                    break;
-                        
-                                case google::protobuf::FieldDescriptor::CPPTYPE_BOOL:
-                                    out_format % refl->GetBool(in, field_desc);
-                                    break;
-                    
-                                case google::protobuf::FieldDescriptor::CPPTYPE_STRING:
-                                    if(field_desc->type() ==  google::protobuf::FieldDescriptor::TYPE_STRING)
-                                        out_format % refl->GetString(in, field_desc);
-                                    else if(field_desc->type() ==  google::protobuf::FieldDescriptor::TYPE_BYTES)
-                                        out_format % goby::util::hex_encode(refl->GetString(in, field_desc));
-                                    break;                    
-                
-                                case google::protobuf::FieldDescriptor::CPPTYPE_FLOAT:
-                                    out_format % refl->GetFloat(in, field_desc);
-                                    break;
-                
-                                case google::protobuf::FieldDescriptor::CPPTYPE_DOUBLE:
-                                    out_format % refl->GetDouble(in, field_desc);
-                                    break;
-                
-                                case google::protobuf::FieldDescriptor::CPPTYPE_ENUM:
-
-                                    out_format % ((use_short_enum) ?
-                                                  strip_name_from_enum(refl->GetEnum(in, field_desc)->name(), field_desc->name()) :
-                                                  refl->GetEnum(in, field_desc)->name());
-                                    break;
+                                out_format % "";
                             }
+                            else
+                            {
+                                switch(field_desc->cpp_type())
+                                {
+                                    case google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE:
+                                        out_format % goby::util::hex_encode(refl->GetMessage(in, field_desc).SerializeAsString());
+                                        break;
+                        
+                                    case google::protobuf::FieldDescriptor::CPPTYPE_INT32:
+                                        out_format % refl->GetInt32(in, field_desc);
+                                        break;
+                        
+                                    case google::protobuf::FieldDescriptor::CPPTYPE_INT64:
+                                        out_format % refl->GetInt64(in, field_desc);                        
+                                        break;
+
+                                    case google::protobuf::FieldDescriptor::CPPTYPE_UINT32:
+                                        out_format % refl->GetUInt32(in, field_desc);
+                                        break;
+
+                                    case google::protobuf::FieldDescriptor::CPPTYPE_UINT64:
+                                        out_format % refl->GetUInt64(in, field_desc);
+                                        break;
+                        
+                                    case google::protobuf::FieldDescriptor::CPPTYPE_BOOL:
+                                        out_format % refl->GetBool(in, field_desc);
+                                        break;
+                    
+                                    case google::protobuf::FieldDescriptor::CPPTYPE_STRING:
+                                        if(field_desc->type() ==  google::protobuf::FieldDescriptor::TYPE_STRING)
+                                            out_format % refl->GetString(in, field_desc);
+                                        else if(field_desc->type() ==  google::protobuf::FieldDescriptor::TYPE_BYTES)
+                                            out_format % goby::util::hex_encode(refl->GetString(in, field_desc));
+                                        break;                    
+                
+                                    case google::protobuf::FieldDescriptor::CPPTYPE_FLOAT:
+                                        out_format % refl->GetFloat(in, field_desc);
+                                        break;
+                
+                                    case google::protobuf::FieldDescriptor::CPPTYPE_DOUBLE:
+                                        out_format % refl->GetDouble(in, field_desc);
+                                        break;
+                
+                                    case google::protobuf::FieldDescriptor::CPPTYPE_ENUM:
+
+                                        out_format % ((use_short_enum) ?
+                                                      strip_name_from_enum(refl->GetEnum(in, field_desc)->name(), field_desc->name()) :
+                                                      refl->GetEnum(in, field_desc)->name());
+                                        break;
+                                }
+                            }    
                         }
                     }
                     else if(mod_it != modified_values.end())

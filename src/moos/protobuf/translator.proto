@@ -35,6 +35,7 @@ message TranslatorEntry
     optional ParserSerializerTechnique technique = 1 [default = TECHNIQUE_PROTOBUF_TEXT_FORMAT];
     required string moos_var = 2;
     optional string format = 3; // only for TECHNIQUE_FORMAT
+    optional string repeated_delimiter = 4 [default = ","];  // only for TECHNIQUE_FORMAT
     
     message Algorithm
     {

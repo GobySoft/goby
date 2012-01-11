@@ -92,22 +92,20 @@ void goby::transitional::DCCLPublish::initialize(const DCCLMessage& msg)
                     format_str += message_vars_[j]->name() + "=";           
             }
             
-            for(unsigned i = 0,
-                    n = (repeat_ > 1) ? 1 : message_vars_[j]->array_length();
-                i < n;
-                ++i)
-            {                
-                ++format_count;
-                std::stringstream ss;
+            ++format_count;
+            std::stringstream ss;
 
-                if(m > 1 && n > 1 && i == 0) ss << "{";
-                if(i) ss << ",";
-                
-                ss << "%" << format_count << "%";
-
-                if(m > 1 && n > 1 && i+1 == n) ss << "}";
-                format_str += ss.str();
-            }
+            unsigned n = (repeat_ > 1) ? 1 : message_vars_[j]->array_length();
+            
+            if(m > 1 && n > 1)
+                ss << "{";
+            
+            ss << "%" << format_count << "%";
+            
+            if(m > 1 && n > 1)
+                ss << "}";
+            
+            format_str += ss.str();
         }
         format_ = format_str;
     } 

@@ -102,6 +102,12 @@ namespace goby
             {
                 sb_.add_stream(verbosity, os);
             }            
+
+            void add_stream(goby::util::protobuf::GLogConfig::Verbosity verbosity = goby::util::protobuf::GLogConfig::VERBOSE, std::ostream* os = 0)
+            {
+                sb_.add_stream(static_cast<logger::Verbosity>(verbosity), os);
+            }            
+
             //@}
 
             /// \name Overloaded insert stream operator<<

@@ -98,7 +98,7 @@ namespace goby
             //@{         
             /// \brief Instantiate optionally with a ostream logger (for human readable output)
             /// \param log std::ostream object or FlexOstream to capture all humanly readable runtime and debug information (optional).
-            DCCLTransitionalCodec(std::ostream* log = 0);
+            DCCLTransitionalCodec();
 
             /// destructor
             ~DCCLTransitionalCodec() {}
@@ -484,28 +484,8 @@ namespace goby
             protobuf::DCCLTransitionalConfig cfg_;
 
             boost::posix_time::ptime start_time_;
-
             
-            ManipulatorManager manip_manager_;    
-
-            google::protobuf::compiler::DiskSourceTree disk_source_tree_;
-
-            class TransitionalErrorCollector: public google::protobuf::compiler::MultiFileErrorCollector
-            {
-                void AddError(const std::string & filename, int line, int column, const std::string & message)
-                {
-                    std::cerr << "File: " << filename << " has error (line: " << line << ", column: " << column << "): " << message << std::endl;
-                }
-
-                
-            };
-                
-            TransitionalErrorCollector error_collector_;
-            google::protobuf::compiler::SourceTreeDescriptorDatabase source_database_;
-            google::protobuf::DescriptorPoolDatabase generated_database_;
-            google::protobuf::MergedDescriptorDatabase merged_database_;
-            
-            google::protobuf::DescriptorPool descriptor_pool_;
+            ManipulatorManager manip_manager_;
         };
         
         /// outputs information about all available messages (same as std::string summary())

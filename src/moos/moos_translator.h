@@ -92,6 +92,10 @@ namespace goby
             
             std::multimap<std::string, CMOOSMsg> protobuf_to_moos(const google::protobuf::Message& protobuf_msg);
 
+
+            // advanced: writes to create, instead of publish!
+            std::multimap<std::string, CMOOSMsg> protobuf_to_inverse_moos(const google::protobuf::Message& protobuf_msg);
+            
             const std::map<std::string, goby::moos::protobuf::TranslatorEntry>&  dictionary() const { return dictionary_; }
             
           private:
@@ -214,6 +218,61 @@ inline std::multimap<std::string, CMOOSMsg> goby::moos::MOOSTranslator::protobuf
     
     return moos_msgs;
 }
+
+
+inline std::multimap<std::string, CMOOSMsg> goby::moos::MOOSTranslator::protobuf_to_inverse_moos(const google::protobuf::Message& protobuf_msg)
+{
+    std::map<std::string, goby::moos::protobuf::TranslatorEntry>::const_iterator it =
+        dictionary_.find(protobuf_msg.GetDescriptor()->full_name());
+
+    if(it == dictionary_.end())
+        throw(std::runtime_error("No TranslatorEntry for Protobuf type: " + protobuf_msg.GetDescriptor()->full_name()));
+
+    const goby::moos::protobuf::TranslatorEntry& entry = it->second;
+    
+    std::multimap<std::string, CMOOSMsg> moos_msgs;
+
+    for(int i = 0, n = entry.create_size();
+        i < n; ++ i)
+    {
+        std::string return_string;
+        std::string moos_var = entry.create(i).moos_var();
+        
+        switch(entry.create(i).technique())
+        {
+            case protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_TEXT_FORMAT:
+                goby::moos::MOOSTranslation<goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_TEXT_FORMAT>::serialize(&return_string, protobuf_msg);
+                break;
+                
+            case protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_NATIVE_ENCODED:
+                goby::moos::MOOSTranslation<goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_NATIVE_ENCODED>::serialize(&return_string, protobuf_msg);
+                break;
+
+            case protobuf::TranslatorEntry::TECHNIQUE_COMMA_SEPARATED_KEY_EQUALS_VALUE_PAIRS:
+                goby::moos::MOOSTranslation<protobuf::TranslatorEntry::TECHNIQUE_COMMA_SEPARATED_KEY_EQUALS_VALUE_PAIRS>::serialize(&return_string, protobuf_msg, google::protobuf::RepeatedPtrField<protobuf::TranslatorEntry::PublishSerializer::Algorithm>(), entry.use_short_enum());
+                break;
+                
+            case protobuf::TranslatorEntry::TECHNIQUE_FORMAT:
+                goby::moos::MOOSTranslation<protobuf::TranslatorEntry::TECHNIQUE_FORMAT>::serialize(&return_string, protobuf_msg, google::protobuf::RepeatedPtrField<protobuf::TranslatorEntry::PublishSerializer::Algorithm>(), entry.create(i).format(), entry.create(i).repeated_delimiter(), entry.use_short_enum());
+                break;
+        }
+        
+        try
+        {
+            double return_double = boost::lexical_cast<double>(return_string);
+            moos_msgs.insert(std::make_pair(moos_var,
+                                            CMOOSMsg(MOOS_NOTIFY, moos_var, return_double)));
+        }
+        catch(boost::bad_lexical_cast&)
+        {
+            moos_msgs.insert(std::make_pair(moos_var,
+                                            CMOOSMsg(MOOS_NOTIFY, moos_var, return_string)));
+        }        
+    }
+    
+    return moos_msgs;
+}
+
 
 template<typename GoogleProtobufMessagePointer, class StringCMOOSMsgMap >
 GoogleProtobufMessagePointer goby::moos::MOOSTranslator::moos_to_protobuf(const StringCMOOSMsgMap& moos_variables, const std::string& protobuf_name)

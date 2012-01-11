@@ -130,6 +130,14 @@ CpTranslator::CpTranslator()
             subscribe(cfg_.translator_entry(i).create(j).moos_var());
         }
     }
+
+
+    for(int i = 0, m = cfg_.multiplex_create_moos_var_size(); i < m; ++i)
+    {
+        TesMoosApp::subscribe(cfg_.multiplex_create_moos_var(i),
+                              &CpTranslator::create_on_multiplex_publish, this);
+    }
+    
 }
 
 CpTranslator::~CpTranslator()
@@ -154,7 +162,47 @@ void CpTranslator::create_on_publish(const CMOOSMsg& trigger_msg,
     if(!entry.trigger().has_mandatory_content() ||
        trigger_msg.GetString().find(entry.trigger().mandatory_content()) != std::string::npos)
         do_translation(entry);
+    else
+        glog.is(VERBOSE) && glog << "Message missing mandatory content for: " << entry.protobuf_name() << std::endl;
+        
 }
+
+void CpTranslator::create_on_multiplex_publish(const CMOOSMsg& moos_msg)
+{
+    std::string moos_msg_str = moos_msg.GetString(); 
+    size_t first_space_pos = moos_msg_str.find(' ');
+
+    std::string protobuf_name = moos_msg_str.substr(0, first_space_pos - 0);
+    std::string message_contents = moos_msg_str.substr(first_space_pos);
+
+    boost::trim(protobuf_name);
+    boost::trim(message_contents);
+    
+    boost::shared_ptr<google::protobuf::Message> msg =
+        goby::util::DynamicProtobufManager::new_protobuf_message(protobuf_name);
+
+    if(&*msg == 0)
+    {
+        glog.is(WARN) &&
+            glog << "Multiplex receive failed: Unknown Protobuf type: " << protobuf_name << "; be sure it is compiled in or directly loaded into the goby::util::DynamicProtobufManager." << std::endl;
+        return;
+    }
+
+    goby::moos::MOOSTranslation<goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_TEXT_FORMAT>::parse(message_contents, &*msg);
+
+    std::multimap<std::string, CMOOSMsg> out;    
+
+    out = translator_.protobuf_to_inverse_moos(*msg);
+    
+    for(std::multimap<std::string, CMOOSMsg>::iterator it = out.begin(), n = out.end();
+        it != n; ++it)
+    {
+        glog.is(VERBOSE) && glog << "Inverse Publishing: " << it->second << std::endl;
+        publish(it->second);
+    }
+}
+
+
 
 void CpTranslator::create_on_timer(const boost::system::error_code& error,
                                    const goby::moos::protobuf::TranslatorEntry& entry,
@@ -178,28 +226,27 @@ void CpTranslator::create_on_timer(const boost::system::error_code& error,
 
 void CpTranslator::do_translation(const goby::moos::protobuf::TranslatorEntry& entry)
 {
-    std::multimap<std::string, CMOOSMsg> out;
-
     boost::shared_ptr<google::protobuf::Message> created_message =
         translator_.moos_to_protobuf<boost::shared_ptr<google::protobuf::Message> >(
             dynamic_vars().all(), entry.protobuf_name());
 
     glog.is(DEBUG1) &&
         glog << "Created message: \n" << created_message->DebugString() << std::endl;
-    
-    
-    out = translator_.protobuf_to_moos(*created_message);
 
+    do_publish(created_message);
+}
+
+void CpTranslator::do_publish(boost::shared_ptr<google::protobuf::Message> created_message)   
+{
+    std::multimap<std::string, CMOOSMsg> out;    
+
+    out = translator_.protobuf_to_moos(*created_message);
+    
     for(std::multimap<std::string, CMOOSMsg>::iterator it = out.begin(), n = out.end();
         it != n; ++it)
     {
         glog.is(VERBOSE) && glog << "Publishing: " << it->second << std::endl;
         publish(it->second);
     }
-
-
-    throw(std::runtime_error(""));
-    
-    
 }
 

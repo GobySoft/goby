@@ -459,25 +459,7 @@ void TesMoosApp::process_configuration()
     //
     // PROCESS CONFIGURATION
     //
-    switch(common_cfg_.verbosity())
-    {
-        case TesMoosAppConfig::VERBOSITY_VERBOSE:
-            glog.add_stream(goby::util::logger::VERBOSE, &std::cout);
-            break;
-        case TesMoosAppConfig::VERBOSITY_WARN:
-            glog.add_stream(goby::util::logger::WARN, &std::cout);
-            break;
-        case TesMoosAppConfig::VERBOSITY_DEBUG:
-            glog.add_stream(goby::util::logger::DEBUG1, &std::cout);
-            break;
-        case TesMoosAppConfig::VERBOSITY_GUI:
-            glog.add_stream(goby::util::logger::GUI, &std::cout);
-            break;
-        case TesMoosAppConfig::VERBOSITY_QUIET:
-            glog.add_stream(goby::util::logger::QUIET, &std::cout);
-            break;
-    }    
-
+    glog.add_stream(common_cfg_.verbosity(), &std::cout);
 
     if(common_cfg_.log())
     {

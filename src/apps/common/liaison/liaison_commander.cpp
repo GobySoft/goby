@@ -59,6 +59,8 @@ goby::common::LiaisonCommander::ControlsContainer::ControlsContainer(
       clear_button_(new WPushButton("Clear", buttons_div_)),
       commands_div_(commands_div)
 {
+    send_button_->setDisabled(true);
+    clear_button_->setDisabled(true);
     
     command_selection_->addItem("(Select a command message)");
     send_button_->clicked().connect(this, &ControlsContainer::send_message);
@@ -84,8 +86,15 @@ goby::common::LiaisonCommander::ControlsContainer::ControlsContainer(
 void goby::common::LiaisonCommander::ControlsContainer::switch_command(int selection_index)
 {
     if(selection_index == 0)
+    {
+        send_button_->setDisabled(true);
+        clear_button_->setDisabled(true);
         return;
-
+    }
+    
+    send_button_->setDisabled(false);
+    clear_button_->setDisabled(false);
+    
     std::string protobuf_name = command_selection_->itemText(selection_index).narrow();
 
     if(!commands_.count(protobuf_name))

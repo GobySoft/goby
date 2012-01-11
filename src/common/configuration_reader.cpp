@@ -479,7 +479,7 @@ void goby::util::ConfigReader::build_description_field(
         if(field_desc->is_extension())
         {
             if(field_desc->extension_scope())
-                before_description += "[" + field_desc->extension_scope()->full_name() + ".";
+                before_description += "[" + field_desc->extension_scope()->full_name() + "." + field_desc->name();
             else
                 before_description += "[" + field_desc->full_name();
         }
@@ -534,7 +534,7 @@ void goby::util::ConfigReader::build_description_field(
         if(field_desc->is_extension())
         {
             if(field_desc->extension_scope())
-                before_description += "[" + field_desc->extension_scope()->full_name() + ".";
+                before_description += "[" + field_desc->extension_scope()->full_name() + "." + field_desc->name();
             else
                 before_description += "[" + field_desc->full_name();
         }

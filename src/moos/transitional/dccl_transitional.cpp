@@ -44,18 +44,11 @@ namespace bf = boost::filesystem;
 /////////////////////
 // public methods (general use)
 /////////////////////
-goby::transitional::DCCLTransitionalCodec::DCCLTransitionalCodec(std::ostream* log /* =0 */)
-    : log_(log),
+goby::transitional::DCCLTransitionalCodec::DCCLTransitionalCodec()
+    : log_(0),
       dccl_(goby::acomms::DCCLCodec::get()),
-      start_time_(goby_time()),
-      source_database_(&disk_source_tree_),
-      generated_database_(*google::protobuf::DescriptorPool::generated_pool()),
-      merged_database_(&generated_database_, &source_database_),
-      descriptor_pool_(&merged_database_)
+      start_time_(goby_time())
 {
-    source_database_.RecordErrorsTo(&error_collector_);
-    disk_source_tree_.MapPath("/", "/");    
-
 }
 
 void goby::transitional::DCCLTransitionalCodec::convert_to_v2_representation(pAcommsHandlerConfig* cfg)
@@ -65,8 +58,8 @@ void goby::transitional::DCCLTransitionalCodec::convert_to_v2_representation(pAc
     for(int i = 0, n = cfg->transitional_cfg().message_file_size(); i < n; ++i)
     {
         convert_xml_message_file(cfg->transitional_cfg().message_file(i).path(),
-                                 cfg->add_load_dccl_proto_file(),
-                                 cfg->mutable_moos_dccl_translator());
+                                 cfg->add_load_proto_file(),
+                                 cfg->mutable_translator_entry());
     }
 }
 
@@ -144,12 +137,13 @@ void goby::transitional::DCCLTransitionalCodec::convert_xml_message_file(
     
     fout.close();
     
-    const google::protobuf::FileDescriptor* file_desc = descriptor_pool_.FindFileByName(*proto_file);    
+    const google::protobuf::FileDescriptor* file_desc =
+        goby::util::DynamicProtobufManager::descriptor_pool().FindFileByName(*proto_file);    
 
-    glog.is(DEBUG2) && glog << file_desc->DebugString() << std::flush;
-    
     if(file_desc)
     {
+        glog.is(DEBUG2) && glog << file_desc->DebugString() << std::flush;
+
         BOOST_FOREACH(unsigned id, added_ids)
         {
             const google::protobuf::Descriptor* desc = file_desc->FindMessageTypeByName(to_iterator(id)->name());
@@ -164,7 +158,12 @@ void goby::transitional::DCCLTransitionalCodec::convert_xml_message_file(
             to_iterator(id)->set_descriptor(desc);
         }
     }
-
+    else
+    {
+        glog << die << "No file_descriptor with name " << *proto_file << " found!" << std::endl;
+    }
+    
+    
 
     BOOST_FOREACH(unsigned id, added_ids)
     {

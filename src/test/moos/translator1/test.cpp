@@ -102,7 +102,7 @@ int main(int argc, char* argv[])
 
 
 
-    std::string format_str = "NAME=%1%,X=%202%,Y=%3%,HEADING=%201%";
+    std::string format_str = "NAME=%1%,X=%202%,Y=%3%,HEADING=%201%,REPEAT={%10%}";
    {
         protobuf::TranslatorEntry entry;
         entry.set_protobuf_name("BasicNodeReport");
@@ -127,6 +127,9 @@ int main(int argc, char* argv[])
     report.set_x(550);
     report.set_y(1023.5);
     report.set_heading(240);
+    report.add_repeat(1);
+    report.add_repeat(-1);
+    
     
     std::multimap<std::string, CMOOSMsg> moos_msgs = translator.protobuf_to_moos(report);    
 
@@ -137,7 +140,7 @@ int main(int argc, char* argv[])
     {
         goby::glog << "Variable: " << it->first << "\n"
                    << "Value: " << it->second.GetString() << std::endl;
-        assert(it->second.GetString() == "NAME=unicorn,X=550,Y=1023.5,HEADING=240");
+        assert(it->second.GetString() == "NAME=unicorn,X=550,Y=1023.5,HEADING=240,REPEAT={1,-1}");
     }
     
     typedef std::auto_ptr<google::protobuf::Message> GoogleProtobufMessagePointer;

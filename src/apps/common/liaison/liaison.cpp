@@ -93,8 +93,12 @@ goby::common::Liaison::Liaison()
              iter != end;
              ++iter)
         {
+#if BOOST_FILESYSTEM_VERSION == 3
             if(iter->path().extension().string() == ".proto")
-                load_proto_file(iter->path().string());        
+#else
+            if(iter->path().extension() == ".proto")
+#endif            
+              load_proto_file(iter->path().string());        
         }
     }
     

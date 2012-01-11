@@ -50,13 +50,17 @@ class CpTranslator : public TesMoosApp
     void loop();     // from TesMoosApp
 
     void create_on_publish(const CMOOSMsg& trigger_msg, const goby::moos::protobuf::TranslatorEntry& entry);
-
+    void create_on_multiplex_publish(const CMOOSMsg& moos_msg);
+    
+    
     void create_on_timer(const boost::system::error_code& error,
                          const goby::moos::protobuf::TranslatorEntry& entry,
                          boost::asio::deadline_timer* timer);
     
     void do_translation(const goby::moos::protobuf::TranslatorEntry& entry);
+    void do_publish(boost::shared_ptr<google::protobuf::Message> created_message);
 
+    
   private:
     google::protobuf::compiler::DiskSourceTree disk_source_tree_;
     google::protobuf::compiler::SourceTreeDescriptorDatabase source_database_;

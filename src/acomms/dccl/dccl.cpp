@@ -316,6 +316,9 @@ void goby::acomms::DCCLCodec::validate(const google::protobuf::Descriptor* desc)
             throw(DCCLException("`dccl.id` " + as<std::string>(dccl_id) + " is already in use by Message " + id2desc_.find(dccl_id)->second->full_name()));
         else
             id2desc_.insert(std::make_pair(id(desc), desc));
+
+        glog.is(DEBUG1) && glog << group(glog_encode_group_) << "Successfully validated message of type: " << desc->full_name() << ": " << desc << std::endl;
+
     }
     catch(DCCLException& e)
     {
@@ -326,7 +329,7 @@ void goby::acomms::DCCLCodec::validate(const google::protobuf::Descriptor* desc)
         catch(DCCLException& e)
         { }
         
-        glog.is(WARN) && glog << "Message " << desc->full_name() << " failed validation. Reason: "
+        glog.is(WARN) && glog << "Message " << desc->full_name() << ": " << desc << " failed validation. Reason: "
                               << e.what() <<  "\n"
                               << "If possible, information about the Message are printed above. " << std::endl;
 

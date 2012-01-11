@@ -1,4 +1,5 @@
 import "goby/common/protobuf/option_extensions.proto";
+import "goby/common/protobuf/logger.proto";
 
 message TesMoosAppConfig
 {
@@ -23,8 +24,7 @@ message TesMoosAppConfig
   optional uint32 comm_tick = 2 [default = 10,
                                  (goby.field).description="Frequency at which to call into the MOOSDB for mail."];
   
-  enum Verbosity { VERBOSITY_QUIET = 1; VERBOSITY_WARN = 2; VERBOSITY_VERBOSE = 3; VERBOSITY_DEBUG = 4; VERBOSITY_GUI = 5; }
-  optional Verbosity verbosity = 3 [default = VERBOSITY_VERBOSE,
+  optional goby.util.protobuf.GLogConfig.Verbosity verbosity = 3 [default = VERBOSE,
                                     (goby.field).description="Verbosity of the terminal window output"];
 
   // post various configuration values to the MOOSDB on startup

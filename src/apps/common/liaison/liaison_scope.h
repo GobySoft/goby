@@ -49,7 +49,8 @@ namespace goby
             
             void moos_inbox(CMOOSMsg& msg);
             std::vector< Wt::WStandardItem * > create_row(CMOOSMsg& msg);
-
+            void attach_pb_rows(Wt::WStandardItem * item, const std::string& value);
+            
           private:
  
            
@@ -188,7 +189,13 @@ namespace goby
       class LiaisonScopeMOOSTreeView : public Wt::WTreeView
         {
           public:
-            LiaisonScopeMOOSTreeView(const protobuf::MOOSScopeConfig& moos_scope_config, Wt::WContainerWidget* parent = 0); 
+            LiaisonScopeMOOSTreeView(const protobuf::MOOSScopeConfig& moos_scope_config, Wt::WContainerWidget* parent = 0);
+
+          private:
+            
+            //           void handle_double_click(const Wt::WModelIndex& index, const Wt::WMouseEvent& event);
+
+            
         };
 
         class LiaisonScopeMOOSModel : public Wt::WStandardItemModel

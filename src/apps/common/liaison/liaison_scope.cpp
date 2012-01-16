@@ -29,7 +29,10 @@
 #include <Wt/Chart/WCartesianChart>
 #include <Wt/WDateTime>
 #include "liaison.h"
+#include "goby/moos/moos_protobuf_helpers.h"
 
+#include <boost/regex.hpp>
+#include <boost/algorithm/string/regex.hpp>
 
 using namespace Wt;
 using namespace goby::util::logger_lock;
@@ -84,14 +87,50 @@ goby::common::LiaisonScope::LiaisonScope(ZeroMQService* service, WTimer* timer, 
 
 
 
+void goby::common::LiaisonScope::attach_pb_rows( Wt::WStandardItem * key_item, const std::string& value)
+{
+    boost::shared_ptr<google::protobuf::Message> pb_msg =
+        dynamic_parse_for_moos(value);
+
+    if(pb_msg)
+    {
+
+        std::vector<std::string> result;
+        std::string debug_string = pb_msg->DebugString();
+        boost::trim(debug_string);
+            
+        boost::split(result, debug_string, boost::is_any_of("\n"));
+
+            
+        for(int i = 0, n = result.size(); i < n; ++i)
+        {
+            std::vector< WStandardItem * > items;
+            items.push_back(new Wt::WStandardItem()); //key
+            items.push_back(new Wt::WStandardItem()); //type
+                
+            Wt::WStandardItem* expanded_value_item = new Wt::WStandardItem;
+            expanded_value_item->setData(result[i],DisplayRole);
+            items.push_back(expanded_value_item);
+            items.push_back(new Wt::WStandardItem()); //time
+            items.push_back(new Wt::WStandardItem()); //community                
+            items.push_back(new Wt::WStandardItem()); //source
+            items.push_back(new Wt::WStandardItem()); //source aux
+                
+            key_item->appendRow(items);
+        }
+    }
+}
+
 std::vector< WStandardItem * > goby::common::LiaisonScope::create_row(CMOOSMsg& msg)
 {
     std::vector< WStandardItem * > items;
     Wt::WStandardItem* key_item = new Wt::WStandardItem(msg.GetKey());
 //    key_item->setFlags(ItemIsEditable);
-//    key_item->setRowCount(1);
+
     items.push_back(key_item);
-    
+
+    if(msg.IsString())
+        attach_pb_rows(key_item, msg.GetString());
     
     items.push_back(new Wt::WStandardItem((msg.IsDouble() ? "double" : "string")));
     
@@ -100,8 +139,10 @@ std::vector< WStandardItem * > goby::common::LiaisonScope::create_row(CMOOSMsg& 
         value_item->setData(msg.GetDouble(), DisplayRole);
     else
         value_item->setData(msg.GetString(), DisplayRole);
-    items.push_back(value_item);
 
+    items.push_back(value_item);
+    
+    
     Wt::WStandardItem* time_item = new Wt::WStandardItem;
     time_item->setData(WDateTime::fromPosixTime(goby::util::unix_double2ptime(msg.GetTime())), DisplayRole);
     items.push_back(time_item);
@@ -199,9 +240,28 @@ goby::common::LiaisonScopeMOOSTreeView::LiaisonScopeMOOSTreeView(const protobuf:
                          moos_scope_config.column_width().source_width()+
                          moos_scope_config.column_width().source_aux_width()+
                          7*(protobuf::MOOSScopeConfig::COLUMN_MAX+1),
-                         Wt::WLength::Auto);
+                         Wt::WLength::Auto);    
+
+//    this->doubleClicked().connect(this, &LiaisonScopeMOOSTreeView::handle_double_click);
 }
-            
+
+// void goby::common::LiaisonScopeMOOSTreeView::handle_double_click(const Wt::WModelIndex& proxy_index, const Wt::WMouseEvent& event)
+// {
+//     const Wt::WAbstractProxyModel* proxy = dynamic_cast<const Wt::WAbstractProxyModel*>(this->model());
+//     const Wt::WStandardItemModel* model = dynamic_cast<Wt::WStandardItemModel*>(proxy->sourceModel());
+//     WModelIndex model_index = proxy->mapToSource(proxy_index);
+
+//     glog.is(DEBUG1, lock) && glog << "clicked: " << model_index.row() << "," << model_index.column() << std::endl << unlock;    
+    
+//     attach_pb_rows(model->item(model_index.row(), protobuf::MOOSScopeConfig::COLUMN_KEY),
+//                    model->item(model_index.row(), protobuf::MOOSScopeConfig::COLUMN_VALUE)->text().narrow());
+
+//     this->setExpanded(proxy_index, true);
+// }
+
+
+
+
 
 goby::common::LiaisonScopeMOOSModel::LiaisonScopeMOOSModel(const protobuf::MOOSScopeConfig& moos_scope_config, Wt::WContainerWidget* parent /*= 0*/)
     : WStandardItemModel(0, protobuf::MOOSScopeConfig::COLUMN_MAX+1, parent)
@@ -438,6 +498,7 @@ void goby::common::LiaisonScope::HistoryContainer::add_history(const goby::commo
         new_proxy->setFilterRegExp(".*");
         new_tree->sortByColumn(protobuf::MOOSScopeConfig::COLUMN_TIME,
                                DescendingOrder);
+
     }
 }
 

@@ -31,7 +31,34 @@ message pAcommsHandlerConfig
   // for dccl
   optional goby.acomms.protobuf.DCCLConfig dccl_cfg = 7 [(goby.field).description="Configure the Dynamic Compact Control Language Encoding/Decoding unit"];  // see acomms_dccl.proto
 
+  message MOOSVariables
+  {
+    // serial feed
+    optional string driver_raw_in = 1 [default="ACOMMS_NMEA_IN"];
+    optional string driver_raw_out = 2 [default="ACOMMS_NMEA_OUT"];
 
+    optional string driver_raw_msg_in = 3 [default="ACOMMS_RAW_INCOMING"];
+    optional string driver_raw_msg_out = 4 [default="ACOMMS_RAW_OUTGOING"];
+    
+    optional string driver_receive = 5 [default="ACOMMS_MODEM_RECEIVE"];
+    optional string driver_transmit = 6 [default="ACOMMS_MODEM_TRANSMIT"];
+    
+    optional string queue_receive = 100 [default="ACOMMS_QUEUE_RECEIVE"];
+    optional string queue_transmit = 101 [default="ACOMMS_QUEUE_TRANSMIT"];
+    // acoustic acknowledgments get written here
+    optional string queue_ack_transmission = 102 [default="ACOMMS_ACK"];
+    optional string queue_ack_original_msg = 103 [default="ACOMMS_ACK_ORIGINAL"];
+    // expired messages (ttl ends)
+    optional string queue_expire = 104 [default="ACOMMS_EXPIRE"];
+    optional string queue_size = 105 [default="ACOMMS_QSIZE"];
+    optional string queue_flush = 106 [default="ACOMMS_FLUSH_QUEUE"];
+
+    optional string mac_cycle_update = 200 [default="ACOMMS_MAC_CYCLE_UPDATE"];
+    optional string mac_initiate_transmission = 201 [default="ACOMMS_MAC_INITIATE_TRANSMISSION"];
+    
+  }
+  optional MOOSVariables moos_var = 10;
+  
   repeated string load_shared_library = 20 [(goby.field).description="Path to a shared library containing compiled DCCL protobuf files. Preferred over load_dccl_proto_file."];
 
   repeated string load_proto_file = 21 [(goby.field).description="Path to a DCCL protobuf file. Use load_shared_library when possible."];

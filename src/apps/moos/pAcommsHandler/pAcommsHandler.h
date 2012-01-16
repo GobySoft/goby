@@ -58,26 +58,6 @@ namespace goby {
     } 
 }
 
-// data
-const std::string MOOS_VAR_RECEIVE = "ACOMMS_MODEM_RECEIVE";
-const std::string MOOS_VAR_TRANSMIT = "ACOMMS_MODEM_TRANSMIT";
-
-// serial feed
-const std::string MOOS_VAR_NMEA_OUT = "ACOMMS_NMEA_OUT";
-const std::string MOOS_VAR_NMEA_IN = "ACOMMS_NMEA_IN";
-
-// acoustic acknowledgments get written here
-const std::string MOOS_VAR_ACK = "ACOMMS_ACK";
-
-// expired messages (ttl ends)
-const std::string MOOS_VAR_EXPIRE = "ACOMMS_EXPIRE";
-
-const std::string MOOS_VAR_QSIZE = "ACOMMS_QSIZE";
-
-const std::string MOOS_VAR_CYCLE_UPDATE = "ACOMMS_MAC_CYCLE_UPDATE";
-
-const std::string MOOS_VAR_FLUSH_QUEUE = "ACOMMS_FLUSH_QUEUE";
-
 class CpAcommsHandler : public TesMoosApp
 {
   public:
@@ -96,17 +76,17 @@ class CpAcommsHandler : public TesMoosApp
                          const goby::moos::protobuf::TranslatorEntry& entry,
                          boost::asio::deadline_timer* timer);
     
-    void translate_and_push(const goby::moos::protobuf::TranslatorEntry& entry);
-    
-    // read the internal driver part of the .moos file
-    // void read_driver_parameters(CProcessConfigReader& config);
-    // read the internal mac part of the .moos file
-    // void read_internal_mac_parameters(CProcessConfigReader& config);
-    // read the message queueing (XML / send, receive = ) part of the .moos file
-    // void read_queue_parameters(CProcessConfigReader& config);
+    void translate_and_push(const goby::moos::protobuf::TranslatorEntry& entry);    
     
     // from QueueManager
-    void queue_receive(const google::protobuf::Message& msg);
+    void handle_queue_receive(const google::protobuf::Message& msg);
+
+    void handle_goby_signal(const google::protobuf::Message& msg1,
+                            const std::string& moos_var1,
+                            const google::protobuf::Message& msg2,
+                            const std::string& moos_var2);
+
+    void handle_raw(const goby::acomms::protobuf::ModemRaw& msg, const std::string& moos_var);
 
     /* void queue_ack(const goby::acomms::protobuf::ModemTransmission& ack_msg, */
     /*                const google::protobuf::Message& orig_msg); */

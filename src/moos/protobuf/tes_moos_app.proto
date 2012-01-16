@@ -9,6 +9,8 @@ message TesMoosAppConfig
   optional string log_path = 101 [default = "./",
                                   (goby.field).moos_global = "log_path",
                                   (goby.field).description="Directory path to write the text log of the terminal output (if log=true)"];
+  optional goby.util.protobuf.GLogConfig.Verbosity log_verbosity = 105 [default = DEBUG2, (goby.field).description="Verbosity of the log file"];
+
   optional string community = 102 [(goby.field).moos_global = "Community",
                                    (goby.field).description="The vehicle's name", (goby.field).example="AUV23"];
   optional double lat_origin = 103 [(goby.field).moos_global = "LatOrigin",

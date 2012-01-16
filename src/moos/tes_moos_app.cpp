@@ -493,7 +493,7 @@ void TesMoosApp::process_configuration()
                 glog.is(DIE) && glog << die << "cannot write to current directory, so cannot log." << std::endl;
             }
             
-            glog.add_stream(goby::util::logger::VERBOSE, &fout_);
+            glog.add_stream(common_cfg_.log_verbosity(), &fout_);
         }
     }
 

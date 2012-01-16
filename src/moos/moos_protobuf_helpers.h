@@ -26,6 +26,7 @@
 #include "goby/common/logger/flex_ostream.h"
 #include "goby/util/as.h"
 #include "goby/util/binary.h"
+#include "goby/util/dynamic_protobuf_manager.h"
 #include "goby/moos/moos_string.h"
 
 #include "goby/moos/transitional/message_algorithms.h"
@@ -37,6 +38,8 @@ namespace goby
 {
     namespace moos
     {
+        const std::string MAGIC_PROTOBUF_HEADER = "@PB";
+        
         inline std::map<int, std::string> run_serialize_algorithms(const google::protobuf::Message& in, const google::protobuf::RepeatedPtrField<protobuf::TranslatorEntry::PublishSerializer::Algorithm>& algorithms)
         {
             const google::protobuf::Descriptor* desc = in.GetDescriptor();
@@ -940,7 +943,9 @@ namespace goby
 /// \param msg Google Protocol buffers message to serialize
 inline void serialize_for_moos(std::string* out, const google::protobuf::Message& msg)
 {
+    std::string header = goby::moos::MAGIC_PROTOBUF_HEADER + "[" + msg.GetDescriptor()->full_name() + "] ";
     goby::moos::MOOSTranslation<goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_TEXT_FORMAT>::serialize(out, msg);
+    *out =  header + *out;
 }
 
 
@@ -950,10 +955,59 @@ inline void serialize_for_moos(std::string* out, const google::protobuf::Message
 /// \param msg Google Protocol buffers message to store result
 inline void parse_for_moos(const std::string& in, google::protobuf::Message* msg)
 {
-    goby::moos::MOOSTranslation<goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_TEXT_FORMAT>::parse(in, msg);    
+    if(in.size() > goby::moos::MAGIC_PROTOBUF_HEADER.size() && in.substr(0, goby::moos::MAGIC_PROTOBUF_HEADER.size()) == goby::moos::MAGIC_PROTOBUF_HEADER)
+    {
+        size_t end_bracket_pos = in.find(']');
+
+        if(end_bracket_pos == std::string::npos)
+            throw(std::runtime_error("Incorrectly formatted protobuf message passed to parse_for_moos."));
+        
+        std::string name = in.substr(goby::moos::MAGIC_PROTOBUF_HEADER.size() + 1,
+                                     end_bracket_pos - 1 - goby::moos::MAGIC_PROTOBUF_HEADER.size());
+        if(name != msg->GetDescriptor()->full_name())
+            throw(std::runtime_error("Wrong Protobuf type passed to parse_for_moos. Expected: " + msg->GetDescriptor()->full_name() + ", received: " + name));
+
+        if(in.size() > end_bracket_pos + 1)
+            goby::moos::MOOSTranslation<goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_TEXT_FORMAT>::parse(in.substr(end_bracket_pos + 1), msg);
+        else
+            msg->Clear();
+    }
+    else
+    {
+        goby::moos::MOOSTranslation<goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_TEXT_FORMAT>::parse(in, msg);
+    }
 }
 
+inline boost::shared_ptr<google::protobuf::Message> dynamic_parse_for_moos(const std::string& in)
+{
+    if(in.size() > goby::moos::MAGIC_PROTOBUF_HEADER.size() && in.substr(0, goby::moos::MAGIC_PROTOBUF_HEADER.size()) == goby::moos::MAGIC_PROTOBUF_HEADER)
+    {
+        size_t end_bracket_pos = in.find(']');
 
-   
+        if(end_bracket_pos == std::string::npos)
+            throw(std::runtime_error("Incorrectly formatted protobuf message passed to parse_for_moos."));
+        
+        std::string name = in.substr(goby::moos::MAGIC_PROTOBUF_HEADER.size() + 1,
+                                     end_bracket_pos - 1 - goby::moos::MAGIC_PROTOBUF_HEADER.size());
+
+        try
+        {
+            boost::shared_ptr<google::protobuf::Message> return_message =
+                goby::util::DynamicProtobufManager::new_protobuf_message(name);
+            if(in.size() > end_bracket_pos + 1)
+                goby::moos::MOOSTranslation<goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_TEXT_FORMAT>::parse(in.substr(end_bracket_pos + 1), return_message.get());
+            return return_message;
+        }
+        catch(std::exception& e)
+        {
+            return boost::shared_ptr<google::protobuf::Message>();
+        }        
+    }
+    else
+    {
+        return boost::shared_ptr<google::protobuf::Message>();
+    }
+}
+
 
 #endif

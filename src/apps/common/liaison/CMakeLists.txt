@@ -15,5 +15,6 @@ target_link_libraries(goby_liaison
   wt
   wthttp
   goby_moos
+  goby_util
   )
 

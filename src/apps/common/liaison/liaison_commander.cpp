@@ -14,6 +14,7 @@
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "goby/util/dynamic_protobuf_manager.h"
+#include "goby/moos/moos_protobuf_helpers.h"
 
 #include "liaison_commander.h"
 
@@ -147,7 +148,9 @@ void goby::common::LiaisonCommander::ControlsContainer::send_message()
 
     if (dialog.exec() == Wt::WDialog::Accepted)
     {
-        moos_node_->send(CMOOSMsg(MOOS_NOTIFY, "LIAISON_COMMANDER_OUT", current_command->message_->GetDescriptor()->full_name() + " " + current_command->message_->ShortDebugString()),
+        std::string serialized; 
+        serialize_for_moos(&serialized, *current_command->message_);
+        moos_node_->send(CMOOSMsg(MOOS_NOTIFY, "LIAISON_COMMANDER_OUT", serialized),
              Liaison::LIAISON_INTERNAL_SUBSCRIBE_SOCKET);
     }
 

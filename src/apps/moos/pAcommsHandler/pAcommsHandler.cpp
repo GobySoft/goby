@@ -33,6 +33,7 @@
 
 #include "pAcommsHandler.h"
 #include "goby/util/sci.h"
+#include "goby/moos/moos_protobuf_helpers.h"
 
 using namespace goby::util::tcolor;
 using namespace goby::util::logger;
@@ -43,7 +44,6 @@ using google::protobuf::uint32;
 using goby::transitional::DCCLMessageVal;
 using goby::glog;
 
-const double NaN = std::numeric_limits<double>::quiet_NaN();
 
 pAcommsHandlerConfig CpAcommsHandler::cfg_;
 CpAcommsHandler* CpAcommsHandler::inst_ = 0;
@@ -79,15 +79,32 @@ CpAcommsHandler::CpAcommsHandler()
     
     
     goby::acomms::connect(&queue_manager_.signal_receive,
-                          this, &CpAcommsHandler::queue_receive);
-    // goby::acomms::connect(&queue_manager_.signal_ack,
-    //                       this, &CpAcommsHandler::queue_ack);
+                          this, &CpAcommsHandler::handle_queue_receive);
+
+
+    // informational 'queue' signals
+    goby::acomms::connect(&queue_manager_.signal_ack,
+                          boost::bind(&CpAcommsHandler::handle_goby_signal, this,
+                                      _1, cfg_.moos_var().queue_ack_transmission(),
+                                      _2, cfg_.moos_var().queue_ack_original_msg()));
+    goby::acomms::connect(&queue_manager_.signal_receive,
+                          boost::bind(&CpAcommsHandler::handle_goby_signal, this,
+                                      _1, cfg_.moos_var().queue_receive(), _1, ""));
+    goby::acomms::connect(&queue_manager_.signal_expire,
+                          boost::bind(&CpAcommsHandler::handle_goby_signal, this,
+                                      _1, cfg_.moos_var().queue_expire(), _1, ""));
+    goby::acomms::connect(&queue_manager_.signal_queue_size_change,
+                          boost::bind(&CpAcommsHandler::handle_goby_signal, this,
+                                      _1, cfg_.moos_var().queue_size(), _1, ""));
+
+    // informational 'mac' signals
+    goby::acomms::connect(&mac_.signal_initiate_transmission,
+                          boost::bind(&CpAcommsHandler::handle_goby_signal, this,
+                                      _1, cfg_.moos_var().mac_initiate_transmission(), _1, ""));
+
+
     // goby::acomms::connect(&queue_manager_.signal_data_on_demand,
     //                       this, &CpAcommsHandler::queue_on_demand);
-    // goby::acomms::connect(&queue_manager_.signal_queue_size_change,
-    //                       this, &CpAcommsHandler::queue_qsize);
-    // goby::acomms::connect(&queue_manager_.signal_expire,
-    //                       this, &CpAcommsHandler::queue_expire);
 
     process_configuration();
 
@@ -97,20 +114,36 @@ CpAcommsHandler::CpAcommsHandler()
         goby::acomms::bind(*driver_, queue_manager_);
         goby::acomms::bind(mac_, *driver_);
 
-// bind our methods to the rest of the goby-acomms signals
-        // goby::acomms::connect(&driver_->signal_raw_outgoing,
-        //                       this, &CpAcommsHandler::modem_raw_out);
-        // goby::acomms::connect(&driver_->signal_raw_incoming,
-        //                       this, &CpAcommsHandler::modem_raw_in);    
-        // goby::acomms::connect(&driver_->signal_receive,
-        //                       this, &CpAcommsHandler::modem_receive);
-        // goby::acomms::connect(&driver_->signal_transmit_result,
-        //                       this, &CpAcommsHandler::modem_transmit_result);
+        // informational 'driver' signals
+        goby::acomms::connect(&driver_->signal_receive,
+                              boost::bind(&CpAcommsHandler::handle_goby_signal, this,
+                                          _1, cfg_.moos_var().driver_receive(), _1, ""));
+
+        goby::acomms::connect(&driver_->signal_transmit_result,
+                              boost::bind(&CpAcommsHandler::handle_goby_signal, this,
+                                          _1, cfg_.moos_var().driver_transmit(), _1, ""));
+
+        goby::acomms::connect(&driver_->signal_raw_incoming,
+                              boost::bind(&CpAcommsHandler::handle_goby_signal, this,
+                                          _1, cfg_.moos_var().driver_raw_msg_in(), _1, ""));
+        goby::acomms::connect(&driver_->signal_raw_outgoing,
+                              boost::bind(&CpAcommsHandler::handle_goby_signal, this,
+                                          _1, cfg_.moos_var().driver_raw_msg_out(), _1, ""));    
+
+        goby::acomms::connect(&driver_->signal_raw_incoming,
+                              boost::bind(&CpAcommsHandler::handle_raw, this,
+                                          _1, cfg_.moos_var().driver_raw_in()));
+        
+        goby::acomms::connect(&driver_->signal_raw_outgoing,
+                              boost::bind(&CpAcommsHandler::handle_raw, this,
+                                          _1, cfg_.moos_var().driver_raw_out()));
+        
+        
     }
     
     
     // update comms cycle
-    subscribe(MOOS_VAR_CYCLE_UPDATE, &CpAcommsHandler::handle_mac_cycle_update, this);    
+    subscribe(cfg_.moos_var().mac_cycle_update(), &CpAcommsHandler::handle_mac_cycle_update, this);    
 }
 
 CpAcommsHandler::~CpAcommsHandler()
@@ -195,6 +228,35 @@ void CpAcommsHandler::handle_mac_cycle_update(const CMOOSMsg& msg)
     mac_.update();
     
 }
+
+void CpAcommsHandler::handle_goby_signal(const google::protobuf::Message& msg1,
+                                         const std::string& moos_var1,
+                                         const google::protobuf::Message& msg2,
+                                         const std::string& moos_var2)
+
+{
+    if(!moos_var1.empty())
+    {
+        std::string serialized1;
+        serialize_for_moos(&serialized1, msg1);
+        publish(moos_var1, serialized1);
+    }
+    
+    if(!moos_var2.empty())
+    {
+        std::string serialized2;
+        serialize_for_moos(&serialized2, msg2);
+        publish(moos_var2, serialized2);
+    }
+}
+
+void CpAcommsHandler::handle_raw(const goby::acomms::protobuf::ModemRaw& msg, const std::string& moos_var)
+{
+    publish(moos_var, msg.raw());
+}
+
+
+
 
 //
 // READ CONFIGURATION
@@ -315,7 +377,7 @@ void CpAcommsHandler::process_configuration()
     }    
 }
 
-void CpAcommsHandler::queue_receive(const google::protobuf::Message& msg)
+void CpAcommsHandler::handle_queue_receive(const google::protobuf::Message& msg)
 {
     std::multimap<std::string, CMOOSMsg> out;    
 
@@ -345,26 +407,15 @@ void CpAcommsHandler::create_on_publish(const CMOOSMsg& trigger_msg,
 
 void CpAcommsHandler::create_on_multiplex_publish(const CMOOSMsg& moos_msg)
 {
-    std::string moos_msg_str = moos_msg.GetString(); 
-    size_t first_space_pos = moos_msg_str.find(' ');
-
-    std::string protobuf_name = moos_msg_str.substr(0, first_space_pos - 0);
-    std::string message_contents = moos_msg_str.substr(first_space_pos);
-
-    boost::trim(protobuf_name);
-    boost::trim(message_contents);
-    
     boost::shared_ptr<google::protobuf::Message> msg =
-        goby::util::DynamicProtobufManager::new_protobuf_message(protobuf_name);
+        dynamic_parse_for_moos(moos_msg.GetString());
 
     if(&*msg == 0)
     {
         glog.is(WARN) &&
-            glog << "Multiplex receive failed: Unknown Protobuf type: " << protobuf_name << "; be sure it is compiled in or directly loaded into the goby::util::DynamicProtobufManager." << std::endl;
+            glog << "Multiplex receive failed: Unknown Protobuf type for " << moos_msg.GetString() << "; be sure it is compiled in or directly loaded into the goby::util::DynamicProtobufManager." << std::endl;
         return;
     }
-
-    goby::moos::MOOSTranslation<goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_TEXT_FORMAT>::parse(message_contents, &*msg);
 
     std::multimap<std::string, CMOOSMsg> out;    
 

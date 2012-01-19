@@ -71,6 +71,7 @@ namespace goby
             Wt::WText name_;
         };        
 
+
         
         class Liaison : public ZeroMQApplicationBase
         {
@@ -84,20 +85,24 @@ namespace goby
                        int size,
                        int socket_id);
 
-            enum 
-            {
-                LIAISON_INTERNAL_PUBLISH_SOCKET = 1,
-                LIAISON_INTERNAL_SUBSCRIBE_SOCKET = 2
-            };
-
             static const std::string LIAISON_INTERNAL_PUBLISH_SOCKET_NAME;
-            static const std::string LIAISON_INTERNAL_SUBSCRIBE_SOCKET_NAME; 
-            
+            static const std::string LIAISON_INTERNAL_SUBSCRIBE_SOCKET_NAME;
 
             void loop();
 
             static boost::shared_ptr<zmq::context_t> zmq_context() { return zmq_context_; }
             static const std::vector<void *>& dl_handles() { return dl_handles_; }
+
+            
+            enum 
+            {
+                LIAISON_INTERNAL_PUBLISH_SOCKET = 1,
+                LIAISON_INTERNAL_SUBSCRIBE_SOCKET = 2,
+                LIAISON_INTERNAL_COMMANDER_SUBSCRIBE_SOCKET = 3,
+                LIAISON_INTERNAL_COMMANDER_PUBLISH_SOCKET = 4,
+                LIAISON_INTERNAL_SCOPE_SUBSCRIBE_SOCKET = 5,
+                LIAISON_INTERNAL_SCOPE_PUBLISH_SOCKET = 6,  
+            };
 
           private:
             void load_proto_file(const std::string& path);
@@ -131,40 +136,6 @@ namespace goby
             
             // add a database client
         };
-
-        class LiaisonWtThread : public Wt::WApplication
-        {
-          public:
-            LiaisonWtThread(const Wt::WEnvironment& env);
-
-            void inbox(MarshallingScheme marshalling_scheme,
-                       const std::string& identifier,
-                       const void* data,
-                       int size,
-                       int socket_id);
-                
-            void loop();
-                
-          private:
-            void add_to_menu(Wt::WMenu* menu, const Wt::WString& name, LiaisonContainer* container);
-            void handle_menu_selection(Wt::WMenuItem * item);
-            
-          private:
-            Wt::WStackedWidget* contents_stack_;
-            Wt::WTimer scope_timer_;
-
-            
-            enum TimerState { ACTIVE = 1, STOPPED = 2, UNKNOWN = 0 };
-            TimerState last_scope_timer_state_;
-            
-            ZeroMQService zeromq_service_;
-        };
-
-        
-        inline Wt::WApplication* create_wt_application(const Wt::WEnvironment& env)
-        {
-            return new LiaisonWtThread(env);
-        }
 
     }
 }

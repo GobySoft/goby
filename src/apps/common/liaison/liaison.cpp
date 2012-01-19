@@ -25,10 +25,8 @@
 #include "goby/util/time.h"
 #include "goby/util/dynamic_protobuf_manager.h"
 
+#include "liaison_wt_thread.h"
 #include "liaison.h"
-#include "liaison_scope.h"
-#include "liaison_home.h"
-#include "liaison_commander.h"
 
 using goby::glog;
 using namespace Wt;    
@@ -186,6 +184,7 @@ void goby::common::Liaison::loop()
     //     wt_server_.stop();
     //     quit();
     // }
+
 }
 
 void goby::common::Liaison::inbox(MarshallingScheme marshalling_scheme,
@@ -203,152 +202,3 @@ void goby::common::Liaison::inbox(MarshallingScheme marshalling_scheme,
         pubsub_node_.publish(marshalling_scheme, identifier, data, size);
     }
 }
-
-
-goby::common::LiaisonWtThread::LiaisonWtThread(const Wt::WEnvironment& env)
-    : Wt::WApplication(env),
-      last_scope_timer_state_(UNKNOWN),
-      zeromq_service_(Liaison::zmq_context())
-{    
-    scope_timer_.setInterval(1/Liaison::cfg_.update_freq()*1.0e3);
-    scope_timer_.timeout().connect(this, &LiaisonWtThread::loop);
-
-    if(!Liaison::cfg_.start_paused())
-        scope_timer_.start();
-    
-//    zeromq_service_.connect_inbox_slot(&LiaisonWtThread::inbox, this);
-
-    protobuf::ZeroMQServiceConfig ipc_sockets;
-    protobuf::ZeroMQServiceConfig::Socket* internal_publish_socket = ipc_sockets.add_socket();
-    internal_publish_socket->set_socket_type(protobuf::ZeroMQServiceConfig::Socket::SUBSCRIBE);
-    internal_publish_socket->set_socket_id(Liaison::LIAISON_INTERNAL_PUBLISH_SOCKET);
-    internal_publish_socket->set_transport(protobuf::ZeroMQServiceConfig::Socket::INPROC);
-    internal_publish_socket->set_connect_or_bind(protobuf::ZeroMQServiceConfig::Socket::CONNECT);
-    internal_publish_socket->set_socket_name(Liaison::LIAISON_INTERNAL_PUBLISH_SOCKET_NAME);
-
-    protobuf::ZeroMQServiceConfig::Socket* internal_subscribe_socket = ipc_sockets.add_socket();
-    internal_subscribe_socket->set_socket_type(protobuf::ZeroMQServiceConfig::Socket::PUBLISH);
-    internal_subscribe_socket->set_socket_id(Liaison::LIAISON_INTERNAL_SUBSCRIBE_SOCKET);
-    internal_subscribe_socket->set_transport(protobuf::ZeroMQServiceConfig::Socket::INPROC);
-    internal_subscribe_socket->set_connect_or_bind(protobuf::ZeroMQServiceConfig::Socket::CONNECT);
-    internal_subscribe_socket->set_socket_name(Liaison::LIAISON_INTERNAL_SUBSCRIBE_SOCKET_NAME);
-
-
-    zeromq_service_.merge_cfg(ipc_sockets);    
-
-
-
-    Wt::WString title_text("goby liaison: " + Liaison::cfg_.base().platform_name());
-    setTitle(title_text);
-
-    useStyleSheet(std::string("css/fonts.css?" + util::goby_file_timestamp()));
-    useStyleSheet(std::string("css/liaison.css?" + util::goby_file_timestamp()));
-//    setCssTheme("");
-    
-
-    root()->setId("main");
-    
-    /*
-     * Set up the title
-     */
-    WContainerWidget* header_div = new WContainerWidget(root());
-    header_div->setId("header");
-    
-    WImage* goby_lp_image = new WImage("images/goby-lp.png");
-    WImage* goby_logo = new WImage("images/gobysoft_logo_dot_org_small.png");
-
-    
-    WAnchor* goby_lp_image_a = new WAnchor("https://launchpad.net/goby", goby_lp_image, header_div);
-    WText* header = new WText(title_text, header_div);
-    header->setId("header");
-
-    WAnchor* goby_logo_a = new WAnchor("http://gobysoft.org/#/software/goby", goby_logo, header_div);
-    goby_lp_image_a->setId("lp_logo");
-    goby_logo_a->setId("goby_logo");
-    goby_lp_image_a->setStyleClass("no_ul");
-    goby_logo_a->setStyleClass("no_ul");
-    goby_lp_image_a->setTarget(TargetNewWindow);
-    goby_logo_a->setTarget(TargetNewWindow);
-    
-
-    new WText("<hr/>", root());
-
-    
-    WContainerWidget* menu_div = new WContainerWidget(root());
-    menu_div->setStyleClass("menu");
-
-    WContainerWidget* contents_div = new WContainerWidget(root());
-    contents_div->setId("contents");
-    contents_stack_ = new WStackedWidget(contents_div);
-    contents_stack_->setStyleClass("fill");
-    
-    /*
-     * Setup the menu
-     */
-    WMenu *menu = new WMenu(contents_stack_, Vertical, menu_div);
-    menu->setRenderAsList(true);
-    menu->setStyleClass("menu");
-    menu->setInternalPathEnabled();
-    menu->setInternalBasePath("/");
-    
-    add_to_menu(menu, "Home", new LiaisonHome);
-    add_to_menu(menu, "Commander", new LiaisonCommander(&zeromq_service_)); 
-    add_to_menu(menu, "Scope", new LiaisonScope(&zeromq_service_, &scope_timer_));
-
-    
-    menu->itemSelected().connect(this, &LiaisonWtThread::handle_menu_selection);
-
-
-    handle_menu_selection(menu->currentItem());
-}
-
-void goby::common::LiaisonWtThread::add_to_menu(WMenu* menu, const WString& name,
-                                                LiaisonContainer* container)
-{
-    menu->addItem(name, container);
-    container->set_name(name);
-}
-
-void goby::common::LiaisonWtThread::handle_menu_selection(Wt::WMenuItem * item)
-{    
-    std::cout << "Item selected: " << item->text() << std::endl;
-    std::cout << "Timer state: " <<  last_scope_timer_state_ << std::endl;
-
-    if(item->text() == "Scope")
-    {
-        if(last_scope_timer_state_ == ACTIVE)
-            scope_timer_.start();
-        last_scope_timer_state_ = UNKNOWN;
-    }
-    else
-    {
-        if(last_scope_timer_state_ == UNKNOWN)
-        {
-            last_scope_timer_state_ = scope_timer_.isActive() ? ACTIVE : STOPPED;
-            scope_timer_.stop();
-        }
-    }
-}
-
-
-
-
-void goby::common::LiaisonWtThread::loop()
-{
-
-    glog.is(DEBUG2, lock) && glog << "LiaisonWtThread: polling" << std::endl << unlock;
-    while(zeromq_service_.poll(0))
-    { }
-
-}
-
-void goby::common::LiaisonWtThread::inbox(MarshallingScheme marshalling_scheme,
-                                                      const std::string& identifier,
-                                                      const void* data,
-                                                      int size,
-                                                      int socket_id)
-{
-    glog.is(DEBUG1, lock) && glog << "LiaisonWtThread: got message with identifier: " << identifier << std::endl << unlock;
-    
-}
-

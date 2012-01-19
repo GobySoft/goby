@@ -5,7 +5,8 @@ add_executable(goby_liaison
   liaison.cpp
   liaison_scope.cpp 
   liaison_home.cpp  
-  liaison_commander.cpp  
+  liaison_commander.cpp
+  liaison_wt_thread.cpp
   ${PROTO_SRCS} ${PROTO_HDRS})
 
 target_link_libraries(goby_liaison
@@ -14,6 +15,8 @@ target_link_libraries(goby_liaison
   goby_common
   wt
   wthttp
+  wtdbo
+  wtdbosqlite3
   goby_moos
   goby_util
   )

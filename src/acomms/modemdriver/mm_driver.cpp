@@ -813,7 +813,8 @@ void goby::acomms::MMDriver::cadrq(const NMEASentence& nmea_in, const protobuf::
 void goby::acomms::MMDriver::camsg(const NMEASentence& nmea, protobuf::ModemTransmission* m)
 {
     // CAMSG,BAD_CRC,4
-    if(nmea.as<std::string>(1) == "BAD_CRC")
+    if(nmea.as<std::string>(1) == "BAD_CRC" &&
+       !frames_waiting_to_receive_.empty()) // it's not a bad CRC on the CCCYC
     {
         m->AddExtension(micromodem::protobuf::frame_with_bad_crc, m->frame_size());
         // add a blank (placeholder) frame

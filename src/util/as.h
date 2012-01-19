@@ -27,6 +27,8 @@
 #include <boost/lexical_cast.hpp>
 #include <iostream>
 #include <limits>
+#include <sstream>
+#include <iomanip>
 
 #include <boost/utility.hpp>
 #include <boost/type_traits.hpp>
@@ -35,7 +37,6 @@
 #include <boost/mpl/and.hpp>
 #include <boost/mpl/logical.hpp>
 #include <boost/numeric/conversion/cast.hpp>
-
 
 namespace goby
 {
@@ -138,7 +139,7 @@ namespace goby
         {
             return from;
         }
-
+        
         template<typename To>
             To as(const std::string& from)
         {
@@ -169,6 +170,68 @@ namespace goby
             return static_cast<To>(from);
         }
 
+        enum FloatRepresentation
+        {
+            FLOAT_DEFAULT,
+            FLOAT_FIXED,
+            FLOAT_SCIENTIFIC
+        };
+        
+        
+        template<typename To, typename From>
+            To as(const From& from, int precision, FloatRepresentation rep = FLOAT_DEFAULT)
+        {
+            return as<To>(from);
+        }
+        
+        template<>
+            inline std::string as<std::string, double>(const double& from,
+                                                       int precision,
+                                                       FloatRepresentation rep)
+        {
+            std::stringstream out;
+            switch(rep)
+            {
+                case FLOAT_DEFAULT:
+                    break;
+
+                case FLOAT_FIXED:
+                     out << std::fixed;
+                    break;
+                case FLOAT_SCIENTIFIC:
+                    out << std::scientific;
+                    break;
+            }
+
+            out << std::setprecision(precision) << from;
+            return out.str();
+        }
+
+        template<>
+            inline std::string as<std::string, float>(const float& from,
+                                                      int precision,
+                                                      FloatRepresentation rep)
+        {
+            std::stringstream out;
+            switch(rep)
+            {
+                case FLOAT_DEFAULT:
+                    break;
+
+                case FLOAT_FIXED:
+                    out << std::fixed;
+                    break;
+                case FLOAT_SCIENTIFIC:
+                    out << std::scientific;
+                    break;
+            }
+
+            out << std::setprecision(precision) << from;
+            return out.str();
+        }
+
+
+        
     }
 }
 #endif

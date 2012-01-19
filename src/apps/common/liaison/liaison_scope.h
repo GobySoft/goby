@@ -44,22 +44,25 @@ namespace goby
         {
             
           public:
-            LiaisonScope(ZeroMQService* service, Wt::WTimer* timer_,
-                         Wt::WContainerWidget* parent = 0);
+            LiaisonScope(ZeroMQService* zeromq_service,
+                         Wt::WTimer* timer_, Wt::WContainerWidget* parent = 0);
             
             void moos_inbox(CMOOSMsg& msg);
-            std::vector< Wt::WStandardItem * > create_row(CMOOSMsg& msg);
-            void attach_pb_rows(Wt::WStandardItem * item, const std::string& value);
+            void update_row(CMOOSMsg& msg, const std::vector<Wt::WStandardItem *>& items);
+            std::vector<Wt::WStandardItem *> create_row(CMOOSMsg& msg);
+            void attach_pb_rows(const std::vector<Wt::WStandardItem *>& items,
+                                CMOOSMsg& msg);
+            
+            void loop();
             
           private:
- 
-           
-
             void handle_global_key(Wt::WKeyEvent event);
 
           private:
+            ZeroMQService* zeromq_service_;
             const protobuf::MOOSScopeConfig& moos_scope_config_;
 
+            Wt::WStringListModel* history_model_;
             Wt::WStandardItemModel* model_;
             Wt::WSortFilterProxyModel* proxy_;
 

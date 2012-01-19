@@ -136,3 +136,13 @@ a.no_ul
 }
 
 
+/* for scope trees */
+.faded
+{
+    color:gray;
+}
+
+.invisible
+{
+    visibility:hidden;
+}

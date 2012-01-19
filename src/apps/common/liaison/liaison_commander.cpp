@@ -55,8 +55,8 @@ goby::common::LiaisonCommander::LiaisonCommander(ZeroMQService* zeromq_service,
       zeromq_service_(zeromq_service),
       pb_commander_config_(Liaison::cfg_.GetExtension(protobuf::pb_commander_config)),
       main_layout_(new WVBoxLayout(this)),
-      commands_div_(new WStackedWidget),
-      controls_div_(new ControlsContainer(this, pb_commander_config_, commands_div_))
+      commands_div_(new WStackedWidget(this)),
+      controls_div_(new ControlsContainer(this, pb_commander_config_, commands_div_, this))
 {
     protobuf::ZeroMQServiceConfig ipc_sockets;
     protobuf::ZeroMQServiceConfig::Socket* internal_subscribe_socket = ipc_sockets.add_socket();
@@ -87,7 +87,57 @@ goby::common::LiaisonCommander::LiaisonCommander(ZeroMQService* zeromq_service,
 void goby::common::LiaisonCommander::moos_inbox(CMOOSMsg& msg)
 {
     glog.is(DEBUG1, lock) && glog << "LiaisonCommander: Got message: " << msg <<  std::endl << unlock;
+
+    WContainerWidget* new_div = new WContainerWidget(controls_div_->incoming_message_stack_);
+    
+    WPushButton* minus = new WPushButton("-", new_div);
+    WPushButton* plus = new WPushButton("+", new_div);
+
+    new WText("Message: " + goby::util::as<std::string>(controls_div_->incoming_message_stack_->children().size()-1), new_div);
+
+    plus->clicked().connect(controls_div_, &ControlsContainer::increment_incoming_messages);
+    minus->clicked().connect(controls_div_, &ControlsContainer::decrement_incoming_messages);    
+    
+    WGroupBox* box = new WGroupBox(msg.GetKey() + " @ " +
+                                   boost::posix_time::to_simple_string(
+                                       goby::util::as<boost::posix_time::ptime>(
+                                           msg.GetTime())),
+                                   new_div);
+
+
+    std::string value = msg.GetAsString();
+    
+    boost::shared_ptr<google::protobuf::Message> pb_msg =
+        dynamic_parse_for_moos(value);
+
+    if(pb_msg)
+        new WText("<pre>" + pb_msg->DebugString() + "</pre>", box);
+    else
+        new WText("<pre>" + value + "</pre>", box);
+        
+    controls_div_->incoming_message_stack_->setCurrentIndex(controls_div_->incoming_message_stack_->children().size()-1);
 }
+
+void goby::common::LiaisonCommander::ControlsContainer::increment_incoming_messages(const WMouseEvent& event)
+{
+    int new_index = incoming_message_stack_->currentIndex()+1;
+    if(new_index == static_cast<int>(incoming_message_stack_->children().size()))
+        new_index = 0;
+    
+    incoming_message_stack_->setCurrentIndex(new_index);
+}
+
+
+void goby::common::LiaisonCommander::ControlsContainer::decrement_incoming_messages(const WMouseEvent& event)
+{
+    int new_index = static_cast<int>(incoming_message_stack_->currentIndex())-1;
+    if(new_index < 0 )
+        new_index = incoming_message_stack_->children().size()-1;
+    
+    incoming_message_stack_->setCurrentIndex(new_index);
+}
+
+
 
 
 void goby::common::LiaisonCommander::loop()
@@ -129,9 +179,9 @@ goby::common::LiaisonCommander::ControlsContainer::ControlsContainer(
       send_button_(new WPushButton("Send", buttons_div_)),
       clear_button_(new WPushButton("Clear", buttons_div_)),
       commands_div_(commands_div),
-      incoming_message_panel_(new Wt::WPanel(wApp->root())),
+      incoming_message_panel_(new Wt::WPanel(this)),
       incoming_message_stack_(new Wt::WStackedWidget),
-      master_field_info_panel_(new Wt::WPanel(wApp->root())),
+      master_field_info_panel_(new Wt::WPanel(this)),
       master_field_info_stack_(new Wt::WStackedWidget)
 {
     // if we're the first thread, make the database connection
@@ -154,19 +204,14 @@ goby::common::LiaisonCommander::ControlsContainer::ControlsContainer(
         glog.is(VERBOSE, lock) && glog << "Could not create tables: " << e.what() << std::endl << unlock;   
     }
 
-//    Wt::WCssDecorationStyle incoming_message_style;
-//    incoming_message_style.setBackgroundColor(WColor(white));
-//    incoming_message_panel_->setDecorationStyle(incoming_message_style);
     
-    incoming_message_panel_->setPositionScheme(Wt::Fixed);
-    incoming_message_panel_->setOffsets(20, Wt::Left | Wt::Bottom);
+//    incoming_message_panel_->setPositionScheme(Wt::Fixed);
+//    incoming_message_panel_->setOffsets(20, Wt::Left | Wt::Bottom);
 
     incoming_message_panel_->setTitle("Incoming messages");
     incoming_message_panel_->setCollapsible(true);
     incoming_message_panel_->setCentralWidget(incoming_message_stack_);
-    
-    new WGroupBox("B", incoming_message_stack_);
-
+    incoming_message_panel_->addStyleClass("fixed-left");
 
 //    Wt::WCssDecorationStyle field_info_style;    
 //    field_info_style.setBackgroundColor(WColor(white));
@@ -177,8 +222,9 @@ goby::common::LiaisonCommander::ControlsContainer::ControlsContainer(
     
 //    master_field_info_panel_->setDecorationStyle(field_info_style);
     
-    master_field_info_panel_->setPositionScheme(Wt::Fixed);
-    master_field_info_panel_->setOffsets(20, Wt::Right | Wt::Bottom);
+//    master_field_info_panel_->setPositionScheme(Wt::Fixed);
+//    master_field_info_panel_->setOffsets(20, Wt::Right | Wt::Bottom);
+    master_field_info_panel_->addStyleClass("fixed-right");
 
 
     
@@ -1098,9 +1144,17 @@ void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::dccl_d
     if(options.has_static_value())
     {
         if(WLineEdit* line_edit = dynamic_cast<WLineEdit*>(value_field))
+        {
             line_edit->setText(options.static_value());
+            line_edit->changed().emit();
+        }
+        
         else if(WComboBox* combo_box = dynamic_cast<WComboBox*>(value_field))
+        {
             combo_box->setCurrentIndex(combo_box->findText(options.static_value()));
+            combo_box->changed().emit();
+        }
+        
         value_field->setDisabled(true);
     }
 

@@ -146,3 +146,19 @@ a.no_ul
 {
     visibility:hidden;
 }
+
+.fixed-right
+{
+    position:fixed; bottom:2%; right:2%; z-index:1;
+    font-size:80%;
+    max-width:40%;
+    overflow: auto;
+}
+
+.fixed-left
+{
+    position:fixed; bottom:2%; left:2%; z-index:1;
+    font-size:80%;
+    max-width:40%;
+    overflow: auto;
+}

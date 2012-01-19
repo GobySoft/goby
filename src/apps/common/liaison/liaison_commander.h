@@ -84,7 +84,7 @@ namespace goby
             void loop();
             
           private:
-
+            
           private:
             ZeroMQService* zeromq_service_;
             const protobuf::ProtobufCommanderConfig& pb_commander_config_;
@@ -103,6 +103,10 @@ namespace goby
 
                 void clear_message();
                 void send_message();
+
+                void increment_incoming_messages(const Wt::WMouseEvent& event);
+                void decrement_incoming_messages(const Wt::WMouseEvent& event);
+                
                 
                 struct CommandContainer : Wt::WGroupBox
                 {

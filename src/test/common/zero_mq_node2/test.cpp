@@ -18,8 +18,6 @@
 
 #include "goby/common/zeromq_service.h"
 
-#include <boost/thread.hpp>
-
 void inbox(goby::common::MarshallingScheme marshalling_scheme,
                  const std::string& identifier,
                  const void* data,
@@ -75,7 +73,7 @@ int main(int argc, char* argv[])
     
     node.connect_inbox_slot(&inbox);
 
-    usleep(1e3);
+    usleep(1e4);
 
     int test_count = 3;
     for(int i = 0; i < test_count; ++i)

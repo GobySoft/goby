@@ -775,6 +775,7 @@ namespace goby
             
             static void parse(const std::string& in, google::protobuf::Message* out,
                               std::string format,
+                              const std::string& repeated_delimiter,
                               const google::protobuf::RepeatedPtrField<protobuf::TranslatorEntry::CreateParser::Algorithm>& algorithms = google::protobuf::RepeatedPtrField<protobuf::TranslatorEntry::CreateParser::Algorithm>(),
                               bool use_short_enum = false)
             {

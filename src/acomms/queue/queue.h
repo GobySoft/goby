@@ -70,7 +70,6 @@ namespace goby
             void stream_for_pop(const google::protobuf::Message& dccl_msg);
             
             std::vector<boost::shared_ptr<google::protobuf::Message> > expire();
-            
           
             bool get_priority_values(double* priority,
                                      boost::posix_time::ptime* last_send_time,
@@ -84,7 +83,6 @@ namespace goby
         
             size_t size() const 
             { return messages_.size(); }
-    
 
             boost::posix_time::ptime last_send_time() const
             { return last_send_time_; }
@@ -122,7 +120,7 @@ namespace goby
             const google::protobuf::Descriptor* desc_;
             QueueManager* parent_;
             
-            boost::posix_time::ptime last_send_time_;    
+            boost::posix_time::ptime last_send_time_;
 
             
             std::list<QueuedMessage> messages_;

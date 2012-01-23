@@ -160,7 +160,7 @@ bool goby::acomms::Queue::get_priority_values(double* priority,
                || next_msg.dest() == BROADCAST_ID // can switch to a real destination
                || request_msg.dest() == next_msg.dest()))) // same as real destination
     {
-        glog.is(DEBUG1) && glog << group(parent_->glog_priority_group()) << "\t" <<  name() << " next message has wrong destination  (must be BROADCAST (0) or same as first user-frame)" << std::endl;
+        glog.is(DEBUG1) && glog << group(parent_->glog_priority_group()) << "\t" <<  name() << " next message has wrong destination (must be BROADCAST (0) or same as first user-frame, is " << next_msg.dest() << ")" << std::endl;
         return false; 
     }
     // wrong ack value UNLESS message can be broadcast

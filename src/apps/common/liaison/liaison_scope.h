@@ -88,6 +88,7 @@ namespace goby
             {
                 SubscriptionsContainer(MOOSNode* node,
                                        Wt::WStandardItemModel* model,
+                                       Wt::WStringListModel* history_model,
                                        std::map<std::string, int>& msg_map,
                                        Wt::WContainerWidget* parent = 0);
 
@@ -96,9 +97,11 @@ namespace goby
                 void add_subscription(std::string type);
 
                 MOOSNode* node_;
-                Wt::WStandardItemModel* model_;
-                std::map<std::string, int>& msg_map_;
                 
+                Wt::WStandardItemModel* model_;
+                Wt::WStringListModel* history_model_;
+                std::map<std::string, int>& msg_map_;
+            
                 Wt::WText* add_text_;
                 Wt::WLineEdit* subscribe_filter_text_;
                 Wt::WPushButton* subscribe_filter_button_;
@@ -179,7 +182,7 @@ namespace goby
 
             Wt::WTreeView* scope_tree_view_;
 
-            // maps CMOOSMsg::GetKey into column
+            // maps CMOOSMsg::GetKey into row
             std::map<std::string, int> msg_map_;
 
             WContainerWidget* bottom_fill_;

@@ -106,7 +106,7 @@ namespace goby
 
                 void increment_incoming_messages(const Wt::WMouseEvent& event);
                 void decrement_incoming_messages(const Wt::WMouseEvent& event);
-                
+                void remove_incoming_message(const Wt::WMouseEvent& event);
                 
                 struct CommandContainer : Wt::WGroupBox
                 {

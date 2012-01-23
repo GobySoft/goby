@@ -291,7 +291,8 @@ void run_one_in_one_out_test(MOOSTranslator& translator, int i, bool hex_encode)
             case 0:
             {    
                 std::string test;
-                serialize_for_moos(&test, msg);
+                goby::moos::MOOSTranslation<protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_TEXT_FORMAT>::serialize(&test, msg);;
+                
                 assert(it->second.GetString() == test);
                 assert(it->first == "TEST_MSG_1");
                 break;

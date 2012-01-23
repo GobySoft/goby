@@ -66,10 +66,10 @@ int main(int argc, char* argv[])
     msg_in2 = msg_in1;
     msg_in2.set_telegram("hello 2");
     
-    std::cout << "Pushed: " << msg_in1 << std::endl;
-    q_manager.push_message(msg_in1);
     std::cout << "Pushed: " << msg_in2 << std::endl;
     q_manager.push_message(msg_in2);
+    std::cout << "Pushed: " << msg_in1 << std::endl;
+    q_manager.push_message(msg_in1);
 
 
     goby::acomms::protobuf::ModemTransmission transmit_msg;

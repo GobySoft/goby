@@ -50,7 +50,7 @@ goby::common::LiaisonScope::LiaisonScope(ZeroMQService* zeromq_service,
       proxy_(new Wt::WSortFilterProxyModel(this)),
       main_layout_(new Wt::WVBoxLayout(this)),
       controls_div_(new ControlsContainer(timer)),
-      subscriptions_div_(new SubscriptionsContainer(this, model_, msg_map_)),
+      subscriptions_div_(new SubscriptionsContainer(this, model_, history_model_, msg_map_)),
       history_header_div_(new HistoryContainer(this, main_layout_, history_model_, moos_scope_config_)),
       regex_filter_div_(new RegexFilterContainer(model_, proxy_, moos_scope_config_)),
       scope_tree_view_(new LiaisonScopeMOOSTreeView(moos_scope_config_)),
@@ -349,11 +349,13 @@ void goby::common::LiaisonScope::ControlsContainer::handle_play_pause(bool toggl
 goby::common::LiaisonScope::SubscriptionsContainer::SubscriptionsContainer(
     MOOSNode* node,
     Wt::WStandardItemModel* model,
+    Wt::WStringListModel* history_model,
     std::map<std::string, int>& msg_map,
     Wt::WContainerWidget* parent /*= 0*/)
     : WContainerWidget(parent),
       node_(node),
       model_(model),
+      history_model_(history_model),
       msg_map_(msg_map),
       add_text_(new WText("Add subscription (e.g. NAV* or NAV_X): ", this)),
       subscribe_filter_text_(new WLineEdit(this)),
@@ -413,6 +415,7 @@ void goby::common::LiaisonScope::SubscriptionsContainer::handle_remove_subscript
 
         if(remove)
         {            
+            history_model_->removeRows(msg_map_[text_to_match], 1);
             msg_map_.erase(text_to_match);
             glog.is(DEBUG1, lock) && glog << "LiaisonScope: removed " << text_to_match << std::endl << unlock;            
             model_->removeRow(i);

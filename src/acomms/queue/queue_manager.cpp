@@ -211,6 +211,9 @@ std::ostream& goby::acomms::operator<< (std::ostream& out, const QueueManager& d
 // priority value, or given a tie, pick the one with the oldest last_send_time
 void goby::acomms::QueueManager::handle_modem_data_request(protobuf::ModemTransmission* msg)
 {
+    // clear old waiting acknowledgments and reset packet defaults
+    clear_packet();
+    
     for(int frame_number = msg->frame_size(), total_frames = msg->max_num_frames();
         frame_number < total_frames; ++frame_number)
     {
@@ -224,8 +227,9 @@ void goby::acomms::QueueManager::handle_modem_data_request(protobuf::ModemTransm
         {
             msg->set_ack_requested(packet_ack_);
             msg->set_dest(packet_dest_);
-            glog.is(DEBUG1) && glog << group(glog_out_group_) << "no data found. sending blank to firmware" 
-                                    << ": " << goby::util::hex_encode(*data) << std::endl; 
+            glog.is(DEBUG1) && glog << group(glog_out_group_)
+                                    << "no data found. sending blank to firmware" << ": "
+                                    << goby::util::hex_encode(*data) << std::endl; 
         }
         else
         {

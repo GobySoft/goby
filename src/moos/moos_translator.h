@@ -315,7 +315,7 @@ GoogleProtobufMessagePointer goby::moos::MOOSTranslator::moos_to_protobuf(const 
                 break;
 
             case protobuf::TranslatorEntry::TECHNIQUE_FORMAT:
-                goby::moos::MOOSTranslation<protobuf::TranslatorEntry::TECHNIQUE_FORMAT>::parse(source_string, &*msg, entry.create(i).format(), entry.create(i).algorithm(), entry.use_short_enum());
+                goby::moos::MOOSTranslation<protobuf::TranslatorEntry::TECHNIQUE_FORMAT>::parse(source_string, &*msg, entry.create(i).format(), entry.create(i).repeated_delimiter(), entry.create(i).algorithm(), entry.use_short_enum());
                 break;
         }
     }

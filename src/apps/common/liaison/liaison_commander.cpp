@@ -93,10 +93,15 @@ void goby::common::LiaisonCommander::moos_inbox(CMOOSMsg& msg)
     WPushButton* minus = new WPushButton("-", new_div);
     WPushButton* plus = new WPushButton("+", new_div);
 
-    new WText("Message: " + goby::util::as<std::string>(controls_div_->incoming_message_stack_->children().size()-1), new_div);
+    WPushButton* remove = new WPushButton("x", new_div);
+    remove->setFloatSide(Wt::Right);
+
+    
+    new WText("Message: " + goby::util::as<std::string>(controls_div_->incoming_message_stack_->children().size()), new_div);
 
     plus->clicked().connect(controls_div_, &ControlsContainer::increment_incoming_messages);
     minus->clicked().connect(controls_div_, &ControlsContainer::decrement_incoming_messages);    
+    remove->clicked().connect(controls_div_, &ControlsContainer::remove_incoming_message);
     
     WGroupBox* box = new WGroupBox(msg.GetKey() + " @ " +
                                    boost::posix_time::to_simple_string(
@@ -113,7 +118,7 @@ void goby::common::LiaisonCommander::moos_inbox(CMOOSMsg& msg)
     if(pb_msg)
         new WText("<pre>" + pb_msg->DebugString() + "</pre>", box);
     else
-        new WText("<pre>" + value + "</pre>", box);
+        new WText(value, PlainText, box);
         
     controls_div_->incoming_message_stack_->setCurrentIndex(controls_div_->incoming_message_stack_->children().size()-1);
 }
@@ -137,6 +142,13 @@ void goby::common::LiaisonCommander::ControlsContainer::decrement_incoming_messa
     incoming_message_stack_->setCurrentIndex(new_index);
 }
 
+void goby::common::LiaisonCommander::ControlsContainer::remove_incoming_message(const WMouseEvent& event)
+{
+    WWidget* remove = incoming_message_stack_->currentWidget();
+    decrement_incoming_messages(event);
+    incoming_message_stack_->removeWidget(remove);
+    
+}
 
 
 

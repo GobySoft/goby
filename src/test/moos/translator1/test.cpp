@@ -101,7 +101,7 @@ int main(int argc, char* argv[])
 
 
 
-
+    
     std::string format_str = "NAME=%1%,X=%202%,Y=%3%,HEADING=%201%,REPEAT={%10%}";
    {
         protobuf::TranslatorEntry entry;
@@ -267,10 +267,52 @@ int main(int argc, char* argv[])
        
    }
     
-    
+   
 
+   std::string sub_message_format_str = "em.val=%17:1%";
+   {
+        protobuf::TranslatorEntry entry;
+        entry.set_protobuf_name("TestMsg");
+        
+        protobuf::TranslatorEntry::CreateParser* parser = entry.add_create();
+        parser->set_technique(protobuf::TranslatorEntry::TECHNIQUE_FORMAT);
+        parser->set_moos_var("TEST_MSG_1");
+        parser->set_format(sub_message_format_str);
+        
+        protobuf::TranslatorEntry::PublishSerializer* serializer = entry.add_publish();
+        serializer->set_technique(protobuf::TranslatorEntry::TECHNIQUE_FORMAT);
+        serializer->set_moos_var("TEST_MSG_1");
+        serializer->set_format(sub_message_format_str);
+        
+        translator.add_entry(entry);
+    }
+
+    goby::glog << translator << std::endl;
+
+    TestMsg embedded_test;
+    embedded_test.mutable_msg_default_optional()->set_val(19.998);    
+    moos_msgs = translator.protobuf_to_moos(embedded_test);  
     
-   std::cout << "all tests passed" << std::endl;
+    for(std::multimap<std::string, CMOOSMsg>::const_iterator it = moos_msgs.begin(),
+            n = moos_msgs.end();
+        it != n;
+        ++ it)
+    {
+        goby::glog << "Variable: " << it->first << "\n"
+                   << "Value: " << it->second.GetString() << std::endl;
+        assert(it->second.GetString() == "em.val=19.998");
+    }
+    
+    typedef std::auto_ptr<google::protobuf::Message> GoogleProtobufMessagePointer;
+    GoogleProtobufMessagePointer embedded_test_out =
+        translator.moos_to_protobuf<GoogleProtobufMessagePointer>(moos_msgs, "TestMsg");
+
+    goby::glog << "Message out: " << std::endl;
+    goby::glog << embedded_test_out->DebugString() << std::endl;    
+    assert(embedded_test_out->SerializeAsString() == embedded_test.SerializeAsString());
+    
+    
+    std::cout << "all tests passed" << std::endl;
 }
 
 void run_one_in_one_out_test(MOOSTranslator& translator, int i, bool hex_encode)

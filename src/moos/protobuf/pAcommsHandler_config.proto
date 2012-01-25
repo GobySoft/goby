@@ -1,4 +1,4 @@
-import "goby/moos/protobuf/tes_moos_app.proto";
+import "goby/moos/protobuf/goby_moos_app.proto";
 import "goby/acomms/protobuf/driver_base.proto";
 import "goby/acomms/protobuf/queue.proto";
 import "goby/acomms/protobuf/amac.proto";
@@ -11,7 +11,7 @@ import "goby/common/protobuf/option_extensions.proto";
 
 message pAcommsHandlerConfig
 {
-  optional TesMoosAppConfig common = 1 [(goby.field).description="Configuration common to all Goby MOOS applications"]; // see tes_moos_app.proto
+  optional GobyMOOSAppConfig common = 1 [(goby.field).description="Configuration common to all Goby MOOS applications"]; // see goby_moos_app.proto
 
   // unique identifying integer (1-31) for this vehicle's modem
   // setting this will set the modem_id for all the components of goby-acomms

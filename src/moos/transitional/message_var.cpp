@@ -30,6 +30,7 @@
 goby::transitional::DCCLMessageVar::DCCLMessageVar()
     : array_length_(1),
       is_key_frame_(true),
+      sequence_number_(-1),
       source_set_(false),
       ap_(DCCLAlgorithmPerformer::getInstance())
 { }

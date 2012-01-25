@@ -296,8 +296,12 @@ void goby::transitional::DCCLTransitionalCodec::fill_create(boost::shared_ptr<DC
     // add any algorithms
     BOOST_FOREACH(const std::string& algorithm, var->algorithms())
     {
+        if(var->source_var().empty())
+            throw(std::runtime_error("Algorithms without a corresponding source variable are not permitted in Goby v2 --> v1 backwards compatibility as the MOOS Translator does all algorithm conversions in Goby2"));
+
         
-        goby::moos::protobuf::TranslatorEntry::CreateParser::Algorithm * new_alg = (*parser_map)[var->source_var()]->add_algorithm();
+        goby::moos::protobuf::TranslatorEntry::CreateParser::Algorithm * new_alg =
+            (*parser_map)[var->source_var()]->add_algorithm();
 
         if(algorithm.find(':') != std::string::npos)
         {

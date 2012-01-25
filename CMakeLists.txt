@@ -19,11 +19,11 @@ if(enable_testing)
   include(CTest)
 endif()
 
-set(GOBY_VERSION_MAJOR "3")
+set(GOBY_VERSION_MAJOR "2")
 set(GOBY_VERSION_MINOR "0")
-set(GOBY_VERSION_PATCH "0-alpha1")
+set(GOBY_VERSION_PATCH "0-beta4")
 set(GOBY_VERSION "${GOBY_VERSION_MAJOR}.${GOBY_VERSION_MINOR}.${GOBY_VERSION_PATCH}")
-set(GOBY_VERSION_DATE "2011 Nov 10")
+set(GOBY_VERSION_DATE "2012 Jan 25")
 
 # give Goby 2 series a few more soversions
 set(GOBY_SOVERSION "21")

@@ -30,14 +30,14 @@
 #include <boost/asio/deadline_timer.hpp>
 
 #include "goby/util/dynamic_protobuf_manager.h"
-#include "goby/moos/tes_moos_app.h"
+#include "goby/moos/goby_moos_app.h"
 #include "goby/moos/moos_translator.h"
 
 #include "pTranslator_config.pb.h"
 
 extern std::vector<void *> dl_handles;
 
-class CpTranslator : public TesMoosApp
+class CpTranslator : public GobyMOOSApp
 {
   public:
     static CpTranslator* get_instance();
@@ -47,7 +47,7 @@ class CpTranslator : public TesMoosApp
     CpTranslator();
     ~CpTranslator();
     
-    void loop();     // from TesMoosApp
+    void loop();     // from GobyMOOSApp
 
     void create_on_publish(const CMOOSMsg& trigger_msg, const goby::moos::protobuf::TranslatorEntry& entry);
     void create_on_multiplex_publish(const CMOOSMsg& moos_msg);

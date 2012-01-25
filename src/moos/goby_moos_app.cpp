@@ -17,7 +17,7 @@
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
 
-#include "tes_moos_app.h"
+#include "goby_moos_app.h"
 
 #include <boost/foreach.hpp>
 #include <boost/bind.hpp>
@@ -29,13 +29,13 @@ using goby::util::as;
 using namespace goby::util::logger;
 
 
-std::string TesMoosApp::mission_file_;
-std::string TesMoosApp::application_name_;
+std::string GobyMOOSApp::mission_file_;
+std::string GobyMOOSApp::application_name_;
 
-int TesMoosApp::argc_ = 0;
-char** TesMoosApp::argv_ = 0;
+int GobyMOOSApp::argc_ = 0;
+char** GobyMOOSApp::argv_ = 0;
 
-bool TesMoosApp::Iterate()
+bool GobyMOOSApp::Iterate()
 {
     if(!configuration_read_) return true;
 
@@ -59,7 +59,7 @@ bool TesMoosApp::Iterate()
     return true;
 }    
 
-bool TesMoosApp::OnNewMail(MOOSMSG_LIST &NewMail)
+bool GobyMOOSApp::OnNewMail(MOOSMSG_LIST &NewMail)
 {
     BOOST_FOREACH(const CMOOSMsg& msg, NewMail)
     {
@@ -87,13 +87,13 @@ bool TesMoosApp::OnNewMail(MOOSMSG_LIST &NewMail)
     return true;    
 }
 
-bool TesMoosApp::OnConnectToServer()
+bool GobyMOOSApp::OnConnectToServer()
 {
     std::cout << m_MissionReader.GetAppName() << ", connected to server." << std::endl;
     connected_ = true;
     try_subscribing();
     
-    BOOST_FOREACH(const TesMoosAppConfig::Initializer& ini,
+    BOOST_FOREACH(const GobyMOOSAppConfig::Initializer& ini,
                   common_cfg_.initializer())
     {   
         if(ini.has_global_cfg_var())
@@ -101,17 +101,17 @@ bool TesMoosApp::OnConnectToServer()
             std::string result;
             if(m_MissionReader.GetValue(ini.global_cfg_var(), result))
             {
-                if(ini.type() == TesMoosAppConfig::Initializer::INI_DOUBLE)
+                if(ini.type() == GobyMOOSAppConfig::Initializer::INI_DOUBLE)
                     publish(ini.moos_var(), as<double>(result));
-                else if(ini.type() == TesMoosAppConfig::Initializer::INI_STRING)
+                else if(ini.type() == GobyMOOSAppConfig::Initializer::INI_STRING)
                     publish(ini.moos_var(), result);
             }
         }
         else
         {
-            if(ini.type() == TesMoosAppConfig::Initializer::INI_DOUBLE)
+            if(ini.type() == GobyMOOSAppConfig::Initializer::INI_DOUBLE)
                 publish(ini.moos_var(), ini.dval());
-            else if(ini.type() == TesMoosAppConfig::Initializer::INI_STRING)
+            else if(ini.type() == GobyMOOSAppConfig::Initializer::INI_STRING)
                 publish(ini.moos_var(), ini.sval());            
         }        
     }
@@ -119,7 +119,7 @@ bool TesMoosApp::OnConnectToServer()
     return true;
 }
 
-bool TesMoosApp::OnStartUp()
+bool GobyMOOSApp::OnStartUp()
 {
     std::cout << m_MissionReader.GetAppName () << ", starting ..." << std::endl;
     CMOOSApp::SetCommsFreq(common_cfg_.comm_tick());
@@ -130,7 +130,7 @@ bool TesMoosApp::OnStartUp()
 }
 
 
-void TesMoosApp::subscribe(const std::string& var,  InboxFunc handler, int blackout /* = 0 */ )
+void GobyMOOSApp::subscribe(const std::string& var,  InboxFunc handler, int blackout /* = 0 */ )
 {
     glog.is(VERBOSE) &&
         glog << "subscribing for MOOS variable: " << var << " @ " << blackout << std::endl;
@@ -141,13 +141,13 @@ void TesMoosApp::subscribe(const std::string& var,  InboxFunc handler, int black
         mail_handlers_[var] = handler;
 }
 
-void TesMoosApp::try_subscribing()
+void GobyMOOSApp::try_subscribing()
 {
     if (connected_ && started_up_)
         do_subscriptions();
 }
 
-void TesMoosApp::do_subscriptions()
+void GobyMOOSApp::do_subscriptions()
 {
     while(!pending_subscriptions_.empty())
     {
@@ -161,7 +161,7 @@ void TesMoosApp::do_subscriptions()
 }
 
 
-void TesMoosApp::fetch_moos_globals(google::protobuf::Message* msg,
+void GobyMOOSApp::fetch_moos_globals(google::protobuf::Message* msg,
                                     CMOOSFileReader& moos_file_reader)
 {
     const google::protobuf::Descriptor* desc = msg->GetDescriptor();
@@ -265,7 +265,7 @@ void TesMoosApp::fetch_moos_globals(google::protobuf::Message* msg,
     }
 }
 
-void TesMoosApp::read_configuration(google::protobuf::Message* cfg)
+void GobyMOOSApp::read_configuration(google::protobuf::Message* cfg)
 {
 
     boost::filesystem::path launch_path(argv_[0]);
@@ -454,7 +454,7 @@ void TesMoosApp::read_configuration(google::protobuf::Message* cfg)
 
 
 
-void TesMoosApp::process_configuration()
+void GobyMOOSApp::process_configuration()
 {
     //
     // PROCESS CONFIGURATION

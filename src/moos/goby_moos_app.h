@@ -16,8 +16,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef TESMOOSAPP20100726H
-#define TESMOOSAPP20100726H
+#ifndef GOBYMOOSAPP20100726H
+#define GOBYMOOSAPP20100726H
 
 #include "MOOSLIB/MOOSApp.h"
 
@@ -30,7 +30,7 @@
 
 #include "dynamic_moos_vars.h"
 #include "goby/common/logger.h"
-#include "goby/moos/protobuf/tes_moos_app.pb.h"
+#include "goby/moos/protobuf/goby_moos_app.pb.h"
 #include "goby/common/configuration_reader.h"
 #include "goby/common/exception.h"
 #include "moos_protobuf_helpers.h"
@@ -45,15 +45,15 @@ namespace goby
     }
 }
 
-class TesMoosApp : public CMOOSApp
+class GobyMOOSApp : public CMOOSApp
 {   
   protected:
     typedef boost::function<void (const CMOOSMsg& msg)> InboxFunc;
     
     template<typename ProtobufConfig>
-        explicit TesMoosApp(ProtobufConfig* cfg);
+        explicit GobyMOOSApp(ProtobufConfig* cfg);
     
-    virtual ~TesMoosApp() { }
+    virtual ~GobyMOOSApp() { }
     
   
     void publish(CMOOSMsg& msg)
@@ -142,7 +142,7 @@ class TesMoosApp : public CMOOSApp
     // MOOS Variable name, blackout time
     std::deque<std::pair<std::string, int> > pending_subscriptions_;
 
-    TesMoosAppConfig common_cfg_;
+    GobyMOOSAppConfig common_cfg_;
 
     bool ignore_stale_;
     
@@ -154,7 +154,7 @@ class TesMoosApp : public CMOOSApp
 
 
 template<typename ProtobufConfig>
-TesMoosApp::TesMoosApp(ProtobufConfig* cfg)
+GobyMOOSApp::GobyMOOSApp(ProtobufConfig* cfg)
 : start_time_(MOOSTime()),
     configuration_read_(false),
     cout_cleared_(false),

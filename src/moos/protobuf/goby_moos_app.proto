@@ -1,7 +1,7 @@
 import "goby/common/protobuf/option_extensions.proto";
 import "goby/common/protobuf/logger.proto";
 
-message TesMoosAppConfig
+message GobyMOOSAppConfig
 {
   // Global moos variables (Specified outside "ProcessConfig" blocks)
   optional bool log = 100 [default = true, (goby.field).moos_global = "log",

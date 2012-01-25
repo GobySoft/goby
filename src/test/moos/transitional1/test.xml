@@ -10,7 +10,7 @@
         <value>hi</value>
       </static>
 
-      <float algorithm="sum:F:I">
+      <float>
         <name>SUM</name>
         <max>200</max>
         <min>-100</min>	  
@@ -18,7 +18,7 @@
         <array_length>4</array_length>
       </float>      
 
-      <float algorithm="*2">
+      <float>
         <name>F</name>
         <max>100</max>
         <min>-50</min>	  
@@ -26,7 +26,7 @@
         <array_length>4</array_length>
       </float>
 
-      <bool algorithm="invert">
+      <bool>
         <name>B</name>
         <array_length>4</array_length>
       </bool>
@@ -40,7 +40,7 @@
         <array_length>4</array_length>
       </enum>
 
-      <string algorithm="prepend_fat">
+      <string>
         <name>S</name>
         <max_length>15</max_length>
         <array_length>4</array_length>
@@ -54,7 +54,7 @@
         <array_length>4</array_length>
       </float>
 
-      <int algorithm="+1">
+      <int>
         <name>I</name>
         <max>100</max>
         <min>-50</min>	  

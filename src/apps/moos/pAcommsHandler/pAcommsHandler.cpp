@@ -61,7 +61,7 @@ void CpAcommsHandler::delete_instance()
 }
 
 CpAcommsHandler::CpAcommsHandler()
-    : TesMoosApp(&cfg_),
+    : GobyMOOSApp(&cfg_),
       source_database_(&disk_source_tree_),
       translator_(goby::moos::protobuf::TranslatorEntry(),
                   cfg_.common().lat_origin(),
@@ -343,7 +343,7 @@ void CpAcommsHandler::process_configuration()
            goby::moos::protobuf::TranslatorEntry::Trigger::TRIGGER_PUBLISH)
         {
             // subscribe for trigger publish variables
-            TesMoosApp::subscribe(cfg_.translator_entry(i).trigger().moos_var(),
+            GobyMOOSApp::subscribe(cfg_.translator_entry(i).trigger().moos_var(),
                                   boost::bind(&CpAcommsHandler::create_on_publish,
                                               this, _1, cfg_.translator_entry(i)));
         }
@@ -372,7 +372,7 @@ void CpAcommsHandler::process_configuration()
 
     for(int i = 0, m = cfg_.multiplex_create_moos_var_size(); i < m; ++i)
     {
-        TesMoosApp::subscribe(cfg_.multiplex_create_moos_var(i),
+        GobyMOOSApp::subscribe(cfg_.multiplex_create_moos_var(i),
                               &CpAcommsHandler::create_on_multiplex_publish, this);
     }    
 }

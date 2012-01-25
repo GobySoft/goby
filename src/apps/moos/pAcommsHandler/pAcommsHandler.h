@@ -43,7 +43,7 @@
 #include "MOOSUtilityLib/MOOSGeodesy.h"
 
 #include "goby/util/dynamic_protobuf_manager.h"
-#include "goby/moos/tes_moos_app.h"
+#include "goby/moos/goby_moos_app.h"
 #include "goby/moos/moos_translator.h"
 
 #include "goby/moos/protobuf/pAcommsHandler_config.pb.h"
@@ -58,7 +58,7 @@ namespace goby {
     } 
 }
 
-class CpAcommsHandler : public TesMoosApp
+class CpAcommsHandler : public GobyMOOSApp
 {
   public:
     static CpAcommsHandler* get_instance();
@@ -67,7 +67,7 @@ class CpAcommsHandler : public TesMoosApp
   private:
     CpAcommsHandler();
     ~CpAcommsHandler();
-    void loop();     // from TesMoosApp
+    void loop();     // from GobyMOOSApp
     void process_configuration();
 
     void create_on_publish(const CMOOSMsg& trigger_msg, const goby::moos::protobuf::TranslatorEntry& entry);

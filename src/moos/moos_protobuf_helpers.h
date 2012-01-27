@@ -158,7 +158,7 @@ namespace goby
         {
           public:
             static void serialize(std::string* out, const google::protobuf::Message& in,
-                                  const google::protobuf::RepeatedPtrField<protobuf::TranslatorEntry::PublishSerializer::Algorithm>& algorithms,
+                                  const google::protobuf::RepeatedPtrField<protobuf::TranslatorEntry::PublishSerializer::Algorithm>& algorithms = google::protobuf::RepeatedPtrField<protobuf::TranslatorEntry::PublishSerializer::Algorithm>(),
                                   bool use_short_enum = false)
             {
                 std::stringstream out_ss;

@@ -24,7 +24,7 @@
 #include "driver_base.h"
 #include "driver_exception.h"
 
-using namespace goby::util::logger;
+using namespace goby::common::logger;
 
 
 int goby::acomms::ModemDriverBase::count_ = 0;
@@ -39,8 +39,8 @@ goby::acomms::ModemDriverBase::ModemDriverBase()
     glog_out_group_ = "goby::acomms::modemdriver::out::" + goby::util::as<std::string>(count_);
     glog_in_group_ = "goby::acomms::modemdriver::in::" + goby::util::as<std::string>(count_);
     
-    goby::glog.add_group(glog_out_group_, util::Colors::lt_magenta);
-    goby::glog.add_group(glog_in_group_, util::Colors::lt_blue);
+    goby::glog.add_group(glog_out_group_, common::Colors::lt_magenta);
+    goby::glog.add_group(glog_in_group_, common::Colors::lt_blue);
 }
 
 goby::acomms::ModemDriverBase::~ModemDriverBase()

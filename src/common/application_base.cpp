@@ -22,7 +22,7 @@
 using goby::util::as;
 
 using goby::glog;
-using namespace goby::util::logger;
+using namespace goby::common::logger;
 
 int goby::common::ApplicationBase::argc_ = 0;
 char** goby::common::ApplicationBase::argv_ = 0;
@@ -41,7 +41,7 @@ goby::common::ApplicationBase::ApplicationBase(google::protobuf::Message* cfg /*
     try
     {
         std::string application_name;
-        util::ConfigReader::read_cfg(argc_, argv_, cfg, &application_name, &od, &var_map);
+        common::ConfigReader::read_cfg(argc_, argv_, cfg, &application_name, &od, &var_map);
 
         // extract the AppBaseConfig assuming the user provided it in their configuration
         // .proto file
@@ -72,7 +72,7 @@ goby::common::ApplicationBase::ApplicationBase(google::protobuf::Message* cfg /*
         merge_app_base_cfg(base_cfg_, var_map);
 
     }
-    catch(util::ConfigException& e)
+    catch(common::ConfigException& e)
     {
         // output all the available command line options
         if(e.error())
@@ -86,10 +86,10 @@ goby::common::ApplicationBase::ApplicationBase(google::protobuf::Message* cfg /*
     
     // set up the logger
    glog.set_name(application_name());
-   glog.add_stream(static_cast<util::logger::Verbosity>(base_cfg_->glog_config().tty_verbosity()), &std::cout);
+   glog.add_stream(static_cast<common::logger::Verbosity>(base_cfg_->glog_config().tty_verbosity()), &std::cout);
 
     if(!base_cfg_->IsInitialized())
-        throw(util::ConfigException("Invalid base configuration"));
+        throw(common::ConfigException("Invalid base configuration"));
     
    glog.is(DEBUG1) && glog << "App name is " << application_name() << std::endl;
     

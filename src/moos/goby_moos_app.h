@@ -172,7 +172,7 @@ GobyMOOSApp::GobyMOOSApp(ProtobufConfig* cfg)
 
     process_configuration();
 
-    glog.is(goby::util::logger::VERBOSE) && glog << cfg->DebugString() << std::endl;
+    glog.is(goby::common::logger::VERBOSE) && glog << cfg->DebugString() << std::endl;
 }
 
 
@@ -189,7 +189,7 @@ int goby::moos::run(int argc, char* argv[])
         App* app = App::get_instance();
         app->Run(App::application_name_.c_str(), App::mission_file_.c_str());
     }
-    catch(goby::util::ConfigException& e)
+    catch(goby::common::ConfigException& e)
     {
         // no further warning as the ApplicationBase Ctor handles this
         return 1;

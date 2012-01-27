@@ -109,7 +109,7 @@ int goby::run(int argc, char* argv[])
         App app;
         app.__run();
     }
-    catch(goby::util::ConfigException& e)
+    catch(goby::common::ConfigException& e)
     {
         // no further warning as the ApplicationBase Ctor handles this
         return 1;

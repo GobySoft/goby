@@ -22,7 +22,7 @@
 #include "goby/acomms/connect.h"
 
 using namespace goby::acomms;
-using namespace goby::util::logger;
+using namespace goby::common::logger;
 using goby::util::as;
 using goby::util::goby_time;
 using namespace boost::posix_time;
@@ -64,19 +64,19 @@ int main(int argc, char* argv[])
         exit(1);
     }
 
-    goby::glog.add_stream(goby::util::logger::DEBUG3, &std::clog);
+    goby::glog.add_stream(goby::common::logger::DEBUG3, &std::clog);
     std::ofstream fout;
     if(argc == 4)
     {
         fout.open(argv[3]);
-        goby::glog.add_stream(goby::util::logger::DEBUG3, &fout);        
+        goby::glog.add_stream(goby::common::logger::DEBUG3, &fout);        
     }
     
     goby::glog.set_name(argv[0]);    
 
-    goby::glog.add_group("test", goby::util::Colors::green);
-    goby::glog.add_group("driver1", goby::util::Colors::green);
-    goby::glog.add_group("driver2", goby::util::Colors::yellow);
+    goby::glog.add_group("test", goby::common::Colors::green);
+    goby::glog.add_group("driver1", goby::common::Colors::green);
+    goby::glog.add_group("driver2", goby::common::Colors::yellow);
 
     driver1.reset(new goby::acomms::MMDriver);
     driver2.reset(new goby::acomms::MMDriver);

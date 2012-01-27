@@ -92,7 +92,7 @@ void goby::transitional::DCCLMessage::preprocess()
     // calculate number of repeated messages that will fit and put this in `repeat_`.
     if(repeat_enabled_)
     {
-        glog.is(goby::util::logger::WARN) && glog << "<repeat> is deprecated and ignored in this version of Goby. Simply post a message several times." << std::endl;
+        glog.is(goby::common::logger::WARN) && glog << "<repeat> is deprecated and ignored in this version of Goby. Simply post a message several times." << std::endl;
     }
 
 //    body_bits_ = calc_total_size();

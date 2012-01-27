@@ -36,7 +36,7 @@
 namespace goby
 {
 
-    namespace util
+    namespace common
     {
         
         namespace logger_lock
@@ -79,21 +79,21 @@ namespace goby
                 sb_.name(s);
             }
             
-            bool is(goby::util::logger::Verbosity verbosity,
+            bool is(goby::common::logger::Verbosity verbosity,
                     logger_lock::LockAction lock_action = logger_lock::none); 
             
             void add_stream(const std::string& verbosity, std::ostream* os = 0)
             {
                 if(verbosity == "scope" || verbosity == "gui")        
-                    add_stream(goby::util::logger::GUI, os);
+                    add_stream(goby::common::logger::GUI, os);
                 else if(verbosity == "quiet")        
-                    add_stream(goby::util::logger::QUIET, os);
+                    add_stream(goby::common::logger::QUIET, os);
                 else if(verbosity == "terse" || verbosity == "warn")        
-                    add_stream(goby::util::logger::WARN, os);
+                    add_stream(goby::common::logger::WARN, os);
                 else if(verbosity == "debug")        
-                    add_stream(goby::util::logger::DEBUG1, os);
+                    add_stream(goby::common::logger::DEBUG1, os);
                 else
-                    add_stream(goby::util::logger::VERBOSE, os);
+                    add_stream(goby::common::logger::VERBOSE, os);
             }
             
             
@@ -103,7 +103,7 @@ namespace goby
                 sb_.add_stream(verbosity, os);
             }            
 
-            void add_stream(goby::util::protobuf::GLogConfig::Verbosity verbosity = goby::util::protobuf::GLogConfig::VERBOSE, std::ostream* os = 0)
+            void add_stream(goby::common::protobuf::GLogConfig::Verbosity verbosity = goby::common::protobuf::GLogConfig::VERBOSE, std::ostream* os = 0)
             {
                 sb_.add_stream(static_cast<logger::Verbosity>(verbosity), os);
             }            
@@ -204,12 +204,12 @@ namespace goby
     /// \name Logger
     //@{
     /// \brief Access the Goby logger through this object. 
-    extern util::FlexOstream glog;
+    extern common::FlexOstream glog;
     //@}
     namespace util
     {
         // for compatibility with Goby1
-        inline FlexOstream& glogger()
+        inline common::FlexOstream& glogger()
         {
             return goby::glog;
         }
@@ -220,7 +220,7 @@ namespace goby
 /// Unlock the Goby logger after a call to glogger(lock)
 inline std::ostream& unlock(std::ostream & os)
 {
-    goby::util::logger::mutex.unlock();    
+    goby::common::logger::mutex.unlock();    
     return os;
 }
 
@@ -235,7 +235,7 @@ class FlexOStreamErrorCollector : public google::protobuf::io::ErrorCollector
     
     void AddError(int line, int column, const std::string& message)
     {
-        using goby::util::logger::WARN;
+        using goby::common::logger::WARN;
         
         print_original(line, column);
         goby::glog.is(WARN) && goby::glog << "line: " << line << " col: " << column << " " << message << std::endl;
@@ -243,7 +243,7 @@ class FlexOStreamErrorCollector : public google::protobuf::io::ErrorCollector
     }
     void AddWarning(int line, int column, const std::string& message)
     {
-        using goby::util::logger::WARN;
+        using goby::common::logger::WARN;
 
         print_original(line, column);
         goby::glog.is(WARN) && goby::glog << "line: " << line << " col: " << column << " " << message << std::endl;
@@ -262,7 +262,7 @@ class FlexOStreamErrorCollector : public google::protobuf::io::ErrorCollector
         while(!getline(ss, line_str).eof())
         {
             if(i == line)
-                goby::glog << goby::util::tcolor::lt_red << "[line " << std::setw(3) << i++ << "]" << line_str << goby::util::tcolor::nocolor << std::endl;
+                goby::glog << goby::common::tcolor::lt_red << "[line " << std::setw(3) << i++ << "]" << line_str << goby::common::tcolor::nocolor << std::endl;
             else
                 goby::glog << "[line " << std::setw(3) << i++ << "]" << line_str << std::endl;       
         }

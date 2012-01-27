@@ -25,9 +25,9 @@
 #include <boost/algorithm/string.hpp>
 
 // brings std::ostream& red, etc. into scope
-using namespace goby::util::tcolor;
+using namespace goby::common::tcolor;
 
-void goby::util::ConfigReader::read_cfg(int argc,
+void goby::common::ConfigReader::read_cfg(int argc,
                                         char* argv[],
                                         google::protobuf::Message* message,
                                         std::string* application_name,
@@ -135,7 +135,7 @@ void goby::util::ConfigReader::read_cfg(int argc,
 
             if(error_collector.has_errors())
             {
-                glog.is(goby::util::logger::DIE) && 
+                glog.is(goby::common::logger::DIE) && 
                     glog << "fatal configuration errors (see above)" << std::endl;    
             }            
 
@@ -160,7 +160,7 @@ void goby::util::ConfigReader::read_cfg(int argc,
             std::stringstream err_msg;
             err_msg << "Configuration is missing required parameters: \n";
             BOOST_FOREACH(const std::string& s, errors)
-                err_msg << util::esc_red << s << "\n" << util::esc_nocolor;
+                err_msg << common::esc_red << s << "\n" << common::esc_nocolor;
                 
             err_msg << "Make sure you specified a proper `cfg_path` to the configuration file.";
             throw(ConfigException(err_msg.str()));
@@ -170,7 +170,7 @@ void goby::util::ConfigReader::read_cfg(int argc,
 }
 
 
-void goby::util::ConfigReader::set_protobuf_program_option(const boost::program_options::variables_map& var_map,
+void goby::common::ConfigReader::set_protobuf_program_option(const boost::program_options::variables_map& var_map,
                                                            google::protobuf::Message& message,
                                                            const std::string& full_name,
                                                            const boost::program_options::variable_value& value)
@@ -314,14 +314,14 @@ void goby::util::ConfigReader::set_protobuf_program_option(const boost::program_
     }
 }
 
-void goby::util::ConfigReader::get_example_cfg_file(google::protobuf::Message* message, std::ostream* stream, const std::string& indent /*= ""*/)
+void goby::common::ConfigReader::get_example_cfg_file(google::protobuf::Message* message, std::ostream* stream, const std::string& indent /*= ""*/)
 {
     build_description(message->GetDescriptor(), *stream, indent, false);
     *stream << std::endl;
 }
 
 
-void  goby::util::ConfigReader::get_protobuf_program_options(boost::program_options::options_description& po_desc,
+void  goby::common::ConfigReader::get_protobuf_program_options(boost::program_options::options_description& po_desc,
                                                              const google::protobuf::Descriptor* desc)
 {
     for(int i = 0, n = desc->field_count(); i < n; ++i)
@@ -331,9 +331,9 @@ void  goby::util::ConfigReader::get_protobuf_program_options(boost::program_opti
         
         std::string cli_name = field_name;
         std::stringstream human_desc_ss;
-        human_desc_ss << util::esc_lt_blue << field_desc->options().GetExtension(goby::field).description();
+        human_desc_ss << common::esc_lt_blue << field_desc->options().GetExtension(goby::field).description();
         human_desc_ss << label(field_desc);
-        human_desc_ss << util::esc_nocolor;
+        human_desc_ss << common::esc_nocolor;
         
         switch(field_desc->cpp_type())
         {
@@ -443,7 +443,7 @@ void  goby::util::ConfigReader::get_protobuf_program_options(boost::program_opti
 }
 
 
-void goby::util::ConfigReader::build_description(const google::protobuf::Descriptor* desc,
+void goby::common::ConfigReader::build_description(const google::protobuf::Descriptor* desc,
                                                  std::ostream& stream,
                                                  const std::string& indent /*= ""*/,
                                                  bool use_color /* = true */ )
@@ -463,7 +463,7 @@ void goby::util::ConfigReader::build_description(const google::protobuf::Descrip
     }    
 }
 
-void goby::util::ConfigReader::build_description_field(
+void goby::common::ConfigReader::build_description_field(
     const google::protobuf::FieldDescriptor* field_desc,
     std::ostream& stream,
     const std::string& indent,
@@ -496,7 +496,7 @@ void goby::util::ConfigReader::build_description_field(
 
         std::string description;
         if(use_color)
-            description += util::esc_green;
+            description += common::esc_green;
         else
             description += "# ";
 
@@ -504,7 +504,7 @@ void goby::util::ConfigReader::build_description_field(
             + label(field_desc);
             
         if(use_color)
-            description += util::esc_nocolor;
+            description += common::esc_nocolor;
 
         if(!use_color)
             wrap_description(&description, before_description.size());
@@ -557,7 +557,7 @@ void goby::util::ConfigReader::build_description_field(
         std::string description;
 
         if(use_color)
-            description +=  util::esc_green;
+            description +=  common::esc_green;
         else
             description += "# ";
             
@@ -589,14 +589,14 @@ void goby::util::ConfigReader::build_description_field(
         stream << description;            
             
         if(use_color)
-            stream << util::esc_nocolor;
+            stream << common::esc_nocolor;
         
     }
 }
 
 
 
-std::string goby::util::ConfigReader::label(const google::protobuf::FieldDescriptor* field_desc)
+std::string goby::common::ConfigReader::label(const google::protobuf::FieldDescriptor* field_desc)
 {
     switch(field_desc->label())
     {
@@ -616,7 +616,7 @@ std::string goby::util::ConfigReader::label(const google::protobuf::FieldDescrip
 
 
 
-std::string goby::util::ConfigReader::word_wrap(std::string s, unsigned width,
+std::string goby::common::ConfigReader::word_wrap(std::string s, unsigned width,
                                                 const std::string & delim)
 {
     std::string out;
@@ -649,7 +649,7 @@ std::string goby::util::ConfigReader::word_wrap(std::string s, unsigned width,
     return out;
 }
             
-void goby::util::ConfigReader::wrap_description(std::string* description, int num_blanks)
+void goby::common::ConfigReader::wrap_description(std::string* description, int num_blanks)
 {
     *description = word_wrap(*description,
                             std::max(MAX_CHAR_PER_LINE -

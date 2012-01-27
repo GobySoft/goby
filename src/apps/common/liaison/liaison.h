@@ -124,7 +124,7 @@ namespace goby
             {
                 void AddError(const std::string & filename, int line, int column, const std::string & message)
                 {
-                    goby::glog.is(goby::util::logger::DIE, goby::util::logger_lock::lock) &&
+                    goby::glog.is(goby::common::logger::DIE, goby::common::logger_lock::lock) &&
                         goby::glog << "File: " << filename
                                    << " has error (line: " << line << ", column: " << column << "): "
                                    << message << std::endl << unlock;

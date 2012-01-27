@@ -40,7 +40,7 @@ using goby::util::as;
 using goby::util::hex_encode;
 using goby::util::hex_decode;
 using goby::glog;
-using namespace goby::util::logger;
+using namespace goby::common::logger;
 
 using google::protobuf::FieldDescriptor;
 using google::protobuf::Descriptor;
@@ -64,8 +64,8 @@ goby::acomms::DCCLCodec::DCCLCodec()
     glog_encode_group_ = "goby::acomms::dccl::encode";
     glog_decode_group_ = "goby::acomms::dccl::decode";
     
-    glog.add_group(glog_encode_group_, util::Colors::lt_magenta);
-    glog.add_group(glog_decode_group_, util::Colors::lt_blue);
+    glog.add_group(glog_encode_group_, common::Colors::lt_magenta);
+    glog.add_group(glog_decode_group_, common::Colors::lt_blue);
 
     set_default_codecs();
 }

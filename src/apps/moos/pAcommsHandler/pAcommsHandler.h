@@ -119,7 +119,7 @@ class CpAcommsHandler : public GobyMOOSApp
     {
         void AddError(const std::string & filename, int line, int column, const std::string & message)
         {
-            goby::glog.is(goby::util::logger::DIE) &&
+            goby::glog.is(goby::common::logger::DIE) &&
                 goby::glog << "File: " << filename
                            << " has error (line: " << line << ", column: " << column << "): "
                            << message << std::endl;

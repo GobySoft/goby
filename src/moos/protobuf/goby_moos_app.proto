@@ -9,7 +9,7 @@ message GobyMOOSAppConfig
   optional string log_path = 101 [default = "./",
                                   (goby.field).moos_global = "log_path",
                                   (goby.field).description="Directory path to write the text log of the terminal output (if log=true)"];
-  optional goby.util.protobuf.GLogConfig.Verbosity log_verbosity = 105 [default = DEBUG2, (goby.field).description="Verbosity of the log file"];
+  optional goby.common.protobuf.GLogConfig.Verbosity log_verbosity = 105 [default = DEBUG2, (goby.field).description="Verbosity of the log file"];
 
   optional string community = 102 [(goby.field).moos_global = "Community",
                                    (goby.field).description="The vehicle's name", (goby.field).example="AUV23"];
@@ -26,7 +26,7 @@ message GobyMOOSAppConfig
   optional uint32 comm_tick = 2 [default = 10,
                                  (goby.field).description="Frequency at which to call into the MOOSDB for mail."];
   
-  optional goby.util.protobuf.GLogConfig.Verbosity verbosity = 3 [default = VERBOSE,
+  optional goby.common.protobuf.GLogConfig.Verbosity verbosity = 3 [default = VERBOSE,
                                     (goby.field).description="Verbosity of the terminal window output"];
 
   // post various configuration values to the MOOSDB on startup

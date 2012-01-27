@@ -41,7 +41,7 @@ class AppBaseConfig;
 
 namespace goby
 {
-    namespace util
+    namespace common
     {                
         ///  \brief  indicates a problem with the runtime command line
         /// or .cfg file configuration (or --help was given)

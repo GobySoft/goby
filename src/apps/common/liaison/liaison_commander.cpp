@@ -30,8 +30,8 @@
 #include "liaison_commander.h"
 
 using namespace Wt;
-using namespace goby::util::logger;
-using goby::util::logger_lock::lock;
+using namespace goby::common::logger;
+using goby::common::logger_lock::lock;
 using goby::glog;
 using goby::moos::operator<<;
 

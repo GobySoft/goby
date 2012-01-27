@@ -21,16 +21,16 @@
 
 using goby::common::ZeroMQService;
 using goby::glog;
-using namespace goby::util::logger_lock;
-using namespace goby::util::logger;
+using namespace goby::common::logger_lock;
+using namespace goby::common::logger;
 
 
 goby::moos::MOOSNode::MOOSNode(ZeroMQService* service)
     : goby::common::NodeInterface<CMOOSMsg>(service)
 {
     boost::mutex::scoped_lock lock(glog.mutex());    
-    glog.add_group("in_hex", util::Colors::green, "Goby MOOS (hex) - Incoming");
-    glog.add_group("out_hex", util::Colors::magenta, "Goby MOOS (hex) - Outgoing");
+    glog.add_group("in_hex", common::Colors::green, "Goby MOOS (hex) - Incoming");
+    glog.add_group("out_hex", common::Colors::magenta, "Goby MOOS (hex) - Outgoing");
 
 }
 

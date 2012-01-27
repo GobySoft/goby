@@ -26,7 +26,7 @@
 
 using goby::glog;
 using goby::util::as;
-using namespace goby::util::logger;
+using namespace goby::common::logger;
 
 
 std::string GobyMOOSApp::mission_file_;
@@ -297,7 +297,7 @@ void GobyMOOSApp::read_configuration(google::protobuf::Message* cfg)
     
         boost::program_options::options_description od_both("Typically given in the .moos file, but may be specified on the command line");
     
-        goby::util::ConfigReader::get_protobuf_program_options(od_both, cfg->GetDescriptor());
+        goby::common::ConfigReader::get_protobuf_program_options(od_both, cfg->GetDescriptor());
         od_all.add(od_both);
         od_all.add(od_cli_only);
 
@@ -313,14 +313,14 @@ void GobyMOOSApp::read_configuration(google::protobuf::Message* cfg)
         
         if (var_map.count("help"))
         {
-            goby::util::ConfigException e("");
+            goby::common::ConfigException e("");
             e.set_error(false);
             throw(e);
         }
         else if(var_map.count("example_config"))
         {
             std::cout << "ProcessConfig = " << application_name_ << "\n{";
-            goby::util::ConfigReader::get_example_cfg_file(cfg, &std::cout, "  ");
+            goby::common::ConfigReader::get_example_cfg_file(cfg, &std::cout, "  ");
             std::cout << "}" << std::endl;
             exit(EXIT_SUCCESS);            
         }
@@ -411,7 +411,7 @@ void GobyMOOSApp::read_configuration(google::protobuf::Message* cfg)
         {
             // let protobuf deal with the defaults
             if(!p.second.defaulted())
-                goby::util::ConfigReader::set_protobuf_program_option(var_map, *cfg, p.first, p.second);
+                goby::common::ConfigReader::set_protobuf_program_option(var_map, *cfg, p.first, p.second);
         }
 
         
@@ -424,14 +424,14 @@ void GobyMOOSApp::read_configuration(google::protobuf::Message* cfg)
             std::stringstream err_msg;
             err_msg << "Configuration is missing required parameters: \n";
             BOOST_FOREACH(const std::string& s, errors)
-                err_msg << goby::util::esc_red << s << "\n" << goby::util::esc_nocolor;
+                err_msg << goby::common::esc_red << s << "\n" << goby::common::esc_nocolor;
                 
             err_msg << "Make sure you specified a proper .moos file";
-            throw(goby::util::ConfigException(err_msg.str()));
+            throw(goby::common::ConfigException(err_msg.str()));
         }
         
     }
-    catch(goby::util::ConfigException& e)
+    catch(goby::common::ConfigException& e)
     {
         // output all the available command line options
         std::cerr << od_all << "\n";

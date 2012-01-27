@@ -20,7 +20,7 @@
 #include "term_color.h"
 
 // TODO(tes): See if this dynamic cast is unncessary now 
-std::ostream& goby::util::tcolor::add_escape_code(std::ostream& os, const std::string& esc_code)
+std::ostream& goby::common::tcolor::add_escape_code(std::ostream& os, const std::string& esc_code)
 {
     try
     {
@@ -32,10 +32,10 @@ std::ostream& goby::util::tcolor::add_escape_code(std::ostream& os, const std::s
 }
 
 
-boost::shared_ptr<goby::util::TermColor> goby::util::TermColor::inst_(new TermColor());
+boost::shared_ptr<goby::common::TermColor> goby::common::TermColor::inst_(new TermColor());
 
 
-goby::util::TermColor::TermColor()
+goby::common::TermColor::TermColor()
 {
     boost::assign::insert(colors_map_)
         ("nocolor",Colors::nocolor)

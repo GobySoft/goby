@@ -38,8 +38,8 @@ using goby::util::ptime2unix_double;
 using goby::util::as;
 using goby::glog;
 using google::protobuf::uint32;
-using namespace goby::util::tcolor;
-using namespace goby::util::logger;
+using namespace goby::common::tcolor;
+using namespace goby::common::logger;
 
 
 boost::posix_time::time_duration goby::acomms::MMDriver::MODEM_WAIT = boost::posix_time::seconds(3);

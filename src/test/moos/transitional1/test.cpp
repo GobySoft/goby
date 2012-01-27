@@ -26,7 +26,7 @@ using goby::transitional::operator<<;
 
 int main(int argc, char* argv[])
 {
-    goby::glog.add_stream(goby::util::logger::DEBUG3, &std::cerr);
+    goby::glog.add_stream(goby::common::logger::DEBUG3, &std::cerr);
     goby::glog.set_name(argv[0]);
     
     std::cout << "loading xml file: " << DCCL_EXAMPLES_DIR "transitional1/test.xml" << std::endl;
@@ -38,7 +38,7 @@ int main(int argc, char* argv[])
     {
         void AddError(const std::string & filename, int line, int column, const std::string & message)
         {
-            goby::glog.is(goby::util::logger::DIE) &&
+            goby::glog.is(goby::common::logger::DIE) &&
                 goby::glog << "File: " << filename
                            << " has error (line: " << line << ", column: " << column << "): "
                            << message << std::endl;

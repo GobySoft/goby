@@ -39,7 +39,7 @@ goby::acomms::BitsHandler::BitsHandler(Bitset* out_pool, Bitset* in_pool, bool l
                 
 void goby::acomms::BitsHandler::transfer_bits(unsigned size)
 {
-    glog.is(util::logger::DEBUG3) && glog  <<  "_get_bits from (" << in_pool_ << ") " << *in_pool_ << " to add to (" << out_pool_ << ") " << *out_pool_ << " number: " << size << std::endl;
+    glog.is(common::logger::DEBUG3) && glog  <<  "_get_bits from (" << in_pool_ << ") " << *in_pool_ << " to add to (" << out_pool_ << ") " << *out_pool_ << " number: " << size << std::endl;
     
     if(lsb_first_)
     {

@@ -9,7 +9,7 @@ using goby::glog;
 inline std::ostream& stream_assert(std::ostream & os)
 { assert(false); }
 
-using namespace goby::util::logger;
+using namespace goby::common::logger;
 
 int main()
 {
@@ -41,9 +41,9 @@ int main()
 
     
     std::cout << "checking locking ... " << std::endl;
-    glog.is(VERBOSE, goby::util::logger_lock::lock) && glog << "lock ok" << std::endl << unlock;
-    glog.is(VERBOSE, goby::util::logger_lock::lock) && glog << "unlock ok" << std::endl << unlock;
-    glog.is(DEBUG3, goby::util::logger_lock::lock) && glog << stream_assert << std::endl << unlock;
+    glog.is(VERBOSE, goby::common::logger_lock::lock) && glog << "lock ok" << std::endl << unlock;
+    glog.is(VERBOSE, goby::common::logger_lock::lock) && glog << "unlock ok" << std::endl << unlock;
+    glog.is(DEBUG3, goby::common::logger_lock::lock) && glog << stream_assert << std::endl << unlock;
 
     
     std::cout << "attaching std::cout to DEBUG1" << std::endl;
@@ -82,8 +82,8 @@ int main()
     std::cout << "ss1: \n" << ss1.rdbuf();
 
 
-    glog.add_group("test1", goby::util::Colors::lt_green, "Test 1");
-    glog.add_group("test2", goby::util::Colors::lt_green, "Test 2");
+    glog.add_group("test1", goby::common::Colors::lt_green, "Test 1");
+    glog.add_group("test2", goby::common::Colors::lt_green, "Test 2");
 
     glog << group("test1") << "test1 group ok" << std::endl;
     glog.is(WARN) && glog << group("test2") << "test2 group warning ok" << std::endl;

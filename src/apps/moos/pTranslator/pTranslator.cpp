@@ -29,7 +29,7 @@
 
 
 using goby::glog;
-using namespace goby::util::logger;
+using namespace goby::common::logger;
 using goby::moos::operator<<;
 
 pTranslatorConfig CpTranslator::cfg_;

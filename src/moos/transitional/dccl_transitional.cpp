@@ -33,7 +33,7 @@
 using goby::util::goby_time;
 using goby::util::as;           
 using goby::acomms::operator<<;
-using namespace goby::util::logger;
+using namespace goby::common::logger;
 
 #if BOOST_FILESYSTEM_VERSION == 3
 namespace bf = boost::filesystem3;
@@ -363,8 +363,8 @@ std::string goby::transitional::DCCLTransitionalCodec::brief_summary() const
 
 // void goby::transitional::DCCLTransitionalCodec::add_flex_groups(util::FlexOstream* tout)
 // {
-//     tout->add_group("dccl_enc", util::Colors::lt_magenta, "encoder messages (goby_dccl)");
-//     tout->add_group("dccl_dec", util::Colors::lt_blue, "decoder messages (goby_dccl)");
+//     tout->add_group("dccl_enc", common::Colors::lt_magenta, "encoder messages (goby_dccl)");
+//     tout->add_group("dccl_dec", common::Colors::lt_blue, "decoder messages (goby_dccl)");
 // }
 
 

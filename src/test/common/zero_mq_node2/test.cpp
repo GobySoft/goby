@@ -39,7 +39,7 @@ enum { SOCKET_REQUESTOR = 104952, SOCKET_REPLIER = 2304
 
 int main(int argc, char* argv[])
 {
-    goby::glog.add_stream(goby::util::logger::DEBUG3, &std::cerr);
+    goby::glog.add_stream(goby::common::logger::DEBUG3, &std::cerr);
     goby::glog.set_name(argv[0]);
 
     goby::common::ZeroMQService node;

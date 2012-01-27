@@ -23,7 +23,7 @@
 
 #include "moos_gateway_config.pb.h"
 
-using namespace goby::util::logger;
+using namespace goby::common::logger;
 
 namespace goby
 {
@@ -98,8 +98,8 @@ goby::moos::MOOSGateway::MOOSGateway()
     
 
 
-    glog.add_group("from_moos", util::Colors::lt_magenta, "MOOS -> Goby");
-    glog.add_group("to_moos", util::Colors::lt_green, "Goby -> MOOS");
+    glog.add_group("from_moos", common::Colors::lt_magenta, "MOOS -> Goby");
+    glog.add_group("to_moos", common::Colors::lt_green, "Goby -> MOOS");
 }
 
 

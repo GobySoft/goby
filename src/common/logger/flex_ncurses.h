@@ -32,7 +32,7 @@ class Group;
 
 namespace goby
 {
-    namespace util
+    namespace common
     {
         /// Enables the Verbosity == gui mode of the Goby logger and displays an NCurses gui for the logger content
         class FlexNCurses

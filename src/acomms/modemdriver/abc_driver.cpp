@@ -22,7 +22,7 @@
 using goby::util::hex_encode;
 using goby::util::hex_decode;
 using goby::glog;
-using namespace goby::util::logger;
+using namespace goby::common::logger;
 
 goby::acomms::ABCDriver::ABCDriver()
 {

@@ -26,7 +26,7 @@
 
 using goby::util::goby_time;
 
-using namespace goby::util::logger;
+using namespace goby::common::logger;
 
 goby::acomms::Queue::Queue(const google::protobuf::Descriptor* desc /*= 0*/, QueueManager* parent /*= 0*/)
     : desc_(desc),

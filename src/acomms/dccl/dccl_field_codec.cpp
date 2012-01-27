@@ -30,7 +30,7 @@ boost::ptr_map<int, boost::signal<void (const boost::any& field_value, const boo
 
 
 using goby::glog;
-using namespace goby::util::logger;
+using namespace goby::common::logger;
 
 //
 // DCCLFieldCodecBase public

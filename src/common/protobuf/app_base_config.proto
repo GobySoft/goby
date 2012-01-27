@@ -21,7 +21,7 @@ message AppBaseConfig
   // advanced options
   optional goby.common.protobuf.ZeroMQServiceConfig additional_socket_config = 100 [(goby.field).description= "open other ZeroMQ sockets, note that `socket_id`s 103998 and 103999 are reserved for the publish / subscribe functionality"];
 
-  optional goby.util.protobuf.GLogConfig glog_config = 11 [(goby.field).description="configure the Goby Logger (TTY terminal and file debugging logger)"];
+  optional goby.common.protobuf.GLogConfig glog_config = 11 [(goby.field).description="configure the Goby Logger (TTY terminal and file debugging logger)"];
   
   extensions 1000 to max;
 

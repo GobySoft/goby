@@ -35,8 +35,8 @@
 #include "goby/util/sci.h"
 #include "goby/moos/moos_protobuf_helpers.h"
 
-using namespace goby::util::tcolor;
-using namespace goby::util::logger;
+using namespace goby::common::tcolor;
+using namespace goby::common::logger;
 using goby::acomms::operator<<;
 using goby::moos::operator<<;
 using goby::util::as;

@@ -36,8 +36,8 @@
 #include <boost/algorithm/string/regex.hpp>
 
 using namespace Wt;
-using namespace goby::util::logger_lock;
-using namespace goby::util::logger;
+using namespace goby::common::logger_lock;
+using namespace goby::common::logger;
 
 goby::common::LiaisonScope::LiaisonScope(ZeroMQService* zeromq_service,
                                          WTimer* timer, Wt::WContainerWidget* parent)

@@ -36,13 +36,14 @@
 #include "goby/common/exception.h"
 #include "logger_manipulators.h"
 
+using goby::util::goby_time;
 
 
 boost::mutex curses_mutex;
 
-boost::mutex goby::util::logger::mutex;
+boost::mutex goby::common::logger::mutex;
 
-goby::util::FlexOStreamBuf::FlexOStreamBuf(): name_("no name"),
+goby::common::FlexOStreamBuf::FlexOStreamBuf(): name_("no name"),
                                               die_flag_(false),
                                               current_verbosity_(logger::VERBOSE),
 #ifdef HAS_NCURSES
@@ -57,14 +58,14 @@ goby::util::FlexOStreamBuf::FlexOStreamBuf(): name_("no name"),
     groups_[""] = no_group;    
 }
 
-goby::util::FlexOStreamBuf::~FlexOStreamBuf()
+goby::common::FlexOStreamBuf::~FlexOStreamBuf()
 {
 #ifdef HAS_NCURSES    
     if(curses_) delete curses_;
 #endif
 }
 
-void goby::util::FlexOStreamBuf::add_stream(logger::Verbosity verbosity, std::ostream* os)
+void goby::common::FlexOStreamBuf::add_stream(logger::Verbosity verbosity, std::ostream* os)
 {
     //check that this stream doesn't exist
     // if so, update its verbosity and return
@@ -111,7 +112,7 @@ void goby::util::FlexOStreamBuf::add_stream(logger::Verbosity verbosity, std::os
     }
 }
 
-void goby::util::FlexOStreamBuf::add_group(const std::string & name, Group g)
+void goby::common::FlexOStreamBuf::add_group(const std::string & name, Group g)
 {
     if(groups_.count(name)) return;
     
@@ -128,7 +129,7 @@ void goby::util::FlexOStreamBuf::add_group(const std::string & name, Group g)
 
 
 // called when flush() or std::endl
-int goby::util::FlexOStreamBuf::sync()
+int goby::common::FlexOStreamBuf::sync()
 {
     std::istream is(this);
     std::string s;
@@ -145,7 +146,7 @@ int goby::util::FlexOStreamBuf::sync()
     return 0;
 }
 
-void goby::util::FlexOStreamBuf::display(std::string & s)
+void goby::common::FlexOStreamBuf::display(std::string & s)
 {
 
 #ifdef HAS_NCURSES    
@@ -228,7 +229,7 @@ void goby::util::FlexOStreamBuf::display(std::string & s)
     }
 }
 
-void goby::util::FlexOStreamBuf::refresh()
+void goby::common::FlexOStreamBuf::refresh()
 {
 #ifdef HAS_NCURSES
     if(is_gui_)
@@ -240,7 +241,7 @@ void goby::util::FlexOStreamBuf::refresh()
 }
 
 // clean out any escape codes for non terminal streams
-void goby::util::FlexOStreamBuf::strip_escapes(std::string& s)
+void goby::common::FlexOStreamBuf::strip_escapes(std::string& s)
 {
     static const std::string esc = "\33[";
     static const std::string m = "m";

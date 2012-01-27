@@ -26,11 +26,11 @@
 std::ostream & operator<< (std::ostream& os, const Group & g)
 {
     os << "description: " << g.description() << std::endl;
-    os << "color: " << goby::util::TermColor::str_from_col(g.color());
+    os << "color: " << goby::common::TermColor::str_from_col(g.color());
     return os;
 }
 
-void GroupSetter::operator()(goby::util::FlexOstream& os) const
+void GroupSetter::operator()(goby::common::FlexOstream& os) const
 {    
     os.set_group(group_);
 }
@@ -39,7 +39,7 @@ void GroupSetter::operator()(std::ostream& os) const
 {
     try
     {
-        goby::util::FlexOstream& flex = dynamic_cast<goby::util::FlexOstream&>(os);
+        goby::common::FlexOstream& flex = dynamic_cast<goby::common::FlexOstream&>(os);
         flex.set_group(group_);
     }
     catch(...)

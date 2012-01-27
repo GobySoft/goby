@@ -35,8 +35,8 @@
 
 using goby::util::goby_time;
 using goby::util::as;
-using namespace goby::util::tcolor;
-using namespace goby::util::logger;
+using namespace goby::common::tcolor;
+using namespace goby::common::logger;
 using goby::glog;
 
 int goby::acomms::MACManager::count_;
@@ -50,7 +50,7 @@ goby::acomms::MACManager::MACManager()
     ++count_;
 
     glog_mac_group_ = "goby::acomms::amac::" + as<std::string>(count_);
-    goby::glog.add_group(glog_mac_group_, util::Colors::blue);
+    goby::glog.add_group(glog_mac_group_, common::Colors::blue);
 }
 
 goby::acomms::MACManager::~MACManager()

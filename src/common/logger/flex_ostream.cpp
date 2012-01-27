@@ -19,22 +19,22 @@
 #include "flex_ostream.h"
 #include "logger_manipulators.h"
 
-using namespace goby::util::logger;
+using namespace goby::common::logger;
 
 
-// boost::shared_ptr<goby::util::FlexOstream> goby::util::FlexOstream::inst_;
+// boost::shared_ptr<goby::common::FlexOstream> goby::common::FlexOstream::inst_;
 
-// goby::util::FlexOstream& goby::util::glogger()
+// goby::common::FlexOstream& goby::common::glogger()
 // {    
 //     if(!FlexOstream::inst_) FlexOstream::inst_.reset(new FlexOstream());    
 //     return(*FlexOstream::inst_);
 // }
 
-int goby::util::FlexOstream::instances_ = 0 ;
+int goby::common::FlexOstream::instances_ = 0 ;
 
-goby::util::FlexOstream goby::glog;
+goby::common::FlexOstream goby::glog;
 
-void goby::util::FlexOstream::add_group(const std::string& name,
+void goby::common::FlexOstream::add_group(const std::string& name,
                                         Colors::Color color /*= Colors::nocolor*/,
                                         const std::string& description /*= ""*/)
 {
@@ -56,13 +56,13 @@ void goby::util::FlexOstream::add_group(const std::string& name,
 }
 
 
-std::ostream& goby::util::FlexOstream::operator<<(std::ostream& (*pf) (std::ostream&))
+std::ostream& goby::common::FlexOstream::operator<<(std::ostream& (*pf) (std::ostream&))
 {
     if(pf == die)   sb_.set_die_flag(true);
     return std::ostream::operator<<(pf);
 }            
 
-bool goby::util::FlexOstream::is(logger::Verbosity verbosity,
+bool goby::common::FlexOstream::is(logger::Verbosity verbosity,
                                  logger_lock::LockAction lock_action /*= none*/)
 {
         
@@ -72,7 +72,7 @@ bool goby::util::FlexOstream::is(logger::Verbosity verbosity,
     {
         if(lock_action == logger_lock::lock)
         {
-            goby::util::logger::mutex.lock(); 
+            goby::common::logger::mutex.lock(); 
         }
             
         switch(verbosity)

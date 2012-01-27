@@ -30,8 +30,8 @@
 
 using goby::glog;
 using namespace Wt;    
-using namespace goby::util::logger_lock;
-using namespace goby::util::logger;
+using namespace goby::common::logger_lock;
+using namespace goby::common::logger;
 
 goby::common::protobuf::LiaisonConfig goby::common::Liaison::cfg_;
 boost::shared_ptr<zmq::context_t> goby::common::Liaison::zmq_context_(new zmq::context_t(1));

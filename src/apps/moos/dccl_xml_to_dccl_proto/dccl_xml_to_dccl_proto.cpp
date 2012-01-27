@@ -35,7 +35,7 @@ int main(int argc, char* argv[])
             exit(EXIT_FAILURE);
     }
 
-    goby::glog.add_stream(goby::util::protobuf::GLogConfig::VERBOSE, &std::cerr);
+    goby::glog.add_stream(goby::common::protobuf::GLogConfig::VERBOSE, &std::cerr);
     google::protobuf::compiler::DiskSourceTree disk_source_tree;
     google::protobuf::compiler::SourceTreeDescriptorDatabase source_database(&disk_source_tree);
 
@@ -43,7 +43,7 @@ int main(int argc, char* argv[])
     {
         void AddError(const std::string & filename, int line, int column, const std::string & message)
         {
-            goby::glog.is(goby::util::logger::DIE) &&
+            goby::glog.is(goby::common::logger::DIE) &&
                 goby::glog << "File: " << filename
                            << " has error (line: " << line << ", column: " << column << "): "
                            << message << std::endl;

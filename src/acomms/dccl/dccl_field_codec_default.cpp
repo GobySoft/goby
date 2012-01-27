@@ -24,7 +24,7 @@
 #include "dccl_field_codec_default.h"
 #include "dccl_type_helper.h"
 
-using namespace goby::util::logger;
+using namespace goby::common::logger;
 
 
 //

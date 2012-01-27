@@ -35,7 +35,7 @@
 
 using goby::glog;
 using goby::util::as;
-using namespace goby::util::logger;
+using namespace goby::common::logger;
 
 int goby::acomms::QueueManager::count_ = 0;
 
@@ -53,11 +53,11 @@ goby::acomms::QueueManager::QueueManager()
     glog_in_group_ = "goby::acomms::queue::in::" + as<std::string>(count_);
 
     
-    goby::glog.add_group(glog_push_group_, util::Colors::lt_cyan);
-    goby::glog.add_group(glog_pop_group_,  util::Colors::lt_green);
-    goby::glog.add_group(glog_priority_group_,  util::Colors::yellow);
-    goby::glog.add_group(glog_out_group_,  util::Colors::cyan);
-    goby::glog.add_group(glog_in_group_,  util::Colors::green);
+    goby::glog.add_group(glog_push_group_, common::Colors::lt_cyan);
+    goby::glog.add_group(glog_pop_group_,  common::Colors::lt_green);
+    goby::glog.add_group(glog_priority_group_,  common::Colors::yellow);
+    goby::glog.add_group(glog_out_group_,  common::Colors::cyan);
+    goby::glog.add_group(glog_in_group_,  common::Colors::green);
 
     goby::acomms::DCCLFieldCodecBase::register_wire_value_hook(
         goby::field.number(),

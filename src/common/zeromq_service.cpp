@@ -26,8 +26,8 @@
 using goby::util::as;
 using goby::glog;
 using goby::util::hex_encode;
-using namespace goby::util::logger_lock;
-using namespace goby::util::logger;
+using namespace goby::common::logger_lock;
+using namespace goby::common::logger;
 
 
 goby::common::ZeroMQService::ZeroMQService(boost::shared_ptr<zmq::context_t> context)

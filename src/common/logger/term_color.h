@@ -28,7 +28,7 @@
 
 namespace goby
 {    
-    namespace util
+    namespace common
     {
         const std::string esc_red = "\33[31m";
         const std::string esc_lt_red = "\33[91m";

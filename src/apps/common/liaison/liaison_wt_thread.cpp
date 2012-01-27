@@ -32,8 +32,8 @@
 
 using goby::glog;
 using namespace Wt;    
-using namespace goby::util::logger_lock;
-using namespace goby::util::logger;
+using namespace goby::common::logger_lock;
+using namespace goby::common::logger;
 
 goby::common::LiaisonWtThread::LiaisonWtThread(const Wt::WEnvironment& env)
     : Wt::WApplication(env),

@@ -1,1 +1,4 @@
-add_subdirectory(liaison)
+
+if(Wt_FOUND)
+  add_subdirectory(liaison)
+endif()

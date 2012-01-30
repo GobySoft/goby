@@ -1,5 +1,10 @@
 #include "goby/util/as.h"
 
+bool isnan(double a)
+{
+  return a != a;
+}
+
 using goby::util::as;
 
 enum MyEnum { BAZ = 0, FOO = 1, BAR = 2 };

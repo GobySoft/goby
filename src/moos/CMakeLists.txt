@@ -18,13 +18,23 @@ include_directories(${MOOS_INCLUDE_DIRS})
 file(GLOB PROTOS protobuf/*.proto)
 protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${PROTOS})
 
-file(GLOB SRC *.cpp)
+set(SRC
+   goby_moos_app.cpp
+   modem_id_convert.cpp
+   moos_translator.cpp
+   transitional/message_val.cpp
+   transitional/message_algorithms.cpp
+)
 
 if(enable_goby_v1_transitional_support)
   file(GLOB TRANSITIONAL_SRC transitional/*.cpp)
 endif()
 
-add_library(goby_moos ${SRC} transitional/message_val.cpp transitional/message_algorithms.cpp ${TRANSITIONAL_SRC} ${PROTO_SRCS} ${PROTO_HDRS})
+if(ZeroMQ_FOUND)
+  set(ZEROMQ_SRC moos_node.cpp)
+endif()
+
+add_library(goby_moos ${SRC} ${ZEROMQ_SRC} ${TRANSITIONAL_SRC} ${PROTO_SRCS} ${PROTO_HDRS})
 
 target_link_libraries(goby_moos
   goby_util

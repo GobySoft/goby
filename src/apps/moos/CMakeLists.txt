@@ -10,9 +10,10 @@ if(build_pTranslator)
 endif()
 
 
-
 if(enable_goby_v1_transitional_support)
   add_subdirectory(dccl_xml_to_dccl_proto)
 endif()
 
-add_subdirectory(moos_gateway_g)
+if(ZeroMQ_FOUND)
+  add_subdirectory(moos_gateway_g)
+endif()

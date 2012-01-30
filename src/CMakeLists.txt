@@ -21,6 +21,9 @@ include_directories(${Boost_INCLUDE_DIRS})
 goby_find_required_package(ProtobufGoby)
 include_directories(${PROTOBUF_INCLUDE_DIRS})
 
+# shared library suffix
+add_definitions(-DSHARED_LIBRARY_SUFFIX="${CMAKE_SHARED_LIBRARY_SUFFIX}")
+
 # optional
 ## cryptopp
 find_package(Cryptopp)
@@ -68,8 +71,6 @@ find_path(Wt_RESOURCES_DIR_BASE share/Wt/resources/plus.gif /usr /usr/local)
 if(Wt_FOUND AND Wt_RESOURCES_DIR_BASE)
   include_directories(${Wt_INCLUDE_DIR})
   set(Wt_RESOURCES_DIR "${Wt_RESOURCES_DIR_BASE}/share/Wt/resources")
-  message(${Wt_RESOURCES_DIR})
-
   add_custom_target(wt_link ALL DEPENDS WtResourcesLink)
   add_custom_command(OUTPUT WtResourcesLink COMMAND ${CMAKE_COMMAND} -E create_symlink ${Wt_RESOURCES_DIR} ${goby_SHARE_DIR}/liaison/resources)
 else()

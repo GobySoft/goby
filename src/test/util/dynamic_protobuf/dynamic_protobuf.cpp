@@ -13,8 +13,14 @@ using namespace goby::util;
 
 int main()
 {
-    void* dl_handle = dlopen("libtest_dyn_protobuf.so", RTLD_LAZY);
+    void* dl_handle = dlopen("libtest_dyn_protobuf" SHARED_LIBRARY_SUFFIX, RTLD_LAZY);
 
+    if(!dl_handle)
+    {
+        std::cerr << "Failed to open libtest_dyn_protobuf" << std::endl;
+        exit(1);
+    }
+    
     google::protobuf::SimpleDescriptorDatabase* simple_database = new google::protobuf::SimpleDescriptorDatabase;
     goby::util::DynamicProtobufManager::add_database(simple_database);
     

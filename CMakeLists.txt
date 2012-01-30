@@ -79,8 +79,6 @@ if(${APPLE})
   link_directories(/sw/lib)
 endif()
 
-## start adding subdirectories
-add_subdirectory(src)
 
 
 ## copy to goby/include
@@ -90,3 +88,7 @@ foreach(I ${INCLUDE_FILES})
 endforeach()
 
 set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES ${goby_INC_DIR}/goby)
+
+## start adding subdirectories
+add_subdirectory(src)
+

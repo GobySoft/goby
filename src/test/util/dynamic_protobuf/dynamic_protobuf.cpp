@@ -17,7 +17,7 @@ int main()
 
     if(!dl_handle)
     {
-        std::cerr << "Failed to open libtest_dyn_protobuf" << std::endl;
+        std::cerr << "Failed to open libtest_dyn_protobuf" SHARED_LIBRARY_SUFFIX << std::endl;
         exit(1);
     }
     

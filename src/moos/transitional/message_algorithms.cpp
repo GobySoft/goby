@@ -100,7 +100,7 @@ void goby::transitional::DCCLAlgorithmPerformer::check_algorithm(const std::stri
     // check if the algorithm exists
     // but ignore if no algorithms loaded (to use for testing tools)
     if ((adv_map1_.size() || adv_map2_.size()) && !adv_map1_.count(ref_vars.at(0)) && !adv_map2_.count(ref_vars.at(0)))
-        throw(goby::acomms::DCCLException(std::string(msg.get_display() + "unknown algorithm defined: " + ref_vars.at(0))));
+        throw(goby::acomms::DCCLException("unknown algorithm defined: " + ref_vars.at(0)));
 
     
     for(std::vector<std::string>::size_type i = 1, n = ref_vars.size();
@@ -127,6 +127,6 @@ void goby::transitional::DCCLAlgorithmPerformer::check_algorithm(const std::stri
         }
 
         if(!ref_found)
-            throw(goby::acomms::DCCLException(std::string(msg.get_display() + "no such reference message variable " + ref_vars.at(i) + " used in algorithm: " + ref_vars.at(0))));
+            throw(goby::acomms::DCCLException(std::string("no such reference message variable " + ref_vars.at(i) + " used in algorithm: " + ref_vars.at(0))));
     }
 }

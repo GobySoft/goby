@@ -37,7 +37,10 @@
 
 #include "goby/acomms.h"
 #include "goby/util.h"
+
+#ifdef ENABLE_GOBY_V1_TRANSITIONAL_SUPPORT
 #include "goby/moos/transitional/dccl_transitional.h"
+#endif
 
 #include "MOOSLIB/MOOSLib.h"
 #include "MOOSUtilityLib/MOOSGeodesy.h"
@@ -130,9 +133,11 @@ class CpAcommsHandler : public GobyMOOSApp
 
     goby::moos::MOOSTranslator translator_;
     
+#ifdef ENABLE_GOBY_V1_TRANSITIONAL_SUPPORT
     //Old style XML DCCL1 parsing
     goby::transitional::DCCLTransitionalCodec transitional_dccl_;
-
+#endif
+    
     // new DCCL2 codec
     goby::acomms::DCCLCodec* dccl_;
     

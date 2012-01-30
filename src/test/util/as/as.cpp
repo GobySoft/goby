@@ -1,8 +1,11 @@
 #include "goby/util/as.h"
 
-bool isnan(double a)
+namespace test
 {
-  return a != a;
+    bool isnan(double a)
+    {
+        return a != a;
+    }
 }
 
 using goby::util::as;
@@ -65,8 +68,8 @@ int main()
     assert(as<double>("12.7") == double(12.7));
     assert(as<float>("12.7") == float(12.7));
     assert(as<double>("1e3") == 1e3);
-    assert(isnan(as<double>("nan")));
-    assert(isnan(as<double>("PIG")));
+    assert(test::isnan(as<double>("nan")));
+    assert(test::isnan(as<double>("PIG")));
 
     // enums
     assert(as<MyEnum>("1") == FOO);

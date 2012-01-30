@@ -41,7 +41,8 @@ using goby::acomms::operator<<;
 using goby::moos::operator<<;
 using goby::util::as;
 using google::protobuf::uint32;
-using goby::transitional::DCCLMessageVal;
+
+
 using goby::glog;
 
 
@@ -74,7 +75,14 @@ CpAcommsHandler::CpAcommsHandler()
     disk_source_tree_.MapPath("/", "/");
     goby::util::DynamicProtobufManager::add_database(&source_database_);
 
+#ifdef ENABLE_GOBY_V1_TRANSITIONAL_SUPPORT
     transitional_dccl_.convert_to_v2_representation(&cfg_);
+#else
+    if(cfg_.has_transitional_cfg())
+        glog.is(DIE) && glog << "transitional_cfg is set but pAcommsHandler was not compiled with the CMake flag 'enable_goby_v1_transitional_support' set to ON" << std::endl;
+#endif
+    
+    
     translator_.add_entry(cfg_.translator_entry());
     
     

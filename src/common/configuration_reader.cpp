@@ -125,7 +125,7 @@ void goby::common::ConfigReader::read_cfg(int argc,
             google::protobuf::TextFormat::Parser parser;
             // maybe the command line will fill in the missing pieces
             glog.set_name(*application_name);
-            glog.add_stream("verbose", &std::cout);
+            glog.add_stream(protobuf::GLogConfig::VERBOSE, &std::cout);
             FlexOStreamErrorCollector error_collector(protobuf_text);
             parser.RecordErrorsTo(&error_collector);
             parser.AllowPartialMessage(true);

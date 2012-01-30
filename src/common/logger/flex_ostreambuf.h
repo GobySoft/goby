@@ -45,7 +45,7 @@ namespace goby
             enum Verbosity { QUIET = protobuf::GLogConfig::QUIET,
                              WARN = protobuf::GLogConfig::WARN,
                              VERBOSE = protobuf::GLogConfig::VERBOSE,
-                             GUI = protobuf::GLogConfig::GUI,
+                             //GUI = protobuf::GLogConfig::GUI,
                              DEBUG1 = protobuf::GLogConfig::DEBUG1,
                              DEBUG2 = protobuf::GLogConfig::DEBUG2,
                              DEBUG3 = protobuf::GLogConfig::DEBUG3,
@@ -78,6 +78,9 @@ namespace goby
             bool is_gui()
             { return is_gui_; }
 
+            void enable_gui();
+            
+            
             logger::Verbosity highest_verbosity()
             {
                 return highest_verbosity_;

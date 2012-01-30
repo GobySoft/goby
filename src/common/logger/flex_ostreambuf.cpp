@@ -84,33 +84,32 @@ void goby::common::FlexOStreamBuf::add_stream(logger::Verbosity verbosity, std::
 
     if(verbosity > highest_verbosity_)
         highest_verbosity_ = verbosity;
-
-    if(verbosity == logger::GUI)
-    {
-#ifdef HAS_NCURSES    
-        if(is_gui_) return;
-        
-        is_gui_ = true;
-        
-        curses_ = new FlexNCurses;
-
-        boost::mutex::scoped_lock lock(curses_mutex);
-
-        curses_->startup();
-
-        // add any groups already on the screen as ncurses windows
-        typedef std::pair<std::string, Group> P;
-        BOOST_FOREACH(const P&p, groups_)
-            curses_->add_win(&groups_[p.first]);
-        
-        curses_->recalculate_win();
-
-        input_thread_ = boost::shared_ptr<boost::thread>(new boost::thread(boost::bind(&FlexNCurses::run_input, curses_)));
-#else
-        throw(goby::Exception("Tried to use verbosity==gui without compiling against NCurses. Install NCurses and recompile goby or use a different verbosity"));
-#endif
-    }
 }
+
+void goby::common::FlexOStreamBuf::enable_gui()
+{
+#ifdef HAS_NCURSES    
+    is_gui_ = true;
+    curses_ = new FlexNCurses;
+    
+    boost::mutex::scoped_lock lock(curses_mutex);
+    
+    curses_->startup();
+    
+    // add any groups already on the screen as ncurses windows
+    typedef std::pair<std::string, Group> P;
+    BOOST_FOREACH(const P&p, groups_)
+        curses_->add_win(&groups_[p.first]);
+    
+    curses_->recalculate_win();
+    
+    input_thread_ = boost::shared_ptr<boost::thread>(new boost::thread(boost::bind(&FlexNCurses::run_input, curses_)));
+#else
+    throw(goby::Exception("Tried to enable NCurses GUI without compiling against NCurses. Install NCurses and recompile goby or disable GUI functionality"));
+#endif
+}
+
+
 
 void goby::common::FlexOStreamBuf::add_group(const std::string & name, Group g)
 {
@@ -149,82 +148,55 @@ int goby::common::FlexOStreamBuf::sync()
 void goby::common::FlexOStreamBuf::display(std::string & s)
 {
 
-#ifdef HAS_NCURSES    
-    if(is_gui_ && current_verbosity_ <= logger::GUI)
-    {
-        if(!die_flag_)
-        {
-            boost::mutex::scoped_lock lock(curses_mutex);
-            std::stringstream line;
-            boost::posix_time::time_duration time_of_day = goby_time().time_of_day();
-            line << "\n"
-                 << std::setfill('0') << std::setw(2) << time_of_day.hours() << ":"  
-                 << std::setw(2) << time_of_day.minutes() << ":" 
-                 << std::setw(2) << time_of_day.seconds() <<
-                TermColor::esc_code_from_col(groups_[group_name_].color()) << " | "  << esc_nocolor
-                 <<  s;
-            
-            curses_->insert(goby_time(), line.str(), &groups_[group_name_]);
-        }
-        else
-        {
-            curses_->alive(false);
-            input_thread_->join();
-            curses_->cleanup();
-            
-            std::cout << TermColor::esc_code_from_col(groups_[group_name_].color()) << name_ << esc_nocolor << ": " << s << esc_nocolor << std::endl;
-        }
-    }
-#endif
-    
+    bool gui_displayed = false;
     BOOST_FOREACH(const StreamConfig& cfg, streams_)
     {
-        if(cfg.os() == &std::cout || cfg.os() == &std::cerr || cfg.os() == &std::clog)
+        if((cfg.os() == &std::cout || cfg.os() == &std::cerr || cfg.os() == &std::clog) && current_verbosity_ <= cfg.verbosity())
         {
-            switch(cfg.verbosity())
+#ifdef HAS_NCURSES    
+            if(is_gui_ && current_verbosity_ <= cfg.verbosity() && !gui_displayed)
             {
-                default:
-                case logger::QUIET:
-                    if(current_verbosity_ > logger::QUIET) break;
-                case logger::WARN:
-                    if(current_verbosity_ > logger::WARN) break;
-                case logger::VERBOSE:
-                    if(current_verbosity_ > logger::VERBOSE) break;
-                case logger::DEBUG1:
-                    if(current_verbosity_ > logger::DEBUG1) break;
-                case logger::DEBUG2:
-                    if(current_verbosity_ > logger::DEBUG2) break;
-                case logger::DEBUG3:
-                    *cfg.os() << TermColor::esc_code_from_col(groups_[group_name_].color())
-                              << name_ << esc_nocolor <<
-                        " [" << goby::util::goby_time_as_string() << "]";
-                    if(!group_name_.empty())
-                        *cfg.os() << " " << "{" << group_name_ << "}";
-                    *cfg.os() << ": " << s <<  std::endl;
-                    break;        
+                if(!die_flag_)
+                {
+                    boost::mutex::scoped_lock lock(curses_mutex);
+                    std::stringstream line;
+                    boost::posix_time::time_duration time_of_day = goby_time().time_of_day();
+                    line << "\n"
+                         << std::setfill('0') << std::setw(2) << time_of_day.hours() << ":"  
+                         << std::setw(2) << time_of_day.minutes() << ":" 
+                         << std::setw(2) << time_of_day.seconds() <<
+                        TermColor::esc_code_from_col(groups_[group_name_].color()) << " | "  << esc_nocolor
+                         <<  s;
+            
+                    curses_->insert(goby_time(), line.str(), &groups_[group_name_]);
+                }
+                else
+                {
+                    curses_->alive(false);
+                    input_thread_->join();
+                    curses_->cleanup();
+            
+                    std::cout << TermColor::esc_code_from_col(groups_[group_name_].color()) << name_
+                              << esc_nocolor << ": " << s << esc_nocolor << std::endl;
+                }
+                gui_displayed = true;
+                continue;
             }
+#endif            
+            
+            *cfg.os() <<
+                TermColor::esc_code_from_col(groups_[group_name_].color())
+                      << name_ << esc_nocolor << " ["
+                      << goby::util::goby_time_as_string() << "]";
+            if(!group_name_.empty())
+                *cfg.os() << " " << "{" << group_name_ << "}";
+            *cfg.os() << ": " << s <<  std::endl;
         }
-        else if(cfg.os())
+        else if(cfg.os() && current_verbosity_ <= cfg.verbosity())
         {
-            switch(cfg.verbosity())
-            {
-                default:
-                case logger::QUIET:
-                    if(current_verbosity_ > logger::QUIET) break;
-                case logger::WARN:
-                    if(current_verbosity_ > logger::WARN) break;
-                case logger::VERBOSE:
-                    if(current_verbosity_ > logger::VERBOSE) break;
-                case logger::DEBUG1:
-                    if(current_verbosity_ > logger::DEBUG1) break;
-                case logger::DEBUG2:
-                    if(current_verbosity_ > logger::DEBUG2) break;
-                case logger::DEBUG3:
-                    basic_log_header(*cfg.os(), group_name_);
-                    strip_escapes(s);
-                    *cfg.os() << s << std::endl;
-                    break;        
-            }
+            basic_log_header(*cfg.os(), group_name_);
+            strip_escapes(s);
+            *cfg.os() << s << std::endl;
         }
     }
 }

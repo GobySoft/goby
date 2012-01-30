@@ -334,8 +334,7 @@ void GobyMOOSApp::read_configuration(google::protobuf::Message* cfg)
         }
         
         glog.set_name(application_name_);
-        glog.add_stream("verbose", &std::cout);
-    
+        glog.add_stream(goby::common::protobuf::GLogConfig::VERBOSE, &std::cout);    
     
         std::string protobuf_text;
         std::ifstream fin;
@@ -442,14 +441,6 @@ void GobyMOOSApp::read_configuration(google::protobuf::Message* cfg)
         throw;
     }
 
-
-
-
-    
-    
-
-
-
 }
 
 
@@ -460,7 +451,12 @@ void GobyMOOSApp::process_configuration()
     // PROCESS CONFIGURATION
     //
     glog.add_stream(common_cfg_.verbosity(), &std::cout);
-
+    if(common_cfg_.show_gui())
+    {
+        glog.enable_gui();
+    }
+    
+    
     if(common_cfg_.log())
     {
         if(!common_cfg_.has_log_path())

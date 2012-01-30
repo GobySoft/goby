@@ -192,7 +192,7 @@ void goby::transitional::DCCLMessageVar::write_schema_to_dccl2(std::ofstream* pr
 
         *proto_file << (count ? ", " : " [");
         ++count;
-        *proto_file << "(goby.field).dccl.max=" << max_tmp;
+        *proto_file << "(goby.field).dccl.max=" << goby::util::as<std::string>(max_tmp, precision(), goby::util::FLOAT_FIXED);
     }
     catch(...) { }
     try
@@ -200,15 +200,18 @@ void goby::transitional::DCCLMessageVar::write_schema_to_dccl2(std::ofstream* pr
         double min_tmp = min();
         *proto_file << (count ? ", " : " [");
         ++count;
-        *proto_file << "(goby.field).dccl.min=" << min_tmp;
+        *proto_file << "(goby.field).dccl.min=" << goby::util::as<std::string>(min_tmp, precision(), goby::util::FLOAT_FIXED);
     }
     catch(...) { }
     try
     {
-        int precision_tmp = precision();
-        *proto_file << (count ? ", " : " [");
-        ++count;
-        *proto_file << "(goby.field).dccl.precision=" << precision_tmp;
+        if(type() == dccl_float)
+        {
+            int precision_tmp = precision();
+            *proto_file << (count ? ", " : " [");
+            ++count;
+            *proto_file << "(goby.field).dccl.precision=" << precision_tmp;
+        }
     }
     catch(...) { }
     try

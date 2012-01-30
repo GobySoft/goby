@@ -80,7 +80,6 @@ bool goby::common::FlexOstream::is(logger::Verbosity verbosity,
             case QUIET: break;
             case WARN: *this << warn; break;
             case VERBOSE: *this << verbose; break;
-            case GUI: break;
             case DEBUG1: *this << debug1; break;
             case DEBUG2: *this << debug2; break;
             case DEBUG3: *this << debug3; break;

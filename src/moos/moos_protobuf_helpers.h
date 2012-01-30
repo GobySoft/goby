@@ -630,14 +630,12 @@ namespace goby
                         max_field_number = it->first;
                 }
 
-                std::cout << "**test** format " << mutable_format << std::endl;
                 for (boost::sregex_iterator it(mutable_format.begin(),
                                                mutable_format.end(),
                                                boost::regex("%([0-9]+:)+[0-9]+%")),
                          end; it != end; ++it)
                 {
                     std::string match = (*it)[0];
-                    std::cout << "**test** match: " << match  << std::endl;
                     boost::trim_if(match, boost::is_any_of("%"));
                     std::vector<std::string> subfields;
                     boost::split(subfields, match, boost::is_any_of(":"));
@@ -669,8 +667,6 @@ namespace goby
 
                     boost::replace_all(mutable_format, match, goby::util::as<std::string>(max_field_number));
 
-                    std::cout << "**test** updated value " << modified_values[max_field_number] << std::endl;
-                    std::cout << "**test** updated format " << mutable_format << std::endl;
                 }
                  
                 

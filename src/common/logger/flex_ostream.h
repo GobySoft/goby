@@ -78,23 +78,29 @@ namespace goby
             {
                 sb_.name(s);
             }
+
+            void enable_gui()
+            {
+                sb_.enable_gui();
+            }
             
+
             bool is(goby::common::logger::Verbosity verbosity,
                     logger_lock::LockAction lock_action = logger_lock::none); 
             
-            void add_stream(const std::string& verbosity, std::ostream* os = 0)
-            {
-                if(verbosity == "scope" || verbosity == "gui")        
-                    add_stream(goby::common::logger::GUI, os);
-                else if(verbosity == "quiet")        
-                    add_stream(goby::common::logger::QUIET, os);
-                else if(verbosity == "terse" || verbosity == "warn")        
-                    add_stream(goby::common::logger::WARN, os);
-                else if(verbosity == "debug")        
-                    add_stream(goby::common::logger::DEBUG1, os);
-                else
-                    add_stream(goby::common::logger::VERBOSE, os);
-            }
+            /* void add_stream(const std::string& verbosity, std::ostream* os = 0) */
+            /* { */
+            /*     if(verbosity == "scope" || verbosity == "gui") */
+            /*         add_stream(goby::common::logger::GUI, os); */
+            /*     else if(verbosity == "quiet")         */
+            /*         add_stream(goby::common::logger::QUIET, os); */
+            /*     else if(verbosity == "terse" || verbosity == "warn")         */
+            /*         add_stream(goby::common::logger::WARN, os); */
+            /*     else if(verbosity == "debug")         */
+            /*         add_stream(goby::common::logger::DEBUG1, os); */
+            /*     else */
+            /*         add_stream(goby::common::logger::VERBOSE, os); */
+            /* } */
             
             
             /// Attach a stream object (e.g. std::cout, std::ofstream, ...) to the logger with desired verbosity

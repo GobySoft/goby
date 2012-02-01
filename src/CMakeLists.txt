@@ -116,14 +116,15 @@ if(build_common)
       add_subdirectory(acomms)
 
   
-        find_package(MOOS)
+        find_package(MOOS QUIET)
+        set(MOOS_DOC_STRING "Build the Acoustic Communications MOOS apps (pAcommsHandler, etc.)")
         if(MOOS_FOUND)
           include_directories(${MOOS_INCLUDE_DIRS})
           add_definitions(-DHAS_MOOS)
-          option(build_moos "Build the Acoustic Communications MOOS apps (pAcommsHandler, etc.)" ON)
+          option(build_moos ${MOOS_DOC_STRING} ON)
         else()
           missing_optional_library(MOOS)
-          option(build_moos "Build the Acoustic Communications MOOS apps (pAcommsHandler, etc.)" OFF)
+          option(build_moos ${MOOS_DOC_STRING} OFF)
         endif()
 
         if(build_moos)

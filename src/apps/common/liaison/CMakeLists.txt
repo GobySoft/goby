@@ -13,9 +13,9 @@ add_executable(goby_liaison
 
 target_link_libraries(goby_liaison
   ${Boost_LIBRARIES}
+  ${Wt_LIBRARIES}
   pthread
   goby_common
-  ${Wt_LIBRARIES}
   goby_moos
   goby_util
   )

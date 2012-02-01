@@ -33,7 +33,7 @@ if(enable_zeromq)
 endif()
 
 if(enable_ncurses)
-  target_link_libraries(goby_common ncurses)
+  target_link_libraries(goby_common ${CURSES_LIBRARIES})
 endif()
 
 target_link_libraries(goby_common ${PROTOBUF_LIBRARY} ${Boost_LIBRARIES} pthread)

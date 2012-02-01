@@ -44,7 +44,7 @@ target_link_libraries(goby_moos
   ${MOOS_LIBRARIES} ${Boost_LIBRARIES} ${PROTOBUF_LIBRARY})
 
 if(enable_v1_transitional)
-  target_link_libraries(goby_moos xerces-c)
+  target_link_libraries(goby_moos ${Xerces_LIBRARIES})
 endif()
 
 set_target_properties(goby_moos PROPERTIES VERSION "${GOBY_VERSION}" SOVERSION "${GOBY_SOVERSION}")

@@ -29,7 +29,7 @@ endif()
 add_library(goby_common ${SRC})
 
 if(enable_zeromq)
-  target_link_libraries(goby_common zmq)
+  target_link_libraries(goby_common ${ZeroMQ_LIBRARIES})
 endif()
 
 if(enable_ncurses)

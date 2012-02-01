@@ -15,10 +15,7 @@ target_link_libraries(goby_liaison
   ${Boost_LIBRARIES}
   pthread
   goby_common
-  wt
-  wthttp
-  wtdbo
-  wtdbosqlite3
+  ${Wt_LIBRARIES}
   goby_moos
   goby_util
   )

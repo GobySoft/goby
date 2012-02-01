@@ -11,7 +11,7 @@ set(SRC
   ${PROTO_SRCS} ${PROTO_HDRS} 
 )
 
-if(ZEROMQ_FOUND)
+if(enable_zeromq)
   set(SRC
     ${SRC}
     application_base.cpp
@@ -19,7 +19,7 @@ if(ZEROMQ_FOUND)
     )
 endif()
 
-if(CURSES_FOUND)
+if(enable_ncurses)
   set(SRC
     ${SRC}
     logger/flex_ncurses.cpp
@@ -28,16 +28,13 @@ endif()
 
 add_library(goby_common ${SRC})
 
-if(ZEROMQ_FOUND)
+if(enable_zeromq)
   target_link_libraries(goby_common zmq)
 endif()
 
-if(CURSES_FOUND)
+if(enable_ncurses)
   target_link_libraries(goby_common ncurses)
-else()
-  message(WARNING "Missing NCurses so building goby_common Logger without GUI support")
 endif()
-
 
 target_link_libraries(goby_common ${PROTOBUF_LIBRARY} ${Boost_LIBRARIES} pthread)
 set_target_properties(goby_common PROPERTIES VERSION "${GOBY_VERSION}" SOVERSION "${GOBY_SOVERSION}")

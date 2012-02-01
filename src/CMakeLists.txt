@@ -26,25 +26,71 @@ add_definitions(-DSHARED_LIBRARY_SUFFIX="${CMAKE_SHARED_LIBRARY_SUFFIX}")
 
 # optional
 ## cryptopp
-find_package(Cryptopp)
+find_package(Cryptopp QUIET)
+set(CRYPTOPP_DOC_STRING "Enable cryptography (requires libcrypto++-dev: http://www.cryptopp.com)")
 if(CRYPTOPP_FOUND)
+  option(enable_cryptography ${CRYPTOPP_DOC_STRING} ON)
+else()
+  option(enable_cryptography ${CRYPTOPP_DOC_STRING} OFF)
+endif()
+
+if(enable_cryptography)
+  goby_find_required_package(Cryptopp)
   add_definitions(-DHAS_CRYPTOPP)
   include_directories(${Cryptopp_INCLUDE_DIRS})
-else()
-  missing_optional_library(Cryptopp)
 endif()  
 
 ## ncurses
 set(CURSES_NEED_NCURSES TRUE)
-find_package(Curses)
+find_package(Curses QUIET)
+set(CURSES_DOC_STRING "Enable NCurses GUI components (requires libncurses-dev)")
 if(CURSES_FOUND)
+    option(enable_ncurses ${CURSES_DOC_STRING} ON)
+else()
+    option(enable_ncurses ${CURSES_DOC_STRING} OFF)
+endif()
+
+if(enable_ncurses)
+  goby_find_required_package(Curses)  
   add_definitions(-DHAS_NCURSES)
   include_directories(${CURSES_INCLUDE_DIR})
-else()
-  missing_optional_library(CURSES)
 endif()
 mark_as_advanced(CURSES_CURSES_H_PATH CURSES_FORM_LIBRARY CURSES_HAVE_CURSES_H)
 
+## zeromq
+find_package(ZeroMQ QUIET)
+set(ZEROMQ_DOC_STRING "Enable ZeroMQ Transport Layer components (requires libzmq-dev: http://www.zeromq.org/)")
+if(ZEROMQ_FOUND)
+    option(enable_zeromq ${ZEROMQ_DOC_STRING} ON)
+else()
+    option(enable_zeromq ${ZEROMQ_DOC_STRING} OFF)
+endif()
+
+if(enable_zeromq)
+  goby_find_required_package(ZeroMQ)
+  include_directories(${ZEROMQ_INCLUDE_DIRS})
+endif()
+
+## Wt
+find_package(WtGoby QUIET)
+set(WT_DOC_STRING "Enable Wt web browser GUI components (requires libwt-dev, libwtdbo-dev, libwtdbosqlite-dev, and libwthttp-dev: http://www.webtoolkit.eu/wt)")
+# find resources directory
+find_path(Wt_RESOURCES_DIR_BASE share/Wt/resources/plus.gif /usr /usr/local)
+if(WTGOBY_FOUND AND Wt_RESOURCES_DIR_BASE)
+    option(enable_wt ${WT_DOC_STRING} ON)
+else()
+    option(enable_wt ${WT_DOC_STRING} OFF)
+endif()
+
+if(enable_wt)
+  goby_find_required_package(WtGoby)    
+  include_directories(${Wt_INCLUDE_DIR})
+  set(Wt_RESOURCES_DIR "${Wt_RESOURCES_DIR_BASE}/share/Wt/resources")
+  add_custom_target(wt_link ALL DEPENDS WtResourcesLink)
+  add_custom_command(OUTPUT WtResourcesLink COMMAND ${CMAKE_COMMAND} -E create_symlink ${Wt_RESOURCES_DIR} ${goby_SHARE_DIR}/liaison/resources)
+endif()  
+
+## Kernel
 option(workaround_2_4_kernel "Apply workarounds for Linux 2.4 kernel. Leave OFF for newer (e.g. 2.6) kernels" OFF)
 if(workaround_2_4_kernel)
   add_definitions(-DBOOST_ASIO_DISABLE_EPOLL)
@@ -57,26 +103,6 @@ option(build_common "Build the Goby Common library" ON)
 # module dependencies
 # you can optionally build up to any point in this chain
 # common -> util -> acomms -> moos
-
-find_package(ZeroMQ)
-if(ZEROMQ_FOUND)
-  include_directories(${ZEROMQ_INCLUDE_DIRS})
-else()
-  missing_optional_library(ZeroMQ)
-endif()
-
-find_package(WtGoby)
-# find resources directory
-find_path(Wt_RESOURCES_DIR_BASE share/Wt/resources/plus.gif /usr /usr/local)
-if(Wt_FOUND AND Wt_RESOURCES_DIR_BASE)
-  include_directories(${Wt_INCLUDE_DIR})
-  set(Wt_RESOURCES_DIR "${Wt_RESOURCES_DIR_BASE}/share/Wt/resources")
-  add_custom_target(wt_link ALL DEPENDS WtResourcesLink)
-  add_custom_command(OUTPUT WtResourcesLink COMMAND ${CMAKE_COMMAND} -E create_symlink ${Wt_RESOURCES_DIR} ${goby_SHARE_DIR}/liaison/resources)
-else()
-  missing_optional_library(Wt)
-endif()  
-
 
 if(build_common)
   add_subdirectory(common)
@@ -111,9 +137,9 @@ endif(build_common)
 
 
 # latex, for documentation
-find_package(LATEX)
-
-option(build_doc "Build documentation (requires Doxygen, LaTeX, XeLaTeX, and certain fonts)" OFF)
+find_package(LATEX QUIET)
+set(LATEX_DOC_STRING "Build documentation (requires Doxygen, LaTeX, XeLaTeX, and certain fonts)")
+option(build_doc ${LATEX_DOC_STRING} OFF)
 
 if(build_doc)
   add_subdirectory(doc)
@@ -122,7 +148,6 @@ endif()
 if(enable_testing)
   add_subdirectory(test)
 endif()
-
 
 option(build_apps "Build applications (as well as libraries)" ON)
 

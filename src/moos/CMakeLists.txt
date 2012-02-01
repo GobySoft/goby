@@ -1,19 +1,20 @@
 goby_find_required_package(MOOS)
-find_package(Xerces)
-if(Xerces_FOUND)
-  include_directories(${Xerces_INCLUDE_DIRS})
-  option(enable_goby_v1_transitional_support "Compile in MOOS support for Goby version 1 XML files" ON)
-else()
-  missing_optional_library(Xerces)
-  option(enable_goby_v1_transitional_support "Compile in MOOS support for Goby version 1 XML files" OFF)
-endif()  
+include_directories(${MOOS_INCLUDE_DIRS})
 
-if(enable_goby_v1_transitional_support)
-  goby_find_required_package(Xerces)
-  add_definitions(-DENABLE_GOBY_V1_TRANSITIONAL_SUPPORT)
+find_package(Xerces QUIET)
+set(TRANSITIONAL_DOC_STRING "Compile in MOOS support for Goby version 1 XML files (requires libxerces-c-dev")
+if(Xerces_FOUND)
+  option(enable_v1_transitional ${TRANSITIONAL_DOC_STRING} ON)
+else()
+  option(enable_v1_transitional ${TRANSITIONAL_DOC_STRING} OFF)
 endif()
 
-include_directories(${MOOS_INCLUDE_DIRS})
+if(enable_v1_transitional)
+  goby_find_required_package(Xerces)
+  include_directories(${Xerces_INCLUDE_DIRS})
+  add_definitions(-DENABLE_GOBY_V1_TRANSITIONAL_SUPPORT)
+endif()  
+
 
 file(GLOB PROTOS protobuf/*.proto)
 protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${PROTOS})
@@ -26,11 +27,11 @@ set(SRC
    transitional/message_algorithms.cpp
 )
 
-if(enable_goby_v1_transitional_support)
+if(enable_v1_transitional)
   file(GLOB TRANSITIONAL_SRC transitional/*.cpp)
 endif()
 
-if(ZeroMQ_FOUND)
+if(enable_zeromq)
   set(ZEROMQ_SRC moos_node.cpp)
 endif()
 
@@ -42,7 +43,7 @@ target_link_libraries(goby_moos
   goby_acomms
   ${MOOS_LIBRARIES} ${Boost_LIBRARIES} ${PROTOBUF_LIBRARY})
 
-if(enable_goby_v1_transitional_support)
+if(enable_v1_transitional)
   target_link_libraries(goby_moos xerces-c)
 endif()
 

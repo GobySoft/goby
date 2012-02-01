@@ -309,7 +309,7 @@ int main(int argc, char* argv[])
 
     goby::glog << "Message out: " << std::endl;
     goby::glog << embedded_test_out->DebugString() << std::endl;    
-    assert(embedded_test_out->SerializeAsString() == embedded_test.SerializeAsString());
+    assert(embedded_test_out->SerializePartialAsString() == embedded_test.SerializePartialAsString());
     
     
     std::cout << "all tests passed" << std::endl;

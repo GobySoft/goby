@@ -23,6 +23,7 @@
 
 #include <boost/date_time.hpp>
 #include <boost/static_assert.hpp>
+#include <boost/function.hpp>
 
 #include "goby/util/primitive_types.h"
 #include "goby/util/as.h"
@@ -30,12 +31,9 @@
 /// All objects related to the Goby Underwater Autonomy Project
 namespace goby
 {
-    /// Utility objects for performing functions such as logging, non-acoustic communication (ethernet / serial), time, scientific, string manipulation, etc.
-    namespace util
+    namespace common
     {
-        ///\name Time
-        //@{        
-        
+                
         /// convert from boost date_time ptime to the number of seconds (including fractional) since 1/1/1970 0:00 UTC ("UNIX Time")
         double ptime2unix_double(boost::posix_time::ptime given_time);
     
@@ -47,71 +45,88 @@ namespace goby
     
         /// convert to boost date_time ptime from the number of microseconds since 1/1/1970 0:00 UTC ("UNIX Time"): good to the microsecond
         boost::posix_time::ptime unix_microsec2ptime(uint64 given_time);
-
-        
+    }
+    
+    
+    namespace util
+    {
         /// \brief specialization of `as` for double (assumed seconds since UNIX 1970-01-01 00:00:00 UTC) to ptime
         template<typename To, typename From>
             typename boost::enable_if<boost::mpl::and_< boost::is_same<To, double>, boost::is_same<From, boost::posix_time::ptime> >, To>::type
             as(const From& from)
-        { return goby::util::ptime2unix_double(from); }
+        { return goby::common::ptime2unix_double(from); }
 
         /// \brief specialization of `as` for ptime to double (seconds since UNIX 1970-01-01 00:00:00 UTC)
         template<typename To, typename From>
             typename boost::enable_if<boost::mpl::and_< boost::is_same<To, boost::posix_time::ptime>, boost::is_same<From, double> >, To>::type
             as(const From& from)
-        { return goby::util::unix_double2ptime(from); }
+        { return goby::common::unix_double2ptime(from); }
 
 
        /// \brief specialization of `as` for uint64 (assumed microseconds since UNIX 1970-01-01 00:00:00 UTC) to ptime
         template<typename To, typename From>
             typename boost::enable_if<boost::mpl::and_< boost::is_same<To, uint64>, boost::is_same<From, boost::posix_time::ptime> >, To>::type
             as(const From& from)
-        { return goby::util::ptime2unix_microsec(from); }
+        { return goby::common::ptime2unix_microsec(from); }
 
         /// \brief specialization of `as` for ptime to uint64 (microseconds since UNIX 1970-01-01 00:00:00 UTC)
         template<typename To, typename From>
             typename boost::enable_if<boost::mpl::and_< boost::is_same<To, boost::posix_time::ptime>, boost::is_same<From, uint64> >, To>::type
             as(const From& from)
-        { return goby::util::unix_microsec2ptime(from); }
+        { return goby::common::unix_microsec2ptime(from); }
+    }
+    
+
+/// Utility objects for performing functions such as logging, non-acoustic communication (ethernet / serial), time, scientific, string manipulation, etc.
+    namespace common
+    {
+        ///\name Time
+        //@{        
+        
 
         template<typename ReturnType>
             ReturnType goby_time()
         { BOOST_STATIC_ASSERT(sizeof(ReturnType) == 0); }
 
+        extern boost::function0<uint64> goby_time_function;
+        
+        /// \brief Returns current UTC time as integer microseconds since 1970-01-01 00:00:00
+        template<> inline uint64 goby_time<uint64>()
+        {
+            if(!goby_time_function)
+            {
+                timeval t;
+                gettimeofday(&t, 0);
+                uint64 whole = t.tv_sec;
+                uint64 micro = t.tv_usec;
+                return whole*1000000 + micro;
+            }
+            else
+            {
+                return goby_time_function();
+            }
+        }
+
+        /// \brief Returns current UTC time as seconds and fractional seconds since 1970-01-01 00:00:00
+        template<> inline double goby_time<double>()
+        { return static_cast<double>(goby_time<uint64>()) / 1.0e6; }
+
         template<>
             inline boost::posix_time::ptime goby_time<boost::posix_time::ptime>()
-        { return boost::posix_time::microsec_clock::universal_time(); }
+        { return util::as<boost::posix_time::ptime>(goby_time<uint64>()); }
 
         /// \brief Returns current UTC time as a boost::posix_time::ptime
         inline boost::posix_time::ptime goby_time()
         { return goby_time<boost::posix_time::ptime>(); }
         
-        /// \brief Returns current UTC time as seconds and fractional seconds since 1970-01-01 00:00:00
-        template<> inline double goby_time<double>()
-        {
-            timeval t;
-            gettimeofday(&t, 0);
-            return t.tv_sec + t.tv_usec / 1.0e6;
-        }
-
-        /// \brief Returns current UTC time as integer microseconds since 1970-01-01 00:00:00
-        template<> inline uint64 goby_time<uint64>()
-        {
-            timeval t;
-            gettimeofday(&t, 0);
-	    uint64 whole = t.tv_sec;
-	    uint64 micro = t.tv_usec;
-            return whole*1000000 + micro;
-        }
-
         /// \brief Returns current UTC time as a human-readable string
         template<> inline std::string goby_time<std::string>()
-        { return as<std::string>(goby_time<boost::posix_time::ptime>()); }
+        { return goby::util::as<std::string>(goby_time<boost::posix_time::ptime>()); }
 
         
         /// Simple string representation of goby_time()
         inline std::string goby_time_as_string(const boost::posix_time::ptime& t = goby_time())
-        { return as<std::string>(t); }
+        { return goby::util::as<std::string>(t); }
         
         /// ISO string representation of goby_time()
         inline std::string goby_file_timestamp()

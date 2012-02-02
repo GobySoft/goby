@@ -32,7 +32,7 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/any.hpp>
 
-#include "goby/util/time.h"
+#include "goby/common/time.h"
 #include "goby/util/as.h"
 
 #include "goby/acomms/protobuf/queue.pb.h"

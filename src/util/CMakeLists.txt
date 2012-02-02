@@ -3,7 +3,6 @@ file(GLOB PROTOS protobuf/*.proto)
 protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${PROTOS})
 
 set(SRC
-  time.cpp
   linebasedcomms/interface.cpp
   linebasedcomms/nmea_sentence.cpp
   linebasedcomms/serial_client.cpp

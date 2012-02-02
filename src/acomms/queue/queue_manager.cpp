@@ -20,7 +20,7 @@
 #include <boost/foreach.hpp>
 
 #include "goby/common/logger.h"
-#include "goby/util/time.h"
+#include "goby/common/time.h"
 #include "goby/util/binary.h"
 
 #include "goby/acomms/dccl.h"
@@ -144,7 +144,7 @@ void goby::acomms::QueueManager::push_message(const google::protobuf::Message& d
     else
     {
         if(!latest_meta_.has_time())
-            latest_meta_.set_time(goby::util::goby_time<uint64>());
+            latest_meta_.set_time(goby::common::goby_time<uint64>());
         
         // add the message
         boost::shared_ptr<google::protobuf::Message> new_dccl_msg(dccl_msg.New());
@@ -361,7 +361,7 @@ goby::acomms::Queue* goby::acomms::QueueManager::find_next_sender(const protobuf
            (!q.size() ||
             q.newest_msg_time() +
             boost::posix_time::microseconds(q.queue_message_options().on_demand_skew_seconds() * 1e6) <
-            util::goby_time()))
+            common::goby_time()))
         {
             boost::shared_ptr<google::protobuf::Message> new_msg = goby::util::DynamicProtobufManager::new_protobuf_message(q.descriptor());
             signal_data_on_demand(request_msg, new_msg.get());

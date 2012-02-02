@@ -38,7 +38,7 @@ using goby::moos::operator<<;
 boost::mutex goby::common::LiaisonCommander::dbo_mutex_;
 boost::shared_ptr<Dbo::backend::Sqlite3> goby::common::LiaisonCommander::sqlite3_;
 boost::shared_ptr<Dbo::FixedSqlConnectionPool> goby::common::LiaisonCommander::connection_pool_;
-boost::posix_time::ptime goby::common::LiaisonCommander::last_db_update_time_(goby::util::goby_time());
+boost::posix_time::ptime goby::common::LiaisonCommander::last_db_update_time_(goby::common::goby_time());
 
 
 const std::string MESSAGE_INCLUDE_TEXT = "include";
@@ -171,7 +171,7 @@ void goby::common::LiaisonCommander::loop()
         boost::mutex::scoped_lock slock(dbo_mutex_);
         Dbo::Transaction transaction(controls_div_->session_);
         current_command->query_model_->reload();
-        current_command->last_reload_time_ = goby::util::goby_time();
+        current_command->last_reload_time_ = goby::common::goby_time();
     }    
 }
 
@@ -381,7 +381,7 @@ void goby::common::LiaisonCommander::ControlsContainer::send_message()
             &command_entry->bytes[0], command_entry->bytes.size());
         command_entry->address = wApp->environment().clientAddress();
         
-        boost::posix_time::ptime now = goby::util::goby_time();
+        boost::posix_time::ptime now = goby::common::goby_time();
         command_entry->time.setPosixTime(now);
         command_entry->comment = comment_line->text().narrow();
         session_.add(command_entry);
@@ -595,6 +595,9 @@ void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::genera
 {
     const google::protobuf::Reflection* refl = message->GetReflection();
 
+    if(field_desc->options().GetExtension(goby::field).dccl().omit())
+        return;
+
     int index = parent->childNodes().size();
     WTreeTableNode* node = new WTreeTableNode(field_desc->name(), 0, parent);
 
@@ -664,8 +667,7 @@ void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::genera
     
     if(modify_field)
     {
-        if(is_dccl(*message))
-            dccl_default_modify_field(modify_field, field_desc);        
+        dccl_default_modify_field(modify_field, field_desc);        
 
         generate_field_info_box(modify_field, field_desc);
 
@@ -682,7 +684,7 @@ void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::genera
     int index /*= -1*/)
 {
     const google::protobuf::Reflection* refl = message->GetReflection();
-
+    
     switch(field_desc->cpp_type())
     {
         case google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE:
@@ -909,8 +911,7 @@ void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::genera
             
     }
     
-    if(is_dccl(*message))
-        dccl_default_value_field(value_field, field_desc);
+    dccl_default_value_field(value_field, field_desc);
 
     generate_field_info_box(value_field, field_desc);
     
@@ -1009,7 +1010,7 @@ void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::handle
             {
                 double fvalue = goby::util::as<float>(value);
 
-                if(is_dccl(*message))
+                if(field_desc->options().GetExtension(goby::field).dccl().has_precision())
                     field->setText(string_from_dccl_double(&fvalue, field_desc));     
 
                 field_desc->is_repeated() ?
@@ -1022,7 +1023,7 @@ void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::handle
             {
                 double dvalue = goby::util::as<double>(value);
                 
-                if(is_dccl(*message))
+                if(field_desc->options().GetExtension(goby::field).dccl().has_precision())
                     field->setText(string_from_dccl_double(&dvalue, field_desc));
                 
                 field_desc->is_repeated() ?

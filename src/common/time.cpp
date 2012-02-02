@@ -15,9 +15,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
-#include "goby/util/time.h"
+#include "goby/common/time.h"
 
-double goby::util::ptime2unix_double(boost::posix_time::ptime given_time)
+boost::function0<goby::uint64> goby::common::goby_time_function;
+
+double goby::common::ptime2unix_double(boost::posix_time::ptime given_time)
 {
     using namespace boost::posix_time;
     using namespace boost::gregorian;
@@ -33,7 +35,7 @@ double goby::util::ptime2unix_double(boost::posix_time::ptime given_time)
     }
 }
 
-boost::posix_time::ptime goby::util::unix_double2ptime(double given_time)
+boost::posix_time::ptime goby::common::unix_double2ptime(double given_time)
 {
     using namespace boost::posix_time;
     using namespace boost::gregorian;
@@ -49,7 +51,7 @@ boost::posix_time::ptime goby::util::unix_double2ptime(double given_time)
     }
 }
 
-goby::uint64 goby::util::ptime2unix_microsec(boost::posix_time::ptime given_time)
+goby::uint64 goby::common::ptime2unix_microsec(boost::posix_time::ptime given_time)
 {
     using namespace boost::posix_time;
     using namespace boost::gregorian;
@@ -68,7 +70,7 @@ goby::uint64 goby::util::ptime2unix_microsec(boost::posix_time::ptime given_time
 
     
 /// convert to boost date_time ptime from the number of microseconds since 1/1/1970 0:00 UTC ("UNIX Time"): good to the microsecond
-boost::posix_time::ptime goby::util::unix_microsec2ptime(uint64 given_time)
+boost::posix_time::ptime goby::common::unix_microsec2ptime(uint64 given_time)
 {
     using namespace boost::posix_time;
     using namespace boost::gregorian;

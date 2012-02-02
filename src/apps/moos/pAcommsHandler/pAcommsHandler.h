@@ -71,6 +71,12 @@ class CpAcommsHandler : public GobyMOOSApp
     CpAcommsHandler();
     ~CpAcommsHandler();
     void loop();     // from GobyMOOSApp
+
+    goby::uint64 microsec_moos_time()
+    { return static_cast<goby::uint64>(MOOSTime() * 1.0e6); }
+    
+        
+    
     void process_configuration();
 
     void create_on_publish(const CMOOSMsg& trigger_msg, const goby::moos::protobuf::TranslatorEntry& entry);
@@ -91,29 +97,9 @@ class CpAcommsHandler : public GobyMOOSApp
 
     void handle_raw(const goby::acomms::protobuf::ModemRaw& msg, const std::string& moos_var);
 
-    /* void queue_ack(const goby::acomms::protobuf::ModemTransmission& ack_msg, */
-    /*                const google::protobuf::Message& orig_msg); */
-    
-//    void queue_on_demand(const goby::acomms::protobuf::ModemTransmission& request_msg, google::protobuf::Message* data_msg);
-    
-    /* void queue_expire(const google::protobuf::Message& orig_msg); */
-    /* void queue_qsize(const goby::acomms::protobuf::QueueSize& size); */
-    
     void handle_mac_cycle_update(const CMOOSMsg& msg);
     void handle_message_push(const CMOOSMsg& msg);
     
-    // from MMDriver
-    // publish raw NMEA stream from the modem ($CA)
-//    void modem_raw_in(const goby::acomms::protobuf::ModemRaw& raw_msg);
-    // publish raw NMEA stream to the modem ($CC)
-//    void modem_raw_out(const goby::acomms::protobuf::ModemRaw& raw_msg);
-
-    // handle parsed receive from the modem 
-//    void modem_receive(const goby::acomms::protobuf::ModemTransmission& message);
-
-    // handle parsed transmit from the modem 
-//    void modem_transmit_result(const goby::acomms::protobuf::ModemTransmission& message);
- 
   private:
     google::protobuf::compiler::DiskSourceTree disk_source_tree_;
     google::protobuf::compiler::SourceTreeDescriptorDatabase source_database_;

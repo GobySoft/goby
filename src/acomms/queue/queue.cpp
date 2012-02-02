@@ -24,7 +24,7 @@
 #include "queue_manager.h"
 #include "goby/common/protobuf/acomms_option_extensions.pb.h"
 
-using goby::util::goby_time;
+using goby::common::goby_time;
 
 using namespace goby::common::logger;
 
@@ -129,7 +129,7 @@ bool goby::acomms::Queue::get_priority_values(double* priority,
                                               const protobuf::ModemTransmission& request_msg,
                                               const std::string& data)
 {
-    *priority = util::time_duration2double((goby_time()-last_send_time_))/queue_message_options().ttl()*queue_message_options().value_base();
+    *priority = common::time_duration2double((goby_time()-last_send_time_))/queue_message_options().ttl()*queue_message_options().value_base();
 
     *last_send_time = last_send_time_;
 

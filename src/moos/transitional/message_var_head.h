@@ -22,7 +22,7 @@
 
 #include "message_var.h"
 
-#include "goby/util/time.h"
+#include "goby/common/time.h"
 #include "goby/util/sci.h"
 
 namespace goby
@@ -65,19 +65,19 @@ namespace goby
             void set_defaults_specific(DCCLMessageVal& v, unsigned modem_id, unsigned id)
             {
                 double d;
-                v = (!v.empty() && v.get(d)) ? v : DCCLMessageVal(util::ptime2unix_double(util::goby_time()));
+                v = (!v.empty() && v.get(d)) ? v : DCCLMessageVal(common::ptime2unix_double(common::goby_time()));
             }
 
             void pre_encode(DCCLMessageVal& v)
             {
                 double d;
-                v = (!v.empty() && v.get(d)) ? DCCLMessageVal(goby::util::as<std::string>(goby::util::unix_double2ptime(d))) : v;
+                v = (!v.empty() && v.get(d)) ? DCCLMessageVal(goby::util::as<std::string>(goby::common::unix_double2ptime(d))) : v;
             }
             
             void post_decode(DCCLMessageVal& v)
             {
                 std::string s;
-                v = (!v.empty() && v.get(s)) ? DCCLMessageVal(goby::util::ptime2unix_double(goby::util::as<boost::posix_time::ptime>(s))) : v;
+                v = (!v.empty() && v.get(s)) ? DCCLMessageVal(goby::common::ptime2unix_double(goby::util::as<boost::posix_time::ptime>(s))) : v;
             }
             
         

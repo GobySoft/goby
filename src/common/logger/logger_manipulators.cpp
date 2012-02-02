@@ -21,7 +21,7 @@
 
 #include "logger_manipulators.h"
 #include "flex_ostream.h"
-#include "goby/util/time.h"
+#include "goby/common/time.h"
 
 std::ostream & operator<< (std::ostream& os, const Group & g)
 {
@@ -50,7 +50,7 @@ void GroupSetter::operator()(std::ostream& os) const
 
 std::ostream& basic_log_header(std::ostream& os, const std::string& group_name)
 {
-    os << "[ " << goby::util::goby_time_as_string() << " ]";
+    os << "[ " << goby::common::goby_time_as_string() << " ]";
 
     if(!group_name.empty())
         os << " " << std::setw(15) << "{" << group_name << "}";

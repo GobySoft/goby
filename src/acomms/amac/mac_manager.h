@@ -30,8 +30,9 @@
 
 #include "goby/acomms/protobuf/modem_message.pb.h"
 #include "goby/acomms/protobuf/amac.pb.h"
+#include "goby/acomms/protobuf/amac_config.pb.h"
 #include "goby/acomms/modem_driver.h"
-#include "goby/util/time.h"
+#include "goby/common/time.h"
 #include "goby/util/as.h"
 
 namespace goby

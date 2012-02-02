@@ -46,7 +46,7 @@ namespace goby
             // from LineBasedInterface
             void do_start()                     
             {
-                last_start_time_ = goby_time();
+                last_start_time_ = common::goby_time();
                 
                 set_active(start_specific());
                 
@@ -75,7 +75,7 @@ namespace goby
                 socket().close();
                 
                 using namespace boost::posix_time;
-                ptime now  = goby_time();
+                ptime now  = common::goby_time();
                 if(now - seconds(RETRY_INTERVAL) < last_start_time_)
                     sleep(RETRY_INTERVAL - (now-last_start_time_).total_seconds());
                 

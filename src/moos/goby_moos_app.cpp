@@ -76,12 +76,6 @@ bool GobyMOOSApp::OnNewMail(MOOSMSG_LIST &NewMail)
         }
         else if(mail_handlers_.count(msg.GetKey()))
             mail_handlers_[msg.GetKey()](msg);
-        else
-        {
-            glog.is(DIE) &&
-                glog << "received mail that we have no handler for!" << std::endl;
-        }
-        
     }
     
     return true;    

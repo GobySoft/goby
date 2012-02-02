@@ -20,7 +20,7 @@
 #include <google/protobuf/descriptor.h>
 #include <google/protobuf/message.h>
 #include <google/protobuf/text_format.h>
-#include "goby/util/time.h"
+#include "goby/common/time.h"
 
 namespace goby
 {

@@ -32,7 +32,7 @@
 #include "goby/common/protobuf/acomms_option_extensions.pb.h"
 #include "goby/util/as.h"
 #include "goby/util/sci.h"
-#include "goby/util/time.h"
+#include "goby/common/time.h"
 #include "goby/acomms/acomms_constants.h"
 
 #include "dccl_field_codec_default_message.h"
@@ -236,7 +236,7 @@ namespace goby
                 using namespace boost::posix_time;
                 using namespace boost::gregorian;
         
-                ptime now = util::goby_time();
+                ptime now = common::goby_time();
                 date day_sent;
                 // if message is from part of the day removed from us by 12 hours, we assume it
                 // was sent yesterday

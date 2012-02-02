@@ -403,7 +403,7 @@ bool goby::common::ZeroMQSocket::check_blackout(MarshallingScheme marshalling_sc
     }
     else
     {
-        boost::posix_time::ptime this_time = goby::util::goby_time();
+        boost::posix_time::ptime this_time = goby::common::goby_time();
 
         BlackoutInfo& blackout_info = blackout_info_[std::make_pair(marshalling_scheme, identifier)];
         

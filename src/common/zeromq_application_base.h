@@ -21,7 +21,7 @@
 #include "application_base.h"
 
 #include "goby/common/logger.h"
-#include "goby/util/time.h"
+#include "goby/common/time.h"
 
 namespace goby
 {
@@ -38,7 +38,7 @@ namespace goby
                 set_loop_freq(base_cfg().loop_freq());
                 
                 // we are started
-                t_start_ = goby::util::goby_time();
+                t_start_ = goby::common::goby_time();
                 // start the loop() on the next even second
                 t_next_loop_ = boost::posix_time::second_clock::universal_time() +
                     boost::posix_time::seconds(1);
@@ -85,7 +85,7 @@ namespace goby
                 using goby::glog;
                 
                 // sit and wait on a message until the next time to call loop() is up        
-                long timeout = (t_next_loop_-goby::util::goby_time()).total_microseconds();
+                long timeout = (t_next_loop_-goby::common::goby_time()).total_microseconds();
                 if(timeout < 0)
                     timeout = 0;
 

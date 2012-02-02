@@ -31,10 +31,10 @@
 #include "driver_exception.h"
 
 using goby::util::NMEASentence;
-using goby::util::goby_time;
+using goby::common::goby_time;
 using goby::util::hex_encode;
 using goby::util::hex_decode;
-using goby::util::ptime2unix_double;
+using goby::common::ptime2unix_double;
 using goby::util::as;
 using goby::glog;
 using google::protobuf::uint32;

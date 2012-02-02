@@ -150,11 +150,6 @@ namespace goby
                                                  const google::protobuf::FieldDescriptor* field_desc);
                     
                     
-                    bool is_dccl(const google::protobuf::Message& message)
-                    {
-                        return message.GetDescriptor()->options().GetExtension(goby::msg).dccl().has_id();
-                    }
-                    
                     
                     void dccl_default_value_field(
                         Wt::WFormWidget*& value_field,

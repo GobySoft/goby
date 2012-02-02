@@ -1,7 +1,7 @@
 import "goby/moos/protobuf/goby_moos_app.proto";
 import "goby/acomms/protobuf/driver_base.proto";
 import "goby/acomms/protobuf/queue.proto";
-import "goby/acomms/protobuf/amac.proto";
+import "goby/acomms/protobuf/amac_config.proto";
 import "goby/acomms/protobuf/dccl.proto";
 import "goby/acomms/protobuf/modem_message.proto";
 import "goby/moos/protobuf/transitional.proto";

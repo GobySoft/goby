@@ -71,6 +71,8 @@ CpAcommsHandler::CpAcommsHandler()
       dccl_(goby::acomms::DCCLCodec::get()),
       work_(timer_io_service_)
 {
+    goby::common::goby_time_function = boost::bind(&CpAcommsHandler::microsec_moos_time, this);
+    
     source_database_.RecordErrorsTo(&error_collector_);
     disk_source_tree_.MapPath("/", "/");
     goby::util::DynamicProtobufManager::add_database(&source_database_);
@@ -211,11 +213,17 @@ void CpAcommsHandler::handle_mac_cycle_update(const CMOOSMsg& msg)
             break;
 
         case goby::acomms::protobuf::MACUpdate::POP_BACK:
-            mac_.pop_back();
+            if(mac_.size())
+                mac_.pop_back();
+            else
+                glog.is(WARN) && glog << "Cannot POP_BACK of empty MAC cycle" << std::endl;
             break;
             
         case goby::acomms::protobuf::MACUpdate::POP_FRONT:
-            mac_.pop_front();
+            if(mac_.size())
+                mac_.pop_front();
+            else
+                glog.is(WARN) && glog << "Cannot POP_FRONT of empty MAC cycle" << std::endl;
             break;
 
         case goby::acomms::protobuf::MACUpdate::INSERT:

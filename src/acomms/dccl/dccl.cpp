@@ -35,7 +35,7 @@
 #include "goby/common/protobuf/acomms_option_extensions.pb.h"
 //#include "goby/common/header.pb.h"
 
-using goby::util::goby_time;
+using goby::common::goby_time;
 using goby::util::as;
 using goby::util::hex_encode;
 using goby::util::hex_decode;

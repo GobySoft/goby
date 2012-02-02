@@ -35,6 +35,10 @@ int main(int argc, char* argv[])
         std::cerr << "usage: analyze_dccl some_dccl.proto" << std::endl;
         exit(1);
     }
+
+    goby::glog.add_stream(goby::common::logger::VERBOSE, &std::cerr);
+    goby::glog.set_name(argv[0]);
+
     
     source_database_.RecordErrorsTo(&error_collector_);
     disk_source_tree_.MapPath("/", "/");

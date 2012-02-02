@@ -107,7 +107,12 @@ void goby::common::FlexNCurses::update_size()
 }
 
 void goby::common::FlexNCurses::alive(bool alive) { alive_ = alive; }
-void goby::common::FlexNCurses::cleanup() { endwin(); }
+void goby::common::FlexNCurses::cleanup()
+{
+    clear();
+    refresh();
+    endwin();
+}
 
 void goby::common::FlexNCurses::add_win(const Group* g)
 {

@@ -30,7 +30,7 @@
 #include "goby/util/dynamic_protobuf_manager.h"
 #include <boost/regex.hpp>
 
-using goby::util::goby_time;
+using goby::common::goby_time;
 using goby::util::as;           
 using goby::acomms::operator<<;
 using namespace goby::common::logger;

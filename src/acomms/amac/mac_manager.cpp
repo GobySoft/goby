@@ -33,7 +33,7 @@
 
 #include "mac_manager.h"
 
-using goby::util::goby_time;
+using goby::common::goby_time;
 using goby::util::as;
 using namespace goby::common::tcolor;
 using namespace goby::common::logger;
@@ -186,7 +186,7 @@ void goby::acomms::MACManager::increment_slot()
         case protobuf::MAC_FIXED_DECENTRALIZED:
         case protobuf::MAC_POLLED:
             next_slot_t_ +=
-                boost::posix_time::microseconds(current_slot_->GetExtension(protobuf::slot_seconds)*1e6);
+                boost::posix_time::microseconds(current_slot_->slot_seconds()*1e6);
             glog.is(DEBUG1) && glog << group(glog_mac_group_) << "next slot at " << next_slot_t_ << std::endl;
             
             ++current_slot_;
@@ -231,6 +231,14 @@ boost::posix_time::ptime goby::acomms::MACManager::next_cycle_time()
 
 void goby::acomms::MACManager::update()
 {
+    if(std::list<protobuf::ModemTransmission>::size() == 0)
+    {
+        glog.is(DEBUG1) && glog << group(glog_mac_group_) << "the MAC TDMA cycle is empty. Stopping timer"
+                                << std::endl;        
+        stop_timer();
+        return;
+    }    
+
     // reset the cycle to the beginning
     current_slot_ = std::list<protobuf::ModemTransmission>::begin();
     // advance the next slot time to the beginning of the next cycle
@@ -267,7 +275,7 @@ double goby::acomms::MACManager::cycle_duration()
 {
     double length = 0;
     BOOST_FOREACH(const protobuf::ModemTransmission& slot, *this)
-        length += slot.GetExtension(protobuf::slot_seconds);
+        length += slot.slot_seconds();
     
     return length;
 }

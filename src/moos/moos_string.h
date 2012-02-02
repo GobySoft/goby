@@ -22,7 +22,7 @@
 
 
 #include "goby/util/as.h"
-#include "goby/util/time.h"
+#include "goby/common/time.h"
 
 namespace goby
 {

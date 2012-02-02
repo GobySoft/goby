@@ -18,7 +18,7 @@
 #ifndef QueueConstants20091205H
 #define QueueConstants20091205H
 
-#include "goby/util/time.h"
+#include "goby/common/time.h"
 #include "goby/acomms/acomms_constants.h"
 
 namespace goby

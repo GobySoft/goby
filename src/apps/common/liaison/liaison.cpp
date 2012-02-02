@@ -22,7 +22,7 @@
 #include <Wt/WImage>
 #include <Wt/WAnchor>
 
-#include "goby/util/time.h"
+#include "goby/common/time.h"
 #include "goby/util/dynamic_protobuf_manager.h"
 
 #include "liaison_wt_thread.h"

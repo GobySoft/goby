@@ -22,7 +22,7 @@
 #include <Wt/WImage>
 #include <Wt/WAnchor>
 
-#include "goby/util/time.h"
+#include "goby/common/time.h"
 #include "goby/util/dynamic_protobuf_manager.h"
 
 #include "liaison_wt_thread.h"
@@ -49,8 +49,8 @@ goby::common::LiaisonWtThread::LiaisonWtThread(const Wt::WEnvironment& env)
     Wt::WString title_text("goby liaison: " + Liaison::cfg_.base().platform_name());
     setTitle(title_text);
 
-    useStyleSheet(std::string("css/fonts.css?" + util::goby_file_timestamp()));
-    useStyleSheet(std::string("css/liaison.css?" + util::goby_file_timestamp()));
+    useStyleSheet(std::string("css/fonts.css?" + common::goby_file_timestamp()));
+    useStyleSheet(std::string("css/liaison.css?" + common::goby_file_timestamp()));
 //    setCssTheme("");
     
 

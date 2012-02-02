@@ -187,7 +187,7 @@ void goby::common::LiaisonScope::update_row(CMOOSMsg& msg, const std::vector<WSt
         items[protobuf::MOOSScopeConfig::COLUMN_VALUE]->setData(msg.GetString(), DisplayRole);
 
     
-    items[protobuf::MOOSScopeConfig::COLUMN_TIME]->setData(WDateTime::fromPosixTime(goby::util::unix_double2ptime(msg.GetTime())), DisplayRole);
+    items[protobuf::MOOSScopeConfig::COLUMN_TIME]->setData(WDateTime::fromPosixTime(goby::common::unix_double2ptime(msg.GetTime())), DisplayRole);
     
     items[protobuf::MOOSScopeConfig::COLUMN_COMMUNITY]->setText(msg.GetCommunity());
     items[protobuf::MOOSScopeConfig::COLUMN_SOURCE]->setText(msg.m_sSrc);

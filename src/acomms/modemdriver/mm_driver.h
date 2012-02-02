@@ -20,7 +20,7 @@
 #ifndef Modem20091211H
 #define Modem20091211H
 
-#include "goby/util/time.h"
+#include "goby/common/time.h"
 
 #include "driver_base.h"
 #include "goby/acomms/protobuf/mm_driver.pb.h"

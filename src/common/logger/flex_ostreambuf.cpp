@@ -32,11 +32,11 @@
 
 #include "flex_ostreambuf.h"
 #include "goby/util/sci.h"
-#include "goby/util/time.h"
+#include "goby/common/time.h"
 #include "goby/common/exception.h"
 #include "logger_manipulators.h"
 
-using goby::util::goby_time;
+using goby::common::goby_time;
 
 
 boost::mutex curses_mutex;
@@ -136,7 +136,6 @@ int goby::common::FlexOStreamBuf::sync()
     while (!getline(is, s).eof())
         display(s);
     
-    
     group_name_.erase();
 
     current_verbosity_ = logger::VERBOSE;
@@ -167,7 +166,7 @@ void goby::common::FlexOStreamBuf::display(std::string & s)
                          << std::setw(2) << time_of_day.seconds() <<
                         TermColor::esc_code_from_col(groups_[group_name_].color()) << " | "  << esc_nocolor
                          <<  s;
-            
+                    
                     curses_->insert(goby_time(), line.str(), &groups_[group_name_]);
                 }
                 else
@@ -175,9 +174,7 @@ void goby::common::FlexOStreamBuf::display(std::string & s)
                     curses_->alive(false);
                     input_thread_->join();
                     curses_->cleanup();
-            
-                    std::cout << TermColor::esc_code_from_col(groups_[group_name_].color()) << name_
-                              << esc_nocolor << ": " << s << esc_nocolor << std::endl;
+                    std::cerr << TermColor::esc_code_from_col(groups_[group_name_].color()) << name_ << esc_nocolor << ": " << s << esc_nocolor << std::endl;
                 }
                 gui_displayed = true;
                 continue;
@@ -187,7 +184,7 @@ void goby::common::FlexOStreamBuf::display(std::string & s)
             *cfg.os() <<
                 TermColor::esc_code_from_col(groups_[group_name_].color())
                       << name_ << esc_nocolor << " ["
-                      << goby::util::goby_time_as_string() << "]";
+                      << goby::common::goby_time_as_string() << "]";
             if(!group_name_.empty())
                 *cfg.os() << " " << "{" << group_name_ << "}";
             *cfg.os() << ": " << s <<  std::endl;

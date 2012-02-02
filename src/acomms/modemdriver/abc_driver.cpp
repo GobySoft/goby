@@ -126,7 +126,7 @@ void goby::acomms::ABCDriver::do_work()
             protobuf::ModemTransmission msg;
             msg.set_src(goby::util::as<int32>(parsed["FROM"]));
             msg.set_dest(goby::util::as<int32>(parsed["TO"]));
-            msg.set_time(goby::util::goby_time<uint64>());
+            msg.set_time(goby::common::goby_time<uint64>());
             
             glog.is(DEBUG1) && glog << group("modem_in") << in << std::endl;
             

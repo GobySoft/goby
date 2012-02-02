@@ -20,7 +20,7 @@
 #include "goby/acomms/dccl/dccl_field_codec_default.h"
 #include "test.pb.h"
 #include "goby/util/as.h"
-#include "goby/util/time.h"
+#include "goby/common/time.h"
 #include "goby/util/binary.h"
 
 using goby::acomms::operator<<;

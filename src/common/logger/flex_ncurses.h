@@ -26,7 +26,7 @@
 #include <boost/thread.hpp>
 
 #include "term_color.h"
-#include "goby/util/time.h"
+#include "goby/common/time.h"
 
 class Group;
 

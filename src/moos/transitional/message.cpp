@@ -141,44 +141,6 @@ std::map<std::string, std::string> goby::transitional::DCCLMessage::message_var_
     return s;
 }
 
-std::set<std::string> goby::transitional::DCCLMessage::get_pubsub_encode_vars()
-{
-    std::set<std::string> s = get_pubsub_src_vars();
-    if(trigger_type_ == "publish")
-        s.insert(trigger_var_);
-    return s;
-}
-
-std::set<std::string> goby::transitional::DCCLMessage::get_pubsub_decode_vars()
-{
-    std::set<std::string> s;
-    s.insert(in_var_);
-    return s;
-}
-    
-std::set<std::string> goby::transitional::DCCLMessage::get_pubsub_all_vars()
-{
-    std::set<std::string> s_enc = get_pubsub_encode_vars();
-    std::set<std::string> s_dec = get_pubsub_decode_vars();
-
-    std::set<std::string>& s = s_enc;        
-    s.insert(s_dec.begin(), s_dec.end());
-        
-    return s;
-}
-    
-std::set<std::string> goby::transitional::DCCLMessage::get_pubsub_src_vars()
-{
-    std::set<std::string> s;
-
-    BOOST_FOREACH(boost::shared_ptr<DCCLMessageVar> mv, layout_)
-        s.insert(mv->source_var());
-    BOOST_FOREACH(boost::shared_ptr<DCCLMessageVar> mv, header_)
-        s.insert(mv->source_var());
-    
-    return s;
-}
-
     
 
 void goby::transitional::DCCLMessage::set_head_defaults(std::map<std::string, std::vector<DCCLMessageVal> >& in, unsigned modem_id)
@@ -206,84 +168,6 @@ boost::shared_ptr<goby::transitional::DCCLMessageVar> goby::transitional::DCCLMe
     throw goby::acomms::DCCLException(std::string("DCCL: no such name \"" + name + "\" found in <layout> or <header>"));
     
     return boost::shared_ptr<DCCLMessageVar>();
-}
-
-////////////////////////////
-// VISUALIZATION
-////////////////////////////
-
-    
-// a long visual display of all the parameters for a DCCLMessage
-std::string goby::transitional::DCCLMessage::get_display() const
-{
-    std::stringstream ss;
-    goby::acomms::DCCLCodec::get()->info(descriptor_, &ss);            
-    ss << "== Begin " << name_ << " Transitional MOOS Additional Information ==" << std::endl;
-    ss << "trigger_type: {" << trigger_type_ << "}" << std::endl;
-    
-    
-    if(trigger_type_ == "publish")
-    {
-        ss << "trigger_var: {" << trigger_var_ << "}";
-        if (trigger_mandatory_ != "")
-            ss << " must contain string \"" << trigger_mandatory_ << "\"";
-        ss << std::endl;
-    }
-    else if(trigger_type_ == "time")
-    {
-        ss << "trigger_time: {" << trigger_time_ << "}" << std::endl;
-    }
-    
-    ss << "outgoing_hex_var: {" << out_var_ << "}" << std::endl;
-    ss << "incoming_hex_var: {" << in_var_ << "}" << std::endl;
-        
-
-    ss << ">>>> HEADER <<<<" << std::endl;
-    BOOST_FOREACH(const boost::shared_ptr<DCCLMessageVar> mv, header_)
-        ss << *mv;
-    
-    ss << ">>>> LAYOUT (message_vars) <<<<" << std::endl;
-
-    BOOST_FOREACH(const boost::shared_ptr<DCCLMessageVar> mv, layout_)
-        ss << *mv;    
-
-    ss << ">>>> PUBLISHES <<<<" << std::endl;
-    
-    BOOST_FOREACH(const DCCLPublish& p, publishes_)
-        ss << p;
-    
-    ss << "== End " << name_ << " Transitional MOOS Additional Information ==" << std::endl;
-    return ss.str();
-}
-
-// a much shorter rundown of the Message parameters
-std::string goby::transitional::DCCLMessage::get_short_display() const
-{
-    std::stringstream ss;
-
-    ss << name_ <<  ": ";
-
-    bool is_moos = !trigger_type_.empty();
-    if(is_moos)
-    {
-        ss << "trig: ";
-        
-        if(trigger_type_ == "publish")
-            ss << trigger_var_;
-        else if(trigger_type_ == "time")
-            ss << trigger_time_ << "s";
-        ss << " | out: " << out_var_;
-        ss << " | in: " << in_var_ << std::endl;
-    }
-    
-    return ss.str();
-}
-    
-// overloaded <<
-std::ostream& goby::transitional::operator<< (std::ostream& out, const DCCLMessage& message)
-{
-    out << message.get_display();
-    return out;
 }
 
 // Added in Goby2 for transition to Protobuf structure
@@ -326,46 +210,3 @@ void goby::transitional::DCCLMessage::write_schema_to_dccl2(std::ofstream* proto
     *proto_file << "} " << std::endl;
 }
 
-void goby::transitional::DCCLMessage::pre_encode(
-    const std::map<std::string, std::vector<DCCLMessageVal> >& in,
-    std::map<std::string, std::vector<DCCLMessageVal> >& out)
-{
-    for (std::vector< boost::shared_ptr<DCCLMessageVar> >::iterator it = header_.begin(),
-             n = header_.end();
-         it != n;
-         ++it)
-    {
-        (*it)->var_pre_encode(in, out);
-    }    
-
-    for (std::vector< boost::shared_ptr<DCCLMessageVar> >::iterator it = layout_.begin(),
-             n = layout_.end();
-         it != n;
-         ++it)
-    {
-        (*it)->var_pre_encode(in, out);
-    }    
-}
-
-
-
-void goby::transitional::DCCLMessage::post_decode(
-    const std::map<std::string, std::vector<DCCLMessageVal> >& in,
-    std::map<std::string, std::vector<DCCLMessageVal> >& out)
-{
-    for (std::vector< boost::shared_ptr<DCCLMessageVar> >::iterator it = header_.begin(),
-             n = header_.end();
-         it != n;
-         ++it)
-    {
-        (*it)->var_post_decode(in, out);
-    }    
-
-    for (std::vector< boost::shared_ptr<DCCLMessageVar> >::iterator it = layout_.begin(),
-             n = layout_.end();
-         it != n;
-         ++it)
-    {
-        (*it)->var_post_decode(in, out);
-    }    
-}

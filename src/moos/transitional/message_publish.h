@@ -77,21 +77,9 @@ namespace goby
             std::vector<std::vector<std::string> > const& algorithms() const {return algorithms_;}
     
         
-            std::string get_display() const;
-            
-            void write_publish(const std::map<std::string,std::vector<DCCLMessageVal> >& vals,
-                               std::multimap<std::string,DCCLMessageVal>* pubsub_vals);
-        
-        
         
 
             void initialize(const DCCLMessage& msg);
-            
-          private:
-            void fill_format(const std::map<std::string,std::vector<DCCLMessageVal> >& vals,
-                             std::string& key,
-                             std::string& value,
-                             unsigned repeat_index);
             
           private:
             std::string var_;
@@ -105,8 +93,6 @@ namespace goby
             DCCLAlgorithmPerformer* ap_;
             unsigned repeat_;
         };
-
-        std::ostream& operator<< (std::ostream& out, const DCCLPublish& publish);
     }
 }
 #endif

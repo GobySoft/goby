@@ -139,11 +139,6 @@ namespace goby
             const std::vector<DCCLPublish>& publishes_const() const                     { return publishes_;}
             
 
-            std::set<std::string> get_pubsub_encode_vars();
-            std::set<std::string> get_pubsub_decode_vars();
-            std::set<std::string> get_pubsub_src_vars();
-            std::set<std::string> get_pubsub_all_vars();
-
             boost::shared_ptr<DCCLMessageVar> name2message_var(const std::string& name) const;
         
             const google::protobuf::Descriptor* descriptor()
@@ -151,8 +146,8 @@ namespace goby
             
         
             //other
-            std::string get_display() const;
-            std::string get_short_display() const;
+            /* std::string get_display() const; */
+            /* std::string get_short_display() const; */
             std::map<std::string, std::string> message_var_names() const;
             void preprocess();
             void set_repeat_array_length();
@@ -161,11 +156,6 @@ namespace goby
             
         
             void set_head_defaults(std::map<std::string, std::vector<DCCLMessageVal> >& in, unsigned modem_id);
-            void pre_encode(const std::map<std::string, std::vector<DCCLMessageVal> >& in,
-                            std::map<std::string, std::vector<DCCLMessageVal> >& out);
-
-            void post_decode(const std::map<std::string, std::vector<DCCLMessageVal> >& in,
-                             std::map<std::string, std::vector<DCCLMessageVal> >& out);
 
             
 
@@ -227,7 +217,7 @@ namespace goby
         }
 
 
-        std::ostream& operator<< (std::ostream& out, const DCCLMessage& message);
+//        std::ostream& operator<< (std::ostream& out, const DCCLMessage& message);
     }
 }
 #endif

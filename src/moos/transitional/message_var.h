@@ -118,30 +118,13 @@ namespace goby
             void initialize(const DCCLMessage& msg);
             //         std::string get_display() const;
 
-            void read_pubsub_vars(std::map<std::string,std::vector<DCCLMessageVal> >& vals,
-                                  const std::map<std::string,std::vector<DCCLMessageVal> >& in);
-        
-            std::string parse_string_val(const std::string& sval);
-
-            void var_pre_encode(
-                const std::map<std::string,std::vector<DCCLMessageVal> >& in_vals,
-                std::map<std::string,std::vector<DCCLMessageVal> >& out_vals);
-
-             void var_post_decode(
-                const std::map<std::string,std::vector<DCCLMessageVal> >& in_vals,
-                std::map<std::string,std::vector<DCCLMessageVal> >& out_vals);
-            
-
             void set_defaults(std::map<std::string,std::vector<DCCLMessageVal> >& vals, unsigned modem_id, unsigned id);  
         
-            std::string get_display() const;
 
             
           protected:
             virtual void initialize_specific() = 0;
 
-            virtual void pre_encode(DCCLMessageVal& val) { }
-            virtual void post_decode(DCCLMessageVal& val) { }
 
             virtual std::string additional_option_extensions()
             { return ""; }
@@ -174,7 +157,6 @@ namespace goby
         };
 
 
-        std::ostream& operator<< (std::ostream& out, const DCCLMessageVar& m);
     }
 }
 #endif

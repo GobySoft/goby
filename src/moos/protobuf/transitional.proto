@@ -1,3 +1,4 @@
+import "goby/acomms/protobuf/manipulator.proto"; 
 import "goby/common/protobuf/option_extensions.proto";
 
 package goby.transitional.protobuf;
@@ -14,19 +15,8 @@ message DCCLTransitionalConfig
 message MessageFile
 {
   required string path = 1 [(goby.field).description="path to the message XML file", (goby.field).example="/home/toby/goby/src/acomms/examples/chat/chat.xml"];
-  enum Manipulator 
-  {
-    NO_MANIP = 1; // blank "empty" manipulator
-    
-    // libdccl (DCCLCodec)
-    NO_ENCODE = 2;
-    NO_DECODE = 3;
 
-    // libqueue (QueueManager)
-    NO_QUEUE = 4;
-    LOOPBACK = 5;
-  }
-  repeated Manipulator manipulator = 2 [(goby.field).description="manipulators to modify the encoding and queuing behavior of the messages in this file", (goby.field).example="NO_MANIP"];
+  repeated goby.acomms.protobuf.Manipulator manipulator = 2 [(goby.field).description="manipulators to modify the encoding and queuing behavior of the messages in this file", (goby.field).example="NO_MANIP"];
 }
 
 

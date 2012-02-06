@@ -55,6 +55,11 @@ int main(int argc, char* argv[])
     
     goby::acomms::protobuf::QueueManagerConfig cfg;
     cfg.set_modem_id(MY_MODEM_ID);
+    goby::acomms::protobuf::QueueManagerConfig::ManipulatorEntry* entry = cfg.add_manipulator_entry();
+    entry->set_protobuf_name("GobyMessage");
+    entry->add_manipulator(goby::acomms::protobuf::ON_DEMAND);
+    cfg.set_on_demand_skew_seconds(0.1);    
+
     q_manager.set_cfg(cfg);
 
     goby::glog << q_manager << std::endl;

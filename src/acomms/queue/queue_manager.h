@@ -248,7 +248,42 @@ namespace goby
             std::string glog_in_group_;            
 
             static int count_;
-        };
+
+            class ManipulatorManager
+            {
+              public:
+                void add(unsigned id, goby::acomms::protobuf::Manipulator manip)
+                { manips_.insert(std::make_pair(id, manip)); }            
+                
+                bool has(unsigned id, goby::acomms::protobuf::Manipulator manip) const
+                {
+                    typedef std::multimap<unsigned, goby::acomms::protobuf::Manipulator>::const_iterator iterator;
+                    std::pair<iterator,iterator> p = manips_.equal_range(id);
+
+                    for(iterator it = p.first; it != p.second; ++it)
+                    {
+                        if(it->second == manip)
+                            return true;
+                    }
+
+                    return false;
+                }
+
+                void clear()
+                {
+                    manips_.clear();
+                }
+            
+              private:
+                // manipulator multimap (no_encode, no_decode, etc)
+                // maps DCCL ID (unsigned) onto Manipulator enumeration (xml_config.proto)
+                std::multimap<unsigned, goby::acomms::protobuf::Manipulator> manips_;
+
+            };
+
+            ManipulatorManager manip_manager_;
+            
+         };
 
         /// outputs information about all available messages (same as info_all)
         std::ostream& operator<< (std::ostream& out, const QueueManager& d);

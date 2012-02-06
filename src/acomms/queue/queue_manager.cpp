@@ -134,15 +134,30 @@ void goby::acomms::QueueManager::push_message(const google::protobuf::Message& d
     codec_->run_hooks(dccl_msg);
     glog.is(DEBUG2) && glog << "post hooks: " << latest_meta_ << std::endl;
     
+    // no queue manipulator set
+    if(manip_manager_.has(dccl_id, protobuf::NO_QUEUE))
+    {
+        glog.is(DEBUG1) && glog << group(glog_out_group_)
+                                << desc->full_name()
+                                << ": not queuing: NO_QUEUE manipulator is set" << std::endl;
+    }
     // message is to us, auto-loopback
-    if(latest_meta_.dest() == modem_id_)
+    else if(latest_meta_.dest() == modem_id_)
     {
         glog.is(DEBUG1) && glog<< group(glog_out_group_) << "outgoing message is for us: using loopback, not physical interface" << std::endl;
         
         signal_receive(dccl_msg);
     }
-    else
+    // queue normally
+    else 
     {
+        // loopback if set
+        if(manip_manager_.has(dccl_id, protobuf::LOOPBACK))
+        {
+            glog.is(DEBUG1) && glog << group(glog_out_group_) << desc->full_name() << ": LOOPBACK manipulator set, sending back to decoder" << std::endl;
+            signal_receive(dccl_msg);
+        }
+
         if(!latest_meta_.has_time())
             latest_meta_.set_time(goby::common::goby_time<uint64>());
         
@@ -242,7 +257,16 @@ void goby::acomms::QueueManager::handle_modem_data_request(protobuf::ModemTransm
                 glog.is(DEBUG1) && glog << group(glog_out_group_) << "sending data to firmware from: "
                                         << winning_queue->name()
                                         << ": "<< *(next_user_frame.dccl_msg) << std::endl;
-            
+                
+                if(manip_manager_.has(codec_->id(winning_queue->descriptor()), protobuf::LOOPBACK_AS_SENT))
+                {
+                    glog.is(DEBUG1) && glog << group(glog_out_group_)
+                                            << winning_queue->descriptor()->full_name()
+                                            << ": LOOPBACK_AS_SENT manipulator set, sending back to decoder" << std::endl;
+                    signal_receive(*next_user_frame.dccl_msg);
+                }
+
+                
                 //
                 // ACK
                 // 
@@ -357,10 +381,10 @@ goby::acomms::Queue* goby::acomms::QueueManager::find_next_sender(const protobuf
         Queue& q = it->second;
         
          // encode on demand
-        if(q.queue_message_options().encode_on_demand() && 
+        if(manip_manager_.has(codec_->id(q.descriptor()), protobuf::ON_DEMAND) && 
            (!q.size() ||
             q.newest_msg_time() +
-            boost::posix_time::microseconds(q.queue_message_options().on_demand_skew_seconds() * 1e6) <
+            boost::posix_time::microseconds(cfg_.on_demand_skew_seconds() * 1e6) <
             common::goby_time()))
         {
             boost::shared_ptr<google::protobuf::Message> new_msg = goby::util::DynamicProtobufManager::new_protobuf_message(q.descriptor());
@@ -461,18 +485,18 @@ void goby::acomms::QueueManager::process_modem_ack(const protobuf::ModemTransmis
 // parses and publishes incoming data
 // by matching the variableID field with the variable specified
 // in a "receive = " line of the configuration file
-void goby::acomms::QueueManager::handle_modem_receive(const protobuf::ModemTransmission& message)
+void goby::acomms::QueueManager::handle_modem_receive(const protobuf::ModemTransmission& modem_message)
 {    
     glog.is(DEBUG1) && glog<< group(glog_in_group_) << "received message"
-                            << ": " << message << std::endl;
+                            << ": " << modem_message << std::endl;
 
-    if(message.type() == protobuf::ModemTransmission::ACK)
+    if(modem_message.type() == protobuf::ModemTransmission::ACK)
     {
-        process_modem_ack(message);
+        process_modem_ack(modem_message);
     }
     else
     {
-        for(int frame_number = 0, total_frames = message.frame_size();
+        for(int frame_number = 0, total_frames = modem_message.frame_size();
             frame_number < total_frames;
             ++frame_number)
         {
@@ -480,23 +504,36 @@ void goby::acomms::QueueManager::handle_modem_receive(const protobuf::ModemTrans
             {
                 std::list<boost::shared_ptr<google::protobuf::Message> > dccl_msgs =
                     codec_->decode_repeated<boost::shared_ptr<google::protobuf::Message> >(
-                        message.frame(frame_number));
+                        modem_message.frame(frame_number));
 
-                BOOST_FOREACH(boost::shared_ptr<google::protobuf::Message> msg, dccl_msgs)
+                BOOST_FOREACH(boost::shared_ptr<google::protobuf::Message> decoded_message, dccl_msgs)
                 {
                     latest_meta_.Clear();
-                    codec_->run_hooks(*msg);
+                    codec_->run_hooks(*decoded_message);
         
                     int32 dest = latest_meta_.dest();
-                    if(dest != BROADCAST_ID && dest != modem_id_)
+
+                    const google::protobuf::Descriptor* desc = decoded_message->GetDescriptor();
+                    
+                    if(dest != BROADCAST_ID &&
+                       dest != modem_id_ &&
+                       !manip_manager_.has(codec_->id(desc),
+                                           protobuf::PROMISCUOUS))
                     {
-                        glog.is(WARN) && glog << group(glog_in_group_)
+                        glog.is(DEBUG1) && glog << group(glog_in_group_)
                                               << "ignoring DCCL message for modem_id = "
-                                              << message.dest() << std::endl;
+                                              << dest << std::endl;
+                    }
+                    else if(manip_manager_.has(codec_->id(desc),
+                                                protobuf::NO_DEQUEUE))
+                    {
+                        glog.is(DEBUG1) && glog << group(glog_in_group_)
+                                                << "ignoring message:  " << desc->full_name()
+                                                << " because NO_DEQUEUE manipulator set" << std::endl;
                     }
                     else
                     {
-                        signal_receive(*msg);
+                        signal_receive(*decoded_message);
                     }
                 }
             }
@@ -526,6 +563,23 @@ void goby::acomms::QueueManager::merge_cfg(const protobuf::QueueManagerConfig& c
 void goby::acomms::QueueManager::process_cfg()
 {
     modem_id_ = cfg_.modem_id();
+    manip_manager_.clear();
+
+    for(int i = 0, n = cfg_.manipulator_entry_size(); i < n; ++i)
+    {
+        for(int j = 0, m = cfg_.manipulator_entry(i).manipulator_size(); j < m; ++j)
+        {
+            const google::protobuf::Descriptor* desc =
+                goby::util::DynamicProtobufManager::descriptor_pool().FindMessageTypeByName(cfg_.manipulator_entry(i).protobuf_name());
+            
+            if(desc)
+                manip_manager_.add(codec_->id(desc), cfg_.manipulator_entry(i).manipulator(j));
+            else
+                glog.is(WARN) && glog << "No message by the name: " << cfg_.manipulator_entry(i).protobuf_name() << "found, not setting manipulators for this type." << std::endl;
+            
+        }
+    }
+    
 }
 
 void goby::acomms::QueueManager::qsize(Queue* q)            

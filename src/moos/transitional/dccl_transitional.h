@@ -154,7 +154,7 @@ namespace goby
             std::vector<DCCLMessage>& messages() {return messages_;}
 
             // grab a reference to the manipulator manager used by the loaded XML messages
-            const ManipulatorManager& manip_manager() const { return manip_manager_; }
+//            const ManipulatorManager& manip_manager() const { return manip_manager_; }
         
           private:
             void convert_xml_message_file(const std::string& xml_file,
@@ -186,7 +186,7 @@ namespace goby
 
             boost::posix_time::ptime start_time_;
             
-            ManipulatorManager manip_manager_;
+//            ManipulatorManager manip_manager_;
         };
         
     }

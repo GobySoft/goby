@@ -63,14 +63,14 @@ int main(int argc, char* argv[])
     downlink_slot.set_src(1);
     downlink_slot.set_rate(0);
     downlink_slot.set_type(goby::acomms::protobuf::ModemTransmission::DATA);
-    downlink_slot.SetExtension(goby::acomms::protobuf::slot_seconds, 0.1);
+    downlink_slot.set_slot_seconds(0.1);
     cfg.add_slot()->CopyFrom(downlink_slot);
 
     goby::acomms::protobuf::ModemTransmission uplink3_slot;
     uplink3_slot.set_src(3);
     uplink3_slot.set_rate(0);
     uplink3_slot.set_type(goby::acomms::protobuf::ModemTransmission::DATA);
-    uplink3_slot.SetExtension(goby::acomms::protobuf::slot_seconds, 0.1);
+    uplink3_slot.set_slot_seconds(0.1);
     cfg.add_slot()->CopyFrom(uplink3_slot);
 
 
@@ -78,7 +78,7 @@ int main(int argc, char* argv[])
     uplink4_slot.set_src(4);
     uplink4_slot.set_rate(0);
     uplink4_slot.set_type(goby::acomms::protobuf::ModemTransmission::DATA);
-    uplink4_slot.SetExtension(goby::acomms::protobuf::slot_seconds, 0.1);
+    uplink4_slot.set_slot_seconds(0.1);
     cfg.add_slot()->CopyFrom(uplink4_slot);
 
     goby::acomms::connect(&mac.signal_initiate_transmission,

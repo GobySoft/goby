@@ -13,6 +13,7 @@ add_subdirectory(queue2)
 add_subdirectory(queue3)
 add_subdirectory(queue4)
 add_subdirectory(queue5)
+add_subdirectory(queue6)
 
 add_subdirectory(amac1)
 

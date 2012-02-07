@@ -43,9 +43,9 @@ bool goby::acomms::Queue::push_message(const protobuf::QueuedMessageMeta& meta_m
 {
     if(meta_msg.non_repeated_size() == 0)
     {
-        goby::glog.is(WARN) && glog << group(parent_->glog_out_group()) 
+        goby::glog.is(DEBUG1) && glog << group(parent_->glog_out_group()) << warn
                                     << "empty message attempted to be pushed to queue "
-                                    << name() << std::endl;
+                                      << name() << std::endl;
         return false;
     }
     
@@ -76,12 +76,12 @@ bool goby::acomms::Queue::push_message(const protobuf::QueuedMessageMeta& meta_m
         messages_.erase(it_to_erase);
     }
     
-    glog.is(DEBUG1) && glog << group(parent_->glog_push_group()) << "pushing" << " to send stack "
-                            << name() << " (qsize " << size() <<  "/"
-                             << queue_message_options().max_queue() << "): ";
+    glog.is(DEBUG1) && glog << group(parent_->glog_push_group())
+                            << "pushed to send stack (queue size " << size() <<  "/"
+                            << queue_message_options().max_queue() << ")" << std::endl;
     
-    glog.is(DEBUG1) && glog << *dccl_msg << std::endl;
-    glog.is(DEBUG2) && glog << meta_msg << std::endl;    
+    glog.is(DEBUG2) && glog << group(parent_->glog_push_group()) << "Message: " << *dccl_msg << std::endl;
+    glog.is(DEBUG2) && glog << group(parent_->glog_push_group()) << "Meta: " << meta_msg << std::endl;    
     
     return true;     
 }
@@ -107,7 +107,7 @@ goby::acomms::QueuedMessage goby::acomms::Queue::give_data(unsigned frame)
     // broadcast cannot acknowledge
     if(it_to_give->meta.dest() == BROADCAST_ID && ack == true)
     {
-        glog.is(DEBUG1) && glog << group(parent_->glog_pop_group()) << name() << ": overriding ack request and setting ack = false because dest = BROADCAST (0) cannot acknowledge messages" << std::endl;
+        glog.is(DEBUG1) && glog << group(parent_->glog_pop_group()) << parent_->msg_string(desc_) << ": setting ack=false because BROADCAST (0) cannot ACK messages" << std::endl;
         ack = false;
     }
 
@@ -194,7 +194,7 @@ bool goby::acomms::Queue::pop_message(unsigned frame)
     {
         if(!it->meta.ack_requested())
         {
-            stream_for_pop(*it->dccl_msg);
+            stream_for_pop(*it);
             messages_.erase(it);
             return true;
         }
@@ -216,7 +216,7 @@ bool goby::acomms::Queue::pop_message_ack(unsigned frame, boost::shared_ptr<goog
         waiting_for_ack_it it = waiting_for_ack_.find(frame);
         removed_msg = (it->second)->dccl_msg;
 
-        stream_for_pop(*removed_msg);
+        stream_for_pop(*it->second);
 
         // remove the message
         messages_.erase(it->second);
@@ -231,11 +231,17 @@ bool goby::acomms::Queue::pop_message_ack(unsigned frame, boost::shared_ptr<goog
     return true;    
 }
 
-void goby::acomms::Queue::stream_for_pop(const google::protobuf::Message& dccl_msg)
+void goby::acomms::Queue::stream_for_pop(const QueuedMessage& queued_msg)
 {
-    glog.is(DEBUG1) && glog  << group(parent_->glog_pop_group()) <<  "popping" << " from send stack "
-                              << name() << " (qsize " << size()-1
-                              <<  "/" << queue_message_options().max_queue() << "): "  << dccl_msg << std::endl;
+    glog.is(DEBUG1) && glog << group(parent_->glog_pop_group())
+                            << parent_->msg_string(desc_) << "popping from send stack "
+                            << " (queue size " << size() <<  "/"
+                            << queue_message_options().max_queue() << ")" << std::endl;
+    
+    glog.is(DEBUG2) && glog << group(parent_->glog_push_group()) << "Message: " << *queued_msg.dccl_msg << std::endl;
+    glog.is(DEBUG2) && glog << group(parent_->glog_push_group()) << "Meta: " << queued_msg.meta << std::endl;    
+
+    
 }
 
 std::vector<boost::shared_ptr<google::protobuf::Message> > goby::acomms::Queue::expire()

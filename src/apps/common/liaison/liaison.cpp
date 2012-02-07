@@ -33,6 +33,13 @@ using namespace Wt;
 using namespace goby::common::logger_lock;
 using namespace goby::common::logger;
 
+#if BOOST_FILESYSTEM_VERSION == 3
+namespace bf = boost::filesystem3;
+#else
+namespace bf = boost::filesystem;
+#endif
+
+
 goby::common::protobuf::LiaisonConfig goby::common::Liaison::cfg_;
 boost::shared_ptr<zmq::context_t> goby::common::Liaison::zmq_context_(new zmq::context_t(1));
 const std::string goby::common::Liaison::LIAISON_INTERNAL_PUBLISH_SOCKET_NAME = "liaison_internal_publish_socket"; 
@@ -166,7 +173,7 @@ goby::common::Liaison::Liaison()
 
 void goby::common::Liaison::load_proto_file(const std::string& path)
 {
-    boost::filesystem::path bpath = boost::filesystem::complete(path);
+    boost::filesystem::path bpath = bf::complete(path);
     bpath.normalize();
 
     glog.is(VERBOSE) &&

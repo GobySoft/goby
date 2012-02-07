@@ -153,6 +153,11 @@ namespace goby
              const std::string& glog_out_group() { return glog_out_group_; }
              const std::string& glog_in_group(){ return glog_in_group_; }
 
+             std::string msg_string(const google::protobuf::Descriptor* desc)
+             {
+                 return desc->full_name() + " (" + goby::util::as<std::string>(codec_->id(desc)) + ")";
+             }
+
 
              /// \brief The current modem ID (MAC address) of this node.
             int modem_id() { return modem_id_; }
@@ -220,6 +225,7 @@ namespace goby
                                      const boost::any& wire_value,
                                      const boost::any& extension_value);
 
+            
             
           private:
             static boost::shared_ptr<QueueManager> inst_;

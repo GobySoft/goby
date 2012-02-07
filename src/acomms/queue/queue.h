@@ -67,7 +67,7 @@ namespace goby
             goby::acomms::QueuedMessage give_data(unsigned frame);
             bool pop_message(unsigned frame);
             bool pop_message_ack(unsigned frame, boost::shared_ptr<google::protobuf::Message>& removed_msg);
-            void stream_for_pop(const google::protobuf::Message& dccl_msg);
+            void stream_for_pop(const QueuedMessage& queued_msg);
             
             std::vector<boost::shared_ptr<google::protobuf::Message> > expire();
           

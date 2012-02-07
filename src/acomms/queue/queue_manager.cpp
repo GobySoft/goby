@@ -93,7 +93,7 @@ void goby::acomms::QueueManager::add_queue(const google::protobuf::Descriptor* d
         
         qsize(&new_q);
         
-        glog.is(DEBUG1) && glog<< group(glog_out_group_) << "added new queue: \n" << new_q << std::endl;
+        glog.is(DEBUG1) && glog<< group(glog_out_group_) << "Added new queue: \n" << new_q << std::endl;
         
     }
 
@@ -121,7 +121,6 @@ void goby::acomms::QueueManager::do_work()
 void goby::acomms::QueueManager::push_message(const google::protobuf::Message& dccl_msg)
 {
     const google::protobuf::Descriptor* desc = dccl_msg.GetDescriptor();
-
     unsigned dccl_id = codec_->id(desc);
     
     if(!queues_.count(dccl_id))
@@ -132,26 +131,29 @@ void goby::acomms::QueueManager::push_message(const google::protobuf::Message& d
     latest_meta_.set_non_repeated_size(codec_->size(dccl_msg));
 
     codec_->run_hooks(dccl_msg);
-    glog.is(DEBUG2) && glog << "post hooks: " << latest_meta_ << std::endl;
+    glog.is(DEBUG3) && glog << "Message post hooks: " << latest_meta_ << std::endl;
 
+    glog.is(DEBUG1) && glog << group(glog_push_group_) << msg_string(desc) << ": attempting to push message addressed to " << latest_meta_.dest() << std::endl;
+    
+    
     // loopback if set
     if(manip_manager_.has(dccl_id, protobuf::LOOPBACK))
     {
-        glog.is(DEBUG1) && glog << group(glog_out_group_) << desc->full_name() << ": LOOPBACK manipulator set, sending back to decoder" << std::endl;
+        glog.is(DEBUG1) && glog << group(glog_push_group_) << msg_string(desc) << ": LOOPBACK manipulator set, sending back to decoder" << std::endl;
         signal_receive(dccl_msg);
     }
     
     // no queue manipulator set
     if(manip_manager_.has(dccl_id, protobuf::NO_QUEUE))
     {
-        glog.is(DEBUG1) && glog << group(glog_out_group_)
-                                << desc->full_name()
+        glog.is(DEBUG1) && glog << group(glog_push_group_)
+                                << msg_string(desc)
                                 << ": not queuing: NO_QUEUE manipulator is set" << std::endl;
     }
     // message is to us, auto-loopback
     else if(latest_meta_.dest() == modem_id_)
     {
-        glog.is(DEBUG1) && glog<< group(glog_out_group_) << "outgoing message is for us: using loopback, not physical interface" << std::endl;
+        glog.is(DEBUG1) && glog << group(glog_push_group_) << "Message is for us: using loopback, not physical interface" << std::endl;
         
         signal_receive(dccl_msg);
     }
@@ -179,12 +181,13 @@ void goby::acomms::QueueManager::flush_queue(const protobuf::QueueFlush& flush)
     if(it != queues_.end())
     {
         it->second.flush();
-        glog.is(DEBUG1) && glog << group(glog_out_group_) <<  " flushed queue: " << flush << std::endl;
+        glog.is(DEBUG1) && glog << group(glog_out_group_) << msg_string(it->second.descriptor())
+                                << ": flushed queue" << std::endl;
         qsize(&it->second);
     }    
     else
     {
-        glog.is(DEBUG1) && glog << group(glog_out_group_) << warn << " cannot find queue to flush: " << flush << std::endl;
+        glog.is(DEBUG1) && glog << group(glog_out_group_) << warn << "Cannot find queue to flush: " << flush << std::endl;
     }
 }
 
@@ -243,8 +246,8 @@ void goby::acomms::QueueManager::handle_modem_data_request(protobuf::ModemTransm
             msg->set_ack_requested(packet_ack_);
             msg->set_dest(packet_dest_);
             glog.is(DEBUG1) && glog << group(glog_out_group_)
-                                    << "no data found. sending blank to firmware" << ": "
-                                    << goby::util::hex_encode(*data) << std::endl; 
+                                    << "No data found. sending empty message to modem driver."
+                                    << std::endl;
         }
         else
         {
@@ -254,9 +257,10 @@ void goby::acomms::QueueManager::handle_modem_data_request(protobuf::ModemTransm
                 // new user frame (e.g. 32B)
                 QueuedMessage next_user_frame = winning_queue->give_data(frame_number);
 
-                glog.is(DEBUG1) && glog << group(glog_out_group_) << "sending data to firmware from: "
-                                        << winning_queue->name()
-                                        << ": "<< *(next_user_frame.dccl_msg) << std::endl;
+                glog.is(DEBUG1) && glog << group(glog_out_group_)
+                                        << msg_string(winning_queue->descriptor())
+                                        << ": sending data to modem driver addressed to "
+                                        << next_user_frame.meta.dest() << std::endl;
                 
                 if(manip_manager_.has(codec_->id(winning_queue->descriptor()), protobuf::LOOPBACK_AS_SENT))
                 {

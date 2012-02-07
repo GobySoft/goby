@@ -35,7 +35,15 @@ void goby::moos::MOOSTranslator::initialize(double lat_origin, double lon_origin
     ap->add_algorithm("to_upper", &alg_to_upper);
     ap->add_algorithm("angle_0_360", &alg_angle_0_360);
     ap->add_algorithm("angle_-180_180", &alg_angle_n180_180);
+    ap->add_algorithm("lat2hemisphere_initial", &alg_lat2hemisphere_initial);
+    ap->add_algorithm("lon2hemisphere_initial", &alg_lon2hemisphere_initial);
 
+    ap->add_algorithm("lat2nmea_lat", &alg_lat2nmea_lat);
+    ap->add_algorithm("lon2nmea_lon", &alg_lon2nmea_lon);
+
+    ap->add_algorithm("unix_time2nmea_time", &alg_unix_time2nmea_time);
+
+    ap->add_algorithm("abs", &alg_abs);
 
     if(!modem_id_lookup_path.empty())
     {
@@ -198,3 +206,74 @@ void goby::moos::alg_to_lower(transitional::DCCLMessageVal& val_to_mod)
 {
     val_to_mod = boost::algorithm::to_lower_copy(std::string(val_to_mod));
 }
+
+void goby::moos::alg_lat2hemisphere_initial(transitional::DCCLMessageVal& val_to_mod)
+{
+    double lat = val_to_mod;
+    if(lat < 0)
+        val_to_mod = "S";
+    else
+        val_to_mod = "N";        
+}
+
+void goby::moos::alg_lon2hemisphere_initial(transitional::DCCLMessageVal& val_to_mod)
+{
+    double lon = val_to_mod;
+    if(lon < 0)
+        val_to_mod = "W";
+    else
+        val_to_mod = "E";
+}
+
+void goby::moos::alg_abs(transitional::DCCLMessageVal& val_to_mod)
+{
+    val_to_mod = std::abs(double(val_to_mod));
+}
+
+void goby::moos::alg_unix_time2nmea_time(transitional::DCCLMessageVal& val_to_mod)
+{
+    double unix_time = val_to_mod;
+    boost::posix_time::ptime ptime = goby::common::unix_double2ptime(unix_time);
+
+    // HHMMSS.SSSSSS
+    boost::format f("%02d%02d%02d.%06d");
+    f % ptime.time_of_day().hours() % ptime.time_of_day().minutes() % ptime.time_of_day().seconds() % (ptime.time_of_day().fractional_seconds() * 1000000 / boost::posix_time::time_duration::ticks_per_second());
+    
+    val_to_mod = f.str();
+}
+
+
+void goby::moos::alg_lat2nmea_lat(transitional::DCCLMessageVal& val_to_mod)
+{
+    double lat = val_to_mod;
+
+    // DDMM.MM
+    boost::format f("%02d%02d.%04d");
+
+    int degrees = std::floor(lat);
+    int minutes = std::floor((lat - degrees) * 60);
+    int ten_thousandth_minutes = std::floor(((lat - degrees) * 60 - minutes) * 10000);
+
+    f % degrees % minutes % ten_thousandth_minutes;
+    
+    val_to_mod = f.str();
+}
+
+
+    
+void goby::moos::alg_lon2nmea_lon(transitional::DCCLMessageVal& val_to_mod)
+{
+    double lon = val_to_mod;
+
+    // DDDMM.MM
+    boost::format f("%03d%02d.%04d");
+
+    int degrees = std::floor(lon);
+    int minutes = std::floor((lon - degrees) * 60);
+    int ten_thousandth_minutes = std::floor(((lon - degrees) * 60 - minutes) * 10000);
+
+    f % degrees % minutes % ten_thousandth_minutes;
+
+    val_to_mod = f.str();
+}
+

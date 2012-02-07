@@ -211,7 +211,6 @@ void goby::common::LiaisonScope::handle_global_key(Wt::WKeyEvent event)
 
 void goby::common::LiaisonScope::moos_inbox(CMOOSMsg& msg)
 {
-
     using goby::moos::operator<<;
     
     glog.is(DEBUG1, lock) && glog << "LiaisonScope: got message:  " << msg << std::endl << unlock;
@@ -347,7 +346,7 @@ void goby::common::LiaisonScope::ControlsContainer::handle_play_pause(bool toggl
 }
 
 goby::common::LiaisonScope::SubscriptionsContainer::SubscriptionsContainer(
-    MOOSNode* node,
+    LiaisonScope* node,
     Wt::WStandardItemModel* model,
     Wt::WStringListModel* history_model,
     std::map<std::string, int>& msg_map,
@@ -386,6 +385,13 @@ void goby::common::LiaisonScope::SubscriptionsContainer::add_subscription(std::s
     node_->subscribe(type, Liaison::LIAISON_INTERNAL_SCOPE_SUBSCRIBE_SOCKET);
 
     new_button->clicked().connect(boost::bind(&SubscriptionsContainer::handle_remove_subscription, this, new_button));
+
+    std::vector<CMOOSMsg> newest = node_->newest_substr(type);
+    for(std::vector<CMOOSMsg>::iterator it = newest.begin(), end = newest.end();
+        it != end; ++it)
+    {
+        node_->moos_inbox(*it);
+    }
 }
 
 
@@ -553,14 +559,11 @@ void goby::common::LiaisonScope::HistoryContainer::add_history(const goby::commo
 
 void goby::common::LiaisonScope::HistoryContainer::handle_remove_history(std::string key)
 {
-    glog.is(DEBUG2, lock) && glog << "LiaisonScope: removing history for: " << key << std::endl << unlock;
-
+    glog.is(DEBUG2, lock) && glog << "LiaisonScope: removing history for: " << key << std::endl << unlock;    
     
     main_layout_->removeWidget(history_models_[key].container);    
     main_layout_->removeWidget(history_models_[key].tree);
 
-    delete history_models_[key].container;
-    delete history_models_[key].tree;
     history_models_.erase(key);
 }
 

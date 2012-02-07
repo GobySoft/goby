@@ -42,6 +42,10 @@ namespace goby
             
             
             CMOOSMsg& newest(const std::string& key);
+
+            // returns newest for "BOB", "BIG", when substr is "B"
+            std::vector<CMOOSMsg> newest_substr(const std::string& substring);
+            
             
           protected:
             // not const because CMOOSMsg requires mutable for many const calls...

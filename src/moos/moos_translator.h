@@ -41,6 +41,17 @@ namespace goby
 
         void alg_to_upper(transitional::DCCLMessageVal& val_to_mod);
         void alg_to_lower(transitional::DCCLMessageVal& val_to_mod);
+
+
+        void alg_abs(transitional::DCCLMessageVal& val_to_mod);
+        void alg_lat2hemisphere_initial(transitional::DCCLMessageVal& val_to_mod);
+        void alg_lon2hemisphere_initial(transitional::DCCLMessageVal& val_to_mod);
+    
+        void alg_unix_time2nmea_time(transitional::DCCLMessageVal& val_to_mod);
+
+        void alg_lat2nmea_lat(transitional::DCCLMessageVal& val_to_mod);
+        void alg_lon2nmea_lon(transitional::DCCLMessageVal& val_to_mod);    
+
         
         class MOOSTranslator
         {

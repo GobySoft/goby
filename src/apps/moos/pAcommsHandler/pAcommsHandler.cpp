@@ -113,8 +113,8 @@ CpAcommsHandler::CpAcommsHandler()
                                       _1, cfg_.moos_var().mac_initiate_transmission(), _1, ""));
 
 
-    // goby::acomms::connect(&queue_manager_.signal_data_on_demand,
-    //                       this, &CpAcommsHandler::queue_on_demand);
+    goby::acomms::connect(&queue_manager_.signal_data_on_demand,
+                          this, &CpAcommsHandler::handle_encode_on_demand);
 
     process_configuration();
 
@@ -274,6 +274,7 @@ void CpAcommsHandler::handle_raw(const goby::acomms::protobuf::ModemRaw& msg, co
 
 
 
+
 //
 // READ CONFIGURATION
 //
@@ -406,6 +407,19 @@ void CpAcommsHandler::handle_queue_receive(const google::protobuf::Message& msg)
         publish(it->second);
     }    
 }
+
+
+void CpAcommsHandler::handle_encode_on_demand(const goby::acomms::protobuf::ModemTransmission& request_msg, google::protobuf::Message* data_msg)
+{
+    glog.is(VERBOSE) && glog << "Received encode on demand request: " << request_msg << std::endl;
+
+    
+    boost::shared_ptr<google::protobuf::Message> created_message =
+        translator_.moos_to_protobuf<boost::shared_ptr<google::protobuf::Message> >(dynamic_vars().all(), data_msg->GetDescriptor()->full_name());
+
+    data_msg->CopyFrom(*created_message);
+}
+
 
 
 void CpAcommsHandler::create_on_publish(const CMOOSMsg& trigger_msg,

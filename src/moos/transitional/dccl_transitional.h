@@ -157,9 +157,12 @@ namespace goby
 //            const ManipulatorManager& manip_manager() const { return manip_manager_; }
         
           private:
-            void convert_xml_message_file(const std::string& xml_file,
+            void convert_xml_message_file(const goby::transitional::protobuf::MessageFile& message_file,
                                           std::string* proto_file,
-                                          google::protobuf::RepeatedPtrField<goby::moos::protobuf::TranslatorEntry>* translator_entries);
+                                          google::protobuf::RepeatedPtrField<goby::moos::protobuf::TranslatorEntry>* translator_entries,
+                                          goby::acomms::protobuf::QueueManagerConfig::ManipulatorEntry* manip_entry);
+            
+            
 
             void fill_create(boost::shared_ptr<DCCLMessageVar> var,
                              std::map<std::string, goby::moos::protobuf::TranslatorEntry::CreateParser*>* parser_map,

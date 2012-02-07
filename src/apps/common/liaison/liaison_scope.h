@@ -86,7 +86,7 @@ namespace goby
 
             struct SubscriptionsContainer : Wt::WContainerWidget
             {
-                SubscriptionsContainer(MOOSNode* node,
+                SubscriptionsContainer(LiaisonScope* node,
                                        Wt::WStandardItemModel* model,
                                        Wt::WStringListModel* history_model,
                                        std::map<std::string, int>& msg_map,
@@ -96,7 +96,7 @@ namespace goby
                 void handle_remove_subscription(Wt::WPushButton* clicked_anchor);
                 void add_subscription(std::string type);
 
-                MOOSNode* node_;
+                LiaisonScope* node_;
                 
                 Wt::WStandardItemModel* model_;
                 Wt::WStringListModel* history_model_;

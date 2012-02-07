@@ -57,18 +57,22 @@ void goby::transitional::DCCLTransitionalCodec::convert_to_v2_representation(pAc
     
     for(int i = 0, n = cfg->transitional_cfg().message_file_size(); i < n; ++i)
     {
-        convert_xml_message_file(cfg->transitional_cfg().message_file(i).path(),
+        convert_xml_message_file(cfg->transitional_cfg().message_file(i),
                                  cfg->add_load_proto_file(),
-                                 cfg->mutable_translator_entry());
+                                 cfg->mutable_translator_entry(),
+                                 cfg->mutable_queue_cfg()->add_manipulator_entry());
     }
 }
 
 
 void goby::transitional::DCCLTransitionalCodec::convert_xml_message_file(
-    const std::string& xml_file,
+    const goby::transitional::protobuf::MessageFile& message_file,
     std::string* proto_file,
-    google::protobuf::RepeatedPtrField<goby::moos::protobuf::TranslatorEntry>* translator_entries)
-{
+    google::protobuf::RepeatedPtrField<goby::moos::protobuf::TranslatorEntry>* translator_entries,
+    goby::acomms::protobuf::QueueManagerConfig::ManipulatorEntry* manip_entry)
+{    
+    const std::string& xml_file = message_file.path();
+
     size_t begin_size = messages_.size();            
         
     // Register handlers for XML parsing
@@ -106,7 +110,8 @@ void goby::transitional::DCCLTransitionalCodec::convert_xml_message_file(
     std::string xml_path_stem  = xml_file_path.stem();
 #endif
 
-    boost::filesystem::path proto_file_path( generated_proto_dir + xml_path_stem + ".proto");
+    boost::filesystem::path proto_file_path = bf::complete( generated_proto_dir + xml_path_stem + ".proto");
+    proto_file_path.normalize();
     
     for(size_t i = 0, n = end_size - begin_size; i < n; ++i)
     {
@@ -119,7 +124,7 @@ void goby::transitional::DCCLTransitionalCodec::convert_xml_message_file(
         added_ids.push_back(messages_[new_index].id());
     }
 
-    *proto_file = bf::complete(proto_file_path).string();
+    *proto_file = proto_file_path.string();
 
     
 
@@ -265,9 +270,15 @@ void goby::transitional::DCCLTransitionalCodec::convert_xml_message_file(
            
     
            
-        }    
+        }
+
+        manip_entry->set_protobuf_name(msg_it->name());
+        for(int i = 0, n = message_file.manipulator_size(); i < n; ++i)
+            manip_entry->add_manipulator(message_file.manipulator(i));
     }
+
     
+        
 }
 
 void goby::transitional::DCCLTransitionalCodec::fill_create(boost::shared_ptr<DCCLMessageVar> var,

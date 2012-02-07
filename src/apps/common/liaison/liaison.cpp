@@ -95,8 +95,9 @@ goby::common::Liaison::Liaison()
             if(iter->path().extension().string() == ".proto")
 #else
             if(iter->path().extension() == ".proto")
-#endif            
-              load_proto_file(iter->path().string());        
+#endif
+                
+                load_proto_file(iter->path().string());        
         }
     }
     
@@ -131,7 +132,8 @@ goby::common::Liaison::Liaison()
         boost::split(wt_argv_vec, str, boost::is_any_of(" "));
         
         char* wt_argv[wt_argv_vec.size()];
-        
+
+
         glog << "setting Wt cfg to: ";
         for(int i = 0, n = wt_argv_vec.size(); i < n; ++i)
         {
@@ -164,11 +166,14 @@ goby::common::Liaison::Liaison()
 
 void goby::common::Liaison::load_proto_file(const std::string& path)
 {
-    glog.is(VERBOSE) &&
-        glog << "Loading protobuf file: " << path << std::endl;
+    boost::filesystem::path bpath = boost::filesystem::complete(path);
+    bpath.normalize();
 
-        
-    if(!goby::util::DynamicProtobufManager::descriptor_pool().FindFileByName(path))
+    glog.is(VERBOSE) &&
+        glog << "Loading protobuf file: " << bpath << std::endl;
+
+    
+    if(!goby::util::DynamicProtobufManager::descriptor_pool().FindFileByName(bpath.string()))
         glog.is(DIE) &&
             glog << "Failed to load file." << std::endl;
 }

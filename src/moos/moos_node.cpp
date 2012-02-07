@@ -123,3 +123,34 @@ CMOOSMsg& goby::moos::MOOSNode::newest(const std::string& key)
     return *newest_vars[key];
 }
 
+std::vector<CMOOSMsg> goby::moos::MOOSNode::newest_substr(const std::string& substring)
+{    
+    std::vector<CMOOSMsg> out;
+
+    std::string trimmed_substring = boost::trim_copy(substring);
+    unsigned size = trimmed_substring.size();
+
+    if(size)
+    {
+        if(trimmed_substring[size-1] == '*')
+        {
+            trimmed_substring = trimmed_substring.substr(0, size-1);
+        }
+        else 
+        {
+            if(newest_vars.count(trimmed_substring))
+                out.push_back(*newest_vars[trimmed_substring]);
+            return out;
+        }
+    }
+    
+    for(std::map<std::string, boost::shared_ptr<CMOOSMsg> >::const_iterator it = newest_vars.begin(), end = newest_vars.end(); it != end; ++it)
+    {
+
+        if(!size || it->first.compare(0, trimmed_substring.size(), trimmed_substring) == 0)
+            out.push_back(*(it->second));
+    }
+    return out;
+}
+
+

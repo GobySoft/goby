@@ -160,8 +160,11 @@ void goby::common::LiaisonCommander::loop()
 
     while(zeromq_service_->poll(0))
     { }
-    
-    
+
+    if(current_command && current_command->time_field_.first)
+    {
+        current_command->set_time_field(current_command->time_field_.first, current_command->time_field_.second);    
+    }
     
     if(current_command && (last_db_update_time_ > current_command->last_reload_time_))
     {
@@ -414,7 +417,8 @@ goby::common::LiaisonCommander::ControlsContainer::CommandContainer::CommandCont
       query_model_(new Dbo::QueryModel<Dbo::ptr<CommandEntry> >(this)),
       query_box_(new WGroupBox("Message log (click for details)", this)),
       query_table_(new WTreeView(query_box_)),
-      last_reload_time_(boost::posix_time::neg_infin)
+      last_reload_time_(boost::posix_time::neg_infin),
+      pb_commander_config_(pb_commander_config)
 {
 
 
@@ -912,7 +916,10 @@ void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::genera
     }
     
     dccl_default_value_field(value_field, field_desc);
+    queue_default_value_field(value_field, field_desc);
 
+    
+        
     generate_field_info_box(value_field, field_desc);
     
 }
@@ -1136,6 +1143,53 @@ WLineEdit* goby::common::LiaisonCommander::ControlsContainer::CommandContainer::
                     this, message, field_desc, combo_box, index));
 
     return combo_box;
+}
+
+void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::queue_default_value_field(WFormWidget*& value_field,
+    const google::protobuf::FieldDescriptor* field_desc)
+{
+    const QueueFieldOptions& queue_options = field_desc->options().GetExtension(goby::field).queue();
+    if(queue_options.is_time())
+    {
+        value_field->setDisabled(true);
+        set_time_field(value_field, field_desc);
+        time_field_ = std::make_pair(value_field, field_desc);
+    }
+    else if(queue_options.is_src())
+    {
+        if(WLineEdit* line_edit = dynamic_cast<WLineEdit*>(value_field))
+        {
+            if(pb_commander_config_.has_modem_id())
+            {
+                line_edit->setDisabled(true);
+                line_edit->setText(goby::util::as<std::string>(pb_commander_config_.modem_id()));
+                line_edit->changed().emit();
+            }
+        }
+    }
+}
+    
+void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::set_time_field(WFormWidget*& value_field, const google::protobuf::FieldDescriptor* field_desc)
+{
+    if(WLineEdit* line_edit = dynamic_cast<WLineEdit*>(value_field))
+    {
+        switch(field_desc->cpp_type())
+        {
+            default:
+                line_edit->setText("Error: invalid goby-acomms time type");
+                break;
+
+            case google::protobuf::FieldDescriptor::CPPTYPE_UINT64:
+                line_edit->setText(goby::util::as<std::string>(goby_time<uint64>()));
+
+            case google::protobuf::FieldDescriptor::CPPTYPE_STRING:
+                line_edit->setText(goby_time<std::string>());
+
+            case google::protobuf::FieldDescriptor::CPPTYPE_DOUBLE:
+                line_edit->setText(goby::util::as<std::string>(goby_time<double>()));
+        }
+        line_edit->changed().emit();
+    }
 }
 
 void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::dccl_default_value_field(

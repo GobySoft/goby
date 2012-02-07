@@ -43,16 +43,15 @@ int main(int argc, char* argv[])
     source_database_.RecordErrorsTo(&error_collector_);
     disk_source_tree_.MapPath("/", "/");
 
-    bf::path proto_file_path(argv[1]);
+    bf::path proto_file_path = bf::complete(argv[1]);
+    proto_file_path.normalize();
 
     google::protobuf::FileDescriptorProto file_proto;
 
-    std::string full_proto_path = bf::complete(proto_file_path).string();
-    source_database_.FindFileByName(
-        full_proto_path, &file_proto);
+    std::string full_proto_path = proto_file_path.string();
+    source_database_.FindFileByName(full_proto_path, &file_proto);
 
     std::cout << "read in: " << full_proto_path << std::endl;
-
 
     
     goby::acomms::DCCLCodec& dccl = *goby::acomms::DCCLCodec::get();
@@ -70,7 +69,7 @@ int main(int argc, char* argv[])
                 dccl.validate(desc);
             else
             {
-                std::cerr << "No descriptor with name " <<  file_proto.message_type(i).name()<< " found!" << std::endl;
+                std::cerr << "No descriptor with name " <<  file_proto.message_type(i).name() << " found!" << std::endl;
                 exit(1);
             }
         }

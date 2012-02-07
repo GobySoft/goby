@@ -150,7 +150,15 @@ namespace goby
                                                  const google::protobuf::FieldDescriptor* field_desc);
                     
                     
+
+                    void set_time_field(Wt::WFormWidget*& value_field,
+                                        const google::protobuf::FieldDescriptor* field_desc);
+
                     
+                    void queue_default_value_field(
+                        Wt::WFormWidget*& value_field,
+                        const google::protobuf::FieldDescriptor* field_desc);
+
                     void dccl_default_value_field(
                         Wt::WFormWidget*& value_field,
                         const google::protobuf::FieldDescriptor* field_desc);
@@ -203,6 +211,9 @@ namespace goby
                     
                     boost::shared_ptr<google::protobuf::Message> message_;
                     
+                    std::pair<Wt::WFormWidget*, const google::protobuf::FieldDescriptor*> time_field_;
+                    
+                    
                     Wt::WGroupBox* tree_box_;
                     Wt::WTreeTable* tree_table_;
 
@@ -219,6 +230,8 @@ namespace goby
 
                     boost::shared_ptr<Wt::WDialog> database_dialog_;
 
+                    const protobuf::ProtobufCommanderConfig& pb_commander_config_;
+                    
                 };
 
                 MOOSNode* moos_node_;

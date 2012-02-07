@@ -62,11 +62,11 @@ goby::common::LiaisonWtThread::LiaisonWtThread(const Wt::WEnvironment& env)
     WContainerWidget* header_div = new WContainerWidget(root());
     header_div->setId("header");
     
-    WImage* goby_lp_image = new WImage("images/goby-lp.png");
+    WImage* goby_lp_image = new WImage("images/mit-logo.gif");
     WImage* goby_logo = new WImage("images/gobysoft_logo_dot_org_small.png");
 
     
-    WAnchor* goby_lp_image_a = new WAnchor("https://launchpad.net/goby", goby_lp_image, header_div);
+    WAnchor* goby_lp_image_a = new WAnchor("http://lamss.mit.edu", goby_lp_image, header_div);
     WText* header = new WText(title_text, header_div);
     header->setId("header");
 

@@ -75,7 +75,7 @@ bool GobyMOOSApp::OnNewMail(MOOSMSG_LIST &NewMail)
                           << std::endl;
         }
         else if(mail_handlers_.count(msg.GetKey()))
-            mail_handlers_[msg.GetKey()](msg);
+            (*mail_handlers_[msg.GetKey()])(msg);
     }
     
     return true;    
@@ -131,8 +131,12 @@ void GobyMOOSApp::subscribe(const std::string& var,  InboxFunc handler, int blac
     
     pending_subscriptions_.push_back(std::make_pair(var, blackout));
     try_subscribing();
+
+    if(!mail_handlers_[var])
+        mail_handlers_[var].reset(new boost::signal<void (const CMOOSMsg& msg)>);
+        
     if(handler)
-        mail_handlers_[var] = handler;
+        mail_handlers_[var]->connect(handler);
 }
 
 void GobyMOOSApp::try_subscribing()

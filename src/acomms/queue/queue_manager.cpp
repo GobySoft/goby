@@ -133,6 +133,13 @@ void goby::acomms::QueueManager::push_message(const google::protobuf::Message& d
 
     codec_->run_hooks(dccl_msg);
     glog.is(DEBUG2) && glog << "post hooks: " << latest_meta_ << std::endl;
+
+    // loopback if set
+    if(manip_manager_.has(dccl_id, protobuf::LOOPBACK))
+    {
+        glog.is(DEBUG1) && glog << group(glog_out_group_) << desc->full_name() << ": LOOPBACK manipulator set, sending back to decoder" << std::endl;
+        signal_receive(dccl_msg);
+    }
     
     // no queue manipulator set
     if(manip_manager_.has(dccl_id, protobuf::NO_QUEUE))
@@ -151,13 +158,6 @@ void goby::acomms::QueueManager::push_message(const google::protobuf::Message& d
     // queue normally
     else 
     {
-        // loopback if set
-        if(manip_manager_.has(dccl_id, protobuf::LOOPBACK))
-        {
-            glog.is(DEBUG1) && glog << group(glog_out_group_) << desc->full_name() << ": LOOPBACK manipulator set, sending back to decoder" << std::endl;
-            signal_receive(dccl_msg);
-        }
-
         if(!latest_meta_.has_time())
             latest_meta_.set_time(goby::common::goby_time<uint64>());
         

@@ -170,9 +170,9 @@ void goby::acomms::DCCLCodec::encode(std::string* bytes, const google::protobuf:
     {
         std::stringstream ss;
         
-        ss << "Message " << desc->full_name() << " failed to encode. Reason: " << e.what() << std::endl;
+        ss << "Message " << desc->full_name() << " failed to encode. Reason: " << e.what();
 
-        glog.is(WARN) && glog <<  ss.str();        
+        glog.is(DEBUG1) && glog << group(glog_encode_group_) << warn << ss.str() << std::endl;  
         throw(DCCLException(ss.str()));
     }
 
@@ -279,7 +279,7 @@ void goby::acomms::DCCLCodec::decode(const std::string& bytes, google::protobuf:
         
         ss << "Message " << hex_encode(bytes) <<  " failed to decode. Reason: " << e.what() << std::endl;
 
-        glog.is(WARN) && glog <<  ss.str();        
+        glog.is(DEBUG1) && glog << group(glog_decode_group_) << warn << ss.str() << std::endl;  
         throw(DCCLException(ss.str()));
     }    
 
@@ -317,7 +317,7 @@ void goby::acomms::DCCLCodec::validate(const google::protobuf::Descriptor* desc)
         else
             id2desc_.insert(std::make_pair(id(desc), desc));
 
-        glog.is(DEBUG1) && glog << group(glog_encode_group_) << "Successfully validated message of type: " << desc->full_name() << ": " << desc << std::endl;
+        glog.is(DEBUG1) && glog << group(glog_encode_group_) << "Successfully validated message of type: " << desc->full_name() << std::endl;
 
     }
     catch(DCCLException& e)
@@ -329,9 +329,9 @@ void goby::acomms::DCCLCodec::validate(const google::protobuf::Descriptor* desc)
         catch(DCCLException& e)
         { }
         
-        glog.is(WARN) && glog << "Message " << desc->full_name() << ": " << desc << " failed validation. Reason: "
-                              << e.what() <<  "\n"
-                              << "If possible, information about the Message are printed above. " << std::endl;
+        glog.is(DEBUG1) && glog << group(glog_encode_group_) << "Message " << desc->full_name() << ": " << desc << " failed validation. Reason: "
+                                << e.what() <<  "\n"
+                                << "If possible, information about the Message are printed above. " << std::endl;
 
         throw;
     }
@@ -409,7 +409,7 @@ void goby::acomms::DCCLCodec::info(const google::protobuf::Descriptor* desc, std
     }
     catch(DCCLException& e)
     {
-        glog.is(WARN) && glog << "Message " << desc->full_name() << " cannot provide information due to invalid configuration. Reason: " << e.what() << std::endl;
+        glog.is(DEBUG1) && glog << group(glog_encode_group_) << warn << "Message " << desc->full_name() << " cannot provide information due to invalid configuration. Reason: " << e.what() << std::endl;
     }
         
 }
@@ -492,14 +492,14 @@ void goby::acomms::DCCLCodec::process_cfg()
         SHA256 hash;
         StringSource unused(cfg_.crypto_passphrase(), true, new HashFilter(hash, new StringSink(crypto_key_)));
         
-        glog.is(DEBUG1) && glog << group(glog_encode_group_) << "cryptography enabled with given passphrase" << std::endl;
+        glog.is(DEBUG1) && glog << group(glog_encode_group_) << "Cryptography enabled with given passphrase" << std::endl;
 #else
-        glog.is(WARN) && glog << group(glog_encode_group_) << "cryptography disabled because Goby was compiled without support of Crypto++. Install Crypto++ and recompile to enable cryptography." << std::endl;
+        glog.is(DEBUG1) && glog << group(glog_encode_group_) << warn << "Cryptography disabled because Goby was compiled without support of Crypto++. Install Crypto++ and recompile to enable cryptography." << std::endl;
 #endif
     }
     else
     {
-        glog.is(DEBUG1) && glog << group(glog_encode_group_) << "cryptography disabled, set crypto_passphrase to enable." << std::endl;
+        glog.is(DEBUG1) && glog << group(glog_encode_group_) << "Cryptography disabled, set crypto_passphrase to enable." << std::endl;
     }
     
 }

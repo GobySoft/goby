@@ -289,7 +289,6 @@ namespace goby
                     std::string piece;
                     encode(&piece, *msg);
                     out += piece;
-                    goby::glog.is(common::logger::DEBUG2) && goby::glog << "out: " << goby::util::hex_encode(out) << std::endl;
                 }
     
                 return out;

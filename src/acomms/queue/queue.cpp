@@ -234,8 +234,8 @@ bool goby::acomms::Queue::pop_message_ack(unsigned frame, boost::shared_ptr<goog
 void goby::acomms::Queue::stream_for_pop(const QueuedMessage& queued_msg)
 {
     glog.is(DEBUG1) && glog << group(parent_->glog_pop_group())
-                            << parent_->msg_string(desc_) << "popping from send stack "
-                            << " (queue size " << size() <<  "/"
+                            << parent_->msg_string(desc_) << ": popping from send stack"
+                            << " (queue size " << size()-1 <<  "/"
                             << queue_message_options().max_queue() << ")" << std::endl;
     
     glog.is(DEBUG2) && glog << group(parent_->glog_push_group()) << "Message: " << *queued_msg.dccl_msg << std::endl;

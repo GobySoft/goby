@@ -113,10 +113,10 @@ void goby::common::FlexOStreamBuf::enable_gui()
 
 void goby::common::FlexOStreamBuf::add_group(const std::string & name, Group g)
 {
-    if(groups_.count(name)) return;
-    
-    groups_[name] = g;
+//    if(groups_.count(name)) return;
 
+    groups_[name] = g;
+    
 #ifdef HAS_NCURSES    
     if(is_gui_)
     {

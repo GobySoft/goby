@@ -72,6 +72,7 @@ CpAcommsHandler::CpAcommsHandler()
       work_(timer_io_service_)
 {
     goby::common::goby_time_function = boost::bind(&CpAcommsHandler::microsec_moos_time, this);
+
     
     source_database_.RecordErrorsTo(&error_collector_);
     disk_source_tree_.MapPath("/", "/");
@@ -79,6 +80,7 @@ CpAcommsHandler::CpAcommsHandler()
 
 #ifdef ENABLE_GOBY_V1_TRANSITIONAL_SUPPORT
     transitional_dccl_.convert_to_v2_representation(&cfg_);
+    glog.is(VERBOSE) && glog << group("pAcommsHandler") << "Configuration after transitional configuration modifications: \n" << cfg_ << std::flush;
 #else
     if(cfg_.has_transitional_cfg())
         glog.is(DIE) && glog << "transitional_cfg is set but pAcommsHandler was not compiled with the CMake flag 'enable_goby_v1_transitional_support' set to ON" << std::endl;
@@ -149,11 +151,11 @@ CpAcommsHandler::CpAcommsHandler()
                                           _1, cfg_.moos_var().driver_raw_out()));
         
         
-    }
-    
+    }    
     
     // update comms cycle
     subscribe(cfg_.moos_var().mac_cycle_update(), &CpAcommsHandler::handle_mac_cycle_update, this);    
+
 }
 
 CpAcommsHandler::~CpAcommsHandler()
@@ -179,11 +181,11 @@ void CpAcommsHandler::handle_mac_cycle_update(const CMOOSMsg& msg)
     goby::acomms::protobuf::MACUpdate update_msg;
     parse_for_moos(msg.GetString(), &update_msg);
     
-    glog << "got update for MAC: " << update_msg << std::endl;
+    glog << group("pAcommsHandler") << "got update for MAC: " << update_msg << std::endl;
 
     if(!update_msg.dest() == cfg_.modem_id())
     {
-        glog << "update not for us" << std::endl;
+        glog << group("pAcommsHandler") << "update not for us" << std::endl;
         return;
     }
 
@@ -216,14 +218,14 @@ void CpAcommsHandler::handle_mac_cycle_update(const CMOOSMsg& msg)
             if(mac_.size())
                 mac_.pop_back();
             else
-                glog.is(WARN) && glog << "Cannot POP_BACK of empty MAC cycle" << std::endl;
+                glog.is(WARN) && glog << group("pAcommsHandler") << "Cannot POP_BACK of empty MAC cycle" << std::endl;
             break;
             
         case goby::acomms::protobuf::MACUpdate::POP_FRONT:
             if(mac_.size())
                 mac_.pop_front();
             else
-                glog.is(WARN) && glog << "Cannot POP_FRONT of empty MAC cycle" << std::endl;
+                glog.is(WARN) && glog << group("pAcommsHandler") << "Cannot POP_FRONT of empty MAC cycle" << std::endl;
             break;
 
         case goby::acomms::protobuf::MACUpdate::INSERT:
@@ -318,13 +320,13 @@ void CpAcommsHandler::process_configuration()
     for(int i = 0, n = cfg_.load_shared_library_size(); i < n; ++i)
     {
         glog.is(VERBOSE) &&
-            glog << "Loading shared library: " << cfg_.load_shared_library(i) << std::endl;
+            glog << group("pAcommsHandler") << "Loading shared library: " << cfg_.load_shared_library(i) << std::endl;
         
         void* handle = dlopen(cfg_.load_shared_library(i).c_str(), RTLD_LAZY);
         if(!handle)
         {
-            glog << die << "Failed ... check path provided or add to /etc/ld.so.conf "
-                 << "or LD_LIBRARY_PATH" << std::endl;
+            glog.is(DIE) && glog << "Failed ... check path provided or add to /etc/ld.so.conf "
+                         << "or LD_LIBRARY_PATH" << std::endl;
         }
         dl_handles.push_back(handle);
     }
@@ -334,7 +336,7 @@ void CpAcommsHandler::process_configuration()
     for(int i = 0, n = cfg_.load_proto_file_size(); i < n; ++i)
     {
         glog.is(VERBOSE) &&
-            glog << "Loading protobuf file: " << cfg_.load_proto_file(i) << std::endl;
+            glog << group("pAcommsHandler") << "Loading protobuf file: " << cfg_.load_proto_file(i) << std::endl;
 
         
         if(!goby::util::DynamicProtobufManager::descriptor_pool().FindFileByName(
@@ -347,7 +349,7 @@ void CpAcommsHandler::process_configuration()
     {
         typedef boost::shared_ptr<google::protobuf::Message> GoogleProtobufMessagePointer;
         glog.is(VERBOSE) &&
-            glog << "Checking translator entry: " << cfg_.translator_entry(i).DebugString()
+            glog << group("pAcommsHandler") << "Checking translator entry: " << cfg_.translator_entry(i).DebugString()
                  << std::flush;
 
         // check that the protobuf file is loaded somehow
@@ -403,7 +405,7 @@ void CpAcommsHandler::handle_queue_receive(const google::protobuf::Message& msg)
     for(std::multimap<std::string, CMOOSMsg>::iterator it = out.begin(), n = out.end();
         it != n; ++it)
     {
-        glog.is(VERBOSE) && glog << "Publishing: " << it->second << std::endl;
+        glog.is(VERBOSE) && glog << group("pAcommsHandler") << "Publishing: " << it->second << std::endl;
         publish(it->second);
     }    
 }
@@ -411,7 +413,7 @@ void CpAcommsHandler::handle_queue_receive(const google::protobuf::Message& msg)
 
 void CpAcommsHandler::handle_encode_on_demand(const goby::acomms::protobuf::ModemTransmission& request_msg, google::protobuf::Message* data_msg)
 {
-    glog.is(VERBOSE) && glog << "Received encode on demand request: " << request_msg << std::endl;
+    glog.is(VERBOSE) && glog << group("pAcommsHandler") << "Received encode on demand request: " << request_msg << std::endl;
 
     
     boost::shared_ptr<google::protobuf::Message> created_message =
@@ -425,13 +427,13 @@ void CpAcommsHandler::handle_encode_on_demand(const goby::acomms::protobuf::Mode
 void CpAcommsHandler::create_on_publish(const CMOOSMsg& trigger_msg,
                                      const goby::moos::protobuf::TranslatorEntry& entry)
 {
-    glog.is(VERBOSE) && glog << "Received trigger: " << trigger_msg << std::endl;
+    glog.is(VERBOSE) && glog << group("pAcommsHandler") << "Received trigger: " << trigger_msg << std::endl;
 
     if(!entry.trigger().has_mandatory_content() ||
        trigger_msg.GetString().find(entry.trigger().mandatory_content()) != std::string::npos)
         translate_and_push(entry);
     else
-        glog.is(VERBOSE) && glog << "Message missing mandatory content for: " << entry.protobuf_name() << std::endl;
+        glog.is(VERBOSE) && glog << group("pAcommsHandler") << "Message missing mandatory content for: " << entry.protobuf_name() << std::endl;
         
 }
 
@@ -443,7 +445,7 @@ void CpAcommsHandler::create_on_multiplex_publish(const CMOOSMsg& moos_msg)
     if(&*msg == 0)
     {
         glog.is(WARN) &&
-            glog << "Multiplex receive failed: Unknown Protobuf type for " << moos_msg.GetString() << "; be sure it is compiled in or directly loaded into the goby::util::DynamicProtobufManager." << std::endl;
+             glog << group("pAcommsHandler") << "Multiplex receive failed: Unknown Protobuf type for " << moos_msg.GetString() << "; be sure it is compiled in or directly loaded into the goby::util::DynamicProtobufManager." << std::endl;
         return;
     }
 
@@ -454,7 +456,7 @@ void CpAcommsHandler::create_on_multiplex_publish(const CMOOSMsg& moos_msg)
     for(std::multimap<std::string, CMOOSMsg>::iterator it = out.begin(), n = out.end();
         it != n; ++it)
     {
-        glog.is(VERBOSE) && glog << "Inverse Publishing: " << it->second << std::endl;
+        glog.is(VERBOSE) && glog << group("pAcommsHandler") << "Inverse Publishing: " << it->second << std::endl;
         publish(it->second);
     }
 }
@@ -474,8 +476,8 @@ void CpAcommsHandler::create_on_timer(const boost::system::error_code& error,
       timer->async_wait(boost::bind(&CpAcommsHandler::create_on_timer, this,
                                        _1, entry, timer));
       
-      glog.is(VERBOSE) && glog << "Received trigger for: " << entry.protobuf_name() << std::endl;
-      glog.is(VERBOSE) && glog << "Next expiry: " << timer->expires_at() << std::endl;
+      glog.is(VERBOSE) && glog << group("pAcommsHandler") << "Received trigger for: " << entry.protobuf_name() << std::endl;
+      glog.is(VERBOSE) && glog << group("pAcommsHandler") << "Next expiry: " << timer->expires_at() << std::endl;
       
       translate_and_push(entry);
   }
@@ -488,7 +490,7 @@ void CpAcommsHandler::translate_and_push(const goby::moos::protobuf::TranslatorE
             dynamic_vars().all(), entry.protobuf_name());
 
     glog.is(DEBUG1) &&
-        glog << "Created message: \n" << created_message->DebugString() << std::endl;
+        glog << group("pAcommsHandler") << "Created message: \n" << created_message->DebugString() << std::endl;
 
     queue_manager_.push_message(*created_message);
 }

@@ -131,9 +131,9 @@ void goby::acomms::QueueManager::push_message(const google::protobuf::Message& d
     latest_meta_.set_non_repeated_size(codec_->size(dccl_msg));
 
     codec_->run_hooks(dccl_msg);
-    glog.is(DEBUG3) && glog << "Message post hooks: " << latest_meta_ << std::endl;
+    glog.is(DEBUG3) && glog << group(glog_push_group_) << "Message post hooks: " << latest_meta_ << std::endl;
 
-    glog.is(DEBUG1) && glog << group(glog_push_group_) << msg_string(desc) << ": attempting to push message addressed to " << latest_meta_.dest() << std::endl;
+    glog.is(DEBUG1) && glog << group(glog_push_group_) << msg_string(desc) << ": attempting to push message (destination: " << latest_meta_.dest() << ")" << std::endl;
     
     
     // loopback if set
@@ -156,6 +156,19 @@ void goby::acomms::QueueManager::push_message(const google::protobuf::Message& d
         glog.is(DEBUG1) && glog << group(glog_push_group_) << "Message is for us: using loopback, not physical interface" << std::endl;
         
         signal_receive(dccl_msg);
+
+        // provide an ACK if desired 
+        if((latest_meta_.has_ack_requested() && latest_meta_.ack_requested()) ||
+           queues_[dccl_id].queue_message_options().ack())
+        {
+            protobuf::ModemTransmission ack_msg;
+            ack_msg.set_time(goby::common::goby_time<uint64>());
+            ack_msg.set_src(latest_meta_.dest());
+            ack_msg.set_dest(latest_meta_.dest());
+            ack_msg.set_type(protobuf::ModemTransmission::ACK);
+            
+            signal_ack(ack_msg, dccl_msg);
+        }
     }
     // queue normally
     else 
@@ -259,8 +272,8 @@ void goby::acomms::QueueManager::handle_modem_data_request(protobuf::ModemTransm
 
                 glog.is(DEBUG1) && glog << group(glog_out_group_)
                                         << msg_string(winning_queue->descriptor())
-                                        << ": sending data to modem driver addressed to "
-                                        << next_user_frame.meta.dest() << std::endl;
+                                        << ": sending data to modem driver (destination: "
+                                        << next_user_frame.meta.dest() << ")" << std::endl;
                 
                 if(manip_manager_.has(codec_->id(winning_queue->descriptor()), protobuf::LOOPBACK_AS_SENT))
                 {
@@ -278,17 +291,17 @@ void goby::acomms::QueueManager::handle_modem_data_request(protobuf::ModemTransm
                 if(next_user_frame.meta.ack_requested())
                 {
                     glog.is(DEBUG2) &&
-                        glog << "inserting ack for queue: " << *winning_queue << std::endl;
+                        glog << group(glog_out_group_) << "inserting ack for queue: " << *winning_queue << std::endl;
                     waiting_for_ack_.insert(std::pair<unsigned, Queue*>(frame_number,
                                                                         winning_queue));
                 }
                 else
                 {
                     glog.is(DEBUG2) &&
-                        glog << "no ack, popping from queue: " << *winning_queue << std::endl;
+                        glog << group(glog_out_group_) << "no ack, popping from queue: " << *winning_queue << std::endl;
                     if(!winning_queue->pop_message(frame_number))
-                        glog.is(WARN) &&
-                            glog << "failed to pop from queue: " << *winning_queue << std::endl;
+                        glog.is(DEBUG1) &&
+                            glog << group(glog_out_group_) <<  "failed to pop from queue: " << *winning_queue << std::endl;
 
                     qsize(winning_queue); // notify change in queue size
                 }
@@ -329,7 +342,7 @@ void goby::acomms::QueueManager::handle_modem_data_request(protobuf::ModemTransm
                 
                 unsigned repeated_size_bytes = codec_->size_repeated(dccl_msgs);
             
-                glog.is(DEBUG2) && glog << "Size repeated " << repeated_size_bytes << std::endl;
+                glog.is(DEBUG2) && glog << group(glog_out_group_) << "Size repeated " << repeated_size_bytes << std::endl;
                 data->resize(repeated_size_bytes);
         
                 // if remaining bytes is greater than 0, we have a chance of adding another user-frame
@@ -375,9 +388,10 @@ goby::acomms::Queue* goby::acomms::QueueManager::find_next_sender(const protobuf
 
     Queue* winning_queue = 0;
     
-    glog.is(DEBUG1) && glog<< group(glog_priority_group_) << "starting priority contest\n"
-                            << "requesting: " << request_msg << "\n"
-                            << "have " << data.size() << "/" << request_msg.max_frame_bytes() << "B: " << goby::util::hex_encode(data) << std::endl;
+    glog.is(DEBUG1) && glog<< group(glog_priority_group_) << "Starting priority contest\n"
+                           << "\tRequesting "<< request_msg.max_num_frames()
+                           <<  " frame(s), have " << data.size()
+                           << "/" << request_msg.max_frame_bytes() << "B" << std::endl;
 
     
     for(std::map<unsigned, Queue>::iterator it = queues_.begin(), n = queues_.end(); it != n; ++it)
@@ -453,7 +467,7 @@ void goby::acomms::QueueManager::process_modem_ack(const protobuf::ModemTransmis
         {
         
             // got an ack, let's pop this!
-            glog.is(DEBUG1) && glog<< group(glog_in_group_) << "received ack for this id" << std::endl;
+            glog.is(DEBUG1) && glog << group(glog_in_group_) << "received ack for us from " << ack_msg.src() << " for frame " << frame_number << std::endl;
         
         
             std::multimap<unsigned, Queue *>::iterator it = waiting_for_ack_.find(frame_number);
@@ -464,7 +478,7 @@ void goby::acomms::QueueManager::process_modem_ack(const protobuf::ModemTransmis
                 boost::shared_ptr<google::protobuf::Message> removed_msg;
                 if(!q->pop_message_ack(frame_number, removed_msg))
                 {
-                    glog.is(WARN) && glog<< group(glog_in_group_) 
+                    glog.is(DEBUG1) && glog<< group(glog_in_group_)  << warn
                                          << "failed to pop message from "
                                          << q->name() << std::endl;
                 }
@@ -475,7 +489,7 @@ void goby::acomms::QueueManager::process_modem_ack(const protobuf::ModemTransmis
                 
                 }
 
-                glog.is(DEBUG1) && glog<< group(glog_in_group_) << ack_msg << std::endl;
+                glog.is(DEBUG2) && glog<< group(glog_in_group_) << ack_msg << std::endl;
             
                 waiting_for_ack_.erase(it);
             
@@ -491,8 +505,8 @@ void goby::acomms::QueueManager::process_modem_ack(const protobuf::ModemTransmis
 // in a "receive = " line of the configuration file
 void goby::acomms::QueueManager::handle_modem_receive(const protobuf::ModemTransmission& modem_message)
 {    
-    glog.is(DEBUG1) && glog<< group(glog_in_group_) << "received message"
-                            << ": " << modem_message << std::endl;
+    glog.is(DEBUG2) && glog<< group(glog_in_group_) << "Received message"
+                           << ": " << modem_message << std::endl;
 
     if(modem_message.type() == protobuf::ModemTransmission::ACK)
     {
@@ -506,6 +520,10 @@ void goby::acomms::QueueManager::handle_modem_receive(const protobuf::ModemTrans
         {
             try
             {
+                glog.is(DEBUG1) && glog << group(glog_in_group_)
+                                       << "Received DATA message from "
+                                        << modem_message.src() << std::endl;
+
                 std::list<boost::shared_ptr<google::protobuf::Message> > dccl_msgs =
                     codec_->decode_repeated<boost::shared_ptr<google::protobuf::Message> >(
                         modem_message.frame(frame_number));
@@ -543,8 +561,8 @@ void goby::acomms::QueueManager::handle_modem_receive(const protobuf::ModemTrans
             }
             catch(DCCLException& e)
             {
-                glog.is(WARN) && glog << group(glog_in_group_)
-                                      << "failed to decode " << e.what() << std::endl;
+                glog.is(DEBUG1) && glog << group(glog_in_group_) << warn
+                                        << "failed to decode " << e.what() << std::endl;
             }            
         }
     }
@@ -579,7 +597,7 @@ void goby::acomms::QueueManager::process_cfg()
             if(desc)
                 manip_manager_.add(codec_->id(desc), cfg_.manipulator_entry(i).manipulator(j));
             else
-                glog.is(WARN) && glog << "No message by the name: " << cfg_.manipulator_entry(i).protobuf_name() << "found, not setting manipulators for this type." << std::endl;
+                glog.is(DEBUG1) && glog << group(glog_push_group_) << warn << "No message by the name: " << cfg_.manipulator_entry(i).protobuf_name() << "found, not setting manipulators for this type." << std::endl;
             
         }
     }
@@ -620,7 +638,7 @@ void goby::acomms::QueueManager::set_latest_metadata(const boost::any& field_val
             throw(QueueException("Invalid type " + std::string(wire_value.type().name()) + " given for (queue_field).is_dest. Expected integer type"));
                     
         goby::glog.is(DEBUG2) &&
-            goby::glog << "setting dest to " << dest << std::endl;
+            goby::glog << group(glog_push_group_) << "setting dest to " << dest << std::endl;
                 
         latest_meta_.set_dest(dest);
     }
@@ -639,7 +657,7 @@ void goby::acomms::QueueManager::set_latest_metadata(const boost::any& field_val
             throw(QueueException("Invalid type " + std::string(wire_value.type().name()) + " given for (queue_field).is_src. Expected integer type"));
 
         goby::glog.is(DEBUG2) &&
-            goby::glog << "setting source to " << src << std::endl;
+            goby::glog << group(glog_push_group_) <<  "setting source to " << src << std::endl;
                 
         latest_meta_.set_src(src);
 
@@ -656,7 +674,7 @@ void goby::acomms::QueueManager::set_latest_metadata(const boost::any& field_val
             throw(QueueException("Invalid type " + std::string(field_value.type().name()) + " given for (goby.field).queue.is_time. Expected uint64 contained microseconds since UNIX, double containing seconds since UNIX or std::string containing as<std::string>(boost::posix_time::ptime)"));
 
         goby::glog.is(DEBUG2) &&
-            goby::glog << "setting time to " << as<boost::posix_time::ptime>(latest_meta_.time()) << std::endl;            
+            goby::glog << group(glog_push_group_) <<  "setting time to " << as<boost::posix_time::ptime>(latest_meta_.time()) << std::endl;            
         
     }
                 

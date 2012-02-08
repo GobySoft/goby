@@ -57,7 +57,7 @@ void goby::acomms::DCCLFieldCodecBase::field_encode(Bitset* bits,
     MessageHandler msg_handler(field);
 
     if(field)
-        glog.is(DEBUG1) && glog << group(DCCLCodec::glog_encode_group()) <<  "Starting encode for field: " << field->DebugString() << std::flush;
+        glog.is(DEBUG2) && glog << group(DCCLCodec::glog_encode_group()) <<  "Starting encode for field: " << field->DebugString() << std::flush;
 
     boost::any wire_value;
     field_pre_encode(&wire_value, field_value);
@@ -151,7 +151,7 @@ void goby::acomms::DCCLFieldCodecBase::field_decode(Bitset* bits,
         throw(DCCLException("Decode called with NULL Bitset"));    
     
     if(field)
-        glog.is(DEBUG1) && glog << group(DCCLCodec::glog_decode_group()) <<  "Starting decode for field: " << field->DebugString() << std::flush;
+        glog.is(DEBUG2) && glog << group(DCCLCodec::glog_decode_group()) <<  "Starting decode for field: " << field->DebugString() << std::flush;
 
     Bitset these_bits;
     BitsHandler bits_handler(&these_bits, bits);
@@ -181,7 +181,7 @@ void goby::acomms::DCCLFieldCodecBase::field_decode_repeated(Bitset* bits,
         throw(DCCLException("Decode called with NULL Bitset"));    
     
     if(field)
-        glog.is(DEBUG1) && glog  << group(DCCLCodec::glog_decode_group()) <<  "Starting repeated decode for field: " << field->DebugString();
+        glog.is(DEBUG2) && glog  << group(DCCLCodec::glog_decode_group()) <<  "Starting repeated decode for field: " << field->DebugString();
     
     Bitset these_bits;
     BitsHandler bits_handler(&these_bits, bits);
@@ -419,9 +419,9 @@ unsigned goby::acomms::DCCLFieldCodecBase::any_size_repeated(const std::vector<b
 void goby::acomms::DCCLFieldCodecBase::any_run_hooks(const boost::any& field_value)   
 {
     if(this_field())
-        glog.is(DEBUG1) && glog  << "running hooks for " << this_field()->DebugString() << std::endl;
+        glog.is(DEBUG2) && glog << group(DCCLCodec::glog_encode_group()) << "Running hooks for " << this_field()->DebugString() << std::flush;
     else
-        glog.is(DEBUG1) && glog  << "running hooks for base message" << std::endl;
+        glog.is(DEBUG2) && glog << group(DCCLCodec::glog_encode_group()) << "running hooks for base message" << std::endl;
 
 
     typedef boost::ptr_map<int, boost::signal<void (const boost::any& field_value,
@@ -448,12 +448,12 @@ void goby::acomms::DCCLFieldCodecBase::any_run_hooks(const boost::any& field_val
                 field_pre_encode(&wire_value, field_value);
                 
                 i->second->operator()(field_value, wire_value, extension_value);   
-                glog.is(DEBUG2) && glog  << "Found : " << i->first << ": " << extension_desc->DebugString() << std::endl;
+                glog.is(DEBUG2) && glog  <<  group(DCCLCodec::glog_encode_group()) <<"Found : " << i->first << ": " << extension_desc->DebugString() << std::endl;
             }
             
             catch(std::exception& e)
             {
-                glog.is(DEBUG1) && glog  << warn << "failed to run hook for " << i->first << ", exception: " << e.what() << std::endl;
+                glog.is(DEBUG1) && glog <<  group(DCCLCodec::glog_encode_group()) <<  warn << "failed to run hook for " << i->first << ", exception: " << e.what() << std::endl;
             }
         }
     }

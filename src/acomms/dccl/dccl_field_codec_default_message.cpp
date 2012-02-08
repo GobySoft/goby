@@ -17,6 +17,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
+#include "dccl.h"
 #include "dccl_field_codec_default_message.h"
 #include "goby/util/dynamic_protobuf_manager.h"
 
@@ -174,4 +175,29 @@ bool goby::acomms::DCCLDefaultMessageCodec::check_field(const google::protobuf::
     }
     
 }
+
+
+
+//
+// RunHooks
+//
+
+void goby::acomms::DCCLDefaultMessageCodec::RunHooks::repeated(
+    boost::shared_ptr<DCCLFieldCodecBase> codec,
+    bool* return_value,
+    const std::vector<boost::any>& field_values,
+    const google::protobuf::FieldDescriptor* field_desc)
+{
+    goby::glog.is(common::logger::DEBUG2) && glog << group(DCCLCodec::glog_encode_group()) << common::logger::warn << "Hooks not run on repeated message: " << field_desc->DebugString() << std::flush;
+}
+
+void goby::acomms::DCCLDefaultMessageCodec::RunHooks::single(
+    boost::shared_ptr<DCCLFieldCodecBase> codec,
+    bool* return_value,
+    const boost::any& field_value,
+    const google::protobuf::FieldDescriptor* field_desc)
+{
+    codec->field_run_hooks(return_value, field_value, field_desc);
+}
+
 

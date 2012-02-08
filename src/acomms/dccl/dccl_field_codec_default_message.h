@@ -92,19 +92,12 @@ namespace goby
                 static void repeated(boost::shared_ptr<DCCLFieldCodecBase> codec,
                                      bool* return_value,
                                      const std::vector<boost::any>& field_values,
-                                     const google::protobuf::FieldDescriptor* field_desc)
-                    {
-                        goby::glog.is(common::logger::DEBUG1) && glog << common::logger::warn << "Hooks not run on repeated message: " << field_desc->DebugString() << std::endl;
-                    }
+                                     const google::protobuf::FieldDescriptor* field_desc);
                 
                 static void single(boost::shared_ptr<DCCLFieldCodecBase> codec,
                                    bool* return_value,
                                    const boost::any& field_value,
-                                   const google::protobuf::FieldDescriptor* field_desc)
-                    {
-                        codec->field_run_hooks(return_value, field_value, field_desc);
-                    }
-                
+                                   const google::protobuf::FieldDescriptor* field_desc);
             };
 
 

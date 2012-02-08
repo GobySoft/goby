@@ -498,9 +498,12 @@ void goby::acomms::MMDriver::ccmuc(protobuf::ModemTransmission* msg)
     cache_outgoing_data(msg);
         
     if(msg->frame_size() > 0)
-    {
+    {        
+        glog.is(DEBUG1) && glog << "Mini-data message: " << *msg << std::endl;
         msg->mutable_frame(0)->resize(MINI_PACKET_SIZE);
-            
+        glog.is(DEBUG1) && glog << "Mini-data message after resize: " << *msg << std::endl;
+
+        
         if((msg->frame(0)[0] & 0x1F) != msg->frame(0)[0])
         {
             glog.is(DEBUG1) && glog << group(glog_out_group()) << warn << "MINI transmission can only be 13 bits; top three bits passed were *not* zeros, so discarding. You should AND your two bytes with 0x1FFF to get 13 bits" << std::endl;
@@ -511,7 +514,7 @@ void goby::acomms::MMDriver::ccmuc(protobuf::ModemTransmission* msg)
         NMEASentence nmea("$CCMUC", NMEASentence::IGNORE);
         nmea.push_back(msg->src()); // ADR1
         nmea.push_back(msg->dest()); // ADR2
-        nmea.push_back(goby::util::hex_encode(msg->frame(0).data())); //HHHH    
+        nmea.push_back(goby::util::hex_encode(msg->frame(0))); //HHHH 
         append_to_write_queue(nmea);
     }
     else

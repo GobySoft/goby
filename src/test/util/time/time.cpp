@@ -73,7 +73,7 @@ int main()
     std::cout << goby_time<double>() << std::endl;
     std::cout << goby_time<uint64>() << std::endl;
     assert(goby_time<uint64>() == TEST_MICROSEC_TIME); 
-    assert(goby_time<double>() == TEST_DOUBLE_TIME); 
+    assert(double_cmp(goby_time<double>(), TEST_DOUBLE_TIME, 6));
     assert(goby_time<ptime>() == TEST_PTIME); 
     
 

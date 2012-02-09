@@ -310,6 +310,59 @@ int main(int argc, char* argv[])
     goby::glog << "Message out: " << std::endl;
     goby::glog << embedded_test_out->DebugString() << std::endl;    
     assert(embedded_test_out->SerializePartialAsString() == embedded_test.SerializePartialAsString());
+
+
+    
+   sub_message_format_str = "em0.val=%117.0:1%,1uint64=%106.1%,0uint64=%106.0%.2uint64=%106.2%:em1.val=%117.1:1%,dbl0=%101.0%,dbl1=%101.1%,dbl2=%101.2%,dbl3=%101.3%";
+   {
+       protobuf::TranslatorEntry entry;
+       entry.set_protobuf_name("TestMsg");
+       
+       protobuf::TranslatorEntry::CreateParser* parser = entry.add_create();
+       parser->set_technique(protobuf::TranslatorEntry::TECHNIQUE_FORMAT);
+       parser->set_moos_var("TEST_MSG_1");
+       parser->set_format(sub_message_format_str);
+       
+       protobuf::TranslatorEntry::PublishSerializer* serializer = entry.add_publish();
+       serializer->set_technique(protobuf::TranslatorEntry::TECHNIQUE_FORMAT);
+       serializer->set_moos_var("TEST_MSG_1");
+       serializer->set_format(sub_message_format_str);
+       
+       translator.add_entry(entry);
+   }
+   
+   goby::glog << translator << std::endl;
+   
+   embedded_test.Clear();
+   embedded_test.add_msg_default_repeat()->set_val(21.123); 
+   embedded_test.add_msg_default_repeat()->set_val(100.5);
+   embedded_test.add_uint64_default_repeat(0);
+   embedded_test.add_uint64_default_repeat(100);
+   embedded_test.add_uint64_default_repeat(200);
+   moos_msgs = translator.protobuf_to_moos(embedded_test);  
+    
+   for(std::multimap<std::string, CMOOSMsg>::const_iterator it = moos_msgs.begin(),
+           n = moos_msgs.end();
+       it != n;
+       ++ it)
+   {
+       goby::glog << "Variable: " << it->first << "\n"
+                  << "Value: " << it->second.GetString() << std::endl;
+       assert(it->second.GetString() == "em0.val=21.123,1uint64=100,0uint64=0.2uint64=200:em1.val=100.5,dbl0=0,dbl1=0,dbl2=0,dbl3=0");
+   }
+   
+   typedef std::auto_ptr<google::protobuf::Message> GoogleProtobufMessagePointer;
+   embedded_test_out = translator.moos_to_protobuf<GoogleProtobufMessagePointer>(moos_msgs, "TestMsg");
+
+    goby::glog << "Message out: " << std::endl;
+    goby::glog << embedded_test_out->DebugString() << std::endl;    
+
+    embedded_test.add_double_default_repeat(0);
+    embedded_test.add_double_default_repeat(0);
+    embedded_test.add_double_default_repeat(0);
+    embedded_test.add_double_default_repeat(0);
+    assert(embedded_test_out->SerializePartialAsString() == embedded_test.SerializePartialAsString());
+
     
     
     std::cout << "all tests passed" << std::endl;

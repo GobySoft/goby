@@ -871,9 +871,10 @@ void goby::acomms::MMDriver::carxd(const NMEASentence& nmea, protobuf::ModemTran
             glog.is(DEBUG1) && glog << group(glog_out_group()) << warn << "frame count mismatch: (Micro-Modem reports): " << frame << ", (goby expects): " << m->frame_size() << std::endl;
         else
             m->add_frame(hex_decode(nmea[5]));
+
+        glog.is(DEBUG1) && glog << group(glog_in_group()) << "Received " << m->frame(m->frame_size()-1).size() << " byte DATA frame " << frame << " from " << m->src() << std::endl;
     }
-    
-    glog.is(DEBUG1) && glog << group(glog_in_group()) << "Received " << m->frame(m->frame_size()-1).size() << " byte DATA frame from " << m->src() << std::endl;
+
     
     frames_waiting_to_receive_.erase(frame);
     
@@ -1119,6 +1120,15 @@ void goby::acomms::MMDriver::cacyc(const NMEASentence& nmea, protobuf::ModemTran
     // we're receiving
     else
     {
+        unsigned rate = as<uint32>(nmea[4]);
+        if(local_cccyc_ && rate != 0) // clear flag for next cycle
+        {            
+            // if we poll for rates > 0, we get *two* CACYC - the one from the poll and the one from the message
+            // thus, ignore the first of these
+            local_cccyc_ = false;
+            return;
+        }       
+        
         unsigned num_frames = as<uint32>(nmea[6]);
         if(!frames_waiting_to_receive_.empty())
         {
@@ -1128,9 +1138,12 @@ void goby::acomms::MMDriver::cacyc(const NMEASentence& nmea, protobuf::ModemTran
 
         for(unsigned i = 0; i < num_frames; ++i)
             frames_waiting_to_receive_.insert(i);
+        
+        // if rate 0 and we didn't send the CCCYC, we have two cacsts (one for the cacyc and one for the carxd)
+        // otherwise, we have one
+        expected_remaining_cacst_ = (as<int32>(nmea[4]) == 0 && !local_cccyc_) ? 1 : 0;
 
-        // if rate 0, we have two cacsts (one for the cacyc and one for the carxd
-        expected_remaining_cacst_ = (as<int32>(nmea[4]) == 0) ? 1 : 0;
+        local_cccyc_ = false;
     }
 }
 

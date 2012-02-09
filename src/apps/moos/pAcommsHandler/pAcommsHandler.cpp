@@ -349,8 +349,7 @@ void CpAcommsHandler::process_configuration()
     {
         typedef boost::shared_ptr<google::protobuf::Message> GoogleProtobufMessagePointer;
         glog.is(VERBOSE) &&
-            glog << group("pAcommsHandler") << "Checking translator entry: " << cfg_.translator_entry(i).DebugString()
-                 << std::flush;
+            glog << group("pAcommsHandler") << "Checking translator entry: " << cfg_.translator_entry(i).protobuf_name() << std::endl;
 
         // check that the protobuf file is loaded somehow
         GoogleProtobufMessagePointer msg = goby::util::DynamicProtobufManager::new_protobuf_message<GoogleProtobufMessagePointer>(cfg_.translator_entry(i).protobuf_name());
@@ -427,7 +426,7 @@ void CpAcommsHandler::handle_encode_on_demand(const goby::acomms::protobuf::Mode
 void CpAcommsHandler::create_on_publish(const CMOOSMsg& trigger_msg,
                                      const goby::moos::protobuf::TranslatorEntry& entry)
 {
-    glog.is(VERBOSE) && glog << group("pAcommsHandler") << "Received trigger: " << trigger_msg << std::endl;
+    glog.is(VERBOSE) && glog << group("pAcommsHandler") << "Received trigger: " << trigger_msg.GetKey() << std::endl;
 
     if(!entry.trigger().has_mandatory_content() ||
        trigger_msg.GetString().find(entry.trigger().mandatory_content()) != std::string::npos)
@@ -456,7 +455,7 @@ void CpAcommsHandler::create_on_multiplex_publish(const CMOOSMsg& moos_msg)
     for(std::multimap<std::string, CMOOSMsg>::iterator it = out.begin(), n = out.end();
         it != n; ++it)
     {
-        glog.is(VERBOSE) && glog << group("pAcommsHandler") << "Inverse Publishing: " << it->second << std::endl;
+        glog.is(VERBOSE) && glog << group("pAcommsHandler") << "Inverse Publishing: " << it->second.GetKey() << std::endl;
         publish(it->second);
     }
 }

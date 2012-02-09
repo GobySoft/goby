@@ -229,42 +229,52 @@ void goby::transitional::DCCLTransitionalCodec::convert_xml_message_file(
            std::string old_format = publish.format();
            std::string new_format = boost::regex_replace(old_format, pattern, replace);
 
-           
+           int v1_index = 1;
            for(int j = 0, m = publish.message_vars().size(); j < m; ++j)
            {
-               int replacement_field = sequence_map[publish.message_vars()[j]->name()];
-               
-               // add any algorithms
-               bool added_algorithms = false;
-               BOOST_FOREACH(const std::string& algorithm, publish.algorithms()[j])
+               for(int k = 0, o = publish.message_vars()[j]->array_length(); k < o; ++k)
                {
-                   added_algorithms = true;
-                   goby::moos::protobuf::TranslatorEntry::PublishSerializer::Algorithm * new_alg = serializer->add_algorithm();
-                   std::vector<std::string> algorithm_parts;
-                   boost::split(algorithm_parts, algorithm, boost::is_any_of(":"));
-                   
-                   new_alg->set_name(algorithm_parts[0]);
-                   new_alg->set_primary_field(sequence_map[publish.message_vars()[j]->name()]);
-                   
-                   for(int k = 1, o = algorithm_parts.size(); k < o; ++k)
-                       new_alg->add_reference_field(sequence_map[algorithm_parts[k]]);
-                   
-                   new_alg->set_output_virtual_field(max_sequence);
-               }
 
-               if(added_algorithms)
-               {
-                   replacement_field = max_sequence;
-                   ++max_sequence;
+                   int replacement_field = sequence_map[publish.message_vars()[j]->name()];
+                   
+                   // add any algorithms
+                   bool added_algorithms = false;
+                   BOOST_FOREACH(const std::string& algorithm, publish.algorithms()[j])
+                   {
+                       added_algorithms = true;
+                       goby::moos::protobuf::TranslatorEntry::PublishSerializer::Algorithm * new_alg = serializer->add_algorithm();
+                       std::vector<std::string> algorithm_parts;
+                       boost::split(algorithm_parts, algorithm, boost::is_any_of(":"));
+                       
+                       new_alg->set_name(algorithm_parts[0]);
+                       new_alg->set_primary_field(sequence_map[publish.message_vars()[j]->name()]);
+                       
+                       for(int l = 1, p = algorithm_parts.size(); l < p; ++l)
+                           new_alg->add_reference_field(sequence_map[algorithm_parts[l]]);
+                       
+                       new_alg->set_output_virtual_field(max_sequence);
+                   }
+                   
+                   if(added_algorithms)
+                   {
+                       replacement_field = max_sequence;
+                       ++max_sequence;
+                   }
+
+                   std::string v2_index = goby::util::as<std::string>(replacement_field);
+                   if(o > 1)
+                       v2_index += "." + goby::util::as<std::string>(k);
+                   
+                   boost::algorithm::replace_all(new_moos_var,
+                                                 "%_GOBY1TEMP_" + goby::util::as<std::string>(v1_index) + "_",
+                                                 "%" + v2_index);
+                   boost::algorithm::replace_all(new_format,
+                                                 "%_GOBY1TEMP_" + goby::util::as<std::string>(v1_index) + "_",
+                                                 "%" + v2_index);
+
+                   ++v1_index;
                }
-                         
-               boost::algorithm::replace_all(new_moos_var, "%_GOBY1TEMP_" + goby::util::as<std::string>(j+1) + "_",
-                                             "%" + goby::util::as<std::string>(replacement_field));
-               boost::algorithm::replace_all(new_format, "%_GOBY1TEMP_" + goby::util::as<std::string>(j+1) + "_",
-                                             "%" + goby::util::as<std::string>(replacement_field));
-           
            }
- 
            serializer->set_moos_var(new_moos_var);
            serializer->set_format(new_format);
            

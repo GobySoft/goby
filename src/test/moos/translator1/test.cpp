@@ -261,9 +261,9 @@ int main(int argc, char* argv[])
                   << "Value: " << it->second.GetString() << std::endl;
 
        if(it->first == "NODE_REPORT_FORMAT")
-           assert(it->second.GetString() == "NAME=unicorn,X=550,Y=1023.5,HEADING=240,REPEAT={};LAT=42.5091075598637;LON=10.806955912844");
+           assert(it->second.GetString() == "NAME=unicorn,X=550,Y=1023.5,HEADING=240,REPEAT={};LAT=42.509107559864;LON=10.80695591284");
        else if(it->first == "NODE_REPORT_KEY_VALUE")
-           assert(it->second.GetString() == "name=unicorn,x=550,y=1023.5,heading=240,utm_y2lat(y)=42.5091075598637,utm_x2lon(x)=10.806955912844,name2modem_id(name)=3,name2modem_id+modem_id2type+to_upper(name)=AUV");
+           assert(it->second.GetString() == "name=unicorn,x=550,y=1023.5,heading=240,utm_y2lat(y)=42.509107559864,utm_x2lon(x)=10.80695591284,name2modem_id(name)=3,name2modem_id+modem_id2type+to_upper(name)=AUV");
        
    }
     

@@ -139,6 +139,9 @@ void goby::moos::MOOSTranslator::alg_utm_x2lon(transitional::DCCLMessageVal& mv,
     double lat = NaN;
     double lon = NaN;
     if(!(boost::math::isnan)(y) && !(boost::math::isnan)(x)) geodesy_.UTM2LatLong(x, y, lat, lon);    
+
+    const int LON_INT_DIGITS = 3;
+    lon = goby::util::unbiased_round(lon, std::numeric_limits<double>::digits10 - LON_INT_DIGITS-1);   
     mv = lon;
 }
 
@@ -152,6 +155,8 @@ void goby::moos::MOOSTranslator::alg_utm_y2lat(transitional::DCCLMessageVal& mv,
     double lon = NaN;
     if(!(boost::math::isnan)(x) && !(boost::math::isnan)(y)) geodesy_.UTM2LatLong(x, y, lat, lon);
     
+    const int LAT_INT_DIGITS = 2;
+    lat = goby::util::unbiased_round(lat, std::numeric_limits<double>::digits10 - LAT_INT_DIGITS-1);   
     mv = lat;
 }
 

@@ -15,7 +15,7 @@
 
 #include "goby/acomms/amac.h"
 #include "goby/acomms/connect.h"
-#include "goby/util/logger.h"
+#include "goby/common/logger.h"
 
 #include <iostream>
 
@@ -26,7 +26,7 @@ void init_transmission(const goby::acomms::protobuf::ModemTransmission& msg);
 int main(int argc, char* argv[])
 {
     goby::glog.set_name(argv[0]);
-    goby::glog.add_stream(goby::util::logger::DEBUG1, &std::clog);
+    goby::glog.add_stream(goby::common::logger::DEBUG1, &std::clog);
 
     //
     // 1. Create a MACManager
@@ -43,7 +43,7 @@ int main(int argc, char* argv[])
     slot->set_src(1);
     slot->set_rate(0);
     slot->set_type(goby::acomms::protobuf::ModemTransmission::DATA);
-    slot->SetExtension(goby::acomms::protobuf::slot_seconds, 5);
+    slot->set_slot_seconds(5);
     
     
     //
@@ -72,7 +72,7 @@ int main(int argc, char* argv[])
     new_slot.set_src(2);
     new_slot.set_rate(0);
     new_slot.set_type(goby::acomms::protobuf::ModemTransmission::DATA);
-    new_slot.SetExtension(goby::acomms::protobuf::slot_seconds, 5);
+    new_slot.set_slot_seconds(5);
     
     mac.push_back(new_slot);
 

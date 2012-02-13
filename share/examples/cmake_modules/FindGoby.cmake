@@ -40,7 +40,7 @@ endfunction()
 
 find_goby_library(GOBY_ACOMMS_LIBRARY goby_acomms ${GOBY_DIR})
 find_goby_library(GOBY_UTIL_LIBRARY goby_util ${GOBY_DIR})
-find_goby_library(GOBY_PROTOBUF_LIBRARY goby_protobuf ${GOBY_DIR})
+find_goby_library(GOBY_COMMON_LIBRARY goby_common ${GOBY_DIR})
 
 #
 # Standard find_package portion
@@ -57,7 +57,7 @@ if(GOBY_FOUND)
   set(GOBY_LIBRARIES 
     ${GOBY_ACOMMS_LIBRARY}
     ${GOBY_UTIL_LIBRARY}
-    ${GOBY_PROTOBUF_LIBRARY}
+    ${GOBY_COMMON_LIBRARY}
     )
 
   set(GOBY_ROOT_DIR "${GOBY_DIR}" CACHE STRING "Path to the root of Goby, e.g. /home/me/goby" FORCE)

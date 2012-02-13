@@ -36,7 +36,7 @@
 #include "chat_curses.h"
 
 using goby::util::as;
-using goby::util::goby_time;
+using goby::common::goby_time;
 
 int startup_failure();
 void received_data(const google::protobuf::Message&);
@@ -86,7 +86,7 @@ int main(int argc, char* argv[])
     //
     //  Initialize logging
     //
-    goby::glog.add_stream(goby::util::logger::DEBUG1, &fout_);
+    goby::glog.add_stream(goby::common::logger::DEBUG1, &fout_);
     goby::glog.set_name(argv[0]);
 
     
@@ -127,14 +127,14 @@ int main(int argc, char* argv[])
     my_slot.set_src(my_id_);
     my_slot.set_dest(buddy_id_);
     my_slot.set_rate(0);
-    my_slot.SetExtension(goby::acomms::protobuf::slot_seconds, 12);
+    my_slot.set_slot_seconds(12);
     my_slot.set_type(goby::acomms::protobuf::ModemTransmission::DATA);
     
     goby::acomms::protobuf::ModemTransmission buddy_slot;
     buddy_slot.set_src(buddy_id_);
     buddy_slot.set_dest(my_id_);
     buddy_slot.set_rate(0);
-    buddy_slot.SetExtension(goby::acomms::protobuf::slot_seconds, 12);
+    buddy_slot.set_slot_seconds(12);
     buddy_slot.set_type(goby::acomms::protobuf::ModemTransmission::DATA);
 
     if(my_id_ < buddy_id_)

@@ -13,13 +13,13 @@
 // You should have received a copy of the GNU General Public License
 // along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
-#include "goby/util/logger.h"
+#include "goby/common/logger.h"
 #include <boost/asio/deadline_timer.hpp> // for deadline_timer
 #include <fstream>
 
-using goby::util::Colors;
-using namespace goby::util::tcolor; // red, blue, etc.
-using namespace goby::util::logger; // VERBOSE, DEBUG, WARN, etc.
+using goby::common::Colors;
+using namespace goby::common::tcolor; // red, blue, etc.
+using namespace goby::common::logger; // VERBOSE, DEBUG, WARN, etc.
 using goby::glog;
 
 void output();
@@ -49,7 +49,7 @@ int main(int argc, char* argv[])
         fout.open(argv[2]);
         if(fout.is_open())
         {            
-            goby::glog.add_stream(goby::util::logger::DEBUG1, &fout);
+            goby::glog.add_stream(goby::common::logger::DEBUG1, &fout);
         }
         else
         {
@@ -62,35 +62,36 @@ int main(int argc, char* argv[])
     {
         std::cout << "--- testing quiet ---" << std::endl;
         // add a stream with the quiet setting
-        goby::glog.add_stream(goby::util::logger::QUIET, &std::cout);
+        goby::glog.add_stream(goby::common::logger::QUIET, &std::cout);
         output();
     }
     else if(verbosity == "warn")
     {
         std::cout << "--- testing warn ---" << std::endl;
         // add a stream with the quiet setting
-        goby::glog.add_stream(goby::util::logger::WARN, &std::cout);
+        goby::glog.add_stream(goby::common::logger::WARN, &std::cout);
         output();
     }
     else if(verbosity == "verbose")
     {
         std::cout << "--- testing verbose ---" << std::endl;
         // add a stream with the quiet setting
-        goby::glog.add_stream(goby::util::logger::VERBOSE, &std::cout);
+        goby::glog.add_stream(goby::common::logger::VERBOSE, &std::cout);
         output();
     }
     else if(verbosity == "debug")
     {
         std::cout << "--- testing debug 1---" << std::endl;
         // add a stream with the quiet setting
-        goby::glog.add_stream(goby::util::logger::DEBUG1, &std::cout);
+        goby::glog.add_stream(goby::common::logger::DEBUG1, &std::cout);
         output();
     }
     else if(verbosity == "gui")
     {
         std::cout << "--- testing gui ---" << std::endl;
         // add a stream with the quiet setting
-        goby::glog.add_stream(goby::util::logger::GUI, &std::cout);
+        goby::glog.add_stream(goby::common::logger::VERBOSE, &std::cout);
+        goby::glog.enable_gui();
         output();
 
         const int CLOSE_TIME = 60;

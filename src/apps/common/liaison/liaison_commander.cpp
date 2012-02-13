@@ -628,7 +628,8 @@ void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::genera
                         this, _1, message, field_desc, node));
 
         spin_box->setValue(refl->FieldSize(*message, field_desc));
-        
+        spin_box->valueChanged().emit(refl->FieldSize(*message, field_desc));
+
         modify_field = spin_box; 
     }    
     else
@@ -1291,6 +1292,7 @@ void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::handle
     WTreeTableNode* parent)
 {
     const google::protobuf::Reflection* refl = message->GetReflection();
+
     
     // add nodes
     while(desired_size > static_cast<int>(parent->childNodes().size()))

@@ -35,6 +35,7 @@ get_filename_component(goby_INC_DIR include ABSOLUTE)
 get_filename_component(goby_SRC_DIR src ABSOLUTE)
 get_filename_component(goby_SHARE_DIR share ABSOLUTE)
 get_filename_component(goby_BUILD_DIR build ABSOLUTE)
+get_filename_component(goby_SCRIPTS_DIR scripts ABSOLUTE)
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -fprofile-arcs -ftest-coverage")
 set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -Wall -fprofile-arcs -ftest-coverage")
@@ -60,10 +61,15 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${goby_LIB_DIR} CACHE PATH
 ## set instructions for `make install`
 install(DIRECTORY ${goby_BIN_DIR}/ DESTINATION ${CMAKE_INSTALL_PREFIX}/bin 
   FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+
+install(FILES ${goby_SCRIPTS_DIR}/analyze_dccl_xml DESTINATION ${CMAKE_INSTALL_PREFIX}/bin 
+  PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+
 install(DIRECTORY ${goby_LIB_DIR}/ DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
 install(DIRECTORY ${goby_SHARE_DIR}/ DESTINATION ${CMAKE_INSTALL_PREFIX}/share/goby)
 install(DIRECTORY ${goby_INC_DIR}/ DESTINATION ${CMAKE_INSTALL_PREFIX}/include
   FILES_MATCHING REGEX .*\\.h|.*\\.proto)
+
 
 
 ## let cmake know where the headers are

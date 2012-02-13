@@ -42,6 +42,7 @@ if(enable_cryptography)
 endif()  
 
 ## ncurses
+set(CURSES_USE_NCURSES TRUE)
 set(CURSES_NEED_NCURSES TRUE)
 find_package(Curses QUIET)
 set(CURSES_DOC_STRING "Enable NCurses GUI components (requires libncurses-dev)")

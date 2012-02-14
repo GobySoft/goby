@@ -1,7 +1,39 @@
 Goby Release Notes
 
 *****************
+Version 1.1.2
 
+-- Fixes for Ubuntu Oneiric
+-- New LOOPBACK_AS_SENT and PROMISCUOUS manipulators
+
+bzr log --line -n0 -r 146..
+
+156: Toby Schneider 2012-02-14 added missing <string> header
+155: Toby Schneider 2011-12-06 [merge] merge from MBAT cruise
+  154.1.1: Toby Schneider 2011-11-29 added new algorithms for MBAT cruise
+154: Toby Schneider 2011-09-22 fixes for oneiric
+153: Toby Schneider 2011-09-22 added LOOPBACK_AS_SENT (loopbacks all queued ...
+152: Toby Schneider 2011-09-20 changed references to gobysoft.com/doc to gob...
+151: Toby Schneider 2011-08-31 reverted bug where cmake did not recognize .....
+150: Chris Murphy 2011-06-27 Adding getter for size field of DCCLMessage.
+149: Chris Murphy 2011-06-26 Making destructor public.
+148: Chris Murphy 2011-06-26 Making ModemDriverBase destructor virtual.
+147: Chris Murphy 2011-06-20 Adding a microsecond time function to goby time...
+
+*****************
+Version 1.1.1
+
+-- Minor bug fixes to the 1.1.0 release
+
+bzr log --line -n0 -r 142..
+
+146: Toby Schneider 2011-06-16 release 1.1.1
+145: Toby Schneider 2011-06-16 incremented .so version since we broke ABI co...
+144: Toby Schneider 2011-06-10 fixed bug in DEPENDENCIES for lucid which doe...
+143: toby 2011-06-07 typo in mm_driver warning
+
+
+*****************
 Version 1.1.0
 -- Improvement to build system - added environmental variables "GOBY_CMAKE_FLAGS" and "GOBY_MAKE_FLAGS" to control build. Removed "INSTALL" and "CONFIGURE" in favor of a single script "BUILD"
 -- DCCL - </all> tag does not try to add any fields given explicitly by <message_var> tags.

@@ -5,12 +5,12 @@ compiling goby
 satisfy the third party dependencies in DEPENDENCIES:
 > ./DEPENDENCIES
 configure using cmake and install locally (goby/bin, goby/include, goby/lib)
-> ./BUILD
+> ./build.sh
 (optional) run unit tests
-> ./BUILD test
+> ./build.sh test
 to install to system (/usr/local/* by default)
-> ./BUILD install
+> ./build.sh install
 to install to some other location (e.g. /home/me/test/usr)
-> GOBY_CMAKE_FLAGS="-DCMAKE_INSTALL_PREFIX=/home/me/test/usr" ./BUILD
+> GOBY_CMAKE_FLAGS="-DCMAKE_INSTALL_PREFIX=/home/me/test/usr" ./build.sh
 
-The contents of the environmental variable GOBY_CMAKE_FLAGS is passed to `CMake` and the arguments to BUILD (plus the contents of GOBY_MAKE_FLAGS) is passed to `make`.
+The contents of the environmental variable GOBY_CMAKE_FLAGS is passed to `CMake` and the arguments to build.sh (plus the contents of GOBY_MAKE_FLAGS) is passed to `make`.

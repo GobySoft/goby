@@ -747,7 +747,6 @@ void goby::acomms::MMDriver::process_receive(const NMEASentence& nmea)
             //
         case CYC: cacyc(nmea, &transmit_msg_); break; // cycle init
         case XST: caxst(nmea, &transmit_msg_); break; // transmit stats for clock mode
-//        case RXP: transmit_msg_.Clear(); break;  // clear the message before receive
         case RXD: carxd(nmea, &receive_msg_); break; // data receive
         case MSG: camsg(nmea, &receive_msg_); break; // for picking up BAD_CRC
         case CST: cacst(nmea, &receive_msg_); break; // transmit stats for clock mode
@@ -1101,7 +1100,11 @@ void goby::acomms::MMDriver::cacyc(const NMEASentence& nmea, protobuf::ModemTran
         // handle a third-party CYC
         if(!local_cccyc_)
         {
-//            msg->Clear();
+            // we have to clear the message if XST isn't set since
+            // otherwise the transmit_msg was never cleared (or copied from initiate_transmission)
+            if(!nvram_cfg_["XST"])
+                msg->Clear();
+            
             msg->set_time(goby_time<uint64>());
 
             msg->set_src(as<uint32>(nmea[2])); // ADR1

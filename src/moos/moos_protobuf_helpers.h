@@ -780,13 +780,14 @@ namespace goby
                                         break;                    
                             
                                     case google::protobuf::FieldDescriptor::CPPTYPE_FLOAT:
-                                        out_repeated << ((j < refl->FieldSize(in, field_desc)) ?
+                                        out_repeated << std::setprecision(std::numeric_limits<float>::digits10)
+                                                     << ((j < refl->FieldSize(in, field_desc)) ?
                                                          refl->GetRepeatedFloat(in, field_desc, j) :
                                                          field_desc->default_value_float());
                                         break;
                             
                                     case google::protobuf::FieldDescriptor::CPPTYPE_DOUBLE:
-                                        out_repeated << std::setprecision(15)
+                                        out_repeated << std::setprecision(std::numeric_limits<double>::digits10)
                                                      << ((j < refl->FieldSize(in, field_desc)) ?
                                                          refl->GetRepeatedDouble(in, field_desc, j) :
                                                          field_desc->default_value_double());
@@ -849,11 +850,11 @@ namespace goby
                                         break;                    
                 
                                     case google::protobuf::FieldDescriptor::CPPTYPE_FLOAT:
-                                        out_format % refl->GetFloat(in, field_desc);
+                                        out_format % boost::io::group(std::setprecision(std::numeric_limits<float>::digits10), refl->GetFloat(in, field_desc));
                                         break;
                 
                                     case google::protobuf::FieldDescriptor::CPPTYPE_DOUBLE:
-                                        out_format % refl->GetDouble(in, field_desc);
+                                        out_format % boost::io::group(std::setprecision(std::numeric_limits<double>::digits10), refl->GetDouble(in, field_desc));
                                         break;
                 
                                     case google::protobuf::FieldDescriptor::CPPTYPE_ENUM:

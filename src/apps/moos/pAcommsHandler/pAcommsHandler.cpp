@@ -34,6 +34,7 @@
 #include "pAcommsHandler.h"
 #include "goby/util/sci.h"
 #include "goby/moos/moos_protobuf_helpers.h"
+#include "goby/moos/moos_ufield_sim_driver.h"
 
 using namespace goby::common::tcolor;
 using namespace goby::common::logger;
@@ -293,6 +294,11 @@ void CpAcommsHandler::process_configuration()
         case pAcommsHandlerConfig::DRIVER_ABC_EXAMPLE_MODEM:
             driver_ = new goby::acomms::ABCDriver;
             break;
+
+        case pAcommsHandlerConfig::DRIVER_UFIELD_SIM_DRIVER:
+            driver_ = new goby::moos::UFldDriver;
+            break;
+
             
         case pAcommsHandlerConfig::DRIVER_NONE: break;
     }    

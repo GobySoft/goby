@@ -1,0 +1,19 @@
+import "goby/acomms/protobuf/driver_base.proto";
+import "goby/moos/protobuf/modem_id_lookup.proto";
+
+package goby.moos.protobuf;
+
+message Config
+{
+  extend goby.acomms.protobuf.DriverConfig 
+  {
+    optional string moos_server = 1300 [default="localhost"];
+    optional int32 moos_port = 1301 [default=9000];
+    optional string ufield_outgoing_moos_var = 1302 [default="NODE_MESSAGE_LOCAL"];
+    optional string ufield_incoming_moos_var = 1303 [default="NODE_MESSAGE"];
+
+    repeated int32 rate_to_bytes = 1304;
+    repeated ModemIdEntry id_entry = 1305;
+    
+  }
+}

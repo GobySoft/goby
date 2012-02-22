@@ -4,7 +4,7 @@
 # or type > man cmake
 
 # this project is intended to be built out of source by using 
-# > ./INSTALL
+# > ./build.sh
 
 cmake_minimum_required(VERSION 2.6.0 FATAL_ERROR)
 project(goby)
@@ -23,7 +23,7 @@ set(GOBY_VERSION_MAJOR "2")
 set(GOBY_VERSION_MINOR "0")
 set(GOBY_VERSION_PATCH "0-beta4")
 set(GOBY_VERSION "${GOBY_VERSION_MAJOR}.${GOBY_VERSION_MINOR}.${GOBY_VERSION_PATCH}")
-set(GOBY_VERSION_DATE "2012 Jan 25")
+set(GOBY_VERSION_DATE "2012 Feb 22")
 
 # give Goby 2 series a few more soversions
 set(GOBY_SOVERSION "21")

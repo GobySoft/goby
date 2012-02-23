@@ -71,6 +71,13 @@ message ProtobufCommanderConfig
   }
   optional DatabaseColumnWidthPixels database_width = 22;
 
+  message ModalDialogDimensions
+  {
+    optional int32 width = 1 [default = 800];
+    optional int32 height = 2 [default = 200];
+  }
+  optional ModalDialogDimensions modal_dimensions = 23;
+  
   repeated string subscription = 30;
 }
 

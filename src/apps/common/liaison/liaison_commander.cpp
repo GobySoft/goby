@@ -356,7 +356,9 @@ void goby::common::LiaisonCommander::ControlsContainer::send_message()
     WGroupBox* message_box = new WGroupBox("Message to send", dialog.contents());
     new WText("<pre>" + current_command->message_->DebugString() + "</pre>", message_box);
 
-    message_box->setMaximumSize(800, 600);
+     
+    message_box->setMaximumSize(pb_commander_config_.modal_dimensions().width(),
+                                pb_commander_config_.modal_dimensions().height());
     message_box->setOverflow(WContainerWidget::OverflowAuto);
 
 //    dialog.setResizable(true);
@@ -505,7 +507,9 @@ void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::handle
      WGroupBox* message_box = new WGroupBox("Message posted", database_dialog_->contents());
      new WText("<pre>" + message->DebugString() + "</pre>", message_box);
      
-     message_box->setMaximumSize(800, 600);
+     message_box->setMaximumSize(pb_commander_config_.modal_dimensions().width(),
+                                 pb_commander_config_.modal_dimensions().height());
+
      message_box->setOverflow(WContainerWidget::OverflowAuto);
 
 

@@ -243,12 +243,16 @@ std::ostream& goby::acomms::operator<< (std::ostream& out, const QueueManager& d
 void goby::acomms::QueueManager::handle_modem_data_request(protobuf::ModemTransmission* msg)
 {
     // clear old waiting acknowledgments and reset packet defaults
-    clear_packet();
+    clear_packet();    
     
     for(int frame_number = msg->frame_size(), total_frames = msg->max_num_frames();
         frame_number < total_frames; ++frame_number)
     {
         std::string* data = msg->add_frame();
+
+        glog.is(DEBUG2) && glog << group(glog_priority_group_)
+                                << "Finding next sender: "
+                                << *msg << std::flush;
         
         // first (0th) user-frame
         Queue* winning_queue = find_next_sender(*msg, *data, true);
@@ -256,7 +260,6 @@ void goby::acomms::QueueManager::handle_modem_data_request(protobuf::ModemTransm
         // no data at all for this frame ... :(
         if(!winning_queue)
         {
-            msg->set_ack_requested(packet_ack_);
             msg->set_dest(packet_dest_);
             glog.is(DEBUG1) && glog << group(glog_out_group_)
                                     << "No data found. sending empty message to modem driver."
@@ -357,12 +360,13 @@ void goby::acomms::QueueManager::handle_modem_data_request(protobuf::ModemTransm
                 }
             }
         
-            msg->set_ack_requested(packet_ack_);
             // finally actually encode the message
             *data = codec_->encode_repeated<boost::shared_ptr<google::protobuf::Message> >(dccl_msgs);
             
         }
     }
+    // only discipline the ACK value at the end, after all chances of making packet_ack_ = true are done
+    msg->set_ack_requested(packet_ack_);
 }
 
 
@@ -455,13 +459,13 @@ void goby::acomms::QueueManager::process_modem_ack(const protobuf::ModemTransmis
         {
             glog.is(WARN) && glog << group(glog_in_group_)
                                   << "ignoring ack for modem_id = " << ack_msg.dest() << std::endl;
-            return;
+            continue;
         }
         else if(!waiting_for_ack_.count(frame_number))
         {
             glog.is(DEBUG1) && glog << group(glog_in_group_)
-                                    << "got ack but we were not expecting one" << std::endl;
-            return;
+                                    << "got ack but we were not expecting one from " << ack_msg.src() << " for frame " << frame_number << std::endl;
+            continue;
         }
         else
         {

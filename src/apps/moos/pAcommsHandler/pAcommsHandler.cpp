@@ -155,7 +155,8 @@ CpAcommsHandler::CpAcommsHandler()
     
     // update comms cycle
     subscribe(cfg_.moos_var().mac_cycle_update(), &CpAcommsHandler::handle_mac_cycle_update, this);    
-
+    
+    subscribe(cfg_.moos_var().queue_flush(), &CpAcommsHandler::handle_flush_queue, this);    
 }
 
 CpAcommsHandler::~CpAcommsHandler()
@@ -246,6 +247,18 @@ void CpAcommsHandler::handle_mac_cycle_update(const CMOOSMsg& msg)
     mac_.update();
     
 }
+
+
+void CpAcommsHandler::handle_flush_queue(const CMOOSMsg& msg)
+{
+    goby::acomms::protobuf::QueueFlush flush;
+    parse_for_moos(msg.GetString(), &flush);
+    
+    glog.is(VERBOSE) && glog << group("pAcommsHandler") <<  "Queue flush request: " << flush << std::endl;
+    queue_manager_.flush_queue(flush);
+}
+
+
 
 void CpAcommsHandler::handle_goby_signal(const google::protobuf::Message& msg1,
                                          const std::string& moos_var1,
@@ -356,6 +369,7 @@ void CpAcommsHandler::process_configuration()
 
         // validate with DCCL
         dccl_->validate(msg->GetDescriptor());
+        queue_manager_.add_queue(msg->GetDescriptor());
         
         if(cfg_.translator_entry(i).trigger().type() ==
            goby::moos::protobuf::TranslatorEntry::Trigger::TRIGGER_PUBLISH)

@@ -98,6 +98,7 @@ class CpAcommsHandler : public GobyMOOSApp
     void handle_raw(const goby::acomms::protobuf::ModemRaw& msg, const std::string& moos_var);
 
     void handle_mac_cycle_update(const CMOOSMsg& msg);
+    void handle_flush_queue(const CMOOSMsg& msg);
 
     void handle_encode_on_demand(const goby::acomms::protobuf::ModemTransmission& request_msg,
                                  google::protobuf::Message* data_msg);

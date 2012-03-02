@@ -327,7 +327,8 @@ void GobyMOOSApp::read_configuration(google::protobuf::Message* cfg)
             std::cout << "This is Version " << goby::VERSION_STRING
                       << " of the Goby Underwater Autonomy Project released on "
                       << goby::VERSION_DATE
-                      << ".\nSee https://launchpad.net/goby to search for updates." << std::endl;
+                      << ". (compiled on " << goby::COMPILE_DATE << ")\n"
+                      <<" See https://launchpad.net/goby to search for updates." << std::endl;
             exit(EXIT_SUCCESS);            
         }
         

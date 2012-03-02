@@ -29,6 +29,7 @@ namespace goby
 {
     const std::string VERSION_STRING = "@GOBY_VERSION@";
     const std::string VERSION_DATE = "@GOBY_VERSION_DATE@";
+    const std::string COMPILE_DATE = "@GOBY_COMPILE_DATE@";
 }
 
 #endif

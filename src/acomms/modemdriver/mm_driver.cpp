@@ -847,8 +847,9 @@ void goby::acomms::MMDriver::camsg(const NMEASentence& nmea, protobuf::ModemTran
         // if enabled cacst will signal_receive, otherwise signal if this is the last frame
         if(frames_waiting_to_receive_.empty() && !nvram_cfg_["CST"])
             signal_receive_and_clear(m);
+
+        glog.is(DEBUG1) && glog << group(glog_in_group()) << warn << "Received message with bad CRC" << std::endl;
     }    
-    glog.is(DEBUG1) && glog << group(glog_in_group()) << warn << "Received message with bad CRC" << std::endl;
 }
 
 void goby::acomms::MMDriver::carxd(const NMEASentence& nmea, protobuf::ModemTransmission* m)

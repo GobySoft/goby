@@ -58,6 +58,7 @@ ubuntu|debian)
  	    libboost-program-options-dev
  	    libboost-filesystem-dev
  	    libboost-signals-dev
+            libboost-regex-dev
  	    libprotobuf-dev
  	    libprotoc-dev
  	    protobuf-compiler"

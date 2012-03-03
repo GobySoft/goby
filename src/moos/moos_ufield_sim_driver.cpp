@@ -101,7 +101,7 @@ void goby::moos::UFldDriver::handle_initiate_transmission(
                << ",dest_node=" << dest
                << ",var_name=GOBY_UFIELD_INCOMING"
                << ",string_val="
-               << "type=DATA" <<
+               << "type=DATA" 
                << ",src=" << msg.src()
                << ",dest=" << msg.dest()
                << ",ack=" << goby::util::as<std::string>(msg.ack_requested())

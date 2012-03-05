@@ -63,7 +63,7 @@ void goby::moos::UFldDriver::startup(const goby::acomms::protobuf::DriverConfig&
         glog << group(glog_out_group())
              << "Connected to MOOSDB." << std::endl;
     
-    moos_client_.Register(driver_cfg_.GetExtension(protobuf::Config::ufield_incoming_moos_var), 0);
+    moos_client_.Register(driver_cfg_.GetExtension(protobuf::Config::incoming_moos_var), 0);
 } 
 
 void goby::moos::UFldDriver::shutdown()
@@ -96,24 +96,34 @@ void goby::moos::UFldDriver::handle_initiate_transmission(
                            modem_id2name_.left.find(msg.src())->second :
                            "unknown");
         
+        std::string hex = hex_encode(msg.frame(0));
+        
         std::stringstream out_ss;
         out_ss << "src_node=" << src
                << ",dest_node=" << dest
-               << ",var_name=GOBY_UFIELD_INCOMING"
-               << ",string_val=" << hex_encode(msg.frame(0));
-
+               << ",var_name=" << driver_cfg_.GetExtension(protobuf::Config::incoming_moos_var)
+               << ",string_val=" << hex;
+        
         goby::acomms::protobuf::ModemRaw out_raw;
         out_raw.set_raw(out_ss.str());
         ModemDriverBase::signal_raw_outgoing(out_raw);
 
+        
         const std::string& out_moos_var =
-            driver_cfg_.GetExtension(protobuf::Config::ufield_outgoing_moos_var);
-        
-        glog.is(DEBUG1) &&
-            glog << group(glog_out_group())  << out_moos_var << ": " <<  out_ss.str() << std::endl;
+            driver_cfg_.GetExtension(protobuf::Config::outgoing_moos_var);
 
+        glog.is(DEBUG1) &&
+            glog << group(glog_out_group())  << out_moos_var << ": " <<  hex << std::endl;
+
+        moos_client_.Notify(out_moos_var, hex);
+
+        const std::string& out_ufield_moos_var =
+            driver_cfg_.GetExtension(protobuf::Config::ufield_outgoing_moos_var);
+
+        glog.is(DEBUG1) &&
+            glog << group(glog_out_group())  << out_ufield_moos_var << ": " <<  out_ss.str() << std::endl;
         
-        moos_client_.Notify(out_moos_var, out_ss.str());
+        moos_client_.Notify(out_ufield_moos_var, out_ss.str());
     }
 } 
 
@@ -125,28 +135,23 @@ void goby::moos::UFldDriver::do_work()
         for(MOOSMSG_LIST::iterator it = msgs.begin(),
                 end = msgs.end(); it != end; ++it)
         {
-            const std::string& in_moos_var = driver_cfg_.GetExtension(protobuf::Config::ufield_incoming_moos_var);
+            const std::string& in_moos_var = driver_cfg_.GetExtension(protobuf::Config::incoming_moos_var);
             if(it->GetKey() == in_moos_var)
             {
                 const std::string& value = it->GetString();
                 
                 glog.is(DEBUG1) &&
-                    glog << group(glog_in_group())  << in_moos_var << ": " << value  << std::endl;
-                
-                int src, dest;
-                goby::moos::val_from_string(src, value, "src_node");
-                goby::moos::val_from_string(dest, value, "dest_node");
+                    glog << group(glog_in_group())  << in_moos_var << ": " << value  << std::endl;                
 
-                std::string hex;
-                goby::moos::val_from_string(hex, value, "string_val");
-                
                 goby::acomms::protobuf::ModemTransmission msg;
-                msg.set_src(src);
-                msg.set_dest(dest);
-                msg.set_time(goby::common::goby_time<uint64>());
 
+                if(modem_id2name_.right.count(it->GetSourceAux()))
+                    msg.set_src(modem_id2name_.right.find(it->GetSourceAux())->second);
+                
+                msg.set_time(goby::common::goby_time<uint64>());
+                
                 msg.set_type(goby::acomms::protobuf::ModemTransmission::DATA);
-                msg.add_frame(hex_decode(hex));
+                msg.add_frame(hex_decode(value));
                 ModemDriverBase::signal_receive(msg);
             }
         }

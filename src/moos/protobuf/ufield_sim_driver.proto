@@ -9,11 +9,14 @@ message Config
   {
     optional string moos_server = 1300 [default="localhost"];
     optional int32 moos_port = 1301 [default=9000];
-    optional string ufield_outgoing_moos_var = 1302 [default="NODE_MESSAGE_LOCAL"];
-    optional string ufield_incoming_moos_var = 1303 [default="NODE_MESSAGE"];
 
-    repeated int32 rate_to_bytes = 1304;
-    repeated ModemIdEntry id_entry = 1305;
+    optional string incoming_moos_var = 1302 [default="ACOMMS_UFIELD_DRIVER_IN"];
+    optional string outgoing_moos_var = 1303 [default="ACOMMS_UFIELD_DRIVER_OUT"];
+
+    optional string ufield_outgoing_moos_var = 1304 [default="NODE_MESSAGE_LOCAL"];
+
+    repeated int32 rate_to_bytes = 1305;
+    repeated ModemIdEntry id_entry = 1306;
     
   }
 }

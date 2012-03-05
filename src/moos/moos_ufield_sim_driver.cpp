@@ -89,46 +89,51 @@ void goby::moos::UFldDriver::handle_initiate_transmission(
     // don't send an empty message
     if(msg.frame_size() && msg.frame(0).size())
     {
-        std::string dest = "unknown";
-        if(msg.dest() == acomms::BROADCAST_ID)
-            dest = "all";
-        else if(modem_id2name_.left.count(msg.dest()))
-            dest = modem_id2name_.left.find(msg.dest())->second;
-        
-        std::string src = (modem_id2name_.left.count(msg.src()) ?
-                           modem_id2name_.left.find(msg.src())->second :
-                           "unknown");
-        
-        std::string hex = hex_encode(msg.SerializeAsString());
-        
-        std::stringstream out_ss;
-        out_ss << "src_node=" << src
-               << ",dest_node=" << dest
-               << ",var_name=" << driver_cfg_.GetExtension(protobuf::Config::incoming_moos_var)
-               << ",string_val=" << hex;
-        
-        goby::acomms::protobuf::ModemRaw out_raw;
-        out_raw.set_raw(out_ss.str());
-        ModemDriverBase::signal_raw_outgoing(out_raw);
-
-        
-        const std::string& out_moos_var =
-            driver_cfg_.GetExtension(protobuf::Config::outgoing_moos_var);
-
-        glog.is(DEBUG1) &&
-            glog << group(glog_out_group())  << out_moos_var << ": " <<  hex << std::endl;
-
-        moos_client_.Notify(out_moos_var, hex);
-
-        const std::string& out_ufield_moos_var =
-            driver_cfg_.GetExtension(protobuf::Config::ufield_outgoing_moos_var);
-        
-        glog.is(DEBUG1) &&
-            glog << group(glog_out_group())  << out_ufield_moos_var << ": " <<  out_ss.str() << std::endl;
-        
-        moos_client_.Notify(out_ufield_moos_var, out_ss.str());
+        send_message(msg);
     }
 } 
+
+void goby::moos::UFldDriver::send_message(const goby::acomms::protobuf::ModemTransmission& msg)
+{            
+    std::string dest = "unknown";
+    if(msg.dest() == acomms::BROADCAST_ID)
+        dest = "all";
+    else if(modem_id2name_.left.count(msg.dest()))
+        dest = modem_id2name_.left.find(msg.dest())->second;
+        
+    std::string src = (modem_id2name_.left.count(msg.src()) ?
+                       modem_id2name_.left.find(msg.src())->second :
+                       "unknown");
+
+    std::string hex = hex_encode(msg.SerializeAsString());
+        
+    std::stringstream out_ss;
+    out_ss << "src_node=" << src
+           << ",dest_node=" << dest
+           << ",var_name=" << driver_cfg_.GetExtension(protobuf::Config::incoming_moos_var)
+           << ",string_val=" << hex;
+        
+    goby::acomms::protobuf::ModemRaw out_raw;
+    out_raw.set_raw(out_ss.str());
+    ModemDriverBase::signal_raw_outgoing(out_raw);
+        
+    const std::string& out_moos_var =
+        driver_cfg_.GetExtension(protobuf::Config::outgoing_moos_var);
+
+    glog.is(DEBUG1) &&
+        glog << group(glog_out_group())  << out_moos_var << ": " <<  hex << std::endl;
+
+    moos_client_.Notify(out_moos_var, hex);
+
+    const std::string& out_ufield_moos_var =
+        driver_cfg_.GetExtension(protobuf::Config::ufield_outgoing_moos_var);
+        
+    glog.is(DEBUG1) &&
+        glog << group(glog_out_group())  << out_ufield_moos_var << ": " <<  out_ss.str() << std::endl;
+        
+    moos_client_.Notify(out_ufield_moos_var, out_ss.str());
+}
+
 
 void goby::moos::UFldDriver::do_work()
 {
@@ -148,6 +153,18 @@ void goby::moos::UFldDriver::do_work()
                 
                 goby::acomms::protobuf::ModemTransmission msg;
                 msg.ParseFromString(hex_decode(value));
+
+                // ack any packets
+                if(msg.ack_requested() && msg.dest() != acomms::BROADCAST_ID)
+                {
+                    goby::acomms::protobuf::ModemTransmission ack;
+                    ack.set_type(goby::acomms::protobuf::ModemTransmission::ACK);
+                    ack.set_src(msg.dest());
+                    ack.set_dest(msg.src());
+                    for(int i = 0, n = msg.frame_size(); i < n; ++i)
+                        ack.add_acked_frame(i);
+                    send_message(ack);
+                }
                 
                 ModemDriverBase::signal_receive(msg);
             }

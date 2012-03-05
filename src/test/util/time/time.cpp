@@ -50,10 +50,12 @@ int main()
     
     assert(goby::common::unix_double2ptime(TEST_DOUBLE_TIME) == TEST_PTIME);
     assert(as<ptime>(TEST_DOUBLE_TIME) == TEST_PTIME);  // same as previous line
-    
-    assert(goby::common::ptime2unix_microsec(TEST_PTIME) == TEST_MICROSEC_TIME);
-    assert(as<uint64>(TEST_PTIME) == TEST_MICROSEC_TIME);  // same as previous line
 
+    std::cout << "goby::common::ptime2unix_microsec(TEST_PTIME) " << goby::common::ptime2unix_microsec(TEST_PTIME) << std::endl;
+
+    assert(goby::common::ptime2unix_microsec(TEST_PTIME) == TEST_MICROSEC_TIME);
+    assert(as<uint64>(TEST_PTIME) == TEST_MICROSEC_TIME);  // same as previous line    
+    
     assert(goby::common::unix_microsec2ptime(TEST_MICROSEC_TIME) == TEST_PTIME);
     assert(as<ptime>(TEST_MICROSEC_TIME) == TEST_PTIME); // same as previous line
 
@@ -77,7 +79,17 @@ int main()
     assert(goby_time<ptime>() == TEST_PTIME); 
     
 
-           
+    // test dates in the next century
+    const double FAR_FUTURE_COMPARISON = 13309696209.39986;
+    ptime far_future_ptime = goby::common::unix_double2ptime(FAR_FUTURE_COMPARISON);
+    double far_future_time = goby::common::ptime2unix_double(far_future_ptime);
+    std::cout << far_future_ptime << "=" << far_future_time << "=" << FAR_FUTURE_COMPARISON << " ?" << std::endl;
+    
+    assert(double_cmp(far_future_time,FAR_FUTURE_COMPARISON, 5));
+
+    const uint64 FAR_FUTURE_COMPARISON_UINT64 = FAR_FUTURE_COMPARISON * 1e6;
+    assert(goby::common::ptime2unix_microsec(goby::common::unix_microsec2ptime(FAR_FUTURE_COMPARISON_UINT64)) == FAR_FUTURE_COMPARISON_UINT64);
+
     
     std::cout << "all tests passed" << std::endl;
     

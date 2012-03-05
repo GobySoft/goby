@@ -43,6 +43,7 @@ namespace goby
             void handle_initiate_transmission(const goby::acomms::protobuf::ModemTransmission& m);
 
           private:
+            void send_message(const goby::acomms::protobuf::ModemTransmission& msg);
             
           private:
             enum { DEFAULT_PACKET_SIZE=64 };

@@ -68,6 +68,8 @@ class CpAcommsHandler : public GobyMOOSApp
     static void delete_instance();
     
   private:
+    typedef boost::asio::basic_deadline_timer<goby::common::GobyTime> Timer;
+    
     CpAcommsHandler();
     ~CpAcommsHandler();
     void loop();     // from GobyMOOSApp
@@ -83,7 +85,7 @@ class CpAcommsHandler : public GobyMOOSApp
     void create_on_multiplex_publish(const CMOOSMsg& moos_msg);
     void create_on_timer(const boost::system::error_code& error,
                          const goby::moos::protobuf::TranslatorEntry& entry,
-                         boost::asio::deadline_timer* timer);
+                         Timer* timer);
     
     void translate_and_push(const goby::moos::protobuf::TranslatorEntry& entry);    
     
@@ -144,7 +146,7 @@ class CpAcommsHandler : public GobyMOOSApp
     boost::asio::io_service::work work_;
 
     
-    std::vector<boost::shared_ptr<boost::asio::deadline_timer> > timers_;
+    std::vector<boost::shared_ptr<Timer> > timers_;
     
     static pAcommsHandlerConfig cfg_;
     static CpAcommsHandler* inst_;    

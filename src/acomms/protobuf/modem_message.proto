@@ -25,6 +25,10 @@ message ModemTransmission
     MICROMODEM_REMUS_LBL_RANGING = 1001;     // modem 1 pings a REMUS network of long baseline (LBL) beacons: $CCPDT
     MICROMODEM_NARROWBAND_LBL_RANGING = 1002;    // modem 1 pings up to four transponders: $CCPNT
     MICROMODEM_MINI_DATA = 1003; // 13 bits (represented as a 1 frame, 2 byte data transmission where data is AND'd with 0x1ff) mini data transmission
+
+    // 2000-2099 taken by UFIELD_DRIVER - fields used by these types are given as Extensions
+    UFIELD_DRIVER_POLL = 2000;
+    
   }
 
   optional TransmissionType type = 7 [default = UNKNOWN];

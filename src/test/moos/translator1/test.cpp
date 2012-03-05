@@ -348,7 +348,7 @@ int main(int argc, char* argv[])
    {
        goby::glog << "Variable: " << it->first << "\n"
                   << "Value: " << it->second.GetString() << std::endl;
-       assert(it->second.GetString() == "em0.val=21.123,1uint64=100,0uint64=0.2uint64=200:em1.val=100.5,dbl0=0,dbl1=0,dbl2=0,dbl3=0");
+       assert(it->second.GetString() == "em0.val=21.123,1uint64=100,0uint64=0.2uint64=200:em1.val=100.5,dbl0=nan,dbl1=nan,dbl2=nan,dbl3=nan");
    }
    
    typedef std::auto_ptr<google::protobuf::Message> GoogleProtobufMessagePointer;
@@ -357,10 +357,10 @@ int main(int argc, char* argv[])
     goby::glog << "Message out: " << std::endl;
     goby::glog << embedded_test_out->DebugString() << std::endl;    
 
-    embedded_test.add_double_default_repeat(0);
-    embedded_test.add_double_default_repeat(0);
-    embedded_test.add_double_default_repeat(0);
-    embedded_test.add_double_default_repeat(0);
+    embedded_test.add_double_default_repeat(std::numeric_limits<double>::quiet_NaN());
+    embedded_test.add_double_default_repeat(std::numeric_limits<double>::quiet_NaN());
+    embedded_test.add_double_default_repeat(std::numeric_limits<double>::quiet_NaN());
+    embedded_test.add_double_default_repeat(std::numeric_limits<double>::quiet_NaN());
     assert(embedded_test_out->SerializePartialAsString() == embedded_test.SerializePartialAsString());
 
     

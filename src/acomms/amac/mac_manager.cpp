@@ -160,8 +160,8 @@ void goby::acomms::MACManager::begin_slot(const boost::system::error_code& e)
                 case protobuf::ModemTransmission::MICROMODEM_REMUS_LBL_RANGING: glog << "r"; break; 
                 case protobuf::ModemTransmission::MICROMODEM_NARROWBAND_LBL_RANGING: glog << "n"; break; 
                 case protobuf::ModemTransmission::MICROMODEM_MINI_DATA: glog << "m"; break;
-                case protobuf::ModemTransmission::ACK:
-                case protobuf::ModemTransmission::UNKNOWN:
+
+                default:
                     break;
             }
         

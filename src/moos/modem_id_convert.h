@@ -43,8 +43,7 @@ namespace tes
         int get_id_from_name(std::string name);
 
         size_t max_name_length() {return max_name_length_;}
-        int max_id() {return max_id_;}
-        
+        int max_id() {return max_id_;}        
         
       private:
         std::map<int, std::string> names;

@@ -114,7 +114,7 @@ namespace goby
                             double lon_origin = std::numeric_limits<double>::quiet_NaN(),
                             const std::string& modem_id_lookup_path="");
             
-
+            
             void alg_lat2utm_y(transitional::DCCLMessageVal& mv,
                                const std::vector<transitional::DCCLMessageVal>& ref_vals);
 

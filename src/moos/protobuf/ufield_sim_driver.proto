@@ -1,5 +1,8 @@
 import "goby/acomms/protobuf/driver_base.proto";
 import "goby/moos/protobuf/modem_id_lookup.proto";
+import "goby/acomms/protobuf/modem_message.proto";
+import "goby/common/protobuf/option_extensions.proto";
+
 
 package goby.moos.protobuf;
 
@@ -16,7 +19,17 @@ message Config
     optional string ufield_outgoing_moos_var = 1304 [default="NODE_MESSAGE_LOCAL"];
 
     repeated int32 rate_to_bytes = 1305;
-    repeated ModemIdEntry id_entry = 1306;
+
+    optional string modem_id_lookup_path = 1306;
+    
+    //repeated ModemIdEntry id_entry = 1306;
     
   }
+}
+
+extend goby.acomms.protobuf.ModemTransmission 
+{
+  // used in UFIELD_DRIVER_POLL message
+  optional int32 poll_src = 2000 [(goby.field).dccl.omit = true];
+  optional int32 poll_dest = 2001 [(goby.field).dccl.omit = true];
 }

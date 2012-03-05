@@ -19,12 +19,14 @@
 
 #include "MOOSLIB/MOOSCommClient.h"
 
-#include <boost/bimap.hpp>
+//#include <boost/bimap.hpp>
 
 #include "goby/common/time.h"
 
 #include "goby/acomms/modemdriver/driver_base.h"
 #include "goby/acomms/acomms_helpers.h"
+
+#include "goby/moos/modem_id_convert.h"
 
 namespace goby
 {
@@ -44,14 +46,15 @@ namespace goby
 
           private:
             void send_message(const goby::acomms::protobuf::ModemTransmission& msg);
+            void receive_message(const goby::acomms::protobuf::ModemTransmission& msg);
             
           private:
             enum { DEFAULT_PACKET_SIZE=64 };
             CMOOSCommClient moos_client_;
             goby::acomms::protobuf::DriverConfig driver_cfg_; // configuration given to you at launch
 
-            boost::bimap<int, std::string> modem_id2name_;
-
+            //boost::bimap<int, std::string> modem_id2name_;
+            tes::ModemIdConvert modem_lookup_;
         };
     }
 }

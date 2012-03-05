@@ -18,6 +18,8 @@
 #ifndef MOOSPROTOBUFHELPERS20110216H
 #define MOOSPROTOBUFHELPERS20110216H
 
+#include <limits>
+
 #include <boost/format.hpp>
 #include <boost/regex.hpp>
 
@@ -29,6 +31,7 @@
 #include "goby/util/binary.h"
 #include "goby/util/dynamic_protobuf_manager.h"
 #include "goby/moos/moos_string.h"
+#include "goby/util/primitive_types.h"
 
 #include "goby/moos/transitional/message_algorithms.h"
 #include "goby/moos/transitional/message_val.h"
@@ -740,26 +743,26 @@ namespace goby
                                     case google::protobuf::FieldDescriptor::CPPTYPE_INT32:
                                         out_repeated << ((j < refl->FieldSize(in, field_desc)) ?
                                                          refl->GetRepeatedInt32(in, field_desc, j) :
-                                                         field_desc->default_value_int32());
+                                                         std::numeric_limits<int32>::max());
                                         
                                         break;
                             
                                     case google::protobuf::FieldDescriptor::CPPTYPE_INT64:
                                         out_repeated << ((j < refl->FieldSize(in, field_desc)) ?
                                                          refl->GetRepeatedInt64(in, field_desc, j) :
-                                                         field_desc->default_value_int64());
+                                                         std::numeric_limits<int64>::max());
                                         break;
                             
                                     case google::protobuf::FieldDescriptor::CPPTYPE_UINT32:
                                         out_repeated << ((j < refl->FieldSize(in, field_desc)) ?
                                                          refl->GetRepeatedUInt32(in, field_desc, j) :
-                                                         field_desc->default_value_uint32());
+                                                         std::numeric_limits<uint32>::max());
                                         break;
                             
                                     case google::protobuf::FieldDescriptor::CPPTYPE_UINT64:
                                         out_repeated << ((j < refl->FieldSize(in, field_desc)) ?
                                                          refl->GetRepeatedUInt64(in, field_desc, j) :
-                                                         field_desc->default_value_uint64());
+                                                         std::numeric_limits<uint64>::max());
                                         break;
                             
                                     case google::protobuf::FieldDescriptor::CPPTYPE_BOOL:
@@ -783,14 +786,14 @@ namespace goby
                                         out_repeated << std::setprecision(std::numeric_limits<float>::digits10)
                                                      << ((j < refl->FieldSize(in, field_desc)) ?
                                                          refl->GetRepeatedFloat(in, field_desc, j) :
-                                                         field_desc->default_value_float());
+                                                         std::numeric_limits<float>::quiet_NaN());
                                         break;
                             
                                     case google::protobuf::FieldDescriptor::CPPTYPE_DOUBLE:
                                         out_repeated << std::setprecision(std::numeric_limits<double>::digits10)
                                                      << ((j < refl->FieldSize(in, field_desc)) ?
                                                          refl->GetRepeatedDouble(in, field_desc, j) :
-                                                         field_desc->default_value_double());
+                                                         std::numeric_limits<double>::quiet_NaN());
                                         break;
                             
                                     case google::protobuf::FieldDescriptor::CPPTYPE_ENUM:

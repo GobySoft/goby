@@ -35,6 +35,7 @@
 #include "goby/util/sci.h"
 #include "goby/moos/moos_protobuf_helpers.h"
 #include "goby/moos/moos_ufield_sim_driver.h"
+#include "goby/moos/protobuf/ufield_sim_driver.pb.h"
 
 using namespace goby::common::tcolor;
 using namespace goby::common::logger;
@@ -310,6 +311,9 @@ void CpAcommsHandler::process_configuration()
 
         case pAcommsHandlerConfig::DRIVER_UFIELD_SIM_DRIVER:
             driver_ = new goby::moos::UFldDriver;
+            cfg_.mutable_driver_cfg()->SetExtension(
+                goby::moos::protobuf::Config::modem_id_lookup_path,
+                cfg_.modem_id_lookup_path());
             break;
 
             
@@ -388,10 +392,10 @@ void CpAcommsHandler::process_configuration()
         else if(cfg_.translator_entry(i).trigger().type() ==
                 goby::moos::protobuf::TranslatorEntry::Trigger::TRIGGER_TIME)
         {
-            timers_.push_back(boost::shared_ptr<boost::asio::deadline_timer>(
-                                  new boost::asio::deadline_timer(timer_io_service_)));
+            timers_.push_back(boost::shared_ptr<Timer>(
+                                  new Timer(timer_io_service_)));
 
-            boost::asio::deadline_timer& new_timer = *timers_.back();
+            Timer& new_timer = *timers_.back();
             
             new_timer.expires_from_now(boost::posix_time::seconds(
                                            cfg_.translator_entry(i).trigger().period()));
@@ -484,7 +488,7 @@ void CpAcommsHandler::create_on_multiplex_publish(const CMOOSMsg& moos_msg)
 
 void CpAcommsHandler::create_on_timer(const boost::system::error_code& error,
                                    const goby::moos::protobuf::TranslatorEntry& entry,
-                                   boost::asio::deadline_timer* timer)
+                                   Timer* timer)
 {
   if (!error)
   {

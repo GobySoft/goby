@@ -16,8 +16,8 @@ const boost::posix_time::ptime TEST_PTIME(date(2011,8,16),
 
 bool double_cmp(double a, double b, int precision)
 {
-    int a_whole = a;
-    int b_whole = b;
+    long long a_whole = a;
+    long long b_whole = b;
 
     int a_part = (a-a_whole)*pow(10.0, precision);
     int b_part = (b-b_whole)*pow(10.0, precision);
@@ -47,6 +47,8 @@ int main()
     
     assert(double_cmp(goby::common::ptime2unix_double(TEST_PTIME), TEST_DOUBLE_TIME, 6));
     assert(double_cmp(as<double>(TEST_PTIME), TEST_DOUBLE_TIME, 6)); // same as previous line
+    
+    std::cout << "goby::common::unix_double2ptime(TEST_DOUBLE_TIME) " << goby::common::unix_double2ptime(TEST_DOUBLE_TIME) << std::endl;
     
     assert(goby::common::unix_double2ptime(TEST_DOUBLE_TIME) == TEST_PTIME);
     assert(as<ptime>(TEST_DOUBLE_TIME) == TEST_PTIME);  // same as previous line
@@ -79,11 +81,15 @@ int main()
     assert(goby_time<ptime>() == TEST_PTIME); 
     
 
+    const ptime FAR_FUTURE_COMPARISON_PTIME(date(2391,10,8),
+                                            time_duration(9,50,9) +
+                                            microseconds(399860));
+    
     // test dates in the next century
     const double FAR_FUTURE_COMPARISON = 13309696209.39986;
     ptime far_future_ptime = goby::common::unix_double2ptime(FAR_FUTURE_COMPARISON);
     double far_future_time = goby::common::ptime2unix_double(far_future_ptime);
-    std::cout << far_future_ptime << "=" << far_future_time << "=" << FAR_FUTURE_COMPARISON << " ?" << std::endl;
+    std::cout << FAR_FUTURE_COMPARISON_PTIME << "=?" << far_future_ptime << "=?" << far_future_time << "=?" << FAR_FUTURE_COMPARISON << std::endl;
     
     assert(double_cmp(far_future_time,FAR_FUTURE_COMPARISON, 5));
 

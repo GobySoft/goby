@@ -110,10 +110,12 @@ namespace goby
                 
                 struct CommandContainer : Wt::WGroupBox
                 {
-                    CommandContainer(const protobuf::ProtobufCommanderConfig& pb_commander_config,
-                                     const std::string& protobuf_name,
-                                     Wt::Dbo::Session* session,
-                                     Wt::WStackedWidget* master_field_info_stack);
+                    CommandContainer(
+                        MOOSNode* moos_node,
+                        const protobuf::ProtobufCommanderConfig& pb_commander_config,
+                        const std::string& protobuf_name,
+                        Wt::Dbo::Session* session,
+                        Wt::WStackedWidget* master_field_info_stack);
 
                     void generate_root();
 
@@ -209,6 +211,7 @@ namespace goby
                     void handle_database_dialog(DatabaseDialogResponse response,
                                                 boost::shared_ptr<google::protobuf::Message> message);
                     
+                    MOOSNode* moos_node_;
                     boost::shared_ptr<google::protobuf::Message> message_;
                     
                     std::pair<Wt::WFormWidget*, const google::protobuf::FieldDescriptor*> time_field_;
@@ -233,7 +236,7 @@ namespace goby
                     const protobuf::ProtobufCommanderConfig& pb_commander_config_;
                     
                 };
-
+                
                 MOOSNode* moos_node_;
                 const protobuf::ProtobufCommanderConfig& pb_commander_config_;
                 std::map<std::string, int> commands_;

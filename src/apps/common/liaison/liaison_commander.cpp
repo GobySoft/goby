@@ -81,13 +81,19 @@ goby::common::LiaisonCommander::LiaisonCommander(ZeroMQService* zeromq_service,
 
     for(int i = 0, n = pb_commander_config_.subscription_size(); i < n; ++i)
         subscribe(pb_commander_config_.subscription(i), Liaison::LIAISON_INTERNAL_COMMANDER_SUBSCRIBE_SOCKET);
-    
+
+    if(pb_commander_config_.has_time_source_var())
+        subscribe(pb_commander_config_.time_source_var(), Liaison::LIAISON_INTERNAL_COMMANDER_SUBSCRIBE_SOCKET);
 }
 
 void goby::common::LiaisonCommander::moos_inbox(CMOOSMsg& msg)
 {
     glog.is(DEBUG1, lock) && glog << "LiaisonCommander: Got message: " << msg <<  std::endl << unlock;
 
+    // nothing to do here
+    if(msg.GetKey() == pb_commander_config_.time_source_var())
+        return;
+    
     WContainerWidget* new_div = new WContainerWidget(controls_div_->incoming_message_stack_);
     
     WPushButton* minus = new WPushButton("-", new_div);
@@ -310,7 +316,8 @@ void goby::common::LiaisonCommander::ControlsContainer::switch_command(int selec
 
     if(!commands_.count(protobuf_name))
     {
-        CommandContainer* new_command = new CommandContainer(pb_commander_config_,
+        CommandContainer* new_command = new CommandContainer(moos_node_,
+                                                             pb_commander_config_,
                                                              protobuf_name,
                                                              &session_,
                                                              master_field_info_stack_);
@@ -406,11 +413,13 @@ void goby::common::LiaisonCommander::ControlsContainer::send_message()
 
 
 goby::common::LiaisonCommander::ControlsContainer::CommandContainer::CommandContainer(
+    MOOSNode* moos_node,
     const protobuf::ProtobufCommanderConfig& pb_commander_config,
     const std::string& protobuf_name,
     Dbo::Session* session,
     WStackedWidget* master_field_info_stack)
     : WGroupBox(protobuf_name),
+      moos_node_(moos_node),
       message_(goby::util::DynamicProtobufManager::new_protobuf_message(protobuf_name)),
       tree_box_(new WGroupBox("Contents", this)),
       tree_table_(new WTreeTable(tree_box_)),
@@ -1178,6 +1187,20 @@ void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::set_ti
 {
     if(WLineEdit* line_edit = dynamic_cast<WLineEdit*>(value_field))
     {
+        boost::posix_time::ptime now;
+        if(pb_commander_config_.has_time_source_var())
+        {
+            CMOOSMsg& newest = moos_node_->newest(pb_commander_config_.time_source_var());
+            now = newest.IsDouble() ?
+                unix_double2ptime(newest.GetDouble()) :
+                unix_double2ptime(goby::util::as<double>(newest.GetString()));
+        }
+        else
+        {
+            now = goby_time();
+        }
+        
+        
         switch(field_desc->cpp_type())
         {
             default:
@@ -1185,13 +1208,13 @@ void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::set_ti
                 break;
 
             case google::protobuf::FieldDescriptor::CPPTYPE_UINT64:
-                line_edit->setText(goby::util::as<std::string>(goby_time<uint64>()));
+                line_edit->setText(goby::util::as<std::string>(goby::util::as<uint64>(now)));
 
             case google::protobuf::FieldDescriptor::CPPTYPE_STRING:
-                line_edit->setText(goby_time<std::string>());
+                line_edit->setText(goby::util::as<std::string>(now));
 
             case google::protobuf::FieldDescriptor::CPPTYPE_DOUBLE:
-                line_edit->setText(goby::util::as<std::string>(goby_time<double>()));
+                line_edit->setText(goby::util::as<std::string>(goby::util::as<double>(now)));
         }
         line_edit->changed().emit();
     }

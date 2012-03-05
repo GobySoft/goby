@@ -27,6 +27,7 @@
 #include <boost/foreach.hpp>
 #include <boost/bind.hpp>
 #include <boost/asio.hpp>
+#include <boost/asio/time_traits.hpp>
 
 #include "goby/acomms/protobuf/modem_message.pb.h"
 #include "goby/acomms/protobuf/amac.pb.h"
@@ -34,6 +35,8 @@
 #include "goby/acomms/modem_driver.h"
 #include "goby/common/time.h"
 #include "goby/util/as.h"
+
+
 
 namespace goby
 {
@@ -114,7 +117,8 @@ namespace goby
             
             // asynchronous timer
             boost::asio::io_service io_;
-            boost::asio::deadline_timer timer_;
+
+            boost::asio::basic_deadline_timer<goby::common::GobyTime> timer_;
             // give the io_service some work to do forever
             boost::asio::io_service::work work_;
     

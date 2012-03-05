@@ -79,6 +79,8 @@ message ProtobufCommanderConfig
   optional ModalDialogDimensions modal_dimensions = 23;
   
   repeated string subscription = 30;
+
+  optional string time_source_var = 40;
 }
 
 message MOOSScopeConfig

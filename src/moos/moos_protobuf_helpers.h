@@ -938,17 +938,15 @@ namespace goby
                                 {
                                     throw(std::runtime_error("Invalid ':' syntax given for format: " + specifier + ". All field indices except the last must be singular embedded messages"));
                                 }
-                                if(field_desc->is_repeated() && field_and_index.size() != 2)
-                                {
-                                    throw(std::runtime_error("Invalid '.' syntax given for format: " + specifier + ". Repeated message, but no valid index given. E.g., use '3.4' for index 4 of field 3."));
-                                }
 
-                                int index = goby::util::as<int>(field_and_index[1]);
-                                
+                                int index = -1;                                
                                 if(field_desc->is_repeated())
                                 {
-                                    while(sub_refl->FieldSize(*sub_message, field_desc) <= index)
-                                        sub_refl->AddMessage(sub_message, field_desc);
+				  if(field_and_index.size() != 2)
+				      throw(std::runtime_error("Invalid '.' syntax given for format: " + specifier + ". Repeated message, but no valid index given. E.g., use '3.4' for index 4 of field 3."));
+				    index =  goby::util::as<int>(field_and_index.at(1));
+				    while(sub_refl->FieldSize(*sub_message, field_desc) <= index)
+				      sub_refl->AddMessage(sub_message, field_desc);
                                 }
                                 
                                 sub_message = (field_desc->is_repeated()) ?

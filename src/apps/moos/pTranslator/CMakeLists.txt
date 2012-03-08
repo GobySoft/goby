@@ -7,7 +7,7 @@ add_executable(pTranslator
   
 target_link_libraries(pTranslator
   goby_moos
-  dl
   ${MOOS_LIBRARIES}
   ${Boost_LIBRARIES}
-  ${PROTOBUF_LIBRARY})
+  ${PROTOBUF_LIBRARY}
+  ${CMAKE_DL_LIBS})

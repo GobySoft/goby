@@ -23,10 +23,17 @@
 #include <boost/assign.hpp>
 
 #ifdef HAS_CRYPTOPP
+#if CRYPTOPP_PATH_USES_PLUS_SIGN
 #include <crypto++/filters.h>
 #include <crypto++/sha.h>
 #include <crypto++/modes.h>
 #include <crypto++/aes.h>
+#else
+#include <cryptopp/filters.h>
+#include <cryptopp/sha.h>
+#include <cryptopp/modes.h>
+#include <cryptopp/aes.h>
+#endif // CRYPTOPP_PATH_USES_PLUS_SIGN
 #endif // HAS_CRYPTOPP
 
 #include "dccl.h"

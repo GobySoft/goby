@@ -4,12 +4,17 @@ compiling goby
 
 satisfy the third party dependencies in DEPENDENCIES:
 > ./DEPENDENCIES
-configure using cmake and install locally (goby/bin, goby/include, goby/lib)
+
+configure and build using cmake and install locally (goby/bin, goby/include, goby/lib)
 > ./build.sh
-(optional) run unit tests
+
+(optional) build & run unit tests
+> GOBY_CMAKE_FLAGS="-Denable_testing=ON" ./build.sh
 > ./build.sh test
+
 to install to system (/usr/local/* by default)
 > ./build.sh install
+
 to install to some other location (e.g. /home/me/test/usr)
 > GOBY_CMAKE_FLAGS="-DCMAKE_INSTALL_PREFIX=/home/me/test/usr" ./build.sh
 

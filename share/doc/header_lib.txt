@@ -20,13 +20,3 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Goby.  If not, see <http://www.gnu.org/licenses/>.
 
-
-// courtesy header for the Stream Logging library (libstreamlogger)
-
-#ifndef STREAMLOGGERCOURTESY20091211H
-#define STREAMLOGGERCOURTESY20091211H
-
-#include "goby/common/logger/flex_ostream.h"
-#include "goby/common/logger/logger_manipulators.h"
-
-#endif

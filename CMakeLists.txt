@@ -100,4 +100,3 @@ set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES ${goby_INC_DIR}/
 
 ## start adding subdirectories
 add_subdirectory(src)
-

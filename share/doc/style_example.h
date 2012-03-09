@@ -1,24 +1,3 @@
-// this is an example of the style for the goby project.
-// peruse the code in the tree for further examples. some cleanup still
-// needs to be done to bring everything in line with this style
-
-// copyright {year} {author name} {author email}
-//                  {secondary author} {secondary author email}
-// 
-// this file is part of {binary or library}, {description}
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// This software is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
 // name of Class, initial date (when file was first created) in YYYYMMDD, followed by capital 'H'
 #ifndef Class20080605H

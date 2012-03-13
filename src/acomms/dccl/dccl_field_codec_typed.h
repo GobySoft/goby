@@ -21,6 +21,11 @@
 // along with Goby.  If not, see <http://www.gnu.org/licenses/>.
 
 
+#ifndef DCCLFIELDCODECTYPED20120312H
+#define DCCLFIELDCODECTYPED20120312H
+
+#include "dccl_field_codec.h"
+
 namespace goby
 {
     namespace acomms
@@ -185,3 +190,5 @@ namespace goby
         
     }
 }
+
+#endif

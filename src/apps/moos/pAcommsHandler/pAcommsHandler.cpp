@@ -351,6 +351,16 @@ void CpAcommsHandler::process_configuration()
                          << "or LD_LIBRARY_PATH" << std::endl;
         }
         dl_handles.push_back(handle);
+
+        // load any shared library codecs
+        void (*dccl_load_ptr)(goby::acomms::DCCLCodec*);
+        dccl_load_ptr = (void (*)(goby::acomms::DCCLCodec*)) dlsym(handle, "goby_dccl_load");
+        if(dccl_load_ptr)
+        {
+            glog << group("pAcommsHandler") << "Loading shared library dccl codecs." << std::endl;
+            (*dccl_load_ptr)(dccl_);
+        }
+        
     }
     
     

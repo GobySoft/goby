@@ -44,7 +44,6 @@ namespace goby
         /// \brief Used for all cases in DCCL when an arbitrary length set of raw bits is needed. boost::dynamic_bitset is similar to std::bitset but allows dynamic length (runtime set) bitsets.
         typedef boost::dynamic_bitset<unsigned char> Bitset;
 
-
         inline Bitset operator+(const Bitset& a, const Bitset& b)
         {
             Bitset out(a);
@@ -52,7 +51,13 @@ namespace goby
                 out.push_back(b[i]);
             return out;
         }
-
+        
+        inline Bitset& operator +=(Bitset& a, const Bitset& b)
+        {
+            for(int i = 0, n = b.size(); i < n; ++i)
+                a.push_back(b[i]);
+            return a;
+        }
         
         inline void bitset2string(const Bitset& bits, std::string* str)
         {

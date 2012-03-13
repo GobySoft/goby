@@ -82,6 +82,91 @@ private:
     enum { B_SIZE = 1 };
 };    
 
+class Int32RepeatedCodec :
+    public goby::acomms::DCCLRepeatedTypedFieldCodec<goby::int32>
+{
+private:
+    enum { REPEAT_STORAGE_BITS = 4 };    
+    enum { MAX_REPEAT_SIZE = 1 << REPEAT_STORAGE_BITS }; // 2^4
+
+    goby::int32 max() { return DCCLFieldCodecBase::dccl_field_options().max(); }
+    goby::int32 min() { return DCCLFieldCodecBase::dccl_field_options().min(); }
+    goby::int32 max_repeat() { return DCCLFieldCodecBase::dccl_field_options().max_repeat(); }
+    
+    Bitset encode_repeated(const std::vector<goby::int32>& wire_values)
+        {            
+            using goby::acomms::operator+=;
+            
+            Bitset value_bits;
+            int repeat_size = static_cast<int>(wire_values.size()) > max_repeat() ?
+                max_repeat() :
+                wire_values.size();            
+
+            std::cout << "repeat size is " << repeat_size << std::endl;
+            
+            for(int i = 0, n = repeat_size; i < n; ++i)
+            {
+                goby::int32 wire_value = wire_values[i];
+                wire_value -= min();
+                value_bits += Bitset(singular_size(), static_cast<unsigned long>(wire_value));
+            }
+
+            std::cout << value_bits << std::endl;
+            std::cout << Bitset(REPEAT_STORAGE_BITS, repeat_size) << std::endl;
+            std::cout << value_bits + Bitset(REPEAT_STORAGE_BITS, repeat_size) << std::endl;
+            return Bitset(REPEAT_STORAGE_BITS, repeat_size) + value_bits;
+        }
+    
+    std::vector<goby::int32> decode_repeated(const Bitset& bits)
+        {
+            int repeat_size = bits.to_ulong();
+            std::cout << "repeat size is " << repeat_size << std::endl;
+            // grabs more bits to add to the MSBs of `bits`
+            get_more_bits(repeat_size*singular_size());
+
+            Bitset value_bits = bits;
+            value_bits >>= REPEAT_STORAGE_BITS;
+
+            std::vector<goby::int32> out;
+            for(int i = 0; i < repeat_size; ++i)
+            {
+                goby::int32 value = value_bits.to_ulong() & ((1 << singular_size()) - 1);
+                value += min();
+                out.push_back(value);
+                value_bits >>= singular_size();
+            }
+            return out;
+        }
+    
+    unsigned size_repeated(const std::vector<goby::int32>& field_values)
+        {
+            return REPEAT_STORAGE_BITS + field_values.size()*singular_size();
+        }
+
+    unsigned singular_size()
+        { return goby::util::ceil_log2((max()-min())+1); }
+    
+    unsigned max_size_repeated()
+        {
+            return REPEAT_STORAGE_BITS + max_repeat()*singular_size();
+        }
+    
+    unsigned min_size_repeated()
+        {
+            return REPEAT_STORAGE_BITS;
+        }
+
+    void validate()
+        {
+            DCCLFieldCodecBase::require(DCCLFieldCodecBase::dccl_field_options().has_min(), "missing (goby.field).dccl.min");
+            DCCLFieldCodecBase::require(DCCLFieldCodecBase::dccl_field_options().has_max(), "missing (goby.field).dccl.max");
+            DCCLFieldCodecBase::require(DCCLFieldCodecBase::dccl_field_options().max_repeat() < MAX_REPEAT_SIZE, "(goby.field).dccl.max_repeat must be less than " + goby::util::as<std::string>(static_cast<int>(MAX_REPEAT_SIZE)));
+        }
+
+    
+};
+
+    
 int main(int argc, char* argv[])
 {
     goby::glog.add_stream(goby::common::logger::DEBUG3, &std::cerr);
@@ -89,6 +174,7 @@ int main(int argc, char* argv[])
 
     goby::acomms::DCCLCodec* codec = goby::acomms::DCCLCodec::get();
     goby::acomms::DCCLFieldCodecManager::add<CustomCodec>("custom_codec");
+    goby::acomms::DCCLFieldCodecManager::add<Int32RepeatedCodec>("int32_test_codec");
 
     goby::acomms::protobuf::DCCLConfig cfg;
     cfg.set_crypto_passphrase("my_passphrase!");
@@ -98,6 +184,7 @@ int main(int argc, char* argv[])
 
     msg_in1.set_a(10);
     msg_in1.set_b(true);
+    
     codec->info(msg_in1.GetDescriptor(), &std::cout);    
     std::cout << "Message in:\n" << msg_in1.DebugString() << std::endl;
     codec->validate(msg_in1.GetDescriptor());
@@ -113,8 +200,9 @@ int main(int argc, char* argv[])
 
     CustomMsg2 msg_in2, msg_out2;
 
-    msg_in2.mutable_msg()->set_a(10);
-    msg_in2.mutable_msg()->set_b(true);
+    msg_in2.mutable_msg()->CopyFrom(msg_in1);
+    msg_in2.add_c(30);
+    msg_in2.add_c(2);
 
     codec->info(msg_in2.GetDescriptor(), &std::cout);    
     std::cout << "Message in:\n" << msg_in2.DebugString() << std::endl;

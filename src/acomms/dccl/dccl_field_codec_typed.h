@@ -187,6 +187,154 @@ namespace goby
 
           
         };
+
+
+        /// \brief Base class for "repeated" (multiple value) static-typed (no boost::any) field encoders/decoders. Most user defined variable length codecs will start with this class. Use DCCLTypedFixedFieldCodec if your codec is fixed length (always uses the same number of bits on the wire). Use DCCLTypedFieldCodec if your fields are always singular ("optional" or "required"). Singular fields are default implemented in this codec by calls to the equivalent repeated function with an empty or single valued vector.
+        /// \ingroup dccl_api
+        ///
+        ///\tparam WireType the type used for the encode and decode functions. This can be any C++ type, and is often the same as FieldType, unless a type conversion should be performed. The reason for using a different WireType and FieldType should be clear from the DCCLDefaultEnumCodec which uses DCCLDefaultArithmeticFieldCodec to do all the numerical encoding / decoding while DCCLDefaultEnumCodec does the type conversion (pre_encode() and post_decode()).
+        ///\tparam FieldType the type used in the Google Protobuf message that is exposed to the end-user DCCLCodec::decode(), DCCLCodec::encode(), etc. functions.
+        template<typename WireType>
+            class DCCLRepeatedTypedFieldCodec : public DCCLTypedFieldCodec<WireType, WireType>
+        {
+          public:
+          typedef WireType wire_type;
+
+          ///\todo (tes) Make this able to take different WireType and FieldType
+          typedef WireType FieldType;
+          typedef FieldType field_type;
+
+          public:          
+          /// \brief Encode a repeated field
+          virtual Bitset encode_repeated(const std::vector<WireType>& wire_value) = 0;
+
+          /// \brief Decode a repeated field
+          virtual std::vector<WireType> decode_repeated(const Bitset& bits) = 0;
+
+          /// \brief Give the size of a repeated field
+          virtual unsigned size_repeated(
+              const std::vector<FieldType>& field_values) = 0;
+
+          /// \brief Give the max size of a repeated field
+          virtual unsigned max_size_repeated() = 0;
+
+          /// \brief Give the min size of a repeated field
+          virtual unsigned min_size_repeated() = 0;
+
+          
+          /// \brief Encode an empty field
+          ///
+          /// \return Bits represented the encoded field.
+          virtual Bitset encode()
+          { return encode_repeated(std::vector<WireType>()); }
+
+          /// \brief Encode a non-empty field 
+          ///
+          /// \param wire_value Value to encode.
+          /// \return Bits represented the encoded field.
+          virtual Bitset encode(const WireType& wire_value)
+          { return encode_repeated(std::vector<WireType>(1, wire_value)); }          
+
+          /// \brief Decode a field. If the field is empty (i.e. was encoded using the zero-argument encode()), throw DCCLNullValueException to indicate this.
+          ///
+          /// \param bits Bits to use for decoding.
+          /// \return the decoded value.
+          virtual WireType decode(const Bitset& bits)
+          { return decode_repeated(bits).at(0); }          
+
+          /// \brief Calculate the size (in bits) of an empty field.
+          ///
+          /// \return the size (in bits) of the empty field.
+          virtual unsigned size()
+          { return size_repeated(std::vector<WireType>()); }
+
+          /// \brief Calculate the size (in bits) of a non-empty field.
+          ///
+          /// \param wire_value Value to use when calculating the size of the field. If calculating the size requires encoding the field completely, cache the encoded value for a likely future call to encode() for the same wire_value.
+          /// \return the size (in bits) of the field.
+          virtual unsigned size(const FieldType& wire_value)
+          { return size_repeated(std::vector<WireType>(1, wire_value)); }
+
+          virtual unsigned max_size()
+          { return max_size_repeated(); }
+          
+          virtual unsigned min_size()
+          { return min_size_repeated(); }
+
+          
+          private:
+          void any_encode_repeated(Bitset* bits, const std::vector<boost::any>& wire_values)
+          {
+              try
+              {
+                  std::vector<WireType> in;
+                  BOOST_FOREACH(const boost::any& wire_value, wire_values)
+                  {                  
+                      in.push_back(boost::any_cast<WireType>(wire_value));
+                  }
+                  
+                  *bits = encode_repeated(in);
+              }
+              catch(boost::bad_any_cast&)
+              { throw(type_error("encode_repeated", typeid(WireType), wire_values.at(0).type())); }
+          }
+          
+          void any_decode_repeated(Bitset* repeated_bits, std::vector<boost::any>* field_values)
+          {
+              any_decode_repeated_specific<WireType>(repeated_bits, field_values);
+          }
+
+          template<typename T>
+          typename boost::enable_if<boost::is_base_of<google::protobuf::Message, T>, void>::type
+          any_decode_repeated_specific(Bitset* repeated_bits, std::vector<boost::any>* wire_values)
+          {
+              std::vector<WireType> decoded_msgs = decode_repeated(*repeated_bits);
+              wire_values->resize(decoded_msgs.size(), WireType());
+              
+              for(int i = 0, n = decoded_msgs.size(); i < n; ++i)
+              {
+                  google::protobuf::Message* msg = boost::any_cast<google::protobuf::Message* >(wire_values->at(i));
+                  msg->CopyFrom(decoded_msgs[i]);
+              }
+          }
+          
+          template<typename T>
+          typename boost::disable_if<boost::is_base_of<google::protobuf::Message, T>, void>::type
+          any_decode_repeated_specific(Bitset* repeated_bits, std::vector<boost::any>* wire_values)
+          {
+              std::vector<WireType> decoded = decode_repeated(*repeated_bits);
+              wire_values->resize(decoded.size(), WireType());
+              
+              for(int i = 0, n = decoded.size(); i < n; ++i)
+                  wire_values->at(i) = decoded[i];
+          }
+
+          
+//          void any_pre_encode_repeated(std::vector<boost::any>* wire_values,
+//                                       const std::vector<boost::any>& field_values);
+          
+//          void any_post_decode_repeated(const std::vector<boost::any>& wire_values,
+//                                        std::vector<boost::any>* field_values);
+          
+          unsigned any_size_repeated(const std::vector<boost::any>& field_values)
+          {
+              try
+              {
+                  std::vector<FieldType> in;
+                  BOOST_FOREACH(const boost::any& field_value, field_values)
+                  {                  
+                      in.push_back(boost::any_cast<FieldType>(field_value));
+                  }
+                  
+                  return size_repeated(in);
+              }
+              catch(boost::bad_any_cast&)
+              { throw(type_error("size_repeated", typeid(FieldType), field_values.at(0).type())); }
+          }
+          
+          
+        };
+
         
     }
 }

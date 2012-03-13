@@ -110,7 +110,6 @@ namespace goby
               if(wire_value < min() || wire_value > max())
                   return Bitset(size());
               
-              wire_value = goby::util::unbiased_round(wire_value, precision());
               
 //              goby::glog.is(common::logger::DEBUG2) && goby::glog << group(DCCLCodec::glog_encode_group()) << "(DCCLDefaultArithmeticFieldCodec) Encoding using wire value (=field value) " << wire_value << std::endl;
               
@@ -120,7 +119,8 @@ namespace goby
               // "presence" value (0)
               if(!DCCLFieldCodecBase::this_field()->is_required())
                   wire_value += 1;
-              
+
+              wire_value = goby::util::unbiased_round(wire_value, 0);
               return Bitset(size(), goby::util::as<unsigned long>(wire_value));
           }
           

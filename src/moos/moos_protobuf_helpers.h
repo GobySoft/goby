@@ -772,9 +772,9 @@ namespace goby
                                         break;
                             
                                     case google::protobuf::FieldDescriptor::CPPTYPE_BOOL:
-                                        out_repeated << ((j < refl->FieldSize(in, field_desc)) ?
-                                                         refl->GetRepeatedBool(in, field_desc, j) :
-                                                         field_desc->default_value_bool());
+                                        out_repeated << std::boolalpha << ((j < refl->FieldSize(in, field_desc)) ?
+                                                                           refl->GetRepeatedBool(in, field_desc, j) :
+                                                                           field_desc->default_value_bool());
                                         break;
                             
                                     case google::protobuf::FieldDescriptor::CPPTYPE_STRING:
@@ -848,7 +848,7 @@ namespace goby
                                         break;
                         
                                     case google::protobuf::FieldDescriptor::CPPTYPE_BOOL:
-                                        out_format % refl->GetBool(in, field_desc);
+                                        out_format % goby::util::as<std::string>(refl->GetBool(in, field_desc));
                                         break;
                     
                                     case google::protobuf::FieldDescriptor::CPPTYPE_STRING:

@@ -500,7 +500,7 @@ void goby::acomms::MMDriver::ccmuc(protobuf::ModemTransmission* msg)
 
     cache_outgoing_data(msg);
         
-    if(msg->frame_size() > 0)
+    if(msg->frame_size() > 0 && msg->frame(0).size())
     {        
         glog.is(DEBUG1) && glog << "Mini-data message: " << *msg << std::endl;
         msg->mutable_frame(0)->resize(MINI_PACKET_SIZE);

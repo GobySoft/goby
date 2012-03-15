@@ -4,8 +4,18 @@ Goby Release Notes (Major version 2)
 *****************
 Version 2.0.0-beta4
 
+- MOOS Functionality (pAcommsHandler) complete, including backwards compatibility with version 1.
+- New MOOS Application pTranslator that can be used for general purpose string<-->Google conversions
+- goby_liaison backported from 3.0
+  - liaison_commander written to take the place of iCommander
+  - liaison_scope complete for MOOS scoping
+- moos_gateway_g backported from 3.0 to interface goby_liaison with a MOOS community
+
 bzr log --line -n0 -r 224..
 
+285: Toby Schneider 2012-02-22 release 2.0.0-beta4
+284: Toby Schneider 2012-02-17 1. Added basic Fedora and OpenSuse to DEPENDENCIES file; 2. fixed bug whe...
+283: Toby Schneider 2012-02-14 updated DEPENDENCIES to be a script again
 282: Toby Schneider 2012-02-13 fixed bug with MMDriver not clearing transmit message (and thereby sending the same message) when XST is not set or not available
 281: Toby Schneider 2012-02-13 1. Examples now compile correctly; 2. Fixed bug with Liaison that was causing repeated fields not to expand on reload. 3. Added analyze_dccl_xml (as shell script) for backwards compatibility
 280: toby 2012-02-13 workaround for broken maverick compiler

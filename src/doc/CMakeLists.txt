@@ -5,19 +5,19 @@ find_program(XELATEX_EXECUTABLE xelatex)
 
 find_file(GENTIUM_AI_FONT NAMES GenAI102.ttf
   PATHS /usr/share/fonts/truetype
-  PATH_SUFFIXES ttf-sil-gentium)
+  PATH_SUFFIXES ttf-sil-gentium gentium)
 
 find_file(GENTIUM_AR_FONT NAMES GenAR102.ttf
   PATHS /usr/share/fonts/truetype
-  PATH_SUFFIXES ttf-sil-gentium)
+  PATH_SUFFIXES ttf-sil-gentium gentium)
 
 find_file(GENTIUM_I_FONT NAMES GenI102.ttf
   PATHS /usr/share/fonts/truetype
-  PATH_SUFFIXES ttf-sil-gentium)
+  PATH_SUFFIXES ttf-sil-gentium gentium)
 
 find_file(GENTIUM_R_FONT NAMES GenR102.ttf
   PATHS /usr/share/fonts/truetype
-  PATH_SUFFIXES ttf-sil-gentium)
+  PATH_SUFFIXES ttf-sil-gentium gentium)
 
 mark_as_advanced(GENTIUM_AI_FONT AND GENTIUM_AR_FONT AND GENTIUM_I_FONT AND GENTIUM_R_FONT XELATEX_EXECUTABLE)
 

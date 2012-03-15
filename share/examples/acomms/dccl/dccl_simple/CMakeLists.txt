@@ -7,3 +7,5 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 # add these executables to the project
 add_executable(dccl_simple dccl_simple.cpp ${PROTO_SRCS} ${PROTO_HDRS})
 target_link_libraries(dccl_simple ${GOBY_LIBRARIES} ${Boost_LIBRARIES} ${PROTOBUF_LIBRARIES})
+
+install(TARGETS dccl_simple RUNTIME DESTINATION bin)

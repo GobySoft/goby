@@ -1,10 +1,3 @@
-// copyright 2009-2011 t. schneider tes@mit.edu
-// 
-// goby software and documentation is distributed under the GNU General
-// Public License v3.
-//
-// You should have received a copy of the GNU General Public License
-// along with this software (see goby/COPYING).  If not, see <http://www.gnu.org/licenses/>.
 
 /*! \page acomms_dccl goby-acomms: DCCL (Dynamic Compact Control Language)
 

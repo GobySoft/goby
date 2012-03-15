@@ -1,21 +1,25 @@
-// copyright 2009-2011 t. schneider tes@mit.edu
+// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+//                     Massachusetts Institute of Technology (2007-)
+//                     Woods Hole Oceanographic Institution (2007-)
+//                     Goby Developers Team (https://launchpad.net/~goby-dev)
 // 
-// this file is part of the Dynamic Compact Control Language (DCCL),
-// the goby-acomms codec. goby-acomms is a collection of libraries 
-// for acoustic underwater networking
 //
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// This file is part of the Goby Underwater Autonomy Project Libraries
+// ("The Goby Libraries").
+//
+// The Goby Libraries are free software: you can redistribute them and/or modify
+// them under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// This software is distributed in the hope that it will be useful,
+// The Goby Libraries are distributed in the hope that they will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Lesser General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
-// along with this software.  If not, see <http://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU Lesser General Public License
+// along with Goby.  If not, see <http://www.gnu.org/licenses/>.
+
 
 // implements DCCLFieldCodecBase for all the basic DCCL types
 
@@ -106,7 +110,6 @@ namespace goby
               if(wire_value < min() || wire_value > max())
                   return Bitset(size());
               
-              wire_value = goby::util::unbiased_round(wire_value, precision());
               
 //              goby::glog.is(common::logger::DEBUG2) && goby::glog << group(DCCLCodec::glog_encode_group()) << "(DCCLDefaultArithmeticFieldCodec) Encoding using wire value (=field value) " << wire_value << std::endl;
               
@@ -116,7 +119,8 @@ namespace goby
               // "presence" value (0)
               if(!DCCLFieldCodecBase::this_field()->is_required())
                   wire_value += 1;
-              
+
+              wire_value = goby::util::unbiased_round(wire_value, 0);
               return Bitset(size(), goby::util::as<unsigned long>(wire_value));
           }
           

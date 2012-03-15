@@ -1,19 +1,25 @@
-// copyright 2010 t. schneider tes@mit.edu
+// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+//                     Massachusetts Institute of Technology (2007-)
+//                     Woods Hole Oceanographic Institution (2007-)
+//                     Goby Developers Team (https://launchpad.net/~goby-dev)
 // 
-// this file is a collection of time conversion utilities used in goby
 //
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// This file is part of the Goby Underwater Autonomy Project Libraries
+// ("The Goby Libraries").
+//
+// The Goby Libraries are free software: you can redistribute them and/or modify
+// them under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// This software is distributed in the hope that it will be useful,
+// The Goby Libraries are distributed in the hope that they will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Lesser General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
-// along with this software.  If not, see <http://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU Lesser General Public License
+// along with Goby.  If not, see <http://www.gnu.org/licenses/>.
+
 
 #ifndef Time20100713H
 #define Time20100713H
@@ -24,6 +30,7 @@
 #include <boost/date_time.hpp>
 #include <boost/static_assert.hpp>
 #include <boost/function.hpp>
+#include <boost/asio/time_traits.hpp>
 
 #include "goby/util/primitive_types.h"
 #include "goby/util/as.h"
@@ -152,11 +159,63 @@ namespace goby
             using namespace boost::posix_time;
             return (double(time_of_day.total_seconds()) + double(time_of_day.fractional_seconds()) / double(time_duration::ticks_per_second()));
         }
-
-
         
         //@}
 
+        // dummy struct for use with boost::asio::time_traits
+        struct GobyTime { };
+        
     }
 }
+
+
+namespace boost
+{
+    namespace asio
+    {
+        /// Time traits specialised for GobyTime
+        template <>
+            struct time_traits<goby::common::GobyTime>
+        {
+            /// The time type.
+            typedef boost::posix_time::ptime time_type;
+
+            /// The duration type.
+            typedef boost::posix_time::time_duration duration_type;
+
+            /// Get the current time.
+            static time_type now()
+            {
+                return goby::common::goby_time();
+            }
+
+            /// Add a duration to a time.
+            static time_type add(const time_type& t, const duration_type& d)
+            {
+                return t + d;
+            }
+
+            /// Subtract one time from another.
+            static duration_type subtract(const time_type& t1, const time_type& t2)
+            {
+                return t1 - t2;
+            }
+
+            /// Test whether one time is less than another.
+            static bool less_than(const time_type& t1, const time_type& t2)
+            {
+                return t1 < t2;
+            }
+
+            /// Convert to POSIX duration type.
+            static boost::posix_time::time_duration to_posix_duration(
+                const duration_type& d)
+            {
+                return d;
+            }
+        };
+    }
+}
+
+
 #endif

@@ -1,30 +1,39 @@
-// copyright 2011 t. schneider tes@mit.edu
+// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+//                     Massachusetts Institute of Technology (2007-)
+//                     Woods Hole Oceanographic Institution (2007-)
+//                     Goby Developers Team (https://launchpad.net/~goby-dev)
+// 
 //
+// This file is part of the Goby Underwater Autonomy Project Libraries
+// ("The Goby Libraries").
 //
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// The Goby Libraries are free software: you can redistribute them and/or modify
+// them under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// This software is distributed in the hope that it will be useful,
+// The Goby Libraries are distributed in the hope that they will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Lesser General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
-// along with this software.  If not, see <http://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU Lesser General Public License
+// along with Goby.  If not, see <http://www.gnu.org/licenses/>.
+
 
 #ifndef UFieldSimDriver20120214H
 #define UFieldSimDriver20120214H
 
 #include "MOOSLIB/MOOSCommClient.h"
 
-#include <boost/bimap.hpp>
+//#include <boost/bimap.hpp>
 
 #include "goby/common/time.h"
 
 #include "goby/acomms/modemdriver/driver_base.h"
 #include "goby/acomms/acomms_helpers.h"
+
+#include "goby/moos/modem_id_convert.h"
 
 namespace goby
 {
@@ -43,14 +52,16 @@ namespace goby
             void handle_initiate_transmission(const goby::acomms::protobuf::ModemTransmission& m);
 
           private:
+            void send_message(const goby::acomms::protobuf::ModemTransmission& msg);
+            void receive_message(const goby::acomms::protobuf::ModemTransmission& msg);
             
           private:
             enum { DEFAULT_PACKET_SIZE=64 };
             CMOOSCommClient moos_client_;
             goby::acomms::protobuf::DriverConfig driver_cfg_; // configuration given to you at launch
 
-            boost::bimap<int, std::string> modem_id2name_;
-
+            //boost::bimap<int, std::string> modem_id2name_;
+            tes::ModemIdConvert modem_lookup_;
         };
     }
 }

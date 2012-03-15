@@ -3,4 +3,6 @@ add_definitions(-DQUEUE_EXAMPLES_DIR="${queue_examples_dir}")
 
 add_subdirectory(queue_simple)
 add_subdirectory(multimessage)
-add_subdirectory(encode_on_demand)
+
+# broken
+#add_subdirectory(encode_on_demand)

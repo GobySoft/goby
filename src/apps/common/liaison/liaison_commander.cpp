@@ -1,17 +1,24 @@
-// copyright 2011 t. schneider tes@mit.edu
+// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+//                     Massachusetts Institute of Technology (2007-)
+//                     Woods Hole Oceanographic Institution (2007-)
+//                     Goby Developers Team (https://launchpad.net/~goby-dev)
 // 
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+//
+// This file is part of the Goby Underwater Autonomy Project Binaries
+// ("The Goby Binaries").
+//
+// The Goby Binaries are free software: you can redistribute them and/or modify
+// them under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// This software is distributed in the hope that it will be useful,
+// The Goby Binaries are distributed in the hope that they will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this software.  If not, see <http://www.gnu.org/licenses/>.
+// along with Goby.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <cfloat>
 #include <cmath>
@@ -81,13 +88,19 @@ goby::common::LiaisonCommander::LiaisonCommander(ZeroMQService* zeromq_service,
 
     for(int i = 0, n = pb_commander_config_.subscription_size(); i < n; ++i)
         subscribe(pb_commander_config_.subscription(i), Liaison::LIAISON_INTERNAL_COMMANDER_SUBSCRIBE_SOCKET);
-    
+
+    if(pb_commander_config_.has_time_source_var())
+        subscribe(pb_commander_config_.time_source_var(), Liaison::LIAISON_INTERNAL_COMMANDER_SUBSCRIBE_SOCKET);
 }
 
 void goby::common::LiaisonCommander::moos_inbox(CMOOSMsg& msg)
 {
     glog.is(DEBUG1, lock) && glog << "LiaisonCommander: Got message: " << msg <<  std::endl << unlock;
 
+    // nothing to do here
+    if(msg.GetKey() == pb_commander_config_.time_source_var())
+        return;
+    
     WContainerWidget* new_div = new WContainerWidget(controls_div_->incoming_message_stack_);
     
     WPushButton* minus = new WPushButton("-", new_div);
@@ -310,7 +323,8 @@ void goby::common::LiaisonCommander::ControlsContainer::switch_command(int selec
 
     if(!commands_.count(protobuf_name))
     {
-        CommandContainer* new_command = new CommandContainer(pb_commander_config_,
+        CommandContainer* new_command = new CommandContainer(moos_node_,
+                                                             pb_commander_config_,
                                                              protobuf_name,
                                                              &session_,
                                                              master_field_info_stack_);
@@ -356,7 +370,9 @@ void goby::common::LiaisonCommander::ControlsContainer::send_message()
     WGroupBox* message_box = new WGroupBox("Message to send", dialog.contents());
     new WText("<pre>" + current_command->message_->DebugString() + "</pre>", message_box);
 
-    message_box->setMaximumSize(800, 600);
+     
+    message_box->setMaximumSize(pb_commander_config_.modal_dimensions().width(),
+                                pb_commander_config_.modal_dimensions().height());
     message_box->setOverflow(WContainerWidget::OverflowAuto);
 
 //    dialog.setResizable(true);
@@ -404,11 +420,13 @@ void goby::common::LiaisonCommander::ControlsContainer::send_message()
 
 
 goby::common::LiaisonCommander::ControlsContainer::CommandContainer::CommandContainer(
+    MOOSNode* moos_node,
     const protobuf::ProtobufCommanderConfig& pb_commander_config,
     const std::string& protobuf_name,
     Dbo::Session* session,
     WStackedWidget* master_field_info_stack)
     : WGroupBox(protobuf_name),
+      moos_node_(moos_node),
       message_(goby::util::DynamicProtobufManager::new_protobuf_message(protobuf_name)),
       tree_box_(new WGroupBox("Contents", this)),
       tree_table_(new WTreeTable(tree_box_)),
@@ -505,7 +523,9 @@ void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::handle
      WGroupBox* message_box = new WGroupBox("Message posted", database_dialog_->contents());
      new WText("<pre>" + message->DebugString() + "</pre>", message_box);
      
-     message_box->setMaximumSize(800, 600);
+     message_box->setMaximumSize(pb_commander_config_.modal_dimensions().width(),
+                                 pb_commander_config_.modal_dimensions().height());
+
      message_box->setOverflow(WContainerWidget::OverflowAuto);
 
 
@@ -1174,6 +1194,20 @@ void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::set_ti
 {
     if(WLineEdit* line_edit = dynamic_cast<WLineEdit*>(value_field))
     {
+        boost::posix_time::ptime now;
+        if(pb_commander_config_.has_time_source_var())
+        {
+            CMOOSMsg& newest = moos_node_->newest(pb_commander_config_.time_source_var());
+            now = newest.IsDouble() ?
+                unix_double2ptime(newest.GetDouble()) :
+                unix_double2ptime(goby::util::as<double>(newest.GetString()));
+        }
+        else
+        {
+            now = goby_time();
+        }
+        
+        
         switch(field_desc->cpp_type())
         {
             default:
@@ -1181,13 +1215,13 @@ void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::set_ti
                 break;
 
             case google::protobuf::FieldDescriptor::CPPTYPE_UINT64:
-                line_edit->setText(goby::util::as<std::string>(goby_time<uint64>()));
+                line_edit->setText(goby::util::as<std::string>(goby::util::as<uint64>(now)));
 
             case google::protobuf::FieldDescriptor::CPPTYPE_STRING:
-                line_edit->setText(goby_time<std::string>());
+                line_edit->setText(goby::util::as<std::string>(now));
 
             case google::protobuf::FieldDescriptor::CPPTYPE_DOUBLE:
-                line_edit->setText(goby::util::as<std::string>(goby_time<double>()));
+                line_edit->setText(goby::util::as<std::string>(goby::util::as<double>(now)));
         }
         line_edit->changed().emit();
     }

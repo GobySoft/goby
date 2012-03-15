@@ -1,17 +1,24 @@
-// copyright 2011 t. schneider tes@mit.edu
+// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+//                     Massachusetts Institute of Technology (2007-)
+//                     Woods Hole Oceanographic Institution (2007-)
+//                     Goby Developers Team (https://launchpad.net/~goby-dev)
 // 
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+//
+// This file is part of the Goby Underwater Autonomy Project Binaries
+// ("The Goby Binaries").
+//
+// The Goby Binaries are free software: you can redistribute them and/or modify
+// them under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// This software is distributed in the hope that it will be useful,
+// The Goby Binaries are distributed in the hope that they will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this software.  If not, see <http://www.gnu.org/licenses/>.
+// along with Goby.  If not, see <http://www.gnu.org/licenses/>.
 
 #ifndef LIAISONCOMMANDER20110609H
 #define LIAISONCOMMANDER20110609H
@@ -110,10 +117,12 @@ namespace goby
                 
                 struct CommandContainer : Wt::WGroupBox
                 {
-                    CommandContainer(const protobuf::ProtobufCommanderConfig& pb_commander_config,
-                                     const std::string& protobuf_name,
-                                     Wt::Dbo::Session* session,
-                                     Wt::WStackedWidget* master_field_info_stack);
+                    CommandContainer(
+                        MOOSNode* moos_node,
+                        const protobuf::ProtobufCommanderConfig& pb_commander_config,
+                        const std::string& protobuf_name,
+                        Wt::Dbo::Session* session,
+                        Wt::WStackedWidget* master_field_info_stack);
 
                     void generate_root();
 
@@ -209,6 +218,7 @@ namespace goby
                     void handle_database_dialog(DatabaseDialogResponse response,
                                                 boost::shared_ptr<google::protobuf::Message> message);
                     
+                    MOOSNode* moos_node_;
                     boost::shared_ptr<google::protobuf::Message> message_;
                     
                     std::pair<Wt::WFormWidget*, const google::protobuf::FieldDescriptor*> time_field_;
@@ -233,7 +243,7 @@ namespace goby
                     const protobuf::ProtobufCommanderConfig& pb_commander_config_;
                     
                 };
-
+                
                 MOOSNode* moos_node_;
                 const protobuf::ProtobufCommanderConfig& pb_commander_config_;
                 std::map<std::string, int> commands_;

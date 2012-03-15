@@ -1,23 +1,25 @@
-// copyright 2009, 2010 t. schneider tes@mit.edu
+// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+//                     Massachusetts Institute of Technology (2007-)
+//                     Woods Hole Oceanographic Institution (2007-)
+//                     Goby Developers Team (https://launchpad.net/~goby-dev)
 // 
-// this file is part of libamac, a medium access control for
-// acoustic networks. 
 //
-// see the readme file within this directory for information
-// pertaining to usage and purpose of this script.
+// This file is part of the Goby Underwater Autonomy Project Libraries
+// ("The Goby Libraries").
 //
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// The Goby Libraries are free software: you can redistribute them and/or modify
+// them under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// This software is distributed in the hope that it will be useful,
+// The Goby Libraries are distributed in the hope that they will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Lesser General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
-// along with this software.  If not, see <http://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU Lesser General Public License
+// along with Goby.  If not, see <http://www.gnu.org/licenses/>.
+
 
 #include <iostream>
 #include <cmath>
@@ -160,8 +162,8 @@ void goby::acomms::MACManager::begin_slot(const boost::system::error_code& e)
                 case protobuf::ModemTransmission::MICROMODEM_REMUS_LBL_RANGING: glog << "r"; break; 
                 case protobuf::ModemTransmission::MICROMODEM_NARROWBAND_LBL_RANGING: glog << "n"; break; 
                 case protobuf::ModemTransmission::MICROMODEM_MINI_DATA: glog << "m"; break;
-                case protobuf::ModemTransmission::ACK:
-                case protobuf::ModemTransmission::UNKNOWN:
+
+                default:
                     break;
             }
         
@@ -208,7 +210,8 @@ boost::posix_time::ptime goby::acomms::MACManager::next_cycle_time()
     using namespace boost::gregorian;
     using namespace boost::posix_time;
 
-    time_duration time_of_day = goby_time().time_of_day();
+    ptime now = goby_time();
+    time_duration time_of_day = now.time_of_day();
     double since_day_start = time_of_day.total_seconds()*1e6
         + (time_of_day-seconds(time_of_day.total_seconds())).total_microseconds();
 
@@ -228,7 +231,7 @@ boost::posix_time::ptime goby::acomms::MACManager::next_cycle_time()
 
     
     // day start plus the next cycle starting from now
-    return ptime(day_clock::universal_day(), microseconds(secs_to_next*1e6));
+    return ptime(now.date(), microseconds(secs_to_next*1e6));
 }
 
 void goby::acomms::MACManager::update()

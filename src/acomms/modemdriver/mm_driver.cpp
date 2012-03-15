@@ -1,22 +1,25 @@
-// copyright 2009-2011 t. schneider tes@mit.edu
-// copyright 2011 j. walls
+// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+//                     Massachusetts Institute of Technology (2007-)
+//                     Woods Hole Oceanographic Institution (2007-)
+//                     Goby Developers Team (https://launchpad.net/~goby-dev)
 // 
-// this file is part of the goby-acomms WHOI Micro-Modem driver.
-// goby-acomms is a collection of libraries 
-// for acoustic underwater networking
 //
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// This file is part of the Goby Underwater Autonomy Project Libraries
+// ("The Goby Libraries").
+//
+// The Goby Libraries are free software: you can redistribute them and/or modify
+// them under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// This software is distributed in the hope that it will be useful,
+// The Goby Libraries are distributed in the hope that they will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Lesser General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
-// along with this software.  If not, see <http://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU Lesser General Public License
+// along with Goby.  If not, see <http://www.gnu.org/licenses/>.
+
 
 #include <sstream>
 
@@ -497,7 +500,7 @@ void goby::acomms::MMDriver::ccmuc(protobuf::ModemTransmission* msg)
 
     cache_outgoing_data(msg);
         
-    if(msg->frame_size() > 0)
+    if(msg->frame_size() > 0 && msg->frame(0).size())
     {        
         glog.is(DEBUG1) && glog << "Mini-data message: " << *msg << std::endl;
         msg->mutable_frame(0)->resize(MINI_PACKET_SIZE);
@@ -847,8 +850,9 @@ void goby::acomms::MMDriver::camsg(const NMEASentence& nmea, protobuf::ModemTran
         // if enabled cacst will signal_receive, otherwise signal if this is the last frame
         if(frames_waiting_to_receive_.empty() && !nvram_cfg_["CST"])
             signal_receive_and_clear(m);
+
+        glog.is(DEBUG1) && glog << group(glog_in_group()) << warn << "Received message with bad CRC" << std::endl;
     }    
-    glog.is(DEBUG1) && glog << group(glog_in_group()) << warn << "Received message with bad CRC" << std::endl;
 }
 
 void goby::acomms::MMDriver::carxd(const NMEASentence& nmea, protobuf::ModemTransmission* m)

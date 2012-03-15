@@ -12,6 +12,8 @@ function usage()
     echo "distribution can be:";
     echo "debian"
     echo "ubuntu"
+    echo "fedora"
+    echo "opensuse"
     echo;
     echo "Other distributions should determine their dependencies"
     echo "by reading this file (less DEPENDENCIES). Please improve this script"
@@ -56,6 +58,7 @@ ubuntu|debian)
  	    libboost-program-options-dev
  	    libboost-filesystem-dev
  	    libboost-signals-dev
+            libboost-regex-dev
  	    libprotobuf-dev
  	    libprotoc-dev
  	    protobuf-compiler"
@@ -95,7 +98,8 @@ ubuntu|debian)
                 packages="goby2"
             else
                 packages="${packages} 
-                     libzmq-dev
+                     moos
+                     libzmq-dev   
                      libwt-dev
                      libwtdbo-dev
                      libwtdbosqlite-dev
@@ -103,6 +107,29 @@ ubuntu|debian)
             fi
         fi
         ;;
+fedora)
+        package_manager=yum
+        install_command="install"
+        packages="cmake
+             protobuf-devel
+             boost-devel"
+
+        if [[ $install_all -ne 0 || $install_doc -ne 0 ]]; then 
+            echo "Warning: ALL and DOC are not yet supported for $1"
+        fi
+        ;; 
+opensuse)
+        package_manager=zypper
+        install_command="install"
+        packages="make gcc gcc-c++
+             protobuf-devel
+             boost-devel"
+
+        if [[ $install_all -ne 0 || $install_doc -ne 0 ]]; then 
+            echo "Warning: ALL and DOC are not yet supported for $1"
+        fi
+
+        ;; 
 *)
    echo -e "Invalid distribution: $1\n"; usage; exit 1;;
 esac
@@ -111,14 +138,21 @@ set -x
 ${package_manager} ${install_command} ${packages}
 
 
+# Fedora notes
+# - base
+# yum install cmake
+# yum install protobuf-devel
+# yum install boost-devel
+
 # OpenSuSe Notes
+# - base
 # zypper install -t pattern devel_C_C++
 # zypper install cmake
 # zypper install boost-devel
+# zypper install protobuf-devel
+# - optional
 # zypper install libxerces-c-devel
 # (crypto++ from src)
-# zypper install protobuf-devel
-# zypper install cdk-devel
 # zypper install wt-devel
 
 
@@ -129,18 +163,19 @@ ${package_manager} ${install_command} ${packages}
 # I believe these are the ports necessary to compile moos-ivp,
 # moos-ivp-local, and goby:
 # 
+# - base
 # boost +universal
+# protobuf-cpp
 # cmake
+# - optional
 # jpeg +universal
 # libcryptopp +universal
 # ncurses +universal
 # ncursesw
-# protobuf-cpp
 # socat
 # tiff +universal
 # xercesc
 # zlib +universal
-
 
 
 # Windows

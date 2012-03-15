@@ -7,3 +7,4 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 add_executable(queue_simple queue_simple.cpp ${PROTO_SRCS} ${PROTO_HDRS})
 target_link_libraries(queue_simple ${GOBY_LIBRARIES} ${Boost_LIBRARIES} ${PROTOBUF_LIBRARIES})
+install(TARGETS queue_simple RUNTIME DESTINATION bin)

@@ -1,25 +1,24 @@
-// t. schneider tes@mit.edu 06.05.08
-// ocean engineering graudate student - mit / whoi joint program
-// massachusetts institute of technology (mit)
-// laboratory for autonomous marine sensing systems (lamss)
+// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+//                     Massachusetts Institute of Technology (2007-)
+//                     Woods Hole Oceanographic Institution (2007-)
+//                     Goby Developers Team (https://launchpad.net/~goby-dev)
 // 
-// this is pAcommsHandler.cpp, part of pAcommsHandler 
 //
-// see the readme file within this directory for information
-// pertaining to usage and purpose of this script.
+// This file is part of the Goby Underwater Autonomy Project Binaries
+// ("The Goby Binaries").
 //
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// The Goby Binaries are free software: you can redistribute them and/or modify
+// them under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// This software is distributed in the hope that it will be useful,
+// The Goby Binaries are distributed in the hope that they will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this software.  If not, see <http://www.gnu.org/licenses/>.
+// along with Goby.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <dlfcn.h>
 #include <cctype>
@@ -35,6 +34,7 @@
 #include "goby/util/sci.h"
 #include "goby/moos/moos_protobuf_helpers.h"
 #include "goby/moos/moos_ufield_sim_driver.h"
+#include "goby/moos/protobuf/ufield_sim_driver.pb.h"
 
 using namespace goby::common::tcolor;
 using namespace goby::common::logger;
@@ -156,7 +156,8 @@ CpAcommsHandler::CpAcommsHandler()
     
     // update comms cycle
     subscribe(cfg_.moos_var().mac_cycle_update(), &CpAcommsHandler::handle_mac_cycle_update, this);    
-
+    
+    subscribe(cfg_.moos_var().queue_flush(), &CpAcommsHandler::handle_flush_queue, this);    
 }
 
 CpAcommsHandler::~CpAcommsHandler()
@@ -248,6 +249,18 @@ void CpAcommsHandler::handle_mac_cycle_update(const CMOOSMsg& msg)
     
 }
 
+
+void CpAcommsHandler::handle_flush_queue(const CMOOSMsg& msg)
+{
+    goby::acomms::protobuf::QueueFlush flush;
+    parse_for_moos(msg.GetString(), &flush);
+    
+    glog.is(VERBOSE) && glog << group("pAcommsHandler") <<  "Queue flush request: " << flush << std::endl;
+    queue_manager_.flush_queue(flush);
+}
+
+
+
 void CpAcommsHandler::handle_goby_signal(const google::protobuf::Message& msg1,
                                          const std::string& moos_var1,
                                          const google::protobuf::Message& msg2,
@@ -297,6 +310,9 @@ void CpAcommsHandler::process_configuration()
 
         case pAcommsHandlerConfig::DRIVER_UFIELD_SIM_DRIVER:
             driver_ = new goby::moos::UFldDriver;
+            cfg_.mutable_driver_cfg()->SetExtension(
+                goby::moos::protobuf::Config::modem_id_lookup_path,
+                cfg_.modem_id_lookup_path());
             break;
 
             
@@ -335,6 +351,16 @@ void CpAcommsHandler::process_configuration()
                          << "or LD_LIBRARY_PATH" << std::endl;
         }
         dl_handles.push_back(handle);
+
+        // load any shared library codecs
+        void (*dccl_load_ptr)(goby::acomms::DCCLCodec*);
+        dccl_load_ptr = (void (*)(goby::acomms::DCCLCodec*)) dlsym(handle, "goby_dccl_load");
+        if(dccl_load_ptr)
+        {
+            glog << group("pAcommsHandler") << "Loading shared library dccl codecs." << std::endl;
+            (*dccl_load_ptr)(dccl_);
+        }
+        
     }
     
     
@@ -362,6 +388,7 @@ void CpAcommsHandler::process_configuration()
 
         // validate with DCCL
         dccl_->validate(msg->GetDescriptor());
+        queue_manager_.add_queue(msg->GetDescriptor());
         
         if(cfg_.translator_entry(i).trigger().type() ==
            goby::moos::protobuf::TranslatorEntry::Trigger::TRIGGER_PUBLISH)
@@ -374,10 +401,10 @@ void CpAcommsHandler::process_configuration()
         else if(cfg_.translator_entry(i).trigger().type() ==
                 goby::moos::protobuf::TranslatorEntry::Trigger::TRIGGER_TIME)
         {
-            timers_.push_back(boost::shared_ptr<boost::asio::deadline_timer>(
-                                  new boost::asio::deadline_timer(timer_io_service_)));
+            timers_.push_back(boost::shared_ptr<Timer>(
+                                  new Timer(timer_io_service_)));
 
-            boost::asio::deadline_timer& new_timer = *timers_.back();
+            Timer& new_timer = *timers_.back();
             
             new_timer.expires_from_now(boost::posix_time::seconds(
                                            cfg_.translator_entry(i).trigger().period()));
@@ -470,7 +497,7 @@ void CpAcommsHandler::create_on_multiplex_publish(const CMOOSMsg& moos_msg)
 
 void CpAcommsHandler::create_on_timer(const boost::system::error_code& error,
                                    const goby::moos::protobuf::TranslatorEntry& entry,
-                                   boost::asio::deadline_timer* timer)
+                                   Timer* timer)
 {
   if (!error)
   {

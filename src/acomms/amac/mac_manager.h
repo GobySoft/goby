@@ -72,6 +72,10 @@ namespace goby
             /// \param cfg Initial configuration values (protobuf::MACConfig defined in acomms_amac.proto)
             void startup(const protobuf::MACConfig& cfg);
 
+            
+            /// \brief Restarts the MAC with original configuration
+            void restart();
+            
             /// \brief Shutdown the MAC
             void shutdown();
             

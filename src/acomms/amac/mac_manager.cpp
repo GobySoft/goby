@@ -73,6 +73,32 @@ void goby::acomms::MACManager::stop_timer()
 
 void goby::acomms::MACManager::startup(const protobuf::MACConfig& cfg)
 {
+    cfg_ = cfg;
+
+    switch(cfg_.type())
+    {
+        case protobuf::MAC_POLLED:
+        case protobuf::MAC_FIXED_DECENTRALIZED:
+            std::list<protobuf::ModemTransmission>::clear();
+            for(int i = 0, n = cfg_.slot_size(); i < n; ++i)
+                std::list<protobuf::ModemTransmission>::push_back(cfg_.slot(i));
+            
+            if(cfg_.type() == protobuf::MAC_POLLED)
+                glog.is(DEBUG1) && glog << group(glog_mac_group_) << "Using the Centralized Polling MAC_POLLED scheme" << std::endl;
+            else if(cfg_.type() == protobuf::MAC_FIXED_DECENTRALIZED)
+                glog.is(DEBUG1) && glog << group(glog_mac_group_) << "Using the Decentralized MAC_FIXED_DECENTRALIZED scheme" << std::endl;
+            break;
+
+        default:
+            return;
+    }
+
+    restart();
+}
+
+
+void goby::acomms::MACManager::restart()
+{
     glog.is(DEBUG1) && glog << group(glog_mac_group_) << "Goby Acoustic Medium Access Control module starting up." << std::endl;
 
     if(started_up_)
@@ -81,36 +107,16 @@ void goby::acomms::MACManager::startup(const protobuf::MACConfig& cfg)
         return;
     }
     
-    // create a copy for us
-    cfg_ = cfg;
-    
     started_up_ = true;
-
-    switch(cfg_.type())
-    {
-        case protobuf::MAC_POLLED:
-        case protobuf::MAC_FIXED_DECENTRALIZED:
-            for(int i = 0, n = cfg_.slot_size(); i < n; ++i)
-                std::list<protobuf::ModemTransmission>::push_back(cfg_.slot(i));
-            
-            if(cfg_.type() == protobuf::MAC_POLLED)
-                glog.is(DEBUG1) && glog << group(glog_mac_group_) << "Using the Centralized Polling MAC_POLLED scheme" << std::endl;
-            else if(cfg_.type() == protobuf::MAC_FIXED_DECENTRALIZED)
-                glog.is(DEBUG1) && glog << group(glog_mac_group_) << "Using the Decentralized MAC_FIXED_DECENTRALIZED scheme" << std::endl;
-            update();
-            
-            break;
-
-        default:
-            return;
-    }
-
+    
+    update();
+    
     glog.is(DEBUG1) && glog << group(glog_mac_group_)
                             << "the first MAC TDMA cycle begins at time: "
                             << next_slot_t_ << std::endl;
     
-
 }
+
 
 void goby::acomms::MACManager::shutdown()
 {
@@ -118,6 +124,9 @@ void goby::acomms::MACManager::shutdown()
     
     current_slot_ = std::list<protobuf::ModemTransmission>::begin();
     started_up_ = false;
+
+    glog.is(DEBUG1) && glog << group(glog_mac_group_)
+                            << "the MAC cycle has been shutdown until restarted." << std::endl;
 }
 
 
@@ -258,7 +267,8 @@ void goby::acomms::MACManager::update()
     // if we can start cycles in the middle, do it
     if(cfg_.start_cycle_in_middle() &&
        std::list<protobuf::ModemTransmission>::size() > 1 &&
-       cfg_.type() == protobuf::MAC_FIXED_DECENTRALIZED)
+       (cfg_.type() == protobuf::MAC_FIXED_DECENTRALIZED ||
+        cfg_.type() == protobuf::MAC_POLLED))
     {
         glog.is(DEBUG1) && glog << group(glog_mac_group_) << "Starting next available slot (in middle of cycle)"
                        << std::endl;

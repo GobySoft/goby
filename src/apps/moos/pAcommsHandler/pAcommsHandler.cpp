@@ -190,7 +190,7 @@ void CpAcommsHandler::handle_mac_cycle_update(const CMOOSMsg& msg)
         glog << group("pAcommsHandler") << "update not for us" << std::endl;
         return;
     }
-
+    
     goby::acomms::MACManager::iterator it1 = mac_.begin(), it2 = mac_.begin();
     
     for(int i = 0, n = update_msg.first_iterator(); i < n; ++i)
@@ -243,9 +243,29 @@ void CpAcommsHandler::handle_mac_cycle_update(const CMOOSMsg& msg)
             
         case goby::acomms::protobuf::MACUpdate::CLEAR:
             mac_.clear();
-            break;            
+            break;
+
+        case goby::acomms::protobuf::MACUpdate::NO_CHANGE:
+            break;
     }
+
     mac_.update();
+
+    if(update_msg.has_cycle_state())
+    {
+        switch(update_msg.cycle_state())
+        {
+            case goby::acomms::protobuf::MACUpdate::STARTED:
+                mac_.restart();
+                break;
+            
+            case goby::acomms::protobuf::MACUpdate::STOPPED:
+                mac_.shutdown();
+                break;
+        }
+    }
+
+    
     
 }
 

@@ -106,6 +106,14 @@ int main(int argc, char* argv[])
     
     mac.shutdown();
 
+    cfg.Clear();
+    me = 3;
+    
+    cfg.set_modem_id(me);
+    cfg.set_type(goby::acomms::protobuf::MAC_FIXED_DECENTRALIZED);
+    mac.startup(cfg);
+
+
     // add slots not through cfg
     mac.clear();
     mac.push_back(downlink_slot);
@@ -117,12 +125,6 @@ int main(int argc, char* argv[])
     mac.push_back(downlink_slot);    
     mac.update();
 
-    cfg.Clear();
-    me = 3;
-    
-    cfg.set_modem_id(me);
-    cfg.set_type(goby::acomms::protobuf::MAC_FIXED_DECENTRALIZED);
-    mac.startup(cfg);
     
     
     while(first_cycle == -1 || (current_cycle < first_cycle + num_cycles_check))

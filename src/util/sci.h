@@ -68,6 +68,7 @@ namespace goby
         }
 
 
+        
         /// \return ceil(log2(v))
         inline unsigned ceil_log2(unsigned v)
         {
@@ -77,6 +78,17 @@ namespace goby
                 r++;
             return r;
         }
+        
+        inline unsigned ceil_log2(double d)
+        {
+            return ceil_log2(static_cast<unsigned>(std::ceil(d)));
+        }
+
+        inline unsigned ceil_log2(int i)
+        {
+            return ceil_log2(static_cast<unsigned>(i));
+        }
+        
         
     }
 

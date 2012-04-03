@@ -27,6 +27,8 @@
 #include "alog_to_goby_db_config.pb.h"
 #include "moos_types.pb.h"
 
+#include <dlfcn.h>
+
 using goby::moos::operator<<;
 using namespace goby::util::logger;
 
@@ -38,6 +40,10 @@ public:
     AlogToGobyDb()
         : ApplicationBase(&cfg_)
         {
+            for(int i = 0, n = cfg_.load_library_size(); i < n; ++i)
+                dlopen(cfg_.load_library(i).c_str(), RTLD_LAZY);
+
+
             goby::moos::MOOSDBOPlugin moos_plugin;
             goby::core::ProtobufDBOPlugin protobuf_plugin;
             
@@ -92,6 +98,8 @@ public:
                         std::string key = boost::trim_copy(parts[1]);
                         std::string source = boost::trim_copy(parts[2]);
                         std::string s_value = boost::trim_copy(parts[3]);
+                        for(int j = 4; j < parts.size(); ++j)
+                            s_value += " " +  boost::trim_copy(parts[j]);
                         
                         char data_type;
                         double d_value;
@@ -143,10 +151,21 @@ public:
                     const CMOOSMsg& moos_msg = (**it).second;
                     goby::glog.is(DEBUG1) && goby::glog << moos_msg << std::endl;
 
-                    if(action.is_key_equals_value_string())
-                        goby::moos::MOOSTranslation<goby::moos::protobuf::TranslatorEntry::TECHNIQUE_COMMA_SEPARATED_KEY_EQUALS_VALUE_PAIRS>::parse(boost::to_lower_copy(moos_msg.GetString()), msg.get());
-                    else
-                        goby::moos::MOOSTranslation<goby::moos::protobuf::TranslatorEntry::TECHNIQUE_FORMAT>::parse(moos_msg.GetString(), msg.get(), action.format());
+                    switch(action.technique())
+                    {
+                        case TECHNIQUE_PROTOBUF_TEXT_FORMAT:
+                            parse_for_moos(moos_msg.GetString(), msg.get());
+                            break;
+                        case TECHNIQUE_PROTOBUF_NATIVE_ENCODED:
+                            msg->ParseFromString(moos_msg.GetString());
+                            break;
+                        case TECHNIQUE_COMMA_SEPARATED_KEY_EQUALS_VALUE_PAIRS:
+                            from_moos_comma_equals_string(msg.get(), boost::to_lower_copy(moos_msg.GetString()));
+                            break;
+                        case TECHNIQUE_FORMAT:
+                            parse(action.format(), moos_msg.GetString(), msg.get());
+                            break;
+                    }                    
                     
                     goby::glog.is(DEBUG1) && goby::glog << "[[" << msg->GetDescriptor()->full_name() << "]] " << msg->DebugString() << std::endl;
                     proto_msgs[(**it).first] = msg;

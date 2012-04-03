@@ -64,7 +64,7 @@ void GPSDriver::loop()
                 gga.mutable_header()->set_time(as<std::string>(nmea_time2ptime(nmea.part(1))));
                 goby::glog << gga << std::flush;
                 
-                publish(gga);
+                publish<GPSSentenceGGA>(gga);
             }
             catch(bad_gga_sentence& e)
             {

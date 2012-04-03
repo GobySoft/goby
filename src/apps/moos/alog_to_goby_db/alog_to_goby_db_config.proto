@@ -1,6 +1,15 @@
 import "goby/common/protobuf/option_extensions.proto";
 import "goby/common/protobuf/app_base_config.proto";
 
+enum ParserSerializerTechnique
+{
+  TECHNIQUE_PROTOBUF_TEXT_FORMAT = 1;
+  TECHNIQUE_PROTOBUF_NATIVE_ENCODED = 2;
+  TECHNIQUE_COMMA_SEPARATED_KEY_EQUALS_VALUE_PAIRS = 3;
+  TECHNIQUE_FORMAT = 4;
+}    
+
+
 message AlogToGobyDbConfig
 {
   required string goby_log = 1 [(goby.field).description="Name of Goby Db file to write."];
@@ -12,11 +21,14 @@ message AlogToGobyDbConfig
   {
     required string protobuf_type_name = 1 [(goby.field).description="Full name of protobuf type used to parse this field."];
     required string sql_where_clause = 2 [(goby.field).description="Portion of SQL query on CMOOSMsg table following `WHERE` used to select rows for parsing", (goby.field).example="key = 'NODE_REPORT' AND string_value LIKE 'NAME=unicorn%'"];
+
     
-    optional bool is_key_equals_value_string = 3 [default=false];
+    optional ParserSerializerTechnique technique = 3 [default=TECHNIQUE_FORMAT];
     optional string format = 4;
   }
 
   repeated ParseAction parse_action = 5 [(goby.field).description="Optional set of parse actions to take: query the CMOOSMsg table and parse into a true Google Protobuf object representation"];
+
+  repeated string load_library = 6 [(goby.field).description="Load these dynamic libraries containing protobuf messages"];
   
 }

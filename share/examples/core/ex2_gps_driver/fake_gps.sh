@@ -5,8 +5,8 @@ if [ -z $1 ]; then
 fi
 
 if [ -e "`which socat`" ]; then
+    echo "Faking GPS on /tmp/ttyFAKE"
     while [ 1 ]; do 
-        echo "Faking GPS on /tmp/ttyFAKE"
         IFS=$'\n'; 
         for line in $(cat $1)
         do

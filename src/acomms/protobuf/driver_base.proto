@@ -28,6 +28,7 @@ message DriverConfig
   
   extensions 1000 to max;
   // extensions 1000-1100 used by acomms_mm_driver.proto
-  // exenstions 1201-1202 used by acomms_abc_driver.proto (example driver)
+  // extensions 1201-1202 used by acomms_abc_driver.proto (example driver)
+  // extensions 1300-1320 used by ufield_sim_driver.proto
 }
 

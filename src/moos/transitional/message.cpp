@@ -1,26 +1,30 @@
-// copyright 2008, 2009 t. schneider tes@mit.edu
+// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+//                     Massachusetts Institute of Technology (2007-)
+//                     Woods Hole Oceanographic Institution (2007-)
+//                     Goby Developers Team (https://launchpad.net/~goby-dev)
 // 
-// this file is part of the Dynamic Compact Control Language (DCCL),
-// the goby-acomms codec. goby-acomms is a collection of libraries 
-// for acoustic underwater networking
 //
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// This file is part of the Goby Underwater Autonomy Project Libraries
+// ("The Goby Libraries").
+//
+// The Goby Libraries are free software: you can redistribute them and/or modify
+// them under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// This software is distributed in the hope that it will be useful,
+// The Goby Libraries are distributed in the hope that they will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Lesser General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
-// along with this software.  If not, see <http://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU Lesser General Public License
+// along with Goby.  If not, see <http://www.gnu.org/licenses/>.
+
 
 #include <boost/foreach.hpp>
 
 #include "goby/util/as.h"
-#include "goby/util/logger.h"
+#include "goby/common/logger.h"
 #include "message.h"
 #include "goby/acomms/dccl/dccl.h"
 #include "goby/acomms/dccl/dccl_exception.h"
@@ -92,7 +96,7 @@ void goby::transitional::DCCLMessage::preprocess()
     // calculate number of repeated messages that will fit and put this in `repeat_`.
     if(repeat_enabled_)
     {
-        glog.is(goby::util::logger::WARN) && glog << "<repeat> is deprecated and ignored in this version of Goby. Simply post a message several times." << std::endl;
+        glog.is(goby::common::logger::WARN) && glog << "<repeat> is deprecated and ignored in this version of Goby. Simply post a message several times." << std::endl;
     }
 
 //    body_bits_ = calc_total_size();
@@ -141,44 +145,6 @@ std::map<std::string, std::string> goby::transitional::DCCLMessage::message_var_
     return s;
 }
 
-std::set<std::string> goby::transitional::DCCLMessage::get_pubsub_encode_vars()
-{
-    std::set<std::string> s = get_pubsub_src_vars();
-    if(trigger_type_ == "publish")
-        s.insert(trigger_var_);
-    return s;
-}
-
-std::set<std::string> goby::transitional::DCCLMessage::get_pubsub_decode_vars()
-{
-    std::set<std::string> s;
-    s.insert(in_var_);
-    return s;
-}
-    
-std::set<std::string> goby::transitional::DCCLMessage::get_pubsub_all_vars()
-{
-    std::set<std::string> s_enc = get_pubsub_encode_vars();
-    std::set<std::string> s_dec = get_pubsub_decode_vars();
-
-    std::set<std::string>& s = s_enc;        
-    s.insert(s_dec.begin(), s_dec.end());
-        
-    return s;
-}
-    
-std::set<std::string> goby::transitional::DCCLMessage::get_pubsub_src_vars()
-{
-    std::set<std::string> s;
-
-    BOOST_FOREACH(boost::shared_ptr<DCCLMessageVar> mv, layout_)
-        s.insert(mv->source_var());
-    BOOST_FOREACH(boost::shared_ptr<DCCLMessageVar> mv, header_)
-        s.insert(mv->source_var());
-    
-    return s;
-}
-
     
 
 void goby::transitional::DCCLMessage::set_head_defaults(std::map<std::string, std::vector<DCCLMessageVal> >& in, unsigned modem_id)
@@ -206,84 +172,6 @@ boost::shared_ptr<goby::transitional::DCCLMessageVar> goby::transitional::DCCLMe
     throw goby::acomms::DCCLException(std::string("DCCL: no such name \"" + name + "\" found in <layout> or <header>"));
     
     return boost::shared_ptr<DCCLMessageVar>();
-}
-
-////////////////////////////
-// VISUALIZATION
-////////////////////////////
-
-    
-// a long visual display of all the parameters for a DCCLMessage
-std::string goby::transitional::DCCLMessage::get_display() const
-{
-    std::stringstream ss;
-    goby::acomms::DCCLCodec::get()->info(descriptor_, &ss);            
-    ss << "== Begin " << name_ << " Transitional MOOS Additional Information ==" << std::endl;
-    ss << "trigger_type: {" << trigger_type_ << "}" << std::endl;
-    
-    
-    if(trigger_type_ == "publish")
-    {
-        ss << "trigger_var: {" << trigger_var_ << "}";
-        if (trigger_mandatory_ != "")
-            ss << " must contain string \"" << trigger_mandatory_ << "\"";
-        ss << std::endl;
-    }
-    else if(trigger_type_ == "time")
-    {
-        ss << "trigger_time: {" << trigger_time_ << "}" << std::endl;
-    }
-    
-    ss << "outgoing_hex_var: {" << out_var_ << "}" << std::endl;
-    ss << "incoming_hex_var: {" << in_var_ << "}" << std::endl;
-        
-
-    ss << ">>>> HEADER <<<<" << std::endl;
-    BOOST_FOREACH(const boost::shared_ptr<DCCLMessageVar> mv, header_)
-        ss << *mv;
-    
-    ss << ">>>> LAYOUT (message_vars) <<<<" << std::endl;
-
-    BOOST_FOREACH(const boost::shared_ptr<DCCLMessageVar> mv, layout_)
-        ss << *mv;    
-
-    ss << ">>>> PUBLISHES <<<<" << std::endl;
-    
-    BOOST_FOREACH(const DCCLPublish& p, publishes_)
-        ss << p;
-    
-    ss << "== End " << name_ << " Transitional MOOS Additional Information ==" << std::endl;
-    return ss.str();
-}
-
-// a much shorter rundown of the Message parameters
-std::string goby::transitional::DCCLMessage::get_short_display() const
-{
-    std::stringstream ss;
-
-    ss << name_ <<  ": ";
-
-    bool is_moos = !trigger_type_.empty();
-    if(is_moos)
-    {
-        ss << "trig: ";
-        
-        if(trigger_type_ == "publish")
-            ss << trigger_var_;
-        else if(trigger_type_ == "time")
-            ss << trigger_time_ << "s";
-        ss << " | out: " << out_var_;
-        ss << " | in: " << in_var_ << std::endl;
-    }
-    
-    return ss.str();
-}
-    
-// overloaded <<
-std::ostream& goby::transitional::operator<< (std::ostream& out, const DCCLMessage& message)
-{
-    out << message.get_display();
-    return out;
 }
 
 // Added in Goby2 for transition to Protobuf structure
@@ -326,46 +214,3 @@ void goby::transitional::DCCLMessage::write_schema_to_dccl2(std::ofstream* proto
     *proto_file << "} " << std::endl;
 }
 
-void goby::transitional::DCCLMessage::pre_encode(
-    const std::map<std::string, std::vector<DCCLMessageVal> >& in,
-    std::map<std::string, std::vector<DCCLMessageVal> >& out)
-{
-    for (std::vector< boost::shared_ptr<DCCLMessageVar> >::iterator it = header_.begin(),
-             n = header_.end();
-         it != n;
-         ++it)
-    {
-        (*it)->var_pre_encode(in, out);
-    }    
-
-    for (std::vector< boost::shared_ptr<DCCLMessageVar> >::iterator it = layout_.begin(),
-             n = layout_.end();
-         it != n;
-         ++it)
-    {
-        (*it)->var_pre_encode(in, out);
-    }    
-}
-
-
-
-void goby::transitional::DCCLMessage::post_decode(
-    const std::map<std::string, std::vector<DCCLMessageVal> >& in,
-    std::map<std::string, std::vector<DCCLMessageVal> >& out)
-{
-    for (std::vector< boost::shared_ptr<DCCLMessageVar> >::iterator it = header_.begin(),
-             n = header_.end();
-         it != n;
-         ++it)
-    {
-        (*it)->var_post_decode(in, out);
-    }    
-
-    for (std::vector< boost::shared_ptr<DCCLMessageVar> >::iterator it = layout_.begin(),
-             n = layout_.end();
-         it != n;
-         ++it)
-    {
-        (*it)->var_post_decode(in, out);
-    }    
-}

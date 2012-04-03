@@ -1,25 +1,24 @@
-// t. schneider tes@mit.edu 06.05.08
-// ocean engineering graudate student - mit / whoi joint program
-// massachusetts institute of technology (mit)
-// laboratory for autonomous marine sensing systems (lamss)
+// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+//                     Massachusetts Institute of Technology (2007-)
+//                     Woods Hole Oceanographic Institution (2007-)
+//                     Goby Developers Team (https://launchpad.net/~goby-dev)
 // 
-// this is pTranslator.h, part of pTranslator
 //
-// see the readme file within this directory for information
-// pertaining to usage and purpose of this script.
+// This file is part of the Goby Underwater Autonomy Project Binaries
+// ("The Goby Binaries").
 //
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// The Goby Binaries are free software: you can redistribute them and/or modify
+// them under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// This software is distributed in the hope that it will be useful,
+// The Goby Binaries are distributed in the hope that they will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this software.  If not, see <http://www.gnu.org/licenses/>.
+// along with Goby.  If not, see <http://www.gnu.org/licenses/>.
 
 #ifndef pTranslatorH
 #define pTranslatorH
@@ -30,14 +29,14 @@
 #include <boost/asio/deadline_timer.hpp>
 
 #include "goby/util/dynamic_protobuf_manager.h"
-#include "goby/moos/tes_moos_app.h"
+#include "goby/moos/goby_moos_app.h"
 #include "goby/moos/moos_translator.h"
 
 #include "pTranslator_config.pb.h"
 
 extern std::vector<void *> dl_handles;
 
-class CpTranslator : public TesMoosApp
+class CpTranslator : public GobyMOOSApp
 {
   public:
     static CpTranslator* get_instance();
@@ -47,16 +46,20 @@ class CpTranslator : public TesMoosApp
     CpTranslator();
     ~CpTranslator();
     
-    void loop();     // from TesMoosApp
+    void loop();     // from GobyMOOSApp
 
     void create_on_publish(const CMOOSMsg& trigger_msg, const goby::moos::protobuf::TranslatorEntry& entry);
-
+    void create_on_multiplex_publish(const CMOOSMsg& moos_msg);
+    
+    
     void create_on_timer(const boost::system::error_code& error,
                          const goby::moos::protobuf::TranslatorEntry& entry,
                          boost::asio::deadline_timer* timer);
     
     void do_translation(const goby::moos::protobuf::TranslatorEntry& entry);
+    void do_publish(boost::shared_ptr<google::protobuf::Message> created_message);
 
+    
   private:
     google::protobuf::compiler::DiskSourceTree disk_source_tree_;
     google::protobuf::compiler::SourceTreeDescriptorDatabase source_database_;
@@ -65,7 +68,7 @@ class CpTranslator : public TesMoosApp
     {
         void AddError(const std::string & filename, int line, int column, const std::string & message)
         {
-            goby::glog.is(goby::util::logger::DIE) &&
+            goby::glog.is(goby::common::logger::DIE) &&
                 goby::glog << "File: " << filename
                            << " has error (line: " << line << ", column: " << column << "): "
                            << message << std::endl;

@@ -17,18 +17,19 @@
 #ifndef PROTOBUFPUBSUBNODE20110506H
 #define PROTOBUFPUBSUBNODE20110506H
 
+#include <boost/function.hpp>
 #include "goby/common/pubsub_node_wrapper.h"
 #include "protobuf_node.h"
 
 namespace goby
 {
-    namespace core
+    namespace pb
     {
-        class StaticProtobufPubSubNodeWrapper : public PubSubNodeWrapper<google::protobuf::Message>
+        class StaticProtobufPubSubNodeWrapper : public common::PubSubNodeWrapper<google::protobuf::Message>
         {
           public:
-          StaticProtobufPubSubNodeWrapper(StaticProtobufNode* node, const protobuf::PubSubSocketConfig& cfg)
-              : PubSubNodeWrapper<google::protobuf::Message>(node, cfg),
+          StaticProtobufPubSubNodeWrapper(StaticProtobufNode* node, const common::protobuf::PubSubSocketConfig& cfg)
+              : common::PubSubNodeWrapper<google::protobuf::Message>(node, cfg),
                 node_(*node)
                 { }
             
@@ -38,9 +39,9 @@ namespace goby
             template<typename ProtoBufMessage>
                 void subscribe(boost::function<void (const ProtoBufMessage&)> handler)
             {
-                if(!cfg().using_pubsub())
+                if(!using_pubsub())
                 {
-                    glog.is(goby::util::logger::WARN) && glog << "Ignoring subscribe since we have `using_pubsub`=false" << std::endl;
+                    glog.is(goby::common::logger::WARN) && glog << "Ignoring subscribe since we have `using_pubsub`=false" << std::endl;
                     return;
                 }    
                 node_.subscribe<ProtoBufMessage>(SOCKET_SUBSCRIBE, handler);

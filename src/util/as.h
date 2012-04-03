@@ -1,23 +1,25 @@
-// copyright 2010 t. schneider tes@mit.edu
-// ocean engineering graudate student - mit / whoi joint program
-// massachusetts institute of technology (mit)
-// laboratory for autonomous marine sensing systems (lamss)    
+// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+//                     Massachusetts Institute of Technology (2007-)
+//                     Woods Hole Oceanographic Institution (2007-)
+//                     Goby Developers Team (https://launchpad.net/~goby-dev)
 // 
-// this file is part of goby-util, a collection of utility libraries
 //
+// This file is part of the Goby Underwater Autonomy Project Libraries
+// ("The Goby Libraries").
 //
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// The Goby Libraries are free software: you can redistribute them and/or modify
+// them under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// This software is distributed in the hope that it will be useful,
+// The Goby Libraries are distributed in the hope that they will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Lesser General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
-// along with this software.  If not, see <http://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU Lesser General Public License
+// along with Goby.  If not, see <http://www.gnu.org/licenses/>.
+
 
 #ifndef STRING20100713H
 #define STRING20100713H
@@ -27,6 +29,8 @@
 #include <boost/lexical_cast.hpp>
 #include <iostream>
 #include <limits>
+#include <sstream>
+#include <iomanip>
 
 #include <boost/utility.hpp>
 #include <boost/type_traits.hpp>
@@ -35,7 +39,6 @@
 #include <boost/mpl/and.hpp>
 #include <boost/mpl/logical.hpp>
 #include <boost/numeric/conversion/cast.hpp>
-
 
 namespace goby
 {
@@ -138,7 +141,7 @@ namespace goby
         {
             return from;
         }
-
+        
         template<typename To>
             To as(const std::string& from)
         {
@@ -169,6 +172,68 @@ namespace goby
             return static_cast<To>(from);
         }
 
+        enum FloatRepresentation
+        {
+            FLOAT_DEFAULT,
+            FLOAT_FIXED,
+            FLOAT_SCIENTIFIC
+        };
+        
+        
+        template<typename To, typename From>
+            To as(const From& from, int precision, FloatRepresentation rep = FLOAT_DEFAULT)
+        {
+            return as<To>(from);
+        }
+        
+        template<>
+            inline std::string as<std::string, double>(const double& from,
+                                                       int precision,
+                                                       FloatRepresentation rep)
+        {
+            std::stringstream out;
+            switch(rep)
+            {
+                case FLOAT_DEFAULT:
+                    break;
+
+                case FLOAT_FIXED:
+                     out << std::fixed;
+                    break;
+                case FLOAT_SCIENTIFIC:
+                    out << std::scientific;
+                    break;
+            }
+
+            out << std::setprecision(precision) << from;
+            return out.str();
+        }
+
+        template<>
+            inline std::string as<std::string, float>(const float& from,
+                                                      int precision,
+                                                      FloatRepresentation rep)
+        {
+            std::stringstream out;
+            switch(rep)
+            {
+                case FLOAT_DEFAULT:
+                    break;
+
+                case FLOAT_FIXED:
+                    out << std::fixed;
+                    break;
+                case FLOAT_SCIENTIFIC:
+                    out << std::scientific;
+                    break;
+            }
+
+            out << std::setprecision(precision) << from;
+            return out.str();
+        }
+
+
+        
     }
 }
 #endif

@@ -31,7 +31,7 @@
 #include <google/protobuf/descriptor.h>
 #include <google/protobuf/descriptor.pb.h>
 
-#include "goby/util/logger.h"
+#include "goby/common/logger.h"
 
 #include <ctime>
 #include <map>

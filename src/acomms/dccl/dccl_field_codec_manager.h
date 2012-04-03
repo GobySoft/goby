@@ -1,21 +1,25 @@
-// copyright 2009-2011 t. schneider tes@mit.edu
+// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+//                     Massachusetts Institute of Technology (2007-)
+//                     Woods Hole Oceanographic Institution (2007-)
+//                     Goby Developers Team (https://launchpad.net/~goby-dev)
 // 
-// this file is part of the Dynamic Compact Control Language (DCCL),
-// the goby-acomms codec. goby-acomms is a collection of libraries 
-// for acoustic underwater networking
 //
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// This file is part of the Goby Underwater Autonomy Project Libraries
+// ("The Goby Libraries").
+//
+// The Goby Libraries are free software: you can redistribute them and/or modify
+// them under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// This software is distributed in the hope that it will be useful,
+// The Goby Libraries are distributed in the hope that they will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Lesser General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
-// along with this software.  If not, see <http://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU Lesser General Public License
+// along with Goby.  If not, see <http://www.gnu.org/licenses/>.
+
 
 #ifndef DCCLFieldCodecManager20110405H
 #define DCCLFieldCodecManager20110405H
@@ -209,7 +213,7 @@ void goby::acomms::DCCLFieldCodecManager::__add(const std::string& name,
         new_field_codec->set_wire_type(wire_type);
         
         codecs_[field_type][name] = new_field_codec;
-        goby::glog.is(util::logger::DEBUG1) && goby::glog << "Adding codec " << *new_field_codec << std::endl;
+        goby::glog.is(common::logger::DEBUG1) && goby::glog << "Adding codec " << *new_field_codec << std::endl;
     }            
     else
     {
@@ -218,7 +222,7 @@ void goby::acomms::DCCLFieldCodecManager::__add(const std::string& name,
         new_field_codec->set_field_type(field_type);
         new_field_codec->set_wire_type(wire_type);
         
-        goby::glog.is(util::logger::DEBUG1) && goby::glog << "Trying to add: " << *new_field_codec
+        goby::glog.is(common::logger::DEBUG1) && goby::glog << "Trying to add: " << *new_field_codec
                              << ", but already have duplicate codec (For `name`/`field type` pair) "
                              << *(codecs_[field_type].find(name)->second)
                              << std::endl;

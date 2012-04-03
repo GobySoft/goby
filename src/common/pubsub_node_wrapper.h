@@ -1,29 +1,35 @@
-// copyright 2011 t. schneider tes@mit.edu
+// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+//                     Massachusetts Institute of Technology (2007-)
+//                     Woods Hole Oceanographic Institution (2007-)
+//                     Goby Developers Team (https://launchpad.net/~goby-dev)
 // 
 //
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// This file is part of the Goby Underwater Autonomy Project Libraries
+// ("The Goby Libraries").
+//
+// The Goby Libraries are free software: you can redistribute them and/or modify
+// them under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// This software is distributed in the hope that it will be useful,
+// The Goby Libraries are distributed in the hope that they will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Lesser General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
-// along with this software.  If not, see <http://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU Lesser General Public License
+// along with Goby.  If not, see <http://www.gnu.org/licenses/>.
+
 
 #ifndef PUBSUBNODE20110506H
 #define PUBSUBNODE20110506H
 
 #include <google/protobuf/message.h>
 #include "goby/common/node_interface.h"
-#include "goby/pb/protobuf/header.pb.h"
 
 namespace goby
 {
-    namespace core
+    namespace common
     {
 
         class PubSubNodeWrapperBase
@@ -43,9 +49,9 @@ namespace goby
                          const void* data,
                          int size)
             {
-                if(!cfg().using_pubsub())
+                if(!using_pubsub())
                 {
-                    glog.is(goby::util::logger::WARN) && glog << "Ignoring publish since we have `using_pubsub`=false" << std::endl;
+                    glog.is(goby::common::logger::WARN) && glog << "Ignoring publish since we have `using_pubsub`=false" << std::endl;
                     return;
                 }
                 
@@ -55,9 +61,9 @@ namespace goby
             void subscribe(MarshallingScheme marshalling_scheme,
                            const std::string& identifier)
             {
-                if(!cfg().using_pubsub())
+                if(!using_pubsub())
                 {
-                    glog.is(goby::util::logger::WARN) && glog << "Ignoring subscribe since we have `using_pubsub`=false" << std::endl;
+                    glog.is(goby::common::logger::WARN) && glog << "Ignoring subscribe since we have `using_pubsub`=false" << std::endl;
                     return;
                 }
                 
@@ -66,8 +72,20 @@ namespace goby
             
             
             void subscribe_all()
-            { zeromq_service_.subscribe_all(SOCKET_SUBSCRIBE); }
+            {
+                if(!using_pubsub())
+                {
+                    glog.is(goby::common::logger::WARN) && glog << "Ignoring subscribe since we have `using_pubsub`=false" << std::endl;
+                    return;
+                }
+                
+                zeromq_service_.subscribe_all(SOCKET_SUBSCRIBE);
+            }
 
+            bool using_pubsub() const
+            { return cfg_.has_publish_socket() && cfg_.has_subscribe_socket(); }
+
+            
           protected:
             const protobuf::PubSubSocketConfig& cfg() const
             { return cfg_; }
@@ -76,36 +94,38 @@ namespace goby
                 SOCKET_SUBSCRIBE = 103998, SOCKET_PUBLISH = 103999
             };
 
+            
           private:
 
             void set_cfg(const protobuf::PubSubSocketConfig& cfg)
             {
                 cfg_ = cfg;
-              
-                goby::core::protobuf::ZeroMQServiceConfig pubsub_cfg;
                 
-                using goby::glog;
-                if(cfg.using_pubsub())
-                {
-                    glog.is(goby::util::logger::DEBUG1) && glog << "Using publish / subscribe." << std::endl;
-                    goby::core::protobuf::ZeroMQServiceConfig::Socket* subscriber_socket = pubsub_cfg.add_socket();
-                    subscriber_socket->set_socket_type(goby::core::protobuf::ZeroMQServiceConfig::Socket::SUBSCRIBE);
-                    subscriber_socket->set_socket_id(SOCKET_SUBSCRIBE);
-                    subscriber_socket->set_ethernet_address(cfg.ethernet_address());
-                    subscriber_socket->set_multicast_address(cfg.multicast_address());
-                    subscriber_socket->set_ethernet_port(cfg.ethernet_port());
-                    std::cout << subscriber_socket->DebugString() << std::endl;
+                goby::common::protobuf::ZeroMQServiceConfig pubsub_cfg;
 
-                    goby::core::protobuf::ZeroMQServiceConfig::Socket* publisher_socket = pubsub_cfg.add_socket();
-                    publisher_socket->set_socket_type(goby::core::protobuf::ZeroMQServiceConfig::Socket::PUBLISH);
+                using goby::glog;
+                if(using_pubsub())
+                {
+                    glog.is(goby::common::logger::DEBUG1) && glog << "Using publish / subscribe." << std::endl;
+                    
+                    goby::common::protobuf::ZeroMQServiceConfig::Socket* subscriber_socket = pubsub_cfg.add_socket();
+                    subscriber_socket->CopyFrom(cfg_.subscribe_socket());
+                    subscriber_socket->set_socket_type(goby::common::protobuf::ZeroMQServiceConfig::Socket::SUBSCRIBE);
+                    subscriber_socket->set_socket_id(SOCKET_SUBSCRIBE);
+                    
+                    glog.is(goby::common::logger::DEBUG1) && glog << "Subscriber socket: " << subscriber_socket->DebugString() << std::endl;
+
+                    goby::common::protobuf::ZeroMQServiceConfig::Socket* publisher_socket = pubsub_cfg.add_socket();
+                    publisher_socket->CopyFrom(cfg_.publish_socket());
+                    publisher_socket->set_socket_type(goby::common::protobuf::ZeroMQServiceConfig::Socket::PUBLISH);
                     publisher_socket->set_socket_id(SOCKET_PUBLISH);
-                    publisher_socket->set_ethernet_address(cfg.ethernet_address());
-                    publisher_socket->set_multicast_address(cfg.multicast_address());
-                    publisher_socket->set_ethernet_port(cfg.ethernet_port());
+
+                    glog.is(goby::common::logger::DEBUG1) && glog << "Publisher socket: " << publisher_socket->DebugString() << std::endl;
+
                 }
                 else
                 {
-                    glog.is(goby::util::logger::DEBUG1) && glog << "Not using publish / subscribe." << std::endl;
+                    glog.is(goby::common::logger::DEBUG1) && glog << "Not using publish / subscribe. Set publish_socket and subscribe_socket to enable publish / subscribe." << std::endl;
                 }
                 
                 zeromq_service_.merge_cfg(pubsub_cfg);
@@ -138,9 +158,9 @@ namespace goby
             /// \param msg Message to publish
             void publish(const NodeTypeBase& msg)
             {
-                if(!cfg().using_pubsub())
+                if(!using_pubsub())
                 {
-                    glog.is(goby::util::logger::WARN) && glog << "Ignoring publish since we have `using_pubsub`=false" << std::endl;
+                    glog.is(goby::common::logger::WARN) && glog << "Ignoring publish since we have `using_pubsub`=false" << std::endl;
                     return;
                 }
                 
@@ -150,9 +170,9 @@ namespace goby
 
             void subscribe(const std::string& identifier)
             {
-                if(!cfg().using_pubsub())
+                if(!using_pubsub())
                 {
-                    glog.is(goby::util::logger::WARN) && glog << "Ignoring subscribe since we have `using_pubsub`=false" << std::endl;
+                    glog.is(goby::common::logger::WARN) && glog << "Ignoring subscribe since we have `using_pubsub`=false" << std::endl;
                     return;
                 }
                  

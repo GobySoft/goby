@@ -1,5 +1,6 @@
 import "goby/acomms/protobuf/driver_base.proto";
 import "goby/acomms/protobuf/modem_message.proto";
+import "goby/common/protobuf/option_extensions.proto";
 
 package micromodem.protobuf;
 
@@ -165,11 +166,11 @@ extend goby.acomms.protobuf.ModemTransmission
 {
   // LBL parameters will be merged with configuration parameters. If a parameter
   // is set in both places, the ones set here take precedence.
-  optional NarrowBandLBLParams narrowband_lbl = 1001;
-  optional REMUSLBLParams remus_lbl = 1002;
+  optional NarrowBandLBLParams narrowband_lbl = 1001 [(goby.field).dccl.omit = true];
+  optional REMUSLBLParams remus_lbl = 1002 [(goby.field).dccl.omit = true];
 
-  optional RangingReply ranging_reply = 1003;
-  repeated ReceiveStatistics receive_stat = 1004; // $CACST
-  repeated TransmitStatistics transmit_stat = 1005; // $CAXST
-  repeated int32 frame_with_bad_crc = 1006;
+  optional RangingReply ranging_reply = 1003 [(goby.field).dccl.omit = true];
+  repeated ReceiveStatistics receive_stat = 1004 [(goby.field).dccl.omit = true]; // $CACST
+  repeated TransmitStatistics transmit_stat = 1005 [(goby.field).dccl.omit = true]; // $CAXST
+  repeated int32 frame_with_bad_crc = 1006 [(goby.field).dccl.omit = true];
 }

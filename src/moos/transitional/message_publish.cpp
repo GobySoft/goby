@@ -1,21 +1,25 @@
-// copyright 2008, 2009 t. schneider tes@mit.edu
+// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+//                     Massachusetts Institute of Technology (2007-)
+//                     Woods Hole Oceanographic Institution (2007-)
+//                     Goby Developers Team (https://launchpad.net/~goby-dev)
 // 
-// this file is part of the Dynamic Compact Control Language (DCCL),
-// the goby-acomms codec. goby-acomms is a collection of libraries 
-// for acoustic underwater networking
 //
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// This file is part of the Goby Underwater Autonomy Project Libraries
+// ("The Goby Libraries").
+//
+// The Goby Libraries are free software: you can redistribute them and/or modify
+// them under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// This software is distributed in the hope that it will be useful,
+// The Goby Libraries are distributed in the hope that they will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Lesser General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
-// along with this software.  If not, see <http://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU Lesser General Public License
+// along with Goby.  If not, see <http://www.gnu.org/licenses/>.
+
 
 #include <boost/foreach.hpp>
 
@@ -91,7 +95,7 @@ void goby::transitional::DCCLPublish::initialize(const DCCLMessage& msg)
                 else
                     format_str += message_vars_[j]->name() + "=";           
             }
-            
+
             for(unsigned i = 0,
                     n = (repeat_ > 1) ? 1 : message_vars_[j]->array_length();
                 i < n;
@@ -107,156 +111,10 @@ void goby::transitional::DCCLPublish::initialize(const DCCLMessage& msg)
 
                 if(m > 1 && n > 1 && i+1 == n) ss << "}";
                 format_str += ss.str();
-            }
+            }            
         }
         format_ = format_str;
     } 
 }
 
 
-void goby::transitional::DCCLPublish::fill_format(const std::map<std::string,std::vector<DCCLMessageVal> >& vals,
-                                            std::string& key,
-                                            std::string& value,
-                                            unsigned repeat_index)
-{
-    std::string filled_value;
-    // format is a boost library class for replacing printf and its ilk
-    boost::format f;
-    
-    // tack on the dest variable with a space separator (no space allowed in dest var
-    // so we can use format on that too
-    std::string input_format = var_ + " " + format_;
-
-    try
-    {            
-        f.parse(input_format);
-            
-        // iterate over the message_vars and fill in the format field
-        for (std::vector<boost::shared_ptr<DCCLMessageVar> >::size_type k = 0, o = message_vars_.size(); k < o; ++k)
-        {
-            std::vector<DCCLMessageVal> vm = vals.find(message_vars_[k]->name())->second;
-            for(std::vector<DCCLMessageVal>::size_type i = (repeat_ > 1) ? repeat_index : 0,
-                    n = (repeat_ > 1) ? repeat_index + 1 : vm.size();
-                i < n;
-                ++i)
-            {
-                // special case when repeating and variable has a single entry, repeat
-                // that entry over all the publishes (this is used for the header
-                std::vector<DCCLMessageVal>::size_type eff_index = (repeat_ > 1 && vm.size() == 1) ? 0 : i;
-                
-                std::vector<std::string>::size_type num_algs = algorithms_[k].size();
-
-                // only run algorithms once on a given variable
-                for(std::vector<std::string>::size_type l = 0; l < num_algs; ++l)
-                    ap_->algorithm(vm[eff_index], i, algorithms_[k][l], vals);
-
-                std::string s =  vm[eff_index];
-                f % s;
-            }
-        }
-
-        filled_value = f.str();
-    }
-    catch (std::exception& e)
-    {
-        throw goby::acomms::DCCLException(std::string(e.what() + (std::string)"\n decode failed. check format string for this <publish />: \n" + get_display()));
-    }
-
-    // split filled_value back into variable and value
-    std::vector<std::string> split_vec;
-    boost::split(split_vec, filled_value, boost::is_any_of(" "));
-        
-    key = split_vec.at(0);
-    value = split_vec.at(1);
-        
-    for(std::vector<std::string>::size_type it = 2, n = split_vec.size(); it < n; ++it)
-        value += " " + split_vec.at(it);
-}
-
-    
-
-void goby::transitional::DCCLPublish::write_publish(const std::map<std::string,std::vector<DCCLMessageVal> >& vals, std::multimap<std::string,DCCLMessageVal>* pubsub_vals)
-
-{
-    for(unsigned i = 0, n = repeat_;
-        i < n;
-        ++i)
-    {        
-        std::string out_var, out_val;
-        fill_format(vals, out_var, out_val, i);
-        
-        // user sets to string
-        if(type_ == cpp_string)
-        {
-            pubsub_vals->insert(std::pair<std::string, DCCLMessageVal>(out_var, out_val));
-            continue;
-        }
-        
-        // pass through a DCCLMessageVal to do the type conversions
-        DCCLMessageVal mv = out_val;
-        double out_dval = mv;
-        if(type_ == cpp_double)
-        {
-            pubsub_vals->insert(std::pair<std::string, DCCLMessageVal>(out_var, out_dval));
-            continue;
-        }
-        long out_lval = mv;    
-        if(type_ == cpp_long)
-        {
-            pubsub_vals->insert(std::pair<std::string, DCCLMessageVal>(out_var, out_lval));
-            continue;
-            
-        }
-        bool out_bval = mv;
-        if(type_ == cpp_bool)
-        {
-            pubsub_vals->insert(std::pair<std::string, DCCLMessageVal>(out_var, out_bval));
-            continue;
-        }
-        
-        // see if our value is numeric
-        bool is_numeric = true;
-        try { boost::lexical_cast<double>(out_val); }
-        catch (boost::bad_lexical_cast &) { is_numeric = false; }
-        
-        if(!is_numeric)
-            pubsub_vals->insert(std::pair<std::string, DCCLMessageVal>(out_var, out_val));
-        else
-            pubsub_vals->insert(std::pair<std::string, DCCLMessageVal>(out_var, out_dval));
-    }
-}
-
-    
-std::string goby::transitional::DCCLPublish::get_display() const
-{
-    std::stringstream ss;
-    
-    ss << "\t(" << type_to_string(type_);
-    ss << ")moos_var: {" << var_ << "}" << std::endl;
-    ss << "\tvalue: \"" << format_ << "\"" << std::endl;
-    ss << "\tmessage_vars:" << std::endl;
-    for (std::vector<boost::shared_ptr<DCCLMessageVar> >::size_type j = 0, m = message_vars_.size(); j < m; ++j)
-    {
-        ss << "\t\t" << (j+1) << ": " << message_vars_[j]->name();
-
-        for(std::vector<std::string>::size_type k = 0, o = algorithms_[j].size(); k < o; ++k)
-        {
-            if(!k)
-                ss << " | algorithm(s): ";
-            else
-                ss << ", ";
-            ss << algorithms_[j][k];                
-        }
-            
-        ss << std::endl;
-    }
-
-    return ss.str();
-}
-
-// overloaded <<
-std::ostream& goby::transitional::operator<< (std::ostream& out, const DCCLPublish& publish)
-{
-    out << publish.get_display();
-    return out;
-}

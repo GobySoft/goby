@@ -29,7 +29,7 @@ message GobyFieldOptions
   optional string description = 100;
   optional string example = 101;
   
-  // used in tes_moos_app.proto
+  // used in goby_moos_app.proto
   optional string moos_global = 102;
 }
 

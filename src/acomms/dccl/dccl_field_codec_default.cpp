@@ -1,21 +1,25 @@
-// copyright 2009-2011 t. schneider tes@mit.edu
+// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+//                     Massachusetts Institute of Technology (2007-)
+//                     Woods Hole Oceanographic Institution (2007-)
+//                     Goby Developers Team (https://launchpad.net/~goby-dev)
 // 
-// this file is part of the Dynamic Compact Control Language (DCCL),
-// the goby-acomms codec. goby-acomms is a collection of libraries 
-// for acoustic underwater networking
 //
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// This file is part of the Goby Underwater Autonomy Project Libraries
+// ("The Goby Libraries").
+//
+// The Goby Libraries are free software: you can redistribute them and/or modify
+// them under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// This software is distributed in the hope that it will be useful,
+// The Goby Libraries are distributed in the hope that they will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Lesser General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
-// along with this software.  If not, see <http://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU Lesser General Public License
+// along with Goby.  If not, see <http://www.gnu.org/licenses/>.
+
 
 
 #include <sstream>
@@ -23,8 +27,9 @@
 
 #include "dccl_field_codec_default.h"
 #include "dccl_type_helper.h"
+#include "dccl.h"
 
-using namespace goby::util::logger;
+using namespace goby::common::logger;
 
 
 //
@@ -157,7 +162,7 @@ goby::acomms::Bitset goby::acomms::DCCLDefaultStringCodec::encode(const std::str
     std::string s = wire_value;
     if(s.size() > dccl_field_options().max_length())
     {
-        goby::glog.is(WARN) && goby::glog << "String " << s <<  " exceeds `dccl.max_length`, truncating" << std::endl;
+        goby::glog.is(DEBUG2) && goby::glog << group(DCCLCodec::glog_encode_group()) << warn << "String " << s <<  " exceeds `dccl.max_length`, truncating" << std::endl;
         s.resize(dccl_field_options().max_length()); 
     }
         
@@ -183,16 +188,16 @@ std::string goby::acomms::DCCLDefaultStringCodec::decode(const Bitset& bits)
         
         unsigned header_length = min_size();
         
-        goby::glog.is(DEBUG2) && goby::glog << "Length of string is = " << value_length << std::endl;
+        goby::glog.is(DEBUG2) && goby::glog << group(DCCLCodec::glog_decode_group()) << "Length of string is = " << value_length << std::endl;
 
         
-        goby::glog.is(DEBUG2) && goby::glog << "bits before get_more_bits " << bits << std::endl;    
+        goby::glog.is(DEBUG2) && goby::glog << group(DCCLCodec::glog_decode_group()) << "bits before get_more_bits " << bits << std::endl;    
 
         // grabs more bits to add to the MSBs of `bits`
         get_more_bits(value_length*BITS_IN_BYTE);
 
         
-        goby::glog.is(DEBUG2) && goby::glog << "bits after get_more_bits " << bits << std::endl;    
+        goby::glog.is(DEBUG2) && goby::glog << group(DCCLCodec::glog_decode_group()) << "bits after get_more_bits " << bits << std::endl;    
         Bitset string_body_bits = bits;
         string_body_bits >>= header_length;
         string_body_bits.resize(bits.size() - header_length);

@@ -1,18 +1,25 @@
-// copyright 2011 t. schneider tes@mit.edu
+// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+//                     Massachusetts Institute of Technology (2007-)
+//                     Woods Hole Oceanographic Institution (2007-)
+//                     Goby Developers Team (https://launchpad.net/~goby-dev)
+// 
 //
+// This file is part of the Goby Underwater Autonomy Project Libraries
+// ("The Goby Libraries").
 //
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// The Goby Libraries are free software: you can redistribute them and/or modify
+// them under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// This software is distributed in the hope that it will be useful,
+// The Goby Libraries are distributed in the hope that they will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Lesser General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
-// along with this software.  If not, see <http://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU Lesser General Public License
+// along with Goby.  If not, see <http://www.gnu.org/licenses/>.
+
 
 #ifndef ZEROMQAPPLICATIONBASE20110418H
 #define ZEROMQAPPLICATIONBASE20110418H
@@ -20,29 +27,29 @@
 #include "zeromq_service.h"
 #include "application_base.h"
 
-#include "goby/util/logger.h"
-#include "goby/util/time.h"
+#include "goby/common/logger.h"
+#include "goby/common/time.h"
 
 namespace goby
 {
-    namespace core
+    namespace common
     {
-        class ZeroMQApplicationBase : public goby::core::ApplicationBase
+        class ZeroMQApplicationBase : public goby::common::ApplicationBase
         {
             
           protected:
           ZeroMQApplicationBase(ZeroMQService* service, google::protobuf::Message* cfg = 0 )
               : ApplicationBase(cfg),
                 zeromq_service_(*service)
-            {
-                set_loop_freq(base_cfg().loop_freq());
-                
-                // we are started
-                t_start_ = goby::util::goby_time();
-                // start the loop() on the next even second
-                t_next_loop_ = boost::posix_time::second_clock::universal_time() +
-                    boost::posix_time::seconds(1);
-            }
+                {
+                    set_loop_freq(base_cfg().loop_freq());
+                    
+                    // we are started
+                    t_start_ = goby::common::goby_time();
+                    // start the loop() on the next even second
+                    t_next_loop_ = boost::posix_time::second_clock::universal_time() +
+                        boost::posix_time::seconds(1);
+                }
             
             virtual ~ZeroMQApplicationBase()
             { }
@@ -85,11 +92,11 @@ namespace goby
                 using goby::glog;
                 
                 // sit and wait on a message until the next time to call loop() is up        
-                long timeout = (t_next_loop_-goby::util::goby_time()).total_microseconds();
+                long timeout = (t_next_loop_-goby::common::goby_time()).total_microseconds();
                 if(timeout < 0)
                     timeout = 0;
 
-                glog.is(goby::util::logger::DEBUG2) &&
+                glog.is(goby::common::logger::DEBUG2) &&
                     glog << "timeout set to: " << timeout << " microseconds." << std::endl;
                 bool had_events = zeromq_service_.poll(timeout);
                 if(!had_events)

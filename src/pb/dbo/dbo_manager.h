@@ -26,7 +26,7 @@
 
 #include <Wt/Dbo/Dbo>
 
-#include "goby/util/time.h"
+#include "goby/common/time.h"
 #include "dbo_plugin.h"
 
 
@@ -46,7 +46,7 @@ namespace Wt
 
 namespace goby
 {
-    namespace core
+    namespace common
     {
         struct RawEntry
         {

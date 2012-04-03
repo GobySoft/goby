@@ -1,10 +1,3 @@
-// copyright 2009-2011 t. schneider tes@mit.edu
-// 
-// goby software and documentation is distributed under the GNU General
-// Public License v3.
-//
-// You should have received a copoy of the GNU General Public License
-// along with this software (see goby/COPYING).  If not, see <http://www.gnu.org/licenses/>.
 
 /*! \page acomms_queue goby-acomms: queue (Message Priority Queuing)
 
@@ -135,7 +128,7 @@ This section gives an overview of the \c queue message and field options availab
     <td>is_time</td>
     <td>bool</td>
     <td>false</td>
-    <td>Set to true to indicate this field contains the time (the FieldType must be a boost::posix_time::ptime, double or uint64. See goby::util::goby_time()). If no field has this option set, the message is time-stamped when it is pushed to the queue.</td>
+    <td>Set to true to indicate this field contains the time (the FieldType must be a boost::posix_time::ptime, double or uint64. See goby::common::goby_time()). If no field has this option set, the message is time-stamped when it is pushed to the queue.</td>
   </tr>
 </table>
 

@@ -16,17 +16,20 @@
 
 #include <iostream>
 
-#include "goby/util/time.h"
+#include "goby/common/time.h"
 
 #include "application.h"
 
-using namespace goby::core;
+using namespace goby::pb;
+using namespace goby::common;
 using namespace goby::util;
-using namespace goby::util::logger;
+using namespace goby::common::logger;
 using boost::shared_ptr;
 using goby::glog;
+using goby::common::operator<<;
 
-goby::core::Application::Application(google::protobuf::Message* cfg /*= 0*/)
+
+goby::pb::Application::Application(google::protobuf::Message* cfg /*= 0*/)
     : ZeroMQApplicationBase(&zeromq_service_, cfg)
 {
     
@@ -36,7 +39,7 @@ goby::core::Application::Application(google::protobuf::Message* cfg /*= 0*/)
     if(cfg) publish(*cfg);
 }
 
-goby::core::Application::~Application()
+goby::pb::Application::~Application()
 {
     glog.is(DEBUG1) &&
         glog << "Application destructing..." << std::endl;    
@@ -44,7 +47,7 @@ goby::core::Application::~Application()
 
 
 
-void goby::core::Application::__set_up_sockets()
+void goby::pb::Application::__set_up_sockets()
 {
     // if(!base_cfg().database_config().using_database())        
     // {
@@ -64,7 +67,7 @@ void goby::core::Application::__set_up_sockets()
     //     database_client_->set_cfg(database_config);
     // }
 
-    if(!base_cfg().pubsub_config().using_pubsub()) 
+    if(!pubsub_node_->using_pubsub()) 
     {
         glog.is(WARN) &&
             glog << "Not using publish subscribe config. You will need to set up your nodes manually" << std::endl;
@@ -80,9 +83,9 @@ void goby::core::Application::__set_up_sockets()
 
 
 
-void goby::core::Application::__finalize_header(
+void goby::pb::Application::__finalize_header(
     google::protobuf::Message* msg,
-    const goby::core::Application::PublishDestination dest_type,
+    const goby::pb::Application::PublishDestination dest_type,
     const std::string& dest_platform)
 {
     const google::protobuf::Descriptor* desc = msg->GetDescriptor();
@@ -104,7 +107,7 @@ void goby::core::Application::__finalize_header(
             
             // derived app has not set time, use current time
             if(!header->has_time())
-                header->set_time(goby::util::as<std::string>(goby::util::goby_time()));
+                header->set_time(goby::util::as<std::string>(goby_time()));
 
             
             if(!header->has_source_app())
@@ -118,7 +121,7 @@ void goby::core::Application::__finalize_header(
     }
 }
 
-void goby::core::Application::__publish(google::protobuf::Message& msg, const std::string& platform_name, PublishDestination dest)
+void goby::pb::Application::__publish(google::protobuf::Message& msg, const std::string& platform_name, PublishDestination dest)
 {
     // adds, as needed, required fields of Header
     __finalize_header(&msg, dest, platform_name);

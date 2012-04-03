@@ -1,21 +1,25 @@
-// copyright 2011 t. schneider tes@mit.edu
+// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+//                     Massachusetts Institute of Technology (2007-)
+//                     Woods Hole Oceanographic Institution (2007-)
+//                     Goby Developers Team (https://launchpad.net/~goby-dev)
 // 
-// this file is part of the Dynamic Compact Control Language (DCCL),
-// the goby-acomms codec. goby-acomms is a collection of libraries 
-// for acoustic underwater networking
 //
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// This file is part of the Goby Underwater Autonomy Project Libraries
+// ("The Goby Libraries").
+//
+// The Goby Libraries are free software: you can redistribute them and/or modify
+// them under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// This software is distributed in the hope that it will be useful,
+// The Goby Libraries are distributed in the hope that they will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Lesser General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
-// along with this software.  If not, see <http://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU Lesser General Public License
+// along with Goby.  If not, see <http://www.gnu.org/licenses/>.
+
 
 #ifndef DCCLFIELDCODECDEFAULTMESSAGE20110510H
 #define DCCLFIELDCODECDEFAULTMESSAGE20110510H
@@ -92,19 +96,12 @@ namespace goby
                 static void repeated(boost::shared_ptr<DCCLFieldCodecBase> codec,
                                      bool* return_value,
                                      const std::vector<boost::any>& field_values,
-                                     const google::protobuf::FieldDescriptor* field_desc)
-                    {
-                        goby::glog.is(util::logger::DEBUG1) && glog << util::logger::warn << "Hooks not run on repeated message: " << field_desc->DebugString() << std::endl;
-                    }
+                                     const google::protobuf::FieldDescriptor* field_desc);
                 
                 static void single(boost::shared_ptr<DCCLFieldCodecBase> codec,
                                    bool* return_value,
                                    const boost::any& field_value,
-                                   const google::protobuf::FieldDescriptor* field_desc)
-                    {
-                        codec->field_run_hooks(return_value, field_value, field_desc);
-                    }
-                
+                                   const google::protobuf::FieldDescriptor* field_desc);
             };
 
 

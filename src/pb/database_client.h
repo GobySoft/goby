@@ -27,35 +27,33 @@
 
 namespace goby
 {
-    namespace core
+    namespace pb
     {
         // provides hooks for using the Goby Database
         class DatabaseClient
         {
           public:
-            DatabaseClient(ZeroMQService* service)
+            DatabaseClient(common::ZeroMQService* service)
                 : zeromq_service_(service),
                 protobuf_node_(service)
                 {
                     goby::acomms::connect(&zeromq_service_->pre_send_hooks, this, &DatabaseClient::pre_send);
 
                     if(cfg_.using_database())
-                        protobuf_node_.on_receipt<protobuf::DatabaseResponse>(DATABASE_REQUEST_SOCKET_ID,
-                                                                              &DatabaseClient::response_inbox,
-                                                                              this);
+                        protobuf_node_.on_receipt<common::protobuf::DatabaseResponse>(DATABASE_REQUEST_SOCKET_ID, &DatabaseClient::response_inbox, this);
                 
                 }
             virtual ~DatabaseClient()
             { }
             
-            void set_cfg(const protobuf::DatabaseClientConfig& cfg)
+            void set_cfg(const common::protobuf::DatabaseClientConfig& cfg)
             {
                 cfg_ = cfg;
 
                 if(cfg_.using_database())
                 {
                     
-                    using goby::core::protobuf::ZeroMQServiceConfig;
+                    using goby::common::protobuf::ZeroMQServiceConfig;
                     ZeroMQServiceConfig socket_cfg;
                     ZeroMQServiceConfig::Socket* request_socket = socket_cfg.add_socket();
                     request_socket->set_socket_type(ZeroMQServiceConfig::Socket::REQUEST);
@@ -72,7 +70,8 @@ namespace goby
                     }
                     catch(std::exception& e)
                     {
-                        glog.is(goby::util::logger::DIE) &&
+                        using common::operator<<;
+                        glog.is(goby::common::logger::DIE) &&
                             glog << "cannot connect to: "
                                  << *request_socket << ": " << e.what() << std::endl;
                     }
@@ -82,24 +81,25 @@ namespace goby
             
             
           private:
-            void response_inbox(const protobuf::DatabaseResponse& response)
+            void response_inbox(const common::protobuf::DatabaseResponse& response)
             {
-                goby::glog.is(goby::util::logger::DEBUG1) &&
+                using common::operator<<;
+                goby::glog.is(goby::common::logger::DEBUG1) &&
                     goby::glog << "Got response: " << response << std::endl;
 
-                if(!response.response_type() == protobuf::DatabaseResponse::NEW_PUBLISH_ACCEPTED)
+                if(!response.response_type() == common::protobuf::DatabaseResponse::NEW_PUBLISH_ACCEPTED)
                 {
-                    goby::glog.is(goby::util::logger::DIE) && goby::glog<< "Database publish was denied!" << std::endl; 
+                    goby::glog.is(goby::common::logger::DIE) && goby::glog<< "Database publish was denied!" << std::endl; 
                 }
                 waiting_on_response_.pop_back();
             }
             
 
-            void pre_send(MarshallingScheme marshalling_scheme,
+            void pre_send(common::MarshallingScheme marshalling_scheme,
                           const std::string& identifier,
                           int socket_id)
             {
-                if(marshalling_scheme == MARSHALLING_PROTOBUF)
+                if(marshalling_scheme == common::MARSHALLING_PROTOBUF)
                 {
                     const std::string& protobuf_type_name = identifier.substr(0, identifier.find_first_of("/"));
                     boost::shared_ptr<google::protobuf::Message> msg = goby::util::DynamicProtobufManager::new_protobuf_message(protobuf_type_name);
@@ -108,17 +108,17 @@ namespace goby
                     {
                         // request permission to begin publishing
                         // (so that we *know* the database has all entries)
-                        static protobuf::DatabaseRequest proto_request;
-                        static protobuf::DatabaseResponse proto_response;
+                        static common::protobuf::DatabaseRequest proto_request;
+                        static common::protobuf::DatabaseResponse proto_response;
                         proto_request.Clear();
                         insert_file_descriptor_proto(msg->GetDescriptor()->file(), &proto_request);
-                        proto_request.set_request_type(protobuf::DatabaseRequest::NEW_PUBLISH);
+                        proto_request.set_request_type(common::protobuf::DatabaseRequest::NEW_PUBLISH);
                         proto_request.set_publish_protobuf_full_name(protobuf_type_name);
 
                         protobuf_node_.send(proto_request, DATABASE_REQUEST_SOCKET_ID);
 
-
-                        goby::glog.is(goby::util::logger::DEBUG1) &&
+                        using common::operator<<;
+                        goby::glog.is(goby::common::logger::DEBUG1) &&
                             goby::glog << "Sending request to goby_database: " << proto_request << "\n"
                                        << "...waiting on response" << std::endl;
                         
@@ -134,7 +134,7 @@ namespace goby
             // to the notification_ message. 
             void insert_file_descriptor_proto(
                 const google::protobuf::FileDescriptor* file_descriptor,
-                protobuf::DatabaseRequest* request)
+                common::protobuf::DatabaseRequest* request)
             {
                 // copy file descriptor for all dependencies of the new file
                 for(int i = 0, n = file_descriptor->dependency_count(); i < n; ++i)
@@ -150,15 +150,15 @@ namespace goby
             }
                 
           private:
-            ZeroMQService* zeromq_service_;
+            common::ZeroMQService* zeromq_service_;
 
             enum { DATABASE_REQUEST_SOCKET_ID = 103997 };
             
             std::vector<std::string> waiting_on_response_;
-            protobuf::DatabaseClientConfig cfg_;
+            common::protobuf::DatabaseClientConfig cfg_;
             // database related things
             std::set<const google::protobuf::FileDescriptor*> registered_file_descriptors_;
-            StaticProtobufNode protobuf_node_;
+            pb::StaticProtobufNode protobuf_node_;
         };  
     }
 }

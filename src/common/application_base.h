@@ -1,18 +1,25 @@
-// copyright 2010-2011 t. schneider tes@mit.edu
+// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+//                     Massachusetts Institute of Technology (2007-)
+//                     Woods Hole Oceanographic Institution (2007-)
+//                     Goby Developers Team (https://launchpad.net/~goby-dev)
 // 
 //
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// This file is part of the Goby Underwater Autonomy Project Libraries
+// ("The Goby Libraries").
+//
+// The Goby Libraries are free software: you can redistribute them and/or modify
+// them under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// This software is distributed in the hope that it will be useful,
+// The Goby Libraries are distributed in the hope that they will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Lesser General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
-// along with this software.  If not, see <http://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU Lesser General Public License
+// along with Goby.  If not, see <http://www.gnu.org/licenses/>.
+
 
 #ifndef MINIMALAPPLICATIONBASE20110413H
 #define MINIMALAPPLICATIONBASE20110413H
@@ -21,11 +28,12 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include "goby/util/exception.h"
-#include "goby/util/configuration_reader.h"
+#include "goby/common/exception.h"
+#include "goby/common/configuration_reader.h"
 
 #include "goby/common/protobuf/app_base_config.pb.h"
 
+#include "goby/common/logger.h"
 
 namespace goby
 {
@@ -37,7 +45,7 @@ namespace goby
     template<typename App>
         int run(int argc, char* argv[]);
 
-    namespace core
+    namespace common
     {
         class ApplicationBase
         {
@@ -85,8 +93,9 @@ namespace goby
 
             // configuration relevant to all applications (loop frequency, for example)
             // defined in #include "proto/app_base_config.pb.h"
-            boost::shared_ptr<AppBaseConfig> base_cfg_;
-
+            AppBaseConfig* base_cfg_;
+            bool own_base_cfg_;
+            
             bool alive_;            
 
         };
@@ -107,7 +116,7 @@ int goby::run(int argc, char* argv[])
         App app;
         app.__run();
     }
-    catch(goby::util::ConfigException& e)
+    catch(goby::common::ConfigException& e)
     {
         // no further warning as the ApplicationBase Ctor handles this
         return 1;

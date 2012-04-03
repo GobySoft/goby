@@ -2,6 +2,7 @@
 
 html { height: 95%; }
  
+
 body {
     font-size:100%;
     height:100%;
@@ -63,6 +64,12 @@ ul.menu
  /* height: 10em; */
 }
 
+.Wt-spinbox
+{
+    width: 3em
+
+}
+
 div#contents
 {
   width: 90%;
@@ -84,8 +91,8 @@ input
   width: 20em;
 }
 
-a#goby_logo { display:block; position: absolute; right:0px; top:0px;}
-a#lp_logo { display:block; position: absolute; left:0px; top:41px;}
+a#goby_logo { display:block; position: absolute; left:0px; top:0px;}
+a#lp_logo { display:block; position: absolute; right:0px; top:0px;}
 
 /*.fl { float:left; }*/
 table.basic_small 
@@ -116,4 +123,42 @@ a.no_ul
 {
     text-decoration:none;
     border-bottom:0px; 
+}
+
+.Wt-treetable table.even
+{
+    background-color: #fff;
+}
+
+.Wt-treetable table.odd
+{
+    background-color: #eee;
+}
+
+
+/* for scope trees */
+.faded
+{
+    color:gray;
+}
+
+.invisible
+{
+    visibility:hidden;
+}
+
+.fixed-right
+{
+    position:fixed; bottom:2%; right:2%; z-index:1;
+    font-size:80%;
+    max-width:40%;
+    overflow: auto;
+}
+
+.fixed-left
+{
+    position:fixed; bottom:2%; left:2%; z-index:1;
+    font-size:80%;
+    max-width:40%;
+    overflow: auto;
 }

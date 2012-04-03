@@ -1,35 +1,42 @@
-// copyright 2011 t. schneider tes@mit.edu
+// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+//                     Massachusetts Institute of Technology (2007-)
+//                     Woods Hole Oceanographic Institution (2007-)
+//                     Goby Developers Team (https://launchpad.net/~goby-dev)
 // 
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+//
+// This file is part of the Goby Underwater Autonomy Project Binaries
+// ("The Goby Binaries").
+//
+// The Goby Binaries are free software: you can redistribute them and/or modify
+// them under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// This software is distributed in the hope that it will be useful,
+// The Goby Binaries are distributed in the hope that they will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this software.  If not, see <http://www.gnu.org/licenses/>.
+// along with Goby.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "MOOSLIB/MOOSCommClient.h"
 
 #include "goby/moos/moos_node.h"
-#include "goby/util/logger.h"
+#include "goby/common/logger.h"
 #include "goby/common/zeromq_application_base.h"
-#include "goby/pb/pubsub_node_wrapper.h"
-#include "goby/util/logger/term_color.h"
+#include "goby/common/pubsub_node_wrapper.h"
+#include "goby/common/logger/term_color.h"
 
 #include "moos_gateway_config.pb.h"
 
-using namespace goby::util::logger;
+using namespace goby::common::logger;
 
 namespace goby
 {
     namespace moos
     {
-        class MOOSGateway : public goby::core::ZeroMQApplicationBase, public MOOSNode
+        class MOOSGateway : public goby::common::ZeroMQApplicationBase, public MOOSNode
         {
         public:
             MOOSGateway();
@@ -44,8 +51,8 @@ namespace goby
             
             
         private:
-            static goby::core::ZeroMQService zeromq_service_;
-            goby::core::PubSubNodeWrapper<CMOOSMsg> goby_moos_pubsub_client_;
+            static goby::common::ZeroMQService zeromq_service_;
+            goby::common::PubSubNodeWrapper<CMOOSMsg> goby_moos_pubsub_client_;
             CMOOSCommClient moos_client_;
             
             enum { MAX_CONNECTION_TIMEOUT = 10 };
@@ -57,7 +64,7 @@ namespace goby
     }
 }
 
-goby::core::ZeroMQService goby::moos::MOOSGateway::zeromq_service_;
+goby::common::ZeroMQService goby::moos::MOOSGateway::zeromq_service_;
 goby::moos::protobuf::MOOSGatewayConfig goby::moos::MOOSGateway::cfg_;
 
 int main(int argc, char* argv[])
@@ -92,11 +99,14 @@ goby::moos::MOOSGateway::MOOSGateway()
     }
 
     for(int i = 0, n = cfg_.goby_subscribe_filter_size(); i < n; ++i)
+    {
         goby_moos_pubsub_client_.subscribe(cfg_.goby_subscribe_filter(i));
+    }
+    
 
 
-    glog.add_group("from_moos", util::Colors::lt_magenta, "MOOS -> Goby");
-    glog.add_group("to_moos", util::Colors::lt_green, "Goby -> MOOS");
+    glog.add_group("from_moos", common::Colors::lt_magenta, "MOOS -> Goby");
+    glog.add_group("to_moos", common::Colors::lt_green, "Goby -> MOOS");
 }
 
 
@@ -115,7 +125,7 @@ void goby::moos::MOOSGateway::moos_inbox(CMOOSMsg& msg)
     msg.SetSourceAux(msg.GetSourceAux() +
                      (msg.GetSourceAux().size() ? "/" : "")
                      + application_name());
-
+    
     glog.is(VERBOSE) &&
         glog << group("to_moos") << msg << std::endl;
     
@@ -146,7 +156,8 @@ void goby::moos::MOOSGateway::loop()
             glog << group("from_moos") << msg << std::endl;    
         
         goby_moos_pubsub_client_.publish(msg);
-    }    
+    }
+
 }
 
 // adapted from CMOOSLogger::HandleWildCardLogging
@@ -173,8 +184,6 @@ void goby::moos::MOOSGateway::check_for_new_moos_variables()
 
             BOOST_FOREACH(const std::string& s, all_var)
             {
-                glog.is(DEBUG1) &&
-                    glog << s << std::endl;
                 if(!subscribed_vars_.count(s))
                 {
                     if(clears_subscribe_filters(s))

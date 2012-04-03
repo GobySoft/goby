@@ -17,9 +17,9 @@
 #ifndef APPLICATION20100908H
 #define APPLICATION20100908H
 
-#include "goby/util/logger.h"
+#include "goby/common/logger.h"
 #include "goby/common/core_helpers.h"
-#include "goby/util/exception.h"
+#include "goby/common/exception.h"
 
 #include "goby/pb/protobuf/config.pb.h"
 #include "goby/pb/protobuf/header.pb.h"
@@ -34,14 +34,14 @@ namespace goby
 {
         
     /// Contains objects relating to the core publish / subscribe architecture provided by Goby.
-    namespace core
+    namespace pb
     {
         /// Base class provided for users to generate applications that participate in the Goby publish/subscribe architecture.
-        class Application : public ZeroMQApplicationBase
+        class Application : public common::ZeroMQApplicationBase
         {
           protected:
             // make these more accessible
-            typedef goby::util::Colors Colors;
+            typedef goby::common::Colors Colors;
             
             /// \name Constructors / Destructor
             //@{
@@ -119,7 +119,7 @@ namespace goby
             
             //@}            
 
-            ZeroMQService& zeromq_service()
+            common::ZeroMQService& zeromq_service()
             {
                 return zeromq_service_;
             }
@@ -134,7 +134,7 @@ namespace goby
             // adds required fields to the Header if not given by the derived application
             void __finalize_header(
                 google::protobuf::Message* msg,
-                const goby::core::Application::PublishDestination dest_type,
+                const goby::pb::Application::PublishDestination dest_type,
                 const std::string& dest_platform);
             
             
@@ -142,7 +142,7 @@ namespace goby
 
             
           private:
-            ZeroMQService zeromq_service_;
+            common::ZeroMQService zeromq_service_;
             boost::shared_ptr<DatabaseClient> database_client_;
             boost::shared_ptr<StaticProtobufNode> protobuf_node_;
             boost::shared_ptr<StaticProtobufPubSubNodeWrapper> pubsub_node_;

@@ -1,15 +1,25 @@
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+//                     Massachusetts Institute of Technology (2007-)
+//                     Woods Hole Oceanographic Institution (2007-)
+//                     Goby Developers Team (https://launchpad.net/~goby-dev)
+// 
+//
+// This file is part of the Goby Underwater Autonomy Project Libraries
+// ("The Goby Libraries").
+//
+// The Goby Libraries are free software: you can redistribute them and/or modify
+// them under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// This software is distributed in the hope that it will be useful,
+// The Goby Libraries are distributed in the hope that they will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Lesser General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
-// along with this software.  If not, see <http://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU Lesser General Public License
+// along with Goby.  If not, see <http://www.gnu.org/licenses/>.
+
 
 
 #include <boost/algorithm/string.hpp>
@@ -35,11 +45,19 @@ void goby::moos::MOOSTranslator::initialize(double lat_origin, double lon_origin
     ap->add_algorithm("to_upper", &alg_to_upper);
     ap->add_algorithm("angle_0_360", &alg_angle_0_360);
     ap->add_algorithm("angle_-180_180", &alg_angle_n180_180);
+    ap->add_algorithm("lat2hemisphere_initial", &alg_lat2hemisphere_initial);
+    ap->add_algorithm("lon2hemisphere_initial", &alg_lon2hemisphere_initial);
 
+    ap->add_algorithm("lat2nmea_lat", &alg_lat2nmea_lat);
+    ap->add_algorithm("lon2nmea_lon", &alg_lon2nmea_lon);
+
+    ap->add_algorithm("unix_time2nmea_time", &alg_unix_time2nmea_time);
+
+    ap->add_algorithm("abs", &alg_abs);
 
     if(!modem_id_lookup_path.empty())
     {
-        goby::glog.is(goby::util::logger::VERBOSE) && goby::glog << modem_lookup_.read_lookup_file(modem_id_lookup_path) << std::flush;
+        goby::glog.is(goby::common::logger::DEBUG1) && goby::glog << modem_lookup_.read_lookup_file(modem_id_lookup_path) << std::flush;
         ap->add_algorithm("modem_id2name", boost::bind(&MOOSTranslator::alg_modem_id2name, this, _1));
         ap->add_algorithm("modem_id2type", boost::bind(&MOOSTranslator::alg_modem_id2type, this, _1));
         ap->add_algorithm("name2modem_id", boost::bind(&MOOSTranslator::alg_name2modem_id, this, _1));
@@ -131,6 +149,9 @@ void goby::moos::MOOSTranslator::alg_utm_x2lon(transitional::DCCLMessageVal& mv,
     double lat = NaN;
     double lon = NaN;
     if(!(boost::math::isnan)(y) && !(boost::math::isnan)(x)) geodesy_.UTM2LatLong(x, y, lat, lon);    
+
+    const int LON_INT_DIGITS = 3;
+    lon = goby::util::unbiased_round(lon, std::numeric_limits<double>::digits10 - LON_INT_DIGITS-1);   
     mv = lon;
 }
 
@@ -144,6 +165,8 @@ void goby::moos::MOOSTranslator::alg_utm_y2lat(transitional::DCCLMessageVal& mv,
     double lon = NaN;
     if(!(boost::math::isnan)(x) && !(boost::math::isnan)(y)) geodesy_.UTM2LatLong(x, y, lat, lon);
     
+    const int LAT_INT_DIGITS = 2;
+    lat = goby::util::unbiased_round(lat, std::numeric_limits<double>::digits10 - LAT_INT_DIGITS-1);   
     mv = lat;
 }
 
@@ -198,3 +221,74 @@ void goby::moos::alg_to_lower(transitional::DCCLMessageVal& val_to_mod)
 {
     val_to_mod = boost::algorithm::to_lower_copy(std::string(val_to_mod));
 }
+
+void goby::moos::alg_lat2hemisphere_initial(transitional::DCCLMessageVal& val_to_mod)
+{
+    double lat = val_to_mod;
+    if(lat < 0)
+        val_to_mod = "S";
+    else
+        val_to_mod = "N";        
+}
+
+void goby::moos::alg_lon2hemisphere_initial(transitional::DCCLMessageVal& val_to_mod)
+{
+    double lon = val_to_mod;
+    if(lon < 0)
+        val_to_mod = "W";
+    else
+        val_to_mod = "E";
+}
+
+void goby::moos::alg_abs(transitional::DCCLMessageVal& val_to_mod)
+{
+    val_to_mod = std::abs(double(val_to_mod));
+}
+
+void goby::moos::alg_unix_time2nmea_time(transitional::DCCLMessageVal& val_to_mod)
+{
+    double unix_time = val_to_mod;
+    boost::posix_time::ptime ptime = goby::common::unix_double2ptime(unix_time);
+
+    // HHMMSS.SSSSSS
+    boost::format f("%02d%02d%02d.%06d");
+    f % ptime.time_of_day().hours() % ptime.time_of_day().minutes() % ptime.time_of_day().seconds() % (ptime.time_of_day().fractional_seconds() * 1000000 / boost::posix_time::time_duration::ticks_per_second());
+    
+    val_to_mod = f.str();
+}
+
+
+void goby::moos::alg_lat2nmea_lat(transitional::DCCLMessageVal& val_to_mod)
+{
+    double lat = val_to_mod;
+
+    // DDMM.MM
+    boost::format f("%02d%02d.%04d");
+
+    int degrees = std::floor(lat);
+    int minutes = std::floor((lat - degrees) * 60);
+    int ten_thousandth_minutes = std::floor(((lat - degrees) * 60 - minutes) * 10000);
+
+    f % degrees % minutes % ten_thousandth_minutes;
+    
+    val_to_mod = f.str();
+}
+
+
+    
+void goby::moos::alg_lon2nmea_lon(transitional::DCCLMessageVal& val_to_mod)
+{
+    double lon = val_to_mod;
+
+    // DDDMM.MM
+    boost::format f("%03d%02d.%04d");
+
+    int degrees = std::floor(lon);
+    int minutes = std::floor((lon - degrees) * 60);
+    int ten_thousandth_minutes = std::floor(((lon - degrees) * 60 - minutes) * 10000);
+
+    f % degrees % minutes % ten_thousandth_minutes;
+
+    val_to_mod = f.str();
+}
+

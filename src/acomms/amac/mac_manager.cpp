@@ -1,42 +1,43 @@
-// copyright 2009, 2010 t. schneider tes@mit.edu
+// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+//                     Massachusetts Institute of Technology (2007-)
+//                     Woods Hole Oceanographic Institution (2007-)
+//                     Goby Developers Team (https://launchpad.net/~goby-dev)
 // 
-// this file is part of libamac, a medium access control for
-// acoustic networks. 
 //
-// see the readme file within this directory for information
-// pertaining to usage and purpose of this script.
+// This file is part of the Goby Underwater Autonomy Project Libraries
+// ("The Goby Libraries").
 //
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// The Goby Libraries are free software: you can redistribute them and/or modify
+// them under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// This software is distributed in the hope that it will be useful,
+// The Goby Libraries are distributed in the hope that they will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Lesser General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
-// along with this software.  If not, see <http://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU Lesser General Public License
+// along with Goby.  If not, see <http://www.gnu.org/licenses/>.
+
 
 #include <iostream>
 #include <cmath>
 
 #include <boost/date_time/gregorian/gregorian_types.hpp>
-#include <boost/thread.hpp>
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 
 #include "goby/acomms/dccl/dccl_common.h"
-#include "goby/util/logger.h"
+#include "goby/common/logger.h"
 #include "goby/acomms/acomms_helpers.h"
 
 #include "mac_manager.h"
 
-using goby::util::goby_time;
+using goby::common::goby_time;
 using goby::util::as;
-using namespace goby::util::tcolor;
-using namespace goby::util::logger;
+using namespace goby::common::tcolor;
+using namespace goby::common::logger;
 using goby::glog;
 
 int goby::acomms::MACManager::count_;
@@ -50,7 +51,7 @@ goby::acomms::MACManager::MACManager()
     ++count_;
 
     glog_mac_group_ = "goby::acomms::amac::" + as<std::string>(count_);
-    goby::glog.add_group(glog_mac_group_, util::Colors::blue);
+    goby::glog.add_group(glog_mac_group_, common::Colors::blue);
 }
 
 goby::acomms::MACManager::~MACManager()
@@ -71,44 +72,50 @@ void goby::acomms::MACManager::stop_timer()
 
 void goby::acomms::MACManager::startup(const protobuf::MACConfig& cfg)
 {
-    if(started_up_)
-    {
-        glog.is(WARN) && glog << group(glog_mac_group_) << "startup() called but MAC is already started." << std::endl;
-        return;
-    }
-    
-    // create a copy for us
     cfg_ = cfg;
-    
-    started_up_ = true;
 
     switch(cfg_.type())
     {
         case protobuf::MAC_POLLED:
         case protobuf::MAC_FIXED_DECENTRALIZED:
+            std::list<protobuf::ModemTransmission>::clear();
             for(int i = 0, n = cfg_.slot_size(); i < n; ++i)
                 std::list<protobuf::ModemTransmission>::push_back(cfg_.slot(i));
             
             if(cfg_.type() == protobuf::MAC_POLLED)
-                glog.is(DEBUG1) && glog << group(glog_mac_group_) << "Using the Centralized Polling MAC scheme" << std::endl;
+                glog.is(DEBUG1) && glog << group(glog_mac_group_) << "Using the Centralized Polling MAC_POLLED scheme" << std::endl;
             else if(cfg_.type() == protobuf::MAC_FIXED_DECENTRALIZED)
-                glog.is(DEBUG1) && glog << group(glog_mac_group_) << "Using the Decentralized (Fixed) Slotted TDMA MAC scheme" << std::endl;
-
-
-            update();
-            
+                glog.is(DEBUG1) && glog << group(glog_mac_group_) << "Using the Decentralized MAC_FIXED_DECENTRALIZED scheme" << std::endl;
             break;
 
         default:
             return;
     }
 
+    restart();
+}
+
+
+void goby::acomms::MACManager::restart()
+{
+    glog.is(DEBUG1) && glog << group(glog_mac_group_) << "Goby Acoustic Medium Access Control module starting up." << std::endl;
+
+    if(started_up_)
+    {
+        glog.is(DEBUG1) && glog << group(glog_mac_group_) << " ... MAC is already started, not restarting." << std::endl;
+        return;
+    }
+    
+    started_up_ = true;
+    
+    update();
+    
     glog.is(DEBUG1) && glog << group(glog_mac_group_)
-                            << "the MAC TDMA first cycle begins at time: "
+                            << "the first MAC TDMA cycle begins at time: "
                             << next_slot_t_ << std::endl;
     
-
 }
+
 
 void goby::acomms::MACManager::shutdown()
 {
@@ -116,6 +123,9 @@ void goby::acomms::MACManager::shutdown()
     
     current_slot_ = std::list<protobuf::ModemTransmission>::begin();
     started_up_ = false;
+
+    glog.is(DEBUG1) && glog << group(glog_mac_group_)
+                            << "the MAC cycle has been shutdown until restarted." << std::endl;
 }
 
 
@@ -146,7 +156,7 @@ void goby::acomms::MACManager::begin_slot(const boost::system::error_code& e)
 
     if(glog.is(DEBUG1))
     {
-        glog << group(glog_mac_group_) << "cycle order: [";
+        glog << group(glog_mac_group_) << "Cycle order: [";
     
         for(std::list<protobuf::ModemTransmission>::iterator it = std::list<protobuf::ModemTransmission>::begin(), n = end(); it != n; ++it)
         {
@@ -160,8 +170,8 @@ void goby::acomms::MACManager::begin_slot(const boost::system::error_code& e)
                 case protobuf::ModemTransmission::MICROMODEM_REMUS_LBL_RANGING: glog << "r"; break; 
                 case protobuf::ModemTransmission::MICROMODEM_NARROWBAND_LBL_RANGING: glog << "n"; break; 
                 case protobuf::ModemTransmission::MICROMODEM_MINI_DATA: glog << "m"; break;
-                case protobuf::ModemTransmission::ACK:
-                case protobuf::ModemTransmission::UNKNOWN:
+
+                default:
                     break;
             }
         
@@ -171,11 +181,14 @@ void goby::acomms::MACManager::begin_slot(const boost::system::error_code& e)
     }
     
     
-    glog.is(DEBUG1) && glog << group(glog_mac_group_) << "starting slot: " << s << std::endl;
+    glog.is(DEBUG1) && glog << group(glog_mac_group_) << "Starting slot: " << s.ShortDebugString() << std::endl;
     
     if(we_are_transmitting) signal_initiate_transmission(s);
 
     increment_slot();
+
+    glog.is(DEBUG1) && glog << group(glog_mac_group_) << "Next slot at " << next_slot_t_ << std::endl;
+
     restart_timer();
 }
 
@@ -186,8 +199,7 @@ void goby::acomms::MACManager::increment_slot()
         case protobuf::MAC_FIXED_DECENTRALIZED:
         case protobuf::MAC_POLLED:
             next_slot_t_ +=
-                boost::posix_time::microseconds(current_slot_->GetExtension(protobuf::slot_seconds)*1e6);
-            glog.is(DEBUG1) && glog << group(glog_mac_group_) << "next slot at " << next_slot_t_ << std::endl;
+                boost::posix_time::microseconds(current_slot_->slot_seconds()*1e6);
             
             ++current_slot_;
             if (current_slot_ == std::list<protobuf::ModemTransmission>::end())
@@ -206,57 +218,71 @@ boost::posix_time::ptime goby::acomms::MACManager::next_cycle_time()
     using namespace boost::gregorian;
     using namespace boost::posix_time;
 
-    time_duration time_of_day = goby_time().time_of_day();
+    ptime now = goby_time();
+    time_duration time_of_day = now.time_of_day();
     double since_day_start = time_of_day.total_seconds()*1e6
         + (time_of_day-seconds(time_of_day.total_seconds())).total_microseconds();
 
     
-    glog.is(DEBUG1) && glog << group(glog_mac_group_) << "microseconds since day start: "
+    glog.is(DEBUG2) && glog << group(glog_mac_group_) << "microseconds since day start: "
                    << since_day_start << std::endl;
 
-    glog.is(DEBUG1) && glog << group(glog_mac_group_) << "cycle duration: "
+    glog.is(DEBUG2) && glog << group(glog_mac_group_) << "cycle duration: "
                    << cycle_duration() << std::endl;
     
     cycles_since_day_start_ = (floor(since_day_start/(cycle_duration()*1e6)) + 1);
     
-    glog.is(DEBUG1) && glog << group(glog_mac_group_) << "cycles since day start: "
+    glog.is(DEBUG2) && glog << group(glog_mac_group_) << "cycles since day start: "
                  << cycles_since_day_start_ << std::endl;
     
     double secs_to_next = cycles_since_day_start_*cycle_duration();
 
     
     // day start plus the next cycle starting from now
-    return ptime(day_clock::universal_day(), microseconds(secs_to_next*1e6));
+    return ptime(now.date(), microseconds(secs_to_next*1e6));
 }
 
 void goby::acomms::MACManager::update()
 {
+    glog.is(DEBUG1) && glog << group(glog_mac_group_) << "Updating MAC cycle." << std::endl;        
+
+    
+    if(std::list<protobuf::ModemTransmission>::size() == 0)
+    {
+        glog.is(DEBUG1) && glog << group(glog_mac_group_) << "the MAC TDMA cycle is empty. Stopping timer"
+                                << std::endl;        
+        stop_timer();
+        return;
+    }    
+
     // reset the cycle to the beginning
     current_slot_ = std::list<protobuf::ModemTransmission>::begin();
     // advance the next slot time to the beginning of the next cycle
     next_slot_t_ = next_cycle_time();
 
-    glog.is(DEBUG1) && glog << group(glog_mac_group_) << "the MAC TDMA next cycle begins at time: "
+    glog.is(DEBUG1) && glog << group(glog_mac_group_) << "The next MAC TDMA cycle begins at time: "
                  << next_slot_t_ << std::endl;
     
     // if we can start cycles in the middle, do it
     if(cfg_.start_cycle_in_middle() &&
        std::list<protobuf::ModemTransmission>::size() > 1 &&
-       cfg_.type() == protobuf::MAC_FIXED_DECENTRALIZED)
+       (cfg_.type() == protobuf::MAC_FIXED_DECENTRALIZED ||
+        cfg_.type() == protobuf::MAC_POLLED))
     {
-        glog.is(DEBUG1) && glog << group(glog_mac_group_) << "starting next available slot (in middle of cycle)"
+        glog.is(DEBUG1) && glog << group(glog_mac_group_) << "Starting next available slot (in middle of cycle)"
                        << std::endl;
 
         // step back a cycle
         next_slot_t_ -= boost::posix_time::microseconds(cycle_duration()*1e6);
-        glog.is(DEBUG1) && glog << group(glog_mac_group_) << "next slot at " << next_slot_t_ << std::endl;
-
         
         boost::posix_time::ptime now = goby_time();
 
         // skip slots until we're at a slot that is in the future
         while(next_slot_t_ < now)
             increment_slot();
+
+        glog.is(DEBUG1) && glog << group(glog_mac_group_) << "Next slot at " << next_slot_t_ << std::endl;
+
     }    
     
     if(started_up_)
@@ -267,7 +293,7 @@ double goby::acomms::MACManager::cycle_duration()
 {
     double length = 0;
     BOOST_FOREACH(const protobuf::ModemTransmission& slot, *this)
-        length += slot.GetExtension(protobuf::slot_seconds);
+        length += slot.slot_seconds();
     
     return length;
 }

@@ -1,21 +1,25 @@
-// copyright 2008, 2009 t. schneider tes@mit.edu 
+// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+//                     Massachusetts Institute of Technology (2007-)
+//                     Woods Hole Oceanographic Institution (2007-)
+//                     Goby Developers Team (https://launchpad.net/~goby-dev)
+// 
 //
-// this file is part of the Queue Library (libqueue),
-// the goby-acomms message queue manager. goby-acomms is a collection of 
-// libraries for acoustic underwater networking
+// This file is part of the Goby Underwater Autonomy Project Libraries
+// ("The Goby Libraries").
 //
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// The Goby Libraries are free software: you can redistribute them and/or modify
+// them under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// This software is distributed in the hope that it will be useful,
+// The Goby Libraries are distributed in the hope that they will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Lesser General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
-// along with this software.  If not, see <http://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU Lesser General Public License
+// along with Goby.  If not, see <http://www.gnu.org/licenses/>.
+
 
 #ifndef Queue20080605H
 #define Queue20080605H
@@ -32,7 +36,7 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/any.hpp>
 
-#include "goby/util/time.h"
+#include "goby/common/time.h"
 #include "goby/util/as.h"
 
 #include "goby/acomms/protobuf/queue.pb.h"
@@ -67,10 +71,9 @@ namespace goby
             goby::acomms::QueuedMessage give_data(unsigned frame);
             bool pop_message(unsigned frame);
             bool pop_message_ack(unsigned frame, boost::shared_ptr<google::protobuf::Message>& removed_msg);
-            void stream_for_pop(const google::protobuf::Message& dccl_msg);
+            void stream_for_pop(const QueuedMessage& queued_msg);
             
             std::vector<boost::shared_ptr<google::protobuf::Message> > expire();
-            
           
             bool get_priority_values(double* priority,
                                      boost::posix_time::ptime* last_send_time,
@@ -84,7 +87,6 @@ namespace goby
         
             size_t size() const 
             { return messages_.size(); }
-    
 
             boost::posix_time::ptime last_send_time() const
             { return last_send_time_; }
@@ -122,7 +124,7 @@ namespace goby
             const google::protobuf::Descriptor* desc_;
             QueueManager* parent_;
             
-            boost::posix_time::ptime last_send_time_;    
+            boost::posix_time::ptime last_send_time_;
 
             
             std::list<QueuedMessage> messages_;

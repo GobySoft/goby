@@ -1,183 +1,410 @@
-Goby Release Notes
-
-*****************
-
-Version 1.1.0
--- Improvement to build system - added environmental variables "GOBY_CMAKE_FLAGS" and "GOBY_MAKE_FLAGS" to control build. Removed "INSTALL" and "CONFIGURE" in favor of a single script "BUILD"
--- DCCL - </all> tag does not try to add any fields given explicitly by <message_var> tags.
--- Numerous minor changes to support GCC-3.3 (on Debian Sarge).
--- Bug fixes pertaining to multi-message handling
--- Improved robustness of ACK handling in MMDriver
--- Post first field trial testing of Goby v1
-
- bzr log --line -n0 -r 118..
-
-142: toby 2011-06-06 version 1.1.0
-141: toby 2011-06-06 improved robustness for matching Micro-Modem CADRQ to Goby frame so that only frames we expect to be ack'd will be popped. removed setting CMOOSMsg Community to originating modem id so that we can properly identify whether the local pAcommsHandler published IN_HEX_*_B or not
-140: toby 2011-06-02 fixed bug for third-party 'pokes' of IN_*_HEX_*B messages in pAcommsHandler
-139: Henrik Schmidt 2011-06-02 fix so that pAcommsHandler does not reject messages sent by another community's pAcommsHandler
-138: toby 2011-06-02 [merge] merged changes from bf9 cruise
-  135.1.6: toby 2011-05-30 fixed bug in WHOI Micro-Modem driver where multi-frame messages initiated via a third-party were not being properly acked if the number of frames sent < total number of frames / packet
-  135.1.5: toby 2011-05-30 added feature to flush queues from topside
-  135.1.4: toby 2011-05-30 fixed regression on multi-frame message ack
-  135.1.3: toby 2011-05-30 buffer publish data when there's no MOOS connection for later sending
-  135.1.2: toby 2011-05-30 qsize posts on startup
-  135.1.1: mituser 2011-05-20 build issues resolved for gcc-33
-137: Toby Schneider 2011-05-26 improved handling of CAERR,NMEA to avoid segmentation fault if multiple CAERR,NMEA posted for a given outgoing message
-136: Toby Schneider 2011-05-24 moved XML related headers to .cpp files
-135: Stephanie Petillo 2011-05-20 fixed build for moos
-134: toby 2011-05-20 updated manual for release 1.1 and a few changes to support pViewMessage in TesMoosApp; also changed <all> in DCCL to not try to add already added message_var
-133: toby 2011-05-18 recommitted removal of unneeded dependencies on boost::regex
-132: toby 2011-05-18 fixed regression in flex_ncurses
-131: toby 2011-05-18 moved to single BUILD script instead of CONFIGURE/INSTALL and added GOBY_CMAKE_FLAGS and GOBY_MAKE_FLAGS environmental variable options
-130: Toby Schneider 2011-05-17 workaround for ASIO problem with epoll in 2.4.27 kernel and more fixes for gcc-3.3
-129: Toby Schneider 2011-05-17 added option to turn off building of certain MOOS apps
-128: toby 2011-05-17 fixed queue_xml for changes to support gcc-3.3
-127: Toby Schneider 2011-05-17 tentative work on supporting gcc-3.3
-126: toby 2011-05-17 removed unneeded dep on boost regex
-125: toby 2011-05-17 removed unfinished goby-core components - all development of goby-core is happening in lp:goby/2.0
-124: Toby Schneider 2011-05-11 updated AUTHORS file to point to launchpad team
-123: toby 2011-05-09 switched DEPENDENCIES for ubuntu to apt-get build-dep
-122: Toby Schneider 2011-05-02 updated doc locations
-121: Toby Schneider 2011-05-02 updated main.dox Documentation page removing items available now in the wiki
-120: Toby Schneider 2011-04-29 release 1.0.3
-119: Toby Schneider 2011-04-29 Updated release notes for 1.0.3
-118: toby 2011-04-28 fix for Bug 772640 pertaining to finding MOOS with CMake
-
-*****************
-Version 1.0.3
--- Improvements to WHOI Micro-Modem Driver DRQ process
--- fixes / improvements to CMake build
-
-> bzr log --line -n0 -r 112..
-118: toby 2011-04-28 fix for Bug 772640 pertaining to finding MOOS with CMake
-117: toby 2011-04-21 [merge] merged changes from trunk to WHOI Micro-Modem Driver mm_driver
-  60.2.30: toby 2011-04-06 removed regression with Polling MAC on WHOI Micro-Modem
-  60.2.29: toby 2011-04-06 streamlined DRQ process and added more logic sanity checks
-  60.2.28: toby 2011-03-22 added REMUS LBL ranging example
-  60.2.27: toby 2011-03-17 [merge] merged MAC OS X building changes from 1.0 series
-  60.2.26: toby 2011-03-16 improved package finding for examples, removed some goby/util/string.h code where a Boost solution exists
-  60.2.25: toby 2011-03-10 [merge] minor fixes to CMake build
-  60.2.24: toby 2011-03-09 cleaned up CMakeLists.txt slightly
-  60.2.23: toby 2011-03-08 [merge] merged changes needed for .deb packaging 1.0
-116: toby 2011-04-06 turned off unneeded MOOS test from building
-115: toby 2011-04-06 Added basic configure / build testing using CTest/CDash
-114: Chris Murphy 2011-04-05 Switching int with unsigned int on an incrementer variable to silence a comparison warning.
-113: toby 2011-04-04 added example for WHOI REMUS LBL ranging, added link to new wiki to doc page, other minor front page documentation edits
-112: toby 2011-03-29 release 1.0.2b - working install on MAC OSX (with MacPorts)
-
-*****************
-Version 1.0.2
--- Made some changes to the CMake build system to better support MAC OS X (using MacPorts)
-
-> bzr log --line -n0 -r 101..
-112: toby 2011-03-29 release 1.0.2b - working install on MAC OSX (with MacPorts)
-111: toby 2011-03-21 typo in basic_ccl example with serial port paths
-110: toby 2011-03-20 fixed bug in doxygen where includes were being missed
-109: toby 2011-03-17 updated DEPENDENCIES with list of MacPorts required
-108: toby 2011-03-17 moved find_package for Crytopp from DCCL to acomms because modemdriver needs it
-107: toby 2011-03-16 updated release notes for 1.0.2
-106: toby 2011-03-16 incremented version #
-105: toby 2011-03-16 Made minor changes to CMake build system to allow building with MacPorts on OS X
-104: toby 2011-03-10 fixed typo in user_manual.pdf (goby/cfg -> goby/share/cfg)
-103: toby 2011-03-09 version explicitly defined
-102: toby 2011-03-08 patched from downstream debian-changes-1.0.1-1gobydev1~maverick1
-101: toby 2011-03-07 missing SOVERSION on liblogger
+Goby Release Notes (Major version 2)
 
 
 *****************
-Version 1.0.1
+Version 2.0.0-beta4
 
-This is release v1.0 of Goby
+- MOOS Functionality (pAcommsHandler) complete, including backwards compatibility with version 1.
+- New MOOS Application pTranslator that can be used for general purpose string<-->Google conversions
+- goby_liaison backported from 3.0
+  - liaison_commander written to take the place of iCommander
+  - liaison_scope complete for MOOS scoping
+- moos_gateway_g backported from 3.0 to interface goby_liaison with a MOOS community
 
-~~~Features
+bzr log --line -n0 -r 224..
 
-MOOS (pAcommsHandler)
---- Most MOOS messages originating from pAcommsHandler (ACOMMS_*) now use the Protocol Buffers TextFormat class to serialize and parse from string (to send through MOOS) to the various Protocol Buffers messages defined in goby/src/protobuf/*.proto (primarily modem_message.proto). You should use goby/src/moos/libmoos_util/moos_protobuf_helpers.h to serialize and parse from the MOOS strings posted.
-	* Informational *
-	--- ACOMMS_NMEA_IN (type: string), ModemMsgBase::raw() for all incoming messages ("$CA..." for WHOI Micro-Modem)
-	--- ACOMMS_NMEA_OUT (type: string), ModemMsgBase::raw() for all outgoing messages ("$CC..." for WHOI Micro-Modem)
-	--- ACOMMS_INCOMING_DATA (type: ModemDataTransmission) written for all received messages containing a data payload
-	--- ACOMMS_OUTGOING_DATA (type: ModemDataTransmission) written for all queued messages containing a data payload
-	--- ACOMMS_RANGE_RESPONSE (type: ModemRangingReply) written in response to ranging request (to another modem or LBL beacons)
-	--- ACOMMS_ACK (type: ModemDataAck) written when received data is acknowledged acoustically by a third party. Contains the original message.
-	--- ACOMMS_EXPIRE (type: ModemDataExpire) written when a message expires (time-to-live [ttl] exceeded) from the queue before being sent (ack = false) or acknowledged (ack = true)
-	--- ACOMMS_QSIZE (type: QueueSize) written when a queue changes size (pop or push) with the new size of the queue.
-	* Commands *
-	 (queuing DCCL data to send is initiated with a DCCL publish when <trigger>publish</trigger> as always, no change here)
-	--- ACOMMS_RANGE_COMMAND (type: ModemRangingRequest) you write this to pAcommsHandler to initiate a ranging request outside the MAC schedule. Note in general it is preferable to use the MAC cycle to coordinate data and ranging.
-	--- ACOMMS_MAC_CYCLE_UPDATE (type: MACUpdate) you write this to update the MAC cycle for MAC_FIXED_DECENTRALIZED and MAC_POLLED modes of operation
---- All .moos file configuration settings can be set at runtime using the command line. run "pAcommsHandler -h" for a list of available options and their syntax. For example, 
-> pAcommsHandler last.moos --driver_cfg 'serial_port: "/dev/ttyUSB1"'
-runs pAcommsHandler with the serial port set to /dev/ttyUSB1. Command line options overwrite .moos file options if both are set.
---- Configuration (.moos) is type checked and syntax checked for common mistakes including extraneous parameters (often misspelled parameters), duplicate parameters (for non-"repeat" fields) and missing required parameters.
---- Running "pAcommsHandler -e" outputs an example .moos ProcessConfig block with all the available options for configuring pAcommsHandler and an example. Where applicable, defaults are indicated with "(default)".
-
-Acomms
---- Replaced generic ModemMessage class with a variety of Google Protocol Buffers messages (see http://code.google.com/p/protobuf/) for all internal signals and slots. Replaced callback handling of asynchronous events with a more general signal/slot mechanism based on boost::signals.
---- DriverBase and supporting messaging is more streamlined to remove the remaining WHOI Micro-Modem bias from the design of Goby. Goby should now easily support other manufacturers' modems by subclassing goby::acomms::DriverBase (goby/src/acomms/libmodemdriver/driver_base.*).  Wrote an example toy driver for a fake modem "ABC Modem". The new driver is abc_driver.h/cpp. You can simulate this new "modem" over TCP using the abc_modem_simulator tool and socat.
---- Fixed CCL queuing functionality in libqueue
---- Improved error handling messages for CCL functionality
---- Improved buffering in the WHOI Micro-Modem driver to anticipate the $CADRQ during the cycle init ($CC/CACYC)
---- Support for REMUS LBL beacon ranging in the WHOI Micro-Modem ($SNTTA, etc.)
---- Support for one-way synchronous time-of-flight in the WHOI Micro-Modem ($CATOA)
-
-Core (still in development / testing)
---- Implemented basic functionality for all core elements (message passing, logging, base application superclass).
---- Wrote two examples in goby/src/core/examples that are documented partially in goby/doc/user_manual
-
-Util
---- Implemented point-to-point messaging for the TCP Server in liblinebasedcomms (previously the TCP server was essentially a one-to-many hub). This makes use of the new protobuf message type Datagram for `src` and `dest` addressing. For TCP `src` and `dest` are ip:port endpoints (e.g. 127.0.0.1:54321). For serial, `src` is the current serial port name. `dest` has no meaning over a serial connection (we don't know where the other end is plugged in!)
-
-~~~Bug Fixes
-
-Acomms
---- Fixed bug where some variables using Algorithms in the DCCL header were being overwritten by the default for that field. DCCL layout variables were not affected.
---- Fixed bug where removing entire polling or fixed TDMA cycle crashed libamac
-
-Util
---- Fixed miscellaneous bugs in liblogger
-
--- Made some structural changes to examples and configuration to allow Debian packaging
-
-> bzr log --line -n0 -r 60.2.6..
-101: toby 2011-03-07 missing SOVERSION on liblogger
-100: toby 2011-03-07 updated ubuntu package names
-99: toby 2011-03-07 changed example ccl_and_dccl to use *relative* path for xml files
-98: toby 2011-03-07 minor typo in README
-97: toby 2011-03-07 fixes to User Manual with change to example paths
-96: toby 2011-03-07 [merge] merged changes from trunk to make .deb packaging feasible
-  60.2.22: toby 2011-03-07 moved examples, documentation, xml to goby/share
-95: toby 2011-03-04 [merge] merged changes from trunk for release 1.0.0
-  60.2.21: toby 2011-03-04 Fixed a few bugs in chat example, finalized installing documentation
-  60.2.20: toby 2011-03-04 added user manual PDF
-  60.2.19: toby 2011-03-04 Updated doxy2pdf to include release version and date
-  60.2.18: toby 2011-03-04 finished release V1.0 version of the User Manual, including updates to the Goby-Core examples
-  60.2.17: toby 2011-03-03 updated pREMUSCodec and iCommander to use new MOOS configuration. Fixed bug that was causing seg fault in libqueue due to bug in GCC with string constructors
-  60.2.16: toby 2011-03-02 Added some basic MOOS files and included them in the User Manual
-  60.2.15: toby 2011-03-02 continued work on User Manual
-  60.2.14: toby 2011-03-02 documented moos_protobuf_helpers
-  60.2.13: toby 2011-03-02 Work on User Manual in advance of release 1.0
-  60.2.12: toby 2011-02-28 substantial updates to documentation in advance of v1.0, updates to linebasedcomms to support more flexible TCP networking (addressing with TCP Server) and groundwork for later goby-core work with TCP networking, wrote a 'fake' driver ABCDriver and corresponding modem simulator (abc_modem_simulator) in order to demonstrate basic modem driver functionality
-  60.2.11: toby 2011-02-18 moved LAMSS specific xml messages to missions-lamss repository
-  60.2.10: toby 2011-02-17 updated build for moos script to add libcore
-  60.2.9: toby 2011-02-17 moved all .proto files to common goby_protobuf library
-  60.2.8: toby 2011-02-17 [merge] merged pre-release v1.0
-94: toby 2011-02-17 fixed bug with improper destination addressing and acknowledge on frames > 0
-93: toby 2011-02-17 added release notes and fixed small parsing error with command-line configuration
-92: toby 2011-02-17 [merge] merged changes from trunk
-  60.2.7: toby 2011-02-17 [merge] added XML files for DCCL
-    60.4.1: toby schneider 2011-02-17 [merge] updated DEPENDENCIES for Debian 6
-      60.3.1: toby schneider 2011-02-17 updated DEPENDENCIES for Debian 6
-  60.2.6: toby 2011-02-17 fixed error in DEPENDENCIES script with Ubuntu PPA for Wt
-
+285: Toby Schneider 2012-02-22 release 2.0.0-beta4
+284: Toby Schneider 2012-02-17 1. Added basic Fedora and OpenSuse to DEPENDENCIES file; 2. fixed bug whe...
+283: Toby Schneider 2012-02-14 updated DEPENDENCIES to be a script again
+282: Toby Schneider 2012-02-13 fixed bug with MMDriver not clearing transmit message (and thereby sending the same message) when XST is not set or not available
+281: Toby Schneider 2012-02-13 1. Examples now compile correctly; 2. Fixed bug with Liaison that was causing repeated fields not to expand on reload. 3. Added analyze_dccl_xml (as shell script) for backwards compatibility
+280: toby 2012-02-13 workaround for broken maverick compiler
+279: Toby Schneider 2012-02-13 Commented out building of zero_mq_test1 which fails in pbuilder on launchpad for unknown reasons: we're not using EPGM anyway in Goby 2
+278: Toby Schneider 2012-02-09 added compiled-in options for Liaision docroot so most of the time users won't have to specify it
+277: Toby Schneider 2012-02-09 added basic rounding to x,y <--> lat,lon algorithms to avoid precision based differences
+276: Toby Schneider 2012-02-09 fixed unnecessary warning from mm_driver about expected frames never being received, added index level specification for MOOS translator
+275: Toby Schneider 2012-02-08 fixed direct double equality comparison 
+274: Toby Schneider 2012-02-07 More substantial cleanups in glog entries
+273: Toby Schneider 2012-02-07 fixed compile problem with newer versions of boost filesystem
+272: Toby Schneider 2012-02-06 a whole bunch of minor fixes and improvements discovered when integrating pAcommsHandler into missions-dsop (LAMSS)
+271: Toby Schneider 2012-02-06 added manipulators back in to acomms (all in Queue) and a test (queue6) for them
+270: Toby Schneider 2012-02-02 1. MAC Cycle update message configured for sending with DCCL and integrated into pAcommsHandler; 2. moved time from util->common; 3. tweaked ncurses closing so errors are properly shown after ncurses exits
+269: Toby Schneider 2012-02-01 removed unneeded code from Transitional DCCL
+268: Toby Schneider 2012-02-01 changed all explicit library linking to use CMake variable names to facilitate compilation when libraries are installed to non-standard places
+267: Toby Schneider 2012-02-01 tweaks to CMakeLists for correct library finding when not on standard library search path
+266: Toby Schneider 2012-02-01 Liaison needs ZeroMQ enabled - doing so
+265: Toby Schneider 2012-02-01 fixed bug in Translator1 test where incomplete message was trying to be serialized
+264: Toby Schneider 2012-02-01 Fix to FindWt
+263: Toby Schneider 2012-02-01 streamlined optional package dependency resolution
+262: Toby Schneider 2012-01-30 a few more disables to build correctly without 0MQ or Xerces
+261: Toby Schneider 2012-01-30 added flag and modification to disable v1 transitional support and still be able to build MOOS
+260: Toby Schneider 2012-01-30 fixed Dynamic protobuf test for dynamic libraries not ending in .so
+259: Toby Schneider 2012-01-30 minor build system bug fix
+258: Toby Schneider 2012-01-30 do not build zeromq tests if no ZeroMQ installed
+257: Toby Schneider 2012-01-30 renamed BUILD to build.sh to deal with name conflict on case-insensitive fileystems
+256: Toby Schneider 2012-01-30 Wt resources link autogenerated by CMake; logger GUI separated from VERBOSITY settings; removed analyze_dccl_xml in favor of dccl_xml_to_dccl_proto + analyze_dccl
+255: Toby Schneider 2012-01-27 properly renamed namespaces for logger and configuration_reader
+254: Toby Schneider 2012-01-27 missing <string> include in version and added a missing default parameter for the MOOS Translator
+253: Toby Schneider 2012-01-25 renamed TesMoosApp GobyMOOSApp
+252: Toby Schneider 2012-01-23 Added ability to access submessage fields from MOOS translator TECHNIQUE_FORMAT
+251: Toby Schneider 2012-01-23 fixed MOOS<->protobuf translator for repeated fields
+250: Toby Schneider 2012-01-23 fixed bug where Queued messages would get acknowledged (and popped) incorrectly
+249: Toby Schneider 2012-01-19 Can cycle throw incoming messages in Liaison
+248: Toby Schneider 2012-01-18 gave Liaison Commander and Scope their own ZeroMQ service and added field information/validation for commander
+247: Toby Schneider 2012-01-16 improvements for Liaison scope
+246: Toby Schneider 2012-01-11 modified pTranslator and wrote a preliminarily working pAcommsHandler using this translation functionality
+245: Toby Schneider 2012-01-05 liaison commander now complete enough to send messages
+244: Toby Schneider 2012-01-02 wrote much of the background for Liaison Commander and fixed some small memory leaks in Liaison
+243: Toby Schneider 2011-12-30 working publish *from* liaison
+242: Toby Schneider 2011-12-30 liaison scope properly pauses when in a different menu item
+241: Toby Schneider 2011-12-30 [merge] merges from 3.0 for liaison
+  195.1.13: Toby Schneider 2011-12-30 moved pubsub wrapper to common
+  240.1.2: Toby Schneider 2011-12-30 renamed core namespace to common
+  240.1.1: Toby Schneider 2011-12-30 [merge] merge from 3.0 for liaison
+    195.1.12: Toby Schneider 2011-12-30 moved liaison and many zero mq components to common
+    195.1.11: Toby Schneider 2011-12-30 [merge] merged changes from 2.0
+    195.1.10: Toby Schneider 2011-11-17 [merge] merged from 2.0
+    195.1.9: Toby Schneider 2011-11-17 [merge] renamed goby_core to goby_pb to suggest optional nature of the library
+    195.1.8: Toby Schneider 2011-11-16 [merge] merged from 2.0, rejecting removed messages we need
+    195.1.7: Toby Schneider 2011-11-16 [merge] merge from 2.0
+    195.1.6: Toby Schneider 2011-11-16 fixed bugs from previous merge
+    195.1.5: Toby Schneider 2011-11-16 [merge] merge from 2.0
+    195.1.4: Toby Schneider 2011-11-16 [merge] merged from 2.0
+    195.1.3: Toby Schneider 2011-09-23 fixed #include to wrong places
+    195.1.2: Toby Schneider 2011-09-23 empty folder
+    195.1.1: Toby Schneider 2011-09-23 [merge] merged into 2.0 except removes from 2.0 that we want to have in 3.0 (all core stuff)
+240: Toby Schneider 2011-12-22 removed protobuf_generate_cpp line from pAcommsHandler CMakelists.txt
+239: Toby Schneider 2011-12-21 mostly finished MOOS <--> Protobuf translator and reworked dynamic protobuf class to be more powerful
+238: Toby Schneider 2011-12-20 incorporated publish, moos_var elements into DCCLv2->v1 backwards compatibility
+237: Toby Schneider 2011-12-20 more work on Goby v1->v2 backwards compatibility
+236: Toby Schneider 2011-12-19 added pTranslator MOOS translation application and added algorithms for key=value parser
+235: Toby Schneider 2011-12-16 continued work on the MOOS translator: incorporated algorithms from pAcommsHandler v1
+234: Toby Schneider 2011-12-06 more work on MOOS <--> Protobuf translator
+233: Toby Schneider 2011-11-17 started working on MOOS string to Protobuf translator
+232: Toby Schneider 2011-11-17 replaced use of core_header.proto with test specific header.proto
+231: Toby Schneider 2011-11-16 fixed missed test on changing path
+230: Toby Schneider 2011-11-16 merged libtransitional into moos, moved protobuf files out of common into their respective libraries where possible
+229: Toby Schneider 2011-11-16 removed unneeded core protobuf messages (punted to 3.0)
+228: Toby Schneider 2011-11-16 fixed file name bug in tests from renamed proto files
+227: Toby Schneider 2011-11-16 renamed goby_protobuf to goby_common to avoid confusion with 3.0 library goby_pb
+226: Toby Schneider 2011-11-16 renamed proto files to reflect goby module
+225: Toby Schneider 2011-11-10 Dynamic Protobuf Manager now looks in the compiled-in pool; also added test for it
+224: Toby Schneider 2011-11-10 added missing library depends for libgoby_moos.so
 
 *****************
-Version 0.1
+Version 2.0.0-beta3
 
-First release of Goby; unless you specifically need backwards compatibility, I suggest you upgrade to Version 1.0.
+bzr log --line -n0 -r 200..
 
-> bzr log --line -n0
+223: Toby Schneider 2011-11-10 pAcommsHandler compiles, but is almost certainly broken. Release 2.0.0-beta3
+222: Toby Schneider 2011-11-10 changed ceil(log(VALUES)/log(2)) to new ceil_log2 integer function to avoid floating point rounding problems caused by inlining under GCC 4.6.1
+221: Toby Schneider 2011-11-09 removed some unnecessary dependencies from suggested list
+220: Toby Schneider 2011-11-02 removed zmq from DEPENDENCIES
+219: Toby Schneider 2011-10-18 updated out-of-date example for signal-slot in developer doc; also started pAcommsHandler migration from 1.0
+218: Toby Schneider 2011-09-29 minor workaround for doxygen bug 660501 in versions of doxygen > 1.7.4
+217: Toby Schneider 2011-09-29 went back to autogenerated Doxygen HTML header/footer so as not to break compatibility with newer versions of Doxygen
+216: Toby Schneider 2011-09-23 Fixed more problems with boost::filesystem version 3 on Ubuntu oneiric
+215: Toby Schneider 2011-09-23 fixed #include with incorrect path
+214: Toby Schneider 2011-09-23 removed unneeded empty folder
+213: Toby Schneider 2011-09-23 renamed moos_util to moos and moved files up a directory
+212: Toby Schneider 2011-09-23 removed old entries from CMakeLists
+211: Toby Schneider 2011-09-23 removed empty directories
+210: Toby Schneider 2011-09-23 cleaned up moos tools and tests and fixed minor compilation problems
+209: Toby Schneider 2011-09-22 updates to support ubuntu 11.10 beta
+208: Toby Schneider 2011-09-21 removed core examples and fixed others
+207: Toby Schneider 2011-09-21 added V2 to dev doc
+206: Toby Schneider 2011-09-21 switched FlexOstream::is to use enumeration instead of function pointers which were mysteriously failing when -Bsymbolic-functions was linked (required by Ubuntu packaging)
+205: Toby Schneider 2011-09-21 always link rpath into tests
+204: Toby Schneider 2011-09-21 changed from using operator== for double comparison to custom function that compares a certain precision
+203: Toby Schneider 2011-09-21 switched default codec name to null string from _default as a workaround for protobuf bug in 32-bit ubuntu 10.04; also fixed 32 bit long bug in MACManager
+202: Toby Schneider 2011-09-21 tests now are set with full path
+201: Toby Schneider 2011-09-20 another unsigned/signed comparison warning squashed
+200: Toby Schneider 2011-09-20 another missing header
+
+*****************
+Version 2.0.0-beta1
+
+bzr log --line -n0 
+
+199: Toby Schneider 2011-09-20 changed version number for 2.0.0-beta1
+198: Toby Schneider 2011-09-20 fixed incorrect headers
+197: Toby Schneider 2011-09-20 updated nightly testing script to build tests
+196: Toby Schneider 2011-09-20 removed core which will sadly be delayed to release 3.0
+195: Toby Schneider 2011-09-20 cleaned up exception handling for bad decode
+194: Toby Schneider 2011-09-20 turned off encryption for Chat example (doesn't work properly with iModemSim bugs) and make a single frame of the null string count as a dataless packet for MMDriver
+193: Toby Schneider 2011-09-20 we no longer set NVRAM values in MMDriver before they are acknowledged (with ) to make sure our view of the MMDriver state is accurate
+192: Toby Schneider 2011-09-20 [merge] merged in changes post CAPTURE2011 cruise from lp:~tes/goby/2.0-rework-modem-messaging
+  191.1.18: Toby Schneider 2011-09-20 added static casts to remove compiler warning about unsigned / signed comparisons
+  191.1.17: Toby Schneider 2011-09-20 finished update of documentation before 2.0 beta
+  191.1.16: Toby Schneider 2011-09-14 updated documentation - mostly preliminarily done except rest of WHOI Micro-Modem NMEA mapping
+  191.1.15: Toby Schneider 2011-09-14 fixed logic error where all nodes should be receivers - not just the one directed to at MMDriver level
+  191.1.14: Toby Schneider 2011-09-14 updated MMDriver to provide XST - also aggregated CACST from both CYC and RXD for rate 0 transmissions
+  191.1.13: Toby Schneider 2011-09-14 more work on bringing dev docu up to speed
+  191.1.12: Toby Schneider 2011-09-14 significant updates to 2.0 developer doc
+  191.1.11: Toby Schneider 2011-08-25 minor API improvements to DCCLCodec and start on Doxygen
+  191.1.10: Toby Schneider 2011-08-24 QueueManager is no longer a singleton (no need) and all acomms examples brought up to speed
+  191.1.9: Toby Schneider 2011-08-24 added 1 second wait between tests for MicroModem to recover
+  191.1.8: Toby Schneider 2011-08-24 more work on DCCL API so that embedded messages are not copied more than necessary + fixed unit tests to reflect this change
+  191.1.7: Toby Schneider 2011-08-22 reworked DCCL to avoid making many copies of embedded messages
+  191.1.6: Toby Schneider 2011-08-22 corrected order of mmdriver unit test tests
+  191.1.5: Toby Schneider 2011-08-22 modified Queue to work with new modem driver changes and fixed all unit tests
+  191.1.4: Toby Schneider 2011-08-16 added unit test for time utilities; finished unit test for MMDriver to do 3 types of ranging, rate 0 data, rate 2 data and made appropriate fixes to MMDriver discovered while running that test
+  191.1.3: Toby Schneider 2011-08-16 added unit test for `as` function family; added enum functionality to `as`, starting testing reworked MMDriver by adding a test for MPC
+  191.1.2: Toby Schneider 2011-08-15 removed old tools directories
+  191.1.1: Toby Schneider 2011-08-15 significantly reworked the modem messages and the MicroModem driver - everything is probably broken now
+191: Toby Schneider 2011-08-15 moved core apps to apps parallel tree and moved dynamic protobuf manager into goby_util (from goby_protobuf)
+190: Toby Schneider 2011-08-11 moved apps to a parallel tree from libraries
+189: Toby Schneider 2011-08-11 [merge] moved tests out of library build into separate parallel tree
+  188.1.1: Toby Schneider 2011-08-11 merged all acomms libraries into a single libgoby_acomms.so
+188: Toby Schneider 2011-08-11 merged all util libraries into a single libgoby_util.so
+187: Toby Schneider 2011-08-11 renamed acomms and util protobuf messages to have the module prefix
+186: Toby Schneider 2011-08-11 make install no longer installs autogenerated Protobuf .cc files
+185: Toby Schneider 2011-08-10 added boost signals back in since signals2 is not available before boost 1.39
+184: Toby Schneider 2011-08-10 removed old MOOS modules and started writing a better DEPENDENCIES file. Also made Crypto++ optional
+183: Toby Schneider 2011-08-10 renamed string.h as.h
+182: Toby Schneider 2011-08-10 cleaned up locations of Exception classes and made them all capitalized words: e.g. ModemDriverException instead of driver_exception
+181: Toby Schneider 2011-08-10 [merge] merged changes from 2.0-rework_dccl_option_extensions
+  173.1.5: Toby Schneider 2011-08-09 [merge] merged from CAPTURE cruise
+    180.1.12: Toby Schneider 2011-08-07 added NARROWBAND LBL as a slot type in MAC
+    180.1.11: Toby Schneider 2011-08-07 implemented preliminary narrowband lbl ranging and updated whoi ranging example
+    180.1.10: Toby Schneider 2011-08-07 added back in J. Walls check to set CCCLK at top of second and start of narrowband lbl in proto files
+    180.1.9: Toby Schneider 2011-08-04 added missing virtual Destructors and a few other pedantic warnings
+    180.1.8: Toby Schneider 2011-08-03 Removed UNKNOWN clock mode in favor of NO_SYNC_TO_PPS_AND_CCCLK_BAD so it takes 2 bits
+    180.1.7: Toby Schneider 2011-08-02 added option to enable tests (default OFF)
+    180.1.6: Toby Schneider 2011-08-01 Added ability to define custom ID codec for specialized cases where a different technique of encoding the DCCL ID is required
+    180.1.5: Toby Schneider 2011-08-01 fixed bug in Mini Packet support about network byte order
+    180.1.4: Toby Schneider 2011-08-01 fixed examples and ABC Driver for new ModemDataInit transmit initialization
+    180.1.3: Toby Schneider 2011-08-01 started perls driver for their custom mini packet header + continued reworking Goby to have generic handling of MicroModem minipacket
+    180.1.2: Toby Schneider 2011-08-01 [merge] merged up to LP
+      180.2.1: Toby Schneider 2011-08-01 initial work to pull out PERLS specific implementation details into a separate driver and leave goby MMDriver support for Mini Packet generic
+    180.1.1: Toby Schneider 2011-08-01 [merge] merged in 2.0-perls
+      177.1.1: Toby Schneider 2011-07-28 [merge] merged in goby-perls, fixing most erroneous removals from lp:goby/1.0 revisions 137+
+        60.5.13: jeff 2011-07-28 added some intelligence in setting the modem clock -- only set during
+        60.5.12: jeff 2011-07-20 JMW: added unknown clock mode enum and update clk_mode_ from xst messages from
+        60.5.11: jeff 2011-07-20 JMW: fixed a few bugs for mini packet encoding after testing in 2-node setup
+        60.5.10: jeff 2011-07-20 JMW: encoding some meta data into mini packets -- useful for owtt and
+        60.5.9: jeff 2011-06-07 JMW: piped in mini packet support and added mode to ranging message definition
+  173.1.4: Toby Schneider 2011-08-08 [merge] merged changes from lp:goby/2.0 and made them work with the new Google assigned option extensions
+  173.1.3: Toby Schneider 2011-07-29 reworked goby to use a single option extension assigned by Google for the project
+  173.1.2: Toby Schneider 2011-07-22 reworked Queue to use a single option extension and modified tests and examples to work. Also removed old DCCL examples
+  173.1.1: Toby Schneider 2011-07-22 initial work on making dccl option extensions an embedded message instead of all primitive fields
+180: Toby Schneider 2011-08-01 improved dccl1 test to test order of repeated hex
+179: Toby Schneider 2011-07-29 fixed bug where MACManager would start cycle on add_slot even if startup had not been called
+178: Toby Schneider 2011-07-28 bool, numeric, and derivatives (enum) will not waste a value on presence if the field is `required`. DCCLCodec checks that a message is initialized before encoded (all required fields set)
+177: Toby Schneider 2011-07-28 fixed bug using new slots in middle if slots are added before TDMA type is known
+176: Toby Schneider 2011-07-27 removed old references to goby::acomms::NaN
+175: Toby Schneider 2011-07-27 1. AMAC fixed tdma can start in the middle; 2. added indexing for DBO
+174: Chris Murphy 2011-07-27 Silence two warnings (unused NaN, long long instead of int64_t)
+173: Toby Schneider 2011-07-21 improved Doxygen comments for QueueManager
+172: Toby Schneider 2011-07-21 1. fixed libqueue to work with new non-CCL DCCL header 2. removed most references to CCL (will add them in as a CCL <--> DCCL translator) 3. restored and augmented on_demand to work with the new libqueue 4. Added a unit test (queue5) and an example (queue_encode_on_demand) for the new on_demand queuing
+171: Toby Schneider 2011-07-21 cleaned up end of example ALOG file for moos alog_to_goby_db example
+170: Toby Schneider 2011-07-12 added two more tests for DCCL and a few functions for examining the DCCL ID (dccl.id)
+169: Chris Murphy 2011-07-07 Public virtual destructor for modemdriverbase ported from goby1.
+168: Chris Murphy 2011-07-07 Adding 'microtime' function, which hopefully is the future of goby timekeeping?
+167: Chris Murphy 2011-07-07 Adjusting where cmake looks for modules to be referenced off of the *CURRENT* source directory, which lets goby work well as a sub-project.
+166: Chris Murphy 2011-07-07 Fixing a bug in FindZeroMQ cmake module -- copy/paste error from XERCES original file.
+165: Toby Schneider 2011-07-05 added example for MOOS tool alog_to_goby_db
+164: Toby Schneider 2011-07-01 updated Doxygen for DCCL v2
+163: Toby Schneider 2011-06-30 removed some relics in core from goby1 testing and added/improved API documentation for DCCLCodec
+162: toby 2011-06-29 moved buggy gcc workaround for maverick from goby root to goby-core
+161: Toby Schneider 2011-06-28 moved Dynamic ProtobufManager from goby-core to goby-protobuf so that goby-acomms does not depend on goby-core; changed DCCLv2 header to minimum 1 byte
+160: toby 2011-06-23 workaround for broken gcc-4.4 compiler in Ubuntu
+159: Toby Schneider 2011-06-22 more missing headers for older Wt
+158: Toby Schneider 2011-06-22 work around for broken boost::optional support in Wt < 3.1.4
+157: Toby Schneider 2011-06-22 missing header for older (pre 3.1.8) versions of Wt
+156: Toby Schneider 2011-06-21 more work on parser for MOOS alogs
+155: Toby Schneider 2011-06-21 added alog to SQLite tool
+154: Toby Schneider 2011-06-20 removed another non-existent header
+153: Toby Schneider 2011-06-20 removed reference to example C++ file that no longer exists
+152: Toby Schneider 2011-06-20 more tweaks to Goby Liaison MOOS scope
+151: Toby Schneider 2011-06-16 finished initial work on MOOS Liaison scope
+150: Toby Schneider 2011-06-14 much more work on Liaison scope - additions to moos_node and zeromq service for unsubscribe
+149: Toby Schneider 2011-06-10 fixed thread memory collision caused by static object
+148: toby 2011-06-10 progress on goby-liaison and scope for it
+147: toby 2011-06-09 goby_liaison can launch a hello world Wt application
+146: toby 2011-06-08 [merge] finished plugins for dbo database
+  145.1.1: toby 2011-06-08 added plugins for DBO
+145: toby 2011-06-08 initial thread safety for new core classes
+144: Toby Schneider 2011-06-07 [merge] merged from testing zeromq restructure
+  143.1.1: Toby Schneider 2011-06-07 work on zeromq node structure
+143: Toby Schneider 2011-06-07 added goby-liaison folder
+142: toby 2011-06-07 [merge] merged changes from release 1.1.0
+  60.5.8: toby 2011-06-07 typo in mm_driver warning
+141: toby 2011-06-07 [merge] merge from 1.0
+  60.5.7: toby 2011-06-06 version 1.1.0
+  60.5.6: toby 2011-06-06 improved robustness for matching Micro-Modem CADRQ to Goby frame so that only frames we expect to be ack'd will be popped. removed setting CMOOSMsg Community to originating modem id so that we can properly identify whether the local pAcommsHandler published IN_HEX_*_B or not
+  60.5.5: toby 2011-06-02 fixed bug for third-party 'pokes' of IN_*_HEX_*B messages in pAcommsHandler
+  60.5.4: Henrik Schmidt 2011-06-02 fix so that pAcommsHandler does not reject messages sent by another community's pAcommsHandler
+  60.5.3: toby 2011-06-02 [merge] merged changes from bf9 cruise
+    60.4.17: toby 2011-05-30 fixed bug in WHOI Micro-Modem driver where multi-frame messages initiated via a third-party were not being properly acked if the number of frames sent < total number of frames / packet
+    60.4.16: toby 2011-05-30 added feature to flush queues from topside
+  60.5.2: Toby Schneider 2011-05-26 improved handling of CAERR,NMEA to avoid segmentation fault if multiple CAERR,NMEA posted for a given outgoing message
+  60.5.1: Toby Schneider 2011-05-24 moved XML related headers to .cpp files
+140: toby 2011-06-02 another non-existent header
+139: toby 2011-06-02 fixed header with non-existent include
+138: toby 2011-05-30 [merge] merged fixes from 1.0
+  60.4.15: toby 2011-05-30 fixed regression on multi-frame message ack
+  60.4.14: toby 2011-05-30 buffer publish data when there's no MOOS connection for later sending
+  60.4.13: toby 2011-05-30 qsize posts on startup
+  60.4.12: mituser 2011-05-20 build issues resolved for gcc-33
+137: toby 2011-05-30 added graphviz for latex manual
+136: toby 2011-05-30 added test for multi-frame ack
+135: Toby Schneider 2011-05-27 reworked default Message codec to eliminate copy-paste code and thus make way for orthogonal traversal
+134: Toby Schneider 2011-05-27 new tools for old DCCL
+133: Toby Schneider 2011-05-27 [merge] merged 2.0-transitional
+  132.1.8: Toby Schneider 2011-05-27 working pAcommsHandler and iCommander
+  132.1.7: Toby Schneider 2011-05-26 cleaned out much of old (now transitional) DCCL encode / decode. Fixed iCommander to work with libtransitional, added queueing to libtransitional
+  132.1.6: Toby Schneider 2011-05-22 [merge] merged changes from 1.0 related to building on gcc-3.3
+    60.4.11: Stephanie Petillo 2011-05-20 fixed build for moos
+    60.4.10: toby 2011-05-20 updated manual for release 1.1 and a few changes to support pViewMessage in TesMoosApp; also changed <all> in DCCL to not try to add already added message_var
+    60.4.9: toby 2011-05-18 recommitted removal of unneeded dependencies on boost::regex
+    60.4.8: toby 2011-05-18 fixed regression in flex_ncurses
+    60.4.7: toby 2011-05-18 moved to single BUILD script instead of CONFIGURE/INSTALL and added GOBY_CMAKE_FLAGS and GOBY_MAKE_FLAGS environmental variable options
+    60.4.6: Toby Schneider 2011-05-17 workaround for ASIO problem with epoll in 2.4.27 kernel and more fixes for gcc-3.3
+    60.4.5: Toby Schneider 2011-05-17 added option to turn off building of certain MOOS apps
+    60.4.4: toby 2011-05-17 fixed queue_xml for changes to support gcc-3.3
+    60.4.3: Toby Schneider 2011-05-17 tentative work on supporting gcc-3.3
+    60.4.2: toby 2011-05-17 removed unneeded dep on boost regex
+    60.4.1: toby 2011-05-17 removed unfinished goby-core components - all development of goby-core is happening in lp:goby/2.0
+  132.1.5: Toby Schneider 2011-05-16 transitional dccl feature complete; working out a few bugs
+  132.1.4: Toby Schneider 2011-05-15 progress on getting DCCL1 backwards compatibility working
+  132.1.3: Toby Schneider 2011-05-14 transitional DCCL XML -> protobuf schema finished
+  132.1.2: Toby Schneider 2011-05-13 restored xml headers for transitional package
+  132.1.1: Toby Schneider 2011-05-13 [merge] moved old DCCL to libtransitional
+    60.2.65: Toby Schneider 2011-05-13 moved libraries for transitional pAcommsHandler
+    60.2.64: Toby Schneider 2011-05-11 updated AUTHORS file to point to launchpad team
+132: toby 2011-05-13 working Chat example with DCCL2
+131: toby 2011-05-12 1. getting examples to work with new DCCL / Queue; 2. fixed goby::core::Application for when PubSub and/or Database not being used
+130: Toby Schneider 2011-05-11 added make clean target for generated html dev doc
+129: toby 2011-05-11 tweaks to test scripts
+128: toby 2011-05-11 working DCCL in libqueue - fixed addressing issues, wrote two new tests to verify this. Found and fixed (longstanding?) bug - reported as 781376 for series 1.0
+127: Toby Schneider 2011-05-11 updated AUTHORS file to point to launchpad team
+126: Toby Schneider 2011-05-11 [merge] merged changes from series 1.0
+  60.2.63: toby 2011-05-09 switched DEPENDENCIES for ubuntu to apt-get mbuild-dep
+  60.2.62: Toby Schneider 2011-05-02 updated doc locations
+  60.2.61: Toby Schneider 2011-05-02 updated main.dox Documentation page removing items available now in the wiki
+  60.2.60: Toby Schneider 2011-04-29 release 1.0.3
+  60.2.59: Toby Schneider 2011-04-29 Updated release notes for 1.0.3
+125: toby 2011-05-11 preliminary working hooks system for DCCL callbacks for arbitrary google::protobuf::FieldOption extensions
+124: toby 2011-05-10 pulled out boost::any from 'leaf' field codecs
+123: toby 2011-05-10 renamed functions for libdccl that deal with boost::any to prefix 'any_' to allow for non-prefixed names to be used with concrete types
+122: toby 2011-05-10 rename DCCLFieldCodec to DCCLFieldCodecBase
+121: Toby Schneider 2011-05-09 add pre-encode and post-decode to DCCL, adding the concept of 'wire_type' (type off the wire) and 'field_type' (end user) and started working on hooks for allowing libqueue to fetch source and destination addressing
+120: Toby Schneider 2011-05-09 reworked structure of ZeroMQNode and Application - ApplicationBase renamed to Application, MinimalApplicationBase renamed to ApplicationBase, ZeroMQNode made into a singleton instead of using virtual inheritance, fixed goby_database in light of these changes, fixed all examples, split out database and pubsub components of Application into two new classes: PubSubNode and DatabaseClient, added configuration *.proto for the new 'pubsub_node'
+119: toby 2011-05-06 removed preview from eps images - causes trouble with epstopdf
+118: toby 2011-05-06 correcting missing symbols in libdbo and version numbers
+117: toby 2011-05-06 removed unneeded graphicspath command for Doxygen pdf latex
+116: toby 2011-05-06 changed paths in user_manual to relative so that packages including tilde work with latex
+115: toby 2011-05-06 removed old ManipulatorManager code
+114: toby 2011-05-06 removed reference to xml proto file
+113: Toby Schneider 2011-05-05 modified goby_db_to_alog to work with wt 3.1.2
+112: toby 2011-05-05 [merge] merged vm changes
+  111.2.1: toby schneider 2011-05-05 [merge] updated dependencies for zeromq
+    111.1.1: toby schneider 2011-05-05 updated dependencies for zeromq
+111: toby 2011-05-04 missed a file from last commit
+110: toby 2011-05-04 Reworked ZeroMQNode to handle REQ/REP as well as publish subscribe and added an arbitrary number of Goby user sockets. Added two tests for the new ZeroMQNode
+109: Toby Schneider 2011-05-03 added test for libqueue and got it basically working with the new DCCL2
+108: toby 2011-05-02 tweaked documentation build
+107: Toby Schneider 2011-05-02 moved doc source from share/doc to src/doc and set up CMake to build it
+106: toby 2011-04-28 [merge] merged bug fixes from 1.0 series
+  60.2.58: toby 2011-04-28 fix for Bug 772640 pertaining to finding MOOS with CMake
+  60.2.57: toby 2011-04-21 [merge] merged changes from trunk to WHOI Micro-Modem Driver mm_driver
+  60.2.56: toby 2011-04-06 turned off unneeded MOOS test from building
+  60.2.55: toby 2011-04-06 Added basic configure / build testing using CTest/CDash
+  60.2.54: Chris Murphy 2011-04-05 Switching int with unsigned int on an incrementer variable to silence a comparison warning.
+  60.2.53: toby 2011-04-04 added example for WHOI REMUS LBL ranging, added link to new wiki to doc page, other minor front page documentation edits
+  60.2.52: toby 2011-03-29 release 1.0.2b - working install on MAC OSX (with MacPorts)
+  60.2.51: toby 2011-03-21 typo in basic_ccl example with serial port paths
+  60.2.50: toby 2011-03-20 fixed bug in doxygen where includes were being missed
+  60.2.49: toby 2011-03-17 updated DEPENDENCIES with list of MacPorts required
+  60.2.48: toby 2011-03-17 moved find_package for Crytopp from DCCL to acomms because modemdriver needs it
+105: toby 2011-04-28 made INSTALL run CONFIGURE if no CMakeCache.txt exists
+104: toby 2011-04-26 reworking libqueue to work properly with the new DCCL
+103: toby 2011-04-21 fixed files missing change from glogger() to goby::glog
+102: toby 2011-04-21 more edits on user_manual for release 2.0
+101: toby 2011-04-21 missed file from last commit
+100: toby 2011-04-21 updating user manual with changes in store for Release 2
+99: Toby Schneider 2011-04-20 fixed typo
+98: toby 2011-04-20 modified Goby Logger to take advantage of short-circuiting behavior of && to avoid computation when logging verbosity is low; wrote version of hex_encode / hex_decode that doesn't rely on Crypto++; also wrote two tests - logger and hex codec.
+97: Toby Schneider 2011-04-19 added test configuration for moos_gateway
+96: Toby Schneider 2011-04-19 integrated MOOS functionality into Goby database and wrote a tool (goby_db_to_alog) to convert the resulting database to a traditional MOOS alog file
+95: toby 2011-04-19 continuing to work out ZeroMQ C++ interface for goby - working preliminary moos gateway as well
+94: Toby Schneider 2011-04-15 [merge] created workaround for issue with zeromq multi-messaging over PGM and started MOOS Gateway application
+  90.2.1: toby 2011-04-11 [merge] playing with 0mq
+93: toby 2011-04-15 continued work on database and goby-core PGM with 0mq
+92: toby 2011-04-13 [merge] split ApplicationBase into MinimalApplicationBase -> ProtobufApplicationBase -> ApplicationBase and add Database
+  86.1.13: toby 2011-04-08 added repeated option to DCCLCodec; added DCCLCommon object to manager logging and other shared tasks
+  86.1.12: toby 2011-04-06 added script for testing
+  86.1.11: toby 2011-04-06 Set up experimental CTest / CDash configuration
+  86.1.10: toby 2011-04-06 Missed adds from previous commit
+  86.1.9: toby 2011-04-06 Mostly working support for custom codecs for arbitrary protobuf message types
+  86.1.8: toby 2011-04-05 properly working repeated types
+  86.1.7: toby 2011-03-31 started work on getting repeats to work
+  86.1.6: toby 2011-03-30 mostly working DCCL2 for non-repeated types
+  86.1.5: toby 2011-03-30 working variable & fixed size encoding of basic types
+  86.1.4: toby 2011-03-29 added variable size option to codecs, fleshed out DCCL info call, created some new bugs
+  86.1.3: toby 2011-03-29 more progress on DCCL2 - reworked DCCLFieldCodec so derived classes of non-CPPTYPE_MESSAGE can more easily access protobuf extensions without knowledge of protobuf
+  86.1.2: toby 2011-03-25 more work on new DCCL2
+  86.1.1: toby 2011-03-25 gutted original DCCL and working on protobuf DCCL2
+91: toby 2011-04-11 [merge] working core examples with 0mq and PGM (without gobyd)
+  90.1.1: toby 2011-04-11 playing around with 0mq
+90: toby 2011-04-06 removed regression with Polling MAC on WHOI Micro-Modem
+89: toby 2011-04-06 streamlined DRQ process and added more logic sanity checks
+88: toby 2011-03-22 added REMUS LBL ranging example
+87: toby 2011-03-17 [merge] merged MAC OS X building changes from 1.0 series
+  60.2.47: toby 2011-03-16 updated release notes for 1.0.2
+  60.2.46: toby 2011-03-16 incremented version #
+  60.2.45: toby 2011-03-16 Made minor changes to CMake build system to allow building with MacPorts on OS X
+  60.2.44: toby 2011-03-10 fixed typo in user_manual.pdf (goby/cfg -> goby/share/cfg)
+86: toby 2011-03-16 improved package finding for examples, removed some goby/util/string.h code where a Boost solution exists
+85: toby 2011-03-10 [merge] minor fixes to CMake build
+  60.2.43: toby 2011-03-09 version explicitly defined
+84: toby 2011-03-09 cleaned up CMakeLists.txt slightly
+83: toby 2011-03-08 [merge] merged changes needed for .deb packaging 1.0
+  60.2.42: toby 2011-03-08 patched from downstream debian-changes-1.0.1-1gobydev1~maverick1
+  60.2.41: toby 2011-03-07 missing SOVERSION on liblogger
+  60.2.40: toby 2011-03-07 updated ubuntu package names
+  60.2.39: toby 2011-03-07 changed example ccl_and_dccl to use *relative* path for xml files
+  60.2.38: toby 2011-03-07 minor typo in README
+  60.2.37: toby 2011-03-07 fixes to User Manual with change to example paths
+  60.2.36: toby 2011-03-07 [merge] merged changes from trunk to make .deb packaging feasible
+  60.2.35: toby 2011-03-04 [merge] merged changes from trunk for release 1.0.0
+82: toby 2011-03-07 moved examples, documentation, xml to goby/share
+81: toby 2011-03-04 Fixed a few bugs in chat example, finalized installing documentation
+80: toby 2011-03-04 added user manual PDF
+79: toby 2011-03-04 Updated doxy2pdf to include release version and date
+78: toby 2011-03-04 finished release V1.0 version of the User Manual, including updates to the Goby-Core examples
+77: toby 2011-03-03 updated pREMUSCodec and iCommander to use new MOOS configuration. Fixed bug that was causing seg fault in libqueue due to bug in GCC with string constructors
+76: toby 2011-03-02 Added some basic MOOS files and included them in the User Manual
+75: toby 2011-03-02 continued work on User Manual
+74: toby 2011-03-02 documented moos_protobuf_helpers
+73: toby 2011-03-02 Work on User Manual in advance of release 1.0
+72: toby 2011-02-28 substantial updates to documentation in advance of v1.0, updates to linebasedcomms to support more flexible TCP networking (addressing with TCP Server) and groundwork for later goby-core work with TCP networking, wrote a 'fake' driver ABCDriver and corresponding modem simulator (abc_modem_simulator) in order to demonstrate basic modem driver functionality
+71: toby 2011-02-18 moved LAMSS specific xml messages to missions-lamss repository
+70: toby 2011-02-17 updated build for moos script to add libcore
+69: toby 2011-02-17 moved all .proto files to common goby_protobuf library
+68: toby 2011-02-17 [merge] merged pre-release v1.0
+  60.2.34: toby 2011-02-17 fixed bug with improper destination addressing and acknowledge on frames > 0
+  60.2.33: toby 2011-02-17 added release notes and fixed small parsing error with command-line configuration
+  60.2.32: toby 2011-02-17 [merge] merged changes from trunk
+  60.2.31: toby 2011-02-17 fixed bug when values destined for the DCCL header are overwritten by defaults if these values are a different type to be later converted by an Algorithm
+  60.2.30: toby 2011-02-15 changed doxygen header on doc pages to reflect series number
+  60.2.29: toby 2011-02-15 [merge] fixed a number of bugs with new configuration and streamlined new internal protobuf message passing
+  60.2.28: toby 2011-02-14 working on new configuration for MOOS apps that gives command line support and example .moos block
+  60.2.27: toby 2011-02-10 finished major work cleaning out MOOS modules and dependencies and reworking configuration for pAcommsHandler
+  60.2.26: toby 2011-02-09 [merge] changed manipulator handling to separate ManipulatorManager class
+    60.3.1: toby 2011-02-09 fixed lowercase enumerations, manipulators, and tcp_share
+  60.2.25: toby 2011-02-09 missed file from previous commit
+  60.2.24: toby 2011-02-09 work on new protobuf configuration for pAcommsHandler
+  60.2.23: toby 2011-02-03 partial progress towards protobuf configuration in pAcommsHandler and goby
+  60.2.22: toby 2011-02-02 reworking driver base to use protobuf configuration object and bringing documentation into line
+  60.2.21: toby 2011-01-22 corrected entry in CMakeLists
+  60.2.20: toby 2011-01-22 replaced libamac Slot and libqueue QueueKey and QueueConfig with Google Protocol Buffers equivalents
+  60.2.19: toby 2011-01-19 replaced ModemMessage with a variety of protocol buffers messages
+67: toby 2011-02-17 [merge] added XML files for DCCL
+  66.2.1: toby schneider 2011-02-17 [merge] updated DEPENDENCIES for Debian 6
+    66.1.1: toby schneider 2011-02-17 updated DEPENDENCIES for Debian 6
+66: toby 2011-02-17 fixed error in DEPENDENCIES script with Ubuntu PPA for Wt
 65: toby 2011-02-15 minor edit to Installing Goby doc
 64: toby 2011-02-14 fixed type in main doxygen page
 63: toby 2011-02-14 updated main document page
@@ -234,7 +461,7 @@ First release of Goby; unless you specifically need backwards compatibility, I s
   43.1.1: toby 2010-07-19 added preliminary work for tcp_server option
 43: toby 2010-07-15 [merge] merged lp:~tes/goby/time_fix with namespace cleanup and time source consistency
   41.1.4: toby 2010-07-15 fixed some Doxygen comments to reflect new namespaces
-  41.1.3: toby 2010-07-14 reduced excessive number of namespaces and changed namespaces to reflect file structure: goby::acomms and goby::util. Also changed some class names to resolve the resulting ...
+  41.1.3: toby 2010-07-14 reduced excessive number of namespaces and changed namespaces to reflect file structure: goby::acomms and goby::util. Also changed some class names to resolve the resulting ambiguity.
   41.1.2: toby 2010-07-14 put all of goby into goby:: namespace and renamed some libraries
   41.1.1: toby 2010-07-13 calls to time should uniformly use boost date_time (and util/gtime.h helper functions)
 42: Chris Murphy 2010-07-14 Minor COPYING tweak to test chrismurf commit.
@@ -275,7 +502,7 @@ First release of Goby; unless you specifically need backwards compatibility, I s
 12: toby schneider 2010-01-03 added <hex/> tag for DCCL
 11: toby 2009-12-21 documentation!
 10: toby schneider 2009-12-19 documentation work
-9: toby schneider 2009-12-17 worked on making driver a base class so that different types of modems can have their own driver class (like MMDriver for the WHOI Micro-Modem). also did a good deal of d...
+9: toby schneider 2009-12-17 worked on making driver a base class so that different types of modems can have their own driver class (like MMDriver for the WHOI Micro-Modem). also did a good deal of doxygen
 8: toby schneider 2009-12-16 added some namespaces and made consistent header files
 7: toby schneider 2009-12-11 [merge] reworked structure to be more in line with linux conventions
   6.1.1: toby schneider 2009-12-10 working on cleaning up structure

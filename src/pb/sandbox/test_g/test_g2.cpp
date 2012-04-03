@@ -1,5 +1,5 @@
 #include "goby/pb/core.h"
-#include "goby/util/time.h"
+#include "goby/common/time.h"
 #include "test.pb.h"
 #include <ctime>
 #include <google/protobuf/text_format.h>

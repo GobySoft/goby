@@ -21,35 +21,35 @@
 #include <Wt/Dbo/backend/Sqlite3>
 
 #include "goby/util/as.h"
-#include "goby/util/time.h"
-#include "goby/util/logger.h"
+#include "goby/common/time.h"
+#include "goby/common/logger.h"
 #include "wt_dbo_overloads.h"
 #include "goby/pb/dbo/dbo_manager.h"
 
 #include "dbo_plugin.h"
 
-using namespace goby::util::logger;
+using namespace goby::common::logger;
 
-goby::core::DBOManager* goby::core::DBOManager::inst_ = 0;
+goby::common::DBOManager* goby::common::DBOManager::inst_ = 0;
 
-using goby::util::goby_time;
+using goby::common::goby_time;
 using goby::glog;
 
 
 // singleton class, use this to get pointer
-goby::core::DBOManager* goby::core::DBOManager::get_instance()
+goby::common::DBOManager* goby::common::DBOManager::get_instance()
 {
-    if(!inst_) inst_ = new goby::core::DBOManager();
+    if(!inst_) inst_ = new goby::common::DBOManager();
     return(inst_);
 }
 
-void goby::core::DBOManager::shutdown()
+void goby::common::DBOManager::shutdown()
 {
     if(inst_) delete inst_;
 }
 
 
-goby::core::DBOManager::DBOManager()
+goby::common::DBOManager::DBOManager()
        :connection_(0),
         session_(0),
         transaction_(0),
@@ -57,10 +57,10 @@ goby::core::DBOManager::DBOManager()
         static_tables_created_(false),
         raw_id_table_name_("_raw")
 {
-    glog.add_group("dbo", goby::util::Colors::lt_green, "database");
+    glog.add_group("dbo", goby::common::Colors::lt_green, "database");
 }
 
-goby::core::DBOManager::~DBOManager()
+goby::common::DBOManager::~DBOManager()
 {
     if(transaction_) delete transaction_;
     if(connection_) delete connection_;
@@ -68,7 +68,7 @@ goby::core::DBOManager::~DBOManager()
 }
 
 
-void goby::core::DBOManager::add_raw(MarshallingScheme marshalling_scheme,
+void goby::common::DBOManager::add_raw(MarshallingScheme marshalling_scheme,
                                      const std::string& identifier,
                                      const void* data,
                                      int size,
@@ -85,7 +85,7 @@ void goby::core::DBOManager::add_raw(MarshallingScheme marshalling_scheme,
 
     std::string bytes = std::string(static_cast<const char*>(data), size);
     new_entry->bytes = std::vector<unsigned char>(bytes.begin(), bytes.end());
-    new_entry->time = goby::util::as<std::string>(goby::util::goby_time());
+    new_entry->time = goby::util::as<std::string>(goby_time());
                 
     session_->add(new_entry);
 
@@ -94,7 +94,7 @@ void goby::core::DBOManager::add_raw(MarshallingScheme marshalling_scheme,
         plugin->add_message(i, identifier, data, size);
 }
 
-void goby::core::DBOManager::commit()
+void goby::common::DBOManager::commit()
 {
     glog.is(VERBOSE) &&
         glog << group("dbo") << "starting commit" << std::endl;
@@ -112,7 +112,7 @@ void goby::core::DBOManager::commit()
 
 
 
-void goby::core::DBOManager::connect(const std::string& db_name /* = "" */)
+void goby::common::DBOManager::connect(const std::string& db_name /* = "" */)
 {
     if(!db_name.empty())
         db_name_ = db_name;
@@ -147,7 +147,7 @@ void goby::core::DBOManager::connect(const std::string& db_name /* = "" */)
     }
 }
 
-void goby::core::DBOManager::reset_session()
+void goby::common::DBOManager::reset_session()
 {
     commit();
     glog.is(VERBOSE) &&
@@ -156,7 +156,7 @@ void goby::core::DBOManager::reset_session()
 }
             
 
-void goby::core::DBOManager::map_types()
+void goby::common::DBOManager::map_types()
 {
     session_->mapClass<RawEntry>(raw_id_table_name_.c_str());
     
@@ -168,10 +168,10 @@ void goby::core::DBOManager::map_types()
     }
 }
 
-void goby::core::DBOManager::create_indices()
+void goby::common::DBOManager::create_indices()
 {
 #if WT_VERSION >= (((3 & 0xff) << 24) | ((1 & 0xff) << 16) | ((3 & 0xff) << 8))    
-    goby::core::DBOManager::get_instance()->session()->execute("CREATE INDEX IF NOT EXISTS " + raw_id_table_name_ + "_id_index ON " + raw_id_table_name_ + " (raw_id)");
+    goby::common::DBOManager::get_instance()->session()->execute("CREATE INDEX IF NOT EXISTS " + raw_id_table_name_ + "_id_index ON " + raw_id_table_name_ + " (raw_id)");
     
     std::set<DBOPlugin*> plugins = plugin_factory_.plugins();
     BOOST_FOREACH(DBOPlugin* plugin, plugins)    
@@ -186,7 +186,7 @@ void goby::core::DBOManager::create_indices()
 }
 
 
-void goby::core::DBOManager::set_table_prefix(const std::string& prefix)
+void goby::common::DBOManager::set_table_prefix(const std::string& prefix)
 {
     raw_id_table_name_ = prefix + "_raw";
     

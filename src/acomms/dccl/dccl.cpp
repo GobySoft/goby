@@ -1,21 +1,25 @@
-// copyright 2009-2011 t. schneider tes@mit.edu
+// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+//                     Massachusetts Institute of Technology (2007-)
+//                     Woods Hole Oceanographic Institution (2007-)
+//                     Goby Developers Team (https://launchpad.net/~goby-dev)
 // 
-// this file is part of the Dynamic Compact Control Language (DCCL),
-// the goby-acomms codec. goby-acomms is a collection of libraries 
-// for acoustic underwater networking
 //
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// This file is part of the Goby Underwater Autonomy Project Libraries
+// ("The Goby Libraries").
+//
+// The Goby Libraries are free software: you can redistribute them and/or modify
+// them under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// This software is distributed in the hope that it will be useful,
+// The Goby Libraries are distributed in the hope that they will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Lesser General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
-// along with this software.  If not, see <http://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU Lesser General Public License
+// along with Goby.  If not, see <http://www.gnu.org/licenses/>.
+
 
 #include <algorithm>
 
@@ -23,10 +27,17 @@
 #include <boost/assign.hpp>
 
 #ifdef HAS_CRYPTOPP
+#if CRYPTOPP_PATH_USES_PLUS_SIGN
 #include <crypto++/filters.h>
 #include <crypto++/sha.h>
 #include <crypto++/modes.h>
 #include <crypto++/aes.h>
+#else
+#include <cryptopp/filters.h>
+#include <cryptopp/sha.h>
+#include <cryptopp/modes.h>
+#include <cryptopp/aes.h>
+#endif // CRYPTOPP_PATH_USES_PLUS_SIGN
 #endif // HAS_CRYPTOPP
 
 #include "dccl.h"
@@ -35,12 +46,12 @@
 #include "goby/common/protobuf/acomms_option_extensions.pb.h"
 //#include "goby/common/header.pb.h"
 
-using goby::util::goby_time;
+using goby::common::goby_time;
 using goby::util::as;
 using goby::util::hex_encode;
 using goby::util::hex_decode;
 using goby::glog;
-using namespace goby::util::logger;
+using namespace goby::common::logger;
 
 using google::protobuf::FieldDescriptor;
 using google::protobuf::Descriptor;
@@ -64,8 +75,8 @@ goby::acomms::DCCLCodec::DCCLCodec()
     glog_encode_group_ = "goby::acomms::dccl::encode";
     glog_decode_group_ = "goby::acomms::dccl::decode";
     
-    glog.add_group(glog_encode_group_, util::Colors::lt_magenta);
-    glog.add_group(glog_decode_group_, util::Colors::lt_blue);
+    glog.add_group(glog_encode_group_, common::Colors::lt_magenta);
+    glog.add_group(glog_decode_group_, common::Colors::lt_blue);
 
     set_default_codecs();
 }
@@ -170,9 +181,9 @@ void goby::acomms::DCCLCodec::encode(std::string* bytes, const google::protobuf:
     {
         std::stringstream ss;
         
-        ss << "Message " << desc->full_name() << " failed to encode. Reason: " << e.what() << std::endl;
+        ss << "Message " << desc->full_name() << " failed to encode. Reason: " << e.what();
 
-        glog.is(WARN) && glog <<  ss.str();        
+        glog.is(DEBUG1) && glog << group(glog_encode_group_) << warn << ss.str() << std::endl;  
         throw(DCCLException(ss.str()));
     }
 
@@ -279,7 +290,7 @@ void goby::acomms::DCCLCodec::decode(const std::string& bytes, google::protobuf:
         
         ss << "Message " << hex_encode(bytes) <<  " failed to decode. Reason: " << e.what() << std::endl;
 
-        glog.is(WARN) && glog <<  ss.str();        
+        glog.is(DEBUG1) && glog << group(glog_decode_group_) << warn << ss.str() << std::endl;  
         throw(DCCLException(ss.str()));
     }    
 
@@ -316,6 +327,9 @@ void goby::acomms::DCCLCodec::validate(const google::protobuf::Descriptor* desc)
             throw(DCCLException("`dccl.id` " + as<std::string>(dccl_id) + " is already in use by Message " + id2desc_.find(dccl_id)->second->full_name()));
         else
             id2desc_.insert(std::make_pair(id(desc), desc));
+
+        glog.is(DEBUG1) && glog << group(glog_encode_group_) << "Successfully validated message of type: " << desc->full_name() << std::endl;
+
     }
     catch(DCCLException& e)
     {
@@ -326,9 +340,9 @@ void goby::acomms::DCCLCodec::validate(const google::protobuf::Descriptor* desc)
         catch(DCCLException& e)
         { }
         
-        glog.is(WARN) && glog << "Message " << desc->full_name() << " failed validation. Reason: "
-                              << e.what() <<  "\n"
-                              << "If possible, information about the Message are printed above. " << std::endl;
+        glog.is(DEBUG1) && glog << group(glog_encode_group_) << "Message " << desc->full_name() << ": " << desc << " failed validation. Reason: "
+                                << e.what() <<  "\n"
+                                << "If possible, information about the Message are printed above. " << std::endl;
 
         throw;
     }
@@ -406,7 +420,7 @@ void goby::acomms::DCCLCodec::info(const google::protobuf::Descriptor* desc, std
     }
     catch(DCCLException& e)
     {
-        glog.is(WARN) && glog << "Message " << desc->full_name() << " cannot provide information due to invalid configuration. Reason: " << e.what() << std::endl;
+        glog.is(DEBUG1) && glog << group(glog_encode_group_) << warn << "Message " << desc->full_name() << " cannot provide information due to invalid configuration. Reason: " << e.what() << std::endl;
     }
         
 }
@@ -489,14 +503,14 @@ void goby::acomms::DCCLCodec::process_cfg()
         SHA256 hash;
         StringSource unused(cfg_.crypto_passphrase(), true, new HashFilter(hash, new StringSink(crypto_key_)));
         
-        glog.is(DEBUG1) && glog << group(glog_encode_group_) << "cryptography enabled with given passphrase" << std::endl;
+        glog.is(DEBUG1) && glog << group(glog_encode_group_) << "Cryptography enabled with given passphrase" << std::endl;
 #else
-        glog.is(WARN) && glog << group(glog_encode_group_) << "cryptography disabled because Goby was compiled without support of Crypto++. Install Crypto++ and recompile to enable cryptography." << std::endl;
+        glog.is(DEBUG1) && glog << group(glog_encode_group_) << warn << "Cryptography disabled because Goby was compiled without support of Crypto++. Install Crypto++ and recompile to enable cryptography." << std::endl;
 #endif
     }
     else
     {
-        glog.is(DEBUG1) && glog << group(glog_encode_group_) << "cryptography disabled, set crypto_passphrase to enable." << std::endl;
+        glog.is(DEBUG1) && glog << group(glog_encode_group_) << "Cryptography disabled, set crypto_passphrase to enable." << std::endl;
     }
     
 }

@@ -1,17 +1,24 @@
-// copyright 2011 t. schneider tes@mit.edu
+// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+//                     Massachusetts Institute of Technology (2007-)
+//                     Woods Hole Oceanographic Institution (2007-)
+//                     Goby Developers Team (https://launchpad.net/~goby-dev)
 // 
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+//
+// This file is part of the Goby Underwater Autonomy Project Binaries
+// ("The Goby Binaries").
+//
+// The Goby Binaries are free software: you can redistribute them and/or modify
+// them under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// This software is distributed in the hope that it will be useful,
+// The Goby Binaries are distributed in the hope that they will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this software.  If not, see <http://www.gnu.org/licenses/>.
+// along with Goby.  If not, see <http://www.gnu.org/licenses/>.
 
 #ifndef LIAISONSCOPE20110609H
 #define LIAISONSCOPE20110609H
@@ -38,26 +45,31 @@ namespace Wt
 
 namespace goby
 {
-    namespace core
+    namespace common
     {
         class LiaisonScope : public LiaisonContainer, public goby::moos::MOOSNode
         {
             
           public:
-            LiaisonScope(ZeroMQService* service, Wt::WTimer* timer_);
+            LiaisonScope(ZeroMQService* zeromq_service,
+                         Wt::WTimer* timer_, Wt::WContainerWidget* parent = 0);
             
             void moos_inbox(CMOOSMsg& msg);
-            std::vector< Wt::WStandardItem * > create_row(CMOOSMsg& msg);
-
+            void update_row(CMOOSMsg& msg, const std::vector<Wt::WStandardItem *>& items);
+            std::vector<Wt::WStandardItem *> create_row(CMOOSMsg& msg);
+            void attach_pb_rows(const std::vector<Wt::WStandardItem *>& items,
+                                CMOOSMsg& msg);
+            
+            void loop();
+            
           private:
- 
-           
-
             void handle_global_key(Wt::WKeyEvent event);
 
           private:
+            ZeroMQService* zeromq_service_;
             const protobuf::MOOSScopeConfig& moos_scope_config_;
 
+            Wt::WStringListModel* history_model_;
             Wt::WStandardItemModel* model_;
             Wt::WSortFilterProxyModel* proxy_;
 
@@ -66,14 +78,12 @@ namespace goby
             struct ControlsContainer : Wt::WContainerWidget
             {
                 ControlsContainer(Wt::WTimer* timer,
-                                  bool is_paused,
                                   Wt::WContainerWidget* parent = 0);
 
                 void handle_play_pause(bool toggle_state);
 
                 
                 Wt::WTimer* timer_;
-                bool is_paused_;
 
                 Wt::WPushButton* play_pause_button_;
                 Wt::WText* play_state_;
@@ -83,8 +93,9 @@ namespace goby
 
             struct SubscriptionsContainer : Wt::WContainerWidget
             {
-                SubscriptionsContainer(MOOSNode* node,
+                SubscriptionsContainer(LiaisonScope* node,
                                        Wt::WStandardItemModel* model,
+                                       Wt::WStringListModel* history_model,
                                        std::map<std::string, int>& msg_map,
                                        Wt::WContainerWidget* parent = 0);
 
@@ -92,10 +103,12 @@ namespace goby
                 void handle_remove_subscription(Wt::WPushButton* clicked_anchor);
                 void add_subscription(std::string type);
 
-                MOOSNode* node_;
-                Wt::WStandardItemModel* model_;
-                std::map<std::string, int>& msg_map_;
+                LiaisonScope* node_;
                 
+                Wt::WStandardItemModel* model_;
+                Wt::WStringListModel* history_model_;
+                std::map<std::string, int>& msg_map_;
+            
                 Wt::WText* add_text_;
                 Wt::WLineEdit* subscribe_filter_text_;
                 Wt::WPushButton* subscribe_filter_button_;
@@ -115,7 +128,7 @@ namespace goby
 
                 void handle_add_history();
                 void handle_remove_history(std::string type);
-                void add_history(const goby::core::protobuf::MOOSScopeConfig::HistoryConfig& config);
+                void add_history(const goby::common::protobuf::MOOSScopeConfig::HistoryConfig& config);
                 void toggle_history_plot(Wt::WWidget* plot);
 
 
@@ -176,7 +189,7 @@ namespace goby
 
             Wt::WTreeView* scope_tree_view_;
 
-            // maps CMOOSMsg::GetKey into column
+            // maps CMOOSMsg::GetKey into row
             std::map<std::string, int> msg_map_;
 
             WContainerWidget* bottom_fill_;
@@ -189,7 +202,13 @@ namespace goby
       class LiaisonScopeMOOSTreeView : public Wt::WTreeView
         {
           public:
-            LiaisonScopeMOOSTreeView(const protobuf::MOOSScopeConfig& moos_scope_config, Wt::WContainerWidget* parent = 0); 
+            LiaisonScopeMOOSTreeView(const protobuf::MOOSScopeConfig& moos_scope_config, Wt::WContainerWidget* parent = 0);
+
+          private:
+            
+            //           void handle_double_click(const Wt::WModelIndex& index, const Wt::WMouseEvent& event);
+
+            
         };
 
         class LiaisonScopeMOOSModel : public Wt::WStandardItemModel

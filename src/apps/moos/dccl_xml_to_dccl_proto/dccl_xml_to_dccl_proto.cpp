@@ -1,17 +1,24 @@
-// copyright 2011 t. schneider tes@mit.edu
+// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+//                     Massachusetts Institute of Technology (2007-)
+//                     Woods Hole Oceanographic Institution (2007-)
+//                     Goby Developers Team (https://launchpad.net/~goby-dev)
+// 
 //
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// This file is part of the Goby Underwater Autonomy Project Binaries
+// ("The Goby Binaries").
+//
+// The Goby Binaries are free software: you can redistribute them and/or modify
+// them under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// This software is distributed in the hope that it will be useful,
+// The Goby Binaries are distributed in the hope that they will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this software.  If not, see <http://www.gnu.org/licenses/>.
+// along with Goby.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "goby/moos/transitional/dccl_transitional.h"
 
@@ -35,7 +42,30 @@ int main(int argc, char* argv[])
             exit(EXIT_FAILURE);
     }
 
+    goby::glog.add_stream(goby::common::protobuf::GLogConfig::VERBOSE, &std::cerr);
+    google::protobuf::compiler::DiskSourceTree disk_source_tree;
+    google::protobuf::compiler::SourceTreeDescriptorDatabase source_database(&disk_source_tree);
+
+    class TranslatorErrorCollector: public google::protobuf::compiler::MultiFileErrorCollector
+    {
+        void AddError(const std::string & filename, int line, int column, const std::string & message)
+        {
+            goby::glog.is(goby::common::logger::DIE) &&
+                goby::glog << "File: " << filename
+                           << " has error (line: " << line << ", column: " << column << "): "
+                           << message << std::endl;
+        }       
+    };
+                
+    TranslatorErrorCollector error_collector;
+
+    
     std::cerr << "creating DCCLTransitionalCodec using xml file: [" << xml_file << "]" << std::endl;
+
+    source_database.RecordErrorsTo(&error_collector);
+    disk_source_tree.MapPath("/", "/");
+    goby::util::DynamicProtobufManager::add_database(&source_database);
+
     
     goby::transitional::DCCLTransitionalCodec dccl;
 
@@ -44,6 +74,8 @@ int main(int argc, char* argv[])
     cfg.mutable_transitional_cfg()->set_generated_proto_dir(proto_folder);
     dccl.convert_to_v2_representation(&cfg);
 
+    
+    
     std::cout << "received: " << cfg.DebugString();
     
     std::cerr << "wrote proto files" << std::endl;

@@ -1,18 +1,25 @@
-// copyright 2010-2011 t. schneider tes@mit.edu
+// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+//                     Massachusetts Institute of Technology (2007-)
+//                     Woods Hole Oceanographic Institution (2007-)
+//                     Goby Developers Team (https://launchpad.net/~goby-dev)
 // 
 //
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// This file is part of the Goby Underwater Autonomy Project Libraries
+// ("The Goby Libraries").
+//
+// The Goby Libraries are free software: you can redistribute them and/or modify
+// them under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// This software is distributed in the hope that it will be useful,
+// The Goby Libraries are distributed in the hope that they will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Lesser General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
-// along with this software.  If not, see <http://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU Lesser General Public License
+// along with Goby.  If not, see <http://www.gnu.org/licenses/>.
+
 
 #ifndef ZEROMQNODE20110413H
 #define ZEROMQNODE20110413H
@@ -28,11 +35,11 @@
 #include <zmq.hpp>
 
 #include "core_constants.h"
-#include "goby/util/logger.h"
+#include "goby/common/logger.h"
 
 namespace goby
 {
-    namespace core
+    namespace common
     {
         class ZeroMQSocket
         {
@@ -121,7 +128,7 @@ namespace goby
                 cfg_.MergeFrom(cfg);
             }
 
-            void subscribe_all(int socket_id);            
+            void subscribe_all(int socket_id);
             void unsubscribe_all(int socket_id);            
             
             void send(MarshallingScheme marshalling_scheme,
@@ -147,7 +154,7 @@ namespace goby
                                        int),
                     C* obj)
             {
-                goby::glog.is(goby::util::logger::DEBUG1, util::logger_lock::lock) &&
+                goby::glog.is(goby::common::logger::DEBUG1, common::logger_lock::lock) &&
                     goby::glog << "ZeroMQService: made connection for: "
                                << typeid(obj).name() << std::endl << unlock;
                 connect_inbox_slot(boost::bind(mem_func, obj, _1, _2, _3, _4, _5));

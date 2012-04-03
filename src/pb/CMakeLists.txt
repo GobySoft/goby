@@ -28,6 +28,8 @@ endif(GCC_COMPILER_VERSION MATCHES ".*4\\.4\\.4\\-14ubuntu5.*")
 file(GLOB PROTOS protobuf/*.proto)
 protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${PROTOS})
 
+set(GOBY_DBO_MAX_PROTOBUF_TYPES 16 CACHE INTEGER "Max number of compiled in Protobuf Types allowed in the goby_dbo library")
+
 file(GLOB DBO_SRC dbo/*.cpp)
 file(GLOB PB_SRC *.cpp)
 

@@ -1,25 +1,24 @@
-// t. schneider tes@mit.edu 06.05.08
-// ocean engineering graudate student - mit / whoi joint program
-// massachusetts institute of technology (mit)
-// laboratory for autonomous marine sensing systems (lamss)
+// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+//                     Massachusetts Institute of Technology (2007-)
+//                     Woods Hole Oceanographic Institution (2007-)
+//                     Goby Developers Team (https://launchpad.net/~goby-dev)
 // 
-// this is pTranslator.cpp, part of pTranslator 
 //
-// see the readme file within this directory for information
-// pertaining to usage and purpose of this script.
+// This file is part of the Goby Underwater Autonomy Project Binaries
+// ("The Goby Binaries").
 //
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// The Goby Binaries are free software: you can redistribute them and/or modify
+// them under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// This software is distributed in the hope that it will be useful,
+// The Goby Binaries are distributed in the hope that they will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this software.  If not, see <http://www.gnu.org/licenses/>.
+// along with Goby.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <dlfcn.h>
 
@@ -29,7 +28,7 @@
 
 
 using goby::glog;
-using namespace goby::util::logger;
+using namespace goby::common::logger;
 using goby::moos::operator<<;
 
 pTranslatorConfig CpTranslator::cfg_;
@@ -48,7 +47,7 @@ void CpTranslator::delete_instance()
 }
 
 CpTranslator::CpTranslator()
-    : TesMoosApp(&cfg_),
+    : GobyMOOSApp(&cfg_),
       source_database_(&disk_source_tree_),
       translator_(cfg_.translator_entry(),
                   cfg_.common().lat_origin(),
@@ -70,9 +69,8 @@ CpTranslator::CpTranslator()
         void* handle = dlopen(cfg_.load_shared_library(i).c_str(), RTLD_LAZY);
         if(!handle)
         {
-            glog.is(DIE) &&
-                glog << "Failed ... check path provided or add to /etc/ld.so.conf "
-                     << "or LD_LIBRARY_PATH" << std::endl;
+            glog << die << "Failed ... check path provided or add to /etc/ld.so.conf "
+                 << "or LD_LIBRARY_PATH" << std::endl;
         }
         dl_handles.push_back(handle);
     }
@@ -106,7 +104,7 @@ CpTranslator::CpTranslator()
            goby::moos::protobuf::TranslatorEntry::Trigger::TRIGGER_PUBLISH)
         {
             // subscribe for trigger publish variables
-            TesMoosApp::subscribe(cfg_.translator_entry(i).trigger().moos_var(),
+            GobyMOOSApp::subscribe(cfg_.translator_entry(i).trigger().moos_var(),
                                   boost::bind(&CpTranslator::create_on_publish,
                                               this, _1, cfg_.translator_entry(i)));
         }
@@ -131,6 +129,14 @@ CpTranslator::CpTranslator()
             subscribe(cfg_.translator_entry(i).create(j).moos_var());
         }
     }
+
+
+    for(int i = 0, m = cfg_.multiplex_create_moos_var_size(); i < m; ++i)
+    {
+        GobyMOOSApp::subscribe(cfg_.multiplex_create_moos_var(i),
+                              &CpTranslator::create_on_multiplex_publish, this);
+    }
+    
 }
 
 CpTranslator::~CpTranslator()
@@ -155,7 +161,47 @@ void CpTranslator::create_on_publish(const CMOOSMsg& trigger_msg,
     if(!entry.trigger().has_mandatory_content() ||
        trigger_msg.GetString().find(entry.trigger().mandatory_content()) != std::string::npos)
         do_translation(entry);
+    else
+        glog.is(VERBOSE) && glog << "Message missing mandatory content for: " << entry.protobuf_name() << std::endl;
+        
 }
+
+void CpTranslator::create_on_multiplex_publish(const CMOOSMsg& moos_msg)
+{
+    std::string moos_msg_str = moos_msg.GetString(); 
+    size_t first_space_pos = moos_msg_str.find(' ');
+
+    std::string protobuf_name = moos_msg_str.substr(0, first_space_pos - 0);
+    std::string message_contents = moos_msg_str.substr(first_space_pos);
+
+    boost::trim(protobuf_name);
+    boost::trim(message_contents);
+    
+    boost::shared_ptr<google::protobuf::Message> msg =
+        goby::util::DynamicProtobufManager::new_protobuf_message(protobuf_name);
+
+    if(&*msg == 0)
+    {
+        glog.is(WARN) &&
+            glog << "Multiplex receive failed: Unknown Protobuf type: " << protobuf_name << "; be sure it is compiled in or directly loaded into the goby::util::DynamicProtobufManager." << std::endl;
+        return;
+    }
+
+    goby::moos::MOOSTranslation<goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_TEXT_FORMAT>::parse(message_contents, &*msg);
+
+    std::multimap<std::string, CMOOSMsg> out;    
+
+    out = translator_.protobuf_to_inverse_moos(*msg);
+    
+    for(std::multimap<std::string, CMOOSMsg>::iterator it = out.begin(), n = out.end();
+        it != n; ++it)
+    {
+        glog.is(VERBOSE) && glog << "Inverse Publishing: " << it->second << std::endl;
+        publish(it->second);
+    }
+}
+
+
 
 void CpTranslator::create_on_timer(const boost::system::error_code& error,
                                    const goby::moos::protobuf::TranslatorEntry& entry,
@@ -179,28 +225,27 @@ void CpTranslator::create_on_timer(const boost::system::error_code& error,
 
 void CpTranslator::do_translation(const goby::moos::protobuf::TranslatorEntry& entry)
 {
-    std::multimap<std::string, CMOOSMsg> out;
-
     boost::shared_ptr<google::protobuf::Message> created_message =
         translator_.moos_to_protobuf<boost::shared_ptr<google::protobuf::Message> >(
             dynamic_vars().all(), entry.protobuf_name());
 
     glog.is(DEBUG1) &&
         glog << "Created message: \n" << created_message->DebugString() << std::endl;
-    
-    
-    out = translator_.protobuf_to_moos(*created_message);
 
+    do_publish(created_message);
+}
+
+void CpTranslator::do_publish(boost::shared_ptr<google::protobuf::Message> created_message)   
+{
+    std::multimap<std::string, CMOOSMsg> out;    
+
+    out = translator_.protobuf_to_moos(*created_message);
+    
     for(std::multimap<std::string, CMOOSMsg>::iterator it = out.begin(), n = out.end();
         it != n; ++it)
     {
         glog.is(VERBOSE) && glog << "Publishing: " << it->second << std::endl;
         publish(it->second);
     }
-
-
-    throw(std::runtime_error(""));
-    
-    
 }
 

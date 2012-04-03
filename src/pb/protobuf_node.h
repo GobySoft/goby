@@ -20,7 +20,7 @@
 #include <boost/function.hpp>
 #include <boost/unordered_map.hpp>
 
-#include "goby/util/logger.h"
+#include "goby/common/logger.h"
 #include "goby/util/dynamic_protobuf_manager.h"
 #include "goby/common/core_helpers.h"
 
@@ -29,14 +29,14 @@
 
 namespace goby
 {
-    namespace core
+    namespace pb
     {
-        class ProtobufNode : public NodeInterface<google::protobuf::Message>
+        class ProtobufNode : public goby::common::NodeInterface<google::protobuf::Message>
         {
 
           protected:
-          ProtobufNode(ZeroMQService* service)
-              : NodeInterface<google::protobuf::Message>(service)
+          ProtobufNode(common::ZeroMQService* service)
+              : common::NodeInterface<google::protobuf::Message>(service)
             { }
             
             virtual ~ProtobufNode()
@@ -53,7 +53,7 @@ namespace goby
 
             
           private:
-            void inbox(MarshallingScheme marshalling_scheme,
+            void inbox(common::MarshallingScheme marshalling_scheme,
                        const std::string& identifier,
                        const void* data,
                        int size,
@@ -65,7 +65,7 @@ namespace goby
         class StaticProtobufNode : public ProtobufNode
         {
           public:
-            StaticProtobufNode(ZeroMQService* service)
+          StaticProtobufNode(common::ZeroMQService* service)
                 : ProtobufNode(service)
             { }
                         
@@ -140,7 +140,7 @@ namespace goby
         class DynamicProtobufNode : public ProtobufNode
         {
           protected:  
-            DynamicProtobufNode(ZeroMQService* service)
+          DynamicProtobufNode(common::ZeroMQService* service)
                 : ProtobufNode(service)
             { }
             
@@ -163,7 +163,7 @@ namespace goby
 
 
 template<typename ProtoBufMessage>
-void goby::core::StaticProtobufNode::on_receipt(
+void goby::pb::StaticProtobufNode::on_receipt(
     int socket_id,
     boost::function<void (const ProtoBufMessage&)> handler
     /*= boost::function<void (const ProtoBufMessage&)>()*/)
@@ -172,7 +172,7 @@ void goby::core::StaticProtobufNode::on_receipt(
     
     const std::string& protobuf_type_name = ProtoBufMessage::descriptor()->full_name();
 
-    glog.is(goby::util::logger::DEBUG1) && 
+    glog.is(goby::common::logger::DEBUG1) && 
         glog << "subscribing for " << protobuf_type_name  << std::endl;
     
     // enforce one handler for each type 
@@ -181,7 +181,7 @@ void goby::core::StaticProtobufNode::on_receipt(
     {
         if(protobuf_type_name == p.second->type_name())
         {
-            glog.is(goby::util::logger::WARN) &&
+            glog.is(goby::common::logger::WARN) &&
                 glog << "already have subscription for type: "
                      << protobuf_type_name << std::endl;
             return;
@@ -195,7 +195,7 @@ void goby::core::StaticProtobufNode::on_receipt(
 }
 
 template<typename ProtoBufMessage>
-void goby::core::StaticProtobufNode::subscribe(
+void goby::pb::StaticProtobufNode::subscribe(
     int socket_id,
     boost::function<void (const ProtoBufMessage&)> handler
     /*= boost::function<void (const ProtoBufMessage&)>()*/)
@@ -205,9 +205,9 @@ void goby::core::StaticProtobufNode::subscribe(
     ProtobufNode::subscribe(protobuf_type_name, socket_id);
 }
 
-/// See goby::core::StaticProtobufNode::newest()
+/// See goby::pb::StaticProtobufNode::newest()
 template<typename ProtoBufMessage>
-const ProtoBufMessage& goby::core::StaticProtobufNode::newest() const 
+const ProtoBufMessage& goby::pb::StaticProtobufNode::newest() const 
 {
     // RTTI needed so we can store subscriptions with a common (non-template) base but also
     // return the subclass requested

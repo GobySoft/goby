@@ -1,21 +1,25 @@
-// copyright 2009-2011 t. schneider tes@mit.edu
+// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+//                     Massachusetts Institute of Technology (2007-)
+//                     Woods Hole Oceanographic Institution (2007-)
+//                     Goby Developers Team (https://launchpad.net/~goby-dev)
 // 
-// this file is part of the Dynamic Compact Control Language (DCCL),
-// the goby-acomms codec. goby-acomms is a collection of libraries 
-// for acoustic underwater networking
 //
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// This file is part of the Goby Underwater Autonomy Project Libraries
+// ("The Goby Libraries").
+//
+// The Goby Libraries are free software: you can redistribute them and/or modify
+// them under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// This software is distributed in the hope that it will be useful,
+// The Goby Libraries are distributed in the hope that they will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Lesser General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
-// along with this software.  If not, see <http://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU Lesser General Public License
+// along with Goby.  If not, see <http://www.gnu.org/licenses/>.
+
 
 #ifndef DCCLFIELDCODEC20110322H
 #define DCCLFIELDCODEC20110322H
@@ -135,7 +139,7 @@ namespace goby
             void base_run_hooks(const google::protobuf::Message& msg, MessagePart part);
 
             /// \brief Calculate the size (in bits) of a part of the base message when it is encoded
-             ///
+            ///
             /// \param bit_size Pointer to unsigned integer to store the result.
             /// \param msg the DCCL Message of which to calculate the size
             /// \param part part of the Message to calculate the size of
@@ -202,7 +206,7 @@ namespace goby
             /// \param wire_values Should be set to the converted field_values
             /// \param field_values Values to convert to the appropriate wire_values
             void field_pre_encode_repeated(std::vector<boost::any>* wire_values,
-                                          const std::vector<boost::any>& field_values)
+                                           const std::vector<boost::any>& field_values)
             { any_pre_encode_repeated(wire_values, field_values); }
             
             // traverse const
@@ -213,8 +217,8 @@ namespace goby
             /// \param field_value Value to encode (FieldType)
             /// \param field Protobuf descriptor to the field to encode. Set to 0 for base message.
             void field_encode(Bitset* bits,
-                             const boost::any& field_value,
-                             const google::protobuf::FieldDescriptor* field);
+                              const boost::any& field_value,
+                              const google::protobuf::FieldDescriptor* field);
 
             /// \brief Encode a repeated field.
             ///
@@ -222,8 +226,8 @@ namespace goby
             /// \param field_values Values to encode (FieldType)
             /// \param field Protobuf descriptor to the field. Set to 0 for base message.
             void field_encode_repeated(Bitset* bits,
-                                      const std::vector<boost::any>& field_values,
-                                      const google::protobuf::FieldDescriptor* field);
+                                       const std::vector<boost::any>& field_values,
+                                       const google::protobuf::FieldDescriptor* field);
 
             /// \brief Run hooks on a field
             ///
@@ -231,8 +235,8 @@ namespace goby
             /// \param field_value Value to run hooks on (FieldType)
             /// \param field Protobuf descriptor to the field. Set to 0 for base message.
             void field_run_hooks(bool* b,
-                                const boost::any& field_value,
-                                const google::protobuf::FieldDescriptor* field);
+                                 const boost::any& field_value,
+                                 const google::protobuf::FieldDescriptor* field);
 
             /// \brief Calculate the size of a field
             ///
@@ -240,7 +244,7 @@ namespace goby
             /// \param field_value Value calculate size of (FieldType)
             /// \param field Protobuf descriptor to the field. Set to 0 for base message.
             void field_size(unsigned* bit_size, const boost::any& field_value,
-                           const google::protobuf::FieldDescriptor* field);
+                            const google::protobuf::FieldDescriptor* field);
             
             /// \brief Calculate the size of a repeated field
             ///
@@ -248,7 +252,7 @@ namespace goby
             /// \param field_values Values to calculate size of (FieldType)
             /// \param field Protobuf descriptor to the field. Set to 0 for base message.
             void field_size_repeated(unsigned* bit_size, const std::vector<boost::any>& field_values,
-                                    const google::protobuf::FieldDescriptor* field);
+                                     const google::protobuf::FieldDescriptor* field);
 
             // traverse mutable
             /// \brief Decode a non-repeated field
@@ -257,17 +261,17 @@ namespace goby
             /// \param field_value Location to store decoded value (FieldType)
             /// \param field Protobuf descriptor to the field. Set to 0 for base message.
             void field_decode(Bitset* bits,
-                             boost::any* field_value,
-                             const google::protobuf::FieldDescriptor* field);            
+                              boost::any* field_value,
+                              const google::protobuf::FieldDescriptor* field);            
 
             /// \brief Decode a repeated field
             ///
             /// \param bits Bits to decode. Used bits are consumed (erased) from the least significant end
             /// \param field_values Location to store decoded values (FieldType)
             /// \param field Protobuf descriptor to the field. Set to 0 for base message.
-void field_decode_repeated(Bitset* bits,
-                                      std::vector<boost::any>* field_values,
-                                      const google::protobuf::FieldDescriptor* field);
+            void field_decode_repeated(Bitset* bits,
+                                       std::vector<boost::any>* field_values,
+                                       const google::protobuf::FieldDescriptor* field);
 
             /// \brief Post-decodes a non-repeated (i.e. optional or required) field by converting the WireType (the type used in the encoded DCCL message) representation into the FieldType representation (the Google Protobuf representation). This allows for type-converting codecs.
             ///
@@ -281,7 +285,7 @@ void field_decode_repeated(Bitset* bits,
             /// \param wire_values Should be set to the desired values to translate
             /// \param field_values Will be set to the converted wire_values
             void field_post_decode_repeated(const std::vector<boost::any>& wire_values,
-                                           std::vector<boost::any>* field_values)
+                                            std::vector<boost::any>* field_values)
             { any_post_decode_repeated(wire_values, field_values); }
             
             
@@ -388,7 +392,7 @@ void field_decode_repeated(Bitset* bits,
             /// \param wire_value Value to convert (WireType)
             /// \param field_value Converted value (FieldType)
             virtual void any_post_decode(const boost::any& wire_value,
-                                               boost::any* field_value)
+                                         boost::any* field_value)
             { *field_value = wire_value; }
 
             /// \brief Virtual method for calculating the size of a field (in bits).
@@ -419,19 +423,18 @@ void field_decode_repeated(Bitset* bits,
             virtual unsigned min_size() = 0;
             
 
-            // TODO (tes): make these virtual for end user
-            void any_encode_repeated(Bitset* bits, const std::vector<boost::any>& field_values);
-            void any_decode_repeated(Bitset* repeated_bits, std::vector<boost::any>* field_values);
+            virtual void any_encode_repeated(Bitset* bits, const std::vector<boost::any>& wire_values);
+            virtual void any_decode_repeated(Bitset* repeated_bits, std::vector<boost::any>* field_values);
 
-            void any_pre_encode_repeated(std::vector<boost::any>* wire_values,
-                                    const std::vector<boost::any>& field_values);
+            virtual void any_pre_encode_repeated(std::vector<boost::any>* wire_values,
+                                                 const std::vector<boost::any>& field_values);
             
-            void any_post_decode_repeated(const std::vector<boost::any>& wire_values,
-                                     std::vector<boost::any>* field_values);
+            virtual void any_post_decode_repeated(const std::vector<boost::any>& wire_values,
+                                                  std::vector<boost::any>* field_values);
             
-            unsigned any_size_repeated(const std::vector<boost::any>& field_values);
-            unsigned max_size_repeated();
-            unsigned min_size_repeated();            
+            virtual unsigned any_size_repeated(const std::vector<boost::any>& field_values);
+            virtual unsigned max_size_repeated();
+            virtual unsigned min_size_repeated();
             
 
             friend class BitsHandler;

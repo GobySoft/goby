@@ -1,21 +1,25 @@
-// copyright 2009 t. schneider tes@mit.edu 
+// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+//                     Massachusetts Institute of Technology (2007-)
+//                     Woods Hole Oceanographic Institution (2007-)
+//                     Goby Developers Team (https://launchpad.net/~goby-dev)
+// 
 //
-// this file is part of the Queue Library (libqueue),
-// the goby-acomms message queue manager. goby-acomms is a collection of 
-// libraries for acoustic underwater networking
+// This file is part of the Goby Underwater Autonomy Project Libraries
+// ("The Goby Libraries").
 //
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// The Goby Libraries are free software: you can redistribute them and/or modify
+// them under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// This software is distributed in the hope that it will be useful,
+// The Goby Libraries are distributed in the hope that they will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Lesser General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
-// along with this software.  If not, see <http://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU Lesser General Public License
+// along with Goby.  If not, see <http://www.gnu.org/licenses/>.
+
 
 
 #ifndef QueueManager20091204_H
@@ -153,6 +157,11 @@ namespace goby
              const std::string& glog_out_group() { return glog_out_group_; }
              const std::string& glog_in_group(){ return glog_in_group_; }
 
+             std::string msg_string(const google::protobuf::Descriptor* desc)
+             {
+                 return desc->full_name() + " (" + goby::util::as<std::string>(codec_->id(desc)) + ")";
+             }
+
 
              /// \brief The current modem ID (MAC address) of this node.
             int modem_id() { return modem_id_; }
@@ -221,6 +230,7 @@ namespace goby
                                      const boost::any& extension_value);
 
             
+            
           private:
             static boost::shared_ptr<QueueManager> inst_;
             protobuf::QueuedMessageMeta latest_meta_;
@@ -248,7 +258,42 @@ namespace goby
             std::string glog_in_group_;            
 
             static int count_;
-        };
+
+            class ManipulatorManager
+            {
+              public:
+                void add(unsigned id, goby::acomms::protobuf::Manipulator manip)
+                { manips_.insert(std::make_pair(id, manip)); }            
+                
+                bool has(unsigned id, goby::acomms::protobuf::Manipulator manip) const
+                {
+                    typedef std::multimap<unsigned, goby::acomms::protobuf::Manipulator>::const_iterator iterator;
+                    std::pair<iterator,iterator> p = manips_.equal_range(id);
+
+                    for(iterator it = p.first; it != p.second; ++it)
+                    {
+                        if(it->second == manip)
+                            return true;
+                    }
+
+                    return false;
+                }
+
+                void clear()
+                {
+                    manips_.clear();
+                }
+            
+              private:
+                // manipulator multimap (no_encode, no_decode, etc)
+                // maps DCCL ID (unsigned) onto Manipulator enumeration (xml_config.proto)
+                std::multimap<unsigned, goby::acomms::protobuf::Manipulator> manips_;
+
+            };
+
+            ManipulatorManager manip_manager_;
+            
+         };
 
         /// outputs information about all available messages (same as info_all)
         std::ostream& operator<< (std::ostream& out, const QueueManager& d);

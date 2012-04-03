@@ -1,23 +1,30 @@
-// copyright 2011 t. schneider tes@mit.edu
+// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+//                     Massachusetts Institute of Technology (2007-)
+//                     Woods Hole Oceanographic Institution (2007-)
+//                     Goby Developers Team (https://launchpad.net/~goby-dev)
 // 
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+//
+// This file is part of the Goby Underwater Autonomy Project Binaries
+// ("The Goby Binaries").
+//
+// The Goby Binaries are free software: you can redistribute them and/or modify
+// them under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// This software is distributed in the hope that it will be useful,
+// The Goby Binaries are distributed in the hope that they will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this software.  If not, see <http://www.gnu.org/licenses/>.
+// along with Goby.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "test.pb.h"
 #include "goby/acomms/queue.h"
 #include "goby/acomms/connect.h"
 #include "goby/util/binary.h"
-#include "goby/util/logger.h"
+#include "goby/common/logger.h"
 
 // tests "encode_on_demand" functionality
 
@@ -46,7 +53,7 @@ void request_test(int request_bytes, int expected_encode_requests, int expected_
 
 int main(int argc, char* argv[])
 {    
-    goby::glog.add_stream(goby::util::logger::DEBUG3, &std::cerr);
+    goby::glog.add_stream(goby::common::logger::DEBUG3, &std::cerr);
     goby::glog.set_name(argv[0]);
 
     goby::acomms::DCCLCodec* codec = goby::acomms::DCCLCodec::get();
@@ -55,6 +62,11 @@ int main(int argc, char* argv[])
     
     goby::acomms::protobuf::QueueManagerConfig cfg;
     cfg.set_modem_id(MY_MODEM_ID);
+    goby::acomms::protobuf::QueueManagerConfig::ManipulatorEntry* entry = cfg.add_manipulator_entry();
+    entry->set_protobuf_name("GobyMessage");
+    entry->add_manipulator(goby::acomms::protobuf::ON_DEMAND);
+    cfg.set_on_demand_skew_seconds(0.1);    
+
     q_manager.set_cfg(cfg);
 
     goby::glog << q_manager << std::endl;

@@ -1,26 +1,31 @@
-// copyright 2011 t. schneider tes@mit.edu
+// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+//                     Massachusetts Institute of Technology (2007-)
+//                     Woods Hole Oceanographic Institution (2007-)
+//                     Goby Developers Team (https://launchpad.net/~goby-dev)
 // 
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+//
+// This file is part of the Goby Underwater Autonomy Project Binaries
+// ("The Goby Binaries").
+//
+// The Goby Binaries are free software: you can redistribute them and/or modify
+// them under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// This software is distributed in the hope that it will be useful,
+// The Goby Binaries are distributed in the hope that they will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this software.  If not, see <http://www.gnu.org/licenses/>.
+// along with Goby.  If not, see <http://www.gnu.org/licenses/>.
 
 
 // tests basic REP/REQ functionality of ZeroMQService class
 
-#include "goby/core.h"
+#include "goby/common/zeromq_service.h"
 
-#include <boost/thread.hpp>
-
-void inbox(goby::core::MarshallingScheme marshalling_scheme,
+void inbox(goby::common::MarshallingScheme marshalling_scheme,
                  const std::string& identifier,
                  const void* data,
                  int size,
@@ -41,13 +46,13 @@ enum { SOCKET_REQUESTOR = 104952, SOCKET_REPLIER = 2304
 
 int main(int argc, char* argv[])
 {
-    goby::glog.add_stream(goby::util::logger::DEBUG3, &std::cerr);
+    goby::glog.add_stream(goby::common::logger::DEBUG3, &std::cerr);
     goby::glog.set_name(argv[0]);
 
-    goby::core::ZeroMQService node;
+    goby::common::ZeroMQService node;
 
     {
-        using goby::core::protobuf::ZeroMQServiceConfig;
+        using goby::common::protobuf::ZeroMQServiceConfig;
         
         ZeroMQServiceConfig requestor_cfg;
         ZeroMQServiceConfig::Socket* requestor_socket = requestor_cfg.add_socket();
@@ -75,16 +80,16 @@ int main(int argc, char* argv[])
     
     node.connect_inbox_slot(&inbox);
 
-    usleep(1e3);
+    usleep(1e4);
 
     int test_count = 3;
     for(int i = 0; i < test_count; ++i)
     {
         std::cout << "requesting " << request_data_ << std::endl;
-        node.send(goby::core::MARSHALLING_CSTR, request_identifier_, &request_data_, sizeof(request_data_)/sizeof(char), SOCKET_REQUESTOR);
+        node.send(goby::common::MARSHALLING_CSTR, request_identifier_, &request_data_, sizeof(request_data_)/sizeof(char), SOCKET_REQUESTOR);
         node.poll(1e6);
         std::cout << "replying " << reply_data_ << std::endl;
-        node.send(goby::core::MARSHALLING_CSTR, reply_identifier_, &reply_data_,  sizeof(reply_data_)/sizeof(char), SOCKET_REPLIER);
+        node.send(goby::common::MARSHALLING_CSTR, reply_identifier_, &reply_data_,  sizeof(reply_data_)/sizeof(char), SOCKET_REPLIER);
         node.poll(1e6);
     }
 
@@ -94,7 +99,7 @@ int main(int argc, char* argv[])
 }
 
 
-void inbox(goby::core::MarshallingScheme marshalling_scheme,
+void inbox(goby::common::MarshallingScheme marshalling_scheme,
            const std::string& identifier,
            const void* data,
            int size,
@@ -104,7 +109,7 @@ void inbox(goby::core::MarshallingScheme marshalling_scheme,
     if(socket_id == SOCKET_REPLIER)
     {        
         assert(identifier == request_identifier_);
-        assert(marshalling_scheme == goby::core::MARSHALLING_CSTR);
+        assert(marshalling_scheme == goby::common::MARSHALLING_CSTR);
         assert(!strcmp(static_cast<const char*>(data), request_data_));
     
         std::cout << "Replier Received: " << static_cast<const char*>(data) << std::endl;
@@ -113,7 +118,7 @@ void inbox(goby::core::MarshallingScheme marshalling_scheme,
     else if(socket_id == SOCKET_REQUESTOR)
     {
         assert(identifier == reply_identifier_);
-        assert(marshalling_scheme == goby::core::MARSHALLING_CSTR);
+        assert(marshalling_scheme == goby::common::MARSHALLING_CSTR);
         assert(!strcmp(static_cast<const char*>(data), reply_data_));
         
         std::cout << "Requestor Received: " << static_cast<const char*>(data) << std::endl;

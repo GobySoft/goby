@@ -1,6 +1,6 @@
 import "goby/common/protobuf/option_extensions.proto";
 
-package goby.core.protobuf;
+package goby.common.protobuf;
 
 message ZeroMQServiceConfig
 {
@@ -31,7 +31,7 @@ message ZeroMQServiceConfig
       BIND = 2;
     }
     required SocketType socket_type = 1;
-    optional uint32 socket_id = 2 [default = 0, (goby.field).description="defines a socket or group of sockets that are send and receive together. Sockets with the same id that are must be compatibility (generally have the same SocketType)"];
+    optional uint32 socket_id = 2 [default = 0, (goby.field).description="defines a socket or group of sockets that are send and receive together. Sockets with the same id that are must be compatible (generally have the same SocketType)"];
     optional Transport transport = 3 [default = EPGM];
     optional ConnectOrBind connect_or_bind = 4 [default = CONNECT];
 

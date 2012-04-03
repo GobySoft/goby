@@ -1,28 +1,32 @@
-// copyright 2008, 2009 t. schneider tes@mit.edu
+// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+//                     Massachusetts Institute of Technology (2007-)
+//                     Woods Hole Oceanographic Institution (2007-)
+//                     Goby Developers Team (https://launchpad.net/~goby-dev)
 // 
-// this file is part of the Dynamic Compact Control Language (DCCL),
-// the goby-acomms codec. goby-acomms is a collection of libraries 
-// for acoustic underwater networking
 //
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// This file is part of the Goby Underwater Autonomy Project Libraries
+// ("The Goby Libraries").
+//
+// The Goby Libraries are free software: you can redistribute them and/or modify
+// them under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// This software is distributed in the hope that it will be useful,
+// The Goby Libraries are distributed in the hope that they will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Lesser General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
-// along with this software.  If not, see <http://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU Lesser General Public License
+// along with Goby.  If not, see <http://www.gnu.org/licenses/>.
+
 
 #ifndef MESSAGE_VAR_HEAD20100317H
 #define MESSAGE_VAR_HEAD20100317H
 
 #include "message_var.h"
 
-#include "goby/util/time.h"
+#include "goby/common/time.h"
 #include "goby/util/sci.h"
 
 namespace goby
@@ -65,19 +69,19 @@ namespace goby
             void set_defaults_specific(DCCLMessageVal& v, unsigned modem_id, unsigned id)
             {
                 double d;
-                v = (!v.empty() && v.get(d)) ? v : DCCLMessageVal(util::ptime2unix_double(util::goby_time()));
+                v = (!v.empty() && v.get(d)) ? v : DCCLMessageVal(common::ptime2unix_double(common::goby_time()));
             }
 
             void pre_encode(DCCLMessageVal& v)
             {
                 double d;
-                v = (!v.empty() && v.get(d)) ? DCCLMessageVal(goby::util::as<std::string>(goby::util::unix_double2ptime(d))) : v;
+                v = (!v.empty() && v.get(d)) ? DCCLMessageVal(goby::util::as<std::string>(goby::common::unix_double2ptime(d))) : v;
             }
             
             void post_decode(DCCLMessageVal& v)
             {
                 std::string s;
-                v = (!v.empty() && v.get(s)) ? DCCLMessageVal(goby::util::ptime2unix_double(goby::util::as<boost::posix_time::ptime>(s))) : v;
+                v = (!v.empty() && v.get(s)) ? DCCLMessageVal(goby::common::ptime2unix_double(goby::util::as<boost::posix_time::ptime>(s))) : v;
             }
             
         

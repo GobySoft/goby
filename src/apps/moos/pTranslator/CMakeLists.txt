@@ -9,4 +9,5 @@ target_link_libraries(pTranslator
   goby_moos
   ${MOOS_LIBRARIES}
   ${Boost_LIBRARIES}
-  ${PROTOBUF_LIBRARY})
+  ${PROTOBUF_LIBRARY}
+  ${CMAKE_DL_LIBS})

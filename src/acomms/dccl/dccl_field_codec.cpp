@@ -1,21 +1,25 @@
-// copyright 2009-2011 t. schneider tes@mit.edu
+// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+//                     Massachusetts Institute of Technology (2007-)
+//                     Woods Hole Oceanographic Institution (2007-)
+//                     Goby Developers Team (https://launchpad.net/~goby-dev)
 // 
-// this file is part of the Dynamic Compact Control Language (DCCL),
-// the goby-acomms codec. goby-acomms is a collection of libraries 
-// for acoustic underwater networking
 //
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// This file is part of the Goby Underwater Autonomy Project Libraries
+// ("The Goby Libraries").
+//
+// The Goby Libraries are free software: you can redistribute them and/or modify
+// them under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// This software is distributed in the hope that it will be useful,
+// The Goby Libraries are distributed in the hope that they will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Lesser General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
-// along with this software.  If not, see <http://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU Lesser General Public License
+// along with Goby.  If not, see <http://www.gnu.org/licenses/>.
+
 
 #include <boost/foreach.hpp>
 
@@ -30,7 +34,7 @@ boost::ptr_map<int, boost::signal<void (const boost::any& field_value, const boo
 
 
 using goby::glog;
-using namespace goby::util::logger;
+using namespace goby::common::logger;
 
 //
 // DCCLFieldCodecBase public
@@ -57,7 +61,7 @@ void goby::acomms::DCCLFieldCodecBase::field_encode(Bitset* bits,
     MessageHandler msg_handler(field);
 
     if(field)
-        glog.is(DEBUG1) && glog << group(DCCLCodec::glog_encode_group()) <<  "Starting encode for field: " << field->DebugString() << std::flush;
+        glog.is(DEBUG2) && glog << group(DCCLCodec::glog_encode_group()) <<  "Starting encode for field: " << field->DebugString() << std::flush;
 
     boost::any wire_value;
     field_pre_encode(&wire_value, field_value);
@@ -151,7 +155,7 @@ void goby::acomms::DCCLFieldCodecBase::field_decode(Bitset* bits,
         throw(DCCLException("Decode called with NULL Bitset"));    
     
     if(field)
-        glog.is(DEBUG1) && glog << group(DCCLCodec::glog_decode_group()) <<  "Starting decode for field: " << field->DebugString() << std::flush;
+        glog.is(DEBUG2) && glog << group(DCCLCodec::glog_decode_group()) <<  "Starting decode for field: " << field->DebugString() << std::flush;
 
     Bitset these_bits;
     BitsHandler bits_handler(&these_bits, bits);
@@ -181,7 +185,7 @@ void goby::acomms::DCCLFieldCodecBase::field_decode_repeated(Bitset* bits,
         throw(DCCLException("Decode called with NULL Bitset"));    
     
     if(field)
-        glog.is(DEBUG1) && glog  << group(DCCLCodec::glog_decode_group()) <<  "Starting repeated decode for field: " << field->DebugString();
+        glog.is(DEBUG2) && glog  << group(DCCLCodec::glog_decode_group()) <<  "Starting repeated decode for field: " << field->DebugString();
     
     Bitset these_bits;
     BitsHandler bits_handler(&these_bits, bits);
@@ -419,9 +423,9 @@ unsigned goby::acomms::DCCLFieldCodecBase::any_size_repeated(const std::vector<b
 void goby::acomms::DCCLFieldCodecBase::any_run_hooks(const boost::any& field_value)   
 {
     if(this_field())
-        glog.is(DEBUG1) && glog  << "running hooks for " << this_field()->DebugString() << std::endl;
+        glog.is(DEBUG2) && glog << group(DCCLCodec::glog_encode_group()) << "Running hooks for " << this_field()->DebugString() << std::flush;
     else
-        glog.is(DEBUG1) && glog  << "running hooks for base message" << std::endl;
+        glog.is(DEBUG2) && glog << group(DCCLCodec::glog_encode_group()) << "running hooks for base message" << std::endl;
 
 
     typedef boost::ptr_map<int, boost::signal<void (const boost::any& field_value,
@@ -439,7 +443,7 @@ void goby::acomms::DCCLFieldCodecBase::any_run_hooks(const boost::any& field_val
             DCCLTypeHelper::find(extension_desc);
 
         boost::any extension_value = helper->get_value(extension_desc, this_field()->options());
-
+        
         if(!(extension_value.empty() || field_value.empty()))
         {
             try
@@ -448,12 +452,12 @@ void goby::acomms::DCCLFieldCodecBase::any_run_hooks(const boost::any& field_val
                 field_pre_encode(&wire_value, field_value);
                 
                 i->second->operator()(field_value, wire_value, extension_value);   
-                glog.is(DEBUG2) && glog  << "Found : " << i->first << ": " << extension_desc->DebugString() << std::endl;
+                glog.is(DEBUG2) && glog  <<  group(DCCLCodec::glog_encode_group()) <<"Found : " << i->first << ": " << extension_desc->DebugString() << std::endl;
             }
             
             catch(std::exception& e)
             {
-                glog.is(DEBUG1) && glog  << warn << "failed to run hook for " << i->first << ", exception: " << e.what() << std::endl;
+                glog.is(DEBUG1) && glog <<  group(DCCLCodec::glog_encode_group()) <<  warn << "failed to run hook for " << i->first << ", exception: " << e.what() << std::endl;
             }
         }
     }
@@ -464,7 +468,7 @@ void goby::acomms::DCCLFieldCodecBase::any_run_hooks(const boost::any& field_val
 unsigned goby::acomms::DCCLFieldCodecBase::max_size_repeated()
 {    
     if(!dccl_field_options().has_max_repeat())
-        throw(DCCLException("Missing (goby.field).dccl.max_repeat option on `repeated` field"));
+        throw(DCCLException("Missing (goby.field).dccl.max_repeat option on `repeated` field: " + this_field()->DebugString()));
     else
         return max_size() * dccl_field_options().max_repeat();
 }
@@ -472,7 +476,7 @@ unsigned goby::acomms::DCCLFieldCodecBase::max_size_repeated()
 unsigned goby::acomms::DCCLFieldCodecBase::min_size_repeated()
 {    
     if(!dccl_field_options().has_max_repeat())
-        throw(DCCLException("Missing (goby.field).dccl.max_repeat option on `repeated` field"));
+        throw(DCCLException("Missing (goby.field).dccl.max_repeat option on `repeated` field " + this_field()->DebugString()));
     else
         return min_size() * dccl_field_options().max_repeat();
 }

@@ -1,21 +1,28 @@
-// t. schneider tes@mit.edu 11.20.09
+// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+//                     Massachusetts Institute of Technology (2007-)
+//                     Woods Hole Oceanographic Institution (2007-)
+//                     Goby Developers Team (https://launchpad.net/~goby-dev)
+// 
 //
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// This file is part of the Goby Underwater Autonomy Project Binaries
+// ("The Goby Binaries").
+//
+// The Goby Binaries are free software: you can redistribute them and/or modify
+// them under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// This software is distributed in the hope that it will be useful,
+// The Goby Binaries are distributed in the hope that they will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this software.  If not, see <http://www.gnu.org/licenses/>.
+// along with Goby.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <iostream>
 
-#include "goby/util/logger.h"
+#include "goby/common/logger.h"
 #include "goby/moos/moos_translator.h"
 #include "test.pb.h"
 #include "basic_node_report.pb.h"
@@ -30,7 +37,7 @@ void run_one_in_one_out_test(MOOSTranslator& translator, int i, bool hex_encode)
 
 int main(int argc, char* argv[])
 {
-    goby::glog.add_stream(goby::util::logger::DEBUG3, &std::cout);
+    goby::glog.add_stream(goby::common::logger::DEBUG3, &std::cout);
     goby::glog.set_name(argv[0]);
 
     
@@ -101,8 +108,8 @@ int main(int argc, char* argv[])
 
 
 
-
-    std::string format_str = "NAME=%1%,X=%202%,Y=%3%,HEADING=%201%";
+    
+    std::string format_str = "NAME=%1%,X=%202%,Y=%3%,HEADING=%201%,REPEAT={%10%}";
    {
         protobuf::TranslatorEntry entry;
         entry.set_protobuf_name("BasicNodeReport");
@@ -127,6 +134,9 @@ int main(int argc, char* argv[])
     report.set_x(550);
     report.set_y(1023.5);
     report.set_heading(240);
+    report.add_repeat(1);
+    report.add_repeat(-1);
+    
     
     std::multimap<std::string, CMOOSMsg> moos_msgs = translator.protobuf_to_moos(report);    
 
@@ -137,7 +147,7 @@ int main(int argc, char* argv[])
     {
         goby::glog << "Variable: " << it->first << "\n"
                    << "Value: " << it->second.GetString() << std::endl;
-        assert(it->second.GetString() == "NAME=unicorn,X=550,Y=1023.5,HEADING=240");
+        assert(it->second.GetString() == "NAME=unicorn,X=550,Y=1023.5,HEADING=240,REPEAT={1,-1}");
     }
     
     typedef std::auto_ptr<google::protobuf::Message> GoogleProtobufMessagePointer;
@@ -237,6 +247,8 @@ int main(int argc, char* argv[])
    report_out =
        translator.moos_to_protobuf<GoogleProtobufMessagePointer>(moos_msgs, "BasicNodeReport");
 
+   report.clear_repeat();
+   
    goby::glog << "Message in: " << std::endl;
    goby::glog << report.DebugString() << std::endl;    
    goby::glog << "Message out: " << std::endl;
@@ -256,16 +268,111 @@ int main(int argc, char* argv[])
                   << "Value: " << it->second.GetString() << std::endl;
 
        if(it->first == "NODE_REPORT_FORMAT")
-           assert(it->second.GetString() == "NAME=unicorn,X=550,Y=1023.5,HEADING=240;LAT=42.5091075598637;LON=10.806955912844");
+           assert(it->second.GetString() == "NAME=unicorn,X=550,Y=1023.5,HEADING=240,REPEAT={};LAT=42.509107559864;LON=10.80695591284");
        else if(it->first == "NODE_REPORT_KEY_VALUE")
-           assert(it->second.GetString() == "name=unicorn,x=550,y=1023.5,heading=240,utm_y2lat(y)=42.5091075598637,utm_x2lon(x)=10.806955912844,name2modem_id(name)=3,name2modem_id+modem_id2type+to_upper(name)=AUV");
+           assert(it->second.GetString() == "name=unicorn,x=550,y=1023.5,heading=240,utm_y2lat(y)=42.509107559864,utm_x2lon(x)=10.80695591284,name2modem_id(name)=3,name2modem_id+modem_id2type+to_upper(name)=AUV");
        
    }
     
+   
+
+   std::string sub_message_format_str = "em.val=%17:1%";
+   {
+        protobuf::TranslatorEntry entry;
+        entry.set_protobuf_name("TestMsg");
+        
+        protobuf::TranslatorEntry::CreateParser* parser = entry.add_create();
+        parser->set_technique(protobuf::TranslatorEntry::TECHNIQUE_FORMAT);
+        parser->set_moos_var("TEST_MSG_1");
+        parser->set_format(sub_message_format_str);
+        
+        protobuf::TranslatorEntry::PublishSerializer* serializer = entry.add_publish();
+        serializer->set_technique(protobuf::TranslatorEntry::TECHNIQUE_FORMAT);
+        serializer->set_moos_var("TEST_MSG_1");
+        serializer->set_format(sub_message_format_str);
+        
+        translator.add_entry(entry);
+    }
+
+    goby::glog << translator << std::endl;
+
+    TestMsg embedded_test;
+    embedded_test.mutable_msg_default_optional()->set_val(19.998);    
+    moos_msgs = translator.protobuf_to_moos(embedded_test);  
     
+    for(std::multimap<std::string, CMOOSMsg>::const_iterator it = moos_msgs.begin(),
+            n = moos_msgs.end();
+        it != n;
+        ++ it)
+    {
+        goby::glog << "Variable: " << it->first << "\n"
+                   << "Value: " << it->second.GetString() << std::endl;
+        assert(it->second.GetString() == "em.val=19.998");
+    }
+    
+    typedef std::auto_ptr<google::protobuf::Message> GoogleProtobufMessagePointer;
+    GoogleProtobufMessagePointer embedded_test_out =
+        translator.moos_to_protobuf<GoogleProtobufMessagePointer>(moos_msgs, "TestMsg");
+
+    goby::glog << "Message out: " << std::endl;
+    goby::glog << embedded_test_out->DebugString() << std::endl;    
+    assert(embedded_test_out->SerializePartialAsString() == embedded_test.SerializePartialAsString());
+
 
     
-   std::cout << "all tests passed" << std::endl;
+   sub_message_format_str = "em0.val=%117.0:1%,1uint64=%106.1%,0uint64=%106.0%.2uint64=%106.2%:em1.val=%117.1:1%,dbl0=%101.0%,dbl1=%101.1%,dbl2=%101.2%,dbl3=%101.3%";
+   {
+       protobuf::TranslatorEntry entry;
+       entry.set_protobuf_name("TestMsg");
+       
+       protobuf::TranslatorEntry::CreateParser* parser = entry.add_create();
+       parser->set_technique(protobuf::TranslatorEntry::TECHNIQUE_FORMAT);
+       parser->set_moos_var("TEST_MSG_1");
+       parser->set_format(sub_message_format_str);
+       
+       protobuf::TranslatorEntry::PublishSerializer* serializer = entry.add_publish();
+       serializer->set_technique(protobuf::TranslatorEntry::TECHNIQUE_FORMAT);
+       serializer->set_moos_var("TEST_MSG_1");
+       serializer->set_format(sub_message_format_str);
+       
+       translator.add_entry(entry);
+   }
+   
+   goby::glog << translator << std::endl;
+   
+   embedded_test.Clear();
+   embedded_test.add_msg_default_repeat()->set_val(21.123); 
+   embedded_test.add_msg_default_repeat()->set_val(100.5);
+   embedded_test.add_uint64_default_repeat(0);
+   embedded_test.add_uint64_default_repeat(100);
+   embedded_test.add_uint64_default_repeat(200);
+   moos_msgs = translator.protobuf_to_moos(embedded_test);  
+    
+   for(std::multimap<std::string, CMOOSMsg>::const_iterator it = moos_msgs.begin(),
+           n = moos_msgs.end();
+       it != n;
+       ++ it)
+   {
+       goby::glog << "Variable: " << it->first << "\n"
+                  << "Value: " << it->second.GetString() << std::endl;
+       assert(it->second.GetString() == "em0.val=21.123,1uint64=100,0uint64=0.2uint64=200:em1.val=100.5,dbl0=nan,dbl1=nan,dbl2=nan,dbl3=nan");
+   }
+   
+   typedef std::auto_ptr<google::protobuf::Message> GoogleProtobufMessagePointer;
+   embedded_test_out = translator.moos_to_protobuf<GoogleProtobufMessagePointer>(moos_msgs, "TestMsg");
+
+    goby::glog << "Message out: " << std::endl;
+    goby::glog << embedded_test_out->DebugString() << std::endl;    
+
+    embedded_test.add_double_default_repeat(std::numeric_limits<double>::quiet_NaN());
+    embedded_test.add_double_default_repeat(std::numeric_limits<double>::quiet_NaN());
+    embedded_test.add_double_default_repeat(std::numeric_limits<double>::quiet_NaN());
+    embedded_test.add_double_default_repeat(std::numeric_limits<double>::quiet_NaN());
+    assert(embedded_test_out->SerializePartialAsString() == embedded_test.SerializePartialAsString());
+
+    
+    
+    std::cout << "all tests passed" << std::endl;
 }
 
 void run_one_in_one_out_test(MOOSTranslator& translator, int i, bool hex_encode)
@@ -288,7 +395,8 @@ void run_one_in_one_out_test(MOOSTranslator& translator, int i, bool hex_encode)
             case 0:
             {    
                 std::string test;
-                serialize_for_moos(&test, msg);
+                goby::moos::MOOSTranslation<protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_TEXT_FORMAT>::serialize(&test, msg);;
+                
                 assert(it->second.GetString() == test);
                 assert(it->first == "TEST_MSG_1");
                 break;

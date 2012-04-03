@@ -1,33 +1,48 @@
-// copyright 2011 t. schneider tes@mit.edu
+// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+//                     Massachusetts Institute of Technology (2007-)
+//                     Woods Hole Oceanographic Institution (2007-)
+//                     Goby Developers Team (https://launchpad.net/~goby-dev)
 // 
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+//
+// This file is part of the Goby Underwater Autonomy Project Binaries
+// ("The Goby Binaries").
+//
+// The Goby Binaries are free software: you can redistribute them and/or modify
+// them under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// This software is distributed in the hope that it will be useful,
+// The Goby Binaries are distributed in the hope that they will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this software.  If not, see <http://www.gnu.org/licenses/>.
+// along with Goby.  If not, see <http://www.gnu.org/licenses/>.
 
 #ifndef LIAISON20110609H
 #define LIAISON20110609H
 
-#include "goby/pb/application.h"
-#include "liaison_config.pb.h"
+#include <google/protobuf/compiler/importer.h>
+#include <google/protobuf/descriptor.h>
+
 #include <Wt/WEnvironment>
 #include <Wt/WApplication>
 #include <Wt/WString>
 #include <Wt/WMenu>
 #include <Wt/WServer>
 #include <Wt/WContainerWidget>
+#include <Wt/WTimer>
+
+#include "goby/common/zeromq_application_base.h"
+#include "goby/common/pubsub_node_wrapper.h"
+
+#include "liaison_config.pb.h"
+
 
 namespace goby
 {
-    namespace core
+    namespace common
     {
         /* class LiaisonContainerWrapper : public Wt::WContainerWidget */
         /* { */
@@ -43,8 +58,8 @@ namespace goby
         class LiaisonContainer : public  Wt::WContainerWidget
         {
           public:
-          LiaisonContainer()
-              : name_(new Wt::WText())
+          LiaisonContainer(Wt::WContainerWidget* parent)
+              : Wt::WContainerWidget(parent)
             {
                 setStyleClass("fill");
                 /* addWidget(new Wt::WText("<hr/>")); */
@@ -54,14 +69,15 @@ namespace goby
 
             void set_name(const Wt::WString& name)
             {
-                name_->setText(name);
+                name_.setText(name);
             }
             
             virtual ~LiaisonContainer() { }
 
           private:
-            Wt::WText* name_;
+            Wt::WText name_;
         };        
+
 
         
         class Liaison : public ZeroMQApplicationBase
@@ -70,28 +86,37 @@ namespace goby
             Liaison();
             ~Liaison() { }
 
-            void inbox(MarshallingScheme marshalling_scheme,
+            void inbox(goby::common::MarshallingScheme marshalling_scheme,
                        const std::string& identifier,
                        const void* data,
                        int size,
                        int socket_id);
 
-            enum 
-            {
-                LIAISON_INTERNAL_PUBLISH_SOCKET = 1,
-                LIAISON_INTERNAL_SUBSCRIBE_SOCKET = 2
-            };
-
             static const std::string LIAISON_INTERNAL_PUBLISH_SOCKET_NAME;
-            static const std::string LIAISON_INTERNAL_SUBSCRIBE_SOCKET_NAME; 
-            
+            static const std::string LIAISON_INTERNAL_SUBSCRIBE_SOCKET_NAME;
 
             void loop();
 
             static boost::shared_ptr<zmq::context_t> zmq_context() { return zmq_context_; }
+            static const std::vector<void *>& dl_handles() { return dl_handles_; }
 
+            
+            enum 
+            {
+                LIAISON_INTERNAL_PUBLISH_SOCKET = 1,
+                LIAISON_INTERNAL_SUBSCRIBE_SOCKET = 2,
+                LIAISON_INTERNAL_COMMANDER_SUBSCRIBE_SOCKET = 3,
+                LIAISON_INTERNAL_COMMANDER_PUBLISH_SOCKET = 4,
+                LIAISON_INTERNAL_SCOPE_SUBSCRIBE_SOCKET = 5,
+                LIAISON_INTERNAL_SCOPE_PUBLISH_SOCKET = 6,  
+            };
+
+          private:
+            void load_proto_file(const std::string& path);
+            
             friend class LiaisonWtThread;
             friend class LiaisonScope;
+            friend class LiaisonCommander;
           private:
             static protobuf::LiaisonConfig cfg_;
             Wt::WServer wt_server_;
@@ -99,36 +124,25 @@ namespace goby
             ZeroMQService zeromq_service_;
             PubSubNodeWrapperBase pubsub_node_;
 
+            google::protobuf::compiler::DiskSourceTree disk_source_tree_;
+            google::protobuf::compiler::SourceTreeDescriptorDatabase source_database_;
+            
+            class LiaisonErrorCollector: public google::protobuf::compiler::MultiFileErrorCollector
+            {
+                void AddError(const std::string & filename, int line, int column, const std::string & message)
+                {
+                    goby::glog.is(goby::common::logger::DIE, goby::common::logger_lock::lock) &&
+                        goby::glog << "File: " << filename
+                                   << " has error (line: " << line << ", column: " << column << "): "
+                                   << message << std::endl << unlock;
+                }       
+            };
+                
+            LiaisonErrorCollector error_collector_;
+            static std::vector<void *> dl_handles_;
+            
             // add a database client
         };
-
-        class LiaisonWtThread : public Wt::WApplication
-        {
-          public:
-            LiaisonWtThread(const Wt::WEnvironment& env);
-
-            void inbox(MarshallingScheme marshalling_scheme,
-                       const std::string& identifier,
-                       const void* data,
-                       int size,
-                       int socket_id);
-                
-            void loop();
-                
-          private:
-            void add_to_menu(Wt::WMenu* menu, const Wt::WString& name, LiaisonContainer* container);
-          private:
-            Wt::WStackedWidget* contents_stack_;
-            Wt::WTimer* timer_;
-            
-            ZeroMQService zeromq_service_;
-        };
-
-        
-        inline Wt::WApplication* create_wt_application(const Wt::WEnvironment& env)
-        {
-            return new LiaisonWtThread(env);
-        }
 
     }
 }

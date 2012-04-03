@@ -1,15 +1,25 @@
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+//                     Massachusetts Institute of Technology (2007-)
+//                     Woods Hole Oceanographic Institution (2007-)
+//                     Goby Developers Team (https://launchpad.net/~goby-dev)
+// 
+//
+// This file is part of the Goby Underwater Autonomy Project Libraries
+// ("The Goby Libraries").
+//
+// The Goby Libraries are free software: you can redistribute them and/or modify
+// them under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// This software is distributed in the hope that it will be useful,
+// The Goby Libraries are distributed in the hope that they will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Lesser General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
-// along with this software.  If not, see <http://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU Lesser General Public License
+// along with Goby.  If not, see <http://www.gnu.org/licenses/>.
+
 
 #include <set>
 #include <map>
@@ -41,6 +51,17 @@ namespace goby
 
         void alg_to_upper(transitional::DCCLMessageVal& val_to_mod);
         void alg_to_lower(transitional::DCCLMessageVal& val_to_mod);
+
+
+        void alg_abs(transitional::DCCLMessageVal& val_to_mod);
+        void alg_lat2hemisphere_initial(transitional::DCCLMessageVal& val_to_mod);
+        void alg_lon2hemisphere_initial(transitional::DCCLMessageVal& val_to_mod);
+    
+        void alg_unix_time2nmea_time(transitional::DCCLMessageVal& val_to_mod);
+
+        void alg_lat2nmea_lat(transitional::DCCLMessageVal& val_to_mod);
+        void alg_lon2nmea_lon(transitional::DCCLMessageVal& val_to_mod);    
+
         
         class MOOSTranslator
         {
@@ -92,6 +113,10 @@ namespace goby
             
             std::multimap<std::string, CMOOSMsg> protobuf_to_moos(const google::protobuf::Message& protobuf_msg);
 
+
+            // advanced: writes to create, instead of publish!
+            std::multimap<std::string, CMOOSMsg> protobuf_to_inverse_moos(const google::protobuf::Message& protobuf_msg);
+            
             const std::map<std::string, goby::moos::protobuf::TranslatorEntry>&  dictionary() const { return dictionary_; }
             
           private:
@@ -99,7 +124,7 @@ namespace goby
                             double lon_origin = std::numeric_limits<double>::quiet_NaN(),
                             const std::string& modem_id_lookup_path="");
             
-
+            
             void alg_lat2utm_y(transitional::DCCLMessageVal& mv,
                                const std::vector<transitional::DCCLMessageVal>& ref_vals);
 
@@ -215,6 +240,61 @@ inline std::multimap<std::string, CMOOSMsg> goby::moos::MOOSTranslator::protobuf
     return moos_msgs;
 }
 
+
+inline std::multimap<std::string, CMOOSMsg> goby::moos::MOOSTranslator::protobuf_to_inverse_moos(const google::protobuf::Message& protobuf_msg)
+{
+    std::map<std::string, goby::moos::protobuf::TranslatorEntry>::const_iterator it =
+        dictionary_.find(protobuf_msg.GetDescriptor()->full_name());
+
+    if(it == dictionary_.end())
+        throw(std::runtime_error("No TranslatorEntry for Protobuf type: " + protobuf_msg.GetDescriptor()->full_name()));
+
+    const goby::moos::protobuf::TranslatorEntry& entry = it->second;
+    
+    std::multimap<std::string, CMOOSMsg> moos_msgs;
+
+    for(int i = 0, n = entry.create_size();
+        i < n; ++ i)
+    {
+        std::string return_string;
+        std::string moos_var = entry.create(i).moos_var();
+        
+        switch(entry.create(i).technique())
+        {
+            case protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_TEXT_FORMAT:
+                goby::moos::MOOSTranslation<goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_TEXT_FORMAT>::serialize(&return_string, protobuf_msg);
+                break;
+                
+            case protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_NATIVE_ENCODED:
+                goby::moos::MOOSTranslation<goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_NATIVE_ENCODED>::serialize(&return_string, protobuf_msg);
+                break;
+
+            case protobuf::TranslatorEntry::TECHNIQUE_COMMA_SEPARATED_KEY_EQUALS_VALUE_PAIRS:
+                goby::moos::MOOSTranslation<protobuf::TranslatorEntry::TECHNIQUE_COMMA_SEPARATED_KEY_EQUALS_VALUE_PAIRS>::serialize(&return_string, protobuf_msg, google::protobuf::RepeatedPtrField<protobuf::TranslatorEntry::PublishSerializer::Algorithm>(), entry.use_short_enum());
+                break;
+                
+            case protobuf::TranslatorEntry::TECHNIQUE_FORMAT:
+                goby::moos::MOOSTranslation<protobuf::TranslatorEntry::TECHNIQUE_FORMAT>::serialize(&return_string, protobuf_msg, google::protobuf::RepeatedPtrField<protobuf::TranslatorEntry::PublishSerializer::Algorithm>(), entry.create(i).format(), entry.create(i).repeated_delimiter(), entry.use_short_enum());
+                break;
+        }
+        
+        try
+        {
+            double return_double = boost::lexical_cast<double>(return_string);
+            moos_msgs.insert(std::make_pair(moos_var,
+                                            CMOOSMsg(MOOS_NOTIFY, moos_var, return_double)));
+        }
+        catch(boost::bad_lexical_cast&)
+        {
+            moos_msgs.insert(std::make_pair(moos_var,
+                                            CMOOSMsg(MOOS_NOTIFY, moos_var, return_string)));
+        }        
+    }
+    
+    return moos_msgs;
+}
+
+
 template<typename GoogleProtobufMessagePointer, class StringCMOOSMsgMap >
 GoogleProtobufMessagePointer goby::moos::MOOSTranslator::moos_to_protobuf(const StringCMOOSMsgMap& moos_variables, const std::string& protobuf_name)
 {
@@ -256,7 +336,7 @@ GoogleProtobufMessagePointer goby::moos::MOOSTranslator::moos_to_protobuf(const 
                 break;
 
             case protobuf::TranslatorEntry::TECHNIQUE_FORMAT:
-                goby::moos::MOOSTranslation<protobuf::TranslatorEntry::TECHNIQUE_FORMAT>::parse(source_string, &*msg, entry.create(i).format(), entry.create(i).algorithm(), entry.use_short_enum());
+                goby::moos::MOOSTranslation<protobuf::TranslatorEntry::TECHNIQUE_FORMAT>::parse(source_string, &*msg, entry.create(i).format(), entry.create(i).repeated_delimiter(), entry.create(i).algorithm(), entry.use_short_enum());
                 break;
         }
     }

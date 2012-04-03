@@ -1,32 +1,43 @@
-// copyright 2011 t. schneider tes@mit.edu
+// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+//                     Massachusetts Institute of Technology (2007-)
+//                     Woods Hole Oceanographic Institution (2007-)
+//                     Goby Developers Team (https://launchpad.net/~goby-dev)
 // 
-// this file is part of goby-acomms, a collection of libraries for acoustic underwater networking
 //
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// This file is part of the Goby Underwater Autonomy Project Libraries
+// ("The Goby Libraries").
+//
+// The Goby Libraries are free software: you can redistribute them and/or modify
+// them under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// This software is distributed in the hope that it will be useful,
+// The Goby Libraries are distributed in the hope that they will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Lesser General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
-// along with this software.  If not, see <http://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU Lesser General Public License
+// along with Goby.  If not, see <http://www.gnu.org/licenses/>.
+
 
 #ifndef MOOSPROTOBUFHELPERS20110216H
 #define MOOSPROTOBUFHELPERS20110216H
 
+#include <limits>
+
 #include <boost/format.hpp>
+#include <boost/regex.hpp>
 
 #include <google/protobuf/io/printer.h>
 #include <google/protobuf/io/tokenizer.h>
 
-#include "goby/util/logger/flex_ostream.h"
+#include "goby/common/logger/flex_ostream.h"
 #include "goby/util/as.h"
 #include "goby/util/binary.h"
+#include "goby/util/dynamic_protobuf_manager.h"
 #include "goby/moos/moos_string.h"
+#include "goby/util/primitive_types.h"
 
 #include "goby/moos/transitional/message_algorithms.h"
 #include "goby/moos/transitional/message_val.h"
@@ -37,6 +48,8 @@ namespace goby
 {
     namespace moos
     {
+        const std::string MAGIC_PROTOBUF_HEADER = "@PB";
+        
         inline std::map<int, std::string> run_serialize_algorithms(const google::protobuf::Message& in, const google::protobuf::RepeatedPtrField<protobuf::TranslatorEntry::PublishSerializer::Algorithm>& algorithms)
         {
             const google::protobuf::Descriptor* desc = in.GetDescriptor();
@@ -154,7 +167,7 @@ namespace goby
         {
           public:
             static void serialize(std::string* out, const google::protobuf::Message& in,
-                                  const google::protobuf::RepeatedPtrField<protobuf::TranslatorEntry::PublishSerializer::Algorithm>& algorithms,
+                                  const google::protobuf::RepeatedPtrField<protobuf::TranslatorEntry::PublishSerializer::Algorithm>& algorithms = google::protobuf::RepeatedPtrField<protobuf::TranslatorEntry::PublishSerializer::Algorithm>(),
                                   bool use_short_enum = false)
             {
                 std::stringstream out_ss;
@@ -162,17 +175,19 @@ namespace goby
                 
                 const google::protobuf::Descriptor* desc = in.GetDescriptor();
                 const google::protobuf::Reflection* refl = in.GetReflection();
-                
+
+                int included_fields = 0;
                 for(int i = 0, n = desc->field_count(); i < n; ++i)
                 {
                     const google::protobuf::FieldDescriptor* field_desc = desc->field(i);
 
                     // leave out unspecified or empty fields
                     if((!field_desc->is_repeated() && !refl->HasField(in, field_desc))
-                       || (field_desc->is_repeated() && !refl->FieldSize(in, field_desc)))
+                       || (field_desc->is_repeated() && refl->FieldSize(in, field_desc)==0))
                         continue;
 
-                    if(i) out_ss << ",";
+                    if(included_fields) out_ss << ",";
+                    ++included_fields;
                     
                     const std::string& field_name = field_desc->name();
 
@@ -593,18 +608,23 @@ namespace goby
             class MOOSTranslation <protobuf::TranslatorEntry::TECHNIQUE_FORMAT>
         {
           public:
+            struct RepeatedFieldKey
+            {
+                int field;
+                int index;
+            };
+            
             static void serialize(std::string* out, const google::protobuf::Message& in,
                                   const google::protobuf::RepeatedPtrField<protobuf::TranslatorEntry::PublishSerializer::Algorithm>& algorithms,
                                   const std::string& format,
                                   const std::string& repeated_delimiter,
                                   bool use_short_enum = false)
             {
-
+                std::string mutable_format = format;
                 
                 const google::protobuf::Descriptor* desc = in.GetDescriptor();
                 const google::protobuf::Reflection* refl = in.GetReflection();
-
-
+                
                 
                 int max_field_number = 1;
                 for(int i = 1, n = desc->field_count(); i < n; ++i)
@@ -614,9 +634,9 @@ namespace goby
                         max_field_number = field_desc->number();
                 }
                 
-
                 // run algorithms
-                std::map<int, std::string> modified_values = run_serialize_algorithms(in, algorithms);
+                std::map<int, std::string> modified_values =
+                    run_serialize_algorithms(in, algorithms);
 
                 for(std::map<int, std::string>::const_iterator it = modified_values.begin(),
                         n = modified_values.end(); it != n; ++it)
@@ -625,69 +645,173 @@ namespace goby
                         max_field_number = it->first;
                 }
 
+                for (boost::sregex_iterator it(mutable_format.begin(),
+                                               mutable_format.end(),
+                                               boost::regex("%([0-9\\.]+:)+[0-9\\.]+%")),
+                         end; it != end; ++it)
+                {
+                    std::string match = (*it)[0];
+                    boost::trim_if(match, boost::is_any_of("%"));
+                    std::vector<std::string> subfields;
+                    boost::split(subfields, match, boost::is_any_of(":"));
+                    
+                    ++max_field_number;
+
+                    const google::protobuf::FieldDescriptor* field_desc = 0;
+                    const google::protobuf::Reflection* sub_refl = refl;
+                    const google::protobuf::Message* sub_message = &in;
+                    
+                    for(int i = 0, n = subfields.size() - 1; i < n; ++i)
+                    {
+                        std::vector<std::string> field_and_index;
+                        boost::split(field_and_index, subfields[i], boost::is_any_of("."));
+                        
+                        field_desc = desc->FindFieldByNumber(goby::util::as<int>(field_and_index[0]));
+                        if(!field_desc ||
+                           field_desc->cpp_type() != google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE)
+                        {
+                            throw(std::runtime_error("Invalid ':' syntax given for format: " + match + ". All field indices except the last must be embedded messages"));
+                        }
+                        if(field_desc->is_repeated() && field_and_index.size() != 2)
+                        {
+                            throw(std::runtime_error("Invalid '.' syntax given for format: " + match + ". Repeated message, but no valid index given. E.g., use '3.4' for index 4 of field 3."));
+                        }
+                        
+                        sub_message = (field_desc->is_repeated()) ?
+                            &sub_refl->GetRepeatedMessage(*sub_message, field_desc, goby::util::as<int>(field_and_index[1])) :
+                            &sub_refl->GetMessage(*sub_message, field_desc);
+                        sub_refl = sub_message->GetReflection();
+                    }
+                    
+                    serialize(&modified_values[max_field_number],
+                              *sub_message,
+                              algorithms,
+                              "%" + subfields[subfields.size()-1] + "%",
+                              repeated_delimiter, use_short_enum);    
+
+                    boost::replace_all(mutable_format, match, goby::util::as<std::string>(max_field_number));
+
+                }
+
+
+                std::map<int, RepeatedFieldKey> indexed_repeated_fields;
                 
-                boost::format out_format(format);
+                for (boost::sregex_iterator it(mutable_format.begin(),
+                                               mutable_format.end(),
+                                               boost::regex("%[0-9]+\\.[0-9]+%")),
+                         end; it != end; ++it)
+                {
+                    std::string match = (*it)[0];
+                    boost::trim_if(match, boost::is_any_of("%"));
+                    
+                    ++max_field_number;
+
+                    boost::replace_all(mutable_format, match, goby::util::as<std::string>(max_field_number));
+
+                    RepeatedFieldKey key;
+
+                    std::vector<std::string> field_and_index;
+                    boost::split(field_and_index, match, boost::is_any_of("."));
+
+                    key.field = goby::util::as<int>(field_and_index[0]);
+                    key.index = goby::util::as<int>(field_and_index[1]);
+                    
+                    indexed_repeated_fields[max_field_number] = key;
+                }
+
+                
+                boost::format out_format(mutable_format);
                 out_format.exceptions( boost::io::all_error_bits ^ ( boost::io::too_many_args_bit | boost::io::too_few_args_bit )); 
 
                 for(int i = 1; i <= max_field_number; ++i)
                 {
-                    const google::protobuf::FieldDescriptor* field_desc = desc->FindFieldByNumber(i);
+                    bool is_indexed_repeated_field = indexed_repeated_fields.count(i);
+                    
+                    const google::protobuf::FieldDescriptor* field_desc = desc->FindFieldByNumber(is_indexed_repeated_field ? indexed_repeated_fields[i].field : i);
                     std::map<int, std::string>::const_iterator mod_it = modified_values.find(i);
                     if(field_desc)
                     {                    
                         if(field_desc->is_repeated())
                         {
+                            int start = (is_indexed_repeated_field) ? indexed_repeated_fields[i].index : 0;
+                            int end = (is_indexed_repeated_field) ? indexed_repeated_fields[i].index+1 : refl->FieldSize(in, field_desc);
+
                             std::stringstream out_repeated;
-                            for(int j = 0, m = refl->FieldSize(in, field_desc); j < m; ++j)
+                            for(int j = start; j < end; ++j)
                             {                    
+                                if(j && !is_indexed_repeated_field) out_repeated << repeated_delimiter;
                                 switch(field_desc->cpp_type())
                                 {
-                                    if(j) out_repeated << repeated_delimiter;
                                     case google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE:
                                         out_repeated << goby::util::hex_encode(refl->GetRepeatedMessage(in, field_desc, j).SerializeAsString());
                                         break;    
                         
                                     case google::protobuf::FieldDescriptor::CPPTYPE_INT32:
-                                        out_repeated << refl->GetRepeatedInt32(in, field_desc, j);
+                                        out_repeated << ((j < refl->FieldSize(in, field_desc)) ?
+                                                         refl->GetRepeatedInt32(in, field_desc, j) :
+                                                         std::numeric_limits<int32>::max());
+                                        
                                         break;
                             
                                     case google::protobuf::FieldDescriptor::CPPTYPE_INT64:
-                                        out_repeated << refl->GetRepeatedInt64(in, field_desc, j);
+                                        out_repeated << ((j < refl->FieldSize(in, field_desc)) ?
+                                                         refl->GetRepeatedInt64(in, field_desc, j) :
+                                                         std::numeric_limits<int64>::max());
                                         break;
                             
                                     case google::protobuf::FieldDescriptor::CPPTYPE_UINT32:
-                                        out_repeated << refl->GetRepeatedUInt32(in, field_desc, j);
+                                        out_repeated << ((j < refl->FieldSize(in, field_desc)) ?
+                                                         refl->GetRepeatedUInt32(in, field_desc, j) :
+                                                         std::numeric_limits<uint32>::max());
                                         break;
                             
                                     case google::protobuf::FieldDescriptor::CPPTYPE_UINT64:
-                                        out_repeated << refl->GetRepeatedUInt64(in, field_desc, j);
+                                        out_repeated << ((j < refl->FieldSize(in, field_desc)) ?
+                                                         refl->GetRepeatedUInt64(in, field_desc, j) :
+                                                         std::numeric_limits<uint64>::max());
                                         break;
                             
                                     case google::protobuf::FieldDescriptor::CPPTYPE_BOOL:
-                                        out_repeated << std::boolalpha << refl->GetRepeatedBool(in, field_desc, j);
+                                        out_repeated << std::boolalpha << ((j < refl->FieldSize(in, field_desc)) ?
+                                                                           refl->GetRepeatedBool(in, field_desc, j) :
+                                                                           field_desc->default_value_bool());
                                         break;
                             
                                     case google::protobuf::FieldDescriptor::CPPTYPE_STRING:
                                         if(field_desc->type() ==  google::protobuf::FieldDescriptor::TYPE_STRING)
-                                            out_repeated << refl->GetRepeatedString(in, field_desc, j);
+                                            out_repeated << ((j < refl->FieldSize(in, field_desc)) ?
+                                                             refl->GetRepeatedString(in, field_desc, j) :
+                                                             field_desc->default_value_string());
                                         else if(field_desc->type() ==  google::protobuf::FieldDescriptor::TYPE_BYTES)
-                                            out_repeated << goby::util::hex_encode(refl->GetRepeatedString(in, field_desc, j));    
+                                            out_repeated << goby::util::hex_encode(((j < refl->FieldSize(in, field_desc)) ?
+                                                             refl->GetRepeatedString(in, field_desc, j) :
+                                                                                    field_desc->default_value_string()));
                                         break;                    
                             
                                     case google::protobuf::FieldDescriptor::CPPTYPE_FLOAT:
-                                        out_repeated << refl->GetRepeatedFloat(in, field_desc, j);
+                                        out_repeated << std::setprecision(std::numeric_limits<float>::digits10)
+                                                     << ((j < refl->FieldSize(in, field_desc)) ?
+                                                         refl->GetRepeatedFloat(in, field_desc, j) :
+                                                         std::numeric_limits<float>::quiet_NaN());
                                         break;
                             
                                     case google::protobuf::FieldDescriptor::CPPTYPE_DOUBLE:
-                                        out_repeated << std::setprecision(15) << refl->GetRepeatedDouble(in, field_desc, j);
+                                        out_repeated << std::setprecision(std::numeric_limits<double>::digits10)
+                                                     << ((j < refl->FieldSize(in, field_desc)) ?
+                                                         refl->GetRepeatedDouble(in, field_desc, j) :
+                                                         std::numeric_limits<double>::quiet_NaN());
                                         break;
                             
                                     case google::protobuf::FieldDescriptor::CPPTYPE_ENUM:
+                                    {
+                                        const google::protobuf::EnumValueDescriptor* enum_val =  ((j < refl->FieldSize(in, field_desc)) ?
+                                                                                           refl->GetRepeatedEnum(in, field_desc, j) :
+                                                                                           field_desc->default_value_enum());
                                         out_repeated << ((use_short_enum) ?
-                                                         strip_name_from_enum(refl->GetRepeatedEnum(in, field_desc, j)->name(), field_desc->name()) :
-                                                         refl->GetRepeatedEnum(in, field_desc, j)->name());
-                                        
-                                        break;
+                                                         strip_name_from_enum(enum_val->name(), field_desc->name()) :
+                                                         enum_val->name());
+                                    }
+                                    break;
                         
                                 }
                             }
@@ -695,54 +819,61 @@ namespace goby
                         }
                         else
                         {
-                            switch(field_desc->cpp_type())
+                            if(!refl->HasField(in, field_desc))
                             {
-                                case google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE:
-                                    out_format % goby::util::hex_encode(refl->GetMessage(in, field_desc).SerializeAsString());
-                                    break;
-                        
-                                case google::protobuf::FieldDescriptor::CPPTYPE_INT32:
-                                    out_format % refl->GetInt32(in, field_desc);
-                                    break;
-                        
-                                case google::protobuf::FieldDescriptor::CPPTYPE_INT64:
-                                    out_format % refl->GetInt64(in, field_desc);                        
-                                    break;
-
-                                case google::protobuf::FieldDescriptor::CPPTYPE_UINT32:
-                                    out_format % refl->GetUInt32(in, field_desc);
-                                    break;
-
-                                case google::protobuf::FieldDescriptor::CPPTYPE_UINT64:
-                                    out_format % refl->GetUInt64(in, field_desc);
-                                    break;
-                        
-                                case google::protobuf::FieldDescriptor::CPPTYPE_BOOL:
-                                    out_format % refl->GetBool(in, field_desc);
-                                    break;
-                    
-                                case google::protobuf::FieldDescriptor::CPPTYPE_STRING:
-                                    if(field_desc->type() ==  google::protobuf::FieldDescriptor::TYPE_STRING)
-                                        out_format % refl->GetString(in, field_desc);
-                                    else if(field_desc->type() ==  google::protobuf::FieldDescriptor::TYPE_BYTES)
-                                        out_format % goby::util::hex_encode(refl->GetString(in, field_desc));
-                                    break;                    
-                
-                                case google::protobuf::FieldDescriptor::CPPTYPE_FLOAT:
-                                    out_format % refl->GetFloat(in, field_desc);
-                                    break;
-                
-                                case google::protobuf::FieldDescriptor::CPPTYPE_DOUBLE:
-                                    out_format % refl->GetDouble(in, field_desc);
-                                    break;
-                
-                                case google::protobuf::FieldDescriptor::CPPTYPE_ENUM:
-
-                                    out_format % ((use_short_enum) ?
-                                                  strip_name_from_enum(refl->GetEnum(in, field_desc)->name(), field_desc->name()) :
-                                                  refl->GetEnum(in, field_desc)->name());
-                                    break;
+                                out_format % "";
                             }
+                            else
+                            {
+                                switch(field_desc->cpp_type())
+                                {
+                                    case google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE:
+                                        out_format % goby::util::hex_encode(refl->GetMessage(in, field_desc).SerializeAsString());
+                                        break;
+                        
+                                    case google::protobuf::FieldDescriptor::CPPTYPE_INT32:
+                                        out_format % refl->GetInt32(in, field_desc);
+                                        break;
+                        
+                                    case google::protobuf::FieldDescriptor::CPPTYPE_INT64:
+                                        out_format % refl->GetInt64(in, field_desc);                        
+                                        break;
+
+                                    case google::protobuf::FieldDescriptor::CPPTYPE_UINT32:
+                                        out_format % refl->GetUInt32(in, field_desc);
+                                        break;
+
+                                    case google::protobuf::FieldDescriptor::CPPTYPE_UINT64:
+                                        out_format % refl->GetUInt64(in, field_desc);
+                                        break;
+                        
+                                    case google::protobuf::FieldDescriptor::CPPTYPE_BOOL:
+                                        out_format % goby::util::as<std::string>(refl->GetBool(in, field_desc));
+                                        break;
+                    
+                                    case google::protobuf::FieldDescriptor::CPPTYPE_STRING:
+                                        if(field_desc->type() ==  google::protobuf::FieldDescriptor::TYPE_STRING)
+                                            out_format % refl->GetString(in, field_desc);
+                                        else if(field_desc->type() ==  google::protobuf::FieldDescriptor::TYPE_BYTES)
+                                            out_format % goby::util::hex_encode(refl->GetString(in, field_desc));
+                                        break;                    
+                
+                                    case google::protobuf::FieldDescriptor::CPPTYPE_FLOAT:
+                                        out_format % boost::io::group(std::setprecision(std::numeric_limits<float>::digits10), refl->GetFloat(in, field_desc));
+                                        break;
+                
+                                    case google::protobuf::FieldDescriptor::CPPTYPE_DOUBLE:
+                                        out_format % boost::io::group(std::setprecision(std::numeric_limits<double>::digits10), refl->GetDouble(in, field_desc));
+                                        break;
+                
+                                    case google::protobuf::FieldDescriptor::CPPTYPE_ENUM:
+
+                                        out_format % ((use_short_enum) ?
+                                                      strip_name_from_enum(refl->GetEnum(in, field_desc)->name(), field_desc->name()) :
+                                                      refl->GetEnum(in, field_desc)->name());
+                                        break;
+                                }
+                            }    
                         }
                     }
                     else if(mod_it != modified_values.end())
@@ -763,6 +894,7 @@ namespace goby
             
             static void parse(const std::string& in, google::protobuf::Message* out,
                               std::string format,
+                              const std::string& repeated_delimiter,
                               const google::protobuf::RepeatedPtrField<protobuf::TranslatorEntry::CreateParser::Algorithm>& algorithms = google::protobuf::RepeatedPtrField<protobuf::TranslatorEntry::CreateParser::Algorithm>(),
                               bool use_short_enum = false)
             {
@@ -791,121 +923,253 @@ namespace goby
                         ++i; // now *i is the next separator
                         std::string extract = str.substr(0, lower_str.find(*i));
                         
-                        int field_index = boost::lexical_cast<int>(specifier);                        
                         
-                        try
+
+                        if(specifier.find(":") != std::string::npos)
                         {
-                            const google::protobuf::FieldDescriptor* field_desc = desc->FindFieldByNumber(field_index);
-                            
-                            if(!field_desc)
-                                throw(std::runtime_error("Bad field: " + specifier + " not in message " + desc->full_name()));
-
-                            // run algorithms
-                            typedef google::protobuf::RepeatedPtrField<protobuf::TranslatorEntry::CreateParser::Algorithm>::const_iterator const_iterator;
-                        
-                            for(const_iterator it = algorithms.begin(), n = algorithms.end();
-                                it != n; ++it)
-                            {
-                                goby::transitional::DCCLMessageVal extract_val(extract);
+                            std::vector<std::string> subfields;
+                            boost::split(subfields, specifier, boost::is_any_of(":"));
+                            const google::protobuf::FieldDescriptor* field_desc = 0;
+                            const google::protobuf::Reflection* sub_refl = refl;
+                            google::protobuf::Message* sub_message = out;
                                 
-                                if(it->primary_field() == field_index)
-                                    transitional::DCCLAlgorithmPerformer::getInstance()->
-                                        run_algorithm(it->name(),
-                                                      extract_val,
-                                                      std::vector<goby::transitional::DCCLMessageVal>());
-                                
-                                extract = std::string(extract_val);
-                            }
-
-                            
-                            switch(field_desc->cpp_type())
+                            for(int i = 0, n = subfields.size() - 1; i < n; ++i)
                             {
-                                case google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE:
-                                    field_desc->is_repeated()
-                                        ? refl->AddMessage(out, field_desc)->ParseFromString(goby::util::hex_decode(extract))
-                                        : refl->MutableMessage(out, field_desc)->ParseFromString(goby::util::hex_decode(extract));
-                                    break;
-                        
-                                case google::protobuf::FieldDescriptor::CPPTYPE_INT32:
-                                    field_desc->is_repeated()
-                                        ? refl->AddInt32(out, field_desc, goby::util::as<google::protobuf::int32>(extract))
-                                        : refl->SetInt32(out, field_desc, goby::util::as<google::protobuf::int32>(extract));
-                                    break;
-                        
-                                case google::protobuf::FieldDescriptor::CPPTYPE_INT64:
-                                    field_desc->is_repeated()
-                                        ? refl->AddInt64(out, field_desc, goby::util::as<google::protobuf::int64>(extract))
-                                        : refl->SetInt64(out, field_desc, goby::util::as<google::protobuf::int64>(extract));                        
-                                    break;
-
-                                case google::protobuf::FieldDescriptor::CPPTYPE_UINT32:
-                                    field_desc->is_repeated()
-                                        ? refl->AddUInt32(out, field_desc, goby::util::as<google::protobuf::uint32>(extract))
-                                        : refl->SetUInt32(out, field_desc, goby::util::as<google::protobuf::uint32>(extract));
-                                    break;
-
-                                case google::protobuf::FieldDescriptor::CPPTYPE_UINT64:
-                                    field_desc->is_repeated()
-                                        ? refl->AddUInt64(out, field_desc, goby::util::as<google::protobuf::uint64>(extract))
-                                        : refl->SetUInt64(out, field_desc, goby::util::as<google::protobuf::uint64>(extract));
-                                    break;
-                        
-                                case google::protobuf::FieldDescriptor::CPPTYPE_BOOL:
-                                    field_desc->is_repeated()                            
-                                        ? refl->AddBool(out, field_desc, goby::util::as<bool>(extract))
-                                        : refl->SetBool(out, field_desc, goby::util::as<bool>(extract));
-                                    break;
-                    
-                                case google::protobuf::FieldDescriptor::CPPTYPE_STRING:
-                                    field_desc->is_repeated()     
-                                        ? refl->AddString(out, field_desc, extract)
-                                        : refl->SetString(out, field_desc, extract);
-                                    break;                    
-                
-                                case google::protobuf::FieldDescriptor::CPPTYPE_FLOAT:
-                                    field_desc->is_repeated()     
-                                        ? refl->AddFloat(out, field_desc, goby::util::as<float>(extract))
-                                        : refl->SetFloat(out, field_desc, goby::util::as<float>(extract));
-                                    break;
-                
-                                case google::protobuf::FieldDescriptor::CPPTYPE_DOUBLE:
-                                    field_desc->is_repeated()
-                                        ? refl->AddDouble(out, field_desc, goby::util::as<double>(extract))
-                                        : refl->SetDouble(out, field_desc, goby::util::as<double>(extract));
-                                    break;
-                
-                                case google::protobuf::FieldDescriptor::CPPTYPE_ENUM:
+                                std::vector<std::string> field_and_index;
+                                boost::split(field_and_index, subfields[i], boost::is_any_of("."));
+                                
+                                field_desc = desc->FindFieldByNumber(goby::util::as<int>(field_and_index[0]));
+                                if(!field_desc ||
+                                   field_desc->cpp_type() != google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE)
                                 {
-                                    std::string enum_value = ((use_short_enum) ? add_name_to_enum(extract, field_desc->name()) : extract);
-
-                                    
-                                    const google::protobuf::EnumValueDescriptor* enum_desc =
-                                        refl->GetEnum(*out, field_desc)->type()->FindValueByName(enum_value);
-
-                                    // try upper case
-                                    if(!enum_desc)
-                                        enum_desc = refl->GetEnum(*out, field_desc)->type()->FindValueByName(boost::to_upper_copy(enum_value));
-                                    // try lower case
-                                    if(!enum_desc)
-                                        enum_desc = refl->GetEnum(*out, field_desc)->type()->FindValueByName(boost::to_lower_copy(enum_value));
-                                    if(enum_desc)
-                                    {
-                                        field_desc->is_repeated()
-                                            ? refl->AddEnum(out, field_desc, enum_desc)
-                                            : refl->SetEnum(out, field_desc, enum_desc);
-                                    }
-                        
+                                    throw(std::runtime_error("Invalid ':' syntax given for format: " + specifier + ". All field indices except the last must be singular embedded messages"));
                                 }
-                                break;
+
+                                int index = -1;                                
+                                if(field_desc->is_repeated())
+                                {
+				  if(field_and_index.size() != 2)
+				      throw(std::runtime_error("Invalid '.' syntax given for format: " + specifier + ". Repeated message, but no valid index given. E.g., use '3.4' for index 4 of field 3."));
+				    index =  goby::util::as<int>(field_and_index.at(1));
+				    while(sub_refl->FieldSize(*sub_message, field_desc) <= index)
+				      sub_refl->AddMessage(sub_message, field_desc);
+                                }
+                                
+                                sub_message = (field_desc->is_repeated()) ?
+                                    sub_refl->MutableRepeatedMessage(sub_message, field_desc,  index) :  
+                                    sub_refl->MutableMessage(sub_message, field_desc);
+                                sub_refl = sub_message->GetReflection();
                             }
-
+                            
+                            parse(extract,
+                                  sub_message,
+                                  "%" + subfields[subfields.size()-1] + "%",
+                                  repeated_delimiter,
+                                  algorithms,
+                                  use_short_enum);
                         }
-                        catch(boost::bad_lexical_cast&)
-                        {
-                            throw(std::runtime_error("Bad specifier: " + specifier + ", must be an integer. For message: " +  desc->full_name()));
-                        }
+                        else
+                        {                            
+                            try
+                            {
+                                std::vector<std::string> field_and_index;
+                                boost::split(field_and_index, specifier, boost::is_any_of("."));
 
-                        // goby::glog.is(DEBUG1) && goby::glog << "field: [" << field_index << "], extract: [" << extract << "]" << std::endl;
+                                int field_index = boost::lexical_cast<int>(field_and_index[0]);
+                                bool is_indexed_repeated_field = field_and_index.size() == 2;
+
+                                int value_index = 0;
+                                if(is_indexed_repeated_field)
+                                    value_index = boost::lexical_cast<int>(field_and_index[1]);
+                                
+                                const google::protobuf::FieldDescriptor* field_desc = desc->FindFieldByNumber(field_index);
+                            
+                                if(!field_desc)
+                                    throw(std::runtime_error("Bad field: " + specifier + " not in message " + desc->full_name()));
+
+                                // run algorithms
+                                typedef google::protobuf::RepeatedPtrField<protobuf::TranslatorEntry::CreateParser::Algorithm>::const_iterator const_iterator;
+                        
+                                for(const_iterator it = algorithms.begin(), n = algorithms.end();
+                                    it != n; ++it)
+                                {
+                                    goby::transitional::DCCLMessageVal extract_val(extract);
+                                
+                                    if(it->primary_field() == field_index)
+                                        transitional::DCCLAlgorithmPerformer::getInstance()->
+                                            run_algorithm(it->name(),
+                                                          extract_val,
+                                                          std::vector<goby::transitional::DCCLMessageVal>());
+                                
+                                    extract = std::string(extract_val);
+                                }
+
+                                std::vector<std::string> parts;
+                                if(is_indexed_repeated_field || !field_desc->is_repeated())
+                                    parts.push_back(extract);
+                                else
+                                    boost::split(parts, extract, boost::is_any_of(repeated_delimiter));
+
+                                for(int j = 0, m = parts.size(); j < m; ++j)
+                                {
+                                    switch(field_desc->cpp_type())
+                                    {
+                                        case google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE:
+                                            if(is_indexed_repeated_field)
+                                            {
+                                                while(refl->FieldSize(*out, field_desc) <= value_index)
+                                                    refl->AddMessage(out, field_desc);
+                                            }
+                                            field_desc->is_repeated()
+                                                ? (is_indexed_repeated_field ?
+                                                   refl->MutableRepeatedMessage(out, field_desc, value_index)->ParseFromString(goby::util::hex_decode(parts[j])) : 
+                                                   refl->AddMessage(out, field_desc)->ParseFromString(goby::util::hex_decode(parts[j])))
+                                                : refl->MutableMessage(out, field_desc)->ParseFromString(goby::util::hex_decode(parts[j]));
+                                            break;
+                        
+                                        case google::protobuf::FieldDescriptor::CPPTYPE_INT32:
+                                            if(is_indexed_repeated_field)
+                                            {
+                                                while(refl->FieldSize(*out, field_desc) <= value_index)
+                                                    refl->AddInt32(out, field_desc, field_desc->default_value_int32());
+                                            }
+                                            field_desc->is_repeated()
+                                                ? (is_indexed_repeated_field ?
+                                                   refl->SetRepeatedInt32(out, field_desc, value_index, goby::util::as<google::protobuf::int32>(parts[j])) :
+                                                   refl->AddInt32(out, field_desc, goby::util::as<google::protobuf::int32>(parts[j])))
+                                                : refl->SetInt32(out, field_desc, goby::util::as<google::protobuf::int32>(parts[j]));
+                                            break;
+                        
+                                        case google::protobuf::FieldDescriptor::CPPTYPE_INT64:
+                                            if(is_indexed_repeated_field)
+                                            {
+                                                while(refl->FieldSize(*out, field_desc) <= value_index)
+                                                    refl->AddInt64(out, field_desc, field_desc->default_value_int64());
+                                            }
+                                            field_desc->is_repeated()
+                                                ? (is_indexed_repeated_field ?
+                                                   refl->SetRepeatedInt64(out, field_desc, value_index, goby::util::as<google::protobuf::int64>(parts[j])) :
+                                                   refl->AddInt64(out, field_desc, goby::util::as<google::protobuf::int64>(parts[j])))
+                                                : refl->SetInt64(out, field_desc, goby::util::as<google::protobuf::int64>(parts[j]));                        
+                                            break;
+
+                                        case google::protobuf::FieldDescriptor::CPPTYPE_UINT32:
+                                            if(is_indexed_repeated_field)
+                                            {
+                                                while(refl->FieldSize(*out, field_desc) <= value_index)
+                                                    refl->AddUInt32(out, field_desc, field_desc->default_value_uint32());
+                                            }
+                                            field_desc->is_repeated()
+                                                ? (is_indexed_repeated_field ?
+                                                   refl->SetRepeatedUInt32(out, field_desc, value_index, goby::util::as<google::protobuf::uint32>(parts[j])) :
+                                                   refl->AddUInt32(out, field_desc, goby::util::as<google::protobuf::uint32>(parts[j])))
+                                                : refl->SetUInt32(out, field_desc, goby::util::as<google::protobuf::uint32>(parts[j]));
+                                            break;
+
+                                        case google::protobuf::FieldDescriptor::CPPTYPE_UINT64:
+                                            if(is_indexed_repeated_field)
+                                            {
+                                                while(refl->FieldSize(*out, field_desc) <= value_index)
+                                                    refl->AddUInt64(out, field_desc, field_desc->default_value_uint64());
+                                            }
+                                            field_desc->is_repeated()
+                                                ? (is_indexed_repeated_field ?
+                                                   refl->SetRepeatedUInt64(out, field_desc, value_index, goby::util::as<google::protobuf::uint64>(parts[j])) :
+                                                   refl->AddUInt64(out, field_desc, goby::util::as<google::protobuf::uint64>(parts[j])))
+                                                : refl->SetUInt64(out, field_desc, goby::util::as<google::protobuf::uint64>(parts[j]));
+                                            break;
+                        
+                                        case google::protobuf::FieldDescriptor::CPPTYPE_BOOL:
+                                            if(is_indexed_repeated_field)
+                                            {
+                                                while(refl->FieldSize(*out, field_desc) <= value_index)
+                                                    refl->AddBool(out, field_desc, field_desc->default_value_bool());
+                                            }
+                                            field_desc->is_repeated()                            
+                                                ? (is_indexed_repeated_field ?
+                                                   refl->SetRepeatedBool(out, field_desc, value_index, goby::util::as<bool>(parts[j])) :
+                                                   refl->AddBool(out, field_desc, goby::util::as<bool>(parts[j])))
+                                                : refl->SetBool(out, field_desc, goby::util::as<bool>(parts[j]));
+                                            break;
+                    
+                                        case google::protobuf::FieldDescriptor::CPPTYPE_STRING:
+                                            if(is_indexed_repeated_field)
+                                            {
+                                                while(refl->FieldSize(*out, field_desc) <= value_index)
+                                                    refl->AddString(out, field_desc, field_desc->default_value_string());
+                                            }
+                                            field_desc->is_repeated()     
+                                                ? (is_indexed_repeated_field ?
+                                                   refl->SetRepeatedString(out, field_desc, value_index, parts[j]) :
+                                                   refl->AddString(out, field_desc, parts[j]))
+                                                : refl->SetString(out, field_desc, parts[j]);
+                                            break;                    
+                
+                                        case google::protobuf::FieldDescriptor::CPPTYPE_FLOAT:
+                                            if(is_indexed_repeated_field)
+                                            {
+                                                while(refl->FieldSize(*out, field_desc) <= value_index)
+                                                    refl->AddFloat(out, field_desc, field_desc->default_value_float());
+                                            }
+                                            field_desc->is_repeated()     
+                                                ? (is_indexed_repeated_field ?
+                                                   refl->SetRepeatedFloat(out, field_desc, value_index, goby::util::as<float>(parts[j])) :
+                                                   refl->AddFloat(out, field_desc, goby::util::as<float>(parts[j])))
+                                                : refl->SetFloat(out, field_desc, goby::util::as<float>(parts[j]));
+                                            break;
+                
+                                        case google::protobuf::FieldDescriptor::CPPTYPE_DOUBLE:
+                                            if(is_indexed_repeated_field)
+                                            {
+                                                while(refl->FieldSize(*out, field_desc) <= value_index)
+                                                    refl->AddDouble(out, field_desc, field_desc->default_value_double());
+                                            }
+                                            field_desc->is_repeated()
+                                                ? (is_indexed_repeated_field ?
+                                                   refl->SetRepeatedDouble(out, field_desc, value_index, goby::util::as<double>(parts[j])) :
+                                                   refl->AddDouble(out, field_desc, goby::util::as<double>(parts[j])))
+                                                : refl->SetDouble(out, field_desc, goby::util::as<double>(parts[j]));
+                                            break;
+                
+                                        case google::protobuf::FieldDescriptor::CPPTYPE_ENUM:
+                                        {
+                                            if(is_indexed_repeated_field)
+                                            {
+                                                while(refl->FieldSize(*out, field_desc) <= value_index)
+                                                    refl->AddEnum(out, field_desc, field_desc->default_value_enum());
+                                            }
+                                            std::string enum_value = ((use_short_enum) ? add_name_to_enum(parts[j], field_desc->name()) : parts[j]);
+                                    
+                                            const google::protobuf::EnumValueDescriptor* enum_desc =
+                                                refl->GetEnum(*out, field_desc)->type()->FindValueByName(enum_value);
+
+                                            // try upper case
+                                            if(!enum_desc)
+                                                enum_desc = refl->GetEnum(*out, field_desc)->type()->FindValueByName(boost::to_upper_copy(enum_value));
+                                            // try lower case
+                                            if(!enum_desc)
+                                                enum_desc = refl->GetEnum(*out, field_desc)->type()->FindValueByName(boost::to_lower_copy(enum_value));
+                                            if(enum_desc)
+                                            {
+                                                field_desc->is_repeated()
+                                                    ? (is_indexed_repeated_field ?
+                                                       refl->SetRepeatedEnum(out, field_desc, value_index, enum_desc) :
+                                                       refl->AddEnum(out, field_desc, enum_desc))
+                                                    : refl->SetEnum(out, field_desc, enum_desc);
+                                            }       
+                                        }
+                                        break;
+                                    }
+                                }
+                            
+                            }
+                            catch(boost::bad_lexical_cast&)
+                            {
+                                throw(std::runtime_error("Bad specifier: " + specifier + ", must be an integer. For message: " +  desc->full_name()));
+                            }
+                        }
+                        
+                        // goby::glog.is(DEBUG1) && goby::glog << "field: [" << field_index << "], parts[j]: [" << parts[j] << "]" << std::endl;
                     }
                     else
                     {
@@ -931,7 +1195,9 @@ namespace goby
 /// \param msg Google Protocol buffers message to serialize
 inline void serialize_for_moos(std::string* out, const google::protobuf::Message& msg)
 {
+    std::string header = goby::moos::MAGIC_PROTOBUF_HEADER + "[" + msg.GetDescriptor()->full_name() + "] ";
     goby::moos::MOOSTranslation<goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_TEXT_FORMAT>::serialize(out, msg);
+    *out =  header + *out;
 }
 
 
@@ -941,10 +1207,59 @@ inline void serialize_for_moos(std::string* out, const google::protobuf::Message
 /// \param msg Google Protocol buffers message to store result
 inline void parse_for_moos(const std::string& in, google::protobuf::Message* msg)
 {
-    goby::moos::MOOSTranslation<goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_TEXT_FORMAT>::parse(in, msg);    
+    if(in.size() > goby::moos::MAGIC_PROTOBUF_HEADER.size() && in.substr(0, goby::moos::MAGIC_PROTOBUF_HEADER.size()) == goby::moos::MAGIC_PROTOBUF_HEADER)
+    {
+        size_t end_bracket_pos = in.find(']');
+
+        if(end_bracket_pos == std::string::npos)
+            throw(std::runtime_error("Incorrectly formatted protobuf message passed to parse_for_moos."));
+        
+        std::string name = in.substr(goby::moos::MAGIC_PROTOBUF_HEADER.size() + 1,
+                                     end_bracket_pos - 1 - goby::moos::MAGIC_PROTOBUF_HEADER.size());
+        if(name != msg->GetDescriptor()->full_name())
+            throw(std::runtime_error("Wrong Protobuf type passed to parse_for_moos. Expected: " + msg->GetDescriptor()->full_name() + ", received: " + name));
+
+        if(in.size() > end_bracket_pos + 1)
+            goby::moos::MOOSTranslation<goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_TEXT_FORMAT>::parse(in.substr(end_bracket_pos + 1), msg);
+        else
+            msg->Clear();
+    }
+    else
+    {
+        goby::moos::MOOSTranslation<goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_TEXT_FORMAT>::parse(in, msg);
+    }
 }
 
+inline boost::shared_ptr<google::protobuf::Message> dynamic_parse_for_moos(const std::string& in)
+{
+    if(in.size() > goby::moos::MAGIC_PROTOBUF_HEADER.size() && in.substr(0, goby::moos::MAGIC_PROTOBUF_HEADER.size()) == goby::moos::MAGIC_PROTOBUF_HEADER)
+    {
+        size_t end_bracket_pos = in.find(']');
 
-   
+        if(end_bracket_pos == std::string::npos)
+            throw(std::runtime_error("Incorrectly formatted protobuf message passed to parse_for_moos."));
+        
+        std::string name = in.substr(goby::moos::MAGIC_PROTOBUF_HEADER.size() + 1,
+                                     end_bracket_pos - 1 - goby::moos::MAGIC_PROTOBUF_HEADER.size());
+
+        try
+        {
+            boost::shared_ptr<google::protobuf::Message> return_message =
+                goby::util::DynamicProtobufManager::new_protobuf_message(name);
+            if(in.size() > end_bracket_pos + 1)
+                goby::moos::MOOSTranslation<goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_TEXT_FORMAT>::parse(in.substr(end_bracket_pos + 1), return_message.get());
+            return return_message;
+        }
+        catch(std::exception& e)
+        {
+            return boost::shared_ptr<google::protobuf::Message>();
+        }        
+    }
+    else
+    {
+        return boost::shared_ptr<google::protobuf::Message>();
+    }
+}
+
 
 #endif

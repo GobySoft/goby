@@ -6,11 +6,11 @@ add_executable(pAcommsHandler
   pAcommsHandler.cpp ${PROTO_SRCS} ${PROTO_HDRS})
   
 target_link_libraries(pAcommsHandler
-  m
-  pthread
   goby_acomms
   goby_util
   goby_moos
   ${MOOS_LIBRARIES}
   ${Boost_LIBRARIES}
-  ${PROTOBUF_LIBRARY})
+  ${PROTOBUF_LIBRARY}
+  ${CMAKE_DL_LIBS}
+)

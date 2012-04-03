@@ -32,13 +32,13 @@
 
 namespace goby
 {
-    namespace core
+    namespace common
     {
         class DBOPlugin
         {
           public:
-            typedef goby::core::DBOPlugin* create_t();
-            typedef void destroy_t(goby::core::DBOPlugin*);
+            typedef goby::common::DBOPlugin* create_t();
+            typedef void destroy_t(goby::common::DBOPlugin*);
             
             DBOPlugin() { }
             virtual ~DBOPlugin() { }
@@ -50,7 +50,7 @@ namespace goby
 
             virtual void create_indices() { }
         };
-
+        
         class ProtobufDBOPlugin : public DBOPlugin
         {
           public:
@@ -149,7 +149,7 @@ namespace goby
             
             std::set<DBOPlugin*> plugins();
             
-            DBOPlugin* plugin(goby::core::MarshallingScheme scheme);
+            DBOPlugin* plugin(goby::common::MarshallingScheme scheme);
           private:
             class PluginLibrary
             {
@@ -170,11 +170,11 @@ namespace goby
                 
                 void* handle_;
                 DBOPlugin* plugin_;
-                goby::core::DBOPlugin::destroy_t* destroy_;
-                goby::core::DBOPlugin::create_t* create_;
+                goby::common::DBOPlugin::destroy_t* destroy_;
+                goby::common::DBOPlugin::create_t* create_;
             };
             
-            std::map<goby::core::MarshallingScheme, boost::shared_ptr<PluginLibrary> > plugins_;
+            std::map<goby::common::MarshallingScheme, boost::shared_ptr<PluginLibrary> > plugins_;
         };
         
         
@@ -190,10 +190,10 @@ namespace Wt
     {
         template <>
             template <int i>
-            struct persist<goby::core::ProtobufDBOPlugin::ProtoBufWrapper<i> >
+            struct persist<goby::common::ProtobufDBOPlugin::ProtoBufWrapper<i> >
         {
             template<typename A>
-                static void apply(goby::core::ProtobufDBOPlugin::ProtoBufWrapper<i>& wrapper, A& action)
+                static void apply(goby::common::ProtobufDBOPlugin::ProtoBufWrapper<i>& wrapper, A& action)
             {
                 Wt::Dbo::field(action, wrapper.unique_id(), "raw_id");
                 protobuf_message_persist(wrapper.msg(), action);

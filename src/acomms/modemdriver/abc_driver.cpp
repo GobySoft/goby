@@ -1,28 +1,36 @@
-// copyright 2011 t. schneider tes@mit.edu
+// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+//                     Massachusetts Institute of Technology (2007-)
+//                     Woods Hole Oceanographic Institution (2007-)
+//                     Goby Developers Team (https://launchpad.net/~goby-dev)
 // 
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+//
+// This file is part of the Goby Underwater Autonomy Project Libraries
+// ("The Goby Libraries").
+//
+// The Goby Libraries are free software: you can redistribute them and/or modify
+// them under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// This software is distributed in the hope that it will be useful,
+// The Goby Libraries are distributed in the hope that they will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Lesser General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
-// along with this software.  If not, see <http://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU Lesser General Public License
+// along with Goby.  If not, see <http://www.gnu.org/licenses/>.
+
 
 #include "abc_driver.h"
 #include "driver_exception.h"
 
-#include "goby/util/logger.h"
+#include "goby/common/logger.h"
 #include "goby/util/binary.h"
 
 using goby::util::hex_encode;
 using goby::util::hex_decode;
 using goby::glog;
-using namespace goby::util::logger;
+using namespace goby::common::logger;
 
 goby::acomms::ABCDriver::ABCDriver()
 {
@@ -126,7 +134,7 @@ void goby::acomms::ABCDriver::do_work()
             protobuf::ModemTransmission msg;
             msg.set_src(goby::util::as<int32>(parsed["FROM"]));
             msg.set_dest(goby::util::as<int32>(parsed["TO"]));
-            msg.set_time(goby::util::goby_time<uint64>());
+            msg.set_time(goby::common::goby_time<uint64>());
             
             glog.is(DEBUG1) && glog << group("modem_in") << in << std::endl;
             

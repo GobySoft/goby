@@ -1,20 +1,37 @@
 goby_find_required_package(MOOS)
-goby_find_required_package(Xerces)
-
 include_directories(${MOOS_INCLUDE_DIRS})
+
 
 file(GLOB PROTOS protobuf/*.proto)
 protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${PROTOS})
 
-file(GLOB SRC *.cpp transitional/*.cpp)
-add_library(goby_moos  ${SRC} ${PROTO_SRCS} ${PROTO_HDRS})
+set(SRC
+   goby_moos_app.cpp
+   modem_id_convert.cpp
+   moos_translator.cpp
+   moos_ufield_sim_driver.cpp
+   transitional/message_val.cpp
+   transitional/message_algorithms.cpp
+)
+
+if(enable_v1_transitional)
+  file(GLOB TRANSITIONAL_SRC transitional/*.cpp)
+endif()
+
+if(enable_zeromq)
+  set(ZEROMQ_SRC moos_node.cpp)
+endif()
+
+add_library(goby_moos ${SRC} ${ZEROMQ_SRC} ${TRANSITIONAL_SRC} ${PROTO_SRCS} ${PROTO_HDRS})
 
 target_link_libraries(goby_moos
-  goby_pb
   goby_util
   goby_common 
   goby_acomms
-  xerces-c
   ${MOOS_LIBRARIES} ${Boost_LIBRARIES} ${PROTOBUF_LIBRARY})
+
+if(enable_v1_transitional)
+  target_link_libraries(goby_moos ${Xerces_LIBRARIES})
+endif()
 
 set_target_properties(goby_moos PROPERTIES VERSION "${GOBY_VERSION}" SOVERSION "${GOBY_SOVERSION}")

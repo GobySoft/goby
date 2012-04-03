@@ -1,21 +1,25 @@
-// copyright 2008, 2009 t. schneider tes@mit.edu
+// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+//                     Massachusetts Institute of Technology (2007-)
+//                     Woods Hole Oceanographic Institution (2007-)
+//                     Goby Developers Team (https://launchpad.net/~goby-dev)
+// 
 //
-// this file is part of the Dynamic Compact Control Language (DCCL),
-// the goby-acomms codec. goby-acomms is a collection of libraries 
-// for acoustic underwater networking
+// This file is part of the Goby Underwater Autonomy Project Libraries
+// ("The Goby Libraries").
 //
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// The Goby Libraries are free software: you can redistribute them and/or modify
+// them under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// This software is distributed in the hope that it will be useful,
+// The Goby Libraries are distributed in the hope that they will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Lesser General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
-// along with this software.  If not, see <http://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU Lesser General Public License
+// along with Goby.  If not, see <http://www.gnu.org/licenses/>.
+
 
 #ifndef PUBLISH20091211H
 #define PUBLISH20091211H
@@ -77,21 +81,9 @@ namespace goby
             std::vector<std::vector<std::string> > const& algorithms() const {return algorithms_;}
     
         
-            std::string get_display() const;
-            
-            void write_publish(const std::map<std::string,std::vector<DCCLMessageVal> >& vals,
-                               std::multimap<std::string,DCCLMessageVal>* pubsub_vals);
-        
-        
         
 
             void initialize(const DCCLMessage& msg);
-            
-          private:
-            void fill_format(const std::map<std::string,std::vector<DCCLMessageVal> >& vals,
-                             std::string& key,
-                             std::string& value,
-                             unsigned repeat_index);
             
           private:
             std::string var_;
@@ -105,8 +97,6 @@ namespace goby
             DCCLAlgorithmPerformer* ap_;
             unsigned repeat_;
         };
-
-        std::ostream& operator<< (std::ostream& out, const DCCLPublish& publish);
     }
 }
 #endif

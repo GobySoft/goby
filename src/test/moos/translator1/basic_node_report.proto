@@ -10,4 +10,5 @@ message BasicNodeReport
   optional double lat = 8;
   optional double lon = 9;
   optional double time = 200;
+  repeated int32 repeat = 10;
 }

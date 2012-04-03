@@ -1,23 +1,25 @@
-// copyright 2009, 2010 t. schneider tes@mit.edu
+// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+//                     Massachusetts Institute of Technology (2007-)
+//                     Woods Hole Oceanographic Institution (2007-)
+//                     Goby Developers Team (https://launchpad.net/~goby-dev)
 // 
-// this file is part of libamac, a medium access control for
-// acoustic networks. 
 //
-// see the readme file within this directory for information
-// pertaining to usage and purpose of this script.
+// This file is part of the Goby Underwater Autonomy Project Libraries
+// ("The Goby Libraries").
 //
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// The Goby Libraries are free software: you can redistribute them and/or modify
+// them under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// This software is distributed in the hope that it will be useful,
+// The Goby Libraries are distributed in the hope that they will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Lesser General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
-// along with this software.  If not, see <http://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU Lesser General Public License
+// along with Goby.  If not, see <http://www.gnu.org/licenses/>.
+
 
 #ifndef MAC20091019H
 #define MAC20091019H
@@ -27,12 +29,16 @@
 #include <boost/foreach.hpp>
 #include <boost/bind.hpp>
 #include <boost/asio.hpp>
+#include <boost/asio/time_traits.hpp>
 
 #include "goby/acomms/protobuf/modem_message.pb.h"
 #include "goby/acomms/protobuf/amac.pb.h"
+#include "goby/acomms/protobuf/amac_config.pb.h"
 #include "goby/acomms/modem_driver.h"
-#include "goby/util/time.h"
+#include "goby/common/time.h"
 #include "goby/util/as.h"
+
+
 
 namespace goby
 {
@@ -66,6 +72,10 @@ namespace goby
             /// \param cfg Initial configuration values (protobuf::MACConfig defined in acomms_amac.proto)
             void startup(const protobuf::MACConfig& cfg);
 
+            
+            /// \brief Restarts the MAC with original configuration
+            void restart();
+            
             /// \brief Shutdown the MAC
             void shutdown();
             
@@ -113,7 +123,8 @@ namespace goby
             
             // asynchronous timer
             boost::asio::io_service io_;
-            boost::asio::deadline_timer timer_;
+
+            boost::asio::basic_deadline_timer<goby::common::GobyTime> timer_;
             // give the io_service some work to do forever
             boost::asio::io_service::work work_;
     

@@ -16,39 +16,39 @@
 
 #include "protobuf_node.h"
 
-#include "goby/util/logger.h"
+#include "goby/common/logger.h"
 
 using goby::glog;
 using goby::util::as;
-using namespace goby::util::logger;
+using namespace goby::common::logger;
 
-void goby::core::ProtobufNode::inbox(MarshallingScheme marshalling_scheme,
-                                     const std::string& identifier,
-                                     const void* data,
-                                     int size,
-                                     int socket_id)
+void goby::pb::ProtobufNode::inbox(common::MarshallingScheme marshalling_scheme,
+                                   const std::string& identifier,
+                                   const void* data,
+                                   int size,
+                                   int socket_id)
 {
-    if(marshalling_scheme == MARSHALLING_PROTOBUF)
+    if(marshalling_scheme == common::MARSHALLING_PROTOBUF)
         protobuf_inbox(identifier.substr(0, identifier.find("/")), data, size, socket_id);
 }
 
 
-void goby::core::ProtobufNode::send(const google::protobuf::Message& msg, int socket_id)
+void goby::pb::ProtobufNode::send(const google::protobuf::Message& msg, int socket_id)
 {
     int size = msg.ByteSize();
     char buffer[size];
     msg.SerializeToArray(&buffer, size);
-    zeromq_service()->send(MARSHALLING_PROTOBUF, msg.GetDescriptor()->full_name() + "/",
+    zeromq_service()->send(common::MARSHALLING_PROTOBUF, msg.GetDescriptor()->full_name() + "/",
                             &buffer, size, socket_id);
 }
             
-void goby::core::ProtobufNode::subscribe(const std::string& identifier, int socket_id)
+void goby::pb::ProtobufNode::subscribe(const std::string& identifier, int socket_id)
 {
     glog.is(DEBUG1) && glog << "Subscribing for MARSHALLING_PROTOBUF type: " << identifier << std::endl;
-    zeromq_service()->subscribe(MARSHALLING_PROTOBUF, identifier, socket_id);
+    zeromq_service()->subscribe(common::MARSHALLING_PROTOBUF, identifier, socket_id);
 }
 
-void goby::core::StaticProtobufNode::protobuf_inbox(const std::string& protobuf_type_name,
+void goby::pb::StaticProtobufNode::protobuf_inbox(const std::string& protobuf_type_name,
                                                     const void* data,
                                                     int size,
                                                     int socket_id)
@@ -64,7 +64,7 @@ void goby::core::StaticProtobufNode::protobuf_inbox(const std::string& protobuf_
 
 
 
-void goby::core::DynamicProtobufNode::protobuf_inbox(const std::string& protobuf_type_name,
+void goby::pb::DynamicProtobufNode::protobuf_inbox(const std::string& protobuf_type_name,
                                                      const void* data,
                                                      int size,
                                                      int socket_id)

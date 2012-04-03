@@ -2,7 +2,7 @@ import "google/protobuf/descriptor.proto";
 import "goby/pb/protobuf/interprocess_notification.proto";
 import "goby/common/protobuf/option_extensions.proto";
 
-package goby.core.protobuf;
+package goby.common.protobuf;
 
 message DatabaseRequest
 {

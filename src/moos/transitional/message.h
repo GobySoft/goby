@@ -1,21 +1,25 @@
-// copyright 2008, 2009 t. schneider tes@mit.edu
+// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+//                     Massachusetts Institute of Technology (2007-)
+//                     Woods Hole Oceanographic Institution (2007-)
+//                     Goby Developers Team (https://launchpad.net/~goby-dev)
 // 
-// this file is part of the Dynamic Compact Control Language (DCCL),
-// the goby-acomms codec. goby-acomms is a collection of libraries 
-// for acoustic underwater networking
 //
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// This file is part of the Goby Underwater Autonomy Project Libraries
+// ("The Goby Libraries").
+//
+// The Goby Libraries are free software: you can redistribute them and/or modify
+// them under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// This software is distributed in the hope that it will be useful,
+// The Goby Libraries are distributed in the hope that they will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Lesser General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
-// along with this software.  If not, see <http://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU Lesser General Public License
+// along with Goby.  If not, see <http://www.gnu.org/licenses/>.
+
 
 #ifndef MESSAGE20091211H
 #define MESSAGE20091211H
@@ -139,11 +143,6 @@ namespace goby
             const std::vector<DCCLPublish>& publishes_const() const                     { return publishes_;}
             
 
-            std::set<std::string> get_pubsub_encode_vars();
-            std::set<std::string> get_pubsub_decode_vars();
-            std::set<std::string> get_pubsub_src_vars();
-            std::set<std::string> get_pubsub_all_vars();
-
             boost::shared_ptr<DCCLMessageVar> name2message_var(const std::string& name) const;
         
             const google::protobuf::Descriptor* descriptor()
@@ -151,8 +150,8 @@ namespace goby
             
         
             //other
-            std::string get_display() const;
-            std::string get_short_display() const;
+            /* std::string get_display() const; */
+            /* std::string get_short_display() const; */
             std::map<std::string, std::string> message_var_names() const;
             void preprocess();
             void set_repeat_array_length();
@@ -161,11 +160,6 @@ namespace goby
             
         
             void set_head_defaults(std::map<std::string, std::vector<DCCLMessageVal> >& in, unsigned modem_id);
-            void pre_encode(const std::map<std::string, std::vector<DCCLMessageVal> >& in,
-                            std::map<std::string, std::vector<DCCLMessageVal> >& out);
-
-            void post_decode(const std::map<std::string, std::vector<DCCLMessageVal> >& in,
-                             std::map<std::string, std::vector<DCCLMessageVal> >& out);
 
             
 
@@ -227,7 +221,7 @@ namespace goby
         }
 
 
-        std::ostream& operator<< (std::ostream& out, const DCCLMessage& message);
+//        std::ostream& operator<< (std::ostream& out, const DCCLMessage& message);
     }
 }
 #endif

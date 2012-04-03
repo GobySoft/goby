@@ -26,7 +26,7 @@
 
 namespace goby
 {
-    namespace core
+    namespace pb
     {
         // forms a non-template base for the Subscription class, allowing us
         // use a common pointer type.

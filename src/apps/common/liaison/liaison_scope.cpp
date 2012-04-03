@@ -1,17 +1,24 @@
-// copyright 2011 t. schneider tes@mit.edu
+// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+//                     Massachusetts Institute of Technology (2007-)
+//                     Woods Hole Oceanographic Institution (2007-)
+//                     Goby Developers Team (https://launchpad.net/~goby-dev)
 // 
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+//
+// This file is part of the Goby Underwater Autonomy Project Binaries
+// ("The Goby Binaries").
+//
+// The Goby Binaries are free software: you can redistribute them and/or modify
+// them under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// This software is distributed in the hope that it will be useful,
+// The Goby Binaries are distributed in the hope that they will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this software.  If not, see <http://www.gnu.org/licenses/>.
+// along with Goby.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "liaison_scope.h"
 
@@ -22,6 +29,7 @@
 #include <Wt/WLineEdit>
 #include <Wt/WPushButton>
 #include <Wt/WVBoxLayout>
+#include <Wt/WStringListModel>
 #include <Wt/WSortFilterProxyModel>
 #include <Wt/WSelectionBox>
 #include <Wt/WTable>
@@ -29,28 +37,54 @@
 #include <Wt/Chart/WCartesianChart>
 #include <Wt/WDateTime>
 #include "liaison.h"
+#include "goby/moos/moos_protobuf_helpers.h"
 
+#include <boost/regex.hpp>
+#include <boost/algorithm/string/regex.hpp>
 
 using namespace Wt;
-using namespace goby::util::logger_lock;
-using namespace goby::util::logger;
+using namespace goby::common::logger_lock;
+using namespace goby::common::logger;
 
-goby::core::LiaisonScope::LiaisonScope(ZeroMQService* service, WTimer* timer)
-    : MOOSNode(service),
+goby::common::LiaisonScope::LiaisonScope(ZeroMQService* zeromq_service,
+                                         WTimer* timer, Wt::WContainerWidget* parent)
+    : LiaisonContainer(parent),
+      MOOSNode(zeromq_service),
+      zeromq_service_(zeromq_service),
       moos_scope_config_(Liaison::cfg_.GetExtension(protobuf::moos_scope_config)),
+      history_model_(new Wt::WStringListModel(this)),
       model_(new LiaisonScopeMOOSModel(moos_scope_config_, this)),
       proxy_(new Wt::WSortFilterProxyModel(this)),
       main_layout_(new Wt::WVBoxLayout(this)),
-      controls_div_(new ControlsContainer(timer, moos_scope_config_.start_paused())),
-      subscriptions_div_(new SubscriptionsContainer(this, model_, msg_map_)),
-      history_header_div_(new HistoryContainer(this, main_layout_, proxy_, moos_scope_config_)),
+      controls_div_(new ControlsContainer(timer)),
+      subscriptions_div_(new SubscriptionsContainer(this, model_, history_model_, msg_map_)),
+      history_header_div_(new HistoryContainer(this, main_layout_, history_model_, moos_scope_config_)),
       regex_filter_div_(new RegexFilterContainer(model_, proxy_, moos_scope_config_)),
       scope_tree_view_(new LiaisonScopeMOOSTreeView(moos_scope_config_)),
       bottom_fill_(new WContainerWidget)
 {
+    protobuf::ZeroMQServiceConfig ipc_sockets;
+    protobuf::ZeroMQServiceConfig::Socket* internal_subscribe_socket = ipc_sockets.add_socket();
+    internal_subscribe_socket->set_socket_type(protobuf::ZeroMQServiceConfig::Socket::SUBSCRIBE);
+    internal_subscribe_socket->set_socket_id(Liaison::LIAISON_INTERNAL_SCOPE_SUBSCRIBE_SOCKET);
+    internal_subscribe_socket->set_transport(protobuf::ZeroMQServiceConfig::Socket::INPROC);
+    internal_subscribe_socket->set_connect_or_bind(protobuf::ZeroMQServiceConfig::Socket::CONNECT);
+    internal_subscribe_socket->set_socket_name(Liaison::LIAISON_INTERNAL_PUBLISH_SOCKET_NAME);
+
+    protobuf::ZeroMQServiceConfig::Socket* internal_publish_socket = ipc_sockets.add_socket();
+    internal_publish_socket->set_socket_type(protobuf::ZeroMQServiceConfig::Socket::PUBLISH);
+    internal_publish_socket->set_socket_id(Liaison::LIAISON_INTERNAL_SCOPE_PUBLISH_SOCKET);
+    internal_publish_socket->set_transport(protobuf::ZeroMQServiceConfig::Socket::INPROC);
+    internal_publish_socket->set_connect_or_bind(protobuf::ZeroMQServiceConfig::Socket::CONNECT);
+    internal_publish_socket->set_socket_name(Liaison::LIAISON_INTERNAL_SUBSCRIBE_SOCKET_NAME);
+
+    zeromq_service_->merge_cfg(ipc_sockets);    
+
+
+
     this->resize(WLength::Auto, WLength(100, WLength::Percentage));
     
-    service->socket_from_id(Liaison::LIAISON_INTERNAL_PUBLISH_SOCKET).set_global_blackout(boost::posix_time::milliseconds(1/Liaison::cfg_.update_freq()*1e3));    
+    zeromq_service_->socket_from_id(Liaison::LIAISON_INTERNAL_SCOPE_SUBSCRIBE_SOCKET).set_global_blackout(boost::posix_time::milliseconds(1/Liaison::cfg_.update_freq()*1e3));    
 
     setStyleClass("scope");
 
@@ -81,76 +115,134 @@ goby::core::LiaisonScope::LiaisonScope(ZeroMQService* service, WTimer* timer)
     wApp->globalKeyPressed().connect(this, &LiaisonScope::handle_global_key);
 }
 
-
-
-std::vector< WStandardItem * > goby::core::LiaisonScope::create_row(CMOOSMsg& msg)
+void goby::common::LiaisonScope::loop()
 {
-    std::vector< WStandardItem * > items;
-    Wt::WStandardItem* key_item = new Wt::WStandardItem(msg.GetKey());
-//    key_item->setFlags(ItemIsEditable);
-//    key_item->setRowCount(1);
-    items.push_back(key_item);
-    
-    
-    items.push_back(new Wt::WStandardItem((msg.IsDouble() ? "double" : "string")));
-    
-    Wt::WStandardItem* value_item = new Wt::WStandardItem;
-    if(msg.IsDouble())
-        value_item->setData(msg.GetDouble(), DisplayRole);
-    else
-        value_item->setData(msg.GetString(), DisplayRole);
-    items.push_back(value_item);
+    glog.is(DEBUG2, lock) && glog << "LiaisonScope: polling" << std::endl << unlock;
+    while(zeromq_service_->poll(0))
+    { }
+}
 
-    Wt::WStandardItem* time_item = new Wt::WStandardItem;
-    time_item->setData(WDateTime::fromPosixTime(goby::util::unix_double2ptime(msg.GetTime())), DisplayRole);
-    items.push_back(time_item);
+
+void goby::common::LiaisonScope::attach_pb_rows(const std::vector<Wt::WStandardItem *>& items,
+                                                CMOOSMsg& msg)
+{
+    const std::string& value = msg.GetString();
+    boost::shared_ptr<google::protobuf::Message> pb_msg =
+        dynamic_parse_for_moos(value);
+
+    Wt::WStandardItem* key_item = items[protobuf::MOOSScopeConfig::COLUMN_KEY];
     
-    items.push_back(new Wt::WStandardItem(msg.GetCommunity()));
-    items.push_back(new Wt::WStandardItem(msg.m_sSrc));
-    items.push_back(new Wt::WStandardItem(msg.GetSourceAux()));
+    
+    if(pb_msg)
+    {
+        
+        std::vector<std::string> result;
+        std::string debug_string = pb_msg->DebugString();
+        boost::trim(debug_string);
+            
+        boost::split(result, debug_string, boost::is_any_of("\n"));
+
+        key_item->setRowCount(result.size());
+        key_item->setColumnCount(protobuf::MOOSScopeConfig::COLUMN_MAX + 1);
+
+
+        items[protobuf::MOOSScopeConfig::COLUMN_TYPE]->setText(pb_msg->GetDescriptor()->full_name() + " (Protobuf)");
+        items[protobuf::MOOSScopeConfig::COLUMN_VALUE]->setText(pb_msg->ShortDebugString());
+
+        for(int i = 0, n = result.size(); i < n; ++i)
+        {
+            for(int j = 0; j <= protobuf::MOOSScopeConfig::COLUMN_MAX; ++j)
+            {
+                if(!key_item->child(i, j))
+                    key_item->setChild(i, j, new Wt::WStandardItem);
+
+                if(j == protobuf::MOOSScopeConfig::COLUMN_VALUE)
+                {
+                    key_item->child(i,j)->setText(result[i]);
+                }
+                else
+                {
+                    // so we can still sort by these fields
+                    key_item->child(i, j)->setText(items[j]->text());
+                    key_item->child(i, j)->setStyleClass("invisible");    
+                }
+            }
+        }
+    }
+}
+std::vector<Wt::WStandardItem *> goby::common::LiaisonScope::create_row(CMOOSMsg& msg)
+{
+    std::vector<Wt::WStandardItem *> items;
+    for(int i = 0; i <= protobuf::MOOSScopeConfig::COLUMN_MAX; ++i)
+        items.push_back(new WStandardItem);
+    update_row(msg, items);
+
     return items;
+}
+
+
+
+void goby::common::LiaisonScope::update_row(CMOOSMsg& msg, const std::vector<WStandardItem *>& items)
+{
+    items[protobuf::MOOSScopeConfig::COLUMN_KEY]->setText(msg.GetKey());
+
+    items[protobuf::MOOSScopeConfig::COLUMN_TYPE]->setText((msg.IsDouble() ? "double" : "string"));
+        
+    if(msg.IsDouble())
+        items[protobuf::MOOSScopeConfig::COLUMN_VALUE]->setData(msg.GetDouble(), DisplayRole);
+    else
+        items[protobuf::MOOSScopeConfig::COLUMN_VALUE]->setData(msg.GetString(), DisplayRole);
+
+    
+    items[protobuf::MOOSScopeConfig::COLUMN_TIME]->setData(WDateTime::fromPosixTime(goby::common::unix_double2ptime(msg.GetTime())), DisplayRole);
+    
+    items[protobuf::MOOSScopeConfig::COLUMN_COMMUNITY]->setText(msg.GetCommunity());
+    items[protobuf::MOOSScopeConfig::COLUMN_SOURCE]->setText(msg.m_sSrc);
+    items[protobuf::MOOSScopeConfig::COLUMN_SOURCE_AUX]->setText(msg.GetSourceAux());
+    
+    if(msg.IsString())
+        attach_pb_rows(items, msg);
+
+
     
 }
 
-void goby::core::LiaisonScope::handle_global_key(Wt::WKeyEvent event)
+void goby::common::LiaisonScope::handle_global_key(Wt::WKeyEvent event)
 {
-    while(MOOSNode::zeromq_service()->poll(0))
+    while(zeromq_service_->poll(0))
     { }
 }
 
 
 
 
-void goby::core::LiaisonScope::moos_inbox(CMOOSMsg& msg)
+void goby::common::LiaisonScope::moos_inbox(CMOOSMsg& msg)
 {
-
     using goby::moos::operator<<;
     
     glog.is(DEBUG1, lock) && glog << "LiaisonScope: got message:  " << msg << std::endl << unlock;
     std::map<std::string, int>::iterator it = msg_map_.find(msg.GetKey());
     if(it != msg_map_.end())
     {
-        model_->item(it->second, protobuf::MOOSScopeConfig::COLUMN_TYPE)->setText((msg.IsDouble() ? "double" : "string"));
-        
-        if(msg.IsDouble())
-            model_->item(it->second, protobuf::MOOSScopeConfig::COLUMN_VALUE)->setData(msg.GetDouble(), DisplayRole);
-        else
-            model_->item(it->second, protobuf::MOOSScopeConfig::COLUMN_VALUE)->setData(msg.GetString(), DisplayRole);
-        
-        model_->item(it->second, protobuf::MOOSScopeConfig::COLUMN_TIME)->setData(WDateTime::fromPosixTime(goby::util::unix_double2ptime(msg.GetTime())), DisplayRole);
-        
-        model_->item(it->second, protobuf::MOOSScopeConfig::COLUMN_COMMUNITY)->setText(msg.GetCommunity());
-        model_->item(it->second, protobuf::MOOSScopeConfig::COLUMN_SOURCE)->setText(msg.m_sSrc);
-        model_->item(it->second, protobuf::MOOSScopeConfig::COLUMN_SOURCE_AUX)->setText(msg.GetSourceAux());
+        std::vector<WStandardItem*> items;
+        items.push_back(model_->item(it->second, protobuf::MOOSScopeConfig::COLUMN_KEY));
+        items.push_back(model_->item(it->second, protobuf::MOOSScopeConfig::COLUMN_TYPE));
+        items.push_back(model_->item(it->second, protobuf::MOOSScopeConfig::COLUMN_VALUE));
+        items.push_back(model_->item(it->second, protobuf::MOOSScopeConfig::COLUMN_TIME));
+        items.push_back(model_->item(it->second, protobuf::MOOSScopeConfig::COLUMN_COMMUNITY));
+        items.push_back(model_->item(it->second, protobuf::MOOSScopeConfig::COLUMN_SOURCE));
+        items.push_back(model_->item(it->second, protobuf::MOOSScopeConfig::COLUMN_SOURCE_AUX));
+        update_row(msg, items);
     }
     else
     {
-        std::vector< WStandardItem * > items = create_row(msg);
+        std::vector<WStandardItem*> items = create_row(msg);
         msg_map_.insert(make_pair(msg.GetKey(), model_->rowCount()));
         model_->appendRow(items);
+        history_model_->addString(msg.GetKey());
+        history_model_->sort(0);
+        regex_filter_div_->handle_set_regex_filter();
     }
-
-    regex_filter_div_->handle_set_regex_filter();
 
     std::map<std::string, HistoryContainer::MVC>::iterator hist_it = history_header_div_->history_models_.find(msg.GetKey());
     if(hist_it != history_header_div_->history_models_.end())
@@ -161,20 +253,20 @@ void goby::core::LiaisonScope::moos_inbox(CMOOSMsg& msg)
 }
 
 
-// void goby::core::LiaisonScope::expanded(Wt::WModelIndex index)
+// void goby::common::LiaisonScope::expanded(Wt::WModelIndex index)
 // {
 //     MOOSNode::set_blackout(boost::any_cast<Wt::WString>(index.data()).narrow(),
 //                            boost::posix_time::milliseconds(0));
 // }
 
-// void goby::core::LiaisonScope::collapsed(Wt::WModelIndex index)
+// void goby::common::LiaisonScope::collapsed(Wt::WModelIndex index)
 // {
 //     MOOSNode::clear_blackout(boost::any_cast<Wt::WString>(index.data()).narrow());    
 // }
 
 
 
-goby::core::LiaisonScopeMOOSTreeView::LiaisonScopeMOOSTreeView(const protobuf::MOOSScopeConfig& moos_scope_config , Wt::WContainerWidget* parent /*= 0*/)
+goby::common::LiaisonScopeMOOSTreeView::LiaisonScopeMOOSTreeView(const protobuf::MOOSScopeConfig& moos_scope_config , Wt::WContainerWidget* parent /*= 0*/)
     : WTreeView(parent)
 {
     this->setAlternatingRowColors(true);
@@ -198,11 +290,32 @@ goby::core::LiaisonScopeMOOSTreeView::LiaisonScopeMOOSTreeView(const protobuf::M
                          moos_scope_config.column_width().source_width()+
                          moos_scope_config.column_width().source_aux_width()+
                          7*(protobuf::MOOSScopeConfig::COLUMN_MAX+1),
-                         Wt::WLength::Auto);
-}
-            
+                         Wt::WLength::Auto);    
 
-goby::core::LiaisonScopeMOOSModel::LiaisonScopeMOOSModel(const protobuf::MOOSScopeConfig& moos_scope_config, Wt::WContainerWidget* parent /*= 0*/)
+//    this->doubleClicked().connect(this, &LiaisonScopeMOOSTreeView::handle_double_click);
+}
+
+ // void goby::common::LiaisonScopeMOOSTreeView::handle_double_click(const Wt::WModelIndex& proxy_index, const Wt::WMouseEvent& event)
+// {
+
+     
+//     const Wt::WAbstractProxyModel* proxy = dynamic_cast<const Wt::WAbstractProxyModel*>(this->model());
+//     const Wt::WStandardItemModel* model = dynamic_cast<Wt::WStandardItemModel*>(proxy->sourceModel());
+//     WModelIndex model_index = proxy->mapToSource(proxy_index);
+
+//     glog.is(DEBUG1, lock) && glog << "clicked: " << model_index.row() << "," << model_index.column() << std::endl << unlock;    
+    
+//     attach_pb_rows(model->item(model_index.row(), protobuf::MOOSScopeConfig::COLUMN_KEY),
+//                    model->item(model_index.row(), protobuf::MOOSScopeConfig::COLUMN_VALUE)->text().narrow());
+
+//     this->setExpanded(proxy_index, true);
+// }
+
+
+
+
+
+goby::common::LiaisonScopeMOOSModel::LiaisonScopeMOOSModel(const protobuf::MOOSScopeConfig& moos_scope_config, Wt::WContainerWidget* parent /*= 0*/)
     : WStandardItemModel(0, protobuf::MOOSScopeConfig::COLUMN_MAX+1, parent)
 {
     this->setHeaderData(protobuf::MOOSScopeConfig::COLUMN_KEY, Horizontal, std::string("Key"));
@@ -217,12 +330,10 @@ goby::core::LiaisonScopeMOOSModel::LiaisonScopeMOOSModel(const protobuf::MOOSSco
 }
 
 
-goby::core::LiaisonScope::ControlsContainer::ControlsContainer(Wt::WTimer* timer,
-                                                               bool is_paused,
-                                                               Wt::WContainerWidget* parent /*= 0*/)
+goby::common::LiaisonScope::ControlsContainer::ControlsContainer(Wt::WTimer* timer,
+                                                                 Wt::WContainerWidget* parent /*= 0*/)
     : Wt::WContainerWidget(parent),
       timer_(timer),
-      is_paused_(is_paused),
       play_pause_button_(new WPushButton("Play/Pause", this)),
       play_state_(new Wt::WText(this))
 {
@@ -231,23 +342,26 @@ goby::core::LiaisonScope::ControlsContainer::ControlsContainer(Wt::WTimer* timer
     handle_play_pause(false);
 }
 
-void goby::core::LiaisonScope::ControlsContainer::handle_play_pause(bool toggle_state)
+void goby::common::LiaisonScope::ControlsContainer::handle_play_pause(bool toggle_state)
 {
+    bool is_paused = !timer_->isActive();
     if(toggle_state)
-        is_paused_ = !is_paused_;
+        is_paused = !is_paused;
 
-    is_paused_ ? timer_->stop() : timer_->start();
-    play_state_->setText(is_paused_ ? "Paused (any key refreshes). " : "Playing... ");
+    is_paused ? timer_->stop() : timer_->start();
+    play_state_->setText(is_paused ? "Paused (any key refreshes). " : "Playing... ");
 }
 
-goby::core::LiaisonScope::SubscriptionsContainer::SubscriptionsContainer(
-    MOOSNode* node,
+goby::common::LiaisonScope::SubscriptionsContainer::SubscriptionsContainer(
+    LiaisonScope* node,
     Wt::WStandardItemModel* model,
+    Wt::WStringListModel* history_model,
     std::map<std::string, int>& msg_map,
     Wt::WContainerWidget* parent /*= 0*/)
     : WContainerWidget(parent),
       node_(node),
       model_(model),
+      history_model_(history_model),
       msg_map_(msg_map),
       add_text_(new WText("Add subscription (e.g. NAV* or NAV_X): ", this)),
       subscribe_filter_text_(new WLineEdit(this)),
@@ -260,13 +374,13 @@ goby::core::LiaisonScope::SubscriptionsContainer::SubscriptionsContainer(
 }
 
 
-void goby::core::LiaisonScope::SubscriptionsContainer::handle_add_subscription()
+void goby::common::LiaisonScope::SubscriptionsContainer::handle_add_subscription()
 {    
     add_subscription(subscribe_filter_text_->text().narrow());
     subscribe_filter_text_->setText("");
 }
 
-void goby::core::LiaisonScope::SubscriptionsContainer::add_subscription(std::string type)
+void goby::common::LiaisonScope::SubscriptionsContainer::add_subscription(std::string type)
 {
     boost::trim(type);
     if(type.empty())
@@ -275,20 +389,27 @@ void goby::core::LiaisonScope::SubscriptionsContainer::add_subscription(std::str
     WPushButton* new_button = new WPushButton(this);
 
     new_button->setText(type + " ");
-    node_->subscribe(type, Liaison::LIAISON_INTERNAL_PUBLISH_SOCKET);
+    node_->subscribe(type, Liaison::LIAISON_INTERNAL_SCOPE_SUBSCRIBE_SOCKET);
 
     new_button->clicked().connect(boost::bind(&SubscriptionsContainer::handle_remove_subscription, this, new_button));
+
+    std::vector<CMOOSMsg> newest = node_->newest_substr(type);
+    for(std::vector<CMOOSMsg>::iterator it = newest.begin(), end = newest.end();
+        it != end; ++it)
+    {
+        node_->moos_inbox(*it);
+    }
 }
 
 
 
-void goby::core::LiaisonScope::SubscriptionsContainer::handle_remove_subscription(WPushButton* clicked_button)
+void goby::common::LiaisonScope::SubscriptionsContainer::handle_remove_subscription(WPushButton* clicked_button)
 {
     std::string type_name = clicked_button->text().narrow();
     boost::trim(type_name);
     unsigned type_name_size = type_name.size();
     
-    node_->unsubscribe(clicked_button->text().narrow(), Liaison::LIAISON_INTERNAL_PUBLISH_SOCKET);
+    node_->unsubscribe(clicked_button->text().narrow(), Liaison::LIAISON_INTERNAL_SCOPE_SUBSCRIBE_SOCKET);
 
     bool has_wildcard_ending = (type_name[type_name_size - 1] == '*');
     if(has_wildcard_ending)
@@ -307,6 +428,7 @@ void goby::core::LiaisonScope::SubscriptionsContainer::handle_remove_subscriptio
 
         if(remove)
         {            
+            history_model_->removeRows(msg_map_[text_to_match], 1);
             msg_map_.erase(text_to_match);
             glog.is(DEBUG1, lock) && glog << "LiaisonScope: removed " << text_to_match << std::endl << unlock;            
             model_->removeRow(i);
@@ -327,11 +449,11 @@ void goby::core::LiaisonScope::SubscriptionsContainer::handle_remove_subscriptio
     delete clicked_button; // removeWidget does not delete
 }
 
-goby::core::LiaisonScope::HistoryContainer::HistoryContainer(MOOSNode* node,
-                                                             Wt::WVBoxLayout* main_layout,
-                                                             Wt::WAbstractItemModel* model,
-                                                             const protobuf::MOOSScopeConfig& moos_scope_config,
-                                                             Wt::WContainerWidget* parent /* = 0 */)
+goby::common::LiaisonScope::HistoryContainer::HistoryContainer(MOOSNode* node,
+                                                               Wt::WVBoxLayout* main_layout,
+                                                               Wt::WAbstractItemModel* model,
+                                                               const protobuf::MOOSScopeConfig& moos_scope_config,
+                                                               Wt::WContainerWidget* parent /* = 0 */)
     : Wt::WContainerWidget(parent),
       node_(node),
       main_layout_(main_layout),
@@ -346,15 +468,15 @@ goby::core::LiaisonScope::HistoryContainer::HistoryContainer(MOOSNode* node,
     history_button_->clicked().connect(this, &HistoryContainer::handle_add_history);
 }
 
-void goby::core::LiaisonScope::HistoryContainer::handle_add_history()
+void goby::common::LiaisonScope::HistoryContainer::handle_add_history()
 {
     std::string selected_key = history_box_->currentText().narrow();
-    goby::core::protobuf::MOOSScopeConfig::HistoryConfig config;
+    goby::common::protobuf::MOOSScopeConfig::HistoryConfig config;
     config.set_key(selected_key);
     add_history(config);
 }
 
-void goby::core::LiaisonScope::HistoryContainer::add_history(const goby::core::protobuf::MOOSScopeConfig::HistoryConfig& config)
+void goby::common::LiaisonScope::HistoryContainer::add_history(const goby::common::protobuf::MOOSScopeConfig::HistoryConfig& config)
 {
     const std::string& selected_key = config.key();
     
@@ -371,10 +493,10 @@ void goby::core::LiaisonScope::HistoryContainer::add_history(const goby::core::p
         
         new WText(" (click to remove)", text_container);
         new WBreak(text_container);
-        WPushButton* toggle_plot_button = new WPushButton("Plot", text_container);
+        // WPushButton* toggle_plot_button = new WPushButton("Plot", text_container);
 
         
-        text_container->resize(Wt::WLength::Auto, WLength(4, WLength::FontEm));
+//        text_container->resize(Wt::WLength::Auto, WLength(4, WLength::FontEm));
 
         Wt::WStandardItemModel* new_model = new LiaisonScopeMOOSModel(moos_scope_config_,
                                                                       new_container);
@@ -383,43 +505,43 @@ void goby::core::LiaisonScope::HistoryContainer::add_history(const goby::core::p
         new_proxy->setSourceModel(new_model);
 
         
-        Chart::WCartesianChart* chart = new Chart::WCartesianChart(new_container);
-        toggle_plot_button->clicked().connect(
-            boost::bind(&HistoryContainer::toggle_history_plot, this, chart));
-        chart->setModel(new_model);    
-        chart->setXSeriesColumn(protobuf::MOOSScopeConfig::COLUMN_TIME); 
-        Chart::WDataSeries s(protobuf::MOOSScopeConfig::COLUMN_VALUE, Chart::LineSeries);
-        chart->addSeries(s);        
+        // Chart::WCartesianChart* chart = new Chart::WCartesianChart(new_container);
+        // toggle_plot_button->clicked().connect(
+        //     boost::bind(&HistoryContainer::toggle_history_plot, this, chart));
+        // chart->setModel(new_model);    
+        // chart->setXSeriesColumn(protobuf::MOOSScopeConfig::COLUMN_TIME); 
+        // Chart::WDataSeries s(protobuf::MOOSScopeConfig::COLUMN_VALUE, Chart::LineSeries);
+        // chart->addSeries(s);        
         
-        chart->setType(Chart::ScatterPlot);
-        chart->axis(Chart::XAxis).setScale(Chart::DateTimeScale); 
-        chart->axis(Chart::XAxis).setTitle("Time"); 
-        chart->axis(Chart::YAxis).setTitle(selected_key); 
+        // chart->setType(Chart::ScatterPlot);
+        // chart->axis(Chart::XAxis).setScale(Chart::DateTimeScale); 
+        // chart->axis(Chart::XAxis).setTitle("Time"); 
+        // chart->axis(Chart::YAxis).setTitle(selected_key); 
 
-        WFont font;
-        font.setFamily(WFont::Serif, "Gentium");
-        chart->axis(Chart::XAxis).setTitleFont(font); 
-        chart->axis(Chart::YAxis).setTitleFont(font); 
+        // WFont font;
+        // font.setFamily(WFont::Serif, "Gentium");
+        // chart->axis(Chart::XAxis).setTitleFont(font); 
+        // chart->axis(Chart::YAxis).setTitleFont(font); 
 
         
-        // Provide space for the X and Y axis and title. 
-        chart->setPlotAreaPadding(80, Left);
-        chart->setPlotAreaPadding(40, Top | Bottom);
-        chart->setMargin(10, Top | Bottom);            // add margin vertically
-        chart->setMargin(WLength::Auto, Left | Right); // center horizontally
-        chart->resize(config.plot_width(), config.plot_height());
+        // // Provide space for the X and Y axis and title. 
+        // chart->setPlotAreaPadding(80, Left);
+        // chart->setPlotAreaPadding(40, Top | Bottom);
+        // chart->setMargin(10, Top | Bottom);            // add margin vertically
+        // chart->setMargin(WLength::Auto, Left | Right); // center horizontally
+        // chart->resize(config.plot_width(), config.plot_height());
 
-        if(!config.show_plot())
-            chart->hide();
+        // if(!config.show_plot())
+        //     chart->hide();
         
         Wt::WTreeView* new_tree = new LiaisonScopeMOOSTreeView(moos_scope_config_, new_container);        
         main_layout_->insertWidget(main_layout_->count()-2, new_container);
         // set the widget *before* the one we just inserted to be resizable
         main_layout_->setResizable(main_layout_->count()-3);
 
-        main_layout_->insertWidget(main_layout_->count()-2, new_tree);
+        //main_layout_->insertWidget(main_layout_->count()-2, new_tree);
         // set the widget *before* the one we just inserted to be resizable
-        main_layout_->setResizable(main_layout_->count()-3);
+        //main_layout_->setResizable(main_layout_->count()-3);
         
         new_tree->setModel(new_proxy);
         MVC& mvc = history_models_[selected_key];
@@ -430,7 +552,7 @@ void goby::core::LiaisonScope::HistoryContainer::add_history(const goby::core::p
         mvc.proxy = new_proxy;
 
         node_->zeromq_service()->socket_from_id(
-            Liaison::LIAISON_INTERNAL_PUBLISH_SOCKET).set_blackout(
+            Liaison::LIAISON_INTERNAL_SCOPE_SUBSCRIBE_SOCKET).set_blackout(
             MARSHALLING_MOOS,
             "CMOOSMsg/" + selected_key + "/",
             boost::posix_time::milliseconds(0));
@@ -438,23 +560,21 @@ void goby::core::LiaisonScope::HistoryContainer::add_history(const goby::core::p
         new_proxy->setFilterRegExp(".*");
         new_tree->sortByColumn(protobuf::MOOSScopeConfig::COLUMN_TIME,
                                DescendingOrder);
+
     }
 }
 
-void goby::core::LiaisonScope::HistoryContainer::handle_remove_history(std::string key)
+void goby::common::LiaisonScope::HistoryContainer::handle_remove_history(std::string key)
 {
-    glog.is(DEBUG2, lock) && glog << "LiaisonScope: removing history for: " << key << std::endl << unlock;
-
+    glog.is(DEBUG2, lock) && glog << "LiaisonScope: removing history for: " << key << std::endl << unlock;    
     
     main_layout_->removeWidget(history_models_[key].container);    
     main_layout_->removeWidget(history_models_[key].tree);
 
-    delete history_models_[key].container;
-    delete history_models_[key].tree;
     history_models_.erase(key);
 }
 
-void goby::core::LiaisonScope::HistoryContainer::toggle_history_plot(Wt::WWidget* plot)
+void goby::common::LiaisonScope::HistoryContainer::toggle_history_plot(Wt::WWidget* plot)
 {
     if(plot->isHidden())
         plot->show();
@@ -464,7 +584,7 @@ void goby::core::LiaisonScope::HistoryContainer::toggle_history_plot(Wt::WWidget
 
 
 
-goby::core::LiaisonScope::RegexFilterContainer::RegexFilterContainer(
+goby::common::LiaisonScope::RegexFilterContainer::RegexFilterContainer(
     Wt::WStandardItemModel* model,
     Wt::WSortFilterProxyModel* proxy,
     const protobuf::MOOSScopeConfig& moos_scope_config,
@@ -510,20 +630,20 @@ goby::core::LiaisonScope::RegexFilterContainer::RegexFilterContainer(
 }
 
 
-void goby::core::LiaisonScope::RegexFilterContainer::handle_set_regex_filter()
+void goby::common::LiaisonScope::RegexFilterContainer::handle_set_regex_filter()
 {
     proxy_->setFilterKeyColumn(regex_column_select_->currentIndex());
     proxy_->setFilterRegExp(regex_filter_text_->text());
 }
 
 
-void goby::core::LiaisonScope::RegexFilterContainer::handle_clear_regex_filter()
+void goby::common::LiaisonScope::RegexFilterContainer::handle_clear_regex_filter()
 {
     regex_filter_text_->setText(".*");
     handle_set_regex_filter();
 }
 
-void goby::core::LiaisonScope::RegexFilterContainer::toggle_regex_examples_table()
+void goby::common::LiaisonScope::RegexFilterContainer::toggle_regex_examples_table()
 {
     regex_examples_table_->isHidden() ?
         regex_examples_table_->show() :

@@ -1,21 +1,25 @@
-// copyright 2008, 2009 t. schneider tes@mit.edu
+// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+//                     Massachusetts Institute of Technology (2007-)
+//                     Woods Hole Oceanographic Institution (2007-)
+//                     Goby Developers Team (https://launchpad.net/~goby-dev)
 // 
-// this file is part of the Dynamic Compact Control Language (DCCL),
-// the goby-acomms codec. goby-acomms is a collection of libraries 
-// for acoustic underwater networking
 //
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// This file is part of the Goby Underwater Autonomy Project Libraries
+// ("The Goby Libraries").
+//
+// The Goby Libraries are free software: you can redistribute them and/or modify
+// them under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// This software is distributed in the hope that it will be useful,
+// The Goby Libraries are distributed in the hope that they will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Lesser General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
-// along with this software.  If not, see <http://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU Lesser General Public License
+// along with Goby.  If not, see <http://www.gnu.org/licenses/>.
+
 
 #ifndef DCCLTransitionalConstants20091211H
 #define DCCLTransitionalConstants20091211H
@@ -304,39 +308,39 @@ namespace goby
 
         
 
-        class ManipulatorManager
-        {
-          public:
-            void add(unsigned id, goby::transitional::protobuf::MessageFile::Manipulator manip)
-            {
-                manips_.insert(std::make_pair(id, manip));
-            }
+        /* class ManipulatorManager */
+        /* { */
+        /*   public: */
+        /*     void add(unsigned id, goby::transitional::protobuf::MessageFile::Manipulator manip) */
+        /*     { */
+        /*         manips_.insert(std::make_pair(id, manip)); */
+        /*     } */
             
-            bool has(unsigned id, goby::transitional::protobuf::MessageFile::Manipulator manip) const
-            {
-                typedef std::multimap<unsigned, goby::transitional::protobuf::MessageFile::Manipulator>::const_iterator iterator;
-                std::pair<iterator,iterator> p = manips_.equal_range(id);
+        /*     bool has(unsigned id, goby::transitional::protobuf::MessageFile::Manipulator manip) const */
+        /*     { */
+        /*         typedef std::multimap<unsigned, goby::transitional::protobuf::MessageFile::Manipulator>::const_iterator iterator; */
+        /*         std::pair<iterator,iterator> p = manips_.equal_range(id); */
 
-                for(iterator it = p.first; it != p.second; ++it)
-                {
-                    if(it->second == manip)
-                        return true;
-                }
+        /*         for(iterator it = p.first; it != p.second; ++it) */
+        /*         { */
+        /*             if(it->second == manip) */
+        /*                 return true; */
+        /*         } */
 
-                return false;
-            }
+        /*         return false; */
+        /*     } */
 
-            void clear()
-            {
-                manips_.clear();
-            }
+        /*     void clear() */
+        /*     { */
+        /*         manips_.clear(); */
+        /*     } */
             
-          private:
-            // manipulator multimap (no_encode, no_decode, etc)
-            // maps DCCL ID (unsigned) onto Manipulator enumeration (xml_config.proto)
-            std::multimap<unsigned, goby::transitional::protobuf::MessageFile::Manipulator> manips_;
+        /*   private: */
+        /*     // manipulator multimap (no_encode, no_decode, etc) */
+        /*     // maps DCCL ID (unsigned) onto Manipulator enumeration (xml_config.proto) */
+        /*     std::multimap<unsigned, goby::transitional::protobuf::MessageFile::Manipulator> manips_; */
 
-        };
+        /* }; */
         
 
 

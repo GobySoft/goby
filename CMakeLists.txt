@@ -4,7 +4,7 @@
 # or type > man cmake
 
 # this project is intended to be built out of source by using 
-# > ./INSTALL
+# > ./build.sh
 
 cmake_minimum_required(VERSION 2.6.0 FATAL_ERROR)
 project(goby)
@@ -19,11 +19,14 @@ if(enable_testing)
   include(CTest)
 endif()
 
-set(GOBY_VERSION_MAJOR "3")
+set(GOBY_VERSION_MAJOR "2")
 set(GOBY_VERSION_MINOR "0")
-set(GOBY_VERSION_PATCH "0-alpha1")
+set(GOBY_VERSION_PATCH "0-beta4")
 set(GOBY_VERSION "${GOBY_VERSION_MAJOR}.${GOBY_VERSION_MINOR}.${GOBY_VERSION_PATCH}")
-set(GOBY_VERSION_DATE "2011 Nov 10")
+set(GOBY_VERSION_DATE "2012.02.22")
+
+include(today)
+today(GOBY_COMPILE_DATE)
 
 # give Goby 2 series a few more soversions
 set(GOBY_SOVERSION "21")
@@ -35,6 +38,7 @@ get_filename_component(goby_INC_DIR include ABSOLUTE)
 get_filename_component(goby_SRC_DIR src ABSOLUTE)
 get_filename_component(goby_SHARE_DIR share ABSOLUTE)
 get_filename_component(goby_BUILD_DIR build ABSOLUTE)
+get_filename_component(goby_SCRIPTS_DIR scripts ABSOLUTE)
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -fprofile-arcs -ftest-coverage")
 set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -Wall -fprofile-arcs -ftest-coverage")
@@ -60,10 +64,15 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${goby_LIB_DIR} CACHE PATH
 ## set instructions for `make install`
 install(DIRECTORY ${goby_BIN_DIR}/ DESTINATION ${CMAKE_INSTALL_PREFIX}/bin 
   FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+
+install(FILES ${goby_SCRIPTS_DIR}/analyze_dccl_xml DESTINATION ${CMAKE_INSTALL_PREFIX}/bin 
+  PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+
 install(DIRECTORY ${goby_LIB_DIR}/ DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
 install(DIRECTORY ${goby_SHARE_DIR}/ DESTINATION ${CMAKE_INSTALL_PREFIX}/share/goby)
 install(DIRECTORY ${goby_INC_DIR}/ DESTINATION ${CMAKE_INSTALL_PREFIX}/include
   FILES_MATCHING REGEX .*\\.h|.*\\.proto)
+
 
 
 ## let cmake know where the headers are
@@ -79,8 +88,6 @@ if(${APPLE})
   link_directories(/sw/lib)
 endif()
 
-## start adding subdirectories
-add_subdirectory(src)
 
 
 ## copy to goby/include
@@ -90,3 +97,6 @@ foreach(I ${INCLUDE_FILES})
 endforeach()
 
 set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES ${goby_INC_DIR}/goby)
+
+## start adding subdirectories
+add_subdirectory(src)

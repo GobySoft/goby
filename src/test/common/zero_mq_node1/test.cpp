@@ -1,26 +1,33 @@
-// copyright 2011 t. schneider tes@mit.edu
+// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+//                     Massachusetts Institute of Technology (2007-)
+//                     Woods Hole Oceanographic Institution (2007-)
+//                     Goby Developers Team (https://launchpad.net/~goby-dev)
 // 
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+//
+// This file is part of the Goby Underwater Autonomy Project Binaries
+// ("The Goby Binaries").
+//
+// The Goby Binaries are free software: you can redistribute them and/or modify
+// them under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// This software is distributed in the hope that it will be useful,
+// The Goby Binaries are distributed in the hope that they will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this software.  If not, see <http://www.gnu.org/licenses/>.
+// along with Goby.  If not, see <http://www.gnu.org/licenses/>.
 
 
 // tests basic publish/subscribe over EPGM functionality of ZeroMQService class
 
-#include "goby/core.h"
+#include "goby/common/zeromq_service.h"
 
 #include <boost/thread.hpp>
 
-void node_inbox(goby::core::MarshallingScheme marshalling_scheme,
+void node_inbox(goby::common::MarshallingScheme marshalling_scheme,
                  const std::string& identifier,
                  const void* data,
                  int size,
@@ -37,17 +44,17 @@ enum {
 
 int main(int argc, char* argv[])
 {
-    goby::glog.add_stream(goby::util::logger::DEBUG3, &std::cerr);
+    goby::glog.add_stream(goby::common::logger::DEBUG3, &std::cerr);
     goby::glog.set_name(argv[0]);
     
-    goby::core::ZeroMQService node;
+    goby::common::ZeroMQService node;
 
-    goby::core::protobuf::ZeroMQServiceConfig pubsub_cfg;
+    goby::common::protobuf::ZeroMQServiceConfig pubsub_cfg;
 
     {
             
-        goby::core::protobuf::ZeroMQServiceConfig::Socket* subscriber_socket = pubsub_cfg.add_socket();
-        subscriber_socket->set_socket_type(goby::core::protobuf::ZeroMQServiceConfig::Socket::SUBSCRIBE);
+        goby::common::protobuf::ZeroMQServiceConfig::Socket* subscriber_socket = pubsub_cfg.add_socket();
+        subscriber_socket->set_socket_type(goby::common::protobuf::ZeroMQServiceConfig::Socket::SUBSCRIBE);
         subscriber_socket->set_socket_id(SOCKET_SUBSCRIBE);
         subscriber_socket->set_ethernet_address("127.0.0.1");
         std::cout << subscriber_socket->DebugString() << std::endl;
@@ -55,8 +62,8 @@ int main(int argc, char* argv[])
 
     {
             
-        goby::core::protobuf::ZeroMQServiceConfig::Socket* publisher_socket = pubsub_cfg.add_socket();
-        publisher_socket->set_socket_type(goby::core::protobuf::ZeroMQServiceConfig::Socket::PUBLISH);
+        goby::common::protobuf::ZeroMQServiceConfig::Socket* publisher_socket = pubsub_cfg.add_socket();
+        publisher_socket->set_socket_type(goby::common::protobuf::ZeroMQServiceConfig::Socket::PUBLISH);
         publisher_socket->set_ethernet_address("127.0.0.1");
         publisher_socket->set_socket_id(SOCKET_PUBLISH);
         std::cout << publisher_socket->DebugString() << std::endl;
@@ -74,7 +81,7 @@ int main(int argc, char* argv[])
     for(int i = 0; i < test_count; ++i)
     {
         std::cout << "publishing " << data_ << std::endl;
-        node.send(goby::core::MARSHALLING_CSTR, identifier_, &data_, 3, SOCKET_PUBLISH);
+        node.send(goby::common::MARSHALLING_CSTR, identifier_, &data_, 3, SOCKET_PUBLISH);
         node.poll(1e6);
     }
 
@@ -84,14 +91,14 @@ int main(int argc, char* argv[])
 }
 
 
-void node_inbox(goby::core::MarshallingScheme marshalling_scheme,
+void node_inbox(goby::common::MarshallingScheme marshalling_scheme,
                  const std::string& identifier,
                  const void* data,
                  int size,
                  int socket_id)
 {
     assert(identifier == identifier_);
-    assert(marshalling_scheme == goby::core::MARSHALLING_CSTR);
+    assert(marshalling_scheme == goby::common::MARSHALLING_CSTR);
     assert(!strcmp(static_cast<const char*>(data), data_));
     assert(socket_id == SOCKET_SUBSCRIBE);
     

@@ -1,98 +1,158 @@
-# Dependencies Makefile for Goby
+#!/bin/bash
+# Dependencies installation script for Goby
 #
-# At a minimum, Goby-Util and Goby-Acomms can be built in a C++ development environment 
+# At a minimum, Goby can be built in a C++ development environment 
 # that also includes Google Protocol Buffers (http://code.google.com/p/protobuf/)
 # and Boost (http://www.boost.org/). Both of these will readily compile on most
 # embedded systems. The other dependencies add useful functionality.
-#
-# Goby-Core requires ZeroMQ (http://www.zeromq.org/) in addition to the dependencies for Goby-Acomms. Again, this small library will compile well on most systems.
-#
-# This is a makefile in disguise. 
-# Most users of Goby-Acomms will type:
-# > sudo make -f DEPENDENCIES ubuntu-minimal
-# Otherwise for Goby-Core and more functionality, 
-# > sudo make -f DEPENDENCIES ubuntu-suggested
-#
-# LINUX
-# This script will attempt to install packages using your package manager for
-# Debian (and derivatives). Pick a target that fulfills your needs:
-# {dist-name}-minimal    |  installs minimal dependencies for using Goby
-# {dist-name}-suggested  |  installs dependencies to give Goby more functionality (recommended!)
+function usage()
+{
+    echo "usage: ./DEPENDENCIES distribution [ALL] [DOC]";
+    echo "";
+    echo "distribution can be:";
+    echo "debian"
+    echo "ubuntu"
+    echo "fedora"
+    echo "opensuse"
+    echo;
+    echo "Other distributions should determine their dependencies"
+    echo "by reading this file (less DEPENDENCIES). Please improve this script"
+    echo "by adding your distribution."
 
-# minimal targets
-debian-minimal:
-	@echo
-	@echo
-	@echo "Installing minimal dependencies (Boost and Google Protocol Buffers)"
-	@apt-get install \
-		build-essential \
-		cmake \
-		libboost-dev \
-		libboost-system-dev \
-		libboost-date-time-dev \
-		libboost-thread-dev \
-		libboost-program-options-dev \
-		libboost-filesystem-dev \
-		libboost-signals-dev \
-		libprotobuf-dev \
-		libprotoc-dev \
-		protobuf-compiler \
-		-y
+    echo "option ALL installs all optional code dependencies";
+    echo "option DOC installs all dependencies for generating documentation (doxygen, latex, etc.)";
+}
 
-ubuntu-minimal: debian-minimal
-
-# suggested targets
-
-debian-suggested: debian-minimal
-	@echo
-	@echo
-	@echo "Installing suggested dependencies"
-	@apt-get install \
-	 	libcrypto++-dev \
-		libncurses-dev \
-		-y
-
-ubuntu-suggested: debian-suggested
+if [ $# -lt 1 ]; then usage; exit 1; fi;
+if [[ $UID -ne 0 ]]; then printf "You must run this script as root. Use 'sudo' in Ubuntu. \n" 1>&2; exit 1; fi
 
 
-# extra targets for special purposes
+echo "Installing dependencies for $1 ...";
+install_doc=0; if [[ $2 == "DOC" || $3 == "DOC" ]]; then install_doc=1; fi;
+if [ $install_doc -ne 0 ]; then echo "Installing documentation dependencies ..."; fi
+install_all=0; if [[ $2 == "ALL" || $3 == "ALL" ]]; then install_all=1; fi;
+if [ $install_all -ne 0 ]; then echo "Installing all dependencies ..."; fi
 
-ubuntu-doc: 
-	@echo
-	@echo 
-	@echo "Installing dependencies for generating documentation"
-	@apt-get install \
-		graphviz \
-		doxygen \
-		texlive-xetex \
-		ttf-sil-gentium \
-		imagemagick \
-		texlive-fonts-recommended \
-		texlive-font-utils \
-		ghostscript \
-		lmodern \
-		texlive-latex-recommended \
-		texlive-latex-extra \
-		-y
+set -u -e 
 
-ubuntu-moos: ubuntu-suggested
-	@apt-get install \
-		moos \
-		-y 
+case $1 in
+ubuntu|debian)
+        # additionally, debian will require:
+        # - Wt from source if desired: http://www.webtoolkit.eu/wt/download
+        # - 0mq from source if desired: http://www.zeromq.org/
 
-ubuntu-moos-transitional: ubuntu-moos
-	@apt-get install \
-		libxerces-c-dev \
-		-y 
+        if [[ -e "`which aptitude`" ]]; then
+            package_manager=aptitude
+        else
+            package_manager=apt-get
+        fi
+        
+        install_command="install"
+
+        packages="build-essential
+ 	    cmake
+ 	    libboost-dev
+ 	    libboost-system-dev
+ 	    libboost-date-time-dev
+ 	    libboost-thread-dev
+ 	    libboost-program-options-dev
+ 	    libboost-filesystem-dev
+ 	    libboost-signals-dev
+            libboost-regex-dev
+ 	    libprotobuf-dev
+ 	    libprotoc-dev
+ 	    protobuf-compiler"
+        if [ $install_all -ne 0 ]; then 
+            packages="${packages}
+ 	 	libcrypto++-dev
+ 		libncurses-dev
+ 		libxerces-c-dev"
+        fi
+        
+        if [ $install_doc -ne 0 ]; then 
+            packages="${packages} 
+ 		graphviz
+ 		doxygen
+ 		texlive-xetex
+ 		ttf-sil-gentium
+ 		imagemagick
+ 		texlive-fonts-recommended
+ 		texlive-font-utils
+ 		ghostscript
+ 		lmodern
+ 		texlive-latex-recommended
+		texlive-latex-extra"
+        fi        
+       
+        # PPA dependencies
+        if [[ $1 == "ubuntu" &&  $install_all -ne 0 ]]; then 
+            set -x
+            add-apt-repository ppa:goby-dev/ppa
+            apt-get update -qq
+            set +x
+
+            # override and use build-dep if ALL and DOC are requested
+            if [ $install_doc -ne 0 ]; then
+                package_manager="apt-get"
+                install_command="build-dep"
+                packages="goby2"
+            else
+                packages="${packages} 
+                     moos
+                     libzmq-dev   
+                     libwt-dev
+                     libwtdbo-dev
+                     libwtdbosqlite-dev
+                     libwthttp-dev"
+            fi
+        fi
+        ;;
+fedora)
+        package_manager=yum
+        install_command="install"
+        packages="cmake
+             protobuf-devel
+             boost-devel"
+
+        if [[ $install_all -ne 0 || $install_doc -ne 0 ]]; then 
+            echo "Warning: ALL and DOC are not yet supported for $1"
+        fi
+        ;; 
+opensuse)
+        package_manager=zypper
+        install_command="install"
+        packages="make gcc gcc-c++
+             protobuf-devel
+             boost-devel"
+
+        if [[ $install_all -ne 0 || $install_doc -ne 0 ]]; then 
+            echo "Warning: ALL and DOC are not yet supported for $1"
+        fi
+
+        ;; 
+*)
+   echo -e "Invalid distribution: $1\n"; usage; exit 1;;
+esac
+
+set -x
+${package_manager} ${install_command} ${packages}
+
+
+# Fedora notes
+# - base
+# yum install cmake
+# yum install protobuf-devel
+# yum install boost-devel
 
 # OpenSuSe Notes
+# - base
 # zypper install -t pattern devel_C_C++
 # zypper install cmake
 # zypper install boost-devel
+# zypper install protobuf-devel
+# - optional
 # zypper install libxerces-c-devel
 # (crypto++ from src)
-# zypper install protobuf-devel
-# zypper install cdk-devel
 # zypper install wt-devel
 
 
@@ -103,18 +163,19 @@ ubuntu-moos-transitional: ubuntu-moos
 # I believe these are the ports necessary to compile moos-ivp,
 # moos-ivp-local, and goby:
 # 
+# - base
 # boost +universal
+# protobuf-cpp
 # cmake
+# - optional
 # jpeg +universal
 # libcryptopp +universal
 # ncurses +universal
 # ncursesw
-# protobuf-cpp
 # socat
 # tiff +universal
 # xercesc
 # zlib +universal
-
 
 
 # Windows

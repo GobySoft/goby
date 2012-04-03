@@ -1,21 +1,25 @@
-// copyright 2008, 2009 t. schneider tes@mit.edu
+// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+//                     Massachusetts Institute of Technology (2007-)
+//                     Woods Hole Oceanographic Institution (2007-)
+//                     Goby Developers Team (https://launchpad.net/~goby-dev)
 // 
-// this file is part of the Dynamic Compact Control Language (DCCL),
-// the goby-acomms codec. goby-acomms is a collection of libraries 
-// for acoustic underwater networking
 //
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// This file is part of the Goby Underwater Autonomy Project Libraries
+// ("The Goby Libraries").
+//
+// The Goby Libraries are free software: you can redistribute them and/or modify
+// them under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// This software is distributed in the hope that it will be useful,
+// The Goby Libraries are distributed in the hope that they will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Lesser General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
-// along with this software.  If not, see <http://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU Lesser General Public License
+// along with Goby.  If not, see <http://www.gnu.org/licenses/>.
+
 
 #ifndef DCCLConstants20091211H
 #define DCCLConstants20091211H
@@ -30,7 +34,7 @@
 
 #include "goby/util/primitive_types.h"
 #include "goby/acomms/acomms_constants.h"
-#include "goby/util/logger.h"
+#include "goby/common/logger.h"
 
 namespace goby
 {
@@ -40,7 +44,6 @@ namespace goby
         /// \brief Used for all cases in DCCL when an arbitrary length set of raw bits is needed. boost::dynamic_bitset is similar to std::bitset but allows dynamic length (runtime set) bitsets.
         typedef boost::dynamic_bitset<unsigned char> Bitset;
 
-
         inline Bitset operator+(const Bitset& a, const Bitset& b)
         {
             Bitset out(a);
@@ -48,7 +51,13 @@ namespace goby
                 out.push_back(b[i]);
             return out;
         }
-
+        
+        inline Bitset& operator +=(Bitset& a, const Bitset& b)
+        {
+            for(int i = 0, n = b.size(); i < n; ++i)
+                a.push_back(b[i]);
+            return a;
+        }
         
         inline void bitset2string(const Bitset& bits, std::string* str)
         {

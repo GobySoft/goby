@@ -133,6 +133,13 @@ if(build_common)
   if(build_util)
     add_subdirectory(util)
 
+#    if(enable_zeromq)
+#      option(build_pb "Build the Goby implementation in Protobuf/C++ (PB) (requires goby-util)" ON)
+#      if(build_pb)
+#        add_subdirectory(pb)
+#      endif(build_pb)
+#    endif()
+
     option(build_acomms "Build the Goby Acoustic Communications library and applications (requires goby-util)" ON)
     if(build_acomms)
       add_subdirectory(acomms)

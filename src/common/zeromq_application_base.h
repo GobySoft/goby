@@ -41,15 +41,15 @@ namespace goby
           ZeroMQApplicationBase(ZeroMQService* service, google::protobuf::Message* cfg = 0 )
               : ApplicationBase(cfg),
                 zeromq_service_(*service)
-            {
-                set_loop_freq(base_cfg().loop_freq());
-                
-                // we are started
-                t_start_ = goby::common::goby_time();
-                // start the loop() on the next even second
-                t_next_loop_ = boost::posix_time::second_clock::universal_time() +
-                    boost::posix_time::seconds(1);
-            }
+                {
+                    set_loop_freq(base_cfg().loop_freq());
+                    
+                    // we are started
+                    t_start_ = goby::common::goby_time();
+                    // start the loop() on the next even second
+                    t_next_loop_ = boost::posix_time::second_clock::universal_time() +
+                        boost::posix_time::seconds(1);
+                }
             
             virtual ~ZeroMQApplicationBase()
             { }

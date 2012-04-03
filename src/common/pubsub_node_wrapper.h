@@ -82,6 +82,10 @@ namespace goby
                 zeromq_service_.subscribe_all(SOCKET_SUBSCRIBE);
             }
 
+            bool using_pubsub() const
+            { return cfg_.has_publish_socket() && cfg_.has_subscribe_socket(); }
+
+            
           protected:
             const protobuf::PubSubSocketConfig& cfg() const
             { return cfg_; }
@@ -90,8 +94,6 @@ namespace goby
                 SOCKET_SUBSCRIBE = 103998, SOCKET_PUBLISH = 103999
             };
 
-            bool using_pubsub() const
-            { return cfg_.has_publish_socket() && cfg_.has_subscribe_socket(); }
             
           private:
 

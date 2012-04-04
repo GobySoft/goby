@@ -269,13 +269,22 @@ inline std::multimap<std::string, CMOOSMsg> goby::moos::MOOSTranslator::protobuf
                 goby::moos::MOOSTranslation<goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_NATIVE_ENCODED>::serialize(&return_string, protobuf_msg);
                 break;
 
-            case protobuf::TranslatorEntry::TECHNIQUE_COMMA_SEPARATED_KEY_EQUALS_VALUE_PAIRS:
-                goby::moos::MOOSTranslation<protobuf::TranslatorEntry::TECHNIQUE_COMMA_SEPARATED_KEY_EQUALS_VALUE_PAIRS>::serialize(&return_string, protobuf_msg, google::protobuf::RepeatedPtrField<protobuf::TranslatorEntry::PublishSerializer::Algorithm>(), entry.use_short_enum());
-                break;
+            case protobuf::TranslatorEntry::TECHNIQUE_COMMA_SEPARATED_KEY_EQUALS_VALUE_PAIRS:    
+            {
+                // workaround for bug in protobuf 2.3.0
+                google::protobuf::RepeatedPtrField<protobuf::TranslatorEntry::PublishSerializer::Algorithm> empty_algorithms;
+                
+                goby::moos::MOOSTranslation<protobuf::TranslatorEntry::TECHNIQUE_COMMA_SEPARATED_KEY_EQUALS_VALUE_PAIRS>::serialize(&return_string, protobuf_msg, empty_algorithms, entry.use_short_enum());
+            }
+            break;
                 
             case protobuf::TranslatorEntry::TECHNIQUE_FORMAT:
-                goby::moos::MOOSTranslation<protobuf::TranslatorEntry::TECHNIQUE_FORMAT>::serialize(&return_string, protobuf_msg, google::protobuf::RepeatedPtrField<protobuf::TranslatorEntry::PublishSerializer::Algorithm>(), entry.create(i).format(), entry.create(i).repeated_delimiter(), entry.use_short_enum());
-                break;
+            {
+                google::protobuf::RepeatedPtrField<protobuf::TranslatorEntry::PublishSerializer::Algorithm> empty_algorithms;
+                
+                goby::moos::MOOSTranslation<protobuf::TranslatorEntry::TECHNIQUE_FORMAT>::serialize(&return_string, protobuf_msg, empty_algorithms, entry.create(i).format(), entry.create(i).repeated_delimiter(), entry.use_short_enum());
+            }
+            break;
         }
         
         try

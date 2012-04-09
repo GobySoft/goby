@@ -34,6 +34,7 @@ using goby::glog;
 using namespace goby::common::logger;
 using goby::common::goby_time;
 
+
 goby::pb::PBDriver::PBDriver(goby::common::ZeroMQService* zeromq_service) :
     StaticProtobufNode(zeromq_service),
     zeromq_service_(zeromq_service),
@@ -73,8 +74,7 @@ void goby::pb::PBDriver::handle_initiate_transmission(const acomms::protobuf::Mo
     msg->CopyFrom(orig_msg);
     signal_modify_transmission(msg);
 
-    msg->set_max_num_frames(acomms::MMDriver::packet_frame_count(msg->rate()));
-    msg->set_max_frame_bytes(acomms::MMDriver::packet_size(msg->rate()));
+    msg->set_max_frame_bytes(driver_cfg_.GetExtension(goby::pb::protobuf::Config::max_frame_size));
     signal_data_request(msg);
 }
 
@@ -100,6 +100,20 @@ void goby::pb::PBDriver::handle_response(const util::protobuf::StoreServerRespon
 
     for(int i = 0, n = response.inbox_size(); i < n; ++i)
     {
-        signal_receive(response.inbox(i));
+        // ack any packets
+        const acomms::protobuf::ModemTransmission& msg = response.inbox(i);
+        if(msg.type() == acomms::protobuf::ModemTransmission::DATA &&
+           msg.ack_requested() && msg.dest() != acomms::BROADCAST_ID)
+        {
+            acomms::protobuf::ModemTransmission& ack = *request_.add_outbox();
+            ack.set_type(goby::acomms::protobuf::ModemTransmission::ACK);
+            ack.set_src(msg.dest());
+            ack.set_dest(msg.src());
+            for(int i = 0, n = msg.frame_size(); i < n; ++i)
+                ack.add_acked_frame(i);
+
+        }
+        
+        signal_receive(msg);
     }
 }

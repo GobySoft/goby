@@ -210,7 +210,8 @@ void goby::moos::UFldDriver::receive_message(const goby::acomms::protobuf::Modem
     else
     {
         // ack any packets
-        if(msg.ack_requested() && msg.dest() != acomms::BROADCAST_ID)
+        if(msg.type() == acomms::protobuf::ModemTransmission::DATA &&
+           msg.ack_requested() && msg.dest() != acomms::BROADCAST_ID)
         {
             goby::acomms::protobuf::ModemTransmission ack;
             ack.set_type(goby::acomms::protobuf::ModemTransmission::ACK);

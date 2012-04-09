@@ -10,5 +10,6 @@ message Config
   {
     optional goby.common.protobuf.ZeroMQServiceConfig.Socket request_socket = 1321;
     optional double query_interval_seconds = 1322 [default = 1];
+    optional int32 max_frame_size = 1323 [default = 65536];
   }
 }

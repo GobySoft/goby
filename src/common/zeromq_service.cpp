@@ -142,7 +142,7 @@ void goby::common::ZeroMQService::process_cfg(const protobuf::ZeroMQServiceConfi
             try
             {
                 this_socket->bind(endpoint.c_str());
-                glog.is(DEBUG1, lock) && glog << cfg.socket(i).ShortDebugString() << "bound to endpoint - " << endpoint << std::endl << unlock;
+                glog.is(DEBUG1, lock) && glog << "bound to endpoint - " << endpoint << ", Socket: " << cfg.socket(i).ShortDebugString() << std::endl << unlock;
             }    
             catch(std::exception& e)
             {

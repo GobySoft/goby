@@ -8,4 +8,6 @@ message GobyStoreServerConfig
 {
   optional AppBaseConfig base = 1;  
   required goby.common.protobuf.ZeroMQServiceConfig.Socket reply_socket = 2;
+  optional string db_file_dir = 3 [default = "."];
+  
 }

@@ -16,4 +16,5 @@ target_link_libraries(
   goby_util
   goby_pb
   goby_acomms
+  ${SQLITE3_LIBRARIES}
   )

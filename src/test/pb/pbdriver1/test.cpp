@@ -24,10 +24,10 @@
 // tests functionality of the MMDriver WHOI Micro-Modem driver
 
 #include "goby/pb/pb_modem_driver.h"
-#include "goby/acomms/modemdriver/mm_driver.h"
 #include "goby/common/logger.h"
 #include "goby/util/binary.h"
 #include "goby/acomms/connect.h"
+#include "goby/acomms/acomms_helpers.h"
 
 using namespace goby::common::logger;
 using namespace goby::acomms;
@@ -54,22 +54,16 @@ void handle_modify_transmission2(protobuf::ModemTransmission* msg);
 void handle_transmit_result2(const protobuf::ModemTransmission& msg);
 void handle_data_receive2(const protobuf::ModemTransmission& msg);
 
-void test0();
-void test1();
-void test2();
-void test3();
+// void test0();
+// void test1();
+// void test2();
+// void test3();
 void test4();
 void test5();
 
 
 int main(int argc, char* argv[])
 {
-    if(argc < 3)
-    {
-        std::cout << "usage: test_mmdriver1 [log file]" << std::endl;
-        exit(1);
-    }
-
     goby::glog.add_stream(goby::common::logger::DEBUG3, &std::clog);
     std::ofstream fout;
 
@@ -95,14 +89,6 @@ int main(int argc, char* argv[])
         goby::acomms::protobuf::DriverConfig cfg1, cfg2;
         
         cfg1.set_modem_id(1);
-        // 0111
-        cfg1.MutableExtension(micromodem::protobuf::Config::remus_lbl)->set_enable_beacons(7);
-
-        // so we can play with the emulator box BNC cables and expect bad CRC'S (otherwise crosstalk is enough to receive everything ok!)
-        cfg1.AddExtension(micromodem::protobuf::Config::nvram_cfg, "AGC,0");
-        cfg2.AddExtension(micromodem::protobuf::Config::nvram_cfg, "AGC,0");
-        cfg1.AddExtension(micromodem::protobuf::Config::nvram_cfg, "AGN,0");
-        cfg2.AddExtension(micromodem::protobuf::Config::nvram_cfg, "AGN,0");
 
         goby::common::protobuf::ZeroMQServiceConfig::Socket* socket1 =
             cfg1.MutableExtension(goby::pb::protobuf::Config::request_socket);
@@ -116,7 +102,8 @@ int main(int argc, char* argv[])
         cfg1.SetExtension(goby::pb::protobuf::Config::query_interval_seconds, 2);
         
         cfg2.set_modem_id(2);
-
+        cfg2.MutableExtension(goby::pb::protobuf::Config::request_socket)->CopyFrom(*socket1);        
+        
         goby::acomms::connect(&driver1->signal_receive, &handle_data_receive1);
         goby::acomms::connect(&driver1->signal_transmit_result, &handle_transmit_result1);
         goby::acomms::connect(&driver1->signal_modify_transmission, &handle_modify_transmission1);
@@ -129,17 +116,15 @@ int main(int argc, char* argv[])
         
         goby::glog << cfg1.DebugString() << std::endl;
         
-        driver1->startup(cfg1);
-
-        
-//        driver2->startup(cfg2);
+        driver1->startup(cfg1);        
+        driver2->startup(cfg2);
 
         int i =0;
         
         while(((i / 10) < 3))
         {
             driver1->do_work();
-//            driver2->do_work();
+            driver2->do_work();
         
             usleep(100000);
             ++i;
@@ -150,10 +135,10 @@ int main(int argc, char* argv[])
         {
             switch(test_number)
             {
-                case 0: test0(); break; 
-                case 1: test1(); break; 
-                case 2: test2(); break; 
-                case 3: test3(); break; 
+                // case 0: test0(); break; 
+                // case 1: test1(); break; 
+                // case 2: test2(); break; 
+                // case 3: test3(); break; 
                 case 4: test4(); break; 
                 case 5: test5(); break; 
                 case -1:
@@ -366,111 +351,111 @@ void handle_data_receive2(const protobuf::ModemTransmission& msg)
 }
 
 
-void test0()
-{
-    // ping test
-    goby::glog << group("test") << "Ping test" << std::endl;
+// void test0()
+// {
+//     // ping test
+//     goby::glog << group("test") << "Ping test" << std::endl;
 
-    protobuf::ModemTransmission transmit;
+//     protobuf::ModemTransmission transmit;
     
-    transmit.set_type(protobuf::ModemTransmission::MICROMODEM_TWO_WAY_PING);
-    transmit.set_src(1);
-    transmit.set_dest(2);
+//     transmit.set_type(protobuf::ModemTransmission::MICROMODEM_TWO_WAY_PING);
+//     transmit.set_src(1);
+//     transmit.set_dest(2);
 
-    driver1->handle_initiate_transmission(transmit);
+//     driver1->handle_initiate_transmission(transmit);
 
-    int i = 0;
-    while(((i / 10) < 10) && check_count < 2)
-    {
-        driver1->do_work();
-//        driver2->do_work();
+//     int i = 0;
+//     while(((i / 10) < 10) && check_count < 2)
+//     {
+//         driver1->do_work();
+// //        driver2->do_work();
         
-        usleep(100000);
-        ++i;
-    }
-    assert(check_count == 2);
-}
+//         usleep(100000);
+//         ++i;
+//     }
+//     assert(check_count == 2);
+// }
 
 
-void test1()
-{
-    goby::glog << group("test") << "Remus LBL test" << std::endl;
+// void test1()
+// {
+//     goby::glog << group("test") << "Remus LBL test" << std::endl;
 
-    protobuf::ModemTransmission transmit;
+//     protobuf::ModemTransmission transmit;
     
-    transmit.set_type(protobuf::ModemTransmission::MICROMODEM_REMUS_LBL_RANGING);
-    transmit.set_src(1);
-    transmit.MutableExtension(micromodem::protobuf::remus_lbl)->set_lbl_max_range(1000);
+//     transmit.set_type(protobuf::ModemTransmission::MICROMODEM_REMUS_LBL_RANGING);
+//     transmit.set_src(1);
+//     transmit.MutableExtension(micromodem::protobuf::remus_lbl)->set_lbl_max_range(1000);
     
-    driver1->handle_initiate_transmission(transmit);
+//     driver1->handle_initiate_transmission(transmit);
 
-    int i = 0;
-    while(((i / 10) < 10) && check_count < 1)
-    {
-        driver1->do_work();
-//        driver2->do_work();
+//     int i = 0;
+//     while(((i / 10) < 10) && check_count < 1)
+//     {
+//         driver1->do_work();
+// //        driver2->do_work();
         
-        usleep(100000);
-        ++i;
-    }
-    assert(check_count == 1);
-}
+//         usleep(100000);
+//         ++i;
+//     }
+//     assert(check_count == 1);
+// }
 
-void test2()
-{
-    goby::glog << group("test") << "Narrowband LBL test" << std::endl;
+// void test2()
+// {
+//     goby::glog << group("test") << "Narrowband LBL test" << std::endl;
 
-    protobuf::ModemTransmission transmit;
+//     protobuf::ModemTransmission transmit;
     
-    transmit.set_type(protobuf::ModemTransmission::MICROMODEM_NARROWBAND_LBL_RANGING);
-    transmit.set_src(1);
+//     transmit.set_type(protobuf::ModemTransmission::MICROMODEM_NARROWBAND_LBL_RANGING);
+//     transmit.set_src(1);
 
-    micromodem::protobuf::NarrowBandLBLParams* params = transmit.MutableExtension(micromodem::protobuf::narrowband_lbl);
-    params->set_lbl_max_range(1000);
-    params->set_turnaround_ms(20);
-    params->set_transmit_freq(26000);
-    params->set_transmit_ping_ms(5);
-    params->set_receive_ping_ms(5);
-    params->add_receive_freq(25000);
-    params->set_transmit_flag(true);
+//     micromodem::protobuf::NarrowBandLBLParams* params = transmit.MutableExtension(micromodem::protobuf::narrowband_lbl);
+//     params->set_lbl_max_range(1000);
+//     params->set_turnaround_ms(20);
+//     params->set_transmit_freq(26000);
+//     params->set_transmit_ping_ms(5);
+//     params->set_receive_ping_ms(5);
+//     params->add_receive_freq(25000);
+//     params->set_transmit_flag(true);
     
-    driver1->handle_initiate_transmission(transmit);
+//     driver1->handle_initiate_transmission(transmit);
 
-    int i = 0;
-    while(((i / 10) < 10) && check_count < 1)
-    {
-        driver1->do_work();
-//        driver2->do_work();
+//     int i = 0;
+//     while(((i / 10) < 10) && check_count < 1)
+//     {
+//         driver1->do_work();
+// //        driver2->do_work();
         
-        usleep(100000);
-        ++i;
-    }
-    assert(check_count == 1);
-}
+//         usleep(100000);
+//         ++i;
+//     }
+//     assert(check_count == 1);
+// }
 
-void test3()
-{
-    goby::glog << group("test") << "Mini data test" << std::endl;
+// void test3()
+// {
+//     goby::glog << group("test") << "Mini data test" << std::endl;
 
-    protobuf::ModemTransmission transmit;
+//     protobuf::ModemTransmission transmit;
     
-    transmit.set_type(protobuf::ModemTransmission::MICROMODEM_MINI_DATA);
-    transmit.set_src(2);
-    transmit.set_dest(1);
+//     transmit.set_type(protobuf::ModemTransmission::MICROMODEM_MINI_DATA);
+//     transmit.set_src(2);
+//     transmit.set_dest(1);
     
-//    driver2->handle_initiate_transmission(transmit);
+// //    driver2->handle_initiate_transmission(transmit);
 
-    int i = 0;
-    while(((i / 10) < 10) && check_count < 2)
-    {
-        driver1->do_work();
-//        driver2->do_work();
+//     int i = 0;
+//     while(((i / 10) < 10) && check_count < 2)
+//     {
+//         driver1->do_work();
+// //        driver2->do_work();
         
-        usleep(100000);
-        ++i;
-    }
-    assert(check_count == 2);
-}
+//         usleep(100000);
+//         ++i;
+//     }
+//     assert(check_count == 2);
+// }
 
 
 void test4()
@@ -490,7 +475,7 @@ void test4()
     while(((i / 10) < 10) && check_count < 3)
     {
         driver1->do_work();
-//        driver2->do_work();
+        driver2->do_work();
         
         usleep(100000);
         ++i;
@@ -517,7 +502,7 @@ void test5()
     while(((i / 10) < 10) && check_count < 3)
     {
         driver1->do_work();
-//        driver2->do_work();
+        driver2->do_work();
         
         usleep(100000);
         ++i;

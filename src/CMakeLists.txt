@@ -75,6 +75,18 @@ if(enable_zeromq)
   include_directories(${ZEROMQ_INCLUDE_DIRS})
 endif()
 
+## Sqlite3
+find_package(Sqlite3 QUIET)
+set(SQLITE_DOC_STRING "Enable SQLite3 database components (requires libsqlite3-dev: http://www.sqlite.org)")
+# find resources directory
+if(SQLITE3_FOUND)
+  option(enable_sqlite ${SQLITE_DOC_STRING} ON)
+else()
+  option(enable_sqlite ${SQLITE_DOC_STRING} OFF)
+  message(">> setting enable_sqlite to OFF ... if you need this functionality: 1) install libsqlite3-dev; 2) run cmake -Denable_sqlite=ON")
+endif()
+
+
 ## Wt
 find_package(WtGoby QUIET)
 set(WT_DOC_STRING "Enable Wt web browser GUI components (requires libwt-dev, libwtdbo-dev, libwtdbosqlite-dev, and libwthttp-dev: http://www.webtoolkit.eu/wt)")

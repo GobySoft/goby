@@ -1,10 +1,7 @@
 import "goby/acomms/protobuf/driver_base.proto"; // load up message DriverBaseConfig
 import "goby/common/protobuf/zero_mq_node_config.proto";
 
-
-package goby.pb.protobuf;
-
-message Config
+message PBDriverConfig
 {
   extend goby.acomms.protobuf.DriverConfig
   {

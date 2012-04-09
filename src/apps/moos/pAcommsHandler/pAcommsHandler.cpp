@@ -35,6 +35,7 @@
 #include "goby/moos/moos_protobuf_helpers.h"
 #include "goby/moos/moos_ufield_sim_driver.h"
 #include "goby/moos/protobuf/ufield_sim_driver.pb.h"
+#include "goby/pb/pb_modem_driver.h"
 
 using namespace goby::common::tcolor;
 using namespace goby::common::logger;
@@ -335,6 +336,9 @@ void CpAcommsHandler::process_configuration()
                 cfg_.modem_id_lookup_path());
             break;
 
+        case pAcommsHandlerConfig::DRIVER_PB_STORE_SERVER:
+            driver_ = new goby::pb::PBDriver(&zeromq_service_);
+            break;
             
         case pAcommsHandlerConfig::DRIVER_NONE: break;
     }    

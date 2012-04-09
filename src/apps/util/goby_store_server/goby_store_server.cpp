@@ -144,7 +144,7 @@ void goby::util::GobyStoreServer::handle_request(const protobuf::StoreServerRequ
         std::string bytes;
         request.outbox(i).SerializeToString(&bytes);
         
-        glog.is(DEBUG1) && glog << "Bytes (hex): " << goby::util::hex_encode(bytes) << std::endl;
+//        glog.is(DEBUG1) && glog << "Bytes (hex): " << goby::util::hex_encode(bytes) << std::endl;
         
         check(sqlite3_bind_blob(insert, 4, bytes.data(), bytes.size(), SQLITE_STATIC),
               "Insert `bytes` binding failed");
@@ -180,11 +180,11 @@ void goby::util::GobyStoreServer::handle_request(const protobuf::StoreServerRequ
             const unsigned char* bytes = sqlite3_column_text(select, 0);
             int num_bytes = sqlite3_column_bytes(select, 0);
 
-            std::string byte_string(reinterpret_cast<const char*>(bytes), num_bytes);
+            // std::string byte_string(reinterpret_cast<const char*>(bytes), num_bytes);
             
-            glog.is(DEBUG1) && glog << "Bytes (hex): " << goby::util::hex_encode(byte_string) << std::endl;
+            // glog.is(DEBUG1) && glog << "Bytes (hex): " << goby::util::hex_encode(byte_string) << std::endl;
             
-            response.add_inbox()->ParseFromString(byte_string);
+            response.add_inbox()->ParseFromArray(bytes, num_bytes);
             glog.is(DEBUG1) &&
                 glog << "Got message for inbox (size: " << num_bytes << "): " << response.inbox(response.inbox_size()-1).DebugString()
                      << std::endl;

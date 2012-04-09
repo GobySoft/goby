@@ -52,14 +52,14 @@ void goby::pb::PBDriver::startup(const acomms::protobuf::DriverConfig& cfg)
     
     common::protobuf::ZeroMQServiceConfig service_cfg;
     service_cfg.add_socket()->CopyFrom(
-        driver_cfg_.GetExtension(goby::pb::protobuf::Config::request_socket));
+        driver_cfg_.GetExtension(PBDriverConfig::request_socket));
     zeromq_service_->set_cfg(service_cfg);
 
     request_socket_id_ =
-        driver_cfg_.GetExtension(goby::pb::protobuf::Config::request_socket).socket_id();
+        driver_cfg_.GetExtension(PBDriverConfig::request_socket).socket_id();
 
     query_interval_seconds_ =
-        driver_cfg_.GetExtension(goby::pb::protobuf::Config::query_interval_seconds);
+        driver_cfg_.GetExtension(PBDriverConfig::query_interval_seconds);
 }
 
 void goby::pb::PBDriver::shutdown()
@@ -74,7 +74,7 @@ void goby::pb::PBDriver::handle_initiate_transmission(const acomms::protobuf::Mo
     msg->CopyFrom(orig_msg);
     signal_modify_transmission(msg);
 
-    msg->set_max_frame_bytes(driver_cfg_.GetExtension(goby::pb::protobuf::Config::max_frame_size));
+    msg->set_max_frame_bytes(driver_cfg_.GetExtension(PBDriverConfig::max_frame_size));
     signal_data_request(msg);
 }
 

@@ -16,6 +16,7 @@ add_library(goby_acomms
   modemdriver/abc_driver.cpp
   modemdriver/driver_base.cpp
   modemdriver/mm_driver.cpp
+  modemdriver/udp_driver.cpp
   ${PROTO_SRCS} ${PROTO_HDRS}
 )
 

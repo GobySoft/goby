@@ -21,9 +21,9 @@
 // along with Goby.  If not, see <http://www.gnu.org/licenses/>.
 
 
-// tests functionality of the MMDriver WHOI Micro-Modem driver
+// tests functionality of the UDPDriver
 
-#include "goby/pb/pb_modem_driver.h"
+#include "goby/acomms/modemdriver/udp_driver.h"
 #include "goby/common/logger.h"
 #include "goby/util/binary.h"
 #include "goby/acomms/connect.h"
@@ -35,7 +35,7 @@ using goby::util::as;
 using goby::common::goby_time;
 using namespace boost::posix_time;
 
-boost::shared_ptr<goby::pb::PBDriver> driver1, driver2;
+boost::shared_ptr<goby::acomms::UDPDriver> driver1, driver2;
 
 static int check_count = 0;
 
@@ -79,10 +79,10 @@ int main(int argc, char* argv[])
     goby::glog.add_group("driver1", goby::common::Colors::green);
     goby::glog.add_group("driver2", goby::common::Colors::yellow);
 
-    goby::common::ZeroMQService zeromq_service1, zeromq_service2;
+    boost::asio::io_service io1, io2;
     
-    driver1.reset(new goby::pb::PBDriver(&zeromq_service1));
-    driver2.reset(new goby::pb::PBDriver(&zeromq_service2));
+    driver1.reset(new goby::acomms::UDPDriver(&io1));
+    driver2.reset(new goby::acomms::UDPDriver(&io2));
     
     try
     {    
@@ -90,19 +90,23 @@ int main(int argc, char* argv[])
         
         cfg1.set_modem_id(1);
 
-        goby::common::protobuf::ZeroMQServiceConfig::Socket* socket1 =
-            cfg1.MutableExtension(PBDriverConfig::request_socket);
-        
-        socket1->set_socket_type(goby::common::protobuf::ZeroMQServiceConfig::Socket::REQUEST);
-        socket1->set_transport(goby::common::protobuf::ZeroMQServiceConfig::Socket::TCP);
-        socket1->set_connect_or_bind(goby::common::protobuf::ZeroMQServiceConfig::Socket::CONNECT);
-        socket1->set_ethernet_address("127.0.0.1");
-        socket1->set_ethernet_port(54321);
+        UDPDriverConfig::EndPoint* endpoint1 =
+            cfg1.MutableExtension(UDPDriverConfig::local);
 
-        cfg1.SetExtension(PBDriverConfig::query_interval_seconds, 2);
-        
+        endpoint1->set_ip("127.0.0.1");
+        endpoint1->set_port(55631);
+
         cfg2.set_modem_id(2);
-        cfg2.MutableExtension(PBDriverConfig::request_socket)->CopyFrom(*socket1);        
+
+        UDPDriverConfig::EndPoint* endpoint2 =
+            cfg2.MutableExtension(UDPDriverConfig::local);
+        
+        endpoint2->set_ip("localhost");
+        endpoint2->set_port(55632);
+
+        cfg1.MutableExtension(UDPDriverConfig::remote)->CopyFrom(*endpoint2);
+        cfg2.MutableExtension(UDPDriverConfig::remote)->CopyFrom(*endpoint1);
+        
         
         goby::acomms::connect(&driver1->signal_receive, &handle_data_receive1);
         goby::acomms::connect(&driver1->signal_transmit_result, &handle_transmit_result1);

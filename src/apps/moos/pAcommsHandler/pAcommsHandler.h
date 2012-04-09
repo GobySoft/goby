@@ -47,6 +47,7 @@
 #include "goby/util/dynamic_protobuf_manager.h"
 #include "goby/moos/goby_moos_app.h"
 #include "goby/moos/moos_translator.h"
+#include "goby/common/zeromq_service.h"
 
 #include "goby/moos/protobuf/pAcommsHandler_config.pb.h"
 
@@ -144,6 +145,8 @@ class CpAcommsHandler : public GobyMOOSApp
     boost::asio::io_service timer_io_service_;
     boost::asio::io_service::work work_;
 
+    // for PBDriver
+    goby::common::ZeroMQService zeromq_service_;
     
     std::vector<boost::shared_ptr<Timer> > timers_;
     

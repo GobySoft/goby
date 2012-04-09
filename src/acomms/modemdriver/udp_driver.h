@@ -21,42 +21,46 @@
 // along with Goby.  If not, see <http://www.gnu.org/licenses/>.
 
 
-#ifndef PBModemDriver20120404H
-#define PBModemDriver20120404H
+#ifndef UDPModemDriver20120409H
+#define UDPModemDriver20120409H
 
 #include "goby/common/time.h"
 
 #include "goby/acomms/modemdriver/driver_base.h"
-#include "goby/pb/protobuf_node.h"
 #include "goby/common/zeromq_service.h"
 #include "goby/util/protobuf/store_server.pb.h"
-#include "goby/pb/protobuf/pb_modem_driver.pb.h"
+#include "goby/acomms/protobuf/udp_driver.pb.h"
 
+#include <boost/bind.hpp>
+#include <boost/asio.hpp>
 
 namespace goby
 {
-    namespace pb
+    namespace acomms
     {
-        class PBDriver : public acomms::ModemDriverBase,
-            public goby::pb::StaticProtobufNode
+        class UDPDriver : public ModemDriverBase
         {
           public:
-            PBDriver(goby::common::ZeroMQService* zeromq_service);
-            void startup(const acomms::protobuf::DriverConfig& cfg);
+            UDPDriver(boost::asio::io_service* io_service);
+            void startup(const protobuf::DriverConfig& cfg);
             void shutdown();            
             void do_work();
-            void handle_initiate_transmission(const acomms::protobuf::ModemTransmission& m);
+            void handle_initiate_transmission(const protobuf::ModemTransmission& m);
 
           private:
-            void handle_response(const util::protobuf::StoreServerResponse& response);
-            
+            void start_send(const google::protobuf::Message& msg);
+            void send_complete(const boost::system::error_code& error, std::size_t bytes_transferred);
+            void start_receive();
+            void receive_complete(const boost::system::error_code& error, std::size_t bytes_transferred);
+            void receive_message(const protobuf::ModemTransmission& m);
+
           private:            
-            goby::common::ZeroMQService* zeromq_service_;
-            acomms::protobuf::DriverConfig driver_cfg_;
-            util::protobuf::StoreServerRequest request_;
-            uint64 last_send_time_;
-            int request_socket_id_;
-            double query_interval_seconds_;
+            protobuf::DriverConfig driver_cfg_;
+            boost::asio::io_service* io_service_;
+            boost::asio::ip::udp::socket socket_;
+            boost::asio::ip::udp::endpoint receiver_;
+            boost::asio::ip::udp::endpoint sender_;            
+            std::vector<char> receive_buffer_; 
         };
     }
 }

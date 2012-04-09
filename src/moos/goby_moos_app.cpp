@@ -52,7 +52,7 @@ bool GobyMOOSApp::Iterate()
         cout_cleared_ = true;
     }
 
-    while(connected_ && !msg_buffer_.empty())
+    while(!msg_buffer_.empty() && (connected_ && started_up_))
     {
         glog << "writing from buffer: " << msg_buffer_.front().GetKey() << ": " << msg_buffer_.front().GetAsString() << std::endl;
         m_Comms.Post(msg_buffer_.front());

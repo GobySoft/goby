@@ -5,7 +5,7 @@ file(GLOB PB_SRC *.cpp)
 
 add_library(goby_pb ${PB_SRC} ${PROTO_SRCS} ${PROTO_HDRS})
 
-target_link_libraries(goby_pb ${Boost_LIBRARIES} pthread goby_common goby_util ${ZeroMQ_LIBRARIES} ${PROTOBUF_LIBRARIES})
+target_link_libraries(goby_pb ${Boost_LIBRARIES} pthread goby_common goby_util goby_acomms ${ZeroMQ_LIBRARIES} ${PROTOBUF_LIBRARIES})
 
 if(NOT ${APPLE})
   target_link_libraries(goby_pb rt) 

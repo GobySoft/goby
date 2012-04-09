@@ -64,7 +64,7 @@ class GobyMOOSApp : public CMOOSApp
   
     void publish(CMOOSMsg& msg)
     {
-        if(connected_)
+        if(connected_ && started_up_)
             m_Comms.Post(msg);
         else
             msg_buffer_.push_back(msg);

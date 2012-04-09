@@ -21,42 +21,42 @@
 // along with Goby.  If not, see <http://www.gnu.org/licenses/>.
 
 
-#ifndef Modem20110225H
-#define Modem20110225H
+#ifndef PBModemDriver20120404H
+#define PBModemDriver20120404H
 
 #include "goby/common/time.h"
 
-#include "driver_base.h"
-#include "goby/acomms/protobuf/abc_driver.pb.h"
-#include "goby/acomms/acomms_helpers.h"
+#include "goby/acomms/modemdriver/driver_base.h"
+#include "goby/pb/protobuf_node.h"
+#include "goby/common/zeromq_service.h"
+#include "goby/util/protobuf/store_server.pb.h"
+#include "goby/pb/protobuf/pb_modem_driver.pb.h"
+
 
 namespace goby
 {
-    namespace acomms
+    namespace pb
     {
-        /// \brief provides an API to the imaginary ABC modem (as an example how to write drivers)
-        /// \ingroup acomms_api
-        /// 
-        class ABCDriver : public ModemDriverBase
+        class PBDriver : public acomms::ModemDriverBase,
+            public goby::pb::StaticProtobufNode
         {
           public:
-            ABCDriver();
-            void startup(const protobuf::DriverConfig& cfg);
+            PBDriver(goby::common::ZeroMQService* zeromq_service);
+            void startup(const acomms::protobuf::DriverConfig& cfg);
             void shutdown();            
             void do_work();
-            void handle_initiate_transmission(const protobuf::ModemTransmission& m);
+            void handle_initiate_transmission(const acomms::protobuf::ModemTransmission& m);
 
           private:
-            void parse_in(const std::string& in,
-                          std::map<std::string, std::string>* out);
-            void signal_and_write(const std::string& raw);
+            void handle_response(const util::protobuf::StoreServerResponse& response);
             
-          private:
-            enum { DEFAULT_BAUD = 4800 };
-            
-            
-            protobuf::DriverConfig driver_cfg_; // configuration given to you at launch
-            // rest is up to you!
+          private:            
+            goby::common::ZeroMQService* zeromq_service_;
+            acomms::protobuf::DriverConfig driver_cfg_; // configuration given to you at launch
+            util::protobuf::StoreServerRequest request_;
+            uint64 last_send_time_;
+            int request_socket_id_;
+            double query_interval_seconds_;
         };
     }
 }

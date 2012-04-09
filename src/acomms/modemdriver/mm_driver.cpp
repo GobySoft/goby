@@ -51,7 +51,7 @@ int goby::acomms::MMDriver::ALLOWED_MS_DIFF = 2000;
 boost::posix_time::time_duration goby::acomms::MMDriver::HYDROID_GATEWAY_GPS_REQUEST_INTERVAL = boost::posix_time::seconds(30);
 std::string goby::acomms::MMDriver::SERIAL_DELIMITER = "\r";
 unsigned goby::acomms::MMDriver::PACKET_FRAME_COUNT [] = { 1, 3, 3, 2, 2, 8 };
-unsigned goby::acomms::MMDriver::PACKET_SIZE [] = { 32, 32, 64, 256, 256, 256 };
+unsigned goby::acomms::MMDriver::PACKET_SIZE [] = { 32, 64, 64, 256, 256, 256 };
 
 
 //

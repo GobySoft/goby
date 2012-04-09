@@ -181,7 +181,7 @@ void goby::pb::StaticProtobufNode::on_receipt(
     const std::string& protobuf_type_name = ProtoBufMessage::descriptor()->full_name();
 
     glog.is(goby::common::logger::DEBUG1) && 
-        glog << "subscribing for " << protobuf_type_name  << std::endl;
+        glog << "registering on_receipt handler for " << protobuf_type_name  << std::endl;
     
     // enforce one handler for each type 
     typedef std::pair <std::string, boost::shared_ptr<SubscriptionBase> > P;
@@ -210,6 +210,10 @@ void goby::pb::StaticProtobufNode::subscribe(
 {
     const std::string& protobuf_type_name = ProtoBufMessage::descriptor()->full_name();
     on_receipt(socket_id, handler);
+
+    glog.is(goby::common::logger::DEBUG1) && 
+        glog << "subscribing for " << protobuf_type_name  << std::endl;
+
     ProtobufNode::subscribe(protobuf_type_name, socket_id);
 }
 

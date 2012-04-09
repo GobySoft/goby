@@ -20,14 +20,19 @@
 // You should have received a copy of the GNU General Public License
 // along with Goby.  If not, see <http://www.gnu.org/licenses/>.
 
+#include "goby/util/protobuf/store_server.pb.h"
 #include "goby/common/zeromq_application_base.h"
+#include "goby/pb/protobuf_node.h"
 #include "goby_store_server_config.pb.h"
+
+using namespace goby::common::logger;
 
 namespace goby
 {
     namespace util
     {
-        class GobyStoreServer : public goby::common::ZeroMQApplicationBase
+        class GobyStoreServer : public goby::common::ZeroMQApplicationBase,
+                                public goby::pb::StaticProtobufNode
         {
         public:
             GobyStoreServer();
@@ -35,6 +40,8 @@ namespace goby
             
 
         private:
+            void handle_request(const protobuf::StoreServerRequest& request);
+            
             void loop();
 
         private:
@@ -55,12 +62,28 @@ int main(int argc, char* argv[])
 }
 
 goby::util::GobyStoreServer::GobyStoreServer()
-    : ZeroMQApplicationBase(&zeromq_service_, &cfg_)
+    : ZeroMQApplicationBase(&zeromq_service_, &cfg_),
+      StaticProtobufNode(&zeromq_service_)
 {
+    
+    on_receipt<protobuf::StoreServerRequest>(
+        cfg_.reply_socket().socket_id(), &GobyStoreServer::handle_request, this);
 
-
+    common::protobuf::ZeroMQServiceConfig service_cfg;
+    service_cfg.add_socket()->CopyFrom(cfg_.reply_socket());
+    zeromq_service_.set_cfg(service_cfg);
 }
 
 void goby::util::GobyStoreServer::loop()
 {
+}
+
+void goby::util::GobyStoreServer::handle_request(const protobuf::StoreServerRequest& request)
+{
+    glog.is(DEBUG1) && glog << "Got request: " << request.DebugString() << std::endl;
+    
+    protobuf::StoreServerResponse response;
+    response.set_modem_id(request.modem_id());
+
+    send(response, cfg_.reply_socket().socket_id());
 }

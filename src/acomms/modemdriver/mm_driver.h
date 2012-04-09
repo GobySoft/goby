@@ -60,8 +60,16 @@ namespace goby
             /// \brief See ModemDriverBase::handle_initiate_transmission()
             void handle_initiate_transmission(const protobuf::ModemTransmission& m);
 
-            /// \brief Current clock mode of the modem, necessary for synchronous navigation. 
+            /// \brief Current clock mode of the modem, necessary for synchronous navigation.
             int clk_mode() { return clk_mode_; }
+
+
+            static unsigned packet_frame_count(int rate)
+            { return PACKET_FRAME_COUNT [rate]; }
+            
+            static unsigned packet_size(int rate)
+            { return PACKET_SIZE [rate]; }
+
             
           private:
         

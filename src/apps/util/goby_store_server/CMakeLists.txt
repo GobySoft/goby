@@ -14,4 +14,6 @@ target_link_libraries(
   ${Wt_LIBRARIES}
   goby_common
   goby_util
+  goby_pb
+  goby_acomms
   )

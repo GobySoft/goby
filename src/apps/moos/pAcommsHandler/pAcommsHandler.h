@@ -146,7 +146,10 @@ class CpAcommsHandler : public GobyMOOSApp
     boost::asio::io_service::work work_;
 
     // for PBDriver
-    goby::common::ZeroMQService zeromq_service_;
+    boost::shared_ptr<goby::common::ZeroMQService> zeromq_service_;
+
+    // for UDPDriver
+    boost::shared_ptr<boost::asio::io_service> asio_service_;
     
     std::vector<boost::shared_ptr<Timer> > timers_;
     

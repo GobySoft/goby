@@ -24,6 +24,7 @@ message pAcommsHandlerConfig
     DRIVER_ABC_EXAMPLE_MODEM = 3;
     DRIVER_UFIELD_SIM_DRIVER = 4;
     DRIVER_PB_STORE_SERVER = 5;
+    DRIVER_UDP = 6;
   }
   optional DriverType driver_type = 3 [default = DRIVER_NONE, (goby.field).description="Corresponding driver for the type of physical acoustic modem used"];
   optional goby.acomms.protobuf.DriverConfig driver_cfg = 4 [(goby.field).description="Configure the acoustic modem driver"]; // see acomms_driver_base.proto & acomms_mm_driver.proto

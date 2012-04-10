@@ -36,6 +36,8 @@
 #include "goby/moos/moos_ufield_sim_driver.h"
 #include "goby/moos/protobuf/ufield_sim_driver.pb.h"
 #include "goby/pb/pb_modem_driver.h"
+#include "goby/acomms/modemdriver/udp_driver.h"
+
 
 using namespace goby::common::tcolor;
 using namespace goby::common::logger;
@@ -337,8 +339,15 @@ void CpAcommsHandler::process_configuration()
             break;
 
         case pAcommsHandlerConfig::DRIVER_PB_STORE_SERVER:
-            driver_ = new goby::pb::PBDriver(&zeromq_service_);
+            zeromq_service_.reset(new goby::common::ZeroMQService);
+            driver_ = new goby::pb::PBDriver(zeromq_service_.get());
             break;
+
+        case pAcommsHandlerConfig::DRIVER_UDP:
+            asio_service_.reset(new boost::asio::io_service);
+            driver_ = new goby::acomms::UDPDriver(asio_service_.get());
+            break;
+
             
         case pAcommsHandlerConfig::DRIVER_NONE: break;
     }    

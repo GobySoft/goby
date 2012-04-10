@@ -49,10 +49,11 @@ void goby::acomms::UDPDriver::startup(const protobuf::DriverConfig& cfg)
 {
     driver_cfg_ = cfg;
     
+    
     const UDPDriverConfig::EndPoint& local = driver_cfg_.GetExtension(UDPDriverConfig::local);
     socket_.open(boost::asio::ip::udp::v4());
     socket_.bind(boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), local.port()));
-    
+
     
     const UDPDriverConfig::EndPoint& remote = driver_cfg_.GetExtension(UDPDriverConfig::remote);
     boost::asio::ip::udp::resolver resolver(*io_service_);

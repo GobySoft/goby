@@ -101,7 +101,7 @@ int main(int argc, char* argv[])
         UDPDriverConfig::EndPoint* endpoint2 =
             cfg2.MutableExtension(UDPDriverConfig::local);
         
-        endpoint2->set_ip("localhost");
+        endpoint2->set_ip("127.0.0.1");
         endpoint2->set_port(55632);
 
         cfg1.MutableExtension(UDPDriverConfig::remote)->CopyFrom(*endpoint2);

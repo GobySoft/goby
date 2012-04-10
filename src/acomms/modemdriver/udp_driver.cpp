@@ -45,6 +45,11 @@ goby::acomms::UDPDriver::UDPDriver(boost::asio::io_service* io_service)
 {
 }
 
+goby::acomms::UDPDriver::~UDPDriver()
+{
+}
+
+
 void goby::acomms::UDPDriver::startup(const protobuf::DriverConfig& cfg)
 {
     driver_cfg_ = cfg;
@@ -71,7 +76,10 @@ void goby::acomms::UDPDriver::startup(const protobuf::DriverConfig& cfg)
 }
 
 void goby::acomms::UDPDriver::shutdown()
-{ }
+{
+    io_service_->stop();
+    socket_.close();
+}
 
 void goby::acomms::UDPDriver::handle_initiate_transmission(const protobuf::ModemTransmission& orig_msg)
 {

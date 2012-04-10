@@ -22,7 +22,6 @@
 
 #include <cfloat>
 #include <cmath>
-
 #include <Wt/Dbo/Exception>
 #include <Wt/WIntValidator>
 #include <Wt/WDoubleValidator>
@@ -368,13 +367,15 @@ void goby::common::LiaisonCommander::ControlsContainer::send_message()
     comment_line->setText(comment_line_->text());
     
     WGroupBox* message_box = new WGroupBox("Message to send", dialog.contents());
-    new WText("<pre>" + current_command->message_->DebugString() + "</pre>", message_box);
+    WContainerWidget* message_div = new WContainerWidget(message_box);
+
+    new WText("<pre>" + current_command->message_->DebugString() + "</pre>", message_div);
 
      
-    message_box->setMaximumSize(pb_commander_config_.modal_dimensions().width(),
+    message_div->setMaximumSize(pb_commander_config_.modal_dimensions().width(),
                                 pb_commander_config_.modal_dimensions().height());
-    message_box->setOverflow(WContainerWidget::OverflowAuto);
-
+    message_div->setOverflow(WContainerWidget::OverflowAuto);
+    
 //    dialog.setResizable(true);
     
     WPushButton ok("Send", dialog.contents());
@@ -521,12 +522,15 @@ void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::handle
      new WText(entry->comment, comment_box);
      
      WGroupBox* message_box = new WGroupBox("Message posted", database_dialog_->contents());
-     new WText("<pre>" + message->DebugString() + "</pre>", message_box);
-     
-     message_box->setMaximumSize(pb_commander_config_.modal_dimensions().width(),
-                                 pb_commander_config_.modal_dimensions().height());
 
-     message_box->setOverflow(WContainerWidget::OverflowAuto);
+     WContainerWidget* message_div = new WContainerWidget(message_box);
+     
+     new WText("<pre>" + message->DebugString() + "</pre>", message_div);
+
+     
+     message_div->setMaximumSize(pb_commander_config_.modal_dimensions().width(),
+                                 pb_commander_config_.modal_dimensions().height());
+     message_div->setOverflow(WContainerWidget::OverflowAuto);
 
 
      WPushButton* edit = new WPushButton("Edit (replace)", database_dialog_->contents());
@@ -1365,7 +1369,7 @@ void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::handle
         parent->expand();
         node->expand();
     }
-
+    
     // remove nodes
     while(desired_size < static_cast<int>(parent->childNodes().size()))
     {

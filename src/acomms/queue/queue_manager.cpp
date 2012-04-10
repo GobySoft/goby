@@ -137,7 +137,10 @@ void goby::acomms::QueueManager::push_message(const google::protobuf::Message& d
     codec_->run_hooks(dccl_msg);
     glog.is(DEBUG3) && glog << group(glog_push_group_) << "Message post hooks: " << latest_meta_ << std::endl;
 
+    signal_out_route(&latest_meta_, dccl_msg);
+    
     glog.is(DEBUG1) && glog << group(glog_push_group_) << msg_string(desc) << ": attempting to push message (destination: " << latest_meta_.dest() << ")" << std::endl;
+
     
     
     // loopback if set
@@ -540,9 +543,13 @@ void goby::acomms::QueueManager::handle_modem_receive(const protobuf::ModemTrans
                 {
                     latest_meta_.Clear();
                     codec_->run_hooks(*decoded_message);
-        
-                    int32 dest = latest_meta_.dest();
 
+                    // messages addressed to us on the link
+                    if(modem_message.dest() == modem_id_)
+                        signal_in_route(latest_meta_, *decoded_message);
+                    
+                    int32 dest = latest_meta_.dest();
+                    
                     const google::protobuf::Descriptor* desc = decoded_message->GetDescriptor();
                     
                     if(dest != BROADCAST_ID &&

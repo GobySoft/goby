@@ -35,6 +35,7 @@ using goby::util::as;
 using goby::common::goby_time;
 using namespace boost::posix_time;
 
+boost::asio::io_service io1, io2;
 boost::shared_ptr<goby::acomms::UDPDriver> driver1, driver2;
 
 static int check_count = 0;
@@ -61,7 +62,6 @@ void handle_data_receive2(const protobuf::ModemTransmission& msg);
 void test4();
 void test5();
 
-
 int main(int argc, char* argv[])
 {
     goby::glog.add_stream(goby::common::logger::DEBUG3, &std::clog);
@@ -79,8 +79,6 @@ int main(int argc, char* argv[])
     goby::glog.add_group("driver1", goby::common::Colors::green);
     goby::glog.add_group("driver2", goby::common::Colors::yellow);
 
-    boost::asio::io_service io1, io2;
-    
     driver1.reset(new goby::acomms::UDPDriver(&io1));
     driver2.reset(new goby::acomms::UDPDriver(&io2));
     
@@ -147,6 +145,8 @@ int main(int argc, char* argv[])
                 case 5: test5(); break; 
                 case -1:
                     goby::glog << group("test") << "all tests passed" << std::endl;
+                    driver1->shutdown();
+                    driver2->shutdown();
                     return 0;
             }    
 
@@ -352,6 +352,8 @@ void handle_data_receive2(const protobuf::ModemTransmission& msg)
             
     }
 
+
+    
 }
 
 

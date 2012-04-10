@@ -42,6 +42,7 @@ namespace goby
         {
           public:
             UDPDriver(boost::asio::io_service* io_service);
+            ~UDPDriver();
             void startup(const protobuf::DriverConfig& cfg);
             void shutdown();            
             void do_work();

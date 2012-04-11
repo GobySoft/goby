@@ -90,7 +90,8 @@ void goby::acomms::UDPDriver::handle_initiate_transmission(const protobuf::Modem
     msg.set_max_frame_bytes(driver_cfg_.GetExtension(UDPDriverConfig::max_frame_size));
     signal_data_request(&msg);
 
-    start_send(msg);
+    if(!(msg.frame_size() == 0 || msg.frame(0).empty()))
+        start_send(msg);
 }
 
 

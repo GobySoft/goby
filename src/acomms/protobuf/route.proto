@@ -9,5 +9,5 @@ message RouteManagerConfig
     repeated int32 hop = 1;
   }
   optional StaticRoute route = 1;
-  optional uint32 subnet_mask = 2 [default = 4294967040]; // 255.255.255.0
+  optional uint32 subnet_mask = 2 [default = 0xFFFFFF00]; // 255.255.255.0
 }

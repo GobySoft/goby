@@ -48,20 +48,25 @@ void goby::acomms::RouteManager::process_cfg()
 
 void goby::acomms::RouteManager::handle_in(
     const protobuf::QueuedMessageMeta& meta,
-    const google::protobuf::Message& data_msg)
+    const google::protobuf::Message& data_msg,
+    int modem_id)
 {
-    glog.is(DEBUG1) && glog << "Trying to route message to destination: " << meta.dest() << std::endl;    
+    glog.is(DEBUG1) && glog << "Incoming message, can we route message to destination: " << meta.dest() << "?" <<  std::endl;    
 
-    if(is_in_route(meta.dest()))
+    int next_hop = find_next_hop(modem_id, meta.dest());
+    if(next_hop != -1)
     {
-        glog.is(DEBUG1) && glog << "Destination is in route, requeuing to proper subnet." << std::endl;
-        uint32 subnet = meta.dest() & cfg_.subnet_mask();
+        uint32 subnet = next_hop & cfg_.subnet_mask();
+        glog.is(DEBUG1) && glog << "Destination is in route, requeuing to proper subnet: "
+                                << subnet << " (" << std::hex
+                                << next_hop << " & " << cfg_.subnet_mask()
+                                << ")" << std::dec <<  std::endl;
         if(!subnet_map_.count(subnet))
         {
             glog.is(DEBUG1) && glog << "No subnet available for this message, ignoring." << std::endl;
             return;    
         }
-
+        
         subnet_map_[subnet]->push_message(data_msg);
     }
     else
@@ -70,25 +75,65 @@ void goby::acomms::RouteManager::handle_in(
     }
 }
 
-bool goby::acomms::RouteManager::is_in_route(int modem_id)
+int goby::acomms::RouteManager::route_index(int modem_id)
 {
     for(int i = 0, n = cfg_.route().hop_size(); i < n; ++i)
     {
         if(cfg_.route().hop(i) == modem_id)
-            return true;
+            return i;
     }
-    return false;
+    return -1;
 }
 
 void goby::acomms::RouteManager::handle_out(
     protobuf::QueuedMessageMeta* meta,
-    const google::protobuf::Message& data_msg)
+    const google::protobuf::Message& data_msg,
+    int modem_id)
 {
+    glog.is(DEBUG1) && glog << "Trying to route outgoing message to destination: " << meta->dest() << std::endl;
     
+
+    int next_hop = find_next_hop(modem_id, meta->dest());
+    if(next_hop != -1)
+    {
+        meta->set_dest(next_hop);
+        glog.is(DEBUG1) && glog << "Set next hop to: " << meta->dest() << std::endl;
+    }
 }
 
-void goby::acomms::RouteManager::add_subnet_queue(uint32 modem_id,
-                                                  QueueManager* manager)
+int goby::acomms::RouteManager::find_next_hop(int us, int dest)
+{
+    int current_route_index = route_index(us);
+
+    if(current_route_index == -1)
+    {
+        glog.is(DEBUG1) && glog << warn << "Current modem id is not in route. Ignoring." << std::endl;
+        return -1;
+    }
+
+    int dest_route_index = route_index(dest);
+
+    if(dest_route_index == -1)
+    {
+        glog.is(DEBUG1) && glog << warn << "Destination modem id is not in route. Ignoring." << std::endl;
+        return -1;
+    }
+
+    int direction = (current_route_index > dest_route_index) ? -1 : 1;
+    int next_hop_index = current_route_index + direction;
+    
+    if(next_hop_index < 0 || next_hop_index >= cfg_.route().hop_size())
+    {
+        glog.is(DEBUG1) && glog << warn << "Next hop index (" << next_hop_index << ") is not in route." << std::endl;
+        return -1;
+    }
+    
+    return cfg_.route().hop(next_hop_index);
+}
+
+
+
+void goby::acomms::RouteManager::add_subnet_queue(QueueManager* manager)
 {
     if(!manager)
     {
@@ -96,11 +141,16 @@ void goby::acomms::RouteManager::add_subnet_queue(uint32 modem_id,
         return;
     }    
 
+    uint32 modem_id = manager->modem_id();
     uint32 subnet = modem_id & cfg_.subnet_mask();
     
     if(subnet_map_.count(subnet))
         glog.is(DEBUG1) && glog << warn << "Subnet " << subnet << " already mapped. Replacing." << std::endl;
 
     subnet_map_[subnet] = manager;
+
+    glog.is(DEBUG1) && glog  << "Adding subnet (hex: " << std::hex << subnet << std::dec
+                             << ")" << std::endl;
+
 }
 

@@ -117,7 +117,7 @@ int main(int argc, char* argv[])
 
         
         goby::glog << cfg1.DebugString() << std::endl;
-        
+
         driver1->startup(cfg1);        
         driver2->startup(cfg2);
 

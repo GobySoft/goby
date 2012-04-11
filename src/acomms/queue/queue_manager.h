@@ -201,11 +201,13 @@ namespace goby
 
             /// \brief Used by a router to change next-hop destination (in meta)
             boost::signal<void (protobuf::QueuedMessageMeta* meta,
-                                const google::protobuf::Message& data_msg)> signal_out_route;
+                                const google::protobuf::Message& data_msg,
+                                int modem_id)> signal_out_route;
 
             /// \brief Used by a router to intercept messages and requeue them if desired
             boost::signal<void (const protobuf::QueuedMessageMeta& meta,
-                                const google::protobuf::Message& data_msg)> signal_in_route;
+                                const google::protobuf::Message& data_msg,
+                                int modem_id)> signal_in_route;
 
             
             /// \example acomms/queue/queue_simple/queue_simple.cpp

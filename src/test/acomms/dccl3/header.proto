@@ -12,7 +12,7 @@ message Header
   // e.g. "2002-01-20 23:59:59.000"
   required string time = 10 [(goby.field).dccl.codec="_time",
                              (goby.field).dccl.in_head=true,
-                             (goby.field).queue.is_time=true];
+                              (goby.field).queue.is_time=true];
 
   //
   // source

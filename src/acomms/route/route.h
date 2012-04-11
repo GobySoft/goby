@@ -34,22 +34,29 @@ namespace goby
         class RouteManager
         {
           public:
-            RouteManager();
-            ~RouteManager();
+            RouteManager() { }
+            ~RouteManager() { }
+            
 
             void set_cfg(const protobuf::RouteManagerConfig& cfg);
             void merge_cfg(const protobuf::RouteManagerConfig& cfg);
 
             void handle_in(const protobuf::QueuedMessageMeta& meta,
-                           const google::protobuf::Message& data_msg);
+                           const google::protobuf::Message& data_msg,
+                           int modem_id);
             
             void handle_out(protobuf::QueuedMessageMeta* meta,
-                            const google::protobuf::Message& data_msg);
+                            const google::protobuf::Message& data_msg,
+                            int modem_id);
 
-            void add_subnet_queue(uint32 modem_id,
-                                  QueueManager* manager);
+            void add_subnet_queue(QueueManager* manager);
 
-            bool is_in_route(int modem_id);
+            bool is_in_route(int modem_id)
+            { return route_index(modem_id) != -1; }
+            
+            int route_index(int modem_id);
+
+            int find_next_hop(int us, int dest);
             
             
           private:

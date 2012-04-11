@@ -123,7 +123,9 @@ void goby::acomms::UDPDriver::start_send(const google::protobuf::Message& msg)
     // send the message
     std::string bytes;
     msg.SerializeToString(&bytes);
-    
+
+    glog.is(DEBUG1) && glog << "Sending hex: " << goby::util::hex_encode(bytes) << std::endl;
+
     socket_.async_send_to(boost::asio::buffer(bytes), receiver_, boost::bind(&UDPDriver::send_complete, this, _1, _2));
 }
 

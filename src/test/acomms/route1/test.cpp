@@ -66,6 +66,9 @@ boost::shared_ptr<goby::acomms::UDPDriver> driver2, driver3;
 
 bool received_message = false;
 
+RouteMessage in_msg;
+
+
 int main(int argc, char* argv[])
 {
     goby::glog.add_stream(goby::common::logger::DEBUG3, &std::clog);    
@@ -98,14 +101,6 @@ int main(int argc, char* argv[])
     r_cfg.mutable_route()->add_hop(ID_3_1);
     r_cfg.set_subnet_mask(0xFFFFFF00);
     r_manager.set_cfg(r_cfg);
-
-    r_manager.add_subnet_queue(&q_manager1);
-    r_manager.add_subnet_queue(&q_manager2);
-
-    goby::acomms::connect(&q_manager1.signal_in_route, &r_manager, &RouteManager::handle_in);
-    goby::acomms::connect(&q_manager2.signal_in_route, &r_manager, &RouteManager::handle_in);
-    goby::acomms::connect(&q_manager1.signal_out_route, &r_manager, &RouteManager::handle_out);
-    goby::acomms::connect(&q_manager2.signal_out_route, &r_manager, &RouteManager::handle_out);
     
     // set up drivers
     driver2.reset(new goby::acomms::UDPDriver(&io2));
@@ -154,13 +149,15 @@ int main(int argc, char* argv[])
     // bind them all together
     goby::acomms::bind(*driver2, q_manager2, mac2);
     goby::acomms::bind(*driver3, q_manager3, mac3);
+
+    goby::acomms::bind(q_manager1, r_manager);
+    goby::acomms::bind(q_manager2, r_manager);
     
     // create a message
-    RouteMessage msg;
-    msg.set_src(ID_0_1);
-    msg.set_dest(ID_3_1);
-    msg.set_time(goby_time<goby::uint64>());
-    msg.set_telegram("0-->3");
+    in_msg.set_src(ID_0_1);
+    in_msg.set_dest(ID_3_1);
+    in_msg.set_time(goby_time<goby::uint64>() / 1000000 * 1000000); // integer second for _time codec
+    in_msg.set_telegram("0-->3");
 
     // create transmission from message 
     goby::acomms::protobuf::ModemTransmission initial_transmit;
@@ -171,7 +168,7 @@ int main(int argc, char* argv[])
     
     goby::acomms::DCCLCodec* dccl = goby::acomms::DCCLCodec::get();
     dccl->validate<RouteMessage>();
-    dccl->encode(initial_transmit.add_frame(), msg);
+    dccl->encode(initial_transmit.add_frame(), in_msg);
 
     // unleash the message
     std::cout << "Modem receive on q1: " << initial_transmit.DebugString() << std::endl;
@@ -226,7 +223,9 @@ void handle_receive2(const google::protobuf::Message &msg)
 void handle_receive3(const google::protobuf::Message &msg)
 {
     std::cout << "Received at 3.1: " << msg.DebugString() << std::endl;
+    std::cout << "Original: " << in_msg.DebugString() << std::endl;
     received_message = true;
+    assert(in_msg.SerializeAsString() == msg.SerializeAsString());
 }
 
 

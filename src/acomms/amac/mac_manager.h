@@ -119,6 +119,9 @@ namespace goby
             void position_blank();
 
           private:
+            MACManager(const MACManager&);
+            MACManager& operator= (const MACManager&);
+            
             protobuf::MACConfig cfg_;
             
             // asynchronous timer

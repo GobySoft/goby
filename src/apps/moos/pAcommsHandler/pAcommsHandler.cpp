@@ -323,33 +323,33 @@ void CpAcommsHandler::process_configuration()
     // create driver object
     switch(cfg_.driver_type())
     {
-        case pAcommsHandlerConfig::DRIVER_WHOI_MICROMODEM:
+        case goby::acomms::protobuf::DRIVER_WHOI_MICROMODEM:
             driver_ = new goby::acomms::MMDriver;
             break;
 
-        case pAcommsHandlerConfig::DRIVER_ABC_EXAMPLE_MODEM:
+        case goby::acomms::protobuf::DRIVER_ABC_EXAMPLE_MODEM:
             driver_ = new goby::acomms::ABCDriver;
             break;
 
-        case pAcommsHandlerConfig::DRIVER_UFIELD_SIM_DRIVER:
+        case goby::acomms::protobuf::DRIVER_UFIELD_SIM_DRIVER:
             driver_ = new goby::moos::UFldDriver;
             cfg_.mutable_driver_cfg()->SetExtension(
                 goby::moos::protobuf::Config::modem_id_lookup_path,
                 cfg_.modem_id_lookup_path());
             break;
 
-        case pAcommsHandlerConfig::DRIVER_PB_STORE_SERVER:
+        case goby::acomms::protobuf::DRIVER_PB_STORE_SERVER:
             zeromq_service_.reset(new goby::common::ZeroMQService);
             driver_ = new goby::pb::PBDriver(zeromq_service_.get());
             break;
 
-        case pAcommsHandlerConfig::DRIVER_UDP:
+        case goby::acomms::protobuf::DRIVER_UDP:
             asio_service_.reset(new boost::asio::io_service);
             driver_ = new goby::acomms::UDPDriver(asio_service_.get());
             break;
 
             
-        case pAcommsHandlerConfig::DRIVER_NONE: break;
+        case goby::acomms::protobuf::DRIVER_NONE: break;
     }    
 
     // check and propagate modem id

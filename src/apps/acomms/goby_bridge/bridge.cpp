@@ -1,0 +1,159 @@
+// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+//                     Massachusetts Institute of Technology (2007-)
+//                     Woods Hole Oceanographic Institution (2007-)
+//                     Goby Developers Team (https://launchpad.net/~goby-dev)
+// 
+//
+// This file is part of the Goby Underwater Autonomy Project Binaries
+// ("The Goby Binaries").
+//
+// The Goby Binaries are free software: you can redistribute them and/or modify
+// them under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// The Goby Binaries are distributed in the hope that they will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Goby.  If not, see <http://www.gnu.org/licenses/>.
+
+#include "goby/common/logger.h"
+#include "goby/common/application_base.h"
+#include "goby/common/logger/term_color.h"
+#include "goby/common/zeromq_service.h"
+
+#include "goby/acomms/queue.h"
+#include "goby/acomms/route.h"
+#include "goby/acomms/amac.h"
+#include "goby/acomms/modem_driver.h"
+#include "goby/acomms/bind.h"
+
+#include "goby/pb/pb_modem_driver.h"
+
+#include "bridge_config.pb.h"
+
+using namespace goby::common::logger;
+
+namespace goby
+{
+    namespace acomms
+    {
+        class Bridge : public goby::common::ApplicationBase
+        {
+        public:
+            Bridge();
+            ~Bridge();
+
+        private:
+            void iterate();
+            
+        private:
+            static protobuf::BridgeConfig cfg_;
+            
+            // for PBDriver, maps drivers_ index to service
+            std::map<size_t, boost::shared_ptr<goby::common::ZeroMQService> > zeromq_services_;
+            
+            // for UDPDriver, maps drivers_ index to service
+            std::map<size_t, boost::shared_ptr<boost::asio::io_service> > asio_services_;
+            
+            std::vector<boost::shared_ptr<QueueManager> > q_managers_;
+            std::vector<boost::shared_ptr<MACManager> > mac_managers_;
+            std::vector<boost::shared_ptr<goby::acomms::ModemDriverBase> > drivers_;
+            
+            RouteManager r_manager_;
+        };
+    }
+}
+
+goby::acomms::protobuf::BridgeConfig goby::acomms::Bridge::cfg_;
+
+int main(int argc, char* argv[])
+{
+    goby::run<goby::acomms::Bridge>(argc, argv);
+}
+
+
+using goby::glog;
+
+goby::acomms::Bridge::Bridge()
+    : ApplicationBase(&cfg_)
+{
+    r_manager_.set_cfg(cfg_.route_cfg());
+    q_managers_.resize(cfg_.subnet_size());
+    mac_managers_.resize(cfg_.subnet_size());
+    drivers_.resize(cfg_.subnet_size());
+    for(int i = 0, n = cfg_.subnet_size(); i < n; ++i)
+    {
+        q_managers_[i].reset(new QueueManager);
+        mac_managers_[i].reset(new MACManager);
+        
+        q_managers_[i]->set_cfg(cfg_.subnet(i).queue_cfg());
+        mac_managers_[i]->startup(cfg_.subnet(i).mac_cfg());
+
+        switch(cfg_.subnet(i).driver_type())
+        {
+            case goby::acomms::protobuf::DRIVER_WHOI_MICROMODEM:
+                drivers_[i].reset(new goby::acomms::MMDriver);
+                break;
+
+            case goby::acomms::protobuf::DRIVER_PB_STORE_SERVER:
+                zeromq_services_[i].reset(new goby::common::ZeroMQService);
+                drivers_[i].reset(new goby::pb::PBDriver(zeromq_services_[i].get()));
+                break;
+
+            case goby::acomms::protobuf::DRIVER_UDP:
+                asio_services_[i].reset(new boost::asio::io_service);
+                drivers_[i].reset(new goby::acomms::UDPDriver(asio_services_[i].get()));
+                break;
+
+
+            default:
+            case goby::acomms::protobuf::DRIVER_NONE:
+                throw(goby::Exception("Invalid driver specified"));
+                break;
+        }
+
+        drivers_[i]->startup(cfg_.subnet(i).driver_cfg());
+
+        goby::acomms::bind(*drivers_[i], *q_managers_[i], *mac_managers_[i]);
+        goby::acomms::bind(*q_managers_[i], r_manager_);
+    }    
+}
+
+
+goby::acomms::Bridge::~Bridge()
+{
+    for(std::vector<boost::shared_ptr<goby::acomms::ModemDriverBase> >::iterator it = drivers_.begin(),
+            end = drivers_.end(); it != end; ++it)
+    {
+        (*it)->shutdown();
+    }
+}
+
+
+void goby::acomms::Bridge::iterate()
+{
+    for(std::vector<boost::shared_ptr<QueueManager> >::iterator it = q_managers_.begin(),
+            end = q_managers_.end(); it != end; ++it)
+    {
+        (*it)->do_work();
+    }
+    
+    for(std::vector<boost::shared_ptr<MACManager> >::iterator it = mac_managers_.begin(),
+            end = mac_managers_.end(); it != end; ++it)
+    {
+        (*it)->do_work();
+    }
+
+    for(std::vector<boost::shared_ptr<goby::acomms::ModemDriverBase> >::iterator it = drivers_.begin(),
+            end = drivers_.end(); it != end; ++it)
+    {
+        (*it)->do_work();
+    }
+
+    usleep(100000);
+}
+

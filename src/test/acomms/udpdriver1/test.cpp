@@ -88,22 +88,34 @@ int main(int argc, char* argv[])
         
         cfg1.set_modem_id(1);
 
-        UDPDriverConfig::EndPoint* endpoint1 =
-            cfg1.MutableExtension(UDPDriverConfig::local);
 
-        endpoint1->set_ip("127.0.0.1");
-        endpoint1->set_port(55631);
-
-        cfg2.set_modem_id(2);
-
-        UDPDriverConfig::EndPoint* endpoint2 =
+        //gumstix
+        UDPDriverConfig::EndPoint* local_endpoint1 =
             cfg2.MutableExtension(UDPDriverConfig::local);
         
-        endpoint2->set_ip("127.0.0.1");
-        endpoint2->set_port(55632);
+        local_endpoint1->set_ip("128.128.89.67");
+        local_endpoint1->set_port(19306);
+        
+        cfg2.set_modem_id(2);
 
-        cfg1.MutableExtension(UDPDriverConfig::remote)->CopyFrom(*endpoint2);
-        cfg2.MutableExtension(UDPDriverConfig::remote)->CopyFrom(*endpoint1);
+        // shore
+        UDPDriverConfig::EndPoint* local_endpoint2 =
+            cfg1.MutableExtension(UDPDriverConfig::local);
+        
+        local_endpoint2->set_ip("128.128.89.67");
+        local_endpoint2->set_port(19301);
+
+        UDPDriverConfig::EndPoint* remote_endpoint1 =
+            cfg2.MutableExtension(UDPDriverConfig::remote);
+
+        remote_endpoint1->set_ip("128.128.99.63");
+        remote_endpoint1->set_port(19300);
+        
+        UDPDriverConfig::EndPoint* remote_endpoint2 =
+            cfg1.MutableExtension(UDPDriverConfig::remote);
+
+        remote_endpoint2->set_ip("128.128.99.63");
+        remote_endpoint2->set_port(19305);
         
         
         goby::acomms::connect(&driver1->signal_receive, &handle_data_receive1);
@@ -118,12 +130,12 @@ int main(int argc, char* argv[])
         
         goby::glog << cfg1.DebugString() << std::endl;
 
-        driver1->startup(cfg1);        
+        driver1->startup(cfg1);
         driver2->startup(cfg2);
 
         int i =0;
         
-        while(((i / 10) < 3))
+        while(((i / 10) < 1))
         {
             driver1->do_work();
             driver2->do_work();
@@ -478,7 +490,7 @@ void test4()
     driver1->handle_initiate_transmission(transmit);
 
     int i = 0;
-    while(((i / 10) < 10) && check_count < 3)
+    while(((i / 10) < 100) && check_count < 3)
     {
         driver1->do_work();
         driver2->do_work();

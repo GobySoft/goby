@@ -20,23 +20,9 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Goby.  If not, see <http://www.gnu.org/licenses/>.
 
+#ifndef ROUTECOURTESY20120411H
+#define ROUTECOURTESY20120411H
 
-// courtesy header for the acoustic modem driver (libmodemdriver)
-#ifndef MODEMDRIVERCOURTESY20091211H
-#define MODEMDRIVERCOURTESY20091211H
-
-// driver base class
-#include "goby/acomms/modemdriver/driver_base.h"
-
-// WHOI Micro-Modem driver
-#include "goby/acomms/modemdriver/mm_driver.h"
-
-// toy example "ABC" driver
-#include "goby/acomms/modemdriver/abc_driver.h"
-
-
-// User Datagram Protocol (UDP) driver
-#include "goby/acomms/modemdriver/udp_driver.h"
-
+#include "goby/acomms/route/route.h"
 
 #endif

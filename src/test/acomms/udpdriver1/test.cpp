@@ -91,31 +91,27 @@ int main(int argc, char* argv[])
 
         //gumstix
         UDPDriverConfig::EndPoint* local_endpoint1 =
-            cfg2.MutableExtension(UDPDriverConfig::local);
-        
-        local_endpoint1->set_ip("128.128.89.67");
-        local_endpoint1->set_port(19306);
+            cfg1.MutableExtension(UDPDriverConfig::local);
+        local_endpoint1->set_port(19300);
         
         cfg2.set_modem_id(2);
 
         // shore
         UDPDriverConfig::EndPoint* local_endpoint2 =
-            cfg1.MutableExtension(UDPDriverConfig::local);
-        
-        local_endpoint2->set_ip("128.128.89.67");
+            cfg2.MutableExtension(UDPDriverConfig::local);        
         local_endpoint2->set_port(19301);
 
         UDPDriverConfig::EndPoint* remote_endpoint1 =
-            cfg2.MutableExtension(UDPDriverConfig::remote);
-
-        remote_endpoint1->set_ip("128.128.99.63");
-        remote_endpoint1->set_port(19300);
-        
-        UDPDriverConfig::EndPoint* remote_endpoint2 =
             cfg1.MutableExtension(UDPDriverConfig::remote);
 
-        remote_endpoint2->set_ip("128.128.99.63");
-        remote_endpoint2->set_port(19305);
+        remote_endpoint1->set_ip("localhost");
+        remote_endpoint1->set_port(19301);
+        
+        UDPDriverConfig::EndPoint* remote_endpoint2 =
+            cfg2.MutableExtension(UDPDriverConfig::remote);
+
+        remote_endpoint2->set_ip("127.0.0.1");
+        remote_endpoint2->set_port(19300);
         
         
         goby::acomms::connect(&driver1->signal_receive, &handle_data_receive1);

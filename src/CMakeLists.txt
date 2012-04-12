@@ -72,7 +72,7 @@ endif()
 
 if(enable_zeromq)
   goby_find_required_package(ZeroMQ)
-  include_directories(${ZEROMQ_INCLUDE_DIRS})
+  include_directories(${ZeroMQ_INCLUDE_DIRS})
 endif()
 
 ## Sqlite3

@@ -45,10 +45,7 @@ namespace goby
                          unsigned baud = 9600,
                          const std::string& delimiter = "\r\n");
 
-            ~SerialClient()
-            {
-                std::cout << "SerialClient destructing" << std::endl;
-            }
+            ~SerialClient() { }
             
             
             /// set serial port name, e.g. "/dev/ttyS0"

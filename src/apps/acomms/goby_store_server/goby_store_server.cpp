@@ -26,7 +26,7 @@
 
 #include "goby/acomms/acomms_constants.h"
 #include "goby/common/time.h"
-#include "goby/util/protobuf/store_server.pb.h"
+#include "goby/acomms/protobuf/store_server.pb.h"
 #include "goby/common/zeromq_application_base.h"
 #include "goby/pb/protobuf_node.h"
 #include "goby_store_server_config.pb.h"
@@ -37,7 +37,7 @@ using goby::common::goby_time;
 
 namespace goby
 {
-    namespace util
+    namespace acomms
     {
         class GobyStoreServer : public goby::common::ZeroMQApplicationBase,
                                 public goby::pb::StaticProtobufNode
@@ -65,16 +65,16 @@ namespace goby
     }
 }
 
-goby::common::ZeroMQService goby::util::GobyStoreServer::zeromq_service_;
-goby::util::protobuf::GobyStoreServerConfig goby::util::GobyStoreServer::cfg_;
+goby::common::ZeroMQService goby::acomms::GobyStoreServer::zeromq_service_;
+goby::acomms::protobuf::GobyStoreServerConfig goby::acomms::GobyStoreServer::cfg_;
 
 
 int main(int argc, char* argv[])
 {
-    goby::run<goby::util::GobyStoreServer>(argc, argv);
+    goby::run<goby::acomms::GobyStoreServer>(argc, argv);
 }
 
-goby::util::GobyStoreServer::GobyStoreServer()
+goby::acomms::GobyStoreServer::GobyStoreServer()
     : ZeroMQApplicationBase(&zeromq_service_, &cfg_),
       StaticProtobufNode(&zeromq_service_),
       db_(0)
@@ -112,11 +112,11 @@ goby::util::GobyStoreServer::GobyStoreServer()
     zeromq_service_.set_cfg(service_cfg);
 }
 
-void goby::util::GobyStoreServer::loop()
+void goby::acomms::GobyStoreServer::loop()
 {
 }
 
-void goby::util::GobyStoreServer::handle_request(const protobuf::StoreServerRequest& request)
+void goby::acomms::GobyStoreServer::handle_request(const protobuf::StoreServerRequest& request)
 {
     glog.is(DEBUG1) && glog << "Got request: " << request.DebugString() << std::endl;
 
@@ -204,7 +204,7 @@ void goby::util::GobyStoreServer::handle_request(const protobuf::StoreServerRequ
 }
 
 
-void goby::util::GobyStoreServer::check(int rc, const std::string& error_prefix)
+void goby::acomms::GobyStoreServer::check(int rc, const std::string& error_prefix)
 {
     if(rc != SQLITE_OK && rc != SQLITE_DONE)
         throw(goby::Exception(error_prefix + ": " + std::string(sqlite3_errmsg(db_))));

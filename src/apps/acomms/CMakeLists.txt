@@ -6,3 +6,7 @@ add_subdirectory(analyze_dccl)
 if(build_pb AND enable_zeromq)
   add_subdirectory(goby_bridge)
 endif()
+
+if(enable_sqlite AND enable_zeromq)
+  add_subdirectory(goby_store_server)
+endif()

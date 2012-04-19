@@ -95,6 +95,9 @@ goby::common::ApplicationBase::ApplicationBase(google::protobuf::Message* cfg /*
    glog.set_name(application_name());
    glog.add_stream(static_cast<common::logger::Verbosity>(base_cfg_->glog_config().tty_verbosity()), &std::cout);
 
+   if(base_cfg_->glog_config().show_gui())
+       glog.enable_gui();
+   
     if(!base_cfg_->IsInitialized())
         throw(common::ConfigException("Invalid base configuration"));
     

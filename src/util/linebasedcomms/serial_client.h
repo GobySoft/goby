@@ -44,6 +44,9 @@ namespace goby
             SerialClient(const std::string& name = "",
                          unsigned baud = 9600,
                          const std::string& delimiter = "\r\n");
+
+            ~SerialClient() { }
+            
             
             /// set serial port name, e.g. "/dev/ttyS0"
             void set_name(const std::string& name) { name_ = name; }
@@ -64,7 +67,7 @@ namespace goby
 
           private:
             bool start_specific();        
-  
+            
           private:
             boost::asio::serial_port serial_port_; // the serial port this instance is connected to
             std::string name_;

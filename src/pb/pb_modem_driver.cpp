@@ -42,7 +42,7 @@ goby::pb::PBDriver::PBDriver(goby::common::ZeroMQService* zeromq_service) :
     request_socket_id_(0),
     query_interval_seconds_(1)
 {
-    on_receipt<util::protobuf::StoreServerResponse>(0, &PBDriver::handle_response, this);
+    on_receipt<acomms::protobuf::StoreServerResponse>(0, &PBDriver::handle_response, this);
 }
 
 void goby::pb::PBDriver::startup(const acomms::protobuf::DriverConfig& cfg)
@@ -94,7 +94,7 @@ void goby::pb::PBDriver::do_work()
     }
 }
 
-void goby::pb::PBDriver::handle_response(const util::protobuf::StoreServerResponse& response)
+void goby::pb::PBDriver::handle_response(const acomms::protobuf::StoreServerResponse& response)
 {
     glog.is(DEBUG1) && glog << (size_t)this <<  ": Response: " << response.DebugString() << std::endl;
 

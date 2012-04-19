@@ -29,7 +29,7 @@
 #include "goby/acomms/modemdriver/driver_base.h"
 #include "goby/pb/protobuf_node.h"
 #include "goby/common/zeromq_service.h"
-#include "goby/util/protobuf/store_server.pb.h"
+#include "goby/acomms/protobuf/store_server.pb.h"
 #include "goby/pb/protobuf/pb_modem_driver.pb.h"
 
 
@@ -48,12 +48,12 @@ namespace goby
             void handle_initiate_transmission(const acomms::protobuf::ModemTransmission& m);
 
           private:
-            void handle_response(const util::protobuf::StoreServerResponse& response);
+            void handle_response(const acomms::protobuf::StoreServerResponse& response);
             
           private:            
             goby::common::ZeroMQService* zeromq_service_;
             acomms::protobuf::DriverConfig driver_cfg_;
-            util::protobuf::StoreServerRequest request_;
+            acomms::protobuf::StoreServerRequest request_;
             uint64 last_send_time_;
             int request_socket_id_;
             double query_interval_seconds_;

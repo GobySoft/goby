@@ -44,6 +44,9 @@ namespace goby
                 LineBasedConnection<ASIOAsyncReadStream>(this)
                 { }            
 
+            virtual ~LineBasedClient() { }
+            
+            
             enum { RETRY_INTERVAL = 10 };            
 
             virtual ASIOAsyncReadStream& socket () = 0;

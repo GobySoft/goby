@@ -33,6 +33,7 @@
 #include "goby/acomms/queue.h"
 #include "goby/acomms/modem_driver.h"
 #include "goby/acomms/amac.h"
+#include "goby/acomms/route.h"
 #include "goby/common/logger.h"
 
 namespace goby
@@ -56,7 +57,14 @@ namespace goby
             connect(&mac.signal_initiate_transmission,
                     &driver, &ModemDriverBase::handle_initiate_transmission);
         }
-    
+
+        /// creates bindings for a RouteManager to control a particular queue (QueueManager)
+        inline void bind(QueueManager& queue_manager, RouteManager& route_manager)
+        {
+            route_manager.add_subnet_queue(&queue_manager);
+            connect(&queue_manager.signal_in_route, &route_manager, &RouteManager::handle_in);
+            connect(&queue_manager.signal_out_route, &route_manager, &RouteManager::handle_out);
+        }        
 
         /// bind all three (shortcut to calling the other three bind functions)
         inline void bind(ModemDriverBase& driver, QueueManager& queue_manager, MACManager& mac)

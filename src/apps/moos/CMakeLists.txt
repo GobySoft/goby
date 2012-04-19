@@ -1,7 +1,7 @@
 
 # for now, we need to be able to link in UDPDriver and PBDriver
 # at some point, make these dynamically loadable
-if(enable_zeromq AND enable_pb)
+if(enable_zeromq AND build_pb)
   option(build_pAcommsHandler "Build pAcommsHandler" ON)
 else()
   option(build_pAcommsHandler "Build pAcommsHandler" OFF)

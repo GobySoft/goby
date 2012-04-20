@@ -57,6 +57,7 @@ namespace goby
             uint64 last_send_time_;
             int request_socket_id_;
             double query_interval_seconds_;
+            bool waiting_for_reply_;
         };
     }
 }

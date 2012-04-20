@@ -43,38 +43,17 @@ int main(int argc, char* argv[])
     }
 
     goby::glog.add_stream(goby::common::protobuf::GLogConfig::VERBOSE, &std::cerr);
-    google::protobuf::compiler::DiskSourceTree disk_source_tree;
-    google::protobuf::compiler::SourceTreeDescriptorDatabase source_database(&disk_source_tree);
-
-    class TranslatorErrorCollector: public google::protobuf::compiler::MultiFileErrorCollector
-    {
-        void AddError(const std::string & filename, int line, int column, const std::string & message)
-        {
-            goby::glog.is(goby::common::logger::DIE) &&
-                goby::glog << "File: " << filename
-                           << " has error (line: " << line << ", column: " << column << "): "
-                           << message << std::endl;
-        }       
-    };
-                
-    TranslatorErrorCollector error_collector;
-
     
     std::cerr << "creating DCCLTransitionalCodec using xml file: [" << xml_file << "]" << std::endl;
-
-    source_database.RecordErrorsTo(&error_collector);
-    disk_source_tree.MapPath("/", "/");
-    goby::util::DynamicProtobufManager::add_database(&source_database);
-
     
     goby::transitional::DCCLTransitionalCodec dccl;
 
+    goby::util::DynamicProtobufManager::enable_compilation();
+    
     pAcommsHandlerConfig cfg;    
     cfg.mutable_transitional_cfg()->add_message_file()->set_path(xml_file);
     cfg.mutable_transitional_cfg()->set_generated_proto_dir(proto_folder);
     dccl.convert_to_v2_representation(&cfg);
-
-    
     
     std::cout << "received: " << cfg.DebugString();
     

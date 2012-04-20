@@ -3,6 +3,7 @@ import "goby/acomms/protobuf/driver_base.proto";
 import "goby/acomms/protobuf/queue.proto";
 import "goby/acomms/protobuf/amac_config.proto";
 import "goby/acomms/protobuf/dccl.proto";
+import "goby/acomms/protobuf/route.proto";
 import "goby/acomms/protobuf/modem_message.proto";
 import "goby/moos/protobuf/transitional.proto";
 import "goby/moos/protobuf/translator.proto";
@@ -18,17 +19,20 @@ message pAcommsHandlerConfig
   required int32 modem_id = 2 [(goby.field).description="Unique number 1-31 to identify this node", (goby.field).example="1"];
 
   optional goby.acomms.protobuf.DriverType driver_type = 3 [default = DRIVER_NONE, (goby.field).description="Corresponding driver for the type of physical acoustic modem used"];
-  optional goby.acomms.protobuf.DriverConfig driver_cfg = 4 [(goby.field).description="Configure the acoustic modem driver"]; // see acomms_driver_base.proto & acomms_mm_driver.proto
+  optional goby.acomms.protobuf.DriverConfig driver_cfg = 4 [(goby.field).description="Configure the acoustic modem driver"]; 
 
   // amac
-  optional goby.acomms.protobuf.MACConfig mac_cfg = 5 [(goby.field).description="Configure the acoustic Medium Access Control"]; // see acomms_amac.proto
+  optional goby.acomms.protobuf.MACConfig mac_cfg = 5 [(goby.field).description="Configure the acoustic Medium Access Control"];
   
   // for queue
-  optional goby.acomms.protobuf.QueueManagerConfig queue_cfg = 6 [(goby.field).description="Configure the Priority Queuing layer"]; // see acomms_queue.proto
+  optional goby.acomms.protobuf.QueueManagerConfig queue_cfg = 6 [(goby.field).description="Configure the Priority Queuing layer"]; 
 
   // for dccl
-  optional goby.acomms.protobuf.DCCLConfig dccl_cfg = 7 [(goby.field).description="Configure the Dynamic Compact Control Language Encoding/Decoding unit"];  // see acomms_dccl.proto
+  optional goby.acomms.protobuf.DCCLConfig dccl_cfg = 7 [(goby.field).description="Configure the Dynamic Compact Control Language Encoding/Decoding unit"];  
 
+  optional goby.acomms.protobuf.RouteManagerConfig route_cfg = 8 [(goby.field).description="Configure the Goby Routing unit"];  
+
+  
   message MOOSVariables
   {
     // serial feed

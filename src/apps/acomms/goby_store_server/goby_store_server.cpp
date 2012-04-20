@@ -159,16 +159,14 @@ void goby::acomms::GobyStoreServer::handle_request(const protobuf::StoreServerRe
     glog.is(DEBUG1) && glog << "Trying to select for dest: " << request.modem_id() << std::endl;
 
     sqlite3_stmt* select;
-    check(sqlite3_prepare(db_, "SELECT bytes FROM ModemTransmission WHERE ((dest = ?1 AND src != ?2 ) OR dest = ?2 ) AND (microtime > ?3 AND microtime <= ?4 );", -1, &select, 0),
+    check(sqlite3_prepare(db_, "SELECT bytes FROM ModemTransmission WHERE src != ?1 AND (microtime > ?2 AND microtime <= ?3 );", -1, &select, 0),
           "Select statement preparation failed");
 
-    check(sqlite3_bind_int(select, 1, goby::acomms::BROADCAST_ID),
-          "Select `dest` BROADCAST_ID binding failed");
-    check(sqlite3_bind_int(select, 2, request.modem_id()),
+    check(sqlite3_bind_int(select, 1, request.modem_id()),
           "Select request modem_id binding failed");
-    check(sqlite3_bind_int64(select, 3, last_request_time_[request.modem_id()]),
+    check(sqlite3_bind_int64(select, 2, last_request_time_[request.modem_id()]),
           "Select `microtime` last time binding failed");
-    check(sqlite3_bind_int64(select, 4, request_time),
+    check(sqlite3_bind_int64(select, 3, request_time),
           "Select `microtime` this time binding failed");
     
     int rc = sqlite3_step(select);

@@ -48,17 +48,13 @@ void CpTranslator::delete_instance()
 
 CpTranslator::CpTranslator()
     : GobyMOOSApp(&cfg_),
-      source_database_(&disk_source_tree_),
       translator_(cfg_.translator_entry(),
                   cfg_.common().lat_origin(),
                   cfg_.common().lon_origin(),
                   cfg_.modem_id_lookup_path()),
       work_(timer_io_service_)
 { 
-    source_database_.RecordErrorsTo(&error_collector_);
-    disk_source_tree_.MapPath("/", "/");
-    goby::util::DynamicProtobufManager::add_database(&source_database_);
-
+    goby::util::DynamicProtobufManager::enable_compilation();
 
     // load all shared libraries
     for(int i = 0, n = cfg_.load_shared_library_size(); i < n; ++i)
@@ -72,7 +68,6 @@ CpTranslator::CpTranslator()
             glog << die << "Failed ... check path provided or add to /etc/ld.so.conf "
                  << "or LD_LIBRARY_PATH" << std::endl;
         }
-        dl_handles.push_back(handle);
     }
     
     

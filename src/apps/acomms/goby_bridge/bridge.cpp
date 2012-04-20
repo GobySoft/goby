@@ -81,6 +81,47 @@ using goby::glog;
 goby::acomms::Bridge::Bridge()
     : ApplicationBase(&cfg_)
 {
+
+    // load all shared libraries
+    for(int i = 0, n = cfg_.load_shared_library_size(); i < n; ++i)
+    {
+        glog.is(DEBUG1) &&
+            glog << "Loading shared library: " << cfg_.load_shared_library(i) << std::endl;
+        
+        void* handle = goby::util::DynamicProtobufManager::load_from_shared_lib(cfg_.load_shared_library(i));
+        
+        if(!handle)
+        {
+            glog.is(DIE) && glog << "Failed ... check path provided or add to /etc/ld.so.conf "
+                         << "or LD_LIBRARY_PATH" << std::endl;
+        }
+
+        glog.is(DEBUG1) && glog << "Loading shared library dccl codecs." << std::endl;
+        
+        goby::acomms::DCCLCodec::get()->load_shared_library_codecs(handle);
+    }
+    
+    // load all .proto files
+    goby::util::DynamicProtobufManager::enable_compilation();
+    for(int i = 0, n = cfg_.load_proto_file_size(); i < n; ++i)
+    {
+        glog.is(DEBUG1) &&
+            glog << "Loading protobuf file: " << cfg_.load_proto_file(i) << std::endl;
+        
+        if(!goby::util::DynamicProtobufManager::load_from_proto_file(cfg_.load_proto_file(i)))
+            glog.is(DIE) && glog << "Failed to load file." << std::endl;
+    }
+
+    // validate all messages
+    typedef boost::shared_ptr<google::protobuf::Message> GoogleProtobufMessagePointer;
+    
+    for(int i = 0, n = cfg_.load_dccl_message_size(); i < n; ++i)
+    {
+        GoogleProtobufMessagePointer msg = goby::util::DynamicProtobufManager::new_protobuf_message<GoogleProtobufMessagePointer>(cfg_.load_dccl_message(i));
+        // validate with DCCL
+        goby::acomms::DCCLCodec::get()->validate(msg->GetDescriptor());
+    }
+    
     r_manager_.set_cfg(cfg_.route_cfg());
     q_managers_.resize(cfg_.subnet_size());
     mac_managers_.resize(cfg_.subnet_size());

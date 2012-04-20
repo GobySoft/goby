@@ -493,6 +493,20 @@ void goby::acomms::DCCLCodec::set_cfg(const protobuf::DCCLConfig& cfg)
     process_cfg();
 }
 
+void goby::acomms::DCCLCodec::load_shared_library_codecs(void* dl_handle)
+{
+    if(!dl_handle)
+        throw(DCCLException("Null shared library handle passed to load_shared_library_codecs"));
+    
+    // load any shared library codecs
+    void (*dccl_load_ptr)(goby::acomms::DCCLCodec*);
+    dccl_load_ptr = (void (*)(goby::acomms::DCCLCodec*)) dlsym(dl_handle, "goby_dccl_load");
+    if(dccl_load_ptr)
+        (*dccl_load_ptr)(this);
+}
+
+
+
 void goby::acomms::DCCLCodec::process_cfg()
 {
     if(cfg_.has_crypto_passphrase())

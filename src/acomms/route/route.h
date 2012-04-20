@@ -34,7 +34,10 @@ namespace goby
         class RouteManager
         {
           public:
-            RouteManager() { }
+            RouteManager()
+            {
+                glog.add_group("goby::acomms::route", common::Colors::yellow);
+            }
             ~RouteManager() { }
             
 

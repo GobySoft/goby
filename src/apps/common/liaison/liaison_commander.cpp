@@ -280,8 +280,7 @@ goby::common::LiaisonCommander::ControlsContainer::ControlsContainer(
     for(int i = 0, n = pb_commander_config.load_protobuf_name_size(); i < n; ++i)
     {
         const google::protobuf::Descriptor* desc =
-            goby::util::DynamicProtobufManager::descriptor_pool().FindMessageTypeByName(
-                pb_commander_config.load_protobuf_name(i));
+            goby::util::DynamicProtobufManager::find_descriptor(pb_commander_config.load_protobuf_name(i));
 
         
         if(!desc)
@@ -610,7 +609,8 @@ void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::genera
         generate_tree_row(parent, message, desc->field(i));
     
     std::vector<const google::protobuf::FieldDescriptor*> extensions;
-    goby::util::DynamicProtobufManager::descriptor_pool().FindAllExtensions(desc, &extensions);
+    goby::util::DynamicProtobufManager::user_descriptor_pool().FindAllExtensions(desc, &extensions);
+    google::protobuf::DescriptorPool::generated_pool()->FindAllExtensions(desc, &extensions);
     for(int i = 0, n = extensions.size(); i < n; ++i)
         generate_tree_row(parent, message, extensions[i]);
 

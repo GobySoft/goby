@@ -24,6 +24,7 @@
 #include "dynamic_protobuf_manager.h"
 
 #include "goby/common/exception.h"
+#include "goby/common/logger.h"
 
 boost::shared_ptr<goby::util::DynamicProtobufManager> goby::util::DynamicProtobufManager::inst_;
 
@@ -33,7 +34,33 @@ const google::protobuf::FileDescriptor* goby::util::DynamicProtobufManager::add_
 {
     simple_database().Add(proto);
     
-    const google::protobuf::FileDescriptor* return_desc = descriptor_pool().FindFileByName(proto.name());
+    const google::protobuf::FileDescriptor* return_desc = user_descriptor_pool().FindFileByName(proto.name());
     new_descriptor_hooks(return_desc);
     return return_desc; 
+}
+
+void goby::util::DynamicProtobufManager::enable_disk_source_database()
+{
+    if(disk_source_tree_)
+        return;
+    
+    disk_source_tree_ = new google::protobuf::compiler::DiskSourceTree;
+    source_database_ = new google::protobuf::compiler::SourceTreeDescriptorDatabase(disk_source_tree_);
+    error_collector_ = new GLogMultiFileErrorCollector;
+    
+    source_database_->RecordErrorsTo(error_collector_);
+    disk_source_tree_->MapPath("/", "/");
+    add_database(source_database_);
+}
+
+// GLogMultiFileErrorCollector
+
+void goby::util::DynamicProtobufManager::GLogMultiFileErrorCollector::AddError(const std::string & filename, int line, int column,
+              const std::string & message)
+{
+    goby::glog.is(goby::common::logger::DIE) &&
+        goby::glog << "File: " << filename
+                   << " has error (line: " << line << ", column: "
+                   << column << "): "
+                   << message << std::endl;
 }

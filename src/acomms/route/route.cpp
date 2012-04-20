@@ -44,6 +44,7 @@ void goby::acomms::RouteManager::merge_cfg(const protobuf::RouteManagerConfig& c
 
 void goby::acomms::RouteManager::process_cfg()
 {
+    glog.is(DEBUG1) && glog << group("goby::acomms::route") << "Route is: " << cfg_.route().DebugString() <<  std::endl;    
 }
 
 void goby::acomms::RouteManager::handle_in(
@@ -51,19 +52,27 @@ void goby::acomms::RouteManager::handle_in(
     const google::protobuf::Message& data_msg,
     int modem_id)
 {
-    glog.is(DEBUG1) && glog << "Incoming message, can we route message to destination: " << meta.dest() << "?" <<  std::endl;    
+    if(meta.dest() == modem_id) // no routing to do ...
+        return;
+    
+        
+    glog.is(DEBUG1) && glog << group("goby::acomms::route") << "Incoming message " << data_msg.GetDescriptor()->full_name() << ", can we route message to destination: " << meta.dest() << "?" <<  std::endl;    
 
+    
     int next_hop = find_next_hop(modem_id, meta.dest());
     if(next_hop != -1)
     {
         uint32 subnet = next_hop & cfg_.subnet_mask();
-        glog.is(DEBUG1) && glog << "Destination is in route, requeuing to proper subnet: "
+        glog.is(DEBUG1) && glog << group("goby::acomms::route")
+                                << "Destination is in route, requeuing to proper subnet: "
                                 << subnet << " (" << std::hex
                                 << next_hop << " & " << cfg_.subnet_mask()
                                 << ")" << std::dec <<  std::endl;
         if(!subnet_map_.count(subnet))
         {
-            glog.is(DEBUG1) && glog << "No subnet available for this message, ignoring." << std::endl;
+            glog.is(DEBUG1) && glog << group("goby::acomms::route")
+                                    << "No subnet available for this message, ignoring."
+                                    << std::endl;
             return;    
         }
         
@@ -71,7 +80,8 @@ void goby::acomms::RouteManager::handle_in(
     }
     else
     {
-        glog.is(DEBUG1) && glog << "Destination is not in route, ignoring." << std::endl;
+        glog.is(DEBUG1) && glog << group("goby::acomms::route")
+                                << "Destination is not in route, ignoring." << std::endl;
     }
 }
 
@@ -90,14 +100,16 @@ void goby::acomms::RouteManager::handle_out(
     const google::protobuf::Message& data_msg,
     int modem_id)
 {
-    glog.is(DEBUG1) && glog << "Trying to route outgoing message to destination: " << meta->dest() << std::endl;
+    glog.is(DEBUG1) && glog << group("goby::acomms::route")
+                            << "Trying to route outgoing message to destination: " << meta->dest() << std::endl;
     
 
     int next_hop = find_next_hop(modem_id, meta->dest());
     if(next_hop != -1)
     {
         meta->set_dest(next_hop);
-        glog.is(DEBUG1) && glog << "Set next hop to: " << meta->dest() << std::endl;
+        glog.is(DEBUG1) && glog << group("goby::acomms::route")
+                                << "Set next hop to: " << meta->dest() << std::endl;
     }
 }
 
@@ -107,7 +119,8 @@ int goby::acomms::RouteManager::find_next_hop(int us, int dest)
 
     if(current_route_index == -1)
     {
-        glog.is(DEBUG1) && glog << warn << "Current modem id is not in route. Ignoring." << std::endl;
+        glog.is(DEBUG1) && glog << warn << group("goby::acomms::route")
+                                << "Current modem id is not in route. Ignoring." << std::endl;
         return -1;
     }
 
@@ -115,7 +128,8 @@ int goby::acomms::RouteManager::find_next_hop(int us, int dest)
 
     if(dest_route_index == -1)
     {
-        glog.is(DEBUG1) && glog << warn << "Destination modem id is not in route. Ignoring." << std::endl;
+        glog.is(DEBUG1) && glog << warn << group("goby::acomms::route")
+                                << "Destination modem id is not in route. Ignoring." << std::endl;
         return -1;
     }
 
@@ -124,7 +138,8 @@ int goby::acomms::RouteManager::find_next_hop(int us, int dest)
     
     if(next_hop_index < 0 || next_hop_index >= cfg_.route().hop_size())
     {
-        glog.is(DEBUG1) && glog << warn << "Next hop index (" << next_hop_index << ") is not in route." << std::endl;
+        glog.is(DEBUG1) && glog << warn << group("goby::acomms::route")
+                                << "Next hop index (" << next_hop_index << ") is not in route." << std::endl;
         return -1;
     }
     
@@ -137,7 +152,8 @@ void goby::acomms::RouteManager::add_subnet_queue(QueueManager* manager)
 {
     if(!manager)
     {
-        glog.is(DEBUG1) && glog << warn << "Null manager passed to add_subnet_queue. Ignoring." << std::endl;
+        glog.is(DEBUG1) && glog << warn << group("goby::acomms::route")
+                                << "Null manager passed to add_subnet_queue. Ignoring." << std::endl;
         return;
     }    
 
@@ -145,11 +161,13 @@ void goby::acomms::RouteManager::add_subnet_queue(QueueManager* manager)
     uint32 subnet = modem_id & cfg_.subnet_mask();
     
     if(subnet_map_.count(subnet))
-        glog.is(DEBUG1) && glog << warn << "Subnet " << subnet << " already mapped. Replacing." << std::endl;
+        glog.is(DEBUG1) && glog << warn << group("goby::acomms::route")
+                                << "Subnet " << subnet << " already mapped. Replacing." << std::endl;
 
     subnet_map_[subnet] = manager;
 
-    glog.is(DEBUG1) && glog  << "Adding subnet (hex: " << std::hex << subnet << std::dec
+    glog.is(DEBUG1) && glog  << group("goby::acomms::route")
+                             << "Adding subnet (hex: " << std::hex << subnet << std::dec
                              << ")" << std::endl;
 
 }

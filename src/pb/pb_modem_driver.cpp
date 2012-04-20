@@ -40,7 +40,8 @@ goby::pb::PBDriver::PBDriver(goby::common::ZeroMQService* zeromq_service) :
     zeromq_service_(zeromq_service),
     last_send_time_(goby_time<uint64>()),
     request_socket_id_(0),
-    query_interval_seconds_(1)
+    query_interval_seconds_(1),
+    waiting_for_reply_(false)
 {
     on_receipt<acomms::protobuf::StoreServerResponse>(0, &PBDriver::handle_response, this);
 }
@@ -76,6 +77,9 @@ void goby::pb::PBDriver::handle_initiate_transmission(const acomms::protobuf::Mo
 
     msg->set_max_frame_bytes(driver_cfg_.GetExtension(PBDriverConfig::max_frame_size));
     signal_data_request(msg);
+
+    if(msg->frame_size() == 0 || msg->frame(0).empty())
+        request_.mutable_outbox()->RemoveLast();
 }
 
 
@@ -85,12 +89,15 @@ void goby::pb::PBDriver::do_work()
     { }
 
     // call in with our outbox
-    if(request_.IsInitialized() && goby_time<uint64>() > last_send_time_ + 1e6*query_interval_seconds_)
+    if(!waiting_for_reply_ &&
+       request_.IsInitialized() &&
+       goby_time<uint64>() > last_send_time_ + 1e6*query_interval_seconds_)
     {
         glog.is(DEBUG2) && glog << "Sending outbox" << std::endl;
         send(request_, request_socket_id_);
         request_.clear_outbox();
         last_send_time_ = goby_time<uint64>();
+        waiting_for_reply_ = true;
     }
 }
 
@@ -102,8 +109,9 @@ void goby::pb::PBDriver::handle_response(const acomms::protobuf::StoreServerResp
     {
         // ack any packets
         const acomms::protobuf::ModemTransmission& msg = response.inbox(i);
-        if(msg.type() == acomms::protobuf::ModemTransmission::DATA &&
-           msg.ack_requested() && msg.dest() != acomms::BROADCAST_ID)
+        if(msg.dest() == driver_cfg_.modem_id() &&
+           msg.type() == acomms::protobuf::ModemTransmission::DATA &&
+           msg.ack_requested())
         {
             acomms::protobuf::ModemTransmission& ack = *request_.add_outbox();
             ack.set_type(goby::acomms::protobuf::ModemTransmission::ACK);
@@ -111,9 +119,11 @@ void goby::pb::PBDriver::handle_response(const acomms::protobuf::StoreServerResp
             ack.set_dest(msg.src());
             for(int i = 0, n = msg.frame_size(); i < n; ++i)
                 ack.add_acked_frame(i);
-
+            
         }
         
         signal_receive(msg);
     }
+
+    waiting_for_reply_ = false;
 }

@@ -23,7 +23,6 @@
 #ifndef pTranslatorH
 #define pTranslatorH
 
-#include <google/protobuf/compiler/importer.h>
 #include <google/protobuf/descriptor.h>
 
 #include <boost/asio/deadline_timer.hpp>
@@ -33,8 +32,6 @@
 #include "goby/moos/moos_translator.h"
 
 #include "pTranslator_config.pb.h"
-
-extern std::vector<void *> dl_handles;
 
 class CpTranslator : public GobyMOOSApp
 {
@@ -61,22 +58,6 @@ class CpTranslator : public GobyMOOSApp
 
     
   private:
-    google::protobuf::compiler::DiskSourceTree disk_source_tree_;
-    google::protobuf::compiler::SourceTreeDescriptorDatabase source_database_;
-
-    class TranslatorErrorCollector: public google::protobuf::compiler::MultiFileErrorCollector
-    {
-        void AddError(const std::string & filename, int line, int column, const std::string & message)
-        {
-            goby::glog.is(goby::common::logger::DIE) &&
-                goby::glog << "File: " << filename
-                           << " has error (line: " << line << ", column: " << column << "): "
-                           << message << std::endl;
-        }       
-    };
-                
-    TranslatorErrorCollector error_collector_;
-
     goby::moos::MOOSTranslator translator_;
     
     

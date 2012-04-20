@@ -324,7 +324,7 @@ void goby::acomms::DCCLCodec::validate(const google::protobuf::Descriptor* desc)
         codec->base_validate(desc, DCCLFieldCodecBase::BODY);
 
         if(id2desc_.count(dccl_id) && desc != id2desc_.find(dccl_id)->second)
-            throw(DCCLException("`dccl.id` " + as<std::string>(dccl_id) + " is already in use by Message " + id2desc_.find(dccl_id)->second->full_name()));
+            throw(DCCLException("`dccl.id` " + as<std::string>(dccl_id) + " is already in use by Message " + id2desc_.find(dccl_id)->second->full_name() + ": " + as<std::string>(id2desc_.find(dccl_id)->second)));
         else
             id2desc_.insert(std::make_pair(id(desc), desc));
 
@@ -492,6 +492,20 @@ void goby::acomms::DCCLCodec::set_cfg(const protobuf::DCCLConfig& cfg)
     cfg_.CopyFrom(cfg);
     process_cfg();
 }
+
+void goby::acomms::DCCLCodec::load_shared_library_codecs(void* dl_handle)
+{
+    if(!dl_handle)
+        throw(DCCLException("Null shared library handle passed to load_shared_library_codecs"));
+    
+    // load any shared library codecs
+    void (*dccl_load_ptr)(goby::acomms::DCCLCodec*);
+    dccl_load_ptr = (void (*)(goby::acomms::DCCLCodec*)) dlsym(dl_handle, "goby_dccl_load");
+    if(dccl_load_ptr)
+        (*dccl_load_ptr)(this);
+}
+
+
 
 void goby::acomms::DCCLCodec::process_cfg()
 {

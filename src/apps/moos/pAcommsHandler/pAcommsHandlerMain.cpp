@@ -20,11 +20,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Goby.  If not, see <http://www.gnu.org/licenses/>.
 
-#include <dlfcn.h>
-
 #include "pAcommsHandler.h"
-
-std::vector<void *> dl_handles;
 
 int main(int argc, char* argv[])
 {
@@ -33,11 +29,6 @@ int main(int argc, char* argv[])
 
     goby::transitional::DCCLAlgorithmPerformer::deleteInstance();
     CpAcommsHandler::delete_instance();
-
-    goby::util::DynamicProtobufManager::protobuf_shutdown();
-    for(std::vector<void *>::iterator it = dl_handles.begin(),
-            n = dl_handles.end(); it != n; ++it)
-        dlclose(*it);
-    
+    goby::util::DynamicProtobufManager::protobuf_shutdown();    
     return return_value;
 }

@@ -75,7 +75,7 @@ namespace goby
         
         // examples
         /// \example acomms/chat/chat.cpp
-        /// chat.proto
+        /// chat.proo
         /// \verbinclude chat.proto
         /// chat.cpp
 

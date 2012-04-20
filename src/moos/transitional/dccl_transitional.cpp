@@ -53,6 +53,7 @@ goby::transitional::DCCLTransitionalCodec::DCCLTransitionalCodec()
       dccl_(goby::acomms::DCCLCodec::get()),
       start_time_(goby_time())
 {
+    goby::util::DynamicProtobufManager::enable_compilation();
 }
 
 void goby::transitional::DCCLTransitionalCodec::convert_to_v2_representation(pAcommsHandlerConfig* cfg)
@@ -103,7 +104,6 @@ void goby::transitional::DCCLTransitionalCodec::convert_xml_message_file(
 
     boost::filesystem::path xml_file_path(xml_file);
 
-
     std::string generated_proto_dir = cfg_.generated_proto_dir();
     if(!generated_proto_dir.empty() && generated_proto_dir[generated_proto_dir.size() - 1] != '/')
         generated_proto_dir += "/";
@@ -147,7 +147,7 @@ void goby::transitional::DCCLTransitionalCodec::convert_xml_message_file(
     fout.close();
     
     const google::protobuf::FileDescriptor* file_desc =
-        goby::util::DynamicProtobufManager::descriptor_pool().FindFileByName(*proto_file);    
+        goby::util::DynamicProtobufManager::user_descriptor_pool().FindFileByName(*proto_file);    
 
     if(file_desc)
     {

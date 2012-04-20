@@ -44,6 +44,7 @@ void goby::acomms::RouteManager::merge_cfg(const protobuf::RouteManagerConfig& c
 
 void goby::acomms::RouteManager::process_cfg()
 {
+    glog.is(DEBUG1) && glog << group("goby::acomms::route") << "Route is: " << cfg_.route().DebugString() <<  std::endl;    
 }
 
 void goby::acomms::RouteManager::handle_in(
@@ -51,8 +52,13 @@ void goby::acomms::RouteManager::handle_in(
     const google::protobuf::Message& data_msg,
     int modem_id)
 {
+    if(meta.dest() == modem_id) // no routing to do ...
+        return;
+    
+        
     glog.is(DEBUG1) && glog << group("goby::acomms::route") << "Incoming message, can we route message to destination: " << meta.dest() << "?" <<  std::endl;    
 
+    
     int next_hop = find_next_hop(modem_id, meta.dest());
     if(next_hop != -1)
     {

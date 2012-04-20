@@ -189,7 +189,7 @@ void goby::common::Liaison::load_proto_file(const std::string& path)
         glog << "Loading protobuf file: " << bpath << std::endl;
 
     
-    if(!goby::util::DynamicProtobufManager::descriptor_pool().FindFileByName(bpath.string()))
+    if(!goby::util::DynamicProtobufManager::user_descriptor_pool().FindFileByName(bpath.string()))
         glog.is(DIE) &&
             glog << "Failed to load file." << std::endl;
 }

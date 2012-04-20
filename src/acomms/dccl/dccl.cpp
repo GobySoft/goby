@@ -324,7 +324,7 @@ void goby::acomms::DCCLCodec::validate(const google::protobuf::Descriptor* desc)
         codec->base_validate(desc, DCCLFieldCodecBase::BODY);
 
         if(id2desc_.count(dccl_id) && desc != id2desc_.find(dccl_id)->second)
-            throw(DCCLException("`dccl.id` " + as<std::string>(dccl_id) + " is already in use by Message " + id2desc_.find(dccl_id)->second->full_name()));
+            throw(DCCLException("`dccl.id` " + as<std::string>(dccl_id) + " is already in use by Message " + id2desc_.find(dccl_id)->second->full_name() + ": " + as<std::string>(id2desc_.find(dccl_id)->second)));
         else
             id2desc_.insert(std::make_pair(id(desc), desc));
 

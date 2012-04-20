@@ -34,7 +34,7 @@ const google::protobuf::FileDescriptor* goby::util::DynamicProtobufManager::add_
 {
     simple_database().Add(proto);
     
-    const google::protobuf::FileDescriptor* return_desc = descriptor_pool().FindFileByName(proto.name());
+    const google::protobuf::FileDescriptor* return_desc = user_descriptor_pool().FindFileByName(proto.name());
     new_descriptor_hooks(return_desc);
     return return_desc; 
 }

@@ -607,7 +607,7 @@ void goby::acomms::QueueManager::process_cfg()
         for(int j = 0, m = cfg_.manipulator_entry(i).manipulator_size(); j < m; ++j)
         {
             const google::protobuf::Descriptor* desc =
-                goby::util::DynamicProtobufManager::descriptor_pool().FindMessageTypeByName(cfg_.manipulator_entry(i).protobuf_name());
+                goby::util::DynamicProtobufManager::find_descriptor(cfg_.manipulator_entry(i).protobuf_name());
             
             if(desc)
                 manip_manager_.add(codec_->id(desc), cfg_.manipulator_entry(i).manipulator(j));

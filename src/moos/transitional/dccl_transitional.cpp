@@ -147,7 +147,7 @@ void goby::transitional::DCCLTransitionalCodec::convert_xml_message_file(
     fout.close();
     
     const google::protobuf::FileDescriptor* file_desc =
-        goby::util::DynamicProtobufManager::descriptor_pool().FindFileByName(*proto_file);    
+        goby::util::DynamicProtobufManager::user_descriptor_pool().FindFileByName(*proto_file);    
 
     if(file_desc)
     {

@@ -78,7 +78,7 @@ CpTranslator::CpTranslator()
             glog << "Loading protobuf file: " << cfg_.load_proto_file(i) << std::endl;
 
         
-        if(!goby::util::DynamicProtobufManager::descriptor_pool().FindFileByName(
+        if(!goby::util::DynamicProtobufManager::find_descriptor(
                cfg_.load_proto_file(i)))
             glog.is(DIE) && glog << "Failed to load file." << std::endl;
     }

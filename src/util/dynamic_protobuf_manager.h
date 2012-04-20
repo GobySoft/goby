@@ -45,16 +45,26 @@ namespace goby
         class DynamicProtobufManager
         {
           public:
+            static const google::protobuf::Descriptor* find_descriptor(const std::string& protobuf_type_name)
+            {
+                // try the generated pool
+                const google::protobuf::Descriptor* desc = google::protobuf::DescriptorPool::generated_pool()->FindMessageTypeByName(protobuf_type_name);
+                if(desc) return desc;
+                
+                // try the user pool
+                desc = user_descriptor_pool().FindMessageTypeByName(protobuf_type_name);
+                return desc;
+            }
+            
             template<typename GoogleProtobufMessagePointer>
                 static GoogleProtobufMessagePointer new_protobuf_message(
                     const std::string& protobuf_type_name)
             {
-                // try the user pool
-                 const google::protobuf::Descriptor* desc = descriptor_pool().FindMessageTypeByName(protobuf_type_name);
-                
-                if(desc) return new_protobuf_message<GoogleProtobufMessagePointer>(desc);
-                
-                throw(std::runtime_error("Unknown type " + protobuf_type_name + ", be sure it is loaded at compile-time, via dlopen, or with a call to add_protobuf_file()"));
+                const google::protobuf::Descriptor* desc = find_descriptor(protobuf_type_name);
+                if(desc)
+                    return new_protobuf_message<GoogleProtobufMessagePointer>(desc);
+                else
+                    throw(std::runtime_error("Unknown type " + protobuf_type_name + ", be sure it is loaded at compile-time, via dlopen, or with a call to add_protobuf_file()"));
             }
             
             template<typename GoogleProtobufMessagePointer>
@@ -97,7 +107,7 @@ namespace goby
                 bf::path proto_file_path = bf::complete(proto_file);
                 proto_file_path.normalize();
 
-                return descriptor_pool().FindFileByName(proto_file_path.string());
+                return user_descriptor_pool().FindFileByName(proto_file_path.string());
             }
 
             static void* load_from_shared_lib(const std::string& shared_lib_path)
@@ -116,13 +126,13 @@ namespace goby
             
             static const google::protobuf::FileDescriptor* add_protobuf_file(
                 const google::protobuf::FileDescriptorProto& proto);
-
+            
             static boost::signal<void (const google::protobuf::FileDescriptor*) > new_descriptor_hooks;
 
             static google::protobuf::DynamicMessageFactory& msg_factory()
             { return *get_instance()->msg_factory_; }
-            static google::protobuf::DescriptorPool& descriptor_pool()
-            { return *get_instance()->descriptor_pool_; }
+            static google::protobuf::DescriptorPool& user_descriptor_pool()
+            { return *get_instance()->user_descriptor_pool_; }
             static google::protobuf::SimpleDescriptorDatabase& simple_database()
             { return *get_instance()->simple_database_; }
             
@@ -151,7 +161,7 @@ namespace goby
                 databases_.push_back(generated_database_);
 
                 merged_database_ = new google::protobuf::MergedDescriptorDatabase(databases_);
-                descriptor_pool_ = new google::protobuf::DescriptorPool(merged_database_);
+                user_descriptor_pool_ = new google::protobuf::DescriptorPool(merged_database_);
             }
             
             ~DynamicProtobufManager()
@@ -162,7 +172,7 @@ namespace goby
             {
 
                 delete msg_factory_;
-                delete descriptor_pool_;
+                delete user_descriptor_pool_;
                 delete merged_database_;
                 delete simple_database_;
                 delete generated_database_;
@@ -184,11 +194,11 @@ namespace goby
             
             void update_databases()
             {
-                delete descriptor_pool_;
+                delete user_descriptor_pool_;
                 delete merged_database_;
                 
                 merged_database_ = new google::protobuf::MergedDescriptorDatabase(databases_);
-                descriptor_pool_ = new google::protobuf::DescriptorPool(merged_database_);
+                user_descriptor_pool_ = new google::protobuf::DescriptorPool(merged_database_);
             }
 
             void enable_disk_source_database();
@@ -203,7 +213,7 @@ namespace goby
             google::protobuf::DescriptorPoolDatabase* generated_database_;
             google::protobuf::SimpleDescriptorDatabase* simple_database_;
             google::protobuf::MergedDescriptorDatabase* merged_database_;
-            google::protobuf::DescriptorPool* descriptor_pool_;
+            google::protobuf::DescriptorPool* user_descriptor_pool_;
             google::protobuf::DynamicMessageFactory* msg_factory_;
 
             // sometimes used

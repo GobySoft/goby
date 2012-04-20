@@ -56,7 +56,7 @@ void goby::acomms::RouteManager::handle_in(
         return;
     
         
-    glog.is(DEBUG1) && glog << group("goby::acomms::route") << "Incoming message, can we route message to destination: " << meta.dest() << "?" <<  std::endl;    
+    glog.is(DEBUG1) && glog << group("goby::acomms::route") << "Incoming message " << data_msg.GetDescriptor()->full_name() << ", can we route message to destination: " << meta.dest() << "?" <<  std::endl;    
 
     
     int next_hop = find_next_hop(modem_id, meta.dest());

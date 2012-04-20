@@ -30,6 +30,10 @@
 #include "goby/acomms/amac.h"
 #include "goby/acomms/modem_driver.h"
 #include "goby/acomms/bind.h"
+#include "goby/acomms/connect.h"
+
+#include "goby/acomms/protobuf/queue.pb.h"
+#include "goby/acomms/protobuf/network_ack.pb.h"
 
 #include "goby/pb/pb_modem_driver.h"
 
@@ -49,6 +53,11 @@ namespace goby
 
         private:
             void iterate();
+
+            void handle_link_ack(const protobuf::ModemTransmission& ack_msg,
+                                 const google::protobuf::Message& orig_msg,
+                                 QueueManager* from_queue);
+            
             
         private:
             static protobuf::BridgeConfig cfg_;
@@ -161,7 +170,20 @@ goby::acomms::Bridge::Bridge()
 
         goby::acomms::bind(*drivers_[i], *q_managers_[i], *mac_managers_[i]);
         goby::acomms::bind(*q_managers_[i], r_manager_);
+
+        goby::acomms::connect(&(q_managers_[i]->signal_ack),
+                              boost::bind(&Bridge::handle_link_ack, this, _1, _2, q_managers_[i].get()));
     }    
+
+
+    protobuf::NetworkAck ack;
+
+    std::cout << ack.GetDescriptor() << "," << google::protobuf::DescriptorPool::generated_pool()->FindMessageTypeByName("goby.acomms.protobuf.NetworkAck") << std::endl;
+
+    assert(ack.GetDescriptor() == google::protobuf::DescriptorPool::generated_pool()->FindMessageTypeByName("goby.acomms.protobuf.NetworkAck"));
+
+    assert(ack.GetDescriptor() == goby::util::DynamicProtobufManager::new_protobuf_message("goby.acomms.protobuf.NetworkAck")->GetDescriptor());
+
 }
 
 
@@ -198,3 +220,23 @@ void goby::acomms::Bridge::iterate()
     usleep(100000);
 }
 
+void goby::acomms::Bridge::handle_link_ack(const protobuf::ModemTransmission& ack_msg,
+                                           const google::protobuf::Message& orig_msg,
+                                           QueueManager* from_queue)
+{
+    protobuf::NetworkAck ack;
+    ack.set_ack_src(ack_msg.src());
+    ack.set_message_dccl_id(DCCLCodec::get()->id(orig_msg.GetDescriptor()));
+
+
+    protobuf::QueuedMessageMeta meta = from_queue->meta_from_msg(orig_msg);
+    ack.set_message_src(meta.src());
+    ack.set_message_dest(meta.dest());
+    ack.set_message_time(meta.time());
+
+    glog.is(VERBOSE) && glog << "Generated network ack: " << ack.DebugString() << "from: " << orig_msg.DebugString() << std::endl;
+    
+    r_manager_.handle_in(from_queue->meta_from_msg(ack), ack, from_queue->modem_id());
+}
+
+            

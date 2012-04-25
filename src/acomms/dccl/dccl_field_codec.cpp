@@ -29,8 +29,7 @@
 
 goby::acomms::DCCLFieldCodecBase::MessagePart goby::acomms::DCCLFieldCodecBase::part_ =
     goby::acomms::DCCLFieldCodecBase::BODY;
-boost::signal<void (unsigned size)> goby::acomms::DCCLFieldCodecBase::get_more_bits;
-boost::ptr_map<int, boost::signal<void (const boost::any& field_value, const boost::any& wire_value, const boost::any& extension_value)> >   goby::acomms::DCCLFieldCodecBase::wire_value_hooks_;
+boost::ptr_map<int, boost::signals2::signal<void (const boost::any& field_value, const boost::any& wire_value, const boost::any& extension_value)> >   goby::acomms::DCCLFieldCodecBase::wire_value_hooks_;
 
 
 using goby::glog;
@@ -157,12 +156,14 @@ void goby::acomms::DCCLFieldCodecBase::field_decode(Bitset* bits,
     if(field)
         glog.is(DEBUG2) && glog << group(DCCLCodec::glog_decode_group()) <<  "Starting decode for field: " << field->DebugString() << std::flush;
 
-    Bitset these_bits;
-    BitsHandler bits_handler(&these_bits, bits);
+    Bitset these_bits(bits);
+//    BitsHandler bits_handler(&these_bits, bits);
 
     unsigned bits_to_transfer = 0;
     field_min_size(&bits_to_transfer, field);
-    bits_handler.transfer_bits(bits_to_transfer);
+    these_bits.get_more_bits(bits_to_transfer);
+    
+//    bits_handler.transfer_bits(bits_to_transfer);
     
     glog.is(DEBUG2) && glog  << group(DCCLCodec::glog_decode_group()) << "... using these bits: " << these_bits << std::endl;
 
@@ -187,13 +188,13 @@ void goby::acomms::DCCLFieldCodecBase::field_decode_repeated(Bitset* bits,
     if(field)
         glog.is(DEBUG2) && glog  << group(DCCLCodec::glog_decode_group()) <<  "Starting repeated decode for field: " << field->DebugString();
     
-    Bitset these_bits;
-    BitsHandler bits_handler(&these_bits, bits);
+    Bitset these_bits(bits);
+//    BitsHandler bits_handler(&these_bits, bits);
     
     unsigned bits_to_transfer = 0;
     field_min_size(&bits_to_transfer, field);
-    bits_handler.transfer_bits(bits_to_transfer);
-    
+//    bits_handler.transfer_bits(bits_to_transfer);
+    these_bits.get_more_bits(bits_to_transfer);
     
     glog.is(DEBUG2) && glog  << group(DCCLCodec::glog_decode_group()) << "using these " <<
         these_bits.size() << " bits: " << these_bits << std::endl;
@@ -392,10 +393,11 @@ void goby::acomms::DCCLFieldCodecBase::any_decode_repeated(Bitset* repeated_bits
 {
     for(unsigned i = 0, n = dccl_field_options().max_repeat(); i < n; ++i)
     {
-        Bitset these_bits;
+        Bitset these_bits(repeated_bits);
         
-        BitsHandler bits_handler(&these_bits, repeated_bits);
-        bits_handler.transfer_bits(min_size());
+        //BitsHandler bits_handler(&these_bits, repeated_bits);
+        these_bits.get_more_bits(min_size());
+//        bits_handler.transfer_bits(min_size());
 
         boost::any value;
         
@@ -427,10 +429,10 @@ void goby::acomms::DCCLFieldCodecBase::any_run_hooks(const boost::any& field_val
     else
         glog.is(DEBUG2) && glog << group(DCCLCodec::glog_encode_group()) << "running hooks for base message" << std::endl;
 
-
-    typedef boost::ptr_map<int, boost::signal<void (const boost::any& field_value,
-                                                    const boost::any& wire_value,
-                                                    const boost::any& extension_value)> > hook_map;
+    
+    typedef boost::ptr_map<int, boost::signals2::signal<void (const boost::any& field_value,
+                                                              const boost::any& wire_value,
+                                                              const boost::any& extension_value)> > hook_map;
 
     for(hook_map::const_iterator i = wire_value_hooks_.begin(), e = wire_value_hooks_.end();
         i != e;

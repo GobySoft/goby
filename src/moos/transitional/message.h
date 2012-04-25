@@ -207,18 +207,18 @@ namespace goby
         };
 
 
-        inline void bitset2string(const boost::dynamic_bitset<unsigned char>& body_bits,
-                                  std::string& body)
-        {
-            body.resize(body_bits.num_blocks()); // resize the string to fit the bitset
-            to_block_range(body_bits, body.rbegin());
-        }
+        /* inline void bitset2string(const boost::dynamic_bitset<unsigned char>& body_bits, */
+        /*                           std::string& body) */
+        /* { */
+        /*     body.resize(body_bits.num_blocks()); // resize the string to fit the bitset */
+        /*     to_block_range(body_bits, body.rbegin()); */
+        /* } */
     
-        inline void string2bitset(boost::dynamic_bitset<unsigned char>& body_bits,
-                                  const std::string& body)
-        {
-            from_block_range(body.rbegin(), body.rend(), body_bits);
-        }
+        /* inline void string2bitset(boost::dynamic_bitset<unsigned char>& body_bits, */
+        /*                           const std::string& body) */
+        /* { */
+        /*     from_block_range(body.rbegin(), body.rend(), body_bits); */
+        /* } */
 
 
 //        std::ostream& operator<< (std::ostream& out, const DCCLMessage& message);

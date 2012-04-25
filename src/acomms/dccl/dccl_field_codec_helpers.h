@@ -26,8 +26,6 @@
 
 #include "dccl_common.h"
 
-#include <boost/signals.hpp>
-
 namespace goby
 {
     namespace acomms
@@ -66,23 +64,6 @@ namespace goby
             int fields_pushed_;
         };
 
-        class BitsHandler
-        {
-          public:
-            BitsHandler(Bitset* out_pool, Bitset* in_pool, bool lsb_first = true);
-            
-            ~BitsHandler()
-            {
-                connection_.disconnect();
-            }
-            void transfer_bits(unsigned size);
-
-          private:
-            bool lsb_first_;
-            Bitset* in_pool_;
-            Bitset* out_pool_;
-            boost::signals::connection connection_;
-        };
     }
 }
 

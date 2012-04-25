@@ -124,7 +124,7 @@ namespace goby
           ///
           /// \param bits Bits to use for decoding.
           /// \return the decoded value.
-          virtual WireType decode(const Bitset& bits) = 0;
+          virtual WireType decode(Bitset* bits) = 0;
 
           /// \brief Calculate the size (in bits) of an empty field.
           ///
@@ -166,7 +166,7 @@ namespace goby
               try
               {
                   google::protobuf::Message* msg = boost::any_cast<google::protobuf::Message* >(*wire_value);  
-                  msg->CopyFrom(decode(*bits));
+                  msg->CopyFrom(decode(bits));
               }
               catch(DCCLNullValueException&)
               {
@@ -180,7 +180,7 @@ namespace goby
           any_decode_specific(Bitset* bits, boost::any* wire_value)
           {
               try
-              { *wire_value = decode(*bits); }
+              { *wire_value = decode(bits); }
               catch(DCCLNullValueException&)
               { *wire_value = boost::any(); }              
           }
@@ -209,7 +209,7 @@ namespace goby
           virtual Bitset encode_repeated(const std::vector<WireType>& wire_value) = 0;
 
           /// \brief Decode a repeated field
-          virtual std::vector<WireType> decode_repeated(const Bitset& bits) = 0;
+          virtual std::vector<WireType> decode_repeated(Bitset* bits) = 0;
 
           /// \brief Give the size of a repeated field
           virtual unsigned size_repeated(
@@ -239,7 +239,7 @@ namespace goby
           ///
           /// \param bits Bits to use for decoding.
           /// \return the decoded value.
-          virtual WireType decode(const Bitset& bits)
+          virtual WireType decode(Bitset* bits)
           { return decode_repeated(bits).at(0); }          
 
           /// \brief Calculate the size (in bits) of an empty field.
@@ -288,7 +288,7 @@ namespace goby
           typename boost::enable_if<boost::is_base_of<google::protobuf::Message, T>, void>::type
           any_decode_repeated_specific(Bitset* repeated_bits, std::vector<boost::any>* wire_values)
           {
-              std::vector<WireType> decoded_msgs = decode_repeated(*repeated_bits);
+              std::vector<WireType> decoded_msgs = decode_repeated(repeated_bits);
               wire_values->resize(decoded_msgs.size(), WireType());
               
               for(int i = 0, n = decoded_msgs.size(); i < n; ++i)
@@ -302,7 +302,7 @@ namespace goby
           typename boost::disable_if<boost::is_base_of<google::protobuf::Message, T>, void>::type
           any_decode_repeated_specific(Bitset* repeated_bits, std::vector<boost::any>* wire_values)
           {
-              std::vector<WireType> decoded = decode_repeated(*repeated_bits);
+              std::vector<WireType> decoded = decode_repeated(repeated_bits);
               wire_values->resize(decoded.size(), WireType());
               
               for(int i = 0, n = decoded.size(); i < n; ++i)

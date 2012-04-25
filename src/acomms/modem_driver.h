@@ -36,7 +36,6 @@
 
 
 // User Datagram Protocol (UDP) driver
-#include "goby/acomms/modemdriver/udp_driver.h"
-
+//#include "goby/acomms/modemdriver/udp_driver.h"
 
 #endif

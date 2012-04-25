@@ -21,7 +21,7 @@
 // along with Goby.  If not, see <http://www.gnu.org/licenses/>.
 
 
-#include "dynamic_protobuf_manager.h"
+#include "goby/util/dynamic_protobuf_manager.h"
 
 #include "goby/common/exception.h"
 #include "goby/common/logger.h"

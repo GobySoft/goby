@@ -53,6 +53,25 @@ else()
   set(BUILD_SHARED_LIBS ON)
 endif()
 
+## build goby logger with threading enabled
+option(make_thread_safe_logger "Enable thread-safety in Goby Logger." ON)
+
+if(make_thread_safe_logger)
+  set(IS_THREAD_SAFE_LOGGER 1)
+else()
+  set(IS_THREAD_SAFE_LOGGER 0)
+endif()
+
+## build dynamic protobuf manager with ability to read from disk (requires
+## boost-filesystem)
+option(make_proto_runtime_compile "Allow runtime compilation of .proto files." ON)
+
+if(make_proto_runtime_compile)
+  set(IS_PROTO_RUNTIME_COMPILE 1)
+else()
+  set(IS_PROTO_RUNTIME_COMPILE 0)
+endif()
+
 ## set the cmake defaults for libraries and binaries
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${goby_LIB_DIR} CACHE PATH 
   "Output directory for the dynamic libraries" )
@@ -73,8 +92,6 @@ install(DIRECTORY ${goby_SHARE_DIR}/ DESTINATION ${CMAKE_INSTALL_PREFIX}/share/g
 install(DIRECTORY ${goby_INC_DIR}/ DESTINATION ${CMAKE_INSTALL_PREFIX}/include
   FILES_MATCHING REGEX .*\\.h|.*\\.proto)
 
-
-
 ## let cmake know where the headers are
 include_directories(${goby_INC_DIR})
 
@@ -88,7 +105,7 @@ if(${APPLE})
   link_directories(/sw/lib)
 endif()
 
-
+set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES ${goby_INC_DIR}/goby)
 
 ## copy to goby/include
 file(GLOB_RECURSE INCLUDE_FILES RELATIVE ${goby_SRC_DIR} src/*.h src/*.proto)
@@ -96,7 +113,6 @@ foreach(I ${INCLUDE_FILES})
   configure_file(${goby_SRC_DIR}/${I} ${goby_INC_DIR}/goby/${I} @ONLY)
 endforeach()
 
-set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES ${goby_INC_DIR}/goby)
-
 ## start adding subdirectories
 add_subdirectory(src)
+

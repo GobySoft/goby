@@ -31,11 +31,12 @@
 #include <boost/bind.hpp>
 #include <boost/date_time.hpp>
 
-//#ifdef HAS_NCURSES
-#include "flex_ncurses.h"
-//#endif
+#include "goby/common/logger/flex_ostreambuf.h"
 
-#include "flex_ostreambuf.h"
+#ifdef HAS_NCURSES
+#include "flex_ncurses.h"
+#endif
+
 #include "goby/util/sci.h"
 #include "goby/common/time.h"
 #include "goby/common/exception.h"
@@ -44,9 +45,13 @@
 using goby::common::goby_time;
 
 
+#ifdef HAS_NCURSES
 boost::mutex curses_mutex;
+#endif
 
+#if THREAD_SAFE_LOGGER
 boost::mutex goby::common::logger::mutex;
+#endif
 
 goby::common::FlexOStreamBuf::FlexOStreamBuf(): name_("no name"),
                                               die_flag_(false),

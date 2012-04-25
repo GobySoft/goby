@@ -54,7 +54,7 @@ namespace goby
           private:
             Bitset encode();
             Bitset encode(const uint32& wire_value);
-            uint32 decode(const Bitset& bits);
+            uint32 decode(Bitset* bits);
             unsigned size();
             unsigned size(const uint32& field_value);
             unsigned max_size();
@@ -124,9 +124,9 @@ namespace goby
               return Bitset(size(), goby::util::as<unsigned long>(wire_value));
           }
           
-          virtual WireType decode(const Bitset& bits)
+          virtual WireType decode(Bitset* bits)
           {
-              unsigned long t = bits.to_ulong();
+              unsigned long t = bits->to_ulong();
               
               if(!DCCLFieldCodecBase::this_field()->is_required())
               {
@@ -161,7 +161,7 @@ namespace goby
           private:
             Bitset encode(const bool& wire_value);
             Bitset encode();
-            bool decode(const Bitset& bits);
+            bool decode(Bitset* bits);
             unsigned size();
             void validate();
         };
@@ -174,7 +174,7 @@ namespace goby
           private:
             Bitset encode();
             Bitset encode(const std::string& wire_value);
-            std::string decode(const Bitset& bits);
+            std::string decode(Bitset* bits);
             unsigned size();
             unsigned size(const std::string& field_value);
             unsigned max_size();
@@ -192,7 +192,7 @@ namespace goby
           private:
             Bitset encode();
             Bitset encode(const std::string& wire_value);
-            std::string decode(const Bitset& bits);
+            std::string decode(Bitset* bits);
             unsigned size();
             unsigned size(const std::string& field_value);
             unsigned max_size();
@@ -275,7 +275,7 @@ namespace goby
             Bitset encode()
             { return Bitset(size()); }
 
-            T decode(const Bitset& bits)
+            T decode(Bitset* bits)
             {
                 std::string t = DCCLFieldCodecBase::dccl_field_options().static_value();
                 return util::as<T>(t);

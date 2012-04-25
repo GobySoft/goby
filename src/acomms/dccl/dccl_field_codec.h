@@ -30,7 +30,7 @@
 #include <boost/any.hpp>
 #include <boost/bind.hpp>
 #include <boost/dynamic_bitset.hpp>
-#include <boost/signals.hpp>
+#include <boost/signals2.hpp>
 #include <boost/ptr_container/ptr_map.hpp>
 #include <google/protobuf/message.h>
 #include <google/protobuf/descriptor.pb.h>
@@ -324,9 +324,7 @@ namespace goby
             /// \param extension_number The Protobuf field number for the extension to .google.protobuf.FieldOptions that you wish to receive callbacks for. The GobyFieldOptions uses extension_number 1009 (reserved with Google).
             /// \param callback A boost::function (generalized function object) which will be called when the desired option extension for the field is set. `field_value` is the value currently set in the message for that field, `wire_value` is the pre-encoded version of `field_value` and `extension_value` is the value set for the desired option extension.
             static void register_wire_value_hook(
-                int extension_number, boost::function<void (const boost::any& field_value,
-                                                            const boost::any& wire_value,
-                                                            const boost::any& extension_value)> callback)
+                int extension_number, boost::function<void (const boost::any& field_value, const boost::any& wire_value, const boost::any& extension_value)> callback)
             { wire_value_hooks_[extension_number].connect(callback); }
 
             //@}
@@ -436,12 +434,6 @@ namespace goby
             virtual unsigned max_size_repeated();
             virtual unsigned min_size_repeated();
             
-
-            friend class BitsHandler;
-
-            /// \brief Inside the any_decode() method call to get more bits into the `bits` Bitset. Used only be variable size codecs (i.e. min_size() != max_size()).
-            static boost::signal<void (unsigned size)> get_more_bits;
-            
             friend class DCCLFieldCodecManager;
           private:
             // codec information
@@ -464,7 +456,7 @@ namespace goby
             static MessagePart part_;
             // maps protobuf extension number for FieldOption onto a hook (signal) to call
             // if such a FieldOption is set, during the call to "size()"
-            static boost::ptr_map<int, boost::signal<void (const boost::any& field_value, const boost::any& wire_value, const boost::any& extension_value)> >  wire_value_hooks_;
+            static boost::ptr_map<int, boost::signals2::signal<void (const boost::any& field_value, const boost::any& wire_value, const boost::any& extension_value)> >  wire_value_hooks_;
             
             std::string name_;
             google::protobuf::FieldDescriptor::Type field_type_;

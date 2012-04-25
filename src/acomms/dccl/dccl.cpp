@@ -149,10 +149,8 @@ void goby::acomms::DCCLCodec::encode(std::string* bytes, const google::protobuf:
         for(int i = 0, n = fixed_id_bits.size(); i < n; ++i)
             head_bits.push_back(fixed_id_bits[i]);
 
-        std::string head_bytes, body_bytes;
-        bitset2string(head_bits, &head_bytes);
-        bitset2string(body_bits, &body_bytes);
-
+        std::string head_bytes = head_bits.to_byte_string();
+        std::string body_bytes = body_bits.to_byte_string();
         
         glog.is(DEBUG2) && glog << group(glog_encode_group_) << "Head bytes (bits): " << head_bytes.size() << "(" << head_bits.size()
                                 << "), body bytes (bits): " <<  body_bytes.size() << "(" << body_bits.size() << ")" <<  std::endl;
@@ -186,8 +184,6 @@ void goby::acomms::DCCLCodec::encode(std::string* bytes, const google::protobuf:
         glog.is(DEBUG1) && glog << group(glog_encode_group_) << warn << ss.str() << std::endl;  
         throw(DCCLException(ss.str()));
     }
-
-
 }
 
 unsigned goby::acomms::DCCLCodec::id_from_encoded(const std::string& bytes)
@@ -200,13 +196,14 @@ unsigned goby::acomms::DCCLCodec::id_from_encoded(const std::string& bytes)
         throw(DCCLException("Bytes passed (hex: " + hex_encode(bytes) + ") is too small to be a valid DCCL message"));
         
     Bitset fixed_header_bits;
-    string2bitset(&fixed_header_bits, bytes.substr(0, std::ceil(double(id_max_size) / BITS_IN_BYTE)));
+    fixed_header_bits.from_byte_string(bytes.substr(0, std::ceil(double(id_max_size) / BITS_IN_BYTE)));
 
-    Bitset these_bits;
-    BitsHandler bits_handler(&these_bits, &fixed_header_bits, false);
-    bits_handler.transfer_bits(id_min_size);
+    Bitset these_bits(&fixed_header_bits);
+//    BitsHandler bits_handler(&these_bits, &fixed_header_bits, false);
+//    bits_handler.transfer_bits(id_min_size);
+    these_bits.get_more_bits(id_min_size, false);
     
-    return id_codec_[current_id_codec_]->decode(these_bits);
+    return id_codec_[current_id_codec_]->decode(&these_bits);
 }
 
 void goby::acomms::DCCLCodec::decode(const std::string& bytes, google::protobuf::Message* msg)
@@ -259,8 +256,8 @@ void goby::acomms::DCCLCodec::decode(const std::string& bytes, google::protobuf:
 
         
         Bitset head_bits, body_bits;
-        string2bitset(&head_bits, head_bytes);
-        string2bitset(&body_bits, body_bytes);
+        head_bits.from_byte_string(head_bytes);
+        body_bits.from_byte_string(body_bytes);
     
         glog.is(DEBUG3) && glog << group(glog_decode_group_) << "Unencrypted Head (bin): " << head_bits << std::endl;
         glog.is(DEBUG3) && glog << group(glog_decode_group_) << "Unencrypted Body (bin): " << body_bits << std::endl;

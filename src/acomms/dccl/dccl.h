@@ -38,7 +38,6 @@
 #include "goby/common/time.h"
 #include "goby/common/logger.h"
 #include "goby/acomms/protobuf/dccl.pb.h"
-#include "goby/acomms/protobuf/modem_message.pb.h"
 #include "goby/acomms/acomms_helpers.h"
 #include "goby/util/binary.h"
 #include "goby/util/dynamic_protobuf_manager.h"

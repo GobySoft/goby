@@ -26,6 +26,8 @@
 #include <boost/foreach.hpp>
 #include <boost/assign.hpp>
 
+#include <dlfcn.h> // for shared library loading
+
 #ifdef HAS_CRYPTOPP
 #if CRYPTOPP_PATH_USES_PLUS_SIGN
 #include <crypto++/filters.h>

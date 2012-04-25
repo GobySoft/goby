@@ -33,7 +33,6 @@
 #include <google/protobuf/io/tokenizer.h>
 
 #include <boost/static_assert.hpp>
-#include <boost/static_assert.hpp>
 
 #include "flex_ostreambuf.h"
 #include "logger_manipulators.h"

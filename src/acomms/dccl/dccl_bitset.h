@@ -138,17 +138,21 @@ namespace goby
                 return *this;
             }
             
-            Bitset& set(bool val = true)
+            Bitset& set()
             {
                 for(iterator it = begin(), n = end(); it != n; ++it)
-                    *it = val;
+                    *it = true;
                 return *this;
             }
             
             Bitset& reset(size_type n)
             { return set(n, false);}
             Bitset& reset()
-            { return set(false); }
+            {
+                for(iterator it = begin(), n = end(); it != n; ++it)
+                    *it = false;
+                return *this;
+            }
 
             Bitset& flip(size_type n)
             { return set(n, !(*this)[n]); }

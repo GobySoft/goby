@@ -74,6 +74,10 @@ int main()
     assert((bits1 <= bits2) == (v1 <= v2));
     assert((bits1 != bits2) == (v1 != v2));
 
+    assert((Bitset(8, 23)) == Bitset(8, 23));
+    assert((Bitset(16, 23)) != Bitset(8, 23));
+    assert((Bitset(16, 0x0001)) != Bitset(16, 0x1001));
+    
     assert(goby::util::hex_encode(bits2.to_byte_string()) == "02a7");
     bits2.from_byte_string(goby::util::hex_decode("02a512"));
     std::cout << bits2.size() << ": " << bits2 << std::endl;

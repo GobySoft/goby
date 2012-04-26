@@ -23,6 +23,8 @@
 #ifndef LIAISONSCOPE20110609H
 #define LIAISONSCOPE20110609H
 
+#include <boost/thread.hpp>
+
 #include <Wt/WText>
 #include <Wt/WCssDecorationStyle>
 #include <Wt/WBorder>
@@ -55,12 +57,20 @@ namespace goby
                          Wt::WTimer* timer_, Wt::WContainerWidget* parent = 0);
             
             void moos_inbox(CMOOSMsg& msg);
-            void update_row(CMOOSMsg& msg, const std::vector<Wt::WStandardItem *>& items);
-            std::vector<Wt::WStandardItem *> create_row(CMOOSMsg& msg);
-            void attach_pb_rows(const std::vector<Wt::WStandardItem *>& items,
+                
+            void handle_message(CMOOSMsg& msg, bool fresh_message);            
+            
+            static std::vector<Wt::WStandardItem *> create_row(CMOOSMsg& msg);
+            static void attach_pb_rows(const std::vector<Wt::WStandardItem *>& items,
                                 CMOOSMsg& msg);
+            static void update_row(CMOOSMsg& msg, const std::vector<Wt::WStandardItem *>& items);
             
             void loop();
+            
+            void pause();
+            void resume();
+            bool is_paused() { return controls_div_->is_paused_; }
+            
             
           private:
             void handle_global_key(Wt::WKeyEvent event);
@@ -74,22 +84,7 @@ namespace goby
             Wt::WSortFilterProxyModel* proxy_;
 
             Wt::WVBoxLayout* main_layout_;
-
-            struct ControlsContainer : Wt::WContainerWidget
-            {
-                ControlsContainer(Wt::WTimer* timer,
-                                  Wt::WContainerWidget* parent = 0);
-
-                void handle_play_pause(bool toggle_state);
-
-                
-                Wt::WTimer* timer_;
-
-                Wt::WPushButton* play_pause_button_;
-                Wt::WText* play_state_;
-            };
             
-            ControlsContainer* controls_div_;
 
             struct SubscriptionsContainer : Wt::WContainerWidget
             {
@@ -103,6 +98,9 @@ namespace goby
                 void handle_remove_subscription(Wt::WPushButton* clicked_anchor);
                 void add_subscription(std::string type);
 
+                void refresh_with_newest();
+                void refresh_with_newest(const std::string& type);
+                
                 LiaisonScope* node_;
                 
                 Wt::WStandardItemModel* model_;
@@ -114,10 +112,12 @@ namespace goby
                 Wt::WPushButton* subscribe_filter_button_;
                 Wt::WBreak* subscribe_break_;
                 Wt::WText* remove_text_;
+
+                std::set<std::string> subscriptions_;
             };
 
             SubscriptionsContainer* subscriptions_div_;
-
+            
             struct HistoryContainer : Wt::WContainerWidget
             {
                 HistoryContainer(MOOSNode* node,
@@ -130,8 +130,9 @@ namespace goby
                 void handle_remove_history(std::string type);
                 void add_history(const goby::common::protobuf::MOOSScopeConfig::HistoryConfig& config);
                 void toggle_history_plot(Wt::WWidget* plot);
-
-
+                void display_message(CMOOSMsg& msg);
+                void flush_buffer();
+                
                 struct MVC
                 {
                     std::string key;
@@ -140,8 +141,7 @@ namespace goby
                     Wt::WTreeView* tree;
                     Wt::WSortFilterProxyModel* proxy;
                 };
-            
-
+                
                 MOOSNode* node_;
                 Wt::WVBoxLayout* main_layout_;
                 
@@ -151,10 +151,45 @@ namespace goby
                 Wt::WText* add_text_;
                 Wt::WComboBox* history_box_;
                 Wt::WPushButton* history_button_;
+
+                std::vector<CMOOSMsg> buffer_;
             };
             
             HistoryContainer* history_header_div_;
 
+
+            struct ControlsContainer : Wt::WContainerWidget
+            {
+                ControlsContainer(Wt::WTimer* timer,
+                                  bool start_paused,
+                                  LiaisonScope* scope,
+                                  SubscriptionsContainer* subscriptions_div,
+                                  HistoryContainer* history_header_div,
+                                  Wt::WContainerWidget* parent = 0);
+
+                void handle_play_pause(bool toggle_state);
+
+                void pause();
+                void resume();
+
+                void run_paused_mail();
+                boost::shared_ptr<boost::thread> paused_mail_thread_;
+                
+                Wt::WTimer* timer_;
+
+
+                Wt::WPushButton* play_pause_button_;
+                
+                Wt::WText* spacer_;
+                Wt::WText* play_state_;
+                bool is_paused_;
+                LiaisonScope* scope_;
+                SubscriptionsContainer* subscriptions_div_;
+                HistoryContainer* history_header_div_;
+            };
+            
+            ControlsContainer* controls_div_;
+            
             struct RegexFilterContainer : Wt::WContainerWidget
             {
                 RegexFilterContainer(

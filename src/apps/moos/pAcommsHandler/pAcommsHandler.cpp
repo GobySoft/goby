@@ -503,7 +503,7 @@ void CpAcommsHandler::create_on_multiplex_publish(const CMOOSMsg& moos_msg)
     boost::shared_ptr<google::protobuf::Message> msg =
         dynamic_parse_for_moos(moos_msg.GetString());
 
-    if(&*msg == 0)
+    if(!msg)
     {
         glog.is(WARN) &&
              glog << group("pAcommsHandler") << "Multiplex receive failed: Unknown Protobuf type for " << moos_msg.GetString() << "; be sure it is compiled in or directly loaded into the goby::util::DynamicProtobufManager." << std::endl;

@@ -46,10 +46,9 @@ goby::common::LiaisonWtThread::LiaisonWtThread(const Wt::WEnvironment& env)
     : Wt::WApplication(env),
       scope_service_(Liaison::zmq_context()),
       commander_service_(Liaison::zmq_context()),
-      last_scope_timer_state_(UNKNOWN)
+      scope_(0),
+      last_scope_state_(UNKNOWN)
 {    
-
-    
 //    zeromq_service_.connect_inbox_slot(&LiaisonWtThread::inbox, this);
 
 
@@ -114,14 +113,13 @@ goby::common::LiaisonWtThread::LiaisonWtThread(const Wt::WEnvironment& env)
     
     add_to_menu(menu, "Commander", commander); 
 
-    LiaisonScope* scope = new LiaisonScope(&scope_service_, &scope_timer_);
+    scope_ = new LiaisonScope(&scope_service_, &scope_timer_);
     scope_timer_.setInterval(1/Liaison::cfg_.update_freq()*1.0e3);
-    scope_timer_.timeout().connect(scope, &LiaisonScope::loop);
+    scope_timer_.timeout().connect(scope_, &LiaisonScope::loop);
 
-    add_to_menu(menu, "Scope", scope);
+    add_to_menu(menu, "Scope", scope_);
 
-    if(!Liaison::cfg_.start_paused())
-        scope_timer_.start();
+    scope_timer_.start();
     
     menu->itemSelected().connect(this, &LiaisonWtThread::handle_menu_selection);
 
@@ -139,7 +137,7 @@ void goby::common::LiaisonWtThread::add_to_menu(WMenu* menu, const WString& name
 void goby::common::LiaisonWtThread::handle_menu_selection(Wt::WMenuItem * item)
 {    
     std::cout << "Item selected: " << item->text() << std::endl;
-    std::cout << "Timer state: " <<  last_scope_timer_state_ << std::endl;
+    std::cout << "Timer state: " <<  last_scope_state_ << std::endl;
 
     if(item->text() == "Commander")
         commander_timer_.start();
@@ -148,16 +146,17 @@ void goby::common::LiaisonWtThread::handle_menu_selection(Wt::WMenuItem * item)
     
     if(item->text() == "Scope")
     {
-        if(last_scope_timer_state_ == ACTIVE)
-            scope_timer_.start();
-        last_scope_timer_state_ = UNKNOWN;
+        if(last_scope_state_ == ACTIVE)
+            scope_->resume();
+        
+        last_scope_state_ = UNKNOWN;
     }
     else
     {
-        if(last_scope_timer_state_ == UNKNOWN)
+        if(last_scope_state_ == UNKNOWN)
         {
-            last_scope_timer_state_ = scope_timer_.isActive() ? ACTIVE : STOPPED;
-            scope_timer_.stop();
+            last_scope_state_ = scope_->is_paused() ? STOPPED : ACTIVE;
+            scope_->pause();
         }
     }
 }

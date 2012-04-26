@@ -328,6 +328,8 @@ void goby::common::ZeroMQService::handle_receive(const void* data,
 
 bool goby::common::ZeroMQService::poll(long timeout /* = -1 */)
 {
+    boost::mutex::scoped_lock slock(poll_mutex_);
+
 //    glog.is(DEBUG2, lock) && glog << "Have " << poll_items_.size() << " items to poll" << std::endl << unlock;   
     bool had_events = false;
     zmq::poll (&poll_items_[0], poll_items_.size(), timeout);

@@ -1,0 +1,13 @@
+import "goby/common/protobuf/option_extensions.proto";
+
+package goby.acomms.protobuf;
+
+message CCL_MDAT_STATE
+{
+  // prefix CCL IDs with 0x0CC1 to get out of normal 0x0000 prefix
+  option (goby.msg).dccl.id = 0x0CC10001; 
+  option (goby.msg).dccl.max_bytes = 32;
+  
+  
+  
+}

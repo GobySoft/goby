@@ -26,28 +26,22 @@
 using namespace goby::common::logger;
 
 goby::acomms::Bitset goby::acomms::Bitset::relinquish_bits(size_type num_bits,
-                                                           bool lsb_first,
                                                            bool final_child)
 {
-    glog.is(DEBUG2) && glog  << group(DCCLCodec::glog_decode_group()) << "Asked to relinquish " << num_bits << " from " << this << ": " << *this << std::endl;
+//    glog.is(DEBUG2) && glog  << group(DCCLCodec::glog_decode_group()) << "Asked to relinquish " << num_bits << " from " << this << ": " << *this << std::endl;
 
     if(final_child || this->size() < num_bits)
     {
-
-
         size_type num_parent_bits = (final_child) ? num_bits : num_bits - this->size();
-        glog.is(DEBUG2) && glog  << group(DCCLCodec::glog_decode_group()) << "Need to get " << num_parent_bits << " from parent" << std::endl;
+//        glog.is(DEBUG2) && glog  << group(DCCLCodec::glog_decode_group()) << "Need to get " << num_parent_bits << " from parent" << std::endl;
 
         if(parent_)
         {
-            Bitset parent_bits = parent_->relinquish_bits(num_parent_bits, lsb_first, false);
+            Bitset parent_bits = parent_->relinquish_bits(num_parent_bits, false);
             
-            glog.is(DEBUG2) && glog  << group(DCCLCodec::glog_decode_group()) << "parent_bits: " << parent_bits << std::endl;
+//            glog.is(DEBUG2) && glog  << group(DCCLCodec::glog_decode_group()) << "parent_bits: " << parent_bits << std::endl;
             
-            if(lsb_first)
-                append(parent_bits);
-            else
-                prepend(parent_bits);
+            append(parent_bits);
         }
     }
 
@@ -59,16 +53,8 @@ goby::acomms::Bitset goby::acomms::Bitset::relinquish_bits(size_type num_bits,
             if(this->empty())
                 throw(Exception("Cannot get_more_bits - no more bits to get!"));
             
-            if(lsb_first)
-            {
-                out.push_back(this->front());
-                this->pop_front();
-            }
-            else
-            {
-                out.push_front(this->back());
-                this->pop_back();
-            }
+            out.push_back(this->front());
+            this->pop_front();
         }
     }
     return out;

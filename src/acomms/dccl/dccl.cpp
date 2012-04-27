@@ -44,6 +44,7 @@
 
 #include "dccl.h"
 #include "dccl_field_codec_default.h"
+#include "dccl_ccl_compatibility.h"
 #include "goby/util/as.h"
 #include "goby/common/protobuf/acomms_option_extensions.pb.h"
 //#include "goby/common/header.pb.h"
@@ -125,9 +126,9 @@ void goby::acomms::DCCLCodec::encode(std::string* bytes, const google::protobuf:
     
         
         //fixed header
-        Bitset fixed_id_bits = id_codec_[current_id_codec_]->encode(id(desc));
-        Bitset head_bits, body_bits;
-
+        Bitset head_bits = id_codec_[current_id_codec_]->encode(id(desc));        
+        Bitset body_bits;
+        
         boost::shared_ptr<DCCLFieldCodecBase> codec = DCCLFieldCodecManager::find(desc);
         boost::shared_ptr<FromProtoCppTypeBase> helper = DCCLTypeHelper::find(desc);
 
@@ -144,12 +145,9 @@ void goby::acomms::DCCLCodec::encode(std::string* bytes, const google::protobuf:
         }
         
         // given header of not even byte size (e.g. 01011), make even byte size (e.g. 00001011)
-        // and shift bytes to MSB (e.g. 01011000).
-        unsigned head_byte_size = ceil_bits2bytes(head_bits.size() + fixed_id_bits.size());
-        unsigned head_bits_diff = head_byte_size * BITS_IN_BYTE - (head_bits.size() + fixed_id_bits.size());
+        unsigned head_byte_size = ceil_bits2bytes(head_bits.size());
+        unsigned head_bits_diff = head_byte_size * BITS_IN_BYTE - (head_bits.size());
         head_bits.resize(head_bits.size() + head_bits_diff);
-        for(int i = 0, n = fixed_id_bits.size(); i < n; ++i)
-            head_bits.push_back(fixed_id_bits[i]);
 
         std::string head_bytes = head_bits.to_byte_string();
         std::string body_bytes = body_bits.to_byte_string();
@@ -166,16 +164,10 @@ void goby::acomms::DCCLCodec::encode(std::string* bytes, const google::protobuf:
 
         glog.is(DEBUG3) && glog << group(glog_encode_group_) << "Encrypted Body (hex): " << hex_encode(body_bytes) << std::endl;
 
-        
-        // reverse so the body reads LSB->MSB such that extra chars at
-        // the end of the string get tacked on to the MSB, not the LSB where they would cause trouble
-        std::reverse(body_bytes.begin(), body_bytes.end());
-        
-        glog.is(DEBUG3) && glog << group(glog_encode_group_) << "Reversed Encrypted Body (hex): " << hex_encode(body_bytes) << std::endl;
 
         glog.is(DEBUG1) && glog << group(glog_encode_group_) << "Successfully encoded message of type: " << desc->full_name() << std::endl;
 
-        *bytes = head_bytes + body_bytes;
+        *bytes =  head_bytes + body_bytes;
     }
     catch(std::exception& e)
     {
@@ -201,9 +193,7 @@ unsigned goby::acomms::DCCLCodec::id_from_encoded(const std::string& bytes)
     fixed_header_bits.from_byte_string(bytes.substr(0, std::ceil(double(id_max_size) / BITS_IN_BYTE)));
 
     Bitset these_bits(&fixed_header_bits);
-//    BitsHandler bits_handler(&these_bits, &fixed_header_bits, false);
-//    bits_handler.transfer_bits(id_min_size);
-    these_bits.get_more_bits(id_min_size, false);
+    these_bits.get_more_bits(id_min_size);
     
     return id_codec_[current_id_codec_]->decode(&these_bits);
 }
@@ -212,7 +202,7 @@ void goby::acomms::DCCLCodec::decode(const std::string& bytes, google::protobuf:
 {
     try
     {
-        unsigned id = id_from_encoded(bytes);   
+        unsigned id = id_from_encoded(bytes);
 
         glog.is(DEBUG1) && glog << group(glog_decode_group_) << "Began decoding message of id: " << id << std::endl;
         
@@ -236,16 +226,11 @@ void goby::acomms::DCCLCodec::decode(const std::string& bytes, google::protobuf:
         unsigned body_size_bytes = ceil_bits2bytes(body_size_bits);
     
         glog.is(DEBUG2) && glog << group(glog_decode_group_) << "Head bytes (bits): " << head_size_bytes << "(" << head_size_bits
-                                << "), body bytes (bits): " << body_size_bytes << "(" << body_size_bits << ")" <<  std::endl;
+                                << "), max body bytes (bits): " << body_size_bytes << "(" << body_size_bits << ")" <<  std::endl;
 
         std::string head_bytes = bytes.substr(0, head_size_bytes);
         std::string body_bytes = bytes.substr(head_size_bytes);
 
-
-        glog.is(DEBUG3) && glog << group(glog_decode_group_) << "Reversed Encrypted Body (hex): " << hex_encode(body_bytes) << std::endl;
-
-        // we had reversed the bytes so extraneous zeros will not cause trouble. undo this reversal.
-        std::reverse(body_bytes.begin(), body_bytes.end());
 
         glog.is(DEBUG3) && glog << group(glog_decode_group_) << "Encrypted Body (hex): " << hex_encode(body_bytes) << std::endl;
 
@@ -263,14 +248,17 @@ void goby::acomms::DCCLCodec::decode(const std::string& bytes, google::protobuf:
     
         glog.is(DEBUG3) && glog << group(glog_decode_group_) << "Unencrypted Head (bin): " << head_bits << std::endl;
         glog.is(DEBUG3) && glog << group(glog_decode_group_) << "Unencrypted Body (bin): " << body_bits << std::endl;
-        
-        head_bits.resize(head_size_bits - id_codec_[current_id_codec_]->size(id));
 
+        // shift off ID bits
+        head_bits >>= id_codec_[current_id_codec_]->size(id);
+
+        glog.is(DEBUG3) && glog << group(glog_decode_group_) << "Unencrypted Head after ID bits removal (bin): " << head_bits << std::endl;
+        
         if(codec)
         {
             MessageHandler msg_handler;
             msg_handler.push(msg->GetDescriptor());
-
+            
             codec->base_decode(&head_bits, msg, DCCLFieldCodecBase::HEAD);
             glog.is(DEBUG2) && glog << group(glog_decode_group_) << "after header decode, message is: " << *msg << std::endl;
             codec->base_decode(&body_bits, msg, DCCLFieldCodecBase::BODY);
@@ -510,6 +498,8 @@ void goby::acomms::DCCLCodec::process_cfg()
 {
     if(cfg_.has_crypto_passphrase())
     {
+        if(!crypto_key_.empty())
+            crypto_key_.clear();
 #ifdef HAS_CRYPTOPP
         using namespace CryptoPP;
         
@@ -525,7 +515,16 @@ void goby::acomms::DCCLCodec::process_cfg()
     {
         glog.is(DEBUG1) && glog << group(glog_encode_group_) << "Cryptography disabled, set crypto_passphrase to enable." << std::endl;
     }
-    
+
+    if(cfg_.ccl_compatible())
+    {
+        add_id_codec<LegacyCCLIdentifierCodec>("_ccl");
+        set_id_codec("_ccl");
+    }
+    else
+    {
+        reset_id_codec();
+    }
 }
 
 void goby::acomms::DCCLCodec::info_all(std::ostream* os) const

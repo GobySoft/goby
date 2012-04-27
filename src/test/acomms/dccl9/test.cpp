@@ -108,6 +108,22 @@ int main(int argc, char* argv[])
     codec->encode(&encoded, mini_abort_in);
     codec->decode(encoded, &mini_abort_out);
     assert(mini_abort_out.SerializeAsString() == mini_abort_in.SerializeAsString());
+
+    cfg.set_ccl_compatible(true);
+    codec->set_cfg(cfg);
+
+    codec->validate<NormalDCCL>();
+    codec->info<NormalDCCL>(&goby::glog);
+    NormalDCCL normal_msg, normal_msg_out;
+    normal_msg.set_a(123);
+    normal_msg.set_b(321);
+
+    codec->encode(&encoded, normal_msg);
+    std::cout << goby::util::hex_encode(encoded) << std::endl;
+    assert(goby::util::hex_encode(encoded).substr(0, 2) == "20");
+    codec->decode(encoded, &normal_msg_out);
+    
+    assert(normal_msg.SerializeAsString() == normal_msg_out.SerializeAsString());
     
     std::cout << "all tests passed" << std::endl;
 }

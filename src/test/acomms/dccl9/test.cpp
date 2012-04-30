@@ -25,6 +25,7 @@
 
 #include "goby/acomms/dccl.h"
 #include "goby/acomms/dccl/dccl_field_codec.h"
+#include "goby/acomms/protobuf/ccl.pb.h"
 #include "test.pb.h"
 
 using goby::acomms::operator<<;
@@ -53,6 +54,17 @@ private:
     enum { MINI_ID_SIZE = 6 };
 };
 
+
+bool double_cmp(double a, double b, int precision)
+{
+    int a_whole = a;
+    int b_whole = b;
+
+    int a_part = (a-a_whole)*pow(10.0, precision);
+    int b_part = (b-b_whole)*pow(10.0, precision);
+    
+    return (a_whole == b_whole) && (a_part == b_part);
+}
 
 goby::acomms::Bitset MicroModemMiniPacketDCCLIDCodec::encode(const goby::uint32& wire_value)
 {
@@ -110,6 +122,7 @@ int main(int argc, char* argv[])
     assert(mini_abort_out.SerializeAsString() == mini_abort_in.SerializeAsString());
 
     cfg.set_ccl_compatible(true);
+    cfg.clear_crypto_passphrase();
     codec->set_cfg(cfg);
 
     codec->validate<NormalDCCL>();
@@ -124,6 +137,21 @@ int main(int argc, char* argv[])
     codec->decode(encoded, &normal_msg_out);
     
     assert(normal_msg.SerializeAsString() == normal_msg_out.SerializeAsString());
+
+    codec->validate<goby::acomms::protobuf::CCLMDATState>();
+    codec->info<goby::acomms::protobuf::CCLMDATState>(&goby::glog);
+
+    goby::acomms::protobuf::CCLMDATState state_in, state_out;
+    codec->decode(goby::util::hex_decode("0e86fa11ad20c9011b4432bf47d10000002401042f0e7d87fa111620c95a200a"), &state_out);
+    state_in.set_latitude(25.282416667);
+    state_in.set_longitude(-77.164266667);
+
+    assert(double_cmp(state_in.latitude(), state_out.latitude(), 4));
+    assert(double_cmp(state_in.longitude(), state_out.longitude(), 4));
+    
+    std::cout << "in:" << state_in << std::endl;
+    std::cout << "out:" << state_out << std::endl;
+    
     
     std::cout << "all tests passed" << std::endl;
 }

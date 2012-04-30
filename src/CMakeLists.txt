@@ -203,6 +203,8 @@ if(build_dccllite)
     acomms/dccl/dccl_field_codec_manager.cpp
     acomms/dccl/dccl_type_helper.cpp
     acomms/dccl/dccl_bitset.cpp
+    acomms/dccl/dccl_ccl_compatibility.cpp
+    acomms/dccl/WhoiUtil.cpp
     # COMMON
     common/time.cpp
     common/logger/logger_manipulators.cpp

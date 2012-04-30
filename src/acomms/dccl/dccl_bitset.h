@@ -57,6 +57,7 @@ namespace goby
                             (*this)[i] = true;
                     }
                 }
+
             
             ~Bitset() { } 
 

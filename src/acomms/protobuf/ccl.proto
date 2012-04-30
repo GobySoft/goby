@@ -2,12 +2,64 @@ import "goby/common/protobuf/option_extensions.proto";
 
 package goby.acomms.protobuf;
 
-message CCL_MDAT_STATE
+
+// typedef struct
+// {
+//     unsigned char     mode;
+//     // MDAT_STATE
+//     LATLON_COMPRESSED latitude;
+//     // 3 bytes
+//     LATLON_COMPRESSED longitude;
+//       unsigned char     fix_age
+//       TIME_DATE         time_date;
+//     // 3 bytes;
+//     unsigned char     heading;
+//     // 1.5 degree resolution
+//     unsigned short    mission_mode_depth;
+//     //
+//     unsigned long     faults;
+//     unsigned char     faults_2;
+//     unsigned char     mission_leg;
+//     char              est_velocity;
+//     char              objective_index;
+//     unsigned char     watts_encoded;
+//     LATLON_COMPRESSED lat_goal;
+//     // 3 bytes
+//     LATLON_COMPRESSED lon_goal;
+//     // 3 bytes
+//     unsigned char     battery_percent;
+//     unsigned short    gfi_pitch_oil_encoded;
+//     // 5 bits gfi,6 bits pitch,
+//     // 5 bits oil
+// }
+// MODEM_MSG_DATA_STATE;
+
+message CCLMDATState
 {
   // prefix CCL IDs with 0x0CC1 to get out of normal 0x0000 prefix
-  option (goby.msg).dccl.id = 0x0CC10001; 
+  option (goby.msg).dccl.id = 0x0CC1000E; 
   option (goby.msg).dccl.max_bytes = 32;
   
+  required double latitude = 1 [(goby.field).dccl.codec="_ccl_latloncompressed",
+                                (goby.field).description="Latitude in degrees"];
   
+  required double longitude = 2 [(goby.field).dccl.codec="_ccl_latloncompressed",
+                                 (goby.field).description="Longitude in degrees"];
+
+  required uint32 fix_age = 3 [(goby.field).dccl.codec="_ccl_fix_age",
+                               (goby.field).description="Fix age in seconds"];
   
+  // required uint64 time_date = 4 [(goby.field).description="Microseconds since UNIX 1970/01/01 00:00:00 UTC"];
+  // required double heading = 5 [(goby.field).description="Heading in degrees"];
+  // required uint32 mission_mode_depth = 6;
+  // required uint32 faults = 7;
+  // required uint32 faults_2 = 8;
+  // required uint32 mission_leg = 9;
+  // required int32 est_velocity = 10;
+  // required int32 objective_index = 11;
+  // required int32 watts_encoded = 12;
+  // required double lat_goal = 13;
+  // required double lon_goal = 14;
+  // required uint32 battery_percent = 15;
+  // required uint32 gfi_pitch_oil_encoded = 16;
 }

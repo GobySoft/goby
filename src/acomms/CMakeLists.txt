@@ -11,6 +11,8 @@ set(SRC
   dccl/dccl_field_codec_manager.cpp
   dccl/dccl_type_helper.cpp
   dccl/dccl_bitset.cpp
+  dccl/dccl_ccl_compatibility.cpp
+  dccl/WhoiUtil.cpp
   queue/queue.cpp
   queue/queue_manager.cpp
   amac/mac_manager.cpp

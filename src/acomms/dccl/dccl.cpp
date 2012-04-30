@@ -496,10 +496,10 @@ void goby::acomms::DCCLCodec::load_shared_library_codecs(void* dl_handle)
 
 void goby::acomms::DCCLCodec::process_cfg()
 {
+    if(!crypto_key_.empty())
+        crypto_key_.clear();
     if(cfg_.has_crypto_passphrase())
     {
-        if(!crypto_key_.empty())
-            crypto_key_.clear();
 #ifdef HAS_CRYPTOPP
         using namespace CryptoPP;
         
@@ -520,6 +520,9 @@ void goby::acomms::DCCLCodec::process_cfg()
     {
         add_id_codec<LegacyCCLIdentifierCodec>("_ccl");
         set_id_codec("_ccl");
+
+        DCCLFieldCodecManager::add<LegacyCCLLatLonCompressedCodec>("_ccl_latloncompressed");
+        DCCLFieldCodecManager::add<LegacyCCLFixAgeCodec>("_ccl_fix_age");
     }
     else
     {

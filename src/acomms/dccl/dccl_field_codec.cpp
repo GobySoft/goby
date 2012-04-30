@@ -157,13 +157,10 @@ void goby::acomms::DCCLFieldCodecBase::field_decode(Bitset* bits,
         glog.is(DEBUG2) && glog << group(DCCLCodec::glog_decode_group()) <<  "Starting decode for field: " << field->DebugString() << std::flush;
 
     Bitset these_bits(bits);
-//    BitsHandler bits_handler(&these_bits, bits);
 
     unsigned bits_to_transfer = 0;
     field_min_size(&bits_to_transfer, field);
-    these_bits.get_more_bits(bits_to_transfer);
-    
-//    bits_handler.transfer_bits(bits_to_transfer);
+    these_bits.get_more_bits(bits_to_transfer);    
     
     glog.is(DEBUG2) && glog  << group(DCCLCodec::glog_decode_group()) << "... using these bits: " << these_bits << std::endl;
 
@@ -189,11 +186,9 @@ void goby::acomms::DCCLFieldCodecBase::field_decode_repeated(Bitset* bits,
         glog.is(DEBUG2) && glog  << group(DCCLCodec::glog_decode_group()) <<  "Starting repeated decode for field: " << field->DebugString();
     
     Bitset these_bits(bits);
-//    BitsHandler bits_handler(&these_bits, bits);
     
     unsigned bits_to_transfer = 0;
     field_min_size(&bits_to_transfer, field);
-//    bits_handler.transfer_bits(bits_to_transfer);
     these_bits.get_more_bits(bits_to_transfer);
     
     glog.is(DEBUG2) && glog  << group(DCCLCodec::glog_decode_group()) << "using these " <<
@@ -393,12 +388,9 @@ void goby::acomms::DCCLFieldCodecBase::any_decode_repeated(Bitset* repeated_bits
 {
     for(unsigned i = 0, n = dccl_field_options().max_repeat(); i < n; ++i)
     {
-        Bitset these_bits(repeated_bits);
-        
-        //BitsHandler bits_handler(&these_bits, repeated_bits);
+        Bitset these_bits(repeated_bits);        
         these_bits.get_more_bits(min_size());
-//        bits_handler.transfer_bits(min_size());
-
+        
         boost::any value;
         
         if(wire_values->size() > i)

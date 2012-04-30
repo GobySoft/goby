@@ -34,37 +34,127 @@ namespace goby
         {
           private:
             Bitset encode()
-            {
-                return DCCLDefaultIdentifierCodec::encode().prepend(
-                    Bitset(BITS_IN_BYTE, DCCL_CCL_HEADER));
-            }
+            { return encode(0); }
             
             Bitset encode(const uint32& wire_value)
             {
-                return DCCLDefaultIdentifierCodec::encode(wire_value).prepend(
-                    Bitset(BITS_IN_BYTE, DCCL_CCL_HEADER));
+                if((wire_value & 0xFFFF0000) == CCL_DCCL_ID_PREFIX)
+                {
+                    // CCL message
+                    return Bitset(BITS_IN_BYTE, wire_value & 0x0000FFFF);
+                }
+                else
+                {
+                    // DCCL message
+                    return DCCLDefaultIdentifierCodec::encode(wire_value).prepend(
+                        Bitset(BITS_IN_BYTE, DCCL_CCL_HEADER));
+                }
+                
             }
                 
             uint32 decode(Bitset* bits)
             {
-                (*bits) >>= BITS_IN_BYTE;
-                return DCCLDefaultIdentifierCodec::decode(bits);
+                std::cout << *bits << std::endl;
+                unsigned ccl_id = bits->to_ulong();
+                std::cout << ccl_id << std::endl;
+                
+                if(ccl_id == DCCL_CCL_HEADER)
+                {
+                    // DCCL message
+                    bits->get_more_bits(DCCLDefaultIdentifierCodec::min_size());
+                    (*bits) >>= BITS_IN_BYTE;
+                    std::cout << *bits << std::endl;
+                    return DCCLDefaultIdentifierCodec::decode(bits);
+                }
+                else
+                {
+                    // CCL message
+                    return CCL_DCCL_ID_PREFIX + ccl_id;
+                }
             }
             
             unsigned size()
-            { return BITS_IN_BYTE + DCCLDefaultIdentifierCodec::size(); }
+            { return size(0); }
             
             unsigned size(const uint32& field_value)
-            { return BITS_IN_BYTE + DCCLDefaultIdentifierCodec::size(field_value); }
+            {
+                if((field_value & 0xFFFF0000) == CCL_DCCL_ID_PREFIX)
+                {
+                    // CCL message
+                    return BITS_IN_BYTE;
+                }
+                else
+                {
+                    return BITS_IN_BYTE +
+                        DCCLDefaultIdentifierCodec::size(field_value);
+                }
+            }
             
             unsigned max_size()
             { return BITS_IN_BYTE + DCCLDefaultIdentifierCodec::max_size(); }
 
             unsigned min_size()
-            { return BITS_IN_BYTE + DCCLDefaultIdentifierCodec::min_size(); }
+            { return BITS_IN_BYTE; }
 
+            // prefixes (goby.msg).dccl.id to indicate that this DCCL
+            // message is an encoding of a legacy CCL message
+            enum { CCL_DCCL_ID_PREFIX = 0x0CC10000 };
         };
 
+        class LegacyCCLLatLonCompressedCodec : public DCCLTypedFixedFieldCodec<double>
+        {
+          private:
+            Bitset encode();
+            Bitset encode(const double& wire_value);
+            double decode(Bitset* bits);
+            unsigned size();
+            enum { LATLON_COMPRESSED_BYTE_SIZE = 3 };
+            enum { DECIMAL_PRECISION = 5 };
+            
+        };
+
+        class LegacyCCLFixAgeCodec : public DCCLDefaultArithmeticFieldCodec<uint32>
+        {
+          private:
+            Bitset encode()
+            {
+                return encode(max());
+            }
+            
+            Bitset encode(const uint32& wire_value)
+            {
+                return DCCLDefaultArithmeticFieldCodec<uint32>::encode(
+                    std::min<unsigned char>(max(), wire_value / SCALE_FACTOR));
+            }
+            
+            uint32 decode(Bitset* bits)
+            {
+                return SCALE_FACTOR *
+                    DCCLDefaultArithmeticFieldCodec<uint32>::decode(bits);
+            }
+                        
+            double max() { return (1 << BITS_IN_BYTE) - 1; }
+            double min() { return 0; }
+            void validate() { }
+            
+            enum { SCALE_FACTOR = 4 };
+            
+        };
+        
+            
+        class LegacyCCLTimeDateCodec : public DCCLTypedFixedFieldCodec<double>
+        {
+          private:
+            Bitset encode();
+            Bitset encode(const double& wire_value);
+            double decode(Bitset* bits);
+            unsigned size();
+        };
+
+        
+        
+
+        
     }
 }
 

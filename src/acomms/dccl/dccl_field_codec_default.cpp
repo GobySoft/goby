@@ -272,11 +272,13 @@ goby::acomms::Bitset goby::acomms::DCCLDefaultBytesCodec::encode(const std::stri
     Bitset bits;
     bits.from_byte_string(wire_value);
     bits.resize(max_size());
-    bits <<= min_size();
-
+    
     if(!this_field()->is_required())
+    {
+        bits <<= 1;
         bits.set(0, true); // presence bit
-        
+    }
+    
     return bits;
 }
 
@@ -294,34 +296,40 @@ unsigned goby::acomms::DCCLDefaultBytesCodec::size(const std::string& field_valu
 
 std::string goby::acomms::DCCLDefaultBytesCodec::decode(Bitset* bits)
 {
-    bool present = (this_field()->is_required()) ? true : bits->to_ulong();
-    if(present)
+    if(!this_field()->is_required())
     {
-        // grabs more bits to add to the MSBs of `bits`
-        bits->get_more_bits(max_size()- min_size());
-
-        Bitset bytes_body_bits = *bits;
-        bytes_body_bits >>= min_size();
-        bytes_body_bits.resize(bits->size() - min_size());
+        if(bits->to_ulong())
+        {
+            // grabs more bits to add to the MSBs of `bits`
+            bits->get_more_bits(max_size()- min_size());
+            
+            Bitset bytes_body_bits = *bits;
+            bytes_body_bits >>= min_size();
+            bytes_body_bits.resize(bits->size() - min_size());
         
-        return bytes_body_bits.to_byte_string();
+            return bytes_body_bits.to_byte_string();
+        }
+        else
+        {
+            throw(DCCLNullValueException());
+        }
     }
     else
     {
-        throw(DCCLNullValueException());
+        return bits->to_byte_string();
     }
-    
 }
 
 unsigned goby::acomms::DCCLDefaultBytesCodec::max_size()
 {
-    return min_size() + dccl_field_options().max_length() * BITS_IN_BYTE;
+    return dccl_field_options().max_length() * BITS_IN_BYTE +
+        (this_field()->is_required() ? 0 : 1); // presence bit?
 }
 
 unsigned goby::acomms::DCCLDefaultBytesCodec::min_size()
 {
     if(this_field()->is_required())
-        return 0;
+        return max_size();
     else
         return 1; // presence bit
 }

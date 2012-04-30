@@ -22,6 +22,7 @@
 
 
 // tests usage of a custom DCCL ID codec
+// including Legacy CCL
 
 #include "goby/acomms/dccl.h"
 #include "goby/acomms/dccl/dccl_field_codec.h"
@@ -142,7 +143,8 @@ int main(int argc, char* argv[])
     codec->info<goby::acomms::protobuf::CCLMDATState>(&goby::glog);
 
     goby::acomms::protobuf::CCLMDATState state_in, state_out;
-    codec->decode(goby::util::hex_decode("0e86fa11ad20c9011b4432bf47d10000002401042f0e7d87fa111620c95a200a"), &state_out);
+    std::string test_state_encoded = "0e86fa11ad20c9011b4432bf47d10000002401042f0e7d87fa111620c95a200a";
+    codec->decode(goby::util::hex_decode(test_state_encoded), &state_out);
     state_in.set_latitude(25.282416667);
     state_in.set_longitude(-77.164266667);
     state_in.set_fix_age(4);
@@ -156,9 +158,19 @@ int main(int argc, char* argv[])
     state_in.set_heading(270);
     state_in.set_depth(2323);
     state_in.set_mission_mode(goby::acomms::protobuf::CCLMDATState::NORMAL);
+    state_in.set_faults(goby::util::hex_decode("00000024"));
+    state_in.set_faults_2(goby::util::hex_decode("01"));
+    state_in.set_mission_leg(4);
+    state_in.set_est_velocity(1.88);
+    state_in.set_objective_index(goby::util::hex_decode("0E"));
+    state_in.set_watts(500);
+    state_in.set_lat_goal(25.282566667);
+    state_in.set_lon_goal(-77.164266667);
+    state_in.set_battery_percent(90);
+    state_in.mutable_gfi_pitch_oil()->set_gfi(0);
+    state_in.mutable_gfi_pitch_oil()->set_pitch(6);
+    state_in.mutable_gfi_pitch_oil()->set_oil(55);
     
-    std::cout << "in:" << state_in << std::endl;
-    std::cout << "out:" << state_out << std::endl;
 
     assert(double_cmp(state_in.latitude(), state_out.latitude(), 4));
     assert(double_cmp(state_in.longitude(), state_out.longitude(), 4));
@@ -168,6 +180,19 @@ int main(int argc, char* argv[])
            goby::util::unbiased_round(state_out.heading(),0));
     assert(double_cmp(state_in.depth(), state_out.depth(), 1));
     assert(state_in.mission_mode() == state_out.mission_mode());
+
+    std::string state_encoded;
+    codec->encode(&state_encoded, state_in);
+
+    goby::acomms::protobuf::CCLMDATState state_out_2;
+    codec->decode(state_encoded, &state_out_2);
+
+    std::cout << "in:" << state_in << std::endl;
+    std::cout << test_state_encoded << std::endl;
+    std::cout << goby::util::hex_encode(state_encoded) << std::endl;
+    std::cout << "out:" << state_out << std::endl;
+    std::cout << "out2: " << state_out_2 << std::endl;
+                  
     
     std::cout << goby::util::hex_encode(state_out.faults()) << std::endl;
     std::cout << goby::util::hex_encode(state_out.faults_2()) << std::endl;

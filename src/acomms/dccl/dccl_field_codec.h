@@ -71,7 +71,7 @@ namespace goby
             google::protobuf::FieldDescriptor::Type field_type() const  { return field_type_; }
             /// \brief the C++ type used "on the wire". This is the type visible <i>after</i> pre_encode and <i>before</i> post_decode functions are called.
             ///
-            /// The wire type allows codecs to make type changes (e.g. from string to integer) before reusing another codec that knows how to encode that wire type (e.g. DCCLDefaultArithmeticFieldCodec)
+            /// The wire type allows codecs to make type changes (e.g. from string to integer) before reusing another codec that knows how to encode that wire type (e.g. DCCLDefaultNumericFieldCodec)
             /// \return the C++ type used to encode and decode. See http://code.google.com/apis/protocolbuffers/docs/reference/cpp/google.protobuf.descriptor.html#FieldDescriptor.CppType.details
             google::protobuf::FieldDescriptor::CppType wire_type() const  { return wire_type_; }
 

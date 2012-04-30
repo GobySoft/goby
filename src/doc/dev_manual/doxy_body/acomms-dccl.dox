@@ -264,21 +264,21 @@ DCCL field options:
     <td>precision</td>
     <td>int32</td>
     <td>0</td>
-    <td>goby::acomms::DCCLDefaultArithmeticFieldCodec (double, float)</td>
+    <td>goby::acomms::DCCLDefaultNumericFieldCodec (double, float)</td>
     <td>Number of decimal digits of precision to keep (can be negative).</td>
   </tr>
   <tr>
     <td>min</td>
     <td>double</td>
     <td>0</td>
-    <td>goby::acomms::DCCLDefaultArithmeticFieldCodec (double, float, int32, uint32, int64, uint64, fixed32, fixed64, sfixed32, sfixed64)</td>
+    <td>goby::acomms::DCCLDefaultNumericFieldCodec (double, float, int32, uint32, int64, uint64, fixed32, fixed64, sfixed32, sfixed64)</td>
     <td>Minimum value that can be encoded in this field.</td>
   </tr>
   <tr>
     <td>max</td>
     <td>double</td>
     <td>0</td>
-    <td>goby::acomms::DCCLDefaultArithmeticFieldCodec (double, float, int32, uint32, int64, uint64, fixed32, fixed64, sfixed32, sfixed64)</td>
+    <td>goby::acomms::DCCLDefaultNumericFieldCodec (double, float, int32, uint32, int64, uint64, fixed32, fixed64, sfixed32, sfixed64)</td>
     <td>Maximum value that can be encoded in this field.</td>
   </tr>
   <tr>

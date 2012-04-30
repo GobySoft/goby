@@ -87,13 +87,13 @@ goby::acomms::DCCLCodec::DCCLCodec()
 void goby::acomms::DCCLCodec::set_default_codecs()
 {
     using google::protobuf::FieldDescriptor;
-    DCCLFieldCodecManager::add<DCCLDefaultArithmeticFieldCodec<double> >(DEFAULT_CODEC_NAME);
-    DCCLFieldCodecManager::add<DCCLDefaultArithmeticFieldCodec<float> >(DEFAULT_CODEC_NAME);
+    DCCLFieldCodecManager::add<DCCLDefaultNumericFieldCodec<double> >(DEFAULT_CODEC_NAME);
+    DCCLFieldCodecManager::add<DCCLDefaultNumericFieldCodec<float> >(DEFAULT_CODEC_NAME);
     DCCLFieldCodecManager::add<DCCLDefaultBoolCodec>(DEFAULT_CODEC_NAME);
-    DCCLFieldCodecManager::add<DCCLDefaultArithmeticFieldCodec<int32> >(DEFAULT_CODEC_NAME);
-    DCCLFieldCodecManager::add<DCCLDefaultArithmeticFieldCodec<int64> >(DEFAULT_CODEC_NAME);
-    DCCLFieldCodecManager::add<DCCLDefaultArithmeticFieldCodec<uint32> >(DEFAULT_CODEC_NAME);
-    DCCLFieldCodecManager::add<DCCLDefaultArithmeticFieldCodec<uint64> >(DEFAULT_CODEC_NAME);
+    DCCLFieldCodecManager::add<DCCLDefaultNumericFieldCodec<int32> >(DEFAULT_CODEC_NAME);
+    DCCLFieldCodecManager::add<DCCLDefaultNumericFieldCodec<int64> >(DEFAULT_CODEC_NAME);
+    DCCLFieldCodecManager::add<DCCLDefaultNumericFieldCodec<uint32> >(DEFAULT_CODEC_NAME);
+    DCCLFieldCodecManager::add<DCCLDefaultNumericFieldCodec<uint64> >(DEFAULT_CODEC_NAME);
     DCCLFieldCodecManager::add<DCCLDefaultStringCodec, FieldDescriptor::TYPE_STRING>(DEFAULT_CODEC_NAME);
     DCCLFieldCodecManager::add<DCCLDefaultBytesCodec, FieldDescriptor::TYPE_BYTES>(DEFAULT_CODEC_NAME);
     DCCLFieldCodecManager::add<DCCLDefaultEnumCodec>(DEFAULT_CODEC_NAME);

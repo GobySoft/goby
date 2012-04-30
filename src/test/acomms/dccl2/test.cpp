@@ -36,33 +36,43 @@ using goby::acomms::Bitset;
 class CustomCodec : public goby::acomms::DCCLTypedFixedFieldCodec<CustomMsg>
 {
 private:
-    unsigned size() { return A_SIZE + B_SIZE; }
+    unsigned size() { return (part() == goby::acomms::MessageHandler::HEAD) ? 0 : A_SIZE + B_SIZE; }
     Bitset encode() { return Bitset(size()); }
     
     Bitset encode(const CustomMsg& msg)
         {
-            Bitset a(A_SIZE, static_cast<unsigned long>(msg.a()));
-            Bitset b(B_SIZE, static_cast<unsigned long>(msg.b()));
-            
-            std::cout << "a: " << a << std::endl;
-            std::cout << "b: " << b  << std::endl;
-            
-            a.append(b);
-            return a;
+            if(part() == goby::acomms::MessageHandler::HEAD)
+            { return encode(); }
+            else
+            {
+                Bitset a(A_SIZE, static_cast<unsigned long>(msg.a()));
+                Bitset b(B_SIZE, static_cast<unsigned long>(msg.b()));
+                
+                std::cout << "a: " << a << std::endl;
+                std::cout << "b: " << b  << std::endl;
+
+                a.append(b);
+                return a;
+            }
         }    
     
     CustomMsg decode(Bitset* bits)
         {
-            Bitset a = *bits;
-            a.resize(A_SIZE);
-            Bitset b = *bits;
-            b >>= A_SIZE;
-            b.resize(B_SIZE);
-            
-            CustomMsg msg;
-            msg.set_a(a.to_ulong());
-            msg.set_b(b.to_ulong());
-            return msg;
+            if(part() == goby::acomms::MessageHandler::HEAD)
+            { throw(goby::acomms::DCCLNullValueException()); }
+            else
+            {
+                Bitset a = *bits;
+                a.resize(A_SIZE);
+                Bitset b = *bits;
+                b >>= A_SIZE;
+                b.resize(B_SIZE);
+                
+                CustomMsg msg;
+                msg.set_a(a.to_ulong());
+                msg.set_b(b.to_ulong());
+                return msg;
+            }
         }
     
     

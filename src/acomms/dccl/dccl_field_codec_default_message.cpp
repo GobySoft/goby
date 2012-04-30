@@ -165,7 +165,9 @@ std::string goby::acomms::DCCLDefaultMessageCodec::info()
 bool goby::acomms::DCCLDefaultMessageCodec::check_field(const google::protobuf::FieldDescriptor* field)
 {
     if(!field)
+    {
         return true;
+    }
     else
     {
         DCCLFieldOptions dccl_field_options = field->options().GetExtension(goby::field).dccl();

@@ -111,7 +111,7 @@ namespace goby
             
         };
 
-        class LegacyCCLFixAgeCodec : public DCCLDefaultArithmeticFieldCodec<uint32>
+        class LegacyCCLFixAgeCodec : public DCCLDefaultNumericFieldCodec<uint32>
         {
           private:
             Bitset encode()
@@ -121,14 +121,14 @@ namespace goby
             
             Bitset encode(const uint32& wire_value)
             {
-                return DCCLDefaultArithmeticFieldCodec<uint32>::encode(
+                return DCCLDefaultNumericFieldCodec<uint32>::encode(
                     std::min<unsigned char>(max(), wire_value / SCALE_FACTOR));
             }
             
             uint32 decode(Bitset* bits)
             {
                 return SCALE_FACTOR *
-                    DCCLDefaultArithmeticFieldCodec<uint32>::decode(bits);
+                    DCCLDefaultNumericFieldCodec<uint32>::decode(bits);
             }
                         
             double max() { return (1 << BITS_IN_BYTE) - 1; }

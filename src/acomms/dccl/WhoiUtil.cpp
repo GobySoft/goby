@@ -1,5 +1,7 @@
 #include <time.h>   // P.Brodsky
 #include <stdio.h>
+#include <iostream>
+#include <iomanip>
 
 #include "WhoiUtil.h"
 
@@ -9,8 +11,10 @@ LATLON_COMPRESSED Encode_latlon(double latlon_in) {
   double encoded;
   encoded = latlon_in * ((double)(0x007FFFFFL)/180.0);
   encoded += (encoded > 0.0) ? 0.5 : -0.5;
-  // deal with truncation 
+  // deal with truncation
+  std::cout << std::setprecision(16) << encoded << std::endl;
   out.as_long =(long int) encoded;
+  std::cout << std::hex << out.as_long << std::endl;
   return(out.as_compressed);
 } 
 
@@ -19,21 +23,11 @@ double Decode_latlon(LATLON_COMPRESSED latlon_in) {
   LONG_AND_COMP in; 
   in.as_long = 0;   //Clear the MSB
   in.as_compressed = latlon_in; 
-  // this logic does not work for 64 bit architecture 
-  //  if (in.as_long & 0x00800000L) // sign extend 
-  //  in.as_long |= 0xFF000000L; 
-  long all_f = -1; 
-  if (in.as_long & 0x00800000L) // sign extend
-    //  in.as_long |= 0xFFFFFFFFFF000000L; 
-    in.as_long |= (all_f & !0xFFFFFL); 
 
-  // P.Brodsky - wrap first (double) below
-  //  return((double)in.as_long * (180.0/(double)(0x007FFFFFL)));
-  // H. Schmidt version 
-  double dval = (double)in.as_long * (180.0/(double)(0x007FFFFFL));
-  if (dval > 180.0)
-    dval -= 360.0; 
-  return(dval);
+  if (in.as_long & 0x00800000L) // if is negative,
+      in.as_long |= ~0xFFFFFFL; // sign extend 
+  
+  return (double)in.as_long * (180.0/(double)(0x007FFFFFL));
 }
 
 unsigned char Encode_heading(float heading) 
@@ -52,7 +46,7 @@ double Decode_heading(unsigned char heading)
  */ 
 char Encode_est_velocity(float est_velocity) 
 {
-  return((char)(est_velocity * 25.0));
+    return((char)(est_velocity * 25.0 + 0.5)); // added 0.5 to perform basic positive rounding
 } 
 
 float Decode_est_velocity(char est_velocity) 

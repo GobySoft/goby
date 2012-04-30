@@ -106,9 +106,7 @@ namespace goby
             Bitset encode(const double& wire_value);
             double decode(Bitset* bits);
             unsigned size();
-            enum { LATLON_COMPRESSED_BYTE_SIZE = 3 };
-            enum { DECIMAL_PRECISION = 5 };
-            
+            enum { LATLON_COMPRESSED_BYTE_SIZE = 3 };            
         };
 
         class LegacyCCLFixAgeCodec : public DCCLDefaultNumericFieldCodec<uint32>

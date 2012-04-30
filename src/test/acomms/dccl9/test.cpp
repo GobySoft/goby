@@ -164,8 +164,8 @@ int main(int argc, char* argv[])
     state_in.set_est_velocity(1.88);
     state_in.set_objective_index(goby::util::hex_decode("0E"));
     state_in.set_watts(500);
-    state_in.set_lat_goal(25.282566667);
-    state_in.set_lon_goal(-77.164266667);
+    state_in.set_lat_goal(25.282440815262891);
+    state_in.set_lon_goal(-77.167505880296929);
     state_in.set_battery_percent(90);
     state_in.mutable_gfi_pitch_oil()->set_gfi(0);
     state_in.mutable_gfi_pitch_oil()->set_pitch(6);
@@ -190,9 +190,12 @@ int main(int argc, char* argv[])
     std::cout << "in:" << state_in << std::endl;
     std::cout << test_state_encoded << std::endl;
     std::cout << goby::util::hex_encode(state_encoded) << std::endl;
+    std::cout << std::setprecision(16) << state_out.lon_goal() << std::endl;
     std::cout << "out:" << state_out << std::endl;
     std::cout << "out2: " << state_out_2 << std::endl;
-                  
+
+    assert(state_out.SerializeAsString() == state_out_2.SerializeAsString());
+    assert(test_state_encoded == goby::util::hex_encode(state_encoded));
     
     std::cout << goby::util::hex_encode(state_out.faults()) << std::endl;
     std::cout << goby::util::hex_encode(state_out.faults_2()) << std::endl;

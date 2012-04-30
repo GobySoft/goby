@@ -45,8 +45,7 @@ double goby::acomms::LegacyCCLLatLonCompressedCodec::decode(Bitset* bits)
 {    
     LONG_AND_COMP decoded;
     decoded.as_long = static_cast<long>(bits->to_ulong());
-    return goby::util::unbiased_round(Decode_latlon(decoded.as_compressed),
-                                      DECIMAL_PRECISION);
+    return Decode_latlon(decoded.as_compressed);
 }
 
 unsigned goby::acomms::LegacyCCLLatLonCompressedCodec::size()
@@ -117,7 +116,10 @@ float goby::acomms::LegacyCCLDepthCodec::decode(Bitset* bits)
 // LegacyCCLVelocityCodec
 //
 goby::acomms::Bitset goby::acomms::LegacyCCLVelocityCodec::encode(const float& wire_value)
-{ return Bitset(size(), Encode_est_velocity(wire_value)); } 
+{
+    std::cout << Encode_est_velocity(wire_value) << std::endl;
+    return Bitset(size(), Encode_est_velocity(wire_value));
+} 
 
 float goby::acomms::LegacyCCLVelocityCodec::decode(Bitset* bits)
 { return Decode_est_velocity(bits->to_ulong()); }

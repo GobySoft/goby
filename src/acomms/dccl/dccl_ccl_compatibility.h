@@ -25,6 +25,7 @@
 
 #include "dccl_field_codec_default.h"
 #include "goby/acomms/acomms_constants.h"
+#include "goby/acomms/protobuf/ccl.pb.h"
 
 namespace goby
 {
@@ -54,16 +55,13 @@ namespace goby
                 
             uint32 decode(Bitset* bits)
             {
-                std::cout << *bits << std::endl;
                 unsigned ccl_id = bits->to_ulong();
-                std::cout << ccl_id << std::endl;
                 
                 if(ccl_id == DCCL_CCL_HEADER)
                 {
                     // DCCL message
                     bits->get_more_bits(DCCLDefaultIdentifierCodec::min_size());
                     (*bits) >>= BITS_IN_BYTE;
-                    std::cout << *bits << std::endl;
                     return DCCLDefaultIdentifierCodec::decode(bits);
                 }
                 else
@@ -142,18 +140,69 @@ namespace goby
         };
         
             
-        class LegacyCCLTimeDateCodec : public DCCLTypedFixedFieldCodec<double>
+        class LegacyCCLTimeDateCodec : public DCCLTypedFixedFieldCodec<uint64>
         {
           private:
             Bitset encode();
-            Bitset encode(const double& wire_value);
-            double decode(Bitset* bits);
+            Bitset encode(const uint64& wire_value);
+            uint64 decode(Bitset* bits);
             unsigned size();
+
+            enum { MICROSECONDS_IN_SECOND = 1000000 };
+            enum { TIME_DATE_COMPRESSED_BYTE_SIZE = 3 };
+            
+                
+            
+        };
+
+        class LegacyCCLHeadingCodec : public DCCLTypedFixedFieldCodec<float>
+        {
+          private:
+            Bitset encode() { return encode(0); }
+            Bitset encode(const float& wire_value);
+            float decode(Bitset* bits);
+            unsigned size() { return BITS_IN_BYTE; }
         };
 
         
-        
+        class LegacyCCLDepthCodec : public DCCLTypedFixedFieldCodec<float>
+        {
+          private:
+            Bitset encode() { return encode(0); }
+            Bitset encode(const float& wire_value);
+            float decode(Bitset* bits);
+            unsigned size() { return 13; }
+        };
 
+        class LegacyCCLVelocityCodec : public DCCLTypedFixedFieldCodec<float>
+        {
+          private:
+            Bitset encode() { return encode(0); }
+            Bitset encode(const float& wire_value);
+            float decode(Bitset* bits);
+            unsigned size() { return BITS_IN_BYTE; }
+        };
+
+        class LegacyCCLWattsCodec : public DCCLTypedFixedFieldCodec<float>
+        {
+          private:
+            Bitset encode() { return encode(0); }
+            Bitset encode(const float& wire_value);
+            float decode(Bitset* bits);
+            unsigned size() { return BITS_IN_BYTE; }
+        };
+
+        class LegacyCCLGFIPitchOilCodec : public DCCLTypedFixedFieldCodec<protobuf::CCLMDATState::GFIPitchOil>
+        {
+          private:
+            Bitset encode() { return encode(protobuf::CCLMDATState::GFIPitchOil()); }
+            Bitset encode(const protobuf::CCLMDATState::GFIPitchOil& wire_value);
+            protobuf::CCLMDATState::GFIPitchOil decode(Bitset* bits);
+            unsigned size() { return GFI_PITCH_OIL_COMPRESSED_BYTE_SIZE*BITS_IN_BYTE; }
+            enum { GFI_PITCH_OIL_COMPRESSED_BYTE_SIZE =2};
+                        
+        };
+        
         
     }
 }

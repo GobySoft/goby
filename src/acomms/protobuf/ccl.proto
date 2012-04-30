@@ -49,17 +49,46 @@ message CCLMDATState
   required uint32 fix_age = 3 [(goby.field).dccl.codec="_ccl_fix_age",
                                (goby.field).description="Fix age in seconds"];
   
-  // required uint64 time_date = 4 [(goby.field).description="Microseconds since UNIX 1970/01/01 00:00:00 UTC"];
-  // required double heading = 5 [(goby.field).description="Heading in degrees"];
-  // required uint32 mission_mode_depth = 6;
-  // required uint32 faults = 7;
-  // required uint32 faults_2 = 8;
-  // required uint32 mission_leg = 9;
-  // required int32 est_velocity = 10;
-  // required int32 objective_index = 11;
-  // required int32 watts_encoded = 12;
-  // required double lat_goal = 13;
-  // required double lon_goal = 14;
-  // required uint32 battery_percent = 15;
-  // required uint32 gfi_pitch_oil_encoded = 16;
+  required uint64 time_date = 4 [(goby.field).dccl.codec="_ccl_time_date",
+                                 (goby.field).description="Microseconds since UNIX 1970/01/01 00:00:00 UTC"];
+  required float heading = 5 [(goby.field).dccl.codec="_ccl_heading",
+                               (goby.field).description="Heading in degrees"];
+  required float depth = 6 [(goby.field).dccl.codec="_ccl_depth",
+                            (goby.field).description="Depth in meters"];
+
+
+  enum MissionMode
+  {
+    MISSION_COMPLETED = 0;
+    MANUAL_MODE = 1;
+    TEST = 2;
+    FAULT = 3;
+    UNKNOWN_MODE_4 = 4;
+    REDIRECT_MISSION_IN_PROGRESS = 5;
+    NORMAL = 6;
+    UNKNOWN_MODE_7 = 7;
+  };
+  
+  required MissionMode mission_mode = 7;
+  
+  required bytes faults = 8 [(goby.field).dccl.max_length=4];
+  required bytes faults_2 = 9 [(goby.field).dccl.max_length=1];
+  required uint32 mission_leg = 10 [(goby.field).dccl.max=255, (goby.field).dccl.min=0];
+  required float est_velocity = 11 [(goby.field).dccl.codec="_ccl_velocity",
+                                    (goby.field).description="Velocity from ADCP or prop turns in m/s"];
+  required bytes objective_index = 12 [(goby.field).dccl.max_length=1];
+  required float watts = 13 [(goby.field).dccl.codec="_ccl_watts"];
+  required double lat_goal = 14 [(goby.field).dccl.codec="_ccl_latloncompressed",
+                                 (goby.field).description="Latitude goal in degrees"];
+  required double lon_goal = 15 [(goby.field).dccl.codec="_ccl_latloncompressed",
+                                 (goby.field).description="Longitude goal in degrees"];
+  required uint32 battery_percent = 16 [(goby.field).dccl.max=255, (goby.field).dccl.min=0];
+
+  message GFIPitchOil
+  {
+    required float gfi = 1 [(goby.field).description="Percentage ground fault (0-100)"];
+    required float pitch = 2 [(goby.field).description="Pitch of the vehicle in degrees"];
+    required float oil = 3 [(goby.field).description="Percentage of the available capacity remaining in the oil compensation system, or 0 if no such system"];
+  }
+  required GFIPitchOil gfi_pitch_oil = 17 [(goby.field).dccl.codec="_ccl_gfi_pitch_oil"];
 }

@@ -169,15 +169,26 @@ bool goby::acomms::DCCLDefaultMessageCodec::check_field(const google::protobuf::
     else
     {
         DCCLFieldOptions dccl_field_options = field->options().GetExtension(goby::field).dccl();
-        if(dccl_field_options.omit() // omit
-            || (field->cpp_type() != google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE // for non message fields, skip if header / body mismatch
-                && ((part() == HEAD && !dccl_field_options.in_head())
-                    || (part() == BODY && dccl_field_options.in_head()))))
+        if(dccl_field_options.omit()) // omit
+        {
+            return false;
+        }
+        else if(MessageHandler::current_part() == MessageHandler::UNKNOWN) // part not yet explicitly specified
+        {
+            if(field->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE &&
+               DCCLFieldCodecManager::find(field)->name() == DCCLCodec::DEFAULT_CODEC_NAME) // default message codec will expand
+                return true;
+            else if((part() == MessageHandler::HEAD && !dccl_field_options.in_head())
+                    || (part() == MessageHandler::BODY && dccl_field_options.in_head()))
+                return false;
+            else
+                return true;
+        }
+        else if(MessageHandler::current_part() != part()) // part specified and doesn't match
             return false;
         else
             return true;
-    }
-    
+    }    
 }
 
 

@@ -36,43 +36,33 @@ using goby::acomms::Bitset;
 class CustomCodec : public goby::acomms::DCCLTypedFixedFieldCodec<CustomMsg>
 {
 private:
-    unsigned size() { return (part() == HEAD) ? 0 : A_SIZE + B_SIZE; }
+    unsigned size() { return A_SIZE + B_SIZE; }
     Bitset encode() { return Bitset(size()); }
     
     Bitset encode(const CustomMsg& msg)
         {
-            if(part() == HEAD)
-            { return encode(); }
-            else
-            {
-                Bitset a(A_SIZE, static_cast<unsigned long>(msg.a()));
-                Bitset b(B_SIZE, static_cast<unsigned long>(msg.b()));
-                
-                std::cout << "a: " << a << std::endl;
-                std::cout << "b: " << b  << std::endl;
-
-                a.append(b);
-                return a;
-            }
+            Bitset a(A_SIZE, static_cast<unsigned long>(msg.a()));
+            Bitset b(B_SIZE, static_cast<unsigned long>(msg.b()));
+            
+            std::cout << "a: " << a << std::endl;
+            std::cout << "b: " << b  << std::endl;
+            
+            a.append(b);
+            return a;
         }    
     
     CustomMsg decode(Bitset* bits)
         {
-            if(part() == HEAD)
-            { throw(goby::acomms::DCCLNullValueException()); }
-            else
-            {
-                Bitset a = *bits;
-                a.resize(A_SIZE);
-                Bitset b = *bits;
-                b >>= A_SIZE;
-                b.resize(B_SIZE);
-                
-                CustomMsg msg;
-                msg.set_a(a.to_ulong());
-                msg.set_b(b.to_ulong());
-                return msg;
-            }
+            Bitset a = *bits;
+            a.resize(A_SIZE);
+            Bitset b = *bits;
+            b >>= A_SIZE;
+            b.resize(B_SIZE);
+            
+            CustomMsg msg;
+            msg.set_a(a.to_ulong());
+            msg.set_b(b.to_ulong());
+            return msg;
         }
     
     

@@ -145,13 +145,33 @@ int main(int argc, char* argv[])
     codec->decode(goby::util::hex_decode("0e86fa11ad20c9011b4432bf47d10000002401042f0e7d87fa111620c95a200a"), &state_out);
     state_in.set_latitude(25.282416667);
     state_in.set_longitude(-77.164266667);
+    state_in.set_fix_age(4);
+    
+    boost::posix_time::ptime time_date(
+        boost::gregorian::date(boost::gregorian::day_clock::universal_day().year(),
+                               boost::date_time::Mar, 04), 
+        boost::posix_time::time_duration(17,1,44));
 
-    assert(double_cmp(state_in.latitude(), state_out.latitude(), 4));
-    assert(double_cmp(state_in.longitude(), state_out.longitude(), 4));
+    state_in.set_time_date(goby::util::as<goby::uint64>(time_date));
+    state_in.set_heading(270);
+    state_in.set_depth(2323);
+    state_in.set_mission_mode(goby::acomms::protobuf::CCLMDATState::NORMAL);
     
     std::cout << "in:" << state_in << std::endl;
     std::cout << "out:" << state_out << std::endl;
+
+    assert(double_cmp(state_in.latitude(), state_out.latitude(), 4));
+    assert(double_cmp(state_in.longitude(), state_out.longitude(), 4));
+    assert(state_in.fix_age() == state_out.fix_age());
+    assert(state_in.time_date() == state_out.time_date());
+    assert(goby::util::unbiased_round(state_in.heading(),0) ==
+           goby::util::unbiased_round(state_out.heading(),0));
+    assert(double_cmp(state_in.depth(), state_out.depth(), 1));
+    assert(state_in.mission_mode() == state_out.mission_mode());
     
+    std::cout << goby::util::hex_encode(state_out.faults()) << std::endl;
+    std::cout << goby::util::hex_encode(state_out.faults_2()) << std::endl;
+                                        
     
     std::cout << "all tests passed" << std::endl;
 }

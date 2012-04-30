@@ -27,8 +27,8 @@
 #include "dccl_exception.h"
 #include "dccl.h"
 
-goby::acomms::DCCLFieldCodecBase::MessagePart goby::acomms::DCCLFieldCodecBase::part_ =
-    goby::acomms::DCCLFieldCodecBase::BODY;
+goby::acomms::MessageHandler::MessagePart goby::acomms::DCCLFieldCodecBase::part_ =
+    goby::acomms::MessageHandler::BODY;
 boost::ptr_map<int, boost::signals2::signal<void (const boost::any& field_value, const boost::any& wire_value, const boost::any& extension_value)> >   goby::acomms::DCCLFieldCodecBase::wire_value_hooks_;
 
 
@@ -42,7 +42,7 @@ goby::acomms::DCCLFieldCodecBase::DCCLFieldCodecBase() { }
             
 void goby::acomms::DCCLFieldCodecBase::base_encode(Bitset* bits,
                                           const google::protobuf::Message& field_value,
-                                          MessagePart part)
+                                          MessageHandler::MessagePart part)
 {
     part_ = part;    
 
@@ -67,7 +67,7 @@ void goby::acomms::DCCLFieldCodecBase::field_encode(Bitset* bits,
     
     Bitset new_bits;
     any_encode(&new_bits, wire_value);
-    __encode_prepend_bits(new_bits, bits);
+    bits->append(new_bits);
 }
 
 void goby::acomms::DCCLFieldCodecBase::field_encode_repeated(Bitset* bits,
@@ -81,14 +81,14 @@ void goby::acomms::DCCLFieldCodecBase::field_encode_repeated(Bitset* bits,
     
     Bitset new_bits;
     any_encode_repeated(&new_bits, wire_values);
-    __encode_prepend_bits(new_bits, bits);
+    bits->append(new_bits);
 }
 
 
             
 void goby::acomms::DCCLFieldCodecBase::base_size(unsigned* bit_size,
                                         const google::protobuf::Message& msg,
-                                        MessagePart part)
+                                        MessageHandler::MessagePart part)
 {
     *bit_size = 0;
     part_ = part;
@@ -104,7 +104,7 @@ void goby::acomms::DCCLFieldCodecBase::field_size(unsigned* bit_size,
 }
 
 void goby::acomms::DCCLFieldCodecBase::base_run_hooks(const google::protobuf::Message& msg,
-                                                      MessagePart part)
+                                                      MessageHandler::MessagePart part)
 {
     part_ = part;
     bool b = false;
@@ -133,7 +133,7 @@ void goby::acomms::DCCLFieldCodecBase::field_size_repeated(unsigned* bit_size,
 
 void goby::acomms::DCCLFieldCodecBase::base_decode(Bitset* bits,
                                                    google::protobuf::Message* field_value,
-                                                   MessagePart part)
+                                                   MessageHandler::MessagePart part)
 {
     part_ = part;
 
@@ -203,7 +203,7 @@ void goby::acomms::DCCLFieldCodecBase::field_decode_repeated(Bitset* bits,
 
 void goby::acomms::DCCLFieldCodecBase::base_max_size(unsigned* bit_size,
                                                          const google::protobuf::Descriptor* desc,
-                                                         MessagePart part)
+                                                         MessageHandler::MessagePart part)
 {
     *bit_size = 0;
 
@@ -233,7 +233,7 @@ void goby::acomms::DCCLFieldCodecBase::field_max_size(unsigned* bit_size,
             
 void goby::acomms::DCCLFieldCodecBase::base_min_size(unsigned* bit_size,
                                                      const google::protobuf::Descriptor* desc,
-                                                     MessagePart part)
+                                                     MessageHandler::MessagePart part)
 {
     *bit_size = 0;
 
@@ -262,7 +262,7 @@ void goby::acomms::DCCLFieldCodecBase::field_min_size(unsigned* bit_size,
 
             
 void goby::acomms::DCCLFieldCodecBase::base_validate(const google::protobuf::Descriptor* desc,
-                                                     MessagePart part)
+                                                     MessageHandler::MessagePart part)
 {
     part_ = part;
 
@@ -288,7 +288,7 @@ void goby::acomms::DCCLFieldCodecBase::field_validate(bool* b,
     validate();
 }
             
-void goby::acomms::DCCLFieldCodecBase::base_info(std::ostream* os, const google::protobuf::Descriptor* desc, MessagePart part)
+void goby::acomms::DCCLFieldCodecBase::base_info(std::ostream* os, const google::protobuf::Descriptor* desc, MessageHandler::MessagePart part)
 {
     part_ = part;
 
@@ -379,7 +379,8 @@ void goby::acomms::DCCLFieldCodecBase::any_encode_repeated(goby::acomms::Bitset*
             any_encode(&new_bits, wire_values[i]);
         else
             any_encode(&new_bits, boost::any());
-        __encode_prepend_bits(new_bits, bits);
+        bits->append(new_bits);
+        
     }
 }
 

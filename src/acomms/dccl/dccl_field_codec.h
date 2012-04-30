@@ -54,13 +54,6 @@ namespace goby
         class DCCLFieldCodecBase
         {
           public:
-            typedef goby::acomms::Bitset Bitset;
-
-            enum MessagePart { HEAD, BODY };
-
-
-
-            
             /// \name Constructor, Destructor
             //@{
             
@@ -106,7 +99,7 @@ namespace goby
             { return !MessageHandler::desc_.empty() ? MessageHandler::desc_.back() : 0; }
 
             /// \brief the part of the message currently being encoded (head or body).
-            static MessagePart part() { return part_; }
+            static MessageHandler::MessagePart part() { return part_; }
             
             //@}
 
@@ -129,21 +122,21 @@ namespace goby
             /// \param part Part of the message to encode
             void base_encode(Bitset* bits,
                              const google::protobuf::Message& msg,
-                             MessagePart part);
+                             MessageHandler::MessagePart part);
 
             /// \brief Run hooks on this part of the base message
             ///
             /// See DCCLCodec::run_hooks() for details on the hook functionality.
             /// \param msg DCCL Message to run hooks on
             /// \param part part of the Message to run hooks on
-            void base_run_hooks(const google::protobuf::Message& msg, MessagePart part);
+            void base_run_hooks(const google::protobuf::Message& msg, MessageHandler::MessagePart part);
 
             /// \brief Calculate the size (in bits) of a part of the base message when it is encoded
             ///
             /// \param bit_size Pointer to unsigned integer to store the result.
             /// \param msg the DCCL Message of which to calculate the size
             /// \param part part of the Message to calculate the size of
-            void base_size(unsigned* bit_size, const google::protobuf::Message& msg, MessagePart part);
+            void base_size(unsigned* bit_size, const google::protobuf::Message& msg, MessageHandler::MessagePart part);
 
             /// \brief Decode part of a message
             ///
@@ -152,34 +145,34 @@ namespace goby
             /// \param part part of the Message to decode         
             void base_decode(Bitset* bits,
                              google::protobuf::Message* msg,
-                             MessagePart part);
+                             MessageHandler::MessagePart part);
 
             /// \brief Calculate the maximum size of a message given its Descriptor alone (no data)
             ///
             /// \param bit_size Pointer to unsigned integer to store calculated maximum size in bits.
             /// \param desc Descriptor to calculate the maximum size of. Use google::protobuf::Message::GetDescriptor() or MyProtobufType::descriptor() to get this object.
             /// \param part part of the Message 
-            void base_max_size(unsigned* bit_size, const google::protobuf::Descriptor* desc, MessagePart part);
+            void base_max_size(unsigned* bit_size, const google::protobuf::Descriptor* desc, MessageHandler::MessagePart part);
 
             /// \brief Calculate the minimum size of a message given its Descriptor alone (no data)
             ///
             /// \param bit_size Pointer to unsigned integer to store calculated minimum size in bits.
             /// \param desc Descriptor to calculate the minimum size of. Use google::protobuf::Message::GetDescriptor() or MyProtobufType::descriptor() to get this object.
             /// \param part part of the Message
-            void base_min_size(unsigned* bit_size, const google::protobuf::Descriptor* desc, MessagePart part);
+            void base_min_size(unsigned* bit_size, const google::protobuf::Descriptor* desc, MessageHandler::MessagePart part);
 
             /// \brief Validate this part of the message to make sure all required extensions are set.
             ///
             /// \param desc Descriptor to validate. Use google::protobuf::Message::GetDescriptor() or MyProtobufType::descriptor() to get this object.
             /// \param part part of the Message       
-            void base_validate(const google::protobuf::Descriptor* desc, MessagePart part);
+            void base_validate(const google::protobuf::Descriptor* desc, MessageHandler::MessagePart part);
 
             /// \brief Get human readable information (size of fields, etc.) about this part of the DCCL message
             /// 
             /// \param os Pointer to stream to store this information
             /// \param desc Descriptor to get information on. Use google::protobuf::Message::GetDescriptor() or MyProtobufType::descriptor() to get this object.
             /// \param part the part of the Message to act on.
-            void base_info(std::ostream* os, const google::protobuf::Descriptor* desc, MessagePart part);
+            void base_info(std::ostream* os, const google::protobuf::Descriptor* desc, MessageHandler::MessagePart part);
             //@}
             
             /// \name Field functions (primitive types and embedded messages)
@@ -444,16 +437,10 @@ namespace goby
             void set_wire_type(google::protobuf::FieldDescriptor::CppType type)
             { wire_type_ = type; }
 
-            bool variable_size() { return max_size() != min_size(); }
-            
-            void __encode_prepend_bits(const Bitset& new_bits, Bitset* bits)
-            {    
-                for(int i = 0, n = new_bits.size(); i < n; ++i)
-                    bits->push_back(new_bits[i]);
-            }
+            bool variable_size() { return max_size() != min_size(); }            
             
           private:
-            static MessagePart part_;
+            static MessageHandler::MessagePart part_;
             // maps protobuf extension number for FieldOption onto a hook (signal) to call
             // if such a FieldOption is set, during the call to "size()"
             static boost::ptr_map<int, boost::signals2::signal<void (const boost::any& field_value, const boost::any& wire_value, const boost::any& extension_value)> >  wire_value_hooks_;

@@ -105,6 +105,8 @@ namespace goby
                 return inst_.get();
             }
             
+            static const std::string DEFAULT_CODEC_NAME;
+
             /// \name Initialization Methods.
             // NOTE: uncommented next two lines from doxygen because of bug in v1.7.4 and newer: https://bugzilla.gnome.org/show_bug.cgi?id=660501 
             // These methods are intended to be called before doing any work with the class. However,
@@ -442,10 +444,8 @@ namespace goby
             static boost::shared_ptr<DCCLCodec> inst_;
 
             static std::string glog_encode_group_;
-            static std::string glog_decode_group_;        
+            static std::string glog_decode_group_;
             
-            const std::string DEFAULT_CODEC_NAME;
-
             protobuf::DCCLConfig cfg_;
             // SHA256 hash of the crypto passphrase
             std::string crypto_key_;

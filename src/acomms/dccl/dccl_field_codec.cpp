@@ -29,6 +29,9 @@
 
 goby::acomms::MessageHandler::MessagePart goby::acomms::DCCLFieldCodecBase::part_ =
     goby::acomms::MessageHandler::BODY;
+
+const google::protobuf::Message* goby::acomms::DCCLFieldCodecBase::root_message_ = 0;
+
 boost::ptr_map<int, boost::signals2::signal<void (const boost::any& field_value, const boost::any& wire_value, const boost::any& extension_value)> >   goby::acomms::DCCLFieldCodecBase::wire_value_hooks_;
 
 
@@ -45,12 +48,13 @@ void goby::acomms::DCCLFieldCodecBase::base_encode(Bitset* bits,
                                           MessageHandler::MessagePart part)
 {
     part_ = part;    
+    root_message_ = &field_value;
 
     // we pass this through the FromProtoCppTypeBase to do dynamic_cast (RTII) for
     // custom message codecs so that these codecs can be written in the derived class (not google::protobuf::Message)
     field_encode(bits,
-                DCCLTypeHelper::find(field_value.GetDescriptor())->get_value(field_value),
-                0);
+                 DCCLTypeHelper::find(field_value.GetDescriptor())->get_value(field_value),
+                 0);
 }
 
 void goby::acomms::DCCLFieldCodecBase::field_encode(Bitset* bits,
@@ -84,13 +88,14 @@ void goby::acomms::DCCLFieldCodecBase::field_encode_repeated(Bitset* bits,
     bits->append(new_bits);
 }
 
-
             
 void goby::acomms::DCCLFieldCodecBase::base_size(unsigned* bit_size,
                                         const google::protobuf::Message& msg,
                                         MessageHandler::MessagePart part)
 {
     *bit_size = 0;
+
+    root_message_ = &msg;
     part_ = part;
     field_size(bit_size, &msg, 0);
 }
@@ -107,6 +112,7 @@ void goby::acomms::DCCLFieldCodecBase::base_run_hooks(const google::protobuf::Me
                                                       MessageHandler::MessagePart part)
 {
     part_ = part;
+    root_message_ = &msg;
     bool b = false;
     field_run_hooks(&b, &msg, 0);
 }
@@ -136,7 +142,7 @@ void goby::acomms::DCCLFieldCodecBase::base_decode(Bitset* bits,
                                                    MessageHandler::MessagePart part)
 {
     part_ = part;
-
+    root_message_ = field_value;
     boost::any value(field_value);
     field_decode(bits, &value, 0);
 }
@@ -155,7 +161,9 @@ void goby::acomms::DCCLFieldCodecBase::field_decode(Bitset* bits,
     
     if(field)
         glog.is(DEBUG2) && glog << group(DCCLCodec::glog_decode_group()) <<  "Starting decode for field: " << field->DebugString() << std::flush;
-
+    
+    glog.is(DEBUG3) && glog << group(DCCLCodec::glog_decode_group()) <<  "Message thus far is: " << root_message()->DebugString() << std::flush;
+    
     Bitset these_bits(bits);
 
     unsigned bits_to_transfer = 0;

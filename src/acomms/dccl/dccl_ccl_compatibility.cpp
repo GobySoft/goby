@@ -117,12 +117,52 @@ float goby::acomms::LegacyCCLDepthCodec::decode(Bitset* bits)
 //
 goby::acomms::Bitset goby::acomms::LegacyCCLVelocityCodec::encode(const float& wire_value)
 {
-    std::cout << Encode_est_velocity(wire_value) << std::endl;
     return Bitset(size(), Encode_est_velocity(wire_value));
 } 
 
 float goby::acomms::LegacyCCLVelocityCodec::decode(Bitset* bits)
 { return Decode_est_velocity(bits->to_ulong()); }
+
+
+//
+// LegacyCCLSpeedCodec
+//
+goby::acomms::Bitset goby::acomms::LegacyCCLSpeedCodec::encode(const float& wire_value)
+{
+    const google::protobuf::Message* root = DCCLFieldCodecBase::root_message();
+    const google::protobuf::FieldDescriptor* thrust_mode_field_desc =
+        root->GetDescriptor()->FindFieldByNumber(
+            DCCLFieldCodecBase::dccl_field_options().ccl().thrust_mode_tag());
+
+    switch(root->GetReflection()->GetEnum(*root, thrust_mode_field_desc)->number())
+    {
+        default:
+        case protobuf::CCLMDATRedirect::RPM:
+            return Bitset(size(), Encode_speed(SPEED_MODE_RPM, wire_value));
+            
+        case protobuf::CCLMDATRedirect::METERS_PER_SECOND:
+            return Bitset(size(), Encode_speed(SPEED_MODE_MSEC, wire_value));
+    }
+} 
+
+float goby::acomms::LegacyCCLSpeedCodec::decode(Bitset* bits)
+{
+    const google::protobuf::Message* root = DCCLFieldCodecBase::root_message();
+    const google::protobuf::FieldDescriptor* thrust_mode_field_desc =
+        root->GetDescriptor()->FindFieldByNumber(
+            DCCLFieldCodecBase::dccl_field_options().ccl().thrust_mode_tag());
+
+    switch(root->GetReflection()->GetEnum(*root, thrust_mode_field_desc)->number())
+    {
+        default:
+        case protobuf::CCLMDATRedirect::RPM:
+            return Decode_speed(SPEED_MODE_RPM, bits->to_ulong());
+            
+        case protobuf::CCLMDATRedirect::METERS_PER_SECOND:
+            return Decode_speed(SPEED_MODE_MSEC, bits->to_ulong());
+    }
+}
+
 
 
 //
@@ -152,3 +192,39 @@ goby::acomms::protobuf::CCLMDATState::GFIPitchOil goby::acomms::LegacyCCLGFIPitc
     decoded.set_oil(oil);
     return decoded;
 }
+
+//
+// LegacyCCLHiResAltitudeCodec
+//
+goby::acomms::Bitset goby::acomms::LegacyCCLHiResAltitudeCodec::encode(const float& wire_value)
+{ return Bitset(size(), Encode_hires_altitude(wire_value)); } 
+
+float goby::acomms::LegacyCCLHiResAltitudeCodec::decode(Bitset* bits)
+{ return Decode_hires_altitude(bits->to_ulong()); }
+
+//
+// LegacyCCLSalinityCodec
+//
+goby::acomms::Bitset goby::acomms::LegacyCCLSalinityCodec::encode(const float& wire_value)
+{ return Bitset(size(), Encode_salinity(wire_value)); } 
+
+float goby::acomms::LegacyCCLSalinityCodec::decode(Bitset* bits)
+{ return Decode_salinity(bits->to_ulong()); }
+
+//
+// LegacyCCLTemperatureCodec
+//
+goby::acomms::Bitset goby::acomms::LegacyCCLTemperatureCodec::encode(const float& wire_value)
+{ return Bitset(size(), Encode_temperature(wire_value)); } 
+
+float goby::acomms::LegacyCCLTemperatureCodec::decode(Bitset* bits)
+{ return Decode_temperature(bits->to_ulong()); }
+
+//
+// LegacyCCLSoundSpeedCodec
+//
+goby::acomms::Bitset goby::acomms::LegacyCCLSoundSpeedCodec::encode(const float& wire_value)
+{ return Bitset(size(), Encode_sound_speed(wire_value)); } 
+
+float goby::acomms::LegacyCCLSoundSpeedCodec::decode(Bitset* bits)
+{ return Decode_sound_speed(bits->to_ulong()); }

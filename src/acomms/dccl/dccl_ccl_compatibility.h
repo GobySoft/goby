@@ -162,6 +162,21 @@ namespace goby
             unsigned size() { return BITS_IN_BYTE; }
         };
 
+
+        class LegacyCCLHiResAltitudeCodec : public DCCLTypedFixedFieldCodec<float>
+        {
+          private:
+            Bitset encode() { return encode(0); }
+            Bitset encode(const float& wire_value);
+            float decode(Bitset* bits);
+            unsigned size()
+            {
+                return HI_RES_ALTITUDE_COMPRESSED_BYTE_SIZE*BITS_IN_BYTE;
+            }
+            enum { HI_RES_ALTITUDE_COMPRESSED_BYTE_SIZE = 2 };
+
+        };
+
         
         class LegacyCCLDepthCodec : public DCCLTypedFixedFieldCodec<float>
         {
@@ -169,7 +184,16 @@ namespace goby
             Bitset encode() { return encode(0); }
             Bitset encode(const float& wire_value);
             float decode(Bitset* bits);
-            unsigned size() { return 13; }
+            unsigned size()
+            {
+                return DCCLFieldCodecBase::dccl_field_options().ccl().bit_size();
+            }
+            
+            void validate()
+            {
+                DCCLFieldCodecBase::require(DCCLFieldCodecBase::dccl_field_options().ccl().has_bit_size(), "missing (goby.field).dccl.ccl.bit_size");
+            }
+            
         };
 
         class LegacyCCLVelocityCodec : public DCCLTypedFixedFieldCodec<float>
@@ -181,6 +205,22 @@ namespace goby
             unsigned size() { return BITS_IN_BYTE; }
         };
 
+        class LegacyCCLSpeedCodec : public DCCLTypedFixedFieldCodec<float>
+        {
+          private:
+            Bitset encode() { return encode(0); }
+            Bitset encode(const float& wire_value);
+            float decode(Bitset* bits);
+            unsigned size() { return BITS_IN_BYTE; }
+
+            void validate()
+            {
+                DCCLFieldCodecBase::require(DCCLFieldCodecBase::dccl_field_options().ccl().has_thrust_mode_tag(), "missing (goby.field).dccl.ccl.thrust_mode_tag");
+            }
+        };
+
+
+        
         class LegacyCCLWattsCodec : public DCCLTypedFixedFieldCodec<float>
         {
           private:
@@ -200,7 +240,33 @@ namespace goby
             enum { GFI_PITCH_OIL_COMPRESSED_BYTE_SIZE =2};
                         
         };
-        
+
+        class LegacyCCLSalinityCodec : public DCCLTypedFixedFieldCodec<float>
+        {
+          private:
+            Bitset encode() { return encode(0); }
+            Bitset encode(const float& wire_value);
+            float decode(Bitset* bits);
+            unsigned size() { return BITS_IN_BYTE; }
+        };
+
+        class LegacyCCLTemperatureCodec : public DCCLTypedFixedFieldCodec<float>
+        {
+          private:
+            Bitset encode() { return encode(0); }
+            Bitset encode(const float& wire_value);
+            float decode(Bitset* bits);
+            unsigned size() { return BITS_IN_BYTE; }
+        };
+
+        class LegacyCCLSoundSpeedCodec : public DCCLTypedFixedFieldCodec<float>
+        {
+          private:
+            Bitset encode() { return encode(0); }
+            Bitset encode(const float& wire_value);
+            float decode(Bitset* bits);
+            unsigned size() { return BITS_IN_BYTE; }
+        };        
         
     }
 }

@@ -238,7 +238,7 @@ namespace goby
                             std::vector<boost::any> field_values;
                             for(int j = 0, m = refl->FieldSize(*msg, field_desc); j < m; ++j)
                                 field_values.push_back(helper->get_repeated_value(field_desc, *msg, j));
-                   
+                            
                             Action::repeated(codec, &return_value, field_values, field_desc);
                         }
                         else

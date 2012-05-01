@@ -5,6 +5,211 @@ package goby.acomms.protobuf;
 
 // typedef struct
 // {
+//   unsigned char mode;
+//   char spare[31];
+// }
+// MODEM_MSG_DATA_EMPTY;
+
+message CCLMDATEmpty
+{
+  // prefix CCL IDs with 0x0CC1 to get out of normal 0x0000 prefix
+  option (goby.msg).dccl.id = 0x0CC10006; 
+  option (goby.msg).dccl.max_bytes = 32;
+
+  required bytes spare = 1 [(goby.field).dccl.max_length=31];
+}
+
+
+// typedef struct
+// {
+//   unsigned char mode;
+//   // MDAT_REDIRECT
+//   unsigned char message_number;
+//   LATLON_COMPRESSED lat;
+//   // Center of search area
+//   LATLON_COMPRESSED lon;
+//   // Center of search area
+//   char speed_depth_flags;
+//   unsigned short depth_goal_encoded_transit;
+//   char speed_encoded_transit;
+//   unsigned char device_cmd_transit;
+//   // Sidescan, DIDSON range.
+//   unsigned short depth_goal_encoded_survey;
+//   char speed_encoded_survey;
+//   unsigned char device_cmd_survey;
+//   // Sidescan, DIDSON range.
+//   unsigned char num_rows;
+//   // 0 if not rows.
+//   unsigned short row_length;
+//   // in meters
+//   unsigned char spacing_0;
+//   // in meters
+//   unsigned char spacing_1;
+//   // in meters
+//   char heading_encoded;
+//   LATLON_COMPRESSED lat_start;
+//   // ack only, where redirect started
+//   LATLON_COMPRESSED lon_start;
+//   char spare[3];
+// }
+// MODEM_MSG_DATA_REDIRECT;
+message CCLMDATRedirect
+{
+  option (goby.msg).dccl.id = 0x0CC10007; 
+  option (goby.msg).dccl.max_bytes = 32;
+
+  required uint32 message_number = 1 [(goby.field).dccl.min=0,
+                                      (goby.field).dccl.max=0xff];
+  
+  required double latitude = 2 [(goby.field).dccl.codec="_ccl_latloncompressed", (goby.field).description="Center of search area: latitude in degrees"];
+  
+  required double longitude = 3 [(goby.field).dccl.codec="_ccl_latloncompressed", (goby.field).description="Center of search area: longitude in degrees"];
+
+  // replaces speed_depth_flags field
+  enum VerticalMode
+  {
+    DEPTH = 0;
+    ALTITUDE = 1;
+    RESERVED_2 = 2;
+    RESERVED_3 = 3;
+    RESERVED_4 = 4;
+    RESERVED_5 = 5;
+    RESERVED_6 = 6;
+    RESERVED_7 = 7;
+  }
+  enum ThrustMode
+  {
+    RPM = 0;
+    METERS_PER_SECOND = 1;
+  }
+
+  required VerticalMode transit_vertical_mode = 4;  
+  required ThrustMode transit_thrust_mode = 5;  
+  required VerticalMode survey_vertical_mode = 6;  
+  required ThrustMode survey_thrust_mode = 7;  
+
+  required float depth_goal_transit = 8 [(goby.field).dccl.codec="_ccl_depth",
+                                         (goby.field).dccl.ccl.bit_size=16];
+  
+  required float speed_transit = 9 [(goby.field).dccl.codec="_ccl_speed",
+                                    (goby.field).dccl.ccl.thrust_mode_tag=5];
+
+  required uint32 device_cmd_transit = 10 [(goby.field).dccl.min=0,
+                                           (goby.field).dccl.max=0xff];
+  
+  required float depth_goal_survey = 11 [(goby.field).dccl.codec="_ccl_depth",
+                                         (goby.field).dccl.ccl.bit_size=16];
+
+  required float speed_survey = 12 [(goby.field).dccl.codec="_ccl_speed",
+                                    (goby.field).dccl.ccl.thrust_mode_tag=7];
+
+  required uint32 device_cmd_survey = 13 [(goby.field).dccl.min=0,
+                                          (goby.field).dccl.max=0xff];
+
+  required uint32 num_rows = 14 [(goby.field).dccl.min=0,
+                                 (goby.field).dccl.max=0xff];
+
+  required uint32 row_length = 15 [(goby.field).dccl.min=0,
+                                   (goby.field).dccl.max=0xffff];
+
+  required uint32 spacing_0 = 16 [(goby.field).dccl.min=0,
+                                  (goby.field).dccl.max=0xff];
+  
+  required uint32 spacing_1 = 17 [(goby.field).dccl.min=0,
+                                  (goby.field).dccl.max=0xff];
+
+  required float heading = 18 [(goby.field).dccl.codec="_ccl_heading",
+                               (goby.field).description="Heading in degrees"];
+  
+  required double lat_start = 19 [(goby.field).dccl.codec="_ccl_latloncompressed"];
+  required double lon_start = 20 [(goby.field).dccl.codec="_ccl_latloncompressed"];
+
+  required bytes spare = 21 [(goby.field).dccl.max_length=3];
+  
+}
+
+
+// typedef struct
+// {
+//   unsigned char mode;
+//   unsigned char spare;
+//   unsigned short depth[3];
+//   unsigned short altitude[3];
+//   LATLON_COMPRESSED latitude[3];
+//   LATLON_COMPRESSED longitude[3];
+// }
+// MODEM_MSG_DATA_BATHY;
+message CCLMDATBathy
+{
+  option (goby.msg).dccl.id = 0x0CC10009; 
+  option (goby.msg).dccl.max_bytes = 32;
+
+  required bytes spare = 1 [(goby.field).dccl.max_length=1];
+  
+  repeated float depth = 2 [(goby.field).dccl.codec="_ccl_depth",
+                            (goby.field).dccl.ccl.bit_size=16,
+                            (goby.field).dccl.max_repeat=3];
+  
+  repeated float altitude = 3 [(goby.field).dccl.codec="_ccl_hires_altitude",
+                                (goby.field).dccl.max_repeat=3];
+
+  repeated double latitude = 4 [(goby.field).dccl.codec="_ccl_latloncompressed",
+                                (goby.field).dccl.max_repeat=3];
+  
+  repeated double longitude = 5 [(goby.field).dccl.codec="_ccl_latloncompressed",
+                                 (goby.field).dccl.max_repeat=3];
+}
+
+
+// typedef struct
+// {
+// unsigned char mode;
+// // MDAT_CTD
+// unsigned char spare;
+// unsigned char salinity[2];
+// unsigned char temperature[2];
+// unsigned short depth[2];
+// unsigned char sound_speed[2];
+// LATLON_COMPRESSED latitude[2];
+// LATLON_COMPRESSED longitude[2];
+// char spare2[8];
+// }
+// MODEM_MSG_DATA_CTD;
+
+// untested, CCL spec does not give test case
+message CCLMDATCTD
+{
+  option (goby.msg).dccl.id = 0x0CC1000A; 
+  option (goby.msg).dccl.max_bytes = 32;
+
+  required bytes spare = 1 [(goby.field).dccl.max_length=1];
+  
+  repeated float salinity = 2 [(goby.field).dccl.codec="_ccl_salinity",
+                            (goby.field).dccl.max_repeat=2];  
+
+  repeated float temperature = 3 [(goby.field).dccl.codec="_ccl_temperature",
+                                  (goby.field).dccl.max_repeat=2];
+  
+  repeated float depth = 4 [(goby.field).dccl.codec="_ccl_depth",
+                            (goby.field).dccl.ccl.bit_size=16,
+                            (goby.field).dccl.max_repeat=2];  
+
+  repeated float sound_speed = 5 [(goby.field).dccl.codec="_ccl_sound_speed",
+                                  (goby.field).dccl.max_repeat=2];
+
+  
+  repeated double latitude = 6 [(goby.field).dccl.codec="_ccl_latloncompressed",
+                                (goby.field).dccl.max_repeat=2];
+  
+  repeated double longitude = 7 [(goby.field).dccl.codec="_ccl_latloncompressed",
+                                 (goby.field).dccl.max_repeat=2];
+
+  required bytes spare2 = 8 [(goby.field).dccl.max_length=8];  
+  
+}
+
+// typedef struct
+// {
 //     unsigned char     mode;
 //     // MDAT_STATE
 //     LATLON_COMPRESSED latitude;
@@ -36,7 +241,6 @@ package goby.acomms.protobuf;
 
 message CCLMDATState
 {
-  // prefix CCL IDs with 0x0CC1 to get out of normal 0x0000 prefix
   option (goby.msg).dccl.id = 0x0CC1000E; 
   option (goby.msg).dccl.max_bytes = 32;
   
@@ -54,7 +258,8 @@ message CCLMDATState
   required float heading = 5 [(goby.field).dccl.codec="_ccl_heading",
                                (goby.field).description="Heading in degrees"];
   required float depth = 6 [(goby.field).dccl.codec="_ccl_depth",
-                            (goby.field).description="Depth in meters"];
+                            (goby.field).description="Depth in meters",
+                            (goby.field).dccl.ccl.bit_size=13]; // 13 since MissionMode is stuck in the top three bits
 
 
   enum MissionMode
@@ -73,7 +278,7 @@ message CCLMDATState
   
   required bytes faults = 8 [(goby.field).dccl.max_length=4];
   required bytes faults_2 = 9 [(goby.field).dccl.max_length=1];
-  required uint32 mission_leg = 10 [(goby.field).dccl.max=255, (goby.field).dccl.min=0];
+  required uint32 mission_leg = 10 [(goby.field).dccl.max=0xff, (goby.field).dccl.min=0];
   required float est_velocity = 11 [(goby.field).dccl.codec="_ccl_velocity",
                                     (goby.field).description="Velocity from ADCP or prop turns in m/s"];
   required bytes objective_index = 12 [(goby.field).dccl.max_length=1];
@@ -82,7 +287,7 @@ message CCLMDATState
                                  (goby.field).description="Latitude goal in degrees"];
   required double lon_goal = 15 [(goby.field).dccl.codec="_ccl_latloncompressed",
                                  (goby.field).description="Longitude goal in degrees"];
-  required uint32 battery_percent = 16 [(goby.field).dccl.max=255, (goby.field).dccl.min=0];
+  required uint32 battery_percent = 16 [(goby.field).dccl.max=0xff, (goby.field).dccl.min=0];
 
   message GFIPitchOil
   {
@@ -95,89 +300,16 @@ message CCLMDATState
 
 // typedef struct
 // {
-//   unsigned char
-//     mode;
-//   // MDAT_REDIRECT
-//   unsigned char
-//     message_number;
-//   LATLON_COMPRESSED lat;
-//   // Center of search area
-//   LATLON_COMPRESSED lon;
-//   // Center of search area
-//   char
-//     speed_depth_flags;
-//   unsigned short
-//     depth_goal_encoded_transit;
-//   char
-//     speed_encoded_transit;
-//   unsigned char
-//     device_cmd_transit;
-//   // Sidescan, DIDSON range.
-//   unsigned short
-//     depth_goal_encoded_survey;
-//   char
-//     speed_encoded_survey;
-//   unsigned char
-//     device_cmd_survey;
-//   // Sidescan, DIDSON range.
-//   unsigned char
-//     num_rows;
-//   // 0 if not rows.
-//   unsigned short
-//     row_length;
-//   // in meters
-//   unsigned char
-//     spacing_0;
-//   // in meters
-//   unsigned char
-//     spacing_1;
-//   // in meters
-//   char
-//     heading_encoded;
-//   LATLON_COMPRESSED lat_start;
-//   // ack only, where redirect started
-//   LATLON_COMPRESSED lon_start;
-//   char spare[3];
+// unsigned char mode;
+// char message[31];
 // }
-// MODEM_MSG_DATA_REDIRECT;
+// MODEM_MSG_ERROR_MSG;
+message CCLMDATError
+{
+  // prefix CCL IDs with 0x0CC1 to get out of normal 0x0000 prefix
+  option (goby.msg).dccl.id = 0x0CC1000F; 
+  option (goby.msg).dccl.max_bytes = 32;
 
+  required string message = 1 [(goby.field).dccl.max_length=31];
+}
 
-
-// message CCLMDATRedirect
-// {
-//   option (goby.msg).dccl.id = 0x0CC10007; 
-//   option (goby.msg).dccl.max_bytes = 32;
-
-//   required bytes DEPRECATED_message_number = 1 [(goby.field).dccl.max_length=1];
-  
-//   required double latitude = 1 [(goby.field).dccl.codec="_ccl_latloncompressed", (goby.field).description="Center of search area: latitude in degrees"];
-  
-//   required double longitude = 2 [(goby.field).dccl.codec="_ccl_latloncompressed", (goby.field).description="Center of search area: longitude in degrees"];
-
-
-//   // replaces speed_depth_flags field
-//   enum VerticalMode
-//   {
-//     DEPTH = 0;
-//     ALTITUDE = 1;
-//     RESERVED_2 = 2;
-//     RESERVED_3 = 3;
-//     RESERVED_4 = 4;
-//     RESERVED_5 = 5;
-//     RESERVED_6 = 6;
-//     RESERVED_7 = 7;
-//   }
-//   enum ThrustMode
-//   {
-//     RPM = 0;
-//     METERS_PER_SECOND = 1;
-//   }
-
-//   required VerticalMode transit_vertical_mode;  
-//   required ThrustMode transit_thrust_mode;  
-//   required VerticalMode survey_vertical_mode;  
-//   required ThrustMode survey_thrust_mode;  
-
-  
-  
-// }

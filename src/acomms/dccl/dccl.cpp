@@ -529,6 +529,17 @@ void goby::acomms::DCCLCodec::process_cfg()
         DCCLFieldCodecManager::add<LegacyCCLVelocityCodec>("_ccl_velocity");
         DCCLFieldCodecManager::add<LegacyCCLWattsCodec>("_ccl_watts");
         DCCLFieldCodecManager::add<LegacyCCLGFIPitchOilCodec>("_ccl_gfi_pitch_oil");
+        DCCLFieldCodecManager::add<LegacyCCLSpeedCodec>("_ccl_speed");
+        DCCLFieldCodecManager::add<LegacyCCLHiResAltitudeCodec>("_ccl_hires_altitude");
+        DCCLFieldCodecManager::add<LegacyCCLTemperatureCodec>("_ccl_temperature");
+        DCCLFieldCodecManager::add<LegacyCCLSalinityCodec>("_ccl_salinity");
+        DCCLFieldCodecManager::add<LegacyCCLSoundSpeedCodec>("_ccl_sound_speed");
+        
+        validate<goby::acomms::protobuf::CCLMDATEmpty>();
+        validate<goby::acomms::protobuf::CCLMDATRedirect>();
+        validate<goby::acomms::protobuf::CCLMDATBathy>();
+        validate<goby::acomms::protobuf::CCLMDATCTD>();
+        validate<goby::acomms::protobuf::CCLMDATState>();
     }
     else
     {

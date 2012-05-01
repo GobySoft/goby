@@ -139,7 +139,6 @@ int main(int argc, char* argv[])
     
     assert(normal_msg.SerializeAsString() == normal_msg_out.SerializeAsString());
 
-    codec->validate<goby::acomms::protobuf::CCLMDATState>();
     codec->info<goby::acomms::protobuf::CCLMDATState>(&goby::glog);
 
     goby::acomms::protobuf::CCLMDATState state_in, state_out;
@@ -199,7 +198,61 @@ int main(int argc, char* argv[])
     
     std::cout << goby::util::hex_encode(state_out.faults()) << std::endl;
     std::cout << goby::util::hex_encode(state_out.faults_2()) << std::endl;
-                                        
+
+
+    codec->info<goby::acomms::protobuf::CCLMDATRedirect>(&goby::glog);
+
+    goby::acomms::protobuf::CCLMDATRedirect redirect_in, redirect_out;
+    std::string test_redirect_encoded = "07522cf9113d20c99964003d6464003d640be60014142035f911ef21c9000000";
+    codec->decode(goby::util::hex_decode(test_redirect_encoded), &redirect_out);
+    redirect_in.set_message_number(82);
+    redirect_in.set_latitude(25.274995002149939);
+    redirect_in.set_longitude(-77.166669030984522);
+    redirect_in.set_transit_vertical_mode(goby::acomms::protobuf::CCLMDATRedirect::ALTITUDE);  
+    redirect_in.set_transit_thrust_mode(goby::acomms::protobuf::CCLMDATRedirect::METERS_PER_SECOND);
+    redirect_in.set_survey_vertical_mode(goby::acomms::protobuf::CCLMDATRedirect::ALTITUDE);  
+    redirect_in.set_survey_thrust_mode(goby::acomms::protobuf::CCLMDATRedirect::METERS_PER_SECOND);
+
+    redirect_in.set_depth_goal_transit(10.0);
+    redirect_in.set_speed_transit(2.0333333);
+    redirect_in.set_device_cmd_transit(100);
+
+    redirect_in.set_depth_goal_survey(10.0);
+    redirect_in.set_speed_survey(2.0333333);
+    redirect_in.set_device_cmd_survey(100);
+
+    redirect_in.set_num_rows(11);
+    redirect_in.set_row_length(230);
+    redirect_in.set_spacing_0(20);
+    redirect_in.set_spacing_1(20);
+    redirect_in.set_heading(45.176472);
+
+    redirect_in.set_lat_start(25.275183333);
+    redirect_in.set_lon_start(-77.15735);
+
+    redirect_in.set_spare(std::string(3, '\0'));
+    
+    std::string redirect_encoded;
+    codec->encode(&redirect_encoded, redirect_in);
+
+    goby::acomms::protobuf::CCLMDATRedirect redirect_out_2;
+    codec->decode(redirect_encoded, &redirect_out_2);
+
+    std::cout << "in:" << redirect_in << std::endl;
+    std::cout << test_redirect_encoded << std::endl;
+    std::cout << goby::util::hex_encode(redirect_encoded) << std::endl;
+    std::cout << "out:" << redirect_out << std::endl;
+    std::cout << "out2: " << redirect_out_2 << std::endl;
+
+    assert(redirect_out.SerializeAsString() == redirect_out_2.SerializeAsString());
+    assert(test_redirect_encoded == goby::util::hex_encode(redirect_encoded));
+    
+
+    codec->info<goby::acomms::protobuf::CCLMDATEmpty>(&goby::glog);
+    codec->info<goby::acomms::protobuf::CCLMDATBathy>(&goby::glog);
+    codec->info<goby::acomms::protobuf::CCLMDATCTD>(&goby::glog);
+    codec->info<goby::acomms::protobuf::CCLMDATError>(&goby::glog);
+    
     
     std::cout << "all tests passed" << std::endl;
 }

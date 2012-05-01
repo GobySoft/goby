@@ -98,6 +98,11 @@ namespace goby
             static const google::protobuf::Descriptor* this_descriptor()
             { return !MessageHandler::desc_.empty() ? MessageHandler::desc_.back() : 0; }
 
+            // currently encoded or (partially) decoded root message
+            static const google::protobuf::Message* root_message()
+            { return root_message_; }
+            
+            
             /// \brief the part of the message currently being encoded (head or body).
             static MessageHandler::MessagePart part() { return part_; }
             
@@ -441,7 +446,10 @@ namespace goby
             
           private:
             static MessageHandler::MessagePart part_;
-            // maps protobuf extension number for FieldOption onto a hook (signal) to call
+
+            static const google::protobuf::Message* root_message_;
+            
+// maps protobuf extension number for FieldOption onto a hook (signal) to call
             // if such a FieldOption is set, during the call to "size()"
             static boost::ptr_map<int, boost::signals2::signal<void (const boost::any& field_value, const boost::any& wire_value, const boost::any& extension_value)> >  wire_value_hooks_;
             

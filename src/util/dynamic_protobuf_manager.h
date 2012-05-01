@@ -36,9 +36,6 @@
 #include <google/protobuf/descriptor_database.h>
 #include <google/protobuf/compiler/importer.h>
 
-#if PROTO_RUNTIME_COMPILE
-#include <boost/filesystem.hpp>
-#endif
 
 #include <boost/signals.hpp>
 #include <boost/shared_ptr.hpp>
@@ -99,22 +96,7 @@ namespace goby
 
 #if PROTO_RUNTIME_COMPILE
             static const google::protobuf::FileDescriptor*
-                load_from_proto_file(const std::string& proto_file)
-            {
-                if(!get_instance()->source_database_)
-                    throw(std::runtime_error("Must called enable_compilation() before loading proto files directly"));
-                
-                
-#if BOOST_FILESYSTEM_VERSION == 3
-                namespace bf = boost::filesystem3;
-#else
-                namespace bf = boost::filesystem;
-#endif
-                bf::path proto_file_path = bf::complete(proto_file);
-                proto_file_path.normalize();
-
-                return user_descriptor_pool().FindFileByName(proto_file_path.string());
-            }
+                load_from_proto_file(const std::string& proto_file);
 #endif
             
             static void* load_from_shared_lib(const std::string& shared_lib_path)

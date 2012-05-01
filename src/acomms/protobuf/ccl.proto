@@ -92,3 +92,92 @@ message CCLMDATState
   }
   required GFIPitchOil gfi_pitch_oil = 17 [(goby.field).dccl.codec="_ccl_gfi_pitch_oil"];
 }
+
+// typedef struct
+// {
+//   unsigned char
+//     mode;
+//   // MDAT_REDIRECT
+//   unsigned char
+//     message_number;
+//   LATLON_COMPRESSED lat;
+//   // Center of search area
+//   LATLON_COMPRESSED lon;
+//   // Center of search area
+//   char
+//     speed_depth_flags;
+//   unsigned short
+//     depth_goal_encoded_transit;
+//   char
+//     speed_encoded_transit;
+//   unsigned char
+//     device_cmd_transit;
+//   // Sidescan, DIDSON range.
+//   unsigned short
+//     depth_goal_encoded_survey;
+//   char
+//     speed_encoded_survey;
+//   unsigned char
+//     device_cmd_survey;
+//   // Sidescan, DIDSON range.
+//   unsigned char
+//     num_rows;
+//   // 0 if not rows.
+//   unsigned short
+//     row_length;
+//   // in meters
+//   unsigned char
+//     spacing_0;
+//   // in meters
+//   unsigned char
+//     spacing_1;
+//   // in meters
+//   char
+//     heading_encoded;
+//   LATLON_COMPRESSED lat_start;
+//   // ack only, where redirect started
+//   LATLON_COMPRESSED lon_start;
+//   char spare[3];
+// }
+// MODEM_MSG_DATA_REDIRECT;
+
+
+
+// message CCLMDATRedirect
+// {
+//   option (goby.msg).dccl.id = 0x0CC10007; 
+//   option (goby.msg).dccl.max_bytes = 32;
+
+//   required bytes DEPRECATED_message_number = 1 [(goby.field).dccl.max_length=1];
+  
+//   required double latitude = 1 [(goby.field).dccl.codec="_ccl_latloncompressed", (goby.field).description="Center of search area: latitude in degrees"];
+  
+//   required double longitude = 2 [(goby.field).dccl.codec="_ccl_latloncompressed", (goby.field).description="Center of search area: longitude in degrees"];
+
+
+//   // replaces speed_depth_flags field
+//   enum VerticalMode
+//   {
+//     DEPTH = 0;
+//     ALTITUDE = 1;
+//     RESERVED_2 = 2;
+//     RESERVED_3 = 3;
+//     RESERVED_4 = 4;
+//     RESERVED_5 = 5;
+//     RESERVED_6 = 6;
+//     RESERVED_7 = 7;
+//   }
+//   enum ThrustMode
+//   {
+//     RPM = 0;
+//     METERS_PER_SECOND = 1;
+//   }
+
+//   required VerticalMode transit_vertical_mode;  
+//   required ThrustMode transit_thrust_mode;  
+//   required VerticalMode survey_vertical_mode;  
+//   required ThrustMode survey_thrust_mode;  
+
+  
+  
+// }

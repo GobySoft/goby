@@ -190,6 +190,7 @@ if(build_dccllite)
              common/protobuf/option_extensions.proto
              common/protobuf/acomms_option_extensions.proto
              acomms/protobuf/dccl.proto
+             acomms/protobuf/ccl.proto
              acomms/protobuf/modem_message.proto)
 
   protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${PROTOS})

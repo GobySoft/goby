@@ -21,6 +21,7 @@
 // along with Goby.  If not, see <http://www.gnu.org/licenses/>.
 
 
+
 #include "goby/common/protobuf/option_extensions.pb.h"
 
 #include "configuration_reader.h"
@@ -31,6 +32,7 @@
 #include <google/protobuf/dynamic_message.h>
 #include <algorithm>
 #include <boost/algorithm/string.hpp>
+#include <boost/filesystem.hpp>
 
 // brings std::ostream& red, etc. into scope
 using namespace goby::common::tcolor;

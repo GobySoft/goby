@@ -26,6 +26,7 @@
 
 #include <boost/foreach.hpp>
 #include <boost/bind.hpp>
+#include <boost/filesystem.hpp>
 
 #include "goby/util/as.h"
 

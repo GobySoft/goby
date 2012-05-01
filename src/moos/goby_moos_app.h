@@ -31,7 +31,6 @@
 #include <boost/function.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/bind.hpp>
-#include <boost/filesystem.hpp>
 #include <boost/signal.hpp>
 
 #include "dynamic_moos_vars.h"

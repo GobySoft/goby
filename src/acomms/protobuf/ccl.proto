@@ -161,6 +161,8 @@ message CCLMDATBathy
 }
 
 
+
+
 // typedef struct
 // {
 // unsigned char mode;
@@ -207,6 +209,68 @@ message CCLMDATCTD
   required bytes spare2 = 8 [(goby.field).dccl.max_length=8];  
   
 }
+
+
+// typedef struct
+// {
+// unsigned char mode;
+// unsigned char spare;
+// unsigned short command;
+// char parameter[28];
+// }
+// MODEM_MSG_DATA_COMMAND;
+message CCLMDATCommand
+{
+  option (goby.msg).dccl.id = 0x0CC1000B; 
+  option (goby.msg).dccl.max_bytes = 32;
+
+  required bytes spare = 1 [(goby.field).dccl.max_length=1];
+
+  enum Command
+  {
+    RESERVED_0 = 0;
+    ABORT_TO_END_POSITION_OF_MISSION = 1;
+    ABORT_IMMEDIATELY = 2;
+    START_MISSION = 3;
+    RELEASE_DESCENT_WEIGHT = 4;
+    RELEASE_ASCENT_WEIGHT = 5;
+    RELEASE_PICKUP_FLOAT = 6;
+    ENABLE_MODEM_RANGER_PING = 7;
+    DISABLE_MODEM_RANGER_PING = 8;
+    OBSOLETE_9 = 9;
+    OBSOLETE_10 = 10;
+    OBSOLETE_11 = 11;
+    OBSOLETE_12 = 12;
+    OBSOLETE_13 = 13;
+    ACCEPT_NEXT_FIX = 14;
+    DUMP_REDIRECT_COMMANDS = 15;
+    GET_GPS_FIX = 16;
+    ABORT_TO_MISSION_START_LOCATION = 17;
+    ABORT_TO_DESTINATION = 18;
+    DUMP_REDIRECT_COMMANDS_EXCEPT_CURRENT = 19;
+    ABORT_DROP_ASCENT_WEIGHT_AND_POWER_TO_SURFACE = 20;
+    RESERVED_21 = 21;  
+    RESERVED_22 = 22;  
+    RESERVED_23 = 23;  
+    RESERVED_24 = 24;  
+    RESERVED_25 = 25;  
+    RESERVED_26 = 26;  
+    RESERVED_27 = 27;  
+    RESERVED_28 = 28;  
+    RESERVED_29 = 29;  
+    RESERVED_30 = 30;  
+    RESERVED_31 = 31;  
+  }
+  required Command command = 2;
+
+  // placeholder for the unenumerated commands
+  required uint32 reserved_command = 3 [(goby.field).dccl.min=0,
+                                        (goby.field).dccl.max=0x7ff];
+  
+  required bytes parameter = 4 [(goby.field).dccl.max_length=28];  
+  
+}
+
 
 // typedef struct
 // {

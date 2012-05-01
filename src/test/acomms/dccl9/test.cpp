@@ -252,6 +252,7 @@ int main(int argc, char* argv[])
     codec->info<goby::acomms::protobuf::CCLMDATBathy>(&goby::glog);
     codec->info<goby::acomms::protobuf::CCLMDATCTD>(&goby::glog);
     codec->info<goby::acomms::protobuf::CCLMDATError>(&goby::glog);
+    codec->info<goby::acomms::protobuf::CCLMDATCommand>(&goby::glog);
     
     
     std::cout << "all tests passed" << std::endl;

@@ -122,7 +122,7 @@ int main(int argc, char* argv[])
     codec->decode(encoded, &mini_abort_out);
     assert(mini_abort_out.SerializeAsString() == mini_abort_in.SerializeAsString());
 
-    cfg.set_ccl_compatible(true);
+    cfg.set_id_codec(goby::acomms::protobuf::DCCLConfig::LEGACY_CCL);
     cfg.clear_crypto_passphrase();
     codec->set_cfg(cfg);
 

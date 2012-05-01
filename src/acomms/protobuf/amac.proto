@@ -24,15 +24,15 @@ message MACUpdate
   required int32 dest = 1 [(goby.field).dccl.min = 1, (goby.field).dccl.max = 30, (goby.field).queue.is_dest = true, (goby.field).dccl.in_head = true]; // modem_id that this update is for
   optional UpdateType update_type = 2 [default = NO_CHANGE];
   repeated ModemTransmission slot = 3 [(goby.field).dccl.max_repeat=6];
-  optional int32 first_iterator = 4 [(goby.field).dccl.min = 0, (goby.field).dccl.max = 100, default = 0]; // integer offset from begin()
-  optional int32 second_iterator = 5 [(goby.field).dccl.min = -1, (goby.field).dccl.max = 100, default = -1]; // integer offset from begin()
+  optional int32 first_iterator = 4 [(goby.field).dccl.min = 0, (goby.field).dccl.max = 60, default = 0]; // integer offset from begin()
+  optional int32 second_iterator = 5 [(goby.field).dccl.min = -1, (goby.field).dccl.max = 60, default = -1]; // integer offset from begin()
 
   enum CycleState
   {
     STOPPED = 1;
     STARTED = 2;
   }
-  optional CycleState cycle_state = 6 [default=STARTED];
+  optional CycleState cycle_state = 6 [default=STARTED, (goby.field).dccl.in_head=true];
 }
 
 

@@ -41,12 +41,12 @@ void goby::acomms::DCCLDefaultMessageCodec::any_encode(Bitset* bits, const boost
   
 
  
-unsigned goby::acomms::DCCLDefaultMessageCodec::any_size(const boost::any& field_value)
+unsigned goby::acomms::DCCLDefaultMessageCodec::any_size(const boost::any& wire_value)
 {
-    if(field_value.empty())
+    if(wire_value.empty())
         return min_size();
     else
-        return traverse_const_message<Size, unsigned>(field_value);
+        return traverse_const_message<Size, unsigned>(wire_value);
 }
 
 void goby::acomms::DCCLDefaultMessageCodec::any_run_hooks(const boost::any& field_value)

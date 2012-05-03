@@ -105,7 +105,11 @@ void goby::acomms::DCCLFieldCodecBase::field_size(unsigned* bit_size,
                                         const google::protobuf::FieldDescriptor* field)
 {
     MessageHandler msg_handler(field);
-    *bit_size += any_size(field_value);
+
+    boost::any wire_value;
+    field_pre_encode(&wire_value, field_value);
+
+    *bit_size += any_size(wire_value);
 }
 
 void goby::acomms::DCCLFieldCodecBase::base_run_hooks(const google::protobuf::Message& msg,
@@ -131,7 +135,11 @@ void goby::acomms::DCCLFieldCodecBase::field_size_repeated(unsigned* bit_size,
                                                   const google::protobuf::FieldDescriptor* field)
 {
     MessageHandler msg_handler(field);
-    *bit_size += any_size_repeated(field_values);
+
+    std::vector<boost::any> wire_values;
+    field_pre_encode_repeated(&wire_values, field_values);
+
+    *bit_size += any_size_repeated(wire_values);
 }
 
 
@@ -410,13 +418,13 @@ void goby::acomms::DCCLFieldCodecBase::any_decode_repeated(Bitset* repeated_bits
     }
 }
 
-unsigned goby::acomms::DCCLFieldCodecBase::any_size_repeated(const std::vector<boost::any>& field_values)
+unsigned goby::acomms::DCCLFieldCodecBase::any_size_repeated(const std::vector<boost::any>& wire_values)
 {
     unsigned out = 0;
     for(unsigned i = 0, n = dccl_field_options().max_repeat(); i < n; ++i)
     {
-        if(i < field_values.size())
-            out += any_size(field_values[i]);
+        if(i < wire_values.size())
+            out += any_size(wire_values[i]);
         else
             out += any_size(boost::any());
     }    

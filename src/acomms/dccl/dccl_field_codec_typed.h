@@ -135,15 +135,15 @@ namespace goby
           ///
           /// \param wire_value Value to use when calculating the size of the field. If calculating the size requires encoding the field completely, cache the encoded value for a likely future call to encode() for the same wire_value.
           /// \return the size (in bits) of the field.
-          virtual unsigned size(const FieldType& wire_value) = 0;
+          virtual unsigned size(const WireType& wire_value) = 0;
           
           private:
-          unsigned any_size(const boost::any& field_value)
+          unsigned any_size(const boost::any& wire_value)
           {
               try
-              { return field_value.empty() ? size() : size(boost::any_cast<FieldType>(field_value)); }
+              { return wire_value.empty() ? size() : size(boost::any_cast<WireType>(wire_value)); }
               catch(boost::bad_any_cast&)
-              { throw(type_error("size", typeid(FieldType), field_value.type())); }
+              { throw(type_error("size", typeid(WireType), wire_value.type())); }
           }          
           
           void any_encode(Bitset* bits, const boost::any& wire_value)
@@ -316,20 +316,20 @@ namespace goby
 //          void any_post_decode_repeated(const std::vector<boost::any>& wire_values,
 //                                        std::vector<boost::any>* field_values);
           
-          unsigned any_size_repeated(const std::vector<boost::any>& field_values)
+          unsigned any_size_repeated(const std::vector<boost::any>& wire_values)
           {
               try
               {
                   std::vector<FieldType> in;
-                  BOOST_FOREACH(const boost::any& field_value, field_values)
+                  BOOST_FOREACH(const boost::any& wire_value, wire_values)
                   {                  
-                      in.push_back(boost::any_cast<FieldType>(field_value));
+                      in.push_back(boost::any_cast<WireType>(wire_value));
                   }
                   
                   return size_repeated(in);
               }
               catch(boost::bad_any_cast&)
-              { throw(type_error("size_repeated", typeid(FieldType), field_values.at(0).type())); }
+              { throw(type_error("size_repeated", typeid(WireType), wire_values.at(0).type())); }
           }
           
           

@@ -42,7 +42,7 @@ namespace goby
             void any_decode(Bitset* bits, boost::any* wire_value); 
             unsigned max_size();
             unsigned min_size();
-            unsigned any_size(const boost::any& field_value);
+            unsigned any_size(const boost::any& wire_value);
             void any_run_hooks(const boost::any& field_value);
 
             

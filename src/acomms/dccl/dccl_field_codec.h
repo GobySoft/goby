@@ -249,7 +249,7 @@ namespace goby
             /// \param bit_size Location to <i>add</i> calculated bit size to. Be sure to zero `bit_size` if you want only the size of this field.
             /// \param field_values Values to calculate size of (FieldType)
             /// \param field Protobuf descriptor to the field. Set to 0 for base message.
-            void field_size_repeated(unsigned* bit_size, const std::vector<boost::any>& field_values,
+            void field_size_repeated(unsigned* bit_size, const std::vector<boost::any>& wire_values,
                                      const google::protobuf::FieldDescriptor* field);
 
             // traverse mutable
@@ -395,7 +395,7 @@ namespace goby
             ///
             /// \param field_value Value to calculate size of
             /// \return Size of field (in bits)
-            virtual unsigned any_size(const boost::any& field_value) = 0;
+            virtual unsigned any_size(const boost::any& wire_value) = 0;
 
             virtual void any_run_hooks(const boost::any& field_value);
 
@@ -428,7 +428,7 @@ namespace goby
             virtual void any_post_decode_repeated(const std::vector<boost::any>& wire_values,
                                                   std::vector<boost::any>* field_values);
             
-            virtual unsigned any_size_repeated(const std::vector<boost::any>& field_values);
+            virtual unsigned any_size_repeated(const std::vector<boost::any>& wire_values);
             virtual unsigned max_size_repeated();
             virtual unsigned min_size_repeated();
             

@@ -233,9 +233,9 @@ unsigned goby::acomms::DCCLDefaultStringCodec::size()
     return min_size();
 }
 
-unsigned goby::acomms::DCCLDefaultStringCodec::size(const std::string& field_value)
+unsigned goby::acomms::DCCLDefaultStringCodec::size(const std::string& wire_value)
 {
-    return std::min(min_size() + static_cast<unsigned>(field_value.length()*BITS_IN_BYTE), max_size());
+    return std::min(min_size() + static_cast<unsigned>(wire_value.length()*BITS_IN_BYTE), max_size());
 }
 
 
@@ -288,7 +288,7 @@ unsigned goby::acomms::DCCLDefaultBytesCodec::size()
 }
 
 
-unsigned goby::acomms::DCCLDefaultBytesCodec::size(const std::string& field_value)
+unsigned goby::acomms::DCCLDefaultBytesCodec::size(const std::string& wire_value)
 {
     return max_size();
 }

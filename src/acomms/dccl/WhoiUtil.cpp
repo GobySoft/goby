@@ -251,6 +251,9 @@ char Encode_speed(SPEED_MODE mode, float speed)
       else if (speed < -127) speed = -127;
       break;
     }
+
+  speed += (speed > 0.0) ? 0.5 : -0.5;
+
   return((char)speed);
 }
 

@@ -551,6 +551,7 @@ void goby::acomms::DCCLCodec::process_cfg()
             validate<goby::acomms::protobuf::CCLMDATCTD>();
             validate<goby::acomms::protobuf::CCLMDATState>();
             validate<goby::acomms::protobuf::CCLMDATCommand>();
+            validate<goby::acomms::protobuf::CCLMDATError>();
         }
     }
     

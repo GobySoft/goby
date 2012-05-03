@@ -374,6 +374,6 @@ message CCLMDATError
   option (goby.msg).dccl.id = 0x0CC1000F; 
   option (goby.msg).dccl.max_bytes = 32;
 
-  required string message = 1 [(goby.field).dccl.max_length=31];
+  required bytes message = 1 [(goby.field).dccl.max_length=31];
 }
 

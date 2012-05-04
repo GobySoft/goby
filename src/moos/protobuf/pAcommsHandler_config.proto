@@ -35,39 +35,42 @@ message pAcommsHandlerConfig
   
   message MOOSVariables
   {
+    optional string prefix = 1 [default="ACOMMS_",
+                                (goby.field).description="Prefix all MOOS variable names with this string"];
+    
     // serial feed
-    optional string driver_raw_in = 1 [default="ACOMMS_NMEA_IN"];
-    optional string driver_raw_out = 2 [default="ACOMMS_NMEA_OUT"];
+    optional string driver_raw_in = 10 [default="NMEA_IN"];
+    optional string driver_raw_out = 11 [default="NMEA_OUT"];
 
-    optional string driver_raw_msg_in = 3 [default="ACOMMS_RAW_INCOMING"];
-    optional string driver_raw_msg_out = 4 [default="ACOMMS_RAW_OUTGOING"];
+    optional string driver_raw_msg_in = 12 [default="RAW_INCOMING"];
+    optional string driver_raw_msg_out = 13 [default="RAW_OUTGOING"];
     
-    optional string driver_receive = 5 [default="ACOMMS_MODEM_RECEIVE"];
-    optional string driver_transmit = 6 [default="ACOMMS_MODEM_TRANSMIT"];
+    optional string driver_receive = 14 [default="MODEM_RECEIVE"];
+    optional string driver_transmit = 15 [default="MODEM_TRANSMIT"];
     
-    optional string queue_receive = 100 [default="ACOMMS_QUEUE_RECEIVE"];
-    optional string queue_transmit = 101 [default="ACOMMS_QUEUE_TRANSMIT"];
+    optional string queue_receive = 100 [default="QUEUE_RECEIVE"];
+    optional string queue_transmit = 101 [default="QUEUE_TRANSMIT"];
     // acoustic acknowledgments get written here
-    optional string queue_ack_transmission = 102 [default="ACOMMS_ACK"];
-    optional string queue_ack_original_msg = 103 [default="ACOMMS_ACK_ORIGINAL"];
+    optional string queue_ack_transmission = 102 [default="ACK"];
+    optional string queue_ack_original_msg = 103 [default="ACK_ORIGINAL"];
     // expired messages (ttl ends)
-    optional string queue_expire = 104 [default="ACOMMS_EXPIRE"];
-    optional string queue_size = 105 [default="ACOMMS_QSIZE"];
-    optional string queue_flush = 106 [default="ACOMMS_FLUSH_QUEUE"];
+    optional string queue_expire = 104 [default="EXPIRE"];
+    optional string queue_size = 105 [default="QSIZE"];
+    optional string queue_flush = 106 [default="FLUSH_QUEUE"];
 
-    optional string mac_cycle_update = 200 [default="ACOMMS_MAC_CYCLE_UPDATE"];
-    optional string mac_initiate_transmission = 201 [default="ACOMMS_MAC_INITIATE_TRANSMISSION"];
+    optional string mac_cycle_update = 200 [default="MAC_CYCLE_UPDATE"];
+    optional string mac_initiate_transmission = 201 [default="MAC_INITIATE_TRANSMISSION"];
     
   }
   optional MOOSVariables moos_var = 10;
   
-  repeated string load_shared_library = 20 [(goby.field).description="Path to a shared library containing compiled DCCL protobuf files. Preferred over load_dccl_proto_file."];
+  repeated string load_shared_library = 20 [(goby.field).description="Path to a shared library containing compiled DCCL protobuf files. Preferred over load_dccl_proto_file.", (goby.field).example="/usr/lib/libmy_dccl_messages.so"];
 
-  repeated string load_proto_file = 21 [(goby.field).description="Path to a DCCL protobuf file. Use load_shared_library when possible."];
+  repeated string load_proto_file = 21 [(goby.field).description="Path to a DCCL protobuf file. Use load_shared_library when possible.", (goby.field).example="/usr/include/mylib/message.proto"];
 
   repeated goby.moos.protobuf.TranslatorEntry translator_entry = 22 [(goby.field).description="Describes how to trigger (generate) a DCCL message from a MOOS event and how to publish the contents of the message upon receipt"];
 
-  repeated string multiplex_create_moos_var = 23 [(goby.field).description="Specify a MOOS variable that contains one of many TextFormat protobuf messages which are distinguished by including the Protobuf name before the message contents. e.g. \"DSOP_DEPLOY DestinationPlatformId: 3 Deploy_Mode: DEPLOY_MODE_RETURN Depth_Mode: DEPTH_MODE_SINGLE Sonar_Control: SONAR_CONTROL_OFF Sonar_Process: SONAR_PROCESS_ON Deploy_Duration: 1800 Deploy_X: 2600 Deploy_Y: 1500 Deploy_Speed: 1.5 Deploy_Depth: 10 Alternate_Depth: 20\""];
+  repeated string multiplex_create_moos_var = 23 [(goby.field).description="Used primarily by goby_liaison. Specify a MOOS variable that contains one of many TECHNIQUE_PREFIXED_PROTOBUF_TEXT_FORMAT encoded protobuf messages. Upon receipt of a message, the `create` directives for this type are *published* (inverse of normal behavior), which triggers the creation of the message (if `trigger` is set to one of the `create` MOOS variables).",  (goby.field).example="LIAISON_COMMANDER_OUT"];
   
   // path to text file with entries:
   //   modem_id,name,type

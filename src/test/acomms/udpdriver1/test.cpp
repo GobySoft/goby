@@ -218,48 +218,7 @@ void handle_data_receive1(const protobuf::ModemTransmission& msg)
 
     switch(test_number)
     {
-        case 0:
-            assert(msg.type() == protobuf::ModemTransmission::MICROMODEM_TWO_WAY_PING);
-            ++check_count;
-            break;
 
-        case 1:
-        {
-            assert(msg.type() == protobuf::ModemTransmission::MICROMODEM_REMUS_LBL_RANGING);
-            assert(msg.src() == 1);
-            assert(!msg.has_dest());
-
-            ptime now = goby_time();
-            ptime reported = as<ptime>(msg.time());                
-            assert(reported < now && reported > now - seconds(2));
-            ++check_count;
-        }
-        break;
-
-        case 2:
-        {
-            assert(msg.type() == protobuf::ModemTransmission::MICROMODEM_NARROWBAND_LBL_RANGING);
-            assert(msg.src() == 1);
-            assert(!msg.has_dest());
-
-            ptime now = goby_time();
-            ptime reported = as<ptime>(msg.time());                
-            assert(reported < now && reported > now - seconds(2));
-            ++check_count;
-        }
-        break;
-
-        case 3:
-        {
-            assert(msg.type() == protobuf::ModemTransmission::MICROMODEM_MINI_DATA);
-            assert(msg.src() == 2);
-            assert(msg.dest() == 1);
-            assert(msg.frame_size() == 1);
-            assert(msg.frame(0).data() == goby::util::hex_decode("0123"));
-            ++check_count;
-        }
-        break;
-            
         case 4:
         {
             assert(msg.type() == protobuf::ModemTransmission::ACK);
@@ -329,10 +288,6 @@ void handle_data_receive2(const protobuf::ModemTransmission& msg)
             assert(false);
             break;
 
-        case 0:
-            assert(msg.type() == protobuf::ModemTransmission::MICROMODEM_TWO_WAY_PING);
-            ++check_count;
-            break;
 
         case 4:
             if(msg.type() == protobuf::ModemTransmission::DATA)

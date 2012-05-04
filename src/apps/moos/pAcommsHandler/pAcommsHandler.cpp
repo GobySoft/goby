@@ -293,20 +293,20 @@ void CpAcommsHandler::handle_goby_signal(const google::protobuf::Message& msg1,
     {
         std::string serialized1;
         serialize_for_moos(&serialized1, msg1);
-        publish(moos_var1, serialized1);
+        publish(cfg_.moos_var().prefix() + moos_var1, serialized1);
     }
     
     if(!moos_var2.empty())
     {
         std::string serialized2;
         serialize_for_moos(&serialized2, msg2);
-        publish(moos_var2, serialized2);
+        publish(cfg_.moos_var().prefix() + moos_var2, serialized2);
     }
 }
 
 void CpAcommsHandler::handle_raw(const goby::acomms::protobuf::ModemRaw& msg, const std::string& moos_var)
 {
-    publish(moos_var, msg.raw());
+    publish(cfg_.moos_var().prefix() + moos_var, msg.raw());
 }
 
 

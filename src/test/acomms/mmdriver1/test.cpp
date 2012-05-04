@@ -214,13 +214,16 @@ void handle_data_receive1(const protobuf::ModemTransmission& msg)
     switch(test_number)
     {
         case 0:
-            assert(msg.type() == protobuf::ModemTransmission::MICROMODEM_TWO_WAY_PING);
+            assert(msg.type() == protobuf::ModemTransmission::DRIVER_SPECIFIC &&
+                   msg.GetExtension(micromodem::protobuf::type) == micromodem::protobuf::MICROMODEM_TWO_WAY_PING);
             ++check_count;
             break;
 
         case 1:
         {
-            assert(msg.type() == protobuf::ModemTransmission::MICROMODEM_REMUS_LBL_RANGING);
+            assert(msg.type() == protobuf::ModemTransmission::DRIVER_SPECIFIC &&
+                   msg.GetExtension(micromodem::protobuf::type) == micromodem::protobuf::MICROMODEM_REMUS_LBL_RANGING);
+
             assert(msg.src() == 1);
             assert(!msg.has_dest());
 
@@ -233,7 +236,9 @@ void handle_data_receive1(const protobuf::ModemTransmission& msg)
 
         case 2:
         {
-            assert(msg.type() == protobuf::ModemTransmission::MICROMODEM_NARROWBAND_LBL_RANGING);
+            assert(msg.type() == protobuf::ModemTransmission::DRIVER_SPECIFIC &&
+                   msg.GetExtension(micromodem::protobuf::type) == micromodem::protobuf::MICROMODEM_NARROWBAND_LBL_RANGING);
+
             assert(msg.src() == 1);
             assert(!msg.has_dest());
 
@@ -246,7 +251,9 @@ void handle_data_receive1(const protobuf::ModemTransmission& msg)
 
         case 3:
         {
-            assert(msg.type() == protobuf::ModemTransmission::MICROMODEM_MINI_DATA);
+            assert(msg.type() == protobuf::ModemTransmission::DRIVER_SPECIFIC &&
+                   msg.GetExtension(micromodem::protobuf::type) == micromodem::protobuf::MICROMODEM_MINI_DATA);
+
             assert(msg.src() == 2);
             assert(msg.dest() == 1);
             assert(msg.frame_size() == 1);
@@ -325,7 +332,8 @@ void handle_data_receive2(const protobuf::ModemTransmission& msg)
             break;
 
         case 0:
-            assert(msg.type() == protobuf::ModemTransmission::MICROMODEM_TWO_WAY_PING);
+            assert(msg.type() == protobuf::ModemTransmission::DRIVER_SPECIFIC &&
+                   msg.GetExtension(micromodem::protobuf::type) == micromodem::protobuf::MICROMODEM_TWO_WAY_PING);
             ++check_count;
             break;
 
@@ -365,7 +373,8 @@ void test0()
 
     protobuf::ModemTransmission transmit;
     
-    transmit.set_type(protobuf::ModemTransmission::MICROMODEM_TWO_WAY_PING);
+    transmit.set_type(protobuf::ModemTransmission::DRIVER_SPECIFIC);
+    transmit.SetExtension(micromodem::protobuf::type, micromodem::protobuf::MICROMODEM_TWO_WAY_PING);
     transmit.set_src(1);
     transmit.set_dest(2);
 
@@ -390,7 +399,9 @@ void test1()
 
     protobuf::ModemTransmission transmit;
     
-    transmit.set_type(protobuf::ModemTransmission::MICROMODEM_REMUS_LBL_RANGING);
+    transmit.set_type(protobuf::ModemTransmission::DRIVER_SPECIFIC);
+    transmit.SetExtension(micromodem::protobuf::type, micromodem::protobuf::MICROMODEM_REMUS_LBL_RANGING);
+
     transmit.set_src(1);
     transmit.MutableExtension(micromodem::protobuf::remus_lbl)->set_lbl_max_range(1000);
     
@@ -414,7 +425,8 @@ void test2()
 
     protobuf::ModemTransmission transmit;
     
-    transmit.set_type(protobuf::ModemTransmission::MICROMODEM_NARROWBAND_LBL_RANGING);
+    transmit.set_type(protobuf::ModemTransmission::DRIVER_SPECIFIC);
+    transmit.SetExtension(micromodem::protobuf::type, micromodem::protobuf::MICROMODEM_NARROWBAND_LBL_RANGING);
     transmit.set_src(1);
 
     micromodem::protobuf::NarrowBandLBLParams* params = transmit.MutableExtension(micromodem::protobuf::narrowband_lbl);
@@ -446,7 +458,9 @@ void test3()
 
     protobuf::ModemTransmission transmit;
     
-    transmit.set_type(protobuf::ModemTransmission::MICROMODEM_MINI_DATA);
+    transmit.set_type(protobuf::ModemTransmission::DRIVER_SPECIFIC);
+    transmit.SetExtension(micromodem::protobuf::type, micromodem::protobuf::MICROMODEM_MINI_DATA);
+
     transmit.set_src(2);
     transmit.set_dest(1);
     

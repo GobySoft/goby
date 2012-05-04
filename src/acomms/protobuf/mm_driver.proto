@@ -162,8 +162,21 @@ message TransmitStatistics
   optional int32 number_bytes = 15;
 }
 
+enum TransmissionType
+{
+  BASE_TYPE = 0;
+    
+  MICROMODEM_TWO_WAY_PING = 1;   // modem 1 interrogates modem 2; modem 2 replies and modem 1 computes one way travel time: $CCMPC
+  MICROMODEM_REMUS_LBL_RANGING = 2;     // modem 1 pings a REMUS network of long baseline (LBL) beacons: $CCPDT
+  MICROMODEM_NARROWBAND_LBL_RANGING = 3;    // modem 1 pings up to four transponders: $CCPNT
+  MICROMODEM_MINI_DATA = 4; // 13 bits (represented as a 1 frame, 2 byte data transmission where data is AND'd with 0x1ff) mini data transmission
+}
+
 extend goby.acomms.protobuf.ModemTransmission 
 {
+  optional TransmissionType type = 1000 [(goby.field).description="Type of transmission if base `type` == DRIVER_SPECIFIC",
+                                         default=BASE_TYPE];
+  
   // LBL parameters will be merged with configuration parameters. If a parameter
   // is set in both places, the ones set here take precedence.
   optional NarrowBandLBLParams narrowband_lbl = 1001 [(goby.field).dccl.omit = true];

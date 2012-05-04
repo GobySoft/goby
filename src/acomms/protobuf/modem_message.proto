@@ -5,33 +5,37 @@ package goby.acomms.protobuf;
 
 message ModemTransmission
 {
-  optional int32 src = 1 [(goby.field).dccl.min = -1, (goby.field).dccl.max = 30, default = -1]; //  0 (BROADCAST), 1-31, 
-  optional int32 dest = 2 [(goby.field).dccl.min = -1, (goby.field).dccl.max = 30, default = -1]; //  0 (BROADCAST), 1-31, -1 (QUERY_DESTINATION_ID)
-  optional uint64 time = 3 [(goby.field).dccl.omit = true]; // microseconds since UNIX (1970-01-01 00:00:00 UTC)
+  optional int32 src = 1 [(goby.field).dccl.min = -1,
+                          (goby.field).dccl.max = 30,
+                          (goby.field).description = "modem ID of message source. 0 indicates BROADCAST.",
+                          default = -1]; // 0 (BROADCAST), 1-30
+  
+  optional int32 dest = 2 [(goby.field).dccl.min = -1,
+                           (goby.field).dccl.max = 30,
+                           (goby.field).description = "modem ID of message destination. 0 indicates BROADCAST, -1 indicates QUERY_DESTINATION_ID (i.e., destination is set to the destination of the next available packet",
+                           default = -1]; //  0 (BROADCAST), 1-30, -1 (QUERY_DESTINATION_ID)
+  optional uint64 time = 3 [(goby.field).dccl.omit = true,
+                            (goby.field).description = "timestamp (microseconds since UNIX (1970-01-01 00:00:00 UTC) of this transmission"];
   enum TimeSource { MODEM_TIME = 1; GOBY_TIME = 2; } 
-  optional TimeSource time_source = 5 [(goby.field).dccl.omit = true, default = GOBY_TIME]; // source of the timestamp given  
-  optional int32 rate = 6 [(goby.field).dccl.min = -1, (goby.field).dccl.max = 5, default = 0]; // 0 (lowest) - 5 (highest), -1 (QUERY_RATE)
- 
+  optional TimeSource time_source = 5 [(goby.field).dccl.omit = true,
+                                       default = GOBY_TIME,
+                                       (goby.field).description = "source of the timestamp given"];
+  optional int32 rate = 6 [(goby.field).dccl.min = -1,
+                           (goby.field).dccl.max = 5,
+                           (goby.field).description = "0 (lowest) - 5 (highest), -1 (QUERY_RATE). QUERY_RATE is currently unsupported by Goby-Queue",
+                           default = 0];
+  
   enum TransmissionType
   {
     // General (DriverBase) types
     UNKNOWN = 0;
     DATA = 1;
     ACK = 2;
-
-    // 1000-1099 taken by MMDriver - fields used by these types are given as MicroModem Extensions
-    // see acomms_mm_driver.proto
-    MICROMODEM_TWO_WAY_PING = 1000;   // modem 1 interrogates modem 2; modem 2 replies and modem 1 computes one way travel time: $CCMPC
-    MICROMODEM_REMUS_LBL_RANGING = 1001;     // modem 1 pings a REMUS network of long baseline (LBL) beacons: $CCPDT
-    MICROMODEM_NARROWBAND_LBL_RANGING = 1002;    // modem 1 pings up to four transponders: $CCPNT
-    MICROMODEM_MINI_DATA = 1003; // 13 bits (represented as a 1 frame, 2 byte data transmission where data is AND'd with 0x1ff) mini data transmission
-
-    // 2000-2099 taken by UFIELD_DRIVER - fields used by these types are given as Extensions
-    UFIELD_DRIVER_POLL = 2000;
-    
+    DRIVER_SPECIFIC = 10;
   }
 
-  optional TransmissionType type = 7 [default = UNKNOWN];
+  optional TransmissionType type = 7 [default = UNKNOWN,
+                                      (goby.field).description="Type of this transmission. DRIVER_SPECIFIC types are enumerated in the extensions for the selected driver."];
   
   // for type == DATA
   optional uint32 max_num_frames = 11 [(goby.field).dccl.omit = true, default = 1]; // set by the modem driver for the given rate
@@ -45,7 +49,7 @@ message ModemTransmission
 
   // for AMAC
   optional double slot_seconds = 30 [(goby.field).dccl.min = 0, (goby.field).dccl.max = 20, (goby.field).dccl.precision=1, default = 10]; // length of slot (in seconds) if this transmission is part of a TDMA cycle
-  optional uint32 unique_id = 31 [(goby.field).dccl.min = 0, (goby.field).dccl.max = 100]; // used to assign an ID to this slot
+  optional uint32 unique_id = 31 [(goby.field).dccl.min = 0, (goby.field).dccl.max = 100, (goby.field).example="0"]; // used to assign an ID to this slot
 
   // 1000-1099 taken by MMDriver (see acomms_mm_driver.proto)
   extensions 1000 to max;

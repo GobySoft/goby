@@ -1,260 +1,89 @@
 \chapter{Goby MOOS Modules}\label{chap:MOOS}
 \MakeShortVerb{\!} % makes !foo! == !foo!
 
-The acoustic communications portion of Goby was developed originally for the MOOS autonomy architecture. Thus, the relevant MOOS modules !pAcommsHandler! and others are still maintained (in goby/src/moos) for the use of the !MOOS-IvP! community. !MOOS-IvP! is explained in \cite{moos-ivp-jfr} and is available at \url{http://moos-ivp.org}. The usage of these modules is documented here. See \url{http://gobysoft.com/doc/#install} for how to install Goby.
-
-The beginning of this chapter motivates the design, followed by a detailed user manual for the individual MOOS processes.
-
-\section{Unified Command and Control for Subsea Autonomous Sensing Networks}
-
-The process of undersea observation, mapping, and monitoring is experiencing a dramatic
-paradigm shift away from platform-centric, human-controlled sensing,
-processing and interpretation. Rather, distributed sensing
-using networks of autonomous platforms is becoming the preferred technique.
-An optimal platform suite is often highly heterogeneous with large differences in mobility,
-maneuverability, sensing capability, and communication connectivity.  The
-sensor systems have different constraints on platform mobility and
-communication capacity, and some network operations require highly
-coordinated maneuvering of heterogeneous platforms. Unified Command and Control \cite{unified_c2} is a new command and control paradigm inherently suited for such heterogeneous networks. Implemented using
-!MOOS-IvP!, Unified C2 provides the fully integrated sensing,
-modeling and control that allows each platform, on its own or in
-collaboration with partners of opportunity, to autonomously detect,
-classify, localize and track (DCLT) an episodic, natural or human-created event, and
-subsequently report back to the operators.
-
-A robust undersea communication infrastructure is crucial to the
-operation of such networks. In contrast to air and land-based
-equivalents, the extremely limited bandwidth, latency and
-intermittency of underwater acoustic communication imposes severe
-requirements to the selectivity of message handling. Thus, contact and
-track reports for high-priority event, such as a detected chemical
-plume from a deep ocean vent,  which may indicate an imminent volcanic
-eruption, must be transmitted to the system operators without delay. On the
-other hand, reports concerning less important events and platform status 
-reports may be delayed without significant effects.
-Previous message handling systems for underwater communications have only a
-rigid, hard-coded queuing infrastructure, and do not support such
-advanced priority-based selectivity, hampering the type and
-amount of information that can be passed between cooperating nodes in
-the network. This severely limits the level of autonomy that can be
-supported on the network nodes.
-
-\begin{figure}[tp]
-  \centering 
-  \includegraphics[width=0.75\textwidth]{bistatic3.eps}
-\caption{ Collaborative autonomy demonstrated in SWAMSI09 using MIT
-  LAMSS communication stack. The two BF21 AUVs Unicorn and Macrura
-  perform synchronized swimming maintaining a constant bistatic angle
-  of $60^{\circ}$ relative to a proud cylindrical target
-  (cp). \label{bistatic3}}
-\end{figure}
-
-In response to this problem, a new !MOOS-IvP! communication software stack was developed at
-the MIT \gls{lamss} \cite{lamss}, in
-support of autonomous sensing programs such as the ONR ASAP MURI,
-GOATS, and SWAMSI. This new stack has enabled the operation of a communication
-infrastructure which provides robust message handling for
-collaborative autonomous sensing by heterogeneous, undersea autonomous
-assets, as demonstrated in a handful of major recent field
-experiments. As an example, Fig.~\ref{bistatic3} shows the
-collaborative, multistatic MCM mission by the Unicorn and Macrura BF21
-AUVs during SWAMSI09 in Panama City, FL. The two vehicles are circling
-a proud cylinder (cp) at a distance of 80 m maintaining a constant
-bistatic angle of 60 degrees. The collaboration was achieved fully
-autonomously without any intervention by the operators, with each
-vehicle adapting its speed based on its current position and the
-position of the other vehicle extrapolated from the latest status,
-contact or track report. Such collaborative maneuvers would not be
-possible using traditional communication schemes, where navigation
-packets must be rigidly interleaved with messages containg data and
-command and control sequences. In contrast, the Dynamic Compact
-Control Language (DCCL) used by the \gls{lamss} communication
-stack allows for adequate navigation information to be packed with all
-other required message content.
-
-Being based on the established open source !goby-acomms! libraries of message handling software, the
-open source architecture of this new MOOS communication stack (embodied primarily in the MOOS application !pAcommsHandler! lends
-itself directly to a wide range of military and civilian
-applications. It supports an arbitrary message suite and
-content without requirement of modifying software. All message encoding and
-decoding information is specified in a mission-unique configuration
-file written in the standard XML format. Not only does this ensure
-maximum flexibility in regard to message design, but it inherently
-enables arbitrary levels of encryption for LPI/LPD communication
-networks.
-
-\section{Overview of the LAMSS Communication Stack}
-
-\begin{figure}[tp]
-  \centering 
-  \includegraphics[width=\textwidth]{dclt_component.eps}
-\caption{Incorporation of the open source LAMSS communication stack into
- a \texttt{MOOS-IvP} DCLT Autonomy System. The green boxes identify the
- open source modules, including the IvP Helm, the generic mission
- manager module, and the communication stack. The red modules are
- project specific, including the frontseat driver module, and the
- sensor modules. Also the message configuration specifying the message
- content and the coding, is project specific. \label{lamss_dclt}} 
-\end{figure}
-
-MIT \gls{lamss} \cite{lamss} has over the last decade focused its research on the
-development of sensor-adaptive, collaborative, autonomous sensing
-concepts for the capture of episodic undersea events, including the
-mapping of coastal fronts, chemical plumes, and natural and man-made
-underwater acoustic sources. All these applications involve the
-Detection, Classification, Localization and Tracking (DCLT) of the
-event. To exploit the benefits of having multiple platforms involved
-in tracking the event, an underwater robust communication system is
-obviously a requirement. On the other hand, the communication capacity
-of such systems is many orders of magnitude below land- and air-based
-equivalents, requiring a much higher level of data compression and
-on-board processing and decision-making than is required in air-based
-systems. Unified C2 \cite{unified_c2}, developed over the
-last decade by \gls{lamss}, is an example of such an autonomy-driven
-undersea sensing concept. Although this concept is based on the
-philosophy that the system must be able to achieve its mission
-objective even during periods with no or limited communication, there
-is obviously still a need for occasional communication, e.g. for
-reporting detected events of interest.
-
-The new !MOOS-IvP! communication stack alleviates some of the problems and limitations of the
-existing software stacks in this regard. These software stacks in general were designed to
-sequentially transmit all messages generated by the autonomy system,
-with only a rigid, hard-coded priority-based message queuing
-infrastructure.
-
-In undersea autonomous systems the priorities of information generated
-by the on-board processing are highly dynamic, depending on the
-tactical situation and the criticality of the generated
-information. Thus, for example, a contact report for a target of
-interest obviously must bypass queued contact reports for less
-significant targets. Also, in high-clutter environments, the number of
-contact reports may by far exceed the communication capacity and on-board
-priority-based filtering is required.
-
-\begin{figure}[htp]
-\centering \includegraphics[width=\linewidth]{auv_community.eps}
-\caption{\texttt{MOOS-IvP} community for MIT sonar AUVs, with the autonomous
-  communication, command and control modules highlighted in
-  gold. }
-\label{fig:moos_comms}
-\end{figure}
-
-The incorporation of the MIT \gls{lamss} communication stack into a MOOS-IvP
-DCLT Autonomy System is illustrated in Fig.~\ref{lamss_dclt}. The
-green boxes identify the Open Source modules, including the helm !pHelmIvP!, the generic mission manager module !pMissionMonitor!,
-and the communication stack. The red modules are project-specific,
-including the frontseat driver module !iRemus!, the sensor
-modules, and the contact manager process !pContactManager!. Also
-the message configuration files specifying the message content and the
-coding specifics, are project-specific and not hard-wired into the
-communication stack.
-
-Figure \ref{fig:moos_comms} shows the communications subsystem as part of the whole
-MIT LAMSS AUV MOOS community.
+The acoustic communications portion of Goby was developed originally for the MOOS autonomy architecture. Thus, the relevant MOOS modules !pAcommsHandler! and others are still maintained (in goby/src/moos) for the use of the !MOOS-IvP! community. !MOOS-IvP! is explained in \cite{moos-ivp-jfr} and is available at \url{http://moos-ivp.org}. The usage of these modules is documented here. See \url{http://gobysoft.org/wiki/InstallingGoby} for how to install Goby.
 
 
- Figure \ref{acomms_sequence} shows the sequence of commands for a single operator command message sent using iCommander.
- 
- 
-\begin{figure}[tp]
-  \centering 
-  \includegraphics[width=1\textwidth]{acomms_sequence.eps}
-\caption{UML Sequence diagram for sending a command to an AUV via the LAMSS Acoustic Communications Modules. \label{acomms_sequence}}
-\end{figure}
+\section{Goby MOOS Applications} \label{sec:goby_moos_app}
 
+The Goby MOOS applications share a common subclass of CMOOSApp the provides a validating configuration reader based on the Google Protocol Buffers TextFormat class. The configuration is still embedded within the .moos file, but the syntax is somewhat different. Here you can control logging to a text file and terminal verbosity. You can also initialize a variable in the MOOS database at startup. Many of these parameters will automatically be set to a global MOOS variable (specified outside any ProcessConfig block) if left empty. For example, the global MOOS variable !LatOrigin! will set the Goby MOOS configuration variable !common::lat_origin!. This allows Goby MOOS applications to conform to MOOS \textit{de facto} conventions.
 
-The structure of the MIT LAMSS communication stack
-is illustrated in Fig.~\ref{lamss_comms}.
-
-\begin{figure}[tp]
-  \centering 
-  \includegraphics[width=\textwidth]{acomms_component.eps}
-  \caption{UML Component Model of the MIT LAMSS communication stack. The principal
-  message handler module is \texttt{pAcommsHandler}, which communicates
-  directly with the modem using built-in drivers, and thus not
-  dependent on third-party MOOS modem drivers. It also manages the
-  message stream by a dynamic, priority-based queuing system. The
-  message coding and decoding is performed by \texttt{pGeneralCodec} based on
-  the rules set out in the configuration file, and dedicated DCCL
-  codecs for transmitting various data streams.The stack also
-  supports standard fixed Compact Control Language (CCL) messages such
-  as the State message used by the Remus AUV, using dedicated codecs. Dashed line indicate dependencies between components. \label{lamss_comms}}
-\end{figure}
-
-\section{pAcommsHandler}
-\label{sec:pacommshandler} 
-
-
-\subsection{Problem}
-Acoustic communications are highly limited in throughput. Thus, it is unreasonable to expect ``total throughput'' of all communications data. Furthermore, even if total throughput is achievable over time, certain messages have a lower tolerance for delay (e.g. vehicle status) than others (e.g. CTD sample data). Reference \url{http://acomms.whoi.edu/umodem/documentation.html} for more information on the WHOI Micro-Modem.
-
-Also, in order to make the best use of this available bandwidth, messages need to be compacted to a minimal size before sending (effective encoding). To do this, pAcommsHandler provides an interface to the Dynamic Compact Control Language (DCCL\footnote{the name comes from the original CCL written by Roger Stokey for the REMUS AUVs, but with the ability to dynamically reconfigure messages based on mission need. DCCL is backwards compatible with a CCL network as it uses CCL message number 32}.) encoder/decoder. Furthermore, DCCL has powerful parsing abilities (``algorithms'') for both encoding and decoding, including the ability to perform certain geodesic conversions (e.g. latitude, longitude $\leftrightarrow$ UTM x,y) and lookups (e.g. \textit{modem\_id} $\leftrightarrow$ vehicle name) on data.
-
-pAcommsHandler roughly performs the same functions of pFramer, pRouter, pAcommsPoller, and iMicroModem but
-generalized to handle any number of message queues and extended to give more control over queue parameters. The DCCL encoding is much more flexible and more compact than the CCL encoding used by these older processes.
-
-\subsection{Solution}
-pAcommsHandler provides a(n):
-\begin{enumerate}
-\item Encoder/decoder unit (codec): encodes and decodes messages using DCCL (goby-acomms !dccl! library), which reduces the data required to be sent by:
-\begin{itemize}
-\item Predefined messages: the user must specify a message structure what specifies what fields the message contains and how large each field should be (in an intuitive fashion that DCCL turns into bits). Both the sender and receiver have preshared knowledge of the message structure. From this knowledge, no meta information about the message (beyond an identifier) needs to be sent, simply the data. 
-\item Custom field sizes: message fields are defined with custom tolerances (ranges and precisions) that are tighter than those given by the IEEE standards for floating point and integer numbers. For example, if a field needs to hold an integer that will never range outside [0, 1000] that field in the message will only be 10 bits long (ceil($\log_2{1001}$)).
-\end{itemize}
-\item Priority Queuing System: maintains an arbitrary number of message queues (each tied to a different MOOS variable) for hexadecimal data strings. (goby-acomms !queue! library)
-\begin{itemize} 
-\item allows configuration of the queue priorities and dynamic growth of the priority over the time since the last sent message.
-\item allows management of WHOI CCL message types as well as DCCL queuing. 
-\end{itemize}
-\item Modem Driver: handles all Micro-Modem serial communications. The driver (goby-acomms !modemdriver! library) can be used with other modems besides the WHOI Micro-Modem (see \url{http://gobysoft.com/doc/acomms__driver.html#acomms_writedriver} for information on writing a new driver). 
-\item MAC Manager: provides medium access control in the form of a simple slotted time division-multiple access (TDMA) scheme or flexible centralized polling (goby-acomms !amac! library).
-\end{enumerate}
-
-\subsection{Limitations}
-pAcommsHandler \textit{does not}:
-
-\begin{itemize}
-\item presently provide any multi-hop routing. The sender and receiver must be directly connected acoustically.
-\item split user messages into packets. The user must provide data that are small enough to fit into the modem frame desired (32 - 256 bytes for the WHOI Micro-Modem).
-\end{itemize} 
-
-\subsection{Compilation}
-pAcommsHandler depends on the Goby and MOOS libraries. See goby/DEPENDENCIES for help resolving the dependencies on your system.
-
-\subsection{Parameters for the pAcommsHandler Configuration Block}\label{sec:pAcommsHandler:config}
-
-\subsubsection{Example moos file}
-
-You can always get a complete listing of MOOS file parameters with their syntax by running
-\begin{verbatim}
-> pAcommsHandler --example_config
-\end{verbatim}
+\boxedverbatiminput{@RELATIVE_CMAKE_CURRENT_SOURCE_DIR@/includes/common.pb.cfg}
 \resetbvlinenumber
 
-This is a complete list of all the configuration values pAcommsHandler accepts. Most of the time you will need far fewer configuration options to use it.
-
-\boxedverbatiminput{"@RELATIVE_CMAKE_SOURCE_DIR@/src/moos/pAcommsHandler/pAcommsHandler_complete.moos"}
-\resetbvlinenumber
-
-\subsubsection{Filling out the .moos file}\label{sec:pAcommsHandler_moos_file}
-
-Many of the parameters are sufficiently explained in the above list of configuration parameters. What follows is a detailed explanation of the parameters that need further explanation.
+Some details about the configuration values:
 
 \begin{itemize}
-\item !common!: Parameters that can be set for any of the Goby MOOS applications. Here you can control logging to a text file, terminal verbosity. You can also initialize a variable in the MOOS database at startup. Many of these parameters will automatically be set to a global MOOS variable (specified outside any ProcessConfig block) if left empty. For example, the global MOOS variable !LatOrigin! will set the pAcommsHandler variable !common::lat_origin!. This allows pAcommsHandler to conform to MOOS \textit{de facto} conventions.
-\begin{itemize}
-\item !verbosity!: choose !VERBOSITY_VERBOSE! for full text terminal output, !VERBOSITY_WARN! for warnings only, and !VERBOSITY_QUIET! for no terminal output. !VERBOSITY_GUI! opens an NCurses GUI helpful to debugging and visualizing the many data flows of pAcommsHandler. 
+\item !log!: boolean to indicate whether to log terminal output or not to files in the path by !log_path!.
+\item !log_path!: folder to log all terminal output to for later debugging. Similar to system logs in /var/log.
+\item !log_verbosity!: verbosity of the log file. See !verbosity! for the various settings.
+\item !community!: the name of the current vehicle community.
+\item !lat_origin!: a decimal degrees latitude indicating the local cartesian origin.
+\item !lon_origin!: a decimal degrees longitude indicating the local cartesian origin.
+\item !app_tick!: same as AppTick.
+\item !comm_tick!: same as CommsTick.
+\item !verbosity!: choose !DEBUG*! for various levels of debugging output, !VERBOSE! for some text terminal output, !WARN! for warnings only, and !QUIET! for no terminal output.
+\item !show_gui!: if true, the running terminal opens an NCurses GUI helpful to debugging and visualizing the many data flows of pAcommsHandler. The verbosity in this GUI is governed by !verbosity!.
 \item !initializer!: since many times it is useful to have a MOOS variable including in a message that remains static for a given mission (vehicle name, etc), we give the option to publish initial MOOS variables here (for later use in messages [until overwritten, of course]). If !global_cfg_var! is set, pAcommsHandler looks for a global (i.e. specified at the top of the MOOS file or outside any !ProcessConfig! blocks) value in the .moos file with the name to the right of the colon and publishes it to a MOOS variable with the name to the left of the colon. For example:
 \begin{verbatim}
 initializer { global_cfg_var: "LatOrigin" moos_var: "LAT_ORIGIN" } 
 \end{verbatim}
 \resetbvlinenumber
 looks for a variable in the .moos file called !LatOrigin! and publishes it to the MOOSDB as a double variable !LAT_ORIGIN! with the value given by !LatOrigin!.
-\item !log_path!: folder to log all terminal output to for later debugging. Similar to system logs in /var/log.
-\item !log!: boolean to indicate whether to log terminal output or not to files in the path by !log_path!.
 \end{itemize}
+
+
+\section{pAcommsHandler}
+\label{sec:pacommshandler} 
+
+pAcommsHandler provides a:
+\begin{enumerate}
+\item MOOS Application wrapper for the Goby-Acomms communication library.
+\item set of translation tools for converting the DCCL messages (written as an extension of Google Protocol Buffers) to MOOS types (strings and doubles) and vice-versa.
+\item full backwards-compatibility support module for version 1 XML messages. 
+\end{enumerate}
+
+\subsection{Parameters for the pAcommsHandler Configuration Block}\label{sec:pAcommsHandler:config}
+
+\subsubsection{Example moos file}
+
+pAcommsHandler has a large number of configuration options, many of which you will never use or leave as default. You can always get a complete listing of MOOS file parameters with their syntax by running
+\begin{verbatim}
+> pAcommsHandler --example_config
+\end{verbatim}
+\resetbvlinenumber
+
+A commonly used \textit{subset} of these configuration values are provided here:
+
+\boxedverbatiminput{@RELATIVE_CMAKE_CURRENT_SOURCE_DIR@/includes/pAcommsHandler_reduced.moos}
+\resetbvlinenumber
+
+
+\subsubsection{Filling out the .moos file}\label{sec:pAcommsHandler_moos_file}
+
+Many of the parameters are sufficiently explained in the above list of configuration parameters. What follows is a detailed explanation of the parameters that need further explanation.
+
+\begin{itemize}
+\item !common!: Parameters that can be set for any of the Goby MOOS applications. See section \ref{sec:goby_moos_app}.
 \item !modem_id!: integer that specifies the !modem_id! of this current vehicle / community. For the WHOI Micro-Modem this is the Micro-Modem ``SRC'' configuration parameter (as set by !\$CCCFG,SRC,#! to check). For the remainder of the document, !modem_id! refers to the value !\$CCCFG,SRC,modem_id!. This configuration parameter will be set on startup. Setting this within the main block for pAcommsHandler sets it for all the modems (!driver_cfg!, !dccl_cfg!, !queue_cfg!, !mac_cfg!)
+\item !driver_type!: 
+\begin{itemize}
+\item !DRIVER_WHOI_MICROMODEM! is a driver for the WHOI Micro-Modem. 
+\item !DRIVER_ABC_EXAMPLE_MODEM! is a simple test ``modem''.
+\item !DRIVER_UFIELD_SIM_DRIVER! is a driver for the MOOS-IvP uField toolbox.
+\item !DRIVER_PB_STORE_SERVER! is a ZeroMQ (TCP, UNIX sockets) driver for the !goby_store_server! database.
+\item !DRIVER_UDP! is a user datagram protocol (UDP) driver.
+\item !DRIVER_NONE! disables the modem driver.
+\end{itemize}
+\item !driver_cfg!: Configures the base driver and the specific driver selected. See section \ref{sec:driver}.
+\item !mac_cfg!: Configures the acoustic Medium Access Control. See section \ref{sec:amac}.
+\item !queue_cfg!: Configures the Priority Queuing layer. See section \ref{sec:queue}.
+\item !dccl_cfg!: Configures the Dynamic Compact Control Language. See section \ref{sec:dccl}.
+\item !moos_var!: Rename any or all of the MOOS variables published by pAcommsHandler.
+\item !load_shared_library!: List of paths to shared libraries containing compiled DCCL (Google Protocol Buffers) messages.
+\item !load_proto_file!: List of paths to .proto files containing compiled DCCL (Google Protocol Buffers) messages. These will be compiled at runtime and loaded. It is preferable to use !load_shared_library! when possible.
+\item !translator_entry!: List of entries indicating when to make (\textit{trigger}) and how to \textit{create} outgoing DCCL messages, and how to \textit{publish} incoming DCCL messages. This can be thought of as providing a generic interface between MOOS strings and Google Protocol Buffers messages.
+\item !multiplex_create_moos_var!: Used by !goby_liaison! to publish multiple commands (outgoing messages) on a single MOOS variable.
 \item !modem_id_lookup_path!: path to a text file giving the mapping between !modem_id! and vehicle name and type for a given experiment. This file should look like:
 \begin{boxedverbatim}
 // modem id, vehicle name (should be community name), vehicle type
@@ -264,117 +93,12 @@ looks for a variable in the .moos file called !LatOrigin! and publishes it to th
 4, macrura, auv
 \end{boxedverbatim}
 \resetbvlinenumber
+\item !transitional_cfg!: Provides the same functionality as !dccl_cfg! does in pAcommsHandler from version 1 of Goby. Behind the scenes, XML messages are read, translated to version 2 Protobuf DCCL messages, and written to the !generated_proto_dir!, and subsequently loaded using !load_proto_file!. The appropriate !translator_entry!s are also created from these messages. Do not use this configuration or the XML representation of DCCL messages for any new projects. See the version 1 documentation (\url{http://gobysoft.org/doc/1.1/}) for more details on the XML representation of DCCL messages.
 \end{itemize}
-
-
-\paragraph{Encoding/Decoding (DCCL) Parameters (\texttt{dccl\_cfg})} \label{dccl_param}
-\begin{itemize}
-\item !modem_id!: Will be set to the same as !ProcessConfig { modem_id: } !. There is no need to set it again here.
-\item !message_file!: !path! to an XML file containing a message set of one or messages. If you want, you can insert one or more manipulators that change the behavior of pAcommsHandler for messages defined in that file. Allowed manipulators:
-\begin{itemize}
-\item !NO_MANIP!: blank manipulator (behavior is not modified by this manipulator)
-\item !NO_ENCODE!: do not encode this message
-\item !NO_DECODE!: do not decode this message
-\item !NO_QUEUE!: do not queue this message
-\item !LOOPBACK!: decode this message internally immediately following encode. Note that messages addressed to the local vehicle are looped back regardless of the value of this manipulator.
-\item !ON_DEMAND!: encode immediately preceding  a data request command (use for time sensitive messages like STATUS). This only works if all the message variables are always assumed fresh in the MOOSDB.
-\end{itemize}
-\item !crypto_password!: optionally provide a password here to encrypt all communications using AES. All receiving nodes must have the same password.
-\end{itemize}
-
-\paragraph{Queuing Parameters (\texttt{queue\_cfg})} \label{sec:xmlqueue}
-All queue configuration for DCCL messges must be configured within the XML files !<queuing />! tag and included with !message_file: {path: "message.xml"}!. Any !message_file!s specified for !dccl_cfg! are copied to !queue_cfg! and vice-versa, so you don't need to specify them in two places.
-
-CCL messages are configured using the !queue { }! object. The fields for !queue! correspond to the XML !<queuing />! tags:
-\begin{itemize}
-\item !id!: DCCL: a unique ID for this message (in the range 0-511). CCL: The decimal representation of the first byte of the CCL message to be queued. 
-\item !ack!: boolean flag (1=true, 0=false) whether to request an
-  acoustic acknowledgment on all sent messages from this field. If
-  omitted, default of 0 (false, no ack) is used.
-\item !blackout_time!: time in seconds after sending a message
-  from this queue for which no more messages will be sent. Use this
-  field to stop an always full queue from hogging the channel. If
-  omitted, default of 0 (no blackout) is used.
-\item !max_queue!: number of messages allowed in the queue before
-  discarding messages. If !newest_first! is set to true, the
-  oldest message in the queue is discarded to make room for the new
-  message. Otherwise, any new messages are disregarded until the space
-  in the queue opens up.
-\item !newest_first!: boolean flag (1=true=FILO, 0=false=FIFO)
-  whether to send newest messages in the queue first (FILO) or not
-  (FIFO).
-\item !ttl!: the time (in seconds) the message is allowed to live before being discarded. This also factors into the priority calculation as messages with a lower time-to-live (ttl) grow in priority faster. 
-\item !value_base!: 
-Each queue has a base value ($V_{base}$) and a time-to-live ($ttl$) that create the priority ($P(t)$) at any given time ($t$):
- \[
-P(t) = V_{base} \frac{(t-t_{last})}{ttl}
- \]
- where $t_{last}$ is the time of the last send from this queue.
-
-This means for every queue, the user has control over two variables ($V_{base}$ and $ttl$). $V_{base}$ is intended to capture how important the message type is in general. Higher base values mean the message is of higher importance. The $ttl$ governs the number of seconds the message lives from creation until it is destroyed by libqueue. The $ttl$ also factors into the priority calculation since all things being equal (same $V_{base}$), it is preferable to send more time sensitive messages first. So in these two parameters, the user can capture both overall value (i.e. $V_{base}$) and latency tolerance ($ttl$) of the message queue.
-
-\item !in_pubsub_var!: name of the moos variable that is published for received messages to this queue. Not used for DCCL queuing.
-\item !out_pubsub_var!: name of the moos variable to subscribe to for
-  messages to add to this queue. Not used for DCCL queuing.
-\end{itemize}
-
-An example queuing block (for DCCL messages):
-\begin{small}
-\begin{boxedverbatim}
-<message_set>
-  <message>
-    <id>23</id>
-    ...
-    <queuing>
-      <ack>false</ack>
-      <blackout_time>0</blackout_time>
-      <max_queue>1</max_queue>
-      <newest_first>true</newest_first>
-      <value_base>4</value_base>
-      <ttl>1000</ttl>
-    </queuing>
-  </message>
-  ...
-</message_set>
-\end{boxedverbatim}
-\resetbvlinenumber
-\end{small}
-
-\paragraph{Modem Driver Parameters (\texttt{driver\_cfg})}
-\begin{itemize}
-\item !driver_type!: The only real driver implemented is the !DRIVER_WHOI_MICROMODEM!. !DRIVER_ABC_EXAMPLE_MODEM! is a simple test ``modem''. !DRIVER_NONE! disables the modem driver.
-\item !connection_type!: type of connection to make to the modem (!CONNECTION_SERIAL!, !CONNECTION_TCP_AS_CLIENT!, !CONNECTION_TCP_AS_SERVER!).
-\item !serial_port!: serial port to which the modem is connected.
-\item !serial_baud!: baud rate to use. Should be set to 19200 for the WHOI Micro-Modem.
-\item !tcp_port!: networking port to use. 
-\item !tcp_server!: IPv4 networking address of the server to connect to. 
-\end{itemize}
-
-Extensions for the WHOI Micro-Modem
-\begin{itemize}
-\item ![MicroModemConfig.nvram_cfg]!: set some modem NVRAM setting to a value. Set ![MicroModemConfig.reset_nvram]: true! to reset all NVRAM (CFG) parameters on startup (!\$CCCFG,ALL,0!). All the ![MicroModemConfig.nvram_cfg]! values are sent after this reset. You do not need to send SRC as this is set to the !modem_id!.
-\item  ![MicroModemConfig.hydroid_gateway_id]!: Set to the HYDROID gateway id (1 or 2) \textit{only if using a HYDROID gateway buoy}. Omit for a normal WHOI Micro-Modem.
-\end{itemize} 
-
-\paragraph{Medium Access Control (MAC) Parameters (\texttt{mac\_cfg})}
-\begin{itemize}
-\item !type!: type of Medium Access Control. See \url{http://gobysoft.com/doc/acomms__mac.html#amac_schemes} for an explanation of the various MAC schemes.
-\item !slot_seconds!: length, in seconds, of each communication slot for the !type: MAC_AUTO_DECENTRALIZED! MAC option.
-\item !rate!: rate for the !type: MAC_AUTO_DECENTRALIZED! MAC option. For the WHOI Micro-Modem 0 is a single 32 byte packet (FSK), 2 is three frames of 64 bytes (PSK), 3 is two frames of 256 bytes (PSK), and 5 is eight frames of 256 bytes (PSK)
-\item !expire_cycles!: number of consecutive cycles in which a vehicle can be silent before being removed from the cycle for the !type: MAC_AUTO_DECENTRALIZED! MAC option.
-\item !slot!: use this repeated field to specify a manual polling or fixed TDMA cycle for the  !type: MAC_FIXED_DECENTRALIZED! and  !type: MAC_POLLED!. 
-\begin{itemize}
-\item !src!: The sending !modem_id! for this slot.
-\item !dest!: The receiving !modem_id! for this slot.
-\item !rate!: Bit-rate code for this slot (0-5).
-\item !type!: Type of transaction to occur in this slot. Can be !SLOT_DATA! (send a datagram), !SLOT_PING! (send a ranging two-way ping to another modem), !SLOT_REMUS_LBL! (ping a REMUS LBL network (WHOI Micro-Modem only)).
-\item !slot_seconds!: The duration of this slot, in seconds.
-\end{itemize} 
-\end{itemize} 
 
 \subsection{MOOS variables subscribed to by pAcommsHandler}
 
-Except for DCCL \xmltag{src\_var}s and \xmltag{trigger\_var}s, pAcommsHandler uses the \href{http://code.google.com/apis/protocolbuffers/docs/reference/cpp/google.protobuf.text_format.html}{Google Protocol Buffers TextFormat} class for parsing from MOOS strings. This saves significant effort in manually parsing strings. You should use these same facilities for creating and reading messages. Two helper functions are provided in \\ \href{http://gobysoft.com/doc/moos__protobuf__helpers_8h.html}{goby/moos/libmoos\_util/moos\_protobuf\_helpers} will help you serialize and parse these messages. See \url{http://gobysoft.com/doc/acomms.html#protobuf} for a brief overview of Google Protocol Buffers as used in Goby.
+Except for the user-configured publishes (!translator_entry!), pAcommsHandler uses the \href{http://code.google.com/apis/protocolbuffers/docs/reference/cpp/google.protobuf.text_format.html}{Google Protocol Buffers TextFormat} class for serializing to and parsing from MOOS strings (same as !TECHNIQUE_PREFIXED_PROTOBUF_TEXT_FORMAT!). This saves significant effort in manually parsing strings. You should use these same facilities for creating and reading messages. Two helper functions are provided in \\ \href{http://gobysoft.com/doc/moos__protobuf__helpers_8h.html}{goby/moos/libmoos\_util/moos\_protobuf\_helpers} will help you serialize and parse these messages. See \url{http://gobysoft.com/doc/2.0/acomms.html#protobuf} for a brief overview of Google Protocol Buffers as used in Goby.
 
 \begin{itemize}
 \item !DCCL!: Most variables subscribed to by pAcommsHandler are configured in the message XML files and are designated by the tags \xmltag{src\_var} (used to fetch data for a particular !message_var! within a DCCL message) and \xmltag{trigger\_var} (used to trigger the creatinon of a particular DCCL message and possibly provide some data for that message. See \ref{sec:dccl_overview} for details on the XML configuration. 
@@ -841,188 +565,10 @@ This example sends the DCCL ``Simple Status'' messsage from node 1 (!mm1!) to no
 
 \section{iCommander}\label{sec:icommander} 
 
-!iCommander! is a topside command and control (C2) tool which provides a simple
-console for issuing commands through the acoustic network. By sharing
-DCCL message configuration (XML) files with !pAcommsHandler! it automatically adapts to the current message set,
-without any need to change code.
+\textit{Deprecated. Use goby\_liaison as a replacement.}
 
-\subsubsection{Parameters for the iCommander Configuration Block}
-\paragraph{Example .moos file}
-The moos file is simple since the bulk of the configuration is stored in separate XML files (see section \ref{sec:dccl_overview} for the configuration of these files):
-
-\boxedverbatiminput{"@RELATIVE_CMAKE_SOURCE_DIR@/src/moos/iCommander/iCommander_complete.moos"}
-\resetbvlinenumber
-As with pAcommsHandler, the above configuration file can be generated at any time with the command:
-\begin{boxedverbatim}
-iCommander --example_config
-\end{boxedverbatim}
-\resetbvlinenumber
-
-
-\paragraph{Filling out the .moos file}
-
-Some of the DCCL configuration (!dccl_cfg!) parameters are not used, such as the !crypto_passphrase!. 
-
-\begin{itemize}
-\item !common!: See section \ref{sec:pAcommsHandler_moos_file}.
-\item !dccl_cfg.message_file!: path to an XML file containing a message set of one or messages. These are the DCCL messages. You can also load messages XML files through the Main Menu in the program.
-\item !load!: path to a file of iCommander saved message(s) to load automatically on startup. You can also load messages through the Main Menu in the program.
-\end{itemize}
-
-\subsubsection{Reference Sheet}
-\paragraph{Main Menu}
-\begin{boxedverbatim}
- ______________________________________________________________
-|            iCommander: Vehicle Command Message Sender        |
-|                        2 messages loaded.                    |
-|    Main Menu:                                                |
-|    > Return to active message                                |
-|    > Select Message                                          |
-|    > Load                                                    |
-|    > Save                                                    |
-|    > Import Message File                                     |
-|    > Exit                                                    |
-|______________________________________________________________|
-\end{boxedverbatim}
-\resetbvlinenumber
-\begin{itemize}
-\item \textit{Return to active message} - only available if you have actively edited a message this session. Choose to return to the editing screen of the last message you were editing.
-\item \textit{Select Message} - pick a message type to edit. All messages are read from DCCL (dynamic compact control language) XML message files.
-\item \textit{Load} - load a saved message parameters file. This allows you to save values for message fields from session to session.
-\item \textit{Save} - saves all open messages to a single file for later use. These files are plain text for easy use outside iCommander.
-\item \textit{Import Message File} - import another DCCL XML file for use.
-\item \textit{Exit} - quit cleanly.
-\end{itemize}
-
-\paragraph{Editing screen}
-\begin{boxedverbatim}
-
-    __________________________________________________
-   |                                                  |
-   |Editing message variable 1 of 22: MessageType     |
-   |(static) you cannot change the value of this field|
-   |__________________________________________________|
-
-   ___________________________________________________
-  |                                                   | 
-  |Message (Type: SENSOR_PROSECUTE)                   |
-  |22 entries total                                   |
-  |        {Enter} for options                        |
-  |        {Up/Down} for more message variables       |
-  |                                                   |
-  |                                 _________________ |
-  |                                |                 ||
-  |1. MessageType (static)         |SENSOR_PROSECUTE ||
-  |                                |_________________||
-  |                                 _________________ |
-  |                                |                 ||
-  |2. SensorCommandType (int)      |1                ||
-  |                                |_________________||
-  |                                 _________________ |
-  |                                |                 || 
-  |3. SourcePlatformId (int)       |0                ||
-  |                                |_________________||
-  |                                 _________________ |
-  |                                |                 ||
-  |4. DestinationPlatformId (int)  |3                ||
-  |                                |_________________||
-  |___________________________________________________|
-\end{boxedverbatim}
-\resetbvlinenumber
-
-Scroll to select the box to edit. Note that you will need to scroll up or down off the screen to see all the fields at once. The information box at the top will tell you how large the field can be based on the DCCL settings. You cannot enter a value outside these ranges. Hit enter to get the editing menu.
-
-\paragraph{Editing menu}
-\begin{boxedverbatim}
-        __________________________________________________________
-       |                                                          |
-       |                     Choose an action                     |
-       |> Return to message                                       |
-       |> Send                                                    |
-       |> Preview                                                 |
-       |> Quick switch to another open message                    |
-       |> Insert special: current time                            |
-       |> Insert special: local X,Y to longitude,latitude         |
-       |> Insert special: community                               |
-       |> Insert special: modem id                                |
-       |> Clear message                                           |
-       |> Main Menu                                               |
-       |                                                          |
-       |                                                          |
-       |__________________________________________________________|
-\end{boxedverbatim}
-\resetbvlinenumber
-\begin{itemize}
-\item \textit{Return to message}
-\item \textit{Send} - publish the variables for use by pAcommsHandler
-\item \textit{Preview} - preview the message to be sent in exact syntactical form
-\item \textit{Quick switch to another open message} - switch to another message with information (either edited this session or loaded)
-\item \textit{Insert special: current time} - insert a placeholder (``\_time'') that will be replaced with the current UNIX time when message is sent (e.g. 1236053988). \textbf{Shortcut: type 't'} directly into the field and bypass this menu.
-\item \textit{Insert special: local X,Y to longitude,latitude} - insert a placeholder designator to do a UTM local grid to latitude / longitude conversion. first the latitude (Y or northings) is entered (``y(lat)1:''), then you choose where to put the longitude (X or eastings) (``x(lon)1:''). after the colon enter the desired value in meters that will be converted to latitude/longitude based in the LatOrigin/LongOrigin set in the top of the MOOS file. Note that you may have more than one pair of x/y. This is the reason for the number following ``y(lat)''/``x(lon)''. ``y(lat)1'' is paired with ``x(lon)1'', ``y(lat)2'' is paired with ``x(lon)2'', etc. \textbf{Shortcut: type 'y' or 'x' respectively} directly into the fields and bypass this menu.
-\item \textit{Insert special: community} - insert the name of this MOOS community.
-\item \textit{Insert special: modem id} - choose a modem id from a list of names. This is based off the modem id lookup table used by pAcommsHandler.
-\item Clear message
-\item Main Menu
-\end{itemize}
-
-\paragraph{Acknowledgments}
-If you are using pAcommsHandler with the ACK field set to 1 (true), all acoustic message acknowledgments are displayed at the top of the screen. For example, the ack of a !LAMSS_DEPLOY! message would look like this:
-\begin{boxedverbatim}
- _____________________________________________
-|                                             |
-|Message acknowledged from queue: LAMSS_DEPLOY|
-| for destination: 5                          |
-| at time: 2011-Mar-03 22:38:12               |
-|_____________________________________________|
-\end{boxedverbatim}
-\resetbvlinenumber
-
-Similarly, expired messages (messages that exceed their \textit{ttl} without being sent) are shown as well:
-\begin{boxedverbatim}
- _____________________________________________
-|                                             |
-|Message expired from queue: LAMSS_DEPLOY     |
-| for destination: 5                          |
-| at time: 2011-Mar-03 22:38:12               |
-|_____________________________________________|
-\end{boxedverbatim}
-\resetbvlinenumber
- 
 \section{pREMUSCodec}
 
-\paragraph{Example .moos file}
-
-\boxedverbatiminput{"@RELATIVE_CMAKE_SOURCE_DIR@/src/moos/pREMUSCodec/pREMUSCodec_complete.moos"}
-\resetbvlinenumber
-As with pAcommsHandler, the above configuration file can be generated at any time with the command:
-\begin{boxedverbatim}
-pREMUSCodec --example_config
-\end{boxedverbatim}
-
-This codec handles several of the standard REMUS CCL messages. It can be configured to generate CCL State messages at regular intervals, and it will translate incoming CCL State messages into the standard !NODE_REPORT! format used internally in the LAMSS autonomy systems. This codec allows a MOOS vehicle to perform collaborative behaviors, such as collision avoidance, with a non-MOOS, standard CCL vehicle. See section \ref{sec:moos_example_1} for an example of using pREMUSCodec.
-
-\section{iMOOS2SQL}
-
-This is a transponder process, which translates Status, Contact, and
-Track Reports into a format for interfacing the MOOS C2 with the
-generic Google Earth-based (geov) topside display, e.g. as shown in
-Fig.~\ref{bistatic3}. This module is available in moos-ivp-local (\url{http://oceanai.mit.edu/moos-ivp/pmwiki/pmwiki.php?n=Support.Milocal}).
-
-
-\section{pGeneralCodec}
-
-\textit{Deprecated. Do not use, rather use pAcommsHandler with no driver, no MAC, and no queueing if only encoding/decoding is desired.}
-
-\section{pBTRCodec}
-
-\textit{Deprecated. Do not use, rather use the \xmltag{array\_length} feature of pAcommsHandler which provides the same functionality.}
-
-\section{pCTDCodec}
-
-\textit{Deprecated. Do not use, rather use the \xmltag{max\_delta} feature of pAcommsHandler which provides all the same functionality but with much more generality. }
-
-\section{pAcommsPoller}
-
-\textit{Deprecated. Use the MAC built into pAcommsHandler. }
+\textit{Deprecated. (**FILL IN DETAILS FOR REPLACEMENT**)}
 
 \DeleteShortVerb{\!}

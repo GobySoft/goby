@@ -1,0 +1,154 @@
+\chapter{Goby-Acomms}\label{chap:acomms}
+\MakeShortVerb{\!} % makes !foo! == !foo!
+
+
+\section{Problem}
+Acoustic communications are highly limited in throughput. Thus, it is unreasonable to expect ``total throughput'' of all communications data. Furthermore, even if total throughput is achievable over time, certain messages have a lower tolerance for delay (e.g. vehicle status) than others (e.g. CTD sample data). 
+
+Also, in order to make the best use of this available bandwidth, messages need to be compacted to a minimal size before sending (effective encoding). To do this, Goby-Acomms provides an interface to the Dynamic Compact Control Language (DCCL\footnote{the name comes from the original CCL written by Roger Stokey for the REMUS AUVs, but with the ability to dynamically reconfigure messages based on mission need. If desired, DCCL can be configured to be backwards compatible with a CCL network using CCL message number 32}) encoder/decoder. 
+
+\section{Dynamic Compact Control Language: DCCL} \label{sec:dccl}
+
+\subsection{Configuration: DCCLConfig}
+
+Configuration of individual DCCL messages is done within the .proto definition. All the non-message specific available configuration for !goby::acomms::DCCLCodec! is given in its TextFormat form as:
+
+\boxedverbatiminput{@RELATIVE_CMAKE_CURRENT_SOURCE_DIR@/includes/dccl_config.pb.cfg}
+\resetbvlinenumber
+
+\subsection{Configuration: Protocol Buffers Extensions}
+
+A full list of the DCCL extensions to google::protobuf::MessageOptions and google::protobuf::FieldOptions is provided at \url{http://gobysoft.com/doc/2.0/acomms_dccl.html#dccl_options} along with descriptions on how to create basic DCCL messages. Therefore, we will not replicate that information here.
+
+\section{Time dependent priority queuing: Queue} \label{sec:queue}
+
+\subsection{Configuration: QueueManagerConfig}
+
+Most of the configuration for queuing messages is done within the .proto message definition of a given DCCL message. The rest of the configuration options for !goby::acomms::QueueManager! are:
+
+\boxedverbatiminput{@RELATIVE_CMAKE_CURRENT_SOURCE_DIR@/includes/queue_config.pb.cfg}
+\resetbvlinenumber
+
+\section{Time Division Multiple Access (TDMA) Medium Access Control (MAC): AMAC} \label{sec:amac}
+
+\subsection{Configuration: MACConfig}
+
+The !goby::acomms::MACManager! is basically a !std::list<goby::acomms::protobuf::ModemTransmission>!. Thus, its configuration is primarily such an initial list of these ``slot''s. Since !ModemTransmission! is extensible to handle different modem drivers, the AMAC configuration is also automatically extended. Some fields in !ModemTransmission! do not make sense to configure !goby::acomms::MACManager! with, so these are omitted here:
+
+\boxedverbatiminput{@RELATIVE_CMAKE_CURRENT_SOURCE_DIR@/includes/mac_config.pb.cfg}
+\resetbvlinenumber
+
+
+Further details on these configuration fields: 
+\begin{itemize}
+\item !type!: type of Medium Access Control. See \url{http://gobysoft.com/doc/2.0/acomms_mac.html#amac_schemes} for an explanation of the various MAC schemes.
+\item !slot!: use this repeated field to specify a manual polling or fixed TDMA cycle for the  !type: MAC_FIXED_DECENTRALIZED! and  !type: MAC_POLLED!. 
+\begin{itemize}
+\item !src!: The sending !modem_id! for this slot.
+\item !dest!: The receiving !modem_id! for this slot. Omit or set to -1 to allow next datagram to set destination.
+\item !rate!: Bit-rate code for this slot (0-5). For the WHOI Micro-Modem 0 is a single 32 byte packet (FSK), 2 is three frames of 64 bytes (PSK), 3 is two frames of 256 bytes (PSK), and 5 is eight frames of 256 bytes (PSK).
+\item !type!: Type of transaction to occur in this slot. If !DRIVER_SPECIFIC!, the specific hardware driver governs the type of this slot.
+\item !slot_seconds!: The duration of this slot, in seconds.
+\item !unique_id!: Integer field that can optionally be used to identify certain types of slots. For example, this allows integration of an in-band (but otherwise unrelated) sonar with the modem MAC cycle.
+\end{itemize} 
+\end{itemize} 
+
+
+Relevant extensions of !goby::acomms::protobuf::ModemTransmission! for the WHOI Micro-Modem driver (!DRIVER_WHOI_MICROMODEM!):
+
+\boxedverbatiminput{@RELATIVE_CMAKE_CURRENT_SOURCE_DIR@/includes/mac_mmdriver.pb.cfg}
+\resetbvlinenumber
+
+Several examples:
+\begin{itemize}
+\item Continous uplink from node 2 to node 1 with a 15 second pause between datagrams (node 1's configuration; same for node 2 except for !modem_id = 2!):
+\begin{boxedverbatim}
+modem_id: 2
+type: MAC_FIXED_DECENTRALIZED
+slot { src: 2  dest: 1  type: DATA  slot_seconds: 15 }
+\end{boxedverbatim}
+\resetbvlinenumber
+\item Equal sharing for three vehicles (destination governed by next data packet):
+\begin{boxedverbatim}
+modem_id: 1 # 2 or 3 for other vehicles
+type: MAC_FIXED_DECENTRALIZED
+slot { src: 1  type: DATA  slot_seconds: 15 }
+slot { src: 2  type: DATA  slot_seconds: 15 }
+slot { src: 3  type: DATA  slot_seconds: 15 }
+\end{boxedverbatim}
+\resetbvlinenumber
+\item Three vehicles with both data and WHOI Micro-Modem two-way ranging (ping):
+\begin{boxedverbatim}
+modem_id: 1 # 2 or 3 for other vehicles
+type: MAC_FIXED_DECENTRALIZED
+slot { src: 1  type: DATA  slot_seconds: 15 }
+slot { 
+  src: 1
+  dest: 2
+  type: DRIVER_SPECIFIC 
+  [micromodem.protobuf.type]: MICROMODEM_TWO_WAY_PING
+  slot_seconds: 5
+}
+slot { 
+  src: 1
+  dest: 3
+  type: DRIVER_SPECIFIC 
+  [micromodem.protobuf.type]: MICROMODEM_TWO_WAY_PING
+  slot_seconds: 5
+}
+slot { src: 2  type: DATA  slot_seconds: 15 }
+slot { src: 3  type: DATA  slot_seconds: 15 }
+\end{boxedverbatim}
+\resetbvlinenumber
+\item One vehicle interleaving data and REMUS long-base-line (LBL) navigation pings:
+\begin{boxedverbatim}
+modem_id: 1
+type: MAC_FIXED_DECENTRALIZED
+slot { src: 1  type: DATA  slot_seconds: 15 }
+slot { 
+  src: 1
+  dest: 2
+  type: DRIVER_SPECIFIC 
+  [micromodem.protobuf.type]: MICROMODEM_REMUS_LBL_RANGING
+  [micromodem.protobuf.remus_lbl] {
+    enable_beacons: 0xf   # enable all four: b1111
+    turnaround_ms: 50
+    lbl_max_range: 500 # meters
+  }
+  slot_seconds: 5
+}
+\end{boxedverbatim}
+\resetbvlinenumber
+\end{itemize}
+
+\section{Abstract Acoustic (or other slow link) Modem Driver: ModemDriver} \label{sec:driver}
+
+\subsection{Configuration: DriverConfig}
+
+Base driver configuration:
+
+\boxedverbatiminput{@RELATIVE_CMAKE_CURRENT_SOURCE_DIR@/includes/driver_config.pb.cfg}
+\resetbvlinenumber
+
+Extensions for the WHOI Micro-Modem (!DRIVER_WHOI_MICROMODEM!):
+\boxedverbatiminput{@RELATIVE_CMAKE_CURRENT_SOURCE_DIR@/includes/driver_mmdriver.pb.cfg}
+\resetbvlinenumber
+
+Extensions for the example driver (!DRIVER_ABC_EXAMPLE_MODEM!):
+\boxedverbatiminput{@RELATIVE_CMAKE_CURRENT_SOURCE_DIR@/includes/driver_abc_driver.pb.cfg}
+\resetbvlinenumber
+
+Extensions for the MOOS uField driver (!DRIVER_UFIELD_SIM_DRIVER!):
+\boxedverbatiminput{@RELATIVE_CMAKE_CURRENT_SOURCE_DIR@/includes/driver_ufield.pb.cfg}
+\resetbvlinenumber
+
+Extensions for the ZeroMQ/Protobuf storage driver (!DRIVER_PB_STORE_SERVER!):
+\boxedverbatiminput{@RELATIVE_CMAKE_CURRENT_SOURCE_DIR@/includes/driver_pb.pb.cfg}
+\resetbvlinenumber
+
+Extensions for the UDP driver (!DRIVER_UDP!):
+\boxedverbatiminput{@RELATIVE_CMAKE_CURRENT_SOURCE_DIR@/includes/driver_udp.pb.cfg}
+\resetbvlinenumber
+
+
+\DeleteShortVerb{\!}

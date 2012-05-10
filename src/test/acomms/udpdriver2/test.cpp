@@ -112,7 +112,8 @@ int main(int argc, char* argv[])
     transmit.set_ack_requested(true);
 
     i = 0;
-    while(((i / 10) < 100))
+    for(;;)
+      //    while(((i / 10) < 100))
     {
         driver1->do_work();
 
@@ -132,7 +133,7 @@ void handle_data_request1(protobuf::ModemTransmission* msg)
     goby::glog << group("driver1") << "Data request: " << *msg << std::endl;
 
     static int i = 0;
-    msg->add_frame(std::string(32, i++));
+    msg->add_frame(std::string(32, i++ % 256));
     
     goby::glog << group("driver1") << "Post data request: " << *msg << std::endl;
 }

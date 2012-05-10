@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e -u
 
 PATH=/home/toby/nightly/goby/2.0/bin:${PATH}
 

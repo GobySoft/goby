@@ -157,9 +157,9 @@ CpAcommsHandler::CpAcommsHandler()
     }
     
     // update comms cycle
-    subscribe(cfg_.moos_var().mac_cycle_update(), &CpAcommsHandler::handle_mac_cycle_update, this);    
+    subscribe(cfg_.moos_var().prefix() + cfg_.moos_var().mac_cycle_update(), &CpAcommsHandler::handle_mac_cycle_update, this);    
     
-    subscribe(cfg_.moos_var().queue_flush(), &CpAcommsHandler::handle_flush_queue, this);    
+    subscribe(cfg_.moos_var().prefix() + cfg_.moos_var().queue_flush(), &CpAcommsHandler::handle_flush_queue, this);    
 }
 
 CpAcommsHandler::~CpAcommsHandler()

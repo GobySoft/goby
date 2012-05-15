@@ -117,7 +117,7 @@ int main(int argc, char* argv[])
     {
         driver1->do_work();
 
-        if((i % 10 == 0) && !is_quiet)
+        if((i % 100 == 0) && !is_quiet)
             driver1->handle_initiate_transmission(transmit);
         
         usleep(100000);

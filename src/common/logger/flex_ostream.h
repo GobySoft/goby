@@ -33,9 +33,8 @@
 #include <google/protobuf/io/tokenizer.h>
 
 #include <boost/static_assert.hpp>
-#include <boost/static_assert.hpp>
 
-#include "flex_ostreambuf.h"
+#include "goby/common/logger/flex_ostreambuf.h"
 #include "logger_manipulators.h"
 
 namespace goby
@@ -161,8 +160,10 @@ namespace goby
             /// \name Thread safety related
             //@{
             /// Get a reference to the Goby logger mutex for scoped locking
+#if THREAD_SAFE_LOGGER
             boost::mutex& mutex()
             { return logger::mutex; }
+#endif
             //@}
 
             void refresh()
@@ -227,13 +228,14 @@ namespace goby
     }
 }
 
-
+#if THREAD_SAFE_LOGGER
 /// Unlock the Goby logger after a call to glogger(lock)
 inline std::ostream& unlock(std::ostream & os)
 {
     goby::common::logger::mutex.unlock();    
     return os;
 }
+#endif
 
 class FlexOStreamErrorCollector : public google::protobuf::io::ErrorCollector
 {

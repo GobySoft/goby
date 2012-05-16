@@ -42,7 +42,7 @@ namespace goby
           virtual unsigned size() = 0;
           
           private:
-          unsigned size(const FieldType& field_value)
+          unsigned size(const WireType& wire_value)
           { return size(); }
           
           unsigned max_size()

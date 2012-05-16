@@ -21,10 +21,14 @@
 // along with Goby.  If not, see <http://www.gnu.org/licenses/>.
 
 
-#include "dynamic_protobuf_manager.h"
+#include "goby/util/dynamic_protobuf_manager.h"
 
 #include "goby/common/exception.h"
 #include "goby/common/logger.h"
+
+#if PROTO_RUNTIME_COMPILE
+#include <boost/filesystem.hpp>
+#endif
 
 boost::shared_ptr<goby::util::DynamicProtobufManager> goby::util::DynamicProtobufManager::inst_;
 
@@ -53,10 +57,31 @@ void goby::util::DynamicProtobufManager::enable_disk_source_database()
     add_database(source_database_);
 }
 
+#if PROTO_RUNTIME_COMPILE
+const google::protobuf::FileDescriptor*
+goby::util::DynamicProtobufManager::load_from_proto_file(const std::string& proto_file)
+{
+    if(!get_instance()->source_database_)
+        throw(std::runtime_error("Must called enable_compilation() before loading proto files directly"));
+                
+                
+#if BOOST_FILESYSTEM_VERSION == 3
+    namespace bf = boost::filesystem3;
+#else
+    namespace bf = boost::filesystem;
+#endif
+    bf::path proto_file_path = bf::complete(proto_file);
+    proto_file_path.normalize();
+
+    return user_descriptor_pool().FindFileByName(proto_file_path.string());
+}
+#endif
+
+
 // GLogMultiFileErrorCollector
 
 void goby::util::DynamicProtobufManager::GLogMultiFileErrorCollector::AddError(const std::string & filename, int line, int column,
-              const std::string & message)
+                                                                               const std::string & message)
 {
     goby::glog.is(goby::common::logger::DIE) &&
         goby::glog << "File: " << filename
@@ -64,3 +89,5 @@ void goby::util::DynamicProtobufManager::GLogMultiFileErrorCollector::AddError(c
                    << column << "): "
                    << message << std::endl;
 }
+
+

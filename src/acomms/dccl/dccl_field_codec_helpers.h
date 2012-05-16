@@ -44,7 +44,14 @@ namespace goby
                     
                 for(int i = 0; i < fields_pushed_; ++i)
                     __pop_field();
+
+                if(desc_.empty())
+                    part_ = UNKNOWN;
+                
             }
+
+            enum MessagePart { HEAD, BODY, UNKNOWN };
+            
             bool first() 
             { return desc_.empty(); }
             int count() 
@@ -53,6 +60,9 @@ namespace goby
             void push(const google::protobuf::Descriptor* desc);
             void push(const google::protobuf::FieldDescriptor* field);
 
+            static MessagePart current_part() { return part_; }
+            
+            
             friend class DCCLFieldCodecBase;
           private:
             void __pop_desc();
@@ -62,6 +72,7 @@ namespace goby
             static std::vector<const google::protobuf::FieldDescriptor*> field_;
             int descriptors_pushed_;
             int fields_pushed_;
+            static MessagePart part_;
         };
 
     }

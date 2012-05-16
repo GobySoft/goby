@@ -119,7 +119,9 @@ void goby::moos::UFldDriver::handle_initiate_transmission(
 
         msg.set_dest(msg.src());
         msg.set_src(driver_cfg_.modem_id());
-        msg.set_type(goby::acomms::protobuf::ModemTransmission::UFIELD_DRIVER_POLL);
+        
+        msg.set_type(goby::acomms::protobuf::ModemTransmission::DRIVER_SPECIFIC);
+        msg.SetExtension(goby::moos::protobuf::type, goby::moos::protobuf::UFIELD_DRIVER_POLL);
 
         send_message(msg);
     }
@@ -195,7 +197,8 @@ void goby::moos::UFldDriver::do_work()
 
 void goby::moos::UFldDriver::receive_message(const goby::acomms::protobuf::ModemTransmission& msg)
 {
-    if(msg.type() == goby::acomms::protobuf::ModemTransmission::UFIELD_DRIVER_POLL)
+    if(msg.type() == goby::acomms::protobuf::ModemTransmission::DRIVER_SPECIFIC &&
+       msg.GetExtension(goby::moos::protobuf::type) == goby::moos::protobuf::UFIELD_DRIVER_POLL)
     {
         goby::acomms::protobuf::ModemTransmission data_msg = msg;
         data_msg.set_type(goby::acomms::protobuf::ModemTransmission::DATA);

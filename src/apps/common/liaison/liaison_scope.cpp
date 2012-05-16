@@ -56,9 +56,10 @@ goby::common::LiaisonScope::LiaisonScope(ZeroMQService* zeromq_service,
       model_(new LiaisonScopeMOOSModel(moos_scope_config_, this)),
       proxy_(new Wt::WSortFilterProxyModel(this)),
       main_layout_(new Wt::WVBoxLayout(this)),
-      controls_div_(new ControlsContainer(timer)),
       subscriptions_div_(new SubscriptionsContainer(this, model_, history_model_, msg_map_)),
       history_header_div_(new HistoryContainer(this, main_layout_, history_model_, moos_scope_config_)),
+      controls_div_(new ControlsContainer(timer, Liaison::cfg_.start_paused(),
+                                          this, subscriptions_div_, history_header_div_)),
       regex_filter_div_(new RegexFilterContainer(model_, proxy_, moos_scope_config_)),
       scope_tree_view_(new LiaisonScopeMOOSTreeView(moos_scope_config_)),
       bottom_fill_(new WContainerWidget)
@@ -170,6 +171,7 @@ void goby::common::LiaisonScope::attach_pb_rows(const std::vector<Wt::WStandardI
         }
     }
 }
+
 std::vector<Wt::WStandardItem *> goby::common::LiaisonScope::create_row(CMOOSMsg& msg)
 {
     std::vector<Wt::WStandardItem *> items;
@@ -202,25 +204,64 @@ void goby::common::LiaisonScope::update_row(CMOOSMsg& msg, const std::vector<WSt
     
     if(msg.IsString())
         attach_pb_rows(items, msg);
-
-
-    
 }
 
 void goby::common::LiaisonScope::handle_global_key(Wt::WKeyEvent event)
 {
-    while(zeromq_service_->poll(0))
-    { }
+    switch(event.key())
+    {
+        // pull single update to display
+        case Key_Enter:
+            subscriptions_div_->refresh_with_newest();
+            history_header_div_->flush_buffer();
+            break;
+
+            // toggle play/pause
+        case Key_P:
+            controls_div_->handle_play_pause(true);
+            
+        default:
+            break;
+    }
+
+}
+
+
+void goby::common::LiaisonScope::pause()
+{
+    controls_div_->pause();
+}
+
+void goby::common::LiaisonScope::resume()
+{
+    controls_div_->resume();
+}
+
+void goby::common::LiaisonScope::moos_inbox(CMOOSMsg& msg)
+{
+    if(is_paused())
+    {
+        std::map<std::string, HistoryContainer::MVC>::iterator hist_it =
+            history_header_div_->history_models_.find(msg.GetKey());
+        if(hist_it != history_header_div_->history_models_.end())
+        {
+            // buffer for later display
+            history_header_div_->buffer_.push_back(msg);
+        }
+    }
+    else
+    {
+        handle_message(msg, true);
+    }
 }
 
 
 
-
-void goby::common::LiaisonScope::moos_inbox(CMOOSMsg& msg)
-{
-    using goby::moos::operator<<;
-    
-    glog.is(DEBUG1, lock) && glog << "LiaisonScope: got message:  " << msg << std::endl << unlock;
+void goby::common::LiaisonScope::handle_message(CMOOSMsg& msg,
+                                                bool fresh_message)
+{    
+//    using goby::moos::operator<<;
+//    glog.is(DEBUG1, lock) && glog << "LiaisonScope: got message:  " << msg << std::endl << unlock;  
     std::map<std::string, int>::iterator it = msg_map_.find(msg.GetKey());
     if(it != msg_map_.end())
     {
@@ -244,11 +285,9 @@ void goby::common::LiaisonScope::moos_inbox(CMOOSMsg& msg)
         regex_filter_div_->handle_set_regex_filter();
     }
 
-    std::map<std::string, HistoryContainer::MVC>::iterator hist_it = history_header_div_->history_models_.find(msg.GetKey());
-    if(hist_it != history_header_div_->history_models_.end())
+    if(fresh_message)
     {
-        hist_it->second.model->appendRow(create_row(msg));
-        hist_it->second.proxy->setFilterRegExp(".*");
+        history_header_div_->display_message(msg);
     }
 }
 
@@ -331,11 +370,20 @@ goby::common::LiaisonScopeMOOSModel::LiaisonScopeMOOSModel(const protobuf::MOOSS
 
 
 goby::common::LiaisonScope::ControlsContainer::ControlsContainer(Wt::WTimer* timer,
+                                                                 bool start_paused,
+                                                                 LiaisonScope* scope,
+                                                                 SubscriptionsContainer* subscriptions_div,
+                                                                 HistoryContainer* history_header_div,
                                                                  Wt::WContainerWidget* parent /*= 0*/)
     : Wt::WContainerWidget(parent),
       timer_(timer),
-      play_pause_button_(new WPushButton("Play/Pause", this)),
-      play_state_(new Wt::WText(this))
+      play_pause_button_(new WPushButton("Play/Pause [p]", this)),
+      spacer_(new Wt::WText(" ", this)),
+      play_state_(new Wt::WText(this)),
+      is_paused_(start_paused),
+      scope_(scope),
+      subscriptions_div_(subscriptions_div),
+      history_header_div_(history_header_div)
 {
     play_pause_button_->clicked().connect(boost::bind(&ControlsContainer::handle_play_pause, this, true));
 
@@ -344,12 +392,42 @@ goby::common::LiaisonScope::ControlsContainer::ControlsContainer(Wt::WTimer* tim
 
 void goby::common::LiaisonScope::ControlsContainer::handle_play_pause(bool toggle_state)
 {
-    bool is_paused = !timer_->isActive();
     if(toggle_state)
-        is_paused = !is_paused;
+        is_paused_ = !(is_paused_);
 
-    is_paused ? timer_->stop() : timer_->start();
-    play_state_->setText(is_paused ? "Paused (any key refreshes). " : "Playing... ");
+    is_paused_ ? pause() : resume();
+    play_state_->setText(is_paused_ ? "Paused ([enter] refreshes). " : "Playing... ");
+}
+
+void goby::common::LiaisonScope::ControlsContainer::pause()
+{
+    // stop the Wt timer and pass control over to a local thread
+    // (so we don't stop reading mail)
+    timer_->stop();
+    is_paused_ = true;
+    paused_mail_thread_.reset(new boost::thread(boost::bind(&ControlsContainer::run_paused_mail, this)));
+}
+
+void goby::common::LiaisonScope::ControlsContainer::resume()
+{
+    // stop the local thread and pass control over to a Wt
+    is_paused_ = false;
+    if(paused_mail_thread_)
+        paused_mail_thread_->join();
+    timer_->start();
+
+    // update with changes since the last we were playing
+    subscriptions_div_->refresh_with_newest();
+    history_header_div_->flush_buffer();
+}
+
+void goby::common::LiaisonScope::ControlsContainer::run_paused_mail()
+{
+    while(is_paused_)
+    {
+        while(scope_->zeromq_service_->poll(10000))
+        { }
+    }
 }
 
 goby::common::LiaisonScope::SubscriptionsContainer::SubscriptionsContainer(
@@ -383,21 +461,36 @@ void goby::common::LiaisonScope::SubscriptionsContainer::handle_add_subscription
 void goby::common::LiaisonScope::SubscriptionsContainer::add_subscription(std::string type)
 {
     boost::trim(type);
-    if(type.empty())
+    if(type.empty() || subscriptions_.count(type))
         return;
     
     WPushButton* new_button = new WPushButton(this);
 
     new_button->setText(type + " ");
     node_->subscribe(type, Liaison::LIAISON_INTERNAL_SCOPE_SUBSCRIBE_SOCKET);
-
+    
     new_button->clicked().connect(boost::bind(&SubscriptionsContainer::handle_remove_subscription, this, new_button));
 
+    subscriptions_.insert(type);
+
+    refresh_with_newest(type);
+}
+
+
+void goby::common::LiaisonScope::SubscriptionsContainer::refresh_with_newest()
+{   
+    for(std::set<std::string>::const_iterator it = subscriptions_.begin(),
+            end = subscriptions_.end(); it != end; ++it)
+        refresh_with_newest(*it);
+}
+
+void goby::common::LiaisonScope::SubscriptionsContainer::refresh_with_newest(const std::string& type)
+{   
     std::vector<CMOOSMsg> newest = node_->newest_substr(type);
     for(std::vector<CMOOSMsg>::iterator it = newest.begin(), end = newest.end();
         it != end; ++it)
     {
-        node_->moos_inbox(*it);
+        node_->handle_message(*it, false);
     }
 }
 
@@ -410,7 +503,9 @@ void goby::common::LiaisonScope::SubscriptionsContainer::handle_remove_subscript
     unsigned type_name_size = type_name.size();
     
     node_->unsubscribe(clicked_button->text().narrow(), Liaison::LIAISON_INTERNAL_SCOPE_SUBSCRIBE_SOCKET);
+    subscriptions_.erase(type_name);
 
+    
     bool has_wildcard_ending = (type_name[type_name_size - 1] == '*');
     if(has_wildcard_ending)
         type_name = type_name.substr(0, type_name_size-1);
@@ -580,6 +675,27 @@ void goby::common::LiaisonScope::HistoryContainer::toggle_history_plot(Wt::WWidg
         plot->show();
     else
         plot->hide();
+}
+
+void goby::common::LiaisonScope::HistoryContainer::display_message(CMOOSMsg& msg)
+{
+    std::map<std::string, HistoryContainer::MVC>::iterator hist_it =
+        history_models_.find(msg.GetKey());
+    if(hist_it != history_models_.end())
+    {
+        hist_it->second.model->appendRow(create_row(msg));
+        hist_it->second.proxy->setFilterRegExp(".*");
+    }
+}
+
+void goby::common::LiaisonScope::HistoryContainer::flush_buffer()
+{
+    for(std::vector<CMOOSMsg>::iterator it = buffer_.begin(),
+            end = buffer_.end(); it != end; ++it)
+    {
+        display_message(*it);
+    }
+    buffer_.clear();
 }
 
 

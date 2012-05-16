@@ -57,12 +57,14 @@ namespace goby
                             (*this)[i] = true;
                     }
                 }
+
             
             ~Bitset() { } 
 
-            // get this number of bits from parent, who will request from their
-            // parent if required
-            void get_more_bits(size_type num_bits, bool lsb_first = true);
+            // get this number of bits from the little end of the parent bitset
+            // and add them to the big end of our bitset,
+            // the parent will request from their parent if required
+            void get_more_bits(size_type num_bits);
 
             
             Bitset& operator&=(const Bitset& rhs)
@@ -201,24 +203,26 @@ namespace goby
                 return s;
             }
 
-            // MSB = string[0]
-            // LSB = string[N]
+            // little-endian
+            // LSB = string[0]
+            // MSB = string[N]
             std::string to_byte_string()
             {
                 // number of bytes needed is ceil(size() / 8)
                 std::string s(this->size()/8 + (this->size()%8 ? 1 : 0), 0);
                 
                 for(size_type i = 0, n = this->size(); i < n; ++i)
-                    s[s.size()-1-i/8] |= static_cast<char>((*this)[i] << (i%8));
+                    s[i/8] |= static_cast<char>((*this)[i] << (i%8));
                 
                 return s;
             }
 
+            // little-endian
             void from_byte_string(const std::string& s)
             {
                 this->resize(s.size() * 8);
                 int i = 0;
-                for(std::string::const_reverse_iterator it = s.rbegin(), n = s.rend();
+                for(std::string::const_iterator it = s.begin(), n = s.end();
                     it != n; ++it)
                 {
                     for(size_type j = 0; j < 8; ++j)
@@ -227,23 +231,29 @@ namespace goby
                 }
             }
 
-            void prepend(const Bitset& bits)
+            // adds the bitset to the little end
+            Bitset& prepend(const Bitset& bits)
             {
                 for(const_reverse_iterator it = bits.rbegin(),
                         n = bits.rend(); it != n; ++it)
                     push_front(*it);
+
+                return *this;
             }
 
-            void append(const Bitset& bits)
+            // adds the bitset to the big end
+            Bitset& append(const Bitset& bits)
             {
                 for(const_iterator it = bits.begin(),
                         n = bits.end(); it != n; ++it)
                     push_back(*it);                
+
+                return *this;
             }
             
             
           private:            
-            Bitset relinquish_bits(size_type num_bits, bool lsb_first, bool final_child);
+            Bitset relinquish_bits(size_type num_bits, bool final_child);
             
           private:            
             Bitset* parent_;
@@ -300,9 +310,9 @@ namespace goby
     }
 }
 
-inline void goby::acomms::Bitset::get_more_bits(size_type num_bits, bool lsb_first /*= true*/)
+inline void goby::acomms::Bitset::get_more_bits(size_type num_bits)
 {
-    relinquish_bits(num_bits, lsb_first, true);
+    relinquish_bits(num_bits, true);
 }
 
 

@@ -45,7 +45,6 @@ int main(int argc, char* argv[])
     
     goby::acomms::DCCLCodec* codec = goby::acomms::DCCLCodec::get();
     goby::acomms::protobuf::DCCLConfig cfg;
-//    cfg.set_crypto_passphrase("hmmm");
     codec->set_cfg(cfg);
 
     GobyMessage msg_in1;

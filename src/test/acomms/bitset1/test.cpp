@@ -78,8 +78,8 @@ int main()
     assert((Bitset(16, 23)) != Bitset(8, 23));
     assert((Bitset(16, 0x0001)) != Bitset(16, 0x1001));
     
-    assert(goby::util::hex_encode(bits2.to_byte_string()) == "02a7");
-    bits2.from_byte_string(goby::util::hex_decode("02a512"));
+    assert(goby::util::hex_encode(bits2.to_byte_string()) == "a702");
+    bits2.from_byte_string(goby::util::hex_decode("12a502"));
     std::cout << bits2.size() << ": " << bits2 << std::endl;
     assert(bits2.to_ulong() == 0x02a512);
 
@@ -104,30 +104,7 @@ int main()
         assert(child.to_ulong() == 0x10);
         assert(parent.to_ulong() == 0xD);
         
-    }
-    
-    
-    {
-        std::cout << std::endl;
-        Bitset parent(8, 0xD1);
-        Bitset child(4, 0, &parent);
-
-        std::cout << "parent: " << parent << std::endl;
-        std::cout << "child: " << child << std::endl;
-
-        std::cout << "get more bits: 4" <<  std::endl;
-        child.get_more_bits(4, false);
-        
-        std::cout << "parent: " << parent << std::endl;
-        std::cout << "child: " << child << std::endl;
-
-        assert(child.size() == 8);
-        assert(parent.size() == 4);
-        
-        assert(child.to_ulong() == 0x0D);
-        assert(parent.to_ulong() == 0x1);
-        
-    }
+    }    
 
     {
         std::cout << std::endl;
@@ -140,7 +117,7 @@ int main()
         std::cout << "child: " << child << std::endl;
 
         std::cout << "get more bits: 4" <<  std::endl;
-        child.get_more_bits(4, true);
+        child.get_more_bits(4);
         
         std::cout << "grandparent: " << grandparent << std::endl;
         std::cout << "parent: " << parent << std::endl;
@@ -167,7 +144,7 @@ int main()
         std::cout << "child: " << child << std::endl;
 
         std::cout << "get more bits: 4" <<  std::endl;
-        child.get_more_bits(4, true);
+        child.get_more_bits(4);
         
         std::cout << "grandparent: " << grandparent << std::endl;
         std::cout << "parent: " << parent << std::endl;

@@ -157,9 +157,9 @@ CpAcommsHandler::CpAcommsHandler()
     }
     
     // update comms cycle
-    subscribe(cfg_.moos_var().mac_cycle_update(), &CpAcommsHandler::handle_mac_cycle_update, this);    
+    subscribe(cfg_.moos_var().prefix() + cfg_.moos_var().mac_cycle_update(), &CpAcommsHandler::handle_mac_cycle_update, this);    
     
-    subscribe(cfg_.moos_var().queue_flush(), &CpAcommsHandler::handle_flush_queue, this);    
+    subscribe(cfg_.moos_var().prefix() + cfg_.moos_var().queue_flush(), &CpAcommsHandler::handle_flush_queue, this);    
 }
 
 CpAcommsHandler::~CpAcommsHandler()
@@ -293,20 +293,20 @@ void CpAcommsHandler::handle_goby_signal(const google::protobuf::Message& msg1,
     {
         std::string serialized1;
         serialize_for_moos(&serialized1, msg1);
-        publish(moos_var1, serialized1);
+        publish(cfg_.moos_var().prefix() + moos_var1, serialized1);
     }
     
     if(!moos_var2.empty())
     {
         std::string serialized2;
         serialize_for_moos(&serialized2, msg2);
-        publish(moos_var2, serialized2);
+        publish(cfg_.moos_var().prefix() + moos_var2, serialized2);
     }
 }
 
 void CpAcommsHandler::handle_raw(const goby::acomms::protobuf::ModemRaw& msg, const std::string& moos_var)
 {
-    publish(moos_var, msg.raw());
+    publish(cfg_.moos_var().prefix() + moos_var, msg.raw());
 }
 
 
@@ -503,7 +503,7 @@ void CpAcommsHandler::create_on_multiplex_publish(const CMOOSMsg& moos_msg)
     boost::shared_ptr<google::protobuf::Message> msg =
         dynamic_parse_for_moos(moos_msg.GetString());
 
-    if(&*msg == 0)
+    if(!msg)
     {
         glog.is(WARN) &&
              glog << group("pAcommsHandler") << "Multiplex receive failed: Unknown Protobuf type for " << moos_msg.GetString() << "; be sure it is compiled in or directly loaded into the goby::util::DynamicProtobufManager." << std::endl;

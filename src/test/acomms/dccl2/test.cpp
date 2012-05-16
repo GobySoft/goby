@@ -36,12 +36,12 @@ using goby::acomms::Bitset;
 class CustomCodec : public goby::acomms::DCCLTypedFixedFieldCodec<CustomMsg>
 {
 private:
-    unsigned size() { return (part() == HEAD) ? 0 : A_SIZE + B_SIZE; }
+    unsigned size() { return (part() == goby::acomms::MessageHandler::HEAD) ? 0 : A_SIZE + B_SIZE; }
     Bitset encode() { return Bitset(size()); }
     
     Bitset encode(const CustomMsg& msg)
         {
-            if(part() == HEAD)
+            if(part() == goby::acomms::MessageHandler::HEAD)
             { return encode(); }
             else
             {
@@ -58,7 +58,7 @@ private:
     
     CustomMsg decode(Bitset* bits)
         {
-            if(part() == HEAD)
+            if(part() == goby::acomms::MessageHandler::HEAD)
             { throw(goby::acomms::DCCLNullValueException()); }
             else
             {

@@ -42,7 +42,7 @@ namespace goby
             void any_decode(Bitset* bits, boost::any* wire_value); 
             unsigned max_size();
             unsigned min_size();
-            unsigned any_size(const boost::any& field_value);
+            unsigned any_size(const boost::any& wire_value);
             void any_run_hooks(const boost::any& field_value);
 
             
@@ -238,7 +238,7 @@ namespace goby
                             std::vector<boost::any> field_values;
                             for(int j = 0, m = refl->FieldSize(*msg, field_desc); j < m; ++j)
                                 field_values.push_back(helper->get_repeated_value(field_desc, *msg, j));
-                   
+                            
                             Action::repeated(codec, &return_value, field_values, field_desc);
                         }
                         else

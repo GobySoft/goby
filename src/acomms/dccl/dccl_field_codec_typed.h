@@ -98,7 +98,7 @@ namespace goby
         /// \brief Base class for static-typed (no boost::any) field encoders/decoders. Most user defined variable length codecs will start with this class. Use DCCLTypedFixedFieldCodec if your codec is fixed length (always uses the same number of bits on the wire).
         /// \ingroup dccl_api
         ///
-        ///\tparam WireType the type used for the encode and decode functions. This can be any C++ type, and is often the same as FieldType, unless a type conversion should be performed. The reason for using a different WireType and FieldType should be clear from the DCCLDefaultEnumCodec which uses DCCLDefaultArithmeticFieldCodec to do all the numerical encoding / decoding while DCCLDefaultEnumCodec does the type conversion (pre_encode() and post_decode()).
+        ///\tparam WireType the type used for the encode and decode functions. This can be any C++ type, and is often the same as FieldType, unless a type conversion should be performed. The reason for using a different WireType and FieldType should be clear from the DCCLDefaultEnumCodec which uses DCCLDefaultNumericFieldCodec to do all the numerical encoding / decoding while DCCLDefaultEnumCodec does the type conversion (pre_encode() and post_decode()).
         ///\tparam FieldType the type used in the Google Protobuf message that is exposed to the end-user DCCLCodec::decode(), DCCLCodec::encode(), etc. functions.
         template<typename WireType, typename FieldType = WireType>
             class DCCLTypedFieldCodec : public DCCLFieldCodecSelector<WireType, FieldType>
@@ -135,15 +135,15 @@ namespace goby
           ///
           /// \param wire_value Value to use when calculating the size of the field. If calculating the size requires encoding the field completely, cache the encoded value for a likely future call to encode() for the same wire_value.
           /// \return the size (in bits) of the field.
-          virtual unsigned size(const FieldType& wire_value) = 0;
+          virtual unsigned size(const WireType& wire_value) = 0;
           
           private:
-          unsigned any_size(const boost::any& field_value)
+          unsigned any_size(const boost::any& wire_value)
           {
               try
-              { return field_value.empty() ? size() : size(boost::any_cast<FieldType>(field_value)); }
+              { return wire_value.empty() ? size() : size(boost::any_cast<WireType>(wire_value)); }
               catch(boost::bad_any_cast&)
-              { throw(type_error("size", typeid(FieldType), field_value.type())); }
+              { throw(type_error("size", typeid(WireType), wire_value.type())); }
           }          
           
           void any_encode(Bitset* bits, const boost::any& wire_value)
@@ -192,7 +192,7 @@ namespace goby
         /// \brief Base class for "repeated" (multiple value) static-typed (no boost::any) field encoders/decoders. Most user defined variable length codecs will start with this class. Use DCCLTypedFixedFieldCodec if your codec is fixed length (always uses the same number of bits on the wire). Use DCCLTypedFieldCodec if your fields are always singular ("optional" or "required"). Singular fields are default implemented in this codec by calls to the equivalent repeated function with an empty or single valued vector.
         /// \ingroup dccl_api
         ///
-        ///\tparam WireType the type used for the encode and decode functions. This can be any C++ type, and is often the same as FieldType, unless a type conversion should be performed. The reason for using a different WireType and FieldType should be clear from the DCCLDefaultEnumCodec which uses DCCLDefaultArithmeticFieldCodec to do all the numerical encoding / decoding while DCCLDefaultEnumCodec does the type conversion (pre_encode() and post_decode()).
+        ///\tparam WireType the type used for the encode and decode functions. This can be any C++ type, and is often the same as FieldType, unless a type conversion should be performed. The reason for using a different WireType and FieldType should be clear from the DCCLDefaultEnumCodec which uses DCCLDefaultNumericFieldCodec to do all the numerical encoding / decoding while DCCLDefaultEnumCodec does the type conversion (pre_encode() and post_decode()).
         ///\tparam FieldType the type used in the Google Protobuf message that is exposed to the end-user DCCLCodec::decode(), DCCLCodec::encode(), etc. functions.
         template<typename WireType>
             class DCCLRepeatedTypedFieldCodec : public DCCLTypedFieldCodec<WireType, WireType>
@@ -316,20 +316,20 @@ namespace goby
 //          void any_post_decode_repeated(const std::vector<boost::any>& wire_values,
 //                                        std::vector<boost::any>* field_values);
           
-          unsigned any_size_repeated(const std::vector<boost::any>& field_values)
+          unsigned any_size_repeated(const std::vector<boost::any>& wire_values)
           {
               try
               {
                   std::vector<FieldType> in;
-                  BOOST_FOREACH(const boost::any& field_value, field_values)
+                  BOOST_FOREACH(const boost::any& wire_value, wire_values)
                   {                  
-                      in.push_back(boost::any_cast<FieldType>(field_value));
+                      in.push_back(boost::any_cast<WireType>(wire_value));
                   }
                   
                   return size_repeated(in);
               }
               catch(boost::bad_any_cast&)
-              { throw(type_error("size_repeated", typeid(FieldType), field_values.at(0).type())); }
+              { throw(type_error("size_repeated", typeid(WireType), wire_values.at(0).type())); }
           }
           
           

@@ -27,6 +27,7 @@
 #include <iostream>
 #include <string>
 #include <boost/bind.hpp>
+#include <boost/thread/mutex.hpp>
 #include <boost/function.hpp>
 #include <boost/signals.hpp>
 
@@ -238,7 +239,7 @@ namespace goby
                                 const void* data,
                                 int size,
                                 int socket_id)> inbox_signal_;
-
+            boost::mutex poll_mutex_;
         };
     }
 }

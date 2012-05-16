@@ -1,0 +1,578 @@
+ProcessConfig = pAcommsHandler
+{
+  common {  # Configuration common to all Goby MOOS applications 
+            # (optional)
+    log: true  # Should we write a text log of the terminal 
+               # output? (optional) (default=true) (can also set 
+               # MOOS global "log=")
+    log_path: "./"  # Directory path to write the text log of the 
+                    # terminal output (if log=true) (optional) 
+                    # (default="./") (can also set MOOS global 
+                    # "log_path=")
+    log_verbosity: DEBUG2  # Verbosity of the log file (QUIET, 
+                           # WARN, VERBOSE, DEBUG1, DEBUG2, DEBUG3, 
+                           # VERBOSITY_QUIET, VERBOSITY_WARN, 
+                           # VERBOSITY_VERBOSE, VERBOSITY_DEBUG, 
+                           # VERBOSITY_GUI) (optional) 
+                           # (default=DEBUG2)
+    community: "AUV23"  # The vehicle's name (optional) (can also 
+                        # set MOOS global "Community=")
+    lat_origin: 42.5  # Latitude in decimal degrees of the local 
+                      # cartesian datum (optional) (can also set 
+                      # MOOS global "LatOrigin=")
+    lon_origin: 10.9  # Longitude in decimal degrees of the local 
+                      # cartesian datum (optional) (can also set 
+                      # MOOS global "LongOrigin=")
+    app_tick: 10  # Frequency at which to run Iterate(). 
+                  # (optional) (default=10)
+    comm_tick: 10  # Frequency at which to call into the MOOSDB 
+                   # for mail. (optional) (default=10)
+    verbosity: VERBOSE  # Verbosity of the terminal window output 
+                        # (QUIET, WARN, VERBOSE, DEBUG1, DEBUG2, 
+                        # DEBUG3, VERBOSITY_QUIET, VERBOSITY_WARN, 
+                        # VERBOSITY_VERBOSE, VERBOSITY_DEBUG, 
+                        # VERBOSITY_GUI) (optional) 
+                        # (default=VERBOSE)
+    show_gui: false  # Set to true to display windowed NCurses 
+                     # GUI for terminal output. (optional) 
+                     # (default=false)
+    initializer {  # Publish a constant value to the MOOSDB at 
+                   # startup (repeated)
+      type: INI_DOUBLE  # type of MOOS variable to publish 
+                        # (INI_DOUBLE, INI_STRING) (required)
+      moos_var: "SOME_MOOS_VAR"  # name of MOOS variable to 
+                                 # publish to (required)
+      global_cfg_var: "LatOrigin"  # Optionally, instead of 
+                                   # giving `sval` or `dval`, give 
+                                   # a name here of a global MOOS 
+                                   # variable (one at the top of 
+                                   # the file) whose contents 
+                                   # should be written to 
+                                   # `moos_var` (optional)
+      dval: 3.454  # Value to write for type==INI_DOUBLE 
+                   # (optional)
+      sval: "a string"  # Value to write for type==INI_STRING 
+                        # (optional)
+    }
+  }
+  modem_id: 1  # Unique number 1-31 to identify this node 
+               # (required)
+  driver_type: DRIVER_NONE  # Corresponding driver for the type 
+                            # of physical acoustic modem used 
+                            # (DRIVER_NONE, DRIVER_WHOI_MICROMODEM, 
+                            # DRIVER_ABC_EXAMPLE_MODEM, 
+                            # DRIVER_UFIELD_SIM_DRIVER, 
+                            # DRIVER_PB_STORE_SERVER, DRIVER_UDP) 
+                            # (optional) (default=DRIVER_NONE)
+  driver_cfg {  # Configure the acoustic modem driver (optional)
+    modem_id: 1  # Unique number 1-31 to identify this node 
+                 # (optional)
+    connection_type: CONNECTION_SERIAL  # Physical connection 
+                                        # type from this computer 
+                                        # (running Goby) to the 
+                                        # acoustic modem 
+                                        # (CONNECTION_SERIAL, 
+                                        # CONNECTION_TCP_AS_CLIENT, 
+                                        # CONNECTION_TCP_AS_SERVER, 
+                                        # CONNECTION_DUAL_UDP_BROADC
+                                        # AST) (optional) 
+                                        # (default=CONNECTION_SERIAL
+                                        # )
+    line_delimiter: "\r\n"  # String used to delimit new lines 
+                            # for this acoustic modem (optional) 
+                            # (default="\r\n")
+    serial_port: "/dev/ttyS0"  # Serial port for 
+                               # CONNECTION_SERIAL (optional)
+    serial_baud: 19200  # Baud rate for CONNECTION_SERIAL 
+                        # (optional)
+    tcp_server: "192.168.1.111"  # IP Address or domain name for 
+                                 # the server if 
+                                 # CONNECTION_TCP_AS_CLIENT 
+                                 # (optional)
+    tcp_port: 50010  # Port to serve on (for 
+                     # CONNECTION_TCP_AS_SERVER) or to connect to 
+                     # (for CONNECTION_TCP_AS_CLIENT) (optional)
+    [micromodem.protobuf.Config.reset_nvram]: false  
+                                              #  (optional) 
+                                              # (default=false)
+    [micromodem.protobuf.Config.nvram_cfg]: ""  
+                                              #  (repeated)
+    [micromodem.protobuf.Config.hydroid_gateway_id]: 0  
+                                              #  (optional) 
+                                              # (default=0)
+    [micromodem.protobuf.Config.narrowband_lbl] {  
+                                              #  (optional)
+      transmit_freq:   #  (optional)
+      transmit_ping_ms:   #  (optional)
+      receive_freq:   #  (repeated)
+      receive_ping_ms:   #  (optional)
+      turnaround_ms:   #  (optional)
+      transmit_flag: true  #  (optional) (default=true)
+      lbl_max_range: 2000  #  (optional) (default=2000)
+    }
+    [micromodem.protobuf.Config.remus_lbl] {  #  (optional)
+      enable_beacons: 15  #  (optional) (default=15)
+      turnaround_ms: 50  #  (optional) (default=50)
+      lbl_max_range: 1000  #  (optional) (default=1000)
+    }
+    [ABCDriverConfig.enable_foo]: true  #  (optional) 
+                                        # (default=true)
+    [ABCDriverConfig.enable_bar]: false  #  (optional) 
+                                         # (default=false)
+    [goby.moos.protobuf.Config.moos_server]: "localhost"  
+                                              #  (optional) 
+                                              # (default="localhost"
+                                              # )
+    [goby.moos.protobuf.Config.moos_port]: 9000  
+                                              #  (optional) 
+                                              # (default=9000)
+    [goby.moos.protobuf.Config.incoming_moos_var]: "ACOMMS_UFIELD_DRIVER_IN"  
+                                              #  (optional) 
+                                              # (default="ACOMMS_UFI
+                                              # ELD_DRIVER_IN")
+    [goby.moos.protobuf.Config.outgoing_moos_var]: "ACOMMS_UFIELD_DRIVER_OUT"  
+                                              #  (optional) 
+                                              # (default="ACOMMS_UFI
+                                              # ELD_DRIVER_OUT")
+    [goby.moos.protobuf.Config.ufield_outgoing_moos_var]: "NODE_MESSAGE_LOCAL"  
+                                              #  (optional) 
+                                              # (default="NODE_MESSA
+                                              # GE_LOCAL")
+    [goby.moos.protobuf.Config.rate_to_bytes]:   
+                                              #  (repeated)
+    [goby.moos.protobuf.Config.modem_id_lookup_path]: ""  
+                                              #  (optional)
+    [PBDriverConfig.request_socket] {  #  (optional)
+      socket_type:   #  (PUBLISH, SUBSCRIBE, REPLY, REQUEST) 
+                     # (required)
+      socket_id: 0  # defines a socket or group of sockets that 
+                    # are send and receive together. Sockets with 
+                    # the same id that are must be compatible 
+                    # (generally have the same SocketType) 
+                    # (optional) (default=0)
+      transport: EPGM  #  (INPROC, IPC, TCP, PGM, EPGM) 
+                       # (optional) (default=EPGM)
+      connect_or_bind: CONNECT  #  (CONNECT, BIND) (optional) 
+                                # (default=CONNECT)
+      ethernet_address: "127.0.0.1"  # primary IP address of the 
+                                     # interface to use (optional) 
+                                     # (default="127.0.0.1")
+      multicast_address: "239.255.7.15"  # only required if 
+                                         # `transport`=PGM or EPGM; 
+                                         # multicast IP address to 
+                                         # use; 
+                                         # 239.252.0.0-239.255.255.2
+                                         # 55 is recommended 
+                                         # (site-local). See also 
+                                         # http://www.iana.org/assig
+                                         # nments/multicast-addresse
+                                         # s/multicast-addresses.ml 
+                                         # (optional) 
+                                         # (default="239.255.7.15")
+      ethernet_port: 11142  #  (optional) (default=11142)
+      socket_name: ""  #  (optional)
+    }
+    [PBDriverConfig.query_interval_seconds]: 1  
+                                              #  (optional) 
+                                              # (default=1)
+    [PBDriverConfig.max_frame_size]: 65536  #  (optional) 
+                                            # (default=65536)
+    [UDPDriverConfig.local] {  # The endpoint of the local 
+                               # machine (IP address can be 
+                               # omitted) (required)
+      ip: "127.0.0.1"  #  (optional) (default="127.0.0.1")
+      port:   #  (required)
+    }
+    [UDPDriverConfig.remote] {  # The endpoint of the receiving 
+                                # machine. (required)
+      ip: "127.0.0.1"  #  (optional) (default="127.0.0.1")
+      port:   #  (required)
+    }
+    [UDPDriverConfig.max_frame_size]: 65536  #  (optional) 
+                                             # (default=65536)
+  }
+  mac_cfg {  # Configure the acoustic Medium Access Control 
+             # (optional)
+    modem_id: 1  # Unique number 1-31 to identify this node 
+                 # (optional)
+    type: MAC_NONE  # The type of TDMA MAC scheme to use 
+                    # (MAC_NONE, MAC_FIXED_DECENTRALIZED, 
+                    # MAC_POLLED) (optional) (default=MAC_NONE)
+    slot {  # Configure a slot in the communications cycle. Slots 
+            # are run in the order they are declared. (repeated)
+      src: -1  # modem ID of message source. 0 indicates 
+               # BROADCAST. (optional) (default=-1)
+      dest: -1  # modem ID of message destination. 0 indicates 
+                # BROADCAST, -1 indicates QUERY_DESTINATION_ID 
+                # (i.e., destination is set to the destination of 
+                # the next available packet (optional) (default=-1)
+      time:   # timestamp (microseconds since UNIX (1970-01-01 
+              # 00:00:00 UTC) of this transmission (optional)
+      time_source: GOBY_TIME  # source of the timestamp given 
+                              # (MODEM_TIME, GOBY_TIME) (optional) 
+                              # (default=GOBY_TIME)
+      rate: 0  # 0 (lowest) - 5 (highest), -1 (QUERY_RATE). 
+               # QUERY_RATE is currently unsupported by Goby-Queue 
+               # (optional) (default=0)
+      type: UNKNOWN  # Type of this transmission. DRIVER_SPECIFIC 
+                     # types are enumerated in the extensions for 
+                     # the selected driver. (UNKNOWN, DATA, ACK, 
+                     # DRIVER_SPECIFIC) (optional) (default=UNKNOWN)
+      max_num_frames: 1  #  (optional) (default=1)
+      max_frame_bytes:   #  (optional)
+      ack_requested: true  #  (optional) (default=true)
+      frame: ""  #  (repeated)
+      acked_frame:   #  (repeated)
+      slot_seconds: 10  #  (optional) (default=10)
+      unique_id: 0  #  (optional)
+      [micromodem.protobuf.type]: BASE_TYPE  # Type of 
+                                             # transmission if base 
+                                             # `type` == 
+                                             # DRIVER_SPECIFIC 
+                                             # (BASE_TYPE, 
+                                             # MICROMODEM_TWO_WAY_PI
+                                             # NG, 
+                                             # MICROMODEM_REMUS_LBL_
+                                             # RANGING, 
+                                             # MICROMODEM_NARROWBAND
+                                             # _LBL_RANGING, 
+                                             # MICROMODEM_MINI_DATA)
+                                             #  (optional) 
+                                             # (default=BASE_TYPE)
+      [micromodem.protobuf.narrowband_lbl] {  #  (optional)
+        transmit_freq:   #  (optional)
+        transmit_ping_ms:   #  (optional)
+        receive_freq:   #  (repeated)
+        receive_ping_ms:   #  (optional)
+        turnaround_ms:   #  (optional)
+        transmit_flag: true  #  (optional) (default=true)
+        lbl_max_range: 2000  #  (optional) (default=2000)
+      }
+      [micromodem.protobuf.remus_lbl] {  #  (optional)
+        enable_beacons: 15  #  (optional) (default=15)
+        turnaround_ms: 50  #  (optional) (default=50)
+        lbl_max_range: 1000  #  (optional) (default=1000)
+      }
+      [micromodem.protobuf.ranging_reply] {  #  (optional)
+        one_way_travel_time:   #  (repeated)
+        ambiguity: OWTT_EXACT  #  (OWTT_EXACT, 
+                               # OWTT_SECOND_AMBIGUOUS) (optional) 
+                               # (default=OWTT_EXACT)
+        is_one_way_synchronous: false  #  (optional) 
+                                       # (default=false)
+        receiver_clk_mode: NO_SYNC_TO_PPS_AND_CCCLK_BAD  
+                                              #  
+                                              # (NO_SYNC_TO_PPS_AND_
+                                              # CCCLK_BAD, 
+                                              # NO_SYNC_TO_PPS_AND_C
+                                              # CCLK_GOOD, 
+                                              # SYNC_TO_PPS_AND_CCCL
+                                              # K_BAD, 
+                                              # SYNC_TO_PPS_AND_CCCL
+                                              # K_GOOD) (optional) 
+                                              # (default=NO_SYNC_TO_
+                                              # PPS_AND_CCCLK_BAD)
+        sender_clk_mode: NO_SYNC_TO_PPS_AND_CCCLK_BAD  
+                                              #  
+                                              # (NO_SYNC_TO_PPS_AND_
+                                              # CCCLK_BAD, 
+                                              # NO_SYNC_TO_PPS_AND_C
+                                              # CCLK_GOOD, 
+                                              # SYNC_TO_PPS_AND_CCCL
+                                              # K_BAD, 
+                                              # SYNC_TO_PPS_AND_CCCL
+                                              # K_GOOD) (optional) 
+                                              # (default=NO_SYNC_TO_
+                                              # PPS_AND_CCCLK_BAD)
+      }
+      [micromodem.protobuf.receive_stat] {  #  (repeated)
+        mode:   #  (RECEIVE_GOOD, BAD_CRC, PACKET_TIMEOUT) 
+                # (optional)
+        time: ""  #  (optional)
+        clock_mode:   #  (NO_SYNC_TO_PPS_AND_CCCLK_BAD, 
+                      # NO_SYNC_TO_PPS_AND_CCCLK_GOOD, 
+                      # SYNC_TO_PPS_AND_CCCLK_BAD, 
+                      # SYNC_TO_PPS_AND_CCCLK_GOOD) (optional)
+        mfd_peak:   #  (optional)
+        mfd_power:   #  (optional)
+        mfd_ratio:   #  (optional)
+        spl:   #  (optional)
+        shf_agn:   #  (optional)
+        shf_ainpshift:   #  (optional)
+        shf_ainshift:   #  (optional)
+        shf_mfdshift:   #  (optional)
+        shf_p2bshift:   #  (optional)
+        rate:   #  (optional)
+        source:   #  (optional)
+        dest:   #  (optional)
+        psk_error_code:   #  (optional)
+        packet_type:   #  (PACKET_TYPE_UNKNOWN, FSK, FSK_MINI, 
+                       # PSK, PSK_MINI) (optional)
+        number_frames:   #  (optional)
+        number_bad_frames:   #  (optional)
+        snr_rss:   #  (optional)
+        snr_in:   #  (optional)
+        snr_out:   #  (optional)
+        snr_symbols:   #  (optional)
+        mse_equalizer:   #  (optional)
+        data_quality_factor:   #  (optional)
+        doppler:   #  (optional)
+        stddev_noise:   #  (optional)
+        carrier_freq:   #  (optional)
+        bandwidth:   #  (optional)
+        version: 0  #  (optional) (default=0)
+        date: ""  #  (optional)
+        pcm:   #  (optional)
+      }
+      [micromodem.protobuf.transmit_stat] {  #  (repeated)
+        date: ""  #  (optional)
+        time: ""  #  (optional)
+        clock_mode:   #  (NO_SYNC_TO_PPS_AND_CCCLK_BAD, 
+                      # NO_SYNC_TO_PPS_AND_CCCLK_GOOD, 
+                      # SYNC_TO_PPS_AND_CCCLK_BAD, 
+                      # SYNC_TO_PPS_AND_CCCLK_GOOD) (optional)
+        mode:   #  (TRANSMIT_SUCCESSFUL, FETS_TOO_HOT, 
+                # EXTSYNC_TIMEOUT, TX_INHIBITED, DATA_TIMEOUT) 
+                # (optional)
+        probe_length:   #  (optional)
+        bandwidth:   #  (optional)
+        carrier_freq:   #  (optional)
+        rate:   #  (optional)
+        source:   #  (optional)
+        dest:   #  (optional)
+        ack_requested:   #  (optional)
+        number_frames_expected:   #  (optional)
+        number_frames_sent:   #  (optional)
+        packet_type:   #  (PACKET_TYPE_UNKNOWN, FSK, FSK_MINI, 
+                       # PSK, PSK_MINI) (optional)
+        number_bytes:   #  (optional)
+      }
+      [micromodem.protobuf.frame_with_bad_crc]:   
+                                              #  (repeated)
+      [goby.moos.protobuf.type]: BASE_TYPE  #  (BASE_TYPE, 
+                                            # UFIELD_DRIVER_POLL) 
+                                            # (optional) 
+                                            # (default=BASE_TYPE)
+      [goby.moos.protobuf.poll_src]:   #  (optional)
+      [goby.moos.protobuf.poll_dest]:   #  (optional)
+    }
+    start_cycle_in_middle: true  # If true, cycle will start / 
+                                 # restart at the next slot, even 
+                                 # if its the middle of the cycle. 
+                                 # If false, any changes to the 
+                                 # cycle will reset it to the first 
+                                 # slot. (optional) (default=true)
+  }
+  queue_cfg {  # Configure the Priority Queuing layer (optional)
+    modem_id: 1  # Unique number 1-31 to identify this node 
+                 # (optional)
+    manipulator_entry {  #  (repeated)
+      protobuf_name: ""  #  (required)
+      manipulator:   # manipulators to modify the encoding and 
+                     # queuing behavior of the specified message 
+                     # (NO_MANIP, NO_QUEUE, NO_DEQUEUE, LOOPBACK, 
+                     # ON_DEMAND, LOOPBACK_AS_SENT, PROMISCUOUS, 
+                     # NO_ENCODE, NO_DECODE) (repeated)
+    }
+    on_demand_skew_seconds: 1  #  (optional) (default=1)
+  }
+  dccl_cfg {  # Configure the Dynamic Compact Control Language 
+              # Encoding/Decoding unit (optional)
+    crypto_passphrase: "twinkletoes%24"  # If given, encrypt all 
+                                         # communications with this 
+                                         # passphrase using AES. 
+                                         # Omit for unencrypted 
+                                         # communications. 
+                                         # (optional)
+    id_codec: VARINT  # Codec used to represent the unique DCCL 
+                      # identifier (goby.msg).dccl.id, used to 
+                      # match an encoded message to a Protobuf 
+                      # message. (VARINT, LEGACY_CCL) (optional) 
+                      # (default=VARINT)
+  }
+  route_cfg {  # Configure the Goby Routing unit (optional)
+    route {  #  (optional)
+      hop:   #  (repeated)
+    }
+    subnet_mask: 4294967040  #  (optional) (default=4294967040)
+  }
+  moos_var {  #  (optional)
+    driver_raw_in: "ACOMMS_NMEA_IN"  #  (optional) 
+                                     # (default="ACOMMS_NMEA_IN")
+    driver_raw_out: "ACOMMS_NMEA_OUT"  #  (optional) 
+                                       # (default="ACOMMS_NMEA_OUT")
+    driver_raw_msg_in: "ACOMMS_RAW_INCOMING"  #  (optional) 
+                                              # (default="ACOMMS_RAW
+                                              # _INCOMING")
+    driver_raw_msg_out: "ACOMMS_RAW_OUTGOING"  
+                                              #  (optional) 
+                                              # (default="ACOMMS_RAW
+                                              # _OUTGOING")
+    driver_receive: "ACOMMS_MODEM_RECEIVE"  #  (optional) 
+                                            # (default="ACOMMS_MODEM
+                                            # _RECEIVE")
+    driver_transmit: "ACOMMS_MODEM_TRANSMIT"  #  (optional) 
+                                              # (default="ACOMMS_MOD
+                                              # EM_TRANSMIT")
+    queue_receive: "ACOMMS_QUEUE_RECEIVE"  #  (optional) 
+                                           # (default="ACOMMS_QUEUE_
+                                           # RECEIVE")
+    queue_transmit: "ACOMMS_QUEUE_TRANSMIT"  #  (optional) 
+                                             # (default="ACOMMS_QUEU
+                                             # E_TRANSMIT")
+    queue_ack_transmission: "ACOMMS_ACK"  #  (optional) 
+                                          # (default="ACOMMS_ACK")
+    queue_ack_original_msg: "ACOMMS_ACK_ORIGINAL"  
+                                              #  (optional) 
+                                              # (default="ACOMMS_ACK
+                                              # _ORIGINAL")
+    queue_expire: "ACOMMS_EXPIRE"  #  (optional) 
+                                   # (default="ACOMMS_EXPIRE")
+    queue_size: "ACOMMS_QSIZE"  #  (optional) 
+                                # (default="ACOMMS_QSIZE")
+    queue_flush: "ACOMMS_FLUSH_QUEUE"  #  (optional) 
+                                       # (default="ACOMMS_FLUSH_QUEU
+                                       # E")
+    mac_cycle_update: "ACOMMS_MAC_CYCLE_UPDATE"  
+                                              #  (optional) 
+                                              # (default="ACOMMS_MAC
+                                              # _CYCLE_UPDATE")
+    mac_initiate_transmission: "ACOMMS_MAC_INITIATE_TRANSMISSION"  
+                                              #  (optional) 
+                                              # (default="ACOMMS_MAC
+                                              # _INITIATE_TRANSMISSI
+                                              # ON")
+  }
+  load_shared_library: "/usr/lib/libmy_dccl_messages.so"  
+                                              # Path to a shared 
+                                              # library containing 
+                                              # compiled DCCL 
+                                              # protobuf files. 
+                                              # Preferred over 
+                                              # load_dccl_proto_file
+                                              # . (repeated)
+  load_proto_file: "/usr/include/mylib/message.proto"  
+                                              # Path to a DCCL 
+                                              # protobuf file. Use 
+                                              # load_shared_library 
+                                              # when possible. 
+                                              # (repeated)
+  translator_entry {  # Describes how to trigger (generate) a 
+                      # DCCL message from a MOOS event and how to 
+                      # publish the contents of the message upon 
+                      # receipt (repeated)
+    protobuf_name: ""  # Fully qualified name (including package, 
+                       # if any) of a DCCL protobuf message to tag 
+                       # this parser to. (required)
+    trigger {  #  (optional)
+      type: TRIGGER_PUBLISH  #  (TRIGGER_PUBLISH, TRIGGER_TIME) 
+                             # (optional) (default=TRIGGER_PUBLISH)
+      moos_var: ""  #  (optional)
+      period:   #  (optional)
+      mandatory_content: ""  #  (optional)
+    }
+    create {  #  (repeated)
+      technique: TECHNIQUE_PROTOBUF_TEXT_FORMAT  
+                                              #  
+                                              # (TECHNIQUE_PROTOBUF_
+                                              # TEXT_FORMAT, 
+                                              # TECHNIQUE_PROTOBUF_N
+                                              # ATIVE_ENCODED, 
+                                              # TECHNIQUE_COMMA_SEPA
+                                              # RATED_KEY_EQUALS_VAL
+                                              # UE_PAIRS, 
+                                              # TECHNIQUE_FORMAT, 
+                                              # TECHNIQUE_PREFIXED_P
+                                              # ROTOBUF_TEXT_FORMAT)
+                                              #  (optional) 
+                                              # (default=TECHNIQUE_P
+                                              # ROTOBUF_TEXT_FORMAT)
+      moos_var: ""  #  (required)
+      format: ""  #  (optional)
+      repeated_delimiter: ","  #  (optional) (default=",")
+      algorithm {  #  (repeated)
+        name: ""  #  (required)
+        primary_field:   #  (required)
+      }
+    }
+    publish {  #  (repeated)
+      technique: TECHNIQUE_PROTOBUF_TEXT_FORMAT  
+                                              #  
+                                              # (TECHNIQUE_PROTOBUF_
+                                              # TEXT_FORMAT, 
+                                              # TECHNIQUE_PROTOBUF_N
+                                              # ATIVE_ENCODED, 
+                                              # TECHNIQUE_COMMA_SEPA
+                                              # RATED_KEY_EQUALS_VAL
+                                              # UE_PAIRS, 
+                                              # TECHNIQUE_FORMAT, 
+                                              # TECHNIQUE_PREFIXED_P
+                                              # ROTOBUF_TEXT_FORMAT)
+                                              #  (optional) 
+                                              # (default=TECHNIQUE_P
+                                              # ROTOBUF_TEXT_FORMAT)
+      moos_var: ""  #  (required)
+      format: ""  #  (optional)
+      repeated_delimiter: ","  #  (optional) (default=",")
+      algorithm {  #  (repeated)
+        name: ""  #  (required)
+        output_virtual_field:   #  (required)
+        primary_field:   #  (required)
+        reference_field:   #  (repeated)
+      }
+    }
+    use_short_enum: false  #  (optional) (default=false)
+  }
+  multiplex_create_moos_var: "LIAISON_COMMANDER_OUT"  
+                                              # Used primarily by 
+                                              # goby_liaison. 
+                                              # Specify a MOOS 
+                                              # variable that 
+                                              # contains one of 
+                                              # many 
+                                              # TECHNIQUE_PREFIXED_P
+                                              # ROTOBUF_TEXT_FORMAT 
+                                              # encoded protobuf 
+                                              # messages. Upon 
+                                              # receipt of a 
+                                              # message, the 
+                                              # `create` directives 
+                                              # for this type are 
+                                              # *published* 
+                                              # (inverse of normal 
+                                              # behavior), which 
+                                              # triggers the 
+                                              # creation of the 
+                                              # message (if 
+                                              # `trigger` is set to 
+                                              # one of the `create` 
+                                              # MOOS variables). 
+                                              # (repeated)
+  modem_id_lookup_path: ""  # Path to file containing mapping 
+                            # between modem_id and vehicle name & 
+                            # type (optional) (can also set MOOS 
+                            # global "modem_id_lookup_path=")
+  transitional_cfg {  # Backwards compatibility for DCCLv1 XML 
+                      # file (optional)
+    modem_id: 1  # Unique number 1-31 to identify this node 
+                 # (optional)
+    message_file {  # XML message file containing one or more 
+                    # DCCL message descriptions (repeated)
+      path: "/home/toby/goby/src/acomms/examples/chat/chat.xml"  
+                                              # path to the 
+                                              # message XML file 
+                                              # (required)
+      manipulator: NO_MANIP  # manipulators to modify the 
+                             # encoding and queuing behavior of the 
+                             # messages in this file (NO_MANIP, 
+                             # NO_QUEUE, NO_DEQUEUE, LOOPBACK, 
+                             # ON_DEMAND, LOOPBACK_AS_SENT, 
+                             # PROMISCUOUS, NO_ENCODE, NO_DECODE) 
+                             # (repeated)
+    }
+    generated_proto_dir: "/tmp"  # Directory to store 
+                                 # auto-generated .proto files from 
+                                 # deprecated XML files (optional) 
+                                 # (default="/tmp")
+  }
+}

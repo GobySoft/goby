@@ -31,6 +31,12 @@ message GobyFieldOptions
   
   // used in goby_moos_app.proto
   optional string moos_global = 102;
+
+  message ConfigurationOptions
+  {
+    optional string cli_short = 1;
+  }
+  optional ConfigurationOptions cfg = 200;
 }
 
 message GobyMessageOptions

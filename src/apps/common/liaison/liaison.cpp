@@ -20,6 +20,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Goby.  If not, see <http://www.gnu.org/licenses/>.
 
+#include <boost/filesystem.hpp>
+
 
 #include <Wt/WText>
 #include <Wt/WHBoxLayout>

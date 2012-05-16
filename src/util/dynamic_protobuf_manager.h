@@ -24,6 +24,8 @@
 #ifndef DYNAMICPROTOBUFMANAGER20110419H
 #define DYNAMICPROTOBUFMANAGER20110419H
 
+#define PROTO_RUNTIME_COMPILE @IS_PROTO_RUNTIME_COMPILE@
+
 #include <dlfcn.h>
 
 #include <set>
@@ -34,7 +36,7 @@
 #include <google/protobuf/descriptor_database.h>
 #include <google/protobuf/compiler/importer.h>
 
-#include <boost/filesystem.hpp>
+
 #include <boost/signals.hpp>
 #include <boost/shared_ptr.hpp>
 
@@ -92,24 +94,11 @@ namespace goby
                 get_instance()->enable_disk_source_database();
             }
 
+#if PROTO_RUNTIME_COMPILE
             static const google::protobuf::FileDescriptor*
-                load_from_proto_file(const std::string& proto_file)
-            {
-                if(!get_instance()->source_database_)
-                    throw(std::runtime_error("Must called enable_compilation() before loading proto files directly"));
-                
-                
-#if BOOST_FILESYSTEM_VERSION == 3
-                namespace bf = boost::filesystem3;
-#else
-                namespace bf = boost::filesystem;
+                load_from_proto_file(const std::string& proto_file);
 #endif
-                bf::path proto_file_path = bf::complete(proto_file);
-                proto_file_path.normalize();
-
-                return user_descriptor_pool().FindFileByName(proto_file_path.string());
-            }
-
+            
             static void* load_from_shared_lib(const std::string& shared_lib_path)
             {
                 void* handle = dlopen(shared_lib_path.c_str(), RTLD_LAZY);

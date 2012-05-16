@@ -41,12 +41,12 @@ void goby::acomms::DCCLDefaultMessageCodec::any_encode(Bitset* bits, const boost
   
 
  
-unsigned goby::acomms::DCCLDefaultMessageCodec::any_size(const boost::any& field_value)
+unsigned goby::acomms::DCCLDefaultMessageCodec::any_size(const boost::any& wire_value)
 {
-    if(field_value.empty())
+    if(wire_value.empty())
         return min_size();
     else
-        return traverse_const_message<Size, unsigned>(field_value);
+        return traverse_const_message<Size, unsigned>(wire_value);
 }
 
 void goby::acomms::DCCLDefaultMessageCodec::any_run_hooks(const boost::any& field_value)
@@ -165,19 +165,32 @@ std::string goby::acomms::DCCLDefaultMessageCodec::info()
 bool goby::acomms::DCCLDefaultMessageCodec::check_field(const google::protobuf::FieldDescriptor* field)
 {
     if(!field)
+    {
         return true;
+    }
     else
     {
         DCCLFieldOptions dccl_field_options = field->options().GetExtension(goby::field).dccl();
-        if(dccl_field_options.omit() // omit
-            || (field->cpp_type() != google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE // for non message fields, skip if header / body mismatch
-                && ((part() == HEAD && !dccl_field_options.in_head())
-                    || (part() == BODY && dccl_field_options.in_head()))))
+        if(dccl_field_options.omit()) // omit
+        {
+            return false;
+        }
+        else if(MessageHandler::current_part() == MessageHandler::UNKNOWN) // part not yet explicitly specified
+        {
+            if(field->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE &&
+               DCCLFieldCodecManager::find(field)->name() == DCCLCodec::DEFAULT_CODEC_NAME) // default message codec will expand
+                return true;
+            else if((part() == MessageHandler::HEAD && !dccl_field_options.in_head())
+                    || (part() == MessageHandler::BODY && dccl_field_options.in_head()))
+                return false;
+            else
+                return true;
+        }
+        else if(MessageHandler::current_part() != part()) // part specified and doesn't match
             return false;
         else
             return true;
-    }
-    
+    }    
 }
 
 

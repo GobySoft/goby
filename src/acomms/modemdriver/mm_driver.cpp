@@ -422,25 +422,31 @@ void goby::acomms::MMDriver::handle_initiate_transmission(const protobuf::ModemT
         glog.is(DEBUG1) && glog << group(glog_out_group()) << "Beginning to initiate transmission." << std::endl;
 
         // allows zero to N third parties modify the transmission before sending.
-        signal_modify_transmission(&transmit_msg_);
-
-        
+        signal_modify_transmission(&transmit_msg_);        
         
         switch(transmit_msg_.type())
         {
             case protobuf::ModemTransmission::DATA: cccyc(&transmit_msg_); break;
-            case protobuf::ModemTransmission::MICROMODEM_MINI_DATA: ccmuc(&transmit_msg_); break;
-            case protobuf::ModemTransmission::MICROMODEM_TWO_WAY_PING: ccmpc(transmit_msg_); break;
-            case protobuf::ModemTransmission::MICROMODEM_REMUS_LBL_RANGING: ccpdt(transmit_msg_); break;
-            case protobuf::ModemTransmission::MICROMODEM_NARROWBAND_LBL_RANGING: ccpnt(transmit_msg_); break;
+            case protobuf::ModemTransmission::DRIVER_SPECIFIC:
+            {
+                switch(transmit_msg_.GetExtension(micromodem::protobuf::type))
+                {
+                    case micromodem::protobuf::MICROMODEM_MINI_DATA: ccmuc(&transmit_msg_); break;
+                    case micromodem::protobuf::MICROMODEM_TWO_WAY_PING: ccmpc(transmit_msg_); break;
+                    case micromodem::protobuf::MICROMODEM_REMUS_LBL_RANGING: ccpdt(transmit_msg_); break;
+                    case micromodem::protobuf::MICROMODEM_NARROWBAND_LBL_RANGING: ccpnt(transmit_msg_); break;
+                    default:
+                        glog.is(DEBUG1) && glog << group(glog_out_group()) << warn << "Not initiating transmission because we were given an invalid DRIVER_SPECIFIC transmission type for the Micro-Modem:" << transmit_msg_ << std::endl;
+                        break;
+                }
+            }
+            break;
 
             default:
-                glog.is(DEBUG1) && glog << group(glog_out_group()) << warn << "Not initiating transmission because we were given an invalid transmission type for the Micro-Modem:" << transmit_msg_ << std::endl;
+                glog.is(DEBUG1) && glog << group(glog_out_group()) << warn << "Not initiating transmission because we were given an invalid transmission type for the base Driver:" << transmit_msg_ << std::endl;
                 break;
             
         }
-        last_transmission_type_ = transmit_msg_.type();
-
     }
 
     catch(ModemDriverException& e)
@@ -544,6 +550,8 @@ void goby::acomms::MMDriver::ccpdt(const protobuf::ModemTransmission& msg)
 {
     glog.is(DEBUG1) && glog << group(glog_out_group()) << "\tthis is a MICROMODEM_REMUS_LBL_RANGING transmission" << std::endl;
 
+    last_lbl_type_ = micromodem::protobuf::MICROMODEM_REMUS_LBL_RANGING;
+    
     // start with configuration parameters
     micromodem::protobuf::REMUSLBLParams params =
         driver_cfg_.GetExtension(micromodem::protobuf::Config::remus_lbl);
@@ -573,6 +581,8 @@ void goby::acomms::MMDriver::ccpnt(const protobuf::ModemTransmission& msg)
 {
     glog.is(DEBUG1) && glog << group(glog_out_group()) << "\tthis is a MICROMODEM_NARROWBAND_LBL_RANGING transmission" << std::endl;
     
+    last_lbl_type_ = micromodem::protobuf::MICROMODEM_NARROWBAND_LBL_RANGING;
+
     // start with configuration parameters
     micromodem::protobuf::NarrowBandLBLParams params =
         driver_cfg_.GetExtension(micromodem::protobuf::Config::narrowband_lbl);
@@ -894,8 +904,9 @@ void goby::acomms::MMDriver::camua(const NMEASentence& nmea, protobuf::ModemTran
     m->set_time(goby_time<uint64>());
     m->set_src(as<uint32>(nmea[1]));
     m->set_dest(as<uint32>(nmea[2]));
-    m->set_type(protobuf::ModemTransmission::MICROMODEM_MINI_DATA);
-
+    m->set_type(protobuf::ModemTransmission::DRIVER_SPECIFIC);
+    m->SetExtension(micromodem::protobuf::type, micromodem::protobuf::MICROMODEM_MINI_DATA);
+    
     m->add_frame(goby::util::hex_decode(nmea[3]));
 
     glog.is(DEBUG1) && glog << group(glog_in_group()) << "Received MICROMODEM_MINI_DATA packet from " << m->src() << std::endl;
@@ -999,7 +1010,8 @@ void goby::acomms::MMDriver::campr(const NMEASentence& nmea, protobuf::ModemTran
     if(nmea.size() > 3)
         ranging_reply->add_one_way_travel_time(as<double>(nmea[3]));
 
-    m->set_type(protobuf::ModemTransmission::MICROMODEM_TWO_WAY_PING);
+    m->set_type(protobuf::ModemTransmission::DRIVER_SPECIFIC);
+    m->SetExtension(micromodem::protobuf::type, micromodem::protobuf::MICROMODEM_TWO_WAY_PING);
 
     glog.is(DEBUG1) && glog << group(glog_in_group()) << "Received MICROMODEM_TWO_WAY_PING response from " << m->src() << ", 1-way travel time: " << ranging_reply->one_way_travel_time(ranging_reply->one_way_travel_time_size()-1) << "s" << std::endl;
     
@@ -1016,7 +1028,8 @@ void goby::acomms::MMDriver::campa(const NMEASentence& nmea, protobuf::ModemTran
     m->set_src(as<uint32>(nmea[1]));
     m->set_dest(as<uint32>(nmea[2]));
 
-    m->set_type(protobuf::ModemTransmission::MICROMODEM_TWO_WAY_PING);
+    m->set_type(protobuf::ModemTransmission::DRIVER_SPECIFIC);
+    m->SetExtension(micromodem::protobuf::type, micromodem::protobuf::MICROMODEM_TWO_WAY_PING);
     
     // if enabled cacst will signal_receive
     if(!nvram_cfg_["CST"])
@@ -1035,15 +1048,17 @@ void goby::acomms::MMDriver::sntta(const NMEASentence& nmea, protobuf::ModemTran
     ranging_reply->add_one_way_travel_time(as<double>(nmea[3]));
     ranging_reply->add_one_way_travel_time(as<double>(nmea[4]));
     
-    m->set_type(last_transmission_type_);
+    m->set_type(protobuf::ModemTransmission::DRIVER_SPECIFIC);
+    m->SetExtension(micromodem::protobuf::type, last_lbl_type_);
 
+    
     m->set_src(driver_cfg_.modem_id());
     m->set_time(as<uint64>(nmea_time2ptime(nmea[5])));
     m->set_time_source(protobuf::ModemTransmission::MODEM_TIME);
 
-    if(last_transmission_type_ == protobuf::ModemTransmission::MICROMODEM_REMUS_LBL_RANGING)
+    if(last_lbl_type_ == micromodem::protobuf::MICROMODEM_REMUS_LBL_RANGING)
         glog.is(DEBUG1) && glog << group(glog_in_group()) << "Received MICROMODEM_REMUS_LBL_RANGING response " << std::endl;
-    else if(last_transmission_type_ == protobuf::ModemTransmission::MICROMODEM_NARROWBAND_LBL_RANGING)
+    else if(last_lbl_type_ == micromodem::protobuf::MICROMODEM_NARROWBAND_LBL_RANGING)
         glog.is(DEBUG1) && glog << group(glog_in_group()) << "Received MICROMODEM_NARROWBAND_LBL_RANGING response " << std::endl; 
    
     // no cacst on sntta, so signal receive here

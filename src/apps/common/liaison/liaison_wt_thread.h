@@ -44,6 +44,9 @@ namespace goby
 {
     namespace common
     {
+        class LiaisonScope;
+        
+        
         class LiaisonWtThread : public Wt::WApplication
         {
           public:
@@ -66,12 +69,14 @@ namespace goby
             
             
             Wt::WStackedWidget* contents_stack_;
+
+            LiaisonScope* scope_;
             Wt::WTimer scope_timer_;
             Wt::WTimer commander_timer_;
 
             
-            enum TimerState { ACTIVE = 1, STOPPED = 2, UNKNOWN = 0 };
-            TimerState last_scope_timer_state_;
+            enum ScopeState { ACTIVE = 1, STOPPED = 2, UNKNOWN = 0 };
+            ScopeState last_scope_state_;
             
         };
 

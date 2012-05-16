@@ -29,13 +29,15 @@
 #include "goby/acomms/route.h"
 #include "goby/acomms/amac.h"
 #include "goby/acomms/modem_driver.h"
+#include "goby/acomms/modemdriver/udp_driver.h"
+#include "goby/pb/pb_modem_driver.h"
+
 #include "goby/acomms/bind.h"
 #include "goby/acomms/connect.h"
 
 #include "goby/acomms/protobuf/queue.pb.h"
 #include "goby/acomms/protobuf/network_ack.pb.h"
 
-#include "goby/pb/pb_modem_driver.h"
 
 #include "bridge_config.pb.h"
 

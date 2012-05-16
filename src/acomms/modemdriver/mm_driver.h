@@ -248,7 +248,7 @@ namespace goby
             // false if a third party initiated the last cycle
             bool local_cccyc_;
 
-            protobuf::ModemTransmission::TransmissionType last_transmission_type_;
+            micromodem::protobuf::TransmissionType last_lbl_type_;
             
         };
     }

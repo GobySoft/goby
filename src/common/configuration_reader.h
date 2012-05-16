@@ -32,7 +32,6 @@
 #include <boost/foreach.hpp>
 #include <boost/program_options.hpp>
 #include <boost/cstdint.hpp>
-#include <boost/filesystem.hpp>
 
 #include <google/protobuf/message.h>
 #include <google/protobuf/descriptor.h>

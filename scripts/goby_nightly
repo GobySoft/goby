@@ -16,7 +16,7 @@ ctest -D NightlyMemCheck
 ctest -D NightlyCoverage
 ctest -D NightlySubmit
 
-cd /home/toby/nightly/goby/1.0/build
+cd /home/toby/nightly/goby/1.1/build
 make clean
 rm -rf *
 cmake .. -Dbuild_moos=ON -DCMAKE_BUILD_TYPE=Debug

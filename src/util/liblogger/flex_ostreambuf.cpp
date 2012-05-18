@@ -42,7 +42,8 @@ boost::mutex curses_mutex;
 
 boost::mutex goby::util::Logger::mutex;
 
-goby::util::FlexOStreamBuf::FlexOStreamBuf(): name_("no name"),
+goby::util::FlexOStreamBuf::FlexOStreamBuf(): buffer_(1),
+                                              name_("no name"),
                                               die_flag_(false),
                                               warn_flag_(false),
                                               debug_flag_(false),
@@ -129,16 +130,27 @@ void goby::util::FlexOStreamBuf::add_group(const std::string & name, Group g)
 #endif
 }
 
+int goby::util::FlexOStreamBuf::overflow(int c /*= EOF*/)
+{
+    if(c == EOF)
+        return c;
+    else if(c == '\n')
+        buffer_.push_back(std::string());
+    else
+        buffer_.back().push_back(c);
+    
+    return c;
+}
 
 // called when flush() or std::endl
 int goby::util::FlexOStreamBuf::sync()
 {
-    std::istream is(this);
-    std::string s;
-
-    while (!getline(is, s).eof())
-        display(s);
-    
+    // all but last one
+    while(buffer_.size() > 1)
+    {
+        display(buffer_.front());
+        buffer_.pop_front();
+    }
     
     group_name_.erase();
 

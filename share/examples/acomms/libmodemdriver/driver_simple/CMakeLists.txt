@@ -1,2 +1,2 @@
 add_executable(driver_simple driver_simple.cpp)
-target_link_libraries(driver_simple goby_modemdriver)
+target_link_libraries(driver_simple goby_modemdriver goby_protobuf protobuf crypto++ boost_system boost_signals)

@@ -1,2 +1,2 @@
 add_executable(queue_multimessage multimessage.cpp)
-target_link_libraries(queue_multimessage goby_queue)
+target_link_libraries(queue_multimessage goby_queue goby_protobuf protobuf boost_signals crypto++)

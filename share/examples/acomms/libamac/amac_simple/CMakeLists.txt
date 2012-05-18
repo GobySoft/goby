@@ -1,2 +1,2 @@
 add_executable(amac_simple amac_simple.cpp)
-target_link_libraries(amac_simple goby_amac)
+target_link_libraries(amac_simple goby_amac boost_system boost_signals goby_protobuf protobuf)

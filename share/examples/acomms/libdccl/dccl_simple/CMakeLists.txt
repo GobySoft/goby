@@ -1,2 +1,2 @@
 add_executable(dccl_simple dccl_simple.cpp)
-target_link_libraries(dccl_simple goby_dccl)
+target_link_libraries(dccl_simple goby_dccl goby_logger goby_protobuf protobuf crypto++)

@@ -1,6 +1,6 @@
 if(CURSES_FOUND)
   add_executable(goby_chat chat.cpp chat_curses.cpp)
-  target_link_libraries(goby_chat ${Boost_LIBRARIES} goby_queue goby_amac goby_dccl goby_modemdriver)
+  target_link_libraries(goby_chat ${Boost_LIBRARIES} goby_queue goby_amac goby_dccl goby_modemdriver goby_protobuf protobuf)
 else()
   message(WARNING "Missing NCurses so not building `chat` example")
 endif()

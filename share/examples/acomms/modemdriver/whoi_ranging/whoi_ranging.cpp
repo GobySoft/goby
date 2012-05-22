@@ -30,7 +30,7 @@ int main(int argc, char* argv[])
         return usage();
 
     goby::glog.set_name(argv[0]);
-    goby::glog.add_stream(goby::common::logger::DEBUG1, &std::clog);
+    goby::glog.add_stream(goby::common::logger::DEBUG2, &std::clog);
     
     //
     // 1. Create and initialize the Micro-Modem driver
@@ -86,9 +86,11 @@ int main(int argc, char* argv[])
     
     goby::acomms::protobuf::ModemTransmission request_msg;
     request_msg.set_src(our_id);
-    request_msg.set_type((type == "remus") ?
-                         goby::acomms::protobuf::ModemTransmission::MICROMODEM_REMUS_LBL_RANGING :
-                         goby::acomms::protobuf::ModemTransmission::MICROMODEM_NARROWBAND_LBL_RANGING);
+    request_msg.set_type(goby::acomms::protobuf::ModemTransmission::DRIVER_SPECIFIC);
+    request_msg.SetExtension(micromodem::protobuf::type,
+                             (type == "remus") ?
+                             micromodem::protobuf::MICROMODEM_REMUS_LBL_RANGING :
+                             micromodem::protobuf::MICROMODEM_NARROWBAND_LBL_RANGING);
 
 
     

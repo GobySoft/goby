@@ -180,8 +180,6 @@ goby::acomms::Bridge::Bridge()
 
     protobuf::NetworkAck ack;
 
-    std::cout << ack.GetDescriptor() << "," << google::protobuf::DescriptorPool::generated_pool()->FindMessageTypeByName("goby.acomms.protobuf.NetworkAck") << std::endl;
-
     assert(ack.GetDescriptor() == google::protobuf::DescriptorPool::generated_pool()->FindMessageTypeByName("goby.acomms.protobuf.NetworkAck"));
 
     assert(ack.GetDescriptor() == goby::util::DynamicProtobufManager::new_protobuf_message("goby.acomms.protobuf.NetworkAck")->GetDescriptor());

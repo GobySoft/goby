@@ -29,6 +29,8 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
+#include <deque>
+#include <cstdio>
 
 #if THREAD_SAFE_LOGGER
 #include <boost/thread.hpp>
@@ -69,15 +71,18 @@ namespace goby
         
         
         /// Class derived from std::stringbuf that allows us to insert things before the stream and control output. This is the string buffer used by goby::common::FlexOstream for the Goby Logger (glogger)
-        class FlexOStreamBuf : public std::stringbuf
+        class FlexOStreamBuf : public std::streambuf
         {
           public:
             FlexOStreamBuf();
             ~FlexOStreamBuf();
-
-            /// virtual inherited from std::ostream. Called when std::endl or std::flush is inserted into the stream
+            
+            /// virtual inherited from std::streambuf. Called when std::endl or std::flush is inserted into the stream
             int sync();
 
+            /// virtual inherited from std::streambuf. Called when something is inserted into the stream
+            int overflow(int c = EOF);
+            
             /// name of the application being served
             void name(const std::string & s)
             { name_ = s; }
@@ -127,7 +132,8 @@ namespace goby
             void strip_escapes(std::string& s);
             
           private:
-
+            std::deque<std::string> buffer_;
+            
             class StreamConfig
             {
               public:

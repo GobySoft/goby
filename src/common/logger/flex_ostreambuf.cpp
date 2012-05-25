@@ -53,16 +53,17 @@ boost::mutex curses_mutex;
 boost::mutex goby::common::logger::mutex;
 #endif
 
-goby::common::FlexOStreamBuf::FlexOStreamBuf(): name_("no name"),
-                                              die_flag_(false),
-                                              current_verbosity_(logger::VERBOSE),
+goby::common::FlexOStreamBuf::FlexOStreamBuf(): buffer_(1),
+                                                name_("no name"),
+                                                die_flag_(false),
+                                                current_verbosity_(logger::VERBOSE),
 #ifdef HAS_NCURSES
-                                              curses_(0),
+                                                curses_(0),
 #endif
-                                              start_time_(goby_time()),
-                                              is_gui_(false),
-                                              highest_verbosity_(logger::QUIET)
-                                              
+                                                start_time_(goby_time()),
+                                                is_gui_(false),
+                                                highest_verbosity_(logger::QUIET)
+                                                
 {
     Group no_group("", "Ungrouped messages");
     groups_[""] = no_group;    
@@ -136,15 +137,27 @@ void goby::common::FlexOStreamBuf::add_group(const std::string & name, Group g)
 #endif
 }
 
+int goby::common::FlexOStreamBuf::overflow(int c /*= EOF*/)
+{
+    if(c == EOF)
+        return c;
+    else if(c == '\n')
+        buffer_.push_back(std::string());
+    else
+        buffer_.back().push_back(c);
+    
+    return c;
+}
 
 // called when flush() or std::endl
 int goby::common::FlexOStreamBuf::sync()
 {
-    std::istream is(this);
-    std::string s;
-
-    while (!getline(is, s).eof())
-        display(s);
+    // all but last one
+    while(buffer_.size() > 1)
+    {
+        display(buffer_.front());
+        buffer_.pop_front();
+    }
     
     group_name_.erase();
 

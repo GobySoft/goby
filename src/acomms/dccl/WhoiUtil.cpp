@@ -12,9 +12,9 @@ LATLON_COMPRESSED Encode_latlon(double latlon_in) {
   encoded = latlon_in * ((double)(0x007FFFFFL)/180.0);
   encoded += (encoded > 0.0) ? 0.5 : -0.5;
   // deal with truncation
-  std::cout << std::setprecision(16) << encoded << std::endl;
+  //  std::cout << std::setprecision(16) << encoded << std::endl;
   out.as_long =(long int) encoded;
-  std::cout << std::hex << out.as_long << std::endl;
+  // std::cout << std::hex << out.as_long << std::endl;
   return(out.as_compressed);
 } 
 

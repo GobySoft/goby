@@ -296,13 +296,16 @@ goby::common::LiaisonCommander::ControlsContainer::ControlsContainer(
     command_selection_->model()->sort(0);
     
     if(last_command)
-    {                
-        command_selection_->setCurrentIndex(
-            command_selection_->findText(last_command->protobuf_name));
-        switch_command(command_selection_->currentIndex());
+    {
+        int last_command_index = command_selection_->findText(last_command->protobuf_name);
+        if(last_command_index >= 0)
+        {
+            command_selection_->setCurrentIndex(last_command_index);
+            switch_command(command_selection_->currentIndex());
+        }
     }
 }
-
+ 
 void goby::common::LiaisonCommander::ControlsContainer::switch_command(int selection_index)
 {
     if(selection_index == 0)
@@ -627,7 +630,11 @@ void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::genera
         return;
 
     int index = parent->childNodes().size();
-    WTreeTableNode* node = new WTreeTableNode(field_desc->name(), 0, parent);
+
+    
+    WTreeTableNode* node = new WTreeTableNode(field_desc->is_extension() ?
+                                              "[" + field_desc->full_name() + "]: ":
+                                              field_desc->name() + ": ", 0, parent);
 
     if((parent->styleClass() == STRIPE_ODD_CLASS && index % 2) || (parent->styleClass() == STRIPE_EVEN_CLASS && !(index % 2)))
         node->setStyleClass(STRIPE_ODD_CLASS);

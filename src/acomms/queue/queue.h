@@ -58,7 +58,7 @@ namespace goby
 
         typedef std::list<QueuedMessage>::iterator messages_it;
         typedef std::multimap<unsigned, messages_it>::iterator waiting_for_ack_it;
-
+        
         
         class Queue
         {
@@ -79,9 +79,9 @@ namespace goby
                                      boost::posix_time::ptime* last_send_time,
                                      const protobuf::ModemTransmission& request_msg,
                                      const std::string& data);
-        
-            void clear_ack_queue()
-            { waiting_for_ack_.clear(); }
+
+            // returns true if empty
+            bool clear_ack_queue();
 
             void flush();
         

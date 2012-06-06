@@ -133,7 +133,14 @@ int goby::acomms::RouteManager::find_next_hop(int us, int dest)
         return -1;
     }
 
-    int direction = (current_route_index > dest_route_index) ? -1 : 1;
+    int direction;
+    if(dest_route_index < current_route_index)
+        direction = -1;
+    else if(dest_route_index > current_route_index)
+        direction = 1;
+    else
+        direction = 0;
+    
     int next_hop_index = current_route_index + direction;
     
     if(next_hop_index < 0 || next_hop_index >= cfg_.route().hop_size())

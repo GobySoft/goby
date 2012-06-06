@@ -33,6 +33,7 @@
 #include <algorithm>
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
+#include "goby/version.h"
 
 // brings std::ostream& red, etc. into scope
 using namespace goby::common::tcolor;
@@ -68,7 +69,8 @@ void goby::common::ConfigReader::read_cfg(int argc,
         ("example_config,e", "writes an example .pb.cfg file")
         ("verbose,v", boost::program_options::value<std::string>()->implicit_value("")->multitoken(), "output useful information to std::cout. -v is verbosity: verbose, -vv is verbosity: debug1, -vvv is verbosity: debug2, -vvvv is verbosity: debug3")
         ("ncurses,n", "output useful information to an NCurses GUI instead of stdout. If set, this parameter overrides --verbose settings.")
-        ("no_db,d", "disables the check for goby_database before publishing. You must set this if not running the goby_database.");
+        ("no_db,d", "disables the check for goby_database before publishing. You must set this if not running the goby_database.")
+        ("version,V", "writes the current version");
     
     std::string od_both_desc = "Typically given in " + *application_name + " configuration file, but may be specified on the command line";
     boost::program_options::options_description od_both(od_both_desc.c_str());
@@ -108,7 +110,19 @@ void goby::common::ConfigReader::read_cfg(int argc,
         get_example_cfg_file(message, &std::cout);    
         throw(e);
     }
+    else if(var_map->count("version"))
+    {
+        ConfigException e("");
+        e.set_error(false);
+        std::cout << "This is Version " << goby::VERSION_STRING
+                  << " of the Goby Underwater Autonomy Project released on "
+                  << goby::VERSION_DATE
+                  << ". (compiled on " << goby::COMPILE_DATE << ")\n"
+                  <<" See https://launchpad.net/goby to search for updates." << std::endl;
+        throw(e);
+    }
 
+    
     if (var_map->count("app_name"))
     {
         *application_name = (*var_map)["app_name"].as<std::string>();

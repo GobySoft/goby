@@ -238,5 +238,3 @@ void goby::acomms::Bridge::handle_link_ack(const protobuf::ModemTransmission& ac
     
     r_manager_.handle_in(from_queue->meta_from_msg(ack), ack, from_queue->modem_id());
 }
-
-            

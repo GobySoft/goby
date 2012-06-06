@@ -379,11 +379,14 @@ void goby::acomms::QueueManager::handle_modem_data_request(protobuf::ModemTransm
 
 void goby::acomms::QueueManager::clear_packet()
 {
-    typedef std::pair<unsigned, Queue*> P;
-    BOOST_FOREACH(const P& p, waiting_for_ack_)
-        p.second->clear_ack_queue();
-    
-    waiting_for_ack_.clear();
+    for (std::multimap<unsigned, Queue*>::iterator it = waiting_for_ack_.begin(),
+             end = waiting_for_ack_.end(); it != end;)
+    {
+        if (it->second->clear_ack_queue())
+            waiting_for_ack_.erase(it++);
+        else
+            ++it;  
+    }
     
     packet_ack_ = false;
     packet_dest_ = BROADCAST_ID;

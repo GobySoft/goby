@@ -11,7 +11,6 @@ add_executable(goby_store_server
 target_link_libraries(
   goby_store_server 
   ${Boost_LIBRARIES}
-  ${Wt_LIBRARIES}
   goby_common
   goby_util
   goby_pb

@@ -121,7 +121,7 @@ goby::acomms::QueuedMessage goby::acomms::Queue::give_data(unsigned frame)
         waiting_for_ack_.insert(std::pair<unsigned, messages_it>(frame, it_to_give));
 
     last_send_time_ = goby_time();
-    
+    it_to_give->meta.set_last_sent_time(util::as<goby::uint64>(last_send_time_));
     
     return *it_to_give;
 }
@@ -301,6 +301,26 @@ void goby::acomms::Queue::flush()
     messages_.clear();
     waiting_for_ack_.clear();
 }        
+
+
+bool goby::acomms::Queue::clear_ack_queue()
+{
+    for (waiting_for_ack_it it = waiting_for_ack_.begin(), end = waiting_for_ack_.end();
+         it != end;)
+    {
+        if (it->second->meta.last_sent_time() +
+            parent_->cfg_.minimum_ack_wait_seconds()*1e6 < goby_time<uint64>())
+        {
+            waiting_for_ack_.erase(it++);
+        }
+        else
+        {
+            ++it; 
+        }
+                    
+    }
+    return waiting_for_ack_.empty();
+}
 
 
 std::ostream& goby::acomms::operator<< (std::ostream& os, const goby::acomms::Queue& oq)

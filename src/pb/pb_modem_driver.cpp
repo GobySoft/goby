@@ -93,7 +93,7 @@ void goby::pb::PBDriver::do_work()
        request_.IsInitialized() &&
        goby_time<uint64>() > last_send_time_ + 1e6*query_interval_seconds_)
     {
-        glog.is(DEBUG2) && glog << "Sending outbox" << std::endl;
+        glog.is(DEBUG2) && glog << group(glog_out_group()) << "Sending outbox: " << request_.DebugString() << std::endl;
         send(request_, request_socket_id_);
         request_.clear_outbox();
         last_send_time_ = goby_time<uint64>();
@@ -103,7 +103,7 @@ void goby::pb::PBDriver::do_work()
 
 void goby::pb::PBDriver::handle_response(const acomms::protobuf::StoreServerResponse& response)
 {
-    glog.is(DEBUG1) && glog << (size_t)this <<  ": Response: " << response.DebugString() << std::endl;
+    glog.is(DEBUG2) && glog << group(glog_in_group()) << ": Response: " << response.DebugString() << std::endl;
 
     for(int i = 0, n = response.inbox_size(); i < n; ++i)
     {

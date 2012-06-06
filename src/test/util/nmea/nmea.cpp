@@ -24,7 +24,12 @@
 
 int main()
 {
+    std::string str("");
+    std::vector<std::string> vec;
+    boost::split(vec, str, boost::is_any_of(","));
 
+    assert(vec.size() == 1 && vec.at(0) == "");
+    
     {
         goby::util::NMEASentence nmea;
         nmea.push_back("$FOOBA");
@@ -40,15 +45,11 @@ int main()
         goby::util::NMEASentence nmea;
         nmea.push_back("$CCTXD");
         nmea.push_back(2);
-        nmea.push_back(1);
-        nmea.push_back(1);
+        nmea.push_back("1,1");
         nmea.push_back(goby::util::hex_encode(""));
         std::cout << nmea.message() << std::endl;
         assert(nmea.message() == "$CCTXD,2,1,1,*7A");
     }
-
-
-    
     
     std::cout << "all tests passed" << std::endl;
     

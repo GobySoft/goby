@@ -92,7 +92,8 @@ using goby::glog;
 goby::acomms::Bridge::Bridge()
     : ApplicationBase(&cfg_)
 {
-
+    glog.is(DEBUG1) && glog << cfg_.DebugString() << std::endl;
+    
     // load all shared libraries
     for(int i = 0, n = cfg_.load_shared_library_size(); i < n; ++i)
     {

@@ -41,7 +41,7 @@ boost::shared_ptr<goby::acomms::MMDriver> driver1, driver2;
 static int check_count = 0;
 
 // terminate with -1
-static int tests_to_run [] = { 0,1,2,3,4,5,-1 };
+static int tests_to_run [] = { 5,-1 };
 static int tests_to_run_index = 0;
 static int test_number = tests_to_run[tests_to_run_index];
 
@@ -73,11 +73,16 @@ int main(int argc, char* argv[])
 
     goby::glog.add_stream(goby::common::logger::DEBUG3, &std::clog);
     std::ofstream fout;
-    if(argc == 4)
+
+//    int mm_version = 1;
+    
+    switch(argc)
     {
-        fout.open(argv[3]);
-        goby::glog.add_stream(goby::common::logger::DEBUG3, &fout);        
-    }
+        // fallthrough intentional
+        case 4:
+            fout.open(argv[3]);
+            goby::glog.add_stream(goby::common::logger::DEBUG3, &fout);        
+    }    
     
     goby::glog.set_name(argv[0]);    
 
@@ -100,11 +105,18 @@ int main(int argc, char* argv[])
 
 
         // so we can play with the emulator box BNC cables and expect bad CRC'S (otherwise crosstalk is enough to receive everything ok!)
-        cfg1.AddExtension(micromodem::protobuf::Config::nvram_cfg, "AGC,0");
-        cfg2.AddExtension(micromodem::protobuf::Config::nvram_cfg, "AGC,0");
+        // also, test upper-casing of parameters
+        cfg1.AddExtension(micromodem::protobuf::Config::nvram_cfg, "agc,0");
+        cfg2.AddExtension(micromodem::protobuf::Config::nvram_cfg, "agc,0");
         cfg1.AddExtension(micromodem::protobuf::Config::nvram_cfg, "AGN,0");
         cfg2.AddExtension(micromodem::protobuf::Config::nvram_cfg, "AGN,0");
-
+        cfg1.AddExtension(micromodem::protobuf::Config::nvram_cfg, "BND,1");
+        cfg2.AddExtension(micromodem::protobuf::Config::nvram_cfg, "BND,1");
+        cfg1.AddExtension(micromodem::protobuf::Config::nvram_cfg, "MOD,1");
+        cfg2.AddExtension(micromodem::protobuf::Config::nvram_cfg, "MOD,1");
+        cfg1.SetExtension(micromodem::protobuf::Config::reset_nvram, true);
+        cfg2.SetExtension(micromodem::protobuf::Config::reset_nvram, true);
+        cfg2.SetExtension(micromodem::protobuf::Config::mm_version, 2);
         
         cfg2.set_serial_port(argv[2]);
         cfg2.set_modem_id(2);
@@ -122,13 +134,11 @@ int main(int argc, char* argv[])
         goby::glog << cfg1 << std::endl;
         
         driver1->startup(cfg1);
-
-        
         driver2->startup(cfg2);
 
         int i =0;
         
-        while(((i / 10) < 3))
+        while(((i / 10) < 20))
         {
             driver1->do_work();
             driver2->do_work();
@@ -354,7 +364,7 @@ void handle_data_receive2(const protobuf::ModemTransmission& msg)
                 assert(msg.src() == 1);
                 assert(msg.dest() == 2);
                 assert(msg.frame_size() == 2);
-                assert(msg.frame(0).data() == std::string(64, '1'));
+                assert(msg.frame(0).data() == std::string(32, '1'));
                 assert(msg.frame(1).data() == std::string(64, '2'));
                 ++check_count;
             }
@@ -513,8 +523,8 @@ void test5()
     transmit.set_type(protobuf::ModemTransmission::DATA);
     transmit.set_src(1);
     transmit.set_dest(2);
-    transmit.set_rate(2);
-    transmit.add_frame(std::string(64,'1'));
+    transmit.set_rate(1);
+    transmit.add_frame(std::string(32,'1'));
     transmit.set_ack_requested(true);
     
     driver1->handle_initiate_transmission(transmit);

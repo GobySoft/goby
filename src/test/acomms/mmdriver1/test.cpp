@@ -41,7 +41,7 @@ boost::shared_ptr<goby::acomms::MMDriver> driver1, driver2;
 static int check_count = 0;
 
 // terminate with -1
-static int tests_to_run [] = { 5,-1 };
+static int tests_to_run [] = { 5,5,5,5,5,5,5,5,5,5,5,5,5,5,-1 };
 static int tests_to_run_index = 0;
 static int test_number = tests_to_run[tests_to_run_index];
 
@@ -106,17 +106,25 @@ int main(int argc, char* argv[])
 
         // so we can play with the emulator box BNC cables and expect bad CRC'S (otherwise crosstalk is enough to receive everything ok!)
         // also, test upper-casing of parameters
-        cfg1.AddExtension(micromodem::protobuf::Config::nvram_cfg, "agc,0");
-        cfg2.AddExtension(micromodem::protobuf::Config::nvram_cfg, "agc,0");
-        cfg1.AddExtension(micromodem::protobuf::Config::nvram_cfg, "AGN,0");
-        cfg2.AddExtension(micromodem::protobuf::Config::nvram_cfg, "AGN,0");
-        cfg1.AddExtension(micromodem::protobuf::Config::nvram_cfg, "BND,1");
-        cfg2.AddExtension(micromodem::protobuf::Config::nvram_cfg, "BND,1");
-        cfg1.AddExtension(micromodem::protobuf::Config::nvram_cfg, "MOD,1");
-        cfg2.AddExtension(micromodem::protobuf::Config::nvram_cfg, "MOD,1");
+//        cfg1.AddExtension(micromodem::protobuf::Config::nvram_cfg, "agc,0");
+//        cfg2.AddExtension(micromodem::protobuf::Config::nvram_cfg, "agc,0");
+//        cfg1.AddExtension(micromodem::protobuf::Config::nvram_cfg, "AGN,0");
+//        cfg2.AddExtension(micromodem::protobuf::Config::nvram_cfg, "AGN,0");
         cfg1.SetExtension(micromodem::protobuf::Config::reset_nvram, true);
         cfg2.SetExtension(micromodem::protobuf::Config::reset_nvram, true);
-        cfg2.SetExtension(micromodem::protobuf::Config::mm_version, 2);
+
+        cfg1.AddExtension(micromodem::protobuf::Config::nvram_cfg, "BND,0");
+        cfg2.AddExtension(micromodem::protobuf::Config::nvram_cfg, "BND,0");
+        cfg1.AddExtension(micromodem::protobuf::Config::nvram_cfg, "BW0,2000");
+        cfg2.AddExtension(micromodem::protobuf::Config::nvram_cfg, "BW0,2000");
+        cfg1.AddExtension(micromodem::protobuf::Config::nvram_cfg, "FC0,10000");
+        cfg2.AddExtension(micromodem::protobuf::Config::nvram_cfg, "FC0,10000");
+        cfg1.AddExtension(micromodem::protobuf::Config::nvram_cfg, "MOD,1");
+        cfg2.AddExtension(micromodem::protobuf::Config::nvram_cfg, "MOD,1");
+        cfg1.AddExtension(micromodem::protobuf::Config::nvram_cfg, "CTO,101");
+        cfg2.AddExtension(micromodem::protobuf::Config::nvram_cfg, "CTO,101");        
+
+        cfg1.SetExtension(micromodem::protobuf::Config::mm_version, 2);
         
         cfg2.set_serial_port(argv[2]);
         cfg2.set_modem_id(2);

@@ -45,7 +45,7 @@ using namespace goby::common::tcolor;
 using namespace goby::common::logger;
 
 
-boost::posix_time::time_duration goby::acomms::MMDriver::MODEM_WAIT = boost::posix_time::seconds(3);
+boost::posix_time::time_duration goby::acomms::MMDriver::MODEM_WAIT = boost::posix_time::seconds(5);
 boost::posix_time::time_duration goby::acomms::MMDriver::WAIT_AFTER_REBOOT = boost::posix_time::seconds(2);
 int goby::acomms::MMDriver::ALLOWED_MS_DIFF = 3000;
 boost::posix_time::time_duration goby::acomms::MMDriver::HYDROID_GATEWAY_GPS_REQUEST_INTERVAL = boost::posix_time::seconds(30);
@@ -838,15 +838,8 @@ void goby::acomms::MMDriver::cadrq(const NMEASentence& nmea_in, const protobuf::
         nmea_out.push_back(int(m.ack_requested()));
         
         // TEMPORARY MM2 BUG WORKAROUND (must fill out frame)
-        if(driver_cfg_.GetExtension(micromodem::protobuf::Config::mm_version) == 2)
-        {
-            int max_bytes = nmea_in.as<int>(5);
-            nmea_out.push_back(hex_encode(m.frame(frame) + std::string(max_bytes - m.frame(frame).size(), '\0')));
-        }
-        else
-        {
-            nmea_out.push_back(hex_encode(m.frame(frame)));
-        }
+        int max_bytes = nmea_in.as<int>(5);
+        nmea_out.push_back(hex_encode(m.frame(frame) + std::string(max_bytes - m.frame(frame).size(), '\0')));
         
         if(m.ack_requested())
             frames_waiting_for_ack_.insert(frame);

@@ -830,7 +830,7 @@ void goby::acomms::MMDriver::cadrq(const NMEASentence& nmea_in, const protobuf::
     // TEMPORARY MM2 BUG WORKAROUND (DRQ frame is 0, not 1)
     int frame = (driver_cfg_.GetExtension(micromodem::protobuf::Config::mm_version) == 2) ? as<int>(nmea_in[6]) : as<int>(nmea_in[6])-1;
     
-    if(frame < m.frame_size())
+    if(frame < m.frame_size() && !m.frame(frame).empty())
     {
         // use the cached data
         nmea_out.push_back(m.src());
@@ -839,7 +839,8 @@ void goby::acomms::MMDriver::cadrq(const NMEASentence& nmea_in, const protobuf::
         
         // TEMPORARY MM2 BUG WORKAROUND (must fill out frame)
         int max_bytes = nmea_in.as<int>(5);
-        nmea_out.push_back(hex_encode(m.frame(frame) + std::string(max_bytes - m.frame(frame).size(), '\0')));
+        
+        nmea_out.push_back(hex_encode(m.frame(frame) + std::string(max_bytes - m.frame(frame).size(), 255)));
         
         if(m.ack_requested())
             frames_waiting_for_ack_.insert(frame);

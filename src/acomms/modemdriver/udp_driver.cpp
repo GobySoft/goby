@@ -68,8 +68,10 @@ void goby::acomms::UDPDriver::startup(const protobuf::DriverConfig& cfg)
     boost::asio::ip::udp::resolver::iterator endpoint_iterator = resolver.resolve(query);
     receiver_ = *endpoint_iterator;
 
-    glog.is(DEBUG1) && glog << "Receiver endpoint is: " << receiver_.address().to_string()
-                            << ":" << receiver_.port() << std::endl;
+    glog.is(DEBUG1) &&
+        glog << group(glog_out_group())
+             << "Receiver endpoint is: " << receiver_.address().to_string()
+             << ":" << receiver_.port() << std::endl;
     
     start_receive();
     io_service_->reset();
@@ -124,7 +126,9 @@ void goby::acomms::UDPDriver::start_send(const google::protobuf::Message& msg)
     std::string bytes;
     msg.SerializeToString(&bytes);
 
-    glog.is(DEBUG1) && glog << "Sending hex: " << goby::util::hex_encode(bytes) << std::endl;
+    glog.is(DEBUG1) &&
+        glog << group(glog_out_group())
+             << "Sending hex: " << goby::util::hex_encode(bytes) << std::endl;
 
     socket_.async_send_to(boost::asio::buffer(bytes), receiver_, boost::bind(&UDPDriver::send_complete, this, _1, _2));
 }
@@ -134,11 +138,15 @@ void goby::acomms::UDPDriver::send_complete(const boost::system::error_code& err
 {
     if(error)
     {
-        glog.is(WARN) && glog << "Send error: " << error.message() << std::endl;
+        glog.is(DEBUG1) &&
+            glog << group(glog_out_group()) << warn
+                 << "Send error: " << error.message() << std::endl;
         return;
     }
     
-    glog.is(DEBUG1) && glog << "Sent " << bytes_transferred << " bytes." << std::endl;
+    glog.is(DEBUG1) &&
+        glog << group(glog_out_group())
+             << "Sent " << bytes_transferred << " bytes." << std::endl;
 
 }
 
@@ -153,13 +161,18 @@ void goby::acomms::UDPDriver::receive_complete(const boost::system::error_code& 
 {
     if(error)
     {
-        glog.is(WARN) && glog << "Receive error: " << error.message() << std::endl;
+        glog.is(DEBUG1) &&
+            glog << group(glog_in_group()) << warn
+                 << "Receive error: " << error.message() << std::endl;
         start_receive();
         return;
     }
-        
-    glog.is(DEBUG1) && glog << "Received " << bytes_transferred << " bytes from " << sender_.address().to_string()
-                            << ":" << sender_.port() << std::endl;
+    
+    glog.is(DEBUG1) &&
+        glog << group(glog_in_group())
+             << "Received " << bytes_transferred << " bytes from "
+             << sender_.address().to_string()
+             << ":" << sender_.port() << std::endl;
     
     protobuf::ModemTransmission msg;
     msg.ParseFromArray(&receive_buffer_[0], bytes_transferred);

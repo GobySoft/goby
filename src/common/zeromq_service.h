@@ -209,10 +209,13 @@ namespace goby
             boost::signal<void (MarshallingScheme marshalling_scheme,
                                 const std::string& identifier,
                                 int socket_id)> post_subscribe_hooks;
-            
+
+            friend class ZeroMQSocket;
           private:
             ZeroMQService(const ZeroMQService&);
             ZeroMQService& operator= (const ZeroMQService&);
+            
+            void init();
             
             void process_cfg(const protobuf::ZeroMQServiceConfig& cfg);
 
@@ -222,6 +225,8 @@ namespace goby
             void handle_receive(const void* data, int size, int message_part, int socket_id);
 
             int socket_type(protobuf::ZeroMQServiceConfig::Socket::SocketType type);
+            static std::string glog_out_group() { return "goby::common::zmq::out"; }
+            static std::string glog_in_group() { return "goby::common::zmq::in"; }
             
 
           private:

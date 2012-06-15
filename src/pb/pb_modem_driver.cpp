@@ -102,6 +102,7 @@ void goby::pb::PBDriver::do_work()
         glog.is(DEBUG2) && glog << group(glog_out_group()) << "Outbox: " << request_.DebugString() << std::flush;
         send(request_, request_socket_id_);
         last_send_time_ = goby_time<uint64>();
+	request_.clear_outbox();
         waiting_for_reply_ = true;
     }
     else if(waiting_for_reply_ &&
@@ -141,6 +142,5 @@ void goby::pb::PBDriver::handle_response(const acomms::protobuf::StoreServerResp
         signal_receive(msg);
     }
 
-    request_.clear_outbox();
     waiting_for_reply_ = false;
 }

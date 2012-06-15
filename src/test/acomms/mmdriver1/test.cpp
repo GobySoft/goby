@@ -533,8 +533,8 @@ void test5()
     transmit.set_dest(2);
     transmit.set_rate(1);
     std::string test = "282b1325041304065245504f5254";
-//    transmit.add_frame(goby::util::hex_decode(test));
-    transmit.add_frame(goby::util::hex_decode(test) + std::string(64-test.size()/2,0));
+    transmit.add_frame(goby::util::hex_decode(test));
+//    transmit.add_frame(goby::util::hex_decode(test) + std::string(64-test.size()/2,0));
 //    transmit.add_frame(std::string(64,'1'));
 //    transmit.add_frame(std::string(64,'2'));
     transmit.add_frame("");

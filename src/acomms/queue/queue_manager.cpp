@@ -368,8 +368,15 @@ void goby::acomms::QueueManager::handle_modem_data_request(protobuf::ModemTransm
             }
         
             // finally actually encode the message
-            *data = codec_->encode_repeated<boost::shared_ptr<google::protobuf::Message> >(dccl_msgs);
-            
+            try
+            {
+                *data = codec_->encode_repeated<boost::shared_ptr<google::protobuf::Message> >(dccl_msgs);
+            }
+            catch(DCCLException& e)
+            {
+                *data = "";
+                glog.is(DEBUG1) && glog << group(glog_out_group_) << warn << "Failed to encode, discarding message." << std::endl;
+            }
         }
     }
     // only discipline the ACK value at the end, after all chances of making packet_ack_ = true are done
@@ -537,10 +544,19 @@ void goby::acomms::QueueManager::handle_modem_receive(const protobuf::ModemTrans
                 glog.is(DEBUG1) && glog << group(glog_in_group_)
                                        << "Received DATA message from "
                                         << modem_message.src() << std::endl;
+                
+                std::list<boost::shared_ptr<google::protobuf::Message> > dccl_msgs;
 
-                std::list<boost::shared_ptr<google::protobuf::Message> > dccl_msgs =
-                    codec_->decode_repeated<boost::shared_ptr<google::protobuf::Message> >(
-                        modem_message.frame(frame_number));
+                try
+                {
+                    dccl_msgs = codec_->decode_repeated<boost::shared_ptr<google::protobuf::Message> >(modem_message.frame(frame_number));
+                }
+                catch(DCCLException& e)
+                {
+                    glog.is(DEBUG1) && glog << group(glog_out_group_) << warn
+                                            << "Failed to decode, discarding message." << std::endl;
+                }
+                
 
                 BOOST_FOREACH(boost::shared_ptr<google::protobuf::Message> decoded_message, dccl_msgs)
                 {

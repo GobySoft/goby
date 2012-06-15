@@ -70,7 +70,7 @@ int main(int argc, char* argv[])
     }
     
     codec->validate_repeated(descs);
-
+    
     std::cout << "Try encode..." << std::endl;
     std::string bytes1 = codec->encode_repeated(msgs) + std::string(4, '\0');
     std::cout << "... got bytes (hex): " << goby::util::hex_encode(bytes1) << std::endl;

@@ -45,9 +45,9 @@ using namespace goby::common::tcolor;
 using namespace goby::common::logger;
 
 
-boost::posix_time::time_duration goby::acomms::MMDriver::MODEM_WAIT = boost::posix_time::seconds(3);
+boost::posix_time::time_duration goby::acomms::MMDriver::MODEM_WAIT = boost::posix_time::seconds(5);
 boost::posix_time::time_duration goby::acomms::MMDriver::WAIT_AFTER_REBOOT = boost::posix_time::seconds(2);
-int goby::acomms::MMDriver::ALLOWED_MS_DIFF = 2000;
+int goby::acomms::MMDriver::ALLOWED_MS_DIFF = 3000;
 boost::posix_time::time_duration goby::acomms::MMDriver::HYDROID_GATEWAY_GPS_REQUEST_INTERVAL = boost::posix_time::seconds(30);
 std::string goby::acomms::MMDriver::SERIAL_DELIMITER = "\r";
 unsigned goby::acomms::MMDriver::PACKET_FRAME_COUNT [] = { 1, 3, 3, 2, 2, 8 };
@@ -336,8 +336,14 @@ void goby::acomms::MMDriver::write_cfg()
 void goby::acomms::MMDriver::write_single_cfg(const std::string &s)
 {
     NMEASentence nmea("$CCCFG", NMEASentence::IGNORE);        
-    nmea.push_back(boost::to_upper_copy(s));
 
+    // old three letter cfg (always upper case)
+    const std::string::size_type MM1_CFG_LENGTH = 3;
+    if(s.find(',') == MM1_CFG_LENGTH)
+         nmea.push_back(boost::to_upper_copy(s));
+    else // new config 
+         nmea.push_back(s);
+    
     append_to_write_queue(nmea);
 }
 
@@ -821,15 +827,20 @@ void goby::acomms::MMDriver::cadrq(const NMEASentence& nmea_in, const protobuf::
     NMEASentence nmea_out("$CCTXD", NMEASentence::IGNORE);        
 
     // WHOI counts frames from 1, we count from 0
-    int frame = as<int>(nmea_in[6])-1;
-
-    if(frame < m.frame_size())
+    // TEMPORARY MM2 BUG WORKAROUND (DRQ frame is 0, not 1)
+    int frame = (driver_cfg_.GetExtension(micromodem::protobuf::Config::mm_version) == 2) ? as<int>(nmea_in[6]) : as<int>(nmea_in[6])-1;
+    
+    if(frame < m.frame_size() && !m.frame(frame).empty())
     {
         // use the cached data
         nmea_out.push_back(m.src());
         nmea_out.push_back(m.dest());
         nmea_out.push_back(int(m.ack_requested()));
-        nmea_out.push_back(hex_encode(m.frame(frame)));
+        
+        // TEMPORARY MM2 BUG WORKAROUND (must fill out frame)
+        int max_bytes = nmea_in.as<int>(5);
+        
+        nmea_out.push_back(hex_encode(m.frame(frame) + std::string(max_bytes - m.frame(frame).size(), 255)));
         
         if(m.ack_requested())
             frames_waiting_for_ack_.insert(frame);
@@ -966,24 +977,70 @@ void goby::acomms::MMDriver::caclk(const NMEASentence& nmea)
 void goby::acomms::MMDriver::caxst(const NMEASentence& nmea, protobuf::ModemTransmission* m)
 {
     micromodem::protobuf::TransmitStatistics* xst = m->AddExtension(micromodem::protobuf::transmit_stat);
-    xst->set_date(nmea.as<std::string>(1));
-    xst->set_time(nmea.as<std::string>(2));
-    xst->set_clock_mode(nmea.as<micromodem::protobuf::ClockMode>(3));
-    xst->set_mode(nmea.as<micromodem::protobuf::TransmitMode>(4));    
-    xst->set_probe_length(nmea.as<int32>(5));
-    xst->set_bandwidth(nmea.as<int32>(6));
-    xst->set_carrier_freq(nmea.as<int32>(7));
-    xst->set_rate(nmea.as<int32>(8));
-    xst->set_source(nmea.as<int32>(9));
-    xst->set_dest(nmea.as<int32>(10));
-    xst->set_ack_requested(nmea.as<bool>(11));
-    xst->set_number_frames_expected(nmea.as<int32>(12));
-    xst->set_number_frames_sent(nmea.as<int32>(13));
-    xst->set_packet_type(nmea.as<micromodem::protobuf::PacketType>(14));
-    xst->set_number_bytes(nmea.as<int32>(15));
-    
-    clk_mode_ = xst->clock_mode();
 
+    // old XST has date as first field, and we'll assume all dates are
+    // greater than UNIX epoch
+    xst->set_version(nmea.as<int>(1) > 19700000 ? 0 : nmea.as<int>(1));
+
+    try
+    {
+        
+        int version_offset = 0; // offset in NMEA field number
+        if(xst->version() == 0)
+        {
+            version_offset = 0;    
+        }
+        else if(xst->version() == 6)
+        {
+            version_offset = 1;
+        }
+    
+        xst->set_date(nmea.as<std::string>(1 + version_offset));
+        xst->set_time(nmea.as<std::string>(2 + version_offset));
+
+        micromodem::protobuf::ClockMode clock_mode =
+            micromodem::protobuf::ClockMode_IsValid(nmea.as<int>(3+version_offset)) ?
+            nmea.as<micromodem::protobuf::ClockMode>(3+version_offset) :
+            micromodem::protobuf::INVALID_CLOCK_MODE;
+        
+        xst->set_clock_mode(clock_mode);
+
+        micromodem::protobuf::TransmitMode transmit_mode =
+            micromodem::protobuf::TransmitMode_IsValid(nmea.as<int>(4+version_offset)) ?
+            nmea.as<micromodem::protobuf::TransmitMode>(4+version_offset) :
+            micromodem::protobuf::INVALID_TRANSMIT_MODE;
+        
+        xst->set_mode(transmit_mode);
+
+        // TEMPORARY MM2 BUG WORKAROUND
+        if(driver_cfg_.GetExtension(micromodem::protobuf::Config::mm_version) == 2)
+            version_offset = 0;
+        
+        xst->set_probe_length(nmea.as<int32>(5 + version_offset));
+        xst->set_bandwidth(nmea.as<int32>(6 + version_offset));
+        xst->set_carrier_freq(nmea.as<int32>(7 + version_offset));
+        xst->set_rate(nmea.as<int32>(8 + version_offset));
+        xst->set_source(nmea.as<int32>(9 + version_offset));
+        xst->set_dest(nmea.as<int32>(10 + version_offset));
+        xst->set_ack_requested(nmea.as<bool>(11 + version_offset));
+        xst->set_number_frames_expected(nmea.as<int32>(12 + version_offset));
+        xst->set_number_frames_sent(nmea.as<int32>(13 + version_offset));
+
+        micromodem::protobuf::PacketType packet_type =
+            micromodem::protobuf::PacketType_IsValid(nmea.as<int>(14+version_offset)) ?
+            nmea.as<micromodem::protobuf::PacketType>(14+version_offset) :
+            micromodem::protobuf::PACKET_TYPE_UNKNOWN;
+
+        xst->set_packet_type(packet_type);
+        xst->set_number_bytes(nmea.as<int32>(15 + version_offset));
+    
+        clk_mode_ = xst->clock_mode();
+    }
+    catch(std::out_of_range& e) // thrown by std::vector::at() called by NMEASentence::as()
+    {
+        glog.is(DEBUG1) && glog << group(glog_in_group()) << warn << "$CAXST message shorter than expected" << std::endl;
+    }    
+    
     if(expected_remaining_caxst_ == 0)
     {
         signal_transmit_result(*m);
@@ -1206,23 +1263,27 @@ void goby::acomms::MMDriver::cacst(const NMEASentence& nmea, protobuf::ModemTran
         int version_offset = 0; // offset in NMEA field number
         if(cst->version() == 0)
         {
-            cst->set_mode(nmea.as<micromodem::protobuf::ReceiveMode>(1));
-            cst->set_time(nmea.as<std::string>(2));  
+            version_offset = 0;    
         }
         else if(cst->version() == 6)
         {
-            // reordered fields
-            cst->set_mode(nmea.as<micromodem::protobuf::ReceiveMode>(4));
-            cst->set_time(nmea.as<std::string>(3));
-    
-            // new fields
-            cst->set_date(nmea.as<std::string>(2));
-            cst->set_pcm(nmea.as<int32>(32));
-
-            version_offset = 2;
+            version_offset = 1;
         }
 
-        cst->set_clock_mode(nmea.as<micromodem::protobuf::ClockMode>(3+version_offset));
+        micromodem::protobuf::ReceiveMode mode =
+            micromodem::protobuf::ReceiveMode_IsValid(nmea.as<int>(1+version_offset)) ?
+            nmea.as<micromodem::protobuf::ReceiveMode>(1+version_offset) :
+            micromodem::protobuf::INVALID_RECEIVE_MODE;
+        
+        cst->set_mode(mode);
+        cst->set_time(nmea.as<std::string>(2+version_offset));  
+
+        micromodem::protobuf::ClockMode clock_mode =
+            micromodem::protobuf::ClockMode_IsValid(nmea.as<int>(3+version_offset)) ?
+            nmea.as<micromodem::protobuf::ClockMode>(3+version_offset) :
+            micromodem::protobuf::INVALID_CLOCK_MODE;
+
+        cst->set_clock_mode(clock_mode);
         cst->set_mfd_peak(nmea.as<int32>(4+version_offset));
         cst->set_mfd_power(nmea.as<int32>(5+version_offset));
         cst->set_mfd_ratio(nmea.as<int32>(6+version_offset));
@@ -1236,7 +1297,14 @@ void goby::acomms::MMDriver::cacst(const NMEASentence& nmea, protobuf::ModemTran
         cst->set_source(nmea.as<int32>(14+version_offset));
         cst->set_dest(nmea.as<int32>(15+version_offset));
         cst->set_psk_error_code(nmea.as<int32>(16+version_offset));
-        cst->set_packet_type(nmea.as<micromodem::protobuf::PacketType>(17+version_offset));
+
+        micromodem::protobuf::PacketType packet_type =
+            micromodem::protobuf::PacketType_IsValid(nmea.as<int>(17+version_offset)) ?
+            nmea.as<micromodem::protobuf::PacketType>(17+version_offset) :
+            micromodem::protobuf::PACKET_TYPE_UNKNOWN;
+
+        
+        cst->set_packet_type(packet_type);
         cst->set_number_frames(nmea.as<int32>(18+version_offset));
         cst->set_number_bad_frames(nmea.as<int32>(19+version_offset));
         cst->set_snr_rss(nmea.as<int32>(20+version_offset));

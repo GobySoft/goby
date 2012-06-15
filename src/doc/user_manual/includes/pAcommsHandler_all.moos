@@ -115,6 +115,9 @@ ProcessConfig = pAcommsHandler
       turnaround_ms: 50  #  (optional) (default=50)
       lbl_max_range: 1000  #  (optional) (default=1000)
     }
+    [micromodem.protobuf.Config.mm_version]: 1  
+                                              #  (optional) 
+                                              # (default=1)
     [ABCDriverConfig.enable_foo]: true  #  (optional) 
                                         # (default=true)
     [ABCDriverConfig.enable_bar]: false  #  (optional) 
@@ -262,8 +265,10 @@ ProcessConfig = pAcommsHandler
                                        # (default=false)
         receiver_clk_mode: NO_SYNC_TO_PPS_AND_CCCLK_BAD  
                                               #  
-                                              # (NO_SYNC_TO_PPS_AND_
-                                              # CCCLK_BAD, 
+                                              # (INVALID_CLOCK_MODE,
+                                              #  
+                                              # NO_SYNC_TO_PPS_AND_C
+                                              # CCLK_BAD, 
                                               # NO_SYNC_TO_PPS_AND_C
                                               # CCLK_GOOD, 
                                               # SYNC_TO_PPS_AND_CCCL
@@ -274,8 +279,10 @@ ProcessConfig = pAcommsHandler
                                               # PPS_AND_CCCLK_BAD)
         sender_clk_mode: NO_SYNC_TO_PPS_AND_CCCLK_BAD  
                                               #  
-                                              # (NO_SYNC_TO_PPS_AND_
-                                              # CCCLK_BAD, 
+                                              # (INVALID_CLOCK_MODE,
+                                              #  
+                                              # NO_SYNC_TO_PPS_AND_C
+                                              # CCLK_BAD, 
                                               # NO_SYNC_TO_PPS_AND_C
                                               # CCLK_GOOD, 
                                               # SYNC_TO_PPS_AND_CCCL
@@ -286,10 +293,11 @@ ProcessConfig = pAcommsHandler
                                               # PPS_AND_CCCLK_BAD)
       }
       [micromodem.protobuf.receive_stat] {  #  (repeated)
-        mode:   #  (RECEIVE_GOOD, BAD_CRC, PACKET_TIMEOUT) 
-                # (optional)
+        mode:   #  (INVALID_RECEIVE_MODE, RECEIVE_GOOD, BAD_CRC, 
+                # PACKET_TIMEOUT) (optional)
         time: ""  #  (optional)
-        clock_mode:   #  (NO_SYNC_TO_PPS_AND_CCCLK_BAD, 
+        clock_mode:   #  (INVALID_CLOCK_MODE, 
+                      # NO_SYNC_TO_PPS_AND_CCCLK_BAD, 
                       # NO_SYNC_TO_PPS_AND_CCCLK_GOOD, 
                       # SYNC_TO_PPS_AND_CCCLK_BAD, 
                       # SYNC_TO_PPS_AND_CCCLK_GOOD) (optional)
@@ -327,13 +335,14 @@ ProcessConfig = pAcommsHandler
       [micromodem.protobuf.transmit_stat] {  #  (repeated)
         date: ""  #  (optional)
         time: ""  #  (optional)
-        clock_mode:   #  (NO_SYNC_TO_PPS_AND_CCCLK_BAD, 
+        clock_mode:   #  (INVALID_CLOCK_MODE, 
+                      # NO_SYNC_TO_PPS_AND_CCCLK_BAD, 
                       # NO_SYNC_TO_PPS_AND_CCCLK_GOOD, 
                       # SYNC_TO_PPS_AND_CCCLK_BAD, 
                       # SYNC_TO_PPS_AND_CCCLK_GOOD) (optional)
-        mode:   #  (TRANSMIT_SUCCESSFUL, FETS_TOO_HOT, 
-                # EXTSYNC_TIMEOUT, TX_INHIBITED, DATA_TIMEOUT) 
-                # (optional)
+        mode:   #  (INVALID_TRANSMIT_MODE, TRANSMIT_SUCCESSFUL, 
+                # FETS_TOO_HOT, EXTSYNC_TIMEOUT, TX_INHIBITED, 
+                # DATA_TIMEOUT) (optional)
         probe_length:   #  (optional)
         bandwidth:   #  (optional)
         carrier_freq:   #  (optional)
@@ -346,6 +355,7 @@ ProcessConfig = pAcommsHandler
         packet_type:   #  (PACKET_TYPE_UNKNOWN, FSK, FSK_MINI, 
                        # PSK, PSK_MINI) (optional)
         number_bytes:   #  (optional)
+        version: 0  #  (optional) (default=0)
       }
       [micromodem.protobuf.frame_with_bad_crc]:   
                                               #  (repeated)
@@ -375,6 +385,7 @@ ProcessConfig = pAcommsHandler
                      # NO_ENCODE, NO_DECODE) (repeated)
     }
     on_demand_skew_seconds: 1  #  (optional) (default=1)
+    minimum_ack_wait_seconds: 0  #  (optional) (default=0)
   }
   dccl_cfg {  # Configure the Dynamic Compact Control Language 
               # Encoding/Decoding unit (optional)
@@ -397,51 +408,37 @@ ProcessConfig = pAcommsHandler
     subnet_mask: 4294967040  #  (optional) (default=4294967040)
   }
   moos_var {  #  (optional)
-    driver_raw_in: "ACOMMS_NMEA_IN"  #  (optional) 
-                                     # (default="ACOMMS_NMEA_IN")
-    driver_raw_out: "ACOMMS_NMEA_OUT"  #  (optional) 
-                                       # (default="ACOMMS_NMEA_OUT")
-    driver_raw_msg_in: "ACOMMS_RAW_INCOMING"  #  (optional) 
-                                              # (default="ACOMMS_RAW
-                                              # _INCOMING")
-    driver_raw_msg_out: "ACOMMS_RAW_OUTGOING"  
+    prefix: "ACOMMS_"  # Prefix all MOOS variable names with this 
+                       # string (optional) (default="ACOMMS_")
+    driver_raw_in: "NMEA_IN"  #  (optional) (default="NMEA_IN")
+    driver_raw_out: "NMEA_OUT"  #  (optional) (default="NMEA_OUT")
+    driver_raw_msg_in: "RAW_INCOMING"  #  (optional) 
+                                       # (default="RAW_INCOMING")
+    driver_raw_msg_out: "RAW_OUTGOING"  #  (optional) 
+                                        # (default="RAW_OUTGOING")
+    driver_receive: "MODEM_RECEIVE"  #  (optional) 
+                                     # (default="MODEM_RECEIVE")
+    driver_transmit: "MODEM_TRANSMIT"  #  (optional) 
+                                       # (default="MODEM_TRANSMIT")
+    queue_receive: "QUEUE_RECEIVE"  #  (optional) 
+                                    # (default="QUEUE_RECEIVE")
+    queue_transmit: "QUEUE_TRANSMIT"  #  (optional) 
+                                      # (default="QUEUE_TRANSMIT")
+    queue_ack_transmission: "ACK"  #  (optional) (default="ACK")
+    queue_ack_original_msg: "ACK_ORIGINAL"  #  (optional) 
+                                            # (default="ACK_ORIGINAL
+                                            # ")
+    queue_expire: "EXPIRE"  #  (optional) (default="EXPIRE")
+    queue_size: "QSIZE"  #  (optional) (default="QSIZE")
+    queue_flush: "FLUSH_QUEUE"  #  (optional) 
+                                # (default="FLUSH_QUEUE")
+    mac_cycle_update: "MAC_CYCLE_UPDATE"  #  (optional) 
+                                          # (default="MAC_CYCLE_UPDA
+                                          # TE")
+    mac_initiate_transmission: "MAC_INITIATE_TRANSMISSION"  
                                               #  (optional) 
-                                              # (default="ACOMMS_RAW
-                                              # _OUTGOING")
-    driver_receive: "ACOMMS_MODEM_RECEIVE"  #  (optional) 
-                                            # (default="ACOMMS_MODEM
-                                            # _RECEIVE")
-    driver_transmit: "ACOMMS_MODEM_TRANSMIT"  #  (optional) 
-                                              # (default="ACOMMS_MOD
-                                              # EM_TRANSMIT")
-    queue_receive: "ACOMMS_QUEUE_RECEIVE"  #  (optional) 
-                                           # (default="ACOMMS_QUEUE_
-                                           # RECEIVE")
-    queue_transmit: "ACOMMS_QUEUE_TRANSMIT"  #  (optional) 
-                                             # (default="ACOMMS_QUEU
-                                             # E_TRANSMIT")
-    queue_ack_transmission: "ACOMMS_ACK"  #  (optional) 
-                                          # (default="ACOMMS_ACK")
-    queue_ack_original_msg: "ACOMMS_ACK_ORIGINAL"  
-                                              #  (optional) 
-                                              # (default="ACOMMS_ACK
-                                              # _ORIGINAL")
-    queue_expire: "ACOMMS_EXPIRE"  #  (optional) 
-                                   # (default="ACOMMS_EXPIRE")
-    queue_size: "ACOMMS_QSIZE"  #  (optional) 
-                                # (default="ACOMMS_QSIZE")
-    queue_flush: "ACOMMS_FLUSH_QUEUE"  #  (optional) 
-                                       # (default="ACOMMS_FLUSH_QUEU
-                                       # E")
-    mac_cycle_update: "ACOMMS_MAC_CYCLE_UPDATE"  
-                                              #  (optional) 
-                                              # (default="ACOMMS_MAC
-                                              # _CYCLE_UPDATE")
-    mac_initiate_transmission: "ACOMMS_MAC_INITIATE_TRANSMISSION"  
-                                              #  (optional) 
-                                              # (default="ACOMMS_MAC
-                                              # _INITIATE_TRANSMISSI
-                                              # ON")
+                                              # (default="MAC_INITIA
+                                              # TE_TRANSMISSION")
   }
   load_shared_library: "/usr/lib/libmy_dccl_messages.so"  
                                               # Path to a shared 

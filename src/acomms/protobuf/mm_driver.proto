@@ -53,11 +53,14 @@ message Config
     optional NarrowBandLBLParams narrowband_lbl = 1003;
     optional REMUSLBLParams remus_lbl = 1004;
 
+    optional uint32 mm_version = 1005 [default = 1];
+    
   }
 }
 
 enum ClockMode
 {
+  INVALID_CLOCK_MODE = -1;
   NO_SYNC_TO_PPS_AND_CCCLK_BAD = 0;
   NO_SYNC_TO_PPS_AND_CCCLK_GOOD = 1;
   SYNC_TO_PPS_AND_CCCLK_BAD = 2;
@@ -90,9 +93,11 @@ enum PacketType
 
 enum ReceiveMode
 {
+  INVALID_RECEIVE_MODE = -1;
   RECEIVE_GOOD = 0;
   BAD_CRC = 1;
-  PACKET_TIMEOUT = 2;}
+  PACKET_TIMEOUT = 2;
+}
   
 message ReceiveStatistics
 {
@@ -135,6 +140,7 @@ message ReceiveStatistics
 
 enum TransmitMode
 {
+  INVALID_TRANSMIT_MODE = -1;
   TRANSMIT_SUCCESSFUL = 0;
   FETS_TOO_HOT = 1;
   EXTSYNC_TIMEOUT = 2;
@@ -160,6 +166,8 @@ message TransmitStatistics
   optional int32 number_frames_sent = 13;
   optional PacketType packet_type = 14;
   optional int32 number_bytes = 15;
+
+  optional int32 version = 100 [default=0];
 }
 
 enum TransmissionType

@@ -24,12 +24,6 @@
 
 int main()
 {
-    std::string str("");
-    std::vector<std::string> vec;
-    boost::split(vec, str, boost::is_any_of(","));
-
-    assert(vec.size() == 1 && vec.at(0) == "");
-    
     {
         goby::util::NMEASentence nmea;
         nmea.push_back("$FOOBA");

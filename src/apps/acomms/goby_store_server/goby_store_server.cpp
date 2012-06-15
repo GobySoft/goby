@@ -169,28 +169,31 @@ void goby::acomms::GobyStoreServer::handle_request(const protobuf::StoreServerRe
     check(sqlite3_bind_int64(select, 3, request_time),
           "Select `microtime` this time binding failed");
     
+
     int rc = sqlite3_step(select);
-
-    switch(rc)
+    while(rc == SQLITE_ROW)
     {
-        case SQLITE_ROW:
+        switch(rc)
         {
-            const unsigned char* bytes = sqlite3_column_text(select, 0);
-            int num_bytes = sqlite3_column_bytes(select, 0);
+            case SQLITE_ROW:
+            {
+                const unsigned char* bytes = sqlite3_column_text(select, 0);
+                int num_bytes = sqlite3_column_bytes(select, 0);
 
-            // std::string byte_string(reinterpret_cast<const char*>(bytes), num_bytes);
+                // std::string byte_string(reinterpret_cast<const char*>(bytes), num_bytes);
             
-            // glog.is(DEBUG1) && glog << "Bytes (hex): " << goby::util::hex_encode(byte_string) << std::endl;
+                // glog.is(DEBUG1) && glog << "Bytes (hex): " << goby::util::hex_encode(byte_string) << std::endl;
             
-            response.add_inbox()->ParseFromArray(bytes, num_bytes);
-            glog.is(DEBUG1) &&
-                glog << "Got message for inbox (size: " << num_bytes << "): " << response.inbox(response.inbox_size()-1).DebugString()
-                     << std::endl;
-            
+                response.add_inbox()->ParseFromArray(bytes, num_bytes);
+                glog.is(DEBUG1) &&
+                    glog << "Got message for inbox (size: " << num_bytes << "): " << response.inbox(response.inbox_size()-1).DebugString()
+                         << std::endl;
+                rc = sqlite3_step(select);
+            }
+            break;
+        
+            default: check(rc, "Select step failed"); break;
         }
-        break;
-
-        default: check(rc, "Select step failed"); break;
     }
     
     check(sqlite3_finalize(select), "Select statement finalize failed");

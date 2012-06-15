@@ -267,4 +267,18 @@ void goby::acomms::Bridge::handle_micromodem_receive(const goby::acomms::protobu
                              cacst,
                              in_queue->modem_id());
     }
+
+    if(message.HasExtension(micromodem::protobuf::ranging_reply))
+    {
+        micromodem::protobuf::RangingReply ranging =
+            message.GetExtension(micromodem::protobuf::ranging_reply);
+        ranging.set_forward_src(in_queue->modem_id());
+        ranging.set_forward_dest(cfg_.topside_modem_id());
+        
+        glog.is(VERBOSE) && glog << "Forwarding ranging message to topside: " << ranging << std::endl;
+        r_manager_.handle_in(in_queue->meta_from_msg(ranging),
+                             ranging,
+                             in_queue->modem_id());        
+    }
+        
 }

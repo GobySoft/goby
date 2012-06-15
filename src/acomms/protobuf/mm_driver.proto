@@ -69,8 +69,14 @@ enum ClockMode
 
 message RangingReply
 {
+  option (goby.msg).dccl.id = 128;
+  option (goby.msg).dccl.max_bytes = 32;
+  
   // seconds
-  repeated double one_way_travel_time = 1;
+  repeated double one_way_travel_time = 1 [(goby.field).dccl.min = 0,
+                                           (goby.field).dccl.max = 30,
+                                           (goby.field).dccl.precision = 3,
+                                           (goby.field).dccl.max_repeat = 4];
   enum OWTTAmbiguity
   {
     OWTT_EXACT = 1; // one_way_travel_time reported is correct and known
@@ -80,6 +86,15 @@ message RangingReply
   optional bool is_one_way_synchronous = 3 [default = false]; // if false, type given by ModemTransmission.type
   optional ClockMode receiver_clk_mode = 4 [default = NO_SYNC_TO_PPS_AND_CCCLK_BAD];
   optional ClockMode sender_clk_mode = 5 [default = NO_SYNC_TO_PPS_AND_CCCLK_BAD];
+
+  // allows for sending it elsewhere
+  optional int32 forward_src = 100 [(goby.field).dccl.min = 0,
+                                (goby.field).dccl.max = 126,
+                                (goby.field).queue.is_src = true];
+  optional int32 forward_dest = 101 [default=0,
+                                 (goby.field).dccl.min = 0,
+                                 (goby.field).dccl.max = 126,
+                                 (goby.field).queue.is_dest = true];
 }
 
 enum PacketType
@@ -115,7 +130,7 @@ enum PSKErrorCode
 // $CACST,0,223413.0000,0,1440,25,0175,0166,75,01,01,01,03,1,007,006,0,3,3,0,146,03,04,-100,-1,000,-1.2,45,10000,2000
 message ReceiveStatistics
 {
-  option (goby.msg).dccl.id = 128;
+  option (goby.msg).dccl.id = 129;
   option (goby.msg).dccl.max_bytes = 32;
   
   // including in "version 0", or the original CACST
@@ -176,11 +191,11 @@ message ReceiveStatistics
 
   // allows for sending it elsewhere
   optional int32 forward_src = 100 [(goby.field).dccl.min = 0,
-                                (goby.field).dccl.max = 127,
+                                (goby.field).dccl.max = 126,
                                 (goby.field).queue.is_src = true];
   optional int32 forward_dest = 101 [default=0,
                                  (goby.field).dccl.min = 0,
-                                 (goby.field).dccl.max = 127,
+                                 (goby.field).dccl.max = 126,
                                  (goby.field).queue.is_dest = true];
   
 }

@@ -32,7 +32,7 @@ int main(int argc, char* argv[])
         exit(1);
     }
 
-    goby::glog.add_stream(goby::common::logger::VERBOSE, &std::cerr);
+//    goby::glog.add_stream(goby::common::logger::VERBOSE, &std::cerr);
     goby::glog.set_name(argv[0]);
 
     goby::util::DynamicProtobufManager::enable_compilation();
@@ -47,9 +47,15 @@ int main(int argc, char* argv[])
         for(int i = 0, n = file_desc->message_type_count(); i < n; ++i)
         {
             const google::protobuf::Descriptor* desc = file_desc->message_type(i);
-
+            
             if(desc)
-                dccl.validate(desc);
+            {
+                try { dccl.validate(desc); }
+                catch(std::exception& e)
+                {
+                    std::cerr << "Not a valid DCCL message: " << desc->full_name() << "\n" << e.what() << std::endl;
+                }
+            }
             else
             {
                 std::cerr << "No descriptor with name " <<

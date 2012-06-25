@@ -1276,7 +1276,7 @@ void goby::acomms::MMDriver::cacst(const NMEASentence& nmea, protobuf::ModemTran
             micromodem::protobuf::INVALID_RECEIVE_MODE;
         
         cst->set_mode(mode);
-        cst->set_time(nmea.as<std::string>(2+version_offset));  
+        cst->set_time(as<uint64>(nmea_time2ptime(nmea.as<std::string>(2+version_offset))));
 
         micromodem::protobuf::ClockMode clock_mode =
             micromodem::protobuf::ClockMode_IsValid(nmea.as<int>(3+version_offset)) ?
@@ -1284,19 +1284,25 @@ void goby::acomms::MMDriver::cacst(const NMEASentence& nmea, protobuf::ModemTran
             micromodem::protobuf::INVALID_CLOCK_MODE;
 
         cst->set_clock_mode(clock_mode);
-        cst->set_mfd_peak(nmea.as<int32>(4+version_offset));
-        cst->set_mfd_power(nmea.as<int32>(5+version_offset));
-        cst->set_mfd_ratio(nmea.as<int32>(6+version_offset));
-        cst->set_spl(nmea.as<int32>(7+version_offset));
-        cst->set_shf_agn(nmea.as<int32>(8+version_offset));
-        cst->set_shf_ainpshift(nmea.as<int32>(9+version_offset));
-        cst->set_shf_ainshift(nmea.as<int32>(10+version_offset)); 
-        cst->set_shf_mfdshift(nmea.as<int32>(11+version_offset));
-        cst->set_shf_p2bshift(nmea.as<int32>(12+version_offset));
+        cst->set_mfd_peak(nmea.as<double>(4+version_offset));
+        cst->set_mfd_power(nmea.as<double>(5+version_offset));
+        cst->set_mfd_ratio(nmea.as<double>(6+version_offset));
+        cst->set_spl(nmea.as<double>(7+version_offset));
+        cst->set_shf_agn(nmea.as<double>(8+version_offset));
+        cst->set_shf_ainpshift(nmea.as<double>(9+version_offset));
+        cst->set_shf_ainshift(nmea.as<double>(10+version_offset)); 
+        cst->set_shf_mfdshift(nmea.as<double>(11+version_offset));
+        cst->set_shf_p2bshift(nmea.as<double>(12+version_offset));
         cst->set_rate(nmea.as<int32>(13+version_offset));
         cst->set_source(nmea.as<int32>(14+version_offset));
         cst->set_dest(nmea.as<int32>(15+version_offset));
-        cst->set_psk_error_code(nmea.as<int32>(16+version_offset));
+
+        micromodem::protobuf::PSKErrorCode psk_error_code =
+            micromodem::protobuf::PSKErrorCode_IsValid(nmea.as<int>(16+version_offset)) ?
+            nmea.as<micromodem::protobuf::PSKErrorCode>(16+version_offset) :
+            micromodem::protobuf::INVALID_PSK_ERROR_CODE;
+
+        cst->set_psk_error_code(psk_error_code);
 
         micromodem::protobuf::PacketType packet_type =
             micromodem::protobuf::PacketType_IsValid(nmea.as<int>(17+version_offset)) ?
@@ -1307,16 +1313,16 @@ void goby::acomms::MMDriver::cacst(const NMEASentence& nmea, protobuf::ModemTran
         cst->set_packet_type(packet_type);
         cst->set_number_frames(nmea.as<int32>(18+version_offset));
         cst->set_number_bad_frames(nmea.as<int32>(19+version_offset));
-        cst->set_snr_rss(nmea.as<int32>(20+version_offset));
-        cst->set_snr_in(nmea.as<int32>(21+version_offset));
-        cst->set_snr_out(nmea.as<int32>(22+version_offset));
-        cst->set_snr_symbols(nmea.as<int32>(23+version_offset));
-        cst->set_mse_equalizer(nmea.as<int32>(24+version_offset));
+        cst->set_snr_rss(nmea.as<double>(20+version_offset));
+        cst->set_snr_in(nmea.as<double>(21+version_offset));
+        cst->set_snr_out(nmea.as<double>(22+version_offset));
+        cst->set_snr_symbols(nmea.as<double>(23+version_offset));
+        cst->set_mse_equalizer(nmea.as<double>(24+version_offset));
         cst->set_data_quality_factor(nmea.as<int32>(25+version_offset));
         cst->set_doppler(nmea.as<double>(26+version_offset));
-        cst->set_stddev_noise(nmea.as<int32>(27+version_offset));
-        cst->set_carrier_freq(nmea.as<int32>(28+version_offset));
-        cst->set_bandwidth(nmea.as<int32>(29+version_offset));
+        cst->set_stddev_noise(nmea.as<double>(27+version_offset));
+        cst->set_carrier_freq(nmea.as<double>(28+version_offset));
+        cst->set_bandwidth(nmea.as<double>(29+version_offset));
     }
     catch(std::out_of_range& e) // thrown by std::vector::at() called by NMEASentence::as()
     {
@@ -1334,7 +1340,7 @@ void goby::acomms::MMDriver::cacst(const NMEASentence& nmea, protobuf::ModemTran
        clk_mode_ == micromodem::protobuf::SYNC_TO_PPS_AND_CCCLK_BAD)
     {
         micromodem::protobuf::RangingReply* ranging_reply = m->MutableExtension(micromodem::protobuf::ranging_reply);
-        boost::posix_time::ptime toa = nmea_time2ptime(cst->time());
+        boost::posix_time::ptime toa = as<boost::posix_time::ptime>(cst->time());
         double frac_sec = double(toa.time_of_day().fractional_seconds())/toa.time_of_day().ticks_per_second();
 
         ranging_reply->add_one_way_travel_time(frac_sec);
@@ -1347,7 +1353,7 @@ void goby::acomms::MMDriver::cacst(const NMEASentence& nmea, protobuf::ModemTran
 
     if(cst->has_time())
     {
-        m->set_time(as<uint64>(nmea_time2ptime(cst->time())));
+        m->set_time(cst->time());
         m->set_time_source(protobuf::ModemTransmission::MODEM_TIME);
     }    
     
@@ -1368,16 +1374,23 @@ boost::posix_time::ptime goby::acomms::MMDriver::nmea_time2ptime(const std::stri
     using namespace boost::posix_time;
     using namespace boost::gregorian;
 
+    std::string::size_type dot_pos = mt.find('.');
+    
     // must be at least HHMMSS
     if(mt.length() < 6)
         return ptime(not_a_date_time);  
     else
     {
-        std::string s_hour = mt.substr(0,2), s_min = mt.substr(2,2), s_sec = mt.substr(4,2), s_fs = "0";
-
+        std::string s_fs = "0";
         // has some fractional seconds
-        if(mt.length() > 7)
-            s_fs = mt.substr(7); // everything after the "."
+        if(dot_pos != std::string::npos)
+            s_fs = mt.substr(dot_pos + 1); // everything after the "."
+        else
+            dot_pos = mt.size();
+        
+        std::string s_hour = mt.substr(dot_pos-6,2), s_min = mt.substr(dot_pos-4,2),
+            s_sec = mt.substr(dot_pos-2,2);
+
 	        
         try
         {

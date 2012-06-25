@@ -41,6 +41,7 @@ goby::pb::PBDriver::PBDriver(goby::common::ZeroMQService* zeromq_service) :
     last_send_time_(goby_time<uint64>()),
     request_socket_id_(0),
     query_interval_seconds_(1),
+    reset_interval_seconds_(120),
     waiting_for_reply_(false)
 {
     on_receipt<acomms::protobuf::StoreServerResponse>(0, &PBDriver::handle_response, this);
@@ -51,16 +52,19 @@ void goby::pb::PBDriver::startup(const acomms::protobuf::DriverConfig& cfg)
     driver_cfg_ = cfg;
     request_.set_modem_id(driver_cfg_.modem_id());
     
-    common::protobuf::ZeroMQServiceConfig service_cfg;
-    service_cfg.add_socket()->CopyFrom(
+    service_cfg_.add_socket()->CopyFrom(
         driver_cfg_.GetExtension(PBDriverConfig::request_socket));
-    zeromq_service_->set_cfg(service_cfg);
+    zeromq_service_->set_cfg(service_cfg_);
 
     request_socket_id_ =
         driver_cfg_.GetExtension(PBDriverConfig::request_socket).socket_id();
 
     query_interval_seconds_ =
         driver_cfg_.GetExtension(PBDriverConfig::query_interval_seconds);
+
+    reset_interval_seconds_ =
+        driver_cfg_.GetExtension(PBDriverConfig::reset_interval_seconds);
+
 }
 
 void goby::pb::PBDriver::shutdown()
@@ -97,9 +101,18 @@ void goby::pb::PBDriver::do_work()
         glog.is(DEBUG1) && glog << group(glog_out_group()) << "Sending to server." << std::endl;
         glog.is(DEBUG2) && glog << group(glog_out_group()) << "Outbox: " << request_.DebugString() << std::flush;
         send(request_, request_socket_id_);
-        request_.clear_outbox();
         last_send_time_ = goby_time<uint64>();
+	request_.clear_outbox();
         waiting_for_reply_ = true;
+    }
+    else if(waiting_for_reply_ &&
+	    goby_time<uint64>() > last_send_time_ + 1e6*reset_interval_seconds_)
+    {
+        glog.is(DEBUG1) && glog << group(glog_out_group()) << warn 
+				<< "No response in " << reset_interval_seconds_ << " seconds, resetting socket." << std::endl;
+	zeromq_service_->close_all();
+        zeromq_service_->set_cfg(service_cfg_);
+	waiting_for_reply_ = false;
     }
 }
 

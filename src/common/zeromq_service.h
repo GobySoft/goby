@@ -172,6 +172,13 @@ namespace goby
 
             
             bool poll(long timeout = -1);
+	    void close_all()
+	    {
+	      sockets_.clear();
+	      poll_items_.clear();
+	      poll_callbacks_.clear();
+	    }
+
 
             ZeroMQSocket& socket_from_id(int socket_id);
             

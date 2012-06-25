@@ -113,14 +113,14 @@ int main(int argc, char* argv[])
         cfg1.SetExtension(micromodem::protobuf::Config::reset_nvram, true);
         cfg2.SetExtension(micromodem::protobuf::Config::reset_nvram, true);
 
+        cfg1.AddExtension(micromodem::protobuf::Config::nvram_cfg, "MOD,1");
+        cfg2.AddExtension(micromodem::protobuf::Config::nvram_cfg, "MOD,1");
         cfg1.AddExtension(micromodem::protobuf::Config::nvram_cfg, "BND,0");
         cfg2.AddExtension(micromodem::protobuf::Config::nvram_cfg, "BND,0");
         cfg1.AddExtension(micromodem::protobuf::Config::nvram_cfg, "BW0,2000");
         cfg2.AddExtension(micromodem::protobuf::Config::nvram_cfg, "BW0,2000");
         cfg1.AddExtension(micromodem::protobuf::Config::nvram_cfg, "FC0,10000");
         cfg2.AddExtension(micromodem::protobuf::Config::nvram_cfg, "FC0,10000");
-        cfg1.AddExtension(micromodem::protobuf::Config::nvram_cfg, "MOD,1");
-        cfg2.AddExtension(micromodem::protobuf::Config::nvram_cfg, "MOD,1");
         cfg1.AddExtension(micromodem::protobuf::Config::nvram_cfg, "CTO,101");
         cfg2.AddExtension(micromodem::protobuf::Config::nvram_cfg, "CTO,101");        
 
@@ -292,11 +292,14 @@ void handle_data_receive1(const protobuf::ModemTransmission& msg)
 
         case 5:
         {
-            assert(msg.type() == protobuf::ModemTransmission::ACK);
-            assert(msg.src() == 2);
-            assert(msg.dest() == 1);
-//            assert(msg.acked_frame_size() == 2 && msg.acked_frame(0) == 0 && msg.acked_frame(1) == 1);
-            ++check_count;
+            if(msg.has_type())
+            {
+                assert(msg.type() == protobuf::ModemTransmission::ACK);
+                assert(msg.src() == 2);
+                assert(msg.dest() == 1);
+                assert(msg.acked_frame_size() == 2 && msg.acked_frame(0) == 0 && msg.acked_frame(1) == 1);
+                ++check_count;
+            }
         }
         break;
         
@@ -534,17 +537,17 @@ void test5()
     transmit.set_rate(1);
     std::string test = "282b1325041304065245504f5254";
 //    transmit.add_frame(goby::util::hex_decode(test));
-    transmit.add_frame(goby::util::hex_decode(test) + std::string(64-test.size()/2,0));
-//    transmit.add_frame(std::string(64,'1'));
+    transmit.add_frame(goby::util::hex_decode(test) + std::string(64-test.size()/2,255));
+    transmit.add_frame(std::string(64,'1'));
 //    transmit.add_frame(std::string(64,'2'));
-    transmit.add_frame("");
+//    transmit.add_frame("");
     transmit.add_frame("");
     transmit.set_ack_requested(true);
     
     driver1->handle_initiate_transmission(transmit);
 
     int i = 0;
-    while(((i / 10) < 10) && check_count < 3)
+    while(((i / 10) < 15) && check_count < 3)
     {
         driver1->do_work();
         driver2->do_work();

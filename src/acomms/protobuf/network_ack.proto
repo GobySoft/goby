@@ -6,7 +6,7 @@ message NetworkAck
 {
   option (goby.msg).dccl.id = 6;
   option (goby.msg).dccl.max_bytes = 32;
-  option (goby.msg).queue.ack = false;
+  option (goby.msg).queue.ack = true;
   
   required int32 message_src = 1 [(goby.field).dccl.min = -1,
                                   (goby.field).dccl.max = 30,

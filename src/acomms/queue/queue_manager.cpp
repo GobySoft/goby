@@ -504,9 +504,9 @@ void goby::acomms::QueueManager::process_modem_ack(const protobuf::ModemTransmis
                 }
 
                 glog.is(DEBUG2) && glog<< group(glog_in_group_) << ack_msg << std::endl;
-            
+                
                 waiting_for_ack_.erase(it);
-            
+                
                 it = waiting_for_ack_.find(frame_number);
             }
         }

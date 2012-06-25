@@ -92,7 +92,8 @@ using goby::glog;
 goby::acomms::Bridge::Bridge()
     : ApplicationBase(&cfg_)
 {
-
+    glog.is(DEBUG1) && glog << cfg_.DebugString() << std::endl;
+    
     // load all shared libraries
     for(int i = 0, n = cfg_.load_shared_library_size(); i < n; ++i)
     {
@@ -224,6 +225,12 @@ void goby::acomms::Bridge::handle_link_ack(const protobuf::ModemTransmission& ac
                                            const google::protobuf::Message& orig_msg,
                                            QueueManager* from_queue)
 {
+    if(orig_msg.GetDescriptor()->full_name() == "goby.acomms.protobuf.NetworkAck")
+    {
+        glog.is(DEBUG1) && glog << "Not generating network ack from NetworkAck to avoid infinite proliferation of ACKS." << std::endl;
+        return;
+    }
+    
     protobuf::NetworkAck ack;
     ack.set_ack_src(ack_msg.src());
     ack.set_message_dccl_id(DCCLCodec::get()->id(orig_msg.GetDescriptor()));

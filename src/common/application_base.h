@@ -97,7 +97,7 @@ namespace goby
             bool own_base_cfg_;
             
             bool alive_;            
-
+            std::vector<boost::shared_ptr<std::ofstream> > fout_;
         };
     }
 }

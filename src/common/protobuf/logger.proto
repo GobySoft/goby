@@ -33,6 +33,6 @@ message GLogConfig
     optional Verbosity verbosity = 2 [default = VERBOSE,
                                       (goby.field).description="Verbosity for this file log"];
   }
-  repeated FileLog file_log = 3 [(goby.field).description="Open one or more files for (debug) logging"];
+  repeated FileLog file_log = 3 [(goby.field).description="Open one or more files for (debug) logging, the symbol '%1%' will be replaced by the current UTC date and time."];
   
 }

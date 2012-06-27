@@ -83,13 +83,18 @@ namespace goby
                 
                 set_active(false);
                 socket().close();
+
+                // try to restart if we had a real error
+                if(error != boost::system::error_code())
+                {
+                    using namespace boost::posix_time;
+                    ptime now  = common::goby_time();
+                    if(now - seconds(RETRY_INTERVAL) < last_start_time_)
+                        sleep(RETRY_INTERVAL - (now-last_start_time_).total_seconds());
+                    
+                    do_start();
+                }
                 
-                using namespace boost::posix_time;
-                ptime now  = common::goby_time();
-                if(now - seconds(RETRY_INTERVAL) < last_start_time_)
-                    sleep(RETRY_INTERVAL - (now-last_start_time_).total_seconds());
-                
-                do_start();
             }
 
             // same as do_close in this case

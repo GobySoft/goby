@@ -15,11 +15,13 @@ message ModemTransmission
                            (goby.field).description = "modem ID of message destination. 0 indicates BROADCAST, -1 indicates QUERY_DESTINATION_ID (i.e., destination is set to the destination of the next available packet",
                            default = -1]; //  0 (BROADCAST), 1-30, -1 (QUERY_DESTINATION_ID)
   optional uint64 time = 3 [(goby.field).dccl.omit = true,
-                            (goby.field).description = "timestamp (microseconds since UNIX (1970-01-01 00:00:00 UTC) of this transmission"];
+                            (goby.field).description = "timestamp (microseconds since UNIX (1970-01-01 00:00:00 UTC) of this transmission",
+                            (goby.field).cfg.action = NEVER];
   enum TimeSource { MODEM_TIME = 1; GOBY_TIME = 2; } 
   optional TimeSource time_source = 5 [(goby.field).dccl.omit = true,
                                        default = GOBY_TIME,
-                                       (goby.field).description = "source of the timestamp given"];
+                                       (goby.field).description = "source of the timestamp given",
+                                       (goby.field).cfg.action = NEVER];
   optional int32 rate = 6 [(goby.field).dccl.min = -1,
                            (goby.field).dccl.max = 5,
                            (goby.field).description = "0 (lowest) - 5 (highest), -1 (QUERY_RATE). QUERY_RATE is currently unsupported by Goby-Queue",
@@ -38,13 +40,18 @@ message ModemTransmission
                                       (goby.field).description="Type of this transmission. DRIVER_SPECIFIC types are enumerated in the extensions for the selected driver."];
   
   // for type == DATA
-  optional uint32 max_num_frames = 11 [(goby.field).dccl.omit = true, default = 1]; // set by the modem driver for the given rate
-  optional uint32 max_frame_bytes = 12 [(goby.field).dccl.omit = true]; // set by the modem driver for the given rate, omitted means no maximum
+  optional uint32 max_num_frames = 11 [(goby.field).dccl.omit = true,
+                                       default = 1,
+                                       (goby.field).cfg.action = NEVER]; // set by the modem driver for the given rate
+  optional uint32 max_frame_bytes = 12 [(goby.field).dccl.omit = true,
+                                        (goby.field).cfg.action = NEVER]; // set by the modem driver for the given rate, omitted means no maximum
   optional bool ack_requested = 13 [default = true]; // acoustic acknowledgment requested
-  repeated bytes frame = 14 [(goby.field).dccl.omit = true]; // if omitted, you will be queried for data on signal_data_request. You can also set some frames here and the rest will be filled by signalling a data request
+  repeated bytes frame = 14 [(goby.field).dccl.omit = true,
+                             (goby.field).description="Data to transmit, represented as ASCII or octal bytes preceeded by a '\' (e.g. \000 is 0x00)"]; // if omitted, you will be queried for data on signal_data_request. You can also set some frames here and the rest will be filled by signalling a data request
 
   // for type == ACK
-  repeated int32 acked_frame = 20 [(goby.field).dccl.omit = true];
+  repeated int32 acked_frame = 20 [(goby.field).dccl.omit = true,
+                                   (goby.field).cfg.action = NEVER];
   
 
   // for AMAC

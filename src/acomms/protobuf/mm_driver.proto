@@ -252,8 +252,12 @@ extend goby.acomms.protobuf.ModemTransmission
   optional NarrowBandLBLParams narrowband_lbl = 1001 [(goby.field).dccl.omit = true];
   optional REMUSLBLParams remus_lbl = 1002 [(goby.field).dccl.omit = true];
 
-  optional RangingReply ranging_reply = 1003 [(goby.field).dccl.omit = true];
-  repeated ReceiveStatistics receive_stat = 1004 [(goby.field).dccl.omit = true]; // $CACST
-  repeated TransmitStatistics transmit_stat = 1005 [(goby.field).dccl.omit = true]; // $CAXST
-  repeated int32 frame_with_bad_crc = 1006 [(goby.field).dccl.omit = true];
+  optional RangingReply ranging_reply = 1003 [(goby.field).dccl.omit = true,
+                                              (goby.field).cfg.action = NEVER];
+  repeated ReceiveStatistics receive_stat = 1004 [(goby.field).dccl.omit = true,
+                                                  (goby.field).cfg.action = NEVER]; // $CACST
+  repeated TransmitStatistics transmit_stat = 1005 [(goby.field).dccl.omit = true,
+                                                    (goby.field).cfg.action = NEVER]; // $CAXST
+  repeated int32 frame_with_bad_crc = 1006 [(goby.field).dccl.omit = true,
+                                            (goby.field).cfg.action = NEVER];
 }

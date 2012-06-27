@@ -1,2 +1,2 @@
-add_executable(test_udpdriver2 test.cpp)
-target_link_libraries(test_udpdriver2 goby_acomms)
+add_executable(goby_test_udpdriver2 test.cpp)
+target_link_libraries(goby_test_udpdriver2 goby_acomms)

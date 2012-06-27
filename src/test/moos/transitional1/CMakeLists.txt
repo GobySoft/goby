@@ -1,5 +1,5 @@
 
-add_executable(test_transitional1 test.cpp)
-target_link_libraries(test_transitional1 goby_moos)
+add_executable(goby_test_transitional1 test.cpp)
+target_link_libraries(goby_test_transitional1 goby_moos)
 
-add_test(test_transitional1 ${goby_BIN_DIR}/test_transitional1)
+add_test(goby_test_transitional1 ${goby_BIN_DIR}/goby_test_transitional1)

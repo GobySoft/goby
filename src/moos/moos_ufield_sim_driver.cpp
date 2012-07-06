@@ -205,6 +205,7 @@ void goby::moos::UFldDriver::receive_message(const goby::acomms::protobuf::Modem
         data_msg.set_src(msg.GetExtension(goby::moos::protobuf::poll_src));
         data_msg.set_dest(msg.GetExtension(goby::moos::protobuf::poll_dest));
 
+        data_msg.ClearExtension(goby::moos::protobuf::type);
         data_msg.ClearExtension(goby::moos::protobuf::poll_dest);
         data_msg.ClearExtension(goby::moos::protobuf::poll_src);        
 

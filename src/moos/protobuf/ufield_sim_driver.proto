@@ -35,11 +35,11 @@ enum TransmissionType
 
 extend goby.acomms.protobuf.ModemTransmission 
 {
-  optional TransmissionType type = 2000 [default=BASE_TYPE];
+  optional TransmissionType type = 1300 [default=BASE_TYPE];
   
   // used in UFIELD_DRIVER_POLL message
-  optional int32 poll_src = 2001 [(goby.field).dccl.omit = true];
-  optional int32 poll_dest = 2002 [(goby.field).dccl.omit = true];
+  optional int32 poll_src = 1301 [(goby.field).dccl.omit = true];
+  optional int32 poll_dest = 1302 [(goby.field).dccl.omit = true];
 
 
   

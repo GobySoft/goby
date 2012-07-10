@@ -49,6 +49,8 @@ using google::protobuf::uint32;
 
 using goby::glog;
 
+goby::uint64 microsec_moos_time()
+{ return static_cast<goby::uint64>(MOOSTime() * 1.0e6); }
 
 pAcommsHandlerConfig CpAcommsHandler::cfg_;
 CpAcommsHandler* CpAcommsHandler::inst_ = 0;
@@ -76,7 +78,11 @@ CpAcommsHandler::CpAcommsHandler()
       work_(timer_io_service_),
       router_(0)
 {
-    goby::common::goby_time_function = boost::bind(&CpAcommsHandler::microsec_moos_time, this);
+    if(cfg_.common().time_warp_multiplier() != 1)
+    {
+        goby::common::goby_time_function = microsec_moos_time;
+        goby::common::goby_time_warp_factor = cfg_.common().time_warp_multiplier();
+    }
 
 #ifdef ENABLE_GOBY_V1_TRANSITIONAL_SUPPORT
     transitional_dccl_.convert_to_v2_representation(&cfg_);
@@ -351,7 +357,7 @@ void CpAcommsHandler::process_configuration()
         case goby::acomms::protobuf::DRIVER_NONE: break;
     }    
 
-    if(cfg_.has_route_cfg())
+    if(cfg_.has_route_cfg() && cfg_.route_cfg().route().hop_size() > 0)
     {
         router_ = new goby::acomms::RouteManager;
     }
@@ -525,15 +531,23 @@ void CpAcommsHandler::create_on_multiplex_publish(const CMOOSMsg& moos_msg)
 
 
 void CpAcommsHandler::create_on_timer(const boost::system::error_code& error,
-                                   const goby::moos::protobuf::TranslatorEntry& entry,
-                                   Timer* timer)
+                                      const goby::moos::protobuf::TranslatorEntry& entry,
+                                      Timer* timer)
 {
-  if (!error)
-  {
-      // reset the timer
-      timer->expires_at(timer->expires_at() +
-                        boost::posix_time::seconds(entry.trigger().period()));
-      
+    if (!error)
+    {
+        goby::uint64 skew_seconds = std::abs(goby::common::goby_time<goby::uint64>() - goby::util::as<goby::uint64>(timer->expires_at())) / 1000000;
+        if( skew_seconds > ALLOWED_TIMER_SKEW_SECONDS)
+        {
+            glog.is(VERBOSE) && glog << group("pAcommsHandler") << warn << "clock skew of " << skew_seconds <<  " seconds detected, resetting timer." << std::endl;
+            timer->expires_at(goby::common::goby_time() + boost::posix_time::seconds(boost::posix_time::seconds(entry.trigger().period())));
+        }
+        else
+        {
+            // reset the timer
+            timer->expires_at(timer->expires_at() + boost::posix_time::seconds(entry.trigger().period()));
+        }
+          
       timer->async_wait(boost::bind(&CpAcommsHandler::create_on_timer, this,
                                        _1, entry, timer));
       

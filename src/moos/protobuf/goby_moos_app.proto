@@ -9,6 +9,7 @@ message GobyMOOSAppConfig
   optional string log_path = 101 [default = "./",
                                   (goby.field).moos_global = "log_path",
                                   (goby.field).description="Directory path to write the text log of the terminal output (if log=true)"];
+
   optional goby.common.protobuf.GLogConfig.Verbosity log_verbosity = 105 [default = DEBUG2, (goby.field).description="Verbosity of the log file"];
 
   optional string community = 102 [(goby.field).moos_global = "Community",
@@ -19,6 +20,9 @@ message GobyMOOSAppConfig
   optional double lon_origin = 104 [(goby.field).moos_global = "LongOrigin",
                                     (goby.field).description="Longitude in decimal degrees of the local cartesian datum",
                                     (goby.field).example="10.9"];
+
+  optional uint32 time_warp_multiplier = 106 [default = 1, (goby.field).moos_global = "MOOSTimeWarp",
+                                            (goby.field).description="Factor by which to make the clock run faster."];
   
   optional uint32 app_tick = 1 [default = 10,
                                 (goby.field).description="Frequency at which to run Iterate()."];

@@ -133,6 +133,15 @@ void goby::acomms::MACManager::begin_slot(const boost::system::error_code& e)
 {    
     // canceled the last timer
     if(e == boost::asio::error::operation_aborted) return;   
+
+    // check skew
+    if(std::abs(goby_time<uint64>() - goby::util::as<uint64>(next_slot_t_)) > ALLOWED_SKEW_SECONDS*1000000)
+    {
+        glog.is(DEBUG1) && glog << group(glog_mac_group_) << warn << "Clock skew detected, updating MAC." << std::endl;
+        update();
+        return;
+    }
+    
     
     const protobuf::ModemTransmission& s = *current_slot_;
     

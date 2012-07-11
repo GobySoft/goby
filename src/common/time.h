@@ -96,6 +96,7 @@ namespace goby
         { BOOST_STATIC_ASSERT(sizeof(ReturnType) == 0); }
 
         extern boost::function0<uint64> goby_time_function;
+        extern int goby_time_warp_factor;
         
         /// \brief Returns current UTC time as integer microseconds since 1970-01-01 00:00:00
         template<> inline uint64 goby_time<uint64>()
@@ -211,7 +212,7 @@ namespace boost
             static boost::posix_time::time_duration to_posix_duration(
                 const duration_type& d)
             {
-                return d;
+                return d/goby::common::goby_time_warp_factor;
             }
         };
     }

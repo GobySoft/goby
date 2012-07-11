@@ -138,7 +138,7 @@ void goby::acomms::GobyStoreServer::handle_request(const protobuf::StoreServerRe
               "Insert `src` binding failed");
         check(sqlite3_bind_int(insert, 2, request.outbox(i).dest()),
               "Insert `dest` binding failed");
-        check(sqlite3_bind_int64(insert, 3, request.outbox(i).has_time() ? request.outbox(i).time() : goby_time<uint64>()),
+        check(sqlite3_bind_int64(insert, 3, goby_time<uint64>()),
               "Insert `microtime` binding failed");
 
         std::string bytes;
@@ -158,6 +158,9 @@ void goby::acomms::GobyStoreServer::handle_request(const protobuf::StoreServerRe
     // find any rows to respond with
     glog.is(DEBUG1) && glog << "Trying to select for dest: " << request.modem_id() << std::endl;
 
+    if(!last_request_time_.count(request.modem_id()))
+        last_request_time_.insert(std::make_pair(request.modem_id(), 0));
+    
     sqlite3_stmt* select;
     check(sqlite3_prepare(db_, "SELECT bytes FROM ModemTransmission WHERE src != ?1 AND (microtime > ?2 AND microtime <= ?3 );", -1, &select, 0),
           "Select statement preparation failed");

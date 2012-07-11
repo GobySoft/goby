@@ -24,6 +24,7 @@
 #include "goby/common/time.h"
 
 boost::function0<goby::uint64> goby::common::goby_time_function;
+int goby::common::goby_time_warp_factor = 1;
 
 double goby::common::ptime2unix_double(boost::posix_time::ptime given_time)
 {

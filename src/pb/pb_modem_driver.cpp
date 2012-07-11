@@ -117,13 +117,14 @@ void goby::pb::PBDriver::do_work()
 {
     while(zeromq_service_->poll(0))
     { }
-
+    
     // call in with our outbox
     if(!waiting_for_reply_ &&
        request_.IsInitialized() &&
-       goby_time<uint64>() > last_send_time_ + 1e6*query_interval_seconds_)
+       goby_time<uint64>() > last_send_time_ + 1000000*static_cast<uint64>(query_interval_seconds_))
     {
-
+        static int request_id = 0;
+        request_.set_request_id(request_id++);
         glog.is(DEBUG1) && glog << group(glog_out_group()) << "Sending to server." << std::endl;
         glog.is(DEBUG2) && glog << group(glog_out_group()) << "Outbox: " << request_.DebugString() << std::flush;
         send(request_, request_socket_id_);

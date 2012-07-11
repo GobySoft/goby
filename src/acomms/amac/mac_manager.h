@@ -118,6 +118,10 @@ namespace goby
             unsigned cycle_sum();
             void position_blank();
 
+            // allowed offset from actual end of slot
+            enum { ALLOWED_SKEW_SECONDS = 2 };
+            
+            
           private:
             MACManager(const MACManager&);
             MACManager& operator= (const MACManager&);

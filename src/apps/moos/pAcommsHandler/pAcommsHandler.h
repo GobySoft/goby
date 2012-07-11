@@ -70,11 +70,7 @@ class CpAcommsHandler : public GobyMOOSApp
     
     CpAcommsHandler();
     ~CpAcommsHandler();
-    void loop();     // from GobyMOOSApp
-
-    goby::uint64 microsec_moos_time()
-    { return static_cast<goby::uint64>(MOOSTime() * 1.0e6); }
-    
+    void loop();     // from GobyMOOSApp    
         
     
     void process_configuration();
@@ -103,6 +99,7 @@ class CpAcommsHandler : public GobyMOOSApp
     void handle_encode_on_demand(const goby::acomms::protobuf::ModemTransmission& request_msg,
                                  google::protobuf::Message* data_msg);
 
+    enum { ALLOWED_TIMER_SKEW_SECONDS = 1 };
     
   private:
     goby::moos::MOOSTranslator translator_;

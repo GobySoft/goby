@@ -536,7 +536,7 @@ void CpAcommsHandler::create_on_timer(const boost::system::error_code& error,
 {
     if (!error)
     {
-        goby::uint64 skew_seconds = std::abs(goby::common::goby_time<goby::uint64>() - goby::util::as<goby::uint64>(timer->expires_at())) / 1000000;
+        double skew_seconds = std::abs(goby::common::goby_time<double>() - goby::util::as<double>(timer->expires_at()));
         if( skew_seconds > ALLOWED_TIMER_SKEW_SECONDS)
         {
             glog.is(VERBOSE) && glog << group("pAcommsHandler") << warn << "clock skew of " << skew_seconds <<  " seconds detected, resetting timer." << std::endl;

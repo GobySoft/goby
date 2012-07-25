@@ -51,7 +51,9 @@ namespace goby
         {
           public:
             LiaisonWtThread(const Wt::WEnvironment& env);
-
+            ~LiaisonWtThread();
+            
+            
             void inbox(MarshallingScheme marshalling_scheme,
                        const std::string& identifier,
                        const void* data,
@@ -60,6 +62,9 @@ namespace goby
                 
                 
           private:
+            LiaisonWtThread(const LiaisonWtThread&);
+            LiaisonWtThread& operator=(const LiaisonWtThread&);
+            
             void add_to_menu(Wt::WMenu* menu, const Wt::WString& name, LiaisonContainer* container);
             void handle_menu_selection(Wt::WMenuItem * item);
             

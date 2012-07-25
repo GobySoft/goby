@@ -390,6 +390,14 @@ goby::common::LiaisonScope::ControlsContainer::ControlsContainer(Wt::WTimer* tim
     handle_play_pause(false);
 }
 
+goby::common::LiaisonScope::ControlsContainer::~ControlsContainer()
+{
+    // stop the paused mail thread before destroying
+    is_paused_ = false;
+    if(paused_mail_thread_)
+        paused_mail_thread_->join();
+}
+
 void goby::common::LiaisonScope::ControlsContainer::handle_play_pause(bool toggle_state)
 {
     if(toggle_state)

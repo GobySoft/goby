@@ -127,6 +127,14 @@ goby::common::LiaisonWtThread::LiaisonWtThread(const Wt::WEnvironment& env)
     handle_menu_selection(menu->currentItem());
 }
 
+goby::common::LiaisonWtThread::~LiaisonWtThread()
+{
+    // we must resume the scope as this stops the background thread, allowing the ZeroMQService for the scope to be safely deleted. This is inelegant, but a by product of how Wt destructs the root object *after* this class (and thus all the local class objects).
+    
+    scope_->resume();
+}
+            
+
 void goby::common::LiaisonWtThread::add_to_menu(WMenu* menu, const WString& name,
                                                 LiaisonContainer* container)
 {
@@ -136,8 +144,6 @@ void goby::common::LiaisonWtThread::add_to_menu(WMenu* menu, const WString& name
 
 void goby::common::LiaisonWtThread::handle_menu_selection(Wt::WMenuItem * item)
 {    
-    std::cout << "Item selected: " << item->text() << std::endl;
-    std::cout << "Timer state: " <<  last_scope_state_ << std::endl;
 
     if(item->text() == "Commander")
         commander_timer_.start();

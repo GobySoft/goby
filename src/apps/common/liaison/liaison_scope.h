@@ -166,7 +166,8 @@ namespace goby
                                   SubscriptionsContainer* subscriptions_div,
                                   HistoryContainer* history_header_div,
                                   Wt::WContainerWidget* parent = 0);
-
+                ~ControlsContainer();
+                
                 void handle_play_pause(bool toggle_state);
 
                 void pause();

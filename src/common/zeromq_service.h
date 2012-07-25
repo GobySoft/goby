@@ -116,6 +116,7 @@ namespace goby
             ZeroMQService();
             ZeroMQService(boost::shared_ptr<zmq::context_t> context);
             virtual ~ZeroMQService();
+            
 
             void set_cfg(const protobuf::ZeroMQServiceConfig& cfg)
             {

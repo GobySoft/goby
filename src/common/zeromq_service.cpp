@@ -51,6 +51,7 @@ goby::common::ZeroMQService::ZeroMQService()
 
 void goby::common::ZeroMQService::init()
 {
+    boost::mutex::scoped_lock lock(glog.mutex());
     glog.add_group(glog_out_group(), common::Colors::lt_magenta);
     glog.add_group(glog_in_group(), common::Colors::lt_blue);
 }
@@ -174,6 +175,8 @@ void goby::common::ZeroMQService::process_cfg(const protobuf::ZeroMQServiceConfi
 
 goby::common::ZeroMQService::~ZeroMQService()
 {
+    std::cout << "ZeroMQService: " << this << ": destroyed" << std::endl;
+    std::cout << "poll_mutex " << &poll_mutex_ << std::endl;
 }
 
 int goby::common::ZeroMQService::socket_type(protobuf::ZeroMQServiceConfig::Socket::SocketType type)

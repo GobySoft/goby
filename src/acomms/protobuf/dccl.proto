@@ -17,3 +17,15 @@ message DCCLConfig
   
 }
 
+
+message ArithmeticModel
+{
+  repeated uint32 frequency = 1; // frequency of the symbol given by the repeated field index
+                                 // probability is (frequency / sum(frequency)) 
+  optional uint32 eof_frequency = 2 [default = 1]; // frequency of EOF symbol
+  optional uint32 out_of_range_frequency = 3 [default = 1]; // frequency of the out-of-range value, that is, the value not within the range defined by [symbol_to_value(0), maximum_value)
+  
+  repeated double value_lower_bound = 10; // lower bound of value in double space that maps to symbol given by repeated field index; upper bound is given by lower bound of the next symbol (except last which is given by `maximum_value` field)
+  required double maximum_value = 11; // upper bound (exclusive) of the last symbol
+  
+}

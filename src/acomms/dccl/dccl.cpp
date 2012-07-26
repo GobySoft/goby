@@ -45,6 +45,7 @@
 #include "dccl.h"
 #include "dccl_field_codec_default.h"
 #include "dccl_ccl_compatibility.h"
+#include "goby/acomms/dccl/dccl_field_codec_arithmetic.h"
 #include "goby/util/as.h"
 #include "goby/common/protobuf/acomms_option_extensions.pb.h"
 //#include "goby/common/header.pb.h"
@@ -105,6 +106,15 @@ void goby::acomms::DCCLCodec::set_default_codecs()
 
     DCCLFieldCodecManager::add<DCCLStaticCodec<std::string> >("_static"); 
     DCCLFieldCodecManager::add<DCCLModemIdConverterCodec>("_platform<->modem_id");
+
+    DCCLFieldCodecManager::add<DCCLArithmeticFieldCodec<int32> >("_arithmetic");
+    DCCLFieldCodecManager::add<DCCLArithmeticFieldCodec<int64> >("_arithmetic");
+    DCCLFieldCodecManager::add<DCCLArithmeticFieldCodec<uint32> >("_arithmetic");
+    DCCLFieldCodecManager::add<DCCLArithmeticFieldCodec<uint64> >("_arithmetic");
+    DCCLFieldCodecManager::add<DCCLArithmeticFieldCodec<double> >("_arithmetic");
+    DCCLFieldCodecManager::add<DCCLArithmeticFieldCodec<float> >("_arithmetic");
+    DCCLFieldCodecManager::add<DCCLArithmeticFieldCodec<bool> >("_arithmetic");
+    DCCLFieldCodecManager::add<DCCLArithmeticFieldCodec<const google::protobuf::EnumValueDescriptor*> >("_arithmetic");
 }
 
 

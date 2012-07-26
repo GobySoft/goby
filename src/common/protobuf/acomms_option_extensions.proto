@@ -31,6 +31,12 @@ message DCCLFieldOptions
   }
   optional LegacyCCLFieldOptions ccl = 100;
 
+  message ArithmeticOptions
+  {
+    required string model = 1;
+  }
+  optional ArithmeticOptions arithmetic = 200;
+  
 
 }
 

@@ -46,7 +46,6 @@ namespace goby
             void any_run_hooks(const boost::any& field_value);
 
             
-            bool variable_size() { return true; }
             void validate();
             std::string info();
             bool check_field(const google::protobuf::FieldDescriptor* field);

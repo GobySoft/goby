@@ -194,14 +194,11 @@ namespace goby
         ///
         ///\tparam WireType the type used for the encode and decode functions. This can be any C++ type, and is often the same as FieldType, unless a type conversion should be performed. The reason for using a different WireType and FieldType should be clear from the DCCLDefaultEnumCodec which uses DCCLDefaultNumericFieldCodec to do all the numerical encoding / decoding while DCCLDefaultEnumCodec does the type conversion (pre_encode() and post_decode()).
         ///\tparam FieldType the type used in the Google Protobuf message that is exposed to the end-user DCCLCodec::decode(), DCCLCodec::encode(), etc. functions.
-        template<typename WireType>
-            class DCCLRepeatedTypedFieldCodec : public DCCLTypedFieldCodec<WireType, WireType>
+        template<typename WireType, typename FieldType = WireType>
+            class DCCLRepeatedTypedFieldCodec : public DCCLTypedFieldCodec<WireType, FieldType>
         {
           public:
           typedef WireType wire_type;
-
-          ///\todo (tes) Make this able to take different WireType and FieldType
-          typedef WireType FieldType;
           typedef FieldType field_type;
 
           public:          
@@ -213,7 +210,7 @@ namespace goby
 
           /// \brief Give the size of a repeated field
           virtual unsigned size_repeated(
-              const std::vector<FieldType>& field_values) = 0;
+              const std::vector<WireType>& wire_values) = 0;
 
           /// \brief Give the max size of a repeated field
           virtual unsigned max_size_repeated() = 0;
@@ -252,7 +249,7 @@ namespace goby
           ///
           /// \param wire_value Value to use when calculating the size of the field. If calculating the size requires encoding the field completely, cache the encoded value for a likely future call to encode() for the same wire_value.
           /// \return the size (in bits) of the field.
-          virtual unsigned size(const FieldType& wire_value)
+          virtual unsigned size(const WireType& wire_value)
           { return size_repeated(std::vector<WireType>(1, wire_value)); }
 
           virtual unsigned max_size()
@@ -320,7 +317,7 @@ namespace goby
           {
               try
               {
-                  std::vector<FieldType> in;
+                  std::vector<WireType> in;
                   BOOST_FOREACH(const boost::any& wire_value, wire_values)
                   {                  
                       in.push_back(boost::any_cast<WireType>(wire_value));

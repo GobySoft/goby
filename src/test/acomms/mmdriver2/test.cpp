@@ -56,14 +56,14 @@ private:
     void handle_data_receive2(const protobuf::ModemTransmission& msg);
     
     void summary(const std::map<int, std::vector<micromodem::protobuf::ReceiveStatistics> >& receive,
-                     const goby::acomms::protobuf::DriverConfig& cfg);
+                 const goby::acomms::protobuf::DriverConfig& cfg);
     
 private:
     
-                 goby::acomms::MMDriver driver1, driver2;
+    goby::acomms::MMDriver driver1, driver2;
     // maps transmit index to receive statistics
-                 std::map<int, std::vector<micromodem::protobuf::ReceiveStatistics> > driver1_receive, driver2_receive;
-
+    std::map<int, std::vector<micromodem::protobuf::ReceiveStatistics> > driver1_receive, driver2_receive;
+    
     bool modems_running_;
     
     static goby::test::protobuf::MMDriverTest2Config cfg_;
@@ -108,7 +108,7 @@ void MMDriverTest2::iterate()
                     boost::mutex::scoped_lock lock(driver_mutex);    
                     driver1.handle_initiate_transmission(cfg_.transmission(last_transmission_index));
                 }
-            
+                
                 sleep(cfg_.transmission(last_transmission_index).slot_seconds());
         }
     }
@@ -161,7 +161,7 @@ void MMDriverTest2::handle_data_receive2(const protobuf::ModemTransmission& msg)
 
     for(int i = 0, n = msg.ExtensionSize(micromodem::protobuf::receive_stat); i < n; ++i)
         driver2_receive[last_transmission_index].push_back(msg.GetExtension(micromodem::protobuf::receive_stat, i));
-
+    
 }
 
 
@@ -178,7 +178,7 @@ void MMDriverTest2::handle_transmit_result2(const protobuf::ModemTransmission& m
 }
 
 void MMDriverTest2::summary(const std::map<int, std::vector<micromodem::protobuf::ReceiveStatistics> >& receive,
-                                const goby::acomms::protobuf::DriverConfig& cfg)
+                            const goby::acomms::protobuf::DriverConfig& cfg)
 {
     goby::glog.is(VERBOSE, lock) &&
         goby::glog << "*** Begin modem " << cfg.modem_id() << " receive summary" << std::endl << unlock;
@@ -196,7 +196,7 @@ void MMDriverTest2::summary(const std::map<int, std::vector<micromodem::protobuf
         std::multiset<micromodem::protobuf::ReceiveMode> mode;
         std::multiset<micromodem::protobuf::PSKErrorCode> code;
 
-        for(int i = 0, n = receive.size(); i < n; ++i)
+        for(int i = 0, n = current_receive_vector.size(); i < n; ++i)
         {
             goby::glog.is(VERBOSE, lock) &&
                 goby::glog << "CACST #" << i << ": " << current_receive_vector[i].ShortDebugString() << std::endl << unlock;
@@ -254,8 +254,8 @@ void MMDriverTest2::summary(const std::map<int, std::vector<micromodem::protobuf
 }
 
 int main(int argc, char* argv[])
-        {
-            goby::run<MMDriverTest2>(argc, argv);
-        }
+{
+    goby::run<MMDriverTest2>(argc, argv);
+}
                             
     

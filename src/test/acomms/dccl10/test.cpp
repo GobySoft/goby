@@ -44,44 +44,33 @@ int main(int argc, char* argv[])
     goby::acomms::DCCLCodec* codec = goby::acomms::DCCLCodec::get();
     codec->set_cfg(cfg);
 
-    ArithmeticTestMsg msg_in;
-
-    msg_in.add_double_arithmetic_repeat(100.5);
-    msg_in.add_double_arithmetic_repeat(100.5);
-    msg_in.add_double_arithmetic_repeat(100.6);
-    msg_in.add_double_arithmetic_repeat(100.7);    
-    
-    codec->info(msg_in.GetDescriptor(), &std::cout);
-    
-    std::cout << "Message in:\n" << msg_in.DebugString() << std::endl;
-
     goby::acomms::protobuf::ArithmeticModel float_model;
 
-    float_model.add_value_lower_bound(100.0);
+    float_model.add_value_bound(100.0);
     float_model.add_frequency(100);
     
-    float_model.add_value_lower_bound(100.1);
+    float_model.add_value_bound(100.1);
     float_model.add_frequency(100);
     
-    float_model.add_value_lower_bound(100.2);
+    float_model.add_value_bound(100.2);
     float_model.add_frequency(100);
     
-    float_model.add_value_lower_bound(100.3);
+    float_model.add_value_bound(100.3);
     float_model.add_frequency(100);
     
-    float_model.add_value_lower_bound(100.4);
-    float_model.add_frequency(100);
+    float_model.add_value_bound(100.4);
+    float_model.add_frequency(90);
     
-    float_model.add_value_lower_bound(100.5);
-    float_model.add_frequency(100);
+    float_model.add_value_bound(100.5);
+    float_model.add_frequency(125);
     
-    float_model.add_value_lower_bound(100.6);
-    float_model.add_frequency(100);
+    float_model.add_value_bound(100.6);
+    float_model.add_frequency(125);
     
-    float_model.add_value_lower_bound(100.7);
-    float_model.add_frequency(100);
+    float_model.add_value_bound(100.7);
+    float_model.add_frequency(125);
 
-    float_model.set_maximum_value(100.8);
+    float_model.add_value_bound(100.8);
 
     float_model.set_eof_frequency(25);
     float_model.set_out_of_range_frequency(10);
@@ -90,8 +79,22 @@ int main(int argc, char* argv[])
     goby::acomms::DCCLArithmeticFieldCodec<double>::set_model("float_model", float_model);
     
     
-    codec->validate(msg_in.GetDescriptor());
 
+
+    ArithmeticTestMsg msg_in;
+
+    msg_in.add_double_arithmetic_repeat(100.5);
+    msg_in.add_double_arithmetic_repeat(100.5);
+    msg_in.add_double_arithmetic_repeat(100.6);
+    msg_in.add_double_arithmetic_repeat(100.7);    
+    
+    codec->info(msg_in.GetDescriptor(), &std::cout);
+
+    codec->validate(msg_in.GetDescriptor());
+    
+    std::cout << "Message in:\n" << msg_in.DebugString() << std::endl;
+
+    
     std::cout << "Try encode..." << std::endl;
     std::string bytes;
     codec->encode(&bytes, msg_in);

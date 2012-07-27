@@ -89,6 +89,11 @@ namespace goby
             return ceil_log2(static_cast<unsigned>(i));
         }
         
+        inline double log2(double d)
+        {
+            static double log_2 = log(2);
+            return log(d)/log_2;
+        }
         
     }
 

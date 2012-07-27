@@ -79,7 +79,7 @@ namespace goby
             /// \brief Returns the FieldDescriptor (field schema  meta-data) for this field
             ///
             /// \return FieldDescriptor for the current field or 0 if this codec is encoding the base message.
-            const google::protobuf::FieldDescriptor* this_field()
+            const google::protobuf::FieldDescriptor* this_field() const 
             { return !MessageHandler::field_.empty() ? MessageHandler::field_.back() : 0; }
             
             /// \brief Returns the Descriptor (message schema meta-data) for the immediate parent Message
@@ -332,7 +332,7 @@ namespace goby
             /// \brief Get the DCCL field option extension value for the current field
             ///
             /// DCCLFieldOptions is defined in acomms_option_extensions.proto
-            DCCLFieldOptions dccl_field_options()
+            DCCLFieldOptions dccl_field_options() const 
             {
                 if(this_field())
                     return this_field()->options().GetExtension(goby::field).dccl();

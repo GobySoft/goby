@@ -1,0 +1,34 @@
+import "goby/common/protobuf/option_extensions.proto";
+
+
+enum Enum1
+{
+  ENUM_A = 1;
+  ENUM_B = 2;
+  ENUM_C = 3;
+}
+
+
+message ArithmeticTestMsg
+{
+  option (goby.msg).dccl.id = 1;
+  option (goby.msg).dccl.max_bytes = 512;
+  
+  repeated double double_arithmetic_repeat = 101 [(goby.field).dccl.codec = "_arithmetic",
+                                                  (goby.field).dccl.arithmetic.model = "float_model",
+                                                  (goby.field).dccl.max_repeat=4];
+  
+  // repeated float float_arithmetic_repeat = 102 [(goby.field).dccl.arithmetic.model = "float_model",
+  //                                              (goby.field).dccl.max_repeat=4];
+
+  // repeated int32 int32_arithmetic_repeat = 103 [(goby.field).dccl.arithmetic.model = "int_model",
+  //                                              (goby.field).dccl.max_repeat=4];
+
+  // repeated bool bool_arithmetic_repeat = 113 [(goby.field).dccl.arithmetic.model = "bool_model",
+  //                                             (goby.field).dccl.max_repeat=4];
+  
+  // repeated Enum1 enum_arithmetic_repeat = 114 [(goby.field).dccl.arithmetic.model = "enum_model",
+  //                                              (goby.field).dccl.max_repeat=4];
+
+}
+

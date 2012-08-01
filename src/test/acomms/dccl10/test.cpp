@@ -44,50 +44,65 @@ int main(int argc, char* argv[])
     goby::acomms::DCCLCodec* codec = goby::acomms::DCCLCodec::get();
     codec->set_cfg(cfg);
 
-    goby::acomms::protobuf::ArithmeticModel float_model;
+    {            
+        goby::acomms::protobuf::ArithmeticModel float_model;
 
-    float_model.add_value_bound(100.0);
-    float_model.add_frequency(100);
+        float_model.add_value_bound(100.0);
+        float_model.add_frequency(100);
     
-    float_model.add_value_bound(100.1);
-    float_model.add_frequency(100);
+        float_model.add_value_bound(100.1);
+        float_model.add_frequency(100);
     
-    float_model.add_value_bound(100.2);
-    float_model.add_frequency(100);
+        float_model.add_value_bound(100.2);
+        float_model.add_frequency(100);
     
-    float_model.add_value_bound(100.3);
-    float_model.add_frequency(100);
+        float_model.add_value_bound(100.3);
+        float_model.add_frequency(100);
     
-    float_model.add_value_bound(100.4);
-    float_model.add_frequency(90);
+        float_model.add_value_bound(100.4);
+        float_model.add_frequency(90);
     
-    float_model.add_value_bound(100.5);
-    float_model.add_frequency(125);
+        float_model.add_value_bound(100.5);
+        float_model.add_frequency(125);
     
-    float_model.add_value_bound(100.6);
-    float_model.add_frequency(125);
+        float_model.add_value_bound(100.6);
+        float_model.add_frequency(125);
     
-    float_model.add_value_bound(100.7);
-    float_model.add_frequency(125);
+        float_model.add_value_bound(100.7);
+        float_model.add_frequency(125);
 
-    float_model.add_value_bound(100.8);
+        float_model.add_value_bound(100.8);
 
-    float_model.set_eof_frequency(25);
-    float_model.set_out_of_range_frequency(10);
+        float_model.set_eof_frequency(25);
+        float_model.set_out_of_range_frequency(10);
+    }
 
+    {        
+        goby::acomms::protobuf::ArithmeticModel float_model2;
     
-    goby::acomms::DCCLArithmeticFieldCodec<double>::set_model("float_model", float_model);
+        float_model2.set_eof_frequency(4); // "a"
+
+        float_model2.add_value_bound(0);
+        float_model2.add_frequency(5); // "b" 
+    
+        float_model2.add_value_bound(1);
+        float_model2.add_frequency(1); // "EOF"
+    
+        float_model2.add_value_bound(2);
+
+        float_model2.set_out_of_range_frequency(0);
     
     
-
-
+        goby::acomms::DCCLArithmeticFieldCodec<double>::set_model("float_model", float_model2);
+    }
+    
     ArithmeticTestMsg msg_in;
 
-    msg_in.add_double_arithmetic_repeat(100.5);
-    msg_in.add_double_arithmetic_repeat(100.5);
-    msg_in.add_double_arithmetic_repeat(100.6);
-    msg_in.add_double_arithmetic_repeat(100.7);    
-    
+    msg_in.add_double_arithmetic_repeat(0); // b 
+    msg_in.add_double_arithmetic_repeat(0); // b
+    msg_in.add_double_arithmetic_repeat(0); // b
+    msg_in.add_double_arithmetic_repeat(1); // "EOF"
+   
     codec->info(msg_in.GetDescriptor(), &std::cout);
 
     codec->validate(msg_in.GetDescriptor());

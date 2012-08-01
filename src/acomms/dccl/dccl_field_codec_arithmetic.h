@@ -43,33 +43,37 @@ namespace goby
               struct Model;
                 
               public:
-              static const int CODE_VALUE_BITS;
-              static const int FREQUENCY_BITS;
-            
-              static const freq_type MAX_FREQUENCY;
-
-              static const symbol_type OUT_OF_RANGE_SYMBOL;
-              static const symbol_type EOF_SYMBOL;
-
-
-              static const uint64 TOP_VALUE;
-              static const uint64 FIRST_QTR;
-              static const uint64 HALF;
-              static const uint64 THIRD_QTR;
               
               typedef double WireType;
               typedef uint32 freq_type;
               typedef int symbol_type; // google protobuf RepeatedField size type
             
+              static const int CODE_VALUE_BITS = 32;
+              static const int FREQUENCY_BITS = CODE_VALUE_BITS - 2;
+              
+              static const freq_type MAX_FREQUENCY = (1 << FREQUENCY_BITS) - 1;
+
+              static const symbol_type OUT_OF_RANGE_SYMBOL = -1;
+              static const symbol_type EOF_SYMBOL = -2;
+              static const symbol_type MIN_SYMBOL = EOF_SYMBOL;
+
+              static const uint64 TOP_VALUE = (static_cast<uint64>(1) << CODE_VALUE_BITS) - 1; // 11111111...
+              static const uint64 HALF = (static_cast<uint64>(1) << CODE_VALUE_BITS-1);        // 10000000...
+              static const uint64 FIRST_QTR = HALF >> 1;                                       // 01000000...
+              static const uint64 THIRD_QTR = HALF+FIRST_QTR;                                  // 11000000...
             
               Bitset encode_repeated(const std::vector<WireType>& wire_value)
               {
+                  using goby::glog;
+                  using namespace goby::common::logger;
+                  
                   const Model& model = current_model();
 
                   uint64 low = 0; // lowest code value (0.0 in decimal version)
                   uint64 high = TOP_VALUE; // highest code value (1.0 in decimal version)
                   int bits_to_follow = 0; // bits to follow with after expanding around half
                   Bitset bits;
+
                   
                   for(unsigned value_index = 0, n = max_repeat(); value_index < n; ++value_index)
                   {
@@ -79,55 +83,61 @@ namespace goby
                           EOF_SYMBOL;
                       
 
-                      goby::glog.is(common::logger::DEBUG3) && goby::glog << "(DCCLArithmeticFieldCodec) value is : " << wire_value[value_index] << std::endl;
-                      goby::glog.is(common::logger::DEBUG3) && goby::glog << "(DCCLArithmeticFieldCodec) symbol is : " << symbol << std::endl;
+                      glog.is(DEBUG3) &&
+                          glog << "(DCCLArithmeticFieldCodec) value is : " << wire_value[value_index] << std::endl;
+                      
+                      glog.is(DEBUG3) &&
+                          glog << "(DCCLArithmeticFieldCodec) symbol is : " << symbol << std::endl;
+                      
+                      glog.is(DEBUG3) &&
+                          glog << "(DCCLArithmeticFieldCodec) current interval: [" << (double)low / TOP_VALUE  << ","
+                               << (double)high / TOP_VALUE << ")" << std::endl;
 
                       
                       uint64 range = (high-low)+1;
                       
                       std::pair<freq_type, freq_type> c_freq_range =
                           model.symbol_to_cumulative_freq(symbol);
-                      
+
+                      glog.is(DEBUG3) &&
+                          glog << "(DCCLArithmeticFieldCodec) input symbol (" << symbol
+                               << ") cumulative freq: ["<< c_freq_range.first << "," << c_freq_range.second << ")" << std::endl;
                       
                       high = low + (range*c_freq_range.second)/model.total_freq-1;
                       low += (range*c_freq_range.first)/model.total_freq;
+                      
+                      glog.is(DEBUG3) &&
+                          glog << "(DCCLArithmeticFieldCodec) input symbol (" << symbol << ") interval: ["
+                               << (double)low / TOP_VALUE  << "," << (double)high / TOP_VALUE << ")" << std::endl;
 
-                      goby::glog.is(common::logger::DEBUG3) && goby::glog << "(DCCLArithmeticFieldCodec) Q1: " << FIRST_QTR << ", Q2: " << HALF << ", Q3 : " << THIRD_QTR << ", top: " << TOP_VALUE << std::endl;
 
-                      goby::glog.is(common::logger::DEBUG3) && goby::glog << "(DCCLArithmeticFieldCodec) low: " << low << ", high: " << high << std::endl;
+                      
+                      glog.is(DEBUG3) &&
+                          glog << "(DCCLArithmeticFieldCodec) Q1: " << Bitset(CODE_VALUE_BITS, FIRST_QTR)
+                               << ", Q2: " <<  Bitset(CODE_VALUE_BITS, HALF)
+                               << ", Q3 : " << Bitset(CODE_VALUE_BITS, THIRD_QTR)
+                               << ", top: " << Bitset(CODE_VALUE_BITS, TOP_VALUE) << std::endl;
+
+                      glog.is(DEBUG3) && glog << "(DCCLArithmeticFieldCodec) low:  " << Bitset(CODE_VALUE_BITS, low).to_string() << std::endl;
+                      glog.is(DEBUG3) && glog << "(DCCLArithmeticFieldCodec) high: " << Bitset(CODE_VALUE_BITS, high).to_string() << std::endl;
 
                       for(;;)
                       {
-                          if(high<HALF || low>=HALF)
+                          if(high<HALF)
                           {
-                              bool bit;
-                              if(high<HALF)
-                              {
-                                  bit = 0;
-                                  goby::glog.is(common::logger::DEBUG3) && goby::glog << "(DCCLArithmeticFieldCodec): completely in lower half" << std::endl;
-                              }
-                              else
-                              {
-                                  bit = 1;
-                                  low -= HALF;
-                                  high -= HALF;
-                                  goby::glog.is(common::logger::DEBUG3) && goby::glog << "(DCCLArithmeticFieldCodec): completely in upper half" << std::endl;
-                              }
-                              
-                              goby::glog.is(common::logger::DEBUG3) && goby::glog << "(DCCLArithmeticFieldCodec): emitted bit: " << bit << std::endl;
-
-                              bits.push_back(bit);
-                              while(bits_to_follow)
-                              {
-                                  goby::glog.is(common::logger::DEBUG3) && goby::glog << "(DCCLArithmeticFieldCodec): emitted bit (from follow): " << !bit << std::endl;
-
-                                  bits.push_back(!bit);
-                                  bits_to_follow -= 1;
-                              }
+                              bit_plus_follow(&bits, &bits_to_follow, 0);
+                              glog.is(DEBUG3) && glog << "(DCCLArithmeticFieldCodec): completely in [0, 0.5): EXPAND" << std::endl;
+                          }
+                          else if(low>=HALF)
+                          {
+                              bit_plus_follow(&bits, &bits_to_follow, 1);
+                              low -= HALF;
+                              high -= HALF;
+                              glog.is(DEBUG3) && glog << "(DCCLArithmeticFieldCodec): completely in [0.5, 1): EXPAND" << std::endl;
                           }
                           else if(low>=FIRST_QTR && high < THIRD_QTR)
                           {
-                              goby::glog.is(common::logger::DEBUG3) && goby::glog << "(DCCLArithmeticFieldCodec): straddle middle" << std::endl;
+                              glog.is(DEBUG3) && glog << "(DCCLArithmeticFieldCodec): straddle middle [0.25, 0.75): EXPAND" << std::endl;
                               
                               bits_to_follow += 1;
                               low -= FIRST_QTR;
@@ -137,9 +147,13 @@ namespace goby
 
                           low <<= 1;
                           high <<= 1;
-                          high += 1;
+                          high += 1;                          
 
-                          goby::glog.is(common::logger::DEBUG3) && goby::glog << "(DCCLArithmeticFieldCodec) low: " << low << ", high: " << high << std::endl;
+                          glog.is(DEBUG3) && glog << "(DCCLArithmeticFieldCodec) low:  " << Bitset(CODE_VALUE_BITS, low).to_string() << std::endl;
+                          glog.is(DEBUG3) && glog << "(DCCLArithmeticFieldCodec) high: " << Bitset(CODE_VALUE_BITS, high).to_string() << std::endl;
+
+                          
+                          glog.is(DEBUG3) && glog << "(DCCLArithmeticFieldCodec) current interval: [" << (double)low / TOP_VALUE  << "," << (double)high / TOP_VALUE << ")" << std::endl;
                           
                       }
 
@@ -148,21 +162,32 @@ namespace goby
                           break;
                   }
 
-                  if(low<FIRST_QTR)
-                  {
-                      bits.push_back(0);
-                      bits.push_back(1);
-                  }
-                  else
-                  {
-                      bits.push_back(1);
-                      bits.push_back(0);
-                  }
+                  // output exactly the number of bits required to store the final range's state
+                  bits_to_follow += 1;
+                  bit_plus_follow(&bits, &bits_to_follow, (low<FIRST_QTR) ? 0 : 1);
+
                   return bits;
               }
-            
+
+              void bit_plus_follow(Bitset* bits, int* bits_to_follow, bool bit)
+              {
+                  bits->push_back(bit);
+                  goby::glog.is(common::logger::DEBUG3) && goby::glog << "(DCCLArithmeticFieldCodec): emitted bit: " << bit << std::endl;
+                  
+                  while(*bits_to_follow)
+                  {
+                      goby::glog.is(common::logger::DEBUG3) && goby::glog << "(DCCLArithmeticFieldCodec): emitted bit (from follow): " << !bit << std::endl;
+
+                      bits->push_back(!bit);
+                      (*bits_to_follow) -= 1;
+                  }
+              }
+              
               std::vector<WireType> decode_repeated(Bitset* bits)
               {
+                  using goby::glog;
+                  using namespace goby::common::logger;
+                  
                   std::vector<WireType> values;
 
                   const Model& model = current_model();
@@ -181,7 +206,7 @@ namespace goby
                           value |= (static_cast<uint64>((*bits)[bits->size()-(i-bit_stream_offset)-1]) << i);
                   }
 
-                  goby::glog.is(common::logger::DEBUG3) && goby::glog << "(DCCLArithmeticFieldCodec): starting value: " << Bitset(CODE_VALUE_BITS, value).to_string() << std::endl;
+                  glog.is(DEBUG3) && glog << "(DCCLArithmeticFieldCodec): starting value: " << Bitset(CODE_VALUE_BITS, value).to_string() << std::endl;
                               
                   
                   
@@ -191,14 +216,48 @@ namespace goby
 
                       symbol_type symbol = bits_to_symbol(bits, value, bit_stream_offset, low, range);
                       
-                      goby::glog.is(common::logger::DEBUG3) && goby::glog << "(DCCLArithmeticFieldCodec) symbol is: " << symbol << std::endl;
-                      // values.push_back(symbol_to_value);
+                      glog.is(DEBUG3) && glog << "(DCCLArithmeticFieldCodec) symbol is: " << symbol << std::endl;
+                      values.push_back(model.symbol_to_value(symbol));
+                      glog.is(DEBUG3) && glog << "(DCCLArithmeticFieldCodec) value is: " << values.back() << std::endl;
 
-                      // rescale, etc.
-
-                      // TESTING
-                      break;
+                      glog.is(DEBUG3) && glog << "(DCCLArithmeticFieldCodec) bits is: " << *bits << std::endl;
                       
+                      std::pair<freq_type, freq_type> c_freq_range =
+                          model.symbol_to_cumulative_freq(symbol);
+
+                      glog.is(DEBUG3) && glog << "(DCCLArithmeticFieldCodec) input symbol (" << symbol << ") cumulative freq: ["<< c_freq_range.first << "," << c_freq_range.second << ")" << std::endl;
+                      
+                      high = low + (range*c_freq_range.second)/model.total_freq-1;
+                      low += (range*c_freq_range.first)/model.total_freq;
+                      
+                      
+                      for(;;)
+                      {
+                          if(high < HALF)
+                          {
+                              // nothing
+                          }
+                          else if(low >= HALF)
+                          {
+                              value -= HALF;
+                              low -= HALF;
+                              high -= HALF;
+                          }
+                          else if(low >= FIRST_QTR
+                                  && high < THIRD_QTR)
+                          {
+                              value -= FIRST_QTR;
+                              low -= FIRST_QTR;
+                              high -= FIRST_QTR;
+                          }
+                          else break;
+
+                          low <<= 1;
+                          high <<= 1;
+                          high += 1;
+                          value <<= 1;
+                          bit_stream_offset +=1;
+                      }                      
                       
                       if(symbol == EOF_SYMBOL)
                           break;
@@ -217,7 +276,7 @@ namespace goby
 
               // this maximum size will be upper bounded by: ceil(log_2(1/P)) + 1 where P is the
               // probability of this least probable set of symbols
-             unsigned max_size_repeated()
+              unsigned max_size_repeated()
               {
                   using goby::util::log2;
                   
@@ -225,7 +284,7 @@ namespace goby
                   std::cout << model.user_model.DebugString() << std::endl;
                   
                   
-                  double lowest_frequency = std::min(model.user_model.out_of_range_frequency(),
+                  double lowest_frequency = std::min((model.user_model.out_of_range_frequency() == 0) ? MAX_FREQUENCY : model.user_model.out_of_range_frequency(),
                                                      *std::min_element(model.user_model.frequency().begin(), model.user_model.frequency().end()));
                   
                   // full of least probable symbols
@@ -292,12 +351,16 @@ namespace goby
                   for(;;)
                   {
                       uint64 value_high = (bit_stream_offset > 0) ?
-                          value + (1ul << bit_stream_offset):
+                          value + (static_cast<uint64>(1) << bit_stream_offset):
                           value;
+                      
+                      
+                      goby::glog.is(common::logger::DEBUG3) && goby::glog << "(DCCLArithmeticFieldCodec): value range: [" << Bitset(CODE_VALUE_BITS, value) << "," << Bitset(CODE_VALUE_BITS, value_high) << ")" << std::endl;
 
+                      
                       freq_type cumulative_freq = ((value-low+1)*model.total_freq-1)/range;
                       freq_type cumulative_freq_high = ((value_high-low+1)*model.total_freq-1)/range;
-
+                      
                       goby::glog.is(common::logger::DEBUG3) && goby::glog << "(DCCLArithmeticFieldCodec): c_freq: " << cumulative_freq << ", c_freq_high: " << cumulative_freq_high << std::endl;
 
                       
@@ -330,7 +393,7 @@ namespace goby
                       --bit_stream_offset;
                       value |= static_cast<uint64>(bits->back()) << bit_stream_offset;
 
-                      goby::glog.is(common::logger::DEBUG3) && goby::glog << "(DCCLArithmeticFieldCodec): ambiguous (symbol could be " << symbol << " or " << symbol+1 << ", new value" << Bitset(CODE_VALUE_BITS, value).to_string() << std::endl;
+                      goby::glog.is(common::logger::DEBUG3) && goby::glog << "(DCCLArithmeticFieldCodec): ambiguous (symbol could be " << symbol << " or " << symbol+1 << ")" << std::endl;
 
                       
                   }
@@ -376,7 +439,7 @@ namespace goby
                   }
 
                   freq_type cumulative_freq = 0;
-                  for(symbol_type symbol = EOF_SYMBOL, n = model->user_model.frequency_size(); symbol < n; ++symbol)
+                  for(symbol_type symbol = MIN_SYMBOL, n = model->user_model.frequency_size(); symbol < n; ++symbol)
                   {
                       freq_type freq;
                       if(symbol == EOF_SYMBOL)
@@ -386,7 +449,7 @@ namespace goby
                       else
                           freq = model->user_model.frequency(symbol);
 
-                      if(freq == 0)
+                      if(freq == 0 && symbol != OUT_OF_RANGE_SYMBOL)
                       {
                           throw(DCCLException("Invalid model: " +
                                               model->user_model.DebugString() +
@@ -394,7 +457,7 @@ namespace goby
                       }                      
                       cumulative_freq += freq;
                       model->cumulative_freq[symbol] = cumulative_freq;
-
+                      
                   }
                   
                   
@@ -433,7 +496,7 @@ namespace goby
               struct Model
               {
                   protobuf::ArithmeticModel user_model;
-                  symbol_type value_to_symbol(const WireType& value) const
+                  symbol_type value_to_symbol(WireType value) const
                       {
                       
                           symbol_type symbol =
@@ -447,6 +510,18 @@ namespace goby
                           
                       }
               
+                  
+                  WireType symbol_to_value(symbol_type symbol) const
+                      {
+                          
+                          WireType value = (symbol == OUT_OF_RANGE_SYMBOL) ?
+                          std::numeric_limits<WireType>::quiet_NaN() :
+                          user_model.value_bound(symbol);
+
+                          return value;
+                      }
+              
+
                   symbol_type total_symbols() // EOF and OUT_OF_RANGE plus all user defined
                       { return cumulative_freq.size();  }
                       
@@ -476,28 +551,18 @@ namespace goby
             
               static std::map<std::string, Model> models_;
             };
-        
-        template<typename WireType>
-            const int DCCLArithmeticFieldCodecBase<WireType>::CODE_VALUE_BITS = 32;
-        template<typename WireType>
-            const int DCCLArithmeticFieldCodecBase<WireType>::FREQUENCY_BITS = 30;
-        template<typename WireType>
-            const typename DCCLArithmeticFieldCodecBase<WireType>::freq_type DCCLArithmeticFieldCodecBase<WireType>::MAX_FREQUENCY = (1 << DCCLArithmeticFieldCodecBase<WireType>::FREQUENCY_BITS) - 1;
 
-        template<typename WireType>
-            const typename DCCLArithmeticFieldCodecBase<WireType>::symbol_type DCCLArithmeticFieldCodecBase<WireType>::OUT_OF_RANGE_SYMBOL = -1;
-        template<typename WireType>
-            const typename DCCLArithmeticFieldCodecBase<WireType>::symbol_type DCCLArithmeticFieldCodecBase<WireType>::EOF_SYMBOL = -2;
-
-        template<typename WireType>
-            const uint64 DCCLArithmeticFieldCodecBase<WireType>::TOP_VALUE = static_cast<uint64>(1) << DCCLArithmeticFieldCodecBase<WireType>::CODE_VALUE_BITS - 1; 
-        template<typename WireType>
-            const uint64 DCCLArithmeticFieldCodecBase<WireType>::FIRST_QTR = DCCLArithmeticFieldCodecBase<WireType>::TOP_VALUE/4+1;
-        template<typename WireType>
-            const uint64 DCCLArithmeticFieldCodecBase<WireType>::HALF = 2*DCCLArithmeticFieldCodecBase<WireType>::FIRST_QTR;
-        template<typename WireType>
-            const uint64 DCCLArithmeticFieldCodecBase<WireType>::THIRD_QTR = 3*DCCLArithmeticFieldCodecBase<WireType>::FIRST_QTR;   
-        
+        // constant integer definitions
+        template<typename WireType> const int DCCLArithmeticFieldCodecBase<WireType>::CODE_VALUE_BITS;
+        template<typename WireType> const int DCCLArithmeticFieldCodecBase<WireType>::FREQUENCY_BITS;
+        template<typename WireType> const typename DCCLArithmeticFieldCodecBase<WireType>::freq_type DCCLArithmeticFieldCodecBase<WireType>::MAX_FREQUENCY;
+        template<typename WireType> const typename DCCLArithmeticFieldCodecBase<WireType>::symbol_type DCCLArithmeticFieldCodecBase<WireType>::OUT_OF_RANGE_SYMBOL;
+        template<typename WireType> const typename DCCLArithmeticFieldCodecBase<WireType>::symbol_type DCCLArithmeticFieldCodecBase<WireType>::EOF_SYMBOL;
+        template<typename WireType> const typename DCCLArithmeticFieldCodecBase<WireType>::symbol_type DCCLArithmeticFieldCodecBase<WireType>::MIN_SYMBOL;
+        template<typename WireType> const uint64 DCCLArithmeticFieldCodecBase<WireType>::TOP_VALUE; 
+        template<typename WireType> const uint64 DCCLArithmeticFieldCodecBase<WireType>::FIRST_QTR;
+        template<typename WireType> const uint64 DCCLArithmeticFieldCodecBase<WireType>::HALF;
+        template<typename WireType> const uint64 DCCLArithmeticFieldCodecBase<WireType>::THIRD_QTR;
           
         template<typename WireType>
             std::map<std::string, typename DCCLArithmeticFieldCodecBase<WireType>::Model > DCCLArithmeticFieldCodecBase<WireType>::models_;

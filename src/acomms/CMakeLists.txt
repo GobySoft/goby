@@ -8,6 +8,7 @@ set(SRC
   dccl/dccl_field_codec_helpers.cpp
   dccl/dccl_field_codec_default.cpp
   dccl/dccl_field_codec_default_message.cpp
+  dccl/dccl_field_codec_arithmetic.cpp
   dccl/dccl_field_codec_manager.cpp
   dccl/dccl_type_helper.cpp
   dccl/dccl_bitset.cpp

@@ -35,79 +35,18 @@
 
 using goby::acomms::operator<<;
 
-int main(int argc, char* argv[])
+void run_test(goby::acomms::protobuf::ArithmeticModel& model,
+              const google::protobuf::Message& msg_in)
 {
-    goby::glog.add_stream(goby::common::logger::DEBUG3, &std::cerr);
-    goby::glog.set_name(argv[0]);
-    
-    goby::acomms::protobuf::DCCLConfig cfg;
     goby::acomms::DCCLCodec* codec = goby::acomms::DCCLCodec::get();
-    codec->set_cfg(cfg);
 
-    {            
-        goby::acomms::protobuf::ArithmeticModel float_model;
-
-        float_model.add_value_bound(100.0);
-        float_model.add_frequency(100);
+    goby::acomms::ModelManager::set_model("model", model);
     
-        float_model.add_value_bound(100.1);
-        float_model.add_frequency(100);
-    
-        float_model.add_value_bound(100.2);
-        float_model.add_frequency(100);
-    
-        float_model.add_value_bound(100.3);
-        float_model.add_frequency(100);
-    
-        float_model.add_value_bound(100.4);
-        float_model.add_frequency(90);
-    
-        float_model.add_value_bound(100.5);
-        float_model.add_frequency(125);
-    
-        float_model.add_value_bound(100.6);
-        float_model.add_frequency(125);
-    
-        float_model.add_value_bound(100.7);
-        float_model.add_frequency(125);
-
-        float_model.add_value_bound(100.8);
-
-        float_model.set_eof_frequency(25);
-        float_model.set_out_of_range_frequency(10);
-    }
-
-    {        
-        goby::acomms::protobuf::ArithmeticModel float_model2;
-    
-        float_model2.set_eof_frequency(4); // "a"
-
-        float_model2.add_value_bound(0);
-        float_model2.add_frequency(5); // "b" 
-    
-        float_model2.add_value_bound(1);
-        float_model2.add_frequency(1); // "EOF"
-    
-        float_model2.add_value_bound(2);
-
-        float_model2.set_out_of_range_frequency(0);
-    
-    
-        goby::acomms::DCCLArithmeticFieldCodec<double>::set_model("float_model", float_model2);
-    }
-    
-    ArithmeticTestMsg msg_in;
-
-    msg_in.add_double_arithmetic_repeat(0); // b 
-    msg_in.add_double_arithmetic_repeat(0); // b
-    msg_in.add_double_arithmetic_repeat(0); // b
-    msg_in.add_double_arithmetic_repeat(1); // "EOF"
-   
-    codec->info(msg_in.GetDescriptor(), &std::cout);
+    //   codec->info(msg_in.GetDescriptor(), &std::cout);
 
     codec->validate(msg_in.GetDescriptor());
     
-    std::cout << "Message in:\n" << msg_in.DebugString() << std::endl;
+//    std::cout << "Message in:\n" << msg_in.DebugString() << std::endl;
 
     
     std::cout << "Try encode..." << std::endl;
@@ -117,14 +56,243 @@ int main(int argc, char* argv[])
 
     std::cout << "Try decode..." << std::endl;
 
-    ArithmeticTestMsg msg_out;
-    codec->decode(bytes, &msg_out);
+    boost::shared_ptr<google::protobuf::Message> msg_out(msg_in.New());
+    codec->decode(bytes, msg_out.get());
     
-    std::cout << "... got Message out:\n" << msg_out.DebugString() << std::endl;
+    //   std::cout << "... got Message out:\n" << msg_out->DebugString() << std::endl;
+    
+    assert(msg_in.SerializeAsString() == msg_out->SerializeAsString());
+}
+
+
+int main(int argc, char* argv[])
+{
+//    goby::glog.add_stream(goby::common::logger::DEBUG3, &std::cerr);
+    goby::glog.set_name(argv[0]);
+    
+    goby::acomms::protobuf::DCCLConfig cfg;
+    goby::acomms::DCCLCodec* codec = goby::acomms::DCCLCodec::get();
+    codec->set_cfg(cfg);
 
     
-    assert(msg_in.SerializeAsString() == msg_out.SerializeAsString());
+    // test case from Practical Implementations of Arithmetic Coding by Paul G. Howard and Je rey Scott Vitter
+    {        
+        goby::acomms::protobuf::ArithmeticModel model;
+        
+        model.set_eof_frequency(4); // "a"
+
+        model.add_value_bound(0);
+        model.add_frequency(5); // "b" 
     
+        model.add_value_bound(1);
+        model.add_frequency(1); // "EOF"
+    
+        model.add_value_bound(2);
+
+        model.set_out_of_range_frequency(0);
+    
+        ArithmeticDoubleTestMsg msg_in;
+
+        msg_in.add_value(0); // b 
+        msg_in.add_value(0); // b
+        msg_in.add_value(0); // b
+        msg_in.add_value(1); // "EOF"
+        
+        run_test(model, msg_in);
+    }
+
+    // misc test case
+    {            
+        goby::acomms::protobuf::ArithmeticModel model;
+
+        model.add_value_bound(100.0);
+        model.add_frequency(100);
+    
+        model.add_value_bound(100.1);
+        model.add_frequency(100);
+    
+        model.add_value_bound(100.2);
+        model.add_frequency(100);
+    
+        model.add_value_bound(100.3);
+        model.add_frequency(100);
+    
+        model.add_value_bound(100.4);
+        model.add_frequency(90);
+    
+        model.add_value_bound(100.5);
+        model.add_frequency(125);
+    
+        model.add_value_bound(100.6);
+        model.add_frequency(125);
+    
+        model.add_value_bound(100.7);
+        model.add_frequency(125);
+
+        model.add_value_bound(100.8);
+
+        model.set_eof_frequency(25);
+        model.set_out_of_range_frequency(10);
+
+        ArithmeticDoubleTestMsg msg_in;
+
+        msg_in.add_value(100.5);
+        msg_in.add_value(100.7);
+        msg_in.add_value(100.2);
+        
+        run_test(model, msg_in);
+        
+    }
+    
+    // edge case 1, should be just a single bit ("1")
+    {            
+        goby::acomms::protobuf::ArithmeticModel model;
+
+        model.set_eof_frequency(10);
+        model.set_out_of_range_frequency(0);
+
+        model.add_value_bound(1);
+        model.add_frequency(2);
+    
+        model.add_value_bound(2);
+        model.add_frequency(3);
+    
+        model.add_value_bound(3);
+        model.add_frequency(85);
+    
+        model.add_value_bound(4);
+
+        ArithmeticEnumTestMsg msg_in;
+
+        msg_in.add_value(ENUM_C);
+        msg_in.add_value(ENUM_C);
+        msg_in.add_value(ENUM_C);
+        msg_in.add_value(ENUM_C);
+        
+        run_test(model, msg_in);
+    }
+
+    // edge case 2, should be full 23 or 24 bits
+    {            
+        goby::acomms::protobuf::ArithmeticModel model;
+
+        model.set_eof_frequency(10);
+        model.set_out_of_range_frequency(0);
+
+        model.add_value_bound(1);
+        model.add_frequency(2);
+    
+        model.add_value_bound(2);
+        model.add_frequency(3);
+    
+        model.add_value_bound(3);
+        model.add_frequency(85);
+    
+        model.add_value_bound(4);
+
+        ArithmeticEnumTestMsg msg_in;
+
+        msg_in.add_value(ENUM_A);
+        msg_in.add_value(ENUM_A);
+        msg_in.add_value(ENUM_A);
+        msg_in.add_value(ENUM_A);
+        
+        run_test(model, msg_in);
+    }
+
+
+    // test case from Arithmetic Coding revealed: A guided tour from theory to praxis Sable Technical Report No. 2007-5 Eric Bodden
+
+    {            
+        goby::acomms::protobuf::ArithmeticModel model;
+
+        model.set_eof_frequency(0);
+        model.set_out_of_range_frequency(0);
+
+        model.add_value_bound(1);
+        model.add_frequency(2);
+    
+        model.add_value_bound(2);
+        model.add_frequency(1);
+    
+        model.add_value_bound(3);
+        model.add_frequency(3);
+
+        model.add_value_bound(4);
+        model.add_frequency(1);
+
+        model.add_value_bound(5);
+        model.add_frequency(1);
+        
+        model.add_value_bound(6);
+
+        ArithmeticEnum2TestMsg msg_in;
+
+        msg_in.add_value(ENUM2_A);
+        msg_in.add_value(ENUM2_B);
+        msg_in.add_value(ENUM2_C);
+        msg_in.add_value(ENUM2_C);
+        msg_in.add_value(ENUM2_E);
+        msg_in.add_value(ENUM2_D);
+        msg_in.add_value(ENUM2_A);
+        msg_in.add_value(ENUM2_C);
+        
+        run_test(model, msg_in);
+    }
+
+    // randomly generate a model and a message
+    // loop over all message lengths from 0 to 100
+    srand ( time(NULL) );
+    for(int i = 0; i <= ArithmeticDouble2TestMsg::descriptor()->FindFieldByName("value")->options().GetExtension(goby::field).dccl().max_repeat(); ++i)
+    {
+        goby::acomms::protobuf::ArithmeticModel model;
+        
+
+        // pick some endpoints
+        goby::int32 low = -(rand() % std::numeric_limits<goby::int32>::max());
+        goby::int32 high = rand() % std::numeric_limits<goby::int32>::max();
+
+        std::cout << "low: " << low << ", high: " << high << std::endl;
+
+        // number of symbols
+        goby::int32 symbols = rand() % 1000 + 10;
+        
+        std::cout << "symbols: " << symbols << std::endl;
+        
+        // maximum freq
+        goby::acomms::Model::freq_type each_max_freq = goby::acomms::Model::MAX_FREQUENCY / (symbols+2);
+        
+        std::cout << "each_max_freq: " << each_max_freq << std::endl;
+        
+        model.set_eof_frequency(rand() % each_max_freq);
+        model.set_out_of_range_frequency(rand() % each_max_freq);
+        
+        model.add_value_bound(low);
+        model.add_frequency(rand() % each_max_freq);
+        for(int j = 1; j < symbols; ++j)
+        {
+//            std::cout << "j: " << j << std::endl;
+
+            goby::int32 remaining_range = high-model.value_bound(j-1);
+            model.add_value_bound(model.value_bound(j-1) + rand() % (remaining_range/symbols-j));
+            model.add_frequency(rand() % each_max_freq);            
+        }
+
+        model.add_value_bound(high);
+
+        ArithmeticDouble2TestMsg msg_in;
+
+        for(int j = 0; j < i; ++j)
+            msg_in.add_value(model.value_bound(rand() % symbols));
+
+        
+        run_test(model, msg_in);
+        
+        std::cout << "end random test #" << i << std::endl;
+        
+    }
+    
+
     std::cout << "all tests passed" << std::endl;
 }
 

@@ -9,15 +9,61 @@ enum Enum1
 }
 
 
-message ArithmeticTestMsg
+enum Enum2
+{
+  ENUM2_A = 1;
+  ENUM2_B = 2;
+  ENUM2_C = 3;
+  ENUM2_D = 4;
+  ENUM2_E = 5;
+}
+
+
+
+message ArithmeticDoubleTestMsg
 {
   option (goby.msg).dccl.id = 1;
   option (goby.msg).dccl.max_bytes = 512;
   
-  repeated double double_arithmetic_repeat = 101 [(goby.field).dccl.codec = "_arithmetic",
-                                                  (goby.field).dccl.arithmetic.model = "float_model",
-                                                  (goby.field).dccl.max_repeat=4];
+  repeated double value = 101 [(goby.field).dccl.codec = "_arithmetic",
+                               (goby.field).dccl.arithmetic.model = "model",
+                               (goby.field).dccl.arithmetic.debug_assert = true,
+                               (goby.field).dccl.max_repeat=4];
+}
+message ArithmeticEnumTestMsg
+{
+  option (goby.msg).dccl.id = 2;
+  option (goby.msg).dccl.max_bytes = 512;
   
+  repeated Enum1 value = 114 [(goby.field).dccl.codec = "_arithmetic",
+                              (goby.field).dccl.arithmetic.model = "model",
+                              (goby.field).dccl.arithmetic.debug_assert = true,
+                              (goby.field).dccl.max_repeat=4];
+  
+}
+message ArithmeticEnum2TestMsg
+{
+  option (goby.msg).dccl.id = 3;
+  option (goby.msg).dccl.max_bytes = 512;
+  
+  repeated Enum2 value = 114 [(goby.field).dccl.codec = "_arithmetic",
+                              (goby.field).dccl.arithmetic.model = "model",
+                              (goby.field).dccl.arithmetic.debug_assert = true,
+                              (goby.field).dccl.max_repeat=8];
+  
+}
+
+message ArithmeticDouble2TestMsg
+{
+  option (goby.msg).dccl.id = 4;
+  option (goby.msg).dccl.max_bytes = 10000;
+  
+  repeated int32 value = 101 [(goby.field).dccl.codec = "_arithmetic",
+                              (goby.field).dccl.arithmetic.model = "model",
+                              (goby.field).dccl.arithmetic.debug_assert = true,
+                              (goby.field).dccl.max_repeat=1000];
+}
+
   // repeated float float_arithmetic_repeat = 102 [(goby.field).dccl.arithmetic.model = "float_model",
   //                                              (goby.field).dccl.max_repeat=4];
 
@@ -27,8 +73,4 @@ message ArithmeticTestMsg
   // repeated bool bool_arithmetic_repeat = 113 [(goby.field).dccl.arithmetic.model = "bool_model",
   //                                             (goby.field).dccl.max_repeat=4];
   
-  // repeated Enum1 enum_arithmetic_repeat = 114 [(goby.field).dccl.arithmetic.model = "enum_model",
-  //                                              (goby.field).dccl.max_repeat=4];
-
-}
 

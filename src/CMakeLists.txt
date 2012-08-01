@@ -202,6 +202,7 @@ if(build_dccllite)
     acomms/dccl/dccl_field_codec_default.cpp
     acomms/dccl/dccl_field_codec_default_message.cpp
     acomms/dccl/dccl_field_codec_manager.cpp
+    acomms/dccl/dccl_field_codec_arithmetic.cpp
     acomms/dccl/dccl_type_helper.cpp
     acomms/dccl/dccl_bitset.cpp
     acomms/dccl/dccl_ccl_compatibility.cpp

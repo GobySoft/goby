@@ -34,6 +34,7 @@ message DCCLFieldOptions
   message ArithmeticOptions
   {
     required string model = 1;
+    optional bool debug_assert = 2 [default = false];
   }
   optional ArithmeticOptions arithmetic = 200;
   

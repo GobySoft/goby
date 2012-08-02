@@ -29,6 +29,8 @@
 #include <limits>
 #include <algorithm>
 
+#include <boost/bimap.hpp>
+
 #include "goby/acomms/dccl/dccl_field_codec_typed.h"
 #include "goby/acomms/protobuf/dccl.pb.h"
 #include "goby/util/sci.h"
@@ -53,17 +55,32 @@ namespace goby
             static const int FREQUENCY_BITS = CODE_VALUE_BITS - 2;
             
             static const freq_type MAX_FREQUENCY = (1 << FREQUENCY_BITS) - 1;
-              
+
+          Model(const protobuf::ArithmeticModel& user)
+              : user_model_(user)
+            { }
+            
+            
             symbol_type value_to_symbol(value_type value) const;
             value_type symbol_to_value(symbol_type symbol) const;
             symbol_type total_symbols() // EOF and OUT_OF_RANGE plus all user defined
-                { return cumulative_freq.size();  }
-            std::pair<freq_type, freq_type> symbol_to_cumulative_freq(symbol_type symbol) const;
+            { return cumulative_freqs_.size();  }
+
+            const protobuf::ArithmeticModel& user_model() const 
+            { return user_model_; }
             
-                  
-            protobuf::ArithmeticModel user_model;
-            std::map<symbol_type, freq_type> cumulative_freq;
-            freq_type total_freq;
+            
+            freq_type total_freq() const { return total_freq_; } 
+            void set_total_freq(freq_type total_freq) { total_freq_ = total_freq; } 
+            
+            std::pair<freq_type, freq_type> symbol_to_cumulative_freq(symbol_type symbol) const;
+            std::pair<symbol_type, symbol_type> cumulative_freq_to_symbol(std::pair<freq_type, freq_type> c_freq_pair) const;
+
+            friend class ModelManager;
+          private:
+            protobuf::ArithmeticModel user_model_;
+            boost::bimap<symbol_type, freq_type> cumulative_freqs_;
+            freq_type total_freq_;
         };
 
         class ModelManager
@@ -71,69 +88,70 @@ namespace goby
           public:
             static void set_model(const std::string& name, const protobuf::ArithmeticModel& model)
             {
-                Model new_model;
-                new_model.user_model = model;
+                Model new_model(model);
                 create_and_validate_model(&new_model);
-                arithmetic_models_[name] = new_model;
+                if(arithmetic_models_.count(name))
+                    arithmetic_models_.erase(name);
+                arithmetic_models_.insert(std::make_pair(name, new_model));
             }
 
             static void create_and_validate_model(Model* model)
             {
-                if(!model->user_model.IsInitialized())
+                if(!model->user_model_.IsInitialized())
                 {
                     throw(DCCLException("Invalid model: " +
-                                        model->user_model.DebugString() +
-                                        "Missing fields: " + model->user_model.InitializationErrorString()));
+                                        model->user_model_.DebugString() +
+                                        "Missing fields: " + model->user_model_.InitializationErrorString()));
                 }
 
                 Model::freq_type cumulative_freq = 0;
-                for(Model::symbol_type symbol = Model::MIN_SYMBOL, n = model->user_model.frequency_size(); symbol < n; ++symbol)
+                for(Model::symbol_type symbol = Model::MIN_SYMBOL, n = model->user_model_.frequency_size(); symbol < n; ++symbol)
                 {
                     Model::freq_type freq;
                     if(symbol == Model::EOF_SYMBOL)
-                        freq = model->user_model.eof_frequency();
+                        freq = model->user_model_.eof_frequency();
                     else if(symbol == Model::OUT_OF_RANGE_SYMBOL)                          
-                        freq = model->user_model.out_of_range_frequency();
+                        freq = model->user_model_.out_of_range_frequency();
                     else
-                        freq = model->user_model.frequency(symbol);
+                        freq = model->user_model_.frequency(symbol);
 
                     if(freq == 0 && symbol != Model::OUT_OF_RANGE_SYMBOL && symbol != Model::EOF_SYMBOL)
                     {
                         throw(DCCLException("Invalid model: " +
-                                            model->user_model.DebugString() +
+                                            model->user_model_.DebugString() +
                                             "All frequencies must be nonzero."));
                     }                      
                     cumulative_freq += freq;
-                    model->cumulative_freq[symbol] = cumulative_freq;
+                    model->cumulative_freqs_.left.insert(std::make_pair(symbol, cumulative_freq));
                       
                 }
                   
                   
-                model->total_freq = cumulative_freq;
-                if(model->total_freq > Model::MAX_FREQUENCY)
+                model->set_total_freq(cumulative_freq);
+                if(model->total_freq() > Model::MAX_FREQUENCY)
                 {
                     throw(DCCLException("Invalid model: " +
-                                        model->user_model.DebugString() +
+                                        model->user_model_.DebugString() +
                                         "Sum of all frequencies must be less than " +
                                         goby::util::as<std::string>(Model::MAX_FREQUENCY) +
                                         " in order to use 64 bit arithmetic"));
                 }
 
-                if(model->user_model.value_bound_size() != model->user_model.frequency_size() + 1)
+                if(model->user_model_.value_bound_size() != model->user_model_.frequency_size() + 1)
                 {
                     throw(DCCLException("Invalid model: " +
-                                        model->user_model.DebugString() +
+                                        model->user_model_.DebugString() +
                                         "`value_bound` size must be exactly 1 more than number of symbols (= size of `frequency`)."));
                 }
 
 
 // is `value_bound` repeated field strictly monotonically increasing?
-                if(std::adjacent_find (model->user_model.value_bound().begin(),
-                                       model->user_model.value_bound().end(),
-                                       std::greater_equal<Model::value_type>()) !=  model->user_model.value_bound().end())
+                if(std::adjacent_find (model->user_model_.value_bound().begin(),
+                                       model->user_model_.value_bound().end(),
+                                       std::greater_equal<Model::value_type>()) !=  model->user_model_.value_bound().end())
                 {
                     throw(DCCLException("Invalid model: " +
-                                        model->user_model.DebugString() +
+                                        model->user_model_.DebugString() +
                                         "`value_bound` must be monotonically increasing."));
                 }
             }
@@ -191,7 +209,7 @@ namespace goby
 
                       // if out-of-range is given no frequency, end encoding
                       if(symbol == Model::OUT_OF_RANGE_SYMBOL &&
-                         model.user_model.out_of_range_frequency() == 0)
+                         model.user_model().out_of_range_frequency() == 0)
                       {
                           
                           glog.is(DEBUG2) &&
@@ -202,11 +220,11 @@ namespace goby
 
                       // if EOF_SYMBOL is given no frequency, use most probable symbol and give a warning
                       if(symbol == Model::EOF_SYMBOL &&
-                         model.user_model.eof_frequency() == 0)
+                         model.user_model().eof_frequency() == 0)
                       {
                           glog.is(DEBUG2) &&
                               glog << warn << "(DCCLArithmeticFieldCodec) end of file, but no frequency given; filling with most probable symbol" << std::endl;
-                          symbol = *std::max_element(model.user_model.frequency().begin(), model.user_model.frequency().end());
+                          symbol = *std::max_element(model.user_model().frequency().begin(), model.user_model().frequency().end());
                       }
                       
                       
@@ -227,8 +245,8 @@ namespace goby
                           glog << "(DCCLArithmeticFieldCodec) input symbol (" << symbol
                                << ") cumulative freq: ["<< c_freq_range.first << "," << c_freq_range.second << ")" << std::endl;
                       
-                      high = low + (range*c_freq_range.second)/model.total_freq-1;
-                      low += (range*c_freq_range.first)/model.total_freq;
+                      high = low + (range*c_freq_range.second)/model.total_freq()-1;
+                      low += (range*c_freq_range.first)/model.total_freq();
                       
                       glog.is(DEBUG3) &&
                           glog << "(DCCLArithmeticFieldCodec) input symbol (" << symbol << ") interval: ["
@@ -338,13 +356,13 @@ namespace goby
                   std::vector<Model::value_type> values;
 
                   const Model& model = current_model();
-
                   
                   uint64 value = 0;
                   uint64 low = 0;
                   uint64 high = TOP_VALUE;
 
                   // offset from `bits` to currently examined `value`
+                  // there are `bit_stream_offset` zeros in the lower bits of `value`
                   int bit_stream_offset = Model::CODE_VALUE_BITS - bits->size();
                   
                   for(int i = 0, n = Model::CODE_VALUE_BITS; i < n; ++i)
@@ -376,8 +394,8 @@ namespace goby
 
                       glog.is(DEBUG3) && glog << "(DCCLArithmeticFieldCodec) input symbol (" << symbol << ") cumulative freq: ["<< c_freq_range.first << "," << c_freq_range.second << ")" << std::endl;
                       
-                      high = low + (range*c_freq_range.second)/model.total_freq-1;
-                      low += (range*c_freq_range.first)/model.total_freq;
+                      high = low + (range*c_freq_range.second)/model.total_freq()-1;
+                      low += (range*c_freq_range.first)/model.total_freq();
                       
                       
                       for(;;)
@@ -443,22 +461,22 @@ namespace goby
                   
                   // if user doesn't provide out_of_range frequency, set it to max to force this
                   // calculation to return the lowest probability symbol in use
-                  Model::freq_type out_of_range_freq = model.user_model.out_of_range_frequency();
+                  Model::freq_type out_of_range_freq = model.user_model().out_of_range_frequency();
                   if(out_of_range_freq == 0)
                       out_of_range_freq = Model::MAX_FREQUENCY;
 
                   Model::value_type lowest_frequency = std::min(out_of_range_freq,
-                                                                *std::min_element(model.user_model.frequency().begin(), model.user_model.frequency().end()));
+                                                                *std::min_element(model.user_model().frequency().begin(), model.user_model().frequency().end()));
                   
                   // full of least probable symbols
-                  unsigned size_least_probable = std::ceil(max_repeat()*(log2(model.total_freq)-log2(lowest_frequency)));
-
+                  unsigned size_least_probable = std::ceil(max_repeat()*(log2(model.total_freq())-log2(lowest_frequency)));
+                  
                   goby::glog.is(common::logger::DEBUG2) && goby::glog << "(DCCLArithmeticFieldCodec) size_least_probable: " << size_least_probable << std::endl;
 
                   
-                  Model::freq_type eof_freq = model.user_model.eof_frequency();                  
+                  Model::freq_type eof_freq = model.user_model().eof_frequency();                  
                   // almost full of least probable symbols plus EOF
-                  unsigned size_least_probable_plus_eof = (eof_freq != 0 ) ? std::ceil(max_repeat()*log2(model.total_freq)-(max_repeat()-1)*log2(lowest_frequency)-log2(eof_freq)) : 0;
+                  unsigned size_least_probable_plus_eof = (eof_freq != 0 ) ? std::ceil(max_repeat()*log2(model.total_freq())-(max_repeat()-1)*log2(lowest_frequency)-log2(eof_freq)) : 0;
 
                   goby::glog.is(common::logger::DEBUG2) && goby::glog << "(DCCLArithmeticFieldCodec) size_least_probable_plus_eof: " << size_least_probable_plus_eof << std::endl;
 
@@ -474,21 +492,21 @@ namespace goby
 
                   // if user doesn't provide out_of_range frequency, set it to 1 (minimum) to force this
                   // calculation to return the highest probability symbol in use
-                  Model::freq_type out_of_range_freq = model.user_model.out_of_range_frequency();
+                  Model::freq_type out_of_range_freq = model.user_model().out_of_range_frequency();
                   if(out_of_range_freq == 0)
                       out_of_range_freq = 1;
 
-                  Model::freq_type eof_freq = model.user_model.eof_frequency();                  
+                  Model::freq_type eof_freq = model.user_model().eof_frequency();                  
                   // just EOF
-                  unsigned size_empty = (eof_freq != 0) ? std::ceil(log2(model.total_freq)-log2(eof_freq)) : std::numeric_limits<unsigned>::max();
+                  unsigned size_empty = (eof_freq != 0) ? std::ceil(log2(model.total_freq())-log2(eof_freq)) : std::numeric_limits<unsigned>::max();
                   
                   goby::glog.is(common::logger::DEBUG2) && goby::glog << "(DCCLArithmeticFieldCodec) size_empty: " << size_empty << std::endl;
                   
                   // full with most probable symbol
                   Model::value_type highest_frequency = std::max(out_of_range_freq,
-                                                                 *std::max_element(model.user_model.frequency().begin(), model.user_model.frequency().end()));
+                                                                 *std::max_element(model.user_model().frequency().begin(), model.user_model().frequency().end()));
                   
-                  unsigned size_most_probable = std::ceil(max_repeat()*(log2(model.total_freq)-log2(highest_frequency)));
+                  unsigned size_most_probable = std::ceil(max_repeat()*(log2(model.total_freq())-log2(highest_frequency)));
 
                   goby::glog.is(common::logger::DEBUG2) && goby::glog << "(DCCLArithmeticFieldCodec) size_most_probable: " << size_most_probable << std::endl;
                   
@@ -532,32 +550,19 @@ namespace goby
                       goby::glog.is(common::logger::DEBUG3) && goby::glog << "(DCCLArithmeticFieldCodec): value range: [" << Bitset(Model::CODE_VALUE_BITS, value) << "," << Bitset(Model::CODE_VALUE_BITS, value_high) << ")" << std::endl;
 
                       
-                      Model::freq_type cumulative_freq = ((value-low+1)*model.total_freq-1)/range;
-                      Model::freq_type cumulative_freq_high = ((value_high-low+1)*model.total_freq-1)/range;
+                      Model::freq_type cumulative_freq = ((value-low+1)*model.total_freq()-1)/range;
+                      Model::freq_type cumulative_freq_high = ((value_high-low+1)*model.total_freq()-1)/range;
                       
                       goby::glog.is(common::logger::DEBUG3) && goby::glog << "(DCCLArithmeticFieldCodec): c_freq: " << cumulative_freq << ", c_freq_high: " << cumulative_freq_high << std::endl;
 
                       
-                      Model::symbol_type symbol;
-                      goby::glog.is(common::logger::DEBUG3) && goby::glog << "(DCCLArithmeticFieldCodec): c_freq(" << -2 << "): " << model.cumulative_freq.find(-2)->second << std::endl;
+                      std::pair<Model::symbol_type, Model::symbol_type> symbol_pair = model.cumulative_freq_to_symbol(std::make_pair(cumulative_freq, cumulative_freq_high));
 
-                      for(symbol = model.cumulative_freq.begin()->first;
-                          model.cumulative_freq.find(symbol)->second <=cumulative_freq;
-                          ++symbol)
-                      {
-                          goby::glog.is(common::logger::DEBUG3) && goby::glog << "(DCCLArithmeticFieldCodec): c_freq(" << symbol << "): " << model.cumulative_freq.find(symbol)->second << std::endl;
-                      }
+                      goby::glog.is(common::logger::DEBUG3) && goby::glog << "(DCCLArithmeticFieldCodec): symbol: " << symbol_pair.first << ", " << symbol_pair.second << std::endl;
+
                       
-                      goby::glog.is(common::logger::DEBUG3) && goby::glog << "(DCCLArithmeticFieldCodec): c_freq(" << symbol << "): " << model.cumulative_freq.find(symbol)->second << std::endl;
-                      
-                      if(symbol == model.cumulative_freq.rbegin()->first)
-                      {
-                          return symbol; // last symbol can't be ambiguous on the low end
-                      }
-                      else if(model.cumulative_freq.find(symbol)->second > cumulative_freq_high)
-                      {
-                          return symbol; // unambiguously this symbol
-                      }
+                      if(symbol_pair.first == symbol_pair.second)
+                          return symbol_pair.first; 
 
                       // add another bit to disambiguate
                       bits->get_more_bits(1);
@@ -567,7 +572,7 @@ namespace goby
                       --bit_stream_offset;
                       value |= static_cast<uint64>(bits->back()) << bit_stream_offset;
 
-                      goby::glog.is(common::logger::DEBUG3) && goby::glog << "(DCCLArithmeticFieldCodec): ambiguous (symbol could be " << symbol << " or " << symbol+1 << ")" << std::endl;
+                      goby::glog.is(common::logger::DEBUG3) && goby::glog << "(DCCLArithmeticFieldCodec): ambiguous (symbol could be " << symbol_pair.first << " or " << symbol_pair.second << ")" << std::endl;
                       
                   }
                   

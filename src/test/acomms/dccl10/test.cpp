@@ -42,11 +42,11 @@ void run_test(goby::acomms::protobuf::ArithmeticModel& model,
 
     goby::acomms::ModelManager::set_model("model", model);
     
-    //   codec->info(msg_in.GetDescriptor(), &std::cout);
+    codec->info(msg_in.GetDescriptor(), &std::cout);
 
     codec->validate(msg_in.GetDescriptor());
     
-//    std::cout << "Message in:\n" << msg_in.DebugString() << std::endl;
+    std::cout << "Message in:\n" << msg_in.DebugString() << std::endl;
 
     
     std::cout << "Try encode..." << std::endl;
@@ -59,15 +59,19 @@ void run_test(goby::acomms::protobuf::ArithmeticModel& model,
     boost::shared_ptr<google::protobuf::Message> msg_out(msg_in.New());
     codec->decode(bytes, msg_out.get());
     
-    //   std::cout << "... got Message out:\n" << msg_out->DebugString() << std::endl;
+    std::cout << "... got Message out:\n" << msg_out->DebugString() << std::endl;
     
     assert(msg_in.SerializeAsString() == msg_out->SerializeAsString());
 }
 
 
+// usage: goby_test_dccl10 [boolean: verbose]
 int main(int argc, char* argv[])
 {
-//    goby::glog.add_stream(goby::common::logger::DEBUG3, &std::cerr);
+    if(argc > 1 && goby::util::as<bool>(argv[1]) == 1)
+        goby::glog.add_stream(goby::common::logger::DEBUG3, &std::cerr);
+    else
+        goby::glog.add_stream(goby::common::logger::DEBUG2, &std::cerr);
     goby::glog.set_name(argv[0]);
     
     goby::acomms::protobuf::DCCLConfig cfg;
@@ -264,18 +268,18 @@ int main(int argc, char* argv[])
         
         std::cout << "each_max_freq: " << each_max_freq << std::endl;
         
-        model.set_eof_frequency(rand() % each_max_freq);
-        model.set_out_of_range_frequency(rand() % each_max_freq);
+        model.set_eof_frequency(rand() % each_max_freq + 1);
+        model.set_out_of_range_frequency(rand() % each_max_freq + 1);
         
         model.add_value_bound(low);
-        model.add_frequency(rand() % each_max_freq);
+        model.add_frequency(rand() % each_max_freq + 1);
         for(int j = 1; j < symbols; ++j)
         {
 //            std::cout << "j: " << j << std::endl;
 
             goby::int32 remaining_range = high-model.value_bound(j-1);
-            model.add_value_bound(model.value_bound(j-1) + rand() % (remaining_range/symbols-j));
-            model.add_frequency(rand() % each_max_freq);            
+            model.add_value_bound(model.value_bound(j-1) + rand() % (remaining_range/symbols-j) +1);
+            model.add_frequency(rand() % each_max_freq + 1);            
         }
 
         model.add_value_bound(high);

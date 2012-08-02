@@ -850,7 +850,7 @@ void goby::acomms::MMDriver::cadrq(const NMEASentence& nmea_in, const protobuf::
         nmea_out.push_back(m.dest());
         nmea_out.push_back(int(m.ack_requested()));
         
-        int max_bytes = nmea_in.as<int>(5);
+//        int max_bytes = nmea_in.as<int>(5);
         
         nmea_out.push_back(hex_encode(m.frame(frame)));
         

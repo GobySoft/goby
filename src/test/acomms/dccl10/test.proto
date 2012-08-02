@@ -61,7 +61,7 @@ message ArithmeticDouble2TestMsg
   repeated int32 value = 101 [(goby.field).dccl.codec = "_arithmetic",
                               (goby.field).dccl.arithmetic.model = "model",
                               (goby.field).dccl.arithmetic.debug_assert = true,
-                              (goby.field).dccl.max_repeat=1000];
+                              (goby.field).dccl.max_repeat=100];
 }
 
   // repeated float float_arithmetic_repeat = 102 [(goby.field).dccl.arithmetic.model = "float_model",

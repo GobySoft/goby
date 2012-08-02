@@ -160,7 +160,7 @@ namespace goby
           private:
             std::map<std::string, goby::moos::protobuf::TranslatorEntry> dictionary_;
             CMOOSGeodesy geodesy_;
-            tes::ModemIdConvert modem_lookup_;
+            goby::moos::ModemIdConvert modem_lookup_;
         };
 
         inline std::ostream& operator<<(std::ostream& os, const MOOSTranslator& tl)

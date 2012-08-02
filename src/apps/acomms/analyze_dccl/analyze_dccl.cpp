@@ -24,21 +24,27 @@
 
 #include "goby/acomms/dccl.h"
 
+
+
 int main(int argc, char* argv[])
 {
-    if(argc != 2)
+    if(argc < 2)
     {
-        std::cerr << "usage: analyze_dccl some_dccl.proto" << std::endl;
+        std::cerr << "usage: analyze_dccl some_dccl.proto [include_path (0-n)]" << std::endl;
         exit(1);
     }
 
-//    goby::glog.add_stream(goby::common::logger::VERBOSE, &std::cerr);
+    goby::glog.add_stream(goby::common::logger::WARN, &std::cerr);
     goby::glog.set_name(argv[0]);
 
     goby::util::DynamicProtobufManager::enable_compilation();
     
+    for(int i = 2; i < argc; ++i)
+        goby::util::DynamicProtobufManager::add_include_path(argv[i]);
+    
     const google::protobuf::FileDescriptor* file_desc =
         goby::util::DynamicProtobufManager::load_from_proto_file(argv[1]);
+
     
     goby::acomms::DCCLCodec& dccl = *goby::acomms::DCCLCodec::get();
     if(file_desc)

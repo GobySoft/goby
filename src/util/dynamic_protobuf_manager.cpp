@@ -54,6 +54,7 @@ void goby::util::DynamicProtobufManager::enable_disk_source_database()
     
     source_database_->RecordErrorsTo(error_collector_);
     disk_source_tree_->MapPath("/", "/");
+    disk_source_tree_->MapPath("", "");
     add_database(source_database_);
 }
 

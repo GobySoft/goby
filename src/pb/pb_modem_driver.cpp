@@ -74,41 +74,54 @@ void goby::pb::PBDriver::shutdown()
 
 void goby::pb::PBDriver::handle_initiate_transmission(const acomms::protobuf::ModemTransmission& orig_msg)
 {
-    // buffer the message
-    acomms::protobuf::ModemTransmission msg = orig_msg;
-    signal_modify_transmission(&msg);
-
-    if(driver_cfg_.modem_id() == msg.src())
-    {        
-        // this is our transmission        
-        if(msg.rate() < driver_cfg_.ExtensionSize(PBDriverConfig::rate_to_bytes))
-            msg.set_max_frame_bytes(driver_cfg_.GetExtension(PBDriverConfig::rate_to_bytes, msg.rate()));
-        else
-            msg.set_max_frame_bytes(driver_cfg_.GetExtension(PBDriverConfig::max_frame_size));
-        
-        // no data given to us, let's ask for some
-        if(msg.frame_size() == 0)
-            ModemDriverBase::signal_data_request(&msg);
-        
-        // don't send an empty message
-        if(msg.frame_size() && msg.frame(0).size())
-        {
-            request_.add_outbox()->CopyFrom(msg);
-        }
-    }
-    else
+    switch(orig_msg.type())
     {
-        // send thirdparty "poll"
-        msg.SetExtension(PBDriverTransmission::poll_src, msg.src());        
-        msg.SetExtension(PBDriverTransmission::poll_dest, msg.dest());
-
-        msg.set_dest(msg.src());
-        msg.set_src(driver_cfg_.modem_id());
+        case acomms::protobuf::ModemTransmission::DATA:
+        {
+    
+            // buffer the message
+            acomms::protobuf::ModemTransmission msg = orig_msg;
+            signal_modify_transmission(&msg);
+    
+            if(driver_cfg_.modem_id() == msg.src())
+            {        
+                // this is our transmission        
+                if(msg.rate() < driver_cfg_.ExtensionSize(PBDriverConfig::rate_to_bytes))
+                    msg.set_max_frame_bytes(driver_cfg_.GetExtension(PBDriverConfig::rate_to_bytes, msg.rate()));
+                else
+                    msg.set_max_frame_bytes(driver_cfg_.GetExtension(PBDriverConfig::max_frame_size));
         
-        msg.set_type(goby::acomms::protobuf::ModemTransmission::DRIVER_SPECIFIC);
-        msg.SetExtension(PBDriverTransmission::type, PBDriverTransmission::PB_DRIVER_POLL);
+                // no data given to us, let's ask for some
+                if(msg.frame_size() == 0)
+                    ModemDriverBase::signal_data_request(&msg);
+        
+                // don't send an empty message
+                if(msg.frame_size() && msg.frame(0).size())
+                {
+                    request_.add_outbox()->CopyFrom(msg);
+                }
+            }
+            else
+            {
+                // send thirdparty "poll"
+                msg.SetExtension(PBDriverTransmission::poll_src, msg.src());        
+                msg.SetExtension(PBDriverTransmission::poll_dest, msg.dest());
 
-        request_.add_outbox()->CopyFrom(msg);
+                msg.set_dest(msg.src());
+                msg.set_src(driver_cfg_.modem_id());
+        
+                msg.set_type(goby::acomms::protobuf::ModemTransmission::DRIVER_SPECIFIC);
+                msg.SetExtension(PBDriverTransmission::type, PBDriverTransmission::PB_DRIVER_POLL);
+
+                request_.add_outbox()->CopyFrom(msg);
+            }
+
+        }    
+        break;
+        default:
+            glog.is(DEBUG1) && glog << group(glog_out_group()) << warn << "Not initiating transmission because we were given an invalid transmission type for the base Driver:" << orig_msg.DebugString() << std::endl;
+            break;
+                
     }
 }
 

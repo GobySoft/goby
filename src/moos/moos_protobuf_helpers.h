@@ -332,13 +332,14 @@ namespace goby
 
             }
             
-            static void parse(const std::string& in, google::protobuf::Message* out,
+            static void parse(std::string in, google::protobuf::Message* out,
                               const google::protobuf::RepeatedPtrField<protobuf::TranslatorEntry::CreateParser::Algorithm>& algorithms = google::protobuf::RepeatedPtrField<protobuf::TranslatorEntry::CreateParser::Algorithm>(),
                               bool use_short_enum = false)
             {
                 const google::protobuf::Descriptor* desc = out->GetDescriptor();
                 const google::protobuf::Reflection* refl = out->GetReflection();
                 
+                boost::to_lower(in);
                 
                 for(int i = 0, n = desc->field_count(); i < n; ++i)
                 {

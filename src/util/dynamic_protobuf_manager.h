@@ -97,6 +97,16 @@ namespace goby
 #if PROTO_RUNTIME_COMPILE
             static const google::protobuf::FileDescriptor*
                 load_from_proto_file(const std::string& proto_file);
+
+
+            static void add_include_path(const std::string& path)
+            {
+                if(!get_instance()->disk_source_tree_)
+                    throw(std::runtime_error("Must called enable_compilation() before loading proto files directly"));
+
+                get_instance()->disk_source_tree_->MapPath("", path);
+            }
+            
 #endif
             
             static void* load_from_shared_lib(const std::string& shared_lib_path)

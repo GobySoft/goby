@@ -369,7 +369,7 @@ boost::bimap<std::string, goby::int32> goby::acomms::DCCLModemIdConverterCodec::
 goby::int32 goby::acomms::DCCLModemIdConverterCodec::pre_encode(const std::string& field_value)
 {
     int32 v = BROADCAST_ID;
-    if(platform2modem_id_.left.count(field_value))
+    if(platform2modem_id_.left.count(boost::to_lower_copy(field_value)))
         v = platform2modem_id_.left.at(field_value);
     
     return v;

@@ -61,7 +61,7 @@ namespace goby
             goby::acomms::protobuf::DriverConfig driver_cfg_; // configuration given to you at launch
 
             //boost::bimap<int, std::string> modem_id2name_;
-            tes::ModemIdConvert modem_lookup_;
+            goby::moos::ModemIdConvert modem_lookup_;
         };
     }
 }

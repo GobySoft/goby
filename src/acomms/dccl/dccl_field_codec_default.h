@@ -30,6 +30,7 @@
 #include <boost/type_traits.hpp>
 #include <boost/static_assert.hpp>
 #include <boost/bimap.hpp>
+#include <boost/algorithm/string.hpp>
 
 #include <google/protobuf/descriptor.h>
 
@@ -300,7 +301,10 @@ namespace goby
           public:
             /// \brief Add an entry to the lookup table used for conversions. 
             static void add(std::string platform, int32 id)
-            { platform2modem_id_.left.insert(std::make_pair(platform, id)); }
+            {
+                boost::to_lower(platform);
+                platform2modem_id_.left.insert(std::make_pair(platform, id));
+            }
             
             int32 pre_encode(const std::string& field_value);
             std::string post_decode(const int32& wire_value);

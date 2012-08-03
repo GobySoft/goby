@@ -606,6 +606,14 @@ namespace goby
                                 
                                 const google::protobuf::EnumValueDescriptor* enum_desc =
                                     field_desc->enum_type()->FindValueByName(enum_value);
+
+                                // try upper case
+                                if(!enum_desc)
+                                    enum_desc = field_desc->enum_type()->FindValueByName(boost::algorithm::to_upper_copy(enum_value));
+                                // try lower case
+                                if(!enum_desc)
+                                    enum_desc = field_desc->enum_type()->FindValueByName(boost::algorithm::to_lower_copy(enum_value));
+                                
                                 if(enum_desc)
                                     refl->AddEnum(proto_msg, field_desc, enum_desc);
                             }
@@ -664,6 +672,14 @@ namespace goby
                             
                             const google::protobuf::EnumValueDescriptor* enum_desc =
                                 field_desc->enum_type()->FindValueByName(enum_value);
+
+                            // try upper case
+                            if(!enum_desc)
+                                enum_desc = field_desc->enum_type()->FindValueByName(boost::algorithm::to_upper_copy(enum_value));
+                            // try lower case
+                            if(!enum_desc)
+                                enum_desc = field_desc->enum_type()->FindValueByName(boost::algorithm::to_lower_copy(enum_value));
+                            
                             if(enum_desc)
                                 refl->SetEnum(proto_msg, field_desc, enum_desc);
                         }

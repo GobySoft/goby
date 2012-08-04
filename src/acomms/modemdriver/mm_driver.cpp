@@ -501,7 +501,7 @@ void goby::acomms::MMDriver::cccyc(protobuf::ModemTransmission* msg)
         nmea.push_back(is_local_cycle
                        ? static_cast<int>(msg->ack_requested())
                        : 1); // ACK: deprecated field, but still dictates the value provided by CADRQ
-        nmea.push_back(msg->max_num_frames()); // number of frames we want
+        nmea.push_back(is_local_cycle ? msg->frame_size() : msg->max_num_frames()); // number of frames we want
 
         append_to_write_queue(nmea);
 

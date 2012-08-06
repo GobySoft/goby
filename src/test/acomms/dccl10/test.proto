@@ -41,9 +41,21 @@ message ArithmeticEnumTestMsg
                               (goby.field).dccl.max_repeat=4];
   
 }
-message ArithmeticEnum2TestMsg
+
+message ArithmeticSingleEnumTestMsg
 {
   option (goby.msg).dccl.id = 3;
+  option (goby.msg).dccl.max_bytes = 512;
+  
+  required Enum1 value = 114 [(goby.field).dccl.codec = "_arithmetic",
+                              (goby.field).dccl.arithmetic.model = "model",
+                              (goby.field).dccl.arithmetic.debug_assert = true];
+  
+}
+
+message ArithmeticEnum2TestMsg
+{
+  option (goby.msg).dccl.id = 4;
   option (goby.msg).dccl.max_bytes = 512;
   
   repeated Enum2 value = 114 [(goby.field).dccl.codec = "_arithmetic",
@@ -55,7 +67,7 @@ message ArithmeticEnum2TestMsg
 
 message ArithmeticDouble2TestMsg
 {
-  option (goby.msg).dccl.id = 4;
+  option (goby.msg).dccl.id = 5;
   option (goby.msg).dccl.max_bytes = 10000;
   
   repeated int32 value = 101 [(goby.field).dccl.codec = "_arithmetic",

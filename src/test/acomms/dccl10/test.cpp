@@ -205,6 +205,30 @@ int main(int argc, char* argv[])
     }
 
 
+    {            
+        goby::acomms::protobuf::ArithmeticModel model;
+
+        model.set_eof_frequency(10);
+        model.set_out_of_range_frequency(0);
+
+        model.add_value_bound(1);
+        model.add_frequency(2);
+    
+        model.add_value_bound(2);
+        model.add_frequency(3);
+    
+        model.add_value_bound(3);
+        model.add_frequency(85);
+    
+        model.add_value_bound(4);
+
+        ArithmeticSingleEnumTestMsg msg_in;
+
+        msg_in.set_value(ENUM_B);
+        
+        run_test(model, msg_in);
+    }
+    
     // test case from Arithmetic Coding revealed: A guided tour from theory to praxis Sable Technical Report No. 2007-5 Eric Bodden
 
     {            

@@ -84,9 +84,9 @@ std::pair<goby::acomms::Model::symbol_type, goby::acomms::Model::symbol_type> go
     
     // find the symbol for which the cumulative frequency is greater than
     // e.g.
-    // symbol: 0   freq: 10   c_freq: 10 [0 ... 9]
-    // symbol: 1   freq: 15   c_freq: 25 [10 ... 24]
-    // symbol: 2   freq: 10   c_freq: 35 [25 ... 34]
+    // symbol: 0   freq: 10   c_freq: 10 [0 ... 10)
+    // symbol: 1   freq: 15   c_freq: 25 [10 ... 25)
+    // symbol: 2   freq: 10   c_freq: 35 [25 ... 35)
     // searching for c_freq of 30 should return symbol 2     
     // searching for c_freq of 10 should return symbol 1
     symbol_pair.first = cumulative_freqs_.right.upper_bound(c_freq_pair.first)->second;

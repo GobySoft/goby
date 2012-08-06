@@ -471,14 +471,14 @@ namespace goby
                   // full of least probable symbols
                   unsigned size_least_probable = std::ceil(max_repeat()*(log2(model.total_freq())-log2(lowest_frequency)));
                   
-                  goby::glog.is(common::logger::DEBUG2) && goby::glog << "(DCCLArithmeticFieldCodec) size_least_probable: " << size_least_probable << std::endl;
+                  goby::glog.is(common::logger::DEBUG3) && goby::glog << "(DCCLArithmeticFieldCodec) size_least_probable: " << size_least_probable << std::endl;
 
                   
                   Model::freq_type eof_freq = model.user_model().eof_frequency();                  
                   // almost full of least probable symbols plus EOF
                   unsigned size_least_probable_plus_eof = (eof_freq != 0 ) ? std::ceil(max_repeat()*log2(model.total_freq())-(max_repeat()-1)*log2(lowest_frequency)-log2(eof_freq)) : 0;
 
-                  goby::glog.is(common::logger::DEBUG2) && goby::glog << "(DCCLArithmeticFieldCodec) size_least_probable_plus_eof: " << size_least_probable_plus_eof << std::endl;
+                  goby::glog.is(common::logger::DEBUG3) && goby::glog << "(DCCLArithmeticFieldCodec) size_least_probable_plus_eof: " << size_least_probable_plus_eof << std::endl;
 
                   return std::max(size_least_probable_plus_eof, size_least_probable) + 1;
               }
@@ -500,7 +500,7 @@ namespace goby
                   // just EOF
                   unsigned size_empty = (eof_freq != 0) ? std::ceil(log2(model.total_freq())-log2(eof_freq)) : std::numeric_limits<unsigned>::max();
                   
-                  goby::glog.is(common::logger::DEBUG2) && goby::glog << "(DCCLArithmeticFieldCodec) size_empty: " << size_empty << std::endl;
+                  goby::glog.is(common::logger::DEBUG3) && goby::glog << "(DCCLArithmeticFieldCodec) size_empty: " << size_empty << std::endl;
                   
                   // full with most probable symbol
                   Model::value_type highest_frequency = std::max(out_of_range_freq,
@@ -508,7 +508,7 @@ namespace goby
                   
                   unsigned size_most_probable = std::ceil(max_repeat()*(log2(model.total_freq())-log2(highest_frequency)));
 
-                  goby::glog.is(common::logger::DEBUG2) && goby::glog << "(DCCLArithmeticFieldCodec) size_most_probable: " << size_most_probable << std::endl;
+                  goby::glog.is(common::logger::DEBUG3) && goby::glog << "(DCCLArithmeticFieldCodec) size_most_probable: " << size_most_probable << std::endl;
                   
                   return std::min(size_empty, size_most_probable);
               }
@@ -543,12 +543,12 @@ namespace goby
                   for(;;)
                   {
                       uint64 value_high = (bit_stream_offset > 0) ?
-                          value + (static_cast<uint64>(1) << bit_stream_offset):
+                          value + ((static_cast<uint64>(1) << bit_stream_offset) - 1):
                           value;
                       
                       
                       goby::glog.is(common::logger::DEBUG3) && goby::glog << "(DCCLArithmeticFieldCodec): value range: [" << Bitset(Model::CODE_VALUE_BITS, value) << "," << Bitset(Model::CODE_VALUE_BITS, value_high) << ")" << std::endl;
-
+                      
                       
                       Model::freq_type cumulative_freq = ((value-low+1)*model.total_freq()-1)/range;
                       Model::freq_type cumulative_freq_high = ((value_high-low+1)*model.total_freq()-1)/range;
@@ -584,7 +584,9 @@ namespace goby
               
               
               goby::int32 max_repeat()
-              { return DCCLFieldCodecBase::dccl_field_options().max_repeat(); }
+              {
+                  return DCCLFieldCodecBase::this_field()->is_repeated() ? DCCLFieldCodecBase::dccl_field_options().max_repeat() : 1;
+              }
 
               const Model& current_model() const
               {

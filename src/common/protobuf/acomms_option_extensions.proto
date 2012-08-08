@@ -21,7 +21,7 @@ message DCCLFieldOptions
   optional uint32 max_length = 9 [default = 0];  
 
   // any `repeated` field
-  optional uint32 max_repeat = 10 [default = 0];
+  optional uint32 max_repeat = 10 [default = 1];
 
 
   message LegacyCCLFieldOptions
@@ -31,6 +31,13 @@ message DCCLFieldOptions
   }
   optional LegacyCCLFieldOptions ccl = 100;
 
+  message ArithmeticOptions
+  {
+    required string model = 1;
+    optional bool debug_assert = 2 [default = false];
+  }
+  optional ArithmeticOptions arithmetic = 200;
+  
 
 }
 

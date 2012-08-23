@@ -21,15 +21,15 @@ endif()
 
 set(GOBY_VERSION_MAJOR "2")
 set(GOBY_VERSION_MINOR "0")
-set(GOBY_VERSION_PATCH "1~rc1+DSOP20120625+1")
+set(GOBY_VERSION_PATCH "1~rc2")
 set(GOBY_VERSION "${GOBY_VERSION_MAJOR}.${GOBY_VERSION_MINOR}.${GOBY_VERSION_PATCH}")
-set(GOBY_VERSION_DATE "2012.06.25")
+set(GOBY_VERSION_DATE "2012.08.23")
 
 include(today)
 today(GOBY_COMPILE_DATE)
 
-# give Goby 2 series a few more soversions
-set(GOBY_SOVERSION "21")
+# give Goby 1 series a few more soversions
+set(GOBY_SOVERSION "22")
 
 # fetch all the local directories for generated code
 get_filename_component(goby_LIB_DIR lib ABSOLUTE)

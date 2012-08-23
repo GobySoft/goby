@@ -63,7 +63,8 @@ namespace goby
             /// \brief Current clock mode of the modem, necessary for synchronous navigation.
             int clk_mode() { return clk_mode_; }
 
-
+            bool is_started() const { return startup_done_; }
+            
             static unsigned packet_frame_count(int rate)
             { return PACKET_FRAME_COUNT [rate]; }
             
@@ -150,17 +151,17 @@ namespace goby
                 
             
             // seconds to wait for modem to respond
-            static boost::posix_time::time_duration MODEM_WAIT; 
+            static const boost::posix_time::time_duration MODEM_WAIT; 
             // seconds to wait after modem reboot
-            static boost::posix_time::time_duration WAIT_AFTER_REBOOT;
+            static const boost::posix_time::time_duration WAIT_AFTER_REBOOT;
             // allowed time diff in millisecs between our clock and the modem clock
-            static int ALLOWED_MS_DIFF;
+            static const int ALLOWED_MS_DIFF;
             
-            static std::string SERIAL_DELIMITER;
+            static const std::string SERIAL_DELIMITER;
             // number of frames for a given packet type
-            static unsigned PACKET_FRAME_COUNT [];
+            static const unsigned PACKET_FRAME_COUNT [];
             // size of packet (in bytes) for a given modem rate
-            static unsigned PACKET_SIZE [];
+            static const unsigned PACKET_SIZE [];
 
 
             // all startup configuration (DriverConfig defined in acomms_driver_base.proto and extended in acomms_mm_driver.proto)
@@ -221,7 +222,7 @@ namespace goby
             // length of #G1 or #M1
             enum { HYDROID_GATEWAY_PREFIX_LENGTH = 3 };
             // time between requests to the hydroid gateway buoy gps
-            static boost::posix_time::time_duration HYDROID_GATEWAY_GPS_REQUEST_INTERVAL;
+            static const boost::posix_time::time_duration HYDROID_GATEWAY_GPS_REQUEST_INTERVAL;
             boost::posix_time::ptime last_hydroid_gateway_gps_request_;
             bool is_hydroid_gateway_;
             std::string hydroid_gateway_modem_prefix_;

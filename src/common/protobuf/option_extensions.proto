@@ -35,6 +35,13 @@ message GobyFieldOptions
   message ConfigurationOptions
   {
     optional string cli_short = 1;
+    enum ConfigAction
+    {
+      ALWAYS = 1;
+      NEVER = 2;
+      ADVANCED = 3;
+    }
+    optional ConfigAction action = 2 [default = ALWAYS];
   }
   optional ConfigurationOptions cfg = 200;
 }

@@ -135,7 +135,7 @@ void goby::acomms::MACManager::begin_slot(const boost::system::error_code& e)
     if(e == boost::asio::error::operation_aborted) return;   
 
     // check skew
-    if(std::abs(goby_time<uint64>() - goby::util::as<uint64>(next_slot_t_)) > ALLOWED_SKEW_SECONDS*1000000)
+    if(std::abs(goby_time<double>() - goby::util::as<double>(next_slot_t_)) > ALLOWED_SKEW_SECONDS)
     {
         glog.is(DEBUG1) && glog << group(glog_mac_group_) << warn << "Clock skew detected, updating MAC." << std::endl;
         update();

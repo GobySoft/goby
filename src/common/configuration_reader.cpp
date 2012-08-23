@@ -351,7 +351,7 @@ void  goby::common::ConfigReader::get_protobuf_program_options(boost::program_op
     for(int i = 0, n = desc->field_count(); i < n; ++i)
     {
         const google::protobuf::FieldDescriptor* field_desc = desc->field(i);
-        const std::string& field_name = field_desc->name();
+        const std::string& field_name = field_desc->name();        
         
         std::string cli_name = field_name;
         std::stringstream human_desc_ss;
@@ -475,6 +475,10 @@ void goby::common::ConfigReader::build_description(const google::protobuf::Descr
     for(int i = 0, n = desc->field_count(); i < n; ++i)
     {
         const google::protobuf::FieldDescriptor* field_desc = desc->field(i);
+
+        if(field_desc->options().GetExtension(goby::field).cfg().action() == goby::GobyFieldOptions::ConfigurationOptions::NEVER)
+            continue;
+        
         build_description_field(field_desc, stream, indent, use_color);
     }
 
@@ -483,6 +487,10 @@ void goby::common::ConfigReader::build_description(const google::protobuf::Descr
     for(int i = 0, n = extensions.size(); i < n; ++i)
     {
         const google::protobuf::FieldDescriptor* field_desc = extensions[i];
+
+        if(field_desc->options().GetExtension(goby::field).cfg().action() == goby::GobyFieldOptions::ConfigurationOptions::NEVER)
+            continue;
+
         build_description_field(field_desc, stream, indent, use_color);
     }    
 }

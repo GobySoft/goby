@@ -1,0 +1,261 @@
+// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+//                     Massachusetts Institute of Technology (2007-)
+//                     Woods Hole Oceanographic Institution (2007-)
+//                     Goby Developers Team (https://launchpad.net/~goby-dev)
+// 
+//
+// This file is part of the Goby Underwater Autonomy Project Binaries
+// ("The Goby Binaries").
+//
+// The Goby Binaries are free software: you can redistribute them and/or modify
+// them under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// The Goby Binaries are distributed in the hope that they will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Goby.  If not, see <http://www.gnu.org/licenses/>.
+
+
+// tests functionality of the MMDriver WHOI Micro-Modem driver
+
+
+#include "goby/acomms/modemdriver/mm_driver.h"
+#include "goby/common/logger.h"
+#include "goby/util/binary.h"
+#include "goby/acomms/connect.h"
+#include "goby/common/application_base.h"
+#include "test_config.pb.h"
+using namespace goby::acomms;
+using namespace goby::common::logger;
+using namespace goby::common::logger_lock;
+using goby::util::as;
+using goby::common::goby_time;
+using namespace boost::posix_time;
+
+boost::mutex driver_mutex;
+int last_transmission_index = 0;
+
+class MMDriverTest2 : public goby::common::ApplicationBase
+{
+public:
+    MMDriverTest2();
+private:
+    void iterate();
+
+    void run(goby::acomms::MMDriver& modem, goby::acomms::protobuf::DriverConfig& cfg);
+
+    void handle_transmit_result1(const protobuf::ModemTransmission& msg);
+    void handle_data_receive1(const protobuf::ModemTransmission& msg);
+
+    void handle_transmit_result2(const protobuf::ModemTransmission& msg);
+    void handle_data_receive2(const protobuf::ModemTransmission& msg);
+    
+    void summary(const std::map<int, std::vector<micromodem::protobuf::ReceiveStatistics> >& receive,
+                 const goby::acomms::protobuf::DriverConfig& cfg);
+    
+private:
+    
+    goby::acomms::MMDriver driver1, driver2;
+    // maps transmit index to receive statistics
+    std::map<int, std::vector<micromodem::protobuf::ReceiveStatistics> > driver1_receive, driver2_receive;
+    
+    bool modems_running_;
+    
+    static goby::test::protobuf::MMDriverTest2Config cfg_;
+};
+
+goby::test::protobuf::MMDriverTest2Config MMDriverTest2::cfg_;
+
+
+MMDriverTest2::MMDriverTest2()
+    : ApplicationBase(&cfg_),
+      modems_running_(true)
+{
+    goby::glog.is(VERBOSE, lock) &&
+        goby::glog << "Running test: " << cfg_ << std::endl << unlock;
+    
+}
+
+void MMDriverTest2::iterate()
+{
+    goby::acomms::connect(&driver1.signal_receive, this, &MMDriverTest2::handle_data_receive1);
+    goby::acomms::connect(&driver1.signal_transmit_result, this, &MMDriverTest2::handle_transmit_result1);
+    goby::acomms::connect(&driver2.signal_receive, this, &MMDriverTest2::handle_data_receive2);
+    goby::acomms::connect(&driver2.signal_transmit_result, this, &MMDriverTest2::handle_transmit_result2);
+    
+    boost::thread modem_thread_A(boost::bind(&MMDriverTest2::run, this,
+                                             boost::ref(driver1), cfg_.mm1_cfg()));
+    boost::thread modem_thread_B(boost::bind(&MMDriverTest2::run, this,
+                                             boost::ref(driver2), cfg_.mm2_cfg()));
+    
+    while(!driver1.is_started() || !driver2.is_started())
+        usleep(10000);        
+
+    for(int i = 0, n = cfg_.repeat(); i < n; ++i)
+    {
+        goby::glog.is(VERBOSE, lock) &&
+            goby::glog << "Beginning test sequence repetition " << i+1 << " of " << n << std::endl << unlock;
+
+        int o = cfg_.transmission_size();
+        for(last_transmission_index = 0; last_transmission_index < o; ++last_transmission_index)
+        {
+                {        
+                    boost::mutex::scoped_lock lock(driver_mutex);    
+                    driver1.handle_initiate_transmission(cfg_.transmission(last_transmission_index));
+                }
+                
+                sleep(cfg_.transmission(last_transmission_index).slot_seconds());
+        }
+    }
+    
+    modems_running_ = false;
+    modem_thread_A.join();
+    modem_thread_B.join();
+
+    summary(driver1_receive, cfg_.mm1_cfg());
+    summary(driver2_receive, cfg_.mm2_cfg());
+    
+    goby::glog.is(VERBOSE, lock) &&
+        goby::glog << "Completed test" << std::endl << unlock;
+    quit();
+}
+
+void MMDriverTest2::run(goby::acomms::MMDriver& modem, goby::acomms::protobuf::DriverConfig& cfg)
+{
+    goby::glog.is(VERBOSE, lock)
+        && goby::glog << "Initializing modem" << std::endl << unlock;
+    modem.startup(cfg);
+    
+    while(modems_running_)
+    {
+            {
+                boost::mutex::scoped_lock lock(driver_mutex);    
+                modem.do_work();
+            }
+            usleep(100000); // 0.1 seconds
+    }
+
+    modem.shutdown();
+}
+
+void MMDriverTest2::handle_data_receive1(const protobuf::ModemTransmission& msg)
+{
+    goby::glog.is(VERBOSE, lock) &&
+        goby::glog << "modem 1 Received: " << msg << std::endl << unlock;
+
+    for(int i = 0, n = msg.ExtensionSize(micromodem::protobuf::receive_stat); i < n; ++i)
+        driver1_receive[last_transmission_index].push_back(msg.GetExtension(micromodem::protobuf::receive_stat, i));
+    
+}
+
+void MMDriverTest2::handle_data_receive2(const protobuf::ModemTransmission& msg)
+{
+    goby::glog.is(VERBOSE, lock) &&
+        goby::glog << "modem 2 Received: " << msg << std::endl << unlock;
+
+
+    for(int i = 0, n = msg.ExtensionSize(micromodem::protobuf::receive_stat); i < n; ++i)
+        driver2_receive[last_transmission_index].push_back(msg.GetExtension(micromodem::protobuf::receive_stat, i));
+    
+}
+
+
+void MMDriverTest2::handle_transmit_result1(const protobuf::ModemTransmission& msg)
+{
+    goby::glog.is(VERBOSE, lock) &&
+        goby::glog << "modem 1 Transmitted: " << msg << std::endl << unlock;
+}
+
+void MMDriverTest2::handle_transmit_result2(const protobuf::ModemTransmission& msg)
+{
+    goby::glog.is(VERBOSE, lock) &&
+        goby::glog << "modem 2 Transmitted: " << msg << std::endl << unlock;
+}
+
+void MMDriverTest2::summary(const std::map<int, std::vector<micromodem::protobuf::ReceiveStatistics> >& receive,
+                            const goby::acomms::protobuf::DriverConfig& cfg)
+{
+    goby::glog.is(VERBOSE, lock) &&
+        goby::glog << "*** Begin modem " << cfg.modem_id() << " receive summary" << std::endl << unlock;
+    
+
+    for(std::map<int, std::vector<micromodem::protobuf::ReceiveStatistics> >::const_iterator it = receive.begin(),
+            end = receive.end(); it != end; ++it)
+    {
+        goby::glog.is(VERBOSE, lock) &&
+            goby::glog << "** Showing stats for this transmission (last transmission before this reception occured): " << cfg_.transmission(it->first).DebugString() << std::flush << unlock;
+
+        const std::vector<micromodem::protobuf::ReceiveStatistics>& current_receive_vector = it->second;
+    
+        std::multiset<micromodem::protobuf::PacketType> type;
+        std::multiset<micromodem::protobuf::ReceiveMode> mode;
+        std::multiset<micromodem::protobuf::PSKErrorCode> code;
+
+        for(int i = 0, n = current_receive_vector.size(); i < n; ++i)
+        {
+            goby::glog.is(VERBOSE, lock) &&
+                goby::glog << "CACST #" << i << ": " << current_receive_vector[i].ShortDebugString() << std::endl << unlock;
+
+            type.insert(current_receive_vector[i].packet_type());
+            mode.insert(current_receive_vector[i].mode());
+            code.insert(current_receive_vector[i].psk_error_code());
+
+        }
+
+        goby::glog.is(VERBOSE, lock) &&
+            goby::glog << "PacketType: " << std::endl << unlock;
+        for(int j = micromodem::protobuf::PacketType_MIN;
+            j <= micromodem::protobuf::PacketType_MAX; ++j)
+        {
+            if(micromodem::protobuf::PacketType_IsValid(j))
+            {
+                micromodem::protobuf::PacketType jt = static_cast<micromodem::protobuf::PacketType>(j);
+                goby::glog.is(VERBOSE, lock) &&
+                    goby::glog << "\t" << micromodem::protobuf::PacketType_Name(jt) << ": " << type.count(jt) << std::endl << unlock;
+            }
+        }
+
+        goby::glog.is(VERBOSE, lock) &&
+            goby::glog << "ReceiveMode: " << std::endl << unlock;
+        for(int j = micromodem::protobuf::ReceiveMode_MIN;
+            j <= micromodem::protobuf::ReceiveMode_MAX; ++j)
+        {
+            if(micromodem::protobuf::ReceiveMode_IsValid(j))
+            {
+                micromodem::protobuf::ReceiveMode jt = static_cast<micromodem::protobuf::ReceiveMode>(j);
+                goby::glog.is(VERBOSE, lock) &&
+                    goby::glog << "\t" << micromodem::protobuf::ReceiveMode_Name(jt) << ": " << mode.count(jt) << std::endl << unlock;
+            }
+        }
+
+        goby::glog.is(VERBOSE, lock) &&
+            goby::glog << "PSKErrorCode: " << std::endl << unlock;
+        for(int j = micromodem::protobuf::PSKErrorCode_MIN;
+            j <= micromodem::protobuf::PSKErrorCode_MAX; ++j)
+        {
+            if(micromodem::protobuf::PSKErrorCode_IsValid(j))
+            {
+                micromodem::protobuf::PSKErrorCode jt = static_cast<micromodem::protobuf::PSKErrorCode>(j);
+                goby::glog.is(VERBOSE, lock) &&
+                    goby::glog << "\t" << micromodem::protobuf::PSKErrorCode_Name(jt) << ": " << code.count(jt) << std::endl << unlock;
+            }
+        }
+    
+
+    
+    }
+    goby::glog.is(VERBOSE, lock) &&
+        goby::glog << "*** End modem " << cfg.modem_id() << " receive summary" << std::endl << unlock;
+}
+
+int main(int argc, char* argv[])
+{
+    goby::run<MMDriverTest2>(argc, argv);
+}
+                            
+    

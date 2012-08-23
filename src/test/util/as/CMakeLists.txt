@@ -1,2 +1,2 @@
-add_executable(test_as as.cpp)
-add_test(test_as ${goby_BIN_DIR}/test_as)
+add_executable(goby_test_as as.cpp)
+add_test(goby_test_as ${goby_BIN_DIR}/goby_test_as)

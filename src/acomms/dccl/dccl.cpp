@@ -358,10 +358,9 @@ unsigned goby::acomms::DCCLCodec::size(const google::protobuf::Message& msg)
     
     unsigned body_size_bits;
     codec->base_size(&body_size_bits, msg, MessageHandler::BODY);
-    
+
     const unsigned head_size_bytes = ceil_bits2bytes(head_size_bits);
     const unsigned body_size_bytes = ceil_bits2bytes(body_size_bits);
-
     return head_size_bytes + body_size_bytes;
 }
 

@@ -22,6 +22,9 @@
 
 #include "dccl_field_codec_arithmetic.h"
 
+using goby::glog;
+using namespace goby::common::logger;
+
 std::map<std::string, goby::acomms::Model> goby::acomms::ModelManager::arithmetic_models_;
 const goby::acomms::Model::symbol_type goby::acomms::Model::OUT_OF_RANGE_SYMBOL;
 const goby::acomms::Model::symbol_type goby::acomms::Model::EOF_SYMBOL;
@@ -29,6 +32,7 @@ const goby::acomms::Model::symbol_type goby::acomms::Model::MIN_SYMBOL;
 const int goby::acomms::Model::CODE_VALUE_BITS;
 const int goby::acomms::Model::FREQUENCY_BITS;
 const goby::acomms::Model::freq_type goby::acomms::Model::MAX_FREQUENCY;
+std::map<std::string, std::map<std::string, goby::acomms::Bitset> > goby::acomms::Model::last_bits_map;
 
 goby::acomms::Model::symbol_type goby::acomms::Model::value_to_symbol(value_type value) const
 {
@@ -59,13 +63,17 @@ goby::acomms::Model::value_type goby::acomms::Model::symbol_to_value(symbol_type
 }
               
 
-std::pair<goby::acomms::Model::freq_type, goby::acomms::Model::freq_type> goby::acomms::Model::symbol_to_cumulative_freq(symbol_type symbol) const
+std::pair<goby::acomms::Model::freq_type, goby::acomms::Model::freq_type> goby::acomms::Model::symbol_to_cumulative_freq(symbol_type symbol, ModelState state) const
 {
+    const boost::bimap<symbol_type, freq_type>& c_freqs = (state == ENCODER) ?
+        encoder_cumulative_freqs_ :
+        decoder_cumulative_freqs_;
+
     boost::bimap<symbol_type, freq_type>::left_map::const_iterator c_freq_it =
-        cumulative_freqs_.left.find(symbol);
+        c_freqs.left.find(symbol);
     std::pair<freq_type, freq_type> c_freq_range;
     c_freq_range.second = c_freq_it->second;
-    if(c_freq_it == cumulative_freqs_.left.begin())
+    if(c_freq_it == c_freqs.left.begin())
     {
         c_freq_range.first  = 0;
     }
@@ -78,8 +86,13 @@ std::pair<goby::acomms::Model::freq_type, goby::acomms::Model::freq_type> goby::
                           
 }
 
-std::pair<goby::acomms::Model::symbol_type, goby::acomms::Model::symbol_type> goby::acomms::Model::cumulative_freq_to_symbol(std::pair<freq_type, freq_type> c_freq_pair) const
+std::pair<goby::acomms::Model::symbol_type, goby::acomms::Model::symbol_type> goby::acomms::Model::cumulative_freq_to_symbol(std::pair<freq_type, freq_type> c_freq_pair,  ModelState state) const
 {
+
+    const boost::bimap<symbol_type, freq_type>& c_freqs = (state == ENCODER) ?
+        encoder_cumulative_freqs_ :
+        decoder_cumulative_freqs_;
+    
     std::pair<symbol_type, symbol_type> symbol_pair;
     
     // find the symbol for which the cumulative frequency is greater than
@@ -89,12 +102,12 @@ std::pair<goby::acomms::Model::symbol_type, goby::acomms::Model::symbol_type> go
     // symbol: 2   freq: 10   c_freq: 35 [25 ... 35)
     // searching for c_freq of 30 should return symbol 2     
     // searching for c_freq of 10 should return symbol 1
-    symbol_pair.first = cumulative_freqs_.right.upper_bound(c_freq_pair.first)->second;
+    symbol_pair.first = c_freqs.right.upper_bound(c_freq_pair.first)->second;
     
     
-    if(symbol_pair.first == cumulative_freqs_.left.rbegin()->first)
+    if(symbol_pair.first == c_freqs.left.rbegin()->first)
         symbol_pair.second = symbol_pair.first; // last symbol can't be ambiguous on the low end
-    else if(cumulative_freqs_.left.find(symbol_pair.first)->second > c_freq_pair.second)
+    else if(c_freqs.left.find(symbol_pair.first)->second > c_freq_pair.second)
         symbol_pair.second = symbol_pair.first; // unambiguously this symbol
     else
         symbol_pair.second = symbol_pair.first + 1;
@@ -102,4 +115,51 @@ std::pair<goby::acomms::Model::symbol_type, goby::acomms::Model::symbol_type> go
 
     
     return symbol_pair;
+}
+
+
+void goby::acomms::Model::update_model(symbol_type symbol, ModelState state)
+{
+    if(!user_model_.is_adaptive())
+        return;
+
+    boost::bimap<symbol_type, freq_type>& c_freqs = (state == ENCODER) ?
+        encoder_cumulative_freqs_ :
+        decoder_cumulative_freqs_;
+
+    if(glog.is(DEBUG3))
+    {
+        glog << "Model was: " << std::endl;
+        for(symbol_type i = MIN_SYMBOL, n = max_symbol(); i <= n; ++i)
+        {
+            boost::bimap<symbol_type, freq_type>::left_iterator it =
+                c_freqs.left.find(i);
+            if(it != c_freqs.left.end())
+                glog << "Symbol: " << it->first << ", c_freq: " << it->second << std::endl;
+        }
+    }
+    
+                
+    for(symbol_type i = max_symbol(), n = symbol; i >= n; --i)
+    {
+        boost::bimap<symbol_type, freq_type>::left_iterator it =
+            c_freqs.left.find(i);
+        if(it != c_freqs.left.end())
+            c_freqs.left.replace_data(it, it->second + 1);
+    }
+
+    if(glog.is(DEBUG3))
+    {
+        glog << "Model is now: " << std::endl;
+        for(symbol_type i = MIN_SYMBOL, n = max_symbol(); i <= n; ++i)
+        {
+            boost::bimap<symbol_type, freq_type>::left_iterator it =
+                c_freqs.left.find(i);
+            if(it != c_freqs.left.end())
+                glog << "Symbol: " << it->first << ", c_freq: " << it->second << std::endl;
+        }
+    }
+    
+    glog.is(DEBUG3) && glog << "total freq: " << total_freq(state) << std::endl;
+                
 }

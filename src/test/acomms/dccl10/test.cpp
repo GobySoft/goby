@@ -36,11 +36,16 @@
 using goby::acomms::operator<<;
 
 void run_test(goby::acomms::protobuf::ArithmeticModel& model,
-              const google::protobuf::Message& msg_in)
+              const google::protobuf::Message& msg_in,
+              bool set_model = true)
 {
     goby::acomms::DCCLCodec* codec = goby::acomms::DCCLCodec::get();
 
-    goby::acomms::ModelManager::set_model("model", model);
+    if(set_model)
+    {
+        model.set_name("model");
+        goby::acomms::ModelManager::set_model(model);
+    }
     
     codec->info(msg_in.GetDescriptor(), &std::cout);
 
@@ -228,6 +233,38 @@ int main(int argc, char* argv[])
         
         run_test(model, msg_in);
     }
+
+    // test case from Practical Implementations of Arithmetic Coding by Paul G. Howard and Je rey Scott Vitter
+    {        
+        goby::acomms::protobuf::ArithmeticModel model;
+        
+        model.set_eof_frequency(1);
+
+        model.add_value_bound(0);
+        model.add_frequency(1); 
+    
+        model.add_value_bound(1);
+        model.add_frequency(1); 
+    
+        model.add_value_bound(2);
+
+        model.set_out_of_range_frequency(1);
+    
+        ArithmeticDouble3TestMsg msg_in;
+
+        msg_in.add_value(0); 
+        msg_in.add_value(0); 
+        msg_in.add_value(0);
+        msg_in.add_value(1); 
+        
+        model.set_is_adaptive(true);
+        run_test(model, msg_in);
+        run_test(model, msg_in, false);
+        run_test(model, msg_in, false);
+        run_test(model, msg_in, false);
+
+    }
+
     
     // test case from Arithmetic Coding revealed: A guided tour from theory to praxis Sable Technical Report No. 2007-5 Eric Bodden
 
@@ -271,7 +308,7 @@ int main(int argc, char* argv[])
     // randomly generate a model and a message
     // loop over all message lengths from 0 to 100
     srand ( time(NULL) );
-    for(int i = 0; i <= ArithmeticDouble2TestMsg::descriptor()->FindFieldByName("value")->options().GetExtension(goby::field).dccl().max_repeat(); ++i)
+    for(unsigned i = 0; i <= ArithmeticDouble2TestMsg::descriptor()->FindFieldByName("value")->options().GetExtension(goby::field).dccl().max_repeat(); ++i)
     {
         goby::acomms::protobuf::ArithmeticModel model;
         
@@ -310,7 +347,7 @@ int main(int argc, char* argv[])
 
         ArithmeticDouble2TestMsg msg_in;
 
-        for(int j = 0; j < i; ++j)
+        for(unsigned j = 0; j < i; ++j)
             msg_in.add_value(model.value_bound(rand() % symbols));
 
         

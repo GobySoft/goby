@@ -56,43 +56,62 @@ namespace goby
             
             static const freq_type MAX_FREQUENCY = (1 << FREQUENCY_BITS) - 1;
 
+            
+            // maps message name -> map of field name -> last size (bits)
+            static std::map<std::string, std::map<std::string, Bitset> > last_bits_map;
+
+            
           Model(const protobuf::ArithmeticModel& user)
               : user_model_(user)
             { }
+
+            enum ModelState
+            { ENCODER, DECODER };
             
             
             symbol_type value_to_symbol(value_type value) const;
             value_type symbol_to_value(symbol_type symbol) const;
             symbol_type total_symbols() // EOF and OUT_OF_RANGE plus all user defined
-            { return cumulative_freqs_.size();  }
+            { return encoder_cumulative_freqs_.size();  }
 
             const protobuf::ArithmeticModel& user_model() const 
             { return user_model_; }
             
+            symbol_type max_symbol() const { return user_model_.frequency_size() - 1; }
             
-            freq_type total_freq() const { return total_freq_; } 
-            void set_total_freq(freq_type total_freq) { total_freq_ = total_freq; } 
+            freq_type total_freq(ModelState state) const
+            {
+                
+                const boost::bimap<symbol_type, freq_type>& c_freqs = (state == ENCODER) ?
+                    encoder_cumulative_freqs_ :
+                    decoder_cumulative_freqs_;
+
+                return c_freqs.left.at(max_symbol());
+            }
+
+            void update_model(symbol_type symbol, ModelState state);
             
-            std::pair<freq_type, freq_type> symbol_to_cumulative_freq(symbol_type symbol) const;
-            std::pair<symbol_type, symbol_type> cumulative_freq_to_symbol(std::pair<freq_type, freq_type> c_freq_pair) const;
+            
+            std::pair<freq_type, freq_type> symbol_to_cumulative_freq(symbol_type symbol, ModelState state) const;
+            std::pair<symbol_type, symbol_type> cumulative_freq_to_symbol(std::pair<freq_type, freq_type> c_freq_pair,  ModelState state) const;
 
             friend class ModelManager;
           private:
             protobuf::ArithmeticModel user_model_;
-            boost::bimap<symbol_type, freq_type> cumulative_freqs_;
-            freq_type total_freq_;
+            boost::bimap<symbol_type, freq_type> encoder_cumulative_freqs_;
+            boost::bimap<symbol_type, freq_type> decoder_cumulative_freqs_;
         };
 
         class ModelManager
         {
           public:
-            static void set_model(const std::string& name, const protobuf::ArithmeticModel& model)
+            static void set_model(const protobuf::ArithmeticModel& model)
             {
                 Model new_model(model);
                 create_and_validate_model(&new_model);
-                if(arithmetic_models_.count(name))
-                    arithmetic_models_.erase(name);
-                arithmetic_models_.insert(std::make_pair(name, new_model));
+                if(arithmetic_models_.count(model.name()))
+                    arithmetic_models_.erase(model.name());
+                arithmetic_models_.insert(std::make_pair(model.name(), new_model));
             }
 
             static void create_and_validate_model(Model* model)
@@ -122,13 +141,14 @@ namespace goby
                                             "All frequencies must be nonzero."));
                     }                      
                     cumulative_freq += freq;
-                    model->cumulative_freqs_.left.insert(std::make_pair(symbol, cumulative_freq));
-                      
+                    model->encoder_cumulative_freqs_.left.insert(std::make_pair(symbol, cumulative_freq));
+                    
                 }
-                  
-                  
-                model->set_total_freq(cumulative_freq);
-                if(model->total_freq() > Model::MAX_FREQUENCY)
+
+                // must have separate models for adaptive encoding.
+                model->decoder_cumulative_freqs_ = model->encoder_cumulative_freqs_;
+                
+                if(model->total_freq(Model::ENCODER) > Model::MAX_FREQUENCY)
                 {
                     throw(DCCLException("Invalid model: " +
                                         model->user_model_.DebugString() +
@@ -157,9 +177,9 @@ namespace goby
             }
             
 
-            static const Model& find(const std::string& name)
+            static Model& find(const std::string& name)
             {
-                std::map<std::string, Model>::const_iterator it = arithmetic_models_.find(name);
+                std::map<std::string, Model>::iterator it = arithmetic_models_.find(name);
                 if(it == arithmetic_models_.end())
                     throw(DCCLException("Cannot find model called: " + name));
                 else
@@ -183,10 +203,16 @@ namespace goby
             
               Bitset encode_repeated(const std::vector<Model::value_type>& wire_value)
               {
+                  return encode_repeated(wire_value, true);
+              }
+              
+              Bitset encode_repeated(const std::vector<Model::value_type>& wire_value,
+                                     bool update_model)
+              {
                   using goby::glog;
                   using namespace goby::common::logger;
                   
-                  const Model& model = current_model();
+                  Model& model = current_model();
 
                   uint64 low = 0; // lowest code value (0.0 in decimal version)
                   uint64 high = TOP_VALUE; // highest code value (1.0 in decimal version)
@@ -226,11 +252,11 @@ namespace goby
                               glog << warn << "(DCCLArithmeticFieldCodec) end of file, but no frequency given; filling with most probable symbol" << std::endl;
                           symbol = *std::max_element(model.user_model().frequency().begin(), model.user_model().frequency().end());
                       }
-                      
+
                       
                       glog.is(DEBUG3) &&
                           glog << "(DCCLArithmeticFieldCodec) symbol is : " << symbol << std::endl;
-                      
+
                       glog.is(DEBUG3) &&
                           glog << "(DCCLArithmeticFieldCodec) current interval: [" << (double)low / TOP_VALUE  << ","
                                << (double)high / TOP_VALUE << ")" << std::endl;
@@ -239,14 +265,14 @@ namespace goby
                       uint64 range = (high-low)+1;
                       
                       std::pair<Model::freq_type, Model::freq_type> c_freq_range =
-                          model.symbol_to_cumulative_freq(symbol);
+                          model.symbol_to_cumulative_freq(symbol, Model::ENCODER);
 
                       glog.is(DEBUG3) &&
                           glog << "(DCCLArithmeticFieldCodec) input symbol (" << symbol
                                << ") cumulative freq: ["<< c_freq_range.first << "," << c_freq_range.second << ")" << std::endl;
                       
-                      high = low + (range*c_freq_range.second)/model.total_freq()-1;
-                      low += (range*c_freq_range.first)/model.total_freq();
+                      high = low + (range*c_freq_range.second)/model.total_freq(Model::ENCODER)-1;
+                      low += (range*c_freq_range.first)/model.total_freq(Model::ENCODER);
                       
                       glog.is(DEBUG3) &&
                           glog << "(DCCLArithmeticFieldCodec) input symbol (" << symbol << ") interval: ["
@@ -263,6 +289,9 @@ namespace goby
                       glog.is(DEBUG3) && glog << "(DCCLArithmeticFieldCodec) low:  " << Bitset(Model::CODE_VALUE_BITS, low).to_string() << std::endl;
                       glog.is(DEBUG3) && glog << "(DCCLArithmeticFieldCodec) high: " << Bitset(Model::CODE_VALUE_BITS, high).to_string() << std::endl;
 
+                      if(update_model)
+                          model.update_model(symbol, Model::ENCODER);
+                      
                       for(;;)
                       {
                           if(high<HALF)
@@ -329,7 +358,13 @@ namespace goby
                       bit_plus_follow(&bits, &bits_to_follow, (low < FIRST_QTR) ? 0 : 1);
                   }
                   
- 
+                  if(DCCLFieldCodecBase::dccl_field_options().arithmetic().debug_assert())
+                  {
+                      // bit of a hack so I can get at the exact bit field sizes
+                      Model::last_bits_map[DCCLFieldCodecBase::this_descriptor()->full_name()][DCCLFieldCodecBase::this_field()->name()] = bits;
+                  }
+
+                  
                   return bits;
               }
 
@@ -355,7 +390,7 @@ namespace goby
                   
                   std::vector<Model::value_type> values;
 
-                  const Model& model = current_model();
+                  Model& model = current_model();
                   
                   uint64 value = 0;
                   uint64 low = 0;
@@ -379,24 +414,28 @@ namespace goby
                   {
                       uint64 range = (high-low)+1;
 
-                      Model::symbol_type symbol = bits_to_symbol(bits, value, bit_stream_offset, low, range);                      
-                       
+                      Model::symbol_type symbol = bits_to_symbol(bits, value, bit_stream_offset, low, range);
+                      
                       glog.is(DEBUG3) && glog << "(DCCLArithmeticFieldCodec) symbol is: " << symbol << std::endl;
+                      
+                      
+                      std::pair<Model::freq_type, Model::freq_type> c_freq_range =
+                          model.symbol_to_cumulative_freq(symbol, Model::DECODER);
+
+                      glog.is(DEBUG3) && glog << "(DCCLArithmeticFieldCodec) input symbol (" << symbol << ") cumulative freq: ["<< c_freq_range.first << "," << c_freq_range.second << ")" << std::endl;
+                      
+                      high = low + (range*c_freq_range.second)/model.total_freq(Model::DECODER)-1;
+                      low += (range*c_freq_range.first)/model.total_freq(Model::DECODER);
+
+                      model.update_model(symbol, Model::DECODER);
+                      
                       if(symbol == Model::EOF_SYMBOL)
                           break;
 
                       values.push_back(model.symbol_to_value(symbol));
+
                       glog.is(DEBUG3) && glog << "(DCCLArithmeticFieldCodec) value is: " << values.back() << std::endl;
 
-                      
-                      std::pair<Model::freq_type, Model::freq_type> c_freq_range =
-                          model.symbol_to_cumulative_freq(symbol);
-
-                      glog.is(DEBUG3) && glog << "(DCCLArithmeticFieldCodec) input symbol (" << symbol << ") cumulative freq: ["<< c_freq_range.first << "," << c_freq_range.second << ")" << std::endl;
-                      
-                      high = low + (range*c_freq_range.second)/model.total_freq()-1;
-                      low += (range*c_freq_range.first)/model.total_freq();
-                      
                       
                       for(;;)
                       {
@@ -432,10 +471,11 @@ namespace goby
                   if(DCCLFieldCodecBase::dccl_field_options().arithmetic().debug_assert())
                   {
                       // must consume same bits as encoded makes
-                      Bitset in = encode_repeated(values);
+                      Bitset in = Model::last_bits_map[DCCLFieldCodecBase::this_descriptor()->full_name()][DCCLFieldCodecBase::this_field()->name()];
+                      
                       glog.is(DEBUG3) && glog << "(DCCLArithmeticFieldCodec) bits used is (" << bits->size() << "):     " << *bits << std::endl;
                       glog.is(DEBUG3) && glog << "(DCCLArithmeticFieldCodec) bits original is (" << in.size() << "): " << in << std::endl;
-                      
+
                       assert(in == *bits);
                   }
                   
@@ -447,7 +487,7 @@ namespace goby
               unsigned size_repeated(const std::vector<Model::value_type>& wire_values)
               {
                   // we should really cache this for efficiency
-                  return encode_repeated(wire_values).size();
+                  return encode_repeated(wire_values, false).size();
               }
             
 
@@ -457,7 +497,7 @@ namespace goby
               {
                   using goby::util::log2;
                   
-                  const Model& model = current_model();
+                  Model& model = current_model();
                   
                   // if user doesn't provide out_of_range frequency, set it to max to force this
                   // calculation to return the lowest probability symbol in use
@@ -469,14 +509,14 @@ namespace goby
                                                                 *std::min_element(model.user_model().frequency().begin(), model.user_model().frequency().end()));
                   
                   // full of least probable symbols
-                  unsigned size_least_probable = std::ceil(max_repeat()*(log2(model.total_freq())-log2(lowest_frequency)));
+                  unsigned size_least_probable = std::ceil(max_repeat()*(log2(model.total_freq(Model::ENCODER))-log2(lowest_frequency)));
                   
                   goby::glog.is(common::logger::DEBUG3) && goby::glog << "(DCCLArithmeticFieldCodec) size_least_probable: " << size_least_probable << std::endl;
 
                   
                   Model::freq_type eof_freq = model.user_model().eof_frequency();                  
                   // almost full of least probable symbols plus EOF
-                  unsigned size_least_probable_plus_eof = (eof_freq != 0 ) ? std::ceil(max_repeat()*log2(model.total_freq())-(max_repeat()-1)*log2(lowest_frequency)-log2(eof_freq)) : 0;
+                  unsigned size_least_probable_plus_eof = (eof_freq != 0 ) ? std::ceil(max_repeat()*log2(model.total_freq(Model::ENCODER))-(max_repeat()-1)*log2(lowest_frequency)-log2(eof_freq)) : 0;
 
                   goby::glog.is(common::logger::DEBUG3) && goby::glog << "(DCCLArithmeticFieldCodec) size_least_probable_plus_eof: " << size_least_probable_plus_eof << std::endl;
 
@@ -490,6 +530,9 @@ namespace goby
                   using goby::util::log2;
                   const Model& model = current_model();
 
+                  if(model.user_model().is_adaptive())
+                      return 0; // force examining bits from the beginning on decode
+                  
                   // if user doesn't provide out_of_range frequency, set it to 1 (minimum) to force this
                   // calculation to return the highest probability symbol in use
                   Model::freq_type out_of_range_freq = model.user_model().out_of_range_frequency();
@@ -498,7 +541,7 @@ namespace goby
 
                   Model::freq_type eof_freq = model.user_model().eof_frequency();                  
                   // just EOF
-                  unsigned size_empty = (eof_freq != 0) ? std::ceil(log2(model.total_freq())-log2(eof_freq)) : std::numeric_limits<unsigned>::max();
+                  unsigned size_empty = (eof_freq != 0) ? std::ceil(log2(model.total_freq(Model::ENCODER))-log2(eof_freq)) : std::numeric_limits<unsigned>::max();
                   
                   goby::glog.is(common::logger::DEBUG3) && goby::glog << "(DCCLArithmeticFieldCodec) size_empty: " << size_empty << std::endl;
                   
@@ -506,7 +549,7 @@ namespace goby
                   Model::value_type highest_frequency = std::max(out_of_range_freq,
                                                                  *std::max_element(model.user_model().frequency().begin(), model.user_model().frequency().end()));
                   
-                  unsigned size_most_probable = std::ceil(max_repeat()*(log2(model.total_freq())-log2(highest_frequency)));
+                  unsigned size_most_probable = std::ceil(max_repeat()*(log2(model.total_freq(Model::ENCODER))-log2(highest_frequency)));
 
                   goby::glog.is(common::logger::DEBUG3) && goby::glog << "(DCCLArithmeticFieldCodec) size_most_probable: " << size_most_probable << std::endl;
                   
@@ -538,7 +581,7 @@ namespace goby
                                          uint64 low,
                                          uint64 range)
               {
-                  const Model& model = current_model();
+                  Model& model = current_model();
                   
                   for(;;)
                   {
@@ -550,13 +593,13 @@ namespace goby
                       goby::glog.is(common::logger::DEBUG3) && goby::glog << "(DCCLArithmeticFieldCodec): value range: [" << Bitset(Model::CODE_VALUE_BITS, value) << "," << Bitset(Model::CODE_VALUE_BITS, value_high) << ")" << std::endl;
                       
                       
-                      Model::freq_type cumulative_freq = ((value-low+1)*model.total_freq()-1)/range;
-                      Model::freq_type cumulative_freq_high = ((value_high-low+1)*model.total_freq()-1)/range;
+                      Model::freq_type cumulative_freq = ((value-low+1)*model.total_freq(Model::DECODER)-1)/range;
+                      Model::freq_type cumulative_freq_high = ((value_high-low+1)*model.total_freq(Model::DECODER)-1)/range;
                       
                       goby::glog.is(common::logger::DEBUG3) && goby::glog << "(DCCLArithmeticFieldCodec): c_freq: " << cumulative_freq << ", c_freq_high: " << cumulative_freq_high << std::endl;
 
                       
-                      std::pair<Model::symbol_type, Model::symbol_type> symbol_pair = model.cumulative_freq_to_symbol(std::make_pair(cumulative_freq, cumulative_freq_high));
+                      std::pair<Model::symbol_type, Model::symbol_type> symbol_pair = model.cumulative_freq_to_symbol(std::make_pair(cumulative_freq, cumulative_freq_high), Model::DECODER);
 
                       goby::glog.is(common::logger::DEBUG3) && goby::glog << "(DCCLArithmeticFieldCodec): symbol: " << symbol_pair.first << ", " << symbol_pair.second << std::endl;
 
@@ -588,7 +631,7 @@ namespace goby
                   return DCCLFieldCodecBase::this_field()->is_repeated() ? DCCLFieldCodecBase::dccl_field_options().max_repeat() : 1;
               }
 
-              const Model& current_model() const
+              Model& current_model()
               {
                   std::string name = DCCLFieldCodecBase::dccl_field_options().arithmetic().model();
                   return ModelManager::find(name);

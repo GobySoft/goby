@@ -27,7 +27,6 @@
 #include <google/protobuf/text_format.h>
 
 #include "test_a.pb.h"
-#include "test_b.pb.h"
 
 using namespace goby::util;
 

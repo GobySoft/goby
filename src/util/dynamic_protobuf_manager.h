@@ -29,6 +29,7 @@
 #include <dlfcn.h>
 
 #include <set>
+#include <stdexcept>
 
 #include <google/protobuf/descriptor.h>
 #include <google/protobuf/descriptor.pb.h>

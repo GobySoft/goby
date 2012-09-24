@@ -143,7 +143,7 @@ void GobyMOOSApp::subscribe(const std::string& var,  InboxFunc handler, int blac
     try_subscribing();
 
     if(!mail_handlers_[var])
-        mail_handlers_[var].reset(new boost::signal<void (const CMOOSMsg& msg)>);
+        mail_handlers_[var].reset(new boost::signals2::signal<void (const CMOOSMsg& msg)>);
         
     if(handler)
         mail_handlers_[var]->connect(handler);

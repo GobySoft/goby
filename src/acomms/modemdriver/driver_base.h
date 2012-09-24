@@ -25,7 +25,7 @@
 #define DriverBase20091214H
 
 #include <boost/thread.hpp>
-#include <boost/signal.hpp>
+#include <boost/signals2.hpp>
 
 #include "goby/acomms/acomms_constants.h"
 #include "goby/acomms/protobuf/modem_message.pb.h"
@@ -77,39 +77,39 @@ namespace goby
             /// \brief Called when a binary data transmission is received from the modem
             ///
             /// You should connect one or more slots (a function or member function) to this signal to receive incoming messages. Use the goby::acomms::connect family of functions to do this. This signal will only be called during a call to poll. ModemDataTransmission is defined in acomms_modem_message.proto.
-            boost::signal<void (const protobuf::ModemTransmission& message)>
+            boost::signals2::signal<void (const protobuf::ModemTransmission& message)>
                 signal_receive;
 
 
             /// \brief Called when a transmission is completed.
             ///
             /// You should connect one or more slots (a function or member function) to this signal to receive incoming messages. Use the goby::acomms::connect family of functions to do this. This signal will only be called during a call to poll. ModemDataTransmission is defined in acomms_modem_message.proto.
-            boost::signal<void (const protobuf::ModemTransmission& message)>
+            boost::signals2::signal<void (const protobuf::ModemTransmission& message)>
                 signal_transmit_result;
 
              /// \brief Called when the modem or modem driver needs data to send. The returned data should be stored in ModemTransmission::frame
             ///
             /// You should connect one or more slots (a function or member function) to this signal to handle data requests. Use the goby::acomms::connect family of functions to do this. This signal will only be called during a call to poll. ModemTransmission is defined in acomms_modem_message.proto.
-            boost::signal<void (protobuf::ModemTransmission* msg)>
+            boost::signals2::signal<void (protobuf::ModemTransmission* msg)>
                 signal_data_request;
 
             /// \brief Called before the modem driver begins processing a transmission. This allows a third party to modify the parameters of the transmission (such as destination or rate) on the fly.
             ///
             /// You may connect one or more slots (a function or member function) to this signal to handle data requests. Use the goby::acomms::connect family of functions to do this. This signal will only be called during a call to poll. ModemTransmission is defined in acomms_modem_message.proto.
-            boost::signal<void (protobuf::ModemTransmission* msg_request)>
+            boost::signals2::signal<void (protobuf::ModemTransmission* msg_request)>
                 signal_modify_transmission;
             
 
             /// \brief Called after any message is received from the modem by the driver. Used by the MACManager for auto-discovery of vehicles. Also useful for higher level analysis and debugging of the transactions between the driver and the modem.
             ///
             /// If desired, you should connect one or more slots (a function or member function) to this signal to listen on incoming transactions. Use the goby::acomms::connect family of functions to do this. This signal will only be called during a call to poll. ModemRaw is defined in acomms_modem_message.proto.
-            boost::signal<void (const protobuf::ModemRaw& msg)>
+            boost::signals2::signal<void (const protobuf::ModemRaw& msg)>
                 signal_raw_incoming;
             
             /// \brief Called after any message is sent from the driver to the modem. Useful for higher level analysis and debugging of the transactions between the driver and the modem.
             ///
             /// If desired, you should connect one or more slots (a function or member function) to this signal to listen on outgoing transactions. Use the goby::acomms::connect family of functions to do this. This signal will only be called during a call to poll. ModemRaw is defined in acomms_modem_message.proto.
-            boost::signal<void (const protobuf::ModemRaw& msg)>
+            boost::signals2::signal<void (const protobuf::ModemRaw& msg)>
                 signal_raw_outgoing;
             //@}
 

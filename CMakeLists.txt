@@ -81,6 +81,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${goby_LIB_DIR} CACHE PATH
   "Output directory for the static libraries (archives)" )
 
 ## set instructions for `make install`
+file(MAKE_DIRECTORY ${goby_BIN_DIR})
 install(DIRECTORY ${goby_BIN_DIR}/ DESTINATION ${CMAKE_INSTALL_PREFIX}/bin 
   FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
 

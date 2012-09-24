@@ -15,7 +15,7 @@ endmacro()
 ## find external packages, libraries, and headers for the entire goby project
 # mandatory
 ## boost
-goby_find_required_package(Boost 1.40.0 COMPONENTS system date_time thread program_options filesystem signals regex)
+goby_find_required_package(Boost 1.40.0 COMPONENTS system date_time thread program_options filesystem regex)
 include_directories(${Boost_INCLUDE_DIRS})
 
 goby_find_required_package(ProtobufGoby)
@@ -217,7 +217,7 @@ if(build_dccllite)
     ${PROTO_SRCS} ${PROTO_HDRS}
   )
 
-  target_link_libraries(goby_dccllite ${Cryptopp_LIBRARIES})
+  target_link_libraries(goby_dccllite ${Cryptopp_LIBRARIES} ${PROTOBUF_LIBRARIES} ${CMAKE_DL_LIBS})
   set_target_properties(goby_dccllite PROPERTIES VERSION "${GOBY_VERSION}" SOVERSION "${GOBY_SOVERSION}")
 endif(build_dccllite)
 

@@ -38,7 +38,7 @@
 #include <google/protobuf/compiler/importer.h>
 
 
-#include <boost/signals.hpp>
+#include <boost/signals2.hpp>
 #include <boost/shared_ptr.hpp>
 
 namespace goby
@@ -127,7 +127,7 @@ namespace goby
             static const google::protobuf::FileDescriptor* add_protobuf_file(
                 const google::protobuf::FileDescriptorProto& proto);
             
-            static boost::signal<void (const google::protobuf::FileDescriptor*) > new_descriptor_hooks;
+            static boost::signals2::signal<void (const google::protobuf::FileDescriptor*) > new_descriptor_hooks;
 
             static google::protobuf::DynamicMessageFactory& msg_factory()
             { return *get_instance()->msg_factory_; }

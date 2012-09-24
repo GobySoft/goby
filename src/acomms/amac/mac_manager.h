@@ -93,7 +93,7 @@ namespace goby
             /// \brief Signals when it is time for this platform to begin transmission of an acoustic message at the start of its TDMA slot. Typically connected to ModemDriverBase::handle_initiate_transmission() using bind().
             ///
             /// \param m a message containing details of the transmission to be initated.  (protobuf::ModemMsgBase defined in acomms_modem_message.proto)
-            boost::signals::signal<void (const protobuf::ModemTransmission& m)> signal_initiate_transmission;
+            boost::signals2::signal<void (const protobuf::ModemTransmission& m)> signal_initiate_transmission;
             /// \example acomms/amac/amac_simple/amac_simple.cpp        
             /// \example acomms/chat/chat.cpp
 

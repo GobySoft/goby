@@ -29,7 +29,7 @@
 #include <boost/bind.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/function.hpp>
-#include <boost/signals.hpp>
+#include <boost/signals2.hpp>
 
 #include "goby/common/protobuf/zero_mq_node_config.pb.h"
 
@@ -202,19 +202,19 @@ namespace goby
             boost::shared_ptr<zmq::context_t> zmq_context() { return context_; }
 
 
-            boost::signal<void (MarshallingScheme marshalling_scheme,
+            boost::signals2::signal<void (MarshallingScheme marshalling_scheme,
                                 const std::string& identifier,
                                 int socket_id)> pre_send_hooks;
 
-            boost::signal<void (MarshallingScheme marshalling_scheme,
+            boost::signals2::signal<void (MarshallingScheme marshalling_scheme,
                                 const std::string& identifier,
                                 int socket_id)> pre_subscribe_hooks;
 
-            boost::signal<void (MarshallingScheme marshalling_scheme,
+            boost::signals2::signal<void (MarshallingScheme marshalling_scheme,
                                 const std::string& identifier,
                                 int socket_id)> post_send_hooks;
 
-            boost::signal<void (MarshallingScheme marshalling_scheme,
+            boost::signals2::signal<void (MarshallingScheme marshalling_scheme,
                                 const std::string& identifier,
                                 int socket_id)> post_subscribe_hooks;
 
@@ -247,7 +247,7 @@ namespace goby
             // maps poll_items_ index to a callback function
             std::map<size_t, boost::function<void (const void* data, int size, int message_part)> > poll_callbacks_;
             
-            boost::signal<void (MarshallingScheme marshalling_scheme,
+            boost::signals2::signal<void (MarshallingScheme marshalling_scheme,
                                 const std::string& identifier,
                                 const void* data,
                                 int size,

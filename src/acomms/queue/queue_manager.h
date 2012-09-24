@@ -28,7 +28,7 @@
 #include <limits>
 #include <set>
 #include <boost/bind.hpp>
-#include <boost/signal.hpp>
+#include <boost/signals2.hpp>
 
 #include "goby/acomms/dccl.h"
 #include "goby/acomms/protobuf/queue.pb.h"
@@ -181,39 +181,39 @@ namespace goby
             /// \brief Signals when acknowledgment of proper message receipt has been received. This is only sent for queues with queue.ack == true with an explicit destination (ModemMessageBase::dest() != 0)
             ///
             /// \param ack_msg a message containing details of the acknowledgment and the acknowledged transmission. (protobuf::ModemMsgAck is defined in acomms_modem_message.proto)        
-            boost::signal<void (const protobuf::ModemTransmission& ack_msg,
+            boost::signals2::signal<void (const protobuf::ModemTransmission& ack_msg,
                                 const google::protobuf::Message& orig_msg)> signal_ack;
 
             /// \brief Signals when a DCCL message is received.
             ///
             /// \param msg the received transmission.
-            boost::signal<void (const google::protobuf::Message& msg) > signal_receive;
+            boost::signals2::signal<void (const google::protobuf::Message& msg) > signal_receive;
             
             /// \brief Signals when a message is expires (exceeds its time-to-live or ttl) before being sent (if queue.ack == false) or before being acknowledged (if queue.ack == true).
             ///
             /// \param expire_msg the expired transmission. (protobuf::ModemDataExpire is defined in acomms_modem_message.proto)
-            boost::signal<void (const google::protobuf::Message& orig_msg)> signal_expire;
+            boost::signals2::signal<void (const google::protobuf::Message& orig_msg)> signal_expire;
             
             /// \brief Forwards the data request to the application layer. This advanced feature is used when queue.encode_on_demand == true and allows for the application to provide data immediately before it is actually sent (for highly time sensitive data)
             ///
             /// \param request_msg the details of the requested data. (protobuf::ModemDataRequest is defined in acomms_modem_message.proto)
             /// \param data_msg pointer to store the supplied data. The message is of the type for this queue.
-            boost::signal<void (const protobuf::ModemTransmission& request_msg,
+            boost::signals2::signal<void (const protobuf::ModemTransmission& request_msg,
                                 google::protobuf::Message* data_msg)> signal_data_on_demand;
 
             /// \brief Signals when any queue changes size (message is popped or pushed)
             ///
             /// \param size message containing the queue that changed size and its new size (protobuf::QueueSize is defined in acomms_queue.proto).
-            boost::signal<void (protobuf::QueueSize size)> signal_queue_size_change;
+            boost::signals2::signal<void (protobuf::QueueSize size)> signal_queue_size_change;
             //@}
 
             /// \brief Used by a router to change next-hop destination (in meta)
-            boost::signal<void (protobuf::QueuedMessageMeta* meta,
+            boost::signals2::signal<void (protobuf::QueuedMessageMeta* meta,
                                 const google::protobuf::Message& data_msg,
                                 int modem_id)> signal_out_route;
 
             /// \brief Used by a router to intercept messages and requeue them if desired
-            boost::signal<void (const protobuf::QueuedMessageMeta& meta,
+            boost::signals2::signal<void (const protobuf::QueuedMessageMeta& meta,
                                 const google::protobuf::Message& data_msg,
                                 int modem_id)> signal_in_route;
 

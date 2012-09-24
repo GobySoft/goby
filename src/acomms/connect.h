@@ -27,7 +27,7 @@
 #define CONNECT20110121H
 
 #include <boost/bind.hpp>
-#include <boost/signal.hpp>
+#include <boost/signals2.hpp>
 
 namespace goby
 {

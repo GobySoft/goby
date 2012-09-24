@@ -31,7 +31,7 @@
 #include <boost/function.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/bind.hpp>
-#include <boost/signal.hpp>
+#include <boost/signals2.hpp>
 
 #include "dynamic_moos_vars.h"
 #include "goby/common/logger.h"
@@ -135,7 +135,7 @@ class GobyMOOSApp : public CMOOSApp
     // allows direct reading of newest publish to a given MOOS variable
     tes::DynamicMOOSVars dynamic_vars_;
 
-    std::map<std::string, boost::shared_ptr<boost::signal<void (const CMOOSMsg& msg)> > > mail_handlers_;
+    std::map<std::string, boost::shared_ptr<boost::signals2::signal<void (const CMOOSMsg& msg)> > > mail_handlers_;
 
     // CMOOSApp::OnConnectToServer()
     bool connected_;

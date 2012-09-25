@@ -3,12 +3,12 @@
  
  \image html gobysoft_logo_image_only_medium.png
 
- The Goby Underwater Autonomy Project aims to create a unified framework for multiple scientific autonomous marine vehicle collaboration, seamlessly incorporating acoustic, ethernet, wifi, and serial communications. Presently the main thrust of the project is developing a set of robust acoustic networking libraries. Goby is licensed under the GNU General Public License v3 <http://www.gnu.org/licenses/gpl.html>.
+ The Goby Underwater Autonomy Project aims to create a unified framework for multiple scientific autonomous marine vehicle collaboration, seamlessly incorporating acoustic, ethernet, wifi, and serial communications. Presently the main thrust of the project is developing a set of robust acoustic networking libraries. The Goby libraries are licensed under the GNU Lesser General Public License v3 <http://www.gnu.org/licenses/lgpl.html> and the applications are licensed under the GNU General Public License v3 <http://www.gnu.org/licenses/gpl.html>.
 
   \section main_resources Resources
   <ul>
   <li> Home page, code, bug tracking, and answers: <https://launchpad.net/goby>.</li>
-  <li> User Manual: <a href=http://gobysoft.com/dl/goby1-user-manual.pdf>(pdf)</a>.</li>
+  <li> User Manual: <a href=http://gobysoft.com/dl/goby2-user-manual.pdf>(pdf)</a>.</li>
   <li> Developers' Manual: <a href=http://gobysoft.com/doc/2.0>(html)</a> <a href=http://gobysoft.com/dl/goby2-dev.pdf>(pdf)</a>.</li>
   <li> Wiki: <http://gobysoft.com/wiki>.</li>
   </ul>
@@ -22,6 +22,8 @@
   \section main_papers Publications
   <ul>
     <li> <a href=http://gobysoft.com/dl/dccl_oceans10.pdf>The Dynamic Compact Control Language: A Compact Marshalling Scheme for Acoustic Communications</a>. IEEE OCEANS'10 / Sydney.
+    <li> <a href=http://gobysoft.com/dl/goby-acomms1.pdf>Goby-Acomms: A modular acoustic networking framework for short-range marine vehicle communication</a>. Unpublished working paper.
+    <li> <a href=http://gobysoft.com/dl/mcmc2012_goby2.pdf>Goby-Acomms version 2: extensible marshalling, queuing, and link layer interfacing for acoustic telemetry</a>. 9th IFAC Conference on Manoeuvring and Control of Marine Craft '12 / Arenzano, Italy.
   </ul>
 
 \section install Download and Install Goby
@@ -30,7 +32,7 @@ Please visit <http://gobysoft.com/wiki/InstallingGoby> for help on obtaining and
 
 \section build_example Building Examples
 
-Please visit <http://gobysoft.com/wiki/Examples> for to learn about the available code examples for Goby.
+Please visit <http://gobysoft.com/wiki/Examples> to learn about the available code examples for Goby.
 
 \section authors Authors
 

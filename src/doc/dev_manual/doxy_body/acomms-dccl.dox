@@ -29,7 +29,7 @@ message Simple
 
 The "= 1" indicates that this is the first field on the wire in our DCCL message. All fields must have a unique index, but otherwise these index values are not particularly important. "required" means a valid "Simple" message always contains something for "telegram" (could be an empty string).
 
-To turn this Protobuf message into a DCCL message, we need to add a few options. All the options are defined in option_extensions.proto so we include that:
+To turn this Protobuf message into a DCCL message, we need to add a few options. All the options are defined in acomms_option_extensions.proto so we include that:
 
 \verbatim
 import "goby/common/protobuf/option_extensions.proto";
@@ -197,7 +197,7 @@ Besides validity checking, the most useful feature of <tt>analyze_dccl</tt> is t
 
 \section dccl_options DCCL Protobuf Options
 
-This section gives an overview of the DCCL message and field options available for use with DCCL and the default field codecs. The full list is available in acomms_option_extensions.proto (as messages DCCLFieldOptions and DCCLMessageOptions).
+This section gives an overview of the DCCL message and field options available for use with DCCL and the default field codecs. The full list is available in option_extensions.proto (as messages DCCLFieldOptions and DCCLMessageOptions).
 
 DCCL message options:
 
@@ -350,7 +350,7 @@ For line by line interaction with the goby::acomms::DCCLCodec and for advanced u
 
 \section dccl_encrypt Encryption
          
-Encryption of all messages can be enabled by providing a secret passphrase to the \link acomms_dccl.proto goby::acomms::protobuf::DCCLConfig \endlink object passed to goby::acomms::DCCLCodec::set_cfg(). All parties to the communication must have the same secret key. 
+Encryption of all messages can be enabled by providing a secret passphrase to the \link dccl.proto goby::acomms::protobuf::DCCLConfig \endlink object passed to goby::acomms::DCCLCodec::set_cfg(). All parties to the communication must have the same secret key. 
 
 DCCL provides AES (Rijndael) encryption for the body of the message. The header, which is sent in plain text, is hashed to form an initialization vector (IV), and the passphrase is hashed using SHA-256 to form the cipher key. You will want to make sure the header (designate fields for the header with <tt>(goby.field).dccl.in_head = true</tt>) is a nonce by including a constantly changing value such as time.
 

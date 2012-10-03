@@ -477,7 +477,10 @@ void GobyMOOSApp::process_configuration()
         if(!common_cfg_.log_path().empty())
         {
             using namespace boost::posix_time;
-            std::string file_name = application_name_ + "_" + common_cfg_.community() + "_" + to_iso_string(second_clock::universal_time()) + ".txt";
+            std::string file_name =
+                boost::replace_all_copy(application_name_, "/", "_") + "_" +
+                common_cfg_.community() + "_" +
+                to_iso_string(second_clock::universal_time()) + ".txt";
 
             glog.is(VERBOSE) &&
                 glog << "logging output to file: " << file_name << std::endl;

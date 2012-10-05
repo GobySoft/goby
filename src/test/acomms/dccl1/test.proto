@@ -42,7 +42,7 @@ message TestMsg
                                       (goby.field).dccl.max=3000];
   optional int64 int64_default_optional = 4 [(goby.field).dccl.min=-710,
                                       (goby.field).dccl.max=3000];
-  optional uint32 uint32_default_optional = 5 [(goby.field).dccl.min=-100,
+  optional uint32 uint32_default_optional = 5 [(goby.field).dccl.min=0,
                                       (goby.field).dccl.max=3000];
   optional uint64 uint64_default_optional = 6 [(goby.field).dccl.min=5,
                                       (goby.field).dccl.max=3000];
@@ -80,7 +80,7 @@ message TestMsg
                                       (goby.field).dccl.max=3000];
   required int64 int64_default_required = 24 [(goby.field).dccl.min=-710,
                                       (goby.field).dccl.max=3000];
-  required uint32 uint32_default_required = 25 [(goby.field).dccl.min=-100,
+  required uint32 uint32_default_required = 25 [(goby.field).dccl.min=0,
                                       (goby.field).dccl.max=3000];
   required uint64 uint64_default_required = 26 [(goby.field).dccl.min=5,
                                       (goby.field).dccl.max=3000];

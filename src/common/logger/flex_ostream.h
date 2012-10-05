@@ -235,7 +235,6 @@ inline std::ostream& unlock(std::ostream & os)
     goby::common::logger::mutex.unlock();    
     return os;
 }
-#endif
 
 class FlexOStreamErrorCollector : public google::protobuf::io::ErrorCollector
 {
@@ -249,22 +248,27 @@ class FlexOStreamErrorCollector : public google::protobuf::io::ErrorCollector
     void AddError(int line, int column, const std::string& message)
     {
         using goby::common::logger::WARN;
+        using namespace goby::common::logger_lock;
         
         print_original(line, column);
-        goby::glog.is(WARN) && goby::glog << "line: " << line << " col: " << column << " " << message << std::endl;
+        goby::glog.is(WARN, lock) && goby::glog << "line: " << line << " col: " << column << " " << message << std::endl << unlock;
         has_errors_ = true;
     }
     void AddWarning(int line, int column, const std::string& message)
     {
         using goby::common::logger::WARN;
+        using namespace goby::common::logger_lock;
 
         print_original(line, column);
-        goby::glog.is(WARN) && goby::glog << "line: " << line << " col: " << column << " " << message << std::endl;
+        goby::glog.is(WARN, lock) && goby::glog << "line: " << line << " col: " << column << " " << message << std::endl << unlock;
         has_warnings_ = true;
     }
     
     void print_original(int line, int column)
     {
+        using goby::common::logger::WARN;
+        using namespace goby::common::logger_lock;
+        
         std::stringstream ss(original_ + "\n");
         std::string line_str;
 
@@ -275,9 +279,9 @@ class FlexOStreamErrorCollector : public google::protobuf::io::ErrorCollector
         while(!getline(ss, line_str).eof())
         {
             if(i == line)
-                goby::glog << goby::common::tcolor::lt_red << "[line " << std::setw(3) << i++ << "]" << line_str << goby::common::tcolor::nocolor << std::endl;
+                goby::glog.is(WARN, lock) && goby::glog << goby::common::tcolor::lt_red << "[line " << std::setw(3) << i++ << "]" << line_str << goby::common::tcolor::nocolor << std::endl << unlock;
             else
-                goby::glog << "[line " << std::setw(3) << i++ << "]" << line_str << std::endl;       
+                goby::glog.is(WARN, lock) && goby::glog << "[line " << std::setw(3) << i++ << "]" << line_str << std::endl << unlock;       
         }
     }
 
@@ -291,6 +295,7 @@ class FlexOStreamErrorCollector : public google::protobuf::io::ErrorCollector
     bool has_warnings_;
     bool has_errors_;
 };
+#endif // THREAD_SAFE_LOGGER
 
 
 #endif

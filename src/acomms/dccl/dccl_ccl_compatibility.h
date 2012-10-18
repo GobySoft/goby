@@ -26,6 +26,7 @@
 #include "dccl_field_codec_default.h"
 #include "goby/acomms/acomms_constants.h"
 #include "goby/acomms/protobuf/ccl.pb.h"
+#include "goby/acomms/protobuf/ccl_extensions.pb.h"
 
 namespace goby
 {
@@ -186,12 +187,12 @@ namespace goby
             float decode(Bitset* bits);
             unsigned size()
             {
-                return DCCLFieldCodecBase::dccl_field_options().ccl().bit_size();
+                return DCCLFieldCodecBase::dccl_field_options().GetExtension(ccl).bit_size();
             }
             
             void validate()
             {
-                DCCLFieldCodecBase::require(DCCLFieldCodecBase::dccl_field_options().ccl().has_bit_size(), "missing (goby.field).dccl.ccl.bit_size");
+                DCCLFieldCodecBase::require(DCCLFieldCodecBase::dccl_field_options().GetExtension(ccl).has_bit_size(), "missing (goby.field).dccl.ccl.bit_size");
             }
             
         };
@@ -215,7 +216,7 @@ namespace goby
 
             void validate()
             {
-                DCCLFieldCodecBase::require(DCCLFieldCodecBase::dccl_field_options().ccl().has_thrust_mode_tag(), "missing (goby.field).dccl.ccl.thrust_mode_tag");
+                DCCLFieldCodecBase::require(DCCLFieldCodecBase::dccl_field_options().GetExtension(ccl).has_thrust_mode_tag(), "missing (goby.field).dccl.ccl.thrust_mode_tag");
             }
         };
 

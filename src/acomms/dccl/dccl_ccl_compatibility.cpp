@@ -132,7 +132,7 @@ goby::acomms::Bitset goby::acomms::LegacyCCLSpeedCodec::encode(const float& wire
     const google::protobuf::Message* root = DCCLFieldCodecBase::root_message();
     const google::protobuf::FieldDescriptor* thrust_mode_field_desc =
         root->GetDescriptor()->FindFieldByNumber(
-            DCCLFieldCodecBase::dccl_field_options().ccl().thrust_mode_tag());
+            DCCLFieldCodecBase::dccl_field_options().GetExtension(ccl).thrust_mode_tag());
 
     switch(root->GetReflection()->GetEnum(*root, thrust_mode_field_desc)->number())
     {
@@ -150,7 +150,7 @@ float goby::acomms::LegacyCCLSpeedCodec::decode(Bitset* bits)
     const google::protobuf::Message* root = DCCLFieldCodecBase::root_message();
     const google::protobuf::FieldDescriptor* thrust_mode_field_desc =
         root->GetDescriptor()->FindFieldByNumber(
-            DCCLFieldCodecBase::dccl_field_options().ccl().thrust_mode_tag());
+            DCCLFieldCodecBase::dccl_field_options().GetExtension(ccl).thrust_mode_tag());
 
     switch(root->GetReflection()->GetEnum(*root, thrust_mode_field_desc)->number())
     {

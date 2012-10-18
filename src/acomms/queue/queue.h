@@ -39,6 +39,7 @@
 #include "goby/common/time.h"
 #include "goby/util/as.h"
 
+
 #include "goby/acomms/protobuf/queue.pb.h"
 #include "goby/common/protobuf/acomms_option_extensions.pb.h"
 #include "goby/acomms/acomms_helpers.h"
@@ -63,7 +64,7 @@ namespace goby
         class Queue
         {
           public:
-            Queue(const google::protobuf::Descriptor* desc = 0, QueueManager* parent = 0);
+            Queue(const google::protobuf::Descriptor* desc = 0, QueueManager* parent = 0, const protobuf::QueuedMessageEntry& cfg = protobuf::QueuedMessageEntry());
 
             bool push_message(const protobuf::QueuedMessageMeta& encoded_msg,
                               boost::shared_ptr<google::protobuf::Message> dccl_msg);
@@ -105,12 +106,12 @@ namespace goby
             {
                 return desc_->full_name();
             }
+
+            void set_cfg(const protobuf::QueuedMessageEntry& cfg)
+            { cfg_ = cfg; }
             
-            
-            QueueMessageOptions queue_message_options()
-            {
-                return desc_->options().GetExtension(goby::msg).queue();
-            }
+            const protobuf::QueuedMessageEntry& queue_message_options()
+            { return cfg_; }
             
             const google::protobuf::Descriptor* descriptor() const {return desc_;}
 
@@ -123,6 +124,7 @@ namespace goby
           private:
             const google::protobuf::Descriptor* desc_;
             QueueManager* parent_;
+            protobuf::QueuedMessageEntry cfg_;
             
             boost::posix_time::ptime last_send_time_;
 

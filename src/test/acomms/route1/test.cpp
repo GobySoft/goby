@@ -78,6 +78,13 @@ int main(int argc, char* argv[])
     // set up queues
     goby::acomms::QueueManager q_manager1, q_manager2, q_manager3;
     goby::acomms::protobuf::QueueManagerConfig q_cfg1, q_cfg2, q_cfg3;
+    goby::acomms::protobuf::QueuedMessageEntry* q_entry = q_cfg1.add_message_entry();
+    q_entry->set_protobuf_name("GobyMessage");
+    q_entry->set_newest_first(true);
+
+    q_cfg2.add_message_entry()->CopyFrom(*q_entry);
+    q_cfg3.add_message_entry()->CopyFrom(*q_entry);
+    
     q_cfg1.set_modem_id(ID_1_1);
     q_manager1.set_cfg(q_cfg1);
 

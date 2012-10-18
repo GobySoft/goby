@@ -50,7 +50,9 @@ int main(int argc, char* argv[])
     
     goby::acomms::protobuf::QueueManagerConfig cfg;
     cfg.set_modem_id(MY_MODEM_ID);
-    cfg.add_manipulator_entry()->set_protobuf_name("GobyMessage");
+    goby::acomms::protobuf::QueuedMessageEntry* q_entry = cfg.add_message_entry();
+    q_entry->set_protobuf_name("GobyMessage");
+    q_entry->set_ack(false);
     q_manager.set_cfg(cfg);
 
     goby::glog << q_manager << std::endl;
@@ -77,8 +79,8 @@ int main(int argc, char* argv[])
 
     {
         receive_count = 0;
-        cfg.mutable_manipulator_entry(0)->clear_manipulator();
-        cfg.mutable_manipulator_entry(0)->add_manipulator(goby::acomms::protobuf::NO_DECODE);
+        cfg.mutable_message_entry(0)->clear_manipulator();
+        cfg.mutable_message_entry(0)->add_manipulator(goby::acomms::protobuf::NO_DECODE);
         q_manager.set_cfg(cfg);
     
         q_manager.push_message(test_msg1);
@@ -95,8 +97,8 @@ int main(int argc, char* argv[])
 
     {
         receive_count = 0;
-        cfg.mutable_manipulator_entry(0)->clear_manipulator();
-        cfg.mutable_manipulator_entry(0)->add_manipulator(goby::acomms::protobuf::NO_QUEUE);
+        cfg.mutable_message_entry(0)->clear_manipulator();
+        cfg.mutable_message_entry(0)->add_manipulator(goby::acomms::protobuf::NO_QUEUE);
         q_manager.set_cfg(cfg);
     
         q_manager.push_message(test_msg1);
@@ -112,8 +114,8 @@ int main(int argc, char* argv[])
 
     {
         receive_count = 0;
-        cfg.mutable_manipulator_entry(0)->clear_manipulator();
-        cfg.mutable_manipulator_entry(0)->add_manipulator(goby::acomms::protobuf::LOOPBACK);
+        cfg.mutable_message_entry(0)->clear_manipulator();
+        cfg.mutable_message_entry(0)->add_manipulator(goby::acomms::protobuf::LOOPBACK);
         q_manager.set_cfg(cfg);
         
         q_manager.push_message(test_msg1);
@@ -133,8 +135,8 @@ int main(int argc, char* argv[])
 
     {
         receive_count = 0;
-        cfg.mutable_manipulator_entry(0)->clear_manipulator();
-        cfg.mutable_manipulator_entry(0)->add_manipulator(goby::acomms::protobuf::LOOPBACK_AS_SENT);
+        cfg.mutable_message_entry(0)->clear_manipulator();
+        cfg.mutable_message_entry(0)->add_manipulator(goby::acomms::protobuf::LOOPBACK_AS_SENT);
         q_manager.set_cfg(cfg);
         
         q_manager.push_message(test_msg1);
@@ -159,7 +161,7 @@ int main(int argc, char* argv[])
         test_msg1.set_dest(3);
 
         receive_count = 0;
-        cfg.mutable_manipulator_entry(0)->clear_manipulator();
+        cfg.mutable_message_entry(0)->clear_manipulator();
         q_manager.set_cfg(cfg);
         
         q_manager.push_message(test_msg1);
@@ -176,8 +178,8 @@ int main(int argc, char* argv[])
         
 
         receive_count = 0;
-        cfg.mutable_manipulator_entry(0)->clear_manipulator();
-        cfg.mutable_manipulator_entry(0)->add_manipulator(goby::acomms::protobuf::PROMISCUOUS);
+        cfg.mutable_message_entry(0)->clear_manipulator();
+        cfg.mutable_message_entry(0)->add_manipulator(goby::acomms::protobuf::PROMISCUOUS);
         q_manager.set_cfg(cfg);
         
         q_manager.push_message(test_msg1);

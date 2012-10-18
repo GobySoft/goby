@@ -1,8 +1,8 @@
+import "goby/acomms/protobuf/ccl_extensions.proto";
 import "goby/acomms/protobuf/dccl_option_extensions.proto";
 import "goby/common/protobuf/option_extensions.proto";
 
 package goby.acomms.protobuf;
-
 
 // typedef struct
 // {
@@ -90,19 +90,19 @@ message CCLMDATRedirect
   required ThrustMode survey_thrust_mode = 7;  
 
   required float depth_goal_transit = 8 [(dccl.field).codec="_ccl_depth",
-                                         (dccl.field).ccl.bit_size=16];
+                                         (dccl.field).(ccl).bit_size=16];
   
   required float speed_transit = 9 [(dccl.field).codec="_ccl_speed",
-                                    (dccl.field).ccl.thrust_mode_tag=5];
+                                    (dccl.field).(ccl).thrust_mode_tag=5];
 
   required uint32 device_cmd_transit = 10 [(dccl.field).min=0,
                                            (dccl.field).max=0xff];
   
   required float depth_goal_survey = 11 [(dccl.field).codec="_ccl_depth",
-                                         (dccl.field).ccl.bit_size=16];
+                                         (dccl.field).(ccl).bit_size=16];
 
   required float speed_survey = 12 [(dccl.field).codec="_ccl_speed",
-                                    (dccl.field).ccl.thrust_mode_tag=7];
+                                    (dccl.field).(ccl).thrust_mode_tag=7];
 
   required uint32 device_cmd_survey = 13 [(dccl.field).min=0,
                                           (dccl.field).max=0xff];
@@ -148,7 +148,7 @@ message CCLMDATBathy
   required bytes spare = 1 [(dccl.field).max_length=1];
   
   repeated float depth = 2 [(dccl.field).codec="_ccl_depth",
-                            (dccl.field).ccl.bit_size=16,
+                            (dccl.field).(ccl).bit_size=16,
                             (dccl.field).max_repeat=3];
   
   repeated float altitude = 3 [(dccl.field).codec="_ccl_hires_altitude",
@@ -194,7 +194,7 @@ message CCLMDATCTD
                                   (dccl.field).max_repeat=2];
   
   repeated float depth = 4 [(dccl.field).codec="_ccl_depth",
-                            (dccl.field).ccl.bit_size=16,
+                            (dccl.field).(ccl).bit_size=16,
                             (dccl.field).max_repeat=2];  
 
   repeated float sound_speed = 5 [(dccl.field).codec="_ccl_sound_speed",
@@ -324,7 +324,7 @@ message CCLMDATState
                                (goby.field).description="Heading in degrees"];
   required float depth = 6 [(dccl.field).codec="_ccl_depth",
                             (goby.field).description="Depth in meters",
-                            (dccl.field).ccl.bit_size=13]; // 13 since MissionMode is stuck in the top three bits
+                            (dccl.field).(ccl).bit_size=13]; // 13 since MissionMode is stuck in the top three bits
 
 
   enum MissionMode

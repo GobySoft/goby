@@ -32,9 +32,10 @@ using goby::common::goby_time;
 
 using namespace goby::common::logger;
 
-goby::acomms::Queue::Queue(const google::protobuf::Descriptor* desc /*= 0*/, QueueManager* parent /*= 0*/)
+goby::acomms::Queue::Queue(const google::protobuf::Descriptor* desc /*= 0*/, QueueManager* parent /*= 0*/, const protobuf::QueuedMessageEntry& cfg)
     : desc_(desc),
       parent_(parent),
+      cfg_(cfg),
       last_send_time_(goby_time())
 {
 
@@ -290,8 +291,10 @@ goby::acomms::waiting_for_ack_it goby::acomms::Queue::find_ack_value(messages_it
 
 void goby::acomms::Queue::info(std::ostream* os) const
 {
-    *os << "Queue [[" << name() << "]] contains " << messages_.size() << " message(s)." << "\n"
-        << "Configured options: \n" << desc_->options().DebugString();
+    *os << "== Begin Queue [[" << name() << "]] ==\n";
+    *os << "Contains " << messages_.size() << " message(s)." << "\n"
+        << "Configured options: \n" << cfg_.ShortDebugString();
+    *os << "\n== End Queue [[" << name() << "]] ==\n";
 }
 
 

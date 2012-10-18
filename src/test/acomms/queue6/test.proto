@@ -4,9 +4,7 @@ import "goby/common/protobuf/option_extensions.proto";
 message GobyMessage
 {
   option (dccl.msg).id = 4;
-  option (dccl.msg).max_bytes = 32;
-  option (goby.msg).queue.ack = false;
-  
+  option (dccl.msg).max_bytes = 32;  
   
   // one byte
   required int32 dest = 1 [(dccl.field).min=0,

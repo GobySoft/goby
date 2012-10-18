@@ -164,7 +164,7 @@ namespace goby
             void convert_xml_message_file(const goby::transitional::protobuf::MessageFile& message_file,
                                           std::string* proto_file,
                                           google::protobuf::RepeatedPtrField<goby::moos::protobuf::TranslatorEntry>* translator_entries,
-                                          goby::acomms::protobuf::QueueManagerConfig::ManipulatorEntry* manip_entry);
+                                          goby::acomms::protobuf::QueueManagerConfig* queue_cfg);
             
             
 

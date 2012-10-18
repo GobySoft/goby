@@ -48,21 +48,9 @@ message DCCLFieldOptions
   optional uint32 max_repeat = 10 [default = 1];
 
 
-  message LegacyCCLFieldOptions
-  {
-    optional uint32 thrust_mode_tag = 1;
-    optional uint32 bit_size = 2;
-  }
-  optional LegacyCCLFieldOptions ccl = 100;
-
-  message ArithmeticOptions
-  {
-    required string model = 1;
-    optional bool debug_assert = 2 [default = false];
-  }
-  optional ArithmeticOptions arithmetic = 200;
-  
-  extensions 10000 to max;
+  // ccl = 1000
+  // arithmetic = 1001
+  extensions 1000 to max;
 }
 
 

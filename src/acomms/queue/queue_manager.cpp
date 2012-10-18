@@ -68,8 +68,20 @@ goby::acomms::QueueManager::QueueManager()
         boost::bind(&QueueManager::set_latest_metadata, this, _1, _2, _3));
 }
 
-void goby::acomms::QueueManager::add_queue(const google::protobuf::Descriptor* desc)
+void goby::acomms::QueueManager::add_queue(const google::protobuf::Descriptor* desc,
+                                           const protobuf::QueuedMessageEntry& queue_cfg /*= protobuf::QueuedMessageEntry()*/)
 {
+    
+    // does the queue exist?
+    unsigned dccl_id = codec_->id(desc);    
+    if(queues_.count(dccl_id))
+    {
+        glog.is(DEBUG1) && glog << group(glog_push_group_) << "Updating config for queue: " << desc->full_name() << " with: " << queue_cfg.ShortDebugString() << std::endl;
+        
+        queues_.find(dccl_id)->second.set_cfg(queue_cfg);
+        return;
+    }
+    
     try
     {
         //validate with DCCL first
@@ -81,7 +93,6 @@ void goby::acomms::QueueManager::add_queue(const google::protobuf::Descriptor* d
     }
     
     // add the newly generated queue
-    unsigned dccl_id = codec_->id(desc);
     if(queues_.count(dccl_id))
     {
         std::stringstream ss;
@@ -91,7 +102,7 @@ void goby::acomms::QueueManager::add_queue(const google::protobuf::Descriptor* d
     else
     {
         std::pair<std::map<unsigned, Queue>::iterator,bool> new_q_pair =
-            queues_.insert(std::make_pair(dccl_id, Queue(desc, this)));
+            queues_.insert(std::make_pair(dccl_id, Queue(desc, this, queue_cfg)));
 
         Queue& new_q = (new_q_pair.first)->second;
         
@@ -126,7 +137,6 @@ void goby::acomms::QueueManager::push_message(const google::protobuf::Message& d
 {
     const google::protobuf::Descriptor* desc = dccl_msg.GetDescriptor();
     unsigned dccl_id = codec_->id(desc);
-    
     if(!queues_.count(dccl_id))
         add_queue(dccl_msg.GetDescriptor());
 
@@ -213,10 +223,10 @@ void goby::acomms::QueueManager::flush_queue(const protobuf::QueueFlush& flush)
 
 void goby::acomms::QueueManager::info_all(std::ostream* os) const
 {
-    *os << "=== Begin QueueManager [[" << queues_.size() << " queues total]] ===" << std::endl;
+    *os << "= Begin QueueManager [[" << queues_.size() << " queues total]] =" << std::endl;
     for(std::map<unsigned, Queue>::const_iterator it = queues_.begin(), n = queues_.end(); it != n; ++it)
         info(it->second.descriptor(), os);
-    *os << "=== End QueueManager ===";
+    *os << "= End QueueManager =";
 }
 
 
@@ -230,6 +240,7 @@ void goby::acomms::QueueManager::info(const google::protobuf::Descriptor* desc, 
         it->second.info(os);
     else
         *os << "No such queue [[" << desc->full_name() << "]] loaded" << "\n";
+
     
     codec_->info(desc, os);
 }
@@ -621,21 +632,25 @@ void goby::acomms::QueueManager::process_cfg()
     modem_id_ = cfg_.modem_id();
     manip_manager_.clear();
 
-    for(int i = 0, n = cfg_.manipulator_entry_size(); i < n; ++i)
+    for(int i = 0, n = cfg_.message_entry_size(); i < n; ++i)
     {
-        for(int j = 0, m = cfg_.manipulator_entry(i).manipulator_size(); j < m; ++j)
+        const google::protobuf::Descriptor* desc =
+            goby::util::DynamicProtobufManager::find_descriptor(cfg_.message_entry(i).protobuf_name());
+        if(desc)
         {
-            const google::protobuf::Descriptor* desc =
-                goby::util::DynamicProtobufManager::find_descriptor(cfg_.manipulator_entry(i).protobuf_name());
             
-            if(desc)
-                manip_manager_.add(codec_->id(desc), cfg_.manipulator_entry(i).manipulator(j));
-            else
-                glog.is(DEBUG1) && glog << group(glog_push_group_) << warn << "No message by the name: " << cfg_.manipulator_entry(i).protobuf_name() << "found, not setting manipulators for this type." << std::endl;
+            add_queue(desc, cfg_.message_entry(i));
             
+            for(int j = 0, m = cfg_.message_entry(i).manipulator_size(); j < m; ++j)
+            {    
+                manip_manager_.add(codec_->id(desc), cfg_.message_entry(i).manipulator(j));
+            }
+        }
+        else
+        {
+            glog.is(DEBUG1) && glog << group(glog_push_group_) << warn << "No message by the name: " << cfg_.message_entry(i).protobuf_name() << "found, not setting Queue options for this type." << std::endl;
         }
     }
-    
 }
 
 void goby::acomms::QueueManager::qsize(Queue* q)            

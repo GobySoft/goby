@@ -5,7 +5,6 @@ message RouteMessage
 {
   option (dccl.msg).id = 1;
   option (dccl.msg).max_bytes = 32;
-  option (goby.msg).queue.newest_first = true;
 
   required uint64 time = 1 [(dccl.field).codec="_time",
                             (goby.field).queue.is_time=true];

@@ -1,4 +1,5 @@
 import "goby/acomms/protobuf/dccl_option_extensions.proto";
+import "goby/acomms/protobuf/arithmetic_extensions.proto";
 
 
 enum Enum1
@@ -26,8 +27,8 @@ message ArithmeticDoubleTestMsg
   option (dccl.msg).max_bytes = 512;
   
   repeated double value = 101 [(dccl.field).codec = "_arithmetic",
-                               (dccl.field).arithmetic.model = "model",
-                               (dccl.field).arithmetic.debug_assert = true,
+                               (dccl.field).(arithmetic).model = "model",
+                               (dccl.field).(arithmetic).debug_assert = true,
                                (dccl.field).max_repeat=4];
 }
 message ArithmeticEnumTestMsg
@@ -36,8 +37,8 @@ message ArithmeticEnumTestMsg
   option (dccl.msg).max_bytes = 512;
   
   repeated Enum1 value = 114 [(dccl.field).codec = "_arithmetic",
-                              (dccl.field).arithmetic.model = "model",
-                              (dccl.field).arithmetic.debug_assert = true,
+                              (dccl.field).(arithmetic).model = "model",
+                              (dccl.field).(arithmetic).debug_assert = true,
                               (dccl.field).max_repeat=4];
   
 }
@@ -48,8 +49,8 @@ message ArithmeticSingleEnumTestMsg
   option (dccl.msg).max_bytes = 512;
   
   required Enum1 value = 114 [(dccl.field).codec = "_arithmetic",
-                              (dccl.field).arithmetic.model = "model",
-                              (dccl.field).arithmetic.debug_assert = true];
+                              (dccl.field).(arithmetic).model = "model",
+                              (dccl.field).(arithmetic).debug_assert = true];
   
 }
 
@@ -59,8 +60,8 @@ message ArithmeticEnum2TestMsg
   option (dccl.msg).max_bytes = 512;
   
   repeated Enum2 value = 114 [(dccl.field).codec = "_arithmetic",
-                              (dccl.field).arithmetic.model = "model",
-                              (dccl.field).arithmetic.debug_assert = true,
+                              (dccl.field).(arithmetic).model = "model",
+                              (dccl.field).(arithmetic).debug_assert = true,
                               (dccl.field).max_repeat=8];
   
 }
@@ -71,8 +72,8 @@ message ArithmeticDouble2TestMsg
   option (dccl.msg).max_bytes = 10000;
   
   repeated int32 value = 101 [(dccl.field).codec = "_arithmetic",
-                              (dccl.field).arithmetic.model = "model",
-                              (dccl.field).arithmetic.debug_assert = true,
+                              (dccl.field).(arithmetic).model = "model",
+                              (dccl.field).(arithmetic).debug_assert = true,
                               (dccl.field).max_repeat=100];
 }
 
@@ -83,19 +84,19 @@ message ArithmeticDouble3TestMsg
   option (dccl.msg).max_bytes = 10000;
   
   repeated int32 value = 101 [(dccl.field).codec = "_arithmetic",
-                              (dccl.field).arithmetic.model = "model",
+                              (dccl.field).(arithmetic).model = "model",
                               (dccl.field).max_repeat=4,
-                              (dccl.field).arithmetic.debug_assert = true];
+                              (dccl.field).(arithmetic).debug_assert = true];
 }
 
 
-  // repeated float float_arithmetic_repeat = 102 [(dccl.field).arithmetic.model = "float_model",
+  // repeated float float_arithmetic_repeat = 102 [(dccl.field).(arithmetic).model = "float_model",
   //                                              (dccl.field).max_repeat=4];
 
-  // repeated int32 int32_arithmetic_repeat = 103 [(dccl.field).arithmetic.model = "int_model",
+  // repeated int32 int32_arithmetic_repeat = 103 [(dccl.field).(arithmetic).model = "int_model",
   //                                              (dccl.field).max_repeat=4];
 
-  // repeated bool bool_arithmetic_repeat = 113 [(dccl.field).arithmetic.model = "bool_model",
+  // repeated bool bool_arithmetic_repeat = 113 [(dccl.field).(arithmetic).model = "bool_model",
   //                                             (dccl.field).max_repeat=4];
   
 

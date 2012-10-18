@@ -693,7 +693,7 @@ void goby::acomms::MMDriver::mm_write(const util::NMEASentence& nmea)
     raw_msg.set_raw(nmea.message());
     raw_msg.set_description(description_map_[nmea.front()]);
 
-    glog.is(DEBUG2, lock) && glog << group(glog_out_group()) << hydroid_gateway_modem_prefix_
+    glog.is(DEBUG1, lock) && glog << group(glog_out_group()) << hydroid_gateway_modem_prefix_
                             << raw_msg.raw() << "\n" << "^ "
                             << magenta << raw_msg.description() << nocolor << std::endl << unlock;
     
@@ -751,7 +751,7 @@ void goby::acomms::MMDriver::process_receive(const NMEASentence& nmea)
         *raw_msg.mutable_description() += ":  " + cfg_map_[nmea.at(1)];
 
     
-    glog.is(DEBUG2, lock) && glog << group(glog_in_group()) << hydroid_gateway_modem_prefix_
+    glog.is(DEBUG1, lock) && glog << group(glog_in_group()) << hydroid_gateway_modem_prefix_
                    << raw_msg.raw() << "\n" << "^ "
                    << magenta << raw_msg.description() << nocolor << std::endl << unlock;
     

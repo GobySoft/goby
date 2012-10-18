@@ -28,10 +28,16 @@
 #include "goby/acomms/protobuf/ccl.pb.h"
 #include "goby/acomms/protobuf/ccl_extensions.pb.h"
 
+extern "C"
+{
+    void goby_dccl_load(goby::acomms::DCCLCodec* dccl);
+}
+
+
 namespace goby
 {
     namespace acomms
-    {        
+    {   
         class LegacyCCLIdentifierCodec : public DCCLDefaultIdentifierCodec
         {
           private:

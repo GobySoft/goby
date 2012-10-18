@@ -122,10 +122,18 @@ int main(int argc, char* argv[])
     codec->decode(encoded, &mini_abort_out);
     assert(mini_abort_out.SerializeAsString() == mini_abort_in.SerializeAsString());
 
-    cfg.set_id_codec(goby::acomms::protobuf::DCCLConfig::LEGACY_CCL);
     cfg.clear_crypto_passphrase();
     codec->set_cfg(cfg);
 
+    void* dl_handle = dlopen("libgoby_ccl_compat" SHARED_LIBRARY_SUFFIX, RTLD_LAZY);
+
+    if(!dl_handle)
+    {
+        std::cerr << "Failed to open libgoby_ccl_compat" SHARED_LIBRARY_SUFFIX << std::endl;
+        exit(1);
+    }
+    codec->load_shared_library_codecs(dl_handle);
+    
     codec->validate<NormalDCCL>();
     codec->info<NormalDCCL>(&goby::glog);
     NormalDCCL normal_msg, normal_msg_out;

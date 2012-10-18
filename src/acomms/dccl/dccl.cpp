@@ -525,45 +525,8 @@ void goby::acomms::DCCLCodec::process_cfg()
         glog.is(DEBUG1) && glog << group(glog_encode_group_) << "Cryptography disabled, set crypto_passphrase to enable." << std::endl;
     }
 
-    switch(cfg_.id_codec())
-    {
-        default:
-        case protobuf::DCCLConfig::VARINT:
-        {
-            add_id_codec<DCCLDefaultIdentifierCodec>(DEFAULT_CODEC_NAME);
-            set_id_codec(DEFAULT_CODEC_NAME);
-            break;
-        }
-        
-        case protobuf::DCCLConfig::LEGACY_CCL:
-        {
-            add_id_codec<LegacyCCLIdentifierCodec>("_ccl");
-            set_id_codec("_ccl");
-            
-            DCCLFieldCodecManager::add<LegacyCCLLatLonCompressedCodec>("_ccl_latloncompressed");
-            DCCLFieldCodecManager::add<LegacyCCLFixAgeCodec>("_ccl_fix_age");
-            DCCLFieldCodecManager::add<LegacyCCLTimeDateCodec>("_ccl_time_date");
-            DCCLFieldCodecManager::add<LegacyCCLHeadingCodec>("_ccl_heading");
-            DCCLFieldCodecManager::add<LegacyCCLDepthCodec>("_ccl_depth");
-            DCCLFieldCodecManager::add<LegacyCCLVelocityCodec>("_ccl_velocity");
-            DCCLFieldCodecManager::add<LegacyCCLWattsCodec>("_ccl_watts");
-            DCCLFieldCodecManager::add<LegacyCCLGFIPitchOilCodec>("_ccl_gfi_pitch_oil");
-            DCCLFieldCodecManager::add<LegacyCCLSpeedCodec>("_ccl_speed");
-            DCCLFieldCodecManager::add<LegacyCCLHiResAltitudeCodec>("_ccl_hires_altitude");
-            DCCLFieldCodecManager::add<LegacyCCLTemperatureCodec>("_ccl_temperature");
-            DCCLFieldCodecManager::add<LegacyCCLSalinityCodec>("_ccl_salinity");
-            DCCLFieldCodecManager::add<LegacyCCLSoundSpeedCodec>("_ccl_sound_speed");
-            
-            validate<goby::acomms::protobuf::CCLMDATEmpty>();
-            validate<goby::acomms::protobuf::CCLMDATRedirect>();
-            validate<goby::acomms::protobuf::CCLMDATBathy>();
-            validate<goby::acomms::protobuf::CCLMDATCTD>();
-            validate<goby::acomms::protobuf::CCLMDATState>();
-            validate<goby::acomms::protobuf::CCLMDATCommand>();
-            validate<goby::acomms::protobuf::CCLMDATError>();
-        }
-    }
-    
+    add_id_codec<DCCLDefaultIdentifierCodec>(DEFAULT_CODEC_NAME);
+    set_id_codec(DEFAULT_CODEC_NAME);
 }
 
 void goby::acomms::DCCLCodec::info_all(std::ostream* os) const

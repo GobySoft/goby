@@ -23,6 +23,41 @@
 #include "dccl_ccl_compatibility.h"
 #include "WhoiUtil.h"
 #include <ctime>
+#include "dccl.h"
+
+// shared library load
+
+extern "C"
+{
+    void goby_dccl_load(goby::acomms::DCCLCodec* dccl)
+    {
+        using namespace goby::acomms;
+        dccl->add_id_codec<LegacyCCLIdentifierCodec>("_ccl");
+        dccl->set_id_codec("_ccl");
+            
+        DCCLFieldCodecManager::add<LegacyCCLLatLonCompressedCodec>("_ccl_latloncompressed");
+        DCCLFieldCodecManager::add<LegacyCCLFixAgeCodec>("_ccl_fix_age");
+        DCCLFieldCodecManager::add<LegacyCCLTimeDateCodec>("_ccl_time_date");
+        DCCLFieldCodecManager::add<LegacyCCLHeadingCodec>("_ccl_heading");
+        DCCLFieldCodecManager::add<LegacyCCLDepthCodec>("_ccl_depth");
+        DCCLFieldCodecManager::add<LegacyCCLVelocityCodec>("_ccl_velocity");
+        DCCLFieldCodecManager::add<LegacyCCLWattsCodec>("_ccl_watts");
+        DCCLFieldCodecManager::add<LegacyCCLGFIPitchOilCodec>("_ccl_gfi_pitch_oil");
+        DCCLFieldCodecManager::add<LegacyCCLSpeedCodec>("_ccl_speed");
+        DCCLFieldCodecManager::add<LegacyCCLHiResAltitudeCodec>("_ccl_hires_altitude");
+        DCCLFieldCodecManager::add<LegacyCCLTemperatureCodec>("_ccl_temperature");
+        DCCLFieldCodecManager::add<LegacyCCLSalinityCodec>("_ccl_salinity");
+        DCCLFieldCodecManager::add<LegacyCCLSoundSpeedCodec>("_ccl_sound_speed");
+        
+        dccl->validate<goby::acomms::protobuf::CCLMDATEmpty>();
+        dccl->validate<goby::acomms::protobuf::CCLMDATRedirect>();
+        dccl->validate<goby::acomms::protobuf::CCLMDATBathy>();
+        dccl->validate<goby::acomms::protobuf::CCLMDATCTD>();
+        dccl->validate<goby::acomms::protobuf::CCLMDATState>();
+        dccl->validate<goby::acomms::protobuf::CCLMDATCommand>();
+        dccl->validate<goby::acomms::protobuf::CCLMDATError>();
+    }
+}
 
 //
 // LegacyCCLLatLonCompressedCodec

@@ -12,8 +12,6 @@ set(SRC
   dccl/dccl_field_codec_manager.cpp
   dccl/dccl_type_helper.cpp
   dccl/dccl_bitset.cpp
-  dccl/dccl_ccl_compatibility.cpp
-  dccl/WhoiUtil.cpp
   queue/queue.cpp
   queue/queue_manager.cpp
   amac/mac_manager.cpp
@@ -34,7 +32,14 @@ endif()
 
 add_library(goby_acomms ${SRC})
 
-target_link_libraries(goby_acomms goby_util goby_common ${Cryptopp_LIBRARIES} ${Boost_LIBRARIES} dl)
+target_link_libraries(goby_acomms goby_util goby_common ${Cryptopp_LIBRARIES} ${Boost_LIBRARIES} ${CMAKE_DL_LIBS})
 
 set_target_properties(goby_acomms PROPERTIES VERSION "${GOBY_VERSION}" SOVERSION "${GOBY_SOVERSION}")
 
+
+add_library(goby_ccl_compat SHARED
+dccl/dccl_ccl_compatibility.cpp
+dccl/WhoiUtil.cpp
+)
+
+target_link_libraries(goby_ccl_compat goby_acomms)

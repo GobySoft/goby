@@ -1,3 +1,4 @@
+import "goby/acomms/protobuf/dccl_option_extensions.proto";
 import "goby/common/protobuf/option_extensions.proto";
 
 package goby.acomms.protobuf;
@@ -13,10 +14,10 @@ package goby.acomms.protobuf;
 message CCLMDATEmpty
 {
   // prefix CCL IDs with 0x0CC1 to get out of normal 0x0000 prefix
-  option (goby.msg).dccl.id = 0x0CC10006; 
-  option (goby.msg).dccl.max_bytes = 32;
+  option (dccl.msg).id = 0x0CC10006; 
+  option (dccl.msg).max_bytes = 32;
 
-  required bytes spare = 1 [(goby.field).dccl.max_length=31];
+  required bytes spare = 1 [(dccl.field).max_length=31];
 }
 
 
@@ -55,15 +56,15 @@ message CCLMDATEmpty
 // MODEM_MSG_DATA_REDIRECT;
 message CCLMDATRedirect
 {
-  option (goby.msg).dccl.id = 0x0CC10007; 
-  option (goby.msg).dccl.max_bytes = 32;
+  option (dccl.msg).id = 0x0CC10007; 
+  option (dccl.msg).max_bytes = 32;
 
-  required uint32 message_number = 1 [(goby.field).dccl.min=0,
-                                      (goby.field).dccl.max=0xff];
+  required uint32 message_number = 1 [(dccl.field).min=0,
+                                      (dccl.field).max=0xff];
   
-  required double latitude = 2 [(goby.field).dccl.codec="_ccl_latloncompressed", (goby.field).description="Center of search area: latitude in degrees"];
+  required double latitude = 2 [(dccl.field).codec="_ccl_latloncompressed", (goby.field).description="Center of search area: latitude in degrees"];
   
-  required double longitude = 3 [(goby.field).dccl.codec="_ccl_latloncompressed", (goby.field).description="Center of search area: longitude in degrees"];
+  required double longitude = 3 [(dccl.field).codec="_ccl_latloncompressed", (goby.field).description="Center of search area: longitude in degrees"];
 
   // replaces speed_depth_flags field
   enum VerticalMode
@@ -88,43 +89,43 @@ message CCLMDATRedirect
   required VerticalMode survey_vertical_mode = 6;  
   required ThrustMode survey_thrust_mode = 7;  
 
-  required float depth_goal_transit = 8 [(goby.field).dccl.codec="_ccl_depth",
-                                         (goby.field).dccl.ccl.bit_size=16];
+  required float depth_goal_transit = 8 [(dccl.field).codec="_ccl_depth",
+                                         (dccl.field).ccl.bit_size=16];
   
-  required float speed_transit = 9 [(goby.field).dccl.codec="_ccl_speed",
-                                    (goby.field).dccl.ccl.thrust_mode_tag=5];
+  required float speed_transit = 9 [(dccl.field).codec="_ccl_speed",
+                                    (dccl.field).ccl.thrust_mode_tag=5];
 
-  required uint32 device_cmd_transit = 10 [(goby.field).dccl.min=0,
-                                           (goby.field).dccl.max=0xff];
+  required uint32 device_cmd_transit = 10 [(dccl.field).min=0,
+                                           (dccl.field).max=0xff];
   
-  required float depth_goal_survey = 11 [(goby.field).dccl.codec="_ccl_depth",
-                                         (goby.field).dccl.ccl.bit_size=16];
+  required float depth_goal_survey = 11 [(dccl.field).codec="_ccl_depth",
+                                         (dccl.field).ccl.bit_size=16];
 
-  required float speed_survey = 12 [(goby.field).dccl.codec="_ccl_speed",
-                                    (goby.field).dccl.ccl.thrust_mode_tag=7];
+  required float speed_survey = 12 [(dccl.field).codec="_ccl_speed",
+                                    (dccl.field).ccl.thrust_mode_tag=7];
 
-  required uint32 device_cmd_survey = 13 [(goby.field).dccl.min=0,
-                                          (goby.field).dccl.max=0xff];
+  required uint32 device_cmd_survey = 13 [(dccl.field).min=0,
+                                          (dccl.field).max=0xff];
 
-  required uint32 num_rows = 14 [(goby.field).dccl.min=0,
-                                 (goby.field).dccl.max=0xff];
+  required uint32 num_rows = 14 [(dccl.field).min=0,
+                                 (dccl.field).max=0xff];
 
-  required uint32 row_length = 15 [(goby.field).dccl.min=0,
-                                   (goby.field).dccl.max=0xffff];
+  required uint32 row_length = 15 [(dccl.field).min=0,
+                                   (dccl.field).max=0xffff];
 
-  required uint32 spacing_0 = 16 [(goby.field).dccl.min=0,
-                                  (goby.field).dccl.max=0xff];
+  required uint32 spacing_0 = 16 [(dccl.field).min=0,
+                                  (dccl.field).max=0xff];
   
-  required uint32 spacing_1 = 17 [(goby.field).dccl.min=0,
-                                  (goby.field).dccl.max=0xff];
+  required uint32 spacing_1 = 17 [(dccl.field).min=0,
+                                  (dccl.field).max=0xff];
 
-  required float heading = 18 [(goby.field).dccl.codec="_ccl_heading",
+  required float heading = 18 [(dccl.field).codec="_ccl_heading",
                                (goby.field).description="Heading in degrees"];
   
-  required double lat_start = 19 [(goby.field).dccl.codec="_ccl_latloncompressed"];
-  required double lon_start = 20 [(goby.field).dccl.codec="_ccl_latloncompressed"];
+  required double lat_start = 19 [(dccl.field).codec="_ccl_latloncompressed"];
+  required double lon_start = 20 [(dccl.field).codec="_ccl_latloncompressed"];
 
-  required bytes spare = 21 [(goby.field).dccl.max_length=3];
+  required bytes spare = 21 [(dccl.field).max_length=3];
   
 }
 
@@ -141,23 +142,23 @@ message CCLMDATRedirect
 // MODEM_MSG_DATA_BATHY;
 message CCLMDATBathy
 {
-  option (goby.msg).dccl.id = 0x0CC10009; 
-  option (goby.msg).dccl.max_bytes = 32;
+  option (dccl.msg).id = 0x0CC10009; 
+  option (dccl.msg).max_bytes = 32;
 
-  required bytes spare = 1 [(goby.field).dccl.max_length=1];
+  required bytes spare = 1 [(dccl.field).max_length=1];
   
-  repeated float depth = 2 [(goby.field).dccl.codec="_ccl_depth",
-                            (goby.field).dccl.ccl.bit_size=16,
-                            (goby.field).dccl.max_repeat=3];
+  repeated float depth = 2 [(dccl.field).codec="_ccl_depth",
+                            (dccl.field).ccl.bit_size=16,
+                            (dccl.field).max_repeat=3];
   
-  repeated float altitude = 3 [(goby.field).dccl.codec="_ccl_hires_altitude",
-                                (goby.field).dccl.max_repeat=3];
+  repeated float altitude = 3 [(dccl.field).codec="_ccl_hires_altitude",
+                                (dccl.field).max_repeat=3];
 
-  repeated double latitude = 4 [(goby.field).dccl.codec="_ccl_latloncompressed",
-                                (goby.field).dccl.max_repeat=3];
+  repeated double latitude = 4 [(dccl.field).codec="_ccl_latloncompressed",
+                                (dccl.field).max_repeat=3];
   
-  repeated double longitude = 5 [(goby.field).dccl.codec="_ccl_latloncompressed",
-                                 (goby.field).dccl.max_repeat=3];
+  repeated double longitude = 5 [(dccl.field).codec="_ccl_latloncompressed",
+                                 (dccl.field).max_repeat=3];
 }
 
 
@@ -181,32 +182,32 @@ message CCLMDATBathy
 // untested, CCL spec does not give test case
 message CCLMDATCTD
 {
-  option (goby.msg).dccl.id = 0x0CC1000A; 
-  option (goby.msg).dccl.max_bytes = 32;
+  option (dccl.msg).id = 0x0CC1000A; 
+  option (dccl.msg).max_bytes = 32;
 
-  required bytes spare = 1 [(goby.field).dccl.max_length=1];
+  required bytes spare = 1 [(dccl.field).max_length=1];
   
-  repeated float salinity = 2 [(goby.field).dccl.codec="_ccl_salinity",
-                            (goby.field).dccl.max_repeat=2];  
+  repeated float salinity = 2 [(dccl.field).codec="_ccl_salinity",
+                            (dccl.field).max_repeat=2];  
 
-  repeated float temperature = 3 [(goby.field).dccl.codec="_ccl_temperature",
-                                  (goby.field).dccl.max_repeat=2];
+  repeated float temperature = 3 [(dccl.field).codec="_ccl_temperature",
+                                  (dccl.field).max_repeat=2];
   
-  repeated float depth = 4 [(goby.field).dccl.codec="_ccl_depth",
-                            (goby.field).dccl.ccl.bit_size=16,
-                            (goby.field).dccl.max_repeat=2];  
+  repeated float depth = 4 [(dccl.field).codec="_ccl_depth",
+                            (dccl.field).ccl.bit_size=16,
+                            (dccl.field).max_repeat=2];  
 
-  repeated float sound_speed = 5 [(goby.field).dccl.codec="_ccl_sound_speed",
-                                  (goby.field).dccl.max_repeat=2];
+  repeated float sound_speed = 5 [(dccl.field).codec="_ccl_sound_speed",
+                                  (dccl.field).max_repeat=2];
 
   
-  repeated double latitude = 6 [(goby.field).dccl.codec="_ccl_latloncompressed",
-                                (goby.field).dccl.max_repeat=2];
+  repeated double latitude = 6 [(dccl.field).codec="_ccl_latloncompressed",
+                                (dccl.field).max_repeat=2];
   
-  repeated double longitude = 7 [(goby.field).dccl.codec="_ccl_latloncompressed",
-                                 (goby.field).dccl.max_repeat=2];
+  repeated double longitude = 7 [(dccl.field).codec="_ccl_latloncompressed",
+                                 (dccl.field).max_repeat=2];
 
-  required bytes spare2 = 8 [(goby.field).dccl.max_length=8];  
+  required bytes spare2 = 8 [(dccl.field).max_length=8];  
   
 }
 
@@ -221,10 +222,10 @@ message CCLMDATCTD
 // MODEM_MSG_DATA_COMMAND;
 message CCLMDATCommand
 {
-  option (goby.msg).dccl.id = 0x0CC1000B; 
-  option (goby.msg).dccl.max_bytes = 32;
+  option (dccl.msg).id = 0x0CC1000B; 
+  option (dccl.msg).max_bytes = 32;
 
-  required bytes spare = 1 [(goby.field).dccl.max_length=1];
+  required bytes spare = 1 [(dccl.field).max_length=1];
 
   enum Command
   {
@@ -264,10 +265,10 @@ message CCLMDATCommand
   required Command command = 2;
 
   // placeholder for the unenumerated commands
-  required uint32 reserved_command = 3 [(goby.field).dccl.min=0,
-                                        (goby.field).dccl.max=0x7ff];
+  required uint32 reserved_command = 3 [(dccl.field).min=0,
+                                        (dccl.field).max=0x7ff];
   
-  required bytes parameter = 4 [(goby.field).dccl.max_length=28];  
+  required bytes parameter = 4 [(dccl.field).max_length=28];  
   
 }
 
@@ -305,25 +306,25 @@ message CCLMDATCommand
 
 message CCLMDATState
 {
-  option (goby.msg).dccl.id = 0x0CC1000E; 
-  option (goby.msg).dccl.max_bytes = 32;
+  option (dccl.msg).id = 0x0CC1000E; 
+  option (dccl.msg).max_bytes = 32;
   
-  required double latitude = 1 [(goby.field).dccl.codec="_ccl_latloncompressed",
+  required double latitude = 1 [(dccl.field).codec="_ccl_latloncompressed",
                                 (goby.field).description="Latitude in degrees"];
   
-  required double longitude = 2 [(goby.field).dccl.codec="_ccl_latloncompressed",
+  required double longitude = 2 [(dccl.field).codec="_ccl_latloncompressed",
                                  (goby.field).description="Longitude in degrees"];
 
-  required uint32 fix_age = 3 [(goby.field).dccl.codec="_ccl_fix_age",
+  required uint32 fix_age = 3 [(dccl.field).codec="_ccl_fix_age",
                                (goby.field).description="Fix age in seconds"];
   
-  required uint64 time_date = 4 [(goby.field).dccl.codec="_ccl_time_date",
+  required uint64 time_date = 4 [(dccl.field).codec="_ccl_time_date",
                                  (goby.field).description="Microseconds since UNIX 1970/01/01 00:00:00 UTC"];
-  required float heading = 5 [(goby.field).dccl.codec="_ccl_heading",
+  required float heading = 5 [(dccl.field).codec="_ccl_heading",
                                (goby.field).description="Heading in degrees"];
-  required float depth = 6 [(goby.field).dccl.codec="_ccl_depth",
+  required float depth = 6 [(dccl.field).codec="_ccl_depth",
                             (goby.field).description="Depth in meters",
-                            (goby.field).dccl.ccl.bit_size=13]; // 13 since MissionMode is stuck in the top three bits
+                            (dccl.field).ccl.bit_size=13]; // 13 since MissionMode is stuck in the top three bits
 
 
   enum MissionMode
@@ -340,18 +341,18 @@ message CCLMDATState
   
   required MissionMode mission_mode = 7;
   
-  required bytes faults = 8 [(goby.field).dccl.max_length=4];
-  required bytes faults_2 = 9 [(goby.field).dccl.max_length=1];
-  required uint32 mission_leg = 10 [(goby.field).dccl.max=0xff, (goby.field).dccl.min=0];
-  required float est_velocity = 11 [(goby.field).dccl.codec="_ccl_velocity",
+  required bytes faults = 8 [(dccl.field).max_length=4];
+  required bytes faults_2 = 9 [(dccl.field).max_length=1];
+  required uint32 mission_leg = 10 [(dccl.field).max=0xff, (dccl.field).min=0];
+  required float est_velocity = 11 [(dccl.field).codec="_ccl_velocity",
                                     (goby.field).description="Velocity from ADCP or prop turns in m/s"];
-  required bytes objective_index = 12 [(goby.field).dccl.max_length=1];
-  required float watts = 13 [(goby.field).dccl.codec="_ccl_watts"];
-  required double lat_goal = 14 [(goby.field).dccl.codec="_ccl_latloncompressed",
+  required bytes objective_index = 12 [(dccl.field).max_length=1];
+  required float watts = 13 [(dccl.field).codec="_ccl_watts"];
+  required double lat_goal = 14 [(dccl.field).codec="_ccl_latloncompressed",
                                  (goby.field).description="Latitude goal in degrees"];
-  required double lon_goal = 15 [(goby.field).dccl.codec="_ccl_latloncompressed",
+  required double lon_goal = 15 [(dccl.field).codec="_ccl_latloncompressed",
                                  (goby.field).description="Longitude goal in degrees"];
-  required uint32 battery_percent = 16 [(goby.field).dccl.max=0xff, (goby.field).dccl.min=0];
+  required uint32 battery_percent = 16 [(dccl.field).max=0xff, (dccl.field).min=0];
 
   message GFIPitchOil
   {
@@ -359,7 +360,7 @@ message CCLMDATState
     required float pitch = 2 [(goby.field).description="Pitch of the vehicle in degrees"];
     required float oil = 3 [(goby.field).description="Percentage of the available capacity remaining in the oil compensation system, or 0 if no such system"];
   }
-  required GFIPitchOil gfi_pitch_oil = 17 [(goby.field).dccl.codec="_ccl_gfi_pitch_oil"];
+  required GFIPitchOil gfi_pitch_oil = 17 [(dccl.field).codec="_ccl_gfi_pitch_oil"];
 }
 
 // typedef struct
@@ -371,9 +372,9 @@ message CCLMDATState
 message CCLMDATError
 {
   // prefix CCL IDs with 0x0CC1 to get out of normal 0x0000 prefix
-  option (goby.msg).dccl.id = 0x0CC1000F; 
-  option (goby.msg).dccl.max_bytes = 32;
+  option (dccl.msg).id = 0x0CC1000F; 
+  option (dccl.msg).max_bytes = 32;
 
-  required bytes message = 1 [(goby.field).dccl.max_length=31];
+  required bytes message = 1 [(dccl.field).max_length=31];
 }
 

@@ -29,6 +29,7 @@
 #include <Wt/WPanel>
 #include <Wt/WLengthValidator>
 
+#include "goby/acomms/protobuf/dccl_option_extensions.pb.h"
 #include "goby/util/dynamic_protobuf_manager.h"
 #include "goby/util/sci.h"
 #include "goby/moos/moos_protobuf_helpers.h"
@@ -626,7 +627,7 @@ void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::genera
 {
     const google::protobuf::Reflection* refl = message->GetReflection();
 
-    if(field_desc->options().GetExtension(goby::field).dccl().omit())
+    if(field_desc->options().GetExtension(dccl::field).omit())
         return;
 
     int index = parent->childNodes().size();
@@ -1049,7 +1050,7 @@ void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::handle
             {
                 double fvalue = goby::util::as<float>(value);
 
-                if(field_desc->options().GetExtension(goby::field).dccl().has_precision())
+                if(field_desc->options().GetExtension(dccl::field).has_precision())
                     field->setText(string_from_dccl_double(&fvalue, field_desc));     
 
                 field_desc->is_repeated() ?
@@ -1062,7 +1063,7 @@ void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::handle
             {
                 double dvalue = goby::util::as<double>(value);
                 
-                if(field_desc->options().GetExtension(goby::field).dccl().has_precision())
+                if(field_desc->options().GetExtension(dccl::field).has_precision())
                     field->setText(string_from_dccl_double(&dvalue, field_desc));
                 
                 field_desc->is_repeated() ?
@@ -1243,7 +1244,7 @@ void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::dccl_d
     const google::protobuf::FieldDescriptor* field_desc)
 {
 
-    const DCCLFieldOptions& options = field_desc->options().GetExtension(goby::field).dccl();
+    const dccl::DCCLFieldOptions& options = field_desc->options().GetExtension(dccl::field);
 
     if(options.has_min() && options.has_max())
     {
@@ -1294,7 +1295,7 @@ void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::dccl_d
     WFormWidget*& modify_field,
     const google::protobuf::FieldDescriptor* field_desc)
 {
-    const DCCLFieldOptions& options = field_desc->options().GetExtension(goby::field).dccl();
+    const dccl::DCCLFieldOptions& options = field_desc->options().GetExtension(dccl::field);
 
     if(options.has_max_repeat())
     {
@@ -1306,7 +1307,7 @@ void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::dccl_d
 
 std::string goby::common::LiaisonCommander::ControlsContainer::CommandContainer::string_from_dccl_double(double* value, const google::protobuf::FieldDescriptor* field_desc)
 {
-    const DCCLFieldOptions& options = field_desc->options().GetExtension(goby::field).dccl();
+    const dccl::DCCLFieldOptions& options = field_desc->options().GetExtension(dccl::field);
     *value = goby::util::unbiased_round(*value, options.precision());
 
     if(options.precision() < 0)

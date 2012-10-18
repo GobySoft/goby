@@ -95,7 +95,7 @@ namespace goby
                 std::string name = "")
             {
                 if(name.empty())
-                    name = desc->options().GetExtension(goby::msg).dccl().codec();
+                    name = desc->options().GetExtension(dccl::msg).codec();
 
                 return __find(google::protobuf::FieldDescriptor::TYPE_MESSAGE,
                               name, desc->full_name());
@@ -130,13 +130,13 @@ namespace goby
 
             static std::string __find_codec(const google::protobuf::FieldDescriptor* field)
             {
-                DCCLFieldOptions dccl_field_options = field->options().GetExtension(goby::field).dccl();
+                dccl::DCCLFieldOptions dccl_field_options = field->options().GetExtension(dccl::field);
                 
                 // prefer the codec listed as a field extension
                 if(dccl_field_options.has_codec())
                     return dccl_field_options.codec();
                 else if(field->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE)
-                    return field->message_type()->options().GetExtension(goby::msg).dccl().codec();
+                    return field->message_type()->options().GetExtension(dccl::msg).codec();
                 else
                     return dccl_field_options.codec();
             }

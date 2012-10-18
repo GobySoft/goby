@@ -89,7 +89,7 @@ namespace goby
                                        int sequence_number)
             {
                 sequence_number_ = sequence_number;
-                *proto_file << "\t" << "optional double " << name() << " = " << sequence_number << " [(goby.field).dccl.codec=\"_time\", (goby.field).dccl.in_head=true, (goby.field).queue.is_time=true];" << std::endl;
+                *proto_file << "\t" << "optional double " << name() << " = " << sequence_number << " [(dccl.field).codec=\"_time\", (dccl.field).in_head=true, (goby.field).queue.is_time=true];" << std::endl;
             }
             
 
@@ -137,7 +137,7 @@ namespace goby
             }
 
             virtual std::string additional_option_extensions()
-            { return "(goby.field).dccl.in_head=true, (goby.field).queue.is_src=true"; }
+            { return "(dccl.field).in_head=true, (goby.field).queue.is_src=true"; }
 
             
         };
@@ -155,7 +155,7 @@ namespace goby
             }
 
             virtual std::string additional_option_extensions()
-            { return "(goby.field).dccl.in_head=true, (goby.field).queue.is_dest=true"; }
+            { return "(dccl.field).in_head=true, (goby.field).queue.is_dest=true"; }
             
         };
 

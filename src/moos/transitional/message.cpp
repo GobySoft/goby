@@ -130,7 +130,7 @@ void goby::transitional::DCCLMessage::set_repeat_array_length()
 unsigned goby::transitional::DCCLMessage::calc_total_size()
 {
     boost::shared_ptr<acomms::DCCLFieldCodecBase> codec =
-        acomms::DCCLFieldCodecManager::find(descriptor_, descriptor_->options().GetExtension(goby::msg).dccl().codec());
+        acomms::DCCLFieldCodecManager::find(descriptor_, descriptor_->options().GetExtension(dccl::msg).codec());
     unsigned u = 0;
     codec->base_max_size(&u, descriptor_, acomms::MessageHandler::BODY);
     return u;
@@ -179,8 +179,8 @@ void goby::transitional::DCCLMessage::write_schema_to_dccl2(std::ofstream* proto
 {
     
     *proto_file << "message " << name_ << " { " << std::endl;
-    *proto_file << "\t" << "option (goby.msg).dccl.id = " << id_ << ";" << std::endl;
-    *proto_file << "\t" << "option (goby.msg).dccl.max_bytes = " << size_ << ";" << std::endl;
+    *proto_file << "\t" << "option (dccl.msg).id = " << id_ << ";" << std::endl;
+    *proto_file << "\t" << "option (dccl.msg).max_bytes = " << size_ << ";" << std::endl;
     
     int sequence_number = 0;
     

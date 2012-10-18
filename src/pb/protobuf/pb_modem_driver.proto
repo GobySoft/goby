@@ -2,7 +2,7 @@ import "goby/acomms/protobuf/driver_base.proto"; // load up message DriverBaseCo
 import "goby/acomms/protobuf/modem_message.proto"; // load up message ModemTransmission
 
 import "goby/common/protobuf/zero_mq_node_config.proto";
-import "goby/common/protobuf/option_extensions.proto";
+import "goby/acomms/protobuf/dccl_option_extensions.proto";
 
 message PBDriverConfig
 {
@@ -29,7 +29,7 @@ message PBDriverTransmission
     optional TransmissionType type = 1321 [default=BASE_TYPE];
   
     // used in PB_DRIVER_POLL message
-    optional int32 poll_src = 1322 [(goby.field).dccl.omit = true];
-    optional int32 poll_dest = 1323 [(goby.field).dccl.omit = true];
+    optional int32 poll_src = 1322 [(dccl.field).omit = true];
+    optional int32 poll_dest = 1323 [(dccl.field).omit = true];
   }
 }

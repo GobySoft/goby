@@ -47,7 +47,7 @@
 #include "dccl_ccl_compatibility.h"
 #include "goby/acomms/dccl/dccl_field_codec_arithmetic.h"
 #include "goby/util/as.h"
-#include "goby/common/protobuf/acomms_option_extensions.pb.h"
+#include "goby/acomms/protobuf/dccl_option_extensions.pb.h"
 //#include "goby/common/header.pb.h"
 
 using goby::common::goby_time;
@@ -151,7 +151,7 @@ void goby::acomms::DCCLCodec::encode(std::string* bytes, const google::protobuf:
         }
         else
         {
-            throw(DCCLException("Failed to find (goby.msg).dccl.codec `" + desc->options().GetExtension(goby::msg).dccl().codec() + "`"));
+            throw(DCCLException("Failed to find (goby.msg).dccl.codec `" + desc->options().GetExtension(dccl::msg).codec() + "`"));
         }
         
         // given header of not even byte size (e.g. 01011), make even byte size (e.g. 00001011)
@@ -276,7 +276,7 @@ void goby::acomms::DCCLCodec::decode(const std::string& bytes, google::protobuf:
         }
         else
         {
-            throw(DCCLException("Failed to find (goby.msg).dccl.codec `" + desc->options().GetExtension(goby::msg).dccl().codec() + "`"));
+            throw(DCCLException("Failed to find (goby.msg).dccl.codec `" + desc->options().GetExtension(dccl::msg).codec() + "`"));
         }
 
         glog.is(DEBUG1) && glog << group(glog_decode_group_) << "Successfully decoded message of type: " << desc->full_name() << std::endl;
@@ -299,9 +299,9 @@ void goby::acomms::DCCLCodec::validate(const google::protobuf::Descriptor* desc)
 {    
     try
     {
-        if(!desc->options().GetExtension(goby::msg).dccl().has_id())
+        if(!desc->options().GetExtension(dccl::msg).has_id())
             throw(DCCLException("Missing message option `(goby.msg).dccl.id`. Specify a unique id (e.g. 3) in the body of your .proto message using \"option (goby.msg).dccl.id = 3\""));
-        if(!desc->options().GetExtension(goby::msg).dccl().has_max_bytes())
+        if(!desc->options().GetExtension(dccl::msg).has_max_bytes())
             throw(DCCLException("Missing message option `(goby.msg).dccl.max_bytes`. Specify a maximum (encoded) message size in bytes (e.g. 32) in the body of your .proto message using \"option (goby.msg).dccl.max_bytes = 32\""));
         
         boost::shared_ptr<DCCLFieldCodecBase> codec = DCCLFieldCodecManager::find(desc);
@@ -314,7 +314,7 @@ void goby::acomms::DCCLCodec::validate(const google::protobuf::Descriptor* desc)
         
         const unsigned byte_size = ceil_bits2bytes(head_size_bits) + ceil_bits2bytes(body_size_bits);
 
-        if(byte_size > desc->options().GetExtension(goby::msg).dccl().max_bytes())
+        if(byte_size > desc->options().GetExtension(dccl::msg).max_bytes())
             throw(DCCLException("Actual maximum size of message exceeds allowed maximum (dccl.max_bytes). Tighten bounds, remove fields, improve codecs, or increase the allowed dccl.max_bytes"));
         
         codec->base_validate(desc, MessageHandler::HEAD);
@@ -394,7 +394,7 @@ void goby::acomms::DCCLCodec::info(const google::protobuf::Descriptor* desc, std
         
         const unsigned byte_size = ceil_bits2bytes(config_head_bit_size + id_bit_size) + ceil_bits2bytes(body_bit_size);
         
-        const unsigned allowed_byte_size = desc->options().GetExtension(goby::msg).dccl().max_bytes();
+        const unsigned allowed_byte_size = desc->options().GetExtension(dccl::msg).max_bytes();
         const unsigned allowed_bit_size = allowed_byte_size * BITS_IN_BYTE;
         
         *os << "= Begin " << desc->full_name() << " =\n"

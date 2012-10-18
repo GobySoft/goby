@@ -1,7 +1,7 @@
 import "goby/acomms/protobuf/driver_base.proto";
 import "goby/moos/protobuf/modem_id_lookup.proto";
 import "goby/acomms/protobuf/modem_message.proto";
-import "goby/common/protobuf/option_extensions.proto";
+import "goby/acomms/protobuf/dccl_option_extensions.proto";
 
 
 package goby.moos.protobuf;
@@ -38,8 +38,8 @@ extend goby.acomms.protobuf.ModemTransmission
   optional TransmissionType type = 1300 [default=BASE_TYPE];
   
   // used in UFIELD_DRIVER_POLL message
-  optional int32 poll_src = 1301 [(goby.field).dccl.omit = true];
-  optional int32 poll_dest = 1302 [(goby.field).dccl.omit = true];
+  optional int32 poll_src = 1301 [(dccl.field).omit = true];
+  optional int32 poll_dest = 1302 [(dccl.field).omit = true];
 
 
   

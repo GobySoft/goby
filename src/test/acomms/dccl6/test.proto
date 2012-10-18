@@ -1,39 +1,39 @@
-import "goby/common/protobuf/option_extensions.proto";
+import "goby/acomms/protobuf/dccl_option_extensions.proto";
 
 message ShortIDMsg
 {
-  option (goby.msg).dccl.id = 2;
-  option (goby.msg).dccl.max_bytes = 1;
+  option (dccl.msg).id = 2;
+  option (dccl.msg).max_bytes = 1;
 }
 
 message ShortIDMsgWithData
 {
-  option (goby.msg).dccl.id = 3;
-  option (goby.msg).dccl.max_bytes = 10;
+  option (dccl.msg).id = 3;
+  option (dccl.msg).max_bytes = 10;
 
-  optional int32 in_head = 1 [(goby.field).dccl.in_head=true, (goby.field).dccl.min=0, (goby.field).dccl.max=100];
-  optional int32 in_body = 2 [(goby.field).dccl.in_head=true, (goby.field).dccl.min=0, (goby.field).dccl.max=100];
+  optional int32 in_head = 1 [(dccl.field).in_head=true, (dccl.field).min=0, (dccl.field).max=100];
+  optional int32 in_body = 2 [(dccl.field).in_head=true, (dccl.field).min=0, (dccl.field).max=100];
 }
 
 message LongIDMsg
 {
-  option (goby.msg).dccl.id = 10000;  option (goby.msg).dccl.max_bytes = 2;
+  option (dccl.msg).id = 10000;  option (dccl.msg).max_bytes = 2;
 }
 
 message TooLongIDMsg
 {
-  option (goby.msg).dccl.id = 32768;
-  option (goby.msg).dccl.max_bytes = 32;
+  option (dccl.msg).id = 32768;
+  option (dccl.msg).max_bytes = 32;
 }
 
 message LongIDEdgeMsg
 {
-  option (goby.msg).dccl.id = 128;
-  option (goby.msg).dccl.max_bytes = 2;
+  option (dccl.msg).id = 128;
+  option (dccl.msg).max_bytes = 2;
 }
 
 message ShortIDEdgeMsg
 {
-  option (goby.msg).dccl.id = 127;
-  option (goby.msg).dccl.max_bytes = 1;
+  option (dccl.msg).id = 127;
+  option (dccl.msg).max_bytes = 1;
 }

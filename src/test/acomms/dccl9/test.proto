@@ -1,52 +1,52 @@
-import "goby/common/protobuf/option_extensions.proto";
+import "goby/acomms/protobuf/dccl_option_extensions.proto";
 
 message MiniUser
 {
-  option (goby.msg).dccl.id = 1000001;
-  option (goby.msg).dccl.max_bytes = 2;
+  option (dccl.msg).id = 1000001;
+  option (dccl.msg).max_bytes = 2;
   
-  required uint32 user = 1 [(goby.field).dccl.min=0,
-                            (goby.field).dccl.max=0x03FF,
-                            (goby.field).dccl.in_head=true];
+  required uint32 user = 1 [(dccl.field).min=0,
+                            (dccl.field).max=0x03FF,
+                            (dccl.field).in_head=true];
 }
 
 message MiniOWTT
 {
-  option (goby.msg).dccl.id = 1000002;
-  option (goby.msg).dccl.max_bytes = 2;
+  option (dccl.msg).id = 1000002;
+  option (dccl.msg).max_bytes = 2;
   
-  required uint32 clock_mode = 1 [(goby.field).dccl.min=0,
-                                  (goby.field).dccl.max=3,
-                                  (goby.field).dccl.in_head=true];
+  required uint32 clock_mode = 1 [(dccl.field).min=0,
+                                  (dccl.field).max=3,
+                                  (dccl.field).in_head=true];
   
-  required uint32 tod = 2 [(goby.field).dccl.min=0,
-                           (goby.field).dccl.max=0x0F,
-                           (goby.field).dccl.in_head=true];
+  required uint32 tod = 2 [(dccl.field).min=0,
+                           (dccl.field).max=0x0F,
+                           (dccl.field).in_head=true];
   
-  required uint32 user = 3 [(goby.field).dccl.min=0,
-                            (goby.field).dccl.max=0x0F,
-                            (goby.field).dccl.in_head=true];
+  required uint32 user = 3 [(dccl.field).min=0,
+                            (dccl.field).max=0x0F,
+                            (dccl.field).in_head=true];
 }
 
 message MiniAbort
 {
-  option (goby.msg).dccl.id = 1000003;
-  option (goby.msg).dccl.max_bytes = 2;
+  option (dccl.msg).id = 1000003;
+  option (dccl.msg).max_bytes = 2;
   
-  required uint32 user = 1 [(goby.field).dccl.min=0,
-                            (goby.field).dccl.max=0x03FF,
-                            (goby.field).dccl.in_head=true];
+  required uint32 user = 1 [(dccl.field).min=0,
+                            (dccl.field).max=0x03FF,
+                            (dccl.field).in_head=true];
 }
 
 message NormalDCCL
 {
-  option (goby.msg).dccl.id = 1;
-  option (goby.msg).dccl.max_bytes = 32;
+  option (dccl.msg).id = 1;
+  option (dccl.msg).max_bytes = 32;
 
-  required int32 a = 1 [(goby.field).dccl.min=0,
-                        (goby.field).dccl.max=0xFFFF];
-  required int32 b = 2 [(goby.field).dccl.min=0,
-                        (goby.field).dccl.max=0xFFFF];
+  required int32 a = 1 [(dccl.field).min=0,
+                        (dccl.field).max=0xFFFF];
+  required int32 b = 2 [(dccl.field).min=0,
+                        (dccl.field).max=0xFFFF];
   
 }
 

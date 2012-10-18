@@ -1,6 +1,7 @@
 import "goby/acomms/protobuf/driver_base.proto";
 import "goby/acomms/protobuf/modem_message.proto";
 import "goby/common/protobuf/option_extensions.proto";
+import "goby/acomms/protobuf/dccl_option_extensions.proto";
 
 package micromodem.protobuf;
 
@@ -69,14 +70,14 @@ enum ClockMode
 
 message RangingReply
 {
-  option (goby.msg).dccl.id = 128;
-  option (goby.msg).dccl.max_bytes = 32;
+  option (dccl.msg).id = 128;
+  option (dccl.msg).max_bytes = 32;
   
   // seconds
-  repeated double one_way_travel_time = 1 [(goby.field).dccl.min = 0,
-                                           (goby.field).dccl.max = 30,
-                                           (goby.field).dccl.precision = 3,
-                                           (goby.field).dccl.max_repeat = 4];
+  repeated double one_way_travel_time = 1 [(dccl.field).min = 0,
+                                           (dccl.field).max = 30,
+                                           (dccl.field).precision = 3,
+                                           (dccl.field).max_repeat = 4];
   enum OWTTAmbiguity
   {
     OWTT_EXACT = 1; // one_way_travel_time reported is correct and known
@@ -88,12 +89,12 @@ message RangingReply
   optional ClockMode sender_clk_mode = 5 [default = NO_SYNC_TO_PPS_AND_CCCLK_BAD];
 
   // allows for sending it elsewhere
-  optional int32 forward_src = 100 [(goby.field).dccl.min = 0,
-                                (goby.field).dccl.max = 126,
+  optional int32 forward_src = 100 [(dccl.field).min = 0,
+                                (dccl.field).max = 126,
                                 (goby.field).queue.is_src = true];
   optional int32 forward_dest = 101 [default=0,
-                                 (goby.field).dccl.min = 0,
-                                 (goby.field).dccl.max = 126,
+                                 (dccl.field).min = 0,
+                                 (dccl.field).max = 126,
                                  (goby.field).queue.is_dest = true];
 }
 
@@ -130,72 +131,72 @@ enum PSKErrorCode
 // $CACST,0,223413.0000,0,1440,25,0175,0166,75,01,01,01,03,1,007,006,0,3,3,0,146,03,04,-100,-1,000,-1.2,45,10000,2000
 message ReceiveStatistics
 {
-  option (goby.msg).dccl.id = 129;
-  option (goby.msg).dccl.max_bytes = 32;
+  option (dccl.msg).id = 129;
+  option (dccl.msg).max_bytes = 32;
   
   // including in "version 0", or the original CACST
   required ReceiveMode mode = 1;
-  required uint64 time = 2 [(goby.field).dccl.codec="_time",
+  required uint64 time = 2 [(dccl.field).codec="_time",
                             (goby.field).queue.is_time = true];
   required ClockMode clock_mode = 3;
-  optional int32 mfd_peak = 4 [(goby.field).dccl.omit=true];
-  required int32 mfd_power = 5 [(goby.field).dccl.min = -30,
-                                (goby.field).dccl.max = 40];
-  required int32 mfd_ratio = 6 [(goby.field).dccl.min = 0,
-                                (goby.field).dccl.max = 16383];
-  optional int32 spl = 7 [(goby.field).dccl.omit=true];
-  optional int32 shf_agn = 8 [(goby.field).dccl.omit=true];
-  optional int32 shf_ainpshift = 9 [(goby.field).dccl.omit=true];
-  optional int32 shf_ainshift = 10 [(goby.field).dccl.omit=true];
-  optional int32 shf_mfdshift = 11 [(goby.field).dccl.omit=true];
-  optional int32 shf_p2bshift = 12 [(goby.field).dccl.omit=true];
-  required int32 rate = 13 [(goby.field).dccl.min = -1,
-                            (goby.field).dccl.max = 6];
-  required int32 source = 14 [(goby.field).dccl.min = 0,
-                              (goby.field).dccl.max = 127];
-  required int32 dest = 15 [(goby.field).dccl.min = 0,
-                            (goby.field).dccl.max = 127];
+  optional int32 mfd_peak = 4 [(dccl.field).omit=true];
+  required int32 mfd_power = 5 [(dccl.field).min = -30,
+                                (dccl.field).max = 40];
+  required int32 mfd_ratio = 6 [(dccl.field).min = 0,
+                                (dccl.field).max = 16383];
+  optional int32 spl = 7 [(dccl.field).omit=true];
+  optional int32 shf_agn = 8 [(dccl.field).omit=true];
+  optional int32 shf_ainpshift = 9 [(dccl.field).omit=true];
+  optional int32 shf_ainshift = 10 [(dccl.field).omit=true];
+  optional int32 shf_mfdshift = 11 [(dccl.field).omit=true];
+  optional int32 shf_p2bshift = 12 [(dccl.field).omit=true];
+  required int32 rate = 13 [(dccl.field).min = -1,
+                            (dccl.field).max = 6];
+  required int32 source = 14 [(dccl.field).min = 0,
+                              (dccl.field).max = 127];
+  required int32 dest = 15 [(dccl.field).min = 0,
+                            (dccl.field).max = 127];
   required PSKErrorCode psk_error_code = 16;
   required PacketType packet_type = 17;
-  required int32 number_frames = 18 [(goby.field).dccl.min = 0,
-                                     (goby.field).dccl.max = 8];
-  required int32 number_bad_frames = 19 [(goby.field).dccl.min = 0,
-                                         (goby.field).dccl.max = 8];
-  required int32 snr_rss = 20 [(goby.field).dccl.min = 0,
-                               (goby.field).dccl.max = 255];
-  required int32 snr_in = 21 [(goby.field).dccl.min = -10,
-                               (goby.field).dccl.max = 30];
-  required int32 snr_out = 22 [(goby.field).dccl.min = 0,
-                               (goby.field).dccl.max = 25];
-  required int32 snr_symbols = 23 [(goby.field).dccl.min = 0,
-                                   (goby.field).dccl.max = 30];
-  required int32 mse_equalizer = 24 [(goby.field).dccl.min = -30,
-                                     (goby.field).dccl.max = 5];
-  required int32 data_quality_factor = 25 [(goby.field).dccl.min = 0,
-                                           (goby.field).dccl.max = 255];
-  required double doppler = 26 [(goby.field).dccl.min = -3,
-                                (goby.field).dccl.max = 3,
-                                (goby.field).dccl.precision = 1];
-  required int32 stddev_noise = 27 [(goby.field).dccl.min = 0,
-                                    (goby.field).dccl.max = 255];
-  required int32 carrier_freq = 28 [(goby.field).dccl.min = 100,
-                                    (goby.field).dccl.max = 30000];
-  required int32 bandwidth = 29 [(goby.field).dccl.min = 1000,
-                                 (goby.field).dccl.max = 5000];
+  required int32 number_frames = 18 [(dccl.field).min = 0,
+                                     (dccl.field).max = 8];
+  required int32 number_bad_frames = 19 [(dccl.field).min = 0,
+                                         (dccl.field).max = 8];
+  required int32 snr_rss = 20 [(dccl.field).min = 0,
+                               (dccl.field).max = 255];
+  required int32 snr_in = 21 [(dccl.field).min = -10,
+                               (dccl.field).max = 30];
+  required int32 snr_out = 22 [(dccl.field).min = 0,
+                               (dccl.field).max = 25];
+  required int32 snr_symbols = 23 [(dccl.field).min = 0,
+                                   (dccl.field).max = 30];
+  required int32 mse_equalizer = 24 [(dccl.field).min = -30,
+                                     (dccl.field).max = 5];
+  required int32 data_quality_factor = 25 [(dccl.field).min = 0,
+                                           (dccl.field).max = 255];
+  required double doppler = 26 [(dccl.field).min = -3,
+                                (dccl.field).max = 3,
+                                (dccl.field).precision = 1];
+  required int32 stddev_noise = 27 [(dccl.field).min = 0,
+                                    (dccl.field).max = 255];
+  required int32 carrier_freq = 28 [(dccl.field).min = 100,
+                                    (dccl.field).max = 30000];
+  required int32 bandwidth = 29 [(dccl.field).min = 1000,
+                                 (dccl.field).max = 5000];
 
   // new for "version 6+", firmware 0.93.0.52+
-  optional int32 version = 30 [default=0, (goby.field).dccl.omit = true];
-  optional string date = 31 [(goby.field).dccl.omit = true];
-  optional int32 pcm = 32 [(goby.field).dccl.omit = true];
+  optional int32 version = 30 [default=0, (dccl.field).omit = true];
+  optional string date = 31 [(dccl.field).omit = true];
+  optional int32 pcm = 32 [(dccl.field).omit = true];
 
 
   // allows for sending it elsewhere
-  optional int32 forward_src = 100 [(goby.field).dccl.min = 0,
-                                (goby.field).dccl.max = 126,
+  optional int32 forward_src = 100 [(dccl.field).min = 0,
+                                (dccl.field).max = 126,
                                 (goby.field).queue.is_src = true];
   optional int32 forward_dest = 101 [default=0,
-                                 (goby.field).dccl.min = 0,
-                                 (goby.field).dccl.max = 126,
+                                 (dccl.field).min = 0,
+                                 (dccl.field).max = 126,
                                  (goby.field).queue.is_dest = true];
   
 }
@@ -249,15 +250,15 @@ extend goby.acomms.protobuf.ModemTransmission
   
   // LBL parameters will be merged with configuration parameters. If a parameter
   // is set in both places, the ones set here take precedence.
-  optional NarrowBandLBLParams narrowband_lbl = 1001 [(goby.field).dccl.omit = true];
-  optional REMUSLBLParams remus_lbl = 1002 [(goby.field).dccl.omit = true];
+  optional NarrowBandLBLParams narrowband_lbl = 1001 [(dccl.field).omit = true];
+  optional REMUSLBLParams remus_lbl = 1002 [(dccl.field).omit = true];
 
-  optional RangingReply ranging_reply = 1003 [(goby.field).dccl.omit = true,
+  optional RangingReply ranging_reply = 1003 [(dccl.field).omit = true,
                                               (goby.field).cfg.action = NEVER];
-  repeated ReceiveStatistics receive_stat = 1004 [(goby.field).dccl.omit = true,
+  repeated ReceiveStatistics receive_stat = 1004 [(dccl.field).omit = true,
                                                   (goby.field).cfg.action = NEVER]; // $CACST
-  repeated TransmitStatistics transmit_stat = 1005 [(goby.field).dccl.omit = true,
+  repeated TransmitStatistics transmit_stat = 1005 [(dccl.field).omit = true,
                                                     (goby.field).cfg.action = NEVER]; // $CAXST
-  repeated int32 frame_with_bad_crc = 1006 [(goby.field).dccl.omit = true,
+  repeated int32 frame_with_bad_crc = 1006 [(dccl.field).omit = true,
                                             (goby.field).cfg.action = NEVER];
 }

@@ -23,7 +23,6 @@ extend .google.protobuf.MessageOptions
 
 message GobyFieldOptions
 {
-  optional DCCLFieldOptions dccl = 1;
   optional QueueFieldOptions queue = 2;
   
   optional string description = 100;
@@ -48,6 +47,5 @@ message GobyFieldOptions
 
 message GobyMessageOptions
 {
-  optional DCCLMessageOptions dccl = 1;
   optional QueueMessageOptions queue = 2;
 }

@@ -84,7 +84,7 @@ void goby::acomms::DCCLDefaultMessageCodec::any_decode(Bitset* bits, boost::any*
                 std::vector<boost::any> wire_values;
                 if(field_desc->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE)
                 {
-                    for(unsigned j = 0, m = field_desc->options().GetExtension(goby::field).dccl().max_repeat(); j < m; ++j)
+                    for(unsigned j = 0, m = field_desc->options().GetExtension(dccl::field).max_repeat(); j < m; ++j)
                         wire_values.push_back(refl->AddMessage(msg, field_desc));
                     
                     codec->field_decode_repeated(bits, &wire_values, field_desc);
@@ -170,7 +170,7 @@ bool goby::acomms::DCCLDefaultMessageCodec::check_field(const google::protobuf::
     }
     else
     {
-        DCCLFieldOptions dccl_field_options = field->options().GetExtension(goby::field).dccl();
+        dccl::DCCLFieldOptions dccl_field_options = field->options().GetExtension(dccl::field);
         if(dccl_field_options.omit()) // omit
         {
             return false;

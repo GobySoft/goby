@@ -157,9 +157,9 @@ private:
 
     void validate()
         {
-            DCCLFieldCodecBase::require(DCCLFieldCodecBase::dccl_field_options().has_min(), "missing (goby.field).dccl.min");
-            DCCLFieldCodecBase::require(DCCLFieldCodecBase::dccl_field_options().has_max(), "missing (goby.field).dccl.max");
-            DCCLFieldCodecBase::require(DCCLFieldCodecBase::dccl_field_options().max_repeat() < MAX_REPEAT_SIZE, "(goby.field).dccl.max_repeat must be less than " + goby::util::as<std::string>(static_cast<int>(MAX_REPEAT_SIZE)));
+            DCCLFieldCodecBase::require(DCCLFieldCodecBase::dccl_field_options().has_min(), "missing (dccl.field).min");
+            DCCLFieldCodecBase::require(DCCLFieldCodecBase::dccl_field_options().has_max(), "missing (dccl.field).max");
+            DCCLFieldCodecBase::require(DCCLFieldCodecBase::dccl_field_options().max_repeat() < MAX_REPEAT_SIZE, "(dccl.field).max_repeat must be less than " + goby::util::as<std::string>(static_cast<int>(MAX_REPEAT_SIZE)));
         }
 
     

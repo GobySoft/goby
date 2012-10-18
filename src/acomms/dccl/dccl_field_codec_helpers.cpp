@@ -67,8 +67,8 @@ goby::acomms::MessageHandler::MessageHandler(const google::protobuf::FieldDescri
         if(field->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE)
         {
             // if explicitly set, set part (HEAD or BODY) of message for all children of this message
-            if(field->options().GetExtension(goby::field).dccl().has_in_head())
-                part_ = field->options().GetExtension(goby::field).dccl().in_head() ? HEAD : BODY;
+            if(field->options().GetExtension(dccl::field).has_in_head())
+                part_ = field->options().GetExtension(dccl::field).in_head() ? HEAD : BODY;
             
             push(field->message_type());
         }

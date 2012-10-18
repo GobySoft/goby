@@ -308,7 +308,7 @@ int main(int argc, char* argv[])
     // randomly generate a model and a message
     // loop over all message lengths from 0 to 100
     srand ( time(NULL) );
-    for(unsigned i = 0; i <= ArithmeticDouble2TestMsg::descriptor()->FindFieldByName("value")->options().GetExtension(goby::field).dccl().max_repeat(); ++i)
+    for(unsigned i = 0; i <= ArithmeticDouble2TestMsg::descriptor()->FindFieldByName("value")->options().GetExtension(dccl::field).max_repeat(); ++i)
     {
         goby::acomms::protobuf::ArithmeticModel model;
         

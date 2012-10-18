@@ -39,7 +39,7 @@
 #include "dccl_common.h"
 #include "dccl_exception.h"
 #include "goby/acomms/protobuf/dccl.pb.h"
-#include "goby/common/protobuf/acomms_option_extensions.pb.h"
+#include "goby/acomms/protobuf/dccl_option_extensions.pb.h"
 #include "goby/util/as.h"
 #include "dccl_type_helper.h"
 #include "dccl_field_codec_helpers.h"
@@ -331,11 +331,11 @@ namespace goby
 
             /// \brief Get the DCCL field option extension value for the current field
             ///
-            /// DCCLFieldOptions is defined in acomms_option_extensions.proto
-            DCCLFieldOptions dccl_field_options() const 
+            /// dccl::DCCLFieldOptions is defined in acomms_option_extensions.proto
+            dccl::DCCLFieldOptions dccl_field_options() const 
             {
                 if(this_field())
-                    return this_field()->options().GetExtension(goby::field).dccl();
+                    return this_field()->options().GetExtension(dccl::field);
                 else
                     throw(DCCLException("Cannot call dccl_field on base message (has no *field* option extension"));                
                 

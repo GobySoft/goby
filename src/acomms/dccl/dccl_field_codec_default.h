@@ -35,7 +35,7 @@
 
 #include <google/protobuf/descriptor.h>
 
-#include "goby/common/protobuf/acomms_option_extensions.pb.h"
+#include "goby/acomms/protobuf/dccl_option_extensions.pb.h"
 #include "goby/util/as.h"
 #include "goby/util/sci.h"
 #include "goby/common/time.h"

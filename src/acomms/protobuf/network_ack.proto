@@ -1,27 +1,27 @@
 import "goby/common/protobuf/option_extensions.proto";
+import "goby/acomms/protobuf/dccl_option_extensions.proto";
 
 package goby.acomms.protobuf;
 
 message NetworkAck
 {
-  option (goby.msg).dccl.id = 6;
-  option (goby.msg).dccl.max_bytes = 32;
+  option (dccl.msg).id = 6;
+  option (dccl.msg).max_bytes = 32;
   option (goby.msg).queue.ack = true;
   
-  required int32 message_src = 1 [(goby.field).dccl.min = -1,
-                                  (goby.field).dccl.max = 30,
+  required int32 message_src = 1 [(dccl.field).min = -1,
+                                  (dccl.field).max = 30,
                                   (goby.field).queue.is_dest=true]; 
-  required int32 message_dest = 2 [(goby.field).dccl.min = -1,
-                                   (goby.field).dccl.max = 30];
-  optional uint64 message_time = 3 [(goby.field).dccl.codec = "_time",
-                            (goby.field).queue.is_time=true];
+  required int32 message_dest = 2 [(dccl.field).min = -1,
+                                   (dccl.field).max = 30];
+  optional uint64 message_time = 3 [(dccl.field).codec = "_time",
+                                    (goby.field).queue.is_time=true];
 
-  required int32 message_dccl_id = 4 [(goby.field).dccl.min = 0,
-                                      (goby.field).dccl.max = 0x7FFF];
+  required int32 message_dccl_id = 4 [(dccl.field).min = 0,
+                                      (dccl.field).max = 0x7FFF];
 
-  required int32 ack_src = 10 [(goby.field).dccl.min = -1,
-                               (goby.field).dccl.max = 30,
-                               (goby.field).queue.is_src=true];
-  
+  required int32 ack_src = 10 [(dccl.field).min = -1,
+                               (dccl.field).max = 30,
+                               (goby.field).queue.is_src=true];  
 
 }

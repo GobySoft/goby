@@ -164,9 +164,9 @@ namespace goby
                                         const google::protobuf::FieldDescriptor* field_desc);
 
                     
-                    void queue_default_value_field(
-                        Wt::WFormWidget*& value_field,
-                        const google::protobuf::FieldDescriptor* field_desc);
+                    /* void queue_default_value_field( */
+                    /*     Wt::WFormWidget*& value_field, */
+                    /*     const google::protobuf::FieldDescriptor* field_desc); */
 
                     void dccl_default_value_field(
                         Wt::WFormWidget*& value_field,

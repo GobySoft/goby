@@ -949,7 +949,7 @@ void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::genera
     }
     
     dccl_default_value_field(value_field, field_desc);
-    queue_default_value_field(value_field, field_desc);
+    //    queue_default_value_field(value_field, field_desc);
 
     
         
@@ -1178,9 +1178,9 @@ WLineEdit* goby::common::LiaisonCommander::ControlsContainer::CommandContainer::
     return combo_box;
 }
 
-void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::queue_default_value_field(WFormWidget*& value_field,
-    const google::protobuf::FieldDescriptor* field_desc)
-{
+// void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::queue_default_value_field(WFormWidget*& value_field,
+//     const google::protobuf::FieldDescriptor* field_desc)
+// {
     // const QueueFieldOptions& queue_options = field_desc->options().GetExtension(goby::field).queue();
     // if(queue_options.is_time())
     // {
@@ -1200,7 +1200,7 @@ void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::queue_
     //         }
     //     }
     // }
-}
+//}
     
 void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::set_time_field(WFormWidget*& value_field, const google::protobuf::FieldDescriptor* field_desc)
 {
@@ -1233,7 +1233,8 @@ void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::set_ti
                 line_edit->setText(goby::util::as<std::string>(now));
 
             case google::protobuf::FieldDescriptor::CPPTYPE_DOUBLE:
-                line_edit->setText(goby::util::as<std::string>(goby::util::as<double>(now)));
+                line_edit->setText(goby::util::as<std::string>(
+                                       goby::util::unbiased_round(goby::util::as<double>(now),0)));
         }
         line_edit->changed().emit();
     }
@@ -1289,6 +1290,14 @@ void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::dccl_d
 
         }
     }
+
+    if(options.codec() == "_time")
+    {
+        value_field->setDisabled(true);
+        set_time_field(value_field, field_desc);
+        time_field_ = std::make_pair(value_field, field_desc);
+    }    
+    
 }
 
 void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::dccl_default_modify_field(

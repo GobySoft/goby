@@ -7,12 +7,10 @@ message ChatMessage
   option (dccl.msg).max_bytes = 32;
   
   required int32 destination = 1 [(dccl.field).max=30,
-                                  (dccl.field).min=0,
-                                  (goby.field).queue.is_dest = true];
+                                  (dccl.field).min=0];
 
   required int32 source = 2 [(dccl.field).max=30,
-                             (dccl.field).min=0,
-                             (goby.field).queue.is_src = true];
+                             (dccl.field).min=0];
 
   required string telegram = 3 [(dccl.field).max_length=26];
 }

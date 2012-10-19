@@ -79,9 +79,21 @@ int main(int argc, char* argv[])
     goby::acomms::QueueManager q_manager1, q_manager2, q_manager3;
     goby::acomms::protobuf::QueueManagerConfig q_cfg1, q_cfg2, q_cfg3;
     goby::acomms::protobuf::QueuedMessageEntry* q_entry = q_cfg1.add_message_entry();
-    q_entry->set_protobuf_name("GobyMessage");
+    q_entry->set_protobuf_name("RouteMessage");
     q_entry->set_newest_first(true);
 
+    goby::acomms::protobuf::QueuedMessageEntry::Role* src_role = q_entry->add_role();
+    src_role->set_type(goby::acomms::protobuf::QueuedMessageEntry::SOURCE_ID);
+    src_role->set_field("src");
+    
+    goby::acomms::protobuf::QueuedMessageEntry::Role* dest_role = q_entry->add_role();
+    dest_role->set_type(goby::acomms::protobuf::QueuedMessageEntry::DESTINATION_ID);
+    dest_role->set_field("dest");    
+
+    goby::acomms::protobuf::QueuedMessageEntry::Role* time_role = q_entry->add_role();
+    time_role->set_type(goby::acomms::protobuf::QueuedMessageEntry::TIMESTAMP);
+    time_role->set_field("time");
+    
     q_cfg2.add_message_entry()->CopyFrom(*q_entry);
     q_cfg3.add_message_entry()->CopyFrom(*q_entry);
     

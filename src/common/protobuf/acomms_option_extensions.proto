@@ -1,6 +1,0 @@
-message QueueFieldOptions
-{
-  optional bool is_src = 1 [default = false];
-  optional bool is_dest = 2 [default = false];
-  optional bool is_time = 3 [default = false];
-}

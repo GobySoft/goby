@@ -30,7 +30,6 @@
 #include "goby/common/logger.h"
 #include "goby/util/as.h"
 #include <google/protobuf/descriptor.pb.h>
-#include "goby/common/protobuf/acomms_option_extensions.pb.h"
 #include "goby/util/dynamic_protobuf_manager.h"
 #include <boost/regex.hpp>
 
@@ -157,8 +156,20 @@ void goby::transitional::DCCLTransitionalCodec::convert_xml_message_file(
         if(old_queue_cfg[i].has_value_base())
             queue_entry->set_value_base(old_queue_cfg[i].value_base());
         if(old_queue_cfg[i].has_ttl())
-            queue_entry->set_ttl(old_queue_cfg[i].ttl());
-
+            queue_entry->set_ttl(old_queue_cfg[i].ttl());        
+        
+        goby::acomms::protobuf::QueuedMessageEntry::Role* src_role = queue_entry->add_role();
+        src_role->set_type(goby::acomms::protobuf::QueuedMessageEntry::SOURCE_ID);
+        src_role->set_field(to_iterator(added_ids[i])->header_var(HEAD_SRC_ID).name());
+        
+        goby::acomms::protobuf::QueuedMessageEntry::Role* dest_role = queue_entry->add_role();
+        dest_role->set_type(goby::acomms::protobuf::QueuedMessageEntry::DESTINATION_ID);
+        dest_role->set_field(to_iterator(added_ids[i])->header_var(HEAD_DEST_ID).name());    
+        
+        goby::acomms::protobuf::QueuedMessageEntry::Role* time_role = queue_entry->add_role();
+        time_role->set_type(goby::acomms::protobuf::QueuedMessageEntry::TIMESTAMP);
+        time_role->set_field(to_iterator(added_ids[i])->header_var(HEAD_TIME).name());
+    
         for(int i = 0, n = message_file.manipulator_size(); i < n; ++i)
             queue_entry->add_manipulator(message_file.manipulator(i));
     }

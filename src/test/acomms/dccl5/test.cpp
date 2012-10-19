@@ -27,7 +27,6 @@
 #include "goby/acomms/dccl/dccl_field_codec_default.h"
 #include "goby/acomms/dccl/dccl_field_codec.h"
 #include "test.pb.h"
-#include "goby/common/protobuf/acomms_option_extensions.pb.h"
 #include "goby/util/as.h"
 #include "goby/common/time.h"
 #include "goby/util/binary.h"
@@ -41,33 +40,30 @@ bool found_time = false;
 
 boost::posix_time::ptime current_time = boost::posix_time::second_clock::universal_time();
 
-void process_queue_field(const boost::any& field_value,
-                         const boost::any& wire_value,
-                         const boost::any& extension_value)
+const std::string time_field = "Header.time";
+const std::string src_field = "Header.source_platform";
+const std::string dest_field = "Header.dest_platform";
+
+void process_queue_field(const google::protobuf::FieldDescriptor* field,
+                         const boost::any& field_value,
+                         const boost::any& wire_value)
 {
-    std::cout << extension_value.type().name() << std::endl;
+    std::cout << "Field: " << field->DebugString() << std::flush;
     
-    const google::protobuf::Message* options_msg = boost::any_cast<const google::protobuf::Message*>(extension_value);
-
-    goby::GobyFieldOptions goby_field_options;
-    goby_field_options.CopyFrom(*options_msg);
-
-    const QueueFieldOptions& field_options = goby_field_options.queue();
-    
-    if(field_options.is_dest())
+    if(field->full_name() == dest_field)
     {
         std::cout << "dest: type: `" << wire_value.type().name() << "`, wire_value: " << boost::any_cast<int32>(wire_value) << std::endl;
         assert(boost::any_cast<int32>(wire_value) == 3);    
         found_dest = true;
     }
-    else if(field_options.is_src())
+    else if(field->full_name() == src_field)
     {
         std::cout << "source: type: `" << wire_value.type().name() << "`, wire_value: " << boost::any_cast<int32>(wire_value) << std::endl;
         
         assert(boost::any_cast<int32>(wire_value) == 1);    
         found_source = true;
     }
-    else if(field_options.is_time())
+    else if(field->full_name() == time_field)
     {
         std::cout << "time: type: `" << field_value.type().name() << "`, field_value: " << boost::any_cast<std::string>(field_value) << std::endl;        
         assert(boost::any_cast<std::string>(field_value) == goby::util::as<std::string>(current_time));
@@ -80,14 +76,15 @@ int main(int argc, char* argv[])
     goby::glog.add_stream(goby::common::logger::DEBUG3, &std::cerr);
     goby::glog.set_name(argv[0]);
 
+    goby::acomms::DCCLCodec* codec = goby::acomms::DCCLCodec::get();
 
-    goby::acomms::DCCLFieldCodecBase::register_wire_value_hook(goby::field.number(), &process_queue_field);
+    goby::acomms::DCCLFieldCodecBase::register_wire_value_hook(codec->id<GobyMessage>(),
+                                                               &process_queue_field);
     
     goby::acomms::DCCLModemIdConverterCodec::add("unicorn", 3);
     goby::acomms::DCCLModemIdConverterCodec::add("topside", 1);
     
     
-    goby::acomms::DCCLCodec* codec = goby::acomms::DCCLCodec::get();
     goby::acomms::protobuf::DCCLConfig cfg;
     codec->set_cfg(cfg);
 

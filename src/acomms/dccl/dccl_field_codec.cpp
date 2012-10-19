@@ -32,7 +32,7 @@ goby::acomms::MessageHandler::MessagePart goby::acomms::DCCLFieldCodecBase::part
 
 const google::protobuf::Message* goby::acomms::DCCLFieldCodecBase::root_message_ = 0;
 
-boost::ptr_map<int, boost::signals2::signal<void (const boost::any& field_value, const boost::any& wire_value, const boost::any& extension_value)> >   goby::acomms::DCCLFieldCodecBase::wire_value_hooks_;
+boost::ptr_map<int, boost::signals2::signal<void (const google::protobuf::FieldDescriptor* field, const boost::any& field_value, const boost::any& wire_value)> > goby::acomms::DCCLFieldCodecBase::wire_value_hooks_;
 
 
 using goby::glog;
@@ -434,44 +434,34 @@ unsigned goby::acomms::DCCLFieldCodecBase::any_size_repeated(const std::vector<b
 void goby::acomms::DCCLFieldCodecBase::any_run_hooks(const boost::any& field_value)   
 {
     if(this_field())
-        glog.is(DEBUG2) && glog << group(DCCLCodec::glog_encode_group()) << "Running hooks for " << this_field()->DebugString() << std::flush;
-    else
-        glog.is(DEBUG2) && glog << group(DCCLCodec::glog_encode_group()) << "running hooks for base message" << std::endl;
-
-    
-    typedef boost::ptr_map<int, boost::signals2::signal<void (const boost::any& field_value,
-                                                              const boost::any& wire_value,
-                                                              const boost::any& extension_value)> > hook_map;
-
-    for(hook_map::const_iterator i = wire_value_hooks_.begin(), e = wire_value_hooks_.end();
-        i != e;
-        ++i )
     {
-        
-        const google::protobuf::FieldDescriptor * extension_desc = this_field()->options().GetReflection()->FindKnownExtensionByNumber(i->first);
-        
-        boost::shared_ptr<FromProtoCppTypeBase> helper =
-            DCCLTypeHelper::find(extension_desc);
-
-        boost::any extension_value = helper->get_value(extension_desc, this_field()->options());
-        
-        if(!(extension_value.empty() || field_value.empty()))
-        {
-            try
-            {
-                boost::any wire_value;
-                field_pre_encode(&wire_value, field_value);
-                
-                i->second->operator()(field_value, wire_value, extension_value);   
-                glog.is(DEBUG2) && glog  <<  group(DCCLCodec::glog_encode_group()) <<"Found : " << i->first << ": " << extension_desc->DebugString() << std::endl;
-            }
-            
-            catch(std::exception& e)
-            {
-                glog.is(DEBUG1) && glog <<  group(DCCLCodec::glog_encode_group()) <<  warn << "failed to run hook for " << i->first << ", exception: " << e.what() << std::endl;
-            }
-        }
+        glog.is(DEBUG2) && glog << group(DCCLCodec::glog_encode_group()) << "Running hooks for " << this_field()->DebugString() << std::flush;
     }
+    else
+    {
+        glog.is(DEBUG2) && glog << group(DCCLCodec::glog_encode_group()) << "Not running hooks for base message" << std::endl;
+        return;
+    }
+
+
+    int dccl_id = DCCLCodec::get()->id(root_message_->GetDescriptor());
+    
+    if(!wire_value_hooks_.count(dccl_id))
+    {
+        glog.is(DEBUG2) && glog << group(DCCLCodec::glog_encode_group()) << "No hooks to run." << std::endl;
+        return;
+    }        
+
+    try
+    {
+        boost::any wire_value;
+        field_pre_encode(&wire_value, field_value);
+        wire_value_hooks_[dccl_id](this_field(), field_value, wire_value);
+    }
+    catch(std::exception& e)
+    {
+        glog.is(DEBUG1) && glog <<  group(DCCLCodec::glog_encode_group()) <<  warn << "failed to run hook, exception: " << e.what() << std::endl;
+    }    
 }            
 
 

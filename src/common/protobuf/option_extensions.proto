@@ -1,5 +1,4 @@
 import "google/protobuf/descriptor.proto";
-import "goby/common/protobuf/acomms_option_extensions.proto";
 
 package goby;
 
@@ -23,8 +22,6 @@ extend .google.protobuf.MessageOptions
 
 message GobyFieldOptions
 {
-  optional QueueFieldOptions queue = 2;
-  
   optional string description = 100;
   optional string example = 101;
   

@@ -6,14 +6,11 @@ message RouteMessage
   option (dccl.msg).id = 1;
   option (dccl.msg).max_bytes = 32;
 
-  required uint64 time = 1 [(dccl.field).codec="_time",
-                            (goby.field).queue.is_time=true];
+  required uint64 time = 1 [(dccl.field).codec="_time"];
   required int32 src = 2 [(dccl.field).min = 0,
-                          (dccl.field).max=65535,
-                          (goby.field).queue.is_src=true];
+                          (dccl.field).max=65535];
   required int32 dest = 3 [(dccl.field).min = 0,
-                           (dccl.field).max=65535,
-                           (goby.field).queue.is_dest=true];
+                           (dccl.field).max=65535];
   required string telegram = 4 [(dccl.field).max_length=10];
 }
 

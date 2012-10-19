@@ -12,15 +12,13 @@ message Header
   // result of goby::util::as<std::string>(goby_time())
   // e.g. "2002-01-20 23:59:59.000"
   required string time = 10 [(dccl.field).codec="_time",
-                             (dccl.field).in_head=true,
-                             (goby.field).queue.is_time=true];
+                             (dccl.field).in_head=true];
 
   //
   // source
   //
   required string source_platform = 11 [(dccl.field).codec="_platform<->modem_id",
-                                        (dccl.field).in_head=true,
-                                        (goby.field).queue.is_src=true];
+                                        (dccl.field).in_head=true];
   optional string source_app = 12 [(dccl.field).omit=true];
   
   //
@@ -30,7 +28,6 @@ message Header
   optional PublishDestination dest_type = 13 [default = PUBLISH_SELF, (dccl.field).in_head=true];
   
   optional string dest_platform = 14 [(dccl.field).codec="_platform<->modem_id",
-                                      (dccl.field).in_head=true,
-                                      (goby.field).queue.is_dest=true]; // required if dest_type == other
+                                      (dccl.field).in_head=true]; // required if dest_type == other
 
 }

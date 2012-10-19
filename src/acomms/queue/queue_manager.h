@@ -168,9 +168,11 @@ namespace goby
              
              protobuf::QueuedMessageMeta meta_from_msg(const google::protobuf::Message& msg)
              {
-                 latest_meta_.Clear();
-                 codec_->run_hooks(msg);
-                 return latest_meta_;
+                 unsigned dccl_id = codec_->id(msg.GetDescriptor());
+                 if(!queues_.count(dccl_id))
+                     add_queue(msg.GetDescriptor());
+                 
+                 return queues_[dccl_id]->meta_from_msg(msg);
              }
              
              
@@ -244,18 +246,13 @@ namespace goby
 
             void process_modem_ack(const protobuf::ModemTransmission& ack_msg);
 
-            void set_latest_metadata(const boost::any& field_value,
-                                     const boost::any& wire_value,
-                                     const boost::any& extension_value);
-
             
             
           private:
-            protobuf::QueuedMessageMeta latest_meta_;
 
             friend class Queue;
             int modem_id_;
-            std::map<unsigned, Queue> queues_;
+            std::map<unsigned, boost::shared_ptr<Queue> > queues_;
             
             // map frame number onto %queue pointer that contains
             // the data for this ack

@@ -91,6 +91,17 @@ int main(int argc, char* argv[])
     //
     goby::acomms::protobuf::QueueManagerConfig q_manager_cfg;
     q_manager_cfg.set_modem_id(my_id_);
+    goby::acomms::protobuf::QueuedMessageEntry* q_entry = q_manager_cfg.add_message_entry();
+    q_entry->set_protobuf_name("ChatMessage");
+
+    goby::acomms::protobuf::QueuedMessageEntry::Role* src_role = q_entry->add_role();
+    src_role->set_type(goby::acomms::protobuf::QueuedMessageEntry::SOURCE_ID);
+    src_role->set_field("source");
+    
+    goby::acomms::protobuf::QueuedMessageEntry::Role* dest_role = q_entry->add_role();
+    dest_role->set_type(goby::acomms::protobuf::QueuedMessageEntry::DESTINATION_ID);
+    dest_role->set_field("destination");
+
     goby::acomms::connect(&q_manager_.signal_receive, &received_data);
     goby::acomms::connect(&q_manager_.signal_ack, &received_ack);
     

@@ -1181,25 +1181,25 @@ WLineEdit* goby::common::LiaisonCommander::ControlsContainer::CommandContainer::
 void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::queue_default_value_field(WFormWidget*& value_field,
     const google::protobuf::FieldDescriptor* field_desc)
 {
-    const QueueFieldOptions& queue_options = field_desc->options().GetExtension(goby::field).queue();
-    if(queue_options.is_time())
-    {
-        value_field->setDisabled(true);
-        set_time_field(value_field, field_desc);
-        time_field_ = std::make_pair(value_field, field_desc);
-    }
-    else if(queue_options.is_src())
-    {
-        if(WLineEdit* line_edit = dynamic_cast<WLineEdit*>(value_field))
-        {
-            if(pb_commander_config_.has_modem_id())
-            {
-                line_edit->setDisabled(true);
-                line_edit->setText(goby::util::as<std::string>(pb_commander_config_.modem_id()));
-                line_edit->changed().emit();
-            }
-        }
-    }
+    // const QueueFieldOptions& queue_options = field_desc->options().GetExtension(goby::field).queue();
+    // if(queue_options.is_time())
+    // {
+    //     value_field->setDisabled(true);
+    //     set_time_field(value_field, field_desc);
+    //     time_field_ = std::make_pair(value_field, field_desc);
+    // }
+    // else if(queue_options.is_src())
+    // {
+    //     if(WLineEdit* line_edit = dynamic_cast<WLineEdit*>(value_field))
+    //     {
+    //         if(pb_commander_config_.has_modem_id())
+    //         {
+    //             line_edit->setDisabled(true);
+    //             line_edit->setText(goby::util::as<std::string>(pb_commander_config_.modem_id()));
+    //             line_edit->changed().emit();
+    //         }
+    //     }
+    // }
 }
     
 void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::set_time_field(WFormWidget*& value_field, const google::protobuf::FieldDescriptor* field_desc)

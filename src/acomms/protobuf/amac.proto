@@ -22,7 +22,7 @@ message MACUpdate
     CLEAR = 8;
   }
 
-  required int32 dest = 1 [(dccl.field).min = 1, (dccl.field).max = 30, (goby.field).queue.is_dest = true, (dccl.field).in_head = true]; // modem_id that this update is for
+  required int32 dest = 1 [(dccl.field).min = 1, (dccl.field).max = 30, (dccl.field).in_head = true]; // modem_id that this update is for
   optional UpdateType update_type = 2 [default = NO_CHANGE];
   repeated ModemTransmission slot = 3 [(dccl.field).max_repeat=6];
   optional int32 first_iterator = 4 [(dccl.field).min = 0, (dccl.field).max = 60, default = 0]; // integer offset from begin()

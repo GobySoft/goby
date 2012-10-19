@@ -27,8 +27,14 @@ message QueuedMessageEntry
   message Role
   {
     required RoleType type = 1;
-    optional string field = 2;
-    optional int32 static = 3;
+    enum RoleSetting
+    {
+      STATIC = 1;
+      FIELD_VALUE = 2;
+    }
+    optional RoleSetting setting = 2 [default = FIELD_VALUE];
+    optional string field = 3;
+    optional int32 static_value = 4;
   }
   repeated Role role = 20 [(goby.field).description="Set a message field or static value to various roles (source address, destination address, etc.)"];
 }

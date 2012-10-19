@@ -1,5 +1,4 @@
 import "goby/acomms/protobuf/dccl_option_extensions.proto";
-import "goby/common/protobuf/option_extensions.proto";
 
 message GobyMessage
 {
@@ -8,8 +7,7 @@ message GobyMessage
   
   // one byte
   required int32 dest = 1 [(dccl.field).min=0,
-                           (dccl.field).max=255,
-                           (goby.field).queue.is_dest = true];
+                           (dccl.field).max=255];
   // one byte
   required int32 telegram = 2 [(dccl.field).min=0,
                                (dccl.field).max=255];

@@ -26,11 +26,11 @@
 
 #include "queue.h"
 #include "queue_manager.h"
-#include "goby/common/protobuf/acomms_option_extensions.pb.h"
 
 using goby::common::goby_time;
 
 using namespace goby::common::logger;
+using goby::util::as;
 
 goby::acomms::Queue::Queue(const google::protobuf::Descriptor* desc /*= 0*/, QueueManager* parent /*= 0*/, const protobuf::QueuedMessageEntry& cfg)
     : desc_(desc),
@@ -38,24 +38,86 @@ goby::acomms::Queue::Queue(const google::protobuf::Descriptor* desc /*= 0*/, Que
       cfg_(cfg),
       last_send_time_(goby_time())
 {
+    goby::acomms::DCCLFieldCodecBase::register_wire_value_hook(
+        id(), boost::bind(&Queue::set_latest_metadata, this, _1, _2, _3));
 
+    process_cfg();
 }
 
 
 // add a new message
-bool goby::acomms::Queue::push_message(const protobuf::QueuedMessageMeta& meta_msg,
-                                       boost::shared_ptr<google::protobuf::Message> dccl_msg)
+bool goby::acomms::Queue::push_message(boost::shared_ptr<google::protobuf::Message> dccl_msg)
 {
-    if(meta_msg.non_repeated_size() == 0)
+    latest_meta_.Clear();
+    
+    latest_meta_.set_non_repeated_size(parent_->codec_->size(*dccl_msg));
+
+    parent_->codec_->run_hooks(*dccl_msg);
+    latest_meta_.MergeFrom(static_meta_);
+    
+    glog.is(DEBUG3) && glog << group(parent_->glog_push_group()) << "Message post hooks: " << latest_meta_ << std::endl;
+    
+    parent_->signal_out_route(&latest_meta_, *dccl_msg, parent_->cfg_.modem_id());
+    
+    glog.is(DEBUG1) && glog << group(parent_->glog_push_group())
+                            << parent_->msg_string(dccl_msg->GetDescriptor())
+                            << ": attempting to push message (destination: "
+                            << latest_meta_.dest() << ")" << std::endl;
+    
+    
+    // loopback if set
+    if(parent_->manip_manager_.has(id(), protobuf::LOOPBACK))
+    {
+        glog.is(DEBUG1) && glog << group(parent_->glog_push_group())
+                                << parent_->msg_string(dccl_msg->GetDescriptor())
+                                << ": LOOPBACK manipulator set, sending back to decoder"
+                                << std::endl;
+        parent_->signal_receive(*dccl_msg);
+    }
+    
+    // no queue manipulator set
+    if(parent_->manip_manager_.has(id(), protobuf::NO_QUEUE))
+    {
+        glog.is(DEBUG1) && glog << group(parent_->glog_push_group())
+                                << parent_->msg_string(dccl_msg->GetDescriptor())
+                                << ": not queuing: NO_QUEUE manipulator is set" << std::endl;
+        return true;
+    }
+    // message is to us, auto-loopback
+    else if(latest_meta_.dest() == parent_->modem_id_)
+    {
+        glog.is(DEBUG1) && glog << group(parent_->glog_push_group()) << "Message is for us: using loopback, not physical interface" << std::endl;
+        
+        parent_->signal_receive(*dccl_msg);
+
+        // provide an ACK if desired 
+        if((latest_meta_.has_ack_requested() && latest_meta_.ack_requested()) ||
+           queue_message_options().ack())
+        {
+            protobuf::ModemTransmission ack_msg;
+            ack_msg.set_time(goby::common::goby_time<uint64>());
+            ack_msg.set_src(latest_meta_.dest());
+            ack_msg.set_dest(latest_meta_.dest());
+            ack_msg.set_type(protobuf::ModemTransmission::ACK);
+            
+            parent_->signal_ack(ack_msg, *dccl_msg);
+        }
+        return true;
+    }
+
+    if(!latest_meta_.has_time())
+        latest_meta_.set_time(goby::common::goby_time<uint64>());
+    
+    if(latest_meta_.non_repeated_size() == 0)
     {
         goby::glog.is(DEBUG1) && glog << group(parent_->glog_out_group()) << warn
-                                    << "empty message attempted to be pushed to queue "
+                                      << "empty message attempted to be pushed to queue "
                                       << name() << std::endl;
         return false;
     }
     
     messages_.push_back(QueuedMessage());
-    messages_.back().meta = meta_msg;
+    messages_.back().meta = latest_meta_;
     messages_.back().dccl_msg = dccl_msg;
     protobuf::QueuedMessageMeta* new_meta_msg = &messages_.back().meta;
     
@@ -86,10 +148,22 @@ bool goby::acomms::Queue::push_message(const protobuf::QueuedMessageMeta& meta_m
                             << queue_message_options().max_queue() << ")" << std::endl;
     
     glog.is(DEBUG2) && glog << group(parent_->glog_push_group()) << "Message: " << *dccl_msg << std::endl;
-    glog.is(DEBUG2) && glog << group(parent_->glog_push_group()) << "Meta: " << meta_msg << std::endl;    
+    glog.is(DEBUG2) && glog << group(parent_->glog_push_group()) << "Meta: " << *new_meta_msg << std::endl;    
     
     return true;     
 }
+
+goby::acomms::protobuf::QueuedMessageMeta goby::acomms::Queue::meta_from_msg(const google::protobuf::Message& dccl_msg)
+{
+    latest_meta_.Clear();
+    parent_->codec_->run_hooks(dccl_msg);
+    latest_meta_.MergeFrom(static_meta_);
+    glog.is(DEBUG2) && glog << group(parent_->glog_push_group()) << "Meta: " << latest_meta_ << std::endl;    
+
+    return latest_meta_;
+}
+
+
 
 goby::acomms::messages_it goby::acomms::Queue::next_message_it()
 {
@@ -332,3 +406,135 @@ std::ostream& goby::acomms::operator<< (std::ostream& os, const goby::acomms::Qu
     return os;
 }
 
+
+void goby::acomms::Queue::set_latest_metadata(const google::protobuf::FieldDescriptor* field,
+                                              const boost::any& field_value,
+                                              const boost::any& wire_value)
+{
+
+if(field->full_name() == roles_[protobuf::QueuedMessageEntry::DESTINATION_ID])
+    {
+        int dest = BROADCAST_ID;
+        if(wire_value.type() == typeid(int32))
+            dest = boost::any_cast<int32>(wire_value);
+        else if(wire_value.type() == typeid(int64))
+            dest = boost::any_cast<int64>(wire_value);
+        else if(wire_value.type() == typeid(uint32))
+            dest = boost::any_cast<uint32>(wire_value);
+        else if(wire_value.type() == typeid(uint64))
+            dest = boost::any_cast<uint64>(wire_value);
+        else if(!wire_value.empty())
+            throw(QueueException("Invalid type " + std::string(wire_value.type().name()) + " given for (queue_field).is_dest. Expected integer type"));
+                    
+        goby::glog.is(DEBUG2) &&
+            goby::glog << group(parent_->glog_push_group_) << "setting dest to " << dest << std::endl;
+                
+        latest_meta_.set_dest(dest);
+    }
+    else if(field->full_name() == roles_[protobuf::QueuedMessageEntry::SOURCE_ID])
+    {
+        int src = BROADCAST_ID;
+        if(wire_value.type() == typeid(int32))
+            src = boost::any_cast<int32>(wire_value);
+        else if(wire_value.type() == typeid(int64))
+            src = boost::any_cast<int64>(wire_value);
+        else if(wire_value.type() == typeid(uint32))
+            src = boost::any_cast<uint32>(wire_value);
+        else if(wire_value.type() == typeid(uint64))
+            src = boost::any_cast<uint64>(wire_value);
+        else if(!wire_value.empty())
+            throw(QueueException("Invalid type " + std::string(wire_value.type().name()) + " given for (queue_field).is_src. Expected integer type"));
+
+        goby::glog.is(DEBUG2) &&
+            goby::glog << group(parent_->glog_push_group_) <<  "setting source to " << src << std::endl;
+                
+        latest_meta_.set_src(src);
+
+    }
+    else if(field->full_name() == roles_[protobuf::QueuedMessageEntry::TIMESTAMP])
+    {
+        if(field_value.type() == typeid(uint64)) 
+            latest_meta_.set_time(boost::any_cast<uint64>(field_value));
+        else if(field_value.type() == typeid(double))
+            latest_meta_.set_time(static_cast<uint64>(boost::any_cast<double>(field_value))*1e6);
+        else if(field_value.type() == typeid(std::string))
+            latest_meta_.set_time(goby::util::as<uint64>(goby::util::as<boost::posix_time::ptime>(boost::any_cast<std::string>(field_value))));
+        else if(!wire_value.empty())
+            throw(QueueException("Invalid type " + std::string(field_value.type().name()) + " given for (goby.field).queue.is_time. Expected uint64 contained microseconds since UNIX, double containing seconds since UNIX or std::string containing as<std::string>(boost::posix_time::ptime)"));
+
+        goby::glog.is(DEBUG2) &&
+            goby::glog << group(parent_->glog_push_group_) <<  "setting time to " << as<boost::posix_time::ptime>(latest_meta_.time()) << std::endl;            
+        
+    } 
+}
+
+void goby::acomms::Queue::process_cfg()
+{
+    roles_.clear();
+    static_meta_.Clear();
+    
+    for(int i = 0, n = cfg_.role_size(); i < n; ++i)
+    {
+        std::string role_field;
+        
+        switch(cfg_.role(i).setting())
+        {
+            case protobuf::QueuedMessageEntry::Role::STATIC:
+            {
+                if(!cfg_.role(i).has_static_value())
+                    throw(QueueException("Role " + protobuf::QueuedMessageEntry::RoleType_Name(cfg_.role(i).type()) + " is set to STATIC but has no `static_value`" ));
+
+                switch(cfg_.role(i).type())
+                {
+                    case protobuf::QueuedMessageEntry::DESTINATION_ID:
+                        static_meta_.set_dest(cfg_.role(i).static_value());
+                        break;
+                    
+                    case protobuf::QueuedMessageEntry::SOURCE_ID:
+                        static_meta_.set_src(cfg_.role(i).static_value());
+                        break;
+                    
+                    case protobuf::QueuedMessageEntry::TIMESTAMP:
+                        throw(QueueException("TIMESTAMP role cannot be static" ));
+                        break;
+                }
+            }
+            break;
+
+            case protobuf::QueuedMessageEntry::Role::FIELD_VALUE:
+            {
+                // if no "." in the name, prepend with message name
+                if(cfg_.role(i).field().find('.') == std::string::npos)
+                    cfg_.mutable_role(i)->set_field(desc_->full_name() + "." + cfg_.role(i).field());
+
+                role_field = cfg_.role(i).field();
+            }
+            break;
+        }
+        typedef std::map<protobuf::QueuedMessageEntry::RoleType, std::string> Map;
+
+        std::pair<Map::iterator,bool> result = roles_.insert(std::make_pair(cfg_.role(i).type(),
+                                                                            role_field));
+        if(!result.second)
+            throw(QueueException("Role " + protobuf::QueuedMessageEntry::RoleType_Name(cfg_.role(i).type()) + " was assigned more than once. Each role must have at most one field or static value per message." ));
+    }
+
+    // check that the FIELD_VALUE roles fields actually exist
+    // latest_meta_.Clear();
+    
+    // boost::shared_ptr<google::protobuf::Message> new_msg =
+    //     goby::util::DynamicProtobufManager::new_protobuf_message(desc_);
+
+    // std::cout << this << ": " << last_send_time_  << std::endl;
+
+    // parent_->codec_->run_hooks(*new_msg);
+    
+    // if(!roles_[protobuf::QueuedMessageEntry::DESTINATION_ID].empty() && !latest_meta_.has_dest())
+    //     throw(QueueException("DESTINATION_ID field (" + roles_[protobuf::QueuedMessageEntry::DESTINATION_ID] + ") does not exist in this message"));
+    // if(!roles_[protobuf::QueuedMessageEntry::SOURCE_ID].empty() && !latest_meta_.has_src())
+    //     throw(QueueException("SOURCE_ID field (" + roles_[protobuf::QueuedMessageEntry::SOURCE_ID] + ") does not exist in this message"));
+    // if(!roles_[protobuf::QueuedMessageEntry::TIMESTAMP].empty() && !latest_meta_.has_time())
+    //     throw(QueueException("TIMESTAMP field (" + roles_[protobuf::QueuedMessageEntry::TIMESTAMP] + ") does not exist in this message"));
+
+    
+}

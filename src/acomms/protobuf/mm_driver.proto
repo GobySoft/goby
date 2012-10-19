@@ -87,15 +87,6 @@ message RangingReply
   optional bool is_one_way_synchronous = 3 [default = false]; // if false, type given by ModemTransmission.type
   optional ClockMode receiver_clk_mode = 4 [default = NO_SYNC_TO_PPS_AND_CCCLK_BAD];
   optional ClockMode sender_clk_mode = 5 [default = NO_SYNC_TO_PPS_AND_CCCLK_BAD];
-
-  // allows for sending it elsewhere
-  optional int32 forward_src = 100 [(dccl.field).min = 0,
-                                (dccl.field).max = 126,
-                                (goby.field).queue.is_src = true];
-  optional int32 forward_dest = 101 [default=0,
-                                 (dccl.field).min = 0,
-                                 (dccl.field).max = 126,
-                                 (goby.field).queue.is_dest = true];
 }
 
 enum PacketType
@@ -136,8 +127,7 @@ message ReceiveStatistics
   
   // including in "version 0", or the original CACST
   required ReceiveMode mode = 1;
-  required uint64 time = 2 [(dccl.field).codec="_time",
-                            (goby.field).queue.is_time = true];
+  required uint64 time = 2 [(dccl.field).codec="_time"];
   required ClockMode clock_mode = 3;
   optional int32 mfd_peak = 4 [(dccl.field).omit=true];
   required int32 mfd_power = 5 [(dccl.field).min = -30,
@@ -190,14 +180,6 @@ message ReceiveStatistics
   optional int32 pcm = 32 [(dccl.field).omit = true];
 
 
-  // allows for sending it elsewhere
-  optional int32 forward_src = 100 [(dccl.field).min = 0,
-                                (dccl.field).max = 126,
-                                (goby.field).queue.is_src = true];
-  optional int32 forward_dest = 101 [default=0,
-                                 (dccl.field).min = 0,
-                                 (dccl.field).max = 126,
-                                 (goby.field).queue.is_dest = true];
   
 }
 

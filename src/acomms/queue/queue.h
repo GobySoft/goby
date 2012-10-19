@@ -38,10 +38,10 @@
 
 #include "goby/common/time.h"
 #include "goby/util/as.h"
+#include "goby/acomms/dccl/dccl.h"
 
 
 #include "goby/acomms/protobuf/queue.pb.h"
-#include "goby/common/protobuf/acomms_option_extensions.pb.h"
 #include "goby/acomms/acomms_helpers.h"
 
 namespace goby
@@ -64,11 +64,15 @@ namespace goby
         class Queue
         {
           public:
-            Queue(const google::protobuf::Descriptor* desc = 0, QueueManager* parent = 0, const protobuf::QueuedMessageEntry& cfg = protobuf::QueuedMessageEntry());
+            Queue(const google::protobuf::Descriptor* desc,
+                  QueueManager* parent,
+                  const protobuf::QueuedMessageEntry& cfg = protobuf::QueuedMessageEntry());
 
-            bool push_message(const protobuf::QueuedMessageMeta& encoded_msg,
-                              boost::shared_ptr<google::protobuf::Message> dccl_msg);
+            bool push_message(boost::shared_ptr<google::protobuf::Message> dccl_msg);
 
+            protobuf::QueuedMessageMeta meta_from_msg(const google::protobuf::Message& dccl_msg);
+            
+            
             goby::acomms::QueuedMessage give_data(unsigned frame);
             bool pop_message(unsigned frame);
             bool pop_message_ack(unsigned frame, boost::shared_ptr<google::protobuf::Message>& removed_msg);
@@ -108,23 +112,38 @@ namespace goby
             }
 
             void set_cfg(const protobuf::QueuedMessageEntry& cfg)
-            { cfg_ = cfg; }
+            {
+                cfg_ = cfg;
+                process_cfg();
+            }
+            void process_cfg();
             
             const protobuf::QueuedMessageEntry& queue_message_options()
             { return cfg_; }
             
             const google::protobuf::Descriptor* descriptor() const {return desc_;}
 
-            
+            int id()
+            { return goby::acomms::DCCLCodec::get()->id(desc_); }
+                
           private:
             waiting_for_ack_it find_ack_value(messages_it it_to_find);
             messages_it next_message_it();    
 
+            void set_latest_metadata(const google::protobuf::FieldDescriptor* field,
+                                     const boost::any& field_value,
+                                     const boost::any& wire_value);
 
           private:
+            Queue& operator=(const Queue&);
+            Queue(const Queue&);
+            
             const google::protobuf::Descriptor* desc_;
             QueueManager* parent_;
             protobuf::QueuedMessageEntry cfg_;
+
+            // maps role onto FieldDescriptor::full_name() or empty string if static role
+            std::map<protobuf::QueuedMessageEntry::RoleType, std::string> roles_;
             
             boost::posix_time::ptime last_send_time_;
 
@@ -134,7 +153,10 @@ namespace goby
             // map frame number onto messages list iterator
             // can have multiples in the same frame now
             std::multimap<unsigned, messages_it> waiting_for_ack_;
-    
+
+            protobuf::QueuedMessageMeta latest_meta_;
+            protobuf::QueuedMessageMeta static_meta_;
+            
         };
         std::ostream & operator<< (std::ostream & os, const Queue & oq);
     }

@@ -317,13 +317,11 @@ namespace goby
             
             /// \name Hook API methods (Advanced)
             //@{
-            /// \brief Register a callback to be called when base_run_hooks() (or field_run_hooks(), which is called by base_run_hooks()) is called.
+            /// \brief Register a callback to be called for every field when base_run_hooks() (or field_run_hooks(), which is called by base_run_hooks()) is called. 
             ///
-            /// \param extension_number The Protobuf field number for the extension to .google.protobuf.FieldOptions that you wish to receive callbacks for. The GobyFieldOptions uses extension_number 1009 (reserved with Google).
-            /// \param callback A boost::function (generalized function object) which will be called when the desired option extension for the field is set. `field_value` is the value currently set in the message for that field, `wire_value` is the pre-encoded version of `field_value` and `extension_value` is the value set for the desired option extension.
-            static void register_wire_value_hook(
-                int extension_number, boost::function<void (const boost::any& field_value, const boost::any& wire_value, const boost::any& extension_value)> callback)
-            { wire_value_hooks_[extension_number].connect(callback); }
+            /// \param callback A boost::function (generalized function object) which will be called when the desired option extension for the field is set. `field` is the FieldDescriptor (meta-dat) of the field, `field_value` is the value currently set in the message for that field, `wire_value` is the pre-encoded version of `field_value`.
+            static void register_wire_value_hook(int dccl_id, boost::function<void (const google::protobuf::FieldDescriptor* field, const boost::any& field_value, const boost::any& wire_value)> callback)
+            { wire_value_hooks_[dccl_id].connect(callback); }
 
             //@}
 
@@ -449,9 +447,8 @@ namespace goby
 
             static const google::protobuf::Message* root_message_;
             
-// maps protobuf extension number for FieldOption onto a hook (signal) to call
-            // if such a FieldOption is set, during the call to "size()"
-            static boost::ptr_map<int, boost::signals2::signal<void (const boost::any& field_value, const boost::any& wire_value, const boost::any& extension_value)> >  wire_value_hooks_;
+            // maps DCCL ID onto a hook (signal) to call during run_hooks
+            static boost::ptr_map<int, boost::signals2::signal<void (const google::protobuf::FieldDescriptor* field, const boost::any& field_value, const boost::any& wire_value)> > wire_value_hooks_;
             
             std::string name_;
             google::protobuf::FieldDescriptor::Type field_type_;

@@ -1,6 +1,0 @@
-add_subdirectory(hex_codec)
-add_subdirectory(as)
-add_subdirectory(time)
-add_subdirectory(sci)
-add_subdirectory(dynamic_protobuf)
-add_subdirectory(nmea)

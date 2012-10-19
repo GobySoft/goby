@@ -1,3 +1,0 @@
-add_executable(goby_test_pbdriver1 test.cpp)
-target_link_libraries(goby_test_pbdriver1 goby_acomms goby_pb)
-

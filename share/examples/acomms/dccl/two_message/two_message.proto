@@ -1,36 +1,36 @@
-import "goby/common/protobuf/option_extensions.proto";
+import "goby/acomms/protobuf/dccl_option_extensions.proto";
 message GoToCommand
 {
-  option (goby.msg).dccl.id = 2;
-  option (goby.msg).dccl.max_bytes = 32;
-  required int32 destination = 1 [(goby.field).dccl.max=31,
-                                  (goby.field).dccl.min=0,
-                                  (goby.field).dccl.precision=0];
-  optional string type = 2 [(goby.field).dccl.static_value="goto",
-                            (goby.field).dccl.codec="_static"];
-  required int32 goto_x = 3 [(goby.field).dccl.max=10000,
-                             (goby.field).dccl.min=0,
-                             (goby.field).dccl.precision=0];
-  required int32 goto_y = 4 [(goby.field).dccl.max=10000,
-                             (goby.field).dccl.min=0,
-                             (goby.field).dccl.precision=0];
+  option (dccl.msg).id = 2;
+  option (dccl.msg).max_bytes = 32;
+  required int32 destination = 1 [(dccl.field).max=31,
+                                  (dccl.field).min=0,
+                                  (dccl.field).precision=0];
+  optional string type = 2 [(dccl.field).static_value="goto",
+                            (dccl.field).codec="_static"];
+  required int32 goto_x = 3 [(dccl.field).max=10000,
+                             (dccl.field).min=0,
+                             (dccl.field).precision=0];
+  required int32 goto_y = 4 [(dccl.field).max=10000,
+                             (dccl.field).min=0,
+                             (dccl.field).precision=0];
   required bool lights_on = 5;
-  required string new_instructions = 6 [(goby.field).dccl.max_length=10];
-  required double goto_speed = 7 [(goby.field).dccl.max=3,
-                                  (goby.field).dccl.min=0,
-                                  (goby.field).dccl.precision=2];
+  required string new_instructions = 6 [(dccl.field).max_length=10];
+  required double goto_speed = 7 [(dccl.field).max=3,
+                                  (dccl.field).min=0,
+                                  (dccl.field).precision=2];
 }
 
 message VehicleStatus
 { 
-  option (goby.msg).dccl.id = 3;
-  option (goby.msg).dccl.max_bytes = 32;
-  required double nav_x = 1 [(goby.field).dccl.max=10000,
-                             (goby.field).dccl.min=0,
-                             (goby.field).dccl.precision=1];
-  required double nav_y = 2 [(goby.field).dccl.max=10000,
-                             (goby.field).dccl.min=0,
-                             (goby.field).dccl.precision=1];
+  option (dccl.msg).id = 3;
+  option (dccl.msg).max_bytes = 32;
+  required double nav_x = 1 [(dccl.field).max=10000,
+                             (dccl.field).min=0,
+                             (dccl.field).precision=1];
+  required double nav_y = 2 [(dccl.field).max=10000,
+                             (dccl.field).min=0,
+                             (dccl.field).precision=1];
   required HealthEnum health = 3;
   enum HealthEnum { 
     HEALTH_GOOD = 0; 

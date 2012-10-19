@@ -16,8 +16,22 @@ message QueuedMessageEntry
   optional double value_base = 7 [default = 1];
     
   repeated Manipulator manipulator = 10 [(goby.field).description="manipulators to modify the encoding and queuing behavior of the specified message"];
-}
+
+  enum RoleType
+  {
+    SOURCE_ID = 1;
+    DESTINATION_ID = 2;
+    TIMESTAMP = 3;
+  }  
   
+  message Role
+  {
+    required RoleType type = 1;
+    optional string field = 2;
+    optional int32 static = 3;
+  }
+  repeated Role role = 20 [(goby.field).description="Set a message field or static value to various roles (source address, destination address, etc.)"];
+}
 
 message QueueManagerConfig
 {

@@ -44,7 +44,6 @@
 
 #include "dccl.h"
 #include "dccl_field_codec_default.h"
-#include "dccl_ccl_compatibility.h"
 #include "goby/acomms/dccl/dccl_field_codec_arithmetic.h"
 #include "goby/util/as.h"
 #include "goby/acomms/protobuf/dccl_option_extensions.pb.h"

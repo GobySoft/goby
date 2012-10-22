@@ -41,6 +41,15 @@ void run_test(goby::acomms::protobuf::ArithmeticModel& model,
 {
     goby::acomms::DCCLCodec* codec = goby::acomms::DCCLCodec::get();
 
+    void* dl_handle = dlopen("libgoby_dccl_arithmetic" SHARED_LIBRARY_SUFFIX, RTLD_LAZY);
+
+    if(!dl_handle)
+    {
+        std::cerr << "Failed to open libgoby_dccl_arithmetic" SHARED_LIBRARY_SUFFIX << std::endl;
+        exit(1);
+    }
+    codec->load_shared_library_codecs(dl_handle);
+    
     if(set_model)
     {
         model.set_name("model");

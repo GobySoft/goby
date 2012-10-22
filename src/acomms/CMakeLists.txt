@@ -8,7 +8,6 @@ set(SRC
   dccl/dccl_field_codec_helpers.cpp
   dccl/dccl_field_codec_default.cpp
   dccl/dccl_field_codec_default_message.cpp
-  dccl/dccl_field_codec_arithmetic.cpp
   dccl/dccl_field_codec_manager.cpp
   dccl/dccl_type_helper.cpp
   dccl/dccl_bitset.cpp
@@ -43,3 +42,9 @@ dccl/WhoiUtil.cpp
 )
 
 target_link_libraries(goby_ccl_compat goby_acomms)
+
+add_library(goby_dccl_arithmetic SHARED
+dccl/dccl_field_codec_arithmetic.cpp
+)
+
+target_link_libraries(goby_dccl_arithmetic goby_acomms)

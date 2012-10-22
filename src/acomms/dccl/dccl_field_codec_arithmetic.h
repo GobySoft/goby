@@ -36,6 +36,12 @@
 #include "goby/acomms/protobuf/arithmetic_extensions.pb.h"
 #include "goby/util/sci.h"
 
+
+extern "C"
+{
+    void goby_dccl_load(goby::acomms::DCCLCodec* dccl);
+}
+
 namespace goby
 {
     namespace acomms

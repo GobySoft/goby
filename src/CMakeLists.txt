@@ -195,9 +195,8 @@ if(build_dccllite)
   endif(enable_ncurses)
   set(PROTOS common/protobuf/logger.proto
              common/protobuf/option_extensions.proto
-             common/protobuf/acomms_option_extensions.proto
+             acomms/protobuf/dccl_option_extensions.proto
              acomms/protobuf/dccl.proto
-             acomms/protobuf/ccl.proto
              acomms/protobuf/modem_message.proto)
 
   protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${PROTOS})
@@ -209,11 +208,8 @@ if(build_dccllite)
     acomms/dccl/dccl_field_codec_default.cpp
     acomms/dccl/dccl_field_codec_default_message.cpp
     acomms/dccl/dccl_field_codec_manager.cpp
-    acomms/dccl/dccl_field_codec_arithmetic.cpp
     acomms/dccl/dccl_type_helper.cpp
     acomms/dccl/dccl_bitset.cpp
-    acomms/dccl/dccl_ccl_compatibility.cpp
-    acomms/dccl/WhoiUtil.cpp
     # COMMON
     common/time.cpp
     common/logger/logger_manipulators.cpp

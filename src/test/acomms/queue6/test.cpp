@@ -45,8 +45,6 @@ int main(int argc, char* argv[])
 {    
     goby::glog.add_stream(goby::common::logger::DEBUG3, &std::cerr);
     goby::glog.set_name(argv[0]);
-
-    q_manager.add_queue<GobyMessage>();
     
     goby::acomms::protobuf::QueueManagerConfig cfg;
     cfg.set_modem_id(MY_MODEM_ID);

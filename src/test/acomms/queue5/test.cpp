@@ -58,8 +58,6 @@ int main(int argc, char* argv[])
 
     goby::acomms::DCCLCodec* codec = goby::acomms::DCCLCodec::get();
     
-    q_manager.add_queue<GobyMessage>();
-    
     goby::acomms::protobuf::QueueManagerConfig cfg;
     cfg.set_modem_id(MY_MODEM_ID);
     goby::acomms::protobuf::QueuedMessageEntry* entry = cfg.add_message_entry();

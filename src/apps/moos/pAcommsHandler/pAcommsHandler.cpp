@@ -420,10 +420,6 @@ void CpAcommsHandler::process_configuration()
 
         // check that the protobuf file is loaded somehow
         GoogleProtobufMessagePointer msg = goby::util::DynamicProtobufManager::new_protobuf_message<GoogleProtobufMessagePointer>(cfg_.translator_entry(i).protobuf_name());
-
-        // validate with DCCL
-        dccl_->validate(msg->GetDescriptor());
-        queue_manager_.add_queue(msg->GetDescriptor());
         
         if(cfg_.translator_entry(i).trigger().type() ==
            goby::moos::protobuf::TranslatorEntry::Trigger::TRIGGER_PUBLISH)

@@ -33,7 +33,9 @@ using goby::common::goby_time;
 using namespace goby::common::logger;
 using goby::util::as;
 
-goby::acomms::Queue::Queue(const google::protobuf::Descriptor* desc /*= 0*/, QueueManager* parent /*= 0*/, const protobuf::QueuedMessageEntry& cfg)
+goby::acomms::Queue::Queue(const google::protobuf::Descriptor* desc,
+                           QueueManager* parent,
+                           const protobuf::QueuedMessageEntry& cfg)
     : desc_(desc),
       parent_(parent),
       cfg_(cfg),
@@ -562,6 +564,5 @@ void goby::acomms::Queue::process_cfg()
     //     throw(QueueException("SOURCE_ID field (" + roles_[protobuf::QueuedMessageEntry::SOURCE_ID] + ") does not exist in this message"));
     // if(!roles_[protobuf::QueuedMessageEntry::TIMESTAMP].empty() && !latest_meta_.has_time())
     //     throw(QueueException("TIMESTAMP field (" + roles_[protobuf::QueuedMessageEntry::TIMESTAMP] + ") does not exist in this message"));
-
     
 }

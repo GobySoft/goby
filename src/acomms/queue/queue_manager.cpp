@@ -134,7 +134,7 @@ void goby::acomms::QueueManager::push_message(const google::protobuf::Message& d
     unsigned dccl_id = codec_->id(desc);
 
     if(!queues_.count(dccl_id))
-        add_queue(dccl_msg.GetDescriptor());
+        throw(QueueException("No queue exists for message: " + desc->full_name() + "; you must configure it first."));
         
     // add the message
     boost::shared_ptr<google::protobuf::Message> new_dccl_msg(dccl_msg.New());

@@ -48,21 +48,14 @@ goby::acomms::Queue::Queue(const google::protobuf::Descriptor* desc /*= 0*/, Que
 // add a new message
 bool goby::acomms::Queue::push_message(boost::shared_ptr<google::protobuf::Message> dccl_msg)
 {
-    latest_meta_.Clear();
+    protobuf::QueuedMessageMeta meta = meta_from_msg(*dccl_msg);
     
-    latest_meta_.set_non_repeated_size(parent_->codec_->size(*dccl_msg));
-
-    parent_->codec_->run_hooks(*dccl_msg);
-    latest_meta_.MergeFrom(static_meta_);
-    
-    glog.is(DEBUG3) && glog << group(parent_->glog_push_group()) << "Message post hooks: " << latest_meta_ << std::endl;
-    
-    parent_->signal_out_route(&latest_meta_, *dccl_msg, parent_->cfg_.modem_id());
+    parent_->signal_out_route(&meta, *dccl_msg, parent_->cfg_.modem_id());
     
     glog.is(DEBUG1) && glog << group(parent_->glog_push_group())
                             << parent_->msg_string(dccl_msg->GetDescriptor())
                             << ": attempting to push message (destination: "
-                            << latest_meta_.dest() << ")" << std::endl;
+                            << meta.dest() << ")" << std::endl;
     
     
     // loopback if set
@@ -84,20 +77,20 @@ bool goby::acomms::Queue::push_message(boost::shared_ptr<google::protobuf::Messa
         return true;
     }
     // message is to us, auto-loopback
-    else if(latest_meta_.dest() == parent_->modem_id_)
+    else if(meta.dest() == parent_->modem_id_)
     {
         glog.is(DEBUG1) && glog << group(parent_->glog_push_group()) << "Message is for us: using loopback, not physical interface" << std::endl;
         
         parent_->signal_receive(*dccl_msg);
 
         // provide an ACK if desired 
-        if((latest_meta_.has_ack_requested() && latest_meta_.ack_requested()) ||
+        if((meta.has_ack_requested() && meta.ack_requested()) ||
            queue_message_options().ack())
         {
             protobuf::ModemTransmission ack_msg;
             ack_msg.set_time(goby::common::goby_time<uint64>());
-            ack_msg.set_src(latest_meta_.dest());
-            ack_msg.set_dest(latest_meta_.dest());
+            ack_msg.set_src(meta.dest());
+            ack_msg.set_dest(meta.dest());
             ack_msg.set_type(protobuf::ModemTransmission::ACK);
             
             parent_->signal_ack(ack_msg, *dccl_msg);
@@ -105,10 +98,10 @@ bool goby::acomms::Queue::push_message(boost::shared_ptr<google::protobuf::Messa
         return true;
     }
 
-    if(!latest_meta_.has_time())
-        latest_meta_.set_time(goby::common::goby_time<uint64>());
+    if(!meta.has_time())
+        meta.set_time(goby::common::goby_time<uint64>());
     
-    if(latest_meta_.non_repeated_size() == 0)
+    if(meta.non_repeated_size() == 0)
     {
         goby::glog.is(DEBUG1) && glog << group(parent_->glog_out_group()) << warn
                                       << "empty message attempted to be pushed to queue "
@@ -117,7 +110,7 @@ bool goby::acomms::Queue::push_message(boost::shared_ptr<google::protobuf::Messa
     }
     
     messages_.push_back(QueuedMessage());
-    messages_.back().meta = latest_meta_;
+    messages_.back().meta = meta;
     messages_.back().dccl_msg = dccl_msg;
     protobuf::QueuedMessageMeta* new_meta_msg = &messages_.back().meta;
     
@@ -156,6 +149,7 @@ bool goby::acomms::Queue::push_message(boost::shared_ptr<google::protobuf::Messa
 goby::acomms::protobuf::QueuedMessageMeta goby::acomms::Queue::meta_from_msg(const google::protobuf::Message& dccl_msg)
 {
     latest_meta_.Clear();
+    latest_meta_.set_non_repeated_size(parent_->codec_->size(dccl_msg));
     parent_->codec_->run_hooks(dccl_msg);
     latest_meta_.MergeFrom(static_meta_);
     glog.is(DEBUG2) && glog << group(parent_->glog_push_group()) << "Meta: " << latest_meta_ << std::endl;    

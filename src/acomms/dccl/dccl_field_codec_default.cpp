@@ -360,29 +360,3 @@ const google::protobuf::EnumValueDescriptor* goby::acomms::DCCLDefaultEnumCodec:
 
 
 
-//
-// DCCLModemIdConverterCodec
-//
-
-boost::bimap<std::string, goby::int32> goby::acomms::DCCLModemIdConverterCodec::platform2modem_id_;
-
-goby::int32 goby::acomms::DCCLModemIdConverterCodec::pre_encode(const std::string& field_value)
-{
-    int32 v = BROADCAST_ID;
-    if(platform2modem_id_.left.count(boost::to_lower_copy(field_value)))
-        v = platform2modem_id_.left.at(field_value);
-    
-    return v;
-}
-            
-std::string goby::acomms::DCCLModemIdConverterCodec::post_decode(const int32& wire_value)
-{
-    if(wire_value == BROADCAST_ID)
-        return "broadcast";
-    else if(platform2modem_id_.right.count(wire_value))
-        return platform2modem_id_.right.at(wire_value);
-    else
-        throw DCCLNullValueException();
-}            
-
-

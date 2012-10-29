@@ -64,21 +64,18 @@ int main(int argc, char* argv[])
     
     goby::acomms::protobuf::QueuedMessageEntry::Role* src_role = q_entry->add_role();
     src_role->set_type(goby::acomms::protobuf::QueuedMessageEntry::SOURCE_ID);
-    src_role->set_field("Header.source_platform");
+    src_role->set_field("header.source_platform");
     
     goby::acomms::protobuf::QueuedMessageEntry::Role* dest_role = q_entry->add_role();
     dest_role->set_type(goby::acomms::protobuf::QueuedMessageEntry::DESTINATION_ID);
-    dest_role->set_field("Header.dest_platform");    
+    dest_role->set_field("header.dest_platform");    
 
     goby::acomms::protobuf::QueuedMessageEntry::Role* time_role = q_entry->add_role();
     time_role->set_type(goby::acomms::protobuf::QueuedMessageEntry::TIMESTAMP);
-    time_role->set_field("Header.time");    
+    time_role->set_field("header.time");    
 
     q_manager.set_cfg(cfg);
     
-    goby::acomms::DCCLModemIdConverterCodec::add("unicorn", UNICORN_MODEM_ID);
-    goby::acomms::DCCLModemIdConverterCodec::add("topside", MY_MODEM_ID);
-    goby::acomms::DCCLModemIdConverterCodec::add("macrura", MACRURA_MODEM_ID);
     
     goby::acomms::connect(&q_manager.signal_receive, &handle_receive);
     goby::acomms::connect(&q_manager.signal_queue_size_change, &qsize);
@@ -87,22 +84,22 @@ int main(int argc, char* argv[])
     msg_in_macrura.set_telegram("hello mac!");
     msg_in_macrura.mutable_header()->set_time(
         goby::util::as<std::string>(current_time));
-    msg_in_macrura.mutable_header()->set_source_platform("topside");
-    msg_in_macrura.mutable_header()->set_dest_platform("macrura");
+    msg_in_macrura.mutable_header()->set_source_platform(MY_MODEM_ID);
+    msg_in_macrura.mutable_header()->set_dest_platform(MACRURA_MODEM_ID);
     msg_in_macrura.mutable_header()->set_dest_type(Header::PUBLISH_OTHER);
 
     msg_in_broadcast.set_telegram("hello all!");
     msg_in_broadcast.mutable_header()->set_time(
         goby::util::as<std::string>(current_time));
     
-    msg_in_broadcast.mutable_header()->set_source_platform("topside");
+    msg_in_broadcast.mutable_header()->set_source_platform(MY_MODEM_ID);
     msg_in_broadcast.mutable_header()->set_dest_type(Header::PUBLISH_ALL);    
     
     msg_in_unicorn.set_telegram("hello uni!");
     msg_in_unicorn.mutable_header()->set_time(
         goby::util::as<std::string>(current_time));
-    msg_in_unicorn.mutable_header()->set_source_platform("topside");
-    msg_in_unicorn.mutable_header()->set_dest_platform("unicorn");
+    msg_in_unicorn.mutable_header()->set_source_platform(MY_MODEM_ID);
+    msg_in_unicorn.mutable_header()->set_dest_platform(UNICORN_MODEM_ID);
     msg_in_unicorn.mutable_header()->set_dest_type(Header::PUBLISH_OTHER);    
 
     std::cout << "Pushed: " << msg_in_broadcast << std::endl;
@@ -195,7 +192,7 @@ void handle_receive(const google::protobuf::Message& msg)
     
     if(!typed_msg.header().has_dest_platform())
         assert(typed_msg.SerializeAsString() == msg_in_broadcast.SerializeAsString());
-    else if(typed_msg.header().dest_platform() == "unicorn")
+    else if(typed_msg.header().dest_platform() == 3)
         assert(typed_msg.SerializeAsString() == msg_in_unicorn.SerializeAsString());
 
     ++receive_count;

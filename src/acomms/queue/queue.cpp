@@ -23,6 +23,7 @@
 
 #include "goby/acomms/acomms_constants.h"
 #include "goby/common/logger.h"
+#include "goby/acomms/dccl/protobuf_cpp_type_helpers.h"
 
 #include "queue.h"
 #include "queue_manager.h"
@@ -38,9 +39,6 @@ goby::acomms::Queue::Queue(const google::protobuf::Descriptor* desc /*= 0*/, Que
       cfg_(cfg),
       last_send_time_(goby_time())
 {
-    goby::acomms::DCCLFieldCodecBase::register_wire_value_hook(
-        id(), boost::bind(&Queue::set_latest_metadata, this, _1, _2, _3));
-
     process_cfg();
 }
 
@@ -148,13 +146,114 @@ bool goby::acomms::Queue::push_message(boost::shared_ptr<google::protobuf::Messa
 
 goby::acomms::protobuf::QueuedMessageMeta goby::acomms::Queue::meta_from_msg(const google::protobuf::Message& dccl_msg)
 {
-    latest_meta_.Clear();
-    latest_meta_.set_non_repeated_size(parent_->codec_->size(dccl_msg));
-    parent_->codec_->run_hooks(dccl_msg);
-    latest_meta_.MergeFrom(static_meta_);
-    glog.is(DEBUG2) && glog << group(parent_->glog_push_group()) << "Meta: " << latest_meta_ << std::endl;    
+    protobuf::QueuedMessageMeta meta = static_meta_;
+    meta.set_non_repeated_size(parent_->codec_->size(dccl_msg));
+    
+    if(!roles_[protobuf::QueuedMessageEntry::DESTINATION_ID].empty())
+    {
+        boost::any field_value = find_queue_field(roles_[protobuf::QueuedMessageEntry::DESTINATION_ID], dccl_msg);
+        
+        int dest = BROADCAST_ID;
+        if(field_value.type() == typeid(int32))
+            dest = boost::any_cast<int32>(field_value);
+        else if(field_value.type() == typeid(int64))
+            dest = boost::any_cast<int64>(field_value);
+        else if(field_value.type() == typeid(uint32))
+            dest = boost::any_cast<uint32>(field_value);
+        else if(field_value.type() == typeid(uint64))
+            dest = boost::any_cast<uint64>(field_value);
+        else if(!field_value.empty())
+            throw(QueueException("Invalid type " + std::string(field_value.type().name()) + " given for (queue_field).is_dest. Expected integer type"));
+                    
+        goby::glog.is(DEBUG2) &&
+            goby::glog << group(parent_->glog_push_group_) << "setting dest to " << dest << std::endl;
+                
+        meta.set_dest(dest);
+    }
 
-    return latest_meta_;
+    if(!roles_[protobuf::QueuedMessageEntry::SOURCE_ID].empty())
+    {
+        boost::any field_value = find_queue_field(roles_[protobuf::QueuedMessageEntry::SOURCE_ID], dccl_msg);
+        
+        int src = BROADCAST_ID;
+        if(field_value.type() == typeid(int32))
+            src = boost::any_cast<int32>(field_value);
+        else if(field_value.type() == typeid(int64))
+            src = boost::any_cast<int64>(field_value);
+        else if(field_value.type() == typeid(uint32))
+            src = boost::any_cast<uint32>(field_value);
+        else if(field_value.type() == typeid(uint64))
+            src = boost::any_cast<uint64>(field_value);
+        else if(!field_value.empty())
+            throw(QueueException("Invalid type " + std::string(field_value.type().name()) + " given for (queue_field).is_src. Expected integer type"));
+
+        goby::glog.is(DEBUG2) &&
+            goby::glog << group(parent_->glog_push_group_) <<  "setting source to " << src << std::endl;
+                
+        meta.set_src(src);
+
+    }
+
+    if(!roles_[protobuf::QueuedMessageEntry::TIMESTAMP].empty())
+    {
+        boost::any field_value = find_queue_field(roles_[protobuf::QueuedMessageEntry::TIMESTAMP], dccl_msg);
+
+        if(field_value.type() == typeid(uint64)) 
+            meta.set_time(boost::any_cast<uint64>(field_value));
+        else if(field_value.type() == typeid(double))
+            meta.set_time(static_cast<uint64>(boost::any_cast<double>(field_value))*1e6);
+        else if(field_value.type() == typeid(std::string))
+            meta.set_time(goby::util::as<uint64>(goby::util::as<boost::posix_time::ptime>(boost::any_cast<std::string>(field_value))));
+        else if(!field_value.empty())
+            throw(QueueException("Invalid type " + std::string(field_value.type().name()) + " given for (goby.field).queue.is_time. Expected uint64 contained microseconds since UNIX, double containing seconds since UNIX or std::string containing as<std::string>(boost::posix_time::ptime)"));
+
+        goby::glog.is(DEBUG2) &&
+            goby::glog << group(parent_->glog_push_group_) <<  "setting time to " << as<boost::posix_time::ptime>(meta.time()) << std::endl;
+    } 
+
+    glog.is(DEBUG2) && glog << group(parent_->glog_push_group()) << "Meta: " << meta << std::endl;
+    return meta;
+}
+
+boost::any goby::acomms::Queue::find_queue_field(const std::string& field_name, const google::protobuf::Message& msg)
+{
+    const google::protobuf::Message* current_msg = &msg;
+    const google::protobuf::Descriptor* current_desc = current_msg->GetDescriptor();
+    
+    // split name on "." as subfield delimiter
+    std::vector<std::string> field_names;
+    boost::split(field_names, field_name, boost::is_any_of("."));
+
+    for(int i = 0, n = field_names.size(); i < n; ++i)
+    {
+        const google::protobuf::FieldDescriptor* field_desc = current_desc->FindFieldByName(field_names[i]);
+        if(!field_desc)
+            throw(QueueException("No such field called " + field_name + " in msg " + current_desc->full_name()));
+        
+        if(field_desc->is_repeated())
+            throw(QueueException("Cannot assign a Queue role to a repeated field"));        
+        
+        boost::shared_ptr<FromProtoCppTypeBase> helper =
+            goby::acomms::DCCLTypeHelper::find(field_desc);
+
+        // last field_name
+        if(i == (n-1))
+        {
+            return helper->get_value(field_desc, *current_msg);
+        }
+        else if(field_desc->type() != google::protobuf::FieldDescriptor::TYPE_MESSAGE)
+        {
+            throw(QueueException("Cannot access child fields of a non-message field: " + field_names[i]));
+        }
+        else
+        {
+            boost::any value = helper->get_value(field_desc, *current_msg);
+            current_msg = boost::any_cast<const google::protobuf::Message*>(value);
+            current_desc = current_msg->GetDescriptor();
+        }
+    }
+
+    return boost::any();
 }
 
 
@@ -400,68 +499,6 @@ std::ostream& goby::acomms::operator<< (std::ostream& os, const goby::acomms::Qu
     return os;
 }
 
-
-void goby::acomms::Queue::set_latest_metadata(const google::protobuf::FieldDescriptor* field,
-                                              const boost::any& field_value,
-                                              const boost::any& wire_value)
-{
-
-if(field->full_name() == roles_[protobuf::QueuedMessageEntry::DESTINATION_ID])
-    {
-        int dest = BROADCAST_ID;
-        if(wire_value.type() == typeid(int32))
-            dest = boost::any_cast<int32>(wire_value);
-        else if(wire_value.type() == typeid(int64))
-            dest = boost::any_cast<int64>(wire_value);
-        else if(wire_value.type() == typeid(uint32))
-            dest = boost::any_cast<uint32>(wire_value);
-        else if(wire_value.type() == typeid(uint64))
-            dest = boost::any_cast<uint64>(wire_value);
-        else if(!wire_value.empty())
-            throw(QueueException("Invalid type " + std::string(wire_value.type().name()) + " given for (queue_field).is_dest. Expected integer type"));
-                    
-        goby::glog.is(DEBUG2) &&
-            goby::glog << group(parent_->glog_push_group_) << "setting dest to " << dest << std::endl;
-                
-        latest_meta_.set_dest(dest);
-    }
-    else if(field->full_name() == roles_[protobuf::QueuedMessageEntry::SOURCE_ID])
-    {
-        int src = BROADCAST_ID;
-        if(wire_value.type() == typeid(int32))
-            src = boost::any_cast<int32>(wire_value);
-        else if(wire_value.type() == typeid(int64))
-            src = boost::any_cast<int64>(wire_value);
-        else if(wire_value.type() == typeid(uint32))
-            src = boost::any_cast<uint32>(wire_value);
-        else if(wire_value.type() == typeid(uint64))
-            src = boost::any_cast<uint64>(wire_value);
-        else if(!wire_value.empty())
-            throw(QueueException("Invalid type " + std::string(wire_value.type().name()) + " given for (queue_field).is_src. Expected integer type"));
-
-        goby::glog.is(DEBUG2) &&
-            goby::glog << group(parent_->glog_push_group_) <<  "setting source to " << src << std::endl;
-                
-        latest_meta_.set_src(src);
-
-    }
-    else if(field->full_name() == roles_[protobuf::QueuedMessageEntry::TIMESTAMP])
-    {
-        if(field_value.type() == typeid(uint64)) 
-            latest_meta_.set_time(boost::any_cast<uint64>(field_value));
-        else if(field_value.type() == typeid(double))
-            latest_meta_.set_time(static_cast<uint64>(boost::any_cast<double>(field_value))*1e6);
-        else if(field_value.type() == typeid(std::string))
-            latest_meta_.set_time(goby::util::as<uint64>(goby::util::as<boost::posix_time::ptime>(boost::any_cast<std::string>(field_value))));
-        else if(!wire_value.empty())
-            throw(QueueException("Invalid type " + std::string(field_value.type().name()) + " given for (goby.field).queue.is_time. Expected uint64 contained microseconds since UNIX, double containing seconds since UNIX or std::string containing as<std::string>(boost::posix_time::ptime)"));
-
-        goby::glog.is(DEBUG2) &&
-            goby::glog << group(parent_->glog_push_group_) <<  "setting time to " << as<boost::posix_time::ptime>(latest_meta_.time()) << std::endl;            
-        
-    } 
-}
-
 void goby::acomms::Queue::process_cfg()
 {
     roles_.clear();
@@ -497,10 +534,6 @@ void goby::acomms::Queue::process_cfg()
 
             case protobuf::QueuedMessageEntry::Role::FIELD_VALUE:
             {
-                // if no "." in the name, prepend with message name
-                if(cfg_.role(i).field().find('.') == std::string::npos)
-                    cfg_.mutable_role(i)->set_field(desc_->full_name() + "." + cfg_.role(i).field());
-
                 role_field = cfg_.role(i).field();
             }
             break;

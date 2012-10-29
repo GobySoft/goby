@@ -72,7 +72,8 @@ namespace goby
 
             protobuf::QueuedMessageMeta meta_from_msg(const google::protobuf::Message& dccl_msg);
             
-            
+            boost::any find_queue_field(const std::string& field_name, const google::protobuf::Message& msg);
+
             goby::acomms::QueuedMessage give_data(unsigned frame);
             bool pop_message(unsigned frame);
             bool pop_message_ack(unsigned frame, boost::shared_ptr<google::protobuf::Message>& removed_msg);
@@ -154,7 +155,6 @@ namespace goby
             // can have multiples in the same frame now
             std::multimap<unsigned, messages_it> waiting_for_ack_;
 
-            protobuf::QueuedMessageMeta latest_meta_;
             protobuf::QueuedMessageMeta static_meta_;
             
         };

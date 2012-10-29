@@ -66,9 +66,9 @@ void goby::moos::MOOSTranslator::initialize(double lat_origin, double lon_origin
         ap->add_algorithm("name2modem_id", boost::bind(&MOOSTranslator::alg_name2modem_id, this, _1));
 
         // set up conversion for DCCLModemIdConverterCodec
-        for(std::map<int, std::string>::const_iterator it = modem_lookup_.names().begin(),
-                end = modem_lookup_.names().end(); it != end; ++it)
-            goby::acomms::DCCLModemIdConverterCodec::add(it->second, it->first);
+        //for(std::map<int, std::string>::const_iterator it = modem_lookup_.names().begin(),
+        //        end = modem_lookup_.names().end(); it != end; ++it)
+        //    goby::acomms::DCCLModemIdConverterCodec::add(it->second, it->first);
             
     }
     

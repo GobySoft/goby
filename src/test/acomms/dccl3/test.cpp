@@ -39,9 +39,6 @@ int main(int argc, char* argv[])
     goby::glog.add_stream(goby::common::logger::DEBUG3, &std::cerr);
     goby::glog.set_name(argv[0]);
     
-    goby::acomms::DCCLModemIdConverterCodec::add("unicorn", 3);
-    goby::acomms::DCCLModemIdConverterCodec::add("topside", 1);
-    
     
     goby::acomms::DCCLCodec* codec = goby::acomms::DCCLCodec::get();
     goby::acomms::protobuf::DCCLConfig cfg;
@@ -52,8 +49,8 @@ int main(int argc, char* argv[])
     msg_in1.set_telegram("hello!");
     msg_in1.mutable_header()->set_time(
         goby::util::as<std::string>(boost::posix_time::second_clock::universal_time()));
-    msg_in1.mutable_header()->set_source_platform("topside");
-    msg_in1.mutable_header()->set_dest_platform("unicorn");
+    msg_in1.mutable_header()->set_source_platform(1);
+    msg_in1.mutable_header()->set_dest_platform(3);
     msg_in1.mutable_header()->set_dest_type(Header::PUBLISH_OTHER);
     
     codec->info(msg_in1.GetDescriptor(), &std::cout);    

@@ -32,7 +32,7 @@
 #include "goby/util/binary.h"
 
 using goby::acomms::operator<<;
-using goby::int32;
+using goby::uint32;
 
 bool found_dest = false;
 bool found_source = false;
@@ -52,15 +52,15 @@ void process_queue_field(const google::protobuf::FieldDescriptor* field,
     
     if(field->full_name() == dest_field)
     {
-        std::cout << "dest: type: `" << wire_value.type().name() << "`, wire_value: " << boost::any_cast<int32>(wire_value) << std::endl;
-        assert(boost::any_cast<int32>(wire_value) == 3);    
+        std::cout << "dest: type: `" << wire_value.type().name() << "`, wire_value: " << boost::any_cast<uint32>(wire_value) << std::endl;
+        assert(boost::any_cast<uint32>(wire_value) == 3);    
         found_dest = true;
     }
     else if(field->full_name() == src_field)
     {
-        std::cout << "source: type: `" << wire_value.type().name() << "`, wire_value: " << boost::any_cast<int32>(wire_value) << std::endl;
+        std::cout << "source: type: `" << wire_value.type().name() << "`, wire_value: " << boost::any_cast<uint32>(wire_value) << std::endl;
         
-        assert(boost::any_cast<int32>(wire_value) == 1);    
+        assert(boost::any_cast<uint32>(wire_value) == 1);    
         found_source = true;
     }
     else if(field->full_name() == time_field)
@@ -79,11 +79,7 @@ int main(int argc, char* argv[])
     goby::acomms::DCCLCodec* codec = goby::acomms::DCCLCodec::get();
 
     goby::acomms::DCCLFieldCodecBase::register_wire_value_hook(codec->id<GobyMessage>(),
-                                                               &process_queue_field);
-    
-    goby::acomms::DCCLModemIdConverterCodec::add("unicorn", 3);
-    goby::acomms::DCCLModemIdConverterCodec::add("topside", 1);
-    
+                                                               &process_queue_field);    
     
     goby::acomms::protobuf::DCCLConfig cfg;
     codec->set_cfg(cfg);
@@ -93,8 +89,8 @@ int main(int argc, char* argv[])
     msg_in1.set_telegram("hello!");
     msg_in1.mutable_header()->set_time(
         goby::util::as<std::string>(current_time));
-    msg_in1.mutable_header()->set_source_platform("topside");
-    msg_in1.mutable_header()->set_dest_platform("unicorn");
+    msg_in1.mutable_header()->set_source_platform(1);
+    msg_in1.mutable_header()->set_dest_platform(3);
     msg_in1.mutable_header()->set_dest_type(Header::PUBLISH_OTHER);
 
     codec->run_hooks(msg_in1);

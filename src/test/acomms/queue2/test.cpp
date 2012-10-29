@@ -51,28 +51,25 @@ int main(int argc, char* argv[])
     
     goby::acomms::protobuf::QueuedMessageEntry::Role* src_role = q_entry->add_role();
     src_role->set_type(goby::acomms::protobuf::QueuedMessageEntry::SOURCE_ID);
-    src_role->set_field("Header.source_platform");
+    src_role->set_field("header.source_platform");
     
     goby::acomms::protobuf::QueuedMessageEntry::Role* dest_role = q_entry->add_role();
     dest_role->set_type(goby::acomms::protobuf::QueuedMessageEntry::DESTINATION_ID);
-    dest_role->set_field("Header.dest_platform");    
+    dest_role->set_field("header.dest_platform");    
 
     goby::acomms::protobuf::QueuedMessageEntry::Role* time_role = q_entry->add_role();
     time_role->set_type(goby::acomms::protobuf::QueuedMessageEntry::TIMESTAMP);
-    time_role->set_field("Header.time");    
+    time_role->set_field("header.time");    
     
     q_manager.set_cfg(cfg);
-    
-    goby::acomms::DCCLModemIdConverterCodec::add("unicorn", UNICORN_MODEM_ID);
-    goby::acomms::DCCLModemIdConverterCodec::add("topside", MY_MODEM_ID);
     
     goby::acomms::connect(&q_manager.signal_receive, &handle_receive);
 
     msg_in1.set_telegram("hello!");
     msg_in1.mutable_header()->set_time(
         goby::util::as<std::string>(boost::posix_time::second_clock::universal_time()));
-    msg_in1.mutable_header()->set_source_platform("topside");
-    msg_in1.mutable_header()->set_dest_platform("unicorn");
+    msg_in1.mutable_header()->set_source_platform(MY_MODEM_ID);
+    msg_in1.mutable_header()->set_dest_platform(UNICORN_MODEM_ID);
     msg_in1.mutable_header()->set_dest_type(Header::PUBLISH_OTHER);
     
 

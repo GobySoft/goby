@@ -303,31 +303,6 @@ namespace goby
         };
 
         
-        /// \brief Codec that converts string names (e.g. "AUV-Unicorn") to integer MAC addresses (modem ID) and encodes the modem ID using DCCLDefaultNumericFieldCodec. The conversion is done using a lookup table.
-        class DCCLModemIdConverterCodec : public DCCLDefaultNumericFieldCodec<int32, std::string>
-        {
-          public:
-            /// \brief Add an entry to the lookup table used for conversions. 
-            static void add(std::string platform, int32 id)
-            {
-                boost::to_lower(platform);
-                platform2modem_id_.left.insert(std::make_pair(platform, id));
-            }
-            
-            int32 pre_encode(const std::string& field_value);
-            std::string post_decode(const int32& wire_value);
-            
-
-          private:  
-            void validate() { }
-            double max() { return 30; }
-            double min() { return 0; }
-
-          private:
-            static boost::bimap<std::string, int32> platform2modem_id_;
-        };
-
-        
     }
 }
 

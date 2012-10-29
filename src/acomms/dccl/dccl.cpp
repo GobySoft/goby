@@ -102,7 +102,6 @@ void goby::acomms::DCCLCodec::set_default_codecs()
     DCCLFieldCodecManager::add<DCCLTimeCodec<double> >("_time");
 
     DCCLFieldCodecManager::add<DCCLStaticCodec<std::string> >("_static"); 
-    DCCLFieldCodecManager::add<DCCLModemIdConverterCodec>("_platform<->modem_id");
 
     // DCCLFieldCodecManager::add<DCCLArithmeticFieldCodec<int32> >("_arithmetic");
     // DCCLFieldCodecManager::add<DCCLArithmeticFieldCodec<int64> >("_arithmetic");

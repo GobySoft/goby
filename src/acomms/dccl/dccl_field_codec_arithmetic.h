@@ -365,11 +365,11 @@ namespace goby
                       bit_plus_follow(&bits, &bits_to_follow, (low < FIRST_QTR) ? 0 : 1);
                   }
                   
-                  if(DCCLFieldCodecBase::dccl_field_options().GetExtension(arithmetic).debug_assert())
-                  {
+//                  if(DCCLFieldCodecBase::dccl_field_options().GetExtension(arithmetic).debug_assert())
+//                  {
                       // bit of a hack so I can get at the exact bit field sizes
-                      Model::last_bits_map[DCCLFieldCodecBase::this_descriptor()->full_name()][DCCLFieldCodecBase::this_field()->name()] = bits;
-                  }
+                  Model::last_bits_map[DCCLFieldCodecBase::this_descriptor()->full_name()][DCCLFieldCodecBase::this_field()->name()] = bits;
+//                  }
 
                   
                   return bits;

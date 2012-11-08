@@ -52,6 +52,7 @@ message GobyMOOSAppConfig
                               (goby.field).example="3.454"]; // required if type == MOOS_DOUBLE
     optional string sval = 5 [(goby.field).description="Value to write for type==INI_STRING",
                               (goby.field).example="a string"]; // required if type == MOOS_STRING
+    optional bool trim = 6 [(goby.field).description="Trim whitespace from front and back of string", default= true];
   }  
   repeated Initializer initializer = 10 [(goby.field).description="Publish a constant value to the MOOSDB at startup"];
 }    

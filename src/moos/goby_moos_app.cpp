@@ -108,7 +108,9 @@ bool GobyMOOSApp::OnConnectToServer()
                 if(ini.type() == GobyMOOSAppConfig::Initializer::INI_DOUBLE)
                     publish(ini.moos_var(), as<double>(result));
                 else if(ini.type() == GobyMOOSAppConfig::Initializer::INI_STRING)
-                    publish(ini.moos_var(), result);
+                    publish(ini.moos_var(), ini.trim() ?
+                            boost::trim_copy(result) :
+                            result);
             }
         }
         else
@@ -116,7 +118,9 @@ bool GobyMOOSApp::OnConnectToServer()
             if(ini.type() == GobyMOOSAppConfig::Initializer::INI_DOUBLE)
                 publish(ini.moos_var(), ini.dval());
             else if(ini.type() == GobyMOOSAppConfig::Initializer::INI_STRING)
-                publish(ini.moos_var(), ini.sval());            
+                publish(ini.moos_var(), ini.trim() ?
+                        boost::trim_copy(ini.sval()) :
+                        ini.sval()); 
         }        
     }
     

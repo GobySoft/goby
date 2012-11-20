@@ -177,7 +177,7 @@ GobyMOOSApp::GobyMOOSApp(ProtobufConfig* cfg)
 
     process_configuration();
 
-    glog.is(goby::common::logger::VERBOSE) && glog << cfg->DebugString() << std::endl;
+    glog.is(goby::common::logger::DEBUG2) && glog << cfg->DebugString() << std::endl;
 }
 
 

@@ -86,7 +86,7 @@ CpAcommsHandler::CpAcommsHandler()
 
 #ifdef ENABLE_GOBY_V1_TRANSITIONAL_SUPPORT
     transitional_dccl_.convert_to_v2_representation(&cfg_);
-    glog.is(VERBOSE) && glog << group("pAcommsHandler") << "Configuration after transitional configuration modifications: \n" << cfg_ << std::flush;
+    glog.is(DEBUG2) && glog << group("pAcommsHandler") << "Configuration after transitional configuration modifications: \n" << cfg_ << std::flush;
 #else
     if(cfg_.has_transitional_cfg())
         glog.is(WARN) && glog << "transitional_cfg is set but pAcommsHandler was not compiled with the CMake flag 'enable_goby_v1_transitional_support' set to ON" << std::endl;

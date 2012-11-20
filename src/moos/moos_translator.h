@@ -86,7 +86,10 @@ namespace goby
                 add_entry(entries);
             }
 
-            
+            void clear_entry(const std::string& protobuf_name)
+            {
+                dictionary_.erase(protobuf_name);
+            }
             
             void add_entry(const goby::moos::protobuf::TranslatorEntry& entry)
             {

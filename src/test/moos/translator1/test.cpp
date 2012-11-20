@@ -80,8 +80,9 @@ int main(int argc, char* argv[])
         serializer->set_moos_var("TEST_MSG_1");
 
         entries.insert(entry);
-    }
-    
+    } 
+   
+    translator.clear_entry("TestMsg");
     translator.add_entry(entries);
 
     goby::glog << translator << std::endl;    
@@ -99,7 +100,8 @@ int main(int argc, char* argv[])
         protobuf::TranslatorEntry::PublishSerializer* serializer = entry.add_publish();
         serializer->set_technique(protobuf::TranslatorEntry::TECHNIQUE_COMMA_SEPARATED_KEY_EQUALS_VALUE_PAIRS);
         serializer->set_moos_var("TEST_MSG_1");
-        
+
+        translator.clear_entry(entry.protobuf_name());
         translator.add_entry(entry);
     }
     
@@ -124,6 +126,7 @@ int main(int argc, char* argv[])
         serializer->set_moos_var("NODE_REPORT");
         serializer->set_format(format_str);
         
+        translator.clear_entry(entry.protobuf_name());        
         translator.add_entry(entry);
     }
 
@@ -232,7 +235,8 @@ int main(int argc, char* argv[])
         serializer2->clear_format();
         serializer2->set_technique(protobuf::TranslatorEntry::TECHNIQUE_COMMA_SEPARATED_KEY_EQUALS_VALUE_PAIRS);
         serializer2->set_moos_var("NODE_REPORT_KEY_VALUE");
-        
+
+        translator.clear_entry(entry.protobuf_name());        
         translator.add_entry(entry);
    }
     
@@ -268,9 +272,9 @@ int main(int argc, char* argv[])
                   << "Value: " << it->second.GetString() << std::endl;
 
        if(it->first == "NODE_REPORT_FORMAT")
-           assert(it->second.GetString() == "NAME=unicorn,X=550,Y=1023.5,HEADING=240,REPEAT={};LAT=42.509107559864;LON=10.80695591284");
+           assert(it->second.GetString() == "NAME=unicorn,X=550,Y=1023.5,HEADING=240,REPEAT={};LAT=42.509107611869;LON=10.80695580804");
        else if(it->first == "NODE_REPORT_KEY_VALUE")
-           assert(it->second.GetString() == "Name=unicorn,x=550,y=1023.5,heading=240,utm_y2lat(y)=42.509107559864,utm_x2lon(x)=10.80695591284,name2modem_id(Name)=3,name2modem_id+modem_id2type+to_upper(Name)=AUV");
+           assert(it->second.GetString() == "Name=unicorn,x=550,y=1023.5,heading=240,utm_y2lat(y)=42.509107611869,utm_x2lon(x)=10.80695580804,name2modem_id(Name)=3,name2modem_id+modem_id2type+to_upper(Name)=AUV");
        
    }
     
@@ -290,7 +294,8 @@ int main(int argc, char* argv[])
         serializer->set_technique(protobuf::TranslatorEntry::TECHNIQUE_FORMAT);
         serializer->set_moos_var("TEST_MSG_1");
         serializer->set_format(sub_message_format_str);
-        
+
+        translator.clear_entry(entry.protobuf_name());
         translator.add_entry(entry);
     }
 
@@ -334,7 +339,8 @@ int main(int argc, char* argv[])
        serializer->set_technique(protobuf::TranslatorEntry::TECHNIQUE_FORMAT);
        serializer->set_moos_var("TEST_MSG_1");
        serializer->set_format(sub_message_format_str);
-       
+
+       translator.clear_entry(entry.protobuf_name());
        translator.add_entry(entry);
    }
    

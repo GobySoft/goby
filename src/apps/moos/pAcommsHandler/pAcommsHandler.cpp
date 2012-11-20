@@ -374,13 +374,6 @@ void CpAcommsHandler::process_configuration()
     cfg_.mutable_transitional_cfg()->set_modem_id(cfg_.modem_id());
     cfg_.mutable_driver_cfg()->set_modem_id(cfg_.modem_id());
 
-    // start goby-acomms classes
-    if(driver_) driver_->startup(cfg_.driver_cfg());
-    mac_.startup(cfg_.mac_cfg());
-    queue_manager_.set_cfg(cfg_.queue_cfg());
-    dccl_->set_cfg(cfg_.dccl_cfg());
-    if(router_) router_->set_cfg(cfg_.route_cfg());
-    
     // load all shared libraries
     for(int i = 0, n = cfg_.load_shared_library_size(); i < n; ++i)
     {
@@ -410,6 +403,13 @@ void CpAcommsHandler::process_configuration()
         if(!goby::util::DynamicProtobufManager::load_from_proto_file(cfg_.load_proto_file(i)))
             glog.is(DIE) && glog << "Failed to load file." << std::endl;
     }
+    
+    // start goby-acomms classes
+    if(driver_) driver_->startup(cfg_.driver_cfg());
+    mac_.startup(cfg_.mac_cfg());
+    queue_manager_.set_cfg(cfg_.queue_cfg());
+    dccl_->set_cfg(cfg_.dccl_cfg());
+    if(router_) router_->set_cfg(cfg_.route_cfg());    
 
     // process translator entries
     for(int i = 0, n = cfg_.translator_entry_size(); i < n; ++i)

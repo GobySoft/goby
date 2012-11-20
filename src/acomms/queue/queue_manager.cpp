@@ -588,7 +588,7 @@ void goby::acomms::QueueManager::process_cfg()
         }
         else
         {
-            glog.is(DEBUG1) && glog << group(glog_push_group_) << warn << "No message by the name: " << cfg_.message_entry(i).protobuf_name() << "found, not setting Queue options for this type." << std::endl;
+            glog.is(DEBUG1) && glog << group(glog_push_group_) << warn << "No message by the name: " << cfg_.message_entry(i).protobuf_name() << " found, not setting Queue options for this type." << std::endl;
         }
     }
 }

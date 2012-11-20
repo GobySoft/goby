@@ -89,7 +89,11 @@ namespace goby
             
             
             void add_entry(const goby::moos::protobuf::TranslatorEntry& entry)
-            { dictionary_[entry.protobuf_name()] =  entry; }
+            {
+                if(dictionary_.count(entry.protobuf_name()))
+                    throw(std::runtime_error("Duplicate translator entry for " + entry.protobuf_name()));
+                dictionary_[entry.protobuf_name()] =  entry;
+            }
             
             void add_entry(const std::set<goby::moos::protobuf::TranslatorEntry>& entries)
             {

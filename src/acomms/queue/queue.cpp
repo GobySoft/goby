@@ -109,13 +109,18 @@ bool goby::acomms::Queue::push_message(boost::shared_ptr<google::protobuf::Messa
         return false;
     }
     
+    if(!meta.has_ack_requested())
+        meta.set_ack_requested(queue_message_options().ack());
     messages_.push_back(QueuedMessage());
     messages_.back().meta = meta;
     messages_.back().dccl_msg = dccl_msg;
-    protobuf::QueuedMessageMeta* new_meta_msg = &messages_.back().meta;
     
-    if(!new_meta_msg->has_ack_requested())
-        new_meta_msg->set_ack_requested(queue_message_options().ack());
+    glog.is(DEBUG1) && glog << group(parent_->glog_push_group())
+                            << "pushed to send stack (queue size " << size() <<  "/"
+                            << queue_message_options().max_queue() << ")" << std::endl;
+    
+    glog.is(DEBUG2) && glog << group(parent_->glog_push_group()) << "Message: " << *dccl_msg << std::endl;
+    glog.is(DEBUG2) && glog << group(parent_->glog_push_group()) << "Meta: " << meta << std::endl;
     
     // pop messages off the stack if the queue is full
     if(queue_message_options().max_queue() && messages_.size() > queue_message_options().max_queue())
@@ -135,13 +140,6 @@ bool goby::acomms::Queue::push_message(boost::shared_ptr<google::protobuf::Messa
 
         messages_.erase(it_to_erase);
     }
-    
-    glog.is(DEBUG1) && glog << group(parent_->glog_push_group())
-                            << "pushed to send stack (queue size " << size() <<  "/"
-                            << queue_message_options().max_queue() << ")" << std::endl;
-    
-    glog.is(DEBUG2) && glog << group(parent_->glog_push_group()) << "Message: " << *dccl_msg << std::endl;
-    glog.is(DEBUG2) && glog << group(parent_->glog_push_group()) << "Meta: " << *new_meta_msg << std::endl;    
     
     return true;     
 }

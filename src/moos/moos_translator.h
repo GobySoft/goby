@@ -47,6 +47,14 @@ namespace goby
         void alg_TSD_to_soundspeed(transitional::DCCLMessageVal& val,
                                    const std::vector<transitional::DCCLMessageVal>& ref_vals);
 
+        // ref_vals subtracted from val
+        void alg_subtract(transitional::DCCLMessageVal& val,
+                          const std::vector<transitional::DCCLMessageVal>& ref_vals);
+
+        // ref_vals added to val
+        void alg_add(transitional::DCCLMessageVal& val,
+                     const std::vector<transitional::DCCLMessageVal>& ref_vals);
+        
         void alg_angle_0_360(transitional::DCCLMessageVal& angle);
         void alg_angle_n180_180(transitional::DCCLMessageVal& angle);
 
@@ -61,8 +69,7 @@ namespace goby
         void alg_unix_time2nmea_time(transitional::DCCLMessageVal& val_to_mod);
 
         void alg_lat2nmea_lat(transitional::DCCLMessageVal& val_to_mod);
-        void alg_lon2nmea_lon(transitional::DCCLMessageVal& val_to_mod);    
-
+        void alg_lon2nmea_lon(transitional::DCCLMessageVal& val_to_mod);
         
         class MOOSTranslator
         {

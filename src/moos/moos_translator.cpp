@@ -56,6 +56,10 @@ void goby::moos::MOOSTranslator::initialize(double lat_origin, double lon_origin
 
     ap->add_algorithm("abs", &alg_abs);
 
+    ap->add_adv_algorithm("add", &alg_add);
+    ap->add_adv_algorithm("subtract", &alg_subtract);
+
+    
     if(!modem_id_lookup_path.empty())
     {
         std::string id_lookup_output = modem_lookup_.read_lookup_file(modem_id_lookup_path);
@@ -301,5 +305,30 @@ void goby::moos::alg_lon2nmea_lon(transitional::DCCLMessageVal& val_to_mod)
     f % degrees % minutes % ten_thousandth_minutes;
 
     val_to_mod = f.str();
+}
+
+
+void goby::moos::alg_subtract(transitional::DCCLMessageVal& val_to_mod,
+                              const std::vector<transitional::DCCLMessageVal>& ref_vals)
+{
+    double diff = val_to_mod;
+
+    for(std::vector<transitional::DCCLMessageVal>::const_iterator it = ref_vals.begin(),
+            end = ref_vals.end(); it != end; ++it)
+        diff -= static_cast<double>(*it);
+
+    val_to_mod = diff;
+}
+
+void goby::moos::alg_add(transitional::DCCLMessageVal& val_to_mod,
+                         const std::vector<transitional::DCCLMessageVal>& ref_vals)
+{
+    double sum = val_to_mod;
+
+    for(std::vector<transitional::DCCLMessageVal>::const_iterator it = ref_vals.begin(),
+            end = ref_vals.end(); it != end; ++it)
+        sum += static_cast<double>(*it);
+
+    val_to_mod = sum;
 }
 

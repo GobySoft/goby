@@ -122,8 +122,8 @@ endif()
 
 
 ## Kernel
-option(workaround_2_4_kernel "Apply workarounds for Linux 2.4 kernel. Leave OFF for newer (e.g. 2.6) kernels" OFF)
-if(workaround_2_4_kernel)
+option(disable_epoll "Apply workarounds for kernels that don't support epoll (before Linux 2.6). Leave OFF for newer kernels" OFF)
+if(disable_epoll)
   add_definitions(-DBOOST_ASIO_DISABLE_EPOLL)
 endif()
 

@@ -21,9 +21,10 @@
 
   \section main_papers Publications
   <ul>
-    <li> <a href=http://gobysoft.com/dl/dccl_oceans10.pdf>The Dynamic Compact Control Language: A Compact Marshalling Scheme for Acoustic Communications</a>. IEEE OCEANS'10 / Sydney.
-    <li> <a href=http://gobysoft.com/dl/goby-acomms1.pdf>Goby-Acomms: A modular acoustic networking framework for short-range marine vehicle communication</a>. Unpublished working paper.
-    <li> <a href=http://gobysoft.com/dl/mcmc2012_goby2.pdf>Goby-Acomms version 2: extensible marshalling, queuing, and link layer interfacing for acoustic telemetry</a>. 9th IFAC Conference on Manoeuvring and Control of Marine Craft '12 / Arenzano, Italy.
+    <li> T. Schneider and H. Schmidt, <a href=http://gobysoft.com/dl/dccl_oceans10.pdf>The Dynamic Compact Control Language: A Compact Marshalling Scheme for Acoustic Communications</a>. IEEE OCEANS'10 / Sydney.
+    <li> T. Schneider and H. Schmidt, <a href=http://gobysoft.com/dl/goby-acomms1.pdf>Goby-Acomms: A modular acoustic networking framework for short-range marine vehicle communication</a>. Unpublished working paper.
+    <li> T. Schneider and H. Schmidt, <a href=http://gobysoft.com/dl/mcmc2012_goby2.pdf>Goby-Acomms version 2: extensible marshalling, queuing, and link layer interfacing for acoustic telemetry</a>. 9th IFAC Conference on Manoeuvring and Control of Marine Craft '12 / Arenzano, Italy.
+    <li> T. Schneider, <a href=http://gobysoft.com/dl/schneider-toby-final-phd-thesis-online.pdf>Advances in Integrating Autonomy with Acoustic Communications for Intelligent Networks of Marine Robots</a>. PhD Thesis, MIT/WHOI Joint Program.
   </ul>
 
 \section install Download and Install Goby

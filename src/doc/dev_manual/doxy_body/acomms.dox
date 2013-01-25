@@ -30,7 +30,7 @@ Table of Contents for \ref acomms.
 To get started using the goby-acomms libraries as quickly as possible:
 
 <ol>
-  <li> If you haven't yet, follow instructions on \ref install "installing Goby".</li>
+  <li> If you haven't yet, follow instructions on installing Goby: <http://gobysoft.com/wiki/InstallingGoby>.</li>
   <li> Identify which components you need:</li>
   <ul>
     <li>Encoding and decoding from C++ types to bit-packed messages: \ref dccl "dccl".</li>

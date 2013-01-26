@@ -23,7 +23,7 @@ endif()
 add_subdirectory(mmdriver1)
 add_subdirectory(mmdriver2)
 
-if(enable_zeromq AND enable_testing_asio)
+if(enable_testing_asio)
   add_subdirectory(route1)
   add_subdirectory(udpdriver1)
   add_subdirectory(udpdriver2)

@@ -18,16 +18,10 @@ set(SRC
   modemdriver/driver_base.cpp
   modemdriver/mm_driver.cpp
   route/route.cpp
+  modemdriver/udp_driver.cpp
   ${PROTO_SRCS} ${PROTO_HDRS}
 )
 
-
-if(enable_zeromq)
-  set(SRC
-    ${SRC}
-    modemdriver/udp_driver.cpp
-    )
-endif()
 
 add_library(goby_acomms ${SRC})
 

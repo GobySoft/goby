@@ -27,7 +27,6 @@
 #include "goby/common/time.h"
 
 #include "goby/acomms/modemdriver/driver_base.h"
-#include "goby/common/zeromq_service.h"
 #include "goby/acomms/protobuf/udp_driver.pb.h"
 
 #include <boost/bind.hpp>

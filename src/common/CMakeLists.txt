@@ -9,13 +9,13 @@ set(SRC
   logger/logger_manipulators.cpp 
   logger/term_color.cpp
   configuration_reader.cpp
+  application_base.cpp
   ${PROTO_SRCS} ${PROTO_HDRS} 
 )
 
 if(enable_zeromq)
   set(SRC
     ${SRC}
-    application_base.cpp
     zeromq_service.cpp
     )
 endif()

@@ -50,8 +50,6 @@ namespace bf = boost::filesystem;
 
 goby::common::protobuf::LiaisonConfig goby::common::Liaison::cfg_;
 boost::shared_ptr<zmq::context_t> goby::common::Liaison::zmq_context_(new zmq::context_t(1));
-const std::string goby::common::Liaison::LIAISON_INTERNAL_PUBLISH_SOCKET_NAME = "liaison_internal_publish_socket"; 
-const std::string goby::common::Liaison::LIAISON_INTERNAL_SUBSCRIBE_SOCKET_NAME = "liaison_internal_subscribe_socket"; 
 
 int main(int argc, char* argv[])
 {
@@ -118,7 +116,7 @@ goby::common::Liaison::Liaison()
     internal_publish_socket->set_socket_id(LIAISON_INTERNAL_PUBLISH_SOCKET);
     internal_publish_socket->set_transport(protobuf::ZeroMQServiceConfig::Socket::INPROC);
     internal_publish_socket->set_connect_or_bind(protobuf::ZeroMQServiceConfig::Socket::BIND);
-    internal_publish_socket->set_socket_name(LIAISON_INTERNAL_PUBLISH_SOCKET_NAME);
+    internal_publish_socket->set_socket_name(liaison_internal_publish_socket_name());
 
 
     protobuf::ZeroMQServiceConfig::Socket* internal_subscribe_socket = ipc_sockets.add_socket();
@@ -126,7 +124,7 @@ goby::common::Liaison::Liaison()
     internal_subscribe_socket->set_socket_id(LIAISON_INTERNAL_SUBSCRIBE_SOCKET);
     internal_subscribe_socket->set_transport(protobuf::ZeroMQServiceConfig::Socket::INPROC);
     internal_subscribe_socket->set_connect_or_bind(protobuf::ZeroMQServiceConfig::Socket::BIND);
-    internal_subscribe_socket->set_socket_name(LIAISON_INTERNAL_SUBSCRIBE_SOCKET_NAME);
+    internal_subscribe_socket->set_socket_name(liaison_internal_subscribe_socket_name());
     
     zeromq_service_.merge_cfg(ipc_sockets);
     zeromq_service_.subscribe_all(LIAISON_INTERNAL_SUBSCRIBE_SOCKET);

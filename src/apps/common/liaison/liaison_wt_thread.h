@@ -37,16 +37,13 @@
 #include "goby/common/zeromq_application_base.h"
 #include "goby/common/pubsub_node_wrapper.h"
 
-#include "liaison_config.pb.h"
+#include "goby/common/protobuf/liaison_config.pb.h"
 #include "liaison.h"
 
 namespace goby
 {
     namespace common
     {
-        class LiaisonScope;
-        
-        
         class LiaisonWtThread : public Wt::WApplication
         {
           public:
@@ -65,23 +62,17 @@ namespace goby
             LiaisonWtThread(const LiaisonWtThread&);
             LiaisonWtThread& operator=(const LiaisonWtThread&);
             
-            void add_to_menu(Wt::WMenu* menu, const Wt::WString& name, LiaisonContainer* container);
+            void add_to_menu(Wt::WMenu* menu, LiaisonContainer* container);
             void handle_menu_selection(Wt::WMenuItem * item);
             
           private:
             ZeroMQService scope_service_;
             ZeroMQService commander_service_;
             
-            
+            Wt::WMenu* menu_;
             Wt::WStackedWidget* contents_stack_;
-
-            LiaisonScope* scope_;
-            Wt::WTimer scope_timer_;
-            Wt::WTimer commander_timer_;
-
+            std::map<Wt::WMenuItem*, LiaisonContainer*> menu_contents_;
             
-            enum ScopeState { ACTIVE = 1, STOPPED = 2, UNKNOWN = 0 };
-            ScopeState last_scope_state_;
             
         };
 

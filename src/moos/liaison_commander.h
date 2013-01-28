@@ -46,6 +46,7 @@
 #include <Wt/WDateTime>
 #include <Wt/WValidator>
 #include <Wt/WGroupBox>
+#include <Wt/WTimer>
 
 #include <Wt/Dbo/Session>
 #include <Wt/Dbo/Impl>
@@ -56,7 +57,7 @@
 #include <Wt/Dbo/WtSqlTraits>
 
 
-#include "liaison.h"
+#include "goby/common/liaison_container.h"
 #include "goby/moos/moos_node.h"
 
 namespace goby
@@ -86,11 +87,22 @@ namespace goby
         class LiaisonCommander : public LiaisonContainer, public goby::moos::MOOSNode
         {
           public:
-            LiaisonCommander(ZeroMQService* zeromq_service, Wt::WContainerWidget* parent = 0);
+            LiaisonCommander(ZeroMQService* zeromq_service, const protobuf::LiaisonConfig& cfg, Wt::WContainerWidget* parent = 0);
             void moos_inbox(CMOOSMsg& msg);
             void loop();
             
           private:
+            
+            void focus()
+            {
+                commander_timer_.start();
+            }
+
+             void unfocus()
+            {
+                commander_timer_.stop();
+            }
+
             
           private:
             ZeroMQService* zeromq_service_;
@@ -98,7 +110,9 @@ namespace goby
             
             Wt::WVBoxLayout* main_layout_;
             Wt::WStackedWidget* commands_div_;
-            
+
+            Wt::WTimer commander_timer_;
+                        
             struct ControlsContainer : Wt::WGroupBox
             {
                 ControlsContainer(

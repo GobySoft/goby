@@ -50,7 +50,7 @@ div.menu
 {
   position:absolute;
   display: block;
-  width: 10%;
+  width: 15%;
 }
 
 ul.menu
@@ -72,10 +72,9 @@ ul.menu
 
 div#contents
 {
-  width: 90%;
   position:absolute;
   display: block;
-  left: 10%;
+  left: 15%;
   height: 100%;
 }
 

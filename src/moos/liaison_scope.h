@@ -35,10 +35,10 @@
 #include <Wt/WSortFilterProxyModel>
 #include <Wt/WBoxLayout>
 #include <Wt/WVBoxLayout>
+#include <Wt/WTimer>
 
 #include "goby/moos/moos_node.h"
-
-#include "liaison.h"
+#include "goby/common/liaison_container.h"
 
 namespace Wt
 {
@@ -53,8 +53,7 @@ namespace goby
         {
             
           public:
-            LiaisonScope(ZeroMQService* zeromq_service,
-                         Wt::WTimer* timer_, Wt::WContainerWidget* parent = 0);
+            LiaisonScope(ZeroMQService* zeromq_service, const protobuf::LiaisonConfig& cfg, Wt::WContainerWidget* parent = 0);
             
             void moos_inbox(CMOOSMsg& msg);
                 
@@ -75,6 +74,32 @@ namespace goby
           private:
             void handle_global_key(Wt::WKeyEvent event);
 
+            void focus()
+            {
+                if(last_scope_state_ == ACTIVE)
+                    resume();
+                else if(last_scope_state_ == UNKNOWN)
+                    scope_timer_.start();
+                
+                last_scope_state_ = UNKNOWN;
+            }
+            
+            void unfocus()
+            {
+                if(last_scope_state_ == UNKNOWN)
+                {
+                    last_scope_state_ = is_paused() ? STOPPED : ACTIVE;
+                    pause();
+                }
+            }
+            
+            void cleanup()
+            {
+                // we must resume the scope as this stops the background thread, allowing the ZeroMQService for the scope to be safely deleted. This is inelegant, but a by product of how Wt destructs the root object *after* this class (and thus all the local class objects).
+                resume();
+            }
+            
+            
           private:
             ZeroMQService* zeromq_service_;
             const protobuf::MOOSScopeConfig& moos_scope_config_;
@@ -84,7 +109,10 @@ namespace goby
             Wt::WSortFilterProxyModel* proxy_;
 
             Wt::WVBoxLayout* main_layout_;
-            
+
+            Wt::WTimer scope_timer_;
+            enum ScopeState { ACTIVE = 1, STOPPED = 2, UNKNOWN = 0 };
+            ScopeState last_scope_state_;
 
             struct SubscriptionsContainer : Wt::WContainerWidget
             {
@@ -97,7 +125,7 @@ namespace goby
                 void handle_add_subscription();
                 void handle_remove_subscription(Wt::WPushButton* clicked_anchor);
                 void add_subscription(std::string type);
-
+                
                 void refresh_with_newest();
                 void refresh_with_newest(const std::string& type);
                 

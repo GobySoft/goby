@@ -37,6 +37,7 @@ if(enable_ncurses)
   target_link_libraries(goby_common ${CURSES_LIBRARIES})
 endif()
 
+
 target_link_libraries(goby_common ${PROTOBUF_LIBRARY} ${Boost_LIBRARIES} pthread)
 set_target_properties(goby_common PROPERTIES VERSION "${GOBY_VERSION}" SOVERSION "${GOBY_SOVERSION}")
 

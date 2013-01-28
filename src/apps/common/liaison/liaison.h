@@ -35,50 +35,13 @@
 
 #include "goby/common/zeromq_application_base.h"
 #include "goby/common/pubsub_node_wrapper.h"
-
-#include "liaison_config.pb.h"
-
+#include "goby/common/liaison_container.h"
+#include "goby/common/protobuf/liaison_config.pb.h"
 
 namespace goby
 {
     namespace common
-    {
-        /* class LiaisonContainerWrapper : public Wt::WContainerWidget */
-        /* { */
-        /*   public: */
-        /*     LiaisonContainerWrapper() */
-        /*     { */
-        /*         setStyleClass("wrapper"); */
-        /*     } */
-        /*     virtual ~LiaisonContainerWrapper() { }             */
-        /* }; */
-
-            
-        class LiaisonContainer : public  Wt::WContainerWidget
-        {
-          public:
-          LiaisonContainer(Wt::WContainerWidget* parent)
-              : Wt::WContainerWidget(parent)
-            {
-                setStyleClass("fill");
-                /* addWidget(new Wt::WText("<hr/>")); */
-                /* addWidget(name_); */
-                /* addWidget(new Wt::WText("<hr/>")); */
-            }
-
-            void set_name(const Wt::WString& name)
-            {
-                name_.setText(name);
-            }
-            
-            virtual ~LiaisonContainer() { }
-
-          private:
-            Wt::WText name_;
-        };        
-
-
-        
+    {        
         class Liaison : public ZeroMQApplicationBase
         {
           public:
@@ -91,30 +54,14 @@ namespace goby
                        int size,
                        int socket_id);
 
-            static const std::string LIAISON_INTERNAL_PUBLISH_SOCKET_NAME;
-            static const std::string LIAISON_INTERNAL_SUBSCRIBE_SOCKET_NAME;
-
             void loop();
 
             static boost::shared_ptr<zmq::context_t> zmq_context() { return zmq_context_; }
-
-            
-            enum 
-            {
-                LIAISON_INTERNAL_PUBLISH_SOCKET = 1,
-                LIAISON_INTERNAL_SUBSCRIBE_SOCKET = 2,
-                LIAISON_INTERNAL_COMMANDER_SUBSCRIBE_SOCKET = 3,
-                LIAISON_INTERNAL_COMMANDER_PUBLISH_SOCKET = 4,
-                LIAISON_INTERNAL_SCOPE_SUBSCRIBE_SOCKET = 5,
-                LIAISON_INTERNAL_SCOPE_PUBLISH_SOCKET = 6,  
-            };
 
           private:
             void load_proto_file(const std::string& path);
             
             friend class LiaisonWtThread;
-            friend class LiaisonScope;
-            friend class LiaisonCommander;
           private:
             static protobuf::LiaisonConfig cfg_;
             Wt::WServer wt_server_;

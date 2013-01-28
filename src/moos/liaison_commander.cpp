@@ -28,6 +28,9 @@
 #include <Wt/WRegExpValidator>
 #include <Wt/WPanel>
 #include <Wt/WLengthValidator>
+#include <Wt/WApplication>
+#include <Wt/WEnvironment>
+
 
 #include "goby/acomms/protobuf/dccl_option_extensions.pb.h"
 #include "goby/util/dynamic_protobuf_manager.h"
@@ -56,11 +59,12 @@ const std::string STRIPE_EVEN_CLASS = "even";
 
 
 goby::common::LiaisonCommander::LiaisonCommander(ZeroMQService* zeromq_service,
+                                                 const protobuf::LiaisonConfig& cfg,
                                                  WContainerWidget* parent)
     : LiaisonContainer(parent),
       MOOSNode(zeromq_service),
       zeromq_service_(zeromq_service),
-      pb_commander_config_(Liaison::cfg_.GetExtension(protobuf::pb_commander_config)),
+      pb_commander_config_(cfg.GetExtension(protobuf::pb_commander_config)),
       main_layout_(new WVBoxLayout(this)),
       commands_div_(new WStackedWidget(this)),
       controls_div_(new ControlsContainer(this, pb_commander_config_, commands_div_, this))
@@ -68,17 +72,17 @@ goby::common::LiaisonCommander::LiaisonCommander(ZeroMQService* zeromq_service,
     protobuf::ZeroMQServiceConfig ipc_sockets;
     protobuf::ZeroMQServiceConfig::Socket* internal_subscribe_socket = ipc_sockets.add_socket();
     internal_subscribe_socket->set_socket_type(protobuf::ZeroMQServiceConfig::Socket::SUBSCRIBE);
-    internal_subscribe_socket->set_socket_id(Liaison::LIAISON_INTERNAL_COMMANDER_SUBSCRIBE_SOCKET);
+    internal_subscribe_socket->set_socket_id(LIAISON_INTERNAL_COMMANDER_SUBSCRIBE_SOCKET);
     internal_subscribe_socket->set_transport(protobuf::ZeroMQServiceConfig::Socket::INPROC);
     internal_subscribe_socket->set_connect_or_bind(protobuf::ZeroMQServiceConfig::Socket::CONNECT);
-    internal_subscribe_socket->set_socket_name(Liaison::LIAISON_INTERNAL_PUBLISH_SOCKET_NAME);
+    internal_subscribe_socket->set_socket_name(liaison_internal_publish_socket_name());
 
     protobuf::ZeroMQServiceConfig::Socket* internal_publish_socket = ipc_sockets.add_socket();
     internal_publish_socket->set_socket_type(protobuf::ZeroMQServiceConfig::Socket::PUBLISH);
-    internal_publish_socket->set_socket_id(Liaison::LIAISON_INTERNAL_COMMANDER_PUBLISH_SOCKET);
+    internal_publish_socket->set_socket_id(LIAISON_INTERNAL_COMMANDER_PUBLISH_SOCKET);
     internal_publish_socket->set_transport(protobuf::ZeroMQServiceConfig::Socket::INPROC);
     internal_publish_socket->set_connect_or_bind(protobuf::ZeroMQServiceConfig::Socket::CONNECT);
-    internal_publish_socket->set_socket_name(Liaison::LIAISON_INTERNAL_SUBSCRIBE_SOCKET_NAME);
+    internal_publish_socket->set_socket_name(liaison_internal_subscribe_socket_name());
 
     zeromq_service_->merge_cfg(ipc_sockets);    
 
@@ -87,10 +91,15 @@ goby::common::LiaisonCommander::LiaisonCommander(ZeroMQService* zeromq_service,
     main_layout_->addStretch(1);
 
     for(int i = 0, n = pb_commander_config_.subscription_size(); i < n; ++i)
-        subscribe(pb_commander_config_.subscription(i), Liaison::LIAISON_INTERNAL_COMMANDER_SUBSCRIBE_SOCKET);
+        subscribe(pb_commander_config_.subscription(i), LIAISON_INTERNAL_COMMANDER_SUBSCRIBE_SOCKET);
 
     if(pb_commander_config_.has_time_source_var())
-        subscribe(pb_commander_config_.time_source_var(), Liaison::LIAISON_INTERNAL_COMMANDER_SUBSCRIBE_SOCKET);
+        subscribe(pb_commander_config_.time_source_var(), LIAISON_INTERNAL_COMMANDER_SUBSCRIBE_SOCKET);
+
+    commander_timer_.setInterval(1/cfg.update_freq()*1.0e3);
+    commander_timer_.timeout().connect(this, &LiaisonCommander::loop);
+
+    set_name("MOOSCommander");
 }
 
 void goby::common::LiaisonCommander::moos_inbox(CMOOSMsg& msg)
@@ -394,7 +403,7 @@ void goby::common::LiaisonCommander::ControlsContainer::send_message()
         std::string serialized; 
         serialize_for_moos(&serialized, *current_command->message_);
         moos_node_->send(CMOOSMsg(MOOS_NOTIFY, "LIAISON_COMMANDER_OUT", serialized),
-             Liaison::LIAISON_INTERNAL_COMMANDER_PUBLISH_SOCKET);
+             LIAISON_INTERNAL_COMMANDER_PUBLISH_SOCKET);
         
             
         CommandEntry* command_entry = new CommandEntry;

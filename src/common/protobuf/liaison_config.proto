@@ -20,6 +20,8 @@ message LiaisonConfig
   repeated string load_proto_dir = 9 [(goby.field).description="Directory containing .proto files to load. Use load_shared_library when possible."];
   
   optional bool start_paused = 10 [default = false];
+
+  repeated string load_plugin_library = 20 [(goby.field).description="Path to a shared library containing Liaison plugins."];
   
   extensions 1000 to max;
 }

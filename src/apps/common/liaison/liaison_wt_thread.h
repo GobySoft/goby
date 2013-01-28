@@ -66,13 +66,10 @@ namespace goby
             void handle_menu_selection(Wt::WMenuItem * item);
             
           private:
-            ZeroMQService scope_service_;
-            ZeroMQService commander_service_;
-            
             Wt::WMenu* menu_;
             Wt::WStackedWidget* contents_stack_;
             std::map<Wt::WMenuItem*, LiaisonContainer*> menu_contents_;
-            
+            std::vector<void* > dl_handles_;
             
         };
 

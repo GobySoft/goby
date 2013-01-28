@@ -68,14 +68,14 @@ goby::common::LiaisonScope::LiaisonScope(ZeroMQService* zeromq_service, const pr
     protobuf::ZeroMQServiceConfig ipc_sockets;
     protobuf::ZeroMQServiceConfig::Socket* internal_subscribe_socket = ipc_sockets.add_socket();
     internal_subscribe_socket->set_socket_type(protobuf::ZeroMQServiceConfig::Socket::SUBSCRIBE);
-    internal_subscribe_socket->set_socket_id(LIAISON_INTERNAL_SCOPE_SUBSCRIBE_SOCKET);
+    internal_subscribe_socket->set_socket_id(LIAISON_INTERNAL_SUBSCRIBE_SOCKET);
     internal_subscribe_socket->set_transport(protobuf::ZeroMQServiceConfig::Socket::INPROC);
     internal_subscribe_socket->set_connect_or_bind(protobuf::ZeroMQServiceConfig::Socket::CONNECT);
     internal_subscribe_socket->set_socket_name(liaison_internal_publish_socket_name());
 
     protobuf::ZeroMQServiceConfig::Socket* internal_publish_socket = ipc_sockets.add_socket();
     internal_publish_socket->set_socket_type(protobuf::ZeroMQServiceConfig::Socket::PUBLISH);
-    internal_publish_socket->set_socket_id(LIAISON_INTERNAL_SCOPE_PUBLISH_SOCKET);
+    internal_publish_socket->set_socket_id(LIAISON_INTERNAL_PUBLISH_SOCKET);
     internal_publish_socket->set_transport(protobuf::ZeroMQServiceConfig::Socket::INPROC);
     internal_publish_socket->set_connect_or_bind(protobuf::ZeroMQServiceConfig::Socket::CONNECT);
     internal_publish_socket->set_socket_name(liaison_internal_subscribe_socket_name());
@@ -86,7 +86,7 @@ goby::common::LiaisonScope::LiaisonScope(ZeroMQService* zeromq_service, const pr
 
     this->resize(WLength::Auto, WLength(100, WLength::Percentage));
     
-    zeromq_service_->socket_from_id(LIAISON_INTERNAL_SCOPE_SUBSCRIBE_SOCKET).set_global_blackout(boost::posix_time::milliseconds(1/cfg.update_freq()*1e3));    
+    zeromq_service_->socket_from_id(LIAISON_INTERNAL_SUBSCRIBE_SOCKET).set_global_blackout(boost::posix_time::milliseconds(1/cfg.update_freq()*1e3));    
 
     setStyleClass("scope");
 
@@ -481,7 +481,7 @@ void goby::common::LiaisonScope::SubscriptionsContainer::add_subscription(std::s
     WPushButton* new_button = new WPushButton(this);
 
     new_button->setText(type + " ");
-    node_->subscribe(type, LIAISON_INTERNAL_SCOPE_SUBSCRIBE_SOCKET);
+    node_->subscribe(type, LIAISON_INTERNAL_SUBSCRIBE_SOCKET);
     
     new_button->clicked().connect(boost::bind(&SubscriptionsContainer::handle_remove_subscription, this, new_button));
 
@@ -516,7 +516,7 @@ void goby::common::LiaisonScope::SubscriptionsContainer::handle_remove_subscript
     boost::trim(type_name);
     unsigned type_name_size = type_name.size();
     
-    node_->unsubscribe(clicked_button->text().narrow(), LIAISON_INTERNAL_SCOPE_SUBSCRIBE_SOCKET);
+    node_->unsubscribe(clicked_button->text().narrow(), LIAISON_INTERNAL_SUBSCRIBE_SOCKET);
     subscriptions_.erase(type_name);
 
     
@@ -661,7 +661,7 @@ void goby::common::LiaisonScope::HistoryContainer::add_history(const goby::commo
         mvc.proxy = new_proxy;
 
         node_->zeromq_service()->socket_from_id(
-            LIAISON_INTERNAL_SCOPE_SUBSCRIBE_SOCKET).set_blackout(
+            LIAISON_INTERNAL_SUBSCRIBE_SOCKET).set_blackout(
             MARSHALLING_MOOS,
             "CMOOSMsg/" + selected_key + "/",
             boost::posix_time::milliseconds(0));

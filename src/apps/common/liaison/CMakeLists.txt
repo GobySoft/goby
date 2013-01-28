@@ -46,6 +46,5 @@ target_link_libraries(goby_liaison
   goby_common
   goby_moos
   goby_util
-  liaison_plugins_goby_moos
   )
 

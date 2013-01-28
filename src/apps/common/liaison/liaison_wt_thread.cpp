@@ -35,8 +35,8 @@
 #include "liaison_wt_thread.h"
 #include "liaison_home.h"
 
-#include "goby/moos/liaison_commander.h"
-#include "goby/moos/liaison_scope.h"
+#include "goby/moos/moos_liaison_load.h"
+
 
 using goby::glog;
 using namespace Wt;    
@@ -44,9 +44,7 @@ using namespace goby::common::logger_lock;
 using namespace goby::common::logger;
 
 goby::common::LiaisonWtThread::LiaisonWtThread(const Wt::WEnvironment& env)
-    : Wt::WApplication(env),
-      scope_service_(Liaison::zmq_context()),
-      commander_service_(Liaison::zmq_context())
+    : Wt::WApplication(env)
 {    
 //    zeromq_service_.connect_inbox_slot(&LiaisonWtThread::inbox, this);
 
@@ -105,11 +103,36 @@ goby::common::LiaisonWtThread::LiaisonWtThread(const Wt::WEnvironment& env)
     
     add_to_menu(menu_, new LiaisonHome);
 
-    LiaisonCommander* commander = new LiaisonCommander(&commander_service_, Liaison::cfg_);
-    add_to_menu(menu_, commander); 
 
-    LiaisonScope* scope = new LiaisonScope(&scope_service_, Liaison::cfg_);
-    add_to_menu(menu_, scope);
+    typedef std::vector<goby::common::LiaisonContainer*> (*liaison_load_func)(const goby::common::protobuf::LiaisonConfig& cfg, boost::shared_ptr<zmq::context_t> zmq_context);
+
+    for(int i = 0, n = Liaison::cfg_.load_plugin_library_size(); i < n; ++i)
+    {
+        glog.is(VERBOSE) &&
+            glog << "Loading plugin library: " << Liaison::cfg_.load_plugin_library(i) << std::endl;
+        
+        void* dl_handle = dlopen( Liaison::cfg_.load_plugin_library(i).c_str(), RTLD_LAZY);
+        if(!dl_handle)
+            glog.is(WARN, lock) && glog << "Liaison: Cannot load plugin library!" << std::endl << unlock;
+        else
+        {
+            liaison_load_func liaison_load_ptr = (liaison_load_func) dlsym(dl_handle, "goby_liaison_load");
+            
+            if(liaison_load_ptr)
+            {
+                std::vector<goby::common::LiaisonContainer*> containers = (*liaison_load_ptr)(Liaison::cfg_, Liaison::zmq_context());
+                for(int j = 0, m = containers.size(); j< m; ++j)
+                    add_to_menu(menu_, containers[j]);
+            }
+            else
+            {
+                glog.is(WARN, lock) && glog << "Liaison: Cannot find function 'goby_liaison_load' in library." << std::endl << unlock;
+            }
+            
+            dl_handles_.push_back(dl_handle);
+        }
+    }
+   
     
     menu_->itemSelected().connect(this, &LiaisonWtThread::handle_menu_selection);
 
@@ -130,6 +153,9 @@ goby::common::LiaisonWtThread::~LiaisonWtThread()
             contents->cleanup();
         }
     }
+
+    for(int i = 0, n = dl_handles_.size(); i < n; ++i)
+        dlclose(dl_handles_[i]);
 }
             
 

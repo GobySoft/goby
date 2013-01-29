@@ -29,7 +29,7 @@ include(today)
 today(GOBY_COMPILE_DATE)
 
 # give Goby 1 series a few more soversions
-set(GOBY_SOVERSION "22")
+set(GOBY_SOVERSION "23")
 
 # fetch all the local directories for generated code
 get_filename_component(goby_LIB_DIR lib ABSOLUTE)

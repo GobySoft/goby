@@ -106,31 +106,20 @@ goby::common::LiaisonWtThread::LiaisonWtThread(const Wt::WEnvironment& env)
 
     typedef std::vector<goby::common::LiaisonContainer*> (*liaison_load_func)(const goby::common::protobuf::LiaisonConfig& cfg, boost::shared_ptr<zmq::context_t> zmq_context);
 
-    for(int i = 0, n = Liaison::cfg_.load_plugin_library_size(); i < n; ++i)
+    for(int i = 0, n = Liaison::plugin_handles_.size(); i < n; ++i)
     {
-        glog.is(VERBOSE) &&
-            glog << "Loading plugin library: " << Liaison::cfg_.load_plugin_library(i) << std::endl;
-        
-        void* dl_handle = dlopen( Liaison::cfg_.load_plugin_library(i).c_str(), RTLD_LAZY);
-        if(!dl_handle)
-            glog.is(WARN, lock) && glog << "Liaison: Cannot load plugin library!" << std::endl << unlock;
+        liaison_load_func liaison_load_ptr = (liaison_load_func) dlsym(Liaison::plugin_handles_[i], "goby_liaison_load");
+            
+        if(liaison_load_ptr)
+        {
+            std::vector<goby::common::LiaisonContainer*> containers = (*liaison_load_ptr)(Liaison::cfg_, Liaison::zmq_context());
+            for(int j = 0, m = containers.size(); j< m; ++j)
+                add_to_menu(menu_, containers[j]);
+        }
         else
         {
-            liaison_load_func liaison_load_ptr = (liaison_load_func) dlsym(dl_handle, "goby_liaison_load");
-            
-            if(liaison_load_ptr)
-            {
-                std::vector<goby::common::LiaisonContainer*> containers = (*liaison_load_ptr)(Liaison::cfg_, Liaison::zmq_context());
-                for(int j = 0, m = containers.size(); j< m; ++j)
-                    add_to_menu(menu_, containers[j]);
-            }
-            else
-            {
-                glog.is(WARN, lock) && glog << "Liaison: Cannot find function 'goby_liaison_load' in library." << std::endl << unlock;
-            }
-            
-            dl_handles_.push_back(dl_handle);
-        }
+            glog.is(WARN, lock) && glog << "Liaison: Cannot find function 'goby_liaison_load' in plugin library." << std::endl << unlock;
+        }        
     }
    
     
@@ -140,8 +129,7 @@ goby::common::LiaisonWtThread::LiaisonWtThread(const Wt::WEnvironment& env)
 }
 
 goby::common::LiaisonWtThread::~LiaisonWtThread()
-{
-    
+{    
     // run on all children
     const std::vector< WMenuItem * >& items = menu_->items();
     for(int i = 0, n = items.size(); i < n; ++i)
@@ -153,9 +141,6 @@ goby::common::LiaisonWtThread::~LiaisonWtThread()
             contents->cleanup();
         }
     }
-
-    for(int i = 0, n = dl_handles_.size(); i < n; ++i)
-        dlclose(dl_handles_[i]);
 }
             
 

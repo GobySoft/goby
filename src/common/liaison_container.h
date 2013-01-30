@@ -61,7 +61,7 @@ namespace goby
             }
             
             virtual ~LiaisonContainer()
-            { cleanup(); }            
+            { }            
             
             void set_name(const Wt::WString& name)
             {

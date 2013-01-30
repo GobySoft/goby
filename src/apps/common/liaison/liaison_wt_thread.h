@@ -69,8 +69,6 @@ namespace goby
             Wt::WMenu* menu_;
             Wt::WStackedWidget* contents_stack_;
             std::map<Wt::WMenuItem*, LiaisonContainer*> menu_contents_;
-            std::vector<void* > dl_handles_;
-            
         };
 
         

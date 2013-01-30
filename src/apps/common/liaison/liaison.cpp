@@ -50,11 +50,37 @@ namespace bf = boost::filesystem;
 
 goby::common::protobuf::LiaisonConfig goby::common::Liaison::cfg_;
 boost::shared_ptr<zmq::context_t> goby::common::Liaison::zmq_context_(new zmq::context_t(1));
+std::vector<void *> goby::common::Liaison::plugin_handles_;
 
 int main(int argc, char* argv[])
 {
+    // load plugins from environmental variable GOBY_LIAISON_PLUGINS
+    char * plugins = getenv ("GOBY_LIAISON_PLUGINS");
+    if (plugins)
+    {
+        std::string s_plugins(plugins);
+        std::vector<std::string> plugin_vec;
+        boost::split(plugin_vec, s_plugins, boost::is_any_of(";:,"));
+
+        for(int i = 0, n = plugin_vec.size(); i < n; ++i)
+        {
+            glog.is(VERBOSE) &&
+                glog << "Loading liaison plugin library: " << plugin_vec[i] << std::endl;
+            void* handle = dlopen(plugin_vec[i].c_str(), RTLD_LAZY);
+            if(handle)
+                goby::common::Liaison::plugin_handles_.push_back(handle);
+            else
+                glog.is(DIE) && glog << "Failed to open library: " << plugin_vec[i] << std::endl;
+        }        
+    }
+    
     int return_value = goby::run<goby::common::Liaison>(argc, argv);
     goby::util::DynamicProtobufManager::protobuf_shutdown();    
+
+    for(int i = 0, n = goby::common::Liaison::plugin_handles_.size();
+        i < n; ++i)
+        dlclose(goby::common::Liaison::plugin_handles_[i]);
+
     return return_value;
 }
 

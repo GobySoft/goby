@@ -41,7 +41,7 @@
 namespace goby
 {
     namespace common
-    {        
+    {   
         class Liaison : public ZeroMQApplicationBase
         {
           public:
@@ -58,6 +58,8 @@ namespace goby
 
             static boost::shared_ptr<zmq::context_t> zmq_context() { return zmq_context_; }
 
+            static std::vector<void *> plugin_handles_;
+
           private:
             void load_proto_file(const std::string& path);
             
@@ -69,7 +71,6 @@ namespace goby
             ZeroMQService zeromq_service_;
             PubSubNodeWrapperBase pubsub_node_;
 
-                
             // add a database client
         };
 

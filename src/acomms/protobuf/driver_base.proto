@@ -19,7 +19,6 @@ message DriverConfig
   enum ConnectionType { CONNECTION_SERIAL = 1; // Modem is connected by a tty serial line (e.g. RS-232)
                         CONNECTION_TCP_AS_CLIENT = 2; // Modem is connected by ethernet and is serving clients
                         CONNECTION_TCP_AS_SERVER = 3; // Modem is connected by ethernet and expects us to serve it
-                        CONNECTION_DUAL_UDP_BROADCAST = 4; // Presently unimplemented
   }
   
   optional ConnectionType connection_type = 2 [default = CONNECTION_SERIAL, (goby.field).description="Physical connection type from this computer (running Goby) to the acoustic modem"];

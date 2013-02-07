@@ -118,9 +118,6 @@ void goby::acomms::ModemDriverBase::modem_start(const protobuf::DriverConfig& cf
                 throw(ModemDriverException("missing tcp port in configuration"));
 
             modem_ = new util::TCPServer(cfg.tcp_port(), cfg.line_delimiter());
-
-        case protobuf::DriverConfig::CONNECTION_DUAL_UDP_BROADCAST:
-            throw(ModemDriverException("unimplemented connection type"));
     }    
 
     modem_->start();

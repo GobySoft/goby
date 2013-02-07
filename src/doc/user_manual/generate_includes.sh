@@ -26,7 +26,7 @@ sed 's/^ \{4\}//' xx05 > includes/driver_abc_driver.pb.cfg
 sed 's/^ \{4\}//' xx06 > includes/driver_ufield.pb.cfg
 sed 's/^ \{4\}//' xx07 > includes/driver_pb.pb.cfg
 sed 's/^ \{4\}//' xx08 > includes/driver_udp.pb.cfg
-sed 's/^ \{4\}//' xx10 > includes/mac_config.pb.cfg
+sed 's/^ \{4\}//' xx10 | sed '/frame:/d' | sed '/poll_/d' > includes/mac_config.pb.cfg
 sed 's/^ \{4\}//' xx12 > includes/queue_config.pb.cfg
 sed 's/^ \{4\}//' xx14 > includes/dccl_config.pb.cfg
 sed 's/^ \{4\}//' xx16 > includes/route_config.pb.cfg

@@ -338,11 +338,7 @@ void GobyMOOSApp::read_configuration(google::protobuf::Message* cfg)
         }
         else if(var_map.count("version"))
         {
-            std::cout << "This is Version " << goby::VERSION_STRING
-                      << " of the Goby Underwater Autonomy Project released on "
-                      << goby::VERSION_DATE
-                      << ". (compiled on " << goby::COMPILE_DATE << ")\n"
-                      <<" See https://launchpad.net/goby to search for updates." << std::endl;
+            std::cout << goby::version_message() << std::endl;
             exit(EXIT_SUCCESS);            
         }
         

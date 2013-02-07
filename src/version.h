@@ -26,6 +26,7 @@
 #define VERSION20110304H
 
 #include <string>
+#include <sstream>
 
 #define GOBY_VERSION_MAJOR @GOBY_VERSION_MAJOR@
 #define GOBY_VERSION_MINOR @GOBY_VERSION_MINOR@
@@ -35,7 +36,16 @@ namespace goby
 {
     const std::string VERSION_STRING = "@GOBY_VERSION@";
     const std::string VERSION_DATE = "@GOBY_VERSION_DATE@";
-    const std::string COMPILE_DATE = "@GOBY_COMPILE_DATE@";
+
+    inline std::string version_message()
+    {
+        std::stringstream ss;
+        ss << "This is Version " << goby::VERSION_STRING
+           << " of the Goby Underwater Autonomy Project released on "
+           << goby::VERSION_DATE
+           <<".\n See https://launchpad.net/goby to search for updates.";
+        return ss.str();
+    }
 }
 
 #endif

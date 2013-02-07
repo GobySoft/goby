@@ -1,88 +1,85 @@
 ProcessConfig = pAcommsHandler
 {
-  common { }
-  modem_id: 1  # Unique number 1-31 to identify this node 
-               # (required)
-
-  # Goby-Acomms Module configuration
+  common {
+  ...
+  }
+  modem_id: 1
   driver_type: DRIVER_NONE
-  driver_cfg { }
-  mac_cfg { }
-  queue_cfg { }
-  dccl_cfg { }
-
-  # MOOS Variables (also see translator_entry)
-  moos_var {  #  (optional)
-    prefix: "ACOMMS_"  # Prefix all MOOS variable names with this 
-                       # string (optional) (default="ACOMMS_")
+  driver_cfg {
+  ...
+  }
+  mac_cfg {
+  ...
+  }
+  queue_cfg {
+  ...
+  }
+  dccl_cfg {
+  ...
+  }
+  route_cfg {
+  ...
+  }
+  moos_var {
+    prefix: "ACOMMS_"
     driver_raw_in: "NMEA_IN"
     driver_raw_out: "NMEA_OUT"
     driver_raw_msg_in: "RAW_INCOMING"
-    driver_raw_msg_out: "RAW_OUTGOING" 
-    driver_receive: "MODEM_RECEIVE" 
+    driver_raw_msg_out: "RAW_OUTGOING"
+    driver_receive: "MODEM_RECEIVE"
     driver_transmit: "MODEM_TRANSMIT"
     queue_receive: "QUEUE_RECEIVE"
     queue_transmit: "QUEUE_TRANSMIT"
-    queue_ack_transmission: "ACK"  
-    queue_ack_original_msg: "ACK_ORIGINAL" 
-    queue_expire: "EXPIRE" 
+    queue_ack_transmission: "ACK"
+    queue_ack_original_msg: "ACK_ORIGINAL"
+    queue_expire: "EXPIRE"
     queue_size: "QSIZE"
     queue_flush: "FLUSH_QUEUE"
-    mac_cycle_update: "MAC_CYCLE_UPDATE" 
-    mac_initiate_transmission: "MAC_INITIATE_TRANSMISSION"  
+    mac_cycle_update: "MAC_CYCLE_UPDATE"
+    mac_initiate_transmission: "MAC_INITIATE_TRANSMISSION"
   }
-
-  load_shared_library: "/usr/lib/libmy_dccl_messages.so"  
-                                              # Path to a shared 
-                                              # library containing 
-                                              # compiled DCCL 
-                                              # protobuf files. 
-                                              # Preferred over 
-                                              # load_dccl_proto_file
-                                              # . (repeated)
-  load_proto_file: "/usr/include/mylib/message.proto"  
-                                              # Path to a DCCL 
-                                              # protobuf file. Use 
-                                              # load_shared_library 
-                                              # when possible. 
-                                              # (repeated)
-
-  translator_entry {  # Describes how to trigger (generate) a 
-                      # DCCL message from a MOOS event and how to 
-                      # publish the contents of the message upon 
-                      # receipt (repeated)
-    protobuf_name: ""  # Fully qualified name (including package, 
-                       # if any) of a DCCL protobuf message to tag 
-                       # this parser to. (required)
-    trigger {  #  (optional)
-      type: TRIGGER_PUBLISH  #  (TRIGGER_PUBLISH, TRIGGER_TIME) 
-                             # (optional) (default=TRIGGER_PUBLISH)
-      moos_var: ""  #  (optional)
-      period:   #  (optional)
-      mandatory_content: ""  #  (optional)
+  load_shared_library: "/usr/lib/libmy_dccl_messages.so"
+  load_proto_file: "/usr/include/mylib/message.proto"
+  translator_entry {
+    protobuf_name: ""
+    trigger {
+      type: TRIGGER_PUBLISH
+      moos_var: ""
+      period:
+      mandatory_content: ""
     }
-    create {  #  (repeated)
+    create {
       technique: TECHNIQUE_PROTOBUF_TEXT_FORMAT
-      moos_var: ""  #  (required)
-      format: ""  #  (optional)
+      moos_var: ""
+      format: ""
+      repeated_delimiter: ","
+      algorithm {
+        name: ""
+        primary_field:
+      }
     }
-    publish {  #  (repeated)
-      technique: TECHNIQUE_PROTOBUF_TEXT_FORMAT  
-      moos_var: ""  #  (required)
-      format: ""  #  (optional)
+    publish {
+      technique: TECHNIQUE_PROTOBUF_TEXT_FORMAT
+      moos_var: ""
+      format: ""
+      repeated_delimiter: ","
+      algorithm {
+        name: ""
+        output_virtual_field:
+        primary_field:
+        reference_field:
+      }
     }
-    use_short_enum: false  #  (optional) (default=false)
+    use_short_enum: false
   }
-  multiplex_create_moos_var: "LIAISON_COMMANDER_OUT"  
-                                              # Used primarily by 
-                                              # goby_liaison. 
-
-  modem_id_lookup_path: ""  # Path to file containing mapping 
-                            # between modem_id and vehicle name & 
-                            # type (optional) (can also set MOOS 
-                            # global "modem_id_lookup_path=")
-
-  # Backwards compatibility with Goby (DCCL) version 1
-  transitional_cfg {  }
-
+  multiplex_create_moos_var: "LIAISON_COMMANDER_OUT"
+  modem_id_lookup_path: ""
+  transitional_cfg {
+    modem_id: 1
+    message_file {
+      path: "/home/toby/goby/src/acomms/examples/chat/chat.xml"
+      manipulator: NO_MANIP
+    }
+    generated_proto_dir: "/tmp"
+  }
 }

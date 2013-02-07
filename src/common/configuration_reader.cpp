@@ -114,11 +114,7 @@ void goby::common::ConfigReader::read_cfg(int argc,
     {
         ConfigException e("");
         e.set_error(false);
-        std::cout << "This is Version " << goby::VERSION_STRING
-                  << " of the Goby Underwater Autonomy Project released on "
-                  << goby::VERSION_DATE
-                  << ". (compiled on " << goby::COMPILE_DATE << ")\n"
-                  <<" See https://launchpad.net/goby to search for updates." << std::endl;
+        std::cout << goby::version_message() << std::endl;
         throw(e);
     }
 

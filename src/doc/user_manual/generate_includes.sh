@@ -12,12 +12,13 @@ pAcommsHandler -e | sed -e 's/#.*//' -e 's/[ ^I]*$//' -e '/^$/ d' | \
     '/queue_cfg *{/+1' '/^  }/' \
     '/dccl_cfg *{/+1' '/^  }/' \
     '/route_cfg *{/+1' '/^  }/' \
+    '/translator_entry *{/+1' '/^  }/' \
    
 echo "ProcessConfig = pGobyApp\n{\n  common {" | cat - xx01 > includes/common.pb.cfg
 echo "  }\n}" >> includes/common.pb.cfg
 
 echo "  ..." > /tmp/ldots
-cat xx00 /tmp/ldots xx02 /tmp/ldots xx09 /tmp/ldots xx11 /tmp/ldots xx13 /tmp/ldots xx15 /tmp/ldots xx17 > includes/pAcommsHandler_reduced.moos
+cat xx00 /tmp/ldots xx02 /tmp/ldots xx09 /tmp/ldots xx11 /tmp/ldots xx13 /tmp/ldots xx15 /tmp/ldots xx17 /tmp/ldots xx19 > includes/pAcommsHandler_reduced.moos
 
 
 sed 's/^ \{4\}//' xx03 > includes/driver_config.pb.cfg
@@ -32,3 +33,29 @@ sed 's/^ \{4\}//' xx14 > includes/dccl_config.pb.cfg
 sed 's/^ \{4\}//' xx16 > includes/route_config.pb.cfg
 
 rm xx*
+
+moos_goby_liaison -e | sed -e 's/#.*//' -e 's/[ ^I]*$//' -e '/^$/ d' | \
+    csplit - \
+    '/base *{/+1' '/^}/' \
+    '/goby\.common\.protobuf\.moos_scope_config/' \
+    '/goby\.common\.protobuf\.pb_commander_config/' \
+
+echo "base {" | cat - xx01 > includes/base.pb.cfg
+echo "}" >> includes/base.pb.cfg
+
+cat xx00 /tmp/ldots xx02 > includes/liaison.pb.cfg
+
+cat xx03 > includes/moos_scope_liaison.pb.cfg
+cat xx04 > includes/moos_commander_liaison.pb.cfg
+
+
+rm xx*
+
+pTranslator -e | sed -e 's/#.*//' -e 's/[ ^I]*$//' -e '/^$/ d' | \
+    csplit - \
+    '/common *{/+1' '/^  }/' \
+   
+cat xx00 /tmp/ldots xx02 > includes/pTranslator.moos
+
+rm xx*
+rm /tmp/ldots

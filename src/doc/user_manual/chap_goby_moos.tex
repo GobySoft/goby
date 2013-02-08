@@ -37,6 +37,75 @@ looks for a variable in the .moos file called !LatOrigin! and publishes it to th
 \end{itemize}
 
 
+\section{pTranslator}
+\label{sec:ptranslator} 
+
+!pTranslator! is a translator between MOOS types (strings and doubles) and Google Protocol Buffers messages (which includes DCCL messages). All of the functionality of !pTranslator! is also present in !pAcommsHandler!, but !pTranslator! is provided as a standalone application for cases when Goby-Acomms is not needed, but the translation functionality is. Also, pTranslator loops back all created messages and immediately publishes them, whereas pAcommsHandler publishes messages received acoustically, and creates messages to be transmitted.
+
+The configuration for !pTranslator! is as follows:
+
+\boxedverbatiminput{@RELATIVE_CMAKE_CURRENT_SOURCE_DIR@/includes/pTranslator.moos}
+\resetbvlinenumber
+
+\begin{itemize}
+\item !common!: Parameters that can be set for any of the Goby MOOS applications. See section \ref{sec:goby_moos_app}.
+\item !load_shared_library!: Repeated string, each with a path to a shared library containing compiled DCCL (Google Protocol Buffers) messages.
+\item !load_proto_file!: Repeated string, each with one path to a .proto file containing compiled DCCL (Google Protocol Buffers) messages. These will be compiled at runtime and loaded. It is preferable to use !load_shared_library! when possible, as syntactical and type mistakes in the DCCL messages will be caught at compile-time rather than delayed to runtime.
+\item !translator_entry!: Repeated entry: there should be one !translator_entry! defined for each Google Protobuf message type that you wish to translate to or from.
+\begin{itemize}
+\item !protobuf_name!: Fully qualified name (packages separated by !.!, e.g. !example.MinimalStatus!) to the Protobuf message that this translator should use. This message must be loaded either by !load_shared_library! or !load_proto_file!. 
+\item !trigger!: The event that causes this translation to occur.
+\begin{itemize}
+\item !type!: Either !TRIGGER_PUBLISH! (do a translation every time a given MOOS variable is published to) or !TRIGGER_TIME! (do a translation on a regular frequency).
+\item !moos_var!: For !TRIGGER_PUBLISH!, the MOOS variable that causes the translation to occur.
+\item !period!: For !TRIGGER_TIME!, the period (in seconds) between translations.
+\item !mandatory_content!: For !TRIGGER_PUBLISH!, if this is defined, the !moos_var! must contain this substring in order to trigger this translation. Use of this field allows a single MOOS variable to trigger several different translations.
+\end{itemize}
+\item !create!: Upon triggering, this defines how the Protobuf message is created from one or more MOOS variables. Repeat this field for multiple MOOS variables. The !create! directives are processed in the order they are defined and thus later !create!s that write the same fields will overwrite earlier ones.
+\begin{itemize}
+\item !technique!: The parsing technique to use. See section \ref{sec:ptranslator_techniques}.
+\item !moos_var!: The MOOS variable to use for this !create!. 
+\item !format!: For !TECHNIQUE_FORMAT!, the format string to use. This is similar to scanf, but instead of type specifiers, numerical specifiers are used, surrounded by !%! on both sides. For example, if the !format! value is !foo=%1%!, this !create! will parse a !moos_var! containing !foo=5! and put the value !5! into field 1 of the Protobuf message given by !protobuf_name!. %
+\item !repeated_delimiter!: When parsing for !repeated! Protobuf fields, this is the string that delimits fields. For example, if !foo=%1%!, field 1 is !repeated int32 field_name = 1!, and the value to parse is !foo=10;12;13;14!, !repeated_delimiter! should be ``;'' in order to parse these four numbers into a ``vector'' of values in that field. %
+\item !algorithm!: An algorithm to modify the parsed field before placing it in the Protobuf message. These are largely provided for backwards compatibility for Goby v1, and are not necessarily encouraged for new use. See \url{http://gobysoft.com/dl/goby1-user-manual.pdf} for a detailing of the available algorithms. Several algorithms can be chained (processed in the order they are defined) by repeated this !algorithm! field with the same !primary_field!.
+\begin{itemize}
+\item !name!: Name of the algorithm, e.g. !to_upper!.
+\item !primary_field!: The field number to apply this algorithm to. 
+\end{itemize}
+\end{itemize}
+\item !publish!: Upon receipt of a Protobuf message, how to publish it back to one or more MOOS variable(s). Several !publish! entries should be specified to publish to several MOOS variables.
+\begin{itemize}
+\item !technique!: The serialization technique to use. See section \ref{sec:ptranslator_techniques}.
+\item !moos_var!: The MOOS variable to write to for this !publish!. 
+\item !format!: For !TECHNIQUE_FORMAT!, the format string to use. This is similar to printf, but instead of type specifiers, numerical specifiers are used, surrounded by !%! on both sides. For example, if the !format! value is !foo=%1%!, this !publish! will write a !moos_var! containing !foo=5! if field 1 in the Protobuf message was !5!. %
+\item !repeated_delimiter!: When writing !repeated! Protobuf fields, this is the string that is used to delimit fields. 
+\item !algorithm!: Several algorithms can be chained (processed in the order they are defined) by repeated this !algorithm! field with the same !primary_field!.
+\begin{itemize}
+\item !name!: Name of the algorithm, e.g. !to_upper!.
+\item !primary_field!: The field number to apply this algorithm to. 
+\item !output_virtual_field!: A ``virtual'' field number (one that doesn't exist in the actual Protobuf message) that is used to specify the output of this algorithm. This virtual field can then be used in the !format! string like a real field. 
+\item !reference_field!: The field(s) required by the algorithm as references, if the algorithm requires them (e.g. !utm_x2lon!).
+\end{itemize}
+\end{itemize}
+\item !use_short_enum!: If true, the front of the enumeration value is removed if it matches the field name plus a !_!. For example, if the enum field is !foo!, and the enumerations are !FOO_OPTION1!, !FOO_OPTION2!, then !OPTION1! and !OPTION2! are published. If false (the default), the enumeration values are published as defined. This is mostly here for backwards compatibility with Goby 1.
+\end{itemize}
+\end{itemize}
+
+
+\section{Translator techniques}
+\label{sec:ptranslator_techniques} 
+
+There are three broad categories of translator techniques: 1) those that use the Google Protocol Buffers tools (!TECHNIQUE_PREFIXED_PROTOBUF_TEXT_FORMAT!, \\ !TECHNIQUE_PROTOBUF_TEXT_FORMAT!, !TECHNIQUE_PROTOBUF_NATIVE_ENCODED!), 2) one that uses the \textit{de facto} MOOS convention of !key=value! pairs delimited by commas \\(!TECHNIQUE_COMMA_SEPARATED_KEY_EQUALS_VALUE_PAIRS!), and 3) one that is based roughly on printf/scanf (!TECHNIQUE_FORMAT!).
+
+More details on each translator type:
+\begin{itemize}
+\item !TECHNIQUE_PROTOBUF_TEXT_FORMAT!: exactly the same as if you used the Google TextFormat class: \url{https://developers.google.com/protocol-buffers/docs/reference/cpp/google.protobuf.text_format}.
+\item !TECHNIQUE_PREFIXED_PROTOBUF_TEXT_FORMAT! (recommendated for most uses). Same as !TECHNIQUE_PROTOBUF_TEXT_FORMAT! but prefixed with !@PB[TypeName] !, so that you can put multiple Protobuf Types in a single MOOS Variable (if you really need to). It's also quite human readable and allows for programs to read / write generic Protobuf messages. This technique is useful enough, there are two shortcut functions for use in your C++ MOOS code\\(!#include "goby/moos/moos_protobuf_helpers.h"!): !serialize_for_moos! and \\!parse_for_moos!.
+\item !TECHNIQUE_PROTOBUF_NATIVE_ENCODED!: exactly the same as if you used the default binary Google encoding (binary), represented as a byte string. This tends to break the MOOS tools that assume strings are ASCII / UTF-8. 
+\item !TECHNIQUE_COMMA_SEPARATED_KEY_EQUALS_VALUE_PAIRS!: all fields represented as !key1=value1,key2=value2,...! Messages with submessages are flattened and the keys assembled by concatenation separated with !_!. This is similar to the existing !NODE_REPORT! variable used in MOOS-IvP.
+\item !TECHNIQUE_FORMAT!: sort of like !printf! / !scanf!, except instead of typed directives (e.g. !%d!), Goby uses numeric directives that correspond the protobuf message field id (e.g. !foobar=%2%!). Submessages can be referenced using ``:'' (e.g. !%5:1%!, where field 5 is a Message), repeated fields can be referenced using ``.'' (e.g. !%7.1%!, where field 7 is repeated). Note the ending !%! on each directive, which is different than !printf!. 
+\end{itemize}
+
 \section{pAcommsHandler}
 \label{sec:pacommshandler} 
 
@@ -87,9 +156,9 @@ Many of the parameters are sufficiently explained in the above list of configura
 \item !dccl_cfg!: Configures the Dynamic Compact Control Language. See section \ref{sec:dccl}.
 \item !route_cfg!: Configures a basic static routing module. This is experimental and subject to change.
 \item !moos_var!: Rename any or all of the MOOS variables published by pAcommsHandler.
-\item !load_shared_library!: List of paths to shared libraries containing compiled DCCL (Google Protocol Buffers) messages.
-\item !load_proto_file!: List of paths to .proto files containing compiled DCCL (Google Protocol Buffers) messages. These will be compiled at runtime and loaded. It is preferable to use !load_shared_library! when possible, as syntactical and type mistakes in the DCCL messages will be caught at compile-time rather than delayed to runtime.
-\item !translator_entry!: List of entries indicating when to make (\textit{trigger}) and how to \textit{create} outgoing DCCL messages, and how to \textit{publish} incoming DCCL messages. This can be thought of as providing a generic interface between MOOS strings and Google Protocol Buffers messages.
+\item !load_shared_library!: Repeated string, each with a path to a shared library containing compiled DCCL (Google Protocol Buffers) messages.
+\item !load_proto_file!: Repeated string, each with one path to a .proto file containing compiled DCCL (Google Protocol Buffers) messages. These will be compiled at runtime and loaded. It is preferable to use !load_shared_library! when possible, as syntactical and type mistakes in the DCCL messages will be caught at compile-time rather than delayed to runtime.
+\item !translator_entry!: List of entries indicating when to make (\textit{trigger}) and how to \textit{create} outgoing DCCL messages, and how to \textit{publish} incoming DCCL messages. This can be thought of as providing a generic interface between MOOS strings and Google Protocol Buffers messages. See section \ref{sec:ptranslator} for a full explanation on how to configure this translation.
 \item !multiplex_create_moos_var!: Used by !goby_liaison! to publish multiple commands (outgoing messages) on a single MOOS variable.
 \item !modem_id_lookup_path!: path to a text file giving the mapping between !modem_id! and vehicle name and type for a given experiment. This file should look like:
 \begin{boxedverbatim}
@@ -231,13 +300,61 @@ Many of the parameters are sufficiently explained in the above list of configura
 %\boxedverbatiminput{"@RELATIVE_CMAKE_SOURCE_DIR@/share/cfg/MOOS/ccl_and_dccl/modemidlookup.txt"}
 %\resetbvlinenumber
 
+\section{MOOS Plugins for Goby Liaison}\label{sec:moos_liaison} 
+
+
+\boxedverbatiminput{@RELATIVE_CMAKE_CURRENT_SOURCE_DIR@/includes/moos_commander_liaison.pb.cfg}
+\resetbvlinenumber
+
+\afterpage{%
+\begin{landscape}
+\begin{figure}
+	\centering
+\includegraphics[width=7.5in]{liaison_commander.png}
+\label{fig:liaison_commander}
+\end{figure}
+\end{landscape}
+}
+
+\boxedverbatiminput{@RELATIVE_CMAKE_CURRENT_SOURCE_DIR@/includes/moos_scope_liaison.pb.cfg}
+\resetbvlinenumber
+
+
+\afterpage{%
+\begin{landscape}
+\begin{figure}
+	\centering
+\includegraphics[width=8in]{liaison_scope.png}
+\label{fig:liaison_commander}
+\end{figure}
+\end{landscape}
+}
 
 \section{Migrating from Version 1 to Version 2} \label{sec:gobyv1_migrate}
+
+pAcommsHandler from Goby version 2 (Goby2) provides nearly full backwards compatibility directly using the XML messages from Goby version 1 (Goby1). 
+
+In order to use XML messages from Goby1 in Goby2, simply rename the !dccl_cfg! section of the pAcommsHandler1 configuration block to !transitional_cfg!. In general this is all that needs to be done, as pAcommsHandler2 will automatically internally convert the XML files to .proto files and load them. Some special features of the XML files are not supported in version 2:
+
+\begin{itemize}
+\item Algorithms without a corresponding source variable.
+\item Algorithms with reference fields (e.g. subtract:timestamp) for message creation. Reference fields are still allowed upon publish.
+\item \xmltag{format} tags must be specified in the boost::format !%1%!, !%2%!, etc. format, not using !%d! printf specifiers. The typed specifiers would work in Goby v1 but are not supported at all in Goby v2.
+\end{itemize}
+
+While the XML files can be used directly as a temporary measure, it is recommended to transition all your XML files to .proto files for direct use with pAcommsHandler2. To ease your transition, there is a tool !dccl_xml_to_dccl_proto! that will automatically convert your XML files for you. The usage is 
+\begin{verbatim}
+dccl_xml_to_dccl_proto message_xml_file.xml [directory for generated .proto (default = pwd (.)]
+\end{verbatim}
+
+In Goby1, the XML files contained both structure information and MOOS translation information. In Goby2, these are separated to allow better support of non-MOOS systems. 
+
+The tool will write the generated .proto files (the structure information) to the directory specified as the second command line parameter (defaults to the current/working directory). It will write to standard output the required additions to the pAcommsHandler2 configuration file for the queuing and translation information present in the XML file. Simply copy these parts to your MOOS file and you can continue to use your old messages natively.
 
 
 \section{iCommander}\label{sec:icommander} 
 
-\textit{Deprecated. Use goby\_liaison as a replacement.}
+\textit{Deprecated. Use goby\_liaison as a replacement. See section \ref{sec:moos_liaison}.}
 
 \section{pREMUSCodec}
 

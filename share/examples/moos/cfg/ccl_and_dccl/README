@@ -1,16 +1,16 @@
-to run:
+This example demonstrates two vehicles exchanging position status information, but with one vehicle using the CCL MDAT State message.
 
-(virtual serial ports)
-(> sudo apt-get install socat)
-> socat -d -d -v pty,raw,echo=0,link=/tmp/ttyLOOPA1 pty,raw,echo=0,link=/tmp/ttyLOOPA2
-> socat -d -d -v pty,raw,echo=0,link=/tmp/ttyLOOPB1 pty,raw,echo=0,link=/tmp/ttyLOOPB2
+1. To generate the basic example:
 
+> ./generate.sh
+
+To run:
 
 (probably other windows / workspaces)
 > pAntler mm1.moos
 > pAntler mm2.moos
 
+2. To generate the example using the Micro-Modem driver instead of the UDP Driver, use
 
-this example demonstrates both CCL (pREMUSCodec + pAcommsHandler) and DCCL functionality (pAcommsHandler)
-mm1 sends DCCL "SIMPLE_STATUS" messages to mm2
-mm2 sends CCL "REMUS_STATE" messages to mm1
+> ./generate.sh mmdriver
+

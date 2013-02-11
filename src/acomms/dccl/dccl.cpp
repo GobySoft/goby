@@ -80,6 +80,9 @@ goby::acomms::DCCLCodec::DCCLCodec()
 
     set_default_codecs();
     process_cfg();
+
+    add_id_codec<DCCLDefaultIdentifierCodec>(DEFAULT_CODEC_NAME);
+    set_id_codec(DEFAULT_CODEC_NAME);
 }
 
 void goby::acomms::DCCLCodec::set_default_codecs()
@@ -520,9 +523,6 @@ void goby::acomms::DCCLCodec::process_cfg()
     {
         glog.is(DEBUG1) && glog << group(glog_encode_group_) << "Cryptography disabled, set crypto_passphrase to enable." << std::endl;
     }
-
-    add_id_codec<DCCLDefaultIdentifierCodec>(DEFAULT_CODEC_NAME);
-    set_id_codec(DEFAULT_CODEC_NAME);
 }
 
 void goby::acomms::DCCLCodec::info_all(std::ostream* os) const

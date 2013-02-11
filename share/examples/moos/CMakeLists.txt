@@ -1,1 +1,1 @@
-add_subdirectory(alog_to_goby_db_simple)
+add_subdirectory(gobyexample_protobuf)

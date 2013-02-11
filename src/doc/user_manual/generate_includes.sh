@@ -58,4 +58,14 @@ pTranslator -e | sed -e 's/#.*//' -e 's/[ ^I]*$//' -e '/^$/ d' | \
 cat xx00 /tmp/ldots xx02 > includes/pTranslator.moos
 
 rm xx*
+
+moos_gateway_g -e | sed -e 's/#.*//' -e 's/[ ^I]*$//' -e '/^$/ d' | \
+    csplit - \
+    '/base *{/+1' '/^}/' \
+   
+cat xx00 /tmp/ldots xx02 > includes/moos_gateway_g.pb.cfg
+
+rm xx*
+
 rm /tmp/ldots
+

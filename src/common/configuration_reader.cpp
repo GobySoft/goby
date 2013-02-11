@@ -69,7 +69,7 @@ void goby::common::ConfigReader::read_cfg(int argc,
         ("example_config,e", "writes an example .pb.cfg file")
         ("verbose,v", boost::program_options::value<std::string>()->implicit_value("")->multitoken(), "output useful information to std::cout. -v is verbosity: verbose, -vv is verbosity: debug1, -vvv is verbosity: debug2, -vvvv is verbosity: debug3")
         ("ncurses,n", "output useful information to an NCurses GUI instead of stdout. If set, this parameter overrides --verbose settings.")
-        ("no_db,d", "disables the check for goby_database before publishing. You must set this if not running the goby_database.")
+//        ("no_db,d", "disables the check for goby_database before publishing. You must set this if not running the goby_database.")
         ("version,V", "writes the current version");
     
     std::string od_both_desc = "Typically given in " + *application_name + " configuration file, but may be specified on the command line";

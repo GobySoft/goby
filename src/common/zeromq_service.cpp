@@ -175,8 +175,8 @@ void goby::common::ZeroMQService::process_cfg(const protobuf::ZeroMQServiceConfi
 
 goby::common::ZeroMQService::~ZeroMQService()
 {
-    std::cout << "ZeroMQService: " << this << ": destroyed" << std::endl;
-    std::cout << "poll_mutex " << &poll_mutex_ << std::endl;
+//    std::cout << "ZeroMQService: " << this << ": destroyed" << std::endl;
+//    std::cout << "poll_mutex " << &poll_mutex_ << std::endl;
 }
 
 int goby::common::ZeroMQService::socket_type(protobuf::ZeroMQServiceConfig::Socket::SocketType type)

@@ -3,7 +3,7 @@
 
 \section{Goby Common Applications}\label{sec:base_cfg}
 
-The Goby Common applications use a validating configuration reader based on the Google Protocol Buffers TextFormat class. 
+The Goby Common applications use a validating configuration reader based on the Google Protocol Buffers TextFormat class. The configuration of any given application is available by passing the !--example_config! flag (or !-e! for short) to that application. Additionally, any of the configuration that may be given in a file is also available as command line options. Provide !--help! (or !-h!) to see the command line options.
 
 They all share a common subset of the configuration (!base!):
 
@@ -45,7 +45,7 @@ They all share a common subset of the configuration (!base!):
 \end{itemize}
 \end{itemize}
 
-\section{Liaison}
+\section{Liaison}\label{sec:liaison}
 
 Goby Liaison (!goby_liaison!) is an extensible web-browser based GUI for managing various aspects of Goby. It is written using the Wt \cite{wt} library and allows users to manage their Goby systems from any machine (GNU/Linux, Windows, Mac OS X) running a modern web browser (e.g. Firefox, Chrome).
 
@@ -72,3 +72,7 @@ The core of Goby Liaison is a server that allows connections from one or more cl
 Additional configuration may be available from the loaded plugins. For example, see the MOOS plugins in section \ref{sec:moos_liaison}.
 
 To connect to a server using the default configuration, simply type !http://localhost:54321! into the address bar of your favorite web browser.
+
+\section{Gateway Applications}
+
+Goby, which uses ZeroMQ as a transport layer, sometimes also needs to talk to other systems using incompatible transport mechanisms. To do this, ``gateway'' applications can be developed that pass packets between the ZeroMQ (Goby) ``world'' and the other system's world. Thus far, one gateway has been written, the !moos_gateway_g! (see section \ref{sec:moos_gateway_g}) for interfacing with the MOOS middleware.

@@ -1,0 +1,42 @@
+ProcessConfig = pTranslator
+{
+  common {
+  ...
+  }
+  load_shared_library: ""
+  load_proto_file: ""
+  translator_entry {
+    protobuf_name: ""
+    trigger {
+      type: TRIGGER_PUBLISH
+      moos_var: ""
+      period:
+      mandatory_content: ""
+    }
+    create {
+      technique: TECHNIQUE_PROTOBUF_TEXT_FORMAT
+      moos_var: ""
+      format: ""
+      repeated_delimiter: ","
+      algorithm {
+        name: ""
+        primary_field:
+      }
+    }
+    publish {
+      technique: TECHNIQUE_PROTOBUF_TEXT_FORMAT
+      moos_var: ""
+      format: ""
+      repeated_delimiter: ","
+      algorithm {
+        name: ""
+        output_virtual_field:
+        primary_field:
+        reference_field:
+      }
+    }
+    use_short_enum: false
+  }
+  modem_id_lookup_path: ""
+  multiplex_create_moos_var: ""
+}

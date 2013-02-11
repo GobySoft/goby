@@ -302,33 +302,106 @@ Many of the parameters are sufficiently explained in the above list of configura
 
 \section{MOOS Plugins for Goby Liaison}\label{sec:moos_liaison} 
 
+Goby2 provides two applications (``tabs'') inside Liaison (see section \ref{sec:liaison}) that can launched by setting the environmental variable !GOBY_LIAISON_PLUGINS! to include the library !libliaison_plugins_goby_moos.so!. For example, in !bash!:
+
+\begin{verbatim}
+export GOBY_LIAISON_PLUGINS=/usr/lib/libliaison_plugins_goby_moos.so
+goby_liaison
+\end{verbatim}
+
+Please note that multiple plugin libraries can be loaded by separating the library paths with colons. The MOOS Plugins are: 1) MOOSCommander, an application that allows operator entry of any Protobuf message, and 2) MOOSScope, a tool that allows examining some subset of the current MOOSDB variables. 
+
+\subsection{Connecting the Goby Liaison to the MOOSDB using moos\_gateway\_g}\label{sec:moos_gateway_g}
+
+Liaison does not use the standard CMOOSCommClient TCP transport that MOOS uses, but rather ZeroMQ \cite{zmq}. However, the Goby application !moos_gateway_g! was written to allow messages to pass between these two different ``worlds.'' The !moos_gateway_g! makes a ZeroMQ publish/subscribe connection on one side, and a CMOOSCommClient connection to a !MOOSDB! on the other. Messages are passed between the two worlds using a set of configured filters.
+
+The configuration available is (!moos_gateway_g --example_config!):
+
+\boxedverbatiminput{@RELATIVE_CMAKE_CURRENT_SOURCE_DIR@/includes/moos_gateway_g.pb.cfg}
+\resetbvlinenumber
+
+\begin{itemize}
+\item !base!: Shared configuration for all !goby_common! applications. See section \ref{sec:base_cfg}. This includes the publish-subscribe configuration required to connect to the Goby ZeroMQ side of the gateway.
+\item !moos_server_host!: IP address or domain name for the !MOOSDB!
+\item !moos_server_port!: Port to connect to the !MOOSDB!
+\item !moos_comm_tick!: Frequency to call into the !MOOSDB! to retrieve mail.
+\item !moos_subscribe_filter!: A repeated string containing a substring to subscribe for in the MOOSDB. That is, !"NAV_"! will subscribe to !NAV_X!, !NAV_Y!, !NAV_DEPTH!, etc. The empty string (!""!) subscribes to everything.
+\item !goby_subscribe_filter!: Same as the !moos_subscribe_filter! but for the Goby side.
+\end{itemize}
+
+
+\subsection{MOOS Commander GUI (Liaison)}
+
+\begin{figure}
+\centering
+\includegraphics[width=7.5in, angle=90]{liaison_commander.png}
+\caption{The MOOS Commander tab in Goby Liaison}
+\label{fig:liaison_commander}
+\end{figure}
+
+
+The MOOS Commander tab is shown (with annotations) in Fig. \ref{fig:liaison_commander}. This is tool that allows a human operator to send DCCL messages (typically commands) to one or more robots. It supports sending any DCCL message (and any regular Protobuf message) known either at compile time  (!load_shared_library!) or runtime (!load_proto_file!).
+
+
+When the MOOS plugins are loaded, the Commander tab can be configured with the following settings with the file passed to Liaison:
 
 \boxedverbatiminput{@RELATIVE_CMAKE_CURRENT_SOURCE_DIR@/includes/moos_commander_liaison.pb.cfg}
 \resetbvlinenumber
 
-\afterpage{%
-\begin{landscape}
-\begin{figure}
-	\centering
-\includegraphics[width=7.5in]{liaison_commander.png}
-\label{fig:liaison_commander}
-\end{figure}
-\end{landscape}
-}
+
+\begin{itemize}
+\item !load_protobuf_name!: Repeated field, each with the full name of a Protobuf message as given by the !google::protobuf::Descriptor::full_name()!. This is the package name(s), followed by the message name, delimited by periods. For example, !example.MinimalStatus!. The messages will be loaded from !load_shared_library!, !load_proto_file!, and/or !load_proto_dir! configuration values given in the Liaison configuration, and made available for sending using the MOOS Commander GUI.
+\item !value_width_pixels!: Change the display width of the !value! field (in pixels).
+\item !modify_width_pixels!:  Change the display width of the !modify! field (in pixels).
+\item !sqlite3_database!: Path to an SQLite3 database file to use (or create) to store all previously sent messages. Delete or modify this file to remove the history.
+\item !database_pool_size!: The connection pool size for database connections. Generally this should be larger than the number of expected simultaneously connection clients to Liaison.
+\item !database_view_height!: The height of the !Message log! section of the GUI (in pixels).
+\item !database_width!: The widths (in pixels) of various components of the !Message log! section.
+\item !modal_dimensions!:  The dimensions (in pixels) of the modal (popup) dialog when sending a message. 
+\item !subscription!: A repeated field, each contains a MOOS variable name to subscribe for. Subscribed variables will be shown in the lower left corner of the Commander GUI.
+\item !time_source_var!: The source of time e.g. !DB_TIME! from the MOOS database to be used for !codec="_time"! DCCL fields.
+\end{itemize}
+
+
+\subsection{MOOS Scope GUI (Liaison)}
 
 \boxedverbatiminput{@RELATIVE_CMAKE_CURRENT_SOURCE_DIR@/includes/moos_scope_liaison.pb.cfg}
 \resetbvlinenumber
 
+\begin{itemize}
+\item !subscription!: A repeated field, each with the string name of a MOOS variable. You can optionally use !*! at the end of the string for basic globbing. Use !regex_filter_expression! below for more advanced filtering. You can subscribe to !"*"! for all variables. Note that receiving mail for subscribed variables consumes network bandwidth, so it may be useful to subscribe to a small subset of variables before filtering when on a limited network connection.
+\item !column_width!: Width (in pixels) for the individual scope columns.
+\item !sort_by_column!: Which column to sort by on startup: Options are !COLUMN_KEY!, !COLUMN_TYPE!, !COLUMN_VALUE!, !COLUMN_TIME!, !COLUMN_COMMUNITY!, !COLUMN_SOURCE!, !COLUMN_SOURCE_AUX!, !COLUMN_MAX!.
+\item !sort_ascending!: If true, sort ascending; if false, sort descending.
+\item !scope_height!: Height (in pixels) of the scope display.
+\item !regex_filter_column!: Which column to apply the !regex_filter_expression! to.
+\item !regex_filter_expression!: A regular expression used to filter the scope results. Defaults to !".*"! which is an all-pass filter.
+\item !history!: Enable one or more history panels showing the log of a given MOOS variable.
+\begin{itemize}
+\item !key!: The MOOS variable name to show history for.
+\item !show_plot!: If true, shows a graph of the variable history. Only valid for MOOS double types.
+\item !plot_width!: Width of the plot in pixels.
+\item !plot_height!: Height of the plot in pixels.
+\end{itemize}
+\end{itemize}
 
-\afterpage{%
-\begin{landscape}
 \begin{figure}
-	\centering
-\includegraphics[width=7.5in]{liaison_scope.png}
-\label{fig:liaison_commander}
+\centering
+\includegraphics[width=7.5in, angle=90]{liaison_scope.png}
+\caption{The MOOS Scope tab in Goby Liaison}
+\label{fig:liaison_scope}
 \end{figure}
-\end{landscape}
-}
+
+\subsection{Example working configuration}
+
+Here are the configuration files for !moos_gateway_g! and !goby_liaison! with the MOOS plugins enabled from a working system as an example:
+
+\boxedverbatiminput{@RELATIVE_CMAKE_CURRENT_SOURCE_DIR@/includes/moos_gateway_g_ex1.pb.cfg}
+\resetbvlinenumber
+
+\boxedverbatiminput{@RELATIVE_CMAKE_CURRENT_SOURCE_DIR@/includes/goby_liaison_ex1.pb.cfg}
+\resetbvlinenumber
+
 
 \section{Migrating from Version 1 to Version 2} \label{sec:gobyv1_migrate}
 

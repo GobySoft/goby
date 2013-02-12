@@ -188,8 +188,12 @@ int main(int argc, char* argv[])
     assert(double_cmp(state_in.depth(), state_out.depth(), 1));
     assert(state_in.mission_mode() == state_out.mission_mode());
 
+    // test the dynamically generated message
+    boost::shared_ptr<google::protobuf::Message> state_in_2 = goby::util::DynamicProtobufManager::new_protobuf_message(goby::acomms::protobuf::CCLMDATState::descriptor());
+    state_in_2->CopyFrom(state_in);
+    
     std::string state_encoded;
-    codec->encode(&state_encoded, state_in);
+    codec->encode(&state_encoded, *state_in_2);
 
     goby::acomms::protobuf::CCLMDATState state_out_2;
     codec->decode(state_encoded, &state_out_2);
@@ -241,6 +245,7 @@ int main(int argc, char* argv[])
     redirect_in.set_spare(std::string(3, '\0'));
     
     std::string redirect_encoded;
+
     codec->encode(&redirect_encoded, redirect_in);
 
     goby::acomms::protobuf::CCLMDATRedirect redirect_out_2;

@@ -131,9 +131,6 @@ namespace goby
 
             void signal_receive_and_clear(protobuf::ModemTransmission* message);
             
-            // utility    
-            static boost::posix_time::ptime nmea_time2ptime(const std::string& mt);
-
             // doxygen
             
             /// \example acomms/modemdriver/driver_simple/driver_simple.cpp

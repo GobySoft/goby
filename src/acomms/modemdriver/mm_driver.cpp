@@ -44,7 +44,7 @@ using google::protobuf::uint32;
 using namespace goby::common::tcolor;
 using namespace goby::common::logger;
 using namespace goby::common::logger_lock;
-
+using goby::common::nmea_time2ptime;
 
 const boost::posix_time::time_duration goby::acomms::MMDriver::MODEM_WAIT = boost::posix_time::seconds(5);
 const boost::posix_time::time_duration goby::acomms::MMDriver::WAIT_AFTER_REBOOT = boost::posix_time::seconds(2);
@@ -1380,48 +1380,6 @@ void goby::acomms::MMDriver::cacst(const NMEASentence& nmea, protobuf::ModemTran
 //
 // UTILITY
 //
-
-boost::posix_time::ptime goby::acomms::MMDriver::nmea_time2ptime(const std::string& mt)
-{   
-    using namespace boost::posix_time;
-    using namespace boost::gregorian;
-
-    std::string::size_type dot_pos = mt.find('.');
-    
-    // must be at least HHMMSS
-    if(mt.length() < 6)
-        return ptime(not_a_date_time);  
-    else
-    {
-        std::string s_fs = "0";
-        // has some fractional seconds
-        if(dot_pos != std::string::npos)
-            s_fs = mt.substr(dot_pos + 1); // everything after the "."
-        else
-            dot_pos = mt.size();
-        
-        std::string s_hour = mt.substr(dot_pos-6,2), s_min = mt.substr(dot_pos-4,2),
-            s_sec = mt.substr(dot_pos-2,2);
-
-	        
-        try
-        {
-            int hour = boost::lexical_cast<int>(s_hour);
-            int min = boost::lexical_cast<int>(s_min);
-            int sec = boost::lexical_cast<int>(s_sec);
-            int micro_sec = boost::lexical_cast<int>(s_fs)*pow(10, 6-s_fs.size());
-           
-	    boost::gregorian::date return_date(boost::gregorian::day_clock::universal_day());
-	    boost::posix_time::time_duration return_duration(boost::posix_time::time_duration(hour, min, sec, 0) + microseconds(micro_sec));
-	    boost::posix_time::ptime return_time(return_date, return_duration);
-            return return_time;
-        }
-        catch (boost::bad_lexical_cast&)
-        {
-            return ptime(not_a_date_time);
-        }        
-    }
-}
 
 void goby::acomms::MMDriver::signal_receive_and_clear(protobuf::ModemTransmission* message)
 {

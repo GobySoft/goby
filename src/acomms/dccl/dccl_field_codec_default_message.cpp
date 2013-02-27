@@ -49,12 +49,6 @@ unsigned goby::acomms::DCCLDefaultMessageCodec::any_size(const boost::any& wire_
         return traverse_const_message<Size, unsigned>(wire_value);
 }
 
-void goby::acomms::DCCLDefaultMessageCodec::any_run_hooks(const boost::any& field_value)
-{
-    if(!field_value.empty())
-        traverse_const_message<RunHooks, bool>(field_value);
-}
-
 
 void goby::acomms::DCCLDefaultMessageCodec::any_decode(Bitset* bits, boost::any* wire_value)
 {
@@ -192,29 +186,3 @@ bool goby::acomms::DCCLDefaultMessageCodec::check_field(const google::protobuf::
             return true;
     }    
 }
-
-
-
-//
-// RunHooks
-//
-
-void goby::acomms::DCCLDefaultMessageCodec::RunHooks::repeated(
-    boost::shared_ptr<DCCLFieldCodecBase> codec,
-    bool* return_value,
-    const std::vector<boost::any>& field_values,
-    const google::protobuf::FieldDescriptor* field_desc)
-{
-    goby::glog.is(common::logger::DEBUG2) && glog << group(DCCLCodec::glog_encode_group()) << common::logger::warn << "Hooks not run on repeated message: " << field_desc->DebugString() << std::flush;
-}
-
-void goby::acomms::DCCLDefaultMessageCodec::RunHooks::single(
-    boost::shared_ptr<DCCLFieldCodecBase> codec,
-    bool* return_value,
-    const boost::any& field_value,
-    const google::protobuf::FieldDescriptor* field_desc)
-{
-    codec->field_run_hooks(return_value, field_value, field_desc);
-}
-
-

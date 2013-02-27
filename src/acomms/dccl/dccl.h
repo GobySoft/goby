@@ -345,55 +345,6 @@ namespace goby
             
             
             //@}
-
-
-            /// \name Hook API (Advanced)
-            ///
-            /// Register hooks (callbacks) to be called when a certain Google Protobuf option extension is encountered while exploring the Google Protobuf descriptor (message meta-data). This is used by libqueue to identify its option extensions (queue.is_src, queue.is_dest, etc.). You may be able to find another use for it as well!
-
-            //@{
-            /// \brief run hooks previously registered to DCCLFieldCodec::register_wire_value_hook
-            ///
-            /// All callbacks registered using DCCLFieldCodec::register_wire_value_hook() will be called when the registered custom FieldOptions extension is set. For example:
-            /// \code
-            /// extend .google.protobuf.FieldOptions
-            /// {
-            ///   optional double my_extension = 50000;
-            /// }
-            ///
-            /// message Foo
-            /// {
-            ///    int32 bar = 1 [(my_extension)=123.456];
-            ///    FooBar baz = 2;
-            /// }
-            /// \endcode
-            /// Now in C++, if I write
-            /// \code
-            /// int main()
-            ///
-            /// void set_latest_metadata(const boost::any& field_value,
-            ///             const boost::any& wire_value,
-            ///             const boost::any& extension_value)
-            /// {
-            ///    assert(field_value.type() == typeid(int32));
-            ///    assert(type_value.type() == typeid(int32));
-            ///    assert(extension_value.type() == typeid(double));
-            ///    assert(boost::any_cast<double>(extension_value) == 123.456);
-            /// }
-            /// 
-            /// int main()
-            /// {
-            ///   goby::acomms::DCCLFieldCodecBase::register_wire_value_hook(
-            ///                   my_extension.number(), set_latest_metadata);
-            ///   Foo foo;
-            ///   goby::acomms::DCCLCodec::get()->run_hooks(foo);
-            ///
-            /// }
-            ///
-            /// \endcode
-            /// set_latest_metadata will be called with "int32 bar = 1" is encountered because "my_extension is set.
-            void run_hooks(const google::protobuf::Message& msg);
-            //@}           
             
             /// \name Custom DCCL ID Codecs (Advanced)
             ///

@@ -54,7 +54,13 @@ int main(int argc, char* argv[])
 {    
     goby::glog.add_stream(goby::common::logger::DEBUG3, &std::cout);
     goby::glog.set_name(argv[0]);
-    
+
+    goby::acomms::DCCLCodec* codec = goby::acomms::DCCLCodec::get();
+
+    goby::acomms::protobuf::DCCLConfig dccl_cfg;
+    dccl_cfg.set_crypto_passphrase("my_passphrase!");
+    codec->set_cfg(dccl_cfg);
+
     goby::acomms::QueueManager q_manager;
     cfg.set_modem_id(MY_MODEM_ID);
 

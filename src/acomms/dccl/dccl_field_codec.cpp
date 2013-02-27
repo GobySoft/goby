@@ -32,8 +32,6 @@ goby::acomms::MessageHandler::MessagePart goby::acomms::DCCLFieldCodecBase::part
 
 const google::protobuf::Message* goby::acomms::DCCLFieldCodecBase::root_message_ = 0;
 
-boost::ptr_map<int, boost::signals2::signal<void (const google::protobuf::FieldDescriptor* field, const boost::any& field_value, const boost::any& wire_value)> > goby::acomms::DCCLFieldCodecBase::wire_value_hooks_;
-
 
 using goby::glog;
 using namespace goby::common::logger;
@@ -110,23 +108,6 @@ void goby::acomms::DCCLFieldCodecBase::field_size(unsigned* bit_size,
     field_pre_encode(&wire_value, field_value);
 
     *bit_size += any_size(wire_value);
-}
-
-void goby::acomms::DCCLFieldCodecBase::base_run_hooks(const google::protobuf::Message& msg,
-                                                      MessageHandler::MessagePart part)
-{
-    part_ = part;
-    root_message_ = &msg;
-    bool b = false;
-    field_run_hooks(&b, &msg, 0);
-}
-
-void goby::acomms::DCCLFieldCodecBase::field_run_hooks(bool* b,
-                                                      const boost::any& field_value,
-                                                      const google::protobuf::FieldDescriptor* field)
-{
-    MessageHandler msg_handler(field);
-    any_run_hooks(field_value);
 }
 
 
@@ -430,41 +411,6 @@ unsigned goby::acomms::DCCLFieldCodecBase::any_size_repeated(const std::vector<b
     }    
     return out;
 }
-
-void goby::acomms::DCCLFieldCodecBase::any_run_hooks(const boost::any& field_value)   
-{
-    if(this_field())
-    {
-        glog.is(DEBUG2) && glog << group(DCCLCodec::glog_encode_group()) << "Running hooks for " << this_field()->DebugString() << std::flush;
-    }
-    else
-    {
-        glog.is(DEBUG2) && glog << group(DCCLCodec::glog_encode_group()) << "Not running hooks for base message" << std::endl;
-        return;
-    }
-
-
-    int dccl_id = DCCLCodec::get()->id(root_message_->GetDescriptor());
-    
-    if(!wire_value_hooks_.count(dccl_id))
-    {
-        glog.is(DEBUG2) && glog << group(DCCLCodec::glog_encode_group()) << "No hooks to run." << std::endl;
-        return;
-    }        
-
-    try
-    {
-        boost::any wire_value;
-        field_pre_encode(&wire_value, field_value);
-        wire_value_hooks_[dccl_id](this_field(), field_value, wire_value);
-    }
-    catch(std::exception& e)
-    {
-        glog.is(DEBUG1) && glog <<  group(DCCLCodec::glog_encode_group()) <<  warn << "failed to run hook, exception: " << e.what() << std::endl;
-    }    
-}            
-
-
 
 unsigned goby::acomms::DCCLFieldCodecBase::max_size_repeated()
 {    

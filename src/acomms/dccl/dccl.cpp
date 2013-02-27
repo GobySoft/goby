@@ -363,19 +363,6 @@ unsigned goby::acomms::DCCLCodec::size(const google::protobuf::Message& msg)
     return head_size_bytes + body_size_bytes;
 }
 
-
-
-void goby::acomms::DCCLCodec::run_hooks(const google::protobuf::Message& msg)
-{
-    const Descriptor* desc = msg.GetDescriptor();
-
-    boost::shared_ptr<DCCLFieldCodecBase> codec = DCCLFieldCodecManager::find(desc);
-    
-    codec->base_run_hooks(msg, MessageHandler::HEAD);
-    codec->base_run_hooks(msg, MessageHandler::BODY);
-}
-
-
 void goby::acomms::DCCLCodec::info(const google::protobuf::Descriptor* desc, std::ostream* os) const
 {
     try

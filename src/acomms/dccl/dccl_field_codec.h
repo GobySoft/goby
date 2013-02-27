@@ -129,13 +129,6 @@ namespace goby
                              const google::protobuf::Message& msg,
                              MessageHandler::MessagePart part);
 
-            /// \brief Run hooks on this part of the base message
-            ///
-            /// See DCCLCodec::run_hooks() for details on the hook functionality.
-            /// \param msg DCCL Message to run hooks on
-            /// \param part part of the Message to run hooks on
-            void base_run_hooks(const google::protobuf::Message& msg, MessageHandler::MessagePart part);
-
             /// \brief Calculate the size (in bits) of a part of the base message when it is encoded
             ///
             /// \param bit_size Pointer to unsigned integer to store the result.
@@ -227,14 +220,6 @@ namespace goby
                                        const std::vector<boost::any>& field_values,
                                        const google::protobuf::FieldDescriptor* field);
 
-            /// \brief Run hooks on a field
-            ///
-            /// \param b Currently unused (will be set to false)
-            /// \param field_value Value to run hooks on (FieldType)
-            /// \param field Protobuf descriptor to the field. Set to 0 for base message.
-            void field_run_hooks(bool* b,
-                                 const boost::any& field_value,
-                                 const google::protobuf::FieldDescriptor* field);
 
             /// \brief Calculate the size of a field
             ///
@@ -315,16 +300,6 @@ namespace goby
             //@}
             
             
-            /// \name Hook API methods (Advanced)
-            //@{
-            /// \brief Register a callback to be called for every field when base_run_hooks() (or field_run_hooks(), which is called by base_run_hooks()) is called. 
-            ///
-            /// \param callback A boost::function (generalized function object) which will be called when the desired option extension for the field is set. `field` is the FieldDescriptor (meta-dat) of the field, `field_value` is the value currently set in the message for that field, `wire_value` is the pre-encoded version of `field_value`.
-            static void register_wire_value_hook(int dccl_id, boost::function<void (const google::protobuf::FieldDescriptor* field, const boost::any& field_value, const boost::any& wire_value)> callback)
-            { wire_value_hooks_[dccl_id].connect(callback); }
-
-            //@}
-
           protected:
 
             /// \brief Get the DCCL field option extension value for the current field
@@ -395,8 +370,6 @@ namespace goby
             /// \return Size of field (in bits)
             virtual unsigned any_size(const boost::any& wire_value) = 0;
 
-            virtual void any_run_hooks(const boost::any& field_value);
-
             // no boost::any
             /// \brief Validate a field. Use require() inside your overloaded validate() to assert requirements or throw DCCLExceptions directly as needed.
             virtual void validate() { }
@@ -446,9 +419,6 @@ namespace goby
             static MessageHandler::MessagePart part_;
 
             static const google::protobuf::Message* root_message_;
-            
-            // maps DCCL ID onto a hook (signal) to call during run_hooks
-            static boost::ptr_map<int, boost::signals2::signal<void (const google::protobuf::FieldDescriptor* field, const boost::any& field_value, const boost::any& wire_value)> > wire_value_hooks_;
             
             std::string name_;
             google::protobuf::FieldDescriptor::Type field_type_;

@@ -49,10 +49,6 @@ int main(int argc, char* argv[])
     q_entry->set_protobuf_name("GobyMessage");
     q_entry->set_newest_first(true);
     
-    goby::acomms::protobuf::QueuedMessageEntry::Role* src_role = q_entry->add_role();
-    src_role->set_type(goby::acomms::protobuf::QueuedMessageEntry::SOURCE_ID);
-    src_role->set_field("header.source_platform");
-    
     goby::acomms::protobuf::QueuedMessageEntry::Role* dest_role = q_entry->add_role();
     dest_role->set_type(goby::acomms::protobuf::QueuedMessageEntry::DESTINATION_ID);
     dest_role->set_field("header.dest_platform");    
@@ -60,7 +56,25 @@ int main(int argc, char* argv[])
     goby::acomms::protobuf::QueuedMessageEntry::Role* time_role = q_entry->add_role();
     time_role->set_type(goby::acomms::protobuf::QueuedMessageEntry::TIMESTAMP);
     time_role->set_field("header.time");    
+
+    goby::acomms::protobuf::QueuedMessageEntry::Role* src_role = q_entry->add_role();
+    src_role->set_type(goby::acomms::protobuf::QueuedMessageEntry::SOURCE_ID);
+    // intentionally misspelled
+    src_role->set_field("hder.source_platform");
     
+    try
+    {    
+        q_manager.set_cfg(cfg);
+        bool FAILED_CHECK_FIELDS = false;
+        assert(FAILED_CHECK_FIELDS);
+    }
+    catch(goby::acomms::QueueException&)
+    {
+        // good
+    }
+
+    // fix the misspelling and try again
+    src_role->set_field("header.source_platform");
     q_manager.set_cfg(cfg);
     
     goby::acomms::connect(&q_manager.signal_receive, &handle_receive);

@@ -248,8 +248,13 @@ boost::any goby::acomms::Queue::find_queue_field(const std::string& field_name, 
         else
         {
             boost::any value = helper->get_value(field_desc, *current_msg);
-            current_msg = boost::any_cast<const google::protobuf::Message*>(value);
-            current_desc = current_msg->GetDescriptor();
+            if(value.empty()) // no submessage in this message
+                return boost::any();
+            else
+            {                
+                current_msg = boost::any_cast<const google::protobuf::Message*>(value);
+                current_desc = current_msg->GetDescriptor();
+            }
         }
     }
 
@@ -504,6 +509,10 @@ void goby::acomms::Queue::process_cfg()
     roles_.clear();
     static_meta_.Clear();
     
+    // used to check that the FIELD_VALUE roles fields actually exist
+    boost::shared_ptr<google::protobuf::Message> new_msg =
+        goby::util::DynamicProtobufManager::new_protobuf_message(desc_);
+    
     for(int i = 0, n = cfg_.role_size(); i < n; ++i)
     {
         std::string role_field;
@@ -535,6 +544,9 @@ void goby::acomms::Queue::process_cfg()
             case protobuf::QueuedMessageEntry::Role::FIELD_VALUE:
             {
                 role_field = cfg_.role(i).field();
+
+                // check that the FIELD_VALUE roles fields actually exist
+                find_queue_field(role_field, *new_msg);
             }
             break;
         }
@@ -545,22 +557,4 @@ void goby::acomms::Queue::process_cfg()
         if(!result.second)
             throw(QueueException("Role " + protobuf::QueuedMessageEntry::RoleType_Name(cfg_.role(i).type()) + " was assigned more than once. Each role must have at most one field or static value per message." ));
     }
-
-    // check that the FIELD_VALUE roles fields actually exist
-    // latest_meta_.Clear();
-    
-    // boost::shared_ptr<google::protobuf::Message> new_msg =
-    //     goby::util::DynamicProtobufManager::new_protobuf_message(desc_);
-
-    // std::cout << this << ": " << last_send_time_  << std::endl;
-
-    // parent_->codec_->run_hooks(*new_msg);
-    
-    // if(!roles_[protobuf::QueuedMessageEntry::DESTINATION_ID].empty() && !latest_meta_.has_dest())
-    //     throw(QueueException("DESTINATION_ID field (" + roles_[protobuf::QueuedMessageEntry::DESTINATION_ID] + ") does not exist in this message"));
-    // if(!roles_[protobuf::QueuedMessageEntry::SOURCE_ID].empty() && !latest_meta_.has_src())
-    //     throw(QueueException("SOURCE_ID field (" + roles_[protobuf::QueuedMessageEntry::SOURCE_ID] + ") does not exist in this message"));
-    // if(!roles_[protobuf::QueuedMessageEntry::TIMESTAMP].empty() && !latest_meta_.has_time())
-    //     throw(QueueException("TIMESTAMP field (" + roles_[protobuf::QueuedMessageEntry::TIMESTAMP] + ") does not exist in this message"));
-    
 }

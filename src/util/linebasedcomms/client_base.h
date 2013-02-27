@@ -1,4 +1,4 @@
-// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
 //                     Massachusetts Institute of Technology (2007-)
 //                     Woods Hole Oceanographic Institution (2007-)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
@@ -44,6 +44,9 @@ namespace goby
                 LineBasedConnection<ASIOAsyncReadStream>(this)
                 { }            
 
+            virtual ~LineBasedClient() { }
+            
+            
             enum { RETRY_INTERVAL = 10 };            
 
             virtual ASIOAsyncReadStream& socket () = 0;
@@ -80,13 +83,18 @@ namespace goby
                 
                 set_active(false);
                 socket().close();
+
+                // try to restart if we had a real error
+                if(error != boost::system::error_code())
+                {
+                    using namespace boost::posix_time;
+                    ptime now  = common::goby_time();
+                    if(now - seconds(RETRY_INTERVAL) < last_start_time_)
+                        sleep(RETRY_INTERVAL - (now-last_start_time_).total_seconds());
+                    
+                    do_start();
+                }
                 
-                using namespace boost::posix_time;
-                ptime now  = common::goby_time();
-                if(now - seconds(RETRY_INTERVAL) < last_start_time_)
-                    sleep(RETRY_INTERVAL - (now-last_start_time_).total_seconds());
-                
-                do_start();
             }
 
             // same as do_close in this case

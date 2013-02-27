@@ -1,4 +1,4 @@
-// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
 //                     Massachusetts Institute of Technology (2007-)
 //                     Woods Hole Oceanographic Institution (2007-)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
@@ -89,6 +89,11 @@ namespace goby
             return ceil_log2(static_cast<unsigned>(i));
         }
         
+        inline double log2(double d)
+        {
+            static double log_2 = log(2);
+            return log(d)/log_2;
+        }
         
     }
 

@@ -1,4 +1,4 @@
-// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
 //                     Massachusetts Institute of Technology (2007-)
 //                     Woods Hole Oceanographic Institution (2007-)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
@@ -93,7 +93,7 @@ namespace goby
             /// \brief Signals when it is time for this platform to begin transmission of an acoustic message at the start of its TDMA slot. Typically connected to ModemDriverBase::handle_initiate_transmission() using bind().
             ///
             /// \param m a message containing details of the transmission to be initated.  (protobuf::ModemMsgBase defined in acomms_modem_message.proto)
-            boost::signal<void (const protobuf::ModemTransmission& m)> signal_initiate_transmission;
+            boost::signals2::signal<void (const protobuf::ModemTransmission& m)> signal_initiate_transmission;
             /// \example acomms/amac/amac_simple/amac_simple.cpp        
             /// \example acomms/chat/chat.cpp
 
@@ -118,7 +118,14 @@ namespace goby
             unsigned cycle_sum();
             void position_blank();
 
+            // allowed offset from actual end of slot
+            enum { ALLOWED_SKEW_SECONDS = 2 };
+            
+            
           private:
+            MACManager(const MACManager&);
+            MACManager& operator= (const MACManager&);
+            
             protobuf::MACConfig cfg_;
             
             // asynchronous timer

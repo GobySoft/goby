@@ -69,7 +69,9 @@ int main(int argc, char* argv[])
 
     mac.resize(mac.size()+1);
     mac.back().CopyFrom(mac.front());
-    mac.back().set_type(goby::acomms::protobuf::ModemTransmission::MICROMODEM_REMUS_LBL_RANGING);
+    mac.back().set_type(goby::acomms::protobuf::ModemTransmission::DRIVER_SPECIFIC);
+    mac.back().SetExtension(micromodem::protobuf::type,
+                            micromodem::protobuf::MICROMODEM_REMUS_LBL_RANGING);
 
     // must call update after manipulating MACManager before calling do_work again.
     mac.update();

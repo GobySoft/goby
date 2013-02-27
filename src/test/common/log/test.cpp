@@ -1,4 +1,4 @@
-// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
 //                     Massachusetts Institute of Technology (2007-)
 //                     Woods Hole Oceanographic Institution (2007-)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
@@ -61,11 +61,12 @@ int main()
     glog.is(WARN) && glog << "warn ok" << std::endl;
 
     
+#if THREAD_SAFE_LOGGER
     std::cout << "checking locking ... " << std::endl;
     glog.is(VERBOSE, goby::common::logger_lock::lock) && glog << "lock ok" << std::endl << unlock;
     glog.is(VERBOSE, goby::common::logger_lock::lock) && glog << "unlock ok" << std::endl << unlock;
     glog.is(DEBUG3, goby::common::logger_lock::lock) && glog << stream_assert << std::endl << unlock;
-
+#endif
     
     std::cout << "attaching std::cout to DEBUG1" << std::endl;
     glog.add_stream(DEBUG1, &std::cout);

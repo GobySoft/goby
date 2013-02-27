@@ -1,4 +1,4 @@
-// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
 //                     Massachusetts Institute of Technology (2007-)
 //                     Woods Hole Oceanographic Institution (2007-)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
@@ -26,8 +26,6 @@
 
 #include "dccl_common.h"
 
-#include <boost/signals.hpp>
-
 namespace goby
 {
     namespace acomms
@@ -46,7 +44,14 @@ namespace goby
                     
                 for(int i = 0; i < fields_pushed_; ++i)
                     __pop_field();
+
+                if(desc_.empty())
+                    part_ = UNKNOWN;
+                
             }
+
+            enum MessagePart { HEAD, BODY, UNKNOWN };
+            
             bool first() 
             { return desc_.empty(); }
             int count() 
@@ -55,6 +60,9 @@ namespace goby
             void push(const google::protobuf::Descriptor* desc);
             void push(const google::protobuf::FieldDescriptor* field);
 
+            static MessagePart current_part() { return part_; }
+            
+            
             friend class DCCLFieldCodecBase;
           private:
             void __pop_desc();
@@ -64,25 +72,9 @@ namespace goby
             static std::vector<const google::protobuf::FieldDescriptor*> field_;
             int descriptors_pushed_;
             int fields_pushed_;
+            static MessagePart part_;
         };
 
-        class BitsHandler
-        {
-          public:
-            BitsHandler(Bitset* out_pool, Bitset* in_pool, bool lsb_first = true);
-            
-            ~BitsHandler()
-            {
-                connection_.disconnect();
-            }
-            void transfer_bits(unsigned size);
-
-          private:
-            bool lsb_first_;
-            Bitset* in_pool_;
-            Bitset* out_pool_;
-            boost::signals::connection connection_;
-        };
     }
 }
 

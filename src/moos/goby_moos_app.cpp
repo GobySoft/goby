@@ -1,4 +1,4 @@
-// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
 //                     Massachusetts Institute of Technology (2007-)
 //                     Woods Hole Oceanographic Institution (2007-)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
@@ -26,6 +26,7 @@
 
 #include <boost/foreach.hpp>
 #include <boost/bind.hpp>
+#include <boost/filesystem.hpp>
 
 #include "goby/util/as.h"
 
@@ -52,7 +53,7 @@ bool GobyMOOSApp::Iterate()
         cout_cleared_ = true;
     }
 
-    while(connected_ && !msg_buffer_.empty())
+    while(!msg_buffer_.empty() && (connected_ && started_up_))
     {
         glog << "writing from buffer: " << msg_buffer_.front().GetKey() << ": " << msg_buffer_.front().GetAsString() << std::endl;
         m_Comms.Post(msg_buffer_.front());
@@ -66,8 +67,12 @@ bool GobyMOOSApp::Iterate()
 
 bool GobyMOOSApp::OnNewMail(MOOSMSG_LIST &NewMail)
 {
-    BOOST_FOREACH(const CMOOSMsg& msg, NewMail)
+    for(MOOSMSG_LIST::const_iterator it = NewMail.begin(),
+        end = NewMail.end(); it != end; ++it)
     {
+        const CMOOSMsg& msg = *it;
+        goby::glog.is(DEBUG3) && goby::glog << "Received mail: " << msg.GetKey() << ", time: " << std::setprecision(15) << msg.GetTime() << std::endl;        
+        
         // update dynamic moos variables - do this inside the loop so the newest is
         // also the one referenced in the call to inbox()
         dynamic_vars().update_moos_vars(msg);   
@@ -103,7 +108,9 @@ bool GobyMOOSApp::OnConnectToServer()
                 if(ini.type() == GobyMOOSAppConfig::Initializer::INI_DOUBLE)
                     publish(ini.moos_var(), as<double>(result));
                 else if(ini.type() == GobyMOOSAppConfig::Initializer::INI_STRING)
-                    publish(ini.moos_var(), result);
+                    publish(ini.moos_var(), ini.trim() ?
+                            boost::trim_copy(result) :
+                            result);
             }
         }
         else
@@ -111,7 +118,9 @@ bool GobyMOOSApp::OnConnectToServer()
             if(ini.type() == GobyMOOSAppConfig::Initializer::INI_DOUBLE)
                 publish(ini.moos_var(), ini.dval());
             else if(ini.type() == GobyMOOSAppConfig::Initializer::INI_STRING)
-                publish(ini.moos_var(), ini.sval());            
+                publish(ini.moos_var(), ini.trim() ?
+                        boost::trim_copy(ini.sval()) :
+                        ini.sval()); 
         }        
     }
     
@@ -138,7 +147,7 @@ void GobyMOOSApp::subscribe(const std::string& var,  InboxFunc handler, int blac
     try_subscribing();
 
     if(!mail_handlers_[var])
-        mail_handlers_[var].reset(new boost::signal<void (const CMOOSMsg& msg)>);
+        mail_handlers_[var].reset(new boost::signals2::signal<void (const CMOOSMsg& msg)>);
         
     if(handler)
         mail_handlers_[var]->connect(handler);
@@ -329,11 +338,7 @@ void GobyMOOSApp::read_configuration(google::protobuf::Message* cfg)
         }
         else if(var_map.count("version"))
         {
-            std::cout << "This is Version " << goby::VERSION_STRING
-                      << " of the Goby Underwater Autonomy Project released on "
-                      << goby::VERSION_DATE
-                      << ". (compiled on " << goby::COMPILE_DATE << ")\n"
-                      <<" See https://launchpad.net/goby to search for updates." << std::endl;
+            std::cout << goby::version_message() << std::endl;
             exit(EXIT_SUCCESS);            
         }
         
@@ -472,7 +477,10 @@ void GobyMOOSApp::process_configuration()
         if(!common_cfg_.log_path().empty())
         {
             using namespace boost::posix_time;
-            std::string file_name = application_name_ + "_" + common_cfg_.community() + "_" + to_iso_string(second_clock::universal_time()) + ".txt";
+            std::string file_name =
+                boost::replace_all_copy(application_name_, "/", "_") + "_" +
+                common_cfg_.community() + "_" +
+                to_iso_string(second_clock::universal_time()) + ".txt";
 
             glog.is(VERBOSE) &&
                 glog << "logging output to file: " << file_name << std::endl;

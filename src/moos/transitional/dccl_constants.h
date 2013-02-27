@@ -1,4 +1,4 @@
-// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
 //                     Massachusetts Institute of Technology (2007-)
 //                     Woods Hole Oceanographic Institution (2007-)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
@@ -33,7 +33,7 @@
 #include <iomanip>
 #include <cmath>
 
-#include <boost/dynamic_bitset.hpp>
+//#include <boost/dynamic_bitset.hpp>
 
 #include "goby/moos/protobuf/transitional.pb.h"
 #include "goby/acomms/acomms_constants.h"
@@ -225,17 +225,17 @@ namespace goby
         }
 
         /// \brief converts a boost::dynamic_bitset (similar to std::bitset but without compile time size requirements) into a hex string
-        inline std::string dyn_bitset2hex_string(const boost::dynamic_bitset<unsigned char>& bits, unsigned trim_to_bytes_size = 0)
-        {
-            std::stringstream binary;
-            binary << bits;
-            std::string out = binary_string2hex_string(binary.str());
+        /* inline std::string dyn_bitset2hex_string(const boost::dynamic_bitset<unsigned char>& bits, unsigned trim_to_bytes_size = 0) */
+        /* { */
+        /*     std::stringstream binary; */
+        /*     binary << bits; */
+        /*     std::string out = binary_string2hex_string(binary.str()); */
 
-            if(trim_to_bytes_size)
-                return out.substr(out.length() - trim_to_bytes_size*2);
-            else
-                return out;
-        }
+        /*     if(trim_to_bytes_size) */
+        /*         return out.substr(out.length() - trim_to_bytes_size*2); */
+        /*     else */
+        /*         return out; */
+        /* } */
     
         /// \brief converts a hex string ("8AAA") into a binary string ("1000101010101010")
         ///
@@ -257,16 +257,16 @@ namespace goby
 
 
         /// \brief converts a hex string ("8AAA") into a dynamic_bitset
-        inline boost::dynamic_bitset<unsigned char> hex_string2dyn_bitset(const std::string & hs, unsigned bits_size = 0)
-        {
-            boost::dynamic_bitset<unsigned char> bits;
-            std::stringstream bin_str;
-            bin_str << hex_string2binary_string(hs);       
-            bin_str >> bits;
+        /* inline boost::dynamic_bitset<unsigned char> hex_string2dyn_bitset(const std::string & hs, unsigned bits_size = 0) */
+        /* { */
+        /*     boost::dynamic_bitset<unsigned char> bits; */
+        /*     std::stringstream bin_str; */
+        /*     bin_str << hex_string2binary_string(hs);        */
+        /*     bin_str >> bits; */
 
-            if(bits_size) bits.resize(bits_size);        
-            return bits;
-        }
+        /*     if(bits_size) bits.resize(bits_size);         */
+        /*     return bits; */
+        /* } */
 
         /// \brief attempts to convert a hex string into a numerical representation (of type T)
         ///

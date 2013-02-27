@@ -1,4 +1,4 @@
-// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
 //                     Massachusetts Institute of Technology (2007-)
 //                     Woods Hole Oceanographic Institution (2007-)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
@@ -40,11 +40,20 @@ using namespace goby::common::logger;
 goby::common::ZeroMQService::ZeroMQService(boost::shared_ptr<zmq::context_t> context)
     : context_(context)
 {
+    init();
 }
 
 goby::common::ZeroMQService::ZeroMQService()
     : context_(new zmq::context_t(2))
-{    
+{
+    init();
+}
+
+void goby::common::ZeroMQService::init()
+{
+    boost::mutex::scoped_lock lock(glog.mutex());
+    glog.add_group(glog_out_group(), common::Colors::lt_magenta);
+    glog.add_group(glog_in_group(), common::Colors::lt_blue);
 }
 
 void goby::common::ZeroMQService::process_cfg(const protobuf::ZeroMQServiceConfig& cfg)
@@ -105,12 +114,17 @@ void goby::common::ZeroMQService::process_cfg(const protobuf::ZeroMQServiceConfi
             try
             {
                 this_socket->connect(endpoint.c_str());
-                glog.is(DEBUG1, lock) && glog << cfg.socket(i).ShortDebugString() << " connected to endpoint - " << endpoint << std::endl << unlock;
+                glog.is(DEBUG1, lock) &&
+                    glog << group(glog_out_group())
+                         << cfg.socket(i).ShortDebugString()
+                         << " connected to endpoint - " << endpoint
+                         << std::endl << unlock;
             }    
             catch(std::exception& e)
             {
-                glog.is(DIE, lock) &&
-                    glog << "cannot connect to: " << endpoint << ": " << e.what() << std::endl << unlock;
+                std::stringstream ess;
+                ess << "cannot connect to: " << endpoint << ": " << e.what();
+                throw(goby::Exception(ess.str()));
             }
         }
         else if(cfg.socket(i).connect_or_bind() == protobuf::ZeroMQServiceConfig::Socket::BIND)
@@ -142,12 +156,17 @@ void goby::common::ZeroMQService::process_cfg(const protobuf::ZeroMQServiceConfi
             try
             {
                 this_socket->bind(endpoint.c_str());
-                glog.is(DEBUG1, lock) && glog << cfg.socket(i).ShortDebugString() << "bound to endpoint - " << endpoint << std::endl << unlock;
+                glog.is(DEBUG1, lock) &&
+                    glog << group(glog_out_group())
+                         << "bound to endpoint - " << endpoint
+                         << ", Socket: " << cfg.socket(i).ShortDebugString()
+                         << std::endl << unlock;
             }    
             catch(std::exception& e)
             {
-                glog.is(DIE, lock) &&
-                    glog << "cannot bind to: " << endpoint << ": " << e.what() << std::endl << unlock;
+                std::stringstream ess;
+                ess << "cannot bind to: " << endpoint << ": " << e.what();
+                throw(goby::Exception(ess.str()));
             }
 
         }
@@ -156,6 +175,8 @@ void goby::common::ZeroMQService::process_cfg(const protobuf::ZeroMQServiceConfi
 
 goby::common::ZeroMQService::~ZeroMQService()
 {
+//    std::cout << "ZeroMQService: " << this << ": destroyed" << std::endl;
+//    std::cout << "poll_mutex " << &poll_mutex_ << std::endl;
 }
 
 int goby::common::ZeroMQService::socket_type(protobuf::ZeroMQServiceConfig::Socket::SocketType type)
@@ -204,7 +225,11 @@ void goby::common::ZeroMQService::subscribe(MarshallingScheme marshalling_scheme
     zmq_filter.resize(zmq_filter.size() - NULL_TERMINATOR_SIZE);
     socket_from_id(socket_id).socket()->setsockopt(ZMQ_SUBSCRIBE, zmq_filter.c_str(), zmq_filter.size());
     
-    glog.is(DEBUG1, lock) && glog << "subscribed for marshalling " << marshalling_scheme << " with identifier: [" << identifier << "] using zmq_filter: " << goby::util::hex_encode(zmq_filter) << std::endl << unlock;
+    glog.is(DEBUG1, lock) &&
+        glog << group(glog_in_group())
+             << "subscribed for marshalling " << marshalling_scheme
+             << " with identifier: [" << identifier << "] using zmq_filter: "
+             << goby::util::hex_encode(zmq_filter) << std::endl << unlock;
 
         
     post_subscribe_hooks(marshalling_scheme, identifier, socket_id);
@@ -219,9 +244,11 @@ void goby::common::ZeroMQService::unsubscribe(MarshallingScheme marshalling_sche
     zmq_filter.resize(zmq_filter.size() - NULL_TERMINATOR_SIZE);
     socket_from_id(socket_id).socket()->setsockopt(ZMQ_UNSUBSCRIBE, zmq_filter.c_str(), zmq_filter.size());
     
-    glog.is(DEBUG1, lock) && glog << "unsubscribed for marshalling " << marshalling_scheme << " with identifier: [" << identifier << "] using zmq_filter: " << goby::util::hex_encode(zmq_filter) << std::endl << unlock;
-
-        
+    glog.is(DEBUG1, lock) &&
+        glog << group(glog_in_group())
+             << "unsubscribed for marshalling " << marshalling_scheme
+             << " with identifier: [" << identifier << "] using zmq_filter: "
+             << goby::util::hex_encode(zmq_filter) << std::endl << unlock;        
 }
 
 
@@ -240,7 +267,9 @@ void goby::common::ZeroMQService::send(MarshallingScheme marshalling_scheme,
     memcpy(static_cast<char*>(msg.data()) + header.size(), body_data, body_size); // insert body
 
     glog.is(DEBUG2, lock) &&
-        glog << "message hex: " << hex_encode(std::string(static_cast<const char*>(msg.data()),msg.size())) << std::endl << unlock;
+        glog << group(glog_out_group())
+             << "Sent message (hex): " << hex_encode(std::string(static_cast<const char*>(msg.data()),msg.size()))
+             << std::endl << unlock;
     socket_from_id(socket_id).socket()->send(msg);
 
     post_send_hooks(marshalling_scheme, identifier, socket_id);
@@ -257,7 +286,9 @@ void goby::common::ZeroMQService::handle_receive(const void* data,
     
 
     glog.is(DEBUG2, lock) &&
-        glog << "got a message: " << goby::util::hex_encode(bytes) << std::endl << unlock;
+        glog << group(glog_in_group())
+             << "Received message (hex): " << goby::util::hex_encode(bytes)
+             << std::endl << unlock;
     
     
     MarshallingScheme marshalling_scheme = MARSHALLING_UNKNOWN;
@@ -296,15 +327,17 @@ void goby::common::ZeroMQService::handle_receive(const void* data,
                                       bytes.find('\0', MARSHALLING_SIZE)-MARSHALLING_SIZE);
 
             glog.is(DEBUG1, lock) &&
-                glog << "Got message of type: [" << identifier << "]" << std::endl << unlock;
+                glog << group(glog_in_group())
+                     << "Received message of type: [" << identifier << "]" << std::endl << unlock;
 
             // +1 for null terminator
             const int HEADER_SIZE = MARSHALLING_SIZE+identifier.size() + 1;
             std::string body(static_cast<const char*>(data)+HEADER_SIZE,
                              size-HEADER_SIZE);
             
-            glog.is(DEBUG2, lock) &&
-                glog << "Body [" << goby::util::hex_encode(body)<< "]" << std::endl << unlock;
+            glog.is(DEBUG3, lock) &&
+                glog << group(glog_in_group())
+                     << "Body [" << goby::util::hex_encode(body)<< "]" << std::endl << unlock;
             
 
             
@@ -328,7 +361,9 @@ void goby::common::ZeroMQService::handle_receive(const void* data,
 
 bool goby::common::ZeroMQService::poll(long timeout /* = -1 */)
 {
-    glog.is(DEBUG2, lock) && glog << "Have " << poll_items_.size() << " items to poll" << std::endl << unlock;   
+    boost::mutex::scoped_lock slock(poll_mutex_);
+
+//    glog.is(DEBUG2, lock) && glog << "Have " << poll_items_.size() << " items to poll" << std::endl << unlock;   
     bool had_events = false;
     zmq::poll (&poll_items_[0], poll_items_.size(), timeout);
     for(int i = 0, n = poll_items_.size(); i < n; ++i)
@@ -342,15 +377,38 @@ bool goby::common::ZeroMQService::poll(long timeout /* = -1 */)
                 /* Create an empty ØMQ message to hold the message part */
                 zmq_msg_t part;
                 int rc = zmq_msg_init (&part);
-                // assert (rc == 0);
+                
+                if(rc)
+                {
+                    glog.is(DEBUG1, lock) &&
+                        glog << warn << "zmq_msg_init failed" << std::endl << unlock;
+                    continue;
+                }
+                
                 /* Block until a message is available to be received from socket */
                 rc = zmq_recv (poll_items_[i].socket, &part, 0);
-                glog.is(DEBUG2, lock) && glog << "Had event for poll item " << i << std::endl << unlock;
+                glog.is(DEBUG2, lock) &&
+                    glog << group(glog_in_group())
+                         << "Had event for poll item " << i << std::endl << unlock;
                 poll_callbacks_[i](zmq_msg_data(&part), zmq_msg_size(&part), message_part);
-                // assert (rc == 0);
+
+                if(rc)
+                {
+                    glog.is(DEBUG1, lock) &&
+                        glog << warn << "zmq_recv failed" << std::endl << unlock;
+                    continue;
+                }
+                
                 /* Determine if more message parts are to follow */
                 rc = zmq_getsockopt (poll_items_[i].socket, ZMQ_RCVMORE, &more, &more_size);
-                // assert (rc == 0);
+
+                if(rc)
+                {
+                    glog.is(DEBUG1, lock) &&
+                        glog << warn << "zmq_getsocketopt failed" << std::endl << unlock;
+                    continue;
+                }
+
                 zmq_msg_close (&part);
                 ++message_part;
             } while (more);
@@ -374,10 +432,7 @@ std::string goby::common::ZeroMQService::make_header(MarshallingScheme marshalli
         marshalling_int >>= BITS_IN_BYTE;
     }
     zmq_filter += identifier + '\0';
-
-    glog.is(DEBUG2, lock) &&
-        glog << "zmq header: " << goby::util::hex_encode(zmq_filter) << std::endl << unlock;
-
+    
     return zmq_filter;
 }
 
@@ -385,7 +440,8 @@ std::string goby::common::ZeroMQService::make_header(MarshallingScheme marshalli
 void goby::common::ZeroMQSocket::set_global_blackout(boost::posix_time::time_duration duration)
 {
     glog.is(DEBUG2, lock) &&
-        glog << "Global blackout set to " << duration << std::endl << unlock;
+        glog << group(ZeroMQService::glog_in_group())
+             << "Global blackout set to " << duration << std::endl << unlock;
     global_blackout_ = duration;
     global_blackout_set_ = true;
 }
@@ -396,7 +452,8 @@ void goby::common::ZeroMQSocket::set_blackout(MarshallingScheme marshalling_sche
                                             boost::posix_time::time_duration duration)            
 {
     glog.is(DEBUG2, lock) &&
-        glog << "Blackout for marshalling scheme: " << marshalling_scheme << " and identifier " << identifier << " set to " << duration << std::endl << unlock;
+        glog << group(ZeroMQService::glog_in_group())
+             << "Blackout for marshalling scheme: " << marshalling_scheme << " and identifier " << identifier << " set to " << duration << std::endl << unlock;
     blackout_info_[std::make_pair(marshalling_scheme, identifier)] = BlackoutInfo(duration);
     local_blackout_set_ = true;
 }
@@ -432,7 +489,8 @@ bool goby::common::ZeroMQSocket::check_blackout(MarshallingScheme marshalling_sc
         else
         {
             glog.is(DEBUG2, lock) && 
-                glog << "Message (marshalling scheme: " << marshalling_scheme
+                glog << group(ZeroMQService::glog_in_group())
+                     << "Message (marshalling scheme: " << marshalling_scheme
                      << ", identifier: " << identifier << ")" << " is in blackout: this time:"
                      << this_time << ", last time: " << last_post_time << ", global blackout: "
                      << global_blackout_ << ", local blackout: " << blackout_info.blackout_interval

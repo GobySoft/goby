@@ -4,16 +4,39 @@
 
 The Goby Underwater Autonomy Project is an \gls{autonomy architecture} tailored for marine robotics with a focus on intervehicle communication.
 
-Currently, Goby has three major parts:
+Currently, Goby provides several libraries, with a primary focus on Goby-Acomms:
 
 \begin{itemize}
 \item Goby-Acomms: The Goby Acoustic Communications library (\verb|goby-acomms|) has been provided since Version 1.0. See the Developers' documentation for details on these library and the various modules it contains at \cite{goby-doc}. Users of the MOOS application \verb|pAcommsHandler| should see Chapter \ref{chap:MOOS}.
-\item Goby-Util: A utility library that provide functions for dealing with time, type conversion, binary conversions, etc. This library is intended to be small, as Goby makes use of the C++ Standard Library and Boost for most utility tasks.
-\item Goby-Core: An \gls{autonomy architecture} that ties together various marshalling schemes (Google Protocol Buffers, MOOS, LCM, etc.) and provides a message passing middleware based on ZeroMQ (for ethernet) and Goby-DCCL (for acoustic communications). Goby-Core will be provided in release version 3.0.
+\item Goby-Common: A library providing tools for the rest of Goby to use. For release 2.0, Goby-Common provides a debug logging tool (\verb|goby::glog|), various utilities (e.g. time functions), and the groundwork for an \gls{autonomy architecture}. The Goby-Common architecture that ties together various marshalling schemes (Google Protocol Buffers, MOOS, LCM, etc.) and provides a message passing middleware based on ZeroMQ (for ethernet) and Goby-DCCL (for acoustic communications and other ``slow links''). Goby-Common will be provided in a more complete (and documented) form in release version 3.0.
+\item Goby-Util: A utility library that provide functions for dealing with type conversions (\verb|goby::util::as<>()|), binary conversions, etc. This library is intended to be small, as Goby makes use of the C++ Standard Library and Boost for most utility tasks.
+\item Goby-PB: The Google Protocol Buffers / C++ implementation of Goby-Common. Like much of Goby-Common, this will be finalized in release 3.0, but is preliminarily provided in release 2.0 to support tools such as \verb|goby_liaison|.
+\item Goby-MOOS: The MOOS \cite{moos} / C++ implementation of Goby-Common. This library provides translator tools from MOOS messages (CMOOSMsg) to and from the Google Protobuf messages used internally. It provides a Goby-Acomms modem driver for the MOOS-IvP uField toolbox \cite{ufield}, allowing multivehicle network simulation without acoustic modem hardware. See also \cite{moos-ivp-jfr} for more on MOOS-IvP.
 \end{itemize}
 
 \section{Structure of this Manual}
-This manual covers the MOOS Applications that use Goby-Acomms release version 2.0. If you are interested in the C++ Goby-Acomms libraries directly, please read the online Developers' documentation at \cite{goby-doc} In fact, you may want to go download and install Goby now before reading further: \url{https://launchpad.net/goby}.
+This manual covers general use of the Goby libraries and the applications provided with them. If you are interested in a complete API and further details, please read the online Developers' documentation at \cite{goby-doc} In fact, you may want to go download and install Goby now before reading further: \url{https://launchpad.net/goby}.
+
+\section{Prerequisites}
+Goby (for both DCCL and the various external APIs) makes significant use of the \gls{protobuf} mechanism for serializing structured data. This library is very well documented and is widely adopted in numerous open source projects. Please take a few moments to familiarize yourself with the project here: \url{https://developers.google.com/protocol-buffers/docs/overview}.
+
+
+\section{Changes / incompatiblities with version 1}
+
+Goby version 2 has been significantly reworked to based on the valuable feedback from users of version 1 and our experience in numerous field trials.
+ The major changes include:
+\begin{itemize}
+\item Goby-Acomms:
+\begin{itemize}
+\item DCCL has been rewritten to be based on Google Protocol Buffers (no more XML). This means much richer type support and cleaner code. Also,
+any field or message can be encoded using a user-defined codec for that particular job.
+\item WHOI Micro-Modem driver (MMDriver) supports all the modem's major functionality: ping, LBL ranging, data, communications statistics, user mini-packet. The DriverBase interface for writing custom modem drivers has been streamlined.
+\item AMAC is simpler and more intuitive: now it is basically a std::list plus a timer.
+\item Many fewer dependencies: only required are Boost and Google Protocol Buffers (which compile nicely on nearly all platforms).
+\end{itemize}
+\end{itemize}
+
+Because of these substantial changes, full backwards compatibility support is provided for users of MOOS (pAcommsHandler) since that community was the primary user base of that release. Other users must migrate code from version 1 before using version 2. Help on migrating from release 1 is given in Chapter \ref{sec:gobyv1_migrate}.
 
 \section{How to get help}
 The Goby community is here to support you. This is an open source project so we have limited time and resources, but you will find that many are willing to contribute their help, with the hope that you will do the same as you gain experience. Please consult these resources and people, probably in this order of preference:
@@ -22,7 +45,7 @@ The Goby community is here to support you. This is an open source project so we 
 \item This user manual. % TODO(tes) put in link this manual
 \item The Wiki: \url{http://gobysoft.com/wiki}.
 \item Questions and Answers on Launchpad: \url{https://answers.launchpad.net/goby}.
-\item The developers' documentation: \url{http://gobysoft.com/doc}.
+\item The developers' documentation: \url{http://gobysoft.com/doc/2.0}.
 \item Email the listserver \href{mailto:goby@mit.edu}{goby@mit.edu}. Please sign up first: \url{http://mailman.mit.edu/mailman/listinfo/goby}.
 \item Email the lead developer (T. Schneider): \href{mailto:tes@mit.edu}{tes@mit.edu}.
 \end{enumerate}

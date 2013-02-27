@@ -1,0 +1,12 @@
+import "goby/acomms/protobuf/dccl_option_extensions.proto";
+
+message LegacyCCLFieldOptions
+{
+  optional uint32 thrust_mode_tag = 1;
+  optional uint32 bit_size = 2;
+}
+
+extend .dccl.DCCLFieldOptions
+{
+  optional LegacyCCLFieldOptions ccl = 1000;
+}

@@ -1,6 +1,8 @@
 file(GLOB PROTOS protobuf/*.proto)
 
-protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${PROTOS})
+protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS 
+  ${PROTOS}
+  )
 
 set(SRC
   linebasedcomms/interface.cpp

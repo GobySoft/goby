@@ -1,4 +1,4 @@
-// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
 //                     Massachusetts Institute of Technology (2007-)
 //                     Woods Hole Oceanographic Institution (2007-)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
@@ -44,6 +44,8 @@ int main(int argc, char* argv[])
     goby::acomms::protobuf::QueueManagerConfig cfg;
     const int MY_MODEM_ID = 1;
     cfg.set_modem_id(MY_MODEM_ID);
+    cfg.add_message_entry()->set_protobuf_name("TestMsg");
+    
     q_manager.set_cfg(cfg);
     
     goby::acomms::connect(&q_manager.signal_receive, &handle_receive);

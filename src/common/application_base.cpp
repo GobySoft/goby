@@ -1,4 +1,4 @@
-// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
 //                     Massachusetts Institute of Technology (2007-)
 //                     Woods Hole Oceanographic Institution (2007-)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
@@ -20,10 +20,10 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Goby.  If not, see <http://www.gnu.org/licenses/>.
 
+#include <boost/format.hpp>
 
 #include "application_base.h"
 #include "goby/common/configuration_reader.h"
-
 #include "core_helpers.h"
 
 using goby::util::as;
@@ -95,6 +95,30 @@ goby::common::ApplicationBase::ApplicationBase(google::protobuf::Message* cfg /*
    glog.set_name(application_name());
    glog.add_stream(static_cast<common::logger::Verbosity>(base_cfg_->glog_config().tty_verbosity()), &std::cout);
 
+   if(base_cfg_->glog_config().show_gui())
+       glog.enable_gui();
+
+   fout_.resize(base_cfg_->glog_config().file_log_size());
+   for(int i = 0, n = base_cfg_->glog_config().file_log_size(); i < n; ++i)
+   {
+       using namespace boost::posix_time;
+
+       boost::format file_format(base_cfg_->glog_config().file_log(i).file_name());
+       file_format.exceptions( boost::io::all_error_bits ^ ( boost::io::too_many_args_bit | boost::io::too_few_args_bit)); 
+
+       std::string file_name = (file_format % to_iso_string(second_clock::universal_time())).str();
+       
+       glog.is(VERBOSE) &&
+           glog << "logging output to file: " << file_name << std::endl;
+
+       fout_[i].reset(new std::ofstream(file_name.c_str()));
+       
+       if(!fout_[i]->is_open())           
+           glog.is(DIE) && glog << die << "cannot write glog output to requested file: " << file_name << std::endl;
+       glog.add_stream(base_cfg_->glog_config().file_log(i).verbosity(), fout_[i].get());
+   } 
+   
+   
     if(!base_cfg_->IsInitialized())
         throw(common::ConfigException("Invalid base configuration"));
     

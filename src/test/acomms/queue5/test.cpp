@@ -1,4 +1,4 @@
-// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
 //                     Massachusetts Institute of Technology (2007-)
 //                     Woods Hole Oceanographic Institution (2007-)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
@@ -58,12 +58,11 @@ int main(int argc, char* argv[])
 
     goby::acomms::DCCLCodec* codec = goby::acomms::DCCLCodec::get();
     
-    q_manager.add_queue<GobyMessage>();
-    
     goby::acomms::protobuf::QueueManagerConfig cfg;
     cfg.set_modem_id(MY_MODEM_ID);
-    goby::acomms::protobuf::QueueManagerConfig::ManipulatorEntry* entry = cfg.add_manipulator_entry();
+    goby::acomms::protobuf::QueuedMessageEntry* entry = cfg.add_message_entry();
     entry->set_protobuf_name("GobyMessage");
+    entry->set_newest_first(true);
     entry->add_manipulator(goby::acomms::protobuf::ON_DEMAND);
     cfg.set_on_demand_skew_seconds(0.1);    
 

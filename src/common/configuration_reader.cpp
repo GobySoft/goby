@@ -1,4 +1,4 @@
-// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
 //                     Massachusetts Institute of Technology (2007-)
 //                     Woods Hole Oceanographic Institution (2007-)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
@@ -21,6 +21,7 @@
 // along with Goby.  If not, see <http://www.gnu.org/licenses/>.
 
 
+
 #include "goby/common/protobuf/option_extensions.pb.h"
 
 #include "configuration_reader.h"
@@ -31,6 +32,8 @@
 #include <google/protobuf/dynamic_message.h>
 #include <algorithm>
 #include <boost/algorithm/string.hpp>
+#include <boost/filesystem.hpp>
+#include "goby/version.h"
 
 // brings std::ostream& red, etc. into scope
 using namespace goby::common::tcolor;
@@ -66,7 +69,8 @@ void goby::common::ConfigReader::read_cfg(int argc,
         ("example_config,e", "writes an example .pb.cfg file")
         ("verbose,v", boost::program_options::value<std::string>()->implicit_value("")->multitoken(), "output useful information to std::cout. -v is verbosity: verbose, -vv is verbosity: debug1, -vvv is verbosity: debug2, -vvvv is verbosity: debug3")
         ("ncurses,n", "output useful information to an NCurses GUI instead of stdout. If set, this parameter overrides --verbose settings.")
-        ("no_db,d", "disables the check for goby_database before publishing. You must set this if not running the goby_database.");
+//        ("no_db,d", "disables the check for goby_database before publishing. You must set this if not running the goby_database.")
+        ("version,V", "writes the current version");
     
     std::string od_both_desc = "Typically given in " + *application_name + " configuration file, but may be specified on the command line";
     boost::program_options::options_description od_both(od_both_desc.c_str());
@@ -106,7 +110,15 @@ void goby::common::ConfigReader::read_cfg(int argc,
         get_example_cfg_file(message, &std::cout);    
         throw(e);
     }
+    else if(var_map->count("version"))
+    {
+        ConfigException e("");
+        e.set_error(false);
+        std::cout << goby::version_message() << std::endl;
+        throw(e);
+    }
 
+    
     if (var_map->count("app_name"))
     {
         *application_name = (*var_map)["app_name"].as<std::string>();
@@ -335,7 +347,7 @@ void  goby::common::ConfigReader::get_protobuf_program_options(boost::program_op
     for(int i = 0, n = desc->field_count(); i < n; ++i)
     {
         const google::protobuf::FieldDescriptor* field_desc = desc->field(i);
-        const std::string& field_name = field_desc->name();
+        const std::string& field_name = field_desc->name();        
         
         std::string cli_name = field_name;
         std::stringstream human_desc_ss;
@@ -459,6 +471,10 @@ void goby::common::ConfigReader::build_description(const google::protobuf::Descr
     for(int i = 0, n = desc->field_count(); i < n; ++i)
     {
         const google::protobuf::FieldDescriptor* field_desc = desc->field(i);
+
+        if(field_desc->options().GetExtension(goby::field).cfg().action() == goby::GobyFieldOptions::ConfigurationOptions::NEVER)
+            continue;
+        
         build_description_field(field_desc, stream, indent, use_color);
     }
 
@@ -467,6 +483,10 @@ void goby::common::ConfigReader::build_description(const google::protobuf::Descr
     for(int i = 0, n = extensions.size(); i < n; ++i)
     {
         const google::protobuf::FieldDescriptor* field_desc = extensions[i];
+
+        if(field_desc->options().GetExtension(goby::field).cfg().action() == goby::GobyFieldOptions::ConfigurationOptions::NEVER)
+            continue;
+
         build_description_field(field_desc, stream, indent, use_color);
     }    
 }

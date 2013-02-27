@@ -1,4 +1,4 @@
-// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
 //                     Massachusetts Institute of Technology (2007-)
 //                     Woods Hole Oceanographic Institution (2007-)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
@@ -33,5 +33,9 @@
 
 // toy example "ABC" driver
 #include "goby/acomms/modemdriver/abc_driver.h"
+
+
+// User Datagram Protocol (UDP) driver
+//#include "goby/acomms/modemdriver/udp_driver.h"
 
 #endif

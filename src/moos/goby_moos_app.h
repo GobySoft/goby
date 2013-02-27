@@ -1,4 +1,4 @@
-// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
 //                     Massachusetts Institute of Technology (2007-)
 //                     Woods Hole Oceanographic Institution (2007-)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
@@ -31,8 +31,7 @@
 #include <boost/function.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/bind.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/signal.hpp>
+#include <boost/signals2.hpp>
 
 #include "dynamic_moos_vars.h"
 #include "goby/common/logger.h"
@@ -64,7 +63,7 @@ class GobyMOOSApp : public CMOOSApp
   
     void publish(CMOOSMsg& msg)
     {
-        if(connected_)
+        if(connected_ && started_up_)
             m_Comms.Post(msg);
         else
             msg_buffer_.push_back(msg);
@@ -136,7 +135,7 @@ class GobyMOOSApp : public CMOOSApp
     // allows direct reading of newest publish to a given MOOS variable
     tes::DynamicMOOSVars dynamic_vars_;
 
-    std::map<std::string, boost::shared_ptr<boost::signal<void (const CMOOSMsg& msg)> > > mail_handlers_;
+    std::map<std::string, boost::shared_ptr<boost::signals2::signal<void (const CMOOSMsg& msg)> > > mail_handlers_;
 
     // CMOOSApp::OnConnectToServer()
     bool connected_;
@@ -178,7 +177,7 @@ GobyMOOSApp::GobyMOOSApp(ProtobufConfig* cfg)
 
     process_configuration();
 
-    glog.is(goby::common::logger::VERBOSE) && glog << cfg->DebugString() << std::endl;
+    glog.is(goby::common::logger::DEBUG2) && glog << cfg->DebugString() << std::endl;
 }
 
 

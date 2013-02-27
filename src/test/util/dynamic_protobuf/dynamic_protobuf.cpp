@@ -1,4 +1,4 @@
-// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
 //                     Massachusetts Institute of Technology (2007-)
 //                     Woods Hole Oceanographic Institution (2007-)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
@@ -27,7 +27,6 @@
 #include <google/protobuf/text_format.h>
 
 #include "test_a.pb.h"
-#include "test_b.pb.h"
 
 using namespace goby::util;
 

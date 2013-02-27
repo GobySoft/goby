@@ -1,4 +1,4 @@
-// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
 //                     Massachusetts Institute of Technology (2007-)
 //                     Woods Hole Oceanographic Institution (2007-)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
@@ -41,15 +41,15 @@ namespace goby
           ZeroMQApplicationBase(ZeroMQService* service, google::protobuf::Message* cfg = 0 )
               : ApplicationBase(cfg),
                 zeromq_service_(*service)
-            {
-                set_loop_freq(base_cfg().loop_freq());
-                
-                // we are started
-                t_start_ = goby::common::goby_time();
-                // start the loop() on the next even second
-                t_next_loop_ = boost::posix_time::second_clock::universal_time() +
-                    boost::posix_time::seconds(1);
-            }
+                {
+                    set_loop_freq(base_cfg().loop_freq());
+                    
+                    // we are started
+                    t_start_ = goby::common::goby_time();
+                    // start the loop() on the next even second
+                    t_next_loop_ = boost::posix_time::second_clock::universal_time() +
+                        boost::posix_time::seconds(1);
+                }
             
             virtual ~ZeroMQApplicationBase()
             { }
@@ -96,8 +96,8 @@ namespace goby
                 if(timeout < 0)
                     timeout = 0;
 
-                glog.is(goby::common::logger::DEBUG2) &&
-                    glog << "timeout set to: " << timeout << " microseconds." << std::endl;
+                glog.is(goby::common::logger::DEBUG2, goby::common::logger_lock::lock) &&
+                    glog << "timeout set to: " << timeout << " microseconds." << std::endl << unlock;
                 bool had_events = zeromq_service_.poll(timeout);
                 if(!had_events)
                 {

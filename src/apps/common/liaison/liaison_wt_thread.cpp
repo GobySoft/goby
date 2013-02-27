@@ -1,4 +1,4 @@
-// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
 //                     Massachusetts Institute of Technology (2007-)
 //                     Woods Hole Oceanographic Institution (2007-)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
@@ -33,9 +33,10 @@
 #include "goby/util/dynamic_protobuf_manager.h"
 
 #include "liaison_wt_thread.h"
-#include "liaison_scope.h"
 #include "liaison_home.h"
-#include "liaison_commander.h"
+
+#include "goby/moos/moos_liaison_load.h"
+
 
 using goby::glog;
 using namespace Wt;    
@@ -43,15 +44,9 @@ using namespace goby::common::logger_lock;
 using namespace goby::common::logger;
 
 goby::common::LiaisonWtThread::LiaisonWtThread(const Wt::WEnvironment& env)
-    : Wt::WApplication(env),
-      scope_service_(Liaison::zmq_context()),
-      commander_service_(Liaison::zmq_context()),
-      last_scope_timer_state_(UNKNOWN)
+    : Wt::WApplication(env)
 {    
-
-    
 //    zeromq_service_.connect_inbox_slot(&LiaisonWtThread::inbox, this);
-
 
     Wt::WString title_text("goby liaison: " + Liaison::cfg_.base().platform_name());
     setTitle(title_text);
@@ -100,66 +95,90 @@ goby::common::LiaisonWtThread::LiaisonWtThread(const Wt::WEnvironment& env)
     /*
      * Setup the menu
      */
-    WMenu *menu = new WMenu(contents_stack_, Vertical, menu_div);
-    menu->setRenderAsList(true);
-    menu->setStyleClass("menu");
-    menu->setInternalPathEnabled();
-    menu->setInternalBasePath("/");
+    menu_ = new WMenu(contents_stack_, Vertical, menu_div);
+    menu_->setRenderAsList(true); 
+    menu_->setStyleClass("menu");
+    menu_->setInternalPathEnabled();
+    menu_->setInternalBasePath("/");
     
-    add_to_menu(menu, "Home", new LiaisonHome);
+    add_to_menu(menu_, new LiaisonHome);
 
-    LiaisonCommander* commander = new LiaisonCommander(&commander_service_);
-    commander_timer_.setInterval(1/Liaison::cfg_.update_freq()*1.0e3);
-    commander_timer_.timeout().connect(commander, &LiaisonCommander::loop);
+
+    typedef std::vector<goby::common::LiaisonContainer*> (*liaison_load_func)(const goby::common::protobuf::LiaisonConfig& cfg, boost::shared_ptr<zmq::context_t> zmq_context);
+
+    for(int i = 0, n = Liaison::plugin_handles_.size(); i < n; ++i)
+    {
+        liaison_load_func liaison_load_ptr = (liaison_load_func) dlsym(Liaison::plugin_handles_[i], "goby_liaison_load");
+            
+        if(liaison_load_ptr)
+        {
+            std::vector<goby::common::LiaisonContainer*> containers = (*liaison_load_ptr)(Liaison::cfg_, Liaison::zmq_context());
+            for(int j = 0, m = containers.size(); j< m; ++j)
+                add_to_menu(menu_, containers[j]);
+        }
+        else
+        {
+            glog.is(WARN, lock) && glog << "Liaison: Cannot find function 'goby_liaison_load' in plugin library." << std::endl << unlock;
+        }        
+    }
+   
     
-    add_to_menu(menu, "Commander", commander); 
+    menu_->itemSelected().connect(this, &LiaisonWtThread::handle_menu_selection);
 
-    LiaisonScope* scope = new LiaisonScope(&scope_service_, &scope_timer_);
-    scope_timer_.setInterval(1/Liaison::cfg_.update_freq()*1.0e3);
-    scope_timer_.timeout().connect(scope, &LiaisonScope::loop);
-
-    add_to_menu(menu, "Scope", scope);
-
-    if(!Liaison::cfg_.start_paused())
-        scope_timer_.start();
-    
-    menu->itemSelected().connect(this, &LiaisonWtThread::handle_menu_selection);
-
-
-    handle_menu_selection(menu->currentItem());
+    handle_menu_selection(menu_->currentItem());
 }
 
-void goby::common::LiaisonWtThread::add_to_menu(WMenu* menu, const WString& name,
-                                                LiaisonContainer* container)
+goby::common::LiaisonWtThread::~LiaisonWtThread()
+{    
+    // run on all children
+    const std::vector< WMenuItem * >& items = menu_->items();
+    for(int i = 0, n = items.size(); i < n; ++i)
+    {
+        LiaisonContainer* contents = menu_contents_[items[i]];
+        if(contents)
+        {
+            glog.is(DEBUG1, lock) && glog << "Liaison: Cleanup : " << contents->name() <<  std::endl << unlock;
+            contents->cleanup();
+        }
+    }
+}
+            
+
+void goby::common::LiaisonWtThread::add_to_menu(WMenu* menu, LiaisonContainer* container)
 {
-    menu->addItem(name, container);
-    container->set_name(name);
+    Wt::WMenuItem* new_item = menu->addItem(container->name(), container);
+    menu_contents_.insert(std::make_pair(new_item, container));
 }
 
 void goby::common::LiaisonWtThread::handle_menu_selection(Wt::WMenuItem * item)
 {    
-    std::cout << "Item selected: " << item->text() << std::endl;
-    std::cout << "Timer state: " <<  last_scope_timer_state_ << std::endl;
-
-    if(item->text() == "Commander")
-        commander_timer_.start();
-    else
-        commander_timer_.stop();
     
-    if(item->text() == "Scope")
+    LiaisonContainer* contents = menu_contents_[item];
+    if(contents)
     {
-        if(last_scope_timer_state_ == ACTIVE)
-            scope_timer_.start();
-        last_scope_timer_state_ = UNKNOWN;
+        glog.is(DEBUG1, lock) && glog << "Liaison: Focused : " << contents->name() <<  std::endl << unlock;
+
+        contents->focus();
     }
     else
     {
-        if(last_scope_timer_state_ == UNKNOWN)
-        {
-            last_scope_timer_state_ = scope_timer_.isActive() ? ACTIVE : STOPPED;
-            scope_timer_.stop();
-        }
+        glog.is(WARN, lock) && glog << "Liaison: Invalid menu item!" << std::endl << unlock;
     }
+    
+    // unfocus all others
+    const std::vector< WMenuItem * >& items = menu_->items();
+    for(int i = 0, n = items.size(); i < n; ++i)
+    {
+        if(items[i] != item)
+        {
+            LiaisonContainer* other_contents = menu_contents_[items[i]];
+            if(other_contents)
+            {
+                glog.is(DEBUG1, lock) && glog << "Liaison: Unfocused : " << other_contents->name() <<  std::endl << unlock;
+                other_contents->unfocus();
+            }
+        }
+    }    
 }
 
 

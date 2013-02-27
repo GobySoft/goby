@@ -1,4 +1,4 @@
-// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
 //                     Massachusetts Institute of Technology (2007-)
 //                     Woods Hole Oceanographic Institution (2007-)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
@@ -33,6 +33,7 @@
 #include "goby/acomms/bind.h"
 #include "goby/acomms/modem_driver.h"
 #include "goby/acomms/amac.h"
+#include "goby/acomms/route.h"
 
 /// \defgroup acomms_api API classes for the major components of the Goby-Acomms acoustic communications library (DCCL, Queue, AMAC, ModemDriver).
 

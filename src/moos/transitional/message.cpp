@@ -1,4 +1,4 @@
-// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
 //                     Massachusetts Institute of Technology (2007-)
 //                     Woods Hole Oceanographic Institution (2007-)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
@@ -130,9 +130,9 @@ void goby::transitional::DCCLMessage::set_repeat_array_length()
 unsigned goby::transitional::DCCLMessage::calc_total_size()
 {
     boost::shared_ptr<acomms::DCCLFieldCodecBase> codec =
-        acomms::DCCLFieldCodecManager::find(descriptor_, descriptor_->options().GetExtension(goby::msg).dccl().codec());
+        acomms::DCCLFieldCodecManager::find(descriptor_, descriptor_->options().GetExtension(dccl::msg).codec());
     unsigned u = 0;
-    codec->base_max_size(&u, descriptor_, acomms::DCCLFieldCodecBase::BODY);
+    codec->base_max_size(&u, descriptor_, acomms::MessageHandler::BODY);
     return u;
 }
 
@@ -175,12 +175,12 @@ boost::shared_ptr<goby::transitional::DCCLMessageVar> goby::transitional::DCCLMe
 }
 
 // Added in Goby2 for transition to Protobuf structure
-void goby::transitional::DCCLMessage::write_schema_to_dccl2(std::ofstream* proto_file, const goby::transitional::protobuf::QueueConfig& queue_cfg)
+void goby::transitional::DCCLMessage::write_schema_to_dccl2(std::ofstream* proto_file)
 {
     
     *proto_file << "message " << name_ << " { " << std::endl;
-    *proto_file << "\t" << "option (goby.msg).dccl.id = " << id_ << ";" << std::endl;
-    *proto_file << "\t" << "option (goby.msg).dccl.max_bytes = " << size_ << ";" << std::endl;
+    *proto_file << "\t" << "option (dccl.msg).id = " << id_ << ";" << std::endl;
+    *proto_file << "\t" << "option (dccl.msg).max_bytes = " << size_ << ";" << std::endl;
     
     int sequence_number = 0;
     
@@ -192,24 +192,6 @@ void goby::transitional::DCCLMessage::write_schema_to_dccl2(std::ofstream* proto
     
     BOOST_FOREACH(boost::shared_ptr<DCCLMessageVar> mv, layout_)
         mv->write_schema_to_dccl2(proto_file, ++sequence_number);
-
-    if(queue_cfg.has_ack())
-        *proto_file << "\t" <<  "option (goby.msg).queue.ack = " << std::boolalpha << queue_cfg.ack() << ";" << std::endl;
-
-    if(queue_cfg.has_blackout_time())
-        *proto_file << "\t" <<  "option (goby.msg).queue.blackout_time = " << queue_cfg.blackout_time() << ";" << std::endl;
-
-    if(queue_cfg.has_max_queue())
-        *proto_file << "\t" <<  "option (goby.msg).queue.max_queue = " << queue_cfg.max_queue() << ";" << std::endl;
-
-    if(queue_cfg.has_newest_first())
-        *proto_file << "\t" <<  "option (goby.msg).queue.newest_first = " << std::boolalpha << queue_cfg.newest_first() << ";" << std::endl;
-      
-    if(queue_cfg.has_value_base())
-        *proto_file << "\t" <<  "option (goby.msg).queue.value_base = " << queue_cfg.value_base() << ";" << std::endl;
-    
-    if(queue_cfg.has_ttl())
-        *proto_file << "\t" <<  "option (goby.msg).queue.ttl = " << queue_cfg.ttl() << ";" << std::endl;
     
     *proto_file << "} " << std::endl;
 }

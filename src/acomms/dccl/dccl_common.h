@@ -1,4 +1,4 @@
-// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
 //                     Massachusetts Institute of Technology (2007-)
 //                     Woods Hole Oceanographic Institution (2007-)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
@@ -33,6 +33,7 @@
 #include <boost/dynamic_bitset.hpp>
 
 #include "goby/util/primitive_types.h"
+#include "goby/acomms/dccl/dccl_bitset.h"
 #include "goby/acomms/acomms_constants.h"
 #include "goby/common/logger.h"
 
@@ -40,37 +41,7 @@ namespace goby
 {
 
     namespace acomms
-    {
-        /// \brief Used for all cases in DCCL when an arbitrary length set of raw bits is needed. boost::dynamic_bitset is similar to std::bitset but allows dynamic length (runtime set) bitsets.
-        typedef boost::dynamic_bitset<unsigned char> Bitset;
-
-        inline Bitset operator+(const Bitset& a, const Bitset& b)
-        {
-            Bitset out(a);
-            for(int i = 0, n = b.size(); i < n; ++i)
-                out.push_back(b[i]);
-            return out;
-        }
-        
-        inline Bitset& operator +=(Bitset& a, const Bitset& b)
-        {
-            for(int i = 0, n = b.size(); i < n; ++i)
-                a.push_back(b[i]);
-            return a;
-        }
-        
-        inline void bitset2string(const Bitset& bits, std::string* str)
-        {
-            str->resize(bits.num_blocks()); // resize the string to fit the bitset
-            to_block_range(bits, str->rbegin());
-        }
-            
-        inline void string2bitset(Bitset* bits, const std::string& str)
-        {
-            bits->resize(str.size() * BITS_IN_BYTE);
-            from_block_range(str.rbegin(), str.rend(), *bits);
-        }
-        
+    {        
         // more efficient way to do ceil(total_bits / 8)
         // to get the number of bytes rounded up.
         enum { BYTE_MASK = 7 }; // 00000111

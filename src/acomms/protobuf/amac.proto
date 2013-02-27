@@ -1,12 +1,13 @@
 import "goby/common/protobuf/option_extensions.proto";
+import "goby/acomms/protobuf/dccl_option_extensions.proto";
 import "goby/acomms/protobuf/modem_message.proto";
 
 package goby.acomms.protobuf;
 
 message MACUpdate
 {
-  option (goby.msg).dccl.id = 5;
-  option (goby.msg).dccl.max_bytes = 32;  
+  option (dccl.msg).id = 5;
+  option (dccl.msg).max_bytes = 32;  
   
   enum UpdateType // this are basically the std::list functions
   {
@@ -21,18 +22,18 @@ message MACUpdate
     CLEAR = 8;
   }
 
-  required int32 dest = 1 [(goby.field).dccl.min = 1, (goby.field).dccl.max = 30, (goby.field).queue.is_dest = true, (goby.field).dccl.in_head = true]; // modem_id that this update is for
+  required int32 dest = 1 [(dccl.field).min = 1, (dccl.field).max = 30, (dccl.field).in_head = true]; // modem_id that this update is for
   optional UpdateType update_type = 2 [default = NO_CHANGE];
-  repeated ModemTransmission slot = 3 [(goby.field).dccl.max_repeat=6];
-  optional int32 first_iterator = 4 [(goby.field).dccl.min = 0, (goby.field).dccl.max = 100, default = 0]; // integer offset from begin()
-  optional int32 second_iterator = 5 [(goby.field).dccl.min = -1, (goby.field).dccl.max = 100, default = -1]; // integer offset from begin()
+  repeated ModemTransmission slot = 3 [(dccl.field).max_repeat=6];
+  optional int32 first_iterator = 4 [(dccl.field).min = 0, (dccl.field).max = 60, default = 0]; // integer offset from begin()
+  optional int32 second_iterator = 5 [(dccl.field).min = -1, (dccl.field).max = 60, default = -1]; // integer offset from begin()
 
   enum CycleState
   {
     STOPPED = 1;
     STARTED = 2;
   }
-  optional CycleState cycle_state = 6 [default=STARTED];
+  optional CycleState cycle_state = 6 [default=STARTED, (dccl.field).in_head=true];
 }
 
 

@@ -1,4 +1,4 @@
-// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
 //                     Massachusetts Institute of Technology (2007-)
 //                     Woods Hole Oceanographic Institution (2007-)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
@@ -26,7 +26,7 @@
 
 #include "dccl_field_codec.h"
 #include "dccl_field_codec_manager.h"
-#include "goby/common/protobuf/acomms_option_extensions.pb.h"
+#include "goby/acomms/protobuf/dccl_option_extensions.pb.h"
 
 
 namespace goby
@@ -42,11 +42,8 @@ namespace goby
             void any_decode(Bitset* bits, boost::any* wire_value); 
             unsigned max_size();
             unsigned min_size();
-            unsigned any_size(const boost::any& field_value);
-            void any_run_hooks(const boost::any& field_value);
-
+            unsigned any_size(const boost::any& wire_value);
             
-            bool variable_size() { return true; }
             void validate();
             std::string info();
             bool check_field(const google::protobuf::FieldDescriptor* field);
@@ -91,19 +88,6 @@ namespace goby
             };
 
             
-            struct RunHooks
-            {
-                static void repeated(boost::shared_ptr<DCCLFieldCodecBase> codec,
-                                     bool* return_value,
-                                     const std::vector<boost::any>& field_values,
-                                     const google::protobuf::FieldDescriptor* field_desc);
-                
-                static void single(boost::shared_ptr<DCCLFieldCodecBase> codec,
-                                   bool* return_value,
-                                   const boost::any& field_value,
-                                   const google::protobuf::FieldDescriptor* field_desc);
-            };
-
 
             struct MaxSize
             {
@@ -238,7 +222,7 @@ namespace goby
                             std::vector<boost::any> field_values;
                             for(int j = 0, m = refl->FieldSize(*msg, field_desc); j < m; ++j)
                                 field_values.push_back(helper->get_repeated_value(field_desc, *msg, j));
-                   
+                            
                             Action::repeated(codec, &return_value, field_values, field_desc);
                         }
                         else

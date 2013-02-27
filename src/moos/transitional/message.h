@@ -1,4 +1,4 @@
-// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
 //                     Massachusetts Institute of Technology (2007-)
 //                     Woods Hole Oceanographic Institution (2007-)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
@@ -61,8 +61,7 @@ namespace goby
           public:
 
             // Added in Goby2 for transition to new Protobuf structure
-            void write_schema_to_dccl2(std::ofstream* proto_file,
-                                       const goby::transitional::protobuf::QueueConfig& queue_cfg);
+            void write_schema_to_dccl2(std::ofstream* proto_file);
             
 
             
@@ -207,18 +206,18 @@ namespace goby
         };
 
 
-        inline void bitset2string(const boost::dynamic_bitset<unsigned char>& body_bits,
-                                  std::string& body)
-        {
-            body.resize(body_bits.num_blocks()); // resize the string to fit the bitset
-            to_block_range(body_bits, body.rbegin());
-        }
+        /* inline void bitset2string(const boost::dynamic_bitset<unsigned char>& body_bits, */
+        /*                           std::string& body) */
+        /* { */
+        /*     body.resize(body_bits.num_blocks()); // resize the string to fit the bitset */
+        /*     to_block_range(body_bits, body.rbegin()); */
+        /* } */
     
-        inline void string2bitset(boost::dynamic_bitset<unsigned char>& body_bits,
-                                  const std::string& body)
-        {
-            from_block_range(body.rbegin(), body.rend(), body_bits);
-        }
+        /* inline void string2bitset(boost::dynamic_bitset<unsigned char>& body_bits, */
+        /*                           const std::string& body) */
+        /* { */
+        /*     from_block_range(body.rbegin(), body.rend(), body_bits); */
+        /* } */
 
 
 //        std::ostream& operator<< (std::ostream& out, const DCCLMessage& message);

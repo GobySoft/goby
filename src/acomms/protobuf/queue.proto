@@ -4,19 +4,50 @@ import "goby/acomms/protobuf/manipulator.proto";
 
 package goby.acomms.protobuf;
 
+
+message QueuedMessageEntry
+{
+  required string protobuf_name = 1;
+  optional bool ack = 2 [default = true];  
+  optional uint32 blackout_time = 3 [default = 0];
+  optional uint32 max_queue = 4 [default = 100];
+  optional bool newest_first = 5 [default = true];
+  optional int32 ttl = 6 [default = 1800];
+  optional double value_base = 7 [default = 1];
+    
+  repeated Manipulator manipulator = 10 [(goby.field).description="manipulators to modify the encoding and queuing behavior of the specified message"];
+
+  enum RoleType
+  {
+    SOURCE_ID = 1;
+    DESTINATION_ID = 2;
+    TIMESTAMP = 3;
+  }  
+  
+  message Role
+  {
+    required RoleType type = 1;
+    enum RoleSetting
+    {
+      STATIC = 1;
+      FIELD_VALUE = 2;
+    }
+    optional RoleSetting setting = 2 [default = FIELD_VALUE];
+    optional string field = 3;
+    optional int32 static_value = 4;
+  }
+  repeated Role role = 20 [(goby.field).description="Set a message field or static value to various roles (source address, destination address, etc.)"];
+}
+
 message QueueManagerConfig
 {
   optional int32 modem_id = 1 [(goby.field).description="Unique number 1-31 to identify this node", (goby.field).example="1"];
 
 
-  message ManipulatorEntry
-  {
-    required string protobuf_name = 1;
-    repeated Manipulator manipulator = 2 [(goby.field).description="manipulators to modify the encoding and queuing behavior of the specified message"];
-  }
-  
-  repeated ManipulatorEntry manipulator_entry = 10;
+  repeated QueuedMessageEntry message_entry = 10;
   optional double on_demand_skew_seconds = 11 [default = 1];
+  
+  optional double minimum_ack_wait_seconds = 20 [default = 0];
 }
 
 message QueueSize
@@ -37,4 +68,7 @@ message QueuedMessageMeta
   optional int32 src = 3;
   optional int32 dest = 4;
   optional uint64 time = 5;
+
+  // last time we tried to send this
+  optional uint64 last_sent_time = 10;  
 }

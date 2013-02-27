@@ -1,4 +1,4 @@
-// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
 //                     Massachusetts Institute of Technology (2007-)
 //                     Woods Hole Oceanographic Institution (2007-)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
@@ -84,13 +84,21 @@ namespace goby
             // commas
             void push_back(const std::string& str)
             {
-                std::vector<std::string> vec;
-                boost::split(vec, str, boost::is_any_of(","));
-                
-                BOOST_FOREACH(const std::string& s, vec)
-                    std::vector<std::string>::push_back(s);
+                if(str.find(',') == std::string::npos)
+                {
+                    std::vector<std::string>::push_back(str);
+                    return;
+                }
+                else
+                {
+                    std::vector<std::string> vec;
+                    boost::split(vec, str, boost::is_any_of(","));
+                    
+                    BOOST_FOREACH(const std::string& s, vec)
+                        std::vector<std::string>::push_back(s);
+                }
             }
-    
+            
             
             static unsigned char checksum(const std::string& s);
         };

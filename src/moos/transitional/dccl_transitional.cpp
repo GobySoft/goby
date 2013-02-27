@@ -1,4 +1,4 @@
-// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
 //                     Massachusetts Institute of Technology (2007-)
 //                     Woods Hole Oceanographic Institution (2007-)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
@@ -30,7 +30,6 @@
 #include "goby/common/logger.h"
 #include "goby/util/as.h"
 #include <google/protobuf/descriptor.pb.h>
-#include "goby/common/protobuf/acomms_option_extensions.pb.h"
 #include "goby/util/dynamic_protobuf_manager.h"
 #include <boost/regex.hpp>
 
@@ -53,6 +52,7 @@ goby::transitional::DCCLTransitionalCodec::DCCLTransitionalCodec()
       dccl_(goby::acomms::DCCLCodec::get()),
       start_time_(goby_time())
 {
+    goby::util::DynamicProtobufManager::enable_compilation();
 }
 
 void goby::transitional::DCCLTransitionalCodec::convert_to_v2_representation(pAcommsHandlerConfig* cfg)
@@ -64,7 +64,7 @@ void goby::transitional::DCCLTransitionalCodec::convert_to_v2_representation(pAc
         convert_xml_message_file(cfg->transitional_cfg().message_file(i),
                                  cfg->add_load_proto_file(),
                                  cfg->mutable_translator_entry(),
-                                 cfg->mutable_queue_cfg()->add_manipulator_entry());
+                                 cfg->mutable_queue_cfg());
     }
 }
 
@@ -73,7 +73,7 @@ void goby::transitional::DCCLTransitionalCodec::convert_xml_message_file(
     const goby::transitional::protobuf::MessageFile& message_file,
     std::string* proto_file,
     google::protobuf::RepeatedPtrField<goby::moos::protobuf::TranslatorEntry>* translator_entries,
-    goby::acomms::protobuf::QueueManagerConfig::ManipulatorEntry* manip_entry)
+    goby::acomms::protobuf::QueueManagerConfig* queue_cfg)
 {    
     const std::string& xml_file = message_file.path();
 
@@ -85,8 +85,8 @@ void goby::transitional::DCCLTransitionalCodec::convert_xml_message_file(
     // instantiate a parser for the xml message files
     XMLParser message_parser(message_content, message_error);
 
-    std::vector<goby::transitional::protobuf::QueueConfig> queue_cfg;
-    QueueContentHandler queue_content(queue_cfg);
+    std::vector<goby::transitional::protobuf::QueueConfig> old_queue_cfg;
+    QueueContentHandler queue_content(old_queue_cfg);
     QueueErrorHandler queue_error;
     // instantiate a parser for the xml message files
     XMLParser queue_parser(queue_content, queue_error);
@@ -102,7 +102,6 @@ void goby::transitional::DCCLTransitionalCodec::convert_xml_message_file(
     std::set<unsigned> set_added_ids;
 
     boost::filesystem::path xml_file_path(xml_file);
-
 
     std::string generated_proto_dir = cfg_.generated_proto_dir();
     if(!generated_proto_dir.empty() && generated_proto_dir[generated_proto_dir.size() - 1] != '/')
@@ -137,17 +136,48 @@ void goby::transitional::DCCLTransitionalCodec::convert_xml_message_file(
     if(!fout.is_open())
         throw(goby::acomms::DCCLException("Could not open " + *proto_file + " for writing"));
 
+    fout << "import \"goby/acomms/protobuf/dccl_option_extensions.proto\";" << std::endl;
     fout << "import \"goby/common/protobuf/option_extensions.proto\";" << std::endl;
 
     for(int i = 0, n = added_ids.size(); i < n; ++i)
     {
-        to_iterator(added_ids[i])->write_schema_to_dccl2(&fout, queue_cfg[i]);
+        to_iterator(added_ids[i])->write_schema_to_dccl2(&fout);
+        
+        goby::acomms::protobuf::QueuedMessageEntry* queue_entry = queue_cfg->add_message_entry();
+        queue_entry->set_protobuf_name(to_iterator(added_ids[i])->name());
+        if(old_queue_cfg[i].has_ack())
+            queue_entry->set_ack(old_queue_cfg[i].ack());
+        if(old_queue_cfg[i].has_blackout_time())
+            queue_entry->set_blackout_time(old_queue_cfg[i].blackout_time());
+        if(old_queue_cfg[i].has_max_queue())
+            queue_entry->set_max_queue(old_queue_cfg[i].max_queue());
+        if(old_queue_cfg[i].has_newest_first())
+            queue_entry->set_newest_first(old_queue_cfg[i].newest_first());
+        if(old_queue_cfg[i].has_value_base())
+            queue_entry->set_value_base(old_queue_cfg[i].value_base());
+        if(old_queue_cfg[i].has_ttl())
+            queue_entry->set_ttl(old_queue_cfg[i].ttl());        
+        
+        goby::acomms::protobuf::QueuedMessageEntry::Role* src_role = queue_entry->add_role();
+        src_role->set_type(goby::acomms::protobuf::QueuedMessageEntry::SOURCE_ID);
+        src_role->set_field(to_iterator(added_ids[i])->header_var(HEAD_SRC_ID).name());
+        
+        goby::acomms::protobuf::QueuedMessageEntry::Role* dest_role = queue_entry->add_role();
+        dest_role->set_type(goby::acomms::protobuf::QueuedMessageEntry::DESTINATION_ID);
+        dest_role->set_field(to_iterator(added_ids[i])->header_var(HEAD_DEST_ID).name());    
+        
+        goby::acomms::protobuf::QueuedMessageEntry::Role* time_role = queue_entry->add_role();
+        time_role->set_type(goby::acomms::protobuf::QueuedMessageEntry::TIMESTAMP);
+        time_role->set_field(to_iterator(added_ids[i])->header_var(HEAD_TIME).name());
+    
+        for(int i = 0, n = message_file.manipulator_size(); i < n; ++i)
+            queue_entry->add_manipulator(message_file.manipulator(i));
     }
     
     fout.close();
     
     const google::protobuf::FileDescriptor* file_desc =
-        goby::util::DynamicProtobufManager::descriptor_pool().FindFileByName(*proto_file);    
+        goby::util::DynamicProtobufManager::user_descriptor_pool().FindFileByName(*proto_file);    
 
     if(file_desc)
     {
@@ -286,9 +316,6 @@ void goby::transitional::DCCLTransitionalCodec::convert_xml_message_file(
            
         }
 
-        manip_entry->set_protobuf_name(msg_it->name());
-        for(int i = 0, n = message_file.manipulator_size(); i < n; ++i)
-            manip_entry->add_manipulator(message_file.manipulator(i));
     }
 
     

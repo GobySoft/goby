@@ -1,4 +1,4 @@
-// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
 //                     Massachusetts Institute of Technology (2007-)
 //                     Woods Hole Oceanographic Institution (2007-)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
@@ -27,6 +27,7 @@
 
 
 #include "goby/util/sci.h"
+#include "goby/acomms/dccl/dccl_field_codec_default.h"
 
 #include "moos_translator.h"
 
@@ -55,12 +56,24 @@ void goby::moos::MOOSTranslator::initialize(double lat_origin, double lon_origin
 
     ap->add_algorithm("abs", &alg_abs);
 
+    ap->add_adv_algorithm("add", &alg_add);
+    ap->add_adv_algorithm("subtract", &alg_subtract);
+
+    
     if(!modem_id_lookup_path.empty())
     {
-        goby::glog.is(goby::common::logger::DEBUG1) && goby::glog << modem_lookup_.read_lookup_file(modem_id_lookup_path) << std::flush;
+        std::string id_lookup_output = modem_lookup_.read_lookup_file(modem_id_lookup_path);
+        goby::glog.is(goby::common::logger::DEBUG1) && goby::glog << id_lookup_output  << std::flush;
+        
         ap->add_algorithm("modem_id2name", boost::bind(&MOOSTranslator::alg_modem_id2name, this, _1));
         ap->add_algorithm("modem_id2type", boost::bind(&MOOSTranslator::alg_modem_id2type, this, _1));
         ap->add_algorithm("name2modem_id", boost::bind(&MOOSTranslator::alg_name2modem_id, this, _1));
+
+        // set up conversion for DCCLModemIdConverterCodec
+        //for(std::map<int, std::string>::const_iterator it = modem_lookup_.names().begin(),
+        //        end = modem_lookup_.names().end(); it != end; ++it)
+        //    goby::acomms::DCCLModemIdConverterCodec::add(it->second, it->first);
+            
     }
     
     if(!(boost::math::isnan)(lat_origin) && !(boost::math::isnan)(lon_origin))
@@ -73,7 +86,9 @@ void goby::moos::MOOSTranslator::initialize(double lat_origin, double lon_origin
             ap->add_adv_algorithm("utm_y2lat", boost::bind(&MOOSTranslator::alg_utm_y2lat, this, _1, _2));
         }
     }
-                
+
+
+    
 }
 
 
@@ -290,5 +305,30 @@ void goby::moos::alg_lon2nmea_lon(transitional::DCCLMessageVal& val_to_mod)
     f % degrees % minutes % ten_thousandth_minutes;
 
     val_to_mod = f.str();
+}
+
+
+void goby::moos::alg_subtract(transitional::DCCLMessageVal& val_to_mod,
+                              const std::vector<transitional::DCCLMessageVal>& ref_vals)
+{
+    double diff = val_to_mod;
+
+    for(std::vector<transitional::DCCLMessageVal>::const_iterator it = ref_vals.begin(),
+            end = ref_vals.end(); it != end; ++it)
+        diff -= static_cast<double>(*it);
+
+    val_to_mod = diff;
+}
+
+void goby::moos::alg_add(transitional::DCCLMessageVal& val_to_mod,
+                         const std::vector<transitional::DCCLMessageVal>& ref_vals)
+{
+    double sum = val_to_mod;
+
+    for(std::vector<transitional::DCCLMessageVal>::const_iterator it = ref_vals.begin(),
+            end = ref_vals.end(); it != end; ++it)
+        sum += static_cast<double>(*it);
+
+    val_to_mod = sum;
 }
 

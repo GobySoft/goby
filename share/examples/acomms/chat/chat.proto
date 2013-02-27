@@ -1,17 +1,16 @@
 import "goby/common/protobuf/option_extensions.proto";
+import "goby/acomms/protobuf/dccl_option_extensions.proto";
 
 message ChatMessage
 {
-  option (goby.msg).dccl.id = 2;
-  option (goby.msg).dccl.max_bytes = 32;
+  option (dccl.msg).id = 2;
+  option (dccl.msg).max_bytes = 32;
   
-  required int32 destination = 1 [(goby.field).dccl.max=30,
-                                  (goby.field).dccl.min=0,
-                                  (goby.field).queue.is_dest = true];
+  required int32 destination = 1 [(dccl.field).max=30,
+                                  (dccl.field).min=0];
 
-  required int32 source = 2 [(goby.field).dccl.max=30,
-                             (goby.field).dccl.min=0,
-                             (goby.field).queue.is_src = true];
+  required int32 source = 2 [(dccl.field).max=30,
+                             (dccl.field).min=0];
 
-  required string telegram = 3 [(goby.field).dccl.max_length=26];
+  required string telegram = 3 [(dccl.field).max_length=26];
 }

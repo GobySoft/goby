@@ -1,4 +1,4 @@
-// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
 //                     Massachusetts Institute of Technology (2007-)
 //                     Woods Hole Oceanographic Institution (2007-)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
@@ -24,12 +24,20 @@
 #ifndef FlexOStreamBuf20091110H
 #define FlexOStreamBuf20091110H
 
+#define THREAD_SAFE_LOGGER @IS_THREAD_SAFE_LOGGER@
+
 #include <iostream>
 #include <sstream>
 #include <vector>
+#include <deque>
+#include <cstdio>
 
+#if THREAD_SAFE_LOGGER
 #include <boost/thread.hpp>
+#endif
+
 #include <boost/shared_ptr.hpp>
+#include <boost/date_time.hpp>
 
 #include "goby/common/protobuf/logger.pb.h"
 
@@ -46,7 +54,11 @@ namespace goby
 
         namespace logger
         {
+
+#if THREAD_SAFE_LOGGER
             extern boost::mutex mutex;
+#endif
+
             enum Verbosity { QUIET = protobuf::GLogConfig::QUIET,
                              WARN = protobuf::GLogConfig::WARN,
                              VERBOSE = protobuf::GLogConfig::VERBOSE,
@@ -59,15 +71,18 @@ namespace goby
         
         
         /// Class derived from std::stringbuf that allows us to insert things before the stream and control output. This is the string buffer used by goby::common::FlexOstream for the Goby Logger (glogger)
-        class FlexOStreamBuf : public std::stringbuf
+        class FlexOStreamBuf : public std::streambuf
         {
           public:
             FlexOStreamBuf();
             ~FlexOStreamBuf();
-
-            /// virtual inherited from std::ostream. Called when std::endl or std::flush is inserted into the stream
+            
+            /// virtual inherited from std::streambuf. Called when std::endl or std::flush is inserted into the stream
             int sync();
 
+            /// virtual inherited from std::streambuf. Called when something is inserted into the stream
+            int overflow(int c = EOF);
+            
             /// name of the application being served
             void name(const std::string & s)
             { name_ = s; }
@@ -117,7 +132,8 @@ namespace goby
             void strip_escapes(std::string& s);
             
           private:
-
+            std::deque<std::string> buffer_;
+            
             class StreamConfig
             {
               public:
@@ -146,8 +162,8 @@ namespace goby
             
 #ifdef HAS_NCURSES
             FlexNCurses* curses_;
-#endif            
             boost::shared_ptr<boost::thread> input_thread_;
+#endif            
 
             boost::posix_time::ptime start_time_;
 

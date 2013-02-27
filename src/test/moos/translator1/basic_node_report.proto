@@ -1,6 +1,6 @@
 message BasicNodeReport
 {
-  optional string name = 1;
+  optional string Name = 1;
   optional double x = 202;
   optional double y = 3;
   optional double speed = 4;

@@ -25,9 +25,8 @@ int main()
 
     goby::acomms::protobuf::QueueManagerConfig cfg;
     cfg.set_modem_id(our_id);
+    cfg.add_message_entry()->set_protobuf_name("Simple");
     q_manager.set_cfg(cfg);
-
-    q_manager.add_queue<Simple>();
     
     // set up the callback to handle received DCCL messages
     goby::acomms::connect(&q_manager.signal_receive, &received_data);

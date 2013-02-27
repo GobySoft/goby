@@ -1,4 +1,4 @@
-// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
 //                     Massachusetts Institute of Technology (2007-)
 //                     Woods Hole Oceanographic Institution (2007-)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
@@ -60,8 +60,17 @@ namespace goby
             /// \brief See ModemDriverBase::handle_initiate_transmission()
             void handle_initiate_transmission(const protobuf::ModemTransmission& m);
 
-            /// \brief Current clock mode of the modem, necessary for synchronous navigation. 
+            /// \brief Current clock mode of the modem, necessary for synchronous navigation.
             int clk_mode() { return clk_mode_; }
+
+            bool is_started() const { return startup_done_; }
+            
+            static unsigned packet_frame_count(int rate)
+            { return PACKET_FRAME_COUNT [rate]; }
+            
+            static unsigned packet_size(int rate)
+            { return PACKET_SIZE [rate]; }
+
             
           private:
         
@@ -122,9 +131,6 @@ namespace goby
 
             void signal_receive_and_clear(protobuf::ModemTransmission* message);
             
-            // utility    
-            static boost::posix_time::ptime nmea_time2ptime(const std::string& mt);
-
             // doxygen
             
             /// \example acomms/modemdriver/driver_simple/driver_simple.cpp
@@ -142,17 +148,17 @@ namespace goby
                 
             
             // seconds to wait for modem to respond
-            static boost::posix_time::time_duration MODEM_WAIT; 
+            static const boost::posix_time::time_duration MODEM_WAIT; 
             // seconds to wait after modem reboot
-            static boost::posix_time::time_duration WAIT_AFTER_REBOOT;
+            static const boost::posix_time::time_duration WAIT_AFTER_REBOOT;
             // allowed time diff in millisecs between our clock and the modem clock
-            static int ALLOWED_MS_DIFF;
+            static const int ALLOWED_MS_DIFF;
             
-            static std::string SERIAL_DELIMITER;
+            static const std::string SERIAL_DELIMITER;
             // number of frames for a given packet type
-            static unsigned PACKET_FRAME_COUNT [];
+            static const unsigned PACKET_FRAME_COUNT [];
             // size of packet (in bytes) for a given modem rate
-            static unsigned PACKET_SIZE [];
+            static const unsigned PACKET_SIZE [];
 
 
             // all startup configuration (DriverConfig defined in acomms_driver_base.proto and extended in acomms_mm_driver.proto)
@@ -213,7 +219,7 @@ namespace goby
             // length of #G1 or #M1
             enum { HYDROID_GATEWAY_PREFIX_LENGTH = 3 };
             // time between requests to the hydroid gateway buoy gps
-            static boost::posix_time::time_duration HYDROID_GATEWAY_GPS_REQUEST_INTERVAL;
+            static const boost::posix_time::time_duration HYDROID_GATEWAY_GPS_REQUEST_INTERVAL;
             boost::posix_time::ptime last_hydroid_gateway_gps_request_;
             bool is_hydroid_gateway_;
             std::string hydroid_gateway_modem_prefix_;
@@ -240,7 +246,7 @@ namespace goby
             // false if a third party initiated the last cycle
             bool local_cccyc_;
 
-            protobuf::ModemTransmission::TransmissionType last_transmission_type_;
+            micromodem::protobuf::TransmissionType last_lbl_type_;
             
         };
     }

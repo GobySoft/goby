@@ -1,4 +1,4 @@
-// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
 //                     Massachusetts Institute of Technology (2007-)
 //                     Woods Hole Oceanographic Institution (2007-)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
@@ -96,6 +96,7 @@ namespace goby
         { BOOST_STATIC_ASSERT(sizeof(ReturnType) == 0); }
 
         extern boost::function0<uint64> goby_time_function;
+        extern int goby_time_warp_factor;
         
         /// \brief Returns current UTC time as integer microseconds since 1970-01-01 00:00:00
         template<> inline uint64 goby_time<uint64>()
@@ -162,6 +163,50 @@ namespace goby
         
         //@}
 
+
+        inline boost::posix_time::ptime nmea_time2ptime(const std::string& mt)
+        {   
+            using namespace boost::posix_time;
+            using namespace boost::gregorian;
+
+            std::string::size_type dot_pos = mt.find('.');
+    
+            // must be at least HHMMSS
+            if(mt.length() < 6)
+                return ptime(not_a_date_time);  
+            else
+            {
+                std::string s_fs = "0";
+                // has some fractional seconds
+                if(dot_pos != std::string::npos)
+                    s_fs = mt.substr(dot_pos + 1); // everything after the "."
+                else
+                    dot_pos = mt.size();
+        
+                std::string s_hour = mt.substr(dot_pos-6,2), s_min = mt.substr(dot_pos-4,2),
+                    s_sec = mt.substr(dot_pos-2,2);
+
+	        
+                try
+                {
+                    int hour = boost::lexical_cast<int>(s_hour);
+                    int min = boost::lexical_cast<int>(s_min);
+                    int sec = boost::lexical_cast<int>(s_sec);
+                    int micro_sec = boost::lexical_cast<int>(s_fs)*pow(10, 6-s_fs.size());
+           
+                    boost::gregorian::date return_date(boost::gregorian::day_clock::universal_day());
+                    boost::posix_time::time_duration return_duration(boost::posix_time::time_duration(hour, min, sec, 0) + microseconds(micro_sec));
+                    boost::posix_time::ptime return_time(return_date, return_duration);
+                    return return_time;
+                }
+                catch (boost::bad_lexical_cast&)
+                {
+                    return ptime(not_a_date_time);
+                }        
+            }
+        }
+
+        
         // dummy struct for use with boost::asio::time_traits
         struct GobyTime { };
         
@@ -211,7 +256,7 @@ namespace boost
             static boost::posix_time::time_duration to_posix_duration(
                 const duration_type& d)
             {
-                return d;
+                return d/goby::common::goby_time_warp_factor;
             }
         };
     }

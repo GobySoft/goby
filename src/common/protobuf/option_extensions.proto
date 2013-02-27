@@ -1,5 +1,4 @@
 import "google/protobuf/descriptor.proto";
-import "goby/common/protobuf/acomms_option_extensions.proto";
 
 package goby;
 
@@ -23,18 +22,26 @@ extend .google.protobuf.MessageOptions
 
 message GobyFieldOptions
 {
-  optional DCCLFieldOptions dccl = 1;
-  optional QueueFieldOptions queue = 2;
-  
   optional string description = 100;
   optional string example = 101;
   
   // used in goby_moos_app.proto
   optional string moos_global = 102;
+
+  message ConfigurationOptions
+  {
+    optional string cli_short = 1;
+    enum ConfigAction
+    {
+      ALWAYS = 1;
+      NEVER = 2;
+      ADVANCED = 3;
+    }
+    optional ConfigAction action = 2 [default = ALWAYS];
+  }
+  optional ConfigurationOptions cfg = 200;
 }
 
 message GobyMessageOptions
 {
-  optional DCCLMessageOptions dccl = 1;
-  optional QueueMessageOptions queue = 2;
 }

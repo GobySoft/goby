@@ -1,4 +1,4 @@
-// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
 //                     Massachusetts Institute of Technology (2007-)
 //                     Woods Hole Oceanographic Institution (2007-)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
@@ -31,11 +31,12 @@
 #include <boost/bind.hpp>
 #include <boost/date_time.hpp>
 
-//#ifdef HAS_NCURSES
-#include "flex_ncurses.h"
-//#endif
+#include "goby/common/logger/flex_ostreambuf.h"
 
-#include "flex_ostreambuf.h"
+#ifdef HAS_NCURSES
+#include "flex_ncurses.h"
+#endif
+
 #include "goby/util/sci.h"
 #include "goby/common/time.h"
 #include "goby/common/exception.h"
@@ -44,20 +45,25 @@
 using goby::common::goby_time;
 
 
-boost::mutex curses_mutex;
-
-boost::mutex goby::common::logger::mutex;
-
-goby::common::FlexOStreamBuf::FlexOStreamBuf(): name_("no name"),
-                                              die_flag_(false),
-                                              current_verbosity_(logger::VERBOSE),
 #ifdef HAS_NCURSES
-                                              curses_(0),
+boost::mutex curses_mutex;
 #endif
-                                              start_time_(goby_time()),
-                                              is_gui_(false),
-                                              highest_verbosity_(logger::QUIET)
-                                              
+
+#if THREAD_SAFE_LOGGER
+boost::mutex goby::common::logger::mutex;
+#endif
+
+goby::common::FlexOStreamBuf::FlexOStreamBuf(): buffer_(1),
+                                                name_("no name"),
+                                                die_flag_(false),
+                                                current_verbosity_(logger::VERBOSE),
+#ifdef HAS_NCURSES
+                                                curses_(0),
+#endif
+                                                start_time_(goby_time()),
+                                                is_gui_(false),
+                                                highest_verbosity_(logger::QUIET)
+                                                
 {
     Group no_group("", "Ungrouped messages");
     groups_[""] = no_group;    
@@ -131,15 +137,27 @@ void goby::common::FlexOStreamBuf::add_group(const std::string & name, Group g)
 #endif
 }
 
+int goby::common::FlexOStreamBuf::overflow(int c /*= EOF*/)
+{
+    if(c == EOF)
+        return c;
+    else if(c == '\n')
+        buffer_.push_back(std::string());
+    else
+        buffer_.back().push_back(c);
+    
+    return c;
+}
 
 // called when flush() or std::endl
 int goby::common::FlexOStreamBuf::sync()
 {
-    std::istream is(this);
-    std::string s;
-
-    while (!getline(is, s).eof())
-        display(s);
+    // all but last one
+    while(buffer_.size() > 1)
+    {
+        display(buffer_.front());
+        buffer_.pop_front();
+    }
     
     group_name_.erase();
 

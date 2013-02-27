@@ -1,11 +1,11 @@
-import "goby/common/protobuf/option_extensions.proto";
+import "goby/acomms/protobuf/dccl_option_extensions.proto";
 
 
 message CustomMsg
 {
-  option (goby.msg).dccl.id = 3;
-  option (goby.msg).dccl.max_bytes = 256;
-  option (goby.msg).dccl.codec = "custom_codec";
+  option (dccl.msg).id = 3;
+  option (dccl.msg).max_bytes = 256;
+  option (dccl.msg).codec = "custom_codec";
   
   optional uint32 a = 1;
   optional bool b = 2;
@@ -14,13 +14,13 @@ message CustomMsg
 
 message CustomMsg2
 {
-  option (goby.msg).dccl.id = 4;
-  option (goby.msg).dccl.max_bytes = 256;
+  option (dccl.msg).id = 4;
+  option (dccl.msg).max_bytes = 256;
 
   optional CustomMsg msg = 1;
-  repeated int32 c = 3 [(goby.field).dccl.max=100,
-                         (goby.field).dccl.min=0,
-                         (goby.field).dccl.max_repeat=4,
-                         (goby.field).dccl.codec="int32_test_codec"];
+  repeated int32 c = 3 [(dccl.field).max=100,
+                         (dccl.field).min=0,
+                         (dccl.field).max_repeat=4,
+                         (dccl.field).codec="int32_test_codec"];
 }
 

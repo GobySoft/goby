@@ -1,4 +1,4 @@
-// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
 //                     Massachusetts Institute of Technology (2007-)
 //                     Woods Hole Oceanographic Institution (2007-)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
@@ -26,47 +26,7 @@
 
 std::vector<const google::protobuf::FieldDescriptor*> goby::acomms::MessageHandler::field_;
 std::vector<const google::protobuf::Descriptor*> goby::acomms::MessageHandler::desc_;
-
-
-//
-// BitsHandler
-//
-goby::acomms::BitsHandler::BitsHandler(Bitset* out_pool, Bitset* in_pool, bool lsb_first /*= true*/)
-    : lsb_first_(lsb_first),
-      in_pool_(in_pool),
-      out_pool_(out_pool)
-{
-    connection_ = DCCLFieldCodecBase::get_more_bits.connect(
-        boost::bind(&BitsHandler::transfer_bits, this, _1),
-        boost::signals::at_back);
-}
-                
-void goby::acomms::BitsHandler::transfer_bits(unsigned size)
-{
-    glog.is(common::logger::DEBUG3) && glog  <<  "_get_bits from (" << in_pool_ << ") " << *in_pool_ << " to add to (" << out_pool_ << ") " << *out_pool_ << " number: " << size << std::endl;
-    
-    if(lsb_first_)
-    {
-        // grab lowest bits first
-        for(int i = 0, n = size; i < n; ++i)
-            out_pool_->push_back((*in_pool_)[i]);
-        *in_pool_ >>= size;
-    }
-    else
-    {
-        // grab highest bits first
-        out_pool_->resize(out_pool_->size() + size);
-        *out_pool_ <<= size;
-        for(int i = 0, n = size; i < n; ++i)
-        {
-            (*out_pool_)[size-i-1] = (*in_pool_)[in_pool_->size()-i-1];
-        }
-        
-    }
-    in_pool_->resize(in_pool_->size()-size);
-}
-
-
+goby::acomms::MessageHandler::MessagePart goby::acomms::MessageHandler::part_ = goby::acomms::MessageHandler::UNKNOWN;
 
 //
 // MessageHandler
@@ -105,8 +65,15 @@ goby::acomms::MessageHandler::MessageHandler(const google::protobuf::FieldDescri
     if(field)
     {
         if(field->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE)
+        {
+            // if explicitly set, set part (HEAD or BODY) of message for all children of this message
+            if(field->options().GetExtension(dccl::field).has_in_head())
+                part_ = field->options().GetExtension(dccl::field).in_head() ? HEAD : BODY;
+            
             push(field->message_type());
+        }
         push(field);
     }
+    
 }
 

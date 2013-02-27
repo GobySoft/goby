@@ -1,4 +1,4 @@
-// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
 //                     Massachusetts Institute of Technology (2007-)
 //                     Woods Hole Oceanographic Institution (2007-)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
@@ -53,10 +53,24 @@ int main(int argc, char* argv[])
     const int MY_MODEM_ID = 1;
     const int UNICORN_MODEM_ID = 3;
     cfg.set_modem_id(MY_MODEM_ID);
-    q_manager.set_cfg(cfg);
+
+    goby::acomms::protobuf::QueuedMessageEntry* q_entry = cfg.add_message_entry();
+    q_entry->set_protobuf_name("GobyMessage");
+    q_entry->set_newest_first(true);
     
-    goby::acomms::DCCLModemIdConverterCodec::add("unicorn", UNICORN_MODEM_ID);
-    goby::acomms::DCCLModemIdConverterCodec::add("topside", MY_MODEM_ID);
+    goby::acomms::protobuf::QueuedMessageEntry::Role* src_role = q_entry->add_role();
+    src_role->set_type(goby::acomms::protobuf::QueuedMessageEntry::SOURCE_ID);
+    src_role->set_field("header.source_platform");
+    
+    goby::acomms::protobuf::QueuedMessageEntry::Role* dest_role = q_entry->add_role();
+    dest_role->set_type(goby::acomms::protobuf::QueuedMessageEntry::DESTINATION_ID);
+    dest_role->set_field("header.dest_platform");    
+
+    goby::acomms::protobuf::QueuedMessageEntry::Role* time_role = q_entry->add_role();
+    time_role->set_type(goby::acomms::protobuf::QueuedMessageEntry::TIMESTAMP);
+    time_role->set_field("header.time");    
+
+    q_manager.set_cfg(cfg);
     
     goby::acomms::connect(&q_manager.signal_receive, &handle_receive);
     goby::acomms::connect(&q_manager.signal_queue_size_change, &qsize);
@@ -65,8 +79,8 @@ int main(int argc, char* argv[])
     msg_in1.set_telegram("hello!");
     msg_in1.mutable_header()->set_time(
         goby::util::as<std::string>(boost::posix_time::second_clock::universal_time()));
-    msg_in1.mutable_header()->set_source_platform("topside");
-    msg_in1.mutable_header()->set_dest_platform("unicorn");
+    msg_in1.mutable_header()->set_source_platform(MY_MODEM_ID);
+    msg_in1.mutable_header()->set_dest_platform(UNICORN_MODEM_ID);
     msg_in1.mutable_header()->set_dest_type(Header::PUBLISH_OTHER);
     msg_in1.set_telegram("hello 1");
     

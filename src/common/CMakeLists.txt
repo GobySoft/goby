@@ -9,13 +9,13 @@ set(SRC
   logger/logger_manipulators.cpp 
   logger/term_color.cpp
   configuration_reader.cpp
+  application_base.cpp
   ${PROTO_SRCS} ${PROTO_HDRS} 
 )
 
 if(enable_zeromq)
   set(SRC
     ${SRC}
-    application_base.cpp
     zeromq_service.cpp
     )
 endif()
@@ -37,6 +37,7 @@ if(enable_ncurses)
   target_link_libraries(goby_common ${CURSES_LIBRARIES})
 endif()
 
-target_link_libraries(goby_common ${PROTOBUF_LIBRARY} ${Boost_LIBRARIES} pthread)
+
+target_link_libraries(goby_common ${PROTOBUF_LIBRARY} ${Boost_LIBRARIES} pthread ${CMAKE_DL_LIBS})
 set_target_properties(goby_common PROPERTIES VERSION "${GOBY_VERSION}" SOVERSION "${GOBY_SOVERSION}")
 

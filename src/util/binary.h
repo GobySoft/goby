@@ -1,4 +1,4 @@
-// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
 //                     Massachusetts Institute of Technology (2007-)
 //                     Woods Hole Oceanographic Institution (2007-)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
@@ -38,7 +38,7 @@ namespace goby
         /// \name Binary encoding
         //@{
 
-        /// \brief Decodes a hexadecimal string to a byte string.
+        /// \brief Decodes a (little-endian) hexadecimal string to a byte string. Index 0 and 1 (first byte) of `in` are written to index 0 (first byte) of `out`
         ///
         /// \param in hexadecimal string (e.g. "544f4d" or "544F4D")
         /// \param out pointer to string to store result (e.g. "TOM").
@@ -86,7 +86,7 @@ namespace goby
             return out;
         }
 
-        /// \brief Encodes a hexadecimal string from a byte string.
+        /// \brief Encodes a (little-endian) hexadecimal string from a byte string. Index 0 of `in` is written to index 0 and 1 (first byte) of `out`
         ///
         /// \param in byte string to encode (e.g. "TOM")
         /// \param out pointer to string to store result (e.g. "544f4d")

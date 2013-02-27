@@ -1,4 +1,4 @@
-// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
 //                     Massachusetts Institute of Technology (2007-)
 //                     Woods Hole Oceanographic Institution (2007-)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
@@ -41,18 +41,12 @@ void goby::acomms::DCCLDefaultMessageCodec::any_encode(Bitset* bits, const boost
   
 
  
-unsigned goby::acomms::DCCLDefaultMessageCodec::any_size(const boost::any& field_value)
+unsigned goby::acomms::DCCLDefaultMessageCodec::any_size(const boost::any& wire_value)
 {
-    if(field_value.empty())
+    if(wire_value.empty())
         return min_size();
     else
-        return traverse_const_message<Size, unsigned>(field_value);
-}
-
-void goby::acomms::DCCLDefaultMessageCodec::any_run_hooks(const boost::any& field_value)
-{
-    if(!field_value.empty())
-        traverse_const_message<RunHooks, bool>(field_value);
+        return traverse_const_message<Size, unsigned>(wire_value);
 }
 
 
@@ -84,7 +78,7 @@ void goby::acomms::DCCLDefaultMessageCodec::any_decode(Bitset* bits, boost::any*
                 std::vector<boost::any> wire_values;
                 if(field_desc->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE)
                 {
-                    for(unsigned j = 0, m = field_desc->options().GetExtension(goby::field).dccl().max_repeat(); j < m; ++j)
+                    for(unsigned j = 0, m = field_desc->options().GetExtension(dccl::field).max_repeat(); j < m; ++j)
                         wire_values.push_back(refl->AddMessage(msg, field_desc));
                     
                     codec->field_decode_repeated(bits, &wire_values, field_desc);
@@ -165,43 +159,30 @@ std::string goby::acomms::DCCLDefaultMessageCodec::info()
 bool goby::acomms::DCCLDefaultMessageCodec::check_field(const google::protobuf::FieldDescriptor* field)
 {
     if(!field)
+    {
         return true;
+    }
     else
     {
-        DCCLFieldOptions dccl_field_options = field->options().GetExtension(goby::field).dccl();
-        if(dccl_field_options.omit() // omit
-            || (field->cpp_type() != google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE // for non message fields, skip if header / body mismatch
-                && ((part() == HEAD && !dccl_field_options.in_head())
-                    || (part() == BODY && dccl_field_options.in_head()))))
+        dccl::DCCLFieldOptions dccl_field_options = field->options().GetExtension(dccl::field);
+        if(dccl_field_options.omit()) // omit
+        {
+            return false;
+        }
+        else if(MessageHandler::current_part() == MessageHandler::UNKNOWN) // part not yet explicitly specified
+        {
+            if(field->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE &&
+               DCCLFieldCodecManager::find(field)->name() == DCCLCodec::DEFAULT_CODEC_NAME) // default message codec will expand
+                return true;
+            else if((part() == MessageHandler::HEAD && !dccl_field_options.in_head())
+                    || (part() == MessageHandler::BODY && dccl_field_options.in_head()))
+                return false;
+            else
+                return true;
+        }
+        else if(MessageHandler::current_part() != part()) // part specified and doesn't match
             return false;
         else
             return true;
-    }
-    
+    }    
 }
-
-
-
-//
-// RunHooks
-//
-
-void goby::acomms::DCCLDefaultMessageCodec::RunHooks::repeated(
-    boost::shared_ptr<DCCLFieldCodecBase> codec,
-    bool* return_value,
-    const std::vector<boost::any>& field_values,
-    const google::protobuf::FieldDescriptor* field_desc)
-{
-    goby::glog.is(common::logger::DEBUG2) && glog << group(DCCLCodec::glog_encode_group()) << common::logger::warn << "Hooks not run on repeated message: " << field_desc->DebugString() << std::flush;
-}
-
-void goby::acomms::DCCLDefaultMessageCodec::RunHooks::single(
-    boost::shared_ptr<DCCLFieldCodecBase> codec,
-    bool* return_value,
-    const boost::any& field_value,
-    const google::protobuf::FieldDescriptor* field_desc)
-{
-    codec->field_run_hooks(return_value, field_value, field_desc);
-}
-
-

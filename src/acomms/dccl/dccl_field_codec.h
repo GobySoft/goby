@@ -1,4 +1,4 @@
-// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
 //                     Massachusetts Institute of Technology (2007-)
 //                     Woods Hole Oceanographic Institution (2007-)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
@@ -30,7 +30,7 @@
 #include <boost/any.hpp>
 #include <boost/bind.hpp>
 #include <boost/dynamic_bitset.hpp>
-#include <boost/signals.hpp>
+#include <boost/signals2.hpp>
 #include <boost/ptr_container/ptr_map.hpp>
 #include <google/protobuf/message.h>
 #include <google/protobuf/descriptor.pb.h>
@@ -39,7 +39,7 @@
 #include "dccl_common.h"
 #include "dccl_exception.h"
 #include "goby/acomms/protobuf/dccl.pb.h"
-#include "goby/common/protobuf/acomms_option_extensions.pb.h"
+#include "goby/acomms/protobuf/dccl_option_extensions.pb.h"
 #include "goby/util/as.h"
 #include "dccl_type_helper.h"
 #include "dccl_field_codec_helpers.h"
@@ -54,13 +54,6 @@ namespace goby
         class DCCLFieldCodecBase
         {
           public:
-            typedef goby::acomms::Bitset Bitset;
-
-            enum MessagePart { HEAD, BODY };
-
-
-
-            
             /// \name Constructor, Destructor
             //@{
             
@@ -78,7 +71,7 @@ namespace goby
             google::protobuf::FieldDescriptor::Type field_type() const  { return field_type_; }
             /// \brief the C++ type used "on the wire". This is the type visible <i>after</i> pre_encode and <i>before</i> post_decode functions are called.
             ///
-            /// The wire type allows codecs to make type changes (e.g. from string to integer) before reusing another codec that knows how to encode that wire type (e.g. DCCLDefaultArithmeticFieldCodec)
+            /// The wire type allows codecs to make type changes (e.g. from string to integer) before reusing another codec that knows how to encode that wire type (e.g. DCCLDefaultNumericFieldCodec)
             /// \return the C++ type used to encode and decode. See http://code.google.com/apis/protocolbuffers/docs/reference/cpp/google.protobuf.descriptor.html#FieldDescriptor.CppType.details
             google::protobuf::FieldDescriptor::CppType wire_type() const  { return wire_type_; }
 
@@ -86,7 +79,7 @@ namespace goby
             /// \brief Returns the FieldDescriptor (field schema  meta-data) for this field
             ///
             /// \return FieldDescriptor for the current field or 0 if this codec is encoding the base message.
-            const google::protobuf::FieldDescriptor* this_field()
+            const google::protobuf::FieldDescriptor* this_field() const 
             { return !MessageHandler::field_.empty() ? MessageHandler::field_.back() : 0; }
             
             /// \brief Returns the Descriptor (message schema meta-data) for the immediate parent Message
@@ -105,8 +98,13 @@ namespace goby
             static const google::protobuf::Descriptor* this_descriptor()
             { return !MessageHandler::desc_.empty() ? MessageHandler::desc_.back() : 0; }
 
+            // currently encoded or (partially) decoded root message
+            static const google::protobuf::Message* root_message()
+            { return root_message_; }
+            
+            
             /// \brief the part of the message currently being encoded (head or body).
-            static MessagePart part() { return part_; }
+            static MessageHandler::MessagePart part() { return part_; }
             
             //@}
 
@@ -129,21 +127,14 @@ namespace goby
             /// \param part Part of the message to encode
             void base_encode(Bitset* bits,
                              const google::protobuf::Message& msg,
-                             MessagePart part);
-
-            /// \brief Run hooks on this part of the base message
-            ///
-            /// See DCCLCodec::run_hooks() for details on the hook functionality.
-            /// \param msg DCCL Message to run hooks on
-            /// \param part part of the Message to run hooks on
-            void base_run_hooks(const google::protobuf::Message& msg, MessagePart part);
+                             MessageHandler::MessagePart part);
 
             /// \brief Calculate the size (in bits) of a part of the base message when it is encoded
             ///
             /// \param bit_size Pointer to unsigned integer to store the result.
             /// \param msg the DCCL Message of which to calculate the size
             /// \param part part of the Message to calculate the size of
-            void base_size(unsigned* bit_size, const google::protobuf::Message& msg, MessagePart part);
+            void base_size(unsigned* bit_size, const google::protobuf::Message& msg, MessageHandler::MessagePart part);
 
             /// \brief Decode part of a message
             ///
@@ -152,34 +143,34 @@ namespace goby
             /// \param part part of the Message to decode         
             void base_decode(Bitset* bits,
                              google::protobuf::Message* msg,
-                             MessagePart part);
+                             MessageHandler::MessagePart part);
 
             /// \brief Calculate the maximum size of a message given its Descriptor alone (no data)
             ///
             /// \param bit_size Pointer to unsigned integer to store calculated maximum size in bits.
             /// \param desc Descriptor to calculate the maximum size of. Use google::protobuf::Message::GetDescriptor() or MyProtobufType::descriptor() to get this object.
             /// \param part part of the Message 
-            void base_max_size(unsigned* bit_size, const google::protobuf::Descriptor* desc, MessagePart part);
+            void base_max_size(unsigned* bit_size, const google::protobuf::Descriptor* desc, MessageHandler::MessagePart part);
 
             /// \brief Calculate the minimum size of a message given its Descriptor alone (no data)
             ///
             /// \param bit_size Pointer to unsigned integer to store calculated minimum size in bits.
             /// \param desc Descriptor to calculate the minimum size of. Use google::protobuf::Message::GetDescriptor() or MyProtobufType::descriptor() to get this object.
             /// \param part part of the Message
-            void base_min_size(unsigned* bit_size, const google::protobuf::Descriptor* desc, MessagePart part);
+            void base_min_size(unsigned* bit_size, const google::protobuf::Descriptor* desc, MessageHandler::MessagePart part);
 
             /// \brief Validate this part of the message to make sure all required extensions are set.
             ///
             /// \param desc Descriptor to validate. Use google::protobuf::Message::GetDescriptor() or MyProtobufType::descriptor() to get this object.
             /// \param part part of the Message       
-            void base_validate(const google::protobuf::Descriptor* desc, MessagePart part);
+            void base_validate(const google::protobuf::Descriptor* desc, MessageHandler::MessagePart part);
 
             /// \brief Get human readable information (size of fields, etc.) about this part of the DCCL message
             /// 
             /// \param os Pointer to stream to store this information
             /// \param desc Descriptor to get information on. Use google::protobuf::Message::GetDescriptor() or MyProtobufType::descriptor() to get this object.
             /// \param part the part of the Message to act on.
-            void base_info(std::ostream* os, const google::protobuf::Descriptor* desc, MessagePart part);
+            void base_info(std::ostream* os, const google::protobuf::Descriptor* desc, MessageHandler::MessagePart part);
             //@}
             
             /// \name Field functions (primitive types and embedded messages)
@@ -229,14 +220,6 @@ namespace goby
                                        const std::vector<boost::any>& field_values,
                                        const google::protobuf::FieldDescriptor* field);
 
-            /// \brief Run hooks on a field
-            ///
-            /// \param b Currently unused (will be set to false)
-            /// \param field_value Value to run hooks on (FieldType)
-            /// \param field Protobuf descriptor to the field. Set to 0 for base message.
-            void field_run_hooks(bool* b,
-                                 const boost::any& field_value,
-                                 const google::protobuf::FieldDescriptor* field);
 
             /// \brief Calculate the size of a field
             ///
@@ -251,7 +234,7 @@ namespace goby
             /// \param bit_size Location to <i>add</i> calculated bit size to. Be sure to zero `bit_size` if you want only the size of this field.
             /// \param field_values Values to calculate size of (FieldType)
             /// \param field Protobuf descriptor to the field. Set to 0 for base message.
-            void field_size_repeated(unsigned* bit_size, const std::vector<boost::any>& field_values,
+            void field_size_repeated(unsigned* bit_size, const std::vector<boost::any>& wire_values,
                                      const google::protobuf::FieldDescriptor* field);
 
             // traverse mutable
@@ -317,29 +300,15 @@ namespace goby
             //@}
             
             
-            /// \name Hook API methods (Advanced)
-            //@{
-            /// \brief Register a callback to be called when base_run_hooks() (or field_run_hooks(), which is called by base_run_hooks()) is called.
-            ///
-            /// \param extension_number The Protobuf field number for the extension to .google.protobuf.FieldOptions that you wish to receive callbacks for. The GobyFieldOptions uses extension_number 1009 (reserved with Google).
-            /// \param callback A boost::function (generalized function object) which will be called when the desired option extension for the field is set. `field_value` is the value currently set in the message for that field, `wire_value` is the pre-encoded version of `field_value` and `extension_value` is the value set for the desired option extension.
-            static void register_wire_value_hook(
-                int extension_number, boost::function<void (const boost::any& field_value,
-                                                            const boost::any& wire_value,
-                                                            const boost::any& extension_value)> callback)
-            { wire_value_hooks_[extension_number].connect(callback); }
-
-            //@}
-
           protected:
 
             /// \brief Get the DCCL field option extension value for the current field
             ///
-            /// DCCLFieldOptions is defined in acomms_option_extensions.proto
-            DCCLFieldOptions dccl_field_options()
+            /// dccl::DCCLFieldOptions is defined in acomms_option_extensions.proto
+            dccl::DCCLFieldOptions dccl_field_options() const 
             {
                 if(this_field())
-                    return this_field()->options().GetExtension(goby::field).dccl();
+                    return this_field()->options().GetExtension(dccl::field);
                 else
                     throw(DCCLException("Cannot call dccl_field on base message (has no *field* option extension"));                
                 
@@ -399,9 +368,7 @@ namespace goby
             ///
             /// \param field_value Value to calculate size of
             /// \return Size of field (in bits)
-            virtual unsigned any_size(const boost::any& field_value) = 0;
-
-            virtual void any_run_hooks(const boost::any& field_value);
+            virtual unsigned any_size(const boost::any& wire_value) = 0;
 
             // no boost::any
             /// \brief Validate a field. Use require() inside your overloaded validate() to assert requirements or throw DCCLExceptions directly as needed.
@@ -432,15 +399,9 @@ namespace goby
             virtual void any_post_decode_repeated(const std::vector<boost::any>& wire_values,
                                                   std::vector<boost::any>* field_values);
             
-            virtual unsigned any_size_repeated(const std::vector<boost::any>& field_values);
+            virtual unsigned any_size_repeated(const std::vector<boost::any>& wire_values);
             virtual unsigned max_size_repeated();
             virtual unsigned min_size_repeated();
-            
-
-            friend class BitsHandler;
-
-            /// \brief Inside the any_decode() method call to get more bits into the `bits` Bitset. Used only be variable size codecs (i.e. min_size() != max_size()).
-            static boost::signal<void (unsigned size)> get_more_bits;
             
             friend class DCCLFieldCodecManager;
           private:
@@ -452,19 +413,12 @@ namespace goby
             void set_wire_type(google::protobuf::FieldDescriptor::CppType type)
             { wire_type_ = type; }
 
-            bool variable_size() { return max_size() != min_size(); }
-            
-            void __encode_prepend_bits(const Bitset& new_bits, Bitset* bits)
-            {    
-                for(int i = 0, n = new_bits.size(); i < n; ++i)
-                    bits->push_back(new_bits[i]);
-            }
+            bool variable_size() { return max_size() != min_size(); }            
             
           private:
-            static MessagePart part_;
-            // maps protobuf extension number for FieldOption onto a hook (signal) to call
-            // if such a FieldOption is set, during the call to "size()"
-            static boost::ptr_map<int, boost::signal<void (const boost::any& field_value, const boost::any& wire_value, const boost::any& extension_value)> >  wire_value_hooks_;
+            static MessageHandler::MessagePart part_;
+
+            static const google::protobuf::Message* root_message_;
             
             std::string name_;
             google::protobuf::FieldDescriptor::Type field_type_;

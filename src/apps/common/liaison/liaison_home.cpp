@@ -1,4 +1,4 @@
-// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
 //                     Massachusetts Institute of Technology (2007-)
 //                     Woods Hole Oceanographic Institution (2007-)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
@@ -35,5 +35,7 @@ goby::common::LiaisonHome::LiaisonHome(Wt::WContainerWidget* parent)
     top_text->addWidget(new WText("Welcome to Goby Liaison: an extensible tool for commanding and comprehending this Goby platform."));
     top_text->addWidget(new WBreak());
     top_text->addWidget(new WText("<i>liaison (n): one that establishes and maintains communication for mutual understanding and cooperation</i>"));
+
+    set_name("Home");
 }
 

@@ -1,4 +1,4 @@
-// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
 //                     Massachusetts Institute of Technology (2007-)
 //                     Woods Hole Oceanographic Institution (2007-)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
@@ -70,7 +70,7 @@ int main(int argc, char* argv[])
     }
     
     codec->validate_repeated(descs);
-
+    
     std::cout << "Try encode..." << std::endl;
     std::string bytes1 = codec->encode_repeated(msgs) + std::string(4, '\0');
     std::cout << "... got bytes (hex): " << goby::util::hex_encode(bytes1) << std::endl;

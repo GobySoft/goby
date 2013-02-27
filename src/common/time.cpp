@@ -1,4 +1,4 @@
-// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
 //                     Massachusetts Institute of Technology (2007-)
 //                     Woods Hole Oceanographic Institution (2007-)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
@@ -24,6 +24,7 @@
 #include "goby/common/time.h"
 
 boost::function0<goby::uint64> goby::common::goby_time_function;
+int goby::common::goby_time_warp_factor = 1;
 
 double goby::common::ptime2unix_double(boost::posix_time::ptime given_time)
 {

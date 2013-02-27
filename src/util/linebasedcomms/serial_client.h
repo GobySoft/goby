@@ -1,4 +1,4 @@
-// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
 //                     Massachusetts Institute of Technology (2007-)
 //                     Woods Hole Oceanographic Institution (2007-)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
@@ -44,6 +44,9 @@ namespace goby
             SerialClient(const std::string& name = "",
                          unsigned baud = 9600,
                          const std::string& delimiter = "\r\n");
+
+            ~SerialClient() { }
+            
             
             /// set serial port name, e.g. "/dev/ttyS0"
             void set_name(const std::string& name) { name_ = name; }
@@ -64,7 +67,7 @@ namespace goby
 
           private:
             bool start_specific();        
-  
+            
           private:
             boost::asio::serial_port serial_port_; // the serial port this instance is connected to
             std::string name_;

@@ -5,12 +5,8 @@ That's all for \verb|goby| in Release 2.0. There's still a lot to do so keep tun
 
 Here's what's on the horizon:
 \begin{itemize}
-\item Goby-Core: a general purpose interprocess and interplatform communication based on messaging schemes drawn both from the existing marine robotics and global open source communities. The focus is on a high degree of runtime reliability and collaboration between development communities.
-\begin{itemize}
-\item For introductory users, it provides an "template" application in C++ that allows object-based messaging (based on Google Protocol Buffers) between processes and platforms without any concern for serialization, routing, sockets, and so on.
-\item For advanced users, it provides a transport layer built on ZeroMQ (which supports 20+ languages including C, C++, Java, .NET, Python, and major platforms) for communicating over reliable multicast (PGM) using one or more existing (e.g. MOOS, LCM, Protobuf, CCL, DCCL, ...) messaging schemes. Goby does not mandate a programming language, a messaging scheme, or a development system and thus intends to tie together groups with different goals, styles, and rules. Furthermore, Gateways can be written to interface the ZeroMQ based Goby transport with the native transport systems used by other architectures (e.g. MOOSDB, LCM multicast).
-\end{itemize}
-\item a \verb|Wt| \cite{wt} based configuration, launch, and runtime manager - all in any web browser of your choice.
+\item Goby-Common: a general purpose interprocess and interplatform communication based on messaging schemes drawn both from the existing marine robotics and global open source communities. The focus is on a high degree of runtime reliability and collaboration between development communities. For advanced users, it provides a transport layer built on ZeroMQ (which supports 20+ languages including C, C++, Java, .NET, Python, and major platforms) for communicating over reliable multicast (PGM) using one or more existing (e.g. MOOS, LCM, Protobuf, CCL, DCCL, ...) messaging schemes. Goby does not mandate a programming language, a messaging scheme, or a development system and thus intends to tie together groups with different goals, styles, and rules. Furthermore, Gateways can be written to interface the ZeroMQ based Goby transport with the native transport systems used by other architectures (e.g. MOOSDB, LCM multicast).
+\item Goby-PB: The Google Protocol Buffers / C++ implementation of Goby-Common. For introductory users, it provides an "template" application in C++ that allows object-based messaging (based on Google Protocol Buffers) between processes and platforms without any concern for serialization, routing, sockets, and so on.
 \end{itemize}
 
 Stay tuned at \url{https://launchpad.net/goby}. Thanks.

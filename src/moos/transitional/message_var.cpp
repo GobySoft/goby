@@ -1,4 +1,4 @@
-// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
 //                     Massachusetts Institute of Technology (2007-)
 //                     Woods Hole Oceanographic Institution (2007-)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
@@ -100,7 +100,7 @@ void goby::transitional::DCCLMessageVar::write_schema_to_dccl2(std::ofstream* pr
 
         *proto_file << (count ? ", " : " [");
         ++count;
-        *proto_file << "(goby.field).dccl.max=" << goby::util::as<std::string>(max_tmp, precision(), goby::util::FLOAT_FIXED);
+        *proto_file << "(dccl.field).max=" << goby::util::as<std::string>(max_tmp, precision(), goby::util::FLOAT_FIXED);
     }
     catch(...) { }
     try
@@ -108,7 +108,7 @@ void goby::transitional::DCCLMessageVar::write_schema_to_dccl2(std::ofstream* pr
         double min_tmp = min();
         *proto_file << (count ? ", " : " [");
         ++count;
-        *proto_file << "(goby.field).dccl.min=" << goby::util::as<std::string>(min_tmp, precision(), goby::util::FLOAT_FIXED);
+        *proto_file << "(dccl.field).min=" << goby::util::as<std::string>(min_tmp, precision(), goby::util::FLOAT_FIXED);
     }
     catch(...) { }
     try
@@ -118,7 +118,7 @@ void goby::transitional::DCCLMessageVar::write_schema_to_dccl2(std::ofstream* pr
             int precision_tmp = precision();
             *proto_file << (count ? ", " : " [");
             ++count;
-            *proto_file << "(goby.field).dccl.precision=" << precision_tmp;
+            *proto_file << "(dccl.field).precision=" << precision_tmp;
         }
     }
     catch(...) { }
@@ -127,7 +127,7 @@ void goby::transitional::DCCLMessageVar::write_schema_to_dccl2(std::ofstream* pr
         unsigned max_length_tmp = max_length();
         *proto_file << (count ? ", " : " [");
         ++count;
-        *proto_file << "(goby.field).dccl.max_length=" << max_length_tmp;        
+        *proto_file << "(dccl.field).max_length=" << max_length_tmp;        
     }
     catch(...) { }
     try
@@ -135,7 +135,7 @@ void goby::transitional::DCCLMessageVar::write_schema_to_dccl2(std::ofstream* pr
         unsigned num_bytes_tmp = num_bytes();
         *proto_file << (count ? ", " : " [");
         ++count;
-        *proto_file << "(goby.field).dccl.max_length=" << num_bytes_tmp;        
+        *proto_file << "(dccl.field).max_length=" << num_bytes_tmp;        
     }
     catch(...) { }
     try
@@ -143,7 +143,7 @@ void goby::transitional::DCCLMessageVar::write_schema_to_dccl2(std::ofstream* pr
         std::string static_val_tmp = static_val();
         *proto_file << (count ? ", " : " [");
         ++count;
-        *proto_file << "default=\"" << static_val_tmp << "\", (goby.field).dccl.static_value=\"" << static_val_tmp << "\", " << "(goby.field).dccl.codec=\"_static\"";      
+        *proto_file << "default=\"" << static_val_tmp << "\", (dccl.field).static_value=\"" << static_val_tmp << "\", " << "(dccl.field).codec=\"_static\"";      
     }
     catch(...) { }
 
@@ -151,7 +151,7 @@ void goby::transitional::DCCLMessageVar::write_schema_to_dccl2(std::ofstream* pr
     {
         *proto_file << (count ? ", " : " [");
         ++count;
-        *proto_file << "(goby.field).dccl.max_repeat=" << array_length_;        
+        *proto_file << "(dccl.field).max_repeat=" << array_length_;        
 
     }
 

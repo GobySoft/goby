@@ -1,4 +1,4 @@
-// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
 //                     Massachusetts Institute of Technology (2007-)
 //                     Woods Hole Oceanographic Institution (2007-)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
@@ -565,8 +565,7 @@ namespace goby
             class FromProtoCustomMessage : public FromProtoCppType<google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE>
         {
           public:
-            typedef const CustomMessage& const_type;
-            typedef CustomMessage mutable_type;
+            typedef CustomMessage type;
             
           private:
             typedef FromProtoCppType<google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE> Parent;
@@ -576,7 +575,10 @@ namespace goby
                 const google::protobuf::Message& msg)
             {
                 Parent::const_type p = boost::any_cast<Parent::const_type>(Parent::_get_value(field, msg));
-                return dynamic_cast<const_type>(*p);
+                type r;
+                r.CopyFrom(*p);
+                return r;
+//                return dynamic_cast<const_type>(*p);
             }
             virtual boost::any _get_repeated_value(
                 const google::protobuf::FieldDescriptor* field,
@@ -584,13 +586,16 @@ namespace goby
                 int index)
             {
                 Parent::const_type p = boost::any_cast<Parent::const_type>(Parent::_get_repeated_value(field, msg, index));
-                return dynamic_cast<const_type>(*p);
+                type r;
+                r.CopyFrom(*p);
+                return r;
+//                return dynamic_cast<const_type>(*p);
             }
             virtual void _set_value(const google::protobuf::FieldDescriptor* field,
                                     google::protobuf::Message* msg,
                                     boost::any value)
             {
-                const_type v = boost::any_cast<const_type>(value);
+                type v = boost::any_cast<type>(value);
                 Parent::const_type p = &v;
                 Parent::_set_value(field, msg, p);
             }
@@ -598,7 +603,7 @@ namespace goby
                                     google::protobuf::Message* msg,
                                     boost::any value)
             {
-                const_type v = boost::any_cast<const_type>(value);
+                type v = boost::any_cast<type>(value);
                 Parent::const_type p = &v;
                 Parent::_add_value(field, msg, p);
             }

@@ -1,4 +1,4 @@
-// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
 //                     Massachusetts Institute of Technology (2007-)
 //                     Woods Hole Oceanographic Institution (2007-)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
@@ -21,8 +21,9 @@
 // along with Goby.  If not, see <http://www.gnu.org/licenses/>.
 
 
-#include "flex_ostream.h"
+#include "goby/common/logger/flex_ostream.h"
 #include "logger_manipulators.h"
+#include "goby/common/exception.h"
 
 using namespace goby::common::logger;
 
@@ -77,7 +78,11 @@ bool goby::common::FlexOstream::is(logger::Verbosity verbosity,
     {
         if(lock_action == logger_lock::lock)
         {
+#if THREAD_SAFE_LOGGER
             goby::common::logger::mutex.lock(); 
+#else
+            throw(goby::Exception("Logger lock requested but Goby is compiled with make_thread_safe_logger==OFF"));
+#endif
         }
             
         switch(verbosity)

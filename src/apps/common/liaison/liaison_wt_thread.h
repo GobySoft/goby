@@ -1,4 +1,4 @@
-// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
 //                     Massachusetts Institute of Technology (2007-)
 //                     Woods Hole Oceanographic Institution (2007-)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
@@ -37,7 +37,7 @@
 #include "goby/common/zeromq_application_base.h"
 #include "goby/common/pubsub_node_wrapper.h"
 
-#include "liaison_config.pb.h"
+#include "goby/common/protobuf/liaison_config.pb.h"
 #include "liaison.h"
 
 namespace goby
@@ -48,7 +48,9 @@ namespace goby
         {
           public:
             LiaisonWtThread(const Wt::WEnvironment& env);
-
+            ~LiaisonWtThread();
+            
+            
             void inbox(MarshallingScheme marshalling_scheme,
                        const std::string& identifier,
                        const void* data,
@@ -57,22 +59,16 @@ namespace goby
                 
                 
           private:
-            void add_to_menu(Wt::WMenu* menu, const Wt::WString& name, LiaisonContainer* container);
+            LiaisonWtThread(const LiaisonWtThread&);
+            LiaisonWtThread& operator=(const LiaisonWtThread&);
+            
+            void add_to_menu(Wt::WMenu* menu, LiaisonContainer* container);
             void handle_menu_selection(Wt::WMenuItem * item);
             
           private:
-            ZeroMQService scope_service_;
-            ZeroMQService commander_service_;
-            
-            
+            Wt::WMenu* menu_;
             Wt::WStackedWidget* contents_stack_;
-            Wt::WTimer scope_timer_;
-            Wt::WTimer commander_timer_;
-
-            
-            enum TimerState { ACTIVE = 1, STOPPED = 2, UNKNOWN = 0 };
-            TimerState last_scope_timer_state_;
-            
+            std::map<Wt::WMenuItem*, LiaisonContainer*> menu_contents_;
         };
 
         

@@ -1,4 +1,4 @@
-// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
 //                     Massachusetts Institute of Technology (2007-)
 //                     Woods Hole Oceanographic Institution (2007-)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
@@ -133,6 +133,15 @@ void goby::acomms::MACManager::begin_slot(const boost::system::error_code& e)
 {    
     // canceled the last timer
     if(e == boost::asio::error::operation_aborted) return;   
+
+    // check skew
+    if(std::abs(goby_time<double>() - goby::util::as<double>(next_slot_t_)) > ALLOWED_SKEW_SECONDS)
+    {
+        glog.is(DEBUG1) && glog << group(glog_mac_group_) << warn << "Clock skew detected, updating MAC." << std::endl;
+        update();
+        return;
+    }
+    
     
     const protobuf::ModemTransmission& s = *current_slot_;
     
@@ -166,10 +175,7 @@ void goby::acomms::MACManager::begin_slot(const boost::system::error_code& e)
             switch(it->type())
             {
                 case protobuf::ModemTransmission::DATA: glog << "d"; break;
-                case protobuf::ModemTransmission::MICROMODEM_TWO_WAY_PING: glog << "p"; break;
-                case protobuf::ModemTransmission::MICROMODEM_REMUS_LBL_RANGING: glog << "r"; break; 
-                case protobuf::ModemTransmission::MICROMODEM_NARROWBAND_LBL_RANGING: glog << "n"; break; 
-                case protobuf::ModemTransmission::MICROMODEM_MINI_DATA: glog << "m"; break;
+                case protobuf::ModemTransmission::DRIVER_SPECIFIC: glog << "s"; break;
 
                 default:
                     break;

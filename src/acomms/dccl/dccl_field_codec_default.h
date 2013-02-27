@@ -1,4 +1,4 @@
-// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
 //                     Massachusetts Institute of Technology (2007-)
 //                     Woods Hole Oceanographic Institution (2007-)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
@@ -30,10 +30,12 @@
 #include <boost/type_traits.hpp>
 #include <boost/static_assert.hpp>
 #include <boost/bimap.hpp>
+#include <boost/algorithm/string.hpp>
+#include <boost/numeric/conversion/bounds.hpp>
 
 #include <google/protobuf/descriptor.h>
 
-#include "goby/common/protobuf/acomms_option_extensions.pb.h"
+#include "goby/acomms/protobuf/dccl_option_extensions.pb.h"
 #include "goby/util/as.h"
 #include "goby/util/sci.h"
 #include "goby/common/time.h"
@@ -51,16 +53,18 @@ namespace goby
         /// \brief Provides the default 1 byte or 2 byte DCCL ID codec
         class DCCLDefaultIdentifierCodec : public DCCLTypedFieldCodec<uint32>
         {
+          protected:
+            virtual Bitset encode();
+            virtual Bitset encode(const uint32& wire_value);
+            virtual uint32 decode(Bitset* bits);
+            virtual unsigned size();
+            virtual unsigned size(const uint32& wire_value);
+            virtual unsigned max_size();
+            virtual unsigned min_size();
+            virtual void validate() { }
+
           private:
-            Bitset encode();
-            Bitset encode(const uint32& wire_value);
-            uint32 decode(const Bitset& bits);
-            unsigned size();
-            unsigned size(const uint32& field_value);
-            unsigned max_size();
-            unsigned min_size();
-            void validate() { }
-            
+            unsigned this_size(const uint32& wire_value);
             // maximum id we can fit in short or long header (MSB reserved to indicate
             // short or long header)
             enum { ONE_BYTE_MAX_ID = (1 << 7) - 1,
@@ -76,7 +80,7 @@ namespace goby
         ///
         /// Takes ceil(log2((max-min)*10^precision)+1) bits for required fields, ceil(log2((max-min)*10^precision)+2) for optional fields.
         template<typename WireType, typename FieldType = WireType>
-            class DCCLDefaultArithmeticFieldCodec : public DCCLTypedFixedFieldCodec<WireType, FieldType>
+            class DCCLDefaultNumericFieldCodec : public DCCLTypedFixedFieldCodec<WireType, FieldType>
         {
           protected:
 
@@ -95,6 +99,13 @@ namespace goby
                       "missing (goby.field).dccl.min");
               DCCLFieldCodecBase::require(DCCLFieldCodecBase::dccl_field_options().has_max(),
                       "missing (goby.field).dccl.max");
+
+
+              // ensure given max and min fit within WireType ranges
+              DCCLFieldCodecBase::require(min() >= boost::numeric::bounds<WireType>::lowest(),
+                                          "(goby.field).dccl.min must be >= minimum of this field type.");
+              DCCLFieldCodecBase::require(max() <= boost::numeric::bounds<WireType>::highest(),
+                                          "(goby.field).dccl.max must be <= maximum of this field type.");
           }
 
           Bitset encode()
@@ -111,7 +122,7 @@ namespace goby
                   return Bitset(size());
               
               
-//              goby::glog.is(common::logger::DEBUG2) && goby::glog << group(DCCLCodec::glog_encode_group()) << "(DCCLDefaultArithmeticFieldCodec) Encoding using wire value (=field value) " << wire_value << std::endl;
+//              goby::glog.is(common::logger::DEBUG2) && goby::glog << group(DCCLCodec::glog_encode_group()) << "(DCCLDefaultNumericFieldCodec) Encoding using wire value (=field value) " << wire_value << std::endl;
               
               wire_value -= min();
               wire_value *= std::pow(10.0, precision());
@@ -124,9 +135,9 @@ namespace goby
               return Bitset(size(), goby::util::as<unsigned long>(wire_value));
           }
           
-          virtual WireType decode(const Bitset& bits)
+          virtual WireType decode(Bitset* bits)
           {
-              unsigned long t = bits.to_ulong();
+              unsigned long t = bits->to_ulong();
               
               if(!DCCLFieldCodecBase::this_field()->is_required())
               {
@@ -137,7 +148,7 @@ namespace goby
               WireType return_value = goby::util::unbiased_round(
                   t / (std::pow(10.0, precision())) + min(), precision());
               
-//              goby::glog.is(common::logger::DEBUG2) && goby::glog << group(DCCLCodec::glog_decode_group()) << "(DCCLDefaultArithmeticFieldCodec) Decoding received wire value (=field value) " << return_value << std::endl;
+//              goby::glog.is(common::logger::DEBUG2) && goby::glog << group(DCCLCodec::glog_decode_group()) << "(DCCLDefaultNumericFieldCodec) Decoding received wire value (=field value) " << return_value << std::endl;
 
               return return_value;
               
@@ -161,7 +172,7 @@ namespace goby
           private:
             Bitset encode(const bool& wire_value);
             Bitset encode();
-            bool decode(const Bitset& bits);
+            bool decode(Bitset* bits);
             unsigned size();
             void validate();
         };
@@ -174,9 +185,9 @@ namespace goby
           private:
             Bitset encode();
             Bitset encode(const std::string& wire_value);
-            std::string decode(const Bitset& bits);
+            std::string decode(Bitset* bits);
             unsigned size();
-            unsigned size(const std::string& field_value);
+            unsigned size(const std::string& wire_value);
             unsigned max_size();
             unsigned min_size();
             void validate();
@@ -192,17 +203,17 @@ namespace goby
           private:
             Bitset encode();
             Bitset encode(const std::string& wire_value);
-            std::string decode(const Bitset& bits);
+            std::string decode(Bitset* bits);
             unsigned size();
-            unsigned size(const std::string& field_value);
+            unsigned size(const std::string& wire_value);
             unsigned max_size();
             unsigned min_size();
             void validate();
         };
 
-        /// \brief Provides an enum encoder. This converts the enumeration to an integer (based on the enumeration <i>index</i> (<b>not</b> its <i>value</i>) and uses DCCLDefaultArithmeticFieldCodec to encode the integer.
+        /// \brief Provides an enum encoder. This converts the enumeration to an integer (based on the enumeration <i>index</i> (<b>not</b> its <i>value</i>) and uses DCCLDefaultNumericFieldCodec to encode the integer.
         class DCCLDefaultEnumCodec
-            : public DCCLDefaultArithmeticFieldCodec<int32, const google::protobuf::EnumValueDescriptor*>
+            : public DCCLDefaultNumericFieldCodec<int32, const google::protobuf::EnumValueDescriptor*>
         {
           public:
             int32 pre_encode(const google::protobuf::EnumValueDescriptor* const& field_value);
@@ -225,7 +236,7 @@ namespace goby
         ///
         /// \tparam TimeType A type representing time: See the various specializations of goby_time() for allowed types.
         template<typename TimeType>
-            class DCCLTimeCodec : public DCCLDefaultArithmeticFieldCodec<int32, TimeType>
+            class DCCLTimeCodec : public DCCLDefaultNumericFieldCodec<int32, TimeType>
         {
           public:
             
@@ -275,7 +286,7 @@ namespace goby
             Bitset encode()
             { return Bitset(size()); }
 
-            T decode(const Bitset& bits)
+            T decode(Bitset* bits)
             {
                 std::string t = DCCLFieldCodecBase::dccl_field_options().static_value();
                 return util::as<T>(t);
@@ -289,28 +300,6 @@ namespace goby
                 DCCLFieldCodecBase::require(DCCLFieldCodecBase::dccl_field_options().has_static_value(), "missing (goby.field).dccl.static_value");
             }
             
-        };
-
-        
-        /// \brief Codec that converts string names (e.g. "AUV-Unicorn") to integer MAC addresses (modem ID) and encodes the modem ID using DCCLDefaultArithmeticFieldCodec. The conversion is done using a lookup table.
-        class DCCLModemIdConverterCodec : public DCCLDefaultArithmeticFieldCodec<int32, std::string>
-        {
-          public:
-            /// \brief Add an entry to the lookup table used for conversions. 
-            static void add(std::string platform, int32 id)
-            { platform2modem_id_.left.insert(std::make_pair(platform, id)); }
-            
-            int32 pre_encode(const std::string& field_value);
-            std::string post_decode(const int32& wire_value);
-            
-
-          private:  
-            void validate() { }
-            double max() { return 30; }
-            double min() { return 0; }
-
-          private:
-            static boost::bimap<std::string, int32> platform2modem_id_;
         };
 
         

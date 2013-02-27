@@ -1,5 +1,96 @@
 Goby Release Notes (Major version 2)
 
+*****************
+Version 2.0.1~rc1
+
+- Release candidate 1: all version 2 functionality complete; documentation still needs to be finished.
+- Wire format of DCCL message changed to be little-endian for both body and header (previously header was big-endian and body was little-endian). This release is wire-incompatible with previous betas.
+- Added set of CCL messages implemented as subset of DCCL.
+- "dccllite" option added for compiling DCCL alone with a minimum of other dependencies within Goby and external.
+- Basic router and two drivers added to support "traditional" networking (TCP / UDP) over slow links (predominantly Iridium)
+
+bzr log --line -n0 -r 285..
+
+345: Toby Schneider 2012-05-07 {2.0.1~rc1} added new acomms chapter
+344: Toby Schneider 2012-05-04 1. Work on Goby2 user manual: MOOS and Acomms components; 2. Changed TransmissionType enumeration in DriverBase to have DRIVER_SPECIFIC value and removed all MICROMODEM_* values and put them in mm_driver.proto extensions; 3. Added prefix for pAcommsHandler MOOS variables
+343: Toby Schneider 2012-05-03 added rounding to legacy CCL encoding for vehicle speed to avoid incorrect values due to truncation
+342: Toby Schneider 2012-05-03 Changed DCCLFieldCodecBase::any_size and any_size_repeated to use WireType instead of FieldType to make it the same as encode
+341: Toby Schneider 2012-05-03 changed CCL Error message to use bytes codec to avoid default DCCL string 1 byte overhead
+340: Toby Schneider 2012-05-01 changed ccl_compatible flag to a selectable enumeration of various identifier codec options (with varint still being the default)
+339: Toby Schneider 2012-05-01 added CCL message: MDAT_COMMAND
+338: Toby Schneider 2012-05-01 completed implementation of base set of CCL messages: MDAT_EMPTY MDAT_REDIRECT MDAT_BATHY MDAT_CTD MDAT_STATE
+337: Toby Schneider 2012-05-01 moved all #include <boost/filesystem.hpp> to .cpp files to avoid bug where including that header brings in a library dependency on boost_system
+336: Toby Schneider 2012-04-30 Corrected fix for 64-bit architecture in CCL Lat/Long routine
+335: Toby Schneider 2012-04-30 Renamed DCCLDefaultArithmeticFieldCodec to DCCLDefaultNumericFieldCodec to avoid confusion with arithmetic coding (which DCCLDefaultNumericFieldCodec does not do)
+334: Toby Schneider 2012-04-30 Nearly finished with CCL State message - cleaned up traversal of message Body and Head for custom embedded messages
+333: Toby Schneider 2012-04-30 Started added Legacy CCL as subset of DCCL
+332: Toby Schneider 2012-04-27 1. Changed confusing wire format of DCCL where header was big-endian and body was little-endian. Entire message is sent as little-endian now, so header starts at the least significant byte and works upwards. This will break compatibility with prior beta releases of Goby2 but that's why we're still in beta. 2. Started adding CCL compatibility option
+331: Toby Schneider 2012-04-26 Much cleaning up in Liaison scope: pause correctly still reads mail in another thread to avoid huge bandwidth and CPU hit when resuming. Made ZeroMQService poll() thread-safe. Added MOOS translator with type name prefix
+330: Toby Schneider 2012-04-25 added missing header in goby_bridge
+329: Toby Schneider 2012-04-25 Added ability to compile goby-logger without thread-safety (boost thread) and DynamicProtobufManager without ability to read files from disk (boost filesystem)
+328: Chris Murphy 2012-04-25 Removing a duplicate include from flex_ostream.h
+327: Chris Murphy 2012-04-25 Adding a 'dccllite' option, which builds a minimal DCCL shared library.  The goal is to have it use the minimum required code to support DCCL functionality, and only require linking against protobuf, dccl, and maybe dl or m or the like.  Still tracking down a boost::system dependency, which sneaks in somewhere.
+326: Chris Murphy 2012-04-25 Adding an include line for dlfcn, since dccl.cpp calls dlsym.
+325: Toby Schneider 2012-04-24 [merge] merge from 2.0-dsop
+  321.1.10: Toby Schneider 2012-04-24 in DCCL, replaced boost::dynamic_bitset and get_more_bits signal with custom class based on std::deque<bool>
+  321.1.9: Toby Schneider 2012-04-23 removed unused header from dccl.h
+324: Toby Schneider 2012-04-20 [merge] merge from 2.0-dsop
+  321.1.8: Toby Schneider 2012-04-20 reworked some functions of Dynamic Protobuf Manager so that compiled in descriptors are the same as those returned from Dynamic Protobuf Manager. Also added network level ACKs for goby_bridge
+  321.1.7: Toby Schneider 2012-04-20 no need to try to route messages to yourself
+  321.1.6: Toby Schneider 2012-04-20 moved runtime compilation of Protobuf messages from individual apps to dynamic_protobuf_manager to reduce duplication of code
+323: Toby Schneider 2012-04-19 [merge] small bug fix from 2.0-dsop
+  321.1.5: Toby Schneider 2012-04-19 fixed CMakeLists bug which caused pAcommsHandler build to be disabled
+322: Toby Schneider 2012-04-19 [merge] merge from 2.0-dsop
+  321.1.4: Toby Schneider 2012-04-18 moved goby_store_server to acomms from util
+  321.1.3: Toby Schneider 2012-04-12 fixed bug where pure virtual function was called on destruction of SerialClient
+  321.1.2: Toby Schneider 2012-04-12 Added second test for UDP driver for DSOP trial (split between two computers)
+  321.1.1: Toby Schneider 2012-04-11 Wrote goby bridge for bridging various subnets together
+321: Toby Schneider 2012-04-11 initial working unit test for goby-route
+320: Toby Schneider 2012-04-10 Fixed overflow bug in Liaison Commander and started work on goby-route
+319: Toby Schneider 2012-04-09 added UDP Driver to pAcommsHandler
+318: Toby Schneider 2012-04-09 Added working UDP driver and test
+317: Toby Schneider 2012-04-09 PBDriver1 test passes with new GobyStoreServer for two data packets (mimic MM rates 0 and 2)
+316: Toby Schneider 2012-04-09 Added preliminary work on PB modem driver for DSOP May trial
+315: Toby Schneider 2012-04-04 workaround for bug on Mac OS X 10.7.2 where MOOS translator would not compile because of private copy-constructor on RepeatedPtrField in Protobuf 2.3.0
+314: Toby Schneider 2012-04-03 [merge] back-ported protobuf node from 3.0
+  195.1.16: Toby Schneider 2012-04-03 put new header on goby-3 files that needed it
+  195.1.15: Toby Schneider 2012-04-03 [merge] merged from 2.0
+  195.1.14: Toby Schneider 2012-04-03 minor improvements to alog_to_goby_db
+313: Toby Schneider 2012-04-03 added storage server for SQL storage of Protobuf messages
+312: Toby Schneider 2012-03-18 downgraded DIE to WARN on transitional cfg being set in pAcommsHandler
+311: Toby Schneider 2012-03-15 updated amac test to reflect changes to startup/restart in MACManager
+310: Toby Schneider 2012-03-15 split doxygen html and pdf generation and turned off pdf generation by default because of problems with pdf generation on certain versions of Doxygen
+309: Toby Schneider 2012-03-15 added stop/start to MACUpdate message
+308: Toby Schneider 2012-03-14 1. MICROMODEM_MINI_DATA properly does not send if no data is given by Queue, 2. MOOS Format serializer uses std::boolalpha for all boolean values
+307: Toby Schneider 2012-03-13 Added start of repeated typed codec and bug fix to default numeric codec involved rounding of doubles
+306: Toby Schneider 2012-03-13 removed ~ backup files
+305: Toby Schneider 2012-03-13 Added ability to load DCCL Codecs at runtime via shared libraries in pAcommsHandler
+304: Toby Schneider 2012-03-09 Added install targets for examples
+303: Toby Schneider 2012-03-09 [merge] 1. Changed license terms to LGPL for libraries (GPL still for binaries); 2. fixed bugs in examples
+  302.1.1: Toby Schneider 2012-03-09 stripped old Copyright header notice
+302: Toby Schneider 2012-03-09 clarifications about running unit tests in INSTALL.txt
+301: Toby Schneider 2012-03-08 [merge] fixed merge from bug discovered on Mac OS X lion
+  297.1.1: Toby Schneider 2012-03-08 [merge] fixed out of range access to vector using operator[] in moos translator
+300: Toby Schneider 2012-03-08 additional correction to FindCryptopp.cmake
+299: Toby Schneider 2012-03-07 improved Doxygen output for Developer's doc to include autogenerated protobuf code
+298: Toby Schneider 2012-03-06 fixes to Crypto++ find and headers to attempt to resolve Fedora build problems
+297: Toby Schneider 2012-03-05 fixed integer overflows on 32 bit system for far future times
+296: Toby Schneider 2012-03-05 Added polling for ufld driver; made NaN default output in MOOS translator for unspecified repeated fields
+295: Toby Schneider 2012-03-05 1. updated MACManager to properly use goby_time for its slot timer, 2. updated Liaison commander to be able to take its time from an external source (e.g. for MOOSTimeWarp)
+294: Toby Schneider 2012-03-05 fixed bugs in time functions that caused overflows in large date, e.g. year 2391
+293: Toby Schneider 2012-03-05 tweak to doc CMakeLists for precise
+292: Toby Schneider 2012-03-05 [merge] merge from 2.S998 branch
+  283.1.2: Toby Schneider 2012-03-05 small modifications to uFld driver
+291: Toby Schneider 2012-03-03 small fix to ufield driver to all compiling
+290: Toby Schneider 2012-03-03 [merge] merged in UFld driver for MOOS
+  283.1.1: Toby Schneider 2012-02-20 added driver for mikerb's uField MOOS toolbox: successfully sends and receives message. Need to add ACK
+289: Toby Schneider 2012-03-02 version.h now includes compile date as well as release date
+288: Toby Schneider 2012-03-02 added missing boost-regex dependency to DEPENDECIES file
+287: Toby Schneider 2012-02-29 fixes ACK bug on multi-frame messages
+286: Toby Schneider 2012-02-23 backwards compatibility for Goby1 TesMoosApp verbosity settings and made Liaison modal dialogs configurable in size
+285: Toby Schneider 2012-02-22 {2.0.0-beta4} release 2.0.0-beta4
+
+
 
 *****************
 Version 2.0.0-beta4

@@ -1,4 +1,4 @@
-// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
 //                     Massachusetts Institute of Technology (2007-)
 //                     Woods Hole Oceanographic Institution (2007-)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
@@ -20,7 +20,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Goby.  If not, see <http://www.gnu.org/licenses/>.
 
-#include <dlfcn.h>
+#include <boost/filesystem.hpp>
+
 
 #include <Wt/WText>
 #include <Wt/WHBoxLayout>
@@ -49,30 +50,45 @@ namespace bf = boost::filesystem;
 
 goby::common::protobuf::LiaisonConfig goby::common::Liaison::cfg_;
 boost::shared_ptr<zmq::context_t> goby::common::Liaison::zmq_context_(new zmq::context_t(1));
-const std::string goby::common::Liaison::LIAISON_INTERNAL_PUBLISH_SOCKET_NAME = "liaison_internal_publish_socket"; 
-const std::string goby::common::Liaison::LIAISON_INTERNAL_SUBSCRIBE_SOCKET_NAME = "liaison_internal_subscribe_socket"; 
-std::vector<void *> goby::common::Liaison::dl_handles_;
+std::vector<void *> goby::common::Liaison::plugin_handles_;
 
 int main(int argc, char* argv[])
 {
-    int return_value = goby::run<goby::common::Liaison>(argc, argv);
-    goby::util::DynamicProtobufManager::protobuf_shutdown();
-    for(std::vector<void *>::const_iterator it = goby::common::Liaison::dl_handles().begin(),
-            n = goby::common::Liaison::dl_handles().end(); it != n; ++it)
-        dlclose(*it);
+    // load plugins from environmental variable GOBY_LIAISON_PLUGINS
+    char * plugins = getenv ("GOBY_LIAISON_PLUGINS");
+    if (plugins)
+    {
+        std::string s_plugins(plugins);
+        std::vector<std::string> plugin_vec;
+        boost::split(plugin_vec, s_plugins, boost::is_any_of(";:,"));
+
+        for(int i = 0, n = plugin_vec.size(); i < n; ++i)
+        {
+            glog.is(VERBOSE) &&
+                glog << "Loading liaison plugin library: " << plugin_vec[i] << std::endl;
+            void* handle = dlopen(plugin_vec[i].c_str(), RTLD_LAZY);
+            if(handle)
+                goby::common::Liaison::plugin_handles_.push_back(handle);
+            else
+                glog.is(DIE) && glog << "Failed to open library: " << plugin_vec[i] << std::endl;
+        }        
+    }
     
+    int return_value = goby::run<goby::common::Liaison>(argc, argv);
+    goby::util::DynamicProtobufManager::protobuf_shutdown();    
+
+    for(int i = 0, n = goby::common::Liaison::plugin_handles_.size();
+        i < n; ++i)
+        dlclose(goby::common::Liaison::plugin_handles_[i]);
+
     return return_value;
 }
 
 goby::common::Liaison::Liaison()
     : ZeroMQApplicationBase(&zeromq_service_, &cfg_),
       zeromq_service_(zmq_context_),
-      pubsub_node_(&zeromq_service_, cfg_.base().pubsub_config()),
-      source_database_(&disk_source_tree_)
+      pubsub_node_(&zeromq_service_, cfg_.base().pubsub_config())
 {
-    source_database_.RecordErrorsTo(&error_collector_);
-    disk_source_tree_.MapPath("/", "/");
-    goby::util::DynamicProtobufManager::add_database(&source_database_);
 
 
     // load all shared libraries
@@ -81,18 +97,19 @@ goby::common::Liaison::Liaison()
         glog.is(VERBOSE) &&
             glog << "Loading shared library: " << cfg_.load_shared_library(i) << std::endl;
         
-        void* handle = dlopen(cfg_.load_shared_library(i).c_str(), RTLD_LAZY);
+        void* handle = goby::util::DynamicProtobufManager::load_from_shared_lib(
+            cfg_.load_shared_library(i));
+        
         if(!handle)
         {
-            glog.is(DIE) &&
-                glog << "Failed ... check path provided or add to /etc/ld.so.conf "
-                     << "or LD_LIBRARY_PATH" << std::endl;
+            glog.is(DIE) && glog << "Failed ... check path provided or add to /etc/ld.so.conf "
+                         << "or LD_LIBRARY_PATH" << std::endl;
         }
-        dl_handles_.push_back(handle);
     }
     
     
     // load all .proto files
+    goby::util::DynamicProtobufManager::enable_compilation();
     for(int i = 0, n = cfg_.load_proto_file_size(); i < n; ++i)
         load_proto_file(cfg_.load_proto_file(i));
 
@@ -125,7 +142,7 @@ goby::common::Liaison::Liaison()
     internal_publish_socket->set_socket_id(LIAISON_INTERNAL_PUBLISH_SOCKET);
     internal_publish_socket->set_transport(protobuf::ZeroMQServiceConfig::Socket::INPROC);
     internal_publish_socket->set_connect_or_bind(protobuf::ZeroMQServiceConfig::Socket::BIND);
-    internal_publish_socket->set_socket_name(LIAISON_INTERNAL_PUBLISH_SOCKET_NAME);
+    internal_publish_socket->set_socket_name(liaison_internal_publish_socket_name());
 
 
     protobuf::ZeroMQServiceConfig::Socket* internal_subscribe_socket = ipc_sockets.add_socket();
@@ -133,7 +150,7 @@ goby::common::Liaison::Liaison()
     internal_subscribe_socket->set_socket_id(LIAISON_INTERNAL_SUBSCRIBE_SOCKET);
     internal_subscribe_socket->set_transport(protobuf::ZeroMQServiceConfig::Socket::INPROC);
     internal_subscribe_socket->set_connect_or_bind(protobuf::ZeroMQServiceConfig::Socket::BIND);
-    internal_subscribe_socket->set_socket_name(LIAISON_INTERNAL_SUBSCRIBE_SOCKET_NAME);
+    internal_subscribe_socket->set_socket_name(liaison_internal_subscribe_socket_name());
     
     zeromq_service_.merge_cfg(ipc_sockets);
     zeromq_service_.subscribe_all(LIAISON_INTERNAL_SUBSCRIBE_SOCKET);
@@ -198,7 +215,7 @@ void goby::common::Liaison::load_proto_file(const std::string& path)
         glog << "Loading protobuf file: " << bpath << std::endl;
 
     
-    if(!goby::util::DynamicProtobufManager::descriptor_pool().FindFileByName(bpath.string()))
+    if(!goby::util::DynamicProtobufManager::user_descriptor_pool().FindFileByName(bpath.string()))
         glog.is(DIE) &&
             glog << "Failed to load file." << std::endl;
 }

@@ -1,0 +1,56 @@
+ProcessConfig = pAcommsHandler
+{
+  common {
+  ...
+  }
+  modem_id: 1
+  driver_type: DRIVER_NONE
+  driver_cfg {
+  ...
+  }
+  mac_cfg {
+  ...
+  }
+  queue_cfg {
+  ...
+  }
+  dccl_cfg {
+  ...
+  }
+  route_cfg {
+  ...
+  }
+  moos_var {
+    prefix: "ACOMMS_"
+    driver_raw_in: "NMEA_IN"
+    driver_raw_out: "NMEA_OUT"
+    driver_raw_msg_in: "RAW_INCOMING"
+    driver_raw_msg_out: "RAW_OUTGOING"
+    driver_receive: "MODEM_RECEIVE"
+    driver_transmit: "MODEM_TRANSMIT"
+    queue_receive: "QUEUE_RECEIVE"
+    queue_transmit: "QUEUE_TRANSMIT"
+    queue_ack_transmission: "ACK"
+    queue_ack_original_msg: "ACK_ORIGINAL"
+    queue_expire: "EXPIRE"
+    queue_size: "QSIZE"
+    queue_flush: "FLUSH_QUEUE"
+    mac_cycle_update: "MAC_CYCLE_UPDATE"
+    mac_initiate_transmission: "MAC_INITIATE_TRANSMISSION"
+  }
+  load_shared_library: "/usr/lib/libmy_dccl_messages.so"
+  load_proto_file: "/usr/include/mylib/message.proto"
+  translator_entry {
+  ...
+  }
+  multiplex_create_moos_var: "LIAISON_COMMANDER_OUT"
+  modem_id_lookup_path: ""
+  transitional_cfg {
+    modem_id: 1
+    message_file {
+      path: "/home/toby/goby/src/acomms/examples/chat/chat.xml"
+      manipulator: NO_MANIP
+    }
+    generated_proto_dir: "/tmp"
+  }
+}

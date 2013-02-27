@@ -1,4 +1,4 @@
-// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
 //                     Massachusetts Institute of Technology (2007-)
 //                     Woods Hole Oceanographic Institution (2007-)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
@@ -26,6 +26,7 @@
 #include <string>
 #include "MOOSLIB/MOOSMsg.h"
 #include "MOOSUtilityLib/MOOSGeodesy.h"
+#include "MOOSGenLib/MOOSGenLibGlobalHelper.h"
 
 #include "goby/moos/moos_protobuf_helpers.h"
 #include "goby/moos/protobuf/translator.pb.h"
@@ -46,6 +47,14 @@ namespace goby
         void alg_TSD_to_soundspeed(transitional::DCCLMessageVal& val,
                                    const std::vector<transitional::DCCLMessageVal>& ref_vals);
 
+        // ref_vals subtracted from val
+        void alg_subtract(transitional::DCCLMessageVal& val,
+                          const std::vector<transitional::DCCLMessageVal>& ref_vals);
+
+        // ref_vals added to val
+        void alg_add(transitional::DCCLMessageVal& val,
+                     const std::vector<transitional::DCCLMessageVal>& ref_vals);
+        
         void alg_angle_0_360(transitional::DCCLMessageVal& angle);
         void alg_angle_n180_180(transitional::DCCLMessageVal& angle);
 
@@ -60,8 +69,7 @@ namespace goby
         void alg_unix_time2nmea_time(transitional::DCCLMessageVal& val_to_mod);
 
         void alg_lat2nmea_lat(transitional::DCCLMessageVal& val_to_mod);
-        void alg_lon2nmea_lon(transitional::DCCLMessageVal& val_to_mod);    
-
+        void alg_lon2nmea_lon(transitional::DCCLMessageVal& val_to_mod);
         
         class MOOSTranslator
         {
@@ -85,10 +93,17 @@ namespace goby
                 add_entry(entries);
             }
 
-            
+            void clear_entry(const std::string& protobuf_name)
+            {
+                dictionary_.erase(protobuf_name);
+            }
             
             void add_entry(const goby::moos::protobuf::TranslatorEntry& entry)
-            { dictionary_[entry.protobuf_name()] =  entry; }
+            {
+                if(dictionary_.count(entry.protobuf_name()))
+                    throw(std::runtime_error("Duplicate translator entry for " + entry.protobuf_name()));
+                dictionary_[entry.protobuf_name()] =  entry;
+            }
             
             void add_entry(const std::set<goby::moos::protobuf::TranslatorEntry>& entries)
             {
@@ -120,6 +135,20 @@ namespace goby
             const std::map<std::string, goby::moos::protobuf::TranslatorEntry>&  dictionary() const { return dictionary_; }
             
           private:
+            CMOOSMsg make_moos_msg(const std::string var, const std::string& str)
+            {
+                try
+                {
+                    double return_double = boost::lexical_cast<double>(str);
+                    return CMOOSMsg(MOOS_NOTIFY, var, return_double);
+                }
+                catch(boost::bad_lexical_cast&)
+                {
+                    return CMOOSMsg(MOOS_NOTIFY, var, str);
+                }      
+            }
+            
+            
             void initialize(double lat_origin = std::numeric_limits<double>::quiet_NaN(),
                             double lon_origin = std::numeric_limits<double>::quiet_NaN(),
                             const std::string& modem_id_lookup_path="");
@@ -145,7 +174,7 @@ namespace goby
           private:
             std::map<std::string, goby::moos::protobuf::TranslatorEntry> dictionary_;
             CMOOSGeodesy geodesy_;
-            tes::ModemIdConvert modem_lookup_;
+            goby::moos::ModemIdConvert modem_lookup_;
         };
 
         inline std::ostream& operator<<(std::ostream& os, const MOOSTranslator& tl)
@@ -204,11 +233,16 @@ inline std::multimap<std::string, CMOOSMsg> goby::moos::MOOSTranslator::protobuf
         switch(entry.publish(i).technique())
         {
             case protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_TEXT_FORMAT:
-                goby::moos::MOOSTranslation<goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_TEXT_FORMAT>::serialize(&return_string, protobuf_msg);
+                goby::moos::MOOSTranslation<protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_TEXT_FORMAT>::serialize(&return_string, protobuf_msg);
                 break;
+
+            case protobuf::TranslatorEntry::TECHNIQUE_PREFIXED_PROTOBUF_TEXT_FORMAT:
+                goby::moos::MOOSTranslation<protobuf::TranslatorEntry::TECHNIQUE_PREFIXED_PROTOBUF_TEXT_FORMAT>::serialize(&return_string, protobuf_msg);
+                break;
+
                 
             case protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_NATIVE_ENCODED:
-                goby::moos::MOOSTranslation<goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_NATIVE_ENCODED>::serialize(&return_string, protobuf_msg);
+                goby::moos::MOOSTranslation<protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_NATIVE_ENCODED>::serialize(&return_string, protobuf_msg);
                 break;
 
             case protobuf::TranslatorEntry::TECHNIQUE_COMMA_SEPARATED_KEY_EQUALS_VALUE_PAIRS:
@@ -223,18 +257,7 @@ inline std::multimap<std::string, CMOOSMsg> goby::moos::MOOSTranslator::protobuf
                 break;
         }
 
-        
-        try
-        {
-            double return_double = boost::lexical_cast<double>(return_string);
-            moos_msgs.insert(std::make_pair(moos_var,
-                                            CMOOSMsg(MOOS_NOTIFY, moos_var, return_double)));
-        }
-        catch(boost::bad_lexical_cast&)
-        {
-            moos_msgs.insert(std::make_pair(moos_var,
-                                            CMOOSMsg(MOOS_NOTIFY, moos_var, return_string)));
-        }        
+        moos_msgs.insert(std::make_pair(moos_var, make_moos_msg(moos_var, return_string)));
     }
     
     return moos_msgs;
@@ -252,7 +275,7 @@ inline std::multimap<std::string, CMOOSMsg> goby::moos::MOOSTranslator::protobuf
     const goby::moos::protobuf::TranslatorEntry& entry = it->second;
     
     std::multimap<std::string, CMOOSMsg> moos_msgs;
-
+    
     for(int i = 0, n = entry.create_size();
         i < n; ++ i)
     {
@@ -264,31 +287,52 @@ inline std::multimap<std::string, CMOOSMsg> goby::moos::MOOSTranslator::protobuf
             case protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_TEXT_FORMAT:
                 goby::moos::MOOSTranslation<goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_TEXT_FORMAT>::serialize(&return_string, protobuf_msg);
                 break;
+
+            case protobuf::TranslatorEntry::TECHNIQUE_PREFIXED_PROTOBUF_TEXT_FORMAT:
+                goby::moos::MOOSTranslation<goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PREFIXED_PROTOBUF_TEXT_FORMAT>::serialize(&return_string, protobuf_msg);
+                break;
                 
             case protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_NATIVE_ENCODED:
                 goby::moos::MOOSTranslation<goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_NATIVE_ENCODED>::serialize(&return_string, protobuf_msg);
                 break;
 
-            case protobuf::TranslatorEntry::TECHNIQUE_COMMA_SEPARATED_KEY_EQUALS_VALUE_PAIRS:
-                goby::moos::MOOSTranslation<protobuf::TranslatorEntry::TECHNIQUE_COMMA_SEPARATED_KEY_EQUALS_VALUE_PAIRS>::serialize(&return_string, protobuf_msg, google::protobuf::RepeatedPtrField<protobuf::TranslatorEntry::PublishSerializer::Algorithm>(), entry.use_short_enum());
-                break;
+            case protobuf::TranslatorEntry::TECHNIQUE_COMMA_SEPARATED_KEY_EQUALS_VALUE_PAIRS:    
+            {
+                // workaround for bug in protobuf 2.3.0
+                google::protobuf::RepeatedPtrField<protobuf::TranslatorEntry::PublishSerializer::Algorithm> empty_algorithms;
+                
+                goby::moos::MOOSTranslation<protobuf::TranslatorEntry::TECHNIQUE_COMMA_SEPARATED_KEY_EQUALS_VALUE_PAIRS>::serialize(&return_string, protobuf_msg, empty_algorithms, entry.use_short_enum());
+            }
+            break;
                 
             case protobuf::TranslatorEntry::TECHNIQUE_FORMAT:
-                goby::moos::MOOSTranslation<protobuf::TranslatorEntry::TECHNIQUE_FORMAT>::serialize(&return_string, protobuf_msg, google::protobuf::RepeatedPtrField<protobuf::TranslatorEntry::PublishSerializer::Algorithm>(), entry.create(i).format(), entry.create(i).repeated_delimiter(), entry.use_short_enum());
-                break;
+            {
+                google::protobuf::RepeatedPtrField<protobuf::TranslatorEntry::PublishSerializer::Algorithm> empty_algorithms;
+                
+                goby::moos::MOOSTranslation<protobuf::TranslatorEntry::TECHNIQUE_FORMAT>::serialize(&return_string, protobuf_msg, empty_algorithms, entry.create(i).format(), entry.create(i).repeated_delimiter(), entry.use_short_enum());
+            }
+            break;
         }
         
-        try
+        moos_msgs.insert(std::make_pair(moos_var, make_moos_msg(moos_var, return_string)));
+    }
+
+    if(entry.trigger().type() == protobuf::TranslatorEntry::Trigger::TRIGGER_PUBLISH)
+    {
+        if(moos_msgs.count(entry.trigger().moos_var()))
         {
-            double return_double = boost::lexical_cast<double>(return_string);
-            moos_msgs.insert(std::make_pair(moos_var,
-                                            CMOOSMsg(MOOS_NOTIFY, moos_var, return_double)));
+            // fake the trigger last so that all other inputs get read in first
+            typedef std::multimap<std::string, CMOOSMsg>::iterator It;
+            std::pair<It, It> p = moos_msgs.equal_range(entry.trigger().moos_var());
+            for(It it = p.first; it != p.second; ++it)
+                it->second.m_dfTime = MOOSTime();
         }
-        catch(boost::bad_lexical_cast&)
+        else
         {
-            moos_msgs.insert(std::make_pair(moos_var,
-                                            CMOOSMsg(MOOS_NOTIFY, moos_var, return_string)));
-        }        
+            // add a trigger
+            moos_msgs.insert(std::make_pair(entry.trigger().moos_var(),
+                                            CMOOSMsg(MOOS_NOTIFY, entry.trigger().moos_var(), "")));
+        }
     }
     
     return moos_msgs;
@@ -326,6 +370,11 @@ GoogleProtobufMessagePointer goby::moos::MOOSTranslator::moos_to_protobuf(const 
             case protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_TEXT_FORMAT:
                 goby::moos::MOOSTranslation<protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_TEXT_FORMAT>::parse(source_string, &*msg);
                 break;
+
+            case protobuf::TranslatorEntry::TECHNIQUE_PREFIXED_PROTOBUF_TEXT_FORMAT:
+                goby::moos::MOOSTranslation<protobuf::TranslatorEntry::TECHNIQUE_PREFIXED_PROTOBUF_TEXT_FORMAT>::parse(source_string, &*msg);
+                break;
+
                 
             case protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_NATIVE_ENCODED:
                 goby::moos::MOOSTranslation<protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_NATIVE_ENCODED>::parse(source_string, &*msg);

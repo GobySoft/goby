@@ -1,4 +1,4 @@
-// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
 //                     Massachusetts Institute of Technology (2007-)
 //                     Woods Hole Oceanographic Institution (2007-)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
@@ -164,7 +164,7 @@ namespace goby
             void convert_xml_message_file(const goby::transitional::protobuf::MessageFile& message_file,
                                           std::string* proto_file,
                                           google::protobuf::RepeatedPtrField<goby::moos::protobuf::TranslatorEntry>* translator_entries,
-                                          goby::acomms::protobuf::QueueManagerConfig::ManipulatorEntry* manip_entry);
+                                          goby::acomms::protobuf::QueueManagerConfig* queue_cfg);
             
             
 

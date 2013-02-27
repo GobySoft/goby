@@ -1,4 +1,4 @@
-// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
 //                     Massachusetts Institute of Technology (2007-)
 //                     Woods Hole Oceanographic Institution (2007-)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
@@ -24,6 +24,7 @@
 #ifndef ASIOLineBasedConnection20100715H
 #define ASIOLineBasedConnection20100715H
 
+#include "goby/common/logger.h"
 
 namespace goby
 {
@@ -72,9 +73,18 @@ namespace goby
             }
             
             void read_complete(const boost::system::error_code& error)
-            {     
-                if(error) return socket_close(error);
-
+            {
+                if(error == boost::asio::error::operation_aborted)
+                {
+                    return;
+                }
+                else if(error)
+                {
+                    goby::glog.is(goby::common::logger::DEBUG2) &&
+                        goby::glog << "Error on reading from socket: " << error.message() << std::endl;
+                    return socket_close(error);
+                }
+                
                 std::istream is(&buffer_);
 
                 std::string& line = *in_datagram_.mutable_data();
@@ -104,7 +114,17 @@ namespace goby
 
             void write_complete(const boost::system::error_code& error)
             { // the asynchronous read operation has now completed or failed and returned an error
-                if(error) return socket_close(error);
+                if(error == boost::asio::error::operation_aborted)
+                {
+                    return;
+                }
+                else if(error)
+                {
+                    goby::glog.is(goby::common::logger::DEBUG2) &&
+                        goby::glog << "Error on writing from socket: " << error.message() << std::endl;
+
+                    return socket_close(error);
+                }
                 
                 out_.pop_front(); // remove the completed data
                 if (!out_.empty()) // if there is anthing left to be written

@@ -1,6 +1,7 @@
 import "goby/acomms/protobuf/driver_base.proto";
 import "goby/acomms/protobuf/modem_message.proto";
 import "goby/common/protobuf/option_extensions.proto";
+import "goby/acomms/protobuf/dccl_option_extensions.proto";
 
 package micromodem.protobuf;
 
@@ -53,11 +54,14 @@ message Config
     optional NarrowBandLBLParams narrowband_lbl = 1003;
     optional REMUSLBLParams remus_lbl = 1004;
 
+    optional uint32 mm_version = 1005 [default = 1];
+    
   }
 }
 
 enum ClockMode
 {
+  INVALID_CLOCK_MODE = -1;
   NO_SYNC_TO_PPS_AND_CCCLK_BAD = 0;
   NO_SYNC_TO_PPS_AND_CCCLK_GOOD = 1;
   SYNC_TO_PPS_AND_CCCLK_BAD = 2;
@@ -66,8 +70,14 @@ enum ClockMode
 
 message RangingReply
 {
+  option (dccl.msg).id = 128;
+  option (dccl.msg).max_bytes = 32;
+  
   // seconds
-  repeated double one_way_travel_time = 1;
+  repeated double one_way_travel_time = 1 [(dccl.field).min = 0,
+                                           (dccl.field).max = 30,
+                                           (dccl.field).precision = 3,
+                                           (dccl.field).max_repeat = 4];
   enum OWTTAmbiguity
   {
     OWTT_EXACT = 1; // one_way_travel_time reported is correct and known
@@ -90,51 +100,92 @@ enum PacketType
 
 enum ReceiveMode
 {
+  INVALID_RECEIVE_MODE = -1;
   RECEIVE_GOOD = 0;
   BAD_CRC = 1;
-  PACKET_TIMEOUT = 2;}
-  
+  PACKET_TIMEOUT = 2;
+}
+
+enum PSKErrorCode
+{
+  INVALID_PSK_ERROR_CODE = -1;
+  NO_ERROR = 0;
+  BAD_MODULATION_HEADER = 1;
+  BAD_CRC_DATA_HEADER = 2;
+  BAD_CRC_AT_LEAST_ONE_FRAME = 3;
+  ERROR_ACCESSING_COPROC = 4;
+  EQUALIZER_TIMEOUT = 5;
+  MISSED_START_OF_PSK_PACKET = 6;
+}
+
+
+// $CACST,0,223413.0000,0,1440,25,0175,0166,75,01,01,01,03,1,007,006,0,3,3,0,146,03,04,-100,-1,000,-1.2,45,10000,2000
 message ReceiveStatistics
 {
+  option (dccl.msg).id = 129;
+  option (dccl.msg).max_bytes = 32;
+  
   // including in "version 0", or the original CACST
-  optional ReceiveMode mode = 1;
-  optional string time = 2;
-  optional ClockMode clock_mode = 3;
-  optional int32 mfd_peak = 4;
-  optional int32 mfd_power = 5;
-  optional int32 mfd_ratio = 6;
-  optional int32 spl = 7;
-  optional int32 shf_agn = 8;
-  optional int32 shf_ainpshift = 9;
-  optional int32 shf_ainshift = 10; 
-  optional int32 shf_mfdshift = 11;
-  optional int32 shf_p2bshift = 12;
-  optional int32 rate = 13;
-  optional int32 source = 14;
-  optional int32 dest = 15;
-  optional int32 psk_error_code = 16;
-  optional PacketType packet_type = 17;
-  optional int32 number_frames = 18;
-  optional int32 number_bad_frames = 19;
-  optional int32 snr_rss = 20;
-  optional int32 snr_in = 21;
-  optional int32 snr_out = 22;
-  optional int32 snr_symbols = 23;
-  optional int32 mse_equalizer = 24;
-  optional int32 data_quality_factor = 25;
-  optional double doppler = 26;
-  optional int32 stddev_noise = 27;
-  optional int32 carrier_freq = 28;
-  optional int32 bandwidth = 29;
+  required ReceiveMode mode = 1;
+  required uint64 time = 2 [(dccl.field).codec="_time"];
+  required ClockMode clock_mode = 3;
+  optional int32 mfd_peak = 4 [(dccl.field).omit=true];
+  required int32 mfd_power = 5 [(dccl.field).min = -30,
+                                (dccl.field).max = 40];
+  required int32 mfd_ratio = 6 [(dccl.field).min = 0,
+                                (dccl.field).max = 16383];
+  optional int32 spl = 7 [(dccl.field).omit=true];
+  optional int32 shf_agn = 8 [(dccl.field).omit=true];
+  optional int32 shf_ainpshift = 9 [(dccl.field).omit=true];
+  optional int32 shf_ainshift = 10 [(dccl.field).omit=true];
+  optional int32 shf_mfdshift = 11 [(dccl.field).omit=true];
+  optional int32 shf_p2bshift = 12 [(dccl.field).omit=true];
+  required int32 rate = 13 [(dccl.field).min = -1,
+                            (dccl.field).max = 6];
+  required int32 source = 14 [(dccl.field).min = 0,
+                              (dccl.field).max = 127];
+  required int32 dest = 15 [(dccl.field).min = 0,
+                            (dccl.field).max = 127];
+  required PSKErrorCode psk_error_code = 16;
+  required PacketType packet_type = 17;
+  required int32 number_frames = 18 [(dccl.field).min = 0,
+                                     (dccl.field).max = 8];
+  required int32 number_bad_frames = 19 [(dccl.field).min = 0,
+                                         (dccl.field).max = 8];
+  required int32 snr_rss = 20 [(dccl.field).min = 0,
+                               (dccl.field).max = 255];
+  required int32 snr_in = 21 [(dccl.field).min = -10,
+                               (dccl.field).max = 30];
+  required int32 snr_out = 22 [(dccl.field).min = 0,
+                               (dccl.field).max = 25];
+  required int32 snr_symbols = 23 [(dccl.field).min = 0,
+                                   (dccl.field).max = 30];
+  required int32 mse_equalizer = 24 [(dccl.field).min = -30,
+                                     (dccl.field).max = 5];
+  required int32 data_quality_factor = 25 [(dccl.field).min = 0,
+                                           (dccl.field).max = 255];
+  required double doppler = 26 [(dccl.field).min = -3,
+                                (dccl.field).max = 3,
+                                (dccl.field).precision = 1];
+  required int32 stddev_noise = 27 [(dccl.field).min = 0,
+                                    (dccl.field).max = 255];
+  required int32 carrier_freq = 28 [(dccl.field).min = 100,
+                                    (dccl.field).max = 30000];
+  required int32 bandwidth = 29 [(dccl.field).min = 1000,
+                                 (dccl.field).max = 5000];
 
   // new for "version 6+", firmware 0.93.0.52+
-  optional int32 version = 30 [default=0];
-  optional string date = 31;
-  optional int32 pcm = 32;
+  optional int32 version = 30 [default=0, (dccl.field).omit = true];
+  optional string date = 31 [(dccl.field).omit = true];
+  optional int32 pcm = 32 [(dccl.field).omit = true];
+
+
+  
 }
 
 enum TransmitMode
 {
+  INVALID_TRANSMIT_MODE = -1;
   TRANSMIT_SUCCESSFUL = 0;
   FETS_TOO_HOT = 1;
   EXTSYNC_TIMEOUT = 2;
@@ -160,17 +211,36 @@ message TransmitStatistics
   optional int32 number_frames_sent = 13;
   optional PacketType packet_type = 14;
   optional int32 number_bytes = 15;
+
+  optional int32 version = 100 [default=0];
+}
+
+enum TransmissionType
+{
+  BASE_TYPE = 0;
+    
+  MICROMODEM_TWO_WAY_PING = 1;   // modem 1 interrogates modem 2; modem 2 replies and modem 1 computes one way travel time: $CCMPC
+  MICROMODEM_REMUS_LBL_RANGING = 2;     // modem 1 pings a REMUS network of long baseline (LBL) beacons: $CCPDT
+  MICROMODEM_NARROWBAND_LBL_RANGING = 3;    // modem 1 pings up to four transponders: $CCPNT
+  MICROMODEM_MINI_DATA = 4; // 13 bits (represented as a 1 frame, 2 byte data transmission where data is AND'd with 0x1ff) mini data transmission
 }
 
 extend goby.acomms.protobuf.ModemTransmission 
 {
+  optional TransmissionType type = 1000 [(goby.field).description="Type of transmission if base `type` == DRIVER_SPECIFIC",
+                                         default=BASE_TYPE];
+  
   // LBL parameters will be merged with configuration parameters. If a parameter
   // is set in both places, the ones set here take precedence.
-  optional NarrowBandLBLParams narrowband_lbl = 1001 [(goby.field).dccl.omit = true];
-  optional REMUSLBLParams remus_lbl = 1002 [(goby.field).dccl.omit = true];
+  optional NarrowBandLBLParams narrowband_lbl = 1001 [(dccl.field).omit = true];
+  optional REMUSLBLParams remus_lbl = 1002 [(dccl.field).omit = true];
 
-  optional RangingReply ranging_reply = 1003 [(goby.field).dccl.omit = true];
-  repeated ReceiveStatistics receive_stat = 1004 [(goby.field).dccl.omit = true]; // $CACST
-  repeated TransmitStatistics transmit_stat = 1005 [(goby.field).dccl.omit = true]; // $CAXST
-  repeated int32 frame_with_bad_crc = 1006 [(goby.field).dccl.omit = true];
+  optional RangingReply ranging_reply = 1003 [(dccl.field).omit = true,
+                                              (goby.field).cfg.action = NEVER];
+  repeated ReceiveStatistics receive_stat = 1004 [(dccl.field).omit = true,
+                                                  (goby.field).cfg.action = NEVER]; // $CACST
+  repeated TransmitStatistics transmit_stat = 1005 [(dccl.field).omit = true,
+                                                    (goby.field).cfg.action = NEVER]; // $CAXST
+  repeated int32 frame_with_bad_crc = 1006 [(dccl.field).omit = true,
+                                            (goby.field).cfg.action = NEVER];
 }

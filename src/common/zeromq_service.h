@@ -1,4 +1,4 @@
-// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
 //                     Massachusetts Institute of Technology (2007-)
 //                     Woods Hole Oceanographic Institution (2007-)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
@@ -27,8 +27,9 @@
 #include <iostream>
 #include <string>
 #include <boost/bind.hpp>
+#include <boost/thread/mutex.hpp>
 #include <boost/function.hpp>
-#include <boost/signals.hpp>
+#include <boost/signals2.hpp>
 
 #include "goby/common/protobuf/zero_mq_node_config.pb.h"
 
@@ -115,6 +116,7 @@ namespace goby
             ZeroMQService();
             ZeroMQService(boost::shared_ptr<zmq::context_t> context);
             virtual ~ZeroMQService();
+            
 
             void set_cfg(const protobuf::ZeroMQServiceConfig& cfg)
             {
@@ -171,6 +173,13 @@ namespace goby
 
             
             bool poll(long timeout = -1);
+	    void close_all()
+	    {
+	      sockets_.clear();
+	      poll_items_.clear();
+	      poll_callbacks_.clear();
+	    }
+
 
             ZeroMQSocket& socket_from_id(int socket_id);
             
@@ -193,25 +202,28 @@ namespace goby
             boost::shared_ptr<zmq::context_t> zmq_context() { return context_; }
 
 
-            boost::signal<void (MarshallingScheme marshalling_scheme,
+            boost::signals2::signal<void (MarshallingScheme marshalling_scheme,
                                 const std::string& identifier,
                                 int socket_id)> pre_send_hooks;
 
-            boost::signal<void (MarshallingScheme marshalling_scheme,
+            boost::signals2::signal<void (MarshallingScheme marshalling_scheme,
                                 const std::string& identifier,
                                 int socket_id)> pre_subscribe_hooks;
 
-            boost::signal<void (MarshallingScheme marshalling_scheme,
+            boost::signals2::signal<void (MarshallingScheme marshalling_scheme,
                                 const std::string& identifier,
                                 int socket_id)> post_send_hooks;
 
-            boost::signal<void (MarshallingScheme marshalling_scheme,
+            boost::signals2::signal<void (MarshallingScheme marshalling_scheme,
                                 const std::string& identifier,
                                 int socket_id)> post_subscribe_hooks;
-            
+
+            friend class ZeroMQSocket;
           private:
             ZeroMQService(const ZeroMQService&);
             ZeroMQService& operator= (const ZeroMQService&);
+            
+            void init();
             
             void process_cfg(const protobuf::ZeroMQServiceConfig& cfg);
 
@@ -221,6 +233,8 @@ namespace goby
             void handle_receive(const void* data, int size, int message_part, int socket_id);
 
             int socket_type(protobuf::ZeroMQServiceConfig::Socket::SocketType type);
+            static std::string glog_out_group() { return "goby::common::zmq::out"; }
+            static std::string glog_in_group() { return "goby::common::zmq::in"; }
             
 
           private:
@@ -233,12 +247,12 @@ namespace goby
             // maps poll_items_ index to a callback function
             std::map<size_t, boost::function<void (const void* data, int size, int message_part)> > poll_callbacks_;
             
-            boost::signal<void (MarshallingScheme marshalling_scheme,
+            boost::signals2::signal<void (MarshallingScheme marshalling_scheme,
                                 const std::string& identifier,
                                 const void* data,
                                 int size,
                                 int socket_id)> inbox_signal_;
-
+            boost::mutex poll_mutex_;
         };
     }
 }

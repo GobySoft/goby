@@ -1,4 +1,4 @@
-// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
 //                     Massachusetts Institute of Technology (2007-)
 //                     Woods Hole Oceanographic Institution (2007-)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
@@ -61,7 +61,7 @@ namespace goby
             goby::acomms::protobuf::DriverConfig driver_cfg_; // configuration given to you at launch
 
             //boost::bimap<int, std::string> modem_id2name_;
-            tes::ModemIdConvert modem_lookup_;
+            goby::moos::ModemIdConvert modem_lookup_;
         };
     }
 }

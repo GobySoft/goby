@@ -1,4 +1,4 @@
-// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
 //                     Massachusetts Institute of Technology (2007-)
 //                     Woods Hole Oceanographic Institution (2007-)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
@@ -48,17 +48,13 @@ void CpTranslator::delete_instance()
 
 CpTranslator::CpTranslator()
     : GobyMOOSApp(&cfg_),
-      source_database_(&disk_source_tree_),
       translator_(cfg_.translator_entry(),
                   cfg_.common().lat_origin(),
                   cfg_.common().lon_origin(),
                   cfg_.modem_id_lookup_path()),
       work_(timer_io_service_)
 { 
-    source_database_.RecordErrorsTo(&error_collector_);
-    disk_source_tree_.MapPath("/", "/");
-    goby::util::DynamicProtobufManager::add_database(&source_database_);
-
+    goby::util::DynamicProtobufManager::enable_compilation();
 
     // load all shared libraries
     for(int i = 0, n = cfg_.load_shared_library_size(); i < n; ++i)
@@ -72,7 +68,6 @@ CpTranslator::CpTranslator()
             glog << die << "Failed ... check path provided or add to /etc/ld.so.conf "
                  << "or LD_LIBRARY_PATH" << std::endl;
         }
-        dl_handles.push_back(handle);
     }
     
     
@@ -83,7 +78,7 @@ CpTranslator::CpTranslator()
             glog << "Loading protobuf file: " << cfg_.load_proto_file(i) << std::endl;
 
         
-        if(!goby::util::DynamicProtobufManager::descriptor_pool().FindFileByName(
+        if(!goby::util::DynamicProtobufManager::find_descriptor(
                cfg_.load_proto_file(i)))
             glog.is(DIE) && glog << "Failed to load file." << std::endl;
     }

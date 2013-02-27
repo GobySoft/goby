@@ -1,4 +1,4 @@
-// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
 //                     Massachusetts Institute of Technology (2007-)
 //                     Woods Hole Oceanographic Institution (2007-)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
@@ -48,7 +48,7 @@ namespace goby
             return os;
         }
 
-        /// find `key` in `str` and if successful put it in out
+        /// case insensitive - find `key` in `str` and if successful put it in out
         /// and return true
         /// deal with these basic forms:
         /// str = foo=1,bar=2,pig=3
@@ -66,17 +66,22 @@ namespace goby
             
             out.erase();
 
-            // str:  foo=1,bar={2,3,4,5},pig=3,cow=yes
-            //  start_pos  ^             ^
-            std::string::size_type start_pos = str.find(std::string(key+"="));
-        
+            
             // deal with foo=bar,o=bar problem when looking for "o=" since
             // o is contained in foo
 
             // ok: beginning of string, end of string, comma right before start_pos
-            while(!(start_pos == 0 || start_pos == std::string::npos || str[start_pos-1] == ','))
-                start_pos = str.find(std::string(key+"="), start_pos+1);
-        
+            int match = 0;
+            std::string::size_type start_pos = 0;
+            while(match == 0 || !(start_pos == 0 || start_pos == std::string::npos || str[start_pos-1] == ','))
+            {
+                // str:  foo=1,bar={2,3,4,5},pig=3,cow=yes
+                //  start_pos  ^             ^
+                boost::iterator_range<std::string::const_iterator> result = boost::ifind_nth(str, std::string(key+"="), match);
+                start_pos = (result) ? result.begin() - str.begin() : std::string::npos;
+                ++match;
+            }
+            
             if(start_pos != std::string::npos)
             {
                 // chopped:   bar={2,3,4,5},pig=3,cow=yes

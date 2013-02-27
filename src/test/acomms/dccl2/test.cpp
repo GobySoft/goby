@@ -1,4 +1,4 @@
-// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
 //                     Massachusetts Institute of Technology (2007-)
 //                     Woods Hole Oceanographic Institution (2007-)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
@@ -31,18 +31,17 @@
 #include "goby/util/binary.h"
 
 using goby::acomms::operator<<;
-using goby::acomms::operator+;
 using goby::acomms::Bitset;
 
 class CustomCodec : public goby::acomms::DCCLTypedFixedFieldCodec<CustomMsg>
 {
 private:
-    unsigned size() { return (part() == HEAD) ? 0 : A_SIZE + B_SIZE; }
+    unsigned size() { return (part() == goby::acomms::MessageHandler::HEAD) ? 0 : A_SIZE + B_SIZE; }
     Bitset encode() { return Bitset(size()); }
     
     Bitset encode(const CustomMsg& msg)
         {
-            if(part() == HEAD)
+            if(part() == goby::acomms::MessageHandler::HEAD)
             { return encode(); }
             else
             {
@@ -51,20 +50,21 @@ private:
                 
                 std::cout << "a: " << a << std::endl;
                 std::cout << "b: " << b  << std::endl;
-                
-                return a + b;
+
+                a.append(b);
+                return a;
             }
         }    
     
-    CustomMsg decode(const Bitset& bits)
+    CustomMsg decode(Bitset* bits)
         {
-            if(part() == HEAD)
+            if(part() == goby::acomms::MessageHandler::HEAD)
             { throw(goby::acomms::DCCLNullValueException()); }
             else
             {
-                Bitset a = bits;
+                Bitset a = *bits;
                 a.resize(A_SIZE);
-                Bitset b = bits;
+                Bitset b = *bits;
                 b >>= A_SIZE;
                 b.resize(B_SIZE);
                 
@@ -95,8 +95,6 @@ private:
     
     Bitset encode_repeated(const std::vector<goby::int32>& wire_values)
         {            
-            using goby::acomms::operator+=;
-            
             Bitset value_bits;
             int repeat_size = static_cast<int>(wire_values.size()) > max_repeat() ?
                 max_repeat() :
@@ -108,23 +106,24 @@ private:
             {
                 goby::int32 wire_value = wire_values[i];
                 wire_value -= min();
-                value_bits += Bitset(singular_size(), static_cast<unsigned long>(wire_value));
+                value_bits.append(Bitset(singular_size(), static_cast<unsigned long>(wire_value)));
             }
 
             std::cout << value_bits << std::endl;
             std::cout << Bitset(REPEAT_STORAGE_BITS, repeat_size) << std::endl;
-            std::cout << value_bits + Bitset(REPEAT_STORAGE_BITS, repeat_size) << std::endl;
-            return Bitset(REPEAT_STORAGE_BITS, repeat_size) + value_bits;
+            Bitset out(REPEAT_STORAGE_BITS, repeat_size);
+            out.append(value_bits);
+            return out;
         }
     
-    std::vector<goby::int32> decode_repeated(const Bitset& bits)
+    std::vector<goby::int32> decode_repeated(Bitset* bits)
         {
-            int repeat_size = bits.to_ulong();
+            int repeat_size = bits->to_ulong();
             std::cout << "repeat size is " << repeat_size << std::endl;
             // grabs more bits to add to the MSBs of `bits`
-            get_more_bits(repeat_size*singular_size());
+            bits->get_more_bits(repeat_size*singular_size());
 
-            Bitset value_bits = bits;
+            Bitset value_bits = *bits;
             value_bits >>= REPEAT_STORAGE_BITS;
 
             std::vector<goby::int32> out;
@@ -158,9 +157,9 @@ private:
 
     void validate()
         {
-            DCCLFieldCodecBase::require(DCCLFieldCodecBase::dccl_field_options().has_min(), "missing (goby.field).dccl.min");
-            DCCLFieldCodecBase::require(DCCLFieldCodecBase::dccl_field_options().has_max(), "missing (goby.field).dccl.max");
-            DCCLFieldCodecBase::require(DCCLFieldCodecBase::dccl_field_options().max_repeat() < MAX_REPEAT_SIZE, "(goby.field).dccl.max_repeat must be less than " + goby::util::as<std::string>(static_cast<int>(MAX_REPEAT_SIZE)));
+            DCCLFieldCodecBase::require(DCCLFieldCodecBase::dccl_field_options().has_min(), "missing (dccl.field).min");
+            DCCLFieldCodecBase::require(DCCLFieldCodecBase::dccl_field_options().has_max(), "missing (dccl.field).max");
+            DCCLFieldCodecBase::require(DCCLFieldCodecBase::dccl_field_options().max_repeat() < MAX_REPEAT_SIZE, "(dccl.field).max_repeat must be less than " + goby::util::as<std::string>(static_cast<int>(MAX_REPEAT_SIZE)));
         }
 
     

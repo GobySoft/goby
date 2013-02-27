@@ -1,4 +1,4 @@
-// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
 //                     Massachusetts Institute of Technology (2007-)
 //                     Woods Hole Oceanographic Institution (2007-)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
@@ -42,7 +42,7 @@ namespace goby
           virtual unsigned size() = 0;
           
           private:
-          unsigned size(const FieldType& field_value)
+          unsigned size(const WireType& wire_value)
           { return size(); }
           
           unsigned max_size()

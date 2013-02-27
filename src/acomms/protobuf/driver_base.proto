@@ -2,6 +2,16 @@ import "goby/common/protobuf/option_extensions.proto";
 
 package goby.acomms.protobuf;
 
+// known drivers - should make this somehow extensible
+enum DriverType {
+  DRIVER_NONE = 1;
+  DRIVER_WHOI_MICROMODEM = 2;
+  DRIVER_ABC_EXAMPLE_MODEM = 3;
+  DRIVER_UFIELD_SIM_DRIVER = 4;
+  DRIVER_PB_STORE_SERVER = 5;
+  DRIVER_UDP = 6;
+}
+
 message DriverConfig
 {
   optional int32 modem_id = 1 [(goby.field).description="Unique number 1-31 to identify this node", (goby.field).example="1"];
@@ -9,7 +19,6 @@ message DriverConfig
   enum ConnectionType { CONNECTION_SERIAL = 1; // Modem is connected by a tty serial line (e.g. RS-232)
                         CONNECTION_TCP_AS_CLIENT = 2; // Modem is connected by ethernet and is serving clients
                         CONNECTION_TCP_AS_SERVER = 3; // Modem is connected by ethernet and expects us to serve it
-                        CONNECTION_DUAL_UDP_BROADCAST = 4; // Presently unimplemented
   }
   
   optional ConnectionType connection_type = 2 [default = CONNECTION_SERIAL, (goby.field).description="Physical connection type from this computer (running Goby) to the acoustic modem"];
@@ -30,5 +39,7 @@ message DriverConfig
   // extensions 1000-1100 used by acomms_mm_driver.proto
   // extensions 1201-1202 used by acomms_abc_driver.proto (example driver)
   // extensions 1300-1320 used by ufield_sim_driver.proto
+  // extensions 1321-1340 used by pb_modem_driver.proto
+  // extensions 1341-1360 used by udp_driver.proto  
 }
 

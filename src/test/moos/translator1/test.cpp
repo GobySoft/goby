@@ -1,4 +1,4 @@
-// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
 //                     Massachusetts Institute of Technology (2007-)
 //                     Woods Hole Oceanographic Institution (2007-)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
@@ -80,8 +80,9 @@ int main(int argc, char* argv[])
         serializer->set_moos_var("TEST_MSG_1");
 
         entries.insert(entry);
-    }
-    
+    } 
+   
+    translator.clear_entry("TestMsg");
     translator.add_entry(entries);
 
     goby::glog << translator << std::endl;    
@@ -99,7 +100,8 @@ int main(int argc, char* argv[])
         protobuf::TranslatorEntry::PublishSerializer* serializer = entry.add_publish();
         serializer->set_technique(protobuf::TranslatorEntry::TECHNIQUE_COMMA_SEPARATED_KEY_EQUALS_VALUE_PAIRS);
         serializer->set_moos_var("TEST_MSG_1");
-        
+
+        translator.clear_entry(entry.protobuf_name());
         translator.add_entry(entry);
     }
     
@@ -124,6 +126,7 @@ int main(int argc, char* argv[])
         serializer->set_moos_var("NODE_REPORT");
         serializer->set_format(format_str);
         
+        translator.clear_entry(entry.protobuf_name());        
         translator.add_entry(entry);
     }
 
@@ -192,7 +195,7 @@ int main(int argc, char* argv[])
         protobuf::TranslatorEntry::PublishSerializer* serializer = entry.add_publish();
         serializer->set_technique(protobuf::TranslatorEntry::TECHNIQUE_FORMAT);
         serializer->set_moos_var("NODE_REPORT_FORMAT");
-        serializer->set_format(format_str + ";LAT=%100%;LON=%101%");
+        serializer->set_format(format_str + ";LAT=%100%;LON=%101%;X+Y=%104%,X-Y=%105%");
         
         protobuf::TranslatorEntry::PublishSerializer::Algorithm* algo_out = serializer->add_algorithm();
         algo_out->set_name("utm_x2lon");
@@ -226,13 +229,25 @@ int main(int argc, char* argv[])
         algo_out->set_output_virtual_field(103);
         algo_out->set_primary_field(1);
         
+        algo_out = serializer->add_algorithm();
+        algo_out->set_name("add");
+        algo_out->set_output_virtual_field(104);
+        algo_out->set_primary_field(202);
+        algo_out->add_reference_field(3);
+
+        algo_out = serializer->add_algorithm();
+        algo_out->set_name("subtract");
+        algo_out->set_output_virtual_field(105);
+        algo_out->set_primary_field(202);
+        algo_out->add_reference_field(3);
         
         protobuf::TranslatorEntry::PublishSerializer* serializer2 = entry.add_publish();
         serializer2->CopyFrom(*serializer);
         serializer2->clear_format();
         serializer2->set_technique(protobuf::TranslatorEntry::TECHNIQUE_COMMA_SEPARATED_KEY_EQUALS_VALUE_PAIRS);
         serializer2->set_moos_var("NODE_REPORT_KEY_VALUE");
-        
+
+        translator.clear_entry(entry.protobuf_name());        
         translator.add_entry(entry);
    }
     
@@ -268,9 +283,9 @@ int main(int argc, char* argv[])
                   << "Value: " << it->second.GetString() << std::endl;
 
        if(it->first == "NODE_REPORT_FORMAT")
-           assert(it->second.GetString() == "NAME=unicorn,X=550,Y=1023.5,HEADING=240,REPEAT={};LAT=42.509107559864;LON=10.80695591284");
+           assert(it->second.GetString() == "NAME=unicorn,X=550,Y=1023.5,HEADING=240,REPEAT={};LAT=42.509107611869;LON=10.80695580804;X+Y=1573.5,X-Y=-473.5");
        else if(it->first == "NODE_REPORT_KEY_VALUE")
-           assert(it->second.GetString() == "name=unicorn,x=550,y=1023.5,heading=240,utm_y2lat(y)=42.509107559864,utm_x2lon(x)=10.80695591284,name2modem_id(name)=3,name2modem_id+modem_id2type+to_upper(name)=AUV");
+           assert(it->second.GetString() == "Name=unicorn,x=550,y=1023.5,heading=240,utm_y2lat(y)=42.509107611869,utm_x2lon(x)=10.80695580804,name2modem_id(Name)=3,name2modem_id+modem_id2type+to_upper(Name)=AUV,add(x)=1573.5,subtract(x)=-473.5");
        
    }
     
@@ -290,7 +305,8 @@ int main(int argc, char* argv[])
         serializer->set_technique(protobuf::TranslatorEntry::TECHNIQUE_FORMAT);
         serializer->set_moos_var("TEST_MSG_1");
         serializer->set_format(sub_message_format_str);
-        
+
+        translator.clear_entry(entry.protobuf_name());
         translator.add_entry(entry);
     }
 
@@ -334,7 +350,8 @@ int main(int argc, char* argv[])
        serializer->set_technique(protobuf::TranslatorEntry::TECHNIQUE_FORMAT);
        serializer->set_moos_var("TEST_MSG_1");
        serializer->set_format(sub_message_format_str);
-       
+
+       translator.clear_entry(entry.protobuf_name());
        translator.add_entry(entry);
    }
    

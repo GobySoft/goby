@@ -19,17 +19,25 @@ if(enable_testing)
   include(CTest)
 endif()
 
+
 set(GOBY_VERSION_MAJOR "2")
 set(GOBY_VERSION_MINOR "0")
-set(GOBY_VERSION_PATCH "0-beta4")
+set(GOBY_VERSION_PATCH "1~rc4")
+
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.bzr")
+   message("Compiling in bazaar source tree.")
+   include(today)
+   today(GOBY_VERSION_DATE)  
+   set(GOBY_VERSION_PATCH "${GOBY_VERSION_PATCH}+bzr")
+else()
+   message("Compiling from release tarball.")
+   set(GOBY_VERSION_DATE "2012.08.24")
+endif()
+
 set(GOBY_VERSION "${GOBY_VERSION_MAJOR}.${GOBY_VERSION_MINOR}.${GOBY_VERSION_PATCH}")
-set(GOBY_VERSION_DATE "2012.02.22")
 
-include(today)
-today(GOBY_COMPILE_DATE)
-
-# give Goby 2 series a few more soversions
-set(GOBY_SOVERSION "21")
+# give Goby 1 series a few more soversions
+set(GOBY_SOVERSION "23")
 
 # fetch all the local directories for generated code
 get_filename_component(goby_LIB_DIR lib ABSOLUTE)
@@ -40,9 +48,9 @@ get_filename_component(goby_SHARE_DIR share ABSOLUTE)
 get_filename_component(goby_BUILD_DIR build ABSOLUTE)
 get_filename_component(goby_SCRIPTS_DIR scripts ABSOLUTE)
 
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -fprofile-arcs -ftest-coverage")
-set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -Wall -fprofile-arcs -ftest-coverage")
-set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -fprofile-arcs -ftest-coverage")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall") # -fprofile-arcs -ftest-coverage")
+set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -Wall") # -fprofile-arcs -ftest-coverage")
+#set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -fprofile-arcs -ftest-coverage")
 
 ## set type of libraries
 option(make_static_libs "Build static libraries instead of shared." OFF)
@@ -51,6 +59,25 @@ if(make_static_libs)
   set(BUILD_SHARED_LIBS OFF)
 else()
   set(BUILD_SHARED_LIBS ON)
+endif()
+
+## build goby logger with threading enabled
+option(make_thread_safe_logger "Enable thread-safety in Goby Logger." ON)
+
+if(make_thread_safe_logger)
+  set(IS_THREAD_SAFE_LOGGER 1)
+else()
+  set(IS_THREAD_SAFE_LOGGER 0)
+endif()
+
+## build dynamic protobuf manager with ability to read from disk (requires
+## boost-filesystem)
+option(make_proto_runtime_compile "Allow runtime compilation of .proto files." ON)
+
+if(make_proto_runtime_compile)
+  set(IS_PROTO_RUNTIME_COMPILE 1)
+else()
+  set(IS_PROTO_RUNTIME_COMPILE 0)
 endif()
 
 ## set the cmake defaults for libraries and binaries
@@ -62,6 +89,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${goby_LIB_DIR} CACHE PATH
   "Output directory for the static libraries (archives)" )
 
 ## set instructions for `make install`
+file(MAKE_DIRECTORY ${goby_BIN_DIR})
 install(DIRECTORY ${goby_BIN_DIR}/ DESTINATION ${CMAKE_INSTALL_PREFIX}/bin 
   FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
 
@@ -72,8 +100,6 @@ install(DIRECTORY ${goby_LIB_DIR}/ DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
 install(DIRECTORY ${goby_SHARE_DIR}/ DESTINATION ${CMAKE_INSTALL_PREFIX}/share/goby)
 install(DIRECTORY ${goby_INC_DIR}/ DESTINATION ${CMAKE_INSTALL_PREFIX}/include
   FILES_MATCHING REGEX .*\\.h|.*\\.proto)
-
-
 
 ## let cmake know where the headers are
 include_directories(${goby_INC_DIR})
@@ -88,7 +114,7 @@ if(${APPLE})
   link_directories(/sw/lib)
 endif()
 
-
+set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES ${goby_INC_DIR}/goby)
 
 ## copy to goby/include
 file(GLOB_RECURSE INCLUDE_FILES RELATIVE ${goby_SRC_DIR} src/*.h src/*.proto)
@@ -96,7 +122,6 @@ foreach(I ${INCLUDE_FILES})
   configure_file(${goby_SRC_DIR}/${I} ${goby_INC_DIR}/goby/${I} @ONLY)
 endforeach()
 
-set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES ${goby_INC_DIR}/goby)
-
 ## start adding subdirectories
 add_subdirectory(src)
+

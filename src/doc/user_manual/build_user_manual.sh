@@ -1,9 +1,7 @@
 #!/bin/bash
 
 # you need xetex and gentium-plus to build this manual
-# > sudo apt-get install texlive-xetex
-# > wget "http://scripts.sil.org/cms/scripts/render_download.php?&format=file&media_id=GentiumPlus-1.504-developer.deb&filename=fonts-sil-gentium-plus_1.504-developer-1_all.deb" -O gentium.deb
-# > sudo dpkg -i gentium.deb
+# > sudo apt-get install texlive-xetex fonts-sil-gentium
 
 set -e
 

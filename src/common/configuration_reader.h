@@ -1,4 +1,4 @@
-// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
 //                     Massachusetts Institute of Technology (2007-)
 //                     Woods Hole Oceanographic Institution (2007-)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
@@ -32,7 +32,6 @@
 #include <boost/foreach.hpp>
 #include <boost/program_options.hpp>
 #include <boost/cstdint.hpp>
-#include <boost/filesystem.hpp>
 
 #include <google/protobuf/message.h>
 #include <google/protobuf/descriptor.h>

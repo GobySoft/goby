@@ -1,4 +1,4 @@
-// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
 //                     Massachusetts Institute of Technology (2007-)
 //                     Woods Hole Oceanographic Institution (2007-)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
@@ -33,9 +33,8 @@
 #include <google/protobuf/io/tokenizer.h>
 
 #include <boost/static_assert.hpp>
-#include <boost/static_assert.hpp>
 
-#include "flex_ostreambuf.h"
+#include "goby/common/logger/flex_ostreambuf.h"
 #include "logger_manipulators.h"
 
 namespace goby
@@ -161,8 +160,10 @@ namespace goby
             /// \name Thread safety related
             //@{
             /// Get a reference to the Goby logger mutex for scoped locking
+#if THREAD_SAFE_LOGGER
             boost::mutex& mutex()
             { return logger::mutex; }
+#endif
             //@}
 
             void refresh()
@@ -227,7 +228,7 @@ namespace goby
     }
 }
 
-
+#if THREAD_SAFE_LOGGER
 /// Unlock the Goby logger after a call to glogger(lock)
 inline std::ostream& unlock(std::ostream & os)
 {
@@ -247,22 +248,27 @@ class FlexOStreamErrorCollector : public google::protobuf::io::ErrorCollector
     void AddError(int line, int column, const std::string& message)
     {
         using goby::common::logger::WARN;
+        using namespace goby::common::logger_lock;
         
         print_original(line, column);
-        goby::glog.is(WARN) && goby::glog << "line: " << line << " col: " << column << " " << message << std::endl;
+        goby::glog.is(WARN, lock) && goby::glog << "line: " << line << " col: " << column << " " << message << std::endl << unlock;
         has_errors_ = true;
     }
     void AddWarning(int line, int column, const std::string& message)
     {
         using goby::common::logger::WARN;
+        using namespace goby::common::logger_lock;
 
         print_original(line, column);
-        goby::glog.is(WARN) && goby::glog << "line: " << line << " col: " << column << " " << message << std::endl;
+        goby::glog.is(WARN, lock) && goby::glog << "line: " << line << " col: " << column << " " << message << std::endl << unlock;
         has_warnings_ = true;
     }
     
     void print_original(int line, int column)
     {
+        using goby::common::logger::WARN;
+        using namespace goby::common::logger_lock;
+        
         std::stringstream ss(original_ + "\n");
         std::string line_str;
 
@@ -273,9 +279,9 @@ class FlexOStreamErrorCollector : public google::protobuf::io::ErrorCollector
         while(!getline(ss, line_str).eof())
         {
             if(i == line)
-                goby::glog << goby::common::tcolor::lt_red << "[line " << std::setw(3) << i++ << "]" << line_str << goby::common::tcolor::nocolor << std::endl;
+                goby::glog.is(WARN, lock) && goby::glog << goby::common::tcolor::lt_red << "[line " << std::setw(3) << i++ << "]" << line_str << goby::common::tcolor::nocolor << std::endl << unlock;
             else
-                goby::glog << "[line " << std::setw(3) << i++ << "]" << line_str << std::endl;       
+                goby::glog.is(WARN, lock) && goby::glog << "[line " << std::setw(3) << i++ << "]" << line_str << std::endl << unlock;       
         }
     }
 
@@ -289,6 +295,7 @@ class FlexOStreamErrorCollector : public google::protobuf::io::ErrorCollector
     bool has_warnings_;
     bool has_errors_;
 };
+#endif // THREAD_SAFE_LOGGER
 
 
 #endif

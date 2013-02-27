@@ -1,4 +1,4 @@
-// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
 //                     Massachusetts Institute of Technology (2007-)
 //                     Woods Hole Oceanographic Institution (2007-)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
@@ -98,7 +98,7 @@ namespace goby
         /// \brief Base class for static-typed (no boost::any) field encoders/decoders. Most user defined variable length codecs will start with this class. Use DCCLTypedFixedFieldCodec if your codec is fixed length (always uses the same number of bits on the wire).
         /// \ingroup dccl_api
         ///
-        ///\tparam WireType the type used for the encode and decode functions. This can be any C++ type, and is often the same as FieldType, unless a type conversion should be performed. The reason for using a different WireType and FieldType should be clear from the DCCLDefaultEnumCodec which uses DCCLDefaultArithmeticFieldCodec to do all the numerical encoding / decoding while DCCLDefaultEnumCodec does the type conversion (pre_encode() and post_decode()).
+        ///\tparam WireType the type used for the encode and decode functions. This can be any C++ type, and is often the same as FieldType, unless a type conversion should be performed. The reason for using a different WireType and FieldType should be clear from the DCCLDefaultEnumCodec which uses DCCLDefaultNumericFieldCodec to do all the numerical encoding / decoding while DCCLDefaultEnumCodec does the type conversion (pre_encode() and post_decode()).
         ///\tparam FieldType the type used in the Google Protobuf message that is exposed to the end-user DCCLCodec::decode(), DCCLCodec::encode(), etc. functions.
         template<typename WireType, typename FieldType = WireType>
             class DCCLTypedFieldCodec : public DCCLFieldCodecSelector<WireType, FieldType>
@@ -124,7 +124,7 @@ namespace goby
           ///
           /// \param bits Bits to use for decoding.
           /// \return the decoded value.
-          virtual WireType decode(const Bitset& bits) = 0;
+          virtual WireType decode(Bitset* bits) = 0;
 
           /// \brief Calculate the size (in bits) of an empty field.
           ///
@@ -135,15 +135,15 @@ namespace goby
           ///
           /// \param wire_value Value to use when calculating the size of the field. If calculating the size requires encoding the field completely, cache the encoded value for a likely future call to encode() for the same wire_value.
           /// \return the size (in bits) of the field.
-          virtual unsigned size(const FieldType& wire_value) = 0;
+          virtual unsigned size(const WireType& wire_value) = 0;
           
           private:
-          unsigned any_size(const boost::any& field_value)
+          unsigned any_size(const boost::any& wire_value)
           {
               try
-              { return field_value.empty() ? size() : size(boost::any_cast<FieldType>(field_value)); }
+              { return wire_value.empty() ? size() : size(boost::any_cast<WireType>(wire_value)); }
               catch(boost::bad_any_cast&)
-              { throw(type_error("size", typeid(FieldType), field_value.type())); }
+              { throw(type_error("size", typeid(WireType), wire_value.type())); }
           }          
           
           void any_encode(Bitset* bits, const boost::any& wire_value)
@@ -166,7 +166,7 @@ namespace goby
               try
               {
                   google::protobuf::Message* msg = boost::any_cast<google::protobuf::Message* >(*wire_value);  
-                  msg->CopyFrom(decode(*bits));
+                  msg->CopyFrom(decode(bits));
               }
               catch(DCCLNullValueException&)
               {
@@ -180,7 +180,7 @@ namespace goby
           any_decode_specific(Bitset* bits, boost::any* wire_value)
           {
               try
-              { *wire_value = decode(*bits); }
+              { *wire_value = decode(bits); }
               catch(DCCLNullValueException&)
               { *wire_value = boost::any(); }              
           }
@@ -192,16 +192,13 @@ namespace goby
         /// \brief Base class for "repeated" (multiple value) static-typed (no boost::any) field encoders/decoders. Most user defined variable length codecs will start with this class. Use DCCLTypedFixedFieldCodec if your codec is fixed length (always uses the same number of bits on the wire). Use DCCLTypedFieldCodec if your fields are always singular ("optional" or "required"). Singular fields are default implemented in this codec by calls to the equivalent repeated function with an empty or single valued vector.
         /// \ingroup dccl_api
         ///
-        ///\tparam WireType the type used for the encode and decode functions. This can be any C++ type, and is often the same as FieldType, unless a type conversion should be performed. The reason for using a different WireType and FieldType should be clear from the DCCLDefaultEnumCodec which uses DCCLDefaultArithmeticFieldCodec to do all the numerical encoding / decoding while DCCLDefaultEnumCodec does the type conversion (pre_encode() and post_decode()).
+        ///\tparam WireType the type used for the encode and decode functions. This can be any C++ type, and is often the same as FieldType, unless a type conversion should be performed. The reason for using a different WireType and FieldType should be clear from the DCCLDefaultEnumCodec which uses DCCLDefaultNumericFieldCodec to do all the numerical encoding / decoding while DCCLDefaultEnumCodec does the type conversion (pre_encode() and post_decode()).
         ///\tparam FieldType the type used in the Google Protobuf message that is exposed to the end-user DCCLCodec::decode(), DCCLCodec::encode(), etc. functions.
-        template<typename WireType>
-            class DCCLRepeatedTypedFieldCodec : public DCCLTypedFieldCodec<WireType, WireType>
+        template<typename WireType, typename FieldType = WireType>
+            class DCCLRepeatedTypedFieldCodec : public DCCLTypedFieldCodec<WireType, FieldType>
         {
           public:
           typedef WireType wire_type;
-
-          ///\todo (tes) Make this able to take different WireType and FieldType
-          typedef WireType FieldType;
           typedef FieldType field_type;
 
           public:          
@@ -209,11 +206,11 @@ namespace goby
           virtual Bitset encode_repeated(const std::vector<WireType>& wire_value) = 0;
 
           /// \brief Decode a repeated field
-          virtual std::vector<WireType> decode_repeated(const Bitset& bits) = 0;
+          virtual std::vector<WireType> decode_repeated(Bitset* bits) = 0;
 
           /// \brief Give the size of a repeated field
           virtual unsigned size_repeated(
-              const std::vector<FieldType>& field_values) = 0;
+              const std::vector<WireType>& wire_values) = 0;
 
           /// \brief Give the max size of a repeated field
           virtual unsigned max_size_repeated() = 0;
@@ -239,7 +236,7 @@ namespace goby
           ///
           /// \param bits Bits to use for decoding.
           /// \return the decoded value.
-          virtual WireType decode(const Bitset& bits)
+          virtual WireType decode(Bitset* bits)
           { return decode_repeated(bits).at(0); }          
 
           /// \brief Calculate the size (in bits) of an empty field.
@@ -252,7 +249,7 @@ namespace goby
           ///
           /// \param wire_value Value to use when calculating the size of the field. If calculating the size requires encoding the field completely, cache the encoded value for a likely future call to encode() for the same wire_value.
           /// \return the size (in bits) of the field.
-          virtual unsigned size(const FieldType& wire_value)
+          virtual unsigned size(const WireType& wire_value)
           { return size_repeated(std::vector<WireType>(1, wire_value)); }
 
           virtual unsigned max_size()
@@ -288,7 +285,7 @@ namespace goby
           typename boost::enable_if<boost::is_base_of<google::protobuf::Message, T>, void>::type
           any_decode_repeated_specific(Bitset* repeated_bits, std::vector<boost::any>* wire_values)
           {
-              std::vector<WireType> decoded_msgs = decode_repeated(*repeated_bits);
+              std::vector<WireType> decoded_msgs = decode_repeated(repeated_bits);
               wire_values->resize(decoded_msgs.size(), WireType());
               
               for(int i = 0, n = decoded_msgs.size(); i < n; ++i)
@@ -302,7 +299,7 @@ namespace goby
           typename boost::disable_if<boost::is_base_of<google::protobuf::Message, T>, void>::type
           any_decode_repeated_specific(Bitset* repeated_bits, std::vector<boost::any>* wire_values)
           {
-              std::vector<WireType> decoded = decode_repeated(*repeated_bits);
+              std::vector<WireType> decoded = decode_repeated(repeated_bits);
               wire_values->resize(decoded.size(), WireType());
               
               for(int i = 0, n = decoded.size(); i < n; ++i)
@@ -316,20 +313,20 @@ namespace goby
 //          void any_post_decode_repeated(const std::vector<boost::any>& wire_values,
 //                                        std::vector<boost::any>* field_values);
           
-          unsigned any_size_repeated(const std::vector<boost::any>& field_values)
+          unsigned any_size_repeated(const std::vector<boost::any>& wire_values)
           {
               try
               {
-                  std::vector<FieldType> in;
-                  BOOST_FOREACH(const boost::any& field_value, field_values)
+                  std::vector<WireType> in;
+                  BOOST_FOREACH(const boost::any& wire_value, wire_values)
                   {                  
-                      in.push_back(boost::any_cast<FieldType>(field_value));
+                      in.push_back(boost::any_cast<WireType>(wire_value));
                   }
                   
                   return size_repeated(in);
               }
               catch(boost::bad_any_cast&)
-              { throw(type_error("size_repeated", typeid(FieldType), field_values.at(0).type())); }
+              { throw(type_error("size_repeated", typeid(WireType), wire_values.at(0).type())); }
           }
           
           

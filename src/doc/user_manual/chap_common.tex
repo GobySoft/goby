@@ -1,0 +1,78 @@
+\chapter{Goby Common Modules}\label{chap:common}
+\MakeShortVerb{\!} % makes !foo! == !foo!
+
+\section{Goby Common Applications}\label{sec:base_cfg}
+
+The Goby Common applications use a validating configuration reader based on the Google Protocol Buffers TextFormat class. The configuration of any given application is available by passing the !--example_config! flag (or !-e! for short) to that application. Additionally, any of the configuration that may be given in a file is also available as command line options. Provide !--help! (or !-h!) to see the command line options.
+
+They all share a common subset of the configuration (!base!):
+
+\boxedverbatiminput{@RELATIVE_CMAKE_CURRENT_SOURCE_DIR@/includes/base.pb.cfg}
+\resetbvlinenumber
+
+\begin{itemize}
+\item !app_name!: Name of the application (defaults to binary name, i.e. oart of argv[0] after last !/!).
+\item !loop_freq!: How often to run the synchronous !loop! method. 
+\item !platform_name!: Name of the node or platform this is running on .
+\item !pubsub_config!: Socket configuration for the publish-subscribe part of Goby-Common. If omitted, no connections or bindings will be made (if an application is standalone).
+\begin{itemize}
+\item !publish_socket!: The socket used for publishing messages. 
+\begin{itemize}
+\item !socket_type!: Must always be !PUBLISH! (you can safely omit the field here).
+\item !socket_id!: Generally a unique id, unless you want several sockets of the same type to send and receive together. You can safely omit this field; it defaults to 103999.
+\item !transport!: !IPC! (UNIX sockets), !TCP!, !PGM! (Pragmatic General Multicast), !EPGM! (PGM encasulated in UDP). In generally, you will use !TCP! or !IPC!.
+\item !connect_or_bind!: !CONNECT! is used on the client side, !BIND! is used on the server side. Generally, you will !BIND! the side on a well-known location, and !CONNECT! the sides that may be more dynamic.
+\item !ethernet_address!: For !TCP!, !PGM! and !EPGM!, the ethernet address to use.
+\item !multicast_address!: For !PGM! and !EPGM!, the multicast address of the group to join.
+\item !ethernet_port!: The network port to connect or bind to.
+\item !socket_name!: For !IPC!, the name (path) of the UNIX socket to create or connect to.
+\end{itemize}
+\item !subscribe_socket!: The socket used for received subscribed messages. Except where noted, the fields are the same as for !publish_socket!. 
+\begin{itemize}
+\item !socket_type!: Must always be !SUBSCRIBE! (you can safely omit the field here).
+\item !socket_id!: Generally a unique id, unless you want several sockets of the same type to send and receive together. You can safely omit this field; it defaults to 103998.
+\end{itemize}
+\end{itemize}
+\item !additional_socket_config!: (Advanced) Used to add additional ZeroMQ connections or bindings. 
+\item !glog_config!: Configure the !goby::glog! logging utility. 
+\begin{itemize}
+\item !tty_verbosity!: Verbosity of the debug logging to standard output in the controlling terminal. Choose !DEBUG1!-!DEBUG3! for various levels of debugging output, !VERBOSE! for some text terminal output, !WARN! for warnings only, and !QUIET! for no terminal output.
+\item !file_log!: A repeated field to log the debugging output to one or more files. If omitted, no files are logged.
+\begin{itemize}
+\item !file_name!: Path to file to log. The symbol !%1%! (if present) will be replaced by the current UTC date and time at application launch. %
+\item !verbosity!: Verbosity of this file log. Same enumeration options as  !tty_verbosity!.
+\end{itemize}
+\end{itemize}
+\end{itemize}
+
+\section{Liaison}\label{sec:liaison}
+
+Goby Liaison (!goby_liaison!) is an extensible web-browser based GUI for managing various aspects of Goby. It is written using the Wt \cite{wt} library and allows users to manage their Goby systems from any machine (GNU/Linux, Windows, Mac OS X) running a modern web browser (e.g. Firefox, Chrome).
+
+The majority of Liaison is provided by plugin shared libraries that are loaded at runtime using the environmental variable !GOBY_LIAISON_PLUGINS!, which is a colon separated list of libraries (either absolute paths or in paths known to !ld!, such as !/usr/lib!).
+
+The core of Goby Liaison is a server that allows connections from one or more clients through any major modern web browser. The core configuration options are given by:
+
+\boxedverbatiminput{@RELATIVE_CMAKE_CURRENT_SOURCE_DIR@/includes/liaison.pb.cfg}
+\resetbvlinenumber
+
+\begin{itemize}
+\item !base!: Shared configuration for all !goby_common! applications. See section \ref{sec:base_cfg}.
+\item !http_address!: IP address or domain name for the interface to bind on. Use !0.0.0.0! to bind on all interfaces. Use !localhost! to allow connections only from the local machine for security.
+\item !http_port!: TCP port to bind on.
+\item !docroot!: Path to the Wt !docroot!, where various resources are found (e.g. CSS, images, etc.). The default is usually correct for your installation.
+\item !additional_wt_http_params!: Additional command line parameters (separated by spaces) to pass to the Wt server. See \url{http://www.webtoolkit.eu/wt/doc/reference/html/overview.html#config_wthttpd}.
+\item !update_freq!: How often to update elements that require data from the server side without client input.
+\item !load_shared_library!: Load a shared library (probably containing Google Protobuf messages) for use.
+\item !load_proto_file!: Load a !.proto! file directly and compile it at runtime for use. When possible, use !load_shared_library!.
+\item !load_proto_dir!: Path to a directory containing !.proto! files. All the !.proto! files in this directory will be loaded and compiled for use.
+\item !start_paused!: For modules that require server side updates without client input, setting this true will start up Liaison with these modules paused. This prevents any server side initiated data from being pushed to the client. Set true for use on low-throughput links (e.g. wireless at sea).
+\end{itemize}
+
+Additional configuration may be available from the loaded plugins. For example, see the MOOS plugins in section \ref{sec:moos_liaison}.
+
+To connect to a server using the default configuration, simply type !http://localhost:54321! into the address bar of your favorite web browser.
+
+\section{Gateway Applications}
+
+Goby, which uses ZeroMQ as a transport layer, sometimes also needs to talk to other systems using incompatible transport mechanisms. To do this, ``gateway'' applications can be developed that pass packets between the ZeroMQ (Goby) ``world'' and the other system's world. Thus far, one gateway has been written, the !moos_gateway_g! (see section \ref{sec:moos_gateway_g}) for interfacing with the MOOS middleware.

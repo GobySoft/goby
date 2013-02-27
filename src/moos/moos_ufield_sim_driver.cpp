@@ -1,4 +1,4 @@
-// Copyright 2009-2012 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
 //                     Massachusetts Institute of Technology (2007-)
 //                     Woods Hole Oceanographic Institution (2007-)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
@@ -119,7 +119,9 @@ void goby::moos::UFldDriver::handle_initiate_transmission(
 
         msg.set_dest(msg.src());
         msg.set_src(driver_cfg_.modem_id());
-        msg.set_type(goby::acomms::protobuf::ModemTransmission::UFIELD_DRIVER_POLL);
+        
+        msg.set_type(goby::acomms::protobuf::ModemTransmission::DRIVER_SPECIFIC);
+        msg.SetExtension(goby::moos::protobuf::type, goby::moos::protobuf::UFIELD_DRIVER_POLL);
 
         send_message(msg);
     }
@@ -195,13 +197,15 @@ void goby::moos::UFldDriver::do_work()
 
 void goby::moos::UFldDriver::receive_message(const goby::acomms::protobuf::ModemTransmission& msg)
 {
-    if(msg.type() == goby::acomms::protobuf::ModemTransmission::UFIELD_DRIVER_POLL)
+    if(msg.type() == goby::acomms::protobuf::ModemTransmission::DRIVER_SPECIFIC &&
+       msg.GetExtension(goby::moos::protobuf::type) == goby::moos::protobuf::UFIELD_DRIVER_POLL)
     {
         goby::acomms::protobuf::ModemTransmission data_msg = msg;
         data_msg.set_type(goby::acomms::protobuf::ModemTransmission::DATA);
         data_msg.set_src(msg.GetExtension(goby::moos::protobuf::poll_src));
         data_msg.set_dest(msg.GetExtension(goby::moos::protobuf::poll_dest));
 
+        data_msg.ClearExtension(goby::moos::protobuf::type);
         data_msg.ClearExtension(goby::moos::protobuf::poll_dest);
         data_msg.ClearExtension(goby::moos::protobuf::poll_src);        
 
@@ -210,7 +214,8 @@ void goby::moos::UFldDriver::receive_message(const goby::acomms::protobuf::Modem
     else
     {
         // ack any packets
-        if(msg.ack_requested() && msg.dest() != acomms::BROADCAST_ID)
+        if(msg.type() == acomms::protobuf::ModemTransmission::DATA &&
+           msg.ack_requested() && msg.dest() != acomms::BROADCAST_ID)
         {
             goby::acomms::protobuf::ModemTransmission ack;
             ack.set_type(goby::acomms::protobuf::ModemTransmission::ACK);

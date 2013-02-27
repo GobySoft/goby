@@ -46,4 +46,3 @@ target_link_libraries(goby_liaison
   goby_common
   goby_util
   )
-

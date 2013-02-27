@@ -91,6 +91,7 @@ set(WT_DOC_STRING "Enable Wt web browser GUI components (requires libwt-dev, lib
 find_path(Wt_RESOURCES_DIR_BASE share/Wt/resources/plus.gif /usr /usr/local)
 if(WTGOBY_FOUND AND Wt_RESOURCES_DIR_BASE)
   option(enable_wt ${WT_DOC_STRING} ON)
+   goby_find_required_package(Boost 1.40.0 COMPONENTS signals)
 else()
   option(enable_wt ${WT_DOC_STRING} OFF)
   message(">> setting enable_wt to OFF ... if you need this functionality: 1) install libwt-dev, libwtdbo-dev, libwtdbosqlite-dev, and libwthttp-dev; 2) run cmake -Denable_wt=ON")

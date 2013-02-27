@@ -90,8 +90,8 @@ unsigned goby::acomms::DCCLDefaultIdentifierCodec::size(const uint32& id)
 
 unsigned goby::acomms::DCCLDefaultIdentifierCodec::this_size(const uint32& id)
 {
-    if(id < 0 || id > TWO_BYTE_MAX_ID)
-        throw(DCCLException("dccl.id provided (" + goby::util::as<std::string>(id) + ") is less than 0 or exceeds maximum: " + goby::util::as<std::string>(int(TWO_BYTE_MAX_ID))));
+    if(id > TWO_BYTE_MAX_ID)
+        throw(DCCLException("dccl.id provided (" + goby::util::as<std::string>(id) + ") exceeds maximum: " + goby::util::as<std::string>(int(TWO_BYTE_MAX_ID))));
     
     return (id <= ONE_BYTE_MAX_ID) ?
         SHORT_FORM_ID_BYTES*BITS_IN_BYTE :

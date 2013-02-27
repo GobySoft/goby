@@ -38,11 +38,6 @@ using goby::util::as;
 using goby::acomms::operator<<;
 using namespace goby::common::logger;
 
-#if BOOST_FILESYSTEM_VERSION == 3
-namespace bf = boost::filesystem3;
-#else
-namespace bf = boost::filesystem;
-#endif
 
 /////////////////////
 // public methods (general use)
@@ -109,11 +104,12 @@ void goby::transitional::DCCLTransitionalCodec::convert_xml_message_file(
 
 #if BOOST_FILESYSTEM_VERSION == 3
     std::string xml_path_stem  = xml_file_path.stem().string();
+    boost::filesystem::path proto_file_path = boost::filesystem::absolute( generated_proto_dir + xml_path_stem + ".proto");
 #else
     std::string xml_path_stem  = xml_file_path.stem();
+    boost::filesystem::path proto_file_path = boost::filesystem::complete( generated_proto_dir + xml_path_stem + ".proto");
 #endif
 
-    boost::filesystem::path proto_file_path = bf::complete( generated_proto_dir + xml_path_stem + ".proto");
     proto_file_path.normalize();
     
     for(size_t i = 0, n = end_size - begin_size; i < n; ++i)

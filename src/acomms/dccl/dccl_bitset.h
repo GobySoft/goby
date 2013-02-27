@@ -276,6 +276,7 @@ namespace goby
                 if(a_bit > b_bit) return false;
                 else if(a_bit < b_bit) return true;
             }
+            return false;
         }                
         
         inline Bitset operator&(const Bitset& b1, const Bitset& b2)

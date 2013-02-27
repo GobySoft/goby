@@ -24,9 +24,9 @@
 #include <set>
 #include <map>
 #include <string>
-#include "MOOSLIB/MOOSMsg.h"
-#include "MOOSUtilityLib/MOOSGeodesy.h"
-#include "MOOSGenLib/MOOSGenLibGlobalHelper.h"
+#include "MOOS/libMOOS/Comms/MOOSMsg.h"
+#include "MOOS/libMOOSGeodesy/MOOSGeodesy.h"
+#include "MOOS/libMOOS/Utils/MOOSUtilityFunctions.h"
 
 #include "goby/moos/moos_protobuf_helpers.h"
 #include "goby/moos/protobuf/translator.pb.h"

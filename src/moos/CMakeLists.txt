@@ -28,7 +28,9 @@ target_link_libraries(goby_moos
   goby_util
   goby_common 
   goby_acomms
-  ${MOOS_LIBRARIES} ${Boost_LIBRARIES} ${PROTOBUF_LIBRARY})
+  ${MOOS_LIBRARIES} ${Boost_LIBRARIES} ${PROTOBUF_LIBRARY}
+  ${MOOSGeodesy_LIBRARIES}
+)
 
 if(enable_v1_transitional)
   target_link_libraries(goby_moos ${Xerces_LIBRARIES})

@@ -24,7 +24,7 @@
 #ifndef DYNAMICMOOSVARSH
 #define DYNAMICMOOSVARSH
 
-#include "MOOSLIB/MOOSLib.h"
+#include "MOOS/libMOOS/Comms/MOOSMsg.h"
 
 namespace tes
 {

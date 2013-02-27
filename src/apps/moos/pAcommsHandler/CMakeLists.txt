@@ -11,6 +11,7 @@ target_link_libraries(pAcommsHandler
   goby_moos
   goby_pb
   ${MOOS_LIBRARIES}
+  ${MOOSGeodesy_LIBRARIES}
   ${Boost_LIBRARIES}
   ${PROTOBUF_LIBRARY}
   ${CMAKE_DL_LIBS}

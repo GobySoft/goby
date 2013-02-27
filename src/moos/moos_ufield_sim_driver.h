@@ -24,7 +24,7 @@
 #ifndef UFieldSimDriver20120214H
 #define UFieldSimDriver20120214H
 
-#include "MOOSLIB/MOOSCommClient.h"
+#include "MOOS/libMOOS/Comms/MOOSCommClient.h"
 
 //#include <boost/bimap.hpp>
 

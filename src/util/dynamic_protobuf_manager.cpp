@@ -67,11 +67,11 @@ goby::util::DynamicProtobufManager::load_from_proto_file(const std::string& prot
                 
                 
 #if BOOST_FILESYSTEM_VERSION == 3
-    namespace bf = boost::filesystem3;
+    boost::filesystem::path proto_file_path = boost::filesystem::absolute(proto_file);
 #else
-    namespace bf = boost::filesystem;
+    boost::filesystem::path proto_file_path = boost::filesystem::complete(proto_file);
 #endif
-    bf::path proto_file_path = bf::complete(proto_file);
+
     proto_file_path.normalize();
 
     return user_descriptor_pool().FindFileByName(proto_file_path.string());

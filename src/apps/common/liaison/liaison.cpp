@@ -41,12 +41,6 @@ using namespace Wt;
 using namespace goby::common::logger_lock;
 using namespace goby::common::logger;
 
-#if BOOST_FILESYSTEM_VERSION == 3
-namespace bf = boost::filesystem3;
-#else
-namespace bf = boost::filesystem;
-#endif
-
 
 goby::common::protobuf::LiaisonConfig goby::common::Liaison::cfg_;
 boost::shared_ptr<zmq::context_t> goby::common::Liaison::zmq_context_(new zmq::context_t(1));
@@ -161,9 +155,9 @@ goby::common::Liaison::Liaison()
         
         if(cfg_.has_docroot())
             doc_root = cfg_.docroot();
-        else if(bf::exists(bf::path(GOBY_LIAISON_COMPILED_DOCROOT)))
+        else if(boost::filesystem::exists(boost::filesystem::path(GOBY_LIAISON_COMPILED_DOCROOT)))
             doc_root = GOBY_LIAISON_COMPILED_DOCROOT;            
-        else if(bf::exists(bf::path(GOBY_LIAISON_INSTALLED_DOCROOT)))
+        else if(boost::filesystem::exists(boost::filesystem::path(GOBY_LIAISON_INSTALLED_DOCROOT)))
             doc_root = GOBY_LIAISON_INSTALLED_DOCROOT;
         else
             throw(std::runtime_error("No valid docroot found for Goby Liaison. Set docroot to the valid path to what is normally /usr/share/goby/liaison"));
@@ -208,7 +202,11 @@ goby::common::Liaison::Liaison()
 
 void goby::common::Liaison::load_proto_file(const std::string& path)
 {
-    boost::filesystem::path bpath = bf::complete(path);
+#if BOOST_FILESYSTEM_VERSION == 3
+    boost::filesystem::path bpath = boost::filesystem::absolute(path);
+#else
+    boost::filesystem::path bpath = boost::filesystem::complete(path);
+#endif
     bpath.normalize();
 
     glog.is(VERBOSE) &&

@@ -268,10 +268,10 @@ namespace goby
         
         inline bool operator<(const Bitset& a, const Bitset& b)
         {
-            for(Bitset::size_type i = (std::max(a.size(), b.size()) - 1); i >= 0; --i)
+            for(int i = (std::max(a.size(), b.size()) - 1); i >= 0; --i)
             {
-                bool a_bit = (i < a.size()) ? a[i] : 0;
-                bool b_bit = (i < b.size()) ? b[i] : 0;
+                bool a_bit = (i < static_cast<int>(a.size())) ? a[i] : 0;
+                bool b_bit = (i < static_cast<int>(b.size())) ? b[i] : 0;
                 
                 if(a_bit > b_bit) return false;
                 else if(a_bit < b_bit) return true;

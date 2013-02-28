@@ -461,16 +461,24 @@ void CpAcommsHandler::process_configuration()
 
 void CpAcommsHandler::handle_queue_receive(const google::protobuf::Message& msg)
 {
-    std::multimap<std::string, CMOOSMsg> out;    
-
-    out = translator_.protobuf_to_moos(msg);
-    
-    for(std::multimap<std::string, CMOOSMsg>::iterator it = out.begin(), n = out.end();
-        it != n; ++it)
+    try
     {
-        glog.is(VERBOSE) && glog << group("pAcommsHandler") << "Publishing: " << it->second << std::endl;
-        publish(it->second);
-    }    
+        std::multimap<std::string, CMOOSMsg> out;    
+
+        out = translator_.protobuf_to_moos(msg);
+    
+        for(std::multimap<std::string, CMOOSMsg>::iterator it = out.begin(), n = out.end();
+            it != n; ++it)
+        {
+            glog.is(VERBOSE) && glog << group("pAcommsHandler") << "Publishing: " << it->second << std::endl;
+            publish(it->second);
+        }    
+    }
+    catch(std::runtime_error& e)
+    {
+        glog.is(WARN) &&
+            glog << group("pAcommsHandler") << "Failed to translate received message: " << e.what() << std::endl;
+    }
 }
 
 
@@ -556,14 +564,22 @@ void CpAcommsHandler::create_on_timer(const boost::system::error_code& error,
 
 void CpAcommsHandler::translate_and_push(const goby::moos::protobuf::TranslatorEntry& entry)
 {
-    boost::shared_ptr<google::protobuf::Message> created_message =
-        translator_.moos_to_protobuf<boost::shared_ptr<google::protobuf::Message> >(
-            dynamic_vars().all(), entry.protobuf_name());
-
-    glog.is(DEBUG1) &&
-        glog << group("pAcommsHandler") << "Created message: \n" << created_message->DebugString() << std::endl;
-
-    queue_manager_.push_message(*created_message);
+    try
+    {
+        boost::shared_ptr<google::protobuf::Message> created_message =
+            translator_.moos_to_protobuf<boost::shared_ptr<google::protobuf::Message> >(
+                dynamic_vars().all(), entry.protobuf_name());
+        
+        glog.is(DEBUG1) &&
+            glog << group("pAcommsHandler") << "Created message: \n" << created_message->DebugString() << std::endl;
+        
+        queue_manager_.push_message(*created_message);
+    }
+    catch(std::runtime_error& e)
+    {
+        glog.is(WARN) &&
+            glog << group("pAcommsHandler") << "Failed to translate or queue message: " << e.what() << std::endl;
+    }
 }
 
 

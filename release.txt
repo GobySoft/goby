@@ -1,6 +1,201 @@
 Goby Release Notes (Major version 2)
 
 *****************
+Version 2.0.2
+
+- First stable release of Goby version 2!
+- A handful of minor breaking changes from the 2.0.1 release candidates to support a standalone DCCLv3+
+  - Reworked Queue messages to not use the .proto files. So no more (goby.field).queue and (goby.msg).queue. Use the goby::acomms::protobuf::QueuedMessageEntry protobuf class instead to configure queues. This makes more sense since different situations may cause differing queueing parameters.
+  - Changed (goby.field).dccl to (dccl.field) and (goby.msg).dccl to (dccl.msg)
+- Goby Liaison loads all modules using shared libraries instead of having the MOOS components compiled in. This makes it truly generic and extensible.
+
+bzr log --line -n0 -r tag:2.0.1~rc4..
+
+445: Toby Schneider 2013-02-28 Tweaks and corrections to developer documentation
+444: Toby Schneider 2013-02-28 Added moos_goby_liaison script to launch goby_liaison with the MOOS plugins (commander and scope)
+443: Toby Schneider 2013-02-28 Try/catch around translator entries
+442: Toby Schneider 2013-02-27 Need boost::signals linkage if using Wt
+441: Toby Schneider 2013-02-27 missing link against Boost for the MOOS goby_liaison library; DCCL bitset operator< more fixes
+440: Toby Schneider 2013-02-27 Fixed operator< that didn't return false on equality
+439: Toby Schneider 2013-02-27 Removed references to filesystem3 in favor of correct new functions so that Goby compiles with newer versions of boost
+438: Toby Schneider 2013-02-27 Found and fixed non-thread safe use of glog in linebasedcomms
+437: Toby Schneider 2013-02-27 Added configuration time check that queue fields used in roles exist in the current message
+436: Toby Schneider 2013-02-27 Removed unused hook framework
+435: Toby Schneider 2013-02-22 Moved nmea_time2ptime into the common header
+434: Toby Schneider 2013-02-22 Added CMAKE_DL_LIBS to cause linking against libdl if necessary
+433: Toby Schneider 2013-02-12 Modified FromProtoCustomMessage to copy the custom class on encode since dynamic_cast do not work on dynamically generated google::protobuf::Messages. Augmented test_dccl9 to include testing for this problem
+432: Toby Schneider 2013-02-11 Work on CCL example, but pAcommsHandler seems to have difficulty encoding MDAT State
+431: Toby Schneider 2013-02-11 Added dual status MOOS example configuration and continued work on User Manual
+430: Toby Schneider 2013-02-08 Updated images
+429: Toby Schneider 2013-02-08 [merge] More doc changes
+  427.1.1: Toby Schneider 2013-02-08 Added images for the user manual
+428: Toby Schneider 2013-02-08 Added images
+427: Toby Schneider 2013-02-07 Lots of documentation updates for the user manual
+426: Toby Schneider 2013-02-07 Autogenerate user doc configuration snippets; improved version number information
+425: Toby Schneider 2013-01-30 Reverted new load_plugin_libraries configuration option; instead added GOBY_LIAISON_PLUGINS env variable so that plugins are loaded *before* configuration structure is even determined, allowing for configuration extensions in the plugins
+424: Toby Schneider 2013-01-29 Bumped soversion
+423: Toby Schneider 2013-01-28 Removed unneeded dependency on goby_moos in Liaison
+422: Toby Schneider 2013-01-28 Added new files for dlfcn plugins for Liaison
+421: Toby Schneider 2013-01-28 Mostly split out Liaison into modules; a bit more work to do to make it completely dl'loading
+420: Toby Schneider 2013-01-26 Removed unneeded dependencies on 0MQ
+419: Toby Schneider 2013-01-25 Incremented copyright year to 2013 in source code files
+418: Toby Schneider 2013-01-11 Added cmake option 'enable_testing_asio' to allow disable building of Boost ASIO related tests on Ubuntu quantal and raring PPAs that have an old kernel + new glibc - see Boost ASIO bug #7012
+417: Toby Schneider 2013-01-11 changed cmake variable 'workaround_2_4_kernel' to 'disable_epoll' to make it more clear what it does
+416: Toby Schneider 2012-12-12 Added 'add' and 'subtract' MOOS algorithms
+415: Toby Schneider 2012-12-05 Fixed bug where queue would cause a segmentation fault if the messagejust pushed was popped (due to full queue with newest_first = false
+414: Toby Schneider 2012-11-20 Fixed translator test for changes in MOOS
+413: Toby Schneider 2012-11-20 Changed logging verbosity of entire configuration to DEBUG2 so it doesn't spam the output in less verbose settings
+412: Toby Schneider 2012-11-20 [merge] Check for duplicate translator entries
+  411.1.1: Toby Schneider 2012-11-20 typo in QueueManager and fixed initialization in pAcommsHandler so messages are all loaded *before* Queues are configured
+411: Toby Schneider 2012-11-08 [merge] Merge from 2.0-dsop
+  321.2.20: Toby Schneider 2012-11-08 Strip white spaces from end of init strings by default in GobyMOOSApp
+410: Toby Schneider 2012-11-02 Always store bit map for Arithmetic coder
+409: Toby Schneider 2012-10-28 updated examples to reflect Queue changes
+408: Toby Schneider 2012-10-28 Removed extra (unconfigured) add_queue call from pAcommsHandler that was erasing the Queue configuration
+407: Toby Schneider 2012-10-28 Reworked Queue to not use DCCL hooks
+406: Toby Schneider 2012-10-28 moved all meta work in Queue to single function
+405: Toby Schneider 2012-10-22 Finished splitting arithmetic coding into a separate library (that can be dynamically loaded at runtime) and fixed compilation of goby_dccllite
+404: Toby Schneider 2012-10-19 Fixed liaison commander to use dccl codec '_time' to detect timestamp field instead of now defunct queue.is_time
+403: Toby Schneider 2012-10-19 Removed Queue is_dest is_src and is_time from Proto files in favor of configured 'Roles'
+402: Toby Schneider 2012-10-19 [merge] Fixed header in User Manual for Quantal changes; removed ccl header from dccl.cpp
+  401.1.1: Toby Schneider 2012-10-19 split 2.0 for merge
+401: Toby Schneider 2012-10-19 Fixed examples for changes to DCCL option extensions
+400: Toby Schneider 2012-10-18 Added missing new files
+399: Toby Schneider 2012-10-18 Split CCL compatibility into its own shared library that can be loaded at runtime to enable CCL compatible headers
+398: Toby Schneider 2012-10-18 Removed Queue options from .proto files in favor of runtime configuration
+397: Toby Schneider 2012-10-18 split out dccl option extensions from goby for future use in separate 3.0 projects
+396: Toby Schneider 2012-10-18 [merge] Merge various fixes from 2.0-dsop
+  321.2.19: Toby Schneider 2012-10-07 {2.0.1~rc1+DSOP20121007+1} Version 2.0.1~rc1+DSOP20121007+1
+  321.2.18: Toby Schneider 2012-10-05 Fixed crash bug in Liaison due to non-thread safe use of Google Protocol Buffer error reporting facility
+  321.2.17: Toby Schneider 2012-10-05 Added bounds check for DCCLDefaultNumericCodec
+  321.2.16: Toby Schneider 2012-10-05 Fixed bug where modem ID to name conversions were not loaded if debug logging was turned off
+395: Toby Schneider 2012-10-03 [merge] Merge from 2.0-dsop
+  321.2.15: Toby Schneider 2012-10-03 Replace / with _ in logging file for goby moos apps
+394: Toby Schneider 2012-09-25 Fixed some out of date links
+393: Toby Schneider 2012-09-25 Made various updates to links on front page of 2.0 doc
+392: Toby Schneider 2012-09-24 Added mkdir for bin during cmake configure
+391: Toby Schneider 2012-09-24 Moved boost requirements so that building dccllite doesn't require finding unneeded boost *.so library components
+390: Toby Schneider 2012-09-24 [merge] Another merge from 2.0-dsop fixing signals2 stuff
+  321.2.14: Toby Schneider 2012-09-24 missed a few more signals references
+  321.2.13: Toby Schneider 2012-09-24 Missed some of the signal -> signals2::signal changes
+389: Toby Schneider 2012-09-24 [merge] merge from 2.0-dsop
+  321.2.12: Toby Schneider 2012-09-24 removed unneeded boost signals library in favor of header-only signals2
+388: Chris Murphy 2012-09-19 Adding stdexcept as a dependency, since std::runtime_error is used.
+387: Toby Schneider 2012-08-24 [merge] {2.0.1~rc4} Merge correcting fix for build system bug fix from 2.0-dsop, release 2.0.1~rc4
+  321.2.11: Toby Schneider 2012-08-24 Actually fixed dynamic protobuf test
+
+
+*****************
+Version 2.0.1~rc3
+Version 2.0.1~rc4
+
+- Build system fixes
+
+bzr log --line -n0 -r tag:2.0.1~rc2..
+
+387: Toby Schneider 2012-08-24 [merge] {2.0.1~rc4} Merge correcting fix for build system bug fix from 2.0-dsop, release 2.0.1~rc4
+  321.2.11: Toby Schneider 2012-08-24 Actually fixed dynamic protobuf test
+386: Toby Schneider 2012-08-24 [merge] {2.0.1~rc3} Merge build system bug fix from 2.0-dsop, release 2.0.1~rc3
+  321.2.10: Toby Schneider 2012-08-24 1. Fixed race condition in building dynamic protobuf test; 2. local CCCYC has only the requested number of frames
+  321.2.9: Toby Schneider 2012-08-23 {2.0.1~rc1+DSOP20120823+2} Release for mbat: 2.0.1~rc1+DSOP20120823+2
+  321.2.8: Toby Schneider 2012-08-23 [merge] Merge from 2.0 until before arithmetic encoding changes
+  321.2.7: Toby Schneider 2012-08-23 {2.0.1~rc1+DSOP20120823+1} Release for mbat: 2.0.1~rc1+DSOP20120823+1
+  321.2.6: Toby Schneider 2012-08-08 Backported new arithmetic extensions from 2.0 main
+385: Toby Schneider 2012-08-23 Added adaptive arithmetic coding
+384: Toby Schneider 2012-08-23 {2.0.1~rc2} Release 2.0.1~rc2
+
+*****************
+Version 2.0.1~rc2
+
+- Release candidate 2: Added a arithmetic encoder to finish thesis work. 
+- Various bug fixes (see below)
+
+bzr log --line -n0 -r tag:2.0.1~rc1..
+
+384: Toby Schneider 2012-08-23 {2.0.1~rc2} Release 2.0.1~rc2
+383: Toby Schneider 2012-08-07 made goby::moos::val_from_string case insensitive
+382: Toby Schneider 2012-08-06 Fixed edge case in arithmetic encoding (used 1111 to represent 1111.... instead of 10000
+381: Toby Schneider 2012-08-04 Sets CCCYC in MMDriver to correct number of frames, if known (local cycle)
+380: Toby Schneider 2012-08-03 Fixed bug with enumerations in TECHNIQUE_COMMA_SEPARATED_KEY_EQUALS_VALUE_PAIRS introduced after automatic lower casing of input; enabled dccl10 run by default
+379: Toby Schneider 2012-08-02 1. Dynamic Protobuf manager includes pwd by default, 2. PB Modem driver gives warning on invalid transmission types
+378: Toby Schneider 2012-08-02 Cleanup on arithmetic coder - reduced computational complexity and thus time on decode
+377: Toby Schneider 2012-08-01 Arithmetic encoder implemented and tested using test_dccl10 - hopefully good to go
+376: Toby Schneider 2012-08-01 Basically working arithmetic coder (still some details to iron out)
+375: Toby Schneider 2012-07-30 more work on (broken) arithmetic encoder/decoder
+374: Toby Schneider 2012-07-27 (currently broken) arithmetic encoder done
+373: Toby Schneider 2012-07-27 Added missing file for arithmetic coder
+372: Toby Schneider 2012-07-27 minor change to nightly script
+371: Toby Schneider 2012-07-27 added new unit test for arithmetic encoding
+370: Toby Schneider 2012-07-26 Added shell for arithmetic codec
+369: Toby Schneider 2012-07-26 Reverted mmdriver1 test to before Tiger12 cruise where I messed it up testing the modems. Will use mmdriver2 test for such modem tests in the future.
+368: Toby Schneider 2012-07-26 Fixed minor bug in mmdriver2 test that caused the summary results to be incomplete
+367: Toby Schneider 2012-07-25 [merge] merge bug fix from 2.0-dsop
+  321.2.5: Toby Schneider 2012-07-25 Fixed bug causing improper destruction of poll_mutex upon reload of goby_liaison webpage
+366: Toby Schneider 2012-07-17 Fixed problems with std::abs(uint64) on lucid
+365: Toby Schneider 2012-07-17 1. Took out 0xFF padding workaround for MM2 (no longer needed), 2; split up the test_mmdriver2 results based on the transmission
+364: Toby Schneider 2012-07-11 [merge] merge from 2.0-dsop
+  321.2.4: Toby Schneider 2012-07-10 Various fixes to allow Goby to fully operate with MOOSTimeWarp
+363: Toby Schneider 2012-07-05 [merge] Merge from DSOP branch
+  321.2.3: Toby Schneider 2012-07-05 Added 'poll' functionality to pb driver. Changed option extensions for various drivers to use same extension numbers for DriverConfig and ModemTransmission messages (similar to what Google does for various options messages)
+  321.2.2: Toby Schneider 2012-06-25 {2.0.1~rc1+DSOP20120625+1} Release 2.0.1~rc1+DSOP20120625+1
+362: Toby Schneider 2012-06-27 Added new unit test for testing the Micro-Modem (more than testing the Goby code)
+361: Toby Schneider 2012-06-27 Prefixed all unit tests with 'goby_'
+360: Toby Schneider 2012-06-27 Added 'draft' to title of user manual
+359: Toby Schneider 2012-06-25 [merge] Merge from 2.0-dsop
+  321.2.1: Toby Schneider 2012-06-25 [merge] Merge from DSOP Tiger12 cruise
+    321.1.30: Toby Schneider 2012-06-15 Added ability for goby_bridge to forward micromodem ping response to topside
+    321.1.29: Toby Schneider 2012-06-15 moved clear inbox for PB driver back to each send (so retries don't pile up)
+    321.1.28: Toby Schneider 2012-06-15 added changes to make CACST into a DCCL message
+    321.1.27: Toby Schneider 2012-06-15 Added option to reset ZMQ socket after timeout in PB modemdriver for more robust performance on abysmal connections
+358: Toby Schneider 2012-06-25 [merge] merge from Tiger12 cruise
+  357.1.1: Toby Schneider 2012-06-15 [merge] merge from 2.0-dsop and work on User Manual
+    321.1.26: Toby Schneider 2012-06-13 1. Cleaned up UDPDriver output, 2. Changed fill for MMDriver from 0 to 255, 3. Fixed bug where PBDriver would only return first row in SELECT
+    321.1.25: Toby Schneider 2012-06-13 Adding time on round trip for pb_driver
+    321.1.24: Toby Schneider 2012-06-13 Improved glog output from ZMQ service
+    321.1.23: Toby Schneider 2012-06-12 1. added link-level ack for NetworkAck message, but disallowed generation of NetworkAcks from these; 2. Changes to mm_driver test to work on DSOP june test
+    321.1.22: Toby Schneider 2012-06-11 zero pad out to end of message for MicroModem 2 bug (should be temporary)
+    321.1.21: Toby Schneider 2012-06-11 workarounds for various bugs in Micro-Modem 2 (svn -r 8876)
+357: Toby Schneider 2012-06-06 [merge] merge from 2.0-dsop
+  321.1.20: Toby Schneider 2012-06-06 1. Fixed uncommon bug (discovered on Beagleboard running Angstrom 2011-03-maintenance using Boost 1.45) where pushing an empty string to NMEASentence does not result in increasing the vector size
+  321.1.19: Toby Schneider 2012-06-01 removed unneeded linkage to Wt for goby_store_server
+  321.1.18: Toby Schneider 2012-06-01 {2.0.1~rc1+DSOP20120601+1} Release Release 1~rc1+DSOP20120601+1
+  321.1.17: Toby Schneider 2012-06-01 added minimal blackout time from a queue's last sent message to when it tries to resend (if no ACK was received)
+  321.1.16: Toby Schneider 2012-06-01 Fixed bug where route did not properly handle messages at destination if destination was an intermediate hop
+  321.1.15: Toby Schneider 2012-05-31 {2.0.1~rc1+DSOP20120531+1, 1~rc1+DSOP20120531+1} 1. Added version (-V) to goby applications; 2. Release 1~rc1+DSOP20120531+1
+  321.1.14: Toby Schneider 2012-05-31 [merge] Merge from 2.0 for Liaison fixes
+  321.1.13: Toby Schneider 2012-05-25 [merge] merge memory leak fix and other minor fixes from 2.0
+  321.1.12: Toby Schneider 2012-05-16 [merge] merge from 2.0 main branch for Release Candidate 1
+356: Toby Schneider 2012-05-30 1. Extensions in LiaisonCommander are displayed with full name (same as TextFormat does); 2. fixed seg fault in Liaison; 3. MOOSTranslator inverse publish publishes trigger *last* so that all other content is received first
+355: Toby Schneider 2012-05-25 removed debugging std::couts that slipped through the cracks
+354: Toby Schneider 2012-05-22 fixed examples in lieu of changes to ModemTransmission::type
+353: Toby Schneider 2012-05-18 updated goby nightly
+352: Toby Schneider 2012-05-18 [merge] merge fix for memory leak in Logger from 1.1
+  60.6.16: Toby Schneider 2012-05-18 fixed memory leak in goby_logger
+  60.6.15: Toby Schneider 2012-02-14 renamed BUILD to build.sh to deal with name conflict on case-insensitive fileystems
+  60.6.14: Toby Schneider 2012-02-14 version 1.1.2
+  60.6.13: Toby Schneider 2012-02-14 added missing <string> header
+  60.6.12: Toby Schneider 2011-12-06 [merge] merge from MBAT cruise
+    60.7.1: Toby Schneider 2011-11-29 added new algorithms for MBAT cruise
+  60.6.11: Toby Schneider 2011-09-22 fixes for oneiric
+  60.6.10: Toby Schneider 2011-09-22 added LOOPBACK_AS_SENT (loopbacks all queued messages only as they are sent) and PROMISCUOUS (decode all messages for a queue regardless of destination) manipulators
+  60.6.9: Toby Schneider 2011-09-20 changed references to gobysoft.com/doc to gobysoft.com/doc/1.0 and a few typos
+  60.6.8: Toby Schneider 2011-08-31 reverted bug where cmake did not recognize .. properly
+  60.6.7: Chris Murphy 2011-06-27 Adding getter for size field of DCCLMessage.
+  60.6.6: Chris Murphy 2011-06-26 Making destructor public.
+  60.6.5: Chris Murphy 2011-06-26 Making ModemDriverBase destructor virtual.
+  60.6.4: Chris Murphy 2011-06-20 Adding a microsecond time function to goby time utilities.
+  60.6.3: Toby Schneider 2011-06-16 release 1.1.1
+  60.6.2: Toby Schneider 2011-06-16 incremented .so version since we broke ABI compatibility from 1.0 -> 1.1
+  60.6.1: Toby Schneider 2011-06-10 fixed bug in DEPENDENCIES for lucid which does not add deb-src when using add-apt-repostories
+351: Toby Schneider 2012-05-18 changed default max queue to 100 to avoid accidental memory leaks (infinitely growing buffers)
+350: Toby Schneider 2012-05-16 [merge] Merge from 2.0-dsop
+  321.1.11: Toby Schneider 2012-04-24 added start of unit test for NMEASentence
+349: Toby Schneider 2012-05-16 Updated minimum Boost version to 1.40
+348: Toby Schneider 2012-05-15 fixed bug with pAcommsHandler fails to add 'prefix' to subscribed variables
+347: Toby Schneider 2012-05-10 added % to udpdriver test to avoid unintentional overflow
+346: Toby Schneider 2012-05-07 {2.0.1~rc1} Release 2.0.1~rc1
+
+*****************
 Version 2.0.1~rc1
 
 - Release candidate 1: all version 2 functionality complete; documentation still needs to be finished.

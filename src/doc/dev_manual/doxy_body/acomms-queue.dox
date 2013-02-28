@@ -33,9 +33,9 @@ The following graph illustrates the priority growth over time of three queues wi
 \section queue_options Queuing Protobuf Options
 
 
-This section gives an overview of the \c queue message and field options available. The full list is available in acomms_option_extensions.proto (as messages QueueFieldOptions and QueueMessageOptions).
+This section gives an overview of the \c queue configuration options available. The full list is available in queue.proto (as messages goby::acomms::protobuf::QueuedMessageEntry).
 
-\c queue message options:
+\c Queue message options:
 
 
 <table border=1>
@@ -103,32 +103,30 @@ This section gives an overview of the \c queue message and field options availab
   </tr>
 </table>
 
-\c queue field options:
+\c Queue Role options: Queue needs to know how to address a message (the source ID and destination ID) as well as the time the message was generated. This information either read from the fields of the of the DCCL message (setting: FIELD_VALUE) or is statically configured (setting: STATIC). In the latter case, the configuration value "static_value" is set and used for every DCCL message of this type that gets queued by this QueueManager. 
+
+In the former case (the default), you can tag a given field of a DCCL message to a particular "role." This takes the place of a fixed transport layer header that protocols such as UDP use. The fields used in a given role can be anywhere within the message. The field is identified by its name (in the configuration value "field"). Submessage fields can be used by separating the field names by periods (".") until the child is a primitive type (e.g. uint32).
 
 <table border=1>
   <tr>
-    <td><strong>name</strong></td>
-    <td><strong>type</strong></td>
-    <td><strong>default</strong></td>
+    <td><strong>RoleType</strong></td>
+    <td><strong>allowed field types</strong></td>
     <td><strong>description</strong></td>
   </tr>
   <tr>
-    <td>is_src</td>
-    <td>bool</td>
-    <td>false</td>
-    <td>Set to true to indicate this field contains the source modem ID address (as the WireType, which must be an int32, int64, uint32, or uint64).  If no field has this option set, the message source is set to the goby::acomms::QueueManager::modem_id().</td>
+    <td>SOURCE_ID</td>
+    <td>All integer types (uint32, int32, uint64, int64, ...)</td>
+    <td>The value in this field is used to represent the sending address (similar to an IP address) of the message.</td>
   </tr>
   <tr>
-    <td>is_dest</td>
-    <td>bool</td>
-    <td>false</td>
-    <td>Set to true to indicate this field contains the destination modem ID address (as the WireType, which must be an int32, int64, uint32, or uint64).  If no field has this option set, the message destination is set to goby::acomms::BROADCAST_ID.</td>
+    <td>DESTINATION_ID</td>
+    <td>All integer types (uint32, int32, uint64, int64, ...)</td>
+    <td>The value in this field is used to represent the destination address (similar to an IP address) of the message. 0 is reserved to indicate broadcast.</td>
   </tr>
   <tr>
-    <td>is_time</td>
-    <td>bool</td>
-    <td>false</td>
-    <td>Set to true to indicate this field contains the time (the FieldType must be a boost::posix_time::ptime, double or uint64. See goby::common::goby_time()). If no field has this option set, the message is time-stamped when it is pushed to the queue.</td>
+    <td>TIMESTAMP</td>
+    <td>uint64 or double</td>
+    <td>The value in this field is used as the timestamp of the message. If the type is double, it must be seconds (and fractional seconds) since the UNIX epoch (1970-01-01 midnight UTC). If it is a uint64, it must be microseconds since the UNIX epoch. This field used for expiring messages that exceed their ttl and thus must, in general, be set and correct.</td>
   </tr>
 </table>
 
@@ -136,15 +134,33 @@ This section gives an overview of the \c queue message and field options availab
 
 \subsection queue_manager_instantiate Instantiate and configure
 
-The goby::acomms::QueueManager is configured similarly to the goby::acomms::DCCLCodec. You need to set a unique identification number for this platform (the "modem ID") through the \link queue.proto goby::acomms::protobuf::QueueManagerConfig \endlink. You need to add queues via calls to goby::acomms::QueueManager::add_queue(). Calling add_queue() also calls goby::acomms::DCCLCodec::validate() so you do not need to call that method separately.
+The goby::acomms::QueueManager is configured similarly to the goby::acomms::DCCLCodec. You need to set a unique identification number for this platform (the "modem ID") through the \link queue.proto goby::acomms::protobuf::QueueManagerConfig \endlink. 
+
+You can configure queues by added repeated fields to the QueueManagerConfig's message_entry field, or by calling goby::acomms::QueueManager::add_queue() directly.
 
 When using goby::acomms::QueueManager you will not likely need to use the goby::acomms::DCCLCodec directly much at all. All messages are pushed to the queues unencoded and are encoded automatically by goby::acomms::QueueManager before sending. Likewise, all messages received are decoded before being provided on the signal goby::acomms::QueueManager::signal_receive.
 
+
+For example, this code configures the QueueManager with a single queue (DCCL type GobyMessage)
 \code
 goby::acomms::protobuf::QueueManagerConfig cfg;
 cfg.set_modem_id(our_id);
+goby::acomms::protobuf::QueuedMessageEntry* q_entry = cfg.add_message_entry();
+q_entry->set_protobuf_name("GobyMessage");
+q_entry->set_newest_first(true);
+
+goby::acomms::protobuf::QueuedMessageEntry::Role* dest_role = q_entry->add_role();
+dest_role->set_type(goby::acomms::protobuf::QueuedMessageEntry::DESTINATION_ID);
+dest_role->set_field("header.dest_platform");    
+
+goby::acomms::protobuf::QueuedMessageEntry::Role* time_role = q_entry->add_role();
+time_role->set_type(goby::acomms::protobuf::QueuedMessageEntry::TIMESTAMP);
+time_role->set_field("header.time");    
+
+goby::acomms::protobuf::QueuedMessageEntry::Role* src_role = q_entry->add_role();
+src_role->set_type(goby::acomms::protobuf::QueuedMessageEntry::SOURCE_ID);
+src_role->set_field("header.source_platform");
 q_manager.set_cfg(cfg);
-q_manager.add_queue<Simple>();
 \endcode
 
 \subsection queue_manager_signals Signals and (application layer) slots

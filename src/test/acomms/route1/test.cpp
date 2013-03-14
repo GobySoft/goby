@@ -61,6 +61,8 @@ void handle_receive1(const google::protobuf::Message &msg);
 void handle_receive2(const google::protobuf::Message &msg);
 void handle_receive3(const google::protobuf::Message &msg);
 
+void handle_modem_receive3(const protobuf::ModemTransmission& message);
+
 boost::asio::io_service io2, io3;
 boost::shared_ptr<goby::acomms::UDPDriver> driver2, driver3;
 
@@ -96,6 +98,10 @@ int main(int argc, char* argv[])
     
     q_cfg2.add_message_entry()->CopyFrom(*q_entry);
     q_cfg3.add_message_entry()->CopyFrom(*q_entry);
+
+    q_cfg1.set_skip_decoding(true);
+    q_cfg2.set_skip_decoding(true);
+    q_cfg3.set_skip_decoding(false);
     
     q_cfg1.set_modem_id(ID_1_1);
     q_manager1.set_cfg(q_cfg1);
@@ -164,6 +170,9 @@ int main(int argc, char* argv[])
     mac2.startup(m_cfg2);
     mac3.startup(m_cfg3);
 
+
+    // renable crypto when we receive on driver3
+    goby::acomms::connect(&driver3->signal_receive, &handle_modem_receive3);
     
     // bind them all together
     goby::acomms::bind(*driver2, q_manager2, mac2);
@@ -186,9 +195,20 @@ int main(int argc, char* argv[])
     initial_transmit.set_type(goby::acomms::protobuf::ModemTransmission::DATA);
     
     goby::acomms::DCCLCodec* dccl = goby::acomms::DCCLCodec::get();
+
+    goby::acomms::protobuf::DCCLConfig dccl_cfg;
+    dccl_cfg.set_crypto_passphrase("my_passphrase2!");
+    dccl->set_cfg(dccl_cfg);
+
+
     dccl->validate<RouteMessage>();
     dccl->encode(initial_transmit.add_frame(), in_msg);
 
+    // remove crypto
+    dccl_cfg.clear_crypto_passphrase();
+    dccl->set_cfg(dccl_cfg);    
+    
+    
     // unleash the message
     std::cout << "Modem receive on q1: " << initial_transmit.DebugString() << std::endl;
     q_manager1.handle_modem_receive(initial_transmit);
@@ -248,3 +268,11 @@ void handle_receive3(const google::protobuf::Message &msg)
 }
 
 
+
+void handle_modem_receive3(const protobuf::ModemTransmission& message)
+{
+    goby::acomms::DCCLCodec* dccl = goby::acomms::DCCLCodec::get();
+    goby::acomms::protobuf::DCCLConfig dccl_cfg;
+    dccl_cfg.set_crypto_passphrase("my_passphrase2!");
+    dccl->set_cfg(dccl_cfg);
+}

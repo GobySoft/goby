@@ -69,7 +69,9 @@ namespace goby
                   const protobuf::QueuedMessageEntry& cfg = protobuf::QueuedMessageEntry());
 
             bool push_message(boost::shared_ptr<google::protobuf::Message> dccl_msg);
-
+            bool push_message(boost::shared_ptr<google::protobuf::Message> dccl_msg,
+                              protobuf::QueuedMessageMeta meta);
+            
             protobuf::QueuedMessageMeta meta_from_msg(const google::protobuf::Message& dccl_msg);
             
             boost::any find_queue_field(const std::string& field_name, const google::protobuf::Message& msg);

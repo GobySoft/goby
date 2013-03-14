@@ -51,7 +51,7 @@ namespace goby
             void handle_out(protobuf::QueuedMessageMeta* meta,
                             const google::protobuf::Message& data_msg,
                             int modem_id);
-
+            
             void add_subnet_queue(QueueManager* manager);
 
             bool is_in_route(int modem_id)

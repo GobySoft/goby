@@ -208,7 +208,7 @@ std::string goby::acomms::DCCLDefaultStringCodec::decode(Bitset* bits)
         
         goby::glog.is(DEBUG2) && goby::glog << group(DCCLCodec::glog_decode_group()) << "Length of string is = " << value_length << std::endl;
         
-        goby::glog.is(DEBUG2) && goby::glog << group(DCCLCodec::glog_decode_group()) << "bits before get_more_bits " << bits << std::endl;    
+        goby::glog.is(DEBUG2) && goby::glog << group(DCCLCodec::glog_decode_group()) << "bits before get_more_bits " << *bits << std::endl;    
 
         // grabs more bits to add to the MSBs of `bits`
         bits->get_more_bits(value_length*BITS_IN_BYTE);

@@ -143,8 +143,11 @@ goby::acomms::Bridge::Bridge()
     {
         q_managers_[i].reset(new QueueManager);
         mac_managers_[i].reset(new MACManager);
+
+        goby::acomms::protobuf::QueueManagerConfig qcfg = cfg_.subnet(i).queue_cfg();
+        q_managers_[i]->set_cfg(qcfg);
+
         
-        q_managers_[i]->set_cfg(cfg_.subnet(i).queue_cfg());
         mac_managers_[i]->startup(cfg_.subnet(i).mac_cfg());
 
         switch(cfg_.subnet(i).driver_type())

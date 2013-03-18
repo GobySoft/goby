@@ -1,6 +1,11 @@
 Goby Release Notes (Major version 2)
 
 *****************
+Version 2.0.3
+
+- Addition to DCCL and goby_bridge to allow forwarding of encrypted messages without unencrypting.
+
+*****************
 Version 2.0.2
 
 - First stable release of Goby version 2!

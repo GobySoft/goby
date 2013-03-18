@@ -350,10 +350,12 @@ goby::int32 goby::acomms::DCCLDefaultEnumCodec::pre_encode(const google::protobu
 const google::protobuf::EnumValueDescriptor* goby::acomms::DCCLDefaultEnumCodec::post_decode(const int32& wire_value)
 {
     const google::protobuf::EnumDescriptor* e = this_field()->enum_type();
-    const google::protobuf::EnumValueDescriptor* return_value = e->value(wire_value);
 
-    if(return_value)
+    if(wire_value < e->value_count())
+    {
+        const google::protobuf::EnumValueDescriptor* return_value = e->value(wire_value);
         return return_value;
+    }
     else
         throw(DCCLNullValueException());
 }

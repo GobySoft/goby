@@ -31,7 +31,10 @@
 #include "goby/common/time.h"
 #include "goby/util/binary.h"
 
+void decode_check(const std::string& encoded);
 using goby::acomms::operator<<;
+goby::acomms::DCCLCodec* codec;
+TestMsg msg_in;
 
 int main(int argc, char* argv[])
 {
@@ -39,10 +42,9 @@ int main(int argc, char* argv[])
     goby::glog.set_name(argv[0]);
     
     goby::acomms::protobuf::DCCLConfig cfg;
-    goby::acomms::DCCLCodec* codec = goby::acomms::DCCLCodec::get();
+    codec = goby::acomms::DCCLCodec::get();
     codec->set_cfg(cfg);
 
-    TestMsg msg_in;
     int i = 0;
     msg_in.set_double_default_optional(++i + 0.1);
     msg_in.set_float_default_optional(++i + 0.2);
@@ -138,20 +140,42 @@ int main(int argc, char* argv[])
     std::cout << "... got bytes (hex): " << goby::util::hex_encode(bytes) << std::endl;
 
     std::cout << "Try decode..." << std::endl;
+    decode_check(bytes);
 
-    TestMsg msg_out;
-    codec->decode(bytes, &msg_out);
-    
-    std::cout << "... got Message out:\n" << msg_out.DebugString() << std::endl;
+    // make sure Goby defaults stay wire compatible
+    decode_check(goby::util::hex_decode("047f277b9628060000b95660c0b0188000d8c0132858800008000dc2c4c6626466024488cca8ee324bd05c3f23af0000ad9112a09509788013e0820b18e0005ed0204c6c2c4666062042644675975982c65235f10a00ad718a5801000000905f27121600000000a0170050640300309201001a0b00007d320a0000a61a0070b20100a81b00d09c6f0000a0401026361643102636160300f0dfbd5b2280ea2e330f3da59a2100aabfa55a000000000000000000000000"));
 
-
-    // truncate to "max_length" as codec should do
-    msg_in.set_string_default_repeat(0,"abc1");
-    msg_in.set_string_default_repeat(1,"abc1");
-
-    
-    assert(msg_in.SerializeAsString() == msg_out.SerializeAsString());
+    // run a bunch of tests with random strings
+    std::string random = bytes;
+    for(unsigned i = 0; i > 10; --i)
+    {    
+        random[(rand() % (bytes.size()-1)+1)] = rand() % 256;
+        std::cout << "Using junk bytes: " << goby::util::hex_encode(random) << std::endl;
+        
+        try
+        {
+            TestMsg msg_out;
+            codec->decode(random, &msg_out);
+        }
+        catch(goby::acomms::DCCLException&)
+        {
+        }
+    }
     
     std::cout << "all tests passed" << std::endl;
 }
 
+
+void decode_check(const std::string& encoded)
+{
+    TestMsg msg_out;
+    codec->decode(encoded, &msg_out);
+    
+    std::cout << "... got Message out:\n" << msg_out.DebugString() << std::endl;
+
+    // truncate to "max_length" as codec should do
+    msg_in.set_string_default_repeat(0,"abc1");
+    msg_in.set_string_default_repeat(1,"abc1");
+    
+    assert(msg_in.SerializeAsString() == msg_out.SerializeAsString());
+}

@@ -6,6 +6,12 @@ import "goby/acomms/protobuf/dccl_option_extensions.proto";
 
 package goby.moos.protobuf;
 
+message MicroModemMimic
+{
+  optional string range_request_var = 1 [default = "CRS_RANGE_REQUEST"];
+  optional string range_report_var = 2 [default = "CRS_RANGE_REPORT"];
+}
+
 message Config
 {
   extend goby.acomms.protobuf.DriverConfig 
@@ -21,6 +27,8 @@ message Config
     repeated int32 rate_to_bytes = 1305;
 
     optional string modem_id_lookup_path = 1306;
+    
+    optional MicroModemMimic micromodem_mimic = 1307;
     
     //repeated ModemIdEntry id_entry = 1306;
     

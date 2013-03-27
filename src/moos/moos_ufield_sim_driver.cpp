@@ -28,6 +28,8 @@
 #include "goby/moos/protobuf/ufield_sim_driver.pb.h"
 #include "goby/moos/moos_string.h"
 #include "goby/moos/modem_id_convert.h"
+#include "goby/acomms/protobuf/mm_driver.pb.h"
+
 
 using goby::util::hex_encode;
 using goby::util::hex_decode;
@@ -37,6 +39,7 @@ using goby::acomms::operator<<;
 
 
 goby::moos::UFldDriver::UFldDriver()
+    : last_ccmpc_dest_(-1)
 {
 }
 
@@ -76,6 +79,7 @@ void goby::moos::UFldDriver::startup(const goby::acomms::protobuf::DriverConfig&
              << "Connected to MOOSDB." << std::endl;
     
     moos_client_.Register(driver_cfg_.GetExtension(protobuf::Config::incoming_moos_var), 0);
+    moos_client_.Register(driver_cfg_.GetExtension(protobuf::Config::micromodem_mimic).range_report_var(), 0);
 } 
 
 void goby::moos::UFldDriver::shutdown()
@@ -92,39 +96,73 @@ void goby::moos::UFldDriver::handle_initiate_transmission(
     // allows zero to N third parties modify the transmission before sending.
     signal_modify_transmission(&msg);
 
-    if(driver_cfg_.modem_id() == msg.src())
-    {        
-        // this is our transmission
-        
-        if(msg.rate() < driver_cfg_.ExtensionSize(protobuf::Config::rate_to_bytes))
-            msg.set_max_frame_bytes(driver_cfg_.GetExtension(protobuf::Config::rate_to_bytes, msg.rate()));
-        else
-            msg.set_max_frame_bytes(DEFAULT_PACKET_SIZE);
-        
-        // no data given to us, let's ask for some
-        if(msg.frame_size() == 0)
-            ModemDriverBase::signal_data_request(&msg);
-        
-        // don't send an empty message
-        if(msg.frame_size() && msg.frame(0).size())
-        {
-            send_message(msg);
-        }
-    }
-    else
+
+    switch(msg.type())
     {
-        // send thirdparty "poll"
-        msg.SetExtension(goby::moos::protobuf::poll_src, msg.src());        
-        msg.SetExtension(goby::moos::protobuf::poll_dest, msg.dest());
-
-        msg.set_dest(msg.src());
-        msg.set_src(driver_cfg_.modem_id());
+        case goby::acomms::protobuf::ModemTransmission::DATA:
+        {
+            if(driver_cfg_.modem_id() == msg.src())
+            {        
+                // this is our transmission
         
-        msg.set_type(goby::acomms::protobuf::ModemTransmission::DRIVER_SPECIFIC);
-        msg.SetExtension(goby::moos::protobuf::type, goby::moos::protobuf::UFIELD_DRIVER_POLL);
+                if(msg.rate() < driver_cfg_.ExtensionSize(protobuf::Config::rate_to_bytes))
+                    msg.set_max_frame_bytes(driver_cfg_.GetExtension(protobuf::Config::rate_to_bytes, msg.rate()));
+                else
+                    msg.set_max_frame_bytes(DEFAULT_PACKET_SIZE);
+        
+                // no data given to us, let's ask for some
+                if(msg.frame_size() == 0)
+                    ModemDriverBase::signal_data_request(&msg);
+        
+                // don't send an empty message
+                if(msg.frame_size() && msg.frame(0).size())
+                {
+                    send_message(msg);
+                }
+            }
+            else
+            {
+                // send thirdparty "poll"
+                msg.SetExtension(goby::moos::protobuf::poll_src, msg.src());        
+                msg.SetExtension(goby::moos::protobuf::poll_dest, msg.dest());
 
-        send_message(msg);
+                msg.set_dest(msg.src());
+                msg.set_src(driver_cfg_.modem_id());
+        
+                msg.set_type(goby::acomms::protobuf::ModemTransmission::DRIVER_SPECIFIC);
+                msg.SetExtension(goby::moos::protobuf::type, goby::moos::protobuf::UFIELD_DRIVER_POLL);
+
+                send_message(msg);
+            }
+        }
+        break;
+
+        case goby::acomms::protobuf::ModemTransmission::DRIVER_SPECIFIC:
+        {
+            if(msg.HasExtension(micromodem::protobuf::type))
+            {
+                switch(msg.GetExtension(micromodem::protobuf::type))
+                {
+                    case micromodem::protobuf::MICROMODEM_TWO_WAY_PING: ccmpc(msg); break;
+                    default:
+                        glog.is(DEBUG1) && glog << group(glog_out_group()) << warn << "Not initiating transmission because we were given a DRIVER_SPECIFIC transmission type for the Micro-Modem that isn't supported by the uFld simulator driver" << msg.ShortDebugString() << std::endl;
+                    break;
+                }
+            }
+            else
+            {
+                glog.is(DEBUG1) && glog << group(glog_out_group()) << warn << "Not initiating transmission because we were given a missing or unrecognized DRIVER_SPECIFIC type: " << msg.ShortDebugString() << std::endl;
+            }
+            
+        }
+        break;
+
+        case goby::acomms::protobuf::ModemTransmission::UNKNOWN:
+        case goby::acomms::protobuf::ModemTransmission::ACK:
+            break;
+
     }
+    
 } 
 
 void goby::moos::UFldDriver::send_message(const goby::acomms::protobuf::ModemTransmission& msg)
@@ -191,6 +229,58 @@ void goby::moos::UFldDriver::do_work()
                 msg.ParseFromString(hex_decode(value));
                 receive_message(msg);
             }
+            else if(it->GetKey() ==
+                    driver_cfg_.GetExtension(protobuf::Config::micromodem_mimic).range_report_var())
+            {
+                // response to our modem "ping"
+                // e.g "range=1722.3869,target=resolution,time=1364413337.272"
+                try
+                {
+                    goby::acomms::protobuf::ModemTransmission m;
+                    std::string target;
+                    double range, time;
+                    if(!val_from_string(target, it->GetString(), "target"))
+                        throw(std::runtime_error("No `target` field"));
+                    if(!val_from_string(range, it->GetString(), "range"))
+                        throw(std::runtime_error("No `range` field"));
+                    if(!val_from_string(time, it->GetString(), "time"))
+                        throw(std::runtime_error("No `time` field"));
+
+                    if(target != modem_lookup_.get_name_from_id(last_ccmpc_dest_))
+                    {
+                        glog.is(DEBUG1) && glog << group(glog_in_group()) << "Ignoring report from target: " << target << std::endl;
+                    }
+                    else
+                    {
+                        m.set_time(static_cast<uint64>(time)*1000000);
+                    
+                        m.set_src(driver_cfg_.modem_id());
+                        m.set_dest(last_ccmpc_dest_);
+
+                        micromodem::protobuf::RangingReply* ranging_reply = m.MutableExtension(micromodem::protobuf::ranging_reply);
+    
+                        ranging_reply->add_one_way_travel_time(range/NOMINAL_SPEED_OF_SOUND);
+
+                        m.set_type(goby::acomms::protobuf::ModemTransmission::DRIVER_SPECIFIC);
+                        m.SetExtension(micromodem::protobuf::type, micromodem::protobuf::MICROMODEM_TWO_WAY_PING);
+
+                        glog.is(DEBUG1) && glog << group(glog_in_group())
+                                                << "Received mimic of MICROMODEM_TWO_WAY_PING response from "
+                                                << m.src() << ", 1-way travel time: "
+                                                << ranging_reply->one_way_travel_time(ranging_reply->one_way_travel_time_size()-1) << "s" << std::endl;
+                    
+                        ModemDriverBase::signal_receive(m);
+                        last_ccmpc_dest_ = -1;
+                    }
+                    
+                }
+                catch(std::exception& e)
+                {
+                    glog.is(DEBUG1) &&
+                        glog << group(glog_in_group())  << warn << "Failed to parse incoming range report message: " << e.what() << std::endl;
+                }
+            }
+            
         }
     }
 } 
@@ -230,3 +320,13 @@ void goby::moos::UFldDriver::receive_message(const goby::acomms::protobuf::Modem
     }    
 }
     
+// mimics the Micro-Modem ccpmc in uFld
+void goby::moos::UFldDriver::ccmpc(const goby::acomms::protobuf::ModemTransmission& msg)
+{
+    glog.is(DEBUG1) && glog << group(glog_out_group()) << "\tthis is a mimic of the MICROMODEM_TWO_WAY_PING transmission" << std::endl;
+
+    std::string src = modem_lookup_.get_name_from_id(msg.src());
+    last_ccmpc_dest_ = msg.dest();
+    moos_client_.Notify(driver_cfg_.GetExtension(protobuf::Config::micromodem_mimic).range_request_var(),
+                        "name=" + src);    
+}

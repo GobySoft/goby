@@ -91,6 +91,8 @@ namespace goby
              ///
              /// \param new_message DCCL message to push.
              void push_message(const google::protobuf::Message& new_message);
+             void push_message(const google::protobuf::Message& new_message,
+                               const protobuf::QueuedMessageMeta* meta);
 
              /// \brief Flush (delete all messages in) a queue
              ///

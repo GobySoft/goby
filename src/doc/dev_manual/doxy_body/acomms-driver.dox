@@ -114,15 +114,14 @@ make a note in driver_base.proto claiming extension numbers 1201 and 1202 (and o
              
 <li> Fill in the methods. You are responsible for emitting the goby::acomms::ModemDriverBase signals at the appropriate times. Read on and all should be clear.
 <ul>
-<li>Minimally your constructor should store a local copy of the ostream logger:
+<li>
 \code
-goby::acomms::ABCDriver::ABCDriver() : ModemDriverBase(log),
-                         log_(log)
+goby::acomms::ABCDriver::ABCDriver()
 {
   // other initialization you can do before you have your goby::acomms::DriverConfig configuration object
 }
 \endcode
-<li>At startup() you get your configuration from the application (pAcommsHandler or other)
+<li>At startup() you get your configuration from the application (e.g. pAcommsHandler)
 
 \dontinclude abc_driver.cpp
 \skipline startup
@@ -163,7 +162,7 @@ The full ABC Modem example driver exists in acomms/modemdriver/abc_driver.h and 
 Notes:
 <ul>
 <li>See goby::acomms::MMDriver for an example real implementation.
-<li>When a message is sent to goby::acomms::BROADCAST_ID (0), it should be broadcast if the modem supports such functionality. Otherwise, the driver should throw an goby::acomms::DriverException indicating that it does not support broadcast allowing the user to reconfigure their MAC / addressing scheme.
+<li>When a message is sent to goby::acomms::BROADCAST_ID (0), it should be broadcast if the modem supports such functionality. Otherwise, the driver should throw an goby::acomms::ModemDriverException indicating that it does not support broadcast allowing the user to reconfigure their MAC / addressing scheme.
 </ul>
 
 

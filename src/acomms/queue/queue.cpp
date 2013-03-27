@@ -49,7 +49,12 @@ goby::acomms::Queue::Queue(const google::protobuf::Descriptor* desc,
 bool goby::acomms::Queue::push_message(boost::shared_ptr<google::protobuf::Message> dccl_msg)
 {
     protobuf::QueuedMessageMeta meta = meta_from_msg(*dccl_msg);
-    
+    return push_message(dccl_msg, meta);
+}
+
+bool goby::acomms::Queue::push_message(boost::shared_ptr<google::protobuf::Message> dccl_msg,
+                                       protobuf::QueuedMessageMeta meta)
+{   
     parent_->signal_out_route(&meta, *dccl_msg, parent_->cfg_.modem_id());
     
     glog.is(DEBUG1) && glog << group(parent_->glog_push_group())

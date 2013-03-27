@@ -76,7 +76,7 @@ void goby::acomms::RouteManager::handle_in(
             return;    
         }
         
-        subnet_map_[subnet]->push_message(data_msg);
+        subnet_map_[subnet]->push_message(data_msg, &meta);
     }
     else
     {

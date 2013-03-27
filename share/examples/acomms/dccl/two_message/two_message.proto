@@ -1,7 +1,7 @@
 import "goby/acomms/protobuf/dccl_option_extensions.proto";
 message GoToCommand
 {
-  option (dccl.msg).id = 2;
+  option (dccl.msg).id = 125;
   option (dccl.msg).max_bytes = 32;
   required int32 destination = 1 [(dccl.field).max=31,
                                   (dccl.field).min=0,
@@ -23,7 +23,7 @@ message GoToCommand
 
 message VehicleStatus
 { 
-  option (dccl.msg).id = 3;
+  option (dccl.msg).id = 126;
   option (dccl.msg).max_bytes = 32;
   required double nav_x = 1 [(dccl.field).max=10000,
                              (dccl.field).min=0,

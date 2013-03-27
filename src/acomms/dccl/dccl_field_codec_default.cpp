@@ -208,7 +208,7 @@ std::string goby::acomms::DCCLDefaultStringCodec::decode(Bitset* bits)
         
         goby::glog.is(DEBUG2) && goby::glog << group(DCCLCodec::glog_decode_group()) << "Length of string is = " << value_length << std::endl;
         
-        goby::glog.is(DEBUG2) && goby::glog << group(DCCLCodec::glog_decode_group()) << "bits before get_more_bits " << bits << std::endl;    
+        goby::glog.is(DEBUG2) && goby::glog << group(DCCLCodec::glog_decode_group()) << "bits before get_more_bits " << *bits << std::endl;    
 
         // grabs more bits to add to the MSBs of `bits`
         bits->get_more_bits(value_length*BITS_IN_BYTE);
@@ -350,10 +350,12 @@ goby::int32 goby::acomms::DCCLDefaultEnumCodec::pre_encode(const google::protobu
 const google::protobuf::EnumValueDescriptor* goby::acomms::DCCLDefaultEnumCodec::post_decode(const int32& wire_value)
 {
     const google::protobuf::EnumDescriptor* e = this_field()->enum_type();
-    const google::protobuf::EnumValueDescriptor* return_value = e->value(wire_value);
 
-    if(return_value)
+    if(wire_value < e->value_count())
+    {
+        const google::protobuf::EnumValueDescriptor* return_value = e->value(wire_value);
         return return_value;
+    }
     else
         throw(DCCLNullValueException());
 }

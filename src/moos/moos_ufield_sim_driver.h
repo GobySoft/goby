@@ -50,19 +50,26 @@ namespace goby
             void shutdown();            
             void do_work();
             void handle_initiate_transmission(const goby::acomms::protobuf::ModemTransmission& m);
-
+    
           private:
             void send_message(const goby::acomms::protobuf::ModemTransmission& msg);
             void receive_message(const goby::acomms::protobuf::ModemTransmission& msg);
+
+            // MicroModem special feature mimics
+            void ccmpc(const goby::acomms::protobuf::ModemTransmission& msg);
             
           private:
             enum { DEFAULT_PACKET_SIZE=64 };
+            enum { NOMINAL_SPEED_OF_SOUND=1500 };
             CMOOSCommClient moos_client_;
             goby::acomms::protobuf::DriverConfig driver_cfg_; // configuration given to you at launch
 
             //boost::bimap<int, std::string> modem_id2name_;
             goby::moos::ModemIdConvert modem_lookup_;
+
+            int last_ccmpc_dest_;
         };
     }
 }
+
 #endif

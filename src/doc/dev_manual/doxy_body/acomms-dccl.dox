@@ -40,15 +40,17 @@ message Simple
 }
 \endverbatim
 
-At a minimum we must give a unique ID for our DCCL message and a maximum number of bytes we allow the message to be before throwing an exception when it is loaded. This allows us to ensure that we are not creating messages larger than we can send with the physical hardware. We want to have the ability to use the lowest rate WHOI Micro-Modem message size, so we pick max_bytes to be 32. We have no other DCCL messages currently in the system so we start with an id of 1. After these additions we have:
+At a minimum we must give a unique ID for our DCCL message and a maximum number of bytes we allow the message to be before throwing an exception when it is loaded. This allows us to ensure that we are not creating messages larger than we can send with the physical hardware. We want to have the ability to use the lowest rate WHOI Micro-Modem message size, so we pick max_bytes to be 32. We are testing so we'll use an id of 124. See http://gobysoft.org/wiki/DcclIdTable for a list of the assigned DCCL IDs.
+
+After these additions we have:
 
 \verbatim
 import "goby/common/protobuf/option_extensions.proto";
 
 message Simple
 {  
-  option (goby.msg).dccl.id = 1;
-  option (goby.msg).dccl.max_bytes = 32;
+  option (dccl.msg).id = 124;
+  option (dccl.msg).max_bytes = 32;
 
   required string telegram = 1;
 }
@@ -111,7 +113,7 @@ We want to be able to command our vehicle (to which we have assigned an ID numbe
 
 Taking all this into account, we form the first message (named GoToCommand) in the file two_message.proto (see \ref dccl_examples_two_message)
 
-We choose a <tt>dccl.id</tt> of 2 to avoid conflicting with the message from Scenario 1 (simple.proto) and a <tt>dccl.max_bytes</tt> of 32 bytes to again allow sending in the WHOI Micro-Modem rate 0 packet.
+We choose a <tt>dccl.id</tt> of 125 to avoid conflicting with the message from Scenario 1 (simple.proto) and a <tt>dccl.max_bytes</tt> of 32 bytes to again allow sending in the WHOI Micro-Modem rate 0 packet.
 
 Now, for the second message in two_message.proto. We want to receive the vehicle's present position and its current health, which can either be "good", "low_battery" or "abort". We make a similar table to before:
 
@@ -151,14 +153,15 @@ You can run <tt>analyze_dccl</tt> to view more information on your messages:
  When I ran the above command I got:
 
 \verbatim
-read in: /home/toby/goby/2.0-rework-modem-messaging/share/examples/acomms/dccl/two_message/two_message.proto
+read in: two_message.proto
 === Begin DCCLCodec ===
 2 messages loaded.
-== Begin GoToCommand ==
+= Begin GoToCommand =
 Actual maximum size of message: 18 bytes / 144 bits [dccl.id head: 8, user head: 0, body: 131, padding: 5]
 Allowed maximum size of message: 32 bytes / 256 bits
-= Header =
-= Body =
+== Begin Header ==
+== End Header ==
+== Begin Body ==
 GoToCommand
  required int32 destination = 1;
  :: size = 5 bit(s)
@@ -175,12 +178,14 @@ GoToCommand
  :: size = 9 bit(s)
 :: min size = 51 bit(s)
 :: max size = 131 bit(s)
-== End GoToCommand ==
-== Begin VehicleStatus ==
+== End Body ==
+= End GoToCommand =
+= Begin VehicleStatus =
 Actual maximum size of message: 6 bytes / 48 bits [dccl.id head: 8, user head: 0, body: 36, padding: 4]
 Allowed maximum size of message: 32 bytes / 256 bits
-= Header =
-= Body =
+== Begin Header ==
+== End Header ==
+== Begin Body ==
 VehicleStatus
  required double nav_x = 1;
  :: size = 17 bit(s)
@@ -189,7 +194,8 @@ VehicleStatus
  required .VehicleStatus.HealthEnum health = 3;
  :: size = 2 bit(s)
 :: size = 36 bit(s)
-== End VehicleStatus ==
+== End Body ==
+= End VehicleStatus =
 === End DCCLCodec ===
 \endverbatim
 

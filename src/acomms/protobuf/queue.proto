@@ -48,6 +48,8 @@ message QueueManagerConfig
   optional double on_demand_skew_seconds = 11 [default = 1];
   
   optional double minimum_ack_wait_seconds = 20 [default = 0];
+
+  optional bool skip_decoding = 21 [default = false, (goby.field).description="Skip decoding of the message body upon receipt, just decode the header (for use with the goby route module to pass messages on without decrypting the body)"];
 }
 
 message QueueSize
@@ -71,4 +73,6 @@ message QueuedMessageMeta
 
   // last time we tried to send this
   optional uint64 last_sent_time = 10;  
+
+  optional bytes encoded_message = 20;
 }

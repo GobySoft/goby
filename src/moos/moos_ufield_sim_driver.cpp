@@ -247,28 +247,32 @@ void goby::moos::UFldDriver::do_work()
                         throw(std::runtime_error("No `time` field"));
 
                     if(target != modem_lookup_.get_name_from_id(last_ccmpc_dest_))
+                    {
                         glog.is(DEBUG1) && glog << group(glog_in_group()) << "Ignoring report from target: " << target << std::endl;
-
-                    m.set_time(static_cast<uint64>(time)*1000000);
+                    }
+                    else
+                    {
+                        m.set_time(static_cast<uint64>(time)*1000000);
                     
-                    m.set_src(driver_cfg_.modem_id());
-                    m.set_dest(last_ccmpc_dest_);
+                        m.set_src(driver_cfg_.modem_id());
+                        m.set_dest(last_ccmpc_dest_);
 
-                    micromodem::protobuf::RangingReply* ranging_reply = m.MutableExtension(micromodem::protobuf::ranging_reply);
+                        micromodem::protobuf::RangingReply* ranging_reply = m.MutableExtension(micromodem::protobuf::ranging_reply);
     
-                    ranging_reply->add_one_way_travel_time(range/NOMINAL_SPEED_OF_SOUND);
+                        ranging_reply->add_one_way_travel_time(range/NOMINAL_SPEED_OF_SOUND);
 
-                    m.set_type(goby::acomms::protobuf::ModemTransmission::DRIVER_SPECIFIC);
-                    m.SetExtension(micromodem::protobuf::type, micromodem::protobuf::MICROMODEM_TWO_WAY_PING);
+                        m.set_type(goby::acomms::protobuf::ModemTransmission::DRIVER_SPECIFIC);
+                        m.SetExtension(micromodem::protobuf::type, micromodem::protobuf::MICROMODEM_TWO_WAY_PING);
 
-                    glog.is(DEBUG1) && glog << group(glog_in_group())
-                                            << "Received mimic of MICROMODEM_TWO_WAY_PING response from "
-                                            << m.src() << ", 1-way travel time: "
-                                            << ranging_reply->one_way_travel_time(ranging_reply->one_way_travel_time_size()-1) << "s" << std::endl;
+                        glog.is(DEBUG1) && glog << group(glog_in_group())
+                                                << "Received mimic of MICROMODEM_TWO_WAY_PING response from "
+                                                << m.src() << ", 1-way travel time: "
+                                                << ranging_reply->one_way_travel_time(ranging_reply->one_way_travel_time_size()-1) << "s" << std::endl;
                     
-                    ModemDriverBase::signal_receive(m);
-                    last_ccmpc_dest_ = -1;
-
+                        ModemDriverBase::signal_receive(m);
+                        last_ccmpc_dest_ = -1;
+                    }
+                    
                 }
                 catch(std::exception& e)
                 {

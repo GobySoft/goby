@@ -47,8 +47,7 @@ bool goby::util::TCPClient::start_specific()
     {
         socket_.close();
         socket_.connect(*endpoint_iterator++, error);
-    }
-    
+    }    
     return error ? false : true;
 }
 

@@ -2,7 +2,7 @@ import "goby/common/protobuf/option_extensions.proto";
 
 package goby.acomms.protobuf;
 
-// known drivers - should make this somehow extensible
+// known drivers - should make this somehow extensible outside Goby
 enum DriverType {
   DRIVER_NONE = 1;
   DRIVER_WHOI_MICROMODEM = 2;
@@ -10,6 +10,7 @@ enum DriverType {
   DRIVER_UFIELD_SIM_DRIVER = 4;
   DRIVER_PB_STORE_SERVER = 5;
   DRIVER_UDP = 6;
+  DRIVER_BLUEFIN_MOOS = 7;
 }
 
 message DriverConfig
@@ -40,6 +41,7 @@ message DriverConfig
   // extensions 1201-1202 used by acomms_abc_driver.proto (example driver)
   // extensions 1300-1320 used by ufield_sim_driver.proto
   // extensions 1321-1340 used by pb_modem_driver.proto
-  // extensions 1341-1360 used by udp_driver.proto  
+  // extensions 1341-1360 used by udp_driver.proto
+  // extensions 1361-1380 used by bluefin_sim_driver.proto
 }
 

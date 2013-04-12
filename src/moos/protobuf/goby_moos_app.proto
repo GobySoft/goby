@@ -23,7 +23,13 @@ message GobyMOOSAppConfig
 
   optional uint32 time_warp_multiplier = 106 [default = 1, (goby.field).moos_global = "MOOSTimeWarp",
                                             (goby.field).description="Factor by which to make the clock run faster."];
-  
+
+
+  optional string server_host = 107 [(goby.field).moos_global = "ServerHost",
+                                    (goby.field).description="MOOSDB Server Host name"];
+  optional int32 server_port = 108 [(goby.field).moos_global = "ServerPort",
+                                    (goby.field).description="MOOSDB Server Port"];
+
   optional uint32 app_tick = 1 [default = 10,
                                 (goby.field).description="Frequency at which to run Iterate()."];
   

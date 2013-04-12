@@ -1,0 +1,303 @@
+// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
+//                     Massachusetts Institute of Technology (2007-)
+//                     Woods Hole Oceanographic Institution (2007-)
+//                     Goby Developers Team (https://launchpad.net/~goby-dev)
+// 
+//
+// This file is part of the Goby Underwater Autonomy Project Libraries
+// ("The Goby Libraries").
+//
+// The Goby Libraries are free software: you can redistribute them and/or modify
+// them under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// The Goby Libraries are distributed in the hope that they will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with Goby.  If not, see <http://www.gnu.org/licenses/>.
+
+
+#include "moos_bluefin_driver.h"
+#include "goby/acomms/modemdriver/driver_exception.h"
+#include "goby/common/logger.h"
+#include "goby/common/time.h"
+#include "goby/util/binary.h"
+#include "goby/moos/protobuf/bluefin_driver.pb.h"
+#include "goby/moos/moos_protobuf_helpers.h"
+#include "goby/moos/moos_string.h"
+#include "goby/acomms/protobuf/mm_driver.pb.h"
+#include "goby/util/linebasedcomms/nmea_sentence.h"
+#include <boost/format.hpp>
+
+using goby::util::hex_encode;
+using goby::util::hex_decode;
+using goby::glog;
+using namespace goby::common::logger;
+using goby::acomms::operator<<;
+using goby::util::NMEASentence;
+using goby::common::goby_time;
+using goby::common::nmea_time2ptime;
+
+
+goby::moos::BluefinCommsDriver::BluefinCommsDriver(goby::acomms::MACManager* mac)
+    : end_of_mac_window_(0),
+      mac_(mac)
+{
+}
+
+void goby::moos::BluefinCommsDriver::startup(const goby::acomms::protobuf::DriverConfig& cfg)
+{
+    glog.is(DEBUG1) && glog << group(glog_out_group()) << "Goby MOOS Bluefin Comms driver starting up." << std::endl;
+
+    driver_cfg_ = cfg;
+
+
+    modem_to_rate_to_bytes_.clear();
+    for(int i = 0, n = driver_cfg_.ExtensionSize(protobuf::BluefinConfig::hardware_to_rate); i < n; ++i)
+    {
+        const protobuf::HardwareRatePair& hardware_to_rate = driver_cfg_.GetExtension(protobuf::BluefinConfig::hardware_to_rate, i);
+        modem_to_rate_to_bytes_[hardware_to_rate.hardware_name()][hardware_to_rate.rate()] = hardware_to_rate.packet_bytes();
+    }
+    
+    const std::string& moos_server = driver_cfg_.GetExtension(protobuf::BluefinConfig::moos_server);
+    int moos_port = driver_cfg_.GetExtension(protobuf::BluefinConfig::moos_port);
+    moos_client_.Run(moos_server.c_str(), moos_port, "goby.moos.BluefinCommsDriver");
+
+    int i = 0;
+    while(!moos_client_.IsConnected())
+    {
+        glog.is(DEBUG1) &&
+            glog << group(glog_out_group())
+                 << "Trying to connect to MOOSDB at "<< moos_server << ":" << moos_port << ", try " << i++ << std::endl;
+        sleep(1);
+    }
+    glog.is(DEBUG1) &&
+        glog << group(glog_out_group())
+             << "Connected to MOOSDB." << std::endl;
+    
+    moos_client_.Register(driver_cfg_.GetExtension(protobuf::BluefinConfig::nmea_in_moos_var), 0);
+} 
+
+void goby::moos::BluefinCommsDriver::shutdown()
+{
+    moos_client_.Close();
+} 
+
+void goby::moos::BluefinCommsDriver::handle_initiate_transmission(
+    const goby::acomms::protobuf::ModemTransmission& orig_msg)
+{
+    // copy so we can modify
+    goby::acomms::protobuf::ModemTransmission msg = orig_msg;    
+
+    // allows zero to N third parties modify the transmission before sending.
+    signal_modify_transmission(&msg);
+
+    switch(msg.type())
+    {
+        case goby::acomms::protobuf::ModemTransmission::DATA:
+        {
+            if(driver_cfg_.modem_id() == msg.src())
+            {        
+                // this is our transmission
+                if(!modem_to_rate_to_bytes_.count(current_modem_))
+                {
+                    glog.is(WARN) &&
+                        glog << group(glog_out_group())
+                             << "Modem \"" << current_modem_ << "\" not configured for rate and bytes. Cannot initiate transmission." << std::endl;
+                    break;
+                }
+                
+                std::map<int, int>& rate_to_bytes = modem_to_rate_to_bytes_[current_modem_];
+
+                if(!rate_to_bytes.count(msg.rate()))
+                {
+                    glog.is(WARN) &&
+                        glog << group(glog_out_group())
+                             << "Modem \"" << current_modem_ << "\" not configured for rate: " << msg.rate() << ". Cannot initiate transmission." << std::endl;
+                    break;
+                }
+                
+                msg.set_max_frame_bytes(rate_to_bytes[msg.rate()]);
+        
+                // no data given to us, let's ask for some
+                if(msg.frame_size() == 0)
+                    ModemDriverBase::signal_data_request(&msg);
+        
+                // don't send an empty message
+                if(msg.frame_size() && msg.frame(0).size())
+                {
+                    NMEASentence nmea("$BPCPD", NMEASentence::IGNORE);
+                    nmea.push_back(unix_time2nmea_time(goby_time<double>()));
+                    nmea.push_back(0); // request id?
+                    nmea.push_back(msg.dest());
+                    nmea.push_back(0); // telemetry mode?
+                    nmea.push_back(static_cast<int>(msg.ack_requested()));
+                    nmea.push_back(msg.frame_size());
+                    for(int i = 0; i < 8; ++i)
+                        nmea.push_back(i < msg.frame_size() ? hex_encode(msg.frame(i)) : "");
+
+                    std::stringstream ss;
+                    ss << "@PB[lamss.protobuf.FrontSeatRaw] raw: \"" << nmea.message() << "\"";
+
+                    goby::acomms::protobuf::ModemRaw out_raw;
+                    out_raw.set_raw(ss.str());
+                    ModemDriverBase::signal_raw_outgoing(out_raw);
+
+                    const std::string& out_moos_var = driver_cfg_.GetExtension(protobuf::BluefinConfig::nmea_out_moos_var);
+                    
+                    glog.is(DEBUG1) &&
+                        glog << group(glog_in_group())  << out_moos_var << ": " << ss.str() << std::endl;
+                    
+                    moos_client_.Notify(out_moos_var, ss.str());
+                }
+            }
+        }
+        break;
+
+        case goby::acomms::protobuf::ModemTransmission::UNKNOWN:
+        case goby::acomms::protobuf::ModemTransmission::DRIVER_SPECIFIC:
+        case goby::acomms::protobuf::ModemTransmission::ACK:
+            glog.is(DEBUG1) &&
+                glog << group(glog_out_group())
+                     << "Not initiating transmission: " << msg.ShortDebugString() << "; invalid transmission type." << std::endl;
+            break;
+
+    }
+    
+} 
+
+void goby::moos::BluefinCommsDriver::do_work()
+{
+    if(mac_->running() && end_of_mac_window_ < goby_time<double>())
+        mac_->shutdown();
+    
+    
+    MOOSMSG_LIST msgs;
+    if(moos_client_.Fetch(msgs))
+    {
+        for(MOOSMSG_LIST::iterator it = msgs.begin(),
+                end = msgs.end(); it != end; ++it)
+        {
+            const std::string& in_moos_var = driver_cfg_.GetExtension(protobuf::BluefinConfig::nmea_in_moos_var);
+            const std::string& s_val = it->GetString();
+
+            const std::string raw = "raw: \"";
+            const std::string::size_type raw_pos = s_val.find(raw);
+            if(raw_pos == std::string::npos)
+                continue;
+
+            const std::string::size_type end_pos = s_val.find("\"", raw_pos + raw.size());
+            if(end_pos == std::string::npos)
+                continue;
+            
+            std::string value = s_val.substr(raw_pos + raw.size(), end_pos-(raw_pos + raw.size()));            
+            
+            if(it->GetKey() == in_moos_var &&
+               (value.substr(0, 5) == "$BFCP" || value.substr(0, 6) == "$BFCMA"))
+            {
+                goby::acomms::protobuf::ModemRaw in_raw;
+                in_raw.set_raw(s_val);
+                ModemDriverBase::signal_raw_incoming(in_raw);
+                try
+                {
+                    glog.is(DEBUG1) &&
+                        glog << group(glog_in_group())  << in_moos_var << ": " << s_val  << std::endl;
+                    NMEASentence nmea(value, NMEASentence::VALIDATE);
+                    if(nmea.sentence_id() == "CMA") // Communications Medium Access
+                        bfcma(nmea);
+                    else if(nmea.sentence_id() == "CPS") // Communications Packet Sent
+                        bfcps(nmea);
+                    else if(nmea.sentence_id() == "CPR") // Communications Packet Received Data
+                        bfcpr(nmea);
+                }
+                catch(std::exception& e)
+                {
+                    glog.is(DEBUG1) && glog << warn << "Failed to handle message: " << e.what() << std::endl;
+                }                
+            }            
+        }
+    }
+} 
+
+std::string goby::moos::BluefinCommsDriver::unix_time2nmea_time(double time)
+{
+    boost::posix_time::ptime ptime = goby::common::unix_double2ptime(time);
+    
+    // HHMMSS.SSS
+    // it appears that exactly three digits of precision is important (sometimes)
+    boost::format f("%02d%02d%02d.%03d");
+    f % ptime.time_of_day().hours() %
+        ptime.time_of_day().minutes() %
+        ptime.time_of_day().seconds() %
+        (ptime.time_of_day().fractional_seconds() * 1000 /
+         boost::posix_time::time_duration::ticks_per_second());
+    
+    return f.str();
+}
+
+void goby::moos::BluefinCommsDriver::bfcma(const goby::util::NMEASentence& nmea)
+{
+    enum 
+    {
+        TIMESTAMP = 1,
+        END_OF_TIME_WINDOW = 2,
+        MODEM_ADDRESS = 3,
+        DEVICE_TYPE = 4
+    };
+    end_of_mac_window_ = goby::util::as<double>(nmea_time2ptime(nmea.at(END_OF_TIME_WINDOW)));
+    current_modem_ = nmea.at(DEVICE_TYPE);
+    mac_->restart();
+}
+
+void goby::moos::BluefinCommsDriver::bfcps(const goby::util::NMEASentence& nmea)
+{
+}
+
+void goby::moos::BluefinCommsDriver::bfcpr(const goby::util::NMEASentence& nmea)
+{
+    enum 
+    {
+        TIMESTAMP = 1,
+        ARRIVAL_TIME = 2,
+        SOURCE = 3,
+        DESTINATION = 4,
+        TELEMETRY_MODE = 5,
+        NUMBER_OF_FRAMES = 6,
+        FRAME_0_STATUS = 7,
+        FRAME_0_HEX = 8,
+        FRAME_1_STATUS = 9,
+        FRAME_1_HEX = 10,
+        FRAME_2_STATUS = 11,
+        FRAME_2_HEX = 12,
+        FRAME_3_STATUS = 13,
+        FRAME_3_HEX = 14,
+        FRAME_4_STATUS = 15,
+        FRAME_4_HEX = 16,
+        FRAME_5_STATUS = 17,
+        FRAME_5_HEX = 18,
+        FRAME_6_STATUS = 19,
+        FRAME_6_HEX = 20,
+        FRAME_7_STATUS = 21,
+        FRAME_7_HEX = 22  
+    };
+
+    goby::acomms::protobuf::ModemTransmission msg;
+    msg.set_time(goby::util::as<uint64>(nmea_time2ptime(nmea.at(ARRIVAL_TIME))));
+    msg.set_time_source(goby::acomms::protobuf::ModemTransmission::MODEM_TIME);
+    msg.set_src(nmea.as<int>(SOURCE));
+    msg.set_dest(nmea.as<int>(DESTINATION));
+    msg.set_type(goby::acomms::protobuf::ModemTransmission::DATA);
+    for(int i = 0, n = nmea.as<int>(NUMBER_OF_FRAMES); i < n; ++i)
+    {
+        if(nmea.as<int>(FRAME_0_STATUS + 2*i) == 1)
+            msg.add_frame(hex_decode(nmea.at(FRAME_0_HEX + 2*i)));
+    }
+    
+    ModemDriverBase::signal_receive(msg);
+                    
+}
+

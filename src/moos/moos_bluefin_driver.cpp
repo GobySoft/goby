@@ -45,7 +45,8 @@ using goby::common::nmea_time2ptime;
 
 goby::moos::BluefinCommsDriver::BluefinCommsDriver(goby::acomms::MACManager* mac)
     : end_of_mac_window_(0),
-      mac_(mac)
+      mac_(mac),
+      last_request_id_(1<<24)
 {
 }
 
@@ -62,6 +63,14 @@ void goby::moos::BluefinCommsDriver::startup(const goby::acomms::protobuf::Drive
         const protobuf::HardwareRatePair& hardware_to_rate = driver_cfg_.GetExtension(protobuf::BluefinConfig::hardware_to_rate, i);
         modem_to_rate_to_bytes_[hardware_to_rate.hardware_name()][hardware_to_rate.rate()] = hardware_to_rate.packet_bytes();
     }
+
+    goby_to_bluefin_id_.clear();
+    for(int i = 0, n = driver_cfg_.ExtensionSize(protobuf::BluefinConfig::modem_lookup); i < n; ++i)
+    {
+        const protobuf::BluefinModemIdLookUp& modem_lookup = driver_cfg_.GetExtension(protobuf::BluefinConfig::modem_lookup, i);
+        goby_to_bluefin_id_.left.insert(std::make_pair(modem_lookup.goby_id(), modem_lookup.bluefin_id()));
+    }
+
     
     const std::string& moos_server = driver_cfg_.GetExtension(protobuf::BluefinConfig::moos_server);
     int moos_port = driver_cfg_.GetExtension(protobuf::BluefinConfig::moos_port);
@@ -132,17 +141,21 @@ void goby::moos::BluefinCommsDriver::handle_initiate_transmission(
                 {
                     NMEASentence nmea("$BPCPD", NMEASentence::IGNORE);
                     nmea.push_back(unix_time2nmea_time(goby_time<double>()));
-                    nmea.push_back(0); // request id?
-                    nmea.push_back(msg.dest());
-                    nmea.push_back(0); // telemetry mode?
+                    nmea.push_back(++last_request_id_);
+                    
+                    int bf_dest = goby_to_bluefin_id_.left.count(msg.dest()) ?
+                        goby_to_bluefin_id_.left.at(msg.dest()) :
+                        -1;
+                    nmea.push_back(bf_dest);
+                    nmea.push_back(msg.rate());
                     nmea.push_back(static_cast<int>(msg.ack_requested()));
                     nmea.push_back(msg.frame_size());
                     for(int i = 0; i < 8; ++i)
-                        nmea.push_back(i < msg.frame_size() ? hex_encode(msg.frame(i)) : "");
-
+                        nmea.push_back(i < msg.frame_size() ? boost::to_upper_copy(hex_encode(msg.frame(i))) : "");
+                    
                     std::stringstream ss;
                     ss << "@PB[lamss.protobuf.FrontSeatRaw] raw: \"" << nmea.message() << "\"";
-
+                    
                     goby::acomms::protobuf::ModemRaw out_raw;
                     out_raw.set_raw(ss.str());
                     ModemDriverBase::signal_raw_outgoing(out_raw);
@@ -150,9 +163,10 @@ void goby::moos::BluefinCommsDriver::handle_initiate_transmission(
                     const std::string& out_moos_var = driver_cfg_.GetExtension(protobuf::BluefinConfig::nmea_out_moos_var);
                     
                     glog.is(DEBUG1) &&
-                        glog << group(glog_in_group())  << out_moos_var << ": " << ss.str() << std::endl;
+                        glog << group(glog_out_group())  << out_moos_var << ": " << ss.str() << std::endl;
                     
                     moos_client_.Notify(out_moos_var, ss.str());
+                    last_data_msg_ = msg;
                 }
             }
         }
@@ -255,6 +269,42 @@ void goby::moos::BluefinCommsDriver::bfcma(const goby::util::NMEASentence& nmea)
 
 void goby::moos::BluefinCommsDriver::bfcps(const goby::util::NMEASentence& nmea)
 {
+    enum 
+    {
+        TIMESTAMP = 1,
+        ACOUSTIC_MESSAGE_TIMESTAMP = 2,
+        REQUEST_ID = 3,
+        NUMBER_OF_FRAMES = 4,
+        FRAME_0_STATUS = 5,
+        FRAME_1_STATUS = 6,
+        FRAME_2_STATUS = 7,
+        FRAME_3_STATUS = 8,
+        FRAME_4_STATUS = 9,
+        FRAME_5_STATUS = 10,
+        FRAME_6_STATUS = 11,
+        FRAME_7_STATUS = 12
+    };
+
+    if(nmea.as<int>(REQUEST_ID) == last_request_id_)
+    {
+        goby::acomms::protobuf::ModemTransmission msg;
+        msg.set_time(goby_time<uint64>());
+        msg.set_src(last_data_msg_.dest()); // ack came from last data's destination, presumably
+        msg.set_dest(last_data_msg_.src());
+        msg.set_type(goby::acomms::protobuf::ModemTransmission::ACK);
+
+        for(int i = 0, n = nmea.as<int>(NUMBER_OF_FRAMES); i < n; ++i)
+        {
+            if(nmea.as<int>(FRAME_0_STATUS + i) == 2)
+                msg.add_acked_frame(i);
+        }
+        
+        ModemDriverBase::signal_receive(msg);
+    }
+    else
+    {
+        glog.is(DEBUG1) && glog << group(glog_in_group()) << warn << "Received CPS for message ID that was not the last request sent, ignoring..." << std::endl;
+    }
 }
 
 void goby::moos::BluefinCommsDriver::bfcpr(const goby::util::NMEASentence& nmea)
@@ -288,16 +338,26 @@ void goby::moos::BluefinCommsDriver::bfcpr(const goby::util::NMEASentence& nmea)
     goby::acomms::protobuf::ModemTransmission msg;
     msg.set_time(goby::util::as<uint64>(nmea_time2ptime(nmea.at(ARRIVAL_TIME))));
     msg.set_time_source(goby::acomms::protobuf::ModemTransmission::MODEM_TIME);
-    msg.set_src(nmea.as<int>(SOURCE));
-    msg.set_dest(nmea.as<int>(DESTINATION));
+
+    int goby_src = goby_to_bluefin_id_.right.count(nmea.as<int>(SOURCE)) ?
+        goby_to_bluefin_id_.right.at(nmea.as<int>(SOURCE)) :
+        -1;
+    msg.set_src(goby_src);
+
+    int goby_dest = goby_to_bluefin_id_.right.count(nmea.as<int>(DESTINATION)) ?
+        goby_to_bluefin_id_.right.at(nmea.as<int>(DESTINATION)) :
+        -1;
+    
+    msg.set_dest(goby_dest);
     msg.set_type(goby::acomms::protobuf::ModemTransmission::DATA);
     for(int i = 0, n = nmea.as<int>(NUMBER_OF_FRAMES); i < n; ++i)
     {
         if(nmea.as<int>(FRAME_0_STATUS + 2*i) == 1)
             msg.add_frame(hex_decode(nmea.at(FRAME_0_HEX + 2*i)));
     }
+
+    glog.is(DEBUG1) && glog << group(glog_in_group()) << "Received BFCPR incoming data message: " << msg.DebugString() << std::endl;
     
-    ModemDriverBase::signal_receive(msg);
-                    
+    ModemDriverBase::signal_receive(msg);    
 }
 

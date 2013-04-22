@@ -11,6 +11,12 @@ message HardwareRatePair
   required int32 packet_bytes = 3;
 }
 
+message BluefinModemIdLookUp
+{
+  required int32 goby_id = 1;
+  required int32 bluefin_id = 2;
+}
+
 
 message BluefinConfig
 {
@@ -23,6 +29,7 @@ message BluefinConfig
     optional string nmea_out_moos_var = 1364 [default="IFS_RAW_OUT"];
 
     repeated HardwareRatePair hardware_to_rate = 1365;
- 
+
+    repeated BluefinModemIdLookUp modem_lookup = 1366;
   }
 }

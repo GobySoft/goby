@@ -26,7 +26,7 @@
 
 #include "MOOSLIB/MOOSCommClient.h"
 
-//#include <boost/bimap.hpp>
+#include <boost/bimap.hpp>
 
 #include "goby/common/time.h"
 
@@ -67,7 +67,13 @@ namespace goby
             // modem name to map of rate to bytes
             std::map<std::string, std::map<int, int> > modem_to_rate_to_bytes_;
 
+            // maps goby modem id to bluefin modem id
+            boost::bimap<int, int> goby_to_bluefin_id_;
+            
             goby::acomms::MACManager* mac_;
+
+            int last_request_id_;
+            goby::acomms::protobuf::ModemTransmission last_data_msg_;
         };
     }
 }

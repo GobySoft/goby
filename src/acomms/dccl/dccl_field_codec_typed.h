@@ -208,6 +208,7 @@ namespace goby
           /// \brief Decode a repeated field
           virtual std::vector<WireType> decode_repeated(Bitset* bits) = 0;
 
+
           /// \brief Give the size of a repeated field
           virtual unsigned size_repeated(
               const std::vector<WireType>& wire_values) = 0;
@@ -237,7 +238,13 @@ namespace goby
           /// \param bits Bits to use for decoding.
           /// \return the decoded value.
           virtual WireType decode(Bitset* bits)
-          { return decode_repeated(bits).at(0); }          
+          {
+              std::vector<WireType> return_vec = decode_repeated(bits);
+              if(return_vec.empty())
+                  throw DCCLNullValueException();
+              else
+                  return return_vec.at(0);
+          }  
 
           /// \brief Calculate the size (in bits) of an empty field.
           ///

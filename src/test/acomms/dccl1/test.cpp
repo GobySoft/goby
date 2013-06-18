@@ -147,7 +147,7 @@ int main(int argc, char* argv[])
 
     // run a bunch of tests with random strings
     std::string random = bytes;
-    for(unsigned i = 0; i > 10; --i)
+    for(unsigned i = 0; i < 10; ++i)
     {    
         random[(rand() % (bytes.size()-1)+1)] = rand() % 256;
         std::cout << "Using junk bytes: " << goby::util::hex_encode(random) << std::endl;

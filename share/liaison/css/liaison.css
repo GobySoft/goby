@@ -66,7 +66,7 @@ ul.menu
 
 .Wt-spinbox
 {
-    width: 3em
+/*    width: 3em*/
 
 }
 
@@ -76,6 +76,7 @@ div#contents
   display: block;
   left: 15%;
   height: 100%;
+  right: 0%;
 }
 
 div.fill
@@ -124,12 +125,25 @@ a.no_ul
     border-bottom:0px; 
 }
 
+
 .Wt-treetable table.even
 {
     background-color: #fff;
 }
 
 .Wt-treetable table.odd
+{
+    background-color: #eee;
+}
+
+
+
+li.even
+{
+    background-color: #fff;
+}
+
+li.odd
 {
     background-color: #eee;
 }
@@ -160,4 +174,7 @@ a.no_ul
     font-size:80%;
     max-width:40%;
     overflow: auto;
+    background-color: #fff;
+    border:1px solid;
+    padding:2px;
 }

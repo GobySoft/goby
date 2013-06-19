@@ -53,7 +53,7 @@ goby::common::LiaisonWtThread::LiaisonWtThread(const Wt::WEnvironment& env)
 
     useStyleSheet(std::string("css/fonts.css?" + common::goby_file_timestamp()));
     useStyleSheet(std::string("css/liaison.css?" + common::goby_file_timestamp()));
-//    setCssTheme("");
+    setCssTheme("default");
     
 
     root()->setId("main");
@@ -126,6 +126,7 @@ goby::common::LiaisonWtThread::LiaisonWtThread(const Wt::WEnvironment& env)
     menu_->itemSelected().connect(this, &LiaisonWtThread::handle_menu_selection);
 
     handle_menu_selection(menu_->currentItem());
+    
 }
 
 goby::common::LiaisonWtThread::~LiaisonWtThread()

@@ -65,10 +65,12 @@ goby::common::LiaisonCommander::LiaisonCommander(ZeroMQService* zeromq_service,
       MOOSNode(zeromq_service),
       zeromq_service_(zeromq_service),
       pb_commander_config_(cfg.GetExtension(protobuf::pb_commander_config)),
-      main_layout_(new WVBoxLayout(this)),
-      commands_div_(new WStackedWidget(this)),
+//      main_layout_(new WVBoxLayout(this)),
+      commands_div_(new WStackedWidget),
       controls_div_(new ControlsContainer(this, pb_commander_config_, commands_div_, this))
 {
+    addWidget(commands_div_);
+    
     protobuf::ZeroMQServiceConfig ipc_sockets;
     protobuf::ZeroMQServiceConfig::Socket* internal_subscribe_socket = ipc_sockets.add_socket();
     internal_subscribe_socket->set_socket_type(protobuf::ZeroMQServiceConfig::Socket::SUBSCRIBE);
@@ -86,9 +88,9 @@ goby::common::LiaisonCommander::LiaisonCommander(ZeroMQService* zeromq_service,
 
     zeromq_service_->merge_cfg(ipc_sockets);    
 
-    main_layout_->addWidget(controls_div_);
-    main_layout_->addWidget(commands_div_);
-    main_layout_->addStretch(1);
+//    main_layout_->addWidget(controls_div_);
+//    main_layout_->addWidget(commands_div_);
+//    main_layout_->addStretch(1);
 
     for(int i = 0, n = pb_commander_config_.subscription_size(); i < n; ++i)
         subscribe(pb_commander_config_.subscription(i), LIAISON_INTERNAL_SUBSCRIBE_SOCKET);
@@ -112,19 +114,8 @@ void goby::common::LiaisonCommander::moos_inbox(CMOOSMsg& msg)
     
     WContainerWidget* new_div = new WContainerWidget(controls_div_->incoming_message_stack_);
     
-    WPushButton* minus = new WPushButton("-", new_div);
-    WPushButton* plus = new WPushButton("+", new_div);
-
-    WPushButton* remove = new WPushButton("x", new_div);
-    remove->setFloatSide(Wt::Right);
-
-    
     new WText("Message: " + goby::util::as<std::string>(controls_div_->incoming_message_stack_->children().size()), new_div);
 
-    plus->clicked().connect(controls_div_, &ControlsContainer::increment_incoming_messages);
-    minus->clicked().connect(controls_div_, &ControlsContainer::decrement_incoming_messages);    
-    remove->clicked().connect(controls_div_, &ControlsContainer::remove_incoming_message);
-    
     WGroupBox* box = new WGroupBox(msg.GetKey() + " @ " +
                                    boost::posix_time::to_simple_string(
                                        goby::util::as<boost::posix_time::ptime>(
@@ -142,6 +133,18 @@ void goby::common::LiaisonCommander::moos_inbox(CMOOSMsg& msg)
     else
         new WText(value, PlainText, box);
         
+    
+    WPushButton* minus = new WPushButton("-", new_div);
+    WPushButton* plus = new WPushButton("+", new_div);
+
+    WPushButton* remove = new WPushButton("x", new_div);
+    remove->setFloatSide(Wt::Right);
+
+    plus->clicked().connect(controls_div_, &ControlsContainer::increment_incoming_messages);
+    minus->clicked().connect(controls_div_, &ControlsContainer::decrement_incoming_messages);    
+    remove->clicked().connect(controls_div_, &ControlsContainer::remove_incoming_message);
+    
+
     controls_div_->incoming_message_stack_->setCurrentIndex(controls_div_->incoming_message_stack_->children().size()-1);
 }
 
@@ -205,7 +208,7 @@ goby::common::LiaisonCommander::ControlsContainer::ControlsContainer(
     const protobuf::ProtobufCommanderConfig& pb_commander_config,
     WStackedWidget* commands_div,
     WContainerWidget* parent /*=0*/)
-    : WGroupBox("Controls"),
+    : WGroupBox("Controls", parent),
       moos_node_(moos_node),
       pb_commander_config_(pb_commander_config),
       command_label_(new WLabel("Message: ", this)),
@@ -216,10 +219,10 @@ goby::common::LiaisonCommander::ControlsContainer::ControlsContainer(
       send_button_(new WPushButton("Send", buttons_div_)),
       clear_button_(new WPushButton("Clear", buttons_div_)),
       commands_div_(commands_div),
-      incoming_message_panel_(new Wt::WPanel(this)),
-      incoming_message_stack_(new Wt::WStackedWidget),
-      master_field_info_panel_(new Wt::WPanel(this)),
-      master_field_info_stack_(new Wt::WStackedWidget)
+//      incoming_message_panel_(new Wt::WPanel(this)),
+      incoming_message_stack_(new Wt::WStackedWidget(this))
+//      master_field_info_panel_(new Wt::WPanel(this)),
+//      master_field_info_stack_(new Wt::WStackedWidget(this))
 {
     // if we're the first thread, make the database connection
     if(!sqlite3_)
@@ -245,25 +248,25 @@ goby::common::LiaisonCommander::ControlsContainer::ControlsContainer(
 //    incoming_message_panel_->setPositionScheme(Wt::Fixed);
 //    incoming_message_panel_->setOffsets(20, Wt::Left | Wt::Bottom);
 
-    incoming_message_panel_->setTitle("Incoming messages");
-    incoming_message_panel_->setCollapsible(true);
-    incoming_message_panel_->setCentralWidget(incoming_message_stack_);
-    incoming_message_panel_->addStyleClass("fixed-left");
-
+//    incoming_message_panel_->setTitle("Incoming messages");
+//   incoming_message_panel_->setCollapsible(true);
+//    incoming_message_panel_->setCentralWidget(incoming_message_stack_);
+//    incoming_message_panel_->addStyleClass("fixed-left");
+    incoming_message_stack_->addStyleClass("fixed-left");
+    
 //    Wt::WCssDecorationStyle field_info_style;    
 //    field_info_style.setBackgroundColor(WColor(white));
 
-    master_field_info_panel_->setTitle("Field Information");
-    master_field_info_panel_->setCollapsible(true);
-    master_field_info_panel_->setCentralWidget(master_field_info_stack_);
+//    master_field_info_panel_->setTitle("Field Information");
+//    master_field_info_panel_->setCollapsible(true);
+//    master_field_info_panel_->setCentralWidget(master_field_info_stack_);
     
 //    master_field_info_panel_->setDecorationStyle(field_info_style);
     
 //    master_field_info_panel_->setPositionScheme(Wt::Fixed);
 //    master_field_info_panel_->setOffsets(20, Wt::Right | Wt::Bottom);
-    master_field_info_panel_->addStyleClass("fixed-right");
-
-
+//    master_field_info_panel_->setStyleClass("fixed-right");
+//    master_field_info_stack_->setStyleClass("fixed-right");
     
     send_button_->setDisabled(true);
     clear_button_->setDisabled(true);
@@ -337,14 +340,15 @@ void goby::common::LiaisonCommander::ControlsContainer::switch_command(int selec
         CommandContainer* new_command = new CommandContainer(moos_node_,
                                                              pb_commander_config_,
                                                              protobuf_name,
-                                                             &session_,
-                                                             master_field_info_stack_);
+                                                             &session_);
+        
+                                                             //master_field_info_stack_);
         commands_div_->addWidget(new_command);
         // index of the newly added widget
         commands_[protobuf_name] = commands_div_->count() - 1;
     }
     commands_div_->setCurrentIndex(commands_[protobuf_name]);
-    master_field_info_stack_->setCurrentIndex(commands_[protobuf_name]);
+//    master_field_info_stack_->setCurrentIndex(commands_[protobuf_name]);
 }
 
 void goby::common::LiaisonCommander::ControlsContainer::clear_message()
@@ -436,26 +440,23 @@ goby::common::LiaisonCommander::ControlsContainer::CommandContainer::CommandCont
     MOOSNode* moos_node,
     const protobuf::ProtobufCommanderConfig& pb_commander_config,
     const std::string& protobuf_name,
-    Dbo::Session* session,
-    WStackedWidget* master_field_info_stack)
+    Dbo::Session* session)
+//    WStackedWidget* master_field_info_stack)
     : WGroupBox(protobuf_name),
       moos_node_(moos_node),
       message_(goby::util::DynamicProtobufManager::new_protobuf_message(protobuf_name)),
       tree_box_(new WGroupBox("Contents", this)),
       tree_table_(new WTreeTable(tree_box_)),
-      field_info_stack_(new WStackedWidget(master_field_info_stack)),
+//      field_info_stack_(new WStackedWidget(master_field_info_stack)),
       session_(session),
       query_model_(new Dbo::QueryModel<Dbo::ptr<CommandEntry> >(this)),
-      query_box_(new WGroupBox("Message log (click for details)", this)),
+      query_box_(new WGroupBox("Sent message log (click for details)", this)),
       query_table_(new WTreeView(query_box_)),
       last_reload_time_(boost::posix_time::neg_infin),
       pb_commander_config_(pb_commander_config)
-{
-
-
-    
-    new WText("", field_info_stack_);
-    field_info_map_[0] = 0;
+{    
+//    new WText("", field_info_stack_);
+    //field_info_map_[0] = 0;
     
     tree_table_->addColumn("Value", pb_commander_config.value_width_pixels());
     tree_table_->addColumn("Modify", pb_commander_config.modify_width_pixels());
@@ -602,13 +603,14 @@ void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::genera
     // Create and set the root node
     WTreeTableNode *root = new WTreeTableNode(desc->name());
     root->setImagePack("resources/");
-    root->expand();
     root->setStyleClass(STRIPE_EVEN_CLASS);    
 
     // deletes an existing root
     tree_table_->setTreeRoot(root, "Field");
     
     generate_tree(root, message_.get());
+
+    root->expand();
 }
 
 
@@ -640,11 +642,11 @@ void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::genera
         return;
 
     int index = parent->childNodes().size();
-
     
-    WTreeTableNode* node = new WTreeTableNode(field_desc->is_extension() ?
-                                              "[" + field_desc->full_name() + "]: ":
-                                              field_desc->name() + ": ", 0, parent);
+    LiaisonTreeTableNode* node = new LiaisonTreeTableNode(field_desc->is_extension() ?
+                                                          "[" + field_desc->full_name() + "]: ":
+                                                          field_desc->name() + ": ", 0, parent);
+
 
     if((parent->styleClass() == STRIPE_ODD_CLASS && index % 2) || (parent->styleClass() == STRIPE_EVEN_CLASS && !(index % 2)))
         node->setStyleClass(STRIPE_ODD_CLASS);
@@ -711,14 +713,14 @@ void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::genera
     if(value_field)
         node->setColumnWidget(1, value_field);
     
-    if(modify_field)
-    {
-        dccl_default_modify_field(modify_field, field_desc);        
+     if(modify_field)
+     {
+         dccl_default_modify_field(modify_field, field_desc);        
+         
+         generate_field_info_box(modify_field, field_desc);
 
-        generate_field_info_box(modify_field, field_desc);
-
-        node->setColumnWidget(2, modify_field);
-    }
+         node->setColumnWidget(2, modify_field);
+     }
     
 }
 
@@ -967,34 +969,44 @@ void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::genera
 }
 void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::generate_field_info_box(Wt::WFormWidget*& value_field, const google::protobuf::FieldDescriptor* field_desc)
 {   
-    if(!field_info_map_.count(field_desc))
+//    if(!field_info_map_.count(field_desc))
+//    {
+//        WGroupBox* box = new WGroupBox(field_desc->full_name(), field_info_stack_);
+
+    std::string info;
+    
+//    new WText("[Field] " + field_desc->DebugString(), box);
+        
+    std::vector<const google::protobuf::FieldDescriptor*> extensions;
+    google::protobuf::DescriptorPool::generated_pool()->FindAllExtensions(field_desc->options().GetDescriptor(), &extensions);
+    for(int i = 0, n = extensions.size(); i < n; ++i)
     {
-        WGroupBox* box = new WGroupBox(field_desc->full_name(), field_info_stack_);
-        new WText("[Field] " + field_desc->DebugString(), box);
+        const google::protobuf::FieldDescriptor* ext_field_desc = extensions[i];
+        if(!ext_field_desc->is_repeated() &&
+           field_desc->options().GetReflection()->HasField(field_desc->options(), ext_field_desc))            {
+            std::string ext_str;
+            google::protobuf::TextFormat::PrintFieldValueToString(field_desc->options(),
+                                                                  ext_field_desc,
+                                                                  -1,
+                                                                  &ext_str);
 
-        std::vector<const google::protobuf::FieldDescriptor*> extensions;
-        google::protobuf::DescriptorPool::generated_pool()->FindAllExtensions(field_desc->options().GetDescriptor(), &extensions);
-        for(int i = 0, n = extensions.size(); i < n; ++i)
-        {
-            const google::protobuf::FieldDescriptor* ext_field_desc = extensions[i];
-            if(!ext_field_desc->is_repeated() &&
-               field_desc->options().GetReflection()->HasField(field_desc->options(), ext_field_desc))
-            {
-                std::string ext_str;
-                google::protobuf::TextFormat::PrintFieldValueToString(field_desc->options(),
-                                                                      ext_field_desc,
-                                                                      -1,
-                                                                      &ext_str);
-                new WText("<br/> [Options] " + ext_field_desc->full_name() + ": " + ext_str, box);
-            }
+            if(!info.empty())
+                info += "<br/>";
+            
+            info += "[Options] " + ext_field_desc->full_name() + ": " + ext_str;
+            
+                //new WText("<br/> [Options] " + ext_field_desc->full_name() + ": " + ext_str, box);
         }
-        
-        
-        field_info_map_.insert(std::make_pair(field_desc, field_info_map_.size()));
     }
+    
+        
+    //     field_info_map_.insert(std::make_pair(field_desc, field_info_map_.size()));
+    // }
+    if(!info.empty())
+        value_field->setToolTip(info, Wt::XHTMLText);
 
-    value_field->focussed().connect(boost::bind(&CommandContainer::handle_field_focus, this,
-                                                field_info_map_[field_desc]));
+//    value_field->focussed().connect(boost::bind(&CommandContainer::handle_field_focus, this,
+//                                                field_info_map_[field_desc]));
 //  value_field->blurred().connect(boost::bind(&CommandContainer::handle_field_focus, this, 0));
     
 }
@@ -1342,10 +1354,10 @@ std::string goby::common::LiaisonCommander::ControlsContainer::CommandContainer:
     }
 }
 
-void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::handle_field_focus(int field_info_index)
-{
-    field_info_stack_->setCurrentIndex(field_info_index);
-}
+// void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::handle_field_focus(int field_info_index)
+// {
+//     field_info_stack_->setCurrentIndex(field_info_index);
+// }
 
 
 

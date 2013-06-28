@@ -1002,9 +1002,17 @@ void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::genera
         
     //     field_info_map_.insert(std::make_pair(field_desc, field_info_map_.size()));
     // }
-    if(!info.empty())
-        value_field->setToolTip(info, Wt::XHTMLText);
+    
 
+//#if WT_VERSION >= 0x03011000
+//    if(!info.empty())
+//        value_field->setToolTip(info, Wt::XHTMLText);
+//#else
+//    if(!info.empty())
+//        value_field->setToolTip(info);
+//#endif
+    
+    
 //    value_field->focussed().connect(boost::bind(&CommandContainer::handle_field_focus, this,
 //                                                field_info_map_[field_desc]));
 //  value_field->blurred().connect(boost::bind(&CommandContainer::handle_field_focus, this, 0));

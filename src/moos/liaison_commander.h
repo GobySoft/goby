@@ -47,6 +47,7 @@
 #include <Wt/WValidator>
 #include <Wt/WGroupBox>
 #include <Wt/WTimer>
+#include <Wt/WTableCell>
 
 #include <Wt/Dbo/Session>
 #include <Wt/Dbo/Impl>

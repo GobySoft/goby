@@ -8,6 +8,7 @@ endif()
 # at some point, make these dynamically loadable
 if(build_pb AND enable_zeromq)
   add_subdirectory(goby_bridge)
+  add_subdirectory(goby_modemdriver)
 endif()
 
 if(enable_sqlite AND enable_zeromq)

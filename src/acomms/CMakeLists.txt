@@ -17,8 +17,9 @@ set(SRC
   modemdriver/abc_driver.cpp
   modemdriver/driver_base.cpp
   modemdriver/mm_driver.cpp
-  route/route.cpp
+  modemdriver/iridium_driver.cpp
   modemdriver/udp_driver.cpp
+  route/route.cpp
   ${PROTO_SRCS} ${PROTO_HDRS}
 )
 

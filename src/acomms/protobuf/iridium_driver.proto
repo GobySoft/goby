@@ -1,0 +1,17 @@
+import "goby/common/protobuf/option_extensions.proto";
+import "goby/acomms/protobuf/driver_base.proto"; 
+
+message IridiumDriverConfig
+{
+  message Remote
+  {
+    required string iridium_number = 1;
+    required int32 modem_id = 2;
+  }
+  
+  extend goby.acomms.protobuf.DriverConfig
+  {
+    optional Remote remote = 1381;
+    optional int32 max_frame_size = 1382 [default = 1500];
+  }
+}

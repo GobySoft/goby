@@ -38,8 +38,15 @@ void goby::pb::ProtobufNode::inbox(common::MarshallingScheme marshalling_scheme,
     if(marshalling_scheme == common::MARSHALLING_PROTOBUF)
     {
         std::string::size_type first_slash = identifier.find("/");
-        std::string group = (first_slash + 1) < identifier.size() ? identifier.substr(first_slash + 1) : "";
-        protobuf_inbox(identifier.substr(0, first_slash), data, size, socket_id, group);
+        std::string group = (first_slash + 1) < identifier.size() ? identifier.substr(first_slash + 1)
+            : "";
+        group.erase(group.size()-1); // final slash
+        
+        std::string pb_full_name = identifier.substr(0, first_slash);
+        
+        glog.is(DEBUG1) && glog << "MARSHALLING_PROTOBUF type: [" << pb_full_name << "], group: [" << group << "]" << std::endl;
+
+        protobuf_inbox(pb_full_name, data, size, socket_id, group);
     }
     
 }
@@ -71,7 +78,7 @@ void goby::pb::StaticProtobufNode::protobuf_inbox(const std::string& protobuf_ty
                                                   const std::string& group
     )
 {
-    typedef boost::unordered_map<std::string, boost::shared_ptr<SubscriptionBase> >::iterator It;
+    typedef boost::unordered_multimap<std::string, boost::shared_ptr<SubscriptionBase> >::iterator It;
 
     std::pair<It,It> it_range = subscriptions_.equal_range(protobuf_type_name);
 

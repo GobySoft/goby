@@ -57,9 +57,8 @@ goby::pb::Application::~Application()
 void goby::pb::Application::__set_up_sockets()
 {
 
-    if(base_cfg().pubsub_config().has_publish_socket() && base_cfg().pubsub_config().has_subscribe_socket()) 
-    {
-        glog.is(WARN) &&
+    if(!(base_cfg().pubsub_config().has_publish_socket() && base_cfg().pubsub_config().has_subscribe_socket()))
+    {glog.is(WARN) &&
             glog << "Not using publish subscribe config. You will need to set up your nodes manually" << std::endl;
     }
     else
@@ -74,7 +73,7 @@ void goby::pb::Application::__set_up_sockets()
 void goby::pb::Application::publish(const google::protobuf::Message& msg, const std::string& group)
 {
     glog.is(DEBUG1) &&
-        glog << "< " << msg << std::endl;
+        glog << "< [" << group << "]: " << msg << std::endl;
 
     if(pubsub_node_)
         pubsub_node_->publish(msg, group);

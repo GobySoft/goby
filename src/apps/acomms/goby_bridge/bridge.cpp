@@ -21,16 +21,15 @@
 // along with Goby.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "goby/common/logger.h"
-#include "goby/common/application_base.h"
 #include "goby/common/logger/term_color.h"
 #include "goby/common/zeromq_service.h"
+
+#include "goby/pb/application.h"
 
 #include "goby/acomms/queue.h"
 #include "goby/acomms/route.h"
 #include "goby/acomms/amac.h"
-#include "goby/acomms/modem_driver.h"
-#include "goby/acomms/modemdriver/udp_driver.h"
-#include "goby/pb/pb_modem_driver.h"
+
 
 #include "goby/acomms/bind.h"
 #include "goby/acomms/connect.h"
@@ -47,33 +46,31 @@ namespace goby
 {
     namespace acomms
     {
-        class Bridge : public goby::common::ApplicationBase
+        class Bridge : public goby::pb::Application
         {
         public:
             Bridge();
             ~Bridge();
 
         private:
-            void iterate();
+            void loop();
 
             void handle_link_ack(const protobuf::ModemTransmission& ack_msg,
                                  const google::protobuf::Message& orig_msg,
                                  QueueManager* from_queue);
             
-            void handle_micromodem_receive(const goby::acomms::protobuf::ModemTransmission& message, QueueManager* in_queue);
+            void handle_modem_receive(const goby::acomms::protobuf::ModemTransmission& message,
+                                      QueueManager* in_queue);
             
+            void handle_initiate_transmission(const protobuf::ModemTransmission& m, int subnet);
+
+            void handle_data_request(const protobuf::ModemTransmission& m, int subnet);
+
         private:
             static protobuf::BridgeConfig cfg_;
             
-            // for PBDriver, maps drivers_ index to service
-            std::map<size_t, boost::shared_ptr<goby::common::ZeroMQService> > zeromq_services_;
-            
-            // for UDPDriver, maps drivers_ index to service
-            std::map<size_t, boost::shared_ptr<boost::asio::io_service> > asio_services_;
-            
             std::vector<boost::shared_ptr<QueueManager> > q_managers_;
             std::vector<boost::shared_ptr<MACManager> > mac_managers_;
-            std::vector<boost::shared_ptr<goby::acomms::ModemDriverBase> > drivers_;
             
             RouteManager r_manager_;
         };
@@ -91,7 +88,7 @@ int main(int argc, char* argv[])
 using goby::glog;
 
 goby::acomms::Bridge::Bridge()
-    : ApplicationBase(&cfg_)
+    : Application(&cfg_)
 {
     glog.is(DEBUG1) && glog << cfg_.DebugString() << std::endl;
     
@@ -138,7 +135,6 @@ goby::acomms::Bridge::Bridge()
     r_manager_.set_cfg(cfg_.route_cfg());
     q_managers_.resize(cfg_.subnet_size());
     mac_managers_.resize(cfg_.subnet_size());
-    drivers_.resize(cfg_.subnet_size());
     for(int i = 0, n = cfg_.subnet_size(); i < n; ++i)
     {
         q_managers_[i].reset(new QueueManager);
@@ -149,40 +145,23 @@ goby::acomms::Bridge::Bridge()
 
         
         mac_managers_[i]->startup(cfg_.subnet(i).mac_cfg());
-
-        switch(cfg_.subnet(i).driver_type())
-        {
-            case goby::acomms::protobuf::DRIVER_WHOI_MICROMODEM:
-                drivers_[i].reset(new goby::acomms::MMDriver);
-                goby::acomms::connect(&(drivers_[i]->signal_receive),
-                                      boost::bind(&Bridge::handle_micromodem_receive,
-                                                  this, _1, q_managers_[i].get()));
-                break;
-
-            case goby::acomms::protobuf::DRIVER_PB_STORE_SERVER:
-                zeromq_services_[i].reset(new goby::common::ZeroMQService);
-                drivers_[i].reset(new goby::pb::PBDriver(zeromq_services_[i].get()));
-                break;
-
-            case goby::acomms::protobuf::DRIVER_UDP:
-                asio_services_[i].reset(new boost::asio::io_service);
-                drivers_[i].reset(new goby::acomms::UDPDriver(asio_services_[i].get()));
-                break;
-
-
-            default:
-            case goby::acomms::protobuf::DRIVER_NONE:
-                throw(goby::Exception("Invalid driver specified"));
-                break;
-        }
-
-        drivers_[i]->startup(cfg_.subnet(i).driver_cfg());
-
-        goby::acomms::bind(*drivers_[i], *q_managers_[i], *mac_managers_[i]);
+        
         goby::acomms::bind(*q_managers_[i], r_manager_);
 
         goby::acomms::connect(&(q_managers_[i]->signal_ack),
                               boost::bind(&Bridge::handle_link_ack, this, _1, _2, q_managers_[i].get()));
+
+        subscribe<goby::acomms::protobuf::ModemTransmission>(
+            boost::bind(&Bridge::handle_modem_receive, this, _1, q_managers_[i].get()),
+            "Rx" + goby::util::as<std::string>(qcfg.modem_id()));
+
+        subscribe<goby::acomms::protobuf::ModemTransmission>(
+            boost::bind(&Bridge::handle_data_request, this, _1, i),
+            "DataRequest" + goby::util::as<std::string>(qcfg.modem_id()));
+
+        goby::acomms::connect(&mac_managers_[i]->signal_initiate_transmission,
+                              boost::bind(&Bridge::handle_initiate_transmission, this, _1, i));
+        
     }    
 
 
@@ -192,20 +171,16 @@ goby::acomms::Bridge::Bridge()
 
     assert(ack.GetDescriptor() == goby::util::DynamicProtobufManager::new_protobuf_message("goby.acomms.protobuf.NetworkAck")->GetDescriptor());
 
+
 }
 
 
 goby::acomms::Bridge::~Bridge()
 {
-    for(std::vector<boost::shared_ptr<goby::acomms::ModemDriverBase> >::iterator it = drivers_.begin(),
-            end = drivers_.end(); it != end; ++it)
-    {
-        (*it)->shutdown();
-    }
 }
 
 
-void goby::acomms::Bridge::iterate()
+void goby::acomms::Bridge::loop()
 {
     for(std::vector<boost::shared_ptr<QueueManager> >::iterator it = q_managers_.begin(),
             end = q_managers_.end(); it != end; ++it)
@@ -218,14 +193,6 @@ void goby::acomms::Bridge::iterate()
     {
         (*it)->do_work();
     }
-
-    for(std::vector<boost::shared_ptr<goby::acomms::ModemDriverBase> >::iterator it = drivers_.begin(),
-            end = drivers_.end(); it != end; ++it)
-    {
-        (*it)->do_work();
-    }
-
-    usleep(100000);
 }
 
 void goby::acomms::Bridge::handle_link_ack(const protobuf::ModemTransmission& ack_msg,
@@ -254,8 +221,10 @@ void goby::acomms::Bridge::handle_link_ack(const protobuf::ModemTransmission& ac
 }
 
 
-void goby::acomms::Bridge::handle_micromodem_receive(const goby::acomms::protobuf::ModemTransmission& message, QueueManager* in_queue)
+void goby::acomms::Bridge::handle_modem_receive(const goby::acomms::protobuf::ModemTransmission& message, QueueManager* in_queue)
 {
+    in_queue->handle_modem_receive(message);
+    
     for(int i = 0, n = message.ExtensionSize(micromodem::protobuf::receive_stat);
         i < n; ++i)
     {
@@ -284,4 +253,20 @@ void goby::acomms::Bridge::handle_micromodem_receive(const goby::acomms::protobu
                              in_queue->modem_id());        
     }
         
+}
+
+
+void goby::acomms::Bridge::handle_initiate_transmission(const protobuf::ModemTransmission& m,
+                                                        int subnet)
+{
+    publish(m, "Tx" + goby::util::as<std::string>(cfg_.subnet(subnet).queue_cfg().modem_id()));
+}
+
+
+void goby::acomms::Bridge::handle_data_request(const protobuf::ModemTransmission& orig_msg,
+                                               int subnet)
+{
+    protobuf::ModemTransmission msg = orig_msg;
+    q_managers_[subnet]->handle_modem_data_request(&msg);
+    publish(msg, "DataResponse" + goby::util::as<std::string>(cfg_.subnet(subnet).queue_cfg().modem_id()));
 }

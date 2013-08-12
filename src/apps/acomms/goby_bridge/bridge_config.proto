@@ -3,7 +3,6 @@ import "goby/common/protobuf/app_base_config.proto";
 import "goby/acomms/protobuf/queue.proto";
 import "goby/acomms/protobuf/route.proto";
 import "goby/acomms/protobuf/amac_config.proto";
-import "goby/acomms/protobuf/driver_base.proto";
 
 package goby.acomms.protobuf;
 
@@ -15,8 +14,6 @@ message BridgeConfig
   {
     required QueueManagerConfig queue_cfg = 1;
     required MACConfig mac_cfg = 2;
-    required DriverType driver_type = 3;
-    required DriverConfig driver_cfg = 4;
   }
   
   repeated Subnet subnet = 2;  

@@ -70,8 +70,8 @@ namespace goby
             /// \param handler Function object to be called as soon as possible upon receipt of a message of this type. The signature of `handler` must match: void handler(const ProtoBufMessage& msg). if `handler` is omitted, no handler is called and only the newest message buffer is updated upon message receipt (for calls to newest<ProtoBufMessage>())
              template<typename ProtoBufMessage>
                 void subscribe(
-                    boost::function<void (const ProtoBufMessage&, const std::string&)> handler =
-                    boost::function<void (const ProtoBufMessage&, const std::string&)>(),
+                    boost::function<void (const ProtoBufMessage&)> handler =
+                    boost::function<void (const ProtoBufMessage&)>(),
                     const std::string& group = ""
                     )
              {
@@ -85,12 +85,12 @@ namespace goby
             /// \param mem_func Member function (method) of class C with a signature of void C::mem_func(const ProtoBufMessage& msg)
             /// \param obj pointer to the object whose member function (mem_func) to call
             template<typename ProtoBufMessage, class C>
-                void subscribe(void(C::*mem_func)(const ProtoBufMessage&, const std::string&),
+                void subscribe(void(C::*mem_func)(const ProtoBufMessage&),
                                C* obj,
                                const std::string& group = "")
             {
                 if(pubsub_node_)
-                    pubsub_node_->subscribe<ProtoBufMessage>(boost::bind(mem_func, obj, _1, _2), group);
+                    pubsub_node_->subscribe<ProtoBufMessage>(boost::bind(mem_func, obj, _1), group);
             }
             
             /// \name Message Accessors

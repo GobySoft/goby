@@ -35,7 +35,7 @@ namespace goby
         {
           public:
             ZeroMQService* zeromq_service() { return zeromq_service_; }
-            virtual void send(const NodeTypeBase& msg, int socket_id) = 0;
+            virtual void send(const NodeTypeBase& msg, int socket_id, const std::string& group = "") = 0;
             virtual void subscribe(const std::string& identifier, int socket_id) = 0;
 
           protected:

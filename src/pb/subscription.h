@@ -40,7 +40,7 @@ namespace goby
         class SubscriptionBase
         {
           public:
-            virtual void post(const void* data, int size) = 0;
+            virtual void post(const void* data, int size, const std::string& group) = 0;
             virtual const google::protobuf::Message& newest() const = 0;
             virtual const std::string& type_name() const = 0;
             virtual bool has_valid_handler() const = 0;
@@ -53,7 +53,7 @@ namespace goby
             class Subscription : public SubscriptionBase
         {
           public:
-            typedef boost::function<void (const ProtoBufMessage&)> HandlerType;
+            typedef boost::function<void (const ProtoBufMessage&, const std::string& group)> HandlerType;
 
           Subscription(HandlerType& handler,
                        const std::string& type_name)
@@ -63,12 +63,12 @@ namespace goby
             
             // handle an incoming message (serialized using the google::protobuf
             // library calls)
-            void post(const void* data, int size)
+            void post(const void* data, int size, const std::string& group)
             {
                 static ProtoBufMessage msg;
                 msg.ParseFromArray(data, size);
                 newest_msg_ = msg;
-                if(handler_) handler_(newest_msg_);
+                if(handler_) handler_(newest_msg_, group);
 
             }
 

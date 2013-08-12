@@ -54,9 +54,10 @@ namespace goby
             virtual void protobuf_inbox(const std::string& protobuf_type_name,
                                         const void* data,
                                         int size,
-                                        int socket_id) = 0;
+                                        int socket_id,
+                                        const std::string& group) = 0;
 
-            void send(const google::protobuf::Message& msg, int socket_id);
+            void send(const google::protobuf::Message& msg, int socket_id, const std::string& group = "");
             void subscribe(const std::string& identifier, int socket_id);
 
             
@@ -88,22 +89,24 @@ namespace goby
              template<typename ProtoBufMessage>
                 void subscribe(
                     int socket_id,
-                    boost::function<void (const ProtoBufMessage&)> handler =
-                    boost::function<void (const ProtoBufMessage&)>()
+                    boost::function<void (const ProtoBufMessage&, const std::string&)> handler =
+                    boost::function<void (const ProtoBufMessage&, const std::string&)>(),
+                    const std::string& group = ""
                     );
 
             template<typename ProtoBufMessage, class C>
                 void subscribe(int socket_id,
-                               void(C::*mem_func)(const ProtoBufMessage&),
-                               C* obj)
-            { subscribe<ProtoBufMessage>(socket_id, boost::bind(mem_func, obj, _1)); }
+                               void(C::*mem_func)(const ProtoBufMessage&, const std::string&),
+                               C* obj,
+                               const std::string& group = "")
+            { subscribe<ProtoBufMessage>(socket_id, boost::bind(mem_func, obj, _1, _2), group); }
 
              
              template<typename ProtoBufMessage>
                  void on_receipt(
                      int socket_id,
-                     boost::function<void (const ProtoBufMessage&)> handler =
-                     boost::function<void (const ProtoBufMessage&)>()
+                     boost::function<void (const ProtoBufMessage&, const std::string&)> handler =
+                     boost::function<void (const ProtoBufMessage&, const std::string&)>()
                      );
 
             template<typename ProtoBufMessage, class C>
@@ -113,9 +116,9 @@ namespace goby
             { on_receipt<ProtoBufMessage>(socket_id, boost::bind(mem_func, obj, _1)); }
 
 
-            void send(const google::protobuf::Message& msg, int socket_id)
+            void send(const google::protobuf::Message& msg, int socket_id, const std::string& group = "")
             {
-                ProtobufNode::send(msg, socket_id);
+                ProtobufNode::send(msg, socket_id, group);
             }
              
             
@@ -135,7 +138,8 @@ namespace goby
             void protobuf_inbox(const std::string& protobuf_type_name,
                                 const void* data,
                                 int size,
-                                int socket_id);
+                                int socket_id,
+                                const std::string& group);
             
 
           private:
@@ -155,13 +159,15 @@ namespace goby
             virtual ~DynamicProtobufNode()
             { }
             
-            virtual void dynamic_protobuf_inbox(boost::shared_ptr<google::protobuf::Message> msg, int socket_id) = 0;
+            virtual void dynamic_protobuf_inbox(boost::shared_ptr<google::protobuf::Message> msg, int socket_id,
+                                                const std::string& group) = 0;
             
           private:
             void protobuf_inbox(const std::string& protobuf_type_name,
                                 const void* data,
                                 int size,
-                                int socket_id);
+                                int socket_id,
+                                const std::string& group);
 
         };
         
@@ -173,7 +179,7 @@ namespace goby
 template<typename ProtoBufMessage>
 void goby::pb::StaticProtobufNode::on_receipt(
     int socket_id,
-    boost::function<void (const ProtoBufMessage&)> handler
+    boost::function<void (const ProtoBufMessage&, const std::string& group)> handler
     /*= boost::function<void (const ProtoBufMessage&)>()*/)
 {    
     using goby::glog;
@@ -205,8 +211,9 @@ void goby::pb::StaticProtobufNode::on_receipt(
 template<typename ProtoBufMessage>
 void goby::pb::StaticProtobufNode::subscribe(
     int socket_id,
-    boost::function<void (const ProtoBufMessage&)> handler
-    /*= boost::function<void (const ProtoBufMessage&)>()*/)
+    boost::function<void (const ProtoBufMessage&, const std::string&)> handler
+    /*= boost::function<void (const ProtoBufMessage&)>()*/,
+    const std::string& group)
 {
     const std::string& protobuf_type_name = ProtoBufMessage::descriptor()->full_name();
     on_receipt(socket_id, handler);
@@ -214,7 +221,11 @@ void goby::pb::StaticProtobufNode::subscribe(
     glog.is(goby::common::logger::DEBUG1) && 
         glog << "subscribing for " << protobuf_type_name  << std::endl;
 
-    ProtobufNode::subscribe(protobuf_type_name, socket_id);
+    std::string identifier = protobuf_type_name + "/";
+    if(!group.empty())
+        identifier += group + "/";    
+    
+    ProtobufNode::subscribe(identifier, socket_id);
 }
 
 /// See goby::pb::StaticProtobufNode::newest()

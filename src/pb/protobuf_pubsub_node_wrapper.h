@@ -44,14 +44,15 @@ namespace goby
             { }
 
             template<typename ProtoBufMessage>
-                void subscribe(boost::function<void (const ProtoBufMessage&)> handler)
+                void subscribe(boost::function<void (const ProtoBufMessage&, const std::string&)> handler,
+                               const std::string& group = "")
             {
                 if(!using_pubsub())
                 {
                     glog.is(goby::common::logger::WARN) && glog << "Ignoring subscribe since we have `using_pubsub`=false" << std::endl;
                     return;
                 }    
-                node_.subscribe<ProtoBufMessage>(SOCKET_SUBSCRIBE, handler);
+                node_.subscribe<ProtoBufMessage>(SOCKET_SUBSCRIBE, handler, group);
             }
 
             template<typename ProtoBufMessage>

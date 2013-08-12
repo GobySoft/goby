@@ -69,7 +69,10 @@ namespace goby
             
             void pause();
             void resume();
-            bool is_paused() { return controls_div_->is_paused_; }
+            bool is_paused()
+            {
+                return (controls_div_->paused_mail_thread_ && controls_div_->paused_mail_thread_->joinable());
+            }
             
             
           private:

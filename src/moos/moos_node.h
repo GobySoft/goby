@@ -43,7 +43,7 @@ namespace goby
             virtual ~MOOSNode()
             { }
             
-            void send(const CMOOSMsg& msg, int socket_id);
+            void send(const CMOOSMsg& msg, int socket_id, const std::string& group_unused = "");
             void subscribe(const std::string& full_or_partial_moos_name, int socket_id);
             void unsubscribe(const std::string& full_or_partial_moos_name, int socket_id);
             

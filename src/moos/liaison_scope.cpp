@@ -400,7 +400,7 @@ goby::common::LiaisonScope::ControlsContainer::~ControlsContainer()
 {
     // stop the paused mail thread before destroying
     is_paused_ = false;
-    if(paused_mail_thread_)
+    if(paused_mail_thread_ && paused_mail_thread_->joinable())
         paused_mail_thread_->join();
 }
 
@@ -426,7 +426,7 @@ void goby::common::LiaisonScope::ControlsContainer::resume()
 {
     // stop the local thread and pass control over to a Wt
     is_paused_ = false;
-    if(paused_mail_thread_)
+    if(paused_mail_thread_ && paused_mail_thread_->joinable())
         paused_mail_thread_->join();
     timer_->start();
 

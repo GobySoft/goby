@@ -156,7 +156,7 @@ namespace goby
             /// \brief Publish a message (of any type derived from google::protobuf::Message)
             ///
             /// \param msg Message to publish
-            void publish(const NodeTypeBase& msg)
+            void publish(const NodeTypeBase& msg, const std::string& group = "")
             {
                 if(!using_pubsub())
                 {
@@ -164,7 +164,7 @@ namespace goby
                     return;
                 }
                 
-                node_.send(msg, SOCKET_PUBLISH);
+                node_.send(msg, SOCKET_PUBLISH, group);
             }
 
 

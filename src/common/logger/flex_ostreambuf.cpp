@@ -100,6 +100,7 @@ void goby::common::FlexOStreamBuf::add_stream(logger::Verbosity verbosity, std::
 void goby::common::FlexOStreamBuf::enable_gui()
 {
 #ifdef HAS_NCURSES    
+    
     is_gui_ = true;
     curses_ = new FlexNCurses;
     

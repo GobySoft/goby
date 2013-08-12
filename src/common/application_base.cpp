@@ -25,6 +25,7 @@
 #include "application_base.h"
 #include "goby/common/configuration_reader.h"
 #include "core_helpers.h"
+#include <csignal>
 
 using goby::util::as;
 
@@ -136,6 +137,12 @@ goby::common::ApplicationBase::~ApplicationBase()
 
 void goby::common::ApplicationBase::__run()
 {
+    // block SIGWINCH (change window size) in all threads
+    sigset_t signal_mask;
+    sigemptyset (&signal_mask);
+    sigaddset (&signal_mask, SIGWINCH);
+    pthread_sigmask (SIG_BLOCK, &signal_mask, NULL);
+
     // continue to run while we are alive (quit() has not been called)
     while(alive_)
     {

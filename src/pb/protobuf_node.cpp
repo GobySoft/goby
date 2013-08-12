@@ -40,7 +40,8 @@ void goby::pb::ProtobufNode::inbox(common::MarshallingScheme marshalling_scheme,
         std::string::size_type first_slash = identifier.find("/");
         std::string group = (first_slash + 1) < identifier.size() ? identifier.substr(first_slash + 1)
             : "";
-        group.erase(group.size()-1); // final slash
+        if(!group.empty())
+            group.erase(group.size()-1); // final slash
         
         std::string pb_full_name = identifier.substr(0, first_slash);
         

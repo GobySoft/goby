@@ -40,9 +40,10 @@ namespace goby
         class SubscriptionBase
         {
           public:
-            virtual void post(const void* data, int size, const std::string& group) = 0;
+            virtual void post(const void* data, int size) = 0;
             virtual const google::protobuf::Message& newest() const = 0;
             virtual const std::string& type_name() const = 0;
+            virtual const std::string& group() const = 0;
             virtual bool has_valid_handler() const = 0;
         };
 
@@ -53,28 +54,31 @@ namespace goby
             class Subscription : public SubscriptionBase
         {
           public:
-            typedef boost::function<void (const ProtoBufMessage&, const std::string& group)> HandlerType;
+            typedef boost::function<void (const ProtoBufMessage&)> HandlerType;
 
           Subscription(HandlerType& handler,
-                       const std::string& type_name)
+                       const std::string& type_name,
+                       const std::string& group = "")
               : handler_(handler),
-                type_name_(type_name)
+                type_name_(type_name),
+                group_(group)
                 { }
             
             // handle an incoming message (serialized using the google::protobuf
             // library calls)
-            void post(const void* data, int size, const std::string& group)
+            void post(const void* data, int size)
             {
                 static ProtoBufMessage msg;
                 msg.ParseFromArray(data, size);
                 newest_msg_ = msg;
-                if(handler_) handler_(newest_msg_, group);
+                if(handler_) handler_(newest_msg_);
 
             }
 
             // getters
             const google::protobuf::Message& newest() const { return newest_msg_; }
             const std::string& type_name() const { return type_name_; }
+            const std::string& group() const { return group_; }
             bool has_valid_handler() const { return handler_; }
             
             
@@ -82,6 +86,7 @@ namespace goby
             HandlerType handler_;
             ProtoBufMessage newest_msg_;
             const std::string type_name_;
+            const std::string group_;
         };
     }
 }

@@ -44,7 +44,7 @@ namespace goby
             { }
 
             template<typename ProtoBufMessage>
-                void subscribe(boost::function<void (const ProtoBufMessage&, const std::string&)> handler,
+                void subscribe(boost::function<void (const ProtoBufMessage&)> handler,
                                const std::string& group = "")
             {
                 if(!using_pubsub())

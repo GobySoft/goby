@@ -71,12 +71,16 @@ void goby::pb::StaticProtobufNode::protobuf_inbox(const std::string& protobuf_ty
                                                   const std::string& group
     )
 {
-    boost::unordered_map<std::string, boost::shared_ptr<SubscriptionBase> >::iterator it = subscriptions_.find(protobuf_type_name);
-    
-    if(it != subscriptions_.end())
-        it->second->post(data, size, group);
-    else
-        glog.is(DEBUG1) && glog << warn << "No handler for static protobuf type: " << protobuf_type_name << " from socket id: " << socket_id << std::endl;
+    typedef boost::unordered_map<std::string, boost::shared_ptr<SubscriptionBase> >::iterator It;
+
+    std::pair<It,It> it_range = subscriptions_.equal_range(protobuf_type_name);
+
+    for(It it = it_range.first; it != it_range.second; ++it)
+    {
+        const std::string& current_group = it->second->group();
+        if(current_group.empty() || current_group == group)
+            it->second->post(data, size);
+    }
 }
 
 

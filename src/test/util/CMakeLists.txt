@@ -4,3 +4,7 @@ add_subdirectory(time)
 add_subdirectory(sci)
 add_subdirectory(dynamic_protobuf)
 add_subdirectory(nmea)
+
+if(enable_gmp)
+  add_subdirectory(base255)
+endif()

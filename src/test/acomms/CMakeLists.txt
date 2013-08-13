@@ -29,3 +29,5 @@ if(enable_testing_asio)
 endif()
 
 add_subdirectory(bitset1)
+
+add_subdirectory(iridiumdriver1)

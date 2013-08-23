@@ -48,8 +48,50 @@ namespace goby
             void receive(const protobuf::ModemTransmission& msg);
             void send(const google::protobuf::Message& msg);
 
-          private:            
+            void at_push_out(const std::string& cmd);
+            void try_at_write();
+            void try_data_write();
+
+            void serialize_rudics_packet(std::string bytes, std::string* rudics_pkt);
+            void parse_rudics_packet(std::string* bytes, std::string rudics_pkt);
+
+            std::string uint32_to_byte_string(uint32_t i);
+            uint32_t byte_string_to_uint32(std::string s);
+            
+            void dial_remote();
+
+            class RudicsPacketException : public std::runtime_error
+            {
+              public:
+                RudicsPacketException(const std::string& what)
+                    : std::runtime_error(what)
+                { }
+            };
+            
+            
+          private:
             protobuf::DriverConfig driver_cfg_;
+            std::deque<std::string> at_out_;
+            std::deque<std::string> data_out_;
+
+            enum CallState 
+            {
+                NOT_IN_CALL,
+                IN_CALL
+            };
+            CallState call_state_;
+
+            enum CommandState
+            {
+                READY_TO_COMMAND,
+                WAITING_FOR_RESPONSE,
+                IN_CALL_DATA
+            };
+            CommandState command_state_;
+
+            double last_command_time_;
+
+            enum { COMMAND_TIMEOUT_SECONDS = 3 };
         };
     }
 }

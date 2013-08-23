@@ -13,5 +13,6 @@ message IridiumDriverConfig
   {
     optional Remote remote = 1381;
     optional int32 max_frame_size = 1382 [default = 1500];
+    repeated string config = 1383;
   }
 }

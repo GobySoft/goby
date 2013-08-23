@@ -26,7 +26,7 @@ set(SRC
 
 add_library(goby_acomms ${SRC})
 
-target_link_libraries(goby_acomms goby_util goby_common ${Cryptopp_LIBRARIES} ${Boost_LIBRARIES} ${CMAKE_DL_LIBS})
+target_link_libraries(goby_acomms goby_util goby_common ${Cryptopp_LIBRARIES} ${Boost_LIBRARIES} ${CMAKE_DL_LIBS} ${GMP_LIBRARIES})
 
 set_target_properties(goby_acomms PROPERTIES VERSION "${GOBY_VERSION}" SOVERSION "${GOBY_SOVERSION}")
 

@@ -19,7 +19,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with Goby.  If not, see <http://www.gnu.org/licenses/>.
-#include "goby/util/base-convert.h"
+#include "goby/util/base_convert.h"
 
 #include <iostream>
 #include <sstream>

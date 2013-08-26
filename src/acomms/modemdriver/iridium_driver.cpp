@@ -35,17 +35,18 @@
 #include "goby/util/binary.h"
 
 using goby::glog;
-using goby::common::logger_lock::lock;
 using namespace goby::common::logger;
 using goby::common::goby_time;
 
 
 goby::acomms::IridiumDriver::IridiumDriver()
-    : call_state_(NOT_IN_CALL),
-      command_state_(READY_TO_COMMAND),
+    : fsm_(driver_cfg_),
       last_command_time_(0)
 {
     assert(byte_string_to_uint32(uint32_to_byte_string(16540)) == 16540);
+    
+    fsm_.initiate(); 
+
 }
 
 goby::acomms::IridiumDriver::~IridiumDriver()
@@ -57,16 +58,13 @@ void goby::acomms::IridiumDriver::startup(const protobuf::DriverConfig& cfg)
 {
     driver_cfg_ = cfg;
     
-    glog.is(DEBUG1, lock) && glog << group(glog_out_group()) << "Goby Iridium RUDICS/SBD driver starting up." << std::endl << unlock;
+    glog.is(DEBUG1) && glog << group(glog_out_group()) << "Goby Iridium RUDICS/SBD driver starting up." << std::endl;
 
     driver_cfg_.set_line_delimiter("\r");
     
     modem_start(driver_cfg_);
-    at_push_out("");
-    at_push_out("E");
-    for(int i = 0, n = driver_cfg_.ExtensionSize(IridiumDriverConfig::config); i < n; ++i)
-        at_push_out(driver_cfg_.GetExtension(IridiumDriverConfig::config, i));
 
+    fsm_.process_event(fsm::EvConfigured());
 }
 
 void goby::acomms::IridiumDriver::shutdown()
@@ -90,91 +88,26 @@ void goby::acomms::IridiumDriver::handle_initiate_transmission(const protobuf::M
 
 void goby::acomms::IridiumDriver::do_work()
 {
-    try_at_write();
-    try_data_write();
+//    DisplayStateConfiguration();
+        
+    try_serial_tx();
     
     std::string in;
-    std::string blank;
     while(modem_read(&in))
     {
-        if(command_state_ != IN_CALL_DATA)
-        {
-            boost::trim_if(in, !boost::algorithm::is_alnum());
-            glog.is(DEBUG1) && glog << group(glog_in_group()) << in << std::endl;
-
-        
-            switch(command_state_)
-            {
-                case READY_TO_COMMAND:
-                    boost::trim_if(in, !boost::algorithm::is_alnum());
-                    if(in == "RING")
-                    {
-                        at_push_out("A");
-                        command_state_ = WAITING_FOR_RESPONSE;
-                    }
-                    else
-                        glog.is(DEBUG1) && glog << group(glog_in_group()) << "^ Unexpected message from modem." << std::endl;
-                    break;
-
-                case WAITING_FOR_RESPONSE:
-                {
-                    if(at_out_.empty())
-                        break;
-
-                    bool response_valid = false;
-                
-                    if(in == "OK")
-                    {
-                        response_valid = true;
-                        command_state_ = READY_TO_COMMAND;
-                    }
-                    else if(in == "NO CARRIER")
-                    {
-                        response_valid = true;
-                        command_state_ = READY_TO_COMMAND;
-                    }
-                    else if(in.compare(0, 7, "CONNECT") == 0)
-                    {
-                        response_valid = true;
-                        command_state_ = IN_CALL_DATA;
-                        call_state_ = IN_CALL;
-                        data_out_.push_front("\r");
-                    }
-
-                    if(response_valid)
-                    {
-                        glog.is(DEBUG1) && glog << group(glog_in_group()) << "^ response to " << at_out_.front() << std::endl;
-                        at_out_.pop_front();
-                        modem_read(&blank);
-                    }
-                
-                }
-                break;                
-
-                case IN_CALL_DATA: break;
-            }
-        }
-        else
-        {
-            glog.is(DEBUG1) && glog << group(glog_in_group()) << goby::util::hex_encode(in) << std::endl;
-
-            std::string bytes;
-            try
-            {
-                parse_rudics_packet(&bytes, in);
-                
-                protobuf::ModemTransmission msg;
-                msg.ParseFromString(bytes);
-                receive(msg);
-            }
-            catch(RudicsPacketException& e)
-            {
-                glog.is(DEBUG1) && glog << group(glog_in_group()) << warn << "Could not decode packet: " << e.what() << std::endl;
-            }
-            
-        }
+        fsm::EvRxSerial data_event;
+        data_event.line = in;
+        fsm_.process_event(data_event);
     }
 
+    while(!fsm_.received().empty())
+    {
+        receive(fsm_.received().front());
+        fsm_.received().pop_front();
+    }
+
+    // try sending again at the end to push newly generated messages before we wait
+    try_serial_tx();
 }
 
 void goby::acomms::IridiumDriver::receive(const protobuf::ModemTransmission& msg)
@@ -195,83 +128,61 @@ void goby::acomms::IridiumDriver::receive(const protobuf::ModemTransmission& msg
     signal_receive(msg);
 }
 
-void goby::acomms::IridiumDriver::send(const google::protobuf::Message& msg)
+void goby::acomms::IridiumDriver::send(const protobuf::ModemTransmission& msg)
 {
-    // send the message
-    std::string bytes;
-    msg.SerializeToString(&bytes);
-
-    // make call or use SBD?
-    if(call_state_ == NOT_IN_CALL)
-        dial_remote();
-
-    // frame message
-    std::string rudics_packet;
-    serialize_rudics_packet(bytes, &rudics_packet);
-    data_out_.push_back(rudics_packet);
-}
-
-void goby::acomms::IridiumDriver::at_push_out(const std::string& cmd)
-{
-    at_out_.push_back(cmd);
-    try_at_write();
+    fsm::EvSendData data_event;
+    data_event.msg = msg;
+    fsm_.process_event(data_event);
 }
 
 
-void goby::acomms::IridiumDriver::try_at_write()
-{
-    if(at_out_.empty())
-        return;
+void goby::acomms::IridiumDriver::try_serial_tx()
+{    
+    fsm_.process_event(fsm::EvTxSerial());
 
-    double now = goby::common::goby_time<double>();
-    
-    if(command_state_ == IN_CALL_DATA)
-        return;
-    else if(command_state_ == WAITING_FOR_RESPONSE)
+    while(!fsm_.send().empty())
     {
-        if((last_command_time_ + COMMAND_TIMEOUT_SECONDS) > now)
-            return;
-        else
-            glog.is(DEBUG1) && glog << warn << group(glog_out_group()) << "Resending last command..." << std::endl;
+        const std::string& line = fsm_.send().front();
+        
+        glog.is(DEBUG1) && glog << group(glog_out_group()) << line << std::endl;
+        modem_write(line);
+
+        fsm_.send().pop_front();
     }
-    
-    
-    std::string at_cmd = "AT" + at_out_.front() + "\r";
-    glog.is(DEBUG1) && glog << group(glog_out_group()) << at_cmd << std::endl;
-    modem_write(at_cmd);
-
-    last_command_time_ = now;
-
-    command_state_ = WAITING_FOR_RESPONSE;
 }
 
-
-void goby::acomms::IridiumDriver::try_data_write()
+void goby::acomms::IridiumDriver::DisplayStateConfiguration()
 {
-    
-    if(data_out_.empty())
-    {
-        return;
-    }
-    else if(command_state_ != IN_CALL_DATA)
-    {
-        return;    
-    }
-    
-    glog.is(DEBUG1) && glog << group(glog_out_group()) << goby::util::hex_encode(data_out_.front()) << std::endl;
+  char orthogonalRegion = 'a';
 
-    modem_write(data_out_.front());
-    data_out_.pop_front();
+  for ( fsm::IridiumDriverFSM::state_iterator pLeafState = fsm_.state_begin();
+    pLeafState != fsm_.state_end(); ++pLeafState )
+  {
+    std::cout << "Orthogonal region " << orthogonalRegion << ": ";
+
+    const fsm::IridiumDriverFSM::state_base_type * pState = &*pLeafState;
+
+    while ( pState != 0 )
+    {
+      if ( pState != &*pLeafState )
+      {
+        std::cout << " -> ";
+      }
+
+      std::cout << std::setw( 15 ) << typeid( *pState ).name();
+ 
+      pState = pState->outer_state_ptr();
+    }
+
+    std::cout << std::endl;
+    ++orthogonalRegion;
+  }
+
+  std::cout << std::endl;
 }
 
 
-void goby::acomms::IridiumDriver::dial_remote()
-{
-    at_push_out("D" + driver_cfg_.GetExtension(IridiumDriverConfig::remote).iridium_number());
-}
-
-
-void goby::acomms::IridiumDriver::serialize_rudics_packet(std::string bytes, std::string* rudics_pkt)
+void goby::acomms::serialize_rudics_packet(std::string bytes, std::string* rudics_pkt)
 {
     // append CRC
     boost::crc_32_type crc;
@@ -287,7 +198,7 @@ void goby::acomms::IridiumDriver::serialize_rudics_packet(std::string bytes, std
     *rudics_pkt += "\r";
 }
 
-void goby::acomms::IridiumDriver::parse_rudics_packet(std::string* bytes, std::string rudics_pkt)
+void goby::acomms::parse_rudics_packet(std::string* bytes, std::string rudics_pkt)
 {
     const unsigned CR_SIZE = 1;    
     if(rudics_pkt.size() < CR_SIZE)
@@ -315,14 +226,14 @@ void goby::acomms::IridiumDriver::parse_rudics_packet(std::string* bytes, std::s
     
 }
 
-std::string goby::acomms::IridiumDriver::uint32_to_byte_string(uint32_t i)
+std::string goby::acomms::uint32_to_byte_string(uint32_t i)
 {
     union u_t { uint32_t i; char c[4]; } u;
     u.i = htonl(i);
     return std::string(u.c, 4);
 }
 
-uint32_t goby::acomms::IridiumDriver::byte_string_to_uint32(std::string s)
+uint32_t goby::acomms::byte_string_to_uint32(std::string s)
 {
     union u_t { uint32_t i; char c[4]; } u;
     memcpy(u.c, s.c_str(), 4);

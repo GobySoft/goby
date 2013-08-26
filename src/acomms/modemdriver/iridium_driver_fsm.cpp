@@ -35,6 +35,26 @@ using namespace goby::common::logger;
 using goby::common::goby_time;
 
 
+void goby::acomms::fsm::IridiumDriverFSM::buffer_data_out( const goby::acomms::protobuf::ModemTransmission& msg)
+{
+    // serialize the (protobuf) message
+    std::string bytes;
+    msg.SerializeToString(&bytes);
+
+    // frame message
+    std::string rudics_packet;
+    serialize_rudics_packet(bytes, &rudics_packet);
+
+    glog.is(DEBUG1) && glog << "Buffering message to send: " << goby::util::hex_encode(rudics_packet) << std::endl;
+    
+    data_out_.push_back(rudics_packet);
+
+
+    // for now, make a call
+    process_event(EvDial());
+    
+}
+
 void goby::acomms::fsm::Command::in_state_react(const EvRxSerial& e)
 {
     std::string in = e.line;
@@ -53,9 +73,13 @@ void goby::acomms::fsm::Command::in_state_react(const EvRxSerial& e)
 }
 
 void goby::acomms::fsm::Command::in_state_react( const EvTxSerial& )
-{    
-    if(!at_out().empty())
-        context<IridiumDriverFSM>().send().push_back("AT" + at_out().front() + "\r");
+{
+    double now = goby_time<double>();
+    if(!at_out_.empty() && at_out_.front().first + COMMAND_TIMEOUT_SECONDS < now)
+    {
+        context<IridiumDriverFSM>().serial_tx_buffer().push_back("AT" + at_out_.front().second + "\r");
+        at_out_.front().first = now;
+    }
 }
 
 
@@ -63,12 +87,11 @@ void goby::acomms::fsm::Ready::in_state_react( const EvOk & e)
 {
     if(!context<Command>().at_out().empty())
     {
-        const std::string& last_at = context<Command>().at_out().front();
+        const std::string& last_at = context<Command>().at_out().front().second;
         if(last_at.size() > 0)
         {
             switch(last_at[0])
             {
-                case 'A': post_event(EvATA()); break;
                 case 'H': post_event(EvATH0()); break;
                 case 'O': post_event(EvATO()); break;
                 default:
@@ -104,24 +127,13 @@ void goby::acomms::fsm::OnCall::in_state_react(const EvRxSerial& e)
     }
 }
 
-void goby::acomms::fsm::OnCall::in_state_react( const EvSendData& e)
-{
-    // send the message
-    std::string bytes;
-    e.msg.SerializeToString(&bytes);
-
-    // frame message
-    std::string rudics_packet;
-    serialize_rudics_packet(bytes, &rudics_packet);
-    
-    data_out_.push_back(rudics_packet);
-}
 
 void goby::acomms::fsm::OnCall::in_state_react( const EvTxSerial& )
 {
-    if(!data_out_.empty())
+    boost::circular_buffer<std::string>& data_out = context<IridiumDriverFSM>().data_out();
+    if(!data_out.empty())
     {
-        context<IridiumDriverFSM>().send().push_back(data_out_.front());
-        data_out_.pop_front();
+        context<IridiumDriverFSM>().serial_tx_buffer().push_back(data_out.front());
+        data_out.pop_front();
     }
 }

@@ -40,13 +40,11 @@ using goby::common::goby_time;
 
 
 goby::acomms::IridiumDriver::IridiumDriver()
-    : fsm_(driver_cfg_),
-      last_command_time_(0)
+    : fsm_(driver_cfg_)
 {
     assert(byte_string_to_uint32(uint32_to_byte_string(16540)) == 16540);
     
-    fsm_.initiate(); 
-
+    fsm_.initiate();
 }
 
 goby::acomms::IridiumDriver::~IridiumDriver()
@@ -130,9 +128,7 @@ void goby::acomms::IridiumDriver::receive(const protobuf::ModemTransmission& msg
 
 void goby::acomms::IridiumDriver::send(const protobuf::ModemTransmission& msg)
 {
-    fsm::EvSendData data_event;
-    data_event.msg = msg;
-    fsm_.process_event(data_event);
+    fsm_.buffer_data_out(msg);
 }
 
 
@@ -140,14 +136,14 @@ void goby::acomms::IridiumDriver::try_serial_tx()
 {    
     fsm_.process_event(fsm::EvTxSerial());
 
-    while(!fsm_.send().empty())
+    while(!fsm_.serial_tx_buffer().empty())
     {
-        const std::string& line = fsm_.send().front();
+        const std::string& line = fsm_.serial_tx_buffer().front();
         
         glog.is(DEBUG1) && glog << group(glog_out_group()) << line << std::endl;
         modem_write(line);
 
-        fsm_.send().pop_front();
+        fsm_.serial_tx_buffer().pop_front();
     }
 }
 

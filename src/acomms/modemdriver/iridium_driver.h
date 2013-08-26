@@ -69,9 +69,6 @@ namespace goby
             fsm::IridiumDriverFSM fsm_;
             protobuf::DriverConfig driver_cfg_;
 
-            double last_command_time_;
-
-            enum { COMMAND_TIMEOUT_SECONDS = 3 };
         };
     }
 }

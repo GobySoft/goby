@@ -158,7 +158,14 @@ namespace goby
         inline double time_duration2double(boost::posix_time::time_duration time_of_day)
         {
             using namespace boost::posix_time;
-            return (double(time_of_day.total_seconds()) + double(time_of_day.fractional_seconds()) / double(time_duration::ticks_per_second()));
+
+            // prevent overflows in getting total seconds with call to ptime::total_seconds
+            if(time_of_day.hours() > (0x7FFFFFFF / 3600))
+                return std::numeric_limits<double>::infinity();
+            else
+                return (double(time_of_day.total_seconds()) +
+                        double(time_of_day.fractional_seconds()) /
+                        double(time_duration::ticks_per_second()));
         }
         
         //@}

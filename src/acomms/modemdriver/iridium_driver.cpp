@@ -40,11 +40,10 @@ using goby::common::goby_time;
 
 
 goby::acomms::IridiumDriver::IridiumDriver()
-    : fsm_(driver_cfg_)
+    : fsm_(driver_cfg_),
+      last_triple_plus_time_(0)
 {
     assert(byte_string_to_uint32(uint32_to_byte_string(16540)) == 16540);
-    
-    fsm_.initiate();
 }
 
 goby::acomms::IridiumDriver::~IridiumDriver()
@@ -58,15 +57,43 @@ void goby::acomms::IridiumDriver::startup(const protobuf::DriverConfig& cfg)
     
     glog.is(DEBUG1) && glog << group(glog_out_group()) << "Goby Iridium RUDICS/SBD driver starting up." << std::endl;
 
-    driver_cfg_.set_line_delimiter("\r");
-    
-    modem_start(driver_cfg_);
+    driver_cfg_.set_line_delimiter("\r");    
 
-    fsm_.process_event(fsm::EvConfigured());
+    modem_init(cfg);
+}
+
+void goby::acomms::IridiumDriver::modem_init(const protobuf::DriverConfig& cfg)
+{
+        
+    modem_start(driver_cfg_);
+    
+    fsm_.initiate();
+
+
+    int i = 0;
+    while(fsm_.state_cast<const fsm::Ready *>() == 0)
+    {
+        do_work();
+
+        const int pause_ms = 10;
+        usleep(pause_ms*1000);
+        ++i;
+
+        const int start_timeout = 10;
+        if(i / (1000/pause_ms) > start_timeout)
+            glog.is(DIE) && glog << group(glog_out_group()) << "Failed to startup." << std::endl;
+    }
 }
 
 void goby::acomms::IridiumDriver::shutdown()
 {
+    fsm_.process_event(fsm::EvHangup());
+
+    while(fsm_.state_cast<const fsm::OnCall *>() != 0)
+    {
+        do_work();
+        usleep(10000);
+    }
     modem_close();
 }
 
@@ -91,7 +118,7 @@ void goby::acomms::IridiumDriver::do_work()
     try_serial_tx();
     
     std::string in;
-    while(modem_read(&in))
+    while(modem().active() && modem_read(&in))
     {
         fsm::EvRxSerial data_event;
         data_event.line = in;
@@ -140,11 +167,15 @@ void goby::acomms::IridiumDriver::send(const protobuf::ModemTransmission& msg)
 
 
 void goby::acomms::IridiumDriver::try_serial_tx()
-{    
+{
     fsm_.process_event(fsm::EvTxSerial());
 
     while(!fsm_.serial_tx_buffer().empty())
     {
+        double now = goby_time<double>();
+        if(last_triple_plus_time_ + TRIPLE_PLUS_WAIT > now)
+            return;
+    
         const std::string& line = fsm_.serial_tx_buffer().front();
 
         
@@ -155,6 +186,9 @@ void goby::acomms::IridiumDriver::try_serial_tx()
         
         modem_write(line);
 
+        // this is safe as all other messages we use are \r terminated
+        if(line == "+++") last_triple_plus_time_ = now;
+        
         fsm_.serial_tx_buffer().pop_front();
     }
 }
@@ -197,12 +231,15 @@ void goby::acomms::serialize_rudics_packet(std::string bytes, std::string* rudic
     crc.process_bytes(bytes.data(), bytes.length());
     bytes += uint32_to_byte_string(crc.checksum());
     
+    
     // convert to base 255
     goby::util::base_convert(bytes, rudics_pkt, 256, 255);
 
     // turn all '\r' into 0xFF (255) so we can use '\r' as an end-of-line character
     std::replace(rudics_pkt->begin(), rudics_pkt->end(), '\r', static_cast<char>(0xFF));
 
+//    *rudics_pkt = goby::util::hex_encode(bytes);
+    
     *rudics_pkt += "\r";
 }
 
@@ -216,6 +253,8 @@ void goby::acomms::parse_rudics_packet(std::string* bytes, std::string rudics_pk
     rudics_pkt = rudics_pkt.substr(0, rudics_pkt.size()-1);
     std::replace(rudics_pkt.begin(), rudics_pkt.end(), static_cast<char>(0xFF), '\r');
     goby::util::base_convert(rudics_pkt, bytes, 255, 256);
+
+//    *bytes = goby::util::hex_decode(rudics_pkt);
 
     const unsigned CRC_BYTE_SIZE = 4;
     if(bytes->size() < CRC_BYTE_SIZE)

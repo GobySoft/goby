@@ -54,6 +54,9 @@ namespace goby
             IridiumDriver();
             ~IridiumDriver();
             void startup(const protobuf::DriverConfig& cfg);
+
+            void modem_init(const protobuf::DriverConfig& cfg);
+            
             void shutdown();            
             void do_work();
             void handle_initiate_transmission(const protobuf::ModemTransmission& m);
@@ -69,6 +72,10 @@ namespace goby
             fsm::IridiumDriverFSM fsm_;
             protobuf::DriverConfig driver_cfg_;
 
+            double last_triple_plus_time_;
+            enum { TRIPLE_PLUS_WAIT = 2 };
+                
+            
         };
     }
 }

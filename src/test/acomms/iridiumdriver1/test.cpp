@@ -47,10 +47,11 @@ int main(int argc, char* argv[])
     
     goby::acomms::protobuf::DriverConfig cfg1, cfg2;
         
-    //gumstix
+    // at-duck1
     cfg1.set_modem_id(1);
     cfg1.set_connection_type(goby::acomms::protobuf::DriverConfig::CONNECTION_TCP_AS_CLIENT);
     cfg1.set_tcp_server("127.0.0.1");
+    cfg1.set_reconnect_interval(1);
     cfg1.set_tcp_port(40001);    
     IridiumDriverConfig::Remote* shore =
         cfg1.MutableExtension(IridiumDriverConfig::remote);
@@ -58,10 +59,11 @@ int main(int argc, char* argv[])
     shore->set_modem_id(2);    
     cfg1.AddExtension(IridiumDriverConfig::config, "+GSN");
     
-    // shore
+    // at-duck2
     cfg2.set_modem_id(2);
     cfg2.set_connection_type(goby::acomms::protobuf::DriverConfig::CONNECTION_TCP_AS_CLIENT);
     cfg2.set_tcp_server("127.0.0.1");
+    cfg2.set_reconnect_interval(1);
     cfg2.set_tcp_port(40001);    
     IridiumDriverConfig::Remote* gumstix =
         cfg2.MutableExtension(IridiumDriverConfig::remote);
@@ -69,6 +71,40 @@ int main(int argc, char* argv[])
     gumstix->set_modem_id(2);
     cfg2.AddExtension(IridiumDriverConfig::config, "+GSN");
 
+    // rudics
+    // {
+    //     cfg1.set_modem_id(1);
+    //     cfg1.set_connection_type(goby::acomms::protobuf::DriverConfig::CONNECTION_TCP_AS_CLIENT);
+    //     cfg1.set_tcp_server("rudics.whoi.edu");
+    //     cfg1.set_tcp_port(54321);    
+    //     IridiumDriverConfig::Remote* remote =
+    //         cfg1.MutableExtension(IridiumDriverConfig::remote);
+    //     remote->set_modem_id(2);
+    //     remote->set_iridium_number("i881693783740");
+    //     cfg1.AddExtension(IridiumDriverConfig::config, "s29=8");
+    //     cfg1.AddExtension(IridiumDriverConfig::config, "s57=9600");
+    // }
+    
+    // gumstix
+    // {
+    //     cfg2.set_modem_id(2);
+    //     cfg2.set_connection_type(goby::acomms::protobuf::DriverConfig::CONNECTION_SERIAL);
+    //     cfg2.set_serial_port("/dev/ttyUSB0");
+    //     cfg2.set_serial_baud(9600);
+    //     IridiumDriverConfig::Remote* remote =
+    //         cfg2.MutableExtension(IridiumDriverConfig::remote);
+    //     remote->set_iridium_number("i00881600005141");
+    //     remote->set_modem_id(2);
+    //     cfg2.AddExtension(IridiumDriverConfig::config, "+IPR=5,0");
+    //     cfg2.AddExtension(IridiumDriverConfig::config, "+CGSN");
+    //     cfg2.AddExtension(IridiumDriverConfig::config, "+CGMM");
+    //     cfg2.AddExtension(IridiumDriverConfig::config, "+CGMI");
+    //     cfg2.AddExtension(IridiumDriverConfig::config, "Q0"); // quiet mode off
+    //     cfg2.AddExtension(IridiumDriverConfig::config, "&D2"); // DTR low hangs up
+    //     cfg2.AddExtension(IridiumDriverConfig::config, "&C1"); // DCD indicates state of connection
+    // }
+
+    
     std::vector<int> tests_to_run;
     tests_to_run.push_back(4);
     tests_to_run.push_back(5);

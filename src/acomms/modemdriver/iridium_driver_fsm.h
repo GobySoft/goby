@@ -50,25 +50,34 @@ namespace goby
             // events
             struct EvRxSerial : boost::statechart::event< EvRxSerial > { std::string line; };
             struct EvTxSerial : boost::statechart::event< EvTxSerial > { };
+
+            struct EvRxOnCallSerial : boost::statechart::event< EvRxOnCallSerial > { std::string line; };
+            struct EvTxOnCallSerial : boost::statechart::event< EvTxOnCallSerial > { };
             
-            struct EvOk : boost::statechart::event< EvOk > {};
+            struct EvAck : boost::statechart::event< EvAck >
+            {
+                EvAck(const std::string& response)
+                    : response_(response) { }
+                
+                std::string response_;
+            };
+            
+            struct EvAtEmpty : boost::statechart::event< EvAtEmpty > {};
 
             struct EvDial : boost::statechart::event< EvDial > {};
             struct EvRing : boost::statechart::event< EvRing > {};
-            struct EvNoCarrier : boost::statechart::event< EvNoCarrier > {};
+            struct EvOnline : boost::statechart::event< EvOnline > {};
+            struct EvOffline : boost::statechart::event< EvOffline > {};
+
+            struct EvHangup : boost::statechart::event< EvHangup > {};
+
             struct EvConnect : boost::statechart::event< EvConnect > {};
-            struct EvATH0 : boost::statechart::event< EvATH0 > {};
+            struct EvNoCarrier : boost::statechart::event< EvNoCarrier > {};
 
             struct EvTriplePlus : boost::statechart::event< EvTriplePlus > {};
-            struct EvATO : boost::statechart::event< EvATO > {};
-
-            struct EvReturnToReady  : boost::statechart::event< EvReturnToReady > {};
-            struct EvConfigured  : boost::statechart::event< EvConfigured > {};
-            
-            // struct EvSendData : boost::statechart::event< EvSendData > 
-            // { goby::acomms::protobuf::ModemTransmission msg; };
             
             // pre-declare
+            struct Active;
             struct Command;
             struct Configure;
             struct Ready;
@@ -80,7 +89,7 @@ namespace goby
             struct NotOnCall;
 
 // state machine
-            struct IridiumDriverFSM : boost::statechart::state_machine<IridiumDriverFSM, Command> 
+            struct IridiumDriverFSM : boost::statechart::state_machine<IridiumDriverFSM, Active > 
             {
               public:
                 IridiumDriverFSM(const protobuf::DriverConfig& driver_cfg)
@@ -115,12 +124,17 @@ namespace goby
                 boost::circular_buffer<std::string> data_out_;
             };
 
+            struct Active: boost::statechart::simple_state< Active, IridiumDriverFSM,
+                boost::mpl::list<Command, NotOnCall> >
+            { };
+            
             // Command
-            struct Command : boost::statechart::simple_state<Command, IridiumDriverFSM, Configure>
+            struct Command : boost::statechart::simple_state<Command, Active::orthogonal<0>, Configure>
             {
               public:
                 void in_state_react( const EvRxSerial& );
                 void in_state_react( const EvTxSerial& );
+                void in_state_react( const EvAck & );
 
               Command()
                   : at_out_(AT_BUFFER_CAPACITY)
@@ -133,7 +147,10 @@ namespace goby
 
                 typedef boost::mpl::list<
                     boost::statechart::in_state_reaction< EvRxSerial, Command, &Command::in_state_react >,
-                    boost::statechart::in_state_reaction< EvTxSerial, Command, &Command::in_state_react >
+                    boost::statechart::in_state_reaction< EvTxSerial, Command, &Command::in_state_react >,
+                    boost::statechart::transition< EvOnline, Online >,
+                    boost::statechart::transition< EvOffline, Ready >,
+                    boost::statechart::in_state_reaction< EvAck, Command, &Command::in_state_react >
                     > reactions;
 
                 void push_at_command(const std::string& cmd)
@@ -146,22 +163,20 @@ namespace goby
               private:
                 enum  { AT_BUFFER_CAPACITY = 100 };
                 boost::circular_buffer< std::pair<double, std::string> > at_out_;
-                enum { COMMAND_TIMEOUT_SECONDS = 3 };
+                enum { COMMAND_TIMEOUT_SECONDS = 2,
+                       DIAL_TIMEOUT_SECONDS = 60,
+                       ANSWER_TIMEOUT_SECONDS = 30};
             };
 
             struct Configure : boost::statechart::state<Configure, Command>
             {    
                 typedef boost::mpl::list<
-                    boost::statechart::transition< EvConfigured, Ready >
+                    boost::statechart::transition< EvAtEmpty, Ready >
                     > reactions;
                     
               Configure(my_context ctx) : my_base(ctx)
                 {
                     std::cout << "Configure\n";
-                }
-
-                ~Configure() {
-                    std::cout << "~Configure\n";
                     context<Command>().push_at_command("");
                     context<Command>().push_at_command("E");
                     for(int i = 0,
@@ -173,7 +188,11 @@ namespace goby
                             context<IridiumDriverFSM>().driver_cfg().GetExtension(
                                 IridiumDriverConfig::config, i));
                     }
-                } // exit
+                }
+
+                ~Configure() {
+                    std::cout << "~Configure\n";
+                } 
             };
 
 
@@ -187,13 +206,14 @@ namespace goby
                     std::cout << "~Ready\n";
                 }
 
-                void in_state_react( const EvOk & );
+                void in_state_react( const EvHangup & );
+                void in_state_react( const EvTriplePlus & );
 
                 typedef boost::mpl::list<
                     boost::statechart::transition< EvRing, Answer >,
-                    boost::statechart::transition< EvDial, Dial >,        
-                    boost::statechart::transition< EvATO, OnCall >,
-                    boost::statechart::in_state_reaction< EvOk, Ready, &Ready::in_state_react >
+                    boost::statechart::transition< EvDial, Dial >,
+                    boost::statechart::in_state_reaction< EvTriplePlus, Ready, &Ready::in_state_react >,
+                    boost::statechart::in_state_reaction< EvHangup, Ready, &Ready::in_state_react >
                     > reactions;
 
               private:
@@ -202,77 +222,106 @@ namespace goby
             struct Dial : boost::statechart::state<Dial, Command>
             {
                 typedef boost::mpl::list<
-                    boost::statechart::transition< EvConnect, OnCall >,
-                    boost::statechart::transition< EvNoCarrier, Dial >
+                    boost::statechart::custom_reaction< EvNoCarrier >
                     > reactions;
     
-              Dial(my_context ctx) : my_base(ctx)
+              Dial(my_context ctx) : my_base(ctx),
+                    dial_attempts_(0)
                 {
                     std::cout << "Dial\n";
-                    context<Command>().push_at_command(
-                        "D" +
-                        context<IridiumDriverFSM>().driver_cfg().GetExtension(
-                            IridiumDriverConfig::remote).iridium_number());
-                } // entry
-                ~Dial() { std::cout << "~Dial\n"; } // exit
+                    dial();
+                } 
+                ~Dial() { std::cout << "~Dial\n"; }
+
+                boost::statechart::result react( const EvNoCarrier& );
+                void dial();
+                
+                
+              private:
+                int dial_attempts_;
             };
 
             struct Answer : boost::statechart::state<Answer, Command>
             {
-                typedef boost::mpl::list<
-                    boost::statechart::transition< EvConnect, OnCall >
-                    > reactions;
+//                typedef boost::mpl::list<
+//                    boost::statechart::transition< EvOnline, Online >
+//                    > reactions;
 
               Answer(my_context ctx) : my_base(ctx) 
                 {
                     std::cout << "Answer\n";
                     context<Command>().push_at_command("A");
                 }
-                ~Answer() { std::cout << "~Answer\n"; } // exit
+                ~Answer() { std::cout << "~Answer\n"; } 
             };
 
 // Online
-
-            struct Online :  boost::statechart::simple_state<Online, IridiumDriverFSM, NotOnCall>
+            struct Online : boost::statechart::simple_state<Online, Active::orthogonal<0> >
             {
-            };
-
-            struct NotOnCall : boost::statechart::state<NotOnCall, Online>
-            {
-    
-                typedef boost::mpl::list<
-                    boost::statechart::transition< EvReturnToReady, Ready >
-                    > reactions;
-    
-              NotOnCall(my_context ctx) : my_base(ctx)
-                {
-                    std::cout << "NotOnCall\n";
-                    post_event(EvReturnToReady());
+                
+                Online() { std::cout << "Online\n"; }
+                ~Online() {
+                    std::cout << "~Online\n";
                 }
+                
+                void in_state_react( const EvRxSerial& );
+                void in_state_react( const EvTxSerial& );
+                boost::statechart::result react( const EvTriplePlus& );
+                boost::statechart::result react( const EvHangup& );
 
-                ~NotOnCall() { std::cout << "~NotOnCall\n"; } // exit
+                typedef boost::mpl::list<
+                    boost::statechart::transition< EvOffline, Ready >,
+                    boost::statechart::custom_reaction< EvHangup >,
+                    boost::statechart::custom_reaction< EvTriplePlus>,
+                    boost::statechart::in_state_reaction< EvRxSerial, Online, &Online::in_state_react >,
+                    boost::statechart::in_state_reaction< EvTxSerial, Online, &Online::in_state_react >
+                    > reactions;
+                
+                
             };
 
 
-            struct OnCall : boost::statechart::state<OnCall, Online>
+            // Orthogonal on-call / not-on-call
+            struct NotOnCall : boost::statechart::simple_state<NotOnCall, Active::orthogonal<1> >
+            {
+                
+                typedef boost::mpl::list<
+                    boost::statechart::transition< EvConnect, OnCall >
+                    > reactions;
+                
+                NotOnCall() { std::cout << "NotOnCall\n"; }
+                ~NotOnCall() { std::cout << "~NotOnCall\n"; } 
+            };
+
+
+            struct OnCall : boost::statechart::state<OnCall, Active::orthogonal<1> >
             {
               public:
 
               OnCall(my_context ctx) : my_base(ctx)
                 {
                     std::cout << "OnCall\n";
-                    // add a carriage return to clear out any garbage at the *beginning* of transmission
+                    // add a carriage return to clear out any garbage
+                    // at the *beginning* of transmission
                     context<IridiumDriverFSM>().data_out().push_front("\r");
-                } // entry
-                ~OnCall() { std::cout << "~OnCall\n"; } // exit
 
-                void in_state_react( const EvRxSerial& );
-                void in_state_react( const EvTxSerial& );
+                    // connecting necessarily puts the DTE online
+                    post_event(EvOnline());
+                } 
+                ~OnCall() {
+                    std::cout << "~OnCall\n";
+                    
+                    // disconnecting necessarily puts the DTE offline
+                    post_event(EvOffline());
+                } 
+
+                void in_state_react( const EvRxOnCallSerial& );
+                void in_state_react( const EvTxOnCallSerial& );
 
                 typedef boost::mpl::list<
-                    boost::statechart::transition< EvATH0, NotOnCall >,
-                    boost::statechart::in_state_reaction< EvRxSerial, OnCall, &OnCall::in_state_react >,
-                    boost::statechart::in_state_reaction< EvTxSerial, OnCall, &OnCall::in_state_react >
+                    boost::statechart::transition< EvNoCarrier, NotOnCall >,
+                    boost::statechart::in_state_reaction< EvRxOnCallSerial, OnCall, &OnCall::in_state_react >,
+                    boost::statechart::in_state_reaction< EvTxOnCallSerial, OnCall, &OnCall::in_state_react >
                     > reactions;    
 
               private:

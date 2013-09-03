@@ -63,15 +63,7 @@ DriverTester::DriverTester(boost::shared_ptr<goby::acomms::ModemDriverBase> driv
     driver2_->startup(cfg2);
 
     int i =0;
-        
-    while(((i / 10) < 1))
-    {
-        driver1_->do_work();
-        driver2_->do_work();
-        
-        usleep(100000);
-        ++i;
-    }
+
 }
 
 
@@ -95,6 +87,7 @@ int DriverTester::run()
                     goby::glog << group("test") << "all tests passed" << std::endl;
                     driver1_->shutdown();
                     driver2_->shutdown();
+                    
                     return 0;
             }    
             
@@ -252,12 +245,14 @@ void DriverTester::handle_data_request2(protobuf::ModemTransmission* msg)
             assert(false);
             break;
 
-
         case 3:
             msg->add_frame(goby::util::hex_decode("0123"));
             ++check_count_;
             break;
-            
+
+        case 4:
+            break;
+
     }
     
     goby::glog << group("driver2") << "Post data request: " << *msg << std::endl;
@@ -290,6 +285,7 @@ void DriverTester::handle_data_receive2(const protobuf::ModemTransmission& msg)
             break;
 
         case 4:
+        {
             if(msg.type() == protobuf::ModemTransmission::DATA)
             {
                 assert(msg.src() == 1);
@@ -298,8 +294,19 @@ void DriverTester::handle_data_receive2(const protobuf::ModemTransmission& msg)
                 assert(msg.frame(0).data() == std::string(32, '5'));
                 ++check_count_;
             }
+
+            // protobuf::ModemTransmission transmit;
+            // transmit.set_type(protobuf::ModemTransmission::DATA);
+            // transmit.set_src(2);
+            // transmit.set_dest(1);
+            // transmit.set_rate(0);
+            // transmit.set_ack_requested(false);
+            // transmit.add_frame(std::string(32,'5'));
+            // driver2_->handle_initiate_transmission(transmit);
+
             break;
-            
+        }
+        
         case 5:
             if(msg.type() == protobuf::ModemTransmission::DATA)
             {
@@ -442,10 +449,12 @@ void DriverTester::test4()
     transmit.set_dest(2);
     transmit.set_rate(0);
     transmit.set_ack_requested(true);
+//    transmit.set_ack_requested(false);
     driver1_->handle_initiate_transmission(transmit);
 
+    
     int i = 0;
-    while(((i / 10) < 10) && check_count_ < 3)
+    while(((i / 10) < 60) && check_count_ < 3)
     {
         driver1_->do_work();
         driver2_->do_work();
@@ -472,7 +481,7 @@ void DriverTester::test5()
     driver1_->handle_initiate_transmission(transmit);
 
     int i = 0;
-    while(((i / 10) < 10) && check_count_ < 3)
+    while(((i / 10) < 60) && check_count_ < 3)
     {
         driver1_->do_work();
         driver2_->do_work();

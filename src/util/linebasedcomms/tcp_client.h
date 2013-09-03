@@ -42,7 +42,8 @@ namespace goby
             /// \param delimiter string used to split lines
             TCPClient(const std::string& server,
                       unsigned port,
-                      const std::string& delimiter = "\r\n");
+                      const std::string& delimiter = "\r\n",
+                      int retry_interval = 10);
             
             boost::asio::ip::tcp::socket& socket() { return socket_; }
 

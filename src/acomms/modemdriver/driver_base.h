@@ -155,7 +155,9 @@ namespace goby
             const std::string& glog_out_group() const { return glog_out_group_; }
             const std::string& glog_in_group() const { return glog_in_group_; }
             
-            
+            /// \brief use for direct access to the modem
+            util::LineBasedInterface& modem() { return *modem_; }
+
             //@}
 
           private:

@@ -27,8 +27,8 @@
 #include "goby/common/time.h"
 #include "goby/util/binary.h"
 
+#include "rudics_packet.h"
 #include "iridium_driver_fsm.h"
-#include "iridium_driver.h"
 
 using goby::glog;
 using namespace goby::common::logger;
@@ -85,6 +85,10 @@ void goby::acomms::fsm::Command::in_state_react(const EvRxSerial& e)
     {
         post_event(EvAck(in));
         post_event(EvNoCarrier());
+    }
+    else if(in == "ERROR")
+    {
+        post_event(EvAck(in));
     }
 }
 

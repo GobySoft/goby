@@ -94,7 +94,7 @@ int main(int argc, char* argv[])
     //     IridiumDriverConfig::Remote* remote =
     //         cfg2.MutableExtension(IridiumDriverConfig::remote);
     //     remote->set_iridium_number("i00881600005141");
-    //     remote->set_modem_id(2);
+    //     remote->set_modem_id(1);
     //     cfg2.AddExtension(IridiumDriverConfig::config, "+IPR=5,0");
     //     cfg2.AddExtension(IridiumDriverConfig::config, "+CGSN");
     //     cfg2.AddExtension(IridiumDriverConfig::config, "+CGMM");

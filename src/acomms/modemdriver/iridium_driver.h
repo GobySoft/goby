@@ -26,28 +26,18 @@
 
 #include "goby/common/time.h"
 
+#include "goby/util/linebasedcomms/tcp_client.h"
+
 #include "goby/acomms/modemdriver/driver_base.h"
 #include "goby/acomms/protobuf/iridium_driver.pb.h"
 
 #include "iridium_driver_fsm.h"
 
+
 namespace goby
 {
     namespace acomms
     {
-        void serialize_rudics_packet(std::string bytes, std::string* rudics_pkt);
-        void parse_rudics_packet(std::string* bytes, std::string rudics_pkt);
-        std::string uint32_to_byte_string(uint32_t i);
-        uint32_t byte_string_to_uint32(std::string s);
-        
-        class RudicsPacketException : public std::runtime_error
-        {
-          public:
-          RudicsPacketException(const std::string& what)
-              : std::runtime_error(what)
-            { }
-        };
-            
         class IridiumDriver : public ModemDriverBase
         {
           public:
@@ -72,6 +62,8 @@ namespace goby
             fsm::IridiumDriverFSM fsm_;
             protobuf::DriverConfig driver_cfg_;
 
+            boost::shared_ptr<goby::util::TCPClient> debug_client_;
+            
             double last_triple_plus_time_;
             enum { TRIPLE_PLUS_WAIT = 2 };
                 

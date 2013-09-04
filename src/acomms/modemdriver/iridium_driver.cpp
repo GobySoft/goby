@@ -20,16 +20,12 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Goby.  If not, see <http://www.gnu.org/licenses/>.
 
-#include <netinet/in.h>
 
 #include <algorithm>
 
-#include <boost/algorithm/string/classification.hpp>
-#include <boost/crc.hpp>     
 
 #include "iridium_driver.h"
 
-#include "goby/util/base_convert.h"
 #include "goby/acomms/modemdriver/driver_exception.h"
 #include "goby/common/logger.h"
 #include "goby/util/binary.h"
@@ -43,7 +39,7 @@ goby::acomms::IridiumDriver::IridiumDriver()
     : fsm_(driver_cfg_),
       last_triple_plus_time_(0)
 {
-    assert(byte_string_to_uint32(uint32_to_byte_string(16540)) == 16540);
+//    assert(byte_string_to_uint32(uint32_to_byte_string(16540)) == 16540);
 }
 
 goby::acomms::IridiumDriver::~IridiumDriver()
@@ -59,6 +55,12 @@ void goby::acomms::IridiumDriver::startup(const protobuf::DriverConfig& cfg)
 
     driver_cfg_.set_line_delimiter("\r");    
 
+    if(driver_cfg_.HasExtension(IridiumDriverConfig::debug_client_port))
+    {
+        debug_client_.reset(new goby::util::TCPClient("localhost", driver_cfg_.GetExtension(IridiumDriverConfig::debug_client_port), "\r"));
+        debug_client_->start();
+    }
+    
     modem_init(cfg);
 }
 
@@ -122,8 +124,12 @@ void goby::acomms::IridiumDriver::do_work()
     {
         fsm::EvRxSerial data_event;
         data_event.line = in;
-
-
+        
+        if(debug_client_ && fsm_.state_cast<const fsm::OnCall *>() != 0)
+        {    
+            debug_client_->write(in);
+        }
+        
         glog.is(DEBUG1) && glog << group(glog_in_group())
                                 << (boost::algorithm::all(in, boost::is_print() ||
                                                           boost::is_any_of("\r\n")) ? in :
@@ -138,6 +144,17 @@ void goby::acomms::IridiumDriver::do_work()
         fsm_.received().pop_front();
     }
 
+    if(debug_client_)
+    {    
+        std::string line;
+        while(debug_client_->readline(&line))
+        {
+            fsm_.serial_tx_buffer().push_back(line);
+            fsm_.process_event(fsm::EvDial());
+        }
+        
+    }
+    
     // try sending again at the end to push newly generated messages before we wait
     try_serial_tx();
 }
@@ -196,7 +213,7 @@ void goby::acomms::IridiumDriver::try_serial_tx()
 void goby::acomms::IridiumDriver::DisplayStateConfiguration()
 {
   char orthogonalRegion = 'a';
-
+  
   for ( fsm::IridiumDriverFSM::state_iterator pLeafState = fsm_.state_begin();
     pLeafState != fsm_.state_end(); ++pLeafState )
   {
@@ -222,68 +239,3 @@ void goby::acomms::IridiumDriver::DisplayStateConfiguration()
 
   std::cout << std::endl;
 }
-
-
-void goby::acomms::serialize_rudics_packet(std::string bytes, std::string* rudics_pkt)
-{
-    // append CRC
-    boost::crc_32_type crc;
-    crc.process_bytes(bytes.data(), bytes.length());
-    bytes += uint32_to_byte_string(crc.checksum());
-    
-    
-    // convert to base 255
-    goby::util::base_convert(bytes, rudics_pkt, 256, 255);
-
-    // turn all '\r' into 0xFF (255) so we can use '\r' as an end-of-line character
-    std::replace(rudics_pkt->begin(), rudics_pkt->end(), '\r', static_cast<char>(0xFF));
-
-//    *rudics_pkt = goby::util::hex_encode(bytes);
-    
-    *rudics_pkt += "\r";
-}
-
-void goby::acomms::parse_rudics_packet(std::string* bytes, std::string rudics_pkt)
-{
-    const unsigned CR_SIZE = 1;    
-    if(rudics_pkt.size() < CR_SIZE)
-        throw(RudicsPacketException("Packet too short for <CR>"));
-    
-        
-    rudics_pkt = rudics_pkt.substr(0, rudics_pkt.size()-1);
-    std::replace(rudics_pkt.begin(), rudics_pkt.end(), static_cast<char>(0xFF), '\r');
-    goby::util::base_convert(rudics_pkt, bytes, 255, 256);
-
-//    *bytes = goby::util::hex_decode(rudics_pkt);
-
-    const unsigned CRC_BYTE_SIZE = 4;
-    if(bytes->size() < CRC_BYTE_SIZE)
-        throw(RudicsPacketException("Packet too short for CRC32"));
-
-    std::string crc_str = bytes->substr(bytes->size()-4, 4);
-    uint32 given_crc = byte_string_to_uint32(crc_str);
-    *bytes = bytes->substr(0, bytes->size()-4);
-
-    boost::crc_32_type crc;
-    crc.process_bytes(bytes->data(), bytes->length());
-    uint32_t computed_crc = crc.checksum();
-
-    if(given_crc != computed_crc)
-        throw(RudicsPacketException("Bad CRC32"));
-    
-}
-
-std::string goby::acomms::uint32_to_byte_string(uint32_t i)
-{
-    union u_t { uint32_t i; char c[4]; } u;
-    u.i = htonl(i);
-    return std::string(u.c, 4);
-}
-
-uint32_t goby::acomms::byte_string_to_uint32(std::string s)
-{
-    union u_t { uint32_t i; char c[4]; } u;
-    memcpy(u.c, s.c_str(), 4);
-    return ntohl(u.i);
-}
-

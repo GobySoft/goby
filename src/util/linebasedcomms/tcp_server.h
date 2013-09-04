@@ -68,6 +68,7 @@ namespace goby
             /// \brief string representation of the local endpoint (e.g. 192.168.1.105:54230
             std::string local_endpoint() { return goby::util::as<std::string>(acceptor_.local_endpoint()); }
 
+            const std::set< boost::shared_ptr<TCPConnection> >& connections();
             
             friend class TCPConnection;
             friend class LineBasedConnection<boost::asio::ip::tcp::socket>;

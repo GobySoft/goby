@@ -26,6 +26,7 @@
 
 #include "goby/acomms/modem_driver.h"
 #include "goby/acomms/modemdriver/udp_driver.h"
+#include "goby/acomms/modemdriver/iridium_driver.h"
 #include "goby/acomms/connect.h"
 
 #include "goby/pb/application.h"
@@ -106,6 +107,10 @@ goby::acomms::ModemDriver::ModemDriver()
         case goby::acomms::protobuf::DRIVER_UDP:
             asio_service_.reset(new boost::asio::io_service);
             driver_.reset(new goby::acomms::UDPDriver(asio_service_.get()));
+            break;
+
+        case goby::acomms::protobuf::DRIVER_IRIDIUM:
+            driver_.reset(new goby::acomms::IridiumDriver);
             break;
 
 

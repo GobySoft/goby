@@ -23,8 +23,8 @@
 
 // tests functionality of the Iridium Driver
 
-#include "goby/acomms/modemdriver/iridium_driver.h"
-#include "../driver_tester/driver_tester.h"
+#include "goby/pb/iridium_driver.h"
+#include "../../acomms/driver_tester/driver_tester.h"
 
 
 boost::shared_ptr<goby::acomms::ModemDriverBase> driver1, driver2;
@@ -41,9 +41,11 @@ int main(int argc, char* argv[])
     }
     
     goby::glog.set_name(argv[0]);    
-    
-    driver1.reset(new goby::acomms::IridiumDriver);
-    driver2.reset(new goby::acomms::IridiumDriver);
+
+    goby::common::ZeroMQService zeromq_service1, zeromq_service2;
+
+    driver1.reset(new goby::acomms::IridiumDriver(&zeromq_service1));
+    driver2.reset(new goby::acomms::IridiumDriver(&zeromq_service2));
     
     goby::acomms::protobuf::DriverConfig cfg1, cfg2;
         

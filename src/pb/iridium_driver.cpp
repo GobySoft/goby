@@ -35,10 +35,18 @@ using namespace goby::common::logger;
 using goby::common::goby_time;
 
 
-goby::acomms::IridiumDriver::IridiumDriver()
-    : fsm_(driver_cfg_),
-      last_triple_plus_time_(0)
+goby::acomms::IridiumDriver::IridiumDriver(goby::common::ZeroMQService* zeromq_service)
+    :     StaticProtobufNode(zeromq_service),
+          fsm_(driver_cfg_),
+          last_triple_plus_time_(0),
+          zeromq_service_(zeromq_service),
+          request_socket_id_(0),
+          last_send_time_(0),
+          query_interval_seconds_(1),
+          waiting_for_reply_(false)
 {
+    on_receipt<acomms::protobuf::MTDataResponse>(0, &IridiumDriver::handle_mt_response, this);
+    
 //    assert(byte_string_to_uint32(uint32_to_byte_string(16540)) == 16540);
 }
 
@@ -60,6 +68,16 @@ void goby::acomms::IridiumDriver::startup(const protobuf::DriverConfig& cfg)
         debug_client_.reset(new goby::util::TCPClient("localhost", driver_cfg_.GetExtension(IridiumDriverConfig::debug_client_port), "\r"));
         debug_client_->start();
     }
+
+    request_.set_modem_id(driver_cfg_.modem_id());
+
+    service_cfg_.add_socket()->CopyFrom(
+        driver_cfg_.GetExtension(IridiumDriverConfig::request_socket));
+    zeromq_service_->set_cfg(service_cfg_);
+
+    request_socket_id_ =
+        driver_cfg_.GetExtension(IridiumDriverConfig::request_socket).socket_id();
+    
     
     modem_init(cfg);
 }
@@ -116,7 +134,26 @@ void goby::acomms::IridiumDriver::handle_initiate_transmission(const protobuf::M
 void goby::acomms::IridiumDriver::do_work()
 {
 //    DisplayStateConfiguration();
-        
+
+    
+    while(zeromq_service_->poll(0))
+    { }
+
+    if(!waiting_for_reply_ &&
+       request_.IsInitialized() &&
+       goby_time<double>() > last_send_time_ + query_interval_seconds_)
+    {
+        static int request_id = 0;
+        request_.set_request_id(request_id++);
+        glog.is(DEBUG1) && glog << group(glog_out_group()) << "Sending to server." << std::endl;
+        glog.is(DEBUG2) && glog << group(glog_out_group()) << "Outbox: " << request_.DebugString() << std::flush;
+        StaticProtobufNode::send(request_, request_socket_id_);
+        last_send_time_ = goby_time<double>();
+	request_.clear_outbox();
+        waiting_for_reply_ = true;
+    }
+    
+    
     try_serial_tx();
     
     std::string in;
@@ -209,6 +246,15 @@ void goby::acomms::IridiumDriver::try_serial_tx()
         fsm_.serial_tx_buffer().pop_front();
     }
 }
+
+void goby::acomms::IridiumDriver::handle_mt_response(const acomms::protobuf::MTDataResponse& response)
+{
+    
+}
+
+
+
+
 
 void goby::acomms::IridiumDriver::DisplayStateConfiguration()
 {

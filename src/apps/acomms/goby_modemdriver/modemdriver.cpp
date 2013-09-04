@@ -26,7 +26,7 @@
 
 #include "goby/acomms/modem_driver.h"
 #include "goby/acomms/modemdriver/udp_driver.h"
-#include "goby/acomms/modemdriver/iridium_driver.h"
+#include "goby/pb/iridium_driver.h"
 #include "goby/acomms/connect.h"
 
 #include "goby/pb/application.h"
@@ -58,7 +58,7 @@ namespace goby
         private:
             static protobuf::ModemDriverConfig cfg_;
             
-            // for PBDriver
+            // for PBDriver, IridiumDriver
             boost::shared_ptr<goby::common::ZeroMQService> zeromq_service_;
             
             // for UDPDriver
@@ -110,7 +110,9 @@ goby::acomms::ModemDriver::ModemDriver()
             break;
 
         case goby::acomms::protobuf::DRIVER_IRIDIUM:
-            driver_.reset(new goby::acomms::IridiumDriver);
+            zeromq_service_.reset(new goby::common::ZeroMQService); 
+            driver_.reset(new goby::acomms::IridiumDriver(zeromq_service_.get()));
+            
             break;
 
 

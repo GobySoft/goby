@@ -26,8 +26,8 @@
 #include "goby/common/zeromq_application_base.h"
 #include "goby/pb/protobuf_node.h"
 #include "goby_rudics_shore_config.pb.h"
-#include "goby/acomms/protobuf/rudics_shore.pb.h"
-#include "goby/acomms/modemdriver/rudics_packet.h"
+#include "goby/pb/protobuf/rudics_shore.pb.h"
+#include "goby/pb/rudics_packet.h"
 #include "goby/util/linebasedcomms/tcp_server.h"
 
 using namespace goby::common::logger;
@@ -62,8 +62,7 @@ namespace goby
             typedef std::string Endpoint;
             typedef unsigned ModemId;
             boost::bimap<ModemId, Endpoint> clients_;
-            
-                         
+            std::map<ModemId, protobuf::MTDataResponse> responses_;
         };
     }
 }
@@ -108,6 +107,8 @@ void goby::acomms::GobyRudicsShore::loop()
             modem_msg.ParseFromString(bytes);
 
             glog.is(DEBUG1) && glog << "Received message from: " << modem_msg.src() << " from endpoint: " << msg.src() << std::endl;
+            clients_.left.insert(std::make_pair(modem_msg.src(), msg.src()));
+            *(responses_[modem_msg.src()].add_inbox()) = modem_msg;
         }
         catch(RudicsPacketException& e)
         {
@@ -116,20 +117,58 @@ void goby::acomms::GobyRudicsShore::loop()
     }    
 
     
-    const std::set< boost::shared_ptr<TCPConnection> >& connections =
-        rudics_server_.connections();
-
-    int j = 0;
-    for(std::set< boost::shared_ptr<TCPConnection> >::const_iterator it = connections.begin(), end = connections.end(); it != end; ++it)
-    {
-        glog.is(DEBUG1) && glog << "Remote " << ++j << ": " << (*it)->remote_endpoint() << std::endl;
-    }
 }
 
 void goby::acomms::GobyRudicsShore::handle_request(const protobuf::MTDataRequest& request)
 {
-    protobuf::MTDataResponse response;
+    protobuf::MTDataResponse& response = responses_[request.modem_id()];
+    response.set_request_id(request.request_id());
+
+    // check if we have a connection for this modem id
+    typedef boost::bimap<ModemId, Endpoint>::left_map::iterator It;
+
+    It map_it = clients_.left.find(request.modem_id());
+    if(map_it == clients_.left.end())
+    {
+        response.set_mobile_node_connected(false);
+    }
+    else
+    {
+        // check that we're still connected   
+        const std::set< boost::shared_ptr<TCPConnection> >& connections =
+            rudics_server_.connections();
+
+        bool still_connected = false;
+        for(std::set< boost::shared_ptr<TCPConnection> >::const_iterator it = connections.begin(), end = connections.end(); it != end; ++it)
+        {
+            if(map_it->second == (*it)->remote_endpoint())
+                still_connected = true;    
+        }
+
+        response.set_mobile_node_connected(still_connected);
+        if(still_connected)
+        {
+            util::protobuf::Datagram tcp_msg;
+            tcp_msg.set_dest(map_it->second);
+            for(int i = 0, n = request.outbox_size(); i < n; ++i)
+            {
+                std::string bytes;
+                request.outbox(i).SerializeToString(&bytes);
+            
+                // frame message
+                std::string rudics_packet;
+                serialize_rudics_packet(bytes, &rudics_packet);
+
+                rudics_server_.write(rudics_packet);
+            }
+        }
+        else
+        {
+            clients_.left.erase(map_it);
+        }
+    }
     
     send(response, cfg_.reply_socket().socket_id());
+    response.Clear();
 }
 

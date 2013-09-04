@@ -105,6 +105,7 @@ void goby::acomms::fsm::Command::in_state_react( const EvTxSerial& )
             default: break;
             case 'D': timeout = DIAL_TIMEOUT_SECONDS; break;
             case 'A': timeout = ANSWER_TIMEOUT_SECONDS; break;
+            case '+': timeout = TRIPLE_PLUS_TIMEOUT_SECONDS; break;
         }
         
 

@@ -165,6 +165,7 @@ namespace goby
                 boost::circular_buffer< std::pair<double, std::string> > at_out_;
                 enum { COMMAND_TIMEOUT_SECONDS = 2,
                        DIAL_TIMEOUT_SECONDS = 60,
+                       TRIPLE_PLUS_TIMEOUT_SECONDS = 6,
                        ANSWER_TIMEOUT_SECONDS = 30};
             };
 

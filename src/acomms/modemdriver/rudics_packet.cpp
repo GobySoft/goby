@@ -23,6 +23,7 @@
 #include <boost/crc.hpp>     
 #include <netinet/in.h>
 #include <boost/algorithm/string.hpp>
+#include <boost/range/algorithm/remove_if.hpp>
 
 #include "goby/util/base_convert.h"
 #include "rudics_packet.h"
@@ -69,13 +70,16 @@ void goby::acomms::parse_rudics_packet(std::string* bytes, std::string rudics_pk
 
     rudics_pkt = rudics_pkt.substr(0, rudics_pkt.size()-1);
 
-
     static const std::string reserved = std::string("\0\r\n", 3) +
         std::string(1, 0xff);
     const int reduced_base = 256-reserved.size();
 
+    std::cout << goby::util::hex_encode(rudics_pkt) << std::endl;
+    
     // get rid of extra junk
-    std::remove_if(rudics_pkt.begin(), rudics_pkt.end(), boost::is_any_of(reserved));
+    rudics_pkt.erase(boost::remove_if(rudics_pkt, boost::is_any_of(reserved)), rudics_pkt.end());
+
+    std::cout << goby::util::hex_encode(rudics_pkt) << std::endl;
 
     for(int i = 0, n = reserved.size(); i < n; ++i)
     {    

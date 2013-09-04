@@ -62,6 +62,24 @@ DriverTester::DriverTester(boost::shared_ptr<goby::acomms::ModemDriverBase> driv
     driver1_->startup(cfg1);
     driver2_->startup(cfg2);
 
+
+    test_str0_.resize(32);
+    for(std::string::size_type i = 0, n = test_str0_.size(); i < n; ++i)
+        test_str0_[i] = i;
+
+    test_str1_.resize(64);
+    for(std::string::size_type i = 0, n = test_str1_.size(); i < n; ++i)
+        test_str1_[i] = i + 64; // skip by some of low bits
+    
+    test_str2_.resize(64);
+    for(std::string::size_type i = 0, n = test_str2_.size(); i < n; ++i)
+        test_str2_[i] = i + 2*64;
+
+    test_str3_.resize(64);
+    for(std::string::size_type i = 0, n = test_str3_.size(); i < n; ++i)
+        test_str3_[i] = i + 3*64;
+
+    
     int i =0;
 
 }
@@ -124,14 +142,15 @@ void DriverTester::handle_data_request1(protobuf::ModemTransmission* msg)
     {
         case 4:
         {            
-            msg->add_frame(std::string(32, '5'));
+            msg->add_frame(test_str0_);
             ++check_count_;
         }
         break;
             
         case 5:
         {   
-            msg->add_frame(std::string(64, '2'));
+            msg->add_frame(test_str2_);
+            msg->add_frame(test_str3_);
             ++check_count_;
         }
         break;
@@ -222,7 +241,7 @@ void DriverTester::handle_data_receive1(const protobuf::ModemTransmission& msg)
             assert(msg.type() == protobuf::ModemTransmission::ACK);
             assert(msg.src() == 2);
             assert(msg.dest() == 1);
-            assert(msg.acked_frame_size() == 2 && msg.acked_frame(0) == 0 && msg.acked_frame(1) == 1);
+            assert(msg.acked_frame_size() == 3 && msg.acked_frame(0) == 0 && msg.acked_frame(1) == 1 && msg.acked_frame(2) == 2);
             ++check_count_;
         }
         break;
@@ -291,18 +310,9 @@ void DriverTester::handle_data_receive2(const protobuf::ModemTransmission& msg)
                 assert(msg.src() == 1);
                 assert(msg.dest() == 2);
                 assert(msg.frame_size() == 1);
-                assert(msg.frame(0).data() == std::string(32, '5'));
+                assert(msg.frame(0) == test_str0_);
                 ++check_count_;
             }
-
-            // protobuf::ModemTransmission transmit;
-            // transmit.set_type(protobuf::ModemTransmission::DATA);
-            // transmit.set_src(2);
-            // transmit.set_dest(1);
-            // transmit.set_rate(0);
-            // transmit.set_ack_requested(false);
-            // transmit.add_frame(std::string(32,'5'));
-            // driver2_->handle_initiate_transmission(transmit);
 
             break;
         }
@@ -312,9 +322,10 @@ void DriverTester::handle_data_receive2(const protobuf::ModemTransmission& msg)
             {
                 assert(msg.src() == 1);
                 assert(msg.dest() == 2);
-                assert(msg.frame_size() == 2);
-                assert(msg.frame(0).data() == std::string(64, '1'));
-                assert(msg.frame(1).data() == std::string(64, '2'));
+                assert(msg.frame_size() == 3);
+                assert(msg.frame(0).data() == test_str1_);
+                assert(msg.frame(1).data() == test_str2_);
+                assert(msg.frame(2).data() == test_str3_);
                 ++check_count_;
             }
             break;
@@ -475,7 +486,8 @@ void DriverTester::test5()
     transmit.set_src(1);
     transmit.set_dest(2);
     transmit.set_rate(2);
-    transmit.add_frame(std::string(64,'1'));
+
+    transmit.add_frame(test_str1_);
     transmit.set_ack_requested(true);
     
     driver1_->handle_initiate_transmission(transmit);

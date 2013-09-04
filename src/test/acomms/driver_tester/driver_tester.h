@@ -65,4 +65,6 @@ class DriverTester
     int tests_to_run_index_;
     int test_number_;
 
+    std::string test_str0_, test_str1_, test_str2_, test_str3_;
+
 };

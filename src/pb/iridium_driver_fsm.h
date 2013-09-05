@@ -74,6 +74,10 @@ namespace goby
             struct EvConnect : boost::statechart::event< EvConnect > {};
             struct EvNoCarrier : boost::statechart::event< EvNoCarrier > {};
 
+            struct EvZMQConnect : boost::statechart::event< EvZMQConnect > {};
+            struct EvZMQDisconnect : boost::statechart::event< EvZMQDisconnect > {};
+
+            
             struct EvTriplePlus : boost::statechart::event< EvTriplePlus > {};
             
             // pre-declare
@@ -86,6 +90,7 @@ namespace goby
 
             struct Online;
             struct OnCall;
+            struct OnZMQCall;
             struct NotOnCall;
 
 // state machine
@@ -287,13 +292,23 @@ namespace goby
             {
                 
                 typedef boost::mpl::list<
-                    boost::statechart::transition< EvConnect, OnCall >
+                    boost::statechart::transition< EvConnect, OnCall >,
+                    boost::statechart::transition< EvZMQConnect, OnZMQCall >
                     > reactions;
                 
                 NotOnCall() { std::cout << "NotOnCall\n"; }
                 ~NotOnCall() { std::cout << "~NotOnCall\n"; } 
             };
 
+            struct OnZMQCall : boost::statechart::simple_state<OnZMQCall, Active::orthogonal<1> >
+            {
+                typedef boost::mpl::list<
+                    boost::statechart::transition< EvZMQDisconnect, NotOnCall >
+                    > reactions;
+                
+                OnZMQCall() { std::cout << "OnZMQCall\n"; }
+                ~OnZMQCall() { std::cout << "~OnZMQCall\n"; } 
+            };
 
             struct OnCall : boost::statechart::state<OnCall, Active::orthogonal<1> >
             {

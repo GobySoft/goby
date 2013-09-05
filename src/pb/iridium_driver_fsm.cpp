@@ -45,7 +45,6 @@ void goby::acomms::fsm::IridiumDriverFSM::buffer_data_out( const goby::acomms::p
     std::string rudics_packet;
     serialize_rudics_packet(bytes, &rudics_packet);
 
-    // add starting "\r" to flush junk that gets in the line
     data_out_.push_back(rudics_packet);
 
     // for now, make a call

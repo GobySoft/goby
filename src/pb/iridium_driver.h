@@ -72,6 +72,7 @@ namespace goby
             enum { TRIPLE_PLUS_WAIT = 2 };
 
             // ZMQ stuff
+            bool using_zmq_;
             goby::common::ZeroMQService* zeromq_service_;
 	    common::protobuf::ZeroMQServiceConfig service_cfg_;
             acomms::protobuf::MTDataRequest request_;

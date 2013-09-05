@@ -61,6 +61,7 @@ namespace goby
 
             typedef std::string Endpoint;
             typedef unsigned ModemId;
+            // maps *destination* modem to *source* TCP endpoint
             boost::bimap<ModemId, Endpoint> clients_;
             std::map<ModemId, protobuf::MTDataResponse> responses_;
         };
@@ -106,9 +107,9 @@ void goby::acomms::GobyRudicsShore::loop()
             protobuf::ModemTransmission modem_msg;
             modem_msg.ParseFromString(bytes);
 
-            glog.is(DEBUG1) && glog << "Received message from: " << modem_msg.src() << " from endpoint: " << msg.src() << std::endl;
-            clients_.left.insert(std::make_pair(modem_msg.src(), msg.src()));
-            *(responses_[modem_msg.src()].add_inbox()) = modem_msg;
+            glog.is(DEBUG1) && glog << "Received message to: " << modem_msg.dest() << " from endpoint: " << msg.src() << std::endl;
+            clients_.left.insert(std::make_pair(modem_msg.dest(), msg.src()));
+            *(responses_[modem_msg.dest()].add_inbox()) = modem_msg;
         }
         catch(RudicsPacketException& e)
         {
@@ -123,6 +124,7 @@ void goby::acomms::GobyRudicsShore::handle_request(const protobuf::MTDataRequest
 {
     protobuf::MTDataResponse& response = responses_[request.modem_id()];
     response.set_request_id(request.request_id());
+    response.set_modem_id(request.modem_id());
 
     // check if we have a connection for this modem id
     typedef boost::bimap<ModemId, Endpoint>::left_map::iterator It;

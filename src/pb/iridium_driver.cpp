@@ -39,13 +39,13 @@ goby::acomms::IridiumDriver::IridiumDriver(goby::common::ZeroMQService* zeromq_s
     :     StaticProtobufNode(zeromq_service),
           fsm_(driver_cfg_),
           last_triple_plus_time_(0),
+          using_zmq_(false),
           zeromq_service_(zeromq_service),
           request_socket_id_(0),
           last_send_time_(0),
           query_interval_seconds_(1),
           waiting_for_reply_(false)
 {
-    on_receipt<acomms::protobuf::MTDataResponse>(0, &IridiumDriver::handle_mt_response, this);
     
 //    assert(byte_string_to_uint32(uint32_to_byte_string(16540)) == 16540);
 }
@@ -69,14 +69,24 @@ void goby::acomms::IridiumDriver::startup(const protobuf::DriverConfig& cfg)
         debug_client_->start();
     }
 
-    request_.set_modem_id(driver_cfg_.modem_id());
 
-    service_cfg_.add_socket()->CopyFrom(
-        driver_cfg_.GetExtension(IridiumDriverConfig::request_socket));
-    zeromq_service_->set_cfg(service_cfg_);
+    using_zmq_ = driver_cfg_.HasExtension(IridiumDriverConfig::request_socket);
+    
+    std::cout << "Using ZMQ? " << (using_zmq_ ? "Yes" : "No") << std::endl;
 
-    request_socket_id_ =
-        driver_cfg_.GetExtension(IridiumDriverConfig::request_socket).socket_id();
+    if(using_zmq_)
+    {        
+        on_receipt<acomms::protobuf::MTDataResponse>(0, &IridiumDriver::handle_mt_response, this);
+
+        request_.set_modem_id(driver_cfg_.modem_id());
+        
+        service_cfg_.add_socket()->CopyFrom(
+            driver_cfg_.GetExtension(IridiumDriverConfig::request_socket));
+        zeromq_service_->set_cfg(service_cfg_);
+        
+        request_socket_id_ =
+            driver_cfg_.GetExtension(IridiumDriverConfig::request_socket).socket_id();
+    }
     
     
     modem_init(cfg);
@@ -135,24 +145,25 @@ void goby::acomms::IridiumDriver::do_work()
 {
 //    DisplayStateConfiguration();
 
-    
-    while(zeromq_service_->poll(0))
-    { }
-
-    if(!waiting_for_reply_ &&
-       request_.IsInitialized() &&
-       goby_time<double>() > last_send_time_ + query_interval_seconds_)
+    if(using_zmq_)
     {
-        static int request_id = 0;
-        request_.set_request_id(request_id++);
-        glog.is(DEBUG1) && glog << group(glog_out_group()) << "Sending to server." << std::endl;
-        glog.is(DEBUG2) && glog << group(glog_out_group()) << "Outbox: " << request_.DebugString() << std::flush;
-        StaticProtobufNode::send(request_, request_socket_id_);
-        last_send_time_ = goby_time<double>();
-	request_.clear_outbox();
-        waiting_for_reply_ = true;
+        while(zeromq_service_->poll(0))
+        { }
+        
+        if(!waiting_for_reply_ &&
+           request_.IsInitialized() &&
+           goby_time<double>() > last_send_time_ + query_interval_seconds_)
+        {
+            static int request_id = 0;
+            request_.set_request_id(request_id++);
+            glog.is(DEBUG1) && glog << group(glog_out_group()) << "Sending request to server." << std::endl;
+            glog.is(DEBUG2) && glog << group(glog_out_group()) << "Outbox: " << request_.DebugString() << std::flush;
+            StaticProtobufNode::send(request_, request_socket_id_);
+            last_send_time_ = goby_time<double>();
+            request_.clear_outbox();
+            waiting_for_reply_ = true;
+        }
     }
-    
     
     try_serial_tx();
     
@@ -163,7 +174,7 @@ void goby::acomms::IridiumDriver::do_work()
         data_event.line = in;
         
         if(debug_client_ && fsm_.state_cast<const fsm::OnCall *>() != 0)
-        {    
+        {
             debug_client_->write(in);
         }
         
@@ -199,7 +210,7 @@ void goby::acomms::IridiumDriver::do_work()
 void goby::acomms::IridiumDriver::receive(const protobuf::ModemTransmission& msg)
 {
     if(msg.type() == protobuf::ModemTransmission::DATA &&
-       msg.ack_requested() && msg.dest() != BROADCAST_ID)
+       msg.ack_requested() && msg.dest() == driver_cfg_.modem_id())
     {
         // make any acks
         protobuf::ModemTransmission ack;
@@ -210,13 +221,16 @@ void goby::acomms::IridiumDriver::receive(const protobuf::ModemTransmission& msg
             ack.add_acked_frame(i);
         send(ack);
     }
-        
+    
     signal_receive(msg);
 }
 
 void goby::acomms::IridiumDriver::send(const protobuf::ModemTransmission& msg)
 {
-    fsm_.buffer_data_out(msg);
+    if(fsm_.state_cast<const fsm::OnZMQCall *>() != 0)
+        (*request_.add_outbox()) = msg;
+    else
+        fsm_.buffer_data_out(msg);
 }
 
 
@@ -249,7 +263,19 @@ void goby::acomms::IridiumDriver::try_serial_tx()
 
 void goby::acomms::IridiumDriver::handle_mt_response(const acomms::protobuf::MTDataResponse& response)
 {
+    glog.is(DEBUG1) && glog << group(glog_in_group()) << "Received response from shore server." << std::endl;
+
+    glog.is(DEBUG2) && glog << group(glog_in_group()) << "Inbox: " << response.DebugString() << std::flush;
+
+    if(response.mobile_node_connected())
+        fsm_.process_event(fsm::EvZMQConnect());
+    else
+        fsm_.process_event(fsm::EvZMQDisconnect());
+
+    for(int i = 0, n = response.inbox_size(); i < n; ++i)
+        receive(response.inbox(i));
     
+    waiting_for_reply_ = false;  
 }
 
 

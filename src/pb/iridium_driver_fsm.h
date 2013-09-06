@@ -101,7 +101,8 @@ namespace goby
                     : serial_tx_buffer_(SERIAL_BUFFER_CAPACITY),
                     received_(RECEIVED_BUFFER_CAPACITY),
                     driver_cfg_(driver_cfg),
-                    data_out_(DATA_BUFFER_CAPACITY)
+                    data_out_(DATA_BUFFER_CAPACITY),
+                    last_rx_tx_time_(0)
                 {
                     ++count_;
                     glog_ir_group_ = "iridiumdriver::" + goby::util::as<std::string>(count_);
@@ -121,6 +122,8 @@ namespace goby
                 const protobuf::DriverConfig& driver_cfg() const {return driver_cfg_;}
 
                 const std::string& glog_ir_group() const { return glog_ir_group_; }                
+                double& last_rx_tx_time() { return last_rx_tx_time_; }
+                
 
               private:
                 enum  { SERIAL_BUFFER_CAPACITY = 10 };
@@ -136,6 +139,8 @@ namespace goby
                 std::string glog_ir_group_;
                 
                 static int count_;
+
+                double last_rx_tx_time_;            
             };
 
             struct Active: boost::statechart::simple_state< Active, IridiumDriverFSM,
@@ -329,6 +334,8 @@ namespace goby
                     // add a carriage return to clear out any garbage
                     // at the *beginning* of transmission
                     context<IridiumDriverFSM>().serial_tx_buffer().push_front("\r");
+
+                    context<IridiumDriverFSM>().last_rx_tx_time() = goby::common::goby_time<double>();
 
                     // connecting necessarily puts the DTE online
                     post_event(EvOnline());

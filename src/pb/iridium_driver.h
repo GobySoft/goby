@@ -89,7 +89,6 @@ namespace goby
             protobuf::ModemTransmission last_mac_msg_;
             double last_send_time_;
 
-            double last_rx_tx_time_;
 
             int serial_fd_;
         };

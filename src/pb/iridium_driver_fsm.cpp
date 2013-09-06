@@ -229,6 +229,7 @@ void goby::acomms::fsm::OnCall::in_state_react(const EvRxOnCallSerial& e)
             protobuf::ModemTransmission msg;
             msg.ParseFromString(bytes);
             context< IridiumDriverFSM >().received().push_back(msg);
+            context< IridiumDriverFSM >().last_rx_tx_time() = goby_time<double>();
         }
         catch(RudicsPacketException& e)
         {
@@ -253,5 +254,7 @@ void goby::acomms::fsm::OnCall::in_state_react( const EvTxOnCallSerial& )
 
         context<IridiumDriverFSM>().serial_tx_buffer().push_back(rudics_packet);
         data_out.pop_front();
+
+        context<IridiumDriverFSM>().last_rx_tx_time() = goby_time<double>();
     }
 }

@@ -46,7 +46,6 @@ goby::acomms::IridiumDriver::IridiumDriver(goby::common::ZeroMQService* zeromq_s
           query_interval_seconds_(1),
           waiting_for_reply_(false),
           last_send_time_(0),
-          last_rx_tx_time_(0),
           serial_fd_(-1)
 {
     
@@ -200,7 +199,9 @@ void goby::acomms::IridiumDriver::handle_initiate_transmission(const protobuf::M
     // buffer the message
     last_mac_msg_ = orig_msg;
     process_transmission();
-    fsm_.process_event(fsm::EvDial());
+
+    if(!(last_mac_msg_.frame_size() == 0 || last_mac_msg_.frame(0).empty()))
+        fsm_.process_event(fsm::EvDial());
 }
 
 void goby::acomms::IridiumDriver::process_transmission()
@@ -276,7 +277,8 @@ void goby::acomms::IridiumDriver::do_work()
         
         glog.is(DEBUG1) && glog << group(glog_in_group())
                                 << (boost::algorithm::all(in, boost::is_print() ||
-                                                          boost::is_any_of("\r\n")) ? in :
+                                                          boost::is_any_of("\r\n")) ?
+                                    boost::trim_copy(in) :
                                     goby::util::hex_encode(in)) << std::endl;
         
         
@@ -300,14 +302,13 @@ void goby::acomms::IridiumDriver::do_work()
         while(debug_client_->readline(&line))
         {
             fsm_.serial_tx_buffer().push_back(line);
-            last_rx_tx_time_ = now;
             fsm_.process_event(fsm::EvDial());
         }
         
     }
 
     if(fsm_.state_cast<const fsm::OnCall *>() != 0 &&
-       now > (last_rx_tx_time_ + driver_cfg_.GetExtension(IridiumDriverConfig::hangup_seconds_after_empty)))
+       now > (fsm_.last_rx_tx_time() + driver_cfg_.GetExtension(IridiumDriverConfig::hangup_seconds_after_empty)))
     {
         hangup();
     }
@@ -332,13 +333,11 @@ void goby::acomms::IridiumDriver::receive(const protobuf::ModemTransmission& msg
     }
     
     signal_receive(msg);
-    last_rx_tx_time_ = goby_time<double>();
 }
 
 void goby::acomms::IridiumDriver::send(const protobuf::ModemTransmission& msg)
 {
     fsm_.buffer_data_out(msg);
-    last_rx_tx_time_ = goby_time<double>();
 }
 
 
@@ -356,7 +355,8 @@ void goby::acomms::IridiumDriver::try_serial_tx()
         
         glog.is(DEBUG1) && glog << group(glog_out_group())
                                 << (boost::algorithm::all(line, boost::is_print() ||
-                                                          boost::is_any_of("\r\n")) ? line :
+                                                          boost::is_any_of("\r\n")) ?
+                                    boost::trim_copy(line) :
                                     goby::util::hex_encode(line)) << std::endl;
         
         modem_write(line);

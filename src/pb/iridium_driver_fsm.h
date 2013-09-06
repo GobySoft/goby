@@ -97,12 +97,15 @@ namespace goby
             struct IridiumDriverFSM : boost::statechart::state_machine<IridiumDriverFSM, Active > 
             {
               public:
-                IridiumDriverFSM(const protobuf::DriverConfig& driver_cfg)
+              IridiumDriverFSM(const protobuf::DriverConfig& driver_cfg)
                     : serial_tx_buffer_(SERIAL_BUFFER_CAPACITY),
                     received_(RECEIVED_BUFFER_CAPACITY),
                     driver_cfg_(driver_cfg),
                     data_out_(DATA_BUFFER_CAPACITY)
-                { }
+                {
+                    ++count_;
+                    glog_ir_group_ = "iridiumdriver::" + goby::util::as<std::string>(count_);
+                }
                 
                 void buffer_data_out(const goby::acomms::protobuf::ModemTransmission& msg);
                 
@@ -113,9 +116,11 @@ namespace goby
                 boost::circular_buffer<protobuf::ModemTransmission>& received() {return received_;}
 
                 // data that should (eventually) be sent out across the Iridium connection
-                boost::circular_buffer<std::string>& data_out() {return data_out_;}
+                boost::circular_buffer<protobuf::ModemTransmission>& data_out() {return data_out_;}
                 
                 const protobuf::DriverConfig& driver_cfg() const {return driver_cfg_;}
+
+                const std::string& glog_ir_group() const { return glog_ir_group_; }                
 
               private:
                 enum  { SERIAL_BUFFER_CAPACITY = 10 };
@@ -126,7 +131,11 @@ namespace goby
                 const protobuf::DriverConfig& driver_cfg_;
 
                 enum  { DATA_BUFFER_CAPACITY = 5 };
-                boost::circular_buffer<std::string> data_out_;
+                boost::circular_buffer<protobuf::ModemTransmission> data_out_;
+
+                std::string glog_ir_group_;
+                
+                static int count_;
             };
 
             struct Active: boost::statechart::simple_state< Active, IridiumDriverFSM,
@@ -144,10 +153,10 @@ namespace goby
               Command()
                   : at_out_(AT_BUFFER_CAPACITY)
                 {
-                    std::cout << "Command\n";
+                    glog.is(goby::common::logger::DEBUG1) && glog << group("iridiumdriver") << "Command" << std::endl;
                 } 
                 ~Command() {
-                    std::cout << "~Command\n";
+                    glog.is(goby::common::logger::DEBUG1) && glog << group("iridiumdriver") << "~Command" << std::endl;
                 }
 
                 typedef boost::mpl::list<
@@ -182,7 +191,7 @@ namespace goby
                     
               Configure(my_context ctx) : my_base(ctx)
                 {
-                    std::cout << "Configure\n";
+                    glog.is(goby::common::logger::DEBUG1) && glog << group("iridiumdriver") << "Configure" << std::endl;
                     context<Command>().push_at_command("");
                     context<Command>().push_at_command("E");
                     for(int i = 0,
@@ -197,7 +206,7 @@ namespace goby
                 }
 
                 ~Configure() {
-                    std::cout << "~Configure\n";
+                    glog.is(goby::common::logger::DEBUG1) && glog << group("iridiumdriver") << "~Configure" << std::endl;
                 } 
             };
 
@@ -206,10 +215,10 @@ namespace goby
             {
               public:
                 Ready() {
-                    std::cout << "Ready\n";
+                    glog.is(goby::common::logger::DEBUG1) && glog << group("iridiumdriver") << "Ready" << std::endl;
                 } 
                 ~Ready() {
-                    std::cout << "~Ready\n";
+                    glog.is(goby::common::logger::DEBUG1) && glog << group("iridiumdriver") << "~Ready" << std::endl;
                 }
 
                 void in_state_react( const EvHangup & );
@@ -234,10 +243,10 @@ namespace goby
               Dial(my_context ctx) : my_base(ctx),
                     dial_attempts_(0)
                 {
-                    std::cout << "Dial\n";
+                    glog.is(goby::common::logger::DEBUG1) && glog << group("iridiumdriver") << "Dial" << std::endl;
                     dial();
                 } 
-                ~Dial() { std::cout << "~Dial\n"; }
+                ~Dial() { glog.is(goby::common::logger::DEBUG1) && glog << group("iridiumdriver") << "~Dial" << std::endl; }
 
                 boost::statechart::result react( const EvNoCarrier& );
                 void dial();
@@ -255,19 +264,19 @@ namespace goby
 
               Answer(my_context ctx) : my_base(ctx) 
                 {
-                    std::cout << "Answer\n";
+                    glog.is(goby::common::logger::DEBUG1) && glog << group("iridiumdriver") << "Answer" << std::endl;
                     context<Command>().push_at_command("A");
                 }
-                ~Answer() { std::cout << "~Answer\n"; } 
+                ~Answer() { glog.is(goby::common::logger::DEBUG1) && glog << group("iridiumdriver") << "~Answer" << std::endl; } 
             };
 
 // Online
             struct Online : boost::statechart::simple_state<Online, Active::orthogonal<0> >
             {
                 
-                Online() { std::cout << "Online\n"; }
+                Online() { glog.is(goby::common::logger::DEBUG1) && glog << group("iridiumdriver") << "Online" << std::endl; }
                 ~Online() {
-                    std::cout << "~Online\n";
+                    glog.is(goby::common::logger::DEBUG1) && glog << group("iridiumdriver") << "~Online" << std::endl;
                 }
                 
                 void in_state_react( const EvRxSerial& );
@@ -296,8 +305,8 @@ namespace goby
                     boost::statechart::transition< EvZMQConnect, OnZMQCall >
                     > reactions;
                 
-                NotOnCall() { std::cout << "NotOnCall\n"; }
-                ~NotOnCall() { std::cout << "~NotOnCall\n"; } 
+                NotOnCall() { glog.is(goby::common::logger::DEBUG1) && glog << group("iridiumdriver") << "NotOnCall" << std::endl; }
+                ~NotOnCall() { glog.is(goby::common::logger::DEBUG1) && glog << group("iridiumdriver") << "~NotOnCall" << std::endl; } 
             };
 
             struct OnZMQCall : boost::statechart::simple_state<OnZMQCall, Active::orthogonal<1> >
@@ -306,8 +315,8 @@ namespace goby
                     boost::statechart::transition< EvZMQDisconnect, NotOnCall >
                     > reactions;
                 
-                OnZMQCall() { std::cout << "OnZMQCall\n"; }
-                ~OnZMQCall() { std::cout << "~OnZMQCall\n"; } 
+                OnZMQCall() { glog.is(goby::common::logger::DEBUG1) && glog << group("iridiumdriver") << "OnZMQCall" << std::endl; }
+                ~OnZMQCall() { glog.is(goby::common::logger::DEBUG1) && glog << group("iridiumdriver") << "~OnZMQCall" << std::endl; } 
             };
 
             struct OnCall : boost::statechart::state<OnCall, Active::orthogonal<1> >
@@ -316,16 +325,16 @@ namespace goby
 
               OnCall(my_context ctx) : my_base(ctx)
                 {
-                    std::cout << "OnCall\n";
+                    glog.is(goby::common::logger::DEBUG1) && glog << group("iridiumdriver") << "OnCall" << std::endl;
                     // add a carriage return to clear out any garbage
                     // at the *beginning* of transmission
-                    context<IridiumDriverFSM>().data_out().push_front("\r");
+                    context<IridiumDriverFSM>().serial_tx_buffer().push_front("\r");
 
                     // connecting necessarily puts the DTE online
                     post_event(EvOnline());
                 } 
                 ~OnCall() {
-                    std::cout << "~OnCall\n";
+                    glog.is(goby::common::logger::DEBUG1) && glog << group("iridiumdriver") << "~OnCall" << std::endl;
                     
                     // disconnecting necessarily puts the DTE offline
                     post_event(EvOffline());

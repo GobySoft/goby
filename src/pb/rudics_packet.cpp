@@ -23,7 +23,6 @@
 #include <boost/crc.hpp>     
 #include <netinet/in.h>
 #include <boost/algorithm/string.hpp>
-#include <boost/range/algorithm/remove_if.hpp>
 
 #include "goby/util/base_convert.h"
 #include "rudics_packet.h"
@@ -41,11 +40,9 @@ void goby::acomms::serialize_rudics_packet(std::string bytes, std::string* rudic
 
     // convert to base (256 minus reserved)
     const int reduced_base = 256-reserved.size();
-    std::cout << "new base: " << reduced_base << std::endl;
     
     goby::util::base_convert(bytes, rudics_pkt, 256, reduced_base);
 
-    std::cout << goby::util::hex_encode(*rudics_pkt) << std::endl;
 
     
     for(int i = 0, n = reserved.size(); i < n; ++i)
@@ -54,7 +51,6 @@ void goby::acomms::serialize_rudics_packet(std::string bytes, std::string* rudic
                      rudics_pkt->end(),
                      reserved[i],
                      static_cast<char>(reduced_base+i));
-        std::cout << goby::util::hex_encode(*rudics_pkt) << std::endl;
     }
     
 //    *rudics_pkt = goby::util::hex_encode(bytes);
@@ -74,12 +70,9 @@ void goby::acomms::parse_rudics_packet(std::string* bytes, std::string rudics_pk
         std::string(1, 0xff);
     const int reduced_base = 256-reserved.size();
 
-    std::cout << goby::util::hex_encode(rudics_pkt) << std::endl;
-    
     // get rid of extra junk
-    rudics_pkt.erase(boost::remove_if(rudics_pkt, boost::is_any_of(reserved)), rudics_pkt.end());
-
-    std::cout << goby::util::hex_encode(rudics_pkt) << std::endl;
+    rudics_pkt.erase(std::remove_if(rudics_pkt.begin(), rudics_pkt.end(),
+                                    boost::is_any_of(reserved)), rudics_pkt.end());
 
     for(int i = 0, n = reserved.size(); i < n; ++i)
     {    

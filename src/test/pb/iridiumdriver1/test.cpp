@@ -47,69 +47,77 @@ int main(int argc, char* argv[])
     driver1.reset(new goby::acomms::IridiumDriver(&zeromq_service1));
     driver2.reset(new goby::acomms::IridiumDriver(&zeromq_service2));
     
-    goby::acomms::protobuf::DriverConfig cfg1, cfg2;
+    goby::acomms::protobuf::DriverConfig glider_cfg, shore_cfg;
         
     // at-duck1
-    cfg1.set_modem_id(1);
-    cfg1.set_connection_type(goby::acomms::protobuf::DriverConfig::CONNECTION_TCP_AS_CLIENT);
-    cfg1.set_tcp_server("127.0.0.1");
-    cfg1.set_reconnect_interval(1);
-    cfg1.set_tcp_port(4001);    
+    glider_cfg.set_modem_id(1);
+    glider_cfg.set_connection_type(goby::acomms::protobuf::DriverConfig::CONNECTION_TCP_AS_CLIENT);
+    glider_cfg.set_tcp_server("127.0.0.1");
+    glider_cfg.set_reconnect_interval(1);
+    glider_cfg.set_tcp_port(4001);    
     IridiumDriverConfig::Remote* shore =
-        cfg1.MutableExtension(IridiumDriverConfig::remote);
+        glider_cfg.MutableExtension(IridiumDriverConfig::remote);
     shore->set_iridium_number("6001");
     shore->set_modem_id(2);    
-    cfg1.AddExtension(IridiumDriverConfig::config, "+GSN");
+    glider_cfg.AddExtension(IridiumDriverConfig::config, "+GSN");
     
     // at-duck2
-    cfg2.set_modem_id(2);
-    cfg2.set_connection_type(goby::acomms::protobuf::DriverConfig::CONNECTION_TCP_AS_CLIENT);
-    cfg2.set_tcp_server("127.0.0.1");
-    cfg2.set_reconnect_interval(1);
-    cfg2.set_tcp_port(4002);
+    shore_cfg.set_modem_id(2);
+    shore_cfg.set_connection_type(goby::acomms::protobuf::DriverConfig::CONNECTION_TCP_AS_CLIENT);
+    shore_cfg.set_tcp_server("127.0.0.1");
+    shore_cfg.set_reconnect_interval(1);
+    shore_cfg.set_tcp_port(4002);
     IridiumDriverConfig::Remote* gumstix =
-        cfg2.MutableExtension(IridiumDriverConfig::remote);
+        shore_cfg.MutableExtension(IridiumDriverConfig::remote);
     gumstix->set_iridium_number("6001");
     gumstix->set_modem_id(2);
-    cfg2.AddExtension(IridiumDriverConfig::config, "+GSN");
+//    shore_cfg.AddExtension(IridiumDriverConfig::config, "+GSN");
     goby::common::protobuf::ZeroMQServiceConfig::Socket* request_socket =
-        cfg2.MutableExtension(IridiumDriverConfig::request_socket);
+        shore_cfg.MutableExtension(IridiumDriverConfig::request_socket);
 
     request_socket->set_socket_type(goby::common::protobuf::ZeroMQServiceConfig::Socket::REQUEST);
     request_socket->set_transport(goby::common::protobuf::ZeroMQServiceConfig::Socket::TCP);
-    request_socket->set_ethernet_port(11142);
+    request_socket->set_ethernet_port(19300);
+//    request_socket->set_ethernet_address("rudics.whoi.edu");
     
-// //    rudics
+//    shore
 //     {
-//         cfg1.set_modem_id(1);
-//         cfg1.set_connection_type(goby::acomms::protobuf::DriverConfig::CONNECTION_TCP_AS_CLIENT);
-//         cfg1.set_tcp_server("rudics.whoi.edu");
-//         cfg1.set_tcp_port(54321);    
+//         shore_cfg.set_modem_id(2);
+//         shore_cfg.set_connection_type(goby::acomms::protobuf::DriverConfig::CONNECTION_TCP_AS_CLIENT);
+//         shore_cfg.set_tcp_server("rudics.whoi.edu");
+//         shore_cfg.set_tcp_port(54321);    
 //         IridiumDriverConfig::Remote* remote =
-//             cfg1.MutableExtension(IridiumDriverConfig::remote);
-//         remote->set_modem_id(2);
+//             shore_cfg.MutableExtension(IridiumDriverConfig::remote);
+//         remote->set_modem_id(1);
 //         remote->set_iridium_number("i881693783740");
-//         cfg1.AddExtension(IridiumDriverConfig::config, "s29=8");
-//         cfg1.AddExtension(IridiumDriverConfig::config, "s57=9600");
+//         shore_cfg.AddExtension(IridiumDriverConfig::config, "s29=8");
+//         shore_cfg.AddExtension(IridiumDriverConfig::config, "s57=9600");
+//         goby::common::protobuf::ZeroMQServiceConfig::Socket* request_socket =
+//             shore_cfg.MutableExtension(IridiumDriverConfig::request_socket);
+        
+//         request_socket->set_socket_type(goby::common::protobuf::ZeroMQServiceConfig::Socket::REQUEST);
+//         request_socket->set_transport(goby::common::protobuf::ZeroMQServiceConfig::Socket::TCP);
+//         request_socket->set_ethernet_port(19300);
+//         request_socket->set_ethernet_address("rudics.whoi.edu");
 //     }
     
 // //    gumstix
 //     {
-//         cfg2.set_modem_id(2);
-//         cfg2.set_connection_type(goby::acomms::protobuf::DriverConfig::CONNECTION_SERIAL);
-//         cfg2.set_serial_port("/dev/ttyUSB0");
-//         cfg2.set_serial_baud(9600);
+//         glider_cfg.set_modem_id(1);
+//         glider_cfg.set_connection_type(goby::acomms::protobuf::DriverConfig::CONNECTION_SERIAL);
+//         glider_cfg.set_serial_port("/dev/ttyUSB0");
+//         glider_cfg.set_serial_baud(9600);
 //         IridiumDriverConfig::Remote* remote =
-//             cfg2.MutableExtension(IridiumDriverConfig::remote);
+//             glider_cfg.MutableExtension(IridiumDriverConfig::remote);
 //         remote->set_iridium_number("i00881600005141");
-//         remote->set_modem_id(1);
-//         cfg2.AddExtension(IridiumDriverConfig::config, "+IPR=5,0");
-//         cfg2.AddExtension(IridiumDriverConfig::config, "+CGSN");
-//         cfg2.AddExtension(IridiumDriverConfig::config, "+CGMM");
-//         cfg2.AddExtension(IridiumDriverConfig::config, "+CGMI");
-//         cfg2.AddExtension(IridiumDriverConfig::config, "Q0"); // quiet mode off
-//         cfg2.AddExtension(IridiumDriverConfig::config, "&D2"); // DTR low hangs up
-//         cfg2.AddExtension(IridiumDriverConfig::config, "&C1"); // DCD indicates state of connection
+//         remote->set_modem_id(2);
+//         glider_cfg.AddExtension(IridiumDriverConfig::config, "+IPR=5,0");
+//         glider_cfg.AddExtension(IridiumDriverConfig::config, "+CGSN");
+//         glider_cfg.AddExtension(IridiumDriverConfig::config, "+CGMM");
+//         glider_cfg.AddExtension(IridiumDriverConfig::config, "+CGMI");
+//         glider_cfg.AddExtension(IridiumDriverConfig::config, "Q0"); // quiet mode off
+//         glider_cfg.AddExtension(IridiumDriverConfig::config, "&D2"); // DTR low hangs up
+//         glider_cfg.AddExtension(IridiumDriverConfig::config, "&C1"); // DCD indicates state of connection
 //     }
 
     
@@ -117,6 +125,6 @@ int main(int argc, char* argv[])
     tests_to_run.push_back(4);
     tests_to_run.push_back(5);
     
-    DriverTester tester(driver1, driver2, cfg1, cfg2, tests_to_run);
+    DriverTester tester(driver1, driver2, glider_cfg, shore_cfg, tests_to_run);
     return tester.run();
 }

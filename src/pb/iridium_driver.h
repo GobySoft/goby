@@ -48,11 +48,12 @@ namespace goby
             ~IridiumDriver();
             void startup(const protobuf::DriverConfig& cfg);
 
-            void modem_init(const protobuf::DriverConfig& cfg);
+            void modem_init();
             
             void shutdown();            
             void do_work();
             void handle_initiate_transmission(const protobuf::ModemTransmission& m);
+            void process_transmission();
             void handle_mt_response(const acomms::protobuf::MTDataResponse& response);
 
           private:
@@ -60,7 +61,11 @@ namespace goby
             void send(const protobuf::ModemTransmission& msg);
 
             void try_serial_tx();
-            void DisplayStateConfiguration();
+            void display_state_cfg(std::ostream* os);
+
+            void hangup();
+            void set_dtr(bool state);
+            bool query_dtr();
             
           private:
             fsm::IridiumDriverFSM fsm_;
@@ -77,10 +82,16 @@ namespace goby
 	    common::protobuf::ZeroMQServiceConfig service_cfg_;
             acomms::protobuf::MTDataRequest request_;
             int request_socket_id_;
-            double last_send_time_;
+            double last_zmq_request_time_;
             double query_interval_seconds_;
             bool waiting_for_reply_;
+            
+            protobuf::ModemTransmission last_mac_msg_;
+            double last_send_time_;
 
+            double last_rx_tx_time_;
+
+            int serial_fd_;
         };
     }
 }

@@ -34,21 +34,11 @@ using goby::glog;
 using namespace goby::common::logger;
 using goby::common::goby_time;
 
+int goby::acomms::fsm::IridiumDriverFSM::count_ = 0;
 
 void goby::acomms::fsm::IridiumDriverFSM::buffer_data_out( const goby::acomms::protobuf::ModemTransmission& msg)
 {
-    // serialize the (protobuf) message
-    std::string bytes;
-    msg.SerializeToString(&bytes);
-
-    // frame message
-    std::string rudics_packet;
-    serialize_rudics_packet(bytes, &rudics_packet);
-
-    data_out_.push_back(rudics_packet);
-
-    // for now, make a call
-    process_event(EvDial());
+    data_out_.push_back(msg);
 }
 
 void goby::acomms::fsm::Command::in_state_react(const EvRxSerial& e)
@@ -56,8 +46,7 @@ void goby::acomms::fsm::Command::in_state_react(const EvRxSerial& e)
     std::string in = e.line;
     
     boost::trim_if(in, !boost::algorithm::is_alnum());
-
-    std::cout << "trimmed line: [" << in << "]" << std::endl;
+    
     
     static const std::string connect = "CONNECT";
     
@@ -110,8 +99,6 @@ void goby::acomms::fsm::Command::in_state_react( const EvTxSerial& )
 
         if((at_out_.front().first + timeout) < now)
         {
-            std::cout << "at_out_.front().first: " << std::setprecision(15) << at_out_.front().first << ", at_out_.front().second: " << at_out_.front().second << ", now: " << now << std::endl;
-            
             std::string at_command;
             if(at_out_.front().second != "+++")
                 at_command = "AT" + at_out_.front().second + "\r";
@@ -177,26 +164,25 @@ void goby::acomms::fsm::Command::in_state_react( const EvAck & e)
     }
     else
     {
-        glog.is(DEBUG1) && glog <<  warn << "Unexpected 'OK'" << std::endl;
+        glog.is(DEBUG1) && glog << group("iridiumdriver") <<  warn << "Unexpected 'OK'" << std::endl;
     }
 }
 
 void goby::acomms::fsm::Ready::in_state_react( const EvHangup & )
 {
-    std::cout << "=== Hangup ===" << std::endl;
-    context<Command>().push_at_command("H");
+    if(state_cast<const fsm::OnCall *>() != 0)
+        context<Command>().push_at_command("H");
 }
 
 void goby::acomms::fsm::Ready::in_state_react( const EvTriplePlus & )
 {
-    std::cout << "=== +++ ===" << std::endl;
     context<Command>().push_at_command("+++");
 }
 
 
 boost::statechart::result goby::acomms::fsm::Dial::react( const EvNoCarrier& x)
 {
-    glog.is(DEBUG1) && glog << "Redialing..."  << std::endl;
+    glog.is(DEBUG1) && glog  << group("iridiumdriver") << "Redialing..."  << std::endl;
     
     const int max_attempts = context<IridiumDriverFSM>().driver_cfg().GetExtension(IridiumDriverConfig::dial_attempts);
     if(dial_attempts_ < max_attempts)
@@ -206,7 +192,7 @@ boost::statechart::result goby::acomms::fsm::Dial::react( const EvNoCarrier& x)
     }
     else
     {
-        glog.is(DEBUG1) && glog <<  warn << "Failed to connect after " << max_attempts << " tries." << std::endl;
+        glog.is(DEBUG1) && glog <<  warn  << group("iridiumdriver") << "Failed to connect after " << max_attempts << " tries." << std::endl;
                 
         return transit<Ready>();
     }
@@ -246,7 +232,7 @@ void goby::acomms::fsm::OnCall::in_state_react(const EvRxOnCallSerial& e)
         }
         catch(RudicsPacketException& e)
         {
-            glog.is(DEBUG1) && glog <<  warn << "Could not decode packet: " << e.what() << std::endl;
+            glog.is(DEBUG1) && glog <<  warn  << group("iridiumdriver") << "Could not decode packet: " << e.what() << std::endl;
         }
     }
 }
@@ -254,10 +240,18 @@ void goby::acomms::fsm::OnCall::in_state_react(const EvRxOnCallSerial& e)
 
 void goby::acomms::fsm::OnCall::in_state_react( const EvTxOnCallSerial& )
 {
-    boost::circular_buffer<std::string>& data_out = context<IridiumDriverFSM>().data_out();
+    boost::circular_buffer<protobuf::ModemTransmission>& data_out = context<IridiumDriverFSM>().data_out();
     if(!data_out.empty())
     {
-        context<IridiumDriverFSM>().serial_tx_buffer().push_back(data_out.front());
+        // serialize the (protobuf) message
+        std::string bytes;
+        data_out.front().SerializeToString(&bytes);
+
+        // frame message
+        std::string rudics_packet;
+        serialize_rudics_packet(bytes, &rudics_packet);
+
+        context<IridiumDriverFSM>().serial_tx_buffer().push_back(rudics_packet);
         data_out.pop_front();
     }
 }

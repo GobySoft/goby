@@ -42,9 +42,12 @@ goby::acomms::IridiumDriver::IridiumDriver(goby::common::ZeroMQService* zeromq_s
           using_zmq_(false),
           zeromq_service_(zeromq_service),
           request_socket_id_(0),
-          last_send_time_(0),
+          last_zmq_request_time_(0),
           query_interval_seconds_(1),
-          waiting_for_reply_(false)
+          waiting_for_reply_(false),
+          last_send_time_(0),
+          last_rx_tx_time_(0),
+          serial_fd_(-1)
 {
     
 //    assert(byte_string_to_uint32(uint32_to_byte_string(16540)) == 16540);
@@ -69,6 +72,10 @@ void goby::acomms::IridiumDriver::startup(const protobuf::DriverConfig& cfg)
         debug_client_->start();
     }
 
+       // dtr low hangs up
+    if(driver_cfg_.connection_type() == protobuf::DriverConfig::CONNECTION_SERIAL)
+       driver_cfg_.AddExtension(IridiumDriverConfig::config, "&D2"); 
+       
 
     using_zmq_ = driver_cfg_.HasExtension(IridiumDriverConfig::request_socket);
     
@@ -89,22 +96,36 @@ void goby::acomms::IridiumDriver::startup(const protobuf::DriverConfig& cfg)
     }
     
     
-    modem_init(cfg);
+    modem_init();
 }
 
-void goby::acomms::IridiumDriver::modem_init(const protobuf::DriverConfig& cfg)
+void goby::acomms::IridiumDriver::modem_init()
 {
         
     modem_start(driver_cfg_);
     
+
     fsm_.initiate();
 
-
+       
     int i = 0;
+    bool dtr_set = false;
     while(fsm_.state_cast<const fsm::Ready *>() == 0)
     {
         do_work();
 
+        if(driver_cfg_.connection_type() ==
+           protobuf::DriverConfig::CONNECTION_SERIAL &&
+           modem().active() &&
+           !dtr_set)
+        {
+            serial_fd_ = dynamic_cast<util::SerialClient&>(modem()).socket().native_handle();
+            set_dtr(true);
+            glog.is(DEBUG1) && glog << group(glog_out_group()) << "DTR is: " << query_dtr() << std::endl;
+            dtr_set = true;
+
+        }
+        
         const int pause_ms = 10;
         usleep(pause_ms*1000);
         ++i;
@@ -115,36 +136,105 @@ void goby::acomms::IridiumDriver::modem_init(const protobuf::DriverConfig& cfg)
     }
 }
 
+void goby::acomms::IridiumDriver::set_dtr(bool state)
+{
+    int status;
+    if(ioctl(serial_fd_, TIOCMGET, &status) == -1)
+    {
+        glog.is(DEBUG1) && glog << group(glog_out_group()) << warn << "IOCTL failed: " << strerror(errno) << std::endl;            
+    }
+    
+    glog.is(DEBUG1) && glog << group(glog_out_group()) << "Setting DTR to " << (state ? "high" : "low" ) << std::endl;
+    if(state) status |= TIOCM_DTR;
+    else status &= ~TIOCM_DTR;
+    if(ioctl(serial_fd_, TIOCMSET, &status) == -1)
+    {
+        glog.is(DEBUG1) && glog << group(glog_out_group()) << warn << "IOCTL failed: " << strerror(errno) << std::endl;            
+    }
+}
+
+bool goby::acomms::IridiumDriver::query_dtr()
+{
+    int status;
+    if(ioctl(serial_fd_, TIOCMGET, &status) == -1)
+    {
+        glog.is(DEBUG1) && glog << group(glog_out_group()) << warn << "IOCTL failed: " << strerror(errno) << std::endl;            
+    }    
+    return (status & TIOCM_DTR);
+}
+
+void goby::acomms::IridiumDriver::hangup()
+{
+    if(driver_cfg_.connection_type() == protobuf::DriverConfig::CONNECTION_SERIAL)
+    {
+        set_dtr(false);
+        sleep(1);
+        set_dtr(true);
+        // phone doesn't give "NO CARRIER" message after DTR disconnect
+        fsm_.process_event(fsm::EvNoCarrier());
+    }
+    else
+    {
+        fsm_.process_event(fsm::EvHangup());
+    }
+}
+
 void goby::acomms::IridiumDriver::shutdown()
 {
-    fsm_.process_event(fsm::EvHangup());
+    hangup();
 
     while(fsm_.state_cast<const fsm::OnCall *>() != 0)
     {
         do_work();
         usleep(10000);
     }
+
+    if(driver_cfg_.connection_type() == protobuf::DriverConfig::CONNECTION_SERIAL)
+        set_dtr(false);
+    
     modem_close();
 }
 
 void goby::acomms::IridiumDriver::handle_initiate_transmission(const protobuf::ModemTransmission& orig_msg)
 {
     // buffer the message
-    protobuf::ModemTransmission msg = orig_msg;
-    signal_modify_transmission(&msg);
+    last_mac_msg_ = orig_msg;
+    process_transmission();
+    fsm_.process_event(fsm::EvDial());
+}
 
-    msg.set_max_frame_bytes(driver_cfg_.GetExtension(IridiumDriverConfig::max_frame_size));
-    signal_data_request(&msg);
+void goby::acomms::IridiumDriver::process_transmission()
+{
+    signal_modify_transmission(&last_mac_msg_);
 
-    if(!(msg.frame_size() == 0 || msg.frame(0).empty()))
-        send(msg);
+    last_mac_msg_.set_max_frame_bytes(driver_cfg_.GetExtension(IridiumDriverConfig::max_frame_size));
+    signal_data_request(&last_mac_msg_);
+
+    if(!(last_mac_msg_.frame_size() == 0 || last_mac_msg_.frame(0).empty()))
+        send(last_mac_msg_);
 }
 
 
 void goby::acomms::IridiumDriver::do_work()
 {
-//    DisplayStateConfiguration();
-
+    //   if(glog.is(DEBUG1))
+    //    display_state_cfg(&glog);
+    double now = goby_time<double>();
+    
+    // if we're on a call, keep pushing data at the target rate
+    const double send_interval =
+        driver_cfg_.GetExtension(IridiumDriverConfig::max_frame_size) /
+        (driver_cfg_.GetExtension(IridiumDriverConfig::target_bit_rate) / static_cast<double>(BITS_IN_BYTE));
+    
+    if(fsm_.data_out().empty() &&
+       (now > (last_send_time_ + send_interval)) &&
+       (fsm_.state_cast<const fsm::NotOnCall *>() == 0))
+    {
+        last_mac_msg_.clear_frame();
+        process_transmission();
+        last_send_time_ = now;
+    }
+    
     if(using_zmq_)
     {
         while(zeromq_service_->poll(0))
@@ -152,14 +242,24 @@ void goby::acomms::IridiumDriver::do_work()
         
         if(!waiting_for_reply_ &&
            request_.IsInitialized() &&
-           goby_time<double>() > last_send_time_ + query_interval_seconds_)
+           now > last_zmq_request_time_ + query_interval_seconds_)
         {
             static int request_id = 0;
             request_.set_request_id(request_id++);
+
+            if(fsm_.state_cast<const fsm::OnZMQCall *>() != 0)
+            {
+                while(!fsm_.data_out().empty())
+                {
+                    (*request_.add_outbox()) = fsm_.data_out().front();
+                    fsm_.data_out().pop_front();    
+                }
+            }
+            
             glog.is(DEBUG1) && glog << group(glog_out_group()) << "Sending request to server." << std::endl;
             glog.is(DEBUG2) && glog << group(glog_out_group()) << "Outbox: " << request_.DebugString() << std::flush;
             StaticProtobufNode::send(request_, request_socket_id_);
-            last_send_time_ = goby_time<double>();
+            last_zmq_request_time_ = now;
             request_.clear_outbox();
             waiting_for_reply_ = true;
         }
@@ -172,16 +272,18 @@ void goby::acomms::IridiumDriver::do_work()
     {
         fsm::EvRxSerial data_event;
         data_event.line = in;
-        
-        if(debug_client_ && fsm_.state_cast<const fsm::OnCall *>() != 0)
-        {
-            debug_client_->write(in);
-        }
+
         
         glog.is(DEBUG1) && glog << group(glog_in_group())
                                 << (boost::algorithm::all(in, boost::is_print() ||
                                                           boost::is_any_of("\r\n")) ? in :
                                     goby::util::hex_encode(in)) << std::endl;
+        
+        
+        if(debug_client_ && fsm_.state_cast<const fsm::OnCall *>() != 0)
+        {
+            debug_client_->write(in);
+        }
         
         fsm_.process_event(data_event);
     }
@@ -198,9 +300,16 @@ void goby::acomms::IridiumDriver::do_work()
         while(debug_client_->readline(&line))
         {
             fsm_.serial_tx_buffer().push_back(line);
+            last_rx_tx_time_ = now;
             fsm_.process_event(fsm::EvDial());
         }
         
+    }
+
+    if(fsm_.state_cast<const fsm::OnCall *>() != 0 &&
+       now > (last_rx_tx_time_ + driver_cfg_.GetExtension(IridiumDriverConfig::hangup_seconds_after_empty)))
+    {
+        hangup();
     }
     
     // try sending again at the end to push newly generated messages before we wait
@@ -223,14 +332,13 @@ void goby::acomms::IridiumDriver::receive(const protobuf::ModemTransmission& msg
     }
     
     signal_receive(msg);
+    last_rx_tx_time_ = goby_time<double>();
 }
 
 void goby::acomms::IridiumDriver::send(const protobuf::ModemTransmission& msg)
 {
-    if(fsm_.state_cast<const fsm::OnZMQCall *>() != 0)
-        (*request_.add_outbox()) = msg;
-    else
-        fsm_.buffer_data_out(msg);
+    fsm_.buffer_data_out(msg);
+    last_rx_tx_time_ = goby_time<double>();
 }
 
 
@@ -245,7 +353,6 @@ void goby::acomms::IridiumDriver::try_serial_tx()
             return;
     
         const std::string& line = fsm_.serial_tx_buffer().front();
-
         
         glog.is(DEBUG1) && glog << group(glog_out_group())
                                 << (boost::algorithm::all(line, boost::is_print() ||
@@ -278,36 +385,40 @@ void goby::acomms::IridiumDriver::handle_mt_response(const acomms::protobuf::MTD
     waiting_for_reply_ = false;  
 }
 
-
-
-
-
-void goby::acomms::IridiumDriver::DisplayStateConfiguration()
+void goby::acomms::IridiumDriver::display_state_cfg(std::ostream* os)
 {
   char orthogonalRegion = 'a';
   
   for ( fsm::IridiumDriverFSM::state_iterator pLeafState = fsm_.state_begin();
     pLeafState != fsm_.state_end(); ++pLeafState )
   {
-    std::cout << "Orthogonal region " << orthogonalRegion << ": ";
-
-    const fsm::IridiumDriverFSM::state_base_type * pState = &*pLeafState;
-
-    while ( pState != 0 )
-    {
-      if ( pState != &*pLeafState )
+      *os << "Orthogonal region " << orthogonalRegion << ": ";
+      
+      const fsm::IridiumDriverFSM::state_base_type * pState = &*pLeafState;
+      
+      while ( pState != 0 )
       {
-        std::cout << " -> ";
+          if ( pState != &*pLeafState )
+          {
+              *os << " -> ";
+          }
+
+          std::string name = typeid( *pState ).name();
+          std::string prefix = "N4goby6acomms3fsm";
+          std::string suffix = "E";
+
+          if(name.find(prefix) != std::string::npos && name.find(suffix) != std::string::npos)
+              name = name.substr(prefix.size() + 1, name.size()-prefix.size()-suffix.size()-1);
+          
+          
+          *os << name;
+          
+          pState = pState->outer_state_ptr();
       }
-
-      std::cout << std::setw( 15 ) << typeid( *pState ).name();
- 
-      pState = pState->outer_state_ptr();
-    }
-
-    std::cout << std::endl;
-    ++orthogonalRegion;
+      
+      *os << "\n";
+      ++orthogonalRegion;
   }
-
-  std::cout << std::endl;
+  
+  *os << std::endl;
 }

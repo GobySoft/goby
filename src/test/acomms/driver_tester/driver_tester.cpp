@@ -79,8 +79,6 @@ DriverTester::DriverTester(boost::shared_ptr<goby::acomms::ModemDriverBase> driv
     for(std::string::size_type i = 0, n = test_str3_.size(); i < n; ++i)
         test_str3_[i] = i + 3*64;
 
-    
-    int i =0;
 
 }
 
@@ -141,17 +139,27 @@ void DriverTester::handle_data_request1(protobuf::ModemTransmission* msg)
     switch(test_number_)
     {
         case 4:
-        {            
+        {
             msg->add_frame(test_str0_);
-            ++check_count_;
+            static bool entered = false;
+            if(!entered)
+            {
+                ++check_count_;
+                entered = true;
+            }            
         }
         break;
             
         case 5:
         {   
+            static bool entered = false;
             msg->add_frame(test_str2_);
             msg->add_frame(test_str3_);
-            ++check_count_;
+            if(!entered)
+            {
+                ++check_count_;
+                entered = true;
+            }            
         }
         break;
             
@@ -265,10 +273,20 @@ void DriverTester::handle_data_request2(protobuf::ModemTransmission* msg)
             break;
 
         case 3:
-            msg->add_frame(goby::util::hex_decode("0123"));
-            ++check_count_;
-            break;
+        {
+            static bool entered = false;
+            if(!entered)
+            {
+                ++check_count_;
+                entered = true;
+            }
+                             
 
+            msg->add_frame(goby::util::hex_decode("0123"));
+            break;
+        }
+        
+            
         case 4:
             break;
 

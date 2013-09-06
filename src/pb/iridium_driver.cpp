@@ -257,8 +257,8 @@ void goby::acomms::IridiumDriver::do_work()
                 }
             }
             
-            glog.is(DEBUG1) && glog << group(glog_out_group()) << "Sending request to server." << std::endl;
-            glog.is(DEBUG2) && glog << group(glog_out_group()) << "Outbox: " << request_.DebugString() << std::flush;
+            glog.is(DEBUG1) && glog << group(goby::common::ZeroMQService::glog_out_group()) << "Sending request to server." << std::endl;
+            glog.is(DEBUG2) && glog << group(goby::common::ZeroMQService::glog_out_group()) << "Outbox: " << request_.DebugString() << std::flush;
             StaticProtobufNode::send(request_, request_socket_id_);
             last_zmq_request_time_ = now;
             request_.clear_outbox();
@@ -370,9 +370,9 @@ void goby::acomms::IridiumDriver::try_serial_tx()
 
 void goby::acomms::IridiumDriver::handle_mt_response(const acomms::protobuf::MTDataResponse& response)
 {
-    glog.is(DEBUG1) && glog << group(glog_in_group()) << "Received response from shore server." << std::endl;
+    glog.is(DEBUG1) && glog << group(goby::common::ZeroMQService::glog_in_group()) << "Received response from shore server." << std::endl;
 
-    glog.is(DEBUG2) && glog << group(glog_in_group()) << "Inbox: " << response.DebugString() << std::flush;
+    glog.is(DEBUG2) && glog << group(goby::common::ZeroMQService::glog_in_group()) << "Inbox: " << response.DebugString() << std::flush;
 
     if(response.mobile_node_connected())
         fsm_.process_event(fsm::EvZMQConnect());

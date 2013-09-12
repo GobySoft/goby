@@ -35,6 +35,8 @@
 #include "goby/moos/moos_protobuf_helpers.h"
 #include "goby/moos/moos_ufield_sim_driver.h"
 #include "goby/moos/protobuf/ufield_sim_driver.pb.h"
+#include "goby/moos/moos_bluefin_driver.h"
+#include "goby/moos/protobuf/bluefin_driver.pb.h"
 #include "goby/pb/pb_modem_driver.h"
 #include "goby/acomms/modemdriver/udp_driver.h"
 
@@ -353,6 +355,15 @@ void CpAcommsHandler::process_configuration()
             driver_ = new goby::acomms::UDPDriver(asio_service_.get());
             break;
 
+        case goby::acomms::protobuf::DRIVER_BLUEFIN_MOOS:
+            driver_ = new goby::moos::BluefinCommsDriver(&mac_);
+            cfg_.mutable_driver_cfg()->SetExtension(
+                goby::moos::protobuf::BluefinConfig::moos_server,
+                cfg_.common().server_host());
+            cfg_.mutable_driver_cfg()->SetExtension(
+                goby::moos::protobuf::BluefinConfig::moos_port,
+                cfg_.common().server_port());
+            break;
             
         case goby::acomms::protobuf::DRIVER_NONE: break;
     }    

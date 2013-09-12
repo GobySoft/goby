@@ -41,7 +41,7 @@ void goby::util::LineBasedInterface::start()
 {
     if(active_) return;
 
-    active_ = true;
+//    active_ = true;
     io_service_.post(boost::bind(&LineBasedInterface::do_start, this));
 }
 

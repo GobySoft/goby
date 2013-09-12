@@ -4,6 +4,23 @@ Goby Release Notes (Major version 2)
 Version 2.0.3
 
 - Addition to DCCL and goby_bridge to allow forwarding of encrypted messages without unencrypting.
+- Added Bluefin Comms Driver (for using the SonarDyne Avtrak acoustic modem via the Bluefin NMEA interface: See Bluefin Payload Interface Guid v1.8 dated 04-04-13 and newer.
+- For the MOOS translators: TECHNIQUE_FORMAT returns the default field instead of the empty string for unset fields.
+
+bzr log --line -n0 -r tag:2.0.2..
+
+457: Toby Schneider 2013-05-10 {2.0.3} Incremented version number and release date
+456: Toby Schneider 2013-04-30 TECHNIQUE_FORMAT returns the default field value instead of the empty string on fields that are not set
+455: Toby Schneider 2013-04-22 Finished initial implementation of Bluefin modem driver for Sonardynae and tested on bench with two modems
+454: Toby Schneider 2013-04-12 Start of Bluefin Comms driver for MOOS
+453: Toby Schneider 2013-04-10 Cleaned up another case where linebasedcomms connection could be 'active' even if the connection failed
+452: Toby Schneider 2013-03-27 Fixed bug in mimic of Micro-Modem ping where ping reports from all vehicles in range were reported
+451: Toby Schneider 2013-03-27 Added mimic of Micro-Modem ping command ($CCMPC) into MOOS UFld Driver
+450: Toby Schneider 2013-03-18 Fixed bug where segmentation fault would occur on invalid or encrpyted messages (if the wrong crypto key is loaded) messages. Now the behavior is either a DCCLException or a nonsense decoded message
+449: Toby Schneider 2013-03-18 {2.0.3~beta1} Release 2.0.3~beta1
+448: Toby Schneider 2013-03-14 1. Possible to decode DCCL header without decrypting body; 2. Possible to pass messages through route without decrypting
+447: Toby Schneider 2013-02-28 {2.0.2} Incremented version to 2.0.2
+
 
 *****************
 Version 2.0.2

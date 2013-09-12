@@ -10,6 +10,7 @@ set(SRC
    modem_id_convert.cpp
    moos_translator.cpp
    moos_ufield_sim_driver.cpp
+   moos_bluefin_driver.cpp
    transitional/message_val.cpp
    transitional/message_algorithms.cpp
 )

@@ -85,6 +85,7 @@ namespace goby
             /// \brief You must call this after any change to the underlying list that would invalidate iterators or change the size (insert, push_back, erase, etc.).
             void update();
 
+            bool running() { return started_up_; }
             
             //@}
 

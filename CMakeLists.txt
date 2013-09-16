@@ -116,12 +116,12 @@ endif()
 
 set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES ${goby_INC_DIR}/goby)
 
+## start adding subdirectories
+add_subdirectory(src)
+
 ## copy to goby/include
 file(GLOB_RECURSE INCLUDE_FILES RELATIVE ${goby_SRC_DIR} src/*.h src/*.proto)
 foreach(I ${INCLUDE_FILES})
   configure_file(${goby_SRC_DIR}/${I} ${goby_INC_DIR}/goby/${I} @ONLY)
 endforeach()
-
-## start adding subdirectories
-add_subdirectory(src)
 

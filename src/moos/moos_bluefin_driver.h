@@ -24,7 +24,7 @@
 #ifndef BluefinCommsDriver20130412H
 #define BluefinCommsDriver20130412H
 
-#include "MOOSLIB/MOOSCommClient.h"
+#include "goby/moos/moos_header.h"
 
 #include <boost/bimap.hpp>
 

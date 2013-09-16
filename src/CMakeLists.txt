@@ -174,12 +174,22 @@ if(build_common)
       endif()
 
 
-  
-      find_package(MOOS QUIET)
+      # first try to find v10 MOOS
+      find_package(MOOS 10 QUIET NO_MODULE)
       set(MOOS_DOC_STRING "Build the Acoustic Communications MOOS apps (pAcommsHandler, etc.)")
       if(MOOS_FOUND)
+        # new MOOS 10
+        set(MOOS_LIBRARIES MOOS)
+        set(MOOS_LIBRARY_HEADER "MOOS/libMOOS/MOOSLib.h" PARENT_SCOPE)
+      else()
+        message(">> Could not find MOOS v10, trying to find MOOS pre-v10.")
+        # try to find old MOOS
+        find_package(MOOS QUIET)
+        set(MOOS_LIBRARY_HEADER "MOOSLIB/MOOSLib.h" PARENT_SCOPE)
+      endif()
+
+      if(MOOS_FOUND)
         include_directories(${MOOS_INCLUDE_DIRS})
-        add_definitions(-DHAS_MOOS)
         option(build_moos ${MOOS_DOC_STRING} ON)
       else()
         option(build_moos ${MOOS_DOC_STRING} OFF)

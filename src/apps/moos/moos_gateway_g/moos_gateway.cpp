@@ -20,8 +20,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Goby.  If not, see <http://www.gnu.org/licenses/>.
 
-#include "MOOSLIB/MOOSCommClient.h"
-
 #include "goby/moos/moos_node.h"
 #include "goby/common/logger.h"
 #include "goby/common/zeromq_application_base.h"

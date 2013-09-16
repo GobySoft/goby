@@ -23,7 +23,7 @@
 
 #include <string>
 
-#include "MOOSLIB/MOOSMsg.h"
+#include "goby/moos/moos_header.h"
 
 namespace goby
 {

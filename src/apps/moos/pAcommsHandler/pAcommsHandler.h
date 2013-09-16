@@ -31,17 +31,12 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/asio/deadline_timer.hpp>
 
-#include "MOOSLIB/MOOSApp.h"
-
 #include "goby/acomms.h"
 #include "goby/util.h"
 
 #ifdef ENABLE_GOBY_V1_TRANSITIONAL_SUPPORT
 #include "goby/moos/transitional/dccl_transitional.h"
 #endif
-
-#include "MOOSLIB/MOOSLib.h"
-#include "MOOSUtilityLib/MOOSGeodesy.h"
 
 #include "goby/util/dynamic_protobuf_manager.h"
 #include "goby/moos/goby_moos_app.h"

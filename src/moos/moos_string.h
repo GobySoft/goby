@@ -24,7 +24,7 @@
 #ifndef MOOSSTRING20110527H
 #define MOOSSTRING20110527H
 
-#include "MOOSLIB/MOOSMsg.h"
+#include "goby/moos/moos_header.h"
 
 
 #include "goby/util/as.h"

@@ -20,43 +20,45 @@
 // You should have received a copy of the GNU General Public License
 // along with Goby.  If not, see <http://www.gnu.org/licenses/>.
 
+// This file uses the same basic API provided by MOOS pre-v10
+// (C) Paul Newman, released GPL v3
 
-#ifndef DYNAMICMOOSVARSH
-#define DYNAMICMOOSVARSH
+#ifndef MOOSGeodesy20130916H
+#define MOOSGeodesy20130916H
 
-#include "goby/moos/moos_header.h"
+#include <proj_api.h>
 
-namespace tes
+class CMOOSGeodesy
 {
-    class DynamicMOOSVars
-    {
-    public:
-        const CMOOSMsg & get_moos_var(const std::string& s)
-        { return vars[s]; }
-        
-        const CMOOSMsg & operator[](const std::string& s)
-        { return vars[s]; }
+public:
+    CMOOSGeodesy();
+    virtual ~CMOOSGeodesy();
     
-        // read the whole list
-        void update_moos_vars(const MOOSMSG_LIST& NewMail)
-            {
-                for(MOOSMSG_LIST::const_iterator p = NewMail.begin(), n = NewMail.end(); p != n; ++p)
-                    vars[p->GetKey()] = *p;
-            }
-
-        // update a single variable at a time
-        void update_moos_vars(const CMOOSMsg& msg)
-            { vars[msg.GetKey()] = msg; }
-
-        std::map<std::string, CMOOSMsg>& all() { return vars; }
-        
-    private:
-        std::map<std::string, CMOOSMsg> vars;
-
-    };
-}
-
-inline bool valid(const CMOOSMsg& m)
-{ return m.GetTime() != -1; }    
+    double GetOriginLatitude();
+    double GetOriginLongitude();
+    double GetOriginNorthing();
+    double GetOriginEasting();
+    int GetUTMZone();
     
+    bool LatLong2LocalUTM(double lat, double lon, double & MetersNorth, double & MetersEast);
+    bool UTM2LatLong(double dfX, double dfY, double& dfLat, double& dfLong);    
+    
+    bool Initialise(double lat, double lon);
+
+private:
+    int m_sUTMZone;
+    double m_dOriginEasting;
+    double m_dOriginNorthing;
+    double m_dOriginLongitude;
+    double m_dOriginLatitude;
+    projPJ pj_utm_, pj_latlong_;
+    
+    void SetOriginLatitude(double lat);
+    void SetOriginLongitude(double lon);
+    void SetOriginEasting(double East);
+    void SetOriginNorthing(double North);
+    void SetUTMZone(int zone);
+
+};
+
 #endif

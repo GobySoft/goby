@@ -11,6 +11,7 @@ enum DriverType {
   DRIVER_PB_STORE_SERVER = 5;
   DRIVER_UDP = 6;
   DRIVER_BLUEFIN_MOOS = 7;
+  DRIVER_IRIDIUM = 8;
 }
 
 message DriverConfig
@@ -34,6 +35,8 @@ message DriverConfig
 
   // required if connection_type == CONNECTION_TCP_AS_CLIENT or CONNECTION_TCP_AS_SERVER
   optional uint32 tcp_port = 7 [(goby.field).description="Port to serve on (for CONNECTION_TCP_AS_SERVER) or to connect to (for CONNECTION_TCP_AS_CLIENT)", (goby.field).example="50010"];
+
+  optional uint32 reconnect_interval = 8 [(goby.field).description="Seconds between TCP reconnect attempts", default = 10];
   
   
   extensions 1000 to max;
@@ -43,5 +46,6 @@ message DriverConfig
   // extensions 1321-1340 used by pb_modem_driver.proto
   // extensions 1341-1360 used by udp_driver.proto
   // extensions 1361-1380 used by bluefin_sim_driver.proto
+  // extensions 1381-1400 used by iridium_driver.proto
 }
 

@@ -24,9 +24,11 @@
 #ifndef BINARY20100713H
 #define BINARY20100713H
 
+
 #include <iomanip>
 #include <cmath>
 #include <sstream>
+#include <iostream>
 
 #include <boost/dynamic_bitset.hpp>
 #include <bitset>

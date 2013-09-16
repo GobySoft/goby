@@ -55,25 +55,27 @@ goby::acomms::ModemDriverBase::~ModemDriverBase()
 
 void goby::acomms::ModemDriverBase::modem_write(const std::string& out)
 {
-    while(!modem_->active())
+    if(!modem_->active())
     {
         goby::glog.is(DEBUG1, lock) && goby::glog << group(glog_out_group_) << warn << "modem is closed! (check physical connection)" << std::endl << unlock;
-        sleep(1);
     }
-    
-    
-    modem_->write(out);
+    else
+    {
+        modem_->write(out);
+    }
 }
 
 bool goby::acomms::ModemDriverBase::modem_read(std::string* in)
 {
-    while(!modem_->active())
+    if(!modem_->active())
     {
         goby::glog.is(DEBUG1, lock) && goby::glog << group(glog_in_group_) << warn << "modem is closed! (check physical connection)" << std::endl << unlock;
-        sleep(1);
+        return false;
     }
-
-    return modem_->readline(in);
+    else
+    {
+        return modem_->readline(in);
+    }
 }
 
 void goby::acomms::ModemDriverBase::modem_close()
@@ -108,7 +110,7 @@ void goby::acomms::ModemDriverBase::modem_start(const protobuf::DriverConfig& cf
             if(!cfg.has_tcp_port())
                 throw(ModemDriverException("missing tcp port in configuration"));
 
-            modem_ = new util::TCPClient(cfg.tcp_server(), cfg.tcp_port(), cfg.line_delimiter());
+            modem_ = new util::TCPClient(cfg.tcp_server(), cfg.tcp_port(), cfg.line_delimiter(), cfg.reconnect_interval());
             break;
             
         case protobuf::DriverConfig::CONNECTION_TCP_AS_SERVER:

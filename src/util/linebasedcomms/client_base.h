@@ -39,15 +39,13 @@ namespace goby
         {
             
           protected:
-          LineBasedClient(const std::string& delimiter)
+          LineBasedClient(const std::string& delimiter, int retry_interval = 10)
               : LineBasedInterface(delimiter),
-                LineBasedConnection<ASIOAsyncReadStream>(this)
+                LineBasedConnection<ASIOAsyncReadStream>(this),
+                retry_interval_(retry_interval)
                 { }            
 
             virtual ~LineBasedClient() { }
-            
-            
-            enum { RETRY_INTERVAL = 10 };            
 
             virtual ASIOAsyncReadStream& socket () = 0;
             virtual std::string local_endpoint() = 0;
@@ -89,8 +87,8 @@ namespace goby
                 {
                     using namespace boost::posix_time;
                     ptime now  = common::goby_time();
-                    if(now - seconds(RETRY_INTERVAL) < last_start_time_)
-                        sleep(RETRY_INTERVAL - (now-last_start_time_).total_seconds());
+                    if(now - seconds(retry_interval_) < last_start_time_)
+                        sleep(retry_interval_ - (now-last_start_time_).total_seconds());
                     
                     do_start();
                 }
@@ -106,7 +104,9 @@ namespace goby
            
             LineBasedClient(const LineBasedClient&);
             LineBasedClient& operator= (const LineBasedClient&);
-        
+
+            int retry_interval_;
+            
         }; 
 
     }

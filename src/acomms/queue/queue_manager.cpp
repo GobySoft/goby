@@ -562,7 +562,7 @@ void goby::acomms::QueueManager::handle_modem_receive(const protobuf::ModemTrans
                 }
                 catch(DCCLException& e)
                 {
-                    glog.is(DEBUG1) && glog << group(glog_out_group_) << warn
+                    glog.is(DEBUG1) && glog << group(glog_in_group_) << warn
                                             << "Failed to decode, discarding message." << std::endl;
                 }
                 

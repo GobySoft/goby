@@ -148,20 +148,24 @@ namespace goby
             /// \throw ModemDriverException Problem opening the physical connection.
             /// 
             void modem_start(const protobuf::DriverConfig& cfg);
-
+            
             /// \brief closes the serial port. Use modem_start to reopen the port.
             void modem_close();
 
             const std::string& glog_out_group() const { return glog_out_group_; }
             const std::string& glog_in_group() const { return glog_in_group_; }
             
-            
+            /// \brief use for direct access to the modem
+            util::LineBasedInterface& modem() { return *modem_; }
+
             //@}
+
+          protected:
+            static int count_;
 
           private:
             // represents the line based communications interface to the modem
             util::LineBasedInterface* modem_;
-            static int count_;
 
             std::string glog_out_group_;
             std::string glog_in_group_;

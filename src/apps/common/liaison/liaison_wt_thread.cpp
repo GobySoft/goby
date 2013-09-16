@@ -4,15 +4,14 @@
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
 // 
 //
-// This file is part of the Goby Underwater Autonomy Project Binaries
-// ("The Goby Binaries").
+// This file is part of the Goby Underwater Autonomy Project Liaison Module
+// ("Goby Liaison").
 //
-// The Goby Binaries are free software: you can redistribute them and/or modify
-// them under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
+// Goby Liaison is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License Version 2
+// as published by the Free Software Foundation.
 //
-// The Goby Binaries are distributed in the hope that they will be useful,
+// Goby Liaison is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
@@ -53,7 +52,7 @@ goby::common::LiaisonWtThread::LiaisonWtThread(const Wt::WEnvironment& env)
 
     useStyleSheet(std::string("css/fonts.css?" + common::goby_file_timestamp()));
     useStyleSheet(std::string("css/liaison.css?" + common::goby_file_timestamp()));
-//    setCssTheme("");
+    setCssTheme("default");
     
 
     root()->setId("main");
@@ -126,6 +125,7 @@ goby::common::LiaisonWtThread::LiaisonWtThread(const Wt::WEnvironment& env)
     menu_->itemSelected().connect(this, &LiaisonWtThread::handle_menu_selection);
 
     handle_menu_selection(menu_->currentItem());
+    
 }
 
 goby::common::LiaisonWtThread::~LiaisonWtThread()

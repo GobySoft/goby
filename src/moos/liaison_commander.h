@@ -4,21 +4,21 @@
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
 // 
 //
-// This file is part of the Goby Underwater Autonomy Project Binaries
-// ("The Goby Binaries").
+// This file is part of the Goby Underwater Autonomy Project Liaison Module
+// ("Goby Liaison").
 //
-// The Goby Binaries are free software: you can redistribute them and/or modify
-// them under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
+// Goby Liaison is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License Version 2
+// as published by the Free Software Foundation.
 //
-// The Goby Binaries are distributed in the hope that they will be useful,
+// Goby Liaison is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
 // along with Goby.  If not, see <http://www.gnu.org/licenses/>.
+
 
 #ifndef LIAISONCOMMANDER20110609H
 #define LIAISONCOMMANDER20110609H
@@ -47,6 +47,7 @@
 #include <Wt/WValidator>
 #include <Wt/WGroupBox>
 #include <Wt/WTimer>
+#include <Wt/WTableCell>
 
 #include <Wt/Dbo/Session>
 #include <Wt/Dbo/Impl>
@@ -65,6 +66,20 @@ namespace goby
 {
     namespace common
     {
+
+        class LiaisonTreeTableNode : public Wt::WTreeTableNode
+        {
+          public:
+          LiaisonTreeTableNode(const Wt::WString &labelText, Wt::WIconPair *labelIcon=0, Wt::WTreeTableNode *parentNode=0)
+              : Wt::WTreeTableNode(labelText, labelIcon, parentNode)
+            {
+                this->labelArea()->setHeight(Wt::WLength(2.5, Wt::WLength::FontEm));
+            }
+            
+        };
+        
+        
+        
         struct CommandEntry
         {
             std::string protobuf_name;
@@ -110,17 +125,14 @@ namespace goby
             const protobuf::ProtobufCommanderConfig& pb_commander_config_;
             
             Wt::WVBoxLayout* main_layout_;
-            Wt::WStackedWidget* commands_div_;
 
-            Wt::WTimer commander_timer_;
-                        
             struct ControlsContainer : Wt::WGroupBox
             {
                 ControlsContainer(
                     MOOSNode* moos_node,
                     const protobuf::ProtobufCommanderConfig& pb_commander_config,
-                                  Wt::WStackedWidget* commands_div,
-                                  Wt::WContainerWidget* parent = 0);
+                    Wt::WStackedWidget* commands_div,
+                    Wt::WContainerWidget* parent = 0);
                 void switch_command(int selection_index);
 
                 void clear_message();
@@ -136,8 +148,9 @@ namespace goby
                         MOOSNode* moos_node,
                         const protobuf::ProtobufCommanderConfig& pb_commander_config,
                         const std::string& protobuf_name,
-                        Wt::Dbo::Session* session,
-                        Wt::WStackedWidget* master_field_info_stack);
+                        Wt::Dbo::Session* session);
+                    
+//                        Wt::WStackedWidget* master_field_info_stack);
 
                     void generate_root();
 
@@ -195,7 +208,7 @@ namespace goby
                         double* value,
                         const google::protobuf::FieldDescriptor* field_desc);
 
-                    void handle_field_focus(int field_info_index);
+//                    void handle_field_focus(int field_info_index);
                      
                     void handle_toggle_single_message(
                         const Wt::WMouseEvent& mouse,
@@ -242,8 +255,8 @@ namespace goby
                     Wt::WGroupBox* tree_box_;
                     Wt::WTreeTable* tree_table_;
 
-                    Wt::WStackedWidget* field_info_stack_;
-                    std::map<const google::protobuf::FieldDescriptor*, int> field_info_map_;
+//                    Wt::WStackedWidget* field_info_stack_;
+//                    std::map<const google::protobuf::FieldDescriptor*, int> field_info_map_;
                     
                     Wt::Dbo::Session* session_;
                     Wt::Dbo::QueryModel<Wt::Dbo::ptr<CommandEntry> >* query_model_;
@@ -274,15 +287,20 @@ namespace goby
                 Wt::WPanel* incoming_message_panel_;
                 Wt::WStackedWidget* incoming_message_stack_;
                 
-                Wt::WPanel* master_field_info_panel_;
-                Wt::WStackedWidget* master_field_info_stack_;
+//                Wt::WPanel* master_field_info_panel_;
+                //               Wt::WStackedWidget* master_field_info_stack_;
 
                 Wt::Dbo::Session session_;
                 
             };
             
+
+
+            Wt::WStackedWidget* commands_div_;
             ControlsContainer* controls_div_;
 
+            Wt::WTimer commander_timer_;
+                        
 
 
             // static database objects

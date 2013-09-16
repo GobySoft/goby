@@ -1,0 +1,25 @@
+import "goby/common/protobuf/option_extensions.proto";
+import "goby/acomms/protobuf/driver_base.proto"; 
+import "goby/common/protobuf/zero_mq_node_config.proto";
+
+message IridiumDriverConfig
+{
+  message Remote
+  {
+    required string iridium_number = 1;
+    required int32 modem_id = 2;
+  }
+  
+  extend goby.acomms.protobuf.DriverConfig
+  {
+    optional Remote remote = 1381;
+    optional int32 max_frame_size = 1382 [default = 1500];
+    optional int32 target_bit_rate = 1383 [default = 2400];
+    repeated string config = 1384;
+    optional int32 dial_attempts = 1385 [default = 3];
+    optional int32 debug_client_port = 1386;
+    optional goby.common.protobuf.ZeroMQServiceConfig.Socket request_socket = 1387;
+
+    optional int32 hangup_seconds_after_empty = 1388 [default = 30];
+  }
+}

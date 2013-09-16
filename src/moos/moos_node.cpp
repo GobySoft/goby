@@ -68,7 +68,7 @@ void goby::moos::MOOSNode::inbox(common::MarshallingScheme marshalling_scheme,
     }
 }
 
-void goby::moos::MOOSNode::send(const CMOOSMsg& msg, int socket_id)
+void goby::moos::MOOSNode::send(const CMOOSMsg& msg, int socket_id, const std::string& group_unused)
 {            
 
     std::string bytes;

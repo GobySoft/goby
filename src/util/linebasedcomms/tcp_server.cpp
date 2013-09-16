@@ -38,7 +38,7 @@ void goby::util::TCPConnection::socket_write(const protobuf::Datagram& line) // 
 
 void goby::util::TCPConnection::socket_close(const boost::system::error_code& error)
 { // something has gone wrong, so close the socket & make this object inactive
-    if (error == boost::asio::error::operation_aborted) // if this call is the result of a timer cancel()
+    if (error == boost::asio::error::operation_aborted) // if this call is thex result of a timer cancel()
         return; // ignore it because the connection cancelled the timer
     
     if(error)
@@ -58,6 +58,27 @@ void goby::util::TCPServer::do_close(const boost::system::error_code& error)
     BOOST_FOREACH(boost::shared_ptr<TCPConnection> c, connections_)
         c->close(error);
 }    
+
+const std::set< boost::shared_ptr<goby::util::TCPConnection> >& goby::util::TCPServer::connections()
+{
+    typedef std::set< boost::shared_ptr<TCPConnection> >::iterator It;
+    It it = connections_.begin(), it_end = connections_.end();
+    while(it != it_end)
+    {
+        if(!(*it)->socket().is_open())
+        {
+            It to_delete = it;
+            ++it;   // increment before erasing!
+            connections_.erase(to_delete);
+        }
+        else
+        {
+            ++it;
+        }
+    }
+    return connections_;
+}   
+
 
 void goby::util::TCPServer::start_accept()
 {

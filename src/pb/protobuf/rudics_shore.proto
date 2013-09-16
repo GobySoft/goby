@@ -1,0 +1,19 @@
+import "goby/acomms/protobuf/modem_message.proto";
+
+package goby.acomms.protobuf;
+
+message MTDataRequest
+{
+  required int32 modem_id = 1;
+  repeated goby.acomms.protobuf.ModemTransmission outbox = 2;
+  optional uint64 request_id = 3;
+}
+
+message MTDataResponse
+{
+  required bool mobile_node_connected = 1;
+  required int32 modem_id = 2;
+  repeated goby.acomms.protobuf.ModemTransmission inbox = 3;
+  optional uint64 request_id = 4;
+}
+

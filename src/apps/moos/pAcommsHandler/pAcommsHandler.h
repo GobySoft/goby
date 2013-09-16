@@ -38,8 +38,6 @@
 #include "goby/moos/transitional/dccl_transitional.h"
 #endif
 
-#include "MOOS/libMOOSGeodesy/MOOSGeodesy.h"
-
 #include "goby/util/dynamic_protobuf_manager.h"
 #include "goby/moos/goby_moos_app.h"
 #include "goby/moos/moos_translator.h"

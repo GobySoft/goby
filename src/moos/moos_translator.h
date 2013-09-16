@@ -24,7 +24,7 @@
 #include <map>
 #include <string>
 #include "MOOS/libMOOS/Comms/MOOSMsg.h"
-#include "MOOS/libMOOSGeodesy/MOOSGeodesy.h"
+#include "moos_geodesy.h"
 #include "MOOS/libMOOS/Utils/MOOSUtilityFunctions.h"
 
 #include "goby/moos/moos_protobuf_helpers.h"

@@ -67,7 +67,7 @@ ubuntu|debian)
  	 	libcrypto++-dev
  		libncurses-dev
  		libxerces-c-dev
-                libgmp-dev"
+                libgmp3-dev"
         fi
         
         if [ $install_doc -ne 0 ]; then 
@@ -100,6 +100,7 @@ ubuntu|debian)
             else
                 packages="${packages} 
                      moos
+                     libproj-dev
                      libzmq-dev   
                      libwt-dev
                      libwtdbo-dev

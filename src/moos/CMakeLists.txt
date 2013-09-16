@@ -1,6 +1,3 @@
-goby_find_required_package(MOOS)
-include_directories(${MOOS_INCLUDE_DIRS})
-
 
 file(GLOB PROTOS protobuf/*.proto)
 protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${PROTOS})
@@ -13,6 +10,7 @@ set(SRC
    moos_bluefin_driver.cpp
    transitional/message_val.cpp
    transitional/message_algorithms.cpp
+   moos_geodesy.cpp
 )
 
 if(enable_v1_transitional)
@@ -29,8 +27,8 @@ target_link_libraries(goby_moos
   goby_util
   goby_common 
   goby_acomms
+  proj  
   ${MOOS_LIBRARIES} ${Boost_LIBRARIES} ${PROTOBUF_LIBRARY}
-  ${MOOSGeodesy_LIBRARIES}
 )
 
 if(enable_v1_transitional)

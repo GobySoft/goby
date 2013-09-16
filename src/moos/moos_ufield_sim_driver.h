@@ -23,7 +23,7 @@
 #ifndef UFieldSimDriver20120214H
 #define UFieldSimDriver20120214H
 
-#include "MOOS/libMOOS/Comms/MOOSCommClient.h"
+#include "goby/moos/moos_header.h"
 
 //#include <boost/bimap.hpp>
 

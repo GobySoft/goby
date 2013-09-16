@@ -23,7 +23,7 @@
 #ifndef GOBYMOOSAPP20100726H
 #define GOBYMOOSAPP20100726H
 
-#include "MOOS/libMOOS/App/MOOSApp.h"
+#include "goby/moos/moos_header.h"
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <map>

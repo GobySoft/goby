@@ -372,7 +372,8 @@ namespace goby
             /// \brief Resets the DCCL id codec currently in use to the default
             void reset_id_codec()
             { set_id_codec(DEFAULT_CODEC_NAME); }
-            
+
+            const std::set<unsigned>& skip_crypto_ids() { return skip_crypto_ids_; }
             //@}           
 
             

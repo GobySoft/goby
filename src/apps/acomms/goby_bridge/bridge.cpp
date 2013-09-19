@@ -37,6 +37,7 @@
 #include "goby/acomms/protobuf/queue.pb.h"
 #include "goby/acomms/protobuf/network_ack.pb.h"
 
+#include "goby/acomms/protobuf/file_transfer.pb.h"
 
 #include "bridge_config.pb.h"
 
@@ -59,13 +60,32 @@ namespace goby
                                  const google::protobuf::Message& orig_msg,
                                  QueueManager* from_queue);
             
+            void handle_queue_receive(const google::protobuf::Message& msg,
+                                      QueueManager* from_queue);
+
             void handle_modem_receive(const goby::acomms::protobuf::ModemTransmission& message,
                                       QueueManager* in_queue);
+
+
+            template<typename ProtobufMessage>
+            void handle_external_push(const ProtobufMessage& message,
+                                      QueueManager* in_queue)
+                {
+                    try
+                    {
+                        in_queue->push_message(message);
+                    }
+                    catch(std::exception& e)
+                    {
+                        glog.is(WARN) && glog << "Failed to push message: " << e.what() << std::endl;
+                    }
+                }
+            
             
             void handle_initiate_transmission(const protobuf::ModemTransmission& m, int subnet);
 
             void handle_data_request(const protobuf::ModemTransmission& m, int subnet);
-
+            
         private:
             static protobuf::BridgeConfig cfg_;
             
@@ -73,6 +93,8 @@ namespace goby
             std::vector<boost::shared_ptr<MACManager> > mac_managers_;
             
             RouteManager r_manager_;
+            
+                
         };
     }
 }
@@ -151,10 +173,21 @@ goby::acomms::Bridge::Bridge()
         goby::acomms::connect(&(q_managers_[i]->signal_ack),
                               boost::bind(&Bridge::handle_link_ack, this, _1, _2, q_managers_[i].get()));
 
+        goby::acomms::connect(&(q_managers_[i]->signal_receive),
+                              boost::bind(&Bridge::handle_queue_receive, this, _1, q_managers_[i].get()));
+        
         subscribe<goby::acomms::protobuf::ModemTransmission>(
             boost::bind(&Bridge::handle_modem_receive, this, _1, q_managers_[i].get()),
             "Rx" + goby::util::as<std::string>(qcfg.modem_id()));
 
+        subscribe<goby::acomms::protobuf::TransferRequest>(
+            boost::bind(&Bridge::handle_external_push<goby::acomms::protobuf::TransferRequest>, this, _1, q_managers_[i].get()),
+            "QueuePush" + goby::util::as<std::string>(qcfg.modem_id()));
+
+        subscribe<goby::acomms::protobuf::FileFragment>(
+            boost::bind(&Bridge::handle_external_push<goby::acomms::protobuf::FileFragment>, this, _1, q_managers_[i].get()),
+            "QueuePush" + goby::util::as<std::string>(qcfg.modem_id()));
+        
         subscribe<goby::acomms::protobuf::ModemTransmission>(
             boost::bind(&Bridge::handle_data_request, this, _1, i),
             "DataRequest" + goby::util::as<std::string>(qcfg.modem_id()));
@@ -195,10 +228,19 @@ void goby::acomms::Bridge::loop()
     }
 }
 
+void goby::acomms::Bridge::handle_queue_receive(const google::protobuf::Message& msg,
+                                                QueueManager* from_queue)
+{
+    publish(msg, "QueueRx" + goby::util::as<std::string>(from_queue->modem_id()));
+}
+
 void goby::acomms::Bridge::handle_link_ack(const protobuf::ModemTransmission& ack_msg,
                                            const google::protobuf::Message& orig_msg,
                                            QueueManager* from_queue)
 {
+    // publish link ack
+    publish(orig_msg, "QueueAckOrig" + goby::util::as<std::string>(from_queue->modem_id()));
+    
     if(orig_msg.GetDescriptor()->full_name() == "goby.acomms.protobuf.NetworkAck")
     {
         glog.is(DEBUG1) && glog << "Not generating network ack from NetworkAck to avoid infinite proliferation of ACKS." << std::endl;
@@ -215,6 +257,13 @@ void goby::acomms::Bridge::handle_link_ack(const protobuf::ModemTransmission& ac
     ack.set_message_dest(meta.dest());
     ack.set_message_time(meta.time());
 
+    if(ack_msg.src() == ack.message_src())
+    {
+        glog.is(DEBUG1) && glog << "Not generating network ack for single hop messages" << std::endl;
+        return;
+    }
+
+    
     glog.is(VERBOSE) && glog << "Generated network ack: " << ack.DebugString() << "from: " << orig_msg.DebugString() << std::endl;
     
     r_manager_.handle_in(from_queue->meta_from_msg(ack), ack, from_queue->modem_id());
@@ -223,36 +272,42 @@ void goby::acomms::Bridge::handle_link_ack(const protobuf::ModemTransmission& ac
 
 void goby::acomms::Bridge::handle_modem_receive(const goby::acomms::protobuf::ModemTransmission& message, QueueManager* in_queue)
 {
-    in_queue->handle_modem_receive(message);
-    
-    for(int i = 0, n = message.ExtensionSize(micromodem::protobuf::receive_stat);
-        i < n; ++i)
+    try
     {
+        in_queue->handle_modem_receive(message);
+    
+        for(int i = 0, n = message.ExtensionSize(micromodem::protobuf::receive_stat);
+            i < n; ++i)
+        {
 
-        micromodem::protobuf::ReceiveStatistics cacst =
-            message.GetExtension(micromodem::protobuf::receive_stat, i);
+            micromodem::protobuf::ReceiveStatistics cacst =
+                message.GetExtension(micromodem::protobuf::receive_stat, i);
 //        cacst.set_forward_src(in_queue->modem_id());
 //        cacst.set_forward_dest(cfg_.topside_modem_id());
         
-        glog.is(VERBOSE) && glog << "Forwarding statistics message to topside: " << cacst << std::endl;
-        r_manager_.handle_in(in_queue->meta_from_msg(cacst),
-                             cacst,
-                             in_queue->modem_id());
-    }
+            glog.is(VERBOSE) && glog << "Forwarding statistics message to topside: " << cacst << std::endl;
+            r_manager_.handle_in(in_queue->meta_from_msg(cacst),
+                                 cacst,
+                                 in_queue->modem_id());
+        }
 
-    if(message.HasExtension(micromodem::protobuf::ranging_reply))
-    {
-        micromodem::protobuf::RangingReply ranging =
-            message.GetExtension(micromodem::protobuf::ranging_reply);
+        if(message.HasExtension(micromodem::protobuf::ranging_reply))
+        {
+            micromodem::protobuf::RangingReply ranging =
+                message.GetExtension(micromodem::protobuf::ranging_reply);
 //        ranging.set_forward_src(in_queue->modem_id());
 //        ranging.set_forward_dest(cfg_.topside_modem_id());
         
-        glog.is(VERBOSE) && glog << "Forwarding ranging message to topside: " << ranging << std::endl;
-        r_manager_.handle_in(in_queue->meta_from_msg(ranging),
-                             ranging,
-                             in_queue->modem_id());        
+            glog.is(VERBOSE) && glog << "Forwarding ranging message to topside: " << ranging << std::endl;
+            r_manager_.handle_in(in_queue->meta_from_msg(ranging),
+                                 ranging,
+                                 in_queue->modem_id());        
+        }
     }
-        
+    catch(std::exception& e)
+    {
+        glog.is(WARN) && glog << "Failed to handle incoming message: " << e.what() << std::endl;
+    }    
 }
 
 

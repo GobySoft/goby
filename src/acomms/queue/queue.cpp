@@ -437,8 +437,8 @@ std::vector<boost::shared_ptr<google::protobuf::Message> > goby::acomms::Queue::
         {
             expired_msgs.push_back(messages_.front().dccl_msg);
             glog.is(DEBUG1) && glog  << group(parent_->glog_pop_group()) <<  "expiring" << " from send stack "
-                                      << name() << " (qsize " << size()-1
-                                      <<  "/" << queue_message_options().max_queue() << "): "  << messages_.front().dccl_msg << std::endl;
+                                     << name() << " " << messages_.front().meta.time() << " (qsize " << size()-1
+                                     <<  "/" << queue_message_options().max_queue() << "): "  << *messages_.front().dccl_msg << std::endl;
             // if we were waiting for an ack for this, erase that too
             waiting_for_ack_it it = find_ack_value(messages_.begin());
             if(it != waiting_for_ack_.end()) waiting_for_ack_.erase(it);

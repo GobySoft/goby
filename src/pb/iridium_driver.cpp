@@ -232,6 +232,11 @@ void goby::acomms::IridiumDriver::do_work()
        (fsm_.state_cast<const fsm::NotOnCall *>() == 0))
     {
         last_mac_msg_.clear_frame();
+        // dest can get set to 0 by queue when no data available
+        last_mac_msg_.clear_dest();
+        // same idea with ACK
+        last_mac_msg_.clear_ack_requested();
+        
         process_transmission();
         last_send_time_ = now;
     }

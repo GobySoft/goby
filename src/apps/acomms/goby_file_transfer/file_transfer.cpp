@@ -196,7 +196,7 @@ void goby::acomms::FileTransfer::send_file(const std::string& path)
 
     if(size > MAX_FILE_TRANSFER_BYTES)
     {
-        throw std::runtime_error("File exceeds maximum supported size of " + goby::util::as<std::string>(MAX_FILE_TRANSFER_BYTES) + "B");
+        throw std::runtime_error("File exceeds maximum supported size of " + goby::util::as<std::string>(int(MAX_FILE_TRANSFER_BYTES)) + "B");
     }
     
     // seek to front

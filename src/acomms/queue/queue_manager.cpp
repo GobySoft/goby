@@ -67,6 +67,16 @@ void goby::acomms::QueueManager::add_queue(const google::protobuf::Descriptor* d
                                            const protobuf::QueuedMessageEntry& queue_cfg /*= protobuf::QueuedMessageEntry()*/)
 {
     
+    try
+    {
+        //validate with DCCL first
+        codec_->validate(desc);
+    }
+    catch(DCCLException& e)
+    {
+        throw(QueueException("could not create queue for message: " + desc->full_name() + " because it failed DCCL validation: " + e.what()));
+    }
+    
     // does the queue exist?
     unsigned dccl_id = codec_->id(desc);    
     if(queues_.count(dccl_id))
@@ -77,15 +87,6 @@ void goby::acomms::QueueManager::add_queue(const google::protobuf::Descriptor* d
         return;
     }
     
-    try
-    {
-        //validate with DCCL first
-        codec_->validate(desc);
-    }
-    catch(DCCLException& e)
-    {
-        throw(QueueException("could not create queue for message: " + desc->full_name() + " because it failed DCCL validation: " + e.what()));
-    }
     
     // add the newly generated queue
     if(queues_.count(dccl_id))

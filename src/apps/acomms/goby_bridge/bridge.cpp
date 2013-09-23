@@ -145,14 +145,7 @@ goby::acomms::Bridge::Bridge()
     }
 
     // validate all messages
-    typedef boost::shared_ptr<google::protobuf::Message> GoogleProtobufMessagePointer;
-    
-    for(int i = 0, n = cfg_.load_dccl_message_size(); i < n; ++i)
-    {
-        GoogleProtobufMessagePointer msg = goby::util::DynamicProtobufManager::new_protobuf_message<GoogleProtobufMessagePointer>(cfg_.load_dccl_message(i));
-        // validate with DCCL
-        goby::acomms::DCCLCodec::get()->validate(msg->GetDescriptor());
-    }
+    typedef boost::shared_ptr<google::protobuf::Message> GoogleProtobufMessagePointer;    
     
     r_manager_.set_cfg(cfg_.route_cfg());
     q_managers_.resize(cfg_.subnet_size());

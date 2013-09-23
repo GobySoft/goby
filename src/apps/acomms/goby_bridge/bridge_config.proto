@@ -24,7 +24,5 @@ message BridgeConfig
   
   repeated string load_proto_file = 11 [(goby.field).description="Path to a DCCL protobuf file. Use load_shared_library when possible."];
 
-  repeated string load_dccl_message = 12 [(goby.field).description="Full name of DCCL protobuf message to validate and load. Must be compiled in or previously loaded using either load_shared_library or load_proto_file"];
-
   optional int32 topside_modem_id = 100 [default = 021];
 }

@@ -66,7 +66,7 @@ void goby::acomms::fsm::Command::in_state_react(const EvRxSerial& e)
     }
     else if(in == "NO DIALTONE")
     {
-         post_event(EvAck(in));
+        post_event(EvAck(in));
         post_event(EvNoCarrier());
     }
     else if(in == "BUSY")

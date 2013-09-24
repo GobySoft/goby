@@ -93,7 +93,9 @@ namespace goby
             std::vector<boost::shared_ptr<MACManager> > mac_managers_;
             
             RouteManager r_manager_;
-            
+
+            typedef int ModemId;
+            std::set<ModemId> network_ack_src_ids_;
                 
         };
     }
@@ -190,14 +192,21 @@ goby::acomms::Bridge::Bridge()
         
     }    
 
+    for(int i = 0, n = cfg_.make_network_ack_for_src_id_size();
+        i < n; ++i)
+    {
+        glog.is(DEBUG1) && glog << "Generating NetworkAck for messages required ACK from source ID: " << cfg_.make_network_ack_for_src_id(i) << std::endl;
+
+        network_ack_src_ids_.insert(cfg_.make_network_ack_for_src_id(i));
+    }
+    
 
     protobuf::NetworkAck ack;
 
     assert(ack.GetDescriptor() == google::protobuf::DescriptorPool::generated_pool()->FindMessageTypeByName("goby.acomms.protobuf.NetworkAck"));
 
     assert(ack.GetDescriptor() == goby::util::DynamicProtobufManager::new_protobuf_message("goby.acomms.protobuf.NetworkAck")->GetDescriptor());
-
-
+    
 }
 
 
@@ -239,6 +248,8 @@ void goby::acomms::Bridge::handle_link_ack(const protobuf::ModemTransmission& ac
         glog.is(DEBUG1) && glog << "Not generating network ack from NetworkAck to avoid infinite proliferation of ACKS." << std::endl;
         return;
     }
+
+    
     
     protobuf::NetworkAck ack;
     ack.set_ack_src(ack_msg.src());
@@ -246,6 +257,13 @@ void goby::acomms::Bridge::handle_link_ack(const protobuf::ModemTransmission& ac
 
 
     protobuf::QueuedMessageMeta meta = from_queue->meta_from_msg(orig_msg);
+
+    if(!network_ack_src_ids_.count(meta.src()))
+    {
+        glog.is(DEBUG1) && glog << "Not generating network ack for message from source ID: " << meta.src() << " as we weren't asked to do so." << std::endl;
+        return;
+    }
+    
     ack.set_message_src(meta.src());
     ack.set_message_dest(meta.dest());
     ack.set_message_time(meta.time());
@@ -268,28 +286,27 @@ void goby::acomms::Bridge::handle_modem_receive(const goby::acomms::protobuf::Mo
     try
     {
         in_queue->handle_modem_receive(message);
-    
-        for(int i = 0, n = message.ExtensionSize(micromodem::protobuf::receive_stat);
-            i < n; ++i)
+
+        if(cfg_.forward_cacst())
         {
-
-            micromodem::protobuf::ReceiveStatistics cacst =
-                message.GetExtension(micromodem::protobuf::receive_stat, i);
-//        cacst.set_forward_src(in_queue->modem_id());
-//        cacst.set_forward_dest(cfg_.topside_modem_id());
-        
-            glog.is(VERBOSE) && glog << "Forwarding statistics message to topside: " << cacst << std::endl;
-            r_manager_.handle_in(in_queue->meta_from_msg(cacst),
-                                 cacst,
-                                 in_queue->modem_id());
+            for(int i = 0, n = message.ExtensionSize(micromodem::protobuf::receive_stat);
+                i < n; ++i)
+            {
+                
+                micromodem::protobuf::ReceiveStatistics cacst =
+                    message.GetExtension(micromodem::protobuf::receive_stat, i);
+                
+                glog.is(VERBOSE) && glog << "Forwarding statistics message to topside: " << cacst << std::endl;
+                r_manager_.handle_in(in_queue->meta_from_msg(cacst),
+                                     cacst,
+                                     in_queue->modem_id());
+            }
         }
-
-        if(message.HasExtension(micromodem::protobuf::ranging_reply))
+        
+        if(cfg_.forward_ranging_reply() && message.HasExtension(micromodem::protobuf::ranging_reply))
         {
             micromodem::protobuf::RangingReply ranging =
                 message.GetExtension(micromodem::protobuf::ranging_reply);
-//        ranging.set_forward_src(in_queue->modem_id());
-//        ranging.set_forward_dest(cfg_.topside_modem_id());
         
             glog.is(VERBOSE) && glog << "Forwarding ranging message to topside: " << ranging << std::endl;
             r_manager_.handle_in(in_queue->meta_from_msg(ranging),

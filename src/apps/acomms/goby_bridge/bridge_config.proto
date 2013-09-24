@@ -24,5 +24,9 @@ message BridgeConfig
   
   repeated string load_proto_file = 11 [(goby.field).description="Path to a DCCL protobuf file. Use load_shared_library when possible."];
 
-  optional int32 topside_modem_id = 100 [default = 021];
+  optional bool forward_cacst = 100 [default = true];
+  optional bool forward_ranging_reply = 101 [default = true];
+
+  repeated int32 make_network_ack_for_src_id = 102;
+  
 }

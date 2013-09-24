@@ -53,7 +53,7 @@ namespace goby
             void shutdown();            
             void do_work();
             void handle_initiate_transmission(const protobuf::ModemTransmission& m);
-            void process_transmission();
+            void process_transmission(protobuf::ModemTransmission msg, bool dial);
             void handle_mt_response(const acomms::protobuf::MTDataResponse& response);
 
           private:
@@ -86,11 +86,13 @@ namespace goby
             double query_interval_seconds_;
             bool waiting_for_reply_;
             
-            protobuf::ModemTransmission last_mac_msg_;
+            protobuf::ModemTransmission rudics_mac_msg_;
             double last_send_time_;
 
 
             int serial_fd_;
+
+            enum { RATE_RUDICS = 1, RATE_SBD = 0 };    
         };
     }
 }

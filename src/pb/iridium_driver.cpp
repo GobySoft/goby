@@ -48,7 +48,7 @@ goby::acomms::IridiumDriver::IridiumDriver(goby::common::ZeroMQService* zeromq_s
           last_send_time_(0),
           serial_fd_(-1)
 {
-    
+     
 //    assert(byte_string_to_uint32(uint32_to_byte_string(16540)) == 16540);
 }
 
@@ -94,6 +94,10 @@ void goby::acomms::IridiumDriver::startup(const protobuf::DriverConfig& cfg)
             driver_cfg_.GetExtension(IridiumDriverConfig::request_socket).socket_id();
     }
     
+    rudics_mac_msg_.set_src(driver_cfg_.modem_id()); 
+    rudics_mac_msg_.set_type(goby::acomms::protobuf::ModemTransmission::DATA);
+    rudics_mac_msg_.set_rate(RATE_RUDICS);
+
     
     modem_init();
 }
@@ -196,24 +200,24 @@ void goby::acomms::IridiumDriver::shutdown()
 
 void goby::acomms::IridiumDriver::handle_initiate_transmission(const protobuf::ModemTransmission& orig_msg)
 {
-    // buffer the message
-    last_mac_msg_ = orig_msg;
-    process_transmission();
-
-    if(!(last_mac_msg_.frame_size() == 0 || last_mac_msg_.frame(0).empty()))
-        fsm_.process_event(fsm::EvDial());
+    process_transmission(orig_msg, true);
 }
 
-void goby::acomms::IridiumDriver::process_transmission()
+void goby::acomms::IridiumDriver::process_transmission(protobuf::ModemTransmission msg, bool dial)
 {
-    signal_modify_transmission(&last_mac_msg_);
+    signal_modify_transmission(&msg);
 
-    last_mac_msg_.set_max_frame_bytes(driver_cfg_.GetExtension(IridiumDriverConfig::max_frame_size));
-    signal_data_request(&last_mac_msg_);
+    msg.set_max_frame_bytes(driver_cfg_.GetExtension(IridiumDriverConfig::max_frame_size));
+    signal_data_request(&msg);
 
-    if(!(last_mac_msg_.frame_size() == 0 || last_mac_msg_.frame(0).empty()))
-        send(last_mac_msg_);
+    if(!(msg.frame_size() == 0 || msg.frame(0).empty()))
+    {
+        if(dial && msg.rate() == RATE_RUDICS)
+            fsm_.process_event(fsm::EvDial());
+        send(msg);
+    }
 }
+
 
 
 void goby::acomms::IridiumDriver::do_work()
@@ -231,13 +235,7 @@ void goby::acomms::IridiumDriver::do_work()
        (now > (last_send_time_ + send_interval)) &&
        (fsm_.state_cast<const fsm::NotOnCall *>() == 0))
     {
-        last_mac_msg_.clear_frame();
-        // dest can get set to 0 by queue when no data available
-        last_mac_msg_.clear_dest();
-        // same idea with ACK
-        last_mac_msg_.clear_ack_requested();
-        
-        process_transmission();
+        process_transmission(rudics_mac_msg_, false);
         last_send_time_ = now;
     }
     

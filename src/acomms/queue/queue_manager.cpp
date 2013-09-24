@@ -354,10 +354,19 @@ void goby::acomms::QueueManager::handle_modem_data_request(protobuf::ModemTransm
             {
                 if(using_encrypted_body)
                 {
-                    glog.is(DEBUG3) && glog << group(glog_out_group_) << "Encoding head only, passing through (encrypted?) body." << std::endl;
+                    glog.is(DEBUG2) && glog << group(glog_out_group_) << "Encoding head only, passing through (encrypted?) body." << std::endl;
+
+                    *data = ""; 
+                    // encode all the messages but the last (these must be unencrypted)
+                    std::list<boost::shared_ptr<google::protobuf::Message> >::iterator it_back = dccl_msgs.end();
+                    --it_back;
+                    if(dccl_msgs.size() > 1)
+                        *data = codec_->encode_repeated<boost::shared_ptr<google::protobuf::Message> >(
+                            std::list<boost::shared_ptr<google::protobuf::Message> >(dccl_msgs.begin(), it_back));
+                        
                     std::string head;
                     codec_->encode(&head, *dccl_msgs.back(), true);
-                    *data = head + passthrough_message.substr(head.size());
+                    *data += head + passthrough_message.substr(head.size());
                 }
                 else
                 {

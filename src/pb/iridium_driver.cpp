@@ -324,6 +324,8 @@ void goby::acomms::IridiumDriver::do_work()
 
 void goby::acomms::IridiumDriver::receive(const protobuf::ModemTransmission& msg)
 {
+    glog.is(DEBUG2) && glog << group(glog_in_group()) << msg << std::endl;
+
     if(msg.type() == protobuf::ModemTransmission::DATA &&
        msg.ack_requested() && msg.dest() == driver_cfg_.modem_id())
     {
@@ -342,6 +344,7 @@ void goby::acomms::IridiumDriver::receive(const protobuf::ModemTransmission& msg
 
 void goby::acomms::IridiumDriver::send(const protobuf::ModemTransmission& msg)
 {
+    glog.is(DEBUG2) && glog << group(glog_out_group()) << msg << std::endl;
     fsm_.buffer_data_out(msg);
 }
 

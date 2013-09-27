@@ -150,7 +150,7 @@ void goby::acomms::MACManager::begin_slot(const boost::system::error_code& e)
     {
         case protobuf::MAC_FIXED_DECENTRALIZED:
             // we only transmit if the packet source is us
-            we_are_transmitting = (s.src() == cfg_.modem_id());
+            we_are_transmitting = (s.src() == cfg_.modem_id()) || s.always_initiate();
             break;
 
         case protobuf::MAC_POLLED:

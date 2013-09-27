@@ -38,6 +38,7 @@
 #include "goby/moos/moos_bluefin_driver.h"
 #include "goby/moos/protobuf/bluefin_driver.pb.h"
 #include "goby/pb/pb_modem_driver.h"
+#include "goby/pb/iridium_driver.h"
 #include "goby/acomms/modemdriver/udp_driver.h"
 
 
@@ -76,7 +77,6 @@ CpAcommsHandler::CpAcommsHandler()
                   cfg_.common().lon_origin(),
                   cfg_.modem_id_lookup_path()),
       dccl_(goby::acomms::DCCLCodec::get()),
-      driver_(0),
       work_(timer_io_service_),
       router_(0)
 {
@@ -155,9 +155,10 @@ CpAcommsHandler::CpAcommsHandler()
         goby::acomms::connect(&driver_->signal_raw_outgoing,
                               boost::bind(&CpAcommsHandler::handle_raw, this,
                                           _1, cfg_.moos_var().driver_raw_out()));
-        
-        
     }
+    for(int i = 0, n = rx_only_drivers_.size(); i < n; ++i)
+        goby::acomms::bind(*rx_only_drivers_[i], queue_manager_);
+
     
     if(router_)
     {
@@ -178,6 +179,9 @@ void CpAcommsHandler::loop()
     timer_io_service_.poll();
 
     if(driver_) driver_->do_work();
+    for(int i = 0, n = rx_only_drivers_.size(); i < n; ++i)
+        rx_only_drivers_[i]->do_work();
+
     mac_.do_work();
     queue_manager_.do_work();    
 }
@@ -267,9 +271,14 @@ void CpAcommsHandler::handle_mac_cycle_update(const CMOOSMsg& msg)
         {
             case goby::acomms::protobuf::MACUpdate::STARTED:
                 mac_.restart();
+
+                if(cfg_.driver_type() == goby::acomms::protobuf::DRIVER_WHOI_MICROMODEM)
+                    dynamic_cast<goby::acomms::MMDriver*>(driver_.get())->set_silent(false);
                 break;
             
             case goby::acomms::protobuf::MACUpdate::STOPPED:
+                if(cfg_.driver_type() == goby::acomms::protobuf::DRIVER_WHOI_MICROMODEM)
+                    dynamic_cast<goby::acomms::MMDriver*>(driver_.get())->set_silent(true);
                 mac_.shutdown();
                 break;
         }
@@ -317,57 +326,30 @@ void CpAcommsHandler::handle_raw(const goby::acomms::protobuf::ModemRaw& msg, co
     publish(cfg_.moos_var().prefix() + moos_var, msg.raw());
 }
 
-
-
-
-
 //
 // READ CONFIGURATION
 //
 
 void CpAcommsHandler::process_configuration()
 {
-    // create driver object
-    switch(cfg_.driver_type())
+    // create driver objects
+    create_driver(driver_, cfg_.driver_type(), cfg_.mutable_driver_cfg(), &mac_);
+
+    // create receive only (listener) drivers
+    if(cfg_.listen_driver_type_size() == cfg_.listen_driver_cfg_size())
     {
-        case goby::acomms::protobuf::DRIVER_WHOI_MICROMODEM:
-            driver_ = new goby::acomms::MMDriver;
-            break;
-
-        case goby::acomms::protobuf::DRIVER_ABC_EXAMPLE_MODEM:
-            driver_ = new goby::acomms::ABCDriver;
-            break;
-
-        case goby::acomms::protobuf::DRIVER_UFIELD_SIM_DRIVER:
-            driver_ = new goby::moos::UFldDriver;
-            cfg_.mutable_driver_cfg()->SetExtension(
-                goby::moos::protobuf::Config::modem_id_lookup_path,
-                cfg_.modem_id_lookup_path());
-            break;
-
-        case goby::acomms::protobuf::DRIVER_PB_STORE_SERVER:
-            zeromq_service_.reset(new goby::common::ZeroMQService);
-            driver_ = new goby::pb::PBDriver(zeromq_service_.get());
-            break;
-
-        case goby::acomms::protobuf::DRIVER_UDP:
-            asio_service_.reset(new boost::asio::io_service);
-            driver_ = new goby::acomms::UDPDriver(asio_service_.get());
-            break;
-
-        case goby::acomms::protobuf::DRIVER_BLUEFIN_MOOS:
-            driver_ = new goby::moos::BluefinCommsDriver(&mac_);
-            cfg_.mutable_driver_cfg()->SetExtension(
-                goby::moos::protobuf::BluefinConfig::moos_server,
-                cfg_.common().server_host());
-            cfg_.mutable_driver_cfg()->SetExtension(
-                goby::moos::protobuf::BluefinConfig::moos_port,
-                cfg_.common().server_port());
-            break;
-            
-        case goby::acomms::protobuf::DRIVER_NONE: break;
-    }    
-
+        for(int i = 0, n = cfg_.listen_driver_type_size(); i < n; ++i)
+        {
+            rx_only_drivers_.push_back(boost::shared_ptr<goby::acomms::ModemDriverBase>());
+            create_driver(rx_only_drivers_.back(), cfg_.listen_driver_type(i), cfg_.mutable_listen_driver_cfg(i), 0);
+        }
+    }
+    else
+    {
+        glog.is(DIE) && glog << "You must specify the same number of listen_driver_type fields to correspond with the listen_driver_cfg fields." << std::endl;
+    }
+    
+    
     if(cfg_.has_route_cfg() && cfg_.route_cfg().route().hop_size() > 0)
     {
         router_ = new goby::acomms::RouteManager;
@@ -383,8 +365,16 @@ void CpAcommsHandler::process_configuration()
     cfg_.mutable_queue_cfg()->set_modem_id(cfg_.modem_id());
     cfg_.mutable_mac_cfg()->set_modem_id(cfg_.modem_id());
     cfg_.mutable_transitional_cfg()->set_modem_id(cfg_.modem_id());
-    cfg_.mutable_driver_cfg()->set_modem_id(cfg_.modem_id());
 
+    if(!cfg_.driver_cfg().has_modem_id())
+        cfg_.mutable_driver_cfg()->set_modem_id(cfg_.modem_id());        
+
+    for(int i = 0, n = rx_only_drivers_.size(); i < n; ++i)
+    {
+        if(!cfg_.listen_driver_cfg(i).has_modem_id())
+            cfg_.mutable_listen_driver_cfg(i)->set_modem_id(cfg_.modem_id());
+    }    
+    
     // load all shared libraries
     for(int i = 0, n = cfg_.load_shared_library_size(); i < n; ++i)
     {
@@ -417,6 +407,9 @@ void CpAcommsHandler::process_configuration()
     
     // start goby-acomms classes
     if(driver_) driver_->startup(cfg_.driver_cfg());
+    for(int i = 0, n = rx_only_drivers_.size(); i < n; ++i)
+        rx_only_drivers_[i]->startup(cfg_.listen_driver_cfg(i));    
+    
     mac_.startup(cfg_.mac_cfg());
     queue_manager_.set_cfg(cfg_.queue_cfg());
     dccl_->set_cfg(cfg_.dccl_cfg());
@@ -470,6 +463,60 @@ void CpAcommsHandler::process_configuration()
     }    
 }
 
+void CpAcommsHandler::create_driver(boost::shared_ptr<goby::acomms::ModemDriverBase>& driver,
+                                    goby::acomms::protobuf::DriverType driver_type,
+                                    goby::acomms::protobuf::DriverConfig* driver_cfg,
+                                    goby::acomms::MACManager* mac)
+{
+    switch(driver_type)
+    {
+        case goby::acomms::protobuf::DRIVER_WHOI_MICROMODEM:
+            driver.reset(new goby::acomms::MMDriver);
+            break;
+
+        case goby::acomms::protobuf::DRIVER_ABC_EXAMPLE_MODEM:
+            driver.reset(new goby::acomms::ABCDriver);
+            break;
+
+        case goby::acomms::protobuf::DRIVER_UFIELD_SIM_DRIVER:
+            driver.reset(new goby::moos::UFldDriver);
+            driver_cfg->SetExtension(
+                goby::moos::protobuf::Config::modem_id_lookup_path,
+                cfg_.modem_id_lookup_path());
+            break;
+
+        case goby::acomms::protobuf::DRIVER_PB_STORE_SERVER:
+            zeromq_service_.push_back(boost::shared_ptr<goby::common::ZeroMQService>(
+                                          new goby::common::ZeroMQService));
+            driver.reset(new goby::pb::PBDriver(zeromq_service_.back().get()));
+            break;
+
+        case goby::acomms::protobuf::DRIVER_IRIDIUM:
+            zeromq_service_.push_back(boost::shared_ptr<goby::common::ZeroMQService>(
+                                          new goby::common::ZeroMQService));
+            driver.reset(new goby::acomms::IridiumDriver(zeromq_service_.back().get()));
+            break;
+            
+        case goby::acomms::protobuf::DRIVER_UDP:
+            asio_service_.push_back(boost::shared_ptr<boost::asio::io_service>(
+                                        new boost::asio::io_service));
+            driver.reset(new goby::acomms::UDPDriver(asio_service_.back().get()));
+            break;
+
+        case goby::acomms::protobuf::DRIVER_BLUEFIN_MOOS:
+            driver.reset(new goby::moos::BluefinCommsDriver(mac));
+            driver_cfg->SetExtension(
+                goby::moos::protobuf::BluefinConfig::moos_server,
+                cfg_.common().server_host());
+            driver_cfg->SetExtension(
+                goby::moos::protobuf::BluefinConfig::moos_port,
+                cfg_.common().server_port());
+            break;
+            
+        case goby::acomms::protobuf::DRIVER_NONE: break;
+    }
+}
+            
 void CpAcommsHandler::handle_queue_receive(const google::protobuf::Message& msg)
 {
     try

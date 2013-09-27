@@ -69,7 +69,11 @@ class CpAcommsHandler : public GobyMOOSApp
         
     
     void process_configuration();
-
+    void create_driver(boost::shared_ptr<goby::acomms::ModemDriverBase>& driver,
+                       goby::acomms::protobuf::DriverType driver_type,
+                       goby::acomms::protobuf::DriverConfig* driver_cfg,
+                       goby::acomms::MACManager* mac);
+    
     void create_on_publish(const CMOOSMsg& trigger_msg, const goby::moos::protobuf::TranslatorEntry& entry);
     void create_on_multiplex_publish(const CMOOSMsg& moos_msg);
     void create_on_timer(const boost::system::error_code& error,
@@ -111,8 +115,12 @@ class CpAcommsHandler : public GobyMOOSApp
     goby::acomms::QueueManager queue_manager_;
     
     // driver class that interfaces to the modem
-    goby::acomms::ModemDriverBase* driver_;
-
+    boost::shared_ptr<goby::acomms::ModemDriverBase> driver_;
+    
+    // additional listener drivers (receive only)
+    std::vector<boost::shared_ptr<goby::acomms::ModemDriverBase> > rx_only_drivers_;
+    
+    
     // MAC
     goby::acomms::MACManager mac_;    
     
@@ -121,11 +129,11 @@ class CpAcommsHandler : public GobyMOOSApp
 
     goby::acomms::RouteManager* router_;
     
-    // for PBDriver
-    boost::shared_ptr<goby::common::ZeroMQService> zeromq_service_;
+    // for PBDriver, IridiumDriver
+    std::vector<boost::shared_ptr<goby::common::ZeroMQService> > zeromq_service_;
 
     // for UDPDriver
-    boost::shared_ptr<boost::asio::io_service> asio_service_;
+    std::vector<boost::shared_ptr<boost::asio::io_service> > asio_service_;
     
     std::vector<boost::shared_ptr<Timer> > timers_;
     

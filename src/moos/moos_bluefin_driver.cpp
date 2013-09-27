@@ -186,7 +186,7 @@ void goby::moos::BluefinCommsDriver::handle_initiate_transmission(
 
 void goby::moos::BluefinCommsDriver::do_work()
 {
-    if(mac_->running() && end_of_mac_window_ < goby_time<double>())
+    if(mac_ && mac_->running() && end_of_mac_window_ < goby_time<double>())
         mac_->shutdown();
     
     
@@ -264,7 +264,7 @@ void goby::moos::BluefinCommsDriver::bfcma(const goby::util::NMEASentence& nmea)
     };
     end_of_mac_window_ = goby::util::as<double>(nmea_time2ptime(nmea.at(END_OF_TIME_WINDOW)));
     current_modem_ = nmea.at(DEVICE_TYPE);
-    mac_->restart();
+    if(mac_) mac_->restart();
 }
 
 void goby::moos::BluefinCommsDriver::bfcps(const goby::util::NMEASentence& nmea)

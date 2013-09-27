@@ -71,6 +71,8 @@ namespace goby
             static unsigned packet_size(int rate)
             { return PACKET_SIZE [rate]; }
 
+            void set_silent(bool silent);
+            
             
           private:
         

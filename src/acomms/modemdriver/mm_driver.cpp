@@ -1394,3 +1394,13 @@ void goby::acomms::MMDriver::signal_receive_and_clear(protobuf::ModemTransmissio
         throw;
     }
 }
+
+
+void goby::acomms::MMDriver::set_silent(bool silent)
+{
+    if(silent)
+        write_single_cfg("SRC,0"); // set to Goby broadcast ID to prevent ACKs
+    else
+        write_single_cfg("SRC," + as<std::string>(driver_cfg_.modem_id()));
+}
+

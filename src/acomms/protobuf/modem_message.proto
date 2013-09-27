@@ -58,12 +58,15 @@ message ModemTransmission
   // for AMAC
   optional double slot_seconds = 30 [(dccl.field).min = 0, (dccl.field).max = 3600, (dccl.field).precision=1, default = 10]; // length of slot (in seconds) if this transmission is part of a TDMA cycle
   optional uint32 unique_id = 31 [(dccl.field).min = 0, (dccl.field).max = 100, (goby.field).example="0"]; // used to assign an ID to this slot
-
+  optional bool always_initiate = 32 [default = false];
+  
   // extensions 1000-1100 used by mm_driver.proto
   // extensions 1201-1202 used by abc_driver.proto (example driver)
   // extensions 1300-1320 used by ufield_sim_driver.proto
   // extensions 1321-1340 used by pb_modem_driver.proto
-  // extensions 1341-1360 used by udp_driver.proto  
+  // extensions 1341-1360 used by udp_driver.proto
+  // extensions 1361-1380 used by bluefin_driver.proto
+  // extensions 1381-1400 used by iridium_driver.proto
   extensions 1000 to max;
 }
 

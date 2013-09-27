@@ -24,7 +24,7 @@ message MACUpdate
 
   required int32 dest = 1 [(dccl.field).min = 1, (dccl.field).max = 30, (dccl.field).in_head = true]; // modem_id that this update is for
   optional UpdateType update_type = 2 [default = NO_CHANGE];
-  repeated ModemTransmission slot = 3 [(dccl.field).max_repeat=11];
+  repeated ModemTransmission slot = 3 [(dccl.field).max_repeat=10];
   optional int32 first_iterator = 4 [(dccl.field).min = 0, (dccl.field).max = 60, default = 0]; // integer offset from begin()
   optional int32 second_iterator = 5 [(dccl.field).min = -1, (dccl.field).max = 60, default = -1]; // integer offset from begin()
 

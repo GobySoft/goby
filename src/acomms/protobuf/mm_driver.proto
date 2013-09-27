@@ -55,6 +55,7 @@ message Config
     optional REMUSLBLParams remus_lbl = 1004;
 
     optional uint32 mm_version = 1005 [default = 1];
+
     
   }
 }

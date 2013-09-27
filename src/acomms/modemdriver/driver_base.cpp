@@ -22,7 +22,9 @@
 
 
 #include <boost/thread/mutex.hpp>
+#include <boost/format.hpp>
 
+#include "goby/acomms/connect.h"
 #include "goby/common/logger.h"
 
 #include "driver_base.h"
@@ -46,6 +48,7 @@ goby::acomms::ModemDriverBase::ModemDriverBase()
     
     goby::glog.add_group(glog_out_group_, common::Colors::lt_magenta);
     goby::glog.add_group(glog_in_group_, common::Colors::lt_blue);
+
 }
 
 goby::acomms::ModemDriverBase::~ModemDriverBase()
@@ -122,6 +125,40 @@ void goby::acomms::ModemDriverBase::modem_start(const protobuf::DriverConfig& cf
             modem_ = new util::TCPServer(cfg.tcp_port(), cfg.line_delimiter());
     }    
 
+
+    if(cfg.has_raw_log())
+    {
+        using namespace boost::posix_time;
+        boost::format file_format(cfg.raw_log());
+        file_format.exceptions( boost::io::all_error_bits ^ ( boost::io::too_many_args_bit | boost::io::too_few_args_bit)); 
+        
+        std::string file_name = (file_format % to_iso_string(second_clock::universal_time())).str();
+
+        glog.is(DEBUG1, lock) && glog << group(glog_out_group_) << "logging NMEA-0183 output to file: " << file_name << std::endl << unlock;
+
+        raw_fs_.reset(new std::ofstream(file_name.c_str()));
+
+        
+        if(raw_fs_->is_open())
+        {
+            connect(&signal_raw_incoming, boost::bind(&ModemDriverBase::write_raw, this, _1, true));
+            connect(&signal_raw_outgoing, boost::bind(&ModemDriverBase::write_raw, this, _1, false));
+        }
+        else
+        {
+            glog.is(DEBUG1, lock) && glog << group(glog_out_group_) << warn << "Failed to open log file" << std::endl << unlock;
+            raw_fs_.reset();
+        }
+    }
+
+
+    
     modem_->start();
 }
 
+void goby::acomms::ModemDriverBase::write_raw(const protobuf::ModemRaw& msg, bool rx)
+{
+    if(rx) *raw_fs_ << "[rx] ";
+    else   *raw_fs_ << "[tx] ";
+    *raw_fs_ << msg.raw() << std::endl;
+}

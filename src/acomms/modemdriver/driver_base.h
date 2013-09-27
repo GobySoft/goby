@@ -164,11 +164,16 @@ namespace goby
             static int count_;
 
           private:
+            void write_raw(const protobuf::ModemRaw& msg, bool rx);
+            
+          private:
             // represents the line based communications interface to the modem
             util::LineBasedInterface* modem_;
 
             std::string glog_out_group_;
             std::string glog_in_group_;
+
+            boost::shared_ptr<std::ofstream> raw_fs_;
 
         };
     }

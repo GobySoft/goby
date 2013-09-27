@@ -38,6 +38,8 @@ message DriverConfig
 
   optional uint32 reconnect_interval = 8 [(goby.field).description="Seconds between TCP reconnect attempts", default = 10];
   
+  optional string raw_log = 9 [(goby.field).description="File to write raw modem log to. If %1% is present, is replaced with the current timestamp."];
+
   
   extensions 1000 to max;
   // extensions 1000-1100 used by acomms_mm_driver.proto

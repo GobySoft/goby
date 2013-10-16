@@ -11,6 +11,7 @@ set(SRC
    transitional/message_val.cpp
    transitional/message_algorithms.cpp
    moos_geodesy.cpp
+   frontseat/frontseat.cpp
 )
 
 if(enable_v1_transitional)
@@ -42,3 +43,5 @@ if(enable_wt AND enable_zeromq)
   add_library(liaison_plugins_goby_moos moos_liaison_load.cpp liaison_scope.cpp liaison_commander.cpp)
   target_link_libraries(liaison_plugins_goby_moos ${Wt_LIBRARIES} goby_moos ${Boost_LIBRARIES})
 endif()
+
+add_subdirectory(frontseat)

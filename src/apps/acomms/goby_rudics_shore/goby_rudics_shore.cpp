@@ -99,7 +99,9 @@ void goby::acomms::GobyRudicsShore::loop()
     util::protobuf::Datagram msg;
     while(rudics_server_.readline(&msg))
     {
-        std::string bytes;
+        glog.is(DEBUG2) && glog << "In: " << msg.ShortDebugString() << std::endl;
+
+        std::string bytes;            
         try
         {
             parse_rudics_packet(&bytes, msg.data());

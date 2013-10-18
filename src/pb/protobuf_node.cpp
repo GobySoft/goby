@@ -55,6 +55,12 @@ void goby::pb::ProtobufNode::inbox(common::MarshallingScheme marshalling_scheme,
 
 void goby::pb::ProtobufNode::send(const google::protobuf::Message& msg, int socket_id, const std::string& group)
 {
+    if(!msg.IsInitialized())
+    {
+        glog.is(DEBUG1) && glog << warn << "Cannot send message of type [" << msg.GetDescriptor()->full_name() << "] because not all required fields are set." << std::endl;
+        return;    
+    }
+    
     int size = msg.ByteSize();
     char buffer[size];
     msg.SerializeToArray(&buffer, size);

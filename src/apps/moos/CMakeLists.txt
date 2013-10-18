@@ -9,6 +9,9 @@ endif()
 
 option(build_pTranslator "Build pTranslator" ON)
 
+option(build_iFrontSeat "Build iFrontSeat" ON)
+
+
 if(build_pAcommsHandler)
   add_subdirectory(pAcommsHandler) # boost, xercesc, asio
 endif()
@@ -16,6 +19,11 @@ endif()
 if(build_pTranslator)
   add_subdirectory(pTranslator) 
 endif()
+
+if(build_iFrontSeat)
+  add_subdirectory(iFrontSeat) 
+endif()
+
 
 if(enable_v1_transitional)
   add_subdirectory(dccl_xml_to_dccl_proto)

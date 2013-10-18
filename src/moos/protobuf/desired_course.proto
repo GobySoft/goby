@@ -1,0 +1,11 @@
+package goby.moos.protobuf;
+
+message DesiredCourse
+{
+  required double time = 1;
+  optional double heading = 2 [default = 0];
+  optional double speed = 3 [default = 0];
+  optional double depth = 4 [default = 0];
+
+  extensions 1000 to max;
+}

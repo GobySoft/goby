@@ -904,11 +904,13 @@ void goby::acomms::MMDriver::carxd(const NMEASentence& nmea, protobuf::ModemTran
     if(!nmea[5].empty()) // don't add blank messages
     {
         if(static_cast<unsigned>(m->frame_size()) != frame)
+        {
             glog.is(DEBUG1, lock) && glog << group(glog_out_group()) << warn << "frame count mismatch: (Micro-Modem reports): " << frame << ", (goby expects): " << m->frame_size() << std::endl << unlock;
-        else
-            m->add_frame(hex_decode(nmea[5]));
+        }
 
+        m->add_frame(hex_decode(nmea[5]));
         glog.is(DEBUG1, lock) && glog << group(glog_in_group()) << "Received " << m->frame(m->frame_size()-1).size() << " byte DATA frame " << frame << " from " << m->src() << std::endl << unlock;
+
     }
 
     

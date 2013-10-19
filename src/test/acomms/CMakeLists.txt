@@ -15,17 +15,13 @@ add_subdirectory(queue4)
 add_subdirectory(queue5)
 add_subdirectory(queue6)
 
-if(enable_testing_asio)
-  add_subdirectory(amac1)
-endif()
+add_subdirectory(amac1)
 
 add_subdirectory(mmdriver1)
 add_subdirectory(mmdriver2)
 
-if(enable_testing_asio)
-  add_subdirectory(route1)
-  add_subdirectory(udpdriver1)
-  add_subdirectory(udpdriver2)
-endif()
+add_subdirectory(route1)
+add_subdirectory(udpdriver1)
+add_subdirectory(udpdriver2)
 
 add_subdirectory(bitset1)

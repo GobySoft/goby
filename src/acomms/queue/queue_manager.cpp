@@ -550,11 +550,6 @@ void goby::acomms::QueueManager::handle_modem_receive(const protobuf::ModemTrans
 
                 try
                 {
-                    if(!cfg_.skip_decoding())
-                    {
-                        dccl_msgs = codec_->decode_repeated<boost::shared_ptr<google::protobuf::Message> >(modem_message.frame(frame_number));
-                    }
-                    
                     if(!signal_in_route.empty())
                     {
                         // decode only header
@@ -568,6 +563,11 @@ void goby::acomms::QueueManager::handle_modem_receive(const protobuf::ModemTrans
                             meta_msg.set_encoded_message(modem_message.frame(frame_number));
                             signal_in_route(meta_msg, *decoded_message, modem_id_);
                         }
+                    }
+
+                    if(!cfg_.skip_decoding())
+                    {
+                        dccl_msgs = codec_->decode_repeated<boost::shared_ptr<google::protobuf::Message> >(modem_message.frame(frame_number));
                     }
                 }
                 catch(DCCLException& e)

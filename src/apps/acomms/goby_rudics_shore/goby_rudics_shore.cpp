@@ -29,6 +29,7 @@
 #include "goby/pb/protobuf/rudics_shore.pb.h"
 #include "goby/pb/rudics_packet.h"
 #include "goby/util/linebasedcomms/tcp_server.h"
+#include "goby/util/binary.h"
 
 using namespace goby::common::logger;
 using goby::glog;

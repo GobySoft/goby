@@ -219,7 +219,7 @@ void goby::acomms::fsm::OnCall::in_state_react(const EvRxOnCallSerial& e)
     {
         post_event(EvNoCarrier());
     }
-    else if(in == "goby\r")
+    else if(boost::trim_copy(in) == "goby")
     {
         glog.is(DEBUG1) && glog << group("iridiumdriver") << "Detected start of Goby RUDICS call" << std::endl;        
     }
@@ -237,7 +237,7 @@ void goby::acomms::fsm::OnCall::in_state_react(const EvRxOnCallSerial& e)
         }
         catch(RudicsPacketException& e)
         {
-            glog.is(DEBUG1) && glog <<  warn  << group("iridiumdriver") << "Could not decode packet: " << e.what() << std::endl;
+	  glog.is(DEBUG1) && glog <<  warn  << group("iridiumdriver") << "Could not decode packet: " << e.what() << std::endl;
         }
     }
 }

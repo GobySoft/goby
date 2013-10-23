@@ -21,7 +21,7 @@ goby_port = 40001
 
 # connections that send "~" as the first character gets
 # forwarded to a server listening on localhost at this port
-ppp_server = "192.168.1.111"
+ppp_server = "127.0.0.1"
 ppp_port = 40002
 
 class ConditionalForwardClient(asyncore.dispatcher_with_send):

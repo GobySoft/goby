@@ -219,6 +219,10 @@ void goby::acomms::fsm::OnCall::in_state_react(const EvRxOnCallSerial& e)
     {
         post_event(EvNoCarrier());
     }
+    else if(in == "goby\r")
+    {
+        glog.is(DEBUG1) && glog << group("iridiumdriver") << "Detected start of Goby RUDICS call" << std::endl;        
+    }
     else
     {
         std::string bytes;

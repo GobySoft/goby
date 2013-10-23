@@ -331,9 +331,11 @@ namespace goby
               OnCall(my_context ctx) : my_base(ctx)
                 {
                     glog.is(goby::common::logger::DEBUG1) && glog << group("iridiumdriver") << "OnCall" << std::endl;
+
+                    // add a brief identifier that is *different* than the "~" which is what PPP uses
                     // add a carriage return to clear out any garbage
                     // at the *beginning* of transmission
-                    context<IridiumDriverFSM>().serial_tx_buffer().push_front("\r");
+                    context<IridiumDriverFSM>().serial_tx_buffer().push_front("goby\r");
 
                     context<IridiumDriverFSM>().last_rx_tx_time() = goby::common::goby_time<double>();
 

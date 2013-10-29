@@ -385,13 +385,22 @@ void goby::acomms::FileTransfer::handle_receive_fragment(const protobuf::FileFra
 void goby::acomms::FileTransfer::handle_receive_response(const protobuf::TransferResponse& response)
 {
     glog.is(VERBOSE) && glog << "Received response for file transfer: " << response.DebugString() << std::flush;
+
+    if(!response.transfer_successful())
+        glog.is(WARN) && glog << "Transfer failed: " << protobuf::TransferResponse::ErrorCode_Name(response.error()) << std::endl;
+
     
     if(!cfg_.daemon())
     {
         if(response.transfer_successful())
+        {
+            glog.is(VERBOSE) && glog << "File transfer completed successfully." << std::endl;
             exit(EXIT_SUCCESS);
+        }
         else
+        {
             exit(EXIT_FAILURE);
+        }
     }
 }
 

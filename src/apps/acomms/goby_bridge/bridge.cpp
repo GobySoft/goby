@@ -183,6 +183,10 @@ goby::acomms::Bridge::Bridge()
             boost::bind(&Bridge::handle_external_push<goby::acomms::protobuf::FileFragment>, this, _1, q_managers_[i].get()),
             "QueuePush" + goby::util::as<std::string>(qcfg.modem_id()));
         
+        subscribe<goby::acomms::protobuf::TransferResponse>(
+            boost::bind(&Bridge::handle_external_push<goby::acomms::protobuf::TransferResponse>, this, _1, q_managers_[i].get()),
+            "QueuePush" + goby::util::as<std::string>(qcfg.modem_id()));
+
         subscribe<goby::acomms::protobuf::ModemTransmission>(
             boost::bind(&Bridge::handle_data_request, this, _1, i),
             "DataRequest" + goby::util::as<std::string>(qcfg.modem_id()));

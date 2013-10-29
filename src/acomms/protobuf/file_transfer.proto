@@ -62,10 +62,12 @@ message TransferResponse
 
   enum ErrorCode
   {
-    FILE_NOT_FOUND = 1;
+    COULD_NOT_READ_FILE = 1;
     FILE_TOO_LARGE = 2;
     TIMEOUT = 3;
     COULD_NOT_WRITE_FILE = 4;
+    ERROR_WHILE_READING = 5;
+    OTHER_ERROR = 6;    
   }
   optional ErrorCode error = 4;
 }

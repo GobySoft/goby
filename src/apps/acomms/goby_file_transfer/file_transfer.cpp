@@ -33,6 +33,7 @@
 #include "file_transfer_config.pb.h"
 
 using namespace goby::common::logger;
+using goby::glog;
 
 namespace goby
 {
@@ -55,7 +56,9 @@ namespace goby
             
             void handle_remote_transfer_request(const protobuf::TransferRequest& request);
             void handle_receive_fragment(const protobuf::FileFragment& fragment);
-            
+
+            void handle_receive_response(const protobuf::TransferResponse& response);
+
             void handle_ack(const protobuf::TransferRequest& request)
                 {
                     std::cout << "Got ack for request: " << request.DebugString() << std::endl;
@@ -91,26 +94,32 @@ goby::acomms::FileTransfer::FileTransfer()
     : Application(&cfg_),
       waiting_for_request_ack_(false)
 {
-    std::cout << cfg_.DebugString() << std::endl;
+    glog.is(DEBUG1) && glog << cfg_.DebugString() << std::endl;
 
     if(cfg_.action() != protobuf::FileTransferConfig::WAIT)
     {
         if(!cfg_.has_remote_id())
         {
-            std::cout << "Must set remote_id modem ID for file destination." << std::endl;
+            glog.is(WARN) && glog << "Must set remote_id modem ID for file destination." << std::endl;
             exit(EXIT_FAILURE);
         }
         if(!cfg_.has_local_file())
         {
-            std::cout << "Must set local_file path." << std::endl;
+            glog.is(WARN) && glog << "Must set local_file path." << std::endl;
             exit(EXIT_FAILURE);
         }
         if(!cfg_.has_remote_id())
         {
-            std::cout << "Must set remote_file path." << std::endl;
+            glog.is(WARN) && glog << "Must set remote_file path." << std::endl;
             exit(EXIT_FAILURE);
         }
-        
+
+        const unsigned max_path = protobuf::TransferRequest::descriptor()->FindFieldByName("file")->options().GetExtension(dccl::field).max_length();
+        if(cfg_.remote_file().size() > max_path)
+        {
+            glog.is(WARN) && glog << "remote_file full path must be less than " <<  max_path << " characters." << std::endl;
+            exit(EXIT_FAILURE);
+        }
     }
 
     subscribe(&FileTransfer::handle_ack, this, "QueueAckOrig" + goby::util::as<std::string>(cfg_.local_id()));
@@ -119,6 +128,7 @@ goby::acomms::FileTransfer::FileTransfer()
 
     subscribe(&FileTransfer::handle_receive_fragment, this, "QueueRx" + goby::util::as<std::string>(cfg_.local_id()));
 
+    subscribe(&FileTransfer::handle_receive_response, this, "QueueRx" + goby::util::as<std::string>(cfg_.local_id()));
     
     try
     {
@@ -127,9 +137,15 @@ goby::acomms::FileTransfer::FileTransfer()
         else if(cfg_.action() == protobuf::FileTransferConfig::PULL)
             pull_file();
     }
+    catch(protobuf::TransferResponse::ErrorCode& c)
+    {
+        glog.is(WARN) && glog << "File transfer action failed: " << protobuf::TransferResponse::ErrorCode_Name(c) << std::endl;
+        if(!cfg_.daemon())
+            exit(EXIT_FAILURE);
+    }
     catch(std::exception& e)
     {
-        std::cout << "File transfer action failed: " << e.what() << std::endl;
+        glog.is(WARN) && glog << "File transfer action failed: " << e.what() << std::endl;
         if(!cfg_.daemon())
             exit(EXIT_FAILURE);
     }
@@ -184,19 +200,20 @@ void goby::acomms::FileTransfer::send_file(const std::string& path)
     
     std::ifstream send_file(path.c_str(), std::ios::binary | std::ios::ate);
 
-    std::cout << "Attempting to transfer: " << path << std::endl;
+    glog.is(VERBOSE) && glog << "Attempting to transfer: " << path << std::endl;
     
     // check open
     if(!send_file.is_open())
-        throw std::runtime_error("Failed to open file for reading.");
+        throw protobuf::TransferResponse::COULD_NOT_READ_FILE;
 
     // check size
     std::streampos size = send_file.tellg();
-    std::cout << "File size: " << size << std::endl;
+    glog.is(VERBOSE) && glog << "File size: " << size << std::endl;
 
     if(size > MAX_FILE_TRANSFER_BYTES)
     {
-        throw std::runtime_error("File exceeds maximum supported size of " + goby::util::as<std::string>(int(MAX_FILE_TRANSFER_BYTES)) + "B");
+        glog.is(WARN) && glog << "File exceeds maximum supported size of " << MAX_FILE_TRANSFER_BYTES << "B" << std::endl;
+        throw protobuf::TransferResponse::FILE_TOO_LARGE;
     }
     
     // seek to front
@@ -235,15 +252,15 @@ void goby::acomms::FileTransfer::send_file(const std::string& path)
 
 
     if(!send_file.eof())
-        throw std::runtime_error("An error occurred while reading the file.");
+        throw protobuf::TransferResponse::ERROR_WHILE_READING;
 
     // FOR TESTING!
-    fragments.resize(fragments.size()*2);
-    std::copy_backward(fragments.begin(), fragments.begin()+fragments.size()/2, fragments.end());
-    std::random_shuffle(fragments.begin(), fragments.end());
+    // fragments.resize(fragments.size()*2);
+    // std::copy_backward(fragments.begin(), fragments.begin()+fragments.size()/2, fragments.end());
+    // std::random_shuffle(fragments.begin(), fragments.end());
     for(int i = 0, n = fragments.size(); i < n; ++i)
     {
-        std::cout << fragments[i].ShortDebugString() << std::endl;
+        glog.is(VERBOSE) && glog << fragments[i].ShortDebugString() << std::endl;
         publish(fragments[i], "QueuePush" + goby::util::as<std::string>(cfg_.local_id()));
     }
 
@@ -258,25 +275,42 @@ goby::acomms::FileTransfer::~FileTransfer()
 
 void goby::acomms::FileTransfer::handle_remote_transfer_request(const protobuf::TransferRequest& request)
 {
-    std::cout << "Received remote transfer request: " << request.DebugString() << std::endl;
+    glog.is(VERBOSE) && glog << "Received remote transfer request: " << request.DebugString() << std::endl;
 
     if(request.push_or_pull() == protobuf::TransferRequest::PUSH)
     {
-        std::cout << "Preparing to receive file..." << std::endl;
+        glog.is(VERBOSE) && glog << "Preparing to receive file..." << std::endl;
         receive_files_[request.src()].clear();
     }
     else if(request.push_or_pull() == protobuf::TransferRequest::PULL)
     {
+        protobuf::TransferResponse response;
+        response.set_src(request.dest());
+        response.set_dest(request.src());
         try
         {            
             send_file(request.file());
+            response.set_transfer_successful(true);
         }
-        catch(std::exception& e)
+        catch(protobuf::TransferResponse::ErrorCode& c)
         {
-            std::cout << "File transfer action failed: " << e.what() << std::endl;
+            glog.is(WARN) && glog << "File transfer action failed: " << protobuf::TransferResponse::ErrorCode_Name(c) << std::endl;
+            response.set_transfer_successful(false);
+            response.set_error(c);
             if(!cfg_.daemon())
                 exit(EXIT_FAILURE);
         }
+        catch(std::exception& e)
+        {
+            glog.is(WARN) && glog << "File transfer action failed: " << e.what() << std::endl;
+            if(!cfg_.daemon())
+                exit(EXIT_FAILURE);
+
+            response.set_transfer_successful(false);
+            response.set_error(protobuf::TransferResponse::OTHER_ERROR);
+        }
+        publish(response, "QueuePush" + goby::util::as<std::string>(cfg_.local_id()));
+
     }
     requests_[request.src()] = request;
 }
@@ -287,39 +321,77 @@ void goby::acomms::FileTransfer::handle_receive_fragment(const protobuf::FileFra
     
     receive.insert(std::make_pair(fragment.fragment(), fragment));
 
-    std::cout << "Received fragment #" << fragment.fragment()  << std::endl;
+    glog.is(VERBOSE) && glog << "Received fragment #" << fragment.fragment()  << std::endl;
 
     if(receive.rbegin()->second.is_last_fragment())
     {
-        if(receive.size() == receive.rbegin()->second.fragment()+1)
+        if((int)receive.size() == receive.rbegin()->second.fragment()+1)
         {
-            std::cout << "Received all fragments!" << std::endl;
-            std::cout << "Writing to " << requests_[fragment.src()].file() << std::endl;
-            std::ofstream receive_file(requests_[fragment.src()].file().c_str(), std::ios::binary);
-            
-            // check open
-            if(!receive_file.is_open())
+            protobuf::TransferResponse response;
+            response.set_src(requests_[fragment.src()].dest());
+            response.set_dest(requests_[fragment.src()].src());
+
+            try
             {
-                std::cout << "Failed to open file for writing." << std::endl;
-                return;
+                glog.is(VERBOSE) && glog << "Received all fragments!" << std::endl;
+                glog.is(VERBOSE) && glog << "Writing to " << requests_[fragment.src()].file() << std::endl;
+                std::ofstream receive_file(requests_[fragment.src()].file().c_str(), std::ios::binary);
+                
+                // check open
+                if(!receive_file.is_open())
+                    throw(protobuf::TransferResponse::COULD_NOT_WRITE_FILE);
+                
+                for(std::map<int, protobuf::FileFragment>::const_iterator it = receive.begin(), end = receive.end();
+                    it != end;
+                    ++it)
+                {
+                    receive_file.write(it->second.data().c_str(), it->second.num_bytes());
+                }
+                
+                receive_file.close();
+                response.set_transfer_successful(true);
+                if(!cfg_.daemon())
+                    exit(EXIT_SUCCESS);
             }
-
-            for(std::map<int, protobuf::FileFragment>::const_iterator it = receive.begin(), end = receive.end();
-                it != end;
-                ++it)
+            catch(protobuf::TransferResponse::ErrorCode& c)
             {
-                receive_file.write(it->second.data().c_str(), it->second.num_bytes());
-           }
+                glog.is(WARN) && glog << "File transfer action failed: " << protobuf::TransferResponse::ErrorCode_Name(c) << std::endl;
+                response.set_transfer_successful(false);
+                response.set_error(c);
 
-            receive_file.close();
-            if(!cfg_.daemon())
-                exit(EXIT_SUCCESS);
+                if(!cfg_.daemon())
+                    exit(EXIT_FAILURE);
+            }
+            catch(std::exception& e)
+            {
+                glog.is(WARN) && glog << "File transfer action failed: " << e.what() << std::endl;
+                if(!cfg_.daemon())
+                    exit(EXIT_FAILURE);
+                
+                response.set_transfer_successful(false);
+                response.set_error(protobuf::TransferResponse::OTHER_ERROR);
+            }
+            publish(response, "QueuePush" + goby::util::as<std::string>(cfg_.local_id()));
+                
         }
         else
         {
-            std::cout << "Still waiting on some fragments..." << std::endl;            
+            glog.is(VERBOSE) && glog << "Still waiting on some fragments..." << std::endl;            
         }
     }
 }
 
             
+void goby::acomms::FileTransfer::handle_receive_response(const protobuf::TransferResponse& response)
+{
+    glog.is(VERBOSE) && glog << "Received response for file transfer: " << response.DebugString() << std::flush;
+    
+    if(!cfg_.daemon())
+    {
+        if(response.transfer_successful())
+            exit(EXIT_SUCCESS);
+        else
+            exit(EXIT_FAILURE);
+    }
+}
+

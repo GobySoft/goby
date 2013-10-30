@@ -266,7 +266,7 @@ void goby::common::ZeroMQService::send(MarshallingScheme marshalling_scheme,
     memcpy(msg.data(), header.c_str(), header.size()); // insert header
     memcpy(static_cast<char*>(msg.data()) + header.size(), body_data, body_size); // insert body
 
-    glog.is(DEBUG2, lock) &&
+    glog.is(DEBUG3, lock) &&
         glog << group(glog_out_group())
              << "Sent message (hex): " << hex_encode(std::string(static_cast<const char*>(msg.data()),msg.size()))
              << std::endl << unlock;
@@ -326,7 +326,7 @@ void goby::common::ZeroMQService::handle_receive(const void* data,
             identifier = bytes.substr(MARSHALLING_SIZE,
                                       bytes.find('\0', MARSHALLING_SIZE)-MARSHALLING_SIZE);
 
-            glog.is(DEBUG1, lock) &&
+            glog.is(DEBUG3, lock) &&
                 glog << group(glog_in_group())
                      << "Received message of type: [" << identifier << "]" << std::endl << unlock;
 

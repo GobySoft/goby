@@ -72,7 +72,7 @@ void goby::pb::Application::__set_up_sockets()
 
 void goby::pb::Application::publish(const google::protobuf::Message& msg, const std::string& group)
 {
-    glog.is(DEBUG1) &&
+    glog.is(DEBUG3) &&
         glog << "< [" << group << "]: " << msg << std::endl;
 
     if(pubsub_node_)

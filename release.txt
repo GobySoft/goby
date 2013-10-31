@@ -1,6 +1,117 @@
 Goby Release Notes (Major version 2)
 
 *****************
+Version 2.1.0
+
+= Acomms =
+- New IridiumDriver that handles the Iridium RUDICS protocol (phone-call style of data transfer)
+
+= MOOS =
+- New MOOS application iFrontSeat (and corresponding additions to libgoby_moos) that provide an extensible interface to the low-level control ("frontseat") of an autonomous vehicle
+      - Driver for iFrontSeat for the Bluefin 21" and 9" family of vehicles (libgoby_frontseat_bluefin)
+      - New drivers can be written outside of Goby and are runtime loaded by iFrontSeat
+- libgoby_moos and Goby MOOS applications (pAcommsHandler, iFrontSeat, etc) compile and runs on MOOS 10 (and still supports pre-10 (SVN revision 2376) MOOS)
+
+= PB = 
+- New application goby_modemdriver that allows provides a ZeroMQ interface to the following Goby ModemDrivers:
+      - goby::acomms::MMDriver (WHOI Micro-Modem)
+      - goby::pb::PBDriver (store-and-forward driver using ZeroMQ and goby_store_server [SQLite])
+      - goby::acomms::UDPDriver (unicast UDP driver)
+      - goby::acomms::IridiumDriver (Iridium)
+- goby_bridge updated to use goby_modemdriver instead of having the ModemDriver components directly in the application
+
+
+bzr log --line -n0 -r tag:2.0.4..
+
+508: Toby Schneider 2013-10-29 Added some nice transfer success/failed messages to goby_file_transfer
+507: Toby Schneider 2013-10-29 Finalized goby_file_transfer - added Response for each transfer indicating success or failure (with error messages in case of failure)
+506: Toby Schneider 2013-10-23 {2.1.0~beta4} Increment version
+505: Toby Schneider 2013-10-23 Fixed detection of start of Rudics call
+504: Toby Schneider 2013-10-23 Added missing include
+503: Toby Schneider 2013-10-23 Changed default PPP server to localhost
+502: Toby Schneider 2013-10-23 Minor change to debugging log output
+501: Toby Schneider 2013-10-23 Added python script for multiplexing PPP and Goby on Rudics shore side
+500: Toby Schneider 2013-10-23 Added unique identifier to start of Goby RUDICS call to distinguish it from other protocols (e.g. PPP)
+499: Toby Schneider 2013-10-23 Moved decoding after routing so if decoding fails (e.g. on encrypted message), the routing still takes place
+498: Toby Schneider 2013-10-19 Changed enable_testing_asio to only disable running of test if set to OFF (still builds test); added enable_testing_zeromq to work around running test bug in Ubuntu Saucy build machines
+497: Toby Schneider 2013-10-18 [merge] Merge changes from DASH-ST6 shallow test
+  496.1.5: Toby Schneider 2013-10-17 Added unit test for salinity (from lamss repos)
+  496.1.4: Toby Schneider 2013-10-17 Fixed bug causing segmentation fault when the Micro-Modem has a frame count mismatch
+  496.1.3: Toby Schneider 2013-10-16 Disallowing sending of uninitialized protobuf message prevents protobuf fatal error from killing application
+  496.1.2: Toby Schneider 2013-10-16 Modified headers on seawater calculations
+  496.1.1: Toby Schneider 2013-10-16 Ported iFrontSeat from lamss project to reside here
+496: Toby Schneider 2013-09-27 {2.1.0~beta3} Incremented version
+495: Toby Schneider 2013-09-27 Added option to write raw modem log to separate file
+494: Toby Schneider 2013-09-27 Resized MACUpdate message to account for new always_initiate field in ModemTransmission message
+493: Toby Schneider 2013-09-27 1. Added option to MAC slot to always initiate allowing hybrid centralized/decentralized MAC setups; 2. Added option to set MMDriver silent by changing source ID (so no ACKs are generated for messages sent to it); 3. Added ability to attach one or more drivers to pAcommsHandler that are listeners (receive only)
+492: Toby Schneider 2013-09-26 Increased MAC update to 64 byte message, and increased bound on MACUpdate message
+491: Toby Schneider 2013-09-25 {2.1.0~beta2} Incremented version
+490: Toby Schneider 2013-09-24 1. Fixed bug where Iridium DATA messages sent by the side that didn't originate the first call were not getting ACK'd; 2. In goby_bridge: made sending of CACSTs and RangingReply messages optional, and made NetworkAck generation only enabled for given source Modem Ids;
+489: Toby Schneider 2013-09-24 Fixed bug in Queue when using pass through messages (to allow encrypted messages to be routed without unencryptied) in conjunction with non-encrypted message(s) that caused the non-encrpyted message(s) to be lost.
+488: Toby Schneider 2013-09-23 Removed unneeded load_dccl_message from goby_bridge; fixed bug where two messages with the same ID could be queued without the second being validated (and thus catching that there were two messages with the same ID)
+487: Toby Schneider 2013-09-19 Fixed minor compile failure for lucid build
+486: Toby Schneider 2013-09-19 Added in goby_file_transfer for raw point-to-point transfer of files over Goby. Currently only supported using goby_bridge.
+485: Toby Schneider 2013-09-16 [merge] {2.1.0~beta1} Merge from 2.0-moos10; Goby2 should now properly build against the original MOOS and MOOS10
+  283.1.17: Toby Schneider 2013-09-16 Modifications so that project still builds against old MOOS (pre v10)
+  283.1.16: Toby Schneider 2013-09-16 Removed MOOSGeodesy in favor of new shell with same API that makes calls to libproj (PROJ.4)
+  283.1.15: Toby Schneider 2013-09-16 [merge] Merge from 2.0
+  283.1.14: Toby Schneider 2013-09-12 Fix header for MOOS 10
+  283.1.13: Toby Schneider 2013-09-12 [merge] Merged 2.0.3 from mainline
+  283.1.12: Toby Schneider 2013-03-27 [merge] Merge from 2.0
+  283.1.11: Toby Schneider 2013-02-27 [merge] merge from 2.0
+  283.1.10: Toby Schneider 2013-02-27 [merge] merge from 2.0
+  283.1.9: Toby Schneider 2013-02-27 [merge] Merge from 2.0
+  283.1.8: Toby Schneider 2013-02-27 [merge] merge from 2.0
+  283.1.7: Toby Schneider 2013-02-27 [merge] Merge bug fix from 2.0
+  283.1.6: Toby Schneider 2013-02-27 Compiles against the new MOOS
+  283.1.5: Toby Schneider 2013-02-27 [merge] Merged from 2.0
+  283.1.4: Toby Schneider 2012-03-18 [merge] merge from 2.0
+  283.1.3: Toby Schneider 2012-03-15 [merge] merge from 2.0
+484: Toby Schneider 2013-09-06 Moved glog output for Iridium driver when talking to goby_rudics_shore to ZMQ group to unclutter modemdriver group for AT commands
+483: Toby Schneider 2013-09-06 Changes to IridiumDriver: Reset hangup timeout at the start of a call; do not make a call if not data to send
+482: Toby Schneider 2013-09-06 Changed native_handle() to native() to allow IridiumDriver to compile on older versions of boost::asio
+481: Toby Schneider 2013-09-06 Added DTR toggle for serial connection hangups; Changed boost::remove_if to std::remove_if
+480: Toby Schneider 2013-09-05 Shore side mobile-originated calls working with ATDuck simulator
+479: Toby Schneider 2013-09-04 Moved Iridium driver into PB library to allow us to use ZMQ and PB node functionality
+478: Toby Schneider 2013-09-04 Working unit test for mobile-terminated rudics call
+477: Toby Schneider 2013-09-04 Started Iridium RUDICS shore side server; changed to omit more problem characters from RUDICS protocol
+476: Toby Schneider 2013-09-03 Progress on Iridium driver: changes to DriverBase - if modem is inactive, do not block waiting for it to become active, TCP reconnect configurable, startup() and shutdown() should block in driver until complete (or fail throwing exception); changes to IridiumDriver - increased timeout on retry for long events such as dial, many minor changes to state machine
+475: Toby Schneider 2013-08-26 [merge] Switched to boost::statechart for finite state machine representation of Hayes DTE (for Iridium Driver)
+  474.1.3: Toby Schneider 2013-08-26 Added code to prevent integer overflows on huge time differences (related to using MOOS timewarp)
+  474.1.2: Toby Schneider 2013-08-26 Passes IridiumDriver1 test with ATduck emulator (with new FSM code)
+  474.1.1: Toby Schneider 2013-08-26 In progress work to FSM model
+474: Toby Schneider 2013-08-23 Initially basic working connection and data passing with Iridium Driver using ATduck emulator
+473: Toby Schneider 2013-08-23 Created shared driver_tester code for various modem driver tests to share
+472: Toby Schneider 2013-08-13 Added subdirectory for iridium driver test
+471: Toby Schneider 2013-08-13 Added arbitrary base conversion for base256 <--> base255 conversions
+470: Toby Schneider 2013-08-12 Fixed bug when group is the null string
+469: Toby Schneider 2013-08-12 [merge] Merge work on standalone goby_modemdriver binary
+  468.1.3: Toby Schneider 2013-08-12 Tentatively fully working standalone goby_modemdriver that exposes the C++ API via ZMQ publish/subscribe messages. Update goby_bridge to use new goby_modemdriver and removed ModemDriver module from goby_bridge.
+  468.1.2: Toby Schneider 2013-08-12 Working string group into Application structure
+  468.1.1: Toby Schneider 2013-08-12 Working string group into Application structure
+468: Toby Schneider 2013-08-09 Folder for standalone modem driver
+467: Toby Schneider 2013-08-09 Framework for Iridium driver
+466: Toby Schneider 2013-08-09 {2.0.4} Updated moos_goby_liaison script to use exec to avoid problems when killing the shell script doesn't kill the goby_liaison process
+
+*****************
+Version 2.0.4
+
+- Licensing terms slightly changed to make them completely compatible with third-party libraries: Liaison is GPL2 only (due to Wt) and goby_moos is GPL3 (because of MOOS). All other licenses remain the same (GPL3+ for binaries, LGPL3+ for libraries)
+- Fixes to make Liaison compatible with Wt 3.3.0 (which works properly with Firefox 20+; older Wt versions do not)
+
+bzr log --line -n0 -r tag:2.0.3..
+
+466: Toby Schneider 2013-08-09 {2.0.4} Updated moos_goby_liaison script to use exec to avoid problems when killing the shell script doesn't kill the goby_liaison process
+465: Toby Schneider 2013-07-09 Changed licensing somewhat: Liaison and related libraries is GPL2 now (because of Wt) and goby_moos is GPL3 (because of MOOS). All other licenses remain the same (GPL3+ for binaries, LGPL3+ for libraries)
+464: Toby Schneider 2013-07-08 Fixed location of queue warning to place in correct glog group
+463: Toby Schneider 2013-06-28 Removed tooltip from commander for the time being as it seems to freeze up on Firefox
+462: Toby Schneider 2013-06-28 Added missing header required for older Wt (3.1.8)
+461: Toby Schneider 2013-06-18 Updated liaison for libwt 3.3.0
+460: Toby Schneider 2013-06-18 Fixed bug in dccl test 1 that was causing garbage rejection test to not run
+459: Toby Schneider 2013-06-13 Updated arithmetic coder to properly pick closest symbol (not floor)
+458: Toby Schneider 2013-05-10 {2.0.3} Updated release notes
+
+*****************
 Version 2.0.3
 
 - Addition to DCCL and goby_bridge to allow forwarding of encrypted messages without unencrypting.

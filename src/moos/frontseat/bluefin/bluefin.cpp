@@ -382,6 +382,10 @@ void BluefinFrontSeat::initialize_huxley()
         log_requests += ACK; // must request ACK first so we get NMEA ACKs for the other messages
     log_requests += NVG,MIS,MSC,NVR,SVS,RVL,SHT,TOP,MBS,MBE,CTD,DVL,BOY,TRM;
     
+    if(bf_config_.accepting_commands_hook() == BluefinFrontSeatConfig::BFCTL_TRIGGER)
+        log_requests += CTL;
+     
+
     NMEASentence nmea("$BPLOG", NMEASentence::IGNORE);
     nmea.push_back("");
     nmea.push_back("ON");
@@ -523,6 +527,10 @@ void BluefinFrontSeat::process_receive(const NMEASentence& nmea)
         case MIS: bfmis(nmea); break; // mission status
         case MBE: bfmbe(nmea); break; // end behavior
 
+        case CTL: bfctl(nmea); break; // backseat control message (SPI 1.10+)
+            
+
+            
         case BOY: bfboy(nmea); break; // buoyancy status
         case TRM: bftrm(nmea); break; // trim status
 
@@ -567,7 +575,7 @@ void BluefinFrontSeat::load_nmea_mappings()
         ("SIL",SIL)("BOY",BOY)("SUS",SUS)("CON",CON)
         ("RES",RES)("SPD",SPD)("SAN",SAN)("GHP",GHP)
         ("GBP",GBP)("RNS",RNS)("RBO",RBO)("CMA",CMA)
-        ("NVR",NVR)("TEL",TEL);
+        ("NVR",NVR)("TEL",TEL)("CTL",CTL);
     
     boost::assign::insert (talker_id_map_)
         ("BF",BF)("BP",BP);
@@ -640,5 +648,7 @@ void BluefinFrontSeat::load_nmea_mappings()
         ("$BFCMA","Communications Medium Access")
         ("$BFCPS","Communications Packet Sent")
         ("$BFCPR","Communications Packet Received Data")
-        ("$BPCPD","Communications Packet Data");
+        ("$BPCPD","Communications Packet Data")
+        ("$BFCTL","Backseat Control");
+
 }

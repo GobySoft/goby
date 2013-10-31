@@ -22,6 +22,7 @@ message BluefinFrontSeatConfig
   {
     BFMSC_TRIGGER = 0;
     BFMIS_RUNNING_TRIGGER = 1;
+    BFCTL_TRIGGER = 2;
   }
 
   optional AcceptingCommandsHook accepting_commands_hook = 12 [default = BFMSC_TRIGGER, (goby.field).description = "How this driver determines if the Bluefin Huxley is accepting commands. BFMSC_TRIGGER means the $BFMSC message receipt indicates that Huxley is receiving our commands. BFMIS_RUNNING_TRIGGER indicates that any $BFMIS (start of mission) that contains the word 'Running' indicates that Huxley is receiving our commands."];

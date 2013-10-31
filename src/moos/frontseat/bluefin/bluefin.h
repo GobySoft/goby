@@ -86,6 +86,7 @@ class BluefinFrontSeat : public FrontSeatInterfaceBase
     void bfdvl(const goby::util::NMEASentence& nmea);
     void bfmis(const goby::util::NMEASentence& nmea);
     void bfctd(const goby::util::NMEASentence& nmea);
+    void bfctl(const goby::util::NMEASentence& nmea);
 
     std::string unix_time2nmea_time(double time);
         
@@ -116,7 +117,7 @@ class BluefinFrontSeat : public FrontSeatInterfaceBase
                         TRK,RTC,RGP,RCN,RCA,RCB,RMB,EMB,
                         TMR,ABT,KIL,MSG,RMP,SEM,NPU,CPD,
                         SIL,BOY,SUS,CON,RES,SPD,SAN,GHP,
-                        GBP,RNS,RBO,CMA,NVR,TEL };
+                        GBP,RNS,RBO,CMA,NVR,TEL,CTL };
     
     std::map<std::string, TalkerIDs> talker_id_map_;
     boost::bimap<std::string, SentenceIDs> sentence_id_map_;

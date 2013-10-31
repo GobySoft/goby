@@ -375,10 +375,20 @@ void BluefinFrontSeat::bfmis(const goby::util::NMEASentence& nmea)
     std::string running = nmea.at(3);
     if(running.find("Running") != std::string::npos)
     {
-        if(bf_config_.accepting_commands_hook() == BluefinFrontSeatConfig::BFMIS_RUNNING_TRIGGER)
-            frontseat_state_ = gpb::FRONTSEAT_ACCEPTING_COMMANDS;
-        else if(frontseat_state_ != gpb::FRONTSEAT_ACCEPTING_COMMANDS)
-            frontseat_state_ = gpb::FRONTSEAT_IN_CONTROL;
+        switch(bf_config_.accepting_commands_hook())
+        {
+            case BluefinFrontSeatConfig::BFMIS_RUNNING_TRIGGER:
+                frontseat_state_ = gpb::FRONTSEAT_ACCEPTING_COMMANDS;
+                break;
+                
+            case BluefinFrontSeatConfig::BFCTL_TRIGGER:
+            case BluefinFrontSeatConfig::BFMSC_TRIGGER:
+                if(frontseat_state_ != gpb::FRONTSEAT_ACCEPTING_COMMANDS)
+                    frontseat_state_ = gpb::FRONTSEAT_IN_CONTROL;
+                break;
+
+            default: break;
+        }
     }
     else
     {
@@ -411,4 +421,19 @@ void BluefinFrontSeat::bfctd(const goby::util::NMEASentence& nmea)
     ctd_sample->set_pressure(nmea.as<double>(PRESSURE)*1e3);
     compute_missing(ctd_sample);
     signal_data_from_frontseat(data);
+}
+
+void BluefinFrontSeat::bfctl(const goby::util::NMEASentence& nmea)
+{
+    if(bf_config_.accepting_commands_hook() == BluefinFrontSeatConfig::BFCTL_TRIGGER)
+    {
+        enum { TIMESTAMP = 1,
+               CONTROL = 2 };
+        
+        bool control = nmea.as<bool>(CONTROL);
+        if(control)
+            frontseat_state_ = gpb::FRONTSEAT_ACCEPTING_COMMANDS;
+        else if(frontseat_state_ == gpb::FRONTSEAT_ACCEPTING_COMMANDS)
+            frontseat_state_ = gpb::FRONTSEAT_IN_CONTROL;
+    }
 }

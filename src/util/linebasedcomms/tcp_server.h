@@ -75,7 +75,10 @@ namespace goby
 
           private:
             void do_start()
-            { start_accept(); }
+            {
+                start_accept();
+                set_active(true);
+            }
         
             void do_write(const protobuf::Datagram& line);
             void do_close(const boost::system::error_code& error);

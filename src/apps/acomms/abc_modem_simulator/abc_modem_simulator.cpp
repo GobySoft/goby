@@ -52,6 +52,8 @@ int main(int argc, char* argv[])
     goby::util::TCPServer server(goby::util::as<unsigned>(argv[1]));
 
     server.start();
+    sleep(1);
+    
     while(server.active())
     {
         goby::util::protobuf::Datagram in;

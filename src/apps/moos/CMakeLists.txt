@@ -22,6 +22,7 @@ endif()
 
 if(build_iFrontSeat)
   add_subdirectory(iFrontSeat) 
+  add_subdirectory(abc_frontseat_simulator)
 endif()
 
 

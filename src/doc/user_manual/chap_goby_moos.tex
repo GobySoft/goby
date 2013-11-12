@@ -425,6 +425,240 @@ In Goby1, the XML files contained both structure information and MOOS translatio
 The tool will write the generated .proto files (the structure information) to the directory specified as the second command line parameter (defaults to the current/working directory). It will write to standard output the required additions to the pAcommsHandler2 configuration file for the queuing and translation information present in the XML file. Simply copy these parts to your MOOS file and you can continue to use your old messages natively.
 
 
+\section{iFrontSeat}
+\label{sec:ifrontseat} 
+
+\subsection{Introduction}
+
+\subsubsection{Motivation}
+Broadly, our goal in Goby is facilitate the development of a autonomy, sensing, and communications infrastructure that can operate on a heterogeneous collection of vehicles. One way to help effect this is to split the system into two components: the \textit{frontseat} and \textit{backseat} computing systems. The \textit{frontseat} is provided by the vehicle manufacturer and is typically proprietary. It is responsible for low level control of the vehicle. The \textit{backseat} runs the high level autonomy (typically the IvP Helm), sensing, and communications (typically Goby) components. The requirements of the \textit{frontseat} on the \textit{backseat} is minimally a continuous (e.g. 1 Hz) stream of course directives, such as desired heading, speed, and depth of the AUV. The requirements of the \textit{backseat} on the \textit{frontseat} is a best attempt to carry out these directives constrained by the dynamics of the vehicle, as well as a feed of the vehicles' navigation solution.
+
+Not surprisingly, a piece of software is required to interface between the \textit{frontseat} and the \textit{backseat}. This code (!iFrontSeat!) is the subject of section.
+
+Historically, a new interface has been written for each vehicle that was to be used with MOOS-IvP\footnote{For example, the applications iHuxley, iRecon, iOceanServerComms, $\ldots$}. This led to a proliferation of approaches for handling the state transitions and control, primarily from !pHelmIvP!. In some cases, misunderstandings involving various aspects of MOOS-IvP led to vehicle runaways. Furthermore, as MOOS-IvP becomes even more widely adopted and the number of manufacturers of robotic assets increases, it seems sensible to minimize the duplication of effort involved in writing interfaces.
+
+
+\subsubsection{Design overview}
+
+!iFrontSeat! (and its corresponding components in the library !libgoby_moos!) is comprised of two major components (the full UML structure diagram is given in Fig. \ref{fig:structure}):
+\begin{itemize}
+\item A base class !FrontSeatInterfaceBase! and MOOS Application !iFrontSeat! providing the IvP Helm state transition logic and MOOSDB subscriptions and publications. This is written \textit{once} and used by all the specific drivers. 
+\item A collection of derived classes (which are compiled into individual shared libraries) to implement the interface provided by !FrontSeatInterfaceBase! for a given manufacturer or vehicle type. The currently available drivers include:
+\begin{itemize}
+\item !BluefinFrontSeat!: Implements !FrontSeatInterfaceBase! for the Bluefin Robotics family of AUVs using the Huxley software.
+\end{itemize}
+\end{itemize}
+
+\begin{figure}
+\centering
+\includegraphics[width=\textwidth]{iFrontSeat_structure.eps}
+\caption{Structure diagram of iFrontSeat and supporting libraries. Green components are implemented once and used by all the drivers (see Chapter \ref{chap:common}). Pink components need to be modified/implemented for each specific driver (see Chapter \ref{chap:specific}).}
+\label{fig:structure}
+\end{figure}
+
+\subsubsection{Running iFrontSeat}
+
+iFrontSeat always requires exactly one driver library to be loaded before any command-line parameters will be accepted. The driver libraries are runtime-loaded because this allows for a driver developer to create his or her own driver without changing any of the Goby source code. The driver library is loaded from the environmental variable !IFRONTSEAT_DRIVER_LIBRARY!. For example, use the bash shell, one can load iFrontSeat with the Bluefin driver (see section \ref{sec:bluefin_specific}) with this invocation:
+
+\begin{verbatim}
+IFRONTSEAT_DRIVER_LIBRARY=libgoby_frontseat_bluefin.so.25 iFrontSeat 
+\end{verbatim}
+
+The library specified must be a complete path or on the !ld! library search path (e.g. set using !LD_LIBRARY_PATH!). Alternatively, you could export !IFRONTSEAT_DRIVER_LIBRARY! from one of the shell configuration files (e.g. !~/.bashrc!), and then simply run !iFrontSeat! on the command line. 
+
+\subsection{Shared MOOS Side Components}\label{chap:common}
+
+iFrontSeat is a Goby MOOS application, which means it uses a validating configuration reader based on Google Protocol Buffers instead of the standard MOOS ProcessConfigReader. The syntax is similar, and you can always get all the valid configuration parameters by running
+\begin{verbatim}
+iFrontSeat --example_config
+\end{verbatim}
+
+Many of these parameters can be left to their defaults, except for special cases and advanced usages. 
+
+This was the configuration of iFrontSeat at the time of writing this technical report. Be sure to check !iFrontSeat --example_config! for the latest possible valid configuration.
+
+\begin{boxedverbatim}
+ProcessConfig = iFrontSeat
+{
+  common {
+	// configuration common to all Goby Applications	
+	// ...
+    }
+  }
+  require_helm: true
+  helm_running_timeout: 10
+  frontseat_connected_timeout: 10
+  status_period: 5
+  moos_var {
+    prefix: "IFS_" 
+    raw_out: "RAW_OUT"
+    raw_in: "RAW_IN"
+    command_request: "COMMAND_REQUEST"
+    command_response: "COMMAND_RESPONSE"
+    data_from_frontseat: "DATA_IN"
+    data_to_frontseat: "DATA_OUT"
+    status: "STATUS"
+  }
+  exit_on_error: false
+  legacy_cfg {
+    subscribe_desired: true
+    subscribe_ctd: false
+    subscribe_acomms_raw: false
+    pub_sub_bf_commands: false
+    publish_nav: true
+    publish_fs_bs_ready: false
+  }
+
+  // vehicle driver specific configuration
+  // ... 
+}
+\end{boxedverbatim}
+\resetbvlinenumber
+
+The configuration for iFrontSeat has three main parts:
+\begin{enumerate}
+\item The !common! configuration which is the same for all Goby MOOS applications. Please see section \ref{sec:goby_moos_app} for details. Setting !verbosity: DEBUG2! is useful for debugging (and also !show_gui: true!, which displays an NCurses screen with useful debugging information). 
+\item The configuration for the shared MOOS side components, described below in this section.
+\item The vehicle driver specific configuration, described in Chapter \ref{chap:specific}.
+\end{enumerate}
+
+The configuration for the shared MOOS components is:
+
+\begin{itemize}
+\item !require_helm!: Require the IvP Helm even for a listening mission where the frontseat is in control (default=true).
+\item !helm_running_timeout!:  If !require_helm: true!, how long (in seconds) to wait for the IvP Helm to start before moving to the Helm Error state. (default=10)
+\item !frontseat_connected_timeout!: How long (in seconds) to wait for the Frontseat to be connected before moving to the Frontseat Error state. (default=10)
+\item !status_period!: Seconds between publishing the status of iFrontseat. The special value 0 disables posting of the status message (default=5).
+\item !moos_var!: Change the default values of the MOOS variables published or subscribed to by iFrontSeat. Throughout the manual, these defaults are referenced. If you change the values here, keep this in mind when reading the rest of the manual.
+\begin{itemize}
+\item !prefix!: Prefix all MOOS variable names with this string (default=``IFS\_'')
+\item !raw_out!: (default=``RAW\_OUT'')
+\item !raw_in!: (default=``RAW\_IN'')
+\item !command_request!: (default=``COMMAND\_REQUEST'')
+\item !command_response!: (default=``COMMAND\_RESPONSE'')
+\item !data_from_frontseat!: (default=``DATA\_IN'')
+\item !data_to_frontseat!: (default=``DATA\_OUT'')
+\item !status!: "STATUS" (default=``STATUS'')
+\end{itemize}  
+\item !exit_on_error!: If true, exit the application if it enters one of the error states. Use only for debugging. (default=false)
+\item !legacy_cfg!: Numerous options to automatically convert legacy variables (e.g., from iHuxley) into the iFrontSeat messages. Generally new projects will not use any of these options and thus this configuration block can be omitted. See section \ref{sec:ifrontseat_legacy_cfg} for details on which of these flags to enable if legacy compatibility is desired.
+\end{itemize}
+
+\subsubsection{MOOS Variable Interface}
+
+The preferred way to use iFrontSeat is via the new !IFS_! set of variables. The contents of these string MOOS variables are the output of the !TECHNIQUE_PREFIXED_PROTOBUF_TEXT_FORMAT! translator explained in the Goby2 user manual (\url{http://gobysoft.com/dl/goby2-user-manual.pdf}). Essentially, they are the !TextFormat! human-readable output of the Google Protocol Buffers messages defined in
+\begin{verbatim}
+goby/moos/protobuf/frontseat.proto
+\end{verbatim}
+
+To get access to the C++ equivalent classes generated by the Protobuf C++ compiler (protoc), include this header:
+\begin{verbatim}
+#include "goby/moos/protobuf/frontseat.pb.h"
+\end{verbatim}
+
+Do not parse these messages manually. You can automatically parse and serialize these values to and from the corresponding Protobuf C++ classes using the functions !serialize_for_moos! and !parse_for_moos!, which are declared in the header file:
+\begin{verbatim}
+#include "goby/moos/moos_protobuf_helpers.h" 
+\end{verbatim}
+
+The MOOS variables \textbf{subscribed} to by iFrontSeat include (note the names are configurable, the defaults are given here):
+\begin{itemize}
+\item !IFS_COMMAND_REQUEST!: Command from to give to the frontseat driver to be asked of the vehicle's computer. This is typically the desired course (heading, speed, and depth) of the vehicle. Other special commands may be defined by the specific vehicle driver. Protobuf Message type:  !CommandRequest!.
+\item !IFS_DATA_TO_FRONTSEAT!: Data that must be passed to the frontseat driver. For example, the Bluefin AUVs require Conductivity-Temperature-Depth (CTD) measurements when the CTD is connected to the backseat computer. Protobuf Message type: !goby.moos.protobuf.FrontSeatInterfaceData!.
+\end{itemize}
+
+The MOOS variables \textbf{published} by iFrontSeat include:
+\begin{itemize}
+\item !IFS_COMMAND_RESPONSE!: Response to each command request, if a response is requested. Protobuf Message type:  !goby.moos.protobuf.CommandResponse!.
+\item !IFS_STATUS!: The current state of the IvP Helm, the frontseat system, and the interface itself. Protobuf Message type:  !goby.moos.protobuf.FrontSeatInterfaceStatus!.
+\item !IFS_DATA_FROM_FRONTSEAT!: Data from the frontseat driver. This may include navigation data (vehicle's current pose, speed, depth, latitude, longitude, etc), or other vehicle specific data. Protobuf Message type: !goby.moos.protobuf.FrontSeatInterfaceData!.
+\item !IFS_RAW_IN!: Raw communications packets (e.g. NMEA-0183) from the frontseat computer to iFrontSeat. Protobuf Message type: !goby.moos.protobuf.FrontSeatRaw!
+\item !IFS_RAW_OUT!: Raw communications packets (e.g. NMEA-0183) from iFrontSeat to the frontseat computer. Protobuf Message type: !goby.moos.protobuf.FrontSeatRaw! 
+\end{itemize}
+
+\subsubsection{Legacy MOOS Variable Interface}\label{sec:ifrontseat_legacy_cfg}
+
+iFrontSeat aims to replace several existing pieces of software, and by necessity provides a number of features to ease transition. This functionality may change or be removed in future versions, so where possible please use the new !IFS_! variables. This legacy functionality is implemented in:
+
+\begin{verbatim}
+goby/src/apps/moos/iFrontSeat/legacy_translator.cpp
+goby/src/apps/moos/iFrontSeat/legacy_translator.h
+\end{verbatim}
+
+The transitional MOOS variables \textbf{subscribed} to by iFrontSeat include:
+
+\begin{itemize}
+\item If !subscribe_ctd: true!, then !CTD_CONDUCTIVITY! (siemens/meter), !CTD_TEMPERATURE! (degrees C), !CTD_PRESSURE! (decibars), !CTD_SALINITY! (unitless - practical salinity scale). These double values are buffered, then upon receipt of !CTD_TEMPERATURE! are converted into a !FrontSeatInterfaceData! message containing a !CTDSample! and published to !IFS_DATA_TO_FRONTSEAT!.
+\item If !subscribe_desired: true!, then !DESIRED_HEADING! (degrees), !DESIRED_SPEED! (meters/second), !DESIRED_DEPTH! (meters). These desired course values (typically published by pHelmIvP) are buffered and upon receipt of !DESIRED_SPEED! are converted to a !CommandRequest! and posted to !IFS_COMMAND_REQUEST!.
+\item If !pub_sub_bf_commands: true!, then !PENDING_SURFACE!: This double value posted by BHV\_PeriodicSurface creates a !CommandRequest! of the special Bluefin type: !BluefinExtraCommands::GPS_REQUEST!. This allows the shallow water vehicles that require a GPS fix to occasionally come to the surface for GPS.
+\item If !subscribe_acomms_raw: true!, then !ACOMMS_RAW_INCOMING!, !ACOMMS_RAW_OUTGOING!: The raw NMEA-0183 feed from the WHOI Micro-Modem (or other acoustic modem) posted by the Goby-Acomms MOOS application pAcommsHandler. These are converted into a !FrontSeatInterfaceData! message containing the special Bluefin extension !BluefinExtraData.micro_modem_raw_in! or !BluefinExtraData.micro_modem_raw_out! and published to !IFS_DATA_TO_FRONTSEAT!. Bluefin still requires our raw Micro-Modem feed as a backup to the hardware tail-cone abort (which uses the Micro-Modem). 
+\end{itemize}
+
+The transitional MOOS variables \textbf{published} by iFrontSeat include:
+
+\begin{itemize}
+\item If !publish_nav: true!, then !NAV_X! (meters), !NAV_Y! (meters), !NAV_LAT! (degrees), !NAV_LONG! (degrees), !NAV_Z! (meters, negative down), !NAV_DEPTH! (meters, positive down), !NAV_YAW! (degrees), !NAV_HEADING! (degrees), !NAV_SPEED! (meters/second), !NAV_PITCH! (radians), !NAV_ROLL! (radians), !NAV_ALTITUDE! (meters). All these double values are generated from the !FrontSeatInterfaceData! message when it contains !node_status! information.
+\item If !publish_fs_bs_ready: true!, then !BACKSEAT_READY!: Published as 1 (true) when the Helm State becomes !HELM_DRIVE!, otherwise 0 (false).
+\item If !publish_fs_bs_ready: true!, then !FRONTSEAT_READY!: Published as 1 (true) when the FrontSeat State becomes !FRONTSEAT_ACCEPTING_COMMANDS!, otherwise 0 (false).
+\item !GPS_UPDATE_RECEIVED!: Published as !Timestamp=double seconds since Unix! when a !BluefinExtraCommands::GPS_REQUEST! command responds successfully.
+\end{itemize}
+
+\subsection{Vehicle Drivers}\label{chap:specific}
+
+\subsubsection{BluefinFrontSeat}\label{sec:bluefin_specific}
+
+The driver !BluefinFrontSeat! is designed for the Bluefin Robotics Standard Payload Interface (SPI) Version 1.8 and newer, which must be requested directly from Bluefin Robotics. 
+
+Knowledge of some details of Bluefin's SPI will be assumed here; please reference that document as needed while reading this section.
+
+The configuration accepted by iFrontSeat for the !BluefinFrontSeat! driver is as follows:
+
+\begin{boxedverbatim}
+
+  [bluefin_config] { 
+    huxley_tcp_address: "" 
+    huxley_tcp_port: 29500 
+    reconnect_interval: 10 
+    nmea_resend_attempts: 3 
+    nmea_resend_interval: 5 
+    allowed_nmea_demerits: 3 
+    allow_missing_nav_interval: 5 
+    heartbeat_interval: 1  
+    extra_bplog: ""  
+    send_tmr_messages: true
+    disable_ack: false
+    accepting_commands_hook: BFMSC_TRIGGER 
+  }
+\end{boxedverbatim}
+\resetbvlinenumber
+
+This configuration values are placed in the .moos file in the !ProcessConfig = iFrontSeat! block:
+
+\begin{itemize}
+\item !huxley_tcp_address!: IP address or domain name of the Huxley server machine.
+\item !huxley_tcp_port!: TCP port of the Huxley server. (default=29500)
+\item !reconnect_interval!: How many seconds to wait between reconnects if the Huxley server disconnects. (default=10)
+\item !nmea_resend_attempts!: Number of resend attempts for a given NMEA message (default=3)
+\item !nmea_resend_interval!: How many seconds to wait between resend attempts (default=5)
+\item !allowed_nmea_demerits!: Number of times Huxley can fail to acknowledge a NMEA message before we close the connection. (default=3)
+\item !allow_missing_nav_interval!: How many seconds to allow without !$BFNVG! before declaring frontseat not providing us data. (default=5)
+\item !heartbeat_interval!:  How many seconds between heartbeats (!$BPSTS!). (default=1)
+\item !extra_bplog!: Additional Bluefin messages to enable logging for (e.g. for to send !$BPLOG,CMA,ON!, set this field to 'CMA'. This field can be repeated.
+\item !send_tmr_messages!: Send the BPTMR message with acoustic comms contents. This is required on certain vehicles outfitted with the WHOI Micro-Modem. Ask Bluefin for details about if they need the BPTMR message sent (default=true). %$
+\item !disable_ack!: If true, do not use the BFACK message. Set to true for vehicles without the BFACK support. Note that if this field is set to true, !IFS_COMMAND_RESPONSE! messages will not be posted.
+\item !accepting_commands_hook!: The mechanism by which the Bluefin frontseat indicates that it is ready to accept commands from iFrontSeat (and also by which it revokes control). The options are:
+\begin{itemize}
+\item !BFMSC_TRIGGER!: If any BFMSC message is received, the frontseat state is set to !FRONTSEAT_ACCEPTING_COMMANDS!. If a BFMIS message is received with the word ``Running'' in the fourth field, the frontseat state is set to be !FRONTSEAT_IN_CONTROL!. Any other BFMIS sets the frontseat state to !FRONTSEAT_IDLE!.
+\item !BFMIS_RUNNING_TRIGGER!: If a BFMIS message is received with the word ``Running'' in the fourth field, the frontseat state is set to be !FRONTSEAT_ACCEPTING_COMMANDS!.  Any other BFMIS sets the frontseat state to !FRONTSEAT_IDLE!.
+\item !BFCTL_TRIGGER!: If the third field is true, the frontseat state is set to !FRONTSEAT_ACCEPTING_COMMANDS!. Otherwise, it is set to !FRONTSEAT_IN_CONTROL!. Also, if a BFMIS message is received with the word ``Running'' in the fourth field, the frontseat state is set to be !FRONTSEAT_IN_CONTROL!.  Any other BFMIS sets the frontseat state to !FRONTSEAT_IDLE!.
+\end{itemize} 
+\end{itemize}
+
+
+\subsubsection{Writing a new driver}
+
+
+
 \section{iCommander}\label{sec:icommander} 
 
 \textit{Deprecated. Use goby\_liaison as a replacement. See section \ref{sec:moos_liaison}.}

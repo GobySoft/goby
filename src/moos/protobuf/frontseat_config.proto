@@ -57,6 +57,8 @@ message iFrontSeatConfig
   }
 
   optional LegacyOperations legacy_cfg = 30 [(goby.field).description="Numerous options to automatically convert legacy variables (e.g., from iHuxley) into the iFrontSeat messages. Generally new projects will not use any of these options and thus this configuration block can be omitted."];
-  
+
+  // Bluefin: 1000
+  // ABC: 1001
   extensions 1000 to max;
 }

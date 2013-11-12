@@ -1,3 +1,5 @@
+\MakeShortVerb{\!} % makes !foo! == !foo!
+
 \chapter{Introduction}
 
 \section{What is Goby?}
@@ -20,6 +22,52 @@ This manual covers general use of the Goby libraries and the applications provid
 \section{Prerequisites}
 Goby (for both DCCL and the various external APIs) makes significant use of the \gls{protobuf} mechanism for serializing structured data. This library is very well documented and is widely adopted in numerous open source projects. Please take a few moments to familiarize yourself with the project here: \url{https://developers.google.com/protocol-buffers/docs/overview}.
 
+
+\section{Getting the Code}
+
+By far the easiest way to get !Goby! is to use any currently supported Ubuntu distribution (see \url{http://en.wikipedia.org/wiki/List_of_Ubuntu_releases#Version_timeline}), and install it using !apt-get!:
+
+\begin{verbatim}
+sudo apt-add-repository ppa:goby-dev/ppa
+sudo apt-get update
+sudo apt-get install libgoby2
+\end{verbatim}
+and then, optionally, install one or more additional packages:
+\begin{verbatim}
+# for the core applications
+sudo apt-get install goby2-apps
+# for the MOOS applications
+sudo apt-get install goby2-moos
+# for the developer header files
+sudo apt-get install libgoby2-dev
+# for the documentation
+sudo apt-get install goby2-doc
+# for the unit tests
+sudo apt-get install goby2-test
+\end{verbatim}
+
+
+You can also compile !Goby! from source using the bazaar version control software:
+
+\begin{verbatim}
+bzr co lp:goby/2.0
+\end{verbatim}
+
+The dependencies for Goby are minimally
+\begin{itemize}
+\item Google Protocol Buffers (see \url{https://code.google.com/p/protobuf/})
+\item Boost (see \url{http://www.boost.org/}). 
+\end{itemize}
+
+Certain optional libraries and/or functionality require additional dependencies:
+\begin{itemize}
+\item ZeroMQ for the communications applications: !goby_modemdriver!, !goby_bridge!, !goby_file_transfer!, !goby_store_server!, !goby_rudics_shore!.
+\item MOOS or MOOS 10 (see \url{http://themoos.org/}) and PROJ.4 for the Goby MOOS library and applications (see Chapter \ref{chap:MOOS}).
+\item Wt for web-browser based GUI applications (!goby_liaison!) 
+\item Crypto++ for encrypting DCCL messages.
+\item GMP for the Iridium driver.
+\item NCurses for the debugging terminal GUI.
+\end{itemize}
 
 \section{Changes / incompatiblities with version 1}
 
@@ -49,4 +97,5 @@ The Goby community is here to support you. This is an open source project so we 
 \item Email the listserver \href{mailto:goby@mit.edu}{goby@mit.edu}. Please sign up first: \url{http://mailman.mit.edu/mailman/listinfo/goby}.
 \item Email the lead developer (T. Schneider): \href{mailto:tes@mit.edu}{tes@mit.edu}.
 \end{enumerate}
+\DeleteShortVerb{\!}
 

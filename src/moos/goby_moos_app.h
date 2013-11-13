@@ -80,7 +80,7 @@ class GobyMOOSApp : public CMOOSApp
         publish(msg);
     }    
     
-    tes::DynamicMOOSVars& dynamic_vars() { return dynamic_vars_; }
+    goby::moos::DynamicMOOSVars& dynamic_vars() { return dynamic_vars_; }
     double start_time() const { return start_time_; }
 
     void subscribe(const std::string& var,
@@ -132,7 +132,7 @@ class GobyMOOSApp : public CMOOSApp
     std::ofstream fout_;
 
     // allows direct reading of newest publish to a given MOOS variable
-    tes::DynamicMOOSVars dynamic_vars_;
+    goby::moos::DynamicMOOSVars dynamic_vars_;
 
     std::map<std::string, boost::shared_ptr<boost::signals2::signal<void (const CMOOSMsg& msg)> > > mail_handlers_;
 

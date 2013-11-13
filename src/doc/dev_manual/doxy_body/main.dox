@@ -17,6 +17,7 @@
   <ul>
   <li> \ref acomms - tackle the extremely rate limited acoustic networking problem. This library was designed with four modules that can operate independently for a developer looking integrate a specific component (e.g. just encoding/decoding) without committing to the entire goby-acomms stack.</li>
   <li> \ref util - provide utility functions for tasks such as logging, scientific calculations, string parsing, and serial device i/o. Goby also relies on the boost libraries <http://www.boost.org/> for many utility tasks to fill in areas where the C++ Standard Library is insufficient or unelegant.</li>
+  <li> \ref moos - classes, applications, and functions for interoperating between Goby and the MOOS middleware. </li>
   </ul>  
 
   \section main_papers Publications

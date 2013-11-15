@@ -49,12 +49,8 @@ class AbcFrontSeat : public FrontSeatInterfaceBase
     void send_command_to_frontseat(const goby::moos::protobuf::CommandRequest& command);
     void send_data_to_frontseat(const goby::moos::protobuf::FrontSeatInterfaceData& data);
     void send_raw_to_frontseat(const goby::moos::protobuf::FrontSeatRaw& data);
-
-
-    goby::moos::protobuf::FrontSeatState frontseat_state() const
-    { return frontseat_state_; }
-    
-    bool frontseat_providing_data() const { return frontseat_providing_data_; }
+    goby::moos::protobuf::FrontSeatState frontseat_state() const;
+    bool frontseat_providing_data() const;
     
   private: // internal non-virtual methods
     void check_connection_state();

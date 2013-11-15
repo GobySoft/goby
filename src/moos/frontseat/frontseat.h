@@ -83,20 +83,21 @@ class FrontSeatInterfaceBase
     boost::signals2::signal<void (const goby::moos::protobuf::FrontSeatRaw& data)>
         signal_raw_to_frontseat;
 
-    // Signals called by FrontSeatInterfaceBase directly. No need to call these
-    // from the Frontseat driver implementation
-    boost::signals2::signal<void (goby::moos::protobuf::InterfaceState state)>
-        signal_state_change;
-
     const iFrontSeatConfig& cfg() const { return cfg_; }
 
     void compute_missing(goby::moos::protobuf::CTDSample* ctd_sample);
     void compute_missing(goby::moos::protobuf::NodeStatus* status);
-    
+
+    friend class FrontSeatLegacyTranslator; // to access the signal_state_change
   private:
     void check_error_states();
     void check_change_state();
 
+    // Signals called by FrontSeatInterfaceBase directly. No need to call these
+    // from the Frontseat driver implementation
+    boost::signals2::signal<void (goby::moos::protobuf::InterfaceState state)>
+        signal_state_change;
+    
     enum Direction { DIRECTION_TO_FRONTSEAT, DIRECTION_FROM_FRONTSEAT };
     
     void glog_raw(const goby::moos::protobuf::FrontSeatRaw& data, Direction direction);

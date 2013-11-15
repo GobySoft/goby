@@ -588,6 +588,7 @@ INPUT                  = @CMAKE_SOURCE_DIR@/src/doc/dev_manual/doxy_body/main.do
                          @CMAKE_SOURCE_DIR@/src/doc/dev_manual/doxy_body/acomms-driver.dox \
                          @CMAKE_SOURCE_DIR@/src/doc/dev_manual/doxy_body/util.dox \
                          @CMAKE_SOURCE_DIR@/src/doc/dev_manual/doxy_body/moos.dox \
+                         @CMAKE_SOURCE_DIR@/share/examples \
                          @goby_INC_DIR@ \
                          @CMAKE_SOURCE_DIR@/src
                          

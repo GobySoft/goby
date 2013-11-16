@@ -190,14 +190,14 @@ void goby::common::LiaisonGeodesy::convert_geo_to_local()
     switch(mode_)
     {
         case DEGREES_MINUTES_SECONDS:
-            lat += lat_sec/3600;
-            lon += lon_sec/3600;
+            lat += lat > 0 ? lat_sec/3600 : -lat_sec/3600;
+            lon += lon > 0 ? lon_sec/3600 : -lon_sec/3600;
             // fall through intentional
         case DEGREES_MINUTES:
-            lat += lat_min/60;
+            lat += lat > 0 ? lat_min/60 : -lat_min/60;
             if(geo_to_local_lat_hemi_->currentIndex() == 1)
                 lat = -lat;
-            lon += lon_min/60;
+            lon += lon > 0 ? lon_min/60 : -lon_min/60;
             if(geo_to_local_lon_hemi_->currentIndex() == 1)
                 lon = -lon;
             // fall through intentional
@@ -324,7 +324,7 @@ std::wstring goby::common::LiaisonGeodesy::format(double angle, LatLonMode mode,
             int deg = std::abs(angle);
             double min = (std::abs(angle)-deg)*60;
             std::wstringstream ss;
-            ss << deg << wchar_t(0x00B0) << " " << std::setprecision(5) << min << "' " << ((angle > 0) ? pos : neg);
+            ss << deg << wchar_t(0x00B0) << " " << std::setprecision(7) << min << "' " << ((angle > 0) ? pos : neg);
             return ss.str();    
         }
         case DEGREES_MINUTES_SECONDS:

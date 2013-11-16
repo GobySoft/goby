@@ -122,7 +122,15 @@ The state transitions for the iFrontSeat interface states are (using the names a
 
 \subsubsection moos_ifs_new_driver_abc Example "ABC" driver
 
-We will show you how to a write a new driver by example. To do so, we have created a simple frontseat simulator ("abc_frontseat_simulator") that is intended to represent the real vehicle frontseat control system. A complete production driver is provided by BluefinFrontSeat for the Bluefin Robotics AUVs that conform to the Bluefin Standard Payload Interface version 1.8 and newer.
+We will show you how to a write a new driver by example. To do so, we have created a simple frontseat simulator ("abc_frontseat_simulator") that is intended to represent the real vehicle frontseat control system. The full source code for this example is given at:
+<ul>
+<li> examples/moos/abc_frontseat_driver/abc_frontseat_driver.h
+<li> examples/moos/abc_frontseat_driver/abc_frontseat_driver.cpp
+<li> examples/moos/abc_frontseat_driver/abc_frontseat_driver_config.proto
+</li>
+
+
+%A complete production driver is provided by BluefinFrontSeat for the Bluefin Robotics AUVs that conform to the Bluefin Standard Payload Interface version 1.8 and newer.
 
 The transport for the ABC frontseat is TCP: the simulator (frontseat) listens on a given port and the driver connects to that machine and port. The wire protocol is a simple ascii line-based protocol where lines are terminated by carriage-return and newline (<CR><NL> or "\r\n"). Each message has a name (key), followed by a number of comma-delimited, colon-separated fields:
 
@@ -185,7 +193,7 @@ extern "C"
 }
 \endcode
 
-First you should decide what configuration your driver will accept. Your configuration object is an extension to the Google Protobuf message "iFrontSeatConfig". For the ABC frontseat driver, we use this .proto file to define the configuration:
+First you should decide what configuration your driver will accept. Your configuration object is an extension to the Google Protobuf message "iFrontSeatConfig". For the ABC frontseat driver, we use the abc_frontseat_driver_config.proto file to define the configuration:
 
 \include abc_frontseat_driver_config.proto
 
@@ -217,15 +225,19 @@ In this case, we set the value of frontseat_status_ based on the received "CTRL"
 \skipline send_data_to_frontseat(
 \until // send_data_to_frontseat
 <li> The method "send_raw_to_frontseat" is called whenever an external application wants to directly control the frontseat. This can be left blank (or post a warning to the glog) if there is no need (or desire) to allow for direct control of the frontseat from external applications.
+<li> The method "loop" is called regularly (at the AppTick of iFrontSeat) and is where you can read data from the frontseat and do other regular work.
+\dontinclude abc_frontseat_driver.cpp
+\skipline loop(
+\until // loop
 </ul>
 
-Now, the final task is to call the appropriate signals in FrontSeatInterfaceBase upon receipt of data and responses to commands. The signals are called just like normal functions with the corresponding signatures.
+Now, the final task is to call the appropriate signals in FrontSeatInterfaceBase upon receipt of data and responses to commands. The signals are called just like normal functions with the corresponding signatures. These signals (except signal_raw_to_frontseat) are typically called in response to data received in the loop() method.
 
 <ul>
 <li> signal_data_from_frontseat: Call when a navigation solution is received from the frontseat. This may have to be merged from several messages, which is why goby::moos::protobuf::NodeStatus has the *_time_lag fields. These fields can be used to indicate the offset of certain fields from the timestamp on the message. You can use the FrontSeatInterfaceBase::compute_missing to compute the loocal fix (X, Y, Z) from the global fix (latitude, longitude, depth) or vice-versa.
 <li> signal_command_response: Call when the frontseat acknowledges a command, if the command request includes response_requested == true. Include the success or failure of the command, and an error code (with description) if applicable. 
-<li> signal_raw_to_frontseat: Call when a raw message (e.g. "CMD,HEADING:260,SPEED:1.5,DEPTH:100") is send to the frontseat. This is for logging and debug purposes.
 <li> signal_raw_from_frontseat: Call when a raw message (e.g. "CMD,RESULT:OK") is received from the frontseat. This is for logging and debug purposes.
+<li> signal_raw_to_frontseat: Call when a raw message (e.g. "CMD,HEADING:260,SPEED:1.5,DEPTH:100") is send to the frontseat. This is for logging and debug purposes.
 </ul>
 
 For testing the ABC driver to see how it functions, you will need to run 

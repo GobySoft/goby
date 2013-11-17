@@ -1,4 +1,0 @@
-- Test and verify repeated
-- Write vector<Message> encode and make non-repeated fields repeated
-- Delta encode for numeric types
-- Check that DCCL bounds are sane for the given c++ type

@@ -24,6 +24,7 @@
 // tests all protobuf types with _default codecs, repeat and non repeat
 
 #include <google/protobuf/descriptor.pb.h>
+#include <boost/foreach.hpp>
 
 #include "goby/acomms/dccl.h"
 #include "test.pb.h"

@@ -34,6 +34,12 @@
 #   ARGN = proto files
 #
 #  ====================================================================
+#  ====================================================================
+#
+#  PROTOBUF_INCLUDE_DIRS (public function)
+#   ARGN = Directories to add to the protoc (Google Protocol Buffer compiler) include path
+#
+#  ====================================================================
 
 
 #=============================================================================
@@ -51,6 +57,18 @@
 #=============================================================================
 # (To distributed this file outside of CMake, substitute the full
 #  License text for the above reference.)
+
+function(PROTOBUF_INCLUDE_DIRS)
+  if(NOT ARGN)
+    message(SEND_ERROR "Error: PROTOBUF_INCLUDE_DIRS() called without any directories")
+    return()
+  endif()  
+
+  foreach(DIR ${ARGN})
+    set(ALL_PROTOBUF_INCLUDE_DIRS "${ALL_PROTOBUF_INCLUDE_DIRS};-I${DIR}" PARENT_SCOPE)
+  endforeach()
+endfunction()
+
 
 function(PROTOBUF_GENERATE_CPP SRCS HDRS)
   if(NOT ARGN)
@@ -88,7 +106,7 @@ function(PROTOBUF_GENERATE_CPP SRCS HDRS)
       OUTPUT "${FIL_PATH}/${FIL_WE}.pb.cc"
              "${FIL_PATH}/${FIL_WE}.pb.h"
       COMMAND  ${PROTOBUF_PROTOC_EXECUTABLE}
-      ARGS --cpp_out ${goby_INC_DIR} --proto_path ${goby_INC_DIR} ${goby_INC_DIR}/goby/${REL_FIL} -I ${PROTOBUF_INCLUDE_DIRS} -I ${goby_INC_DIR}
+      ARGS --cpp_out ${goby_INC_DIR} --proto_path ${goby_INC_DIR} ${goby_INC_DIR}/goby/${REL_FIL} ${ALL_PROTOBUF_INCLUDE_DIRS} -I ${goby_INC_DIR}
       DEPENDS ${ABS_FIL}
       COMMENT "Running C++ protocol buffer compiler on ${FIL}"
       VERBATIM )
@@ -107,6 +125,9 @@ endfunction()
 
 
 find_path(PROTOBUF_INCLUDE_DIR google/protobuf/service.h)
+
+# so that we can use Google's included descriptor.proto
+list(APPEND ALL_PROTOBUF_INCLUDE_DIRS "-I${PROTOBUF_INCLUDE_DIR}")
 
 # Google's provided vcproj files generate libraries with a "lib"
 # prefix on Windows

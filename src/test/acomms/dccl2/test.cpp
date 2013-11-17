@@ -29,6 +29,7 @@
 #include "goby/util/as.h"
 #include "goby/common/time.h"
 #include "goby/util/binary.h"
+#include "goby/util/sci.h"
 
 using goby::acomms::operator<<;
 using goby::acomms::Bitset;

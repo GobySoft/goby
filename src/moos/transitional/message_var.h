@@ -37,7 +37,7 @@
 #include <boost/lexical_cast.hpp>
 
 #include "dccl_constants.h"
-#include "goby/acomms/dccl/dccl_exception.h"
+#include "goby/acomms/dccl.h"
 #include "message_val.h"
 namespace goby
 {

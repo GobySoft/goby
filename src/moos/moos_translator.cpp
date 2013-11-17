@@ -27,7 +27,7 @@
 
 
 #include "goby/util/sci.h"
-#include "goby/acomms/dccl/dccl_field_codec_default.h"
+#include "goby/acomms/dccl.h"
 
 #include "moos_translator.h"
 

@@ -36,7 +36,7 @@
 #include "goby/moos/transitional/xml/xerces_strings.h"
 
 #include "message.h"
-#include "goby/acomms/dccl/dccl_exception.h"
+#include "goby/acomms/dccl.h"
 #include "goby/moos/transitional/xml/tags.h"
 
 namespace goby

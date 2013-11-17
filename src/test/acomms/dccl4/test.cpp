@@ -24,7 +24,6 @@
 // tests functionality of std::list<const google::protobuf::Message*> calls
 
 #include "goby/acomms/dccl.h"
-#include "goby/acomms/dccl/dccl_field_codec_default.h"
 #include "test.pb.h"
 #include "goby/util/as.h"
 #include "goby/common/time.h"

@@ -15,7 +15,6 @@ set(SRC
   ${PROTO_SRCS} ${PROTO_HDRS}
 )
 
-
 add_library(goby_acomms ${SRC})
 
 target_link_libraries(goby_acomms goby_util goby_common dccl ${Cryptopp_LIBRARIES} ${Boost_LIBRARIES} ${CMAKE_DL_LIBS} ${GMP_LIBRARIES})

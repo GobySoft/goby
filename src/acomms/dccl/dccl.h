@@ -49,12 +49,24 @@ namespace goby
         typedef dccl::DefaultStringCodec DCCLDefaultStringCodec;
         typedef dccl::DefaultBytesCodec DCCLDefaultBytesCodec;
         typedef dccl::DefaultEnumCodec DCCLDefaultEnumCodec;
+        typedef dccl::MessageStack MessageHandler;
 //        typedef dccl::TimeCodec DCCLTimeCodec;
 //        typedef dccl::StaticCodec DCCLStaticCodec;
         typedef dccl::DefaultMessageCodec DCCLDefaultMessageCodec;
-//        typedef dccl::TypedFixedFieldCodec DCCLTypedFixedFieldCodec;
+
+        typedef dccl::FieldCodecBase DCCLFieldCodecBase;
+
+        template<typename WireType, typename FieldType = WireType>
+            struct DCCLTypedFixedFieldCodec : public dccl::TypedFixedFieldCodec<WireType, FieldType> {
+            typedef dccl::FieldCodecBase DCCLFieldCodecBase;
+        };
+        
+        template<typename WireType, typename FieldType = WireType>
+            struct DCCLRepeatedTypedFieldCodec : public dccl::RepeatedTypedFieldCodec<WireType, FieldType> {
+            typedef dccl::FieldCodecBase DCCLFieldCodecBase;
+        };
+
         typedef dccl::FieldCodecManager DCCLFieldCodecManager;
-//        typedef dccl::RepeatedTypedFieldCodec DCCLRepeatedTypedFieldCodec;
 //        typedef dccl::TypedFieldCodec DCCLTypedFieldCodec;
         typedef dccl::FieldCodecManager DCCLFieldCodecManager;
         typedef dccl::FromProtoCppTypeBase FromProtoCppTypeBase;
@@ -62,7 +74,6 @@ namespace goby
         // typedef dccl::FromProtoCppType FromProtoCppType;
         //typedef dccl::ToProtoCppType ToProtoCppType;
         typedef dccl::Bitset Bitset;
-        typedef dccl::FieldCodecBase DCCLFieldCodecBase; 
         typedef dccl::TypeHelper DCCLTypeHelper;
         
         class DCCLCodec

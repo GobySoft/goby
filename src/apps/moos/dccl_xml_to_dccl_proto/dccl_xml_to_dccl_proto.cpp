@@ -21,6 +21,7 @@
 // along with Goby.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "goby/moos/transitional/dccl_transitional.h"
+#include "goby/util/dynamic_protobuf_manager.h"
 
 int main(int argc, char* argv[])
 {

@@ -25,6 +25,7 @@
 #include "goby/acomms/connect.h"
 #include "goby/util/binary.h"
 #include "goby/common/logger.h"
+#include "goby/acomms/acomms_constants.h"
 
 // tests "encode_on_demand" functionality
 

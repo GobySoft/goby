@@ -37,7 +37,6 @@
 
 #include "message.h"
 #include "message_val.h"
-#include "goby/acomms/dccl/dccl_exception.h"
 #include "goby/moos/protobuf/transitional.pb.h"
 #include "goby/moos/protobuf/pAcommsHandler_config.pb.h"
 #include "goby/acomms/protobuf/queue.pb.h"

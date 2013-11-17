@@ -1,5 +1,5 @@
 import "goby/common/protobuf/option_extensions.proto";
-import "goby/acomms/protobuf/dccl_option_extensions.proto";
+import "dccl/protobuf/option_extensions.proto";
 
 // required fields will be filled in for you by ApplicationBase
 // if you choose not to do so yourself
@@ -9,9 +9,8 @@ message Header
   // time
   //
 
-  // result of goby::util::as<std::string>(goby_time())
-  // e.g. "2002-01-20 23:59:59.000"
-  required string time = 10 [(dccl.field).codec="_time",
+  // micro-seconds since unix
+  required uint64 time = 10 [(dccl.field).codec="_time",
                              (dccl.field).in_head=true];
 
   //

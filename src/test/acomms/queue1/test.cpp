@@ -22,6 +22,7 @@
 
 #include "test.pb.h"
 #include "goby/acomms/queue.h"
+#include "goby/acomms/acomms_constants.h"
 #include "goby/acomms/connect.h"
 #include "goby/util/binary.h"
 #include "goby/common/logger.h"

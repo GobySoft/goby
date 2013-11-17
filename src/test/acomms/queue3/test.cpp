@@ -22,10 +22,11 @@
 
 #include "test.pb.h"
 #include "goby/acomms/queue.h"
+#include "goby/acomms/acomms_constants.h"
 #include "goby/acomms/connect.h"
 #include "goby/util/binary.h"
 #include "goby/common/logger.h"
-#include "goby/acomms/dccl/dccl_field_codec_default.h"
+#include "goby/acomms/dccl.h"
 // tests basic DCCL queuing with non-BROADCAST destination
 
 using goby::acomms::operator<<;
@@ -89,21 +90,21 @@ int main(int argc, char* argv[])
 
     msg_in_macrura.set_telegram("hello mac!");
     msg_in_macrura.mutable_header()->set_time(
-        goby::util::as<std::string>(current_time));
+        goby::util::as<goby::uint64>(current_time));
     msg_in_macrura.mutable_header()->set_source_platform(MY_MODEM_ID);
     msg_in_macrura.mutable_header()->set_dest_platform(MACRURA_MODEM_ID);
     msg_in_macrura.mutable_header()->set_dest_type(Header::PUBLISH_OTHER);
 
     msg_in_broadcast.set_telegram("hello all!");
     msg_in_broadcast.mutable_header()->set_time(
-        goby::util::as<std::string>(current_time));
+        goby::util::as<goby::uint64>(current_time));
     
     msg_in_broadcast.mutable_header()->set_source_platform(MY_MODEM_ID);
     msg_in_broadcast.mutable_header()->set_dest_type(Header::PUBLISH_ALL);    
     
     msg_in_unicorn.set_telegram("hello uni!");
     msg_in_unicorn.mutable_header()->set_time(
-        goby::util::as<std::string>(current_time));
+        goby::util::as<goby::uint64>(current_time));
     msg_in_unicorn.mutable_header()->set_source_platform(MY_MODEM_ID);
     msg_in_unicorn.mutable_header()->set_dest_platform(UNICORN_MODEM_ID);
     msg_in_unicorn.mutable_header()->set_dest_type(Header::PUBLISH_OTHER);    
@@ -194,7 +195,7 @@ void handle_receive(const google::protobuf::Message& msg)
     GobyMessage typed_msg;
     typed_msg.CopyFrom(msg);    
     
-    assert(typed_msg.header().time() == goby::util::as<std::string>(current_time));
+    assert(typed_msg.header().time() == goby::util::as<goby::uint64>(current_time));
     
     if(!typed_msg.header().has_dest_platform())
         assert(typed_msg.SerializeAsString() == msg_in_broadcast.SerializeAsString());

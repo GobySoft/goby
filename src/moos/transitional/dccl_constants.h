@@ -37,7 +37,7 @@
 
 #include "goby/moos/protobuf/transitional.pb.h"
 #include "goby/acomms/acomms_constants.h"
-#include "goby/acomms/dccl/dccl_exception.h"
+#include "goby/acomms/dccl.h"
 
 namespace goby
 {

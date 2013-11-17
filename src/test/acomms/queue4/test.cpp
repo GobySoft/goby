@@ -25,7 +25,7 @@
 #include "goby/acomms/connect.h"
 #include "goby/util/binary.h"
 #include "goby/common/logger.h"
-#include "goby/acomms/dccl/dccl_field_codec_default.h"
+#include "goby/acomms/dccl.h"
 
 // tests multi-frame DCCL queuing with non-BROADCAST destination
 
@@ -78,7 +78,7 @@ int main(int argc, char* argv[])
 
     msg_in1.set_telegram("hello!");
     msg_in1.mutable_header()->set_time(
-        goby::util::as<std::string>(boost::posix_time::second_clock::universal_time()));
+        goby::util::as<goby::uint64>(boost::posix_time::second_clock::universal_time()));
     msg_in1.mutable_header()->set_source_platform(MY_MODEM_ID);
     msg_in1.mutable_header()->set_dest_platform(UNICORN_MODEM_ID);
     msg_in1.mutable_header()->set_dest_type(Header::PUBLISH_OTHER);

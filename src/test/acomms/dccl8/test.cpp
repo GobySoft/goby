@@ -24,6 +24,7 @@
 // tests receiving one of several static types
 
 #include "goby/acomms/dccl.h"
+#include "goby/acomms/acomms_helpers.h"
 #include "test.pb.h"
 
 

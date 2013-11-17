@@ -27,9 +27,7 @@
 #include "goby/common/logger.h"
 #include "message.h"
 #include "goby/acomms/dccl/dccl.h"
-#include "goby/acomms/dccl/dccl_exception.h"
-#include "goby/acomms/dccl/dccl_field_codec.h"
-#include "goby/acomms/dccl/dccl_field_codec_manager.h"
+
 
 using goby::util::as;
 using goby::glog;

@@ -452,7 +452,7 @@ Historically, a new interface has been written for each vehicle that was to be u
 \begin{figure}
 \centering
 \includegraphics[width=\textwidth]{iFrontSeat_structure.eps}
-\caption{Structure diagram of iFrontSeat and supporting libraries. Green components are implemented once and used by all the drivers (see Chapter \ref{chap:common}). Pink components need to be modified/implemented for each specific driver (see Chapter \ref{chap:specific}).}
+\caption{Structure diagram of iFrontSeat and supporting libraries. Green components are implemented once and used by all the drivers (see section \ref{chap:common}). Pink components need to be modified/implemented for each specific driver (see section \ref{chap:specific}).}
 \label{fig:structure}
 \end{figure}
 
@@ -532,13 +532,13 @@ The configuration for the shared MOOS components is:
 \item !moos_var!: Change the default values of the MOOS variables published or subscribed to by iFrontSeat. Throughout the manual, these defaults are referenced. If you change the values here, keep this in mind when reading the rest of the manual.
 \begin{itemize}
 \item !prefix!: Prefix all MOOS variable names with this string (default=``IFS\_'')
-\item !raw_out!: (default=``RAW\_OUT'')
-\item !raw_in!: (default=``RAW\_IN'')
-\item !command_request!: (default=``COMMAND\_REQUEST'')
-\item !command_response!: (default=``COMMAND\_RESPONSE'')
-\item !data_from_frontseat!: (default=``DATA\_IN'')
-\item !data_to_frontseat!: (default=``DATA\_OUT'')
-\item !status!: "STATUS" (default=``STATUS'')
+\item !raw_out!: variable used to post raw (e.g. NMEA-0183) messages from iFrontSeat to the vehicle frontseat.  (default=``RAW\_OUT'')
+\item !raw_in!: variable used to post raw messages from the vehicle frontseat to iFrontSeat. (default=``RAW\_IN'')
+\item !command_request!: variable used for commands that iFrontSeat should request the vehicle frontseat to carry out. (default=``COMMAND\_REQUEST'')
+\item !command_response!: if supported by the frontseat driver, the variable used to post the result (success or failure with error information) of a given request. (default=``COMMAND\_RESPONSE'')
+\item !data_from_frontseat!: the variable used to post any navigation and/or sensor data from the frontseat. (default=``DATA\_IN'')
+\item !data_to_frontseat!: the variable used to post any data to be sent to the frontseat. (default=``DATA\_OUT'')
+\item !status!: the variable used to post the state of the frontseat, IvP helm, and iFrontSeat. (default=``STATUS'')
 \end{itemize}  
 \item !exit_on_error!: If true, exit the application if it enters one of the error states. Use only for debugging. (default=false)
 \item !legacy_cfg!: Numerous options to automatically convert legacy variables (e.g., from iHuxley) into the iFrontSeat messages. Generally new projects will not use any of these options and thus this configuration block can be omitted. See section \ref{sec:ifrontseat_legacy_cfg} for details on which of these flags to enable if legacy compatibility is desired.
@@ -546,7 +546,7 @@ The configuration for the shared MOOS components is:
 
 \subsubsection{MOOS Variable Interface}
 
-The preferred way to use iFrontSeat is via the new !IFS_! set of variables. The contents of these string MOOS variables are the output of the !TECHNIQUE_PREFIXED_PROTOBUF_TEXT_FORMAT! translator explained in the Goby2 user manual (\url{http://gobysoft.com/dl/goby2-user-manual.pdf}). Essentially, they are the !TextFormat! human-readable output of the Google Protocol Buffers messages defined in
+The preferred way to use iFrontSeat is via the new !IFS_! set of variables. The contents of these string MOOS variables are the output of the !TECHNIQUE_PREFIXED_PROTOBUF_TEXT_FORMAT! translator explained section \ref{sec:ptranslator_techniques}. Essentially, they are the !TextFormat! human-readable output of the Google Protocol Buffers messages defined in
 \begin{verbatim}
 goby/moos/protobuf/frontseat.proto
 \end{verbatim}
@@ -657,6 +657,7 @@ This configuration values are placed in the .moos file in the !ProcessConfig = i
 
 \subsubsection{Writing a new driver}
 
+A tutorial on how to write a new driver is available in the Goby developers' documentation at \cite{goby-doc}.
 
 
 \section{iCommander}\label{sec:icommander} 
@@ -665,6 +666,6 @@ This configuration values are placed in the .moos file in the !ProcessConfig = i
 
 \section{pREMUSCodec}
 
-\textit{Deprecated, see section \ref{sec:ccl_dccl_example} for an example of using pAcommsHandler with CCL.}
+\textit{Deprecated. DCCL has significant support for interoperating with the CCL protocol using pAcommsHandler with the libgoby\_ccl\_compat library. Please contact one of us (section \ref{sec:help}) if you need help getting started with this functionality.}
 
 \DeleteShortVerb{\!}

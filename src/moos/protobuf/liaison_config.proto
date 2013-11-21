@@ -6,6 +6,7 @@ extend goby.common.protobuf.LiaisonConfig
 {
   optional MOOSScopeConfig moos_scope_config = 1000;
   optional ProtobufCommanderConfig pb_commander_config = 1001;
+  optional GeodesyConfig geodesy_config = 1002;
 }
 
 message ProtobufCommanderConfig
@@ -95,4 +96,10 @@ message MOOSScopeConfig
   
   
   repeated HistoryConfig history = 8;
+}
+
+message GeodesyConfig
+{
+  required double lat_origin = 1;
+  required double lon_origin = 2;
 }

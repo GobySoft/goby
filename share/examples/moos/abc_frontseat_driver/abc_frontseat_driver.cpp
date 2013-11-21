@@ -73,7 +73,7 @@ void AbcFrontSeat::loop()
     // FrontSeatInterfaceBase class knows
     if(goby_time<double>() > last_frontseat_data_time_ + allowed_skew)
         frontseat_providing_data_ = false;
-}
+} // loop
 
 void AbcFrontSeat::check_connection_state()
 {
@@ -195,17 +195,28 @@ void AbcFrontSeat::send_command_to_frontseat(const gpb::CommandRequest& command)
         glog.is(VERBOSE) && glog << "Unhandled command: " << command.ShortDebugString() << std::endl;
     }
     
-}
+} // send_command_to_frontseat
     
 void AbcFrontSeat::send_data_to_frontseat(const gpb::FrontSeatInterfaceData& data)
 {
     // ABC driver doesn't have any data to sent to the frontseat
-}
+} // send_data_to_frontseat
 
 void AbcFrontSeat::send_raw_to_frontseat(const gpb::FrontSeatRaw& data)
 {
     write(data.raw());
-}
+} // send_raw_to_frontseat
+
+    
+bool AbcFrontSeat::frontseat_providing_data() const
+{
+    return frontseat_providing_data_;
+} // frontseat_providing_data
+
+goby::moos::protobuf::FrontSeatState AbcFrontSeat::frontseat_state() const
+{
+    return frontseat_state_;
+} // frontseat_state
 
 void AbcFrontSeat::write(const std::string& s)
 {

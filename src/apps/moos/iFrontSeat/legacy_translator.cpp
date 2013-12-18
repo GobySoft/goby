@@ -128,9 +128,9 @@ void FrontSeatLegacyTranslator::handle_driver_data_from_frontseat(const goby::mo
         const double pi = 3.14159;
         if(status.pose().has_heading())
         {
-            double yaw = -status.pose().heading() * 180.0 / pi;
-            while (yaw < 0) yaw += 360;
-            while (yaw >=360 ) yaw -= 360;
+            double yaw = -status.pose().heading() * pi/180.0;
+            while(yaw < -pi) yaw += 2*pi;
+            while(yaw >= pi) yaw -= 2*pi;
             ifs_->publish("NAV_YAW", yaw);
             ifs_->publish("NAV_HEADING", status.pose().heading());
         }

@@ -19,7 +19,7 @@ Version 2.1.0
       - goby::acomms::UDPDriver (unicast UDP driver)
       - goby::acomms::IridiumDriver (Iridium)
 - goby_bridge updated to use goby_modemdriver instead of having the ModemDriver components directly in the application
-
+- goby_file_transfer that works with goby_bridge to allow arbitrary file transfer over a Goby link.
 
 bzr log --line -n0 -r tag:2.0.4..
 

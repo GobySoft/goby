@@ -118,6 +118,9 @@ namespace goby
                 sb_.add_stream(static_cast<logger::Verbosity>(verbosity), os);
             }            
 
+            const FlexOStreamBuf& buf() { return sb_; }
+            
+            
             //@}
 
             /// \name Overloaded insert stream operator<<

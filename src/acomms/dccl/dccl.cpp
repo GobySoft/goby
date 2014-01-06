@@ -25,3 +25,6 @@
 
 boost::shared_ptr<goby::acomms::DCCLCodec> goby::acomms::DCCLCodec::inst_;
 
+std::string goby::acomms::DCCLCodec::glog_encode_group_ = "goby::acomms::dccl::encode";
+std::string goby::acomms::DCCLCodec::glog_decode_group_ = "goby::acomms::dccl::decode";
+    

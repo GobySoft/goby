@@ -84,31 +84,31 @@ namespace goby
             int overflow(int c = EOF);
             
             /// name of the application being served
-            void name(const std::string & s)
+            void name(const std::string & s) 
             { name_ = s; }
 
             /// add a stream to the logger
             void add_stream(logger::Verbosity verbosity, std::ostream* os);            
 
             /// do all attached streams have Verbosity == quiet?
-            bool is_quiet()
+            bool is_quiet() const
             { return highest_verbosity_ == logger::QUIET; }    
 
             /// is there an attached stream with Verbosity == gui (ncurses GUI)
-            bool is_gui()
+            bool is_gui() const 
             { return is_gui_; }
 
             void enable_gui();
             
             
-            logger::Verbosity highest_verbosity()
+            logger::Verbosity highest_verbosity() const
             {
                 return highest_verbosity_;
             }
             
             
             /// current group name (last insertion of group("") into the stream)
-            void group_name(const std::string & s)
+            void group_name(const std::string & s) 
             { group_name_ = s; }
 
             /// exit on error at the next call to sync()

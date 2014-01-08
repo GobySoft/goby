@@ -31,7 +31,7 @@
 #include <Wt/WEnvironment>
 
 
-#include "goby/acomms/protobuf/dccl_option_extensions.pb.h"
+#include "dccl/protobuf/option_extensions.pb.h"
 #include "goby/util/dynamic_protobuf_manager.h"
 #include "goby/util/sci.h"
 #include "goby/moos/moos_protobuf_helpers.h"

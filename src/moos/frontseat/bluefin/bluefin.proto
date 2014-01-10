@@ -82,6 +82,8 @@ message BluefinExtraCommands
     SILENT_MODE = 5;
     CANCEL_CURRENT_BEHAVIOR = 6;
     ABORT_MISSION = 7;
+    MISSION_START_CONFIRM = 8;
+    MISSION_END_CONFIRM = 9;
   }
   optional BluefinCommand command = 1 [default = UNKNOWN_COMMAND];
 
@@ -99,6 +101,14 @@ message BluefinExtraCommands
   }
 
   optional AbortReason abort_reason = 11 [default = ABORT_WITH_ERRORS];
+
+  enum StartConfirm
+  {
+    SUCCESS  = 1;
+    FAIL     = 0;
+  }
+  optional StartConfirm start_confirm = 12 [default = SUCCESS];
+  
 }
 
 extend CommandRequest

@@ -196,6 +196,31 @@ void BluefinFrontSeat::send_command_to_frontseat(const gpb::CommandRequest& comm
             }
             break;
 
+	    case gpb::BluefinExtraCommands::MISSION_START_CONFIRM: 
+            {
+                glog.is(DEBUG1) &&
+                    glog << "Bluefin Extra Command: Mission start confirmation by backseat " << std::endl;
+                NMEASentence nmea("$BPSMC", NMEASentence::IGNORE);
+                nmea.push_back(unix_time2nmea_time(goby_time<double>()));
+                nmea.push_back(1);//static_cast<int>(bluefin_command.start_confirm())
+                append_to_write_queue(nmea);
+            }
+            break;
+
+
+	    case gpb::BluefinExtraCommands::MISSION_END_CONFIRM: 
+            {
+                glog.is(DEBUG1) &&
+                    glog << "Bluefin Extra Command: Mission end confirmation by backseat " << std::endl;
+                NMEASentence nmea("$BPRCE", NMEASentence::IGNORE);
+                nmea.push_back(unix_time2nmea_time(goby_time<double>()));
+                nmea.push_back(0);
+                append_to_write_queue(nmea);
+            }
+            break;
+
+
+
         }
     }
     
@@ -611,6 +636,7 @@ void BluefinFrontSeat::load_nmea_mappings()
         ("$BFPLN","Mission Plan Element")
         ("$BFACK","Message Acknowledgement")
         ("$BFTRM","Trim Status")
+	("$BPSMC","Confirm Mission Start")
         ("$BFBOY","Buoyancy Status")
         ("$BPLOG","Logging Control")
         ("$BPSTS","Payload Status Message")
@@ -620,6 +646,7 @@ void BluefinFrontSeat::load_nmea_mappings()
         ("$BPRTC","Request Additional Trackcircle")
         ("$BPRGP","Request Additional GPS Hits")
         ("$BPRCN","Cancel Requested Behavior")
+        ("$BPRCE","Cancel Current Mission Element")
         ("$BPRCA","Cancel All Requested Behaviors")
         ("$BPRCB","Cancel Current Behavior")
         ("$BPRMB","Modify Current Behavior")

@@ -45,7 +45,7 @@ void goby::pb::ProtobufNode::inbox(common::MarshallingScheme marshalling_scheme,
         
         std::string pb_full_name = identifier.substr(0, first_slash);
         
-        glog.is(DEBUG1) && glog << "MARSHALLING_PROTOBUF type: [" << pb_full_name << "], group: [" << group << "]" << std::endl;
+        glog.is(DEBUG3) && glog << "MARSHALLING_PROTOBUF type: [" << pb_full_name << "], group: [" << group << "]" << std::endl;
 
         protobuf_inbox(pb_full_name, data, size, socket_id, group);
     }

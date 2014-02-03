@@ -285,7 +285,7 @@ void goby::common::ZeroMQService::handle_receive(const void* data,
                       size);
     
 
-    glog.is(DEBUG2, lock) &&
+    glog.is(DEBUG3, lock) &&
         glog << group(glog_in_group())
              << "Received message (hex): " << goby::util::hex_encode(bytes)
              << std::endl << unlock;
@@ -387,7 +387,7 @@ bool goby::common::ZeroMQService::poll(long timeout /* = -1 */)
                 
                 /* Block until a message is available to be received from socket */
                 rc = zmq_recv (poll_items_[i].socket, &part, 0);
-                glog.is(DEBUG2, lock) &&
+                glog.is(DEBUG3, lock) &&
                     glog << group(glog_in_group())
                          << "Had event for poll item " << i << std::endl << unlock;
                 poll_callbacks_[i](zmq_msg_data(&part), zmq_msg_size(&part), message_part);
@@ -488,7 +488,7 @@ bool goby::common::ZeroMQSocket::check_blackout(MarshallingScheme marshalling_sc
         }
         else
         {
-            glog.is(DEBUG2, lock) && 
+            glog.is(DEBUG3, lock) && 
                 glog << group(ZeroMQService::glog_in_group())
                      << "Message (marshalling scheme: " << marshalling_scheme
                      << ", identifier: " << identifier << ")" << " is in blackout: this time:"

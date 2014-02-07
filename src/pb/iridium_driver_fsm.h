@@ -156,7 +156,6 @@ namespace goby
                 void in_state_react( const EvRxSerial& );
                 void in_state_react( const EvTxSerial& );
                 void in_state_react( const EvAck & );
-                void in_state_react( const EvDisconnect & );
 
               Command()
                   : at_out_(AT_BUFFER_CAPACITY)
@@ -172,8 +171,7 @@ namespace goby
                     boost::statechart::in_state_reaction< EvTxSerial, Command, &Command::in_state_react >,
                     boost::statechart::transition< EvOnline, Online >,
                     boost::statechart::transition< EvOffline, Ready >,
-                    boost::statechart::in_state_reaction< EvAck, Command, &Command::in_state_react >,
-                    boost::statechart::in_state_reaction< EvDisconnect, Command, &Command::in_state_react >
+                    boost::statechart::in_state_reaction< EvAck, Command, &Command::in_state_react >
                     > reactions;
 
                 void push_at_command(const std::string& cmd)
@@ -232,12 +230,14 @@ namespace goby
 
                 void in_state_react( const EvHangup & );
                 void in_state_react( const EvTriplePlus & );
+                void in_state_react( const EvDisconnect & );
 
                 typedef boost::mpl::list<
                     boost::statechart::transition< EvRing, Answer >,
                     boost::statechart::transition< EvDial, Dial >,
                     boost::statechart::in_state_reaction< EvTriplePlus, Ready, &Ready::in_state_react >,
-                    boost::statechart::in_state_reaction< EvHangup, Ready, &Ready::in_state_react >
+                    boost::statechart::in_state_reaction< EvHangup, Ready, &Ready::in_state_react >,
+                    boost::statechart::in_state_reaction< EvDisconnect, Ready, &Ready::in_state_react >
                     > reactions;
 
               private:
@@ -292,10 +292,12 @@ namespace goby
                 void in_state_react( const EvTxSerial& );
                 boost::statechart::result react( const EvTriplePlus& );
                 boost::statechart::result react( const EvHangup& );
+                boost::statechart::result react( const EvDisconnect& );
 
                 typedef boost::mpl::list<
                     boost::statechart::transition< EvOffline, Ready >,
                     boost::statechart::custom_reaction< EvHangup >,
+                    boost::statechart::custom_reaction< EvDisconnect >,
                     boost::statechart::custom_reaction< EvTriplePlus>,
                     boost::statechart::in_state_reaction< EvRxSerial, Online, &Online::in_state_react >,
                     boost::statechart::in_state_reaction< EvTxSerial, Online, &Online::in_state_react >

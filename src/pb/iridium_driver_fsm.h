@@ -73,7 +73,9 @@ namespace goby
 
             struct EvConnect : boost::statechart::event< EvConnect > {};
             struct EvNoCarrier : boost::statechart::event< EvNoCarrier > {};
+            struct EvDisconnect : boost::statechart::event< EvDisconnect > {};
 
+            
             struct EvZMQConnect : boost::statechart::event< EvZMQConnect > {};
             struct EvZMQDisconnect : boost::statechart::event< EvZMQDisconnect > {};
 
@@ -154,6 +156,7 @@ namespace goby
                 void in_state_react( const EvRxSerial& );
                 void in_state_react( const EvTxSerial& );
                 void in_state_react( const EvAck & );
+                void in_state_react( const EvDisconnect & );
 
               Command()
                   : at_out_(AT_BUFFER_CAPACITY)
@@ -169,7 +172,8 @@ namespace goby
                     boost::statechart::in_state_reaction< EvTxSerial, Command, &Command::in_state_react >,
                     boost::statechart::transition< EvOnline, Online >,
                     boost::statechart::transition< EvOffline, Ready >,
-                    boost::statechart::in_state_reaction< EvAck, Command, &Command::in_state_react >
+                    boost::statechart::in_state_reaction< EvAck, Command, &Command::in_state_react >,
+                    boost::statechart::in_state_reaction< EvDisconnect, Command, &Command::in_state_react >
                     > reactions;
 
                 void push_at_command(const std::string& cmd)
@@ -345,8 +349,8 @@ namespace goby
                 ~OnCall() {
                     glog.is(goby::common::logger::DEBUG1) && glog << group("iridiumdriver") << "~OnCall" << std::endl;
                     
-                    // disconnecting necessarily puts the DTE offline
-                    post_event(EvOffline());
+                    // signal the disconnect event for the command state to handle
+                    post_event(EvDisconnect());
                 } 
 
                 void in_state_react( const EvRxOnCallSerial& );

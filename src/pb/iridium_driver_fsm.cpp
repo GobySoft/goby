@@ -168,6 +168,14 @@ void goby::acomms::fsm::Command::in_state_react( const EvAck & e)
     }
 }
 
+void goby::acomms::fsm::Command::in_state_react( const EvDisconnect & )
+{
+    glog.is(DEBUG1) && glog << group("iridiumdriver") << "Disconnected..." << std::endl;
+    push_at_command("+CEER");    
+    post_event(EvOffline());
+}
+
+
 void goby::acomms::fsm::Ready::in_state_react( const EvHangup & )
 {
     if(state_cast<const fsm::OnCall *>() != 0)

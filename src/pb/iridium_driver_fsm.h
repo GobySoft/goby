@@ -73,7 +73,9 @@ namespace goby
 
             struct EvConnect : boost::statechart::event< EvConnect > {};
             struct EvNoCarrier : boost::statechart::event< EvNoCarrier > {};
+            struct EvDisconnect : boost::statechart::event< EvDisconnect > {};
 
+            
             struct EvZMQConnect : boost::statechart::event< EvZMQConnect > {};
             struct EvZMQDisconnect : boost::statechart::event< EvZMQDisconnect > {};
 
@@ -228,12 +230,14 @@ namespace goby
 
                 void in_state_react( const EvHangup & );
                 void in_state_react( const EvTriplePlus & );
+                void in_state_react( const EvDisconnect & );
 
                 typedef boost::mpl::list<
                     boost::statechart::transition< EvRing, Answer >,
                     boost::statechart::transition< EvDial, Dial >,
                     boost::statechart::in_state_reaction< EvTriplePlus, Ready, &Ready::in_state_react >,
-                    boost::statechart::in_state_reaction< EvHangup, Ready, &Ready::in_state_react >
+                    boost::statechart::in_state_reaction< EvHangup, Ready, &Ready::in_state_react >,
+                    boost::statechart::in_state_reaction< EvDisconnect, Ready, &Ready::in_state_react >
                     > reactions;
 
               private:
@@ -288,10 +292,12 @@ namespace goby
                 void in_state_react( const EvTxSerial& );
                 boost::statechart::result react( const EvTriplePlus& );
                 boost::statechart::result react( const EvHangup& );
+                boost::statechart::result react( const EvDisconnect& );
 
                 typedef boost::mpl::list<
                     boost::statechart::transition< EvOffline, Ready >,
                     boost::statechart::custom_reaction< EvHangup >,
+                    boost::statechart::custom_reaction< EvDisconnect >,
                     boost::statechart::custom_reaction< EvTriplePlus>,
                     boost::statechart::in_state_reaction< EvRxSerial, Online, &Online::in_state_react >,
                     boost::statechart::in_state_reaction< EvTxSerial, Online, &Online::in_state_react >
@@ -345,8 +351,8 @@ namespace goby
                 ~OnCall() {
                     glog.is(goby::common::logger::DEBUG1) && glog << group("iridiumdriver") << "~OnCall" << std::endl;
                     
-                    // disconnecting necessarily puts the DTE offline
-                    post_event(EvOffline());
+                    // signal the disconnect event for the command state to handle
+                    post_event(EvDisconnect());
                 } 
 
                 void in_state_react( const EvRxOnCallSerial& );

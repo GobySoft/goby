@@ -78,7 +78,7 @@ void goby::acomms::IridiumDriver::startup(const protobuf::DriverConfig& cfg)
 
     using_zmq_ = driver_cfg_.HasExtension(IridiumDriverConfig::request_socket);
     
-    std::cout << "Using ZMQ? " << (using_zmq_ ? "Yes" : "No") << std::endl;
+    glog.is(DEBUG1) && glog << "Using ZMQ? " << (using_zmq_ ? "Yes" : "No") << std::endl;
 
     if(using_zmq_)
     {        
@@ -133,7 +133,7 @@ void goby::acomms::IridiumDriver::modem_init()
         usleep(pause_ms*1000);
         ++i;
 
-        const int start_timeout = 10;
+        const int start_timeout = driver_cfg_.GetExtension(IridiumDriverConfig::start_timeout);
         if(i / (1000/pause_ms) > start_timeout)
             glog.is(DIE) && glog << group(glog_out_group()) << "Failed to startup." << std::endl;
     }

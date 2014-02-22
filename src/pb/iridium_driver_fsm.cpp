@@ -129,6 +129,14 @@ boost::statechart::result goby::acomms::fsm::Online::react( const EvTriplePlus& 
 }
 
 
+boost::statechart::result goby::acomms::fsm::Online::react( const EvDisconnect& )
+{
+    post_event(EvOffline());
+    return defer_event();
+}
+
+
+
 void goby::acomms::fsm::Online::in_state_react(const EvRxSerial& e)
 {
     EvRxOnCallSerial eo;
@@ -167,6 +175,13 @@ void goby::acomms::fsm::Command::in_state_react( const EvAck & e)
         glog.is(DEBUG1) && glog << group("iridiumdriver") <<  warn << "Unexpected 'OK'" << std::endl;
     }
 }
+
+void goby::acomms::fsm::Ready::in_state_react( const EvDisconnect & )
+{
+    glog.is(DEBUG1) && glog << group("iridiumdriver") << "Disconnected; checking error details: " << std::endl;
+    context<Command>().push_at_command("+CEER");    
+}
+
 
 void goby::acomms::fsm::Ready::in_state_react( const EvHangup & )
 {

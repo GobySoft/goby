@@ -177,7 +177,7 @@ void BluefinFrontSeat::send_command_to_frontseat(const gpb::CommandRequest& comm
             {
                 glog.is(DEBUG1) &&
                     glog << "Bluefin Extra Command: Cancel current behavior requested by backseat." << std::endl;
-                NMEASentence nmea("$BPRCB", NMEASentence::IGNORE);
+                NMEASentence nmea("$BPRCE", NMEASentence::IGNORE);
                 nmea.push_back(unix_time2nmea_time(goby_time<double>()));
                 nmea.push_back(0);
                 append_to_write_queue(nmea);
@@ -252,23 +252,28 @@ void BluefinFrontSeat::send_command_to_frontseat(const gpb::CommandRequest& comm
             NMEASentence nmea("$BPRMB", NMEASentence::IGNORE);
             nmea.push_back(unix_time2nmea_time(goby_time<double>()));
             const goby::moos::protobuf::DesiredCourse& desired_course = command.desired_course();
-            nmea.push_back(desired_course.heading());
-            nmea.push_back(desired_course.depth());
-            nmea.push_back(0); // previous field is a depth (not altitude [1] or pitch [2])
 
-            // for zero speed, send zero RPM
+
+            // for zero speed, send zero RPM, pitch, rudder
             if(desired_course.speed() < 0.01)
             {
-                nmea.push_back(0); // 0 rpm
-                nmea.push_back(0); // previous field is an rpm (not speed [1])
+                nmea.push_back(0); // zero rudder
+                nmea.push_back(0); // zero pitch
+                nmea.push_back(2); // previous field is a pitch [2]
+                nmea.push_back(0); // zero rpm
+                nmea.push_back(0); // previous field is an rpm [0]
+                nmea.push_back(1); // first field is a rudder adjustment [1]
             }
             else
             {
+                nmea.push_back(desired_course.heading());
+                nmea.push_back(desired_course.depth());
+                nmea.push_back(0); // previous field is a depth (not altitude [1] or pitch [2])
                 nmea.push_back(desired_course.speed());
                 nmea.push_back(1); // previous field is a speed (not rpm [0])
+                nmea.push_back(0); // first field is a heading (not rudder adjustment [1])
             }
             
-            nmea.push_back(0); // first field is a heading (not rudder adjustment [1])
             append_to_write_queue(nmea);
         }
     }

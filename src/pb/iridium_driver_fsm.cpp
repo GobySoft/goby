@@ -112,30 +112,6 @@ void goby::acomms::fsm::Command::in_state_react( const EvTxSerial& )
     }
 }
 
-boost::statechart::result goby::acomms::fsm::Online::react( const EvHangup& )
-{
-    // count "+++" as message in Command mode, so kick us offline then defer the events
-    post_event(EvOffline());
-    post_event(EvTriplePlus());
-    post_event(EvHangup());
-    return discard_event();
-}
-
-boost::statechart::result goby::acomms::fsm::Online::react( const EvTriplePlus& )
-{
-    // count "+++" as message in Command mode, so kick us offline then defer the event
-    post_event(EvOffline());
-    return defer_event();
-}
-
-
-boost::statechart::result goby::acomms::fsm::Online::react( const EvDisconnect& )
-{
-    post_event(EvOffline());
-    return defer_event();
-}
-
-
 
 void goby::acomms::fsm::Online::in_state_react(const EvRxSerial& e)
 {
@@ -175,25 +151,6 @@ void goby::acomms::fsm::Command::in_state_react( const EvAck & e)
         glog.is(DEBUG1) && glog << group("iridiumdriver") <<  warn << "Unexpected 'OK'" << std::endl;
     }
 }
-
-void goby::acomms::fsm::Ready::in_state_react( const EvDisconnect & )
-{
-    glog.is(DEBUG1) && glog << group("iridiumdriver") << "Disconnected; checking error details: " << std::endl;
-    context<Command>().push_at_command("+CEER");    
-}
-
-
-void goby::acomms::fsm::Ready::in_state_react( const EvHangup & )
-{
-    if(state_cast<const fsm::OnCall *>() != 0)
-        context<Command>().push_at_command("H");
-}
-
-void goby::acomms::fsm::Ready::in_state_react( const EvTriplePlus & )
-{
-    context<Command>().push_at_command("+++");
-}
-
 
 boost::statechart::result goby::acomms::fsm::Dial::react( const EvNoCarrier& x)
 {

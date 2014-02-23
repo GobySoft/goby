@@ -67,7 +67,6 @@ namespace goby
             struct EvDial : boost::statechart::event< EvDial > {};
             struct EvRing : boost::statechart::event< EvRing > {};
             struct EvOnline : boost::statechart::event< EvOnline > {};
-            struct EvOffline : boost::statechart::event< EvOffline > {};
 
             struct EvHangup : boost::statechart::event< EvHangup > {};
 
@@ -80,7 +79,7 @@ namespace goby
             struct EvZMQDisconnect : boost::statechart::event< EvZMQDisconnect > {};
 
             
-            struct EvTriplePlus : boost::statechart::event< EvTriplePlus > {};
+//            struct EvTriplePlus : boost::statechart::event< EvTriplePlus > {};
             
             // pre-declare
             struct Active;
@@ -89,7 +88,9 @@ namespace goby
             struct Ready;
             struct Answer;
             struct Dial;
-
+            struct HangingUp;
+            struct PostDisconnected;
+            
             struct Online;
             struct OnCall;
             struct OnZMQCall;
@@ -170,7 +171,6 @@ namespace goby
                     boost::statechart::in_state_reaction< EvRxSerial, Command, &Command::in_state_react >,
                     boost::statechart::in_state_reaction< EvTxSerial, Command, &Command::in_state_react >,
                     boost::statechart::transition< EvOnline, Online >,
-                    boost::statechart::transition< EvOffline, Ready >,
                     boost::statechart::in_state_reaction< EvAck, Command, &Command::in_state_react >
                     > reactions;
 
@@ -228,21 +228,56 @@ namespace goby
                     glog.is(goby::common::logger::DEBUG1) && glog << group("iridiumdriver") << "~Ready" << std::endl;
                 }
 
-                void in_state_react( const EvHangup & );
-                void in_state_react( const EvTriplePlus & );
-                void in_state_react( const EvDisconnect & );
-
                 typedef boost::mpl::list<
                     boost::statechart::transition< EvRing, Answer >,
-                    boost::statechart::transition< EvDial, Dial >,
-                    boost::statechart::in_state_reaction< EvTriplePlus, Ready, &Ready::in_state_react >,
-                    boost::statechart::in_state_reaction< EvHangup, Ready, &Ready::in_state_react >,
-                    boost::statechart::in_state_reaction< EvDisconnect, Ready, &Ready::in_state_react >
+                    boost::statechart::transition< EvDial, Dial >
                     > reactions;
 
               private:
             };
 
+
+            struct HangingUp : boost::statechart::state<HangingUp, Command>
+            {
+              public:
+              HangingUp(my_context ctx) : my_base(ctx) 
+                {
+                    glog.is(goby::common::logger::DEBUG1) && glog << group("iridiumdriver") << "HangingUp" << std::endl;
+                    context<Command>().push_at_command("+++");
+                    context<Command>().push_at_command("H");
+                } 
+                ~HangingUp() {
+                    glog.is(goby::common::logger::DEBUG1) && glog << group("iridiumdriver") << "~HangingUp" << std::endl;
+                }
+                
+                typedef boost::mpl::list<
+                    boost::statechart::transition< EvAtEmpty, Ready >
+                    > reactions;
+                    
+              private:
+            };
+
+            struct PostDisconnected : boost::statechart::state<PostDisconnected, Command>
+            {
+              public:
+              PostDisconnected(my_context ctx) : my_base(ctx) 
+                {
+                    glog.is(goby::common::logger::DEBUG1) && glog << group("iridiumdriver") << "PostDisconnected" << std::endl;
+                    glog.is(goby::common::logger::DEBUG1) && glog << group("iridiumdriver") << "Disconnected; checking error details: " << std::endl;
+                    context<Command>().push_at_command("+CEER");
+                } 
+                ~PostDisconnected() {
+                    glog.is(goby::common::logger::DEBUG1) && glog << group("iridiumdriver") << "~PostDisconnected" << std::endl;
+                }
+                
+                typedef boost::mpl::list<
+                    boost::statechart::transition< EvAtEmpty, Ready >
+                    > reactions;
+                    
+              private:
+            };
+
+            
             struct Dial : boost::statechart::state<Dial, Command>
             {
                 typedef boost::mpl::list<
@@ -290,15 +325,10 @@ namespace goby
                 
                 void in_state_react( const EvRxSerial& );
                 void in_state_react( const EvTxSerial& );
-                boost::statechart::result react( const EvTriplePlus& );
-                boost::statechart::result react( const EvHangup& );
-                boost::statechart::result react( const EvDisconnect& );
 
                 typedef boost::mpl::list<
-                    boost::statechart::transition< EvOffline, Ready >,
-                    boost::statechart::custom_reaction< EvHangup >,
-                    boost::statechart::custom_reaction< EvDisconnect >,
-                    boost::statechart::custom_reaction< EvTriplePlus>,
+                    boost::statechart::transition< EvHangup, HangingUp >,
+                    boost::statechart::transition< EvDisconnect, PostDisconnected >,
                     boost::statechart::in_state_reaction< EvRxSerial, Online, &Online::in_state_react >,
                     boost::statechart::in_state_reaction< EvTxSerial, Online, &Online::in_state_react >
                     > reactions;

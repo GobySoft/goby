@@ -154,7 +154,10 @@ void goby::acomms::fsm::Command::in_state_react( const EvAck & e)
 
 boost::statechart::result goby::acomms::fsm::Dial::react( const EvNoCarrier& x)
 {
-    glog.is(DEBUG1) && glog  << group("iridiumdriver") << "Redialing..."  << std::endl;
+    const int redial_wait_seconds = 2;
+    glog.is(DEBUG1) && glog  << group("iridiumdriver") << "Redialing in " << redial_wait_seconds << " seconds ..."  << std::endl;
+
+    sleep(redial_wait_seconds);
     
     const int max_attempts = context<IridiumDriverFSM>().driver_cfg().GetExtension(IridiumDriverConfig::dial_attempts);
     if(dial_attempts_ < max_attempts)

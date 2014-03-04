@@ -242,6 +242,11 @@ namespace goby
             // relating to ACKs
             std::set<unsigned> frames_waiting_for_ack_;
 
+            // keep track of where we sent the message to be acked to work around a bug in
+            // the MM1 firmware that reports third-party acks with a destination of the local modem
+            unsigned expected_ack_destination_;
+            
+            
             std::set<unsigned> frames_waiting_to_receive_;
 
             // true if we initiated the last cycle ($CCCYC) (and thereby cache data for it)?

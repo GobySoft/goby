@@ -70,6 +70,7 @@ goby::acomms::MMDriver::MMDriver()
       is_hydroid_gateway_(false),
       expected_remaining_caxst_(0),
       expected_remaining_cacst_(0),
+      expected_ack_destination_(0),
       local_cccyc_(false)
 {
     initialize_talkers();
@@ -806,6 +807,8 @@ void goby::acomms::MMDriver::caack(const NMEASentence& nmea, protobuf::ModemTran
     // ACK has nothing to do with us!
     if(as<int32>(nmea[2]) != driver_cfg_.modem_id())
         return;
+    if(as<unsigned>(nmea[1]) != expected_ack_destination_)
+        return;
     
     // WHOI counts starting at 1, Goby counts starting at 0
     uint32 frame = as<uint32>(nmea[3])-1;
@@ -855,7 +858,10 @@ void goby::acomms::MMDriver::cadrq(const NMEASentence& nmea_in, const protobuf::
         nmea_out.push_back(hex_encode(m.frame(frame)));
         
         if(m.ack_requested())
+        {
+            expected_ack_destination_ = m.dest();
             frames_waiting_for_ack_.insert(frame);
+        }
     }
     else
     {
@@ -1248,6 +1254,7 @@ void goby::acomms::MMDriver::cache_outgoing_data(protobuf::ModemTransmission* ms
         {
             glog.is(DEBUG1, lock) && glog << group(glog_out_group()) << warn << "flushing " << frames_waiting_for_ack_.size() << " expected acknowledgments that were never received." << std::endl << unlock;
             frames_waiting_for_ack_.clear();
+            expected_ack_destination_ = 0;
         }
         
         signal_data_request(msg);

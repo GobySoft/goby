@@ -55,11 +55,11 @@ namespace goby
                 node_.subscribe<ProtoBufMessage>(SOCKET_SUBSCRIBE, handler, group);
             }
 
-            template<typename ProtoBufMessage>
-                const ProtoBufMessage& newest() const
-            {
-                return node_.newest<ProtoBufMessage>();
-            }
+            /* template<typename ProtoBufMessage> */
+            /*     const ProtoBufMessage& newest() const */
+            /* { */
+            /*     return node_.newest<ProtoBufMessage>(); */
+            /* } */
             
 
           private:

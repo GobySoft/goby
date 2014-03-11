@@ -98,14 +98,14 @@ namespace goby
             /// \brief Fetchs the newest received message of this type 
             ///
             /// You must subscribe() for this type before using this method
-            template<typename ProtoBufMessage>
-                const ProtoBufMessage& newest()
-            {
-                if(pubsub_node_)
-                    return pubsub_node_->newest<ProtoBufMessage>();
-                else
-                    throw(goby::Exception("not using pubsub, can't call newest"));
-            }
+/*             template<typename ProtoBufMessage> */
+/*                 const ProtoBufMessage& newest() */
+/*             { */
+/*                 if(pubsub_node_) */
+/*                     return pubsub_node_->newest<ProtoBufMessage>(); */
+/*                 else */
+/*                     throw(goby::Exception("not using pubsub, can't call newest")); */
+/* 	    } */
             
             //@}            
 

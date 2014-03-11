@@ -18,6 +18,15 @@ endmacro()
 goby_find_required_package(ProtobufGoby)
 include_directories(${PROTOBUF_INCLUDE_DIRS})
 
+
+if(${PROTOC_VERSION} VERSION_LESS 2.5.0})
+  message("libprotobuf < 2.5.0")
+else()
+  message("libprotobuf >= 2.5.0")
+  set(PROTOBUF_ALLOW_ALIAS "option allow_alias = true;" PARENT_SCOPE)
+endif()
+
+
 # shared library suffix
 add_definitions(-DSHARED_LIBRARY_SUFFIX="${CMAKE_SHARED_LIBRARY_SUFFIX}")
 

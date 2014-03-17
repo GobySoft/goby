@@ -140,39 +140,41 @@ void goby::common::LiaisonScope::attach_pb_rows(const std::vector<Wt::WStandardI
     Wt::WStandardItem* key_item = items[protobuf::MOOSScopeConfig::COLUMN_KEY];
     
     
+    std::vector<std::string> result;
     if(pb_msg)
     {
         
-        std::vector<std::string> result;
         std::string debug_string = pb_msg->DebugString();
         boost::trim(debug_string);
             
         boost::split(result, debug_string, boost::is_any_of("\n"));
-
-        key_item->setRowCount(result.size());
-        key_item->setColumnCount(protobuf::MOOSScopeConfig::COLUMN_MAX + 1);
-
-
         items[protobuf::MOOSScopeConfig::COLUMN_TYPE]->setText(pb_msg->GetDescriptor()->full_name() + " (Protobuf)");
         items[protobuf::MOOSScopeConfig::COLUMN_VALUE]->setText(pb_msg->ShortDebugString());
+    }
+    else
+    {
+        boost::split(result, value, boost::is_any_of(","));        
+    }
+    
+    key_item->setRowCount(result.size());
+    key_item->setColumnCount(protobuf::MOOSScopeConfig::COLUMN_MAX + 1);
 
-        for(int i = 0, n = result.size(); i < n; ++i)
+    for(int i = 0, n = result.size(); i < n; ++i)
+    {
+        for(int j = 0; j <= protobuf::MOOSScopeConfig::COLUMN_MAX; ++j)
         {
-            for(int j = 0; j <= protobuf::MOOSScopeConfig::COLUMN_MAX; ++j)
-            {
-                if(!key_item->child(i, j))
-                    key_item->setChild(i, j, new Wt::WStandardItem);
+            if(!key_item->child(i, j))
+                key_item->setChild(i, j, new Wt::WStandardItem);
 
-                if(j == protobuf::MOOSScopeConfig::COLUMN_VALUE)
-                {
-                    key_item->child(i,j)->setText(result[i]);
-                }
-                else
-                {
-                    // so we can still sort by these fields
-                    key_item->child(i, j)->setText(items[j]->text());
-                    key_item->child(i, j)->setStyleClass("invisible");    
-                }
+            if(j == protobuf::MOOSScopeConfig::COLUMN_VALUE)
+            {
+                key_item->child(i,j)->setText(result[i]);
+            }
+            else
+            {
+                // so we can still sort by these fields
+                key_item->child(i, j)->setText(items[j]->text());
+                key_item->child(i, j)->setStyleClass("invisible");    
             }
         }
     }

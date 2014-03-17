@@ -112,22 +112,6 @@ void goby::acomms::fsm::Command::in_state_react( const EvTxSerial& )
     }
 }
 
-boost::statechart::result goby::acomms::fsm::Online::react( const EvHangup& )
-{
-    // count "+++" as message in Command mode, so kick us offline then defer the events
-    post_event(EvOffline());
-    post_event(EvTriplePlus());
-    post_event(EvHangup());
-    return discard_event();
-}
-
-boost::statechart::result goby::acomms::fsm::Online::react( const EvTriplePlus& )
-{
-    // count "+++" as message in Command mode, so kick us offline then defer the event
-    post_event(EvOffline());
-    return defer_event();
-}
-
 
 void goby::acomms::fsm::Online::in_state_react(const EvRxSerial& e)
 {
@@ -168,21 +152,12 @@ void goby::acomms::fsm::Command::in_state_react( const EvAck & e)
     }
 }
 
-void goby::acomms::fsm::Ready::in_state_react( const EvHangup & )
-{
-    if(state_cast<const fsm::OnCall *>() != 0)
-        context<Command>().push_at_command("H");
-}
-
-void goby::acomms::fsm::Ready::in_state_react( const EvTriplePlus & )
-{
-    context<Command>().push_at_command("+++");
-}
-
-
 boost::statechart::result goby::acomms::fsm::Dial::react( const EvNoCarrier& x)
 {
-    glog.is(DEBUG1) && glog  << group("iridiumdriver") << "Redialing..."  << std::endl;
+    const int redial_wait_seconds = 2;
+    glog.is(DEBUG1) && glog  << group("iridiumdriver") << "Redialing in " << redial_wait_seconds << " seconds ..."  << std::endl;
+
+    sleep(redial_wait_seconds);
     
     const int max_attempts = context<IridiumDriverFSM>().driver_cfg().GetExtension(IridiumDriverConfig::dial_attempts);
     if(dial_attempts_ < max_attempts)

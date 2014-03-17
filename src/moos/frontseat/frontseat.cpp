@@ -238,6 +238,9 @@ void FrontSeatInterfaceBase::compute_missing(gpb::CTDSample* ctd_sample)
 
 void FrontSeatInterfaceBase::compute_missing(gpb::NodeStatus* status)
 {
+    if(!status->has_name())
+        status->set_name(cfg_.common().community());
+    
     if(!status->has_global_fix() && !status->has_local_fix())
     {
         glog.is(WARN) && glog << "Cannot 'compute_missing' on NodeStatus when global_fix and local_fix are both missing (cannot make up a position from nothing)!" << std::endl;

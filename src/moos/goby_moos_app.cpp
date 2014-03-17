@@ -96,10 +96,11 @@ bool GobyMOOSApp::OnConnectToServer()
     std::cout << m_MissionReader.GetAppName() << ", connected to server." << std::endl;
     connected_ = true;
     try_subscribing();
-    
-    BOOST_FOREACH(const GobyMOOSAppConfig::Initializer& ini,
-                  common_cfg_.initializer())
-    {   
+
+
+    for(google::protobuf::RepeatedPtrField<GobyMOOSAppConfig::Initializer>::const_iterator it = common_cfg_.initializer().begin(), end = common_cfg_.initializer().end(); it != end; ++it)
+    {
+        const GobyMOOSAppConfig::Initializer& ini = *it;
         if(ini.has_global_cfg_var())
         {
             std::string result;

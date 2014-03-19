@@ -145,9 +145,6 @@ goby::acomms::Bridge::Bridge()
         if(!goby::util::DynamicProtobufManager::load_from_proto_file(cfg_.load_proto_file(i)))
             glog.is(DIE) && glog << "Failed to load file." << std::endl;
     }
-
-    // validate all messages
-    typedef boost::shared_ptr<google::protobuf::Message> GoogleProtobufMessagePointer;    
     
     r_manager_.set_cfg(cfg_.route_cfg());
     q_managers_.resize(cfg_.subnet_size());

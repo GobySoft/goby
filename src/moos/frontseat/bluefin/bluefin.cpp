@@ -51,7 +51,8 @@ BluefinFrontSeat::BluefinFrontSeat(const iFrontSeatConfig& cfg)
     : FrontSeatInterfaceBase(cfg),
       bf_config_(cfg.GetExtension(bluefin_config)),
       tcp_(bf_config_.huxley_tcp_address(),
-           bf_config_.huxley_tcp_port()),
+           bf_config_.huxley_tcp_port(), "\r\n",
+           bf_config_.reconnect_interval()),
       frontseat_providing_data_(false),
       last_frontseat_data_time_(0),
       frontseat_state_(gpb::FRONTSEAT_NOT_CONNECTED),
@@ -63,6 +64,8 @@ BluefinFrontSeat::BluefinFrontSeat(const iFrontSeatConfig& cfg)
       last_heartbeat_time_(0)
 {
     load_nmea_mappings();
+    glog.is(VERBOSE) && glog << "Trying to connect to Huxley server @ " <<bf_config_.huxley_tcp_address() << ":" << bf_config_.huxley_tcp_port() << std::endl;
+    tcp_.start();
 }
 
 void BluefinFrontSeat::loop()
@@ -73,20 +76,6 @@ void BluefinFrontSeat::loop()
     if(!tcp_.active())
     {
         frontseat_state_ = gpb::FRONTSEAT_NOT_CONNECTED;
-        if(now > next_connect_attempt_time_)
-        {
-            bool first_attempt = (next_connect_attempt_time_ == 0);
-            if(!first_attempt)
-            {
-                glog.is(WARN) && glog << "Not connected to the Huxley server." << std::endl;
-                tcp_.close();
-            }
-            glog.is(VERBOSE) && glog << "Trying to connect to Huxley server @ " <<bf_config_.huxley_tcp_address() << ":" << bf_config_.huxley_tcp_port() << std::endl;
-            tcp_.start();
-            
-            next_connect_attempt_time_ = now +
-                bf_config_.reconnect_interval();
-        }
     }
     else
     {

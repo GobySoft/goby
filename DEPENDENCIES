@@ -105,7 +105,8 @@ ubuntu|debian)
                 packages="goby2"
             else
                 packages="${packages} 
-                     libmoos10-dev"
+                     libmoos10-dev
+                     libproj-dev"
             fi
         fi
         ;;

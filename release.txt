@@ -1,7 +1,7 @@
 Goby Release Notes (Major version 2)
 
 *****************
-Version 2.1.0
+Version 2.0.5
 
 = Acomms =
 - New IridiumDriver that handles the Iridium RUDICS protocol (phone-call style of data transfer)

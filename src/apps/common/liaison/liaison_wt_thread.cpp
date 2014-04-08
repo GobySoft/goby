@@ -49,7 +49,7 @@ goby::common::LiaisonWtThread::LiaisonWtThread(const Wt::WEnvironment& env)
 {    
 //    zeromq_service_.connect_inbox_slot(&LiaisonWtThread::inbox, this);
 
-    Wt::WString title_text("goby liaison: " + Liaison::cfg_.base().platform_name());
+    Wt::WString title_text("goby liaison: " + liaison_cfg_.base().platform_name());
     setTitle(title_text);
 
     useStyleSheet(std::string("css/fonts.css?" + common::goby_file_timestamp()));
@@ -113,7 +113,7 @@ goby::common::LiaisonWtThread::LiaisonWtThread(const Wt::WEnvironment& env)
             
         if(liaison_load_ptr)
         {
-            std::vector<goby::common::LiaisonContainer*> containers = (*liaison_load_ptr)(Liaison::cfg_, Liaison::zmq_context());
+            std::vector<goby::common::LiaisonContainer*> containers = (*liaison_load_ptr)(liaison_cfg_, Liaison::zmq_context());
             for(int j = 0, m = containers.size(); j< m; ++j)
                 add_to_menu(menu_, containers[j]);
         }

@@ -44,7 +44,7 @@ int last_transmission_index = 0;
 class MMDriverTest2 : public goby::common::ApplicationBase
 {
 public:
-    MMDriverTest2();
+    MMDriverTest2(goby::test::protobuf::MMDriverTest2Config* cfg);
 private:
     void iterate();
 
@@ -60,6 +60,7 @@ private:
                  const goby::acomms::protobuf::DriverConfig& cfg);
     
 private:
+    goby::test::protobuf::MMDriverTest2Config& cfg_;
     
     goby::acomms::MMDriver driver1, driver2;
     // maps transmit index to receive statistics
@@ -67,14 +68,13 @@ private:
     
     bool modems_running_;
     
-    static goby::test::protobuf::MMDriverTest2Config cfg_;
 };
 
-goby::test::protobuf::MMDriverTest2Config MMDriverTest2::cfg_;
 
 
-MMDriverTest2::MMDriverTest2()
-    : ApplicationBase(&cfg_),
+MMDriverTest2::MMDriverTest2(goby::test::protobuf::MMDriverTest2Config* cfg)
+    : ApplicationBase(cfg),
+      cfg_(*cfg),
       modems_running_(true)
 {
     goby::glog.is(VERBOSE, lock) &&
@@ -256,7 +256,8 @@ void MMDriverTest2::summary(const std::map<int, std::vector<micromodem::protobuf
 
 int main(int argc, char* argv[])
 {
-    goby::run<MMDriverTest2>(argc, argv);
+    goby::test::protobuf::MMDriverTest2Config cfg;
+    goby::run<MMDriverTest2>(argc, argv, &cfg);
 }
                             
     

@@ -51,7 +51,7 @@ namespace goby
         class Bridge : public goby::pb::Application
         {
         public:
-            Bridge();
+            Bridge(protobuf::BridgeConfig* cfg);
             ~Bridge();
 
         private:
@@ -88,7 +88,7 @@ namespace goby
             void handle_data_request(const protobuf::ModemTransmission& m, int subnet);
             
         private:
-            static protobuf::BridgeConfig cfg_;
+            protobuf::BridgeConfig& cfg_;
             
             std::vector<boost::shared_ptr<QueueManager> > q_managers_;
             std::vector<boost::shared_ptr<MACManager> > mac_managers_;
@@ -102,18 +102,20 @@ namespace goby
     }
 }
 
-goby::acomms::protobuf::BridgeConfig goby::acomms::Bridge::cfg_;
 
 int main(int argc, char* argv[])
 {
-    goby::run<goby::acomms::Bridge>(argc, argv);
+    goby::acomms::protobuf::BridgeConfig cfg;
+    goby::run<goby::acomms::Bridge>(argc, argv, &cfg);
 }
 
 
 using goby::glog;
 
-goby::acomms::Bridge::Bridge()
-    : Application(&cfg_)
+
+goby::acomms::Bridge::Bridge(protobuf::BridgeConfig* cfg)
+    : Application(cfg),
+      cfg_(*cfg)
 {
     glog.is(DEBUG1) && glog << cfg_.DebugString() << std::endl;
     

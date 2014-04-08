@@ -43,9 +43,10 @@ namespace goby
     /// \param argc same as int main(int argc, char* argv)
     /// \param argv same as int main(int argc, char* argv)
     /// \return same as int main(int argc, char* argv)
-    template<typename App>
-        int run(int argc, char* argv[]);
 
+    template<typename App, typename Config>
+        int run(int argc, char* argv[], Config* cfg);
+    
     namespace common
     {
         class ApplicationBase
@@ -65,9 +66,10 @@ namespace goby
             /// name of this platform (from AppBaseConfig::platform_name). E.g. "AUV-23" or "unicorn"
             std::string platform_name()
             { return base_cfg_->platform_name(); }
+
             
-            template<typename App>
-                friend int ::goby::run(int argc, char* argv[]);
+            template<typename App, typename Config>
+                friend int ::goby::run(int argc, char* argv[], Config* cfg = 0);
 
             const AppBaseConfig& base_cfg()
             { return *base_cfg_; }
@@ -91,6 +93,7 @@ namespace goby
             // ApplicationBase to pass them through their constructors
             static int argc_;
             static char** argv_;
+            google::protobuf::Message* all_cfg_;
 
             // configuration relevant to all applications (loop frequency, for example)
             // defined in #include "proto/app_base_config.pb.h"
@@ -104,17 +107,16 @@ namespace goby
 }
 
 
-
-template<typename App>
-int goby::run(int argc, char* argv[])
-{
+template<typename App, typename Config>
+    int goby::run(int argc, char* argv[], Config* cfg)
+{    
     // avoid making the user pass these through their Ctor...
     App::argc_ = argc;
     App::argv_ = argv;
-    
+
     try
     {
-        App app;
+        App app(cfg);
         app.__run();
     }
     catch(goby::common::ConfigException& e)

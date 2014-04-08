@@ -44,7 +44,7 @@ namespace goby
         class ModemDriver : public goby::pb::Application
         {
         public:
-            ModemDriver();
+            ModemDriver(protobuf::ModemDriverConfig* cfg);
             ~ModemDriver();
 
         private:
@@ -57,7 +57,7 @@ namespace goby
             void handle_initiate_transmission(const protobuf::ModemTransmission& message);
 
         private:
-            static protobuf::ModemDriverConfig cfg_;
+            protobuf::ModemDriverConfig& cfg_;
             
             // for PBDriver, IridiumDriver
             boost::shared_ptr<goby::common::ZeroMQService> zeromq_service_;
@@ -77,18 +77,19 @@ namespace goby
     }
 }
 
-goby::acomms::protobuf::ModemDriverConfig goby::acomms::ModemDriver::cfg_;
 
 int main(int argc, char* argv[])
 {
-    goby::run<goby::acomms::ModemDriver>(argc, argv);
+    goby::acomms::protobuf::ModemDriverConfig cfg;
+    goby::run<goby::acomms::ModemDriver>(argc, argv, &cfg);
 }
 
 
 using goby::glog;
 
-goby::acomms::ModemDriver::ModemDriver()
-    : goby::pb::Application(&cfg_),
+goby::acomms::ModemDriver::ModemDriver(protobuf::ModemDriverConfig* cfg)
+    : goby::pb::Application(cfg),
+      cfg_(*cfg),
       data_response_received_(false),
       initiate_transmit_pending_(false)
 {

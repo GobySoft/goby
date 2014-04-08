@@ -1,0 +1,23 @@
+import "goby/common/protobuf/option_extensions.proto";
+import "goby/acomms/protobuf/dccl_option_extensions.proto";
+
+package goby.acomms.protobuf;
+
+message MoshPacket
+{
+  option (dccl.msg).id = 0x0200;
+  option (dccl.msg).max_bytes = 64;
+  
+  required int32 src = 1 [(dccl.field).min = 1,
+                          (dccl.field).max = 32,
+                          (dccl.field).in_head = true]; 
+  required int32 dest = 2 [(dccl.field).min = 1,
+                           (dccl.field).max = 32,
+                           (dccl.field).in_head = true];
+
+  required int32 frag_len = 3 [(dccl.field).min = 1,
+                               (dccl.field).max = 60,
+                               (dccl.field).in_head = true];
+  required bytes fragment = 4 [(dccl.field).max_length = 60];
+}
+

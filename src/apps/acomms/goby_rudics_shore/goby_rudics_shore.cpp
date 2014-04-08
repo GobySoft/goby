@@ -46,7 +46,7 @@ namespace goby
                                 public goby::pb::StaticProtobufNode
         {
         public:
-            GobyRudicsShore();
+            GobyRudicsShore(protobuf::GobyRudicsShoreConfig* cfg);
             ~GobyRudicsShore()
                 {   }            
             
@@ -57,7 +57,7 @@ namespace goby
 
         private:
             static goby::common::ZeroMQService zeromq_service_;
-            static protobuf::GobyRudicsShoreConfig cfg_;
+            protobuf::GobyRudicsShoreConfig& cfg_;
 
             goby::util::TCPServer rudics_server_;
 
@@ -71,17 +71,18 @@ namespace goby
 }
 
 goby::common::ZeroMQService goby::acomms::GobyRudicsShore::zeromq_service_;
-goby::acomms::protobuf::GobyRudicsShoreConfig goby::acomms::GobyRudicsShore::cfg_;
 
 
 int main(int argc, char* argv[])
 {
-    goby::run<goby::acomms::GobyRudicsShore>(argc, argv);
+    goby::acomms::protobuf::GobyRudicsShoreConfig cfg;
+    goby::run<goby::acomms::GobyRudicsShore>(argc, argv, &cfg);
 }
 
-goby::acomms::GobyRudicsShore::GobyRudicsShore()
-    : ZeroMQApplicationBase(&zeromq_service_, &cfg_),
+goby::acomms::GobyRudicsShore::GobyRudicsShore(protobuf::GobyRudicsShoreConfig* cfg)
+    : ZeroMQApplicationBase(&zeromq_service_, cfg),
       StaticProtobufNode(&zeromq_service_),
+      cfg_(*cfg),
       rudics_server_(cfg_.rudics_server_port(), "\r")
 {
     rudics_server_.start();

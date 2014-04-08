@@ -44,10 +44,12 @@ namespace goby
 {
     namespace common
     {   
+        extern protobuf::LiaisonConfig liaison_cfg_;
+
         class Liaison : public ZeroMQApplicationBase
         {
           public:
-            Liaison();
+            Liaison(protobuf::LiaisonConfig* cfg);
             ~Liaison() { }
 
             void inbox(goby::common::MarshallingScheme marshalling_scheme,
@@ -67,7 +69,6 @@ namespace goby
             
             friend class LiaisonWtThread;
           private:
-            static protobuf::LiaisonConfig cfg_;
             Wt::WServer wt_server_;
             static boost::shared_ptr<zmq::context_t> zmq_context_;
             ZeroMQService zeromq_service_;

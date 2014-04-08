@@ -44,7 +44,7 @@ namespace goby
                                 public goby::pb::StaticProtobufNode
         {
         public:
-            GobyStoreServer();
+            GobyStoreServer(protobuf::GobyStoreServerConfig* cfg);
             ~GobyStoreServer()
                 { if(db_) sqlite3_close(db_); }
             
@@ -57,7 +57,7 @@ namespace goby
 
         private:
             static goby::common::ZeroMQService zeromq_service_;
-            static protobuf::GobyStoreServerConfig cfg_;
+            protobuf::GobyStoreServerConfig& cfg_;
             sqlite3* db_;
 
             // maps modem_id to time (microsecs since UNIX)
@@ -67,17 +67,18 @@ namespace goby
 }
 
 goby::common::ZeroMQService goby::acomms::GobyStoreServer::zeromq_service_;
-goby::acomms::protobuf::GobyStoreServerConfig goby::acomms::GobyStoreServer::cfg_;
 
 
 int main(int argc, char* argv[])
 {
-    goby::run<goby::acomms::GobyStoreServer>(argc, argv);
+    goby::acomms::protobuf::GobyStoreServerConfig cfg;
+    goby::run<goby::acomms::GobyStoreServer>(argc, argv, &cfg);
 }
 
-goby::acomms::GobyStoreServer::GobyStoreServer()
-    : ZeroMQApplicationBase(&zeromq_service_, &cfg_),
+goby::acomms::GobyStoreServer::GobyStoreServer(protobuf::GobyStoreServerConfig* cfg)
+    : ZeroMQApplicationBase(&zeromq_service_, cfg),
       StaticProtobufNode(&zeromq_service_),
+      cfg_(*cfg),
       db_(0)
 {
     // create database

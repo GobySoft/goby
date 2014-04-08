@@ -38,7 +38,7 @@ namespace goby
         class MOOSGateway : public goby::common::ZeroMQApplicationBase, public MOOSNode
         {
         public:
-            MOOSGateway();
+            MOOSGateway(protobuf::MOOSGatewayConfig* cfg);
             ~MOOSGateway();
 
         private:
@@ -51,12 +51,13 @@ namespace goby
             
         private:
             static goby::common::ZeroMQService zeromq_service_;
+            protobuf::MOOSGatewayConfig& cfg_;
+
             goby::common::PubSubNodeWrapper<CMOOSMsg> goby_moos_pubsub_client_;
             CMOOSCommClient moos_client_;
             
             enum { MAX_CONNECTION_TIMEOUT = 10 };
             
-            static protobuf::MOOSGatewayConfig cfg_;
 
             std::set<std::string> subscribed_vars_;
         };
@@ -64,19 +65,19 @@ namespace goby
 }
 
 goby::common::ZeroMQService goby::moos::MOOSGateway::zeromq_service_;
-goby::moos::protobuf::MOOSGatewayConfig goby::moos::MOOSGateway::cfg_;
 
 int main(int argc, char* argv[])
 {
-    goby::run<goby::moos::MOOSGateway>(argc, argv);
+    goby::moos::protobuf::MOOSGatewayConfig cfg;
+    goby::run<goby::moos::MOOSGateway>(argc, argv, &cfg);
 }
-
 
 using goby::glog;
 
-goby::moos::MOOSGateway::MOOSGateway()
-    : ZeroMQApplicationBase(&zeromq_service_, &cfg_),
+goby::moos::MOOSGateway::MOOSGateway(protobuf::MOOSGatewayConfig* cfg)
+    : ZeroMQApplicationBase(&zeromq_service_, cfg),
       MOOSNode(&zeromq_service_),
+      cfg_(*cfg),
       goby_moos_pubsub_client_(this, cfg_.base().pubsub_config())
 {
     moos_client_.Run(cfg_.moos_server_host().c_str(), cfg_.moos_server_port(), cfg_.base().app_name().c_str(), cfg_.moos_comm_tick());

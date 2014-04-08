@@ -37,7 +37,8 @@ int goby::common::ApplicationBase::argc_ = 0;
 char** goby::common::ApplicationBase::argv_ = 0;
 
 goby::common::ApplicationBase::ApplicationBase(google::protobuf::Message* cfg /*= 0*/)
-    : base_cfg_(0),
+    : all_cfg_(cfg),
+      base_cfg_(0),
       own_base_cfg_(false),
       alive_(true)
 {

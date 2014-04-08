@@ -43,7 +43,7 @@ namespace goby
         class FileTransfer : public goby::pb::Application
         {
         public:
-            FileTransfer();
+            FileTransfer(protobuf::FileTransferConfig* cfg_);
             ~FileTransfer();
 
         private:
@@ -68,7 +68,7 @@ namespace goby
             
             
         private:
-            static protobuf::FileTransferConfig cfg_;
+             protobuf::FileTransferConfig& cfg_;
             
             enum { MAX_FILE_TRANSFER_BYTES = 1024*1024 };
 
@@ -81,18 +81,20 @@ namespace goby
     }
 }
 
-goby::acomms::protobuf::FileTransferConfig goby::acomms::FileTransfer::cfg_;
 
 int main(int argc, char* argv[])
 {
-    goby::run<goby::acomms::FileTransfer>(argc, argv);
+    goby::acomms::protobuf::FileTransferConfig cfg;
+    goby::run<goby::acomms::FileTransfer>(argc, argv, &cfg);
 }
 
 
 using goby::glog;
 
-goby::acomms::FileTransfer::FileTransfer()
-    : Application(&cfg_),
+
+goby::acomms::FileTransfer::FileTransfer(protobuf::FileTransferConfig* cfg)
+    : Application(cfg),
+      cfg_(*cfg),
       waiting_for_request_ack_(false)
 {
     glog.is(DEBUG1) && glog << cfg_.DebugString() << std::endl;

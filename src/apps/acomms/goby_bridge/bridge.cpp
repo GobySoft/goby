@@ -39,6 +39,7 @@
 #include "goby/acomms/protobuf/network_ack.pb.h"
 
 #include "goby/acomms/protobuf/file_transfer.pb.h"
+#include "goby/acomms/protobuf/mosh_packet.pb.h"
 
 #include "bridge_config.pb.h"
 
@@ -187,6 +188,11 @@ goby::acomms::Bridge::Bridge(protobuf::BridgeConfig* cfg)
             boost::bind(&Bridge::handle_external_push<goby::acomms::protobuf::TransferResponse>, this, _1, q_managers_[i].get()),
             "QueuePush" + goby::util::as<std::string>(qcfg.modem_id()));
 
+        subscribe<goby::acomms::protobuf::MoshPacket>(
+            boost::bind(&Bridge::handle_external_push<goby::acomms::protobuf::MoshPacket>, this, _1, q_managers_[i].get()),
+            "QueuePush" + goby::util::as<std::string>(qcfg.modem_id()));
+
+        
         subscribe<goby::acomms::protobuf::ModemTransmission>(
             boost::bind(&Bridge::handle_data_request, this, _1, i),
             "DataRequest" + goby::util::as<std::string>(qcfg.modem_id()));

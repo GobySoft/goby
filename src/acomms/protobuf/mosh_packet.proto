@@ -15,9 +15,16 @@ message MoshPacket
                            (dccl.field).max = 32,
                            (dccl.field).in_head = true];
 
-  required int32 frag_len = 3 [(dccl.field).min = 1,
-                               (dccl.field).max = 60,
+  required int32 frag_num = 3 [(dccl.field).min = 0,
+                               (dccl.field).max = 21,
                                (dccl.field).in_head = true];
-  required bytes fragment = 4 [(dccl.field).max_length = 60];
+  
+  required int32 frag_len = 4 [(dccl.field).min = 1,
+                               (dccl.field).max = 59,
+                               (dccl.field).in_head = true];
+
+  required bool is_last_frag = 5 [(dccl.field).in_head = true];
+  
+  required bytes fragment = 6 [(dccl.field).max_length = 59];
 }
 

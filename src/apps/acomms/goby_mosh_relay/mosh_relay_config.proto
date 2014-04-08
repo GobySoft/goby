@@ -12,5 +12,9 @@ message MoshRelayConfig
   optional uint32 udp_port = 3;
   optional bool bind = 4;
 
+
+  required uint32 src_modem_id = 5;
+  required uint32 dest_modem_id = 6;
+  
 }
 

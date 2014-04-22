@@ -21,8 +21,8 @@ endif()
 
 
 set(GOBY_VERSION_MAJOR "2")
-set(GOBY_VERSION_MINOR "0")
-set(GOBY_VERSION_PATCH "5")
+set(GOBY_VERSION_MINOR "1")
+set(GOBY_VERSION_PATCH "0~alpha1")
 
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.bzr")
    message("Compiling in bazaar source tree.")

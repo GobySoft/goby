@@ -35,3 +35,4 @@ share/examples/acomms/libqueue/multimessage/queue_multimessage
 share/examples/acomms/libqueue/queue_simple/queue_simple
 queue_encode_on_demand
 share/liaison/resources
+src/acomms/protobuf/dccl_option_extensions.proto

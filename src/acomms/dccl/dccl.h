@@ -29,6 +29,9 @@
 #include "goby/common/logger.h"
 
 #include "dccl/codec.h"
+#include "dccl/codecs2/field_codec_default.h"
+#include "dccl/field_codec_id.h"
+#include "dccl/field_codec_message_stack.h"
 
 /// The global namespace for the Goby project.
 namespace goby
@@ -44,15 +47,27 @@ namespace goby
         typedef dccl::NullValueException DCCLNullValueException;
 
         typedef dccl::DefaultIdentifierCodec DCCLDefaultIdentifierCodec;
-//        typedef dccl::DefaultNumericFieldCodec DCCLDefaultNumericFieldCodec;
-        typedef dccl::DefaultBoolCodec DCCLDefaultBoolCodec;
-        typedef dccl::DefaultStringCodec DCCLDefaultStringCodec;
-        typedef dccl::DefaultBytesCodec DCCLDefaultBytesCodec;
-        typedef dccl::DefaultEnumCodec DCCLDefaultEnumCodec;
+        template<typename WireType, typename FieldType = WireType>
+            class DefaultNumericFieldCodec : public dccl::v2::DefaultNumericFieldCodec<WireType, FieldType> { };
+
+        typedef dccl::v2::DefaultBoolCodec DCCLDefaultBoolCodec;
+        typedef dccl::v2::DefaultStringCodec DCCLDefaultStringCodec;
+        typedef dccl::v2::DefaultBytesCodec DCCLDefaultBytesCodec;
+        typedef dccl::v2::DefaultEnumCodec DCCLDefaultEnumCodec;
         typedef dccl::MessageStack MessageHandler;
-//        typedef dccl::TimeCodec DCCLTimeCodec;
-//        typedef dccl::StaticCodec DCCLStaticCodec;
-        typedef dccl::DefaultMessageCodec DCCLDefaultMessageCodec;
+        template<typename TimeType>
+            class TimeCodec : public dccl::v2::TimeCodecBase<TimeType, 0>
+        { BOOST_STATIC_ASSERT(sizeof(TimeCodec) == 0); };
+
+        template<> class TimeCodec<dccl::uint64> : public dccl::v2::TimeCodecBase<dccl::uint64, 1000000> { };
+        template<> class TimeCodec<dccl::int64> : public dccl::v2::TimeCodecBase<dccl::int64, 1000000> { };
+        template<> class TimeCodec<double> : public dccl::v2::TimeCodecBase<double, 1> { };
+    
+        template<typename T>
+            class StaticCodec : public dccl::v2::StaticCodec<T>
+        { };
+
+        typedef dccl::v2::DefaultMessageCodec DCCLDefaultMessageCodec;
 
         typedef dccl::FieldCodecBase DCCLFieldCodecBase;
 

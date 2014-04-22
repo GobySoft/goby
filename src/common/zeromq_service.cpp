@@ -1,6 +1,6 @@
-// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
-//                     Massachusetts Institute of Technology (2007-)
-//                     Woods Hole Oceanographic Institution (2007-)
+// Copyright 2009-2014 Toby Schneider (https://launchpad.net/~tes)
+//                     GobySoft, LLC (2013-)
+//                     Massachusetts Institute of Technology (2007-2014)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
 // 
 //
@@ -9,7 +9,7 @@
 //
 // The Goby Libraries are free software: you can redistribute them and/or modify
 // them under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
+// the Free Software Foundation, either version 2.1 of the License, or
 // (at your option) any later version.
 //
 // The Goby Libraries are distributed in the hope that they will be useful,
@@ -19,6 +19,7 @@
 //
 // You should have received a copy of the GNU Lesser General Public License
 // along with Goby.  If not, see <http://www.gnu.org/licenses/>.
+
 
 
 #include <boost/asio/detail/socket_ops.hpp> // for network_to_host_long
@@ -285,7 +286,7 @@ void goby::common::ZeroMQService::handle_receive(const void* data,
                       size);
     
 
-    glog.is(DEBUG2, lock) &&
+    glog.is(DEBUG3, lock) &&
         glog << group(glog_in_group())
              << "Received message (hex): " << goby::util::hex_encode(bytes)
              << std::endl << unlock;
@@ -387,7 +388,7 @@ bool goby::common::ZeroMQService::poll(long timeout /* = -1 */)
                 
                 /* Block until a message is available to be received from socket */
                 rc = zmq_recv (poll_items_[i].socket, &part, 0);
-                glog.is(DEBUG2, lock) &&
+                glog.is(DEBUG3, lock) &&
                     glog << group(glog_in_group())
                          << "Had event for poll item " << i << std::endl << unlock;
                 poll_callbacks_[i](zmq_msg_data(&part), zmq_msg_size(&part), message_part);
@@ -488,7 +489,7 @@ bool goby::common::ZeroMQSocket::check_blackout(MarshallingScheme marshalling_sc
         }
         else
         {
-            glog.is(DEBUG2, lock) && 
+            glog.is(DEBUG3, lock) && 
                 glog << group(ZeroMQService::glog_in_group())
                      << "Message (marshalling scheme: " << marshalling_scheme
                      << ", identifier: " << identifier << ")" << " is in blackout: this time:"

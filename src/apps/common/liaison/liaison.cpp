@@ -1,23 +1,25 @@
-// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
-//                     Massachusetts Institute of Technology (2007-)
-//                     Woods Hole Oceanographic Institution (2007-)
+// Copyright 2009-2014 Toby Schneider (https://launchpad.net/~tes)
+//                     GobySoft, LLC (2013-)
+//                     Massachusetts Institute of Technology (2007-2014)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
 // 
 //
-// This file is part of the Goby Underwater Autonomy Project Liaison Module
-// ("Goby Liaison").
+// This file is part of the Goby Underwater Autonomy Project Binaries
+// ("The Goby Binaries").
 //
-// Goby Liaison is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License Version 2
-// as published by the Free Software Foundation.
+// The Goby Binaries are free software: you can redistribute them and/or modify
+// them under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 2 of the License, or
+// (at your option) any later version.
 //
-// Goby Liaison is distributed in the hope that it will be useful,
+// The Goby Binaries are distributed in the hope that they will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
 // along with Goby.  If not, see <http://www.gnu.org/licenses/>.
+
 
 #include <boost/filesystem.hpp>
 
@@ -41,9 +43,10 @@ using namespace goby::common::logger_lock;
 using namespace goby::common::logger;
 
 
-goby::common::protobuf::LiaisonConfig goby::common::Liaison::cfg_;
 boost::shared_ptr<zmq::context_t> goby::common::Liaison::zmq_context_(new zmq::context_t(1));
 std::vector<void *> goby::common::Liaison::plugin_handles_;
+
+goby::common::protobuf::LiaisonConfig goby::common::liaison_cfg_;
 
 int main(int argc, char* argv[])
 {
@@ -67,7 +70,7 @@ int main(int argc, char* argv[])
         }        
     }
     
-    int return_value = goby::run<goby::common::Liaison>(argc, argv);
+    int return_value = goby::run<goby::common::Liaison>(argc, argv, &goby::common::liaison_cfg_);
     goby::util::DynamicProtobufManager::protobuf_shutdown();    
 
     for(int i = 0, n = goby::common::Liaison::plugin_handles_.size();
@@ -77,21 +80,21 @@ int main(int argc, char* argv[])
     return return_value;
 }
 
-goby::common::Liaison::Liaison()
-    : ZeroMQApplicationBase(&zeromq_service_, &cfg_),
+goby::common::Liaison::Liaison(protobuf::LiaisonConfig* cfg)
+    : ZeroMQApplicationBase(&zeromq_service_, cfg),
       zeromq_service_(zmq_context_),
-      pubsub_node_(&zeromq_service_, cfg_.base().pubsub_config())
+      pubsub_node_(&zeromq_service_, cfg->base().pubsub_config())
 {
 
 
     // load all shared libraries
-    for(int i = 0, n = cfg_.load_shared_library_size(); i < n; ++i)
+    for(int i = 0, n = cfg->load_shared_library_size(); i < n; ++i)
     {
         glog.is(VERBOSE) &&
-            glog << "Loading shared library: " << cfg_.load_shared_library(i) << std::endl;
+            glog << "Loading shared library: " << cfg->load_shared_library(i) << std::endl;
         
         void* handle = goby::util::DynamicProtobufManager::load_from_shared_lib(
-            cfg_.load_shared_library(i));
+            cfg->load_shared_library(i));
         
         if(!handle)
         {
@@ -103,13 +106,13 @@ goby::common::Liaison::Liaison()
     
     // load all .proto files
     goby::util::DynamicProtobufManager::enable_compilation();
-    for(int i = 0, n = cfg_.load_proto_file_size(); i < n; ++i)
-        load_proto_file(cfg_.load_proto_file(i));
+    for(int i = 0, n = cfg->load_proto_file_size(); i < n; ++i)
+        load_proto_file(cfg->load_proto_file(i));
 
     // load all .proto file directories
-    for(int i = 0, n = cfg_.load_proto_dir_size(); i < n; ++i)
+    for(int i = 0, n = cfg->load_proto_dir_size(); i < n; ++i)
     {
-        boost::filesystem::path current_dir(cfg_.load_proto_dir(i));
+        boost::filesystem::path current_dir(cfg->load_proto_dir(i));
 
         for (boost::filesystem::directory_iterator iter(current_dir), end;
              iter != end;
@@ -152,8 +155,8 @@ goby::common::Liaison::Liaison()
     {   
         std::string doc_root;
         
-        if(cfg_.has_docroot())
-            doc_root = cfg_.docroot();
+        if(cfg->has_docroot())
+            doc_root = cfg->docroot();
         else if(boost::filesystem::exists(boost::filesystem::path(GOBY_LIAISON_COMPILED_DOCROOT)))
             doc_root = GOBY_LIAISON_COMPILED_DOCROOT;            
         else if(boost::filesystem::exists(boost::filesystem::path(GOBY_LIAISON_INSTALLED_DOCROOT)))
@@ -163,7 +166,7 @@ goby::common::Liaison::Liaison()
         
         // create a set of fake argc / argv for Wt::WServer
         std::vector<std::string> wt_argv_vec;  
-        std::string str = cfg_.base().app_name() + " --docroot " + doc_root + " --http-port " + goby::util::as<std::string>(cfg_.http_port()) + " --http-address " + cfg_.http_address();
+        std::string str = cfg->base().app_name() + " --docroot " + doc_root + " --http-port " + goby::util::as<std::string>(cfg->http_port()) + " --http-address " + cfg->http_address();
         boost::split(wt_argv_vec, str, boost::is_any_of(" "));
         
         char* wt_argv[wt_argv_vec.size()];

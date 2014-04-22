@@ -1,6 +1,6 @@
-// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
-//                     Massachusetts Institute of Technology (2007-)
-//                     Woods Hole Oceanographic Institution (2007-)
+// Copyright 2009-2014 Toby Schneider (https://launchpad.net/~tes)
+//                     GobySoft, LLC (2013-)
+//                     Massachusetts Institute of Technology (2007-2014)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
 // 
 //
@@ -9,7 +9,7 @@
 //
 // The Goby Binaries are free software: you can redistribute them and/or modify
 // them under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
+// the Free Software Foundation, either version 2 of the License, or
 // (at your option) any later version.
 //
 // The Goby Binaries are distributed in the hope that they will be useful,
@@ -19,6 +19,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with Goby.  If not, see <http://www.gnu.org/licenses/>.
+
 
 #include "goby/common/logger.h"
 #include "goby/common/logger/term_color.h"
@@ -43,7 +44,7 @@ namespace goby
         class ModemDriver : public goby::pb::Application
         {
         public:
-            ModemDriver();
+            ModemDriver(protobuf::ModemDriverConfig* cfg);
             ~ModemDriver();
 
         private:
@@ -56,7 +57,7 @@ namespace goby
             void handle_initiate_transmission(const protobuf::ModemTransmission& message);
 
         private:
-            static protobuf::ModemDriverConfig cfg_;
+            protobuf::ModemDriverConfig& cfg_;
             
             // for PBDriver, IridiumDriver
             boost::shared_ptr<goby::common::ZeroMQService> zeromq_service_;
@@ -76,18 +77,19 @@ namespace goby
     }
 }
 
-goby::acomms::protobuf::ModemDriverConfig goby::acomms::ModemDriver::cfg_;
 
 int main(int argc, char* argv[])
 {
-    goby::run<goby::acomms::ModemDriver>(argc, argv);
+    goby::acomms::protobuf::ModemDriverConfig cfg;
+    goby::run<goby::acomms::ModemDriver>(argc, argv, &cfg);
 }
 
 
 using goby::glog;
 
-goby::acomms::ModemDriver::ModemDriver()
-    : goby::pb::Application(&cfg_),
+goby::acomms::ModemDriver::ModemDriver(protobuf::ModemDriverConfig* cfg)
+    : goby::pb::Application(cfg),
+      cfg_(*cfg),
       data_response_received_(false),
       initiate_transmit_pending_(false)
 {

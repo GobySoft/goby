@@ -1,6 +1,6 @@
-// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
-//                     Massachusetts Institute of Technology (2007-)
-//                     Woods Hole Oceanographic Institution (2007-)
+// Copyright 2009-2014 Toby Schneider (https://launchpad.net/~tes)
+//                     GobySoft, LLC (2013-)
+//                     Massachusetts Institute of Technology (2007-2014)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
 // 
 //
@@ -9,7 +9,7 @@
 //
 // The Goby Binaries are free software: you can redistribute them and/or modify
 // them under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
+// the Free Software Foundation, either version 2 of the License, or
 // (at your option) any later version.
 //
 // The Goby Binaries are distributed in the hope that they will be useful,
@@ -19,6 +19,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with Goby.  If not, see <http://www.gnu.org/licenses/>.
+
 
 #include <boost/bimap.hpp>
 
@@ -45,7 +46,7 @@ namespace goby
                                 public goby::pb::StaticProtobufNode
         {
         public:
-            GobyRudicsShore();
+            GobyRudicsShore(protobuf::GobyRudicsShoreConfig* cfg);
             ~GobyRudicsShore()
                 {   }            
             
@@ -56,7 +57,7 @@ namespace goby
 
         private:
             static goby::common::ZeroMQService zeromq_service_;
-            static protobuf::GobyRudicsShoreConfig cfg_;
+            protobuf::GobyRudicsShoreConfig& cfg_;
 
             goby::util::TCPServer rudics_server_;
 
@@ -70,17 +71,18 @@ namespace goby
 }
 
 goby::common::ZeroMQService goby::acomms::GobyRudicsShore::zeromq_service_;
-goby::acomms::protobuf::GobyRudicsShoreConfig goby::acomms::GobyRudicsShore::cfg_;
 
 
 int main(int argc, char* argv[])
 {
-    goby::run<goby::acomms::GobyRudicsShore>(argc, argv);
+    goby::acomms::protobuf::GobyRudicsShoreConfig cfg;
+    goby::run<goby::acomms::GobyRudicsShore>(argc, argv, &cfg);
 }
 
-goby::acomms::GobyRudicsShore::GobyRudicsShore()
-    : ZeroMQApplicationBase(&zeromq_service_, &cfg_),
+goby::acomms::GobyRudicsShore::GobyRudicsShore(protobuf::GobyRudicsShoreConfig* cfg)
+    : ZeroMQApplicationBase(&zeromq_service_, cfg),
       StaticProtobufNode(&zeromq_service_),
+      cfg_(*cfg),
       rudics_server_(cfg_.rudics_server_port(), "\r")
 {
     rudics_server_.start();

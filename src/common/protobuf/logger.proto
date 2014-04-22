@@ -6,6 +6,7 @@ message GLogConfig
 {
   enum Verbosity
   {
+    @PROTOBUF_ALLOW_ALIAS@
     QUIET = 1;
     WARN = 2;
     VERBOSE = 3;

@@ -1,6 +1,6 @@
-// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
-//                     Massachusetts Institute of Technology (2007-)
-//                     Woods Hole Oceanographic Institution (2007-)
+// Copyright 2009-2014 Toby Schneider (https://launchpad.net/~tes)
+//                     GobySoft, LLC (2013-)
+//                     Massachusetts Institute of Technology (2007-2014)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
 // 
 //
@@ -9,7 +9,7 @@
 //
 // The Goby Binaries are free software: you can redistribute them and/or modify
 // them under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
+// the Free Software Foundation, either version 2 of the License, or
 // (at your option) any later version.
 //
 // The Goby Binaries are distributed in the hope that they will be useful,
@@ -19,6 +19,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with Goby.  If not, see <http://www.gnu.org/licenses/>.
+
 
 #include "goby/moos/moos_node.h"
 #include "goby/common/logger.h"
@@ -37,7 +38,7 @@ namespace goby
         class MOOSGateway : public goby::common::ZeroMQApplicationBase, public MOOSNode
         {
         public:
-            MOOSGateway();
+            MOOSGateway(protobuf::MOOSGatewayConfig* cfg);
             ~MOOSGateway();
 
         private:
@@ -50,12 +51,13 @@ namespace goby
             
         private:
             static goby::common::ZeroMQService zeromq_service_;
+            protobuf::MOOSGatewayConfig& cfg_;
+
             goby::common::PubSubNodeWrapper<CMOOSMsg> goby_moos_pubsub_client_;
             CMOOSCommClient moos_client_;
             
             enum { MAX_CONNECTION_TIMEOUT = 10 };
             
-            static protobuf::MOOSGatewayConfig cfg_;
 
             std::set<std::string> subscribed_vars_;
         };
@@ -63,19 +65,19 @@ namespace goby
 }
 
 goby::common::ZeroMQService goby::moos::MOOSGateway::zeromq_service_;
-goby::moos::protobuf::MOOSGatewayConfig goby::moos::MOOSGateway::cfg_;
 
 int main(int argc, char* argv[])
 {
-    goby::run<goby::moos::MOOSGateway>(argc, argv);
+    goby::moos::protobuf::MOOSGatewayConfig cfg;
+    goby::run<goby::moos::MOOSGateway>(argc, argv, &cfg);
 }
-
 
 using goby::glog;
 
-goby::moos::MOOSGateway::MOOSGateway()
-    : ZeroMQApplicationBase(&zeromq_service_, &cfg_),
+goby::moos::MOOSGateway::MOOSGateway(protobuf::MOOSGatewayConfig* cfg)
+    : ZeroMQApplicationBase(&zeromq_service_, cfg),
       MOOSNode(&zeromq_service_),
+      cfg_(*cfg),
       goby_moos_pubsub_client_(this, cfg_.base().pubsub_config())
 {
     moos_client_.Run(cfg_.moos_server_host().c_str(), cfg_.moos_server_port(), cfg_.base().app_name().c_str(), cfg_.moos_comm_tick());

@@ -1,6 +1,6 @@
-// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
-//                     Massachusetts Institute of Technology (2007-)
-//                     Woods Hole Oceanographic Institution (2007-)
+// Copyright 2009-2014 Toby Schneider (https://launchpad.net/~tes)
+//                     GobySoft, LLC (2013-)
+//                     Massachusetts Institute of Technology (2007-2014)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
 // 
 //
@@ -9,7 +9,7 @@
 //
 // The Goby Libraries are free software: you can redistribute them and/or modify
 // them under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
+// the Free Software Foundation, either version 2.1 of the License, or
 // (at your option) any later version.
 //
 // The Goby Libraries are distributed in the hope that they will be useful,
@@ -19,6 +19,7 @@
 //
 // You should have received a copy of the GNU Lesser General Public License
 // along with Goby.  If not, see <http://www.gnu.org/licenses/>.
+
 
 
 #ifndef Modem20091211H
@@ -242,6 +243,11 @@ namespace goby
             // relating to ACKs
             std::set<unsigned> frames_waiting_for_ack_;
 
+            // keep track of where we sent the message to be acked to work around a bug in
+            // the MM1 firmware that reports third-party acks with a destination of the local modem
+            unsigned expected_ack_destination_;
+            
+            
             std::set<unsigned> frames_waiting_to_receive_;
 
             // true if we initiated the last cycle ($CCCYC) (and thereby cache data for it)?

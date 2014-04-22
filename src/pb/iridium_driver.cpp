@@ -1,6 +1,6 @@
-// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
-//                     Massachusetts Institute of Technology (2007-)
-//                     Woods Hole Oceanographic Institution (2007-)
+// Copyright 2009-2014 Toby Schneider (https://launchpad.net/~tes)
+//                     GobySoft, LLC (2013-)
+//                     Massachusetts Institute of Technology (2007-2014)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
 // 
 //
@@ -9,7 +9,7 @@
 //
 // The Goby Libraries are free software: you can redistribute them and/or modify
 // them under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
+// the Free Software Foundation, either version 2.1 of the License, or
 // (at your option) any later version.
 //
 // The Goby Libraries are distributed in the hope that they will be useful,
@@ -19,6 +19,7 @@
 //
 // You should have received a copy of the GNU Lesser General Public License
 // along with Goby.  If not, see <http://www.gnu.org/licenses/>.
+
 
 
 #include <algorithm>
@@ -78,7 +79,7 @@ void goby::acomms::IridiumDriver::startup(const protobuf::DriverConfig& cfg)
 
     using_zmq_ = driver_cfg_.HasExtension(IridiumDriverConfig::request_socket);
     
-    std::cout << "Using ZMQ? " << (using_zmq_ ? "Yes" : "No") << std::endl;
+    glog.is(DEBUG1) && glog << "Using ZMQ? " << (using_zmq_ ? "Yes" : "No") << std::endl;
 
     if(using_zmq_)
     {        
@@ -133,7 +134,7 @@ void goby::acomms::IridiumDriver::modem_init()
         usleep(pause_ms*1000);
         ++i;
 
-        const int start_timeout = 10;
+        const int start_timeout = driver_cfg_.GetExtension(IridiumDriverConfig::start_timeout);
         if(i / (1000/pause_ms) > start_timeout)
             glog.is(DIE) && glog << group(glog_out_group()) << "Failed to startup." << std::endl;
     }
@@ -260,7 +261,7 @@ void goby::acomms::IridiumDriver::do_work()
                 }
             }
             
-            glog.is(DEBUG1) && glog << group(goby::common::ZeroMQService::glog_out_group()) << "Sending request to server." << std::endl;
+            glog.is(DEBUG2) && glog << group(goby::common::ZeroMQService::glog_out_group()) << "Sending request to server." << std::endl;
             glog.is(DEBUG2) && glog << group(goby::common::ZeroMQService::glog_out_group()) << "Outbox: " << request_.DebugString() << std::flush;
             StaticProtobufNode::send(request_, request_socket_id_);
             last_zmq_request_time_ = now;
@@ -376,7 +377,7 @@ void goby::acomms::IridiumDriver::try_serial_tx()
 
 void goby::acomms::IridiumDriver::handle_mt_response(const acomms::protobuf::MTDataResponse& response)
 {
-    glog.is(DEBUG1) && glog << group(goby::common::ZeroMQService::glog_in_group()) << "Received response from shore server." << std::endl;
+    glog.is(DEBUG2) && glog << group(goby::common::ZeroMQService::glog_in_group()) << "Received response from shore server." << std::endl;
 
     glog.is(DEBUG2) && glog << group(goby::common::ZeroMQService::glog_in_group()) << "Inbox: " << response.DebugString() << std::flush;
 

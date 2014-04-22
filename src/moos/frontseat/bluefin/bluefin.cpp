@@ -1,24 +1,25 @@
-// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
-//                     Massachusetts Institute of Technology (2007-)
-//                     Woods Hole Oceanographic Institution (2007-)
+// Copyright 2009-2014 Toby Schneider (https://launchpad.net/~tes)
+//                     GobySoft, LLC (2013-)
+//                     Massachusetts Institute of Technology (2007-2014)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
 // 
 //
-// This file is part of the Goby Underwater Autonomy Project MOOS Interface Library
-// ("The Goby MOOS Library").
+// This file is part of the Goby Underwater Autonomy Project Libraries
+// ("The Goby Libraries").
 //
-// The Goby MOOS Library is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
+// The Goby Libraries are free software: you can redistribute them and/or modify
+// them under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 2.1 of the License, or
 // (at your option) any later version.
 //
-// The Goby MOOS Library is distributed in the hope that it will be useful,
+// The Goby Libraries are distributed in the hope that they will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Lesser General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
+// You should have received a copy of the GNU Lesser General Public License
 // along with Goby.  If not, see <http://www.gnu.org/licenses/>.
+
 
 #include <boost/assign.hpp>
 #include <boost/format.hpp>
@@ -51,7 +52,8 @@ BluefinFrontSeat::BluefinFrontSeat(const iFrontSeatConfig& cfg)
     : FrontSeatInterfaceBase(cfg),
       bf_config_(cfg.GetExtension(bluefin_config)),
       tcp_(bf_config_.huxley_tcp_address(),
-           bf_config_.huxley_tcp_port()),
+           bf_config_.huxley_tcp_port(), "\r\n",
+           bf_config_.reconnect_interval()),
       frontseat_providing_data_(false),
       last_frontseat_data_time_(0),
       frontseat_state_(gpb::FRONTSEAT_NOT_CONNECTED),
@@ -63,6 +65,8 @@ BluefinFrontSeat::BluefinFrontSeat(const iFrontSeatConfig& cfg)
       last_heartbeat_time_(0)
 {
     load_nmea_mappings();
+    glog.is(VERBOSE) && glog << "Trying to connect to Huxley server @ " <<bf_config_.huxley_tcp_address() << ":" << bf_config_.huxley_tcp_port() << std::endl;
+    tcp_.start();
 }
 
 void BluefinFrontSeat::loop()
@@ -73,20 +77,6 @@ void BluefinFrontSeat::loop()
     if(!tcp_.active())
     {
         frontseat_state_ = gpb::FRONTSEAT_NOT_CONNECTED;
-        if(now > next_connect_attempt_time_)
-        {
-            bool first_attempt = (next_connect_attempt_time_ == 0);
-            if(!first_attempt)
-            {
-                glog.is(WARN) && glog << "Not connected to the Huxley server." << std::endl;
-                tcp_.close();
-            }
-            glog.is(VERBOSE) && glog << "Trying to connect to Huxley server @ " <<bf_config_.huxley_tcp_address() << ":" << bf_config_.huxley_tcp_port() << std::endl;
-            tcp_.start();
-            
-            next_connect_attempt_time_ = now +
-                bf_config_.reconnect_interval();
-        }
     }
     else
     {
@@ -177,7 +167,7 @@ void BluefinFrontSeat::send_command_to_frontseat(const gpb::CommandRequest& comm
             {
                 glog.is(DEBUG1) &&
                     glog << "Bluefin Extra Command: Cancel current behavior requested by backseat." << std::endl;
-                NMEASentence nmea("$BPRCB", NMEASentence::IGNORE);
+                NMEASentence nmea("$BPRCE", NMEASentence::IGNORE);
                 nmea.push_back(unix_time2nmea_time(goby_time<double>()));
                 nmea.push_back(0);
                 append_to_write_queue(nmea);
@@ -195,6 +185,31 @@ void BluefinFrontSeat::send_command_to_frontseat(const gpb::CommandRequest& comm
                 append_to_write_queue(nmea);
             }
             break;
+
+	    case gpb::BluefinExtraCommands::MISSION_START_CONFIRM: 
+            {
+                glog.is(DEBUG1) &&
+                    glog << "Bluefin Extra Command: Mission start confirmation by backseat " << std::endl;
+                NMEASentence nmea("$BPSMC", NMEASentence::IGNORE);
+                nmea.push_back(unix_time2nmea_time(goby_time<double>()));
+                nmea.push_back(1);//static_cast<int>(bluefin_command.start_confirm())
+                append_to_write_queue(nmea);
+            }
+            break;
+
+
+	    case gpb::BluefinExtraCommands::MISSION_END_CONFIRM: 
+            {
+                glog.is(DEBUG1) &&
+                    glog << "Bluefin Extra Command: Mission end confirmation by backseat " << std::endl;
+                NMEASentence nmea("$BPRCE", NMEASentence::IGNORE);
+                nmea.push_back(unix_time2nmea_time(goby_time<double>()));
+                nmea.push_back(0);
+                append_to_write_queue(nmea);
+            }
+            break;
+
+
 
         }
     }
@@ -227,23 +242,28 @@ void BluefinFrontSeat::send_command_to_frontseat(const gpb::CommandRequest& comm
             NMEASentence nmea("$BPRMB", NMEASentence::IGNORE);
             nmea.push_back(unix_time2nmea_time(goby_time<double>()));
             const goby::moos::protobuf::DesiredCourse& desired_course = command.desired_course();
-            nmea.push_back(desired_course.heading());
-            nmea.push_back(desired_course.depth());
-            nmea.push_back(0); // previous field is a depth (not altitude [1] or pitch [2])
 
-            // for zero speed, send zero RPM
+
+            // for zero speed, send zero RPM, pitch, rudder
             if(desired_course.speed() < 0.01)
             {
-                nmea.push_back(0); // 0 rpm
-                nmea.push_back(0); // previous field is an rpm (not speed [1])
+                nmea.push_back(0); // zero rudder
+                nmea.push_back(0); // zero pitch
+                nmea.push_back(2); // previous field is a pitch [2]
+                nmea.push_back(0); // zero rpm
+                nmea.push_back(0); // previous field is an rpm [0]
+                nmea.push_back(1); // first field is a rudder adjustment [1]
             }
             else
             {
+                nmea.push_back(desired_course.heading());
+                nmea.push_back(desired_course.depth());
+                nmea.push_back(0); // previous field is a depth (not altitude [1] or pitch [2])
                 nmea.push_back(desired_course.speed());
                 nmea.push_back(1); // previous field is a speed (not rpm [0])
+                nmea.push_back(0); // first field is a heading (not rudder adjustment [1])
             }
             
-            nmea.push_back(0); // first field is a heading (not rudder adjustment [1])
             append_to_write_queue(nmea);
         }
     }
@@ -611,6 +631,7 @@ void BluefinFrontSeat::load_nmea_mappings()
         ("$BFPLN","Mission Plan Element")
         ("$BFACK","Message Acknowledgement")
         ("$BFTRM","Trim Status")
+	("$BPSMC","Confirm Mission Start")
         ("$BFBOY","Buoyancy Status")
         ("$BPLOG","Logging Control")
         ("$BPSTS","Payload Status Message")
@@ -620,6 +641,7 @@ void BluefinFrontSeat::load_nmea_mappings()
         ("$BPRTC","Request Additional Trackcircle")
         ("$BPRGP","Request Additional GPS Hits")
         ("$BPRCN","Cancel Requested Behavior")
+        ("$BPRCE","Cancel Current Mission Element")
         ("$BPRCA","Cancel All Requested Behaviors")
         ("$BPRCB","Cancel Current Behavior")
         ("$BPRMB","Modify Current Behavior")

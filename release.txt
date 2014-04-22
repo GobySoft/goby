@@ -1,7 +1,7 @@
 Goby Release Notes (Major version 2)
 
 *****************
-Version 2.1.0
+Version 2.0.5
 
 = Acomms =
 - New IridiumDriver that handles the Iridium RUDICS protocol (phone-call style of data transfer)
@@ -19,10 +19,53 @@ Version 2.1.0
       - goby::acomms::UDPDriver (unicast UDP driver)
       - goby::acomms::IridiumDriver (Iridium)
 - goby_bridge updated to use goby_modemdriver instead of having the ModemDriver components directly in the application
-
+- goby_file_transfer that works with goby_bridge to allow arbitrary file transfer over a Goby link.
 
 bzr log --line -n0 -r tag:2.0.4..
 
+534: Toby Schneider 2014-03-25 Remove Xerces from default dependencies install
+533: Toby Schneider 2014-03-25 Moved more dependencies into Debian install now that they are available in Wheezy (stable)
+532: Toby Schneider 2014-03-25 Switched to default to MOOS10 for MOOS dependency when running DEPENDENCIES script
+531: Toby Schneider 2014-03-25 Fixed proper component disabling when missing GMP library
+530: Toby Schneider 2014-03-25 Changed header on all files to reflect change in license to GPL/LGPL2
+529: Toby Schneider 2014-03-25 Changed license to GPL2 as per MIT open source request in COPYING
+528: Toby Schneider 2014-03-19 Removed unused typedef in goby_bridge
+527: Toby Schneider 2014-03-19 Added include for abc_frontseat_driver example
+526: Toby Schneider 2014-03-19 Fixed double reconnect attempt in Bluefin driver for iFrontSeat
+525: Toby Schneider 2014-03-17 Patch removing boost foreach which doesn't play nice with new g++ and protobuf 2.3.0
+524: Toby Schneider 2014-03-17 [merge] Merge from DASH ST8a
+  520.1.6: Toby Schneider 2014-03-03 1. workaround third-party ACK bug in Micro-Modem firmware; 2. Added name to publish of iFrontSeat status
+  520.1.5: Toby Schneider 2014-02-23 Added short wait between Iridium redial attempts
+  520.1.4: Toby Schneider 2014-02-23 Added HangingUp and PostDisconnected states to Iridium state machine to clean up series of actions in both of these end-of-call situations
+  520.1.3: Toby Schneider 2014-02-22 Added split on commas for MOOS strings in MOOSLiaisonScope
+  520.1.2: mituser 2014-02-22 [merge] Merge changes to Iridium Driver for CEER debug message and configurable start up time
+    520.2.2: Toby Schneider 2014-02-07 Need to kick Offline before handling Disconnect (because of +CEER)
+    520.2.1: Toby Schneider 2014-02-07 Added +CEER extended error message check for Iridium driver
+  520.1.1: Toby Schneider 2014-02-22 {2.1.0~beta8} In iFrontSeat Bluefin driver: Changed BPRCB to BPRCE on advice of Patrick Larocque; changed command of 0 speed as 0 rpm to also send 0 pitch and 0 rudder
+523: Toby Schneider 2014-03-11 Added check for newer versions of protobuf to add intentional enum aliases to avoid error in protobuf 2.5.0 and newer
+522: Toby Schneider 2014-03-11 Removed newest() call from Application
+521: Toby Schneider 2014-03-11 Removed newest() call from Protobuf pub sub wrapper since the underlying node doesn't have the call anymore
+520: Toby Schneider 2014-02-03 Reduced verbosity of store server send for iridium driver
+519: Toby Schneider 2014-02-03 {2.1.0~beta7} Increment version
+518: Toby Schneider 2014-02-03 Demoted certain reliability ZMQ messages to a lower debug level to reduce debug file spam
+517: Toby Schneider 2014-01-10 [merge] Merge BFSMC support from 87mcmahon
+  510.1.1: Jim McMahon 2013-12-13 Added start mission confirm bluefin command
+516: Toby Schneider 2013-12-18 Fixed conversion error in NAV_YAW in the iFrontSeat legacy translators.
+515: Toby Schneider 2013-12-11 {2.1.0~beta6} Increment version
+514: Toby Schneider 2013-11-21 [merge] Merge changes made on DASH-ST6 deep cruise
+  513.1.5: Toby Schneider 2013-11-15 Small tweak to Liaison geodesy tab
+  513.1.4: Toby Schneider 2013-11-15 More features for new MOOS Geodesy liaison tab
+  513.1.3: Toby Schneider 2013-11-14 Updates on frontseat driver documentation
+  513.1.2: Toby Schneider 2013-11-13 Minor changes to user manual
+  513.1.1: Toby Schneider 2013-11-13 1. Changed tes::DynamicMOOSVars to goby::moos::DynamicMOOSVars; 2. More documentation on iFrontSeat
+513: Toby Schneider 2013-11-12 [merge] Merge from DASH-ST6 leg 1 - added example frontseat simulator, and updated related documentation
+  512.1.1: Toby Schneider 2013-11-09 Added ABC example frontseat simulator and corresponding iFrontSeat driver as an example on how to write drivers
+512: Toby Schneider 2013-10-31 {2.1.0~beta5} increment version
+511: Toby Schneider 2013-10-31 [merge] Ported BFCTL handoff of control from lamss DSOP branch
+  509.2.1: Toby Schneider 2013-10-31 Ported BFCTL handoff of control from DSOP branch
+510: Toby Schneider 2013-10-30 [merge] Merge from shore node
+  509.1.1: Toby Schneider 2013-10-30 Various fixes to python PPP/Goby RUDCS forward script
+509: Toby Schneider 2013-10-30 Reduced verbosity of ZMQ messages to reduce debug file sizes
 508: Toby Schneider 2013-10-29 Added some nice transfer success/failed messages to goby_file_transfer
 507: Toby Schneider 2013-10-29 Finalized goby_file_transfer - added Response for each transfer indicating success or failure (with error messages in case of failure)
 506: Toby Schneider 2013-10-23 {2.1.0~beta4} Increment version

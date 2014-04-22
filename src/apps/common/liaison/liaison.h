@@ -1,23 +1,25 @@
-// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
-//                     Massachusetts Institute of Technology (2007-)
-//                     Woods Hole Oceanographic Institution (2007-)
+// Copyright 2009-2014 Toby Schneider (https://launchpad.net/~tes)
+//                     GobySoft, LLC (2013-)
+//                     Massachusetts Institute of Technology (2007-2014)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
 // 
 //
-// This file is part of the Goby Underwater Autonomy Project Liaison Module
-// ("Goby Liaison").
+// This file is part of the Goby Underwater Autonomy Project Binaries
+// ("The Goby Binaries").
 //
-// Goby Liaison is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License Version 2
-// as published by the Free Software Foundation.
+// The Goby Binaries are free software: you can redistribute them and/or modify
+// them under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 2 of the License, or
+// (at your option) any later version.
 //
-// Goby Liaison is distributed in the hope that it will be useful,
+// The Goby Binaries are distributed in the hope that they will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
 // along with Goby.  If not, see <http://www.gnu.org/licenses/>.
+
 
 
 #ifndef LIAISON20110609H
@@ -42,10 +44,12 @@ namespace goby
 {
     namespace common
     {   
+        extern protobuf::LiaisonConfig liaison_cfg_;
+
         class Liaison : public ZeroMQApplicationBase
         {
           public:
-            Liaison();
+            Liaison(protobuf::LiaisonConfig* cfg);
             ~Liaison() { }
 
             void inbox(goby::common::MarshallingScheme marshalling_scheme,
@@ -65,7 +69,6 @@ namespace goby
             
             friend class LiaisonWtThread;
           private:
-            static protobuf::LiaisonConfig cfg_;
             Wt::WServer wt_server_;
             static boost::shared_ptr<zmq::context_t> zmq_context_;
             ZeroMQService zeromq_service_;

@@ -1,23 +1,25 @@
-// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
-//                     Massachusetts Institute of Technology (2007-)
-//                     Woods Hole Oceanographic Institution (2007-)
+// Copyright 2009-2014 Toby Schneider (https://launchpad.net/~tes)
+//                     GobySoft, LLC (2013-)
+//                     Massachusetts Institute of Technology (2007-2014)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
 // 
 //
-// This file is part of the Goby Underwater Autonomy Project Liaison Module
-// ("Goby Liaison").
+// This file is part of the Goby Underwater Autonomy Project Binaries
+// ("The Goby Binaries").
 //
-// Goby Liaison is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License Version 2
-// as published by the Free Software Foundation.
+// The Goby Binaries are free software: you can redistribute them and/or modify
+// them under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 2 of the License, or
+// (at your option) any later version.
 //
-// Goby Liaison is distributed in the hope that it will be useful,
+// The Goby Binaries are distributed in the hope that they will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
 // along with Goby.  If not, see <http://www.gnu.org/licenses/>.
+
 
 #include <dlfcn.h>
 
@@ -47,7 +49,7 @@ goby::common::LiaisonWtThread::LiaisonWtThread(const Wt::WEnvironment& env)
 {    
 //    zeromq_service_.connect_inbox_slot(&LiaisonWtThread::inbox, this);
 
-    Wt::WString title_text("goby liaison: " + Liaison::cfg_.base().platform_name());
+    Wt::WString title_text("goby liaison: " + liaison_cfg_.base().platform_name());
     setTitle(title_text);
 
     useStyleSheet(std::string("css/fonts.css?" + common::goby_file_timestamp()));
@@ -111,7 +113,7 @@ goby::common::LiaisonWtThread::LiaisonWtThread(const Wt::WEnvironment& env)
             
         if(liaison_load_ptr)
         {
-            std::vector<goby::common::LiaisonContainer*> containers = (*liaison_load_ptr)(Liaison::cfg_, Liaison::zmq_context());
+            std::vector<goby::common::LiaisonContainer*> containers = (*liaison_load_ptr)(liaison_cfg_, Liaison::zmq_context());
             for(int j = 0, m = containers.size(); j< m; ++j)
                 add_to_menu(menu_, containers[j]);
         }

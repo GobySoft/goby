@@ -1,6 +1,6 @@
-// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
-//                     Massachusetts Institute of Technology (2007-)
-//                     Woods Hole Oceanographic Institution (2007-)
+// Copyright 2009-2014 Toby Schneider (https://launchpad.net/~tes)
+//                     GobySoft, LLC (2013-)
+//                     Massachusetts Institute of Technology (2007-2014)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
 // 
 //
@@ -9,7 +9,7 @@
 //
 // The Goby Binaries are free software: you can redistribute them and/or modify
 // them under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
+// the Free Software Foundation, either version 2 of the License, or
 // (at your option) any later version.
 //
 // The Goby Binaries are distributed in the hope that they will be useful,
@@ -19,6 +19,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with Goby.  If not, see <http://www.gnu.org/licenses/>.
+
 
 #include <sqlite3.h>
 
@@ -43,7 +44,7 @@ namespace goby
                                 public goby::pb::StaticProtobufNode
         {
         public:
-            GobyStoreServer();
+            GobyStoreServer(protobuf::GobyStoreServerConfig* cfg);
             ~GobyStoreServer()
                 { if(db_) sqlite3_close(db_); }
             
@@ -56,7 +57,7 @@ namespace goby
 
         private:
             static goby::common::ZeroMQService zeromq_service_;
-            static protobuf::GobyStoreServerConfig cfg_;
+            protobuf::GobyStoreServerConfig& cfg_;
             sqlite3* db_;
 
             // maps modem_id to time (microsecs since UNIX)
@@ -66,17 +67,18 @@ namespace goby
 }
 
 goby::common::ZeroMQService goby::acomms::GobyStoreServer::zeromq_service_;
-goby::acomms::protobuf::GobyStoreServerConfig goby::acomms::GobyStoreServer::cfg_;
 
 
 int main(int argc, char* argv[])
 {
-    goby::run<goby::acomms::GobyStoreServer>(argc, argv);
+    goby::acomms::protobuf::GobyStoreServerConfig cfg;
+    goby::run<goby::acomms::GobyStoreServer>(argc, argv, &cfg);
 }
 
-goby::acomms::GobyStoreServer::GobyStoreServer()
-    : ZeroMQApplicationBase(&zeromq_service_, &cfg_),
+goby::acomms::GobyStoreServer::GobyStoreServer(protobuf::GobyStoreServerConfig* cfg)
+    : ZeroMQApplicationBase(&zeromq_service_, cfg),
       StaticProtobufNode(&zeromq_service_),
+      cfg_(*cfg),
       db_(0)
 {
     // create database

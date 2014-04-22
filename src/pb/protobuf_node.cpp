@@ -1,6 +1,6 @@
-// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
-//                     Massachusetts Institute of Technology (2007-)
-//                     Woods Hole Oceanographic Institution (2007-)
+// Copyright 2009-2014 Toby Schneider (https://launchpad.net/~tes)
+//                     GobySoft, LLC (2013-)
+//                     Massachusetts Institute of Technology (2007-2014)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
 // 
 //
@@ -9,7 +9,7 @@
 //
 // The Goby Libraries are free software: you can redistribute them and/or modify
 // them under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
+// the Free Software Foundation, either version 2.1 of the License, or
 // (at your option) any later version.
 //
 // The Goby Libraries are distributed in the hope that they will be useful,
@@ -19,6 +19,7 @@
 //
 // You should have received a copy of the GNU Lesser General Public License
 // along with Goby.  If not, see <http://www.gnu.org/licenses/>.
+
 
 
 #include "protobuf_node.h"
@@ -45,7 +46,7 @@ void goby::pb::ProtobufNode::inbox(common::MarshallingScheme marshalling_scheme,
         
         std::string pb_full_name = identifier.substr(0, first_slash);
         
-        glog.is(DEBUG1) && glog << "MARSHALLING_PROTOBUF type: [" << pb_full_name << "], group: [" << group << "]" << std::endl;
+        glog.is(DEBUG3) && glog << "MARSHALLING_PROTOBUF type: [" << pb_full_name << "], group: [" << group << "]" << std::endl;
 
         protobuf_inbox(pb_full_name, data, size, socket_id, group);
     }

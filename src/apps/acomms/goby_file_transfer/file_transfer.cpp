@@ -1,6 +1,6 @@
-// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
-//                     Massachusetts Institute of Technology (2007-)
-//                     Woods Hole Oceanographic Institution (2007-)
+// Copyright 2009-2014 Toby Schneider (https://launchpad.net/~tes)
+//                     GobySoft, LLC (2013-)
+//                     Massachusetts Institute of Technology (2007-2014)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
 // 
 //
@@ -9,7 +9,7 @@
 //
 // The Goby Binaries are free software: you can redistribute them and/or modify
 // them under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
+// the Free Software Foundation, either version 2 of the License, or
 // (at your option) any later version.
 //
 // The Goby Binaries are distributed in the hope that they will be useful,
@@ -19,6 +19,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with Goby.  If not, see <http://www.gnu.org/licenses/>.
+
 
 #include <iostream>
 #include <fstream>
@@ -42,7 +43,7 @@ namespace goby
         class FileTransfer : public goby::pb::Application
         {
         public:
-            FileTransfer();
+            FileTransfer(protobuf::FileTransferConfig* cfg_);
             ~FileTransfer();
 
         private:
@@ -67,7 +68,7 @@ namespace goby
             
             
         private:
-            static protobuf::FileTransferConfig cfg_;
+             protobuf::FileTransferConfig& cfg_;
             
             enum { MAX_FILE_TRANSFER_BYTES = 1024*1024 };
 
@@ -80,18 +81,20 @@ namespace goby
     }
 }
 
-goby::acomms::protobuf::FileTransferConfig goby::acomms::FileTransfer::cfg_;
 
 int main(int argc, char* argv[])
 {
-    goby::run<goby::acomms::FileTransfer>(argc, argv);
+    goby::acomms::protobuf::FileTransferConfig cfg;
+    goby::run<goby::acomms::FileTransfer>(argc, argv, &cfg);
 }
 
 
 using goby::glog;
 
-goby::acomms::FileTransfer::FileTransfer()
-    : Application(&cfg_),
+
+goby::acomms::FileTransfer::FileTransfer(protobuf::FileTransferConfig* cfg)
+    : Application(cfg),
+      cfg_(*cfg),
       waiting_for_request_ack_(false)
 {
     glog.is(DEBUG1) && glog << cfg_.DebugString() << std::endl;

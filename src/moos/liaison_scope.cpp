@@ -1,23 +1,25 @@
-// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
-//                     Massachusetts Institute of Technology (2007-)
-//                     Woods Hole Oceanographic Institution (2007-)
+// Copyright 2009-2014 Toby Schneider (https://launchpad.net/~tes)
+//                     GobySoft, LLC (2013-)
+//                     Massachusetts Institute of Technology (2007-2014)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
 // 
 //
-// This file is part of the Goby Underwater Autonomy Project Liaison Module
-// ("Goby Liaison").
+// This file is part of the Goby Underwater Autonomy Project Libraries
+// ("The Goby Libraries").
 //
-// Goby Liaison is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License Version 2
-// as published by the Free Software Foundation.
+// The Goby Libraries are free software: you can redistribute them and/or modify
+// them under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 2.1 of the License, or
+// (at your option) any later version.
 //
-// Goby Liaison is distributed in the hope that it will be useful,
+// The Goby Libraries are distributed in the hope that they will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Lesser General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
+// You should have received a copy of the GNU Lesser General Public License
 // along with Goby.  If not, see <http://www.gnu.org/licenses/>.
+
 
 
 #include "liaison_scope.h"
@@ -140,39 +142,41 @@ void goby::common::LiaisonScope::attach_pb_rows(const std::vector<Wt::WStandardI
     Wt::WStandardItem* key_item = items[protobuf::MOOSScopeConfig::COLUMN_KEY];
     
     
+    std::vector<std::string> result;
     if(pb_msg)
     {
         
-        std::vector<std::string> result;
         std::string debug_string = pb_msg->DebugString();
         boost::trim(debug_string);
             
         boost::split(result, debug_string, boost::is_any_of("\n"));
-
-        key_item->setRowCount(result.size());
-        key_item->setColumnCount(protobuf::MOOSScopeConfig::COLUMN_MAX + 1);
-
-
         items[protobuf::MOOSScopeConfig::COLUMN_TYPE]->setText(pb_msg->GetDescriptor()->full_name() + " (Protobuf)");
         items[protobuf::MOOSScopeConfig::COLUMN_VALUE]->setText(pb_msg->ShortDebugString());
+    }
+    else
+    {
+        boost::split(result, value, boost::is_any_of(","));        
+    }
+    
+    key_item->setRowCount(result.size());
+    key_item->setColumnCount(protobuf::MOOSScopeConfig::COLUMN_MAX + 1);
 
-        for(int i = 0, n = result.size(); i < n; ++i)
+    for(int i = 0, n = result.size(); i < n; ++i)
+    {
+        for(int j = 0; j <= protobuf::MOOSScopeConfig::COLUMN_MAX; ++j)
         {
-            for(int j = 0; j <= protobuf::MOOSScopeConfig::COLUMN_MAX; ++j)
-            {
-                if(!key_item->child(i, j))
-                    key_item->setChild(i, j, new Wt::WStandardItem);
+            if(!key_item->child(i, j))
+                key_item->setChild(i, j, new Wt::WStandardItem);
 
-                if(j == protobuf::MOOSScopeConfig::COLUMN_VALUE)
-                {
-                    key_item->child(i,j)->setText(result[i]);
-                }
-                else
-                {
-                    // so we can still sort by these fields
-                    key_item->child(i, j)->setText(items[j]->text());
-                    key_item->child(i, j)->setStyleClass("invisible");    
-                }
+            if(j == protobuf::MOOSScopeConfig::COLUMN_VALUE)
+            {
+                key_item->child(i,j)->setText(result[i]);
+            }
+            else
+            {
+                // so we can still sort by these fields
+                key_item->child(i, j)->setText(items[j]->text());
+                key_item->child(i, j)->setStyleClass("invisible");    
             }
         }
     }

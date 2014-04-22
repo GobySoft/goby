@@ -21,5 +21,6 @@ message IridiumDriverConfig
     optional goby.common.protobuf.ZeroMQServiceConfig.Socket request_socket = 1387;
 
     optional int32 hangup_seconds_after_empty = 1388 [default = 30];
+    optional int32 start_timeout = 1389 [default = 20];
   }
 }

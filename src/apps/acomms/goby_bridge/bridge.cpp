@@ -1,6 +1,6 @@
-// Copyright 2009-2013 Toby Schneider (https://launchpad.net/~tes)
-//                     Massachusetts Institute of Technology (2007-)
-//                     Woods Hole Oceanographic Institution (2007-)
+// Copyright 2009-2014 Toby Schneider (https://launchpad.net/~tes)
+//                     GobySoft, LLC (2013-)
+//                     Massachusetts Institute of Technology (2007-2014)
 //                     Goby Developers Team (https://launchpad.net/~goby-dev)
 // 
 //
@@ -9,7 +9,7 @@
 //
 // The Goby Binaries are free software: you can redistribute them and/or modify
 // them under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
+// the Free Software Foundation, either version 2 of the License, or
 // (at your option) any later version.
 //
 // The Goby Binaries are distributed in the hope that they will be useful,
@@ -19,6 +19,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with Goby.  If not, see <http://www.gnu.org/licenses/>.
+
 
 #include "goby/common/logger.h"
 #include "goby/common/logger/term_color.h"
@@ -38,6 +39,7 @@
 #include "goby/acomms/protobuf/network_ack.pb.h"
 
 #include "goby/acomms/protobuf/file_transfer.pb.h"
+#include "goby/acomms/protobuf/mosh_packet.pb.h"
 
 #include "bridge_config.pb.h"
 
@@ -50,7 +52,7 @@ namespace goby
         class Bridge : public goby::pb::Application
         {
         public:
-            Bridge();
+            Bridge(protobuf::BridgeConfig* cfg);
             ~Bridge();
 
         private:
@@ -87,7 +89,7 @@ namespace goby
             void handle_data_request(const protobuf::ModemTransmission& m, int subnet);
             
         private:
-            static protobuf::BridgeConfig cfg_;
+            protobuf::BridgeConfig& cfg_;
             
             std::vector<boost::shared_ptr<QueueManager> > q_managers_;
             std::vector<boost::shared_ptr<MACManager> > mac_managers_;
@@ -101,18 +103,20 @@ namespace goby
     }
 }
 
-goby::acomms::protobuf::BridgeConfig goby::acomms::Bridge::cfg_;
 
 int main(int argc, char* argv[])
 {
-    goby::run<goby::acomms::Bridge>(argc, argv);
+    goby::acomms::protobuf::BridgeConfig cfg;
+    goby::run<goby::acomms::Bridge>(argc, argv, &cfg);
 }
 
 
 using goby::glog;
 
-goby::acomms::Bridge::Bridge()
-    : Application(&cfg_)
+
+goby::acomms::Bridge::Bridge(protobuf::BridgeConfig* cfg)
+    : Application(cfg),
+      cfg_(*cfg)
 {
     glog.is(DEBUG1) && glog << cfg_.DebugString() << std::endl;
     
@@ -145,9 +149,6 @@ goby::acomms::Bridge::Bridge()
         if(!goby::util::DynamicProtobufManager::load_from_proto_file(cfg_.load_proto_file(i)))
             glog.is(DIE) && glog << "Failed to load file." << std::endl;
     }
-
-    // validate all messages
-    typedef boost::shared_ptr<google::protobuf::Message> GoogleProtobufMessagePointer;    
     
     r_manager_.set_cfg(cfg_.route_cfg());
     q_managers_.resize(cfg_.subnet_size());
@@ -187,6 +188,11 @@ goby::acomms::Bridge::Bridge()
             boost::bind(&Bridge::handle_external_push<goby::acomms::protobuf::TransferResponse>, this, _1, q_managers_[i].get()),
             "QueuePush" + goby::util::as<std::string>(qcfg.modem_id()));
 
+        subscribe<goby::acomms::protobuf::MoshPacket>(
+            boost::bind(&Bridge::handle_external_push<goby::acomms::protobuf::MoshPacket>, this, _1, q_managers_[i].get()),
+            "QueuePush" + goby::util::as<std::string>(qcfg.modem_id()));
+
+        
         subscribe<goby::acomms::protobuf::ModemTransmission>(
             boost::bind(&Bridge::handle_data_request, this, _1, i),
             "DataRequest" + goby::util::as<std::string>(qcfg.modem_id()));

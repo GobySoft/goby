@@ -66,8 +66,13 @@ ubuntu|debian)
             packages="${packages}
  	 	libcrypto++-dev
  		libncurses-dev
- 		libxerces-c-dev
-                libgmp3-dev"
+                libgmp3-dev
+                libzmq-dev   
+                libwt-dev
+                libwtdbo-dev
+                libwtdbosqlite-dev
+                libwthttp-dev
+                libsqlite3-dev"
         fi
         
         if [ $install_doc -ne 0 ]; then 
@@ -89,6 +94,7 @@ ubuntu|debian)
         if [[ $1 == "ubuntu" &&  $install_all -ne 0 ]]; then 
             set -x
             add-apt-repository ppa:goby-dev/ppa
+            add-apt-repository ppa:tes/lamss-moos10
             apt-get update -qq
             set +x
 
@@ -99,13 +105,8 @@ ubuntu|debian)
                 packages="goby2"
             else
                 packages="${packages} 
-                     moos
-                     libproj-dev
-                     libzmq-dev   
-                     libwt-dev
-                     libwtdbo-dev
-                     libwtdbosqlite-dev
-                     libwthttp-dev"
+                     libmoos10-dev
+                     libproj-dev"
             fi
         fi
         ;;

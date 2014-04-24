@@ -72,6 +72,12 @@ namespace goby
         typedef dccl::FieldCodecBase DCCLFieldCodecBase;
 
         template<typename WireType, typename FieldType = WireType>
+            struct DCCLTypedFieldCodec : public dccl::TypedFieldCodec<WireType, FieldType> {
+            typedef dccl::FieldCodecBase DCCLFieldCodecBase;
+        };
+
+        
+        template<typename WireType, typename FieldType = WireType>
             struct DCCLTypedFixedFieldCodec : public dccl::TypedFixedFieldCodec<WireType, FieldType> {
             typedef dccl::FieldCodecBase DCCLFieldCodecBase;
         };
@@ -117,7 +123,10 @@ namespace goby
             }
 
             void load_shared_library_codecs(void* dl_handle)
-            { codec_.load_library(dl_handle); }
+            {
+                codec_->load_library(dl_handle);
+                loaded_libs_.insert(dl_handle);
+            }
 
             template<typename ProtobufMessage>
                 void validate()
@@ -128,26 +137,32 @@ namespace goby
             { info(ProtobufMessage::descriptor(), os); }
           
             void info_all(std::ostream* os) const
-            { codec_.info_all(os); }
+            { codec_->info_all(os); }
 
             template <typename ProtobufMessage>
                 unsigned id() const
             { return id(ProtobufMessage::descriptor()); }
             
             unsigned size(const google::protobuf::Message& msg)
-            { return codec_.size(msg); } 
+            { return codec_->size(msg); } 
 
             void encode(std::string* bytes, const google::protobuf::Message& msg, bool header_only = false)
-            { codec_.encode(bytes, msg, header_only); }
-
+            {
+                bytes->clear();
+                codec_->encode(bytes, msg, header_only);
+            }
+            
             void decode(const std::string& bytes, google::protobuf::Message* msg, bool header_only = false)
-            { codec_.decode(bytes, msg, header_only); }
+            { codec_->decode(bytes, msg, header_only); }
 
             unsigned id_from_encoded(const std::string& bytes)
-            { return codec_.id(bytes); }
+            { return codec_->id(bytes); }
 
             void validate(const google::protobuf::Descriptor* desc)
-            { codec_.load(desc); }
+            {
+                codec_->load(desc);
+                loaded_msgs_.insert(desc);
+            }
 
             void validate_repeated(const std::list<const google::protobuf::Descriptor*>& descs)
             {
@@ -156,7 +171,7 @@ namespace goby
             }
             
             void info(const google::protobuf::Descriptor* desc, std::ostream* os) const
-            { codec_.info(desc, os); }
+            { codec_->info(desc, os); }
 
             void info_repeated(const std::list<const google::protobuf::Descriptor*>& desc, std::ostream* os) const
             {
@@ -180,7 +195,7 @@ namespace goby
             template<typename GoogleProtobufMessagePointer>
                 GoogleProtobufMessagePointer decode(const std::string& bytes, bool header_only = false)
                 {
-                    return codec_.decode<GoogleProtobufMessagePointer>(bytes, header_only);
+                    return codec_->decode<GoogleProtobufMessagePointer>(bytes, header_only);
                 }
             
             
@@ -227,6 +242,37 @@ namespace goby
 
                 }
 
+            template<typename DCCLTypedFieldCodecUint32>
+                void add_id_codec(const std::string& identifier)
+            {
+                dccl::FieldCodecManager::add<DCCLTypedFieldCodecUint32>(identifier);
+            }
+
+            void set_id_codec(const std::string& identifier)
+            {
+                codec_.reset(new dccl::Codec(identifier));
+
+                for(std::set<void*>::const_iterator it = loaded_libs_.begin(), end = loaded_libs_.end(); it != end; ++it)
+                    load_shared_library_codecs(*it);
+
+                for(std::set<const google::protobuf::Descriptor*>::const_iterator it = loaded_msgs_.begin(), end = loaded_msgs_.end(); it != end; ++it)
+                {
+                    try
+                    {
+                        validate(*it);
+                    }
+                    catch(dccl::Exception& e)
+                    {
+                        glog.is(common::logger::WARN) && glog << "Failed to reload " << (*it)->full_name() <<  " after ID codec change: " << e.what()  << std::endl;
+                    }
+                }
+            }
+
+            void reset_id_codec()
+            {
+                set_id_codec(dccl::Codec::default_id_codec_name());
+            }
+
             //@}           
 
             
@@ -238,6 +284,7 @@ namespace goby
                 friend void boost::checked_delete(T*);
             
             DCCLCodec()
+                : codec_(new dccl::Codec)
             {
                 glog.add_group(glog_encode_group_, common::Colors::lt_magenta);
                 glog.add_group(glog_decode_group_, common::Colors::lt_blue);
@@ -280,7 +327,7 @@ namespace goby
                     std::set<unsigned> skip_crypto_ids;
                     for(int i = 0, n = cfg_.skip_crypto_for_id_size(); i < n; ++i)
                         skip_crypto_ids.insert(cfg_.skip_crypto_for_id(i));
-                    codec_.set_crypto_passphrase(cfg_.crypto_passphrase(),
+                    codec_->set_crypto_passphrase(cfg_.crypto_passphrase(),
                                                  skip_crypto_ids);
                 }
             }
@@ -304,7 +351,11 @@ namespace goby
             
             protobuf::DCCLConfig cfg_;
 
-            dccl::Codec codec_;
+            boost::shared_ptr<dccl::Codec> codec_;
+            
+            std::set<void*> loaded_libs_;
+            std::set<const google::protobuf::Descriptor*> loaded_msgs_;
+            
         };
 
         inline std::ostream& operator<<(std::ostream& os, const DCCLCodec& codec)

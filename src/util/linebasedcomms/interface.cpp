@@ -85,3 +85,8 @@ void goby::util::LineBasedInterface::write(const protobuf::Datagram& msg)
 // call the do_close function via the io service in the other thread
 void goby::util::LineBasedInterface::close()
 { io_service_.post(boost::bind(&LineBasedInterface::do_close, this, boost::system::error_code())); }
+
+void goby::util::LineBasedInterface::sleep(int sec)
+{
+    io_service_.post(boost::bind(::sleep, sec));
+}

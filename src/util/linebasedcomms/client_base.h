@@ -89,9 +89,10 @@ namespace goby
                     using namespace boost::posix_time;
                     ptime now  = common::goby_time();
                     if(now - seconds(retry_interval_) < last_start_time_)
-                        sleep(retry_interval_ - (now-last_start_time_).total_seconds());
-                    
-                    do_start();
+                        LineBasedInterface::sleep(retry_interval_ - (now-last_start_time_).total_seconds());
+
+                    // add this to the io_service jobs
+                    LineBasedInterface::start();
                 }
                 
             }

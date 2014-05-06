@@ -58,7 +58,8 @@ namespace goby
             void close();
             // is the connection alive and well?
             bool active() { return active_; }
-            
+
+            void sleep(int sec);
 
             enum AccessOrder { NEWEST_FIRST, OLDEST_FIRST };
 

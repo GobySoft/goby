@@ -668,7 +668,7 @@ void goby::acomms::MMDriver::try_send()
         
         if(global_fail_count_ == MAX_FAILS_BEFORE_DEAD)
         {
-            modem_close();
+            shutdown();
             throw(ModemDriverException("Micro-Modem appears to not be responding!"));
         }
         

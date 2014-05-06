@@ -26,6 +26,7 @@
 #define DriverException20100812H
 
 #include "goby/common/exception.h"
+#include "goby/acomms/protobuf/modem_driver_status.pb.h"
 
 namespace goby
 {
@@ -34,10 +35,14 @@ namespace goby
         class ModemDriverException : public goby::Exception
         {
           public:
-          ModemDriverException(const std::string& s)
-              : Exception(s)
+          ModemDriverException(const std::string& s, protobuf::ModemDriverStatus::Status stat)
+              : Exception(s),
+                stat_(stat)
             { }
-
+            protobuf::ModemDriverStatus::Status status() const { return stat_; }
+            
+          private:
+            protobuf::ModemDriverStatus::Status stat_;
         };
     }
 }

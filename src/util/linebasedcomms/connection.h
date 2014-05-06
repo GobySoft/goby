@@ -38,7 +38,7 @@ namespace goby
             class LineBasedConnection
         {
 
-          protected:
+          public:
             LineBasedConnection<ASIOAsyncReadStream>(LineBasedInterface* interface):
             interface_(interface)
             {}

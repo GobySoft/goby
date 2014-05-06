@@ -669,7 +669,7 @@ void goby::acomms::MMDriver::try_send()
         if(global_fail_count_ == MAX_FAILS_BEFORE_DEAD)
         {
             shutdown();
-            throw(ModemDriverException("Micro-Modem appears to not be responding!"));
+            throw(ModemDriverException("Micro-Modem appears to not be responding!", protobuf::ModemDriverStatus::MODEM_NOT_RESPONDING));
         }
         
         try
@@ -711,7 +711,7 @@ void goby::acomms::MMDriver::increment_present_fail()
 {
     ++present_fail_count_;
     if(present_fail_count_ >= RETRIES)
-        throw(ModemDriverException("Fail count exceeds RETRIES"));
+        throw(ModemDriverException("Fail count exceeds RETRIES", protobuf::ModemDriverStatus::MODEM_NOT_RESPONDING));
 }
 
 void goby::acomms::MMDriver::present_fail_exceeds_retries()

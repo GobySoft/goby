@@ -61,7 +61,7 @@ void goby::acomms::ModemDriverBase::modem_write(const std::string& out)
     if(modem_->active())
         modem_->write(out);
     else
-        throw(ModemDriverException("Modem physical connection failed."));
+        throw(ModemDriverException("Modem physical connection failed.", protobuf::ModemDriverStatus::CONNECTION_TO_MODEM_FAILED));
 }
 
 bool goby::acomms::ModemDriverBase::modem_read(std::string* in)
@@ -69,7 +69,7 @@ bool goby::acomms::ModemDriverBase::modem_read(std::string* in)
     if(modem_->active())
         return modem_->readline(in);
     else
-        throw(ModemDriverException("Modem physical connection failed."));
+        throw(ModemDriverException("Modem physical connection failed.", protobuf::ModemDriverStatus::CONNECTION_TO_MODEM_FAILED));
 }
 
 void goby::acomms::ModemDriverBase::modem_close()
@@ -82,7 +82,7 @@ void goby::acomms::ModemDriverBase::modem_close()
 void goby::acomms::ModemDriverBase::modem_start(const protobuf::DriverConfig& cfg)
 {        
     if(!cfg.has_modem_id())
-        throw(ModemDriverException("missing modem_id in configuration"));
+        throw(ModemDriverException("missing modem_id in configuration", protobuf::ModemDriverStatus::INVALID_CONFIGURATION));
     
     switch(cfg.connection_type())
     {
@@ -90,9 +90,9 @@ void goby::acomms::ModemDriverBase::modem_start(const protobuf::DriverConfig& cf
             goby::glog.is(DEBUG1, lock) && goby::glog << group(glog_out_group_) << "opening serial port " << cfg.serial_port() << " @ " << cfg.serial_baud() << std::endl << unlock;
 
             if(!cfg.has_serial_port())
-                throw(ModemDriverException("missing serial port in configuration"));
+                throw(ModemDriverException("missing serial port in configuration",protobuf::ModemDriverStatus::INVALID_CONFIGURATION));
             if(!cfg.has_serial_baud())
-                throw(ModemDriverException("missing serial baud in configuration"));
+                throw(ModemDriverException("missing serial baud in configuration",protobuf::ModemDriverStatus::INVALID_CONFIGURATION));
             
             modem_.reset(new util::SerialClient(cfg.serial_port(), cfg.serial_baud(), cfg.line_delimiter()));
             break;
@@ -100,9 +100,9 @@ void goby::acomms::ModemDriverBase::modem_start(const protobuf::DriverConfig& cf
         case protobuf::DriverConfig::CONNECTION_TCP_AS_CLIENT:
             goby::glog.is(DEBUG1, lock) && goby::glog << group(glog_out_group_) << "opening tcp client: " << cfg.tcp_server() << ":" << cfg.tcp_port() << std::endl << unlock;
             if(!cfg.has_tcp_server())
-                throw(ModemDriverException("missing tcp server address in configuration"));
+                throw(ModemDriverException("missing tcp server address in configuration",protobuf::ModemDriverStatus::INVALID_CONFIGURATION));
             if(!cfg.has_tcp_port())
-                throw(ModemDriverException("missing tcp port in configuration"));
+                throw(ModemDriverException("missing tcp port in configuration",protobuf::ModemDriverStatus::INVALID_CONFIGURATION));
 
             modem_.reset(new util::TCPClient(cfg.tcp_server(), cfg.tcp_port(), cfg.line_delimiter(), cfg.reconnect_interval()));
             break;
@@ -111,7 +111,7 @@ void goby::acomms::ModemDriverBase::modem_start(const protobuf::DriverConfig& cf
             goby::glog.is(DEBUG1, lock) && goby::glog << group(glog_out_group_) << "opening tcp server on port" << cfg.tcp_port() << std::endl << unlock;
 
             if(!cfg.has_tcp_port())
-                throw(ModemDriverException("missing tcp port in configuration"));
+                throw(ModemDriverException("missing tcp port in configuration",protobuf::ModemDriverStatus::INVALID_CONFIGURATION));
 
             modem_.reset(new util::TCPServer(cfg.tcp_port(), cfg.line_delimiter()));
     }    
@@ -154,7 +154,7 @@ void goby::acomms::ModemDriverBase::modem_start(const protobuf::DriverConfig& cf
         usleep(100000); // 100 ms
         startup_elapsed_ms += 100;
         if(startup_elapsed_ms >= max_startup_ms)
-            throw(ModemDriverException("Modem physical connection failed to startup."));
+            throw(ModemDriverException("Modem physical connection failed to startup.",protobuf::ModemDriverStatus::STARTUP_FAILED));
     }
 }
 

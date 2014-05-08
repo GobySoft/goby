@@ -31,21 +31,21 @@
 
 void goby::acomms::serialize_rudics_packet(std::string bytes, std::string* rudics_pkt)
 {
-    // append CRC
+    // 1. append CRC
     boost::crc_32_type crc;
     crc.process_bytes(bytes.data(), bytes.length());
     bytes += uint32_to_byte_string(crc.checksum());
 
     static const std::string reserved = std::string("\0\r\n",3) +
         std::string(1, 0xff);
-
-    // convert to base (256 minus reserved)
+    
+    // 2. convert to base (256 minus reserved)
     const int reduced_base = 256-reserved.size();
     
     goby::util::base_convert(bytes, rudics_pkt, 256, reduced_base);
 
 
-    
+    // 3. replace reserved characters
     for(int i = 0, n = reserved.size(); i < n; ++i)
     {
         std::replace(rudics_pkt->begin(),
@@ -55,7 +55,8 @@ void goby::acomms::serialize_rudics_packet(std::string bytes, std::string* rudic
     }
     
 //    *rudics_pkt = goby::util::hex_encode(bytes);
-    
+
+    // 4. append CR
     *rudics_pkt += "\r";
 }
 
@@ -65,6 +66,7 @@ void goby::acomms::parse_rudics_packet(std::string* bytes, std::string rudics_pk
     if(rudics_pkt.size() < CR_SIZE)
         throw(RudicsPacketException("Packet too short for <CR>"));
 
+    // 4. remove CR
     rudics_pkt = rudics_pkt.substr(0, rudics_pkt.size()-1);
 
     static const std::string reserved = std::string("\0\r\n", 3) +
@@ -75,6 +77,7 @@ void goby::acomms::parse_rudics_packet(std::string* bytes, std::string rudics_pk
     rudics_pkt.erase(std::remove_if(rudics_pkt.begin(), rudics_pkt.end(),
                                     boost::is_any_of(reserved)), rudics_pkt.end());
 
+    // 3. replace reserved characters
     for(int i = 0, n = reserved.size(); i < n; ++i)
     {    
         std::replace(rudics_pkt.begin(),
@@ -82,11 +85,13 @@ void goby::acomms::parse_rudics_packet(std::string* bytes, std::string rudics_pk
                      static_cast<char>(reduced_base+i),
                      reserved[i]);
     }
-    
+
+    // 2. convert to base
     goby::util::base_convert(rudics_pkt, bytes, reduced_base, 256);
 
 //    *bytes = goby::util::hex_decode(rudics_pkt);
 
+    // 1. check CRC
     const unsigned CRC_BYTE_SIZE = 4;
     if(bytes->size() < CRC_BYTE_SIZE)
         throw(RudicsPacketException("Packet too short for CRC32"));

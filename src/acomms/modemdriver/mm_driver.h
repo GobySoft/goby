@@ -255,7 +255,8 @@ namespace goby
             bool local_cccyc_;
 
             micromodem::protobuf::TransmissionType last_lbl_type_;
-            
+
+            double last_keep_alive_time_;
         };
     }
 }

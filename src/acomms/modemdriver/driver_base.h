@@ -175,7 +175,7 @@ namespace goby
             std::string glog_in_group_;
 
             boost::shared_ptr<std::ofstream> raw_fs_;
-
+            bool raw_fs_connections_made_;
         };
     }
 }

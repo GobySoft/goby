@@ -356,5 +356,8 @@ void goby::acomms::Bridge::handle_data_request(const protobuf::ModemTransmission
 
 void goby::acomms::Bridge::handle_driver_status(const protobuf::ModemDriverStatus& m, int subnet)
 {    
-    glog.is(DEBUG1) && glog << m.DebugString() << std::endl;
+    glog.is(VERBOSE) && glog << "Forwarding modemdriver status message to topside: " << m.ShortDebugString() << std::endl;
+    QueueManager* in_queue = q_managers_[subnet].get();
+
+    r_manager_.handle_in(in_queue->meta_from_msg(m), m, in_queue->modem_id());    
 }

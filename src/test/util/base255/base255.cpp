@@ -21,6 +21,7 @@
 // along with Goby.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "goby/util/base_convert.h"
+#include "goby/util/binary.h"
 
 #include <iostream>
 #include <sstream>
@@ -61,9 +62,10 @@ void test255(const std::string& in, bool output = true)
         intprint(in2);
     }
     
+    std::cout << "Encoded string is " << (int)out.size() - (int)in.size() << " bytes larger than original string (" << in.size() << " bytes)" << std::endl;
+
     assert(in == in2);
 
-    std::cout << "Encoded string is " << out.size() - in.size() << " bytes larger than original string (" << in.size() << " bytes)" << std::endl;
 }
 
 std::string randstring(int size)
@@ -102,8 +104,11 @@ int main()
     test255(randstring(255));
     test255(randstring(1500));
     test255(randstring(15000), false);
+
+    test255(goby::util::hex_decode("01020000"));
     
-    
+    test255(goby::util::hex_decode("080e100a300138016040680172400ecf026800793cac69341a8d46a3d16834da376bcf2f0f21fef979e3000000d700eec35f2e82010000fcfce0e5e939e4984a6c62ff7a94584eb71cc471e1f53efd364000"));
+
     std::cout << "all tests passed" << std::endl;
     
     return 0;

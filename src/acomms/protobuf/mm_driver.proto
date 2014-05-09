@@ -56,7 +56,7 @@ message Config
 
     optional uint32 mm_version = 1005 [default = 1];
 
-    
+    optional int32 keep_alive_seconds = 1006 [default = 10];
   }
 }
 

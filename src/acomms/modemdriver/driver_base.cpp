@@ -39,7 +39,8 @@ int goby::acomms::ModemDriverBase::count_ = 0;
 
 
 
-goby::acomms::ModemDriverBase::ModemDriverBase()
+goby::acomms::ModemDriverBase::ModemDriverBase() :
+    raw_fs_connections_made_(false)
 {
     ++count_;
 
@@ -125,15 +126,20 @@ void goby::acomms::ModemDriverBase::modem_start(const protobuf::DriverConfig& cf
         
         std::string file_name = (file_format % to_iso_string(second_clock::universal_time())).str();
 
-        glog.is(DEBUG1, lock) && glog << group(glog_out_group_) << "logging NMEA-0183 output to file: " << file_name << std::endl << unlock;
+        glog.is(DEBUG1, lock) && glog << group(glog_out_group_) << "logging raw output to file: " << file_name << std::endl << unlock;
 
         raw_fs_.reset(new std::ofstream(file_name.c_str()));
 
         
         if(raw_fs_->is_open())
         {
-            connect(&signal_raw_incoming, boost::bind(&ModemDriverBase::write_raw, this, _1, true));
-            connect(&signal_raw_outgoing, boost::bind(&ModemDriverBase::write_raw, this, _1, false));
+            if(!raw_fs_connections_made_)
+            {
+                connect(&signal_raw_incoming, boost::bind(&ModemDriverBase::write_raw, this, _1, true));
+                connect(&signal_raw_outgoing, boost::bind(&ModemDriverBase::write_raw, this, _1, false));
+                raw_fs_connections_made_ = true;
+            }
+            
         }
         else
         {

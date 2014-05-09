@@ -23,6 +23,7 @@
 
 
 #include "goby/util/as.h"
+#include "goby/common/logger.h"
 
 #include "tcp_client.h"
 
@@ -39,9 +40,22 @@ goby::util::TCPClient::TCPClient(const std::string& server,
 
 bool goby::util::TCPClient::start_specific()
 {
+    using namespace goby::common::logger;
+    using namespace goby::common::logger_lock;
+    using goby::glog;
+
+    
     boost::asio::ip::tcp::resolver resolver(io_service_);
-    boost::asio::ip::tcp::resolver::query query(server_, port_);
-    boost::asio::ip::tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
+    boost::asio::ip::tcp::resolver::query query(server_, port_, boost::asio::ip::resolver_query_base::numeric_service);
+
+    boost::system::error_code resolver_error = boost::asio::error::host_not_found;
+    boost::asio::ip::tcp::resolver::iterator endpoint_iterator = resolver.resolve(query, resolver_error);
+    if(resolver_error)
+    {
+        glog.is(WARN, lock) && glog << "Error resolving address: " << server_ <<":" << port_ << ": " << resolver_error.message() << std::endl << unlock;
+        return false;
+    }
+    
     boost::asio::ip::tcp::resolver::iterator end;
 
     boost::system::error_code error = boost::asio::error::host_not_found;
@@ -49,7 +63,11 @@ bool goby::util::TCPClient::start_specific()
     {
         socket_.close();
         socket_.connect(*endpoint_iterator++, error);
-    }    
+    }
+
+    if(error)
+        glog.is(WARN, lock) && glog << "Error connecting to address: " << server_ <<":" << port_ << ": " << error.message() << std::endl << unlock;
+
     return error ? false : true;
 }
 

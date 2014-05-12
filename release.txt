@@ -1,5 +1,28 @@
 Goby Release Notes (Major version 2)
 
+****************
+Version 2.0.6
+
+= Acomms = 
+- MOSH Client allowing support for the MOSH shell (mosh.mit.edu) over Goby. Requires use of a patched version of MOSH available at https://github.com/tsaubergine/mosh/tree/mosh-goby
+- Fixes to goby_file_transfer
+- DCCL ModemDriverStatus message reports status of a given driver 
+
+bzr log --line -n0 -r tag:2.0.5..
+
+542: Toby Schneider 2014-05-08 [merge] Merge changes including bug fixes and ModemDriverStatus message
+  541.1.6: Toby Schneider 2014-05-08 Fixed bug where DriverBase keep adding repeated writes to the raw log file if it was restarted
+  541.1.5: Toby Schneider 2014-05-08 Added keep-alive  (NVRAM status query) to detect if the modem has disappeared (e.g. power failure, etc.)
+  541.1.4: Toby Schneider 2014-05-08 Added functionality to goby_bridge to queue ModemDriverStatus
+  541.1.3: Toby Schneider 2014-05-08 Improved error reporting messages from TCPClient
+  541.1.2: Toby Schneider 2014-05-08 Fixed bug in PULL file transfers that terminated transfer before completed if the TransferReponse message was received before the last fragment
+  541.1.1: Toby Schneider 2014-05-08 Added functionality to base_convert to preserve zeros at the most significant end, e.g. 002 in base10 becomes 0010 in base2, which then stays 002 when back to base10; we need this because encoded values can end in necessary zeros
+541: Toby Schneider 2014-05-06 Added ModemDriverStatus message and related code to fill it out in goby_modemdriver
+540: Toby Schneider 2014-05-06 Fixed bugs allowing DriverBase to properly reset itself and changed ModemDriver application to handle exceptions from the DriverBase and derived class, then reset the driver after a delay
+539: Toby Schneider 2014-04-08 {2.0.6~rc1} Initially working MOSH relay over Goby UDP driver (at 320 bytes/sec)
+538: Toby Schneider 2014-04-08 1. Reworked application_base run() method to take the configuration object as an argument (instead of requiring that the Application class have a static configuration object (this was causing problems properly constructing the protobuf configuration for some compilers). Changed all derived applications to use this new structure. 2. Started framework for mosh relay client
+537: Toby Schneider 2014-04-01 {2.0.5} Release 2.0.5
+
 *****************
 Version 2.0.5
 

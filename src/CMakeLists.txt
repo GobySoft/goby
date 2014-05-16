@@ -172,8 +172,12 @@ if(build_common)
     option(build_acomms "Build the Goby Acoustic Communications library and applications (requires goby-util)" ON)
     if(build_acomms)
       goby_find_required_package(DCCL)
-      include_directories("${DCCL_INCLUDE_DIR}")
-      protobuf_include_dirs("${DCCL_INCLUDE_DIR}")
+     
+      if(DEFINED DCCL_INCLUDE_DIR)
+	include_directories("${DCCL_INCLUDE_DIR}")
+	protobuf_include_dirs("${DCCL_INCLUDE_DIR}")
+      endif()
+
       add_subdirectory(acomms)
 
 

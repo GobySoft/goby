@@ -1,6 +1,6 @@
 
 if(NOT ${PROTOC_VERSION} VERSION_LESS 2.5.0})
-  file(WRITE protobuf/dccl_option_extensions.proto "import public \"dccl/protobuf/option_extensions.proto\";")
+  file(WRITE protobuf/dccl_option_extensions.proto "import public \"dccl/protobuf/option_extensions.proto\";\npackage dccl;")
 endif()
 
 file(GLOB PROTOS protobuf/*.proto)

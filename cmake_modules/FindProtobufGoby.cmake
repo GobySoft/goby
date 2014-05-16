@@ -129,6 +129,10 @@ find_path(PROTOBUF_INCLUDE_DIR google/protobuf/service.h)
 # so that we can use Google's included descriptor.proto
 list(APPEND ALL_PROTOBUF_INCLUDE_DIRS "-I${PROTOBUF_INCLUDE_DIR}")
 
+list(APPEND ALL_PROTOBUF_INCLUDE_DIRS "-I/usr/include")
+list(APPEND ALL_PROTOBUF_INCLUDE_DIRS "-I/usr/local/include")
+
+
 # Google's provided vcproj files generate libraries with a "lib"
 # prefix on Windows
 if(WIN32)

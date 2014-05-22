@@ -56,7 +56,7 @@ std::ostream& basic_log_header(std::ostream& os, const std::string& group_name)
     os << "[ " << goby::common::goby_time_as_string() << " ]";
 
     if(!group_name.empty())
-        os << " " << std::setw(15) << "{" << group_name << "}";
+        os << " " << std::setfill(' ') << std::setw(15) << "{" << group_name << "}";
         
     os << ": ";
     return os;

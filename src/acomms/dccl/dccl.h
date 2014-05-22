@@ -309,11 +309,12 @@ namespace goby
                               dccl::logger::Verbosity vrb,
                               dccl::logger::Group grp)
             {
-                std::cout << vrb << std::endl;
                 if(grp == dccl::logger::DECODE)
                     goby::glog << group(glog_decode_group_) << msg << std::endl;
-                else
+                else if(grp == dccl::logger::ENCODE)
                     goby::glog << group(glog_encode_group_) << msg << std::endl;
+                else if(grp == dccl::logger::SIZE)
+                    goby::glog << group(glog_encode_group_) << " {size} "  << msg << std::endl;
             }
             
             

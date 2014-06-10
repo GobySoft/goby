@@ -171,7 +171,7 @@ void goby::acomms::MoshRelay::handle_udp_receive(const boost::system::error_code
 {
     if (!error || error == boost::asio::error::message_size)
     {
-        std::cout << remote_endpoint_ << ": " << bytes_transferred << " Bytes" << std::endl;
+        glog.is(DEBUG1) && glog << remote_endpoint_ << ": " << bytes_transferred << " Bytes" << std::endl;
 
         goby::acomms::Packetizer p(cfg_.src_modem_id(), cfg_.dest_modem_id(), std::vector<char>(recv_buffer_.begin(), recv_buffer_.begin()+bytes_transferred));
         const std::set<goby::acomms::protobuf::MoshPacket>& f = p.fragments();
@@ -184,7 +184,7 @@ void goby::acomms::MoshRelay::handle_udp_receive(const boost::system::error_code
 
 void goby::acomms::MoshRelay::handle_goby_receive(const protobuf::MoshPacket& packet)
 {
-    std::cout << "> " << packet.ShortDebugString() << std::endl;
+    glog.is(DEBUG1) && glog << "> " << packet.ShortDebugString() << std::endl;
 
     if(packet.dest() == (int)cfg_.src_modem_id())
     {
@@ -229,7 +229,7 @@ goby::acomms::Packetizer::Packetizer(int src, int dest, const std::vector<char>&
             end = begin + packet.frag_len();
         std::copy(begin, end, frag->begin());
 
-        std::cout << packet.DebugString() << std::endl;
+        glog.is(DEBUG1) && glog << packet.DebugString() << std::endl;
         
         fragments_.insert(packet);
     }

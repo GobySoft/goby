@@ -85,7 +85,11 @@ goby::acomms::GobyStoreServer::GobyStoreServer(protobuf::GobyStoreServerConfig* 
     if(!boost::filesystem::exists(cfg_.db_file_dir()))
         throw(goby::Exception("db_file_dir does not exist: " + cfg_.db_file_dir()));
 
-    std::string full_db_name = cfg_.db_file_dir() + "/" + "goby_store_server_" + goby::common::goby_file_timestamp() + ".db";
+    std::string full_db_name = cfg_.db_file_dir() + "/";
+    if(cfg_.has_db_file_name())
+        full_db_name += cfg_.db_file_name();
+    else
+        full_db_name += "goby_store_server_" + goby::common::goby_file_timestamp() + ".db";
 
     int rc;    
     rc = sqlite3_open(full_db_name.c_str(), &db_);
@@ -94,7 +98,7 @@ goby::acomms::GobyStoreServer::GobyStoreServer(protobuf::GobyStoreServerConfig* 
     
     // initial tables
     char* errmsg;
-    rc = sqlite3_exec(db_, "CREATE TABLE ModemTransmission (id INTEGER PRIMARY KEY ASC AUTOINCREMENT, src INTEGER, dest INTEGER, microtime INTEGER, bytes BLOB);", 0, 0, &errmsg);
+    rc = sqlite3_exec(db_, "CREATE TABLE IF NOT EXISTS ModemTransmission (id INTEGER PRIMARY KEY ASC AUTOINCREMENT, src INTEGER, dest INTEGER, microtime INTEGER, bytes BLOB);", 0, 0, &errmsg);
 
     if (rc != SQLITE_OK)
     {

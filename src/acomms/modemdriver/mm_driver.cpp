@@ -72,7 +72,8 @@ goby::acomms::MMDriver::MMDriver()
       expected_remaining_caxst_(0),
       expected_remaining_cacst_(0),
       expected_ack_destination_(0),
-      local_cccyc_(false)
+      local_cccyc_(false),
+      last_keep_alive_time_(0)
 {
     initialize_talkers();
 }
@@ -397,6 +398,17 @@ void goby::acomms::MMDriver::do_work()
     // we can send
     if(!clock_set_ && out_.empty())
         set_clock();
+
+    // send a message periodically (query the source ID) to the local modem to ascertain that it is still alive
+    double now = goby::common::goby_time<double>();
+    if(last_keep_alive_time_ + driver_cfg_.GetExtension(micromodem::protobuf::Config::keep_alive_seconds) <= now)
+    {
+        NMEASentence nmea("$CCCFQ", NMEASentence::IGNORE);
+        nmea.push_back("SRC");
+        append_to_write_queue(nmea);
+        last_keep_alive_time_ = now;
+    }    
+
     
     // keep trying to send stuff to the modem
     try_send();
@@ -668,8 +680,9 @@ void goby::acomms::MMDriver::try_send()
         
         if(global_fail_count_ == MAX_FAILS_BEFORE_DEAD)
         {
-            modem_close();
-            throw(ModemDriverException("Micro-Modem appears to not be responding!"));
+            shutdown();
+            global_fail_count_ = 0;
+            throw(ModemDriverException("Micro-Modem appears to not be responding!", protobuf::ModemDriverStatus::MODEM_NOT_RESPONDING));
         }
         
         try
@@ -711,7 +724,7 @@ void goby::acomms::MMDriver::increment_present_fail()
 {
     ++present_fail_count_;
     if(present_fail_count_ >= RETRIES)
-        throw(ModemDriverException("Fail count exceeds RETRIES"));
+        throw(ModemDriverException("Fail count exceeds RETRIES", protobuf::ModemDriverStatus::MODEM_NOT_RESPONDING));
 }
 
 void goby::acomms::MMDriver::present_fail_exceeds_retries()

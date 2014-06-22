@@ -12,5 +12,8 @@ message ModemDriverConfig
   required DriverConfig driver_cfg = 3;
 
   optional float data_request_timeout = 4 [default = 1.0, (goby.field).description = "Time (in seconds) to wait for a response to a data request"];
+
+  optional int32 status_period_s = 5 [default = 300, (goby.field).description = "Seconds between publish of goby.acomms.protobuf.ModemDriverStatus message"];
+  
 }
 

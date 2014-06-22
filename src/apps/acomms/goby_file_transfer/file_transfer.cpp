@@ -324,10 +324,11 @@ void goby::acomms::FileTransfer::handle_receive_fragment(const protobuf::FileFra
     
     receive.insert(std::make_pair(fragment.fragment(), fragment));
 
-    glog.is(VERBOSE) && glog << "Received fragment #" << fragment.fragment()  << std::endl;
+    glog.is(VERBOSE) && glog << "Received fragment #" << fragment.fragment() << ", total received: " << receive.size() << std::endl;
 
     if(receive.rbegin()->second.is_last_fragment())
     {
+
         if((int)receive.size() == receive.rbegin()->second.fragment()+1)
         {
             protobuf::TransferResponse response;
@@ -398,7 +399,6 @@ void goby::acomms::FileTransfer::handle_receive_response(const protobuf::Transfe
         if(response.transfer_successful())
         {
             glog.is(VERBOSE) && glog << "File transfer completed successfully." << std::endl;
-            exit(EXIT_SUCCESS);
         }
         else
         {

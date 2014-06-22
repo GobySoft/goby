@@ -33,6 +33,13 @@ inline std::ostream& stream_assert(std::ostream & os)
 
 using namespace goby::common::logger;
 
+void spew(int n, int m)
+{
+    for(int i = 0; i < n; i++)
+        glog.is(VERBOSE) && glog << m << " " << i << std::endl;        
+}
+
+
 int main()
 {
     glog.set_name("test");
@@ -64,9 +71,18 @@ int main()
     
 #if THREAD_SAFE_LOGGER
     std::cout << "checking locking ... " << std::endl;
-    glog.is(VERBOSE, goby::common::logger_lock::lock) && glog << "lock ok" << std::endl << unlock;
-    glog.is(VERBOSE, goby::common::logger_lock::lock) && glog << "unlock ok" << std::endl << unlock;
-    glog.is(DEBUG3, goby::common::logger_lock::lock) && glog << stream_assert << std::endl << unlock;
+    glog.set_lock_action(goby::common::logger_lock::lock);
+    glog.is(VERBOSE) && glog << "lock ok" << std::endl;
+    glog.is(VERBOSE) && glog << "unlock ok" << std::endl;
+    glog.is(DEBUG3) && glog << stream_assert << std::endl;
+
+    boost::thread t1(boost::bind(spew, 1000, 1));
+    boost::thread t2(boost::bind(spew, 1000, 2));
+    t1.join();
+    t2.join();    
+
+    glog.set_lock_action(goby::common::logger_lock::none);
+
 #endif
     
     std::cout << "attaching std::cout to DEBUG1" << std::endl;

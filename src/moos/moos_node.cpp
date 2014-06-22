@@ -37,7 +37,6 @@ using namespace goby::common::logger;
 goby::moos::MOOSNode::MOOSNode(ZeroMQService* service)
     : goby::common::NodeInterface<CMOOSMsg>(service)
 {
-    boost::mutex::scoped_lock lock(glog.mutex());    
     glog.add_group("in_hex", common::Colors::green, "Goby MOOS (hex) - Incoming");
     glog.add_group("out_hex", common::Colors::magenta, "Goby MOOS (hex) - Outgoing");
 
@@ -51,16 +50,16 @@ void goby::moos::MOOSNode::inbox(common::MarshallingScheme marshalling_scheme,
                                  int socket_id)
 {
 
-    glog.is(DEBUG2, lock) && 
-        glog << group("in_hex") << "Received marshalling scheme: " << marshalling_scheme << std::endl << unlock;
+    glog.is(DEBUG2) && 
+        glog << group("in_hex") << "Received marshalling scheme: " << marshalling_scheme << std::endl;
     
     if(marshalling_scheme == goby::common::MARSHALLING_MOOS)
     {
         boost::shared_ptr<CMOOSMsg> msg(new CMOOSMsg);
         std::string bytes(static_cast<const char*>(data), size);
 
-        glog.is(DEBUG2, lock) && 
-            glog << group("in_hex") << goby::util::hex_encode(bytes) << std::endl << unlock;
+        glog.is(DEBUG2) && 
+            glog << group("in_hex") << goby::util::hex_encode(bytes) << std::endl;
         MOOSSerializer::parse(msg.get(), bytes);
 
         const std::string& key = msg->GetKey();
@@ -75,12 +74,12 @@ void goby::moos::MOOSNode::send(const CMOOSMsg& msg, int socket_id, const std::s
     std::string bytes;
     MOOSSerializer::serialize(msg, &bytes);
 
-    glog.is(DEBUG1, lock) &&
-        glog << "Sent: " << "CMOOSMsg/" << msg.GetKey() << "/"  << std::endl << unlock;
+    glog.is(DEBUG1) &&
+        glog << "Sent: " << "CMOOSMsg/" << msg.GetKey() << "/"  << std::endl;
 
 
-    glog.is(DEBUG2, lock) &&
-        glog << group("out_hex") << goby::util::hex_encode(bytes) << std::endl << unlock;
+    glog.is(DEBUG2) &&
+        glog << group("out_hex") << goby::util::hex_encode(bytes) << std::endl;
 
     zeromq_service()->send(goby::common::MARSHALLING_MOOS, "CMOOSMsg/" + msg.GetKey() + "/", &bytes[0], bytes.size(), socket_id);
 }
@@ -109,7 +108,7 @@ void goby::moos::MOOSNode::unsubscribe(const std::string& full_or_partial_moos_n
     unsigned size = trimmed_name.size();
     if(!size)
     {
-        glog.is(WARN, lock) && glog << warn << "Not unsubscribing for empty string!" << std::endl << unlock;
+        glog.is(WARN) && glog << warn << "Not unsubscribing for empty string!" << std::endl;
     }
     else if(trimmed_name[size-1] == '*')
     {

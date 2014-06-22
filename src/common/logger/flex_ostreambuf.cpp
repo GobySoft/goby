@@ -51,7 +51,7 @@ boost::mutex curses_mutex;
 #endif
 
 #if THREAD_SAFE_LOGGER
-boost::mutex goby::common::logger::mutex;
+boost::recursive_mutex goby::common::logger::mutex;
 #endif
 
 goby::common::FlexOStreamBuf::FlexOStreamBuf(): buffer_(1),
@@ -154,6 +154,8 @@ int goby::common::FlexOStreamBuf::overflow(int c /*= EOF*/)
 // called when flush() or std::endl
 int goby::common::FlexOStreamBuf::sync()
 {
+    assert(current_verbosity_ != logger::UNKNOWN || lock_action_ != logger_lock::lock);
+    
     // all but last one
     while(buffer_.size() > 1)
     {
@@ -163,9 +165,17 @@ int goby::common::FlexOStreamBuf::sync()
     
     group_name_.erase();
 
-    current_verbosity_ = logger::VERBOSE;
+    current_verbosity_ = logger::UNKNOWN;
     
     if(die_flag_) exit(EXIT_FAILURE);
+
+#if THREAD_SAFE_LOGGER
+    if(lock_action_ == logger_lock::lock)
+    {
+        logger::mutex.unlock();
+    }
+#endif
+    
     return 0;
 }
 

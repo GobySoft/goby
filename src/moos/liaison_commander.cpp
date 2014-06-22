@@ -107,7 +107,7 @@ goby::common::LiaisonCommander::LiaisonCommander(ZeroMQService* zeromq_service,
 
 void goby::common::LiaisonCommander::moos_inbox(CMOOSMsg& msg)
 {
-    glog.is(DEBUG1, lock) && glog << "LiaisonCommander: Got message: " << msg <<  std::endl << unlock;
+    glog.is(DEBUG1) && glog << "LiaisonCommander: Got message: " << msg <<  std::endl;
 
     // nothing to do here
     if(msg.GetKey() == pb_commander_config_.time_source_var())
@@ -194,8 +194,8 @@ void goby::common::LiaisonCommander::loop()
     
     if(current_command && (last_db_update_time_ > current_command->last_reload_time_))
     {
-        glog.is(DEBUG1, lock) && glog << "Reloading command!" <<  std::endl << unlock;
-        glog.is(DEBUG1, lock) && glog << last_db_update_time_ << "/" <<  current_command->last_reload_time_ << unlock;
+        glog.is(DEBUG1) && glog << "Reloading command!" <<  std::endl;
+        glog.is(DEBUG1) && glog << last_db_update_time_ << "/" <<  current_command->last_reload_time_ << std::endl;
     
         boost::mutex::scoped_lock slock(dbo_mutex_);
         Dbo::Transaction transaction(controls_div_->session_);
@@ -242,7 +242,7 @@ goby::common::LiaisonCommander::ControlsContainer::ControlsContainer(
     }
     catch(Dbo::Exception& e)
     {
-        glog.is(VERBOSE, lock) && glog << "Could not create tables: " << e.what() << std::endl << unlock;   
+        glog.is(VERBOSE) && glog << "Could not create tables: " << e.what() << std::endl;   
     }
 
     
@@ -285,7 +285,7 @@ goby::common::LiaisonCommander::ControlsContainer::ControlsContainer(
         Dbo::Transaction transaction(session_);            
         last_command = session_.find<CommandEntry>("ORDER BY time DESC LIMIT 1");
         if(last_command)
-            glog.is(DEBUG1, lock) && glog << "Last command was of type: " << last_command->protobuf_name << std::endl << unlock;
+            glog.is(DEBUG1) && glog << "Last command was of type: " << last_command->protobuf_name << std::endl;
             
     }
     
@@ -299,7 +299,7 @@ goby::common::LiaisonCommander::ControlsContainer::ControlsContainer(
         
         if(!desc)
         {
-            glog.is(WARN, lock) && glog << "Could not find protobuf name " << pb_commander_config.load_protobuf_name(i) << " to load for Protobuf Commander (configuration line `load_protobuf_name`)" << std::endl << unlock;
+            glog.is(WARN) && glog << "Could not find protobuf name " << pb_commander_config.load_protobuf_name(i) << " to load for Protobuf Commander (configuration line `load_protobuf_name`)" << std::endl;
         }
         else
         {
@@ -373,7 +373,7 @@ void goby::common::LiaisonCommander::ControlsContainer::clear_message()
 
 void goby::common::LiaisonCommander::ControlsContainer::send_message()
 {
-    glog.is(VERBOSE, lock) && glog << "Message to be sent!" << std::endl << unlock;
+    glog.is(VERBOSE) && glog << "Message to be sent!" << std::endl;
 
     WDialog dialog("Confirm sending of message: " + command_selection_->currentText());
 
@@ -509,7 +509,7 @@ goby::common::LiaisonCommander::ControlsContainer::CommandContainer::CommandCont
         message_->ParseFromArray(&entry->bytes[0], entry->bytes.size());
     }
     
-    glog.is(DEBUG1, lock) && glog << "Model has "<< query_model_->rowCount() << " rows" <<  std::endl << unlock;
+    glog.is(DEBUG1) && glog << "Model has "<< query_model_->rowCount() << " rows" <<  std::endl;
 
     
     generate_root();
@@ -517,7 +517,7 @@ goby::common::LiaisonCommander::ControlsContainer::CommandContainer::CommandCont
 
 void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::handle_database_double_click(const WModelIndex& index, const WMouseEvent& event)
  {    
-     glog.is(DEBUG1, lock) && glog << "clicked: " << index.row() << "," << index.column() << std::endl << unlock;    
+     glog.is(DEBUG1) && glog << "clicked: " << index.row() << "," << index.column() << std::endl;    
 
      const Dbo::ptr<CommandEntry>& entry = query_model_->resultRow(index.row());
      
@@ -526,7 +526,7 @@ void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::handle
 
      if(!message)
      {
-         glog.is(WARN, lock) && glog << "Invalid message!" <<  std::endl << unlock;
+         glog.is(WARN) && glog << "Invalid message!" <<  std::endl;
          return;
      }
      
@@ -1139,7 +1139,7 @@ void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::handle
                 break;    
         }
     }
-    glog.is(DEBUG1, lock) && glog << "The message is: " << message_->DebugString() <<  std::endl << unlock;
+    glog.is(DEBUG1) && glog << "The message is: " << message_->DebugString() <<  std::endl;
 }
 
                     

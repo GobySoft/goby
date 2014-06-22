@@ -202,7 +202,7 @@ int goby::moos::run(int argc, char* argv[])
     catch(std::exception& e)
     {
         // some other exception
-        goby::glog.is(goby::common::logger::DIE, goby::common::logger_lock::lock) &&  goby::glog << "uncaught exception: " << e.what() << std::endl << unlock;
+        goby::glog.is(goby::common::logger::DIE) &&  goby::glog << "uncaught exception: " << e.what() << std::endl;
         return 2;
     }
 

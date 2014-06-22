@@ -39,7 +39,6 @@
 
 using goby::glog;
 using namespace Wt;    
-using namespace goby::common::logger_lock;
 using namespace goby::common::logger;
 
 
@@ -50,6 +49,8 @@ goby::common::protobuf::LiaisonConfig goby::common::liaison_cfg_;
 
 int main(int argc, char* argv[])
 {
+    glog.set_lock_action(goby::common::logger_lock::lock);
+    
     // load plugins from environmental variable GOBY_LIAISON_PLUGINS
     char * plugins = getenv ("GOBY_LIAISON_PLUGINS");
     if (plugins)
@@ -172,12 +173,12 @@ goby::common::Liaison::Liaison(protobuf::LiaisonConfig* cfg)
         char* wt_argv[wt_argv_vec.size()];
 
 
-        glog << "setting Wt cfg to: ";
+        glog.is(DEBUG1) && glog << "setting Wt cfg to: " << std::flush;
         for(int i = 0, n = wt_argv_vec.size(); i < n; ++i)
         {
             wt_argv[i] = new char[wt_argv_vec[i].size() + 1];
             strcpy(wt_argv[i], wt_argv_vec[i].c_str());
-            glog << "\t" << wt_argv[i] << std::endl;
+            glog.is(DEBUG1) && glog << "\t" << wt_argv[i] << std::endl;
         }
         
         wt_server_.setServerConfiguration(wt_argv_vec.size(), wt_argv);
@@ -240,12 +241,12 @@ void goby::common::Liaison::inbox(MarshallingScheme marshalling_scheme,
                                 int size,
                                 int socket_id)
 {
-    glog.is(DEBUG2, lock) && glog << "Liaison: got message with identifier: " << identifier << " from socket: " << socket_id << std::endl << unlock;
+    glog.is(DEBUG2) && glog << "Liaison: got message with identifier: " << identifier << " from socket: " << socket_id << std::endl;
     zeromq_service_.send(marshalling_scheme, identifier, data, size, LIAISON_INTERNAL_PUBLISH_SOCKET);
     
     if(socket_id == LIAISON_INTERNAL_SUBSCRIBE_SOCKET)
     {
-        glog.is(DEBUG2, lock) && glog << "Sending to pubsub node: " << identifier << std::endl << unlock;
+        glog.is(DEBUG2) && glog << "Sending to pubsub node: " << identifier << std::endl;
         pubsub_node_.publish(marshalling_scheme, identifier, data, size);
     }
 }

@@ -126,7 +126,7 @@ goby::common::LiaisonScope::LiaisonScope(ZeroMQService* zeromq_service, const pr
 
 void goby::common::LiaisonScope::loop()
 {
-    glog.is(DEBUG2, lock) && glog << "LiaisonScope: polling" << std::endl << unlock;
+    glog.is(DEBUG2) && glog << "LiaisonScope: polling" << std::endl;
     while(zeromq_service_->poll(0))
     { }
 }
@@ -271,7 +271,7 @@ void goby::common::LiaisonScope::handle_message(CMOOSMsg& msg,
                                                 bool fresh_message)
 {    
 //    using goby::moos::operator<<;
-//    glog.is(DEBUG1, lock) && glog << "LiaisonScope: got message:  " << msg << std::endl << unlock;  
+//    glog.is(DEBUG1) && glog << "LiaisonScope: got message:  " << msg << std::endl;  
     std::map<std::string, int>::iterator it = msg_map_.find(msg.GetKey());
     if(it != msg_map_.end())
     {
@@ -352,7 +352,7 @@ goby::common::LiaisonScopeMOOSTreeView::LiaisonScopeMOOSTreeView(const protobuf:
 //     const Wt::WStandardItemModel* model = dynamic_cast<Wt::WStandardItemModel*>(proxy->sourceModel());
 //     WModelIndex model_index = proxy->mapToSource(proxy_index);
 
-//     glog.is(DEBUG1, lock) && glog << "clicked: " << model_index.row() << "," << model_index.column() << std::endl << unlock;    
+//     glog.is(DEBUG1) && glog << "clicked: " << model_index.row() << "," << model_index.column() << std::endl;    
     
 //     attach_pb_rows(model->item(model_index.row(), protobuf::MOOSScopeConfig::COLUMN_KEY),
 //                    model->item(model_index.row(), protobuf::MOOSScopeConfig::COLUMN_VALUE)->text().narrow());
@@ -543,7 +543,7 @@ void goby::common::LiaisonScope::SubscriptionsContainer::handle_remove_subscript
         {            
             history_model_->removeRows(msg_map_[text_to_match], 1);
             msg_map_.erase(text_to_match);
-            glog.is(DEBUG1, lock) && glog << "LiaisonScope: removed " << text_to_match << std::endl << unlock;            
+            glog.is(DEBUG1) && glog << "LiaisonScope: removed " << text_to_match << std::endl;            
             model_->removeRow(i);
             
             // shift down the remaining indices
@@ -679,7 +679,7 @@ void goby::common::LiaisonScope::HistoryContainer::add_history(const goby::commo
 
 void goby::common::LiaisonScope::HistoryContainer::handle_remove_history(std::string key)
 {
-    glog.is(DEBUG2, lock) && glog << "LiaisonScope: removing history for: " << key << std::endl << unlock;    
+    glog.is(DEBUG2) && glog << "LiaisonScope: removing history for: " << key << std::endl;    
     
     main_layout_->removeWidget(history_models_[key].container);    
     main_layout_->removeWidget(history_models_[key].tree);

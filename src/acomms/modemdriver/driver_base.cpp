@@ -61,7 +61,7 @@ void goby::acomms::ModemDriverBase::modem_write(const std::string& out)
 {
     if(!modem_->active())
     {
-        goby::glog.is(DEBUG1, lock) && goby::glog << group(glog_out_group_) << warn << "modem is closed! (check physical connection)" << std::endl << unlock;
+        goby::glog.is(DEBUG1) && goby::glog << group(glog_out_group_) << warn << "modem is closed! (check physical connection)" << std::endl;
     }
     else
     {
@@ -73,7 +73,7 @@ bool goby::acomms::ModemDriverBase::modem_read(std::string* in)
 {
     if(!modem_->active())
     {
-        goby::glog.is(DEBUG1, lock) && goby::glog << group(glog_in_group_) << warn << "modem is closed! (check physical connection)" << std::endl << unlock;
+        goby::glog.is(DEBUG1) && goby::glog << group(glog_in_group_) << warn << "modem is closed! (check physical connection)" << std::endl;
         return false;
     }
     else
@@ -97,7 +97,7 @@ void goby::acomms::ModemDriverBase::modem_start(const protobuf::DriverConfig& cf
     switch(cfg.connection_type())
     {
         case protobuf::DriverConfig::CONNECTION_SERIAL:
-            goby::glog.is(DEBUG1, lock) && goby::glog << group(glog_out_group_) << "opening serial port " << cfg.serial_port() << " @ " << cfg.serial_baud() << std::endl << unlock;
+            goby::glog.is(DEBUG1) && goby::glog << group(glog_out_group_) << "opening serial port " << cfg.serial_port() << " @ " << cfg.serial_baud() << std::endl;
 
             if(!cfg.has_serial_port())
                 throw(ModemDriverException("missing serial port in configuration"));
@@ -108,7 +108,7 @@ void goby::acomms::ModemDriverBase::modem_start(const protobuf::DriverConfig& cf
             break;
             
         case protobuf::DriverConfig::CONNECTION_TCP_AS_CLIENT:
-            goby::glog.is(DEBUG1, lock) && goby::glog << group(glog_out_group_) << "opening tcp client: " << cfg.tcp_server() << ":" << cfg.tcp_port() << std::endl << unlock;
+            goby::glog.is(DEBUG1) && goby::glog << group(glog_out_group_) << "opening tcp client: " << cfg.tcp_server() << ":" << cfg.tcp_port() << std::endl;
             if(!cfg.has_tcp_server())
                 throw(ModemDriverException("missing tcp server address in configuration"));
             if(!cfg.has_tcp_port())
@@ -118,7 +118,7 @@ void goby::acomms::ModemDriverBase::modem_start(const protobuf::DriverConfig& cf
             break;
             
         case protobuf::DriverConfig::CONNECTION_TCP_AS_SERVER:
-            goby::glog.is(DEBUG1, lock) && goby::glog << group(glog_out_group_) << "opening tcp server on port" << cfg.tcp_port() << std::endl << unlock;
+            goby::glog.is(DEBUG1) && goby::glog << group(glog_out_group_) << "opening tcp server on port" << cfg.tcp_port() << std::endl;
 
             if(!cfg.has_tcp_port())
                 throw(ModemDriverException("missing tcp port in configuration"));
@@ -135,7 +135,7 @@ void goby::acomms::ModemDriverBase::modem_start(const protobuf::DriverConfig& cf
         
         std::string file_name = (file_format % to_iso_string(second_clock::universal_time())).str();
 
-        glog.is(DEBUG1, lock) && glog << group(glog_out_group_) << "logging NMEA-0183 output to file: " << file_name << std::endl << unlock;
+        glog.is(DEBUG1) && glog << group(glog_out_group_) << "logging NMEA-0183 output to file: " << file_name << std::endl;
 
         raw_fs_.reset(new std::ofstream(file_name.c_str()));
 
@@ -147,7 +147,7 @@ void goby::acomms::ModemDriverBase::modem_start(const protobuf::DriverConfig& cf
         }
         else
         {
-            glog.is(DEBUG1, lock) && glog << group(glog_out_group_) << warn << "Failed to open log file" << std::endl << unlock;
+            glog.is(DEBUG1) && glog << group(glog_out_group_) << warn << "Failed to open log file" << std::endl;
             raw_fs_.reset();
         }
     }

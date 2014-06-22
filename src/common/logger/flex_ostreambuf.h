@@ -52,15 +52,22 @@ namespace goby
     {
 
         class FlexNCurses;
-
+        
+        namespace logger_lock
+        {
+            /// Mutex actions available to the Goby logger (glogger)
+            enum LockAction { none, lock };
+        }
+        
         namespace logger
         {
-
+            
 #if THREAD_SAFE_LOGGER
-            extern boost::mutex mutex;
+            extern boost::recursive_mutex mutex;
 #endif
 
-            enum Verbosity { QUIET = protobuf::GLogConfig::QUIET,
+            enum Verbosity { UNKNOWN = 4,
+                             QUIET = protobuf::GLogConfig::QUIET,
                              WARN = protobuf::GLogConfig::WARN,
                              VERBOSE = protobuf::GLogConfig::VERBOSE,
                              //GUI = protobuf::GLogConfig::GUI,
@@ -119,6 +126,9 @@ namespace goby
             void set_verbosity_depth(logger::Verbosity depth)
             { current_verbosity_ = depth; }
 
+            logger::Verbosity verbosity_depth()
+            { return current_verbosity_; }
+            
             /// add a new group
             void add_group(const std::string& name, Group g);
 
@@ -128,6 +138,14 @@ namespace goby
 
             /// refresh the display (does nothing if !is_gui())
             void refresh();
+
+            void set_lock_action(logger_lock::LockAction lock_action)
+            {
+                lock_action_ = lock_action;
+            }
+
+            logger_lock::LockAction lock_action() { return lock_action_; }
+            
           private:
             void display(std::string& s);    
             void strip_escapes(std::string& s);
@@ -172,7 +190,9 @@ namespace goby
 
             bool is_gui_;
 
-            logger::Verbosity highest_verbosity_;            
+            logger::Verbosity highest_verbosity_;
+
+            logger_lock::LockAction lock_action_;
         };
     }
 }

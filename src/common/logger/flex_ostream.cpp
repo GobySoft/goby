@@ -63,9 +63,10 @@ void goby::common::FlexOstream::add_group(const std::string& name,
     }
     
     
-    this->is(VERBOSE) && *this << "Adding FlexOstream group: "
-                               << sb_.color2esc_code(color) << name
-                               << sb_.color2esc_code(Colors::nocolor) << " (" << description << ")" << std::endl;
+    this->is(VERBOSE) &&
+        *this << "Adding FlexOstream group: "
+              << TermColor::esc_code_from_col(color) << name
+              << TermColor::esc_code_from_col(Colors::nocolor) << " (" << description << ")" << std::endl;
 }
 
 

@@ -132,10 +132,6 @@ namespace goby
             /// add a new group
             void add_group(const std::string& name, Group g);
 
-            /// TODO(tes): unnecessary?
-            std::string color2esc_code(Colors::Color color)
-            { return TermColor::esc_code_from_col(color); }
-
             /// refresh the display (does nothing if !is_gui())
             void refresh();
 

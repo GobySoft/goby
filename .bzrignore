@@ -36,3 +36,4 @@ share/examples/acomms/libqueue/queue_simple/queue_simple
 queue_encode_on_demand
 share/liaison/resources
 src/acomms/protobuf/dccl_option_extensions.proto
+src/acomms/protobuf/arithmetic_extensions.proto

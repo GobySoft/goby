@@ -1,6 +1,11 @@
 
 if(NOT ${PROTOC_VERSION} VERSION_LESS 2.5.0})
-  file(WRITE protobuf/dccl_option_extensions.proto "import public \"dccl/protobuf/option_extensions.proto\";\npackage dccl;")
+  if(NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/protobuf/dccl_option_extensions.proto)
+    file(WRITE ${CMAKE_CURRENT_SOURCE_DIR}/protobuf/dccl_option_extensions.proto "import public \"dccl/protobuf/option_extensions.proto\";\npackage dccl;")
+  endif()
+  if(NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/protobuf/arithmetic_extensions.proto)
+    file(WRITE ${CMAKE_CURRENT_SOURCE_DIR}/protobuf/arithmetic_extensions.proto "import public \"dccl/arithmetic/protobuf/arithmetic_extensions.proto\";")
+  endif()
 endif()
 
 file(GLOB PROTOS protobuf/*.proto)

@@ -30,6 +30,8 @@
 #include <Wt/WVBoxLayout>
 #include <Wt/WTimer>
 
+#include <dccl.h>
+
 #include "goby/common/liaison_container.h"
 #include "goby/moos/protobuf/liaison_config.pb.h"
 
@@ -46,8 +48,15 @@ namespace goby
           private:
 
             void loop();
+            void dccl_analyze(const Wt::WMouseEvent& event);
+            void dccl_select(int index); 
+
             
           private:
+            dccl::Codec dccl_;
+
+            Wt::WPushButton* dccl_analyze_;
+            Wt::WText* dccl_analyze_text_;
             
             const protobuf::AcommsConfig& acomms_config_;
 

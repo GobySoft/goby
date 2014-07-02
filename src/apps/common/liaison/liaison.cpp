@@ -167,7 +167,7 @@ goby::common::Liaison::Liaison(protobuf::LiaisonConfig* cfg)
         
         // create a set of fake argc / argv for Wt::WServer
         std::vector<std::string> wt_argv_vec;  
-        std::string str = cfg->base().app_name() + " --docroot " + doc_root + " --http-port " + goby::util::as<std::string>(cfg->http_port()) + " --http-address " + cfg->http_address();
+        std::string str = cfg->base().app_name() + " --docroot " + doc_root + " --http-port " + goby::util::as<std::string>(cfg->http_port()) + " --http-address " + cfg->http_address() + " " + cfg->additional_wt_http_params();
         boost::split(wt_argv_vec, str, boost::is_any_of(" "));
         
         char* wt_argv[wt_argv_vec.size()];

@@ -136,7 +136,15 @@ a.no_ul
     background-color: #eee;
 }
 
+tr.even
+{
+    background-color: #fff;
+}
 
+tr.odd
+{
+    background-color: #eee;
+}
 
 li.even
 {

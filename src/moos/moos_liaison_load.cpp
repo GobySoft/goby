@@ -47,7 +47,8 @@ extern "C"
 
         containers.push_back(new goby::common::LiaisonGeodesy(cfg));
         
-        containers.push_back(new goby::common::LiaisonAcomms(cfg));
+        services_.push_back(boost::shared_ptr<goby::common::ZeroMQService>(new goby::common::ZeroMQService(zmq_context)));
+        containers.push_back(new goby::common::LiaisonAcomms(services_.back().get(), cfg));
 
         return containers;
     }

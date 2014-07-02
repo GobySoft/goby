@@ -126,7 +126,7 @@ CpAcommsHandler::CpAcommsHandler()
                           this, &CpAcommsHandler::handle_encode_on_demand);
 
     process_configuration();
-
+            
     // bind the lower level pieces of goby-acomms together
     if(driver_)
     {
@@ -170,6 +170,9 @@ CpAcommsHandler::CpAcommsHandler()
     subscribe(cfg_.moos_var().prefix() + cfg_.moos_var().mac_cycle_update(), &CpAcommsHandler::handle_mac_cycle_update, this);    
     
     subscribe(cfg_.moos_var().prefix() + cfg_.moos_var().queue_flush(), &CpAcommsHandler::handle_flush_queue, this);    
+
+    subscribe(cfg_.moos_var().prefix() + cfg_.moos_var().config_file_request(), &CpAcommsHandler::handle_config_file_request, this);    
+
 }
 
 CpAcommsHandler::~CpAcommsHandler()
@@ -299,6 +302,11 @@ void CpAcommsHandler::handle_flush_queue(const CMOOSMsg& msg)
     queue_manager_.flush_queue(flush);
 }
 
+void CpAcommsHandler::handle_config_file_request(const CMOOSMsg&)
+{
+    publish(cfg_.moos_var().prefix() + cfg_.moos_var().config_file(),
+            dccl::b64_encode(cfg_.SerializeAsString()));
+}
 
 
 void CpAcommsHandler::handle_goby_signal(const google::protobuf::Message& msg1,

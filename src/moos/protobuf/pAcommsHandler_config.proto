@@ -64,7 +64,9 @@ message pAcommsHandlerConfig
 
     optional string mac_cycle_update = 200 [default="MAC_CYCLE_UPDATE"];
     optional string mac_initiate_transmission = 201 [default="MAC_INITIATE_TRANSMISSION"];
-    
+
+    optional string config_file = 300 [default="CONFIG"];
+    optional string config_file_request = 301 [default="CONFIG_REQUEST"];
   }
   optional MOOSVariables moos_var = 10;
   

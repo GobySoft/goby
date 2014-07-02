@@ -24,12 +24,14 @@
 
 #include "interface.h"
 #include "goby/common/exception.h"
-            
+#include "goby/common/logger.h"
 
 goby::util::LineBasedInterface::LineBasedInterface(const std::string& delimiter)
     : work_(io_service_),
       active_(false)
 {
+    goby::glog.set_lock_action(goby::common::logger_lock::lock);
+    
     if(delimiter.empty())
         throw Exception("Line based comms started with null string as delimiter!");
     
@@ -85,3 +87,8 @@ void goby::util::LineBasedInterface::write(const protobuf::Datagram& msg)
 // call the do_close function via the io service in the other thread
 void goby::util::LineBasedInterface::close()
 { io_service_.post(boost::bind(&LineBasedInterface::do_close, this, boost::system::error_code())); }
+
+void goby::util::LineBasedInterface::sleep(int sec)
+{
+    io_service_.post(boost::bind(::sleep, sec));
+}

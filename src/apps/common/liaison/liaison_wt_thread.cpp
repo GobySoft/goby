@@ -41,7 +41,6 @@
 
 using goby::glog;
 using namespace Wt;    
-using namespace goby::common::logger_lock;
 using namespace goby::common::logger;
 
 goby::common::LiaisonWtThread::LiaisonWtThread(const Wt::WEnvironment& env)
@@ -119,7 +118,7 @@ goby::common::LiaisonWtThread::LiaisonWtThread(const Wt::WEnvironment& env)
         }
         else
         {
-            glog.is(WARN, lock) && glog << "Liaison: Cannot find function 'goby_liaison_load' in plugin library." << std::endl << unlock;
+            glog.is(WARN) && glog << "Liaison: Cannot find function 'goby_liaison_load' in plugin library." << std::endl;
         }        
     }
    
@@ -139,7 +138,7 @@ goby::common::LiaisonWtThread::~LiaisonWtThread()
         LiaisonContainer* contents = menu_contents_[items[i]];
         if(contents)
         {
-            glog.is(DEBUG1, lock) && glog << "Liaison: Cleanup : " << contents->name() <<  std::endl << unlock;
+            glog.is(DEBUG1) && glog << "Liaison: Cleanup : " << contents->name() <<  std::endl;
             contents->cleanup();
         }
     }
@@ -158,13 +157,13 @@ void goby::common::LiaisonWtThread::handle_menu_selection(Wt::WMenuItem * item)
     LiaisonContainer* contents = menu_contents_[item];
     if(contents)
     {
-        glog.is(DEBUG1, lock) && glog << "Liaison: Focused : " << contents->name() <<  std::endl << unlock;
+        glog.is(DEBUG1) && glog << "Liaison: Focused : " << contents->name() <<  std::endl;
 
         contents->focus();
     }
     else
     {
-        glog.is(WARN, lock) && glog << "Liaison: Invalid menu item!" << std::endl << unlock;
+        glog.is(WARN) && glog << "Liaison: Invalid menu item!" << std::endl;
     }
     
     // unfocus all others
@@ -176,7 +175,7 @@ void goby::common::LiaisonWtThread::handle_menu_selection(Wt::WMenuItem * item)
             LiaisonContainer* other_contents = menu_contents_[items[i]];
             if(other_contents)
             {
-                glog.is(DEBUG1, lock) && glog << "Liaison: Unfocused : " << other_contents->name() <<  std::endl << unlock;
+                glog.is(DEBUG1) && glog << "Liaison: Unfocused : " << other_contents->name() <<  std::endl;
                 other_contents->unfocus();
             }
         }
@@ -190,6 +189,6 @@ void goby::common::LiaisonWtThread::inbox(MarshallingScheme marshalling_scheme,
                                                       int size,
                                                       int socket_id)
 {
-    glog.is(DEBUG1, lock) && glog << "LiaisonWtThread: got message with identifier: " << identifier << std::endl << unlock;
+    glog.is(DEBUG1) && glog << "LiaisonWtThread: got message with identifier: " << identifier << std::endl;
 }
 

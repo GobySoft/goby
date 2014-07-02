@@ -169,13 +169,13 @@ namespace goby
             
           private:
             // represents the line based communications interface to the modem
-            util::LineBasedInterface* modem_;
+            boost::shared_ptr<util::LineBasedInterface> modem_;
 
             std::string glog_out_group_;
             std::string glog_in_group_;
 
             boost::shared_ptr<std::ofstream> raw_fs_;
-
+            bool raw_fs_connections_made_;
         };
     }
 }

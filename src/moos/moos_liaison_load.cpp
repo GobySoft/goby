@@ -25,6 +25,7 @@
 #include "goby/moos/liaison_commander.h"
 #include "goby/moos/liaison_scope.h"
 #include "goby/moos/liaison_geodesy.h"
+#include "goby/moos/liaison_acomms.h"
 
 #include "moos_liaison_load.h"
 
@@ -45,6 +46,9 @@ extern "C"
         containers.push_back(new goby::common::LiaisonScope(services_.back().get(), cfg));
 
         containers.push_back(new goby::common::LiaisonGeodesy(cfg));
+        
+        services_.push_back(boost::shared_ptr<goby::common::ZeroMQService>(new goby::common::ZeroMQService(zmq_context)));
+        containers.push_back(new goby::common::LiaisonAcomms(services_.back().get(), cfg));
 
         return containers;
     }

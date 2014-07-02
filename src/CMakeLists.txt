@@ -112,6 +112,7 @@ if(enable_wt)
   set(Wt_RESOURCES_DIR "${Wt_RESOURCES_DIR_BASE}/share/Wt/resources")
   add_custom_command(OUTPUT WtResourcesLink COMMAND ${CMAKE_COMMAND} -E create_symlink ${Wt_RESOURCES_DIR} ${goby_SHARE_DIR}/liaison/resources)
   add_custom_target(wt_link ALL DEPENDS WtResourcesLink)
+  add_definitions(-DBOOST_SIGNALS_NO_DEPRECATION_WARNING)
 endif()  
 
 # Xerces

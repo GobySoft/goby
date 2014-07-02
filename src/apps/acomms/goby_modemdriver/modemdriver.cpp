@@ -29,11 +29,13 @@
 #include "goby/acomms/modemdriver/udp_driver.h"
 #include "goby/pb/iridium_driver.h"
 #include "goby/acomms/connect.h"
+#include "goby/acomms/modemdriver/driver_exception.h"
 
 #include "goby/pb/application.h"
 #include "goby/pb/pb_modem_driver.h"
 
 #include "modemdriver_config.pb.h"
+#include "goby/acomms/protobuf/modem_driver_status.pb.h"
 
 using namespace goby::common::logger;
 
@@ -56,6 +58,10 @@ namespace goby
             void handle_data_response(const protobuf::ModemTransmission& message);
             void handle_initiate_transmission(const protobuf::ModemTransmission& message);
 
+            void reset(const ModemDriverException& e);
+
+            std::string modem_id_str() { return goby::util::as<std::string>(cfg_.driver_cfg().modem_id()); }
+
         private:
             protobuf::ModemDriverConfig& cfg_;
             
@@ -72,7 +78,11 @@ namespace goby
 
             bool initiate_transmit_pending_;
             protobuf::ModemTransmission initiate_transmission_;
+
+            bool driver_started_;
             
+            double last_status_time_;
+            goby::acomms::protobuf::ModemDriverStatus status_;
         };
     }
 }
@@ -91,7 +101,9 @@ goby::acomms::ModemDriver::ModemDriver(protobuf::ModemDriverConfig* cfg)
     : goby::pb::Application(cfg),
       cfg_(*cfg),
       data_response_received_(false),
-      initiate_transmit_pending_(false)
+      initiate_transmit_pending_(false),
+      driver_started_(false),
+      last_status_time_(0)
 {
     glog.is(DEBUG1) && glog << cfg_.DebugString() << std::endl;
 
@@ -133,9 +145,10 @@ goby::acomms::ModemDriver::ModemDriver(protobuf::ModemDriverConfig* cfg)
     
     connect(&driver_->signal_data_request,
             this, &ModemDriver::handle_modem_data_request);
-    
-    driver_->startup(cfg_.driver_cfg());
 
+
+    status_.set_src(cfg_.driver_cfg().modem_id());
+    status_.set_status(goby::acomms::protobuf::ModemDriverStatus::NOMINAL);
 }
 
 
@@ -149,8 +162,31 @@ goby::acomms::ModemDriver::~ModemDriver()
 void goby::acomms::ModemDriver::loop()
 {
     if(driver_)
-        driver_->do_work();
+    {
+        try
+        {
+            if(!driver_started_)
+            {
+                driver_->startup(cfg_.driver_cfg());
+                driver_started_ = true;
+                status_.set_status(goby::acomms::protobuf::ModemDriverStatus::NOMINAL);
+            }
+            driver_->do_work();
+        }
+        catch(const ModemDriverException& e)
+        {
+            reset(e);
+        }
+    }
 
+    double now = goby::common::goby_time<double>();
+    if(last_status_time_ + cfg_.status_period_s() <= now)
+    {
+        status_.set_time(now);
+        publish(status_, "Status" + modem_id_str());
+        last_status_time_ = now;
+    }    
+        
     if(initiate_transmit_pending_)
     {
         driver_->handle_initiate_transmission(initiate_transmission_);
@@ -161,7 +197,7 @@ void goby::acomms::ModemDriver::loop()
 
 void goby::acomms::ModemDriver::handle_modem_data_request(protobuf::ModemTransmission* msg)
 {
-    publish(*msg, "DataRequest" + goby::util::as<std::string>(cfg_.driver_cfg().modem_id()));
+    publish(*msg, "DataRequest" + modem_id_str());
     data_response_received_ = false;
     
     double start_time = goby::common::goby_time<double>();
@@ -180,7 +216,7 @@ void goby::acomms::ModemDriver::handle_modem_data_request(protobuf::ModemTransmi
 
 void goby::acomms::ModemDriver::handle_modem_receive(const protobuf::ModemTransmission& message)
 {
-    publish(message, "Rx" + goby::util::as<std::string>(cfg_.driver_cfg().modem_id()));
+    publish(message, "Rx" + modem_id_str());
 }
 
 
@@ -198,3 +234,14 @@ void goby::acomms::ModemDriver::handle_initiate_transmission(const protobuf::Mod
     initiate_transmission_ = message;
 }
 
+void goby::acomms::ModemDriver::reset(const ModemDriverException& e)
+{
+    status_.set_status(e.status());
+    glog.is(WARN) && glog << "Exception: " << e.what() << std::endl;
+    const int restart_sec = 15;
+    glog.is(WARN) && glog << "Shutting down driver." << std::endl;
+    driver_->shutdown();
+    glog.is(WARN) && glog << "Attempting to restart driver in " << restart_sec << " seconds." << std::endl;
+    sleep(restart_sec);
+    driver_started_ = false;
+}

@@ -43,19 +43,13 @@ namespace goby
 
     namespace common
     {
-        
-        namespace logger_lock
-        {
-            /// Mutex actions available to the Goby logger (glogger)
-            enum LockAction { none, lock };
-        }
-
         /// Forms the basis of the Goby logger: std::ostream derived class for holding the FlexOStreamBuf
         class FlexOstream : public std::ostream
         {
           public:
           FlexOstream()
-              : std::ostream(&sb_)
+              : std::ostream(&sb_),
+                lock_action_(logger_lock::none)
             {
                 ++instances_;
                 if(instances_ > 1)
@@ -66,14 +60,11 @@ namespace goby
             }
             ~FlexOstream()
             { }
-            FlexOstream(const FlexOstream&);
-            FlexOstream& operator = (const FlexOstream&);            
 
 
             /// \name Initialization
             //@{
             /// Add another group to the logger. A group provides related manipulator for categorizing log messages.
-            /// For thread safe use use boost::scoped_lock on Logger::mutex
             void add_group(const std::string & name,
                            Colors::Color color = Colors::nocolor,
                            const std::string & description = "");
@@ -81,17 +72,22 @@ namespace goby
             /// Set the name of the application that the logger is serving.
             void set_name(const std::string & s)
             {
+#if THREAD_SAFE_LOGGER
+                boost::recursive_mutex::scoped_lock l(goby::common::logger::mutex);
+#endif
                 sb_.name(s);
             }
 
             void enable_gui()
             {
+#if THREAD_SAFE_LOGGER
+                boost::recursive_mutex::scoped_lock l(goby::common::logger::mutex);
+#endif
                 sb_.enable_gui();
             }
             
 
-            bool is(goby::common::logger::Verbosity verbosity,
-                    logger_lock::LockAction lock_action = logger_lock::none); 
+            bool is(goby::common::logger::Verbosity verbosity); 
             
             /* void add_stream(const std::string& verbosity, std::ostream* os = 0) */
             /* { */
@@ -111,11 +107,17 @@ namespace goby
             /// Attach a stream object (e.g. std::cout, std::ofstream, ...) to the logger with desired verbosity
             void add_stream(logger::Verbosity verbosity = logger::VERBOSE, std::ostream* os = 0)
             {
+#if THREAD_SAFE_LOGGER
+                boost::recursive_mutex::scoped_lock l(goby::common::logger::mutex);
+#endif
                 sb_.add_stream(verbosity, os);
             }            
 
             void add_stream(goby::common::protobuf::GLogConfig::Verbosity verbosity = goby::common::protobuf::GLogConfig::VERBOSE, std::ostream* os = 0)
             {
+#if THREAD_SAFE_LOGGER
+                boost::recursive_mutex::scoped_lock l(goby::common::logger::mutex);
+#endif
                 sb_.add_stream(static_cast<logger::Verbosity>(verbosity), os);
             }            
 
@@ -165,8 +167,11 @@ namespace goby
             //@{
             /// Get a reference to the Goby logger mutex for scoped locking
 #if THREAD_SAFE_LOGGER
-            boost::mutex& mutex()
+            boost::recursive_mutex& mutex()
             { return logger::mutex; }
+
+            void set_lock_action(logger_lock::LockAction lock_action)
+            { sb_.set_lock_action(lock_action); }
 #endif
             //@}
 
@@ -179,7 +184,10 @@ namespace goby
                 sb_.group_name(s);
             }            
             
-          private:            
+          private:
+            FlexOstream(const FlexOstream&);
+            FlexOstream& operator = (const FlexOstream&);            
+
             bool quiet()
             { return (sb_.is_quiet()); }
             
@@ -199,6 +207,7 @@ namespace goby
 
           private:
             FlexOStreamBuf sb_;
+            logger_lock::LockAction lock_action_;
         };        
         
         inline std::ostream& operator<< (FlexOstream& out, char c )
@@ -232,14 +241,6 @@ namespace goby
     }
 }
 
-#if THREAD_SAFE_LOGGER
-/// Unlock the Goby logger after a call to glogger(lock)
-inline std::ostream& unlock(std::ostream & os)
-{
-    goby::common::logger::mutex.unlock();    
-    return os;
-}
-
 class FlexOStreamErrorCollector : public google::protobuf::io::ErrorCollector
 {
   public:
@@ -252,26 +253,24 @@ class FlexOStreamErrorCollector : public google::protobuf::io::ErrorCollector
     void AddError(int line, int column, const std::string& message)
     {
         using goby::common::logger::WARN;
-        using namespace goby::common::logger_lock;
         
         print_original(line, column);
-        goby::glog.is(WARN, lock) && goby::glog << "line: " << line << " col: " << column << " " << message << std::endl << unlock;
+        goby::glog.is(WARN) && goby::glog << "line: " << line << " col: " << column << " " << message << std::endl;
         has_errors_ = true;
     }
     void AddWarning(int line, int column, const std::string& message)
     {
         using goby::common::logger::WARN;
-        using namespace goby::common::logger_lock;
 
         print_original(line, column);
-        goby::glog.is(WARN, lock) && goby::glog << "line: " << line << " col: " << column << " " << message << std::endl << unlock;
+        goby::glog.is(WARN) && goby::glog << "line: " << line << " col: " << column << " " << message << std::endl;
+        
         has_warnings_ = true;
     }
     
     void print_original(int line, int column)
     {
         using goby::common::logger::WARN;
-        using namespace goby::common::logger_lock;
         
         std::stringstream ss(original_ + "\n");
         std::string line_str;
@@ -283,9 +282,9 @@ class FlexOStreamErrorCollector : public google::protobuf::io::ErrorCollector
         while(!getline(ss, line_str).eof())
         {
             if(i == line)
-                goby::glog.is(WARN, lock) && goby::glog << goby::common::tcolor::lt_red << "[line " << std::setw(3) << i++ << "]" << line_str << goby::common::tcolor::nocolor << std::endl << unlock;
+                goby::glog.is(WARN) && goby::glog << goby::common::tcolor::lt_red << "[line " << std::setw(3) << i++ << "]" << line_str << goby::common::tcolor::nocolor << std::endl;
             else
-                goby::glog.is(WARN, lock) && goby::glog << "[line " << std::setw(3) << i++ << "]" << line_str << std::endl << unlock;       
+                goby::glog.is(WARN) && goby::glog << "[line " << std::setw(3) << i++ << "]" << line_str << std::endl;       
         }
     }
 
@@ -299,7 +298,6 @@ class FlexOStreamErrorCollector : public google::protobuf::io::ErrorCollector
     bool has_warnings_;
     bool has_errors_;
 };
-#endif // THREAD_SAFE_LOGGER
 
 
 #endif

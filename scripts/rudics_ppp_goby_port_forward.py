@@ -93,7 +93,10 @@ class ConditionalForwardServer(asyncore.dispatcher):
             sock, addr = pair
             print 'Incoming connection from %s' % repr(addr)
             sys.stdout.flush()
+        try:
             handler = ConditionalForwardHandler(sock, addr)
+        except: 
+            print "Unexpected error:", sys.exc_info()[0]
             
 import sys
 print "Goby/PPP Iridium RUDICS Port forwarder starting up ..."

@@ -157,9 +157,9 @@ namespace goby
                                        int),
                     C* obj)
             {
-                goby::glog.is(goby::common::logger::DEBUG1, common::logger_lock::lock) &&
+                goby::glog.is(goby::common::logger::DEBUG1) &&
                     goby::glog << "ZeroMQService: made connection for: "
-                               << typeid(obj).name() << std::endl << unlock;
+                               << typeid(obj).name() << std::endl;
                 connect_inbox_slot(boost::bind(mem_func, obj, _1, _2, _3, _4, _5));
             }
 

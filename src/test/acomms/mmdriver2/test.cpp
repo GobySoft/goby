@@ -77,8 +77,9 @@ MMDriverTest2::MMDriverTest2(goby::test::protobuf::MMDriverTest2Config* cfg)
       cfg_(*cfg),
       modems_running_(true)
 {
-    goby::glog.is(VERBOSE, lock) &&
-        goby::glog << "Running test: " << cfg_ << std::endl << unlock;
+    goby::glog.set_lock_action(lock);
+    
+    goby::glog.is(VERBOSE) && goby::glog << "Running test: " << cfg_ << std::endl;
     
 }
 
@@ -99,8 +100,8 @@ void MMDriverTest2::iterate()
 
     for(int i = 0, n = cfg_.repeat(); i < n; ++i)
     {
-        goby::glog.is(VERBOSE, lock) &&
-            goby::glog << "Beginning test sequence repetition " << i+1 << " of " << n << std::endl << unlock;
+        goby::glog.is(VERBOSE) &&
+            goby::glog << "Beginning test sequence repetition " << i+1 << " of " << n << std::endl;
 
         int o = cfg_.transmission_size();
         for(last_transmission_index = 0; last_transmission_index < o; ++last_transmission_index)
@@ -121,15 +122,15 @@ void MMDriverTest2::iterate()
     summary(driver1_receive, cfg_.mm1_cfg());
     summary(driver2_receive, cfg_.mm2_cfg());
     
-    goby::glog.is(VERBOSE, lock) &&
-        goby::glog << "Completed test" << std::endl << unlock;
+    goby::glog.is(VERBOSE) &&
+        goby::glog << "Completed test" << std::endl;
     quit();
 }
 
 void MMDriverTest2::run(goby::acomms::MMDriver& modem, goby::acomms::protobuf::DriverConfig& cfg)
 {
-    goby::glog.is(VERBOSE, lock)
-        && goby::glog << "Initializing modem" << std::endl << unlock;
+    goby::glog.is(VERBOSE)
+        && goby::glog << "Initializing modem" << std::endl;
     modem.startup(cfg);
     
     while(modems_running_)
@@ -146,8 +147,8 @@ void MMDriverTest2::run(goby::acomms::MMDriver& modem, goby::acomms::protobuf::D
 
 void MMDriverTest2::handle_data_receive1(const protobuf::ModemTransmission& msg)
 {
-    goby::glog.is(VERBOSE, lock) &&
-        goby::glog << "modem 1 Received: " << msg << std::endl << unlock;
+    goby::glog.is(VERBOSE) &&
+        goby::glog << "modem 1 Received: " << msg << std::endl;
 
     for(int i = 0, n = msg.ExtensionSize(micromodem::protobuf::receive_stat); i < n; ++i)
         driver1_receive[last_transmission_index].push_back(msg.GetExtension(micromodem::protobuf::receive_stat, i));
@@ -156,8 +157,8 @@ void MMDriverTest2::handle_data_receive1(const protobuf::ModemTransmission& msg)
 
 void MMDriverTest2::handle_data_receive2(const protobuf::ModemTransmission& msg)
 {
-    goby::glog.is(VERBOSE, lock) &&
-        goby::glog << "modem 2 Received: " << msg << std::endl << unlock;
+    goby::glog.is(VERBOSE) &&
+        goby::glog << "modem 2 Received: " << msg << std::endl;
 
 
     for(int i = 0, n = msg.ExtensionSize(micromodem::protobuf::receive_stat); i < n; ++i)
@@ -168,28 +169,28 @@ void MMDriverTest2::handle_data_receive2(const protobuf::ModemTransmission& msg)
 
 void MMDriverTest2::handle_transmit_result1(const protobuf::ModemTransmission& msg)
 {
-    goby::glog.is(VERBOSE, lock) &&
-        goby::glog << "modem 1 Transmitted: " << msg << std::endl << unlock;
+    goby::glog.is(VERBOSE) &&
+        goby::glog << "modem 1 Transmitted: " << msg << std::endl;
 }
 
 void MMDriverTest2::handle_transmit_result2(const protobuf::ModemTransmission& msg)
 {
-    goby::glog.is(VERBOSE, lock) &&
-        goby::glog << "modem 2 Transmitted: " << msg << std::endl << unlock;
+    goby::glog.is(VERBOSE) &&
+        goby::glog << "modem 2 Transmitted: " << msg << std::endl;
 }
 
 void MMDriverTest2::summary(const std::map<int, std::vector<micromodem::protobuf::ReceiveStatistics> >& receive,
                             const goby::acomms::protobuf::DriverConfig& cfg)
 {
-    goby::glog.is(VERBOSE, lock) &&
-        goby::glog << "*** Begin modem " << cfg.modem_id() << " receive summary" << std::endl << unlock;
+    goby::glog.is(VERBOSE) &&
+        goby::glog << "*** Begin modem " << cfg.modem_id() << " receive summary" << std::endl;
     
 
     for(std::map<int, std::vector<micromodem::protobuf::ReceiveStatistics> >::const_iterator it = receive.begin(),
             end = receive.end(); it != end; ++it)
     {
-        goby::glog.is(VERBOSE, lock) &&
-            goby::glog << "** Showing stats for this transmission (last transmission before this reception occured): " << cfg_.transmission(it->first).DebugString() << std::flush << unlock;
+        goby::glog.is(VERBOSE) &&
+            goby::glog << "** Showing stats for this transmission (last transmission before this reception occured): " << cfg_.transmission(it->first).DebugString() << std::flush;
 
         const std::vector<micromodem::protobuf::ReceiveStatistics>& current_receive_vector = it->second;
     
@@ -199,8 +200,8 @@ void MMDriverTest2::summary(const std::map<int, std::vector<micromodem::protobuf
 
         for(int i = 0, n = current_receive_vector.size(); i < n; ++i)
         {
-            goby::glog.is(VERBOSE, lock) &&
-                goby::glog << "CACST #" << i << ": " << current_receive_vector[i].ShortDebugString() << std::endl << unlock;
+            goby::glog.is(VERBOSE) &&
+                goby::glog << "CACST #" << i << ": " << current_receive_vector[i].ShortDebugString() << std::endl;
 
             type.insert(current_receive_vector[i].packet_type());
             mode.insert(current_receive_vector[i].mode());
@@ -208,50 +209,50 @@ void MMDriverTest2::summary(const std::map<int, std::vector<micromodem::protobuf
 
         }
 
-        goby::glog.is(VERBOSE, lock) &&
-            goby::glog << "PacketType: " << std::endl << unlock;
+        goby::glog.is(VERBOSE) &&
+            goby::glog << "PacketType: " << std::endl;
         for(int j = micromodem::protobuf::PacketType_MIN;
             j <= micromodem::protobuf::PacketType_MAX; ++j)
         {
             if(micromodem::protobuf::PacketType_IsValid(j))
             {
                 micromodem::protobuf::PacketType jt = static_cast<micromodem::protobuf::PacketType>(j);
-                goby::glog.is(VERBOSE, lock) &&
-                    goby::glog << "\t" << micromodem::protobuf::PacketType_Name(jt) << ": " << type.count(jt) << std::endl << unlock;
+                goby::glog.is(VERBOSE) &&
+                    goby::glog << "\t" << micromodem::protobuf::PacketType_Name(jt) << ": " << type.count(jt) << std::endl;
             }
         }
 
-        goby::glog.is(VERBOSE, lock) &&
-            goby::glog << "ReceiveMode: " << std::endl << unlock;
+        goby::glog.is(VERBOSE) &&
+            goby::glog << "ReceiveMode: " << std::endl;
         for(int j = micromodem::protobuf::ReceiveMode_MIN;
             j <= micromodem::protobuf::ReceiveMode_MAX; ++j)
         {
             if(micromodem::protobuf::ReceiveMode_IsValid(j))
             {
                 micromodem::protobuf::ReceiveMode jt = static_cast<micromodem::protobuf::ReceiveMode>(j);
-                goby::glog.is(VERBOSE, lock) &&
-                    goby::glog << "\t" << micromodem::protobuf::ReceiveMode_Name(jt) << ": " << mode.count(jt) << std::endl << unlock;
+                goby::glog.is(VERBOSE) &&
+                    goby::glog << "\t" << micromodem::protobuf::ReceiveMode_Name(jt) << ": " << mode.count(jt) << std::endl;
             }
         }
 
-        goby::glog.is(VERBOSE, lock) &&
-            goby::glog << "PSKErrorCode: " << std::endl << unlock;
+        goby::glog.is(VERBOSE) &&
+            goby::glog << "PSKErrorCode: " << std::endl;
         for(int j = micromodem::protobuf::PSKErrorCode_MIN;
             j <= micromodem::protobuf::PSKErrorCode_MAX; ++j)
         {
             if(micromodem::protobuf::PSKErrorCode_IsValid(j))
             {
                 micromodem::protobuf::PSKErrorCode jt = static_cast<micromodem::protobuf::PSKErrorCode>(j);
-                goby::glog.is(VERBOSE, lock) &&
-                    goby::glog << "\t" << micromodem::protobuf::PSKErrorCode_Name(jt) << ": " << code.count(jt) << std::endl << unlock;
+                goby::glog.is(VERBOSE) &&
+                    goby::glog << "\t" << micromodem::protobuf::PSKErrorCode_Name(jt) << ": " << code.count(jt) << std::endl;
             }
         }
     
 
     
     }
-    goby::glog.is(VERBOSE, lock) &&
-        goby::glog << "*** End modem " << cfg.modem_id() << " receive summary" << std::endl << unlock;
+    goby::glog.is(VERBOSE) &&
+        goby::glog << "*** End modem " << cfg.modem_id() << " receive summary" << std::endl;
 }
 
 int main(int argc, char* argv[])

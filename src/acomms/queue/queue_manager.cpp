@@ -114,7 +114,6 @@ void goby::acomms::QueueManager::add_queue(const google::protobuf::Descriptor* d
 
 void goby::acomms::QueueManager::do_work()
 {
-    typedef std::pair<unsigned, Queue> P;
     for(std::map<unsigned, boost::shared_ptr<Queue> >::iterator it = queues_.begin(), n = queues_.end(); it != n; ++it)
     {
         std::vector<boost::shared_ptr<google::protobuf::Message> >expired_msgs =

@@ -40,6 +40,7 @@
 
 #include "goby/acomms/protobuf/file_transfer.pb.h"
 #include "goby/acomms/protobuf/mosh_packet.pb.h"
+#include "goby/acomms/protobuf/modem_driver_status.pb.h"
 
 #include "bridge_config.pb.h"
 
@@ -87,7 +88,9 @@ namespace goby
             void handle_initiate_transmission(const protobuf::ModemTransmission& m, int subnet);
 
             void handle_data_request(const protobuf::ModemTransmission& m, int subnet);
-            
+
+            void handle_driver_status(const protobuf::ModemDriverStatus& m, int subnet);
+
         private:
             protobuf::BridgeConfig& cfg_;
             
@@ -197,6 +200,11 @@ goby::acomms::Bridge::Bridge(protobuf::BridgeConfig* cfg)
             boost::bind(&Bridge::handle_data_request, this, _1, i),
             "DataRequest" + goby::util::as<std::string>(qcfg.modem_id()));
 
+        subscribe<goby::acomms::protobuf::ModemDriverStatus>(
+            boost::bind(&Bridge::handle_driver_status, this, _1, i),
+            "Status" + goby::util::as<std::string>(qcfg.modem_id()));
+
+        
         goby::acomms::connect(&mac_managers_[i]->signal_initiate_transmission,
                               boost::bind(&Bridge::handle_initiate_transmission, this, _1, i));
         
@@ -344,4 +352,12 @@ void goby::acomms::Bridge::handle_data_request(const protobuf::ModemTransmission
     protobuf::ModemTransmission msg = orig_msg;
     q_managers_[subnet]->handle_modem_data_request(&msg);
     publish(msg, "DataResponse" + goby::util::as<std::string>(cfg_.subnet(subnet).queue_cfg().modem_id()));
+}
+
+void goby::acomms::Bridge::handle_driver_status(const protobuf::ModemDriverStatus& m, int subnet)
+{    
+    glog.is(VERBOSE) && glog << "Forwarding modemdriver status message to topside: " << m.ShortDebugString() << std::endl;
+    QueueManager* in_queue = q_managers_[subnet].get();
+
+    r_manager_.handle_in(in_queue->meta_from_msg(m), m, in_queue->modem_id());    
 }

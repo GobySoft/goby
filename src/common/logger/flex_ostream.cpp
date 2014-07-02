@@ -45,21 +45,28 @@ void goby::common::FlexOstream::add_group(const std::string& name,
                                         Colors::Color color /*= Colors::nocolor*/,
                                         const std::string& description /*= ""*/)
 {
-
-    if(description.empty())
     {
-        Group ng(name, name, color);
-        sb_.add_group(name, ng);
-    }
-    else
-    {
-        Group ng(name, description, color);
-        sb_.add_group(name, ng);
+#if THREAD_SAFE_LOGGER
+        boost::recursive_mutex::scoped_lock l(goby::common::logger::mutex);
+#endif
+        
+        if(description.empty())
+        {
+            Group ng(name, name, color);
+            sb_.add_group(name, ng);
+        }
+        else
+        {
+            Group ng(name, description, color);
+            sb_.add_group(name, ng);
+        }
     }
     
     
-    *this << "Adding FlexOstream group: " << sb_.color2esc_code(color) << name
-          << sb_.color2esc_code(Colors::nocolor) << " (" << description << ")" << std::endl;
+    this->is(VERBOSE) &&
+        *this << "Adding FlexOstream group: "
+              << TermColor::esc_code_from_col(color) << name
+              << TermColor::esc_code_from_col(Colors::nocolor) << " (" << description << ")" << std::endl;
 }
 
 
@@ -69,15 +76,15 @@ std::ostream& goby::common::FlexOstream::operator<<(std::ostream& (*pf) (std::os
     return std::ostream::operator<<(pf);
 }            
 
-bool goby::common::FlexOstream::is(logger::Verbosity verbosity,
-                                 logger_lock::LockAction lock_action /*= none*/)
+bool goby::common::FlexOstream::is(logger::Verbosity verbosity)
 {
-        
+    assert(sb_.verbosity_depth() == logger::UNKNOWN || lock_action_ != logger_lock::lock);
+    
     bool display = (sb_.highest_verbosity() >= verbosity) || (verbosity == logger::DIE);
 
     if(display)
     {
-        if(lock_action == logger_lock::lock)
+        if(sb_.lock_action() == logger_lock::lock)
         {
 #if THREAD_SAFE_LOGGER
             goby::common::logger::mutex.lock(); 
@@ -90,6 +97,7 @@ bool goby::common::FlexOstream::is(logger::Verbosity verbosity,
         {
             case QUIET: break;
             case WARN: *this << warn; break;
+            case UNKNOWN:
             case VERBOSE: *this << verbose; break;
             case DEBUG1: *this << debug1; break;
             case DEBUG2: *this << debug2; break;

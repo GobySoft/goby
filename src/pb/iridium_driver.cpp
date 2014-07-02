@@ -136,7 +136,7 @@ void goby::acomms::IridiumDriver::modem_init()
 
         const int start_timeout = driver_cfg_.GetExtension(IridiumDriverConfig::start_timeout);
         if(i / (1000/pause_ms) > start_timeout)
-            glog.is(DIE) && glog << group(glog_out_group()) << "Failed to startup." << std::endl;
+            throw(ModemDriverException("Failed to startup.",protobuf::ModemDriverStatus::STARTUP_FAILED));
     }
 }
 

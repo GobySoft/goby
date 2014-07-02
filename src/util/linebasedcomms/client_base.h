@@ -58,10 +58,10 @@ namespace goby
                 last_start_time_ = common::goby_time();
                 
                 set_active(start_specific());
-                
-                LineBasedConnection<ASIOAsyncReadStream>::read_start();
+
+                LineBasedInterface::io_service().post(boost::bind(&LineBasedConnection<ASIOAsyncReadStream>::read_start, this));
                 if(!LineBasedConnection<ASIOAsyncReadStream>::out().empty())
-                    LineBasedConnection<ASIOAsyncReadStream>::write_start();
+                    LineBasedInterface::io_service().post(boost::bind(&LineBasedConnection<ASIOAsyncReadStream>::write_start, this));
             }
             
             virtual bool start_specific() = 0;
@@ -71,7 +71,7 @@ namespace goby
             { 
                 bool write_in_progress = !LineBasedConnection<ASIOAsyncReadStream>::out().empty();
                 LineBasedConnection<ASIOAsyncReadStream>::out().push_back(line);
-                if (!write_in_progress) LineBasedConnection<ASIOAsyncReadStream>::write_start();
+                if (!write_in_progress) LineBasedInterface::io_service().post(boost::bind(&LineBasedConnection<ASIOAsyncReadStream>::write_start, this));
             }
 
             // from LineBasedInterface
@@ -89,9 +89,10 @@ namespace goby
                     using namespace boost::posix_time;
                     ptime now  = common::goby_time();
                     if(now - seconds(retry_interval_) < last_start_time_)
-                        sleep(retry_interval_ - (now-last_start_time_).total_seconds());
-                    
-                    do_start();
+                        LineBasedInterface::sleep(retry_interval_ - (now-last_start_time_).total_seconds());
+
+                    // add this to the io_service jobs
+                    LineBasedInterface::start();
                 }
                 
             }

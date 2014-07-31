@@ -54,8 +54,6 @@ message Config
     optional NarrowBandLBLParams narrowband_lbl = 1003;
     optional REMUSLBLParams remus_lbl = 1004;
 
-    optional uint32 mm_version = 1005 [default = 1];
-
     optional int32 keep_alive_seconds = 1006 [default = 10];
   }
 }
@@ -97,6 +95,7 @@ enum PacketType
   FSK_MINI = 2;
   PSK = 3;
   PSK_MINI = 4;
+  FLEXIBLE_DATA_PACKET = 5;
 }
 
 enum ReceiveMode
@@ -224,6 +223,7 @@ enum TransmissionType
   MICROMODEM_REMUS_LBL_RANGING = 2;     // modem 1 pings a REMUS network of long baseline (LBL) beacons: $CCPDT
   MICROMODEM_NARROWBAND_LBL_RANGING = 3;    // modem 1 pings up to four transponders: $CCPNT
   MICROMODEM_MINI_DATA = 4; // 13 bits (represented as a 1 frame, 2 byte data transmission where data is AND'd with 0x1ff) mini data transmission
+  MICROMODEM_FLEXIBLE_DATA = 5; // Flexible Data Protocol in Micro-Modem 2: Up to 100 bytes
 }
 
 extend goby.acomms.protobuf.ModemTransmission 

@@ -56,6 +56,7 @@ class DriverTester
     void test3();
     void test4();
     void test5();
+    void test6();
     
   private:
     boost::shared_ptr<goby::acomms::ModemDriverBase> driver1_, driver2_;

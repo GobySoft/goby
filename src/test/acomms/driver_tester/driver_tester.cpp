@@ -63,6 +63,16 @@ DriverTester::DriverTester(boost::shared_ptr<goby::acomms::ModemDriverBase> driv
     driver1_->startup(cfg1);
     driver2_->startup(cfg2);
 
+    
+    int i = 0;
+    while(((i / 10) < 3))
+    {
+        driver1_->do_work();
+        driver2_->do_work();
+        
+        usleep(100000);
+        ++i;
+    }
 
     test_str0_.resize(32);
     for(std::string::size_type i = 0, n = test_str0_.size(); i < n; ++i)
@@ -100,6 +110,7 @@ int DriverTester::run()
                 case 3: test3(); break; 
                 case 4: test4(); break; 
                 case 5: test5(); break;
+                case 6: test6(); break;
                 case -1:
                     goby::glog << group("test") << "all tests passed" << std::endl;
                     driver1_->shutdown();
@@ -255,7 +266,21 @@ void DriverTester::handle_data_receive1(const protobuf::ModemTransmission& msg)
         }
         break;
         
-        
+        case 6:
+        {
+            assert(msg.type() == protobuf::ModemTransmission::DRIVER_SPECIFIC &&
+                   msg.GetExtension(micromodem::protobuf::type) == micromodem::protobuf::MICROMODEM_FLEXIBLE_DATA);
+
+            assert(msg.src() == 2);
+            assert(msg.dest() == 1);
+            assert(msg.rate() == 1);
+            assert(msg.frame_size() == 1);
+            assert(msg.frame(0).data() == goby::util::hex_decode("00112233445566778899001122334455667788990011"));
+            ++check_count_;
+        }
+        break;
+
+
         default:
             assert(false);
             break;
@@ -287,10 +312,24 @@ void DriverTester::handle_data_request2(protobuf::ModemTransmission* msg)
             break;
         }
         
-            
         case 4:
             break;
 
+        case 6:
+        {
+            static bool entered = false;
+            if(!entered)
+            {
+                ++check_count_;
+                entered = true;
+            }
+                             
+
+            msg->add_frame(goby::util::hex_decode("00112233445566778899001122334455667788990011"));
+            break;
+        }
+
+            
     }
     
     goby::glog << group("driver2") << "Post data request: " << *msg << std::endl;
@@ -521,4 +560,32 @@ void DriverTester::test5()
         ++i;
     }
     assert(check_count_ == 3);
+}
+
+
+void DriverTester::test6()
+{
+    goby::glog << group("test") << "FDP data test" << std::endl;
+
+    protobuf::ModemTransmission transmit;
+    
+    transmit.set_type(protobuf::ModemTransmission::DRIVER_SPECIFIC);
+    transmit.SetExtension(micromodem::protobuf::type, micromodem::protobuf::MICROMODEM_FLEXIBLE_DATA);
+
+    transmit.set_src(2);
+    transmit.set_dest(1);
+    transmit.set_rate(1);
+    
+    driver2_->handle_initiate_transmission(transmit);
+
+    int i = 0;
+    while(((i / 10) < 10) && check_count_ < 2)
+    {
+        driver1_->do_work();
+        driver2_->do_work();
+        
+        usleep(100000);
+        ++i;
+    }
+    assert(check_count_ == 2);
 }

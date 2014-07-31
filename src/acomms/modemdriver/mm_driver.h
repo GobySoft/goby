@@ -89,6 +89,7 @@ namespace goby
 
             void cccyc(protobuf::ModemTransmission* msg);
             void ccmuc(protobuf::ModemTransmission* msg);
+            void cctdp(protobuf::ModemTransmission* msg);
             void ccmpc(const protobuf::ModemTransmission& msg);
             void ccpdt(const protobuf::ModemTransmission& msg);
             void ccpnt(const protobuf::ModemTransmission& msg);
@@ -115,6 +116,9 @@ namespace goby
             // mini packet
             void camua(const util::NMEASentence& nmea, protobuf::ModemTransmission* msg); // $CAMUA
 
+            // flexible data protocol
+            void cardp(const util::NMEASentence& nmea, protobuf::ModemTransmission* msg); // $CARDP
+            
             // ranging (pings)
             void campr(const util::NMEASentence& nmea, protobuf::ModemTransmission* msg); // $CAMPR
             void campa(const util::NMEASentence& nmea, protobuf::ModemTransmission* msg); // $CAMPA
@@ -208,7 +212,7 @@ namespace goby
                                 CFR,CST,MSG,REV,
                                 DQF,SHF,SNR,DOP,
                                 DBG,FFL,FST,ERR,
-                                TOA,XST};
+                                TOA,XST,RDP,TDP};
             
             std::map<std::string, TalkerIDs> talker_id_map_;
             std::map<std::string, SentenceIDs> sentence_id_map_;

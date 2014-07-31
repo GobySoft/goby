@@ -45,7 +45,7 @@ int main(int argc, char* argv[])
         goby::glog.add_stream(goby::common::logger::DEBUG3, &fout);        
     }
     int mm_version = 1;
-    if(argc = 5)
+    if(argc == 5)
     {
         mm_version = goby::util::as<int>(argv[4]);
     }
@@ -76,14 +76,26 @@ int main(int argc, char* argv[])
 
     std::vector<int> tests_to_run;
     tests_to_run.push_back(0);
-    tests_to_run.push_back(1);
-    tests_to_run.push_back(2);
-    tests_to_run.push_back(3);
+    if(mm_version == 1)
+    {
+        // ranging, mini-data not yet supported by MM2?
+        tests_to_run.push_back(1);
+        tests_to_run.push_back(2);
+        tests_to_run.push_back(3);
+    }
+    
     tests_to_run.push_back(4);
     tests_to_run.push_back(5);
+
+    // FDP only supported in MM2
     if(mm_version == 2)
+    {
         tests_to_run.push_back(6);
+        cfg1.AddExtension(micromodem::protobuf::Config::nvram_cfg, "psk.packet.mod_hdr_version,0");
+        cfg2.AddExtension(micromodem::protobuf::Config::nvram_cfg, "psk.packet.mod_hdr_version,0");
         
+    }
+    
 
     driver1.reset(new goby::acomms::MMDriver);
     driver2.reset(new goby::acomms::MMDriver);

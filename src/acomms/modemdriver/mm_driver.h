@@ -73,15 +73,15 @@ namespace goby
             { return PACKET_SIZE [rate]; }
 
             void set_silent(bool silent);
+            void write_single_cfg(const std::string &s); // write a single NVRAM value
             
-            
+
           private:
         
             // startup
             void initialize_talkers(); // insert strings into sentence_id_map_, etc for later use
             void set_clock(); // set the modem clock from the system (goby) clock
             void write_cfg(); // write the NVRAM configuration values to the modem
-            void write_single_cfg(const std::string &s); // write a single NVRAM value
             void query_all_cfg(); // query the current NVRAM configuration of the modem
             void set_hydroid_gateway_prefix(int id); // if using the hydroid gateway, set its id number
             
@@ -238,6 +238,7 @@ namespace goby
 
             protobuf::ModemTransmission transmit_msg_;
             unsigned expected_remaining_caxst_; // used to determine how many CAXST to aggregate (so that bost rate 0 transmissions [CYC and TXD] are provided as a single logical unit)
+            
             
             protobuf::ModemTransmission receive_msg_;
             unsigned expected_remaining_cacst_; // used to determine how many CACST to aggregate (so that rate 0 transmissions [CYC and RXD] are provided as a single logical unit)

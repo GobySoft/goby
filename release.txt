@@ -6,10 +6,15 @@ Version 2.0.6
 = Acomms = 
 - MOSH Client allowing support for the MOSH shell (mosh.mit.edu) over Goby. Requires use of a patched version of MOSH available at https://github.com/tsaubergine/mosh/tree/mosh-goby
 - Fixes to goby_file_transfer
-- DCCL ModemDriverStatus message reports status of a given driver 
+- DCCL ModemDriverStatus message reports status of a given driver - used by goby_modemdriver.
+- Support for the WHOI Micro-Modem Flexible Data Protocol (FDP)
 
 bzr log --line -n0 -r tag:2.0.5..
 
+546: Toby Schneider 2014-07-31 Support for the Micro-Modem 2 FDP
+545: Toby Schneider 2014-06-15 Added ability to reuse database for goby_store_server
+544: Toby Schneider 2014-06-10 Replaced couts with glog in goby_mosh_relay
+543: Toby Schneider 2014-05-12 {2.0.6~rc2} Increment version
 542: Toby Schneider 2014-05-08 [merge] Merge changes including bug fixes and ModemDriverStatus message
   541.1.6: Toby Schneider 2014-05-08 Fixed bug where DriverBase keep adding repeated writes to the raw log file if it was restarted
   541.1.5: Toby Schneider 2014-05-08 Added keep-alive  (NVRAM status query) to detect if the modem has disappeared (e.g. power failure, etc.)

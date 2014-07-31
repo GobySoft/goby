@@ -334,9 +334,11 @@ Data request is anticipated from the $CCCYC or $CACYC and buffered. Thus it is n
 <td>
 \link modem_message.proto goby::acomms::protobuf::ModemTransmission.type()\endlink = goby::acomms::protobuf::ModemTransmission::DRIVER_SPECIFIC <br> 
  extension \link mm_driver.proto micromodem::protobuf::type\endlink = micromodem::protobuf::MICROMODEM_FLEXIBLE_DATA <br>
-\link modem_message.proto goby::acomms::protobuf::ModemTransmission.src()\endlink = SRC<br>
-\link modem_message.proto goby::acomms::protobuf::ModemTransmission.dest()\endlink = DEST<br>
-\link modem_message.proto goby::acomms::protobuf::ModemTransmission.frame(0)\endlink = goby::util::hex_decode(HHHH) <br>
+\link modem_message.proto goby::acomms::protobuf::ModemTransmission.src()\endlink = src<br>
+\link modem_message.proto goby::acomms::protobuf::ModemTransmission.dest()\endlink = dest<br>
+\link modem_message.proto goby::acomms::protobuf::ModemTransmission.rate()\endlink = rate<br>
+\link modem_message.proto goby::acomms::protobuf::ModemTransmission.frame(0)\endlink = goby::util::hex_decode(df1+df2+df3...dfN) where "+" means concatenate, unless any frame fails the CRC check, in which case this field is set to the empty string. <br>
+\link mm_driver.proto micromodem::protobuf::frame_with_bad_crc(0)\endlink = 0 indicated that Goby frame 0 is bad, if any sub-frame in the FDP has a bad CRC<br>
 </td>
 </tr>
 <tr>
@@ -430,6 +432,16 @@ DEST = \link modem_message.proto goby::acomms::protobuf::ModemTransmission.dest(
 HHHH = goby::acomms::hex_encode(\link modem_message.proto goby::acomms::protobuf::ModemTransmission.frame(0)\endlink) & 0x1F<br>
 </td>
 </tr>
+<tr>
+<td>$CCTDP</td>
+<td>
+dest = \link modem_message.proto goby::acomms::protobuf::ModemTransmission.dest()\endlink<br>
+rate = \link modem_message.proto goby::acomms::protobuf::ModemTransmission.rate()\endlink<br>
+ack = 0 (not yet supported by the Micro-Modem 2) <br>
+reserved = 0 <br>
+hexdata = goby::acomms::hex_encode(\link modem_message.proto goby::acomms::protobuf::ModemTransmission.frame(0)\endlink)<br>
+</td>
+</tr>
 </table>
 
 
@@ -459,6 +471,8 @@ Two way ping
 \image html goby-acomms-mmdriver-mpc.png
 \image latex goby-acomms-mmdriver-mpc.eps "Two way ping"
 
-
+Flexible Data Protocol (Micro-Modem 2)
+\image html goby-acomms-mmdriver-tdp.png
+\image latex goby-acomms-mmdriver-tdp.eps "Flexible Data Protocol"
 
 */

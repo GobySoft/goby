@@ -391,7 +391,7 @@ DEST = \link modem_message.proto goby::acomms::protobuf::ModemTransmission.dest(
 <tr>
 <td>$CCPDT</td>
 <td>
-protobuf::MICROMODEM_REMUS_LBL_RANGING == \link modem_message.proto goby::acomms::protobuf::ModemTransmission.type()\endlink<br>
+micromodem::protobuf::protobuf::MICROMODEM_REMUS_LBL_RANGING == extension \link mm_driver.proto micromodem::protobuf::type\endlink<br>
 \link mm_driver.proto micromodem::protobuf::REMUSLBLParams\endlink type used to determine the parameters of the LBL ping. The object provided with configuration (\link mm_driver.proto micromodem::protobuf::Config::remus_lbl\endlink) is merged with the object provided with the ModemTransmission (\link mm_driver.proto micromodem::protobuf::remus_lbl\endlink) with the latter taking priority on fields that a set in both objects: <br>
 GRP = 1<br>
 CHANNEL = modem ID % 4 + 1 (use four consecutive modem IDs if you need multiple vehicles pinging)<br>
@@ -408,7 +408,7 @@ DF = \link mm_driver.proto micromodem::protobuf::REMUSLBLParams::enable_beacons(
 <tr>
 <td>$CCPNT</td>
 <td>
-protobuf::MICROMODEM_NARROWBAND_LBL_RANGING == \link modem_message.proto goby::acomms::protobuf::ModemTransmission.type()\endlink<br>
+micromodem::protobuf::protobuf::MICROMODEM_NARROWBAND_LBL_RANGING == extension \link mm_driver.proto micromodem::protobuf::type\endlink<br>
 \link mm_driver.proto micromodem::protobuf::NarrowBandLBLParams\endlink type used to determine the parameters of the LBL ping. The object provided with configuration (\link mm_driver.proto micromodem::protobuf::Config::narrowband_lbl\endlink) is merged with the object provided with the ModemTransmission (\link mm_driver.proto micromodem::protobuf::narrowband_lbl\endlink) with the latter taking priority on fields that a set in both objects: <br>
 <!--CCPNT, Ftx, Ttx, Trx, Timeout, FA, FB, FC, FD,Tflag-->
 Ftx = \link mm_driver.proto micromodem::protobuf::NarrowBandLBLParams::transmit_freq()\endlink <br>

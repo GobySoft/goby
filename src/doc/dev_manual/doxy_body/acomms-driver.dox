@@ -341,7 +341,6 @@ Data request is anticipated from the $CCCYC or $CACYC and buffered. Thus it is n
 \link mm_driver.proto micromodem::protobuf::frame_with_bad_crc(0)\endlink = 0 indicated that Goby frame 0 is bad, if any sub-frame in the FDP has a bad CRC<br>
 </td>
 </tr>
-<tr>
 </table>
 
 Control Computer to Modem ($CC):

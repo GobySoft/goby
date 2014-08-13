@@ -45,17 +45,17 @@ namespace goby
         /// binds the driver link-layer callbacks to the QueueManager
         inline void bind(ModemDriverBase& driver, QueueManager& queue_manager)
         {
-            connect(&driver.signal_receive,
+            goby::acomms::connect(&driver.signal_receive,
                     &queue_manager, &QueueManager::handle_modem_receive);
             
-            connect(&driver.signal_data_request,
+            goby::acomms::connect(&driver.signal_data_request,
                     &queue_manager, &QueueManager::handle_modem_data_request);
         }
         
         /// binds the MAC initiate transmission callback to the driver and the driver parsed message callback to the MAC
         inline void bind(MACManager& mac, ModemDriverBase& driver)
         {
-            connect(&mac.signal_initiate_transmission,
+            goby::acomms::connect(&mac.signal_initiate_transmission,
                     &driver, &ModemDriverBase::handle_initiate_transmission);
         }
 
@@ -63,15 +63,15 @@ namespace goby
         inline void bind(QueueManager& queue_manager, RouteManager& route_manager)
         {
             route_manager.add_subnet_queue(&queue_manager);
-            connect(&queue_manager.signal_in_route, &route_manager, &RouteManager::handle_in);
-            connect(&queue_manager.signal_out_route, &route_manager, &RouteManager::handle_out);
+            goby::acomms::connect(&queue_manager.signal_in_route, &route_manager, &RouteManager::handle_in);
+            goby::acomms::connect(&queue_manager.signal_out_route, &route_manager, &RouteManager::handle_out);
         }        
 
         /// bind all three (shortcut to calling the other three bind functions)
         inline void bind(ModemDriverBase& driver, QueueManager& queue_manager, MACManager& mac)
         {
-            bind(driver, queue_manager);
-            bind(mac, driver);
+            goby::acomms::bind(driver, queue_manager);
+            goby::acomms::bind(mac, driver);
         }
         
         // examples

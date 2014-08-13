@@ -1172,7 +1172,7 @@ RTF_EXTENSIONS_FILE    =
 # If the GENERATE_MAN tag is set to YES (the default) Doxygen will 
 # generate man pages
 
-GENERATE_MAN           = YES
+GENERATE_MAN           = NO
 
 # The MAN_OUTPUT tag is used to specify where the man pages will be put. 
 # If a relative path is entered the value of OUTPUT_DIRECTORY will be 
@@ -1430,19 +1430,19 @@ HAVE_DOT               = YES
 # DOTFONTPATH environment variable or by setting DOT_FONTPATH to the directory 
 # containing the font.
 
-DOT_FONTNAME           = FreeSans
+# DOT_FONTNAME           = FreeSans
 
 # The DOT_FONTSIZE tag can be used to set the size of the font of dot graphs. 
 # The default size is 10pt.
 
-DOT_FONTSIZE           = 10
+# DOT_FONTSIZE           = 10
 
 # By default doxygen will tell dot to use the output directory to look for the 
 # FreeSans.ttf font (which doxygen will put there itself). If you specify a 
 # different font using DOT_FONTNAME you can set the path where dot 
 # can find it using this tag.
 
-DOT_FONTPATH           = 
+# DOT_FONTPATH           = 
 
 # If the CLASS_GRAPH and HAVE_DOT tags are set to YES then doxygen 
 # will generate a graph for each documented class showing the direct and 

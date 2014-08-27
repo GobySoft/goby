@@ -33,16 +33,21 @@ int main(int argc, char* argv[])
 {
     if(argc < 3)
     {
-        std::cout << "usage: test_mmdriver1 /dev/ttyS0 /dev/ttyS1 [file to write]" << std::endl;
+        std::cout << "usage: test_mmdriver1 /dev/ttyS0 /dev/ttyS1 [file to write] [mm version (1 or 2)]" << std::endl;
         exit(1);
     }
 
     goby::glog.add_stream(goby::common::logger::DEBUG3, &std::clog);
     std::ofstream fout;
-    if(argc == 4)
+    if(argc >= 4)
     {
         fout.open(argv[3]);
         goby::glog.add_stream(goby::common::logger::DEBUG3, &fout);        
+    }
+    int mm_version = 1;
+    if(argc == 5)
+    {
+        mm_version = goby::util::as<int>(argv[4]);
     }
     
     goby::glog.set_name(argv[0]);    
@@ -55,6 +60,7 @@ int main(int argc, char* argv[])
     // 0111
     cfg1.MutableExtension(micromodem::protobuf::Config::remus_lbl)->set_enable_beacons(7);
 
+    if(mm_version != 2)
     cfg1.SetExtension(micromodem::protobuf::Config::reset_nvram, true);
     cfg2.SetExtension(micromodem::protobuf::Config::reset_nvram, true);
 
@@ -70,11 +76,26 @@ int main(int argc, char* argv[])
 
     std::vector<int> tests_to_run;
     tests_to_run.push_back(0);
-    tests_to_run.push_back(1);
-    tests_to_run.push_back(2);
-    tests_to_run.push_back(3);
+    if(mm_version == 1)
+    {
+        // ranging, mini-data not yet supported by MM2?
+        tests_to_run.push_back(1);
+        tests_to_run.push_back(2);
+        tests_to_run.push_back(3);
+    }
+    
     tests_to_run.push_back(4);
     tests_to_run.push_back(5);
+
+    // FDP only supported in MM2
+    if(mm_version == 2)
+    {
+        tests_to_run.push_back(6);
+        cfg1.AddExtension(micromodem::protobuf::Config::nvram_cfg, "psk.packet.mod_hdr_version,0");
+        cfg2.AddExtension(micromodem::protobuf::Config::nvram_cfg, "psk.packet.mod_hdr_version,0");
+        
+    }
+    
 
     driver1.reset(new goby::acomms::MMDriver);
     driver2.reset(new goby::acomms::MMDriver);

@@ -21,6 +21,8 @@
 
 #include "chat_curses.h"
 
+//#define USE_FLEXIBLE_DATA_PACKET
+
 using goby::util::as;
 using goby::common::goby_time;
 
@@ -94,6 +96,10 @@ int main(int argc, char* argv[])
     goby::acomms::protobuf::QueuedMessageEntry* q_entry = q_manager_cfg.add_message_entry();
     q_entry->set_protobuf_name("ChatMessage");
 
+#ifdef USE_FLEXIBLE_DATA_PACKET
+    q_entry->set_ack(false);
+#endif
+    
     goby::acomms::protobuf::QueuedMessageEntry::Role* src_role = q_entry->add_role();
     src_role->set_type(goby::acomms::protobuf::QueuedMessageEntry::SOURCE_ID);
     src_role->set_field("source");
@@ -111,6 +117,10 @@ int main(int argc, char* argv[])
     goby::acomms::protobuf::DriverConfig driver_cfg;
     driver_cfg.set_modem_id(my_id_);
     driver_cfg.set_serial_port(serial_port);
+
+#ifdef USE_FLEXIBLE_DATA_PACKET
+    driver_cfg.AddExtension(micromodem::protobuf::Config::nvram_cfg, "psk.packet.mod_hdr_version,1");
+#endif
     
     //
     // Initiate medium access control (libamac)
@@ -123,16 +133,30 @@ int main(int argc, char* argv[])
     goby::acomms::protobuf::ModemTransmission my_slot;
     my_slot.set_src(my_id_);
     my_slot.set_dest(buddy_id_);
-    my_slot.set_rate(0);
-    my_slot.set_slot_seconds(12);
+#ifdef USE_FLEXIBLE_DATA_PACKET
+    my_slot.set_type(goby::acomms::protobuf::ModemTransmission::DRIVER_SPECIFIC);
+    my_slot.SetExtension(micromodem::protobuf::type, micromodem::protobuf::MICROMODEM_FLEXIBLE_DATA);
+    my_slot.set_max_frame_bytes(32);
+    my_slot.set_rate(1);
+#else
     my_slot.set_type(goby::acomms::protobuf::ModemTransmission::DATA);
+    my_slot.set_rate(0);
+#endif
+    my_slot.set_slot_seconds(12);
     
     goby::acomms::protobuf::ModemTransmission buddy_slot;
     buddy_slot.set_src(buddy_id_);
     buddy_slot.set_dest(my_id_);
-    buddy_slot.set_rate(0);
     buddy_slot.set_slot_seconds(12);
+#ifdef USE_FLEXIBLE_DATA_PACKET
+    buddy_slot.set_type(goby::acomms::protobuf::ModemTransmission::DRIVER_SPECIFIC);
+    buddy_slot.SetExtension(micromodem::protobuf::type, micromodem::protobuf::MICROMODEM_FLEXIBLE_DATA);
+    buddy_slot.set_max_frame_bytes(32);
+    buddy_slot.set_rate(1);
+#else
     buddy_slot.set_type(goby::acomms::protobuf::ModemTransmission::DATA);
+    buddy_slot.set_rate(0);
+#endif
 
     if(my_id_ < buddy_id_)
     {

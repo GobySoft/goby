@@ -170,7 +170,7 @@ Notes:
 
 \subsection acomms_mmdriver_overview Supported Functionality 
 
-The goby::acomms::MMDriver extends the goby::acomms::ModemDriverBase for the WHOI Micro-Modem acoustic %modem. It is tested to work with revision 0.94.0.00 of the Micro-Modem firmware, but is known to work with older firmware (at least 0.92.0.85). It is likely to work properly with newer firmware, and any problems while using newer Micro-Modem firmware should be filed as a <a href="https://bugs.launchpad.net/goby">bug in Goby</a>. The following features of the WHOI Micro-Modem are implemented, which comprise the majority of the Micro-Modem functionality:
+The goby::acomms::MMDriver extends the goby::acomms::ModemDriverBase for the WHOI Micro-Modem acoustic %modem. It is tested to work with revision 0.94.0.00 of the Micro-Modem 1 and revision 2.0.16421 of the Micro-Modem 2 firmware, but is known to work with older firmware (at least 0.92.0.85). It is likely to work properly with newer firmware, and any problems while using newer Micro-Modem firmware should be filed as a <a href="https://bugs.launchpad.net/goby">bug in Goby</a>. The following features of the WHOI Micro-Modem are implemented, which comprise the majority of the Micro-Modem functionality:
 
 
 <ul>
@@ -180,6 +180,7 @@ The goby::acomms::MMDriver extends the goby::acomms::ModemDriverBase for the WHO
 <li>REMUS transponder LBL ping
 <li>User mini-packet 13 bit data transmission
 <li>Two way ping
+<li>Flexible Data Protocol (Micro-Modem 2 only)
 </ul>
 
 See the \ref acomms_mmdriver_uml "UML diagrams" for a graphical diagram of using Goby for each of these features.
@@ -242,7 +243,8 @@ Used only to detect BAD_CRC frames ($CAMSG,BAD_CRC...).
 <tr>
 <td>$CAMUA</td>
 <td>
-\link modem_message.proto goby::acomms::protobuf::ModemTransmission.type()\endlink = goby::acomms::protobuf::ModemTransmission::MICROMODEM_MINI_DATA <br>
+\link modem_message.proto goby::acomms::protobuf::ModemTransmission.type()\endlink = goby::acomms::protobuf::ModemTransmission::DRIVER_SPECIFIC <br> 
+ extension \link mm_driver.proto micromodem::protobuf::type\endlink = micromodem::protobuf::MICROMODEM_MINI_DATA <br>
 \link modem_message.proto goby::acomms::protobuf::ModemTransmission.time()\endlink = goby::common::goby_time<uint64>() <br>
 \link modem_message.proto goby::acomms::protobuf::ModemTransmission.src()\endlink = SRC<br>
 \link modem_message.proto goby::acomms::protobuf::ModemTransmission.dest()\endlink = DEST<br>
@@ -255,7 +257,8 @@ Used only to detect BAD_CRC frames ($CAMSG,BAD_CRC...).
 \link modem_message.proto goby::acomms::protobuf::ModemTransmission.time()\endlink = goby::common::goby_time<uint64>() <br>
 \link modem_message.proto goby::acomms::protobuf::ModemTransmission.dest()\endlink = SRC (SRC and DEST flipped to be SRC and DEST of $CCMPC)<br>
 \link modem_message.proto goby::acomms::protobuf::ModemTransmission.src()\endlink = DEST<br>
-\link modem_message.proto goby::acomms::protobuf::ModemTransmission.type()\endlink = MICROMODEM_TWO_WAY_PING<br>
+\link modem_message.proto goby::acomms::protobuf::ModemTransmission.type()\endlink = goby::acomms::protobuf::ModemTransmission::DRIVER_SPECIFIC <br> 
+ extension \link mm_driver.proto micromodem::protobuf::type\endlink = micromodem::protobuf::MICROMODEM_TWO_WAY_PING <br>
 (in extension \link mm_driver.proto micromodem::protobuf::ranging_reply\endlink) <br>
 \link mm_driver.proto micromodem::protobuf::RangingReply.one_way_travel_time(0)\endlink = Travel Time<br>
 </td>
@@ -266,7 +269,8 @@ Used only to detect BAD_CRC frames ($CAMSG,BAD_CRC...).
 \link modem_message.proto goby::acomms::protobuf::ModemTransmission.time()\endlink = goby::common::goby_time<uint64>() <br>
 \link modem_message.proto goby::acomms::protobuf::ModemTransmission.src()\endlink = SRC<br>
 \link modem_message.proto goby::acomms::protobuf::ModemTransmission.dest()\endlink = DEST<br>
-\link modem_message.proto goby::acomms::protobuf::ModemTransmission.type()\endlink = MICROMODEM_TWO_WAY_PING<br>
+\link modem_message.proto goby::acomms::protobuf::ModemTransmission.type()\endlink = goby::acomms::protobuf::ModemTransmission::DRIVER_SPECIFIC <br> 
+ extension \link mm_driver.proto micromodem::protobuf::type\endlink = micromodem::protobuf::MICROMODEM_TWO_WAY_PING <br>
 </td>
 </tr>
 <tr>
@@ -274,7 +278,8 @@ Used only to detect BAD_CRC frames ($CAMSG,BAD_CRC...).
 <td>
 \link modem_message.proto goby::acomms::protobuf::ModemTransmission.time()\endlink = hhmmsss.ss (converted to microseconds since 1970-01-01 00:00:00 UTC) <br>
 \link modem_message.proto goby::acomms::protobuf::ModemTransmission.time_source()\endlink = goby::acomms::protobuf::MODEM_TIME <br>
-\link modem_message.proto goby::acomms::protobuf::ModemTransmission.type()\endlink = goby::acomms::protobuf::MICROMODEM_REMUS_LBL_RANGING or goby::acomms::protobuf::MICROMODEM_NARROWBAND_LBL_RANGING (depending on which LBL type was last initiated)<br>
+\link modem_message.proto goby::acomms::protobuf::ModemTransmission.type()\endlink = goby::acomms::protobuf::ModemTransmission::DRIVER_SPECIFIC <br> 
+ extension \link mm_driver.proto micromodem::protobuf::type\endlink =  micromodem::protobuf::MICROMODEM_REMUS_LBL_RANGING or micromodem::protobuf::MICROMODEM_NARROWBAND_LBL_RANGING (depending on which LBL type was last initiated)<br>
 \link modem_message.proto goby::acomms::protobuf::ModemTransmission.src()\endlink = modem ID<br>
 (in extension \link mm_driver.proto micromodem::protobuf::ranging_reply\endlink) <br>
 \link modem_message.proto micromodem::protobuf::RangingReply.one_way_travel_time(0)\endlink = TA<br>
@@ -324,6 +329,18 @@ Checked against system clock and if skew is unacceptable another $CCCLK will be 
 Data request is anticipated from the $CCCYC or $CACYC and buffered. Thus it is not translated into any of the Protobuf messages.
 </td>
 </tr>
+<tr>
+<td>$CARDP</td>
+<td>
+\link modem_message.proto goby::acomms::protobuf::ModemTransmission.type()\endlink = goby::acomms::protobuf::ModemTransmission::DRIVER_SPECIFIC <br> 
+ extension \link mm_driver.proto micromodem::protobuf::type\endlink = micromodem::protobuf::MICROMODEM_FLEXIBLE_DATA <br>
+\link modem_message.proto goby::acomms::protobuf::ModemTransmission.src()\endlink = src<br>
+\link modem_message.proto goby::acomms::protobuf::ModemTransmission.dest()\endlink = dest<br>
+\link modem_message.proto goby::acomms::protobuf::ModemTransmission.rate()\endlink = rate<br>
+\link modem_message.proto goby::acomms::protobuf::ModemTransmission.frame(0)\endlink = goby::util::hex_decode(df1+df2+df3...dfN) where "+" means concatenate, unless any frame fails the CRC check, in which case this field is set to the empty string. <br>
+\link mm_driver.proto micromodem::protobuf::frame_with_bad_crc(0)\endlink = 0 indicated that Goby frame 0 is bad, if any sub-frame in the FDP has a bad CRC<br>
+</td>
+</tr>
 </table>
 
 Control Computer to Modem ($CC):
@@ -367,7 +384,7 @@ Nframes = \link modem_message.proto goby::acomms::protobuf::ModemTransmission.ma
 <tr>
 <td>$CCMPC</td>
 <td>
-protobuf::MICROMODEM_TWO_WAY_PING == \link modem_message.proto goby::acomms::protobuf::ModemTransmission.type()\endlink<br>
+micromodem::protobuf::MICROMODEM_TWO_WAY_PING == extension \link mm_driver.proto micromodem::protobuf::type\endlink<br>
 SRC = \link modem_message.proto goby::acomms::protobuf::ModemTransmission.src()\endlink<br>
 DEST = \link modem_message.proto goby::acomms::protobuf::ModemTransmission.dest()\endlink<br>
 </td>
@@ -375,7 +392,7 @@ DEST = \link modem_message.proto goby::acomms::protobuf::ModemTransmission.dest(
 <tr>
 <td>$CCPDT</td>
 <td>
-protobuf::MICROMODEM_REMUS_LBL_RANGING == \link modem_message.proto goby::acomms::protobuf::ModemTransmission.type()\endlink<br>
+micromodem::protobuf::protobuf::MICROMODEM_REMUS_LBL_RANGING == extension \link mm_driver.proto micromodem::protobuf::type\endlink<br>
 \link mm_driver.proto micromodem::protobuf::REMUSLBLParams\endlink type used to determine the parameters of the LBL ping. The object provided with configuration (\link mm_driver.proto micromodem::protobuf::Config::remus_lbl\endlink) is merged with the object provided with the ModemTransmission (\link mm_driver.proto micromodem::protobuf::remus_lbl\endlink) with the latter taking priority on fields that a set in both objects: <br>
 GRP = 1<br>
 CHANNEL = modem ID % 4 + 1 (use four consecutive modem IDs if you need multiple vehicles pinging)<br>
@@ -392,7 +409,7 @@ DF = \link mm_driver.proto micromodem::protobuf::REMUSLBLParams::enable_beacons(
 <tr>
 <td>$CCPNT</td>
 <td>
-protobuf::MICROMODEM_NARROWBAND_LBL_RANGING == \link modem_message.proto goby::acomms::protobuf::ModemTransmission.type()\endlink<br>
+micromodem::protobuf::protobuf::MICROMODEM_NARROWBAND_LBL_RANGING == extension \link mm_driver.proto micromodem::protobuf::type\endlink<br>
 \link mm_driver.proto micromodem::protobuf::NarrowBandLBLParams\endlink type used to determine the parameters of the LBL ping. The object provided with configuration (\link mm_driver.proto micromodem::protobuf::Config::narrowband_lbl\endlink) is merged with the object provided with the ModemTransmission (\link mm_driver.proto micromodem::protobuf::narrowband_lbl\endlink) with the latter taking priority on fields that a set in both objects: <br>
 <!--CCPNT, Ftx, Ttx, Trx, Timeout, FA, FB, FC, FD,Tflag-->
 Ftx = \link mm_driver.proto micromodem::protobuf::NarrowBandLBLParams::transmit_freq()\endlink <br>
@@ -412,6 +429,16 @@ Tflag = \link mm_driver.proto micromodem::protobuf::NarrowBandLBLParams::transmi
 SRC = \link modem_message.proto goby::acomms::protobuf::ModemTransmission.src()\endlink<br>
 DEST = \link modem_message.proto goby::acomms::protobuf::ModemTransmission.dest()\endlink<br>
 HHHH = goby::acomms::hex_encode(\link modem_message.proto goby::acomms::protobuf::ModemTransmission.frame(0)\endlink) & 0x1F<br>
+</td>
+</tr>
+<tr>
+<td>$CCTDP</td>
+<td>
+dest = \link modem_message.proto goby::acomms::protobuf::ModemTransmission.dest()\endlink<br>
+rate = \link modem_message.proto goby::acomms::protobuf::ModemTransmission.rate()\endlink<br>
+ack = 0 (not yet supported by the Micro-Modem 2) <br>
+reserved = 0 <br>
+hexdata = goby::acomms::hex_encode(\link modem_message.proto goby::acomms::protobuf::ModemTransmission.frame(0)\endlink)<br>
 </td>
 </tr>
 </table>
@@ -443,6 +470,8 @@ Two way ping
 \image html goby-acomms-mmdriver-mpc.png
 \image latex goby-acomms-mmdriver-mpc.eps "Two way ping"
 
-
+Flexible Data Protocol (Micro-Modem 2)
+\image html goby-acomms-mmdriver-tdp.png
+\image latex goby-acomms-mmdriver-tdp.eps "Flexible Data Protocol"
 
 */

@@ -145,7 +145,8 @@ void goby::acomms::MMDriver::initialize_talkers()
         ("CFR",CFR)("CST",CST)("MSG",MSG)("REV",REV) 
         ("DQF",DQF)("SHF",SHF)("MFD",MFD)("SNR",SNR) 
         ("DOP",DOP)("DBG",DBG)("FFL",FFL)("FST",FST) 
-        ("ERR",ERR)("TOA",TOA)("XST",XST);
+        ("ERR",ERR)("TOA",TOA)("XST",XST)("TDP",TDP)
+        ("RDP",RDP);
 
     boost::assign::insert (talker_id_map_)
         ("CC",CC)("CA",CA)("SN",SN)("GP",GP); 
@@ -208,7 +209,10 @@ void goby::acomms::MMDriver::initialize_talkers()
         ("$CADOP","Doppler speed message, modem to host")
         ("$CADBG","Low level debug message, modem to host")
         ("$CAERR","Error message, modem to host")
-        ("$CATOA","Message from modem to host reporting time of arrival of the previous packet, and the synchronous timing mode used to determine that time.");
+        ("$CATOA","Message from modem to host reporting time of arrival of the previous packet, and the synchronous timing mode used to determine that time.")
+        ("$CCTDP","Transmit (downlink) data packet with Flexible Data Protocol (Micro-Modem 2)")
+        ("$CCTDP","Response to CCTDP for Flexible Data Protocol (Micro-Modem 2)")
+        ("$CARDP","Reception of a FDP downlink data packet (Micro-Modem 2)");
 
     // from Micro-Modem Software Interface Guide v. 3.04
     boost::assign::insert (cfg_map_)
@@ -465,6 +469,7 @@ void goby::acomms::MMDriver::handle_initiate_transmission(const protobuf::ModemT
                 switch(transmit_msg_.GetExtension(micromodem::protobuf::type))
                 {
                     case micromodem::protobuf::MICROMODEM_MINI_DATA: ccmuc(&transmit_msg_); break;
+                    case micromodem::protobuf::MICROMODEM_FLEXIBLE_DATA: cctdp(&transmit_msg_); break;
                     case micromodem::protobuf::MICROMODEM_TWO_WAY_PING: ccmpc(transmit_msg_); break;
                     case micromodem::protobuf::MICROMODEM_REMUS_LBL_RANGING: ccpdt(transmit_msg_); break;
                     case micromodem::protobuf::MICROMODEM_NARROWBAND_LBL_RANGING: ccpnt(transmit_msg_); break;
@@ -566,7 +571,46 @@ void goby::acomms::MMDriver::ccmuc(protobuf::ModemTransmission* msg)
     
 
 }
+
+void goby::acomms::MMDriver::cctdp(protobuf::ModemTransmission* msg)
+{
+    glog.is(DEBUG1) && glog << group(glog_out_group()) << "\tthis is a MICROMODEM_FLEXIBLE_DATA transmission" << std::endl;
+
+    const int FDP_NUM_FRAMES = 1;
+    const int FDP_MAX_PACKET_SIZE = 100;
+
+    msg->set_max_num_frames(FDP_NUM_FRAMES);
+
+    // if the requestor of the transmission already set a maximum, don't overwrite it.
+    if(!msg->has_max_frame_bytes())
+        msg->set_max_frame_bytes(FDP_MAX_PACKET_SIZE);
+
+    cache_outgoing_data(msg);
+        
+    if(msg->frame_size() > 0 && msg->frame(0).size())
+    {        
+        glog.is(DEBUG1) && glog << "FDP data message: " << *msg << std::endl;
+            
+        //$CCTDP,dest,rate,ack,reserved,hexdata*CS
+        NMEASentence nmea("$CCTDP", NMEASentence::IGNORE);
+        nmea.push_back(msg->dest()); 
+        nmea.push_back(msg->rate());
+        if(msg->ack_requested())
+            glog.is(WARN) && glog << "ACK not yet supported for FDP" << std::endl;
+        nmea.push_back(0); // ack
+        nmea.push_back(0); // reserved
+        nmea.push_back(goby::util::hex_encode(msg->frame(0))); //HHHH 
+        append_to_write_queue(nmea);
+    }
+    else
+    {
+        glog.is(DEBUG1) && glog << group(glog_out_group()) << warn << "FDP transmission failed: no data provided" << std::endl;
+    }
     
+
+}
+
+
 void goby::acomms::MMDriver::ccmpc(const protobuf::ModemTransmission& msg)
 {
     glog.is(DEBUG1) && glog << group(glog_out_group()) << "\tthis is a MICROMODEM_TWO_WAY_PING transmission" << std::endl;
@@ -798,6 +842,7 @@ void goby::acomms::MMDriver::process_receive(const NMEASentence& nmea)
         case MSG: camsg(nmea, &receive_msg_); break; // for picking up BAD_CRC
         case CST: cacst(nmea, &receive_msg_); break; // transmit stats for clock mode
         case MUA: camua(nmea, &receive_msg_); break; // mini-packet receive
+        case RDP: cardp(nmea, &receive_msg_); break; // FDP receive
         case ACK: caack(nmea, &receive_msg_); break; // acknowledge
 
             //
@@ -857,8 +902,7 @@ void goby::acomms::MMDriver::cadrq(const NMEASentence& nmea_in, const protobuf::
     NMEASentence nmea_out("$CCTXD", NMEASentence::IGNORE);        
 
     // WHOI counts frames from 1, we count from 0
-    // TEMPORARY MM2 BUG WORKAROUND (DRQ frame is 0, not 1)
-    int frame = (driver_cfg_.GetExtension(micromodem::protobuf::Config::mm_version) == 2) ? as<int>(nmea_in[6]) : as<int>(nmea_in[6])-1;
+    int frame = as<int>(nmea_in[6])-1;
     
     if(frame < m.frame_size() && !m.frame(frame).empty())
     {
@@ -961,6 +1005,61 @@ void goby::acomms::MMDriver::camua(const NMEASentence& nmea, protobuf::ModemTran
         signal_receive_and_clear(m);
 }
 
+void goby::acomms::MMDriver::cardp(const NMEASentence& nmea, protobuf::ModemTransmission* m)
+{
+    enum { SRC = 1,
+           DEST = 2,
+           RATE = 3,
+           ACK = 4,
+           RESERVED = 5,
+           DATA = 6 };
+    
+    m->set_time(goby_time<uint64>());
+    m->set_src(as<uint32>(nmea[SRC]));
+    m->set_dest(as<uint32>(nmea[DEST]));
+    m->set_rate(as<uint32>(nmea[RATE]));
+    m->set_type(protobuf::ModemTransmission::DRIVER_SPECIFIC);
+    m->SetExtension(micromodem::protobuf::type, micromodem::protobuf::MICROMODEM_FLEXIBLE_DATA);
+
+    std::vector<std::string> frames;
+    boost::split(frames, nmea[DATA], boost::is_any_of(";"));
+
+    bool bad_frame = false;
+    std::string frame_hex;
+    const int num_fields = 3;
+    for(int f = 0, n = frames.size()/num_fields; f < n; ++f)
+    {
+        // offset from f
+        enum { CRCCHECK = 0, NBYTES = 1, DATA = 2 };
+        
+        if(!goby::util::as<bool>(frames[f*num_fields + CRCCHECK]))
+        {
+            bad_frame = true;
+            break;       
+        }
+        else
+        {
+            frame_hex += frames[f*num_fields + DATA];
+        }
+    }
+
+    if(bad_frame)
+    {
+        m->AddExtension(micromodem::protobuf::frame_with_bad_crc, 0);
+        m->add_frame();
+    }
+    else
+    {
+        m->add_frame(goby::util::hex_decode(frame_hex));
+    }
+    
+    glog.is(DEBUG1) && glog << group(glog_in_group()) << "Received MICROMODEM_FLEXIBLE_DATA packet from " << m->src() << std::endl;
+
+    // if enabled cacst will signal_receive
+    if(!nvram_cfg_["CST"])
+        signal_receive_and_clear(m);
+}
+
 void goby::acomms::MMDriver::cacfg(const NMEASentence& nmea)
 {
     nvram_cfg_[nmea[1]] = nmea.as<int>(2);
@@ -1045,10 +1144,6 @@ void goby::acomms::MMDriver::caxst(const NMEASentence& nmea, protobuf::ModemTran
             micromodem::protobuf::INVALID_TRANSMIT_MODE;
         
         xst->set_mode(transmit_mode);
-
-        // TEMPORARY MM2 BUG WORKAROUND
-        if(driver_cfg_.GetExtension(micromodem::protobuf::Config::mm_version) == 2)
-            version_offset = 0;
         
         xst->set_probe_length(nmea.as<int32>(5 + version_offset));
         xst->set_bandwidth(nmea.as<int32>(6 + version_offset));

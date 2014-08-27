@@ -173,6 +173,7 @@ CpAcommsHandler::CpAcommsHandler()
 
     subscribe(cfg_.moos_var().prefix() + cfg_.moos_var().config_file_request(), &CpAcommsHandler::handle_config_file_request, this);    
 
+    subscribe(cfg_.moos_var().prefix() + cfg_.moos_var().mac_initiate_transmission(), &CpAcommsHandler::handle_external_initiate_transmission, this);    
 }
 
 CpAcommsHandler::~CpAcommsHandler()
@@ -306,6 +307,22 @@ void CpAcommsHandler::handle_config_file_request(const CMOOSMsg&)
 {
     publish(cfg_.moos_var().prefix() + cfg_.moos_var().config_file(),
             dccl::b64_encode(cfg_.SerializeAsString()));
+}
+
+void CpAcommsHandler::handle_external_initiate_transmission(const CMOOSMsg& msg)
+{
+    // don't repost our own transmissions
+    if(msg.GetSource() == CMOOSApp::GetAppName())
+        return;
+    
+    if(driver_)
+    {
+        goby::acomms::protobuf::ModemTransmission transmission;
+        parse_for_moos(msg.GetString(), &transmission);
+        
+        glog.is(VERBOSE) && glog << group("pAcommsHandler") <<  "Initiating transmission: " << transmission << std::endl;
+        driver_->handle_initiate_transmission(transmission);
+    }    
 }
 
 

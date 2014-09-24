@@ -303,9 +303,9 @@ namespace goby
 
             struct Answer : boost::statechart::state<Answer, Command>
             {
-//                typedef boost::mpl::list<
-//                    boost::statechart::transition< EvOnline, Online >
-//                    > reactions;
+                typedef boost::mpl::list<
+                    boost::statechart::transition< EvNoCarrier, Ready >
+                    > reactions;
 
               Answer(my_context ctx) : my_base(ctx) 
                 {

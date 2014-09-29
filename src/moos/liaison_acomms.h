@@ -27,6 +27,7 @@
 
 #include <Wt/WTimer>
 #include <Wt/WProgressBar>
+#include <Wt/WCssDecorationStyle>
 
 #include <dccl.h>
 
@@ -49,6 +50,16 @@ namespace goby
             
         };
         
+        class MACBar : public Wt::WProgressBar
+        {
+          public:
+            MACBar(Wt::WContainerWidget* parent = 0)
+                : Wt::WProgressBar(parent)
+            { }
+            Wt::WString text() const;            
+            
+        };
+
         
         class LiaisonAcomms : public LiaisonContainer, public goby::moos::MOOSNode
         {
@@ -87,13 +98,19 @@ namespace goby
             Wt::WText* dccl_message_text_;
             Wt::WComboBox* dccl_combo_;
             Wt::WTable* queue_table_;
-                
+
+            Wt::WContainerWidget* amac_box_;
+            
             std::map<dccl::int32, QueueBar*> queue_bars_;
 
             // maps dccl id onto QueuedMessageEntry index
             std::map<dccl::int32, int> queue_cfg_;
+
+            // maps index of MAC cycle to container
+            std::map<int, Wt::WContainerWidget*> mac_slots_;
+            std::map<int, MACBar*> mac_bars_;
+            Wt::WCssDecorationStyle mac_slot_style_;
             
-                
             struct QueueStats
             {
             QueueStats() : last_rx_time(-1) { }
@@ -110,6 +127,9 @@ namespace goby
             
             Wt::WTimer timer_;
 
+            goby::acomms::protobuf::ModemTransmission last_slot_;
+            
+            
         };
 
     }

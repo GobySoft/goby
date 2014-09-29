@@ -31,8 +31,9 @@
 #include <Wt/WLabel>
 #include <Wt/WFont>
 #include <Wt/WTable>
-#include <Wt/WCssDecorationStyle>
 #include <Wt/WDialog>
+#include <Wt/WColor>
+#include <Wt/WPanel>
 
 #include "goby/util/as.h"
 #include "goby/util/dynamic_protobuf_manager.h"
@@ -75,7 +76,7 @@ goby::common::LiaisonAcomms::LiaisonAcomms(ZeroMQService* zeromq_service, const 
     subscribe("ACOMMS_CONFIG", LIAISON_INTERNAL_SUBSCRIBE_SOCKET);
     subscribe("ACOMMS_QSIZE", LIAISON_INTERNAL_SUBSCRIBE_SOCKET);
     subscribe("ACOMMS_QUEUE_RECEIVE", LIAISON_INTERNAL_SUBSCRIBE_SOCKET);
-    subscribe("ACOMMS_MAC_INITIATE_TRANSMISSION", LIAISON_INTERNAL_SUBSCRIBE_SOCKET);
+    subscribe("ACOMMS_MAC_SLOT_START", LIAISON_INTERNAL_SUBSCRIBE_SOCKET);
     subscribe("ACOMMS_MODEM_TRANSMIT", LIAISON_INTERNAL_SUBSCRIBE_SOCKET);
     subscribe("ACOMMS_MODEM_RECEIVE", LIAISON_INTERNAL_SUBSCRIBE_SOCKET);
 
@@ -85,7 +86,13 @@ goby::common::LiaisonAcomms::LiaisonAcomms(ZeroMQService* zeromq_service, const 
     timer_.setInterval(1/cfg.update_freq()*1.0e3);
     timer_.timeout().connect(this, &LiaisonAcomms::loop);
 
-    WGroupBox* dccl_box = new Wt::WGroupBox("DCCL", this);    
+    WPanel* dccl_panel = new Wt::WPanel(this);    
+    dccl_panel->setTitle("DCCL");
+    dccl_panel->setCollapsible(true);
+    dccl_panel->setCollapsed(cfg_.minimize_dccl());
+    
+    WContainerWidget* dccl_box = new Wt::WContainerWidget();
+    dccl_panel->setCentralWidget(dccl_box);
     new WLabel("Message: ", dccl_box);
     dccl_combo_ = new WComboBox(dccl_box);
     
@@ -114,18 +121,34 @@ goby::common::LiaisonAcomms::LiaisonAcomms(ZeroMQService* zeromq_service, const 
     dccl_analyze_text_->hide();
     
     
-    Wt::WGroupBox* queue_box = new Wt::WGroupBox("Queue", this);
+    WPanel* queue_panel = new Wt::WPanel(this);    
+    queue_panel->setTitle("Queue");
+    queue_panel->setCollapsible(true);
+    WContainerWidget* queue_box = new Wt::WContainerWidget();
+    queue_panel->setCentralWidget(queue_box);
+    queue_panel->setCollapsed(cfg_.minimize_queue());
+
     queue_table_ = new Wt::WTable(queue_box);
     queue_table_->setStyleClass("basic_small");
     queue_table_->setHeaderCount(1);
     queue_table_->elementAt(0,0)->addWidget(new WText("DCCL Message"));
     queue_table_->elementAt(0,1)->addWidget(new WText("Queue Size"));
-    queue_table_->elementAt(0,2)->addWidget(new WText("Time since Rx"));
+    queue_table_->elementAt(0,2)->addWidget(new WText("Time since Receive"));
 
     
-    WGroupBox* amac_box = new Wt::WGroupBox("AMAC", this);
+    WPanel* amac_panel = new Wt::WPanel(this);    
+    amac_panel->setTitle("AMAC");
+    amac_panel->setCollapsible(true);
+    amac_box_ = new Wt::WContainerWidget();
+    amac_panel->setCentralWidget(amac_box_);
+    amac_panel->setCollapsed(cfg_.minimize_amac());
 
-    WGroupBox* driver_box = new Wt::WGroupBox("ModemDriver", this);
+    WPanel* driver_panel = new Wt::WPanel(this);    
+    driver_panel->setTitle("Driver");
+    driver_panel->setCollapsible(true);
+    WContainerWidget* driver_box = new Wt::WContainerWidget();
+    driver_panel->setCentralWidget(driver_box);
+    driver_panel->setCollapsed(cfg_.minimize_driver());
     
     set_name("MOOSAcomms");
 }
@@ -144,6 +167,13 @@ void goby::common::LiaisonAcomms::loop()
             it->second.last_rx_time_text->setText("Never");
 
     }
+    
+    if(mac_bars_.count(last_slot_.slot_index()))
+    {
+        mac_bars_[last_slot_.slot_index()]->setValue(now - static_cast<int>(last_slot_.time()/1e6));
+    }
+    
+    
 }
 
 
@@ -226,9 +256,32 @@ void goby::common::LiaisonAcomms::moos_inbox(CMOOSMsg& msg)
     else if(msg.GetKey() == "ACOMMS_QUEUE_RECEIVE")
     {
         boost::shared_ptr<google::protobuf::Message> dccl_msg = dynamic_parse_for_moos(msg.GetString());
-        if(dccl_msg)
+        if(dccl_msg && queue_stats_.count(dccl_.id(dccl_msg->GetDescriptor())))
         {
             queue_stats_[dccl_.id(dccl_msg->GetDescriptor())].last_rx_time = goby::common::goby_time<double>();
+        }
+    }
+    else if(msg.GetKey() == "ACOMMS_MAC_SLOT_START")
+    {
+        if(mac_slots_.count(last_slot_.slot_index()))
+        {
+//            Wt::WCssDecorationStyle s = mac_slot_style_;
+//            mac_slots_[last_slot_.slot_index()]->setDecorationStyle(s);
+            mac_slots_[last_slot_.slot_index()]->disable();
+            mac_bars_[last_slot_.slot_index()]->setHidden(true);
+        }
+        
+        parse_for_moos(msg.GetString(), &last_slot_);
+        
+        glog.is(DEBUG1) && glog << last_slot_.DebugString() << std::endl;
+
+        if(mac_slots_.count(last_slot_.slot_index()))
+        {
+            mac_slots_[last_slot_.slot_index()]->enable();
+            mac_bars_[last_slot_.slot_index()]->setHidden(false);
+//            Wt::WCssDecorationStyle s = mac_slot_style_;
+//            s.setBackgroundColor(Wt::WColor(Wt::green));
+//            mac_slots_[last_slot_.slot_index()]->setDecorationStyle(s);
         }
     }
 }
@@ -272,7 +325,7 @@ void goby::common::LiaisonAcomms::process_acomms_config()
             info->clicked().connect(boost::bind(&LiaisonAcomms::queue_info, this, _1, id));
             queue_table_->elementAt(row, 3)->addWidget(info);
 
-            WPushButton* flush = new WPushButton("Flush");
+            WPushButton* flush = new WPushButton("Clear");
             flush->clicked().connect(boost::bind(&LiaisonAcomms::queue_flush, this, _1, id));
             queue_table_->elementAt(row, 4)->addWidget(flush);            
 
@@ -294,13 +347,48 @@ void goby::common::LiaisonAcomms::process_acomms_config()
         dccl_combo_->addItem(std::string(goby::util::as<std::string>(it->first) + ": " + it->second->full_name()));
     }
 
+    
+    mac_slot_style_.setBorder(Wt::WBorder(Wt::WBorder::Solid, Wt::WBorder::Thin));
+    for(int i = 0, n = acomms_config_.mac_cfg().slot_size(); i < n; ++i)
+    {
 
+        const goby::acomms::protobuf::ModemTransmission& slot = acomms_config_.mac_cfg().slot(i);
+
+        Wt::WContainerWidget* box = new Wt::WContainerWidget(amac_box_);
+        box->setDecorationStyle(mac_slot_style_);
+
+        double height = std::log10(slot.slot_seconds());
+        box->setPadding(Wt::WLength(height/2, Wt::WLength::FontEm), Wt::Top | Wt::Bottom);
+        box->setPadding(Wt::WLength(3), Wt::Right | Wt::Left);
+        box->setMargin(Wt::WLength(3));
+        box->resize(Wt::WLength(), Wt::WLength(1+height, Wt::WLength::FontEm));
+
+        new Wt::WText(slot.DebugString(), box);
+
+//        new Wt::WBreak(box);
+        
+        MACBar* new_bar = new MACBar(box);
+        new_bar->setMinimum(0);
+        new_bar->setMaximum(slot.slot_seconds());
+        new_bar->setFloatSide(Wt::Right);
+        new_bar->setHidden(true);
+        
+        mac_bars_[i] = new_bar;
+        
+        box->disable();
+        
+        mac_slots_[i] = box;
+    }
 }
-
 
 Wt::WString goby::common::QueueBar::text() const
 {
     return std::string(goby::util::as<std::string>(value()) + "/" + goby::util::as<std::string>(maximum()));
+}
+
+Wt::WString goby::common::MACBar::text() const
+{
+    return std::string(goby::util::as<std::string>(value()) + "/" + goby::util::as<std::string>(maximum()) + " s");
 }
 
 void goby::common::LiaisonAcomms::queue_info(const Wt::WMouseEvent& event, int id)
@@ -322,7 +410,7 @@ void goby::common::LiaisonAcomms::queue_info(const Wt::WMouseEvent& event, int i
      
     message_div->setOverflow(WContainerWidget::OverflowAuto);
     
-    WPushButton ok("ok", dialog.contents());
+    WPushButton ok("OK", dialog.contents());
 
     dialog.rejectWhenEscapePressed();
     ok.clicked().connect(&dialog, &WDialog::accept);

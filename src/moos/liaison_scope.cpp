@@ -126,10 +126,14 @@ goby::common::LiaisonScope::LiaisonScope(ZeroMQService* zeromq_service, const pr
 
 void goby::common::LiaisonScope::loop()
 {
-    glog.is(DEBUG2) && glog << "LiaisonScope: polling" << std::endl;
-    while(zeromq_service_->poll(0))
-    { }
+    if(!is_paused())
+    {
+        glog.is(DEBUG2) && glog << "LiaisonScope: polling" << std::endl;
+        while(zeromq_service_->poll(0))
+        { }
+    }
 }
+
 
 
 void goby::common::LiaisonScope::attach_pb_rows(const std::vector<Wt::WStandardItem *>& items,

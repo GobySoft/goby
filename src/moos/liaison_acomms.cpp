@@ -39,6 +39,8 @@
 #include <Wt/Chart/WDataSeries>
 #include <Wt/WStandardItemModel>
 #include <Wt/WStandardItem>
+#include <Wt/WCheckBox>
+#include <Wt/WDoubleSpinBox>
 
 #include "goby/util/as.h"
 #include "goby/util/dynamic_protobuf_manager.h"
@@ -158,15 +160,15 @@ goby::common::LiaisonAcomms::LiaisonAcomms(ZeroMQService* zeromq_service, const 
     driver_panel_ = new Wt::WPanel(this);    
     driver_panel_->setTitle("Driver");
     driver_panel_->setCollapsible(true);
-    WContainerWidget* driver_box = new Wt::WContainerWidget();
-    driver_panel_->setCentralWidget(driver_box);
+    driver_box_ = new Wt::WContainerWidget();
+    driver_panel_->setCentralWidget(driver_box_);
     driver_panel_->setCollapsed(cfg_.minimize_driver());
 
-    driver_tx_.box = new Wt::WGroupBox("Transmit", driver_box);
+    driver_tx_.box = new Wt::WGroupBox("Transmit", driver_box_);
     driver_tx_.last_time_text = new Wt::WText(driver_tx_.box);
     driver_tx_.box->clicked().connect(boost::bind(&LiaisonAcomms::driver_info, this, _1, &driver_tx_));
     
-    driver_rx_.box = new Wt::WGroupBox("Receive", driver_box);
+    driver_rx_.box = new Wt::WGroupBox("Receive", driver_box_);
     driver_rx_.last_time_text = new Wt::WText(driver_rx_.box);
     driver_rx_.box->clicked().connect(boost::bind(&LiaisonAcomms::driver_info, this, _1, &driver_rx_));
     
@@ -182,7 +184,7 @@ void goby::common::LiaisonAcomms::loop()
     for(std::map<dccl::int32, QueueStats>::const_iterator it = queue_stats_.begin(), end = queue_stats_.end(); it != end; ++it)
     {
         if(it->second.last_rx_time > 0)
-            it->second.last_rx_time_text->setText("Last: " + format_seconds(now-it->second.last_rx_time) + " s ago");
+            it->second.last_rx_time_text->setText("Last: " + format_seconds(now-it->second.last_rx_time) + " ago");
         else
             it->second.last_rx_time_text->setText("Never");
 
@@ -205,12 +207,14 @@ void goby::common::LiaisonAcomms::loop()
 
     if(mm_rx_stats_box_)
     {
-        for(int i = 0, n = mm_rx_stats_model_->rowCount(); i < n; ++i)
+        for(int i = mm_rx_stats_model_->rowCount()-1, n = 0; i >= n; --i)
         {
             int time = Wt::asNumber(mm_rx_stats_model_->data(i, TIME_COLUMN, DisplayRole));
             int elapsed = time - goby_time<double>();
-            glog << elapsed << std::endl;
-            mm_rx_stats_model_->setData(i, ELAPSED_COLUMN, elapsed, DisplayRole);
+            if(elapsed < -mm_rx_stats_range_-10)
+                break;
+            else
+                mm_rx_stats_model_->setData(i, ELAPSED_COLUMN, elapsed, DisplayRole);
         }
     }
     
@@ -362,6 +366,9 @@ void goby::common::LiaisonAcomms::moos_inbox(CMOOSMsg& msg)
         for(int i = 0, n = rx_msg.ExtensionSize(micromodem::protobuf::receive_stat); i < n; ++i)
         {
             const micromodem::protobuf::ReceiveStatistics& rx_stats = rx_msg.GetExtension(micromodem::protobuf::receive_stat, i);
+
+            if(rx_stats.packet_type() != micromodem::protobuf::PSK) continue;
+            
             std::vector<WStandardItem*> row;
             WStandardItem* time = new WStandardItem;
             time->setData(rx_stats.time()/1e6, DisplayRole);
@@ -395,7 +402,6 @@ void goby::common::LiaisonAcomms::moos_inbox(CMOOSMsg& msg)
 
 void goby::common::LiaisonAcomms::handle_modem_message(LiaisonAcomms::DriverStats* driver_stats, bool good, goby::acomms::protobuf::ModemTransmission& msg)
 {        
-    glog.is(DEBUG1) && glog << msg.DebugString() << std::endl;
     driver_stats->last_time = msg.time()/1e6;
         
     if(good)
@@ -542,37 +548,121 @@ void goby::common::LiaisonAcomms::process_acomms_config()
 
     if(acomms_config_.driver_type() == goby::acomms::protobuf::DRIVER_WHOI_MICROMODEM)
     {
-        mm_rx_stats_box_ = new WGroupBox("WHOI Micro-Modem Receive Statistics", driver_rx_.box);
+        mm_rx_stats_box_ = new WGroupBox("WHOI Micro-Modem Receive Statistics", driver_box_);
         mm_rx_stats_model_ = new WStandardItemModel(0,MAX_COLUMN+1,mm_rx_stats_box_);
 
 
         mm_rx_stats_graph_ = new Chart::WCartesianChart(Chart::ScatterPlot, mm_rx_stats_box_);
         mm_rx_stats_graph_->setModel(mm_rx_stats_model_);
         mm_rx_stats_graph_->setXSeriesColumn(ELAPSED_COLUMN);
-        Chart::WDataSeries s(MSE_COLUMN, Chart::LineSeries);
-        s.setMarker(Chart::CircleMarker);
-        
-        mm_rx_stats_graph_->addSeries(s);
 
-        mm_rx_stats_graph_->axis(Chart::XAxis).setTitle("Time Difference From Now"); 
+        for(int i = MSE_COLUMN, n = MAX_COLUMN; i <= n; ++i)
+        {
+            Chart::WDataSeries s(i, Chart::LineSeries);
+            Chart::MarkerType type;
+            switch(i)
+            {
+                default:
+                case MSE_COLUMN: type = Chart::CircleMarker; break;
+                case SNR_IN_COLUMN: type = Chart::SquareMarker; break;
+                case SNR_OUT_COLUMN: type = Chart::CrossMarker; break;
+                case DOPPLER_COLUMN: type = Chart::TriangleMarker; break;                    
+            }
+            s.setMarker(type);
+            s.setHidden(true);
+            mm_rx_stats_graph_->addSeries(s);
+        }        
+        
+        mm_rx_stats_graph_->axis(Chart::XAxis).setTitle("Seconds ago"); 
 
         mm_rx_stats_model_->setHeaderData(MSE_COLUMN, std::string("MSE")); 
         mm_rx_stats_model_->setHeaderData(SNR_IN_COLUMN, std::string("SNR In")); 
         mm_rx_stats_model_->setHeaderData(SNR_OUT_COLUMN, std::string("SNR Out")); 
         mm_rx_stats_model_->setHeaderData(DOPPLER_COLUMN, std::string("Doppler")); 
         
-        mm_rx_stats_graph_->setPlotAreaPadding(100, Left | Right);
+        mm_rx_stats_graph_->setPlotAreaPadding(120, Right);
+        mm_rx_stats_graph_->setPlotAreaPadding(50, Left);
         mm_rx_stats_graph_->setPlotAreaPadding(40, Top | Bottom);
         mm_rx_stats_graph_->setMargin(10, Top | Bottom);            // add margin vertically
         mm_rx_stats_graph_->setMargin(WLength::Auto, Left | Right); // center horizontally
-        mm_rx_stats_graph_->resize(600, 300);
+        mm_rx_stats_graph_->resize(Wt::WLength(40, Wt::WLength::FontEm), 300);
 
         mm_rx_stats_graph_->setLegendEnabled(true);
 
-        mm_rx_stats_graph_->axis(Chart::XAxis).setRange(-mm_rx_stats_range_, 0);
-        mm_rx_stats_graph_->axis(Chart::XAxis).setLabelInterval(mm_rx_stats_range_ / 5);
+        mm_range(mm_rx_stats_range_);
+
+        mm_rx_stats_graph_->axis(Chart::Y1Axis).setVisible(false);
+        mm_rx_stats_graph_->axis(Chart::Y1Axis).setVisible(false);
+
+        WGroupBox* y1axis_group = new Wt::WGroupBox("Y1 Axis", mm_rx_stats_box_);
+        y1axis_group->resize(Wt::WLength(40, Wt::WLength::Percentage), Wt::WLength::Auto);
+        y1axis_group->setInline(true);
+        WGroupBox* y2axis_group = new Wt::WGroupBox("Y2 Axis", mm_rx_stats_box_);
+        y2axis_group->resize(Wt::WLength(40, Wt::WLength::Percentage), Wt::WLength::Auto);
+        y2axis_group->setInline(true);
+        for(int i = MSE_COLUMN, n = MAX_COLUMN; i <= n; ++i)
+        {
+            for(int j = 0, m = 2; j < m; ++j)
+            {
+                mm_rx_chks_[i][j] = new WCheckBox(asString(mm_rx_stats_model_->headerData(i)), j == 0 ? y1axis_group : y2axis_group);
+                mm_rx_chks_[i][j]->resize(Wt::WLength(40, Wt::WLength::Percentage), Wt::WLength::Auto);
+
+                mm_rx_chks_[i][j]->checked().connect(boost::bind(&LiaisonAcomms::mm_check, this, j, i, true));
+                mm_rx_chks_[i][j]->unChecked().connect(boost::bind(&LiaisonAcomms::mm_check, this, j, i, false));
+            }
+        }
+
+        mm_rx_chks_[MSE_COLUMN][0]->setChecked(true);
+        mm_check(0, MSE_COLUMN, true);
+
+        new Wt::WBreak(mm_rx_stats_box_);
+        
+        new Wt::WText("X Axis Range (seconds):", mm_rx_stats_box_);
+        
+        WDoubleSpinBox* range_box = new WDoubleSpinBox(mm_rx_stats_box_);
+        range_box->setMinimum(10);
+        range_box->setMaximum(1e100);
+        range_box->setSingleStep(600);
+        range_box->setDecimals(0);
+        range_box->setValue(mm_rx_stats_range_);
+        range_box->valueChanged().connect(this, &LiaisonAcomms::mm_range);
+        
     }
 }
+
+void goby::common::LiaisonAcomms::mm_check(int axis, int column, bool checked)
+{
+    std::cout << "Axis: " << axis << ", column: " << column << ", check: " << checked << std::endl;
+    
+    Chart::WDataSeries& s = mm_rx_stats_graph_->series(column);
+    s.setHidden(!checked);
+    s.bindToAxis(axis == 0 ? Chart::Y1Axis : Chart::Y2Axis);
+
+    // uncheck the corresponding other axis
+    if(checked) mm_rx_chks_[column][axis == 0 ? 1 : 0]->setChecked(false);
+
+    bool axis_enabled[2] = {false, false};
+    for(std::map<int, std::map<int, Wt::WCheckBox*> >::iterator it = mm_rx_chks_.begin(),
+            end = mm_rx_chks_.end(); it != end; ++it)
+    {
+        for(int i = 0, n = 2; i < n; ++i)
+        {
+            if(it->second[i]->isChecked()) axis_enabled[i] = true;
+        }
+    }
+
+    for(int i = 0, n = 2; i < n; ++i)
+        mm_rx_stats_graph_->axis(i == 0 ? Chart::Y1Axis : Chart::Y2Axis).setVisible(axis_enabled[i]);
+    
+}
+
+void goby::common::LiaisonAcomms::mm_range(double range)
+{
+    mm_rx_stats_range_ = range;
+    mm_rx_stats_graph_->axis(Chart::XAxis).setRange(-mm_rx_stats_range_, 0);
+    mm_rx_stats_graph_->axis(Chart::XAxis).setLabelInterval(mm_rx_stats_range_ / 5);
+}
+
 
 Wt::WString goby::common::QueueBar::text() const
 {

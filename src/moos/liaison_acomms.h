@@ -88,7 +88,9 @@ namespace goby
             void handle_modem_message(DriverStats* driver_stats, bool good, goby::acomms::protobuf::ModemTransmission& msg);
 
             void driver_info(const Wt::WMouseEvent& event, DriverStats* driver_stats);
-
+            void mm_check(int axis, int column, bool checked);
+            void mm_range(double range);  
+            
             void focus()
             { timer_.start(); }
 
@@ -137,7 +139,8 @@ namespace goby
             bool have_acomms_config_;
 
             Wt::WPanel* driver_panel_;
-
+            WContainerWidget* driver_box_;
+            
             enum Direction { RX, TX };
             
             struct DriverStats
@@ -160,8 +163,11 @@ namespace goby
             Wt::Chart::WCartesianChart* mm_rx_stats_graph_;
 
             enum { TIME_COLUMN = 0, ELAPSED_COLUMN = 1, MSE_COLUMN = 2, SNR_IN_COLUMN = 3, SNR_OUT_COLUMN = 4, DOPPLER_COLUMN = 5, MAX_COLUMN = 5};
-
+            
             int mm_rx_stats_range_;
+
+            // column -> axis -> Checkbox 
+            std::map<int, std::map<int, Wt::WCheckBox*> > mm_rx_chks_;
             
             Wt::WTimer timer_;
 

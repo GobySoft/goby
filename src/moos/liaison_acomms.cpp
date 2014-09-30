@@ -393,7 +393,11 @@ void goby::common::LiaisonAcomms::moos_inbox(CMOOSMsg& msg)
             WStandardItem* doppler = new WStandardItem;
             doppler->setData(rx_stats.doppler(), DisplayRole);
             row.push_back(doppler);
-            
+
+            WStandardItem* bad_frames = new WStandardItem;
+            bad_frames->setData(double(rx_stats.number_bad_frames())/rx_stats.number_frames()*100.0, DisplayRole);
+            row.push_back(bad_frames);
+
             mm_rx_stats_model_->appendRow(row);
 
         }                
@@ -566,7 +570,8 @@ void goby::common::LiaisonAcomms::process_acomms_config()
                 case MSE_COLUMN: type = Chart::CircleMarker; break;
                 case SNR_IN_COLUMN: type = Chart::SquareMarker; break;
                 case SNR_OUT_COLUMN: type = Chart::CrossMarker; break;
-                case DOPPLER_COLUMN: type = Chart::TriangleMarker; break;                    
+                case DOPPLER_COLUMN: type = Chart::TriangleMarker; break;                     
+                case PERCENT_BAD_FRAMES_COLUMN: type = Chart::XCrossMarker; break;                    
             }
             s.setMarker(type);
             s.setHidden(true);
@@ -579,6 +584,7 @@ void goby::common::LiaisonAcomms::process_acomms_config()
         mm_rx_stats_model_->setHeaderData(SNR_IN_COLUMN, std::string("SNR In")); 
         mm_rx_stats_model_->setHeaderData(SNR_OUT_COLUMN, std::string("SNR Out")); 
         mm_rx_stats_model_->setHeaderData(DOPPLER_COLUMN, std::string("Doppler")); 
+        mm_rx_stats_model_->setHeaderData(PERCENT_BAD_FRAMES_COLUMN, std::string("% bad frames")); 
         
         mm_rx_stats_graph_->setPlotAreaPadding(120, Right);
         mm_rx_stats_graph_->setPlotAreaPadding(50, Left);
@@ -595,10 +601,10 @@ void goby::common::LiaisonAcomms::process_acomms_config()
         mm_rx_stats_graph_->axis(Chart::Y1Axis).setVisible(false);
 
         WGroupBox* y1axis_group = new Wt::WGroupBox("Y1 Axis", mm_rx_stats_box_);
-        y1axis_group->resize(Wt::WLength(40, Wt::WLength::Percentage), Wt::WLength::Auto);
+        y1axis_group->resize(Wt::WLength(45, Wt::WLength::Percentage), Wt::WLength::Auto);
         y1axis_group->setInline(true);
         WGroupBox* y2axis_group = new Wt::WGroupBox("Y2 Axis", mm_rx_stats_box_);
-        y2axis_group->resize(Wt::WLength(40, Wt::WLength::Percentage), Wt::WLength::Auto);
+        y2axis_group->resize(Wt::WLength(45, Wt::WLength::Percentage), Wt::WLength::Auto);
         y2axis_group->setInline(true);
         for(int i = MSE_COLUMN, n = MAX_COLUMN; i <= n; ++i)
         {

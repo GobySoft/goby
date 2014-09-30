@@ -162,7 +162,7 @@ namespace goby
             Wt::WStandardItemModel* mm_rx_stats_model_;
             Wt::Chart::WCartesianChart* mm_rx_stats_graph_;
 
-            enum { TIME_COLUMN = 0, ELAPSED_COLUMN = 1, MSE_COLUMN = 2, SNR_IN_COLUMN = 3, SNR_OUT_COLUMN = 4, DOPPLER_COLUMN = 5, MAX_COLUMN = 5};
+            enum { TIME_COLUMN = 0, ELAPSED_COLUMN = 1, MSE_COLUMN = 2, SNR_IN_COLUMN = 3, SNR_OUT_COLUMN = 4, DOPPLER_COLUMN = 5, PERCENT_BAD_FRAMES_COLUMN = 6, MAX_COLUMN = 6};
             
             int mm_rx_stats_range_;
 

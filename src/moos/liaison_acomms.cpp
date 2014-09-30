@@ -21,6 +21,7 @@
 // along with Goby.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <sstream>
+#include <numeric>
 
 #include <Wt/WGroupBox>
 #include <Wt/WLineEdit>
@@ -34,11 +35,16 @@
 #include <Wt/WDialog>
 #include <Wt/WColor>
 #include <Wt/WPanel>
+#include <Wt/Chart/WCartesianChart>
+#include <Wt/Chart/WDataSeries>
+#include <Wt/WStandardItemModel>
+#include <Wt/WStandardItem>
 
 #include "goby/util/as.h"
 #include "goby/util/dynamic_protobuf_manager.h"
 
 #include "goby/moos/moos_protobuf_helpers.h"
+#include "goby/acomms/protobuf/mm_driver.pb.h"
 
 #include "liaison_acomms.h"
 
@@ -53,9 +59,12 @@ goby::common::LiaisonAcomms::LiaisonAcomms(ZeroMQService* zeromq_service, const 
       MOOSNode(zeromq_service),
       zeromq_service_(zeromq_service),
       cfg_(cfg.GetExtension(protobuf::acomms_config)),
-      have_acomms_config_(false)
+      have_acomms_config_(false),
+      driver_rx_(RX),
+      driver_tx_(TX),
+      mm_rx_stats_box_(0),
+      mm_rx_stats_range_(600)
 {
-    
     protobuf::ZeroMQServiceConfig ipc_sockets;
     protobuf::ZeroMQServiceConfig::Socket* internal_subscribe_socket = ipc_sockets.add_socket();
     internal_subscribe_socket->set_socket_type(protobuf::ZeroMQServiceConfig::Socket::SUBSCRIBE);
@@ -143,12 +152,23 @@ goby::common::LiaisonAcomms::LiaisonAcomms(ZeroMQService* zeromq_service, const 
     amac_panel->setCentralWidget(amac_box_);
     amac_panel->setCollapsed(cfg_.minimize_amac());
 
-    WPanel* driver_panel = new Wt::WPanel(this);    
-    driver_panel->setTitle("Driver");
-    driver_panel->setCollapsible(true);
+    last_slot_.set_slot_index(-1);
+    
+    
+    driver_panel_ = new Wt::WPanel(this);    
+    driver_panel_->setTitle("Driver");
+    driver_panel_->setCollapsible(true);
     WContainerWidget* driver_box = new Wt::WContainerWidget();
-    driver_panel->setCentralWidget(driver_box);
-    driver_panel->setCollapsed(cfg_.minimize_driver());
+    driver_panel_->setCentralWidget(driver_box);
+    driver_panel_->setCollapsed(cfg_.minimize_driver());
+
+    driver_tx_.box = new Wt::WGroupBox("Transmit", driver_box);
+    driver_tx_.last_time_text = new Wt::WText(driver_tx_.box);
+    driver_tx_.box->clicked().connect(boost::bind(&LiaisonAcomms::driver_info, this, _1, &driver_tx_));
+    
+    driver_rx_.box = new Wt::WGroupBox("Receive", driver_box);
+    driver_rx_.last_time_text = new Wt::WText(driver_rx_.box);
+    driver_rx_.box->clicked().connect(boost::bind(&LiaisonAcomms::driver_info, this, _1, &driver_rx_));
     
     set_name("MOOSAcomms");
 }
@@ -162,7 +182,7 @@ void goby::common::LiaisonAcomms::loop()
     for(std::map<dccl::int32, QueueStats>::const_iterator it = queue_stats_.begin(), end = queue_stats_.end(); it != end; ++it)
     {
         if(it->second.last_rx_time > 0)
-            it->second.last_rx_time_text->setText(goby::util::as<std::string>(now-it->second.last_rx_time) + " s");
+            it->second.last_rx_time_text->setText("Last: " + format_seconds(now-it->second.last_rx_time) + " s ago");
         else
             it->second.last_rx_time_text->setText("Never");
 
@@ -170,12 +190,46 @@ void goby::common::LiaisonAcomms::loop()
     
     if(mac_bars_.count(last_slot_.slot_index()))
     {
-        mac_bars_[last_slot_.slot_index()]->setValue(now - static_cast<int>(last_slot_.time()/1e6));
+        int seconds_into_slot = now - static_cast<int>(last_slot_.time()/1e6);
+        mac_bars_[last_slot_.slot_index()]->setValue(seconds_into_slot);
+
+        int seconds_into_cycle = seconds_into_slot;
+        for(int i = 0, n = last_slot_.slot_index(); i < n; ++i)
+            seconds_into_cycle += acomms_config_.mac_cfg().slot(i).slot_seconds();
+        mac_cycle_bar_->setValue(seconds_into_cycle);
+        
     }
-    
+
+    update_driver_stats(now, &driver_rx_);
+    update_driver_stats(now, &driver_tx_);
+
+    if(mm_rx_stats_box_)
+    {
+        for(int i = 0, n = mm_rx_stats_model_->rowCount(); i < n; ++i)
+        {
+            int time = Wt::asNumber(mm_rx_stats_model_->data(i, TIME_COLUMN, DisplayRole));
+            int elapsed = time - goby_time<double>();
+            glog << elapsed << std::endl;
+            mm_rx_stats_model_->setData(i, ELAPSED_COLUMN, elapsed, DisplayRole);
+        }
+    }
     
 }
 
+void goby::common::LiaisonAcomms::update_driver_stats(int now, LiaisonAcomms::DriverStats* driver_stats)
+{
+    if(driver_stats->last_time > 0)
+    {
+        driver_stats->last_time_text->setText("Last: " + format_seconds(now-driver_stats->last_time) + " ago");
+
+        if(now-driver_stats->last_time > 10)
+            driver_stats->last_time_text->decorationStyle().setBackgroundColor(Wt::WColor());
+    }
+    else
+    {
+        driver_stats->last_time_text->setText("Never");
+    }
+}
 
 
 void goby::common::LiaisonAcomms::dccl_analyze(const WMouseEvent& event)
@@ -265,26 +319,95 @@ void goby::common::LiaisonAcomms::moos_inbox(CMOOSMsg& msg)
     {
         if(mac_slots_.count(last_slot_.slot_index()))
         {
-//            Wt::WCssDecorationStyle s = mac_slot_style_;
-//            mac_slots_[last_slot_.slot_index()]->setDecorationStyle(s);
-            mac_slots_[last_slot_.slot_index()]->disable();
+            mac_slots_[last_slot_.slot_index()]->decorationStyle().setBackgroundColor(Wt::WColor());
+            mac_slots_[last_slot_.slot_index()]->decorationStyle().setForegroundColor(Wt::WColor());
+//            mac_slots_[last_slot_.slot_index()]->disable();
             mac_bars_[last_slot_.slot_index()]->setHidden(true);
         }
         
         parse_for_moos(msg.GetString(), &last_slot_);
         
-        glog.is(DEBUG1) && glog << last_slot_.DebugString() << std::endl;
-
         if(mac_slots_.count(last_slot_.slot_index()))
         {
-            mac_slots_[last_slot_.slot_index()]->enable();
+//            mac_slots_[last_slot_.slot_index()]->enable();
             mac_bars_[last_slot_.slot_index()]->setHidden(false);
-//            Wt::WCssDecorationStyle s = mac_slot_style_;
-//            s.setBackgroundColor(Wt::WColor(Wt::green));
-//            mac_slots_[last_slot_.slot_index()]->setDecorationStyle(s);
+            mac_slots_[last_slot_.slot_index()]->decorationStyle().setBackgroundColor(goby_orange);
+            mac_slots_[last_slot_.slot_index()]->decorationStyle().setForegroundColor(Wt::white);
         }
     }
+    else if(msg.GetKey() == "ACOMMS_MODEM_TRANSMIT")
+    {
+        goby::acomms::protobuf::ModemTransmission tx_msg;
+        parse_for_moos(msg.GetString(), &tx_msg);
+
+        bool tx_good = true;
+        
+        for(int i = 0, n = tx_msg.ExtensionSize(micromodem::protobuf::transmit_stat); i < n; ++i)
+            tx_good = tx_good && (tx_msg.GetExtension(micromodem::protobuf::transmit_stat, i).mode() == micromodem::protobuf::TRANSMIT_SUCCESSFUL);
+
+        handle_modem_message(&driver_tx_, tx_good, tx_msg);
+    }
+    else if(msg.GetKey() == "ACOMMS_MODEM_RECEIVE")
+    {
+        goby::acomms::protobuf::ModemTransmission rx_msg;
+        parse_for_moos(msg.GetString(), &rx_msg);    
+
+        bool rx_good = true;        
+        for(int i = 0, n = rx_msg.ExtensionSize(micromodem::protobuf::receive_stat); i < n; ++i)
+            rx_good = rx_good && (rx_msg.GetExtension(micromodem::protobuf::receive_stat, i).mode() == micromodem::protobuf::RECEIVE_GOOD);
+
+        handle_modem_message(&driver_rx_, rx_good, rx_msg);
+
+
+        for(int i = 0, n = rx_msg.ExtensionSize(micromodem::protobuf::receive_stat); i < n; ++i)
+        {
+            const micromodem::protobuf::ReceiveStatistics& rx_stats = rx_msg.GetExtension(micromodem::protobuf::receive_stat, i);
+            std::vector<WStandardItem*> row;
+            WStandardItem* time = new WStandardItem;
+            time->setData(rx_stats.time()/1e6, DisplayRole);
+            row.push_back(time);
+
+            WStandardItem* elapsed = new WStandardItem;
+            elapsed->setData(0, DisplayRole);
+            row.push_back(elapsed);
+            
+            WStandardItem* mse = new WStandardItem;
+            mse->setData(rx_stats.mse_equalizer(), DisplayRole);
+            row.push_back(mse);
+
+            WStandardItem* snr_in = new WStandardItem;
+            snr_in->setData(rx_stats.snr_in(), DisplayRole);
+            row.push_back(snr_in);
+
+            WStandardItem* snr_out = new WStandardItem;
+            snr_out->setData(rx_stats.snr_out(), DisplayRole);
+            row.push_back(snr_out);
+            
+            WStandardItem* doppler = new WStandardItem;
+            doppler->setData(rx_stats.doppler(), DisplayRole);
+            row.push_back(doppler);
+            
+            mm_rx_stats_model_->appendRow(row);
+
+        }                
+    }
 }
+
+void goby::common::LiaisonAcomms::handle_modem_message(LiaisonAcomms::DriverStats* driver_stats, bool good, goby::acomms::protobuf::ModemTransmission& msg)
+{        
+    glog.is(DEBUG1) && glog << msg.DebugString() << std::endl;
+    driver_stats->last_time = msg.time()/1e6;
+        
+    if(good)
+        driver_stats->last_time_text->decorationStyle().setBackgroundColor(goby_blue);
+    else
+        driver_stats->last_time_text->decorationStyle().setBackgroundColor(goby_orange);
+
+    driver_stats->last_msg_ = msg;
+    
+}
+
+
 
 void goby::common::LiaisonAcomms::process_acomms_config()
 {
@@ -347,6 +470,19 @@ void goby::common::LiaisonAcomms::process_acomms_config()
         dccl_combo_->addItem(std::string(goby::util::as<std::string>(it->first) + ": " + it->second->full_name()));
     }
 
+    Wt::WContainerWidget* mac_top_box = new Wt::WContainerWidget(amac_box_);
+
+    new Wt::WText("Number of slots in the cycle: " + goby::util::as<std::string>(acomms_config_.mac_cfg().slot_size()) + ".", mac_top_box);
+    mac_cycle_bar_ = new MACBar(mac_top_box);
+    mac_cycle_bar_->setMinimum(0);
+    int cycle_length = 0;
+    for(int i = 0, n = acomms_config_.mac_cfg().slot_size(); i < n; ++i)
+        cycle_length += acomms_config_.mac_cfg().slot(i).slot_seconds();
+    
+    mac_cycle_bar_->setMaximum(cycle_length);
+    mac_cycle_bar_->setFloatSide(Wt::Right);
+
+    new Wt::WText("<hr/>", mac_top_box);
     
     mac_slot_style_.setBorder(Wt::WBorder(Wt::WBorder::Solid, Wt::WBorder::Thin));
     for(int i = 0, n = acomms_config_.mac_cfg().slot_size(); i < n; ++i)
@@ -356,6 +492,7 @@ void goby::common::LiaisonAcomms::process_acomms_config()
 
         Wt::WContainerWidget* box = new Wt::WContainerWidget(amac_box_);
         box->setDecorationStyle(mac_slot_style_);
+        box->clicked().connect(boost::bind(&LiaisonAcomms::mac_info, this, _1, i));
 
         double height = std::log10(slot.slot_seconds());
         box->setPadding(Wt::WLength(height/2, Wt::WLength::FontEm), Wt::Top | Wt::Bottom);
@@ -363,8 +500,29 @@ void goby::common::LiaisonAcomms::process_acomms_config()
         box->setMargin(Wt::WLength(3));
         box->resize(Wt::WLength(), Wt::WLength(1+height, Wt::WLength::FontEm));
 
-        new Wt::WText(slot.DebugString(), box);
-
+        std::string slot_text;
+        if(slot.type() == goby::acomms::protobuf::ModemTransmission::UNKNOWN)
+        {
+            slot_text = "Non-Acomms Slot";
+            if(slot.has_unique_id())
+                slot_text += " (" + goby::util::as<std::string>(slot.unique_id()) + ")";
+        }
+        else if(slot.type() == goby::acomms::protobuf::ModemTransmission::DATA)
+        {
+            std::stringstream ss;
+            ss << "Data Slot | Source: " << slot.src();
+            if(slot.dest() != -1)
+                ss << " | Dest: " << slot.dest();
+            ss << " | Rate: " << slot.rate();
+            slot_text = ss.str();
+        }
+        else
+        {
+            slot_text = slot.DebugString();
+        }
+        
+        new Wt::WText(slot_text, box);
+        
 //        new Wt::WBreak(box);
         
         MACBar* new_bar = new MACBar(box);
@@ -375,9 +533,44 @@ void goby::common::LiaisonAcomms::process_acomms_config()
         
         mac_bars_[i] = new_bar;
         
-        box->disable();
+//        box->disable();
         
         mac_slots_[i] = box;
+    }
+
+    driver_panel_->setTitle("Driver: " + goby::acomms::protobuf::DriverType_Name(acomms_config_.driver_type()));
+
+    if(acomms_config_.driver_type() == goby::acomms::protobuf::DRIVER_WHOI_MICROMODEM)
+    {
+        mm_rx_stats_box_ = new WGroupBox("WHOI Micro-Modem Receive Statistics", driver_rx_.box);
+        mm_rx_stats_model_ = new WStandardItemModel(0,MAX_COLUMN+1,mm_rx_stats_box_);
+
+
+        mm_rx_stats_graph_ = new Chart::WCartesianChart(Chart::ScatterPlot, mm_rx_stats_box_);
+        mm_rx_stats_graph_->setModel(mm_rx_stats_model_);
+        mm_rx_stats_graph_->setXSeriesColumn(ELAPSED_COLUMN);
+        Chart::WDataSeries s(MSE_COLUMN, Chart::LineSeries);
+        s.setMarker(Chart::CircleMarker);
+        
+        mm_rx_stats_graph_->addSeries(s);
+
+        mm_rx_stats_graph_->axis(Chart::XAxis).setTitle("Time Difference From Now"); 
+
+        mm_rx_stats_model_->setHeaderData(MSE_COLUMN, std::string("MSE")); 
+        mm_rx_stats_model_->setHeaderData(SNR_IN_COLUMN, std::string("SNR In")); 
+        mm_rx_stats_model_->setHeaderData(SNR_OUT_COLUMN, std::string("SNR Out")); 
+        mm_rx_stats_model_->setHeaderData(DOPPLER_COLUMN, std::string("Doppler")); 
+        
+        mm_rx_stats_graph_->setPlotAreaPadding(100, Left | Right);
+        mm_rx_stats_graph_->setPlotAreaPadding(40, Top | Bottom);
+        mm_rx_stats_graph_->setMargin(10, Top | Bottom);            // add margin vertically
+        mm_rx_stats_graph_->setMargin(WLength::Auto, Left | Right); // center horizontally
+        mm_rx_stats_graph_->resize(600, 300);
+
+        mm_rx_stats_graph_->setLegendEnabled(true);
+
+        mm_rx_stats_graph_->axis(Chart::XAxis).setRange(-mm_rx_stats_range_, 0);
+        mm_rx_stats_graph_->axis(Chart::XAxis).setLabelInterval(mm_rx_stats_range_ / 5);
     }
 }
 
@@ -420,6 +613,42 @@ void goby::common::LiaisonAcomms::queue_info(const Wt::WMouseEvent& event, int i
 }
 
 
+void goby::common::LiaisonAcomms::mac_info(const Wt::WMouseEvent& event, int id)
+{
+    WDialog dialog("AMAC Slot Info for Slot #" + goby::util::as<std::string>(id));
+    WContainerWidget* message_div = new WContainerWidget(dialog.contents());
+    new WText(std::string("<pre>" + acomms_config_.mac_cfg().slot(id).DebugString()  + "</pre>"), message_div);
+     
+    message_div->setOverflow(WContainerWidget::OverflowAuto);
+    
+    WPushButton ok("OK", dialog.contents());
+
+    dialog.rejectWhenEscapePressed();
+    ok.clicked().connect(&dialog, &WDialog::accept);
+
+    if (dialog.exec() == WDialog::Accepted)  { }
+}
+
+void goby::common::LiaisonAcomms::driver_info(const Wt::WMouseEvent& event, LiaisonAcomms::DriverStats* driver_stats)
+{
+    WDialog dialog("Last Message " + std::string(driver_stats->direction == RX ? "Received" : "Transmitted"));
+    WContainerWidget* message_div = new WContainerWidget(dialog.contents());
+    WText* txt = new WText(std::string(driver_stats->last_msg_.DebugString()), message_div);
+    txt->setTextFormat(PlainText);
+    
+    message_div->setMaximumSize(800, 600);
+    message_div->setOverflow(WContainerWidget::OverflowAuto);
+    
+    WPushButton ok("OK", dialog.contents());
+
+    dialog.rejectWhenEscapePressed();
+    ok.clicked().connect(&dialog, &WDialog::accept);
+
+    if (dialog.exec() == WDialog::Accepted)  { }
+}
+
+
+
 void goby::common::LiaisonAcomms::queue_flush(const Wt::WMouseEvent& event, int id)
 {
     goby::acomms::protobuf::QueueFlush flush;
@@ -429,5 +658,14 @@ void goby::common::LiaisonAcomms::queue_flush(const Wt::WMouseEvent& event, int 
 
     MOOSNode::send(CMOOSMsg(MOOS_NOTIFY, "ACOMMS_FLUSH_QUEUE", serialized), LIAISON_INTERNAL_PUBLISH_SOCKET);
     
+}
+
+
+std::string goby::common::LiaisonAcomms::format_seconds(int sec)
+{
+    if(sec < 60)
+        return goby::util::as<std::string>(sec) + " s";
+    else
+        return goby::util::as<std::string>(sec/60) + ":" + ((sec%60 < 10) ? "0" : "") + goby::util::as<std::string>(sec%60);
 }
 

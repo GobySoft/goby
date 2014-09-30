@@ -34,8 +34,9 @@ namespace goby
 {
     namespace common
     {
-        class FlexOstream;
 
+        class FlexOstream;
+        
         namespace logger
         {
             /// label stream as "error"
@@ -135,11 +136,7 @@ inline std::ostream& operator<<(std::ostream& os, const GroupSetter & gs)
     return(os);
 }
 
-inline goby::common::FlexOstream& operator<<(goby::common::FlexOstream& os, const GroupSetter & gs)
-{
-    gs(os);
-    return(os);
-}
+goby::common::FlexOstream& operator<<(goby::common::FlexOstream& os, const GroupSetter & gs);
 
 /// used for non tty ostreams (everything but std::cout / std::cerr) as the header for every line
 std::ostream& basic_log_header(std::ostream& os, const std::string& group_name);

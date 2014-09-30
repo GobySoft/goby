@@ -26,6 +26,7 @@
 #define LIAISONACOMMS20140626H
 
 #include <Wt/WTimer>
+#include <Wt/WPanel>
 #include <Wt/WProgressBar>
 #include <Wt/WCssDecorationStyle>
 
@@ -80,13 +81,22 @@ namespace goby
             void queue_info(const Wt::WMouseEvent& event, int id);
             void queue_flush(const Wt::WMouseEvent& event, int id);
 
-            
+            void mac_info(const Wt::WMouseEvent& event, int id);
+
+            class DriverStats;
+            void update_driver_stats(int now, DriverStats* driver_stats);
+            void handle_modem_message(DriverStats* driver_stats, bool good, goby::acomms::protobuf::ModemTransmission& msg);
+
+            void driver_info(const Wt::WMouseEvent& event, DriverStats* driver_stats);
+
             void focus()
             { timer_.start(); }
 
             void unfocus()
             { timer_.stop(); }
 
+
+            std::string format_seconds(int sec);
             
           private:
             boost::mutex dccl_mutex_;
@@ -109,6 +119,7 @@ namespace goby
             // maps index of MAC cycle to container
             std::map<int, Wt::WContainerWidget*> mac_slots_;
             std::map<int, MACBar*> mac_bars_;
+            MACBar* mac_cycle_bar_;
             Wt::WCssDecorationStyle mac_slot_style_;
             
             struct QueueStats
@@ -124,6 +135,33 @@ namespace goby
             const protobuf::AcommsConfig& cfg_;
             pAcommsHandlerConfig acomms_config_;
             bool have_acomms_config_;
+
+            Wt::WPanel* driver_panel_;
+
+            enum Direction { RX, TX };
+            
+            struct DriverStats
+            {
+            DriverStats(Direction d): direction(d), last_time(-1) 
+                    { }
+                
+                Direction direction;
+                int last_time;
+                Wt::WText* last_time_text;
+                goby::acomms::protobuf::ModemTransmission last_msg_;
+                Wt::WGroupBox* box;
+            };
+
+            DriverStats driver_rx_;
+            DriverStats driver_tx_;
+
+            Wt::WGroupBox* mm_rx_stats_box_;
+            Wt::WStandardItemModel* mm_rx_stats_model_;
+            Wt::Chart::WCartesianChart* mm_rx_stats_graph_;
+
+            enum { TIME_COLUMN = 0, ELAPSED_COLUMN = 1, MSE_COLUMN = 2, SNR_IN_COLUMN = 3, SNR_OUT_COLUMN = 4, DOPPLER_COLUMN = 5, MAX_COLUMN = 5};
+
+            int mm_rx_stats_range_;
             
             Wt::WTimer timer_;
 

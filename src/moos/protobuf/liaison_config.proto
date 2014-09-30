@@ -111,5 +111,6 @@ message AcommsConfig
   optional bool minimize_dccl = 1 [default = false];
   optional bool minimize_queue = 2 [default = false];
   optional bool minimize_amac = 3 [default = false];
-  optional bool minimize_driver = 4 [default = false];  
+  optional bool minimize_driver = 4 [default = false];
+  
 }

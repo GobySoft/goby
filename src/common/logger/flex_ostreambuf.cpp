@@ -57,7 +57,7 @@ boost::recursive_mutex goby::common::logger::mutex;
 goby::common::FlexOStreamBuf::FlexOStreamBuf(): buffer_(1),
                                                 name_("no name"),
                                                 die_flag_(false),
-                                                current_verbosity_(logger::VERBOSE),
+                                                current_verbosity_(logger::UNKNOWN),
 #ifdef HAS_NCURSES
                                                 curses_(0),
 #endif
@@ -154,7 +154,11 @@ int goby::common::FlexOStreamBuf::overflow(int c /*= EOF*/)
 // called when flush() or std::endl
 int goby::common::FlexOStreamBuf::sync()
 {
-    assert(current_verbosity_ != logger::UNKNOWN || lock_action_ != logger_lock::lock);
+    if(!(current_verbosity_ != logger::UNKNOWN || lock_action_ != logger_lock::lock))
+    {
+        display(buffer_.front());
+        assert(current_verbosity_ != logger::UNKNOWN || lock_action_ != logger_lock::lock);
+    }
     
     // all but last one
     while(buffer_.size() > 1)

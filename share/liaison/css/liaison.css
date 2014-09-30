@@ -186,3 +186,7 @@ li.odd
     border:1px solid;
     padding:2px;
 }
+
+.Wt-progressbar .Wt-pgb-bar {
+    background: #1C9FCB
+}

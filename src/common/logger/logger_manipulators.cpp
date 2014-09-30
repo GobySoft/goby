@@ -61,3 +61,10 @@ std::ostream& basic_log_header(std::ostream& os, const std::string& group_name)
     os << ": ";
     return os;
 }
+
+goby::common::FlexOstream& operator<<(goby::common::FlexOstream& os, const GroupSetter & gs)
+{
+    os.set_unset_verbosity();
+    gs(os);
+    return(os);
+}

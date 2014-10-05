@@ -857,7 +857,8 @@ void goby::acomms::MMDriver::process_receive(const NMEASentence& nmea)
 
     
     // clear the last send given modem acknowledgement
-    if(!out_.empty() && out_.front().sentence_id() == nmea.sentence_id())
+    if(!out_.empty() && (out_.front().sentence_id() == nmea.sentence_id()
+                         || (out_.front().sentence_id() == "CFQ" && nmea.sentence_id() == "CFG"))) // special case CFG acks CFQ
         pop_out();    
 }
 
@@ -1063,13 +1064,6 @@ void goby::acomms::MMDriver::cardp(const NMEASentence& nmea, protobuf::ModemTran
 void goby::acomms::MMDriver::cacfg(const NMEASentence& nmea)
 {
     nvram_cfg_[nmea[1]] = nmea.as<int>(2);
-
-    
-    if(out_.empty() ||
-       (out_.front().sentence_id() != "CFG" && out_.front().sentence_id() != "CFQ"))
-        return;
-    
-    if(out_.front().sentence_id() == "CFQ") pop_out();
 }
 
 void goby::acomms::MMDriver::caclk(const NMEASentence& nmea)

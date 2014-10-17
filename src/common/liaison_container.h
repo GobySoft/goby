@@ -27,6 +27,7 @@
 
 #include <Wt/WContainerWidget>
 #include <Wt/WText>
+#include <Wt/WColor>
 
 #include "goby/common/protobuf/liaison_config.pb.h"
 
@@ -45,6 +46,8 @@ namespace goby
 //            LIAISON_INTERNAL_SCOPE_PUBLISH_SOCKET = 6,  
         };
 
+        const Wt::WColor goby_blue(28,159,203);
+        const Wt::WColor goby_orange(227,96,52);
         
         inline std::string liaison_internal_publish_socket_name() { return "liaison_internal_publish_socket"; }
         inline std::string liaison_internal_subscribe_socket_name() { return "liaison_internal_subscribe_socket"; }

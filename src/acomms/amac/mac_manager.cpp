@@ -80,7 +80,11 @@ void goby::acomms::MACManager::startup(const protobuf::MACConfig& cfg)
         case protobuf::MAC_FIXED_DECENTRALIZED:
             std::list<protobuf::ModemTransmission>::clear();
             for(int i = 0, n = cfg_.slot_size(); i < n; ++i)
-                std::list<protobuf::ModemTransmission>::push_back(cfg_.slot(i));
+            {
+                protobuf::ModemTransmission slot = cfg_.slot(i);
+                slot.set_slot_index(i);
+                std::list<protobuf::ModemTransmission>::push_back(slot);
+            }
             
             if(cfg_.type() == protobuf::MAC_POLLED)
                 glog.is(DEBUG1) && glog << group(glog_mac_group_) << "Using the Centralized Polling MAC_POLLED scheme" << std::endl;
@@ -143,7 +147,8 @@ void goby::acomms::MACManager::begin_slot(const boost::system::error_code& e)
     }
     
     
-    const protobuf::ModemTransmission& s = *current_slot_;
+    protobuf::ModemTransmission s = *current_slot_;
+    s.set_time(goby::util::as<uint64>(next_slot_t_));
     
     bool we_are_transmitting = true;    
     switch(cfg_.type())
@@ -190,7 +195,8 @@ void goby::acomms::MACManager::begin_slot(const boost::system::error_code& e)
     glog.is(DEBUG1) && glog << group(glog_mac_group_) << "Starting slot: " << s.ShortDebugString() << std::endl;
     
     if(we_are_transmitting) signal_initiate_transmission(s);
-
+    signal_slot_start(s);
+    
     increment_slot();
 
     glog.is(DEBUG1) && glog << group(glog_mac_group_) << "Next slot at " << next_slot_t_ << std::endl;

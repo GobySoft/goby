@@ -73,6 +73,7 @@ void goby::common::FlexOstream::add_group(const std::string& name,
 std::ostream& goby::common::FlexOstream::operator<<(std::ostream& (*pf) (std::ostream&))
 {
     if(pf == die)   sb_.set_die_flag(true);
+    set_unset_verbosity();
     return std::ostream::operator<<(pf);
 }            
 
@@ -93,6 +94,8 @@ bool goby::common::FlexOstream::is(logger::Verbosity verbosity)
 #endif
         }
             
+        sb_.set_verbosity_depth(verbosity);
+
         switch(verbosity)
         {
             case QUIET: break;
@@ -105,7 +108,6 @@ bool goby::common::FlexOstream::is(logger::Verbosity verbosity)
             case DIE: *this << die; break;
         }
 
-        sb_.set_verbosity_depth(verbosity);
     }
                 
     return display;

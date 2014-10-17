@@ -245,7 +245,7 @@ namespace goby
                                     bool first_user_frame);
         
             // clears the destination and ack values for the packet to reset for next $CADRQ
-            void clear_packet(); 
+            void clear_packet(unsigned start_frame); 
             void process_cfg();
 
             void process_modem_ack(const protobuf::ModemTransmission& ack_msg);

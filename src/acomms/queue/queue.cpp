@@ -485,12 +485,15 @@ void goby::acomms::Queue::flush()
 }        
 
 
-bool goby::acomms::Queue::clear_ack_queue()
+bool goby::acomms::Queue::clear_ack_queue(unsigned start_frame)
 {
     for (waiting_for_ack_it it = waiting_for_ack_.begin(), end = waiting_for_ack_.end();
          it != end;)
     {
-        if (it->second->meta.last_sent_time() +
+        // clear out acks for frames whose ack wait time has expired (or whose frame
+        // number has come around again. This should avoid losing unack'd data.
+        if (it->first >= start_frame ||
+            it->second->meta.last_sent_time() +
             parent_->cfg_.minimum_ack_wait_seconds()*1e6 < goby_time<uint64>())
         {
             waiting_for_ack_.erase(it++);

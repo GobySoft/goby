@@ -121,6 +121,10 @@ CpAcommsHandler::CpAcommsHandler()
                           boost::bind(&CpAcommsHandler::handle_goby_signal, this,
                                       _1, cfg_.moos_var().mac_initiate_transmission(), _1, ""));
 
+    goby::acomms::connect(&mac_.signal_slot_start,
+                          boost::bind(&CpAcommsHandler::handle_goby_signal, this,
+                                      _1, cfg_.moos_var().mac_slot_start(), _1, ""));
+
 
     goby::acomms::connect(&queue_manager_.signal_data_on_demand,
                           this, &CpAcommsHandler::handle_encode_on_demand);

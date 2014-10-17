@@ -74,6 +74,8 @@ int main()
     glog.set_lock_action(goby::common::logger_lock::lock);
     glog.is(VERBOSE) && glog << "lock ok" << std::endl;
     glog.is(VERBOSE) && glog << "unlock ok" << std::endl;
+    glog << "lock ok" << std::endl;
+    glog << std::string("lock ok") << std::endl;
     glog.is(DEBUG3) && glog << stream_assert << std::endl;
 
     boost::thread t1(boost::bind(spew, 1000, 1));

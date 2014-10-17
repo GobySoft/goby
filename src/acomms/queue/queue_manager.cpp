@@ -212,9 +212,10 @@ std::ostream& goby::acomms::operator<< (std::ostream& out, const QueueManager& d
 void goby::acomms::QueueManager::handle_modem_data_request(protobuf::ModemTransmission* msg)
 {
     // clear old waiting acknowledgments and reset packet defaults
-    clear_packet();    
+    clear_packet(msg->frame_start());    
     
-    for(int frame_number = msg->frame_size(), total_frames = msg->max_num_frames();
+    for(unsigned frame_number = msg->frame_size() + msg->frame_start(),
+            total_frames = msg->max_num_frames() + msg->frame_start();
         frame_number < total_frames; ++frame_number)
     {
         std::string* data = msg->add_frame();
@@ -297,7 +298,7 @@ void goby::acomms::QueueManager::handle_modem_data_request(protobuf::ModemTransm
                 // DEST
                 // 
                 // update destination address
-                if(frame_number == 0)
+                if(frame_number == msg->frame_start())
                 {
                     // discipline the destination of the packet if initially unset
                     if(msg->dest() == QUERY_DESTINATION_ID)
@@ -385,12 +386,12 @@ void goby::acomms::QueueManager::handle_modem_data_request(protobuf::ModemTransm
 }
 
 
-void goby::acomms::QueueManager::clear_packet()
+void goby::acomms::QueueManager::clear_packet(unsigned start_frame)
 {
     for (std::multimap<unsigned, Queue*>::iterator it = waiting_for_ack_.begin(),
              end = waiting_for_ack_.end(); it != end;)
     {
-        if (it->second->clear_ack_queue())
+        if (it->second->clear_ack_queue(start_frame))
             waiting_for_ack_.erase(it++);
         else
             ++it;  
@@ -414,7 +415,6 @@ goby::acomms::Queue* goby::acomms::QueueManager::find_next_sender(const protobuf
                            << "\tRequesting "<< request_msg.max_num_frames()
                            <<  " frame(s), have " << data.size()
                            << "/" << request_msg.max_frame_bytes() << "B" << std::endl;
-
     
     for(std::map<unsigned, boost::shared_ptr<Queue> >::iterator it = queues_.begin(), n = queues_.end(); it != n; ++it)
     {

@@ -42,7 +42,8 @@ const size_t UDP_MAX_PACKET_SIZE = 65507; // (16 bit length = 65535 - 8 byte UDP
 goby::acomms::UDPDriver::UDPDriver(boost::asio::io_service* io_service)
     : io_service_(io_service),
       socket_(*io_service),
-      receive_buffer_(UDP_MAX_PACKET_SIZE)
+      receive_buffer_(UDP_MAX_PACKET_SIZE),
+      next_frame_(0)
 {
 }
 
@@ -90,6 +91,11 @@ void goby::acomms::UDPDriver::handle_initiate_transmission(const protobuf::Modem
     protobuf::ModemTransmission msg = orig_msg;
     signal_modify_transmission(&msg);
 
+    if(!msg.has_frame_start())
+        msg.set_frame_start(next_frame_++);
+    if(next_frame_ >= FRAME_COUNT_ROLLOVER)
+        next_frame_ = 0;
+    
     msg.set_max_frame_bytes(driver_cfg_.GetExtension(UDPDriverConfig::max_frame_size));
     signal_data_request(&msg);
 
@@ -118,7 +124,7 @@ void goby::acomms::UDPDriver::receive_message(const protobuf::ModemTransmission&
         ack.set_type(goby::acomms::protobuf::ModemTransmission::ACK);
         ack.set_src(msg.dest());
         ack.set_dest(msg.src());
-        for(int i = 0, n = msg.frame_size(); i < n; ++i)
+        for(int i = msg.frame_start(), n = msg.frame_size() + msg.frame_start(); i < n; ++i)
             ack.add_acked_frame(i);
         start_send(ack);
     }

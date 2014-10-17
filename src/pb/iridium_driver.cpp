@@ -47,7 +47,8 @@ goby::acomms::IridiumDriver::IridiumDriver(goby::common::ZeroMQService* zeromq_s
           query_interval_seconds_(1),
           waiting_for_reply_(false),
           last_send_time_(0),
-          serial_fd_(-1)
+          serial_fd_(-1),
+          next_frame_(0)
 {
      
 //    assert(byte_string_to_uint32(uint32_to_byte_string(16540)) == 16540);
@@ -208,6 +209,11 @@ void goby::acomms::IridiumDriver::process_transmission(protobuf::ModemTransmissi
 {
     signal_modify_transmission(&msg);
 
+    if(dial || next_frame_ >= FRAME_COUNT_ROLLOVER)
+        next_frame_ = 0;
+    if(!msg.has_frame_start())
+        msg.set_frame_start(next_frame_++);
+    
     msg.set_max_frame_bytes(driver_cfg_.GetExtension(IridiumDriverConfig::max_frame_size));
     signal_data_request(&msg);
 

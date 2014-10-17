@@ -43,7 +43,8 @@ goby::pb::PBDriver::PBDriver(goby::common::ZeroMQService* zeromq_service) :
     request_socket_id_(0),
     query_interval_seconds_(1),
     reset_interval_seconds_(120),
-    waiting_for_reply_(false)
+    waiting_for_reply_(false),
+    next_frame_(0)
 {
     on_receipt<acomms::protobuf::StoreServerResponse>(0, &PBDriver::handle_response, this);
 }
@@ -85,7 +86,13 @@ void goby::pb::PBDriver::handle_initiate_transmission(const acomms::protobuf::Mo
             signal_modify_transmission(&msg);
     
             if(driver_cfg_.modem_id() == msg.src())
-            {        
+            {
+
+                if(!msg.has_frame_start())
+                    msg.set_frame_start(next_frame_++);
+                if(next_frame_ >= FRAME_COUNT_ROLLOVER)
+                    next_frame_ = 0;
+    
                 // this is our transmission        
                 if(msg.rate() < driver_cfg_.ExtensionSize(PBDriverConfig::rate_to_bytes))
                     msg.set_max_frame_bytes(driver_cfg_.GetExtension(PBDriverConfig::rate_to_bytes, msg.rate()));

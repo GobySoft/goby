@@ -90,7 +90,7 @@ namespace goby
                                      const std::string& data);
 
             // returns true if empty
-            bool clear_ack_queue();
+            bool clear_ack_queue(unsigned start_frame);
 
             void flush();
         

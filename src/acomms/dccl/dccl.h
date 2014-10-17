@@ -31,7 +31,7 @@
 #include "dccl/codec.h"
 #include "dccl/codecs2/field_codec_default.h"
 #include "dccl/field_codec_id.h"
-#include "dccl/field_codec_message_stack.h"
+#include "dccl/internal/field_codec_message_stack.h"
 
 /// The global namespace for the Goby project.
 namespace goby
@@ -54,7 +54,17 @@ namespace goby
         typedef dccl::v2::DefaultStringCodec DCCLDefaultStringCodec;
         typedef dccl::v2::DefaultBytesCodec DCCLDefaultBytesCodec;
         typedef dccl::v2::DefaultEnumCodec DCCLDefaultEnumCodec;
-        typedef dccl::MessageStack MessageHandler;
+
+        class MessageHandler : public dccl::internal::MessageStack 
+        {
+          public:
+            MessageHandler(const google::protobuf::FieldDescriptor* field = 0)
+                : MessageStack(field)
+            { }
+            typedef dccl::MessagePart MessagePart;
+            static const MessagePart HEAD = dccl::HEAD, BODY = dccl::BODY, UNKNOWN = dccl::UNKNOWN;
+        };
+        
         template<typename TimeType>
             class TimeCodec : public dccl::v2::TimeCodecBase<TimeType, 0>
         { BOOST_STATIC_ASSERT(sizeof(TimeCodec) == 0); };
@@ -90,12 +100,12 @@ namespace goby
         typedef dccl::FieldCodecManager DCCLFieldCodecManager;
 //        typedef dccl::TypedFieldCodec DCCLTypedFieldCodec;
         typedef dccl::FieldCodecManager DCCLFieldCodecManager;
-        typedef dccl::FromProtoCppTypeBase FromProtoCppTypeBase;
+        typedef dccl::internal::FromProtoCppTypeBase FromProtoCppTypeBase;
         //       typedef dccl::FromProtoType FromProtoType;
         // typedef dccl::FromProtoCppType FromProtoCppType;
         //typedef dccl::ToProtoCppType ToProtoCppType;
         typedef dccl::Bitset Bitset;
-        typedef dccl::TypeHelper DCCLTypeHelper;
+        typedef dccl::internal::TypeHelper DCCLTypeHelper;
         
         class DCCLCodec
         {

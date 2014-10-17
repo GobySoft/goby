@@ -86,10 +86,10 @@ div.fill
 }
 
 
-input
-{
-  width: 20em;
-}
+input[type="text"]
+ { 
+   width: 20em; 
+ } 
 
 a#goby_logo { display:block; position: absolute; left:0px; top:0px;}
 a#lp_logo { display:block; position: absolute; right:0px; top:0px;}
@@ -185,4 +185,8 @@ li.odd
     background-color: #fff;
     border:1px solid;
     padding:2px;
+}
+
+.Wt-progressbar .Wt-pgb-bar {
+    background: #1C9FCB
 }

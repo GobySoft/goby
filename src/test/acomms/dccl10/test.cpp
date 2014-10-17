@@ -35,7 +35,7 @@
 
 using goby::acomms::operator<<;
 
-void run_test(dccl::protobuf::ArithmeticModel& model,
+void run_test(dccl::arith::protobuf::ArithmeticModel& model,
               const google::protobuf::Message& msg_in,
               bool set_model = true)
 {
@@ -53,7 +53,7 @@ void run_test(dccl::protobuf::ArithmeticModel& model,
     if(set_model)
     {
         model.set_name("model");
-        dccl::ModelManager::set_model(model);
+        dccl::arith::ModelManager::set_model(model);
     }
     
     codec->info(msg_in.GetDescriptor(), &std::cout);
@@ -95,7 +95,7 @@ int main(int argc, char* argv[])
     
     // test case from Practical Implementations of Arithmetic Coding by Paul G. Howard and Je rey Scott Vitter
     {        
-        dccl::protobuf::ArithmeticModel model;
+        dccl::arith::protobuf::ArithmeticModel model;
         
         model.set_eof_frequency(4); // "a"
 
@@ -121,7 +121,7 @@ int main(int argc, char* argv[])
 
     // misc test case
     {            
-        dccl::protobuf::ArithmeticModel model;
+        dccl::arith::protobuf::ArithmeticModel model;
 
         model.add_value_bound(100.0);
         model.add_frequency(100);
@@ -164,7 +164,7 @@ int main(int argc, char* argv[])
     
     // edge case 1, should be just a single bit ("1")
     {            
-        dccl::protobuf::ArithmeticModel model;
+        dccl::arith::protobuf::ArithmeticModel model;
 
         model.set_eof_frequency(10);
         model.set_out_of_range_frequency(0);
@@ -192,7 +192,7 @@ int main(int argc, char* argv[])
 
     // edge case 2, should be full 23 or 24 bits
     {            
-        dccl::protobuf::ArithmeticModel model;
+        dccl::arith::protobuf::ArithmeticModel model;
 
         model.set_eof_frequency(10);
         model.set_out_of_range_frequency(0);
@@ -220,7 +220,7 @@ int main(int argc, char* argv[])
 
 
     {            
-        dccl::protobuf::ArithmeticModel model;
+        dccl::arith::protobuf::ArithmeticModel model;
 
         model.set_eof_frequency(10);
         model.set_out_of_range_frequency(0);
@@ -245,7 +245,7 @@ int main(int argc, char* argv[])
 
     // test case from Practical Implementations of Arithmetic Coding by Paul G. Howard and Je rey Scott Vitter
     {        
-        dccl::protobuf::ArithmeticModel model;
+        dccl::arith::protobuf::ArithmeticModel model;
         
         model.set_eof_frequency(1);
 
@@ -278,7 +278,7 @@ int main(int argc, char* argv[])
     // test case from Arithmetic Coding revealed: A guided tour from theory to praxis Sable Technical Report No. 2007-5 Eric Bodden
 
     {            
-        dccl::protobuf::ArithmeticModel model;
+        dccl::arith::protobuf::ArithmeticModel model;
 
         model.set_eof_frequency(0);
         model.set_out_of_range_frequency(0);
@@ -319,7 +319,7 @@ int main(int argc, char* argv[])
     srand ( time(NULL) );
     for(unsigned i = 0; i <= ArithmeticDouble2TestMsg::descriptor()->FindFieldByName("value")->options().GetExtension(dccl::field).max_repeat(); ++i)
     {
-        dccl::protobuf::ArithmeticModel model;
+        dccl::arith::protobuf::ArithmeticModel model;
         
 
         // pick some endpoints
@@ -334,7 +334,7 @@ int main(int argc, char* argv[])
         std::cout << "symbols: " << symbols << std::endl;
         
         // maximum freq
-        dccl::Model::freq_type each_max_freq = dccl::Model::MAX_FREQUENCY / (symbols+2);
+        dccl::arith::Model::freq_type each_max_freq = dccl::arith::Model::MAX_FREQUENCY / (symbols+2);
         std::cout << "each_max_freq: " << each_max_freq << std::endl;
         
         model.set_eof_frequency(rand() % each_max_freq + 1);

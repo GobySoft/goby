@@ -261,7 +261,7 @@ void DriverTester::handle_data_receive1(const protobuf::ModemTransmission& msg)
             assert(msg.type() == protobuf::ModemTransmission::ACK);
             assert(msg.src() == 2);
             assert(msg.dest() == 1);
-            assert(msg.acked_frame_size() == 3 && msg.acked_frame(0) == 0 && msg.acked_frame(1) == 1 && msg.acked_frame(2) == 2);
+            assert(msg.acked_frame_size() == 3 && msg.acked_frame(1) ==  msg.acked_frame(0) + 1 && msg.acked_frame(2) ==  msg.acked_frame(0) + 2);
             ++check_count_;
         }
         break;

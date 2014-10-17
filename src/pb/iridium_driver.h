@@ -94,6 +94,10 @@ namespace goby
             int serial_fd_;
 
             enum { RATE_RUDICS = 1, RATE_SBD = 0 };    
+
+            unsigned next_frame_;
+            enum { FRAME_COUNT_ROLLOVER = 1 << 16 };
+
         };
     }
 }

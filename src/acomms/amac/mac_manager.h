@@ -96,6 +96,13 @@ namespace goby
             ///
             /// \param m a message containing details of the transmission to be initated.  (protobuf::ModemMsgBase defined in acomms_modem_message.proto)
             boost::signals2::signal<void (const protobuf::ModemTransmission& m)> signal_initiate_transmission;
+
+            /// \brief Signals the start of all transmissions (even when we don't transmit)
+            ///
+            /// \param m a message containing details of the transmission to be initated.  (protobuf::ModemMsgBase defined in acomms_modem_message.proto)
+
+            boost::signals2::signal<void (const protobuf::ModemTransmission& m)> signal_slot_start;
+            
             /// \example acomms/amac/amac_simple/amac_simple.cpp        
             /// \example acomms/chat/chat.cpp
 

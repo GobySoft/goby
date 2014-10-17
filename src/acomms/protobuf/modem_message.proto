@@ -51,6 +51,8 @@ message ModemTransmission
   repeated bytes frame = 14 [(dccl.field).omit = true,
                              (goby.field).description="Data to transmit, represented as ASCII or octal bytes preceeded by a '\' (e.g. \000 is 0x00)"]; // if omitted, you will be queried for data on signal_data_request. You can also set some frames here and the rest will be filled by signalling a data request
 
+  optional uint32 frame_start = 15 [(dccl.field).omit = true, default = 0];
+  
   // for type == ACK
   repeated int32 acked_frame = 20 [(dccl.field).omit = true,
                                    (goby.field).cfg.action = NEVER];
@@ -60,6 +62,7 @@ message ModemTransmission
   optional double slot_seconds = 30 [(dccl.field).min = 0, (dccl.field).max = 3600, (dccl.field).precision=1, default = 10]; // length of slot (in seconds) if this transmission is part of a TDMA cycle
   optional uint32 unique_id = 31 [(dccl.field).min = 0, (dccl.field).max = 100, (goby.field).example="0"]; // used to assign an ID to this slot
   optional bool always_initiate = 32 [default = false];
+  optional int32 slot_index = 33 [(dccl.field).omit = true];
   
   // extensions 1000-1100 used by mm_driver.proto
   // extensions 1201-1202 used by abc_driver.proto (example driver)

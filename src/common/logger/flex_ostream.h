@@ -49,6 +49,7 @@ namespace goby
           public:
           FlexOstream()
               : std::ostream(&sb_),
+                sb_(this),
                 lock_action_(logger_lock::none)
             {
                 ++instances_;
@@ -136,31 +137,32 @@ namespace goby
             
             //provide interfaces to the rest of the types
             std::ostream& operator<< (bool& val )
-            { set_unset_verbosity(); return std::ostream::operator<<(val); }
+            { return std::ostream::operator<<(val); }
             std::ostream& operator<< (const short& val )
-            { set_unset_verbosity(); return std::ostream::operator<<(val); }
+            { return std::ostream::operator<<(val); }
             std::ostream& operator<< (const unsigned short& val )
-            { set_unset_verbosity(); return std::ostream::operator<<(val); }
+            { return std::ostream::operator<<(val); }
             std::ostream& operator<< (const int& val )
-            { set_unset_verbosity(); return std::ostream::operator<<(val); }
+            { return std::ostream::operator<<(val); }
             std::ostream& operator<< (const unsigned int& val )
-            { set_unset_verbosity(); return std::ostream::operator<<(val); }
+            { return std::ostream::operator<<(val); }
             std::ostream& operator<< (const long& val )
-            { set_unset_verbosity(); return std::ostream::operator<<(val); }
+            { return std::ostream::operator<<(val); }
             std::ostream& operator<< (const unsigned long& val )
-            { set_unset_verbosity(); return std::ostream::operator<<(val); }
+            { return std::ostream::operator<<(val); }
             std::ostream& operator<< (const float& val )
-            { set_unset_verbosity(); return std::ostream::operator<<(val); }
+            { return std::ostream::operator<<(val); }
             std::ostream& operator<< (const double& val )
-            { set_unset_verbosity(); return std::ostream::operator<<(val); }
+            { return std::ostream::operator<<(val); }
             std::ostream& operator<< (const long double& val )
-            { set_unset_verbosity(); return std::ostream::operator<<(val); }
+            { return std::ostream::operator<<(val); }
             std::ostream& operator<< (std::streambuf* sb )
-            { set_unset_verbosity(); return std::ostream::operator<<(sb); }
+            { return std::ostream::operator<<(sb); }
             std::ostream& operator<< (std::ios& ( *pf )(std::ios&))
-            { set_unset_verbosity(); return std::ostream::operator<<(pf); }
+            { return std::ostream::operator<<(pf); }
             std::ostream& operator<< (std::ios_base& ( *pf )(std::ios_base&))
-            { set_unset_verbosity(); return std::ostream::operator<<(pf); }
+            { return std::ostream::operator<<(pf); }
+
             //@}
 
             /// \name Thread safety related
@@ -218,24 +220,24 @@ namespace goby
         };        
         
         inline std::ostream& operator<< (FlexOstream& out, char c )
-        { out.set_unset_verbosity(); return std::operator<<(out, c); }
+        { return std::operator<<(out, c); }
         inline std::ostream& operator<< (FlexOstream& out, signed char c )
-        { out.set_unset_verbosity(); return std::operator<<(out, c); }
+        { return std::operator<<(out, c); }
         inline std::ostream& operator<< (FlexOstream& out, unsigned char c )
-        { out.set_unset_verbosity(); return std::operator<<(out, c); }        
+        { return std::operator<<(out, c); }        
         inline std::ostream& operator<< (FlexOstream& out, const char* s )
-        { out.set_unset_verbosity(); return std::operator<<(out, s); }        
+        { return std::operator<<(out, s); }        
         inline std::ostream& operator<< (FlexOstream& out, const signed char* s )
-        { out.set_unset_verbosity(); return std::operator<<(out, s); }        
+        { return std::operator<<(out, s); }        
         inline std::ostream& operator<< (FlexOstream& out, const unsigned char* s )
-        { out.set_unset_verbosity(); return std::operator<<(out, s); }                    
+        { return std::operator<<(out, s); }                    
         //@}
 
         template<typename _CharT, typename _Traits, typename _Alloc>
             inline std::ostream&
             operator<<(FlexOstream& out, const std::basic_string<_CharT, _Traits, _Alloc>& s)
         {
-            out.set_unset_verbosity(); return std::operator<<(out, s);
+            return std::operator<<(out, s);
         }
         
     }

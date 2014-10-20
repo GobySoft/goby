@@ -33,10 +33,27 @@ inline std::ostream& stream_assert(std::ostream & os)
 
 using namespace goby::common::logger;
 
+struct A
+{
+    A() : i(0) { }
+    A(int i) : i(i) { }
+    
+    int i;
+};
+
+std::ostream& operator<<(std::ostream& out, const A& a)
+{
+    return out << a.i;
+}    
+
 void spew(int n, int m)
 {
     for(int i = 0; i < n; i++)
         glog.is(VERBOSE) && glog << m << " " << i << std::endl;        
+
+    for(int i = 0; i < n; i++)
+        glog.is(VERBOSE) && glog << m << " " << A(i) << std::endl;        
+
 }
 
 
@@ -76,6 +93,12 @@ int main()
     glog.is(VERBOSE) && glog << "unlock ok" << std::endl;
     glog << "lock ok" << std::endl;
     glog << std::string("lock ok") << std::endl;
+
+    A a;
+    a.i = 10;
+    glog << "Testing overloaded operator<<" << std::endl;
+    glog << a << std::endl;
+    
     glog.is(DEBUG3) && glog << stream_assert << std::endl;
 
     boost::thread t1(boost::bind(spew, 1000, 1));

@@ -37,6 +37,7 @@
 #ifdef HAS_NCURSES
 #include "flex_ncurses.h"
 #endif
+#include "flex_ostream.h"
 
 #include "goby/util/sci.h"
 #include "goby/common/time.h"
@@ -54,16 +55,17 @@ boost::mutex curses_mutex;
 boost::recursive_mutex goby::common::logger::mutex;
 #endif
 
-goby::common::FlexOStreamBuf::FlexOStreamBuf(): buffer_(1),
-                                                name_("no name"),
-                                                die_flag_(false),
-                                                current_verbosity_(logger::UNKNOWN),
+goby::common::FlexOStreamBuf::FlexOStreamBuf(FlexOstream* parent): buffer_(1),
+                                                                   name_("no name"),
+                                                                   die_flag_(false),
+                                                                   current_verbosity_(logger::UNKNOWN),
 #ifdef HAS_NCURSES
-                                                curses_(0),
+                                                                   curses_(0),
 #endif
-                                                start_time_(goby_time()),
-                                                is_gui_(false),
-                                                highest_verbosity_(logger::QUIET)
+                                                                   start_time_(goby_time()),
+                                                                   is_gui_(false),
+                                                                   highest_verbosity_(logger::QUIET),
+                                                                   parent_(parent)
                                                 
 {
     Group no_group("", "Ungrouped messages");
@@ -141,6 +143,8 @@ void goby::common::FlexOStreamBuf::add_group(const std::string & name, Group g)
 
 int goby::common::FlexOStreamBuf::overflow(int c /*= EOF*/)
 {
+    parent_->set_unset_verbosity();
+    
     if(c == EOF)
         return c;
     else if(c == '\n')

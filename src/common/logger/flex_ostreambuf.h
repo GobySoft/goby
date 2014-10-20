@@ -79,10 +79,12 @@ namespace goby
         
         
         /// Class derived from std::stringbuf that allows us to insert things before the stream and control output. This is the string buffer used by goby::common::FlexOstream for the Goby Logger (glogger)
+        class FlexOstream;
+        
         class FlexOStreamBuf : public std::streambuf
         {
           public:
-            FlexOStreamBuf();
+            FlexOStreamBuf(FlexOstream* parent);
             ~FlexOStreamBuf();
             
             /// virtual inherited from std::streambuf. Called when std::endl or std::flush is inserted into the stream
@@ -189,6 +191,7 @@ namespace goby
             logger::Verbosity highest_verbosity_;
 
             logger_lock::LockAction lock_action_;
+            FlexOstream* parent_;
         };
     }
 }

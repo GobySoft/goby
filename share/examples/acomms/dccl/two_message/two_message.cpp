@@ -2,6 +2,8 @@
 
 #include "goby/acomms/dccl.h"
 #include "goby/util/binary.h"
+#include "goby/acomms/acomms_helpers.h" // for operator<< of google::protobuf::Message
+
 #include "two_message.pb.h"
 #include <exception>
 #include <iostream>

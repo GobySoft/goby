@@ -11,6 +11,11 @@ mark_as_advanced(GOBY_INCLUDE_DIR)
 get_filename_component(GOBY_DIR ${GOBY_INCLUDE_DIR}/../ ABSOLUTE)
 set(GOBY_LIBRARY_PATH "${GOBY_DIR}/lib")
 
+file(READ "${GOBY_INCLUDE_DIR}/goby/version.h" GOBY_VERSION_HPP_CONTENTS)
+  
+string(REGEX REPLACE ".*#define GOBY_VERSION_MAJOR ([0-9]+).*" "\\1" GOBY_VERSION_MAJOR "${GOBY_VERSION_HPP_CONTENTS}")
+string(REGEX REPLACE ".*#define GOBY_VERSION_MINOR ([0-9]+).*" "\\1" GOBY_VERSION_MINOR "${GOBY_VERSION_HPP_CONTENTS}")
+
 message("Using Goby in ${GOBY_DIR}")
 
 #
@@ -42,6 +47,15 @@ find_goby_library(GOBY_ACOMMS_LIBRARY goby_acomms ${GOBY_DIR})
 find_goby_library(GOBY_UTIL_LIBRARY goby_util ${GOBY_DIR})
 find_goby_library(GOBY_COMMON_LIBRARY goby_common ${GOBY_DIR})
 
+if(NOT (GOBY_VERSION_MAJOR EQUAL "2" AND GOBY_VERSION_MINOR EQUAL "0"))
+  find_package(DCCL)
+  if(DEFINED DCCL_INCLUDE_DIR)
+    include_directories("${DCCL_INCLUDE_DIR}")
+    protobuf_include_dirs("${DCCL_INCLUDE_DIR}")
+  endif()
+  set(DCCL_LIBRARIES dccl dccl_arithmetic)
+endif()
+
 #
 # Standard find_package portion
 #
@@ -58,6 +72,7 @@ if(GOBY_FOUND)
     ${GOBY_ACOMMS_LIBRARY}
     ${GOBY_UTIL_LIBRARY}
     ${GOBY_COMMON_LIBRARY}
+    ${DCCL_LIBRARIES}
     )
 
   set(GOBY_ROOT_DIR "${GOBY_DIR}" CACHE STRING "Path to the root of Goby, e.g. /home/me/goby" FORCE)

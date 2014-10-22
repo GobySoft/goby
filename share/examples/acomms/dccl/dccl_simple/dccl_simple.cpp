@@ -6,6 +6,7 @@
 #include "goby/acomms/dccl.h" // for DCCLCodec
 #include "simple.pb.h" // for `Simple` protobuf message defined in simple.proto
 #include "goby/util/binary.h" // for goby::util::hex_encode
+#include "goby/acomms/acomms_helpers.h" // for operator<< of google::protobuf::Message
 
 using goby::acomms::operator<<;
 

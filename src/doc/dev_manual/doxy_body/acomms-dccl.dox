@@ -3,7 +3,7 @@
 
 Table of contents for libdccl:
 <ul>
-<li> \ref dccl_designing
+doxyg<li> \ref dccl_designing
 <li> \ref dccl_codec
 <li> \ref dccl_options
 <li> \ref dccl_encrypt

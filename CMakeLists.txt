@@ -22,7 +22,7 @@ endif()
 
 set(GOBY_VERSION_MAJOR "2")
 set(GOBY_VERSION_MINOR "1")
-set(GOBY_VERSION_PATCH "0~alpha1")
+set(GOBY_VERSION_PATCH "0+shark1")
 
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.bzr")
    message("Compiling in bazaar source tree.")
@@ -31,13 +31,12 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.bzr")
    set(GOBY_VERSION_PATCH "${GOBY_VERSION_PATCH}+bzr")
 else()
    message("Compiling from release tarball.")
-   set(GOBY_VERSION_DATE "2014.04.01")
+   set(GOBY_VERSION_DATE "2014.11.05")
 endif()
 
 set(GOBY_VERSION "${GOBY_VERSION_MAJOR}.${GOBY_VERSION_MINOR}.${GOBY_VERSION_PATCH}")
 
-# give Goby 1 series a few more soversions
-set(GOBY_SOVERSION "26")
+set(GOBY_SOVERSION "27")
 
 # fetch all the local directories for generated code
 get_filename_component(goby_LIB_DIR lib ABSOLUTE)

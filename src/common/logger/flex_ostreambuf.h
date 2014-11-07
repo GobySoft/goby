@@ -25,17 +25,13 @@
 #ifndef FlexOStreamBuf20091110H
 #define FlexOStreamBuf20091110H
 
-#define THREAD_SAFE_LOGGER @IS_THREAD_SAFE_LOGGER@
-
 #include <iostream>
 #include <sstream>
 #include <vector>
 #include <deque>
 #include <cstdio>
 
-#if THREAD_SAFE_LOGGER
 #include <boost/thread.hpp>
-#endif
 
 #include <boost/shared_ptr.hpp>
 #include <boost/date_time.hpp>
@@ -62,9 +58,7 @@ namespace goby
         namespace logger
         {
             
-#if THREAD_SAFE_LOGGER
             extern boost::recursive_mutex mutex;
-#endif
 
             enum Verbosity { UNKNOWN = 4,
                              QUIET = protobuf::GLogConfig::QUIET,
@@ -177,10 +171,8 @@ namespace goby
             bool die_flag_;
             logger::Verbosity current_verbosity_;
             
-#ifdef HAS_NCURSES
             FlexNCurses* curses_;
             boost::shared_ptr<boost::thread> input_thread_;
-#endif            
 
             boost::posix_time::ptime start_time_;
 

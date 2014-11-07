@@ -86,7 +86,6 @@ int main()
     glog.is(WARN) && glog << "warn ok" << std::endl;
 
     
-#if THREAD_SAFE_LOGGER
     std::cout << "checking locking ... " << std::endl;
     glog.set_lock_action(goby::common::logger_lock::lock);
     glog.is(VERBOSE) && glog << "lock ok" << std::endl;
@@ -108,7 +107,6 @@ int main()
 
     glog.set_lock_action(goby::common::logger_lock::none);
 
-#endif
     
     std::cout << "attaching std::cout to DEBUG1" << std::endl;
     glog.add_stream(DEBUG1, &std::cout);

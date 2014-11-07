@@ -51,9 +51,7 @@ using goby::common::goby_time;
 boost::mutex curses_mutex;
 #endif
 
-#if THREAD_SAFE_LOGGER
 boost::recursive_mutex goby::common::logger::mutex;
-#endif
 
 goby::common::FlexOStreamBuf::FlexOStreamBuf(FlexOstream* parent): buffer_(1),
                                                                    name_("no name"),
@@ -177,12 +175,11 @@ int goby::common::FlexOStreamBuf::sync()
     
     if(die_flag_) exit(EXIT_FAILURE);
 
-#if THREAD_SAFE_LOGGER
+
     if(lock_action_ == logger_lock::lock)
     {
         logger::mutex.unlock();
     }
-#endif
     
     return 0;
 }

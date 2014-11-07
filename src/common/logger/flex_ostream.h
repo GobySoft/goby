@@ -73,17 +73,13 @@ namespace goby
             /// Set the name of the application that the logger is serving.
             void set_name(const std::string & s)
             {
-#if THREAD_SAFE_LOGGER
                 boost::recursive_mutex::scoped_lock l(goby::common::logger::mutex);
-#endif
                 sb_.name(s);
             }
 
             void enable_gui()
             {
-#if THREAD_SAFE_LOGGER
                 boost::recursive_mutex::scoped_lock l(goby::common::logger::mutex);
-#endif
                 sb_.enable_gui();
             }
             
@@ -108,17 +104,13 @@ namespace goby
             /// Attach a stream object (e.g. std::cout, std::ofstream, ...) to the logger with desired verbosity
             void add_stream(logger::Verbosity verbosity = logger::VERBOSE, std::ostream* os = 0)
             {
-#if THREAD_SAFE_LOGGER
                 boost::recursive_mutex::scoped_lock l(goby::common::logger::mutex);
-#endif
                 sb_.add_stream(verbosity, os);
             }            
 
             void add_stream(goby::common::protobuf::GLogConfig::Verbosity verbosity = goby::common::protobuf::GLogConfig::VERBOSE, std::ostream* os = 0)
             {
-#if THREAD_SAFE_LOGGER
                 boost::recursive_mutex::scoped_lock l(goby::common::logger::mutex);
-#endif
                 sb_.add_stream(static_cast<logger::Verbosity>(verbosity), os);
             }            
 
@@ -168,13 +160,11 @@ namespace goby
             /// \name Thread safety related
             //@{
             /// Get a reference to the Goby logger mutex for scoped locking
-#if THREAD_SAFE_LOGGER
             boost::recursive_mutex& mutex()
             { return logger::mutex; }
 
             void set_lock_action(logger_lock::LockAction lock_action)
             { sb_.set_lock_action(lock_action); }
-#endif
             //@}
 
             void refresh()

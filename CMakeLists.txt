@@ -61,15 +61,6 @@ else()
   set(BUILD_SHARED_LIBS ON)
 endif()
 
-## build goby logger with threading enabled
-option(make_thread_safe_logger "Enable thread-safety in Goby Logger." ON)
-
-if(make_thread_safe_logger)
-  set(IS_THREAD_SAFE_LOGGER 1)
-else()
-  set(IS_THREAD_SAFE_LOGGER 0)
-endif()
-
 ## build dynamic protobuf manager with ability to read from disk (requires
 ## boost-filesystem)
 option(make_proto_runtime_compile "Allow runtime compilation of .proto files." ON)

@@ -22,5 +22,7 @@ message IridiumDriverConfig
 
     optional int32 hangup_seconds_after_empty = 1388 [default = 30];
     optional int32 start_timeout = 1389 [default = 20];
+
+    optional bool use_dtr = 1390 [default = false];
   }
 }

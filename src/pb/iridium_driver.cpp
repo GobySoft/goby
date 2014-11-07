@@ -72,10 +72,17 @@ void goby::acomms::IridiumDriver::startup(const protobuf::DriverConfig& cfg)
         debug_client_->start();
     }
 
-       // dtr low hangs up
-    if(driver_cfg_.connection_type() == protobuf::DriverConfig::CONNECTION_SERIAL)
-       driver_cfg_.AddExtension(IridiumDriverConfig::config, "&D2"); 
-       
+
+    if(!driver_cfg_.HasExtension(IridiumDriverConfig::use_dtr) && 
+        driver_cfg_.connection_type() == protobuf::DriverConfig::CONNECTION_SERIAL)
+    {
+        driver_cfg_.SetExtension(IridiumDriverConfig::use_dtr, true);
+    }
+    
+    // dtr low hangs up
+    if(driver_cfg_.GetExtension(IridiumDriverConfig::use_dtr))
+      driver_cfg_.AddExtension(IridiumDriverConfig::config, "&D2"); 
+
 
     using_zmq_ = driver_cfg_.HasExtension(IridiumDriverConfig::request_socket);
     
@@ -99,7 +106,6 @@ void goby::acomms::IridiumDriver::startup(const protobuf::DriverConfig& cfg)
     rudics_mac_msg_.set_type(goby::acomms::protobuf::ModemTransmission::DATA);
     rudics_mac_msg_.set_rate(RATE_RUDICS);
 
-    
     modem_init();
 }
 
@@ -118,8 +124,7 @@ void goby::acomms::IridiumDriver::modem_init()
     {
         do_work();
 
-        if(driver_cfg_.connection_type() ==
-           protobuf::DriverConfig::CONNECTION_SERIAL &&
+        if(driver_cfg_.GetExtension(IridiumDriverConfig::use_dtr) &&
            modem().active() &&
            !dtr_set)
         {
@@ -169,7 +174,7 @@ bool goby::acomms::IridiumDriver::query_dtr()
 
 void goby::acomms::IridiumDriver::hangup()
 {
-    if(driver_cfg_.connection_type() == protobuf::DriverConfig::CONNECTION_SERIAL)
+  if(driver_cfg_.GetExtension(IridiumDriverConfig::use_dtr))
     {
         set_dtr(false);
         sleep(1);
@@ -193,7 +198,7 @@ void goby::acomms::IridiumDriver::shutdown()
         usleep(10000);
     }
 
-    if(driver_cfg_.connection_type() == protobuf::DriverConfig::CONNECTION_SERIAL)
+    if(driver_cfg_.GetExtension(IridiumDriverConfig::use_dtr))
         set_dtr(false);
     
     modem_close();

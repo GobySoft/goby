@@ -339,7 +339,7 @@ void goby::acomms::IridiumDriver::receive(const protobuf::ModemTransmission& msg
         ack.set_type(goby::acomms::protobuf::ModemTransmission::ACK);
         ack.set_src(msg.dest());
         ack.set_dest(msg.src());
-        for(int i = 0, n = msg.frame_size(); i < n; ++i)
+        for(int i = msg.frame_start(), n = msg.frame_size() + msg.frame_start(); i < n; ++i)
             ack.add_acked_frame(i);
         send(ack);
     }

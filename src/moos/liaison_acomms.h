@@ -29,6 +29,7 @@
 #include <Wt/WPanel>
 #include <Wt/WProgressBar>
 #include <Wt/WCssDecorationStyle>
+#include <Wt/Chart/WCartesianChart>
 
 #include <dccl.h>
 

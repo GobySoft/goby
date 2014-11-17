@@ -31,22 +31,6 @@ endif()
 add_definitions(-DSHARED_LIBRARY_SUFFIX="${CMAKE_SHARED_LIBRARY_SUFFIX}")
 
 # optional
-## cryptopp
-find_package(Cryptopp QUIET)
-set(CRYPTOPP_DOC_STRING "Enable cryptography (requires libcrypto++-dev: http://www.cryptopp.com)")
-if(CRYPTOPP_FOUND)
-  option(enable_cryptography ${CRYPTOPP_DOC_STRING} ON)
-else()
-  option(enable_cryptography ${CRYPTOPP_DOC_STRING} OFF)
-  message(">> setting enable_cryptography to OFF ... if you need this functionality: 1) install libcrypto++-dev; 2) run cmake -Denable_cryptography=ON")
-endif()
-
-if(enable_cryptography)
-  goby_find_required_package(Cryptopp)
-  add_definitions(-DHAS_CRYPTOPP)
-  include_directories(${Cryptopp_INCLUDE_DIRS})
-endif()  
-
 ## ncurses
 set(CURSES_USE_NCURSES TRUE)
 set(CURSES_NEED_NCURSES TRUE)

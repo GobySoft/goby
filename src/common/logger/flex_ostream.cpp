@@ -46,9 +46,8 @@ void goby::common::FlexOstream::add_group(const std::string& name,
                                         const std::string& description /*= ""*/)
 {
     {
-#if THREAD_SAFE_LOGGER
+
         boost::recursive_mutex::scoped_lock l(goby::common::logger::mutex);
-#endif
         
         if(description.empty())
         {
@@ -87,11 +86,7 @@ bool goby::common::FlexOstream::is(logger::Verbosity verbosity)
     {
         if(sb_.lock_action() == logger_lock::lock)
         {
-#if THREAD_SAFE_LOGGER
             goby::common::logger::mutex.lock(); 
-#else
-            throw(goby::Exception("Logger lock requested but Goby is compiled with make_thread_safe_logger==OFF"));
-#endif
         }
             
         sb_.set_verbosity_depth(verbosity);

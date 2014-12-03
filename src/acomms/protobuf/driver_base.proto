@@ -40,6 +40,7 @@ message DriverConfig
   
   optional string raw_log = 9 [(goby.field).description="File to write raw modem log to. If %1% is present, is replaced with the current timestamp."];
 
+  optional string driver_name = 10 [(goby.field).description="Driver name to load from plugin library"];
   
   extensions 1000 to max;
   // extensions 1000-1100 used by acomms_mm_driver.proto

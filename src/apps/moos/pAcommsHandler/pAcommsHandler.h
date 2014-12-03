@@ -60,7 +60,8 @@ class CpAcommsHandler : public GobyMOOSApp
   public:
     static CpAcommsHandler* get_instance();
     static void delete_instance();
-    
+    static std::map<std::string, void*> driver_plugins_;
+
   private:
     typedef boost::asio::basic_deadline_timer<goby::common::GobyTime> Timer;
     

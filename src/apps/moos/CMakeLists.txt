@@ -25,6 +25,11 @@ if(build_iFrontSeat)
   add_subdirectory(abc_frontseat_simulator)
 endif()
 
+option(build_pGobyMOOSAppTemplate "Build pGobyMOOSAppTemplate - example Goby MOOS App" OFF)
+
+if(build_pGobyMOOSAppTemplate)
+  add_subdirectory(pGobyMOOSAppTemplate) 
+endif()
 
 if(enable_v1_transitional)
   add_subdirectory(dccl_xml_to_dccl_proto)

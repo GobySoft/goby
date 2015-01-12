@@ -229,9 +229,22 @@ namespace goby
                     glog.is(goby::common::logger::DEBUG1) && glog << group("iridiumdriver") << "~Ready" << std::endl;
                 }
 
+                boost::statechart::result react( const EvDial& )
+                {
+                    if(state_downcast<const NotOnCall *>() != 0)
+                    {
+                        return transit<Dial>();
+                    }
+                    else
+                    {
+                        glog.is(goby::common::logger::DEBUG1) && glog << group("iridiumdriver") << "Not dialing since we are already on a call." << std::endl;
+                        return discard_event();
+                    }
+                }
+                
                 typedef boost::mpl::list<
                     boost::statechart::transition< EvRing, Answer >,
-                    boost::statechart::transition< EvDial, Dial >
+                    boost::statechart::custom_reaction< EvDial >
                     > reactions;
 
               private:

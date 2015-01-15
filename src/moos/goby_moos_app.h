@@ -545,7 +545,7 @@ template <class MOOSAppType>
         {
             std::string line;
             bool in_process_config = false;
-            while(!getline(fin, line).eof())
+            while(getline(fin, line))
             {
                 std::string no_blanks_line = boost::algorithm::erase_all_copy(line, " ");
                 if(boost::algorithm::iequals(no_blanks_line, "PROCESSCONFIG=" +  application_name_))

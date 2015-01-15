@@ -314,6 +314,9 @@ namespace goby
                     codec_->set_crypto_passphrase(cfg_.crypto_passphrase(),
                                                  skip_crypto_ids);
                 }
+
+                if(cfg_.has_id_codec())
+                { set_id_codec(cfg_.id_codec()); }
             }
 
             void dlog_message(const std::string& msg,

@@ -135,6 +135,7 @@ namespace goby
             {
                 google::protobuf::TextFormat::Printer printer;
                 printer.SetSingleLineMode(true);
+                printer.SetUseShortRepeatedPrimitives(true);
                 printer.PrintToString(in, out);
             }
             

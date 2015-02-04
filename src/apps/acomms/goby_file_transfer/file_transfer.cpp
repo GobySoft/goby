@@ -53,7 +53,7 @@ namespace goby
             void push_file();
             void pull_file();
 
-            void send_file(const std::string& path);
+            int send_file(const std::string& path);
             
             void handle_remote_transfer_request(const protobuf::TransferRequest& request);
             void handle_receive_fragment(const protobuf::FileFragment& fragment);
@@ -198,7 +198,7 @@ void goby::acomms::FileTransfer::pull_file()
 
 }
 
-void goby::acomms::FileTransfer::send_file(const std::string& path)
+int goby::acomms::FileTransfer::send_file(const std::string& path)
 {
     
     std::ifstream send_file(path.c_str(), std::ios::binary | std::ios::ate);
@@ -236,14 +236,14 @@ void goby::acomms::FileTransfer::send_file(const std::string& path)
     
     std::vector<protobuf::FileFragment>::iterator fragments_it = fragments.begin();
     std::vector<char> buffer(fragment_size);
-    int i = 0;
+    int fragment_idx = 0;
     while(send_file.good())
     {
         protobuf::FileFragment& fragment = *(fragments_it++);
         send_file.read(&buffer[0], fragment_size);
         int bytes_read = send_file.gcount();
         size_acquired += bytes_read;
-        fragment.set_fragment(i++);
+        fragment.set_fragment(fragment_idx++);
         if(size_acquired == size)
             fragment.set_is_last_fragment(true);
         else
@@ -267,7 +267,7 @@ void goby::acomms::FileTransfer::send_file(const std::string& path)
         publish(fragments[i], "QueuePush" + goby::util::as<std::string>(cfg_.local_id()));
     }
 
-    
+    return fragment_idx;
 }
 
 goby::acomms::FileTransfer::~FileTransfer()
@@ -292,7 +292,7 @@ void goby::acomms::FileTransfer::handle_remote_transfer_request(const protobuf::
         response.set_dest(request.src());
         try
         {            
-            send_file(request.file());
+            response.set_num_fragments(send_file(request.file()));
             response.set_transfer_successful(true);
         }
         catch(protobuf::TransferResponse::ErrorCode& c)

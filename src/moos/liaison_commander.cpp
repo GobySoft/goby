@@ -233,18 +233,20 @@ goby::common::LiaisonCommander::ControlsContainer::ControlsContainer(
         connection_pool_.reset(new Dbo::FixedSqlConnectionPool(sqlite3_.get(), pb_commander_config_.database_pool_size()));
     }        
 
-    session_.setConnectionPool(*connection_pool_);
-    session_.mapClass<CommandEntry>("_liaison_commands");
-    
-    try
-    {    
-        session_.createTables();
-    }
-    catch(Dbo::Exception& e)
     {
-        glog.is(VERBOSE) && glog << "Could not create tables: " << e.what() << std::endl;   
+        boost::mutex::scoped_lock slock(dbo_mutex_);    
+	session_.setConnectionPool(*connection_pool_);
+    	session_.mapClass<CommandEntry>("_liaison_commands");
+    
+    	try
+    	{    
+    	    session_.createTables();
+    	}
+    	catch(Dbo::Exception& e)
+    	{
+    	    glog.is(VERBOSE) && glog << "Could not create tables: " << e.what() << std::endl;   
+    	}
     }
-
     
 //    incoming_message_panel_->setPositionScheme(Wt::Fixed);
 //    incoming_message_panel_->setOffsets(20, Wt::Left | Wt::Bottom);

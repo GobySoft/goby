@@ -26,6 +26,9 @@
 #include "goby/common/zeromq_application_base.h"
 #include "goby/common/pubsub_node_wrapper.h"
 #include "goby/common/logger/term_color.h"
+#include "goby/pb/protobuf_node.h"
+#include "goby/pb/protobuf_pubsub_node_wrapper.h"
+#include "goby/moos/moos_protobuf_helpers.h"
 
 #include "moos_gateway_config.pb.h"
 
@@ -35,7 +38,7 @@ namespace goby
 {
     namespace moos
     {
-        class MOOSGateway : public goby::common::ZeroMQApplicationBase, public MOOSNode
+        class MOOSGateway : public goby::common::ZeroMQApplicationBase, public MOOSNode, public goby::pb::DynamicProtobufNode
         {
         public:
             MOOSGateway(protobuf::MOOSGatewayConfig* cfg);
@@ -47,7 +50,8 @@ namespace goby
             
             void check_for_new_moos_variables();
             bool clears_subscribe_filters(const std::string& moos_variable);
-            
+
+            void pb_inbox(boost::shared_ptr<google::protobuf::Message> msg, const std::string& group);
             
         private:
             static goby::common::ZeroMQService zeromq_service_;
@@ -55,11 +59,20 @@ namespace goby
 
             goby::common::PubSubNodeWrapper<CMOOSMsg> goby_moos_pubsub_client_;
             CMOOSCommClient moos_client_;
-            
+            goby::pb::DynamicProtobufPubSubNodeWrapper goby_pb_pubsub_client_;
+
             enum { MAX_CONNECTION_TIMEOUT = 10 };
             
 
             std::set<std::string> subscribed_vars_;
+
+            // MOOS Var -> PB Group
+            std::map<std::string, std::string> moos2pb_;
+
+            // PB Group -> MOOS Var
+            std::map<std::string, std::string> pb2moos_;
+
+            
         };
     }
 }
@@ -77,9 +90,42 @@ using goby::glog;
 goby::moos::MOOSGateway::MOOSGateway(protobuf::MOOSGatewayConfig* cfg)
     : ZeroMQApplicationBase(&zeromq_service_, cfg),
       MOOSNode(&zeromq_service_),
+      goby::pb::DynamicProtobufNode(&zeromq_service_),
       cfg_(*cfg),
-      goby_moos_pubsub_client_(this, cfg_.base().pubsub_config())
+      goby_moos_pubsub_client_(this, cfg_.base().pubsub_config()),
+      goby_pb_pubsub_client_(this, cfg_.base().pubsub_config())
 {
+
+    goby::util::DynamicProtobufManager::enable_compilation();
+
+    // load all shared libraries
+    for(int i = 0, n = cfg_.load_shared_library_size(); i < n; ++i)
+    {
+        glog.is(VERBOSE) &&
+            glog << "Loading shared library: " << cfg_.load_shared_library(i) << std::endl;
+        
+        void* handle = dlopen(cfg_.load_shared_library(i).c_str(), RTLD_LAZY);
+        if(!handle)
+        {
+            glog << die << "Failed ... check path provided or add to /etc/ld.so.conf "
+                 << "or LD_LIBRARY_PATH" << std::endl;
+        }
+    }
+    
+    
+    // load all .proto files
+    for(int i = 0, n = cfg_.load_proto_file_size(); i < n; ++i)
+    {
+        glog.is(VERBOSE) &&
+            glog << "Loading protobuf file: " << cfg_.load_proto_file(i) << std::endl;
+
+        
+        if(!goby::util::DynamicProtobufManager::find_descriptor(
+               cfg_.load_proto_file(i)))
+            glog.is(DIE) && glog << "Failed to load file." << std::endl;
+    }
+
+    
     moos_client_.Run(cfg_.moos_server_host().c_str(), cfg_.moos_server_port(), cfg_.base().app_name().c_str(), cfg_.moos_comm_tick());
 
     glog.is(VERBOSE) &&
@@ -104,7 +150,28 @@ goby::moos::MOOSGateway::MOOSGateway(protobuf::MOOSGatewayConfig* cfg)
     }
     
 
+    for(int i = 0, n = cfg_.pb_pair_size(); i < n; ++i)
+    {
+        if(cfg_.pb_pair(i).direction() == protobuf::MOOSGatewayConfig::ProtobufMOOSBridgePair::PB_TO_MOOS)
+        {
+            pb2moos_[cfg_.pb_pair(i).pb_group()] = cfg_.pb_pair(i).moos_var();
+            goby::pb::DynamicProtobufNode::subscribe(goby::common::PubSubNodeWrapperBase::SOCKET_SUBSCRIBE,
+                                                     boost::bind(&MOOSGateway::pb_inbox, this, _1, cfg_.pb_pair(i).pb_group()),
+                                                     cfg_.pb_pair(i).pb_group());
+        }
+        else if(cfg_.pb_pair(i).direction() == protobuf::MOOSGatewayConfig::ProtobufMOOSBridgePair::MOOS_TO_PB)
+        {
+            moos2pb_[cfg_.pb_pair(i).moos_var()] = cfg_.pb_pair(i).pb_group();
+            if(!subscribed_vars_.count(cfg_.pb_pair(i).moos_var()))
+            {
+                moos_client_.Register(cfg_.pb_pair(i).moos_var(), 0);
+                subscribed_vars_.insert(cfg_.pb_pair(i).moos_var());
+            }
+        }
+        
+    }    
 
+    
     glog.add_group("from_moos", common::Colors::lt_magenta, "MOOS -> Goby");
     glog.add_group("to_moos", common::Colors::lt_green, "Goby -> MOOS");
 }
@@ -211,3 +278,12 @@ bool goby::moos::MOOSGateway::clears_subscribe_filters(const std::string& moos_v
     return false;    
 }
     
+
+void goby::moos::MOOSGateway::pb_inbox(boost::shared_ptr<google::protobuf::Message> msg, const std::string& group)
+{
+    glog.is(DEBUG2) && glog << "PB --> MOOS: Group: " << group << ", msg type: " << msg->GetDescriptor()->full_name() << std::endl;
+
+    std::string serialized;
+    serialize_for_moos(&serialized,*msg);
+    moos_client_.Notify(pb2moos_[group], serialized);
+}

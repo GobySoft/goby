@@ -50,7 +50,7 @@ namespace goby
 {
     namespace acomms
     {
-        class Bridge : public goby::pb::Application
+        class Bridge : public goby::pb::Application, public goby::pb::DynamicProtobufNode
         {
         public:
             Bridge(protobuf::BridgeConfig* cfg);
@@ -69,14 +69,13 @@ namespace goby
             void handle_modem_receive(const goby::acomms::protobuf::ModemTransmission& message,
                                       QueueManager* in_queue);
 
-
-            template<typename ProtobufMessage>
-            void handle_external_push(const ProtobufMessage& message,
+            
+            void handle_external_push(boost::shared_ptr<google::protobuf::Message> msg,
                                       QueueManager* in_queue)
                 {
                     try
                     {
-                        in_queue->push_message(message);
+                        in_queue->push_message(*msg);
                     }
                     catch(std::exception& e)
                     {
@@ -101,7 +100,7 @@ namespace goby
 
             typedef int ModemId;
             std::set<ModemId> network_ack_src_ids_;
-                
+
         };
     }
 }
@@ -119,6 +118,7 @@ using goby::glog;
 
 goby::acomms::Bridge::Bridge(protobuf::BridgeConfig* cfg)
     : Application(cfg),
+      DynamicProtobufNode(&Application::zeromq_service()),
       cfg_(*cfg)
 {
     glog.is(DEBUG1) && glog << cfg_.DebugString() << std::endl;
@@ -134,7 +134,7 @@ goby::acomms::Bridge::Bridge(protobuf::BridgeConfig* cfg)
         if(!handle)
         {
             glog.is(DIE) && glog << "Failed ... check path provided or add to /etc/ld.so.conf "
-                         << "or LD_LIBRARY_PATH" << std::endl;
+                                 << "or LD_LIBRARY_PATH" << std::endl;
         }
 
         glog.is(DEBUG1) && glog << "Loading shared library dccl codecs." << std::endl;
@@ -175,32 +175,19 @@ goby::acomms::Bridge::Bridge(protobuf::BridgeConfig* cfg)
         goby::acomms::connect(&(q_managers_[i]->signal_receive),
                               boost::bind(&Bridge::handle_queue_receive, this, _1, q_managers_[i].get()));
         
-        subscribe<goby::acomms::protobuf::ModemTransmission>(
+        Application::subscribe<goby::acomms::protobuf::ModemTransmission>(
             boost::bind(&Bridge::handle_modem_receive, this, _1, q_managers_[i].get()),
             "Rx" + goby::util::as<std::string>(qcfg.modem_id()));
 
-        subscribe<goby::acomms::protobuf::TransferRequest>(
-            boost::bind(&Bridge::handle_external_push<goby::acomms::protobuf::TransferRequest>, this, _1, q_managers_[i].get()),
-            "QueuePush" + goby::util::as<std::string>(qcfg.modem_id()));
-
-        subscribe<goby::acomms::protobuf::FileFragment>(
-            boost::bind(&Bridge::handle_external_push<goby::acomms::protobuf::FileFragment>, this, _1, q_managers_[i].get()),
-            "QueuePush" + goby::util::as<std::string>(qcfg.modem_id()));
+        DynamicProtobufNode::subscribe(goby::common::PubSubNodeWrapperBase::SOCKET_SUBSCRIBE,
+                                       boost::bind(&Bridge::handle_external_push, this, _1, q_managers_[i].get()),
+                                       "QueuePush" + goby::util::as<std::string>(qcfg.modem_id()));
         
-        subscribe<goby::acomms::protobuf::TransferResponse>(
-            boost::bind(&Bridge::handle_external_push<goby::acomms::protobuf::TransferResponse>, this, _1, q_managers_[i].get()),
-            "QueuePush" + goby::util::as<std::string>(qcfg.modem_id()));
-
-        subscribe<goby::acomms::protobuf::MoshPacket>(
-            boost::bind(&Bridge::handle_external_push<goby::acomms::protobuf::MoshPacket>, this, _1, q_managers_[i].get()),
-            "QueuePush" + goby::util::as<std::string>(qcfg.modem_id()));
-
-        
-        subscribe<goby::acomms::protobuf::ModemTransmission>(
+        Application::subscribe<goby::acomms::protobuf::ModemTransmission>(
             boost::bind(&Bridge::handle_data_request, this, _1, i),
             "DataRequest" + goby::util::as<std::string>(qcfg.modem_id()));
 
-        subscribe<goby::acomms::protobuf::ModemDriverStatus>(
+        Application::subscribe<goby::acomms::protobuf::ModemDriverStatus>(
             boost::bind(&Bridge::handle_driver_status, this, _1, i),
             "Status" + goby::util::as<std::string>(qcfg.modem_id()));
 

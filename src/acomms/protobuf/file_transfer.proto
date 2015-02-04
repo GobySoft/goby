@@ -70,4 +70,9 @@ message TransferResponse
     OTHER_ERROR = 6;    
   }
   optional ErrorCode error = 4;
+
+
+  optional int32 num_fragments = 5 [(dccl.field).min = 0,
+                                    (dccl.field).max = 18079]; // max file: 1048576 / data length: 58  
+  
 }

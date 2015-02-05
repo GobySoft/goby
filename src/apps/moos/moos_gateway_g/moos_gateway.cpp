@@ -67,10 +67,10 @@ namespace goby
             std::set<std::string> subscribed_vars_;
 
             // MOOS Var -> PB Group
-            std::map<std::string, std::string> moos2pb_;
+            std::multimap<std::string, std::string> moos2pb_;
 
             // PB Group -> MOOS Var
-            std::map<std::string, std::string> pb2moos_;
+            std::multimap<std::string, std::string> pb2moos_;
 
             
         };
@@ -154,14 +154,14 @@ goby::moos::MOOSGateway::MOOSGateway(protobuf::MOOSGatewayConfig* cfg)
     {
         if(cfg_.pb_pair(i).direction() == protobuf::MOOSGatewayConfig::ProtobufMOOSBridgePair::PB_TO_MOOS)
         {
-            pb2moos_[cfg_.pb_pair(i).pb_group()] = cfg_.pb_pair(i).moos_var();
+            pb2moos_.insert(std::make_pair(cfg_.pb_pair(i).pb_group(), cfg_.pb_pair(i).moos_var()));
             goby::pb::DynamicProtobufNode::subscribe(goby::common::PubSubNodeWrapperBase::SOCKET_SUBSCRIBE,
                                                      boost::bind(&MOOSGateway::pb_inbox, this, _1, cfg_.pb_pair(i).pb_group()),
                                                      cfg_.pb_pair(i).pb_group());
         }
         else if(cfg_.pb_pair(i).direction() == protobuf::MOOSGatewayConfig::ProtobufMOOSBridgePair::MOOS_TO_PB)
         {
-            moos2pb_[cfg_.pb_pair(i).moos_var()] = cfg_.pb_pair(i).pb_group();
+            moos2pb_.insert(std::make_pair(cfg_.pb_pair(i).moos_var(), cfg_.pb_pair(i).pb_group()));
             if(!subscribed_vars_.count(cfg_.pb_pair(i).moos_var()))
             {
                 moos_client_.Register(cfg_.pb_pair(i).moos_var(), 0);
@@ -195,8 +195,9 @@ void goby::moos::MOOSGateway::moos_inbox(CMOOSMsg& msg)
     
     glog.is(VERBOSE) &&
         glog << group("to_moos") << msg << std::endl;
-    
+
     moos_client_.Post(msg);
+
 }
 
     
@@ -223,6 +224,22 @@ void goby::moos::MOOSGateway::loop()
             glog << group("from_moos") << msg << std::endl;    
         
         goby_moos_pubsub_client_.publish(msg);
+
+        
+        
+        if(moos2pb_.count(msg.GetKey()))
+        {
+            boost::shared_ptr<google::protobuf::Message> pbmsg =
+                dynamic_parse_for_moos(msg.GetString());
+            if(pbmsg)
+            {                
+                typedef std::multimap<std::string, std::string>::iterator It;
+                std::pair<It, It> it_range = moos2pb_.equal_range(msg.GetKey());
+                for(It it = it_range.first; it != it_range.second; ++it)
+                    goby_pb_pubsub_client_.publish(*pbmsg, it->second);
+            }
+            
+        }
     }
 
 }
@@ -285,5 +302,10 @@ void goby::moos::MOOSGateway::pb_inbox(boost::shared_ptr<google::protobuf::Messa
 
     std::string serialized;
     serialize_for_moos(&serialized,*msg);
-    moos_client_.Notify(pb2moos_[group], serialized);
+
+    typedef std::multimap<std::string, std::string>::iterator It;
+    std::pair<It, It> it_range = pb2moos_.equal_range(group);
+
+    for(It it = it_range.first; it != it_range.second; ++it)
+        moos_client_.Notify(it->second, serialized);
 }

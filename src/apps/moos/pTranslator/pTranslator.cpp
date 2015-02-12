@@ -32,6 +32,11 @@ using goby::glog;
 using namespace goby::common::logger;
 using goby::moos::operator<<;
 
+
+goby::uint64 microsec_moos_time()
+{ return static_cast<goby::uint64>(MOOSTime() * 1.0e6); }
+
+
 pTranslatorConfig CpTranslator::cfg_;
 CpTranslator* CpTranslator::inst_ = 0;
 
@@ -55,6 +60,13 @@ CpTranslator::CpTranslator()
                   cfg_.modem_id_lookup_path()),
       work_(timer_io_service_)
 { 
+
+    if(cfg_.common().time_warp_multiplier() != 1)
+    {
+        goby::common::goby_time_function = microsec_moos_time;
+        goby::common::goby_time_warp_factor = cfg_.common().time_warp_multiplier();
+    }
+
     goby::util::DynamicProtobufManager::enable_compilation();
 
     // load all shared libraries
@@ -107,10 +119,10 @@ CpTranslator::CpTranslator()
         else if(cfg_.translator_entry(i).trigger().type() ==
                 goby::moos::protobuf::TranslatorEntry::Trigger::TRIGGER_TIME)
         {
-            timers_.push_back(boost::shared_ptr<boost::asio::deadline_timer>(
-                                  new boost::asio::deadline_timer(timer_io_service_)));
+            timers_.push_back(boost::shared_ptr<Timer>(
+                                  new Timer(timer_io_service_)));
 
-            boost::asio::deadline_timer& new_timer = *timers_.back();
+            Timer& new_timer = *timers_.back();
             
             new_timer.expires_from_now(boost::posix_time::seconds(
                                            cfg_.translator_entry(i).trigger().period()));
@@ -201,19 +213,28 @@ void CpTranslator::create_on_multiplex_publish(const CMOOSMsg& moos_msg)
 
 void CpTranslator::create_on_timer(const boost::system::error_code& error,
                                    const goby::moos::protobuf::TranslatorEntry& entry,
-                                   boost::asio::deadline_timer* timer)
+                                   Timer* timer)
 {
   if (!error)
   {
-      // reset the timer
-      timer->expires_at(timer->expires_at() +
-                        boost::posix_time::seconds(entry.trigger().period()));
+      double skew_seconds = std::abs(goby::common::goby_time<double>() - goby::util::as<double>(timer->expires_at()));
+      if( skew_seconds > ALLOWED_TIMER_SKEW_SECONDS)
+      {
+          glog.is(VERBOSE) && glog << "clock skew of " << skew_seconds <<  " seconds detected, resetting timer." << std::endl;
+          timer->expires_at(goby::common::goby_time() + boost::posix_time::seconds(boost::posix_time::seconds(entry.trigger().period())));
+      }
+      else
+      {
+          // reset the timer
+          timer->expires_at(timer->expires_at() + boost::posix_time::seconds(entry.trigger().period()));
+      }
+      
       
       timer->async_wait(boost::bind(&CpTranslator::create_on_timer, this,
                                        _1, entry, timer));
       
       glog.is(VERBOSE) && glog << "Received trigger for: " << entry.protobuf_name() << std::endl;
-      glog.is(VERBOSE) && glog << "Next expiry: " << timer->expires_at() << std::endl;
+      glog.is(VERBOSE) && glog << "Next expiry: " << timer->expires_at() << std::endl;      
       
       do_translation(entry);
   }

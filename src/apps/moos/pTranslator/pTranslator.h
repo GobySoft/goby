@@ -41,6 +41,7 @@ class CpTranslator : public GobyMOOSApp
     static void delete_instance();
     
   private:
+    typedef boost::asio::basic_deadline_timer<goby::common::GobyTime> Timer;
     CpTranslator();
     ~CpTranslator();
     
@@ -52,13 +53,15 @@ class CpTranslator : public GobyMOOSApp
     
     void create_on_timer(const boost::system::error_code& error,
                          const goby::moos::protobuf::TranslatorEntry& entry,
-                         boost::asio::deadline_timer* timer);
+                         Timer* timer);
     
     void do_translation(const goby::moos::protobuf::TranslatorEntry& entry);
     void do_publish(boost::shared_ptr<google::protobuf::Message> created_message);
 
     
   private:
+    enum { ALLOWED_TIMER_SKEW_SECONDS = 1 };
+
     goby::moos::MOOSTranslator translator_;
     
     
@@ -66,7 +69,7 @@ class CpTranslator : public GobyMOOSApp
     boost::asio::io_service::work work_;
 
     
-    std::vector<boost::shared_ptr<boost::asio::deadline_timer> > timers_;
+    std::vector<boost::shared_ptr<Timer > > timers_;
     
     static pTranslatorConfig cfg_;    
     static CpTranslator* inst_;    

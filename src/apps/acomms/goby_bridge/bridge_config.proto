@@ -27,6 +27,5 @@ message BridgeConfig
   optional bool forward_cacst = 100 [default = true];
   optional bool forward_ranging_reply = 101 [default = true];
 
-  repeated int32 make_network_ack_for_src_id = 102;
   
 }

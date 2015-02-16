@@ -24,4 +24,6 @@ message NetworkAck
                                (dccl.field).max = 30,
                                (dccl.field).in_head = true];  
 
+  enum AckType { ACK = 1; EXPIRE = 2; }
+  optional AckType ack_type = 11;
 }

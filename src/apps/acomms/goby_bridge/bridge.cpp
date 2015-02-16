@@ -36,7 +36,6 @@
 #include "goby/acomms/connect.h"
 
 #include "goby/acomms/protobuf/queue.pb.h"
-#include "goby/acomms/protobuf/network_ack.pb.h"
 
 #include "goby/acomms/protobuf/file_transfer.pb.h"
 #include "goby/acomms/protobuf/mosh_packet.pb.h"
@@ -97,10 +96,6 @@ namespace goby
             std::vector<boost::shared_ptr<MACManager> > mac_managers_;
             
             RouteManager r_manager_;
-
-            typedef int ModemId;
-            std::set<ModemId> network_ack_src_ids_;
-
         };
     }
 }
@@ -197,20 +192,6 @@ goby::acomms::Bridge::Bridge(protobuf::BridgeConfig* cfg)
         
     }    
 
-    for(int i = 0, n = cfg_.make_network_ack_for_src_id_size();
-        i < n; ++i)
-    {
-        glog.is(DEBUG1) && glog << "Generating NetworkAck for messages required ACK from source ID: " << cfg_.make_network_ack_for_src_id(i) << std::endl;
-
-        network_ack_src_ids_.insert(cfg_.make_network_ack_for_src_id(i));
-    }
-    
-
-    protobuf::NetworkAck ack;
-
-    assert(ack.GetDescriptor() == google::protobuf::DescriptorPool::generated_pool()->FindMessageTypeByName("goby.acomms.protobuf.NetworkAck"));
-
-    assert(ack.GetDescriptor() == goby::util::DynamicProtobufManager::new_protobuf_message("goby.acomms.protobuf.NetworkAck")->GetDescriptor());
     
 }
 
@@ -248,41 +229,6 @@ void goby::acomms::Bridge::handle_link_ack(const protobuf::ModemTransmission& ac
     // publish link ack
     publish(orig_msg, "QueueAckOrig" + goby::util::as<std::string>(from_queue->modem_id()));
     
-    if(orig_msg.GetDescriptor()->full_name() == "goby.acomms.protobuf.NetworkAck")
-    {
-        glog.is(DEBUG1) && glog << "Not generating network ack from NetworkAck to avoid infinite proliferation of ACKS." << std::endl;
-        return;
-    }
-
-    
-    
-    protobuf::NetworkAck ack;
-    ack.set_ack_src(ack_msg.src());
-    ack.set_message_dccl_id(DCCLCodec::get()->id(orig_msg.GetDescriptor()));
-
-
-    protobuf::QueuedMessageMeta meta = from_queue->meta_from_msg(orig_msg);
-
-    if(!network_ack_src_ids_.count(meta.src()))
-    {
-        glog.is(DEBUG1) && glog << "Not generating network ack for message from source ID: " << meta.src() << " as we weren't asked to do so." << std::endl;
-        return;
-    }
-    
-    ack.set_message_src(meta.src());
-    ack.set_message_dest(meta.dest());
-    ack.set_message_time(meta.time());
-
-    if(ack_msg.src() == ack.message_src())
-    {
-        glog.is(DEBUG1) && glog << "Not generating network ack for single hop messages" << std::endl;
-        return;
-    }
-
-    
-    glog.is(VERBOSE) && glog << "Generated network ack: " << ack.DebugString() << "from: " << orig_msg.DebugString() << std::endl;
-    
-    r_manager_.handle_in(from_queue->meta_from_msg(ack), ack, from_queue->modem_id());
 }
 
 

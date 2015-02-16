@@ -87,14 +87,15 @@ namespace goby
             { return cfg_.has_publish_socket() && cfg_.has_subscribe_socket(); }
 
             
-          protected:
-            const protobuf::PubSubSocketConfig& cfg() const
-            { return cfg_; }
-            
             enum {
                 SOCKET_SUBSCRIBE = 103998, SOCKET_PUBLISH = 103999
             };
 
+
+          protected:
+            const protobuf::PubSubSocketConfig& cfg() const
+            { return cfg_; }
+            
             
           private:
 
@@ -168,7 +169,7 @@ namespace goby
                 node_.send(msg, SOCKET_PUBLISH, group);
             }
 
-
+            
             void subscribe(const std::string& identifier)
             {
                 if(!using_pubsub())
@@ -179,6 +180,7 @@ namespace goby
                  
                 node_.subscribe(identifier, SOCKET_SUBSCRIBE);
             }
+
 
           protected:
             

@@ -35,6 +35,6 @@ if(enable_v1_transitional)
   add_subdirectory(dccl_xml_to_dccl_proto)
 endif()
 
-if(enable_zeromq)
+if(build_pb AND enable_zeromq)
   add_subdirectory(moos_gateway_g)
 endif()

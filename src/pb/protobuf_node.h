@@ -60,6 +60,7 @@ namespace goby
 
             void send(const google::protobuf::Message& msg, int socket_id, const std::string& group = "");
             void subscribe(const std::string& identifier, int socket_id);
+            void subscribe(const std::string& protobuf_type_name, int socket_id, const std::string& group);
 
             
           private:
@@ -161,8 +162,31 @@ namespace goby
             
             virtual ~DynamicProtobufNode()
             { }
+
+            void subscribe(int socket_id,
+                           boost::function<void (boost::shared_ptr<google::protobuf::Message> msg)> handler,
+                           const std::string& group);
+
+            template<class C>
+                void subscribe(int socket_id,
+                               void(C::*mem_func)(boost::shared_ptr<google::protobuf::Message> msg),
+                               C* obj,
+                               const std::string& group)
+            { subscribe(socket_id, boost::bind(mem_func, obj, _1), group); }
+             
+            void on_receipt(
+                int socket_id,
+                boost::function<void (boost::shared_ptr<google::protobuf::Message> msg)> handler,
+                const std::string& group);
             
-            virtual void dynamic_protobuf_inbox(boost::shared_ptr<google::protobuf::Message> msg, int socket_id, const std::string& group) = 0;
+            template<class C>
+                void on_receipt(int socket_id,
+                                void(C::*mem_func)(boost::shared_ptr<google::protobuf::Message> msg),
+                                C* obj,
+                                const std::string& group)
+            { on_receipt(socket_id, boost::bind(mem_func, obj, _1), group); }
+            
+            // virtual void dynamic_protobuf_inbox(boost::shared_ptr<google::protobuf::Message> msg, int socket_id, const std::string& group) = 0;
             
           private:
             void protobuf_inbox(const std::string& protobuf_type_name,
@@ -170,7 +194,10 @@ namespace goby
                                 int size,
                                 int socket_id,
                                 const std::string& group);
-
+          private:
+            // key = type of var
+            // value = Subscription object for all the subscriptions,  handler, newest message, etc.
+            boost::unordered_multimap<std::string, boost::function<void (boost::shared_ptr<google::protobuf::Message> msg)> > subscriptions_;
         };
         
         
@@ -211,11 +238,7 @@ void goby::pb::StaticProtobufNode::subscribe(
     glog.is(goby::common::logger::DEBUG1) && 
         glog << "subscribing for " << protobuf_type_name  << std::endl;
 
-    std::string identifier = protobuf_type_name + "/";
-    if(!group.empty())
-        identifier += group + "/";    
-    
-    ProtobufNode::subscribe(identifier, socket_id);
+    ProtobufNode::subscribe(protobuf_type_name, socket_id, group);
 }
 
 /// See goby::pb::StaticProtobufNode::newest()

@@ -39,12 +39,9 @@ void goby::pb::ProtobufNode::inbox(common::MarshallingScheme marshalling_scheme,
     if(marshalling_scheme == common::MARSHALLING_PROTOBUF)
     {
         std::string::size_type first_slash = identifier.find("/");
-        std::string group = (first_slash + 1) < identifier.size() ? identifier.substr(first_slash + 1)
-            : "";
-        if(!group.empty())
-            group.erase(group.size()-1); // final slash
-        
-        std::string pb_full_name = identifier.substr(0, first_slash);
+        std::string group = identifier.substr(0, first_slash);
+        std::string pb_full_name = identifier.substr(first_slash + 1);
+        pb_full_name.erase(pb_full_name.size()-1); // final slash
         
         glog.is(DEBUG3) && glog << "MARSHALLING_PROTOBUF type: [" << pb_full_name << "], group: [" << group << "]" << std::endl;
 
@@ -66,13 +63,17 @@ void goby::pb::ProtobufNode::send(const google::protobuf::Message& msg, int sock
     char buffer[size];
     msg.SerializeToArray(&buffer, size);
 
-    std::string identifier =  msg.GetDescriptor()->full_name() + "/";
-    if(!group.empty())
-        identifier += group + "/";
+    std::string identifier =  group + "/" + msg.GetDescriptor()->full_name() + "/";
     
     zeromq_service()->send(common::MARSHALLING_PROTOBUF, identifier, &buffer, size, socket_id);
 }
             
+void goby::pb::ProtobufNode::subscribe(const std::string& protobuf_type_name, int socket_id, const std::string& group)
+{
+    subscribe(group + "/" + protobuf_type_name + (protobuf_type_name.empty() ? "" : "/"), socket_id);
+}
+
+
 void goby::pb::ProtobufNode::subscribe(const std::string& identifier, int socket_id)
 {
     glog.is(DEBUG1) && glog << "Subscribing for MARSHALLING_PROTOBUF type: " << identifier << std::endl;
@@ -105,13 +106,44 @@ void goby::pb::DynamicProtobufNode::protobuf_inbox(const std::string& protobuf_t
                                                    const void* data,
                                                    int size,
                                                    int socket_id,
-                                                   const std::string& group
-    )
+                                                   const std::string& group)
 {
-    boost::shared_ptr<google::protobuf::Message> msg =
-        goby::util::DynamicProtobufManager::new_protobuf_message(protobuf_type_name);
-    msg->ParseFromArray(data, size);
-    dynamic_protobuf_inbox(msg, socket_id, group);
+    try
+    {
+        
+        boost::shared_ptr<google::protobuf::Message> msg =
+            goby::util::DynamicProtobufManager::new_protobuf_message(protobuf_type_name);
+        msg->ParseFromArray(data, size);
+        
+        boost::unordered_multimap<std::string, boost::function<void (boost::shared_ptr<google::protobuf::Message> msg)> >::iterator it =
+            subscriptions_.find(group);
+        
+        if(it != subscriptions_.end())
+            it->second(msg);
+    }
+    catch(std::exception& e)
+    {
+        glog.is(WARN) && glog << e.what() << std::endl;
+    }    
 }
 
+void goby::pb::DynamicProtobufNode::on_receipt(
+    int socket_id,
+    boost::function<void (boost::shared_ptr<google::protobuf::Message> msg)> handler,
+    const std::string& group)
+{    
+    using goby::glog;
+    glog.is(goby::common::logger::DEBUG1) && 
+        glog << "registering on_receipt handler for group: " << group  << std::endl;
 
+    subscriptions_.insert(std::make_pair(group, handler));
+}
+
+void goby::pb::DynamicProtobufNode::subscribe(
+    int socket_id,
+    boost::function<void (boost::shared_ptr<google::protobuf::Message> msg)> handler,
+    const std::string& group)
+{
+    on_receipt(socket_id, handler, group);
+    ProtobufNode::subscribe("", socket_id, group);
+}

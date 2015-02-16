@@ -115,6 +115,11 @@ namespace goby
                 return zeromq_service_;
             }
 
+
+            boost::shared_ptr<StaticProtobufPubSubNodeWrapper> pubsub_node()
+            {
+                return pubsub_node_;
+            }
             
           private:
             Application(const Application&);

@@ -67,6 +67,22 @@ namespace goby
             StaticProtobufNode& node_;
         };
         
+        class DynamicProtobufPubSubNodeWrapper : public common::PubSubNodeWrapper<google::protobuf::Message>
+        {
+          public:
+          DynamicProtobufPubSubNodeWrapper(DynamicProtobufNode* node, const common::protobuf::PubSubSocketConfig& cfg)
+              : common::PubSubNodeWrapper<google::protobuf::Message>(node, cfg),
+                node_(*node)
+                { }
+            
+            ~DynamicProtobufPubSubNodeWrapper()
+            { }
+
+
+          private:
+            DynamicProtobufNode& node_;
+        };
+        
         
 
     }

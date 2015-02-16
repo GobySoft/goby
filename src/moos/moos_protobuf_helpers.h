@@ -733,12 +733,18 @@ namespace goby
                         max_field_number = it->first;
                 }
 
+
+
+                std::string mutable_format_temp = mutable_format;
                 for (boost::sregex_iterator it(mutable_format.begin(),
                                                mutable_format.end(),
                                                boost::regex("%([0-9\\.]+:)+[0-9\\.]+%")),
                          end; it != end; ++it)
                 {
                     std::string match = (*it)[0];
+
+                    std::cout << "Match: " << match << std::endl;
+
                     boost::trim_if(match, boost::is_any_of("%"));
                     std::vector<std::string> subfields;
                     boost::split(subfields, match, boost::is_any_of(":"));
@@ -754,7 +760,7 @@ namespace goby
                         std::vector<std::string> field_and_index;
                         boost::split(field_and_index, subfields[i], boost::is_any_of("."));
                         
-                        field_desc = desc->FindFieldByNumber(goby::util::as<int>(field_and_index[0]));
+                        field_desc = sub_message->GetDescriptor()->FindFieldByNumber(goby::util::as<int>(field_and_index[0]));
                         if(!field_desc ||
                            field_desc->cpp_type() != google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE)
                         {
@@ -777,10 +783,11 @@ namespace goby
                               "%" + subfields[subfields.size()-1] + "%",
                               repeated_delimiter, use_short_enum);    
 
-                    boost::replace_all(mutable_format, match, goby::util::as<std::string>(max_field_number));
+                    boost::replace_all(mutable_format_temp, match, goby::util::as<std::string>(max_field_number));
 
                 }
 
+                mutable_format = mutable_format_temp;
 
                 std::map<int, RepeatedFieldKey> indexed_repeated_fields;
                 
@@ -794,7 +801,7 @@ namespace goby
                     
                     ++max_field_number;
 
-                    boost::replace_all(mutable_format, match, goby::util::as<std::string>(max_field_number));
+                    boost::replace_all(mutable_format_temp, match, goby::util::as<std::string>(max_field_number));
 
                     RepeatedFieldKey key;
 
@@ -807,6 +814,10 @@ namespace goby
                     indexed_repeated_fields[max_field_number] = key;
                 }
 
+                mutable_format = mutable_format_temp;
+
+                std::cout << mutable_format << std::endl;
+                
                 
                 boost::format out_format(mutable_format);
                 out_format.exceptions( boost::io::all_error_bits ^ ( boost::io::too_many_args_bit | boost::io::too_few_args_bit )); 
@@ -1019,7 +1030,7 @@ namespace goby
                                 std::vector<std::string> field_and_index;
                                 boost::split(field_and_index, subfields[i], boost::is_any_of("."));
                                 
-                                field_desc = desc->FindFieldByNumber(goby::util::as<int>(field_and_index[0]));
+                                field_desc = sub_message->GetDescriptor()->FindFieldByNumber(goby::util::as<int>(field_and_index[0]));
                                 if(!field_desc ||
                                    field_desc->cpp_type() != google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE)
                                 {

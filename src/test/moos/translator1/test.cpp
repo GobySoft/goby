@@ -337,7 +337,7 @@ int main(int argc, char* argv[])
 
 
     
-   sub_message_format_str = "em0.val=%117.0:1%,1uint64=%106.1%,0uint64=%106.0%.2uint64=%106.2%:em1.val=%117.1:1%,dbl0=%101.0%,dbl1=%101.1%,dbl2=%101.2%,dbl3=%101.3%";
+   sub_message_format_str = "em0.val=%117.0:1%,1uint64=%106.1%,0uint64=%106.0%.2uint64=%106.2%:em1.val=%117.1:1%,dbl0=%101.0%,dbl1=%101.1%,dbl2=%101.2%,dbl3=%101.3%,em0.em1.val=%37:2:1%";
    {
        protobuf::TranslatorEntry entry;
        entry.set_protobuf_name("TestMsg");
@@ -361,6 +361,7 @@ int main(int argc, char* argv[])
    embedded_test.Clear();
    embedded_test.add_msg_default_repeat()->set_val(21.123); 
    embedded_test.add_msg_default_repeat()->set_val(100.5);
+   embedded_test.mutable_msg_default_required()->mutable_msg()->set_val(45);
    embedded_test.add_uint64_default_repeat(0);
    embedded_test.add_uint64_default_repeat(100);
    embedded_test.add_uint64_default_repeat(200);
@@ -373,7 +374,7 @@ int main(int argc, char* argv[])
    {
        goby::glog << "Variable: " << it->first << "\n"
                   << "Value: " << it->second.GetString() << std::endl;
-       assert(it->second.GetString() == "em0.val=21.123,1uint64=100,0uint64=0.2uint64=200:em1.val=100.5,dbl0=nan,dbl1=nan,dbl2=nan,dbl3=nan");
+       assert(it->second.GetString() == "em0.val=21.123,1uint64=100,0uint64=0.2uint64=200:em1.val=100.5,dbl0=nan,dbl1=nan,dbl2=nan,dbl3=nan,em0.em1.val=45");
    }
    
    typedef std::auto_ptr<google::protobuf::Message> GoogleProtobufMessagePointer;

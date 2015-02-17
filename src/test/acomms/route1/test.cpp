@@ -45,6 +45,7 @@
 #include "goby/common/time.h"
 #include "goby/acomms/amac/mac_manager.h"
 #include "test.pb.h"
+#include  <cstdlib>
 
 
 using namespace goby::common::logger;
@@ -136,8 +137,12 @@ int main(int argc, char* argv[])
     d_cfg2.set_modem_id(ID_2_1);
     d_cfg3.set_modem_id(ID_3_1);
 
-    d_cfg2.MutableExtension(UDPDriverConfig::local)->set_port(55631);
-    d_cfg3.MutableExtension(UDPDriverConfig::local)->set_port(55632);
+    srand (time(NULL));
+    int port1 = rand() % 1000 + 50020;
+    int port2 = port1 + 1;
+
+    d_cfg2.MutableExtension(UDPDriverConfig::local)->set_port(port1);
+    d_cfg3.MutableExtension(UDPDriverConfig::local)->set_port(port2);
     d_cfg2.MutableExtension(UDPDriverConfig::remote)->CopyFrom(
         d_cfg3.GetExtension(UDPDriverConfig::local));
     d_cfg3.MutableExtension(UDPDriverConfig::remote)->CopyFrom(

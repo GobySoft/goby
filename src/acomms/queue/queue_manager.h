@@ -33,6 +33,7 @@
 
 #include "goby/acomms/dccl.h"
 #include "goby/acomms/protobuf/queue.pb.h"
+#include "goby/acomms/protobuf/network_ack.pb.h"
 
 #include <map>
 #include <deque>
@@ -249,7 +250,9 @@ namespace goby
             void process_cfg();
 
             void process_modem_ack(const protobuf::ModemTransmission& ack_msg);
-
+            void create_network_ack(int ack_src,
+                                    const google::protobuf::Message& orig_msg,
+                                    goby::acomms::protobuf::NetworkAck::AckType ack_type);
             
             
           private:
@@ -265,7 +268,10 @@ namespace goby
             // the first *user* frame sets the tone (dest & ack) for the entire packet (all %modem frames)
             unsigned packet_ack_;
             int packet_dest_;
- 
+
+            typedef int ModemId;
+            std::set<ModemId> network_ack_src_ids_;
+            
             protobuf::QueueManagerConfig cfg_;            
 
             goby::acomms::DCCLCodec* codec_;

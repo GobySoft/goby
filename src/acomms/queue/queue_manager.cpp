@@ -62,6 +62,12 @@ goby::acomms::QueueManager::QueueManager()
     goby::glog.add_group(glog_out_group_,  common::Colors::cyan);
     goby::glog.add_group(glog_in_group_,  common::Colors::green);
 
+    protobuf::NetworkAck ack;
+
+    assert(ack.GetDescriptor() == google::protobuf::DescriptorPool::generated_pool()->FindMessageTypeByName("goby.acomms.protobuf.NetworkAck"));
+
+    assert(ack.GetDescriptor() == goby::util::DynamicProtobufManager::new_protobuf_message("goby.acomms.protobuf.NetworkAck")->GetDescriptor());
+
 }
 
 void goby::acomms::QueueManager::add_queue(const google::protobuf::Descriptor* desc,
@@ -122,6 +128,8 @@ void goby::acomms::QueueManager::do_work()
         BOOST_FOREACH(boost::shared_ptr<google::protobuf::Message> expire, expired_msgs)
         {
             signal_expire(*expire);
+            if(network_ack_src_ids_.count(meta_from_msg(*expire).src()))
+                create_network_ack(modem_id_, *expire, goby::acomms::protobuf::NetworkAck::EXPIRE);
         }
         
     }
@@ -508,7 +516,8 @@ void goby::acomms::QueueManager::process_modem_ack(const protobuf::ModemTransmis
                 {
                     qsize(q);
                     signal_ack(ack_msg, *removed_msg);
-                
+                    if(network_ack_src_ids_.count(meta_from_msg(*removed_msg).src()))
+                        create_network_ack(ack_msg.src(), *removed_msg, goby::acomms::protobuf::NetworkAck::ACK);
                 }
 
                 glog.is(DEBUG2) && glog<< group(glog_in_group_) << ack_msg << std::endl;
@@ -634,7 +643,8 @@ void goby::acomms::QueueManager::process_cfg()
 {
     modem_id_ = cfg_.modem_id();
     manip_manager_.clear();
-
+    network_ack_src_ids_.clear();
+    
     for(int i = 0, n = cfg_.message_entry_size(); i < n; ++i)
     {
         const google::protobuf::Descriptor* desc =
@@ -654,6 +664,14 @@ void goby::acomms::QueueManager::process_cfg()
             glog.is(DEBUG1) && glog << group(glog_push_group_) << warn << "No message by the name: " << cfg_.message_entry(i).protobuf_name() << " found, not setting Queue options for this type." << std::endl;
         }
     }
+
+    for(int i = 0, n = cfg_.make_network_ack_for_src_id_size();
+        i < n; ++i)
+    {
+        glog.is(DEBUG1) && glog << group(glog_push_group_) << "Generating NetworkAck for messages required ACK from source ID: " << cfg_.make_network_ack_for_src_id(i) << std::endl;
+
+        network_ack_src_ids_.insert(cfg_.make_network_ack_for_src_id(i));
+    }
 }
 
 void goby::acomms::QueueManager::qsize(Queue* q)            
@@ -662,5 +680,43 @@ void goby::acomms::QueueManager::qsize(Queue* q)
     size.set_dccl_id(codec_->id(q->descriptor()));
     size.set_size(q->size());
     signal_queue_size_change(size);
+}
+
+void goby::acomms::QueueManager::create_network_ack(int ack_src,
+                                                    const google::protobuf::Message& orig_msg,
+                                                    goby::acomms::protobuf::NetworkAck::AckType ack_type)
+{
+    if(orig_msg.GetDescriptor()->full_name() == "goby.acomms.protobuf.NetworkAck")
+    {
+        glog.is(DEBUG1) && glog << group(glog_in_group_) << "Not generating network ack from NetworkAck to avoid infinite proliferation of ACKS." << std::endl;
+        return;
+    }
+    protobuf::NetworkAck ack;
+    ack.set_ack_src(ack_src);
+    ack.set_message_dccl_id(DCCLCodec::get()->id(orig_msg.GetDescriptor()));
+    
+    protobuf::QueuedMessageMeta meta = meta_from_msg(orig_msg);
+
+    if(!network_ack_src_ids_.count(meta.src()))
+    {
+        glog.is(DEBUG1) && glog << group(glog_in_group_) << "Not generating network ack for message from source ID: " << meta.src() << " as we weren't asked to do so." << std::endl;
+        return;
+    }
+    
+    ack.set_message_src(meta.src());
+    ack.set_message_dest(meta.dest());
+    ack.set_message_time(meta.time());
+    ack.set_ack_type(ack_type);
+    
+    
+    glog.is(VERBOSE) && glog << group(glog_in_group_) << "Generated network ack: " << ack.DebugString() << "from: " << orig_msg.DebugString() << std::endl;
+
+
+    const protobuf::QueuedMessageMeta network_ack_meta = meta_from_msg(ack);
+
+    if(network_ack_meta.dest() == modem_id_)
+        signal_receive(ack);
+    else
+        signal_in_route(network_ack_meta, ack, modem_id_);
 }
 

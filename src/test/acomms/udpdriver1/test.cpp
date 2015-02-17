@@ -26,7 +26,7 @@
 
 #include "goby/acomms/modemdriver/udp_driver.h"
 #include "../driver_tester/driver_tester.h"
-
+#include  <cstdlib>
 
 boost::asio::io_service io1, io2;
 boost::shared_ptr<goby::acomms::ModemDriverBase> driver1, driver2;
@@ -53,29 +53,33 @@ int main(int argc, char* argv[])
         
     cfg1.set_modem_id(1);
 
+    srand (time(NULL));
+    int port1 = rand() % 1000 + 50000;
+    int port2 = port1 + 1;
+    
     //gumstix
     UDPDriverConfig::EndPoint* local_endpoint1 =
         cfg1.MutableExtension(UDPDriverConfig::local);
-    local_endpoint1->set_port(19300);
+    local_endpoint1->set_port(port1);
         
     cfg2.set_modem_id(2);
 
     // shore
     UDPDriverConfig::EndPoint* local_endpoint2 =
         cfg2.MutableExtension(UDPDriverConfig::local);        
-    local_endpoint2->set_port(19301);
+    local_endpoint2->set_port(port2);
 
     UDPDriverConfig::EndPoint* remote_endpoint1 =
         cfg1.MutableExtension(UDPDriverConfig::remote);
 
     remote_endpoint1->set_ip("localhost");
-    remote_endpoint1->set_port(19301);
+    remote_endpoint1->set_port(port2);
         
     UDPDriverConfig::EndPoint* remote_endpoint2 =
         cfg2.MutableExtension(UDPDriverConfig::remote);
 
     remote_endpoint2->set_ip("127.0.0.1");
-    remote_endpoint2->set_port(19300);
+    remote_endpoint2->set_port(port1);
     
     std::vector<int> tests_to_run;
     tests_to_run.push_back(4);

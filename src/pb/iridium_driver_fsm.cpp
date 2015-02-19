@@ -50,11 +50,16 @@ void goby::acomms::fsm::Command::in_state_react(const EvRxSerial& e)
     
     
     static const std::string connect = "CONNECT";
+    static const std::string sbdi = "+SBDI";
     
     if(in == "OK")
+    {
         post_event(EvAck(in));
+    }
     else if(in == "RING")
+    {
         post_event(EvRing());
+    }
     else if(in == "NO CARRIER")
     {
         post_event(EvAck(in));
@@ -79,6 +84,19 @@ void goby::acomms::fsm::Command::in_state_react(const EvRxSerial& e)
     {
         post_event(EvAck(in));
     }
+    else if(in == "0" || in == "1" || in == "2" || in == "3")
+    {
+        post_event(EvAck(in));
+    }
+    else if(in == "READY")
+    {
+        post_event(EvAck(in));
+    }
+    else if(in.compare(0, sbdi.size(), sbdi) == 0)
+    {
+        post_event(EvAck(in));
+    }
+    
 }
 
 
@@ -97,7 +115,7 @@ void goby::acomms::fsm::Command::in_state_react( const EvTxSerial& )
             case '+': timeout = TRIPLE_PLUS_TIMEOUT_SECONDS; break;
         }
         
-
+        
         if((at_out_.front().first + timeout) < now)
         {
             std::string at_command;
@@ -129,23 +147,57 @@ void goby::acomms::fsm::Online::in_state_react( const EvTxSerial& )
 
 void goby::acomms::fsm::Command::in_state_react( const EvAck & e)
 {
+    // deal with the numeric codes
+    if(e.response_.size() > 0)
+    {
+        switch(e.response_[0])
+        {
+            case '0':
+                if(!at_out().empty() && at_out().front().second == "+SBDD0")
+                    post_event(EvSBDSendBufferCleared());
+                else if(at_out().empty()) // no AT command before this - we write the data directly
+                    post_event(EvSBDWriteComplete());
+                break;
+            case '1':
+                break;
+            case '2':
+                break;
+            case '3':
+                break;
+            default:
+                break;
+        }
+    }
+    
     if(!at_out().empty())
     {
         const std::string& last_at = at_out().front().second;
-       if(last_at.size() > 0 && e.response_ == "OK")
-       {
-           switch(last_at[0])
-           {
-               case 'H': post_event(EvNoCarrier()); break;
-//               case 'O': post_event(EvOnline()); break;
-               default:
-                   break;
-           }
-      }
+        if(last_at.size() > 0 && (e.response_ == "OK"))
+        {
+            switch(last_at[0])
+            {
+                case 'H': post_event(EvNoCarrier()); break;
+               
+                default:
+                    break;
+            }
+        }
+        
+        if(e.response_ == "READY")  // used for SBD
+            post_event(EvSBDWriteReady());
+
+
+        static const std::string sbdi = "+SBDI";
+        if(e.response_.compare(0, sbdi.size(), sbdi) == 0)
+        {
+            post_event(EvSBDTransmitComplete(e.response_));
+        }
+        
+        
         at_out().pop_front();
         if(at_out().empty())
             post_event(EvAtEmpty());
-        
+       
     }
     else
     {
@@ -213,7 +265,7 @@ void goby::acomms::fsm::OnCall::in_state_react(const EvRxOnCallSerial& e)
         }
         catch(RudicsPacketException& e)
         {
-	  glog.is(DEBUG1) && glog <<  warn  << group("iridiumdriver") << "Could not decode packet: " << e.what() << std::endl;
+            glog.is(DEBUG1) && glog <<  warn  << group("iridiumdriver") << "Could not decode packet: " << e.what() << std::endl;
         }
     }
 }

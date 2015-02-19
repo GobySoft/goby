@@ -9,4 +9,5 @@ message GobyRudicsShoreConfig
   optional AppBaseConfig base = 1;  
   required goby.common.protobuf.ZeroMQServiceConfig.Socket reply_socket = 2;
   required uint32 rudics_server_port = 10;
+  optional uint32 mo_sbd_server_port = 11 [default = 40001];
 }

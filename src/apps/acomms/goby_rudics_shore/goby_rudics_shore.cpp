@@ -60,12 +60,12 @@ namespace goby
             protobuf::GobyRudicsShoreConfig& cfg_;
 
             goby::util::TCPServer rudics_server_;
+            goby::util::TCPServer mo_sbd_server_;
 
             typedef std::string Endpoint;
             typedef unsigned ModemId;
             // maps *destination* modem to *source* TCP endpoint
             boost::bimap<ModemId, Endpoint> clients_;
-            std::map<ModemId, protobuf::MTDataResponse> responses_;
         };
     }
 }
@@ -83,10 +83,12 @@ goby::acomms::GobyRudicsShore::GobyRudicsShore(protobuf::GobyRudicsShoreConfig* 
     : ZeroMQApplicationBase(&zeromq_service_, cfg),
       StaticProtobufNode(&zeromq_service_),
       cfg_(*cfg),
-      rudics_server_(cfg_.rudics_server_port(), "\r")
+      rudics_server_(cfg_.rudics_server_port(), "\r"),
+      mo_sbd_server_(cfg_.mo_sbd_server_port(), "\r")
 {
     rudics_server_.start();
-
+    mo_sbd_server_.start();
+    
     // set up receiving requests    
     on_receipt<protobuf::MTDataRequest>(
         cfg_.reply_socket().socket_id(), &GobyRudicsShore::handle_request, this);
@@ -102,7 +104,7 @@ void goby::acomms::GobyRudicsShore::loop()
     util::protobuf::Datagram msg;
     while(rudics_server_.readline(&msg))
     {
-	glog.is(DEBUG1) && glog << "Received bytes: " << goby::util::hex_encode(msg.data()) << std::endl;
+	glog.is(DEBUG1) && glog << "RUDICS received bytes: " << goby::util::hex_encode(msg.data()) << std::endl;
 
         std::string bytes;
         try
@@ -112,9 +114,13 @@ void goby::acomms::GobyRudicsShore::loop()
             protobuf::ModemTransmission modem_msg;
             modem_msg.ParseFromString(bytes);
 
-            glog.is(DEBUG1) && glog << "Received message to: " << modem_msg.dest() << " from endpoint: " << msg.src() << std::endl;
+            glog.is(DEBUG1) && glog << "Received RUDICS message to: " << modem_msg.dest() << " from endpoint: " << msg.src() << std::endl;
             clients_.left.insert(std::make_pair(modem_msg.dest(), msg.src()));
-            *(responses_[modem_msg.dest()].add_inbox()) = modem_msg;
+
+            protobuf::MODataAsyncReceive async_rx_msg;
+            async_rx_msg.set_modem_id(modem_msg.dest());
+            *async_rx_msg.mutable_inbox() = modem_msg;
+            send(async_rx_msg, cfg_.reply_socket().socket_id());
         }
         catch(RudicsPacketException& e)
         {
@@ -122,12 +128,34 @@ void goby::acomms::GobyRudicsShore::loop()
         }
     }    
 
-    
+    msg.Clear();
+    while(mo_sbd_server_.readline(&msg))
+    {
+	glog.is(DEBUG1) && glog << "MO SBD received bytes: " << goby::util::hex_encode(msg.data()) << std::endl;
+        try
+        {
+            if(msg.data().size() < 3)
+                throw std::runtime_error("SBD message too short, must be >= 3 bytes");
+
+            const int csum_bytes = 2;
+            protobuf::ModemTransmission modem_msg;
+            modem_msg.ParseFromString(msg.data().substr(0, msg.data().size() - csum_bytes));
+
+            protobuf::MODataAsyncReceive async_rx_msg;
+            async_rx_msg.set_modem_id(modem_msg.dest());
+            *async_rx_msg.mutable_inbox() = modem_msg;
+            send(async_rx_msg, cfg_.reply_socket().socket_id());            
+        }
+        catch (std::exception& e)
+        {
+            glog.is(DEBUG1) && glog <<  warn << "Could not decode SBD packet: " << e.what() << std::endl;
+        }
+    }
 }
 
 void goby::acomms::GobyRudicsShore::handle_request(const protobuf::MTDataRequest& request)
 {
-    protobuf::MTDataResponse& response = responses_[request.modem_id()];
+    protobuf::MTDataResponse response;
     response.set_request_id(request.request_id());
     response.set_modem_id(request.modem_id());
 

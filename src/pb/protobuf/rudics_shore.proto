@@ -13,7 +13,11 @@ message MTDataResponse
 {
   required bool mobile_node_connected = 1;
   required int32 modem_id = 2;
-  repeated goby.acomms.protobuf.ModemTransmission inbox = 3;
   optional uint64 request_id = 4;
 }
 
+message MODataAsyncReceive
+{
+  required int32 modem_id = 1;
+  required goby.acomms.protobuf.ModemTransmission inbox = 2;
+}

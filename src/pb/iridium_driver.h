@@ -56,6 +56,7 @@ namespace goby
             void handle_initiate_transmission(const protobuf::ModemTransmission& m);
             void process_transmission(protobuf::ModemTransmission msg, bool dial);
             void handle_mt_response(const acomms::protobuf::MTDataResponse& response);
+            void handle_mo_async_receive(const acomms::protobuf::MODataAsyncReceive& rx);
 
           private:
             void receive(const protobuf::ModemTransmission& msg);

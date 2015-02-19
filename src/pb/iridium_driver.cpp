@@ -85,6 +85,7 @@ void goby::acomms::IridiumDriver::startup(const protobuf::DriverConfig& cfg)
     if(using_zmq_)
     {        
         on_receipt<acomms::protobuf::MTDataResponse>(0, &IridiumDriver::handle_mt_response, this);
+        on_receipt<acomms::protobuf::MODataAsyncReceive>(0, &IridiumDriver::handle_mo_async_receive, this);
 
         request_.set_modem_id(driver_cfg_.modem_id());
         
@@ -209,7 +210,7 @@ void goby::acomms::IridiumDriver::process_transmission(protobuf::ModemTransmissi
 {
     signal_modify_transmission(&msg);
 
-    if(dial || next_frame_ >= FRAME_COUNT_ROLLOVER)
+    if(next_frame_ >= FRAME_COUNT_ROLLOVER)
         next_frame_ = 0;
     if(!msg.has_frame_start())
         msg.set_frame_start(next_frame_++);
@@ -222,6 +223,10 @@ void goby::acomms::IridiumDriver::process_transmission(protobuf::ModemTransmissi
         if(dial && msg.rate() == RATE_RUDICS)
             fsm_.process_event(fsm::EvDial());
         send(msg);
+    }
+    else if(msg.rate() == RATE_SBD)
+    {
+        fsm_.process_event(fsm::EvSBDBeginData()); // mailbox check
     }
 }
 
@@ -339,6 +344,7 @@ void goby::acomms::IridiumDriver::receive(const protobuf::ModemTransmission& msg
         ack.set_type(goby::acomms::protobuf::ModemTransmission::ACK);
         ack.set_src(msg.dest());
         ack.set_dest(msg.src());
+        ack.set_rate(msg.rate());
         for(int i = msg.frame_start(), n = msg.frame_size() + msg.frame_start(); i < n; ++i)
             ack.add_acked_frame(i);
         send(ack);
@@ -350,7 +356,11 @@ void goby::acomms::IridiumDriver::receive(const protobuf::ModemTransmission& msg
 void goby::acomms::IridiumDriver::send(const protobuf::ModemTransmission& msg)
 {
     glog.is(DEBUG2) && glog << group(glog_out_group()) << msg << std::endl;
-    fsm_.buffer_data_out(msg);
+
+    if(msg.rate() == RATE_RUDICS)
+        fsm_.buffer_data_out(msg);
+    else if(msg.rate() == RATE_SBD)
+        fsm_.process_event(fsm::EvSBDBeginData(msg.SerializeAsString()));
 }
 
 
@@ -383,20 +393,25 @@ void goby::acomms::IridiumDriver::try_serial_tx()
 
 void goby::acomms::IridiumDriver::handle_mt_response(const acomms::protobuf::MTDataResponse& response)
 {
-    glog.is(DEBUG2) && glog << group(goby::common::ZeroMQService::glog_in_group()) << "Received response from shore server." << std::endl;
-
-    glog.is(DEBUG2) && glog << group(goby::common::ZeroMQService::glog_in_group()) << "Inbox: " << response.DebugString() << std::flush;
-
+    glog.is(DEBUG2) && glog << group(goby::common::ZeroMQService::glog_in_group()) << "Received response from shore server:" <<  response.DebugString() << std::endl;
+    
     if(response.mobile_node_connected())
         fsm_.process_event(fsm::EvZMQConnect());
     else
         fsm_.process_event(fsm::EvZMQDisconnect());
 
-    for(int i = 0, n = response.inbox_size(); i < n; ++i)
-        receive(response.inbox(i));
     
     waiting_for_reply_ = false;  
 }
+
+void goby::acomms::IridiumDriver::handle_mo_async_receive(const acomms::protobuf::MODataAsyncReceive& rx)
+{
+    glog.is(DEBUG2) && glog << group(goby::common::ZeroMQService::glog_in_group()) << "Received async data from shore server:" <<  rx.DebugString() << std::endl;
+    
+    receive(rx.inbox());
+}
+
+
 
 void goby::acomms::IridiumDriver::display_state_cfg(std::ostream* os)
 {

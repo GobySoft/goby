@@ -8,6 +8,33 @@ message GobyRudicsShoreConfig
 {
   optional AppBaseConfig base = 1;  
   required goby.common.protobuf.ZeroMQServiceConfig.Socket reply_socket = 2;
+  required goby.common.protobuf.ZeroMQServiceConfig.Socket publish_socket = 3;
   required uint32 rudics_server_port = 10;
   optional uint32 mo_sbd_server_port = 11 [default = 40001];
+}
+
+message DirectIPMOPreHeader
+{
+  required int32 protocol_ver = 1; // 1 byte
+  required uint32 overall_length = 2; // 2 bytes
+}
+
+
+message DirectIPMOHeader
+{
+  required int32 iei = 1; // 1 bytes
+  required uint32 length = 2; // 2 bytes
+  required uint32 cdr_reference = 3; // 4 bytes
+  required string imei = 4; // 15 bytes
+  required uint32 session_status = 5; // 1 byte
+  required uint32 momsn = 6; // 2 bytes
+  required uint32 mtmsn = 7; // 2 bytes
+  required uint32 time_of_session = 8; // 4 bytes
+}
+
+message DirectIPMOPayload
+{
+  required int32 iei = 1; // 1 bytes
+  required uint32 length = 2; // 2 bytes
+  required string payload = 3; // N bytes
 }

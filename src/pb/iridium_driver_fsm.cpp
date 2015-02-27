@@ -154,9 +154,14 @@ void goby::acomms::fsm::Command::in_state_react( const EvAck & e)
         {
             case '0':
                 if(!at_out().empty() && at_out().front().second == "+SBDD0")
+                {
                     post_event(EvSBDSendBufferCleared());
+                }
                 else if(at_out().empty()) // no AT command before this - we write the data directly
+                {
                     post_event(EvSBDWriteComplete());
+                    return;
+                }
                 break;
             case '1':
                 break;

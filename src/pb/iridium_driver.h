@@ -84,6 +84,7 @@ namespace goby
 	    common::protobuf::ZeroMQServiceConfig service_cfg_;
             acomms::protobuf::MTDataRequest request_;
             int request_socket_id_;
+            int subscribe_socket_id_;
             double last_zmq_request_time_;
             double query_interval_seconds_;
             bool waiting_for_reply_;

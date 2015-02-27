@@ -27,17 +27,20 @@
 #include "goby/common/zeromq_application_base.h"
 #include "goby/pb/protobuf_node.h"
 #include "goby_rudics_shore_config.pb.h"
-#include "goby/pb/protobuf/rudics_shore.pb.h"
 #include "goby/pb/rudics_packet.h"
 #include "goby/util/linebasedcomms/tcp_server.h"
-#include "goby/util/binary.h"
+
+#include "goby_rudics_shore.h"
 
 using namespace goby::common::logger;
 using goby::glog;
 using goby::common::goby_time;
 using goby::util::TCPConnection;
+using goby::acomms::protobuf::DirectIPMOPreHeader;
+using goby::acomms::protobuf::DirectIPMOHeader;
+using goby::acomms::protobuf::DirectIPMOPayload;
 
-
+ 
 namespace goby
 {
     namespace acomms
@@ -55,13 +58,17 @@ namespace goby
             void handle_request(const protobuf::MTDataRequest& request);
             void loop();
 
+            void decode_mo(DirectIPMOPreHeader* pre_header, DirectIPMOHeader* header, DirectIPMOPayload* body,
+                                     const std::string& data);            
+            
         private:
             static goby::common::ZeroMQService zeromq_service_;
             protobuf::GobyRudicsShoreConfig& cfg_;
 
             goby::util::TCPServer rudics_server_;
-            goby::util::TCPServer mo_sbd_server_;
-
+            boost::asio::io_service sbd_io_;
+            SBDServer mo_sbd_server_;
+            
             typedef std::string Endpoint;
             typedef unsigned ModemId;
             // maps *destination* modem to *source* TCP endpoint
@@ -84,10 +91,9 @@ goby::acomms::GobyRudicsShore::GobyRudicsShore(protobuf::GobyRudicsShoreConfig* 
       StaticProtobufNode(&zeromq_service_),
       cfg_(*cfg),
       rudics_server_(cfg_.rudics_server_port(), "\r"),
-      mo_sbd_server_(cfg_.mo_sbd_server_port(), "\r")
+      mo_sbd_server_(sbd_io_, cfg_.mo_sbd_server_port())
 {
     rudics_server_.start();
-    mo_sbd_server_.start();
     
     // set up receiving requests    
     on_receipt<protobuf::MTDataRequest>(
@@ -95,6 +101,7 @@ goby::acomms::GobyRudicsShore::GobyRudicsShore(protobuf::GobyRudicsShoreConfig* 
 
     // start zeromqservice
     common::protobuf::ZeroMQServiceConfig service_cfg;
+    service_cfg.add_socket()->CopyFrom(cfg_.publish_socket());
     service_cfg.add_socket()->CopyFrom(cfg_.reply_socket());
     zeromq_service_.set_cfg(service_cfg);
 }
@@ -120,7 +127,7 @@ void goby::acomms::GobyRudicsShore::loop()
             protobuf::MODataAsyncReceive async_rx_msg;
             async_rx_msg.set_modem_id(modem_msg.dest());
             *async_rx_msg.mutable_inbox() = modem_msg;
-            send(async_rx_msg, cfg_.reply_socket().socket_id());
+            send(async_rx_msg, cfg_.publish_socket().socket_id());
         }
         catch(RudicsPacketException& e)
         {
@@ -128,27 +135,46 @@ void goby::acomms::GobyRudicsShore::loop()
         }
     }    
 
-    msg.Clear();
-    while(mo_sbd_server_.readline(&msg))
+    try
     {
-	glog.is(DEBUG1) && glog << "MO SBD received bytes: " << goby::util::hex_encode(msg.data()) << std::endl;
-        try
+        sbd_io_.poll();
+    }
+    catch(std::exception& e)
+    {
+        glog.is(DEBUG1) && glog <<  warn << "Could not handle SBD receive: " << e.what() << std::endl;
+    }
+
+    std::set<boost::shared_ptr<SBDConnection> >::iterator it = mo_sbd_server_.connections().begin(),
+        end = mo_sbd_server_.connections().end();
+    while(it != end)
+    {
+        const int timeout = 5;
+        if((*it)->data_ready())
         {
-            if(msg.data().size() < 3)
-                throw std::runtime_error("SBD message too short, must be >= 3 bytes");
-
-            const int csum_bytes = 2;
             protobuf::ModemTransmission modem_msg;
-            modem_msg.ParseFromString(msg.data().substr(0, msg.data().size() - csum_bytes));
 
+            glog.is(DEBUG1) && glog << "SBD PreHeader: " << (*it)->pre_header().DebugString() << std::endl;
+            glog.is(DEBUG1) && glog << "SBD Header: " << (*it)->header().DebugString()  << std::endl;
+            glog.is(DEBUG1) && glog << "SBD Payload: " << (*it)->body().DebugString() << std::endl;
+
+            modem_msg.ParseFromString((*it)->body().payload());
+            
+            glog.is(DEBUG1) && glog << "ModemTransmission: " << modem_msg.ShortDebugString() << std::endl;
+            
             protobuf::MODataAsyncReceive async_rx_msg;
             async_rx_msg.set_modem_id(modem_msg.dest());
             *async_rx_msg.mutable_inbox() = modem_msg;
-            send(async_rx_msg, cfg_.reply_socket().socket_id());            
+            send(async_rx_msg, cfg_.publish_socket().socket_id());            
+            mo_sbd_server_.connections().erase(it++);
         }
-        catch (std::exception& e)
+        else if((*it)->connect_time() > 0 && (goby::common::goby_time<double>() > ((*it)->connect_time() + timeout)))
         {
-            glog.is(DEBUG1) && glog <<  warn << "Could not decode SBD packet: " << e.what() << std::endl;
+            glog.is(DEBUG1) && glog << "Removing connection that has timed out." << std::endl;
+            mo_sbd_server_.connections().erase(it++);
+        }
+        else
+        {
+            ++it;
         }
     }
 }
@@ -206,4 +232,3 @@ void goby::acomms::GobyRudicsShore::handle_request(const protobuf::MTDataRequest
     send(response, cfg_.reply_socket().socket_id());
     response.Clear();
 }
-

@@ -43,6 +43,7 @@ goby::acomms::IridiumDriver::IridiumDriver(goby::common::ZeroMQService* zeromq_s
           using_zmq_(false),
           zeromq_service_(zeromq_service),
           request_socket_id_(0),
+          subscribe_socket_id_(1),
           last_zmq_request_time_(0),
           query_interval_seconds_(1),
           waiting_for_reply_(false),
@@ -83,18 +84,30 @@ void goby::acomms::IridiumDriver::startup(const protobuf::DriverConfig& cfg)
     glog.is(DEBUG1) && glog << "Using ZMQ? " << (using_zmq_ ? "Yes" : "No") << std::endl;
 
     if(using_zmq_)
-    {        
-        on_receipt<acomms::protobuf::MTDataResponse>(0, &IridiumDriver::handle_mt_response, this);
-        on_receipt<acomms::protobuf::MODataAsyncReceive>(0, &IridiumDriver::handle_mo_async_receive, this);
+    {
+        if(driver_cfg_.GetExtension(IridiumDriverConfig::request_socket).has_socket_id())
+            request_socket_id_ = driver_cfg_.GetExtension(IridiumDriverConfig::request_socket).socket_id();
+        else
+            driver_cfg_.MutableExtension(IridiumDriverConfig::request_socket)->set_socket_id(request_socket_id_);
+        
+        if(driver_cfg_.GetExtension(IridiumDriverConfig::subscribe_socket).has_socket_id())
+            subscribe_socket_id_ = driver_cfg_.GetExtension(IridiumDriverConfig::subscribe_socket).socket_id();
+        else
+            driver_cfg_.MutableExtension(IridiumDriverConfig::subscribe_socket)->set_socket_id(subscribe_socket_id_);
 
         request_.set_modem_id(driver_cfg_.modem_id());
         
         service_cfg_.add_socket()->CopyFrom(
             driver_cfg_.GetExtension(IridiumDriverConfig::request_socket));
-        zeromq_service_->set_cfg(service_cfg_);
         
-        request_socket_id_ =
-            driver_cfg_.GetExtension(IridiumDriverConfig::request_socket).socket_id();
+        service_cfg_.add_socket()->CopyFrom(
+            driver_cfg_.GetExtension(IridiumDriverConfig::subscribe_socket));
+        
+        zeromq_service_->set_cfg(service_cfg_);
+
+        
+        on_receipt<acomms::protobuf::MTDataResponse>(request_socket_id_, &IridiumDriver::handle_mt_response, this);
+        subscribe<acomms::protobuf::MODataAsyncReceive>(subscribe_socket_id_, &IridiumDriver::handle_mo_async_receive, this);
     }
     
     rudics_mac_msg_.set_src(driver_cfg_.modem_id()); 

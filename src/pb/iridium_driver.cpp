@@ -30,6 +30,8 @@
 #include "goby/acomms/modemdriver/driver_exception.h"
 #include "goby/common/logger.h"
 #include "goby/util/binary.h"
+#include "goby/pb/rudics_packet.h"
+
 
 using goby::glog;
 using namespace goby::common::logger;
@@ -66,7 +68,7 @@ void goby::acomms::IridiumDriver::startup(const protobuf::DriverConfig& cfg)
     
     glog.is(DEBUG1) && glog << group(glog_out_group()) << "Goby Iridium RUDICS/SBD driver starting up." << std::endl;
 
-    driver_cfg_.set_line_delimiter("\r");    
+    driver_cfg_.set_line_delimiter("\r");
 
     if(driver_cfg_.HasExtension(IridiumDriverConfig::debug_client_port))
     {
@@ -237,7 +239,7 @@ void goby::acomms::IridiumDriver::process_transmission(protobuf::ModemTransmissi
             fsm_.process_event(fsm::EvDial());
         send(msg);
     }
-    else if(msg.rate() == RATE_SBD)
+    else if(msg.rate() == RATE_SBD && !using_zmq_)
     {
         fsm_.process_event(fsm::EvSBDBeginData()); // mailbox check
     }
@@ -270,27 +272,37 @@ void goby::acomms::IridiumDriver::do_work()
         { }
         
         if(!waiting_for_reply_ &&
-           request_.IsInitialized() &&
-           now > last_zmq_request_time_ + query_interval_seconds_)
+           request_.IsInitialized())
         {
             static int request_id = 0;
             request_.set_request_id(request_id++);
 
-            if(fsm_.state_cast<const fsm::OnZMQCall *>() != 0)
+
+            bool on_call = (fsm_.state_cast<const fsm::OnZMQCall *>() != 0);
+            
+            
+            while(!fsm_.data_out().empty())
             {
-                while(!fsm_.data_out().empty())
+                if(on_call || fsm_.data_out().front().rate() == RATE_SBD)
                 {
                     (*request_.add_outbox()) = fsm_.data_out().front();
-                    fsm_.data_out().pop_front();    
+                    fsm_.data_out().pop_front();
+                }
+                else
+                {
+                    break; // we're not on a call and the next packet isn't SBD
                 }
             }
-            
-            glog.is(DEBUG2) && glog << group(goby::common::ZeroMQService::glog_out_group()) << "Sending request to server." << std::endl;
-            glog.is(DEBUG2) && glog << group(goby::common::ZeroMQService::glog_out_group()) << "Outbox: " << request_.DebugString() << std::flush;
-            StaticProtobufNode::send(request_, request_socket_id_);
-            last_zmq_request_time_ = now;
-            request_.clear_outbox();
-            waiting_for_reply_ = true;
+
+            if(request_.outbox_size())
+            {            
+                glog.is(DEBUG2) && glog << group(goby::common::ZeroMQService::glog_out_group()) << "Sending request to server." << std::endl;
+                glog.is(DEBUG2) && glog << group(goby::common::ZeroMQService::glog_out_group()) << "Outbox: " << request_.DebugString() << std::flush;
+                StaticProtobufNode::send(request_, request_socket_id_);
+                last_zmq_request_time_ = now;
+                request_.clear_outbox();
+                waiting_for_reply_ = true;
+            }
         }
     }
     
@@ -373,7 +385,18 @@ void goby::acomms::IridiumDriver::send(const protobuf::ModemTransmission& msg)
     if(msg.rate() == RATE_RUDICS)
         fsm_.buffer_data_out(msg);
     else if(msg.rate() == RATE_SBD)
-        fsm_.process_event(fsm::EvSBDBeginData(msg.SerializeAsString()));
+    {
+        bool on_call = (fsm_.state_cast<const fsm::OnCall *>() != 0);
+        if(using_zmq_ || on_call) // if we're on a call send it via the call
+            fsm_.buffer_data_out(msg);
+        else
+        {
+            std::string rudics_packet;
+            serialize_rudics_packet(msg.SerializeAsString(), &rudics_packet);
+            fsm_.process_event(fsm::EvSBDBeginData(rudics_packet));
+        }
+        
+    }
 }
 
 

@@ -45,6 +45,16 @@ namespace goby
 {
     namespace acomms
     {
+
+        inline unsigned sbd_csum(const std::string& data)
+        {
+            unsigned int csum = 0;
+            for(std::string::const_iterator it = data.begin(), end = data.end(); it!=end; ++it)
+                csum += *it & 0xFF;
+            return csum;
+        }
+        
+        
         namespace fsm
         {
 
@@ -134,7 +144,7 @@ namespace goby
             struct SBD;
             struct SBDConfigure;
             struct SBDReady;
-            struct SBDClearSendBuffer;
+            struct SBDClearBuffers;
             struct SBDWrite;
             struct SBDTransmit;
             struct SBDReceive;
@@ -222,7 +232,11 @@ namespace goby
                 }
                 
                 boost::circular_buffer< std::pair<double, std::string> >& at_out() {return at_out_;}
+                
+                void clear_sbd_rx_buffer() { sbd_rx_buffer_.clear(); }
 
+                void handle_sbd_rx(const std::string& in);
+                
               private:
                 enum  { AT_BUFFER_CAPACITY = 100 };
                 boost::circular_buffer< std::pair<double, std::string> > at_out_;
@@ -230,6 +244,8 @@ namespace goby
                        DIAL_TIMEOUT_SECONDS = 60,
                        TRIPLE_PLUS_TIMEOUT_SECONDS = 6,
                        ANSWER_TIMEOUT_SECONDS = 30};
+
+                std::string sbd_rx_buffer_;
             };
 
             struct Configure : boost::statechart::state<Configure, Command::orthogonal<0> >, StateNotify
@@ -450,12 +466,15 @@ namespace goby
                     { set_data(e.data_); }
                     void set_data(const std::string& data)
                     {
-                        unsigned int csum = 0;
-                        for(std::string::const_iterator it = data.begin(), end = data.end(); it!=end; ++it)
-                            csum += *it & 0xFF;
-
-                        const int bits_in_byte = 8;
-                        data_ = data + std::string(1, (csum & 0xFF00) >> bits_in_byte) + std::string(1, (csum & 0xFF));
+                        if(data.empty())
+                            data_ = data;
+                        else
+                        {
+                            unsigned int csum = sbd_csum(data);
+                            
+                            const int bits_in_byte = 8;
+                            data_ = data + std::string(1, (csum & 0xFF00) >> bits_in_byte) + std::string(1, (csum & 0xFF));
+                        }
                     }
                     void clear_data() { data_.clear(); }
                     const std::string& data() const { return data_; }
@@ -482,7 +501,7 @@ namespace goby
             struct SBDReady: boost::statechart::simple_state<SBDReady, SBD >, StateNotify
             {
               typedef boost::mpl::list<
-                  boost::statechart::transition< EvSBDBeginData, SBDClearSendBuffer, SBD, &SBD::set_data >
+                  boost::statechart::transition< EvSBDBeginData, SBDClearBuffers, SBD, &SBD::set_data >
                   > reactions;
 
               SBDReady() : StateNotify("SBDReady") {
@@ -492,18 +511,19 @@ namespace goby
               }            
             };
 
-            struct SBDClearSendBuffer : boost::statechart::state<SBDClearSendBuffer, SBD >, StateNotify
+            struct SBDClearBuffers : boost::statechart::state<SBDClearBuffers, SBD >, StateNotify
             {
                 typedef boost::mpl::list<
                     boost::statechart::transition< EvSBDSendBufferCleared, SBDWrite >
                     > reactions;
                                 
-              SBDClearSendBuffer(my_context ctx) : my_base(ctx), StateNotify("SBDClearSendBuffer")
+              SBDClearBuffers(my_context ctx) : my_base(ctx), StateNotify("SBDClearBuffers")
                 {
-                    context<Command>().push_at_command("+SBDD0");
+                    context<Command>().clear_sbd_rx_buffer();
+                    context<Command>().push_at_command("+SBDD2");
                 }
                 
-                ~SBDClearSendBuffer()
+                ~SBDClearBuffers()
                 {
                 }
             };
@@ -555,7 +575,7 @@ namespace goby
             struct SBDTransmit : boost::statechart::state<SBDTransmit, SBD >, StateNotify
             {
                 typedef boost::mpl::list<
-                    boost::statechart::transition< EvSBDTransmitComplete, SBDReceive >
+                    boost::statechart::custom_reaction< EvSBDTransmitComplete >
                     > reactions;
               SBDTransmit(my_context ctx) : my_base(ctx), StateNotify("SBDTransmit")
                 {
@@ -566,14 +586,43 @@ namespace goby
                     context<SBD>().clear_data();
                 }
                 
+                boost::statechart::result react( const EvSBDTransmitComplete& e)
+                {
+                    // +SBDIX:<MO status>,<MOMSN>,<MT status>,<MTMSN>,<MT length>,<MT queued>
+                    std::vector<std::string> sbdi_fields;
+                    boost::algorithm::split(sbdi_fields, e.sbdi_, boost::is_any_of(":,"));
+
+                    std::for_each(sbdi_fields.begin(), sbdi_fields.end(), 
+                                  boost::bind(&boost::trim<std::string>, _1, std::locale()));
+                    
+                    if(sbdi_fields.size() != 7)
+                    {
+                        glog.is(goby::common::logger::DEBUG1) && glog << group("iridiumdriver") << "Invalid +SBDI response: " << e.sbdi_ << std::endl;
+                        return transit<SBDReady>();
+                    }
+                    else
+                    {
+                        
+                        enum { MO_STATUS = 1, MOMSN = 2, MT_STATUS = 3, MTMSN = 4, MT_LENGTH=5, MT_QUEUED = 6 };
+                        enum { MT_STATUS_NO_MESSAGE = 0, MT_STATUS_RECEIVED_MESSAGE = 1, MT_STATUS_ERROR = 2 } ;
+                        
+                        int mt_status = goby::util::as<int>(sbdi_fields[MT_STATUS]);
+                        if(mt_status == MT_STATUS_RECEIVED_MESSAGE)
+                            return transit<SBDReceive>();
+                        else
+                            return transit<SBDReady>();
+                    }
+                    
+                }
             };
             
-            struct SBDReceive : boost::statechart::simple_state<SBDReceive, SBD >, StateNotify
+            struct SBDReceive : boost::statechart::state<SBDReceive, SBD >, StateNotify
             {
                 typedef boost::mpl::list<
                     boost::statechart::transition< EvSBDReceiveComplete, SBDReady >
                     > reactions;
-              SBDReceive() : StateNotify("SBDReceive") {
+                SBDReceive(my_context ctx) : my_base(ctx), StateNotify("SBDReceive") {
+                    context<Command>().push_at_command("+SBDRB");
                 }
                 ~SBDReceive() {
                 }

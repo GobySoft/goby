@@ -56,6 +56,7 @@ namespace goby
             void handle_initiate_transmission(const protobuf::ModemTransmission& m);
             void process_transmission(protobuf::ModemTransmission msg, bool dial);
             void handle_mt_response(const acomms::protobuf::MTDataResponse& response);
+            void handle_mo_async_receive(const acomms::protobuf::MODataAsyncReceive& rx);
 
           private:
             void receive(const protobuf::ModemTransmission& msg);
@@ -83,6 +84,7 @@ namespace goby
 	    common::protobuf::ZeroMQServiceConfig service_cfg_;
             acomms::protobuf::MTDataRequest request_;
             int request_socket_id_;
+            int subscribe_socket_id_;
             double last_zmq_request_time_;
             double query_interval_seconds_;
             bool waiting_for_reply_;

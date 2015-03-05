@@ -42,19 +42,33 @@ void goby::acomms::fsm::IridiumDriverFSM::buffer_data_out( const goby::acomms::p
     data_out_.push_back(msg);
 }
 
+
+
+
 void goby::acomms::fsm::Command::in_state_react(const EvRxSerial& e)
 {
     std::string in = e.line;
+
+    // deal with SBD received data special case
+    if(!at_out().empty() && at_out().front().second == "+SBDRB")
+    {
+        handle_sbd_rx(in);
+        return;
+    }
     
-    boost::trim_if(in, !boost::algorithm::is_alnum());
-    
+    boost::trim(in);
     
     static const std::string connect = "CONNECT";
+    static const std::string sbdi = "+SBDI";
     
     if(in == "OK")
+    {
         post_event(EvAck(in));
+    }
     else if(in == "RING")
+    {
         post_event(EvRing());
+    }
     else if(in == "NO CARRIER")
     {
         post_event(EvAck(in));
@@ -79,6 +93,65 @@ void goby::acomms::fsm::Command::in_state_react(const EvRxSerial& e)
     {
         post_event(EvAck(in));
     }
+    else if(in == "0" || in == "1" || in == "2" || in == "3")
+    {
+        post_event(EvAck(in));
+    }
+    else if(in == "READY")
+    {
+        post_event(EvAck(in));
+    }
+    else if(in.compare(0, sbdi.size(), sbdi) == 0)
+    {
+        post_event(EvAck(in));
+    }
+    
+}
+
+void goby::acomms::fsm::Command::handle_sbd_rx(const std::string& in)
+{
+    enum 
+    {
+        SBD_FIELD_SIZE_BYTES = 2,
+        SBD_BITS_IN_BYTE = 8,
+        SBD_CHECKSUM_BYTES = 2
+    };
+
+    if(sbd_rx_buffer_.empty() && in.at(0) == '\n')
+        sbd_rx_buffer_ = in.substr(1); // discard left over '\n' from last command
+    else
+        sbd_rx_buffer_ += in;
+    
+    // need to build up message in pieces since we use \r delimiter
+    if(sbd_rx_buffer_.size() < SBD_FIELD_SIZE_BYTES)
+        return;
+    else
+    {
+        unsigned sbd_rx_size = ((sbd_rx_buffer_[0] & 0xff) << SBD_BITS_IN_BYTE) | (sbd_rx_buffer_[1] & 0xff);
+        glog.is(DEBUG1) && glog << group("iridiumdriver") << "SBD RX Size: " << sbd_rx_size << std::endl;
+        
+        if(sbd_rx_buffer_.size() < (SBD_FIELD_SIZE_BYTES + sbd_rx_size))
+        {
+            return; // keep building up message
+        }
+        else
+        {
+            std::string sbd_rx_data = sbd_rx_buffer_.substr(SBD_FIELD_SIZE_BYTES, sbd_rx_size);
+            std::string bytes;
+            parse_rudics_packet(&bytes, sbd_rx_data);
+            protobuf::ModemTransmission msg;
+            msg.ParseFromString(bytes);
+            context< IridiumDriverFSM >().received().push_back(msg);
+            context< IridiumDriverFSM >().last_rx_tx_time() = goby_time<double>();
+            at_out().pop_front();
+
+            post_event(EvSBDReceiveComplete());
+
+            // clear out the checksum
+            push_at_command("");
+        }
+            
+    }
 }
 
 
@@ -94,10 +167,16 @@ void goby::acomms::fsm::Command::in_state_react( const EvTxSerial& )
             default: break;
             case 'D': timeout = DIAL_TIMEOUT_SECONDS; break;
             case 'A': timeout = ANSWER_TIMEOUT_SECONDS; break;
-            case '+': timeout = TRIPLE_PLUS_TIMEOUT_SECONDS; break;
+            case '+':
+                if(at_out_.front().second == "+++")
+                    timeout = TRIPLE_PLUS_TIMEOUT_SECONDS;
+                break;
         }
-        
 
+        if(at_out_.front().second == "+SBDRB")
+            clear_sbd_rx_buffer();
+
+        
         if((at_out_.front().first + timeout) < now)
         {
             std::string at_command;
@@ -129,27 +208,66 @@ void goby::acomms::fsm::Online::in_state_react( const EvTxSerial& )
 
 void goby::acomms::fsm::Command::in_state_react( const EvAck & e)
 {
+    // deal with the numeric codes
+    if(e.response_.size() > 0)
+    {
+        switch(e.response_[0])
+        {
+            case '0':
+                if(!at_out().empty() && at_out().front().second == "+SBDD2")
+                {
+                    post_event(EvSBDSendBufferCleared());
+                }
+                else if(at_out().empty()) // no AT command before this - we write the data directly
+                {
+                    post_event(EvSBDWriteComplete());
+                    return;
+                }
+                break;
+            case '1':
+                break;
+            case '2':
+                break;
+            case '3':
+                break;
+            default:
+                break;
+        }
+    }
+    
     if(!at_out().empty())
     {
         const std::string& last_at = at_out().front().second;
-       if(last_at.size() > 0 && e.response_ == "OK")
-       {
-           switch(last_at[0])
-           {
-               case 'H': post_event(EvNoCarrier()); break;
-//               case 'O': post_event(EvOnline()); break;
-               default:
-                   break;
-           }
-      }
+        if(last_at.size() > 0 && (e.response_ == "OK"))
+        {
+            switch(last_at[0])
+            {
+                case 'H': post_event(EvNoCarrier()); break;
+               
+                default:
+                    break;
+            }
+        }
+        
+        if(e.response_ == "READY")  // used for SBD
+            post_event(EvSBDWriteReady());
+
+
+        static const std::string sbdi = "+SBDI";
+        if(e.response_.compare(0, sbdi.size(), sbdi) == 0)
+        {
+            post_event(EvSBDTransmitComplete(e.response_));
+        }
+        
+        
         at_out().pop_front();
         if(at_out().empty())
             post_event(EvAtEmpty());
-        
+       
     }
     else
     {
-        glog.is(DEBUG1) && glog << group("iridiumdriver") <<  warn << "Unexpected 'OK'" << std::endl;
+        glog.is(DEBUG1) && glog << group("iridiumdriver") <<  warn << "Unexpected '" << e.response_ << "'" << std::endl;
     }
 }
 
@@ -213,7 +331,7 @@ void goby::acomms::fsm::OnCall::in_state_react(const EvRxOnCallSerial& e)
         }
         catch(RudicsPacketException& e)
         {
-	  glog.is(DEBUG1) && glog <<  warn  << group("iridiumdriver") << "Could not decode packet: " << e.what() << std::endl;
+            glog.is(DEBUG1) && glog <<  warn  << group("iridiumdriver") << "Could not decode packet: " << e.what() << std::endl;
         }
     }
 }

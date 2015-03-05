@@ -743,7 +743,6 @@ namespace goby
                 {
                     std::string match = (*it)[0];
 
-                    std::cout << "Match: " << match << std::endl;
 
                     boost::trim_if(match, boost::is_any_of("%"));
                     std::vector<std::string> subfields;
@@ -816,7 +815,6 @@ namespace goby
 
                 mutable_format = mutable_format_temp;
 
-                std::cout << mutable_format << std::endl;
                 
                 
                 boost::format out_format(mutable_format);

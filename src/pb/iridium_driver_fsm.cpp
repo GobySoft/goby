@@ -177,7 +177,7 @@ void goby::acomms::fsm::Command::in_state_react( const EvTxSerial& )
             clear_sbd_rx_buffer();
 
         
-        if((at_out_.front().first + timeout) < now)
+        if((at_out_.front().first.last_send_time_ + timeout) < now)
         {
             std::string at_command;
             if(at_out_.front().second != "+++")
@@ -185,8 +185,16 @@ void goby::acomms::fsm::Command::in_state_react( const EvTxSerial& )
             else
                 at_command = at_out_.front().second;        
             
-            context<IridiumDriverFSM>().serial_tx_buffer().push_back(at_command);
-            at_out_.front().first = now;
+            if(++at_out_.front().first.tries_ > RETRIES_BEFORE_RESET)
+            {
+                glog.is(DEBUG1) && glog << group("iridiumdriver") << warn << "No valid response after " << RETRIES_BEFORE_RESET << " tries. Resetting state machine" << std::endl;
+                post_event(EvReset());
+            }
+            else
+            {
+                context<IridiumDriverFSM>().serial_tx_buffer().push_back(at_command);
+                at_out_.front().first.last_send_time_ = now;
+            }
         }
         
     }

@@ -22,6 +22,7 @@ message ProtobufCommanderConfig
 
   enum Column
   {
+    @PROTOBUF_ALLOW_ALIAS@
     COLUMN_COMMENT = 0;
     COLUMN_NAME = 1;
     COLUMN_IP = 2;
@@ -56,6 +57,7 @@ message MOOSScopeConfig
 
   enum Column
   {
+    @PROTOBUF_ALLOW_ALIAS@
     COLUMN_KEY = 0;
     COLUMN_TYPE = 1;
     COLUMN_VALUE = 2;

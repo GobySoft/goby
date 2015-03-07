@@ -34,7 +34,7 @@
 #include <boost/statechart/transition.hpp>
 #include <boost/statechart/in_state_reaction.hpp>
 #include <boost/statechart/custom_reaction.hpp>
-
+#include <boost/statechart/deep_history.hpp>
 #include <boost/mpl/list.hpp>
 #include <iostream>
 
@@ -221,8 +221,8 @@ namespace goby
 
                   Command()
                       : StateNotify("Command"),
-                        at_out_(AT_BUFFER_CAPACITY)
-                        { } 
+                    at_out_(AT_BUFFER_CAPACITY)
+                    { } 
                     ~Command() { }
                     
                     typedef boost::mpl::list<
@@ -253,7 +253,9 @@ namespace goby
                     void clear_sbd_rx_buffer() { sbd_rx_buffer_.clear(); }
 
                     void handle_sbd_rx(const std::string& in);
-                
+
+                    
+                    
                   private:
                     enum  { AT_BUFFER_CAPACITY = 100 };
                     boost::circular_buffer< std::pair<ATSentenceMeta, std::string> > at_out_;
@@ -263,7 +265,6 @@ namespace goby
                            ANSWER_TIMEOUT_SECONDS = 30};
 
                     enum { RETRIES_BEFORE_RESET = 3 };
-
                     std::string sbd_rx_buffer_;
                 };
 
@@ -474,7 +475,7 @@ namespace goby
             };
 
 
-            struct SBD : boost::statechart::simple_state<SBD, Command::orthogonal<1>, SBDConfigure>,
+            struct SBD : boost::statechart::simple_state<SBD, Command::orthogonal<1>, SBDReady >,
                 StateNotify
                 {
                   SBD() : StateNotify("SBD") {
@@ -502,19 +503,19 @@ namespace goby
                     std::string data_;
                 };
 
-            struct SBDConfigure : boost::statechart::simple_state<SBDConfigure, SBD >, StateNotify
-            {
-                typedef boost::mpl::list<
-                    boost::statechart::transition< EvConfigured, SBDReady >
-                    > reactions;
+            /* struct SBDConfigure : boost::statechart::simple_state<SBDConfigure, SBD >, StateNotify */
+            /* { */
+            /*     typedef boost::mpl::list< */
+            /*         boost::statechart::transition< EvConfigured, SBDReady > */
+            /*         > reactions; */
                 
-              SBDConfigure() : StateNotify("SBDConfigure")
-                {
-                }
-                ~SBDConfigure() {
-                }
+            /*   SBDConfigure() : StateNotify("SBDConfigure") */
+            /*     { */
+            /*     } */
+            /*     ~SBDConfigure() { */
+            /*     } */
                 
-            };
+            /* }; */
             
                 
             struct SBDReady: boost::statechart::simple_state<SBDReady, SBD >, StateNotify

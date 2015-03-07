@@ -34,7 +34,7 @@
 #include <boost/statechart/transition.hpp>
 #include <boost/statechart/in_state_reaction.hpp>
 #include <boost/statechart/custom_reaction.hpp>
-
+#include <boost/statechart/deep_history.hpp>
 #include <boost/mpl/list.hpp>
 #include <iostream>
 
@@ -90,6 +90,7 @@ namespace goby
             };
             
             struct EvAtEmpty : boost::statechart::event< EvAtEmpty > {};
+            struct EvReset : boost::statechart::event< EvReset > {};
 
             struct EvDial : boost::statechart::event< EvDial > {};
             struct EvRing : boost::statechart::event< EvRing > {};
@@ -201,7 +202,12 @@ namespace goby
 
             struct Active: boost::statechart::simple_state< Active, IridiumDriverFSM,
                 boost::mpl::list<Command, NotOnCall> >
-            { };
+            {
+
+                typedef boost::mpl::list<
+                    boost::statechart::transition< EvReset, Active >
+                    > reactions;
+            };
             
             // Command
             struct Command : boost::statechart::simple_state<Command, Active::orthogonal<0>,
@@ -213,40 +219,54 @@ namespace goby
                 void in_state_react( const EvTxSerial& );
                 void in_state_react( const EvAck & );
 
-              Command()
-                  : StateNotify("Command"),
+                  Command()
+                      : StateNotify("Command"),
                     at_out_(AT_BUFFER_CAPACITY)
-                { } 
-                ~Command() { }
+                    { } 
+                    ~Command() { }
+                    
+                    typedef boost::mpl::list<
+                        boost::statechart::in_state_reaction< EvRxSerial, Command, &Command::in_state_react >,
+                        boost::statechart::in_state_reaction< EvTxSerial, Command, &Command::in_state_react >,
+                        boost::statechart::transition< EvOnline, Online >,
+                        boost::statechart::in_state_reaction< EvAck, Command, &Command::in_state_react >
+                        > reactions;
 
-                typedef boost::mpl::list<
-                    boost::statechart::in_state_reaction< EvRxSerial, Command, &Command::in_state_react >,
-                    boost::statechart::in_state_reaction< EvTxSerial, Command, &Command::in_state_react >,
-                    boost::statechart::transition< EvOnline, Online >,
-                    boost::statechart::in_state_reaction< EvAck, Command, &Command::in_state_react >
-                    > reactions;
 
-                void push_at_command(const std::string& cmd)
-                {
-                    at_out_.push_back(std::make_pair(0, cmd));
-                }
+                    struct ATSentenceMeta
+                    {
+                    ATSentenceMeta() :
+                        last_send_time_(0),
+                            tries_(0)
+                            { }
+                        double last_send_time_;
+                        int tries_;
+                    };
+
+                    void push_at_command(const std::string& cmd)
+                    {
+                        at_out_.push_back(std::make_pair(ATSentenceMeta(), cmd));
+                    }
                 
-                boost::circular_buffer< std::pair<double, std::string> >& at_out() {return at_out_;}
+                    boost::circular_buffer< std::pair<ATSentenceMeta, std::string> >& at_out() {return at_out_;}
                 
-                void clear_sbd_rx_buffer() { sbd_rx_buffer_.clear(); }
+                    void clear_sbd_rx_buffer() { sbd_rx_buffer_.clear(); }
 
-                void handle_sbd_rx(const std::string& in);
-                
-              private:
-                enum  { AT_BUFFER_CAPACITY = 100 };
-                boost::circular_buffer< std::pair<double, std::string> > at_out_;
-                enum { COMMAND_TIMEOUT_SECONDS = 2,
-                       DIAL_TIMEOUT_SECONDS = 60,
-                       TRIPLE_PLUS_TIMEOUT_SECONDS = 6,
-                       ANSWER_TIMEOUT_SECONDS = 30};
+                    void handle_sbd_rx(const std::string& in);
 
-                std::string sbd_rx_buffer_;
-            };
+                    
+                    
+                  private:
+                    enum  { AT_BUFFER_CAPACITY = 100 };
+                    boost::circular_buffer< std::pair<ATSentenceMeta, std::string> > at_out_;
+                    enum { COMMAND_TIMEOUT_SECONDS = 2,
+                           DIAL_TIMEOUT_SECONDS = 60,
+                           TRIPLE_PLUS_TIMEOUT_SECONDS = 6,
+                           ANSWER_TIMEOUT_SECONDS = 30};
+
+                    enum { RETRIES_BEFORE_RESET = 3 };
+                    std::string sbd_rx_buffer_;
+                };
 
             struct Configure : boost::statechart::state<Configure, Command::orthogonal<0> >, StateNotify
             {    
@@ -257,18 +277,18 @@ namespace goby
               Configure(my_context ctx) : my_base(ctx),
                     StateNotify("Configure")
                     {
-                    context<Command>().push_at_command("");
-                    context<Command>().push_at_command("E");
-                    for(int i = 0,
-                            n = context<IridiumDriverFSM>().driver_cfg().ExtensionSize(
-                                IridiumDriverConfig::config);
-                        i < n; ++i)
-                    {
-                        context<Command>().push_at_command(
-                            context<IridiumDriverFSM>().driver_cfg().GetExtension(
-                                IridiumDriverConfig::config, i));
+                        context<Command>().push_at_command("");
+                        context<Command>().push_at_command("E");
+                        for(int i = 0,
+                                n = context<IridiumDriverFSM>().driver_cfg().ExtensionSize(
+                                    IridiumDriverConfig::config);
+                            i < n; ++i)
+                        {
+                            context<Command>().push_at_command(
+                                context<IridiumDriverFSM>().driver_cfg().GetExtension(
+                                    IridiumDriverConfig::config, i));
+                        }
                     }
-                }
 
                 ~Configure()
                 {
@@ -455,7 +475,7 @@ namespace goby
             };
 
 
-            struct SBD : boost::statechart::simple_state<SBD, Command::orthogonal<1>, SBDConfigure>,
+            struct SBD : boost::statechart::simple_state<SBD, Command::orthogonal<1>, SBDReady >,
                 StateNotify
                 {
                   SBD() : StateNotify("SBD") {
@@ -483,19 +503,19 @@ namespace goby
                     std::string data_;
                 };
 
-            struct SBDConfigure : boost::statechart::simple_state<SBDConfigure, SBD >, StateNotify
-            {
-                typedef boost::mpl::list<
-                    boost::statechart::transition< EvConfigured, SBDReady >
-                    > reactions;
+            /* struct SBDConfigure : boost::statechart::simple_state<SBDConfigure, SBD >, StateNotify */
+            /* { */
+            /*     typedef boost::mpl::list< */
+            /*         boost::statechart::transition< EvConfigured, SBDReady > */
+            /*         > reactions; */
                 
-              SBDConfigure() : StateNotify("SBDConfigure")
-                {
-                }
-                ~SBDConfigure() {
-                }
+            /*   SBDConfigure() : StateNotify("SBDConfigure") */
+            /*     { */
+            /*     } */
+            /*     ~SBDConfigure() { */
+            /*     } */
                 
-            };
+            /* }; */
             
                 
             struct SBDReady: boost::statechart::simple_state<SBDReady, SBD >, StateNotify

@@ -283,7 +283,7 @@ void goby::acomms::QueueManager::handle_modem_data_request(protobuf::ModemTransm
                 if(next_user_frame.meta.ack_requested())
                 {
                     glog.is(DEBUG2) &&
-                        glog << group(glog_out_group_) << "inserting ack for queue: " << *winning_queue << std::endl;
+                        glog << group(glog_out_group_) << "inserting ack for queue: " << *winning_queue << " for frame: " << frame_number << std::endl;
                     waiting_for_ack_.insert(std::pair<unsigned, Queue*>(frame_number,
                                                                         winning_queue));
                 }
@@ -385,7 +385,7 @@ void goby::acomms::QueueManager::handle_modem_data_request(protobuf::ModemTransm
             catch(DCCLException& e)
             {
                 *data = "";
-                glog.is(DEBUG1) && glog << group(glog_out_group_) << warn << "Failed to encode, discarding message." << std::endl;
+                glog.is(DEBUG1) && glog << group(glog_out_group_) << warn << "Failed to encode, discarding message:" << e.what() << std::endl;
             }
         }
     }
@@ -582,7 +582,7 @@ void goby::acomms::QueueManager::handle_modem_receive(const protobuf::ModemTrans
                 catch(DCCLException& e)
                 {
                     glog.is(DEBUG1) && glog << group(glog_in_group_) << warn
-                                            << "Failed to decode, discarding message." << std::endl;
+                                            << "Failed to decode, discarding message:" << e.what() << std::endl;
                 }
                 
 

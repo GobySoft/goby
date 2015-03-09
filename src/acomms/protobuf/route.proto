@@ -2,12 +2,21 @@ import "goby/common/protobuf/option_extensions.proto";
 
 package goby.acomms.protobuf;
 
+
+message StaticRoute
+{
+   repeated int32 hop = 1;
+}
+
 message RouteManagerConfig
 {  
-  message StaticRoute
-  {
-    repeated int32 hop = 1;
-  }
   optional StaticRoute route = 1;
   optional uint32 subnet_mask = 2 [default = 0xFFFFFF00]; // 255.255.255.0
+}
+
+message RouteCommand
+{
+   optional int32 dest = 1;
+   optional uint64 time = 2;
+   optional StaticRoute new_route = 3;
 }

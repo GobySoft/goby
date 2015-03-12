@@ -94,8 +94,13 @@ void goby::common::FlexOStreamBuf::add_stream(logger::Verbosity verbosity, std::
     if(!stream_exists)
         streams_.push_back(StreamConfig(os, verbosity));
 
-    if(verbosity > highest_verbosity_)
-        highest_verbosity_ = verbosity;
+
+    highest_verbosity_ = logger::QUIET;
+    for(std::vector<StreamConfig>::const_iterator it = streams_.begin(), end = streams_.end(); it != end; ++it)
+    {
+        if(it->verbosity() > highest_verbosity_)
+            highest_verbosity_ = it->verbosity();
+    }
 }
 
 void goby::common::FlexOStreamBuf::enable_gui()

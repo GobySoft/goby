@@ -209,7 +209,7 @@ void CpAcommsHandler::handle_mac_cycle_update(const CMOOSMsg& msg)
     
     glog << group("pAcommsHandler") << "got update for MAC: " << update_msg << std::endl;
 
-    if(!update_msg.dest() == cfg_.modem_id())
+    if(update_msg.dest() != cfg_.modem_id())
     {
         glog << group("pAcommsHandler") << "update not for us" << std::endl;
         return;

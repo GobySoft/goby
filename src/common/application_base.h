@@ -69,7 +69,7 @@ namespace goby
 
             
             template<typename App, typename Config>
-                friend int ::goby::run(int argc, char* argv[], Config* cfg = 0);
+                friend int ::goby::run(int argc, char* argv[], Config* cfg);
 
             const AppBaseConfig& base_cfg()
             { return *base_cfg_; }

@@ -161,11 +161,9 @@ namespace goby
             bool die_flag_;
             logger::Verbosity current_verbosity_;
             
-#ifdef HAS_NCURSES
             FlexNCurses* curses_;
             boost::shared_ptr<boost::thread> input_thread_;
-#endif            
-
+            
             boost::posix_time::ptime start_time_;
 
             std::vector<StreamConfig> streams_;

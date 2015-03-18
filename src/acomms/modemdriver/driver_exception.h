@@ -22,7 +22,7 @@
 
 
 
-#ifndef DriverException20108012H
+#ifndef DriverException20100812H
 #define DriverException20100812H
 
 #include "goby/common/exception.h"

@@ -37,6 +37,15 @@ using goby::util::hex_encode;
 using namespace goby::common::logger_lock;
 using namespace goby::common::logger;
 
+#if ZMQ_VERSION_MAJOR == 2
+#   define zmq_msg_send(msg,sock,opt) zmq_send (sock, msg, opt)
+#   define zmq_msg_recv(msg,sock,opt) zmq_recv (sock, msg, opt)
+#   define ZMQ_POLL_DIVISOR    1        //  zmq_poll is usec
+#   define more_t int64_t
+#else
+#   define more_t int
+#   define ZMQ_POLL_DIVISOR    1000     //  zmq_poll is msec
+#endif
 
 goby::common::ZeroMQService::ZeroMQService(boost::shared_ptr<zmq::context_t> context)
     : context_(context)
@@ -366,20 +375,20 @@ bool goby::common::ZeroMQService::poll(long timeout /* = -1 */)
 
 //    glog.is(DEBUG2, lock) && glog << "Have " << poll_items_.size() << " items to poll" << std::endl << unlock;   
     bool had_events = false;
-    zmq::poll (&poll_items_[0], poll_items_.size(), timeout);
+    zmq::poll (&poll_items_[0], poll_items_.size(), timeout/ZMQ_POLL_DIVISOR);
     for(int i = 0, n = poll_items_.size(); i < n; ++i)
     {
         if (poll_items_[i].revents & ZMQ_POLLIN) 
         {
             int message_part = 0;
-            int64_t more;
-            size_t more_size = sizeof more;
+            more_t more;
+            size_t more_size = sizeof(more_t);
             do {
                 /* Create an empty ØMQ message to hold the message part */
                 zmq_msg_t part;
                 int rc = zmq_msg_init (&part);
                 
-                if(rc)
+                if(rc == -1)
                 {
                     glog.is(DEBUG1, lock) &&
                         glog << warn << "zmq_msg_init failed" << std::endl << unlock;
@@ -387,13 +396,13 @@ bool goby::common::ZeroMQService::poll(long timeout /* = -1 */)
                 }
                 
                 /* Block until a message is available to be received from socket */
-                rc = zmq_recv (poll_items_[i].socket, &part, 0);
+                rc = zmq_msg_recv (&part, poll_items_[i].socket, 0);
                 glog.is(DEBUG3, lock) &&
                     glog << group(glog_in_group())
                          << "Had event for poll item " << i << std::endl << unlock;
                 poll_callbacks_[i](zmq_msg_data(&part), zmq_msg_size(&part), message_part);
 
-                if(rc)
+                if(rc == -1)
                 {
                     glog.is(DEBUG1, lock) &&
                         glog << warn << "zmq_recv failed" << std::endl << unlock;
@@ -403,7 +412,7 @@ bool goby::common::ZeroMQService::poll(long timeout /* = -1 */)
                 /* Determine if more message parts are to follow */
                 rc = zmq_getsockopt (poll_items_[i].socket, ZMQ_RCVMORE, &more, &more_size);
 
-                if(rc)
+                if(rc == -1)
                 {
                     glog.is(DEBUG1, lock) &&
                         glog << warn << "zmq_getsocketopt failed" << std::endl << unlock;

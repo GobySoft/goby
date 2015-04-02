@@ -142,7 +142,6 @@ void goby::acomms::fsm::Command::handle_sbd_rx(const std::string& in)
             protobuf::ModemTransmission msg;
             msg.ParseFromString(bytes);
             context< IridiumDriverFSM >().received().push_back(msg);
-            context< IridiumDriverFSM >().last_rx_tx_time() = goby_time<double>();
             at_out().pop_front();
 
             post_event(EvSBDReceiveComplete());
@@ -325,6 +324,11 @@ void goby::acomms::fsm::OnCall::in_state_react(const EvRxOnCallSerial& e)
     {
         glog.is(DEBUG1) && glog << group("iridiumdriver") << "Detected start of Goby RUDICS call" << std::endl;        
     }
+    else if(boost::trim_copy(in) == "bye")
+    {
+        glog.is(DEBUG1) && glog << group("iridiumdriver") << "Detected remote completion of Goby RUDICS call" << std::endl;
+        set_bye_received(true);
+    }
     else
     {
         std::string bytes;
@@ -335,7 +339,7 @@ void goby::acomms::fsm::OnCall::in_state_react(const EvRxOnCallSerial& e)
             protobuf::ModemTransmission msg;
             msg.ParseFromString(bytes);
             context< IridiumDriverFSM >().received().push_back(msg);
-            context< IridiumDriverFSM >().last_rx_tx_time() = goby_time<double>();
+            set_last_rx_time(goby_time<double>());
         }
         catch(RudicsPacketException& e)
         {
@@ -361,6 +365,12 @@ void goby::acomms::fsm::OnCall::in_state_react( const EvTxOnCallSerial& )
         context<IridiumDriverFSM>().serial_tx_buffer().push_back(rudics_packet);
         data_out.pop_front();
 
-        context<IridiumDriverFSM>().last_rx_tx_time() = goby_time<double>();
+        set_last_tx_time(goby_time<double>());
     }
+}
+
+void goby::acomms::fsm::OnCall::in_state_react( const EvSendBye& )
+{   
+    context<IridiumDriverFSM>().serial_tx_buffer().push_front("bye\r");
+    set_bye_sent(true);
 }

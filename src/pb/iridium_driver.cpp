@@ -265,54 +265,50 @@ void goby::acomms::IridiumDriver::do_work()
     const double send_interval =
         driver_cfg_.GetExtension(IridiumDriverConfig::max_frame_size) /
         (driver_cfg_.GetExtension(IridiumDriverConfig::target_bit_rate) / static_cast<double>(BITS_IN_BYTE));
+
+    
+    const fsm::OnCall* on_call = fsm_.state_cast<const fsm::OnCall*>();
+    const fsm::OnZMQCall* on_zmq_call = fsm_.state_cast<const fsm::OnZMQCall*>();
+    const fsm::OnCallBase* on_call_base = (on_call) ?
+        static_cast<const fsm::OnCallBase*>(on_call) :
+        static_cast<const fsm::OnCallBase*>(on_zmq_call);
     
     if(fsm_.data_out().empty() &&
-       (now > (last_send_time_ + send_interval)) &&
-       (fsm_.state_cast<const fsm::NotOnCall *>() == 0))
+       (now > (last_send_time_ + send_interval)))
     {
-        process_transmission(rudics_mac_msg_, false);
-        last_send_time_ = now;
-    }
-    
-    if(using_zmq_)
-    {
-        while(zeromq_service_->poll(0))
-        { }
-        
-        if(!waiting_for_reply_ &&
-           request_.IsInitialized())
-        {
-            static int request_id = 0;
-            request_.set_request_id(request_id++);
-
-
-            bool on_call = (fsm_.state_cast<const fsm::OnZMQCall *>() != 0);
-            
-            
-            while(!fsm_.data_out().empty())
-            {
-                if(on_call || fsm_.data_out().front().rate() == RATE_SBD)
-                {
-                    (*request_.add_outbox()) = fsm_.data_out().front();
-                    fsm_.data_out().pop_front();
-                }
-                else
-                {
-                    break; // we're not on a call and the next packet isn't SBD
-                }
-            }
-
-            if(request_.outbox_size())
-            {            
-                glog.is(DEBUG2) && glog << group(goby::common::ZeroMQService::glog_out_group()) << "Sending request to server." << std::endl;
-                glog.is(DEBUG2) && glog << group(goby::common::ZeroMQService::glog_out_group()) << "Outbox: " << request_.DebugString() << std::flush;
-                StaticProtobufNode::send(request_, request_socket_id_);
-                last_zmq_request_time_ = now;
-                request_.clear_outbox();
-                waiting_for_reply_ = true;
-            }
+        if(on_call_base && !on_call_base->bye_sent())
+        {        
+            process_transmission(rudics_mac_msg_, false);
+            last_send_time_ = now;
         }
     }
+
+    // if we're on either type of call, see if we need to send the "bye" message or hangup
+    if(on_call_base)
+    {
+        glog.is(DEBUG2) && glog << on_call_base->last_tx_time() << std::endl;
+        if(!on_call_base->bye_sent() &&
+           now > (on_call_base->last_tx_time() + driver_cfg_.GetExtension(IridiumDriverConfig::handshake_hangup_seconds)))
+        {
+            glog.is(DEBUG2) && glog << "Sending bye" << std::endl;
+            fsm_.process_event(fsm::EvSendBye());
+            if(on_zmq_call)
+                request_.set_command(goby::acomms::protobuf::MTDataRequest::SEND_BYE);
+        }
+
+
+        if((on_call_base->bye_received() && on_call_base->bye_sent()) ||
+           (now > (on_call_base->last_rx_tx_time() + driver_cfg_.GetExtension(IridiumDriverConfig::hangup_seconds_after_empty))))
+        {
+            if(on_zmq_call)
+                request_.set_command(goby::acomms::protobuf::MTDataRequest::HANGUP);
+            else
+                hangup();
+        }
+    }
+
+    if(using_zmq_)
+        do_zmq_work(now, on_zmq_call);    
     
     try_serial_tx();
     
@@ -355,15 +351,48 @@ void goby::acomms::IridiumDriver::do_work()
         
     }
 
-    if(fsm_.state_cast<const fsm::OnCall *>() != 0 &&
-       now > (fsm_.last_rx_tx_time() + driver_cfg_.GetExtension(IridiumDriverConfig::hangup_seconds_after_empty)))
-    {
-        hangup();
-    }
     
     // try sending again at the end to push newly generated messages before we wait
     try_serial_tx();
 }
+
+void goby::acomms::IridiumDriver::do_zmq_work(double now, const fsm::OnZMQCall* on_zmq_call)
+{
+    while(zeromq_service_->poll(0))
+    { }
+        
+    if(!waiting_for_reply_ &&
+       request_.IsInitialized())
+    {
+        static int request_id = 0;
+        request_.set_request_id(request_id++);
+            
+        while(!fsm_.data_out().empty())
+        {
+            if(on_zmq_call || fsm_.data_out().front().rate() == RATE_SBD)
+            {
+                (*request_.add_outbox()) = fsm_.data_out().front();
+                fsm_.data_out().pop_front();
+            }
+            else
+            {
+                break; // we're not on a call and the next packet isn't SBD
+            }
+        }
+
+        if(request_.outbox_size() || request_.has_command())
+        {            
+            glog.is(DEBUG2) && glog << group(goby::common::ZeroMQService::glog_out_group()) << "Sending request to server." << std::endl;
+            glog.is(DEBUG2) && glog << group(goby::common::ZeroMQService::glog_out_group()) << "Outbox: " << request_.DebugString() << std::flush;
+            StaticProtobufNode::send(request_, request_socket_id_);
+            last_zmq_request_time_ = now;
+            request_.clear_outbox();
+            request_.clear_command();
+            waiting_for_reply_ = true;
+        }
+    }
+}
+
 
 void goby::acomms::IridiumDriver::receive(const protobuf::ModemTransmission& msg)
 {

@@ -158,9 +158,11 @@ if(build_common)
     if(build_acomms)
       goby_find_required_package(DCCL)
      
+      message("Using DCCL in ${DCCL_DIR}")
+
       if(DEFINED DCCL_INCLUDE_DIR)
-	include_directories("${DCCL_INCLUDE_DIR}")
-	protobuf_include_dirs("${DCCL_INCLUDE_DIR}")
+        include_directories("${DCCL_INCLUDE_DIR}")
+        protobuf_include_dirs("${DCCL_INCLUDE_DIR}")
       endif()
 
       add_subdirectory(acomms)

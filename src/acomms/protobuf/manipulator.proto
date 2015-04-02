@@ -2,6 +2,7 @@ package goby.acomms.protobuf;
 
 enum Manipulator 
 {
+  @PROTOBUF_ALLOW_ALIAS@
   NO_MANIP = 1; // blank "empty" manipulator
 
   // (QueueManager)

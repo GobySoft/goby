@@ -26,7 +26,7 @@ message DatabaseResponse
     NEW_PUBLISH_ACCEPTED = 1;
     NEW_PUBLISH_DENIED = 2;
     SQL_QUERY_RESULT = 3; 
-    SQL_QUERY_INVALID = 3; 
+    SQL_QUERY_INVALID = 4; 
   }
   required ResponseType response_type = 1;
   

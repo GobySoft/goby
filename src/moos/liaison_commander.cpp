@@ -764,7 +764,7 @@ void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::genera
         
         case google::protobuf::FieldDescriptor::CPPTYPE_INT64:
         {
-            WIntValidator* validator = new WIntValidator;
+            WIntValidator* validator = 0;
 
             if(field_desc->is_repeated() && refl->FieldSize(*message, field_desc) <= index)
                 refl->AddInt64(message, field_desc, field_desc->default_value_int64());
@@ -807,8 +807,7 @@ void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::genera
 
         case google::protobuf::FieldDescriptor::CPPTYPE_UINT64:
         {
-            WIntValidator* validator = new WIntValidator;
-            validator->setBottom(0);
+            WIntValidator* validator = 0;
 
             if(field_desc->is_repeated() && refl->FieldSize(*message, field_desc) <= index)
                 refl->AddUInt64(message, field_desc, field_desc->default_value_uint64());
@@ -1259,14 +1258,18 @@ void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::set_ti
                 break;
 
             case google::protobuf::FieldDescriptor::CPPTYPE_UINT64:
+            case google::protobuf::FieldDescriptor::CPPTYPE_INT64:
                 line_edit->setText(goby::util::as<std::string>(goby::util::as<uint64>(now)));
+                break;                
 
             case google::protobuf::FieldDescriptor::CPPTYPE_STRING:
                 line_edit->setText(goby::util::as<std::string>(now));
+                break;                
 
             case google::protobuf::FieldDescriptor::CPPTYPE_DOUBLE:
                 line_edit->setText(goby::util::as<std::string>(
                                        goby::util::unbiased_round(goby::util::as<double>(now),0)));
+                break;
         }
         line_edit->changed().emit();
     }

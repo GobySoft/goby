@@ -671,15 +671,23 @@ template <class MOOSAppType>
         if(!common_cfg_.log_path().empty())
         {
             using namespace boost::posix_time;
-            std::string file_name =
+            std::string file_name_base =
                 boost::replace_all_copy(application_name_, "/", "_") + "_" +
-                common_cfg_.community() + "_" +
+                common_cfg_.community();
+
+            std::string file_name = file_name_base + "_" +
                 to_iso_string(second_clock::universal_time()) + ".txt";
 
+            std::string file_symlink = file_name_base + "_latest.txt";
+            
             goby::glog.is(goby::common::logger::VERBOSE) &&
                 goby::glog << "logging output to file: " << file_name << std::endl;
             
             fout_.open(std::string(common_cfg_.log_path() + "/" + file_name).c_str());
+
+            // symlink to "latest.txt"
+            remove(std::string(common_cfg_.log_path() + "/" + file_symlink).c_str());
+            symlink(file_name.c_str(), std::string(common_cfg_.log_path() + "/" + file_symlink).c_str());
         
             // if fails, try logging to this directory
             if(!fout_.is_open())

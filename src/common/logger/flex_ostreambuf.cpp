@@ -161,10 +161,12 @@ int goby::common::FlexOStreamBuf::overflow(int c /*= EOF*/)
 // called when flush() or std::endl
 int goby::common::FlexOStreamBuf::sync()
 {
-    if(!(current_verbosity_ != logger::UNKNOWN || lock_action_ != logger_lock::lock))
+    if(current_verbosity_ == logger::UNKNOWN && lock_action_ == logger_lock::lock)
     {
-        display(buffer_.front());
-        assert(current_verbosity_ != logger::UNKNOWN || lock_action_ != logger_lock::lock);
+        std::cerr << "== Misuse of goby::glog in threaded mode: must use 'goby.is(...) && glog' syntax" << std::endl;
+        std::cerr << "== Offending line: " << buffer_.front() << std::endl;
+        assert(!(lock_action_ == logger_lock::lock && current_verbosity_ == logger::UNKNOWN));
+        return 0;
     }
     
     // all but last one

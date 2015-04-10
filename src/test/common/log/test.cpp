@@ -46,14 +46,41 @@ std::ostream& operator<<(std::ostream& out, const A& a)
     return out << a.i;
 }    
 
-void spew(int n, int m)
+void spew(int n, int m, int run)
 {
-    for(int i = 0; i < n; i++)
-        glog.is(VERBOSE) && glog << m << " " << i << std::endl;        
+    switch(run)
+    {
+        case 0:
+            glog.is(VERBOSE) && glog << "Spew 1: " << std::endl;
+            for(int i = 0; i < n; i++)
+                glog.is(VERBOSE) && glog << m << " " << i << std::endl;        
+            break;
 
-    for(int i = 0; i < n; i++)
-        glog.is(VERBOSE) && glog << m << " " << A(i) << std::endl;        
+        case 1:
+            glog.is(VERBOSE) && glog << "Spew 2: " << std::endl;
+            for(int i = 0; i < n; i++)
+                glog.is(VERBOSE) && glog << m << " " << A(i) << std::endl;        
+            break;
+            
+        case 2:
+            glog.is(VERBOSE) && glog << "Spew 3: " << std::endl;
+            for(int i = 0; i < n; i++)
+                glog << m << " " << i << std::endl;
+            break;
 
+        case 3:
+            glog.is(VERBOSE) && glog << "Spew 4: " << std::endl;
+            for(int i = 0; i < n; i++)
+                glog<< m << " " << i;
+            glog << std::endl;
+            break;
+
+        case 4:
+            glog.is(VERBOSE) && glog << "Spew 5: " << std::endl;
+            for(int i = 0; i < n; i++)
+                glog.is(VERBOSE) && glog << m << " " << i << std::endl << i << std::endl;
+            break;
+    }
 }
 
 
@@ -90,21 +117,24 @@ int main()
     glog.set_lock_action(goby::common::logger_lock::lock);
     glog.is(VERBOSE) && glog << "lock ok" << std::endl;
     glog.is(VERBOSE) && glog << "unlock ok" << std::endl;
-    glog << "lock ok" << std::endl;
-    glog << std::string("lock ok") << std::endl;
+    // glog << "lock ok" << std::endl;
+    // glog << std::string("lock ok") << std::endl;
 
-    A a;
-    a.i = 10;
-    glog << "Testing overloaded operator<<" << std::endl;
-    glog << a << std::endl;
+    // A a;
+    // a.i = 10;
+    // glog << "Testing overloaded operator<<" << std::endl;
+    // glog << a << std::endl;
     
     glog.is(DEBUG3) && glog << stream_assert << std::endl;
 
-    boost::thread t1(boost::bind(spew, 1000, 1));
-    boost::thread t2(boost::bind(spew, 1000, 2));
-    t1.join();
-    t2.join();    
-
+    for(int i = 0; i < 2; ++i)
+    {
+        boost::thread t1(boost::bind(spew, 1000, 1, i));
+        boost::thread t2(boost::bind(spew, 1000, 2, i));
+        t1.join();
+        t2.join();    
+    }
+    
     glog.set_lock_action(goby::common::logger_lock::none);
 
     

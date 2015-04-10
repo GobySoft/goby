@@ -98,9 +98,13 @@ void goby::pb::PBDriver::handle_initiate_transmission(const acomms::protobuf::Mo
                     msg.set_max_frame_bytes(driver_cfg_.GetExtension(PBDriverConfig::rate_to_bytes, msg.rate()));
                 else
                     msg.set_max_frame_bytes(driver_cfg_.GetExtension(PBDriverConfig::max_frame_size));
-        
+
+                if(msg.rate() < driver_cfg_.ExtensionSize(PBDriverConfig::rate_to_frames))
+                    msg.set_max_num_frames(driver_cfg_.GetExtension(PBDriverConfig::rate_to_frames, msg.rate()));
+    
+                
                 // no data given to us, let's ask for some
-                if(msg.frame_size() == 0)
+                if(msg.frame_size() < (int)msg.max_num_frames())
                     ModemDriverBase::signal_data_request(&msg);
         
                 // don't send an empty message

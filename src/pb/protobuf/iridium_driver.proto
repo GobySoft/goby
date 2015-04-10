@@ -13,7 +13,7 @@ message IridiumDriverConfig
   extend goby.acomms.protobuf.DriverConfig
   {
     optional Remote remote = 1381;
-    optional int32 max_frame_size = 1382 [default = 1500];
+    optional uint32 max_frame_size = 1382 [default = 1500];
     optional int32 target_bit_rate = 1383 [default = 2400];
     repeated string config = 1384;
     optional int32 dial_attempts = 1385 [default = 3];
@@ -23,7 +23,7 @@ message IridiumDriverConfig
 
     optional int32 hangup_seconds_after_empty = 1388 [default = 30];
     optional int32 start_timeout = 1389 [default = 20];
-
     optional bool use_dtr = 1390 [default = false];
+    optional int32 handshake_hangup_seconds = 1392 [default = 5];
   }
 }

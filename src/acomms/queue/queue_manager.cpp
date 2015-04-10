@@ -567,7 +567,8 @@ void goby::acomms::QueueManager::handle_modem_receive(const protobuf::ModemTrans
                                 modem_message.frame(frame_number), true);
                         protobuf::QueuedMessageMeta meta_msg = meta_from_msg(*decoded_message);
                         // messages addressed to us on the link
-                        if(modem_message.dest() == modem_id_)
+                        if(modem_message.dest() == modem_id_ ||
+                           (modem_message.dest() == BROADCAST_ID &&  cfg_.route_broadcast_packets()))
                         {
                             meta_msg.set_encoded_message(modem_message.frame(frame_number));
                             signal_in_route(meta_msg, *decoded_message, modem_id_);

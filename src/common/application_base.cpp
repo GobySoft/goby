@@ -110,7 +110,8 @@ goby::common::ApplicationBase::ApplicationBase(google::protobuf::Message* cfg /*
        file_format.exceptions( boost::io::all_error_bits ^ ( boost::io::too_many_args_bit | boost::io::too_few_args_bit)); 
 
        std::string file_name = (file_format % to_iso_string(second_clock::universal_time())).str();
-       
+       std::string file_symlink = (file_format % "latest").str();
+
        glog.is(VERBOSE) &&
            glog << "logging output to file: " << file_name << std::endl;
 
@@ -118,6 +119,11 @@ goby::common::ApplicationBase::ApplicationBase(google::protobuf::Message* cfg /*
        
        if(!fout_[i]->is_open())           
            glog.is(DIE) && glog << die << "cannot write glog output to requested file: " << file_name << std::endl;
+
+       remove(file_symlink.c_str());
+       symlink(canonicalize_file_name(file_name.c_str()), file_symlink.c_str());
+        
+       
        glog.add_stream(base_cfg_->glog_config().file_log(i).verbosity(), fout_[i].get());
    } 
    

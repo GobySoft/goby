@@ -7,6 +7,13 @@ message MTDataRequest
   required int32 modem_id = 1;
   repeated goby.acomms.protobuf.ModemTransmission outbox = 2;
   optional uint64 request_id = 3;
+
+  enum Command
+  { 
+    SEND_BYE = 1;           
+    HANGUP = 2;
+  }
+  optional Command command = 4;
 }
 
 message MTDataResponse

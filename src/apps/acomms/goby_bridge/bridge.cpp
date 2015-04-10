@@ -220,6 +220,17 @@ void goby::acomms::Bridge::handle_queue_receive(const google::protobuf::Message&
                                                 QueueManager* from_queue)
 {
     publish(msg, "QueueRx" + goby::util::as<std::string>(from_queue->modem_id()));
+
+    // handle RouteCommand messages
+    if(msg.GetDescriptor() == goby::acomms::protobuf::RouteCommand::descriptor())
+    {
+        goby::acomms::protobuf::RouteCommand route_cmd;
+        route_cmd.CopyFrom(msg);
+        glog.is(VERBOSE) && glog << "Received RouteCommand: " << msg.DebugString() << std::endl;
+        goby::acomms::protobuf::RouteManagerConfig cfg = cfg_.route_cfg();
+        cfg.mutable_route()->CopyFrom(route_cmd.new_route());
+        r_manager_.set_cfg(cfg);
+    }
 }
 
 void goby::acomms::Bridge::handle_link_ack(const protobuf::ModemTransmission& ack_msg,

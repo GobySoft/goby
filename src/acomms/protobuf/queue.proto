@@ -53,6 +53,7 @@ message QueueManagerConfig
   
   repeated int32 make_network_ack_for_src_id = 30;
 
+  optional bool route_broadcast_packets = 40 [default = false, (goby.field).description="If true, try to route packets that are adddressed to broadcast at the link level"];
 }
 
 message QueueSize

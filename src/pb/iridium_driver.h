@@ -53,6 +53,8 @@ namespace goby
             
             void shutdown();            
             void do_work();
+            void do_zmq_work(double now, const fsm::OnZMQCall* on_zmq_call);
+            
             void handle_initiate_transmission(const protobuf::ModemTransmission& m);
             void process_transmission(protobuf::ModemTransmission msg, bool dial);
             void handle_mt_response(const acomms::protobuf::MTDataResponse& response);

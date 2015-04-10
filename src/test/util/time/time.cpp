@@ -83,6 +83,8 @@ int main()
     assert(goby::common::unix_microsec2ptime(TEST_MICROSEC_TIME) == TEST_PTIME);
     assert(as<ptime>(TEST_MICROSEC_TIME) == TEST_PTIME); // same as previous line
 
+    std::cout << "as<string>(as<uint64>(ptime): " << goby::util::as<std::string>(goby::util::as<uint64>(TEST_PTIME)) << std::endl;
+    
     
     assert(as<ptime>(std::numeric_limits<uint64>::max()) == ptime(not_a_date_time));
 

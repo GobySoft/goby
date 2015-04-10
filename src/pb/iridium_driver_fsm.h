@@ -102,6 +102,9 @@ namespace goby
             struct EvNoCarrier : boost::statechart::event< EvNoCarrier > {};
             struct EvDisconnect : boost::statechart::event< EvDisconnect > {};
 
+
+            struct EvSendBye : boost::statechart::event< EvSendBye > {};
+
             
             struct EvZMQConnect : boost::statechart::event< EvZMQConnect > {};
             struct EvZMQDisconnect : boost::statechart::event< EvZMQDisconnect > {};
@@ -158,8 +161,7 @@ namespace goby
                     : serial_tx_buffer_(SERIAL_BUFFER_CAPACITY),
                     received_(RECEIVED_BUFFER_CAPACITY),
                     driver_cfg_(driver_cfg),
-                    data_out_(DATA_BUFFER_CAPACITY),
-                    last_rx_tx_time_(0)
+                    data_out_(DATA_BUFFER_CAPACITY)
                 {
                     ++count_;
                     glog_ir_group_ = "iridiumdriver::" + goby::util::as<std::string>(count_);
@@ -179,7 +181,7 @@ namespace goby
                 const protobuf::DriverConfig& driver_cfg() const {return driver_cfg_;}
 
                 const std::string& glog_ir_group() const { return glog_ir_group_; }                
-                double& last_rx_tx_time() { return last_rx_tx_time_; }
+
                 
 
               private:
@@ -196,8 +198,6 @@ namespace goby
                 std::string glog_ir_group_;
                 
                 static int count_;
-
-                double last_rx_tx_time_;            
             };
 
             struct Active: boost::statechart::simple_state< Active, IridiumDriverFSM,
@@ -430,17 +430,57 @@ namespace goby
                 ~NotOnCall() {} 
             };
 
-            struct OnZMQCall : boost::statechart::simple_state<OnZMQCall, Active::orthogonal<1> >, StateNotify
+            class OnCallBase
             {
-                typedef boost::mpl::list<
-                    boost::statechart::transition< EvZMQDisconnect, NotOnCall >
-                    > reactions;
+            public:
+              OnCallBase()
+                  : last_tx_time_(goby::common::goby_time<double>()),
+                    last_rx_time_(0),
+                    bye_received_(false),
+                    bye_sent_(false)
+                    { }
+                
+                double last_rx_tx_time() const { return std::max(last_tx_time_, last_rx_time_); }
+                double last_rx_time() const { return last_rx_time_; }
+                double last_tx_time() const { return last_tx_time_; }
+                
+                
+                void set_bye_received(bool b) { bye_received_ = b; }
+                void set_bye_sent(bool b) { bye_sent_ = b; }
+                
+                bool bye_received() const { return bye_received_; }
+                bool bye_sent() const { return bye_sent_; }
+                
+                void set_last_tx_time(double d) { last_tx_time_ = d; }
+                void set_last_rx_time(double d) { last_rx_time_ = d; }
+
+              private:
+                double last_tx_time_;            
+                double last_rx_time_;            
+                bool bye_received_;
+                bool bye_sent_;     
+            };
+            
+            
+            struct OnZMQCall : boost::statechart::simple_state<OnZMQCall, Active::orthogonal<1> >, StateNotify, OnCallBase
+            {
                 
               OnZMQCall() : StateNotify("OnZMQCall") { }
                 ~OnZMQCall() {} 
+
+                void in_state_react( const EvSendBye& )
+                {
+                    set_bye_sent(true);
+                }
+
+                typedef boost::mpl::list<
+                    boost::statechart::transition< EvZMQDisconnect, NotOnCall >,
+                    boost::statechart::in_state_reaction< EvSendBye, OnZMQCall, &OnZMQCall::in_state_react >
+                    > reactions;
+                
             };
 
-            struct OnCall : boost::statechart::state<OnCall, Active::orthogonal<1> >, StateNotify
+            struct OnCall : boost::statechart::state<OnCall, Active::orthogonal<1> >, StateNotify, OnCallBase
             {
               public:
 
@@ -450,9 +490,7 @@ namespace goby
                     // add a carriage return to clear out any garbage
                     // at the *beginning* of transmission
                     context<IridiumDriverFSM>().serial_tx_buffer().push_front("goby\r");
-
-                    context<IridiumDriverFSM>().last_rx_tx_time() = goby::common::goby_time<double>();
-
+                    
                     // connecting necessarily puts the DTE online
                     post_event(EvOnline());
                 } 
@@ -463,15 +501,20 @@ namespace goby
 
                 void in_state_react( const EvRxOnCallSerial& );
                 void in_state_react( const EvTxOnCallSerial& );
+                void in_state_react( const EvSendBye& );
+
 
                 typedef boost::mpl::list<
                     boost::statechart::transition< EvNoCarrier, NotOnCall >,
                     boost::statechart::in_state_reaction< EvRxOnCallSerial, OnCall, &OnCall::in_state_react >,
-                    boost::statechart::in_state_reaction< EvTxOnCallSerial, OnCall, &OnCall::in_state_react >
+                    boost::statechart::in_state_reaction< EvTxOnCallSerial, OnCall, &OnCall::in_state_react >,
+                    boost::statechart::in_state_reaction< EvSendBye, OnCall, &OnCall::in_state_react >
+
                     > reactions;    
 
               private:
-
+    
+           
             };
 
 

@@ -26,4 +26,6 @@ message MOOSGatewayConfig
         required Direction direction = 3;
   }
   repeated ProtobufMOOSBridgePair pb_pair = 12 [(goby.field).description="Convert MOOS Variables to Goby PB Groups and vice/versa based on these directives."];
+
+  optional bool pb_convert = 13 [default = false, (goby.field).description="Use a DynamicProtobuf Node on the PB side instead of a MOOSNode."];
 }

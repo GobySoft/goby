@@ -92,8 +92,8 @@ goby::moos::MOOSGateway::MOOSGateway(protobuf::MOOSGatewayConfig* cfg)
       MOOSNode(&zeromq_service_),
       goby::pb::DynamicProtobufNode(&zeromq_service_),
       cfg_(*cfg),
-      goby_moos_pubsub_client_(this, cfg_.base().pubsub_config()),
-      goby_pb_pubsub_client_(this, cfg_.base().pubsub_config())
+      goby_moos_pubsub_client_(this, cfg_.pb_convert() ? goby::common::protobuf::PubSubSocketConfig() : cfg_.base().pubsub_config()),
+      goby_pb_pubsub_client_(this, cfg_.pb_convert() ? cfg_.base().pubsub_config() : goby::common::protobuf::PubSubSocketConfig())
 {
 
     goby::util::DynamicProtobufManager::enable_compilation();
@@ -146,7 +146,10 @@ goby::moos::MOOSGateway::MOOSGateway(protobuf::MOOSGatewayConfig* cfg)
 
     for(int i = 0, n = cfg_.goby_subscribe_filter_size(); i < n; ++i)
     {
+      if(!cfg_.pb_convert())
         goby_moos_pubsub_client_.subscribe(cfg_.goby_subscribe_filter(i));
+      else
+        goby_pb_pubsub_client_.subscribe(cfg_.goby_subscribe_filter(i));
     }
     
 
@@ -223,11 +226,12 @@ void goby::moos::MOOSGateway::loop()
         glog.is(VERBOSE) &&
             glog << group("from_moos") << msg << std::endl;    
         
-        goby_moos_pubsub_client_.publish(msg);
+	if(!cfg_.pb_convert())
+	  goby_moos_pubsub_client_.publish(msg);
 
         
         
-        if(moos2pb_.count(msg.GetKey()))
+        if(cfg_.pb_convert() && moos2pb_.count(msg.GetKey()))
         {
             boost::shared_ptr<google::protobuf::Message> pbmsg =
                 dynamic_parse_for_moos(msg.GetString());

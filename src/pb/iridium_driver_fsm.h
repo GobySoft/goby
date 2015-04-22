@@ -261,6 +261,7 @@ namespace goby
                     boost::circular_buffer< std::pair<ATSentenceMeta, std::string> > at_out_;
                     enum { COMMAND_TIMEOUT_SECONDS = 2,
                            DIAL_TIMEOUT_SECONDS = 60,
+                           SBDIX_TIMEOUT_SECONDS = DIAL_TIMEOUT_SECONDS,
                            TRIPLE_PLUS_TIMEOUT_SECONDS = 6,
                            ANSWER_TIMEOUT_SECONDS = 30};
 
@@ -648,6 +649,40 @@ namespace goby
                 {
                     context<SBD>().clear_data();
                 }
+
+                std::string mo_status_as_string(int code)
+                {
+                    switch(code)
+                    {
+                        // success
+                        case 0: return "MO message, if any, transferred successfully";
+                        case 1: return "MO message, if any, transferred successfully, but the MT message in the queue was too big to be transferred";
+                        case 2: return "MO message, if any, transferred successfully, but the requested Location Update was not accepted";
+                        case 3: case 4:
+                            return "Reserved, but indicate MO session success if used";
+
+                            // failure
+                        case 5: case 6: case 7: case 8: case 9:
+                        case 20: case 21: case 22: case 23: case 24: case 25: case 26: case 27: case 28: case 29: case 30: case 31:
+                        case 33: case 34:
+                        case 36:
+                        default:
+                            return "Reserved, but indicate MO session failure if used";                            
+                        case 10: return "GSS reported that the call did not complete in the allowed time";
+                        case 11: return "MO message queue at the GSS is full";
+                        case 12: return "MO message has too many segments";
+                        case 13: return "GSS reported that the session did not complete";
+                        case 14: return "Invalid segment size";
+                        case 15: return "Access is denied";
+                        case 16: return "Modem has been locked and may not make SBD calls";
+                        case 17: return "Gateway not responding (local session timeout)";
+                        case 18: return "Connection lost (RF drop)";
+                        case 19: return "Link failure (A protocol error caused termination of the call)";
+                        case 32: return "No network service, unable to initiate call";
+                        case 35: return "Iridium 9523 is busy, unable to initiate call";
+                    }
+                }
+                
                 
                 boost::statechart::result react( const EvSBDTransmitComplete& e)
                 {
@@ -668,7 +703,24 @@ namespace goby
                         
                         enum { MO_STATUS = 1, MOMSN = 2, MT_STATUS = 3, MTMSN = 4, MT_LENGTH=5, MT_QUEUED = 6 };
                         enum { MT_STATUS_NO_MESSAGE = 0, MT_STATUS_RECEIVED_MESSAGE = 1, MT_STATUS_ERROR = 2 } ;
+
+                        // 0-4 OK, 5-36 FAILURE
+                        enum { MO_STATUS_SUCCESS_MAX = 4, MO_STATUS_FAILURE_MIN = 5 };
                         
+                        
+                        
+                        int mo_status = goby::util::as<int>(sbdi_fields[MO_STATUS]);
+                        if(mo_status <= MO_STATUS_SUCCESS_MAX)
+                        {
+                            glog.is(goby::common::logger::DEBUG1) && glog << group("iridiumdriver") << "Success sending SBDIX: " << mo_status_as_string(mo_status) << std::endl;
+                        }
+                        else
+                        {
+                            glog.is(goby::common::logger::WARN) && glog << group("iridiumdriver") << "Error sending SBD packet: " << mo_status_as_string(mo_status) << std::endl;
+                            return transit<SBDReady>();
+                        }
+                        
+                            
                         int mt_status = goby::util::as<int>(sbdi_fields[MT_STATUS]);
                         if(mt_status == MT_STATUS_RECEIVED_MESSAGE)
                             return transit<SBDReceive>();

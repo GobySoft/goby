@@ -172,6 +172,10 @@ void goby::acomms::fsm::Command::in_state_react( const EvTxSerial& )
                 break;
         }
 
+        if(at_out_.front().second == "+SBDIX")
+            timeout = SBDIX_TIMEOUT_SECONDS;
+        
+        
         if(at_out_.front().second == "+SBDRB")
             clear_sbd_rx_buffer();
 
@@ -228,15 +232,15 @@ void goby::acomms::fsm::Command::in_state_react( const EvAck & e)
                 else if(at_out().empty()) // no AT command before this - we write the data directly
                 {
                     post_event(EvSBDWriteComplete());
-                    return;
+                    push_at_command("AT"); // this is so the "OK" will have something to clear
                 }
-                break;
+                return; // all followed by "OK" which will clear the sentence
             case '1':
-                break;
+                return; 
             case '2':
-                break;
+                return; 
             case '3':
-                break;
+                return; 
             default:
                 break;
         }

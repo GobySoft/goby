@@ -65,7 +65,7 @@ FrontSeatLegacyTranslator::FrontSeatLegacyTranslator(iFrontSeat* fs)
     if(ifs_->cfg_.legacy_cfg().subscribe_desired())
     {
         std::vector<std::string> desired_params;
-        desired_params += "HEADING", "SPEED", "DEPTH";
+        desired_params += "HEADING", "SPEED", "DEPTH", "PITCH", "ROLL", "Z_RATE";
         for(std::vector<std::string>::const_iterator it = desired_params.begin(), end = desired_params.end();
             it != end; ++it)
         {
@@ -250,6 +250,18 @@ void FrontSeatLegacyTranslator::handle_mail_desired_course(const CMOOSMsg& msg)
     else if(key == "DESIRED_DEPTH")
     {
         desired_course_.set_depth(msg.GetDouble());
+    }
+    else if(key == "DESIRED_PITCH")
+    {
+        desired_course_.set_pitch(msg.GetDouble());
+    }
+    else if(key == "DESIRED_ROLL")
+    {
+        desired_course_.set_roll(msg.GetDouble());
+    }
+    else if(key == "DESIRED_Z_RATE")
+    {
+        desired_course_.set_z_rate(msg.GetDouble());
     }
 }
 

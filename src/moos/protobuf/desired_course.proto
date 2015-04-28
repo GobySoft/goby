@@ -6,6 +6,9 @@ message DesiredCourse
   optional double heading = 2 [default = 0];
   optional double speed = 3 [default = 0];
   optional double depth = 4 [default = 0];
+  optional double pitch = 5 [default = 0];
+  optional double roll = 6 [default = 0];
+  optional double z_rate = 7 [default = 0];
 
   extensions 1000 to max;
 }

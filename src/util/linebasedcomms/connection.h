@@ -26,6 +26,7 @@
 #define ASIOLineBasedConnection20100715H
 
 #include "goby/common/logger.h"
+#include "goby/common/time.h"
 
 namespace goby
 {
@@ -94,6 +95,8 @@ namespace goby
                     in_datagram_.set_src(remote_endpoint());
                 if(!local_endpoint().empty())
                     in_datagram_.set_dest(local_endpoint());
+
+                in_datagram_.set_time(goby::common::goby_time<double>());
 
                 char last = interface_->delimiter().at(interface_->delimiter().length()-1);
                 while(!std::getline(is, line, last).eof())

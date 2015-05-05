@@ -139,7 +139,7 @@ void goby::acomms::GobyRudicsShore::loop()
             clients_.left.insert(std::make_pair(modem_msg.dest(), msg.src()));
 
             protobuf::MODataAsyncReceive async_rx_msg;
-            async_rx_msg.set_modem_id(modem_msg.dest());
+            async_rx_msg.set_modem_id(modem_msg.src());
             *async_rx_msg.mutable_inbox() = modem_msg;
             send(async_rx_msg, cfg_.publish_socket().socket_id());
         }

@@ -481,8 +481,8 @@ void goby::acomms::IridiumDriver::handle_mo_async_receive(const acomms::protobuf
 {
     glog.is(DEBUG2) && glog << group(goby::common::ZeroMQService::glog_in_group()) << "Received async data from shore server:" <<  rx.DebugString() << std::endl;
 
-    if(msg.dest() == driver_cfg_.modem_id())
-      fsm_.process_event(fsm::EvZMQConnect());
+    // TODO: need to distinguish different connected IDs!
+    fsm_.process_event(fsm::EvZMQConnect());
 
     receive(rx.inbox());
 }

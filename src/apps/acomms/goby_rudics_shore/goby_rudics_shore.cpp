@@ -193,7 +193,7 @@ void goby::acomms::GobyRudicsShore::loop()
         }
         else if((*it)->connect_time() > 0 && (goby::common::goby_time<double>() > ((*it)->connect_time() + timeout)))
         {
-            glog.is(DEBUG1) && glog << "Removing connection that has timed out." << std::endl;
+	  glog.is(DEBUG1) && glog << "Removing connection that has timed out:" << (*it)->socket().remote_endpoint() << std::endl;
             mo_sbd_server_.connections().erase(it++);
         }
         else
@@ -347,7 +347,14 @@ std::string goby::acomms::GobyRudicsShore::create_sbd_mt_data_message(const std:
     header.set_length(HEADER_SIZE);
     header.set_client_id(i++);
     header.set_imei(imei);
-    header.set_disposition_flags(0);
+    
+    enum { DISP_FLAG_FLUSH_MT_QUEUE = 0x01,
+	   DISP_FLAG_SEND_RING_ALERT_NO_MTM = 0x02,
+	   DISP_FLAG_UPDATE_SSD_LOCATION = 0x08, 
+	   DISP_FLAG_HIGH_PRIORITY_MESSAGE = 0x10, 
+	   DISP_FLAG_ASSIGN_MTMSN = 0x20 };
+
+    header.set_disposition_flags(DISP_FLAG_FLUSH_MT_QUEUE);
 
     std::string header_bytes(IEI_SIZE+HEADER_SIZE, '\0');
 

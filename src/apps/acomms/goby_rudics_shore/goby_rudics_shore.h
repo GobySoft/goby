@@ -282,6 +282,11 @@ namespace goby
             {
                 if (!error)
                 {
+		    using namespace goby::common::logger;
+		    using goby::glog;
+		    
+		    glog.is(DEBUG1) && glog << "Received connection from: " << new_connection->socket().remote_endpoint() << std::endl;
+
                     new_connection->start();
                 }
 

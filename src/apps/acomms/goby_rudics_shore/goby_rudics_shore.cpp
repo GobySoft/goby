@@ -74,7 +74,7 @@ namespace goby
             
             typedef std::string Endpoint;
             typedef unsigned ModemId;
-            // maps *destination* modem to *source* TCP endpoint
+            // maps remote modem to remote TCP endpoint
             boost::bimap<ModemId, Endpoint> clients_;
 
             enum { RATE_RUDICS = 1, RATE_SBD = 0 };    
@@ -135,11 +135,10 @@ void goby::acomms::GobyRudicsShore::loop()
             protobuf::ModemTransmission modem_msg;
             modem_msg.ParseFromString(bytes);
 
-            glog.is(DEBUG1) && glog << "Received RUDICS message to: " << modem_msg.dest() << " from endpoint: " << msg.src() << std::endl;
-            clients_.left.insert(std::make_pair(modem_msg.dest(), msg.src()));
+            glog.is(DEBUG1) && glog << "Received RUDICS message from: " << modem_msg.src() << " to: " << modem_msg.dest() << " from endpoint: " << msg.src() << std::endl;
+            clients_.left.insert(std::make_pair(modem_msg.src(), msg.src()));
 
             protobuf::MODataAsyncReceive async_rx_msg;
-            async_rx_msg.set_modem_id(modem_msg.src());
             *async_rx_msg.mutable_inbox() = modem_msg;
             send(async_rx_msg, cfg_.publish_socket().socket_id());
         }
@@ -181,7 +180,6 @@ void goby::acomms::GobyRudicsShore::loop()
                 glog.is(DEBUG1) && glog << "Rx ModemTransmission: " << modem_msg.ShortDebugString() << std::endl;
             
                 protobuf::MODataAsyncReceive async_rx_msg;
-                async_rx_msg.set_modem_id(modem_msg.dest());
                 *async_rx_msg.mutable_inbox() = modem_msg;
                 send(async_rx_msg, cfg_.publish_socket().socket_id());            
                 mo_sbd_server_.connections().erase(it++);
@@ -207,79 +205,110 @@ void goby::acomms::GobyRudicsShore::handle_request(const protobuf::MTDataRequest
 {
     protobuf::MTDataResponse response;
     response.set_request_id(request.request_id());
-    response.set_modem_id(request.modem_id());
 
-    // check if we have a connection for this modem id
-    typedef boost::bimap<ModemId, Endpoint>::left_map::iterator It;
-
-    It map_it = clients_.left.find(request.modem_id());
-    if(map_it == clients_.left.end())
+    // process commands
+    for(int i = 0, n = request.command_size(); i < n; ++i)
     {
-        response.set_mobile_node_connected(false);
-    }
-    else
-    {
-        // check that we're still connected   
-        const std::set< boost::shared_ptr<TCPConnection> >& connections =
-            rudics_server_.connections();
+        glog.is(DEBUG1) && glog << "Processing command: " << request.command(i).ShortDebugString() << std::endl;
+        
+        typedef boost::bimap<ModemId, Endpoint>::left_map::iterator LeftIt;
+        LeftIt map_it = clients_.left.find(request.command(i).modem_id());
 
-        bool still_connected = false;
-        for(std::set< boost::shared_ptr<TCPConnection> >::const_iterator it = connections.begin(), end = connections.end(); it != end; ++it)
-        {
-            if(map_it->second == (*it)->remote_endpoint())
-                still_connected = true;    
-        }
-
-        response.set_mobile_node_connected(still_connected);
-        if(still_connected)
-        {
-            util::protobuf::Datagram tcp_msg;
-            tcp_msg.set_dest(map_it->second);
-            for(int i = 0, n = request.outbox_size(); i < n; ++i)
+        if(map_it != clients_.left.end())
+        {       
+            switch(request.command(i).type())
             {
-                std::string bytes;
-                request.outbox(i).SerializeToString(&bytes);
-            
-                // frame message
-                std::string rudics_packet;
-                serialize_rudics_packet(bytes, &rudics_packet);
-
-                rudics_server_.write(rudics_packet);
+                case protobuf::MTDataRequest::Command::SEND_BYE:
+                {
+                    util::protobuf::Datagram tcp_msg;
+                    tcp_msg.set_dest(map_it->second);
+                    tcp_msg.set_data("bye\r");
+                    rudics_server_.write(tcp_msg);
+                    break;
+                }
+                
+                case protobuf::MTDataRequest::Command::HANGUP:
+                    rudics_server_.close(map_it->second);
+                    break;                    
             }
         }
         else
         {
-            clients_.left.erase(map_it);
+            glog.is(WARN) && glog << "Cannot process command: no MO RUDICS connection for modem id: " << request.command(i).modem_id() << std::endl;
         }
+        
     }
 
-    // send any SBD packets that weren't send
-    if(!response.mobile_node_connected())
-    {
-        for(int i = 0, n = request.outbox_size(); i < n; ++i)
-        {
-            if(request.outbox(i).rate() == RATE_SBD)
-            {
-                std::string bytes;
-                request.outbox(i).SerializeToString(&bytes);
-
-                std::string rudics_packet;
-                serialize_rudics_packet(bytes, &rudics_packet);
-
-                if(modem_id_to_imei_.count(request.outbox(i).dest()))
-                    send_sbd_mt(rudics_packet, modem_id_to_imei_[request.outbox(i).dest()]);
-                else
-                    glog.is(WARN) && glog << "No IMEI configured for destination address " << request.outbox(i).dest() << " so unabled to send SBD message." << std::endl;
-            }
-            
-        }
-
-    }
     
+    const std::map< Endpoint, boost::shared_ptr<TCPConnection> >& connections =
+        rudics_server_.connections();
+    
+    // update/build up list of connected clients
+    typedef boost::bimap<ModemId, Endpoint>::right_map::iterator RightIt;
+    RightIt it = clients_.right.begin(), it_end = clients_.right.end();
+    while(it != it_end)
+    {
+        if(!connections.count(it->first))
+        {
+            RightIt to_delete = it;
+            ++it;   // increment before erasing!
+            clients_.right.erase(to_delete);
+        }
+        else
+        {
+            response.add_modem_id_connected(it->second);
+            ++it;
+        }        
+    }
+
+    // send outgoing mail
+    for(int i = 0, n = request.outbox_size(); i < n; ++i)
+    {
+        typedef boost::bimap<ModemId, Endpoint>::left_map::iterator LeftIt;
+        LeftIt map_it = clients_.left.find(request.outbox(i).dest());
+
+        // send any packets we can using RUDICS
+        if(map_it != clients_.left.end())
+        {        
+            util::protobuf::Datagram tcp_msg;
+            tcp_msg.set_dest(map_it->second);
+
+        
+            std::string bytes;
+            request.outbox(i).SerializeToString(&bytes);
+        
+            // frame message
+            std::string* rudics_packet = tcp_msg.mutable_data();
+            serialize_rudics_packet(bytes, rudics_packet);
+            
+            rudics_server_.write(tcp_msg);
+        }
+        // warn if we can't send rate RUDICS packets
+        else if(request.outbox(i).rate() == RATE_RUDICS)
+        {
+            glog.is(WARN) && glog << "Cannot send RUDICS message: no MO RUDICS connection for modem id: " << request.outbox(i).dest() << std::endl;
+        }
+        // send SBD packets anyway (without connection)
+        else if(request.outbox(i).rate() == RATE_SBD)
+        {
+            std::string bytes;
+            request.outbox(i).SerializeToString(&bytes);
+            
+            std::string sbd_packet;
+            serialize_rudics_packet(bytes, &sbd_packet);
+            
+            if(modem_id_to_imei_.count(request.outbox(i).dest()))
+                send_sbd_mt(sbd_packet, modem_id_to_imei_[request.outbox(i).dest()]);
+            else
+                glog.is(WARN) && glog << "No IMEI configured for destination address " << request.outbox(i).dest() << " so unabled to send SBD message." << std::endl;
+        }
+    }    
     
     send(response, cfg_.reply_socket().socket_id());
     response.Clear();
 }
+
+
 
 
 void goby::acomms::GobyRudicsShore::send_sbd_mt(const std::string& bytes, const std::string& imei)

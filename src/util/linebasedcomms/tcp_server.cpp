@@ -49,24 +49,44 @@ void goby::util::TCPConnection::socket_close(const boost::system::error_code& er
     
 void goby::util::TCPServer::do_write(const protobuf::Datagram& line)
 {
-    BOOST_FOREACH(boost::shared_ptr<TCPConnection> c, connections_)
-        c->write(line);
+    if(line.has_dest())
+    {
+        std::map< Endpoint, boost::shared_ptr<TCPConnection> >::iterator it = connections_.find(line.dest());
+        if(it != connections_.end())
+            (it->second)->write(line);
+    }
+    else
+    {
+        for(std::map< Endpoint, boost::shared_ptr<TCPConnection> >::iterator it = connections_.begin(),
+                end = connections_.end(); it != end; ++it)
+            (it->second)->write(line);
+    }    
 }
 
 // close all the connections, it's up to the clients to try to reconnect
-void goby::util::TCPServer::do_close(const boost::system::error_code& error)
+void goby::util::TCPServer::do_close(const boost::system::error_code& error, goby::util::TCPServer::Endpoint endpt /* = ""*/)
 {
-    BOOST_FOREACH(boost::shared_ptr<TCPConnection> c, connections_)
-        c->close(error);
+    if(!endpt.empty())
+    {
+        std::map< Endpoint, boost::shared_ptr<TCPConnection> >::iterator it = connections_.find(endpt);
+        if(it != connections_.end())
+            (it->second)->close(error);
+    }
+    else
+    {
+        for(std::map< Endpoint, boost::shared_ptr<TCPConnection> >::iterator it = connections_.begin(),
+                end = connections_.end(); it != end; ++it)
+            (it->second)->close(error);
+    }
 }    
 
-const std::set< boost::shared_ptr<goby::util::TCPConnection> >& goby::util::TCPServer::connections()
+const std::map< goby::util::TCPServer::Endpoint, boost::shared_ptr<goby::util::TCPConnection> >& goby::util::TCPServer::connections()
 {
-    typedef std::set< boost::shared_ptr<TCPConnection> >::iterator It;
+    typedef std::map< Endpoint, boost::shared_ptr<TCPConnection> >::iterator It;
     It it = connections_.begin(), it_end = connections_.end();
     while(it != it_end)
     {
-        if(!(*it)->socket().is_open())
+        if(!(it->second)->socket().is_open())
         {
             It to_delete = it;
             ++it;   // increment before erasing!
@@ -93,7 +113,7 @@ void goby::util::TCPServer::handle_accept(boost::shared_ptr<TCPConnection> new_c
     if (!error)
     {
         new_connection_->start();
-        connections_.insert(new_connection_);
+        connections_.insert(std::make_pair(new_connection_->remote_endpoint(), new_connection_));
         start_accept();
     }
 }

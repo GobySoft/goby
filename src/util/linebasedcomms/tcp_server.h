@@ -64,12 +64,15 @@ namespace goby
                 {  }
             virtual ~TCPServer() 
             { }
-            
+
+            typedef std::string Endpoint;
+            void close(const Endpoint& endpoint)
+            { io_service_.post(boost::bind(&TCPServer::do_close, this, boost::system::error_code(), endpoint)); }
             
             /// \brief string representation of the local endpoint (e.g. 192.168.1.105:54230
             std::string local_endpoint() { return goby::util::as<std::string>(acceptor_.local_endpoint()); }
 
-            const std::set< boost::shared_ptr<TCPConnection> >& connections();
+            const std::map< Endpoint, boost::shared_ptr<TCPConnection> >& connections();
             
             friend class TCPConnection;
             friend class LineBasedConnection<boost::asio::ip::tcp::socket>;
@@ -82,7 +85,8 @@ namespace goby
             }
         
             void do_write(const protobuf::Datagram& line);
-            void do_close(const boost::system::error_code& error);
+            void do_close(const boost::system::error_code& error) { do_close(error, ""); }
+            void do_close(const boost::system::error_code& error, Endpoint endpt);
             
           private:
             void start_accept();
@@ -93,7 +97,7 @@ namespace goby
             std::string server_;
             boost::asio::ip::tcp::acceptor acceptor_;
             boost::shared_ptr<TCPConnection> new_connection_;
-            std::set< boost::shared_ptr<TCPConnection> > connections_;    
+            std::map<Endpoint, boost::shared_ptr<TCPConnection> > connections_;    
         };
 
 

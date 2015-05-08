@@ -20,8 +20,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Goby.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef GobyRudicsShore20150227H
-#define GobyRudicsShore20150227H
+#ifndef IridiumShoreSBD20150227H
+#define IridiumShoreSBD20150227H
 
 #include <boost/bind.hpp>
 #include <boost/asio.hpp>
@@ -29,6 +29,7 @@
 #include "goby/pb/protobuf/rudics_shore.pb.h"
 #include "goby/util/binary.h"
 #include "goby/common/time.h"
+#include "goby/pb/protobuf/iridium_sbd_directip.pb.h"
 
 namespace goby
 {

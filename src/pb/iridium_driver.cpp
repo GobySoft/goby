@@ -267,9 +267,9 @@ void goby::acomms::IridiumDriver::do_work()
     
     const fsm::OnCall* on_call = fsm_.state_cast<const fsm::OnCall*>();
     const fsm::OnZMQCall* on_zmq_call = fsm_.state_cast<const fsm::OnZMQCall*>();
-    const fsm::OnCallBase* on_call_base = (on_call) ?
-        static_cast<const fsm::OnCallBase*>(on_call) :
-        static_cast<const fsm::OnCallBase*>(on_zmq_call);
+    const OnCallBase* on_call_base = (on_call) ?
+        static_cast<const OnCallBase*>(on_call) :
+        static_cast<const OnCallBase*>(on_zmq_call);
     
     if(fsm_.data_out().empty() &&
        (now > (last_send_time_ + send_interval)))

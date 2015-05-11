@@ -28,6 +28,7 @@
 #include "goby/acomms/modem_driver.h"
 #include "goby/acomms/modemdriver/udp_driver.h"
 #include "goby/pb/iridium_driver.h"
+#include "goby/pb/iridium_shore_driver.h"
 #include "goby/acomms/connect.h"
 #include "goby/acomms/modemdriver/driver_exception.h"
 
@@ -129,6 +130,9 @@ goby::acomms::ModemDriver::ModemDriver(protobuf::ModemDriverConfig* cfg)
             
             break;
 
+        case goby::acomms::protobuf::DRIVER_IRIDIUM_SHORE:
+            driver_.reset(new goby::acomms::IridiumShoreDriver);
+            break;
 
         default:
         case goby::acomms::protobuf::DRIVER_NONE:

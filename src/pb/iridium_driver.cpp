@@ -104,8 +104,6 @@ void goby::acomms::IridiumDriver::startup(const protobuf::DriverConfig& cfg)
         else
             driver_cfg_.MutableExtension(IridiumDriverConfig::subscribe_socket)->set_socket_id(subscribe_socket_id_);
 
-        request_.set_modem_id(driver_cfg_.modem_id());
-        
         service_cfg_.add_socket()->CopyFrom(
             driver_cfg_.GetExtension(IridiumDriverConfig::request_socket));
         
@@ -269,9 +267,9 @@ void goby::acomms::IridiumDriver::do_work()
     
     const fsm::OnCall* on_call = fsm_.state_cast<const fsm::OnCall*>();
     const fsm::OnZMQCall* on_zmq_call = fsm_.state_cast<const fsm::OnZMQCall*>();
-    const fsm::OnCallBase* on_call_base = (on_call) ?
-        static_cast<const fsm::OnCallBase*>(on_call) :
-        static_cast<const fsm::OnCallBase*>(on_zmq_call);
+    const OnCallBase* on_call_base = (on_call) ?
+        static_cast<const OnCallBase*>(on_call) :
+        static_cast<const OnCallBase*>(on_zmq_call);
     
     if(fsm_.data_out().empty() &&
        (now > (last_send_time_ + send_interval)))
@@ -293,7 +291,12 @@ void goby::acomms::IridiumDriver::do_work()
             glog.is(DEBUG2) && glog << "Sending bye" << std::endl;
             fsm_.process_event(fsm::EvSendBye());
             if(on_zmq_call)
-                request_.set_command(goby::acomms::protobuf::MTDataRequest::SEND_BYE);
+            {
+                protobuf::MTDataRequest::Command* cmd = request_.add_command();
+                // TODO: add modem id of destination!
+                cmd->set_modem_id(0);
+                cmd->set_type(goby::acomms::protobuf::MTDataRequest::Command::SEND_BYE);
+            }
         }
 
 
@@ -301,9 +304,16 @@ void goby::acomms::IridiumDriver::do_work()
            (now > (on_call_base->last_rx_tx_time() + driver_cfg_.GetExtension(IridiumDriverConfig::hangup_seconds_after_empty))))
         {
             if(on_zmq_call)
-                request_.set_command(goby::acomms::protobuf::MTDataRequest::HANGUP);
+            {
+                protobuf::MTDataRequest::Command* cmd = request_.add_command();
+                // TODO: add modem id of destination!
+                cmd->set_modem_id(0);
+                cmd->set_type(goby::acomms::protobuf::MTDataRequest::Command::HANGUP);
+            }
             else
+            {
                 hangup();
+            }
         }
     }
 
@@ -380,16 +390,13 @@ void goby::acomms::IridiumDriver::do_zmq_work(double now, const fsm::OnZMQCall* 
             }
         }
 
-        if(request_.outbox_size() || request_.has_command())
-        {            
-            glog.is(DEBUG2) && glog << group(goby::common::ZeroMQService::glog_out_group()) << "Sending request to server." << std::endl;
-            glog.is(DEBUG2) && glog << group(goby::common::ZeroMQService::glog_out_group()) << "Outbox: " << request_.DebugString() << std::flush;
-            StaticProtobufNode::send(request_, request_socket_id_);
-            last_zmq_request_time_ = now;
-            request_.clear_outbox();
-            request_.clear_command();
-            waiting_for_reply_ = true;
-        }
+        glog.is(DEBUG2) && glog << group(goby::common::ZeroMQService::glog_out_group()) << "Sending request to server." << std::endl;
+        glog.is(DEBUG2) && glog << group(goby::common::ZeroMQService::glog_out_group()) << "Outbox: " << request_.DebugString() << std::flush;
+        StaticProtobufNode::send(request_, request_socket_id_);
+        last_zmq_request_time_ = now;
+        request_.clear_outbox();
+        request_.clear_command();
+        waiting_for_reply_ = true;
     }
 }
 
@@ -467,8 +474,9 @@ void goby::acomms::IridiumDriver::try_serial_tx()
 void goby::acomms::IridiumDriver::handle_mt_response(const acomms::protobuf::MTDataResponse& response)
 {
     glog.is(DEBUG2) && glog << group(goby::common::ZeroMQService::glog_in_group()) << "Received response from shore server:" <<  response.DebugString() << std::endl;
-    
-    if(response.mobile_node_connected())
+
+    // TODO: fix to adjust for different connection IDs
+    if(response.modem_id_connected_size())
         fsm_.process_event(fsm::EvZMQConnect());
     else
         fsm_.process_event(fsm::EvZMQDisconnect());
@@ -480,9 +488,6 @@ void goby::acomms::IridiumDriver::handle_mt_response(const acomms::protobuf::MTD
 void goby::acomms::IridiumDriver::handle_mo_async_receive(const acomms::protobuf::MODataAsyncReceive& rx)
 {
     glog.is(DEBUG2) && glog << group(goby::common::ZeroMQService::glog_in_group()) << "Received async data from shore server:" <<  rx.DebugString() << std::endl;
-
-    // TODO: need to distinguish different connected IDs!
-    fsm_.process_event(fsm::EvZMQConnect());
 
     receive(rx.inbox());
 }

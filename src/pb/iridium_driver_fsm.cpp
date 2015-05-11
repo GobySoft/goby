@@ -103,8 +103,13 @@ void goby::acomms::fsm::Command::in_state_react(const EvRxSerial& e)
     }
     else if(in.compare(0, sbdi.size(), sbdi) == 0)
     {
-        post_event(EvAck(in));
+        post_event(EvSBDTransmitComplete(in));
     }
+    else if(in == "SBDRING")
+    {
+        post_event(EvSBDBeginData("", true));
+    }
+    
     
 }
 
@@ -166,6 +171,7 @@ void goby::acomms::fsm::Command::in_state_react( const EvTxSerial& )
             default: break;
             case 'D': timeout = DIAL_TIMEOUT_SECONDS; break;
             case 'A': timeout = ANSWER_TIMEOUT_SECONDS; break;
+            case 'H': timeout = HANGUP_TIMEOUT_SECONDS; break;
             case '+':
                 if(at_out_.front().second == "+++")
                     timeout = TRIPLE_PLUS_TIMEOUT_SECONDS;
@@ -262,14 +268,6 @@ void goby::acomms::fsm::Command::in_state_react( const EvAck & e)
         
         if(e.response_ == "READY")  // used for SBD
             post_event(EvSBDWriteReady());
-
-
-        static const std::string sbdi = "+SBDI";
-        if(e.response_.compare(0, sbdi.size(), sbdi) == 0)
-        {
-            post_event(EvSBDTransmitComplete(e.response_));
-        }
-        
         
         at_out().pop_front();
         if(at_out().empty())

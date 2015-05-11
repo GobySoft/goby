@@ -20,8 +20,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Goby.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef GobyRudicsShore20150227H
-#define GobyRudicsShore20150227H
+#ifndef IridiumShoreSBD20150227H
+#define IridiumShoreSBD20150227H
 
 #include <boost/bind.hpp>
 #include <boost/asio.hpp>
@@ -29,6 +29,7 @@
 #include "goby/pb/protobuf/rudics_shore.pb.h"
 #include "goby/util/binary.h"
 #include "goby/common/time.h"
+#include "goby/pb/protobuf/iridium_sbd_directip.pb.h"
 
 namespace goby
 {
@@ -225,6 +226,8 @@ namespace goby
 
             void start()
             {
+                remote_endpoint_str_ = boost::lexical_cast<std::string>(socket_.remote_endpoint());
+
                 connect_time_ = goby::common::goby_time<double>();
                 boost::asio::async_read(socket_,
                                         boost::asio::buffer(message_.data()),
@@ -239,18 +242,21 @@ namespace goby
             double connect_time() const { return connect_time_; }
     
             const SBDMOMessageReader& message() const { return message_; }
+            const std::string& remote_endpoint_str() { return remote_endpoint_str_; }
 
           private:
           SBDConnection(boost::asio::io_service& io_service)
               : socket_(io_service),
                 connect_time_(-1),
-                message_(socket_)
+                message_(socket_),
+                remote_endpoint_str_("Unknown")
                 {
                 }
             
             boost::asio::ip::tcp::socket socket_;
             double connect_time_;
             SBDMOMessageReader message_;
+            std::string remote_endpoint_str_;
 
         };
 

@@ -12,6 +12,7 @@ enum DriverType {
   DRIVER_UDP = 6;
   DRIVER_BLUEFIN_MOOS = 7;
   DRIVER_IRIDIUM = 8;
+  DRIVER_IRIDIUM_SHORE = 9;
 }
 
 message DriverConfig
@@ -51,5 +52,6 @@ message DriverConfig
   // extensions 1361-1380 used by bluefin_sim_driver.proto
   // extensions 1381-1400 used by iridium_driver.proto
   // extensions 1401-1420 used by MOOSSafir (external)
+  // extensions 1421-1440 used by iridium_shore_driver.proto
 }
 

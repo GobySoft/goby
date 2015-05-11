@@ -24,11 +24,10 @@
 #include <boost/bimap.hpp>
 
 #include "goby/common/time.h"
-#include "goby/pb/rudics_packet.h"
 #include "goby/acomms/modemdriver/driver_exception.h"
 #include "goby/common/logger.h"
 #include "goby/util/binary.h"
-#include "goby/pb/rudics_packet.h"
+#include "goby/acomms/modemdriver/rudics_packet.h"
 
 #include "iridium_shore_sbd.h"
 #include "iridium_shore_driver.h"
@@ -287,7 +286,7 @@ void goby::acomms::IridiumShoreDriver::rudics_line(const std::string& data, boos
             }
             else
             {
-                glog.is(WARN) && glog << "Bye dectected from connection we do not have in the clients_ map: " << connection->remote_endpoint_str() << std::endl;
+                glog.is(WARN) && glog << "Bye detected from connection we do not have in the clients_ map: " << connection->remote_endpoint_str() << std::endl;
             }
         }
         else
@@ -348,7 +347,7 @@ void goby::acomms::IridiumShoreDriver::receive_sbd_mo()
 
                 modem_msg.ParseFromString(bytes);
             
-                glog.is(DEBUG1) && glog << "Rx ModemTransmission: " << modem_msg.ShortDebugString() << std::endl;
+                glog.is(DEBUG1) && glog << "Rx SBD ModemTransmission: " << modem_msg.ShortDebugString() << std::endl;
 
                 receive(modem_msg);
                 
@@ -356,12 +355,12 @@ void goby::acomms::IridiumShoreDriver::receive_sbd_mo()
             }
             catch(RudicsPacketException& e)
             {
-                glog.is(DEBUG1) && glog <<  warn << "Could not decode packet: " << e.what() << std::endl;
+                glog.is(DEBUG1) && glog <<  warn << "Could not decode SBD packet: " << e.what() << std::endl;
             }
         }
         else if((*it)->connect_time() > 0 && (goby::common::goby_time<double>() > ((*it)->connect_time() + timeout)))
         {
-            glog.is(DEBUG1) && glog << "Removing connection that has timed out:" << (*it)->remote_endpoint_str() << std::endl;
+            glog.is(DEBUG1) && glog << "Removing SBD connection that has timed out:" << (*it)->remote_endpoint_str() << std::endl;
             mo_sbd_server_->connections().erase(it++);
         }
         else

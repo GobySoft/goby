@@ -116,19 +116,19 @@ namespace goby
             void handle_read(const boost::system::error_code& error,
                              size_t bytes_transferred)
             {
+                using goby::glog;
+                using goby::common::logger::WARN;
+                using goby::common::logger::DEBUG1;
                 if(!error)
                 {
                     std::istream istrm(&buffer_);
                     std::string line;
-                    while(std::getline(istrm, line, '\r'))
-                        line_signal(line + "\r", shared_from_this());
+                    std::getline(istrm, line, '\r');
+                    line_signal(line + "\r", shared_from_this());
                     read_start();
                 }
                 else
                 {
-                    using goby::glog;
-                    using goby::common::logger::WARN;
-                    using goby::common::logger::DEBUG1;
                     if(error == boost::asio::error::eof)
                     {
                         glog.is(DEBUG1) && glog << "Connection reached EOF" << std::endl;
@@ -187,12 +187,12 @@ namespace goby
 		    using namespace goby::common::logger;
 		    using goby::glog;
 		    
-		    glog.is(DEBUG1) && glog << "Received connection from: " << new_connection->remote_endpoint_str() << std::endl;
                     connections_.insert(new_connection);
                     
                     new_connection->disconnect_signal.connect(boost::bind(&RUDICSServer::handle_disconnect, this, _1));                    
                     connect_signal(new_connection);
                     new_connection->start();
+		    glog.is(DEBUG1) && glog << "Received connection from: " << new_connection->remote_endpoint_str() << std::endl;
                 }
 
                 start_accept();

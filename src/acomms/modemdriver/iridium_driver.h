@@ -30,22 +30,20 @@
 #include "goby/util/linebasedcomms/tcp_client.h"
 
 #include "goby/acomms/modemdriver/driver_base.h"
-#include "goby/pb/protobuf/iridium_driver.pb.h"
-#include "goby/pb/protobuf/rudics_shore.pb.h"
+#include "goby/acomms/protobuf/iridium_driver.pb.h"
+#include "goby/acomms/protobuf/rudics_shore.pb.h"
 
 #include "iridium_driver_fsm.h"
 
-#include "goby/pb/protobuf_node.h"
 
 namespace goby
 {
     namespace acomms
     {
-        class IridiumDriver : public ModemDriverBase,
-            public goby::pb::StaticProtobufNode
+        class IridiumDriver : public ModemDriverBase
         {
           public:
-            IridiumDriver(goby::common::ZeroMQService* zeromq_service);
+            IridiumDriver();
             ~IridiumDriver();
             void startup(const protobuf::DriverConfig& cfg);
 
@@ -53,12 +51,9 @@ namespace goby
             
             void shutdown();            
             void do_work();
-            void do_zmq_work(double now, const fsm::OnZMQCall* on_zmq_call);
             
             void handle_initiate_transmission(const protobuf::ModemTransmission& m);
             void process_transmission(protobuf::ModemTransmission msg, bool dial);
-            void handle_mt_response(const acomms::protobuf::MTDataResponse& response);
-            void handle_mo_async_receive(const acomms::protobuf::MODataAsyncReceive& rx);
 
           private:
             void receive(const protobuf::ModemTransmission& msg);
@@ -79,17 +74,6 @@ namespace goby
             
             double last_triple_plus_time_;
             enum { TRIPLE_PLUS_WAIT = 2 };
-
-            // ZMQ stuff
-            bool using_zmq_;
-            goby::common::ZeroMQService* zeromq_service_;
-	    common::protobuf::ZeroMQServiceConfig service_cfg_;
-            acomms::protobuf::MTDataRequest request_;
-            int request_socket_id_;
-            int subscribe_socket_id_;
-            double last_zmq_request_time_;
-            double query_interval_seconds_;
-            bool waiting_for_reply_;
             
             protobuf::ModemTransmission rudics_mac_msg_;
             double last_send_time_;

@@ -1,2 +1,1 @@
 add_subdirectory(pbdriver1)
-add_subdirectory(iridiumdriver1)

@@ -178,7 +178,8 @@ void goby::acomms::fsm::Command::in_state_react( const EvTxSerial& )
                 break;
         }
 
-        if(at_out_.front().second == "+SBDIX")
+        static const std::string sbdi = "+SBDI";
+        if(at_out_.front().second.compare(0, sbdi.size(), sbdi) == 0)
             timeout = SBDIX_TIMEOUT_SECONDS;
         
         

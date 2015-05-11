@@ -26,10 +26,10 @@
 #include <boost/bind.hpp>
 #include <boost/asio.hpp>
 #include <boost/enable_shared_from_this.hpp>
-#include "goby/pb/protobuf/rudics_shore.pb.h"
+#include "goby/acomms/protobuf/rudics_shore.pb.h"
 #include "goby/util/binary.h"
 #include "goby/common/time.h"
-#include "goby/pb/protobuf/iridium_sbd_directip.pb.h"
+#include "goby/acomms/protobuf/iridium_sbd_directip.pb.h"
 
 namespace goby
 {
@@ -291,7 +291,7 @@ namespace goby
 		    using namespace goby::common::logger;
 		    using goby::glog;
 		    
-		    glog.is(DEBUG1) && glog << "Received connection from: " << new_connection->socket().remote_endpoint() << std::endl;
+		    glog.is(DEBUG1) && glog << "Received SBD connection from: " << new_connection->socket().remote_endpoint() << std::endl;
 
                     new_connection->start();
                 }

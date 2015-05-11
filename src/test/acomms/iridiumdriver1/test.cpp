@@ -24,7 +24,7 @@
 
 // tests functionality of the Iridium Driver
 
-#include "goby/pb/iridium_driver.h"
+#include "goby/acomms/modemdriver/iridium_driver.h"
 #include "../../acomms/driver_tester/driver_tester.h"
 
 
@@ -43,10 +43,8 @@ int main(int argc, char* argv[])
     
     goby::glog.set_name(argv[0]);    
 
-    goby::common::ZeroMQService zeromq_service1, zeromq_service2;
-
-    driver1.reset(new goby::acomms::IridiumDriver(&zeromq_service1));
-    driver2.reset(new goby::acomms::IridiumDriver(&zeromq_service2));
+    driver1.reset(new goby::acomms::IridiumDriver);
+    driver2.reset(new goby::acomms::IridiumDriver);
     
     goby::acomms::protobuf::DriverConfig glider_cfg, shore_cfg;
         
@@ -73,13 +71,6 @@ int main(int argc, char* argv[])
     gumstix->set_iridium_number("6001");
     gumstix->set_modem_id(2);
 //    shore_cfg.AddExtension(IridiumDriverConfig::config, "+GSN");
-    goby::common::protobuf::ZeroMQServiceConfig::Socket* request_socket =
-        shore_cfg.MutableExtension(IridiumDriverConfig::request_socket);
-
-    request_socket->set_socket_type(goby::common::protobuf::ZeroMQServiceConfig::Socket::REQUEST);
-    request_socket->set_transport(goby::common::protobuf::ZeroMQServiceConfig::Socket::TCP);
-    request_socket->set_ethernet_port(19300);
-//    request_socket->set_ethernet_address("rudics.whoi.edu");
     
 //    shore
 //     {
@@ -93,13 +84,6 @@ int main(int argc, char* argv[])
 //         remote->set_iridium_number("i881693783740");
 //         shore_cfg.AddExtension(IridiumDriverConfig::config, "s29=8");
 //         shore_cfg.AddExtension(IridiumDriverConfig::config, "s57=9600");
-//         goby::common::protobuf::ZeroMQServiceConfig::Socket* request_socket =
-//             shore_cfg.MutableExtension(IridiumDriverConfig::request_socket);
-        
-//         request_socket->set_socket_type(goby::common::protobuf::ZeroMQServiceConfig::Socket::REQUEST);
-//         request_socket->set_transport(goby::common::protobuf::ZeroMQServiceConfig::Socket::TCP);
-//         request_socket->set_ethernet_port(19300);
-//         request_socket->set_ethernet_address("rudics.whoi.edu");
 //     }
     
 // //    gumstix

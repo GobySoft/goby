@@ -39,7 +39,8 @@
 #include "goby/moos/moos_bluefin_driver.h"
 #include "goby/moos/protobuf/bluefin_driver.pb.h"
 #include "goby/pb/pb_modem_driver.h"
-#include "goby/pb/iridium_driver.h"
+#include "goby/acomms/modemdriver/iridium_driver.h"
+#include "goby/acomms/modemdriver/iridium_shore_driver.h"
 #include "goby/acomms/modemdriver/udp_driver.h"
 
 
@@ -556,9 +557,7 @@ void CpAcommsHandler::create_driver(boost::shared_ptr<goby::acomms::ModemDriverB
                 break;
 
             case goby::acomms::protobuf::DRIVER_IRIDIUM:
-                zeromq_service_.push_back(boost::shared_ptr<goby::common::ZeroMQService>(
-                                              new goby::common::ZeroMQService));
-                driver.reset(new goby::acomms::IridiumDriver(zeromq_service_.back().get()));
+                driver.reset(new goby::acomms::IridiumDriver);
                 break;
             
             case goby::acomms::protobuf::DRIVER_UDP:
@@ -575,6 +574,11 @@ void CpAcommsHandler::create_driver(boost::shared_ptr<goby::acomms::ModemDriverB
                 driver_cfg->SetExtension(
                     goby::moos::protobuf::BluefinConfig::moos_port,
                     cfg_.common().server_port());
+                break;
+
+                
+            case goby::acomms::protobuf::DRIVER_IRIDIUM_SHORE:
+                driver.reset(new goby::acomms::IridiumShoreDriver);
                 break;
             
             case goby::acomms::protobuf::DRIVER_NONE: break;

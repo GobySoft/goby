@@ -30,12 +30,12 @@
 
 #include "goby/common/time.h"
 #include "goby/acomms/modemdriver/driver_base.h"
-#include "goby/pb/protobuf/iridium_shore_driver.pb.h"
-#include "goby/pb/protobuf/iridium_driver.pb.h"
-#include "goby/pb/protobuf/iridium_sbd_directip.pb.h"
-#include "goby/pb/iridium_shore_rudics.h"
-#include "goby/pb/iridium_shore_sbd.h"
-#include "goby/pb/iridium_driver_common.h"
+#include "goby/acomms/protobuf/iridium_shore_driver.pb.h"
+#include "goby/acomms/protobuf/iridium_driver.pb.h"
+#include "goby/acomms/protobuf/iridium_sbd_directip.pb.h"
+#include "goby/acomms/modemdriver/iridium_shore_rudics.h"
+#include "goby/acomms/modemdriver/iridium_shore_sbd.h"
+#include "goby/acomms/modemdriver/iridium_driver_common.h"
 
 namespace goby
 {

@@ -39,8 +39,8 @@
 #include <iostream>
 
 #include "goby/acomms/protobuf/modem_message.pb.h"
-#include "goby/pb/protobuf/iridium_driver.pb.h"
-#include "goby/pb/iridium_driver_common.h"
+#include "goby/acomms/protobuf/iridium_driver.pb.h"
+#include "goby/acomms/modemdriver/iridium_driver_common.h"
 
 namespace goby
 {

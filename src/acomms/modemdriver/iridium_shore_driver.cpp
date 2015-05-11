@@ -24,11 +24,10 @@
 #include <boost/bimap.hpp>
 
 #include "goby/common/time.h"
-#include "goby/pb/rudics_packet.h"
 #include "goby/acomms/modemdriver/driver_exception.h"
 #include "goby/common/logger.h"
 #include "goby/util/binary.h"
-#include "goby/pb/rudics_packet.h"
+#include "goby/acomms/modemdriver/rudics_packet.h"
 
 #include "iridium_shore_sbd.h"
 #include "iridium_shore_driver.h"

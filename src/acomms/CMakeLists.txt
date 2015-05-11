@@ -21,12 +21,16 @@ set(SRC
   modemdriver/driver_base.cpp
   modemdriver/mm_driver.cpp
   modemdriver/udp_driver.cpp
+  modemdriver/rudics_packet.cpp
+  modemdriver/iridium_driver.cpp
+  modemdriver/iridium_driver_fsm.cpp
+  modemdriver/iridium_shore_driver.cpp
   route/route.cpp
   ${PROTO_SRCS} ${PROTO_HDRS}
 )
 
 add_library(goby_acomms ${SRC})
 
-target_link_libraries(goby_acomms goby_util goby_common dccl dccl_arithmetic ${Cryptopp_LIBRARIES} ${Boost_LIBRARIES} ${CMAKE_DL_LIBS})
+target_link_libraries(goby_acomms goby_util goby_common dccl dccl_arithmetic ${Cryptopp_LIBRARIES} ${Boost_LIBRARIES} ${CMAKE_DL_LIBS}  ${GMP_LIBRARIES})
 
 set_target_properties(goby_acomms PROPERTIES VERSION "${GOBY_VERSION}" SOVERSION "${GOBY_SOVERSION}")

@@ -24,3 +24,5 @@ add_subdirectory(route1)
 add_subdirectory(udpdriver1)
 add_subdirectory(udpdriver2)
 add_subdirectory(udpdriver3)
+
+add_subdirectory(iridiumdriver1)

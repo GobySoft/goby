@@ -4,27 +4,29 @@ package goby.acomms.protobuf;
 
 message MTDataRequest
 {
-  required int32 modem_id = 1;
   repeated goby.acomms.protobuf.ModemTransmission outbox = 2;
   optional uint64 request_id = 3;
 
-  enum Command
-  { 
-    SEND_BYE = 1;           
-    HANGUP = 2;
+  message Command
+  {
+      required int32 modem_id = 1;
+      enum CommandType
+      { 
+          SEND_BYE = 1;
+          HANGUP = 2;
+      }
+      required CommandType type = 2;
   }
-  optional Command command = 4;
+  repeated Command command = 4;
 }
 
 message MTDataResponse
 {
-  required bool mobile_node_connected = 1;
-  required int32 modem_id = 2;
+  repeated int32 modem_id_connected = 1;
   optional uint64 request_id = 4;
 }
 
 message MODataAsyncReceive
 {
-  required int32 modem_id = 1;
   required goby.acomms.protobuf.ModemTransmission inbox = 2;
 }

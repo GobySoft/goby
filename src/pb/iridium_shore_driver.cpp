@@ -25,7 +25,6 @@
 
 #include "goby/common/time.h"
 #include "goby/pb/rudics_packet.h"
-#include "goby/util/linebasedcomms/tcp_server.h"
 #include "goby/acomms/modemdriver/driver_exception.h"
 #include "goby/common/logger.h"
 #include "goby/util/binary.h"
@@ -126,7 +125,8 @@ void goby::acomms::IridiumShoreDriver::do_work()
     {
         RemoteNode& remote = it->second;
         boost::shared_ptr<OnCallBase> on_call_base = it->second.on_call;
-    
+        ModemId id = it->first;
+        
         if(now > (remote.last_send_time + send_interval))
         {
             if(on_call_base && !on_call_base->bye_sent())
@@ -140,25 +140,26 @@ void goby::acomms::IridiumShoreDriver::do_work()
         // if we're on either type of call, see if we need to send the "bye" message or hangup
         if(on_call_base)
         {
-            glog.is(DEBUG2) && glog << on_call_base->last_tx_time() << std::endl;
             if(!on_call_base->bye_sent() &&
                now > (on_call_base->last_tx_time() + driver_cfg_.GetExtension(IridiumDriverConfig::handshake_hangup_seconds)))
             {
-                glog.is(DEBUG2) && glog << "Sending bye" << std::endl;
-
-                ///
-                /// cmd->set_type(goby::acomms::protobuf::MTDataRequest::Command::SEND_BYE);
-                ///
+                glog.is(DEBUG1) && glog << "Sending bye" << std::endl;
+                rudics_send("bye\r", id);
+                on_call_base->set_bye_sent(true);
             }
 
 
             if((on_call_base->bye_received() && on_call_base->bye_sent()) ||
                (now > (on_call_base->last_rx_tx_time() + driver_cfg_.GetExtension(IridiumDriverConfig::hangup_seconds_after_empty))))
             {
-                ///
-                /// TODO: add modem id of destination!
-                /// cmd->set_modem_id(0);
-                /// cmd->set_type(goby::acomms::protobuf::MTDataRequest::Command::HANGUP);
+                glog.is(DEBUG1) && glog << "Hanging up by disconnecting" << std::endl;
+                typedef boost::bimap<ModemId, boost::shared_ptr<RUDICSConnection> >::left_map::iterator LeftIt;
+                LeftIt client_it = clients_.left.find(id);
+                if(client_it != clients_.left.end())
+                    rudics_server_->disconnect(client_it->second);
+                else
+                    glog.is(WARN) && glog << "Failed to find connection from ModemId " << id << std::endl;
+                remote_[id].on_call.reset();
             }
         }
     }
@@ -203,10 +204,8 @@ void goby::acomms::IridiumShoreDriver::send(const protobuf::ModemTransmission& m
         // frame message
         std::string rudics_packet;
         serialize_rudics_packet(bytes, &rudics_packet);
-
-        //
-        // SEND VIA RUDICS
-        //
+        rudics_send(rudics_packet, msg.dest());
+        
     }
     else if(msg.rate() == RATE_SBD)
     {
@@ -223,42 +222,89 @@ void goby::acomms::IridiumShoreDriver::send(const protobuf::ModemTransmission& m
     }
 }
 
+void goby::acomms::IridiumShoreDriver::rudics_send(const std::string& data, goby::acomms::IridiumShoreDriver::ModemId id)
+{
+    typedef boost::bimap<ModemId, boost::shared_ptr<RUDICSConnection> >::left_map::iterator LeftIt;
+    LeftIt client_it = clients_.left.find(id);
+    if(client_it != clients_.left.end())
+    {
+        glog.is(DEBUG1) && glog << "RUDICS sending bytes: " << goby::util::hex_encode(data) << std::endl;
+        client_it->second->write_start(data);
+    }
+    else
+    {
+        glog.is(WARN) && glog << "Failed to find connection from ModemId " << id << std::endl;
+    }
+}
+
+
 void goby::acomms::IridiumShoreDriver::rudics_connect(boost::shared_ptr<RUDICSConnection> connection)
 {
     connection->line_signal.connect(boost::bind(&IridiumShoreDriver::rudics_line, this, _1, _2));
+    connection->disconnect_signal.connect(boost::bind(&IridiumShoreDriver::rudics_disconnect, this, _1));
 }
 
 void goby::acomms::IridiumShoreDriver::rudics_disconnect(boost::shared_ptr<RUDICSConnection> connection)
 {
-    clients_.right.erase(connection);
+    typedef boost::bimap<ModemId, boost::shared_ptr<RUDICSConnection> >::right_map::iterator RightIt;
+    
+    RightIt client_it = clients_.right.find(connection);
+    if(client_it != clients_.right.end())
+    {
+        ModemId id = client_it->second;
+        remote_[id].on_call.reset();
+        clients_.right.erase(client_it);
+        glog.is(DEBUG1) && glog << "Disconnecting client for modem id: " << id << "; " << clients_.size() << " clients remaining." << std::endl;
+    }
+    else
+    {
+        glog.is(WARN) && glog << "Disconnection received from connection we do not have in the clients_ map: " << connection->remote_endpoint_str() << std::endl;
+    }    
 }
 
 void goby::acomms::IridiumShoreDriver::rudics_line(const std::string& data, boost::shared_ptr<RUDICSConnection> connection)
 {
-    glog.is(DEBUG1) && glog << "RUDICS received bytes: " << goby::util::hex_encode(data) << " [" << data << "]" << std::endl;
+    glog.is(DEBUG1) && glog << "RUDICS received bytes: " << goby::util::hex_encode(data) << std::endl;
 
     try
     {
-        std::string line;
+        std::string decoded_line;
 
-        if(line == "goby\r")
+        if(data == "goby\r")
         {
-            glog.is(DEBUG1) && glog << "Detected start of Goby RUDICS connection" << std::endl;
+            glog.is(DEBUG1) && glog << "Detected start of Goby RUDICS connection from " <<  connection->remote_endpoint_str() << std::endl;
         }
-        else if(line == "bye\r")
+        else if(data == "bye\r")
         {
+            typedef boost::bimap<ModemId, boost::shared_ptr<RUDICSConnection> >::right_map::iterator RightIt;
+    
+            RightIt client_it = clients_.right.find(connection);
+            if(client_it != clients_.right.end())
+            {
+                ModemId id = client_it->second;
+                glog.is(DEBUG1) && glog << "Detected bye from " <<  connection->remote_endpoint_str() << " ID: " << id << std::endl;
+                remote_[id].on_call->set_bye_received(true);
+            }
+            else
+            {
+                glog.is(WARN) && glog << "Bye dectected from connection we do not have in the clients_ map: " << connection->remote_endpoint_str() << std::endl;
+            }
         }
         else
         {
-            parse_rudics_packet(&line, data);
+            parse_rudics_packet(&decoded_line, data);
             
             protobuf::ModemTransmission modem_msg;
-            modem_msg.ParseFromString(line);
+            modem_msg.ParseFromString(decoded_line);
 
-            glog.is(DEBUG1) && glog << "Received RUDICS message from: " << modem_msg.src() << " to: " << modem_msg.dest() << " from endpoint: " << connection->socket().remote_endpoint() << std::endl;
+            glog.is(DEBUG1) && glog << "Received RUDICS message from: " << modem_msg.src() << " to: " << modem_msg.dest() << " from endpoint: " << connection->remote_endpoint_str() << std::endl;
             if(!clients_.left.count(modem_msg.src()))
+            {
                 clients_.left.insert(std::make_pair(modem_msg.src(), connection));
-
+                remote_[modem_msg.src()].on_call.reset(new OnCallBase);
+            }
+            
+                
             receive(modem_msg);
         }
         
@@ -315,7 +361,7 @@ void goby::acomms::IridiumShoreDriver::receive_sbd_mo()
         }
         else if((*it)->connect_time() > 0 && (goby::common::goby_time<double>() > ((*it)->connect_time() + timeout)))
         {
-            glog.is(DEBUG1) && glog << "Removing connection that has timed out:" << (*it)->socket().remote_endpoint() << std::endl;
+            glog.is(DEBUG1) && glog << "Removing connection that has timed out:" << (*it)->remote_endpoint_str() << std::endl;
             mo_sbd_server_->connections().erase(it++);
         }
         else

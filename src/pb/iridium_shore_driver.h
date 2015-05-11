@@ -29,9 +29,6 @@
 #include <boost/bimap.hpp>
 
 #include "goby/common/time.h"
-
-#include "goby/util/linebasedcomms/tcp_client.h"
-
 #include "goby/acomms/modemdriver/driver_base.h"
 #include "goby/pb/protobuf/iridium_shore_driver.pb.h"
 #include "goby/pb/protobuf/iridium_driver.pb.h"
@@ -60,6 +57,8 @@ namespace goby
             void process_transmission(protobuf::ModemTransmission msg);
 
           private:
+            typedef unsigned ModemId;
+
             void receive(const protobuf::ModemTransmission& msg);
             void send(const protobuf::ModemTransmission& msg);
 
@@ -71,6 +70,7 @@ namespace goby
             void receive_sbd_mo();
             void send_sbd_mt(const std::string& bytes, const std::string& imei);
 
+            void rudics_send(const std::string& data, ModemId id);
             void rudics_disconnect(boost::shared_ptr<RUDICSConnection> connection);
             void rudics_line(const std::string& line, boost::shared_ptr<RUDICSConnection> connection);
             void rudics_connect(boost::shared_ptr<RUDICSConnection> connection);
@@ -97,7 +97,6 @@ namespace goby
             };
             
             
-            typedef unsigned ModemId;
             std::map<ModemId, RemoteNode> remote_;
 
 

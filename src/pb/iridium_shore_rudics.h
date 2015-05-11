@@ -49,10 +49,18 @@ namespace goby
             }
 
             void start()
-            {                
+            {
+                remote_endpoint_str_ = boost::lexical_cast<std::string>(socket_.remote_endpoint());
                 read_start();
             }
 
+
+            void close()
+            {
+                socket_.shutdown(boost::asio::ip::tcp::socket::shutdown_both);
+                socket_.close();
+            }
+            
             void read_start()
             {
                 boost::asio::async_read_until(socket_,
@@ -60,28 +68,41 @@ namespace goby
                                               '\r',
                                               boost::bind(&RUDICSConnection::handle_read, this, _1, _2));
             }
-            
+
+            void write_start(const std::string& data)
+            {
+                boost::asio::async_write(socket_,
+                                         boost::asio::buffer(data),
+                                         boost::bind(&RUDICSConnection::handle_write,
+                                                     this,
+                                                     _1, _2));
+            }            
+                                
             ~RUDICSConnection()
             {
                 using goby::glog;
                 using goby::common::logger::DEBUG1;
-                glog.is(DEBUG1) && glog << "Disconnecting from: " << socket_.remote_endpoint() << std::endl;
+                glog.is(DEBUG1) && glog << "Disconnecting from: " << remote_endpoint_str_ << std::endl;
             }
 
             
             boost::signals2::signal<void (const std::string& line, boost::shared_ptr<RUDICSConnection> connection)> line_signal;
             boost::signals2::signal<void (boost::shared_ptr<RUDICSConnection> connection)> disconnect_signal;
 
+            const std::string& remote_endpoint_str() { return remote_endpoint_str_; }
+            
+            
           private:
           RUDICSConnection(boost::asio::io_service& io_service)
-              : socket_(io_service)
+              : socket_(io_service),
+                remote_endpoint_str_("Unknown")
             {
 
             }
 
 
             void handle_write(const boost::system::error_code& error,
-                              size_t /*bytes_transferred*/)
+                              size_t bytes_transferred)
             {
                 if(error)
                 {
@@ -97,7 +118,6 @@ namespace goby
             {
                 if(!error)
                 {
-                    buffer_.commit(bytes_transferred);
                     std::istream istrm(&buffer_);
                     std::string line;
                     while(std::getline(istrm, line, '\r'))
@@ -108,7 +128,20 @@ namespace goby
                 {
                     using goby::glog;
                     using goby::common::logger::WARN;
-                    glog.is(WARN) && glog << "Error reading from TCP connection: " << error << std::endl;                
+                    using goby::common::logger::DEBUG1;
+                    if(error == boost::asio::error::eof)
+                    {
+                        glog.is(DEBUG1) && glog << "Connection reached EOF" << std::endl;
+                    }
+                    else if(error == boost::asio::error::operation_aborted)
+                    {
+                        glog.is(DEBUG1) && glog << "Read operation aborted (socket closed)" << std::endl;
+                    }
+                    else
+                    {
+                        glog.is(WARN) && glog << "Error reading from TCP connection: " << error << std::endl;                
+                    }
+                    
                     disconnect_signal(shared_from_this());
                 }
             }
@@ -116,6 +149,7 @@ namespace goby
           private:
             boost::asio::ip::tcp::socket socket_;
             boost::asio::streambuf buffer_;
+            std::string remote_endpoint_str_;
 
         };
 
@@ -132,13 +166,14 @@ namespace goby
 
             boost::signals2::signal<void (boost::shared_ptr<RUDICSConnection> connection)> connect_signal;
 
+            void disconnect(boost::shared_ptr<RUDICSConnection> connection)
+            { connection->close(); }
+            
+
           private:
             void start_accept()
             {
-                boost::shared_ptr<RUDICSConnection> new_connection = RUDICSConnection::create(acceptor_.get_io_service());
-
-                connections_.insert(new_connection);
-        
+                boost::shared_ptr<RUDICSConnection> new_connection = RUDICSConnection::create(acceptor_.get_io_service());        
                 acceptor_.async_accept(new_connection->socket(),
                                        boost::bind(&RUDICSServer::handle_accept, this, new_connection,
                                                    boost::asio::placeholders::error));
@@ -152,8 +187,9 @@ namespace goby
 		    using namespace goby::common::logger;
 		    using goby::glog;
 		    
-		    glog.is(DEBUG1) && glog << "Received connection from: " << new_connection->socket().remote_endpoint() << std::endl;
-
+		    glog.is(DEBUG1) && glog << "Received connection from: " << new_connection->remote_endpoint_str() << std::endl;
+                    connections_.insert(new_connection);
+                    
                     new_connection->disconnect_signal.connect(boost::bind(&RUDICSServer::handle_disconnect, this, _1));                    
                     connect_signal(new_connection);
                     new_connection->start();
@@ -164,7 +200,12 @@ namespace goby
 
             void handle_disconnect(boost::shared_ptr<RUDICSConnection> connection)
             {
+                using goby::glog;
+                using goby::common::logger::DEBUG1;
+                
                 connections_.erase(connection);
+
+                glog.is(DEBUG1) && glog << "Server removing connection: " << connection->remote_endpoint_str() << ". Remaining connection count: " << connections_.size() << std::endl;
             }
 
             std::set<boost::shared_ptr<RUDICSConnection> > connections_;

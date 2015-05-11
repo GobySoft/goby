@@ -113,9 +113,12 @@ namespace goby
             struct EvConfigured : boost::statechart::event< EvConfigured > {};
             struct EvSBDBeginData : boost::statechart::event< EvSBDBeginData >
             {
-              EvSBDBeginData(const std::string& data = "")
-                  : data_(data) { }
+              EvSBDBeginData(const std::string& data = "", bool in_response_to_ring_alert = false)
+                  : data_(data),
+                    in_response_to_ring_alert_(in_response_to_ring_alert)
+                    { }
                 std::string data_;
+                bool in_response_to_ring_alert_;
             };
             
             
@@ -264,6 +267,7 @@ namespace goby
                            DIAL_TIMEOUT_SECONDS = 60,
                            SBDIX_TIMEOUT_SECONDS = DIAL_TIMEOUT_SECONDS,
                            TRIPLE_PLUS_TIMEOUT_SECONDS = 6,
+                           HANGUP_TIMEOUT_SECONDS = 10,
                            ANSWER_TIMEOUT_SECONDS = 30};
 
                     enum { RETRIES_BEFORE_RESET = 3 };
@@ -496,7 +500,15 @@ namespace goby
                     ~SBD() { }
 
                     void set_data(const EvSBDBeginData& e)
-                    { set_data(e.data_); }
+                    {
+                        set_data(e.data_);
+                        in_response_to_ring_alert_ = e.in_response_to_ring_alert_;
+                    }
+                    void clear_data() { data_.clear(); }
+                    const std::string& data() const { return data_; }
+                    bool in_response_to_ring_alert() const { return in_response_to_ring_alert_; }
+                    
+                  private:
                     void set_data(const std::string& data)
                     {
                         if(data.empty())
@@ -509,13 +521,12 @@ namespace goby
                             data_ = data + std::string(1, (csum & 0xFF00) >> bits_in_byte) + std::string(1, (csum & 0xFF));
                         }
                     }
-                    void clear_data() { data_.clear(); }
-                    const std::string& data() const { return data_; }
-                    
+
                   private:
                     std::string data_;
+                    bool in_response_to_ring_alert_;
                 };
-
+            
             /* struct SBDConfigure : boost::statechart::simple_state<SBDConfigure, SBD >, StateNotify */
             /* { */
             /*     typedef boost::mpl::list< */
@@ -612,7 +623,10 @@ namespace goby
                     > reactions;
               SBDTransmit(my_context ctx) : my_base(ctx), StateNotify("SBDTransmit")
                 {
-                    context<Command>().push_at_command("+SBDIX");
+                    if(context<SBD>().in_response_to_ring_alert())
+                        context<Command>().push_at_command("+SBDIXA");
+                    else
+                        context<Command>().push_at_command("+SBDIX");
                 }
                 ~SBDTransmit()
                 {

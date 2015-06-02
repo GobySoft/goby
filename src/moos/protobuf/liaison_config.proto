@@ -99,6 +99,10 @@ message MOOSScopeConfig
   
   
   repeated HistoryConfig history = 8;
+
+  optional bool use_binary_protobuf = 9 [default=false];
+    
+    
 }
 
 message GeodesyConfig

@@ -216,7 +216,8 @@ namespace goby
             }
             
         };
-        
+
+
 
         template<>
             class MOOSTranslation <protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_NATIVE_ENCODED>
@@ -232,6 +233,98 @@ namespace goby
                 out->ParseFromString(in);
             }
         };
+
+
+        
+        template<>
+            class MOOSTranslation <protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_NATIVE_HEX>
+        {
+          public:
+            static void serialize(std::string* out, const google::protobuf::Message& in)
+            {
+                std::string native_encoded;
+                goby::moos::MOOSTranslation<goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_NATIVE_ENCODED>::serialize(&native_encoded, in);
+                goby::util::hex_encode(native_encoded, out);
+            }
+            
+            static void parse(const std::string& in, google::protobuf::Message* out)
+            {
+                std::string native_encoded;
+                goby::util::hex_decode(in, &native_encoded);
+                goby::moos::MOOSTranslation<goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_NATIVE_ENCODED>::parse(native_encoded, out);
+            }
+        };
+        
+
+        template<>
+            class MOOSTranslation <protobuf::TranslatorEntry::TECHNIQUE_PREFIXED_PROTOBUF_NATIVE_HEX>
+        {
+          public:
+            static void serialize(std::string* out, const google::protobuf::Message& msg)
+            {
+                std::string header = goby::moos::MAGIC_PROTOBUF_HEADER + "[" + msg.GetDescriptor()->full_name() + "]";
+                goby::moos::MOOSTranslation<goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_NATIVE_HEX>::serialize(out, msg);
+                *out = header + *out;
+            }
+            
+            static void parse(const std::string& in, google::protobuf::Message* msg)
+            {
+                if(in.size() > goby::moos::MAGIC_PROTOBUF_HEADER.size() && in.substr(0, goby::moos::MAGIC_PROTOBUF_HEADER.size()) == goby::moos::MAGIC_PROTOBUF_HEADER)
+                {
+                    size_t end_bracket_pos = in.find(']');
+
+                    if(end_bracket_pos == std::string::npos)
+                        throw(std::runtime_error("Incorrectly formatted protobuf message passed to MOOSTranslation<protobuf::TranslatorEntry::TECHNIQUE_PREFIXED_PROTOBUF_NATIVE_HEX>::parse."));
+        
+                    std::string name = in.substr(goby::moos::MAGIC_PROTOBUF_HEADER.size() + 1,
+                                                 end_bracket_pos - 1 - goby::moos::MAGIC_PROTOBUF_HEADER.size());
+                    if(name != msg->GetDescriptor()->full_name())
+                        throw(std::runtime_error("Wrong Protobuf type passed to MOOSTranslation<protobuf::TranslatorEntry::TECHNIQUE_PREFIXED_PROTOBUF_NATIVE_HEX>::parse. Expected: " + msg->GetDescriptor()->full_name() + ", received: " + name));
+
+                    if(in.size() > end_bracket_pos + 1)
+                        goby::moos::MOOSTranslation<goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_NATIVE_HEX>::parse(in.substr(end_bracket_pos + 1), msg);
+                    else
+                        msg->Clear();
+                }
+                else
+                {
+                    goby::moos::MOOSTranslation<goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_NATIVE_HEX>::parse(in, msg);
+                }
+            }
+
+            static boost::shared_ptr<google::protobuf::Message> dynamic_parse(const std::string& in)
+            {
+                if(in.size() > goby::moos::MAGIC_PROTOBUF_HEADER.size() && in.substr(0, goby::moos::MAGIC_PROTOBUF_HEADER.size()) == goby::moos::MAGIC_PROTOBUF_HEADER)
+                {
+                    size_t end_bracket_pos = in.find(']');
+
+                    if(end_bracket_pos == std::string::npos)
+                        throw(std::runtime_error("Incorrectly formatted protobuf message passed to MOOSTranslation<protobuf::TranslatorEntry::TECHNIQUE_PREFIXED_PROTOBUF_NATIVE_HEX>::dynamic_parse."));
+        
+                    std::string name = in.substr(goby::moos::MAGIC_PROTOBUF_HEADER.size() + 1,
+                                                 end_bracket_pos - 1 - goby::moos::MAGIC_PROTOBUF_HEADER.size());
+
+                    try
+                    {
+                        boost::shared_ptr<google::protobuf::Message> return_message =
+                            goby::util::DynamicProtobufManager::new_protobuf_message(name);
+                        if(in.size() > end_bracket_pos + 1)
+                            goby::moos::MOOSTranslation<goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_NATIVE_HEX>::parse(in.substr(end_bracket_pos + 1), return_message.get());
+                        return return_message;
+                    }
+                    catch(std::exception& e)
+                    {
+                        return boost::shared_ptr<google::protobuf::Message>();
+                    }        
+                }
+                else
+                {
+                    return boost::shared_ptr<google::protobuf::Message>();
+                }
+            }
+            
+        };
+
 
         template<>
             class MOOSTranslation <protobuf::TranslatorEntry::TECHNIQUE_COMMA_SEPARATED_KEY_EQUALS_VALUE_PAIRS>
@@ -1283,9 +1376,21 @@ namespace goby
 ///
 /// \param out pointer to std::string to store serialized result
 /// \param msg Google Protocol buffers message to serialize
+namespace goby
+{
+    namespace moos
+    {
+        extern bool use_binary_protobuf;
+    }
+}
+
+
 inline void serialize_for_moos(std::string* out, const google::protobuf::Message& msg)
 {
-    goby::moos::MOOSTranslation<goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PREFIXED_PROTOBUF_TEXT_FORMAT>::serialize(out, msg);
+    if(goby::moos::use_binary_protobuf)
+        goby::moos::MOOSTranslation<goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PREFIXED_PROTOBUF_NATIVE_HEX>::serialize(out, msg);
+    else
+        goby::moos::MOOSTranslation<goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PREFIXED_PROTOBUF_TEXT_FORMAT>::serialize(out, msg);        
 }
 
 /// \brief Parses the string `in` to Google Protocol Buffers message `msg`. All errors are written to the goby::util::glogger().
@@ -1294,12 +1399,18 @@ inline void serialize_for_moos(std::string* out, const google::protobuf::Message
 /// \param msg Google Protocol buffers message to store result
 inline void parse_for_moos(const std::string& in, google::protobuf::Message* msg)
 {
-    goby::moos::MOOSTranslation<goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PREFIXED_PROTOBUF_TEXT_FORMAT>::parse(in, msg);
+    if(goby::moos::use_binary_protobuf)
+        goby::moos::MOOSTranslation<goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PREFIXED_PROTOBUF_NATIVE_HEX>::parse(in, msg);
+    else
+        goby::moos::MOOSTranslation<goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PREFIXED_PROTOBUF_TEXT_FORMAT>::parse(in, msg);
 }
 
 inline boost::shared_ptr<google::protobuf::Message> dynamic_parse_for_moos(const std::string& in)
 {
-    return goby::moos::MOOSTranslation<goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PREFIXED_PROTOBUF_TEXT_FORMAT>::dynamic_parse(in);
+    if(goby::moos::use_binary_protobuf)
+        return goby::moos::MOOSTranslation<goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PREFIXED_PROTOBUF_NATIVE_HEX>::dynamic_parse(in);
+    else
+        return goby::moos::MOOSTranslation<goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PREFIXED_PROTOBUF_TEXT_FORMAT>::dynamic_parse(in);
 }
 
 

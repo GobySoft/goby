@@ -40,7 +40,11 @@ message GobyMOOSAppConfig
                                     (goby.field).description="Verbosity of the terminal window output"];
   optional bool show_gui  = 4 [default = false, (goby.field).description="Set to true to display windowed NCurses GUI for terminal output."];
 
-  
+
+  optional bool use_binary_protobuf = 109 [default = false,
+                                           (goby.field).moos_global = "use_binary_protobuf",
+                                           (goby.field).description="Use TECHNIQUE_PREFIXED_PROTOBUF_NATIVE_HEX for parse_for_moos and serialize_for_moos"];
+    
   // post various configuration values to the MOOSDB on startup
   message Initializer
   {

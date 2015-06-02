@@ -707,6 +707,8 @@ template <class MOOSAppType>
         }
     }
 
+    goby::moos::use_binary_protobuf = common_cfg_.use_binary_protobuf();
+
 }
 
 

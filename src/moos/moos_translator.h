@@ -234,10 +234,20 @@ inline std::multimap<std::string, CMOOSMsg> goby::moos::MOOSTranslator::protobuf
         {
             case protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_TEXT_FORMAT:
                 goby::moos::MOOSTranslation<protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_TEXT_FORMAT>::serialize(&return_string, protobuf_msg);
-                break;
-
+                break;                
+                
+                
             case protobuf::TranslatorEntry::TECHNIQUE_PREFIXED_PROTOBUF_TEXT_FORMAT:
                 goby::moos::MOOSTranslation<protobuf::TranslatorEntry::TECHNIQUE_PREFIXED_PROTOBUF_TEXT_FORMAT>::serialize(&return_string, protobuf_msg);
+                break;
+
+
+            case protobuf::TranslatorEntry::TECHNIQUE_PREFIXED_PROTOBUF_NATIVE_HEX:
+                goby::moos::MOOSTranslation<protobuf::TranslatorEntry::TECHNIQUE_PREFIXED_PROTOBUF_NATIVE_HEX>::serialize(&return_string, protobuf_msg);
+                break;
+
+            case protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_NATIVE_HEX:
+                goby::moos::MOOSTranslation<protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_NATIVE_HEX>::serialize(&return_string, protobuf_msg);
                 break;
 
                 
@@ -291,6 +301,15 @@ inline std::multimap<std::string, CMOOSMsg> goby::moos::MOOSTranslator::protobuf
             case protobuf::TranslatorEntry::TECHNIQUE_PREFIXED_PROTOBUF_TEXT_FORMAT:
                 goby::moos::MOOSTranslation<goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PREFIXED_PROTOBUF_TEXT_FORMAT>::serialize(&return_string, protobuf_msg);
                 break;
+
+            case protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_NATIVE_HEX:
+                goby::moos::MOOSTranslation<goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_NATIVE_HEX>::serialize(&return_string, protobuf_msg);
+                break;
+
+            case protobuf::TranslatorEntry::TECHNIQUE_PREFIXED_PROTOBUF_NATIVE_HEX:
+                goby::moos::MOOSTranslation<goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PREFIXED_PROTOBUF_NATIVE_HEX>::serialize(&return_string, protobuf_msg);
+                break;
+
                 
             case protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_NATIVE_ENCODED:
                 goby::moos::MOOSTranslation<goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_NATIVE_ENCODED>::serialize(&return_string, protobuf_msg);
@@ -373,6 +392,15 @@ GoogleProtobufMessagePointer goby::moos::MOOSTranslator::moos_to_protobuf(const 
 
             case protobuf::TranslatorEntry::TECHNIQUE_PREFIXED_PROTOBUF_TEXT_FORMAT:
                 goby::moos::MOOSTranslation<protobuf::TranslatorEntry::TECHNIQUE_PREFIXED_PROTOBUF_TEXT_FORMAT>::parse(source_string, &*msg);
+                break;
+
+
+            case protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_NATIVE_HEX:
+                goby::moos::MOOSTranslation<protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_NATIVE_HEX>::parse(source_string, &*msg);
+                break;
+
+            case protobuf::TranslatorEntry::TECHNIQUE_PREFIXED_PROTOBUF_NATIVE_HEX:
+                goby::moos::MOOSTranslation<protobuf::TranslatorEntry::TECHNIQUE_PREFIXED_PROTOBUF_NATIVE_HEX>::parse(source_string, &*msg);
                 break;
 
                 

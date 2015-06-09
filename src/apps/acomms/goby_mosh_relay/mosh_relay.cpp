@@ -239,6 +239,15 @@ goby::acomms::Packetizer::Packetizer(int src, int dest, const std::vector<char>&
 bool goby::acomms::Packetizer::add_fragment(const protobuf::MoshPacket& frag)
 {
     fragments_.insert(frag);
+
+    // packet loss
+    if(frag.is_last_frag() && fragments_.size() != frag.frag_num()+1)
+    {
+        fragments_.clear();
+        glog.is(WARN) && glog << "Missed fragment" << std::endl;
+        return false;
+    }
+    
     return frag.is_last_frag();
 }
 

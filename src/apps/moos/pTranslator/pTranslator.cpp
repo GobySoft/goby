@@ -188,13 +188,20 @@ void CpTranslator::create_on_multiplex_publish(const CMOOSMsg& moos_msg)
 
     std::multimap<std::string, CMOOSMsg> out;    
 
-    out = translator_.protobuf_to_inverse_moos(*msg);
-    
-    for(std::multimap<std::string, CMOOSMsg>::iterator it = out.begin(), n = out.end();
-        it != n; ++it)
+    try
     {
-        glog.is(VERBOSE) && glog << "Inverse Publishing: " << it->second.GetKey() << std::endl;
-        publish(it->second);
+        out = translator_.protobuf_to_inverse_moos(*msg);
+    
+        for(std::multimap<std::string, CMOOSMsg>::iterator it = out.begin(), n = out.end();
+            it != n; ++it)
+        {
+            glog.is(VERBOSE) && glog << "Inverse Publishing: " << it->second.GetKey() << std::endl;
+            publish(it->second);
+        }
+    }
+    catch(std::exception &e)
+    {
+        glog.is(WARN) && glog << "Failed to inverse publish: " << e.what() << std::endl;
     }
 }
 

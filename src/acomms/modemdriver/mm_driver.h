@@ -93,7 +93,8 @@ namespace goby
             void ccmpc(const protobuf::ModemTransmission& msg);
             void ccpdt(const protobuf::ModemTransmission& msg);
             void ccpnt(const protobuf::ModemTransmission& msg);
-             
+            void ccmec(const protobuf::ModemTransmission& msg);
+
             void try_send(); // try to send another NMEA message to the modem
             void pop_out(); // pop the NMEA send deque upon successful NMEA acknowledgment
             void cache_outgoing_data(protobuf::ModemTransmission* msg); // cache data upon a CCCYC
@@ -124,6 +125,10 @@ namespace goby
             void campa(const util::NMEASentence& nmea, protobuf::ModemTransmission* msg); // $CAMPA
             void sntta(const util::NMEASentence& nmea, protobuf::ModemTransmission* msg); // $SNTTA
 
+            // hardware control
+            void camer(const util::NMEASentence& nmea, protobuf::ModemTransmission* msg); // $CAMER
+
+            
             
             // local modem
             void caxst(const util::NMEASentence& nmea, protobuf::ModemTransmission* msg); // $CAXST
@@ -262,6 +267,16 @@ namespace goby
             micromodem::protobuf::TransmissionType last_lbl_type_;
 
             double last_keep_alive_time_;
+
+            struct MMRevision
+            {
+                MMRevision() : mm_major(0), mm_minor(0), mm_patch(0) { }
+                int mm_major;
+                int mm_minor;
+                int mm_patch;
+            };
+            MMRevision revision_;
+            
         };
     }
 }

@@ -473,6 +473,7 @@ void goby::acomms::MMDriver::handle_initiate_transmission(const protobuf::ModemT
                     case micromodem::protobuf::MICROMODEM_TWO_WAY_PING: ccmpc(transmit_msg_); break;
                     case micromodem::protobuf::MICROMODEM_REMUS_LBL_RANGING: ccpdt(transmit_msg_); break;
                     case micromodem::protobuf::MICROMODEM_NARROWBAND_LBL_RANGING: ccpnt(transmit_msg_); break;
+                    case micromodem::protobuf::MICROMODEM_HARDWARE_CONTROL: ccmec(transmit_msg_); break;
                     default:
                         glog.is(DEBUG1) && glog << group(glog_out_group()) << warn << "Not initiating transmission because we were given an invalid DRIVER_SPECIFIC transmission type for the Micro-Modem:" << transmit_msg_ << std::endl;
                         break;
@@ -693,7 +694,25 @@ void goby::acomms::MMDriver::ccpnt(const protobuf::ModemTransmission& msg)
     nmea.push_back(static_cast<int>(params.transmit_flag()));
     append_to_write_queue(nmea);
 }
+
+void goby::acomms::MMDriver::ccmec(const protobuf::ModemTransmission& msg)
+{
+    glog.is(DEBUG1) && glog << group(glog_out_group()) << "\tthis is a MICROMODEM_HARDWARE_CONTROL transmission" << std::endl;
     
+    micromodem::protobuf::HardwareControl params = msg.GetExtension(micromodem::protobuf::hw_ctl);
+
+    // $CCMEC,source,dest,line,mode,arg*CS
+    NMEASentence nmea("$CCMEC", NMEASentence::IGNORE);
+    nmea.push_back(msg.src());
+    nmea.push_back(msg.dest());
+    nmea.push_back(static_cast<int>(params.line()));
+    nmea.push_back(static_cast<int>(params.mode()));
+    nmea.push_back(static_cast<int>(params.arg()));
+
+    append_to_write_queue(nmea);
+}
+
+
 
 //
 // OUTGOING NMEA
@@ -850,7 +869,10 @@ void goby::acomms::MMDriver::process_receive(const NMEASentence& nmea)
             //
         case MPR: campr(nmea, &receive_msg_); break; // two way ping
         case MPA: campa(nmea, &receive_msg_); break; // hear request for two way ping 
-        case TTA: sntta(nmea, &receive_msg_); break; // remus / narrowband lbl times 
+        case TTA: sntta(nmea, &receive_msg_); break; // remus / narrowband lbl times
+
+            // hardware control
+        case MER: camer(nmea, &receive_msg_); break; // reply to hardware control
 
         default: break;
     }
@@ -894,6 +916,41 @@ void goby::acomms::MMDriver::caack(const NMEASentence& nmea, protobuf::ModemTran
         glog.is(DEBUG1) && glog << group(glog_in_group()) << "Received ACK for Micro-Modem frame " << frame + 1 << " (Goby frame " << frame << ") that we were not expecting." << std::endl;
     }
 }
+
+
+void goby::acomms::MMDriver::camer(const NMEASentence& nmea, protobuf::ModemTransmission* m)
+{
+    int src_field = 1;
+    int dest_field = 2;
+
+    // this are swapped in older MM2 revisions
+    if(revision_.mm_major == 2 && revision_.mm_minor == 0 && revision_.mm_patch < 18307)
+    {
+        src_field = 2;
+        dest_field = 1;
+    }
+
+    if(as<int32>(nmea[dest_field]) != driver_cfg_.modem_id())
+        return;
+
+    m->set_time(goby_time<uint64>());
+    // I think these are reversed from what the manual states
+    m->set_src(as<uint32>(nmea[src_field]));
+    m->set_dest(as<uint32>(nmea[dest_field]));
+    m->set_type(protobuf::ModemTransmission::DRIVER_SPECIFIC);
+    m->SetExtension(micromodem::protobuf::type, micromodem::protobuf::MICROMODEM_HARDWARE_CONTROL_REPLY);    
+    
+    micromodem::protobuf::HardwareControl* hw_ctl = m->MutableExtension(micromodem::protobuf::hw_ctl);
+
+    hw_ctl->set_line(nmea.as<micromodem::protobuf::HardwareLine>(3));
+    hw_ctl->set_mode(nmea.as<micromodem::protobuf::HardwareControlMode>(4));
+    hw_ctl->set_arg(nmea.as<micromodem::protobuf::HardwareControlArgument>(5));    
+    
+    // if enabled cacst will signal_receive
+    if(!nvram_cfg_["CST"])
+        signal_receive_and_clear(m);
+}
+
 
 void goby::acomms::MMDriver::cadrq(const NMEASentence& nmea_in, const protobuf::ModemTransmission& m)
 {
@@ -1265,6 +1322,21 @@ void goby::acomms::MMDriver::carev(const NMEASentence& nmea)
         
         if( abs( int( t_diff.total_milliseconds())) > ALLOWED_MS_DIFF )
             clock_set_ = false;
+
+        std::vector<std::string> rev_parts;
+        boost::split(rev_parts, nmea[3], boost::is_any_of("."));
+        if(rev_parts.size() == 3)
+        {
+            revision_.mm_major = as<int>(rev_parts[0]);
+            revision_.mm_minor = as<int>(rev_parts[1]);
+            revision_.mm_patch = as<int>(rev_parts[2]);
+            glog.is(DEBUG1) && glog << group(glog_in_group()) << "Revision: " << revision_.mm_major << "." << revision_.mm_minor << "." << revision_.mm_patch << std::endl;
+        }
+        else
+        {
+            glog.is(WARN) && glog << group(glog_in_group()) << "Bad revision string: " << nmea[3] << std::endl;
+        }
+        
     }
 }
 

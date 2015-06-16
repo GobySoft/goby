@@ -176,36 +176,32 @@ void CpTranslator::create_on_publish(const CMOOSMsg& trigger_msg,
 
 void CpTranslator::create_on_multiplex_publish(const CMOOSMsg& moos_msg)
 {
-    std::string moos_msg_str = moos_msg.GetString(); 
-    size_t first_space_pos = moos_msg_str.find(' ');
-
-    std::string protobuf_name = moos_msg_str.substr(0, first_space_pos - 0);
-    std::string message_contents = moos_msg_str.substr(first_space_pos);
-
-    boost::trim(protobuf_name);
-    boost::trim(message_contents);
-    
     boost::shared_ptr<google::protobuf::Message> msg =
-        goby::util::DynamicProtobufManager::new_protobuf_message(protobuf_name);
+        dynamic_parse_for_moos(moos_msg.GetString());
 
-    if(&*msg == 0)
+    if(!msg)
     {
         glog.is(WARN) &&
-            glog << "Multiplex receive failed: Unknown Protobuf type: " << protobuf_name << "; be sure it is compiled in or directly loaded into the goby::util::DynamicProtobufManager." << std::endl;
+	  glog <<  "Multiplex receive failed: Unknown Protobuf type for " << moos_msg.GetString() << "; be sure it is compiled in or directly loaded into the goby::util::DynamicProtobufManager." << std::endl;
         return;
     }
 
-    goby::moos::MOOSTranslation<goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_TEXT_FORMAT>::parse(message_contents, &*msg);
-
     std::multimap<std::string, CMOOSMsg> out;    
 
-    out = translator_.protobuf_to_inverse_moos(*msg);
-    
-    for(std::multimap<std::string, CMOOSMsg>::iterator it = out.begin(), n = out.end();
-        it != n; ++it)
+    try
     {
-        glog.is(VERBOSE) && glog << "Inverse Publishing: " << it->second << std::endl;
-        publish(it->second);
+        out = translator_.protobuf_to_inverse_moos(*msg);
+    
+        for(std::multimap<std::string, CMOOSMsg>::iterator it = out.begin(), n = out.end();
+            it != n; ++it)
+        {
+            glog.is(VERBOSE) && glog << "Inverse Publishing: " << it->second.GetKey() << std::endl;
+            publish(it->second);
+        }
+    }
+    catch(std::exception &e)
+    {
+        glog.is(WARN) && glog << "Failed to inverse publish: " << e.what() << std::endl;
     }
 }
 

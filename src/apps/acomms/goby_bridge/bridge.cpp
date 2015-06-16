@@ -40,6 +40,7 @@
 #include "goby/acomms/protobuf/file_transfer.pb.h"
 #include "goby/acomms/protobuf/mosh_packet.pb.h"
 #include "goby/acomms/protobuf/modem_driver_status.pb.h"
+#include "goby/acomms/protobuf/mm_driver.pb.h"
 
 #include "bridge_config.pb.h"
 
@@ -96,6 +97,8 @@ namespace goby
             std::vector<boost::shared_ptr<MACManager> > mac_managers_;
             
             RouteManager r_manager_;
+            
+            boost::shared_ptr<micromodem::protobuf::HardwareControlCommand> pending_hw_ctl_;
         };
     }
 }
@@ -221,7 +224,7 @@ void goby::acomms::Bridge::handle_queue_receive(const google::protobuf::Message&
 {
     publish(msg, "QueueRx" + goby::util::as<std::string>(from_queue->modem_id()));
 
-    // handle RouteCommand messages
+    // handle various command messages
     if(msg.GetDescriptor() == goby::acomms::protobuf::RouteCommand::descriptor())
     {
         goby::acomms::protobuf::RouteCommand route_cmd;
@@ -231,6 +234,15 @@ void goby::acomms::Bridge::handle_queue_receive(const google::protobuf::Message&
         cfg.mutable_route()->CopyFrom(route_cmd.new_route());
         r_manager_.set_cfg(cfg);
     }
+    else if(msg.GetDescriptor() == micromodem::protobuf::HardwareControlCommand::descriptor())
+    {
+        pending_hw_ctl_.reset(new micromodem::protobuf::HardwareControlCommand);
+        pending_hw_ctl_->CopyFrom(msg);
+        if(!pending_hw_ctl_->has_hw_ctl_dest())
+            pending_hw_ctl_->set_hw_ctl_dest(pending_hw_ctl_->command_dest());
+        
+        glog.is(VERBOSE) && glog << "Received HardwareControlCommand: " << msg.DebugString() << std::endl;
+    }   
 }
 
 void goby::acomms::Bridge::handle_link_ack(const protobuf::ModemTransmission& ack_msg,
@@ -275,6 +287,33 @@ void goby::acomms::Bridge::handle_modem_receive(const goby::acomms::protobuf::Mo
                                  ranging,
                                  in_queue->modem_id());        
         }
+
+
+        if(message.type() == goby::acomms::protobuf::ModemTransmission::DRIVER_SPECIFIC &&
+           message.GetExtension(micromodem::protobuf::type) == micromodem::protobuf::MICROMODEM_HARDWARE_CONTROL_REPLY)
+        {
+            micromodem::protobuf::HardwareControl control =
+                message.GetExtension(micromodem::protobuf::hw_ctl);
+            
+            if(message.src() == pending_hw_ctl_->hw_ctl_dest() && message.dest() == in_queue->modem_id())
+            {
+                glog.is(VERBOSE) && glog << "Received hardware control response: " << control << " to our command: " << *pending_hw_ctl_ << std::endl;
+
+                protobuf::NetworkAck ack;
+                ack.set_ack_src(message.src());
+                ack.set_message_dccl_id(DCCLCodec::get()->id(pending_hw_ctl_->GetDescriptor()));
+                
+                ack.set_message_src(pending_hw_ctl_->command_src());
+                ack.set_message_dest(pending_hw_ctl_->command_dest());
+                ack.set_message_time(pending_hw_ctl_->time());
+                ack.set_ack_type(goby::acomms::protobuf::NetworkAck::ACK);
+                
+                r_manager_.handle_in(in_queue->meta_from_msg(ack),
+                                     ack,
+                                     in_queue->modem_id());        
+                pending_hw_ctl_.reset();
+            }
+        }
     }
     catch(std::exception& e)
     {
@@ -286,7 +325,21 @@ void goby::acomms::Bridge::handle_modem_receive(const goby::acomms::protobuf::Mo
 void goby::acomms::Bridge::handle_initiate_transmission(const protobuf::ModemTransmission& m,
                                                         int subnet)
 {
-    publish(m, "Tx" + goby::util::as<std::string>(cfg_.subnet(subnet).queue_cfg().modem_id()));
+    // see if we need to override with a hardware control command
+    if(pending_hw_ctl_ &&
+       (m.dest() == pending_hw_ctl_->hw_ctl_dest() || m.dest() == QUERY_DESTINATION_ID))
+    {
+        protobuf::ModemTransmission new_transmission = m;
+        new_transmission.set_dest(pending_hw_ctl_->hw_ctl_dest());
+        new_transmission.set_type(goby::acomms::protobuf::ModemTransmission::DRIVER_SPECIFIC);
+        new_transmission.SetExtension(micromodem::protobuf::type, micromodem::protobuf::MICROMODEM_HARDWARE_CONTROL);
+        new_transmission.MutableExtension(micromodem::protobuf::hw_ctl)->CopyFrom(pending_hw_ctl_->control());
+        publish(new_transmission, "Tx" + goby::util::as<std::string>(cfg_.subnet(subnet).queue_cfg().modem_id()));
+    }
+    else
+    {
+        publish(m, "Tx" + goby::util::as<std::string>(cfg_.subnet(subnet).queue_cfg().modem_id()));
+    }
 }
 
 

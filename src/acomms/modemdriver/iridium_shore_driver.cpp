@@ -204,7 +204,8 @@ void goby::acomms::IridiumShoreDriver::send(const protobuf::ModemTransmission& m
         std::string rudics_packet;
         serialize_rudics_packet(bytes, &rudics_packet);
         rudics_send(rudics_packet, msg.dest());
-        
+        boost::shared_ptr<OnCallBase> on_call_base = remote.on_call;
+        on_call_base->set_last_tx_time(goby_time<double>());
     }
     else if(msg.rate() == RATE_SBD)
     {
@@ -302,7 +303,9 @@ void goby::acomms::IridiumShoreDriver::rudics_line(const std::string& data, boos
                 clients_.left.insert(std::make_pair(modem_msg.src(), connection));
                 remote_[modem_msg.src()].on_call.reset(new OnCallBase);
             }
-            
+
+            remote_[modem_msg.src()].on_call->set_last_rx_time(goby_time<double>());
+
                 
             receive(modem_msg);
         }

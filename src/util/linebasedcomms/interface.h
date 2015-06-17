@@ -66,15 +66,7 @@ namespace goby
             /// \brief returns string line (including delimiter)
             ///
             /// \return true if data was read, false if no data to read
-            bool readline(std::string* s, AccessOrder order = OLDEST_FIRST)
-            {
-                protobuf::Datagram datagram;
-                bool is_data = readline(&datagram, order);
-                *s = datagram.data();
-                return is_data;
-            }
-            
-            
+            bool readline(std::string* s, AccessOrder order = OLDEST_FIRST);
             bool readline(protobuf::Datagram* msg, AccessOrder order = OLDEST_FIRST);
 
             // write a line to the buffer

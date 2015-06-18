@@ -49,6 +49,16 @@ namespace goby
     {
         template<typename App>
             int run(int argc, char* argv[]);
+
+
+        template<typename ProtobufMessage>
+        inline void protobuf_inbox(const CMOOSMsg& msg,
+                                   boost::function<void (const ProtobufMessage& msg)> handler)
+        {
+            ProtobufMessage pb_msg;
+            parse_for_moos(msg.GetString(), &pb_msg);
+            handler(pb_msg);
+        }
     }
 }
 
@@ -64,7 +74,6 @@ class MOOSAppShell : public CMOOSApp
     void RegisterVariables() { }
     void PostReport() { }
 };
-
 
 template <class MOOSAppType = MOOSAppShell>
     class GobyMOOSAppSelector : public MOOSAppType
@@ -96,7 +105,15 @@ template <class MOOSAppType = MOOSAppShell>
 
       
       virtual ~GobyMOOSAppSelector() { }
-    
+
+      template<typename ProtobufMessage>
+      void publish_pb(const std::string& key, const ProtobufMessage& msg)
+      {
+          std::string serialized;
+          serialize_for_moos(&serialized, msg);
+          publish(key, serialized);
+      }
+      
   
       void publish(CMOOSMsg& msg)
       {
@@ -124,7 +141,7 @@ template <class MOOSAppType = MOOSAppShell>
       void subscribe(const std::string& var,
                      InboxFunc handler = InboxFunc(),
                      int blackout = 0);
-    
+      
       template<typename V, typename A1>
       void subscribe(const std::string& var,
                      void(V::*mem_func)(A1),
@@ -132,8 +149,24 @@ template <class MOOSAppType = MOOSAppShell>
                      int blackout = 0)
       { subscribe(var, boost::bind(mem_func, obj, _1), blackout); }    
 
-    
-    
+
+      template<typename V, typename ProtobufMessage>
+      void subscribe_pb(const std::string& var,
+                     void(V::*mem_func)(const ProtobufMessage&),
+                     V* obj,
+                     int blackout = 0)
+      { subscribe_pb<ProtobufMessage>(var, boost::bind(mem_func, obj, _1), blackout); }
+            
+      template<typename ProtobufMessage>
+      void subscribe_pb(const std::string& var,
+                        boost::function<void (const ProtobufMessage& msg)> handler,
+                        int blackout = 0)
+      {
+          subscribe(var,
+                    boost::bind(&goby::moos::protobuf_inbox<ProtobufMessage>, _1, handler),
+                    blackout);
+      }
+      
       template<typename App>
       friend int ::goby::moos::run(int argc, char* argv[]);
 
@@ -322,6 +355,7 @@ template <class MOOSAppType>
     try_subscribing();
     return true;
 }
+
 
 
 template <class MOOSAppType>

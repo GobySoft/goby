@@ -30,29 +30,31 @@ using goby::util::as;
 
 int main(int argc, char* argv[])
 {
-    std::string server_port;
-    std::string serial_port;
-    std::string serial_baud;
 
-    if(argc != 4)
+    int run_freq = 100;
+    
+    if(argc < 4)
     {
-        std::cout << "usage: serial2tcp_server server_port serial_port serial_baud" << std::endl;        
+        std::cout << "usage: serial2tcp_server server_port serial_port serial_baud [run-frequency=100]" << std::endl;        
         return 1;
     }
 
-    server_port = argv[1];
-    serial_port = argv[2];
-    serial_baud = argv[3];
-
+    std::string server_port = argv[1];
+    std::string serial_port = argv[2];
+    std::string serial_baud = argv[3];
+    if(argc == 5)
+        run_freq = goby::util::as<int>(argv[4]);
+    
+        
     goby::util::TCPServer tcp_server(as<unsigned>(server_port));
     goby::util::SerialClient serial_client(serial_port, as<unsigned>(serial_baud));
 
     tcp_server.start();
     serial_client.start(); 
 
+    std::string s;
     for(;;)
     {
-        std::string s;
         while(serial_client.readline(&s))
         {
             std::cout << "serial->tcp: " << s << std::flush;
@@ -64,7 +66,7 @@ int main(int argc, char* argv[])
             serial_client.write(s);
         }
         
-        usleep(1000);
+        usleep(1000000/run_freq);
     }
 }
 

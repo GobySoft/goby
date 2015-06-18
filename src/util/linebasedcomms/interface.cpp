@@ -79,6 +79,31 @@ bool goby::util::LineBasedInterface::readline(protobuf::Datagram* msg, AccessOrd
     }
 }
 
+bool goby::util::LineBasedInterface::readline(std::string* s, AccessOrder order /* = OLDEST_FIRST */)   
+{
+    if(in_.empty())
+    {
+        return false;
+    }
+    else
+    {
+        boost::mutex::scoped_lock lock(in_mutex_);
+        switch(order)
+        {
+            case NEWEST_FIRST:
+                (*s) = in_.back().data();
+                in_.pop_back(); 
+                break;
+                
+            case OLDEST_FIRST:
+                (*s) = in_.front().data();
+                in_.pop_front();       
+                break;
+        }       
+        return true;
+    }
+}
+
 
 // pass the write data via the io service in the other thread
 void goby::util::LineBasedInterface::write(const protobuf::Datagram& msg)

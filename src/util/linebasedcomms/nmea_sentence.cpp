@@ -28,6 +28,8 @@
 
 #include "nmea_sentence.h"
 
+bool goby::util::NMEASentence::enforce_talker_length = true;
+
 goby::util::NMEASentence::NMEASentence(std::string s, strategy cs_strat /*= VALIDATE*/)
 {
     bool found_csum = false;
@@ -59,7 +61,7 @@ goby::util::NMEASentence::NMEASentence(std::string s, strategy cs_strat /*= VALI
     // Split string into parts.
     boost::split(*(std::vector<std::string>*)this, s, boost::is_any_of(","));
     // Validate talker size.
-    if (this->front().size() != 6)
+    if (enforce_talker_length && this->front().size() != 6)
       throw bad_nmea_sentence("NMEASentence: bad talker length '" + s + "'.");
 }
 

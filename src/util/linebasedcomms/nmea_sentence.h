@@ -102,6 +102,8 @@ namespace goby
             
             
             static unsigned char checksum(const std::string& s);
+	    
+	    static bool enforce_talker_length;
         };
     }
 }

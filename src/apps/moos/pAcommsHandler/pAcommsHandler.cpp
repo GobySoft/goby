@@ -606,6 +606,18 @@ void CpAcommsHandler::handle_queue_receive(const google::protobuf::Message& msg)
         glog.is(WARN) &&
             glog << group("pAcommsHandler") << "Failed to translate received message: " << e.what() << std::endl;
     }
+
+    // handle various commands
+    
+    if(router_ && msg.GetDescriptor() == goby::acomms::protobuf::RouteCommand::descriptor())
+    {
+        goby::acomms::protobuf::RouteCommand route_cmd;
+        route_cmd.CopyFrom(msg);
+        glog.is(VERBOSE) && glog << group("pAcommsHandler") << "Received RouteCommand: " << msg.DebugString() << std::endl;
+        goby::acomms::protobuf::RouteManagerConfig cfg = cfg_.route_cfg();
+        cfg.mutable_route()->CopyFrom(route_cmd.new_route());
+        router_->set_cfg(cfg);
+    }
 }
 
 

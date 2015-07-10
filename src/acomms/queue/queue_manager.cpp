@@ -557,35 +557,10 @@ void goby::acomms::QueueManager::handle_modem_receive(const protobuf::ModemTrans
                 
                 std::list<boost::shared_ptr<google::protobuf::Message> > dccl_msgs;
 
-                try
+                if(!cfg_.skip_decoding())
                 {
-                    if(!signal_in_route.empty())
-                    {
-                        // decode only header
-                        boost::shared_ptr<google::protobuf::Message> decoded_message =
-                            codec_->decode<boost::shared_ptr<google::protobuf::Message> >(
-                                modem_message.frame(frame_number), true);
-                        protobuf::QueuedMessageMeta meta_msg = meta_from_msg(*decoded_message);
-                        // messages addressed to us on the link
-                        if(modem_message.dest() == modem_id_ ||
-                           (modem_message.dest() == BROADCAST_ID &&  cfg_.route_broadcast_packets()))
-                        {
-                            meta_msg.set_encoded_message(modem_message.frame(frame_number));
-                            signal_in_route(meta_msg, *decoded_message, modem_id_);
-                        }
-                    }
-
-                    if(!cfg_.skip_decoding())
-                    {
-                        dccl_msgs = codec_->decode_repeated<boost::shared_ptr<google::protobuf::Message> >(modem_message.frame(frame_number));
-                    }
-                }
-                catch(DCCLException& e)
-                {
-                    glog.is(DEBUG1) && glog << group(glog_in_group_) << warn
-                                            << "Failed to decode, discarding message:" << e.what() << std::endl;
-                }
-                
+                    dccl_msgs = codec_->decode_repeated<boost::shared_ptr<google::protobuf::Message> >(modem_message.frame(frame_number));
+                }                
 
                 BOOST_FOREACH(boost::shared_ptr<google::protobuf::Message> decoded_message, dccl_msgs)
                 {
@@ -616,6 +591,23 @@ void goby::acomms::QueueManager::handle_modem_receive(const protobuf::ModemTrans
                         signal_receive(*decoded_message);
                     }
                 }
+                
+                if(!signal_in_route.empty())
+                {
+                    // decode only header
+                    boost::shared_ptr<google::protobuf::Message> decoded_message =
+                        codec_->decode<boost::shared_ptr<google::protobuf::Message> >(
+                            modem_message.frame(frame_number), true);
+                    protobuf::QueuedMessageMeta meta_msg = meta_from_msg(*decoded_message);
+                    // messages addressed to us on the link
+                    if(modem_message.dest() == modem_id_ ||
+                       (route_additional_modem_ids_.count(modem_message.dest())))
+                    {
+                        meta_msg.set_encoded_message(modem_message.frame(frame_number));
+                        signal_in_route(meta_msg, *decoded_message, modem_id_);
+                    }
+                }
+
             }
             catch(DCCLException& e)
             {
@@ -645,6 +637,7 @@ void goby::acomms::QueueManager::process_cfg()
     modem_id_ = cfg_.modem_id();
     manip_manager_.clear();
     network_ack_src_ids_.clear();
+    route_additional_modem_ids_.clear();
     
     for(int i = 0, n = cfg_.message_entry_size(); i < n; ++i)
     {
@@ -673,6 +666,15 @@ void goby::acomms::QueueManager::process_cfg()
 
         network_ack_src_ids_.insert(cfg_.make_network_ack_for_src_id(i));
     }
+
+    for(int i = 0, n = cfg_.route_for_additional_modem_id_size();
+        i < n; ++i)
+    {
+        glog.is(DEBUG1) && glog << group(glog_push_group_) << "Also routing messages addressed to link layer destination ID: " << cfg_.route_for_additional_modem_id(i) << std::endl;
+
+        route_additional_modem_ids_.insert(cfg_.route_for_additional_modem_id(i));
+    }
+
 }
 
 void goby::acomms::QueueManager::qsize(Queue* q)            

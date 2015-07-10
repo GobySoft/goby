@@ -592,6 +592,15 @@ void goby::acomms::QueueManager::handle_modem_receive(const protobuf::ModemTrans
                     }
                 }
                 
+            }
+            catch(DCCLException& e)
+            {
+                glog.is(DEBUG1) && glog << group(glog_in_group_) << warn
+                                        << "failed to decode " << e.what() << std::endl;
+            }
+
+            try
+            {
                 if(!signal_in_route.empty())
                 {
                     // decode only header
@@ -607,13 +616,14 @@ void goby::acomms::QueueManager::handle_modem_receive(const protobuf::ModemTrans
                         signal_in_route(meta_msg, *decoded_message, modem_id_);
                     }
                 }
-
             }
             catch(DCCLException& e)
             {
                 glog.is(DEBUG1) && glog << group(glog_in_group_) << warn
-                                        << "failed to decode " << e.what() << std::endl;
-            }            
+                                        << "failed to decode header for routing: " << e.what() << std::endl;
+            }
+
+
         }
     }
 }

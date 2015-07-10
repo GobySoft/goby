@@ -271,6 +271,7 @@ namespace goby
 
             typedef int ModemId;
             std::set<ModemId> network_ack_src_ids_;
+            std::set<ModemId> route_additional_modem_ids_;
             
             protobuf::QueueManagerConfig cfg_;            
 

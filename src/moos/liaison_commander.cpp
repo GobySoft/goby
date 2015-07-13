@@ -187,9 +187,10 @@ void goby::common::LiaisonCommander::loop()
     while(zeromq_service_->poll(0))
     { }
 
-    if(current_command && current_command->time_field_.first)
+    if(current_command && current_command->time_fields_.size())
     {
-        current_command->set_time_field(current_command->time_field_.first, current_command->time_field_.second);    
+        for(std::map<Wt::WFormWidget*, const google::protobuf::FieldDescriptor*>::iterator it = current_command->time_fields_.begin(), end = current_command->time_fields_.end(); it != end; ++it)
+	  current_command->set_time_field(it->first, it->second);
     }
     
     if(current_command && (last_db_update_time_ > current_command->last_reload_time_))
@@ -1233,7 +1234,7 @@ WLineEdit* goby::common::LiaisonCommander::ControlsContainer::CommandContainer::
     // }
 //}
     
-void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::set_time_field(WFormWidget*& value_field, const google::protobuf::FieldDescriptor* field_desc)
+void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::set_time_field(WFormWidget* value_field, const google::protobuf::FieldDescriptor* field_desc)
 {
     if(WLineEdit* line_edit = dynamic_cast<WLineEdit*>(value_field))
     {
@@ -1330,7 +1331,7 @@ void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::dccl_d
     {
         value_field->setDisabled(true);
         set_time_field(value_field, field_desc);
-        time_field_ = std::make_pair(value_field, field_desc);
+        time_fields_.insert(std::make_pair(value_field, field_desc));
     }    
     
 }

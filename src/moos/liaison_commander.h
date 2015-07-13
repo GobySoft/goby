@@ -190,7 +190,7 @@ namespace goby
                     
                     
 
-                    void set_time_field(Wt::WFormWidget*& value_field,
+                    void set_time_field(Wt::WFormWidget* value_field,
                                         const google::protobuf::FieldDescriptor* field_desc);
 
                     
@@ -251,7 +251,7 @@ namespace goby
                     MOOSNode* moos_node_;
                     boost::shared_ptr<google::protobuf::Message> message_;
                     
-                    std::pair<Wt::WFormWidget*, const google::protobuf::FieldDescriptor*> time_field_;
+                    std::map<Wt::WFormWidget*, const google::protobuf::FieldDescriptor*> time_fields_;
                     
                     
                     Wt::WGroupBox* tree_box_;

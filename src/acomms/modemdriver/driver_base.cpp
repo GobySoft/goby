@@ -40,12 +40,12 @@ int goby::acomms::ModemDriverBase::count_ = 0;
 
 
 goby::acomms::ModemDriverBase::ModemDriverBase() :
-    raw_fs_connections_made_(false)
+    raw_fs_connections_made_(false),
+    order_(++count_)
 {
-    ++count_;
-
-    glog_out_group_ = "goby::acomms::modemdriver::out::" + goby::util::as<std::string>(count_);
-    glog_in_group_ = "goby::acomms::modemdriver::in::" + goby::util::as<std::string>(count_);
+    
+    glog_out_group_ = "goby::acomms::modemdriver::out::" + goby::util::as<std::string>(order_);
+    glog_in_group_ = "goby::acomms::modemdriver::in::" + goby::util::as<std::string>(order_);
     
     goby::glog.add_group(glog_out_group_, common::Colors::lt_magenta);
     goby::glog.add_group(glog_in_group_, common::Colors::lt_blue);

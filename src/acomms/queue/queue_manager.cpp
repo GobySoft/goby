@@ -579,6 +579,11 @@ void goby::acomms::QueueManager::handle_modem_receive(const protobuf::ModemTrans
                                               << "ignoring DCCL message for modem_id = "
                                               << dest << std::endl;
                     }
+                    else if(dest == BROADCAST_ID && meta_msg.src() == modem_id_)
+                    {
+                        glog.is(DEBUG1) && glog << group(glog_in_group_)
+                                                << "ignoring broadcast message that we sent" << std::endl;
+                    }
                     else if(manip_manager_.has(codec_->id(desc),
                                                 protobuf::NO_DEQUEUE))
                     {

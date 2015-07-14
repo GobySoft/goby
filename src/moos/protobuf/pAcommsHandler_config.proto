@@ -23,7 +23,18 @@ message pAcommsHandlerConfig
 
   repeated goby.acomms.protobuf.DriverType listen_driver_type = 30 [(goby.field).description="Optionally, add one or more additional drivers for listening (receiving) only."];
   repeated goby.acomms.protobuf.DriverConfig listen_driver_cfg = 31 [(goby.field).description="Configuration for the additional drivers."]; 
-
+  
+  message DriverFailureApproach
+  {
+     enum DriverFailureTechnique 
+     { CONTINUALLY_RESTART_DRIVER = 1;
+       MOVE_LISTEN_DRIVER_TO_PRIMARY = 2;
+       DISABLE_AND_MOVE_LISTEN_DRIVER_TO_PRIMARY = 3;
+     }
+     optional DriverFailureTechnique technique = 1 [default = CONTINUALLY_RESTART_DRIVER];
+     optional int32 driver_backoff_sec = 2 [(goby.field).description="Seconds to wait until restarting a failed driver.", default = 60];
+  }
+  optional DriverFailureApproach driver_failure_approach = 32 [(goby.field).description="How to try to deal with a failed driver"];
 
   // amac
   optional goby.acomms.protobuf.MACConfig mac_cfg = 5 [(goby.field).description="Configure the acoustic Medium Access Control"];

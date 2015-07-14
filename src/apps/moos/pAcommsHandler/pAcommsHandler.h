@@ -31,6 +31,7 @@
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/asio/deadline_timer.hpp>
+#include <boost/bimap.hpp>
 
 #include "goby/acomms.h"
 #include "goby/util.h"
@@ -45,6 +46,7 @@
 #include "goby/common/zeromq_service.h"
 
 #include "goby/moos/protobuf/pAcommsHandler_config.pb.h"
+#include "goby/acomms/modemdriver/driver_exception.h"
 
 
 namespace goby {
@@ -54,6 +56,19 @@ namespace goby {
         }
     } 
 }
+
+namespace boost 
+{
+    inline bool operator<(const shared_ptr<goby::acomms::ModemDriverBase>& lhs, const shared_ptr<goby::acomms::ModemDriverBase>& rhs)
+    {
+        int lhs_count = lhs ? lhs->driver_order() : 0;
+        int rhs_count = rhs ? rhs->driver_order() : 0;
+        
+        return lhs_count < rhs_count;
+    }
+}
+
+        
 
 class CpAcommsHandler : public GobyMOOSApp
 {
@@ -104,6 +119,14 @@ class CpAcommsHandler : public GobyMOOSApp
     void handle_encode_on_demand(const goby::acomms::protobuf::ModemTransmission& request_msg,
                                  google::protobuf::Message* data_msg);
 
+    void driver_bind();
+    void driver_unbind();
+    void driver_reset(boost::shared_ptr<goby::acomms::ModemDriverBase> driver,
+                      const goby::acomms::ModemDriverException& e,
+                      pAcommsHandlerConfig::DriverFailureApproach::DriverFailureTechnique = cfg_.driver_failure_approach().technique());
+    
+    void restart_drivers();
+    
     enum { ALLOWED_TIMER_SKEW_SECONDS = 1 };
     
   private:
@@ -123,10 +146,10 @@ class CpAcommsHandler : public GobyMOOSApp
     // driver class that interfaces to the modem
     boost::shared_ptr<goby::acomms::ModemDriverBase> driver_;
     
-    // additional listener drivers (receive only)
-    std::vector<boost::shared_ptr<goby::acomms::ModemDriverBase> > rx_only_drivers_;
+    // driver and additional listener drivers (receive only)
+    std::map<boost::shared_ptr<goby::acomms::ModemDriverBase>, goby::acomms::protobuf::DriverConfig* > drivers_;    
     
-    
+        
     // MAC
     goby::acomms::MACManager mac_;    
     
@@ -142,6 +165,10 @@ class CpAcommsHandler : public GobyMOOSApp
     std::vector<boost::shared_ptr<boost::asio::io_service> > asio_service_;
     
     std::vector<boost::shared_ptr<Timer> > timers_;
+
+
+    std::map<boost::shared_ptr<goby::acomms::ModemDriverBase>, double > driver_restart_time_;
+
     
     static pAcommsHandlerConfig cfg_;
     static CpAcommsHandler* inst_;    

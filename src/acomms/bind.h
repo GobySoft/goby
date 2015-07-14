@@ -74,7 +74,41 @@ namespace goby
             goby::acomms::bind(mac, driver);
         }
         
-        // examples
+
+        
+        /// unbinds the driver link-layer callbacks to the QueueManager
+        inline void unbind(ModemDriverBase& driver, QueueManager& queue_manager)
+        {
+            goby::acomms::disconnect(&driver.signal_receive,
+                    &queue_manager, &QueueManager::handle_modem_receive);
+            
+            goby::acomms::disconnect(&driver.signal_data_request,
+                    &queue_manager, &QueueManager::handle_modem_data_request);
+        }
+        
+        /// unbinds the MAC initiate transmission callback to the driver and the driver parsed message callback to the MAC
+        inline void unbind(MACManager& mac, ModemDriverBase& driver)
+        {
+            goby::acomms::disconnect(&mac.signal_initiate_transmission,
+                    &driver, &ModemDriverBase::handle_initiate_transmission);
+        }
+
+        /// creates unbindings for a RouteManager to control a particular queue (QueueManager)
+        inline void unbind(QueueManager& queue_manager, RouteManager& route_manager)
+        {
+            route_manager.add_subnet_queue(&queue_manager);
+            goby::acomms::disconnect(&queue_manager.signal_in_route, &route_manager, &RouteManager::handle_in);
+            goby::acomms::disconnect(&queue_manager.signal_out_route, &route_manager, &RouteManager::handle_out);
+        }        
+
+        /// unbind all three (shortcut to calling the other three unbind functions)
+        inline void unbind(ModemDriverBase& driver, QueueManager& queue_manager, MACManager& mac)
+        {
+            goby::acomms::unbind(driver, queue_manager);
+            goby::acomms::unbind(mac, driver);
+        }
+
+// examples
         /// \example acomms/chat/chat.cpp
         /// chat.proo
         /// \verbinclude chat.proto

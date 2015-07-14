@@ -132,39 +132,13 @@ CpAcommsHandler::CpAcommsHandler()
                           this, &CpAcommsHandler::handle_encode_on_demand);
 
     process_configuration();
-            
-    // bind the lower level pieces of goby-acomms together
-    if(driver_)
-    {
-        goby::acomms::bind(*driver_, queue_manager_);
-        goby::acomms::bind(mac_, *driver_);
 
-        // informational 'driver' signals
-        goby::acomms::connect(&driver_->signal_receive,
-                              boost::bind(&CpAcommsHandler::handle_goby_signal, this,
-                                          _1, cfg_.moos_var().driver_receive(), _1, ""));
-
-        goby::acomms::connect(&driver_->signal_transmit_result,
-                              boost::bind(&CpAcommsHandler::handle_goby_signal, this,
-                                          _1, cfg_.moos_var().driver_transmit(), _1, ""));
-
-        goby::acomms::connect(&driver_->signal_raw_incoming,
-                              boost::bind(&CpAcommsHandler::handle_goby_signal, this,
-                                          _1, cfg_.moos_var().driver_raw_msg_in(), _1, ""));
-        goby::acomms::connect(&driver_->signal_raw_outgoing,
-                              boost::bind(&CpAcommsHandler::handle_goby_signal, this,
-                                          _1, cfg_.moos_var().driver_raw_msg_out(), _1, ""));    
-
-        goby::acomms::connect(&driver_->signal_raw_incoming,
-                              boost::bind(&CpAcommsHandler::handle_raw, this,
-                                          _1, cfg_.moos_var().driver_raw_in()));
-        
-        goby::acomms::connect(&driver_->signal_raw_outgoing,
-                              boost::bind(&CpAcommsHandler::handle_raw, this,
-                                          _1, cfg_.moos_var().driver_raw_out()));
-    }
-    for(int i = 0, n = rx_only_drivers_.size(); i < n; ++i)
-        goby::acomms::bind(*rx_only_drivers_[i], queue_manager_);
+    driver_bind();
+    
+    
+    
+    for(std::map<boost::shared_ptr<goby::acomms::ModemDriverBase>, goby::acomms::protobuf::DriverConfig* >::iterator it = drivers_.begin(), end = drivers_.end(); it != end; ++it)
+        goby::acomms::bind(*(it->first), queue_manager_);
 
     
     if(router_)
@@ -189,11 +163,29 @@ void CpAcommsHandler::loop()
 {
     timer_io_service_.poll();
 
-    if(driver_) driver_->do_work();
-    for(int i = 0, n = rx_only_drivers_.size(); i < n; ++i)
-        rx_only_drivers_[i]->do_work();
+    if(driver_restart_time_.size())
+        restart_drivers();
+    
+    for(std::map<boost::shared_ptr<goby::acomms::ModemDriverBase>, goby::acomms::protobuf::DriverConfig* >::iterator it = drivers_.begin(), end = drivers_.end(); it != end; ++it)
+    {        
+        if(!driver_restart_time_.count(it->first))
+        {
+            try
+            {
+                it->first->do_work();
+            }
+            catch(goby::acomms::ModemDriverException& e)
+            {
+                driver_reset(it->first, e);
+                break; // no longer valid drivers_ container
+            }
+        }
+    }
+    
 
-    mac_.do_work();
+    // don't run the MAC if the primary driver is shutdown
+    if(!driver_restart_time_.count(driver_)) 
+        mac_.do_work();
     queue_manager_.do_work();    
 }
 
@@ -366,14 +358,17 @@ void CpAcommsHandler::process_configuration()
 {
     // create driver objects
     create_driver(driver_, cfg_.driver_type(), cfg_.mutable_driver_cfg(), &mac_);
-
+    if(driver_)
+        drivers_.insert(std::make_pair(driver_, cfg_.mutable_driver_cfg()));
+    
     // create receive only (listener) drivers
     if(cfg_.listen_driver_type_size() == cfg_.listen_driver_cfg_size())
     {
         for(int i = 0, n = cfg_.listen_driver_type_size(); i < n; ++i)
         {
-            rx_only_drivers_.push_back(boost::shared_ptr<goby::acomms::ModemDriverBase>());
-            create_driver(rx_only_drivers_.back(), cfg_.listen_driver_type(i), cfg_.mutable_listen_driver_cfg(i), 0);
+            boost::shared_ptr<goby::acomms::ModemDriverBase> driver;
+            create_driver(driver, cfg_.listen_driver_type(i), cfg_.mutable_listen_driver_cfg(i), 0);
+            drivers_.insert(std::make_pair(driver, cfg_.mutable_listen_driver_cfg(i)));
         }
     }
     else
@@ -398,13 +393,11 @@ void CpAcommsHandler::process_configuration()
     cfg_.mutable_mac_cfg()->set_modem_id(cfg_.modem_id());
     cfg_.mutable_transitional_cfg()->set_modem_id(cfg_.modem_id());
 
-    if(!cfg_.driver_cfg().has_modem_id())
-        cfg_.mutable_driver_cfg()->set_modem_id(cfg_.modem_id());        
 
-    for(int i = 0, n = rx_only_drivers_.size(); i < n; ++i)
+    for(std::map<boost::shared_ptr<goby::acomms::ModemDriverBase>, goby::acomms::protobuf::DriverConfig* >::iterator it = drivers_.begin(), end = drivers_.end(); it != end; ++it)
     {
-        if(!cfg_.listen_driver_cfg(i).has_modem_id())
-            cfg_.mutable_listen_driver_cfg(i)->set_modem_id(cfg_.modem_id());
+        if(!it->second->has_modem_id())
+            it->second->set_modem_id(cfg_.modem_id());
     }    
     
 
@@ -447,9 +440,9 @@ void CpAcommsHandler::process_configuration()
     }
     
     // start goby-acomms classes
-    if(driver_) driver_->startup(cfg_.driver_cfg());
-    for(int i = 0, n = rx_only_drivers_.size(); i < n; ++i)
-        rx_only_drivers_[i]->startup(cfg_.listen_driver_cfg(i));    
+    
+    for(std::map<boost::shared_ptr<goby::acomms::ModemDriverBase>, goby::acomms::protobuf::DriverConfig* >::iterator it = drivers_.begin(), end = drivers_.end(); it != end; ++it)
+        driver_restart_time_.insert(std::make_pair(it->first, 0));
     
     mac_.startup(cfg_.mac_cfg());
     queue_manager_.set_cfg(cfg_.queue_cfg());
@@ -730,3 +723,177 @@ void CpAcommsHandler::translate_and_push(const goby::moos::protobuf::TranslatorE
 }
 
 
+
+void CpAcommsHandler::driver_reset(boost::shared_ptr<goby::acomms::ModemDriverBase> driver,
+                                   const goby::acomms::ModemDriverException& e,
+                                   pAcommsHandlerConfig::DriverFailureApproach::DriverFailureTechnique technique /* = cfg_.driver_failure_approach().technique() */)
+{
+    glog.is(WARN) && glog << group("pAcommsHandler") << "Driver exception: " << e.what() << std::endl;
+    glog.is(WARN) && glog << group("pAcommsHandler") << "Shutting down driver: " << driver << std::endl;
+    driver->shutdown();
+
+    switch(technique)
+    {
+
+        case pAcommsHandlerConfig::DriverFailureApproach::DISABLE_AND_MOVE_LISTEN_DRIVER_TO_PRIMARY:
+        case pAcommsHandlerConfig::DriverFailureApproach::MOVE_LISTEN_DRIVER_TO_PRIMARY:
+        {
+            if(driver == driver_)
+            {
+                glog.is(WARN) && glog << group("pAcommsHandler") << "Now using listen driver as new primary." << std::endl;
+                // unbind signals to old driver
+                driver_unbind();
+
+                if(drivers_.size() == 1)
+                {
+                    glog.is(DIE) && glog << "No more drivers to try..." << std::endl;
+                }
+                else
+                {
+                    std::map<boost::shared_ptr<goby::acomms::ModemDriverBase>, goby::acomms::protobuf::DriverConfig* >::iterator old_it =
+                        drivers_.find(driver);
+                    std::map<boost::shared_ptr<goby::acomms::ModemDriverBase>, goby::acomms::protobuf::DriverConfig* >::iterator new_it = old_it;
+
+                    // try the next one after the current driver_, otherwise the first driver
+                    ++new_it;
+                    if(new_it == drivers_.end())
+                        new_it = drivers_.begin();
+
+                    // new primary driver_
+                    driver_ = new_it->first;                    
+                    if(!driver_restart_time_.count(driver_))
+                        driver_->shutdown();
+                    
+                    goby::acomms::protobuf::DriverConfig& new_config = *(new_it->second);
+                    goby::acomms::protobuf::DriverConfig& old_config = *(old_it->second);
+                    
+                    // swap the modem ids
+                    int new_id = old_config.modem_id();
+                    old_config.set_modem_id(new_config.modem_id());
+                    new_config.set_modem_id(new_id);
+                    
+                    // bind the correct signals
+                    driver_bind();
+
+                    // restart the new primary driver
+                    driver_restart_time_.insert(std::make_pair(driver_, 0));
+                }
+            }
+            
+            if(technique == pAcommsHandlerConfig::DriverFailureApproach::DISABLE_AND_MOVE_LISTEN_DRIVER_TO_PRIMARY)
+            {
+                // erase old driver
+                drivers_.erase(driver);
+                driver_restart_time_.erase(driver);
+                break;
+            }
+        }
+        // fall through intentional (no break) - want to restart old driver if MOVE_LISTEN_DRIVER_TO_PRIMARY
+        case pAcommsHandlerConfig::DriverFailureApproach::CONTINUALLY_RESTART_DRIVER:
+        {
+            glog.is(WARN) && glog << group("pAcommsHandler") << "Attempting to restart driver in " << cfg_.driver_failure_approach().driver_backoff_sec() << " seconds." << std::endl;
+            driver_restart_time_.insert(std::make_pair(driver, goby::common::goby_time<double>() + cfg_.driver_failure_approach().driver_backoff_sec()));
+        }
+        break;
+    }
+}
+
+void CpAcommsHandler::restart_drivers()
+{
+    double now = goby::common::goby_time<double>();
+    std::set<boost::shared_ptr<goby::acomms::ModemDriverBase> > drivers_to_start;
+    
+    for (std::map<boost::shared_ptr<goby::acomms::ModemDriverBase>, double >::iterator it = driver_restart_time_.begin(); it != driver_restart_time_.end(); )
+    {
+        if(it->second < now)
+        {
+            drivers_to_start.insert(it->first);
+            driver_restart_time_.erase(it++);
+        }
+        else
+        {
+            ++it;
+        }
+    }
+
+    for(std::set<boost::shared_ptr<goby::acomms::ModemDriverBase> >::iterator it =  drivers_to_start.begin(), end = drivers_to_start.end(); it != end; ++it)
+    {
+        boost::shared_ptr<goby::acomms::ModemDriverBase> driver = *it;
+        try
+        {
+            glog.is(DEBUG1) && glog << "Starting up driver: " << driver << std::endl;
+            driver->startup(*drivers_[driver]);    
+        }
+        catch(goby::acomms::ModemDriverException& e)
+        {
+            driver_reset(driver, e);
+        }
+    }
+}
+
+void CpAcommsHandler::driver_bind()
+{
+   // bind the lower level pieces of goby-acomms together
+    if(driver_)
+    {
+        goby::acomms::bind(mac_, *driver_);
+
+        // informational 'driver' signals
+        goby::acomms::connect(&driver_->signal_receive,
+                              boost::bind(&CpAcommsHandler::handle_goby_signal, this,
+                                          _1, cfg_.moos_var().driver_receive(), _1, ""));
+
+        goby::acomms::connect(&driver_->signal_transmit_result,
+                              boost::bind(&CpAcommsHandler::handle_goby_signal, this,
+                                          _1, cfg_.moos_var().driver_transmit(), _1, ""));
+
+        goby::acomms::connect(&driver_->signal_raw_incoming,
+                              boost::bind(&CpAcommsHandler::handle_goby_signal, this,
+                                          _1, cfg_.moos_var().driver_raw_msg_in(), _1, ""));
+        goby::acomms::connect(&driver_->signal_raw_outgoing,
+                              boost::bind(&CpAcommsHandler::handle_goby_signal, this,
+                                          _1, cfg_.moos_var().driver_raw_msg_out(), _1, ""));    
+
+        goby::acomms::connect(&driver_->signal_raw_incoming,
+                              boost::bind(&CpAcommsHandler::handle_raw, this,
+                                          _1, cfg_.moos_var().driver_raw_in()));
+        
+        goby::acomms::connect(&driver_->signal_raw_outgoing,
+                              boost::bind(&CpAcommsHandler::handle_raw, this,
+                                          _1, cfg_.moos_var().driver_raw_out()));
+    }
+}
+
+
+void CpAcommsHandler::driver_unbind()
+{
+   // unbind the lower level pieces of goby-acomms together
+    if(driver_)
+    {
+        goby::acomms::unbind(mac_, *driver_);
+
+        // informational 'driver' signals
+        goby::acomms::disconnect(&driver_->signal_receive,
+                                 boost::bind(&CpAcommsHandler::handle_goby_signal, this,
+                                             _1, cfg_.moos_var().driver_receive(), _1, ""));
+
+        goby::acomms::disconnect(&driver_->signal_transmit_result,
+                                 boost::bind(&CpAcommsHandler::handle_goby_signal, this,
+                                             _1, cfg_.moos_var().driver_transmit(), _1, ""));
+
+        goby::acomms::disconnect(&driver_->signal_raw_incoming,
+                                 boost::bind(&CpAcommsHandler::handle_goby_signal, this,
+                                             _1, cfg_.moos_var().driver_raw_msg_in(), _1, ""));
+        goby::acomms::disconnect(&driver_->signal_raw_outgoing,
+                                 boost::bind(&CpAcommsHandler::handle_goby_signal, this,
+                                             _1, cfg_.moos_var().driver_raw_msg_out(), _1, ""));    
+        
+        goby::acomms::disconnect(&driver_->signal_raw_incoming,
+                                 boost::bind(&CpAcommsHandler::handle_raw, this,
+                                             _1, cfg_.moos_var().driver_raw_in()));
+        
+        goby::acomms::disconnect(&driver_->signal_raw_outgoing,
+                                 boost::bind(&CpAcommsHandler::handle_raw, this,
+                                             _1, cfg_.moos_var().driver_raw_out()));
+    }
+}

@@ -54,6 +54,29 @@ namespace goby
         template<typename Signal, typename Obj, typename A1, typename A2, typename A3> 
             void connect(Signal* signal, Obj* obj, void(Obj::*mem_func)(A1, A2, A3))
         { connect(signal, boost::bind(mem_func, obj, _1, _2, _3)); }
+
+
+        
+        /// disconnect a signal to a slot (e.g. function pointer)
+        template<typename Signal, typename Slot>
+            void disconnect(Signal* signal, Slot slot)
+        { signal->disconnect(slot); }
+
+        /// disconnect a signal to a member function with one argument
+        template<typename Signal, typename Obj, typename A1> 
+            void disconnect(Signal* signal, Obj* obj, void(Obj::*mem_func)(A1))
+        { disconnect(signal, boost::bind(mem_func, obj, _1)); }
+
+        /// disconnect a signal to a member function with two arguments
+        template<typename Signal, typename Obj, typename A1, typename A2> 
+            void disconnect(Signal* signal, Obj* obj, void(Obj::*mem_func)(A1, A2))
+        { disconnect(signal, boost::bind(mem_func, obj, _1, _2)); }
+
+        /// disconnect a signal to a member function with three arguments
+        template<typename Signal, typename Obj, typename A1, typename A2, typename A3> 
+            void disconnect(Signal* signal, Obj* obj, void(Obj::*mem_func)(A1, A2, A3))
+        { disconnect(signal, boost::bind(mem_func, obj, _1, _2, _3)); }
+
     }
 }
 

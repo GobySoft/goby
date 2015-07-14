@@ -117,6 +117,7 @@ namespace goby
             /// Public Destructor
             virtual ~ModemDriverBase();
 
+            int driver_order() { return order_; }
             
           protected:
             /// \name Constructors/Destructor
@@ -159,8 +160,7 @@ namespace goby
             /// \brief use for direct access to the modem
             util::LineBasedInterface& modem() { return *modem_; }
 
-            //@}
-
+            //@}            
           protected:
             static int count_;
 
@@ -176,6 +176,7 @@ namespace goby
 
             boost::shared_ptr<std::ofstream> raw_fs_;
             bool raw_fs_connections_made_;
+            int order_;
         };
     }
 }

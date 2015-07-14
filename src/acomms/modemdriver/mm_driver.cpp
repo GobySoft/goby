@@ -383,6 +383,7 @@ void goby::acomms::MMDriver::query_all_cfg()
 
 void goby::acomms::MMDriver::shutdown()
 {
+    out_.clear();
     startup_done_ = false;
     modem_close();
 }
@@ -881,7 +882,9 @@ void goby::acomms::MMDriver::process_receive(const NMEASentence& nmea)
     // clear the last send given modem acknowledgement
     if(!out_.empty() && (out_.front().sentence_id() == nmea.sentence_id()
                          || (out_.front().sentence_id() == "CFQ" && nmea.sentence_id() == "CFG"))) // special case CFG acks CFQ
-        pop_out();    
+        pop_out();
+
+
 }
 
 void goby::acomms::MMDriver::caack(const NMEASentence& nmea, protobuf::ModemTransmission* m)

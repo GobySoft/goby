@@ -161,9 +161,9 @@ int main(int argc, char* argv[])
     assert(transmit_msg.dest() == UNICORN_MODEM_ID);
     assert(transmit_msg.ack_requested() == true);    
 
-    // feed back the modem layer - the unicorn message will be rejected
+    // feed back the modem layer - both messages will be rejected
     q_manager.handle_modem_receive(transmit_msg);
-    assert(receive_count == 1);
+    assert(receive_count == 0);
 
     // fake an ack from unicorn
     goby::acomms::protobuf::ModemTransmission ack;
@@ -183,7 +183,7 @@ int main(int argc, char* argv[])
     // feed back the modem layer
     q_manager.handle_modem_receive(transmit_msg);
     
-    assert(receive_count == 3);
+    assert(receive_count == 2);
 
     
     std::cout << "all tests passed" << std::endl;    

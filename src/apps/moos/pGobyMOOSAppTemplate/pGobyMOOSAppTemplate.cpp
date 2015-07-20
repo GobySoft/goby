@@ -27,7 +27,7 @@ using goby::glog;
 using namespace goby::common::logger;
 using goby::moos::operator<<;
 
-GobyMOOSAppTemplateConfig GobyMOOSAppTemplate::cfg_;
+boost::shared_ptr<GobyMOOSAppTemplateConfig> master_config;
 GobyMOOSAppTemplate* GobyMOOSAppTemplate::inst_ = 0;
 
 
@@ -41,7 +41,10 @@ int main(int argc, char* argv[])
 GobyMOOSAppTemplate* GobyMOOSAppTemplate::get_instance()
 {
     if(!inst_)
-        inst_ = new GobyMOOSAppTemplate();
+    {
+        master_config.reset(new GobyMOOSAppTemplateConfig);
+        inst_ = new GobyMOOSAppTemplate(*master_config);
+    }
     return inst_;
 }
 
@@ -51,8 +54,9 @@ void GobyMOOSAppTemplate::delete_instance()
 }
 
 
-GobyMOOSAppTemplate::GobyMOOSAppTemplate()
-    : GobyMOOSApp(&cfg_)
+GobyMOOSAppTemplate::GobyMOOSAppTemplate(GobyMOOSAppTemplateConfig& cfg)
+    : GobyMOOSApp(&cfg),
+    cfg_(cfg)
 {
     // example subscription -
     //    handle_db_time called each time mail from DB_TIME is received

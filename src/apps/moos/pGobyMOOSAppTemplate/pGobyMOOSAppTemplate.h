@@ -35,7 +35,7 @@ class GobyMOOSAppTemplate : public GobyMOOSApp
     static void delete_instance();
     
   private:
-    GobyMOOSAppTemplate();
+    GobyMOOSAppTemplate(GobyMOOSAppTemplateConfig& cfg);
     ~GobyMOOSAppTemplate();
     
     void loop();     // from GobyMOOSApp
@@ -43,8 +43,7 @@ class GobyMOOSAppTemplate : public GobyMOOSApp
     void handle_db_time(const CMOOSMsg& msg);
     
   private:
-
-    static GobyMOOSAppTemplateConfig cfg_;    
+    GobyMOOSAppTemplateConfig& cfg_;  
     static GobyMOOSAppTemplate* inst_;    
 };
 

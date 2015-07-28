@@ -130,7 +130,11 @@ class BluefinFrontSeat : public FrontSeatInterfaceBase
     // maps command type to outstanding request, if response is requested
     std::map<goby::moos::protobuf::BluefinExtraCommands::BluefinCommand,
         goby::moos::protobuf::CommandRequest> outstanding_requests_;
-    
+
+
+    // maps status expire time to payload status
+    std::multimap<goby::uint64, goby::moos::protobuf::BluefinExtraData::PayloadStatus>
+        payload_status_;
 };
 
 #endif

@@ -62,6 +62,16 @@ message BluefinExtraData
   optional goby.acomms.protobuf.ModemRaw micro_modem_raw_in = 2;
   optional BuoyancyStatus buoyancy_status = 10;
   optional TrimStatus trim_status = 20;
+    
+  message PayloadStatus
+  {
+      required int32 id = 1;
+      required uint64 expire_time = 2;
+      required string msg = 3;
+      required bool all_ok = 4;
+  };
+
+  repeated PayloadStatus payload_status = 30;  
 }
 
 

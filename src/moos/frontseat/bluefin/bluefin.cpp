@@ -334,7 +334,10 @@ void BluefinFrontSeat::send_data_to_frontseat(const gpb::FrontSeatInterfaceData&
             boost::replace_all(modem_nmea, "\r", " ");
             nmea.push_back(modem_nmea);
             append_to_write_queue(nmea);
-        }        
+        }
+
+        for(int i = 0, n = bf_extra.payload_status_size(); i < n; ++i)
+            payload_status_.insert(std::make_pair(bf_extra.payload_status(i).expire_time(), bf_extra.payload_status(i)));
     }
     
 }
@@ -358,12 +361,40 @@ void BluefinFrontSeat::check_send_heartbeat()
     if(now > last_heartbeat_time_ + bf_config_.heartbeat_interval())
     {
         NMEASentence nmea("$BPSTS",NMEASentence::IGNORE);
-
+        
         nmea.push_back(unix_time2nmea_time(goby_time<double>()));
         const int FAILED = 0, ALL_OK = 1;
-        nmea.push_back((state() != gpb::INTERFACE_HELM_ERROR &&
-                        state() != gpb::INTERFACE_FS_ERROR) ? ALL_OK : FAILED);
-        nmea.push_back("Deploy");
+        bool ok = state() != gpb::INTERFACE_HELM_ERROR && state() != gpb::INTERFACE_FS_ERROR;
+
+        std::string status;
+        if(payload_status_.size())
+        {
+            std::map<int, std::string> seen_ids;            
+            status += goby::common::goby_time_as_string();
+            payload_status_.erase(payload_status_.begin(), payload_status_.upper_bound(goby::common::goby_time<goby::uint64>()));
+
+            for(std::multimap<goby::uint64, goby::moos::protobuf::BluefinExtraData::PayloadStatus>::const_iterator it = payload_status_.begin(), end = payload_status_.end(); it != end; ++it)
+            {
+                // only display the newest from a given ID
+                if(!seen_ids.count(it->second.id()))
+                {
+                    ok = ok && it->second.all_ok();
+                    seen_ids[it->second.id()] = it->second.msg();
+                }
+            }
+            
+            for(std::map<int, std::string>::const_iterator it = seen_ids.begin(), end = seen_ids.end(); it != end; ++it)
+            {
+                status += "; ";
+                status += it->second;
+            }
+        }
+        
+        if(status.empty())
+            status = "Deploy";
+        
+        nmea.push_back(ok ? ALL_OK : FAILED);
+        nmea.push_back(status);
         append_to_write_queue(nmea);
 
         last_heartbeat_time_ = now + bf_config_.heartbeat_interval();

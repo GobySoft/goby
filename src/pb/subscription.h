@@ -69,9 +69,7 @@ namespace goby
             // library calls)
             void post(const void* data, int size)
             {
-                static ProtoBufMessage msg;
-                msg.ParseFromArray(data, size);
-                newest_msg_ = msg;
+                newest_msg_.ParseFromArray(data, size);
                 if(handler_) handler_(newest_msg_);
 
             }

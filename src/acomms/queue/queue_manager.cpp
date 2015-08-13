@@ -220,7 +220,7 @@ std::ostream& goby::acomms::operator<< (std::ostream& out, const QueueManager& d
 void goby::acomms::QueueManager::handle_modem_data_request(protobuf::ModemTransmission* msg)
 {
     // clear old waiting acknowledgments and reset packet defaults
-    clear_packet(msg->frame_start());    
+    clear_packet(*msg);    
     
     for(unsigned frame_number = msg->frame_size() + msg->frame_start(),
             total_frames = msg->max_num_frames() + msg->frame_start();
@@ -315,7 +315,7 @@ void goby::acomms::QueueManager::handle_modem_data_request(protobuf::ModemTransm
                     if(msg->src() == QUERY_SOURCE_ID)
                         msg->set_src(modem_id_);
                     
-                    if(packet_dest_ == BROADCAST_ID)
+                    if(packet_dest_ == BROADCAST_ID || packet_dest_ == QUERY_DESTINATION_ID)
                         packet_dest_ = msg->dest();
                 }
                 
@@ -394,19 +394,19 @@ void goby::acomms::QueueManager::handle_modem_data_request(protobuf::ModemTransm
 }
 
 
-void goby::acomms::QueueManager::clear_packet(unsigned start_frame)
+void goby::acomms::QueueManager::clear_packet(const protobuf::ModemTransmission& message)
 {
     for (std::multimap<unsigned, Queue*>::iterator it = waiting_for_ack_.begin(),
              end = waiting_for_ack_.end(); it != end;)
     {
-        if (it->second->clear_ack_queue(start_frame))
+        if (it->second->clear_ack_queue(message.frame_start()))
             waiting_for_ack_.erase(it++);
         else
             ++it;  
     }
     
-    packet_ack_ = false;
-    packet_dest_ = BROADCAST_ID;
+    packet_ack_ = message.has_ack_requested() ? message.ack_requested() : false;
+    packet_dest_ = message.dest();
 }
 
 

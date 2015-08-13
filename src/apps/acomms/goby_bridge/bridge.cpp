@@ -40,6 +40,7 @@
 #include "goby/acomms/protobuf/file_transfer.pb.h"
 #include "goby/acomms/protobuf/mosh_packet.pb.h"
 #include "goby/acomms/protobuf/modem_driver_status.pb.h"
+#include "goby/acomms/protobuf/time_update.pb.h"
 #include "goby/acomms/protobuf/mm_driver.pb.h"
 
 #include "bridge_config.pb.h"
@@ -65,7 +66,7 @@ namespace goby
             
             void handle_queue_receive(const google::protobuf::Message& msg,
                                       QueueManager* from_queue);
-
+            
             void handle_modem_receive(const goby::acomms::protobuf::ModemTransmission& message,
                                       QueueManager* in_queue);
 
@@ -99,6 +100,7 @@ namespace goby
             RouteManager r_manager_;
             
             boost::shared_ptr<micromodem::protobuf::HardwareControlCommand> pending_hw_ctl_;
+            boost::shared_ptr<goby::acomms::protobuf::TimeUpdateResponse> pending_time_update_;
         };
     }
 }
@@ -243,6 +245,17 @@ void goby::acomms::Bridge::handle_queue_receive(const google::protobuf::Message&
         
         glog.is(VERBOSE) && glog << "Received HardwareControlCommand: " << msg.DebugString() << std::endl;
     }   
+    else if(msg.GetDescriptor() == goby::acomms::protobuf::TimeUpdateRequest::descriptor())
+    {
+        goby::acomms::protobuf::TimeUpdateRequest request;
+        request.CopyFrom(msg);
+        
+        pending_time_update_.reset(new goby::acomms::protobuf::TimeUpdateResponse);
+        pending_time_update_->set_src(from_queue->modem_id());
+        pending_time_update_->set_dest(request.update_time_for_id());
+        
+        glog.is(VERBOSE) && glog << "Received TimeUpdateRequest: " << msg.DebugString() << std::endl;
+    }   
 }
 
 void goby::acomms::Bridge::handle_link_ack(const protobuf::ModemTransmission& ack_msg,
@@ -289,7 +302,34 @@ void goby::acomms::Bridge::handle_modem_receive(const goby::acomms::protobuf::Mo
         }
 
 
-        if(message.type() == goby::acomms::protobuf::ModemTransmission::DRIVER_SPECIFIC &&
+        if(pending_time_update_)
+        {
+            if(message.type() == goby::acomms::protobuf::ModemTransmission::DRIVER_SPECIFIC &&
+               message.GetExtension(micromodem::protobuf::type) == micromodem::protobuf::MICROMODEM_TWO_WAY_PING)
+            {
+                micromodem::protobuf::RangingReply range_reply =
+                    message.GetExtension(micromodem::protobuf::ranging_reply);
+                
+                if(range_reply.one_way_travel_time_size() > 0)
+                    pending_time_update_->set_time_of_flight_microsec(range_reply.one_way_travel_time(0)*1e6);
+                
+                glog.is(VERBOSE) && glog << "Received time of flight of " << pending_time_update_->time_of_flight_microsec() << " microseconds" << std::endl;
+            }
+            else if(message.type() == goby::acomms::protobuf::ModemTransmission::ACK &&
+                    pending_time_update_->has_time_of_flight_microsec())
+            {
+                if(message.acked_frame_size() && message.acked_frame(0) == 0)
+                {
+                    // ack for our response
+                    glog.is(VERBOSE) && glog << "Received ack for TimeUpdateResponse" << std::endl;
+                    pending_time_update_.reset();
+                }               
+            }
+            
+        }
+        
+        
+        if(pending_hw_ctl_ && message.type() == goby::acomms::protobuf::ModemTransmission::DRIVER_SPECIFIC &&
            message.GetExtension(micromodem::protobuf::type) == micromodem::protobuf::MICROMODEM_HARDWARE_CONTROL_REPLY)
         {
             micromodem::protobuf::HardwareControl control =
@@ -325,8 +365,31 @@ void goby::acomms::Bridge::handle_modem_receive(const goby::acomms::protobuf::Mo
 void goby::acomms::Bridge::handle_initiate_transmission(const protobuf::ModemTransmission& m,
                                                         int subnet)
 {
+    // see if we need to override with a time update ping
+    if(pending_time_update_ &&
+       (m.dest() == pending_time_update_->dest() || m.dest() == QUERY_DESTINATION_ID)) 
+    {
+        protobuf::ModemTransmission new_transmission = m;
+        if(!pending_time_update_->has_time_of_flight_microsec())
+        {
+            new_transmission.set_dest(pending_time_update_->dest());
+            new_transmission.set_type(goby::acomms::protobuf::ModemTransmission::DRIVER_SPECIFIC);
+            new_transmission.SetExtension(micromodem::protobuf::type, micromodem::protobuf::MICROMODEM_TWO_WAY_PING);
+        }
+        else
+        {
+            // send it out!
+            new_transmission.set_type(goby::acomms::protobuf::ModemTransmission::DATA);
+            new_transmission.set_ack_requested(true);
+            new_transmission.set_dest(pending_time_update_->dest());
+            
+            pending_time_update_->set_time(goby::common::goby_time<uint64>());
+            goby::acomms::DCCLCodec::get()->encode(new_transmission.add_frame(), *pending_time_update_);
+        }
+        publish(new_transmission, "Tx" + goby::util::as<std::string>(cfg_.subnet(subnet).queue_cfg().modem_id()));
+    }
     // see if we need to override with a hardware control command
-    if(pending_hw_ctl_ &&
+    else if(pending_hw_ctl_ &&
        (m.dest() == pending_hw_ctl_->hw_ctl_dest() || m.dest() == QUERY_DESTINATION_ID))
     {
         protobuf::ModemTransmission new_transmission = m;

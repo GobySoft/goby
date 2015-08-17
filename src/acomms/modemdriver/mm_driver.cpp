@@ -1328,11 +1328,17 @@ void goby::acomms::MMDriver::carev(const NMEASentence& nmea)
 
         std::vector<std::string> rev_parts;
         boost::split(rev_parts, nmea[3], boost::is_any_of("."));
-        if(rev_parts.size() == 3)
+        if(rev_parts.size() == 3 || rev_parts.size() == 4)
         {
             revision_.mm_major = as<int>(rev_parts[0]);
             revision_.mm_minor = as<int>(rev_parts[1]);
             revision_.mm_patch = as<int>(rev_parts[2]);
+            if(rev_parts.size() == 4)
+            {
+                revision_.mm_patch *= 100;
+                revision_.mm_patch += as<int>(rev_parts[3]);
+            }
+            
             glog.is(DEBUG1) && glog << group(glog_in_group()) << "Revision: " << revision_.mm_major << "." << revision_.mm_minor << "." << revision_.mm_patch << std::endl;
         }
         else

@@ -261,7 +261,11 @@ void goby::acomms::fsm::Command::in_state_react( const EvAck & e)
             switch(last_at[0])
             {
                 case 'H': post_event(EvNoCarrier()); break;
-               
+
+                    // 2015-08-18 - Iridium 9523 gave "OK" in response to a dial (as failure?)
+                    // if this happens, assume it's a failure.
+                case 'D': post_event(EvNoCarrier()); break;
+                    
                 default:
                     break;
             }

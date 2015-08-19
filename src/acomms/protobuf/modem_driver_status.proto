@@ -27,6 +27,10 @@ message ModemDriverStatus
     INVALID_CONFIGURATION = 4;
   }
 
-  required Status status = 4 [(dccl.field).in_head = true];
+  required Status status = 4;
+
+  optional uint32 n_resets = 5 [default = 0, (dccl.field).min = 0, (dccl.field).max = 10000];
+  
+  
 }
 

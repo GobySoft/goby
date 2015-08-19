@@ -61,11 +61,12 @@ void goby::acomms::RouteManager::handle_in(
 
     
     int next_hop = find_next_hop(modem_id, meta.dest());
+
     if(next_hop != -1)
     {
         uint32 subnet = next_hop & cfg_.subnet_mask();
         glog.is(DEBUG1) && glog << group("goby::acomms::route")
-                                << "Destination is in route, requeuing to proper subnet: "
+                                << "Requeuing to proper subnet: "
                                 << subnet << " (" << std::hex
                                 << next_hop << " & " << cfg_.subnet_mask()
                                 << ")" << std::dec <<  std::endl;
@@ -116,12 +117,24 @@ void goby::acomms::RouteManager::handle_out(
 
 int goby::acomms::RouteManager::find_next_hop(int us, int dest)
 {
+    int next_hop = find_next_route_hop(us, dest);
+    if(next_hop == -1 && cfg_.has_default_gateway())
+    {
+        next_hop = cfg_.default_gateway();
+        glog.is(DEBUG1) && glog << group("goby::acomms::route")
+                                << "Using default gateway: " << next_hop << std::endl;
+    }
+    return next_hop;
+}
+
+int goby::acomms::RouteManager::find_next_route_hop(int us, int dest)
+{
     int current_route_index = route_index(us);
 
     if(current_route_index == -1)
     {
-        glog.is(DEBUG1) && glog << warn << group("goby::acomms::route")
-                                << "Current modem id is not in route. Ignoring." << std::endl;
+        glog.is(DEBUG1) && glog << group("goby::acomms::route")
+                                << "Current modem id is not in route." << std::endl;
         return -1;
     }
 
@@ -129,8 +142,8 @@ int goby::acomms::RouteManager::find_next_hop(int us, int dest)
 
     if(dest_route_index == -1)
     {
-        glog.is(DEBUG1) && glog << warn << group("goby::acomms::route")
-                                << "Destination modem id is not in route. Ignoring." << std::endl;
+        glog.is(DEBUG1) && glog << group("goby::acomms::route")
+                                << "Destination modem id is not in route." << std::endl;
         return -1;
     }
 

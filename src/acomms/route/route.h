@@ -61,6 +61,7 @@ namespace goby
             int route_index(int modem_id);
 
             int find_next_hop(int us, int dest);
+            int find_next_route_hop(int us, int dest);
             
             
           private:

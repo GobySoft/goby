@@ -92,8 +92,8 @@ namespace goby
                 const int max_packet_failures = 3;
                 if(++packet_failures_ >= max_packet_failures)
                 {
-                    glog.is(DEBUG1) && glog << "More than " << max_packet_failures << " bad RUDICS packets." << std::endl;
-                    disconnect_signal(shared_from_this());
+		    glog.is(DEBUG1) && glog << "More than " << max_packet_failures << " bad RUDICS packets." << std::endl;
+                    close();
                 }
             }
             

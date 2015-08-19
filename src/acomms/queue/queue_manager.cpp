@@ -618,6 +618,7 @@ void goby::acomms::QueueManager::handle_modem_receive(const protobuf::ModemTrans
                        (route_additional_modem_ids_.count(modem_message.dest())))
                     {
                         meta_msg.set_encoded_message(modem_message.frame(frame_number));
+                        meta_msg.set_non_repeated_size(meta_msg.encoded_message().size());
                         signal_in_route(meta_msg, *decoded_message, modem_id_);
                     }
                 }

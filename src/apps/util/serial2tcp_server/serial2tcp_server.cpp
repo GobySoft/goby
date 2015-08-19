@@ -56,15 +56,10 @@ int main(int argc, char* argv[])
     for(;;)
     {
         while(serial_client.readline(&s))
-        {
-            std::cout << "serial->tcp: " << s << std::flush;
             tcp_server.write(s);
-        }
+
         while(tcp_server.readline(&s))
-        {
-            std::cout << "tcp->serial: " << s << std::flush;
             serial_client.write(s);
-        }
         
         usleep(1000000/run_freq);
     }

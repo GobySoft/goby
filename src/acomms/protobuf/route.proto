@@ -13,6 +13,7 @@ message RouteManagerConfig
 {  
   optional StaticRoute route = 1;
   optional uint32 subnet_mask = 2 [default = 0xFFFFFF00]; // 255.255.255.0
+  optional uint32 default_gateway = 3;
 }
 
 message RouteCommand

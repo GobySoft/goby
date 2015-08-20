@@ -34,6 +34,10 @@
 
 using namespace goby::common::logger;
 
+
+bool MOOSGateway_OnConnect(void* pParam);
+bool MOOSGateway_OnDisconnect(void* pParam);
+
 namespace goby
 {
     namespace moos
@@ -44,6 +48,9 @@ namespace goby
             MOOSGateway(protobuf::MOOSGatewayConfig* cfg);
             ~MOOSGateway();
 
+            friend bool ::MOOSGateway_OnConnect(void* pParam);
+            friend bool ::MOOSGateway_OnDisconnect(void* pParam);
+            
         private:
             void moos_inbox(CMOOSMsg& msg);
             void loop();
@@ -72,7 +79,8 @@ namespace goby
             // PB Group -> MOOS Var
             std::multimap<std::string, std::string> pb2moos_;
 
-            
+            bool moos_resubscribe_required_;
+
         };
     }
 }
@@ -93,7 +101,8 @@ goby::moos::MOOSGateway::MOOSGateway(protobuf::MOOSGatewayConfig* cfg)
       goby::pb::DynamicProtobufNode(&zeromq_service_),
       cfg_(*cfg),
       goby_moos_pubsub_client_(this, cfg_.pb_convert() ? goby::common::protobuf::PubSubSocketConfig() : cfg_.base().pubsub_config()),
-      goby_pb_pubsub_client_(this, cfg_.pb_convert() ? cfg_.base().pubsub_config() : goby::common::protobuf::PubSubSocketConfig())
+      goby_pb_pubsub_client_(this, cfg_.pb_convert() ? cfg_.base().pubsub_config() : goby::common::protobuf::PubSubSocketConfig()),
+      moos_resubscribe_required_(false)
 {
 
     goby::util::DynamicProtobufManager::enable_compilation();
@@ -125,7 +134,10 @@ goby::moos::MOOSGateway::MOOSGateway(protobuf::MOOSGatewayConfig* cfg)
             glog.is(DIE) && glog << "Failed to load file." << std::endl;
     }
 
+
     
+    moos_client_.SetOnConnectCallBack(MOOSGateway_OnConnect,this);
+    moos_client_.SetOnDisconnectCallBack(MOOSGateway_OnDisconnect,this);
     moos_client_.Run(cfg_.moos_server_host().c_str(), cfg_.moos_server_port(), cfg_.base().app_name().c_str(), cfg_.moos_comm_tick());
 
     glog.is(VERBOSE) &&
@@ -312,4 +324,42 @@ void goby::moos::MOOSGateway::pb_inbox(boost::shared_ptr<google::protobuf::Messa
 
     for(It it = it_range.first; it != it_range.second; ++it)
         moos_client_.Notify(it->second, serialized);
+}
+
+bool MOOSGateway_OnConnect(void* pParam)
+{
+    if(pParam)
+    {
+        goby::moos::MOOSGateway* pApp = (goby::moos::MOOSGateway*)pParam;
+
+        if(pApp->moos_resubscribe_required_)
+        {
+            for(std::set<std::string>::const_iterator it = pApp->subscribed_vars_.begin(), end = pApp->subscribed_vars_.end(); it != end; ++it)
+            {
+                pApp->moos_client_.Register(*it, 0);
+                glog.is(DEBUG2) && glog << "Resubscribing for: " << *it << std::endl;
+            }
+        }
+        
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+bool MOOSGateway_OnDisconnect(void* pParam)
+{
+    if(pParam)
+    {
+        goby::moos::MOOSGateway* pApp = (goby::moos::MOOSGateway*)pParam;
+        pApp->moos_resubscribe_required_ = true;
+        
+        return true;
+    }
+    else
+    {
+        return false;
+    }
 }

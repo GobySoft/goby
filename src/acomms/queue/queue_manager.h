@@ -253,8 +253,12 @@ namespace goby
             void create_network_ack(int ack_src,
                                     const google::protobuf::Message& orig_msg,
                                     goby::acomms::protobuf::NetworkAck::AckType ack_type);
-            
-            
+
+            // "overload" those from DCCLCodec to allow changing of crypto passphrase
+            std::string encode_repeated(const std::list<QueuedMessage>& msgs);
+            std::list<QueuedMessage> decode_repeated(const std::string& orig_bytes);
+            unsigned size_repeated(const std::list<QueuedMessage>& msgs);
+
           private:
 
             friend class Queue;
@@ -272,6 +276,9 @@ namespace goby
             typedef int ModemId;
             std::set<ModemId> network_ack_src_ids_;
             std::set<ModemId> route_additional_modem_ids_;
+            
+            // maps id to crypto passphrase
+            std::map<ModemId, std::string> encrypt_rules_;
             
             protobuf::QueueManagerConfig cfg_;            
 

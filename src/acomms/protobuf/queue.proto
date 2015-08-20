@@ -54,6 +54,15 @@ message QueueManagerConfig
   repeated int32 make_network_ack_for_src_id = 30;
 
   repeated int32 route_for_additional_modem_id = 40 [(goby.field).description="Try to route packets addressed to these modem_ids (in addition to those addressed to this modem's actual modem_id)"];
+
+  message DCCLEncryptRule
+  {
+     // if encoding - dest id
+     // if decoding - source id
+     optional int32 id = 1;
+     required string crypto_passphrase = 2;
+  }
+  repeated DCCLEncryptRule encrypt_rule = 50;  
 }
 
 message QueueSize

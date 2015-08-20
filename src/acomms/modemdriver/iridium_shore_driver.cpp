@@ -270,7 +270,7 @@ void goby::acomms::IridiumShoreDriver::rudics_line(const std::string& data, boos
     {
         std::string decoded_line;
 
-        if(data == "goby\r")
+        if(data == "goby\r" || data == "\0goby\r") // sometimes Iridium adds a 0x00 to the start of transmission
         {
             glog.is(DEBUG1) && glog << "Detected start of Goby RUDICS connection from " <<  connection->remote_endpoint_str() << std::endl;
         }
@@ -314,6 +314,7 @@ void goby::acomms::IridiumShoreDriver::rudics_line(const std::string& data, boos
     catch(RudicsPacketException& e)
     {
         glog.is(DEBUG1) && glog <<  warn << "Could not decode packet: " << e.what() << std::endl;
+        connection->add_packet_failure();
     }
 }
 

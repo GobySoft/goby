@@ -85,6 +85,18 @@ namespace goby
                 glog.is(DEBUG1) && glog << "Disconnecting from: " << remote_endpoint_str_ << std::endl;
             }
 
+            void add_packet_failure()
+            {
+                using goby::glog;
+                using goby::common::logger::DEBUG1;
+                const int max_packet_failures = 3;
+                if(++packet_failures_ >= max_packet_failures)
+                {
+		    glog.is(DEBUG1) && glog << "More than " << max_packet_failures << " bad RUDICS packets." << std::endl;
+                    close();
+                }
+            }
+            
             
             boost::signals2::signal<void (const std::string& line, boost::shared_ptr<RUDICSConnection> connection)> line_signal;
             boost::signals2::signal<void (boost::shared_ptr<RUDICSConnection> connection)> disconnect_signal;
@@ -95,9 +107,10 @@ namespace goby
           private:
           RUDICSConnection(boost::asio::io_service& io_service)
               : socket_(io_service),
-                remote_endpoint_str_("Unknown")
+                remote_endpoint_str_("Unknown"),
+                packet_failures_(0)
             {
-
+                
             }
 
 
@@ -150,7 +163,7 @@ namespace goby
             boost::asio::ip::tcp::socket socket_;
             boost::asio::streambuf buffer_;
             std::string remote_endpoint_str_;
-
+            int packet_failures_;
         };
 
         class RUDICSServer

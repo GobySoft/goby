@@ -611,6 +611,8 @@ void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::genera
 
     // deletes an existing root
     tree_table_->setTreeRoot(root, "Field");
+
+    time_fields_.clear();
     
     generate_tree(root, message_.get());
 
@@ -622,6 +624,7 @@ void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::genera
     WTreeTableNode* parent,
     google::protobuf::Message* message)
 {
+    
     const google::protobuf::Descriptor* desc = message->GetDescriptor();
     
     for(int i = 0, n = desc->field_count(); i < n; ++i)

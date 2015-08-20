@@ -66,7 +66,7 @@ bool goby::acomms::Queue::push_message(boost::shared_ptr<google::protobuf::Messa
     
     
     // loopback if set
-    if(parent_->manip_manager_.has(id(), protobuf::LOOPBACK))
+    if(parent_->manip_manager_.has(id(), protobuf::LOOPBACK) && !meta.has_encoded_message())
     {
         glog.is(DEBUG1) && glog << group(parent_->glog_push_group())
                                 << parent_->msg_string(dccl_msg->GetDescriptor())

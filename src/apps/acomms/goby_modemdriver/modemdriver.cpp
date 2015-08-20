@@ -240,6 +240,7 @@ void goby::acomms::ModemDriver::handle_initiate_transmission(const protobuf::Mod
 void goby::acomms::ModemDriver::reset(const ModemDriverException& e)
 {
     status_.set_status(e.status());
+    status_.set_n_resets(status_.n_resets()+1);
     glog.is(WARN) && glog << "Exception: " << e.what() << std::endl;
     const int restart_sec = 15;
     glog.is(WARN) && glog << "Shutting down driver." << std::endl;

@@ -43,6 +43,7 @@ using goby::acomms::operator<<;
 goby::acomms::IridiumDriver::IridiumDriver()
     : fsm_(driver_cfg_),
       last_triple_plus_time_(0),
+      last_send_time_(0),
       serial_fd_(-1),
       next_frame_(0)
 {

@@ -245,7 +245,7 @@ void goby::acomms::QueueManager::handle_modem_data_request(protobuf::ModemTransm
         }
         else
         {
-            std::list<boost::shared_ptr<google::protobuf::Message> > dccl_msgs;
+            std::list<QueuedMessage> dccl_msgs;
 
             // set true if we are passing on encrypted data untouched
             bool using_encrypted_body = false;
@@ -330,7 +330,9 @@ void goby::acomms::QueueManager::handle_modem_data_request(protobuf::ModemTransm
                 //                        static_cast<char>((next_user_frame.data().size()-DCCL_NUM_HEADER_BYTES)));
                 // new_data.insert(DCCL_NUM_HEADER_BYTES, frame_size);        
 
-                dccl_msgs.push_back(next_user_frame.dccl_msg);
+                // fix the destination
+                next_user_frame.meta = meta_from_msg(*next_user_frame.dccl_msg);
+                dccl_msgs.push_back(next_user_frame);
 
                 // 
                 if(using_encrypted_body)
@@ -340,7 +342,7 @@ void goby::acomms::QueueManager::handle_modem_data_request(protobuf::ModemTransm
                 }
                 else
                 {
-                    unsigned repeated_size_bytes = codec_->size_repeated(dccl_msgs);
+                    unsigned repeated_size_bytes = size_repeated(dccl_msgs);
                     
                     glog.is(DEBUG2) && glog << group(glog_out_group_) << "Size repeated " << repeated_size_bytes << std::endl;
                     data->resize(repeated_size_bytes);
@@ -367,19 +369,20 @@ void goby::acomms::QueueManager::handle_modem_data_request(protobuf::ModemTransm
 
                     *data = ""; 
                     // encode all the messages but the last (these must be unencrypted)
-                    std::list<boost::shared_ptr<google::protobuf::Message> >::iterator it_back = dccl_msgs.end();
-                    --it_back;
                     if(dccl_msgs.size() > 1)
-                        *data = codec_->encode_repeated<boost::shared_ptr<google::protobuf::Message> >(
-                            std::list<boost::shared_ptr<google::protobuf::Message> >(dccl_msgs.begin(), it_back));
+                    {
+                        std::list<QueuedMessage>::iterator it_back = dccl_msgs.end();
+                        --it_back;
+                        *data = encode_repeated(std::list<QueuedMessage>(dccl_msgs.begin(), it_back));
+                    }
                         
                     std::string head;
-                    codec_->encode(&head, *dccl_msgs.back(), true);
+                    codec_->encode(&head, *dccl_msgs.back().dccl_msg, true);
                     *data += head + passthrough_message.substr(head.size());
                 }
                 else
                 {
-                    *data = codec_->encode_repeated<boost::shared_ptr<google::protobuf::Message> >(dccl_msgs);
+                    *data = encode_repeated(dccl_msgs);
                 }    
             }
             catch(DCCLException& e)
@@ -392,6 +395,96 @@ void goby::acomms::QueueManager::handle_modem_data_request(protobuf::ModemTransm
     // only discipline the ACK value at the end, after all chances of making packet_ack_ = true are done
     msg->set_ack_requested(packet_ack_);
 }
+
+
+std::string goby::acomms::QueueManager::encode_repeated(const std::list<QueuedMessage>& msgs)
+{
+    std::string out;
+    BOOST_FOREACH(const QueuedMessage& msg, msgs)
+    {
+        if(encrypt_rules_.size())
+        {
+            protobuf::DCCLConfig cfg;
+            std::map<ModemId, std::string>::const_iterator it = encrypt_rules_.find(msg.meta.dest());
+
+            if(it != encrypt_rules_.end())
+            {
+                cfg.set_crypto_passphrase(it->second);
+            }
+            
+            codec_->merge_cfg(cfg);
+        }
+            
+        std::string piece;
+        codec_->encode(&piece, *(msg.dccl_msg));
+        out += piece;
+    }    
+    return out;
+}
+
+
+            
+std::list<goby::acomms::QueuedMessage> goby::acomms::QueueManager::decode_repeated(const std::string& orig_bytes)
+{
+    std::string bytes = orig_bytes;
+    std::list<QueuedMessage> out;
+    while(!bytes.empty())
+    {
+        try
+        {
+            QueuedMessage msg;
+            
+            if(encrypt_rules_.size())
+            {
+                boost::shared_ptr<google::protobuf::Message> header =
+                    codec_->decode<boost::shared_ptr<google::protobuf::Message> >(bytes, true);
+
+                msg.meta = meta_from_msg(*header);
+                
+                protobuf::DCCLConfig cfg;
+                std::map<ModemId, std::string>::const_iterator it = encrypt_rules_.find(msg.meta.src());
+
+                if(it != encrypt_rules_.end())
+                {
+                    cfg.set_crypto_passphrase(it->second);
+                }
+                
+                codec_->merge_cfg(cfg);
+            }       
+
+            msg.dccl_msg = codec_->decode<boost::shared_ptr<google::protobuf::Message> >(bytes);
+
+            if(!encrypt_rules_.size())
+                msg.meta = meta_from_msg(*(msg.dccl_msg));
+            
+            out.push_back(msg);
+            unsigned last_size = codec_->size(*(out.back().dccl_msg));
+            glog.is(common::logger::DEBUG1) && glog << group(glog_in_group_) << "last message size was: " << last_size << std::endl;
+            bytes.erase(0, last_size);
+        }
+        catch(dccl::Exception& e)
+        {
+            if(out.empty())
+                throw(e);
+            else
+            {
+                glog.is(common::logger::WARN) && glog << group(glog_in_group_) << "failed to decode " << goby::util::hex_encode(bytes) << " but returning parts already decoded"  << std::endl;
+                return out;
+            }
+        }        
+    }
+    return out;
+}
+
+
+unsigned goby::acomms::QueueManager::size_repeated(const std::list<QueuedMessage>& msgs)
+{
+    unsigned out = 0;
+    BOOST_FOREACH(const QueuedMessage& msg, msgs)
+        out += codec_->size(*(msg.dccl_msg));
+    return out;
+}
+
 
 
 void goby::acomms::QueueManager::clear_packet(const protobuf::ModemTransmission& message)
@@ -555,20 +648,20 @@ void goby::acomms::QueueManager::handle_modem_receive(const protobuf::ModemTrans
                                        << "Received DATA message from "
                                         << modem_message.src() << std::endl;
                 
-                std::list<boost::shared_ptr<google::protobuf::Message> > dccl_msgs;
+                std::list<QueuedMessage> dccl_msgs;
 
                 if(!cfg_.skip_decoding())
                 {
-                    dccl_msgs = codec_->decode_repeated<boost::shared_ptr<google::protobuf::Message> >(modem_message.frame(frame_number));
+                    dccl_msgs = decode_repeated(modem_message.frame(frame_number));
                 }                
 
-                BOOST_FOREACH(boost::shared_ptr<google::protobuf::Message> decoded_message, dccl_msgs)
+                BOOST_FOREACH(const QueuedMessage& decoded_message, dccl_msgs)
                 {
-                    protobuf::QueuedMessageMeta meta_msg = meta_from_msg(*decoded_message);
+                    const protobuf::QueuedMessageMeta& meta_msg = decoded_message.meta;
                     
                     int32 dest = meta_msg.dest();
                     
-                    const google::protobuf::Descriptor* desc = decoded_message->GetDescriptor();
+                    const google::protobuf::Descriptor* desc = decoded_message.dccl_msg->GetDescriptor();
                     
                     if(dest != BROADCAST_ID &&
                        dest != modem_id_ &&
@@ -593,7 +686,7 @@ void goby::acomms::QueueManager::handle_modem_receive(const protobuf::ModemTrans
                     }
                     else
                     {
-                        signal_receive(*decoded_message);
+                        signal_receive(*(decoded_message.dccl_msg));
                     }
                 }
                 
@@ -654,6 +747,7 @@ void goby::acomms::QueueManager::process_cfg()
     manip_manager_.clear();
     network_ack_src_ids_.clear();
     route_additional_modem_ids_.clear();
+    encrypt_rules_.clear();
     
     for(int i = 0, n = cfg_.message_entry_size(); i < n; ++i)
     {
@@ -691,6 +785,13 @@ void goby::acomms::QueueManager::process_cfg()
         route_additional_modem_ids_.insert(cfg_.route_for_additional_modem_id(i));
     }
 
+
+    for(int i = 0, n = cfg_.encrypt_rule_size(); i < n; ++i)
+    {
+        glog.is(DEBUG1) && glog << group(glog_push_group_) << "Adding encrypt rule for ModemId: " << cfg_.encrypt_rule(i).id() << std::endl;
+
+        encrypt_rules_[cfg_.encrypt_rule(i).id()] = cfg_.encrypt_rule(i).crypto_passphrase();
+    }
 }
 
 void goby::acomms::QueueManager::qsize(Queue* q)            

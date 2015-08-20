@@ -124,13 +124,14 @@ namespace goby
             void set_cfg(const protobuf::DCCLConfig& cfg)
             {
                 cfg_.CopyFrom(cfg);
-                process_cfg();
+                process_cfg(true);
             }
                 
             void merge_cfg(const protobuf::DCCLConfig& cfg)
             {
+                bool new_id_codec = (cfg_.id_codec() != cfg.id_codec());
                 cfg_.MergeFrom(cfg);
-                process_cfg();
+                process_cfg(new_id_codec);
             }
 
             void load_shared_library_codecs(void* dl_handle)
@@ -304,7 +305,7 @@ namespace goby
             DCCLCodec(const DCCLCodec&);
             DCCLCodec& operator= (const DCCLCodec&);
             
-            void process_cfg()
+            void process_cfg(bool new_id_codec)
             {
                 if(cfg_.has_crypto_passphrase())
                 {
@@ -315,7 +316,7 @@ namespace goby
                                                  skip_crypto_ids);
                 }
 
-                if(cfg_.has_id_codec())
+                if(new_id_codec && cfg_.has_id_codec())
                 { set_id_codec(cfg_.id_codec()); }
             }
 
@@ -329,6 +330,8 @@ namespace goby
                     goby::glog << group(glog_encode_group_) << msg << std::endl;
                 else if(grp == dccl::logger::SIZE)
                     goby::glog << group(glog_encode_group_) << " {size} "  << msg << std::endl;
+                else
+                    goby::glog << group(glog_encode_group_) << msg << std::endl;
             }
             
             

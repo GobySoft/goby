@@ -3,6 +3,7 @@ import "goby/common/protobuf/app_base_config.proto";
 import "goby/acomms/protobuf/queue.proto";
 import "goby/acomms/protobuf/route.proto";
 import "goby/acomms/protobuf/amac_config.proto";
+import "goby/acomms/protobuf/dccl.proto";
 
 package goby.acomms.protobuf;
 
@@ -24,6 +25,8 @@ message BridgeConfig
   
   repeated string load_proto_file = 11 [(goby.field).description="Path to a DCCL protobuf file. Use load_shared_library when possible."];
 
+  optional DCCLConfig dccl_cfg = 12;
+ 
   optional bool forward_cacst = 100 [default = true];
   optional bool forward_ranging_reply = 101 [default = true];
 

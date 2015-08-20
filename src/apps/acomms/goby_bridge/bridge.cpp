@@ -122,6 +122,8 @@ goby::acomms::Bridge::Bridge(protobuf::BridgeConfig* cfg)
       cfg_(*cfg)
 {
     glog.is(DEBUG1) && glog << cfg_.DebugString() << std::endl;
+
+    goby::acomms::DCCLCodec::get()->set_cfg(cfg->dccl_cfg());
     
     // load all shared libraries
     for(int i = 0, n = cfg_.load_shared_library_size(); i < n; ++i)

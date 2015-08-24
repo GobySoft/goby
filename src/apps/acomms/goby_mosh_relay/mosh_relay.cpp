@@ -186,7 +186,7 @@ void goby::acomms::MoshRelay::handle_goby_receive(const protobuf::MoshPacket& pa
 {
     glog.is(DEBUG1) && glog << "> " << packet.ShortDebugString() << std::endl;
 
-    if(packet.dest() == (int)cfg_.src_modem_id())
+    if(packet.dest() == (int)cfg_.src_modem_id() && packet.src() == (int)cfg_.dest_modem_id())
     {
         if(packets_[packet.src()].add_fragment(packet))  
         {

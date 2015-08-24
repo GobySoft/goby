@@ -355,12 +355,12 @@ void goby::acomms::IridiumShoreDriver::receive_sbd_mo()
 
                 receive(modem_msg);
                 
-                mo_sbd_server_->connections().erase(it++);
             }
             catch(RudicsPacketException& e)
             {
                 glog.is(DEBUG1) && glog <<  warn << "Could not decode SBD packet: " << e.what() << std::endl;
             }
+            mo_sbd_server_->connections().erase(it++);
         }
         else if((*it)->connect_time() > 0 && (goby::common::goby_time<double>() > ((*it)->connect_time() + timeout)))
         {

@@ -81,7 +81,7 @@ namespace goby
 
             int serial_fd_;
 
-            unsigned next_frame_;
+            goby::uint32 next_frame_;
 
         };
     }

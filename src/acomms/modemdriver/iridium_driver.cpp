@@ -192,10 +192,8 @@ void goby::acomms::IridiumDriver::process_transmission(protobuf::ModemTransmissi
 {
     signal_modify_transmission(&msg);
 
-    if(next_frame_ >= FRAME_COUNT_ROLLOVER)
-        next_frame_ = 0;
     if(!msg.has_frame_start())
-        msg.set_frame_start(next_frame_++);
+        msg.set_frame_start(next_frame_);
 
     // set the frame size, if not set or if it exceeds the max configured
     if(!msg.has_max_frame_bytes() || msg.max_frame_bytes() > driver_cfg_.GetExtension(IridiumDriverConfig::max_frame_size))
@@ -203,6 +201,8 @@ void goby::acomms::IridiumDriver::process_transmission(protobuf::ModemTransmissi
     
     signal_data_request(&msg);
 
+    next_frame_ += msg.frame_size();
+    
     if(!(msg.frame_size() == 0 || msg.frame(0).empty()))
     {
         if(dial && msg.rate() == RATE_RUDICS)

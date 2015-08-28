@@ -92,9 +92,7 @@ void goby::acomms::UDPDriver::handle_initiate_transmission(const protobuf::Modem
     signal_modify_transmission(&msg);
 
     if(!msg.has_frame_start())
-        msg.set_frame_start(next_frame_++);
-    if(next_frame_ >= FRAME_COUNT_ROLLOVER)
-        next_frame_ = 0;
+        msg.set_frame_start(next_frame_);
     
     msg.set_max_frame_bytes(driver_cfg_.GetExtension(UDPDriverConfig::max_frame_size));
     signal_data_request(&msg);
@@ -103,6 +101,8 @@ void goby::acomms::UDPDriver::handle_initiate_transmission(const protobuf::Modem
     glog.is(DEBUG1) &&
         glog << group(glog_out_group())
              << "After modification, initiating transmission with " << msg << std::endl;
+
+    next_frame_ += msg.frame_size();
     
     if(!(msg.frame_size() == 0 || msg.frame(0).empty()))
         start_send(msg);

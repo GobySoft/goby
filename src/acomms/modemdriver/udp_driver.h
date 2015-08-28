@@ -61,9 +61,7 @@ namespace goby
             boost::asio::ip::udp::endpoint receiver_;
             boost::asio::ip::udp::endpoint sender_;            
             std::vector<char> receive_buffer_;
-            unsigned next_frame_;
-
-            enum { FRAME_COUNT_ROLLOVER = 1 << 16 };
+            goby::uint32 next_frame_;
             
         };
     }

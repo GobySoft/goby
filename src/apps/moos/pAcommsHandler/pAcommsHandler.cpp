@@ -153,7 +153,9 @@ CpAcommsHandler::CpAcommsHandler()
 
     subscribe(cfg_.moos_var().prefix() + cfg_.moos_var().config_file_request(), &CpAcommsHandler::handle_config_file_request, this);    
 
-    subscribe(cfg_.moos_var().prefix() + cfg_.moos_var().mac_initiate_transmission(), &CpAcommsHandler::handle_external_initiate_transmission, this);    
+    subscribe(cfg_.moos_var().prefix() + cfg_.moos_var().mac_initiate_transmission(), &CpAcommsHandler::handle_external_initiate_transmission, this);
+
+    subscribe(cfg_.moos_var().prefix() + cfg_.moos_var().driver_reset(), &CpAcommsHandler::handle_driver_reset, this);
 }
 
 CpAcommsHandler::~CpAcommsHandler()
@@ -305,6 +307,11 @@ void CpAcommsHandler::handle_config_file_request(const CMOOSMsg&)
 {
     publish(cfg_.moos_var().prefix() + cfg_.moos_var().config_file(),
             dccl::b64_encode(cfg_.SerializeAsString()));
+}
+
+void CpAcommsHandler::handle_driver_reset(const CMOOSMsg& msg)
+{
+    driver_reset(driver_, goby::acomms::ModemDriverException("Manual reset", goby::acomms::protobuf::ModemDriverStatus::MANUAL_RESET));
 }
 
 void CpAcommsHandler::handle_external_initiate_transmission(const CMOOSMsg& msg)
@@ -897,3 +904,4 @@ void CpAcommsHandler::driver_unbind()
                                              _1, cfg_.moos_var().driver_raw_out()));
     }
 }
+

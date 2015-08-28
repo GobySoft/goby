@@ -81,8 +81,7 @@ namespace goby
             protobuf::ModemTransmission rudics_mac_msg_;
             
 
-            unsigned next_frame_;
-            enum { FRAME_COUNT_ROLLOVER = 1 << 16 };
+            goby::uint32 next_frame_;
             
             struct RemoteNode
             {

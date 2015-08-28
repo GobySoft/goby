@@ -89,10 +89,8 @@ void goby::acomms::IridiumShoreDriver::process_transmission(protobuf::ModemTrans
 {
     signal_modify_transmission(&msg);
 
-    if(next_frame_ >= FRAME_COUNT_ROLLOVER)
-        next_frame_ = 0;
     if(!msg.has_frame_start())
-        msg.set_frame_start(next_frame_++);
+        msg.set_frame_start(next_frame_);
 
     // set the frame size, if not set or if it exceeds the max configured
     if(!msg.has_max_frame_bytes() || msg.max_frame_bytes() > driver_cfg_.GetExtension(IridiumDriverConfig::max_frame_size))
@@ -100,6 +98,8 @@ void goby::acomms::IridiumShoreDriver::process_transmission(protobuf::ModemTrans
     
     signal_data_request(&msg);
 
+    next_frame_ += msg.frame_size();
+    
     if(!(msg.frame_size() == 0 || msg.frame(0).empty()))
     {
         send(msg);
@@ -355,12 +355,12 @@ void goby::acomms::IridiumShoreDriver::receive_sbd_mo()
 
                 receive(modem_msg);
                 
-                mo_sbd_server_->connections().erase(it++);
             }
             catch(RudicsPacketException& e)
             {
                 glog.is(DEBUG1) && glog <<  warn << "Could not decode SBD packet: " << e.what() << std::endl;
             }
+            mo_sbd_server_->connections().erase(it++);
         }
         else if((*it)->connect_time() > 0 && (goby::common::goby_time<double>() > ((*it)->connect_time() + timeout)))
         {

@@ -61,8 +61,7 @@ namespace goby
             double query_interval_seconds_;
             double reset_interval_seconds_;
             bool waiting_for_reply_;
-            unsigned next_frame_;
-            enum { FRAME_COUNT_ROLLOVER = 1 << 16 };
+            goby::uint32 next_frame_;
         };
     }
 }

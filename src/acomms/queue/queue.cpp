@@ -492,10 +492,15 @@ bool goby::acomms::Queue::clear_ack_queue(unsigned start_frame)
     {
         // clear out acks for frames whose ack wait time has expired (or whose frame
         // number has come around again. This should avoid losing unack'd data.
-        if (it->first >= start_frame ||
-            it->second->meta.last_sent_time() +
+        if (it->first >= start_frame)
+	{
+            glog.is(DEBUG1) && glog  << group(parent_->glog_pop_group()) << name() << ": Clearing ack for queue because last_frame >= current_frame"  << std::endl;
+            waiting_for_ack_.erase(it++);
+        }
+	else if(it->second->meta.last_sent_time() +
             parent_->cfg_.minimum_ack_wait_seconds()*1e6 < goby_time<uint64>())
         {
+	  glog.is(DEBUG1) && glog  << group(parent_->glog_pop_group()) << name() << ": Clearing ack for queue because " << parent_->cfg_.minimum_ack_wait_seconds() << " seconds has elapsed since last send. Last send:" << it->second->meta.last_sent_time() << std::endl;
             waiting_for_ack_.erase(it++);
         }
         else

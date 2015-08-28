@@ -63,7 +63,6 @@ namespace goby
             std::vector<char> receive_buffer_;
             unsigned next_frame_;
 
-            enum { FRAME_COUNT_ROLLOVER = 1 << 16 };
             
         };
     }

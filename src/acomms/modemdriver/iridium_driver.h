@@ -82,7 +82,6 @@ namespace goby
             int serial_fd_;
 
             unsigned next_frame_;
-            enum { FRAME_COUNT_ROLLOVER = 1 << 16 };
 
         };
     }

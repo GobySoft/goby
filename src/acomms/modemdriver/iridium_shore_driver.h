@@ -82,7 +82,6 @@ namespace goby
             
 
             unsigned next_frame_;
-            enum { FRAME_COUNT_ROLLOVER = 1 << 16 };
             
             struct RemoteNode
             {

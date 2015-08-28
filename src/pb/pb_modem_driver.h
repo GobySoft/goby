@@ -62,7 +62,6 @@ namespace goby
             double reset_interval_seconds_;
             bool waiting_for_reply_;
             unsigned next_frame_;
-            enum { FRAME_COUNT_ROLLOVER = 1 << 16 };
         };
     }
 }

@@ -79,6 +79,8 @@ message pAcommsHandlerConfig
 
     optional string config_file = 300 [default="CONFIG"];
     optional string config_file_request = 301 [default="CONFIG_REQUEST"];
+
+    optional string driver_reset = 400 [default="DRIVER_RESET"];
   }
   optional MOOSVariables moos_var = 10;
   

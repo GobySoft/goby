@@ -25,6 +25,7 @@ message ModemDriverStatus
     MODEM_NOT_RESPONDING = 2;
     STARTUP_FAILED = 3;
     INVALID_CONFIGURATION = 4;
+    MANUAL_RESET = 5;
   }
 
   required Status status = 4;

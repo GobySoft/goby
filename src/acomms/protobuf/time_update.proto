@@ -42,4 +42,6 @@ message TimeUpdateResponse
  
   required uint64 time_of_flight_microsec = 4 [(dccl.field).min = 0, (dccl.field).max = 20000000, (dccl.field).precision = -3]; // microsec correction applied to `time` field - good for 20 sec (about 30km)
  
+  optional int32 request_src = 5 [(dccl.field).omit = true];
+
 }

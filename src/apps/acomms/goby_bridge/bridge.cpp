@@ -441,6 +441,8 @@ void goby::acomms::Bridge::handle_initiate_transmission(const protobuf::ModemTra
             new_transmission.set_ack_requested(true);
             new_transmission.set_dest(pending_time_update_->dest());
             
+	    pending_time_update_->set_time(goby::common::goby_time<uint64>());
+
             goby::acomms::DCCLCodec::get()->encode(new_transmission.add_frame(), *pending_time_update_);
         }
         publish(new_transmission, "Tx" + goby::util::as<std::string>(cfg_.subnet(subnet).queue_cfg().modem_id()));

@@ -276,14 +276,29 @@ void CpAcommsHandler::handle_mac_cycle_update(const CMOOSMsg& msg)
         {
             case goby::acomms::protobuf::MACUpdate::STARTED:
                 mac_.restart();
-
-                if(cfg_.driver_type() == goby::acomms::protobuf::DRIVER_WHOI_MICROMODEM)
-                    dynamic_cast<goby::acomms::MMDriver*>(driver_.get())->set_silent(false);
+		
+		for(std::map<boost::shared_ptr<goby::acomms::ModemDriverBase>, goby::acomms::protobuf::DriverConfig* >::iterator it = drivers_.begin(), end = drivers_.end(); it != end; ++it)
+		{
+		    if(!driver_restart_time_.count(it->first))
+		    {
+		        goby::acomms::MMDriver* driver = dynamic_cast<goby::acomms::MMDriver*>(it->first.get());
+		        if(driver)
+		           driver->set_silent(false);
+		    }
+		}
                 break;
             
             case goby::acomms::protobuf::MACUpdate::STOPPED:
-                if(cfg_.driver_type() == goby::acomms::protobuf::DRIVER_WHOI_MICROMODEM)
-                    dynamic_cast<goby::acomms::MMDriver*>(driver_.get())->set_silent(true);
+		for(std::map<boost::shared_ptr<goby::acomms::ModemDriverBase>, goby::acomms::protobuf::DriverConfig* >::iterator it = drivers_.begin(), end = drivers_.end(); it != end; ++it)
+		{
+		    if(!driver_restart_time_.count(it->first))
+		    {
+		      goby::acomms::MMDriver* driver = dynamic_cast<goby::acomms::MMDriver*>(it->first.get());
+		      if(driver)
+		        driver->set_silent(true);
+		    }
+		}
+
                 mac_.shutdown();
                 break;
         }

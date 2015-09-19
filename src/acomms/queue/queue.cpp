@@ -57,14 +57,6 @@ bool goby::acomms::Queue::push_message(boost::shared_ptr<google::protobuf::Messa
 bool goby::acomms::Queue::push_message(boost::shared_ptr<google::protobuf::Message> dccl_msg,
                                        protobuf::QueuedMessageMeta meta)
 {   
-    parent_->signal_out_route(&meta, *dccl_msg, parent_->cfg_.modem_id());
-    
-    glog.is(DEBUG1) && glog << group(parent_->glog_push_group())
-                            << parent_->msg_string(dccl_msg->GetDescriptor())
-                            << ": attempting to push message (destination: "
-                            << meta.dest() << ")" << std::endl;
-    
-    
     // loopback if set
     if(parent_->manip_manager_.has(id(), protobuf::LOOPBACK) && !meta.has_encoded_message())
     {
@@ -74,6 +66,14 @@ bool goby::acomms::Queue::push_message(boost::shared_ptr<google::protobuf::Messa
                                 << std::endl;
         parent_->signal_receive(*dccl_msg);
     }
+
+    parent_->signal_out_route(&meta, *dccl_msg, parent_->cfg_.modem_id());
+    
+    glog.is(DEBUG1) && glog << group(parent_->glog_push_group())
+                            << parent_->msg_string(dccl_msg->GetDescriptor())
+                            << ": attempting to push message (destination: "
+                            << meta.dest() << ")" << std::endl;
+        
     
     // no queue manipulator set
     if(parent_->manip_manager_.has(id(), protobuf::NO_QUEUE))

@@ -67,6 +67,10 @@ goby::common::LiaisonAcomms::LiaisonAcomms(ZeroMQService* zeromq_service, const 
       mm_rx_stats_box_(0),
       mm_rx_stats_range_(600)
 {
+
+    for(int i = 0, n = cfg.load_shared_library_size(); i < n; ++i)
+        dccl_.load_library(cfg.load_shared_library(i));
+
     protobuf::ZeroMQServiceConfig ipc_sockets;
     protobuf::ZeroMQServiceConfig::Socket* internal_subscribe_socket = ipc_sockets.add_socket();
     internal_subscribe_socket->set_socket_type(protobuf::ZeroMQServiceConfig::Socket::SUBSCRIBE);

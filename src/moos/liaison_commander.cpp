@@ -424,6 +424,7 @@ void goby::common::LiaisonCommander::ControlsContainer::send_message()
         boost::posix_time::ptime now = goby::common::goby_time();
         command_entry->time.setPosixTime(now);
         command_entry->comment = comment_line->text().narrow();
+	command_entry->last_ack = 0;
         session_.add(command_entry);
 
         {
@@ -477,6 +478,7 @@ goby::common::LiaisonCommander::ControlsContainer::CommandContainer::CommandCont
     query_model_->addColumn("protobuf_name", "Name");
     query_model_->addColumn("address", "Network Address");
     query_model_->addColumn("time", "Time");
+    query_model_->addColumn("last_ack", "Latest Ack");
     
     query_table_->setModel(query_model_);
     query_table_->resize(WLength::Auto,
@@ -487,6 +489,7 @@ goby::common::LiaisonCommander::ControlsContainer::CommandContainer::CommandCont
                                  pb_commander_config.database_width().name_width()+
                                  pb_commander_config.database_width().ip_width()+
                                  pb_commander_config.database_width().time_width()+
+				 pb_commander_config.database_width().last_ack_width()+
                                  7*(protobuf::MOOSScopeConfig::COLUMN_MAX+1),
                                  WLength::Auto);    
 
@@ -501,6 +504,9 @@ goby::common::LiaisonCommander::ControlsContainer::CommandContainer::CommandCont
     
     query_table_->setColumnWidth(protobuf::ProtobufCommanderConfig::COLUMN_TIME,
                                  pb_commander_config.database_width().time_width());
+
+    query_table_->setColumnWidth(protobuf::ProtobufCommanderConfig::COLUMN_LAST_ACK,
+                                 pb_commander_config.database_width().last_ack_width());
     
     query_table_->clicked().connect(this, &CommandContainer::handle_database_double_click);
 

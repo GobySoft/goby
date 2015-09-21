@@ -91,6 +91,13 @@ namespace goby
 
             void handle_driver_status(const protobuf::ModemDriverStatus& m, int subnet);
 
+
+            void generate_hw_ctl_network_ack(QueueManager* in_queue, 
+					   goby::acomms::protobuf::NetworkAck::AckType type);
+            void generate_time_update_network_ack(QueueManager* in_queue,
+						  goby::acomms::protobuf::NetworkAck::AckType type);
+
+
         private:
             protobuf::BridgeConfig& cfg_;
             
@@ -221,6 +228,27 @@ void goby::acomms::Bridge::loop()
     {
         (*it)->do_work();
     }
+
+    goby::uint64 now = goby::common::goby_time<goby::uint64>();
+    if(pending_hw_ctl_ && 
+       (pending_hw_ctl_->time() + cfg_.special_command_ttl()*1000000 < now))
+    {
+      glog.is(VERBOSE) && glog << "HardwareControlCommand expired." << std::endl;
+      
+      generate_hw_ctl_network_ack(q_managers_.at(0).get(),
+				  goby::acomms::protobuf::NetworkAck::EXPIRE);
+      pending_hw_ctl_.reset();
+    }
+    
+    if(pending_time_update_ && 
+       (pending_time_update_->time() + cfg_.special_command_ttl()*1000000 < now))
+    {
+      glog.is(VERBOSE) && glog << "TimeUpdateRequest expired." << std::endl;
+
+      generate_time_update_network_ack(q_managers_.at(0).get(),
+				       goby::acomms::protobuf::NetworkAck::EXPIRE);
+      pending_time_update_.reset();
+    }
 }
 
 void goby::acomms::Bridge::handle_queue_receive(const google::protobuf::Message& msg,
@@ -253,6 +281,8 @@ void goby::acomms::Bridge::handle_queue_receive(const google::protobuf::Message&
         request.CopyFrom(msg);
         
         pending_time_update_.reset(new goby::acomms::protobuf::TimeUpdateResponse);
+	pending_time_update_->set_time(request.time());
+        pending_time_update_->set_request_src(request.src());
         pending_time_update_->set_src(from_queue->modem_id());
         pending_time_update_->set_dest(request.update_time_for_id());
         
@@ -324,6 +354,8 @@ void goby::acomms::Bridge::handle_modem_receive(const goby::acomms::protobuf::Mo
                 {
                     // ack for our response
                     glog.is(VERBOSE) && glog << "Received ack for TimeUpdateResponse" << std::endl;
+
+		    generate_time_update_network_ack(in_queue, goby::acomms::protobuf::NetworkAck::ACK);
                     pending_time_update_.reset();
                 }               
             }
@@ -341,18 +373,7 @@ void goby::acomms::Bridge::handle_modem_receive(const goby::acomms::protobuf::Mo
             {
                 glog.is(VERBOSE) && glog << "Received hardware control response: " << control << " to our command: " << *pending_hw_ctl_ << std::endl;
 
-                protobuf::NetworkAck ack;
-                ack.set_ack_src(message.src());
-                ack.set_message_dccl_id(DCCLCodec::get()->id(pending_hw_ctl_->GetDescriptor()));
-                
-                ack.set_message_src(pending_hw_ctl_->command_src());
-                ack.set_message_dest(pending_hw_ctl_->command_dest());
-                ack.set_message_time(pending_hw_ctl_->time());
-                ack.set_ack_type(goby::acomms::protobuf::NetworkAck::ACK);
-                
-                r_manager_.handle_in(in_queue->meta_from_msg(ack),
-                                     ack,
-                                     in_queue->modem_id());        
+		generate_hw_ctl_network_ack(in_queue, goby::acomms::protobuf::NetworkAck::ACK);
                 pending_hw_ctl_.reset();
             }
         }
@@ -361,6 +382,41 @@ void goby::acomms::Bridge::handle_modem_receive(const goby::acomms::protobuf::Mo
     {
         glog.is(WARN) && glog << "Failed to handle incoming message: " << e.what() << std::endl;
     }    
+}
+
+void goby::acomms::Bridge::generate_hw_ctl_network_ack(QueueManager* in_queue, 
+						       goby::acomms::protobuf::NetworkAck::AckType type)
+{
+  protobuf::NetworkAck ack;
+  ack.set_ack_src(pending_hw_ctl_->hw_ctl_dest());
+  ack.set_message_dccl_id(DCCLCodec::get()->id(pending_hw_ctl_->GetDescriptor()));
+                
+  ack.set_message_src(pending_hw_ctl_->command_src());
+  ack.set_message_dest(pending_hw_ctl_->command_dest());
+  ack.set_message_time(pending_hw_ctl_->time());
+  ack.set_ack_type(type);
+                
+  r_manager_.handle_in(in_queue->meta_from_msg(ack),
+		       ack,
+		       in_queue->modem_id());        
+
+}
+       
+void goby::acomms::Bridge::generate_time_update_network_ack(QueueManager* in_queue,
+							    goby::acomms::protobuf::NetworkAck::AckType type)
+{
+  protobuf::NetworkAck ack;
+  ack.set_ack_src(pending_time_update_->dest());
+  ack.set_message_dccl_id(DCCLCodec::get()->id(goby::acomms::protobuf::TimeUpdateRequest::descriptor()));
+                
+  ack.set_message_src(pending_time_update_->request_src());
+  ack.set_message_dest(pending_time_update_->dest());
+  ack.set_message_time(pending_time_update_->time());
+  ack.set_ack_type(type);
+                
+  r_manager_.handle_in(in_queue->meta_from_msg(ack),
+		       ack,
+		       in_queue->modem_id());        
 }
 
 
@@ -385,7 +441,8 @@ void goby::acomms::Bridge::handle_initiate_transmission(const protobuf::ModemTra
             new_transmission.set_ack_requested(true);
             new_transmission.set_dest(pending_time_update_->dest());
             
-            pending_time_update_->set_time(goby::common::goby_time<uint64>());
+	    pending_time_update_->set_time(goby::common::goby_time<uint64>());
+
             goby::acomms::DCCLCodec::get()->encode(new_transmission.add_frame(), *pending_time_update_);
         }
         publish(new_transmission, "Tx" + goby::util::as<std::string>(cfg_.subnet(subnet).queue_cfg().modem_id()));
@@ -423,3 +480,4 @@ void goby::acomms::Bridge::handle_driver_status(const protobuf::ModemDriverStatu
 
     r_manager_.handle_in(in_queue->meta_from_msg(m), m, in_queue->modem_id());    
 }
+

@@ -89,7 +89,8 @@ namespace goby
             Wt::WDateTime time;
             std::string comment;
             std::string address;
-            
+            int last_ack;
+	  
             template<class Action>
             void persist(Action& a)
                 {
@@ -98,6 +99,7 @@ namespace goby
                     Wt::Dbo::field(a, time, "time");
                     Wt::Dbo::field(a, comment, "comment");
                     Wt::Dbo::field(a, address, "address"); 
+                    Wt::Dbo::field(a, last_ack, "last_ack"); 
                }
         };
         

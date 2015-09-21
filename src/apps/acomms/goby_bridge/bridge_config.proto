@@ -30,5 +30,6 @@ message BridgeConfig
   optional bool forward_cacst = 100 [default = true];
   optional bool forward_ranging_reply = 101 [default = true];
 
-  
+  optional int32 special_command_ttl = 200 [default = 1800]; 
+ 
 }

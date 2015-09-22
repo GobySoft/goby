@@ -38,8 +38,7 @@ set -u -e
 case $1 in
 ubuntu|debian)
         # additionally, debian will require:
-        # - Wt from source if desired: http://www.webtoolkit.eu/wt/download
-        # - 0mq from source if desired: http://www.zeromq.org/
+        # DCCL3 from source: http://libdccl.org
 
         if [[ -e "`which aptitude`" ]]; then
             package_manager=aptitude
@@ -58,14 +57,14 @@ ubuntu|debian)
  	    libboost-program-options-dev
  	    libboost-filesystem-dev
  	    libboost-signals-dev
-            libboost-regex-dev
+        libboost-regex-dev
  	    libprotobuf-dev
  	    libprotoc-dev
  	    protobuf-compiler"
         if [ $install_all -ne 0 ]; then 
             packages="${packages}
- 	 	libcrypto++-dev
- 		libncurses-dev
+                libcrypto++-dev
+ 	            libncurses-dev
                 libgmp3-dev
                 libzmq-dev   
                 libwt-dev
@@ -73,6 +72,14 @@ ubuntu|debian)
                 libwtdbosqlite-dev
                 libwthttp-dev
                 libsqlite3-dev"
+        fi
+
+        if [[ $1 == "ubuntu" ]]; then
+            add-apt-repository ppa:dccl-dev/ppa -y
+            apt-get update -qq
+            set +x
+            packages="${packages} 
+                      libdccl3-dev"
         fi
         
         if [ $install_doc -ne 0 ]; then 

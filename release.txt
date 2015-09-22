@@ -1,6 +1,167 @@
 Goby Release Notes (Major version 2)
 
 ****************
+Version 2.1.1
+
+= Acomms = 
+- DCCL is now its own project separate from Goby: http://libdccl.org. Removed DCCL code and added dependency on libdccl. Left backwards-compatible API in goby/acomms/dccl to allow seamless transition for previous Goby users. One exception: users of Google Protocol Buffers versions prior to 2.5.0 will need to change all DCCL .proto files to import the DCCL extensions .proto instead of the Goby one. That is:
+  From:
+        import "goby/acomms/protobuf/dccl_option_extensions.proto";
+  To:
+        import "dccl/protobuf/option_extensions.proto";
+- Updated IridiumDriver to handle the Iridium Short Burst Data (SBD) protocol in addition to the previously available RUDICS protocol. Removed shore-based components of IridiumDriver (now it is only for the mobile side). Removed dependency on the goby_pb library and so IridiumDriver has moved into the goby_acomms library.
+- Removed goby_rudics_shore and added new IridiumShoreDriver to handle all shore-based SBD ("DirectIP") and RUDICS protocol transactions.
+
+= MOOS = 
+-  Added failure handling in pAcommsHandler for multiple modems - can try to use one of the listen modems as the new primary modem, or restart the modem with a configurable backoff period. 
+
+= PB =
+- Protocol Change! Switched order of group and protobuf name in ZMQ identifier string. Thus, version 2.1 goby_pb is not backwards compatible with 2.0.
+
+bzr log --line -n0 -r tag:2.0.6..
+
+586: Toby Schneider 2015-09-21 Release 2.1.1
+585: Toby Schneider 2015-09-21 [merge] Various minor fixes
+  538.1.67: Toby Schneider 2015-09-20 [merge] Merge from pre-ST10
+    538.3.2: Toby Schneider 2015-09-19 Fixed liaison acomms to load DCCL libraries to allow custom codecs
+    538.3.1: Toby Schneider 2015-09-19 Process loopback before signal_in_route to accomodate RouteCommand message
+  538.1.66: Toby Schneider 2015-09-04 Fixed regression on time update in Goby Bridge
+  538.1.65: Toby Schneider 2015-09-04 Added in NetworkAck expire for time update and hardware control messages in goby_bridge
+  538.1.64: Toby Schneider 2015-09-04 Updated pAcommsHandler MAC start/stop to apply to all drivers
+584: Toby Schneider 2015-08-28 [merge] Merge: primarily driver fixes
+  538.1.63: Toby Schneider 2015-08-28 Added manual driver reset command to pAcommsHandler
+  538.1.62: Toby Schneider 2015-08-28 Changed unsigned to uint32 for next_frame to ensure overflow matches protobuf type
+  538.1.61: Toby Schneider 2015-08-28 Added debugging info explaining clearing acks
+  538.1.60: Toby Schneider 2015-08-28 Fixed frame count updates in PB Modem driver for multiple frame messages; Updated other drivers to use same logic in the event they become multi-frame in the future
+  538.1.59: Toby Schneider 2015-08-24 Fixed infinite loop in shore Iridium driver if SBD packet could not be decodded correctly
+  538.1.58: Toby Schneider 2015-08-24 Added check on correct packet source for Mosh relay
+583: Toby Schneider 2015-08-20 [merge] Merge various bug fixes and feature that adds destination-based encryption passphrases for Queue
+  538.1.57: Toby Schneider 2015-08-20 Added option to allow queue to set DCCL passphrase on a destination by destination basis
+  538.1.56: Toby Schneider 2015-08-20 Fixed missing initialized value for time in Iridium driver
+  538.1.55: Toby Schneider 2015-08-20 Added MOOSCommClient connect and disconnect callback handling to moos_gateway_g to allow it to be robust to disconnects from the MOOSDB
+  538.1.54: Toby Schneider 2015-08-19 Added number of resets tracker to ModemDriverStatus
+  538.1.53: Toby Schneider 2015-08-19 Fixed bug with previous commit
+  538.1.52: Toby Schneider 2015-08-19 Added disconnect on multiple RUDICS packet failures
+  538.1.51: Toby Schneider 2015-08-19 Fixed segmentation fault when replacing a Liaison message caused by new multiple _time field fix
+582: Toby Schneider 2015-08-19 [merge] Merge changes from waveglider testing
+  538.1.50: Toby Schneider 2015-08-19 Added default gateway for routing
+  538.1.49: Toby Schneider 2015-08-18 Correctly set size of encrypted passthrough messages
+  538.1.48: Toby Schneider 2015-08-18 Added handling of edge case bug where Iridium phone gives an 'OK' in response to a dial (shouldn't happen, but just did today)
+  538.1.47: Toby Schneider 2015-08-17 Corrected revision parsing for Micro-Modem 1; Removed std::cout spam from serial2tcp_server
+581: Toby Schneider 2015-08-13 [merge] Merge TimeUpdate code
+  538.1.46: Toby Schneider 2015-08-13 Added rough time update code into goby_bridge
+580: Toby Schneider 2015-08-10 [merge] Merge payload status updates in BF frontseat driver
+  578.1.2: Toby Schneider 2015-07-31 Removed unnecessary copy
+  578.1.1: Toby Schneider 2015-07-28 {2.1.1~rc4} Added ability to post payload status in Bluefin frontseat driver
+579: Toby Schneider 2015-07-20 Changed pGobyMOOSAppTemplate to use non-static configuration object since Protobuf seems to have issues with default strings in statically configured Protobuf objects
+578: Toby Schneider 2015-07-15 [merge] Merge fix to unit test
+  538.1.45: Toby Schneider 2015-07-15 Updated unit test for change to ignore broadcast messages originated from the current modem id
+577: Toby Schneider 2015-07-14 [merge] Merge multiple modem failure handling in pAcommsHandler
+  538.1.44: Toby Schneider 2015-07-14 Added failure handling in pAcommsHandler for multiple modems - can try to use one of the listen modems as the new primary modem, or restart the modem with a configurable backoff period. To support this, added these features: unbind/unconnect for Goby slots, increasing inddex for DriverBase objects as they are created (to sort them by order of creation)
+576: Toby Schneider 2015-07-13 [merge] Merge fix to MOOSCommander time field filler
+  538.1.43: Toby Schneider 2015-07-13 Corrected MOOSCommander Liaison plugin to autofill timestamps on messages with multiple _time fields
+575: Toby Schneider 2015-07-10 [merge] Merge fix for bug introduced in previous merge
+  538.1.42: Toby Schneider 2015-07-10 Fixed bug where routing now fails if decoding the whole message fails (e.g. encrypted when we don't have the crypto key
+574: Toby Schneider 2015-07-10 [merge] Merge changes to Goby-Queue to support configurable routing
+  538.1.41: Toby Schneider 2015-07-10 1. Switched order of decode/signal_route_in in Queue to enable processing of data (specifically, RouteCommand) before the routing is done. 2. Added handling of RouteCommand to pAcommsHandler, 3. Changed QueueManager config route_broadcast_packets to route_for_additional_modem_id which is more generic (you can specify additional routing for any modem id(s), not just 0 (broadcast)
+573: Toby Schneider 2015-07-09 [merge] Merge change for NMEASentence non-standard talker
+  538.1.40: Toby Schneider 2015-07-09 Added option to use non-standard (5 character) talker length
+572: Toby Schneider 2015-06-18 [merge] {2.1.1~rc3} Merge in improvements for serial2tcp_server and added PB methods for GobyMOOSApp
+  538.1.39: Toby Schneider 2015-06-18 Added publish_pb and subscribe_pb methods to GobyMOOSApp that directly use the serialize_for_moos and parse_for_moos functions
+  538.1.38: Toby Schneider 2015-06-17 Added configurable run frequency for serial2tcp_server
+  538.1.37: Toby Schneider 2015-06-17 Improved efficiency of std::string overload of readline in linebasedcomms
+  538.1.36: Toby Schneider 2015-06-16 Renamed serial2tcp_server to goby_serial2tcp_server for consistency
+571: Toby Schneider 2015-06-16 [merge] Merge in hardware control support for Micro-Modem driver
+  538.1.35: Toby Schneider 2015-06-15 Added support for CCMEC - hardware control of Micro-Modem line and HardwareControlCommand remote DCCL command
+  538.1.34: Toby Schneider 2015-06-15 Brought pTranslator create_on_multiplex_publish in line with pAcommsHandler version
+  538.1.33: Toby Schneider 2015-06-09 Added logic to deal with packet loss in Mosh relay
+  538.1.32: Toby Schneider 2015-06-09 Added code to correctly set tx and rx times for iridium shore driver
+570: Toby Schneider 2015-06-02 Added support for binary protobuf encoding into Liaison MOOS Scope
+569: Toby Schneider 2015-06-02 Added two new MOOS <-> protobuf translators: TECHNIQUE_PROTOBUF_NATIVE_HEX and TECHNIQUE_PREFIXED_PROTOBUF_NATIVE_HEX which used ascii-encoded hexadecimal representation of the protobuf native encoding
+568: Toby Schneider 2015-05-11 [merge] Merge move Iridium ModemDriver into acomms
+  538.1.31: Toby Schneider 2015-05-11 Fixed line based connection handler for RUDICS in iridium shore driver
+  538.1.30: Toby Schneider 2015-05-11 Moved Iridium driver into Acomms, since it no longer depends on ZMQ stuff in PB
+567: Toby Schneider 2015-05-11 [merge] Merge rework of goby_rudics_shore into standalone ModemDriver
+  538.1.29: Toby Schneider 2015-05-11 [merge] Merge restructure of shore-side rudics/sbd to fix several bugs and streamline code
+    538.2.3: Toby Schneider 2015-05-11 Finished rework of goby_rudics_shore into new ModemDriver.
+    538.2.2: Toby Schneider 2015-05-08 Reworked goby_rudics_shore into new ModemDriver: iridium_shore_driver and removed old goby_rudics_shore
+    538.2.1: Toby Schneider 2015-05-08 Reworking RUDICS shore for multiple gliders
+  538.1.28: Toby Schneider 2015-05-05 Switched modem_id in MTAsyncData to be consistent with other rudics shore messages
+  538.1.27: Toby Schneider 2015-05-05 Register ZMQ connect on data receive
+  538.1.26: Toby Schneider 2015-05-04 Set disposition flag on MT Iridium SBD to flush buffer with new messages
+566: Toby Schneider 2015-04-28 {2.1.1~rc2} Added rx timestamp to linebasedcomms data
+565: Toby Schneider 2015-04-27 Added pitch, roll, z-rate optionally to desired course
+564: Toby Schneider 2015-04-22 [merge] Merge changes for real Iridium SBD
+  538.1.25: Toby Schneider 2015-04-22 Minor modifications to make SBD work with actual Iridium hardware
+563: Toby Schneider 2015-04-14 [merge] {2.1.1~rc1} Merge fix in moos_gateway_g
+  538.1.24: Toby Schneider 2015-04-14 Fixed moos_gateway_g double-connect bug - must choose either MOOSNode or ProtobufNode connection on Goby side
+  538.1.23: Toby Schneider 2015-04-10 [merge] Merge from 2.1
+562: Toby Schneider 2015-04-10 [merge] Merge RUDICS handshake and route command messages
+  538.1.22: Toby Schneider 2015-04-09 1. Implemented routing command DCCL message to change goby_bridge routes; 2. Added creation symlinks to log file for latest log; 3. Minor fixes to moos liaison commander
+  538.1.21: Toby Schneider 2015-04-02 Added handshake to RUDICS disconnect
+  538.1.20: Toby Schneider 2015-04-02 [merge] Merge fixes from 2.1 main
+  538.1.19: Toby Schneider 2015-03-31 Added transition for NoCarrier during Answer
+  538.1.18: Toby Schneider 2015-03-09 Added route command message
+561: Toby Schneider 2015-04-10 Minor mods to logging test to track down multithreading logging issues
+560: Toby Schneider 2015-04-02 Added output for DCCL location that is being used
+559: Toby Schneider 2015-03-30 [merge] Merged fix from 2.0 for libzmq version 3+
+  513.1.43: Toby Schneider 2015-03-30 Fixes for libzmq3: tested against libzmq1:2.2.0+dfsg-5 (backwards compatbility and libzmq3:4.0.4+dfsg-2
+558: Toby Schneider 2015-03-18 [merge] Merged fix of typo in driver_exception header guard
+  513.1.42: Toby Schneider 2015-03-18 1. Fixed bug where HAS_NCURSES definition is in header file; 2. Fixed typo in DriverException header guard
+557: Toby Schneider 2015-03-18 Fixed conflict in extension numbers in iridium_driver.proto
+556: Toby Schneider 2015-03-18 [merge] Merge bug fixes from 2.0
+  513.1.41: Toby Schneider 2015-03-06 Fixes for Clang in OSX Yosemite
+  513.1.40: Toby Schneider 2014-11-07 [merge] Merge from ST8c
+    513.5.3: Toby Schneider 2014-10-04 Fixed bug in MMDriver where  would clear both a  and then a 
+    513.5.2: Toby Schneider 2014-10-03 Added option to disable use of DTR
+    513.5.1: Toby Schneider 2014-10-01 Workaround for partial frame bug in MM2
+  513.1.39: Toby Schneider 2014-09-24 Added transition for Iridium driver to Answer state to correctly return to ready if the call disconnects in the process of being answered (RING -> ATA -> NO CARRIER)
+555: Toby Schneider 2015-03-11 Fixed bug in glog where if you added a stream and then later replaced it with the same stream of a different verbosity, the highest_verbosity would remain at the previous level, causing unnecessary CPU overhead generated streams without any sink
+554: Toby Schneider 2015-03-06 [merge] Merged SBD updates
+  538.1.17: Toby Schneider 2015-03-07 Took out SBDConfigure to allow re-entry to SBDReady after RUDICS call; added minor debug output
+  538.1.16: Toby Schneider 2015-03-06 Added reset after several retries of an AT command to Iridium driver
+553: Toby Schneider 2015-03-05 [merge] Merged in SBD initial support
+  538.1.15: Toby Schneider 2015-03-04 Finalized initial implementation of Iridium SBD
+  538.1.14: Toby Schneider 2015-03-04 Removed debug std::cout
+  538.1.13: Toby Schneider 2015-02-27 Added shore side (MO) support for Iridium short-burst data into goby_rudics_shore
+  538.1.12: Toby Schneider 2015-02-19 Added in great deal of structure and code for SBD that largely works. Also added in async messages from goby_rudics_shore - this is currently non-functional
+552: Toby Schneider 2015-02-17 [merge] Merge changes to NetworkAck
+  538.1.11: Toby Schneider 2015-02-17 Added random port to route test as well
+  538.1.10: Toby Schneider 2015-02-17 Initialized random seed for ports in tests to reduce conflicts on parallel builds
+  538.1.9: Toby Schneider 2015-02-16 Changed UDPDriver test to use random ports to avoid conflicts during parallel builds
+  538.1.8: Toby Schneider 2015-02-16 Moved NetworkAck from goby_bridge to goby::acomms::QueueManager so it can be used by any application (e.g. pAcommsHandler). Added EXPIRE messages to NetworkAck as well
+  538.1.7: Toby Schneider 2015-02-16 [merge] Merge fixes to pTranslator
+551: Toby Schneider 2015-02-16 [merge] Merge change to wire protocol of ZMQ for PB messages - makes it possible to subscribe to a group that contains multiple types of messages
+  538.1.6: Toby Schneider 2015-02-05 More work on functionality to moos_gateway_g to decode PB messages and repost as MOOS
+  538.1.5: Toby Schneider 2015-02-04 1. (PB Wire Protocol Change\!) Switched order of group and protobuf name in ZMQ identifier string. 2. Update goby_file_transfer to report number of fragments in Response message, 3. Updated DynamicProtobufNode and changed goby_bridge to use that instead of just StaticProtobufNode (to handle external queue push messages), 4. Add functionality to moos_gateway_g to decode PB messages and repost as MOOS TECHNIQUE_PREFIXED_PROTOBUF_TEXT_FORMAT messages
+  538.1.4: Toby Schneider 2015-01-14 [merge] Merge from 2.1 main
+550: Toby Schneider 2015-02-12 Fixed pTranslator to work with MOOS Time Warp; Fixed TECHNIQUE_FORMAT parser to properly handle nested embedded messages
+549: Toby Schneider 2015-01-27 Reverted UseShortRepeated primitives as this does not work on Protobuf 2.3.0
+548: Toby Schneider 2015-01-20 Used protobuf TextFormat ShortRepeatedPrimitives for MOOS parsing/serialization
+547: Toby Schneider 2015-01-14 [merge] Merge changes from 2.1-dsop
+  538.1.3: Toby Schneider 2015-01-12 Added guard to Iridium driver state machine so it won't try to dial when it's on a call already
+  538.1.2: Toby Schneider 2014-11-17 [merge] Merge bug fixes from 2.1
+  538.1.1: Toby Schneider 2014-11-05 {2.1.0+shark1} Release 2.1.0+shark1
+546: Toby Schneider 2015-01-14 Fixed bug where GobyMOOSApp fails to read last line of .moos file if it doesn't contain a final newline character
+545: Toby Schneider 2015-01-02 Added template GobyMOOSApp
+544: Toby Schneider 2014-12-03 Added plugin infrastructure for pAcommsHandler drivers; also added ability to use custom id codec with pAcommsHandler
+543: Toby Schneider 2014-12-02 Reworked GobyMOOSApp so that it can be used (optionally) with AppCastingMOOSApp
+542: Toby Schneider 2014-11-17 Fixed bug introduced by use of new frame_start in ModemTransmission: ACKs did not have correct frame number for PBDriver and IridiumDriver
+541: Toby Schneider 2014-11-13 Added missing header
+540: Toby Schneider 2014-11-06 Fixed very bad bug: Removed HAS_NCURSES macro from header file since this needed to be defined by library user code to work correctly; also removed option to compile without pthread for the Goby logger
+539: Toby Schneider 2014-11-06 Fixed typo in docs
+538: Toby Schneider 2014-10-22 Minor changes to examples to compile properly
+537: Toby Schneider 2014-10-20 Fixed thread-safe logger for custom operator<<() overloads when not using explicit FlexOstream::is() method
+536: Toby Schneider 2014-10-17 [merge] 1. Merge changes to Liaison Acomms tab; 2. Updated for namespace and other structural changes in DCCL; 3. Fixed frame ack bug in UDP, PB and Iridium driver (where frames could be inadvertently ack'd
+  535.1.4: Toby Schneider 2014-09-30 Added percent bad frames into Liaison Acomms tab stats
+  535.1.3: Toby Schneider 2014-09-30 Finished initial graph of stats
+  535.1.2: Toby Schneider 2014-09-30 More work on liaison acomms tab - updated MAC and started driver work
+  535.1.1: Toby Schneider 2014-09-29 Finished AMAC part of MOOSAcomms tab in Goby Liaison - also minor changes to MACManager to support this
+535: Toby Schneider 2014-08-27 [merge] Merge from 2.0
+  513.1.38: Toby Schneider 2014-08-25 Added subscription for pAcommsHandler on ACOMMS_MAC_INITIATE_TRANSMISSION for folks to handle MAC externally
+  513.1.37: Toby Schneider 2014-08-01 {2.0.6} Increment version
+
+****************
 Version 2.0.6
 
 = Acomms = 

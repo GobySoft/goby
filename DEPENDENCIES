@@ -60,12 +60,12 @@ ubuntu|debian)
         libboost-regex-dev
  	    libprotobuf-dev
  	    libprotoc-dev
- 	    protobuf-compiler"
+ 	    protobuf-compiler
+        libgmp3-dev"
         if [ $install_all -ne 0 ]; then 
             packages="${packages}
                 libcrypto++-dev
  	            libncurses-dev
-                libgmp3-dev
                 libzmq-dev   
                 libwt-dev
                 libwtdbo-dev

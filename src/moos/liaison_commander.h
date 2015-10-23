@@ -86,20 +86,25 @@ namespace goby
         {
             std::string protobuf_name;
             std::vector<unsigned char> bytes;
+            long long utime;
             Wt::WDateTime time;
             std::string comment;
             std::string address;
             int last_ack;
-	  
+            // serialized NetworkAckSet
+            std::vector<unsigned char> acks;
+            
             template<class Action>
             void persist(Action& a)
                 {
                     Wt::Dbo::field(a, protobuf_name, "protobuf_name");
                     Wt::Dbo::field(a, bytes, "bytes");
+                    Wt::Dbo::field(a, utime, "utime");
                     Wt::Dbo::field(a, time, "time");
                     Wt::Dbo::field(a, comment, "comment");
                     Wt::Dbo::field(a, address, "address"); 
                     Wt::Dbo::field(a, last_ack, "last_ack"); 
+                    Wt::Dbo::field(a, acks, "acks"); 
                }
         };
         
@@ -127,6 +132,8 @@ namespace goby
           private:
             ZeroMQService* zeromq_service_;
             const protobuf::ProtobufCommanderConfig& pb_commander_config_;
+            std::set<std::string> display_subscriptions_;
+            
             
             Wt::WVBoxLayout* main_layout_;
 
@@ -254,7 +261,7 @@ namespace goby
                     boost::shared_ptr<google::protobuf::Message> message_;
                     
                     std::map<Wt::WFormWidget*, const google::protobuf::FieldDescriptor*> time_fields_;
-                    
+                    goby::uint64 latest_time_;
                     
                     Wt::WGroupBox* tree_box_;
                     Wt::WTreeTable* tree_table_;

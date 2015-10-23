@@ -1,4 +1,5 @@
 import "goby/common/protobuf/liaison_config.proto";
+import "goby/acomms/protobuf/network_ack.proto";
 
 package goby.common.protobuf;
 
@@ -52,6 +53,14 @@ message ProtobufCommanderConfig
   repeated string subscription = 30;
 
   optional string time_source_var = 40;
+
+  optional string network_ack_var = 41 [default = "ACOMMS_NETWORK_ACK"];
+}
+
+message NetworkAckSet
+{
+  optional uint64 newest_ack_time = 1;
+  repeated goby.acomms.protobuf.NetworkAck ack = 2;
 }
 
 message MOOSScopeConfig

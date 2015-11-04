@@ -1334,7 +1334,7 @@ void goby::common::LiaisonCommander::ControlsContainer::CommandContainer::set_ti
             case google::protobuf::FieldDescriptor::CPPTYPE_UINT64:
             case google::protobuf::FieldDescriptor::CPPTYPE_INT64:
                 line_edit->setText(goby::util::as<std::string>(goby::util::as<uint64>(now)));
-                if(options.has_precision())
+                if(!options.has_precision())
                     latest_time_ = dccl::round(latest_time_, -MICROSEC_ORDER_MAG);
                 else
                     latest_time_ = dccl::round(latest_time_, options.precision());

@@ -114,18 +114,19 @@ int main(int argc, char* argv[])
     
     std::string format_str = "NAME=%1%,X=%202%,Y=%3%,HEADING=%201%,REPEAT={%10%}";
    {
+       std::string repeat_format_str = format_str + ",REPEAT={%10.0%,%10.1%,%10.2%,%10.3%,%10.4%,%10.5%,%10.6%,%10.7%,%10.8%,%10.9%,%10.10%,%10.11%}";
         protobuf::TranslatorEntry entry;
         entry.set_protobuf_name("BasicNodeReport");
         
         protobuf::TranslatorEntry::CreateParser* parser = entry.add_create();
         parser->set_technique(protobuf::TranslatorEntry::TECHNIQUE_FORMAT);
         parser->set_moos_var("NODE_REPORT");
-        parser->set_format(format_str);
+        parser->set_format(repeat_format_str);
         
         protobuf::TranslatorEntry::PublishSerializer* serializer = entry.add_publish();
         serializer->set_technique(protobuf::TranslatorEntry::TECHNIQUE_FORMAT);
         serializer->set_moos_var("NODE_REPORT");
-        serializer->set_format(format_str);
+        serializer->set_format(repeat_format_str);
         
         translator.clear_entry(entry.protobuf_name());        
         translator.add_entry(entry);
@@ -140,6 +141,16 @@ int main(int argc, char* argv[])
     report.set_heading(240);
     report.add_repeat(1);
     report.add_repeat(-1);
+    report.add_repeat(2);
+    report.add_repeat(-2);
+    report.add_repeat(3);
+    report.add_repeat(-3);
+    report.add_repeat(4);
+    report.add_repeat(-4);
+    report.add_repeat(5);
+    report.add_repeat(-5);
+    report.add_repeat(6);
+    report.add_repeat(-6);
     
     
     std::multimap<std::string, CMOOSMsg> moos_msgs = translator.protobuf_to_moos(report);    
@@ -151,7 +162,7 @@ int main(int argc, char* argv[])
     {
         goby::glog << "Variable: " << it->first << "\n"
                    << "Value: " << it->second.GetString() << std::endl;
-        assert(it->second.GetString() == "NAME=unicorn,X=550,Y=1023.5,HEADING=240,REPEAT={1,-1}");
+        assert(it->second.GetString() == "NAME=unicorn,X=550,Y=1023.5,HEADING=240,REPEAT={1,-1,2,-2,3,-3,4,-4,5,-5,6,-6},REPEAT={1,-1,2,-2,3,-3,4,-4,5,-5,6,-6}");
     }
     
     typedef std::auto_ptr<google::protobuf::Message> GoogleProtobufMessagePointer;

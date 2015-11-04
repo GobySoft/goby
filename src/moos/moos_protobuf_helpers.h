@@ -875,7 +875,7 @@ namespace goby
                               "%" + subfields[subfields.size()-1] + "%",
                               repeated_delimiter, use_short_enum);    
 
-                    boost::replace_all(mutable_format_temp, match, goby::util::as<std::string>(max_field_number));
+                    boost::replace_all(mutable_format_temp, std::string("%" + match + "%"), std::string("%" + goby::util::as<std::string>(max_field_number) + "%")); 
 
                 }
 
@@ -893,7 +893,7 @@ namespace goby
                     
                     ++max_field_number;
 
-                    boost::replace_all(mutable_format_temp, match, goby::util::as<std::string>(max_field_number));
+                    boost::replace_all(mutable_format_temp, std::string("%" + match + "%"), std::string("%" + goby::util::as<std::string>(max_field_number) + "%")); 
 
                     RepeatedFieldKey key;
 

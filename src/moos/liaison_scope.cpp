@@ -578,7 +578,8 @@ goby::common::LiaisonScope::HistoryContainer::HistoryContainer(MOOSNode* node,
       hr_(new WText("<hr />", this)),
       add_text_(new WText(("Add history for key: "), this)),
       history_box_(new WComboBox(this)),
-      history_button_(new WPushButton("Add", this))
+      history_button_(new WPushButton("Add", this)),
+      buffer_(moos_scope_config.max_history_items())
 
 {
     history_box_->setModel(model);
@@ -706,13 +707,16 @@ void goby::common::LiaisonScope::HistoryContainer::display_message(CMOOSMsg& msg
     if(hist_it != history_models_.end())
     {
         hist_it->second.model->appendRow(create_row(msg));
+        while(hist_it->second.model->rowCount() > moos_scope_config_.max_history_items())
+            hist_it->second.model->removeRow(0);
+        
         hist_it->second.proxy->setFilterRegExp(".*");
     }
 }
 
 void goby::common::LiaisonScope::HistoryContainer::flush_buffer()
 {
-    for(std::vector<CMOOSMsg>::iterator it = buffer_.begin(),
+    for(boost::circular_buffer<CMOOSMsg>::iterator it = buffer_.begin(),
             end = buffer_.end(); it != end; ++it)
     {
         display_message(*it);

@@ -612,7 +612,7 @@ void CpAcommsHandler::handle_queue_receive(const google::protobuf::Message& msg)
         for(std::multimap<std::string, CMOOSMsg>::iterator it = out.begin(), n = out.end();
             it != n; ++it)
         {
-            glog.is(VERBOSE) && glog << group("pAcommsHandler") << "Publishing: " << it->second << std::endl;
+            glog.is(DEBUG2) && glog << group("pAcommsHandler") << "Publishing: " << it->second << std::endl;
             publish(it->second);
         }    
     }
@@ -652,13 +652,13 @@ void CpAcommsHandler::handle_encode_on_demand(const goby::acomms::protobuf::Mode
 void CpAcommsHandler::create_on_publish(const CMOOSMsg& trigger_msg,
                                      const goby::moos::protobuf::TranslatorEntry& entry)
 {
-    glog.is(VERBOSE) && glog << group("pAcommsHandler") << "Received trigger: " << trigger_msg.GetKey() << std::endl;
+    glog.is(DEBUG2) && glog << group("pAcommsHandler") << "Received trigger: " << trigger_msg.GetKey() << std::endl;
 
     if(!entry.trigger().has_mandatory_content() ||
        trigger_msg.GetString().find(entry.trigger().mandatory_content()) != std::string::npos)
         translate_and_push(entry);
     else
-        glog.is(VERBOSE) && glog << group("pAcommsHandler") << "Message missing mandatory content for: " << entry.protobuf_name() << std::endl;
+        glog.is(DEBUG2) && glog << group("pAcommsHandler") << "Message missing mandatory content for: " << entry.protobuf_name() << std::endl;
         
 }
 
@@ -717,8 +717,8 @@ void CpAcommsHandler::create_on_timer(const boost::system::error_code& error,
       timer->async_wait(boost::bind(&CpAcommsHandler::create_on_timer, this,
                                        _1, entry, timer));
       
-      glog.is(VERBOSE) && glog << group("pAcommsHandler") << "Received trigger for: " << entry.protobuf_name() << std::endl;
-      glog.is(VERBOSE) && glog << group("pAcommsHandler") << "Next expiry: " << timer->expires_at() << std::endl;
+      glog.is(DEBUG2) && glog << group("pAcommsHandler") << "Received trigger for: " << entry.protobuf_name() << std::endl;
+      glog.is(DEBUG2) && glog << group("pAcommsHandler") << "Next expiry: " << timer->expires_at() << std::endl;
       
       translate_and_push(entry);
   }
@@ -732,7 +732,7 @@ void CpAcommsHandler::translate_and_push(const goby::moos::protobuf::TranslatorE
             translator_.moos_to_protobuf<boost::shared_ptr<google::protobuf::Message> >(
                 dynamic_vars().all(), entry.protobuf_name());
         
-        glog.is(DEBUG1) &&
+        glog.is(DEBUG2) &&
             glog << group("pAcommsHandler") << "Created message: \n" << created_message->DebugString() << std::endl;
         
         queue_manager_.push_message(*created_message);

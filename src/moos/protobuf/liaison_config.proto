@@ -106,14 +106,13 @@ message MOOSScopeConfig
     optional bool show_plot = 2 [default = false];
     optional int32 plot_width = 3 [default = 800];
     optional int32 plot_height = 4 [default = 300];
-  }
-  
+
+  } 
   
   repeated HistoryConfig history = 8;
 
   optional bool use_binary_protobuf = 9 [default=false];
-    
-    
+  optional int32 max_history_items = 10 [default = 100];
 }
 
 message GeodesyConfig

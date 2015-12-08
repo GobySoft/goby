@@ -26,6 +26,7 @@
 #define LIAISONSCOPE20110609H
 
 #include <boost/thread.hpp>
+#include <boost/circular_buffer.hpp>
 
 #include <Wt/WText>
 #include <Wt/WCssDecorationStyle>
@@ -185,8 +186,8 @@ namespace goby
                 Wt::WText* add_text_;
                 Wt::WComboBox* history_box_;
                 Wt::WPushButton* history_button_;
-
-                std::vector<CMOOSMsg> buffer_;
+                
+                boost::circular_buffer<CMOOSMsg> buffer_;
             };
             
             HistoryContainer* history_header_div_;

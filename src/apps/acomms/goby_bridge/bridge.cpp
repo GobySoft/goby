@@ -108,6 +108,8 @@ namespace goby
             
             boost::shared_ptr<micromodem::protobuf::HardwareControlCommand> pending_hw_ctl_;
             boost::shared_ptr<goby::acomms::protobuf::TimeUpdateResponse> pending_time_update_;
+            goby::uint64 time_update_request_time_;
+            
         };
     }
 }
@@ -126,7 +128,8 @@ using goby::glog;
 goby::acomms::Bridge::Bridge(protobuf::BridgeConfig* cfg)
     : Application(cfg),
       DynamicProtobufNode(&Application::zeromq_service()),
-      cfg_(*cfg)
+      cfg_(*cfg),
+      time_update_request_time_(0)
 {
     glog.is(DEBUG1) && glog << cfg_.DebugString() << std::endl;
 
@@ -279,9 +282,10 @@ void goby::acomms::Bridge::handle_queue_receive(const google::protobuf::Message&
     {
         goby::acomms::protobuf::TimeUpdateRequest request;
         request.CopyFrom(msg);
-        
+
         pending_time_update_.reset(new goby::acomms::protobuf::TimeUpdateResponse);
 	pending_time_update_->set_time(request.time());
+        time_update_request_time_ = request.time();
         pending_time_update_->set_request_src(request.src());
         pending_time_update_->set_src(from_queue->modem_id());
         pending_time_update_->set_dest(request.update_time_for_id());
@@ -411,7 +415,7 @@ void goby::acomms::Bridge::generate_time_update_network_ack(QueueManager* in_que
                 
   ack.set_message_src(pending_time_update_->request_src());
   ack.set_message_dest(pending_time_update_->dest());
-  ack.set_message_time(pending_time_update_->time());
+  ack.set_message_time(time_update_request_time_);
   ack.set_ack_type(type);
                 
   r_manager_.handle_in(in_queue->meta_from_msg(ack),

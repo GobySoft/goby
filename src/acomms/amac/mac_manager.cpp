@@ -231,27 +231,40 @@ boost::posix_time::ptime goby::acomms::MACManager::next_cycle_time()
     using namespace boost::posix_time;
 
     ptime now = goby_time();
-    time_duration time_of_day = now.time_of_day();
-    double since_day_start = time_of_day.total_seconds()*1e6
-        + (time_of_day-seconds(time_of_day.total_seconds())).total_microseconds();
 
+    ptime reference;
+    switch(cfg_.ref_time_type())
+    {
+        case protobuf::MACConfig::REFERENCE_START_OF_DAY:
+            reference = ptime(now.date(), seconds(0));
+            break;
+        case protobuf::MACConfig::REFERENCE_FIXED:
+            reference = goby::common::unix_double2ptime(cfg_.fixed_ref_time());
+            break;
+    }
+
+    time_duration duration_since_ref = now-reference;
+    goby::int64 microsec_since_reference = duration_since_ref.total_seconds()*1000000ll
+                + (duration_since_ref-seconds(duration_since_ref.total_seconds())).total_microseconds();
     
-    glog.is(DEBUG2) && glog << group(glog_mac_group_) << "microseconds since day start: "
-                   << since_day_start << std::endl;
+    glog.is(DEBUG2) && glog << group(glog_mac_group_) << "reference: "
+                            << reference << std::endl;
+    
+    glog.is(DEBUG2) && glog << group(glog_mac_group_) << "microseconds since reference: "
+                            << microsec_since_reference << std::endl;
 
     glog.is(DEBUG2) && glog << group(glog_mac_group_) << "cycle duration: "
-                   << cycle_duration() << std::endl;
+                            << cycle_duration() << std::endl;
     
-    cycles_since_day_start_ = (floor(since_day_start/(cycle_duration()*1e6)) + 1);
+    cycles_since_reference_ = microsec_since_reference/(cycle_duration()*1000000) + 1;
     
-    glog.is(DEBUG2) && glog << group(glog_mac_group_) << "cycles since day start: "
-                 << cycles_since_day_start_ << std::endl;
+    glog.is(DEBUG2) && glog << group(glog_mac_group_) << "cycles since reference: "
+                            << cycles_since_reference_ << std::endl;
     
-    double secs_to_next = cycles_since_day_start_*cycle_duration();
+    goby::int64 secs_to_next = cycles_since_reference_*cycle_duration();
 
     
-    // day start plus the next cycle starting from now
-    return ptime(now.date(), microseconds(secs_to_next*1e6));
+    return reference + microseconds(secs_to_next*1000000ll);
 }
 
 void goby::acomms::MACManager::update()
@@ -273,7 +286,7 @@ void goby::acomms::MACManager::update()
     next_slot_t_ = next_cycle_time();
 
     glog.is(DEBUG1) && glog << group(glog_mac_group_) << "The next MAC TDMA cycle begins at time: "
-                 << next_slot_t_ << std::endl;
+                            << next_slot_t_ << std::endl;
     
     // if we can start cycles in the middle, do it
     if(cfg_.start_cycle_in_middle() &&
@@ -282,7 +295,7 @@ void goby::acomms::MACManager::update()
         cfg_.type() == protobuf::MAC_POLLED))
     {
         glog.is(DEBUG1) && glog << group(glog_mac_group_) << "Starting next available slot (in middle of cycle)"
-                       << std::endl;
+                                << std::endl;
 
         // step back a cycle
         next_slot_t_ -= boost::posix_time::microseconds(cycle_duration()*1e6);

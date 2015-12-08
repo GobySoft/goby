@@ -22,5 +22,12 @@ message MACConfig
   
   optional bool start_cycle_in_middle = 4 [default = true,
                                            (goby.field).description="If true, cycle will start / restart at the next slot, even if its the middle of the cycle. If false, any changes to the cycle will reset it to the first slot."];
-  
+
+    enum MACRefTime 
+    {
+        REFERENCE_START_OF_DAY = 1;
+        REFERENCE_FIXED = 2;
+    }
+    optional MACRefTime ref_time_type = 5 [default = REFERENCE_START_OF_DAY];
+    optional int32 fixed_ref_time = 6 [(goby.field).description="Seconds since UNIX 1970-01-01T00:00:00 to use as reference time if ref_time_type == REFERENCE_FIXED"];
 }

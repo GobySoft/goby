@@ -149,7 +149,7 @@ namespace goby
 
             std::list<protobuf::ModemTransmission>::iterator current_slot_;
     
-            unsigned cycles_since_day_start_;
+            unsigned cycles_since_reference_;
             
             bool started_up_;
 

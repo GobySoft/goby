@@ -260,11 +260,11 @@ boost::posix_time::ptime goby::acomms::MACManager::next_cycle_time()
     
     glog.is(DEBUG2) && glog << group(glog_mac_group_) << "cycles since reference: "
                             << cycles_since_reference_ << std::endl;
-    
-    goby::int64 secs_to_next = cycles_since_reference_*cycle_duration();
+
+    double secs_to_next = cycles_since_reference_*cycle_duration();
 
     
-    return reference + microseconds(secs_to_next*1000000ll);
+    return reference + seconds(secs_to_next) + microseconds((secs_to_next - floor(secs_to_next))*1000000);
 }
 
 void goby::acomms::MACManager::update()

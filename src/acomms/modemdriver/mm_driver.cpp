@@ -1116,7 +1116,8 @@ void goby::acomms::MMDriver::cardp(const NMEASentence& nmea, protobuf::ModemTran
            RATE = 3,
            ACK = 4,
            RESERVED = 5,
-           DATA = 6 };
+           DATA_MINI = 6,
+           DATA = 7};
     
     m->set_time(goby_time<uint64>());
     m->set_src(as<uint32>(nmea[SRC]));
@@ -1125,9 +1126,11 @@ void goby::acomms::MMDriver::cardp(const NMEASentence& nmea, protobuf::ModemTran
     m->set_type(protobuf::ModemTransmission::DRIVER_SPECIFIC);
     m->SetExtension(micromodem::protobuf::type, micromodem::protobuf::MICROMODEM_FLEXIBLE_DATA);
 
-    std::vector<std::string> frames;
-    boost::split(frames, nmea[DATA], boost::is_any_of(";"));
-
+    std::vector<std::string> frames, frames_data;
+    boost::split(frames, nmea[DATA_MINI], boost::is_any_of(";"));
+    boost::split(frames_data, nmea[DATA], boost::is_any_of(";"));
+    frames.insert(frames.end(), frames_data.begin(), frames_data.end());
+    
     bool bad_frame = false;
     std::string frame_hex;
     const int num_fields = 3;

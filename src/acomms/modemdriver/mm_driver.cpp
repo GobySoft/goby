@@ -49,7 +49,6 @@ using goby::common::nmea_time2ptime;
 
 const boost::posix_time::time_duration goby::acomms::MMDriver::MODEM_WAIT = boost::posix_time::seconds(5);
 const boost::posix_time::time_duration goby::acomms::MMDriver::WAIT_AFTER_REBOOT = boost::posix_time::seconds(2);
-const int goby::acomms::MMDriver::ALLOWED_MS_DIFF = 3000;
 const boost::posix_time::time_duration goby::acomms::MMDriver::HYDROID_GATEWAY_GPS_REQUEST_INTERVAL = boost::posix_time::seconds(30);
 const std::string goby::acomms::MMDriver::SERIAL_DELIMITER = "\r";
 const unsigned goby::acomms::MMDriver::PACKET_FRAME_COUNT [] = { 1, 3, 3, 2, 2, 8 };
@@ -105,6 +104,22 @@ void goby::acomms::MMDriver::startup(const protobuf::DriverConfig& cfg)
     modem_start(driver_cfg_);
 
     write_cfg();
+
+    // reboot, to ensure we get a $CAREV message
+    {
+        NMEASentence nmea("$CCMSC", NMEASentence::IGNORE);
+        nmea.push_back(driver_cfg_.modem_id());
+        nmea.push_back(driver_cfg_.modem_id());
+        nmea.push_back(0);
+        append_to_write_queue(nmea);
+    }
+    
+    while(!out_.empty())
+    {
+        do_work();
+        usleep(100000); // 10 Hz
+    }
+
     
     // so that we know what the Micro-Modem has for all the NVRAM values, not just the ones we set
     query_all_cfg();
@@ -146,7 +161,7 @@ void goby::acomms::MMDriver::initialize_talkers()
         ("DQF",DQF)("SHF",SHF)("MFD",MFD)("SNR",SNR) 
         ("DOP",DOP)("DBG",DBG)("FFL",FFL)("FST",FST) 
         ("ERR",ERR)("TOA",TOA)("XST",XST)("TDP",TDP)
-        ("RDP",RDP);
+        ("RDP",RDP)("TMS",TMS)("TMQ",TMQ)("TMG",TMG);
 
     boost::assign::insert (talker_id_map_)
         ("CC",CC)("CA",CA)("SN",SN)("GP",GP); 
@@ -212,8 +227,13 @@ void goby::acomms::MMDriver::initialize_talkers()
         ("$CATOA","Message from modem to host reporting time of arrival of the previous packet, and the synchronous timing mode used to determine that time.")
         ("$CCTDP","Transmit (downlink) data packet with Flexible Data Protocol (Micro-Modem 2)")
         ("$CCTDP","Response to CCTDP for Flexible Data Protocol (Micro-Modem 2)")
-        ("$CARDP","Reception of a FDP downlink data packet (Micro-Modem 2)");
-
+        ("$CARDP","Reception of a FDP downlink data packet (Micro-Modem 2)")
+        ("$CCTMS","Set the modem clock (Micro-Modem 2)")
+        ("$CATMS","Response to set clock command (Micro-Modem 2)")
+        ("$CCTMQ","Query modem time command (Micro-Modem 2)")
+        ("$CATMQ","Response to time query (CCTMQ) command (Micro-Modem 2)")
+        ("$CATMG", "Informational message about timing source, printed when timing sources change (Micro-Modem 2)");
+    
     // from Micro-Modem Software Interface Guide v. 3.04
     boost::assign::insert (cfg_map_)
         ("AGC","Turn on automatic gain control")
@@ -297,7 +317,6 @@ void goby::acomms::MMDriver::set_clock()
 {
     glog.is(DEBUG1) && glog << group(glog_out_group()) << "Setting the Micro-Modem clock." << std::endl;
 
-    NMEASentence nmea("$CCCLK", NMEASentence::IGNORE);
     boost::posix_time::ptime p = goby_time();
 
     // for sync nav, let's make sure to send the ccclk at the beginning of the
@@ -312,18 +331,35 @@ void goby::acomms::MMDriver::set_clock()
         p = goby_time();
         frac_sec = double(p.time_of_day().fractional_seconds())/p.time_of_day().ticks_per_second();
     }
-    
-    nmea.push_back(int(p.date().year()));
-    nmea.push_back(int(p.date().month()));
-    nmea.push_back(int(p.date().day()));
-    nmea.push_back(int(p.time_of_day().hours()));
-    nmea.push_back(int(p.time_of_day().minutes()));
-    nmea.push_back(int(p.time_of_day().seconds()));
-    
-    append_to_write_queue(nmea);
 
-    // take a breath to let the clock be set 
-    sleep(1);
+    if(revision_.mm_major >= 2)
+    {
+        NMEASentence nmea("$CCTMS", NMEASentence::IGNORE);
+        std::stringstream iso_time;
+        boost::posix_time::time_facet *facet = new boost::posix_time::time_facet("%Y-%m-%dT%H:%M:%SZ");
+        iso_time.imbue(std::locale(iso_time.getloc(), facet));
+        iso_time << p;
+        nmea.push_back(iso_time.str());
+        nmea.push_back(0);
+        
+        append_to_write_queue(nmea);
+    }
+    else
+    {
+        NMEASentence nmea("$CCCLK", NMEASentence::IGNORE);
+        nmea.push_back(int(p.date().year()));
+        nmea.push_back(int(p.date().month()));
+        nmea.push_back(int(p.date().day()));
+        nmea.push_back(int(p.time_of_day().hours()));
+        nmea.push_back(int(p.time_of_day().minutes()));
+        nmea.push_back(int(p.time_of_day().seconds()));
+        
+        append_to_write_queue(nmea);
+
+        // take a breath to let the clock be set 
+        sleep(1);
+    }
+    
 }
 
 void goby::acomms::MMDriver::write_cfg()
@@ -349,8 +385,6 @@ void goby::acomms::MMDriver::write_cfg()
 
     // enforce RXP to be enabled, we use it to detect start of received message
     write_single_cfg("RXP,1");
-
-
 }
 
 void goby::acomms::MMDriver::write_single_cfg(const std::string &s)
@@ -371,8 +405,16 @@ void goby::acomms::MMDriver::write_single_cfg(const std::string &s)
 
 void goby::acomms::MMDriver::query_all_cfg()
 {
-    NMEASentence nmea("$CCCFQ,ALL", NMEASentence::IGNORE);
-    append_to_write_queue(nmea);
+    if(revision_.mm_major >= 2)
+    {
+        NMEASentence nmea("$CCCFQ,TOP", NMEASentence::IGNORE);
+        append_to_write_queue(nmea);
+    }
+    else
+    {
+        NMEASentence nmea("$CCCFQ,ALL", NMEASentence::IGNORE);
+        append_to_write_queue(nmea);
+    }
 }
 
 
@@ -850,8 +892,9 @@ void goby::acomms::MMDriver::process_receive(const NMEASentence& nmea)
         case ERR: caerr(nmea); break; // error message
         case DRQ: cadrq(nmea, transmit_msg_); break; // data request
         case CFG: cacfg(nmea); break; // configuration
-        case CLK: caclk(nmea); break; // clock
-
+        case CLK: receive_time(nmea, CLK); break; // clock
+        case TMS: receive_time(nmea, TMS); break; // clock (MM2)
+        case TMQ: receive_time(nmea, TMQ); break; // clock (MM2)
             
             //
             // data cycle
@@ -1126,38 +1169,65 @@ void goby::acomms::MMDriver::cacfg(const NMEASentence& nmea)
     nvram_cfg_[nmea[1]] = nmea.as<int>(2);
 }
 
-void goby::acomms::MMDriver::caclk(const NMEASentence& nmea)
+void goby::acomms::MMDriver::receive_time(const NMEASentence& nmea, SentenceIDs sentence_id)
 {
-    if(out_.empty() || out_.front().sentence_id() != "CLK")
+    if(out_.empty() ||
+       (sentence_id == CLK && out_.front().sentence_id() != "CLK") ||
+       (sentence_id == TMS && out_.front().sentence_id() != "TMS") ||
+       (sentence_id == TMQ && out_.front().sentence_id() != "TMQ"))
         return;
     
     using namespace boost::posix_time;
     using namespace boost::gregorian;
-    // modem responds to the previous second, which is why we subtract one second from the current time
     ptime expected = goby_time();
-    ptime reported = ptime(date(nmea.as<int>(1),
-                                nmea.as<int>(2),
-                                nmea.as<int>(3)),
-                           time_duration(nmea.as<int>(4),
-                                         nmea.as<int>(5),
-                                         nmea.as<int>(6)+1,
-                                         0));
-    glog.is(DEBUG1) && glog << group(glog_in_group()) << "Micro-Modem reported time: " << reported << std::endl;
+    ptime reported;
     
-
+    if(sentence_id == CLK)
+    {
+        // modem responds to the previous second, which is why we add one to the reported time
+        reported = ptime(date(nmea.as<int>(1),
+                              nmea.as<int>(2),
+                              nmea.as<int>(3)),
+                         time_duration(nmea.as<int>(4),
+                                       nmea.as<int>(5),
+                                       nmea.as<int>(6)+1,
+                                       0));
+    }
+    else if(sentence_id == TMS || sentence_id == TMQ)
+    {
+        int time_field = 0;
+        if(sentence_id == TMS)
+            time_field = 2;
+        else if(sentence_id == TMQ)
+            time_field = 1;
+        
+        std::string t = nmea.at(time_field).substr(0, nmea.at(time_field).size()-1);
+        boost::posix_time::time_input_facet *tif = new boost::posix_time::time_input_facet;
+        tif->set_iso_extended_format();
+        std::istringstream iso_time(t);
+        iso_time.imbue(std::locale(std::locale::classic(), tif));
+        iso_time >> reported;
+        
+        reported += boost::posix_time::seconds(1);
+    }
+    // glog.is(DEBUG1) && glog << group(glog_in_group()) << "Micro-Modem reported time: " << reported << std::endl;
     
     // make sure the modem reports its time as set at the right time
     // we may end up oversetting the clock, but better safe than sorry...
     boost::posix_time::time_duration t_diff = (reported - expected);
+
+    // glog.is(DEBUG1) && glog << group(glog_in_group()) << "Difference: " << t_diff << std::endl;
+
     
-    if( abs( int( t_diff.total_milliseconds())) < ALLOWED_MS_DIFF )
+    if( abs( int( t_diff.total_milliseconds())) < driver_cfg_.GetExtension(micromodem::protobuf::Config::allowed_skew_ms))
     {
-        glog.is(DEBUG1) && glog << group(glog_out_group()) << "Micro-Modem clock acceptably set." << std::endl;        
+        // glog.is(DEBUG1) && glog << group(glog_out_group()) << "Micro-Modem clock acceptably set." << std::endl;        
         clock_set_ = true;
     }
     else
     {
         glog.is(DEBUG1) && glog << group(glog_out_group()) << "Time is not within allowed skew, setting Micro-Modem clock again." << std::endl;
+        clock_set_ = false;
     }
 }
 
@@ -1323,7 +1393,7 @@ void goby::acomms::MMDriver::carev(const NMEASentence& nmea)
 
         boost::posix_time::time_duration t_diff = (reported - expected);
         
-        if( abs( int( t_diff.total_milliseconds())) > ALLOWED_MS_DIFF )
+        if( abs( int( t_diff.total_milliseconds())) > driver_cfg_.GetExtension(micromodem::protobuf::Config::allowed_skew_ms) )
             clock_set_ = false;
 
         std::vector<std::string> rev_parts;

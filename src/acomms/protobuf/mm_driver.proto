@@ -55,6 +55,8 @@ message Config
     optional REMUSLBLParams remus_lbl = 1004;
 
     optional int32 keep_alive_seconds = 1006 [default = 10];
+
+    optional int32 allowed_skew_ms = 1008 [default = 1000];
   }
 }
 

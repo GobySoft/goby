@@ -77,7 +77,22 @@ namespace goby
             
 
           private:
-        
+            enum SentenceIDs  { SENTENCE_NOT_DEFINED = 0,
+                                ACK,DRQ,RXA,RXD,
+                                RXP,TXD,TXA,TXP,
+                                TXF,CYC,MPC,MPA,
+                                MPR,RSP,MSC,MSA,
+                                MSR,EXL,MEC,MEA,
+                                MER,MUC,MUA,MUR,
+                                PDT,PNT,TTA,MFD,
+                                CLK,CFG,AGC,BBD,
+                                CFR,CST,MSG,REV,
+                                DQF,SHF,SNR,DOP,
+                                DBG,FFL,FST,ERR,
+                                TOA,XST,RDP,TDP,
+                                TMS,TMQ,TMG};
+            
+                    
             // startup
             void initialize_talkers(); // insert strings into sentence_id_map_, etc for later use
             void set_clock(); // set the modem clock from the system (goby) clock
@@ -136,7 +151,8 @@ namespace goby
             void carev(const util::NMEASentence& nmea); // $CAREV
             void caerr(const util::NMEASentence& nmea); // $CAERR
             void cacfg(const util::NMEASentence& nmea);
-            void caclk(const util::NMEASentence& nmea); // $CACLK
+            void receive_time(const util::NMEASentence& nmea, SentenceIDs sentence_id); // $CACLK
+            void catms(const util::NMEASentence& nmea); // $CATMS
             void cadrq(const util::NMEASentence& nmea, const protobuf::ModemTransmission& m); // $CADRQ
 
             void validate_transmission_start(const protobuf::ModemTransmission& message);
@@ -205,19 +221,6 @@ namespace goby
 
             enum TalkerIDs { TALKER_NOT_DEFINED = 0,CA,CC,SN,GP};
 
-            enum SentenceIDs  { SENTENCE_NOT_DEFINED = 0,
-                                ACK,DRQ,RXA,RXD,
-                                RXP,TXD,TXA,TXP,
-                                TXF,CYC,MPC,MPA,
-                                MPR,RSP,MSC,MSA,
-                                MSR,EXL,MEC,MEA,
-                                MER,MUC,MUA,MUR,
-                                PDT,PNT,TTA,MFD,
-                                CLK,CFG,AGC,BBD,
-                                CFR,CST,MSG,REV,
-                                DQF,SHF,SNR,DOP,
-                                DBG,FFL,FST,ERR,
-                                TOA,XST,RDP,TDP};
             
             std::map<std::string, TalkerIDs> talker_id_map_;
             std::map<std::string, SentenceIDs> sentence_id_map_;
@@ -276,7 +279,6 @@ namespace goby
                 int mm_patch;
             };
             MMRevision revision_;
-            
         };
     }
 }

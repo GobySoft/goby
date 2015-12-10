@@ -120,16 +120,6 @@ void goby::acomms::MMDriver::startup(const protobuf::DriverConfig& cfg)
         usleep(100000); // 10 Hz
     }
 
-    
-    // so that we know what the Micro-Modem has for all the NVRAM values, not just the ones we set
-    query_all_cfg();
-
-    while(!out_.empty())
-    {
-        do_work();
-        usleep(100000); // 10 Hz
-    }
-    
     // some clock stuff -- set clk_mode_ zeros for starters
     set_clock();
     clk_mode_ = micromodem::protobuf::NO_SYNC_TO_PPS_AND_CCCLK_BAD;
@@ -139,7 +129,10 @@ void goby::acomms::MMDriver::startup(const protobuf::DriverConfig& cfg)
         do_work();
         usleep(100000); // 10 Hz
     }
-    
+
+    // so that we know what the Micro-Modem has for all the NVRAM values, not just the ones we set
+    query_all_cfg();
+
     startup_done_ = true;
 }
 
@@ -320,11 +313,11 @@ void goby::acomms::MMDriver::set_clock()
     boost::posix_time::ptime p = goby_time();
 
     // for sync nav, let's make sure to send the ccclk at the beginning of the
-    // second: between 1ms-50ms after the top of the second
+    // second: between 50ms-100ms after the top of the second
     // see WHOI sync nav manual
     // http://acomms.whoi.edu/documents/Synchronous%20Navigation%20With%20MicroModem%20RevD.pdf
     double frac_sec = double(p.time_of_day().fractional_seconds())/p.time_of_day().ticks_per_second();
-    while(frac_sec > 50e-3 || frac_sec < 1e-3)
+    while(frac_sec > 100e-3 || frac_sec < 50e-3)
     {
         // wait 1 ms
         usleep(1000);
@@ -338,7 +331,7 @@ void goby::acomms::MMDriver::set_clock()
         std::stringstream iso_time;
         boost::posix_time::time_facet *facet = new boost::posix_time::time_facet("%Y-%m-%dT%H:%M:%SZ");
         iso_time.imbue(std::locale(iso_time.getloc(), facet));
-        iso_time << p;
+        iso_time << (p+boost::posix_time::seconds(1));
         nmea.push_back(iso_time.str());
         nmea.push_back(0);
         
@@ -352,7 +345,7 @@ void goby::acomms::MMDriver::set_clock()
         nmea.push_back(int(p.date().day()));
         nmea.push_back(int(p.time_of_day().hours()));
         nmea.push_back(int(p.time_of_day().minutes()));
-        nmea.push_back(int(p.time_of_day().seconds()));
+        nmea.push_back(int(p.time_of_day().seconds()+1));
         
         append_to_write_queue(nmea);
 
@@ -1187,13 +1180,12 @@ void goby::acomms::MMDriver::receive_time(const NMEASentence& nmea, SentenceIDs 
     
     if(sentence_id == CLK)
     {
-        // modem responds to the previous second, which is why we add one to the reported time
         reported = ptime(date(nmea.as<int>(1),
                               nmea.as<int>(2),
                               nmea.as<int>(3)),
                          time_duration(nmea.as<int>(4),
                                        nmea.as<int>(5),
-                                       nmea.as<int>(6)+1,
+                                       nmea.as<int>(6),
                                        0));
     }
     else if(sentence_id == TMS || sentence_id == TMQ)
@@ -1210,8 +1202,6 @@ void goby::acomms::MMDriver::receive_time(const NMEASentence& nmea, SentenceIDs 
         std::istringstream iso_time(t);
         iso_time.imbue(std::locale(std::locale::classic(), tif));
         iso_time >> reported;
-        
-        reported += boost::posix_time::seconds(1);
     }
     // glog.is(DEBUG1) && glog << group(glog_in_group()) << "Micro-Modem reported time: " << reported << std::endl;
     
@@ -1224,7 +1214,7 @@ void goby::acomms::MMDriver::receive_time(const NMEASentence& nmea, SentenceIDs 
     
     if( abs( int( t_diff.total_milliseconds())) < driver_cfg_.GetExtension(micromodem::protobuf::Config::allowed_skew_ms))
     {
-        // glog.is(DEBUG1) && glog << group(glog_out_group()) << "Micro-Modem clock acceptably set." << std::endl;        
+        glog.is(DEBUG1) && glog << group(glog_out_group()) << "Micro-Modem clock acceptably set." << std::endl;        
         clock_set_ = true;
     }
     else
@@ -1389,16 +1379,6 @@ void goby::acomms::MMDriver::carev(const NMEASentence& nmea)
     }
     else if(nmea[2] == "AUV")
     {
-        //check the clock
-        using boost::posix_time::ptime;
-        ptime expected = goby_time();
-        ptime reported = nmea_time2ptime(nmea[1]);
-
-        boost::posix_time::time_duration t_diff = (reported - expected);
-        
-        if( abs( int( t_diff.total_milliseconds())) > driver_cfg_.GetExtension(micromodem::protobuf::Config::allowed_skew_ms) )
-            clock_set_ = false;
-
         std::vector<std::string> rev_parts;
         boost::split(rev_parts, nmea[3], boost::is_any_of("."));
         if(rev_parts.size() == 3 || rev_parts.size() == 4)

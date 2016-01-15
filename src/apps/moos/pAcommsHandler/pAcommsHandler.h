@@ -171,6 +171,7 @@ class CpAcommsHandler : public GobyMOOSApp
 
     std::map<boost::shared_ptr<goby::acomms::ModemDriverBase>, double > driver_restart_time_;
 
+    std::set<const google::protobuf::Descriptor*> dccl_frontseat_forward_;
     
     static pAcommsHandlerConfig cfg_;
     static CpAcommsHandler* inst_;    

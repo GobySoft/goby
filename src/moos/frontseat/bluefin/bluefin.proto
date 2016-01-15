@@ -118,7 +118,6 @@ message BluefinExtraCommands
     FAIL     = 0;
   }
   optional StartConfirm start_confirm = 12 [default = SUCCESS];
-  
 }
 
 extend CommandRequest

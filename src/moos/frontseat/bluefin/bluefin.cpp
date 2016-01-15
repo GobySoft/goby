@@ -29,6 +29,8 @@
 #include "goby/common/logger.h"
 #include "goby/util/as.h"
 
+#include "dccl/binary.h"
+
 #include "bluefin.h"
 
 namespace gpb = goby::moos::protobuf;
@@ -208,9 +210,6 @@ void BluefinFrontSeat::send_command_to_frontseat(const gpb::CommandRequest& comm
                 append_to_write_queue(nmea);
             }
             break;
-
-
-
         }
     }
     
@@ -317,6 +316,14 @@ void BluefinFrontSeat::send_data_to_frontseat(const gpb::FrontSeatInterfaceData&
         append_to_write_queue(nmea);   
     }
 
+    if(data.has_dccl_message())
+    {
+        NMEASentence nmea("$BPDCL", NMEASentence::IGNORE);
+        nmea.push_back(unix_time2nmea_time(goby_time<double>()));
+        nmea.push_back(dccl::b64_encode(data.dccl_message()));
+        append_to_write_queue(nmea);
+    }
+    
     if(data.HasExtension(gpb::bluefin_data))
     {
         const gpb::BluefinExtraData& bf_extra = data.GetExtension(gpb::bluefin_data);

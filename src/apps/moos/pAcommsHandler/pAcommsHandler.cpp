@@ -38,6 +38,7 @@
 #include "goby/moos/protobuf/ufield_sim_driver.pb.h"
 #include "goby/moos/moos_bluefin_driver.h"
 #include "goby/moos/protobuf/bluefin_driver.pb.h"
+#include "goby/moos/protobuf/frontseat.pb.h"
 #include "goby/pb/pb_modem_driver.h"
 #include "goby/acomms/modemdriver/iridium_driver.h"
 #include "goby/acomms/modemdriver/iridium_shore_driver.h"
@@ -353,18 +354,11 @@ void CpAcommsHandler::handle_goby_signal(const google::protobuf::Message& msg1,
 
 {
     if(!moos_var1.empty())
-    {
-        std::string serialized1;
-        serialize_for_moos(&serialized1, msg1);
-        publish(cfg_.moos_var().prefix() + moos_var1, serialized1);
-    }
+        publish_pb(cfg_.moos_var().prefix() + moos_var1, msg1);
     
     if(!moos_var2.empty())
-    {
-        std::string serialized2;
-        serialize_for_moos(&serialized2, msg2);
-        publish(cfg_.moos_var().prefix() + moos_var2, serialized2);
-    }
+        publish_pb(cfg_.moos_var().prefix() + moos_var2, msg2);
+    
 }
 
 void CpAcommsHandler::handle_raw(const goby::acomms::protobuf::ModemRaw& msg, const std::string& moos_var)
@@ -514,8 +508,23 @@ void CpAcommsHandler::process_configuration()
     for(int i = 0, m = cfg_.multiplex_create_moos_var_size(); i < m; ++i)
     {
         GobyMOOSApp::subscribe(cfg_.multiplex_create_moos_var(i),
-                              &CpAcommsHandler::create_on_multiplex_publish, this);
+                               &CpAcommsHandler::create_on_multiplex_publish, this);
     }    
+    
+    
+    for(int i = 0, n = cfg_.dccl_frontseat_forward_name_size(); i < n; ++i)
+    {
+        const google::protobuf::Descriptor* desc = goby::util::DynamicProtobufManager::find_descriptor(cfg_.dccl_frontseat_forward_name(i));
+        if(desc)
+        {
+            dccl_frontseat_forward_.insert(desc);
+        }
+        else
+        {
+            glog.is(DIE) && glog << "Invalid message name given to dccl_frontseat_forward_name: " << cfg_.dccl_frontseat_forward_name(i) << std::endl;
+        }
+    }
+    
 }
 
 
@@ -622,6 +631,15 @@ void CpAcommsHandler::handle_queue_receive(const google::protobuf::Message& msg)
             glog << group("pAcommsHandler") << "Failed to translate received message: " << e.what() << std::endl;
     }
 
+    // forward to frontseat driver
+    if(dccl_frontseat_forward_.count(msg.GetDescriptor()))
+    {
+        goby::moos::protobuf::FrontSeatInterfaceData fs_data;
+        dccl_->encode(fs_data.mutable_dccl_message(), msg);
+        publish_pb(cfg_.moos_var().ifrontseat_data_out(), fs_data);
+    }
+    
+    
     // handle various commands
     
     if(router_ && msg.GetDescriptor() == goby::acomms::protobuf::RouteCommand::descriptor())

@@ -78,7 +78,8 @@ message FrontSeatInterfaceData
 {
   optional NodeStatus node_status = 1;
   optional CTDSample ctd_sample = 2;
-
+  optional bytes dccl_message = 3;
+    
   extensions 1000 to max;
 }
 

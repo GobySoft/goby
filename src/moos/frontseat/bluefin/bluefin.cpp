@@ -285,7 +285,7 @@ void BluefinFrontSeat::send_command_to_frontseat(const gpb::CommandRequest& comm
     
 void BluefinFrontSeat::send_data_to_frontseat(const gpb::FrontSeatInterfaceData& data)
 {
-//    glog.is(DEBUG1) && glog << "Data to FS: " << data.DebugString() << std::endl;
+    //    glog.is(DEBUG1) && glog << "Data to FS: " << data.DebugString() << std::endl;
 
     // we need to send our CTD to Bluefin when we have it attached to our payload
     if(data.has_ctd_sample())
@@ -320,7 +320,7 @@ void BluefinFrontSeat::send_data_to_frontseat(const gpb::FrontSeatInterfaceData&
     {
         NMEASentence nmea("$BPDCL", NMEASentence::IGNORE);
         nmea.push_back(unix_time2nmea_time(goby_time<double>()));
-        nmea.push_back(dccl::b64_encode(data.dccl_message()));
+        nmea.push_back(boost::trim_copy(dccl::b64_encode(data.dccl_message())));
         append_to_write_queue(nmea);
     }
     
@@ -633,7 +633,7 @@ void BluefinFrontSeat::load_nmea_mappings()
         ("SIL",SIL)("BOY",BOY)("SUS",SUS)("CON",CON)
         ("RES",RES)("SPD",SPD)("SAN",SAN)("GHP",GHP)
         ("GBP",GBP)("RNS",RNS)("RBO",RBO)("CMA",CMA)
-        ("NVR",NVR)("TEL",TEL)("CTL",CTL);
+        ("NVR",NVR)("TEL",TEL)("CTL",CTL)("DCL",DCL);
     
     boost::assign::insert (talker_id_map_)
         ("BF",BF)("BP",BP);
@@ -709,6 +709,7 @@ void BluefinFrontSeat::load_nmea_mappings()
         ("$BFCPS","Communications Packet Sent")
         ("$BFCPR","Communications Packet Received Data")
         ("$BPCPD","Communications Packet Data")
-        ("$BFCTL","Backseat Control");
+        ("$BFCTL","Backseat Control")
+        ("$BPDCL","Forward DCCL message to Huxley from Payload"); 
 
 }

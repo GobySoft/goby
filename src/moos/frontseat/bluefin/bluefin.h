@@ -118,7 +118,7 @@ class BluefinFrontSeat : public FrontSeatInterfaceBase
                         TRK,RTC,RGP,RCN,RCA,RCB,RMB,EMB,
                         TMR,ABT,KIL,MSG,RMP,SEM,NPU,CPD,
                         SIL,BOY,SUS,CON,RES,SPD,SAN,GHP,
-                        GBP,RNS,RBO,CMA,NVR,TEL,CTL };
+                        GBP,RNS,RBO,CMA,NVR,TEL,CTL,DCL };
     
     std::map<std::string, TalkerIDs> talker_id_map_;
     boost::bimap<std::string, SentenceIDs> sentence_id_map_;

@@ -222,11 +222,16 @@ void goby::acomms::QueueManager::handle_modem_data_request(protobuf::ModemTransm
     // clear old waiting acknowledgments and reset packet defaults
     clear_packet(*msg);    
     
-    for(unsigned frame_number = msg->frame_size() + msg->frame_start(),
+    for(unsigned frame_number = msg->frame_start(),
             total_frames = msg->max_num_frames() + msg->frame_start();
         frame_number < total_frames; ++frame_number)
     {
-        std::string* data = msg->add_frame();
+        std::string* data = 0;
+        if((frame_number - msg->frame_start()) < (unsigned)msg->frame_size())
+            data = msg->mutable_frame(frame_number - msg->frame_start());
+        else
+            data = msg->add_frame();
+        unsigned original_data_size = data->size();
 
         glog.is(DEBUG2) && glog << group(glog_priority_group_)
                                 << "Finding next sender: "
@@ -345,7 +350,7 @@ void goby::acomms::QueueManager::handle_modem_data_request(protobuf::ModemTransm
                     unsigned repeated_size_bytes = size_repeated(dccl_msgs);
                     
                     glog.is(DEBUG2) && glog << group(glog_out_group_) << "Size repeated " << repeated_size_bytes << std::endl;
-                    data->resize(repeated_size_bytes);
+                    data->resize(repeated_size_bytes + original_data_size);
                     
                     // if remaining bytes is greater than 0, we have a chance of adding another user-frame
                     if((msg->max_frame_bytes() - data->size()) > 0)
@@ -367,13 +372,13 @@ void goby::acomms::QueueManager::handle_modem_data_request(protobuf::ModemTransm
                 {
                     glog.is(DEBUG2) && glog << group(glog_out_group_) << "Encoding head only, passing through (encrypted?) body." << std::endl;
 
-                    *data = ""; 
+                    *data = data->substr(0, original_data_size); 
                     // encode all the messages but the last (these must be unencrypted)
                     if(dccl_msgs.size() > 1)
                     {
                         std::list<QueuedMessage>::iterator it_back = dccl_msgs.end();
                         --it_back;
-                        *data = encode_repeated(std::list<QueuedMessage>(dccl_msgs.begin(), it_back));
+                        *data += encode_repeated(std::list<QueuedMessage>(dccl_msgs.begin(), it_back));
                     }
                         
                     std::string head;
@@ -382,7 +387,7 @@ void goby::acomms::QueueManager::handle_modem_data_request(protobuf::ModemTransm
                 }
                 else
                 {
-                    *data = encode_repeated(dccl_msgs);
+                    *data = data->substr(0, original_data_size) + encode_repeated(dccl_msgs);
                 }    
             }
             catch(DCCLException& e)

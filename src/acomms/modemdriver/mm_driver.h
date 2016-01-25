@@ -25,6 +25,8 @@
 #ifndef Modem20091211H
 #define Modem20091211H
 
+#include <dccl.h>
+
 #include "goby/common/time.h"
 
 #include "driver_base.h"
@@ -35,7 +37,7 @@ namespace goby
 {
     namespace acomms
     {
-
+        
         /// \class MMDriver mm_driver.h goby/acomms/modem_driver.h
         /// \ingroup acomms_api
         /// \brief provides an API to the WHOI Micro-Modem driver
@@ -128,7 +130,8 @@ namespace goby
             void camsg(const util::NMEASentence& nmea, protobuf::ModemTransmission* m);
 
             void caack(const util::NMEASentence& nmea, protobuf::ModemTransmission* msg); // $CAACK
-        
+            void handle_ack(uint32 src, uint32 dest, uint32 frame, protobuf::ModemTransmission* m);
+            
             // mini packet
             void camua(const util::NMEASentence& nmea, protobuf::ModemTransmission* msg); // $CAMUA
 
@@ -279,6 +282,15 @@ namespace goby
                 int mm_patch;
             };
             MMRevision revision_;
+
+            bool using_application_acks_;
+            int application_ack_max_frames_;
+            int next_frame_;
+
+            // modem id to frames
+            std::map<unsigned, std::set<unsigned> > frames_to_ack_;
+
+            dccl::Codec dccl_;
         };
     }
 }

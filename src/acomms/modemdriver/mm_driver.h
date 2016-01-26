@@ -161,6 +161,10 @@ namespace goby
             void validate_transmission_start(const protobuf::ModemTransmission& message);
 
             void signal_receive_and_clear(protobuf::ModemTransmission* message);
+
+            // application acks
+            void process_incoming_app_ack(protobuf::ModemTransmission* m);
+            void process_outgoing_app_ack(protobuf::ModemTransmission* msg);
             
             // doxygen
             

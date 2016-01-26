@@ -625,7 +625,7 @@ void goby::acomms::MMDriver::cctdp(protobuf::ModemTransmission* msg)
 
     const int FDP_NUM_FRAMES = 1;
     const int FDP_MAX_PACKET_SIZE = 100;
-
+    
     msg->set_max_num_frames(FDP_NUM_FRAMES);
 
     // if the requestor of the transmission already set a maximum, don't overwrite it.
@@ -646,7 +646,7 @@ void goby::acomms::MMDriver::cctdp(protobuf::ModemTransmission* msg)
         {
             if(!using_application_acks_)
             {
-                glog.is(WARN) && glog << "ACK not yet supported for FDP" << std::endl;
+                glog.is(WARN) && glog << "Firmware ACK not yet supported for FDP. Enable application acks (use_application_acks: true) for ACK capability." << std::endl;
             }
             else
             {
@@ -657,6 +657,7 @@ void goby::acomms::MMDriver::cctdp(protobuf::ModemTransmission* msg)
         
         nmea.push_back(0); // ack
         nmea.push_back(0); // reserved
+        
         nmea.push_back(goby::util::hex_encode(msg->frame(0))); //HHHH 
         append_to_write_queue(nmea);
     }
@@ -1178,34 +1179,8 @@ void goby::acomms::MMDriver::cardp(const NMEASentence& nmea, protobuf::ModemTran
     else
     {
         m->add_frame(goby::util::hex_decode(frame_hex));
-
-        if(using_application_acks_ && dccl_.id(m->frame(0)) == dccl_.id<micromodem::protobuf::MMApplicationAck>())
-        {
-            micromodem::protobuf::MMApplicationAck acks;
-            dccl_.decode(m->mutable_frame(0), &acks);
-            glog.is(DEBUG1) && glog << group(glog_in_group()) << "Received ACKS " << acks.DebugString() << std::endl;
-                
-            if(m->dest() == driver_cfg_.modem_id() && acks.ack_requested())
-            {
-                frames_to_ack_[m->src()].insert(acks.frame_start());
-            }
-
-            for(int i = 0, n = acks.part_size(); i < n; ++i)
-            {
-                if(acks.part(i).ack_dest() == driver_cfg_.modem_id())
-                {
-                    for(int j = 0, o = application_ack_max_frames_; j < o; ++j)
-                    {
-                        if(acks.part(i).acked_frames() & (1ul << j))
-                        {
-                            protobuf::ModemTransmission msg;
-                            handle_ack(m->src(), acks.part(i).ack_dest(), j, &msg);
-                            signal_receive(msg);
-                        }
-                    }
-                }
-            }
-        }        
+        if(using_application_acks_)
+            process_incoming_app_ack(m);
     }
     
     glog.is(DEBUG1) && glog << group(glog_in_group()) << "Received MICROMODEM_FLEXIBLE_DATA packet from " << m->src() << std::endl;
@@ -1214,6 +1189,41 @@ void goby::acomms::MMDriver::cardp(const NMEASentence& nmea, protobuf::ModemTran
     if(!nvram_cfg_["CST"])
         signal_receive_and_clear(m);
 }
+
+void goby::acomms::MMDriver::process_incoming_app_ack(protobuf::ModemTransmission* m) 
+{    
+    if(dccl_.id(m->frame(0)) == dccl_.id<micromodem::protobuf::MMApplicationAck>())
+    {
+        micromodem::protobuf::MMApplicationAck acks;
+        dccl_.decode(m->mutable_frame(0), &acks);
+        glog.is(DEBUG1) && glog << group(glog_in_group()) << "Received ACKS " << acks.DebugString() << std::endl;
+
+        // this data message requires a future ACK from us
+        if(m->dest() == driver_cfg_.modem_id() && acks.ack_requested())
+        {
+            frames_to_ack_[m->src()].insert(acks.frame_start());
+        }
+
+        // process any acks that were included in this message
+        for(int i = 0, n = acks.part_size(); i < n; ++i)
+        {
+            if(acks.part(i).ack_dest() == driver_cfg_.modem_id())
+            {
+                for(int j = 0, o = application_ack_max_frames_; j < o; ++j)
+                {
+                    if(acks.part(i).acked_frames() & (1ul << j))
+                    {
+                        protobuf::ModemTransmission msg;
+                        handle_ack(m->src(), acks.part(i).ack_dest(), j, &msg);
+                        signal_receive(msg);
+                    }
+                }
+            }
+        }
+    }        
+}
+
+
 
 void goby::acomms::MMDriver::cacfg(const NMEASentence& nmea)
 {
@@ -1555,67 +1565,68 @@ void goby::acomms::MMDriver::cache_outgoing_data(protobuf::ModemTransmission* ms
             next_frame_ = 0;
         }
 
-
         if(using_application_acks_)
-        {
-            if(msg->frame_size())
-            {
-                glog.is(WARN) && glog << group(glog_out_group()) << "Must use data request callback when using application acknowledgments" << std::endl;
-            }
-            else
-            {
-                // build up message to ack
-                micromodem::protobuf::MMApplicationAck acks;
-
-                for(std::map<unsigned, std::set<unsigned> >::const_iterator it = frames_to_ack_.begin(), end = frames_to_ack_.end();
-                    it != end; ++it)
-                {
-                    micromodem::protobuf::MMApplicationAck::AckPart& acks_part = *acks.add_part();
-                    acks_part.set_ack_dest(it->first);
-                    
-                    goby::uint32 acked_frames = 0;
-                    for(std::set<unsigned>::const_iterator jt = it->second.begin(), jend = it->second.end();
-                        jt != jend; ++jt)
-                        acked_frames |= (1ul << *jt);
-                    
-                    acks_part.set_acked_frames(acked_frames);    
-                }
-                frames_to_ack_.clear();
-
-                acks.set_frame_start(next_frame_);
-                msg->set_frame_start(next_frame_);
-
-                
-                // calculate size of ack message
-                unsigned ack_size = dccl_.size(acks);
-
-                // insert placeholder
-                msg->add_frame()->resize(ack_size, 0);
-                    
-                // get actual data
-                signal_data_request(msg);
-                
-                // now that we know if an ack is requested, set that
-                acks.set_ack_requested(msg->ack_requested());
-                std::string ack_bytes;
-                dccl_.encode(&ack_bytes, acks);
-                // insert real ack message
-                msg->mutable_frame(0)->replace(0, ack_size, ack_bytes);
-
-                // if we're not sending any data and we don't have acks, don't send anything
-                if(acks.part_size() == 0 && msg->frame_size() == 1 && (int)msg->frame(0).size() == acks.part_size())
-                    msg->clear_frame();
-                else if(msg->dest() == goby::acomms::QUERY_DESTINATION_ID) // make sure we have a real destination
-                    msg->set_dest(goby::acomms::BROADCAST_ID);
-            }
-            
-        }
+            process_outgoing_app_ack(msg);
         else
-        {
             signal_data_request(msg);
-        }
     }
 }
+
+void goby::acomms::MMDriver::process_outgoing_app_ack(protobuf::ModemTransmission* msg)
+{
+    if(msg->frame_size())
+    {
+        glog.is(WARN) && glog << group(glog_out_group()) << "Must use data request callback when using application acknowledgments" << std::endl;
+    }
+    else
+    {
+        // build up message to ack
+        micromodem::protobuf::MMApplicationAck acks;
+
+        for(std::map<unsigned, std::set<unsigned> >::const_iterator it = frames_to_ack_.begin(), end = frames_to_ack_.end();
+            it != end; ++it)
+        {
+            micromodem::protobuf::MMApplicationAck::AckPart& acks_part = *acks.add_part();
+            acks_part.set_ack_dest(it->first);
+                    
+            goby::uint32 acked_frames = 0;
+            for(std::set<unsigned>::const_iterator jt = it->second.begin(), jend = it->second.end();
+                jt != jend; ++jt)
+                acked_frames |= (1ul << *jt);
+                    
+            acks_part.set_acked_frames(acked_frames);    
+        }
+        frames_to_ack_.clear();
+
+        acks.set_frame_start(next_frame_);
+        msg->set_frame_start(next_frame_);
+
+                
+        // calculate size of ack message
+        unsigned ack_size = dccl_.size(acks);
+
+        // insert placeholder
+        msg->add_frame()->resize(ack_size, 0);
+                    
+        // get actual data
+        signal_data_request(msg);
+                
+        // now that we know if an ack is requested, set that
+        acks.set_ack_requested(msg->ack_requested());
+        std::string ack_bytes;
+        dccl_.encode(&ack_bytes, acks);
+        // insert real ack message
+        msg->mutable_frame(0)->replace(0, ack_size, ack_bytes);
+
+        // if we're not sending any data and we don't have acks, don't send anything
+        if(acks.part_size() == 0 && msg->frame_size() == 1 && (int)msg->frame(0).size() == acks.part_size())
+            msg->clear_frame();
+        else if(msg->dest() == goby::acomms::QUERY_DESTINATION_ID) // make sure we have a real destination
+            msg->set_dest(goby::acomms::BROADCAST_ID);
+    }
+
+}
+
 
 void goby::acomms::MMDriver::validate_transmission_start(const protobuf::ModemTransmission& message)
 {

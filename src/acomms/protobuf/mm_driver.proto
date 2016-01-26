@@ -57,6 +57,8 @@ message Config
     optional int32 keep_alive_seconds = 1006 [default = 10];
 
     optional int32 allowed_skew_ms = 1008 [default = 1000];
+
+    optional bool use_application_acks = 1009 [default = false];
   }
 }
 
@@ -317,3 +319,27 @@ extend goby.acomms.protobuf.ModemTransmission
 
   optional HardwareControl hw_ctl = 1007  [(dccl.field).omit = true];
 }
+
+
+message MMApplicationAck
+{
+    option (dccl.msg).id = 10;
+    option (dccl.msg).max_bytes = 32;
+    option (dccl.msg).codec_version = 3;
+
+    repeated AckPart part = 1 [(dccl.field).max_repeat = 4];
+    message AckPart
+    {
+        required int32 ack_dest = 1 [(dccl.field).min = 0, (dccl.field).max = 31];
+        
+        required uint32 acked_frames = 2 [(dccl.field).min = 0,
+                                          (dccl.field).max = 0xFFFFFFFF];
+        
+    }
+
+    required bool ack_requested = 3;
+    required uint32 frame_start = 4 [(dccl.field).min = 0,
+                                     (dccl.field).max = 31];
+    
+}
+

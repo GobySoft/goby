@@ -157,6 +157,8 @@ CpAcommsHandler::CpAcommsHandler()
     subscribe(cfg_.moos_var().prefix() + cfg_.moos_var().mac_initiate_transmission(), &CpAcommsHandler::handle_external_initiate_transmission, this);
 
     subscribe(cfg_.moos_var().prefix() + cfg_.moos_var().driver_reset(), &CpAcommsHandler::handle_driver_reset, this);
+
+    subscribe_pb(cfg_.moos_var().prefix() + cfg_.moos_var().driver_cfg_update(), &CpAcommsHandler::handle_driver_cfg_update, this);
 }
 
 CpAcommsHandler::~CpAcommsHandler()
@@ -329,6 +331,26 @@ void CpAcommsHandler::handle_driver_reset(const CMOOSMsg& msg)
 {
     driver_reset(driver_, goby::acomms::ModemDriverException("Manual reset", goby::acomms::protobuf::ModemDriverStatus::MANUAL_RESET));
 }
+
+void CpAcommsHandler::handle_driver_cfg_update(const goby::acomms::protobuf::DriverConfig& cfg)
+{
+    glog.is(VERBOSE) && glog << group("pAcommsHandler") <<  "Driver config update request: " << cfg << std::endl;
+
+    bool driver_found = false;
+    for(std::map<boost::shared_ptr<goby::acomms::ModemDriverBase>, goby::acomms::protobuf::DriverConfig* >::iterator it = drivers_.begin(), end = drivers_.end(); it != end; ++it)
+    {
+        if(it->second->modem_id() == cfg.modem_id())
+        {
+            driver_found = true;
+            if(it->first && !driver_restart_time_.count(it->first))
+                it->first->update_cfg(cfg);
+        }
+    }
+    if(!driver_found)
+        glog.is(WARN) && glog << group("pAcommsHandler") <<  "Could not find driver with modem id: " << cfg.modem_id() << " to update";    
+}
+
+
 
 void CpAcommsHandler::handle_external_initiate_transmission(const CMOOSMsg& msg)
 {

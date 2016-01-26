@@ -62,7 +62,9 @@ message pAcommsHandlerConfig
     
     optional string driver_receive = 14 [default="MODEM_RECEIVE"];
     optional string driver_transmit = 15 [default="MODEM_TRANSMIT"];
-    
+
+    optional string driver_cfg_update = 16 [default="DRIVER_CONFIG_UPDATE"];
+      
     optional string queue_receive = 100 [default="QUEUE_RECEIVE"];
     optional string queue_transmit = 101 [default="QUEUE_TRANSMIT"];
     // acoustic acknowledgments get written here
@@ -79,7 +81,7 @@ message pAcommsHandlerConfig
 
     optional string config_file = 300 [default="CONFIG"];
     optional string config_file_request = 301 [default="CONFIG_REQUEST"];
-
+      
     optional string driver_reset = 400 [default="DRIVER_RESET"];
 
     optional string ifrontseat_data_out = 500 [default="IFS_DATA_OUT"];

@@ -54,6 +54,8 @@ namespace goby
             /// \param cfg Configuration for the Micro-Modem driver. DriverConfig is defined in acomms_driver_base.proto, and various extensions specific to the WHOI Micro-Modem are defined in acomms_mm_driver.proto.
             void startup(const protobuf::DriverConfig& cfg);
 
+            void update_cfg(const protobuf::DriverConfig& cfg);
+            
             /// \brief Stops the driver.
             void shutdown();
             

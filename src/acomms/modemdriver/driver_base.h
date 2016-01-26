@@ -54,6 +54,9 @@ namespace goby
             /// \param cfg Startup configuration for the driver and modem. DriverConfig is defined in acomms_driver_base.proto. Derived classes can define extensions (see http://code.google.com/apis/protocolbuffers/docs/proto.html#extensions) to DriverConfig to handle modem specific configuration.
             virtual void startup(const protobuf::DriverConfig& cfg) = 0;
 
+            /// \brief Update configuration while running (not required to be implemented)
+            virtual void update_cfg(const protobuf::DriverConfig& cfg);
+            
             /// \brief Shuts down the modem driver. 
             virtual void shutdown() = 0;
 

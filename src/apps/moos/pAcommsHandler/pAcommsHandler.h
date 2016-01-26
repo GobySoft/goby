@@ -117,6 +117,7 @@ class CpAcommsHandler : public GobyMOOSApp
 
     void handle_driver_reset(const CMOOSMsg& msg);
 
+    void handle_driver_cfg_update(const goby::acomms::protobuf::DriverConfig& cfg);
     
     void handle_encode_on_demand(const goby::acomms::protobuf::ModemTransmission& request_msg,
                                  google::protobuf::Message* data_msg);

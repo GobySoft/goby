@@ -146,8 +146,11 @@ void goby::acomms::MMDriver::startup(const protobuf::DriverConfig& cfg)
     startup_done_ = true;
 }
 
-
-
+void goby::acomms::MMDriver::update_cfg(const protobuf::DriverConfig& cfg)
+{
+    for(int i = 0, n = cfg.ExtensionSize(micromodem::protobuf::Config::nvram_cfg); i < n; ++i)
+        write_single_cfg(cfg.GetExtension(micromodem::protobuf::Config::nvram_cfg, i));
+}
 
 void goby::acomms::MMDriver::initialize_talkers()
 {
@@ -938,10 +941,22 @@ void goby::acomms::MMDriver::process_receive(const NMEASentence& nmea)
 
     
     // clear the last send given modem acknowledgement
-    if(!out_.empty() && (out_.front().sentence_id() == nmea.sentence_id()
-                         || (out_.front().sentence_id() == "CFQ" && nmea.sentence_id() == "CFG"))) // special case CFG acks CFQ
-        pop_out();
-
+    if(!out_.empty())
+    {
+        if(out_.front().sentence_id() == "CFG")
+        {
+            if(nmea.size() == 3 && nmea.at(1) == out_.front().at(1) && nmea.at(2) == out_.front().at(2)) // special case, needs to match all three parts
+                pop_out();
+        }
+        else if(out_.front().sentence_id() == "CFQ" && nmea.sentence_id() == "CFG") // special case CFG acks CFQ
+        {
+            pop_out();
+        }
+        else if(out_.front().sentence_id() == nmea.sentence_id()) // general matching sentence id
+        {
+            pop_out();
+        }
+}
 
 }
 

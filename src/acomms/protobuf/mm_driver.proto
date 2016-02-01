@@ -59,6 +59,9 @@ message Config
     optional int32 allowed_skew_ms = 1008 [default = 1000];
 
     optional bool use_application_acks = 1009 [default = false];
+
+    optional bool icex_set_clock_workaround = 1010 [default = true];
+
   }
 }
 

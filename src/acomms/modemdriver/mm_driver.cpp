@@ -462,6 +462,11 @@ void goby::acomms::MMDriver::do_work()
         last_keep_alive_time_ = now;
     }    
 
+    if(driver_cfg_.GetExtension(micromodem::protobuf::Config::icex_set_clock_workaround) && ((goby::common::goby_time().time_of_day().seconds()-7) % 10) ==0)
+    {
+      // temporary work around to keep setting clock
+      clock_set_ = false;
+    }
     
     // keep trying to send stuff to the modem
     try_send();

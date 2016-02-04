@@ -1639,7 +1639,7 @@ void goby::acomms::MMDriver::process_outgoing_app_ack(protobuf::ModemTransmissio
         msg->mutable_frame(0)->replace(0, ack_size, ack_bytes);
 
         // if we're not sending any data and we don't have acks, don't send anything
-        if(acks.part_size() == 0 && msg->frame_size() == 1 && (int)msg->frame(0).size() == acks.part_size())
+        if(acks.part_size() == 0 && msg->frame_size() == 1 && msg->frame(0).size() == ack_size)
             msg->clear_frame();
         else if(msg->dest() == goby::acomms::QUERY_DESTINATION_ID) // make sure we have a real destination
             msg->set_dest(goby::acomms::BROADCAST_ID);

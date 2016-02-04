@@ -1,0 +1,2 @@
+add_executable(goby_split_micromodem split_micromodem.cpp)
+target_link_libraries(goby_split_micromodem goby_util goby_acomms)

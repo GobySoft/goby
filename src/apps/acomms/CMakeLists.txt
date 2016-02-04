@@ -12,3 +12,4 @@ if(build_pb AND enable_zeromq)
   endif()
 endif()
 
+add_subdirectory(goby_split_micromodem)

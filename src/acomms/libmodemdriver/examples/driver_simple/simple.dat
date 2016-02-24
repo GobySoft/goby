@@ -1,5 +1,0 @@
-# simple.cpp reads this file and sends it one line at a time
-# destination_id hex_string
-0 abcd1234
-3 0932aef4
-2 2001293a

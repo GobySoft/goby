@@ -13,7 +13,7 @@ message IridiumShoreDriverConfig
   
   extend goby.acomms.protobuf.DriverConfig
   {
-    required uint32 rudics_server_port = 1421;
+    optional uint32 rudics_server_port = 1421;
     optional uint32 mo_sbd_server_port = 1422 [default = 40001];
     optional string mt_sbd_server_address = 1423;
     optional uint32 mt_sbd_server_port = 1424;

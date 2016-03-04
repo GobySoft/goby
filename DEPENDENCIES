@@ -75,7 +75,7 @@ ubuntu|debian)
         fi
 
         if [[ $1 == "ubuntu" ]]; then
-            add-apt-repository ppa:dccl-dev/ppa -y
+            add-apt-repository ppa:dccl-dev/ppa -s -y
             apt-get update -qq
             set +x
             packages="${packages} 
@@ -100,8 +100,8 @@ ubuntu|debian)
         # PPA dependencies
         if [[ $1 == "ubuntu" &&  $install_all -ne 0 ]]; then 
             set -x
-            add-apt-repository ppa:goby-dev/ppa
-            add-apt-repository ppa:tes/lamss-moos10
+            add-apt-repository ppa:goby-dev/ppa -s -y 
+            add-apt-repository ppa:tes/lamss-moos10 -s -y
             apt-get update -qq
             set +x
 

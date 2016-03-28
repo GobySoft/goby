@@ -1,0 +1,16 @@
+import "dccl/protobuf/option_extensions.proto";
+import "dccl/arithmetic/protobuf/arithmetic_extensions.proto";
+
+package goby.acomms.protobuf;
+
+message NetworkHeader
+{
+    option (dccl.msg).id = 0xF000;
+    option (dccl.msg).max_bytes = 8;
+    repeated uint32 srcdest_addr = 1 [(dccl.field).codec = "dccl.arithmetic",
+                                      (dccl.field).max_repeat = 2,
+                                      (dccl.field).(arithmetic).model = "goby.acomms.NetworkHeader.AddrModel"];
+    repeated uint32 srcdest_port = 2 [(dccl.field).codec = "dccl.arithmetic",
+                                      (dccl.field).max_repeat = 2,
+                                      (dccl.field).(arithmetic).model = "goby.acomms.NetworkHeader.PortModel"];
+}

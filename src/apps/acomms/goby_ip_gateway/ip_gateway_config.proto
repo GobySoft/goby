@@ -1,0 +1,10 @@
+import "goby/common/protobuf/option_extensions.proto";
+import "goby/common/protobuf/app_base_config.proto";
+
+package goby.acomms.protobuf;
+
+message IPGatewayConfig
+{
+  optional AppBaseConfig app = 1;  
+
+}

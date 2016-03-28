@@ -24,11 +24,23 @@ set(GOBY_VERSION_MAJOR "2")
 set(GOBY_VERSION_MINOR "1")
 set(GOBY_VERSION_PATCH "1")
 
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.bzr")
-   message("Compiling in bazaar source tree.")
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git")
+   message("Compiling in Git source tree.")
    include(today)
    today(GOBY_VERSION_DATE)  
-   set(GOBY_VERSION_PATCH "${GOBY_VERSION_PATCH}+bzr")
+   execute_process(COMMAND git rev-parse --short HEAD
+     OUTPUT_VARIABLE GOBY_LAST_REV)
+   string(STRIP ${GOBY_LAST_REV} GOBY_LAST_REV)
+
+   execute_process(COMMAND git diff-index --quiet HEAD
+     RESULT_VARIABLE GOBY_DIRTY_REV)
+   if(GOBY_DIRTY_REV EQUAL 0)
+     set(GOBY_DIRTY_REV_STRING "")
+   else()
+     set(GOBY_DIRTY_REV_STRING "-dirty")
+   endif()
+   set(GOBY_VERSION_PATCH "${GOBY_VERSION_PATCH}+git${GOBY_LAST_REV}${GOBY_DIRTY_REV_STRING}")
+   
 else()
    message("Compiling from release tarball.")
    set(GOBY_VERSION_DATE "2015.09.21")

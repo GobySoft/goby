@@ -7,10 +7,24 @@ message NetworkHeader
 {
     option (dccl.msg).id = 0xF000;
     option (dccl.msg).max_bytes = 8;
-    repeated uint32 srcdest_addr = 1 [(dccl.field).codec = "dccl.arithmetic",
+    option (dccl.msg).codec_version = 3;    
+
+    enum Protocol
+    {
+        UDP = 0x11;
+    }
+    required Protocol protocol = 1;
+
+    enum ICMPType
+    {
+        ICMP_ECHO_REPLY = 0;
+        ICMP_ECHO_REQUEST = 8;
+    }
+    
+    repeated uint32 srcdest_addr = 10 [(dccl.field).codec = "dccl.arithmetic",
                                       (dccl.field).max_repeat = 2,
                                       (dccl.field).(arithmetic).model = "goby.acomms.NetworkHeader.AddrModel"];
-    repeated uint32 srcdest_port = 2 [(dccl.field).codec = "dccl.arithmetic",
+    repeated uint32 srcdest_port = 11 [(dccl.field).codec = "dccl.arithmetic",
                                       (dccl.field).max_repeat = 2,
                                       (dccl.field).(arithmetic).model = "goby.acomms.NetworkHeader.PortModel"];
 }

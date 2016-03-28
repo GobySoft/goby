@@ -5,6 +5,12 @@ package goby.acomms.protobuf;
 
 message IPGatewayConfig
 {
-  optional AppBaseConfig app = 1;  
-
+    optional AppBaseConfig app = 1;
+    
+    optional int32 total_addresses = 2;
+    repeated string static_ip_addresses = 3;
+    
+    optional int32 total_ports = 10;
+    repeated int32 static_udp_ports = 11;
+    
 }

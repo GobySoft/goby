@@ -22,11 +22,14 @@
 
 #include "goby/acomms/ip_codecs.h"
 
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
 using namespace goby::common::logger;
 using goby::glog;
 
 
-void test(const std::string& hex, dccl::Codec& dccl_1)
+void ip_test(const std::string& hex, dccl::Codec& dccl_1)
 {
     goby::acomms::protobuf::IPv4Header iphdr;
     std::string header_data(goby::util::hex_decode(hex));
@@ -37,6 +40,13 @@ void test(const std::string& hex, dccl::Codec& dccl_1)
     dccl_1.encode(&test, iphdr);
     glog.is(VERBOSE) && glog << "Re-encoded as: " << goby::util::hex_encode(test) << std::endl;
     assert(test == header_data);
+
+    unsigned orig_cs = iphdr.header_checksum();
+    iphdr.set_header_checksum(0);
+    dccl_1.encode(&test, iphdr);
+    
+    assert(goby::acomms::net_checksum(header_data) == 0);
+    assert(goby::acomms::net_checksum(test) == orig_cs);
 }
 
 
@@ -46,7 +56,7 @@ int main(int argc, char* argv[])
     goby::glog.set_name(argv[0]);
     
     dccl::FieldCodecManager::add<goby::acomms::IPGatewayEmptyIdentifierCodec<0xF001> >("ip_gateway_id_codec_1");
-    dccl::FieldCodecManager::add<goby::acomms::IPShortCodec>("ip.short");
+    dccl::FieldCodecManager::add<goby::acomms::NetShortCodec>("net.short");
     dccl::FieldCodecManager::add<goby::acomms::IPv4AddressCodec>("ip.v4.address");
     dccl::FieldCodecManager::add<goby::acomms::IPv4FlagsFragOffsetCodec>("ip.v4.flagsfragoffset");
 
@@ -54,11 +64,13 @@ int main(int argc, char* argv[])
     dccl_1.load<goby::acomms::protobuf::IPv4Header>();
 
     // ICMP Ping
-    test("4500001c837e40004001360dc0a80001c0a80004", dccl_1);
+    ip_test("4500001c837e40004001360dc0a80001c0a80004", dccl_1);
     // UDP
-    test("4500003e2fe8400040116d42c0a88e32c0a88e01", dccl_1);
+    ip_test("4500003e2fe8400040116d42c0a88e32c0a88e01", dccl_1);
     // UDP
-    test("4500004cb803000038111b4d40712005c0a88e32", dccl_1);
-        
+    ip_test("4500004cb803000038111b4d40712005c0a88e32", dccl_1);
+
+    
+    
     std::cout << "all tests passed" << std::endl;
 }

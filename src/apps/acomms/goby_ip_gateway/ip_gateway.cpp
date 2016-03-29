@@ -47,10 +47,16 @@ namespace goby
             ~IPGateway();
         private:
             void loop();
-            
+            void handle_udp_packet(const goby::acomms::protobuf::IPv4Header& ip_hdr,
+                                   const goby::acomms::protobuf::UDPHeader& udp_hdr,
+                                   std::string payload);
+            void write_udp_packet(goby::acomms::protobuf::IPv4Header& ip_hdr,
+                                  goby::acomms::protobuf::UDPHeader& udp_hdr,
+                                  std::string payload);
+
         private:
             goby::acomms::protobuf::IPGatewayConfig& cfg_;
-            dccl::Codec dccl_0_, dccl_1_;
+            dccl::Codec dccl_goby_nh_, dccl_ip_, dccl_udp_;
             int tun_fd_;
             unsigned mtu_;
         };        
@@ -60,8 +66,9 @@ namespace goby
 goby::acomms::IPGateway::IPGateway(goby::acomms::protobuf::IPGatewayConfig* cfg)
     : Application(cfg),
       cfg_(*cfg),
-      dccl_0_("ip_gateway_id_codec_0"),
-      dccl_1_("ip_gateway_id_codec_1"),
+      dccl_goby_nh_("ip_gateway_id_codec_0"),
+      dccl_ip_("ip_gateway_id_codec_1"),
+      dccl_udp_("ip_gateway_id_codec_2"),
       tun_fd_(-1),
       mtu_(1500)
 {
@@ -76,11 +83,10 @@ goby::acomms::IPGateway::IPGateway(goby::acomms::protobuf::IPGatewayConfig* cfg)
         glog.is(DIE) && glog << "Could not configure tun interface. Check IP address: " << cfg_.local_ip_address() << " and netmask prefix: " << cfg_.cidr_netmask_prefix() << std::endl;
     
     
-    std::cout << tun_name << std::endl;    
     
     dccl::dlog.connect(dccl::logger::INFO, &std::cout);
     
-    dccl_arithmetic_load(&dccl_0_);
+    dccl_arithmetic_load(&dccl_goby_nh_);
     
     dccl::arith::protobuf::ArithmeticModel addr_model;
     addr_model.set_name("goby.acomms.NetworkHeader.AddrModel");
@@ -122,10 +128,11 @@ goby::acomms::IPGateway::IPGateway(goby::acomms::protobuf::IPGatewayConfig* cfg)
     port_model.set_out_of_range_frequency(0);
     dccl::arith::ModelManager::set_model(port_model);
 
-    dccl_0_.load<goby::acomms::protobuf::NetworkHeader>();
-    dccl_1_.load<goby::acomms::protobuf::IPv4Header>();
+    dccl_goby_nh_.load<goby::acomms::protobuf::NetworkHeader>();
+    dccl_ip_.load<goby::acomms::protobuf::IPv4Header>();
+    dccl_udp_.load<goby::acomms::protobuf::UDPHeader>();
     
-    dccl_0_.info_all(&std::cout);
+    dccl_goby_nh_.info_all(&std::cout);
     
     goby::acomms::protobuf::NetworkHeader hdr, hdr_out;
     hdr.set_protocol(goby::acomms::protobuf::NetworkHeader::UDP);
@@ -137,30 +144,27 @@ goby::acomms::IPGateway::IPGateway(goby::acomms::protobuf::IPGatewayConfig* cfg)
     hdr.add_srcdest_port(0);
 
     std::string encoded;
-    dccl_0_.encode(&encoded, hdr);
+    dccl_goby_nh_.encode(&encoded, hdr);
     std::cout << goby::util::hex_encode(encoded) << std::endl;
-    dccl_0_.decode(encoded, &hdr_out);
+    dccl_goby_nh_.decode(encoded, &hdr_out);
     std::cout << hdr_out.DebugString() << std::endl;
 }
 
 goby::acomms::IPGateway::~IPGateway()
 {
-    dccl_arithmetic_unload(&dccl_0_);
+    dccl_arithmetic_unload(&dccl_goby_nh_);
 }
 
 
 
 void goby::acomms::IPGateway::loop()
 {
-    glog.is(DEBUG1) && glog << "loop()" << std::endl;
-
     fd_set rd_set;
     FD_ZERO(&rd_set);
     FD_SET(tun_fd_, &rd_set);
 
     timeval tout = {0};
     int ret = select(tun_fd_+1, &rd_set, 0, 0, &tout);
-    glog.is(DEBUG1) && glog << ret << std::endl;
 
     if (ret < 0 && errno != EINTR) {
         glog.is(WARN) && glog << "Could not select on tun fd." << std::endl;
@@ -180,28 +184,96 @@ void goby::acomms::IPGateway::loop()
         }
         else
         {
-            goby::acomms::protobuf::IPv4Header iphdr;
-            unsigned short header_length = (buffer[0] & 0xF) * 4;
+            goby::acomms::protobuf::IPv4Header ip_hdr;
+            unsigned short ip_header_size = (buffer[0] & 0xF) * 4;
             unsigned short version = ((buffer[0] >> 4) & 0xF);
             if(version == 4)
             {
-                std::string header_data(buffer, header_length);
-                dccl_1_.decode(header_data, &iphdr);
-                glog.is(VERBOSE) && glog << "Received " << len << " bytes. " << std::endl;
-                glog.is(VERBOSE) && glog << "Header is: " << header_length << " bytes: " << goby::util::hex_encode(header_data) << "\n" << iphdr.DebugString() << std::endl;
-
+                std::string header_data(buffer, ip_header_size);
+                dccl_ip_.decode(header_data, &ip_hdr);
+                glog.is(DEBUG2) && glog << "Received " << len << " bytes. " << std::endl;
+                switch(ip_hdr.protocol())
+                {
+                    default:
+                        glog.is(DEBUG1) && glog << "IPv4 Protocol " << ip_hdr.protocol() << " is not supported." << std::endl;
+                        break;
+                    case IPPROTO_UDP:
+                    {
+                        const int udp_header_size = 8;
+                        goby::acomms::protobuf::UDPHeader udp_hdr;
+                        std::string udp_header_data(&buffer[ip_header_size], udp_header_size); 
+                        dccl_udp_.decode(udp_header_data, &udp_hdr);
+                        handle_udp_packet(ip_hdr, udp_hdr, std::string(&buffer[ip_header_size+udp_header_size], ip_hdr.total_length()-ip_header_size-udp_header_size));
+                        break;
+                    }
+                }
             }
             
         }
     }
 }
 
+void goby::acomms::IPGateway::handle_udp_packet(
+    const goby::acomms::protobuf::IPv4Header& ip_hdr,
+    const goby::acomms::protobuf::UDPHeader& udp_hdr,
+    std::string payload)
+{
+    
+    glog.is(VERBOSE) && glog << "Received UDP Packet. IPv4 Header: " << ip_hdr.DebugString() << "UDP Header: " << udp_hdr <<  "Payload (" << payload.size() << " bytes): " << goby::util::hex_encode(payload) << std::endl;
+
+    // echo for now
+    goby::acomms::protobuf::IPv4Header new_ip_hdr = ip_hdr;
+    goby::acomms::protobuf::UDPHeader new_udp_hdr = udp_hdr;
+    new_ip_hdr.mutable_source_ip_address()->swap(*new_ip_hdr.mutable_dest_ip_address());
+    
+    const unsigned new_source_port = udp_hdr.dest_port();
+    const unsigned new_dest_port = udp_hdr.source_port();
+    new_udp_hdr.set_source_port(new_source_port);
+    new_udp_hdr.set_dest_port(new_dest_port);
+    
+    write_udp_packet(new_ip_hdr, new_udp_hdr, payload);
+}
+
+
+void goby::acomms::IPGateway::write_udp_packet(goby::acomms::protobuf::IPv4Header& ip_hdr, goby::acomms::protobuf::UDPHeader& udp_hdr, std::string payload)
+{
+    // set checksum 0 for calculation
+    ip_hdr.set_header_checksum(0);
+    udp_hdr.set_checksum(0);
+    
+    std::string ip_hdr_data, udp_hdr_data;
+    dccl_udp_.encode(&udp_hdr_data, udp_hdr);
+    dccl_ip_.encode(&ip_hdr_data, ip_hdr);
+
+    enum { NET_SHORT_BYTES = 2, NET_LONG_BYTES = 4 };
+    enum { IPV4_SOURCE_ADDR_OFFSET = 12, IPV4_DEST_ADDR_OFFSET = 16, IPV4_CS_OFFSET = 10 };
+    enum { UDP_LENGTH_OFFSET = 4, UDP_CS_OFFSET = 6};
+    
+    std::string udp_pseudo_header = ip_hdr_data.substr(IPV4_SOURCE_ADDR_OFFSET, NET_LONG_BYTES) + ip_hdr_data.substr(IPV4_DEST_ADDR_OFFSET, NET_LONG_BYTES) + char(0) + char(IPPROTO_UDP) + udp_hdr_data.substr(UDP_LENGTH_OFFSET, NET_SHORT_BYTES);
+    assert(udp_pseudo_header.size() == 12);
+
+    uint16_t ip_checksum = net_checksum(ip_hdr_data);
+    uint16_t udp_checksum = net_checksum(udp_pseudo_header + udp_hdr_data + payload);
+
+    ip_hdr_data[IPV4_CS_OFFSET] = (ip_checksum >> 8) & 0xFF;
+    ip_hdr_data[IPV4_CS_OFFSET+1] = ip_checksum & 0xFF;
+
+    udp_hdr_data[UDP_CS_OFFSET] = (udp_checksum >> 8) & 0xFF;
+    udp_hdr_data[UDP_CS_OFFSET+1] = udp_checksum & 0xFF;
+
+    
+    std::string packet(ip_hdr_data + udp_hdr_data + payload);
+    unsigned len = write(tun_fd_, packet.c_str(), packet.size());
+    if(len < packet.size())
+        glog.is(WARN) && glog << "Failed to write all " << packet.size() << " bytes." << std::endl;
+}
 
 int main(int argc, char* argv[])
 {
     dccl::FieldCodecManager::add<goby::acomms::IPGatewayEmptyIdentifierCodec<0xF000> >("ip_gateway_id_codec_0");
     dccl::FieldCodecManager::add<goby::acomms::IPGatewayEmptyIdentifierCodec<0xF001> >("ip_gateway_id_codec_1");
-    dccl::FieldCodecManager::add<goby::acomms::IPShortCodec>("ip.short");
+    dccl::FieldCodecManager::add<goby::acomms::IPGatewayEmptyIdentifierCodec<0xF002> >("ip_gateway_id_codec_2");
+    dccl::FieldCodecManager::add<goby::acomms::NetShortCodec>("net.short");
     dccl::FieldCodecManager::add<goby::acomms::IPv4AddressCodec>("ip.v4.address");
     dccl::FieldCodecManager::add<goby::acomms::IPv4FlagsFragOffsetCodec>("ip.v4.flagsfragoffset");
     

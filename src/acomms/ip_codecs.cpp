@@ -20,6 +20,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Goby.  If not, see <http://www.gnu.org/licenses/>.
 
+
 #include "ip_codecs.h"
 
 #include <netinet/in.h>
@@ -36,4 +37,26 @@ std::string goby::acomms::IPv4AddressCodec::post_decode(const dccl::uint32& wire
     in_addr addr;
     addr.s_addr = wire_value;
     return std::string(inet_ntoa(addr));
+}
+
+uint16_t goby::acomms::net_checksum(const std::string& data)
+{
+    uint32_t sum = 0;  
+    int len = data.size();
+    uint16_t* p = (uint16_t*) &data[0];
+
+    while(len > 1)
+    {
+        sum += ntohs(*(p++));
+        len -= 2;
+    }
+
+    // last byte is large byte (LSB is padded with zeros)
+    if(len)
+        sum += (*(uint8_t*)p << 8) & 0xFF00;
+            
+    while(sum >> 16)
+        sum = (sum & 0xFFFF) + (sum >> 16);
+            
+    return ~sum;
 }

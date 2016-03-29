@@ -53,7 +53,7 @@ namespace goby
         };        
 
         // 16 bit IP unsigned short codec
-        class IPShortCodec : public dccl::TypedFixedFieldCodec<dccl::uint32>
+        class NetShortCodec : public dccl::TypedFixedFieldCodec<dccl::uint32>
         {
         private:
             dccl::Bitset encode()
@@ -116,7 +116,10 @@ namespace goby
                 { return Id; }
             unsigned size() 
                 { return 0; }
-        };
+        };        
+        
+        uint16_t net_checksum(const std::string& data);
+        
     }
 }
 

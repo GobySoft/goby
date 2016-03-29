@@ -49,8 +49,8 @@ message IPv4Header
     // Differentiated Services Code Point (DSCP)
     required uint32 dscp = 3 [(dccl.field).min = 0, (dccl.field).max = 3];
 
-    required uint32 total_length = 5 [(dccl.field).codec = "ip.short"];
-    required uint32 identification = 6 [(dccl.field).codec = "ip.short"];
+    required uint32 total_length = 5 [(dccl.field).codec = "net.short"];
+    required uint32 identification = 6 [(dccl.field).codec = "net.short"];
 
     message FlagsFragOffset
     {
@@ -63,9 +63,22 @@ message IPv4Header
     
     required uint32 ttl = 8 [(dccl.field).min = 0, (dccl.field).max = 255];
     required uint32 protocol = 9 [(dccl.field).min = 0, (dccl.field).max = 255];
-    required uint32 header_checksum = 10 [(dccl.field).codec = "ip.short"];
+    required uint32 header_checksum = 10 [(dccl.field).codec = "net.short"];
 
     required string source_ip_address = 11 [(dccl.field).codec = "ip.v4.address"];
     required string dest_ip_address = 12 [(dccl.field).codec = "ip.v4.address"];
+    
+}
+
+message UDPHeader
+{
+    option (dccl.msg).id = 0xF002;
+    option (dccl.msg).max_bytes = 8;
+    option (dccl.msg).codec_version = 3;
+
+    required uint32 source_port = 1 [(dccl.field).codec = "net.short"];
+    required uint32 dest_port = 2 [(dccl.field).codec = "net.short"];
+    required uint32 length = 3 [(dccl.field).codec = "net.short"];
+    required uint32 checksum = 4 [(dccl.field).codec = "net.short"];
     
 }

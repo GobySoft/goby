@@ -13,6 +13,7 @@ file(GLOB PROTOS protobuf/*.proto)
 protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${PROTOS})
 
 set(SRC
+  ip_codecs.cpp
   dccl/dccl.cpp
   queue/queue.cpp
   queue/queue_manager.cpp

@@ -24,15 +24,15 @@
 #include <net/if.h>
 #include <linux/if_tun.h>
 
-#include "dccl.h"
 #include "dccl/arithmetic/field_codec_arithmetic.h"
 
 #include "ip_gateway_config.pb.h"
 #include "goby/pb/application.h"
-#include "goby/acomms/protobuf/network_header.pb.h"
 #include "goby/util/binary.h"
+#include "goby/acomms/ip_codecs.h"
 
 int tun_alloc(char *dev);
+int tun_config(const char* dev, const char* host, unsigned cidr_prefix);
 
 using namespace goby::common::logger;
 
@@ -40,7 +40,6 @@ namespace goby
 {
     namespace acomms
     {
-    
         class IPGateway : public goby::pb::Application
         {
         public:
@@ -51,27 +50,9 @@ namespace goby
             
         private:
             goby::acomms::protobuf::IPGatewayConfig& cfg_;
-            dccl::Codec dccl_;
+            dccl::Codec dccl_0_, dccl_1_;
             int tun_fd_;
             unsigned mtu_;
-        };
-
-        // no-op identifier codec
-        class IPGatewayEmptyIdentifierCodec : public dccl::TypedFixedFieldCodec<dccl::uint32>
-        {
-        private:
-            dccl::Bitset encode()
-                { return dccl::Bitset(0, 0); }
-        
-            dccl::Bitset encode(const goby::uint32& wire_value)
-                { return dccl::Bitset(0, 0); }
-    
-            goby::uint32 decode(dccl::Bitset* bits)
-                {
-                    return goby::acomms::protobuf::NetworkHeader::descriptor()->options().GetExtension(dccl::msg).id();
-                }
-            unsigned size() 
-                { return 0; }
         };        
     }
 }
@@ -79,22 +60,27 @@ namespace goby
 goby::acomms::IPGateway::IPGateway(goby::acomms::protobuf::IPGatewayConfig* cfg)
     : Application(cfg),
       cfg_(*cfg),
-      dccl_("ip_gateway_id_codec"),
+      dccl_0_("ip_gateway_id_codec_0"),
+      dccl_1_("ip_gateway_id_codec_1"),
       tun_fd_(-1),
       mtu_(1500)
 {
     char tun_name[IFNAMSIZ];
     strcpy(tun_name, "\0");
-    tun_fd_ = tun_alloc(tun_name);
-
+    tun_fd_ = tun_alloc(tun_name);    
     if(tun_fd_ < 0)
         glog.is(DIE) && glog << "Could not allocate tun interface. Check permissions?" << std::endl;
+
+    int ret = tun_config(tun_name, cfg_.local_ip_address().c_str(), cfg_.cidr_netmask_prefix());
+    if(ret < 0)
+        glog.is(DIE) && glog << "Could not configure tun interface. Check IP address: " << cfg_.local_ip_address() << " and netmask prefix: " << cfg_.cidr_netmask_prefix() << std::endl;
+    
     
     std::cout << tun_name << std::endl;    
     
     dccl::dlog.connect(dccl::logger::INFO, &std::cout);
     
-    dccl_arithmetic_load(&dccl_);
+    dccl_arithmetic_load(&dccl_0_);
     
     dccl::arith::protobuf::ArithmeticModel addr_model;
     addr_model.set_name("goby.acomms.NetworkHeader.AddrModel");
@@ -136,9 +122,10 @@ goby::acomms::IPGateway::IPGateway(goby::acomms::protobuf::IPGatewayConfig* cfg)
     port_model.set_out_of_range_frequency(0);
     dccl::arith::ModelManager::set_model(port_model);
 
-    dccl_.load<goby::acomms::protobuf::NetworkHeader>();
+    dccl_0_.load<goby::acomms::protobuf::NetworkHeader>();
+    dccl_1_.load<goby::acomms::protobuf::IPv4Header>();
     
-    dccl_.info_all(&std::cout);
+    dccl_0_.info_all(&std::cout);
     
     goby::acomms::protobuf::NetworkHeader hdr, hdr_out;
     hdr.set_protocol(goby::acomms::protobuf::NetworkHeader::UDP);
@@ -150,15 +137,15 @@ goby::acomms::IPGateway::IPGateway(goby::acomms::protobuf::IPGatewayConfig* cfg)
     hdr.add_srcdest_port(0);
 
     std::string encoded;
-    dccl_.encode(&encoded, hdr);
+    dccl_0_.encode(&encoded, hdr);
     std::cout << goby::util::hex_encode(encoded) << std::endl;
-    dccl_.decode(encoded, &hdr_out);
+    dccl_0_.decode(encoded, &hdr_out);
     std::cout << hdr_out.DebugString() << std::endl;
 }
 
 goby::acomms::IPGateway::~IPGateway()
 {
-    dccl_arithmetic_unload(&dccl_);
+    dccl_arithmetic_unload(&dccl_0_);
 }
 
 
@@ -193,8 +180,18 @@ void goby::acomms::IPGateway::loop()
         }
         else
         {
-            std::string data(buffer, len);
-            glog.is(VERBOSE) && glog << "Received " << data.size() << " bytes. " << goby::util::hex_encode(data) << std::endl;            
+            goby::acomms::protobuf::IPv4Header iphdr;
+            unsigned short header_length = (buffer[0] & 0xF) * 4;
+            unsigned short version = ((buffer[0] >> 4) & 0xF);
+            if(version == 4)
+            {
+                std::string header_data(buffer, header_length);
+                dccl_1_.decode(header_data, &iphdr);
+                glog.is(VERBOSE) && glog << "Received " << len << " bytes. " << std::endl;
+                glog.is(VERBOSE) && glog << "Header is: " << header_length << " bytes: " << goby::util::hex_encode(header_data) << "\n" << iphdr.DebugString() << std::endl;
+
+            }
+            
         }
     }
 }
@@ -202,7 +199,11 @@ void goby::acomms::IPGateway::loop()
 
 int main(int argc, char* argv[])
 {
-    dccl::FieldCodecManager::add<goby::acomms::IPGatewayEmptyIdentifierCodec>("ip_gateway_id_codec");
+    dccl::FieldCodecManager::add<goby::acomms::IPGatewayEmptyIdentifierCodec<0xF000> >("ip_gateway_id_codec_0");
+    dccl::FieldCodecManager::add<goby::acomms::IPGatewayEmptyIdentifierCodec<0xF001> >("ip_gateway_id_codec_1");
+    dccl::FieldCodecManager::add<goby::acomms::IPShortCodec>("ip.short");
+    dccl::FieldCodecManager::add<goby::acomms::IPv4AddressCodec>("ip.v4.address");
+    dccl::FieldCodecManager::add<goby::acomms::IPv4FlagsFragOffsetCodec>("ip.v4.flagsfragoffset");
     
     goby::acomms::protobuf::IPGatewayConfig cfg;
     goby::run<goby::acomms::IPGateway>(argc, argv, &cfg);
@@ -230,7 +231,7 @@ int tun_alloc(char *dev)
      *
      *        IFF_NO_PI - Do not provide packet information  
      */ 
-    ifr.ifr_flags = IFF_TUN; 
+    ifr.ifr_flags = IFF_TUN | IFF_NO_PI; 
     if(*dev)
         strncpy(ifr.ifr_name, dev, IFNAMSIZ);
 
@@ -240,7 +241,66 @@ int tun_alloc(char *dev)
         return err;
     }
 
+    
     strcpy(dev, ifr.ifr_name);
     return fd;
 }              
- 
+
+// from https://stackoverflow.com/questions/5308090/set-ip-address-using-siocsifaddr-ioctl
+int tun_config(const char* dev, const char* host, unsigned cidr_prefix)
+{
+    // set address 
+
+    struct ifreq ifr;
+    struct sockaddr_in* sai = (struct sockaddr_in *)&ifr.ifr_addr;
+    int sockfd;
+        
+    sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+
+    memset(&ifr, 0, sizeof(ifr));
+
+    strncpy(ifr.ifr_name, dev, IFNAMSIZ);
+
+
+    sai->sin_family = AF_INET;
+    sai->sin_port = 0;
+
+    int ret = inet_aton(host, &sai->sin_addr);
+    if(ret == 0)
+        return -1;
+
+    if(ioctl(sockfd, SIOCSIFADDR, &ifr) == -1)
+        return -1;
+        
+    if(ioctl(sockfd, SIOCGIFFLAGS, &ifr) == -1)
+        return -1;
+        
+    ifr.ifr_flags |= IFF_UP | IFF_RUNNING;
+
+    if(ioctl(sockfd, SIOCSIFFLAGS, &ifr) == -1)
+        return -1;
+
+
+    // set mask
+        
+    struct ifreq ifr_mask;
+    struct sockaddr_in* sai_mask = (struct sockaddr_in *)&ifr_mask.ifr_addr;
+    memset(&ifr_mask, 0, sizeof(ifr_mask));
+    strncpy(ifr_mask.ifr_name, dev, IFNAMSIZ);
+
+    sai_mask->sin_family = AF_INET;
+    sai_mask->sin_port = 0;
+
+    if(cidr_prefix > 32)
+        return -1;
+        
+    sai_mask->sin_addr.s_addr = htonl(0xFFFFFFFF - ((1 << (32-cidr_prefix))-1));
+
+    if(ioctl(sockfd, SIOCSIFNETMASK, &ifr_mask) == -1)
+        return -1;
+        
+    close(sockfd);
+    
+    return 0;    
+}
+

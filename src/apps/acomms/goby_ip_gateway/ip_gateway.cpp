@@ -24,12 +24,21 @@
 #include <net/if.h>
 #include <linux/if_tun.h>
 
+#include <boost/bimap.hpp>
+
 #include "dccl/arithmetic/field_codec_arithmetic.h"
 
-#include "ip_gateway_config.pb.h"
 #include "goby/pb/application.h"
 #include "goby/util/binary.h"
 #include "goby/acomms/ip_codecs.h"
+#include "goby/acomms/protobuf/modem_message.pb.h"
+#include "goby/acomms/acomms_constants.h"
+#include "goby/acomms/amac.h"
+#include "goby/acomms/connect.h"
+
+#include "ip_gateway_config.pb.h"
+
+enum { IPV4_ADDRESS_BITS = 32, UDP_HEADER_SIZE = 8 };
 
 int tun_alloc(char *dev);
 int tun_config(const char* dev, const char* host, unsigned cidr_prefix);
@@ -47,18 +56,39 @@ namespace goby
             ~IPGateway();
         private:
             void loop();
-            void handle_udp_packet(const goby::acomms::protobuf::IPv4Header& ip_hdr,
+            void handle_udp_packet(protobuf::ModemTransmission* m,
+                                   const goby::acomms::protobuf::IPv4Header& ip_hdr,
                                    const goby::acomms::protobuf::UDPHeader& udp_hdr,
-                                   std::string payload);
+                                   const std::string& payload);
             void write_udp_packet(goby::acomms::protobuf::IPv4Header& ip_hdr,
                                   goby::acomms::protobuf::UDPHeader& udp_hdr,
-                                  std::string payload);
+                                  const std::string& payload);
+
+            std::pair<int, int> to_src_dest_pair(int srcdest);
+            int from_src_dest_pair(std::pair<int, int> src_dest);
+
+            int ipv4_to_goby_address(const std::string& ipv4_address);
+            std::string goby_address_to_ipv4(int modem_id);
+            
+            void handle_data_request(const protobuf::ModemTransmission& m);
+            void handle_initiate_transmission(const protobuf::ModemTransmission& m);
+            void handle_modem_receive(const goby::acomms::protobuf::ModemTransmission& m);
 
         private:
             goby::acomms::protobuf::IPGatewayConfig& cfg_;
             dccl::Codec dccl_goby_nh_, dccl_ip_, dccl_udp_;
             int tun_fd_;
-            unsigned mtu_;
+            int total_addresses_;
+            goby::uint32 local_address_; // in host byte order
+            int local_modem_id_;
+            goby::uint32 netmask_; // in host byte order
+
+            goby::acomms::MACManager mac_;
+
+            // map goby_port to udp_port
+            boost::bimap<int, int> port_map_;
+            int dynamic_port_index_;
+            std::vector<int> dynamic_udp_fd_;
         };        
     }
 }
@@ -70,19 +100,30 @@ goby::acomms::IPGateway::IPGateway(goby::acomms::protobuf::IPGatewayConfig* cfg)
       dccl_ip_("ip_gateway_id_codec_1"),
       dccl_udp_("ip_gateway_id_codec_2"),
       tun_fd_(-1),
-      mtu_(1500)
+      total_addresses_((1 << (IPV4_ADDRESS_BITS-cfg_.cidr_netmask_prefix()))-1), // minus one since we don't need to use .255 as broadcast
+      local_address_(0),
+      local_modem_id_(0),
+      netmask_(0),
+      dynamic_port_index_(cfg_.static_udp_port_size())
 {
     char tun_name[IFNAMSIZ];
     strcpy(tun_name, "\0");
     tun_fd_ = tun_alloc(tun_name);    
     if(tun_fd_ < 0)
         glog.is(DIE) && glog << "Could not allocate tun interface. Check permissions?" << std::endl;
-
-    int ret = tun_config(tun_name, cfg_.local_ip_address().c_str(), cfg_.cidr_netmask_prefix());
+    
+    int ret = tun_config(tun_name, cfg_.local_ipv4_address().c_str(), cfg_.cidr_netmask_prefix());
     if(ret < 0)
-        glog.is(DIE) && glog << "Could not configure tun interface. Check IP address: " << cfg_.local_ip_address() << " and netmask prefix: " << cfg_.cidr_netmask_prefix() << std::endl;
+        glog.is(DIE) && glog << "Could not configure tun interface. Check IP address: " << cfg_.local_ipv4_address() << " and netmask prefix: " << cfg_.cidr_netmask_prefix() << std::endl;
     
-    
+    in_addr local_addr;
+    inet_aton(cfg_.local_ipv4_address().c_str(), &local_addr);
+    local_address_ = ntohl(local_addr.s_addr);    
+    netmask_ = 0xFFFFFFFF - ((1 << (IPV4_ADDRESS_BITS-cfg_.cidr_netmask_prefix()))-1);
+    local_modem_id_ = ipv4_to_goby_address(cfg_.local_ipv4_address());
+
+    Application::subscribe(&IPGateway::handle_data_request, this, "DataRequest" + goby::util::as<std::string>(local_modem_id_));
+    Application::subscribe(&IPGateway::handle_modem_receive, this, "Rx" + goby::util::as<std::string>(local_modem_id_));
     
     dccl::dlog.connect(dccl::logger::INFO, &std::cout);
     
@@ -90,13 +131,11 @@ goby::acomms::IPGateway::IPGateway(goby::acomms::protobuf::IPGatewayConfig* cfg)
     
     dccl::arith::protobuf::ArithmeticModel addr_model;
     addr_model.set_name("goby.acomms.NetworkHeader.AddrModel");
-    for(int i = 0, n = 32; i <= n; ++i)
+    for(int i = 0, n = total_addresses_*(total_addresses_-1); i <= n; ++i)
     {
         if(i != n)
         {
             int freq = 10;
-            if(i == 0 || i == 1)
-                freq = 100;
             addr_model.add_value_bound(i);
             addr_model.add_frequency(freq);
         }
@@ -109,9 +148,20 @@ goby::acomms::IPGateway::IPGateway(goby::acomms::protobuf::IPGatewayConfig* cfg)
     addr_model.set_out_of_range_frequency(0);
     dccl::arith::ModelManager::set_model(addr_model);        
 
+    if(cfg_.total_ports() < cfg_.static_udp_port_size())
+        glog.is(DIE) && glog << "total_ports must be at least as many as the static_udp_ports defined" << std::endl;
+
+    for(int i = 0, n = cfg_.total_ports(); i < n; ++i)
+    {
+        if(i < cfg_.static_udp_port_size())
+            port_map_.insert(boost::bimap<int, int>::value_type(i, cfg_.static_udp_port(i)));
+        else
+            port_map_.insert(boost::bimap<int, int>::value_type(i, -i));
+    }
+    
     dccl::arith::protobuf::ArithmeticModel port_model;
     port_model.set_name("goby.acomms.NetworkHeader.PortModel");
-    for(int i = 0, n = 1; i <= n; ++i)
+    for(int i = 0, n = cfg_.total_ports(); i <= n; ++i)
     {
         if(i != n)
         {
@@ -124,7 +174,7 @@ goby::acomms::IPGateway::IPGateway(goby::acomms::protobuf::IPGatewayConfig* cfg)
             port_model.add_value_bound(n);
         }
     }
-    port_model.set_eof_frequency(0); 
+    port_model.set_eof_frequency(0);
     port_model.set_out_of_range_frequency(0);
     dccl::arith::ModelManager::set_model(port_model);
 
@@ -133,21 +183,13 @@ goby::acomms::IPGateway::IPGateway(goby::acomms::protobuf::IPGatewayConfig* cfg)
     dccl_udp_.load<goby::acomms::protobuf::UDPHeader>();
     
     dccl_goby_nh_.info_all(&std::cout);
-    
-    goby::acomms::protobuf::NetworkHeader hdr, hdr_out;
-    hdr.set_protocol(goby::acomms::protobuf::NetworkHeader::UDP);
-    
-    hdr.add_srcdest_addr(4);
-    hdr.add_srcdest_addr(1);
 
-    hdr.add_srcdest_port(0);
-    hdr.add_srcdest_port(0);
 
-    std::string encoded;
-    dccl_goby_nh_.encode(&encoded, hdr);
-    std::cout << goby::util::hex_encode(encoded) << std::endl;
-    dccl_goby_nh_.decode(encoded, &hdr_out);
-    std::cout << hdr_out.DebugString() << std::endl;
+    goby::acomms::connect(&mac_.signal_initiate_transmission, this, &IPGateway::handle_initiate_transmission);
+
+    cfg_.mutable_mac_cfg()->set_modem_id(local_modem_id_);
+    mac_.startup(cfg_.mac_cfg());
+
 }
 
 goby::acomms::IPGateway::~IPGateway()
@@ -159,83 +201,232 @@ goby::acomms::IPGateway::~IPGateway()
 
 void goby::acomms::IPGateway::loop()
 {
-    fd_set rd_set;
-    FD_ZERO(&rd_set);
-    FD_SET(tun_fd_, &rd_set);
-
-    timeval tout = {0};
-    int ret = select(tun_fd_+1, &rd_set, 0, 0, &tout);
-
-    if (ret < 0 && errno != EINTR) {
-        glog.is(WARN) && glog << "Could not select on tun fd." << std::endl;
-        return;
-    }
-    else if(ret > 0)
-    {
-        char buffer[mtu_];
-        int len = read(tun_fd_, buffer, mtu_);
-        if ( len < 0 )
-        {
-            glog.is(WARN) && glog << "tun read error." << std::endl;
-        }
-        else if ( len == 0 )
-        {
-            glog.is(DIE) && glog << "tun reached EOF." << std::endl;
-        }
-        else
-        {
-            goby::acomms::protobuf::IPv4Header ip_hdr;
-            unsigned short ip_header_size = (buffer[0] & 0xF) * 4;
-            unsigned short version = ((buffer[0] >> 4) & 0xF);
-            if(version == 4)
-            {
-                std::string header_data(buffer, ip_header_size);
-                dccl_ip_.decode(header_data, &ip_hdr);
-                glog.is(DEBUG2) && glog << "Received " << len << " bytes. " << std::endl;
-                switch(ip_hdr.protocol())
-                {
-                    default:
-                        glog.is(DEBUG1) && glog << "IPv4 Protocol " << ip_hdr.protocol() << " is not supported." << std::endl;
-                        break;
-                    case IPPROTO_UDP:
-                    {
-                        const int udp_header_size = 8;
-                        goby::acomms::protobuf::UDPHeader udp_hdr;
-                        std::string udp_header_data(&buffer[ip_header_size], udp_header_size); 
-                        dccl_udp_.decode(udp_header_data, &udp_hdr);
-                        handle_udp_packet(ip_hdr, udp_hdr, std::string(&buffer[ip_header_size+udp_header_size], ip_hdr.total_length()-ip_header_size-udp_header_size));
-                        break;
-                    }
-                }
-            }
-            
-        }
-    }
+    mac_.do_work();    
 }
 
 void goby::acomms::IPGateway::handle_udp_packet(
+    protobuf::ModemTransmission* m,
     const goby::acomms::protobuf::IPv4Header& ip_hdr,
     const goby::acomms::protobuf::UDPHeader& udp_hdr,
-    std::string payload)
+    const std::string& payload)
 {
     
     glog.is(VERBOSE) && glog << "Received UDP Packet. IPv4 Header: " << ip_hdr.DebugString() << "UDP Header: " << udp_hdr <<  "Payload (" << payload.size() << " bytes): " << goby::util::hex_encode(payload) << std::endl;
 
-    // echo for now
-    goby::acomms::protobuf::IPv4Header new_ip_hdr = ip_hdr;
-    goby::acomms::protobuf::UDPHeader new_udp_hdr = udp_hdr;
-    new_ip_hdr.mutable_source_ip_address()->swap(*new_ip_hdr.mutable_dest_ip_address());
+    int src = ipv4_to_goby_address(ip_hdr.source_ip_address());
+    int dest = ipv4_to_goby_address(ip_hdr.dest_ip_address());
+
+    if(m->src() != src)
+        glog.is(WARN) && glog << "Wrong source ID on data request" << std::endl;
+
+    m->set_dest(dest);
+    m->set_ack_requested(false);
     
-    const unsigned new_source_port = udp_hdr.dest_port();
-    const unsigned new_dest_port = udp_hdr.source_port();
-    new_udp_hdr.set_source_port(new_source_port);
-    new_udp_hdr.set_dest_port(new_dest_port);
+    goby::acomms::protobuf::NetworkHeader net_header;
+    net_header.set_protocol(goby::acomms::protobuf::NetworkHeader::UDP);
+    net_header.set_srcdest_addr(from_src_dest_pair(std::make_pair(src,dest)));
+
+    boost::bimap<int, int>::right_map::const_iterator src_it = port_map_.right.find(udp_hdr.source_port());
+    if(src_it != port_map_.right.end())
+    {
+        net_header.add_srcdest_port(src_it->second);
+    }
+    else
+    {
+        // on transmit, try to map the source port to a dynamic port
+        if(cfg_.total_ports() == cfg_.static_udp_port_size())
+        {
+            glog.is(WARN) && glog << "No mapping for source UDP port: " << udp_hdr.source_port() << " and we have no dynamic ports allocated (static_udp_port size == total_ports)" << std::endl;
+            return;
+        }
+        else
+        {
+            boost::bimap<int, int>::left_map::iterator dyn_port_it = port_map_.left.find(dynamic_port_index_);
+            port_map_.left.replace_data(dyn_port_it, udp_hdr.source_port());
+            net_header.add_srcdest_port(dynamic_port_index_);
+            ++dynamic_port_index_;
+            if(dynamic_port_index_ >= cfg_.total_ports())
+                dynamic_port_index_ = cfg_.static_udp_port_size();
+        }
+    }
     
-    write_udp_packet(new_ip_hdr, new_udp_hdr, payload);
+    boost::bimap<int, int>::right_map::const_iterator dest_it = port_map_.right.find(udp_hdr.dest_port());
+    if(dest_it != port_map_.right.end())
+    {
+        net_header.add_srcdest_port(dest_it->second);
+    }
+    else
+    {
+        glog.is(WARN) && glog << "No mapping for destination UDP port: " << udp_hdr.dest_port() << ". Unable to send packet." << std::endl;
+        return;
+    }
+    
+    
+    glog.is(VERBOSE) && glog << "NetHeader: " << net_header.DebugString() << std::endl;
+    
+    std::string nh;
+    dccl_goby_nh_.encode(&nh, net_header);
+    m->add_frame(nh + payload);
+}
+
+void goby::acomms::IPGateway::handle_initiate_transmission(const protobuf::ModemTransmission& m)
+{
+    publish(m, "Tx" + goby::util::as<std::string>(local_modem_id_));
 }
 
 
-void goby::acomms::IPGateway::write_udp_packet(goby::acomms::protobuf::IPv4Header& ip_hdr, goby::acomms::protobuf::UDPHeader& udp_hdr, std::string payload)
+void goby::acomms::IPGateway::handle_data_request(const protobuf::ModemTransmission& orig_msg)
+{
+    protobuf::ModemTransmission msg = orig_msg;
+
+    while((unsigned)msg.frame_size() < msg.max_num_frames())
+    {
+        fd_set rd_set;
+        FD_ZERO(&rd_set);
+        FD_SET(tun_fd_, &rd_set);
+
+        timeval tout = {0};
+        int ret = select(tun_fd_+1, &rd_set, 0, 0, &tout);
+
+        if (ret < 0 && errno != EINTR) {
+            glog.is(WARN) && glog << "Could not select on tun fd." << std::endl;
+            break;
+        }
+        else if(ret > 0)
+        {
+            char buffer[cfg_.mtu()];
+            int len = read(tun_fd_, buffer, cfg_.mtu());
+            if ( len < 0 )
+            {
+                glog.is(WARN) && glog << "tun read error." << std::endl;
+            }
+            else if ( len == 0 )
+            {
+                glog.is(DIE) && glog << "tun reached EOF." << std::endl;
+            }
+            else
+            {
+                goby::acomms::protobuf::IPv4Header ip_hdr;
+                unsigned short ip_header_size = (buffer[0] & 0xF) * 4;
+                unsigned short version = ((buffer[0] >> 4) & 0xF);
+                if(version == 4)
+                {
+                    std::string header_data(buffer, ip_header_size);
+                    dccl_ip_.decode(header_data, &ip_hdr);
+                    glog.is(DEBUG2) && glog << "Received " << len << " bytes. " << std::endl;
+                    switch(ip_hdr.protocol())
+                    {
+                        default:
+                            glog.is(DEBUG1) && glog << "IPv4 Protocol " << ip_hdr.protocol() << " is not supported." << std::endl;
+                            break;
+                        case IPPROTO_UDP:
+                        {
+                            goby::acomms::protobuf::UDPHeader udp_hdr;
+                            std::string udp_header_data(&buffer[ip_header_size], UDP_HEADER_SIZE); 
+                            dccl_udp_.decode(udp_header_data, &udp_hdr);
+                            handle_udp_packet(&msg, ip_hdr, udp_hdr, std::string(&buffer[ip_header_size+UDP_HEADER_SIZE], ip_hdr.total_length()-ip_header_size-UDP_HEADER_SIZE));
+                            break;
+                        }
+                    }
+                }
+            
+            }
+        }
+        else
+        {
+            break;
+        }
+    }
+    
+    publish(msg, "DataResponse" + goby::util::as<std::string>(local_modem_id_));
+}
+
+void goby::acomms::IPGateway::handle_modem_receive(const goby::acomms::protobuf::ModemTransmission& modem_msg)
+{
+    for(int i = 0, n = modem_msg.frame_size(); i < n; ++i)
+    {
+        goby::acomms::protobuf::IPv4Header ip_hdr;
+        goby::acomms::protobuf::UDPHeader udp_hdr;
+
+        enum 
+        {
+            MIN_IPV4_HEADER_LENGTH = 5, // number of 32-bit words
+            IPV4_VERSION = 4,
+        };
+
+        goby::acomms::protobuf::NetworkHeader net_header;
+        std::string frame = modem_msg.frame(i);
+        dccl_goby_nh_.decode(&frame, &net_header); // strips used bytes off frame
+ 
+        glog.is(VERBOSE) && glog << "NetHeader: " << net_header.DebugString() << std::endl;
+           
+        ip_hdr.set_ihl(MIN_IPV4_HEADER_LENGTH);
+        ip_hdr.set_version(IPV4_VERSION);
+        ip_hdr.set_ecn(0);
+        ip_hdr.set_dscp(0);
+        ip_hdr.set_total_length(MIN_IPV4_HEADER_LENGTH*4 + UDP_HEADER_SIZE + frame.size());
+        ip_hdr.set_identification(0);
+        ip_hdr.mutable_flags_frag_offset()->set_dont_fragment(false); 
+        ip_hdr.mutable_flags_frag_offset()->set_more_fragments(false);
+        ip_hdr.mutable_flags_frag_offset()->set_fragment_offset(0);
+        ip_hdr.set_ttl(63);
+        ip_hdr.set_protocol(net_header.protocol());
+
+        std::pair<int, int> src_dest = to_src_dest_pair(net_header.srcdest_addr());
+        ip_hdr.set_source_ip_address(goby_address_to_ipv4(src_dest.first));
+        ip_hdr.set_dest_ip_address(goby_address_to_ipv4(src_dest.second));
+        
+        if(net_header.srcdest_port_size() == 2)
+        {
+            boost::bimap<int, int>::left_map::iterator src_it = port_map_.left.find(net_header.srcdest_port(0));
+            int source_port = src_it->second;
+            if(source_port < 0)
+            {
+                // get an unused UDP port
+                int fd = socket(AF_INET, SOCK_DGRAM, 0);
+                struct sockaddr_in addr;
+                memset((char *)&addr, 0, sizeof(addr));
+                addr.sin_family = AF_INET;
+                addr.sin_addr.s_addr = htonl(INADDR_ANY);
+                addr.sin_port = htons(0);
+                bind(fd, (struct sockaddr *)&addr, sizeof(addr));
+                
+                struct sockaddr_in sa;
+                socklen_t sa_len;
+                sa_len = sizeof(sa);
+                getsockname(fd, (struct sockaddr *)&sa, &sa_len);
+                source_port = ntohs(sa.sin_port);
+                dynamic_udp_fd_.push_back(fd);
+
+                port_map_.left.replace_data(src_it, source_port);
+            }
+            
+            
+            boost::bimap<int, int>::left_map::const_iterator dest_it = port_map_.left.find(net_header.srcdest_port(1));
+            int dest_port = dest_it->second;
+            if(dest_port < 0)
+            {
+                glog.is(WARN) && glog << "No mapping for destination port: " << net_header.srcdest_port(1) << ", cannot write packet" << std::endl;
+                continue;
+            }
+            
+            udp_hdr.set_source_port(source_port);
+            udp_hdr.set_dest_port(dest_port);
+        }
+        else
+        {
+            glog.is(WARN) && glog << "Bad srcdest_port field, must have two values." << std::endl;
+            continue;
+        }
+
+        udp_hdr.set_length(UDP_HEADER_SIZE + frame.size());
+        write_udp_packet(ip_hdr, udp_hdr, frame);
+    }
+}
+
+
+
+void goby::acomms::IPGateway::write_udp_packet(goby::acomms::protobuf::IPv4Header& ip_hdr, goby::acomms::protobuf::UDPHeader& udp_hdr, const std::string& payload)
 {
     // set checksum 0 for calculation
     ip_hdr.set_header_checksum(0);
@@ -267,6 +458,63 @@ void goby::acomms::IPGateway::write_udp_packet(goby::acomms::protobuf::IPv4Heade
     if(len < packet.size())
         glog.is(WARN) && glog << "Failed to write all " << packet.size() << " bytes." << std::endl;
 }
+
+//          src
+//       0  1  2  3
+//     ------------
+// d 0 | x  0  1  2 
+// e 1 | 3  x  4  5
+// s 2 | 6  7  x  8
+// t 3 | 9 10 11  x
+std::pair<int, int> goby::acomms::IPGateway::to_src_dest_pair(int srcdest)
+{
+    int src = srcdest % (total_addresses_-1);
+    int dest = srcdest / (total_addresses_-1);
+    if(src == dest)
+        ++src;
+
+    return std::make_pair(src, dest);
+}
+
+int goby::acomms::IPGateway::from_src_dest_pair(std::pair<int, int> src_dest)
+{
+    int src = src_dest.first;
+    int dest = src_dest.second;
+
+    if(src == dest) return -1;
+
+    return dest * (total_addresses_-1) + src - (src > dest ? 1 : 0);
+}
+
+
+int goby::acomms::IPGateway::ipv4_to_goby_address(const std::string& ipv4_address)
+{
+    in_addr remote_addr;
+    inet_aton(ipv4_address.c_str(), &remote_addr);
+    goby::uint32 remote_address = ntohl(remote_addr.s_addr);
+    int modem_id = remote_address & ~netmask_;
+
+    // broadcast conventions differ
+    if(modem_id + netmask_ == 0xFFFFFFFF)
+        modem_id = goby::acomms::BROADCAST_ID;
+    return modem_id;
+}
+
+std::string goby::acomms::IPGateway::goby_address_to_ipv4(int modem_id)
+{
+    goby::uint32 address = 0;
+    if(modem_id == goby::acomms::BROADCAST_ID)
+        address = (local_address_ & netmask_) + ~netmask_;
+    else
+        address = (local_address_ & netmask_) + modem_id;
+    
+    in_addr ret_addr;
+    ret_addr.s_addr = htonl(address);
+    return std::string(inet_ntoa(ret_addr));
+}
+
+
+
 
 int main(int argc, char* argv[])
 {
@@ -363,10 +611,10 @@ int tun_config(const char* dev, const char* host, unsigned cidr_prefix)
     sai_mask->sin_family = AF_INET;
     sai_mask->sin_port = 0;
 
-    if(cidr_prefix > 32)
+    if(cidr_prefix > IPV4_ADDRESS_BITS)
         return -1;
         
-    sai_mask->sin_addr.s_addr = htonl(0xFFFFFFFF - ((1 << (32-cidr_prefix))-1));
+    sai_mask->sin_addr.s_addr = htonl(0xFFFFFFFF - ((1 << (IPV4_ADDRESS_BITS-cidr_prefix))-1));
 
     if(ioctl(sockfd, SIOCSIFNETMASK, &ifr_mask) == -1)
         return -1;

@@ -15,18 +15,11 @@ message NetworkHeader
     }
     required Protocol protocol = 1;
 
-    enum ICMPType
-    {
-        ICMP_ECHO_REPLY = 0;
-        ICMP_ECHO_REQUEST = 8;
-    }
-    
-    repeated uint32 srcdest_addr = 10 [(dccl.field).codec = "dccl.arithmetic",
-                                      (dccl.field).max_repeat = 2,
-                                      (dccl.field).(arithmetic).model = "goby.acomms.NetworkHeader.AddrModel"];
+    required uint32 srcdest_addr = 10 [(dccl.field).codec = "dccl.arithmetic",
+                                       (dccl.field).(arithmetic).model = "goby.acomms.NetworkHeader.AddrModel"];
     repeated uint32 srcdest_port = 11 [(dccl.field).codec = "dccl.arithmetic",
-                                      (dccl.field).max_repeat = 2,
-                                      (dccl.field).(arithmetic).model = "goby.acomms.NetworkHeader.PortModel"];
+                                       (dccl.field).max_repeat = 2,
+                                       (dccl.field).(arithmetic).model = "goby.acomms.NetworkHeader.PortModel"];
 }
 
 // the real IP header

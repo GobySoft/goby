@@ -1163,9 +1163,18 @@ void goby::acomms::MMDriver::cardp(const NMEASentence& nmea, protobuf::ModemTran
     m->SetExtension(micromodem::protobuf::type, micromodem::protobuf::MICROMODEM_FLEXIBLE_DATA);
 
     std::vector<std::string> frames, frames_data;
-    boost::split(frames, nmea[DATA_MINI], boost::is_any_of(";"));
-    boost::split(frames_data, nmea[DATA], boost::is_any_of(";"));
+
+    if(!nmea[DATA_MINI].empty())
+        boost::split(frames, nmea[DATA_MINI], boost::is_any_of(";"));
+    if(!nmea[DATA].empty())
+        boost::split(frames_data, nmea[DATA], boost::is_any_of(";"));
     frames.insert(frames.end(), frames_data.begin(), frames_data.end());
+
+    
+    for(int f = 0, n = frames.size(); f < n; ++f)
+    {
+        std::cout << f << ": " << frames[f] << std::endl;
+    }    
     
     bool bad_frame = false;
     std::string frame_hex;
@@ -1177,6 +1186,7 @@ void goby::acomms::MMDriver::cardp(const NMEASentence& nmea, protobuf::ModemTran
         
         if(!goby::util::as<bool>(frames[f*num_fields + CRCCHECK]))
         {
+            std::cout << frames[f*num_fields + CRCCHECK] << std::endl;
             bad_frame = true;
             break;       
         }

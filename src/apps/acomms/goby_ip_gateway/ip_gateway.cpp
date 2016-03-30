@@ -38,10 +38,12 @@
 
 #include "ip_gateway_config.pb.h"
 
-enum { IPV4_ADDRESS_BITS = 32, UDP_HEADER_SIZE = 8 };
+enum { IPV4_ADDRESS_BITS = 32,
+       MIN_IPV4_HEADER_LENGTH = 5, // number of 32-bit words
+       UDP_HEADER_SIZE = 8 };
 
 int tun_alloc(char *dev);
-int tun_config(const char* dev, const char* host, unsigned cidr_prefix);
+int tun_config(const char* dev, const char* host, unsigned cidr_prefix, unsigned mtu);
 
 using namespace goby::common::logger;
 
@@ -55,6 +57,9 @@ namespace goby
             IPGateway(goby::acomms::protobuf::IPGatewayConfig* cfg);
             ~IPGateway();
         private:
+            void init_dccl();
+            void init_tun();
+
             void loop();
             void handle_udp_packet(protobuf::ModemTransmission* m,
                                    const goby::acomms::protobuf::IPv4Header& ip_hdr,
@@ -89,6 +94,8 @@ namespace goby
             boost::bimap<int, int> port_map_;
             int dynamic_port_index_;
             std::vector<int> dynamic_udp_fd_;
+
+            int ip_mtu_; // the MTU on the tun interface, which is slightly different than the Goby MTU specified in the config file since the IP and Goby NetworkHeader are different sizes.
         };        
     }
 }
@@ -106,24 +113,20 @@ goby::acomms::IPGateway::IPGateway(goby::acomms::protobuf::IPGatewayConfig* cfg)
       netmask_(0),
       dynamic_port_index_(cfg_.static_udp_port_size())
 {
-    char tun_name[IFNAMSIZ];
-    strcpy(tun_name, "\0");
-    tun_fd_ = tun_alloc(tun_name);    
-    if(tun_fd_ < 0)
-        glog.is(DIE) && glog << "Could not allocate tun interface. Check permissions?" << std::endl;
-    
-    int ret = tun_config(tun_name, cfg_.local_ipv4_address().c_str(), cfg_.cidr_netmask_prefix());
-    if(ret < 0)
-        glog.is(DIE) && glog << "Could not configure tun interface. Check IP address: " << cfg_.local_ipv4_address() << " and netmask prefix: " << cfg_.cidr_netmask_prefix() << std::endl;
-    
-    in_addr local_addr;
-    inet_aton(cfg_.local_ipv4_address().c_str(), &local_addr);
-    local_address_ = ntohl(local_addr.s_addr);    
-    netmask_ = 0xFFFFFFFF - ((1 << (IPV4_ADDRESS_BITS-cfg_.cidr_netmask_prefix()))-1);
-    local_modem_id_ = ipv4_to_goby_address(cfg_.local_ipv4_address());
+
+    init_dccl();
+    init_tun();
 
     Application::subscribe(&IPGateway::handle_data_request, this, "DataRequest" + goby::util::as<std::string>(local_modem_id_));
     Application::subscribe(&IPGateway::handle_modem_receive, this, "Rx" + goby::util::as<std::string>(local_modem_id_));
+
+    goby::acomms::connect(&mac_.signal_initiate_transmission, this, &IPGateway::handle_initiate_transmission);
+    cfg_.mutable_mac_cfg()->set_modem_id(local_modem_id_);
+    mac_.startup(cfg_.mac_cfg());
+
+}
+void goby::acomms::IPGateway::init_dccl()
+{
     
     dccl::dlog.connect(dccl::logger::INFO, &std::cout);
     
@@ -183,14 +186,29 @@ goby::acomms::IPGateway::IPGateway(goby::acomms::protobuf::IPGatewayConfig* cfg)
     dccl_udp_.load<goby::acomms::protobuf::UDPHeader>();
     
     dccl_goby_nh_.info_all(&std::cout);
-
-
-    goby::acomms::connect(&mac_.signal_initiate_transmission, this, &IPGateway::handle_initiate_transmission);
-
-    cfg_.mutable_mac_cfg()->set_modem_id(local_modem_id_);
-    mac_.startup(cfg_.mac_cfg());
-
 }
+
+void goby::acomms::IPGateway::init_tun()
+{
+    char tun_name[IFNAMSIZ];
+    strcpy(tun_name, "\0");
+    tun_fd_ = tun_alloc(tun_name);    
+    if(tun_fd_ < 0)
+        glog.is(DIE) && glog << "Could not allocate tun interface. Check permissions?" << std::endl;
+
+    ip_mtu_ = cfg_.mtu()-dccl_goby_nh_.max_size<goby::acomms::protobuf::NetworkHeader>()+MIN_IPV4_HEADER_LENGTH*4;
+
+    int ret = tun_config(tun_name, cfg_.local_ipv4_address().c_str(), cfg_.cidr_netmask_prefix(), ip_mtu_);
+    if(ret < 0)
+        glog.is(DIE) && glog << "Could not configure tun interface. Check IP address: " << cfg_.local_ipv4_address() << " and netmask prefix: " << cfg_.cidr_netmask_prefix() << std::endl;
+    
+    in_addr local_addr;
+    inet_aton(cfg_.local_ipv4_address().c_str(), &local_addr);
+    local_address_ = ntohl(local_addr.s_addr);    
+    netmask_ = 0xFFFFFFFF - ((1 << (IPV4_ADDRESS_BITS-cfg_.cidr_netmask_prefix()))-1);
+    local_modem_id_ = ipv4_to_goby_address(cfg_.local_ipv4_address());
+}
+
 
 goby::acomms::IPGateway::~IPGateway()
 {
@@ -278,7 +296,7 @@ void goby::acomms::IPGateway::handle_initiate_transmission(const protobuf::Modem
 void goby::acomms::IPGateway::handle_data_request(const protobuf::ModemTransmission& orig_msg)
 {
     protobuf::ModemTransmission msg = orig_msg;
-
+    
     while((unsigned)msg.frame_size() < msg.max_num_frames())
     {
         fd_set rd_set;
@@ -294,8 +312,9 @@ void goby::acomms::IPGateway::handle_data_request(const protobuf::ModemTransmiss
         }
         else if(ret > 0)
         {
-            char buffer[cfg_.mtu()];
-            int len = read(tun_fd_, buffer, cfg_.mtu());
+            char buffer[ip_mtu_+1];
+            int len = read(tun_fd_, buffer, ip_mtu_);
+
             if ( len < 0 )
             {
                 glog.is(WARN) && glog << "tun read error." << std::endl;
@@ -343,6 +362,8 @@ void goby::acomms::IPGateway::handle_data_request(const protobuf::ModemTransmiss
 
 void goby::acomms::IPGateway::handle_modem_receive(const goby::acomms::protobuf::ModemTransmission& modem_msg)
 {
+    std::cout << modem_msg.DebugString() << std::endl;
+    
     for(int i = 0, n = modem_msg.frame_size(); i < n; ++i)
     {
         goby::acomms::protobuf::IPv4Header ip_hdr;
@@ -350,14 +371,20 @@ void goby::acomms::IPGateway::handle_modem_receive(const goby::acomms::protobuf:
 
         enum 
         {
-            MIN_IPV4_HEADER_LENGTH = 5, // number of 32-bit words
             IPV4_VERSION = 4,
         };
 
         goby::acomms::protobuf::NetworkHeader net_header;
         std::string frame = modem_msg.frame(i);
-        dccl_goby_nh_.decode(&frame, &net_header); // strips used bytes off frame
- 
+
+        try {
+            dccl_goby_nh_.decode(&frame, &net_header); // strips used bytes off frame
+        }
+        catch (goby::Exception &e) {
+            glog.is(WARN) && glog << "Could not decode header: " << e.what() << std::endl;
+            continue;
+        }        
+            
         glog.is(VERBOSE) && glog << "NetHeader: " << net_header.DebugString() << std::endl;
            
         ip_hdr.set_ihl(MIN_IPV4_HEADER_LENGTH);
@@ -470,7 +497,7 @@ std::pair<int, int> goby::acomms::IPGateway::to_src_dest_pair(int srcdest)
 {
     int src = srcdest % (total_addresses_-1);
     int dest = srcdest / (total_addresses_-1);
-    if(src == dest)
+    if(src >= dest)
         ++src;
 
     return std::make_pair(src, dest);
@@ -567,7 +594,7 @@ int tun_alloc(char *dev)
 }              
 
 // from https://stackoverflow.com/questions/5308090/set-ip-address-using-siocsifaddr-ioctl
-int tun_config(const char* dev, const char* host, unsigned cidr_prefix)
+int tun_config(const char* dev, const char* host, unsigned cidr_prefix, unsigned mtu)
 {
     // set address 
 
@@ -584,7 +611,7 @@ int tun_config(const char* dev, const char* host, unsigned cidr_prefix)
 
     sai->sin_family = AF_INET;
     sai->sin_port = 0;
-
+        
     int ret = inet_aton(host, &sai->sin_addr);
     if(ret == 0)
         return -1;
@@ -593,6 +620,11 @@ int tun_config(const char* dev, const char* host, unsigned cidr_prefix)
         return -1;
         
     if(ioctl(sockfd, SIOCGIFFLAGS, &ifr) == -1)
+        return -1;
+
+    ifr.ifr_mtu = mtu;
+    
+    if(ioctl(sockfd, SIOCSIFMTU, &ifr) == -1)
         return -1;
         
     ifr.ifr_flags |= IFF_UP | IFF_RUNNING;

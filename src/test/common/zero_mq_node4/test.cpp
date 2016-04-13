@@ -24,15 +24,14 @@
 
 // tests blackout functionality of ZeroMQService
 
-#include "goby.common.h"
+#include "goby/common/zeromq_service.h"
 
 #include <boost/thread.hpp>
 
 void node_inbox(goby::common::MarshallingScheme marshalling_scheme,
-                 const std::string& identifier,
-                 const void* data,
-                 int size,
-                 int socket_id);
+                const std::string& identifier,
+                const std::string& data,
+                int socket_id);
 
 
 void run_basic_test(int test_count, int expected_blackouts, int ms_wait);
@@ -129,7 +128,7 @@ void run_basic_test(int test_count, int expected_blackouts, int ms_wait)
     for(int i = 0; i < test_count; ++i)
     {
         std::cout << "publishing " << data_ << std::endl;
-        node1_.send(goby::common::MARSHALLING_CSTR, identifier_, &data_, 3, SOCKET_PUBLISH);
+        node1_.send(goby::common::MARSHALLING_CSTR, identifier_, std::string(data_), SOCKET_PUBLISH);
         node2_.poll(1e6);
         // wait ms_wait milliseconds
         usleep(ms_wait*1e3);
@@ -140,16 +139,15 @@ void run_basic_test(int test_count, int expected_blackouts, int ms_wait)
 
 
 void node_inbox(goby::common::MarshallingScheme marshalling_scheme,
-                 const std::string& identifier,
-                 const void* data,
-                 int size,
-                 int socket_id)
+                const std::string& identifier,
+                const std::string& data,
+                int socket_id)
 {
     assert(identifier == identifier_);
     assert(marshalling_scheme == goby::common::MARSHALLING_CSTR);
-    assert(!strcmp(static_cast<const char*>(data), data_));
+    assert(!strcmp(data.c_str(), data_));
     assert(socket_id == SOCKET_SUBSCRIBE);
     
-    std::cout << "Received: " << static_cast<const char*>(data) << std::endl;
+    std::cout << "Received: " << data << std::endl;
     ++inbox_count_;
 }

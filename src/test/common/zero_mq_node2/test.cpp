@@ -27,10 +27,9 @@
 #include "goby/common/zeromq_service.h"
 
 void inbox(goby::common::MarshallingScheme marshalling_scheme,
-                 const std::string& identifier,
-                 const void* data,
-                 int size,
-                 int socket_id);
+           const std::string& identifier,
+           const std::string& data,
+           int socket_id);
 
 
 const std::string reply_identifier_ = "RESPONSE/";
@@ -87,10 +86,10 @@ int main(int argc, char* argv[])
     for(int i = 0; i < test_count; ++i)
     {
         std::cout << "requesting " << request_data_ << std::endl;
-        node.send(goby::common::MARSHALLING_CSTR, request_identifier_, &request_data_, sizeof(request_data_)/sizeof(char), SOCKET_REQUESTOR);
+        node.send(goby::common::MARSHALLING_CSTR, request_identifier_, std::string(request_data_), SOCKET_REQUESTOR);
         node.poll(1e6);
         std::cout << "replying " << reply_data_ << std::endl;
-        node.send(goby::common::MARSHALLING_CSTR, reply_identifier_, &reply_data_,  sizeof(reply_data_)/sizeof(char), SOCKET_REPLIER);
+        node.send(goby::common::MARSHALLING_CSTR, reply_identifier_, std::string(reply_data_), SOCKET_REPLIER);
         node.poll(1e6);
     }
 
@@ -102,8 +101,7 @@ int main(int argc, char* argv[])
 
 void inbox(goby::common::MarshallingScheme marshalling_scheme,
            const std::string& identifier,
-           const void* data,
-           int size,
+           const std::string& data,
            int socket_id)
 {
 
@@ -111,18 +109,18 @@ void inbox(goby::common::MarshallingScheme marshalling_scheme,
     {        
         assert(identifier == request_identifier_);
         assert(marshalling_scheme == goby::common::MARSHALLING_CSTR);
-        assert(!strcmp(static_cast<const char*>(data), request_data_));
+        assert(!strcmp(data.c_str(), request_data_));
     
-        std::cout << "Replier Received: " << static_cast<const char*>(data) << std::endl;
+        std::cout << "Replier Received: " << data << std::endl;
         ++inbox_count_;
     }
     else if(socket_id == SOCKET_REQUESTOR)
     {
         assert(identifier == reply_identifier_);
         assert(marshalling_scheme == goby::common::MARSHALLING_CSTR);
-        assert(!strcmp(static_cast<const char*>(data), reply_data_));
+        assert(!strcmp(data.c_str(), reply_data_));
         
-        std::cout << "Requestor Received: " << static_cast<const char*>(data) << std::endl;
+        std::cout << "Requestor Received: " << data << std::endl;
         ++inbox_count_;
     }
     else

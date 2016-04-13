@@ -48,8 +48,7 @@ namespace goby
             
             virtual void inbox(MarshallingScheme marshalling_scheme,
                                const std::string& identifier,
-                               const void* data,
-                               int size,
+                               const std::string& body,
                                int socket_id) = 0;
           private:
             ZeroMQService* zeromq_service_;

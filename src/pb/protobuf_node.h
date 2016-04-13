@@ -53,8 +53,7 @@ namespace goby
 
 
             virtual void protobuf_inbox(const std::string& protobuf_type_name,
-                                        const void* data,
-                                        int size,
+                                        const std::string& body,
                                         int socket_id,
                                         const std::string& group) = 0;
 
@@ -66,8 +65,7 @@ namespace goby
           private:
             void inbox(common::MarshallingScheme marshalling_scheme,
                        const std::string& identifier,
-                       const void* data,
-                       int size,
+                       const std::string& body,
                        int socket_id);
             
 
@@ -140,8 +138,7 @@ namespace goby
             
           private:
             void protobuf_inbox(const std::string& protobuf_type_name,
-                                const void* data,
-                                int size,
+                                const std::string& body,
                                 int socket_id,
                                 const std::string& group);
             
@@ -190,8 +187,7 @@ namespace goby
             
           private:
             void protobuf_inbox(const std::string& protobuf_type_name,
-                                const void* data,
-                                int size,
+                                const std::string& body,
                                 int socket_id,
                                 const std::string& group);
           private:

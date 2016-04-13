@@ -32,8 +32,7 @@ using namespace goby::common::logger;
 
 void goby::pb::ProtobufNode::inbox(common::MarshallingScheme marshalling_scheme,
                                    const std::string& identifier,
-                                   const void* data,
-                                   int size,
+                                   const std::string& body,
                                    int socket_id)
 {
     if(marshalling_scheme == common::MARSHALLING_PROTOBUF)
@@ -45,7 +44,7 @@ void goby::pb::ProtobufNode::inbox(common::MarshallingScheme marshalling_scheme,
         
         glog.is(DEBUG3) && glog << "MARSHALLING_PROTOBUF type: [" << pb_full_name << "], group: [" << group << "]" << std::endl;
 
-        protobuf_inbox(pb_full_name, data, size, socket_id, group);
+        protobuf_inbox(pb_full_name, body, socket_id, group);
     }
     
 }
@@ -59,13 +58,12 @@ void goby::pb::ProtobufNode::send(const google::protobuf::Message& msg, int sock
         return;    
     }
     
-    int size = msg.ByteSize();
-    char buffer[size];
-    msg.SerializeToArray(&buffer, size);
+    std::string body;
+    msg.SerializeToString(&body);
 
     std::string identifier =  group + "/" + msg.GetDescriptor()->full_name() + "/";
     
-    zeromq_service()->send(common::MARSHALLING_PROTOBUF, identifier, &buffer, size, socket_id);
+    zeromq_service()->send(common::MARSHALLING_PROTOBUF, identifier, body, socket_id);
 }
             
 void goby::pb::ProtobufNode::subscribe(const std::string& protobuf_type_name, int socket_id, const std::string& group)
@@ -81,8 +79,7 @@ void goby::pb::ProtobufNode::subscribe(const std::string& identifier, int socket
 }
 
 void goby::pb::StaticProtobufNode::protobuf_inbox(const std::string& protobuf_type_name,
-                                                  const void* data,
-                                                  int size,
+                                                  const std::string& body,
                                                   int socket_id,
                                                   const std::string& group
     )
@@ -95,7 +92,7 @@ void goby::pb::StaticProtobufNode::protobuf_inbox(const std::string& protobuf_ty
     {
         const std::string& current_group = it->second->group();
         if(current_group.empty() || current_group == group)
-            it->second->post(data, size);
+            it->second->post(body);
     }
 }
 
@@ -103,8 +100,7 @@ void goby::pb::StaticProtobufNode::protobuf_inbox(const std::string& protobuf_ty
 
 
 void goby::pb::DynamicProtobufNode::protobuf_inbox(const std::string& protobuf_type_name,
-                                                   const void* data,
-                                                   int size,
+                                                   const std::string& body,
                                                    int socket_id,
                                                    const std::string& group)
 {
@@ -113,7 +109,7 @@ void goby::pb::DynamicProtobufNode::protobuf_inbox(const std::string& protobuf_t
         
         boost::shared_ptr<google::protobuf::Message> msg =
             goby::util::DynamicProtobufManager::new_protobuf_message(protobuf_type_name);
-        msg->ParseFromArray(data, size);
+        msg->ParseFromString(body);
         
         boost::unordered_multimap<std::string, boost::function<void (boost::shared_ptr<google::protobuf::Message> msg)> >::iterator it =
             subscriptions_.find(group);

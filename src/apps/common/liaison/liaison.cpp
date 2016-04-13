@@ -236,17 +236,16 @@ void goby::common::Liaison::loop()
 }
 
 void goby::common::Liaison::inbox(MarshallingScheme marshalling_scheme,
-                                const std::string& identifier,
-                                const void* data,
-                                int size,
-                                int socket_id)
+                                  const std::string& identifier,
+                                  const std::string& data,
+                                  int socket_id)
 {
     glog.is(DEBUG2) && glog << "Liaison: got message with identifier: " << identifier << " from socket: " << socket_id << std::endl;
-    zeromq_service_.send(marshalling_scheme, identifier, data, size, LIAISON_INTERNAL_PUBLISH_SOCKET);
+    zeromq_service_.send(marshalling_scheme, identifier, data, LIAISON_INTERNAL_PUBLISH_SOCKET);
     
     if(socket_id == LIAISON_INTERNAL_SUBSCRIBE_SOCKET)
     {
         glog.is(DEBUG2) && glog << "Sending to pubsub node: " << identifier << std::endl;
-        pubsub_node_.publish(marshalling_scheme, identifier, data, size);
+        pubsub_node_.publish(marshalling_scheme, identifier, data);
     }
 }

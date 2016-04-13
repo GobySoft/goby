@@ -136,8 +136,7 @@ namespace goby
             
             void send(MarshallingScheme marshalling_scheme,
                       const std::string& identifier,
-                      const void* data,
-                      int size,
+                      const std::string& body,
                       int socket_id);
             
             void subscribe(MarshallingScheme marshalling_scheme,
@@ -152,23 +151,21 @@ namespace goby
                 void connect_inbox_slot(
                     void(C::*mem_func)(MarshallingScheme,
                                        const std::string&,
-                                       const void*,
-                                       int,
+                                       const std::string&,
                                        int),
                     C* obj)
             {
                 goby::glog.is(goby::common::logger::DEBUG1) &&
                     goby::glog << "ZeroMQService: made connection for: "
                                << typeid(obj).name() << std::endl;
-                connect_inbox_slot(boost::bind(mem_func, obj, _1, _2, _3, _4, _5));
+                connect_inbox_slot(boost::bind(mem_func, obj, _1, _2, _3, _4));
             }
 
             
             void connect_inbox_slot(
                 boost::function<void (MarshallingScheme marshalling_scheme,
                                       const std::string& identifier,
-                                      const void* data,
-                                      int size,
+                                      const std::string& body,
                                       int socket_id)> slot)
             { inbox_signal_.connect(slot); }
 
@@ -231,9 +228,6 @@ namespace goby
             
             void process_cfg(const protobuf::ZeroMQServiceConfig& cfg);
 
-            std::string make_header(MarshallingScheme marshalling_scheme,
-                                    const std::string& protobuf_type_name);
-
             void handle_receive(const void* data, int size, int message_part, int socket_id);
 
             int socket_type(protobuf::ZeroMQServiceConfig::Socket::SocketType type);
@@ -249,10 +243,9 @@ namespace goby
             std::map<size_t, boost::function<void (const void* data, int size, int message_part)> > poll_callbacks_;
             
             boost::signals2::signal<void (MarshallingScheme marshalling_scheme,
-                                const std::string& identifier,
-                                const void* data,
-                                int size,
-                                int socket_id)> inbox_signal_;
+                                          const std::string& identifier,
+                                          const std::string& body,
+                                          int socket_id)> inbox_signal_;
             boost::mutex poll_mutex_;
         };
     }

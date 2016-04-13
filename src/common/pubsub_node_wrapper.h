@@ -47,8 +47,7 @@ namespace goby
 
             void publish(MarshallingScheme marshalling_scheme,
                          const std::string& identifier,
-                         const void* data,
-                         int size)
+                         const std::string& body)
             {
                 if(!using_pubsub())
                 {
@@ -56,7 +55,7 @@ namespace goby
                     return;
                 }
                 
-                zeromq_service_.send(marshalling_scheme, identifier, data, size, SOCKET_PUBLISH);
+                zeromq_service_.send(marshalling_scheme, identifier, body, SOCKET_PUBLISH);
             }
 
             void subscribe(MarshallingScheme marshalling_scheme,

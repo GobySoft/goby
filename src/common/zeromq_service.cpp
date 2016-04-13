@@ -22,13 +22,13 @@
 
 
 
-#include <boost/asio/detail/socket_ops.hpp> // for network_to_host_long
 
 #include "goby/util/binary.h" // for hex_encode
 #include "goby/common/logger.h" // for glog & manipulators die, warn, group(), etc.
 #include "goby/util/as.h" // for goby::util::as
 
 #include "zeromq_service.h"
+#include "zeromq_packet.h"
 #include "goby/common/exception.h"
 
 using goby::util::as;
@@ -229,7 +229,7 @@ void goby::common::ZeroMQService::subscribe(MarshallingScheme marshalling_scheme
 {
     pre_subscribe_hooks(marshalling_scheme, identifier, socket_id);
     
-    std::string zmq_filter = make_header(marshalling_scheme, identifier);
+    std::string zmq_filter = zeromq_packet_make_header(marshalling_scheme, identifier);
     int NULL_TERMINATOR_SIZE = 1;
     zmq_filter.resize(zmq_filter.size() - NULL_TERMINATOR_SIZE);
     socket_from_id(socket_id).socket()->setsockopt(ZMQ_SUBSCRIBE, zmq_filter.c_str(), zmq_filter.size());
@@ -248,7 +248,7 @@ void goby::common::ZeroMQService::unsubscribe(MarshallingScheme marshalling_sche
                                        const std::string& identifier,
                                        int socket_id)
 {
-    std::string zmq_filter = make_header(marshalling_scheme, identifier);
+    std::string zmq_filter = zeromq_packet_make_header(marshalling_scheme, identifier);
     int NULL_TERMINATOR_SIZE = 1;
     zmq_filter.resize(zmq_filter.size() - NULL_TERMINATOR_SIZE);
     socket_from_id(socket_id).socket()->setsockopt(ZMQ_UNSUBSCRIBE, zmq_filter.c_str(), zmq_filter.size());
@@ -262,18 +262,17 @@ void goby::common::ZeroMQService::unsubscribe(MarshallingScheme marshalling_sche
 
 
 void goby::common::ZeroMQService::send(MarshallingScheme marshalling_scheme,
-                                  const std::string& identifier,
-                                  const void* body_data,
-                                  int body_size,
-                                  int socket_id)
+                                       const std::string& identifier,
+                                       const std::string& body,
+                                       int socket_id)
 {
     pre_send_hooks(marshalling_scheme, identifier, socket_id);
     
-    std::string header = make_header(marshalling_scheme, identifier);
-
-    zmq::message_t msg(header.size() + body_size);
-    memcpy(msg.data(), header.c_str(), header.size()); // insert header
-    memcpy(static_cast<char*>(msg.data()) + header.size(), body_data, body_size); // insert body
+    std::string raw;
+    zeromq_packet_encode(&raw, marshalling_scheme, identifier, body);
+    
+    zmq::message_t msg(raw.size());
+    memcpy(msg.data(), raw.c_str(), raw.size()); // insert packet
 
     glog.is(DEBUG3) &&
         glog << group(glog_out_group())
@@ -302,60 +301,28 @@ void goby::common::ZeroMQService::handle_receive(const void* data,
     
     MarshallingScheme marshalling_scheme = MARSHALLING_UNKNOWN;
     std::string identifier;
-
+    std::string body;
+    
     switch(message_part)
     {
         case 0:
         {
-            // byte size of marshalling id
-            const unsigned MARSHALLING_SIZE = BITS_IN_UINT32 / BITS_IN_BYTE;
-            
-            if(bytes.size() < MARSHALLING_SIZE)
-                throw(std::runtime_error("Message is too small"));
-
-            
-            google::protobuf::uint32 marshalling_int = 0;
-            for(int i = MARSHALLING_SIZE-1, n = 0; i >= n; --i)
-            {
-                marshalling_int <<= BITS_IN_BYTE;
-                marshalling_int ^= bytes[i];
-            }
-        
-            marshalling_int = boost::asio::detail::socket_ops::network_to_host_long(
-                marshalling_int);                 
-        
-            if(marshalling_int >= MARSHALLING_UNKNOWN &&
-               marshalling_int <= MARSHALLING_MAX)
-                marshalling_scheme = static_cast<MarshallingScheme>(marshalling_int);
-            else
-                throw(std::runtime_error("Invalid marshalling value = "
-                                         + as<std::string>(marshalling_int)));
-        
-            
-            identifier = bytes.substr(MARSHALLING_SIZE,
-                                      bytes.find('\0', MARSHALLING_SIZE)-MARSHALLING_SIZE);
+            zeromq_packet_decode(bytes, &marshalling_scheme, &identifier, &body);
 
             glog.is(DEBUG3) &&
                 glog << group(glog_in_group())
-                     << "Received message of type: [" << identifier << "]" << std::endl ;
+                     << "Received message of type: [" << identifier << "]" << std::endl;
 
-            // +1 for null terminator
-            const int HEADER_SIZE = MARSHALLING_SIZE+identifier.size() + 1;
-            std::string body(static_cast<const char*>(data)+HEADER_SIZE,
-                             size-HEADER_SIZE);
-            
             glog.is(DEBUG3) &&
                 glog << group(glog_in_group())
-                     << "Body [" << goby::util::hex_encode(body)<< "]" << std::endl ;
-            
+                     << "Body [" << goby::util::hex_encode(body)<< "]" << std::endl;
 
             
             if(socket_from_id(socket_id).check_blackout(marshalling_scheme, identifier))
             {
                 inbox_signal_(marshalling_scheme,
                               identifier,
-                              static_cast<const char*>(data)+HEADER_SIZE,
-                              size-HEADER_SIZE,
+                              body,
                               socket_id);
             }
         }
@@ -428,22 +395,6 @@ bool goby::common::ZeroMQService::poll(long timeout /* = -1 */)
 }
 
 
-std::string goby::common::ZeroMQService::make_header(MarshallingScheme marshalling_scheme,
-                                                const std::string& identifier)
-{
-    std::string zmq_filter;
-    
-    google::protobuf::uint32 marshalling_int = boost::asio::detail::socket_ops::host_to_network_long(static_cast<google::protobuf::uint32>(marshalling_scheme));
-    
-    for(int i = 0, n = BITS_IN_UINT32 / BITS_IN_BYTE; i < n; ++i)
-    {
-        zmq_filter.push_back(marshalling_int & 0xFF);
-        marshalling_int >>= BITS_IN_BYTE;
-    }
-    zmq_filter += identifier + '\0';
-    
-    return zmq_filter;
-}
 
 
 void goby::common::ZeroMQSocket::set_global_blackout(boost::posix_time::time_duration duration)

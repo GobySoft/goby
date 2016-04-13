@@ -45,8 +45,7 @@ goby::moos::MOOSNode::MOOSNode(ZeroMQService* service)
 
 void goby::moos::MOOSNode::inbox(common::MarshallingScheme marshalling_scheme,
                                  const std::string& identifier,
-                                 const void* data,
-                                 int size,
+                                 const std::string& bytes,
                                  int socket_id)
 {
 
@@ -56,7 +55,6 @@ void goby::moos::MOOSNode::inbox(common::MarshallingScheme marshalling_scheme,
     if(marshalling_scheme == goby::common::MARSHALLING_MOOS)
     {
         boost::shared_ptr<CMOOSMsg> msg(new CMOOSMsg);
-        std::string bytes(static_cast<const char*>(data), size);
 
         glog.is(DEBUG2) && 
             glog << group("in_hex") << goby::util::hex_encode(bytes) << std::endl;
@@ -81,7 +79,7 @@ void goby::moos::MOOSNode::send(const CMOOSMsg& msg, int socket_id, const std::s
     glog.is(DEBUG2) &&
         glog << group("out_hex") << goby::util::hex_encode(bytes) << std::endl;
 
-    zeromq_service()->send(goby::common::MARSHALLING_MOOS, "CMOOSMsg/" + msg.GetKey() + "/", &bytes[0], bytes.size(), socket_id);
+    zeromq_service()->send(goby::common::MARSHALLING_MOOS, "CMOOSMsg/" + msg.GetKey() + "/", bytes, socket_id);
 }
 
 void goby::moos::MOOSNode::subscribe(const std::string& full_or_partial_moos_name, int socket_id)

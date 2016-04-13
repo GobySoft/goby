@@ -41,7 +41,7 @@ namespace goby
         class SubscriptionBase
         {
           public:
-            virtual void post(const void* data, int size) = 0;
+            virtual void post(const std::string& body) = 0;
             virtual const google::protobuf::Message& newest() const = 0;
             virtual const std::string& type_name() const = 0;
             virtual const std::string& group() const = 0;
@@ -67,9 +67,9 @@ namespace goby
             
             // handle an incoming message (serialized using the google::protobuf
             // library calls)
-            void post(const void* data, int size)
+            void post(const std::string& body)
             {
-                newest_msg_.ParseFromArray(data, size);
+                newest_msg_.ParseFromString(body);
                 if(handler_) handler_(newest_msg_);
 
             }

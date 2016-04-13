@@ -11,15 +11,38 @@ message NetworkHeader
 
     enum Protocol
     {
+        ICMP = 0x01;
         UDP = 0x11;
+        SCTP = 0x84;
     }
     required Protocol protocol = 1;
 
     required uint32 srcdest_addr = 10 [(dccl.field).codec = "dccl.arithmetic",
                                        (dccl.field).(arithmetic).model = "goby.acomms.NetworkHeader.AddrModel"];
-    repeated uint32 srcdest_port = 11 [(dccl.field).codec = "dccl.arithmetic",
-                                       (dccl.field).max_repeat = 2,
-                                       (dccl.field).(arithmetic).model = "goby.acomms.NetworkHeader.PortModel"];
+    
+    // if Protocol == UDP
+    message UDPHeader
+    {
+        repeated uint32 srcdest_port = 1 [(dccl.field).codec = "dccl.arithmetic",
+                                           (dccl.field).max_repeat = 2,
+                                           (dccl.field).(arithmetic).model = "goby.acomms.NetworkHeader.PortModel"];
+    }
+    required UDPHeader udp = 20;
+    
+    // if Protocol == ICMP
+    message ICMPHeader
+    {
+        // not yet supported
+    }
+    // if Protocol == SCTP
+    message SCTPHeader
+    {
+        // not yet supported
+    }
+
+    // total length of packet, if not supported by link layer
+    // optional int32 total_length = 100;
+    
 }
 
 // the real IP header

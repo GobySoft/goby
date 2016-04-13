@@ -79,6 +79,8 @@ namespace goby
             void handle_initiate_transmission(const protobuf::ModemTransmission& m);
             void handle_modem_receive(const goby::acomms::protobuf::ModemTransmission& m);
 
+            int ac_freq(int srcdest);
+             
         private:
             goby::acomms::protobuf::IPGatewayConfig& cfg_;
             dccl::Codec dccl_goby_nh_, dccl_ip_, dccl_udp_;
@@ -114,6 +116,27 @@ goby::acomms::IPGateway::IPGateway(goby::acomms::protobuf::IPGatewayConfig* cfg)
       dynamic_port_index_(cfg_.static_udp_port_size())
 {
 
+    for(int d = 0; d < total_addresses_; ++d)
+    {
+        for(int s = 0; s < total_addresses_; ++s)
+        {
+            int S = from_src_dest_pair(std::make_pair(s,d));
+            std::cout << std::setw(8) << S;
+            if(s != 0 && s != d)
+            {
+                std::pair<int, int> sd = to_src_dest_pair(S);
+                std::cout << "(" << sd.first << "," << sd.second << ")";
+                assert(sd.first == s && sd.second == d);
+            }
+            else
+                std::cout << "(" << s << "," << d << ")";
+
+        }
+
+        std::cout << std::endl;
+    }
+    
+    
     init_dccl();
     init_tun();
 
@@ -123,10 +146,19 @@ goby::acomms::IPGateway::IPGateway(goby::acomms::protobuf::IPGatewayConfig* cfg)
     goby::acomms::connect(&mac_.signal_initiate_transmission, this, &IPGateway::handle_initiate_transmission);
     cfg_.mutable_mac_cfg()->set_modem_id(local_modem_id_);
     mac_.startup(cfg_.mac_cfg());
-
+    
 }
 void goby::acomms::IPGateway::init_dccl()
 {
+    if(cfg_.model_type() == protobuf::IPGatewayConfig::AUTONOMY_COLLABORATION)
+    {
+        if(cfg_.gamma_autonomy() > 1 || cfg_.gamma_autonomy() < 0)
+            glog.is(DIE) && glog << "gamma_autonomy must be [0, 1]" << std::endl;
+        
+        if(cfg_.gamma_collaboration() > cfg_.gamma_autonomy() || cfg_.gamma_collaboration() < 0)
+            glog.is(DIE) && glog << "gamma_collaboration must be [0, gamma_autonomy]" << std::endl;
+    }
+    
     
     dccl::dlog.connect(dccl::logger::INFO, &std::cout);
     
@@ -134,11 +166,22 @@ void goby::acomms::IPGateway::init_dccl()
     
     dccl::arith::protobuf::ArithmeticModel addr_model;
     addr_model.set_name("goby.acomms.NetworkHeader.AddrModel");
-    for(int i = 0, n = total_addresses_*(total_addresses_-1); i <= n; ++i)
+    
+    for(int i = 0, n = (total_addresses_-1)*(total_addresses_-1); i <= n; ++i)
     {
         if(i != n)
         {
             int freq = 10;
+            switch(cfg_.model_type())
+            {
+                case protobuf::IPGatewayConfig::UNIFORM:
+                    // already set to uniform value
+                    break;
+                case protobuf::IPGatewayConfig::AUTONOMY_COLLABORATION:
+                    freq = ac_freq(i);
+                    break;
+            }
+            
             addr_model.add_value_bound(i);
             addr_model.add_frequency(freq);
         }
@@ -147,8 +190,11 @@ void goby::acomms::IPGateway::init_dccl()
             addr_model.add_value_bound(n);
         }
     }
+
     addr_model.set_eof_frequency(0); 
     addr_model.set_out_of_range_frequency(0);
+    glog.is(DEBUG1) && glog << addr_model.DebugString() << std::endl;
+    
     dccl::arith::ModelManager::set_model(addr_model);        
 
     if(cfg_.total_ports() < cfg_.static_udp_port_size())
@@ -247,7 +293,7 @@ void goby::acomms::IPGateway::handle_udp_packet(
     boost::bimap<int, int>::right_map::const_iterator src_it = port_map_.right.find(udp_hdr.source_port());
     if(src_it != port_map_.right.end())
     {
-        net_header.add_srcdest_port(src_it->second);
+        net_header.mutable_udp()->add_srcdest_port(src_it->second);
     }
     else
     {
@@ -261,7 +307,7 @@ void goby::acomms::IPGateway::handle_udp_packet(
         {
             boost::bimap<int, int>::left_map::iterator dyn_port_it = port_map_.left.find(dynamic_port_index_);
             port_map_.left.replace_data(dyn_port_it, udp_hdr.source_port());
-            net_header.add_srcdest_port(dynamic_port_index_);
+            net_header.mutable_udp()->add_srcdest_port(dynamic_port_index_);
             ++dynamic_port_index_;
             if(dynamic_port_index_ >= cfg_.total_ports())
                 dynamic_port_index_ = cfg_.static_udp_port_size();
@@ -271,7 +317,7 @@ void goby::acomms::IPGateway::handle_udp_packet(
     boost::bimap<int, int>::right_map::const_iterator dest_it = port_map_.right.find(udp_hdr.dest_port());
     if(dest_it != port_map_.right.end())
     {
-        net_header.add_srcdest_port(dest_it->second);
+        net_header.mutable_udp()->add_srcdest_port(dest_it->second);
     }
     else
     {
@@ -403,9 +449,9 @@ void goby::acomms::IPGateway::handle_modem_receive(const goby::acomms::protobuf:
         ip_hdr.set_source_ip_address(goby_address_to_ipv4(src_dest.first));
         ip_hdr.set_dest_ip_address(goby_address_to_ipv4(src_dest.second));
         
-        if(net_header.srcdest_port_size() == 2)
+        if(net_header.udp().srcdest_port_size() == 2)
         {
-            boost::bimap<int, int>::left_map::iterator src_it = port_map_.left.find(net_header.srcdest_port(0));
+            boost::bimap<int, int>::left_map::iterator src_it = port_map_.left.find(net_header.udp().srcdest_port(0));
             int source_port = src_it->second;
             if(source_port < 0)
             {
@@ -429,11 +475,11 @@ void goby::acomms::IPGateway::handle_modem_receive(const goby::acomms::protobuf:
             }
             
             
-            boost::bimap<int, int>::left_map::const_iterator dest_it = port_map_.left.find(net_header.srcdest_port(1));
+            boost::bimap<int, int>::left_map::const_iterator dest_it = port_map_.left.find(net_header.udp().srcdest_port(1));
             int dest_port = dest_it->second;
             if(dest_port < 0)
             {
-                glog.is(WARN) && glog << "No mapping for destination port: " << net_header.srcdest_port(1) << ", cannot write packet" << std::endl;
+                glog.is(WARN) && glog << "No mapping for destination port: " << net_header.udp().srcdest_port(1) << ", cannot write packet" << std::endl;
                 continue;
             }
             
@@ -490,13 +536,13 @@ void goby::acomms::IPGateway::write_udp_packet(goby::acomms::protobuf::IPv4Heade
 //       0  1  2  3
 //     ------------
 // d 0 | x  0  1  2 
-// e 1 | 3  x  4  5
-// s 2 | 6  7  x  8
-// t 3 | 9 10 11  x
+// e 1 | x  x  3  4  
+// s 2 | x  5  x  6  
+// t 3 | x  7  8  x 
 std::pair<int, int> goby::acomms::IPGateway::to_src_dest_pair(int srcdest)
 {
-    int src = srcdest % (total_addresses_-1);
-    int dest = srcdest / (total_addresses_-1);
+    int src = (srcdest-1) % (total_addresses_-2) + 1;
+    int dest = (srcdest-1) / (total_addresses_-2);
     if(src >= dest)
         ++src;
 
@@ -508,9 +554,9 @@ int goby::acomms::IPGateway::from_src_dest_pair(std::pair<int, int> src_dest)
     int src = src_dest.first;
     int dest = src_dest.second;
 
-    if(src == dest) return -1;
+    if(src == dest || src == goby::acomms::BROADCAST_ID) return -1;
 
-    return dest * (total_addresses_-1) + src - (src > dest ? 1 : 0);
+    return dest * (total_addresses_-2) + src - (src > dest ? 1 : 0);
 }
 
 
@@ -538,6 +584,28 @@ std::string goby::acomms::IPGateway::goby_address_to_ipv4(int modem_id)
     in_addr ret_addr;
     ret_addr.s_addr = htonl(address);
     return std::string(inet_ntoa(ret_addr));
+}
+
+int goby::acomms::IPGateway::ac_freq(int srcdest)
+{
+    std::pair<int, int> sd = to_src_dest_pair(srcdest);
+    int s = sd.first;
+    int d = sd.second;    
+    int N = total_addresses_ + 1;
+    const int scale_factor = N*N*100;
+    
+    double p0 = 1.0/(N-2);
+    double p1 = 1.0/(N-3);
+    double p2 = 1.0/(N*N-6*N+9);
+
+    if(s == d || s == goby::acomms::BROADCAST_ID)
+        return 0;
+    else if(s == cfg_.gateway_id())
+        return scale_factor*p0*(1-cfg_.gamma_autonomy());
+    else if(d == cfg_.gateway_id())
+        return scale_factor*p1*(cfg_.gamma_autonomy() - cfg_.gamma_collaboration());
+    else
+        return scale_factor*p2*(cfg_.gamma_collaboration());
 }
 
 

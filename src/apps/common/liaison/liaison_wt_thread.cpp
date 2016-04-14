@@ -64,21 +64,32 @@ goby::common::LiaisonWtThread::LiaisonWtThread(const Wt::WEnvironment& env)
     WContainerWidget* header_div = new WContainerWidget(root());
     header_div->setId("header");
     
-    WImage* goby_lp_image = new WImage("images/mit-logo.gif");
-    WImage* goby_logo = new WImage("images/gobysoft_logo_dot_org_small.png");
-
-    
-    WAnchor* goby_lp_image_a = new WAnchor("http://lamss.mit.edu", goby_lp_image, header_div);
     WText* header = new WText(title_text, header_div);
     header->setId("header");
 
+    WImage* goby_logo = new WImage("images/gobysoft_logo_dot_org_small.png");
     WAnchor* goby_logo_a = new WAnchor("http://gobysoft.org/#/software/goby", goby_logo, header_div);
-    goby_lp_image_a->setId("lp_logo");
     goby_logo_a->setId("goby_logo");
-    goby_lp_image_a->setStyleClass("no_ul");
     goby_logo_a->setStyleClass("no_ul");
-    goby_lp_image_a->setTarget(TargetNewWindow);
     goby_logo_a->setTarget(TargetNewWindow);
+
+    if(!liaison_cfg_.has_upper_right_logo())
+    {
+        WImage* goby_lp_image = new WImage("images/mit-logo.gif");
+        WAnchor* goby_lp_image_a = new WAnchor("http://lamss.mit.edu", goby_lp_image, header_div);
+        goby_lp_image_a->setId("lp_logo");
+        goby_lp_image_a->setStyleClass("no_ul");
+        goby_lp_image_a->setTarget(TargetNewWindow);
+    }
+    else
+    {
+        WImage* goby_lp_image = new WImage(liaison_cfg_.upper_right_logo());
+        WAnchor* goby_lp_image_a = new WAnchor(liaison_cfg_.has_upper_right_logo_link() ?
+                                               liaison_cfg_.upper_right_logo_link() : "", goby_lp_image, header_div);
+        goby_lp_image_a->setId("lp_logo");
+        goby_lp_image_a->setStyleClass("no_ul");
+        goby_lp_image_a->setTarget(TargetNewWindow);
+    }
     
 
     new WText("<hr/>", root());

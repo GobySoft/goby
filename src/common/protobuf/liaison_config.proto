@@ -21,6 +21,9 @@ message LiaisonConfig
   
   optional bool start_paused = 10 [default = false];
 
+  optional string upper_right_logo = 11 [(goby.field).description="Image for upper right, relative to docroot"];
+  optional string upper_right_logo_link = 12 [(goby.field).description="Hyperlink for upper right image"];
+    
   // MOOS - 1000 to 1099
   // DRC -  1100 
   extensions 1000 to max;

@@ -21,7 +21,11 @@
 
 #include "chat_curses.h"
 
+
+// Uncomment to use the Micro-Modem 2 Flexible Data Packet instead of the traditional $CCCYC data cycle
 //#define USE_FLEXIBLE_DATA_PACKET
+// Uncomment to use the Micro-Modem ping $CCMPC instead of sending data
+//#define USE_TWO_WAY_PING
 
 using goby::util::as;
 using goby::common::goby_time;
@@ -31,6 +35,8 @@ void received_data(const google::protobuf::Message&);
 void received_ack(const goby::acomms::protobuf::ModemTransmission&,
                   const google::protobuf::Message&);
 void monitor_mac(const goby::acomms::protobuf::ModemTransmission& mac_msg);
+void monitor_modem_receive(const goby::acomms::protobuf::ModemTransmission& rx_msg);
+
 
 std::ofstream fout_;
 goby::acomms::DCCLCodec* dccl_ = goby::acomms::DCCLCodec::get();
@@ -117,11 +123,15 @@ int main(int argc, char* argv[])
     goby::acomms::protobuf::DriverConfig driver_cfg;
     driver_cfg.set_modem_id(my_id_);
     driver_cfg.set_serial_port(serial_port);
-
+    
 #ifdef USE_FLEXIBLE_DATA_PACKET
     driver_cfg.AddExtension(micromodem::protobuf::Config::nvram_cfg, "psk.packet.mod_hdr_version,1");
 #endif
-    
+
+#ifdef USE_TWO_WAY_PING
+    goby::acomms::connect(&mm_driver_.signal_receive, &monitor_modem_receive);
+#endif
+
     //
     // Initiate medium access control (libamac)
     //
@@ -138,6 +148,9 @@ int main(int argc, char* argv[])
     my_slot.SetExtension(micromodem::protobuf::type, micromodem::protobuf::MICROMODEM_FLEXIBLE_DATA);
     my_slot.set_max_frame_bytes(32);
     my_slot.set_rate(1);
+#elif defined(USE_TWO_WAY_PING)
+    my_slot.set_type(goby::acomms::protobuf::ModemTransmission::DRIVER_SPECIFIC);
+    my_slot.SetExtension(micromodem::protobuf::type, micromodem::protobuf::MICROMODEM_TWO_WAY_PING);
 #else
     my_slot.set_type(goby::acomms::protobuf::ModemTransmission::DATA);
     my_slot.set_rate(0);
@@ -153,6 +166,9 @@ int main(int argc, char* argv[])
     buddy_slot.SetExtension(micromodem::protobuf::type, micromodem::protobuf::MICROMODEM_FLEXIBLE_DATA);
     buddy_slot.set_max_frame_bytes(32);
     buddy_slot.set_rate(1);
+#elif defined(USE_TWO_WAY_PING)
+    buddy_slot.set_type(goby::acomms::protobuf::ModemTransmission::DRIVER_SPECIFIC);
+    buddy_slot.SetExtension(micromodem::protobuf::type, micromodem::protobuf::MICROMODEM_TWO_WAY_PING);
 #else
     buddy_slot.set_type(goby::acomms::protobuf::ModemTransmission::DATA);
     buddy_slot.set_rate(0);
@@ -237,6 +253,22 @@ void monitor_mac(const goby::acomms::protobuf::ModemTransmission& mac_msg)
         curses_.post_message("{control} starting send to my buddy");
     else if(mac_msg.src() == buddy_id_)
         curses_.post_message("{control} my buddy might be sending to me now");
+}
+
+void monitor_modem_receive(const goby::acomms::protobuf::ModemTransmission& rx_msg)
+{
+    if(rx_msg.GetExtension(micromodem::protobuf::type) == micromodem::protobuf::MICROMODEM_TWO_WAY_PING &&
+       rx_msg.HasExtension(micromodem::protobuf::ranging_reply))
+    {
+        const micromodem::protobuf::RangingReply& range_reply = rx_msg.GetExtension(micromodem::protobuf::ranging_reply);
+        if(range_reply.one_way_travel_time_size() > 0)
+        {
+            double owtt = range_reply.one_way_travel_time(0);
+            curses_.post_message(range_reply.ShortDebugString());
+        }
+        
+    }
+    
 }
 
 void received_data(const google::protobuf::Message& message_in)

@@ -54,8 +54,6 @@ void goby::acomms::serialize_rudics_packet(std::string bytes, std::string* rudic
                      static_cast<char>(reduced_base+i));
     }
     
-//    *rudics_pkt = goby::util::hex_encode(bytes);
-
     // 4. append CR
     *rudics_pkt += "\r";
 }
@@ -88,8 +86,6 @@ void goby::acomms::parse_rudics_packet(std::string* bytes, std::string rudics_pk
 
     // 2. convert to base
     goby::util::base_convert(rudics_pkt, bytes, reduced_base, 256);
-
-//    *bytes = goby::util::hex_decode(rudics_pkt);
 
     // 1. check CRC
     const unsigned CRC_BYTE_SIZE = 4;

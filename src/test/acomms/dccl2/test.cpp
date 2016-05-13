@@ -1,8 +1,7 @@
-// Copyright 2009-2014 Toby Schneider (https://launchpad.net/~tes)
+// Copyright 2009-2016 Toby Schneider (http://gobysoft.org/index.wt/people/toby)
 //                     GobySoft, LLC (2013-)
 //                     Massachusetts Institute of Technology (2007-2014)
-//                     Goby Developers Team (https://launchpad.net/~goby-dev)
-// 
+//
 //
 // This file is part of the Goby Underwater Autonomy Project Binaries
 // ("The Goby Binaries").
@@ -19,8 +18,6 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with Goby.  If not, see <http://www.gnu.org/licenses/>.
-
-
 
 // tests custom message codec
 // tests cryptography

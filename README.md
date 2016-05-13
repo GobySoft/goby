@@ -20,3 +20,10 @@ please read the INSTALL.txt file in this directory
 
 please read the COPYING file found in this directory
 
+## contributing to Goby
+
+please read the AUTHORS file found in this directory for instructions on how to contribute to Goby. You can fork the project and use the Github pull request system for submitting bug fixes and new features.
+
+## reporting bugs and other issues
+
+please use the Github issue tracking system to report bugs or inconstencies in the software or documentation. If you have a fix, this is greatly appreciated as well.

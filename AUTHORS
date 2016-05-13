@@ -1,4 +1,32 @@
-Goby is authored by:
+== Core Authors ==
 
-Team is Goby Developers: https://launchpad.net/~goby-dev
-Lead is Toby Schneider: https://launchpad.net/~tes
+Goby is primarily authored by:
+
+Toby Schneider: https://github.com/tsaubergine
+GobySoft goby-dev team:  https://github.com/orgs/GobySoft/teams/goby-dev
+
+== MIT Authors ==
+
+Goby started as a project with the Massachusetts Institute of Technology. MIT owns the copyright to parts of Goby, and has agreed to release it freely under the terms of the LGPL/GPL as given in the MIT Open Source Approval Case 16741 dated 2014-03-17 located in share/doc/MIT_Open_Source_Approval_Case_16741.pdf
+
+MIT contributors include:
+Toby Schneider
+Chris Murphy
+Henrik Schmidt
+
+== Community contributions to Goby ==
+
+We greatly appreciate contributions of code, bug fixes, and documentation from the community.
+
+Before contributing to Goby, in order for us to use your contribution and distribute it under the existing open source licenses, we request that you read the appropriate Contributor License Agreement (CLA) located at:
+
+Individuals: 
+  http://gobysoft.org/dl/gobysoft_contributor_license_agreement-individual.pdf
+Entities:
+  http://gobysoft.org/dl/gobysoft_contributor_license_agreement-entity.pdf
+
+** Please note **: This CLA does not take away your copyright, it merely gives us a license to use your open source contribution.
+
+To accept this CLA, please add your name, email, and date to the list below, and commit the change using your name and email. Committing your name electronically with your SSH key will be considered a substitute for your physical signature:
+
+Toby Schneider <toby@gobysoft.org> 2016-05-13

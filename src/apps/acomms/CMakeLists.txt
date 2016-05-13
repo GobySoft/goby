@@ -1,5 +1,7 @@
 add_subdirectory(abc_modem_simulator)
 
+
+
 # for now, we need to be able to link in UDPDriver and PBDriver
 # at some point, make these dynamically loadable
 if(build_pb AND enable_zeromq)
@@ -10,5 +12,6 @@ if(build_pb AND enable_zeromq)
   if(enable_sqlite)
     add_subdirectory(goby_store_server)
   endif()
+  add_subdirectory(goby_ip_gateway)
 endif()
 

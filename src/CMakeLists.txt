@@ -168,12 +168,13 @@ if(build_common)
         # for DCCL 3.0.3 and newer
         get_target_property(DCCL_INCLUDE_DIR dccl INTERFACE_INCLUDE_DIRECTORIES)
       endif()
-
-      message("Including protobuf dir: ${DCCL_INCLUDE_DIR}")
-      protobuf_include_dirs("${DCCL_INCLUDE_DIR}")
-
+      
+      if(DCCL_INCLUDE_DIR)
+        message("Including protobuf dir: ${DCCL_INCLUDE_DIR}")
+        protobuf_include_dirs("${DCCL_INCLUDE_DIR}")
+      endif()
+      
       add_subdirectory(acomms)
-
 
       if(enable_zeromq AND enable_gmp)
         option(build_pb "Build the Goby implementation in Protobuf/C++ (PB) (requires goby-acomms)" ON)

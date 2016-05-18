@@ -160,17 +160,14 @@ if(build_common)
      
       message("Using DCCL in ${DCCL_DIR}")
       
-      if(DEFINED DCCL_INCLUDE_DIR)
-        # for DCCL 3.0.2 and older
-        include_directories("${DCCL_INCLUDE_DIR}")
-        protobuf_include_dirs("${DCCL_INCLUDE_DIR}")
-      else()
+      if(NOT DEFINED DCCL_INCLUDE_DIR)
         # for DCCL 3.0.3 and newer
         get_target_property(DCCL_INCLUDE_DIR dccl INTERFACE_INCLUDE_DIRECTORIES)
       endif()
       
       if(DCCL_INCLUDE_DIR)
         message("Including protobuf dir: ${DCCL_INCLUDE_DIR}")
+        include_directories("${DCCL_INCLUDE_DIR}")
         protobuf_include_dirs("${DCCL_INCLUDE_DIR}")
       endif()
       

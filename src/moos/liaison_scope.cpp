@@ -113,7 +113,7 @@ goby::common::LiaisonScope::LiaisonScope(ZeroMQService* zeromq_service, const pr
     for(int i = 0, n = moos_scope_config_.history_size(); i < n; ++i)
         history_header_div_->add_history(moos_scope_config_.history(i));
 
-    goby::moos::use_binary_protobuf = moos_scope_config_.use_binary_protobuf();
+    goby::moos::moos_technique = moos_scope_config_.moos_parser_technique();
     
     wApp->globalKeyPressed().connect(this, &LiaisonScope::handle_global_key);
 

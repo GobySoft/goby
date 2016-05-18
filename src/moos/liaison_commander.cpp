@@ -93,6 +93,8 @@ goby::common::LiaisonCommander::LiaisonCommander(ZeroMQService* zeromq_service,
 //    main_layout_->addWidget(commands_div_);
 //    main_layout_->addStretch(1);
 
+    goby::moos::moos_technique = pb_commander_config_.moos_parser_technique();
+    
     for(int i = 0, n = pb_commander_config_.subscription_size(); i < n; ++i)
     {
         display_subscriptions_.insert(pb_commander_config_.subscription(i));

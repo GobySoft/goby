@@ -207,8 +207,8 @@ namespace goby
                     if(name != msg->GetDescriptor()->full_name())
                         throw(std::runtime_error("Wrong Protobuf type passed to MOOSTranslation<" + goby::moos::protobuf::TranslatorEntry::ParserSerializerTechnique_Name(prefix_technique) + ">::parse. Expected: " + msg->GetDescriptor()->full_name() + ", received: " + name));
 
-                    if(in.size() > end_bracket_pos + 1)
-                        goby::moos::MOOSTranslation<base_technique>::parse(in.substr(end_bracket_pos + 1), msg);
+                    if(in.size() > end_bracket_pos + 2)
+                        goby::moos::MOOSTranslation<base_technique>::parse(in.substr(end_bracket_pos + 2), msg);
                     else
                         msg->Clear();
                 }

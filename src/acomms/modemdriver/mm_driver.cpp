@@ -111,6 +111,19 @@ void goby::acomms::MMDriver::startup(const protobuf::DriverConfig& cfg)
     
     modem_start(driver_cfg_);
 
+    // Grab our native file descrpitor for the serial port.  Only works for linux.
+    // Used to change control lines (e.g. RTS) w/ linux through IOCTL calls.
+    // Would need #ifdef's for conditional compling if other platforms become desired.
+    serial_fd_ = dynamic_cast<util::SerialClient&>(modem()).socket().native();
+
+    // The MM2 (at least, possibly MM1 as well) has an issue where serial comms are
+    // garbled when RTS is asserted and hardware flow control is disabled (HFC0).
+    // HFC is disabled by default on MM boot so we need to make sure 
+    // RTS is low to talk to it.  Lines besides TX/RX/GND are rarely wired into
+    // MM units, but the newer MM2 development boxes full 9-line serial passthrough.
+        
+    set_rts(false);
+
     write_cfg();
 
     // reboot, to ensure we get a $CAREV message
@@ -142,6 +155,33 @@ void goby::acomms::MMDriver::startup(const protobuf::DriverConfig& cfg)
     query_all_cfg();
 
     startup_done_ = true;
+}
+
+void goby::acomms::MMDriver::set_rts(bool state)
+{
+    int status;
+    if(ioctl(serial_fd_, TIOCMGET, &status) == -1)
+    {
+        glog.is(DEBUG1) && glog << group(glog_out_group()) << warn << "IOCTL failed: " << strerror(errno) << std::endl;            
+    }
+    
+    glog.is(DEBUG1) && glog << group(glog_out_group()) << "Setting RTS to " << (state ? "high" : "low" ) << std::endl;
+    if(state) status |= TIOCM_RTS;
+    else status &= ~TIOCM_RTS;
+    if(ioctl(serial_fd_, TIOCMSET, &status) == -1)
+    {
+        glog.is(DEBUG1) && glog << group(glog_out_group()) << warn << "IOCTL failed: " << strerror(errno) << std::endl;            
+    }
+}
+
+bool goby::acomms::MMDriver::query_rts()
+{
+    int status;
+    if(ioctl(serial_fd_, TIOCMGET, &status) == -1)
+    {
+        glog.is(DEBUG1) && glog << group(glog_out_group()) << warn << "IOCTL failed: " << strerror(errno) << std::endl;            
+    }    
+    return (status & TIOCM_RTS);
 }
 
 void goby::acomms::MMDriver::update_cfg(const protobuf::DriverConfig& cfg)

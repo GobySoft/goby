@@ -87,7 +87,8 @@ template <class MOOSAppType = MOOSAppShell>
       cout_cleared_(false),
       connected_(false),
       started_up_(false),
-      ignore_stale_(true)
+      ignore_stale_(true),
+      dynamic_moos_vars_enabled_(true)
       {
           using goby::glog;
 
@@ -146,9 +147,23 @@ template <class MOOSAppType = MOOSAppShell>
                      void(V::*mem_func)(A1),
                      V* obj,
                      int blackout = 0)
-      { subscribe(var, boost::bind(mem_func, obj, _1), blackout); }    
+      { subscribe(var, boost::bind(mem_func, obj, _1), blackout); }
 
+      // wildcard
+      void subscribe(const std::string& var_pattern,
+                     const std::string& app_pattern,
+                     InboxFunc handler = InboxFunc(),
+                     int blackout = 0);
+      
+      template<typename V, typename A1>
+      void subscribe(const std::string& var_pattern,
+                     const std::string& app_pattern,
+                     void(V::*mem_func)(A1),
+                     V* obj,
+                     int blackout = 0)
+      { subscribe(var_pattern, app_pattern, boost::bind(mem_func, obj, _1), blackout); }
 
+      
       template<typename V, typename ProtobufMessage>
       void subscribe_pb(const std::string& var,
                      void(V::*mem_func)(const ProtobufMessage&),
@@ -174,6 +189,8 @@ template <class MOOSAppType = MOOSAppShell>
       bool ignore_stale() { return ignore_stale_; }
       void set_ignore_stale(bool b) { ignore_stale_ = b; }
 
+      bool dynamic_moos_vars_enabled() { return dynamic_moos_vars_enabled_; }
+      void set_dynamic_moos_vars_enabled(bool b) { dynamic_moos_vars_enabled_ = b; }
     
       private:
       // from CMOOSApp
@@ -206,6 +223,8 @@ template <class MOOSAppType = MOOSAppShell>
 
       std::map<std::string, boost::shared_ptr<boost::signals2::signal<void (const CMOOSMsg& msg)> > > mail_handlers_;
 
+      std::map<std::pair<std::string, std::string>, boost::shared_ptr<boost::signals2::signal<void (const CMOOSMsg& msg)> > > wildcard_mail_handlers_;
+
       // CMOOSApp::OnConnectToServer()
       bool connected_;
       // CMOOSApp::OnStartUp()
@@ -216,10 +235,16 @@ template <class MOOSAppType = MOOSAppShell>
       // MOOS Variable name, blackout time
       std::deque<std::pair<std::string, int> > pending_subscriptions_;
 
+      // MOOS Variable pattern, MOOS App pattern, blackout time
+      std::deque<std::pair<std::pair<std::string, std::string>, int> > wildcard_pending_subscriptions_;
+
+      
       GobyMOOSAppConfig common_cfg_;
 
       bool ignore_stale_;
-    
+
+      bool dynamic_moos_vars_enabled_;
+      
       static int argc_;
       static char** argv_;
       static std::string mission_file_;
@@ -288,7 +313,8 @@ template <class MOOSAppType>
         
         // update dynamic moos variables - do this inside the loop so the newest is
         // also the one referenced in the call to inbox()
-        dynamic_vars().update_moos_vars(msg);   
+        if(dynamic_moos_vars_enabled_)
+            dynamic_vars().update_moos_vars(msg);   
 
         if(msg.GetTime() < start_time_ && ignore_stale_)
         {
@@ -299,6 +325,12 @@ template <class MOOSAppType>
         }
         else if(mail_handlers_.count(msg.GetKey()))
             (*mail_handlers_[msg.GetKey()])(msg);
+
+        for(std::map<std::pair<std::string, std::string>, boost::shared_ptr<boost::signals2::signal<void (const CMOOSMsg& msg)> > >::iterator it = wildcard_mail_handlers_.begin(), end = wildcard_mail_handlers_.end(); it != end; ++it)
+        {
+            if(MOOSWildCmp(it->first.first, msg.GetKey()) && MOOSWildCmp(it->first.second, msg.GetSource()))
+                (*(it->second))(msg);
+        }
     }
     
     return true;    
@@ -368,10 +400,29 @@ template <class MOOSAppType>
 
     if(!mail_handlers_[var])
         mail_handlers_[var].reset(new boost::signals2::signal<void (const CMOOSMsg& msg)>);
-        
+    
     if(handler)
         mail_handlers_[var]->connect(handler);
 }
+
+template <class MOOSAppType>
+void GobyMOOSAppSelector<MOOSAppType>::subscribe(const std::string& var_pattern, const std::string& app_pattern, InboxFunc handler, int blackout /* = 0 */ )
+{
+    goby::glog.is(goby::common::logger::VERBOSE) &&
+        goby::glog << "wildcard subscribing for MOOS variable pattern: " << var_pattern << ", app pattern: " << app_pattern << " @ " << blackout << std::endl;
+    
+    std::pair<std::string, std::string> key = std::make_pair(var_pattern, app_pattern);
+    wildcard_pending_subscriptions_.push_back(std::make_pair(key, blackout));
+    try_subscribing();
+
+    
+    if(!wildcard_mail_handlers_.count(key))
+        wildcard_mail_handlers_.insert(std::make_pair(key, boost::shared_ptr<boost::signals2::signal<void (const CMOOSMsg& msg)> >(new boost::signals2::signal<void (const CMOOSMsg& msg)>)));
+    
+    if(handler)
+        wildcard_mail_handlers_[key]->connect(handler);
+}
+
 
 template <class MOOSAppType>
     void GobyMOOSAppSelector<MOOSAppType>::try_subscribing()
@@ -388,12 +439,37 @@ template <class MOOSAppType>
     while(!pending_subscriptions_.empty())
     {
         // variable name, blackout
-        MOOSAppType::m_Comms.Register(pending_subscriptions_.front().first,
-                         pending_subscriptions_.front().second);
-        goby::glog.is(goby::common::logger::VERBOSE) &&
-            goby::glog << "subscribed for: " << pending_subscriptions_.front().first << std::endl;
+        if(MOOSAppType::m_Comms.Register(pending_subscriptions_.front().first,
+                                         pending_subscriptions_.front().second))
+        {
+            goby::glog.is(goby::common::logger::VERBOSE) &&
+                goby::glog << "subscribed for: " << pending_subscriptions_.front().first << std::endl;
+        }
+        else
+        {
+            goby::glog.is(goby::common::logger::WARN) &&
+                goby::glog << "failed to subscribe for: " << pending_subscriptions_.front().first << std::endl;
+        }
         pending_subscriptions_.pop_front();
     }
+    
+    while(!wildcard_pending_subscriptions_.empty())
+    {
+        // variable name, blackout
+        if(MOOSAppType::m_Comms.Register(wildcard_pending_subscriptions_.front().first.first, wildcard_pending_subscriptions_.front().first.second, wildcard_pending_subscriptions_.front().second))
+        {
+            goby::glog.is(goby::common::logger::VERBOSE) &&
+                goby::glog << "subscribed for: " << wildcard_pending_subscriptions_.front().first.first << ":" << wildcard_pending_subscriptions_.front().first.second << std::endl;
+        }
+        else
+        {
+            goby::glog.is(goby::common::logger::WARN) &&
+                goby::glog << "failed to subscribe for: " << wildcard_pending_subscriptions_.front().first.first << ":" << wildcard_pending_subscriptions_.front().first.second << std::endl;
+        }
+
+        wildcard_pending_subscriptions_.pop_front();
+    }
+    
 }
 
 

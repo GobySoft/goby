@@ -1,5 +1,6 @@
 import "goby/common/protobuf/option_extensions.proto";
 import "goby/common/protobuf/logger.proto";
+import "goby/moos/protobuf/translator.proto";
 
 message GobyMOOSAppConfig
 {
@@ -43,7 +44,9 @@ message GobyMOOSAppConfig
 
   optional bool use_binary_protobuf = 109 [default = false,
                                            (goby.field).moos_global = "use_binary_protobuf",
-                                           (goby.field).description="Use TECHNIQUE_PREFIXED_PROTOBUF_NATIVE_HEX for parse_for_moos and serialize_for_moos"];
+                                           (goby.field).description="Use TECHNIQUE_PREFIXED_PROTOBUF_NATIVE_ENCODED for parse_for_moos and serialize_for_moos"];
+
+    optional goby.moos.protobuf.TranslatorEntry.ParserSerializerTechnique moos_parser_technique = 110 [default = TECHNIQUE_PREFIXED_PROTOBUF_TEXT_FORMAT, (goby.field).moos_global = "moos_parser_technique" ];
     
   // post various configuration values to the MOOSDB on startup
   message Initializer

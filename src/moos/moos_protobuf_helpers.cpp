@@ -22,4 +22,5 @@
 
 #include "moos_protobuf_helpers.h"
 
-bool goby::moos::use_binary_protobuf = false;
+goby::moos::protobuf::TranslatorEntry::ParserSerializerTechnique goby::moos::moos_technique = goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PREFIXED_PROTOBUF_TEXT_FORMAT;
+

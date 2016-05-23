@@ -107,8 +107,26 @@ int main(int argc, char* argv[])
     goby::glog << translator << std::endl;    
     run_one_in_one_out_test(translator, 2, false);
 
+    {
+        protobuf::TranslatorEntry entry;
+        entry.set_protobuf_name("TestMsg");
+        
+        protobuf::TranslatorEntry::CreateParser* parser = entry.add_create();
+        parser->set_technique(protobuf::TranslatorEntry::TECHNIQUE_PREFIXED_PROTOBUF_NATIVE_HEX);
+        parser->set_moos_var("TEST_MSG_1");
+        
+        protobuf::TranslatorEntry::PublishSerializer* serializer = entry.add_publish();
+        serializer->set_technique(protobuf::TranslatorEntry::TECHNIQUE_PREFIXED_PROTOBUF_NATIVE_HEX);
+        serializer->set_moos_var("TEST_MSG_1");
 
+        translator.clear_entry(entry.protobuf_name());
+        translator.add_entry(entry);
+    }
+    
+    goby::glog << translator << std::endl;    
+    run_one_in_one_out_test(translator, 3, false);
 
+    
     
     std::string format_str = "NAME=%1%,X=%202%,Y=%3%,HEADING=%201%,REPEAT={%10%}";
    {
@@ -445,7 +463,17 @@ void run_one_in_one_out_test(MOOSTranslator& translator, int i, bool hex_encode)
                 assert(it->first == "TEST_MSG_1");
                 break;
             }
-            
+
+            case 3:
+            {
+                TestMsg msg_out;
+                goby::moos::MOOSTranslation<protobuf::TranslatorEntry::TECHNIQUE_PREFIXED_PROTOBUF_NATIVE_HEX>::parse(it->second.GetString(), &msg_out);
+                
+                assert(msg.SerializeAsString() == msg_out.SerializeAsString());
+                assert(it->first == "TEST_MSG_1");
+                break;
+            }
+
             
             default:
                 assert(false);

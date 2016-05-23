@@ -134,17 +134,28 @@ namespace goby
             const std::map<std::string, goby::moos::protobuf::TranslatorEntry>&  dictionary() const { return dictionary_; }
             
           private:
-            CMOOSMsg make_moos_msg(const std::string var, const std::string& str)
+            CMOOSMsg make_moos_msg(const std::string& var, const std::string& str, bool is_binary, goby::moos::protobuf::TranslatorEntry::ParserSerializerTechnique technique, const std::string& pb_name)
             {
-                try
+                if(is_binary)
                 {
-                    double return_double = boost::lexical_cast<double>(str);
-                    return CMOOSMsg(MOOS_NOTIFY, var, return_double);
+                    CMOOSMsg moos_msg(MOOS_NOTIFY, var, str.size(), str.data());
+                    moos_msg.SetSourceAux(pb_name + ":" + goby::moos::protobuf::TranslatorEntry::ParserSerializerTechnique_Name(technique));
+                    return moos_msg;
                 }
-                catch(boost::bad_lexical_cast&)
+                else
                 {
-                    return CMOOSMsg(MOOS_NOTIFY, var, str);
-                }      
+                    try
+                    {
+                        double return_double = boost::lexical_cast<double>(str);
+                        return CMOOSMsg(MOOS_NOTIFY, var, return_double);
+                    }
+                    catch(boost::bad_lexical_cast&)
+                    {
+                        CMOOSMsg moos_msg(MOOS_NOTIFY, var, str);
+                        moos_msg.SetSourceAux(pb_name + ":" + goby::moos::protobuf::TranslatorEntry::ParserSerializerTechnique_Name(technique));
+                        return moos_msg;
+                    }
+                }
             }
             
             
@@ -216,13 +227,17 @@ inline std::multimap<std::string, CMOOSMsg> goby::moos::MOOSTranslator::protobuf
     std::map<std::string, goby::moos::protobuf::TranslatorEntry>::const_iterator it =
         dictionary_.find(protobuf_msg.GetDescriptor()->full_name());
 
+    const std::string& pb_name = protobuf_msg.GetDescriptor()->full_name();
+    
     if(it == dictionary_.end())
-        throw(std::runtime_error("No TranslatorEntry for Protobuf type: " + protobuf_msg.GetDescriptor()->full_name()));
+        throw(std::runtime_error("No TranslatorEntry for Protobuf type: " + pb_name));
 
     const goby::moos::protobuf::TranslatorEntry& entry = it->second;
     
     std::multimap<std::string, CMOOSMsg> moos_msgs;
 
+    bool is_binary = false;
+    
     for(int i = 0, n = entry.publish_size();
         i < n; ++ i)
     {
@@ -248,12 +263,17 @@ inline std::multimap<std::string, CMOOSMsg> goby::moos::MOOSTranslator::protobuf
             case protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_NATIVE_HEX:
                 goby::moos::MOOSTranslation<protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_NATIVE_HEX>::serialize(&return_string, protobuf_msg);
                 break;
-
                 
             case protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_NATIVE_ENCODED:
                 goby::moos::MOOSTranslation<protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_NATIVE_ENCODED>::serialize(&return_string, protobuf_msg);
+                is_binary = true;
                 break;
 
+            case protobuf::TranslatorEntry::TECHNIQUE_PREFIXED_PROTOBUF_NATIVE_ENCODED:
+                goby::moos::MOOSTranslation<protobuf::TranslatorEntry::TECHNIQUE_PREFIXED_PROTOBUF_NATIVE_ENCODED>::serialize(&return_string, protobuf_msg);
+                is_binary = true;
+                break;
+                
             case protobuf::TranslatorEntry::TECHNIQUE_COMMA_SEPARATED_KEY_EQUALS_VALUE_PAIRS:
                 goby::moos::MOOSTranslation<protobuf::TranslatorEntry::TECHNIQUE_COMMA_SEPARATED_KEY_EQUALS_VALUE_PAIRS>::serialize(&return_string, protobuf_msg, entry.publish(i).algorithm(), entry.use_short_enum());
                 break;
@@ -266,25 +286,28 @@ inline std::multimap<std::string, CMOOSMsg> goby::moos::MOOSTranslator::protobuf
                 break;
         }
 
-        moos_msgs.insert(std::make_pair(moos_var, make_moos_msg(moos_var, return_string)));
+        moos_msgs.insert(std::make_pair(moos_var, make_moos_msg(moos_var, return_string, is_binary, entry.publish(i).technique(), pb_name)));
     }
     
     return moos_msgs;
 }
-
 
 inline std::multimap<std::string, CMOOSMsg> goby::moos::MOOSTranslator::protobuf_to_inverse_moos(const google::protobuf::Message& protobuf_msg)
 {
     std::map<std::string, goby::moos::protobuf::TranslatorEntry>::const_iterator it =
         dictionary_.find(protobuf_msg.GetDescriptor()->full_name());
 
+    const std::string& pb_name = protobuf_msg.GetDescriptor()->full_name();
+    
     if(it == dictionary_.end())
-        throw(std::runtime_error("No TranslatorEntry for Protobuf type: " + protobuf_msg.GetDescriptor()->full_name()));
+        throw(std::runtime_error("No TranslatorEntry for Protobuf type: " + pb_name));
 
     const goby::moos::protobuf::TranslatorEntry& entry = it->second;
     
     std::multimap<std::string, CMOOSMsg> moos_msgs;
-    
+
+    bool is_binary = false;
+
     for(int i = 0, n = entry.create_size();
         i < n; ++ i)
     {
@@ -312,8 +335,15 @@ inline std::multimap<std::string, CMOOSMsg> goby::moos::MOOSTranslator::protobuf
                 
             case protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_NATIVE_ENCODED:
                 goby::moos::MOOSTranslation<goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_NATIVE_ENCODED>::serialize(&return_string, protobuf_msg);
+                is_binary = true;
                 break;
 
+            case protobuf::TranslatorEntry::TECHNIQUE_PREFIXED_PROTOBUF_NATIVE_ENCODED:
+                goby::moos::MOOSTranslation<goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PREFIXED_PROTOBUF_NATIVE_ENCODED>::serialize(&return_string, protobuf_msg);
+                is_binary = true;
+                break;
+
+                
             case protobuf::TranslatorEntry::TECHNIQUE_COMMA_SEPARATED_KEY_EQUALS_VALUE_PAIRS:    
             {
                 // workaround for bug in protobuf 2.3.0
@@ -332,7 +362,7 @@ inline std::multimap<std::string, CMOOSMsg> goby::moos::MOOSTranslator::protobuf
             break;
         }
         
-        moos_msgs.insert(std::make_pair(moos_var, make_moos_msg(moos_var, return_string)));
+        moos_msgs.insert(std::make_pair(moos_var, make_moos_msg(moos_var, return_string, is_binary, entry.publish(i).technique(), pb_name)));
     }
 
     if(entry.trigger().type() == protobuf::TranslatorEntry::Trigger::TRIGGER_PUBLISH)
@@ -407,6 +437,11 @@ GoogleProtobufMessagePointer goby::moos::MOOSTranslator::moos_to_protobuf(const 
                 goby::moos::MOOSTranslation<protobuf::TranslatorEntry::TECHNIQUE_PROTOBUF_NATIVE_ENCODED>::parse(source_string, &*msg);
                 break;
 
+
+            case protobuf::TranslatorEntry::TECHNIQUE_PREFIXED_PROTOBUF_NATIVE_ENCODED:
+                goby::moos::MOOSTranslation<protobuf::TranslatorEntry::TECHNIQUE_PREFIXED_PROTOBUF_NATIVE_ENCODED>::parse(source_string, &*msg);
+                break;
+                
             case protobuf::TranslatorEntry::TECHNIQUE_COMMA_SEPARATED_KEY_EQUALS_VALUE_PAIRS:
                 goby::moos::MOOSTranslation<protobuf::TranslatorEntry::TECHNIQUE_COMMA_SEPARATED_KEY_EQUALS_VALUE_PAIRS>::parse(source_string, &*msg, entry.create(i).algorithm(), entry.use_short_enum());
                 break;

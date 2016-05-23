@@ -1,5 +1,6 @@
 import "goby/common/protobuf/liaison_config.proto";
 import "goby/acomms/protobuf/network_ack.proto";
+import "goby/moos/protobuf/translator.proto";
 
 package goby.common.protobuf;
 
@@ -55,6 +56,10 @@ message ProtobufCommanderConfig
   optional string time_source_var = 40;
 
   optional string network_ack_var = 41 [default = "ACOMMS_NETWORK_ACK"];
+
+
+  optional goby.moos.protobuf.TranslatorEntry.ParserSerializerTechnique moos_parser_technique = 50 [default = TECHNIQUE_PREFIXED_PROTOBUF_TEXT_FORMAT];
+
 }
 
 message NetworkAckSet
@@ -111,8 +116,10 @@ message MOOSScopeConfig
   
   repeated HistoryConfig history = 8;
 
-  optional bool use_binary_protobuf = 9 [default=false];
   optional int32 max_history_items = 10 [default = 100];
+
+  optional goby.moos.protobuf.TranslatorEntry.ParserSerializerTechnique moos_parser_technique = 20 [default = TECHNIQUE_PREFIXED_PROTOBUF_TEXT_FORMAT];
+
 }
 
 message GeodesyConfig

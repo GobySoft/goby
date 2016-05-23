@@ -1,0 +1,9 @@
+
+package goby.common.protobuf;
+
+message HDF5Config
+{
+    required string output_file = 10;
+
+    extensions 1000 to max;
+}

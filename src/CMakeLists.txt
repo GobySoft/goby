@@ -77,7 +77,7 @@ else()
 endif()
 
 ## HDF5
-find_package(HDF5 QUIET)
+find_package(HDF5 QUIET COMPONENTS C CXX)
 set(HDF5_DOC_STRING "Enable HDF5 file format tools (requires libhdf5-dev: https://www.hdfgroup.org/HDF5)")
 # find resources directory
 if(HDF5_FOUND)

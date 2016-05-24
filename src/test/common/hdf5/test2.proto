@@ -1,0 +1,4 @@
+message TestHDF5Message
+{
+    repeated double a = 1;
+}

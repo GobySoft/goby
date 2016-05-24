@@ -116,77 +116,112 @@ void goby::common::hdf5::Writer::write()
 void goby::common::hdf5::Writer::write_channel(const std::string& group, const goby::common::hdf5::Channel& channel)
 {
     std::cout << "Channel: [" << channel.name << "]" << std::endl;
-    for(std::map<std::string, goby::common::hdf5::Message>::const_iterator it = channel.entries.begin(), end = channel.entries.end(); it != end; ++it)
-        write_message(group + "/" + it->first, it->second);    
+    for(std::map<std::string, goby::common::hdf5::MessageCollection>::const_iterator it = channel.entries.begin(), end = channel.entries.end(); it != end; ++it)
+        write_message_collection(group + "/" + it->first, it->second);    
 }
 
 
-void goby::common::hdf5::Writer::write_message(const std::string& group, const goby::common::hdf5::Message& message)
+void goby::common::hdf5::Writer::write_message_collection(const std::string& group, const goby::common::hdf5::MessageCollection& message_collection)
 {
-    std::cout << "Message: [" << message.name << "]" << std::endl;
+    std::cout << "MessageCollection: [" << message_collection.name << "]" << std::endl;
     std::cout << "group: [" << group << "]" << std::endl;
 
-    write_time(group, message);
+    write_time(group, message_collection);
     
-    const google::protobuf::Descriptor* desc = message.entries.begin()->second->GetDescriptor();
+    const google::protobuf::Descriptor* desc = message_collection.entries.begin()->second->GetDescriptor();
     for(int i = 0, n = desc->field_count(); i < n; ++i)
     {
         const google::protobuf::FieldDescriptor* field_desc = desc->field(i);
-        switch(field_desc->cpp_type())
-        {
-            case google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE:
-                break;
-                            
-            case google::protobuf::FieldDescriptor::CPPTYPE_ENUM:
-                break;
-                                
-            case google::protobuf::FieldDescriptor::CPPTYPE_INT32:
-                write_field<goby::int32>(group, field_desc, message);
-                break;
-                            
-            case google::protobuf::FieldDescriptor::CPPTYPE_INT64:
-                write_field<goby::int64>(group, field_desc, message);
-                break;
-                            
-            case google::protobuf::FieldDescriptor::CPPTYPE_UINT32:
-                write_field<goby::uint32>(group, field_desc, message);
-                break;
-                            
-            case google::protobuf::FieldDescriptor::CPPTYPE_UINT64:
-                write_field<goby::uint64>(group, field_desc, message);
-                break;
-                            
-            case google::protobuf::FieldDescriptor::CPPTYPE_BOOL:
-                //write_field<bool>(group, field_desc, message);
-                break;
-                            
-            case google::protobuf::FieldDescriptor::CPPTYPE_STRING:
-                // if(field_desc->type() ==  google::protobuf::FieldDescriptor::TYPE_STRING)
-                //     write_field<std::string>(group, field_desc, message);
-                // else if(field_desc->type() ==  google::protobuf::FieldDescriptor::TYPE_BYTES)
-                //     write_field<std::string>(group, field_desc, message);
-                break;                    
-                
-            case google::protobuf::FieldDescriptor::CPPTYPE_FLOAT:                
-                write_field<float>(group, field_desc, message);
-                break;
-                            
-            case google::protobuf::FieldDescriptor::CPPTYPE_DOUBLE:
-                write_field<double>(group, field_desc, message);
-                break;
-        }
 
+        std::vector<const google::protobuf::Message* > messages;
+        for(std::multimap<goby::uint64, boost::shared_ptr<google::protobuf::Message> >::const_iterator it = message_collection.entries.begin(), end = message_collection.entries.end(); it != end; ++it)
+        {
+            messages.push_back(it->second.get());
+        }
+        write_field_selector(group, field_desc, messages);
     }
-    
+}
+
+void goby::common::hdf5::Writer::write_embedded_message(const std::string& group, const google::protobuf::FieldDescriptor* field_desc, const std::vector<const google::protobuf::Message* > messages)
+{
+    if(field_desc->is_repeated())
+        return; // TODO: support repeateds
+    else
+    {
+        const google::protobuf::Descriptor* sub_desc = field_desc->message_type();
+        for(int i = 0, n = sub_desc->field_count(); i < n; ++i)
+        {
+            const google::protobuf::FieldDescriptor* sub_field_desc = sub_desc->field(i);
+            std::vector<const google::protobuf::Message* > sub_messages;
+            for(std::vector<const google::protobuf::Message* >::const_iterator it = messages.begin(), end = messages.end(); it != end; ++it)
+            {
+                const google::protobuf::Reflection* refl = (*it)->GetReflection();
+                const google::protobuf::Message& sub_msg = refl->GetMessage(**it, field_desc);
+                //                const google::protobuf::Reflection* sub_refl = sub_msg.GetReflection();
+                sub_messages.push_back(&sub_msg);
+            }
+            write_field_selector(group + "/" + field_desc->name(), sub_field_desc, sub_messages);
+        }
+    }
 }
 
 
-void goby::common::hdf5::Writer::write_time(const std::string& group, const goby::common::hdf5::Message& message)
+void goby::common::hdf5::Writer::write_field_selector(const std::string& group, const google::protobuf::FieldDescriptor* field_desc, const std::vector<const google::protobuf::Message* >& messages)
 {
-    std::vector<goby::uint64> utime(message.entries.size(), 0);
-    std::vector<double> datenum(message.entries.size(), 0);
+    switch(field_desc->cpp_type())
+    {
+        case google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE:
+            write_embedded_message(group, field_desc, messages);
+            break;
+                
+        case google::protobuf::FieldDescriptor::CPPTYPE_ENUM:
+            break;
+                                
+        case google::protobuf::FieldDescriptor::CPPTYPE_INT32:
+            write_field<goby::int32>(group, field_desc, messages);
+            break;
+                            
+        case google::protobuf::FieldDescriptor::CPPTYPE_INT64:
+            write_field<goby::int64>(group, field_desc, messages);
+            break;
+                            
+        case google::protobuf::FieldDescriptor::CPPTYPE_UINT32:
+            write_field<goby::uint32>(group, field_desc, messages);
+            break;
+                            
+        case google::protobuf::FieldDescriptor::CPPTYPE_UINT64:
+            write_field<goby::uint64>(group, field_desc, messages);
+            break;
+                            
+        case google::protobuf::FieldDescriptor::CPPTYPE_BOOL:
+            write_field<unsigned char>(group, field_desc, messages);
+            break;
+                            
+        case google::protobuf::FieldDescriptor::CPPTYPE_STRING:
+            if(cfg_.include_string_fields())
+                write_field<std::string>(group, field_desc, messages);
+            else
+                // placeholder for users to know that the field exists, even if the data are omitted
+                write_vector(group, field_desc->name(), std::vector<unsigned char>());
+            break;
+                
+        case google::protobuf::FieldDescriptor::CPPTYPE_FLOAT:                
+            write_field<float>(group, field_desc, messages);
+            break;
+                            
+        case google::protobuf::FieldDescriptor::CPPTYPE_DOUBLE:
+            write_field<double>(group, field_desc, messages);
+            break;
+    }   
+}
+
+
+void goby::common::hdf5::Writer::write_time(const std::string& group, const goby::common::hdf5::MessageCollection& message_collection)
+{
+    std::vector<goby::uint64> utime(message_collection.entries.size(), 0);
+    std::vector<double> datenum(message_collection.entries.size(), 0);
     int i = 0;
-    for(std::multimap<goby::uint64, boost::shared_ptr<google::protobuf::Message> >::const_iterator it = message.entries.begin(), end = message.entries.end(); it != end; ++it)
+    for(std::multimap<goby::uint64, boost::shared_ptr<google::protobuf::Message> >::const_iterator it = message_collection.entries.begin(), end = message_collection.entries.end(); it != end; ++it)
     {
         utime[i] = it->first;
         // datenum(1970, 1, 1, 0, 0, 0)

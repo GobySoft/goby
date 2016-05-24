@@ -5,5 +5,7 @@ message HDF5Config
 {
     required string output_file = 10;
 
+    optional bool include_string_fields = 20 [default = false];
+    
     extensions 1000 to max;
 }

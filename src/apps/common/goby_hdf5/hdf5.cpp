@@ -157,7 +157,6 @@ void goby::common::hdf5::Writer::write_embedded_message(const std::string& group
             {
                 const google::protobuf::Reflection* refl = (*it)->GetReflection();
                 const google::protobuf::Message& sub_msg = refl->GetMessage(**it, field_desc);
-                //                const google::protobuf::Reflection* sub_refl = sub_msg.GetReflection();
                 sub_messages.push_back(&sub_msg);
             }
             write_field_selector(group + "/" + field_desc->name(), sub_field_desc, sub_messages);
@@ -175,8 +174,13 @@ void goby::common::hdf5::Writer::write_field_selector(const std::string& group, 
             break;
                 
         case google::protobuf::FieldDescriptor::CPPTYPE_ENUM:
+        {
+            // google uses int for the enum value type, we'll assume that's an int32 here
+            write_field<goby::int32>(group, field_desc, messages);
+            write_enum_attributes(group, field_desc);
             break;
-                                
+        }
+        
         case google::protobuf::FieldDescriptor::CPPTYPE_INT32:
             write_field<goby::int32>(group, field_desc, messages);
             break;
@@ -214,6 +218,42 @@ void goby::common::hdf5::Writer::write_field_selector(const std::string& group, 
             break;
     }   
 }
+
+void goby::common::hdf5::Writer::write_enum_attributes(const std::string& group, const google::protobuf::FieldDescriptor* field_desc)
+{
+    // write enum names and values to attributes
+    H5::Group& grp = group_factory_.fetch_group(group);
+    H5::DataSet ds = grp.openDataSet(field_desc->name());
+
+    const google::protobuf::EnumDescriptor * enum_desc = field_desc->enum_type();
+
+    std::vector<const char*> names(enum_desc->value_count(), (const char*)(0));
+    std::vector<goby::int32> values(enum_desc->value_count(), 0);
+
+    for(int i = 0, n = enum_desc->value_count(); i < n; ++i)
+    {
+        names[i] = enum_desc->value(i)->name().c_str();
+        values[i] = enum_desc->value(i)->number();
+    }
+            
+    {
+        const int rank = 1;
+        hsize_t dimsf[] = {names.size()}; 
+        H5::DataSpace att_space(rank, dimsf, dimsf);
+        H5::StrType att_type(H5::PredType::C_S1, H5T_VARIABLE);          
+        H5::Attribute att = ds.createAttribute("enum_names", att_type, att_space);
+        att.write(att_type, &names[0]);
+    }
+    {
+        const int rank = 1;
+        hsize_t dimsf[] = {values.size()}; 
+        H5::DataSpace att_space(rank, dimsf, dimsf);
+        H5::IntType att_type(predicate<goby::int32>());          
+        H5::Attribute att = ds.createAttribute("enum_values", att_type, att_space);
+        att.write(att_type, &values[0]);
+    }
+}
+
 
 
 void goby::common::hdf5::Writer::write_time(const std::string& group, const goby::common::hdf5::MessageCollection& message_collection)

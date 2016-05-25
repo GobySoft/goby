@@ -178,6 +178,8 @@ namespace goby
 
                 void write_field_selector(const std::string& group, const google::protobuf::FieldDescriptor* field_desc, const std::vector<const google::protobuf::Message* >& messages);
 
+                void write_enum_attributes(const std::string& group, const google::protobuf::FieldDescriptor* field_desc);
+                
                 template<typename T>
                     void write_field(const std::string& group, const google::protobuf::FieldDescriptor* field_desc, const std::vector<const google::protobuf::Message* >& messages)
                 {
@@ -317,10 +319,32 @@ namespace goby
             { *val = std::numeric_limits<goby::int32>::max(); }
             template <>
                 void retrieve_single_present_value(goby::int32* val, PBMeta m)
-            { *val = m.refl->GetInt32(m.msg, m.field_desc); }
+            {
+                if(m.field_desc->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_INT32)
+                {
+                    *val = m.refl->GetInt32(m.msg, m.field_desc);
+                }
+                else if(m.field_desc->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_ENUM)
+                {
+                    const google::protobuf::EnumValueDescriptor* enum_desc =
+                        m.refl->GetEnum(m.msg, m.field_desc);
+                    *val = enum_desc->number();
+                }
+            }
             template <>
                 void retrieve_repeated_value(goby::int32* val, int index, PBMeta m)
-            { *val = m.refl->GetRepeatedInt32(m.msg, m.field_desc, index); }
+            {
+                if(m.field_desc->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_INT32)
+                {
+                    *val = m.refl->GetRepeatedInt32(m.msg, m.field_desc, index);
+                }
+                else if(m.field_desc->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_ENUM)
+                {
+                    const google::protobuf::EnumValueDescriptor* enum_desc =
+                        m.refl->GetRepeatedEnum(m.msg, m.field_desc, index);
+                    *val = enum_desc->number();                    
+                }                
+            }
 
             template <>
                 void retrieve_empty_value(goby::uint32* val)

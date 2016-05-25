@@ -63,6 +63,9 @@ bool TestHDF5Plugin::provide_entry(goby::common::HDF5ProtobufEntry* entry)
 {
     static int entry_index = 0;
 
+    if(entry_index > 20)
+        return false;
+    
     if(entry_index < 3 || entry_index > 7)
     {
         TestMsg msg;
@@ -87,26 +90,54 @@ bool TestHDF5Plugin::provide_entry(goby::common::HDF5ProtobufEntry* entry)
     
     ++entry_index;
 
-    if(entry_index > 20)
-        return false;
-    else
-        return true;
+    return true;
 }
 
 
 void TestHDF5Plugin::fill_message(TestHDF5Message& msg)
 {
     static int i = 0;
+    static int i2 = 0;
+    static int i3 = 0;
+    static int i4 = 0;
     if(i == 0)
     {
         for(int j = 0; j < 10; ++j)
             msg.add_a(++i);
+
+        for(int j = 0; j < 10; ++j)
+        {
+            B* b = msg.add_b();
+            for(int k = 0; k < 20; ++k)
+            {
+                b->add_c(++i2);
+                if(k < 10)
+                    b->add_d(++i3);
+                if(k < 5)
+                    b->add_e(++i4);
+            }
+        }
+        
     }
     else
     {
         for(int j = 0; j < 20; ++j)
             msg.add_a(++i);
+
+        for(int j = 0; j < 3; ++j)
+        {
+            B* b = msg.add_b();
+            for(int k = 0; k < 2; ++k)
+            {
+                b->add_c(++i2);
+                b->add_d(++i3);
+                b->add_e(++i4);
+            }
+        }
     }
+
+    
+    
 }
 
 void TestHDF5Plugin::fill_message(TestMsg& msg_in)
@@ -159,7 +190,7 @@ void TestHDF5Plugin::fill_message(TestMsg& msg_in)
     msg_in.mutable_msg_default_required()->mutable_msg()->set_val(++i);
 
     
-    for(int j = 0; j < 2; ++j)
+    for(int j = 0; j < 3; ++j)
     {
         msg_in.add_double_default_repeat(++i + 0.1);
         msg_in.add_float_default_repeat(++i + 0.2);

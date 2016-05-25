@@ -138,83 +138,135 @@ void goby::common::hdf5::Writer::write_message_collection(const std::string& gro
         {
             messages.push_back(it->second.get());
         }
-        write_field_selector(group, field_desc, messages);
+        std::vector<hsize_t> hs;
+        hs.push_back(messages.size());
+        write_field_selector(group, field_desc, messages, hs);
     }
 }
 
-void goby::common::hdf5::Writer::write_embedded_message(const std::string& group, const google::protobuf::FieldDescriptor* field_desc, const std::vector<const google::protobuf::Message* > messages)
+void goby::common::hdf5::Writer::write_embedded_message(const std::string& group, const google::protobuf::FieldDescriptor* field_desc, const std::vector<const google::protobuf::Message* > messages, std::vector<hsize_t>& hs)
 {
+    const google::protobuf::Descriptor* sub_desc = field_desc->message_type();
     if(field_desc->is_repeated())
-        return; // TODO: support repeateds
+    {
+        int max_field_size = 0;
+        for(unsigned i = 0, n = messages.size(); i < n; ++i)
+        {
+            if(messages[i])
+            {
+                const google::protobuf::Reflection* refl = messages[i]->GetReflection();
+                int field_size = refl->FieldSize(*messages[i], field_desc);
+                if(field_size > max_field_size) max_field_size = field_size;
+            }
+        }
+
+        hs.push_back(max_field_size);
+        
+        for(int i = 0, n = sub_desc->field_count(); i < n; ++i)
+        {
+            const google::protobuf::FieldDescriptor* sub_field_desc = sub_desc->field(i);
+
+            for(int i = 0; i < hs.size(); ++i)
+                std::cout << group << "/" << field_desc->name() << ": write_em_msg: hs[" << i << "]: " << hs[i] << std::endl;
+            
+            std::vector<const google::protobuf::Message* > sub_messages(messages.size()*max_field_size, (const google::protobuf::Message*) 0);
+
+            for(unsigned i = 0, n = messages.size(); i < n; ++i)
+            {
+                if(messages[i])
+                {
+                    const google::protobuf::Reflection* refl = messages[i]->GetReflection();
+                    int field_size = refl->FieldSize(*messages[i], field_desc);
+                    
+                    for(int j = 0; j < field_size; ++j)
+                    {
+                        const google::protobuf::Message& sub_msg = refl->GetRepeatedMessage(*messages[i], field_desc, j);
+                        sub_messages[i*max_field_size+j] = &sub_msg;
+                    }
+                }
+            }
+            write_field_selector(group + "/" + field_desc->name(), sub_field_desc, sub_messages, hs);
+        }
+        hs.pop_back();
+    }    
     else
     {
-        const google::protobuf::Descriptor* sub_desc = field_desc->message_type();
         for(int i = 0, n = sub_desc->field_count(); i < n; ++i)
         {
             const google::protobuf::FieldDescriptor* sub_field_desc = sub_desc->field(i);
             std::vector<const google::protobuf::Message* > sub_messages;
             for(std::vector<const google::protobuf::Message* >::const_iterator it = messages.begin(), end = messages.end(); it != end; ++it)
             {
-                const google::protobuf::Reflection* refl = (*it)->GetReflection();
-                const google::protobuf::Message& sub_msg = refl->GetMessage(**it, field_desc);
-                sub_messages.push_back(&sub_msg);
+                if(*it)
+                {
+                    const google::protobuf::Reflection* refl = (*it)->GetReflection();
+                    const google::protobuf::Message& sub_msg = refl->GetMessage(**it, field_desc);
+                    sub_messages.push_back(&sub_msg);
+                }
+                else
+                {
+                    sub_messages.push_back(0);
+                }
             }
-            write_field_selector(group + "/" + field_desc->name(), sub_field_desc, sub_messages);
+            write_field_selector(group + "/" + field_desc->name(), sub_field_desc, sub_messages, hs);
         }
     }
 }
 
 
-void goby::common::hdf5::Writer::write_field_selector(const std::string& group, const google::protobuf::FieldDescriptor* field_desc, const std::vector<const google::protobuf::Message* >& messages)
+void goby::common::hdf5::Writer::write_field_selector(const std::string& group,
+                                                      const google::protobuf::FieldDescriptor* field_desc,
+                                                      const std::vector<const google::protobuf::Message* >& messages,
+                                                      std::vector<hsize_t>& hs)
 {
     switch(field_desc->cpp_type())
     {
         case google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE:
-            write_embedded_message(group, field_desc, messages);
+            write_embedded_message(group, field_desc, messages, hs);
             break;
                 
         case google::protobuf::FieldDescriptor::CPPTYPE_ENUM:
         {
             // google uses int for the enum value type, we'll assume that's an int32 here
-            write_field<goby::int32>(group, field_desc, messages);
+            write_field<goby::int32>(group, field_desc, messages, hs);
             write_enum_attributes(group, field_desc);
             break;
         }
         
         case google::protobuf::FieldDescriptor::CPPTYPE_INT32:
-            write_field<goby::int32>(group, field_desc, messages);
+            write_field<goby::int32>(group, field_desc, messages, hs);
             break;
                             
         case google::protobuf::FieldDescriptor::CPPTYPE_INT64:
-            write_field<goby::int64>(group, field_desc, messages);
+            write_field<goby::int64>(group, field_desc, messages, hs);
             break;
                             
         case google::protobuf::FieldDescriptor::CPPTYPE_UINT32:
-            write_field<goby::uint32>(group, field_desc, messages);
+            write_field<goby::uint32>(group, field_desc, messages, hs);
             break;
                             
         case google::protobuf::FieldDescriptor::CPPTYPE_UINT64:
-            write_field<goby::uint64>(group, field_desc, messages);
+            write_field<goby::uint64>(group, field_desc, messages, hs);
             break;
                             
         case google::protobuf::FieldDescriptor::CPPTYPE_BOOL:
-            write_field<unsigned char>(group, field_desc, messages);
+            write_field<unsigned char>(group, field_desc, messages, hs);
             break;
                             
         case google::protobuf::FieldDescriptor::CPPTYPE_STRING:
             if(cfg_.include_string_fields())
-                write_field<std::string>(group, field_desc, messages);
+                write_field<std::string>(group, field_desc, messages, hs);
             else
                 // placeholder for users to know that the field exists, even if the data are omitted
-                write_vector(group, field_desc->name(), std::vector<unsigned char>());
+                write_vector(group, field_desc->name(), std::vector<unsigned char>(), std::vector<hsize_t>(1,0));
             break;
                 
         case google::protobuf::FieldDescriptor::CPPTYPE_FLOAT:                
-            write_field<float>(group, field_desc, messages);
+            write_field<float>(group, field_desc, messages, hs);
             break;
                             
         case google::protobuf::FieldDescriptor::CPPTYPE_DOUBLE:
-            write_field<double>(group, field_desc, messages);
+            write_field<double>(group, field_desc, messages, hs);
             break;
     }   
 }
@@ -238,16 +290,16 @@ void goby::common::hdf5::Writer::write_enum_attributes(const std::string& group,
             
     {
         const int rank = 1;
-        hsize_t dimsf[] = {names.size()}; 
-        H5::DataSpace att_space(rank, dimsf, dimsf);
+        hsize_t hs[] = {names.size()}; 
+        H5::DataSpace att_space(rank, hs, hs);
         H5::StrType att_type(H5::PredType::C_S1, H5T_VARIABLE);          
         H5::Attribute att = ds.createAttribute("enum_names", att_type, att_space);
         att.write(att_type, &names[0]);
     }
     {
         const int rank = 1;
-        hsize_t dimsf[] = {values.size()}; 
-        H5::DataSpace att_space(rank, dimsf, dimsf);
+        hsize_t hs[] = {values.size()}; 
+        H5::DataSpace att_space(rank, hs, hs);
         H5::IntType att_type(predicate<goby::int32>());          
         H5::Attribute att = ds.createAttribute("enum_values", att_type, att_space);
         att.write(att_type, &values[0]);
@@ -272,6 +324,9 @@ void goby::common::hdf5::Writer::write_time(const std::string& group, const goby
         datenum[i] = datenum_unix_epoch + static_cast<double>(utime_sec)/seconds_in_day + static_cast<double>(utime_frac)/1000000/seconds_in_day;
         ++i;
     }
-    write_vector(group, "_utime_", utime);
-    write_vector(group, "_datenum_", datenum);
+
+    std::vector<hsize_t> hs;
+    hs.push_back(message_collection.entries.size());
+    write_vector(group, "_utime_", utime, hs);
+    write_vector(group, "_datenum_", datenum, hs);
 }

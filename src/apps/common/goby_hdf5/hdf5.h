@@ -58,7 +58,15 @@ namespace goby
                 const google::protobuf::Message& msg;
             };
             
-            template <typename T> void retrieve_empty_value(T* val);            
+            template <typename T> void retrieve_empty_value(T* val);
+            template <typename T> T retrieve_empty_value()
+            {
+                T t;
+                retrieve_empty_value(&t);
+                return t;
+            }
+            
+            
             template <typename T> void retrieve_single_value(T* val, PBMeta m)
             {
                 if(m.field_desc->is_optional() && !m.refl->HasField(m.msg, m.field_desc))
@@ -176,111 +184,103 @@ namespace goby
                 void write_message_collection(const std::string& group, const goby::common::hdf5::MessageCollection& message_collection);
                 void write_time(const std::string& group, const goby::common::hdf5::MessageCollection& message_collection);
 
-                void write_field_selector(const std::string& group, const google::protobuf::FieldDescriptor* field_desc, const std::vector<const google::protobuf::Message* >& messages);
+                void write_field_selector(const std::string& group,
+                                          const google::protobuf::FieldDescriptor* field_desc,
+                                          const std::vector<const google::protobuf::Message* >& messages,
+                                          std::vector<hsize_t>& hs);
 
                 void write_enum_attributes(const std::string& group, const google::protobuf::FieldDescriptor* field_desc);
                 
                 template<typename T>
-                    void write_field(const std::string& group, const google::protobuf::FieldDescriptor* field_desc, const std::vector<const google::protobuf::Message* >& messages)
+                    void write_field(const std::string& group, const google::protobuf::FieldDescriptor* field_desc,
+                                     const std::vector<const google::protobuf::Message* >& messages,
+                                     std::vector<hsize_t>& hs)
                 {
                     if(field_desc->is_repeated())
                     {
-                        std::vector<std::vector<T> > values(messages.size(), std::vector<T>());
-                    
-                        int i = 0;
+                        // pass one to figure out field size
                         int max_field_size = 0;
-                        for(std::vector<const google::protobuf::Message* >::const_iterator it = messages.begin(), end = messages.end(); it != end; ++it)
+                        for(unsigned i = 0, n = messages.size(); i < n; ++i)
                         {
-                            const google::protobuf::Reflection* refl = (*it)->GetReflection();
-                            std::vector<T>& v_row = values[i];
-                            int field_size = refl->FieldSize(**it, field_desc);
-                            if(field_size > max_field_size) max_field_size = field_size;
-                            v_row.resize(field_size);
-
-                            for(int j = 0; j < field_size; ++j)
-                                retrieve_repeated_value<T>(&v_row[j], j, PBMeta(refl, field_desc, (**it)));
-                            ++i;
+                            if(messages[i])
+                            {
+                                const google::protobuf::Reflection* refl = messages[i]->GetReflection();
+                                int field_size = refl->FieldSize(*messages[i], field_desc);
+                                if(field_size > max_field_size) max_field_size = field_size;
+                            }
                         }
-                        write_matrix(group, field_desc->name(), values, max_field_size);
+
+                        hs.push_back(max_field_size);
+
+                        for(int i = 0; i < hs.size(); ++i)
+                            std::cout << field_desc->name() << ": write_field: hs[" << i << "]: " << hs[i] << std::endl;
+
+                        std::vector<T> values(messages.size()*max_field_size, retrieve_empty_value<T>());
+
+                        for(unsigned i = 0, n = messages.size(); i < n; ++i)
+                        {
+                            if(messages[i])
+                            {
+                                const google::protobuf::Reflection* refl = messages[i]->GetReflection();
+                                int field_size = refl->FieldSize(*messages[i], field_desc);
+                                for(int j = 0; j < field_size; ++j)
+                                    retrieve_repeated_value<T>(&values[i*max_field_size+j], j, PBMeta(refl, field_desc, (*messages[i])));
+                            }
+                        }
+
+                        write_vector(group, field_desc->name(), values, hs);
+
+                        hs.pop_back();
                     }
                     else
                     {
-                        std::vector<T> values(messages.size(), T());
-                    
-                        int i = 0;
-                        for(std::vector<const google::protobuf::Message* >::const_iterator it = messages.begin(), end = messages.end(); it != end; ++it)
+                        std::vector<T> values(messages.size(), retrieve_empty_value<T>());
+                        for(unsigned i = 0, n = messages.size(); i < n; ++i)
                         {
-                            const google::protobuf::Reflection* refl = (*it)->GetReflection();
-                            retrieve_single_value<T>(&values[i], PBMeta(refl, field_desc, (**it)));
-                            ++i;
+                            if(messages[i])
+                            {
+                                const google::protobuf::Reflection* refl = messages[i]->GetReflection();
+                                retrieve_single_value<T>(&values[i], PBMeta(refl, field_desc, (*messages[i])));
+                            }
                         }
-                        write_vector(group, field_desc->name(), values);
+
+                        write_vector(group, field_desc->name(), values, hs);
                     }
                 }
 
                 
-                void write_embedded_message(const std::string& group, const google::protobuf::FieldDescriptor* field_desc, const std::vector<const google::protobuf::Message*> messages);
+                void write_embedded_message(const std::string& group, const google::protobuf::FieldDescriptor* field_desc, const std::vector<const google::protobuf::Message*> messages, std::vector<hsize_t>& hs);
 
-                
 
                 
                 template<typename T>
-                    void write_vector(const std::string& group, const std::string dataset_name, const std::vector<T>& data)
+                    void write_vector(const std::string& group, const std::string dataset_name, const std::vector<T>& data, const std::vector<hsize_t>& hs)
                 {
-                    const int rank = 1;
-                    hsize_t dimsf[] = {data.size()}; 
-                    H5::DataSpace dataspace(rank, dimsf, dimsf);
+                    
+                        for(int i = 0; i < hs.size(); ++i)
+                            std::cout << group << "/" << dataset_name << ": write_vector: hs[" << i << "]: " << hs[i] << std::endl;
+
+                    
+                    H5::DataSpace dataspace(hs.size(), hs.data(), hs.data());
                     H5::Group& grp = group_factory_.fetch_group(group);
                     H5::DataSet dataset = grp.createDataSet(dataset_name,
                                                             predicate<T>(),
                                                             dataspace);
                     if(data.size())
                         dataset.write(&data[0], predicate<T>());
-                }
-
-
-                template<typename T>
-                    void write_matrix(const std::string& group, const std::string dataset_name, const std::vector<std::vector<T> >& data, int max_field_size)
-                {
-                    hsize_t nx = data.size(), ny = max_field_size;
-                    const int rank = 2;
-                    hsize_t dimsf[] = { nx, ny };
-
-                    T cdata[nx][ny];
-                    for(int i = 0; i < nx; ++i)
-                    {
-                        const std::vector<T>& inner = data[i];
-                        for(int j = 0; j < ny; ++j)
-                        {
-                            if(j < inner.size())
-                                cdata[i][j] = data[i][j];
-                            else
-                                retrieve_empty_value(&cdata[i][j]);
-                        }
-                    }
-                    
-                    H5::DataSpace dataspace(rank, dimsf, dimsf);
-                    H5::Group& grp = group_factory_.fetch_group(group);
-
-                    H5::DataSet dataset = grp.createDataSet(dataset_name,
-                                                            predicate<T>(),
-                                                            dataspace);
-                    dataset.write(cdata, predicate<T>());
-                }
-
-                
+                }                
                 
                 void write_vector(const std::string& group,
                                   const std::string dataset_name,
-                                  const std::vector<std::string>& data)
-                {                   
+                                  const std::vector<std::string>& data,
+                                  const std::vector<hsize_t>& hs)
+            {                   
                     std::vector<const char*> data_c_str;
                     for (unsigned i = 0, n = data.size(); i < n; ++i) 
                         data_c_str.push_back(data[i].c_str());
+
                     
-                    const int rank = 1;
-                    hsize_t dimsf[] = {data.size()}; 
-                    H5::DataSpace dataspace(rank, dimsf, dimsf);
+                    H5::DataSpace dataspace(hs.size(), hs.data(), hs.data());
                     H5::StrType datatype(H5::PredType::C_S1, H5T_VARIABLE);          
                     H5::Group& grp = group_factory_.fetch_group(group);
                     H5::DataSet dataset = grp.createDataSet(dataset_name,
@@ -290,16 +290,6 @@ namespace goby
                     if(data_c_str.size())
                         dataset.write(data_c_str.data(), datatype);
                 }
-                
-
-                void write_matrix(const std::string& group,
-                                  const std::string dataset_name,
-                                  const std::vector<std::vector<std::string > >& data,
-                                  int max_field_size)
-                {                   
-                    // TODO: implement if this makes sense
-                }
-                
                 
                 void iterate() { }
 
@@ -423,14 +413,16 @@ namespace goby
             template <>
                 void retrieve_single_value(std::string* val, PBMeta m)
             {
-                    *val = m.refl->GetString(m.msg, m.field_desc);
-                    if(m.field_desc->type() == google::protobuf::FieldDescriptor::TYPE_BYTES)
-                        *val = goby::util::hex_encode(*val);                
+                *val = m.refl->GetString(m.msg, m.field_desc);
+                if(m.field_desc->type() == google::protobuf::FieldDescriptor::TYPE_BYTES)
+                    *val = goby::util::hex_encode(*val);                
             }
             template <>
                 void retrieve_repeated_value(std::string* val, int index, PBMeta m)
             {
-                // TODO: implement if this makes sense
+                *val = m.refl->GetRepeatedString(m.msg, m.field_desc, index);
+                if(m.field_desc->type() == google::protobuf::FieldDescriptor::TYPE_BYTES)
+                    *val = goby::util::hex_encode(*val);
             }
 
             

@@ -57,6 +57,50 @@ int main(int argc, char * argv[])
 }
 
 
+void goby::common::hdf5::Channel::add_message(const goby::common::HDF5ProtobufEntry& entry)
+{    
+    const std::string& msg_name = entry.msg->GetDescriptor()->full_name();
+    typedef std::map<std::string, MessageCollection>::iterator It;
+    It it = entries.find(msg_name);
+    if(it == entries.end())
+    {
+        std::pair<It, bool> itpair = entries.insert(std::make_pair(msg_name, MessageCollection(msg_name)));
+        it = itpair.first;
+    }
+    it->second.entries.insert(std::make_pair(entry.time, entry.msg));
+}
+
+H5::Group& goby::common::hdf5::GroupFactory::fetch_group(const std::string& group_path)
+{
+    std::deque<std::string> nodes;
+    std::string clean_path = boost::trim_copy_if(group_path, boost::algorithm::is_space() || boost::algorithm::is_any_of("/"));
+    boost::split(nodes, clean_path, boost::is_any_of("/"));
+    return root_group_.fetch_group(nodes);
+}
+
+
+H5::Group& goby::common::hdf5::GroupFactory::GroupWrapper::fetch_group(std::deque<std::string>& nodes)
+{
+    if(nodes.empty())
+    {
+        return group_;
+    }
+    else
+    {
+        typedef std::map<std::string, GroupWrapper>::iterator It;
+        It it = children_.find(nodes[0]);
+        if(it == children_.end())
+        {
+            std::pair<It, bool> itpair = children_.insert(std::make_pair(nodes[0], GroupWrapper(nodes[0], group_)));
+            it = itpair.first;
+        }
+        nodes.pop_front();
+        return it->second.fetch_group(nodes); 
+    }
+}
+
+
+
 goby::common::hdf5::Writer::Writer(goby::common::protobuf::HDF5Config* cfg)
     : ApplicationBase(cfg),
       cfg_(*cfg),
@@ -115,7 +159,6 @@ void goby::common::hdf5::Writer::write()
 
 void goby::common::hdf5::Writer::write_channel(const std::string& group, const goby::common::hdf5::Channel& channel)
 {
-    std::cout << "Channel: [" << channel.name << "]" << std::endl;
     for(std::map<std::string, goby::common::hdf5::MessageCollection>::const_iterator it = channel.entries.begin(), end = channel.entries.end(); it != end; ++it)
         write_message_collection(group + "/" + it->first, it->second);    
 }
@@ -123,9 +166,6 @@ void goby::common::hdf5::Writer::write_channel(const std::string& group, const g
 
 void goby::common::hdf5::Writer::write_message_collection(const std::string& group, const goby::common::hdf5::MessageCollection& message_collection)
 {
-    std::cout << "MessageCollection: [" << message_collection.name << "]" << std::endl;
-    std::cout << "group: [" << group << "]" << std::endl;
-
     write_time(group, message_collection);
     
     const google::protobuf::Descriptor* desc = message_collection.entries.begin()->second->GetDescriptor();
@@ -166,9 +206,6 @@ void goby::common::hdf5::Writer::write_embedded_message(const std::string& group
         {
             const google::protobuf::FieldDescriptor* sub_field_desc = sub_desc->field(i);
 
-            for(int i = 0; i < hs.size(); ++i)
-                std::cout << group << "/" << field_desc->name() << ": write_em_msg: hs[" << i << "]: " << hs[i] << std::endl;
-            
             std::vector<const google::protobuf::Message* > sub_messages(messages.size()*max_field_size, (const google::protobuf::Message*) 0);
 
             for(unsigned i = 0, n = messages.size(); i < n; ++i)
@@ -330,3 +367,25 @@ void goby::common::hdf5::Writer::write_time(const std::string& group, const goby
     write_vector(group, "_utime_", utime, hs);
     write_vector(group, "_datenum_", datenum, hs);
 }
+
+void goby::common::hdf5::Writer::write_vector(const std::string& group,
+                                              const std::string dataset_name,
+                                              const std::vector<std::string>& data,
+                                              const std::vector<hsize_t>& hs)
+{                   
+    std::vector<const char*> data_c_str;
+    for (unsigned i = 0, n = data.size(); i < n; ++i) 
+        data_c_str.push_back(data[i].c_str());
+
+                    
+    H5::DataSpace dataspace(hs.size(), hs.data(), hs.data());
+    H5::StrType datatype(H5::PredType::C_S1, H5T_VARIABLE);          
+    H5::Group& grp = group_factory_.fetch_group(group);
+    H5::DataSet dataset = grp.createDataSet(dataset_name,
+                                            datatype,
+                                            dataspace);
+
+    if(data_c_str.size())
+        dataset.write(data_c_str.data(), datatype);
+}
+                

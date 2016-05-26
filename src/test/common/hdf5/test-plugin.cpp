@@ -100,6 +100,8 @@ void TestHDF5Plugin::fill_message(TestHDF5Message& msg)
     static int i2 = 0;
     static int i3 = 0;
     static int i4 = 0;
+    static int i5 = 0;
+    static int i6 = 0;
     if(i == 0)
     {
         for(int j = 0; j < 10; ++j)
@@ -115,6 +117,13 @@ void TestHDF5Plugin::fill_message(TestHDF5Message& msg)
                     b->add_d(++i3);
                 if(k < 5)
                     b->add_e(++i4);
+            }
+            for(int l = 0; l < 3; ++l)
+            {
+                F* f = b->add_f();
+                f->set_h(++i5);
+                for(int m = 0; m < 6; ++m)
+                    f->add_g(++i6);
             }
         }
         
@@ -132,6 +141,13 @@ void TestHDF5Plugin::fill_message(TestHDF5Message& msg)
                 b->add_c(++i2);
                 b->add_d(++i3);
                 b->add_e(++i4);
+            }            
+            for(int l = 0; l < 5; ++l)
+            {
+                F* f = b->add_f();
+                f->set_h(++i5);
+                for(int m = 0; m < 8; ++m)
+                    f->add_g(++i6);
             }
         }
     }

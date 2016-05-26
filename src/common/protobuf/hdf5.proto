@@ -4,8 +4,10 @@ package goby.common.protobuf;
 message HDF5Config
 {
     required string output_file = 10;
-
     optional bool include_string_fields = 20 [default = false];
+
+    // for use by plugins, if desired
+    repeated string input_file = 30;
     
     extensions 1000 to max;
 }

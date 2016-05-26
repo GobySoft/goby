@@ -184,9 +184,6 @@ namespace goby
             // how many retries on a given message
             enum { RETRIES = 3 };
             enum { ROUGH_SPEED_OF_SOUND = 1500 }; // m/s
-                
-	    
-            int serial_fd_;
 
             // seconds to wait for modem to respond
             static const boost::posix_time::time_duration MODEM_WAIT; 
@@ -301,6 +298,9 @@ namespace goby
             std::map<unsigned, std::set<unsigned> > frames_to_ack_;
 
             dccl::Codec dccl_;
+            
+            int serial_fd_;
+
         };
     }
 }

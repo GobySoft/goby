@@ -152,25 +152,24 @@ if(build_common)
 
   option(build_util "Build the Goby Utility library and applications (requires goby-common)" ON)
   if(build_util)
+    goby_find_required_package(DCCL)
+    message("Using DCCL in ${DCCL_DIR}")
+    
+    if(NOT DEFINED DCCL_INCLUDE_DIR)
+      # for DCCL 3.0.3 and newer
+      get_target_property(DCCL_INCLUDE_DIR dccl INTERFACE_INCLUDE_DIRECTORIES)
+    endif()
+    
+    if(DCCL_INCLUDE_DIR)
+      message("Including protobuf dir: ${DCCL_INCLUDE_DIR}")
+      include_directories("${DCCL_INCLUDE_DIR}")
+      protobuf_include_dirs("${DCCL_INCLUDE_DIR}")
+    endif()
+    
     add_subdirectory(util)
 
     option(build_acomms "Build the Goby Acoustic Communications library and applications (requires goby-util)" ON)
-    if(build_acomms)
-      goby_find_required_package(DCCL)
-     
-      message("Using DCCL in ${DCCL_DIR}")
-      
-      if(NOT DEFINED DCCL_INCLUDE_DIR)
-        # for DCCL 3.0.3 and newer
-        get_target_property(DCCL_INCLUDE_DIR dccl INTERFACE_INCLUDE_DIRECTORIES)
-      endif()
-      
-      if(DCCL_INCLUDE_DIR)
-        message("Including protobuf dir: ${DCCL_INCLUDE_DIR}")
-        include_directories("${DCCL_INCLUDE_DIR}")
-        protobuf_include_dirs("${DCCL_INCLUDE_DIR}")
-      endif()
-      
+    if(build_acomms)     
       add_subdirectory(acomms)
 
       if(enable_zeromq AND enable_gmp)

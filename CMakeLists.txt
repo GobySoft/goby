@@ -77,11 +77,6 @@ endif()
 ## boost-filesystem)
 option(make_proto_runtime_compile "Allow runtime compilation of .proto files." ON)
 
-if(make_proto_runtime_compile)
-  set(IS_PROTO_RUNTIME_COMPILE 1)
-else()
-  set(IS_PROTO_RUNTIME_COMPILE 0)
-endif()
 
 ## set the cmake defaults for libraries and binaries
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${goby_LIB_DIR} CACHE PATH 

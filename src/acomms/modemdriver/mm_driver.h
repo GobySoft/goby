@@ -166,6 +166,10 @@ namespace goby
             void process_incoming_app_ack(protobuf::ModemTransmission* m);
             void process_outgoing_app_ack(protobuf::ModemTransmission* msg);
             
+	    // Serial port methods
+            void set_rts(bool state);
+            bool query_rts();
+            
             // doxygen
             
             /// \example acomms/modemdriver/driver_simple/driver_simple.cpp
@@ -180,8 +184,7 @@ namespace goby
             // how many retries on a given message
             enum { RETRIES = 3 };
             enum { ROUGH_SPEED_OF_SOUND = 1500 }; // m/s
-                
-            
+
             // seconds to wait for modem to respond
             static const boost::posix_time::time_duration MODEM_WAIT; 
             // seconds to wait after modem reboot
@@ -295,6 +298,9 @@ namespace goby
             std::map<unsigned, std::set<unsigned> > frames_to_ack_;
 
             dccl::Codec dccl_;
+            
+            int serial_fd_;
+
         };
     }
 }

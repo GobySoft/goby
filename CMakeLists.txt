@@ -112,7 +112,7 @@ if(${APPLE})
   link_directories(/sw/lib)
 endif()
 
-set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES ${goby_INC_DIR}/goby)
+set_property(DIRECTORY APPEND PROPERTY ADDITIONAL_MAKE_CLEAN_FILES "${goby_BIN_DIR}" "${goby_LIB_DIR}" "${goby_INCLUDE_DIR}/goby")
 
 ## start adding subdirectories
 add_subdirectory(src)

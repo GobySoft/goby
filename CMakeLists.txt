@@ -106,19 +106,6 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${goby_BIN_DIR} CACHE PATH
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${goby_LIB_DIR} CACHE PATH 
   "Output directory for the static libraries (archives)" )
 
-## set instructions for `make install`
-file(MAKE_DIRECTORY ${goby_BIN_DIR})
-install(DIRECTORY ${goby_BIN_DIR}/ DESTINATION ${CMAKE_INSTALL_PREFIX}/bin 
-  FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
-
-install(FILES ${goby_SCRIPTS_DIR}/analyze_dccl_xml ${goby_SCRIPTS_DIR}/moos_goby_liaison DESTINATION ${CMAKE_INSTALL_PREFIX}/bin 
-  PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
-
-install(DIRECTORY ${goby_LIB_DIR}/ DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
-install(DIRECTORY ${goby_SHARE_DIR}/ DESTINATION ${CMAKE_INSTALL_PREFIX}/share/goby)
-install(DIRECTORY ${goby_INC_DIR}/ DESTINATION ${CMAKE_INSTALL_PREFIX}/include
-  FILES_MATCHING REGEX .*\\.h|.*\\.proto)
-
 ## let cmake know where the headers are
 include_directories(${goby_INC_DIR})
 
@@ -133,6 +120,21 @@ if(${APPLE})
 endif()
 
 set_property(DIRECTORY APPEND PROPERTY ADDITIONAL_MAKE_CLEAN_FILES "${goby_BIN_DIR}" "${goby_LIB_DIR}" "${goby_INC_DIR}" "${goby_SHARE_DIR}")
+
+## set instructions for `make install`
+file(MAKE_DIRECTORY ${goby_BIN_DIR})
+install(DIRECTORY ${goby_BIN_DIR}/ DESTINATION ${CMAKE_INSTALL_PREFIX}/bin 
+  FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+
+install(FILES ${goby_SCRIPTS_DIR}/analyze_dccl_xml ${goby_SCRIPTS_DIR}/moos_goby_liaison DESTINATION ${CMAKE_INSTALL_PREFIX}/bin 
+  PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+
+install(DIRECTORY ${goby_SHARE_DIR}/ DESTINATION ${CMAKE_INSTALL_PREFIX}/share/goby)
+install(DIRECTORY ${goby_INC_DIR}/ DESTINATION ${CMAKE_INSTALL_PREFIX}/include
+  FILES_MATCHING REGEX .*\\.h|.*\\.proto)
+
+# clear library list
+unset(GOBY_LIBRARY_LIST CACHE)
 
 ## start adding subdirectories
 add_subdirectory(src)
@@ -158,3 +160,7 @@ foreach(I ${SHARE_FILES})
 endforeach()
 
 
+# configuration export - installed version
+install(EXPORT goby-config DESTINATION share/goby/cmake)
+# configuration export - local build version
+export(TARGETS ${GOBY_LIBRARY_LIST} FILE ${CMAKE_BINARY_DIR}/goby-config.cmake)

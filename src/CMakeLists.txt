@@ -27,6 +27,22 @@ else()
 endif()
 
 
+# dccl
+goby_find_required_package(DCCL)
+message("Using DCCL in ${DCCL_DIR}")
+
+if(NOT DEFINED DCCL_INCLUDE_DIR)
+  # for DCCL 3.0.3 and newer
+  get_target_property(DCCL_INCLUDE_DIR dccl INTERFACE_INCLUDE_DIRECTORIES)
+endif()
+
+if(DCCL_INCLUDE_DIR)
+  message("Including protobuf dir: ${DCCL_INCLUDE_DIR}")
+  include_directories("${DCCL_INCLUDE_DIR}")
+  protobuf_include_dirs("${DCCL_INCLUDE_DIR}")
+endif()
+
+
 # shared library suffix
 add_definitions(-DSHARED_LIBRARY_SUFFIX="${CMAKE_SHARED_LIBRARY_SUFFIX}")
 
@@ -150,6 +166,22 @@ endif()
 ## set flags
 option(build_common "Build the Goby Common library" ON)  
 
+
+
+macro(goby_install_lib target_lib)
+  target_include_directories(${target_lib} PUBLIC
+    $<BUILD_INTERFACE:${goby_INC_DIR}>
+    $<INSTALL_INTERFACE:include>  # <prefix>/include
+    )
+
+  install(TARGETS ${target_lib} EXPORT goby-config
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib) 
+  list(APPEND GOBY_LIBRARY_LIST ${target_lib})
+  set(GOBY_LIBRARY_LIST ${GOBY_LIBRARY_LIST} CACHE INTERNAL "goby_library_list")
+endmacro()
+
+
 # module dependencies
 # you can optionally build up to any point in this chain
 # common -> util -> acomms -> moos
@@ -163,21 +195,7 @@ if(build_common)
   add_subdirectory(common)
 
   option(build_util "Build the Goby Utility library and applications (requires goby-common)" ON)
-  if(build_util)
-    goby_find_required_package(DCCL)
-    message("Using DCCL in ${DCCL_DIR}")
-    
-    if(NOT DEFINED DCCL_INCLUDE_DIR)
-      # for DCCL 3.0.3 and newer
-      get_target_property(DCCL_INCLUDE_DIR dccl INTERFACE_INCLUDE_DIRECTORIES)
-    endif()
-    
-    if(DCCL_INCLUDE_DIR)
-      message("Including protobuf dir: ${DCCL_INCLUDE_DIR}")
-      include_directories("${DCCL_INCLUDE_DIR}")
-      protobuf_include_dirs("${DCCL_INCLUDE_DIR}")
-    endif()
-    
+  if(build_util)    
     add_subdirectory(util)
 
     option(build_acomms "Build the Goby Acoustic Communications library and applications (requires goby-util)" ON)
@@ -239,3 +257,4 @@ option(build_apps "Build applications (as well as libraries)" ON)
 if(build_apps)
   add_subdirectory(apps)
 endif()
+

@@ -24,6 +24,7 @@ if(enable_zeromq)
 endif()
 
 add_library(goby_moos ${SRC} ${ZEROMQ_SRC} ${TRANSITIONAL_SRC} ${PROTO_SRCS} ${PROTO_HDRS})
+goby_install_lib(goby_moos)
 
 target_link_libraries(goby_moos
   goby_util
@@ -49,6 +50,7 @@ if(enable_wt AND enable_zeromq)
     liaison_acomms.cpp)
 
   target_link_libraries(liaison_plugins_goby_moos ${Wt_LIBRARIES} goby_moos ${Boost_LIBRARIES})
+  goby_install_lib(liaison_plugins_goby_moos)
 endif()
 
 add_subdirectory(frontseat)

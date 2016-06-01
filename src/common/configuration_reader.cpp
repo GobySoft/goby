@@ -339,7 +339,7 @@ void goby::common::ConfigReader::get_example_cfg_file(google::protobuf::Message*
 }
 
 
-void  goby::common::ConfigReader::get_protobuf_program_options(boost::program_options::options_description& po_desc,
+void goby::common::ConfigReader::get_protobuf_program_options(boost::program_options::options_description& po_desc,
                                                              const google::protobuf::Descriptor* desc)
 {
     for(int i = 0, n = desc->field_count(); i < n; ++i)

@@ -76,6 +76,18 @@ else()
   message(">> setting enable_sqlite to OFF ... if you need this functionality: 1) install libsqlite3-dev; 2) run cmake -Denable_sqlite=ON")
 endif()
 
+## HDF5
+find_package(HDF5 QUIET COMPONENTS C CXX)
+set(HDF5_DOC_STRING "Enable HDF5 file format tools (requires libhdf5-dev: https://www.hdfgroup.org/HDF5)")
+# find resources directory
+if(HDF5_FOUND)
+  option(enable_hdf5 ${HDF5_DOC_STRING} ON)
+else()
+  option(enable_hdf5 ${HDF5_DOC_STRING} OFF)
+  message(">> setting enable_hdf5 to OFF ... if you need this functionality: 1) install libhdf5-dev; 2) run cmake -Denable_hdf5=ON")
+endif()
+
+
 
 ## Wt
 find_package(WtGoby QUIET)

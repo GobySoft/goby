@@ -169,7 +169,7 @@ option(build_common "Build the Goby Common library" ON)
 
 
 macro(goby_install_lib target_lib)
-  target_include_directories(${target_lib} PUBLIC
+  set_property(TARGET ${target_lib} APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES
     $<BUILD_INTERFACE:${goby_INC_DIR}>
     $<INSTALL_INTERFACE:include>  # <prefix>/include
     )

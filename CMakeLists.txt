@@ -6,7 +6,8 @@
 # this project is intended to be built out of source by using 
 # > ./build.sh
 
-cmake_minimum_required(VERSION 2.6.0 FATAL_ERROR)
+cmake_minimum_required(VERSION 2.8.0 FATAL_ERROR)
+cmake_policy(SET CMP0009 NEW)
 project(goby)
 
 ## allows us to write custom modules or modifying existing ones
@@ -29,10 +30,12 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git")
    include(today)
    today(GOBY_VERSION_DATE)  
    execute_process(COMMAND git rev-parse --short HEAD
+     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
      OUTPUT_VARIABLE GOBY_LAST_REV)
    string(STRIP ${GOBY_LAST_REV} GOBY_LAST_REV)
 
    execute_process(COMMAND git diff-index --quiet HEAD
+     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
      RESULT_VARIABLE GOBY_DIRTY_REV)
    if(GOBY_DIRTY_REV EQUAL 0)
      set(GOBY_DIRTY_REV_STRING "")
@@ -51,14 +54,31 @@ set(GOBY_VERSION "${GOBY_VERSION_MAJOR}.${GOBY_VERSION_MINOR}.${GOBY_VERSION_PAT
 # give Goby 1 series a few more soversions
 set(GOBY_SOVERSION "26")
 
-# fetch all the local directories for generated code
-get_filename_component(goby_LIB_DIR lib ABSOLUTE)
-get_filename_component(goby_BIN_DIR bin ABSOLUTE)
-get_filename_component(goby_INC_DIR include ABSOLUTE)
+# create variables for various directories
 get_filename_component(goby_SRC_DIR src ABSOLUTE)
-get_filename_component(goby_SHARE_DIR share ABSOLUTE)
-get_filename_component(goby_BUILD_DIR build ABSOLUTE)
+get_filename_component(goby_BUILD_DIR ${CMAKE_BINARY_DIR} ABSOLUTE)
 get_filename_component(goby_SCRIPTS_DIR scripts ABSOLUTE)
+
+# fetch all the local directories for generated code
+get_filename_component(goby_LIB_DIR ${goby_BUILD_DIR}/lib ABSOLUTE)
+get_filename_component(goby_BIN_DIR ${goby_BUILD_DIR}/bin ABSOLUTE)
+get_filename_component(goby_INC_DIR ${goby_BUILD_DIR}/include ABSOLUTE)
+get_filename_component(goby_SHARE_DIR ${goby_BUILD_DIR}/share ABSOLUTE)
+
+# symlink these into the build directory to provide backwards compatibility with the former locations (<= version 2.1.1)
+get_filename_component(goby_FORMER_LIB_DIR lib ABSOLUTE)
+get_filename_component(goby_FORMER_BIN_DIR bin ABSOLUTE)
+get_filename_component(goby_FORMER_INC_DIR include ABSOLUTE)
+get_filename_component(goby_FORMER_SHARE_DIR share ABSOLUTE)
+add_custom_command(OUTPUT LibLink COMMAND ${CMAKE_COMMAND} -E create_symlink ${goby_LIB_DIR} ${goby_FORMER_LIB_DIR})
+add_custom_target(lib_link ALL DEPENDS LibLink)
+add_custom_command(OUTPUT BinLink COMMAND ${CMAKE_COMMAND} -E create_symlink ${goby_BIN_DIR} ${goby_FORMER_BIN_DIR})
+add_custom_target(bin_link ALL DEPENDS BinLink)
+add_custom_command(OUTPUT IncludeLink COMMAND ${CMAKE_COMMAND} -E create_symlink ${goby_INC_DIR} ${goby_FORMER_INC_DIR})
+add_custom_target(inc_link ALL DEPENDS IncludeLink)
+add_custom_command(OUTPUT ShareLink COMMAND ${CMAKE_COMMAND} -E create_symlink ${goby_SHARE_DIR} ${goby_FORMER_SHARE_DIR})
+add_custom_target(share_link ALL DEPENDS ShareLink)
+
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall") # -fprofile-arcs -ftest-coverage")
 set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -Wall") # -fprofile-arcs -ftest-coverage")
@@ -112,14 +132,29 @@ if(${APPLE})
   link_directories(/sw/lib)
 endif()
 
-set_property(DIRECTORY APPEND PROPERTY ADDITIONAL_MAKE_CLEAN_FILES "${goby_BIN_DIR}" "${goby_LIB_DIR}" "${goby_INCLUDE_DIR}/goby")
+set_property(DIRECTORY APPEND PROPERTY ADDITIONAL_MAKE_CLEAN_FILES "${goby_BIN_DIR}" "${goby_LIB_DIR}" "${goby_INC_DIR}" "${goby_SHARE_DIR}")
 
 ## start adding subdirectories
 add_subdirectory(src)
 
-## copy to goby/include
-file(GLOB_RECURSE INCLUDE_FILES RELATIVE ${goby_SRC_DIR} src/*.h src/*.proto)
-foreach(I ${INCLUDE_FILES})
+## configure to build/include
+file(GLOB BASE_INCLUDE_FILES RELATIVE ${goby_SRC_DIR} src/*.h)
+file(GLOB_RECURSE INCLUDE_FILES RELATIVE ${goby_SRC_DIR} 
+  src/*.proto
+  src/acomms/*.h
+  src/common/*.h 
+  src/util/*.h 
+  src/moos/*.h 
+  src/pb/*.h 
+  )
+foreach(I ${BASE_INCLUDE_FILES} ${INCLUDE_FILES})
   configure_file(${goby_SRC_DIR}/${I} ${goby_INC_DIR}/goby/${I} @ONLY)
 endforeach()
+
+## copy to build/share
+file(GLOB SHARE_FILES RELATIVE ${goby_SRC_DIR} src/share/*)
+foreach(I ${SHARE_FILES})
+  file(COPY ${goby_SRC_DIR}/${I} DESTINATION ${goby_SHARE_DIR})
+endforeach()
+
 

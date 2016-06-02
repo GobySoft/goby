@@ -7,7 +7,7 @@ Version 2.1.2
 - Improved support for Flexible Data Packet (FDP) in Micro-Modem 2. Now supports both mini-packet and full packets (previously only mini-packets were supported), and an optional application acknowledgment is available that can be used to get acks from FDP messages.
 - Added ability to update MicroModem NVRAM configuration while driver is running, rather than just at initialization.
 - Added option for MACManager to use a fixed reference (in Unix time) rather than the start of the current day).
-- Fix to set 
+- Fix to set RTS line low to avoid garbled messages with the MicroModem2 in Linux.
 - (experimental). New `goby_ip_gateway` application: Linux `tun` interface to ease sending of IP/UDP datagrams over Goby.
 
 ### PB 

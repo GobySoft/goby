@@ -12,3 +12,4 @@ if(NOT ${APPLE})
 endif()
 
 set_target_properties(goby_pb PROPERTIES VERSION "${GOBY_VERSION}" SOVERSION "${GOBY_SOVERSION}")
+goby_install_lib(goby_pb)

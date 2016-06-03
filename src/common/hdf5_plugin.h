@@ -24,6 +24,7 @@
 #define HDF5_PLUGIN20160523H
 
 #include <google/protobuf/message.h>
+#include <google/protobuf/descriptor.h>
 
 #include <boost/shared_ptr.hpp>
 

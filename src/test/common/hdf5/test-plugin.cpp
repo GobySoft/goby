@@ -21,7 +21,6 @@
 
 
 #include "goby/common/hdf5_plugin.h"
-#include "goby/moos/moos_protobuf_helpers.h"
 
 #include "goby/common/time.h"
 #include "goby/util/binary.h"

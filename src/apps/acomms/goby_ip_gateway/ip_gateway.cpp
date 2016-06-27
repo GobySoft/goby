@@ -24,6 +24,7 @@
 #include <linux/if_tun.h>
 
 #include <boost/bimap.hpp>
+#include <boost/circular_buffer.hpp>
 
 #include "dccl/arithmetic/field_codec_arithmetic.h"
 
@@ -60,14 +61,15 @@ namespace goby
             void init_tun();
 
             void loop();
-            void handle_udp_packet(protobuf::ModemTransmission* m,
-                                   const goby::acomms::protobuf::IPv4Header& ip_hdr,
+            void receive_packets();
+
+            void handle_udp_packet(const goby::acomms::protobuf::IPv4Header& ip_hdr,
                                    const goby::acomms::protobuf::UDPHeader& udp_hdr,
                                    const std::string& payload);
             void write_udp_packet(goby::acomms::protobuf::IPv4Header& ip_hdr,
                                   goby::acomms::protobuf::UDPHeader& udp_hdr,
                                   const std::string& payload);
-
+            
             std::pair<int, int> to_src_dest_pair(int srcdest);
             int from_src_dest_pair(std::pair<int, int> src_dest);
 
@@ -97,6 +99,9 @@ namespace goby
             std::vector<int> dynamic_udp_fd_;
 
             int ip_mtu_; // the MTU on the tun interface, which is slightly different than the Goby MTU specified in the config file since the IP and Goby NetworkHeader are different sizes.
+
+            // maps destination goby address to message buffer
+            std::map<int, boost::circular_buffer<std::string> > outgoing_;
         };        
     }
 }
@@ -264,11 +269,13 @@ goby::acomms::IPGateway::~IPGateway()
 
 void goby::acomms::IPGateway::loop()
 {
-    mac_.do_work();    
+    mac_.do_work();
+    receive_packets();
 }
 
+
+
 void goby::acomms::IPGateway::handle_udp_packet(
-    protobuf::ModemTransmission* m,
     const goby::acomms::protobuf::IPv4Header& ip_hdr,
     const goby::acomms::protobuf::UDPHeader& udp_hdr,
     const std::string& payload)
@@ -278,12 +285,6 @@ void goby::acomms::IPGateway::handle_udp_packet(
 
     int src = ipv4_to_goby_address(ip_hdr.source_ip_address());
     int dest = ipv4_to_goby_address(ip_hdr.dest_ip_address());
-
-    if(m->src() != src)
-        glog.is(WARN) && glog << "Wrong source ID on data request" << std::endl;
-
-    m->set_dest(dest);
-    m->set_ack_requested(false);
     
     goby::acomms::protobuf::NetworkHeader net_header;
     net_header.set_protocol(goby::acomms::protobuf::NetworkHeader::UDP);
@@ -329,7 +330,17 @@ void goby::acomms::IPGateway::handle_udp_packet(
     
     std::string nh;
     dccl_goby_nh_.encode(&nh, net_header);
-    m->add_frame(nh + payload);
+
+    std::map<int, boost::circular_buffer<std::string> >::iterator it = outgoing_.find(dest);
+    if(it == outgoing_.end())
+    {
+        std::pair<std::map<int, boost::circular_buffer<std::string> >::iterator, bool> itboolpair =
+            outgoing_.insert(std::make_pair(dest, boost::circular_buffer<std::string>(cfg_.queue_size())));
+        it = itboolpair.first;
+    }
+    
+    it->second.push_back(nh + payload);
+    glog.is(DEBUG1) && glog << "Queue size is: " << it->second.size() << std::endl; 
 }
 
 void goby::acomms::IPGateway::handle_initiate_transmission(const protobuf::ModemTransmission& m)
@@ -337,12 +348,9 @@ void goby::acomms::IPGateway::handle_initiate_transmission(const protobuf::Modem
     publish(m, "Tx" + goby::util::as<std::string>(local_modem_id_));
 }
 
-
-void goby::acomms::IPGateway::handle_data_request(const protobuf::ModemTransmission& orig_msg)
+void goby::acomms::IPGateway::receive_packets()
 {
-    protobuf::ModemTransmission msg = orig_msg;
-    
-    while((unsigned)msg.frame_size() < msg.max_num_frames())
+    while(true)
     {
         fd_set rd_set;
         FD_ZERO(&rd_set);
@@ -353,7 +361,7 @@ void goby::acomms::IPGateway::handle_data_request(const protobuf::ModemTransmiss
 
         if (ret < 0 && errno != EINTR) {
             glog.is(WARN) && glog << "Could not select on tun fd." << std::endl;
-            break;
+            return;
         }
         else if(ret > 0)
         {
@@ -388,7 +396,7 @@ void goby::acomms::IPGateway::handle_data_request(const protobuf::ModemTransmiss
                             goby::acomms::protobuf::UDPHeader udp_hdr;
                             std::string udp_header_data(&buffer[ip_header_size], UDP_HEADER_SIZE); 
                             dccl_udp_.decode(udp_header_data, &udp_hdr);
-                            handle_udp_packet(&msg, ip_hdr, udp_hdr, std::string(&buffer[ip_header_size+UDP_HEADER_SIZE], ip_hdr.total_length()-ip_header_size-UDP_HEADER_SIZE));
+                            handle_udp_packet(ip_hdr, udp_hdr, std::string(&buffer[ip_header_size+UDP_HEADER_SIZE], ip_hdr.total_length()-ip_header_size-UDP_HEADER_SIZE));
                             break;
                         }
                     }
@@ -398,8 +406,60 @@ void goby::acomms::IPGateway::handle_data_request(const protobuf::ModemTransmiss
         }
         else
         {
+            // no select items
+            return;
+        }
+    }
+}
+
+
+
+void goby::acomms::IPGateway::handle_data_request(const protobuf::ModemTransmission& orig_msg)
+{
+    protobuf::ModemTransmission msg = orig_msg;
+    
+    while((unsigned)msg.frame_size() < msg.max_num_frames())
+    {
+        if(msg.dest() != goby::acomms::QUERY_DESTINATION_ID)
+        {
+            std::map<int, boost::circular_buffer<std::string> >::iterator it = outgoing_.find(msg.dest());
+            if(it == outgoing_.end())
+            {
+                break;
+            }
+            else if(it->second.size() == 0)
+            {
+                break;
+            }
+            else
+            {
+                msg.set_ack_requested(false);
+                msg.add_frame(it->second.front());
+                it->second.pop_front();
+            }
+        }
+        else
+        {
+            // TODO: not fair - prioritizes lower valued destinations
+            for(std::map<int, boost::circular_buffer<std::string> >::iterator it = outgoing_.begin(),
+                    end = outgoing_.end(); it != end; ++it)
+            {
+                if(it->second.size() == 0)
+                {
+                    continue;
+                }
+                else
+                {
+                    msg.set_dest(it->first);
+                    msg.set_ack_requested(false);
+                    msg.add_frame(it->second.front());
+                    it->second.pop_front();
+                    break;
+                }
+            }
             break;
         }
+        
     }
     
     publish(msg, "DataResponse" + goby::util::as<std::string>(local_modem_id_));

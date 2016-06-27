@@ -84,13 +84,11 @@ namespace goby
             struct RemoteNode
             {
                 enum  { DATA_BUFFER_CAPACITY = 30 };
-            RemoteNode() : data_out(DATA_BUFFER_CAPACITY),
-                    last_send_time(0)
+            RemoteNode() : data_out(DATA_BUFFER_CAPACITY)
                     { }
                 
                 boost::shared_ptr<OnCallBase> on_call;
                 boost::circular_buffer<protobuf::ModemTransmission> data_out;
-                double last_send_time;
             };
             
             

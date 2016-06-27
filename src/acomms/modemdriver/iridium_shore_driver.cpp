@@ -113,31 +113,32 @@ void goby::acomms::IridiumShoreDriver::do_work()
     //    display_state_cfg(&glog);
     double now = goby_time<double>();
     
-    // if we're on a call, keep pushing data at the target rate
-    const double send_interval =
-        driver_cfg_.GetExtension(IridiumDriverConfig::max_frame_size) /
-        (driver_cfg_.GetExtension(IridiumDriverConfig::target_bit_rate) / static_cast<double>(BITS_IN_BYTE));
 
     for(std::map<ModemId, RemoteNode>::iterator it = remote_.begin(), end = remote_.end();
         it != end; ++it)
     {
         RemoteNode& remote = it->second;
-        boost::shared_ptr<OnCallBase> on_call_base = it->second.on_call;
+        boost::shared_ptr<OnCallBase> on_call_base = remote.on_call;
         ModemId id = it->first;
         
-        if(now > (remote.last_send_time + send_interval))
-        {
-            if(on_call_base && !on_call_base->bye_sent())
-            {
-                rudics_mac_msg_.set_dest(it->first);
-                process_transmission(rudics_mac_msg_);
-                remote.last_send_time = now;
-            }
-        }
 
         // if we're on either type of call, see if we need to send the "bye" message or hangup
         if(on_call_base)
         {
+            // if we're on a call, keep pushing data at the target rate
+            const double send_wait =
+                on_call_base->last_bytes_sent() /
+                (driver_cfg_.GetExtension(IridiumDriverConfig::target_bit_rate) / static_cast<double>(BITS_IN_BYTE));
+            
+            if(now > (on_call_base->last_tx_time() + send_wait))
+            {
+                if(!on_call_base->bye_sent())
+                {
+                    rudics_mac_msg_.set_dest(it->first);
+                    process_transmission(rudics_mac_msg_);
+                }
+            }
+
             if(!on_call_base->bye_sent() &&
                now > (on_call_base->last_tx_time() + driver_cfg_.GetExtension(IridiumDriverConfig::handshake_hangup_seconds)))
             {
@@ -205,6 +206,7 @@ void goby::acomms::IridiumShoreDriver::send(const protobuf::ModemTransmission& m
         rudics_send(rudics_packet, msg.dest());
         boost::shared_ptr<OnCallBase> on_call_base = remote.on_call;
         on_call_base->set_last_tx_time(goby_time<double>());
+        on_call_base->set_last_bytes_sent(rudics_packet.size());
     }
     else if(msg.rate() == RATE_SBD)
     {

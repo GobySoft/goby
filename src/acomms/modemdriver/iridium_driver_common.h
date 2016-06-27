@@ -36,13 +36,17 @@ namespace goby
               : last_tx_time_(goby::common::goby_time<double>()),
                 last_rx_time_(0),
                 bye_received_(false),
-                bye_sent_(false)
+                bye_sent_(false),
+                total_bytes_sent_(0),
+                last_bytes_sent_(0)
                 { }
-                
             double last_rx_tx_time() const { return std::max(last_tx_time_, last_rx_time_); }
             double last_rx_time() const { return last_rx_time_; }
             double last_tx_time() const { return last_tx_time_; }
-                
+
+            int last_bytes_sent() const { return last_bytes_sent_; }
+            int total_bytes_sent() const { return total_bytes_sent_; }
+            
                 
             void set_bye_received(bool b) { bye_received_ = b; }
             void set_bye_sent(bool b) { bye_sent_ = b; }
@@ -53,11 +57,19 @@ namespace goby
             void set_last_tx_time(double d) { last_tx_time_ = d; }
             void set_last_rx_time(double d) { last_rx_time_ = d; }
 
+            void set_last_bytes_sent(int i) 
+            {
+                last_bytes_sent_ = i;
+                total_bytes_sent_ += i;
+            }
+            
           private:
             double last_tx_time_;            
             double last_rx_time_;            
             bool bye_received_;
-            bool bye_sent_;     
+            bool bye_sent_;
+            int total_bytes_sent_;
+            int last_bytes_sent_;
         };
             
     }

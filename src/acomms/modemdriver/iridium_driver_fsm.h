@@ -105,9 +105,6 @@ namespace goby
             struct EvSendBye : boost::statechart::event< EvSendBye > {};
 
             
-            struct EvZMQConnect : boost::statechart::event< EvZMQConnect > {};
-            struct EvZMQDisconnect : boost::statechart::event< EvZMQDisconnect > {};
-
             struct EvConfigured : boost::statechart::event< EvConfigured > {};
             struct EvSBDBeginData : boost::statechart::event< EvSBDBeginData >
             {
@@ -144,7 +141,6 @@ namespace goby
             
             struct Online;
             struct OnCall;
-            struct OnZMQCall;
             struct NotOnCall;
 
             struct SBD;
@@ -426,37 +422,19 @@ namespace goby
             struct NotOnCall : boost::statechart::simple_state<NotOnCall, Active::orthogonal<1> >, StateNotify
             {
                 typedef boost::mpl::list<
-                    boost::statechart::transition< EvConnect, OnCall >,
-                    boost::statechart::transition< EvZMQConnect, OnZMQCall >
+                    boost::statechart::transition< EvConnect, OnCall >
                     > reactions;
                 
               NotOnCall() : StateNotify("NotOnCall") {}
                 ~NotOnCall() {} 
             };
 
-            struct OnZMQCall : boost::statechart::simple_state<OnZMQCall, Active::orthogonal<1> >, StateNotify, OnCallBase
-            {
-                
-              OnZMQCall() : StateNotify("OnZMQCall") { }
-                ~OnZMQCall() {} 
-
-                void in_state_react( const EvSendBye& )
-                {
-                    set_bye_sent(true);
-                }
-
-                typedef boost::mpl::list<
-                    boost::statechart::transition< EvZMQDisconnect, NotOnCall >,
-                    boost::statechart::in_state_reaction< EvSendBye, OnZMQCall, &OnZMQCall::in_state_react >
-                    > reactions;
-                
-            };
 
             struct OnCall : boost::statechart::state<OnCall, Active::orthogonal<1> >, StateNotify, OnCallBase
             {
               public:
 
-              OnCall(my_context ctx) : my_base(ctx), StateNotify("OnCall")
+            OnCall(my_context ctx) : my_base(ctx), StateNotify("OnCall")
                 {
                     // add a brief identifier that is *different* than the "~" which is what PPP uses
                     // add a carriage return to clear out any garbage
@@ -468,14 +446,14 @@ namespace goby
                 } 
                 ~OnCall() {
                     // signal the disconnect event for the command state to handle
+                    glog.is(goby::common::logger::DEBUG1) && glog << group("iridiumdriver") << "Sent " << total_bytes_sent() << " bytes on this call." << std::endl;
                     post_event(EvDisconnect());
                 } 
 
                 void in_state_react( const EvRxOnCallSerial& );
                 void in_state_react( const EvTxOnCallSerial& );
                 void in_state_react( const EvSendBye& );
-
-
+                
                 typedef boost::mpl::list<
                     boost::statechart::transition< EvNoCarrier, NotOnCall >,
                     boost::statechart::in_state_reaction< EvRxOnCallSerial, OnCall, &OnCall::in_state_react >,
@@ -485,7 +463,7 @@ namespace goby
                     > reactions;    
 
               private:
-    
+
            
             };
 

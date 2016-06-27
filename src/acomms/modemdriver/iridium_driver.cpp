@@ -41,7 +41,6 @@ using goby::acomms::operator<<;
 goby::acomms::IridiumDriver::IridiumDriver()
     : fsm_(driver_cfg_),
       last_triple_plus_time_(0),
-      last_send_time_(0),
       serial_fd_(-1),
       next_frame_(0)
 {
@@ -221,26 +220,24 @@ void goby::acomms::IridiumDriver::do_work()
     //    display_state_cfg(&glog);
     double now = goby_time<double>();
     
-    // if we're on a call, keep pushing data at the target rate
-    const double send_interval =
-        driver_cfg_.GetExtension(IridiumDriverConfig::max_frame_size) /
-        (driver_cfg_.GetExtension(IridiumDriverConfig::target_bit_rate) / static_cast<double>(BITS_IN_BYTE));
-
-    
     const fsm::OnCall* on_call = fsm_.state_cast<const fsm::OnCall*>();
-    
-    if(fsm_.data_out().empty() &&
-       (now > (last_send_time_ + send_interval)))
-    {
-        if(on_call && !on_call->bye_sent())
-        {        
-            process_transmission(rudics_mac_msg_, false);
-            last_send_time_ = now;
-        }
-    }
 
     if(on_call)
     {
+        // if we're on a call, keep pushing data at the target rate
+        const double send_wait =
+            on_call->last_bytes_sent() /
+            (driver_cfg_.GetExtension(IridiumDriverConfig::target_bit_rate) / static_cast<double>(BITS_IN_BYTE));
+    
+        if(fsm_.data_out().empty() &&
+           (now > (on_call->last_tx_time() + send_wait)))
+        {
+            if(!on_call->bye_sent())
+            {        
+                process_transmission(rudics_mac_msg_, false);
+            }
+        }
+
         if(!on_call->bye_sent() &&
            now > (on_call->last_tx_time() + driver_cfg_.GetExtension(IridiumDriverConfig::handshake_hangup_seconds)))
         {

@@ -38,13 +38,16 @@ using goby::common::goby_time;
 using goby::acomms::operator<<;
 
 
+boost::shared_ptr<dccl::Codec> goby::acomms::iridium_header_dccl_;
+
 goby::acomms::IridiumDriver::IridiumDriver()
     : fsm_(driver_cfg_),
       last_triple_plus_time_(0),
       serial_fd_(-1),
       next_frame_(0)
 {
-     
+    init_iridium_dccl();
+    
 //    assert(byte_string_to_uint32(uint32_to_byte_string(16540)) == 16540);
 }
 
@@ -189,8 +192,10 @@ void goby::acomms::IridiumDriver::process_transmission(protobuf::ModemTransmissi
 {
     signal_modify_transmission(&msg);
 
+    const static unsigned frame_max = IridiumHeader::descriptor()->FindFieldByName("frame_start")->options().GetExtension(dccl::field).max();
+    
     if(!msg.has_frame_start())
-        msg.set_frame_start(next_frame_);
+        msg.set_frame_start(next_frame_ % frame_max);
 
     // set the frame size, if not set or if it exceeds the max configured
     if(!msg.has_max_frame_bytes() || msg.max_frame_bytes() > driver_cfg_.GetExtension(IridiumDriverConfig::max_frame_size))
@@ -335,8 +340,11 @@ void goby::acomms::IridiumDriver::send(const protobuf::ModemTransmission& msg)
             fsm_.buffer_data_out(msg);
         else
         {
+            std::string iridium_packet;
+            serialize_iridium_modem_message(&iridium_packet, msg);
+            
             std::string rudics_packet;
-            serialize_rudics_packet(msg.SerializeAsString(), &rudics_packet);
+            serialize_rudics_packet(iridium_packet, &rudics_packet);
             fsm_.process_event(fsm::EvSBDBeginData(rudics_packet));
         }
         

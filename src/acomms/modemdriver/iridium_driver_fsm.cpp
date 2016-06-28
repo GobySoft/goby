@@ -145,7 +145,7 @@ void goby::acomms::fsm::Command::handle_sbd_rx(const std::string& in)
             std::string bytes;
             parse_rudics_packet(&bytes, sbd_rx_data);
             protobuf::ModemTransmission msg;
-            msg.ParseFromString(bytes);
+            parse_iridium_modem_message(bytes, &msg);
             context< IridiumDriverFSM >().received().push_back(msg);
             at_out().pop_front();
 
@@ -344,7 +344,7 @@ void goby::acomms::fsm::OnCall::in_state_react(const EvRxOnCallSerial& e)
             parse_rudics_packet(&bytes, in);
             
             protobuf::ModemTransmission msg;
-            msg.ParseFromString(bytes);
+            parse_iridium_modem_message(bytes, &msg);
             context< IridiumDriverFSM >().received().push_back(msg);
             set_last_rx_time(goby_time<double>());
         }
@@ -368,8 +368,8 @@ void goby::acomms::fsm::OnCall::in_state_react( const EvTxOnCallSerial& )
     {
         // serialize the (protobuf) message
         std::string bytes;
-        data_out.front().SerializeToString(&bytes);
-
+        serialize_iridium_modem_message(&bytes, data_out.front());
+        
         // frame message
         std::string rudics_packet;
         serialize_rudics_packet(bytes, &rudics_packet);

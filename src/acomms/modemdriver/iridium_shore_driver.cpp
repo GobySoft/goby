@@ -47,6 +47,7 @@ using goby::acomms::protobuf::DirectIPMTPayload;
 goby::acomms::IridiumShoreDriver::IridiumShoreDriver() :
     next_frame_(0)
 {     
+    init_iridium_dccl();
 }
 
 goby::acomms::IridiumShoreDriver::~IridiumShoreDriver()
@@ -198,7 +199,7 @@ void goby::acomms::IridiumShoreDriver::send(const protobuf::ModemTransmission& m
     if(msg.rate() == RATE_RUDICS || remote.on_call)
     {
         std::string bytes;
-        msg.SerializeToString(&bytes);
+        serialize_iridium_modem_message(&bytes, msg);
 
         // frame message
         std::string rudics_packet;
@@ -211,7 +212,7 @@ void goby::acomms::IridiumShoreDriver::send(const protobuf::ModemTransmission& m
     else if(msg.rate() == RATE_SBD)
     {
         std::string bytes;
-        msg.SerializeToString(&bytes);
+        serialize_iridium_modem_message(&bytes, msg);
             
         std::string sbd_packet;
         serialize_rudics_packet(bytes, &sbd_packet);
@@ -296,8 +297,9 @@ void goby::acomms::IridiumShoreDriver::rudics_line(const std::string& data, boos
             parse_rudics_packet(&decoded_line, data);
             
             protobuf::ModemTransmission modem_msg;
-            modem_msg.ParseFromString(decoded_line);
+            parse_iridium_modem_message(decoded_line, &modem_msg);
 
+            
             glog.is(DEBUG1) && glog << "Received RUDICS message from: " << modem_msg.src() << " to: " << modem_msg.dest() << " from endpoint: " << connection->remote_endpoint_str() << std::endl;
             if(!clients_.left.count(modem_msg.src()))
             {
@@ -349,8 +351,7 @@ void goby::acomms::IridiumShoreDriver::receive_sbd_mo()
             try
             {
                 parse_rudics_packet(&bytes, (*it)->message().body().payload());
-
-                modem_msg.ParseFromString(bytes);
+                parse_iridium_modem_message(bytes, &modem_msg);
             
                 glog.is(DEBUG1) && glog << "Rx SBD ModemTransmission: " << modem_msg.ShortDebugString() << std::endl;
 

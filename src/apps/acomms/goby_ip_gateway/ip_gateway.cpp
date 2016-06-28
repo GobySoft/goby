@@ -467,7 +467,8 @@ void goby::acomms::IPGateway::handle_data_request(const protobuf::ModemTransmiss
 
 void goby::acomms::IPGateway::handle_modem_receive(const goby::acomms::protobuf::ModemTransmission& modem_msg)
 {
-    std::cout << modem_msg.DebugString() << std::endl;
+    if(cfg_.has_only_rate() && cfg_.only_rate() != modem_msg.rate())
+        return;
     
     for(int i = 0, n = modem_msg.frame_size(); i < n; ++i)
     {

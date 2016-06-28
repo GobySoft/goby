@@ -33,4 +33,6 @@ message IPGatewayConfig
     required uint32 mtu = 31;
 
     optional int32 queue_size = 40 [default = 100];
+
+    optional int32 only_rate = 50;
 }

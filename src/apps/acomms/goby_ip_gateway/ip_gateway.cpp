@@ -416,6 +416,9 @@ void goby::acomms::IPGateway::receive_packets()
 
 void goby::acomms::IPGateway::handle_data_request(const protobuf::ModemTransmission& orig_msg)
 {
+    if(cfg_.has_only_rate() && cfg_.only_rate() != orig_msg.rate())
+        return;
+    
     protobuf::ModemTransmission msg = orig_msg;
     
     while((unsigned)msg.frame_size() < msg.max_num_frames())

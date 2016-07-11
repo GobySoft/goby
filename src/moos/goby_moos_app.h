@@ -25,6 +25,7 @@
 
 #include "goby/moos/moos_header.h"
 #include "goby/util/as.h"
+#include "goby/moos/moos_translator.h"
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <map>
@@ -109,9 +110,11 @@ template <class MOOSAppType = MOOSAppShell>
       template<typename ProtobufMessage>
       void publish_pb(const std::string& key, const ProtobufMessage& msg)
       {
+          
           std::string serialized;
-          serialize_for_moos(&serialized, msg);
-          publish(key, serialized);
+          bool is_binary = serialize_for_moos(&serialized, msg);
+          CMOOSMsg moos_msg = goby::moos::MOOSTranslator::make_moos_msg(key, serialized, is_binary, goby::moos::moos_technique, msg.GetDescriptor()->full_name());
+          publish(moos_msg);
       }
       
   

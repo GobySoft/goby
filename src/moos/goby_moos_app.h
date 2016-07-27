@@ -194,7 +194,36 @@ template <class MOOSAppType = MOOSAppShell>
 
       bool dynamic_moos_vars_enabled() { return dynamic_moos_vars_enabled_; }
       void set_dynamic_moos_vars_enabled(bool b) { dynamic_moos_vars_enabled_ = b; }
-    
+
+      std::pair<std::string, goby::moos::protobuf::TranslatorEntry::ParserSerializerTechnique> parse_type_technique(const std::string& type_and_technique)
+      {
+          std::string protobuf_type;
+          goby::moos::protobuf::TranslatorEntry::ParserSerializerTechnique technique;
+          if(!type_and_technique.empty())
+          {
+              std::string::size_type colon_pos = type_and_technique.find(':');
+
+              if(colon_pos != std::string::npos)
+              {
+                  protobuf_type = type_and_technique.substr(0, colon_pos);
+                  std::string str_technique = type_and_technique.substr(colon_pos+1);
+                  
+                  if(!goby::moos::protobuf::TranslatorEntry::ParserSerializerTechnique_Parse(str_technique, &technique))
+                      throw(std::runtime_error("Invalid technique string"));
+              }
+              else
+              {
+                  throw std::runtime_error("Missing colon (:)");
+              }
+              return std::make_pair(protobuf_type, technique);
+          }
+          else
+          {
+              throw std::runtime_error("Empty technique string");
+          }
+      }
+      
+      
       private:
       // from CMOOSApp
       bool Iterate();

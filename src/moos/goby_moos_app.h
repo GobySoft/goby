@@ -183,6 +183,25 @@ template <class MOOSAppType = MOOSAppShell>
                     boost::bind(&goby::moos::protobuf_inbox<ProtobufMessage>, _1, handler),
                     blackout);
       }
+
+      void register_timer(int period_seconds, boost::function<void ()> handler)      
+      {
+          int now = goby::common::goby_time<double>() / period_seconds;
+          now *= period_seconds;
+
+          SynchronousLoop new_loop;
+          new_loop.unix_next = now + period_seconds;
+          new_loop.period_seconds = period_seconds;
+          new_loop.handler = handler;
+          synchronous_loops_.push_back(new_loop);
+      }
+      
+
+      template<typename V>
+      void register_timer(int period_seconds,
+                          void(V::*mem_func)(),
+                          V* obj)
+      { register_timer(period_seconds, boost::bind(mem_func, obj)); }
       
       template<typename App>
       friend int ::goby::moos::run(int argc, char* argv[]);
@@ -222,6 +241,8 @@ template <class MOOSAppType = MOOSAppShell>
               throw std::runtime_error("Empty technique string");
           }
       }
+
+
       
       
       private:
@@ -270,6 +291,14 @@ template <class MOOSAppType = MOOSAppShell>
       // MOOS Variable pattern, MOOS App pattern, blackout time
       std::deque<std::pair<std::pair<std::string, std::string>, int> > wildcard_pending_subscriptions_;
 
+      struct SynchronousLoop
+      {
+          int unix_next;
+          int period_seconds;
+          boost::function<void ()> handler;
+      };
+      
+      std::vector<SynchronousLoop> synchronous_loops_;
       
       GobyMOOSAppConfig common_cfg_;
 
@@ -328,6 +357,21 @@ template <class MOOSAppType>
     
     
     loop();
+
+    if(synchronous_loops_.size())
+    {
+        double now = goby::common::goby_time<double>();
+        for(typename std::vector<SynchronousLoop>::iterator it = synchronous_loops_.begin(), end = synchronous_loops_.end(); it != end; ++it)
+        {
+            SynchronousLoop& loop = *it;
+            if(loop.unix_next <= now)
+            {
+                loop.handler();
+                loop.unix_next += loop.period_seconds;
+            }
+        }
+    }
+    
     return true;
 }    
 

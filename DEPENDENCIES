@@ -49,29 +49,29 @@ ubuntu|debian)
         install_command="install"
 
         packages="build-essential
- 	    cmake
- 	    libboost-dev
- 	    libboost-system-dev
- 	    libboost-date-time-dev
- 	    libboost-thread-dev
- 	    libboost-program-options-dev
- 	    libboost-filesystem-dev
- 	    libboost-signals-dev
-        libboost-regex-dev
- 	    libprotobuf-dev
- 	    libprotoc-dev
- 	    protobuf-compiler
-        libgmp3-dev"
+          cmake
+          libboost-dev
+          libboost-system-dev
+          libboost-date-time-dev
+          libboost-thread-dev
+          libboost-program-options-dev
+          libboost-filesystem-dev
+          libboost-signals-dev
+          libboost-regex-dev
+          libprotobuf-dev
+          libprotoc-dev
+          protobuf-compiler
+          libgmp3-dev"
         if [ $install_all -ne 0 ]; then 
             packages="${packages}
-                libcrypto++-dev
- 	            libncurses-dev
-                libzmq-dev   
-                libwt-dev
-                libwtdbo-dev
-                libwtdbosqlite-dev
-                libwthttp-dev
-                libsqlite3-dev"
+              libcrypto++-dev
+              libncurses-dev
+              libzmq-dev
+              libwt-dev
+              libwtdbo-dev
+              libwtdbosqlite-dev
+              libwthttp-dev
+              libsqlite3-dev"
         fi
 
         if [[ $1 == "ubuntu" ]]; then
@@ -84,18 +84,18 @@ ubuntu|debian)
         
         if [ $install_doc -ne 0 ]; then 
             packages="${packages} 
- 		graphviz
- 		doxygen
- 		texlive-xetex
- 		ttf-sil-gentium
- 		imagemagick
- 		texlive-fonts-recommended
- 		texlive-font-utils
- 		ghostscript
- 		lmodern
- 		texlive-latex-recommended
-		texlive-latex-extra"
-        fi        
+              graphviz
+              doxygen
+              texlive-xetex
+              ttf-sil-gentium
+              imagemagick
+              texlive-fonts-recommended
+              texlive-font-utils
+              ghostscript
+              lmodern
+              texlive-latex-recommended
+              texlive-latex-extra"
+        fi
        
         # PPA dependencies
         if [[ $1 == "ubuntu" &&  $install_all -ne 0 ]]; then 
@@ -121,8 +121,8 @@ fedora)
         package_manager=yum
         install_command="install"
         packages="cmake
-             protobuf-devel
-             boost-devel"
+          protobuf-devel
+          boost-devel"
 
         if [[ $install_all -ne 0 || $install_doc -ne 0 ]]; then 
             echo "Warning: ALL and DOC are not yet supported for $1"
@@ -132,8 +132,8 @@ opensuse)
         package_manager=zypper
         install_command="install"
         packages="make gcc gcc-c++
-             protobuf-devel
-             boost-devel"
+          protobuf-devel
+          boost-devel"
 
         if [[ $install_all -ne 0 || $install_doc -ne 0 ]]; then 
             echo "Warning: ALL and DOC are not yet supported for $1"

@@ -365,7 +365,7 @@ inline std::multimap<std::string, CMOOSMsg> goby::moos::MOOSTranslator::protobuf
             break;
         }
         
-        moos_msgs.insert(std::make_pair(moos_var, make_moos_msg(moos_var, return_string, is_binary, entry.publish(i).technique(), pb_name)));
+        moos_msgs.insert(std::make_pair(moos_var, make_moos_msg(moos_var, return_string, is_binary, entry.create(i).technique(), pb_name)));
     }
 
     if(entry.trigger().type() == protobuf::TranslatorEntry::Trigger::TRIGGER_PUBLISH)

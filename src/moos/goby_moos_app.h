@@ -293,7 +293,7 @@ template <class MOOSAppType = MOOSAppShell>
 
       struct SynchronousLoop
       {
-          int unix_next;
+          double unix_next;
           int period_seconds;
           boost::function<void ()> handler;
       };
@@ -368,7 +368,17 @@ template <class MOOSAppType>
             {
                 loop.handler();
                 loop.unix_next += loop.period_seconds;
+
+                // fix jumps forward in time
+                if(loop.unix_next < now)
+                    loop.unix_next = now + loop.period_seconds;
+
             }
+
+            // fix jumps backwards in time
+            if(loop.unix_next > (now + 2*loop.period_seconds))
+                loop.unix_next = now + loop.period_seconds;
+
         }
     }
     

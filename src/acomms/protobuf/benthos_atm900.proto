@@ -1,0 +1,12 @@
+import "goby/common/protobuf/option_extensions.proto";
+import "goby/acomms/protobuf/driver_base.proto"; 
+
+message BenthosATM900DriverConfig
+{    
+    // 1441-1460
+    extend goby.acomms.protobuf.DriverConfig
+        {
+            optional bool factory_reset = 1441 [default = false, (goby.field).description="Reset modem to factory defaults prior to applying configuration values specified in 'cfg' (i.e. load values from ffs/factcfg.ini)"];
+            repeated string cfg = 1442 [(goby.field).description="Repeated strings of configuration values to set in CLAM format, for example \"@AcRspTmOut=10.0\""];
+        }
+}

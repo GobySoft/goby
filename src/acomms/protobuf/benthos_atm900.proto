@@ -6,7 +6,10 @@ message BenthosATM900DriverConfig
     // 1441-1460
     extend goby.acomms.protobuf.DriverConfig
         {
-            optional bool factory_reset = 1441 [default = false, (goby.field).description="Reset modem to factory defaults prior to applying configuration values specified in 'cfg' (i.e. load values from ffs/factcfg.ini)"];
-            repeated string cfg = 1442 [(goby.field).description="Repeated strings of configuration values to set in CLAM format, for example \"@AcRspTmOut=10.0\""];
+            optional bool factory_reset = 1441 [default = false, (goby.field).description="Reset modem to factory defaults prior to applying configuration values specified in 'config' (i.e. load values from ffs/factcfg.ini)"];
+            optional string config_load = 1442 [(goby.field).description="Path to config file to load on the modem, e.g. 'ffs/standard.ini'"];
+            repeated string config = 1443 [(goby.field).description="Strings of configuration values to set in CLAM format, for example \"@AcRspTmOut=10.0\""];
+            optional int32 start_timeout = 1445 [default = 20, (goby.field).description="Number of seconds to initialize the modem before giving up"];
+            optional uint32 max_frame_size = 1446 [default = 64, (goby.field).description="Enforce maximum packet size for all rates (also used if max_frame_bytes not set in ModemTransmission)"];
         }
 }

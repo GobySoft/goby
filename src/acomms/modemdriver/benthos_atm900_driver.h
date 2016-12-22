@@ -28,6 +28,7 @@
 #include "driver_base.h"
 #include "goby/acomms/protobuf/benthos_atm900.pb.h"
 #include "goby/acomms/acomms_helpers.h"
+#include "benthos_atm900_driver_fsm.h"
 
 namespace goby
 {
@@ -43,10 +44,18 @@ namespace goby
             void handle_initiate_transmission(const protobuf::ModemTransmission& m);
 
         private:
+            void receive(const protobuf::ModemTransmission& msg);
+            void send(const protobuf::ModemTransmission& msg);
+            void try_serial_tx();
+            
 
         private:
             enum { DEFAULT_BAUD = 9600 };
+            static const std::string SERIAL_DELIMITER;
+
+            benthos_fsm::BenthosATM900FSM fsm_;
             protobuf::DriverConfig driver_cfg_; // configuration given to you at launch
+            goby::uint32 next_frame_;
         };
     }
 }

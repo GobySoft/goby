@@ -28,16 +28,13 @@
 #include "rudics_packet.h"
 #include "goby/util/binary.h"
 
-void goby::acomms::serialize_rudics_packet(std::string bytes, std::string* rudics_pkt)
+void goby::acomms::serialize_rudics_packet(std::string bytes, std::string* rudics_pkt, const std::string& reserved)
 {
     // 1. append CRC
     boost::crc_32_type crc;
     crc.process_bytes(bytes.data(), bytes.length());
     bytes += uint32_to_byte_string(crc.checksum());
 
-    static const std::string reserved = std::string("\0\r\n",3) +
-        std::string(1, 0xff);
-    
     // 2. convert to base (256 minus reserved)
     const int reduced_base = 256-reserved.size();
     
@@ -57,7 +54,7 @@ void goby::acomms::serialize_rudics_packet(std::string bytes, std::string* rudic
     *rudics_pkt += "\r";
 }
 
-void goby::acomms::parse_rudics_packet(std::string* bytes, std::string rudics_pkt)
+void goby::acomms::parse_rudics_packet(std::string* bytes, std::string rudics_pkt, const std::string& reserved)
 {    
     const unsigned CR_SIZE = 1;    
     if(rudics_pkt.size() < CR_SIZE)
@@ -66,8 +63,6 @@ void goby::acomms::parse_rudics_packet(std::string* bytes, std::string rudics_pk
     // 4. remove CR
     rudics_pkt = rudics_pkt.substr(0, rudics_pkt.size()-1);
 
-    static const std::string reserved = std::string("\0\r\n", 3) +
-        std::string(1, 0xff);
     const int reduced_base = 256-reserved.size();
 
     // get rid of extra junk

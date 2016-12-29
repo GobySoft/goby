@@ -29,6 +29,7 @@
 
 #include "rudics_packet.h"
 #include "benthos_atm900_driver_fsm.h"
+#include "benthos_atm900_driver.h"
 
 using goby::glog;
 using namespace goby::common::logger;
@@ -57,9 +58,15 @@ void goby::acomms::benthos_fsm::Active::in_state_react(const EvRxSerial& e)
         // data
         post_event(EvReceive(in));
     }
-    else if(in.compare(0, user.size(), user) == 0 || // shell prompt
-            in.empty() // empty string
-        )
+    else if(in.compare(0, user.size(), user) == 0)  // shell prompt
+    {
+        post_event(EvShellPrompt());
+
+        if(in.find("Lowpower") != std::string::npos)
+            post_event(EvAck(in));
+
+    }
+    else if(in.empty()) // empty string
     {
         // do nothing
     }
@@ -73,13 +80,101 @@ void goby::acomms::benthos_fsm::Active::in_state_react(const EvRxSerial& e)
     }
 }
 
+goby::acomms::benthos_fsm::ReceiveData::ReceiveData(my_context ctx) :
+    my_base(ctx), StateNotify("ReceiveData"), reported_size_(0)
+{
+    try 
+    {
+        if(const EvReceive* ev_rx = dynamic_cast<const EvReceive*>(triggering_event()))
+        {
+            std::string first = ev_rx->first_;
+            // remove extra spaces in the string
+            boost::erase_all(first, " ");
+            // e.g. DATA(0037):b2b645b7097cb585d181b0c34ff1a13b
+            std::cout << "ReceiveData: " << first << std::endl;
+            enum { SIZE_START = 5, SIZE_END = 9, BYTES_START = 11 };
+            if(first.size() < BYTES_START)
+                throw(std::runtime_error("String too short"));
+
+            std::string size_str = first.substr(SIZE_START, SIZE_END-SIZE_START);
+            boost::trim_left_if(size_str, boost::is_any_of("0"));
+            reported_size_ = boost::lexical_cast<unsigned>(size_str);
+            std::cout << "Size: [" << reported_size_ << "]" << std::endl;
+
+            std::cout << "Bytes: [" << first.substr(BYTES_START) << "]" << std::endl;
+            encoded_bytes_ += goby::util::hex_decode(first.substr(BYTES_START));
+        }
+        else
+        {
+            throw(std::runtime_error("Invalid triggering_event, expected EvReceive"));
+        }
+    }
+    catch(std::exception& e)
+    {
+        goby::glog.is(goby::common::logger::WARN) && goby::glog << "Invalid data received, ignoring: " << e.what() << std::endl;
+        post_event(EvReceiveComplete());
+    }
+}
+
 void goby::acomms::benthos_fsm::ReceiveData::in_state_react( const EvRxSerial& e)
 {
-    std::string in = e.line;
-    boost::trim(in);
-    std::cout << "ReceiveData: " << in << std::endl;
-    if(in == "<EOP>")
+    try 
+    {
+        std::string in = e.line;
+        boost::trim(in);
+        std::cout << "ReceiveData: " << in << std::endl;
+
+        const std::string source = "Source";
+        const std::string crc = "CRC";
+    
+    
+        if(in == "<EOP>")
+        {
+            std::cout << "End of packet: " << rx_msg_.DebugString() << std::endl;
+            parse_benthos_modem_message(encoded_bytes_, &rx_msg_);
+            context<BenthosATM900FSM>().received().push_back(rx_msg_);
+            
+            post_event(EvReceiveComplete());
+        }
+        else if(encoded_bytes_.size() < reported_size_)
+        {
+            // assume more bytes
+            boost::erase_all(in, " ");
+            encoded_bytes_ += goby::util::hex_decode(in);
+            std::cout << "Added " << in.size()/2 << " more bytes" << std::endl;
+            std::cout << "Total size: " << encoded_bytes_.size() << std::endl;
+        }
+        else if(in.compare(0, source.size(), source) == 0)
+        {
+            //  Source:001  Destination:002
+            std::vector<std::string> src_dest;
+            boost::split(src_dest, in, boost::is_any_of(" "), boost::token_compress_on);
+            if(src_dest.size() != 2)
+            {
+                throw(std::runtime_error("Invalid source/dest string, expected \"Source:NNN Destination: MMM\""));
+            }
+
+            enum { SOURCE_ID_START = 7, DEST_ID_START = 12 };
+            for(int i = 0; i < 2; ++i)
+            {
+                std::string id_str = src_dest[i].substr(i == 0 ? SOURCE_ID_START : DEST_ID_START);
+                boost::trim_left_if(id_str, boost::is_any_of("0"));
+                int id = boost::lexical_cast<unsigned>(id_str);
+                if(i == 0) rx_msg_.set_src(id);
+                else if(i == 1) rx_msg_.set_dest(id);
+            }
+        }
+        else if(in.compare(0, crc.size(), crc) == 0)
+        {
+            // CRC:Pass MPD:03.2 SNR:31.3 AGC:91 SPD:+00.0 CCERR:013
+        }
+    }
+    catch(std::exception& e)
+    {
+        goby::glog.is(goby::common::logger::WARN) && goby::glog << "Invalid data received, ignoring. Reason: " << e.what() << std::endl;
         post_event(EvReceiveComplete());
+    }
+    
 }
 
 
@@ -131,17 +226,11 @@ void goby::acomms::benthos_fsm::TransmitData::in_state_react( const EvTxSerial& 
     boost::circular_buffer<protobuf::ModemTransmission>& data_out = context<BenthosATM900FSM>().data_out();
     if(!data_out.empty())
     {
-        for(int i = 0, n = data_out.front().frame_size(); i < n; ++i)
-        {
-            if(data_out.front().frame(i).empty())
-                break;
-            
-            // frame message
-            std::string rudics_packet;
-            serialize_rudics_packet(data_out.front().frame(i), &rudics_packet, "\r");
+        // frame message
+        std::string packet;
+        serialize_benthos_modem_message(&packet, data_out.front());
+        context<BenthosATM900FSM>().serial_tx_buffer().push_back(packet);
 
-            context<BenthosATM900FSM>().serial_tx_buffer().push_back(rudics_packet);
-        }
         data_out.pop_front();
     }
 }
@@ -177,6 +266,11 @@ void goby::acomms::benthos_fsm::Command::in_state_react( const EvAck & e)
         else if(e.response_.compare(0, user.size(), user) == 0 && last_cmd.substr(0, 3) == "+++")
         {
             // no response in command mode other than giving us a new user:N> prompt
+            valid = true;
+        }
+        else if(last_cmd.substr(0, 3) == "ATL" && e.response_.find("Lowpower") != std::string::npos)
+        {
+            post_event(EvLowPower());
             valid = true;
         }
         else if(last_cmd.size() > 0) // deal with varied CLAM responses

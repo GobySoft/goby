@@ -34,10 +34,14 @@ using goby::common::goby_time;
 
 const std::string goby::acomms::BenthosATM900Driver::SERIAL_DELIMITER = "\r\n";
 
+boost::shared_ptr<dccl::Codec> goby::acomms::benthos_header_dccl_;
+
 goby::acomms::BenthosATM900Driver::BenthosATM900Driver()
     : fsm_(driver_cfg_),
       next_frame_(0)
 {
+    
+    init_benthos_dccl();
 }
 
 void goby::acomms::BenthosATM900Driver::startup(const protobuf::DriverConfig& cfg)
@@ -95,23 +99,15 @@ void goby::acomms::BenthosATM900Driver::handle_initiate_transmission(const proto
 {
     protobuf::ModemTransmission msg = orig_msg;
     signal_modify_transmission(&msg);
- 
-    if(!msg.has_frame_start())
-        msg.set_frame_start(next_frame_);
 
     // set the frame size, if not set or if it exceeds the max configured
     if(!msg.has_max_frame_bytes() || msg.max_frame_bytes() > driver_cfg_.GetExtension(BenthosATM900DriverConfig::max_frame_size))
         msg.set_max_frame_bytes(driver_cfg_.GetExtension(BenthosATM900DriverConfig::max_frame_size));
     
     signal_data_request(&msg);
-
-    next_frame_ += msg.frame_size();
     
     if(!(msg.frame_size() == 0 || msg.frame(0).empty()))
-    {
-        fsm_.process_event(benthos_fsm::EvDial(msg.dest()));
         send(msg);
-    }
 } 
 
 void goby::acomms::BenthosATM900Driver::do_work()
@@ -169,6 +165,7 @@ void goby::acomms::BenthosATM900Driver::send(const protobuf::ModemTransmission& 
 {
     glog.is(DEBUG2) && glog << group(glog_out_group()) << msg << std::endl;
     fsm_.buffer_data_out(msg);
+    fsm_.process_event(benthos_fsm::EvDial(msg.dest()));
 }
 
 

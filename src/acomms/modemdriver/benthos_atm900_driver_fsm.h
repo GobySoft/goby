@@ -37,6 +37,7 @@
 #include <iostream>
 
 #include "goby/acomms/acomms_constants.h"
+#include "goby/util/binary.h"
 
 #include "goby/acomms/protobuf/modem_message.pb.h"
 #include "goby/acomms/protobuf/benthos_atm900.pb.h"
@@ -93,6 +94,7 @@ namespace goby
             };
 
             struct EvReceiveComplete : boost::statechart::event< EvReceiveComplete > {};
+            struct EvShellPrompt : boost::statechart::event< EvShellPrompt > {};
 
             struct Active;
             struct ReceiveData;
@@ -186,15 +188,7 @@ namespace goby
             struct ReceiveData : boost::statechart::state<ReceiveData, BenthosATM900FSM>, StateNotify
             {
                 
-            ReceiveData(my_context ctx) : my_base(ctx), StateNotify("ReceiveData")
-                {
-
-                    if(const EvReceive* ev_rx = dynamic_cast<const EvReceive*>(triggering_event()))
-                    {
-                        std::cout << "ReceiveData: " << ev_rx->first_ << std::endl;
-                    }
-                    
-                }
+                ReceiveData(my_context ctx);
                 ~ReceiveData()
                 { }
 
@@ -205,6 +199,11 @@ namespace goby
                     boost::statechart::in_state_reaction< EvRxSerial, ReceiveData, &ReceiveData::in_state_react >,
                     boost::statechart::transition< EvReceiveComplete, boost::statechart::deep_history< Command > >
                     > reactions;
+                
+                protobuf::ModemTransmission rx_msg_;
+                unsigned reported_size_;
+                std::string encoded_bytes_; // still base 255 encoded
+                
             };
             
             // Command
@@ -212,8 +211,21 @@ namespace goby
                 StateNotify
             {
               public:
-                void in_state_react( const EvTxSerial& );
                 void in_state_react( const EvAck & );
+                void in_state_react( const EvTxSerial& );
+                boost::statechart::result react( const EvConnect& )
+                {
+                    if(at_out_.empty() || at_out_.front().second != "+++")
+                    {
+                        at_out_.clear();
+                        return transit<Online>();
+                    }
+                    else
+                    {
+                        // connect when trying to send "+++"
+                        return discard_event();
+                    }
+                }
 
                   Command()
                       : StateNotify("Command"),
@@ -225,9 +237,9 @@ namespace goby
                     ~Command() { }
                     
                     typedef boost::mpl::list<
-                        boost::statechart::in_state_reaction< EvTxSerial, Command, &Command::in_state_react >,
-                        boost::statechart::transition< EvConnect, Online >,
-                        boost::statechart::in_state_reaction< EvAck, Command, &Command::in_state_react >
+                        boost::statechart::custom_reaction < EvConnect >,
+                        boost::statechart::in_state_reaction< EvAck, Command, &Command::in_state_react >,
+                        boost::statechart::in_state_reaction< EvTxSerial, Command, &Command::in_state_react >
                         > reactions;
 
 
@@ -396,7 +408,12 @@ namespace goby
             Online(my_context ctx) : my_base(ctx), StateNotify("Online")
                 {
                 }
-                ~Online() { }                
+                ~Online() { }
+
+                
+                typedef boost::mpl::list<
+                    boost::statechart::transition< EvShellPrompt, boost::statechart::deep_history< Command > >
+                    > reactions;
             };
 
             struct Listen : boost::statechart::state<Listen, Online>, StateNotify

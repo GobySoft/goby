@@ -91,7 +91,6 @@ goby::acomms::benthos_fsm::ReceiveData::ReceiveData(my_context ctx) :
             // remove extra spaces in the string
             boost::erase_all(first, " ");
             // e.g. DATA(0037):b2b645b7097cb585d181b0c34ff1a13b
-            std::cout << "ReceiveData: " << first << std::endl;
             enum { SIZE_START = 5, SIZE_END = 9, BYTES_START = 11 };
             if(first.size() < BYTES_START)
                 throw(std::runtime_error("String too short"));
@@ -99,9 +98,6 @@ goby::acomms::benthos_fsm::ReceiveData::ReceiveData(my_context ctx) :
             std::string size_str = first.substr(SIZE_START, SIZE_END-SIZE_START);
             boost::trim_left_if(size_str, boost::is_any_of("0"));
             reported_size_ = boost::lexical_cast<unsigned>(size_str);
-            std::cout << "Size: [" << reported_size_ << "]" << std::endl;
-
-            std::cout << "Bytes: [" << first.substr(BYTES_START) << "]" << std::endl;
             encoded_bytes_ += goby::util::hex_decode(first.substr(BYTES_START));
         }
         else
@@ -122,15 +118,12 @@ void goby::acomms::benthos_fsm::ReceiveData::in_state_react( const EvRxSerial& e
     {
         std::string in = e.line;
         boost::trim(in);
-        std::cout << "ReceiveData: " << in << std::endl;
-
         const std::string source = "Source";
         const std::string crc = "CRC";
     
     
         if(in == "<EOP>")
         {
-            std::cout << "End of packet: " << rx_msg_.DebugString() << std::endl;
             parse_benthos_modem_message(encoded_bytes_, &rx_msg_);
             context<BenthosATM900FSM>().received().push_back(rx_msg_);
             
@@ -141,8 +134,6 @@ void goby::acomms::benthos_fsm::ReceiveData::in_state_react( const EvRxSerial& e
             // assume more bytes
             boost::erase_all(in, " ");
             encoded_bytes_ += goby::util::hex_decode(in);
-            std::cout << "Added " << in.size()/2 << " more bytes" << std::endl;
-            std::cout << "Total size: " << encoded_bytes_.size() << std::endl;
         }
         else if(in.compare(0, source.size(), source) == 0)
         {

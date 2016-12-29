@@ -123,11 +123,8 @@ namespace goby
             std::vector<std::string> encoded_frames;
             boost::split(encoded_frames, in, boost::is_any_of("\r"), boost::token_compress_on);
 
-            std::cout << "Total of " << encoded_frames.size() << " frames." << std::endl;
-            
             for(int i = 0, n = encoded_frames.size(); i < n; ++i)
             {
-                std::cout << "frame: " << i << " " << goby::util::hex_encode(encoded_frames[i] + "\r") << std::endl;
                 if(!encoded_frames[i].empty())
                     parse_rudics_packet(out->add_frame(), encoded_frames[i] + "\r", "\r");
             }            

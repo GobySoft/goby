@@ -343,6 +343,9 @@ namespace goby
                         // Receive all packets, let Goby deal with discarding them
                         context<Command>().push_clam_command("@RcvAll=Ena");
 
+                        // Show data for bad packets so we can stats
+                        context<Command>().push_clam_command("@ShowBadData=Ena");
+                        
                         // store the current configuration for later inspection
                         // context<Command>().push_clam_command("cfg store /ffs/goby.ini");
                     }

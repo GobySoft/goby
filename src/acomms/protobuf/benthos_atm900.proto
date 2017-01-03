@@ -43,12 +43,25 @@ enum TransmissionType
 
 message ReceiveStatistics
 {
+    option (dccl.msg).unit_system = "si";
     
+    enum CRCState
+    {
+        CRC_PASS = 1;
+        CRC_FAIL = 2;
+    }
+    
+    required CRCState crc = 1;
+    optional float multipath_delay = 2 [(dccl.field).units.base_dimensions="T"];
+    optional float snr = 3;
+    optional float relative_speed = 4 [(dccl.field).units.base_dimensions="LT^-1"];
+    optional float auto_gain_control = 5;
+    optional int32 corrected_channel_error = 6;    
 }
 
 message RangingReply
 {
-    required double one_way_travel_time = 1;
+    required double one_way_travel_time = 1 [(dccl.field).units.unit="si::second"];
 }
 
 

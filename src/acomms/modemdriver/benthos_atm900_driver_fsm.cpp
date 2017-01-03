@@ -22,6 +22,9 @@
 
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/units/base_units/metric/knot.hpp>
+#include <boost/units/systems/si/prefixes.hpp>
+
 
 #include "goby/common/logger.h"
 #include "goby/common/time.h"
@@ -153,7 +156,85 @@ void goby::acomms::benthos_fsm::ReceiveData::in_state_react( const EvRxSerial& e
         }
         else if(in.compare(0, crc.size(), crc) == 0)
         {
+            benthos::protobuf::ReceiveStatistics& rx_stats = *rx_msg_.MutableExtension(benthos::protobuf::receive_stat);
+                
             // CRC:Pass MPD:03.2 SNR:31.3 AGC:91 SPD:+00.0 CCERR:013
+            std::vector<std::string> stats;
+            boost::split(stats, in, boost::is_any_of(" "), boost::token_compress_on);
+            
+            enum StatField
+            {
+                STAT_CRC = 0,
+                STAT_MPD = 1,
+                STAT_AGC = 2,
+                STAT_SNR = 3,
+                STAT_SPD = 4,
+                STAT_CCERR = 5
+            };
+
+            // use int instead of enum to satisfy compiler (enum is local type)
+            std::map<std::string, int> statmap;
+            statmap.insert(std::make_pair("CRC", (int)STAT_CRC));
+            statmap.insert(std::make_pair("MPD", (int)STAT_MPD));
+            statmap.insert(std::make_pair("SNR", (int)STAT_SNR));
+            statmap.insert(std::make_pair("AGC", (int)STAT_AGC));
+            statmap.insert(std::make_pair("SPD", (int)STAT_SPD));
+            statmap.insert(std::make_pair("CCERR", (int)STAT_CCERR));
+            
+            
+            for(unsigned i = 0; i < stats.size(); ++i)
+            {
+                std::string::size_type col_pos = stats[i].find(":");
+                if(col_pos == std::string::npos)
+                    continue;
+                
+                std::string key_str = stats[i].substr(0, col_pos);
+
+                std::map<std::string, int>::const_iterator it = statmap.find(key_str);
+                if(it == statmap.end())
+                    continue;
+                
+                StatField field = static_cast<StatField>(it->second);
+                std::string val_str = stats[i].substr(col_pos+1);
+                boost::trim(val_str);
+                boost::trim_left_if(val_str, boost::is_any_of("+0"));
+                if(val_str.empty()) val_str = "0";
+                float val = 0;
+                if(field != STAT_CRC) val = boost::lexical_cast<float>(val_str);
+                switch(field)
+                {
+                    case STAT_CRC:
+                        if(val_str == "Pass")
+                        {
+                            rx_stats.set_crc(benthos::protobuf::ReceiveStatistics::CRC_PASS);
+                        }
+                        else
+                        {
+                            rx_stats.set_crc(benthos::protobuf::ReceiveStatistics::CRC_FAIL);
+                            rx_msg_.clear_frame(); // clear frames for bad data
+                        }
+                        break;
+                    case STAT_MPD:
+                        rx_stats.set_multipath_delay_with_units(val*boost::units::si::milli*boost::units::si::seconds);
+                        break;
+                    case STAT_SNR:
+                        rx_stats.set_snr(val);
+                        break;
+                    case STAT_AGC:
+                        rx_stats.set_auto_gain_control(val);
+                        break;
+                    case STAT_SPD:
+                    {
+                        boost::units::metric::knot_base_unit::unit_type knots;
+                        rx_stats.set_relative_speed_with_units(val*knots);
+                        break;
+                    }
+                    case STAT_CCERR:
+                        rx_stats.set_corrected_channel_error(val);
+                        break;
+                }
+            }
+            
         }
     }
     catch(std::exception& e)
@@ -220,7 +301,7 @@ void goby::acomms::benthos_fsm::Range::in_state_react( const EvRxSerial& e)
             std::string rt_ms = in.substr(rt_start_pos + roundtrip.size(), rt_end_pos - (rt_start_pos + roundtrip.size()));
             boost::trim(rt_ms);
             
-            range_msg.MutableExtension(benthos::protobuf::ranging_reply)->set_one_way_travel_time(boost::lexical_cast<double>(rt_ms)/(2*1000));
+            range_msg.MutableExtension(benthos::protobuf::ranging_reply)->set_one_way_travel_time_with_units(boost::lexical_cast<double>(rt_ms)/2*boost::units::si::milli*boost::units::si::seconds);
             
             
             context<BenthosATM900FSM>().received().push_back(range_msg);

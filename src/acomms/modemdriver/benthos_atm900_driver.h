@@ -81,12 +81,12 @@ namespace goby
         {
             dccl::FieldCodecManager::add<NoOpIdentifierCodec>("benthos_header_id");
             benthos_header_dccl_.reset(new dccl::Codec("benthos_header_id"));
-            benthos_header_dccl_->load<BenthosHeader>();
+            benthos_header_dccl_->load<benthos::protobuf::BenthosHeader>();
         }
         
         inline void serialize_benthos_modem_message(std::string* out, const goby::acomms::protobuf::ModemTransmission& in)
         {
-            BenthosHeader header;
+            benthos::protobuf::BenthosHeader header;
             header.set_type(in.type());
             if(in.has_ack_requested())
                 header.set_ack_requested(in.ack_requested());
@@ -110,7 +110,7 @@ namespace goby
 
         inline void parse_benthos_modem_message(std::string in, goby::acomms::protobuf::ModemTransmission* out)
         {
-            BenthosHeader header;
+            benthos::protobuf::BenthosHeader header;
             benthos_header_dccl_->decode(&in, &header);
 
             out->set_type(header.type());

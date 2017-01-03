@@ -68,7 +68,7 @@ void goby::acomms::BenthosATM900Driver::startup(const protobuf::DriverConfig& cf
         usleep(pause_ms*1000);
         ++i;
 
-        const int start_timeout = driver_cfg_.GetExtension(BenthosATM900DriverConfig::start_timeout);
+        const int start_timeout = driver_cfg_.GetExtension(benthos::protobuf::BenthosATM900DriverConfig::start_timeout);
         if(i / (1000/pause_ms) > start_timeout)
             throw(ModemDriverException("Failed to startup.", protobuf::ModemDriverStatus::STARTUP_FAILED));
     }
@@ -101,14 +101,41 @@ void goby::acomms::BenthosATM900Driver::handle_initiate_transmission(const proto
     protobuf::ModemTransmission msg = orig_msg;
     signal_modify_transmission(&msg);
 
-    // set the frame size, if not set or if it exceeds the max configured
-    if(!msg.has_max_frame_bytes() || msg.max_frame_bytes() > driver_cfg_.GetExtension(BenthosATM900DriverConfig::max_frame_size))
-        msg.set_max_frame_bytes(driver_cfg_.GetExtension(BenthosATM900DriverConfig::max_frame_size));
+
+    switch(msg.type())
+    {
+        case protobuf::ModemTransmission::DATA:
+        {
+            // set the frame size, if not set or if it exceeds the max configured
+            if(!msg.has_max_frame_bytes() || msg.max_frame_bytes() > driver_cfg_.GetExtension(benthos::protobuf::BenthosATM900DriverConfig::max_frame_size))
+                msg.set_max_frame_bytes(driver_cfg_.GetExtension(benthos::protobuf::BenthosATM900DriverConfig::max_frame_size));
     
-    signal_data_request(&msg);
+            signal_data_request(&msg);
     
-    if(!(msg.frame_size() == 0 || msg.frame(0).empty()))
-        send(msg);
+            if(!(msg.frame_size() == 0 || msg.frame(0).empty()))
+                send(msg);
+        }
+        break;
+
+        case protobuf::ModemTransmission::DRIVER_SPECIFIC:
+        {
+            switch(msg.GetExtension(benthos::protobuf::type))
+            {
+                case benthos::protobuf::BENTHOS_TWO_WAY_PING:
+                    fsm_.process_event(benthos_fsm::EvRange(msg.dest()));
+                    break;
+                default:
+                    glog.is(DEBUG1) && glog << group(glog_out_group()) << warn << "Not initiating transmission because we were given an invalid DRIVER_SPECIFIC transmission type for the Benthos ATM-900:" << msg << std::endl;
+                    break;
+            }
+        }
+        break;
+
+        default:
+            glog.is(DEBUG1) && glog << group(glog_out_group()) << warn << "Not initiating transmission because we were given an invalid transmission type for the base Driver:" << msg << std::endl;
+            break;
+            
+    }
 } 
 
 void goby::acomms::BenthosATM900Driver::do_work()

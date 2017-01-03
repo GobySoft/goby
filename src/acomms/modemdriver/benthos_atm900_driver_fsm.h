@@ -34,10 +34,12 @@
 #include <boost/statechart/custom_reaction.hpp>
 #include <boost/statechart/deep_history.hpp>
 #include <boost/mpl/list.hpp>
+#include <boost/format.hpp>
 #include <iostream>
 
 #include "goby/acomms/acomms_constants.h"
 #include "goby/util/binary.h"
+#include "goby/common/time.h"
 
 #include "goby/acomms/protobuf/modem_message.pb.h"
 #include "goby/acomms/protobuf/benthos_atm900.pb.h"
@@ -75,14 +77,19 @@ namespace goby
                 int dest_;
                 int rate_;
             };
+
+            struct EvRange : boost::statechart::event< EvRange >
+            {
+                EvRange(int dest) : dest_(dest) { }
+                int dest_;
+            };
+            
             struct EvRequestLowPower : boost::statechart::event< EvRequestLowPower > {};
             struct EvLowPower : boost::statechart::event< EvLowPower > {};
 
 
             struct EvConnect : boost::statechart::event< EvConnect > {};
             struct EvNoCarrier : boost::statechart::event< EvNoCarrier > {};
-
-            struct EvConfigured : boost::statechart::event< EvConfigured > {};
 
             struct EvTransmit : boost::statechart::event< EvTransmit > {};
 
@@ -98,15 +105,17 @@ namespace goby
 
             struct EvReceiveComplete : boost::statechart::event< EvReceiveComplete > {};
             struct EvShellPrompt : boost::statechart::event< EvShellPrompt > {};
+            struct EvRangingComplete : boost::statechart::event< EvRangingComplete > {};
 
             struct Active;
             struct ReceiveData;
             struct Command;
             struct Ready;
             struct Configure;
+            struct SetClock;
             struct Dial;
             struct LowPower;
-            struct RangeRequest;
+            struct Range;
 
             struct Online;
             struct Listen;
@@ -273,7 +282,7 @@ namespace goby
                   private:
                     enum  { AT_BUFFER_CAPACITY = 100 };
                     boost::circular_buffer< std::pair<ATSentenceMeta, std::string> > at_out_;
-                    enum { COMMAND_TIMEOUT_SECONDS = 2};
+                    enum { COMMAND_TIMEOUT_SECONDS = 2 };
 
                     enum { RETRIES_BEFORE_RESET = 3 };
                 };
@@ -281,7 +290,7 @@ namespace goby
             struct Configure : boost::statechart::state<Configure, Command >, StateNotify
             {    
                 typedef boost::mpl::list<
-                    boost::statechart::transition< EvAtEmpty, Ready >
+                    boost::statechart::transition< EvAtEmpty, SetClock >
                     > reactions;
                     
               Configure(my_context ctx) : my_base(ctx),
@@ -292,22 +301,22 @@ namespace goby
                         // disable local echo to avoid confusing our parser
                         context<Command>().push_clam_command("@P1EchoChar=Dis");
 
-                        if(context<BenthosATM900FSM>().driver_cfg().GetExtension(BenthosATM900DriverConfig::factory_reset))
+                        if(context<BenthosATM900FSM>().driver_cfg().GetExtension(benthos::protobuf::BenthosATM900DriverConfig::factory_reset))
                             context<Command>().push_clam_command("factory_reset");
 
-                        if(context<BenthosATM900FSM>().driver_cfg().HasExtension(BenthosATM900DriverConfig::config_load))
+                        if(context<BenthosATM900FSM>().driver_cfg().HasExtension(benthos::protobuf::BenthosATM900DriverConfig::config_load))
                         {
-                            context<Command>().push_clam_command("cfg load " + context<BenthosATM900FSM>().driver_cfg().GetExtension(BenthosATM900DriverConfig::config_load));
+                            context<Command>().push_clam_command("cfg load " + context<BenthosATM900FSM>().driver_cfg().GetExtension(benthos::protobuf::BenthosATM900DriverConfig::config_load));
                         }
                         
                         for(int i = 0,
                                 n = context<BenthosATM900FSM>().driver_cfg().ExtensionSize(
-                                    BenthosATM900DriverConfig::config);
+                                    benthos::protobuf::BenthosATM900DriverConfig::config);
                             i < n; ++i)
                         {
                             context<Command>().push_clam_command(
                                 context<BenthosATM900FSM>().driver_cfg().GetExtension(
-                                    BenthosATM900DriverConfig::config, i));
+                                    benthos::protobuf::BenthosATM900DriverConfig::config, i));
                         }
 
                         
@@ -340,9 +349,33 @@ namespace goby
 
                 ~Configure()
                 {
-                    post_event(EvConfigured());
                 } 
             };
+
+            struct SetClock : boost::statechart::state<SetClock, Command >, StateNotify
+            {    
+                typedef boost::mpl::list<
+                    boost::statechart::transition< EvAtEmpty, Ready >
+                    > reactions;
+                    
+              SetClock(my_context ctx) : my_base(ctx),
+                    StateNotify("SetClock")
+                    {
+                        boost::posix_time::ptime p = goby::common::goby_time();
+                        
+                        std::string date_str = boost::str(boost::format("-d%02d/%02d/%04d") % (int)p.date().month() % p.date().day() % p.date().year());
+                        std::string time_str = boost::str(boost::format("-t%02d:%02d:%02d") % p.time_of_day().hours() % p.time_of_day().minutes() % p.time_of_day().seconds());
+
+                        
+                        
+                        context<Command>().push_clam_command("date " + time_str + " " + date_str);
+                    }
+
+                ~SetClock()
+                {
+                } 
+            };
+
 
 
             struct Ready : boost::statechart::simple_state<Ready, Command >, StateNotify
@@ -357,6 +390,7 @@ namespace goby
 
                 typedef boost::mpl::list<
                     boost::statechart::transition< EvDial, Dial>,
+                    boost::statechart::transition< EvRange, Range>,
                     boost::statechart::in_state_reaction< EvRequestLowPower, Ready, &Ready::in_state_react >,
                     boost::statechart::transition< EvLowPower, LowPower >
                     > reactions;
@@ -402,13 +436,30 @@ namespace goby
                 ~LowPower() { }
             };
             
-            struct RangeRequest : boost::statechart::state<RangeRequest, Command>, StateNotify
+            struct Range : boost::statechart::state<Range, Command>, StateNotify
             {
-              RangeRequest(my_context ctx) : my_base(ctx),
-                    StateNotify("RangeRequest")
+                
+                void in_state_react( const EvRxSerial& );
+                
+              Range(my_context ctx) : my_base(ctx),
+                    StateNotify("Range"),
+                    dest_(0)
                     {
+                        if(const EvRange* ev = dynamic_cast<const EvRange*>(triggering_event()))
+                        {
+                            dest_ = ev->dest_;
+                        }
+                        context<Command>().push_at_command("R" + goby::util::as<std::string>(dest_));
                     }
-                ~RangeRequest() { }
+                ~Range() { }
+   
+                typedef boost::mpl::list<
+                    boost::statechart::transition< EvRangingComplete, Ready>,
+                    boost::statechart::in_state_reaction< EvRxSerial, Range, &Range::in_state_react >
+                    > reactions;
+                
+            private:
+                int dest_;
             };
 
             // Online

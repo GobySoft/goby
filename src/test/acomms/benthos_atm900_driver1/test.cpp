@@ -52,18 +52,19 @@ int main(int argc, char* argv[])
     modem2_cfg.set_serial_port("/dev/ttyUSB1");
 
     // add some simulated delay
-    modem1_cfg.AddExtension(BenthosATM900DriverConfig::config, "@SimAcDly=1000");
-    modem2_cfg.AddExtension(BenthosATM900DriverConfig::config, "@SimAcDly=1000");
+    modem1_cfg.AddExtension(benthos::protobuf::BenthosATM900DriverConfig::config, "@SimAcDly=1000");
+    modem2_cfg.AddExtension(benthos::protobuf::BenthosATM900DriverConfig::config, "@SimAcDly=1000");
 
     // turn down TxPower to minimum
-    modem1_cfg.AddExtension(BenthosATM900DriverConfig::config, "@TxPower=1");
-    modem2_cfg.AddExtension(BenthosATM900DriverConfig::config, "@TxPower=1");
+    modem1_cfg.AddExtension(benthos::protobuf::BenthosATM900DriverConfig::config, "@TxPower=1");
+    modem2_cfg.AddExtension(benthos::protobuf::BenthosATM900DriverConfig::config, "@TxPower=1");
 
     
     std::vector<int> tests_to_run;
+    tests_to_run.push_back(0);    
     tests_to_run.push_back(4);
     tests_to_run.push_back(5);
     
-    DriverTester tester(driver1, driver2, modem1_cfg, modem2_cfg, tests_to_run);
+    DriverTester tester(driver1, driver2, modem1_cfg, modem2_cfg, tests_to_run, goby::acomms::protobuf::DRIVER_BENTHOS_ATM900);
     return tester.run();
 }

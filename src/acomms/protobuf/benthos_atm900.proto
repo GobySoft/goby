@@ -3,6 +3,8 @@ import "goby/acomms/protobuf/driver_base.proto";
 import "goby/acomms/protobuf/modem_message.proto"; 
 import "dccl/protobuf/option_extensions.proto";
 
+package benthos.protobuf;
+
 message BenthosATM900DriverConfig
 {    
     // 1441-1460
@@ -30,4 +32,32 @@ message BenthosHeader
                                     (dccl.field).max = 0x7,
                                     (dccl.field).max_repeat=8];
     
-} 
+}
+
+
+enum TransmissionType
+{
+  BASE_TYPE = 0;    
+  BENTHOS_TWO_WAY_PING = 1;   // modem 1 interrogates modem 2; modem 2 replies and modem 1 computes one way travel time
+}
+
+message ReceiveStatistics
+{
+    
+}
+
+message RangingReply
+{
+    required double one_way_travel_time = 1;
+}
+
+
+extend goby.acomms.protobuf.ModemTransmission 
+{
+  optional TransmissionType type = 1401 [(goby.field).description="Type of transmission if base `type` == DRIVER_SPECIFIC",
+                                         default=BASE_TYPE];
+  optional ReceiveStatistics receive_stat = 1402;
+  optional RangingReply ranging_reply = 1403;
+}
+
+  

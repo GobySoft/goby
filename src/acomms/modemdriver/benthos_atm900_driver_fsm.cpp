@@ -164,6 +164,75 @@ void goby::acomms::benthos_fsm::ReceiveData::in_state_react( const EvRxSerial& e
     
 }
 
+void goby::acomms::benthos_fsm::Range::in_state_react( const EvRxSerial& e)
+{
+    try 
+    {
+        std::string in = e.line;
+        boost::trim(in);
+
+        static const std::string tx_time = "TX time";
+        static const std::string range = "Range";
+
+        if(!context<Command>().at_out().empty())
+        {
+            const std::string& last_cmd = context<Command>().at_out().front().second;
+            if(last_cmd.substr(0, 3) == "ATR" && in.compare(0, tx_time.size(), tx_time) == 0)
+            {
+                context<Command>().at_out().pop_front();
+            }
+        }
+        
+        if(in.compare(0, range.size(), range) == 0)
+        {
+            protobuf::ModemTransmission range_msg;
+
+            // Range 1 to 2 : 1499.6 m  (Round-trip  1999.5 ms) speed  0.0 m/s
+            // ^-range_pos  ^- col_pos  ^- rt_start_pos     ^- rt_end_pos 
+
+            const std::string roundtrip = "(Round-trip";
+            const std::string ms = "ms)";
+            
+            std::string::size_type range_pos = in.find(range);
+            std::string::size_type col_pos = in.find(":");
+            std::string::size_type rt_start_pos = in.find(roundtrip);
+            std::string::size_type rt_end_pos = in.find(ms);
+
+            if(range_pos == std::string::npos || col_pos == std::string::npos || rt_start_pos == std::string::npos || rt_end_pos == std::string::npos)
+                throw(std::runtime_error("Invalid format for range string"));
+
+            // "1 to 2"
+            std::string src_to_dest = in.substr(range_pos + range.size(), col_pos-(range_pos + range.size()));
+            boost::trim(src_to_dest);
+            std::vector<std::string> src_dest;
+            boost::split(src_dest, src_to_dest, boost::is_any_of(" to"), boost::token_compress_on);
+            if(src_dest.size() != 2)
+            {
+                throw(std::runtime_error("Invalid source/dest string, expected \"Range 1 to 2\""));
+            }
+
+            range_msg.set_src(boost::lexical_cast<unsigned>(src_dest[0]));
+            range_msg.set_dest(boost::lexical_cast<unsigned>(src_dest[1]));
+
+            range_msg.set_type(protobuf::ModemTransmission::DRIVER_SPECIFIC);
+            range_msg.SetExtension(benthos::protobuf::type, benthos::protobuf::BENTHOS_TWO_WAY_PING);
+
+            std::string rt_ms = in.substr(rt_start_pos + roundtrip.size(), rt_end_pos - (rt_start_pos + roundtrip.size()));
+            boost::trim(rt_ms);
+            
+            range_msg.MutableExtension(benthos::protobuf::ranging_reply)->set_one_way_travel_time(boost::lexical_cast<double>(rt_ms)/(2*1000));
+            
+            
+            context<BenthosATM900FSM>().received().push_back(range_msg);
+            post_event(EvRangingComplete());
+        }
+    }
+    catch(std::exception& e)
+    {
+        goby::glog.is(goby::common::logger::WARN) && goby::glog << "Invalid ranging data received, ignoring. Reason: " << e.what() << std::endl;
+        post_event(EvRangingComplete());
+    }
+}
 
 
 void goby::acomms::benthos_fsm::Command::in_state_react( const EvTxSerial& )
@@ -247,7 +316,6 @@ void goby::acomms::benthos_fsm::Command::in_state_react( const EvAck & e)
         static const std::string connect = "CONNECT";    
         static const std::string user = "user";
 
-
         if(e.response_ == "OK")
         {
             valid = true;
@@ -274,6 +342,7 @@ void goby::acomms::benthos_fsm::Command::in_state_react( const EvAck & e)
         {
             std::string::size_type eq_pos = last_cmd.find('=');
             static const std::string cfg_store = "cfg store";
+            static const std::string date_cmd = "date";
             
             if(last_cmd[0] == '@' && eq_pos != std::string::npos && boost::iequals(last_cmd.substr(1, eq_pos-1), e.response_.substr(0, eq_pos-1)))
             {
@@ -283,6 +352,10 @@ void goby::acomms::benthos_fsm::Command::in_state_react( const EvAck & e)
                 valid = true;
             }
             else if(e.response_ == "Configuration stored." && boost::iequals(last_cmd.substr(0, cfg_store.size()), cfg_store))
+            {
+                valid = true;
+            }
+            else if(e.response_ == "Ok" && boost::iequals(last_cmd.substr(0, date_cmd.size()), date_cmd))
             {
                 valid = true;
             }

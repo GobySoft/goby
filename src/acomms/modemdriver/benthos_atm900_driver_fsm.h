@@ -67,10 +67,13 @@ namespace goby
 
             struct EvDial : boost::statechart::event< EvDial >
             {
-                EvDial(int dest)
-                    : dest_(dest) { }
+            EvDial(int dest, int rate)
+                : dest_(dest),
+                    rate_(rate)
+                    { }
 
                 int dest_;
+                int rate_;
             };
             struct EvRequestLowPower : boost::statechart::event< EvRequestLowPower > {};
             struct EvLowPower : boost::statechart::event< EvLowPower > {};
@@ -177,7 +180,6 @@ namespace goby
 
                 typedef boost::mpl::list<
                     boost::statechart::transition< EvReset, Active >,
-                    boost::statechart::transition< EvLowPower, LowPower >,
                     boost::statechart::in_state_reaction< EvRxSerial, Active, &Active::in_state_react >,
                     boost::statechart::transition< EvReceive, ReceiveData>
                     > reactions;
@@ -355,31 +357,39 @@ namespace goby
 
                 typedef boost::mpl::list<
                     boost::statechart::transition< EvDial, Dial>,
-                    boost::statechart::in_state_reaction< EvRequestLowPower, Ready, &Ready::in_state_react >
+                    boost::statechart::in_state_reaction< EvRequestLowPower, Ready, &Ready::in_state_react >,
+                    boost::statechart::transition< EvLowPower, LowPower >
                     > reactions;
             };
             
             struct Dial : boost::statechart::state<Dial, Command >, StateNotify
             {
                 enum { BENTHOS_BROADCAST_ID = 255 };
+                enum { DEFAULT_RATE = 2, RATE_MIN = 2, RATE_MAX = 13 };
     
               Dial(my_context ctx) : my_base(ctx),
                     StateNotify("Dial"),
-                    dest_(BENTHOS_BROADCAST_ID)
+                    dest_(BENTHOS_BROADCAST_ID),
+                    rate_(DEFAULT_RATE)
                 {
                     if(const EvDial* evdial = dynamic_cast<const EvDial*>(triggering_event()))
                     {
                         dest_ = evdial->dest_;
                         if(dest_ == goby::acomms::BROADCAST_ID)
                             dest_ =  BENTHOS_BROADCAST_ID;
+
+                        if(evdial->rate_ >= RATE_MIN && evdial->rate_ <= RATE_MAX)
+                            rate_ = evdial->rate_;
                     }
                     context<Command>().push_clam_command("@RemoteAddr=" + goby::util::as<std::string>(dest_));
+                    context<Command>().push_clam_command("@TxRate=" + goby::util::as<std::string>(rate_));
                     context<Command>().push_at_command("O");
                 } 
                 ~Dial(){ }
                 
               private:
                 int dest_;
+                int rate_;
             };
 
             
@@ -442,10 +452,12 @@ namespace goby
                 ~TransmitData() { }
 
                 void in_state_react( const EvTxSerial& );
+                void in_state_react( const EvAck& );
                 
                 typedef boost::mpl::list<
                     boost::statechart::transition< EvTransmitBegun, Ready>,
-                    boost::statechart::in_state_reaction< EvTxSerial, TransmitData, &TransmitData::in_state_react >
+                    boost::statechart::in_state_reaction< EvTxSerial, TransmitData, &TransmitData::in_state_react >,
+                    boost::statechart::in_state_reaction< EvAck, TransmitData, &TransmitData::in_state_react >
                     > reactions;
                 
             };

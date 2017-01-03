@@ -93,6 +93,7 @@ void goby::acomms::BenthosATM900Driver::shutdown()
     }
     
     ModemDriverBase::modem_close();
+    fsm_.terminate();
 } 
 
 void goby::acomms::BenthosATM900Driver::handle_initiate_transmission(const protobuf::ModemTransmission& orig_msg)
@@ -165,7 +166,7 @@ void goby::acomms::BenthosATM900Driver::send(const protobuf::ModemTransmission& 
 {
     glog.is(DEBUG2) && glog << group(glog_out_group()) << msg << std::endl;
     fsm_.buffer_data_out(msg);
-    fsm_.process_event(benthos_fsm::EvDial(msg.dest()));
+    fsm_.process_event(benthos_fsm::EvDial(msg.dest(), msg.rate()));
 }
 
 

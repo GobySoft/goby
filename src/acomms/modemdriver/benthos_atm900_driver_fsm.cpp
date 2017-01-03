@@ -66,10 +66,6 @@ void goby::acomms::benthos_fsm::Active::in_state_react(const EvRxSerial& e)
             post_event(EvAck(in));
 
     }
-    else if(in.empty()) // empty string
-    {
-        // do nothing
-    }
     else     // presumably a response to something else
     {
         post_event(EvAck(in));
@@ -186,7 +182,7 @@ void goby::acomms::benthos_fsm::Command::in_state_react( const EvTxSerial& )
             if(at_out_.front().second == "+++")
             {
                 // Benthos implementation of Hayes requires 1 second pause *before* +++
-                sleep(1);
+                usleep(1300000);
                 // insert \r after +++ so that we accidentally send +++ during command mode, this is recognized as an (invalid) command
                 at_command = at_out_.front().second + "\r";
             }
@@ -226,6 +222,16 @@ void goby::acomms::benthos_fsm::TransmitData::in_state_react( const EvTxSerial& 
     }
 }
 
+void goby::acomms::benthos_fsm::TransmitData::in_state_react( const EvAck & e)
+{
+    static const std::string forwarding_delay_up = "Forwarding Delay Up";
+    if(e.response_.compare(0, forwarding_delay_up.size(), forwarding_delay_up) == 0)
+    {
+        post_event(EvTransmitBegun());
+    }
+}    
+
+
 void goby::acomms::benthos_fsm::Command::in_state_react( const EvAck & e)
 {
     bool valid = false;
@@ -254,9 +260,9 @@ void goby::acomms::benthos_fsm::Command::in_state_react( const EvAck & e)
         {
             valid = true;
         }
-        else if(e.response_.compare(0, user.size(), user) == 0 && last_cmd.substr(0, 3) == "+++")
+        else if(last_cmd.substr(0, 3) == "+++" && (e.response_.compare(0, user.size(), user) == 0 || e.response_.empty()))
         {
-            // no response in command mode other than giving us a new user:N> prompt
+            // no response in command mode other than giving us a new user:N> prompt or sometimes just an empty string
             valid = true;
         }
         else if(last_cmd.substr(0, 3) == "ATL" && e.response_.find("Lowpower") != std::string::npos)

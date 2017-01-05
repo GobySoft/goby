@@ -244,6 +244,8 @@ namespace goby
                     {
                         // in case we start up in Online mode - likely as the @OpMode=1 is the default
                         context<Command>().push_at_command("+++");
+                        // the modem seems to like to reset the OpMode
+                        context<Command>().push_clam_command("@OpMode=0");
                     } 
                     ~Command() { }
                     
@@ -331,9 +333,6 @@ namespace goby
                         context<Command>().push_clam_command("@FwdDelay=0.05");
                         context<Command>().push_clam_command("@LocalAddr=" + goby::util::as<std::string>(context<BenthosATM900FSM>().driver_cfg().modem_id()));
 
-                        // start up in Command mode after reboot/lowpower resume
-                        context<Command>().push_clam_command("@OpMode=0");
-
                         // Hex format for data
                         context<Command>().push_clam_command("@PrintHex=Ena");
 
@@ -346,6 +345,9 @@ namespace goby
                         // Show data for bad packets so we can stats
                         context<Command>().push_clam_command("@ShowBadData=Ena");
                         
+                        // start up in Command mode after reboot/lowpower resume
+                        context<Command>().push_clam_command("@OpMode=0");
+
                         // store the current configuration for later inspection
                         // context<Command>().push_clam_command("cfg store /ffs/goby.ini");
                     }

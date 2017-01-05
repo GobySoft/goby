@@ -103,7 +103,7 @@ namespace goby
                     break;
                 
                 std::string rudics_packet;
-                serialize_rudics_packet(in.frame(i), &rudics_packet, "\r");
+                serialize_rudics_packet(in.frame(i), &rudics_packet, "\r", false);
                 *out += rudics_packet;
             }            
         }
@@ -126,7 +126,7 @@ namespace goby
             for(int i = 0, n = encoded_frames.size(); i < n; ++i)
             {
                 if(!encoded_frames[i].empty())
-                    parse_rudics_packet(out->add_frame(), encoded_frames[i] + "\r", "\r");
+                    parse_rudics_packet(out->add_frame(), encoded_frames[i] + "\r", "\r", false);
             }            
         }
         

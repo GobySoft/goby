@@ -59,6 +59,11 @@ int main(int argc, char* argv[])
     modem1_cfg.AddExtension(benthos::protobuf::BenthosATM900DriverConfig::config, "@TxPower=1");
     modem2_cfg.AddExtension(benthos::protobuf::BenthosATM900DriverConfig::config, "@TxPower=1");
 
+    // go to lowpower quickly to test this
+    modem1_cfg.AddExtension(benthos::protobuf::BenthosATM900DriverConfig::config, "@IdleTimer=00:00:05");
+    modem2_cfg.AddExtension(benthos::protobuf::BenthosATM900DriverConfig::config, "@IdleTimer=00:00:05");
+
+    
     
     std::vector<int> tests_to_run;
     tests_to_run.push_back(0);    

@@ -123,7 +123,11 @@ void goby::acomms::benthos_fsm::ReceiveData::in_state_react( const EvRxSerial& e
     
         if(in == "<EOP>")
         {
-            parse_benthos_modem_message(encoded_bytes_, &rx_msg_);
+            const benthos::protobuf::ReceiveStatistics& rx_stats = rx_msg_.GetExtension(benthos::protobuf::receive_stat);
+
+            if(rx_stats.crc() == benthos::protobuf::ReceiveStatistics::CRC_PASS)
+                parse_benthos_modem_message(encoded_bytes_, &rx_msg_);
+            
             context<BenthosATM900FSM>().received().push_back(rx_msg_);
             
             post_event(EvReceiveComplete());
@@ -211,7 +215,6 @@ void goby::acomms::benthos_fsm::ReceiveData::in_state_react( const EvRxSerial& e
                         else
                         {
                             rx_stats.set_crc(benthos::protobuf::ReceiveStatistics::CRC_FAIL);
-                            rx_msg_.clear_frame(); // clear frames for bad data
                         }
                         break;
                     case STAT_MPD:
@@ -258,7 +261,7 @@ void goby::acomms::benthos_fsm::Range::in_state_react( const EvRxSerial& e)
         if(!context<Command>().at_out().empty())
         {
             const std::string& last_cmd = context<Command>().at_out().front().second;
-            if(last_cmd.substr(0, 3) == "ATR" && in.compare(0, tx_time.size(), tx_time) == 0)
+            if(last_cmd.substr(0, 3) == "ATR" && boost::iequals(in.substr(0, tx_time.size()), tx_time))
             {
                 context<Command>().at_out().pop_front();
             }
@@ -423,7 +426,7 @@ void goby::acomms::benthos_fsm::Command::in_state_react( const EvAck & e)
         {
             std::string::size_type eq_pos = last_cmd.find('=');
             static const std::string cfg_store = "cfg store";
-            static const std::string date_cmd = "date";
+            static const std::string date_cmd = "date -t";
             
             if(last_cmd[0] == '@' && eq_pos != std::string::npos && boost::iequals(last_cmd.substr(1, eq_pos-1), e.response_.substr(0, eq_pos-1)))
             {
@@ -436,7 +439,7 @@ void goby::acomms::benthos_fsm::Command::in_state_react( const EvAck & e)
             {
                 valid = true;
             }
-            else if(e.response_ == "Ok" && boost::iequals(last_cmd.substr(0, date_cmd.size()), date_cmd))
+            else if(boost::iequals(last_cmd.substr(0, date_cmd.size()), date_cmd) && e.response_.find(last_cmd.substr(date_cmd.size(), 8)) != std::string::npos) // match time in response e.g. 19:04:26
             {
                 valid = true;
             }

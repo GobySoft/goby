@@ -41,6 +41,7 @@
 #include "goby/acomms/modemdriver/iridium_driver.h"
 #include "goby/acomms/modemdriver/iridium_shore_driver.h"
 #include "goby/acomms/modemdriver/udp_driver.h"
+#include "goby/acomms/modemdriver/benthos_atm900_driver.h"
 
 
 using namespace goby::common::tcolor;
@@ -581,6 +582,10 @@ void CpAcommsHandler::create_driver(boost::shared_ptr<goby::acomms::ModemDriverB
         {
             case goby::acomms::protobuf::DRIVER_WHOI_MICROMODEM:
                 driver.reset(new goby::acomms::MMDriver);
+                break;
+
+            case goby::acomms::protobuf::DRIVER_BENTHOS_ATM900:
+                driver.reset(new goby::acomms::BenthosATM900Driver);
                 break;
 
             case goby::acomms::protobuf::DRIVER_ABC_EXAMPLE_MODEM:

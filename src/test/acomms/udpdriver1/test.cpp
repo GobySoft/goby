@@ -82,6 +82,6 @@ int main(int argc, char* argv[])
     tests_to_run.push_back(4);
     tests_to_run.push_back(5);
     
-    DriverTester tester(driver1, driver2, cfg1, cfg2, tests_to_run);
+    DriverTester tester(driver1, driver2, cfg1, cfg2, tests_to_run, goby::acomms::protobuf::DRIVER_UDP);
     return tester.run();
 }

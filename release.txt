@@ -1,4 +1,24 @@
 Goby Release Notes (Major version 2)
+****************
+Version 2.1.6
+### Acomms
+
+ - New driver for the Teledyne Benthos ATM-900 series acoustic modems
+
+### MOOS
+
+ - Updates to GobyMOOSApp to support MOOSTimeWarp for all subclasses and to resubscribe automatically if the MOOSDB connection is lost.
+
+
+See https://github.com/GobySoft/goby/compare/2.1.5...2.1.6
+****************
+Version 2.1.5
+### MOOS
+- Bug fix for "register_time" in GobyMOOSApp to allow use with MOOSTimeWarp #15 
+- Bug fix for "inverse_publish" in moos_translators #14 
+- Cleanups for Dependencies list.
+
+See https://github.com/GobySoft/goby/compare/2.1.4...2.1.5
 
 ****************
 Version 2.1.4

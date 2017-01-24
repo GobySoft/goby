@@ -54,9 +54,6 @@ using google::protobuf::uint32;
 
 using goby::glog;
 
-goby::uint64 microsec_moos_time()
-{ return static_cast<goby::uint64>(MOOSTime() * 1.0e6); }
-
 pAcommsHandlerConfig CpAcommsHandler::cfg_;
 CpAcommsHandler* CpAcommsHandler::inst_ = 0;
 std::map<std::string, void*> CpAcommsHandler::driver_plugins_;
@@ -83,12 +80,6 @@ CpAcommsHandler::CpAcommsHandler()
       work_(timer_io_service_),
       router_(0)
 {
-    if(cfg_.common().time_warp_multiplier() != 1)
-    {
-        goby::common::goby_time_function = microsec_moos_time;
-        goby::common::goby_time_warp_factor = cfg_.common().time_warp_multiplier();
-    }
-
 #ifdef ENABLE_GOBY_V1_TRANSITIONAL_SUPPORT
     transitional_dccl_.convert_to_v2_representation(&cfg_);
     glog.is(DEBUG2) && glog << group("pAcommsHandler") << "Configuration after transitional configuration modifications: \n" << cfg_ << std::flush;

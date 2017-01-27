@@ -99,7 +99,7 @@ int main(int argc, char* argv[])
 
     
     
-    DriverTester tester(driver1, driver2, cfg1, cfg2, tests_to_run);
+    DriverTester tester(driver1, driver2, cfg1, cfg2, tests_to_run, goby::acomms::protobuf::DRIVER_WHOI_MICROMODEM);
     return tester.run();
 
 }

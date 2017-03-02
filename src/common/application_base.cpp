@@ -21,6 +21,7 @@
 // along with Goby.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <boost/format.hpp>
+#include <boost/filesystem.hpp>
 
 #include "application_base.h"
 #include "goby/common/configuration_reader.h"
@@ -120,7 +121,9 @@ goby::common::ApplicationBase::ApplicationBase(google::protobuf::Message* cfg /*
            glog.is(DIE) && glog << die << "cannot write glog output to requested file: " << file_name << std::endl;
 
        remove(file_symlink.c_str());
-       symlink(canonicalize_file_name(file_name.c_str()), file_symlink.c_str());
+       namespace fs = boost::filesystem;
+       fs::path canonicalized_file_name = fs::canonical(fs::path(file_name.c_str()), fs::path(file_symlink.c_str()));
+       symlink(canonicalized_file_name.string().c_str(), file_symlink.c_str());       
         
        
        glog.add_stream(base_cfg_->glog_config().file_log(i).verbosity(), fout_[i].get());

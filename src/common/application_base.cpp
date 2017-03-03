@@ -122,7 +122,7 @@ goby::common::ApplicationBase::ApplicationBase(google::protobuf::Message* cfg /*
 
        remove(file_symlink.c_str());
        namespace fs = boost::filesystem;
-       fs::path canonicalized_file_name = fs::canonical(fs::path(file_name.c_str()), fs::path(file_symlink.c_str()));
+       fs::path canonicalized_file_name = fs::canonical(fs::path(file_name.c_str()));
        symlink(canonicalized_file_name.string().c_str(), file_symlink.c_str());       
         
        

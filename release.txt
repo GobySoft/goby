@@ -1,5 +1,13 @@
 Goby Release Notes (Major version 2)
 ****************
+Version 2.1.7
+
+- Minor compilation updates for non-Ubuntu systems.
+
+### MOOS
+- Bug fix for iFrontSeat to correctly handle large time skews
+
+****************
 Version 2.1.6
 ### Acomms
 

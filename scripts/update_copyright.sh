@@ -18,13 +18,13 @@ header_strip()
 
 pushd ../src
 header_strip
-for i in `find -regex ".*\.h$\|.*\.cpp$"`; do cat $here/../share/doc/header_lib.txt $i > $i.tmp; mv $i.tmp $i; done
+for i in `find -regex ".*\.h$\|.*\.cpp$"`; do cat $here/../src/share/doc/header_lib.txt $i > $i.tmp; mv $i.tmp $i; done
 popd
 
 for dir in ../src/apps ../src/test ../src/share/examples; do
 pushd $dir
 header_strip
-for i in `find -regex ".*\.h$\|.*\.cpp$"`; do cat $here/../share/doc/header_bin.txt $i > $i.tmp; mv $i.tmp $i; done
+for i in `find -regex ".*\.h$\|.*\.cpp$"`; do cat $here/../src/share/doc/header_bin.txt $i > $i.tmp; mv $i.tmp $i; done
 popd
 
 done

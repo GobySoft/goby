@@ -1,4 +1,4 @@
-// Copyright 2009-2016 Toby Schneider (http://gobysoft.org/index.wt/people/toby)
+// Copyright 2009-2017 Toby Schneider (http://gobysoft.org/index.wt/people/toby)
 //                     GobySoft, LLC (2013-)
 //                     Massachusetts Institute of Technology (2007-2014)
 //                     Community contributors (see AUTHORS file)
@@ -25,6 +25,7 @@
 
 #include "goby/moos/moos_header.h"
 #include "goby/util/as.h"
+#include "goby/moos/moos_translator.h"
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <map>
@@ -77,7 +78,9 @@ class MOOSAppShell : public CMOOSApp
 template <class MOOSAppType = MOOSAppShell>
     class GobyMOOSAppSelector : public MOOSAppType
     {
-      protected:
+    public:
+    static goby::uint64 microsec_moos_time() { return static_cast<goby::uint64>(MOOSTime() * 1.0e6); }
+    protected:
       typedef boost::function<void (const CMOOSMsg& msg)> InboxFunc;
       
       template<typename ProtobufConfig>
@@ -109,9 +112,11 @@ template <class MOOSAppType = MOOSAppShell>
       template<typename ProtobufMessage>
       void publish_pb(const std::string& key, const ProtobufMessage& msg)
       {
+          
           std::string serialized;
-          serialize_for_moos(&serialized, msg);
-          publish(key, serialized);
+          bool is_binary = serialize_for_moos(&serialized, msg);
+          CMOOSMsg moos_msg = goby::moos::MOOSTranslator::make_moos_msg(key, serialized, is_binary, goby::moos::moos_technique, msg.GetDescriptor()->full_name());
+          publish(moos_msg);
       }
       
   
@@ -180,6 +185,25 @@ template <class MOOSAppType = MOOSAppShell>
                     boost::bind(&goby::moos::protobuf_inbox<ProtobufMessage>, _1, handler),
                     blackout);
       }
+
+      void register_timer(int period_seconds, boost::function<void ()> handler)      
+      {
+          int now = goby::common::goby_time<double>() / period_seconds;
+          now *= period_seconds;
+
+          SynchronousLoop new_loop;
+          new_loop.unix_next = now + period_seconds;
+          new_loop.period_seconds = period_seconds;
+          new_loop.handler = handler;
+          synchronous_loops_.push_back(new_loop);
+      }
+      
+
+      template<typename V>
+      void register_timer(int period_seconds,
+                          void(V::*mem_func)(),
+                          V* obj)
+      { register_timer(period_seconds, boost::bind(mem_func, obj)); }
       
       template<typename App>
       friend int ::goby::moos::run(int argc, char* argv[]);
@@ -191,12 +215,44 @@ template <class MOOSAppType = MOOSAppShell>
 
       bool dynamic_moos_vars_enabled() { return dynamic_moos_vars_enabled_; }
       void set_dynamic_moos_vars_enabled(bool b) { dynamic_moos_vars_enabled_ = b; }
-    
+
+      std::pair<std::string, goby::moos::protobuf::TranslatorEntry::ParserSerializerTechnique> parse_type_technique(const std::string& type_and_technique)
+      {
+          std::string protobuf_type;
+          goby::moos::protobuf::TranslatorEntry::ParserSerializerTechnique technique;
+          if(!type_and_technique.empty())
+          {
+              std::string::size_type colon_pos = type_and_technique.find(':');
+
+              if(colon_pos != std::string::npos)
+              {
+                  protobuf_type = type_and_technique.substr(0, colon_pos);
+                  std::string str_technique = type_and_technique.substr(colon_pos+1);
+                  
+                  if(!goby::moos::protobuf::TranslatorEntry::ParserSerializerTechnique_Parse(str_technique, &technique))
+                      throw(std::runtime_error("Invalid technique string"));
+              }
+              else
+              {
+                  throw std::runtime_error("Missing colon (:)");
+              }
+              return std::make_pair(protobuf_type, technique);
+          }
+          else
+          {
+              throw std::runtime_error("Empty technique string");
+          }
+      }
+
+
+      
+      
       private:
       // from CMOOSApp
       bool Iterate();
       bool OnStartUp();
       bool OnConnectToServer();
+      bool OnDisconnectFromServer();
       bool OnNewMail(MOOSMSG_LIST &NewMail);
       void try_subscribing();
       void do_subscriptions();
@@ -234,10 +290,20 @@ template <class MOOSAppType = MOOSAppShell>
     
       // MOOS Variable name, blackout time
       std::deque<std::pair<std::string, int> > pending_subscriptions_;
+      std::deque<std::pair<std::string, int> > existing_subscriptions_;
 
       // MOOS Variable pattern, MOOS App pattern, blackout time
       std::deque<std::pair<std::pair<std::string, std::string>, int> > wildcard_pending_subscriptions_;
+      std::deque<std::pair<std::pair<std::string, std::string>, int> > wildcard_existing_subscriptions_;
 
+      struct SynchronousLoop
+      {
+          double unix_next;
+          int period_seconds;
+          boost::function<void ()> handler;
+      };
+      
+      std::vector<SynchronousLoop> synchronous_loops_;
       
       GobyMOOSAppConfig common_cfg_;
 
@@ -296,6 +362,31 @@ template <class MOOSAppType>
     
     
     loop();
+
+    if(synchronous_loops_.size())
+    {
+        double now = goby::common::goby_time<double>();
+        for(typename std::vector<SynchronousLoop>::iterator it = synchronous_loops_.begin(), end = synchronous_loops_.end(); it != end; ++it)
+        {
+            SynchronousLoop& loop = *it;
+            if(loop.unix_next <= now)
+            {
+                loop.handler();
+                loop.unix_next += loop.period_seconds;
+
+                // fix jumps forward in time
+                if(loop.unix_next < now)
+                    loop.unix_next = now + loop.period_seconds;
+
+            }
+
+            // fix jumps backwards in time
+            if(loop.unix_next > (now + 2*loop.period_seconds))
+                loop.unix_next = now + loop.period_seconds;
+
+        }
+    }
+    
     return true;
 }    
 
@@ -335,6 +426,19 @@ template <class MOOSAppType>
     
     return true;    
 }
+
+template <class MOOSAppType>
+    bool GobyMOOSAppSelector<MOOSAppType>::OnDisconnectFromServer()
+{
+    std::cout << MOOSAppType::m_MissionReader.GetAppName() << ", disconnected from server." << std::endl;
+    connected_ = false;
+    pending_subscriptions_.insert(pending_subscriptions_.end(), existing_subscriptions_.begin(), existing_subscriptions_.end());
+    existing_subscriptions_.clear();
+    wildcard_pending_subscriptions_.insert(wildcard_pending_subscriptions_.end(), wildcard_existing_subscriptions_.begin(), wildcard_existing_subscriptions_.end());
+    wildcard_existing_subscriptions_.clear();
+    return true;
+}
+
 
 template <class MOOSAppType>
     bool GobyMOOSAppSelector<MOOSAppType>::OnConnectToServer()
@@ -450,6 +554,7 @@ template <class MOOSAppType>
             goby::glog.is(goby::common::logger::WARN) &&
                 goby::glog << "failed to subscribe for: " << pending_subscriptions_.front().first << std::endl;
         }
+        existing_subscriptions_.push_back(pending_subscriptions_.front());
         pending_subscriptions_.pop_front();
     }
     
@@ -467,9 +572,9 @@ template <class MOOSAppType>
                 goby::glog << "failed to subscribe for: " << wildcard_pending_subscriptions_.front().first.first << ":" << wildcard_pending_subscriptions_.front().first.second << std::endl;
         }
 
+        wildcard_existing_subscriptions_.push_back(wildcard_pending_subscriptions_.front());
         wildcard_pending_subscriptions_.pop_front();
-    }
-    
+    }    
 }
 
 
@@ -820,8 +925,13 @@ template <class MOOSAppType>
         goby::moos::moos_technique = common_cfg_.moos_parser_technique();
     else if(common_cfg_.has_use_binary_protobuf())
         goby::moos::moos_technique = common_cfg_.use_binary_protobuf() ? goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PREFIXED_PROTOBUF_NATIVE_ENCODED : goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PREFIXED_PROTOBUF_TEXT_FORMAT;
-    
 
+    
+    if(common_cfg_.time_warp_multiplier() != 1)
+    {
+        goby::common::goby_time_function = GobyMOOSAppSelector<MOOSAppType>::microsec_moos_time;
+        goby::common::goby_time_warp_factor = common_cfg_.time_warp_multiplier();
+    }
 }
 
 

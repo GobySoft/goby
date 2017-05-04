@@ -1,5 +1,49 @@
 Goby Release Notes (Major version 2)
 ****************
+Version 2.1.7
+
+- Minor compilation updates for non-Ubuntu systems.
+
+### MOOS
+- Bug fix for iFrontSeat to correctly handle large time skews
+
+****************
+Version 2.1.6
+### Acomms
+
+ - New driver for the Teledyne Benthos ATM-900 series acoustic modems
+
+### MOOS
+
+ - Updates to GobyMOOSApp to support MOOSTimeWarp for all subclasses and to resubscribe automatically if the MOOSDB connection is lost.
+
+
+See https://github.com/GobySoft/goby/compare/2.1.5...2.1.6
+****************
+Version 2.1.5
+### MOOS
+- Bug fix for "register_time" in GobyMOOSApp to allow use with MOOSTimeWarp #15 
+- Bug fix for "inverse_publish" in moos_translators #14 
+- Cleanups for Dependencies list.
+
+See https://github.com/GobySoft/goby/compare/2.1.4...2.1.5
+
+****************
+Version 2.1.4
+
+### MOOS
+
+- Added function "register_timer" to GobyMOOSApp to allow for low frequency (<AppTick) register events. Ofter it is usual to do something every 10 sec, every 60 sec, etc. This functionality simplifies doing so.
+
+See https://github.com/GobySoft/goby/compare/2.1.3...2.1.4
+
+****************
+Version 2.1.3
+
+This release contains minor bug fixes.
+
+See https://github.com/GobySoft/goby/compare/2.1.2a...2.1.3
+****************
 Version 2.1.2
 
 ### Acomms 

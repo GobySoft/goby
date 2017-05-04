@@ -1,5 +1,4 @@
-## goby project
-
+## goby project (version 2)
 
 The Goby Underwater Autonomy Project aims to create a unified framework for multiple scientific autonomous marine vehicle collaboration, seamlessly incorporating acoustic, ethernet, wifi, and serial communications. Presently the main thrust of the project is developing a set of robust acoustic networking libraries.
 
@@ -11,6 +10,8 @@ As of release 2.1.1, Goby uses the standalone DCCL project: https://github.com/G
 - Mailing list: goby@mit.edu; join: http://mailman.mit.edu/mailman/listinfo/goby.
 - Release Ubuntu packages: https://launchpad.net/~goby-dev/+archive/ppa
 - Nightly testing Ubuntu packages: https://code.launchpad.net/~tes/+archive/goby-daily
+
+Please note that the experimental Goby3 project is a separate fork: https://github.com/GobySoft/goby3
 
 ## compiling goby
 

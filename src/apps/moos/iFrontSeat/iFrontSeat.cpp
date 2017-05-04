@@ -1,4 +1,4 @@
-// Copyright 2009-2016 Toby Schneider (http://gobysoft.org/index.wt/people/toby)
+// Copyright 2009-2017 Toby Schneider (http://gobysoft.org/index.wt/people/toby)
 //                     GobySoft, LLC (2013-)
 //                     Massachusetts Institute of Technology (2007-2014)
 //
@@ -90,8 +90,7 @@ FrontSeatInterfaceBase* load_driver(iFrontSeatConfig* cfg)
 iFrontSeat::iFrontSeat()
     : GobyMOOSApp(&cfg_),
       frontseat_(load_driver(&cfg_)),
-      translator_(this),
-      next_status_time_(goby_time<double>() + cfg_.status_period())
+      translator_(this)
 {
 
     
@@ -120,21 +119,12 @@ iFrontSeat::iFrontSeat()
     // IvP Helm State
     subscribe("IVPHELM_STATE", &iFrontSeat::handle_mail_helm_state, this);
 
+    register_timer(cfg_.status_period(), boost::bind(&iFrontSeat::status_loop, this));
 }
 
 void iFrontSeat::loop()
 {
     frontseat_->do_work();
-
-    if(cfg_.status_period() &&
-       goby_time<double>() > next_status_time_)
-    {
-        std::string serialized;
-        serialize_for_moos(&serialized, frontseat_->status());
-        glog.is(DEBUG1) && glog << "Status: " << serialized << std::endl;
-        publish(cfg_.moos_var().prefix() + cfg_.moos_var().status(), serialized);
-        next_status_time_ += cfg_.status_period();
-    }
 
     if(cfg_.exit_on_error() &&
        (frontseat_->state() == gpb::INTERFACE_FS_ERROR ||
@@ -145,6 +135,11 @@ void iFrontSeat::loop()
     
 }
 
+void iFrontSeat::status_loop()
+{
+    glog.is(DEBUG1) && glog << "Status: " << frontseat_->status().ShortDebugString() << std::endl;
+    publish_pb(cfg_.moos_var().prefix() + cfg_.moos_var().status(), frontseat_->status());
+}
 
 void iFrontSeat::handle_mail_command_request(const CMOOSMsg& msg)
 {
@@ -210,29 +205,21 @@ void iFrontSeat::handle_mail_helm_state(const CMOOSMsg& msg)
 
 void iFrontSeat::handle_driver_command_response(const goby::moos::protobuf::CommandResponse& response)
 {
-    std::string serialized;
-    serialize_for_moos(&serialized, response);
-    publish(cfg_.moos_var().prefix() + cfg_.moos_var().command_response(), serialized);
+    publish_pb(cfg_.moos_var().prefix() + cfg_.moos_var().command_response(), response);
 }
 
 void iFrontSeat::handle_driver_data_from_frontseat(const goby::moos::protobuf::FrontSeatInterfaceData& data)
 {
-    std::string serialized;
-    serialize_for_moos(&serialized, data);
-    publish(cfg_.moos_var().prefix() + cfg_.moos_var().data_from_frontseat(), serialized);
+    publish_pb(cfg_.moos_var().prefix() + cfg_.moos_var().data_from_frontseat(), data);
 }
 
 void iFrontSeat::handle_driver_raw_in(const goby::moos::protobuf::FrontSeatRaw& data)
 {
-    std::string serialized;
-    serialize_for_moos(&serialized, data);
-    publish(cfg_.moos_var().prefix() + cfg_.moos_var().raw_in(), serialized);
+    publish_pb(cfg_.moos_var().prefix() + cfg_.moos_var().raw_in(), data);
 }
 
 void iFrontSeat::handle_driver_raw_out(const goby::moos::protobuf::FrontSeatRaw& data)
 {
-    std::string serialized;
-    serialize_for_moos(&serialized, data);
-    publish(cfg_.moos_var().prefix() + cfg_.moos_var().raw_out(), serialized);
+    publish_pb(cfg_.moos_var().prefix() + cfg_.moos_var().raw_out(), data);
 }
 

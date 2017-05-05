@@ -355,6 +355,24 @@ void goby::acomms::IPGateway::handle_udp_packet(
     
     it->second.push_back(nh + payload);
     icmp_report_queue();
+
+    // skip the MACManager and directly initiate the transmission
+    if(cfg_.bypass_mac())
+    {
+        if(cfg_.has_bypass_mac_slot())
+        {
+            handle_initiate_transmission(cfg_.bypass_mac_slot());
+        }
+        else
+        {
+            protobuf::ModemTransmission m;
+            m.set_src(local_modem_id_);
+            m.set_type(protobuf::ModemTransmission::DATA);
+            if(cfg_.has_only_rate())
+                m.set_rate(cfg_.only_rate());
+            handle_initiate_transmission(m);
+        }
+    }
 }
 
 void goby::acomms::IPGateway::handle_initiate_transmission(const protobuf::ModemTransmission& m)

@@ -355,24 +355,6 @@ void goby::acomms::IPGateway::handle_udp_packet(
     
     it->second.push_back(nh + payload);
     icmp_report_queue();
-
-    // skip the MACManager and directly initiate the transmission
-    if(cfg_.bypass_mac())
-    {
-        if(cfg_.has_bypass_mac_slot())
-        {
-            handle_initiate_transmission(cfg_.bypass_mac_slot());
-        }
-        else
-        {
-            protobuf::ModemTransmission m;
-            m.set_src(local_modem_id_);
-            m.set_type(protobuf::ModemTransmission::DATA);
-            if(cfg_.has_only_rate())
-                m.set_rate(cfg_.only_rate());
-            handle_initiate_transmission(m);
-        }
-    }
 }
 
 void goby::acomms::IPGateway::handle_initiate_transmission(const protobuf::ModemTransmission& m)
@@ -644,6 +626,8 @@ void goby::acomms::IPGateway::icmp_report_queue()
     control_msg.set_type(protobuf::IPGatewayICMPControl::QUEUE_REPORT);
     control_msg.set_address(cfg_.local_ipv4_address());
 
+    int total_messages = 0;
+    
     for(std::map<int, boost::circular_buffer<std::string> >::const_iterator it = outgoing_.begin(), end = outgoing_.end(); it != end; ++it)
     {
         int size = it->second.size();
@@ -652,9 +636,28 @@ void goby::acomms::IPGateway::icmp_report_queue()
             protobuf::IPGatewayICMPControl::QueueReport::SubQueue* q = control_msg.mutable_queue_report()->add_queue();
             q->set_dest(it->first);
             q->set_size(size);
+            total_messages += size;
         }
     }
     write_icmp_control_message(control_msg);
+
+    // skip the MACManager and directly initiate the transmission
+    if(total_messages > 0 && cfg_.bypass_mac())
+    {
+        if(cfg_.has_bypass_mac_slot())
+        {
+            handle_initiate_transmission(cfg_.bypass_mac_slot());
+        }
+        else
+        {
+            protobuf::ModemTransmission m;
+            m.set_src(local_modem_id_);
+            m.set_type(protobuf::ModemTransmission::DATA);
+            if(cfg_.has_only_rate())
+                m.set_rate(cfg_.only_rate());
+            handle_initiate_transmission(m);
+        }
+    }    
 }
 
 void goby::acomms::IPGateway::write_icmp_control_message(const protobuf::IPGatewayICMPControl& control_msg)

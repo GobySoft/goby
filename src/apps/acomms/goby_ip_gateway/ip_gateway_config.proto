@@ -11,6 +11,7 @@ message IPGatewayConfig
 
     required string local_ipv4_address = 2;
     required uint32 cidr_netmask_prefix = 3;
+    optional int32 tun_number = 4;
 
     optional bool enable_broadcast_address = 10 [default = true]; // use all ones address as broadcast (e.g. 192.168.1.255 in /24 subnet
     optional uint32 dynamic_address_count = 11 [default = 0]; // number of dynamic addresses for use as reverse-NAT (starting at one less than broadcast and counting down).

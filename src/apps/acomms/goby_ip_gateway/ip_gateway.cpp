@@ -255,7 +255,14 @@ void goby::acomms::IPGateway::init_dccl()
 void goby::acomms::IPGateway::init_tun()
 {
     char tun_name[IFNAMSIZ];
-    strcpy(tun_name, "\0");
+
+    std::string desired_tun_name = "tun";
+    if(cfg_.has_tun_number())
+        desired_tun_name += goby::util::as<std::string>(cfg_.tun_number());
+    else
+        desired_tun_name += "%d";
+    
+    strcpy(tun_name, desired_tun_name.c_str());
     tun_fd_ = tun_alloc(tun_name);    
     if(tun_fd_ < 0)
         glog.is(DIE) && glog << "Could not allocate tun interface. Check permissions?" << std::endl;
@@ -304,6 +311,20 @@ void goby::acomms::IPGateway::handle_udp_packet(
     net_header.set_protocol(goby::acomms::protobuf::NetworkHeader::UDP);
     net_header.set_srcdest_addr(from_src_dest_pair(std::make_pair(src,dest)));
 
+    // map destination first - we need this mapping to exist on the other end
+    // if we map the source first, we might use the source mapping when source port == dest port
+    boost::bimap<int, int>::right_map::const_iterator dest_it = port_map_.right.find(udp_hdr.dest_port());
+    if(dest_it != port_map_.right.end())
+    {
+        net_header.mutable_udp()->add_srcdest_port(dest_it->second);
+    }
+    else
+    {
+        glog.is(WARN) && glog << "No mapping for destination UDP port: " << udp_hdr.dest_port() << ". Unable to send packet." << std::endl;
+        return;
+    }
+
+    
     boost::bimap<int, int>::right_map::const_iterator src_it = port_map_.right.find(udp_hdr.source_port());
     if(src_it != port_map_.right.end())
     {
@@ -327,18 +348,6 @@ void goby::acomms::IPGateway::handle_udp_packet(
                 dynamic_port_index_ = cfg_.static_udp_port_size();
         }
     }
-    
-    boost::bimap<int, int>::right_map::const_iterator dest_it = port_map_.right.find(udp_hdr.dest_port());
-    if(dest_it != port_map_.right.end())
-    {
-        net_header.mutable_udp()->add_srcdest_port(dest_it->second);
-    }
-    else
-    {
-        glog.is(WARN) && glog << "No mapping for destination UDP port: " << udp_hdr.dest_port() << ". Unable to send packet." << std::endl;
-        return;
-    }
-    
     
     glog.is(VERBOSE) && glog << "NetHeader: " << net_header.DebugString() << std::endl;
     

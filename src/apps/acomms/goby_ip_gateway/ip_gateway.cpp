@@ -313,10 +313,11 @@ void goby::acomms::IPGateway::handle_udp_packet(
 
     // map destination first - we need this mapping to exist on the other end
     // if we map the source first, we might use the source mapping when source port == dest port
+    int dest_port = 0, src_port = 0;
     boost::bimap<int, int>::right_map::const_iterator dest_it = port_map_.right.find(udp_hdr.dest_port());
     if(dest_it != port_map_.right.end())
     {
-        net_header.mutable_udp()->add_srcdest_port(dest_it->second);
+        dest_port = dest_it->second;
     }
     else
     {
@@ -328,7 +329,7 @@ void goby::acomms::IPGateway::handle_udp_packet(
     boost::bimap<int, int>::right_map::const_iterator src_it = port_map_.right.find(udp_hdr.source_port());
     if(src_it != port_map_.right.end())
     {
-        net_header.mutable_udp()->add_srcdest_port(src_it->second);
+        src_port = src_it->second;
     }
     else
     {
@@ -348,6 +349,9 @@ void goby::acomms::IPGateway::handle_udp_packet(
                 dynamic_port_index_ = cfg_.static_udp_port_size();
         }
     }
+
+    net_header.mutable_udp()->add_srcdest_port(src_port);
+    net_header.mutable_udp()->add_srcdest_port(dest_port);    
     
     glog.is(VERBOSE) && glog << "NetHeader: " << net_header.DebugString() << std::endl;
     

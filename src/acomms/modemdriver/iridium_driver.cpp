@@ -213,7 +213,8 @@ void goby::acomms::IridiumDriver::process_transmission(protobuf::ModemTransmissi
     }
     else if(msg.rate() == RATE_SBD)
     {
-        fsm_.process_event(fsm::EvSBDBeginData()); // mailbox check
+        if(msg.GetExtension(IridiumDriverConfig::if_no_data_do_mailbox_check))
+           fsm_.process_event(fsm::EvSBDBeginData()); // mailbox check
     }
 }
 

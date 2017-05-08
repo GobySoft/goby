@@ -25,6 +25,12 @@ message IridiumDriverConfig
     optional bool use_dtr = 1390 [default = false];
     optional int32 handshake_hangup_seconds = 1392 [default = 5];
   }
+    
+  extend goby.acomms.protobuf.ModemTransmission
+  {
+      optional bool if_no_data_do_mailbox_check = 1381 [default = true];
+  }
+    
 }
 
 // subset of goby.acomms.protobuf.ModemTransmission

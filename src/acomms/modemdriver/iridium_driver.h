@@ -74,7 +74,6 @@ namespace goby
             enum { TRIPLE_PLUS_WAIT = 2 };
             
             protobuf::ModemTransmission rudics_mac_msg_;
-            double last_send_time_;
 
 
             int serial_fd_;

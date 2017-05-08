@@ -26,6 +26,7 @@
 #include "goby/common/logger.h"
 #include "goby/common/time.h"
 #include "goby/util/binary.h"
+#include "goby/acomms/acomms_constants.h"
 
 #include "rudics_packet.h"
 #include "iridium_driver_fsm.h"
@@ -144,7 +145,7 @@ void goby::acomms::fsm::Command::handle_sbd_rx(const std::string& in)
             std::string bytes;
             parse_rudics_packet(&bytes, sbd_rx_data);
             protobuf::ModemTransmission msg;
-            msg.ParseFromString(bytes);
+            parse_iridium_modem_message(bytes, &msg);
             context< IridiumDriverFSM >().received().push_back(msg);
             at_out().pop_front();
 
@@ -343,7 +344,7 @@ void goby::acomms::fsm::OnCall::in_state_react(const EvRxOnCallSerial& e)
             parse_rudics_packet(&bytes, in);
             
             protobuf::ModemTransmission msg;
-            msg.ParseFromString(bytes);
+            parse_iridium_modem_message(bytes, &msg);
             context< IridiumDriverFSM >().received().push_back(msg);
             set_last_rx_time(goby_time<double>());
         }
@@ -357,13 +358,18 @@ void goby::acomms::fsm::OnCall::in_state_react(const EvRxOnCallSerial& e)
 
 void goby::acomms::fsm::OnCall::in_state_react( const EvTxOnCallSerial& )
 {
+    const static double target_byte_rate = (context<IridiumDriverFSM>().driver_cfg().GetExtension(IridiumDriverConfig::target_bit_rate) / static_cast<double>(goby::acomms::BITS_IN_BYTE));
+
+    const double send_wait = last_bytes_sent() / target_byte_rate;    
+    
+    double now = goby_time<double>();
     boost::circular_buffer<protobuf::ModemTransmission>& data_out = context<IridiumDriverFSM>().data_out();
-    if(!data_out.empty())
+    if(!data_out.empty() && (now > last_tx_time() + send_wait))
     {
         // serialize the (protobuf) message
         std::string bytes;
-        data_out.front().SerializeToString(&bytes);
-
+        serialize_iridium_modem_message(&bytes, data_out.front());
+        
         // frame message
         std::string rudics_packet;
         serialize_rudics_packet(bytes, &rudics_packet);
@@ -371,7 +377,8 @@ void goby::acomms::fsm::OnCall::in_state_react( const EvTxOnCallSerial& )
         context<IridiumDriverFSM>().serial_tx_buffer().push_back(rudics_packet);
         data_out.pop_front();
 
-        set_last_tx_time(goby_time<double>());
+        set_last_bytes_sent(rudics_packet.size());
+        set_last_tx_time(now);
     }
 }
 

@@ -56,6 +56,13 @@ int main()
         std::cout << nmea.message() << std::endl;
         assert(nmea.at(8) == "ROLL");
     }
+
+    {
+        goby::util::NMEASentence nmea("!AIVDO,1,1,,,B0000003wk?8mP=18D3Q3wwUkP06,0*7B");
+        std::cout << nmea.message() << std::endl;
+        assert(nmea.as<int>(1) == 1);
+        assert(nmea.as<int>(2) == 1);
+    }
     
     std::cout << "all tests passed" << std::endl;
     

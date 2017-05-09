@@ -111,12 +111,21 @@ include_directories(${goby_INC_DIR})
 
 ## for MAC OS X 
 if(${APPLE})
-  ## MacPorts
-  include_directories(/opt/local/include)
-  link_directories(/opt/local/lib)
-  ## Fink
-  include_directories(/sw/include)
-  link_directories(/sw/lib)
+	if( EXISTS /opt/local/include AND EXISTS /opt/local/lib )
+    message(status "Detected use of 'MacPorts' for dependencies")
+		include_directories(/opt/local/include)
+		link_directories(/opt/local/lib)
+	endif()
+	if( EXISTS /sw/include AND EXISTS /sw/lib )
+    message(status "Detected use of 'Fink' for dependencies")
+		include_directories(/sw/include)
+		link_directories(/sw/lib)
+	endif()
+  if( EXISTS /usr/local/Cellar )
+    message(status "Detected use of 'Homebrew' for dependencies")
+		include_directories(/usr/local/include)
+		link_directories(/usr/local/lib)
+	endif()
 endif()
 
 set_property(DIRECTORY APPEND PROPERTY ADDITIONAL_MAKE_CLEAN_FILES "${goby_BIN_DIR}" "${goby_LIB_DIR}" "${goby_INC_DIR}" "${goby_SHARE_DIR}")

@@ -1,11 +1,35 @@
 Goby Release Notes (Major version 2)
 ****************
+Version 2.1.8
+
+### Acomms
+- Significant reduction in data usage by IridiumDriver by using DCCL to compress the ModemTransmission wrapper message
+- goby_ip_gateway minor improvements
+  - Configurable queue size
+  - Configurable tun number (e.g. tun10)
+  - Ability to bypass MAC for modemdrivers that have built in MAC
+  
+### Common
+- goby_hdf5: Default protobuf value written into HDF5 file
+
+### MOOS
+- iFrontSeat driver for Liquid Robotics SV2 waveglider
+
+### Compiling
+- Improvements for Mac OS X compilation
+
+
+See https://github.com/GobySoft/goby/compare/2.1.7...2.1.8
+
+****************
 Version 2.1.7
 
 - Minor compilation updates for non-Ubuntu systems.
 
 ### MOOS
 - Bug fix for iFrontSeat to correctly handle large time skews
+
+See https://github.com/GobySoft/goby/compare/2.1.6...2.1.7
 
 ****************
 Version 2.1.6

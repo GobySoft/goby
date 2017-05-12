@@ -57,6 +57,15 @@ void goby::acomms::fsm::Command::in_state_react(const EvRxSerial& e)
     }
     
     boost::trim(in);
+
+    // deal with echo getting turned back on unintentionally
+    if(!at_out().empty() && at_out().front().second != "E" && (in == std::string("AT" + at_out().front().second)))
+    {
+        glog.is(WARN) && glog << group("iridiumdriver") << "Echo turned on. Disabling" << std::endl;
+        // push to front so we send this before anything else
+        at_out_.insert(at_out_.begin()+1, std::make_pair(ATSentenceMeta(), "E"));
+        return;
+    }
     
     static const std::string connect = "CONNECT";
     static const std::string sbdi = "+SBDI";

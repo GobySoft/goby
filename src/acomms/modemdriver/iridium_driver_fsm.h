@@ -278,7 +278,6 @@ namespace goby
                     StateNotify("Configure")
                     {
                         context<Command>().push_at_command("");
-                        context<Command>().push_at_command("E");
                         for(int i = 0,
                                 n = context<IridiumDriverFSM>().driver_cfg().ExtensionSize(
                                     IridiumDriverConfig::config);

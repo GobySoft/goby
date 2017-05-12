@@ -100,7 +100,7 @@ void goby::acomms::fsm::Command::in_state_react(const EvRxSerial& e)
     }
     else if(in == "ERROR")
     {
-        post_event(EvAck(in));
+        post_event(EvReset());
     }
     else if(in == "0" || in == "1" || in == "2" || in == "3")
     {

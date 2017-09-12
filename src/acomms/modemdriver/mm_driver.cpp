@@ -994,11 +994,15 @@ void goby::acomms::MMDriver::process_receive(const NMEASentence& nmea)
         {
             pop_out();
         }
+	else if(out_.front().sentence_id() == "MSC" && (nmea.sentence_id() == "REV" || nmea.sentence_id() == "MSC"))
+	{
+	    pop_out();
+	}
         else if(out_.front().sentence_id() == nmea.sentence_id()) // general matching sentence id
         {
             pop_out();
         }
-}
+    }
 
 }
 

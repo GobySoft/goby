@@ -1,0 +1,13 @@
+import "goby/moos/protobuf/frontseat_config.proto";
+import "goby/common/protobuf/option_extensions.proto";
+
+message IverFrontSeatConfig
+{
+  required string serial_port = 1;
+  optional uint32 serial_baud = 2 [default = 19200];
+}
+
+extend iFrontSeatConfig
+{
+  optional IverFrontSeatConfig iver_config = 1003;
+}

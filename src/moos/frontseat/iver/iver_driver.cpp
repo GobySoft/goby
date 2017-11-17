@@ -216,16 +216,29 @@ boost::units::quantity<boost::units::si::time> IverFrontSeat::nmea_time_to_secon
     int seconds = nmea_time;
     long micro_s = (nmea_time - seconds)*1e6;
     
-    
-    int day = nmea_date / 10000;
-    nmea_date -= day*10000;
-    int month = nmea_date / 100;
-    nmea_date -= month*100;
-    int year = nmea_date;
 
+    int day = 0, month = 0, year = 0;
+    // for time warp
+    if(nmea_date > 999999)
+    {
+	day = nmea_date / 100000;
+	nmea_date -= day*100000;
+	month = nmea_date / 1000;
+	nmea_date -= month*1000;
+	year = nmea_date;
+    }
+    else
+    {
+	day = nmea_date / 10000;
+	nmea_date -= day*10000;
+	month = nmea_date / 100;
+	nmea_date -= month*100;
+	year = nmea_date;
+    }
+    
     try
     {
-        ptime given_time(date((year < 70) ? (year + 2000) : (year + 1900), month, day),
+        ptime given_time(date(year + 2000, month, day),
                          time_duration(hours, minutes, seconds) + microseconds(micro_s));
         
         if (given_time == not_a_date_time)
@@ -244,6 +257,7 @@ boost::units::quantity<boost::units::si::time> IverFrontSeat::nmea_time_to_secon
     }
     catch(std::exception& e)
     {
+	glog.is(DEBUG1) && glog << "Invalid time: " << e.what() << std::endl;
         return -1*si::seconds;
     }
 }

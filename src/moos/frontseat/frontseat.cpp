@@ -240,6 +240,8 @@ void FrontSeatInterfaceBase::compute_missing(gpb::NodeStatus* status)
 {
     if(!status->has_name())
         status->set_name(cfg_.common().community());
+    if(!status->has_modem_id())
+	status->set_modem_id(cfg_.modem_id());
     
     if(!status->has_global_fix() && !status->has_local_fix())
     {

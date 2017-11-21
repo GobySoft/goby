@@ -7,9 +7,11 @@ message NodeStatus
   option (dccl.msg).id = 20;
   option (dccl.msg).max_bytes = 32;
   option (dccl.msg).unit_system = "si";
+  option (dccl.msg).codec_version = 3;
 
   required double time = 1 [(dccl.field).codec="_time", (dccl.field).in_head=true, (dccl.field).units.derived_dimensions="time"];
-  required string name = 2 [(dccl.field).codec = "_platform<->modem_id"];
+  optional string name = 2 [(dccl.field).omit = true];
+  optional uint32 modem_id = 12 [(dccl.field).min=1, (dccl.field).max=31];
 
   // defined in goby/core/proto/config.proto
   optional VehicleType type = 3;
@@ -56,8 +58,8 @@ message GeodeticCoordinate
 {
   option (dccl.msg).unit_system = "si";
 
-  required double lat = 1 [(dccl.field).omit = true, (dccl.field).units.derived_dimensions = "plane_angle", (dccl.field).units.system = "angle::degree" ]; // dccl sends Cartesian Y
-  required double lon = 2 [(dccl.field).omit = true, (dccl.field).units.derived_dimensions = "plane_angle", (dccl.field).units.system = "angle::degree" ]; // dccl sends Cartesian X
+  optional double lat = 1 [(dccl.field).omit = true, (dccl.field).units.derived_dimensions = "plane_angle", (dccl.field).units.system = "angle::degree" ]; // dccl sends Cartesian Y
+  optional double lon = 2 [(dccl.field).omit = true, (dccl.field).units.derived_dimensions = "plane_angle", (dccl.field).units.system = "angle::degree" ]; // dccl sends Cartesian X
   optional double depth = 3 [default = 0,
                              (dccl.field).max=6400.0,
                              (dccl.field).min=0.0,

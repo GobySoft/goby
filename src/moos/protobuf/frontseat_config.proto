@@ -61,5 +61,6 @@ message iFrontSeatConfig
   // Bluefin: 1000
   // ABC: 1001
   // Nemo: 1002
+  // Iver3: 1003
   extensions 1000 to max;
 }

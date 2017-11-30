@@ -21,7 +21,7 @@
 // along with Goby.  If not, see <http://www.gnu.org/licenses/>.
 
 #ifndef WavegliderSV2FrontSeat20150909H
-#define WavegliderSV2FrontSeat20130909H
+#define WavegliderSV2FrontSeat20150909H
 
 #include <boost/bimap.hpp>
 #include <boost/circular_buffer.hpp>

@@ -61,6 +61,9 @@ IverFrontSeat::IverFrontSeat(const iFrontSeatConfig& cfg)
 void IverFrontSeat::loop()
 {
     try_receive();
+
+    goby::util::NMEASentence request_data("$OSD,G,C,S,P,,,,");
+    serial_.write(request_data.message_cr_nl());
     
     if(goby_time<double>() > last_frontseat_data_time_ + allowed_skew)
         frontseat_providing_data_ = false;

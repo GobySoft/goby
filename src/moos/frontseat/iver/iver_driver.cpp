@@ -25,6 +25,7 @@
 #include "goby/common/logger.h"
 #include "goby/util/as.h"
 #include "goby/util/linebasedcomms/nmea_sentence.h"
+#include "goby/util/binary.h"
 
 #include "iver_driver.h"
 
@@ -73,6 +74,7 @@ void IverFrontSeat::loop()
 void IverFrontSeat::try_receive()
 {
     std::string in;
+    
     while(serial_.readline(&in))
     {
         boost::trim(in);
@@ -127,8 +129,6 @@ void IverFrontSeat::process_receive(const std::string& s)
 
 	    static const boost::units::metric::knot_base_unit::unit_type knots;
 	    status_.set_speed_with_units(nmea.as<double>(SOG_KNOTS)*knots);
-	    // I think OceanServer is using Track for True Heading - TODO: check this
-	    status_.mutable_pose()->set_heading_with_units(nmea.as<double>(TRACK_DEGREES)*boost::units::degree::degrees);
 	}
 	else if(nmea.at(0).substr(0,2) == "$C")
 	{
@@ -148,6 +148,7 @@ void IverFrontSeat::process_receive(const std::string& s)
 	    status_.mutable_global_fix()->set_depth_with_units(goby::util::as<double>(cfields.at(DEPTH))*feet);
 	    status_.mutable_pose()->set_roll_with_units(goby::util::as<double>(cfields.at(ROLL))*boost::units::degree::degrees);
 	    status_.mutable_pose()->set_pitch_with_units(goby::util::as<double>(cfields.at(PITCH))*boost::units::degree::degrees);
+	    status_.mutable_pose()->set_heading_with_units(goby::util::as<double>(cfields.at(HEADING))*boost::units::degree::degrees);
     
 	    compute_missing(&status_);	   
 	    gpb::FrontSeatInterfaceData data;
@@ -156,7 +157,7 @@ void IverFrontSeat::process_receive(const std::string& s)
 	}
 	else
 	{
-	    glog.is(DEBUG1) && glog << "[Parser]: Ignoring sentence: " << s << std::flush;
+	    glog.is(DEBUG1) && glog << "[Parser]: Ignoring sentence: " << s << std::endl;
 	}
         
     }

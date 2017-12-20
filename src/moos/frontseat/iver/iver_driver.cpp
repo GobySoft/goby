@@ -28,6 +28,7 @@
 #include "goby/util/binary.h"
 
 #include "iver_driver.h"
+#include "goby/moos/frontseat/iver/iver_driver.pb.h"
 
 namespace gpb = goby::moos::protobuf;
 using goby::common::goby_time;
@@ -64,7 +65,7 @@ void IverFrontSeat::loop()
     try_receive();
 
     goby::util::NMEASentence request_data("$OSD,G,C,S,P,,,,");
-    serial_.write(request_data.message_cr_nl());
+    write(request_data.message());
     
     if(goby_time<double>() > last_frontseat_data_time_ + allowed_skew)
         frontseat_providing_data_ = false;
@@ -154,6 +155,11 @@ void IverFrontSeat::process_receive(const std::string& s)
 	    gpb::FrontSeatInterfaceData data;
 	    data.mutable_node_status()->CopyFrom(status_);
 	    signal_data_from_frontseat(data);
+	    frontseat_providing_data_ = true;
+	    last_frontseat_data_time_ = goby_time<double>();
+
+	    // no explicit handshake for frontseat command
+	    frontseat_state_ = gpb::FRONTSEAT_ACCEPTING_COMMANDS;
 	}
 	else
 	{
@@ -167,13 +173,49 @@ void IverFrontSeat::process_receive(const std::string& s)
     }
         
     
-// TODO add in backseat control mode
-    frontseat_state_ = gpb::FRONTSEAT_IN_CONTROL;
 }
 
 void IverFrontSeat::send_command_to_frontseat(const gpb::CommandRequest& command)
 {    
-    // not yet implemented
+    if(command.HasExtension(gpb::iver_command))
+    {
+	const gpb::IverExtraCommands& iver_command = command.GetExtension(gpb::iver_command);
+	gpb::IverExtraCommands::IverCommand type = iver_command.command();
+	switch(type)
+	{
+          case gpb::IverExtraCommands::UNKNOWN_COMMAND:
+	      break;
+          case gpb::IverExtraCommands::START_MISSION:
+	     if(iver_command.has_mission() && !iver_command.mission().empty())
+	     {
+		 goby::util::NMEASentence nmea("$OMSTART", goby::util::NMEASentence::IGNORE);
+		 const int ignore_gps = 0;
+		 const int ignore_sounder = 0;
+		 const int ignore_pressure_transducer = 0;
+		 const int mission_type = 0; // normal mission
+		 const std::string srp_mission = "";
+		 nmea.push_back(ignore_gps);
+		 nmea.push_back(ignore_sounder);
+		 nmea.push_back(ignore_pressure_transducer);
+		 nmea.push_back(mission_type);
+		 nmea.push_back(iver_command.mission());
+		 nmea.push_back(srp_mission);
+		 write(nmea.message());
+	     }
+	     else
+	     {
+		 glog.is(DEBUG1) && glog << "Refusing to start empty mission" << std::endl;
+	     }
+	     break;
+             case gpb::IverExtraCommands::STOP_MISSION:
+	     {
+		 // flag is always null (0)
+		 goby::util::NMEASentence nmea("$OMSTOP,0", goby::util::NMEASentence::IGNORE);
+		 write(nmea.message());
+	     }
+	     break;
+	}
+    }
 } 
     
 void IverFrontSeat::send_data_to_frontseat(const gpb::FrontSeatInterfaceData& data)

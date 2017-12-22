@@ -58,6 +58,12 @@ IverFrontSeat::IverFrontSeat(const iFrontSeatConfig& cfg)
     
     serial_.start();
 
+    if(iver_config_.has_ntp_serial_port())
+    {
+        ntp_serial_.reset(new goby::util::SerialClient(iver_config_.ntp_serial_port(),
+						       4800, "\r\n"));
+	ntp_serial_->start();
+    }
 }
 
 void IverFrontSeat::loop()
@@ -69,6 +75,13 @@ void IverFrontSeat::loop()
     
     if(goby_time<double>() > last_frontseat_data_time_ + allowed_skew)
         frontseat_providing_data_ = false;
+
+    
+    std::string in;
+    while(ntp_serial_ && ntp_serial_->readline(&in))
+    {
+        glog.is(DEBUG2) && glog << "NTP says: " << in << std::endl;
+    }
 } 
 
 
@@ -130,6 +143,8 @@ void IverFrontSeat::process_receive(const std::string& s)
 
 	    static const boost::units::metric::knot_base_unit::unit_type knots;
 	    status_.set_speed_with_units(nmea.as<double>(SOG_KNOTS)*knots);
+	    if(ntp_serial_)
+	      ntp_serial_->write(nmea.message_cr_nl());
 	}
 	else if(nmea.at(0).substr(0,2) == "$C")
 	{

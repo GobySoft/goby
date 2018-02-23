@@ -599,9 +599,18 @@ template <class MOOSAppType>
         switch(field_desc->cpp_type())
         {
             case google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE:
+            {
+                bool message_was_empty = !refl->HasField(*msg, field_desc);
                 fetch_moos_globals(refl->MutableMessage(msg, field_desc), moos_file_reader);
+                std::vector<const google::protobuf::FieldDescriptor*> set_fields;
+                refl->ListFields(refl->GetMessage(*msg, field_desc), &set_fields);
+                std::cout << field_desc->DebugString() << set_fields.size() << std::endl;
+                if(set_fields.empty() && message_was_empty)
+                    refl->ClearField(msg, field_desc);
+                
                 break;    
-                    
+            }
+            
             case google::protobuf::FieldDescriptor::CPPTYPE_INT32:
             {
                 int result;

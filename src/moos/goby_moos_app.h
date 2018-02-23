@@ -257,8 +257,8 @@ template <class MOOSAppType = MOOSAppShell>
       void try_subscribing();
       void do_subscriptions();
     
-      void fetch_moos_globals(google::protobuf::Message* msg,
-                              CMOOSFileReader& moos_file_reader);
+      int fetch_moos_globals(google::protobuf::Message* msg,
+                             CMOOSFileReader& moos_file_reader);
 
       void read_configuration(google::protobuf::Message* cfg);
       void process_configuration();
@@ -582,12 +582,13 @@ template <class MOOSAppType>
 
 
 template <class MOOSAppType>
-    void GobyMOOSAppSelector<MOOSAppType>::fetch_moos_globals(google::protobuf::Message* msg,
+    int GobyMOOSAppSelector<MOOSAppType>::fetch_moos_globals(google::protobuf::Message* msg,
                                     CMOOSFileReader& moos_file_reader)
 {
+    int globals = 0;
     const google::protobuf::Descriptor* desc = msg->GetDescriptor();
     const google::protobuf::Reflection* refl = msg->GetReflection();
-
+    
     for(int i = 0, n = desc->field_count(); i < n; ++i)
     {
         const google::protobuf::FieldDescriptor* field_desc = desc->field(i);
@@ -601,11 +602,8 @@ template <class MOOSAppType>
             case google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE:
             {
                 bool message_was_empty = !refl->HasField(*msg, field_desc);
-                fetch_moos_globals(refl->MutableMessage(msg, field_desc), moos_file_reader);
-                std::vector<const google::protobuf::FieldDescriptor*> set_fields;
-                refl->ListFields(refl->GetMessage(*msg, field_desc), &set_fields);
-                std::cout << field_desc->DebugString() << set_fields.size() << std::endl;
-                if(set_fields.empty() && message_was_empty)
+                int set_globals = fetch_moos_globals(refl->MutableMessage(msg, field_desc), moos_file_reader);
+                if(set_globals ==0 && message_was_empty)
                     refl->ClearField(msg, field_desc);
                 
                 break;    
@@ -615,7 +613,11 @@ template <class MOOSAppType>
             {
                 int result;
                 if(moos_file_reader.GetValue(moos_global, result))
+                {
                     refl->SetInt32(msg, field_desc, result);
+                    ++globals;
+                }
+                
                 break;
             }
             
@@ -623,7 +625,10 @@ template <class MOOSAppType>
             {
                 int result;
                 if(moos_file_reader.GetValue(moos_global, result))
+                {
                     refl->SetInt64(msg, field_desc, result);
+                    ++globals;
+                }
                 break;
             }
 
@@ -631,7 +636,11 @@ template <class MOOSAppType>
             {
                 unsigned result;
                 if(moos_file_reader.GetValue(moos_global, result))
+                {
                     refl->SetUInt32(msg, field_desc, result);
+                    ++globals;
+                }
+
                 break;
             }
 
@@ -639,7 +648,10 @@ template <class MOOSAppType>
             {
                 unsigned result;
                 if(moos_file_reader.GetValue(moos_global, result))
+                {
                     refl->SetUInt64(msg, field_desc, result);
+                    ++globals;
+                }
                 break;
             }
                         
@@ -647,7 +659,10 @@ template <class MOOSAppType>
             {
                 bool result;
                 if(moos_file_reader.GetValue(moos_global, result))
+                {
                     refl->SetBool(msg, field_desc, result);
+                    ++globals;
+                }
                 break;
             }
                     
@@ -655,7 +670,11 @@ template <class MOOSAppType>
             {
                 std::string result;
                 if(moos_file_reader.GetValue(moos_global, result))
+                {
                     refl->SetString(msg, field_desc, result);
+                    ++globals;
+                }
+
                 break;
             }
                 
@@ -663,7 +682,11 @@ template <class MOOSAppType>
             {
                 float result;
                 if(moos_file_reader.GetValue(moos_global, result))
+                {
                     refl->SetFloat(msg, field_desc, result);
+                    ++globals;
+                }
+
                 break;
             }
 
@@ -671,7 +694,10 @@ template <class MOOSAppType>
             {
                 double result;
                 if(moos_file_reader.GetValue(moos_global, result))
+                {
                     refl->SetDouble(msg, field_desc, result);
+                    ++globals;
+                }
                 break;
             }
                 
@@ -688,11 +714,13 @@ template <class MOOSAppType>
                                                              field_desc->name())));
                     
                     refl->SetEnum(msg, field_desc, enum_desc);
+                    ++globals;
                 }
                 break;
             }
         }
     }
+    return globals;
 }
 
 template <class MOOSAppType>

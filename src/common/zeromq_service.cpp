@@ -75,7 +75,7 @@ void goby::common::ZeroMQService::process_cfg(const protobuf::ZeroMQServiceConfi
             sockets_.insert(std::make_pair(cfg.socket(i).socket_id(), ZeroMQSocket(new_socket)));
             
             //  Initialize poll set
-            zmq::pollitem_t item = { *new_socket, 0, ZMQ_POLLIN, 0 };
+            zmq::pollitem_t item = { (void*)*new_socket, 0, ZMQ_POLLIN, 0 };
 
             // publish sockets can't receive
             if(cfg.socket(i).socket_type() != protobuf::ZeroMQServiceConfig::Socket::PUBLISH)

@@ -29,6 +29,7 @@
 #include <string>
 #include <sstream>
 #include <limits>
+#include <boost/math/special_functions/fpclassify.hpp>
 
 #include "goby/util/linebasedcomms.h"
 #include "goby/util/as.h"
@@ -48,7 +49,7 @@ CMOOSGeodesy geodesy;
 
 void parse_in(const std::string& in, std::map<std::string, std::string>* out);
 bool started()
-{ return !isnan(datum_lat) && !isnan(datum_lon); }
+{ return !boost::math::isnan(datum_lat) && !boost::math::isnan(datum_lon); }
 
 int main(int argc, char* argv[])
 {

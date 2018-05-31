@@ -33,3 +33,8 @@ Toby Schneider <toby@gobysoft.org> 2016-05-13
 Zac Berkowitz <zberkowitz@whoi.edu> 2016-05-19
 Stephanie Kemna <stephaniekemna@gmail.com> 2016-10-11
 Tommaso Fabbri <t.fabbri@yahoo.com> 2017-03-02
+Michael Godin <mikegodin@yahoo.com> 2018-05-30
+
+== Third-party Dependencies ==
+
+Third-party contributions (works not authored by GobySoft or those who have signed GobySoft's CLA) must be publicly available with an open source license that is compatible with the GPL (see https://www.gnu.org/licenses/license-list.html#GPLCompatibleLicenses). For example, most projects available in Debian APT repositories fulfill this requirement. 

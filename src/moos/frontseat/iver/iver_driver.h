@@ -85,6 +85,6 @@ class IverFrontSeat : public FrontSeatInterfaceBase
     goby::moos::protobuf::CommandRequest last_request_;    
 
     goby::moos::protobuf::NodeStatus status_;
-};
+}
 
 #endif

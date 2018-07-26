@@ -166,9 +166,9 @@ void IverFrontSeat::process_receive(const std::string& s)
                 SRP_ACTIVE = 16
             };            
 
-            status_.mutable_global_fix()->set_lat(nmea.as<double>(LATITUDE));
-	    status_.mutable_global_fix()->set_lon(nmea.as<double>(LONGITUDE));
-
+            status_.mutable_global_fix()->set_lat_with_units(nmea.as<double>(LATITUDE)*boost::units::degree::degrees);
+	    status_.mutable_global_fix()->set_lon_with_units(nmea.as<double>(LONGITUDE)*boost::units::degree::degrees);
+            
 	    static const boost::units::metric::knot_base_unit::unit_type knots;
 	    status_.set_speed_with_units(nmea.as<double>(SPEED)*knots);            
         }

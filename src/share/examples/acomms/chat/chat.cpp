@@ -61,8 +61,7 @@ void monitor_modem_receive(const goby::acomms::protobuf::ModemTransmission& rx_m
 std::ofstream fout_;
 goby::acomms::DCCLCodec* dccl_ = goby::acomms::DCCLCodec::get();
 goby::acomms::QueueManager q_manager_;
-goby::acomms::MMDriver mm_driver_;
-goby::acomms::MACManager mac_;
+
 ChatCurses curses_;
 int my_id_;
 int buddy_id_;
@@ -70,26 +69,28 @@ int buddy_id_;
 
 int main(int argc, char* argv[])
 {
+    goby::acomms::MACManager mac_;
+    boost::asio::io_service io;
+    goby::acomms::UDPDriver driver_(&io);
+
     //
     // Deal with command line parameters
     //
     
-    if(argc != 5) return startup_failure();
-    
-    std::string serial_port = argv[1];
+    if(argc != 4) return startup_failure();
 
     try
     {
-        my_id_ = boost::lexical_cast<int>(argv[2]);
-        buddy_id_ = boost::lexical_cast<int>(argv[3]);
+        my_id_ = boost::lexical_cast<int>(argv[1]);
+        buddy_id_ = boost::lexical_cast<int>(argv[2]);
     }
     catch(boost::bad_lexical_cast&)
     {
-        std::cerr << "bad value for my_id: " << argv[2] << " or buddy_id: " << argv[3] << ". these must be unsigned integers." << std::endl;
+        std::cerr << "bad value for my_id: " << argv[1] << " or buddy_id: " << argv[2] << ". these must be unsigned integers." << std::endl;
         return startup_failure();        
     }
 
-    std::string log_file = argv[4];
+    std::string log_file = argv[3];
     fout_.open(log_file.c_str());
     if(!fout_.is_open())
     {
@@ -105,7 +106,7 @@ int main(int argc, char* argv[])
 
     
     // bind the signals of these libraries
-    bind(mm_driver_, q_manager_, mac_);
+    bind(driver_, q_manager_, mac_);
     
     //
     // Initiate DCCL (libdccl)
@@ -142,14 +143,16 @@ int main(int argc, char* argv[])
     //
     goby::acomms::protobuf::DriverConfig driver_cfg;
     driver_cfg.set_modem_id(my_id_);
-    driver_cfg.set_serial_port(serial_port);
+    //    driver_cfg.set_serial_port(serial_port);
+
     
 #ifdef USE_FLEXIBLE_DATA_PACKET
     driver_cfg.AddExtension(micromodem::protobuf::Config::nvram_cfg, "psk.packet.mod_hdr_version,1");
 #endif
 
+
 #ifdef USE_TWO_WAY_PING
-    goby::acomms::connect(&mm_driver_.signal_receive, &monitor_modem_receive);
+    goby::acomms::connect(&driver_.signal_receive, &monitor_modem_receive);
 #endif
 
     //
@@ -198,11 +201,18 @@ int main(int argc, char* argv[])
     {
         mac_cfg.add_slot()->CopyFrom(my_slot);
         mac_cfg.add_slot()->CopyFrom(buddy_slot);
+        
+        driver_cfg.MutableExtension(UDPDriverConfig::local)->set_port(60001);
+        driver_cfg.MutableExtension(UDPDriverConfig::remote)->set_port(60002);
+    
     }
     else
     {
         mac_cfg.add_slot()->CopyFrom(buddy_slot);
         mac_cfg.add_slot()->CopyFrom(my_slot);
+
+        driver_cfg.MutableExtension(UDPDriverConfig::local)->set_port(60002);
+        driver_cfg.MutableExtension(UDPDriverConfig::remote)->set_port(60001);
     }    
     
     //
@@ -213,7 +223,7 @@ int main(int argc, char* argv[])
         dccl_->set_cfg(dccl_cfg);
         q_manager_.set_cfg(q_manager_cfg);
         mac_.startup(mac_cfg);
-        mm_driver_.startup(driver_cfg);
+        driver_.startup(driver_cfg);
     }
     catch(std::runtime_error& e)
     {
@@ -246,7 +256,7 @@ int main(int argc, char* argv[])
             
         try
         {
-            mm_driver_.do_work();
+            driver_.do_work();
             mac_.do_work();
             q_manager_.do_work();
         }
@@ -263,7 +273,7 @@ int main(int argc, char* argv[])
 
 int startup_failure()
 {
-    std::cerr << "usage: chat /dev/tty_modem my_id buddy_id log_file" << std::endl;
+    std::cerr << "usage: chat my_id buddy_id log_file" << std::endl;
     return 1;
 }
 

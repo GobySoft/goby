@@ -1,4 +1,3 @@
 import "goby/moos/protobuf/frontseat.proto";
 
 package goby.moos.protobuf;
-

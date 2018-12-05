@@ -17,4 +17,9 @@ AlwaysBreakTemplateDeclarations: false
 KeepEmptyLinesAtTheStartOfBlocks: false
 UseTab: Never
 IndentCaseLabels: true
-
+---
+Language: Proto
+BasedOnStyle: Google
+IndentWidth: '4'
+UseTab: Never
+BreakBeforeBraces: Allman

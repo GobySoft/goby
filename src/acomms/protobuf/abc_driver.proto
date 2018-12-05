@@ -2,9 +2,9 @@ import "goby/acomms/protobuf/driver_base.proto"; // load up message DriverBaseCo
 
 message ABCDriverConfig
 {
-  extend goby.acomms.protobuf.DriverConfig
-  {
-    optional bool enable_foo = 1201 [ default = true ];
-    optional bool enable_bar = 1202 [ default = false ];
-  }
+    extend goby.acomms.protobuf.DriverConfig
+    {
+        optional bool enable_foo = 1201 [default = true];
+        optional bool enable_bar = 1202 [default = false];
+    }
 }

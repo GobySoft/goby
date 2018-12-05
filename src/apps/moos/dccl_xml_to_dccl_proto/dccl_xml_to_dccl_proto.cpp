@@ -26,36 +26,34 @@ int main(int argc, char* argv[])
 {
     std::string xml_file;
     std::string proto_folder = "";
-    
-    switch(argc)
+
+    switch (argc)
     {
-        case 3:
-            xml_file = argv[1];
-            proto_folder = argv[2];
-        
-        case 2:
-            xml_file = argv[1];
-            break;
+        case 3: xml_file = argv[1]; proto_folder = argv[2];
+
+        case 2: xml_file = argv[1]; break;
 
         default:
-            std::cerr << "usage: dccl_xml_to_dccl_proto message_xml_file.xml [directory for generated .proto (default = pwd (.)]" << std::endl;
+            std::cerr << "usage: dccl_xml_to_dccl_proto message_xml_file.xml [directory for "
+                         "generated .proto (default = pwd (.)]"
+                      << std::endl;
             exit(EXIT_FAILURE);
     }
 
     goby::glog.add_stream(goby::common::protobuf::GLogConfig::VERBOSE, &std::cerr);
-    
+
     std::cerr << "creating DCCLTransitionalCodec using xml file: [" << xml_file << "]" << std::endl;
-    
+
     goby::transitional::DCCLTransitionalCodec dccl;
 
     goby::util::DynamicProtobufManager::enable_compilation();
-    
-    pAcommsHandlerConfig cfg;    
+
+    pAcommsHandlerConfig cfg;
     cfg.mutable_transitional_cfg()->add_message_file()->set_path(xml_file);
     cfg.mutable_transitional_cfg()->set_generated_proto_dir(proto_folder);
     dccl.convert_to_v2_representation(&cfg);
-    
+
     std::cout << "received: " << cfg.DebugString();
-    
+
     std::cerr << "wrote proto files" << std::endl;
 }

@@ -24,58 +24,55 @@
 
 #include <google/protobuf/descriptor.h>
 
-#include <Wt/WEnvironment>
 #include <Wt/WApplication>
-#include <Wt/WString>
+#include <Wt/WContainerWidget>
+#include <Wt/WEnvironment>
 #include <Wt/WMenu>
 #include <Wt/WServer>
-#include <Wt/WContainerWidget>
+#include <Wt/WString>
 #include <Wt/WTimer>
 
-#include "goby/common/zeromq_application_base.h"
-#include "goby/common/pubsub_node_wrapper.h"
 #include "goby/common/liaison_container.h"
 #include "goby/common/protobuf/liaison_config.pb.h"
+#include "goby/common/pubsub_node_wrapper.h"
+#include "goby/common/zeromq_application_base.h"
 
 namespace goby
 {
-    namespace common
-    {   
-        extern protobuf::LiaisonConfig liaison_cfg_;
+namespace common
+{
+extern protobuf::LiaisonConfig liaison_cfg_;
 
-        class Liaison : public ZeroMQApplicationBase
-        {
-          public:
-            Liaison(protobuf::LiaisonConfig* cfg);
-            ~Liaison() { }
+class Liaison : public ZeroMQApplicationBase
+{
+  public:
+    Liaison(protobuf::LiaisonConfig* cfg);
+    ~Liaison() {}
 
-            void inbox(goby::common::MarshallingScheme marshalling_scheme,
-                       const std::string& identifier,
-                       const std::string& data,
-                       int socket_id);
+    void inbox(goby::common::MarshallingScheme marshalling_scheme, const std::string& identifier,
+               const std::string& data, int socket_id);
 
-            void loop();
+    void loop();
 
-            static boost::shared_ptr<zmq::context_t> zmq_context() { return zmq_context_; }
+    static boost::shared_ptr<zmq::context_t> zmq_context() { return zmq_context_; }
 
-            static std::vector<void *> plugin_handles_;
+    static std::vector<void*> plugin_handles_;
 
-          private:
-            void load_proto_file(const std::string& path);
-            
-            friend class LiaisonWtThread;
-          private:
-            Wt::WServer wt_server_;
-            static boost::shared_ptr<zmq::context_t> zmq_context_;
-            ZeroMQService zeromq_service_;
-            PubSubNodeWrapperBase pubsub_node_;
+  private:
+    void load_proto_file(const std::string& path);
 
-            // add a database client
-        };
+    friend class LiaisonWtThread;
 
-    }
-}
+  private:
+    Wt::WServer wt_server_;
+    static boost::shared_ptr<zmq::context_t> zmq_context_;
+    ZeroMQService zeromq_service_;
+    PubSubNodeWrapperBase pubsub_node_;
 
+    // add a database client
+};
 
+} // namespace common
+} // namespace goby
 
 #endif

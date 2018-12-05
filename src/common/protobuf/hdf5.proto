@@ -8,6 +8,6 @@ message HDF5Config
 
     // for use by plugins, if desired
     repeated string input_file = 30;
-    
+
     extensions 1000 to max;
 }

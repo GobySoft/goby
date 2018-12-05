@@ -30,7 +30,7 @@ int main(int argc, char* argv[])
 {
     goby::glog.add_stream(goby::common::logger::DEBUG3, &std::cerr);
     goby::glog.set_name(argv[0]);
-    
+
     goby::acomms::DCCLCodec* codec = goby::acomms::DCCLCodec::get();
 
     ShortIDMsg short_id_msg;
@@ -48,7 +48,6 @@ int main(int argc, char* argv[])
     assert(codec->size(long_id_msg) == 2);
     codec->encode(&encoded, long_id_msg);
     codec->decode(encoded, &long_id_msg);
-    
 
     ShortIDEdgeMsg short_id_edge_msg;
     codec->validate(short_id_edge_msg.GetDescriptor());
@@ -71,9 +70,9 @@ int main(int argc, char* argv[])
         codec->validate(too_long_id_msg.GetDescriptor());
         assert(false);
     }
-    catch(goby::acomms::DCCLException& e)
-    { }
-    
+    catch (goby::acomms::DCCLException& e)
+    {
+    }
 
     ShortIDMsgWithData short_id_msg_with_data;
     codec->validate(short_id_msg_with_data.GetDescriptor());
@@ -84,7 +83,5 @@ int main(int argc, char* argv[])
     codec->encode(&encoded, short_id_msg_with_data);
     codec->decode(encoded, &short_id_msg_with_data);
 
-    
     std::cout << "all tests passed" << std::endl;
 }
-

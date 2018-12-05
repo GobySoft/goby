@@ -25,92 +25,90 @@
 #ifndef MESSAGE_XML_CALLBACKS20091211H
 #define MESSAGE_XML_CALLBACKS20091211H
 
-#include <vector>
 #include <sstream>
+#include <vector>
 
-#include <xercesc/sax2/Attributes.hpp>
-#include <xercesc/sax2/DefaultHandler.hpp> 
 #include <boost/algorithm/string.hpp> // for string functions
+#include <xercesc/sax2/Attributes.hpp>
+#include <xercesc/sax2/DefaultHandler.hpp>
 
 #include "goby/moos/transitional/xml/xerces_strings.h"
 
-#include "message.h"
 #include "goby/acomms/dccl.h"
 #include "goby/moos/transitional/xml/tags.h"
+#include "message.h"
 
 namespace goby
 {
-    namespace transitional
-    {
-        class DCCLMessage;
-        
+namespace transitional
+{
+class DCCLMessage;
+
 // Implements callbacks that receive character data and
-// notifications about the beginnings and ends of elements 
-        class DCCLMessageContentHandler : public xercesc::DefaultHandler {
-          public:
-          DCCLMessageContentHandler(std::vector<DCCLMessage> & messages) : messages(messages)
-            { initialize_tags(tags_map_); }
+// notifications about the beginnings and ends of elements
+class DCCLMessageContentHandler : public xercesc::DefaultHandler
+{
+  public:
+    DCCLMessageContentHandler(std::vector<DCCLMessage>& messages) : messages(messages)
+    {
+        initialize_tags(tags_map_);
+    }
 
-            void startElement( 
-                const XMLCh *const uri,        // namespace URI
-                const XMLCh *const localname,  // tagname w/ out NS prefix
-                const XMLCh *const qname,      // tagname + NS pefix
-                const xercesc::Attributes &attrs );      // elements's attributes
+    void startElement(const XMLCh* const uri,            // namespace URI
+                      const XMLCh* const localname,      // tagname w/ out NS prefix
+                      const XMLCh* const qname,          // tagname + NS pefix
+                      const xercesc::Attributes& attrs); // elements's attributes
 
-            void endElement(          
-                const XMLCh *const uri,        // namespace URI
-                const XMLCh *const localname,  // tagname w/ out NS prefix
-                const XMLCh *const qname );     // tagname + NS pefix
+    void endElement(const XMLCh* const uri,       // namespace URI
+                    const XMLCh* const localname, // tagname w/ out NS prefix
+                    const XMLCh* const qname);    // tagname + NS pefix
 
 #if XERCES_VERSION_MAJOR < 3
-            void characters(const XMLCh* const chars, const unsigned int length)
-	      { current_text.append(toNative(chars), 0, length); }
+    void characters(const XMLCh* const chars, const unsigned int length)
+    {
+        current_text.append(toNative(chars), 0, length);
+    }
 #else
-            void characters(const XMLCh* const chars, const XMLSize_t length )
-	      { current_text.append(toNative(chars), 0, length); }
+    void characters(const XMLCh* const chars, const XMLSize_t length)
+    {
+        current_text.append(toNative(chars), 0, length);
+    }
 #endif
 
-          private:
-            bool in_message_var()
-            { return xml::in_message_var(parents_); }
-            bool in_header_var()
-            { return xml::in_header_var(parents_); }
-            bool in_publish()
-            { return xml::in_publish(parents_); }
-        
-          private:
-            std::vector<DCCLMessage>& messages;
-            std::string current_text;
+  private:
+    bool in_message_var() { return xml::in_message_var(parents_); }
+    bool in_header_var() { return xml::in_header_var(parents_); }
+    bool in_publish() { return xml::in_publish(parents_); }
 
-            std::set<xml::Tag> parents_;
-            std::map<std::string, xml::Tag> tags_map_;
+  private:
+    std::vector<DCCLMessage>& messages;
+    std::string current_text;
 
-            transitional::DCCLHeaderPart curr_head_piece_;
-        
-        };
+    std::set<xml::Tag> parents_;
+    std::map<std::string, xml::Tag> tags_map_;
+
+    transitional::DCCLHeaderPart curr_head_piece_;
+};
 
 // Receives Error notifications.
-        class DCCLMessageErrorHandler : public xercesc::DefaultHandler 
-        {
-
-          public:
-            void warning(const xercesc::SAXParseException& e)
-            {
-                std::cout << "warning:" << toNative(e.getMessage());
-            }
-            void error(const xercesc::SAXParseException& e)
-            {
-                XMLSSize_t line = e.getLineNumber();
-                std::stringstream ss;
-                ss << "message xml parsing error on line " << line << ": " << std::endl << toNative(e.getMessage());
-            
-                throw goby::acomms::DCCLException(ss.str());
-            }
-            void fatalError(const xercesc::SAXParseException& e) 
-            {
-                error(e);
-            }
-        };
+class DCCLMessageErrorHandler : public xercesc::DefaultHandler
+{
+  public:
+    void warning(const xercesc::SAXParseException& e)
+    {
+        std::cout << "warning:" << toNative(e.getMessage());
     }
-}
+    void error(const xercesc::SAXParseException& e)
+    {
+        XMLSSize_t line = e.getLineNumber();
+        std::stringstream ss;
+        ss << "message xml parsing error on line " << line << ": " << std::endl
+           << toNative(e.getMessage());
+
+        throw goby::acomms::DCCLException(ss.str());
+    }
+    void fatalError(const xercesc::SAXParseException& e) { error(e); }
+};
+} // namespace transitional
+} // namespace goby
 #endif

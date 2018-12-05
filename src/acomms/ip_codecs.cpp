@@ -22,8 +22,8 @@
 
 #include "ip_codecs.h"
 
-#include <netinet/in.h>
 #include <arpa/inet.h>
+#include <netinet/in.h>
 
 dccl::uint32 goby::acomms::IPv4AddressCodec::pre_encode(const std::string& field_value)
 {
@@ -40,22 +40,21 @@ std::string goby::acomms::IPv4AddressCodec::post_decode(const dccl::uint32& wire
 
 uint16_t goby::acomms::net_checksum(const std::string& data)
 {
-    uint32_t sum = 0;  
+    uint32_t sum = 0;
     int len = data.size();
-    uint16_t* p = (uint16_t*) &data[0];
+    uint16_t* p = (uint16_t*)&data[0];
 
-    while(len > 1)
+    while (len > 1)
     {
         sum += ntohs(*(p++));
         len -= 2;
     }
 
     // last byte is large byte (LSB is padded with zeros)
-    if(len)
+    if (len)
         sum += (*(uint8_t*)p << 8) & 0xFF00;
-            
-    while(sum >> 16)
-        sum = (sum & 0xFFFF) + (sum >> 16);
-            
+
+    while (sum >> 16) sum = (sum & 0xFFFF) + (sum >> 16);
+
     return ~sum;
 }

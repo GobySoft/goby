@@ -21,10 +21,9 @@
 
 // tests receiving one of several static types
 
-#include "goby/acomms/dccl.h"
 #include "goby/acomms/acomms_helpers.h"
+#include "goby/acomms/dccl.h"
 #include "test.pb.h"
-
 
 using goby::acomms::operator<<;
 
@@ -40,7 +39,6 @@ int main(int argc, char* argv[])
     goby::glog.add_stream(goby::common::logger::DEBUG3, &std::cerr);
     goby::glog.set_name(argv[0]);
 
-
     codec->validate<GobyMessage1>();
     codec->validate<GobyMessage2>();
     codec->validate<GobyMessage3>();
@@ -49,8 +47,6 @@ int main(int argc, char* argv[])
     codec->info<GobyMessage2>(&goby::glog);
     codec->info<GobyMessage3>(&goby::glog);
 
-    
- 
     msg_in1.set_int32_val(1);
     msg_in2.set_bool_val(false);
     msg_in3.set_string_val("string1");
@@ -58,11 +54,14 @@ int main(int argc, char* argv[])
     std::cout << "Try encode..." << std::endl;
     std::string bytes1, bytes2, bytes3;
     codec->encode(&bytes1, msg_in1);
-    std::cout << "... got bytes for GobyMessage1 (hex): " << goby::util::hex_encode(bytes1) << std::endl;
+    std::cout << "... got bytes for GobyMessage1 (hex): " << goby::util::hex_encode(bytes1)
+              << std::endl;
     codec->encode(&bytes2, msg_in2);
-    std::cout << "... got bytes for GobyMessage2 (hex): " << goby::util::hex_encode(bytes2) << std::endl;
+    std::cout << "... got bytes for GobyMessage2 (hex): " << goby::util::hex_encode(bytes2)
+              << std::endl;
     codec->encode(&bytes3, msg_in3);
-    std::cout << "... got bytes for GobyMessage3 (hex): " << goby::util::hex_encode(bytes3) << std::endl;
+    std::cout << "... got bytes for GobyMessage3 (hex): " << goby::util::hex_encode(bytes3)
+              << std::endl;
 
     std::cout << "Try decode..." << std::endl;
 
@@ -70,7 +69,6 @@ int main(int argc, char* argv[])
     decode(bytes2);
     decode(bytes1);
     decode(bytes3);
-    
 
     std::cout << "all tests passed" << std::endl;
 }
@@ -78,8 +76,8 @@ int main(int argc, char* argv[])
 void decode(const std::string& bytes)
 {
     unsigned dccl_id = codec->id_from_encoded(bytes);
-    
-    if(dccl_id == codec->id<GobyMessage1>())
+
+    if (dccl_id == codec->id<GobyMessage1>())
     {
         GobyMessage1 msg_out1;
         codec->decode(bytes, &msg_out1);
@@ -87,7 +85,7 @@ void decode(const std::string& bytes)
         std::cout << "Got..." << msg_out1 << std::endl;
         assert(msg_out1.SerializeAsString() == msg_in1.SerializeAsString());
     }
-    else if(dccl_id == codec->id<GobyMessage2>())
+    else if (dccl_id == codec->id<GobyMessage2>())
     {
         GobyMessage2 msg_out2;
         codec->decode(bytes, &msg_out2);
@@ -95,13 +93,12 @@ void decode(const std::string& bytes)
         std::cout << "Got..." << msg_out2 << std::endl;
         assert(msg_out2.SerializeAsString() == msg_in2.SerializeAsString());
     }
-    else if(dccl_id == codec->id<GobyMessage3>())
+    else if (dccl_id == codec->id<GobyMessage3>())
     {
         GobyMessage3 msg_out3;
         codec->decode(bytes, &msg_out3);
-        
+
         std::cout << "Got..." << msg_out3 << std::endl;
         assert(msg_out3.SerializeAsString() == msg_in3.SerializeAsString());
     }
-    
 }

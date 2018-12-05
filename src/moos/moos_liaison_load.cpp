@@ -20,32 +20,35 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Goby.  If not, see <http://www.gnu.org/licenses/>.
 
-#include "goby/moos/liaison_commander.h"
-#include "goby/moos/liaison_scope.h"
-#include "goby/moos/liaison_geodesy.h"
 #include "goby/moos/liaison_acomms.h"
+#include "goby/moos/liaison_commander.h"
+#include "goby/moos/liaison_geodesy.h"
+#include "goby/moos/liaison_scope.h"
 
 #include "moos_liaison_load.h"
 
 std::vector<boost::shared_ptr<goby::common::ZeroMQService> > services_;
 
 extern "C"
-{    
-    std::vector<goby::common::LiaisonContainer*> goby_liaison_load(const goby::common::protobuf::LiaisonConfig& cfg,
-                                                                   boost::shared_ptr<zmq::context_t> zmq_context)
+{
+    std::vector<goby::common::LiaisonContainer*>
+    goby_liaison_load(const goby::common::protobuf::LiaisonConfig& cfg,
+                      boost::shared_ptr<zmq::context_t> zmq_context)
     {
-        
         std::vector<goby::common::LiaisonContainer*> containers;
 
-        services_.push_back(boost::shared_ptr<goby::common::ZeroMQService>(new goby::common::ZeroMQService(zmq_context)));
+        services_.push_back(boost::shared_ptr<goby::common::ZeroMQService>(
+            new goby::common::ZeroMQService(zmq_context)));
         containers.push_back(new goby::common::LiaisonCommander(services_.back().get(), cfg));
 
-        services_.push_back(boost::shared_ptr<goby::common::ZeroMQService>(new goby::common::ZeroMQService(zmq_context)));
+        services_.push_back(boost::shared_ptr<goby::common::ZeroMQService>(
+            new goby::common::ZeroMQService(zmq_context)));
         containers.push_back(new goby::common::LiaisonScope(services_.back().get(), cfg));
 
         containers.push_back(new goby::common::LiaisonGeodesy(cfg));
-        
-        services_.push_back(boost::shared_ptr<goby::common::ZeroMQService>(new goby::common::ZeroMQService(zmq_context)));
+
+        services_.push_back(boost::shared_ptr<goby::common::ZeroMQService>(
+            new goby::common::ZeroMQService(zmq_context)));
         containers.push_back(new goby::common::LiaisonAcomms(services_.back().get(), cfg));
 
         return containers;

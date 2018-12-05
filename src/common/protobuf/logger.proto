@@ -4,36 +4,45 @@ package goby.common.protobuf;
 
 message GLogConfig
 {
-  enum Verbosity
-  {
-    @PROTOBUF_ALLOW_ALIAS@
-    QUIET = 1;
-    WARN = 2;
-    VERBOSE = 3;
-    DEBUG1 = 5;
-    DEBUG2 = 6;
-    DEBUG3 = 7;
+    enum Verbosity
+    {
+        @PROTOBUF_ALLOW_ALIAS@
+        
+        QUIET = 1;
+        WARN = 2;
+        VERBOSE = 3;
+        DEBUG1 = 5;
+        DEBUG2 = 6;
+        DEBUG3 = 7;
 
-    /* backwards compatibility with v1 */
-    VERBOSITY_QUIET = 1;
-    VERBOSITY_WARN = 2;
-    VERBOSITY_VERBOSE = 3;
-    VERBOSITY_DEBUG = 6;
-    VERBOSITY_GUI = 6;
+        /* backwards compatibility with v1 */
+        VERBOSITY_QUIET = 1;
+        VERBOSITY_WARN = 2;
+        VERBOSITY_VERBOSE = 3;
+        VERBOSITY_DEBUG = 6;
+        VERBOSITY_GUI = 6;
+    }
 
-  }
-  
-  optional Verbosity tty_verbosity = 1 [default = QUIET,
-                                        (goby.field).description="Terminal verbosity"];
+    optional Verbosity tty_verbosity = 1
+        [default = QUIET, (goby.field).description = "Terminal verbosity"];
 
-  optional bool show_gui = 2 [default = false, (goby.field).description="Set to true to display windowed NCurses GUI for terminal output."];
-    
-  message FileLog
-  {
-    required string file_name = 1;
-    optional Verbosity verbosity = 2 [default = VERBOSE,
-                                      (goby.field).description="Verbosity for this file log"];
-  }
-  repeated FileLog file_log = 3 [(goby.field).description="Open one or more files for (debug) logging, the symbol '%1%' will be replaced by the current UTC date and time."];
-  
+    optional bool show_gui = 2 [
+        default = false,
+        (goby.field).description =
+            "Set to true to display windowed NCurses GUI for terminal output."
+    ];
+
+    message FileLog
+    {
+        required string file_name = 1;
+        optional Verbosity verbosity = 2 [
+            default = VERBOSE,
+            (goby.field).description = "Verbosity for this file log"
+        ];
+    }
+    repeated FileLog file_log = 3 [
+        (goby.field).description =
+            "Open one or more files for (debug) logging, the symbol '%1%' will "
+            "be replaced by the current UTC date and time."
+    ];
 }

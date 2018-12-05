@@ -30,9 +30,9 @@ int main(int argc, char* argv[])
 {
     goby::glog.add_stream(goby::common::logger::DEBUG3, &std::cerr);
     goby::glog.set_name(argv[0]);
-    
+
     goby::acomms::DCCLCodec* codec = goby::acomms::DCCLCodec::get();
-    
+
     codec->validate<BytesMsg>();
     codec->info<BytesMsg>(&goby::glog);
 
@@ -43,13 +43,11 @@ int main(int argc, char* argv[])
 
     std::string encoded;
     codec->encode(&encoded, msg_in);
-    
+
     BytesMsg msg_out;
     codec->decode(encoded, &msg_out);
 
     assert(msg_in.SerializeAsString() == msg_out.SerializeAsString());
-    
-    
+
     std::cout << "all tests passed" << std::endl;
 }
-

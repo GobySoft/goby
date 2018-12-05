@@ -23,23 +23,21 @@
 
 #include "goby/common/zeromq_service.h"
 
-void inbox(goby::common::MarshallingScheme marshalling_scheme,
-           const std::string& identifier,
-           const std::string& data,
-           int socket_id);
-
+void inbox(goby::common::MarshallingScheme marshalling_scheme, const std::string& identifier,
+           const std::string& data, int socket_id);
 
 const std::string reply_identifier_ = "RESPONSE/";
 const std::string request_identifier_ = "REQUEST/";
 int inbox_count_ = 0;
-const char request_data_ [] = {'h', 'i', '\0'};    
-const char reply_data_ [] = {'w', 'e', 'l', 'l',' ', 'h', 'e', 'l', 'l','o', '\0'};    
+const char request_data_[] = {'h', 'i', '\0'};
+const char reply_data_[] = {'w', 'e', 'l', 'l', ' ', 'h', 'e', 'l', 'l', 'o', '\0'};
 
 // pick some misc values
-enum { SOCKET_REQUESTOR = 104952, SOCKET_REPLIER = 2304 
+enum
+{
+    SOCKET_REQUESTOR = 104952,
+    SOCKET_REPLIER = 2304
 };
-
-    
 
 int main(int argc, char* argv[])
 {
@@ -50,7 +48,7 @@ int main(int argc, char* argv[])
 
     {
         using goby::common::protobuf::ZeroMQServiceConfig;
-        
+
         ZeroMQServiceConfig requestor_cfg;
         ZeroMQServiceConfig::Socket* requestor_socket = requestor_cfg.add_socket();
         requestor_socket->set_socket_type(ZeroMQServiceConfig::Socket::REQUEST);
@@ -70,53 +68,51 @@ int main(int argc, char* argv[])
         replier_socket->set_socket_id(SOCKET_REPLIER);
 
         std::cout << replier_socket->DebugString() << std::endl;
-    
+
         node.merge_cfg(requestor_cfg);
         node.merge_cfg(replier_cfg);
     }
-    
+
     node.connect_inbox_slot(&inbox);
 
     usleep(1e4);
 
     int test_count = 3;
-    for(int i = 0; i < test_count; ++i)
+    for (int i = 0; i < test_count; ++i)
     {
         std::cout << "requesting " << request_data_ << std::endl;
-        node.send(goby::common::MARSHALLING_CSTR, request_identifier_, std::string(request_data_), SOCKET_REQUESTOR);
+        node.send(goby::common::MARSHALLING_CSTR, request_identifier_, std::string(request_data_),
+                  SOCKET_REQUESTOR);
         node.poll(1e6);
         std::cout << "replying " << reply_data_ << std::endl;
-        node.send(goby::common::MARSHALLING_CSTR, reply_identifier_, std::string(reply_data_), SOCKET_REPLIER);
+        node.send(goby::common::MARSHALLING_CSTR, reply_identifier_, std::string(reply_data_),
+                  SOCKET_REPLIER);
         node.poll(1e6);
     }
 
-    assert(inbox_count_ == 2*test_count);
-    
+    assert(inbox_count_ == 2 * test_count);
+
     std::cout << "all tests passed" << std::endl;
 }
 
-
-void inbox(goby::common::MarshallingScheme marshalling_scheme,
-           const std::string& identifier,
-           const std::string& data,
-           int socket_id)
+void inbox(goby::common::MarshallingScheme marshalling_scheme, const std::string& identifier,
+           const std::string& data, int socket_id)
 {
-
-    if(socket_id == SOCKET_REPLIER)
-    {        
+    if (socket_id == SOCKET_REPLIER)
+    {
         assert(identifier == request_identifier_);
         assert(marshalling_scheme == goby::common::MARSHALLING_CSTR);
         assert(!strcmp(data.c_str(), request_data_));
-    
+
         std::cout << "Replier Received: " << data << std::endl;
         ++inbox_count_;
     }
-    else if(socket_id == SOCKET_REQUESTOR)
+    else if (socket_id == SOCKET_REQUESTOR)
     {
         assert(identifier == reply_identifier_);
         assert(marshalling_scheme == goby::common::MARSHALLING_CSTR);
         assert(!strcmp(data.c_str(), reply_data_));
-        
+
         std::cout << "Requestor Received: " << data << std::endl;
         ++inbox_count_;
     }
@@ -124,5 +120,4 @@ void inbox(goby::common::MarshallingScheme marshalling_scheme,
     {
         assert(false);
     }
-    
 }

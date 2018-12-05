@@ -2,9 +2,9 @@ import "dccl/protobuf/option_extensions.proto";
 
 message BytesMsg
 {
-  option (dccl.msg).id = 10;
-  option (dccl.msg).max_bytes = 32;
+    option (dccl.msg).id = 10;
+    option (dccl.msg).max_bytes = 32;
 
-  required bytes req_bytes = 1 [(dccl.field).max_length=8];
-  optional bytes opt_bytes = 2 [(dccl.field).max_length=8];  
+    required bytes req_bytes = 1 [(dccl.field).max_length = 8];
+    optional bytes opt_bytes = 2 [(dccl.field).max_length = 8];
 }

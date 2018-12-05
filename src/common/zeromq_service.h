@@ -216,7 +216,7 @@ class ZeroMQService
     protobuf::ZeroMQServiceConfig cfg_;
 
     // maps poll_items_ index to a callback function
-    std::map<size_t, boost::function<void(const void* data, int size, int message_part)>>
+    std::map<size_t, boost::function<void(const void* data, int size, int message_part)> >
         poll_callbacks_;
 
     boost::signals2::signal<void(MarshallingScheme marshalling_scheme,

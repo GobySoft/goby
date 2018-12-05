@@ -163,12 +163,12 @@ class CpAcommsHandler : public GobyMOOSApp
     goby::acomms::RouteManager* router_;
 
     // for PBDriver, IridiumDriver
-    std::vector<boost::shared_ptr<goby::common::ZeroMQService>> zeromq_service_;
+    std::vector<boost::shared_ptr<goby::common::ZeroMQService> > zeromq_service_;
 
     // for UDPDriver
-    std::vector<boost::shared_ptr<boost::asio::io_service>> asio_service_;
+    std::vector<boost::shared_ptr<boost::asio::io_service> > asio_service_;
 
-    std::vector<boost::shared_ptr<Timer>> timers_;
+    std::vector<boost::shared_ptr<Timer> > timers_;
 
     std::map<boost::shared_ptr<goby::acomms::ModemDriverBase>, double> driver_restart_time_;
 

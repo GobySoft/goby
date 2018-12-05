@@ -66,7 +66,7 @@ class CpTranslator : public GobyMOOSApp
     boost::asio::io_service timer_io_service_;
     boost::asio::io_service::work work_;
 
-    std::vector<boost::shared_ptr<Timer>> timers_;
+    std::vector<boost::shared_ptr<Timer> > timers_;
 
     static pTranslatorConfig cfg_;
     static CpTranslator* inst_;

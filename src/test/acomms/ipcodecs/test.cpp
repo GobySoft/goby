@@ -53,7 +53,7 @@ int main(int argc, char* argv[])
     goby::glog.add_stream(goby::common::logger::DEBUG3, &std::cerr);
     goby::glog.set_name(argv[0]);
 
-    dccl::FieldCodecManager::add<goby::acomms::IPGatewayEmptyIdentifierCodec<0xF001>>(
+    dccl::FieldCodecManager::add<goby::acomms::IPGatewayEmptyIdentifierCodec<0xF001> >(
         "ip_gateway_id_codec_1");
     dccl::FieldCodecManager::add<goby::acomms::NetShortCodec>("net.short");
     dccl::FieldCodecManager::add<goby::acomms::IPv4AddressCodec>("ip.v4.address");

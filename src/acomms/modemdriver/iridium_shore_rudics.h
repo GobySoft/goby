@@ -162,7 +162,7 @@ class RUDICSServer
         start_accept();
     }
 
-    std::set<boost::shared_ptr<RUDICSConnection>>& connections() { return connections_; }
+    std::set<boost::shared_ptr<RUDICSConnection> >& connections() { return connections_; }
 
     boost::signals2::signal<void(boost::shared_ptr<RUDICSConnection> connection)> connect_signal;
 
@@ -211,7 +211,7 @@ class RUDICSServer
                  << ". Remaining connection count: " << connections_.size() << std::endl;
     }
 
-    std::set<boost::shared_ptr<RUDICSConnection>> connections_;
+    std::set<boost::shared_ptr<RUDICSConnection> > connections_;
     boost::asio::ip::tcp::acceptor acceptor_;
 };
 

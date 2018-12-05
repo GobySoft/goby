@@ -1733,8 +1733,8 @@ void goby::acomms::MMDriver::process_outgoing_app_ack(protobuf::ModemTransmissio
         // build up message to ack
         micromodem::protobuf::MMApplicationAck acks;
 
-        for (std::map<unsigned, std::set<unsigned>>::const_iterator it = frames_to_ack_.begin(),
-                                                                    end = frames_to_ack_.end();
+        for (std::map<unsigned, std::set<unsigned> >::const_iterator it = frames_to_ack_.begin(),
+                                                                     end = frames_to_ack_.end();
              it != end; ++it)
         {
             micromodem::protobuf::MMApplicationAck::AckPart& acks_part = *acks.add_part();

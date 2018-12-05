@@ -123,11 +123,11 @@ class DCCLMessage
     DCCLMessageVar& header_var(transitional::DCCLHeaderPart p) { return *header_[p]; }
     DCCLPublish& last_publish() { return publishes_.back(); }
 
-    std::vector<boost::shared_ptr<DCCLMessageVar>>& layout() { return layout_; }
-    std::vector<boost::shared_ptr<DCCLMessageVar>>& header() { return header_; }
+    std::vector<boost::shared_ptr<DCCLMessageVar> >& layout() { return layout_; }
+    std::vector<boost::shared_ptr<DCCLMessageVar> >& header() { return header_; }
 
-    const std::vector<boost::shared_ptr<DCCLMessageVar>>& layout_const() const { return layout_; }
-    const std::vector<boost::shared_ptr<DCCLMessageVar>>& header_const() const { return header_; }
+    const std::vector<boost::shared_ptr<DCCLMessageVar> >& layout_const() const { return layout_; }
+    const std::vector<boost::shared_ptr<DCCLMessageVar> >& header_const() const { return header_; }
 
     std::vector<DCCLPublish>& publishes() { return publishes_; }
     const std::vector<DCCLPublish>& publishes_const() const { return publishes_; }
@@ -144,7 +144,7 @@ class DCCLMessage
     void set_repeat_array_length();
     unsigned calc_total_size();
 
-    void set_head_defaults(std::map<std::string, std::vector<DCCLMessageVal>>& in,
+    void set_head_defaults(std::map<std::string, std::vector<DCCLMessageVal> >& in,
                            unsigned modem_id);
 
     // increment, means increase trigger number
@@ -185,8 +185,8 @@ class DCCLMessage
     std::string in_var_;
     std::string out_var_;
 
-    std::vector<boost::shared_ptr<DCCLMessageVar>> layout_;
-    std::vector<boost::shared_ptr<DCCLMessageVar>> header_;
+    std::vector<boost::shared_ptr<DCCLMessageVar> > layout_;
+    std::vector<boost::shared_ptr<DCCLMessageVar> > header_;
 
     std::vector<DCCLPublish> publishes_;
 

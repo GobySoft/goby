@@ -70,7 +70,7 @@ class TCPServer : public LineBasedInterface
     /// \brief string representation of the local endpoint (e.g. 192.168.1.105:54230
     std::string local_endpoint() { return goby::util::as<std::string>(acceptor_.local_endpoint()); }
 
-    const std::map<Endpoint, boost::shared_ptr<TCPConnection>>& connections();
+    const std::map<Endpoint, boost::shared_ptr<TCPConnection> >& connections();
 
     friend class TCPConnection;
     friend class LineBasedConnection<boost::asio::ip::tcp::socket>;
@@ -95,7 +95,7 @@ class TCPServer : public LineBasedInterface
     std::string server_;
     boost::asio::ip::tcp::acceptor acceptor_;
     boost::shared_ptr<TCPConnection> new_connection_;
-    std::map<Endpoint, boost::shared_ptr<TCPConnection>> connections_;
+    std::map<Endpoint, boost::shared_ptr<TCPConnection> > connections_;
 };
 
 class TCPConnection : public boost::enable_shared_from_this<TCPConnection>,

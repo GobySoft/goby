@@ -98,7 +98,7 @@ class IridiumShoreDriver : public ModemDriverBase
     boost::shared_ptr<SBDServer> mo_sbd_server_;
 
     // maps remote modem to connection
-    boost::bimap<ModemId, boost::shared_ptr<RUDICSConnection>> clients_;
+    boost::bimap<ModemId, boost::shared_ptr<RUDICSConnection> > clients_;
 
     typedef std::string IMEI;
     std::map<ModemId, IMEI> modem_id_to_imei_;

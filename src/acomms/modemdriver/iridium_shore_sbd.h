@@ -241,7 +241,7 @@ class SBDServer
         start_accept();
     }
 
-    std::set<boost::shared_ptr<SBDConnection>>& connections() { return connections_; }
+    std::set<boost::shared_ptr<SBDConnection> >& connections() { return connections_; }
 
   private:
     void start_accept()
@@ -273,7 +273,7 @@ class SBDServer
         start_accept();
     }
 
-    std::set<boost::shared_ptr<SBDConnection>> connections_;
+    std::set<boost::shared_ptr<SBDConnection> > connections_;
     boost::asio::ip::tcp::acceptor acceptor_;
 };
 

@@ -232,7 +232,7 @@ class LiaisonCommander : public LiaisonContainer, public goby::moos::MOOSNode
             //                    std::map<const google::protobuf::FieldDescriptor*, int> field_info_map_;
 
             Wt::Dbo::Session* session_;
-            Wt::Dbo::QueryModel<Wt::Dbo::ptr<CommandEntry>>* query_model_;
+            Wt::Dbo::QueryModel<Wt::Dbo::ptr<CommandEntry> >* query_model_;
 
             Wt::WGroupBox* query_box_;
             Wt::WTreeView* query_table_;

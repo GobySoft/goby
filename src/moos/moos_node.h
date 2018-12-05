@@ -58,7 +58,7 @@ class MOOSNode : public goby::common::NodeInterface<CMOOSMsg>
                const std::string& body, int socket_id);
 
   private:
-    std::map<std::string, boost::shared_ptr<CMOOSMsg>> newest_vars;
+    std::map<std::string, boost::shared_ptr<CMOOSMsg> > newest_vars;
 };
 } // namespace moos
 } // namespace goby

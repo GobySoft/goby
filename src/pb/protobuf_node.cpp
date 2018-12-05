@@ -83,7 +83,7 @@ void goby::pb::StaticProtobufNode::protobuf_inbox(const std::string& protobuf_ty
                                                   const std::string& body, int socket_id,
                                                   const std::string& group)
 {
-    typedef boost::unordered_multimap<std::string, boost::shared_ptr<SubscriptionBase>>::iterator
+    typedef boost::unordered_multimap<std::string, boost::shared_ptr<SubscriptionBase> >::iterator
         It;
 
     std::pair<It, It> it_range = subscriptions_.equal_range(protobuf_type_name);
@@ -108,7 +108,7 @@ void goby::pb::DynamicProtobufNode::protobuf_inbox(const std::string& protobuf_t
 
         boost::unordered_multimap<
             std::string,
-            boost::function<void(boost::shared_ptr<google::protobuf::Message> msg)>>::iterator it =
+            boost::function<void(boost::shared_ptr<google::protobuf::Message> msg)> >::iterator it =
             subscriptions_.find(group);
 
         if (it != subscriptions_.end())

@@ -92,8 +92,8 @@ class Bridge : public goby::pb::Application, public goby::pb::DynamicProtobufNod
   private:
     protobuf::BridgeConfig& cfg_;
 
-    std::vector<boost::shared_ptr<QueueManager>> q_managers_;
-    std::vector<boost::shared_ptr<MACManager>> mac_managers_;
+    std::vector<boost::shared_ptr<QueueManager> > q_managers_;
+    std::vector<boost::shared_ptr<MACManager> > mac_managers_;
 
     RouteManager r_manager_;
 
@@ -200,12 +200,12 @@ goby::acomms::Bridge::~Bridge() {}
 
 void goby::acomms::Bridge::loop()
 {
-    for (std::vector<boost::shared_ptr<QueueManager>>::iterator it = q_managers_.begin(),
-                                                                end = q_managers_.end();
+    for (std::vector<boost::shared_ptr<QueueManager> >::iterator it = q_managers_.begin(),
+                                                                 end = q_managers_.end();
          it != end; ++it)
     { (*it)->do_work(); }
 
-    for (std::vector<boost::shared_ptr<MACManager>>::iterator it = mac_managers_.begin(),
+    for (std::vector<boost::shared_ptr<MACManager> >::iterator it = mac_managers_.begin(),
          end = mac_managers_.end();
          it != end; ++it)
     { (*it)->do_work(); } goby::uint64 now = goby::common::goby_time<goby::uint64>();

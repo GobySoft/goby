@@ -115,7 +115,7 @@ class IPGateway : public goby::pb::Application
     int ip_mtu_; // the MTU on the tun interface, which is slightly different than the Goby MTU specified in the config file since the IP and Goby NetworkHeader are different sizes.
 
     // maps destination goby address to message buffer
-    std::map<int, boost::circular_buffer<std::string>> outgoing_;
+    std::map<int, boost::circular_buffer<std::string> > outgoing_;
 };
 } // namespace acomms
 } // namespace goby
@@ -355,10 +355,10 @@ void goby::acomms::IPGateway::handle_udp_packet(const goby::acomms::protobuf::IP
     std::string nh;
     dccl_goby_nh_.encode(&nh, net_header);
 
-    std::map<int, boost::circular_buffer<std::string>>::iterator it = outgoing_.find(dest);
+    std::map<int, boost::circular_buffer<std::string> >::iterator it = outgoing_.find(dest);
     if (it == outgoing_.end())
     {
-        std::pair<std::map<int, boost::circular_buffer<std::string>>::iterator, bool> itboolpair =
+        std::pair<std::map<int, boost::circular_buffer<std::string> >::iterator, bool> itboolpair =
             outgoing_.insert(
                 std::make_pair(dest, boost::circular_buffer<std::string>(cfg_.queue_size())));
         it = itboolpair.first;
@@ -465,7 +465,7 @@ void goby::acomms::IPGateway::handle_data_request(const protobuf::ModemTransmiss
     {
         if (msg.dest() != goby::acomms::QUERY_DESTINATION_ID)
         {
-            std::map<int, boost::circular_buffer<std::string>>::iterator it =
+            std::map<int, boost::circular_buffer<std::string> >::iterator it =
                 outgoing_.find(msg.dest());
             if (it == outgoing_.end())
             {
@@ -486,7 +486,7 @@ void goby::acomms::IPGateway::handle_data_request(const protobuf::ModemTransmiss
         else
         {
             // TODO: not fair - prioritizes lower valued destinations
-            for (std::map<int, boost::circular_buffer<std::string>>::iterator
+            for (std::map<int, boost::circular_buffer<std::string> >::iterator
                      it = outgoing_.begin(),
                      end = outgoing_.end();
                  it != end; ++it)
@@ -665,8 +665,8 @@ void goby::acomms::IPGateway::icmp_report_queue()
 
     int total_messages = 0;
 
-    for (std::map<int, boost::circular_buffer<std::string>>::const_iterator it = outgoing_.begin(),
-                                                                            end = outgoing_.end();
+    for (std::map<int, boost::circular_buffer<std::string> >::const_iterator it = outgoing_.begin(),
+                                                                             end = outgoing_.end();
          it != end; ++it)
     {
         int size = it->second.size();
@@ -854,13 +854,13 @@ int goby::acomms::IPGateway::ac_freq(int srcdest)
 
 int main(int argc, char* argv[])
 {
-    dccl::FieldCodecManager::add<goby::acomms::IPGatewayEmptyIdentifierCodec<0xF000>>(
+    dccl::FieldCodecManager::add<goby::acomms::IPGatewayEmptyIdentifierCodec<0xF000> >(
         "ip_gateway_id_codec_0");
-    dccl::FieldCodecManager::add<goby::acomms::IPGatewayEmptyIdentifierCodec<0xF001>>(
+    dccl::FieldCodecManager::add<goby::acomms::IPGatewayEmptyIdentifierCodec<0xF001> >(
         "ip_gateway_id_codec_1");
-    dccl::FieldCodecManager::add<goby::acomms::IPGatewayEmptyIdentifierCodec<0xF002>>(
+    dccl::FieldCodecManager::add<goby::acomms::IPGatewayEmptyIdentifierCodec<0xF002> >(
         "ip_gateway_id_codec_2");
-    dccl::FieldCodecManager::add<goby::acomms::IPGatewayEmptyIdentifierCodec<0xF003>>(
+    dccl::FieldCodecManager::add<goby::acomms::IPGatewayEmptyIdentifierCodec<0xF003> >(
         "ip_gateway_id_codec_3");
     dccl::FieldCodecManager::add<goby::acomms::NetShortCodec>("net.short");
     dccl::FieldCodecManager::add<goby::acomms::IPv4AddressCodec>("ip.v4.address");

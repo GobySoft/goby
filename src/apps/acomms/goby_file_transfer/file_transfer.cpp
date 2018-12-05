@@ -73,7 +73,7 @@ class FileTransfer : public goby::pb::Application
 
     typedef int ModemId;
 
-    std::map<ModemId, std::map<int, protobuf::FileFragment>> receive_files_;
+    std::map<ModemId, std::map<int, protobuf::FileFragment> > receive_files_;
     std::map<ModemId, protobuf::TransferRequest> requests_;
     bool waiting_for_request_ack_;
 };

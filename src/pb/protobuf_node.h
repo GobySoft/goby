@@ -119,7 +119,7 @@ class StaticProtobufNode : public ProtobufNode
   private:
     // key = type of var
     // value = Subscription object for all the subscriptions,  handler, newest message, etc.
-    boost::unordered_multimap<std::string, boost::shared_ptr<SubscriptionBase>> subscriptions_;
+    boost::unordered_multimap<std::string, boost::shared_ptr<SubscriptionBase> > subscriptions_;
 };
 
 class DynamicProtobufNode : public ProtobufNode
@@ -163,7 +163,7 @@ class DynamicProtobufNode : public ProtobufNode
     // key = type of var
     // value = Subscription object for all the subscriptions,  handler, newest message, etc.
     boost::unordered_multimap<
-        std::string, boost::function<void(boost::shared_ptr<google::protobuf::Message> msg)>>
+        std::string, boost::function<void(boost::shared_ptr<google::protobuf::Message> msg)> >
         subscriptions_;
 };
 

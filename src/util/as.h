@@ -152,7 +152,7 @@ typename boost::enable_if<boost::is_same<To, std::string>, To>::type as(const Fr
 }
 
 template <typename To, typename From>
-typename boost::enable_if<boost::mpl::and_<boost::is_arithmetic<To>, boost::is_arithmetic<From>>,
+typename boost::enable_if<boost::mpl::and_<boost::is_arithmetic<To>, boost::is_arithmetic<From> >,
                           To>::type
 as(const From& from)
 {
@@ -161,7 +161,7 @@ as(const From& from)
 
 // not much better we can do for enums than static cast them ...
 template <typename To, typename From>
-typename boost::enable_if<boost::mpl::and_<boost::is_enum<To>, boost::is_arithmetic<From>>,
+typename boost::enable_if<boost::mpl::and_<boost::is_enum<To>, boost::is_arithmetic<From> >,
                           To>::type
 as(const From& from)
 {

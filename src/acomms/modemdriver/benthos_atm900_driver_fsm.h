@@ -222,7 +222,7 @@ struct Active : boost::statechart::simple_state<Active, BenthosATM900FSM, Comman
     typedef boost::mpl::list<
         boost::statechart::transition<EvReset, Active>,
         boost::statechart::in_state_reaction<EvRxSerial, Active, &Active::in_state_react>,
-        boost::statechart::transition<EvReceive, ReceiveData>>
+        boost::statechart::transition<EvReceive, ReceiveData> >
         reactions;
 };
 
@@ -235,7 +235,8 @@ struct ReceiveData : boost::statechart::state<ReceiveData, BenthosATM900FSM>, St
 
     typedef boost::mpl::list<
         boost::statechart::in_state_reaction<EvRxSerial, ReceiveData, &ReceiveData::in_state_react>,
-        boost::statechart::transition<EvReceiveComplete, boost::statechart::deep_history<Command>>>
+        boost::statechart::transition<EvReceiveComplete,
+                                      boost::statechart::deep_history<Command> > >
         reactions;
 
     protobuf::ModemTransmission rx_msg_;
@@ -277,7 +278,7 @@ struct Command : boost::statechart::simple_state<Command, Active, Configure,
     typedef boost::mpl::list<
         boost::statechart::custom_reaction<EvConnect>,
         boost::statechart::in_state_reaction<EvAck, Command, &Command::in_state_react>,
-        boost::statechart::in_state_reaction<EvTxSerial, Command, &Command::in_state_react>>
+        boost::statechart::in_state_reaction<EvTxSerial, Command, &Command::in_state_react> >
         reactions;
 
     struct ATSentenceMeta
@@ -299,14 +300,14 @@ struct Command : boost::statechart::simple_state<Command, Active, Configure,
         at_out_.push_back(std::make_pair(ATSentenceMeta(), cmd));
     }
 
-    boost::circular_buffer<std::pair<ATSentenceMeta, std::string>>& at_out() { return at_out_; }
+    boost::circular_buffer<std::pair<ATSentenceMeta, std::string> >& at_out() { return at_out_; }
 
   private:
     enum
     {
         AT_BUFFER_CAPACITY = 100
     };
-    boost::circular_buffer<std::pair<ATSentenceMeta, std::string>> at_out_;
+    boost::circular_buffer<std::pair<ATSentenceMeta, std::string> > at_out_;
     enum
     {
         COMMAND_TIMEOUT_SECONDS = 2
@@ -320,7 +321,7 @@ struct Command : boost::statechart::simple_state<Command, Active, Configure,
 
 struct Configure : boost::statechart::state<Configure, Command>, StateNotify
 {
-    typedef boost::mpl::list<boost::statechart::transition<EvAtEmpty, SetClock>> reactions;
+    typedef boost::mpl::list<boost::statechart::transition<EvAtEmpty, SetClock> > reactions;
 
     Configure(my_context ctx) : my_base(ctx), StateNotify("Configure")
     {
@@ -387,7 +388,7 @@ struct Configure : boost::statechart::state<Configure, Command>, StateNotify
 
 struct SetClock : boost::statechart::state<SetClock, Command>, StateNotify
 {
-    typedef boost::mpl::list<boost::statechart::transition<EvAtEmpty, Ready>> reactions;
+    typedef boost::mpl::list<boost::statechart::transition<EvAtEmpty, Ready> > reactions;
 
     SetClock(my_context ctx) : my_base(ctx), StateNotify("SetClock")
     {
@@ -417,7 +418,7 @@ struct Ready : boost::statechart::simple_state<Ready, Command>, StateNotify
     typedef boost::mpl::list<
         boost::statechart::transition<EvDial, Dial>, boost::statechart::transition<EvRange, Range>,
         boost::statechart::in_state_reaction<EvRequestLowPower, Ready, &Ready::in_state_react>,
-        boost::statechart::transition<EvLowPower, LowPower>>
+        boost::statechart::transition<EvLowPower, LowPower> >
         reactions;
 };
 
@@ -479,7 +480,7 @@ struct Range : boost::statechart::state<Range, Command>, StateNotify
 
     typedef boost::mpl::list<
         boost::statechart::transition<EvRangingComplete, Ready>,
-        boost::statechart::in_state_reaction<EvRxSerial, Range, &Range::in_state_react>>
+        boost::statechart::in_state_reaction<EvRxSerial, Range, &Range::in_state_react> >
         reactions;
 
   private:
@@ -493,7 +494,7 @@ struct Online : boost::statechart::state<Online, Active, Listen>, StateNotify
     ~Online() {}
 
     typedef boost::mpl::list<
-        boost::statechart::transition<EvShellPrompt, boost::statechart::deep_history<Command>>>
+        boost::statechart::transition<EvShellPrompt, boost::statechart::deep_history<Command> > >
         reactions;
 };
 
@@ -506,7 +507,7 @@ struct Listen : boost::statechart::state<Listen, Online>, StateNotify
     }
     ~Listen() {}
 
-    typedef boost::mpl::list<boost::statechart::transition<EvTransmit, TransmitData>> reactions;
+    typedef boost::mpl::list<boost::statechart::transition<EvTransmit, TransmitData> > reactions;
 };
 
 struct TransmitData : boost::statechart::state<TransmitData, Online>, StateNotify
@@ -521,7 +522,7 @@ struct TransmitData : boost::statechart::state<TransmitData, Online>, StateNotif
         boost::statechart::transition<EvTransmitBegun, Ready>,
         boost::statechart::in_state_reaction<EvTxSerial, TransmitData,
                                              &TransmitData::in_state_react>,
-        boost::statechart::in_state_reaction<EvAck, TransmitData, &TransmitData::in_state_react>>
+        boost::statechart::in_state_reaction<EvAck, TransmitData, &TransmitData::in_state_react> >
         reactions;
 };
 

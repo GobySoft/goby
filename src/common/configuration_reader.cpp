@@ -206,7 +206,7 @@ void goby::common::ConfigReader::set_protobuf_program_option(
         switch (field_desc->cpp_type())
         {
             case google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE:
-                BOOST_FOREACH (std::string v, value.as<std::vector<std::string>>())
+                BOOST_FOREACH (std::string v, value.as<std::vector<std::string> >())
                 {
                     google::protobuf::TextFormat::Parser parser;
                     parser.AllowPartialMessage(true);
@@ -217,50 +217,50 @@ void goby::common::ConfigReader::set_protobuf_program_option(
 
             case google::protobuf::FieldDescriptor::CPPTYPE_INT32:
                 BOOST_FOREACH (google::protobuf::int32 v,
-                               value.as<std::vector<google::protobuf::int32>>())
+                               value.as<std::vector<google::protobuf::int32> >())
                     refl->AddInt32(&message, field_desc, v);
                 break;
 
             case google::protobuf::FieldDescriptor::CPPTYPE_INT64:
                 BOOST_FOREACH (google::protobuf::int64 v,
-                               value.as<std::vector<google::protobuf::int64>>())
+                               value.as<std::vector<google::protobuf::int64> >())
                     refl->AddInt64(&message, field_desc, v);
                 break;
 
             case google::protobuf::FieldDescriptor::CPPTYPE_UINT32:
                 BOOST_FOREACH (google::protobuf::uint32 v,
-                               value.as<std::vector<google::protobuf::uint32>>())
+                               value.as<std::vector<google::protobuf::uint32> >())
                     refl->AddUInt32(&message, field_desc, v);
                 break;
 
             case google::protobuf::FieldDescriptor::CPPTYPE_UINT64:
                 BOOST_FOREACH (google::protobuf::uint64 v,
-                               value.as<std::vector<google::protobuf::uint64>>())
+                               value.as<std::vector<google::protobuf::uint64> >())
                     refl->AddUInt64(&message, field_desc, v);
                 break;
 
             case google::protobuf::FieldDescriptor::CPPTYPE_BOOL:
-                BOOST_FOREACH (bool v, value.as<std::vector<bool>>())
+                BOOST_FOREACH (bool v, value.as<std::vector<bool> >())
                     refl->AddBool(&message, field_desc, v);
                 break;
 
             case google::protobuf::FieldDescriptor::CPPTYPE_STRING:
-                BOOST_FOREACH (const std::string& v, value.as<std::vector<std::string>>())
+                BOOST_FOREACH (const std::string& v, value.as<std::vector<std::string> >())
                     refl->AddString(&message, field_desc, v);
                 break;
 
             case google::protobuf::FieldDescriptor::CPPTYPE_FLOAT:
-                BOOST_FOREACH (float v, value.as<std::vector<float>>())
+                BOOST_FOREACH (float v, value.as<std::vector<float> >())
                     refl->AddFloat(&message, field_desc, v);
                 break;
 
             case google::protobuf::FieldDescriptor::CPPTYPE_DOUBLE:
-                BOOST_FOREACH (double v, value.as<std::vector<double>>())
+                BOOST_FOREACH (double v, value.as<std::vector<double> >())
                     refl->AddDouble(&message, field_desc, v);
                 break;
 
             case google::protobuf::FieldDescriptor::CPPTYPE_ENUM:
-                BOOST_FOREACH (std::string v, value.as<std::vector<std::string>>())
+                BOOST_FOREACH (std::string v, value.as<std::vector<std::string> >())
                 {
                     const google::protobuf::EnumValueDescriptor* enum_desc =
                         field_desc->enum_type()->FindValueByName(v);

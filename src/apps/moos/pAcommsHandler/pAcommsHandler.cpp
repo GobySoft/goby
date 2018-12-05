@@ -696,7 +696,7 @@ void CpAcommsHandler::handle_encode_on_demand(
                              << "Received encode on demand request: " << request_msg << std::endl;
 
     boost::shared_ptr<google::protobuf::Message> created_message =
-        translator_.moos_to_protobuf<boost::shared_ptr<google::protobuf::Message>>(
+        translator_.moos_to_protobuf<boost::shared_ptr<google::protobuf::Message> >(
             dynamic_vars().all(), data_msg->GetDescriptor()->full_name());
 
     data_msg->CopyFrom(*created_message);
@@ -793,7 +793,7 @@ void CpAcommsHandler::translate_and_push(const goby::moos::protobuf::TranslatorE
     try
     {
         boost::shared_ptr<google::protobuf::Message> created_message =
-            translator_.moos_to_protobuf<boost::shared_ptr<google::protobuf::Message>>(
+            translator_.moos_to_protobuf<boost::shared_ptr<google::protobuf::Message> >(
                 dynamic_vars().all(), entry.protobuf_name());
 
         glog.is(DEBUG2) && glog << group("pAcommsHandler") << "Created message: \n"
@@ -896,7 +896,7 @@ void CpAcommsHandler::driver_reset(
 void CpAcommsHandler::restart_drivers()
 {
     double now = goby::common::goby_time<double>();
-    std::set<boost::shared_ptr<goby::acomms::ModemDriverBase>> drivers_to_start;
+    std::set<boost::shared_ptr<goby::acomms::ModemDriverBase> > drivers_to_start;
 
     for (std::map<boost::shared_ptr<goby::acomms::ModemDriverBase>, double>::iterator it =
              driver_restart_time_.begin();
@@ -913,7 +913,7 @@ void CpAcommsHandler::restart_drivers()
         }
     }
 
-    for (std::set<boost::shared_ptr<goby::acomms::ModemDriverBase>>::iterator
+    for (std::set<boost::shared_ptr<goby::acomms::ModemDriverBase> >::iterator
              it = drivers_to_start.begin(),
              end = drivers_to_start.end();
          it != end; ++it)

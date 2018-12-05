@@ -1,5 +1,6 @@
 ---
 Language: Cpp
+Standard: Cpp03
 BasedOnStyle: LLVM
 BreakBeforeBraces: Allman
 ReflowComments: false

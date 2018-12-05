@@ -141,7 +141,7 @@ std::vector<CMOOSMsg> goby::moos::MOOSNode::newest_substr(const std::string& sub
         }
     }
 
-    for (std::map<std::string, boost::shared_ptr<CMOOSMsg>>::const_iterator
+    for (std::map<std::string, boost::shared_ptr<CMOOSMsg> >::const_iterator
              it = newest_vars.begin(),
              end = newest_vars.end();
          it != end; ++it)

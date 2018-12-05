@@ -662,8 +662,8 @@ void goby::common::LiaisonAcomms::mm_check(int axis, int column, bool checked)
         mm_rx_chks_[column][axis == 0 ? 1 : 0]->setChecked(false);
 
     bool axis_enabled[2] = {false, false};
-    for (std::map<int, std::map<int, Wt::WCheckBox*>>::iterator it = mm_rx_chks_.begin(),
-                                                                end = mm_rx_chks_.end();
+    for (std::map<int, std::map<int, Wt::WCheckBox*> >::iterator it = mm_rx_chks_.begin(),
+                                                                 end = mm_rx_chks_.end();
          it != end; ++it)
     {
         for (int i = 0, n = 2; i < n; ++i)

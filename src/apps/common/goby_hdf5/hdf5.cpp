@@ -184,7 +184,7 @@ void goby::common::hdf5::Writer::write_message_collection(
 
         std::vector<const google::protobuf::Message*> messages;
         for (std::multimap<goby::uint64,
-                           boost::shared_ptr<google::protobuf::Message>>::const_iterator
+                           boost::shared_ptr<google::protobuf::Message> >::const_iterator
                  it = message_collection.entries.begin(),
                  end = message_collection.entries.end();
              it != end; ++it)
@@ -369,7 +369,7 @@ void goby::common::hdf5::Writer::write_time(
     std::vector<goby::uint64> utime(message_collection.entries.size(), 0);
     std::vector<double> datenum(message_collection.entries.size(), 0);
     int i = 0;
-    for (std::multimap<goby::uint64, boost::shared_ptr<google::protobuf::Message>>::const_iterator
+    for (std::multimap<goby::uint64, boost::shared_ptr<google::protobuf::Message> >::const_iterator
              it = message_collection.entries.begin(),
              end = message_collection.entries.end();
          it != end; ++it)

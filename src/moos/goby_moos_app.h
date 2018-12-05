@@ -258,11 +258,11 @@ template <class MOOSAppType = MOOSAppShell> class GobyMOOSAppSelector : public M
     // allows direct reading of newest publish to a given MOOS variable
     goby::moos::DynamicMOOSVars dynamic_vars_;
 
-    std::map<std::string, boost::shared_ptr<boost::signals2::signal<void(const CMOOSMsg& msg)>>>
+    std::map<std::string, boost::shared_ptr<boost::signals2::signal<void(const CMOOSMsg& msg)> > >
         mail_handlers_;
 
     std::map<std::pair<std::string, std::string>,
-             boost::shared_ptr<boost::signals2::signal<void(const CMOOSMsg& msg)>>>
+             boost::shared_ptr<boost::signals2::signal<void(const CMOOSMsg& msg)> > >
         wildcard_mail_handlers_;
 
     // CMOOSApp::OnConnectToServer()
@@ -273,12 +273,13 @@ template <class MOOSAppType = MOOSAppShell> class GobyMOOSAppSelector : public M
     std::deque<CMOOSMsg> msg_buffer_;
 
     // MOOS Variable name, blackout time
-    std::deque<std::pair<std::string, int>> pending_subscriptions_;
-    std::deque<std::pair<std::string, int>> existing_subscriptions_;
+    std::deque<std::pair<std::string, int> > pending_subscriptions_;
+    std::deque<std::pair<std::string, int> > existing_subscriptions_;
 
     // MOOS Variable pattern, MOOS App pattern, blackout time
-    std::deque<std::pair<std::pair<std::string, std::string>, int>> wildcard_pending_subscriptions_;
-    std::deque<std::pair<std::pair<std::string, std::string>, int>>
+    std::deque<std::pair<std::pair<std::string, std::string>, int> >
+        wildcard_pending_subscriptions_;
+    std::deque<std::pair<std::pair<std::string, std::string>, int> >
         wildcard_existing_subscriptions_;
 
     struct SynchronousLoop
@@ -400,7 +401,7 @@ template <class MOOSAppType> bool GobyMOOSAppSelector<MOOSAppType>::OnNewMail(MO
 
         for (std::map<
                  std::pair<std::string, std::string>,
-                 boost::shared_ptr<boost::signals2::signal<void(const CMOOSMsg&msg)>>>::iterator
+                 boost::shared_ptr<boost::signals2::signal<void(const CMOOSMsg&msg)> > >::iterator
                  it = wildcard_mail_handlers_.begin(),
                  end = wildcard_mail_handlers_.end();
              it != end; ++it)
@@ -508,7 +509,7 @@ void GobyMOOSAppSelector<MOOSAppType>::subscribe(const std::string& var_pattern,
 
     if (!wildcard_mail_handlers_.count(key))
         wildcard_mail_handlers_.insert(std::make_pair(
-            key, boost::shared_ptr<boost::signals2::signal<void(const CMOOSMsg& msg)>>(
+            key, boost::shared_ptr<boost::signals2::signal<void(const CMOOSMsg& msg)> >(
                      new boost::signals2::signal<void(const CMOOSMsg& msg)>)));
 
     if (handler)

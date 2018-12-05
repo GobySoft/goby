@@ -45,7 +45,7 @@ void goby::transitional::DCCLAlgorithmPerformer::deleteInstance() { delete inst_
 
 void goby::transitional::DCCLAlgorithmPerformer::algorithm(
     DCCLMessageVal& in, unsigned array_index, const std::string& algorithm,
-    const std::map<std::string, std::vector<DCCLMessageVal>>& vals)
+    const std::map<std::string, std::vector<DCCLMessageVal> >& vals)
 {
     if (in.empty())
         return;
@@ -61,7 +61,7 @@ void goby::transitional::DCCLAlgorithmPerformer::algorithm(
 
     for (std::vector<std::string>::size_type i = 1, n = ref_vars.size(); i < n; ++i)
     {
-        std::map<std::string, std::vector<DCCLMessageVal>>::const_iterator it =
+        std::map<std::string, std::vector<DCCLMessageVal> >::const_iterator it =
             vals.find(ref_vars[i]);
         if (it != vals.end())
         {

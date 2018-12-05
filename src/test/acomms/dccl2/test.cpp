@@ -200,7 +200,7 @@ int main(int argc, char* argv[])
     std::cout << "... got bytes (hex): " << goby::util::hex_encode(bytes1) << std::endl;
     std::cout << "Try decode..." << std::endl;
     boost::shared_ptr<google::protobuf::Message> msg_out1 =
-        codec->decode<boost::shared_ptr<google::protobuf::Message>>(bytes1);
+        codec->decode<boost::shared_ptr<google::protobuf::Message> >(bytes1);
     std::cout << "... got Message out:\n" << msg_out1->DebugString() << std::endl;
     assert(msg_in1.SerializeAsString() == msg_out1->SerializeAsString());
 

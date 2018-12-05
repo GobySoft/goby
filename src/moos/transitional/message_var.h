@@ -133,7 +133,7 @@ class DCCLMessageVar
     void initialize(const DCCLMessage& msg);
     //         std::string get_display() const;
 
-    void set_defaults(std::map<std::string, std::vector<DCCLMessageVal>>& vals, unsigned modem_id,
+    void set_defaults(std::map<std::string, std::vector<DCCLMessageVal> >& vals, unsigned modem_id,
                       unsigned id);
 
   protected:

@@ -449,9 +449,9 @@ void goby::acomms::Queue::stream_for_pop(const QueuedMessage& queued_msg)
                             << std::endl;
 }
 
-std::vector<boost::shared_ptr<google::protobuf::Message>> goby::acomms::Queue::expire()
+std::vector<boost::shared_ptr<google::protobuf::Message> > goby::acomms::Queue::expire()
 {
-    std::vector<boost::shared_ptr<google::protobuf::Message>> expired_msgs;
+    std::vector<boost::shared_ptr<google::protobuf::Message> > expired_msgs;
 
     while (!messages_.empty())
     {

@@ -77,13 +77,13 @@ class DCCLPublish
     bool use_all_names() const { return use_all_names_; }
 
     DCCLCppType type() const { return type_; }
-    std::vector<boost::shared_ptr<DCCLMessageVar>> const& message_vars() const
+    std::vector<boost::shared_ptr<DCCLMessageVar> > const& message_vars() const
     {
         return message_vars_;
     }
 
     std::vector<std::string> const& names() const { return names_; }
-    std::vector<std::vector<std::string>> const& algorithms() const { return algorithms_; }
+    std::vector<std::vector<std::string> > const& algorithms() const { return algorithms_; }
 
     void initialize(const DCCLMessage& msg);
 
@@ -94,8 +94,8 @@ class DCCLPublish
     bool use_all_names_;
     DCCLCppType type_;
     std::vector<std::string> names_;
-    std::vector<boost::shared_ptr<DCCLMessageVar>> message_vars_;
-    std::vector<std::vector<std::string>> algorithms_;
+    std::vector<boost::shared_ptr<DCCLMessageVar> > message_vars_;
+    std::vector<std::vector<std::string> > algorithms_;
     DCCLAlgorithmPerformer* ap_;
     unsigned repeat_;
 };

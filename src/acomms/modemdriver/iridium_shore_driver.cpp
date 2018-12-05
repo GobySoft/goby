@@ -147,7 +147,7 @@ void goby::acomms::IridiumShoreDriver::do_work()
             {
                 glog.is(DEBUG1) && glog << "Hanging up by disconnecting" << std::endl;
                 typedef boost::bimap<
-                    ModemId, boost::shared_ptr<RUDICSConnection>>::left_map::iterator LeftIt;
+                    ModemId, boost::shared_ptr<RUDICSConnection> >::left_map::iterator LeftIt;
                 LeftIt client_it = clients_.left.find(id);
                 if (client_it != clients_.left.end())
                     rudics_server_->disconnect(client_it->second);
@@ -222,7 +222,7 @@ void goby::acomms::IridiumShoreDriver::send(const protobuf::ModemTransmission& m
 void goby::acomms::IridiumShoreDriver::rudics_send(const std::string& data,
                                                    goby::acomms::IridiumShoreDriver::ModemId id)
 {
-    typedef boost::bimap<ModemId, boost::shared_ptr<RUDICSConnection>>::left_map::iterator LeftIt;
+    typedef boost::bimap<ModemId, boost::shared_ptr<RUDICSConnection> >::left_map::iterator LeftIt;
     LeftIt client_it = clients_.left.find(id);
     if (client_it != clients_.left.end())
     {
@@ -247,7 +247,8 @@ void goby::acomms::IridiumShoreDriver::rudics_connect(
 void goby::acomms::IridiumShoreDriver::rudics_disconnect(
     boost::shared_ptr<RUDICSConnection> connection)
 {
-    typedef boost::bimap<ModemId, boost::shared_ptr<RUDICSConnection>>::right_map::iterator RightIt;
+    typedef boost::bimap<ModemId, boost::shared_ptr<RUDICSConnection> >::right_map::iterator
+        RightIt;
 
     RightIt client_it = clients_.right.find(connection);
     if (client_it != clients_.right.end())
@@ -284,7 +285,7 @@ void goby::acomms::IridiumShoreDriver::rudics_line(const std::string& data,
         }
         else if (data == "bye\r")
         {
-            typedef boost::bimap<ModemId, boost::shared_ptr<RUDICSConnection>>::right_map::iterator
+            typedef boost::bimap<ModemId, boost::shared_ptr<RUDICSConnection> >::right_map::iterator
                 RightIt;
 
             RightIt client_it = clients_.right.find(connection);
@@ -343,8 +344,9 @@ void goby::acomms::IridiumShoreDriver::receive_sbd_mo()
                                 << std::endl;
     }
 
-    std::set<boost::shared_ptr<SBDConnection>>::iterator it = mo_sbd_server_->connections().begin(),
-                                                         end = mo_sbd_server_->connections().end();
+    std::set<boost::shared_ptr<SBDConnection> >::iterator it =
+                                                              mo_sbd_server_->connections().begin(),
+                                                          end = mo_sbd_server_->connections().end();
     while (it != end)
     {
         const int timeout = 5;

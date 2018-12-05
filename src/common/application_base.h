@@ -88,7 +88,7 @@ class ApplicationBase
     bool own_base_cfg_;
 
     bool alive_;
-    std::vector<boost::shared_ptr<std::ofstream>> fout_;
+    std::vector<boost::shared_ptr<std::ofstream> > fout_;
 };
 } // namespace common
 } // namespace goby

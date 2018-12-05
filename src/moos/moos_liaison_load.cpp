@@ -27,7 +27,7 @@
 
 #include "moos_liaison_load.h"
 
-std::vector<boost::shared_ptr<goby::common::ZeroMQService>> services_;
+std::vector<boost::shared_ptr<goby::common::ZeroMQService> > services_;
 
 extern "C"
 {

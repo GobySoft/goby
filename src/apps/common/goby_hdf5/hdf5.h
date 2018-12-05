@@ -46,7 +46,7 @@ struct MessageCollection
     std::string name;
 
     // time -> Message contents
-    std::multimap<goby::uint64, boost::shared_ptr<google::protobuf::Message>> entries;
+    std::multimap<goby::uint64, boost::shared_ptr<google::protobuf::Message> > entries;
 };
 
 struct Channel

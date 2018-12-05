@@ -77,7 +77,7 @@ class Queue
     bool pop_message_ack(unsigned frame, boost::shared_ptr<google::protobuf::Message>& removed_msg);
     void stream_for_pop(const QueuedMessage& queued_msg);
 
-    std::vector<boost::shared_ptr<google::protobuf::Message>> expire();
+    std::vector<boost::shared_ptr<google::protobuf::Message> > expire();
 
     bool get_priority_values(double* priority, boost::posix_time::ptime* last_send_time,
                              const protobuf::ModemTransmission& request_msg,

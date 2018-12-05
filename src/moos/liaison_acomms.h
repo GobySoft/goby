@@ -170,7 +170,7 @@ class LiaisonAcomms : public LiaisonContainer, public goby::moos::MOOSNode
     int mm_rx_stats_range_;
 
     // column -> axis -> Checkbox
-    std::map<int, std::map<int, Wt::WCheckBox*>> mm_rx_chks_;
+    std::map<int, std::map<int, Wt::WCheckBox*> > mm_rx_chks_;
 
     Wt::WTimer timer_;
 

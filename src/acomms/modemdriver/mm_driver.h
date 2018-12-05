@@ -350,7 +350,7 @@ class MMDriver : public ModemDriverBase
     int next_frame_;
 
     // modem id to frames
-    std::map<unsigned, std::set<unsigned>> frames_to_ack_;
+    std::map<unsigned, std::set<unsigned> > frames_to_ack_;
 
     dccl::Codec dccl_;
 

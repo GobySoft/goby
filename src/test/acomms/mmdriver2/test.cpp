@@ -53,15 +53,16 @@ class MMDriverTest2 : public goby::common::ApplicationBase
     void handle_transmit_result2(const protobuf::ModemTransmission& msg);
     void handle_data_receive2(const protobuf::ModemTransmission& msg);
 
-    void summary(const std::map<int, std::vector<micromodem::protobuf::ReceiveStatistics>>& receive,
-                 const goby::acomms::protobuf::DriverConfig& cfg);
+    void
+    summary(const std::map<int, std::vector<micromodem::protobuf::ReceiveStatistics> >& receive,
+            const goby::acomms::protobuf::DriverConfig& cfg);
 
   private:
     goby::test::protobuf::MMDriverTest2Config& cfg_;
 
     goby::acomms::MMDriver driver1, driver2;
     // maps transmit index to receive statistics
-    std::map<int, std::vector<micromodem::protobuf::ReceiveStatistics>> driver1_receive,
+    std::map<int, std::vector<micromodem::protobuf::ReceiveStatistics> > driver1_receive,
         driver2_receive;
 
     bool modems_running_;
@@ -170,13 +171,13 @@ void MMDriverTest2::handle_transmit_result2(const protobuf::ModemTransmission& m
 }
 
 void MMDriverTest2::summary(
-    const std::map<int, std::vector<micromodem::protobuf::ReceiveStatistics>>& receive,
+    const std::map<int, std::vector<micromodem::protobuf::ReceiveStatistics> >& receive,
     const goby::acomms::protobuf::DriverConfig& cfg)
 {
     goby::glog.is(VERBOSE) && goby::glog << "*** Begin modem " << cfg.modem_id()
                                          << " receive summary" << std::endl;
 
-    for (std::map<int, std::vector<micromodem::protobuf::ReceiveStatistics>>::const_iterator
+    for (std::map<int, std::vector<micromodem::protobuf::ReceiveStatistics> >::const_iterator
              it = receive.begin(),
              end = receive.end();
          it != end; ++it)

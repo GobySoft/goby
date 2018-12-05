@@ -131,14 +131,15 @@ class ConfigReader
             {
                 po_desc.add_options()(
                     name.c_str(),
-                    boost::program_options::value<std::vector<T>>()->default_value(
+                    boost::program_options::value<std::vector<T> >()->default_value(
                         std::vector<T>(1, default_value),
                         goby::util::as<std::string>(default_value)),
                     description.c_str());
             }
             else
             {
-                po_desc.add_options()(name.c_str(), boost::program_options::value<std::vector<T>>(),
+                po_desc.add_options()(name.c_str(),
+                                      boost::program_options::value<std::vector<T> >(),
                                       description.c_str());
             }
         }

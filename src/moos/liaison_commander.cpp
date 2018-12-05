@@ -490,7 +490,7 @@ goby::common::LiaisonCommander::ControlsContainer::CommandContainer::CommandCont
       latest_time_(0), tree_box_(new WGroupBox("Contents", this)),
       tree_table_(new WTreeTable(tree_box_)),
       //      field_info_stack_(new WStackedWidget(master_field_info_stack)),
-      session_(session), query_model_(new Dbo::QueryModel<Dbo::ptr<CommandEntry>>(this)),
+      session_(session), query_model_(new Dbo::QueryModel<Dbo::ptr<CommandEntry> >(this)),
       query_box_(new WGroupBox("Sent message log (click for details)", this)),
       query_table_(new WTreeView(query_box_)), last_reload_time_(boost::posix_time::neg_infin),
       pb_commander_config_(pb_commander_config)

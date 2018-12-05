@@ -71,8 +71,8 @@ void goby::transitional::DCCLPublish::initialize(const DCCLMessage& msg)
     if (!format_set_)
     {
         std::string format_str;
-        for (std::vector<boost::shared_ptr<DCCLMessageVar>>::size_type j = 0,
-                                                                       m = message_vars_.size();
+        for (std::vector<boost::shared_ptr<DCCLMessageVar> >::size_type j = 0,
+                                                                        m = message_vars_.size();
              j < m; ++j)
         {
             if (m > 1)

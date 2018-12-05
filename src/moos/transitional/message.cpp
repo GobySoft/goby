@@ -130,10 +130,10 @@ std::map<std::string, std::string> goby::transitional::DCCLMessage::message_var_
 }
 
 void goby::transitional::DCCLMessage::set_head_defaults(
-    std::map<std::string, std::vector<DCCLMessageVal>>& in, unsigned modem_id)
+    std::map<std::string, std::vector<DCCLMessageVal> >& in, unsigned modem_id)
 {
-    for (std::vector<boost::shared_ptr<DCCLMessageVar>>::iterator it = header_.begin(),
-                                                                  n = header_.end();
+    for (std::vector<boost::shared_ptr<DCCLMessageVar> >::iterator it = header_.begin(),
+                                                                   n = header_.end();
          it != n; ++it)
     { (*it)->set_defaults(in, modem_id, id_); } }
 

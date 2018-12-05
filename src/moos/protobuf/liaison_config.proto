@@ -73,7 +73,7 @@ message NetworkAckSet
 message MOOSScopeConfig
 {
     repeated string subscription = 1;
-
+    
     enum Column
     {
         @PROTOBUF_ALLOW_ALIAS@

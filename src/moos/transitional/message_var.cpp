@@ -49,7 +49,7 @@ void goby::transitional::DCCLMessageVar::initialize(const DCCLMessage& msg)
 }
 
 void goby::transitional::DCCLMessageVar::set_defaults(
-    std::map<std::string, std::vector<DCCLMessageVal>>& vals, unsigned modem_id, unsigned id)
+    std::map<std::string, std::vector<DCCLMessageVal> >& vals, unsigned modem_id, unsigned id)
 {
     vals[name_].resize(array_length_);
 

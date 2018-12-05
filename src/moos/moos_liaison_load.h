@@ -28,7 +28,7 @@
 #include "goby/common/protobuf/liaison_config.pb.h"
 #include "goby/common/zeromq_service.h"
 
-extern std::vector<boost::shared_ptr<goby::common::ZeroMQService>> services_;
+extern std::vector<boost::shared_ptr<goby::common::ZeroMQService> > services_;
 
 extern "C"
 {

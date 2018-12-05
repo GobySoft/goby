@@ -36,7 +36,7 @@ extern "C"
                                google::protobuf::FieldDescriptor::TYPE_MESSAGE>("SV2");
         FieldCodecManager::add<dccl::v3::DefaultBytesCodec,
                                google::protobuf::FieldDescriptor::TYPE_BYTES>("SV2");
-        FieldCodecManager::add<goby::moos::SV2NumericCodec<dccl::uint32>>("SV2");
+        FieldCodecManager::add<goby::moos::SV2NumericCodec<dccl::uint32> >("SV2");
 
         dccl->load<goby::moos::protobuf::SV2RequestEnumerate>();
         dccl->load<goby::moos::protobuf::SV2ReplyEnumerate>();
@@ -76,6 +76,6 @@ extern "C"
                                   google::protobuf::FieldDescriptor::TYPE_MESSAGE>("SV2");
         FieldCodecManager::remove<dccl::v3::DefaultBytesCodec,
                                   google::protobuf::FieldDescriptor::TYPE_BYTES>("SV2");
-        FieldCodecManager::remove<goby::moos::SV2NumericCodec<dccl::uint32>>("SV2");
+        FieldCodecManager::remove<goby::moos::SV2NumericCodec<dccl::uint32> >("SV2");
     }
 }

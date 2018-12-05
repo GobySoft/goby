@@ -57,7 +57,7 @@ namespace util
 /// \brief specialization of `as` for double (assumed seconds since UNIX 1970-01-01 00:00:00 UTC) to ptime
 template <typename To, typename From>
 typename boost::enable_if<
-    boost::mpl::and_<boost::is_same<To, double>, boost::is_same<From, boost::posix_time::ptime>>,
+    boost::mpl::and_<boost::is_same<To, double>, boost::is_same<From, boost::posix_time::ptime> >,
     To>::type
 as(const From& from)
 {
@@ -67,7 +67,7 @@ as(const From& from)
 /// \brief specialization of `as` for ptime to double (seconds since UNIX 1970-01-01 00:00:00 UTC)
 template <typename To, typename From>
 typename boost::enable_if<
-    boost::mpl::and_<boost::is_same<To, boost::posix_time::ptime>, boost::is_same<From, double>>,
+    boost::mpl::and_<boost::is_same<To, boost::posix_time::ptime>, boost::is_same<From, double> >,
     To>::type
 as(const From& from)
 {
@@ -77,7 +77,7 @@ as(const From& from)
 /// \brief specialization of `as` for uint64 (assumed microseconds since UNIX 1970-01-01 00:00:00 UTC) to ptime
 template <typename To, typename From>
 typename boost::enable_if<
-    boost::mpl::and_<boost::is_same<To, uint64>, boost::is_same<From, boost::posix_time::ptime>>,
+    boost::mpl::and_<boost::is_same<To, uint64>, boost::is_same<From, boost::posix_time::ptime> >,
     To>::type
 as(const From& from)
 {
@@ -87,7 +87,7 @@ as(const From& from)
 /// \brief specialization of `as` for ptime to uint64 (microseconds since UNIX 1970-01-01 00:00:00 UTC)
 template <typename To, typename From>
 typename boost::enable_if<
-    boost::mpl::and_<boost::is_same<To, boost::posix_time::ptime>, boost::is_same<From, uint64>>,
+    boost::mpl::and_<boost::is_same<To, boost::posix_time::ptime>, boost::is_same<From, uint64> >,
     To>::type
 as(const From& from)
 {

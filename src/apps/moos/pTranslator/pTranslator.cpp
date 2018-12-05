@@ -203,7 +203,7 @@ void CpTranslator::create_on_timer(const boost::system::error_code& error,
 void CpTranslator::do_translation(const goby::moos::protobuf::TranslatorEntry& entry)
 {
     boost::shared_ptr<google::protobuf::Message> created_message =
-        translator_.moos_to_protobuf<boost::shared_ptr<google::protobuf::Message>>(
+        translator_.moos_to_protobuf<boost::shared_ptr<google::protobuf::Message> >(
             dynamic_vars().all(), entry.protobuf_name());
 
     glog.is(DEBUG1) && glog << "Created message: \n" << created_message->DebugString() << std::endl;

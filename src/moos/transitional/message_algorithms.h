@@ -54,7 +54,7 @@ class DCCLAlgorithmPerformer
     static void deleteInstance();
 
     void algorithm(DCCLMessageVal& in, unsigned array_index, const std::string& algorithm,
-                   const std::map<std::string, std::vector<DCCLMessageVal>>& vals);
+                   const std::map<std::string, std::vector<DCCLMessageVal> >& vals);
 
     void run_algorithm(const std::string& algorithm, DCCLMessageVal& in,
                        const std::vector<DCCLMessageVal>& ref);

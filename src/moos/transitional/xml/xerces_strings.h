@@ -36,10 +36,7 @@
 // typedef std::basic_string<XMLCh> XercesString;
 
 /* // Converts from a narrow-character string to a wide-character string. */
- inline const XMLCh* fromNative(const char* str) 
- { 
-   return xercesc::XMLString::transcode(str);
- }
+inline const XMLCh* fromNative(const char* str) { return xercesc::XMLString::transcode(str); }
 
 /* // Converts from a narrow-character string to a wide-charactr string. */
 /* inline XercesString fromNative(const std::string& str) */

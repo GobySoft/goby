@@ -22,21 +22,18 @@
 // tests proper encoding of standard Goby header
 
 #include "goby/acomms/dccl.h"
-#include "test.pb.h"
-#include "goby/util/as.h"
 #include "goby/common/time.h"
+#include "goby/util/as.h"
 #include "goby/util/binary.h"
+#include "test.pb.h"
 
 using goby::acomms::operator<<;
-
-
 
 int main(int argc, char* argv[])
 {
     goby::glog.add_stream(goby::common::logger::DEBUG3, &std::cerr);
     goby::glog.set_name(argv[0]);
-    
-    
+
     goby::acomms::DCCLCodec* codec = goby::acomms::DCCLCodec::get();
     goby::acomms::protobuf::DCCLConfig cfg;
     codec->set_cfg(cfg);
@@ -49,8 +46,8 @@ int main(int argc, char* argv[])
     msg_in1.mutable_header()->set_source_platform(1);
     msg_in1.mutable_header()->set_dest_platform(3);
     msg_in1.mutable_header()->set_dest_type(Header::PUBLISH_OTHER);
-    
-    codec->info(msg_in1.GetDescriptor(), &std::cout);    
+
+    codec->info(msg_in1.GetDescriptor(), &std::cout);
     std::cout << "Message in:\n" << msg_in1.DebugString() << std::endl;
     codec->validate(msg_in1.GetDescriptor());
     std::cout << "Try encode..." << std::endl;
@@ -60,14 +57,13 @@ int main(int argc, char* argv[])
 
     // test that adding garbage to the end does not affect decoding
     bytes1 += std::string(10, '\0');
-    
+
     std::cout << "Try decode..." << std::endl;
-    
+
     GobyMessage* msg_out1 = codec->decode<GobyMessage*>(bytes1);
     std::cout << "... got Message out:\n" << msg_out1->DebugString() << std::endl;
     assert(msg_in1.SerializeAsString() == msg_out1->SerializeAsString());
     delete msg_out1;
-    
+
     std::cout << "all tests passed" << std::endl;
 }
-

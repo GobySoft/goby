@@ -23,64 +23,63 @@
 #ifndef LIAISONCONTAINER20130128H
 #define LIAISONCONTAINER20130128H
 
+#include <Wt/WColor>
 #include <Wt/WContainerWidget>
 #include <Wt/WText>
-#include <Wt/WColor>
 
 #include "goby/common/protobuf/liaison_config.pb.h"
 
 namespace goby
 {
-    namespace common
-    {
-            
-        enum 
-        {
-            LIAISON_INTERNAL_PUBLISH_SOCKET = 1,
-            LIAISON_INTERNAL_SUBSCRIBE_SOCKET = 2
-//            LIAISON_INTERNAL_COMMANDER_SUBSCRIBE_SOCKET = 3,
-//            LIAISON_INTERNAL_COMMANDER_PUBLISH_SOCKET = 4,
-//            LIAISON_INTERNAL_SCOPE_SUBSCRIBE_SOCKET = 5,
-//            LIAISON_INTERNAL_SCOPE_PUBLISH_SOCKET = 6,  
-        };
+namespace common
+{
+enum
+{
+    LIAISON_INTERNAL_PUBLISH_SOCKET = 1,
+    LIAISON_INTERNAL_SUBSCRIBE_SOCKET = 2
+    //            LIAISON_INTERNAL_COMMANDER_SUBSCRIBE_SOCKET = 3,
+    //            LIAISON_INTERNAL_COMMANDER_PUBLISH_SOCKET = 4,
+    //            LIAISON_INTERNAL_SCOPE_SUBSCRIBE_SOCKET = 5,
+    //            LIAISON_INTERNAL_SCOPE_PUBLISH_SOCKET = 6,
+};
 
-        const Wt::WColor goby_blue(28,159,203);
-        const Wt::WColor goby_orange(227,96,52);
-        
-        inline std::string liaison_internal_publish_socket_name() { return "liaison_internal_publish_socket"; }
-        inline std::string liaison_internal_subscribe_socket_name() { return "liaison_internal_subscribe_socket"; }
-        
-        class LiaisonContainer : public  Wt::WContainerWidget
-        {
-          public:
-          LiaisonContainer(Wt::WContainerWidget* parent)
-              : Wt::WContainerWidget(parent)
-            {
-                setStyleClass("fill");
-                /* addWidget(new Wt::WText("<hr/>")); */
-                /* addWidget(name_); */
-                /* addWidget(new Wt::WText("<hr/>")); */
-            }
-            
-            virtual ~LiaisonContainer()
-            { }            
-            
-            void set_name(const Wt::WString& name)
-            {
-                name_.setText(name);
-            }
+const Wt::WColor goby_blue(28, 159, 203);
+const Wt::WColor goby_orange(227, 96, 52);
 
-            const Wt::WString& name() { return name_.text(); }
-            
-            virtual void focus() { }
-            virtual void unfocus() { }
-            virtual void cleanup() { }            
-
-            
-          private:
-            Wt::WText name_;
-        };        
-
-    }
+inline std::string liaison_internal_publish_socket_name()
+{
+    return "liaison_internal_publish_socket";
 }
+inline std::string liaison_internal_subscribe_socket_name()
+{
+    return "liaison_internal_subscribe_socket";
+}
+
+class LiaisonContainer : public Wt::WContainerWidget
+{
+  public:
+    LiaisonContainer(Wt::WContainerWidget* parent) : Wt::WContainerWidget(parent)
+    {
+        setStyleClass("fill");
+        /* addWidget(new Wt::WText("<hr/>")); */
+        /* addWidget(name_); */
+        /* addWidget(new Wt::WText("<hr/>")); */
+    }
+
+    virtual ~LiaisonContainer() {}
+
+    void set_name(const Wt::WString& name) { name_.setText(name); }
+
+    const Wt::WString& name() { return name_.text(); }
+
+    virtual void focus() {}
+    virtual void unfocus() {}
+    virtual void cleanup() {}
+
+  private:
+    Wt::WText name_;
+};
+
+} // namespace common
+} // namespace goby
 #endif

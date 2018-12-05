@@ -25,60 +25,52 @@
 #include <google/protobuf/compiler/importer.h>
 #include <google/protobuf/descriptor.h>
 
-#include <Wt/WEnvironment>
 #include <Wt/WApplication>
-#include <Wt/WString>
+#include <Wt/WContainerWidget>
+#include <Wt/WEnvironment>
 #include <Wt/WMenu>
 #include <Wt/WServer>
-#include <Wt/WContainerWidget>
+#include <Wt/WString>
 #include <Wt/WTimer>
 
-#include "goby/common/zeromq_application_base.h"
 #include "goby/common/pubsub_node_wrapper.h"
+#include "goby/common/zeromq_application_base.h"
 
 #include "goby/common/protobuf/liaison_config.pb.h"
 #include "liaison.h"
 
 namespace goby
 {
-    namespace common
-    {
-        class LiaisonWtThread : public Wt::WApplication
-        {
-          public:
-            LiaisonWtThread(const Wt::WEnvironment& env);
-            ~LiaisonWtThread();
-            
-            
-            void inbox(MarshallingScheme marshalling_scheme,
-                       const std::string& identifier,
-                       const void* data,
-                       int size,
-                       int socket_id);
-                
-                
-          private:
-            LiaisonWtThread(const LiaisonWtThread&);
-            LiaisonWtThread& operator=(const LiaisonWtThread&);
-            
-            void add_to_menu(Wt::WMenu* menu, LiaisonContainer* container);
-            void handle_menu_selection(Wt::WMenuItem * item);
-            
-          private:
-            Wt::WMenu* menu_;
-            Wt::WStackedWidget* contents_stack_;
-            std::map<Wt::WMenuItem*, LiaisonContainer*> menu_contents_;
-        };
+namespace common
+{
+class LiaisonWtThread : public Wt::WApplication
+{
+  public:
+    LiaisonWtThread(const Wt::WEnvironment& env);
+    ~LiaisonWtThread();
 
-        
-        inline Wt::WApplication* create_wt_application(const Wt::WEnvironment& env)
-        {
-            return new LiaisonWtThread(env);
-        }
+    void inbox(MarshallingScheme marshalling_scheme, const std::string& identifier,
+               const void* data, int size, int socket_id);
 
-    }
+  private:
+    LiaisonWtThread(const LiaisonWtThread&);
+    LiaisonWtThread& operator=(const LiaisonWtThread&);
+
+    void add_to_menu(Wt::WMenu* menu, LiaisonContainer* container);
+    void handle_menu_selection(Wt::WMenuItem* item);
+
+  private:
+    Wt::WMenu* menu_;
+    Wt::WStackedWidget* contents_stack_;
+    std::map<Wt::WMenuItem*, LiaisonContainer*> menu_contents_;
+};
+
+inline Wt::WApplication* create_wt_application(const Wt::WEnvironment& env)
+{
+    return new LiaisonWtThread(env);
 }
 
-
+} // namespace common
+} // namespace goby
 
 #endif

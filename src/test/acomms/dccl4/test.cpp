@@ -22,10 +22,10 @@
 // tests functionality of std::list<const google::protobuf::Message*> calls
 
 #include "goby/acomms/dccl.h"
-#include "test.pb.h"
-#include "goby/util/as.h"
 #include "goby/common/time.h"
+#include "goby/util/as.h"
 #include "goby/util/binary.h"
+#include "test.pb.h"
 
 using goby::acomms::operator<<;
 
@@ -45,49 +45,48 @@ int main(int argc, char* argv[])
     msg_in2.set_bool_val(false);
     msg_in3.set_string_val("string1");
     msg_in4.set_string_val("string2");
-    
+
     std::list<const google::protobuf::Message*> msgs;
     msgs.push_back(&msg_in1);
     msgs.push_back(&msg_in2);
-    msgs.push_back(&msg_in3);    
+    msgs.push_back(&msg_in3);
     msgs.push_back(&msg_in4);
 
     std::list<const google::protobuf::Descriptor*> descs;
     descs.push_back(msg_in1.GetDescriptor());
     descs.push_back(msg_in2.GetDescriptor());
-    descs.push_back(msg_in3.GetDescriptor());    
+    descs.push_back(msg_in3.GetDescriptor());
     descs.push_back(msg_in4.GetDescriptor());
-    
-    codec->info_repeated(descs, &std::cout);    
 
-    BOOST_FOREACH(const google::protobuf::Message* p, msgs)
+    codec->info_repeated(descs, &std::cout);
+
+    BOOST_FOREACH (const google::protobuf::Message* p, msgs)
     {
         static int i = 0;
         std::cout << "Message " << ++i << " in:\n" << p->DebugString() << std::endl;
     }
-    
+
     codec->validate_repeated(descs);
-    
+
     std::cout << "Try encode..." << std::endl;
     std::string bytes1 = codec->encode_repeated(msgs) + std::string(4, '\0');
     std::cout << "... got bytes (hex): " << goby::util::hex_encode(bytes1) << std::endl;
     std::cout << "Try decode..." << std::endl;
-    
-    std::list< boost::shared_ptr<google::protobuf::Message> > msgs_out = codec->decode_repeated<boost::shared_ptr<google::protobuf::Message> >(bytes1);
+
+    std::list<boost::shared_ptr<google::protobuf::Message>> msgs_out =
+        codec->decode_repeated<boost::shared_ptr<google::protobuf::Message>>(bytes1);
 
     std::list<const google::protobuf::Message*>::const_iterator in_it = msgs.begin();
 
     assert(msgs.size() == msgs_out.size());
-    
-    BOOST_FOREACH(boost::shared_ptr<google::protobuf::Message> p, msgs_out)
+
+    BOOST_FOREACH (boost::shared_ptr<google::protobuf::Message> p, msgs_out)
     {
         static int i = 0;
         std::cout << "... got Message " << ++i << " out:\n" << p->DebugString() << std::endl;
         assert((*in_it)->SerializeAsString() == p->SerializeAsString());
         ++in_it;
     }
-    
 
     std::cout << "all tests passed" << std::endl;
 }
-

@@ -1,0 +1,20 @@
+---
+Language: Cpp
+BasedOnStyle: LLVM
+BreakBeforeBraces: Allman
+ReflowComments: false
+IndentWidth: '4'
+AlignEscapedNewlinesLeft: true
+AllowShortBlocksOnASingleLine: true
+AllowShortCaseLabelsOnASingleLine: true
+AllowShortFunctionsOnASingleLine: true
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: true
+ColumnLimit:     100
+PointerAlignment: Left
+NamespaceIndentation: None
+AlwaysBreakTemplateDeclarations: false
+KeepEmptyLinesAtTheStartOfBlocks: false
+UseTab: Never
+IndentCaseLabels: true
+

@@ -30,95 +30,85 @@
 
 namespace goby
 {
-    namespace acomms
+namespace acomms
+{
+// 32 bit IPv4 address
+class IPv4AddressCodec : public dccl::TypedFixedFieldCodec<dccl::uint32, std::string>
+{
+  private:
+    dccl::uint32 pre_encode(const std::string& field_value);
+    std::string post_decode(const dccl::uint32& wire_value);
+
+    dccl::Bitset encode() { return dccl::Bitset(size(), 0); }
+    dccl::Bitset encode(const goby::uint32& wire_value) { return dccl::Bitset(size(), wire_value); }
+    goby::uint32 decode(dccl::Bitset* bits) { return bits->to<dccl::uint32>(); }
+    unsigned size() { return 32; }
+};
+
+// 16 bit IP unsigned short codec
+class NetShortCodec : public dccl::TypedFixedFieldCodec<dccl::uint32>
+{
+  private:
+    dccl::Bitset encode() { return dccl::Bitset(size(), 0); }
+
+    dccl::Bitset encode(const goby::uint32& wire_value)
     {
-        
-        // 32 bit IPv4 address
-        class IPv4AddressCodec : public dccl::TypedFixedFieldCodec<dccl::uint32, std::string>
-        {
-        private:
-            dccl::uint32 pre_encode(const std::string& field_value);
-            std::string post_decode(const dccl::uint32& wire_value);
-            
-            dccl::Bitset encode()
-                { return dccl::Bitset(size(), 0); }
-            dccl::Bitset encode(const goby::uint32& wire_value)
-                { return dccl::Bitset(size(), wire_value); }
-            goby::uint32 decode(dccl::Bitset* bits)
-                { return bits->to<dccl::uint32>(); }
-            unsigned size() 
-                { return 32; }
-        };        
-
-        // 16 bit IP unsigned short codec
-        class NetShortCodec : public dccl::TypedFixedFieldCodec<dccl::uint32>
-        {
-        private:
-            dccl::Bitset encode()
-                { return dccl::Bitset(size(), 0); }
-        
-            dccl::Bitset encode(const goby::uint32& wire_value)
-                {
-                    unsigned short val = wire_value & 0xFFFF;
-                    unsigned short val_le = ((val & 0xFF) << 8) | ((val >> 8) & 0xFF);
-                    return dccl::Bitset(size(), val_le);
-                }
-            goby::uint32 decode(dccl::Bitset* bits)
-                {
-                    unsigned short val = bits->to<goby::uint32>();
-                    return ((val & 0xFF) << 8) | ((val >> 8) & 0xFF);
-                }
-            unsigned size() 
-                { return 16; }
-        };
-
-        // 16 bit IP unsigned short codec
-        class IPv4FlagsFragOffsetCodec : public dccl::TypedFixedFieldCodec<goby::acomms::protobuf::IPv4Header::FlagsFragOffset>
-        {
-        private:
-            dccl::Bitset encode()
-                { return dccl::Bitset(size(), 0); }
-        
-            dccl::Bitset encode(const goby::acomms::protobuf::IPv4Header::FlagsFragOffset& wire_value)
-                {
-                    unsigned short val = wire_value.fragment_offset() & 0x1FFF; // 13 bits
-                    if(wire_value.dont_fragment())  val |= 0x4000;
-                    if(wire_value.more_fragments()) val |= 0x2000;
-                    unsigned short val_le = ((val & 0xFF) << 8) | ((val >> 8) & 0xFF);
-                    return dccl::Bitset(size(), val_le);
-                }
-            goby::acomms::protobuf::IPv4Header::FlagsFragOffset decode(dccl::Bitset* bits)
-                {
-                    unsigned short val_le = bits->to<goby::uint32>();
-                    unsigned short val = ((val_le & 0xFF) << 8) | ((val_le >> 8) & 0xFF);
-                    goby::acomms::protobuf::IPv4Header::FlagsFragOffset ret;
-                    ret.set_fragment_offset(val & 0x1FFF);
-                    ret.set_dont_fragment(val & 0x4000);
-                    ret.set_more_fragments(val & 0x2000);
-                    return ret;
-                }
-            unsigned size() 
-                { return 16; }
-        };
-        
-        // no-op identifier codec
-        template<unsigned Id>
-        class IPGatewayEmptyIdentifierCodec : public dccl::TypedFixedFieldCodec<dccl::uint32>
-        {
-        private:
-            dccl::Bitset encode()
-                { return dccl::Bitset(0, 0); }
-            dccl::Bitset encode(const goby::uint32& wire_value)
-                { return dccl::Bitset(0, 0); }
-            goby::uint32 decode(dccl::Bitset* bits)
-                { return Id; }
-            unsigned size() 
-                { return 0; }
-        };        
-        
-        uint16_t net_checksum(const std::string& data);
-        
+        unsigned short val = wire_value & 0xFFFF;
+        unsigned short val_le = ((val & 0xFF) << 8) | ((val >> 8) & 0xFF);
+        return dccl::Bitset(size(), val_le);
     }
-}
+    goby::uint32 decode(dccl::Bitset* bits)
+    {
+        unsigned short val = bits->to<goby::uint32>();
+        return ((val & 0xFF) << 8) | ((val >> 8) & 0xFF);
+    }
+    unsigned size() { return 16; }
+};
+
+// 16 bit IP unsigned short codec
+class IPv4FlagsFragOffsetCodec
+    : public dccl::TypedFixedFieldCodec<goby::acomms::protobuf::IPv4Header::FlagsFragOffset>
+{
+  private:
+    dccl::Bitset encode() { return dccl::Bitset(size(), 0); }
+
+    dccl::Bitset encode(const goby::acomms::protobuf::IPv4Header::FlagsFragOffset& wire_value)
+    {
+        unsigned short val = wire_value.fragment_offset() & 0x1FFF; // 13 bits
+        if (wire_value.dont_fragment())
+            val |= 0x4000;
+        if (wire_value.more_fragments())
+            val |= 0x2000;
+        unsigned short val_le = ((val & 0xFF) << 8) | ((val >> 8) & 0xFF);
+        return dccl::Bitset(size(), val_le);
+    }
+    goby::acomms::protobuf::IPv4Header::FlagsFragOffset decode(dccl::Bitset* bits)
+    {
+        unsigned short val_le = bits->to<goby::uint32>();
+        unsigned short val = ((val_le & 0xFF) << 8) | ((val_le >> 8) & 0xFF);
+        goby::acomms::protobuf::IPv4Header::FlagsFragOffset ret;
+        ret.set_fragment_offset(val & 0x1FFF);
+        ret.set_dont_fragment(val & 0x4000);
+        ret.set_more_fragments(val & 0x2000);
+        return ret;
+    }
+    unsigned size() { return 16; }
+};
+
+// no-op identifier codec
+template <unsigned Id>
+class IPGatewayEmptyIdentifierCodec : public dccl::TypedFixedFieldCodec<dccl::uint32>
+{
+  private:
+    dccl::Bitset encode() { return dccl::Bitset(0, 0); }
+    dccl::Bitset encode(const goby::uint32& wire_value) { return dccl::Bitset(0, 0); }
+    goby::uint32 decode(dccl::Bitset* bits) { return Id; }
+    unsigned size() { return 0; }
+};
+
+uint16_t net_checksum(const std::string& data);
+
+} // namespace acomms
+} // namespace goby
 
 #endif

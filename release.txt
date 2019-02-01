@@ -1,6 +1,14 @@
 Goby Release Notes (Major version 2)
 
 ****************
+Version 2.1.12a
+
+### Bug fixes
+- Fixed version.h header macros (regression introduced by clang-format)
+
+See https://github.com/GobySoft/goby/compare/2.1.12...2.1.12a
+
+****************
 Version 2.1.12
 
 ### Code aesthetics

@@ -1,6 +1,14 @@
 Goby Release Notes (Major version 2)
 
 ****************
+Version 2.1.13
+
+### Bug fixes
+- Fix to Dynamic Protobuf unit test for changes in DCCL 3.0.10
+
+See https://github.com/GobySoft/goby/compare/2.1.12a...2.1.13
+
+****************
 Version 2.1.12a
 
 ### Bug fixes

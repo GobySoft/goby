@@ -28,7 +28,6 @@
 #include "goby/util/binary.h"
 #include "goby/util/linebasedcomms/nmea_sentence.h"
 
-#include "goby/moos/frontseat/iver/iver_driver.pb.h"
 #include "iver_driver.h"
 
 namespace gpb = goby::moos::protobuf;
@@ -50,7 +49,8 @@ IverFrontSeat::IverFrontSeat(const iFrontSeatConfig& cfg)
     : FrontSeatInterfaceBase(cfg), iver_config_(cfg.GetExtension(iver_config)),
       serial_(iver_config_.serial_port(), iver_config_.serial_baud(), "\r\n"),
       frontseat_providing_data_(false), last_frontseat_data_time_(0),
-      frontseat_state_(gpb::FRONTSEAT_NOT_CONNECTED)
+      frontseat_state_(gpb::FRONTSEAT_NOT_CONNECTED),
+      reported_mission_mode_(gpb::IverState::IVER_MODE_UNKNOWN)
 {
     goby::util::NMEASentence::enforce_talker_length = false;
 
@@ -167,6 +167,44 @@ void IverFrontSeat::process_receive(const std::string& s)
 
             static const boost::units::metric::knot_base_unit::unit_type knots;
             status_.set_speed_with_units(nmea.as<double>(SPEED) * knots);
+
+            std::string mode_str = nmea.at(MODE);
+            if (mode_str.size() >= 1 && gpb::IverState::IverMissionMode_IsValid(mode_str[0]))
+            {
+                reported_mission_mode_ = static_cast<gpb::IverState::IverMissionMode>(mode_str[0]);
+                glog.is(DEBUG1) &&
+                    glog << "Iver mission mode: "
+                         << gpb::IverState::IverMissionMode_Name(reported_mission_mode_)
+                         << std::endl;
+            }
+            else
+            {
+                glog.is(WARN) && glog << "[Parser]: Invalid mode string [" << mode_str << "]"
+                                      << std::endl;
+                reported_mission_mode_ = gpb::IverState::IVER_MODE_UNKNOWN;
+            }
+
+            switch (reported_mission_mode_)
+            {
+                case gpb::IverState::IVER_MODE_UNKNOWN:
+                case gpb::IverState::IVER_MODE_STOPPED:
+                    frontseat_state_ = gpb::FRONTSEAT_IDLE;
+                    break;
+
+                case gpb::IverState::IVER_MODE_PARKING:
+                    frontseat_state_ = gpb::FRONTSEAT_IN_CONTROL;
+                    break;
+
+                    // all these modes can take a backseat command
+                case gpb::IverState::IVER_MODE_NORMAL:
+                case gpb::IverState::IVER_MODE_MANUAL_OVERRIDE:
+                case gpb::IverState::IVER_MODE_MANUAL_PARKING:
+                case gpb::IverState::IVER_MODE_SERVO_MODE:
+                case gpb::IverState::IVER_MODE_MISSION_MODE:
+                    // no explicit handshake for frontseat command
+                    frontseat_state_ = gpb::FRONTSEAT_ACCEPTING_COMMANDS;
+                    break;
+            }
         }
         else if (nmea.at(0).substr(0, 2) == "$C")
         {
@@ -200,9 +238,6 @@ void IverFrontSeat::process_receive(const std::string& s)
             signal_data_from_frontseat(data);
             frontseat_providing_data_ = true;
             last_frontseat_data_time_ = goby_time<double>();
-
-            // no explicit handshake for frontseat command
-            frontseat_state_ = gpb::FRONTSEAT_ACCEPTING_COMMANDS;
         }
         else
         {

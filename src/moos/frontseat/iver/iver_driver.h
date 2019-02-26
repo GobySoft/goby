@@ -33,6 +33,7 @@
 #include "goby/util/primitive_types.h"
 
 #include "goby/moos/frontseat/frontseat.h"
+#include "goby/moos/frontseat/iver/iver_driver.pb.h"
 
 #include "iver_driver_config.pb.h"
 
@@ -81,6 +82,7 @@ class IverFrontSeat : public FrontSeatInterfaceBase
     bool frontseat_providing_data_;
     double last_frontseat_data_time_;
     goby::moos::protobuf::FrontSeatState frontseat_state_;
+    goby::moos::protobuf::IverState::IverMissionMode reported_mission_mode_;
 
     goby::moos::protobuf::CommandRequest last_request_;
 

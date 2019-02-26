@@ -31,6 +31,7 @@
 
 #include "goby/util/linebasedcomms/serial_client.h"
 #include "goby/util/primitive_types.h"
+#include "goby/util/sci.h"
 
 #include "goby/moos/frontseat/frontseat.h"
 #include "goby/moos/frontseat/iver/iver_driver.pb.h"
@@ -73,6 +74,15 @@ class IverFrontSeat : public FrontSeatInterfaceBase
     boost::units::quantity<boost::units::degree::plane_angle> nmea_geo_to_degrees(double nmea_geo,
                                                                                   char hemi);
 
+    // remote helm manual shows input as tenths precision, so we will force that here
+    std::string tenths_precision_str(double d)
+    {
+	std::stringstream ss;
+	ss << std::fixed << std::setprecision(1) << goby::util::unbiased_round(d, 1);
+	return ss.str();
+    }
+
+    
   private:
     const IverFrontSeatConfig iver_config_;
     goby::util::SerialClient serial_;

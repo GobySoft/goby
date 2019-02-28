@@ -34,3 +34,8 @@ extend CommandRequest
 {
     optional IverExtraCommands iver_command = 1001;
 }
+
+extend FrontSeatInterfaceData
+{
+    optional IverState iver_state = 1001;
+}

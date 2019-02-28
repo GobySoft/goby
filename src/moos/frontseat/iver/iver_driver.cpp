@@ -205,6 +205,19 @@ void IverFrontSeat::process_receive(const std::string& s)
                     frontseat_state_ = gpb::FRONTSEAT_ACCEPTING_COMMANDS;
                     break;
             }
+
+            static const boost::units::imperial::foot_base_unit::unit_type feet;
+            status_.mutable_global_fix()->set_depth_with_units(
+                nmea.as<double>(COR_DFS) * feet);
+            status_.mutable_global_fix()->set_altitude_with_units(
+                nmea.as<double>(ALTIMETER) * feet);
+            status_.mutable_pose()->set_heading_with_units(
+                nmea.as<double>(TRUEHEADING) * boost::units::degree::degrees);
+	    
+	    gpb::FrontSeatInterfaceData fs_data;
+	    gpb::IverState& iver_state = *fs_data.MutableExtension(gpb::iver_state);
+	    iver_state.set_mode(reported_mission_mode_);
+	    signal_data_from_frontseat(fs_data);
         }
         else if (nmea.at(0).substr(0, 2) == "$C")
         {
@@ -222,15 +235,11 @@ void IverFrontSeat::process_receive(const std::string& s)
             std::vector<std::string> cfields;
             boost::split(cfields, nmea.at(0), boost::is_any_of("CPRTD"));
 
-            static const boost::units::imperial::foot_base_unit::unit_type feet;
-            status_.mutable_global_fix()->set_depth_with_units(
-                goby::util::as<double>(cfields.at(DEPTH)) * feet);
             status_.mutable_pose()->set_roll_with_units(goby::util::as<double>(cfields.at(ROLL)) *
                                                         boost::units::degree::degrees);
             status_.mutable_pose()->set_pitch_with_units(goby::util::as<double>(cfields.at(PITCH)) *
                                                          boost::units::degree::degrees);
-            status_.mutable_pose()->set_heading_with_units(
-                goby::util::as<double>(cfields.at(HEADING)) * boost::units::degree::degrees);
+
 
             compute_missing(&status_);
             gpb::FrontSeatInterfaceData data;

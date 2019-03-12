@@ -954,6 +954,8 @@ template <class MOOSAppType> void GobyMOOSAppSelector<MOOSAppType>::process_conf
     {
         goby::common::goby_time_function = GobyMOOSAppSelector<MOOSAppType>::microsec_moos_time;
         goby::common::goby_time_warp_factor = common_cfg_.time_warp_multiplier();
+	// MOOS hasn't processed the warp multiplier at the point start_time is set
+	start_time_ *= common_cfg_.time_warp_multiplier();
     }
 }
 

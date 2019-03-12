@@ -312,10 +312,10 @@ void IverFrontSeat::send_command_to_frontseat(const gpb::CommandRequest& command
 	nmea.push_back(tenths_precision_str(heading));
 	using boost::units::quantity;
 	typedef boost::units::imperial::foot_base_unit::unit_type feet;
-	nmea.push_back(tenths_precision_str(command.desired_course().depth_with_units<quantity<feet>>().value())); // in feet
+	nmea.push_back(tenths_precision_str(command.desired_course().depth_with_units<quantity<feet> >().value())); // in feet
 	nmea.push_back(tenths_precision_str(iver_config_.max_pitch_angle_degrees())); // in degrees
 	typedef boost::units::metric::knot_base_unit::unit_type knots;
-	nmea.push_back(tenths_precision_str(command.desired_course().speed_with_units<quantity<knots>>().value())); // in knots
+	nmea.push_back(tenths_precision_str(command.desired_course().speed_with_units<quantity<knots> >().value())); // in knots
 	const int time_out = 5; // seconds
 	nmea.push_back(time_out);
 	

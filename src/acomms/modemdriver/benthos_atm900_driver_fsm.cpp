@@ -428,9 +428,9 @@ void goby::acomms::benthos_fsm::Command::in_state_react(const EvAck& e)
             valid = true;
         }
         else if (last_cmd.substr(0, 3) == "+++" &&
-                 (e.response_.compare(0, user.size(), user) == 0 || e.response_.empty()))
+                 (e.response_.compare(0, user.size(), user) == 0))
         {
-            // no response in command mode other than giving us a new user:N> prompt or sometimes just an empty string
+            // no response in command mode other than giving us a new user:N> prompt
             valid = true;
         }
         else if (last_cmd.substr(0, 3) == "ATL" &&

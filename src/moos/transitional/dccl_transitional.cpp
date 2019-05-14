@@ -127,7 +127,7 @@ void goby::transitional::DCCLTransitionalCodec::convert_xml_message_file(
     if (!fout.is_open())
         throw(goby::acomms::DCCLException("Could not open " + *proto_file + " for writing"));
 
-    fout << "import \"dccl/protobuf/option_extensions.proto\";" << std::endl;
+    fout << "import \"dccl/option_extensions.proto\";" << std::endl;
     fout << "import \"goby/common/protobuf/option_extensions.proto\";" << std::endl;
 
     for (int i = 0, n = added_ids.size(); i < n; ++i)

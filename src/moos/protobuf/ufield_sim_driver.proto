@@ -1,7 +1,7 @@
 import "goby/acomms/protobuf/driver_base.proto";
 import "goby/moos/protobuf/modem_id_lookup.proto";
 import "goby/acomms/protobuf/modem_message.proto";
-import "dccl/protobuf/option_extensions.proto";
+import "dccl/option_extensions.proto";
 
 package goby.moos.protobuf;
 

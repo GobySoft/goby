@@ -79,7 +79,8 @@ ubuntu|debian)
             apt-get update -qq
             set +x
             packages="${packages} 
-            libdccl3-dev"
+            libdccl3-dev
+            dccl3-compiler"
         fi
         
         if [ $install_doc -ne 0 ]; then 

@@ -26,6 +26,10 @@ else()
   set(PROTOBUF_ALLOW_ALIAS "option allow_alias = true;" PARENT_SCOPE)
 endif()
 
+if(NOT ${PROTOC_VERSION} VERSION_LESS 3.0.0)
+  message("libprotobuf >= 3.0.0")
+  set(PROTOBUF_SYNTAX_VERSION "syntax = \"proto2\";" PARENT_SCOPE)
+endif()
 
 # dccl
 goby_find_required_package(DCCL)

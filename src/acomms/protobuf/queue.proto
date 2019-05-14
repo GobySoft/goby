@@ -86,6 +86,13 @@ message QueueSize
 {
     required uint32 dccl_id = 1;
     required uint32 size = 2;
+
+    message EncodedMessage
+    {
+        required string full_name = 1;
+        required bytes data = 2;
+    }
+    optional EncodedMessage triggering_message = 10;
 }
 
 message QueueFlush

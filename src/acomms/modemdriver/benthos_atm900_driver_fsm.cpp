@@ -160,6 +160,11 @@ void goby::acomms::benthos_fsm::ReceiveData::in_state_react(const EvRxSerial& e)
             {
                 std::string id_str = src_dest[i].substr(i == 0 ? SOURCE_ID_START : DEST_ID_START);
                 boost::trim_left_if(id_str, boost::is_any_of("0"));
+
+                // handle special case of "000"
+                if (id_str.empty())
+                    id_str = "0";
+
                 int id = boost::lexical_cast<unsigned>(id_str);
                 if (i == 0)
                     rx_msg_.set_src(id);

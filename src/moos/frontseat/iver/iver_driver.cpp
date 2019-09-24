@@ -156,8 +156,8 @@ void IverFrontSeat::process_receive(const std::string& s)
                 CURRENTMISSIONNAME = 12,
                 REMAININGMISSIONTIME = 13,
                 TRUEHEADING = 14,
-                COR_DFS = 15,
-                SRP_ACTIVE = 16
+                COR_DFS = 15
+                // fields after this appear to change from Remote Helm version 4->5
             };
 
             status_.mutable_global_fix()->set_lat_with_units(nmea.as<double>(LATITUDE) *
@@ -312,8 +312,18 @@ void IverFrontSeat::send_command_to_frontseat(const gpb::CommandRequest& command
 	nmea.push_back(tenths_precision_str(heading));
 	using boost::units::quantity;
 	typedef boost::units::imperial::foot_base_unit::unit_type feet;
-	nmea.push_back(tenths_precision_str(command.desired_course().depth_with_units<quantity<feet> >().value())); // in feet
-	nmea.push_back(tenths_precision_str(iver_config_.max_pitch_angle_degrees())); // in degrees
+
+        // Remote Helm switched the depth field from feet -> meters in version 5
+        if (iver_config_.remote_helm_version_major() < 5)
+            nmea.push_back(tenths_precision_str(
+                command.desired_course().depth_with_units<quantity<feet> >().value())); // in feet
+        else
+            nmea.push_back(
+                tenths_precision_str(command.desired_course()
+                                         .depth_with_units<quantity<boost::units::si::length> >()
+                                         .value())); // in meters
+
+        nmea.push_back(tenths_precision_str(iver_config_.max_pitch_angle_degrees())); // in degrees
 	typedef boost::units::metric::knot_base_unit::unit_type knots;
 	nmea.push_back(tenths_precision_str(command.desired_course().speed_with_units<quantity<knots> >().value())); // in knots
 	const int time_out = 5; // seconds

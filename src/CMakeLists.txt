@@ -47,6 +47,8 @@ if(DCCL_INCLUDE_DIR)
 endif()
 
 
+find_package(Threads)
+
 # shared library suffix
 add_definitions(-DSHARED_LIBRARY_SUFFIX="${CMAKE_SHARED_LIBRARY_SUFFIX}")
 

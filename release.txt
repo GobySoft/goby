@@ -1,7 +1,7 @@
 Goby Release Notes (Major version 2)
 
 ****************
-Version 2.1.13
+Version 2.1.14
 
 ### Acomms
 - Add FM Sweep ($CCSWP) And M-sequence ($CCMSQ) messages to Micro-Modem driver

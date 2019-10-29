@@ -3,6 +3,22 @@ Goby Release Notes (Major version 2)
 ****************
 Version 2.1.13
 
+### Acomms
+- Add FM Sweep ($CCSWP) And M-sequence ($CCMSQ) messages to Micro-Modem driver
+
+### MOOS
+- Completed iFrontSeat driver for OceanServer Iver3 vehicles (for Remote Helm versions 4 and 5)
+
+### Bug fixes
+Benthos Modem Driver:
+- Fixed bug where benthos modem driver couldn't handle ID:000
+- Improved switching from Online to Command mode when modem is in the Lowpower state.
+
+See https://github.com/GobySoft/goby/compare/2.1.13...2.1.14
+
+****************
+Version 2.1.13
+
 ### Bug fixes
 - Fix to Dynamic Protobuf unit test for changes in DCCL 3.0.10
 

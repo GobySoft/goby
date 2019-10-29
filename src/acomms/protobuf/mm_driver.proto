@@ -44,7 +44,7 @@ message GenericLBLParams
     optional uint32 n_bits =
         2;  // number of bits to use from the signal sequence, same for outgoing
             // as well as incoming pings
-    optional uint64 tranmit_seq_code =
+    optional uint64 transmit_seq_code =
         3;  // outgoing sequence bits, packed into a 64 bit int
     optional uint32 receive_freq =
         4;  // in hertz, first element (0) == beacon A, etc.
@@ -55,6 +55,27 @@ message GenericLBLParams
     optional uint32 turnaround_ms = 7;
     // meters
     optional uint32 lbl_max_range = 8 [default = 2000];
+}
+
+message FMSweepParams
+{
+    // for MICROMODEM_FM_SWEEP
+    required double start_freq = 1;
+    required double stop_freq = 2;
+    required double duration_ms = 3;
+    optional uint32 number_repetitions = 4 [default = 1];
+    optional double repetition_period_ms = 5 [default = 1000];
+}
+
+message MSequenceParams
+{
+    // for MICROMODEM_M_SEQUENCE
+    required uint32 seqlen_bits =
+        1;  // Sequence length, bits. Should be 2k-1, where k={4...16}
+    required uint32 number_repetitions =
+        2;  // number of repetitions, between 3 to 60.
+    required uint32 carrier_cycles_per_chip = 3;
+    required uint32 carrier_freq = 4;  // carrier, Hz
 }
 
 message Config
@@ -87,6 +108,9 @@ message Config
         optional bool use_application_acks = 1009 [default = false];
 
         optional GenericLBLParams generic_lbl = 1010;
+
+        optional FMSweepParams fm_sweep = 1011;
+        optional MSequenceParams m_sequence = 1012;
     }
 }
 
@@ -265,6 +289,8 @@ enum TransmissionType
         7;  // $CAMER response to writing hardware lines
     MICROMODEM_GENERIC_LBL_RANGING =
         8;  // $CCPGT Ping Generic Transponder from host to modem
+    MICROMODEM_FM_SWEEP = 9;     // $CCSWP Send an FM sweep
+    MICROMODEM_M_SEQUENCE = 10;  // $CCMSQ Send a maximal-length sequence
 }
 
 enum HardwareLine
@@ -372,6 +398,8 @@ extend goby.acomms.protobuf.ModemTransmission
     optional HardwareControl hw_ctl = 1007 [(dccl.field).omit = true];
 
     optional GenericLBLParams generic_lbl = 1008 [(dccl.field).omit = true];
+    optional FMSweepParams fm_sweep = 1009 [(dccl.field).omit = true];
+    optional MSequenceParams m_sequence = 1010 [(dccl.field).omit = true];
 }
 
 message MMApplicationAck

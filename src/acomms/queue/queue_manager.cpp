@@ -109,7 +109,7 @@ void goby::acomms::QueueManager::add_queue(
 
         Queue& new_q = *((new_q_pair.first)->second);
 
-        qsize(&new_q);
+        qsize(&new_q, 0);
 
         glog.is(DEBUG1) && glog << group(glog_out_group_) << "Added new queue: \n"
                                 << new_q << std::endl;
@@ -158,7 +158,7 @@ void goby::acomms::QueueManager::push_message(const google::protobuf::Message& d
     else
         queues_.find(dccl_id)->second->push_message(new_dccl_msg);
 
-    qsize(queues_[dccl_id].get());
+    qsize(queues_[dccl_id].get(), new_dccl_msg.get());
 }
 
 void goby::acomms::QueueManager::flush_queue(const protobuf::QueueFlush& flush)
@@ -170,7 +170,7 @@ void goby::acomms::QueueManager::flush_queue(const protobuf::QueueFlush& flush)
         it->second->flush();
         glog.is(DEBUG1) && glog << group(glog_out_group_) << msg_string(it->second->descriptor())
                                 << ": flushed queue" << std::endl;
-        qsize(it->second.get());
+        qsize(it->second.get(), 0);
     }
     else
     {
@@ -298,12 +298,14 @@ void goby::acomms::QueueManager::handle_modem_data_request(protobuf::ModemTransm
                     glog.is(DEBUG2) && glog << group(glog_out_group_)
                                             << "no ack, popping from queue: " << *winning_queue
                                             << std::endl;
-                    if (!winning_queue->pop_message(frame_number))
+
+                    boost::shared_ptr<google::protobuf::Message> removed_msg;
+                    if (!winning_queue->pop_message(frame_number, removed_msg))
                         glog.is(DEBUG1) && glog << group(glog_out_group_)
                                                 << "failed to pop from queue: " << *winning_queue
                                                 << std::endl;
-
-                    qsize(winning_queue); // notify change in queue size
+                    else
+                        qsize(winning_queue, removed_msg.get()); // notify change in queue size
                 }
 
                 // if an ack been set, do not unset these
@@ -625,7 +627,7 @@ void goby::acomms::QueueManager::process_modem_ack(const protobuf::ModemTransmis
                 }
                 else
                 {
-                    qsize(q);
+                    qsize(q, removed_msg.get());
                     signal_ack(ack_msg, *removed_msg);
                     if (network_ack_src_ids_.count(meta_from_msg(*removed_msg).src()))
                         create_network_ack(ack_msg.src(), *removed_msg,
@@ -811,11 +813,20 @@ void goby::acomms::QueueManager::process_cfg()
     }
 }
 
-void goby::acomms::QueueManager::qsize(Queue* q)
+void goby::acomms::QueueManager::qsize(Queue* q,
+                                       const google::protobuf::Message* triggering_message)
 {
     protobuf::QueueSize size;
     size.set_dccl_id(codec_->id(q->descriptor()));
     size.set_size(q->size());
+
+    if (triggering_message)
+    {
+        protobuf::QueueSize::EncodedMessage& encoded_message = *size.mutable_triggering_message();
+        encoded_message.set_full_name(triggering_message->GetDescriptor()->full_name());
+        encoded_message.set_data(triggering_message->SerializePartialAsString());
+    }
+
     signal_queue_size_change(size);
 }
 

@@ -384,7 +384,9 @@ bool goby::acomms::Queue::get_priority_values(double* priority,
     }
 }
 
-bool goby::acomms::Queue::pop_message(unsigned frame)
+bool goby::acomms::Queue::pop_message(unsigned frame,
+                                      boost::shared_ptr<google::protobuf::Message>& removed_msg)
+
 {
     std::list<QueuedMessage>::iterator back_it = messages_.end();
     --back_it; // gives us "back" iterator
@@ -399,6 +401,7 @@ bool goby::acomms::Queue::pop_message(unsigned frame)
         if (!it->meta.ack_requested())
         {
             stream_for_pop(*it);
+            removed_msg = it->dccl_msg;
             messages_.erase(it);
             return true;
         }

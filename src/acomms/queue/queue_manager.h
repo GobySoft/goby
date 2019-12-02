@@ -227,7 +227,7 @@ class QueueManager
     QueueManager& operator=(const QueueManager&);
     //@}
 
-    void qsize(Queue* q);
+    void qsize(Queue* q, const google::protobuf::Message* triggering_message);
 
     // finds the %queue with the highest priority
     Queue* find_next_sender(const protobuf::ModemTransmission& message, const std::string& data,

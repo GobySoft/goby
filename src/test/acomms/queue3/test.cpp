@@ -62,6 +62,10 @@ int main(int argc, char* argv[])
     goby::acomms::QueueManager q_manager;
     cfg.set_modem_id(MY_MODEM_ID);
 
+    goby::acomms::connect(&q_manager.signal_receive, &handle_receive);
+    goby::acomms::connect(&q_manager.signal_queue_size_change, &qsize);
+    goby::acomms::connect(&q_manager.signal_ack, &handle_ack);
+
     goby::acomms::protobuf::QueuedMessageEntry* q_entry = cfg.add_message_entry();
     q_entry->set_protobuf_name("GobyMessage");
     q_entry->set_newest_first(true);
@@ -79,10 +83,6 @@ int main(int argc, char* argv[])
     time_role->set_field("header.time");
 
     q_manager.set_cfg(cfg);
-
-    goby::acomms::connect(&q_manager.signal_receive, &handle_receive);
-    goby::acomms::connect(&q_manager.signal_queue_size_change, &qsize);
-    goby::acomms::connect(&q_manager.signal_ack, &handle_ack);
 
     msg_in_macrura.set_telegram("hello mac!");
     msg_in_macrura.mutable_header()->set_time(goby::util::as<goby::uint64>(current_time));
@@ -196,7 +196,22 @@ void handle_receive(const google::protobuf::Message& msg)
     ++receive_count;
 }
 
-void qsize(goby::acomms::protobuf::QueueSize size) { goby_message_qsize = size.size(); }
+void qsize(goby::acomms::protobuf::QueueSize size)
+{
+    std::cout << "Queue size change: " << size.ShortDebugString() << std::endl;
+
+    if (size.has_triggering_message())
+    {
+        boost::shared_ptr<google::protobuf::Message> triggering_message =
+            dccl::DynamicProtobufManager::new_protobuf_message(
+                size.triggering_message().full_name());
+        triggering_message->ParseFromString(size.triggering_message().data());
+        std::cout << "\tTriggering message decodes as: " << triggering_message->ShortDebugString()
+                  << std::endl;
+    }
+
+    goby_message_qsize = size.size();
+}
 
 void handle_ack(const goby::acomms::protobuf::ModemTransmission& ack_msg,
                 const google::protobuf::Message& orig_msg)

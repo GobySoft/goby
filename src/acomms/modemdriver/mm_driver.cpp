@@ -25,6 +25,7 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/assign.hpp>
 #include <boost/foreach.hpp>
+#include <boost/version.hpp>
 
 #include <dccl/bitset.h>
 
@@ -112,7 +113,11 @@ void goby::acomms::MMDriver::startup(const protobuf::DriverConfig& cfg)
         // Grab our native file descrpitor for the serial port.  Only works for linux.
         // Used to change control lines (e.g. RTS) w/ linux through IOCTL calls.
         // Would need #ifdef's for conditional compling if other platforms become desired.
+#if BOOST_VERSION < 104700
         serial_fd_ = dynamic_cast<util::SerialClient&>(modem()).socket().native();
+#else
+        serial_fd_ = dynamic_cast<util::SerialClient&>(modem()).socket().native_handle();
+#endif
 
         // The MM2 (at least, possibly MM1 as well) has an issue where serial comms are
         // garbled when RTS is asserted and hardware flow control is disabled (HFC0).

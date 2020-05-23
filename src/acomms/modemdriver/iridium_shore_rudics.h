@@ -29,6 +29,7 @@
 #include <boost/signals2.hpp>
 
 #include "goby/common/time.h"
+#include "goby/common/io_service.h"
 #include "goby/util/binary.h"
 
 namespace goby

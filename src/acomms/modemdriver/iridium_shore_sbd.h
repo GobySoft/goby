@@ -26,6 +26,7 @@
 #include "goby/acomms/protobuf/iridium_sbd_directip.pb.h"
 #include "goby/acomms/protobuf/rudics_shore.pb.h"
 #include "goby/common/time.h"
+#include "goby/common/io_service.h"
 #include "goby/util/binary.h"
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>

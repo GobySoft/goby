@@ -168,7 +168,8 @@ endif()
 ## set flags
 option(build_common "Build the Goby Common library" ON)  
 
-
+## Enable use of deprectect Proj API
+add_definitions(-DACCEPT_USE_OF_DEPRECATED_PROJ_API_H)
 
 macro(goby_install_lib target_lib)
   set_property(TARGET ${target_lib} APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES

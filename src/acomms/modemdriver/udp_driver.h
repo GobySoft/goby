@@ -24,6 +24,7 @@
 #define UDPModemDriver20120409H
 
 #include "goby/common/time.h"
+#include "goby/common/io_service.h"
 
 #include "goby/acomms/modemdriver/driver_base.h"
 #include "goby/acomms/protobuf/udp_driver.pb.h"

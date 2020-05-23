@@ -32,6 +32,7 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 
 #include "goby/acomms.h"
+#include "goby/common/io_service.h"
 #include "goby/util.h"
 
 #ifdef ENABLE_GOBY_V1_TRANSITIONAL_SUPPORT

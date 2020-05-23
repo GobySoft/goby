@@ -24,6 +24,7 @@
 
 #include "goby/acomms/modemdriver/driver_exception.h"
 #include "goby/acomms/modemdriver/rudics_packet.h"
+#include "goby/common/io_service.h"
 #include "goby/common/logger.h"
 #include "goby/common/time.h"
 #include "goby/util/binary.h"

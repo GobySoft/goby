@@ -21,6 +21,7 @@
 
 #include <boost/asio.hpp>
 
+#include "goby/common/io_service.h"
 #include "goby/common/logger.h"
 
 #include "goby/pb/application.h"

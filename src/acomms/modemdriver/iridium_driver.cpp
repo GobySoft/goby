@@ -21,6 +21,7 @@
 // along with Goby.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <algorithm>
+#include <boost/version.hpp>
 
 #include "iridium_driver.h"
 
@@ -94,7 +95,11 @@ void goby::acomms::IridiumDriver::modem_init()
 
         if (driver_cfg_.GetExtension(IridiumDriverConfig::use_dtr) && modem().active() && !dtr_set)
         {
+#if BOOST_VERSION < 104700
             serial_fd_ = dynamic_cast<util::SerialClient&>(modem()).socket().native();
+#else
+            serial_fd_ = dynamic_cast<util::SerialClient&>(modem()).socket().native_handle();
+#endif
             set_dtr(true);
             glog.is(DEBUG1) && glog << group(glog_out_group()) << "DTR is: " << query_dtr()
                                     << std::endl;

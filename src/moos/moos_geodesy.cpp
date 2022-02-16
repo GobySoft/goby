@@ -45,7 +45,7 @@ bool CMOOSGeodesy::Initialise(double lat, double lon)
     SetOriginLatitude(lat);
     SetOriginLongitude(lon);
 
-    int zone = (static_cast<int>(std::floor((lon + 180) / 6)) + 1) % 60;
+    int zone = (static_cast<int>(std::floor((lon + 180) / 6))) % 60 + 1;
 
     std::stringstream proj_utm;
     proj_utm << "+proj=utm +ellps=WGS84 +zone=" << zone;

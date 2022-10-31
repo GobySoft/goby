@@ -73,7 +73,7 @@ class Queue
                                 const google::protobuf::Message& msg);
 
     goby::acomms::QueuedMessage give_data(unsigned frame);
-    bool pop_message(unsigned frame);
+    bool pop_message(unsigned frame, boost::shared_ptr<google::protobuf::Message>& removed_msg);
     bool pop_message_ack(unsigned frame, boost::shared_ptr<google::protobuf::Message>& removed_msg);
     void stream_for_pop(const QueuedMessage& queued_msg);
 

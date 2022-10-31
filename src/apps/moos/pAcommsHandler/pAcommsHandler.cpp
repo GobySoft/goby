@@ -33,6 +33,7 @@
 #include "goby/acomms/modemdriver/iridium_driver.h"
 #include "goby/acomms/modemdriver/iridium_shore_driver.h"
 #include "goby/acomms/modemdriver/udp_driver.h"
+#include "goby/common/io_service.h"
 #include "goby/moos/moos_bluefin_driver.h"
 #include "goby/moos/moos_protobuf_helpers.h"
 #include "goby/moos/moos_ufield_sim_driver.h"

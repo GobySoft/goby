@@ -19,6 +19,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Goby.  If not, see <http://www.gnu.org/licenses/>.
 
+#include "goby/common/io_service.h"
 #include "goby/common/logger.h"
 #include "goby/common/logger/term_color.h"
 #include "goby/common/zeromq_service.h"

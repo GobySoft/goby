@@ -34,6 +34,7 @@
 #include "goby/acomms/protobuf/iridium_sbd_directip.pb.h"
 #include "goby/acomms/protobuf/iridium_shore_driver.pb.h"
 #include "goby/common/time.h"
+#include "goby/common/io_service.h"
 
 namespace goby
 {
